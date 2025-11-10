@@ -1,0 +1,57 @@
+/**
+ * Корневой модуль сервиса «Сайты».
+ *
+ * Состав модулей:
+ * - ConfigModule: загрузка переменных окружения (глобально)
+ * - CqrsModule: лёгкая CQRS‑обвязка (используется частично)
+ * - RabbitMQModule: транспорт и клиенты RMQ (единая очередь `sites_queue`)
+ * - EventsModule: best‑effort публикация доменных событий в RMQ
+ * - DatabaseModule: провайдер подключения к PostgreSQL (Drizzle)
+ *
+ * Контроллеры:
+ * - HealthController: HTTP‑хелсчек для оркестраторов (Coolify, Docker, K8s)
+ * - SitesMicroserviceController: RPC‑входные точки (паттерны `sites.*`)
+ * - GeneratorMicroserviceController: RPC‑сборка (паттерн `sites.build`)
+ * - BillingListenerController: подписчик событий биллинга (пока логирующий)
+ *
+ * Провайдеры:
+ * - SitesDomainService: доменная логика (CRUD, домены, публикация, freeze/unfreeze)
+ * - SiteGeneratorService: генерация артефактов и обновление статусов билдов
+ * - CoolifyProvider + DeploymentsService: оркестрация деплоя (mock/http режимы)
+ */
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { CqrsModule } from '@nestjs/cqrs';
+import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
+import { DatabaseModule } from './db/database.module';
+import { HealthController } from './health.controller';
+import { SitesMicroserviceController } from './sites.microservice.controller';
+import { GeneratorMicroserviceController } from './generator/generator.controller';
+import { SiteGeneratorService } from './generator/generator.service';
+import { SitesDomainService } from './sites.service';
+import { EventsModule } from './events/events.module';
+import { BillingListenerController } from './billing/billing.listener';
+import { CoolifyProvider } from './deployments/coolify.provider';
+import { DeploymentsService } from './deployments/deployments.service';
+import { S3StorageService } from './storage/s3.service';
+import { ScheduleModule } from '@nestjs/schedule';
+import { RetentionScheduler } from './scheduler/retention.scheduler';
+import { BillingSyncScheduler } from './scheduler/billing-sync.scheduler';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath:
+        process.env.NODE_ENV === 'production' ? undefined : ['.env.local', '.env'],
+    }),
+    CqrsModule.forRoot(),
+    ScheduleModule.forRoot(),
+    RabbitMQModule,
+    EventsModule,
+    DatabaseModule,
+  ],
+  controllers: [HealthController, SitesMicroserviceController, GeneratorMicroserviceController, BillingListenerController],
+  providers: [SitesDomainService, SiteGeneratorService, CoolifyProvider, DeploymentsService, S3StorageService, RetentionScheduler, BillingSyncScheduler],
+})
+export class AppModule {}

@@ -27,13 +27,12 @@ COPY --from=builder /app/package.json /app/pnpm-lock.yaml ./
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 
-EXPOSE 3020
+EXPOSE 3114
 
 ENV NODE_ENV=production
-ENV PORT=3020
+ENV PORT=3114
 
 HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=3 \
-    CMD curl -f http://localhost:${PORT:-3020}/health || exit 1
+    CMD curl -f http://localhost:${PORT:-3114}/health || exit 1
 
 CMD ["node", "dist/main.js"]
-

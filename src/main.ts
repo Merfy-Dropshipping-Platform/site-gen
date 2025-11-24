@@ -32,7 +32,7 @@ async function bootstrap() {
 
   await app.startAllMicroservices();
 
-  const port = Number.parseInt(String(process.env.PORT ?? 3020), 10);
+  const port = Number.parseInt(String(process.env.PORT ?? 3114), 10);
   await app.listen(port);
   logger.log(`Sites service HTTP listening on http://localhost:${port}`);
   logger.log('Sites microservice connected to RabbitMQ (sites_queue)');
@@ -43,4 +43,3 @@ bootstrap().catch((e) => {
   console.error(e);
   process.exit(1);
 });
-

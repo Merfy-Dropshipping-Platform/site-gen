@@ -17,7 +17,7 @@ pnpm install
 2) Настроить окружение `.env.local`
 ```dotenv
 NODE_ENV=development
-PORT=3020
+PORT=3114
 RABBITMQ_URL=amqp://rabbitmq:password@localhost:5672
 ```
 

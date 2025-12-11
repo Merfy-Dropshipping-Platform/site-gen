@@ -48,17 +48,21 @@ async function manualMigrate() {
 
     console.log('Manual migration completed successfully');
 
-    // Показать информацию о выполненных миграциях
-    const appliedMigrations = await pool.query(`
-      SELECT id, hash, created_at
-      FROM __drizzle_migrations
-      ORDER BY created_at
-    `);
+    // Показать информацию о выполненных миграциях (после создания таблицы)
+    try {
+      const appliedMigrations = await pool.query(`
+        SELECT id, hash, created_at
+        FROM __drizzle_migrations
+        ORDER BY created_at
+      `);
 
-    console.log('\nApplied migrations:');
-    appliedMigrations.rows.forEach((row: any, index: number) => {
-      console.log(`${index + 1}. ${row.id} (${row.created_at})`);
-    });
+      console.log('\nApplied migrations:');
+      appliedMigrations.rows.forEach((row: any, index: number) => {
+        console.log(`${index + 1}. ${row.id} (${row.created_at})`);
+      });
+    } catch (error) {
+      console.log('Could not fetch migration history (table may not exist yet)');
+    }
 
   } catch (error) {
     console.error('Manual migration failed:', error);

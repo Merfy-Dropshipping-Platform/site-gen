@@ -21,7 +21,7 @@ FROM node:24-alpine
 WORKDIR /app
 
 RUN apk add --no-cache curl
-RUN npm install -g pnpm@8
+RUN npm install -g pnpm@10.14.0
 
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml ./
 COPY --from=builder /app/dist ./dist
@@ -35,4 +35,4 @@ ENV PORT=3114
 HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=3 \
     CMD curl -f http://localhost:${PORT:-3114}/health || exit 1
 
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main.js"]

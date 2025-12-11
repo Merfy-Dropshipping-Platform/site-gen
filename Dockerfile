@@ -25,6 +25,7 @@ RUN npm install -g pnpm@10.14.0
 
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml ./
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/node_modules ./node_modules
 
 EXPOSE 3114
@@ -35,4 +36,4 @@ ENV PORT=3114
 HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=3 \
     CMD curl -f http://localhost:${PORT:-3114}/health || exit 1
 
-CMD ["node", "dist/src/main.js"]
+CMD ["sh", "-c", "node dist/src/db/manual-migrate.js && node dist/src/main.js"]

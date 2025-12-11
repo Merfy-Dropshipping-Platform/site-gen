@@ -1,0 +1,8 @@
+---
+const { eyebrow, title, description, align = 'left' } = Astro.props;
+---
+<section style={`text-align:${align};`}>
+  {eyebrow && <p style="text-transform: uppercase; letter-spacing: .12em; opacity: .6">{eyebrow}</p>}
+  <h1 style="font-size: clamp(32px, 4vw, 48px); margin: 8px 0 12px;">{title ?? 'Заголовок'}</h1>
+  {description && <p style="color:#475569; font-size: 18px;">{description}</p>}
+</section>

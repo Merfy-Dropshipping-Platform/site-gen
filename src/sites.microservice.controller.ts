@@ -46,6 +46,21 @@ export class SitesMicroserviceController {
     }
   }
 
+  @MessagePattern('sites.get_site_by_slug')
+  async getSiteBySlug(@Payload() data: any) {
+    try {
+      this.logger.log(`get_site_by_slug request: ${JSON.stringify(data)}`);
+      const { slug } = data ?? {};
+      if (!slug) return { success: false, message: 'slug is required' };
+      const site = await this.service.getBySlug(slug);
+      if (!site) return { success: false, message: 'not_found' };
+      return { success: true, site };
+    } catch (e: any) {
+      this.logger.error('get_site_by_slug failed', e);
+      return { success: false, message: e?.message ?? 'internal_error' };
+    }
+  }
+
   @MessagePattern('sites.list')
   async listSites(@Payload() data: any) {
     try {
@@ -184,7 +199,7 @@ export class SitesMicroserviceController {
       const { tenantId, siteId, revisionId } = data ?? {};
       if (!tenantId || !siteId || !revisionId) return { success: false, message: 'tenantId, siteId and revisionId required' };
       const res = await this.service.setCurrentRevision({ tenantId, siteId, revisionId });
-      return { success: true, ...res };
+      return res;
     } catch (e: any) {
       this.logger.error('revisions.set_current failed', e);
       return { success: false, message: e?.message ?? 'internal_error' };

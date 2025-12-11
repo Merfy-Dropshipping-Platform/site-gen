@@ -18,7 +18,7 @@ import { randomUUID } from 'crypto';
 import * as path from 'path';
 import * as fsp from 'fs/promises';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { and, eq, ilike, sql } from 'drizzle-orm';
+import { and, eq, ilike, or, sql } from 'drizzle-orm';
 import { PG_CONNECTION } from './constants';
 import * as schema from './db/schema';
 import { SiteGeneratorService } from './generator/generator.service';
@@ -74,6 +74,31 @@ export class SitesDomainService {
       .from(schema.site)
       .where(and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)));
     return row ?? null;
+  }
+
+  async getBySlug(slug: string) {
+    const [row] = await this.db
+      .select({
+        id: schema.site.id,
+        tenantId: schema.site.tenantId,
+        name: schema.site.name,
+        slug: schema.site.slug,
+        status: schema.site.status,
+        theme: schema.site.theme,
+        createdAt: schema.site.createdAt,
+        updatedAt: schema.site.updatedAt,
+      })
+      .from(schema.site)
+      .where(
+        and(
+          or(eq(schema.site.slug, slug), ilike(schema.site.slug, slug)),
+          sql`${schema.site.deletedAt} IS NULL`,
+        ),
+      )
+      .limit(1);
+
+    if (!row) return null;
+    return row;
   }
 
   async create(params: { tenantId: string; actorUserId: string; name: string; slug?: string }) {

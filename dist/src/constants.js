@@ -1,5 +1,0 @@
-export const RMQ_SERVICE = 'RMQ_SERVICE';
-export const BILLING_RMQ_SERVICE = 'BILLING_RMQ_SERVICE';
-export const PG_CONNECTION = 'PG_CONNECTION';
-export const USER_RMQ_SERVICE = 'USER_RMQ_SERVICE';
-//# sourceMappingURL=constants.js.map

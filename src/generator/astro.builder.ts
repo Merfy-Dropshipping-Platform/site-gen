@@ -8,6 +8,7 @@ export interface AstroBuildParams {
   outDir: string; // каталог dist (внутри workingDir)
   data: any; // JSON Puck/тема
   outFileName?: string; // имя zip-артефакта (по умолчанию site.zip)
+  theme?: string; // название темы (папка в templates/astro/<theme>)
 }
 
 async function writeFile(filePath: string, content: string) {
@@ -125,16 +126,53 @@ async function zipDir(srcDir: string, outZipPath: string) {
   });
 }
 
+async function copyDir(src: string, dest: string) {
+  await fs.mkdir(dest, { recursive: true });
+  const entries = await fs.readdir(src, { withFileTypes: true });
+  for (const entry of entries) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      await copyDir(srcPath, destPath);
+    } else if (entry.isFile()) {
+      await fs.copyFile(srcPath, destPath);
+    }
+  }
+}
+
+async function ensureTemplate(workingDir: string, theme?: string) {
+  const themeName = theme || 'default';
+  const templateRoot = path.join(process.cwd(), 'templates', 'astro', themeName);
+  const exists = await fs
+    .stat(templateRoot)
+    .then((st) => st.isDirectory())
+    .catch(() => false);
+  if (!exists) return false;
+  await copyDir(templateRoot, workingDir);
+  return true;
+}
+
 export async function buildWithAstro(params: AstroBuildParams): Promise<{ ok: boolean; artifactPath?: string; error?: string }>{
   const { workingDir, outDir, data } = params;
   try {
-    // 1) Подготовить проект Astro
-    await writeFile(path.join(workingDir, 'package.json'), pkgJson());
-    await writeFile(path.join(workingDir, 'astro.config.mjs'), astroConfig(path.join(workingDir, 'dist')));
-    await writeFile(path.join(workingDir, 'src/pages/index.astro'), indexAstro());
-    await writeFile(path.join(workingDir, 'src/components/Hero.astro'), heroAstro());
-    await writeFile(path.join(workingDir, 'src/components/TextBlock.astro'), textBlockAstro());
-    await writeFile(path.join(workingDir, 'src/components/ButtonRow.astro'), buttonRowAstro());
+    // 1) Подготовить проект Astro: если есть тема templates/astro/<theme>, скопировать её; иначе fallback на базовый шаблон
+    const templateUsed = await ensureTemplate(workingDir, params.theme);
+
+    // Базовые файлы — пишем только если их нет (чтобы не затирать шаблон)
+    const pkgPath = path.join(workingDir, 'package.json');
+    const astroCfgPath = path.join(workingDir, 'astro.config.mjs');
+    if (!(await fs.stat(pkgPath).catch(() => false))) {
+      await writeFile(pkgPath, pkgJson());
+    }
+    if (!(await fs.stat(astroCfgPath).catch(() => false))) {
+      await writeFile(astroCfgPath, astroConfig(path.join(workingDir, 'dist')));
+    }
+    if (!templateUsed) {
+      await writeFile(path.join(workingDir, 'src/pages/index.astro'), indexAstro());
+      await writeFile(path.join(workingDir, 'src/components/Hero.astro'), heroAstro());
+      await writeFile(path.join(workingDir, 'src/components/TextBlock.astro'), textBlockAstro());
+      await writeFile(path.join(workingDir, 'src/components/ButtonRow.astro'), buttonRowAstro());
+    }
     await writeFile(path.join(workingDir, 'src/data/data.json'), JSON.stringify(data ?? {}, null, 2));
 
     // 2) Установить зависимости и собрать

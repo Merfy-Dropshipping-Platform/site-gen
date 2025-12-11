@@ -6,29 +6,57 @@ export class S3StorageService {
   private readonly logger = new Logger(S3StorageService.name);
   private client: Minio.Client | null = null;
   private bucketName: string | null = null;
+  private publicEndpoint: string | null = null;
+  private region: string = 'us-east-1';
 
   constructor() {
-    const endp = process.env.S3_ENDPOINT;
-    const access = process.env.S3_ACCESS_KEY;
-    const secret = process.env.S3_SECRET_KEY;
-    const bucket = process.env.S3_BUCKET;
-    if (endp && access && secret && bucket) {
+    const endpoint =
+      process.env.S3_ENDPOINT ||
+      process.env.MINIO_ENDPOINT ||
+      process.env.MINIO_URL;
+    const access =
+      process.env.S3_ACCESS_KEY || process.env.MINIO_ACCESS_KEY || process.env.S3_ACCESS_KEY_ID;
+    const secret =
+      process.env.S3_SECRET_KEY || process.env.MINIO_SECRET_KEY || process.env.S3_SECRET_ACCESS_KEY;
+    const bucket =
+      process.env.S3_BUCKET || process.env.S3_BUCKET_SITES || process.env.MINIO_BUCKET;
+    this.publicEndpoint =
+      process.env.S3_PUBLIC_ENDPOINT || process.env.MINIO_PUBLIC_ENDPOINT || null;
+    this.region = process.env.S3_REGION || 'us-east-1';
+
+    if (endpoint && access && secret && bucket) {
       try {
-        const url = new URL(endp);
+        const parsed = this.parseEndpoint(endpoint);
         this.client = new Minio.Client({
-          endPoint: url.hostname,
-          port: url.port ? Number(url.port) : url.protocol === 'https:' ? 443 : 80,
-          useSSL: url.protocol === 'https:',
+          endPoint: parsed.host,
+          port: parsed.port,
+          useSSL: parsed.useSSL,
           accessKey: access,
           secretKey: secret,
-          region: process.env.S3_REGION || 'us-east-1',
+          region: this.region,
         });
         this.bucketName = bucket;
       } catch (e) {
-        this.logger.warn(`S3 init failed: ${e instanceof Error ? e.message : e}`);
+        this.logger.warn(`S3/Minio init failed: ${e instanceof Error ? e.message : e}`);
         this.client = null;
         this.bucketName = null;
       }
+    }
+  }
+
+  private parseEndpoint(endpoint: string): { host: string; port: number; useSSL: boolean } {
+    try {
+      const url = new URL(endpoint);
+      return {
+        host: url.hostname,
+        port: url.port ? Number(url.port) : url.protocol === 'https:' ? 443 : 80,
+        useSSL: url.protocol === 'https:',
+      };
+    } catch {
+      // Если строка без протокола, считаем её hostname:port
+      const [host, portRaw] = endpoint.split(':');
+      const port = portRaw ? Number(portRaw) : 9000;
+      return { host, port, useSSL: false };
     }
   }
 
@@ -40,7 +68,7 @@ export class S3StorageService {
     if (!this.client || !this.bucketName) throw new Error('S3 not configured');
     const exists = await this.client.bucketExists(this.bucketName).catch(() => false);
     if (!exists) {
-      await this.client.makeBucket(this.bucketName, process.env.S3_REGION || 'us-east-1');
+      await this.client.makeBucket(this.bucketName, this.region);
     }
     return this.bucketName;
   }
@@ -48,13 +76,11 @@ export class S3StorageService {
   async uploadFile(bucket: string, key: string, filePath: string) {
     if (!this.client) throw new Error('S3 client not initialized');
     await this.client.fPutObject(bucket, key, filePath, {});
-    const endpoint = process.env.S3_PUBLIC_ENDPOINT || process.env.S3_ENDPOINT;
+    const endpoint = this.publicEndpoint || process.env.S3_ENDPOINT || process.env.MINIO_ENDPOINT;
     if (endpoint) {
       const base = endpoint.replace(/\/$/, '');
-      // Если Minio расположен за прокси, PUBLIC_ENDPOINT может указывать на CDN/HTTP адрес
       return `${base}/${bucket}/${key}`;
     }
-    // Fallback на s3:// URL
     return `s3://${bucket}/${key}`;
   }
 
@@ -70,7 +96,6 @@ export class S3StorageService {
       objectsStream.on('error', reject);
     });
     if (keys.length === 0) return { removed: 0 } as const;
-    // MinIO allows batch removal via removeObjects
     await this.client.removeObjects(bucket, keys);
     return { removed: keys.length } as const;
   }

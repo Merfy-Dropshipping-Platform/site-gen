@@ -13,6 +13,7 @@
  * - SitesMicroserviceController: RPC‑входные точки (паттерны `sites.*`)
  * - GeneratorMicroserviceController: RPC‑сборка (паттерн `sites.build`)
  * - BillingListenerController: подписчик событий биллинга (пока логирующий)
+ * - SitesEventsListenerController: no-op обработчики доменных событий (ack внутри очереди)
  *
  * Провайдеры:
  * - SitesDomainService: доменная логика (CRUD, домены, публикация, freeze/unfreeze)
@@ -31,19 +32,23 @@ import { SiteGeneratorService } from './generator/generator.service';
 import { SitesDomainService } from './sites.service';
 import { EventsModule } from './events/events.module';
 import { BillingListenerController } from './billing/billing.listener';
+import { UserListenerController } from './user/user.listener';
 import { CoolifyProvider } from './deployments/coolify.provider';
 import { DeploymentsService } from './deployments/deployments.service';
 import { S3StorageService } from './storage/s3.service';
 import { ScheduleModule } from '@nestjs/schedule';
 import { RetentionScheduler } from './scheduler/retention.scheduler';
 import { BillingSyncScheduler } from './scheduler/billing-sync.scheduler';
+import { SitesEventsListenerController } from './events/events.listener';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath:
-        process.env.NODE_ENV === 'production' ? undefined : ['.env.local', '.env'],
+        process.env.NODE_ENV === 'production'
+          ? undefined
+          : ['.env.local', '.env'],
     }),
     CqrsModule.forRoot(),
     ScheduleModule.forRoot(),
@@ -51,7 +56,22 @@ import { BillingSyncScheduler } from './scheduler/billing-sync.scheduler';
     EventsModule,
     DatabaseModule,
   ],
-  controllers: [HealthController, SitesMicroserviceController, GeneratorMicroserviceController, BillingListenerController],
-  providers: [SitesDomainService, SiteGeneratorService, CoolifyProvider, DeploymentsService, S3StorageService, RetentionScheduler, BillingSyncScheduler],
+  controllers: [
+    HealthController,
+    SitesMicroserviceController,
+    GeneratorMicroserviceController,
+    BillingListenerController,
+    UserListenerController,
+    SitesEventsListenerController,
+  ],
+  providers: [
+    SitesDomainService,
+    SiteGeneratorService,
+    CoolifyProvider,
+    DeploymentsService,
+    S3StorageService,
+    RetentionScheduler,
+    BillingSyncScheduler,
+  ],
 })
 export class AppModule {}

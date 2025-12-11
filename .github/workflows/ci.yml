@@ -9,6 +9,20 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: sites_service
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres123
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sites_service"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -27,6 +41,32 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Prepare environment variables
+        run: |
+          cat <<'EOF' > .env.local
+          POSTGRES_PASSWORD=postgres123
+          POSTGRES_DB=sites_service
+          POSTGRES_USER=postgres
+          DATABASE_URL=postgresql://postgres:postgres123@localhost:5432/sites_service
+          NODE_ENV=test
+          EOF
+
+      - name: Wait for Postgres
+        run: |
+          for i in {1..10}; do
+            if nc -z localhost 5432; then
+              echo "Postgres is ready"
+              exit 0
+            fi
+            echo "Waiting for Postgres..."
+            sleep 3
+          done
+          echo "Postgres failed to start" >&2
+          exit 1
+
+      - name: Run database migrations
+        run: pnpm run db:migrate
 
       - name: Run build
         run: pnpm run build

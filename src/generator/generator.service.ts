@@ -91,6 +91,19 @@ export class SiteGeneratorService {
     // Попытаться собрать через Astro (можно отключить через ASTRO_BUILD_ENABLED=false)
     let artifactFile = path.join(artifactsDir, `${buildId}.zip`);
     let artifactUrl = `file://${artifactFile}`;
+    let metadataFile = path.join(artifactsDir, `${buildId}.json`);
+    let logUrl = `file://${metadataFile}`;
+    const metadata = {
+      buildId,
+      siteId: params.siteId,
+      tenantId: params.tenantId,
+      revisionId: '',
+      mode: params.mode ?? 'draft',
+      createdAt: now.toISOString(),
+      artifactFile: artifactFile,
+      artifactUrl: artifactUrl,
+      s3: null as null | { bucket: string; key: string },
+    };
     const astroEnabled = (process.env.ASTRO_BUILD_ENABLED ?? 'true').toLowerCase() !== 'false';
     try {
       if (astroEnabled) {
@@ -104,10 +117,13 @@ export class SiteGeneratorService {
             .from(schema.siteRevision)
             .where(eq(schema.siteRevision.id, revisionId))
             .then((r) => ({ ...(r[0]?.data ?? {}), meta: r[0]?.meta ?? {} }))) as any,
+          theme: (siteRow?.theme as any)?.template ?? 'default',
         });
         if (astroResult.ok && astroResult.artifactPath) {
           artifactFile = astroResult.artifactPath;
           artifactUrl = `file://${artifactFile}`;
+          metadata.artifactFile = artifactFile;
+          metadata.artifactUrl = artifactUrl;
         } else {
           this.logger.warn(`Astro build failed, fallback to stub: ${astroResult.error ?? ''}`);
           await fs.writeFile(
@@ -132,14 +148,27 @@ export class SiteGeneratorService {
 
     // Если настроен S3/Minio — загрузить артефакт и сохранить URL/ключи
     try {
+      // Обновляем metadata перед выгрузкой
+      metadata.revisionId = revisionId!;
+      await fs.writeFile(metadataFile, JSON.stringify(metadata, null, 2), 'utf8');
+
       if (await this.s3.isEnabled()) {
         const bucket = await this.s3.ensureBucket();
-        const key = `sites/${params.tenantId}/${params.siteId}/${buildId}.zip`;
-        const uploadedUrl = await this.s3.uploadFile(bucket, key, artifactFile);
+        const prefix = `sites/${params.tenantId}/${params.siteId}/`;
+        const artifactKey = `${prefix}${buildId}.zip`;
+        const metadataKey = `${prefix}${buildId}.json`;
+
+        const uploadedUrl = await this.s3.uploadFile(bucket, artifactKey, artifactFile);
+        const metaUrl = await this.s3.uploadFile(bucket, metadataKey, metadataFile).catch(() => null);
         artifactUrl = uploadedUrl ?? artifactUrl;
+        logUrl = metaUrl ?? logUrl;
+        metadata.s3 = { bucket, key: artifactKey };
+        metadata.artifactUrl = artifactUrl;
+        await fs.writeFile(metadataFile, JSON.stringify(metadata, null, 2), 'utf8');
+
         await this.db
           .update(schema.siteBuild)
-          .set({ s3Bucket: bucket, s3KeyPrefix: key })
+          .set({ s3Bucket: bucket, s3KeyPrefix: prefix, logUrl })
           .where(eq(schema.siteBuild.id, buildId));
       }
     } catch (e) {
@@ -149,7 +178,7 @@ export class SiteGeneratorService {
     // uploaded
     await this.db
       .update(schema.siteBuild)
-      .set({ status: 'uploaded', artifactUrl, completedAt: new Date() })
+      .set({ status: 'uploaded', artifactUrl, logUrl, completedAt: new Date() })
       .where(eq(schema.siteBuild.id, buildId));
 
     this.logger.log(`Generated build ${buildId} for site ${params.siteId} (artifact: ${artifactUrl})`);
@@ -166,7 +195,7 @@ export class SiteGeneratorService {
       const entries = await fs.readdir(dir, { withFileTypes: true });
       await Promise.all(
         entries
-          .filter((e) => e.isFile() && e.name.endsWith('.zip'))
+          .filter((e) => e.isFile() && (e.name.endsWith('.zip') || e.name.endsWith('.json')))
           .map(async (e) => {
             const p = path.join(dir, e.name);
             try {

@@ -56,7 +56,7 @@ async function manualMigrate() {
     `);
 
     console.log('\nApplied migrations:');
-    appliedMigrations.rows.forEach((row, index) => {
+    appliedMigrations.rows.forEach((row: any, index: number) => {
       console.log(`${index + 1}. ${row.id} (${row.created_at})`);
     });
 
@@ -64,7 +64,7 @@ async function manualMigrate() {
     console.error('Manual migration failed:', error);
 
     // Попытаемся показать больше информации об ошибке
-    if (error.message.includes('relation') && error.message.includes('does not exist')) {
+    if (error instanceof Error && error.message.includes('relation') && error.message.includes('does not exist')) {
       console.log('\nIt seems like some tables are missing. You may need to:');
       console.log('1. Check if the database exists');
       console.log('2. Verify the connection string');

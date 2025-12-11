@@ -38,7 +38,7 @@ async function fixSchema() {
     `);
 
     console.log('Existing indexes:');
-    indexes.rows.forEach((row) => {
+    indexes.rows.forEach((row: any) => {
       console.log(`  ${row.indexname}`);
     });
 

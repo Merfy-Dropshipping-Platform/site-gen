@@ -1,12 +1,19 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Logger } from 'nestjs-pino';
 
 async function bootstrap() {
-  const logger = new Logger('SitesBootstrap');
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+  });
+
+  // Использовать Pino как основной logger
+  app.useLogger(app.get(Logger));
+
+  const logger = app.get(Logger);
 
   const config = app.get(ConfigService);
   const rabbitmqUrl = config.get<string>('RABBITMQ_URL');

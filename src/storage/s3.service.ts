@@ -1,12 +1,25 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as Minio from 'minio';
 
+/**
+ * S3StorageService — сервис для работы с S3/MinIO хранилищем статики сайтов.
+ *
+ * Статика сайтов хранится в публичном bucket и раздаётся напрямую из MinIO.
+ * URL файлов: ${S3_PUBLIC_ENDPOINT}/${bucket}/sites/{tenantId}/{siteId}/...
+ *
+ * Переменные окружения:
+ * - S3_ENDPOINT / MINIO_ENDPOINT — внутренний endpoint для записи (http://minio:9000)
+ * - S3_PUBLIC_ENDPOINT — публичный endpoint для URL (https://s3.merfy.ru)
+ * - S3_BUCKET — имя bucket (merfy-sites)
+ * - S3_ACCESS_KEY / S3_SECRET_KEY — credentials
+ */
 @Injectable()
 export class S3StorageService {
   private readonly logger = new Logger(S3StorageService.name);
   private client: Minio.Client | null = null;
   private bucketName: string | null = null;
   private publicEndpoint: string | null = null;
+  private internalEndpoint: string | null = null;
   private region: string = 'us-east-1';
 
   constructor() {
@@ -19,9 +32,10 @@ export class S3StorageService {
     const secret =
       process.env.S3_SECRET_KEY || process.env.MINIO_SECRET_KEY || process.env.S3_SECRET_ACCESS_KEY;
     const bucket =
-      process.env.S3_BUCKET || process.env.S3_BUCKET_SITES || process.env.MINIO_BUCKET;
+      process.env.S3_BUCKET || process.env.S3_BUCKET_SITES || process.env.MINIO_BUCKET || 'merfy-sites';
     this.publicEndpoint =
-      process.env.S3_PUBLIC_ENDPOINT || process.env.MINIO_PUBLIC_ENDPOINT || null;
+      process.env.S3_PUBLIC_ENDPOINT || process.env.MINIO_API_URL || process.env.MINIO_PUBLIC_ENDPOINT || null;
+    this.internalEndpoint = endpoint || null;
     this.region = process.env.S3_REGION || 'us-east-1';
 
     if (endpoint && access && secret && bucket) {
@@ -36,6 +50,7 @@ export class S3StorageService {
           region: this.region,
         });
         this.bucketName = bucket;
+        this.logger.log(`S3/MinIO initialized: ${endpoint}, bucket: ${bucket}`);
       } catch (e) {
         this.logger.warn(`S3/Minio init failed: ${e instanceof Error ? e.message : e}`);
         this.client = null;
@@ -69,19 +84,81 @@ export class S3StorageService {
     const exists = await this.client.bucketExists(this.bucketName).catch(() => false);
     if (!exists) {
       await this.client.makeBucket(this.bucketName, this.region);
+      this.logger.log(`Created bucket: ${this.bucketName}`);
+      // Установить публичную политику для раздачи статики
+      await this.setPublicReadPolicy(this.bucketName);
     }
     return this.bucketName;
+  }
+
+  /**
+   * Установить публичную политику на bucket для раздачи статики.
+   * Разрешает анонимный доступ на чтение для prefix sites/*
+   */
+  private async setPublicReadPolicy(bucket: string) {
+    if (!this.client) return;
+
+    const policy = {
+      Version: '2012-10-17',
+      Statement: [
+        {
+          Sid: 'PublicReadSites',
+          Effect: 'Allow',
+          Principal: '*',
+          Action: ['s3:GetObject'],
+          Resource: [`arn:aws:s3:::${bucket}/sites/*`],
+        },
+      ],
+    };
+
+    try {
+      await this.client.setBucketPolicy(bucket, JSON.stringify(policy));
+      this.logger.log(`Set public read policy on bucket ${bucket} for sites/*`);
+    } catch (e) {
+      this.logger.warn(`Failed to set bucket policy: ${e instanceof Error ? e.message : e}`);
+    }
   }
 
   async uploadFile(bucket: string, key: string, filePath: string) {
     if (!this.client) throw new Error('S3 client not initialized');
     await this.client.fPutObject(bucket, key, filePath, {});
-    const endpoint = this.publicEndpoint || process.env.S3_ENDPOINT || process.env.MINIO_ENDPOINT;
+    return this.getPublicUrl(bucket, key);
+  }
+
+  /**
+   * Получить публичный URL для файла.
+   * Использует S3_PUBLIC_ENDPOINT если настроен, иначе внутренний endpoint.
+   */
+  getPublicUrl(bucket: string, key: string): string {
+    const endpoint = this.publicEndpoint || this.internalEndpoint;
     if (endpoint) {
       const base = endpoint.replace(/\/$/, '');
       return `${base}/${bucket}/${key}`;
     }
     return `s3://${bucket}/${key}`;
+  }
+
+  /**
+   * Получить публичный URL для сайта (index.html).
+   * Используется для publicUrl сайта после публикации.
+   */
+  getSitePublicUrl(tenantId: string, siteId: string): string | null {
+    if (!this.bucketName) return null;
+    const endpoint = this.publicEndpoint || this.internalEndpoint;
+    if (!endpoint) return null;
+    const base = endpoint.replace(/\/$/, '');
+    return `${base}/${this.bucketName}/sites/${tenantId}/${siteId}/index.html`;
+  }
+
+  /**
+   * Получить базовый URL для статики сайта (без index.html).
+   */
+  getSiteBaseUrl(tenantId: string, siteId: string): string | null {
+    if (!this.bucketName) return null;
+    const endpoint = this.publicEndpoint || this.internalEndpoint;
+    if (!endpoint) return null;
+    const base = endpoint.replace(/\/$/, '');
+    return `${base}/${this.bucketName}/sites/${tenantId}/${siteId}/`;
   }
 
   async removePrefix(bucket: string, prefix: string) {
@@ -104,5 +181,76 @@ export class S3StorageService {
     if (!this.client) throw new Error('S3 client not initialized');
     await this.client.removeObject(bucket, key);
     return { removed: 1 } as const;
+  }
+
+  /**
+   * Загрузить директорию в S3 рекурсивно.
+   * Используется для загрузки статики сайта (dist/) напрямую.
+   *
+   * @param bucket - имя bucket
+   * @param prefix - префикс ключа (например sites/tenant/site/)
+   * @param localDir - локальная директория для загрузки
+   * @returns количество загруженных файлов
+   */
+  async uploadDirectory(bucket: string, prefix: string, localDir: string): Promise<{ uploaded: number }> {
+    if (!this.client) throw new Error('S3 client not initialized');
+
+    const fs = await import('fs/promises');
+    const path = await import('path');
+
+    let uploaded = 0;
+
+    const uploadRecursive = async (dir: string, keyPrefix: string) => {
+      const entries = await fs.readdir(dir, { withFileTypes: true });
+
+      for (const entry of entries) {
+        const localPath = path.join(dir, entry.name);
+        const s3Key = `${keyPrefix}${entry.name}`;
+
+        if (entry.isDirectory()) {
+          await uploadRecursive(localPath, `${s3Key}/`);
+        } else if (entry.isFile()) {
+          await this.client!.fPutObject(bucket, s3Key, localPath, {
+            'Content-Type': this.getContentType(entry.name),
+          });
+          uploaded++;
+        }
+      }
+    };
+
+    await uploadRecursive(localDir, prefix);
+    this.logger.log(`Uploaded ${uploaded} files to s3://${bucket}/${prefix}`);
+    return { uploaded };
+  }
+
+  /**
+   * Определить Content-Type по расширению файла.
+   */
+  private getContentType(filename: string): string {
+    const ext = filename.split('.').pop()?.toLowerCase();
+    const types: Record<string, string> = {
+      html: 'text/html',
+      htm: 'text/html',
+      css: 'text/css',
+      js: 'application/javascript',
+      mjs: 'application/javascript',
+      json: 'application/json',
+      png: 'image/png',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      gif: 'image/gif',
+      svg: 'image/svg+xml',
+      ico: 'image/x-icon',
+      webp: 'image/webp',
+      woff: 'font/woff',
+      woff2: 'font/woff2',
+      ttf: 'font/ttf',
+      eot: 'application/vnd.ms-fontobject',
+      xml: 'application/xml',
+      txt: 'text/plain',
+      md: 'text/markdown',
+      pdf: 'application/pdf',
+    };
+    return types[ext ?? ''] || 'application/octet-stream';
   }
 }

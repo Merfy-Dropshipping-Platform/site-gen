@@ -23,8 +23,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { CqrsModule } from '@nestjs/cqrs';
+import { LoggerModule } from 'nestjs-pino';
 import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
 import { DatabaseModule } from './db/database.module';
+import { pinoConfig } from './common/logger/pino.config';
+import { MetricsModule } from './common/metrics/metrics.module';
 import { HealthController } from './health.controller';
 import { SitesMicroserviceController } from './sites.microservice.controller';
 import { GeneratorMicroserviceController } from './generator/generator.controller';
@@ -46,6 +49,7 @@ import { DomainModule } from './domain';
 
 @Module({
   imports: [
+    LoggerModule.forRoot(pinoConfig),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath:
@@ -53,6 +57,7 @@ import { DomainModule } from './domain';
           ? undefined
           : ['.env.local', '.env'],
     }),
+    MetricsModule,
     CqrsModule.forRoot(),
     ScheduleModule.forRoot(),
     RabbitMQModule,

@@ -165,6 +165,10 @@ export class SiteGeneratorService {
     const products = await this.fetchProducts(params.tenantId);
     this.logger.log(`Fetched ${products.length} products for tenant ${params.tenantId}`);
 
+    // Путь к dist/ директории после сборки Astro
+    const distDir = path.join(workingDir, 'dist');
+    let astroBuildSuccess = false;
+
     try {
       if (astroEnabled) {
         const astroResult = await buildWithAstro({
@@ -185,6 +189,7 @@ export class SiteGeneratorService {
           artifactUrl = `file://${artifactFile}`;
           metadata.artifactFile = artifactFile;
           metadata.artifactUrl = artifactUrl;
+          astroBuildSuccess = true;
         } else {
           this.logger.warn(`Astro build failed, fallback to stub: ${astroResult.error ?? ''}`);
           await fs.writeFile(
@@ -197,6 +202,23 @@ export class SiteGeneratorService {
           artifactFile,
           JSON.stringify({ buildId, siteId: params.siteId, mode: params.mode ?? 'draft' }, null, 2),
         );
+      }
+
+      // Загрузить статику в S3 напрямую (для раздачи из MinIO)
+      if (astroBuildSuccess && await this.s3.isEnabled()) {
+        try {
+          const bucket = await this.s3.ensureBucket();
+          const sitePrefix = `sites/${params.tenantId}/${params.siteId}/`;
+
+          // Удалить старые файлы сайта (если были)
+          await this.s3.removePrefix(bucket, sitePrefix).catch(() => {});
+
+          // Загрузить все файлы из dist/
+          const { uploaded } = await this.s3.uploadDirectory(bucket, sitePrefix, distDir);
+          this.logger.log(`Uploaded ${uploaded} static files to S3 for site ${params.siteId}`);
+        } catch (e) {
+          this.logger.warn(`Static files upload to S3 failed: ${e instanceof Error ? e.message : e}`);
+        }
       }
     } finally {
       // Очистка рабочей директории (best-effort)

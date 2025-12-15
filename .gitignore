@@ -4,3 +4,10 @@ dist/
 .env
 .env.local
 .DS_Store
+
+# Build artifacts (stored in MinIO, not git)
+.astro-builds/
+artifacts/
+
+# Drizzle backups
+drizzle_backup/

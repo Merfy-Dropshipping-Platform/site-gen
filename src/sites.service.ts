@@ -410,15 +410,53 @@ export class SitesDomainService {
   async publish(params: { tenantId: string; siteId: string; mode?: 'draft' | 'production' }) {
     const site = await this.get(params.tenantId, params.siteId);
     if (!site) throw new Error('site_not_found');
-    const { buildId, artifactUrl, revisionId } = await this.generator.build({ tenantId: params.tenantId, siteId: params.siteId, mode: params.mode });
-    const { url } = await this.deployments.deploy({ tenantId: params.tenantId, siteId: params.siteId, buildId, artifactUrl });
-    // Отметить сайт как опубликованный и сохранить текущую ревизию
+
+    // 1. Собрать сайт и загрузить в S3
+    const { buildId, artifactUrl, revisionId } = await this.generator.build({
+      tenantId: params.tenantId,
+      siteId: params.siteId,
+      mode: params.mode,
+    });
+
+    // 2. Получить публичный URL из S3 (статика раздаётся напрямую из MinIO)
+    const publicUrl = this.storage.getSitePublicUrl(params.tenantId, params.siteId);
+
+    // 3. Опционально: деплой через Coolify (для кастомных доменов)
+    let deployUrl: string | undefined;
+    try {
+      const deployResult = await this.deployments.deploy({
+        tenantId: params.tenantId,
+        siteId: params.siteId,
+        buildId,
+        artifactUrl,
+      });
+      deployUrl = deployResult.url;
+    } catch (e) {
+      this.logger.warn(`Coolify deploy skipped: ${e instanceof Error ? e.message : e}`);
+    }
+
+    // Приоритет: publicUrl из S3, fallback на deployUrl из Coolify
+    const finalUrl = publicUrl || deployUrl || site.publicUrl;
+
+    // 4. Обновить статус сайта
     await this.db
       .update(schema.site)
-      .set({ status: 'published', currentRevisionId: revisionId, updatedAt: new Date() })
+      .set({
+        status: 'published',
+        currentRevisionId: revisionId,
+        publicUrl: finalUrl,
+        updatedAt: new Date(),
+      })
       .where(and(eq(schema.site.id, params.siteId), eq(schema.site.tenantId, params.tenantId)));
-    this.events.emit('sites.site.published', { tenantId: params.tenantId, siteId: params.siteId, buildId, url });
-    return { url, buildId, artifactUrl };
+
+    this.events.emit('sites.site.published', {
+      tenantId: params.tenantId,
+      siteId: params.siteId,
+      buildId,
+      url: finalUrl,
+    });
+
+    return { url: finalUrl, buildId, artifactUrl };
   }
 
   // Revisions API

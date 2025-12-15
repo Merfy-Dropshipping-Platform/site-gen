@@ -10,15 +10,26 @@
  * а затем выгружать артефакт в S3/Minio и сохранять ссылку в `artifactUrl`.
  */
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { and, eq } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
-import { PG_CONNECTION } from '../constants';
+import { firstValueFrom, timeout, catchError } from 'rxjs';
+import { PG_CONNECTION, PRODUCT_RMQ_SERVICE } from '../constants';
 import * as schema from '../db/schema';
 import { buildWithAstro } from './astro.builder';
 import { S3StorageService } from '../storage/s3.service';
+
+interface ProductData {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  images?: string[];
+  slug?: string;
+}
 
 @Injectable()
 export class SiteGeneratorService {
@@ -27,8 +38,46 @@ export class SiteGeneratorService {
   constructor(
     @Inject(PG_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
+    @Inject(PRODUCT_RMQ_SERVICE)
+    private readonly productClient: ClientProxy,
     private readonly s3: S3StorageService,
   ) {}
+
+  /**
+   * Получить товары для сайта по tenantId (shopId).
+   * Возвращает пустой массив при ошибке/таймауте.
+   */
+  private async fetchProducts(tenantId: string, limit = 20): Promise<ProductData[]> {
+    try {
+      const result = await firstValueFrom(
+        this.productClient.send('product.findAll', {
+          shopId: tenantId,
+          take: limit,
+          status: 'active',
+        }).pipe(
+          timeout(5000),
+          catchError((err) => {
+            this.logger.warn(`Failed to fetch products for tenant ${tenantId}: ${err?.message ?? err}`);
+            return [{ success: false, data: [] }];
+          }),
+        ),
+      );
+      if (result?.success && Array.isArray(result.data)) {
+        return result.data.map((p: any) => ({
+          id: p.id,
+          name: p.title ?? p.name ?? '',
+          description: p.description,
+          price: p.basePrice ?? p.price ?? 0,
+          images: p.images ?? [],
+          slug: p.slug ?? p.id,
+        }));
+      }
+      return [];
+    } catch (e) {
+      this.logger.warn(`fetchProducts error: ${e instanceof Error ? e.message : e}`);
+      return [];
+    }
+  }
 
   async build(params: { tenantId: string; siteId: string; mode?: 'draft' | 'production' }) {
     // Подтянуть текущую тему/ревизию и собрать артефакт с единым именем <buildId>.zip
@@ -38,8 +87,15 @@ export class SiteGeneratorService {
 
     // Определяем, какую ревизию брать: приоритет — currentRevisionId, если нет — создаём с темой
     const [siteRow] = await this.db
-      .select({ id: schema.site.id, theme: schema.site.theme, currentRevisionId: schema.site.currentRevisionId })
+      .select({
+        id: schema.site.id,
+        themeId: schema.site.themeId,
+        currentRevisionId: schema.site.currentRevisionId,
+        // JOIN: get templateId from theme table
+        templateId: schema.theme.templateId,
+      })
       .from(schema.site)
+      .leftJoin(schema.theme, eq(schema.site.themeId, schema.theme.id))
       .where(eq(schema.site.id, params.siteId));
 
     if (siteRow?.currentRevisionId) {
@@ -53,10 +109,9 @@ export class SiteGeneratorService {
       }
     }
 
-    // Если текущая ревизия не найдена — создаём новую из темы сайта
+    // Если текущая ревизия не найдена — создаём новую с базовыми данными
     if (!revisionId) {
-      const theme = (siteRow?.theme as any) ?? {};
-      const data = Array.isArray(theme?.content) || typeof theme?.content === 'object' ? theme : { content: [], meta: { title: 'Мой сайт' } };
+      const data = { content: [], meta: { title: 'Мой сайт' } };
       revisionId = randomUUID();
       await this.db.insert(schema.siteRevision).values({
         id: revisionId,
@@ -105,6 +160,11 @@ export class SiteGeneratorService {
       s3: null as null | { bucket: string; key: string },
     };
     const astroEnabled = (process.env.ASTRO_BUILD_ENABLED ?? 'true').toLowerCase() !== 'false';
+
+    // Получаем товары для сайта
+    const products = await this.fetchProducts(params.tenantId);
+    this.logger.log(`Fetched ${products.length} products for tenant ${params.tenantId}`);
+
     try {
       if (astroEnabled) {
         const astroResult = await buildWithAstro({
@@ -117,7 +177,8 @@ export class SiteGeneratorService {
             .from(schema.siteRevision)
             .where(eq(schema.siteRevision.id, revisionId))
             .then((r) => ({ ...(r[0]?.data ?? {}), meta: r[0]?.meta ?? {} }))) as any,
-          theme: (siteRow?.theme as any)?.template ?? 'default',
+          theme: siteRow?.templateId ?? 'default',
+          products,
         });
         if (astroResult.ok && astroResult.artifactPath) {
           artifactFile = astroResult.artifactPath;

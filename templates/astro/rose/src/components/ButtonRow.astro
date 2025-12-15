@@ -1,0 +1,86 @@
+---
+interface Button {
+  label: string;
+  href: string;
+  variant?: 'primary' | 'secondary' | 'outline';
+}
+
+interface Props {
+  buttons?: Button[];
+  align?: 'left' | 'center' | 'right';
+}
+
+const { buttons = [], align = 'center' } = Astro.props;
+---
+
+{buttons.length > 0 && (
+  <div class="button-row" style={`justify-content: ${align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center'}`}>
+    {buttons.map((btn) => (
+      <a href={btn.href} class={`btn btn--${btn.variant ?? 'primary'}`}>
+        {btn.label}
+      </a>
+    ))}
+  </div>
+)}
+
+<style>
+  .button-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 20px 0;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 32px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .btn--primary {
+    background: var(--rose-600);
+    color: #fff;
+  }
+
+  .btn--primary:hover {
+    background: var(--rose-700);
+  }
+
+  .btn--secondary {
+    background: var(--neutral-800);
+    color: #fff;
+  }
+
+  .btn--secondary:hover {
+    background: var(--neutral-900);
+  }
+
+  .btn--outline {
+    background: transparent;
+    color: var(--neutral-800);
+    border: 1px solid var(--neutral-300);
+  }
+
+  .btn--outline:hover {
+    border-color: var(--rose-600);
+    color: var(--rose-600);
+  }
+
+  @media (max-width: 480px) {
+    .button-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .btn {
+      text-align: center;
+    }
+  }
+</style>

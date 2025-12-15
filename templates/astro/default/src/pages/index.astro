@@ -1,11 +1,14 @@
 ---
 import data from '../data/data.json';
+import products from '../data/products.json';
 import Hero from '../components/Hero.astro';
 import TextBlock from '../components/TextBlock.astro';
 import ButtonRow from '../components/ButtonRow.astro';
+import ProductGrid from '../components/ProductGrid.astro';
 
 const blocks = data?.content ?? [];
 const meta = data?.meta ?? {};
+const hasProducts = products && products.length > 0;
 ---
 <html lang="ru">
   <head>
@@ -23,7 +26,7 @@ const meta = data?.meta ?? {};
   </head>
   <body>
     <main>
-      {blocks.length === 0 && (
+      {blocks.length === 0 && !hasProducts && (
         <section>
           <h1>Пустой сайт</h1>
           <p>Добавьте блоки в теме, чтобы увидеть контент.</p>
@@ -37,6 +40,8 @@ const meta = data?.meta ?? {};
             return <TextBlock {...b.props} />;
           case 'ButtonRow':
             return <ButtonRow {...b.props} />;
+          case 'ProductGrid':
+            return <ProductGrid products={products} {...b.props} />;
           default:
             return (
               <section>
@@ -46,6 +51,9 @@ const meta = data?.meta ?? {};
             );
         }
       })}
+      {hasProducts && !blocks.some(b => b.type === 'ProductGrid') && (
+        <ProductGrid products={products} title="Наши товары" />
+      )}
     </main>
   </body>
 </html>

@@ -1,0 +1,124 @@
+---
+import data from '../data/data.json';
+import products from '../data/products.json';
+import ProductGrid from '../components/ProductGrid.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+const meta = data?.meta ?? {};
+---
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Каталог — {meta?.title ?? 'Мой магазин'}</title>
+    {meta?.description && <meta name="description" content={meta.description} />}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --rose-50: #fff1f2;
+        --rose-100: #ffe4e6;
+        --rose-200: #fecdd3;
+        --rose-300: #fda4af;
+        --rose-400: #fb7185;
+        --rose-500: #f43f5e;
+        --rose-600: #e11d48;
+        --rose-700: #be123c;
+        --rose-800: #9f1239;
+        --rose-900: #881337;
+
+        --neutral-50: #fafafa;
+        --neutral-100: #f5f5f5;
+        --neutral-200: #e5e5e5;
+        --neutral-300: #d4d4d4;
+        --neutral-400: #a3a3a3;
+        --neutral-500: #737373;
+        --neutral-600: #525252;
+        --neutral-700: #404040;
+        --neutral-800: #262626;
+        --neutral-900: #171717;
+
+        --font-display: 'Cormorant Garamond', Georgia, serif;
+        --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        font-family: var(--font-body);
+        color: var(--neutral-800);
+        background: var(--neutral-50);
+        line-height: 1.6;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      main {
+        flex: 1;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 20px 80px;
+        width: 100%;
+      }
+
+      h1, h2, h3 {
+        font-family: var(--font-display);
+        font-weight: 500;
+        letter-spacing: -0.02em;
+      }
+
+      a {
+        color: var(--rose-600);
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+
+      a:hover {
+        color: var(--rose-700);
+      }
+
+      .page-header {
+        text-align: center;
+        margin-bottom: 40px;
+      }
+
+      .page-title {
+        font-size: 2.5rem;
+        color: var(--neutral-900);
+      }
+
+      .breadcrumb {
+        margin-bottom: 16px;
+        font-size: 0.9rem;
+        color: var(--neutral-500);
+      }
+
+      .breadcrumb a {
+        color: var(--neutral-500);
+      }
+
+      .breadcrumb a:hover {
+        color: var(--rose-600);
+      }
+    </style>
+  </head>
+  <body>
+    <Header siteName={meta?.title ?? 'ROSE'} />
+
+    <main>
+      <div class="page-header">
+        <p class="breadcrumb">
+          <a href="/">Главная</a> / Каталог
+        </p>
+        <h1 class="page-title">Каталог</h1>
+      </div>
+
+      <ProductGrid products={products} title="" columns={4} />
+    </main>
+
+    <Footer siteName={meta?.title ?? 'ROSE'} />
+  </body>
+</html>

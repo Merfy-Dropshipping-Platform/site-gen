@@ -30,6 +30,8 @@ import { SitesMicroserviceController } from './sites.microservice.controller';
 import { GeneratorMicroserviceController } from './generator/generator.controller';
 import { SiteGeneratorService } from './generator/generator.service';
 import { SitesDomainService } from './sites.service';
+import { ThemesService } from './themes.service';
+import { ThemesMicroserviceController } from './themes.microservice.controller';
 import { EventsModule } from './events/events.module';
 import { BillingListenerController } from './billing/billing.listener';
 import { UserListenerController } from './user/user.listener';
@@ -40,6 +42,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { RetentionScheduler } from './scheduler/retention.scheduler';
 import { BillingSyncScheduler } from './scheduler/billing-sync.scheduler';
 import { SitesEventsListenerController } from './events/events.listener';
+import { DomainModule } from './domain';
 
 @Module({
   imports: [
@@ -55,10 +58,12 @@ import { SitesEventsListenerController } from './events/events.listener';
     RabbitMQModule,
     EventsModule,
     DatabaseModule,
+    DomainModule,
   ],
   controllers: [
     HealthController,
     SitesMicroserviceController,
+    ThemesMicroserviceController,
     GeneratorMicroserviceController,
     BillingListenerController,
     UserListenerController,
@@ -66,6 +71,7 @@ import { SitesEventsListenerController } from './events/events.listener';
   ],
   providers: [
     SitesDomainService,
+    ThemesService,
     SiteGeneratorService,
     CoolifyProvider,
     DeploymentsService,

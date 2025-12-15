@@ -1,0 +1,108 @@
+---
+const { eyebrow, title, description, align = 'center', backgroundImage } = Astro.props;
+---
+
+<section class="hero" style={backgroundImage ? `background-image: url(${backgroundImage})` : ''}>
+  <div class="hero-content" style={`text-align: ${align}`}>
+    {eyebrow && <p class="hero-eyebrow">{eyebrow}</p>}
+    <h1 class="hero-title">{title ?? 'Ваш стиль'}</h1>
+    {description && <p class="hero-description">{description}</p>}
+    <div class="hero-actions">
+      <a href="/catalog" class="btn btn-primary">Смотреть каталог</a>
+      <a href="/about" class="btn btn-secondary">О нас</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+    background: linear-gradient(135deg, var(--rose-50) 0%, var(--rose-100) 100%);
+    background-size: cover;
+    background-position: center;
+    border-radius: 20px;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.8);
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 700px;
+  }
+
+  .hero-eyebrow {
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--rose-600);
+    margin-bottom: 16px;
+  }
+
+  .hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    font-weight: 500;
+    color: var(--neutral-900);
+    line-height: 1.1;
+    margin-bottom: 20px;
+  }
+
+  .hero-description {
+    font-size: 1.1rem;
+    color: var(--neutral-600);
+    max-width: 500px;
+    margin: 0 auto 32px;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 32px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .btn-primary {
+    background: var(--rose-600);
+    color: #fff;
+  }
+
+  .btn-primary:hover {
+    background: var(--rose-700);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--neutral-800);
+    border: 1px solid var(--neutral-300);
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--rose-600);
+    color: var(--rose-600);
+  }
+</style>

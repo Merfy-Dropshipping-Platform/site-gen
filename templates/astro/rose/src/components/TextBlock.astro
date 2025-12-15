@@ -1,0 +1,77 @@
+---
+interface Props {
+  heading?: string;
+  text?: string;
+  align?: 'left' | 'center' | 'right';
+  size?: 'small' | 'medium' | 'large';
+}
+
+const { heading, text, align = 'center', size = 'medium' } = Astro.props;
+---
+
+<section class={`text-block text-block--${size}`} style={`text-align: ${align}`}>
+  {heading && <h2 class="text-block-heading">{heading}</h2>}
+  {text && <p class="text-block-text">{text}</p>}
+  <slot />
+</section>
+
+<style>
+  .text-block {
+    padding: 60px 20px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .text-block--small {
+    padding: 40px 20px;
+  }
+
+  .text-block--large {
+    padding: 80px 20px;
+  }
+
+  .text-block-heading {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 500;
+    color: var(--neutral-900);
+    margin-bottom: 20px;
+    line-height: 1.2;
+  }
+
+  .text-block--large .text-block-heading {
+    font-size: 2.5rem;
+  }
+
+  .text-block--small .text-block-heading {
+    font-size: 1.5rem;
+  }
+
+  .text-block-text {
+    font-size: 1.1rem;
+    color: var(--neutral-600);
+    line-height: 1.7;
+  }
+
+  .text-block--large .text-block-text {
+    font-size: 1.2rem;
+  }
+
+  .text-block--small .text-block-text {
+    font-size: 1rem;
+  }
+
+  @media (max-width: 768px) {
+    .text-block {
+      padding: 40px 20px;
+    }
+
+    .text-block-heading {
+      font-size: 1.75rem;
+    }
+
+    .text-block--large .text-block-heading {
+      font-size: 2rem;
+    }
+  }
+</style>

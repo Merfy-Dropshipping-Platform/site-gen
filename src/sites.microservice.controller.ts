@@ -20,12 +20,12 @@ export class SitesMicroserviceController {
   async createSite(@Payload() data: any, @Ctx() _ctx: RmqContext) {
     try {
       this.logger.log(`create_site request: ${JSON.stringify(data)}`);
-      const { tenantId, actorUserId, name, slug } = data ?? {};
+      const { tenantId, actorUserId, name, slug, companyName } = data ?? {};
       if (!tenantId || !actorUserId || !name) {
         return { success: false, message: 'tenantId, actorUserId and name are required' };
       }
-      const siteId = await this.service.create({ tenantId, actorUserId, name, slug });
-      return { success: true, siteId };
+      const result = await this.service.create({ tenantId, actorUserId, name, slug, companyName });
+      return { success: true, siteId: result.id, publicUrl: result.publicUrl };
     } catch (e: any) {
       this.logger.error('create_site failed', e);
       return { success: false, message: e?.message ?? 'internal_error' };

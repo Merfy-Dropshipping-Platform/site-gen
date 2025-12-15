@@ -26,6 +26,7 @@ import { SitesEventsService } from './events/events.service';
 import { DeploymentsService } from './deployments/deployments.service';
 import { CoolifyProvider } from './deployments/coolify.provider';
 import { S3StorageService } from './storage/s3.service';
+import { DomainClient } from './domain';
 
 function slugify(input: string) {
   return input
@@ -49,6 +50,7 @@ export class SitesDomainService {
     private readonly deployments: DeploymentsService,
     private readonly coolify: CoolifyProvider,
     private readonly storage: S3StorageService,
+    private readonly domainClient: DomainClient,
   ) {}
 
   async list(tenantId: string, limit = 50, cursor?: string) {
@@ -59,21 +61,70 @@ export class SitesDomainService {
         name: schema.site.name,
         slug: schema.site.slug,
         status: schema.site.status,
+        themeId: schema.site.themeId,
+        publicUrl: schema.site.publicUrl,
         createdAt: schema.site.createdAt,
+        // JOIN: theme data
+        theme: {
+          id: schema.theme.id,
+          name: schema.theme.name,
+          slug: schema.theme.slug,
+          previewDesktop: schema.theme.previewDesktop,
+          previewMobile: schema.theme.previewMobile,
+          badge: schema.theme.badge,
+        },
       })
       .from(schema.site)
+      .leftJoin(schema.theme, eq(schema.site.themeId, schema.theme.id))
       .where(and(eq(schema.site.tenantId, tenantId), sql`${schema.site.deletedAt} IS NULL`))
       .limit(limit);
 
-    return { items: rows, nextCursor: null };
+    // Transform null theme objects to null (when no theme is selected)
+    const items = rows.map((row) => ({
+      ...row,
+      theme: row.theme?.id ? row.theme : null,
+    }));
+
+    return { items, nextCursor: null };
   }
 
   async get(tenantId: string, siteId: string) {
     const [row] = await this.db
-      .select()
+      .select({
+        id: schema.site.id,
+        tenantId: schema.site.tenantId,
+        name: schema.site.name,
+        slug: schema.site.slug,
+        status: schema.site.status,
+        themeId: schema.site.themeId,
+        currentRevisionId: schema.site.currentRevisionId,
+        createdAt: schema.site.createdAt,
+        updatedAt: schema.site.updatedAt,
+        publicUrl: schema.site.publicUrl,
+        coolifyAppUuid: schema.site.coolifyAppUuid,
+        coolifyProjectUuid: schema.site.coolifyProjectUuid,
+        domainId: schema.site.domainId,
+        // JOIN: theme data
+        theme: {
+          id: schema.theme.id,
+          name: schema.theme.name,
+          slug: schema.theme.slug,
+          description: schema.theme.description,
+          previewDesktop: schema.theme.previewDesktop,
+          previewMobile: schema.theme.previewMobile,
+          templateId: schema.theme.templateId,
+          badge: schema.theme.badge,
+          tags: schema.theme.tags,
+        },
+      })
       .from(schema.site)
+      .leftJoin(schema.theme, eq(schema.site.themeId, schema.theme.id))
       .where(and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)));
-    return row ?? null;
+    if (!row) return null;
+    return {
+      ...row,
+      theme: row.theme?.id ? row.theme : null,
+    };
   }
 
   async getBySlug(slug: string) {
@@ -84,11 +135,21 @@ export class SitesDomainService {
         name: schema.site.name,
         slug: schema.site.slug,
         status: schema.site.status,
-        theme: schema.site.theme,
+        themeId: schema.site.themeId,
+        publicUrl: schema.site.publicUrl,
         createdAt: schema.site.createdAt,
         updatedAt: schema.site.updatedAt,
+        // JOIN: theme data
+        theme: {
+          id: schema.theme.id,
+          name: schema.theme.name,
+          slug: schema.theme.slug,
+          templateId: schema.theme.templateId,
+          badge: schema.theme.badge,
+        },
       })
       .from(schema.site)
+      .leftJoin(schema.theme, eq(schema.site.themeId, schema.theme.id))
       .where(
         and(
           or(eq(schema.site.slug, slug), ilike(schema.site.slug, slug)),
@@ -98,10 +159,20 @@ export class SitesDomainService {
       .limit(1);
 
     if (!row) return null;
-    return row;
+    return {
+      ...row,
+      theme: row.theme?.id ? row.theme : null,
+    };
   }
 
-  async create(params: { tenantId: string; actorUserId: string; name: string; slug?: string }) {
+  async create(params: {
+    tenantId: string;
+    actorUserId: string;
+    name: string;
+    slug?: string;
+    companyName?: string;
+    skipCoolify?: boolean;
+  }) {
     // Генерация уникального slug в рамках одного tenant (читаемые суффиксы при коллизиях)
     const id = randomUUID();
     let effectiveSlug = params.slug?.trim();
@@ -123,6 +194,45 @@ export class SitesDomainService {
     }
 
     const now = new Date();
+
+    // Интеграция с Coolify и Domain Service
+    let coolifyProjectUuid: string | undefined;
+    let coolifyAppUuid: string | undefined;
+    let domainId: string | undefined;
+    let publicUrl: string | undefined;
+
+    if (!params.skipCoolify) {
+      try {
+        // 1. Получить или создать Project в Coolify для компании
+        const companyName = params.companyName || params.name;
+        coolifyProjectUuid = await this.coolify.getOrCreateProject(params.tenantId, companyName);
+        this.logger.log(`Got Coolify project ${coolifyProjectUuid} for tenant ${params.tenantId}`);
+
+        // 2. Сгенерировать поддомен через Domain Service
+        const domainResult = await this.domainClient.generateSubdomain();
+        domainId = domainResult.id;
+        const subdomain = domainResult.name;
+        this.logger.log(`Generated subdomain ${subdomain} (id: ${domainId})`);
+
+        // 3. Создать приложение в Coolify с поддоменом
+        const appResult = await this.coolify.createSiteApplication({
+          projectUuid: coolifyProjectUuid,
+          name: `${params.name}-${candidate}`,
+          subdomain,
+        });
+        coolifyAppUuid = appResult.uuid;
+        publicUrl = appResult.url;
+        this.logger.log(`Created Coolify app ${coolifyAppUuid} with URL ${publicUrl}`);
+      } catch (e) {
+        this.logger.warn(
+          `Coolify/Domain integration failed (site will be created without deployment): ${
+            e instanceof Error ? e.message : e
+          }`,
+        );
+        // Продолжаем создание сайта без Coolify интеграции
+      }
+    }
+
     await this.db.insert(schema.site).values({
       id,
       tenantId: params.tenantId,
@@ -133,9 +243,21 @@ export class SitesDomainService {
       updatedAt: now,
       createdBy: params.actorUserId,
       updatedBy: params.actorUserId,
+      coolifyProjectUuid,
+      coolifyAppUuid,
+      domainId,
+      publicUrl,
     });
-    this.events.emit('sites.site.created', { tenantId: params.tenantId, siteId: id, name: params.name, slug: candidate });
-    return id;
+
+    this.events.emit('sites.site.created', {
+      tenantId: params.tenantId,
+      siteId: id,
+      name: params.name,
+      slug: candidate,
+      publicUrl,
+    });
+
+    return { id, publicUrl };
   }
 
   async update(params: { tenantId: string; siteId: string; patch: any; actorUserId?: string }) {
@@ -167,12 +289,12 @@ export class SitesDomainService {
         updates.slug = candidate;
       }
     }
-    if (params.patch?.theme) {
-      const size = Buffer.byteLength(JSON.stringify(params.patch.theme), 'utf8');
-      if (size > SitesDomainService.MAX_THEME_BYTES) {
-        throw new Error('theme_payload_too_large');
-      }
-      updates.theme = params.patch.theme;
+    // Handle themeId (new) or theme (legacy, for backward compatibility during migration)
+    if (typeof params.patch?.themeId === 'string') {
+      updates.themeId = params.patch.themeId || null;
+    } else if (params.patch?.theme?.id) {
+      // Legacy: accept { theme: { id: 'rose' } } and extract themeId
+      updates.themeId = params.patch.theme.id;
     }
 
     updates.updatedAt = new Date();

@@ -2,13 +2,14 @@
  * Схемы Drizzle для сервиса «Сайты».
  *
  * Таблицы:
+ * - theme — каталог тем для магазинов
  * - site — метаданные сайта в границах тенанта (organization) и его статус
  * - site_domain — подключённые домены и сведения о верификации
  * - site_revision — JSON‑структура (совместима с Puck) и SEO/метаданные
  * - site_build — жизненный цикл сборки и ссылки на артефакты
  * - site_deployment — снимок деплоя (ID приложения/окружения провайдера и публичный URL)
  */
-import { pgEnum, pgTable, text, timestamp, jsonb } from 'drizzle-orm/pg-core';
+import { pgEnum, pgTable, text, timestamp, jsonb, integer, boolean } from 'drizzle-orm/pg-core';
 
 export const siteStatusEnum = pgEnum('site_status', [
   'draft',
@@ -16,6 +17,28 @@ export const siteStatusEnum = pgEnum('site_status', [
   'frozen',
   'archived',
 ]);
+
+/**
+ * Каталог тем для магазинов.
+ * Темы предопределены и управляются через миграции.
+ */
+export const theme = pgTable('theme', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  slug: text('slug').notNull(),
+  description: text('description'),
+  previewDesktop: text('preview_desktop'),
+  previewMobile: text('preview_mobile'),
+  templateId: text('template_id').notNull(),
+  price: integer('price').default(0),
+  tags: jsonb('tags').$type<string[]>(),
+  badge: text('badge'),
+  author: text('author').default('merfy'),
+  viewCount: integer('view_count').default(0),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+  updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
+});
 
 export const site = pgTable('site', {
   id: text('id').primaryKey(),
@@ -26,6 +49,9 @@ export const site = pgTable('site', {
   status: siteStatusEnum('status').default('draft').notNull(),
   // Предыдущий статус (для корректного unfreeze)
   prevStatus: siteStatusEnum('prev_status'),
+  // Ссылка на выбранную тему
+  themeId: text('theme_id'),
+  // @deprecated: Старое JSONB поле theme будет удалено после миграции
   theme: jsonb('theme'),
   currentRevisionId: text('current_revision_id'),
   createdAt: timestamp('created_at').$defaultFn(() => new Date()).notNull(),
@@ -34,6 +60,13 @@ export const site = pgTable('site', {
   updatedBy: text('updated_by'),
   deletedAt: timestamp('deleted_at'),
   frozenAt: timestamp('frozen_at'),
+  // Coolify интеграция
+  coolifyAppUuid: text('coolify_app_uuid'),
+  coolifyProjectUuid: text('coolify_project_uuid'),
+  // Domain Service интеграция
+  domainId: text('domain_id'),
+  // Публичный URL сайта (например, abc123.merfy.ru)
+  publicUrl: text('public_url'),
 });
 
 export const siteDomain = pgTable('site_domain', {

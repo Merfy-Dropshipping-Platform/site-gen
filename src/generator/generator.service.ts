@@ -91,6 +91,7 @@ export class SiteGeneratorService {
         id: schema.site.id,
         themeId: schema.site.themeId,
         currentRevisionId: schema.site.currentRevisionId,
+        publicUrl: schema.site.publicUrl,
         // JOIN: get templateId from theme table
         templateId: schema.theme.templateId,
       })
@@ -208,14 +209,17 @@ export class SiteGeneratorService {
       if (astroBuildSuccess && await this.s3.isEnabled()) {
         try {
           const bucket = await this.s3.ensureBucket();
-          const sitePrefix = `sites/${params.tenantId}/${params.siteId}/`;
+          // Используем subdomain-based путь если есть publicUrl, иначе fallback на старый формат
+          const sitePrefix = siteRow?.publicUrl
+            ? this.s3.getSitePrefixBySubdomain(siteRow.publicUrl)
+            : `sites/${params.tenantId}/${params.siteId}/`;
 
           // Удалить старые файлы сайта (если были)
           await this.s3.removePrefix(bucket, sitePrefix).catch(() => {});
 
           // Загрузить все файлы из dist/
           const { uploaded } = await this.s3.uploadDirectory(bucket, sitePrefix, distDir);
-          this.logger.log(`Uploaded ${uploaded} static files to S3 for site ${params.siteId}`);
+          this.logger.log(`Uploaded ${uploaded} static files to S3 for site ${params.siteId} (prefix: ${sitePrefix})`);
         } catch (e) {
           this.logger.warn(`Static files upload to S3 failed: ${e instanceof Error ? e.message : e}`);
         }
@@ -237,7 +241,10 @@ export class SiteGeneratorService {
 
       if (await this.s3.isEnabled()) {
         const bucket = await this.s3.ensureBucket();
-        const prefix = `sites/${params.tenantId}/${params.siteId}/`;
+        // Используем subdomain-based путь для артефактов
+        const prefix = siteRow?.publicUrl
+          ? this.s3.getSitePrefixBySubdomain(siteRow.publicUrl)
+          : `sites/${params.tenantId}/${params.siteId}/`;
         const artifactKey = `${prefix}${buildId}.zip`;
         const metadataKey = `${prefix}${buildId}.json`;
 

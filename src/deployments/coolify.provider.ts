@@ -514,4 +514,93 @@ export class CoolifyProvider {
       throw e;
     }
   }
+
+  /**
+   * createStaticSiteApp — создаёт Coolify приложение для статического сайта.
+   *
+   * Использует nginx-minio-proxy из GitHub репо для проксирования к MinIO.
+   * Каждый сайт получает своё Coolify приложение с настроенными env vars.
+   *
+   * @param params - параметры создания
+   * @returns UUID приложения и публичный URL
+   */
+  async createStaticSiteApp(params: {
+    projectUuid: string;
+    name: string;
+    subdomain: string; // abc123.merfy.ru
+    sitePath: string;  // sites/abc123
+  }): Promise<{ uuid: string; url: string }> {
+    const { projectUuid, name, subdomain, sitePath } = params;
+    const fqdn = `https://${subdomain}`;
+    // Используем публичный URL MinIO для nginx (не внутренний S3_ENDPOINT)
+    const minioUrl = process.env.S3_PUBLIC_ENDPOINT || process.env.MINIO_PUBLIC_ENDPOINT || process.env.S3_ENDPOINT || 'https://minio.example.com';
+    const bucket = process.env.S3_BUCKET || 'merfy-sites';
+    const nginxProxyRepo = process.env.NGINX_PROXY_REPO || 'https://github.com/Merfy-Dropshipping-Platform/nginx-minio-proxy';
+
+    if (this.mode !== 'http') {
+      this.logger.log(`createStaticSiteApp (mock) ${name} -> ${fqdn}`);
+      return { uuid: `mock-static-${name}`, url: fqdn };
+    }
+
+    if (!this.serverUuid) {
+      throw new Error('COOLIFY_SERVER_UUID is required');
+    }
+
+    try {
+      // 1. Создаём приложение из публичного GitHub репо
+      const appPayload = {
+        project_uuid: projectUuid,
+        server_uuid: this.serverUuid,
+        environment_name: this.environmentName,
+        name,
+        git_repository: nginxProxyRepo,
+        git_branch: 'main',
+        build_pack: 'dockerfile',
+        ports_exposes: '80',
+        domains: fqdn,
+        instant_deploy: false, // Сначала добавим env vars
+      };
+
+      this.logger.log(`Creating static site app: ${name} -> ${fqdn}`);
+
+      const result = await this.http<any>('/applications/public', {
+        method: 'POST',
+        body: JSON.stringify(appPayload),
+      });
+
+      const appUuid = result?.uuid;
+      if (!appUuid) {
+        throw new Error('Application UUID not returned');
+      }
+
+      // 2. Добавляем environment variables
+      const envVars = {
+        data: [
+          { key: 'MINIO_URL', value: minioUrl },
+          { key: 'BUCKET', value: bucket },
+          { key: 'SITE_PATH', value: sitePath },
+        ],
+      };
+
+      await this.http(`/applications/${appUuid}/envs/bulk`, {
+        method: 'PATCH',
+        body: JSON.stringify(envVars),
+      });
+
+      // 3. Устанавливаем домен (API может не установить его при создании)
+      await this.http(`/applications/${appUuid}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ domains: fqdn }),
+      });
+
+      // 4. Запускаем деплой
+      await this.http(`/applications/${appUuid}/start`, { method: 'POST' });
+
+      this.logger.log(`Created static site app ${appUuid}: ${fqdn} -> ${minioUrl}/${bucket}/${sitePath}`);
+      return { uuid: appUuid, url: fqdn };
+    } catch (e) {
+      this.logger.error(`createStaticSiteApp failed: ${e instanceof Error ? e.message : e}`);
+      throw e;
+    }
+  }
 }

@@ -195,41 +195,29 @@ export class SitesDomainService {
 
     const now = new Date();
 
-    // Интеграция с Coolify и Domain Service
-    let coolifyProjectUuid: string | undefined;
-    let coolifyAppUuid: string | undefined;
+    // Интеграция с Domain Service для генерации поддомена
+    // Coolify не используется для статических сайтов — статика раздаётся напрямую из S3/MinIO
     let domainId: string | undefined;
     let publicUrl: string | undefined;
 
     if (!params.skipCoolify) {
       try {
-        // 1. Получить или создать Project в Coolify для компании
-        const companyName = params.companyName || params.name;
-        coolifyProjectUuid = await this.coolify.getOrCreateProject(params.tenantId, companyName);
-        this.logger.log(`Got Coolify project ${coolifyProjectUuid} for tenant ${params.tenantId}`);
-
-        // 2. Сгенерировать поддомен через Domain Service
+        // Сгенерировать поддомен через Domain Service
+        // Domain Service автоматически создаёт A-record в Selectel DNS → IP reverse proxy
         const domainResult = await this.domainClient.generateSubdomain();
         domainId = domainResult.id;
-        const subdomain = domainResult.name;
-        this.logger.log(`Generated subdomain ${subdomain} (id: ${domainId})`);
+        const subdomain = domainResult.name; // abc123.merfy.ru
 
-        // 3. Создать приложение в Coolify с поддоменом
-        const appResult = await this.coolify.createSiteApplication({
-          projectUuid: coolifyProjectUuid,
-          name: `${params.name}-${candidate}`,
-          subdomain,
-        });
-        coolifyAppUuid = appResult.uuid;
-        publicUrl = appResult.url;
-        this.logger.log(`Created Coolify app ${coolifyAppUuid} with URL ${publicUrl}`);
+        // Публичный URL = поддомен (reverse proxy раздаёт статику из MinIO)
+        publicUrl = this.storage.getSitePublicUrlBySubdomain(subdomain);
+        this.logger.log(`Generated subdomain ${subdomain} (id: ${domainId}), publicUrl: ${publicUrl}`);
       } catch (e) {
         this.logger.warn(
-          `Coolify/Domain integration failed (site will be created without deployment): ${
+          `Domain Service integration failed (site will be created without subdomain): ${
             e instanceof Error ? e.message : e
           }`,
         );
-        // Продолжаем создание сайта без Coolify интеграции
+        // Продолжаем создание сайта без поддомена — можно будет добавить позже
       }
     }
 
@@ -243,8 +231,6 @@ export class SitesDomainService {
       updatedAt: now,
       createdBy: params.actorUserId,
       updatedBy: params.actorUserId,
-      coolifyProjectUuid,
-      coolifyAppUuid,
       domainId,
       publicUrl,
     });
@@ -327,22 +313,35 @@ export class SitesDomainService {
   }
 
   async hardDelete(tenantId: string, siteId: string) {
+    // Сначала получаем publicUrl для определения S3 prefix
+    const [siteRow] = await this.db
+      .select({ id: schema.site.id, publicUrl: schema.site.publicUrl })
+      .from(schema.site)
+      .where(and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)));
+
     // Жёсткое удаление: удаление данных из БД и локальных артефактов (если есть)
     const [row] = await this.db
       .delete(schema.site)
       .where(and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)))
       .returning({ id: schema.site.id });
+
     if (row) {
       this.events.emit('sites.site.deleted', { tenantId, siteId, soft: false });
+
+      // Очистка локальных артефактов
       try {
         const artifactsDir = path.join(process.cwd(), 'artifacts', siteId);
         await fsp.rm(artifactsDir, { recursive: true, force: true });
       } catch {}
-      // Best-effort: удалить артефакты из S3/Minio, если включен
+
+      // Best-effort: удалить статику из S3/MinIO
       try {
         if (await this.storage.isEnabled()) {
           const bucket = await this.storage.ensureBucket();
-          const prefix = `sites/${tenantId}/${siteId}/`;
+          // Используем subdomain-based путь если есть publicUrl, иначе fallback
+          const prefix = siteRow?.publicUrl
+            ? this.storage.getSitePrefixBySubdomain(siteRow.publicUrl)
+            : `sites/${tenantId}/${siteId}/`;
           await this.storage.removePrefix(bucket, prefix);
         }
       } catch {}
@@ -411,40 +410,74 @@ export class SitesDomainService {
     const site = await this.get(params.tenantId, params.siteId);
     if (!site) throw new Error('site_not_found');
 
-    // 1. Собрать сайт и загрузить в S3
+    // 1. Проверяем/создаём Coolify app для раздачи статики
+    let coolifyAppUuid = site.coolifyAppUuid;
+    let finalUrl = site.publicUrl;
+
+    if (!coolifyAppUuid && finalUrl) {
+      // Создаём Coolify app (nginx-minio-proxy) для этого сайта
+      try {
+        const subdomain = this.storage.extractSubdomainSlug(finalUrl);
+        const projectUuid = site.coolifyProjectUuid || process.env.COOLIFY_PROJECT_UUID;
+
+        if (!projectUuid) {
+          this.logger.warn('COOLIFY_PROJECT_UUID not configured, skipping Coolify app creation');
+        } else {
+          const sitePath = this.storage.getSitePrefixBySubdomain(finalUrl).replace(/\/$/, '');
+
+          this.logger.log(`Creating Coolify static site app for ${subdomain}.merfy.ru`);
+          const coolifyResult = await this.coolify.createStaticSiteApp({
+            projectUuid,
+            name: `site-${subdomain}`,
+            subdomain: `${subdomain}.merfy.ru`,
+            sitePath,
+          });
+
+          coolifyAppUuid = coolifyResult.uuid;
+
+          // Сохраняем UUID приложения
+          await this.db
+            .update(schema.site)
+            .set({ coolifyAppUuid, updatedAt: new Date() })
+            .where(and(eq(schema.site.id, params.siteId), eq(schema.site.tenantId, params.tenantId)));
+
+          this.logger.log(`Created Coolify app ${coolifyAppUuid} for site ${params.siteId}`);
+        }
+      } catch (e) {
+        this.logger.warn(`Failed to create Coolify app (site will still be built): ${e instanceof Error ? e.message : e}`);
+      }
+    }
+
+    // 2. Собрать сайт и загрузить статику в S3
+    // SiteGeneratorService загружает все файлы из dist/ в S3 по пути sites/{subdomain}/
     const { buildId, artifactUrl, revisionId } = await this.generator.build({
       tenantId: params.tenantId,
       siteId: params.siteId,
       mode: params.mode,
     });
 
-    // 2. Получить публичный URL из S3 (статика раздаётся напрямую из MinIO)
-    const publicUrl = this.storage.getSitePublicUrl(params.tenantId, params.siteId);
-
-    // 3. Опционально: деплой через Coolify (для кастомных доменов)
-    let deployUrl: string | undefined;
-    try {
-      const deployResult = await this.deployments.deploy({
-        tenantId: params.tenantId,
-        siteId: params.siteId,
-        buildId,
-        artifactUrl,
-      });
-      deployUrl = deployResult.url;
-    } catch (e) {
-      this.logger.warn(`Coolify deploy skipped: ${e instanceof Error ? e.message : e}`);
+    // 3. Если Coolify app уже существовал, перезапускаем его для обновления
+    if (coolifyAppUuid) {
+      try {
+        await this.coolify.restartApplication(coolifyAppUuid);
+        this.logger.log(`Restarted Coolify app ${coolifyAppUuid}`);
+      } catch (e) {
+        // Не критично — nginx подхватит новые файлы из MinIO автоматически
+        this.logger.warn(`Failed to restart Coolify app: ${e instanceof Error ? e.message : e}`);
+      }
     }
 
-    // Приоритет: publicUrl из S3, fallback на deployUrl из Coolify
-    const finalUrl = publicUrl || deployUrl || site.publicUrl;
+    // 4. Определить публичный URL (если не установлен — fallback)
+    if (!finalUrl) {
+      finalUrl = this.storage.getSitePublicUrl(params.tenantId, params.siteId);
+    }
 
-    // 4. Обновить статус сайта
+    // 5. Обновить статус сайта
     await this.db
       .update(schema.site)
       .set({
         status: 'published',
         currentRevisionId: revisionId,
-        publicUrl: finalUrl,
         updatedAt: new Date(),
       })
       .where(and(eq(schema.site.id, params.siteId), eq(schema.site.tenantId, params.tenantId)));
@@ -456,6 +489,7 @@ export class SitesDomainService {
       url: finalUrl,
     });
 
+    this.logger.log(`Published site ${params.siteId} at ${finalUrl}`);
     return { url: finalUrl, buildId, artifactUrl };
   }
 

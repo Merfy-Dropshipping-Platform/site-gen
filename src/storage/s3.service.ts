@@ -141,6 +141,7 @@ export class S3StorageService {
   /**
    * Получить публичный URL для сайта (index.html).
    * Используется для publicUrl сайта после публикации.
+   * @deprecated Использовать getSitePublicUrlBySubdomain для новых сайтов
    */
   getSitePublicUrl(tenantId: string, siteId: string): string | null {
     if (!this.bucketName) return null;
@@ -152,6 +153,7 @@ export class S3StorageService {
 
   /**
    * Получить базовый URL для статики сайта (без index.html).
+   * @deprecated Использовать getSitePrefixBySubdomain для новых сайтов
    */
   getSiteBaseUrl(tenantId: string, siteId: string): string | null {
     if (!this.bucketName) return null;
@@ -159,6 +161,49 @@ export class S3StorageService {
     if (!endpoint) return null;
     const base = endpoint.replace(/\/$/, '');
     return `${base}/${this.bucketName}/sites/${tenantId}/${siteId}/`;
+  }
+
+  /**
+   * Извлечь slug из поддомена (abc123.merfy.ru → abc123)
+   */
+  extractSubdomainSlug(subdomain: string): string {
+    // Убираем протокол если есть
+    let domain = subdomain.replace(/^https?:\/\//, '');
+    // Убираем trailing slash
+    domain = domain.replace(/\/$/, '');
+    // Берём первую часть до точки (abc123.merfy.ru → abc123)
+    return domain.split('.')[0];
+  }
+
+  /**
+   * Получить S3 prefix для сайта по поддомену.
+   * Новый формат: sites/{subdomain-slug}/
+   */
+  getSitePrefixBySubdomain(subdomain: string): string {
+    const slug = this.extractSubdomainSlug(subdomain);
+    return `sites/${slug}/`;
+  }
+
+  /**
+   * Получить публичный URL для сайта по поддомену.
+   * URL вида: https://{subdomain}.merfy.ru (раздаётся через reverse proxy → MinIO)
+   */
+  getSitePublicUrlBySubdomain(subdomain: string): string {
+    const slug = this.extractSubdomainSlug(subdomain);
+    // Публичный URL - это сам поддомен (reverse proxy раздаёт из MinIO)
+    return `https://${slug}.merfy.ru`;
+  }
+
+  /**
+   * Получить S3 URL для статики сайта (для отладки/прямого доступа).
+   */
+  getSiteS3Url(subdomain: string): string | null {
+    if (!this.bucketName) return null;
+    const endpoint = this.publicEndpoint || this.internalEndpoint;
+    if (!endpoint) return null;
+    const base = endpoint.replace(/\/$/, '');
+    const slug = this.extractSubdomainSlug(subdomain);
+    return `${base}/${this.bucketName}/sites/${slug}/index.html`;
   }
 
   async removePrefix(bucket: string, prefix: string) {

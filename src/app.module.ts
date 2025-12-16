@@ -37,6 +37,7 @@ import { ThemesService } from './themes.service';
 import { ThemesMicroserviceController } from './themes.microservice.controller';
 import { EventsModule } from './events/events.module';
 import { BillingListenerController } from './billing/billing.listener';
+import { BillingClient } from './billing/billing.client';
 import { UserListenerController } from './user/user.listener';
 import { CoolifyProvider } from './deployments/coolify.provider';
 import { DeploymentsService } from './deployments/deployments.service';
@@ -83,6 +84,7 @@ import { DomainModule } from './domain';
     S3StorageService,
     RetentionScheduler,
     BillingSyncScheduler,
+    BillingClient,
   ],
 })
 export class AppModule {}

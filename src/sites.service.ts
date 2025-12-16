@@ -27,6 +27,7 @@ import { DeploymentsService } from './deployments/deployments.service';
 import { CoolifyProvider } from './deployments/coolify.provider';
 import { S3StorageService } from './storage/s3.service';
 import { DomainClient } from './domain';
+import { BillingClient } from './billing/billing.client';
 
 function slugify(input: string) {
   return input
@@ -51,6 +52,7 @@ export class SitesDomainService {
     private readonly coolify: CoolifyProvider,
     private readonly storage: S3StorageService,
     private readonly domainClient: DomainClient,
+    private readonly billingClient: BillingClient,
   ) {}
 
   async list(tenantId: string, limit = 50, cursor?: string) {
@@ -173,6 +175,25 @@ export class SitesDomainService {
     companyName?: string;
     skipCoolify?: boolean;
   }) {
+    // Проверяем лимит сайтов по тарифу
+    const currentSiteCount = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(schema.site)
+      .where(
+        and(
+          eq(schema.site.tenantId, params.tenantId),
+          sql`${schema.site.deletedAt} IS NULL`,
+          sql`${schema.site.status} != 'archived'`,
+        ),
+      )
+      .then((rows) => rows[0]?.count ?? 0);
+
+    const canCreate = await this.billingClient.canCreateSite(params.tenantId, currentSiteCount);
+    if (!canCreate.allowed) {
+      this.logger.warn(`Site creation blocked for tenant ${params.tenantId}: ${canCreate.reason}, limit=${canCreate.limit}, current=${currentSiteCount}`);
+      throw new Error(canCreate.reason === 'account_frozen' ? 'account_frozen' : 'shops_limit_reached');
+    }
+
     // Генерация уникального slug в рамках одного tenant (читаемые суффиксы при коллизиях)
     const id = randomUUID();
     let effectiveSlug = params.slug?.trim();
@@ -203,8 +224,9 @@ export class SitesDomainService {
     if (!params.skipCoolify) {
       try {
         // Сгенерировать поддомен через Domain Service
-        // Domain Service автоматически создаёт A-record в Selectel DNS → IP reverse proxy
-        const domainResult = await this.domainClient.generateSubdomain();
+        // Domain Service автоматически создаёт A-record в REG.RU DNS → IP reverse proxy
+        // Subdomain будет на основе tenantId (первые 12 символов UUID без дефисов)
+        const domainResult = await this.domainClient.generateSubdomain(params.tenantId);
         domainId = domainResult.id;
         const subdomain = domainResult.name; // abc123.merfy.ru
 
@@ -418,10 +440,12 @@ export class SitesDomainService {
       // Создаём Coolify app (nginx-minio-proxy) для этого сайта
       try {
         const subdomain = this.storage.extractSubdomainSlug(finalUrl);
-        const projectUuid = site.coolifyProjectUuid || process.env.COOLIFY_PROJECT_UUID;
+
+        // Получаем или создаём Coolify Project для этого тенанта
+        const projectUuid = site.coolifyProjectUuid || await this.getOrCreateTenantProject(params.tenantId);
 
         if (!projectUuid) {
-          this.logger.warn('COOLIFY_PROJECT_UUID not configured, skipping Coolify app creation');
+          this.logger.warn('Failed to get Coolify project, skipping Coolify app creation');
         } else {
           const sitePath = this.storage.getSitePrefixBySubdomain(finalUrl).replace(/\/$/, '');
 
@@ -435,13 +459,13 @@ export class SitesDomainService {
 
           coolifyAppUuid = coolifyResult.uuid;
 
-          // Сохраняем UUID приложения
+          // Сохраняем UUID приложения и проекта
           await this.db
             .update(schema.site)
-            .set({ coolifyAppUuid, updatedAt: new Date() })
+            .set({ coolifyAppUuid, coolifyProjectUuid: projectUuid, updatedAt: new Date() })
             .where(and(eq(schema.site.id, params.siteId), eq(schema.site.tenantId, params.tenantId)));
 
-          this.logger.log(`Created Coolify app ${coolifyAppUuid} for site ${params.siteId}`);
+          this.logger.log(`Created Coolify app ${coolifyAppUuid} in project ${projectUuid} for site ${params.siteId}`);
         }
       } catch (e) {
         this.logger.warn(`Failed to create Coolify app (site will still be built): ${e instanceof Error ? e.message : e}`);
@@ -571,5 +595,50 @@ export class SitesDomainService {
       } catch {}
     }
     return { affected: res.length };
+  }
+
+  /**
+   * Получает или создаёт Coolify Project для тенанта.
+   *
+   * Каждая компания (tenant) получает отдельный Project в Coolify.
+   * Это обеспечивает изоляцию сайтов разных компаний.
+   *
+   * @param tenantId - UUID тенанта
+   * @param companyName - название компании (опционально, для именования проекта)
+   * @returns UUID Coolify Project
+   */
+  async getOrCreateTenantProject(tenantId: string, companyName?: string): Promise<string> {
+    // 1. Проверяем локальный кэш в БД
+    const [cached] = await this.db
+      .select({
+        coolifyProjectUuid: schema.tenantProject.coolifyProjectUuid,
+      })
+      .from(schema.tenantProject)
+      .where(eq(schema.tenantProject.tenantId, tenantId))
+      .limit(1);
+
+    if (cached?.coolifyProjectUuid) {
+      this.logger.debug(`Found cached project ${cached.coolifyProjectUuid} for tenant ${tenantId}`);
+      return cached.coolifyProjectUuid;
+    }
+
+    // 2. Создаём или находим проект в Coolify
+    const projectName = companyName || `tenant-${tenantId.slice(0, 8)}`;
+    const coolifyProjectUuid = await this.coolify.getOrCreateProject(tenantId, projectName);
+
+    // 3. Сохраняем в локальный кэш
+    await this.db.insert(schema.tenantProject).values({
+      id: randomUUID(),
+      tenantId,
+      coolifyProjectUuid,
+      coolifyProjectName: projectName,
+      createdAt: new Date(),
+    }).onConflictDoUpdate({
+      target: schema.tenantProject.tenantId,
+      set: { coolifyProjectUuid, coolifyProjectName: projectName },
+    });
+
+    this.logger.log(`Created/found Coolify project ${coolifyProjectUuid} for tenant ${tenantId}`);
+    return coolifyProjectUuid;
   }
 }

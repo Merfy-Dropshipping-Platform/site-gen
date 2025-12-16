@@ -31,16 +31,18 @@ export class DomainClient {
    * Генерирует уникальный поддомен вида xxx.merfy.ru.
    *
    * Domain Service автоматически:
-   * 1. Генерирует случайный 12-символьный slug
-   * 2. Создаёт A-record в Selectel DNS → MERFY_ZONE_IP
+   * 1. Генерирует subdomain на основе tenantId (первые 12 символов UUID без дефисов)
+   *    или случайный 12-символьный slug если tenantId не передан
+   * 2. Создаёт A-record в REG.RU DNS → MERFY_ZONE_IP
    * 3. Возвращает домен со статусом ACTIVE
    *
+   * @param tenantId - UUID тенанта для генерации детерминированного поддомена
    * @returns Сгенерированный поддомен с id и именем
    */
-  async generateSubdomain(): Promise<GeneratedSubdomain> {
+  async generateSubdomain(tenantId: string): Promise<GeneratedSubdomain> {
     const url = `${this.baseUrl}/domains/generate-subdomain`;
 
-    this.logger.log(`Generating subdomain via ${url}`);
+    this.logger.log(`Generating subdomain for tenant ${tenantId} via ${url}`);
 
     try {
       const res = await fetch(url, {
@@ -49,6 +51,7 @@ export class DomainClient {
           'Content-Type': 'application/json',
           Accept: 'application/json',
         },
+        body: JSON.stringify({ tenantId }),
       });
 
       if (!res.ok) {
@@ -59,7 +62,7 @@ export class DomainClient {
 
       const data = await res.json();
 
-      this.logger.log(`Generated subdomain: ${data.name} (id: ${data.id})`);
+      this.logger.log(`Generated subdomain: ${data.name} (id: ${data.id}) for tenant ${tenantId}`);
 
       return {
         id: data.id,

@@ -131,3 +131,16 @@ export const siteDeployment = pgTable('site_deployment', {
   createdAt: timestamp('created_at').$defaultFn(() => new Date()).notNull(),
   updatedAt: timestamp('updated_at').$defaultFn(() => new Date()).notNull(),
 });
+
+/**
+ * Маппинг тенантов на Coolify Projects.
+ * Каждый тенант = отдельный проект в Coolify.
+ * Используется для изоляции сайтов разных компаний.
+ */
+export const tenantProject = pgTable('tenant_project', {
+  id: text('id').primaryKey(),
+  tenantId: text('tenant_id').notNull().unique(),
+  coolifyProjectUuid: text('coolify_project_uuid').notNull(),
+  coolifyProjectName: text('coolify_project_name'),
+  createdAt: timestamp('created_at').$defaultFn(() => new Date()).notNull(),
+});

@@ -226,7 +226,7 @@ function formatPrice(price: number): string {
           {product?.description && (
             <p class="product-description">{product.description}</p>
           )}
-          <button class="add-to-cart">В корзину</button>
+          <a href={`/checkout?productId=${product.slug ?? product.id}`} class="add-to-cart">Купить сейчас</a>
         </div>
       </div>
     </main>

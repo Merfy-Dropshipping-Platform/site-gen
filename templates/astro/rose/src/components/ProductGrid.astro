@@ -53,7 +53,10 @@ function formatPrice(price: number): string {
                 </div>
               )}
               <div class="product-overlay">
-                <span class="view-btn">Подробнее</span>
+                <div class="product-overlay-buttons">
+                  <span class="view-btn">Подробнее</span>
+                  <a href={`/checkout?productId=${product.slug ?? product.id}`} class="buy-btn" onclick="event.stopPropagation();">Купить</a>
+                </div>
               </div>
             </div>
             <div class="product-info">
@@ -173,6 +176,18 @@ function formatPrice(price: number): string {
     opacity: 1;
   }
 
+  .product-overlay-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transform: translateY(10px);
+    transition: transform 0.3s;
+  }
+
+  .product-card:hover .product-overlay-buttons {
+    transform: translateY(0);
+  }
+
   .view-btn {
     background: #fff;
     color: var(--neutral-900);
@@ -180,12 +195,23 @@ function formatPrice(price: number): string {
     border-radius: 8px;
     font-size: 0.9rem;
     font-weight: 500;
-    transform: translateY(10px);
-    transition: transform 0.3s;
+    text-align: center;
   }
 
-  .product-card:hover .view-btn {
-    transform: translateY(0);
+  .buy-btn {
+    background: var(--rose-600);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-decoration: none;
+    text-align: center;
+    transition: background 0.2s;
+  }
+
+  .buy-btn:hover {
+    background: var(--rose-700);
   }
 
   .product-info {

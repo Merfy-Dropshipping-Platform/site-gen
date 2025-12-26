@@ -184,6 +184,7 @@ export class SiteGeneratorService {
             .then((r) => ({ ...(r[0]?.data ?? {}), meta: r[0]?.meta ?? {} }))) as any,
           theme: siteRow?.templateId ?? 'default',
           products,
+          tenantId: params.tenantId, // shopId для checkout
         });
         if (astroResult.ok && astroResult.artifactPath) {
           artifactFile = astroResult.artifactPath;

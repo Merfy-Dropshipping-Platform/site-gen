@@ -19,6 +19,8 @@ export interface AstroBuildParams {
   outFileName?: string; // имя zip-артефакта (по умолчанию site.zip)
   theme?: string; // название темы (папка в templates/astro/<theme>)
   products?: ProductData[]; // товары для сайта
+  tenantId?: string; // shopId для checkout
+  apiUrl?: string; // URL API Gateway
 }
 
 async function writeFile(filePath: string, content: string) {
@@ -388,8 +390,16 @@ export async function buildWithAstro(params: AstroBuildParams): Promise<{ ok: bo
         await writeFile(productGridPath, productGridAstro());
       }
     }
-    // Записываем данные страницы и товары
-    await writeFile(path.join(workingDir, 'src/data/data.json'), JSON.stringify(data ?? {}, null, 2));
+    // Записываем данные страницы с shopId и apiUrl для checkout
+    const pageData = {
+      ...(data ?? {}),
+      meta: {
+        ...(data?.meta ?? {}),
+        shopId: params.tenantId ?? '',
+        apiUrl: params.apiUrl ?? process.env.API_GATEWAY_URL ?? 'https://api.merfy.ru',
+      },
+    };
+    await writeFile(path.join(workingDir, 'src/data/data.json'), JSON.stringify(pageData, null, 2));
     await writeFile(path.join(workingDir, 'src/data/products.json'), JSON.stringify(products, null, 2));
 
     // 2) Установить зависимости и собрать

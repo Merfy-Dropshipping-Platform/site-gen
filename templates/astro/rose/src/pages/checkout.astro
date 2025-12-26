@@ -1,0 +1,425 @@
+---
+import data from '../data/data.json';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+const meta = data?.meta ?? {};
+---
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Оформление заказа — {meta?.title ?? 'Мой магазин'}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --rose-50: #fff1f2;
+        --rose-100: #ffe4e6;
+        --rose-200: #fecdd3;
+        --rose-300: #fda4af;
+        --rose-400: #fb7185;
+        --rose-500: #f43f5e;
+        --rose-600: #e11d48;
+        --rose-700: #be123c;
+        --rose-800: #9f1239;
+        --rose-900: #881337;
+
+        --neutral-50: #fafafa;
+        --neutral-100: #f5f5f5;
+        --neutral-200: #e5e5e5;
+        --neutral-300: #d4d4d4;
+        --neutral-400: #a3a3a3;
+        --neutral-500: #737373;
+        --neutral-600: #525252;
+        --neutral-700: #404040;
+        --neutral-800: #262626;
+        --neutral-900: #171717;
+
+        --font-display: 'Cormorant Garamond', Georgia, serif;
+        --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        font-family: var(--font-body);
+        color: var(--neutral-800);
+        background: var(--neutral-50);
+        line-height: 1.6;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      h1, h2, h3 {
+        font-family: var(--font-display);
+        font-weight: 500;
+        letter-spacing: -0.02em;
+      }
+
+      a {
+        color: var(--rose-600);
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+
+      a:hover {
+        color: var(--rose-700);
+      }
+
+      .checkout-container {
+        flex: 1;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 40px 20px 80px;
+        width: 100%;
+      }
+
+      .checkout-title {
+        font-size: 2rem;
+        margin-bottom: 32px;
+        text-align: center;
+      }
+
+      .step-indicator {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        margin-bottom: 40px;
+      }
+
+      .step-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--neutral-300);
+        transition: background 0.3s;
+      }
+
+      .step-dot.active {
+        background: var(--rose-600);
+      }
+
+      .step-dot.completed {
+        background: #10b981;
+      }
+
+      .checkout-step {
+        display: none;
+      }
+
+      .checkout-step.active {
+        display: block;
+      }
+
+      .step-title {
+        font-size: 1.5rem;
+        margin-bottom: 24px;
+        color: var(--neutral-900);
+      }
+
+      .product-summary {
+        background: #fff;
+        padding: 24px;
+        border-radius: 16px;
+        margin-bottom: 32px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      }
+
+      .product-summary-item {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+      }
+
+      .product-summary-image {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 12px;
+        background: var(--rose-50);
+      }
+
+      .product-summary-info h3 {
+        font-size: 1.1rem;
+        margin-bottom: 8px;
+        color: var(--neutral-800);
+      }
+
+      .product-summary-price {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--rose-600);
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: var(--neutral-700);
+      }
+
+      .form-group label .required {
+        color: var(--rose-600);
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: 14px 16px;
+        border: 1px solid var(--neutral-300);
+        border-radius: 10px;
+        font-size: 1rem;
+        font-family: inherit;
+        transition: border-color 0.2s, box-shadow 0.2s;
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: var(--rose-500);
+        box-shadow: 0 0 0 3px var(--rose-100);
+      }
+
+      .form-group input::placeholder {
+        color: var(--neutral-400);
+      }
+
+      .btn-primary {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        padding: 16px 32px;
+        font-size: 1rem;
+        font-weight: 500;
+        font-family: inherit;
+        background: var(--rose-600);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: background 0.2s;
+        text-decoration: none;
+      }
+
+      .btn-primary:hover {
+        background: var(--rose-700);
+        color: #fff;
+      }
+
+      .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .btn-back {
+        display: block;
+        text-align: center;
+        margin-top: 16px;
+        color: var(--neutral-500);
+        font-size: 0.95rem;
+      }
+
+      .btn-back:hover {
+        color: var(--rose-600);
+      }
+
+      .error-message {
+        color: #dc2626;
+        margin-top: 12px;
+        font-size: 0.9rem;
+        text-align: center;
+      }
+
+      .order-summary {
+        background: #fff;
+        padding: 24px;
+        border-radius: 16px;
+        margin-bottom: 24px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      }
+
+      .order-summary-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        color: var(--neutral-600);
+      }
+
+      .order-summary-row.total {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid var(--neutral-200);
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--neutral-900);
+      }
+
+      .order-summary-row.total .price {
+        color: var(--rose-600);
+      }
+
+      .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-radius: 50%;
+        border-top-color: #fff;
+        animation: spin 0.8s linear infinite;
+        margin-right: 8px;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .error-page {
+        text-align: center;
+        padding: 60px 20px;
+      }
+
+      .error-page h2 {
+        margin-bottom: 16px;
+        color: var(--neutral-800);
+      }
+
+      .error-page p {
+        margin-bottom: 24px;
+        color: var(--neutral-600);
+      }
+
+      @media (max-width: 480px) {
+        .checkout-container {
+          padding: 24px 16px 60px;
+        }
+
+        .product-summary {
+          padding: 16px;
+        }
+
+        .product-summary-image {
+          width: 60px;
+          height: 60px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <Header siteName={meta?.title ?? 'ROSE'} />
+
+    <main class="checkout-container">
+      <h1 class="checkout-title">Оформление заказа</h1>
+
+      <!-- Индикатор шагов -->
+      <div class="step-indicator">
+        <div class="step-dot active" data-step="1"></div>
+        <div class="step-dot" data-step="2"></div>
+        <div class="step-dot" data-step="3"></div>
+        <div class="step-dot" data-step="4"></div>
+      </div>
+
+      <!-- Шаг 1: Товар -->
+      <div class="checkout-step active" data-step="1">
+        <h2 class="step-title">Ваш товар</h2>
+        <div class="product-summary" id="product-summary">
+          <p style="color: var(--neutral-500);">Загрузка...</p>
+        </div>
+        <button class="btn-primary" id="btn-to-contacts">Продолжить</button>
+        <a href="/" class="btn-back">Вернуться в магазин</a>
+      </div>
+
+      <!-- Шаг 2: Контакты -->
+      <div class="checkout-step" data-step="2">
+        <h2 class="step-title">Контактные данные</h2>
+        <form id="customer-form">
+          <div class="form-group">
+            <label for="email">Email <span class="required">*</span></label>
+            <input type="email" id="email" name="email" required placeholder="your@email.com" autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label for="phone">Телефон <span class="required">*</span></label>
+            <input type="tel" id="phone" name="phone" required placeholder="+7 (999) 123-45-67" autocomplete="tel">
+          </div>
+          <div class="form-group">
+            <label for="name">Имя</label>
+            <input type="text" id="name" name="name" placeholder="Иван Иванов" autocomplete="name">
+          </div>
+          <div class="error-message" id="customer-error"></div>
+          <button type="submit" class="btn-primary">Продолжить</button>
+        </form>
+        <button class="btn-back" id="btn-back-to-product">Назад</button>
+      </div>
+
+      <!-- Шаг 3: Адрес -->
+      <div class="checkout-step" data-step="3">
+        <h2 class="step-title">Адрес доставки</h2>
+        <form id="address-form">
+          <div class="form-group">
+            <label for="city">Город <span class="required">*</span></label>
+            <input type="text" id="city" name="city" required placeholder="Москва" autocomplete="address-level2">
+          </div>
+          <div class="form-group">
+            <label for="street">Улица <span class="required">*</span></label>
+            <input type="text" id="street" name="street" required placeholder="ул. Пушкина" autocomplete="street-address">
+          </div>
+          <div class="form-group">
+            <label for="building">Дом <span class="required">*</span></label>
+            <input type="text" id="building" name="building" required placeholder="10">
+          </div>
+          <div class="form-group">
+            <label for="apartment">Квартира</label>
+            <input type="text" id="apartment" name="apartment" placeholder="42">
+          </div>
+          <div class="form-group">
+            <label for="postalCode">Индекс</label>
+            <input type="text" id="postalCode" name="postalCode" placeholder="101000" autocomplete="postal-code">
+          </div>
+          <div class="error-message" id="address-error"></div>
+          <button type="submit" class="btn-primary">Продолжить</button>
+        </form>
+        <button class="btn-back" id="btn-back-to-contacts">Назад</button>
+      </div>
+
+      <!-- Шаг 4: Оплата -->
+      <div class="checkout-step" data-step="4">
+        <h2 class="step-title">Оплата</h2>
+        <div class="order-summary" id="order-summary">
+          <p style="color: var(--neutral-500);">Загрузка...</p>
+        </div>
+        <div class="error-message" id="payment-error"></div>
+        <button class="btn-primary" id="btn-pay">
+          <span class="loading" style="display:none;">
+            <span class="loading-spinner"></span>
+            Создаём платёж...
+          </span>
+          <span class="text">Оплатить</span>
+        </button>
+        <button class="btn-back" id="btn-back-to-address">Назад</button>
+      </div>
+
+      <!-- Ошибка -->
+      <div class="checkout-step error-page" data-step="error">
+        <h2 id="error-title">Ошибка</h2>
+        <p id="error-text">Что-то пошло не так</p>
+        <a href="/" class="btn-primary">На главную</a>
+      </div>
+    </main>
+
+    <Footer siteName={meta?.title ?? 'ROSE'} />
+
+    <!-- Конфигурация Merfy -->
+    <script is:inline define:vars={{ shopId: meta?.shopId, apiUrl: meta?.apiUrl }}>
+      window.__MERFY_CONFIG__ = {
+        shopId: shopId || '',
+        apiUrl: apiUrl || 'https://api.merfy.ru',
+      };
+    </script>
+    <script type="module" src="/scripts/checkout.js"></script>
+  </body>
+</html>

@@ -12,8 +12,54 @@ import * as dotenv from 'dotenv';
 // Load environment variables
 dotenv.config({ path: '.env.local' });
 
+// Функция для создания базы данных, если её нет
+async function ensureDatabaseExists() {
+  if (!process.env.DATABASE_URL) {
+    console.log('DATABASE_URL not set, skipping database creation check');
+    return;
+  }
+
+  const url = new URL(process.env.DATABASE_URL);
+  const dbName = url.pathname.slice(1); // Remove leading slash
+
+  const connectionConfig = {
+    host: url.hostname,
+    port: parseInt(url.port || '5432', 10),
+    user: url.username,
+    password: url.password,
+    database: 'postgres', // Подключаемся к postgres для создания новой БД
+  };
+
+  const pool = new Pool(connectionConfig);
+
+  try {
+    const result = await pool.query(
+      'SELECT 1 FROM pg_database WHERE datname = $1',
+      [dbName],
+    );
+
+    if (result.rows.length === 0) {
+      console.log(`Creating database '${dbName}'...`);
+      await pool.query(`CREATE DATABASE "${dbName}"`);
+      console.log(`✅ Database '${dbName}' created successfully`);
+    } else {
+      console.log(`✅ Database '${dbName}' already exists`);
+    }
+  } catch (error: any) {
+    if (error.code !== '42P04') {
+      console.error('Failed to ensure database exists:', error.message);
+      throw error;
+    }
+  } finally {
+    await pool.end();
+  }
+}
+
 async function manualMigrate() {
   console.log('Starting manual migration for sites service...');
+
+  // Сначала убеждаемся, что база данных существует
+  await ensureDatabaseExists();
 
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,

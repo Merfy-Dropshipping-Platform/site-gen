@@ -61,6 +61,25 @@ export class SitesMicroserviceController {
     }
   }
 
+  /**
+   * Публичный endpoint для получения магазина по ID (для orders/storefront)
+   * Не требует tenantId - используется для создания корзины покупателем
+   */
+  @MessagePattern('sites.get_shop')
+  async getShop(@Payload() data: any) {
+    try {
+      this.logger.log(`get_shop request: ${JSON.stringify(data)}`);
+      const { siteId } = data ?? {};
+      if (!siteId) return { success: false, message: 'siteId is required' };
+      const site = await this.service.getById(siteId);
+      if (!site) return { success: false, message: 'not_found' };
+      return { success: true, data: site };
+    } catch (e: any) {
+      this.logger.error('get_shop failed', e);
+      return { success: false, message: e?.message ?? 'internal_error' };
+    }
+  }
+
   @MessagePattern('sites.list')
   async listSites(@Payload() data: any) {
     try {

@@ -167,6 +167,47 @@ export class SitesDomainService {
     };
   }
 
+  /**
+   * Получить магазин по ID (публичный доступ, без проверки tenantId)
+   * Используется orders service для создания корзины
+   */
+  async getById(siteId: string) {
+    const [row] = await this.db
+      .select({
+        id: schema.site.id,
+        tenantId: schema.site.tenantId,
+        name: schema.site.name,
+        slug: schema.site.slug,
+        status: schema.site.status,
+        themeId: schema.site.themeId,
+        publicUrl: schema.site.publicUrl,
+        createdAt: schema.site.createdAt,
+        updatedAt: schema.site.updatedAt,
+        theme: {
+          id: schema.theme.id,
+          name: schema.theme.name,
+          slug: schema.theme.slug,
+          templateId: schema.theme.templateId,
+          badge: schema.theme.badge,
+        },
+      })
+      .from(schema.site)
+      .leftJoin(schema.theme, eq(schema.site.themeId, schema.theme.id))
+      .where(
+        and(
+          eq(schema.site.id, siteId),
+          sql`${schema.site.deletedAt} IS NULL`,
+        ),
+      )
+      .limit(1);
+
+    if (!row) return null;
+    return {
+      ...row,
+      theme: row.theme?.id ? row.theme : null,
+    };
+  }
+
   async create(params: {
     tenantId: string;
     actorUserId: string;
@@ -570,14 +611,23 @@ export class SitesDomainService {
       .update(schema.site)
       .set({ prevStatus: sql`${schema.site.status}` as any, status: 'frozen', frozenAt: new Date() })
       .where(and(eq(schema.site.tenantId, tenantId), sql`${schema.site.deletedAt} IS NULL`, sql`${schema.site.status} != 'frozen'`))
-      .returning({ id: schema.site.id });
+      .returning({ id: schema.site.id, coolifyAppUuid: schema.site.coolifyAppUuid });
     this.events.emit('sites.tenant.frozen', { tenantId, count: res.length });
-    // Best-effort включить maintenance у провайдера для всех сайтов
-    for (const row of res) {
-      try {
-        await this.coolify.toggleMaintenance(row.id, true);
-      } catch {}
+
+    // Best-effort включить maintenance у провайдера для всех сайтов (параллельно)
+    const sitesWithCoolify = res.filter((row) => row.coolifyAppUuid);
+    if (sitesWithCoolify.length > 0) {
+      const results = await Promise.allSettled(
+        sitesWithCoolify.map((row) => this.coolify.toggleMaintenance(row.coolifyAppUuid!, true)),
+      );
+      const failed = results.filter((r) => r.status === 'rejected').length;
+      if (failed > 0) {
+        this.logger.warn(`freezeTenant: ${failed}/${sitesWithCoolify.length} Coolify maintenance toggles failed`);
+      } else {
+        this.logger.log(`freezeTenant: enabled maintenance for ${sitesWithCoolify.length} sites`);
+      }
     }
+
     return { affected: res.length };
   }
 
@@ -586,14 +636,23 @@ export class SitesDomainService {
       .update(schema.site)
       .set({ status: sql`COALESCE(${schema.site.prevStatus}, 'draft')`, prevStatus: null as any, frozenAt: null as any })
       .where(and(eq(schema.site.tenantId, tenantId), eq(schema.site.status, 'frozen')))
-      .returning({ id: schema.site.id });
+      .returning({ id: schema.site.id, coolifyAppUuid: schema.site.coolifyAppUuid });
     this.events.emit('sites.tenant.unfrozen', { tenantId, count: res.length });
-    // Best-effort выключить maintenance у провайдера для всех сайтов
-    for (const row of res) {
-      try {
-        await this.coolify.toggleMaintenance(row.id, false);
-      } catch {}
+
+    // Best-effort выключить maintenance у провайдера для всех сайтов (параллельно)
+    const sitesWithCoolify = res.filter((row) => row.coolifyAppUuid);
+    if (sitesWithCoolify.length > 0) {
+      const results = await Promise.allSettled(
+        sitesWithCoolify.map((row) => this.coolify.toggleMaintenance(row.coolifyAppUuid!, false)),
+      );
+      const failed = results.filter((r) => r.status === 'rejected').length;
+      if (failed > 0) {
+        this.logger.warn(`unfreezeTenant: ${failed}/${sitesWithCoolify.length} Coolify maintenance toggles failed`);
+      } else {
+        this.logger.log(`unfreezeTenant: disabled maintenance for ${sitesWithCoolify.length} sites`);
+      }
     }
+
     return { affected: res.length };
   }
 

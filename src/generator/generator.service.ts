@@ -211,9 +211,11 @@ export class SiteGeneratorService {
         try {
           const bucket = await this.s3.ensureBucket();
           // Используем subdomain-based путь если есть publicUrl, иначе fallback на старый формат
+          this.logger.log(`Site publicUrl: ${siteRow?.publicUrl ?? 'NOT SET'}`);
           const sitePrefix = siteRow?.publicUrl
             ? this.s3.getSitePrefixBySubdomain(siteRow.publicUrl)
             : `sites/${params.tenantId}/${params.siteId}/`;
+          this.logger.log(`Using S3 prefix: ${sitePrefix}`);
 
           // Удалить старые файлы сайта (если были)
           await this.s3.removePrefix(bucket, sitePrefix).catch(() => {});

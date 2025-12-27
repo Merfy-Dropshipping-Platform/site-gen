@@ -8,8 +8,8 @@ const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://rabbitmq:password@local
 const SITES_QUEUE = 'sites_queue';
 
 const sites = [
-  { siteId: '9ab7ee50-3556-4e15-9e56-79097470ea20', tenantId: 'test-tenant-1765817200084', subdomain: 'w4ucjfczdqbs' },
-  { siteId: 'f84724ff-5e1b-4886-adcc-f0a083ed3020', tenantId: 'test-tenant-1765818429273', subdomain: '6vozi7lv03kn' },
+  { siteId: '9ab7ee50-3556-4e15-9e56-79097470ea20', tenantId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', subdomain: 'w4ucjfczdqbs' },
+  { siteId: 'f84724ff-5e1b-4886-adcc-f0a083ed3020', tenantId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', subdomain: '6vozi7lv03kn' },
 ];
 
 async function sendRpc(channel, queue, pattern, data) {

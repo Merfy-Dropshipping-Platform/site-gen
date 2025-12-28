@@ -4,7 +4,7 @@
  * Периодически проверяет активных пользователей без сайтов и создаёт им дефолтный сайт.
  * Запускается каждые 5 минут.
  */
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { ClientProxy } from '@nestjs/microservices';
 import { BILLING_RMQ_SERVICE, USER_RMQ_SERVICE } from '../constants';
@@ -23,15 +23,31 @@ interface EntitlementsResponse {
 }
 
 @Injectable()
-export class SiteProvisioningScheduler {
+export class SiteProvisioningScheduler implements OnModuleInit {
   private readonly logger = new Logger(SiteProvisioningScheduler.name);
   private isRunning = false;
+  private migrationDone = false;
 
   constructor(
     @Inject(BILLING_RMQ_SERVICE) private readonly billingClient: ClientProxy,
     @Inject(USER_RMQ_SERVICE) private readonly userClient: ClientProxy,
     private readonly sites: SitesDomainService,
   ) {}
+
+  async onModuleInit() {
+    // Запускаем миграцию сайтов без subdomain/Coolify при старте (один раз)
+    if (!this.migrationDone) {
+      this.migrationDone = true;
+      this.logger.log('Running orphaned sites migration on startup...');
+      try {
+        const result = await this.sites.migrateOrphanedSites();
+        this.logger.log(`Migration complete: ${result.migrated} migrated, ${result.failed} failed`);
+        result.details.forEach((d) => this.logger.log(d));
+      } catch (e) {
+        this.logger.error(`Migration failed: ${e instanceof Error ? e.message : e}`);
+      }
+    }
+  }
 
   private rpc<T>(client: ClientProxy, pattern: string, data: unknown): Promise<T> {
     return new Promise<T>((resolve, reject) => {

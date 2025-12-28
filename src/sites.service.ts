@@ -780,7 +780,7 @@ export class SitesDomainService {
   }
 
   /**
-   * Миграция: создаёт subdomain и Coolify проект для сайтов без publicUrl.
+   * Миграция: создаёт subdomain и Coolify проект для сайтов без publicUrl или с mock проектами.
    * Вызывается один раз для исправления сайтов, созданных до фикса DomainModule.
    */
   async migrateOrphanedSites(): Promise<{ migrated: number; failed: number; details: string[] }> {
@@ -788,7 +788,7 @@ export class SitesDomainService {
     let migrated = 0;
     let failed = 0;
 
-    // Находим сайты без publicUrl
+    // Находим сайты без publicUrl ИЛИ с mock coolifyProjectUuid
     const orphanedSites = await this.db
       .select({
         id: schema.site.id,
@@ -798,9 +798,9 @@ export class SitesDomainService {
         coolifyProjectUuid: schema.site.coolifyProjectUuid,
       })
       .from(schema.site)
-      .where(sql`${schema.site.publicUrl} IS NULL AND ${schema.site.deletedAt} IS NULL`);
+      .where(sql`${schema.site.deletedAt} IS NULL AND (${schema.site.publicUrl} IS NULL OR ${schema.site.coolifyProjectUuid} LIKE 'mock-project-%')`);
 
-    this.logger.log(`Found ${orphanedSites.length} sites without publicUrl to migrate`);
+    this.logger.log(`Found ${orphanedSites.length} sites to migrate (no publicUrl or mock coolifyProjectUuid)`);
 
     for (const site of orphanedSites) {
       try {
@@ -816,8 +816,12 @@ export class SitesDomainService {
           this.logger.log(`Site ${site.id}: generated subdomain ${subdomain}, publicUrl: ${publicUrl}`);
         }
 
-        // 2. Создаём Coolify проект если нет
-        if (!site.coolifyProjectUuid) {
+        // 2. Создаём реальный Coolify проект если нет или mock
+        const isMockProject = site.coolifyProjectUuid?.startsWith('mock-project-');
+        if (!site.coolifyProjectUuid || isMockProject) {
+          if (isMockProject) {
+            this.logger.log(`Site ${site.id}: replacing mock project ${site.coolifyProjectUuid}`);
+          }
           const coolifyProjectUuid = await this.getOrCreateTenantProject(site.tenantId, site.name);
           updates.coolifyProjectUuid = coolifyProjectUuid;
           this.logger.log(`Site ${site.id}: created Coolify project ${coolifyProjectUuid}`);
@@ -830,7 +834,7 @@ export class SitesDomainService {
           .where(eq(schema.site.id, site.id));
 
         migrated++;
-        details.push(`✓ Site ${site.id} (${site.name}): migrated, publicUrl=${updates.publicUrl}`);
+        details.push(`✓ Site ${site.id} (${site.name}): migrated, publicUrl=${site.publicUrl || updates.publicUrl}, coolifyProject=${updates.coolifyProjectUuid || site.coolifyProjectUuid}`);
       } catch (e) {
         failed++;
         const error = e instanceof Error ? e.message : String(e);

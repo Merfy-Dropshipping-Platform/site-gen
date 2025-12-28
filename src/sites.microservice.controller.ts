@@ -239,4 +239,16 @@ export class SitesMicroserviceController {
       return { success: false, message: e?.message ?? 'internal_error' };
     }
   }
+
+  @MessagePattern('sites.migrate_orphaned')
+  async migrateOrphaned() {
+    try {
+      this.logger.log('Starting orphaned sites migration');
+      const result = await this.service.migrateOrphanedSites();
+      return { success: true, ...result };
+    } catch (e: any) {
+      this.logger.error('migrate_orphaned failed', e);
+      return { success: false, message: e?.message ?? 'internal_error' };
+    }
+  }
 }

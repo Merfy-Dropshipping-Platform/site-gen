@@ -778,4 +778,68 @@ export class SitesDomainService {
       reason,
     };
   }
+
+  /**
+   * Миграция: создаёт subdomain и Coolify проект для сайтов без publicUrl.
+   * Вызывается один раз для исправления сайтов, созданных до фикса DomainModule.
+   */
+  async migrateOrphanedSites(): Promise<{ migrated: number; failed: number; details: string[] }> {
+    const details: string[] = [];
+    let migrated = 0;
+    let failed = 0;
+
+    // Находим сайты без publicUrl
+    const orphanedSites = await this.db
+      .select({
+        id: schema.site.id,
+        tenantId: schema.site.tenantId,
+        name: schema.site.name,
+        publicUrl: schema.site.publicUrl,
+        coolifyProjectUuid: schema.site.coolifyProjectUuid,
+      })
+      .from(schema.site)
+      .where(sql`${schema.site.publicUrl} IS NULL AND ${schema.site.deletedAt} IS NULL`);
+
+    this.logger.log(`Found ${orphanedSites.length} sites without publicUrl to migrate`);
+
+    for (const site of orphanedSites) {
+      try {
+        const updates: Partial<typeof schema.site.$inferInsert> = { updatedAt: new Date() };
+
+        // 1. Генерируем subdomain если нет
+        if (!site.publicUrl) {
+          const domainResult = await this.domainClient.generateSubdomain(site.tenantId);
+          const subdomain = domainResult.name;
+          const publicUrl = this.storage.getSitePublicUrlBySubdomain(subdomain);
+          updates.domainId = domainResult.id;
+          updates.publicUrl = publicUrl;
+          this.logger.log(`Site ${site.id}: generated subdomain ${subdomain}, publicUrl: ${publicUrl}`);
+        }
+
+        // 2. Создаём Coolify проект если нет
+        if (!site.coolifyProjectUuid) {
+          const coolifyProjectUuid = await this.getOrCreateTenantProject(site.tenantId, site.name);
+          updates.coolifyProjectUuid = coolifyProjectUuid;
+          this.logger.log(`Site ${site.id}: created Coolify project ${coolifyProjectUuid}`);
+        }
+
+        // 3. Обновляем сайт
+        await this.db
+          .update(schema.site)
+          .set(updates)
+          .where(eq(schema.site.id, site.id));
+
+        migrated++;
+        details.push(`✓ Site ${site.id} (${site.name}): migrated, publicUrl=${updates.publicUrl}`);
+      } catch (e) {
+        failed++;
+        const error = e instanceof Error ? e.message : String(e);
+        details.push(`✗ Site ${site.id} (${site.name}): ${error}`);
+        this.logger.error(`Failed to migrate site ${site.id}: ${error}`);
+      }
+    }
+
+    this.logger.log(`Migration complete: ${migrated} migrated, ${failed} failed`);
+    return { migrated, failed, details };
+  }
 }

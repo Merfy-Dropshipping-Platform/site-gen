@@ -679,7 +679,7 @@ export class SitesDomainService {
    * @returns UUID Coolify Project
    */
   async getOrCreateTenantProject(tenantId: string, companyName?: string): Promise<string> {
-    // 1. Проверяем локальный кэш в БД
+    // 1. Проверяем локальный кэш в БД (игнорируем mock значения)
     const [cached] = await this.db
       .select({
         coolifyProjectUuid: schema.tenantProject.coolifyProjectUuid,
@@ -688,7 +688,8 @@ export class SitesDomainService {
       .where(eq(schema.tenantProject.tenantId, tenantId))
       .limit(1);
 
-    if (cached?.coolifyProjectUuid) {
+    // Игнорируем mock-project-* значения из старого кэша
+    if (cached?.coolifyProjectUuid && !cached.coolifyProjectUuid.startsWith('mock-project-')) {
       this.logger.debug(`Found cached project ${cached.coolifyProjectUuid} for tenant ${tenantId}`);
       return cached.coolifyProjectUuid;
     }

@@ -105,14 +105,16 @@ export class SiteProvisioningScheduler {
       // Проверяем что у пользователя реально нет сайтов
       const existingSites = await this.sites.list(tenantId, 1);
       if (existingSites.items.length > 0) {
-        this.logger.debug(`User ${userId} already has sites, skip`);
+        this.logger.log(`User ${userId} (tenant ${tenantId}) already has ${existingSites.items.length} site(s), skip`);
         return;
       }
 
       // Проверяем биллинг
       const entitlements = await this.getEntitlements(accountId);
+      this.logger.log(`User ${userId} entitlements: frozen=${entitlements.frozen}, shopsLimit=${entitlements.shopsLimit}, success=${entitlements.success}`);
+
       if (!this.canCreateSite(entitlements)) {
-        this.logger.debug(`User ${userId} cannot create site: frozen or no quota`);
+        this.logger.log(`User ${userId} cannot create site: frozen or no quota`);
         return;
       }
 

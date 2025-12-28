@@ -284,6 +284,17 @@ export class SitesDomainService {
       }
     }
 
+    // Создаём или получаем Coolify проект для тенанта (best-effort)
+    let coolifyProjectUuid: string | undefined;
+    if (!params.skipCoolify) {
+      try {
+        coolifyProjectUuid = await this.getOrCreateTenantProject(params.tenantId, params.companyName);
+        this.logger.log(`Coolify project ${coolifyProjectUuid} ready for tenant ${params.tenantId}`);
+      } catch (e) {
+        this.logger.warn(`Failed to create Coolify project (site will be created anyway): ${e instanceof Error ? e.message : e}`);
+      }
+    }
+
     await this.db.insert(schema.site).values({
       id,
       tenantId: params.tenantId,
@@ -296,6 +307,7 @@ export class SitesDomainService {
       updatedBy: params.actorUserId,
       domainId,
       publicUrl,
+      coolifyProjectUuid,
     });
 
     this.events.emit('sites.site.created', {

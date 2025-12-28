@@ -20,15 +20,12 @@ interface CreateApplicationParams {
   port?: number;
 }
 
-type Mode = 'mock' | 'http';
 
 /**
  * CoolifyProvider — адаптер провайдера деплоя.
  *
- * Два режима работы управляются переменными окружения:
- * - `COOLIFY_MODE=mock` (по умолчанию) — без внешних вызовов, предсказуемые ответы.
- * - `COOLIFY_MODE=http` — реальные HTTP‑вызовы к Coolify API с использованием
- *   `COOLIFY_API_URL` и `COOLIFY_API_TOKEN` (Bearer‑токен).
+ * Использует HTTP-вызовы к Coolify API с использованием
+ * `COOLIFY_API_URL` и `COOLIFY_API_TOKEN` (Bearer‑токен).
  *
  * Соответствие реальному API Coolify (согласно docs /api/v1/*):
  * - ensureApp:
@@ -45,7 +42,6 @@ type Mode = 'mock' | 'http';
 @Injectable()
 export class CoolifyProvider {
   private readonly logger = new Logger(CoolifyProvider.name);
-  private readonly mode: Mode;
   private readonly apiUrl: string | undefined;
   private readonly apiToken: string | undefined;
   private readonly appUuid: string | undefined;
@@ -58,7 +54,6 @@ export class CoolifyProvider {
   private readonly wildcardDomain: string;
 
   constructor() {
-    this.mode = (process.env.COOLIFY_MODE as Mode) ?? 'mock';
     this.apiUrl = process.env.COOLIFY_API_URL;
     // Coolify API токен вида `5|...`
     this.apiToken = process.env.COOLIFY_API_TOKEN;
@@ -137,10 +132,6 @@ export class CoolifyProvider {
    * Возвращает uuid приложения (appId) и envId (пока не используется).
    */
   async ensureApp(siteId: string) {
-    if (this.mode !== 'http') {
-      this.logger.log(`ensureApp (mock) for ${siteId}`);
-      return { appId: `app_${siteId}`, envId: `env_${siteId}` } satisfies EnsureAppResult;
-    }
     // 1) Если явно задан UUID — используем его
     if (this.appUuid) {
       return { appId: this.appUuid, envId: '' } satisfies EnsureAppResult;
@@ -164,11 +155,6 @@ export class CoolifyProvider {
    * Coolify самостоятельно тянет код/образ; `artifactUrl` пишем в deployment_note для трассировки.
    */
   async deployBuild(params: { siteId: string; buildId: string; artifactUrl: string }) {
-    if (this.mode !== 'http') {
-      this.logger.log(`deployBuild (mock) ${params.siteId} using ${params.artifactUrl}`);
-      const url = `https://${params.siteId}.preview.local`;
-      return { url } satisfies DeployResult;
-    }
     try {
       const ensure = await this.ensureApp(params.siteId);
       const payload = await this.http<any>('/deploy', {
@@ -186,7 +172,7 @@ export class CoolifyProvider {
         `https://${params.siteId}.preview.local`;
       return { url: String(url) } satisfies DeployResult;
     } catch (e) {
-      this.logger.warn(`deployBuild failed, fallback to mock: ${e instanceof Error ? e.message : e}`);
+      this.logger.warn(`deployBuild failed: ${e instanceof Error ? e.message : e}`);
       return { url: `https://${params.siteId}.preview.local` } satisfies DeployResult;
     }
   }
@@ -196,10 +182,6 @@ export class CoolifyProvider {
    * В Coolify домены указываются в поле fqdn (через запятую).
    */
   async setDomain(siteId: string, domain: string) {
-    if (this.mode !== 'http') {
-      this.logger.log(`setDomain (mock) for ${siteId} -> ${domain}`);
-      return { success: true } as const;
-    }
     try {
       const ensure = await this.ensureApp(siteId);
       await this.http(`/applications/${ensure.appId}`, {
@@ -208,7 +190,7 @@ export class CoolifyProvider {
       });
       return { success: true } as const;
     } catch (e) {
-      this.logger.warn(`setDomain failed, fallback to mock: ${e instanceof Error ? e.message : e}`);
+      this.logger.warn(`setDomain failed: ${e instanceof Error ? e.message : e}`);
       return { success: true } as const;
     }
   }
@@ -217,10 +199,6 @@ export class CoolifyProvider {
    * toggleMaintenance — включить/выключить режим обслуживания у приложения.
    */
   async toggleMaintenance(siteId: string, enabled: boolean) {
-    if (this.mode !== 'http') {
-      this.logger.log(`toggleMaintenance (mock) for ${siteId}: ${enabled}`);
-      return { success: true } as const;
-    }
     try {
       const ensure = await this.ensureApp(siteId);
       const path = enabled
@@ -229,7 +207,7 @@ export class CoolifyProvider {
       await this.http(path, { method: 'POST' });
       return { success: true } as const;
     } catch (e) {
-      this.logger.warn(`toggleMaintenance failed, fallback to mock: ${e instanceof Error ? e.message : e}`);
+      this.logger.warn(`toggleMaintenance failed: ${e instanceof Error ? e.message : e}`);
       return { success: true } as const;
     }
   }
@@ -243,11 +221,6 @@ export class CoolifyProvider {
   async createApplication(params: CreateApplicationParams): Promise<CreateApplicationResult> {
     const { name, siteSlug, dockerImage = 'nginx:alpine', port = 80 } = params;
     const fqdn = `https://${siteSlug}.${this.wildcardDomain}`;
-
-    if (this.mode !== 'http') {
-      this.logger.log(`createApplication (mock) ${name} -> ${fqdn}`);
-      return { uuid: `mock-app-${siteSlug}`, fqdn };
-    }
 
     if (!this.serverUuid || !this.projectUuid) {
       throw new Error('COOLIFY_SERVER_UUID and COOLIFY_PROJECT_UUID are required');
@@ -292,10 +265,6 @@ export class CoolifyProvider {
    * getOrCreateApp — находит существующее приложение по имени или создаёт новое.
    */
   async getOrCreateApp(params: CreateApplicationParams): Promise<CreateApplicationResult> {
-    if (this.mode !== 'http') {
-      return this.createApplication(params);
-    }
-
     try {
       // Пробуем найти по имени
       const apps = await this.http<any>('/applications');
@@ -320,11 +289,6 @@ export class CoolifyProvider {
    * startApplication — запускает приложение.
    */
   async startApplication(appUuid: string) {
-    if (this.mode !== 'http') {
-      this.logger.log(`startApplication (mock) ${appUuid}`);
-      return { success: true };
-    }
-
     try {
       await this.http(`/applications/${appUuid}/start`, { method: 'POST' });
       return { success: true };
@@ -338,11 +302,6 @@ export class CoolifyProvider {
    * restartApplication — перезапускает приложение для применения изменений.
    */
   async restartApplication(appUuid: string) {
-    if (this.mode !== 'http') {
-      this.logger.log(`restartApplication (mock) ${appUuid}`);
-      return { success: true };
-    }
-
     try {
       await this.http(`/applications/${appUuid}/restart`, { method: 'POST' });
       return { success: true };
@@ -356,11 +315,6 @@ export class CoolifyProvider {
    * deleteApplication — удаляет приложение из Coolify.
    */
   async deleteApplication(appUuid: string) {
-    if (this.mode !== 'http') {
-      this.logger.log(`deleteApplication (mock) ${appUuid}`);
-      return { success: true };
-    }
-
     try {
       await this.http(`/applications/${appUuid}`, { method: 'DELETE' });
       return { success: true };
@@ -381,11 +335,6 @@ export class CoolifyProvider {
    * @returns UUID проекта
    */
   async getOrCreateProject(tenantId: string, companyName: string): Promise<string> {
-    if (this.mode !== 'http') {
-      this.logger.log(`getOrCreateProject (mock) for tenant ${tenantId}`);
-      return `mock-project-${tenantId}`;
-    }
-
     try {
       // Получаем список проектов
       const projects = await this.http<any[]>('/projects');
@@ -447,11 +396,6 @@ export class CoolifyProvider {
     const { projectUuid, name, subdomain, dockerImage = 'nginx:alpine', port = 80 } = params;
     const fqdn = subdomain.startsWith('http') ? subdomain : `http://${subdomain}`;
 
-    if (this.mode !== 'http') {
-      this.logger.log(`createSiteApplication (mock) ${name} -> ${fqdn}`);
-      return { uuid: `mock-app-${name}`, url: fqdn };
-    }
-
     if (!this.serverUuid) {
       throw new Error('COOLIFY_SERVER_UUID is required');
     }
@@ -496,11 +440,6 @@ export class CoolifyProvider {
    * Используется когда нужно изменить домен после создания приложения.
    */
   async updateApplicationDomain(appUuid: string, domain: string): Promise<void> {
-    if (this.mode !== 'http') {
-      this.logger.log(`updateApplicationDomain (mock) ${appUuid} -> ${domain}`);
-      return;
-    }
-
     const fqdn = domain.startsWith('http') ? domain : `http://${domain}`;
 
     try {
@@ -536,11 +475,6 @@ export class CoolifyProvider {
     const minioUrl = process.env.S3_PUBLIC_ENDPOINT || process.env.MINIO_PUBLIC_ENDPOINT || process.env.S3_ENDPOINT || 'https://minio.example.com';
     const bucket = process.env.S3_BUCKET || 'merfy-sites';
     const nginxProxyRepo = process.env.NGINX_PROXY_REPO || 'https://github.com/Merfy-Dropshipping-Platform/nginx-minio-proxy';
-
-    if (this.mode !== 'http') {
-      this.logger.log(`createStaticSiteApp (mock) ${name} -> ${fqdn}`);
-      return { uuid: `mock-static-${name}`, url: fqdn };
-    }
 
     if (!this.serverUuid) {
       throw new Error('COOLIFY_SERVER_UUID is required');

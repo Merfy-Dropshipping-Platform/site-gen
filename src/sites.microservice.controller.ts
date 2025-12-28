@@ -224,4 +224,19 @@ export class SitesMicroserviceController {
       return { success: false, message: e?.message ?? 'internal_error' };
     }
   }
+
+  @MessagePattern('sites.check_availability')
+  async checkAvailability(@Payload() data: any) {
+    try {
+      const { tenantId, siteId } = data ?? {};
+      if (!tenantId || !siteId) {
+        return { success: false, message: 'tenantId and siteId required' };
+      }
+      const result = await this.service.checkSiteAvailability(tenantId, siteId);
+      return { success: true, ...result };
+    } catch (e: any) {
+      this.logger.error('check_availability failed', e);
+      return { success: false, message: e?.message ?? 'internal_error' };
+    }
+  }
 }

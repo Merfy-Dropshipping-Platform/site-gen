@@ -712,4 +712,70 @@ export class SitesDomainService {
     this.logger.log(`Created/found Coolify project ${coolifyProjectUuid} for tenant ${tenantId}`);
     return coolifyProjectUuid;
   }
+
+  /**
+   * Проверяет доступность сайта для публичного доступа.
+   */
+  async checkSiteAvailability(tenantId: string, siteId: string) {
+    const site = await this.fetchSiteForAvailabilityCheck(tenantId, siteId);
+    if (!site) {
+      return this.buildUnavailableResponse('site_not_found');
+    }
+
+    const entitlements = await this.billingClient.getEntitlements(tenantId);
+    const checks = {
+      billingAllowed: !entitlements.frozen,
+      isPublished: site.status === 'published',
+      isDeployed: Boolean(site.coolifyAppUuid),
+    };
+
+    const reason = this.determineUnavailabilityReason(checks);
+    const available = reason === undefined;
+
+    return {
+      available,
+      exists: true,
+      ...checks,
+      publicUrl: site.publicUrl,
+      reason,
+    };
+  }
+
+  private async fetchSiteForAvailabilityCheck(tenantId: string, siteId: string) {
+    const [site] = await this.db
+      .select({
+        id: schema.site.id,
+        status: schema.site.status,
+        publicUrl: schema.site.publicUrl,
+        coolifyAppUuid: schema.site.coolifyAppUuid,
+      })
+      .from(schema.site)
+      .where(and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)))
+      .limit(1);
+
+    return site ?? null;
+  }
+
+  private determineUnavailabilityReason(checks: {
+    billingAllowed: boolean;
+    isPublished: boolean;
+    isDeployed: boolean;
+  }): string | undefined {
+    if (!checks.billingAllowed) return 'account_frozen';
+    if (!checks.isPublished) return 'site_not_published';
+    if (!checks.isDeployed) return 'site_not_deployed';
+    return undefined;
+  }
+
+  private buildUnavailableResponse(reason: string) {
+    return {
+      available: false,
+      exists: false,
+      billingAllowed: false,
+      isPublished: false,
+      isDeployed: false,
+      publicUrl: null,
+      reason,
+    };
+  }
 }

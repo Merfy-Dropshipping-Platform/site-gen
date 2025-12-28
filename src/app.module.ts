@@ -45,6 +45,7 @@ import { S3StorageService } from './storage/s3.service';
 import { ScheduleModule } from '@nestjs/schedule';
 import { RetentionScheduler } from './scheduler/retention.scheduler';
 import { BillingSyncScheduler } from './scheduler/billing-sync.scheduler';
+import { SiteProvisioningScheduler } from './scheduler/site-provisioning.scheduler';
 import { SitesEventsListenerController } from './events/events.listener';
 import { DomainModule } from './domain';
 
@@ -84,6 +85,7 @@ import { DomainModule } from './domain';
     S3StorageService,
     RetentionScheduler,
     BillingSyncScheduler,
+    SiteProvisioningScheduler,
     BillingClient,
   ],
 })

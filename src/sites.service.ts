@@ -14,17 +14,18 @@
  * - События публикуются в fire‑and‑forget режиме — сбои в брокере не блокируют основной сценарий.
  */
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
+import { firstValueFrom, timeout, catchError, of } from 'rxjs';
 import { randomUUID } from 'crypto';
 import * as path from 'path';
 import * as fsp from 'fs/promises';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { and, eq, ilike, or, sql } from 'drizzle-orm';
-import { PG_CONNECTION } from './constants';
+import { COOLIFY_RMQ_SERVICE, PG_CONNECTION } from './constants';
 import * as schema from './db/schema';
 import { SiteGeneratorService } from './generator/generator.service';
 import { SitesEventsService } from './events/events.service';
 import { DeploymentsService } from './deployments/deployments.service';
-import { CoolifyProvider } from './deployments/coolify.provider';
 import { S3StorageService } from './storage/s3.service';
 import { DomainClient } from './domain';
 import { BillingClient } from './billing/billing.client';
@@ -46,14 +47,29 @@ export class SitesDomainService {
   constructor(
     @Inject(PG_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
+    @Inject(COOLIFY_RMQ_SERVICE)
+    private readonly coolifyClient: ClientProxy,
     private readonly generator: SiteGeneratorService,
     private readonly events: SitesEventsService,
     private readonly deployments: DeploymentsService,
-    private readonly coolify: CoolifyProvider,
     private readonly storage: S3StorageService,
     private readonly domainClient: DomainClient,
     private readonly billingClient: BillingClient,
   ) {}
+
+  /**
+   * Вызов Coolify Worker через RPC.
+   * Возвращает { success: true, ...data } или { success: false, message: string }
+   */
+  private async callCoolify<T = any>(pattern: string, data: any): Promise<T> {
+    const result = await firstValueFrom(
+      this.coolifyClient.send(pattern, data).pipe(
+        timeout(30000),
+        catchError((err) => of({ success: false, message: err?.message || 'rpc_timeout' })),
+      ),
+    );
+    return result as T;
+  }
 
   async list(tenantId: string, limit = 50, cursor?: string) {
     // Cursor‑пагинация зарезервирована для будущей версии; сейчас возвращаем первые N записей
@@ -381,7 +397,7 @@ export class SitesDomainService {
       this.events.emit('sites.site.deleted', { tenantId, siteId, soft: true });
       // Best-effort: включить maintenance у провайдера
       try {
-        await this.coolify.toggleMaintenance(siteId, true);
+        await this.callCoolify('coolify.toggle_maintenance', { appUuid: siteId, enabled: true });
       } catch {}
     }
     return Boolean(row);
@@ -476,7 +492,7 @@ export class SitesDomainService {
       .returning({ id: schema.siteDomain.id, domain: schema.siteDomain.domain });
     if (row) {
       this.events.emit('sites.domain.verified', { tenantId: params.tenantId, siteId: params.siteId, domain: params.domain });
-      await this.coolify.setDomain(params.siteId, params.domain);
+      await this.callCoolify('coolify.set_domain', { appUuid: params.siteId, domain: params.domain });
     }
     return Boolean(row);
   }
@@ -503,14 +519,21 @@ export class SitesDomainService {
           const sitePath = this.storage.getSitePrefixBySubdomain(finalUrl).replace(/\/$/, '');
 
           this.logger.log(`Creating Coolify static site app for ${subdomain}.merfy.ru`);
-          const coolifyResult = await this.coolify.createStaticSiteApp({
-            projectUuid,
-            name: `site-${subdomain}`,
-            subdomain: `${subdomain}.merfy.ru`,
-            sitePath,
-          });
+          const coolifyResult = await this.callCoolify<{ success: boolean; appUuid?: string; url?: string; message?: string }>(
+            'coolify.create_static_site_app',
+            {
+              projectUuid,
+              name: `site-${subdomain}`,
+              subdomain: `${subdomain}.merfy.ru`,
+              sitePath,
+            },
+          );
 
-          coolifyAppUuid = coolifyResult.uuid;
+          if (!coolifyResult.success || !coolifyResult.appUuid) {
+            throw new Error(coolifyResult.message || 'coolify_create_failed');
+          }
+
+          coolifyAppUuid = coolifyResult.appUuid;
 
           // Сохраняем UUID приложения и проекта
           await this.db
@@ -536,7 +559,7 @@ export class SitesDomainService {
     // 3. Если Coolify app уже существовал, перезапускаем его для обновления
     if (coolifyAppUuid) {
       try {
-        await this.coolify.restartApplication(coolifyAppUuid);
+        await this.callCoolify('coolify.restart_application', { appUuid: coolifyAppUuid });
         this.logger.log(`Restarted Coolify app ${coolifyAppUuid}`);
       } catch (e) {
         // Не критично — nginx подхватит новые файлы из MinIO автоматически
@@ -630,7 +653,9 @@ export class SitesDomainService {
     const sitesWithCoolify = res.filter((row) => row.coolifyAppUuid);
     if (sitesWithCoolify.length > 0) {
       const results = await Promise.allSettled(
-        sitesWithCoolify.map((row) => this.coolify.toggleMaintenance(row.coolifyAppUuid!, true)),
+        sitesWithCoolify.map((row) =>
+          this.callCoolify('coolify.toggle_maintenance', { appUuid: row.coolifyAppUuid, enabled: true }),
+        ),
       );
       const failed = results.filter((r) => r.status === 'rejected').length;
       if (failed > 0) {
@@ -655,7 +680,9 @@ export class SitesDomainService {
     const sitesWithCoolify = res.filter((row) => row.coolifyAppUuid);
     if (sitesWithCoolify.length > 0) {
       const results = await Promise.allSettled(
-        sitesWithCoolify.map((row) => this.coolify.toggleMaintenance(row.coolifyAppUuid!, false)),
+        sitesWithCoolify.map((row) =>
+          this.callCoolify('coolify.toggle_maintenance', { appUuid: row.coolifyAppUuid, enabled: false }),
+        ),
       );
       const failed = results.filter((r) => r.status === 'rejected').length;
       if (failed > 0) {
@@ -693,9 +720,18 @@ export class SitesDomainService {
       return cached.coolifyProjectUuid;
     }
 
-    // 2. Создаём или находим проект в Coolify
+    // 2. Создаём или находим проект в Coolify через RPC
     const projectName = companyName || `tenant-${tenantId.slice(0, 8)}`;
-    const coolifyProjectUuid = await this.coolify.getOrCreateProject(tenantId, projectName);
+    const rpcResult = await this.callCoolify<{ success: boolean; projectUuid?: string; message?: string }>(
+      'coolify.get_or_create_project',
+      { tenantId, companyName: projectName },
+    );
+
+    if (!rpcResult.success || !rpcResult.projectUuid) {
+      throw new Error(rpcResult.message || 'coolify_project_create_failed');
+    }
+
+    const coolifyProjectUuid = rpcResult.projectUuid;
 
     // 3. Сохраняем в локальный кэш
     await this.db.insert(schema.tenantProject).values({

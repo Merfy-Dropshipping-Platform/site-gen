@@ -11,9 +11,8 @@ import { Controller, Get, Post, Inject, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom, timeout, catchError, of } from 'rxjs';
 import { sql } from 'drizzle-orm';
-import { PG_CONNECTION, BILLING_RMQ_SERVICE } from './constants';
+import { PG_CONNECTION, BILLING_RMQ_SERVICE, COOLIFY_RMQ_SERVICE } from './constants';
 import { DomainClient } from './domain/domain.client';
-import { CoolifyProvider } from './deployments/coolify.provider';
 import { SitesDomainService } from './sites.service';
 
 interface HealthCheck {
@@ -30,8 +29,8 @@ export class HealthController {
   constructor(
     @Inject(PG_CONNECTION) private readonly db: any,
     @Inject(BILLING_RMQ_SERVICE) private readonly billingClient: ClientProxy,
+    @Inject(COOLIFY_RMQ_SERVICE) private readonly coolifyClient: ClientProxy,
     private readonly domainClient: DomainClient,
-    private readonly coolify: CoolifyProvider,
     private readonly sitesService: SitesDomainService,
   ) {}
 
@@ -80,12 +79,10 @@ export class HealthController {
     checks.push(domainCheck);
     // Domain Service не критичен — есть HTTP fallback
 
-    // 4. Проверка Coolify (опционально, только в http mode)
-    if (process.env.COOLIFY_MODE === 'http') {
-      const coolifyCheck = await this.checkCoolify();
-      checks.push(coolifyCheck);
-      // Coolify не критичен для базовой работы
-    }
+    // 4. Проверка Coolify Worker (опционально)
+    const coolifyCheck = await this.checkCoolify();
+    checks.push(coolifyCheck);
+    // Coolify Worker не критичен для базовой работы
 
     return {
       status: healthy ? 'ok' : 'degraded',
@@ -173,40 +170,23 @@ export class HealthController {
   private async checkCoolify(): Promise<HealthCheck> {
     const start = Date.now();
     try {
-      // Простая проверка — попытка получить список приложений
-      // В реальности CoolifyProvider не имеет метода health, делаем best-effort
-      // Проверяем что API URL и token настроены
-      const apiUrl = process.env.COOLIFY_API_URL;
-      const apiToken = process.env.COOLIFY_API_TOKEN;
-
-      if (!apiUrl || !apiToken) {
-        return {
-          name: 'coolify',
-          status: 'down',
-          latencyMs: Date.now() - start,
-          error: 'not_configured',
-        };
-      }
-
-      // Пинг API
-      const res = await fetch(`${apiUrl}/api/v1/`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${apiToken}`,
-          Accept: 'application/json',
-        },
-        signal: AbortSignal.timeout(3000),
-      });
+      // Проверка через RPC к coolify-worker
+      const result = await firstValueFrom(
+        this.coolifyClient.send('coolify.health', {}).pipe(
+          timeout(5000),
+          catchError(() => of({ success: false, status: 'down', error: 'rpc_timeout' })),
+        ),
+      );
 
       return {
-        name: 'coolify',
-        status: res.ok ? 'up' : 'down',
-        latencyMs: Date.now() - start,
-        error: res.ok ? undefined : `http_${res.status}`,
+        name: 'coolify-worker',
+        status: result.success && result.status === 'up' ? 'up' : 'down',
+        latencyMs: result.latencyMs ?? (Date.now() - start),
+        error: result.error,
       };
     } catch (error) {
       return {
-        name: 'coolify',
+        name: 'coolify-worker',
         status: 'down',
         latencyMs: Date.now() - start,
         error: error instanceof Error ? error.message : 'unknown',

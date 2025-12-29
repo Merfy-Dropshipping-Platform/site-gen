@@ -7,13 +7,14 @@
  *
  * Используется оркестраторами (Coolify, Docker, Kubernetes) для healthcheck.
  */
-import { Controller, Get, Inject, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Inject, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom, timeout, catchError, of } from 'rxjs';
 import { sql } from 'drizzle-orm';
 import { PG_CONNECTION, BILLING_RMQ_SERVICE } from './constants';
 import { DomainClient } from './domain/domain.client';
 import { CoolifyProvider } from './deployments/coolify.provider';
+import { SitesDomainService } from './sites.service';
 
 interface HealthCheck {
   name: string;
@@ -31,6 +32,7 @@ export class HealthController {
     @Inject(BILLING_RMQ_SERVICE) private readonly billingClient: ClientProxy,
     private readonly domainClient: DomainClient,
     private readonly coolify: CoolifyProvider,
+    private readonly sitesService: SitesDomainService,
   ) {}
 
   /**
@@ -207,6 +209,31 @@ export class HealthController {
         name: 'coolify',
         status: 'down',
         latencyMs: Date.now() - start,
+        error: error instanceof Error ? error.message : 'unknown',
+      };
+    }
+  }
+
+  /**
+   * Запуск миграции orphaned sites
+   * POST /migrate-orphaned
+   *
+   * Очищает mock кэш и создаёт реальные Coolify приложения
+   * для сайтов без publicUrl или coolifyProjectUuid
+   */
+  @Post('migrate-orphaned')
+  async migrateOrphaned() {
+    this.logger.log('Starting orphaned sites migration via HTTP');
+    try {
+      const result = await this.sitesService.migrateOrphanedSites();
+      return {
+        success: true,
+        ...result,
+      };
+    } catch (error) {
+      this.logger.error(`Migration failed: ${error}`);
+      return {
+        success: false,
         error: error instanceof Error ? error.message : 'unknown',
       };
     }

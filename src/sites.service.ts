@@ -816,6 +816,81 @@ export class SitesDomainService {
   }
 
   /**
+   * Выполняет HTTP health check сайта — проверяет что publicUrl отвечает HTTP 200.
+   * Возвращает { available, statusCode, latencyMs }.
+   */
+  async healthCheck(
+    tenantId: string,
+    siteId: string,
+  ): Promise<{
+    available: boolean;
+    statusCode?: number;
+    latencyMs: number;
+    publicUrl: string | null;
+    error?: string;
+  }> {
+    const site = await this.fetchSiteForAvailabilityCheck(tenantId, siteId);
+    if (!site) {
+      return {
+        available: false,
+        latencyMs: 0,
+        publicUrl: null,
+        error: 'site_not_found',
+      };
+    }
+
+    if (!site.publicUrl) {
+      return {
+        available: false,
+        latencyMs: 0,
+        publicUrl: null,
+        error: 'no_public_url',
+      };
+    }
+
+    const start = Date.now();
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+      const response = await fetch(site.publicUrl, {
+        method: 'GET',
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'Merfy-HealthCheck/1.0',
+        },
+      });
+
+      clearTimeout(timeout);
+      const latencyMs = Date.now() - start;
+
+      return {
+        available: response.ok,
+        statusCode: response.status,
+        latencyMs,
+        publicUrl: site.publicUrl,
+      };
+    } catch (e: any) {
+      const latencyMs = Date.now() - start;
+      const errorMessage =
+        e?.name === 'AbortError'
+          ? 'timeout'
+          : e?.cause?.code ?? e?.message ?? 'fetch_failed';
+
+      this.logger.warn(
+        `Health check failed for site ${siteId}: ${errorMessage}`,
+      );
+
+      return {
+        available: false,
+        latencyMs,
+        publicUrl: site.publicUrl,
+        error: errorMessage,
+      };
+    }
+  }
+
+  /**
    * Очищает mock данные из кэша tenant_project и сбрасывает coolifyProjectUuid в сайтах.
    */
   async clearMockCache(): Promise<void> {

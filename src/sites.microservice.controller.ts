@@ -6,6 +6,7 @@
  * - sites.update_site, sites.delete_site
  * - sites.attach_domain, sites.verify_domain
  * - sites.freeze_tenant, sites.unfreeze_tenant
+ * - sites.check_availability, sites.health_check
  */
 import { Controller, Logger } from '@nestjs/common';
 import { Ctx, MessagePattern, Payload, RmqContext } from '@nestjs/microservices';
@@ -236,6 +237,25 @@ export class SitesMicroserviceController {
       return { success: true, ...result };
     } catch (e: any) {
       this.logger.error('check_availability failed', e);
+      return { success: false, message: e?.message ?? 'internal_error' };
+    }
+  }
+
+  /**
+   * HTTP health check — делает GET запрос на publicUrl сайта.
+   * Возвращает { available, statusCode, latencyMs }.
+   */
+  @MessagePattern('sites.health_check')
+  async healthCheck(@Payload() data: any) {
+    try {
+      const { tenantId, siteId } = data ?? {};
+      if (!tenantId || !siteId) {
+        return { success: false, message: 'tenantId and siteId required' };
+      }
+      const result = await this.service.healthCheck(tenantId, siteId);
+      return { success: true, ...result };
+    } catch (e: any) {
+      this.logger.error('health_check failed', e);
       return { success: false, message: e?.message ?? 'internal_error' };
     }
   }

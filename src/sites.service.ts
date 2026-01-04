@@ -920,7 +920,7 @@ export class SitesDomainService {
     // Сначала очищаем mock кэш
     await this.clearMockCache();
 
-    // Находим сайты без publicUrl ИЛИ без coolifyProjectUuid
+    // Находим сайты без publicUrl, coolifyProjectUuid ИЛИ coolifyAppUuid
     const orphanedSites = await this.db
       .select({
         id: schema.site.id,
@@ -928,11 +928,12 @@ export class SitesDomainService {
         name: schema.site.name,
         publicUrl: schema.site.publicUrl,
         coolifyProjectUuid: schema.site.coolifyProjectUuid,
+        coolifyAppUuid: schema.site.coolifyAppUuid,
       })
       .from(schema.site)
-      .where(sql`${schema.site.deletedAt} IS NULL AND (${schema.site.publicUrl} IS NULL OR ${schema.site.coolifyProjectUuid} IS NULL)`);
+      .where(sql`${schema.site.deletedAt} IS NULL AND (${schema.site.publicUrl} IS NULL OR ${schema.site.coolifyProjectUuid} IS NULL OR ${schema.site.coolifyAppUuid} IS NULL)`);
 
-    this.logger.log(`Found ${orphanedSites.length} sites to migrate (no publicUrl or no coolifyProjectUuid)`);
+    this.logger.log(`Found ${orphanedSites.length} sites to migrate (no publicUrl, coolifyProjectUuid, or coolifyAppUuid)`);
 
     for (const site of orphanedSites) {
       try {
@@ -949,20 +950,51 @@ export class SitesDomainService {
         }
 
         // 2. Создаём Coolify проект если нет
-        if (!site.coolifyProjectUuid) {
-          const coolifyProjectUuid = await this.getOrCreateTenantProject(site.tenantId, site.name);
-          updates.coolifyProjectUuid = coolifyProjectUuid;
-          this.logger.log(`Site ${site.id}: created Coolify project ${coolifyProjectUuid}`);
+        let projectUuid = site.coolifyProjectUuid;
+        if (!projectUuid) {
+          projectUuid = await this.getOrCreateTenantProject(site.tenantId, site.name);
+          updates.coolifyProjectUuid = projectUuid;
+          this.logger.log(`Site ${site.id}: created Coolify project ${projectUuid}`);
         }
 
-        // 3. Обновляем сайт
+        // 3. Создаём Coolify Application (nginx-minio-proxy) если нет
+        const finalPublicUrl = site.publicUrl || updates.publicUrl;
+        if (!site.coolifyAppUuid && finalPublicUrl && projectUuid) {
+          try {
+            const subdomain = this.storage.extractSubdomainSlug(finalPublicUrl);
+            const sitePath = this.storage.getSitePrefixBySubdomain(finalPublicUrl).replace(/\/$/, '');
+
+            this.logger.log(`Site ${site.id}: creating Coolify app for ${subdomain}.merfy.ru`);
+
+            const coolifyResult = await this.callCoolify<{ success: boolean; appUuid?: string; url?: string; message?: string }>(
+              'coolify.create_static_site_app',
+              {
+                projectUuid,
+                name: `site-${subdomain}`,
+                subdomain: `${subdomain}.merfy.ru`,
+                sitePath,
+              },
+            );
+
+            if (coolifyResult.success && coolifyResult.appUuid) {
+              updates.coolifyAppUuid = coolifyResult.appUuid;
+              this.logger.log(`Site ${site.id}: created Coolify app ${coolifyResult.appUuid}`);
+            } else {
+              this.logger.warn(`Site ${site.id}: Coolify app creation failed: ${coolifyResult.message}`);
+            }
+          } catch (e) {
+            this.logger.warn(`Site ${site.id}: Coolify app creation error: ${e instanceof Error ? e.message : e}`);
+          }
+        }
+
+        // 4. Обновляем сайт
         await this.db
           .update(schema.site)
           .set(updates)
           .where(eq(schema.site.id, site.id));
 
         migrated++;
-        details.push(`✓ Site ${site.id} (${site.name}): migrated, publicUrl=${site.publicUrl || updates.publicUrl}, coolifyProject=${updates.coolifyProjectUuid || site.coolifyProjectUuid}`);
+        details.push(`✓ Site ${site.id} (${site.name}): migrated, publicUrl=${finalPublicUrl}, coolifyProject=${projectUuid}, coolifyApp=${updates.coolifyAppUuid || site.coolifyAppUuid || 'N/A'}`);
       } catch (e) {
         failed++;
         const error = e instanceof Error ? e.message : String(e);

@@ -1043,9 +1043,9 @@ export class SitesDomainService {
         name: s.name,
         tenantId: s.tenantId?.slice(0, 8),
         status: s.status,
-        hasPublicUrl: Boolean(s.publicUrl),
-        hasProject: Boolean(s.coolifyProjectUuid),
-        hasApp: Boolean(s.coolifyAppUuid),
+        publicUrl: s.publicUrl,
+        coolifyProjectUuid: s.coolifyProjectUuid,
+        coolifyAppUuid: s.coolifyAppUuid,
         isDeleted: Boolean(s.deletedAt),
       })),
     };

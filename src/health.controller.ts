@@ -218,4 +218,13 @@ export class HealthController {
       };
     }
   }
+
+  /**
+   * Диагностика состояния сайтов
+   * GET /sites-debug
+   */
+  @Get('sites-debug')
+  async sitesDebug() {
+    return this.sitesService.debugSitesState();
+  }
 }

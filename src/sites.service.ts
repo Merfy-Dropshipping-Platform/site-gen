@@ -1006,4 +1006,48 @@ export class SitesDomainService {
     this.logger.log(`Migration complete: ${migrated} migrated, ${failed} failed`);
     return { migrated, failed, details };
   }
+
+  /**
+   * Диагностика состояния сайтов для отладки.
+   */
+  async debugSitesState() {
+    const sites = await this.db
+      .select({
+        id: schema.site.id,
+        tenantId: schema.site.tenantId,
+        name: schema.site.name,
+        status: schema.site.status,
+        publicUrl: schema.site.publicUrl,
+        coolifyProjectUuid: schema.site.coolifyProjectUuid,
+        coolifyAppUuid: schema.site.coolifyAppUuid,
+        deletedAt: schema.site.deletedAt,
+      })
+      .from(schema.site);
+
+    const summary = {
+      total: sites.length,
+      active: sites.filter((s) => !s.deletedAt).length,
+      deleted: sites.filter((s) => s.deletedAt).length,
+      withPublicUrl: sites.filter((s) => s.publicUrl && !s.deletedAt).length,
+      withProject: sites.filter((s) => s.coolifyProjectUuid && !s.deletedAt).length,
+      withApp: sites.filter((s) => s.coolifyAppUuid && !s.deletedAt).length,
+      needsMigration: sites.filter(
+        (s) => !s.deletedAt && (!s.publicUrl || !s.coolifyProjectUuid || !s.coolifyAppUuid),
+      ).length,
+    };
+
+    return {
+      summary,
+      sites: sites.map((s) => ({
+        id: s.id,
+        name: s.name,
+        tenantId: s.tenantId?.slice(0, 8),
+        status: s.status,
+        hasPublicUrl: Boolean(s.publicUrl),
+        hasProject: Boolean(s.coolifyProjectUuid),
+        hasApp: Boolean(s.coolifyAppUuid),
+        isDeleted: Boolean(s.deletedAt),
+      })),
+    };
+  }
 }

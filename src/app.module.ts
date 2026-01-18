@@ -48,6 +48,7 @@ import { BillingSyncScheduler } from './scheduler/billing-sync.scheduler';
 import { SiteProvisioningScheduler } from './scheduler/site-provisioning.scheduler';
 import { SitesEventsListenerController } from './events/events.listener';
 import { DomainModule } from './domain';
+import { BulkModule } from './admin/bulk/bulk.module';
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { DomainModule } from './domain';
     EventsModule,
     DatabaseModule,
     DomainModule,
+    BulkModule,
   ],
   controllers: [
     HealthController,

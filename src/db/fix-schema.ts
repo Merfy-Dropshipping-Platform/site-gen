@@ -1,10 +1,10 @@
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { Pool } from 'pg';
-import * as dotenv from 'dotenv';
-import { sql } from 'drizzle-orm';
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
+import * as dotenv from "dotenv";
+import { sql } from "drizzle-orm";
 
 // Load environment variables
-dotenv.config({ path: '.env.local' });
+dotenv.config({ path: ".env.local" });
 
 async function fixSchema() {
   const pool = new Pool({
@@ -14,7 +14,7 @@ async function fixSchema() {
   const db = drizzle(pool);
 
   try {
-    console.log('Fixing sites database schema...');
+    console.log("Fixing sites database schema...");
 
     // Check if the site table has the prev_status column (added in migration 0002)
     const siteColumns = await db.execute(sql`
@@ -24,7 +24,7 @@ async function fixSchema() {
     `);
 
     if (siteColumns.rows.length === 0) {
-      console.log('Adding prev_status column to site table...');
+      console.log("Adding prev_status column to site table...");
       await db.execute(
         sql`ALTER TABLE "site" ADD COLUMN "prev_status" "site_status";`,
       );
@@ -37,7 +37,7 @@ async function fixSchema() {
       WHERE tablename IN ('site', 'site_domain', 'site_revision', 'site_build', 'site_deployment')
     `);
 
-    console.log('Existing indexes:');
+    console.log("Existing indexes:");
     indexes.rows.forEach((row: any) => {
       console.log(`  ${row.indexname}`);
     });
@@ -45,9 +45,9 @@ async function fixSchema() {
     // You can add more schema fixes here as needed
     // For example, adding missing constraints, indexes, etc.
 
-    console.log('Schema fixed successfully');
+    console.log("Schema fixed successfully");
   } catch (error) {
-    console.error('Failed to fix schema:', error);
+    console.error("Failed to fix schema:", error);
   } finally {
     await pool.end();
   }

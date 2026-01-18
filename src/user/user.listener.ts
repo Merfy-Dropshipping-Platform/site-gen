@@ -4,11 +4,11 @@
  * Подписывается на события от user service для асинхронной обработки.
  * - user.registered: создает дефолтный сайт для нового пользователя
  */
-import { Controller, Inject, Logger } from '@nestjs/common';
-import { Ctx, EventPattern, Payload, RmqContext } from '@nestjs/microservices';
-import { ClientProxy } from '@nestjs/microservices';
-import { BILLING_RMQ_SERVICE } from '../constants';
-import { SitesDomainService } from '../sites.service';
+import { Controller, Inject, Logger } from "@nestjs/common";
+import { Ctx, EventPattern, Payload, RmqContext } from "@nestjs/microservices";
+import { ClientProxy } from "@nestjs/microservices";
+import { BILLING_RMQ_SERVICE } from "../constants";
+import { SitesDomainService } from "../sites.service";
 
 interface UserRegisteredPayload {
   userId: string;
@@ -33,44 +33,44 @@ export class UserListenerController {
 
   constructor(
     @Inject(BILLING_RMQ_SERVICE) private readonly billingClient: ClientProxy,
-    private readonly sites: SitesDomainService
+    private readonly sites: SitesDomainService,
   ) {}
 
-  @EventPattern('user.registered')
+  @EventPattern("user.registered")
   async handleUserRegistered(
     @Payload() payload: UserRegisteredPayload,
-    @Ctx() _ctx: RmqContext
+    @Ctx() _ctx: RmqContext,
   ) {
     try {
       const { userId, tenantId, accountId } = payload;
 
       if (!userId || !tenantId) {
-        this.logger.warn('user.registered event missing userId or tenantId');
+        this.logger.warn("user.registered event missing userId or tenantId");
         return;
       }
 
       this.logger.log(
-        `Received user.registered event for userId=${userId}, tenantId=${tenantId}`
+        `Received user.registered event for userId=${userId}, tenantId=${tenantId}`,
       );
 
       // Check billing entitlements - does plan allow creating sites?
       const entitlements: BillingEntitlementsResponse = await new Promise(
         (resolve, reject) => {
           const sub = this.billingClient
-            .send<BillingEntitlementsResponse>('billing.get_entitlements', {
+            .send<BillingEntitlementsResponse>("billing.get_entitlements", {
               accountId,
             })
             .subscribe({
               next: (v) => resolve(v),
               error: (e) => {
                 this.logger.warn(
-                  `Failed to get entitlements for ${accountId}: ${e}`
+                  `Failed to get entitlements for ${accountId}: ${e}`,
                 );
                 resolve({ shopsLimit: null }); // Continue without entitlements check
               },
               complete: () => sub.unsubscribe(),
             });
-        }
+        },
       );
 
       // Check if user already has sites
@@ -94,16 +94,16 @@ export class UserListenerController {
         const siteId = await this.sites.create({
           tenantId,
           actorUserId: userId,
-          name: 'Мой сайт',
+          name: "Мой сайт",
           slug: undefined,
         });
 
         this.logger.log(
-          `Default site created: siteId=${siteId} for tenantId=${tenantId}`
+          `Default site created: siteId=${siteId} for tenantId=${tenantId}`,
         );
       } else {
         this.logger.log(
-          `Skipping site creation for tenantId=${tenantId}: existingSites=${existingSitesCount}, limit=${shopsLimit}, canCreate=${canCreate}`
+          `Skipping site creation for tenantId=${tenantId}: existingSites=${existingSitesCount}, limit=${shopsLimit}, canCreate=${canCreate}`,
         );
       }
     } catch (error) {
@@ -111,7 +111,7 @@ export class UserListenerController {
         `Failed to process user.registered event: ${
           error instanceof Error ? error.message : String(error)
         }`,
-        error instanceof Error ? error.stack : undefined
+        error instanceof Error ? error.stack : undefined,
       );
     }
   }

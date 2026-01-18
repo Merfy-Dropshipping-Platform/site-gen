@@ -5,25 +5,25 @@
  * для best‑effort публикации событий (fire‑and‑forget). Потребители могут
  * подписываться на них по мере необходимости.
  */
-import { Module } from '@nestjs/common';
-import { ClientsModule, Transport } from '@nestjs/microservices';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { SitesEventsService } from './events.service';
+import { Module } from "@nestjs/common";
+import { ClientsModule, Transport } from "@nestjs/microservices";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { SitesEventsService } from "./events.service";
 
 @Module({
   imports: [
     ClientsModule.registerAsync([
       {
-        name: 'SITES_EVENTS_CLIENT',
+        name: "SITES_EVENTS_CLIENT",
         imports: [ConfigModule],
         useFactory: (configService: ConfigService) => {
-          const rabbitmqUrl = configService.get<string>('RABBITMQ_URL');
-          if (!rabbitmqUrl) throw new Error('RABBITMQ_URL is not defined');
+          const rabbitmqUrl = configService.get<string>("RABBITMQ_URL");
+          if (!rabbitmqUrl) throw new Error("RABBITMQ_URL is not defined");
           return {
             transport: Transport.RMQ,
             options: {
               urls: [rabbitmqUrl],
-              queue: 'sites_queue',
+              queue: "sites_queue",
               queueOptions: { durable: true },
             },
           };

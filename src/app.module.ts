@@ -20,35 +20,35 @@
  * - SiteGeneratorService: генерация артефактов и обновление статусов билдов
  * - CoolifyProvider + DeploymentsService: оркестрация деплоя (mock/http режимы)
  */
-import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { CqrsModule } from '@nestjs/cqrs';
-import { LoggerModule } from 'nestjs-pino';
-import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
-import { DatabaseModule } from './db/database.module';
-import { pinoConfig } from './common/logger/pino.config';
-import { MetricsModule } from './common/metrics/metrics.module';
-import { HealthController } from './health.controller';
-import { SitesMicroserviceController } from './sites.microservice.controller';
-import { GeneratorMicroserviceController } from './generator/generator.controller';
-import { SiteGeneratorService } from './generator/generator.service';
-import { SitesDomainService } from './sites.service';
-import { ThemesService } from './themes.service';
-import { ThemesMicroserviceController } from './themes.microservice.controller';
-import { EventsModule } from './events/events.module';
-import { BillingListenerController } from './billing/billing.listener';
-import { BillingClient } from './billing/billing.client';
-import { UserListenerController } from './user/user.listener';
-import { CoolifyProvider } from './deployments/coolify.provider';
-import { DeploymentsService } from './deployments/deployments.service';
-import { S3StorageService } from './storage/s3.service';
-import { ScheduleModule } from '@nestjs/schedule';
-import { RetentionScheduler } from './scheduler/retention.scheduler';
-import { BillingSyncScheduler } from './scheduler/billing-sync.scheduler';
-import { SiteProvisioningScheduler } from './scheduler/site-provisioning.scheduler';
-import { SitesEventsListenerController } from './events/events.listener';
-import { DomainModule } from './domain';
-import { BulkModule } from './admin/bulk/bulk.module';
+import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+import { CqrsModule } from "@nestjs/cqrs";
+import { LoggerModule } from "nestjs-pino";
+import { RabbitMQModule } from "./rabbitmq/rabbitmq.module";
+import { DatabaseModule } from "./db/database.module";
+import { pinoConfig } from "./common/logger/pino.config";
+import { MetricsModule } from "./common/metrics/metrics.module";
+import { HealthController } from "./health.controller";
+import { SitesMicroserviceController } from "./sites.microservice.controller";
+import { GeneratorMicroserviceController } from "./generator/generator.controller";
+import { SiteGeneratorService } from "./generator/generator.service";
+import { SitesDomainService } from "./sites.service";
+import { ThemesService } from "./themes.service";
+import { ThemesMicroserviceController } from "./themes.microservice.controller";
+import { EventsModule } from "./events/events.module";
+import { BillingListenerController } from "./billing/billing.listener";
+import { BillingClient } from "./billing/billing.client";
+import { UserListenerController } from "./user/user.listener";
+import { CoolifyProvider } from "./deployments/coolify.provider";
+import { DeploymentsService } from "./deployments/deployments.service";
+import { S3StorageService } from "./storage/s3.service";
+import { ScheduleModule } from "@nestjs/schedule";
+import { RetentionScheduler } from "./scheduler/retention.scheduler";
+import { BillingSyncScheduler } from "./scheduler/billing-sync.scheduler";
+import { SiteProvisioningScheduler } from "./scheduler/site-provisioning.scheduler";
+import { SitesEventsListenerController } from "./events/events.listener";
+import { DomainModule } from "./domain";
+import { BulkModule } from "./admin/bulk/bulk.module";
 
 @Module({
   imports: [
@@ -56,9 +56,9 @@ import { BulkModule } from './admin/bulk/bulk.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath:
-        process.env.NODE_ENV === 'production'
+        process.env.NODE_ENV === "production"
           ? undefined
-          : ['.env.local', '.env'],
+          : [".env.local", ".env"],
     }),
     MetricsModule,
     CqrsModule.forRoot(),

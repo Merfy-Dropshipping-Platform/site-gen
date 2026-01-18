@@ -1,12 +1,12 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { PG_CONNECTION } from '../constants';
-import * as schema from '../db/schema';
-import { and, isNotNull, lt } from 'drizzle-orm';
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import { S3StorageService } from '../storage/s3.service';
+import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Cron, CronExpression } from "@nestjs/schedule";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { PG_CONNECTION } from "../constants";
+import * as schema from "../db/schema";
+import { and, isNotNull, lt } from "drizzle-orm";
+import * as fs from "fs/promises";
+import * as path from "path";
+import { S3StorageService } from "../storage/s3.service";
 
 @Injectable()
 export class RetentionScheduler {
@@ -20,7 +20,10 @@ export class RetentionScheduler {
 
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
   async cleanupArtifacts() {
-    const days = Number.parseInt(String(process.env.ARTIFACT_RETENTION_DAYS ?? 14), 10);
+    const days = Number.parseInt(
+      String(process.env.ARTIFACT_RETENTION_DAYS ?? 14),
+      10,
+    );
     if (!Number.isFinite(days) || days <= 0) return;
     const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
     this.logger.log(`Retention job: removing artifacts older than ${days}d`);
@@ -36,16 +39,21 @@ export class RetentionScheduler {
         completedAt: schema.siteBuild.completedAt,
       })
       .from(schema.siteBuild)
-      .where(and(isNotNull(schema.siteBuild.completedAt), lt(schema.siteBuild.completedAt, cutoff)));
+      .where(
+        and(
+          isNotNull(schema.siteBuild.completedAt),
+          lt(schema.siteBuild.completedAt, cutoff),
+        ),
+      );
 
     // Удалим локальные файлы
     for (const r of rows) {
-      if (r.artifactUrl?.startsWith('file://')) {
+      if (r.artifactUrl?.startsWith("file://")) {
         try {
-          const localPath = r.artifactUrl.replace('file://', '');
+          const localPath = r.artifactUrl.replace("file://", "");
           await fs.rm(localPath, { force: true });
         } catch {}
-      } else if (r.artifactUrl?.startsWith('/')) {
+      } else if (r.artifactUrl?.startsWith("/")) {
         // На случай абсолютного пути
         try {
           await fs.rm(r.artifactUrl, { force: true });
@@ -67,10 +75,11 @@ export class RetentionScheduler {
         }
       }
     } catch (e) {
-      this.logger.warn(`S3 retention failed: ${e instanceof Error ? e.message : e}`);
+      this.logger.warn(
+        `S3 retention failed: ${e instanceof Error ? e.message : e}`,
+      );
     }
 
     this.logger.log(`Retention job completed for ${rows.length} builds`);
   }
 }
-

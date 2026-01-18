@@ -4,12 +4,12 @@
  * Оркестрирует деплой через провайдера (Coolify). Сохраняет снимок `site_deployment`
  * для аудита и отслеживания, возвращает публичный URL.
  */
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { randomUUID } from 'crypto';
-import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import * as schema from '../db/schema';
-import { PG_CONNECTION } from '../constants';
-import { CoolifyProvider } from './coolify.provider';
+import { Inject, Injectable, Logger } from "@nestjs/common";
+import { randomUUID } from "crypto";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import * as schema from "../db/schema";
+import { PG_CONNECTION } from "../constants";
+import { CoolifyProvider } from "./coolify.provider";
 
 @Injectable()
 export class DeploymentsService {
@@ -20,7 +20,12 @@ export class DeploymentsService {
     private readonly coolify: CoolifyProvider,
   ) {}
 
-  async deploy(params: { tenantId: string; siteId: string; buildId: string; artifactUrl: string }) {
+  async deploy(params: {
+    tenantId: string;
+    siteId: string;
+    buildId: string;
+    artifactUrl: string;
+  }) {
     const ensure = await this.coolify.ensureApp(params.siteId);
     const { url } = await this.coolify.deployBuild({
       siteId: params.siteId,
@@ -36,7 +41,7 @@ export class DeploymentsService {
       buildId: params.buildId,
       coolifyAppId: ensure.appId,
       coolifyEnvId: ensure.envId,
-      status: 'deployed',
+      status: "deployed",
       url,
       createdAt: now,
       updatedAt: now,

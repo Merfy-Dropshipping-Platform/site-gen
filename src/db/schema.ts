@@ -9,127 +9,149 @@
  * - site_build — жизненный цикл сборки и ссылки на артефакты
  * - site_deployment — снимок деплоя (ID приложения/окружения провайдера и публичный URL)
  */
-import { pgEnum, pgTable, text, timestamp, jsonb, integer, boolean } from 'drizzle-orm/pg-core';
+import {
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  jsonb,
+  integer,
+  boolean,
+} from "drizzle-orm/pg-core";
 
-export const siteStatusEnum = pgEnum('site_status', [
-  'draft',
-  'published',
-  'frozen',
-  'archived',
+export const siteStatusEnum = pgEnum("site_status", [
+  "draft",
+  "published",
+  "frozen",
+  "archived",
 ]);
 
 /**
  * Каталог тем для магазинов.
  * Темы предопределены и управляются через миграции.
  */
-export const theme = pgTable('theme', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  slug: text('slug').notNull(),
-  description: text('description'),
-  previewDesktop: text('preview_desktop'),
-  previewMobile: text('preview_mobile'),
-  templateId: text('template_id').notNull(),
-  price: integer('price').default(0),
-  tags: jsonb('tags').$type<string[]>(),
-  badge: text('badge'),
-  author: text('author').default('merfy'),
-  viewCount: integer('view_count').default(0),
-  isActive: boolean('is_active').default(true),
-  createdAt: timestamp('created_at').$defaultFn(() => new Date()),
-  updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
+export const theme = pgTable("theme", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  description: text("description"),
+  previewDesktop: text("preview_desktop"),
+  previewMobile: text("preview_mobile"),
+  templateId: text("template_id").notNull(),
+  price: integer("price").default(0),
+  tags: jsonb("tags").$type<string[]>(),
+  badge: text("badge"),
+  author: text("author").default("merfy"),
+  viewCount: integer("view_count").default(0),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").$defaultFn(() => new Date()),
+  updatedAt: timestamp("updated_at").$defaultFn(() => new Date()),
 });
 
-export const site = pgTable('site', {
-  id: text('id').primaryKey(),
-  tenantId: text('tenant_id').notNull(),
-  name: text('name').notNull(),
-  slug: text('slug'),
+export const site = pgTable("site", {
+  id: text("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
+  name: text("name").notNull(),
+  slug: text("slug"),
   // Возможные статусы: draft|published|frozen|archived (см. siteStatusEnum)
-  status: siteStatusEnum('status').default('draft').notNull(),
+  status: siteStatusEnum("status").default("draft").notNull(),
   // Предыдущий статус (для корректного unfreeze)
-  prevStatus: siteStatusEnum('prev_status'),
+  prevStatus: siteStatusEnum("prev_status"),
   // Ссылка на выбранную тему
-  themeId: text('theme_id'),
+  themeId: text("theme_id"),
   // @deprecated: Старое JSONB поле theme будет удалено после миграции
-  theme: jsonb('theme'),
-  currentRevisionId: text('current_revision_id'),
-  createdAt: timestamp('created_at').$defaultFn(() => new Date()).notNull(),
-  updatedAt: timestamp('updated_at').$defaultFn(() => new Date()).notNull(),
-  createdBy: text('created_by'),
-  updatedBy: text('updated_by'),
-  deletedAt: timestamp('deleted_at'),
-  frozenAt: timestamp('frozen_at'),
+  theme: jsonb("theme"),
+  currentRevisionId: text("current_revision_id"),
+  createdAt: timestamp("created_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+  updatedAt: timestamp("updated_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+  createdBy: text("created_by"),
+  updatedBy: text("updated_by"),
+  deletedAt: timestamp("deleted_at"),
+  frozenAt: timestamp("frozen_at"),
   // Coolify интеграция
-  coolifyAppUuid: text('coolify_app_uuid'),
-  coolifyProjectUuid: text('coolify_project_uuid'),
+  coolifyAppUuid: text("coolify_app_uuid"),
+  coolifyProjectUuid: text("coolify_project_uuid"),
   // Domain Service интеграция
-  domainId: text('domain_id'),
+  domainId: text("domain_id"),
   // Публичный URL сайта (например, abc123.merfy.ru)
-  publicUrl: text('public_url'),
+  publicUrl: text("public_url"),
 });
 
-export const siteDomain = pgTable('site_domain', {
-  id: text('id').primaryKey(),
-  siteId: text('site_id').notNull(),
-  domain: text('domain').notNull(),
+export const siteDomain = pgTable("site_domain", {
+  id: text("id").primaryKey(),
+  siteId: text("site_id").notNull(),
+  domain: text("domain").notNull(),
   // Возможные статусы: pending|verified|failed (string для гибкости, не enum)
-  status: text('status').default('pending').notNull(),
-  verificationToken: text('verification_token'),
-  verificationType: text('verification_type'),
-  createdAt: timestamp('created_at').$defaultFn(() => new Date()).notNull(),
-  verifiedAt: timestamp('verified_at'),
+  status: text("status").default("pending").notNull(),
+  verificationToken: text("verification_token"),
+  verificationType: text("verification_type"),
+  createdAt: timestamp("created_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+  verifiedAt: timestamp("verified_at"),
 });
 
-export const siteRevision = pgTable('site_revision', {
-  id: text('id').primaryKey(),
-  siteId: text('site_id').notNull(),
-  data: jsonb('data'),
-  meta: jsonb('meta'),
-  createdAt: timestamp('created_at').$defaultFn(() => new Date()).notNull(),
-  createdBy: text('created_by'),
+export const siteRevision = pgTable("site_revision", {
+  id: text("id").primaryKey(),
+  siteId: text("site_id").notNull(),
+  data: jsonb("data"),
+  meta: jsonb("meta"),
+  createdAt: timestamp("created_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+  createdBy: text("created_by"),
 });
 
-export const siteBuildStatusEnum = pgEnum('site_build_status', [
-  'queued',
-  'running',
-  'failed',
-  'uploaded',
+export const siteBuildStatusEnum = pgEnum("site_build_status", [
+  "queued",
+  "running",
+  "failed",
+  "uploaded",
 ]);
 
-export const siteBuild = pgTable('site_build', {
-  id: text('id').primaryKey(),
-  siteId: text('site_id').notNull(),
-  revisionId: text('revision_id').notNull(),
+export const siteBuild = pgTable("site_build", {
+  id: text("id").primaryKey(),
+  siteId: text("site_id").notNull(),
+  revisionId: text("revision_id").notNull(),
   // Статусы сборки: queued|running|failed|uploaded — простая машина состояний
-  status: siteBuildStatusEnum('status').default('queued').notNull(),
-  artifactUrl: text('artifact_url'),
-  s3Bucket: text('s3_bucket'),
-  s3KeyPrefix: text('s3_key_prefix'),
-  logUrl: text('log_url'),
-  createdAt: timestamp('created_at').$defaultFn(() => new Date()).notNull(),
-  completedAt: timestamp('completed_at'),
-  error: text('error'),
+  status: siteBuildStatusEnum("status").default("queued").notNull(),
+  artifactUrl: text("artifact_url"),
+  s3Bucket: text("s3_bucket"),
+  s3KeyPrefix: text("s3_key_prefix"),
+  logUrl: text("log_url"),
+  createdAt: timestamp("created_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+  completedAt: timestamp("completed_at"),
+  error: text("error"),
 });
 
-export const siteDeploymentStatusEnum = pgEnum('site_deployment_status', [
-  'provisioning',
-  'deployed',
-  'disabled',
-  'failed',
+export const siteDeploymentStatusEnum = pgEnum("site_deployment_status", [
+  "provisioning",
+  "deployed",
+  "disabled",
+  "failed",
 ]);
 
-export const siteDeployment = pgTable('site_deployment', {
-  id: text('id').primaryKey(),
-  siteId: text('site_id').notNull(),
-  buildId: text('build_id').notNull(),
-  coolifyAppId: text('coolify_app_id'),
-  coolifyEnvId: text('coolify_env_id'),
+export const siteDeployment = pgTable("site_deployment", {
+  id: text("id").primaryKey(),
+  siteId: text("site_id").notNull(),
+  buildId: text("build_id").notNull(),
+  coolifyAppId: text("coolify_app_id"),
+  coolifyEnvId: text("coolify_env_id"),
   // Статусы деплоя: provisioning|deployed|disabled|failed
-  status: siteDeploymentStatusEnum('status').default('provisioning').notNull(),
-  url: text('url'),
-  createdAt: timestamp('created_at').$defaultFn(() => new Date()).notNull(),
-  updatedAt: timestamp('updated_at').$defaultFn(() => new Date()).notNull(),
+  status: siteDeploymentStatusEnum("status").default("provisioning").notNull(),
+  url: text("url"),
+  createdAt: timestamp("created_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+  updatedAt: timestamp("updated_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
 });
 
 /**
@@ -137,10 +159,12 @@ export const siteDeployment = pgTable('site_deployment', {
  * Каждый тенант = отдельный проект в Coolify.
  * Используется для изоляции сайтов разных компаний.
  */
-export const tenantProject = pgTable('tenant_project', {
-  id: text('id').primaryKey(),
-  tenantId: text('tenant_id').notNull().unique(),
-  coolifyProjectUuid: text('coolify_project_uuid').notNull(),
-  coolifyProjectName: text('coolify_project_name'),
-  createdAt: timestamp('created_at').$defaultFn(() => new Date()).notNull(),
+export const tenantProject = pgTable("tenant_project", {
+  id: text("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().unique(),
+  coolifyProjectUuid: text("coolify_project_uuid").notNull(),
+  coolifyProjectName: text("coolify_project_name"),
+  createdAt: timestamp("created_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
 });

@@ -4,11 +4,11 @@
  * Периодически проверяет активных пользователей без сайтов и создаёт им дефолтный сайт.
  * Запускается каждые 5 минут.
  */
-import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
-import { ClientProxy } from '@nestjs/microservices';
-import { BILLING_RMQ_SERVICE, USER_RMQ_SERVICE } from '../constants';
-import { SitesDomainService } from '../sites.service';
+import { Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { Cron } from "@nestjs/schedule";
+import { ClientProxy } from "@nestjs/microservices";
+import { BILLING_RMQ_SERVICE, USER_RMQ_SERVICE } from "../constants";
+import { SitesDomainService } from "../sites.service";
 
 interface UserWithoutSite {
   userId: string;
@@ -38,18 +38,26 @@ export class SiteProvisioningScheduler implements OnModuleInit {
     // Запускаем миграцию сайтов без subdomain/Coolify при старте (один раз)
     if (!this.migrationDone) {
       this.migrationDone = true;
-      this.logger.log('Running orphaned sites migration on startup...');
+      this.logger.log("Running orphaned sites migration on startup...");
       try {
         const result = await this.sites.migrateOrphanedSites();
-        this.logger.log(`Migration complete: ${result.migrated} migrated, ${result.failed} failed`);
+        this.logger.log(
+          `Migration complete: ${result.migrated} migrated, ${result.failed} failed`,
+        );
         result.details.forEach((d) => this.logger.log(d));
       } catch (e) {
-        this.logger.error(`Migration failed: ${e instanceof Error ? e.message : e}`);
+        this.logger.error(
+          `Migration failed: ${e instanceof Error ? e.message : e}`,
+        );
       }
     }
   }
 
-  private rpc<T>(client: ClientProxy, pattern: string, data: unknown): Promise<T> {
+  private rpc<T>(
+    client: ClientProxy,
+    pattern: string,
+    data: unknown,
+  ): Promise<T> {
     return new Promise<T>((resolve, reject) => {
       const sub = client.send<T>(pattern, data).subscribe({
         next: (v) => resolve(v),
@@ -59,12 +67,12 @@ export class SiteProvisioningScheduler implements OnModuleInit {
     });
   }
 
-  @Cron('*/5 * * * *') // Каждые 5 минут
+  @Cron("*/5 * * * *") // Каждые 5 минут
   async provisionMissingSites() {
     if (this.shouldSkip()) return;
 
     this.isRunning = true;
-    this.logger.log('Site provisioning cron: start');
+    this.logger.log("Site provisioning cron: start");
 
     try {
       const usersWithoutSites = await this.getUsersWithoutSites();
@@ -73,9 +81,13 @@ export class SiteProvisioningScheduler implements OnModuleInit {
         await this.provisionSiteForUser(user);
       }
 
-      this.logger.log(`Site provisioning cron: done, checked ${usersWithoutSites.length} users`);
+      this.logger.log(
+        `Site provisioning cron: done, checked ${usersWithoutSites.length} users`,
+      );
     } catch (e) {
-      this.logger.error(`Site provisioning cron failed: ${e instanceof Error ? e.message : e}`);
+      this.logger.error(
+        `Site provisioning cron failed: ${e instanceof Error ? e.message : e}`,
+      );
     } finally {
       this.isRunning = false;
     }
@@ -83,12 +95,14 @@ export class SiteProvisioningScheduler implements OnModuleInit {
 
   private shouldSkip(): boolean {
     if (this.isRunning) {
-      this.logger.debug('Site provisioning cron: already running, skip');
+      this.logger.debug("Site provisioning cron: already running, skip");
       return true;
     }
 
-    const enabled = (process.env.SITE_PROVISIONING_CRON_ENABLED ?? 'true').toLowerCase();
-    if (enabled === 'false') {
+    const enabled = (
+      process.env.SITE_PROVISIONING_CRON_ENABLED ?? "true"
+    ).toLowerCase();
+    if (enabled === "false") {
       return true;
     }
 
@@ -97,11 +111,10 @@ export class SiteProvisioningScheduler implements OnModuleInit {
 
   private async getUsersWithoutSites(): Promise<UserWithoutSite[]> {
     try {
-      const response = await this.rpc<{ success: boolean; users?: UserWithoutSite[] }>(
-        this.userClient,
-        'user.list_without_sites',
-        {},
-      );
+      const response = await this.rpc<{
+        success: boolean;
+        users?: UserWithoutSite[];
+      }>(this.userClient, "user.list_without_sites", {});
 
       if (!response.success || !response.users) {
         return [];
@@ -109,7 +122,9 @@ export class SiteProvisioningScheduler implements OnModuleInit {
 
       return response.users;
     } catch (e) {
-      this.logger.warn(`Failed to get users without sites: ${e instanceof Error ? e.message : e}`);
+      this.logger.warn(
+        `Failed to get users without sites: ${e instanceof Error ? e.message : e}`,
+      );
       return [];
     }
   }
@@ -121,42 +136,56 @@ export class SiteProvisioningScheduler implements OnModuleInit {
       // Проверяем что у пользователя реально нет сайтов
       const existingSites = await this.sites.list(tenantId, 1);
       if (existingSites.items.length > 0) {
-        this.logger.log(`User ${userId} (tenant ${tenantId}) already has ${existingSites.items.length} site(s), skip`);
+        this.logger.log(
+          `User ${userId} (tenant ${tenantId}) already has ${existingSites.items.length} site(s), skip`,
+        );
         return;
       }
 
       // Проверяем биллинг
       const entitlements = await this.getEntitlements(accountId);
-      this.logger.log(`User ${userId} entitlements: frozen=${entitlements.frozen}, shopsLimit=${entitlements.shopsLimit}, success=${entitlements.success}`);
+      this.logger.log(
+        `User ${userId} entitlements: frozen=${entitlements.frozen}, shopsLimit=${entitlements.shopsLimit}, success=${entitlements.success}`,
+      );
 
       if (!this.canCreateSite(entitlements)) {
-        this.logger.log(`User ${userId} cannot create site: frozen or no quota`);
+        this.logger.log(
+          `User ${userId} cannot create site: frozen or no quota`,
+        );
         return;
       }
 
       // Создаём сайт
-      this.logger.log(`Provisioning site for user ${userId}, tenant ${tenantId}`);
+      this.logger.log(
+        `Provisioning site for user ${userId}, tenant ${tenantId}`,
+      );
       const result = await this.sites.create({
         tenantId,
         actorUserId: userId,
-        name: 'Мой магазин',
+        name: "Мой магазин",
       });
 
       this.logger.log(`Site provisioned: ${result.id} for tenant ${tenantId}`);
     } catch (e) {
-      this.logger.warn(`Failed to provision site for user ${userId}: ${e instanceof Error ? e.message : e}`);
+      this.logger.warn(
+        `Failed to provision site for user ${userId}: ${e instanceof Error ? e.message : e}`,
+      );
     }
   }
 
-  private async getEntitlements(accountId: string): Promise<EntitlementsResponse> {
+  private async getEntitlements(
+    accountId: string,
+  ): Promise<EntitlementsResponse> {
     try {
       return await this.rpc<EntitlementsResponse>(
         this.billingClient,
-        'billing.get_entitlements',
+        "billing.get_entitlements",
         { accountId },
       );
     } catch (e) {
-      this.logger.warn(`Failed to get entitlements for ${accountId}: ${e instanceof Error ? e.message : e}`);
+      this.logger.warn(
+        `Failed to get entitlements for ${accountId}: ${e instanceof Error ? e.message : e}`,
+      );
       return { success: false };
     }
   }

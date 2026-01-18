@@ -68,6 +68,9 @@ jobs:
       - name: Run database migrations
         run: pnpm run db:migrate
 
+      - name: Run lint
+        run: pnpm run lint:check
+
       - name: Run build
         run: pnpm run build
 

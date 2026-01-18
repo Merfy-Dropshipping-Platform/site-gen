@@ -1,12 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { URL } from 'url';
+import { Injectable, Logger } from "@nestjs/common";
+import { URL } from "url";
 
 interface EnsureAppResult {
   appId: string;
   envId: string;
 }
 
-interface DeployResult { url: string }
+interface DeployResult {
+  url: string;
+}
 
 interface CreateApplicationResult {
   uuid: string;
@@ -19,7 +21,6 @@ interface CreateApplicationParams {
   dockerImage?: string;
   port?: number;
 }
-
 
 /**
  * CoolifyProvider — адаптер провайдера деплоя.
@@ -64,14 +65,14 @@ export class CoolifyProvider {
     // Для создания новых приложений
     this.serverUuid = process.env.COOLIFY_SERVER_UUID;
     this.projectUuid = process.env.COOLIFY_PROJECT_UUID;
-    this.environmentName = process.env.COOLIFY_ENVIRONMENT_NAME ?? 'production';
-    this.wildcardDomain = process.env.COOLIFY_WILDCARD_DOMAIN ?? 'merfy.ru';
+    this.environmentName = process.env.COOLIFY_ENVIRONMENT_NAME ?? "production";
+    this.wildcardDomain = process.env.COOLIFY_WILDCARD_DOMAIN ?? "merfy.ru";
   }
 
   // Вспомогательный метод HTTP‑запроса к Coolify API
   private async http<T = any>(path: string, init?: RequestInit): Promise<T> {
     if (!this.apiUrl || !this.apiToken) {
-      throw new Error('Coolify API not configured');
+      throw new Error("Coolify API not configured");
     }
 
     /**
@@ -91,25 +92,25 @@ export class CoolifyProvider {
     if (prefixRaw) {
       let prefix = prefixRaw.trim();
       if (prefix) {
-        if (!prefix.startsWith('/')) prefix = `/${prefix}`;
+        if (!prefix.startsWith("/")) prefix = `/${prefix}`;
         // Специальный случай: `/v1` трактуем как `/api/v1`
-        if (prefix === '/v1') prefix = '/api/v1';
-        effectiveBase = new URL(prefix.replace(/^\//, ''), root);
+        if (prefix === "/v1") prefix = "/api/v1";
+        effectiveBase = new URL(prefix.replace(/^\//, ""), root);
       } else {
         effectiveBase = root;
       }
-    } else if (!root.pathname.includes('/api/')) {
+    } else if (!root.pathname.includes("/api/")) {
       // Если префикс не задан и в URL нет /api/, добавляем /api/v1 по умолчанию
-      effectiveBase = new URL('api/v1/', root);
+      effectiveBase = new URL("api/v1/", root);
     } else {
       effectiveBase = root;
     }
 
-    const url = new URL(path.replace(/^\//, ''), effectiveBase).toString();
+    const url = new URL(path.replace(/^\//, ""), effectiveBase).toString();
     const headers: Record<string, string> = {
-      Accept: 'application/json',
+      Accept: "application/json",
       Authorization: `Bearer ${this.apiToken}`,
-      ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(init?.body ? { "Content-Type": "application/json" } : {}),
       ...(init?.headers as any),
     };
 
@@ -118,8 +119,8 @@ export class CoolifyProvider {
     const payload = hasPayload ? await res.json().catch(() => null) : null;
     if (!res.ok) {
       this.logger.warn(
-        `Coolify API ${init?.method ?? 'GET'} ${path} failed: ${res.status} ${
-          payload ? JSON.stringify(payload) : ''
+        `Coolify API ${init?.method ?? "GET"} ${path} failed: ${res.status} ${
+          payload ? JSON.stringify(payload) : ""
         }`,
       );
       throw new Error(`coolify_api_${res.status}`);
@@ -134,31 +135,37 @@ export class CoolifyProvider {
   async ensureApp(siteId: string) {
     // 1) Если явно задан UUID — используем его
     if (this.appUuid) {
-      return { appId: this.appUuid, envId: '' } satisfies EnsureAppResult;
+      return { appId: this.appUuid, envId: "" } satisfies EnsureAppResult;
     }
 
     // 2) Иначе пытаемся найти по имени среди приложений команды
     const nameToFind = this.appName ?? siteId;
-    const apps = await this.http<any>('/applications', { method: 'GET' });
+    const apps = await this.http<any>("/applications", { method: "GET" });
     const found = Array.isArray(apps?.data)
-      ? apps.data.find((a: any) => a?.name === nameToFind || a?.uuid === nameToFind)
+      ? apps.data.find(
+          (a: any) => a?.name === nameToFind || a?.uuid === nameToFind,
+        )
       : null;
     if (found?.uuid) {
-      return { appId: String(found.uuid), envId: '' } satisfies EnsureAppResult;
+      return { appId: String(found.uuid), envId: "" } satisfies EnsureAppResult;
     }
 
-    throw new Error('coolify_application_not_found');
+    throw new Error("coolify_application_not_found");
   }
 
   /**
    * deployBuild — триггерит деплой существующего приложения в Coolify.
    * Coolify самостоятельно тянет код/образ; `artifactUrl` пишем в deployment_note для трассировки.
    */
-  async deployBuild(params: { siteId: string; buildId: string; artifactUrl: string }) {
+  async deployBuild(params: {
+    siteId: string;
+    buildId: string;
+    artifactUrl: string;
+  }) {
     try {
       const ensure = await this.ensureApp(params.siteId);
-      const payload = await this.http<any>('/deploy', {
-        method: 'POST',
+      const payload = await this.http<any>("/deploy", {
+        method: "POST",
         body: JSON.stringify({
           uuid: ensure.appId,
           force_rebuild: true,
@@ -172,8 +179,12 @@ export class CoolifyProvider {
         `https://${params.siteId}.preview.local`;
       return { url: String(url) } satisfies DeployResult;
     } catch (e) {
-      this.logger.warn(`deployBuild failed: ${e instanceof Error ? e.message : e}`);
-      return { url: `https://${params.siteId}.preview.local` } satisfies DeployResult;
+      this.logger.warn(
+        `deployBuild failed: ${e instanceof Error ? e.message : e}`,
+      );
+      return {
+        url: `https://${params.siteId}.preview.local`,
+      } satisfies DeployResult;
     }
   }
 
@@ -185,12 +196,14 @@ export class CoolifyProvider {
     try {
       const ensure = await this.ensureApp(siteId);
       await this.http(`/applications/${ensure.appId}`, {
-        method: 'PATCH',
+        method: "PATCH",
         body: JSON.stringify({ fqdn: domain }),
       });
       return { success: true } as const;
     } catch (e) {
-      this.logger.warn(`setDomain failed: ${e instanceof Error ? e.message : e}`);
+      this.logger.warn(
+        `setDomain failed: ${e instanceof Error ? e.message : e}`,
+      );
       return { success: true } as const;
     }
   }
@@ -204,10 +217,12 @@ export class CoolifyProvider {
       const path = enabled
         ? `/applications/${ensure.appId}/stop`
         : `/applications/${ensure.appId}/start`;
-      await this.http(path, { method: 'POST' });
+      await this.http(path, { method: "POST" });
       return { success: true } as const;
     } catch (e) {
-      this.logger.warn(`toggleMaintenance failed: ${e instanceof Error ? e.message : e}`);
+      this.logger.warn(
+        `toggleMaintenance failed: ${e instanceof Error ? e.message : e}`,
+      );
       return { success: true } as const;
     }
   }
@@ -218,12 +233,16 @@ export class CoolifyProvider {
    * Использует Docker Image build pack. Приложение получает домен вида:
    * https://{siteSlug}.{wildcardDomain}
    */
-  async createApplication(params: CreateApplicationParams): Promise<CreateApplicationResult> {
-    const { name, siteSlug, dockerImage = 'nginx:alpine', port = 80 } = params;
+  async createApplication(
+    params: CreateApplicationParams,
+  ): Promise<CreateApplicationResult> {
+    const { name, siteSlug, dockerImage = "nginx:alpine", port = 80 } = params;
     const fqdn = `https://${siteSlug}.${this.wildcardDomain}`;
 
     if (!this.serverUuid || !this.projectUuid) {
-      throw new Error('COOLIFY_SERVER_UUID and COOLIFY_PROJECT_UUID are required');
+      throw new Error(
+        "COOLIFY_SERVER_UUID and COOLIFY_PROJECT_UUID are required",
+      );
     }
 
     try {
@@ -234,29 +253,35 @@ export class CoolifyProvider {
         environment_name: this.environmentName,
         name,
         description: `Merfy site: ${name}`,
-        docker_registry_image_name: dockerImage.split(':')[0],
-        docker_registry_image_tag: dockerImage.split(':')[1] || 'latest',
+        docker_registry_image_name: dockerImage.split(":")[0],
+        docker_registry_image_tag: dockerImage.split(":")[1] || "latest",
         ports_exposes: String(port),
         domains: fqdn,
         instant_deploy: true,
       };
 
-      this.logger.log(`Creating Coolify application: ${JSON.stringify(appPayload)}`);
+      this.logger.log(
+        `Creating Coolify application: ${JSON.stringify(appPayload)}`,
+      );
 
-      const result = await this.http<any>('/applications/dockerimage', {
-        method: 'POST',
+      const result = await this.http<any>("/applications/dockerimage", {
+        method: "POST",
         body: JSON.stringify(appPayload),
       });
 
       const appUuid = result?.uuid;
       if (!appUuid) {
-        throw new Error('Application UUID not returned');
+        throw new Error("Application UUID not returned");
       }
 
-      this.logger.log(`Created Coolify application ${appUuid} with fqdn ${fqdn}`);
+      this.logger.log(
+        `Created Coolify application ${appUuid} with fqdn ${fqdn}`,
+      );
       return { uuid: appUuid, fqdn };
     } catch (e) {
-      this.logger.error(`createApplication failed: ${e instanceof Error ? e.message : e}`);
+      this.logger.error(
+        `createApplication failed: ${e instanceof Error ? e.message : e}`,
+      );
       throw e;
     }
   }
@@ -264,23 +289,31 @@ export class CoolifyProvider {
   /**
    * getOrCreateApp — находит существующее приложение по имени или создаёт новое.
    */
-  async getOrCreateApp(params: CreateApplicationParams): Promise<CreateApplicationResult> {
+  async getOrCreateApp(
+    params: CreateApplicationParams,
+  ): Promise<CreateApplicationResult> {
     try {
       // Пробуем найти по имени
-      const apps = await this.http<any>('/applications');
+      const apps = await this.http<any>("/applications");
       const found = Array.isArray(apps)
         ? apps.find((a: any) => a?.name === params.name)
         : null;
 
       if (found?.uuid) {
         this.logger.log(`Found existing application: ${found.uuid}`);
-        return { uuid: found.uuid, fqdn: found.fqdn || `https://${params.siteSlug}.${this.wildcardDomain}` };
+        return {
+          uuid: found.uuid,
+          fqdn:
+            found.fqdn || `https://${params.siteSlug}.${this.wildcardDomain}`,
+        };
       }
 
       // Не нашли — создаём
       return this.createApplication(params);
     } catch (e) {
-      this.logger.warn(`getOrCreateApp search failed, creating new: ${e instanceof Error ? e.message : e}`);
+      this.logger.warn(
+        `getOrCreateApp search failed, creating new: ${e instanceof Error ? e.message : e}`,
+      );
       return this.createApplication(params);
     }
   }
@@ -290,10 +323,12 @@ export class CoolifyProvider {
    */
   async startApplication(appUuid: string) {
     try {
-      await this.http(`/applications/${appUuid}/start`, { method: 'POST' });
+      await this.http(`/applications/${appUuid}/start`, { method: "POST" });
       return { success: true };
     } catch (e) {
-      this.logger.error(`startApplication failed: ${e instanceof Error ? e.message : e}`);
+      this.logger.error(
+        `startApplication failed: ${e instanceof Error ? e.message : e}`,
+      );
       throw e;
     }
   }
@@ -303,10 +338,12 @@ export class CoolifyProvider {
    */
   async restartApplication(appUuid: string) {
     try {
-      await this.http(`/applications/${appUuid}/restart`, { method: 'POST' });
+      await this.http(`/applications/${appUuid}/restart`, { method: "POST" });
       return { success: true };
     } catch (e) {
-      this.logger.error(`restartApplication failed: ${e instanceof Error ? e.message : e}`);
+      this.logger.error(
+        `restartApplication failed: ${e instanceof Error ? e.message : e}`,
+      );
       throw e;
     }
   }
@@ -316,10 +353,12 @@ export class CoolifyProvider {
    */
   async deleteApplication(appUuid: string) {
     try {
-      await this.http(`/applications/${appUuid}`, { method: 'DELETE' });
+      await this.http(`/applications/${appUuid}`, { method: "DELETE" });
       return { success: true };
     } catch (e) {
-      this.logger.error(`deleteApplication failed: ${e instanceof Error ? e.message : e}`);
+      this.logger.error(
+        `deleteApplication failed: ${e instanceof Error ? e.message : e}`,
+      );
       throw e;
     }
   }
@@ -334,10 +373,13 @@ export class CoolifyProvider {
    * @param companyName - название компании (используется при создании)
    * @returns UUID проекта
    */
-  async getOrCreateProject(tenantId: string, companyName: string): Promise<string> {
+  async getOrCreateProject(
+    tenantId: string,
+    companyName: string,
+  ): Promise<string> {
     try {
       // Получаем список проектов
-      const projects = await this.http<any[]>('/projects');
+      const projects = await this.http<any[]>("/projects");
 
       // Ищем проект по имени (tenantId или companyName)
       const found = Array.isArray(projects)
@@ -350,13 +392,15 @@ export class CoolifyProvider {
         : null;
 
       if (found?.uuid) {
-        this.logger.log(`Found existing project ${found.uuid} for tenant ${tenantId}`);
+        this.logger.log(
+          `Found existing project ${found.uuid} for tenant ${tenantId}`,
+        );
         return found.uuid;
       }
 
       // Создаём новый проект
-      const result = await this.http<any>('/projects', {
-        method: 'POST',
+      const result = await this.http<any>("/projects", {
+        method: "POST",
         body: JSON.stringify({
           name: companyName || tenantId,
           description: `Company: ${companyName} (tenant: ${tenantId})`,
@@ -364,13 +408,15 @@ export class CoolifyProvider {
       });
 
       if (!result?.uuid) {
-        throw new Error('Project UUID not returned');
+        throw new Error("Project UUID not returned");
       }
 
       this.logger.log(`Created project ${result.uuid} for tenant ${tenantId}`);
       return result.uuid;
     } catch (e) {
-      this.logger.error(`getOrCreateProject failed: ${e instanceof Error ? e.message : e}`);
+      this.logger.error(
+        `getOrCreateProject failed: ${e instanceof Error ? e.message : e}`,
+      );
       throw e;
     }
   }
@@ -393,11 +439,19 @@ export class CoolifyProvider {
     dockerImage?: string;
     port?: number;
   }): Promise<{ uuid: string; url: string }> {
-    const { projectUuid, name, subdomain, dockerImage = 'nginx:alpine', port = 80 } = params;
-    const fqdn = subdomain.startsWith('http') ? subdomain : `http://${subdomain}`;
+    const {
+      projectUuid,
+      name,
+      subdomain,
+      dockerImage = "nginx:alpine",
+      port = 80,
+    } = params;
+    const fqdn = subdomain.startsWith("http")
+      ? subdomain
+      : `http://${subdomain}`;
 
     if (!this.serverUuid) {
-      throw new Error('COOLIFY_SERVER_UUID is required');
+      throw new Error("COOLIFY_SERVER_UUID is required");
     }
 
     try {
@@ -407,29 +461,35 @@ export class CoolifyProvider {
         environment_name: this.environmentName,
         name,
         description: `Merfy site: ${name}`,
-        docker_registry_image_name: dockerImage.split(':')[0],
-        docker_registry_image_tag: dockerImage.split(':')[1] || 'latest',
+        docker_registry_image_name: dockerImage.split(":")[0],
+        docker_registry_image_tag: dockerImage.split(":")[1] || "latest",
         ports_exposes: String(port),
         domains: fqdn,
         instant_deploy: true,
       };
 
-      this.logger.log(`Creating Coolify site application: ${JSON.stringify(appPayload)}`);
+      this.logger.log(
+        `Creating Coolify site application: ${JSON.stringify(appPayload)}`,
+      );
 
-      const result = await this.http<any>('/applications/dockerimage', {
-        method: 'POST',
+      const result = await this.http<any>("/applications/dockerimage", {
+        method: "POST",
         body: JSON.stringify(appPayload),
       });
 
       const appUuid = result?.uuid;
       if (!appUuid) {
-        throw new Error('Application UUID not returned');
+        throw new Error("Application UUID not returned");
       }
 
-      this.logger.log(`Created Coolify site application ${appUuid} with URL ${fqdn}`);
+      this.logger.log(
+        `Created Coolify site application ${appUuid} with URL ${fqdn}`,
+      );
       return { uuid: appUuid, url: fqdn };
     } catch (e) {
-      this.logger.error(`createSiteApplication failed: ${e instanceof Error ? e.message : e}`);
+      this.logger.error(
+        `createSiteApplication failed: ${e instanceof Error ? e.message : e}`,
+      );
       throw e;
     }
   }
@@ -439,17 +499,22 @@ export class CoolifyProvider {
    *
    * Используется когда нужно изменить домен после создания приложения.
    */
-  async updateApplicationDomain(appUuid: string, domain: string): Promise<void> {
-    const fqdn = domain.startsWith('http') ? domain : `http://${domain}`;
+  async updateApplicationDomain(
+    appUuid: string,
+    domain: string,
+  ): Promise<void> {
+    const fqdn = domain.startsWith("http") ? domain : `http://${domain}`;
 
     try {
       await this.http(`/applications/${appUuid}`, {
-        method: 'PATCH',
+        method: "PATCH",
         body: JSON.stringify({ domains: fqdn }),
       });
       this.logger.log(`Updated application ${appUuid} domain to ${fqdn}`);
     } catch (e) {
-      this.logger.error(`updateApplicationDomain failed: ${e instanceof Error ? e.message : e}`);
+      this.logger.error(
+        `updateApplicationDomain failed: ${e instanceof Error ? e.message : e}`,
+      );
       throw e;
     }
   }
@@ -467,17 +532,23 @@ export class CoolifyProvider {
     projectUuid: string;
     name: string;
     subdomain: string; // abc123.merfy.ru
-    sitePath: string;  // sites/abc123
+    sitePath: string; // sites/abc123
   }): Promise<{ uuid: string; url: string }> {
     const { projectUuid, name, subdomain, sitePath } = params;
     const fqdn = `https://${subdomain}`;
     // Используем публичный URL MinIO для nginx (не внутренний S3_ENDPOINT)
-    const minioUrl = process.env.S3_PUBLIC_ENDPOINT || process.env.MINIO_PUBLIC_ENDPOINT || process.env.S3_ENDPOINT || 'https://minio.example.com';
-    const bucket = process.env.S3_BUCKET || 'merfy-sites';
-    const nginxProxyRepo = process.env.NGINX_PROXY_REPO || 'https://github.com/Merfy-Dropshipping-Platform/nginx-minio-proxy';
+    const minioUrl =
+      process.env.S3_PUBLIC_ENDPOINT ||
+      process.env.MINIO_PUBLIC_ENDPOINT ||
+      process.env.S3_ENDPOINT ||
+      "https://minio.example.com";
+    const bucket = process.env.S3_BUCKET || "merfy-sites";
+    const nginxProxyRepo =
+      process.env.NGINX_PROXY_REPO ||
+      "https://github.com/Merfy-Dropshipping-Platform/nginx-minio-proxy";
 
     if (!this.serverUuid) {
-      throw new Error('COOLIFY_SERVER_UUID is required');
+      throw new Error("COOLIFY_SERVER_UUID is required");
     }
 
     try {
@@ -488,52 +559,56 @@ export class CoolifyProvider {
         environment_name: this.environmentName,
         name,
         git_repository: nginxProxyRepo,
-        git_branch: 'main',
-        build_pack: 'dockerfile',
-        ports_exposes: '80',
+        git_branch: "main",
+        build_pack: "dockerfile",
+        ports_exposes: "80",
         domains: fqdn,
         instant_deploy: false, // Сначала добавим env vars
       };
 
       this.logger.log(`Creating static site app: ${name} -> ${fqdn}`);
 
-      const result = await this.http<any>('/applications/public', {
-        method: 'POST',
+      const result = await this.http<any>("/applications/public", {
+        method: "POST",
         body: JSON.stringify(appPayload),
       });
 
       const appUuid = result?.uuid;
       if (!appUuid) {
-        throw new Error('Application UUID not returned');
+        throw new Error("Application UUID not returned");
       }
 
       // 2. Добавляем environment variables
       const envVars = {
         data: [
-          { key: 'MINIO_URL', value: minioUrl },
-          { key: 'BUCKET', value: bucket },
-          { key: 'SITE_PATH', value: sitePath },
+          { key: "MINIO_URL", value: minioUrl },
+          { key: "BUCKET", value: bucket },
+          { key: "SITE_PATH", value: sitePath },
         ],
       };
 
       await this.http(`/applications/${appUuid}/envs/bulk`, {
-        method: 'PATCH',
+        method: "PATCH",
         body: JSON.stringify(envVars),
       });
 
       // 3. Устанавливаем домен (API может не установить его при создании)
       await this.http(`/applications/${appUuid}`, {
-        method: 'PATCH',
+        method: "PATCH",
         body: JSON.stringify({ domains: fqdn }),
       });
 
       // 4. Запускаем деплой
-      await this.http(`/applications/${appUuid}/start`, { method: 'POST' });
+      await this.http(`/applications/${appUuid}/start`, { method: "POST" });
 
-      this.logger.log(`Created static site app ${appUuid}: ${fqdn} -> ${minioUrl}/${bucket}/${sitePath}`);
+      this.logger.log(
+        `Created static site app ${appUuid}: ${fqdn} -> ${minioUrl}/${bucket}/${sitePath}`,
+      );
       return { uuid: appUuid, url: fqdn };
     } catch (e) {
-      this.logger.error(`createStaticSiteApp failed: ${e instanceof Error ? e.message : e}`);
+      this.logger.error(
+        `createStaticSiteApp failed: ${e instanceof Error ? e.message : e}`,
+      );
       throw e;
     }
   }

@@ -1,7 +1,7 @@
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import { spawn } from 'child_process';
-import archiver from 'archiver';
+import * as fs from "fs/promises";
+import * as path from "path";
+import { spawn } from "child_process";
+import archiver from "archiver";
 
 export interface ProductData {
   id: string;
@@ -25,24 +25,24 @@ export interface AstroBuildParams {
 
 async function writeFile(filePath: string, content: string) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.writeFile(filePath, content, 'utf8');
+  await fs.writeFile(filePath, content, "utf8");
 }
 
 function pkgJson() {
   return JSON.stringify(
     {
-      name: 'merfy-site-astro-template',
+      name: "merfy-site-astro-template",
       private: true,
-      type: 'module',
-      version: '0.0.0',
+      type: "module",
+      version: "0.0.0",
       scripts: {
-        build: 'astro build',
+        build: "astro build",
       },
       dependencies: {
-        astro: '^4.0.0',
-        react: '^18.3.1',
-        'react-dom': '^18.3.1',
-        '@astrojs/react': '^3.0.0',
+        astro: "^4.0.0",
+        react: "^18.3.1",
+        "react-dom": "^18.3.1",
+        "@astrojs/react": "^3.0.0",
       },
     },
     null,
@@ -57,7 +57,7 @@ import react from '@astrojs/react';
 export default defineConfig({
   integrations: [react()],
   output: 'static',
-  build: { outDir: '${outDir.replace(/\\/g, '/')}'}
+  build: { outDir: '${outDir.replace(/\\/g, "/")}'}
 });
 `;
 }
@@ -326,11 +326,11 @@ function formatPrice(price: number): string {
 
 async function zipDir(srcDir: string, outZipPath: string) {
   await fs.mkdir(path.dirname(outZipPath), { recursive: true });
-  const archive = archiver('zip', { zlib: { level: 9 } });
-  const stream = (await fs.open(outZipPath, 'w')).createWriteStream();
+  const archive = archiver("zip", { zlib: { level: 9 } });
+  const stream = (await fs.open(outZipPath, "w")).createWriteStream();
   return new Promise<void>((resolve, reject) => {
-    archive.directory(srcDir, false).on('error', reject).pipe(stream);
-    stream.on('close', () => resolve());
+    archive.directory(srcDir, false).on("error", reject).pipe(stream);
+    stream.on("close", () => resolve());
     archive.finalize().catch(reject);
   });
 }
@@ -350,8 +350,13 @@ async function copyDir(src: string, dest: string) {
 }
 
 async function ensureTemplate(workingDir: string, theme?: string) {
-  const themeName = theme || 'default';
-  const templateRoot = path.join(process.cwd(), 'templates', 'astro', themeName);
+  const themeName = theme || "default";
+  const templateRoot = path.join(
+    process.cwd(),
+    "templates",
+    "astro",
+    themeName,
+  );
   const exists = await fs
     .stat(templateRoot)
     .then((st) => st.isDirectory())
@@ -361,31 +366,54 @@ async function ensureTemplate(workingDir: string, theme?: string) {
   return true;
 }
 
-export async function buildWithAstro(params: AstroBuildParams): Promise<{ ok: boolean; artifactPath?: string; error?: string }>{
+export async function buildWithAstro(
+  params: AstroBuildParams,
+): Promise<{ ok: boolean; artifactPath?: string; error?: string }> {
   const { workingDir, outDir, data, products = [] } = params;
   try {
     // 1) Подготовить проект Astro: если есть тема templates/astro/<theme>, скопировать её; иначе fallback на базовый шаблон
     const templateUsed = await ensureTemplate(workingDir, params.theme);
 
     // Базовые файлы — пишем только если их нет (чтобы не затирать шаблон)
-    const pkgPath = path.join(workingDir, 'package.json');
-    const astroCfgPath = path.join(workingDir, 'astro.config.mjs');
+    const pkgPath = path.join(workingDir, "package.json");
+    const astroCfgPath = path.join(workingDir, "astro.config.mjs");
     if (!(await fs.stat(pkgPath).catch(() => false))) {
       await writeFile(pkgPath, pkgJson());
     }
     if (!(await fs.stat(astroCfgPath).catch(() => false))) {
-      await writeFile(astroCfgPath, astroConfig(path.join(workingDir, 'dist')));
+      await writeFile(astroCfgPath, astroConfig(path.join(workingDir, "dist")));
     }
     if (!templateUsed) {
-      await writeFile(path.join(workingDir, 'src/pages/index.astro'), indexAstro());
-      await writeFile(path.join(workingDir, 'src/components/Hero.astro'), heroAstro());
-      await writeFile(path.join(workingDir, 'src/components/TextBlock.astro'), textBlockAstro());
-      await writeFile(path.join(workingDir, 'src/components/ButtonRow.astro'), buttonRowAstro());
-      await writeFile(path.join(workingDir, 'src/components/ProductGrid.astro'), productGridAstro());
+      await writeFile(
+        path.join(workingDir, "src/pages/index.astro"),
+        indexAstro(),
+      );
+      await writeFile(
+        path.join(workingDir, "src/components/Hero.astro"),
+        heroAstro(),
+      );
+      await writeFile(
+        path.join(workingDir, "src/components/TextBlock.astro"),
+        textBlockAstro(),
+      );
+      await writeFile(
+        path.join(workingDir, "src/components/ButtonRow.astro"),
+        buttonRowAstro(),
+      );
+      await writeFile(
+        path.join(workingDir, "src/components/ProductGrid.astro"),
+        productGridAstro(),
+      );
     } else {
       // Если шаблон есть, но нет ProductGrid — добавляем его
-      const productGridPath = path.join(workingDir, 'src/components/ProductGrid.astro');
-      const hasProductGrid = await fs.stat(productGridPath).then(() => true).catch(() => false);
+      const productGridPath = path.join(
+        workingDir,
+        "src/components/ProductGrid.astro",
+      );
+      const hasProductGrid = await fs
+        .stat(productGridPath)
+        .then(() => true)
+        .catch(() => false);
       if (!hasProductGrid) {
         await writeFile(productGridPath, productGridAstro());
       }
@@ -395,28 +423,48 @@ export async function buildWithAstro(params: AstroBuildParams): Promise<{ ok: bo
       ...(data ?? {}),
       meta: {
         ...(data?.meta ?? {}),
-        shopId: params.tenantId ?? '',
-        apiUrl: params.apiUrl ?? process.env.API_GATEWAY_URL ?? 'https://api.merfy.ru',
+        shopId: params.tenantId ?? "",
+        apiUrl:
+          params.apiUrl ??
+          process.env.API_GATEWAY_URL ??
+          "https://api.merfy.ru",
       },
     };
-    await writeFile(path.join(workingDir, 'src/data/data.json'), JSON.stringify(pageData, null, 2));
-    await writeFile(path.join(workingDir, 'src/data/products.json'), JSON.stringify(products, null, 2));
+    await writeFile(
+      path.join(workingDir, "src/data/data.json"),
+      JSON.stringify(pageData, null, 2),
+    );
+    await writeFile(
+      path.join(workingDir, "src/data/products.json"),
+      JSON.stringify(products, null, 2),
+    );
 
     // 2) Установить зависимости и собрать
     await new Promise<void>((resolve, reject) => {
-      const p = spawn('npm', ['install', '--silent', '--no-fund', '--no-audit'], { cwd: workingDir, stdio: 'ignore' });
-      p.on('exit', (code) => (code === 0 ? resolve() : reject(new Error('npm install failed'))));
-      p.on('error', reject);
+      const p = spawn(
+        "npm",
+        ["install", "--silent", "--no-fund", "--no-audit"],
+        { cwd: workingDir, stdio: "ignore" },
+      );
+      p.on("exit", (code) =>
+        code === 0 ? resolve() : reject(new Error("npm install failed")),
+      );
+      p.on("error", reject);
     });
     await new Promise<void>((resolve, reject) => {
-      const p = spawn('npm', ['run', 'build', '--silent'], { cwd: workingDir, stdio: 'ignore' });
-      p.on('exit', (code) => (code === 0 ? resolve() : reject(new Error('astro build failed'))));
-      p.on('error', reject);
+      const p = spawn("npm", ["run", "build", "--silent"], {
+        cwd: workingDir,
+        stdio: "ignore",
+      });
+      p.on("exit", (code) =>
+        code === 0 ? resolve() : reject(new Error("astro build failed")),
+      );
+      p.on("error", reject);
     });
 
     // 3) Упаковать dist в zip
-    const artifactZip = path.join(outDir, params.outFileName ?? 'site.zip');
-    await zipDir(path.join(workingDir, 'dist'), artifactZip);
+    const artifactZip = path.join(outDir, params.outFileName ?? "site.zip");
+    await zipDir(path.join(workingDir, "dist"), artifactZip);
 
     return { ok: true, artifactPath: artifactZip };
   } catch (e: any) {

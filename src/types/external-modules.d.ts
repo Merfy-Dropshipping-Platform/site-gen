@@ -1,3 +1,2 @@
-declare module 'pg';
-declare module 'archiver';
-
+declare module "pg";
+declare module "archiver";

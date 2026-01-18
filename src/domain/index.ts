@@ -1,2 +1,2 @@
-export * from './domain.client';
-export * from './domain.module';
+export * from "./domain.client";
+export * from "./domain.module";

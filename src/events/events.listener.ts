@@ -5,8 +5,8 @@
  * Чтобы RabbitMQ не ругался на отсутствие подписчиков, держим no-op
  * обработчики для всех внутренних событий (логика может появиться позже).
  */
-import { Controller, Logger } from '@nestjs/common';
-import { EventPattern, Payload } from '@nestjs/microservices';
+import { Controller, Logger } from "@nestjs/common";
+import { EventPattern, Payload } from "@nestjs/microservices";
 
 @Controller()
 export class SitesEventsListenerController {
@@ -17,43 +17,43 @@ export class SitesEventsListenerController {
     this.logger.debug(`Ack ${pattern}: ${JSON.stringify(payload)}`);
   }
 
-  @EventPattern('sites.site.created')
+  @EventPattern("sites.site.created")
   handleSiteCreated(@Payload() payload: any) {
-    this.drop('sites.site.created', payload);
+    this.drop("sites.site.created", payload);
   }
 
-  @EventPattern('sites.site.updated')
+  @EventPattern("sites.site.updated")
   handleSiteUpdated(@Payload() payload: any) {
-    this.drop('sites.site.updated', payload);
+    this.drop("sites.site.updated", payload);
   }
 
-  @EventPattern('sites.site.deleted')
+  @EventPattern("sites.site.deleted")
   handleSiteDeleted(@Payload() payload: any) {
-    this.drop('sites.site.deleted', payload);
+    this.drop("sites.site.deleted", payload);
   }
 
-  @EventPattern('sites.site.published')
+  @EventPattern("sites.site.published")
   handleSitePublished(@Payload() payload: any) {
-    this.drop('sites.site.published', payload);
+    this.drop("sites.site.published", payload);
   }
 
-  @EventPattern('sites.domain.attached')
+  @EventPattern("sites.domain.attached")
   handleDomainAttached(@Payload() payload: any) {
-    this.drop('sites.domain.attached', payload);
+    this.drop("sites.domain.attached", payload);
   }
 
-  @EventPattern('sites.domain.verified')
+  @EventPattern("sites.domain.verified")
   handleDomainVerified(@Payload() payload: any) {
-    this.drop('sites.domain.verified', payload);
+    this.drop("sites.domain.verified", payload);
   }
 
-  @EventPattern('sites.tenant.frozen')
+  @EventPattern("sites.tenant.frozen")
   handleTenantFrozen(@Payload() payload: any) {
-    this.drop('sites.tenant.frozen', payload);
+    this.drop("sites.tenant.frozen", payload);
   }
 
-  @EventPattern('sites.tenant.unfrozen')
+  @EventPattern("sites.tenant.unfrozen")
   handleTenantUnfrozen(@Payload() payload: any) {
-    this.drop('sites.tenant.unfrozen', payload);
+    this.drop("sites.tenant.unfrozen", payload);
   }
 }

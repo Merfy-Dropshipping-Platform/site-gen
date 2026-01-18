@@ -7,47 +7,47 @@ import {
   ArrayMinSize,
   ArrayMaxSize,
   ValidateNested,
-} from 'class-validator';
-import { Type } from 'class-transformer';
+} from "class-validator";
+import { Type } from "class-transformer";
 
 /**
  * Bulk operation types for sites
  */
 export enum BulkOperationType {
-  CHANGE_STATUS = 'change_status',
-  FREEZE = 'freeze',
-  UNFREEZE = 'unfreeze',
-  ARCHIVE = 'archive',
-  DEPLOY = 'deploy',
-  DELETE = 'delete',
-  EXPORT = 'export',
+  CHANGE_STATUS = "change_status",
+  FREEZE = "freeze",
+  UNFREEZE = "unfreeze",
+  ARCHIVE = "archive",
+  DEPLOY = "deploy",
+  DELETE = "delete",
+  EXPORT = "export",
 }
 
 /**
  * Site status values (matches schema enum)
  */
 export enum SiteStatus {
-  DRAFT = 'draft',
-  PUBLISHED = 'published',
-  FROZEN = 'frozen',
-  ARCHIVED = 'archived',
+  DRAFT = "draft",
+  PUBLISHED = "published",
+  FROZEN = "frozen",
+  ARCHIVED = "archived",
 }
 
 /**
  * Export formats for bulk export
  */
 export enum ExportFormat {
-  CSV = 'csv',
-  EXCEL = 'excel',
-  JSON = 'json',
+  CSV = "csv",
+  EXCEL = "excel",
+  JSON = "json",
 }
 
 /**
  * Delete types for sites
  */
 export enum DeleteType {
-  SOFT = 'soft',
-  HARD = 'hard',
+  SOFT = "soft",
+  HARD = "hard",
 }
 
 /**
@@ -81,7 +81,11 @@ export interface BulkOperationResult {
  */
 export const ALLOWED_STATUS_TRANSITIONS: Record<SiteStatus, SiteStatus[]> = {
   [SiteStatus.DRAFT]: [SiteStatus.PUBLISHED, SiteStatus.ARCHIVED],
-  [SiteStatus.PUBLISHED]: [SiteStatus.DRAFT, SiteStatus.FROZEN, SiteStatus.ARCHIVED],
+  [SiteStatus.PUBLISHED]: [
+    SiteStatus.DRAFT,
+    SiteStatus.FROZEN,
+    SiteStatus.ARCHIVED,
+  ],
   [SiteStatus.FROZEN]: [SiteStatus.DRAFT, SiteStatus.PUBLISHED], // unfrozen to prevStatus
   [SiteStatus.ARCHIVED]: [SiteStatus.DRAFT], // can restore archived sites
 };

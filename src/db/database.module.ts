@@ -4,9 +4,9 @@
  * Предоставляет единый инстанс Drizzle NodePgDatabase под токеном PG_CONNECTION.
  * Другие сервисы внедряют его для чтения/записи доменных таблиц.
  */
-import { Module } from '@nestjs/common';
-import { PG_CONNECTION } from '../constants';
-import { db } from './db';
+import { Module } from "@nestjs/common";
+import { PG_CONNECTION } from "../constants";
+import { db } from "./db";
 
 @Module({
   providers: [

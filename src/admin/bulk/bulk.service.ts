@@ -1,15 +1,20 @@
-import { Inject, Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
-import { eq, inArray, and, isNull } from 'drizzle-orm';
-import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { firstValueFrom } from 'rxjs';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  BadRequestException,
+} from "@nestjs/common";
+import { ClientProxy } from "@nestjs/microservices";
+import { eq, inArray, and, isNull } from "drizzle-orm";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { firstValueFrom } from "rxjs";
 import {
   PG_CONNECTION,
   BILLING_RMQ_SERVICE,
   COOLIFY_RMQ_SERVICE,
   DOMAIN_RMQ_SERVICE,
-} from '../../constants';
-import * as schema from '../../db/schema';
+} from "../../constants";
+import * as schema from "../../db/schema";
 import {
   BulkOperationType,
   SiteStatus,
@@ -25,7 +30,7 @@ import {
   type BulkExportDto,
   type BulkOperationResult,
   type BulkItemResult,
-} from './bulk.dto';
+} from "./bulk.dto";
 
 type SiteRow = typeof schema.site.$inferSelect;
 type SiteDomainRow = typeof schema.siteDomain.$inferSelect;
@@ -51,12 +56,14 @@ export class BulkOperationsService {
   /**
    * Bulk change site status with transition validation
    */
-  async bulkChangeStatus(dto: BulkChangeStatusDto): Promise<BulkOperationResult> {
+  async bulkChangeStatus(
+    dto: BulkChangeStatusDto,
+  ): Promise<BulkOperationResult> {
     const results: BulkItemResult[] = [];
     const { ids, params, actorId, reason, tenantId } = dto;
 
     this.logger.log(
-      `[AUDIT] Bulk change status started: actor=${actorId}, count=${ids.length}, newStatus=${params.status}, tenant=${tenantId}, reason=${reason ?? params.reason ?? 'none'}`,
+      `[AUDIT] Bulk change status started: actor=${actorId}, count=${ids.length}, newStatus=${params.status}, tenant=${tenantId}, reason=${reason ?? params.reason ?? "none"}`,
     );
 
     // Fetch existing sites with tenant validation
@@ -82,12 +89,14 @@ export class BulkOperationsService {
           results.push({
             id,
             success: false,
-            error: tenantId ? 'Site not found in tenant scope' : 'Site not found',
+            error: tenantId
+              ? "Site not found in tenant scope"
+              : "Site not found",
           });
           continue;
         }
 
-        const previousStatus = site.status;
+        const previousStatus = site.status as SiteStatus;
 
         // Skip if already in target status
         if (previousStatus === params.status) {
@@ -132,7 +141,10 @@ export class BulkOperationsService {
               updateData.prevStatus = previousStatus as any;
               // Enable maintenance mode
               await this.toggleMaintenanceMode(site, true);
-            } else if (previousStatus === SiteStatus.FROZEN && params.status !== SiteStatus.FROZEN) {
+            } else if (
+              previousStatus === SiteStatus.FROZEN &&
+              (params.status as SiteStatus) !== SiteStatus.FROZEN
+            ) {
               updateData.frozenAt = null;
               updateData.prevStatus = null;
               // Disable maintenance mode
@@ -165,7 +177,7 @@ export class BulkOperationsService {
           );
 
           // Emit event (best-effort)
-          await this.emitSiteEvent('sites.site.status_changed', {
+          await this.emitSiteEvent("sites.site.status_changed", {
             siteId: id,
             tenantId: site.tenantId,
             fromStatus: previousStatus,
@@ -187,7 +199,11 @@ export class BulkOperationsService {
       }
     }
 
-    return this.buildResult(BulkOperationType.CHANGE_STATUS, ids.length, results);
+    return this.buildResult(
+      BulkOperationType.CHANGE_STATUS,
+      ids.length,
+      results,
+    );
   }
 
   /**
@@ -198,7 +214,7 @@ export class BulkOperationsService {
     const { ids, params, actorId, reason, tenantId } = dto;
 
     this.logger.log(
-      `[AUDIT] Bulk freeze started: actor=${actorId}, count=${ids.length}, tenant=${tenantId}, reason=${reason ?? params?.reason ?? 'none'}`,
+      `[AUDIT] Bulk freeze started: actor=${actorId}, count=${ids.length}, tenant=${tenantId}, reason=${reason ?? params?.reason ?? "none"}`,
     );
 
     return this.executeBulkStatusChange(
@@ -209,7 +225,10 @@ export class BulkOperationsService {
       reason ?? params?.reason,
       async (site) => {
         // Enable maintenance mode and store previous status
-        await this.toggleMaintenanceMode(site, params?.enableMaintenance !== false);
+        await this.toggleMaintenanceMode(
+          site,
+          params?.enableMaintenance !== false,
+        );
         return {
           frozenAt: new Date(),
           prevStatus: site.status as any,
@@ -226,7 +245,7 @@ export class BulkOperationsService {
     const { ids, params, actorId, reason, tenantId } = dto;
 
     this.logger.log(
-      `[AUDIT] Bulk unfreeze started: actor=${actorId}, count=${ids.length}, tenant=${tenantId}, reason=${reason ?? params?.reason ?? 'none'}`,
+      `[AUDIT] Bulk unfreeze started: actor=${actorId}, count=${ids.length}, tenant=${tenantId}, reason=${reason ?? params?.reason ?? "none"}`,
     );
 
     // Fetch existing sites to get prevStatus
@@ -251,7 +270,7 @@ export class BulkOperationsService {
           results.push({
             id,
             success: false,
-            error: 'Site not found',
+            error: "Site not found",
           });
           continue;
         }
@@ -265,9 +284,10 @@ export class BulkOperationsService {
           continue;
         }
 
-        const targetStatus = params?.restoreToPrevStatus !== false && site.prevStatus
-          ? site.prevStatus
-          : SiteStatus.DRAFT;
+        const targetStatus =
+          params?.restoreToPrevStatus !== false && site.prevStatus
+            ? site.prevStatus
+            : SiteStatus.DRAFT;
 
         try {
           await this.db.transaction(async (tx) => {
@@ -322,7 +342,7 @@ export class BulkOperationsService {
     const { ids, params, actorId, reason, tenantId } = dto;
 
     this.logger.log(
-      `[AUDIT] Bulk archive started: actor=${actorId}, count=${ids.length}, tenant=${tenantId}, reason=${reason ?? params?.reason ?? 'none'}`,
+      `[AUDIT] Bulk archive started: actor=${actorId}, count=${ids.length}, tenant=${tenantId}, reason=${reason ?? params?.reason ?? "none"}`,
     );
 
     return this.executeBulkStatusChange(
@@ -353,7 +373,7 @@ export class BulkOperationsService {
     const { ids, params, actorId, reason, tenantId } = dto;
 
     this.logger.log(
-      `[AUDIT] Bulk deploy started: actor=${actorId}, count=${ids.length}, tenant=${tenantId}, forceBuild=${params?.forceBuild}, reason=${reason ?? params?.reason ?? 'none'}`,
+      `[AUDIT] Bulk deploy started: actor=${actorId}, count=${ids.length}, tenant=${tenantId}, forceBuild=${params?.forceBuild}, reason=${reason ?? params?.reason ?? "none"}`,
     );
 
     // Fetch existing sites
@@ -378,7 +398,7 @@ export class BulkOperationsService {
           results.push({
             id,
             success: false,
-            error: 'Site not found',
+            error: "Site not found",
           });
           continue;
         }
@@ -388,13 +408,13 @@ export class BulkOperationsService {
           results.push({
             id,
             success: false,
-            error: 'Cannot deploy frozen site',
+            error: "Cannot deploy frozen site",
           });
           continue;
         }
 
         try {
-          const previousStatus = site.status;
+          const previousStatus = site.status as SiteStatus;
 
           // Deploy the site
           const deployResult = await this.deploySite(site, params?.forceBuild);
@@ -427,7 +447,7 @@ export class BulkOperationsService {
             );
 
             // Emit event
-            await this.emitSiteEvent('sites.site.deployed', {
+            await this.emitSiteEvent("sites.site.deployed", {
               siteId: id,
               tenantId: site.tenantId,
               deploymentUrl: deployResult.url,
@@ -438,7 +458,7 @@ export class BulkOperationsService {
             results.push({
               id,
               success: false,
-              error: deployResult.error || 'Deployment failed',
+              error: deployResult.error || "Deployment failed",
               details: {
                 buildLogs: deployResult.logs,
               },
@@ -469,7 +489,7 @@ export class BulkOperationsService {
     const { ids, params, actorId, reason, tenantId } = dto;
 
     this.logger.log(
-      `[AUDIT] Bulk delete started: actor=${actorId}, count=${ids.length}, type=${params.type}, tenant=${tenantId}, reason=${reason ?? params?.reason ?? 'none'}`,
+      `[AUDIT] Bulk delete started: actor=${actorId}, count=${ids.length}, type=${params.type}, tenant=${tenantId}, reason=${reason ?? params?.reason ?? "none"}`,
     );
 
     // Fetch existing sites
@@ -494,7 +514,7 @@ export class BulkOperationsService {
           results.push({
             id,
             success: false,
-            error: 'Site not found',
+            error: "Site not found",
           });
           continue;
         }
@@ -504,10 +524,18 @@ export class BulkOperationsService {
             // Hard delete: remove all data
             await this.db.transaction(async (tx) => {
               // Delete related records first
-              await tx.delete(schema.siteDomain).where(eq(schema.siteDomain.siteId, id));
-              await tx.delete(schema.siteRevision).where(eq(schema.siteRevision.siteId, id));
-              await tx.delete(schema.siteBuild).where(eq(schema.siteBuild.siteId, id));
-              await tx.delete(schema.siteDeployment).where(eq(schema.siteDeployment.siteId, id));
+              await tx
+                .delete(schema.siteDomain)
+                .where(eq(schema.siteDomain.siteId, id));
+              await tx
+                .delete(schema.siteRevision)
+                .where(eq(schema.siteRevision.siteId, id));
+              await tx
+                .delete(schema.siteBuild)
+                .where(eq(schema.siteBuild.siteId, id));
+              await tx
+                .delete(schema.siteDeployment)
+                .where(eq(schema.siteDeployment.siteId, id));
 
               // Delete main site record
               await tx.delete(schema.site).where(eq(schema.site.id, id));
@@ -526,7 +554,7 @@ export class BulkOperationsService {
               id,
               success: true,
               previousValue: site.status,
-              newValue: 'hard_deleted',
+              newValue: "hard_deleted",
               details: {
                 assetsDeleted: params.deleteAssets !== false,
                 coolifyAppDeleted: params.deleteCoolifyApp !== false,
@@ -553,7 +581,7 @@ export class BulkOperationsService {
               id,
               success: true,
               previousValue: site.status,
-              newValue: 'deleted',
+              newValue: "deleted",
               details: {
                 softDelete: true,
                 reason: reason ?? params?.reason,
@@ -566,7 +594,7 @@ export class BulkOperationsService {
           );
 
           // Emit event
-          await this.emitSiteEvent('sites.site.deleted', {
+          await this.emitSiteEvent("sites.site.deleted", {
             siteId: id,
             tenantId: site.tenantId,
             deleteType: params.type,
@@ -595,7 +623,7 @@ export class BulkOperationsService {
     const { ids, params, actorId, reason, tenantId } = dto;
 
     this.logger.log(
-      `[AUDIT] Bulk export started: actor=${actorId}, count=${ids.length}, format=${params.format}, tenant=${tenantId}, reason=${reason ?? 'none'}`,
+      `[AUDIT] Bulk export started: actor=${actorId}, count=${ids.length}, format=${params.format}, tenant=${tenantId}, reason=${reason ?? "none"}`,
     );
 
     try {
@@ -603,19 +631,16 @@ export class BulkOperationsService {
       let whereClause = inArray(schema.site.id, ids);
 
       if (tenantId) {
-        whereClause = and(whereClause, eq(schema.site.tenantId, tenantId));
+        whereClause = and(whereClause, eq(schema.site.tenantId, tenantId))!;
       }
 
       // Include/exclude deleted sites
       if (!params.includeDeleted) {
-        whereClause = and(whereClause, isNull(schema.site.deletedAt));
+        whereClause = and(whereClause, isNull(schema.site.deletedAt))!;
       }
 
       // Fetch sites
-      const sites = await this.db
-        .select()
-        .from(schema.site)
-        .where(whereClause);
+      const sites = await this.db.select().from(schema.site).where(whereClause);
 
       if (sites.length === 0) {
         return {
@@ -627,7 +652,7 @@ export class BulkOperationsService {
           results: ids.map((id) => ({
             id,
             success: false,
-            error: 'No sites found for export',
+            error: "No sites found for export",
           })),
           processedAt: new Date().toISOString(),
         };
@@ -665,26 +690,48 @@ export class BulkOperationsService {
 
       // Generate export data
       let exportData: any;
-      let filename = params.filename || `sites_export_${new Date().toISOString().split('T')[0]}`;
+      let filename =
+        params.filename ||
+        `sites_export_${new Date().toISOString().split("T")[0]}`;
 
       switch (params.format) {
         case ExportFormat.CSV:
-          exportData = this.generateSitesCSV(sites, domains, revisions, deployments, params);
-          filename += '.csv';
+          exportData = this.generateSitesCSV(
+            sites,
+            domains,
+            revisions,
+            deployments,
+            params,
+          );
+          filename += ".csv";
           break;
 
         case ExportFormat.EXCEL:
-          exportData = await this.generateSitesExcel(sites, domains, revisions, deployments, params);
-          filename += '.xlsx';
+          exportData = await this.generateSitesExcel(
+            sites,
+            domains,
+            revisions,
+            deployments,
+            params,
+          );
+          filename += ".xlsx";
           break;
 
         case ExportFormat.JSON:
-          exportData = this.generateSitesJSON(sites, domains, revisions, deployments, params);
-          filename += '.json';
+          exportData = this.generateSitesJSON(
+            sites,
+            domains,
+            revisions,
+            deployments,
+            params,
+          );
+          filename += ".json";
           break;
 
         default:
-          throw new BadRequestException(`Unsupported export format: ${params.format}`);
+          throw new BadRequestException(
+            `Unsupported export format: ${params.format}`,
+          );
       }
 
       // Mark all as successful
@@ -693,7 +740,7 @@ export class BulkOperationsService {
           id: site.id,
           success: true,
           previousValue: null,
-          newValue: 'exported',
+          newValue: "exported",
         });
       });
 
@@ -718,7 +765,9 @@ export class BulkOperationsService {
       };
     } catch (error) {
       const err = error as Error;
-      this.logger.error(`[AUDIT] Export failed: actor=${actorId}, error=${err.message}`);
+      this.logger.error(
+        `[AUDIT] Export failed: actor=${actorId}, error=${err.message}`,
+      );
 
       return {
         success: false,
@@ -745,7 +794,9 @@ export class BulkOperationsService {
     targetStatus: SiteStatus,
     actorId: string,
     reason?: string,
-    customLogic?: (site: SiteRow) => Promise<Partial<typeof schema.site.$inferInsert>>,
+    customLogic?: (
+      site: SiteRow,
+    ) => Promise<Partial<typeof schema.site.$inferInsert>>,
   ): Promise<BulkOperationResult> {
     const results: BulkItemResult[] = [];
 
@@ -771,7 +822,7 @@ export class BulkOperationsService {
           results.push({
             id,
             success: false,
-            error: 'Site not found',
+            error: "Site not found",
           });
           continue;
         }
@@ -820,13 +871,20 @@ export class BulkOperationsService {
       }
     }
 
-    return this.buildResult(BulkOperationType.CHANGE_STATUS, ids.length, results);
+    return this.buildResult(
+      BulkOperationType.CHANGE_STATUS,
+      ids.length,
+      results,
+    );
   }
 
   /**
    * Deploy a single site
    */
-  private async deploySite(site: SiteRow, forceBuild = false): Promise<{
+  private async deploySite(
+    site: SiteRow,
+    forceBuild = false,
+  ): Promise<{
     success: boolean;
     url?: string;
     buildTime?: number;
@@ -838,7 +896,7 @@ export class BulkOperationsService {
 
       // Call generator service to build and deploy
       const deployResult = await firstValueFrom(
-        this.coolifyClient.send('coolify.deploy_site', {
+        this.coolifyClient.send("coolify.deploy_site", {
           siteId: site.id,
           tenantId: site.tenantId,
           forceBuild,
@@ -856,7 +914,7 @@ export class BulkOperationsService {
       } else {
         return {
           success: false,
-          error: deployResult.error || 'Deployment failed',
+          error: deployResult.error || "Deployment failed",
           logs: deployResult.logs,
         };
       }
@@ -872,22 +930,31 @@ export class BulkOperationsService {
   /**
    * Toggle maintenance mode for a site
    */
-  private async toggleMaintenanceMode(site: SiteRow, enabled: boolean): Promise<void> {
+  private async toggleMaintenanceMode(
+    site: SiteRow,
+    enabled: boolean,
+  ): Promise<void> {
     if (!site.coolifyAppUuid) {
-      this.logger.warn(`No Coolify app UUID for site ${site.id}, skipping maintenance toggle`);
+      this.logger.warn(
+        `No Coolify app UUID for site ${site.id}, skipping maintenance toggle`,
+      );
       return;
     }
 
     try {
       await firstValueFrom(
-        this.coolifyClient.send('coolify.toggle_maintenance', {
+        this.coolifyClient.send("coolify.toggle_maintenance", {
           appUuid: site.coolifyAppUuid,
           enabled,
         }),
       );
-      this.logger.debug(`Maintenance mode ${enabled ? 'enabled' : 'disabled'} for site ${site.id}`);
+      this.logger.debug(
+        `Maintenance mode ${enabled ? "enabled" : "disabled"} for site ${site.id}`,
+      );
     } catch (error) {
-      this.logger.error(`Failed to toggle maintenance mode for site ${site.id}: ${error}`);
+      this.logger.error(
+        `Failed to toggle maintenance mode for site ${site.id}: ${error}`,
+      );
       // Don't throw - this is not critical for the main operation
     }
   }
@@ -899,10 +966,14 @@ export class BulkOperationsService {
     try {
       // Call storage service to remove site assets
       // This would typically involve removing the S3 prefix: sites/{subdomain}/
-      this.logger.debug(`Would cleanup assets for site ${site.id} (${site.slug})`);
+      this.logger.debug(
+        `Would cleanup assets for site ${site.id} (${site.slug})`,
+      );
       // TODO: Implement actual S3 cleanup call
     } catch (error) {
-      this.logger.error(`Failed to cleanup assets for site ${site.id}: ${error}`);
+      this.logger.error(
+        `Failed to cleanup assets for site ${site.id}: ${error}`,
+      );
       // Don't throw - this is best effort
     }
   }
@@ -913,13 +984,15 @@ export class BulkOperationsService {
   private async deleteCoolifyApp(coolifyAppUuid: string): Promise<void> {
     try {
       await firstValueFrom(
-        this.coolifyClient.send('coolify.delete_application', {
+        this.coolifyClient.send("coolify.delete_application", {
           appUuid: coolifyAppUuid,
         }),
       );
       this.logger.debug(`Deleted Coolify app ${coolifyAppUuid}`);
     } catch (error) {
-      this.logger.error(`Failed to delete Coolify app ${coolifyAppUuid}: ${error}`);
+      this.logger.error(
+        `Failed to delete Coolify app ${coolifyAppUuid}: ${error}`,
+      );
       // Don't throw - this is best effort
     }
   }
@@ -927,49 +1000,76 @@ export class BulkOperationsService {
   /**
    * Generate CSV export for sites
    */
-  private generateSitesCSV(sites: any[], domains: any[], revisions: any[], deployments: any[], params: any): string {
-    const defaultFields = ['id', 'name', 'slug', 'status', 'tenantId', 'publicUrl', 'createdAt'];
+  private generateSitesCSV(
+    sites: any[],
+    domains: any[],
+    revisions: any[],
+    deployments: any[],
+    params: any,
+  ): string {
+    const defaultFields = [
+      "id",
+      "name",
+      "slug",
+      "status",
+      "tenantId",
+      "publicUrl",
+      "createdAt",
+    ];
     const exportFields = params.fields || defaultFields;
 
     // Header
-    const header = exportFields.join(',');
+    const header = exportFields.join(",");
 
     // Rows
     const rows = sites.map((site) => {
-      return exportFields.map((field) => {
-        const value = this.getNestedValue(site, field);
-        if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
-          return `"${value.replace(/"/g, '""')}"`;
-        }
-        return value ?? '';
-      }).join(',');
+      return exportFields
+        .map((field: string) => {
+          const value = this.getNestedValue(site, field);
+          if (
+            typeof value === "string" &&
+            (value.includes(",") || value.includes('"'))
+          ) {
+            return `"${value.replace(/"/g, '""')}"`;
+          }
+          return value ?? "";
+        })
+        .join(",");
     });
 
-    return [header, ...rows].join('\n');
+    return [header, ...rows].join("\n");
   }
 
   /**
    * Generate Excel export for sites
    */
-  private async generateSitesExcel(sites: any[], domains: any[], revisions: any[], deployments: any[], params: any): Promise<any> {
-    const sheets = [{
-      name: 'Sites',
-      headers: params.fields || ['id', 'name', 'slug', 'status', 'publicUrl'],
-      data: sites,
-    }];
+  private async generateSitesExcel(
+    sites: any[],
+    domains: any[],
+    revisions: any[],
+    deployments: any[],
+    params: any,
+  ): Promise<any> {
+    const sheets = [
+      {
+        name: "Sites",
+        headers: params.fields || ["id", "name", "slug", "status", "publicUrl"],
+        data: sites,
+      },
+    ];
 
     if (params.includeDomains && domains.length > 0) {
       sheets.push({
-        name: 'Domains',
-        headers: ['siteId', 'domain', 'status', 'verificationToken'],
+        name: "Domains",
+        headers: ["siteId", "domain", "status", "verificationToken"],
         data: domains,
       });
     }
 
     if (params.includeDeployments && deployments.length > 0) {
       sheets.push({
-        name: 'Deployments',
-        headers: ['siteId', 'status', 'url', 'createdAt'],
+        name: "Deployments",
+        headers: ["siteId", "status", "url", "createdAt"],
         data: deployments,
       });
     }
@@ -980,19 +1080,29 @@ export class BulkOperationsService {
   /**
    * Generate JSON export for sites
    */
-  private generateSitesJSON(sites: any[], domains: any[], revisions: any[], deployments: any[], params: any): any {
-    if (params.includeDomains || params.includeDeployments || params.includeRevisions) {
+  private generateSitesJSON(
+    sites: any[],
+    domains: any[],
+    revisions: any[],
+    deployments: any[],
+    params: any,
+  ): any {
+    if (
+      params.includeDomains ||
+      params.includeDeployments ||
+      params.includeRevisions
+    ) {
       // Return enriched sites with related data
       return sites.map((site) => ({
         ...site,
         ...(params.includeDomains && {
-          domains: domains.filter(d => d.siteId === site.id),
+          domains: domains.filter((d) => d.siteId === site.id),
         }),
         ...(params.includeDeployments && {
-          deployments: deployments.filter(d => d.siteId === site.id),
+          deployments: deployments.filter((d) => d.siteId === site.id),
         }),
         ...(params.includeRevisions && {
-          revisionCount: revisions.filter(r => r.siteId === site.id).length,
+          revisionCount: revisions.filter((r) => r.siteId === site.id).length,
         }),
       }));
     }
@@ -1015,7 +1125,7 @@ export class BulkOperationsService {
    * Get nested property value
    */
   private getNestedValue(obj: any, path: string): any {
-    return path.split('.').reduce((current, key) => current?.[key], obj);
+    return path.split(".").reduce((current, key) => current?.[key], obj);
   }
 
   /**

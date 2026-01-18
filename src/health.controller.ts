@@ -7,17 +7,21 @@
  *
  * Используется оркестраторами (Coolify, Docker, Kubernetes) для healthcheck.
  */
-import { Controller, Get, Post, Inject, Logger } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
-import { firstValueFrom, timeout, catchError, of } from 'rxjs';
-import { sql } from 'drizzle-orm';
-import { PG_CONNECTION, BILLING_RMQ_SERVICE, COOLIFY_RMQ_SERVICE } from './constants';
-import { DomainClient } from './domain/domain.client';
-import { SitesDomainService } from './sites.service';
+import { Controller, Get, Post, Inject, Logger } from "@nestjs/common";
+import { ClientProxy } from "@nestjs/microservices";
+import { firstValueFrom, timeout, catchError, of } from "rxjs";
+import { sql } from "drizzle-orm";
+import {
+  PG_CONNECTION,
+  BILLING_RMQ_SERVICE,
+  COOLIFY_RMQ_SERVICE,
+} from "./constants";
+import { DomainClient } from "./domain/domain.client";
+import { SitesDomainService } from "./sites.service";
 
 interface HealthCheck {
   name: string;
-  status: 'up' | 'down';
+  status: "up" | "down";
   latencyMs?: number;
   error?: string;
 }
@@ -38,11 +42,11 @@ export class HealthController {
    * Базовая проверка живости (liveness probe)
    * Возвращает 200 если сервис запущен
    */
-  @Get('health')
+  @Get("health")
   health() {
     return {
-      status: 'ok',
-      service: 'sites-service',
+      status: "ok",
+      service: "sites-service",
       timestamp: new Date().toISOString(),
     };
   }
@@ -55,7 +59,7 @@ export class HealthController {
    * - Domain Service (опционально)
    * - Coolify API (опционально, только в http mode)
    */
-  @Get('health/ready')
+  @Get("health/ready")
   async readiness() {
     const checks: HealthCheck[] = [];
     let healthy = true;
@@ -63,14 +67,14 @@ export class HealthController {
     // 1. Проверка PostgreSQL
     const dbCheck = await this.checkDatabase();
     checks.push(dbCheck);
-    if (dbCheck.status === 'down') {
+    if (dbCheck.status === "down") {
       healthy = false;
     }
 
     // 2. Проверка RabbitMQ через Billing Service
     const rmqCheck = await this.checkRabbitMQ();
     checks.push(rmqCheck);
-    if (rmqCheck.status === 'down') {
+    if (rmqCheck.status === "down") {
       healthy = false;
     }
 
@@ -85,8 +89,8 @@ export class HealthController {
     // Coolify Worker не критичен для базовой работы
 
     return {
-      status: healthy ? 'ok' : 'degraded',
-      service: 'sites-service',
+      status: healthy ? "ok" : "degraded",
+      service: "sites-service",
       timestamp: new Date().toISOString(),
       checks,
     };
@@ -97,17 +101,17 @@ export class HealthController {
     try {
       await this.db.execute(sql`SELECT 1`);
       return {
-        name: 'postgresql',
-        status: 'up',
+        name: "postgresql",
+        status: "up",
         latencyMs: Date.now() - start,
       };
     } catch (error) {
       this.logger.error(`Database health check failed: ${error}`);
       return {
-        name: 'postgresql',
-        status: 'down',
+        name: "postgresql",
+        status: "down",
         latencyMs: Date.now() - start,
-        error: error instanceof Error ? error.message : 'unknown',
+        error: error instanceof Error ? error.message : "unknown",
       };
     }
   }
@@ -117,7 +121,7 @@ export class HealthController {
     try {
       // Ping billing service через RPC
       const response = await firstValueFrom(
-        this.billingClient.send('billing.get_plans', {}).pipe(
+        this.billingClient.send("billing.get_plans", {}).pipe(
           timeout(3000),
           catchError(() => of(null)),
         ),
@@ -125,25 +129,25 @@ export class HealthController {
 
       if (response) {
         return {
-          name: 'rabbitmq',
-          status: 'up',
+          name: "rabbitmq",
+          status: "up",
           latencyMs: Date.now() - start,
         };
       }
 
       return {
-        name: 'rabbitmq',
-        status: 'down',
+        name: "rabbitmq",
+        status: "down",
         latencyMs: Date.now() - start,
-        error: 'no_response',
+        error: "no_response",
       };
     } catch (error) {
       this.logger.error(`RabbitMQ health check failed: ${error}`);
       return {
-        name: 'rabbitmq',
-        status: 'down',
+        name: "rabbitmq",
+        status: "down",
         latencyMs: Date.now() - start,
-        error: error instanceof Error ? error.message : 'unknown',
+        error: error instanceof Error ? error.message : "unknown",
       };
     }
   }
@@ -153,16 +157,16 @@ export class HealthController {
     try {
       const isHealthy = await this.domainClient.healthCheck();
       return {
-        name: 'domain-service',
-        status: isHealthy ? 'up' : 'down',
+        name: "domain-service",
+        status: isHealthy ? "up" : "down",
         latencyMs: Date.now() - start,
       };
     } catch (error) {
       return {
-        name: 'domain-service',
-        status: 'down',
+        name: "domain-service",
+        status: "down",
         latencyMs: Date.now() - start,
-        error: error instanceof Error ? error.message : 'unknown',
+        error: error instanceof Error ? error.message : "unknown",
       };
     }
   }
@@ -172,24 +176,26 @@ export class HealthController {
     try {
       // Проверка через RPC к coolify-worker
       const result = await firstValueFrom(
-        this.coolifyClient.send('coolify.health', {}).pipe(
+        this.coolifyClient.send("coolify.health", {}).pipe(
           timeout(5000),
-          catchError(() => of({ success: false, status: 'down', error: 'rpc_timeout' })),
+          catchError(() =>
+            of({ success: false, status: "down", error: "rpc_timeout" }),
+          ),
         ),
       );
 
       return {
-        name: 'coolify-worker',
-        status: result.success && result.status === 'up' ? 'up' : 'down',
-        latencyMs: result.latencyMs ?? (Date.now() - start),
+        name: "coolify-worker",
+        status: result.success && result.status === "up" ? "up" : "down",
+        latencyMs: result.latencyMs ?? Date.now() - start,
         error: result.error,
       };
     } catch (error) {
       return {
-        name: 'coolify-worker',
-        status: 'down',
+        name: "coolify-worker",
+        status: "down",
         latencyMs: Date.now() - start,
-        error: error instanceof Error ? error.message : 'unknown',
+        error: error instanceof Error ? error.message : "unknown",
       };
     }
   }
@@ -201,9 +207,9 @@ export class HealthController {
    * Очищает mock кэш и создаёт реальные Coolify приложения
    * для сайтов без publicUrl или coolifyProjectUuid
    */
-  @Post('migrate-orphaned')
+  @Post("migrate-orphaned")
   async migrateOrphaned() {
-    this.logger.log('Starting orphaned sites migration via HTTP');
+    this.logger.log("Starting orphaned sites migration via HTTP");
     try {
       const result = await this.sitesService.migrateOrphanedSites();
       return {
@@ -214,7 +220,7 @@ export class HealthController {
       this.logger.error(`Migration failed: ${error}`);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'unknown',
+        error: error instanceof Error ? error.message : "unknown",
       };
     }
   }
@@ -223,7 +229,7 @@ export class HealthController {
    * Диагностика состояния сайтов
    * GET /sites-debug
    */
-  @Get('sites-debug')
+  @Get("sites-debug")
   async sitesDebug() {
     return this.sitesService.debugSitesState();
   }

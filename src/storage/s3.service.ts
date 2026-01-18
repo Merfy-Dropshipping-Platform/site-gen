@@ -1,5 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
-import * as Minio from 'minio';
+import { Injectable, Logger } from "@nestjs/common";
+import * as Minio from "minio";
 
 /**
  * S3StorageService — сервис для работы с S3/MinIO хранилищем статики сайтов.
@@ -20,7 +20,7 @@ export class S3StorageService {
   private bucketName: string | null = null;
   private publicEndpoint: string | null = null;
   private internalEndpoint: string | null = null;
-  private region: string = 'us-east-1';
+  private region: string = "us-east-1";
 
   constructor() {
     const endpoint =
@@ -28,15 +28,25 @@ export class S3StorageService {
       process.env.MINIO_ENDPOINT ||
       process.env.MINIO_URL;
     const access =
-      process.env.S3_ACCESS_KEY || process.env.MINIO_ACCESS_KEY || process.env.S3_ACCESS_KEY_ID;
+      process.env.S3_ACCESS_KEY ||
+      process.env.MINIO_ACCESS_KEY ||
+      process.env.S3_ACCESS_KEY_ID;
     const secret =
-      process.env.S3_SECRET_KEY || process.env.MINIO_SECRET_KEY || process.env.S3_SECRET_ACCESS_KEY;
+      process.env.S3_SECRET_KEY ||
+      process.env.MINIO_SECRET_KEY ||
+      process.env.S3_SECRET_ACCESS_KEY;
     const bucket =
-      process.env.S3_BUCKET || process.env.S3_BUCKET_SITES || process.env.MINIO_BUCKET || 'merfy-sites';
+      process.env.S3_BUCKET ||
+      process.env.S3_BUCKET_SITES ||
+      process.env.MINIO_BUCKET ||
+      "merfy-sites";
     this.publicEndpoint =
-      process.env.S3_PUBLIC_ENDPOINT || process.env.MINIO_API_URL || process.env.MINIO_PUBLIC_ENDPOINT || null;
+      process.env.S3_PUBLIC_ENDPOINT ||
+      process.env.MINIO_API_URL ||
+      process.env.MINIO_PUBLIC_ENDPOINT ||
+      null;
     this.internalEndpoint = endpoint || null;
-    this.region = process.env.S3_REGION || 'us-east-1';
+    this.region = process.env.S3_REGION || "us-east-1";
 
     if (endpoint && access && secret && bucket) {
       try {
@@ -52,24 +62,34 @@ export class S3StorageService {
         this.bucketName = bucket;
         this.logger.log(`S3/MinIO initialized: ${endpoint}, bucket: ${bucket}`);
       } catch (e) {
-        this.logger.warn(`S3/Minio init failed: ${e instanceof Error ? e.message : e}`);
+        this.logger.warn(
+          `S3/Minio init failed: ${e instanceof Error ? e.message : e}`,
+        );
         this.client = null;
         this.bucketName = null;
       }
     }
   }
 
-  private parseEndpoint(endpoint: string): { host: string; port: number; useSSL: boolean } {
+  private parseEndpoint(endpoint: string): {
+    host: string;
+    port: number;
+    useSSL: boolean;
+  } {
     try {
       const url = new URL(endpoint);
       return {
         host: url.hostname,
-        port: url.port ? Number(url.port) : url.protocol === 'https:' ? 443 : 80,
-        useSSL: url.protocol === 'https:',
+        port: url.port
+          ? Number(url.port)
+          : url.protocol === "https:"
+            ? 443
+            : 80,
+        useSSL: url.protocol === "https:",
       };
     } catch {
       // Если строка без протокола, считаем её hostname:port
-      const [host, portRaw] = endpoint.split(':');
+      const [host, portRaw] = endpoint.split(":");
       const port = portRaw ? Number(portRaw) : 9000;
       return { host, port, useSSL: false };
     }
@@ -80,8 +100,10 @@ export class S3StorageService {
   }
 
   async ensureBucket() {
-    if (!this.client || !this.bucketName) throw new Error('S3 not configured');
-    const exists = await this.client.bucketExists(this.bucketName).catch(() => false);
+    if (!this.client || !this.bucketName) throw new Error("S3 not configured");
+    const exists = await this.client
+      .bucketExists(this.bucketName)
+      .catch(() => false);
     if (!exists) {
       await this.client.makeBucket(this.bucketName, this.region);
       this.logger.log(`Created bucket: ${this.bucketName}`);
@@ -99,13 +121,13 @@ export class S3StorageService {
     if (!this.client) return;
 
     const policy = {
-      Version: '2012-10-17',
+      Version: "2012-10-17",
       Statement: [
         {
-          Sid: 'PublicReadSites',
-          Effect: 'Allow',
-          Principal: '*',
-          Action: ['s3:GetObject'],
+          Sid: "PublicReadSites",
+          Effect: "Allow",
+          Principal: "*",
+          Action: ["s3:GetObject"],
           Resource: [`arn:aws:s3:::${bucket}/sites/*`],
         },
       ],
@@ -115,12 +137,14 @@ export class S3StorageService {
       await this.client.setBucketPolicy(bucket, JSON.stringify(policy));
       this.logger.log(`Set public read policy on bucket ${bucket} for sites/*`);
     } catch (e) {
-      this.logger.warn(`Failed to set bucket policy: ${e instanceof Error ? e.message : e}`);
+      this.logger.warn(
+        `Failed to set bucket policy: ${e instanceof Error ? e.message : e}`,
+      );
     }
   }
 
   async uploadFile(bucket: string, key: string, filePath: string) {
-    if (!this.client) throw new Error('S3 client not initialized');
+    if (!this.client) throw new Error("S3 client not initialized");
     await this.client.fPutObject(bucket, key, filePath, {});
     return this.getPublicUrl(bucket, key);
   }
@@ -132,7 +156,7 @@ export class S3StorageService {
   getPublicUrl(bucket: string, key: string): string {
     const endpoint = this.publicEndpoint || this.internalEndpoint;
     if (endpoint) {
-      const base = endpoint.replace(/\/$/, '');
+      const base = endpoint.replace(/\/$/, "");
       return `${base}/${bucket}/${key}`;
     }
     return `s3://${bucket}/${key}`;
@@ -147,7 +171,7 @@ export class S3StorageService {
     if (!this.bucketName) return null;
     const endpoint = this.publicEndpoint || this.internalEndpoint;
     if (!endpoint) return null;
-    const base = endpoint.replace(/\/$/, '');
+    const base = endpoint.replace(/\/$/, "");
     return `${base}/${this.bucketName}/sites/${tenantId}/${siteId}/index.html`;
   }
 
@@ -159,7 +183,7 @@ export class S3StorageService {
     if (!this.bucketName) return null;
     const endpoint = this.publicEndpoint || this.internalEndpoint;
     if (!endpoint) return null;
-    const base = endpoint.replace(/\/$/, '');
+    const base = endpoint.replace(/\/$/, "");
     return `${base}/${this.bucketName}/sites/${tenantId}/${siteId}/`;
   }
 
@@ -168,11 +192,11 @@ export class S3StorageService {
    */
   extractSubdomainSlug(subdomain: string): string {
     // Убираем протокол если есть
-    let domain = subdomain.replace(/^https?:\/\//, '');
+    let domain = subdomain.replace(/^https?:\/\//, "");
     // Убираем trailing slash
-    domain = domain.replace(/\/$/, '');
+    domain = domain.replace(/\/$/, "");
     // Берём первую часть до точки (abc123.merfy.ru → abc123)
-    return domain.split('.')[0];
+    return domain.split(".")[0];
   }
 
   /**
@@ -201,21 +225,21 @@ export class S3StorageService {
     if (!this.bucketName) return null;
     const endpoint = this.publicEndpoint || this.internalEndpoint;
     if (!endpoint) return null;
-    const base = endpoint.replace(/\/$/, '');
+    const base = endpoint.replace(/\/$/, "");
     const slug = this.extractSubdomainSlug(subdomain);
     return `${base}/${this.bucketName}/sites/${slug}/index.html`;
   }
 
   async removePrefix(bucket: string, prefix: string) {
-    if (!this.client) throw new Error('S3 client not initialized');
+    if (!this.client) throw new Error("S3 client not initialized");
     const objectsStream = this.client.listObjectsV2(bucket, prefix, true);
     const keys: string[] = await new Promise((resolve, reject) => {
       const arr: string[] = [];
-      objectsStream.on('data', (obj: any) => {
+      objectsStream.on("data", (obj: any) => {
         if (obj?.name) arr.push(obj.name);
       });
-      objectsStream.on('end', () => resolve(arr));
-      objectsStream.on('error', reject);
+      objectsStream.on("end", () => resolve(arr));
+      objectsStream.on("error", reject);
     });
     if (keys.length === 0) return { removed: 0 } as const;
     await this.client.removeObjects(bucket, keys);
@@ -223,7 +247,7 @@ export class S3StorageService {
   }
 
   async removeObject(bucket: string, key: string) {
-    if (!this.client) throw new Error('S3 client not initialized');
+    if (!this.client) throw new Error("S3 client not initialized");
     await this.client.removeObject(bucket, key);
     return { removed: 1 } as const;
   }
@@ -237,11 +261,15 @@ export class S3StorageService {
    * @param localDir - локальная директория для загрузки
    * @returns количество загруженных файлов
    */
-  async uploadDirectory(bucket: string, prefix: string, localDir: string): Promise<{ uploaded: number }> {
-    if (!this.client) throw new Error('S3 client not initialized');
+  async uploadDirectory(
+    bucket: string,
+    prefix: string,
+    localDir: string,
+  ): Promise<{ uploaded: number }> {
+    if (!this.client) throw new Error("S3 client not initialized");
 
-    const fs = await import('fs/promises');
-    const path = await import('path');
+    const fs = await import("fs/promises");
+    const path = await import("path");
 
     let uploaded = 0;
 
@@ -256,7 +284,7 @@ export class S3StorageService {
           await uploadRecursive(localPath, `${s3Key}/`);
         } else if (entry.isFile()) {
           await this.client!.fPutObject(bucket, s3Key, localPath, {
-            'Content-Type': this.getContentType(entry.name),
+            "Content-Type": this.getContentType(entry.name),
           });
           uploaded++;
         }
@@ -272,30 +300,30 @@ export class S3StorageService {
    * Определить Content-Type по расширению файла.
    */
   private getContentType(filename: string): string {
-    const ext = filename.split('.').pop()?.toLowerCase();
+    const ext = filename.split(".").pop()?.toLowerCase();
     const types: Record<string, string> = {
-      html: 'text/html',
-      htm: 'text/html',
-      css: 'text/css',
-      js: 'application/javascript',
-      mjs: 'application/javascript',
-      json: 'application/json',
-      png: 'image/png',
-      jpg: 'image/jpeg',
-      jpeg: 'image/jpeg',
-      gif: 'image/gif',
-      svg: 'image/svg+xml',
-      ico: 'image/x-icon',
-      webp: 'image/webp',
-      woff: 'font/woff',
-      woff2: 'font/woff2',
-      ttf: 'font/ttf',
-      eot: 'application/vnd.ms-fontobject',
-      xml: 'application/xml',
-      txt: 'text/plain',
-      md: 'text/markdown',
-      pdf: 'application/pdf',
+      html: "text/html",
+      htm: "text/html",
+      css: "text/css",
+      js: "application/javascript",
+      mjs: "application/javascript",
+      json: "application/json",
+      png: "image/png",
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      gif: "image/gif",
+      svg: "image/svg+xml",
+      ico: "image/x-icon",
+      webp: "image/webp",
+      woff: "font/woff",
+      woff2: "font/woff2",
+      ttf: "font/ttf",
+      eot: "application/vnd.ms-fontobject",
+      xml: "application/xml",
+      txt: "text/plain",
+      md: "text/markdown",
+      pdf: "application/pdf",
     };
-    return types[ext ?? ''] || 'application/octet-stream';
+    return types[ext ?? ""] || "application/octet-stream";
   }
 }

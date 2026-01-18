@@ -6,11 +6,11 @@
  * - Получение темы по ID
  * - Инкремент счётчика просмотров
  */
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { eq, sql } from 'drizzle-orm';
-import { PG_CONNECTION } from './constants';
-import * as schema from './db/schema';
+import { Inject, Injectable, Logger } from "@nestjs/common";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { eq, sql } from "drizzle-orm";
+import { PG_CONNECTION } from "./constants";
+import * as schema from "./db/schema";
 
 export interface ThemeFilters {
   isActive?: boolean;
@@ -47,7 +47,11 @@ export class ThemesService {
         updatedAt: schema.theme.updatedAt,
       })
       .from(schema.theme)
-      .where(filters?.isActive !== false ? eq(schema.theme.isActive, true) : undefined);
+      .where(
+        filters?.isActive !== false
+          ? eq(schema.theme.isActive, true)
+          : undefined,
+      );
 
     return { items: rows };
   }
@@ -92,6 +96,6 @@ export class ThemesService {
       .select({ templateId: schema.theme.templateId })
       .from(schema.theme)
       .where(eq(schema.theme.id, themeId));
-    return row?.templateId ?? 'default';
+    return row?.templateId ?? "default";
   }
 }

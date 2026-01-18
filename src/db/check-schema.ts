@@ -1,8 +1,8 @@
-import { Pool } from 'pg';
-import * as dotenv from 'dotenv';
+import { Pool } from "pg";
+import * as dotenv from "dotenv";
 
 // Load environment variables
-dotenv.config({ path: '.env.local' });
+dotenv.config({ path: ".env.local" });
 
 async function checkSchema() {
   const pool = new Pool({
@@ -10,7 +10,7 @@ async function checkSchema() {
   });
 
   try {
-    console.log('Checking sites database schema...');
+    console.log("Checking sites database schema...");
 
     // Check if the site table exists and has all required columns
     const siteColumns = await pool.query(`
@@ -20,7 +20,7 @@ async function checkSchema() {
       ORDER BY ordinal_position
     `);
 
-    console.log('Site table columns:');
+    console.log("Site table columns:");
     siteColumns.rows.forEach((row: any) => {
       console.log(
         `  ${row.column_name} (${row.data_type}): nullable=${row.is_nullable}, default=${row.column_default}`,
@@ -34,7 +34,7 @@ async function checkSchema() {
       WHERE table_name = 'site_domain'
     `);
 
-    console.log('Site domain table exists:', siteDomainTable.rows.length > 0);
+    console.log("Site domain table exists:", siteDomainTable.rows.length > 0);
 
     // Check if the site_revision table exists
     const siteRevisionTable = await pool.query(`
@@ -43,7 +43,10 @@ async function checkSchema() {
       WHERE table_name = 'site_revision'
     `);
 
-    console.log('Site revision table exists:', siteRevisionTable.rows.length > 0);
+    console.log(
+      "Site revision table exists:",
+      siteRevisionTable.rows.length > 0,
+    );
 
     // Check if the site_build table exists
     const siteBuildTable = await pool.query(`
@@ -52,7 +55,7 @@ async function checkSchema() {
       WHERE table_name = 'site_build'
     `);
 
-    console.log('Site build table exists:', siteBuildTable.rows.length > 0);
+    console.log("Site build table exists:", siteBuildTable.rows.length > 0);
 
     // Check if the site_deployment table exists
     const siteDeploymentTable = await pool.query(`
@@ -61,7 +64,10 @@ async function checkSchema() {
       WHERE table_name = 'site_deployment'
     `);
 
-    console.log('Site deployment table exists:', siteDeploymentTable.rows.length > 0);
+    console.log(
+      "Site deployment table exists:",
+      siteDeploymentTable.rows.length > 0,
+    );
 
     // Check for all enum types
     const enumTypes = await pool.query(`
@@ -70,7 +76,7 @@ async function checkSchema() {
       WHERE typtype = 'e' AND typname LIKE '%site%'
     `);
 
-    console.log('Site-related enum types:');
+    console.log("Site-related enum types:");
     enumTypes.rows.forEach((row: any) => {
       console.log(`  ${row.typname}`);
     });
@@ -82,7 +88,10 @@ async function checkSchema() {
       WHERE table_name = '__drizzle_migrations'
     `);
 
-    console.log('Drizzle migrations table exists:', migrationTable.rows.length > 0);
+    console.log(
+      "Drizzle migrations table exists:",
+      migrationTable.rows.length > 0,
+    );
 
     if (migrationTable.rows.length > 0) {
       const migrations = await pool.query(`
@@ -91,13 +100,13 @@ async function checkSchema() {
         ORDER BY created_at
       `);
 
-      console.log('Applied migrations:');
+      console.log("Applied migrations:");
       migrations.rows.forEach((row: any) => {
         console.log(`  ${row.id}: ${row.hash} (${row.created_at})`);
       });
     }
   } catch (error) {
-    console.error('Failed to check schema:', error);
+    console.error("Failed to check schema:", error);
   } finally {
     await pool.end();
   }

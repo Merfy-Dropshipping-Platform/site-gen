@@ -1,14 +1,14 @@
-import { Module } from '@nestjs/common';
-import { PrometheusModule } from '@willsoto/nestjs-prometheus';
+import { Module } from "@nestjs/common";
+import { PrometheusModule } from "@willsoto/nestjs-prometheus";
 
 @Module({
   imports: [
     PrometheusModule.register({
-      path: '/metrics',
+      path: "/metrics",
       defaultMetrics: {
         enabled: true,
         config: {
-          prefix: 'merfy_sites_',
+          prefix: "merfy_sites_",
         },
       },
     }),

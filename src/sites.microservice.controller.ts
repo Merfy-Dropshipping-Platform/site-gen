@@ -84,13 +84,17 @@ export class SitesMicroserviceController {
   @MessagePattern('sites.list')
   async listSites(@Payload() data: any) {
     try {
-      this.logger.log(`list request: ${JSON.stringify(data)}`);
+      this.logger.log(`Received sites.list message: ${JSON.stringify(data)}`);
       const { tenantId, cursor, limit } = data ?? {};
-      if (!tenantId) return { success: false, message: 'tenantId required' };
+      if (!tenantId) {
+        this.logger.warn('sites.list request without tenantId');
+        return { success: false, message: 'tenantId required' };
+      }
       const result = await this.service.list(tenantId, limit, cursor);
+      this.logger.log(`Returning sites.list result: ${result.items?.length ?? 0} items`);
       return { success: true, ...result };
     } catch (e: any) {
-      this.logger.error('list failed', e);
+      this.logger.error('sites.list failed', e);
       return { success: false, message: e?.message ?? 'internal_error' };
     }
   }

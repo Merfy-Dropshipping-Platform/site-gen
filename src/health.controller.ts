@@ -7,7 +7,7 @@
  *
  * Используется оркестраторами (Coolify, Docker, Kubernetes) для healthcheck.
  */
-import { Controller, Get, Post, Inject, Logger } from "@nestjs/common";
+import { Controller, Get, Post, Param, Query, Inject, Logger } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
 import { firstValueFrom, timeout, catchError, of } from "rxjs";
 import { sql } from "drizzle-orm";
@@ -18,6 +18,7 @@ import {
 } from "./constants";
 import { DomainClient } from "./domain/domain.client";
 import { SitesDomainService } from "./sites.service";
+import { S3StorageService } from "./storage/s3.service";
 
 interface HealthCheck {
   name: string;
@@ -36,6 +37,7 @@ export class HealthController {
     @Inject(COOLIFY_RMQ_SERVICE) private readonly coolifyClient: ClientProxy,
     private readonly domainClient: DomainClient,
     private readonly sitesService: SitesDomainService,
+    private readonly s3Storage: S3StorageService,
   ) {}
 
   /**
@@ -87,6 +89,11 @@ export class HealthController {
     const coolifyCheck = await this.checkCoolify();
     checks.push(coolifyCheck);
     // Coolify Worker не критичен для базовой работы
+
+    // 5. Проверка MinIO/S3 (опционально)
+    const minioCheck = await this.checkMinIO();
+    checks.push(minioCheck);
+    // MinIO не критичен для базовой работы
 
     return {
       status: healthy ? "ok" : "degraded",
@@ -196,6 +203,160 @@ export class HealthController {
         status: "down",
         latencyMs: Date.now() - start,
         error: error instanceof Error ? error.message : "unknown",
+      };
+    }
+  }
+
+  private async checkMinIO(): Promise<HealthCheck> {
+    const result = await this.s3Storage.healthCheck();
+    return {
+      name: "minio",
+      status: result.status,
+      latencyMs: result.latencyMs,
+      error: result.error,
+    };
+  }
+
+  /**
+   * Health check для конкретного сайта
+   * GET /sites/:siteId/health?tenantId=xxx
+   *
+   * Если передан tenantId — проверяет что сайт принадлежит тенанту (tenant-safe).
+   * Если tenantId не передан — работает как internal monitoring (без tenant isolation).
+   *
+   * Проверяет:
+   * - Существование сайта в БД (+ принадлежность тенанту если указан)
+   * - Наличие статики в MinIO
+   * - HTTP доступность (если опубликован)
+   */
+  @Get("sites/:siteId/health")
+  async siteHealth(
+    @Param("siteId") siteId: string,
+    @Query("tenantId") tenantId?: string,
+  ) {
+    const start = Date.now();
+
+    try {
+      // 1. Проверяем существование сайта в БД
+      // Если передан tenantId — используем tenant-safe метод
+      const site = tenantId
+        ? await this.sitesService.get(tenantId, siteId)
+        : await this.sitesService.getById(siteId);
+
+      if (!site) {
+        return {
+          siteId,
+          tenantId: tenantId ?? null,
+          available: false,
+          status: "not_found",
+          error: tenantId
+            ? "Site not found or does not belong to tenant"
+            : "Site not found in database",
+          timestamp: new Date().toISOString(),
+        };
+      }
+
+      // 2. Проверяем статику в MinIO
+      let staticCheck = {
+        exists: false,
+        hasIndex: false,
+        fileCount: 0,
+        totalSize: 0,
+      };
+
+      if (site.publicUrl) {
+        const prefix = this.s3Storage.getSitePrefixBySubdomain(site.publicUrl);
+        staticCheck = await this.s3Storage.checkSiteFiles(prefix);
+      }
+
+      // 3. Проверяем HTTP доступность (если опубликован)
+      let httpCheck = {
+        status: 0,
+        latencyMs: 0,
+        available: false,
+      };
+
+      if (site.publicUrl && site.status === "published") {
+        const httpStart = Date.now();
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          const response = await fetch(site.publicUrl, {
+            method: "HEAD",
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+          httpCheck = {
+            status: response.status,
+            latencyMs: Date.now() - httpStart,
+            available: response.ok,
+          };
+        } catch (e) {
+          httpCheck = {
+            status: 0,
+            latencyMs: Date.now() - httpStart,
+            available: false,
+          };
+        }
+      }
+
+      // 4. Определяем итоговый статус
+      const isAvailable =
+        site.status === "published" &&
+        staticCheck.hasIndex &&
+        (httpCheck.available || !site.publicUrl);
+
+      return {
+        siteId,
+        available: isAvailable,
+        status: site.status,
+        publicUrl: site.publicUrl,
+        checks: {
+          database: { exists: true, status: site.status },
+          static: staticCheck,
+          http: httpCheck,
+        },
+        latencyMs: Date.now() - start,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      this.logger.error(`Site health check failed for ${siteId}: ${error}`);
+      return {
+        siteId,
+        available: false,
+        status: "error",
+        error: error instanceof Error ? error.message : "unknown",
+        latencyMs: Date.now() - start,
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  /**
+   * Bulk health check всех сайтов тенанта
+   * GET /tenants/:tenantId/sites/health
+   *
+   * Возвращает статус всех сайтов тенанта:
+   * - Общая статистика (total, healthy, unhealthy)
+   * - Детальный статус каждого сайта
+   */
+  @Get("tenants/:tenantId/sites/health")
+  async tenantSitesHealth(@Param("tenantId") tenantId: string) {
+    try {
+      const result = await this.sitesService.healthCheckAll(tenantId);
+      return {
+        success: true,
+        tenantId,
+        timestamp: new Date().toISOString(),
+        ...result,
+      };
+    } catch (error) {
+      this.logger.error(`Tenant sites health check failed: ${error}`);
+      return {
+        success: false,
+        tenantId,
+        error: error instanceof Error ? error.message : "unknown",
+        timestamp: new Date().toISOString(),
       };
     }
   }

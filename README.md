@@ -1,11 +1,30 @@
 # Sites Service
 
-Микросервис сайтов Merfy. Слушает одну очередь `sites_queue`, предоставляет RPC для CRUD сайтов, доменов и публикации. Внутри сервиса встроен модуль генератора (build) — отдельного `site-gen` процесса нет. HTTP-эндпоинт `/health` для проверки.
+Микросервис сайтов Merfy. Слушает очередь `sites_queue`, предоставляет RPC для CRUD сайтов,
+доменов и публикации. Включает встроенный генератор статики (Astro) и интеграцию с Coolify для деплоя.
+
+## Архитектура
+
+```
+Sites Service (3114)
+├── SitesDomainService     — CRUD, freeze/unfreeze, publish
+├── CoolifyProvider        — HTTP клиент к Coolify API
+├── GeneratorService       — Генерация статики (Astro)
+├── S3StorageService       — MinIO/S3 хранилище
+├── BillingClient/Listener — Интеграция с биллингом
+└── HealthController       — Health checks
+```
+
+**Подробнее:** см. [SITES-ARCHITECTURE.md](../docs/SITES-ARCHITECTURE.md)
 
 ## Требования
+
 - Node.js 24+
 - pnpm 10
 - RabbitMQ
+- PostgreSQL
+- MinIO (опционально, для статики)
+- Coolify (для деплоя)
 
 ## Быстрый старт
 
@@ -14,11 +33,23 @@
 pnpm install
 ```
 
-2) Настроить окружение `.env.local`
-```dotenv
-NODE_ENV=development
-PORT=3114
+2) Скопировать `.env.example` в `.env` и настроить:
+```env
+# Database
+DATABASE_URL=postgresql://postgres:postgres123@localhost:5432/sites_service
+
+# RabbitMQ
 RABBITMQ_URL=amqp://rabbitmq:password@localhost:5672
+
+# Coolify (Production)
+COOLIFY_API_URL=http://176.57.218.121:8000
+COOLIFY_API_TOKEN=2|...
+COOLIFY_SERVER_UUID=oo0kocc8ks0wccgc88kocwss
+COOLIFY_PROJECT_UUID=cck0k8sscwos8sgs408kgok8
+
+# S3/MinIO
+S3_ENDPOINT=http://localhost:9000
+S3_BUCKET=merfy-sites
 ```
 
 3) Запустить сервис
@@ -26,7 +57,11 @@ RABBITMQ_URL=amqp://rabbitmq:password@localhost:5672
 pnpm run start:dev
 ```
 
-Примечание: хранение артефактов публикации на этапе разработки локально (без Minio). Для прод/интеграции используйте конфигурацию Minio/S3 из product‑сервиса.
+## Health Checks
+
+- `GET /health` — liveness probe
+- `GET /health/ready` — readiness probe (PostgreSQL, RabbitMQ, MinIO, Coolify)
+- `GET /sites/:siteId/health` — health check конкретного сайта
 
 ## Очереди и контракты
 - RMQ: `sites_queue` (единая очередь)

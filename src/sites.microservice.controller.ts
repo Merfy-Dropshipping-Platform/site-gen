@@ -340,4 +340,23 @@ export class SitesMicroserviceController {
       return { success: false, message: e?.message ?? "internal_error" };
     }
   }
+
+  /**
+   * Bulk health check — проверяет все сайты тенанта.
+   * Возвращает массив результатов для каждого сайта.
+   */
+  @MessagePattern("sites.health_check_all")
+  async healthCheckAll(@Payload() data: any) {
+    try {
+      const { tenantId } = data ?? {};
+      if (!tenantId) {
+        return { success: false, message: "tenantId required" };
+      }
+      const result = await this.service.healthCheckAll(tenantId);
+      return { success: true, ...result };
+    } catch (e: any) {
+      this.logger.error("health_check_all failed", e);
+      return { success: false, message: e?.message ?? "internal_error" };
+    }
+  }
 }

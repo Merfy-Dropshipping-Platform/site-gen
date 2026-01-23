@@ -326,4 +326,135 @@ export class S3StorageService {
     };
     return types[ext ?? ""] || "application/octet-stream";
   }
+
+  /**
+   * Проверка доступности MinIO/S3.
+   * Используется для health check сервиса.
+   */
+  async healthCheck(): Promise<{
+    status: "up" | "down";
+    latencyMs: number;
+    error?: string;
+  }> {
+    const start = Date.now();
+    if (!this.client || !this.bucketName) {
+      return {
+        status: "down",
+        latencyMs: Date.now() - start,
+        error: "S3 not configured",
+      };
+    }
+
+    try {
+      // Проверяем что bucket существует
+      const exists = await this.client.bucketExists(this.bucketName);
+      if (!exists) {
+        return {
+          status: "down",
+          latencyMs: Date.now() - start,
+          error: `Bucket ${this.bucketName} does not exist`,
+        };
+      }
+      return { status: "up", latencyMs: Date.now() - start };
+    } catch (e) {
+      return {
+        status: "down",
+        latencyMs: Date.now() - start,
+        error: e instanceof Error ? e.message : "unknown",
+      };
+    }
+  }
+
+  /**
+   * Проверить наличие файлов сайта в MinIO.
+   * Используется для health check конкретного сайта.
+   *
+   * @param sitePrefix - префикс сайта (например sites/abc123/)
+   * @returns информация о файлах сайта
+   */
+  async checkSiteFiles(sitePrefix: string): Promise<{
+    exists: boolean;
+    hasIndex: boolean;
+    fileCount: number;
+    totalSize: number;
+    files: string[];
+    error?: string;
+  }> {
+    if (!this.client || !this.bucketName) {
+      return {
+        exists: false,
+        hasIndex: false,
+        fileCount: 0,
+        totalSize: 0,
+        files: [],
+        error: "S3 not configured",
+      };
+    }
+
+    try {
+      const objectsStream = this.client.listObjectsV2(
+        this.bucketName,
+        sitePrefix,
+        true,
+      );
+
+      const files: string[] = [];
+      let totalSize = 0;
+      let hasIndex = false;
+
+      await new Promise<void>((resolve, reject) => {
+        objectsStream.on("data", (obj: Minio.BucketItem) => {
+          if (obj?.name) {
+            files.push(obj.name);
+            totalSize += obj.size || 0;
+            // Проверяем наличие index.html
+            if (obj.name.endsWith("index.html")) {
+              hasIndex = true;
+            }
+          }
+        });
+        objectsStream.on("end", () => resolve());
+        objectsStream.on("error", reject);
+      });
+
+      return {
+        exists: files.length > 0,
+        hasIndex,
+        fileCount: files.length,
+        totalSize,
+        files: files.slice(0, 20), // Возвращаем первые 20 файлов
+      };
+    } catch (e) {
+      return {
+        exists: false,
+        hasIndex: false,
+        fileCount: 0,
+        totalSize: 0,
+        files: [],
+        error: e instanceof Error ? e.message : "unknown",
+      };
+    }
+  }
+
+  /**
+   * Проверить существование конкретного файла в MinIO.
+   * Быстрая проверка для health check.
+   */
+  async fileExists(key: string): Promise<boolean> {
+    if (!this.client || !this.bucketName) return false;
+
+    try {
+      await this.client.statObject(this.bucketName, key);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Получить имя bucket.
+   */
+  getBucketName(): string | null {
+    return this.bucketName;
+  }
 }

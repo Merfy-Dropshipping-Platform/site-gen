@@ -1103,6 +1103,88 @@ export class SitesDomainService {
   }
 
   /**
+   * Bulk health check — проверяет все сайты тенанта.
+   * Возвращает сводку и детализацию по каждому сайту.
+   */
+  async healthCheckAll(tenantId: string): Promise<{
+    total: number;
+    healthy: number;
+    unhealthy: number;
+    sites: Array<{
+      siteId: string;
+      name: string;
+      status: string;
+      available: boolean;
+      publicUrl: string | null;
+      latencyMs?: number;
+      error?: string;
+    }>;
+  }> {
+    // Получаем все сайты тенанта
+    const sites = await this.db
+      .select({
+        id: schema.site.id,
+        name: schema.site.name,
+        status: schema.site.status,
+        publicUrl: schema.site.publicUrl,
+      })
+      .from(schema.site)
+      .where(eq(schema.site.tenantId, tenantId));
+
+    const results: Array<{
+      siteId: string;
+      name: string;
+      status: string;
+      available: boolean;
+      publicUrl: string | null;
+      latencyMs?: number;
+      error?: string;
+    }> = [];
+
+    let healthy = 0;
+    let unhealthy = 0;
+
+    for (const site of sites) {
+      // Только опубликованные сайты проверяем через HTTP
+      if (site.status === "published" && site.publicUrl) {
+        const check = await this.healthCheck(tenantId, site.id);
+        results.push({
+          siteId: site.id,
+          name: site.name,
+          status: site.status,
+          available: check.available,
+          publicUrl: site.publicUrl,
+          latencyMs: check.latencyMs,
+          error: check.error,
+        });
+        if (check.available) {
+          healthy++;
+        } else {
+          unhealthy++;
+        }
+      } else {
+        // Не опубликованные — считаем unavailable, но не ошибкой
+        results.push({
+          siteId: site.id,
+          name: site.name,
+          status: site.status,
+          available: false,
+          publicUrl: site.publicUrl,
+          error: site.status === "frozen" ? "frozen" : "not_published",
+        });
+        unhealthy++;
+      }
+    }
+
+    return {
+      total: sites.length,
+      healthy,
+      unhealthy,
+      sites: results,
+    };
+  }
+
+  /**
    * Очищает mock данные из кэша tenant_project и сбрасывает coolifyProjectUuid в сайтах.
    */
   async clearMockCache(): Promise<void> {

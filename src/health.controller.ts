@@ -7,7 +7,15 @@
  *
  * Используется оркестраторами (Coolify, Docker, Kubernetes) для healthcheck.
  */
-import { Controller, Get, Post, Param, Query, Inject, Logger } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Query,
+  Inject,
+  Logger,
+} from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
 import { firstValueFrom, timeout, catchError, of } from "rxjs";
 import { sql } from "drizzle-orm";

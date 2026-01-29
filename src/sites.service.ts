@@ -865,25 +865,25 @@ export class SitesDomainService {
       });
     this.events.emit("sites.tenant.unfrozen", { tenantId, count: res.length });
 
-    // Best-effort выключить maintenance у провайдера для всех сайтов (параллельно)
+    // Best-effort перезапустить контейнеры у провайдера для всех сайтов (параллельно)
+    // Используем restart вместо start, т.к. контейнер может быть в состоянии exited:unhealthy
     const sitesWithCoolify = res.filter((row) => row.coolifyAppUuid);
     if (sitesWithCoolify.length > 0) {
       const results = await Promise.allSettled(
         sitesWithCoolify.map((row) =>
-          this.callCoolify("coolify.toggle_maintenance", {
+          this.callCoolify("coolify.restart_application", {
             appUuid: row.coolifyAppUuid,
-            enabled: false,
           }),
         ),
       );
       const failed = results.filter((r) => r.status === "rejected").length;
       if (failed > 0) {
         this.logger.warn(
-          `unfreezeTenant: ${failed}/${sitesWithCoolify.length} Coolify maintenance toggles failed`,
+          `unfreezeTenant: ${failed}/${sitesWithCoolify.length} Coolify restarts failed`,
         );
       } else {
         this.logger.log(
-          `unfreezeTenant: disabled maintenance for ${sitesWithCoolify.length} sites`,
+          `unfreezeTenant: restarted ${sitesWithCoolify.length} site containers`,
         );
       }
     }

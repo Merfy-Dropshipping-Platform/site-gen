@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
@@ -12,7 +12,7 @@ import { ClientProxy } from "@nestjs/microservices";
 import { SitesDomainService } from "../sites.service";
 
 @Injectable()
-export class BillingSyncScheduler {
+export class BillingSyncScheduler implements OnModuleInit {
   private readonly logger = new Logger(BillingSyncScheduler.name);
 
   constructor(
@@ -21,6 +21,19 @@ export class BillingSyncScheduler {
     @Inject(USER_RMQ_SERVICE) private readonly userClient: ClientProxy,
     private readonly sites: SitesDomainService,
   ) {}
+
+  /**
+   * Запускает синхронизацию при старте сервиса для быстрого восстановления.
+   */
+  async onModuleInit() {
+    // Отложенный запуск чтобы дать сервисам время на инициализацию
+    setTimeout(() => {
+      this.logger.log("Running initial billing sync on startup...");
+      this.reconcileBilling().catch((e) => {
+        this.logger.warn(`Initial billing sync failed: ${e instanceof Error ? e.message : e}`);
+      });
+    }, 10000); // 10 секунд после старта
+  }
 
   private rpc<T = any>(
     client: ClientProxy,
@@ -36,7 +49,11 @@ export class BillingSyncScheduler {
     });
   }
 
-  @Cron(CronExpression.EVERY_HOUR)
+  /**
+   * Синхронизация billing status каждые 5 минут для быстрого восстановления.
+   * Если event-based синхронизация не сработала, cron подхватит изменения.
+   */
+  @Cron(CronExpression.EVERY_5_MINUTES)
   async reconcileBilling() {
     if (
       (process.env.BILLING_SYNC_CRON_ENABLED ?? "true").toLowerCase() ===

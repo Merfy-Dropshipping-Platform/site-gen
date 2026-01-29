@@ -38,6 +38,7 @@ import { ThemesMicroserviceController } from "./themes.microservice.controller";
 import { EventsModule } from "./events/events.module";
 import { BillingListenerController } from "./billing/billing.listener";
 import { BillingClient } from "./billing/billing.client";
+import { BillingEventsConsumer } from "./billing/billing-events.consumer";
 import { UserListenerController } from "./user/user.listener";
 import { CoolifyProvider } from "./deployments/coolify.provider";
 import { DeploymentsService } from "./deployments/deployments.service";
@@ -89,6 +90,7 @@ import { BulkModule } from "./admin/bulk/bulk.module";
     BillingSyncScheduler,
     SiteProvisioningScheduler,
     BillingClient,
+    BillingEventsConsumer,
   ],
 })
 export class AppModule {}

@@ -862,6 +862,7 @@ export class SitesDomainService {
       .returning({
         id: schema.site.id,
         coolifyAppUuid: schema.site.coolifyAppUuid,
+        publicUrl: schema.site.publicUrl,
       });
     this.events.emit("sites.tenant.unfrozen", { tenantId, count: res.length });
 
@@ -884,6 +885,51 @@ export class SitesDomainService {
       } else {
         this.logger.log(
           `unfreezeTenant: restarted ${sitesWithCoolify.length} site containers`,
+        );
+      }
+    }
+
+    // Best-effort: проверить наличие контента и сгенерировать если отсутствует
+    if (res.length > 0 && (await this.storage.isEnabled())) {
+      const buildPromises = res.map(async (site) => {
+        try {
+          // Определяем S3 prefix для сайта
+          const prefix = site.publicUrl
+            ? this.storage.getSitePrefixBySubdomain(site.publicUrl)
+            : `sites/${tenantId}/${site.id}/`;
+
+          // Проверяем наличие index.html
+          const check = await this.storage.checkSiteFiles(prefix);
+          if (!check.hasIndex) {
+            this.logger.log(
+              `unfreezeTenant: site ${site.id} has no content, triggering build...`,
+            );
+            const buildResult = await this.generator.build({
+              tenantId,
+              siteId: site.id,
+              mode: "production",
+            });
+            this.logger.log(
+              `unfreezeTenant: built site ${site.id}, artifact: ${buildResult.artifactUrl}`,
+            );
+            return { siteId: site.id, built: true };
+          }
+          return { siteId: site.id, built: false, reason: "content_exists" };
+        } catch (e) {
+          this.logger.warn(
+            `unfreezeTenant: failed to check/build site ${site.id}: ${e instanceof Error ? e.message : e}`,
+          );
+          return { siteId: site.id, built: false, error: true };
+        }
+      });
+
+      const buildResults = await Promise.allSettled(buildPromises);
+      const builtCount = buildResults.filter(
+        (r) => r.status === "fulfilled" && r.value.built,
+      ).length;
+      if (builtCount > 0) {
+        this.logger.log(
+          `unfreezeTenant: auto-built ${builtCount}/${res.length} sites without content`,
         );
       }
     }

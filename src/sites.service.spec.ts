@@ -37,6 +37,38 @@ class MockStorage {
   async isEnabled() {
     return false;
   }
+  getSitePrefixBySubdomain(_subdomain: string) {
+    return "sites/test/";
+  }
+  async checkSiteFiles(_prefix: string) {
+    return { exists: true, hasIndex: true, fileCount: 1, totalSize: 100, files: [] };
+  }
+}
+
+class MockCoolifyClient {
+  send(_pattern: string, _data: any) {
+    return {
+      pipe: () => ({
+        subscribe: (observer: any) => {
+          observer.next({ success: true });
+          observer.complete?.();
+          return { unsubscribe: () => {} };
+        },
+      }),
+    };
+  }
+}
+
+class MockDomainClient {
+  async verifyDomain(_domain: string) {
+    return { verified: true };
+  }
+}
+
+class MockBillingClient {
+  async checkQuota(_tenantId: string) {
+    return { allowed: true };
+  }
 }
 
 type TableAny = any;
@@ -83,11 +115,13 @@ describe("SitesDomainService (unit)", () => {
     const events = new MockEvents();
     const service = new SitesDomainService(
       db,
+      new MockCoolifyClient() as any,
       new MockGenerator() as any,
       events as any,
       new MockDeployments() as any,
-      new MockCoolify() as any,
       new MockStorage() as any,
+      new MockDomainClient() as any,
+      new MockBillingClient() as any,
     );
 
     // Act
@@ -127,11 +161,13 @@ describe("SitesDomainService (unit)", () => {
     };
     const service = new SitesDomainService(
       db,
+      new MockCoolifyClient() as any,
       new MockGenerator() as any,
       new MockEvents() as any,
       new MockDeployments() as any,
-      new MockCoolify() as any,
       new MockStorage() as any,
+      new MockDomainClient() as any,
+      new MockBillingClient() as any,
     );
     await expect(
       service.attachDomain({
@@ -171,11 +207,13 @@ describe("SitesDomainService (unit)", () => {
     };
     const service = new SitesDomainService(
       db,
+      new MockCoolifyClient() as any,
       new MockGenerator() as any,
       new MockEvents() as any,
       new MockDeployments() as any,
-      new MockCoolify() as any,
       new MockStorage() as any,
+      new MockDomainClient() as any,
+      new MockBillingClient() as any,
     );
     await expect(
       service.verifyDomain({

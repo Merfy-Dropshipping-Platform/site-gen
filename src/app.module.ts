@@ -47,6 +47,7 @@ import { ScheduleModule } from "@nestjs/schedule";
 import { RetentionScheduler } from "./scheduler/retention.scheduler";
 import { BillingSyncScheduler } from "./scheduler/billing-sync.scheduler";
 import { SiteProvisioningScheduler } from "./scheduler/site-provisioning.scheduler";
+import { ContentSyncScheduler } from "./scheduler/content-sync.scheduler";
 import { SitesEventsListenerController } from "./events/events.listener";
 import { DomainModule } from "./domain";
 import { BulkModule } from "./admin/bulk/bulk.module";
@@ -89,6 +90,7 @@ import { BulkModule } from "./admin/bulk/bulk.module";
     RetentionScheduler,
     BillingSyncScheduler,
     SiteProvisioningScheduler,
+    ContentSyncScheduler,
     BillingClient,
     BillingEventsConsumer,
   ],

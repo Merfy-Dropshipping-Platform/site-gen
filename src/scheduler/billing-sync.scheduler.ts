@@ -10,6 +10,8 @@ import * as schema from "../db/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { ClientProxy } from "@nestjs/microservices";
 import { SitesDomainService } from "../sites.service";
+import { S3StorageService } from "../storage/s3.service";
+import { SiteGeneratorService } from "../generator/generator.service";
 
 @Injectable()
 export class BillingSyncScheduler implements OnModuleInit {
@@ -20,6 +22,8 @@ export class BillingSyncScheduler implements OnModuleInit {
     @Inject(BILLING_RMQ_SERVICE) private readonly billingClient: ClientProxy,
     @Inject(USER_RMQ_SERVICE) private readonly userClient: ClientProxy,
     private readonly sites: SitesDomainService,
+    private readonly storage: S3StorageService,
+    private readonly generator: SiteGeneratorService,
   ) {}
 
   /**
@@ -116,8 +120,73 @@ export class BillingSyncScheduler implements OnModuleInit {
       this.logger.warn(
         `Billing sync cron failed: ${e instanceof Error ? e.message : e}`,
       );
-    } finally {
-      this.logger.log("Billing sync cron: done");
+    }
+
+    // После синхронизации freeze/unfreeze — проверяем статику для активных сайтов
+    await this.ensureStaticContent();
+
+    this.logger.log("Billing sync cron: done");
+  }
+
+  /**
+   * Проверить наличие статики для published сайтов и сгенерировать если нет.
+   * Гарантирует что сайты с активной подпиской имеют рабочую статику.
+   */
+  private async ensureStaticContent() {
+    try {
+      // Получаем все published сайты с publicUrl
+      const publishedSites = await this.db
+        .select({
+          id: schema.site.id,
+          tenantId: schema.site.tenantId,
+          publicUrl: schema.site.publicUrl,
+        })
+        .from(schema.site)
+        .where(
+          and(
+            eq(schema.site.status, "published"),
+            sql`${schema.site.deletedAt} IS NULL`,
+            sql`${schema.site.publicUrl} IS NOT NULL`,
+          ),
+        );
+
+      if (publishedSites.length === 0) return;
+
+      this.logger.log(
+        `Checking static content for ${publishedSites.length} published sites`,
+      );
+
+      for (const site of publishedSites) {
+        try {
+          if (!site.publicUrl) continue;
+
+          // Проверяем наличие index.html в S3
+          const prefix = this.storage.getSitePrefixBySubdomain(site.publicUrl);
+          const check = await this.storage.checkSiteFiles(prefix);
+
+          if (!check.hasIndex) {
+            this.logger.log(
+              `Site ${site.id} has no static content, triggering build...`,
+            );
+
+            await this.generator.build({
+              tenantId: site.tenantId,
+              siteId: site.id,
+              mode: "production",
+            });
+
+            this.logger.log(`Built static content for site ${site.id}`);
+          }
+        } catch (e) {
+          this.logger.warn(
+            `Failed to check/build site ${site.id}: ${e instanceof Error ? e.message : e}`,
+          );
+        }
+      }
+    } catch (e) {
+      this.logger.warn(
+        `ensureStaticContent failed: ${e instanceof Error ? e.message : e}`,
+      );
     }
   }
 }

@@ -26,6 +26,7 @@ RUN npm install -g pnpm@10.14.0
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml ./
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/drizzle ./drizzle
+COPY --from=builder /app/templates ./templates
 COPY --from=builder /app/node_modules ./node_modules
 
 EXPOSE 3114

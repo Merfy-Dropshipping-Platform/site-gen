@@ -866,21 +866,41 @@ export class SitesDomainService {
       });
     this.events.emit("sites.tenant.unfrozen", { tenantId, count: res.length });
 
-    // Best-effort перезапустить контейнеры у провайдера для всех сайтов (параллельно)
-    // Используем restart вместо start, т.к. контейнер может быть в состоянии exited:unhealthy
+    // Best-effort: отключить maintenance mode и перезапустить контейнеры
     const sitesWithCoolify = res.filter((row) => row.coolifyAppUuid);
     if (sitesWithCoolify.length > 0) {
-      const results = await Promise.allSettled(
+      // 1. Сначала отключаем maintenance mode (включённый при заморозке)
+      const maintenanceResults = await Promise.allSettled(
+        sitesWithCoolify.map((row) =>
+          this.callCoolify("coolify.toggle_maintenance", {
+            appUuid: row.coolifyAppUuid,
+            enabled: false,
+          }),
+        ),
+      );
+      const maintenanceFailed = maintenanceResults.filter((r) => r.status === "rejected").length;
+      if (maintenanceFailed > 0) {
+        this.logger.warn(
+          `unfreezeTenant: ${maintenanceFailed}/${sitesWithCoolify.length} Coolify maintenance toggles failed`,
+        );
+      } else {
+        this.logger.log(
+          `unfreezeTenant: disabled maintenance for ${sitesWithCoolify.length} sites`,
+        );
+      }
+
+      // 2. Перезапускаем контейнеры (на случай если они были остановлены или в плохом состоянии)
+      const restartResults = await Promise.allSettled(
         sitesWithCoolify.map((row) =>
           this.callCoolify("coolify.restart_application", {
             appUuid: row.coolifyAppUuid,
           }),
         ),
       );
-      const failed = results.filter((r) => r.status === "rejected").length;
-      if (failed > 0) {
+      const restartFailed = restartResults.filter((r) => r.status === "rejected").length;
+      if (restartFailed > 0) {
         this.logger.warn(
-          `unfreezeTenant: ${failed}/${sitesWithCoolify.length} Coolify restarts failed`,
+          `unfreezeTenant: ${restartFailed}/${sitesWithCoolify.length} Coolify restarts failed`,
         );
       } else {
         this.logger.log(
@@ -1429,5 +1449,208 @@ export class SitesDomainService {
         isDeleted: Boolean(s.deletedAt),
       })),
     };
+  }
+
+  // ==================== Site Products (локальные товары) ====================
+
+  /**
+   * Получить все товары сайта.
+   */
+  async listSiteProducts(siteId: string, tenantId: string) {
+    // Проверяем что сайт принадлежит тенанту
+    const [site] = await this.db
+      .select({ id: schema.site.id })
+      .from(schema.site)
+      .where(and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)))
+      .limit(1);
+
+    if (!site) {
+      throw new Error("site_not_found");
+    }
+
+    const products = await this.db
+      .select()
+      .from(schema.siteProduct)
+      .where(and(eq(schema.siteProduct.siteId, siteId), eq(schema.siteProduct.isActive, true)))
+      .orderBy(schema.siteProduct.sortOrder);
+
+    return products;
+  }
+
+  /**
+   * Получить товары для генерации (без проверки tenantId — внутренний метод).
+   */
+  async getProductsForBuild(siteId: string) {
+    const products = await this.db
+      .select()
+      .from(schema.siteProduct)
+      .where(and(eq(schema.siteProduct.siteId, siteId), eq(schema.siteProduct.isActive, true)))
+      .orderBy(schema.siteProduct.sortOrder);
+
+    return products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      description: p.description ?? undefined,
+      price: p.price / 100, // копейки → рубли для фронта
+      compareAtPrice: p.compareAtPrice ? p.compareAtPrice / 100 : undefined,
+      images: (p.images as string[]) ?? [],
+      slug: p.slug ?? p.id,
+    }));
+  }
+
+  /**
+   * Создать товар.
+   */
+  async createSiteProduct(
+    siteId: string,
+    tenantId: string,
+    data: {
+      name: string;
+      description?: string;
+      price?: number;
+      compareAtPrice?: number;
+      images?: string[];
+      slug?: string;
+    },
+  ) {
+    // Проверяем что сайт принадлежит тенанту
+    const [site] = await this.db
+      .select({ id: schema.site.id })
+      .from(schema.site)
+      .where(and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)))
+      .limit(1);
+
+    if (!site) {
+      throw new Error("site_not_found");
+    }
+
+    const now = new Date();
+    const id = randomUUID();
+    const slug = data.slug || slugify(data.name) || id;
+
+    // Получить следующий sortOrder
+    const [maxSort] = await this.db
+      .select({ max: sql<number>`COALESCE(MAX(${schema.siteProduct.sortOrder}), 0)` })
+      .from(schema.siteProduct)
+      .where(eq(schema.siteProduct.siteId, siteId));
+
+    const [product] = await this.db
+      .insert(schema.siteProduct)
+      .values({
+        id,
+        siteId,
+        name: data.name,
+        description: data.description,
+        price: data.price ?? 0,
+        compareAtPrice: data.compareAtPrice,
+        images: data.images ?? [],
+        slug,
+        sortOrder: (maxSort?.max ?? 0) + 1,
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .returning();
+
+    this.logger.log(`Created product ${id} for site ${siteId}`);
+    return product;
+  }
+
+  /**
+   * Обновить товар.
+   */
+  async updateSiteProduct(
+    productId: string,
+    siteId: string,
+    tenantId: string,
+    updates: Partial<{
+      name: string;
+      description: string;
+      price: number;
+      compareAtPrice: number;
+      images: string[];
+      slug: string;
+      sortOrder: number;
+      isActive: boolean;
+    }>,
+  ) {
+    // Проверяем что сайт принадлежит тенанту
+    const [site] = await this.db
+      .select({ id: schema.site.id })
+      .from(schema.site)
+      .where(and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)))
+      .limit(1);
+
+    if (!site) {
+      throw new Error("site_not_found");
+    }
+
+    const [product] = await this.db
+      .update(schema.siteProduct)
+      .set({
+        ...updates,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(schema.siteProduct.id, productId), eq(schema.siteProduct.siteId, siteId)))
+      .returning();
+
+    if (!product) {
+      throw new Error("product_not_found");
+    }
+
+    this.logger.log(`Updated product ${productId}`);
+    return product;
+  }
+
+  /**
+   * Удалить товар.
+   */
+  async deleteSiteProduct(productId: string, siteId: string, tenantId: string) {
+    // Проверяем что сайт принадлежит тенанту
+    const [site] = await this.db
+      .select({ id: schema.site.id })
+      .from(schema.site)
+      .where(and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)))
+      .limit(1);
+
+    if (!site) {
+      throw new Error("site_not_found");
+    }
+
+    const [deleted] = await this.db
+      .delete(schema.siteProduct)
+      .where(and(eq(schema.siteProduct.id, productId), eq(schema.siteProduct.siteId, siteId)))
+      .returning({ id: schema.siteProduct.id });
+
+    if (!deleted) {
+      throw new Error("product_not_found");
+    }
+
+    this.logger.log(`Deleted product ${productId}`);
+    return true;
+  }
+
+  /**
+   * Получить один товар.
+   */
+  async getSiteProduct(productId: string, siteId: string, tenantId: string) {
+    // Проверяем что сайт принадлежит тенанту
+    const [site] = await this.db
+      .select({ id: schema.site.id })
+      .from(schema.site)
+      .where(and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)))
+      .limit(1);
+
+    if (!site) {
+      throw new Error("site_not_found");
+    }
+
+    const [product] = await this.db
+      .select()
+      .from(schema.siteProduct)
+      .where(and(eq(schema.siteProduct.id, productId), eq(schema.siteProduct.siteId, siteId)))
+      .limit(1);
+
+    return product ?? null;
   }
 }

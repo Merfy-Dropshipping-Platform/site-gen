@@ -359,4 +359,106 @@ export class SitesMicroserviceController {
       return { success: false, message: e?.message ?? "internal_error" };
     }
   }
+
+  // ==================== Site Products (локальные товары) ====================
+
+  /**
+   * Получить список товаров сайта.
+   */
+  @MessagePattern("sites.products.list")
+  async listProducts(@Payload() data: any) {
+    try {
+      const { tenantId, siteId } = data ?? {};
+      if (!tenantId || !siteId) {
+        return { success: false, message: "tenantId and siteId required" };
+      }
+      const products = await this.service.listSiteProducts(siteId, tenantId);
+      return { success: true, data: products };
+    } catch (e: any) {
+      this.logger.error("products.list failed", e);
+      return { success: false, message: e?.message ?? "internal_error" };
+    }
+  }
+
+  /**
+   * Создать товар на сайте.
+   */
+  @MessagePattern("sites.products.create")
+  async createProduct(@Payload() data: any) {
+    try {
+      const { tenantId, siteId, name, description, price, compareAtPrice, images, slug } = data ?? {};
+      if (!tenantId || !siteId || !name) {
+        return { success: false, message: "tenantId, siteId, and name required" };
+      }
+      const product = await this.service.createSiteProduct(siteId, tenantId, {
+        name,
+        description,
+        price: price ?? 0,
+        compareAtPrice,
+        images: images ?? [],
+        slug,
+      });
+      return { success: true, data: product };
+    } catch (e: any) {
+      this.logger.error("products.create failed", e);
+      return { success: false, message: e?.message ?? "internal_error" };
+    }
+  }
+
+  /**
+   * Обновить товар.
+   */
+  @MessagePattern("sites.products.update")
+  async updateProduct(@Payload() data: any) {
+    try {
+      const { tenantId, siteId, productId, ...updates } = data ?? {};
+      if (!tenantId || !siteId || !productId) {
+        return { success: false, message: "tenantId, siteId, and productId required" };
+      }
+      const product = await this.service.updateSiteProduct(productId, siteId, tenantId, updates);
+      return { success: true, data: product };
+    } catch (e: any) {
+      this.logger.error("products.update failed", e);
+      return { success: false, message: e?.message ?? "internal_error" };
+    }
+  }
+
+  /**
+   * Удалить товар.
+   */
+  @MessagePattern("sites.products.delete")
+  async deleteProduct(@Payload() data: any) {
+    try {
+      const { tenantId, siteId, productId } = data ?? {};
+      if (!tenantId || !siteId || !productId) {
+        return { success: false, message: "tenantId, siteId, and productId required" };
+      }
+      await this.service.deleteSiteProduct(productId, siteId, tenantId);
+      return { success: true };
+    } catch (e: any) {
+      this.logger.error("products.delete failed", e);
+      return { success: false, message: e?.message ?? "internal_error" };
+    }
+  }
+
+  /**
+   * Получить один товар.
+   */
+  @MessagePattern("sites.products.get")
+  async getProduct(@Payload() data: any) {
+    try {
+      const { tenantId, siteId, productId } = data ?? {};
+      if (!tenantId || !siteId || !productId) {
+        return { success: false, message: "tenantId, siteId, and productId required" };
+      }
+      const product = await this.service.getSiteProduct(productId, siteId, tenantId);
+      if (!product) {
+        return { success: false, message: "product_not_found" };
+      }
+      return { success: true, data: product };
+    } catch (e: any) {
+      this.logger.error("products.get failed", e);
+      return { success: false, message: e?.message ?? "internal_error" };
+    }
+  }
 }

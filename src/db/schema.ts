@@ -155,6 +155,30 @@ export const siteDeployment = pgTable("site_deployment", {
 });
 
 /**
+ * Локальные товары сайта.
+ * Используются для генерации статических страниц без интеграции с Product Service.
+ * Альтернатива полноценному каталогу — простые товары для одностраничников.
+ */
+export const siteProduct = pgTable("site_product", {
+  id: text("id").primaryKey(),
+  siteId: text("site_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  price: integer("price").notNull().default(0), // в копейках
+  compareAtPrice: integer("compare_at_price"), // старая цена (зачёркнутая)
+  images: jsonb("images").$type<string[]>().default([]),
+  slug: text("slug"),
+  sortOrder: integer("sort_order").default(0),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+  updatedAt: timestamp("updated_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
+
+/**
  * Маппинг тенантов на Coolify Projects.
  * Каждый тенант = отдельный проект в Coolify.
  * Используется для изоляции сайтов разных компаний.

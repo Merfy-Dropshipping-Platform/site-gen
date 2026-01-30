@@ -44,10 +44,10 @@ export class SiteGeneratorService {
   ) {}
 
   /**
-   * Получить товары для сайта по tenantId (shopId).
-   * Возвращает пустой массив при ошибке/таймауте.
+   * Получить товары для сайта из Product Service через RabbitMQ.
    */
   private async fetchProducts(
+    siteId: string,
     tenantId: string,
     limit = 20,
   ): Promise<ProductData[]> {
@@ -186,10 +186,10 @@ export class SiteGeneratorService {
     const astroEnabled =
       (process.env.ASTRO_BUILD_ENABLED ?? "true").toLowerCase() !== "false";
 
-    // Получаем товары для сайта
-    const products = await this.fetchProducts(params.tenantId);
+    // Получаем товары из Product Service через RabbitMQ
+    const products = await this.fetchProducts(params.siteId, params.tenantId);
     this.logger.log(
-      `Fetched ${products.length} products for tenant ${params.tenantId}`,
+      `Fetched ${products.length} products for site ${params.siteId}`,
     );
 
     // Путь к dist/ директории после сборки Astro

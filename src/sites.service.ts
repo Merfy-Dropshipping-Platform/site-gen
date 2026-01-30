@@ -954,7 +954,77 @@ export class SitesDomainService {
       }
     }
 
+    // Автопубликация draft сайтов при активной подписке
+    await this.autoPublishDraftSites(tenantId);
+
     return { affected: res.length };
+  }
+
+  /**
+   * Автоматически публикует все draft сайты тенанта.
+   * Вызывается при разморозке (активации подписки).
+   */
+  async autoPublishDraftSites(tenantId: string) {
+    try {
+      // Находим все draft сайты тенанта
+      const draftSites = await this.db
+        .select({
+          id: schema.site.id,
+          name: schema.site.name,
+          publicUrl: schema.site.publicUrl,
+        })
+        .from(schema.site)
+        .where(
+          and(
+            eq(schema.site.tenantId, tenantId),
+            eq(schema.site.status, "draft"),
+            sql`${schema.site.deletedAt} IS NULL`,
+          ),
+        );
+
+      if (draftSites.length === 0) {
+        this.logger.debug(`autoPublishDraftSites: no draft sites for tenant ${tenantId}`);
+        return { published: 0 };
+      }
+
+      this.logger.log(
+        `autoPublishDraftSites: publishing ${draftSites.length} draft sites for tenant ${tenantId}`,
+      );
+
+      const publishResults = await Promise.allSettled(
+        draftSites.map(async (site) => {
+          try {
+            await this.publish({
+              tenantId,
+              siteId: site.id,
+              mode: "production",
+            });
+            this.logger.log(`autoPublishDraftSites: published site ${site.id} (${site.name})`);
+            return { siteId: site.id, success: true };
+          } catch (e) {
+            this.logger.warn(
+              `autoPublishDraftSites: failed to publish site ${site.id}: ${e instanceof Error ? e.message : e}`,
+            );
+            return { siteId: site.id, success: false };
+          }
+        }),
+      );
+
+      const successCount = publishResults.filter(
+        (r) => r.status === "fulfilled" && r.value.success,
+      ).length;
+
+      this.logger.log(
+        `autoPublishDraftSites: published ${successCount}/${draftSites.length} sites for tenant ${tenantId}`,
+      );
+
+      return { published: successCount, total: draftSites.length };
+    } catch (e) {
+      this.logger.error(
+        `autoPublishDraftSites error: ${e instanceof Error ? e.message : e}`,
+      );
+      return { published: 0, error: true };
+    }
   }
 
   /**

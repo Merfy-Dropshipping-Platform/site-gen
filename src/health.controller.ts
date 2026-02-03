@@ -402,4 +402,33 @@ export class HealthController {
   async sitesDebug() {
     return this.sitesService.debugSitesState();
   }
+
+  /**
+   * Массовая регенерация всех сайтов с указанным шаблоном
+   * POST /regenerate-all?template=rose
+   *
+   * Регенерирует все активные сайты с принудительным использованием
+   * указанного шаблона (по умолчанию 'rose').
+   */
+  @Post("regenerate-all")
+  async regenerateAll(@Query("template") template?: string) {
+    const templateId = template || "rose";
+    this.logger.log(`Starting bulk regeneration with template: ${templateId}`);
+
+    try {
+      const result = await this.sitesService.regenerateAllWithTemplate(
+        templateId,
+      );
+      return {
+        success: true,
+        ...result,
+      };
+    } catch (error) {
+      this.logger.error(`Bulk regeneration failed: ${error}`);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "unknown",
+      };
+    }
+  }
 }

@@ -92,6 +92,7 @@ export class SiteGeneratorService {
     tenantId: string;
     siteId: string;
     mode?: "draft" | "production";
+    templateOverride?: string; // Force specific template (e.g., 'rose')
   }) {
     // Подтянуть текущую тему/ревизию и собрать артефакт с единым именем <buildId>.zip
     let revisionId: string | null = null;
@@ -214,7 +215,7 @@ export class SiteGeneratorService {
               ...(r[0]?.data ?? {}),
               meta: r[0]?.meta ?? {},
             }))) as any,
-          theme: siteRow?.templateId ?? "default",
+          theme: params.templateOverride ?? siteRow?.templateId ?? "default",
           products,
           tenantId: params.tenantId, // shopId для checkout
         });

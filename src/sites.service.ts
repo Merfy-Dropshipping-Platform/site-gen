@@ -1723,4 +1723,87 @@ export class SitesDomainService {
 
     return product ?? null;
   }
+
+  /**
+   * Регенерировать все активные сайты с указанным шаблоном.
+   * Используется для массового обновления шаблона всех сайтов.
+   */
+  async regenerateAllWithTemplate(templateId: string) {
+    this.logger.log(`Starting bulk regeneration with template: ${templateId}`);
+
+    // Получаем все активные сайты
+    const sites = await this.db
+      .select({
+        id: schema.site.id,
+        tenantId: schema.site.tenantId,
+        name: schema.site.name,
+        publicUrl: schema.site.publicUrl,
+      })
+      .from(schema.site)
+      .where(sql`${schema.site.deletedAt} IS NULL`);
+
+    this.logger.log(`Found ${sites.length} sites to regenerate`);
+
+    const results: {
+      siteId: string;
+      name: string;
+      success: boolean;
+      error?: string;
+    }[] = [];
+
+    for (const site of sites) {
+      try {
+        this.logger.log(`Regenerating site ${site.id} (${site.name})`);
+
+        // Вызываем генератор с принудительным шаблоном
+        await this.generator.build({
+          tenantId: site.tenantId,
+          siteId: site.id,
+          mode: "production",
+          templateOverride: templateId,
+        });
+
+        // Обновляем статус
+        await this.db
+          .update(schema.site)
+          .set({
+            status: "published",
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.site.id, site.id));
+
+        results.push({
+          siteId: site.id,
+          name: site.name,
+          success: true,
+        });
+
+        this.logger.log(`Successfully regenerated site ${site.id}`);
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        this.logger.error(`Failed to regenerate site ${site.id}: ${errorMsg}`);
+        results.push({
+          siteId: site.id,
+          name: site.name,
+          success: false,
+          error: errorMsg,
+        });
+      }
+    }
+
+    const successful = results.filter((r) => r.success).length;
+    const failed = results.filter((r) => !r.success).length;
+
+    this.logger.log(
+      `Bulk regeneration complete: ${successful} success, ${failed} failed`,
+    );
+
+    return {
+      template: templateId,
+      total: sites.length,
+      successful,
+      failed,
+      results,
+    };
+  }
 }

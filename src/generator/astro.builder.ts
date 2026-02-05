@@ -144,6 +144,8 @@ const style = variant === 'secondary' ? 'background:#ddd;color:#222' : 'backgrou
 
 function productGridAstro() {
   return `---
+import data from '../data/data.json';
+
 interface Product {
   id: string;
   name: string;
@@ -160,6 +162,8 @@ interface Props {
 }
 
 const { products = [], title = 'Товары', columns = 3 } = Astro.props;
+const shopId = data?.meta?.shopId ?? '';
+const apiUrl = data?.meta?.apiUrl ?? 'https://gateway.merfy.ru';
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('ru-RU', {
@@ -199,15 +203,149 @@ function formatPrice(price: number): string {
               <p class="product-description">{product.description}</p>
             )}
             <div class="product-price">{formatPrice(product.price)}</div>
-            <a href={\`/product/\${product.slug ?? product.id}\`} class="product-link">
-              Подробнее
-            </a>
+            <button
+              class="buy-button"
+              data-product-id={product.id}
+              data-product-name={product.name}
+              data-product-price={product.price}
+            >
+              Купить
+            </button>
           </div>
         </article>
       ))}
     </div>
   )}
 </section>
+
+<!-- Модальное окно для ввода email -->
+<div id="checkout-modal" class="modal hidden">
+  <div class="modal-backdrop"></div>
+  <div class="modal-content">
+    <h3>Оформление заказа</h3>
+    <p id="modal-product-name"></p>
+    <p id="modal-product-price" style="font-weight:bold;font-size:1.25rem;color:#222;margin-bottom:16px"></p>
+    <form id="checkout-form">
+      <input type="email" id="customer-email" placeholder="Ваш email" required />
+      <input type="tel" id="customer-phone" placeholder="Телефон (необязательно)" />
+      <div class="modal-buttons">
+        <button type="button" class="cancel-btn" id="modal-cancel">Отмена</button>
+        <button type="submit" class="submit-btn" id="modal-submit">Оплатить</button>
+      </div>
+    </form>
+    <div id="checkout-loading" class="hidden">
+      <div class="spinner"></div>
+      <p>Создаём заказ...</p>
+    </div>
+    <div id="checkout-error" class="hidden"></div>
+  </div>
+</div>
+
+<script define:vars={{ shopId, apiUrl }}>
+  // Quick Checkout Flow
+  const modal = document.getElementById('checkout-modal');
+  const form = document.getElementById('checkout-form');
+  const loading = document.getElementById('checkout-loading');
+  const errorDiv = document.getElementById('checkout-error');
+  let currentProduct = null;
+
+  // Открыть модалку при клике на "Купить"
+  document.querySelectorAll('.buy-button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentProduct = {
+        id: btn.dataset.productId,
+        name: btn.dataset.productName,
+        price: Number(btn.dataset.productPrice)
+      };
+      document.getElementById('modal-product-name').textContent = currentProduct.name;
+      document.getElementById('modal-product-price').textContent =
+        new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 })
+          .format(currentProduct.price);
+      modal.classList.remove('hidden');
+      form.classList.remove('hidden');
+      loading.classList.add('hidden');
+      errorDiv.classList.add('hidden');
+    });
+  });
+
+  // Закрыть модалку
+  document.getElementById('modal-cancel').addEventListener('click', () => {
+    modal.classList.add('hidden');
+  });
+  document.querySelector('.modal-backdrop').addEventListener('click', () => {
+    modal.classList.add('hidden');
+  });
+
+  // Отправка формы - Quick Checkout
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const email = document.getElementById('customer-email').value;
+    const phone = document.getElementById('customer-phone').value;
+
+    form.classList.add('hidden');
+    loading.classList.remove('hidden');
+    errorDiv.classList.add('hidden');
+
+    try {
+      // 1. Создать корзину
+      const cartRes = await fetch(apiUrl + '/orders/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shopId: shopId })
+      });
+      const cartData = await cartRes.json();
+      if (!cartData.success) throw new Error(cartData.message || 'Не удалось создать корзину');
+      const cartId = cartData.data.id;
+
+      // 2. Добавить товар
+      const addRes = await fetch(apiUrl + '/orders/cart/' + cartId + '/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: currentProduct.id, quantity: 1 })
+      });
+      const addData = await addRes.json();
+      if (!addData.success) throw new Error(addData.message || 'Не удалось добавить товар');
+
+      // 3. Установить данные покупателя
+      const customerRes = await fetch(apiUrl + '/orders/cart/' + cartId + '/customer', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, phone: phone || undefined })
+      });
+      const customerData = await customerRes.json();
+      if (!customerData.success) throw new Error(customerData.message || 'Не удалось сохранить данные');
+
+      // 4. Checkout
+      const checkoutRes = await fetch(apiUrl + '/orders/cart/' + cartId + '/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const checkoutData = await checkoutRes.json();
+      if (!checkoutData.success) throw new Error(checkoutData.message || 'Ошибка оформления заказа');
+      const orderId = checkoutData.data.id;
+
+      // 5. Создать платёж и редиректнуть на ЮKassa
+      const returnUrl = window.location.origin + '/checkout-result.html?orderId=' + orderId;
+      const paymentRes = await fetch(apiUrl + '/orders/' + orderId + '/create-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ returnUrl: returnUrl })
+      });
+      const paymentData = await paymentRes.json();
+      if (!paymentData.success) throw new Error(paymentData.message || 'Не удалось создать платёж');
+
+      // Редирект на страницу оплаты ЮKassa
+      window.location.href = paymentData.data.confirmationUrl;
+
+    } catch (err) {
+      loading.classList.add('hidden');
+      form.classList.remove('hidden');
+      errorDiv.classList.remove('hidden');
+      errorDiv.textContent = err.message || 'Произошла ошибка';
+    }
+  });
+</script>
 
 <style>
   .product-grid-section {
@@ -306,21 +444,276 @@ function formatPrice(price: number): string {
     margin-bottom: 12px;
   }
 
-  .product-link {
+  .buy-button {
     display: inline-block;
-    background: #222;
+    background: #22c55e;
     color: #fff;
-    padding: 10px 20px;
+    padding: 12px 24px;
     border-radius: 6px;
-    text-decoration: none;
-    font-size: 0.9rem;
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
     transition: background 0.2s;
+    width: 100%;
   }
 
-  .product-link:hover {
-    background: #444;
+  .buy-button:hover {
+    background: #16a34a;
+  }
+
+  /* Modal styles */
+  .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal.hidden {
+    display: none;
+  }
+
+  .modal-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+  }
+
+  .modal-content {
+    position: relative;
+    background: #fff;
+    padding: 24px;
+    border-radius: 12px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+
+  .modal-content h3 {
+    margin: 0 0 16px;
+    font-size: 1.25rem;
+  }
+
+  .modal-content p {
+    margin: 0 0 8px;
+    color: #666;
+  }
+
+  .modal-content input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    font-size: 1rem;
+    box-sizing: border-box;
+  }
+
+  .modal-content input:focus {
+    outline: none;
+    border-color: #22c55e;
+  }
+
+  .modal-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .cancel-btn {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+
+  .cancel-btn:hover {
+    background: #f5f5f5;
+  }
+
+  .submit-btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    background: #22c55e;
+    color: #fff;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .submit-btn:hover {
+    background: #16a34a;
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #22c55e;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  #checkout-loading {
+    text-align: center;
+    padding: 20px;
+  }
+
+  #checkout-error {
+    color: #dc2626;
+    padding: 12px;
+    background: #fef2f2;
+    border-radius: 6px;
+    margin-top: 12px;
   }
 </style>
+`;
+}
+
+function checkoutResultAstro() {
+  return `---
+import data from '../data/data.json';
+const apiUrl = data?.meta?.apiUrl ?? 'https://gateway.merfy.ru';
+---
+
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Результат оплаты</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+      .container { max-width: 600px; margin: 80px auto; padding: 40px 20px; text-align: center; }
+      .icon { width: 80px; height: 80px; margin: 0 auto 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+      .icon.success { background: #dcfce7; color: #22c55e; }
+      .icon.pending { background: #fef3c7; color: #f59e0b; }
+      .icon.failed { background: #fee2e2; color: #dc2626; }
+      .icon svg { width: 40px; height: 40px; }
+      h1 { font-size: 1.5rem; margin-bottom: 12px; }
+      p { color: #666; margin-bottom: 24px; }
+      .btn { display: inline-block; background: #222; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 500; }
+      .btn:hover { background: #444; }
+      .spinner { width: 60px; height: 60px; border: 4px solid #f3f3f3; border-top: 4px solid #22c55e; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 24px; }
+      @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      .hidden { display: none; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div id="loading">
+        <div class="spinner"></div>
+        <h1>Проверяем оплату...</h1>
+        <p>Пожалуйста, подождите</p>
+      </div>
+
+      <div id="success" class="hidden">
+        <div class="icon success">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+        </div>
+        <h1>Оплата прошла успешно!</h1>
+        <p>Спасибо за заказ. Мы свяжемся с вами для подтверждения.</p>
+        <a href="/" class="btn">Вернуться на главную</a>
+      </div>
+
+      <div id="pending" class="hidden">
+        <div class="icon pending">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        </div>
+        <h1>Оплата обрабатывается</h1>
+        <p>Ваш платёж находится в обработке. Вы получите уведомление на email.</p>
+        <a href="/" class="btn">Вернуться на главную</a>
+      </div>
+
+      <div id="failed" class="hidden">
+        <div class="icon failed">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </div>
+        <h1>Оплата не прошла</h1>
+        <p>К сожалению, оплата не была завершена. Попробуйте ещё раз.</p>
+        <a href="/" class="btn">Вернуться на главную</a>
+      </div>
+    </div>
+
+    <script define:vars={{ apiUrl }}>
+      const params = new URLSearchParams(window.location.search);
+      const orderId = params.get('orderId');
+
+      const loadingDiv = document.getElementById('loading');
+      const successDiv = document.getElementById('success');
+      const pendingDiv = document.getElementById('pending');
+      const failedDiv = document.getElementById('failed');
+
+      function showStatus(status) {
+        loadingDiv.classList.add('hidden');
+        successDiv.classList.add('hidden');
+        pendingDiv.classList.add('hidden');
+        failedDiv.classList.add('hidden');
+
+        if (status === 'succeeded') successDiv.classList.remove('hidden');
+        else if (status === 'pending' || status === 'processing') pendingDiv.classList.remove('hidden');
+        else failedDiv.classList.remove('hidden');
+      }
+
+      if (!orderId) {
+        showStatus('failed');
+      } else {
+        let attempts = 0;
+        const maxAttempts = 15;
+
+        async function checkStatus() {
+          try {
+            const res = await fetch(apiUrl + '/orders/' + orderId + '/payment-status');
+            const data = await res.json();
+
+            if (data.success && data.data) {
+              const status = data.data.status;
+              if (status === 'succeeded') {
+                showStatus('succeeded');
+                return;
+              }
+              if (status === 'failed' || status === 'cancelled') {
+                showStatus('failed');
+                return;
+              }
+            }
+
+            attempts++;
+            if (attempts < maxAttempts) {
+              setTimeout(checkStatus, 2000);
+            } else {
+              showStatus('pending');
+            }
+          } catch (e) {
+            showStatus('failed');
+          }
+        }
+
+        checkStatus();
+      }
+    </script>
+  </body>
+</html>
 `;
 }
 
@@ -404,6 +797,10 @@ export async function buildWithAstro(
         path.join(workingDir, "src/components/ProductGrid.astro"),
         productGridAstro(),
       );
+      await writeFile(
+        path.join(workingDir, "src/pages/checkout-result.astro"),
+        checkoutResultAstro(),
+      );
     } else {
       // Если шаблон есть, но нет ProductGrid — добавляем его
       const productGridPath = path.join(
@@ -418,6 +815,13 @@ export async function buildWithAstro(
         await writeFile(productGridPath, productGridAstro());
       }
     }
+
+    // Всегда добавляем страницу результата оплаты
+    await writeFile(
+      path.join(workingDir, "src/pages/checkout-result.astro"),
+      checkoutResultAstro(),
+    );
+
     // Записываем данные страницы с shopId и apiUrl для checkout
     const pageData = {
       ...(data ?? {}),
@@ -427,7 +831,7 @@ export async function buildWithAstro(
         apiUrl:
           params.apiUrl ??
           process.env.API_GATEWAY_URL ??
-          "https://api.merfy.ru",
+          "https://gateway.merfy.ru",
       },
     };
     await writeFile(

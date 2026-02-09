@@ -6,7 +6,7 @@
 // Конфигурация читается из window.__MERFY_CONFIG__
 function getConfig() {
   return {
-    apiUrl: window.__MERFY_CONFIG__?.apiUrl || 'https://api.merfy.ru',
+    apiUrl: window.__MERFY_CONFIG__?.apiUrl || 'https://gateway.merfy.ru/api',
     shopId: window.__MERFY_CONFIG__?.shopId || '',
   };
 }

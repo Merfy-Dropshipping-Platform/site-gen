@@ -163,7 +163,7 @@ interface Props {
 
 const { products = [], title = 'Товары', columns = 3 } = Astro.props;
 const shopId = data?.meta?.shopId ?? '';
-const apiUrl = data?.meta?.apiUrl ?? 'https://gateway.merfy.ru';
+const apiUrl = data?.meta?.apiUrl ?? 'https://gateway.merfy.ru/api';
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('ru-RU', {
@@ -326,7 +326,7 @@ function formatPrice(price: number): string {
       const orderId = checkoutData.data.id;
 
       // 5. Создать платёж и редиректнуть на ЮKassa
-      const returnUrl = window.location.origin + '/checkout-result.html?orderId=' + orderId;
+      const returnUrl = window.location.origin + '/checkout-result/?orderId=' + orderId;
       const paymentRes = await fetch(apiUrl + '/orders/' + orderId + '/create-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -593,7 +593,7 @@ function formatPrice(price: number): string {
 function checkoutResultAstro() {
   return `---
 import data from '../data/data.json';
-const apiUrl = data?.meta?.apiUrl ?? 'https://gateway.merfy.ru';
+const apiUrl = data?.meta?.apiUrl ?? 'https://gateway.merfy.ru/api';
 ---
 
 <html lang="ru">
@@ -827,11 +827,11 @@ export async function buildWithAstro(
       ...(data ?? {}),
       meta: {
         ...(data?.meta ?? {}),
-        shopId: params.tenantId ?? "",
+        shopId: params.tenantId ?? "", // tenantId here receives siteId from generator.service
         apiUrl:
           params.apiUrl ??
           process.env.API_GATEWAY_URL ??
-          "https://gateway.merfy.ru",
+          "https://gateway.merfy.ru/api",
       },
     };
     await writeFile(

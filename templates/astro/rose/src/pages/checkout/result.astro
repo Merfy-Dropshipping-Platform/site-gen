@@ -197,7 +197,7 @@ const meta = data?.meta ?? {};
     <!-- Конфигурация Merfy -->
     <script is:inline define:vars={{ apiUrl: meta?.apiUrl }}>
       window.__MERFY_CONFIG__ = {
-        apiUrl: apiUrl || 'https://api.merfy.ru',
+        apiUrl: apiUrl || 'https://gateway.merfy.ru/api',
       };
     </script>
     <script type="module" src="/scripts/checkout-result.js"></script>

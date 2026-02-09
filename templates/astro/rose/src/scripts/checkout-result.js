@@ -3,7 +3,7 @@
  * Polling статуса платежа после возврата с ЮKassa
  */
 
-const API_BASE = window.__MERFY_CONFIG__?.apiUrl || 'https://api.merfy.ru';
+const API_BASE = window.__MERFY_CONFIG__?.apiUrl || 'https://gateway.merfy.ru/api';
 
 async function checkPaymentStatus() {
   const params = new URLSearchParams(window.location.search);

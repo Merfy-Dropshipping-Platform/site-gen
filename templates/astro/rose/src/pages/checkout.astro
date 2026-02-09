@@ -417,7 +417,7 @@ const meta = data?.meta ?? {};
     <script is:inline define:vars={{ shopId: meta?.shopId, apiUrl: meta?.apiUrl }}>
       window.__MERFY_CONFIG__ = {
         shopId: shopId || '',
-        apiUrl: apiUrl || 'https://api.merfy.ru',
+        apiUrl: apiUrl || 'https://gateway.merfy.ru/api',
       };
     </script>
     <script type="module" src="/scripts/checkout.js"></script>

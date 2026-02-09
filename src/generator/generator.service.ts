@@ -217,7 +217,7 @@ export class SiteGeneratorService {
             }))) as any,
           theme: params.templateOverride ?? siteRow?.templateId ?? "default",
           products,
-          tenantId: params.tenantId, // shopId для checkout
+          tenantId: params.siteId, // shopId для checkout (site ID, не org ID)
         });
         if (astroResult.ok && astroResult.artifactPath) {
           artifactFile = astroResult.artifactPath;

@@ -117,8 +117,8 @@ async function main() {
     meta: {
       ...(revision?.meta || {}),
       title: site.name || 'Мой магазин',
-      shopId: TENANT_ID,
-      apiUrl: 'https://api.merfy.ru',
+      shopId: SITE_ID,
+      apiUrl: 'https://gateway.merfy.ru/api',
     },
   };
   await fs.mkdir(path.join(workDir, 'src/data'), { recursive: true });

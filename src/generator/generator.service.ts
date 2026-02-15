@@ -16,7 +16,6 @@ import * as fs from "fs/promises";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { and, eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
-import { firstValueFrom, timeout, catchError } from "rxjs";
 import { PG_CONNECTION, PRODUCT_RMQ_SERVICE } from "../constants";
 import * as schema from "../db/schema";
 import { buildWithAstro } from "./astro.builder";
@@ -44,42 +43,32 @@ export class SiteGeneratorService {
   ) {}
 
   /**
-   * Получить товары для сайта из Product Service через RabbitMQ.
+   * Получить товары для сайта из таблицы site_product (локальная БД sites_service).
    */
   private async fetchProducts(
     siteId: string,
-    tenantId: string,
-    limit = 20,
+    _tenantId: string,
   ): Promise<ProductData[]> {
     try {
-      const result = await firstValueFrom(
-        this.productClient
-          .send("product.findAll", {
-            shopId: tenantId,
-            take: limit,
-            status: "active",
-          })
-          .pipe(
-            timeout(5000),
-            catchError((err) => {
-              this.logger.warn(
-                `Failed to fetch products for tenant ${tenantId}: ${err?.message ?? err}`,
-              );
-              return [{ success: false, data: [] }];
-            }),
+      const products = await this.db
+        .select()
+        .from(schema.siteProduct)
+        .where(
+          and(
+            eq(schema.siteProduct.siteId, siteId),
+            eq(schema.siteProduct.isActive, true),
           ),
-      );
-      if (result?.success && Array.isArray(result.data)) {
-        return result.data.map((p: any) => ({
-          id: p.id,
-          name: p.title ?? p.name ?? "",
-          description: p.description,
-          price: p.basePrice ?? p.price ?? 0,
-          images: p.images ?? [],
-          slug: p.slug ?? p.id,
-        }));
-      }
-      return [];
+        )
+        .orderBy(schema.siteProduct.sortOrder);
+
+      return products.map((p) => ({
+        id: p.id,
+        name: p.name,
+        description: p.description ?? undefined,
+        price: p.price / 100, // копейки → рубли
+        images: (p.images as string[]) ?? [],
+        slug: p.slug ?? p.id,
+      }));
     } catch (e) {
       this.logger.warn(
         `fetchProducts error: ${e instanceof Error ? e.message : e}`,
@@ -187,7 +176,7 @@ export class SiteGeneratorService {
     const astroEnabled =
       (process.env.ASTRO_BUILD_ENABLED ?? "true").toLowerCase() !== "false";
 
-    // Получаем товары из Product Service через RabbitMQ
+    // Получаем товары из таблицы site_product
     const products = await this.fetchProducts(params.siteId, params.tenantId);
     this.logger.log(
       `Fetched ${products.length} products for site ${params.siteId}`,

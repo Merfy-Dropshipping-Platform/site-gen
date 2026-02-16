@@ -407,14 +407,37 @@ async function stageGenerate(
   const registry = params.registry ?? {};
 
   // Build page entries from revision content
-  const content = (ctx.revisionData as { content?: unknown[] }).content;
   const pages: PageEntry[] = [];
 
-  if (Array.isArray(content) && content.length > 0) {
-    pages.push({
-      fileName: "index.astro",
-      data: { content: content as any[] },
-    });
+  // New multipage format: { pages: PageMeta[], pagesData: Record<string, PuckData> }
+  const revPages = (ctx.revisionData as { pages?: { id: string; slug: string }[] }).pages;
+  const revPagesData = (ctx.revisionData as { pagesData?: Record<string, { content?: unknown[] }> }).pagesData;
+
+  if (Array.isArray(revPages) && revPages.length > 0 && revPagesData) {
+    for (const page of revPages) {
+      const pageData = revPagesData[page.id];
+      if (!pageData?.content || !Array.isArray(pageData.content)) continue;
+
+      // Convert slug to filename: "/" → "index.astro", "/about" → "about.astro"
+      const slug = (page.slug || "/").replace(/^\/+/, "");
+      const fileName = slug === "" ? "index.astro" : `${slug}.astro`;
+
+      pages.push({
+        fileName,
+        data: { content: pageData.content as any[] },
+      });
+    }
+    logger.log(`[generate] Multipage format: ${pages.length} pages from revision`);
+  } else {
+    // Legacy single-page format: { content: [...] }
+    const content = (ctx.revisionData as { content?: unknown[] }).content;
+    if (Array.isArray(content) && content.length > 0) {
+      pages.push({
+        fileName: "index.astro",
+        data: { content: content as any[] },
+      });
+    }
+    logger.log(`[generate] Legacy format: ${pages.length} page(s)`);
   }
 
   const apiUrl = process.env.API_GATEWAY_URL ?? "https://gateway.merfy.ru/api";

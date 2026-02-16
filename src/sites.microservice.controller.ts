@@ -246,6 +246,23 @@ export class SitesMicroserviceController {
     }
   }
 
+  @MessagePattern("sites.revisions.get")
+  async getRevision(@Payload() data: any) {
+    try {
+      const { tenantId, siteId, revisionId } = data ?? {};
+      if (!tenantId || !siteId || !revisionId)
+        return {
+          success: false,
+          message: "tenantId, siteId and revisionId required",
+        };
+      const res = await this.service.getRevision(tenantId, siteId, revisionId);
+      return { success: true, ...res };
+    } catch (e: any) {
+      this.logger.error("revisions.get failed", e);
+      return { success: false, message: e?.message ?? "internal_error" };
+    }
+  }
+
   @MessagePattern("sites.revisions.create")
   async createRevision(@Payload() data: any) {
     try {
@@ -360,6 +377,33 @@ export class SitesMicroserviceController {
     }
   }
 
+  // ==================== Build Status ====================
+
+  @MessagePattern("sites.build_status")
+  async getBuildStatus(@Payload() data: any) {
+    try {
+      const { tenantId, siteId, buildId } = data ?? {};
+      if (!tenantId || !siteId || !buildId) {
+        return {
+          success: false,
+          message: "tenantId, siteId, and buildId required",
+        };
+      }
+      const result = await this.service.getBuildStatus(
+        tenantId,
+        siteId,
+        buildId,
+      );
+      if (!result) {
+        return { success: false, message: "build_not_found" };
+      }
+      return { success: true, data: result };
+    } catch (e: any) {
+      this.logger.error("build_status failed", e);
+      return { success: false, message: e?.message ?? "internal_error" };
+    }
+  }
+
   // ==================== Site Products (локальные товары) ====================
 
   /**
@@ -386,9 +430,21 @@ export class SitesMicroserviceController {
   @MessagePattern("sites.products.create")
   async createProduct(@Payload() data: any) {
     try {
-      const { tenantId, siteId, name, description, price, compareAtPrice, images, slug } = data ?? {};
+      const {
+        tenantId,
+        siteId,
+        name,
+        description,
+        price,
+        compareAtPrice,
+        images,
+        slug,
+      } = data ?? {};
       if (!tenantId || !siteId || !name) {
-        return { success: false, message: "tenantId, siteId, and name required" };
+        return {
+          success: false,
+          message: "tenantId, siteId, and name required",
+        };
       }
       const product = await this.service.createSiteProduct(siteId, tenantId, {
         name,
@@ -413,9 +469,17 @@ export class SitesMicroserviceController {
     try {
       const { tenantId, siteId, productId, ...updates } = data ?? {};
       if (!tenantId || !siteId || !productId) {
-        return { success: false, message: "tenantId, siteId, and productId required" };
+        return {
+          success: false,
+          message: "tenantId, siteId, and productId required",
+        };
       }
-      const product = await this.service.updateSiteProduct(productId, siteId, tenantId, updates);
+      const product = await this.service.updateSiteProduct(
+        productId,
+        siteId,
+        tenantId,
+        updates,
+      );
       return { success: true, data: product };
     } catch (e: any) {
       this.logger.error("products.update failed", e);
@@ -431,7 +495,10 @@ export class SitesMicroserviceController {
     try {
       const { tenantId, siteId, productId } = data ?? {};
       if (!tenantId || !siteId || !productId) {
-        return { success: false, message: "tenantId, siteId, and productId required" };
+        return {
+          success: false,
+          message: "tenantId, siteId, and productId required",
+        };
       }
       await this.service.deleteSiteProduct(productId, siteId, tenantId);
       return { success: true };
@@ -449,9 +516,16 @@ export class SitesMicroserviceController {
     try {
       const { tenantId, siteId, productId } = data ?? {};
       if (!tenantId || !siteId || !productId) {
-        return { success: false, message: "tenantId, siteId, and productId required" };
+        return {
+          success: false,
+          message: "tenantId, siteId, and productId required",
+        };
       }
-      const product = await this.service.getSiteProduct(productId, siteId, tenantId);
+      const product = await this.service.getSiteProduct(
+        productId,
+        siteId,
+        tenantId,
+      );
       if (!product) {
         return { success: false, message: "product_not_found" };
       }

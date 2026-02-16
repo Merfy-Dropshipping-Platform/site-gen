@@ -51,6 +51,8 @@ import { ContentSyncScheduler } from "./scheduler/content-sync.scheduler";
 import { SitesEventsListenerController } from "./events/events.listener";
 import { DomainModule } from "./domain";
 import { BulkModule } from "./admin/bulk/bulk.module";
+import { RetrySetupService } from "./rabbitmq/retry-setup.service";
+import { BuildQueueConsumer } from "./rabbitmq/build-queue.consumer";
 
 @Module({
   imports: [
@@ -93,6 +95,8 @@ import { BulkModule } from "./admin/bulk/bulk.module";
     ContentSyncScheduler,
     BillingClient,
     BillingEventsConsumer,
+    RetrySetupService,
+    BuildQueueConsumer,
   ],
 })
 export class AppModule {}

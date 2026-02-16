@@ -736,6 +736,22 @@ export class SitesDomainService {
     return { items: rows };
   }
 
+  async getRevision(tenantId: string, siteId: string, revisionId: string) {
+    const site = await this.get(tenantId, siteId);
+    if (!site) throw new Error("site_not_found");
+    const [rev] = await this.db
+      .select()
+      .from(schema.siteRevision)
+      .where(
+        and(
+          eq(schema.siteRevision.id, revisionId),
+          eq(schema.siteRevision.siteId, siteId),
+        ),
+      );
+    if (!rev) throw new Error("revision_not_found");
+    return { item: rev };
+  }
+
   async createRevision(params: {
     tenantId: string;
     siteId: string;
@@ -878,7 +894,9 @@ export class SitesDomainService {
           }),
         ),
       );
-      const maintenanceFailed = maintenanceResults.filter((r) => r.status === "rejected").length;
+      const maintenanceFailed = maintenanceResults.filter(
+        (r) => r.status === "rejected",
+      ).length;
       if (maintenanceFailed > 0) {
         this.logger.warn(
           `unfreezeTenant: ${maintenanceFailed}/${sitesWithCoolify.length} Coolify maintenance toggles failed`,
@@ -897,7 +915,9 @@ export class SitesDomainService {
           }),
         ),
       );
-      const restartFailed = restartResults.filter((r) => r.status === "rejected").length;
+      const restartFailed = restartResults.filter(
+        (r) => r.status === "rejected",
+      ).length;
       if (restartFailed > 0) {
         this.logger.warn(
           `unfreezeTenant: ${restartFailed}/${sitesWithCoolify.length} Coolify restarts failed`,
@@ -983,7 +1003,9 @@ export class SitesDomainService {
         );
 
       if (draftSites.length === 0) {
-        this.logger.debug(`autoPublishDraftSites: no draft sites for tenant ${tenantId}`);
+        this.logger.debug(
+          `autoPublishDraftSites: no draft sites for tenant ${tenantId}`,
+        );
         return { published: 0 };
       }
 
@@ -999,7 +1021,9 @@ export class SitesDomainService {
               siteId: site.id,
               mode: "production",
             });
-            this.logger.log(`autoPublishDraftSites: published site ${site.id} (${site.name})`);
+            this.logger.log(
+              `autoPublishDraftSites: published site ${site.id} (${site.name})`,
+            );
             return { siteId: site.id, success: true };
           } catch (e) {
             this.logger.warn(
@@ -1531,7 +1555,9 @@ export class SitesDomainService {
     const [site] = await this.db
       .select({ id: schema.site.id })
       .from(schema.site)
-      .where(and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)))
+      .where(
+        and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)),
+      )
       .limit(1);
 
     if (!site) {
@@ -1541,7 +1567,12 @@ export class SitesDomainService {
     const products = await this.db
       .select()
       .from(schema.siteProduct)
-      .where(and(eq(schema.siteProduct.siteId, siteId), eq(schema.siteProduct.isActive, true)))
+      .where(
+        and(
+          eq(schema.siteProduct.siteId, siteId),
+          eq(schema.siteProduct.isActive, true),
+        ),
+      )
       .orderBy(schema.siteProduct.sortOrder);
 
     return products;
@@ -1554,7 +1585,12 @@ export class SitesDomainService {
     const products = await this.db
       .select()
       .from(schema.siteProduct)
-      .where(and(eq(schema.siteProduct.siteId, siteId), eq(schema.siteProduct.isActive, true)))
+      .where(
+        and(
+          eq(schema.siteProduct.siteId, siteId),
+          eq(schema.siteProduct.isActive, true),
+        ),
+      )
       .orderBy(schema.siteProduct.sortOrder);
 
     return products.map((p) => ({
@@ -1587,7 +1623,9 @@ export class SitesDomainService {
     const [site] = await this.db
       .select({ id: schema.site.id })
       .from(schema.site)
-      .where(and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)))
+      .where(
+        and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)),
+      )
       .limit(1);
 
     if (!site) {
@@ -1600,7 +1638,9 @@ export class SitesDomainService {
 
     // Получить следующий sortOrder
     const [maxSort] = await this.db
-      .select({ max: sql<number>`COALESCE(MAX(${schema.siteProduct.sortOrder}), 0)` })
+      .select({
+        max: sql<number>`COALESCE(MAX(${schema.siteProduct.sortOrder}), 0)`,
+      })
       .from(schema.siteProduct)
       .where(eq(schema.siteProduct.siteId, siteId));
 
@@ -1648,7 +1688,9 @@ export class SitesDomainService {
     const [site] = await this.db
       .select({ id: schema.site.id })
       .from(schema.site)
-      .where(and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)))
+      .where(
+        and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)),
+      )
       .limit(1);
 
     if (!site) {
@@ -1661,7 +1703,12 @@ export class SitesDomainService {
         ...updates,
         updatedAt: new Date(),
       })
-      .where(and(eq(schema.siteProduct.id, productId), eq(schema.siteProduct.siteId, siteId)))
+      .where(
+        and(
+          eq(schema.siteProduct.id, productId),
+          eq(schema.siteProduct.siteId, siteId),
+        ),
+      )
       .returning();
 
     if (!product) {
@@ -1680,7 +1727,9 @@ export class SitesDomainService {
     const [site] = await this.db
       .select({ id: schema.site.id })
       .from(schema.site)
-      .where(and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)))
+      .where(
+        and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)),
+      )
       .limit(1);
 
     if (!site) {
@@ -1689,7 +1738,12 @@ export class SitesDomainService {
 
     const [deleted] = await this.db
       .delete(schema.siteProduct)
-      .where(and(eq(schema.siteProduct.id, productId), eq(schema.siteProduct.siteId, siteId)))
+      .where(
+        and(
+          eq(schema.siteProduct.id, productId),
+          eq(schema.siteProduct.siteId, siteId),
+        ),
+      )
       .returning({ id: schema.siteProduct.id });
 
     if (!deleted) {
@@ -1708,7 +1762,9 @@ export class SitesDomainService {
     const [site] = await this.db
       .select({ id: schema.site.id })
       .from(schema.site)
-      .where(and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)))
+      .where(
+        and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)),
+      )
       .limit(1);
 
     if (!site) {
@@ -1718,7 +1774,12 @@ export class SitesDomainService {
     const [product] = await this.db
       .select()
       .from(schema.siteProduct)
-      .where(and(eq(schema.siteProduct.id, productId), eq(schema.siteProduct.siteId, siteId)))
+      .where(
+        and(
+          eq(schema.siteProduct.id, productId),
+          eq(schema.siteProduct.siteId, siteId),
+        ),
+      )
       .limit(1);
 
     return product ?? null;
@@ -1804,6 +1865,78 @@ export class SitesDomainService {
       successful,
       failed,
       results,
+    };
+  }
+
+  /**
+   * Get build status/progress for a specific build.
+   */
+  async getBuildStatus(
+    tenantId: string,
+    siteId: string,
+    buildId: string,
+  ): Promise<{
+    buildId: string;
+    siteId: string;
+    status: string;
+    stage: string | null;
+    percent: number;
+    message: string | null;
+    error: string | null;
+    retryCount: number;
+    startedAt: Date | null;
+    completedAt: Date | null;
+    createdAt: Date;
+  } | null> {
+    // Verify site belongs to tenant
+    const [siteRow] = await this.db
+      .select({ id: schema.site.id })
+      .from(schema.site)
+      .where(
+        and(
+          eq(schema.site.id, siteId),
+          eq(schema.site.tenantId, tenantId),
+        ),
+      );
+
+    if (!siteRow) return null;
+
+    const [build] = await this.db
+      .select({
+        id: schema.siteBuild.id,
+        siteId: schema.siteBuild.siteId,
+        status: schema.siteBuild.status,
+        stage: schema.siteBuild.stage,
+        percent: schema.siteBuild.percent,
+        message: schema.siteBuild.message,
+        error: schema.siteBuild.error,
+        retryCount: schema.siteBuild.retryCount,
+        startedAt: schema.siteBuild.startedAt,
+        completedAt: schema.siteBuild.completedAt,
+        createdAt: schema.siteBuild.createdAt,
+      })
+      .from(schema.siteBuild)
+      .where(
+        and(
+          eq(schema.siteBuild.id, buildId),
+          eq(schema.siteBuild.siteId, siteId),
+        ),
+      );
+
+    if (!build) return null;
+
+    return {
+      buildId: build.id,
+      siteId: build.siteId,
+      status: build.status,
+      stage: build.stage,
+      percent: build.percent ?? 0,
+      message: build.message,
+      error: build.error,
+      retryCount: build.retryCount ?? 0,
+      startedAt: build.startedAt,
+      completedAt: build.completedAt,
+      createdAt: build.createdAt,
     };
   }
 }

@@ -29,6 +29,20 @@
       "when": 1765887796343,
       "tag": "0003_damp_vector",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1766000000000,
+      "tag": "0004_site_product",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1766100000000,
+      "tag": "0005_build_progress",
+      "breakpoints": true
     }
   ]
 }

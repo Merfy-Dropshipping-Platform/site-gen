@@ -123,9 +123,16 @@ export const siteBuild = pgTable("site_build", {
   s3Bucket: text("s3_bucket"),
   s3KeyPrefix: text("s3_key_prefix"),
   logUrl: text("log_url"),
+  // Build progress tracking
+  stage: text("stage"),
+  percent: integer("percent").default(0),
+  message: text("message"),
+  // DLX retry tracking
+  retryCount: integer("retry_count").default(0),
   createdAt: timestamp("created_at")
     .$defaultFn(() => new Date())
     .notNull(),
+  startedAt: timestamp("started_at"),
   completedAt: timestamp("completed_at"),
   error: text("error"),
 });

@@ -103,7 +103,7 @@ export interface BuildResult {
 }
 
 /**
- * Emit a progress event (best-effort).
+ * Emit a progress event (best-effort) and persist to DB.
  */
 function emitProgress(
   deps: BuildDependencies,
@@ -119,6 +119,13 @@ function emitProgress(
     stage,
     message,
   });
+
+  // Persist progress to DB (best-effort, don't block pipeline)
+  deps.db
+    .update(deps.schema.siteBuild)
+    .set({ stage, percent, message })
+    .where(eq(deps.schema.siteBuild.id, ctx.buildId))
+    .catch((e) => logger.warn(`Failed to persist build progress: ${e}`));
 }
 
 /**
@@ -134,6 +141,9 @@ async function updateBuildStatus(
   if (extra?.error) set.error = extra.error;
   if (extra?.artifactUrl) set.artifactUrl = extra.artifactUrl;
   if (extra?.logUrl) set.logUrl = extra.logUrl;
+  if (status === "running") {
+    set.startedAt = new Date();
+  }
   if (status === "uploaded" || status === "failed") {
     set.completedAt = new Date();
   }

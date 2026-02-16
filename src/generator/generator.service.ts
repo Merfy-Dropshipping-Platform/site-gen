@@ -20,6 +20,7 @@ import * as schema from "../db/schema";
 import { buildWithAstro } from "./astro.builder";
 import { S3StorageService } from "../storage/s3.service";
 import { runBuildPipeline, type BuildDependencies } from "./build.service";
+import { fetchProducts as rpcFetchProducts } from "./data-fetcher";
 
 interface ProductData {
   id: string;
@@ -43,12 +44,38 @@ export class SiteGeneratorService {
   ) {}
 
   /**
-   * Получить товары для сайта из таблицы site_product (локальная БД sites_service).
+   * Получить товары для сайта: сначала RPC из product-service, затем fallback на site_product.
    */
   private async fetchProducts(
     siteId: string,
-    _tenantId: string,
+    tenantId: string,
   ): Promise<ProductData[]> {
+    // Try RPC fetch from product-service first
+    try {
+      const rpcProducts = await rpcFetchProducts(
+        this.productClient,
+        tenantId,
+      );
+      if (rpcProducts.length > 0) {
+        this.logger.log(
+          `RPC product.list returned ${rpcProducts.length} products for tenant ${tenantId}`,
+        );
+        return rpcProducts.map((p) => ({
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          price: p.price,
+          images: p.images,
+          slug: p.slug ?? p.id,
+        }));
+      }
+    } catch (e) {
+      this.logger.warn(
+        `RPC fetchProducts failed, falling back to local: ${e instanceof Error ? e.message : e}`,
+      );
+    }
+
+    // Fallback: local site_product table
     try {
       const products = await this.db
         .select()
@@ -71,7 +98,7 @@ export class SiteGeneratorService {
       }));
     } catch (e) {
       this.logger.warn(
-        `fetchProducts error: ${e instanceof Error ? e.message : e}`,
+        `fetchProducts local fallback error: ${e instanceof Error ? e.message : e}`,
       );
       return [];
     }

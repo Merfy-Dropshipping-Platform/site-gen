@@ -1,13 +1,12 @@
 /**
  * SiteGeneratorService — сервис генерации.
  *
- * Текущая версия — заглушка, имитирующая пайплайн сборки:
- * 1) создаёт запись в `site_revision` (data/meta)
- * 2) добавляет `site_build` со статусом queued
- * 3) переводит билд в running, пишет локальный артефакт, затем проставляет uploaded
+ * Supports two build modes:
+ * - **Pipeline mode** (BUILD_PIPELINE_ENABLED=true): Uses the new 7-stage build pipeline
+ *   (merge → generate → fetch_data → astro_build → zip → upload → deploy) via build.service.ts
+ * - **Legacy mode** (default): Uses the original buildWithAstro monolithic builder
  *
- * В продакшене здесь следует вызывать генератор Astro+React и паковать результат (zip/tar),
- * а затем выгружать артефакт в S3/Minio и сохранять ссылку в `artifactUrl`.
+ * Pipeline mode emits progress events via RabbitMQ and tracks build status in site_build table.
  */
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
@@ -20,6 +19,7 @@ import { PG_CONNECTION, PRODUCT_RMQ_SERVICE } from "../constants";
 import * as schema from "../db/schema";
 import { buildWithAstro } from "./astro.builder";
 import { S3StorageService } from "../storage/s3.service";
+import { runBuildPipeline, type BuildDependencies } from "./build.service";
 
 interface ProductData {
   id: string;
@@ -83,6 +83,28 @@ export class SiteGeneratorService {
     mode?: "draft" | "production";
     templateOverride?: string; // Force specific template (e.g., 'rose')
   }) {
+    // Check if new pipeline is enabled
+    const pipelineEnabled =
+      (process.env.BUILD_PIPELINE_ENABLED ?? "false").toLowerCase() === "true";
+
+    if (pipelineEnabled) {
+      this.logger.log(`Using new build pipeline for site ${params.siteId}`);
+      const deps: BuildDependencies = {
+        db: this.db,
+        schema,
+        productClient: this.productClient,
+        s3: this.s3,
+      };
+      const result = await runBuildPipeline(deps, {
+        tenantId: params.tenantId,
+        siteId: params.siteId,
+        mode: params.mode,
+        templateOverride: params.templateOverride,
+      });
+      return result;
+    }
+
+    // === Legacy build path ===
     // Подтянуть текущую тему/ревизию и собрать артефакт с единым именем <buildId>.zip
     let revisionId: string | null = null;
     const buildId = randomUUID();

@@ -86,24 +86,20 @@ export class RetrySetupService implements OnModuleInit {
       await ch.bindQueue(DEAD_LETTER_QUEUE, DLX_EXCHANGE, DEAD_LETTER_QUEUE);
       this.logger.log(`Dead letter queue declared: ${DEAD_LETTER_QUEUE}`);
 
-      // 4. Re-assert sites_queue with priority support
-      // Note: If the queue already exists with different args, this will fail.
-      // In that case, the queue must be deleted and recreated (done via management API or manually).
+      // 4. Check sites_queue exists (do NOT change args — queue already declared by NestJS)
+      // Attempting assertQueue with different args (e.g. x-max-priority) would crash the channel.
+      // Use a separate channel with passive=true check instead.
+      let ch2: amqplib.Channel | null = null;
       try {
-        await ch.assertQueue(SITES_QUEUE, {
-          durable: true,
-          arguments: {
-            "x-max-priority": 10,
-          },
-        });
-        this.logger.log(
-          `Main queue asserted with priority: ${SITES_QUEUE} (x-max-priority: 10)`,
-        );
-      } catch (priorityErr) {
+        ch2 = await conn.createChannel();
+        await ch2.checkQueue(SITES_QUEUE);
+        this.logger.log(`Main queue verified: ${SITES_QUEUE}`);
+      } catch {
         this.logger.warn(
-          `Could not assert ${SITES_QUEUE} with priority (may already exist with different args). ` +
-            `Priority queue feature requires manual queue recreation. Error: ${priorityErr instanceof Error ? priorityErr.message : priorityErr}`,
+          `${SITES_QUEUE} does not exist yet — will be created by NestJS microservice`,
         );
+      } finally {
+        try { await ch2?.close(); } catch { /* ignore */ }
       }
     } finally {
       await ch.close();

@@ -19,6 +19,7 @@
  * - SitesDomainService: доменная логика (CRUD, домены, публикация, freeze/unfreeze)
  * - SiteGeneratorService: генерация артефактов и обновление статусов билдов
  * - CoolifyProvider + DeploymentsService: оркестрация деплоя (mock/http режимы)
+ * - ProductUpdateListener: слушает product.updated → debounce 30s → queue rebuild (priority 5)
  */
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
@@ -53,6 +54,8 @@ import { DomainModule } from "./domain";
 import { BulkModule } from "./admin/bulk/bulk.module";
 import { RetrySetupService } from "./rabbitmq/retry-setup.service";
 import { BuildQueueConsumer } from "./rabbitmq/build-queue.consumer";
+import { BuildQueuePublisher } from "./rabbitmq/build-queue.service";
+import { ProductUpdateListener } from "./listeners/product-update.listener";
 
 @Module({
   imports: [
@@ -97,6 +100,8 @@ import { BuildQueueConsumer } from "./rabbitmq/build-queue.consumer";
     BillingEventsConsumer,
     RetrySetupService,
     BuildQueueConsumer,
+    BuildQueuePublisher,
+    ProductUpdateListener,
   ],
 })
 export class AppModule {}

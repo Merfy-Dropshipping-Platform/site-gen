@@ -47,9 +47,14 @@ export class BuildQueuePublisher implements OnModuleInit, OnModuleDestroy {
     this.connection = amqp.connect([rabbitmqUrl]);
     this.channel = this.connection.createChannel({
       setup: async (channel: Channel) => {
-        await channel.assertQueue(SITES_QUEUE, {
-          durable: true,
-        });
+        try {
+          await channel.assertQueue(SITES_QUEUE, {
+            durable: true,
+            arguments: { "x-max-priority": 10 },
+          });
+        } catch {
+          // Queue may already exist with different args — OK
+        }
       },
     });
 

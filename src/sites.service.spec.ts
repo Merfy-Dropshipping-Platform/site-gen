@@ -41,7 +41,13 @@ class MockStorage {
     return "sites/test/";
   }
   async checkSiteFiles(_prefix: string) {
-    return { exists: true, hasIndex: true, fileCount: 1, totalSize: 100, files: [] };
+    return {
+      exists: true,
+      hasIndex: true,
+      fileCount: 1,
+      totalSize: 100,
+      files: [],
+    };
   }
 }
 
@@ -122,6 +128,7 @@ describe("SitesDomainService (unit)", () => {
       new MockStorage() as any,
       new MockDomainClient() as any,
       new MockBillingClient() as any,
+      { queueBuild: () => Promise.resolve(true) } as any,
     );
 
     // Act
@@ -168,6 +175,7 @@ describe("SitesDomainService (unit)", () => {
       new MockStorage() as any,
       new MockDomainClient() as any,
       new MockBillingClient() as any,
+      { queueBuild: () => Promise.resolve(true) } as any,
     );
     await expect(
       service.attachDomain({
@@ -214,6 +222,7 @@ describe("SitesDomainService (unit)", () => {
       new MockStorage() as any,
       new MockDomainClient() as any,
       new MockBillingClient() as any,
+      { queueBuild: () => Promise.resolve(true) } as any,
     );
     await expect(
       service.verifyDomain({

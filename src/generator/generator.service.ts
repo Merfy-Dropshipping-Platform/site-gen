@@ -55,6 +55,7 @@ export class SiteGeneratorService {
       const rpcProducts = await rpcFetchProducts(
         this.productClient,
         tenantId,
+        siteId,
       );
       if (rpcProducts.length > 0) {
         this.logger.log(

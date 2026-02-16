@@ -50,11 +50,12 @@ const RETRY_DELAY_MS = 1_000;
 export async function fetchProducts(
   productClient: ClientProxy,
   tenantId: string,
+  siteId?: string,
 ): Promise<FetchedProduct[]> {
   try {
     const result = await firstValueFrom(
       productClient
-        .send<RpcResponse<FetchedProduct[]>>("product.list", { tenantId })
+        .send<RpcResponse<FetchedProduct[]>>("product.list", { tenantId, siteId })
         .pipe(
           timeout(RPC_TIMEOUT_MS),
           retry({
@@ -142,9 +143,10 @@ export async function fetchCollections(
 export async function fetchStoreData(
   productClient: ClientProxy,
   tenantId: string,
+  siteId?: string,
 ): Promise<FetchedStoreData> {
   const [products, collections] = await Promise.all([
-    fetchProducts(productClient, tenantId),
+    fetchProducts(productClient, tenantId, siteId),
     fetchCollections(productClient, tenantId),
   ]);
 

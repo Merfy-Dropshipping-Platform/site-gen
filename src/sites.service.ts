@@ -29,6 +29,7 @@ import { DeploymentsService } from "./deployments/deployments.service";
 import { S3StorageService } from "./storage/s3.service";
 import { DomainClient } from "./domain";
 import { BillingClient } from "./billing/billing.client";
+import { BuildQueuePublisher } from "./rabbitmq/build-queue.service";
 
 function slugify(input: string) {
   return input
@@ -55,6 +56,7 @@ export class SitesDomainService {
     private readonly storage: S3StorageService,
     private readonly domainClient: DomainClient,
     private readonly billingClient: BillingClient,
+    private readonly buildQueue: BuildQueuePublisher,
   ) {}
 
   /**
@@ -667,7 +669,71 @@ export class SitesDomainService {
       }
     }
 
-    // 2. Собрать сайт и загрузить статику в S3
+    // 2. Определить публичный URL (если не установлен — fallback)
+    if (!finalUrl) {
+      finalUrl = this.storage.getSitePublicUrl(params.tenantId, params.siteId);
+    }
+
+    // 3. Build: queued (async) or synchronous depending on feature flags
+    const queueEnabled =
+      (process.env.BUILD_QUEUE_CONSUMER_ENABLED ?? "false").toLowerCase() ===
+      "true";
+
+    if (queueEnabled) {
+      // === QUEUED BUILD PATH ===
+      // Determine priority based on billing plan (paid=10, free/trial=1)
+      let priority = 1;
+      try {
+        const entitlements = await this.billingClient.getEntitlements(
+          params.tenantId,
+        );
+        const plan = (entitlements.planName ?? "").toLowerCase();
+        priority = plan && plan !== "free" && plan !== "trial" ? 10 : 1;
+      } catch {
+        // Default to low priority on billing error
+      }
+
+      await this.buildQueue.queueBuild({
+        tenantId: params.tenantId,
+        siteId: params.siteId,
+        mode: params.mode,
+        priority,
+        trigger: "publish",
+      });
+
+      // Update site status to published (build will complete asynchronously)
+      await this.db
+        .update(schema.site)
+        .set({
+          status: "published",
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(schema.site.id, params.siteId),
+            eq(schema.site.tenantId, params.tenantId),
+          ),
+        );
+
+      this.events.emit("sites.site.published", {
+        tenantId: params.tenantId,
+        siteId: params.siteId,
+        url: finalUrl,
+        queued: true,
+      });
+
+      this.logger.log(
+        `Published site ${params.siteId} (queued build, priority=${priority}) at ${finalUrl}`,
+      );
+      return {
+        url: finalUrl,
+        buildId: "queued",
+        artifactUrl: "",
+        queued: true,
+      };
+    }
+
+    // === SYNCHRONOUS BUILD PATH (legacy) ===
     // SiteGeneratorService загружает все файлы из dist/ в S3 по пути sites/{subdomain}/
     const { buildId, artifactUrl, revisionId } = await this.generator.build({
       tenantId: params.tenantId,
@@ -675,7 +741,7 @@ export class SitesDomainService {
       mode: params.mode,
     });
 
-    // 3. Если Coolify app уже существовал, перезапускаем его для обновления
+    // Если Coolify app уже существовал, перезапускаем его для обновления
     if (coolifyAppUuid) {
       try {
         await this.callCoolify("coolify.restart_application", {
@@ -690,12 +756,7 @@ export class SitesDomainService {
       }
     }
 
-    // 4. Определить публичный URL (если не установлен — fallback)
-    if (!finalUrl) {
-      finalUrl = this.storage.getSitePublicUrl(params.tenantId, params.siteId);
-    }
-
-    // 5. Обновить статус сайта
+    // Обновить статус сайта
     await this.db
       .update(schema.site)
       .set({
@@ -1893,10 +1954,7 @@ export class SitesDomainService {
       .select({ id: schema.site.id })
       .from(schema.site)
       .where(
-        and(
-          eq(schema.site.id, siteId),
-          eq(schema.site.tenantId, tenantId),
-        ),
+        and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)),
       );
 
     if (!siteRow) return null;

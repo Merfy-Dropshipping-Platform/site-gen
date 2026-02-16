@@ -397,6 +397,52 @@ async function stageMerge(
 }
 
 /**
+ * Extract Header and Footer component props from revision data.
+ * Searches through page content arrays for Header/Footer components and
+ * returns their props as site-config.json data for the Astro theme.
+ */
+function extractSiteConfig(
+  revisionData: Record<string, unknown>,
+  pagesData?: Record<string, { content?: unknown[] }> | undefined,
+): Record<string, unknown> {
+  const siteConfig: Record<string, unknown> = { header: {}, footer: {} };
+
+  // Find content to search — prefer home page from multipage, fall back to legacy
+  let homeContent: unknown[] = [];
+  if (pagesData?.home?.content && Array.isArray(pagesData.home.content)) {
+    homeContent = pagesData.home.content;
+  } else if (Array.isArray((revisionData as { content?: unknown[] }).content)) {
+    homeContent = (revisionData as { content: unknown[] }).content;
+  }
+
+  for (const component of homeContent) {
+    const comp = component as { type?: string; props?: Record<string, unknown> };
+    if (!comp?.type || !comp?.props) continue;
+
+    if (comp.type === "Header") {
+      siteConfig.header = {
+        siteTitle: comp.props.siteTitle ?? "Rose",
+        logo: comp.props.logo ?? "/logo.svg",
+        navigationLinks: comp.props.navigationLinks ?? [],
+        actionButtons: comp.props.actionButtons ?? {},
+      };
+    }
+
+    if (comp.type === "Footer") {
+      siteConfig.footer = {
+        newsletter: comp.props.newsletter ?? {},
+        navigationColumn: comp.props.navigationColumn ?? {},
+        informationColumn: comp.props.informationColumn ?? {},
+        socialColumn: comp.props.socialColumn ?? {},
+        copyright: comp.props.copyright ?? {},
+      };
+    }
+  }
+
+  return siteConfig;
+}
+
+/**
  * Stage 2: GENERATE — Scaffold the Astro project using the scaffold-builder.
  */
 async function stageGenerate(
@@ -442,6 +488,9 @@ async function stageGenerate(
 
   const apiUrl = process.env.API_GATEWAY_URL ?? "https://gateway.merfy.ru/api";
 
+  // Extract Header and Footer component props from revision data for site-config.json
+  const siteConfig = extractSiteConfig(ctx.revisionData, revPagesData);
+
   const scaffoldConfig: ScaffoldConfig = {
     outputDir: ctx.workingDir,
     themeName: ctx.templateId,
@@ -459,6 +508,9 @@ async function stageGenerate(
     dynamicPages: {
       apiUrl,
       shopId: ctx.siteId,
+    },
+    extraFiles: {
+      "src/data/site-config.json": JSON.stringify(siteConfig, null, 2),
     },
   };
 

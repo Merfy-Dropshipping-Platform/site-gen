@@ -22,6 +22,13 @@ interface CreateApplicationParams {
   port?: number;
 }
 
+/** Default timeout for Coolify API calls (30 seconds) */
+const DEFAULT_TIMEOUT_MS = 30_000;
+/** Max retries for transient Coolify API errors */
+const MAX_RETRIES = 3;
+/** Base delay for exponential backoff (ms) */
+const RETRY_BASE_DELAY_MS = 1_000;
+
 /**
  * CoolifyProvider — адаптер провайдера деплоя.
  *
@@ -47,6 +54,8 @@ export class CoolifyProvider {
   private readonly apiToken: string | undefined;
   private readonly appUuid: string | undefined;
   private readonly appName: string | undefined;
+  /** COOLIFY_MODE: 'http' for real API calls, 'mock' for no-op */
+  private readonly mode: "http" | "mock";
 
   // Настройки для автоматического создания приложений
   private readonly serverUuid: string | undefined;
@@ -67,24 +76,25 @@ export class CoolifyProvider {
     this.projectUuid = process.env.COOLIFY_PROJECT_UUID;
     this.environmentName = process.env.COOLIFY_ENVIRONMENT_NAME ?? "production";
     this.wildcardDomain = process.env.COOLIFY_WILDCARD_DOMAIN ?? "merfy.ru";
+
+    // COOLIFY_MODE=http activates real HTTP calls, anything else is mock
+    const modeEnv = process.env.COOLIFY_MODE?.toLowerCase();
+    this.mode =
+      modeEnv === "http" && this.apiUrl && this.apiToken ? "http" : "mock";
+    this.logger.log(`CoolifyProvider mode: ${this.mode}`);
   }
 
-  // Вспомогательный метод HTTP‑запроса к Coolify API
-  private async http<T = any>(path: string, init?: RequestInit): Promise<T> {
-    if (!this.apiUrl || !this.apiToken) {
-      throw new Error("Coolify API not configured");
-    }
+  /** Check if real HTTP mode is active */
+  isHttpMode(): boolean {
+    return this.mode === "http";
+  }
 
-    /**
-     * Нормализуем базовый URL API.
-     *
-     * Варианты конфигурации:
-     * - COOLIFY_API_URL = http://host:8000/api/v1
-     * - COOLIFY_API_URL = http://host:8000 и (опц.) COOLIFY_API_PREFIX=/api/v1 или /v1
-     *
-     * Для обратной совместимости `.env.local`, где используется COOLIFY_API_URL=http://localhost:8000
-     * и COOLIFY_API_PREFIX=/v1, мы интерпретируем `/v1` как `/api/v1`.
-     */
+  /**
+   * Build the full URL for a Coolify API path.
+   */
+  private buildUrl(path: string): string {
+    if (!this.apiUrl) throw new Error("Coolify API not configured");
+
     const root = new URL(this.apiUrl);
     const prefixRaw = process.env.COOLIFY_API_PREFIX;
     let effectiveBase: URL;
@@ -93,20 +103,38 @@ export class CoolifyProvider {
       let prefix = prefixRaw.trim();
       if (prefix) {
         if (!prefix.startsWith("/")) prefix = `/${prefix}`;
-        // Специальный случай: `/v1` трактуем как `/api/v1`
         if (prefix === "/v1") prefix = "/api/v1";
         effectiveBase = new URL(prefix.replace(/^\//, ""), root);
       } else {
         effectiveBase = root;
       }
     } else if (!root.pathname.includes("/api/")) {
-      // Если префикс не задан и в URL нет /api/, добавляем /api/v1 по умолчанию
       effectiveBase = new URL("api/v1/", root);
     } else {
       effectiveBase = root;
     }
 
-    const url = new URL(path.replace(/^\//, ""), effectiveBase).toString();
+    return new URL(path.replace(/^\//, ""), effectiveBase).toString();
+  }
+
+  /**
+   * HTTP request to Coolify API with timeout and retry (exponential backoff).
+   *
+   * Retries on 5xx errors and network failures up to MAX_RETRIES times.
+   * Uses AbortController for per-request timeout.
+   */
+  private async http<T = any>(
+    path: string,
+    init?: RequestInit,
+    options?: { timeoutMs?: number; maxRetries?: number },
+  ): Promise<T> {
+    if (!this.apiUrl || !this.apiToken) {
+      throw new Error("Coolify API not configured");
+    }
+
+    const timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    const maxRetries = options?.maxRetries ?? MAX_RETRIES;
+    const url = this.buildUrl(path);
     const headers: Record<string, string> = {
       Accept: "application/json",
       Authorization: `Bearer ${this.apiToken}`,
@@ -114,25 +142,96 @@ export class CoolifyProvider {
       ...(init?.headers as any),
     };
 
-    const res = await fetch(url, { ...init, headers });
-    const hasPayload = res.status !== 204;
-    const payload = hasPayload ? await res.json().catch(() => null) : null;
-    if (!res.ok) {
-      this.logger.warn(
-        `Coolify API ${init?.method ?? "GET"} ${path} failed: ${res.status} ${
-          payload ? JSON.stringify(payload) : ""
-        }`,
-      );
-      throw new Error(`coolify_api_${res.status}`);
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      if (attempt > 0) {
+        const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1);
+        this.logger.log(
+          `Coolify API retry ${attempt}/${maxRetries} for ${init?.method ?? "GET"} ${path} after ${delay}ms`,
+        );
+        await new Promise((r) => setTimeout(r, delay));
+      }
+
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+      try {
+        const res = await fetch(url, {
+          ...init,
+          headers,
+          signal: controller.signal,
+        });
+        clearTimeout(timer);
+
+        const hasPayload = res.status !== 204;
+        const payload = hasPayload
+          ? await res.json().catch(() => null)
+          : null;
+
+        if (!res.ok) {
+          const errMsg = `coolify_api_${res.status}`;
+          this.logger.warn(
+            `Coolify API ${init?.method ?? "GET"} ${path} failed: ${res.status} ${
+              payload ? JSON.stringify(payload) : ""
+            }`,
+          );
+
+          // Retry on 5xx server errors
+          if (res.status >= 500 && attempt < maxRetries) {
+            lastError = new Error(errMsg);
+            continue;
+          }
+          throw new Error(errMsg);
+        }
+
+        return payload as T;
+      } catch (e: unknown) {
+        clearTimeout(timer);
+
+        const err = e instanceof Error ? e : new Error(String(e));
+
+        // Retry on timeout / network errors
+        if (
+          (err.name === "AbortError" || err.message.includes("fetch")) &&
+          attempt < maxRetries
+        ) {
+          lastError = err;
+          continue;
+        }
+
+        throw err;
+      }
     }
-    return payload as T;
+
+    throw lastError ?? new Error("Coolify API request failed after retries");
   }
 
   /**
-   * ensureApp — находит приложение в Coolify.
-   * Возвращает uuid приложения (appId) и envId (пока не используется).
+   * ensureApp — находит или создаёт приложение в Coolify.
+   *
+   * In mock mode: returns a placeholder without making API calls.
+   * In http mode:
+   * 1. If explicit UUID set via COOLIFY_APPLICATION_UUID — uses it
+   * 2. Searches by name/siteId among existing applications
+   * 3. If not found and serverUuid is configured — creates via createStaticSiteApp
+   *    with nginx-minio-proxy repo + MINIO_URL, BUCKET, SITE_PATH env vars
    */
-  async ensureApp(siteId: string) {
+  async ensureApp(
+    siteId: string,
+    createOptions?: {
+      projectUuid?: string;
+      subdomain?: string;
+    },
+  ) {
+    // Mock mode — return placeholder
+    if (!this.isHttpMode()) {
+      return {
+        appId: `mock-${siteId}`,
+        envId: "",
+      } satisfies EnsureAppResult;
+    }
+
     // 1) Если явно задан UUID — используем его
     if (this.appUuid) {
       return { appId: this.appUuid, envId: "" } satisfies EnsureAppResult;
@@ -140,14 +239,51 @@ export class CoolifyProvider {
 
     // 2) Иначе пытаемся найти по имени среди приложений команды
     const nameToFind = this.appName ?? siteId;
-    const apps = await this.http<any>("/applications", { method: "GET" });
-    const found = Array.isArray(apps?.data)
-      ? apps.data.find(
-          (a: any) => a?.name === nameToFind || a?.uuid === nameToFind,
-        )
-      : null;
-    if (found?.uuid) {
-      return { appId: String(found.uuid), envId: "" } satisfies EnsureAppResult;
+    try {
+      const apps = await this.http<any>("/applications", { method: "GET" });
+      const appList = Array.isArray(apps?.data)
+        ? apps.data
+        : Array.isArray(apps)
+          ? apps
+          : [];
+      const found = appList.find(
+        (a: any) => a?.name === nameToFind || a?.uuid === nameToFind,
+      );
+      if (found?.uuid) {
+        return {
+          appId: String(found.uuid),
+          envId: "",
+        } satisfies EnsureAppResult;
+      }
+    } catch (e) {
+      this.logger.warn(
+        `ensureApp search failed: ${e instanceof Error ? e.message : e}`,
+      );
+    }
+
+    // 3) Not found — create with nginx-minio-proxy if server is configured
+    if (this.serverUuid) {
+      const projectUuid =
+        createOptions?.projectUuid || this.projectUuid || "";
+      const subdomain =
+        createOptions?.subdomain || `${siteId}.${this.wildcardDomain}`;
+      const sitePath = `sites/${siteId}`;
+
+      this.logger.log(
+        `ensureApp: creating new static site app for ${siteId} with nginx-minio-proxy`,
+      );
+
+      const created = await this.createStaticSiteApp({
+        projectUuid,
+        name: `merfy-site-${siteId}`,
+        subdomain,
+        sitePath,
+      });
+
+      return {
+        appId: created.uuid,
+        envId: "",
+      } satisfies EnsureAppResult;
     }
 
     throw new Error("coolify_application_not_found");
@@ -156,12 +292,20 @@ export class CoolifyProvider {
   /**
    * deployBuild — триггерит деплой существующего приложения в Coolify.
    * Coolify самостоятельно тянет код/образ; `artifactUrl` пишем в deployment_note для трассировки.
+   *
+   * In mock mode: returns a placeholder URL without making API calls.
    */
   async deployBuild(params: {
     siteId: string;
     buildId: string;
     artifactUrl: string;
   }) {
+    if (!this.isHttpMode()) {
+      return {
+        url: `https://${params.siteId}.preview.local`,
+      } satisfies DeployResult;
+    }
+
     try {
       const ensure = await this.ensureApp(params.siteId);
       const payload = await this.http<any>("/deploy", {
@@ -172,18 +316,17 @@ export class CoolifyProvider {
           deployment_note: `artifact:${params.artifactUrl}`,
         }),
       });
-      // Coolify не возвращает публичный URL в deploy, поэтому оставляем предыдущий/мок
       const url =
         payload?.deployment_url ??
         payload?.url ??
-        `https://${params.siteId}.preview.local`;
+        `https://${params.siteId}.${this.wildcardDomain}`;
       return { url: String(url) } satisfies DeployResult;
     } catch (e) {
       this.logger.warn(
         `deployBuild failed: ${e instanceof Error ? e.message : e}`,
       );
       return {
-        url: `https://${params.siteId}.preview.local`,
+        url: `https://${params.siteId}.${this.wildcardDomain}`,
       } satisfies DeployResult;
     }
   }
@@ -191,8 +334,14 @@ export class CoolifyProvider {
   /**
    * setDomain — привязать домен к приложению у провайдера и включить SSL (Let's Encrypt).
    * В Coolify домены указываются в поле fqdn (через запятую).
+   *
+   * In mock mode: returns success without making API calls.
    */
   async setDomain(siteId: string, domain: string) {
+    if (!this.isHttpMode()) {
+      return { success: true } as const;
+    }
+
     try {
       const ensure = await this.ensureApp(siteId);
       await this.http(`/applications/${ensure.appId}`, {
@@ -210,8 +359,14 @@ export class CoolifyProvider {
 
   /**
    * toggleMaintenance — включить/выключить режим обслуживания у приложения.
+   *
+   * In mock mode: returns success without making API calls.
    */
   async toggleMaintenance(siteId: string, enabled: boolean) {
+    if (!this.isHttpMode()) {
+      return { success: true } as const;
+    }
+
     try {
       const ensure = await this.ensureApp(siteId);
       const path = enabled

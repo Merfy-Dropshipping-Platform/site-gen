@@ -567,6 +567,11 @@ async function stageZip(ctx: BuildContext): Promise<void> {
 
 /**
  * Stage 6: UPLOAD — Upload artifact + static files to S3/MinIO.
+ *
+ * Uploads:
+ * 1. Zip artifact to sites/{siteId}/{buildId}/artifact.zip
+ * 2. Static files for direct serving to sites/{siteId}/
+ * 3. Updates site_build.artifactUrl with the S3 URL
  */
 async function stageUpload(
   deps: BuildDependencies,
@@ -578,36 +583,42 @@ async function stageUpload(
   }
 
   const bucket = await deps.s3.ensureBucket();
-  const sitePrefix = ctx.publicUrl
-    ? deps.s3.getSitePrefixBySubdomain(ctx.publicUrl)
-    : `sites/${ctx.tenantId}/${ctx.siteId}/`;
 
-  // Remove old files for this site
-  await deps.s3.removePrefix(bucket, sitePrefix).catch(() => {});
+  // Determine the site prefix for live serving
+  const siteSlug = ctx.publicUrl
+    ? deps.s3.extractSubdomainSlug(ctx.publicUrl)
+    : ctx.siteId;
 
-  // Upload all static files from dist/
-  const { uploaded } = await deps.s3.uploadDirectory(
-    bucket,
-    sitePrefix,
+  // 1. Upload zip artifact to sites/{siteId}/{buildId}/artifact.zip
+  const artifactUrl = await deps.s3
+    .uploadArtifact(siteSlug, ctx.buildId, ctx.artifactPath)
+    .catch((e) => {
+      logger.warn(`[upload] Failed to upload artifact: ${e}`);
+      return null;
+    });
+  if (artifactUrl) {
+    ctx.artifactUrl = artifactUrl;
+  }
+
+  // 2. Upload static files for direct serving
+  const { uploaded, livePrefix } = await deps.s3.uploadStaticFiles(
+    siteSlug,
+    ctx.buildId,
     ctx.distDir,
   );
   logger.log(
-    `[upload] Uploaded ${uploaded} static files (prefix: ${sitePrefix})`,
+    `[upload] Uploaded ${uploaded} static files + artifact for site ${siteSlug}`,
   );
 
-  // Upload zip artifact
-  const artifactKey = `${sitePrefix}${ctx.buildId}.zip`;
-  const uploadedUrl = await deps.s3
-    .uploadFile(bucket, artifactKey, ctx.artifactPath)
-    .catch(() => null);
-  if (uploadedUrl) {
-    ctx.artifactUrl = uploadedUrl;
-  }
-
-  // Update build record with S3 info
+  // 3. Update build record with S3 info and artifactUrl
+  const sitePrefix = `sites/${siteSlug}/`;
   await deps.db
     .update(deps.schema.siteBuild)
-    .set({ s3Bucket: bucket, s3KeyPrefix: sitePrefix })
+    .set({
+      s3Bucket: bucket,
+      s3KeyPrefix: sitePrefix,
+      artifactUrl: ctx.artifactUrl || undefined,
+    })
     .where(eq(deps.schema.siteBuild.id, ctx.buildId));
 }
 

@@ -457,4 +457,53 @@ export class S3StorageService {
   getBucketName(): string | null {
     return this.bucketName;
   }
+
+  /**
+   * Upload build artifact zip to S3: sites/{siteId}/{buildId}/artifact.zip
+   *
+   * @returns public URL of the uploaded artifact
+   */
+  async uploadArtifact(
+    siteId: string,
+    buildId: string,
+    zipPath: string,
+  ): Promise<string> {
+    const bucket = await this.ensureBucket();
+    const key = `sites/${siteId}/${buildId}/artifact.zip`;
+    return this.uploadFile(bucket, key, zipPath);
+  }
+
+  /**
+   * Upload static files from a dist directory to S3 for direct serving.
+   * Files are uploaded to sites/{siteId}/{buildId}/ prefix.
+   * Also updates the "live" prefix at sites/{siteId}/ for current serving.
+   *
+   * @returns number of uploaded files and the live prefix URL
+   */
+  async uploadStaticFiles(
+    siteId: string,
+    buildId: string,
+    distDir: string,
+  ): Promise<{ uploaded: number; livePrefix: string }> {
+    const bucket = await this.ensureBucket();
+
+    // Upload to build-specific prefix (archive)
+    const buildPrefix = `sites/${siteId}/${buildId}/`;
+    await this.uploadDirectory(bucket, buildPrefix, distDir);
+
+    // Upload to live prefix (overwrite current serving files)
+    const livePrefix = `sites/${siteId}/`;
+    await this.removePrefix(bucket, livePrefix).catch(() => {});
+    const { uploaded } = await this.uploadDirectory(
+      bucket,
+      livePrefix,
+      distDir,
+    );
+
+    this.logger.log(
+      `Uploaded ${uploaded} static files for site ${siteId}, build ${buildId}`,
+    );
+
+    return { uploaded, livePrefix: this.getPublicUrl(bucket, livePrefix) };
+  }
 }

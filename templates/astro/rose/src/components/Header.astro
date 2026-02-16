@@ -3,16 +3,36 @@ interface Props {
   siteName?: string;
 }
 const { siteName = 'ROSE' } = Astro.props;
+
+// Load dynamic site config (generated from constructor revision data)
+let siteConfig: any = { header: {} };
+try {
+  siteConfig = await import('../data/site-config.json');
+} catch {
+  // Fallback: site-config.json not present
+}
+
+const header = siteConfig.header || {};
+const displayName = header.siteTitle || siteName;
+const navigationLinks: { label: string; href: string; submenu?: { label: string; href: string }[] }[] =
+  header.navigationLinks?.length > 0
+    ? header.navigationLinks
+    : [
+      { label: 'Главная', href: '/' },
+      { label: 'Каталог', href: '/catalog' },
+      { label: 'О нас', href: '/about' },
+      { label: 'Контакты', href: '/contacts' },
+    ];
+const currentPath = Astro.url.pathname;
 ---
 
 <header class="header">
   <div class="header-container">
-    <a href="/" class="logo">{siteName}</a>
+    <a href="/" class="logo">{displayName}</a>
     <nav class="nav">
-      <a href="/">Главная</a>
-      <a href="/catalog">Каталог</a>
-      <a href="/about">О нас</a>
-      <a href="/contacts">Контакты</a>
+      {navigationLinks.map((link) => (
+        <a href={link.href} class:list={[{ active: currentPath === link.href }]}>{link.label}</a>
+      ))}
     </nav>
     <div class="header-actions">
       <button class="icon-btn" aria-label="Поиск">
@@ -74,7 +94,8 @@ const { siteName = 'ROSE' } = Astro.props;
     transition: color 0.2s;
   }
 
-  .nav a:hover {
+  .nav a:hover,
+  .nav a.active {
     color: var(--rose-600);
   }
 

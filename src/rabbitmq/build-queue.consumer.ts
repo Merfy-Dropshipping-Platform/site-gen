@@ -23,7 +23,10 @@ import {
 } from "./retry-setup.service";
 import { PG_CONNECTION, PRODUCT_RMQ_SERVICE } from "../constants";
 import * as schema from "../db/schema";
-import { runBuildPipeline, type BuildDependencies } from "../generator/build.service";
+import {
+  runBuildPipeline,
+  type BuildDependencies,
+} from "../generator/build.service";
 import { S3StorageService } from "../storage/s3.service";
 
 const MAX_CONCURRENT_BUILDS = 3;
@@ -32,7 +35,9 @@ const MAX_CONCURRENT_BUILDS = 3;
 export class BuildQueueConsumer implements OnModuleInit {
   private readonly logger = new Logger(BuildQueueConsumer.name);
   private connection: Awaited<ReturnType<typeof amqplib.connect>> | null = null;
-  private channel: Awaited<ReturnType<Awaited<ReturnType<typeof amqplib.connect>>["createChannel"]>> | null = null;
+  private channel: Awaited<
+    ReturnType<Awaited<ReturnType<typeof amqplib.connect>>["createChannel"]>
+  > | null = null;
 
   constructor(
     private readonly config: ConfigService,
@@ -45,10 +50,14 @@ export class BuildQueueConsumer implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     const enabled =
-      (this.config.get<string>("BUILD_QUEUE_CONSUMER_ENABLED") ?? "false").toLowerCase() === "true";
+      (
+        this.config.get<string>("BUILD_QUEUE_CONSUMER_ENABLED") ?? "false"
+      ).toLowerCase() === "true";
 
     if (!enabled) {
-      this.logger.log("Build queue consumer disabled (BUILD_QUEUE_CONSUMER_ENABLED != true)");
+      this.logger.log(
+        "Build queue consumer disabled (BUILD_QUEUE_CONSUMER_ENABLED != true)",
+      );
       return;
     }
 
@@ -74,20 +83,11 @@ export class BuildQueueConsumer implements OnModuleInit {
     // Limit concurrent builds
     await this.channel.prefetch(MAX_CONCURRENT_BUILDS);
 
-    // Ensure queue exists (idempotent)
-    try {
-      await this.channel.assertQueue(SITES_QUEUE, {
-        durable: true,
-        arguments: { "x-max-priority": 10 },
-      });
-    } catch {
-      this.logger.warn(
-        "Could not assert sites_queue with priority — may already exist with different args",
-      );
-      // Reconnect since assertQueue failure closes the channel
-      this.channel = await this.connection.createChannel();
-      await this.channel.prefetch(MAX_CONCURRENT_BUILDS);
-    }
+    // Ensure queue exists (idempotent — do NOT pass x-max-priority to avoid
+    // PRECONDITION_FAILED if queue already exists without priority support)
+    await this.channel.assertQueue(SITES_QUEUE, {
+      durable: true,
+    });
 
     this.logger.log(
       `Build queue consumer started (prefetch: ${MAX_CONCURRENT_BUILDS})`,
@@ -121,12 +121,16 @@ export class BuildQueueConsumer implements OnModuleInit {
 
         const payload = data.data as Record<string, unknown> | undefined;
         if (!payload) {
-          this.logger.warn("build_queued message without data, acking to discard");
+          this.logger.warn(
+            "build_queued message without data, acking to discard",
+          );
           this.channel?.ack(msg);
           return;
         }
 
-        const retryCount = getRetryCountFromHeaders(msg.properties as unknown as Record<string, unknown>);
+        const retryCount = getRetryCountFromHeaders(
+          msg.properties as unknown as Record<string, unknown>,
+        );
         const { tenantId, siteId, buildId, mode } = payload as {
           tenantId?: string;
           siteId?: string;
@@ -204,28 +208,24 @@ export class BuildQueueConsumer implements OnModuleInit {
             this.logger.log(
               `Routing to retry queue: ${routingKey} (attempt ${retryCount + 1})`,
             );
-            this.channel?.publish(
-              DLX_EXCHANGE,
-              routingKey,
-              msg.content,
-              {
-                persistent: true,
-                priority: msg.properties.priority,
-                headers: {
-                  ...msg.properties.headers,
-                  "x-death": [
-                    ...(((msg.properties.headers?.["x-death"] as unknown[]) ?? []) as Array<Record<string, unknown>>),
-                    {
-                      queue: SITES_QUEUE,
-                      reason: "rejected",
-                      count: 1,
-                      time: new Date(),
-                    },
-                  ],
-                  "x-retry-count": retryCount + 1,
-                },
+            this.channel?.publish(DLX_EXCHANGE, routingKey, msg.content, {
+              persistent: true,
+              priority: msg.properties.priority,
+              headers: {
+                ...msg.properties.headers,
+                "x-death": [
+                  ...(((msg.properties.headers?.["x-death"] as unknown[]) ??
+                    []) as Array<Record<string, unknown>>),
+                  {
+                    queue: SITES_QUEUE,
+                    reason: "rejected",
+                    count: 1,
+                    time: new Date(),
+                  },
+                ],
+                "x-retry-count": retryCount + 1,
               },
-            );
+            });
             this.channel?.ack(msg); // ack original
           } else {
             // Max retries exceeded — route to dead letter

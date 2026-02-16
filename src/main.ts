@@ -30,9 +30,6 @@ async function bootstrap() {
       prefetchCount: 3,
       queueOptions: {
         durable: true,
-        arguments: {
-          "x-max-priority": 10,
-        },
       },
     },
   });

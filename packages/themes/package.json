@@ -1,13 +1,29 @@
 {
   "name": "@merfy/themes",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "main": "./types.ts",
   "types": "./types.ts",
   "exports": {
     ".": "./types.ts",
-    "./types": "./types.ts"
+    "./types": "./types.ts",
+    "./lib/validateTheme": "./lib/validateTheme.ts",
+    "./lib/resolveComponents": "./lib/resolveComponents.ts",
+    "./lib/generateTokensCss": "./lib/generateTokensCss.ts",
+    "./lib/loadTheme": "./lib/loadTheme.ts",
+    "./cli/create": "./cli/create.ts",
+    "./cli/add-component": "./cli/add-component.ts",
+    "./cli/validate": "./cli/validate.ts",
+    "./cli/dev": "./cli/dev.ts",
+    "./schema": "./schema/theme-manifest.schema.json"
+  },
+  "scripts": {
+    "theme:create": "tsx cli/create.ts",
+    "theme:add-component": "tsx cli/add-component.ts",
+    "theme:validate": "tsx cli/validate.ts",
+    "theme:dev": "tsx cli/dev.ts",
+    "test": "jest --config jest.config.ts"
   },
   "devDependencies": {
     "typescript": "^5.7.0"

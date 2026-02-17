@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://merfy.ru/schemas/theme-manifest.json",
+  "title": "Merfy Theme Manifest",
+  "description": "Schema for theme.json manifest file that describes a Merfy storefront theme",
+  "type": "object",
+  "required": ["name", "version"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Theme display name",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version of the theme",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9.]+)?$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Short description of the theme",
+      "maxLength": 500
+    },
+    "author": {
+      "type": "string",
+      "description": "Theme author name or organization"
+    },
+    "category": {
+      "type": "string",
+      "description": "Theme category for marketplace filtering",
+      "enum": ["fashion", "electronics", "food", "digital", "general", "beauty", "home", "sports"]
+    },
+    "preview": {
+      "type": "string",
+      "description": "Path to theme preview image"
+    },
+    "screenshots": {
+      "type": "array",
+      "description": "Theme screenshot URLs for marketplace",
+      "items": {
+        "type": "string"
+      }
+    },
+    "features": {
+      "type": "object",
+      "description": "Feature flags controlling which components are available",
+      "additionalProperties": {
+        "type": "boolean"
+      }
+    },
+    "pages": {
+      "type": "array",
+      "description": "List of page template names (must have corresponding .json files in pages/)",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "settings_schema": {
+      "type": "array",
+      "description": "Groups of settings available for merchant customization",
+      "items": {
+        "type": "object",
+        "required": ["name", "settings"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Settings group name"
+          },
+          "settings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "type", "label"],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Setting identifier (used as CSS variable name)"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["color", "font", "range", "select", "text", "checkbox"],
+                  "description": "Setting input type"
+                },
+                "label": {
+                  "type": "string",
+                  "description": "Human-readable label for the setting"
+                },
+                "default": {
+                  "description": "Default value for the setting"
+                },
+                "min": {
+                  "type": "number",
+                  "description": "Minimum value for range type"
+                },
+                "max": {
+                  "type": "number",
+                  "description": "Maximum value for range type"
+                },
+                "unit": {
+                  "type": "string",
+                  "description": "Unit suffix for range values (px, rem, etc.)"
+                },
+                "enum": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Options for select type"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "color_schemes": {
+      "type": "object",
+      "description": "Color scheme configuration",
+      "properties": {
+        "min": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Minimum number of color schemes"
+        },
+        "max": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum number of color schemes"
+        },
+        "default": {
+          "type": "array",
+          "description": "Default color scheme definitions",
+          "items": {
+            "type": "object",
+            "required": ["name", "background", "foreground"],
+            "properties": {
+              "name": { "type": "string" },
+              "background": { "type": "string", "pattern": "^#[0-9a-fA-F]{3,8}$" },
+              "foreground": { "type": "string", "pattern": "^#[0-9a-fA-F]{3,8}$" },
+              "primary": { "type": "string", "pattern": "^#[0-9a-fA-F]{3,8}$" },
+              "button": { "type": "string", "pattern": "^#[0-9a-fA-F]{3,8}$" },
+              "buttonText": { "type": "string", "pattern": "^#[0-9a-fA-F]{3,8}$" }
+            }
+          }
+        }
+      }
+    },
+    "presets": {
+      "type": "array",
+      "description": "Pre-configured theme presets",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "settings": { "type": "object" }
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

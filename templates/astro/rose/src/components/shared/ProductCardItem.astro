@@ -1,0 +1,37 @@
+---
+interface Props {
+	name: string;
+	price: string;
+	oldPrice?: string;
+	image: string;
+	href?: string;
+}
+
+const { name, price, oldPrice, image, href = '#' } = Astro.props;
+---
+
+<a href={href} class="flex flex-col gap-4 sm:gap-5 md:gap-6 lg:gap-[25px] group cursor-pointer">
+	<div class="bg-gray-100 rounded-lg sm:rounded-[8px] md:rounded-[10px] overflow-hidden w-full aspect-[318/515]">
+		<img
+			src={image}
+			alt={name}
+			loading="lazy"
+			class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+		/>
+	</div>
+	<div class="flex flex-col gap-2 sm:gap-2.5 md:gap-3 lg:gap-[10px] px-2 sm:px-3 md:px-4 lg:px-[15px]">
+		<h3 class="text-base sm:text-lg md:text-xl lg:text-[24px] font-normal text-black leading-[1.366] font-manrope">
+			{name}
+		</h3>
+		<div class="flex items-center gap-2 sm:gap-3 md:gap-4 lg:gap-[15px] flex-wrap">
+			<span class="text-lg sm:text-xl md:text-2xl lg:text-[32px] font-normal text-black leading-[1.366] font-manrope">
+				{price}
+			</span>
+			{oldPrice && (
+				<span class="text-sm sm:text-base md:text-lg lg:text-[20px] font-medium text-[#999999] line-through leading-[1.366] font-manrope">
+					{oldPrice}
+				</span>
+			)}
+		</div>
+	</div>
+</a>

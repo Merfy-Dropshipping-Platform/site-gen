@@ -1,0 +1,19 @@
+---
+interface Props {
+	icon: string;
+	label: string;
+}
+
+const { icon, label } = Astro.props;
+---
+
+<button
+	aria-label={label}
+	class="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 flex items-center justify-center hover:opacity-70 transition-opacity"
+>
+	<img
+		src={icon}
+		alt={label}
+		class="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10"
+	/>
+</button>

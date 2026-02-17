@@ -1,170 +1,66 @@
 ---
-interface Collection {
-  name: string;
-  image?: string;
-  hidden?: boolean;
-}
+import SectionHeader from './shared/SectionHeader.astro';
+import CollectionCardItem from './shared/CollectionCardItem.astro';
 
 interface Props {
   title?: string;
-  titleSize?: 'small' | 'medium' | 'large';
   subtitle?: string;
-  collections?: Collection[];
+  titleSize?: string;
+  subtitleSize?: string;
+  dataSource?: string;
+  collections?: Array<{ name: string; image: string }>;
   columnsCount?: number;
   colorScheme?: string;
   padding?: { top?: number; bottom?: number };
 }
 
 const {
-  title = 'Коллекции',
-  titleSize = 'medium',
-  subtitle,
+  title = 'Снова в продаже',
+  subtitle = 'Стиль для каждой ситуации - найдите свой в каталоге.',
+  dataSource = 'auto',
   collections = [],
   columnsCount = 3,
-  padding,
+  padding = { top: 80, bottom: 80 },
 } = Astro.props;
 
-const padTop = padding?.top ?? 80;
-const padBottom = padding?.bottom ?? 80;
-const visibleCollections = collections.filter((c) => !c.hidden);
+let collectionsData = collections || [];
+
+if (dataSource === 'auto' || collectionsData.length === 0) {
+  try {
+    const imported = await import('../data/collections.json');
+    collectionsData = imported.default || [];
+  } catch {
+    collectionsData = [
+      { name: 'Коллекция 1', image: '/images/puk-1.png' },
+      { name: 'Коллекция 2', image: '/images/puk-2.png' },
+      { name: 'Коллекция 3', image: '/images/puk-3.png' },
+    ];
+  }
+}
+
+const cols = columnsCount || 3;
 ---
 
-<section class={`collections collections--${titleSize}`} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}>
-  {title && <h2 class="collections-heading">{title}</h2>}
-  {subtitle && <p class="collections-subtitle">{subtitle}</p>}
+<section id="collections" class="bg-white w-full scroll-mt-16 sm:scroll-mt-20" style={`padding: ${padding?.top || 80}px 0 ${padding?.bottom || 80}px;`}>
+  <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12">
+    <SectionHeader title={title || ''} subtitle={subtitle} />
 
-  {visibleCollections.length === 0 ? (
-    <p class="no-collections">Коллекции скоро появятся</p>
-  ) : (
-    <div class="collections-grid" style={`--columns: ${columnsCount}`}>
-      {visibleCollections.map((collection) => (
-        <article class="collection-card">
-          <div class="collection-image-wrapper">
-            {collection.image ? (
-              <img src={collection.image} alt={collection.name} class="collection-image" loading="lazy" />
-            ) : (
-              <div class="collection-image-placeholder">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                  <circle cx="8.5" cy="8.5" r="1.5"/>
-                  <polyline points="21,15 16,10 5,21"/>
-                </svg>
-              </div>
-            )}
-            <div class="collection-overlay">
-              <h3 class="collection-name">{collection.name}</h3>
-            </div>
-          </div>
-        </article>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 md:gap-10 lg:gap-12 xl:gap-16 collections-grid" role="list">
+      {collectionsData.map((collection, index) => (
+        <CollectionCardItem
+          name={collection.name}
+          image={collection.image}
+          eager={index < 2}
+        />
       ))}
     </div>
-  )}
+  </div>
 </section>
 
-<style>
-  .collections {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding-left: 20px;
-    padding-right: 20px;
-  }
-
-  .collections-heading {
-    font-family: var(--font-display);
-    font-weight: 500;
-    text-align: center;
-    margin-bottom: 16px;
-    color: var(--neutral-900);
-    line-height: 1.2;
-  }
-
-  .collections--small .collections-heading { font-size: 1.5rem; }
-  .collections--medium .collections-heading { font-size: 2rem; }
-  .collections--large .collections-heading { font-size: 2.5rem; }
-
-  .collections-subtitle {
-    text-align: center;
-    color: var(--neutral-600);
-    font-size: 1.1rem;
-    margin-bottom: 40px;
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-
-  .no-collections {
-    text-align: center;
-    color: var(--neutral-500);
-    padding: 60px 20px;
-    font-size: 1.1rem;
-  }
-
-  .collections-grid {
-    display: grid;
-    grid-template-columns: repeat(var(--columns), 1fr);
-    gap: 24px;
-  }
-
-  @media (max-width: 768px) {
-    .collections-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
-  }
-
-  @media (max-width: 480px) {
-    .collections-grid { grid-template-columns: 1fr; }
-  }
-
-  .collection-card {
-    border-radius: 16px;
-    overflow: hidden;
-    transition: transform 0.3s, box-shadow 0.3s;
-    cursor: pointer;
-  }
-
-  .collection-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.1);
-  }
-
-  .collection-image-wrapper {
-    position: relative;
-    aspect-ratio: 4/3;
-    overflow: hidden;
-    background: var(--rose-50);
-  }
-
-  .collection-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.4s;
-  }
-
-  .collection-card:hover .collection-image {
-    transform: scale(1.05);
-  }
-
-  .collection-image-placeholder {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--rose-300);
-  }
-
-  .collection-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.5), transparent);
-    display: flex;
-    align-items: flex-end;
-    padding: 20px;
-  }
-
-  .collection-name {
-    font-family: var(--font-display);
-    font-size: 1.25rem;
-    font-weight: 500;
-    color: #fff;
+<style define:vars={{ cols }}>
+  @media (min-width: 1024px) {
+    .collections-grid {
+      grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+    }
   }
 </style>

@@ -1,0 +1,46 @@
+/* Rose Theme — Design Tokens
+ * CSS custom properties generated from theme.json defaults.
+ * Colors stored as RGB triplets for rgba() support:
+ *   background: rgba(var(--color-primary), 0.5);
+ */
+
+:root {
+  /* ── Colors (RGB triplets) ── */
+  --color-primary: 225, 29, 72;
+  --color-primary-rgb: 225, 29, 72;
+  --color-background: 255, 255, 255;
+  --color-foreground: 18, 18, 18;
+  --color-border: 229, 231, 235;
+  --color-button-text: 255, 255, 255;
+  --color-muted: 107, 114, 128;
+
+  /* ── Typography ── */
+  --font-heading: 'Comfortaa', cursive;
+  --font-body: 'Manrope', sans-serif;
+
+  /* ── Border Radii ── */
+  --radius-base: 0.5rem;
+  --radius-button: 9999px;
+  --radius-card: 1rem;
+  --radius-input: 0.5rem;
+
+  /* ── Layout ── */
+  --page-width: 1280px;
+  --spacing-section: 4rem;
+}
+
+/* ── Color Scheme 1: Light ── */
+.color-scheme-1 {
+  --color-background: 255, 255, 255;
+  --color-foreground: 18, 18, 18;
+  --color-primary: 225, 29, 72;
+  --color-border: 229, 231, 235;
+}
+
+/* ── Color Scheme 2: Dark accent ── */
+.color-scheme-2 {
+  --color-background: 26, 26, 46;
+  --color-foreground: 226, 232, 240;
+  --color-primary: 244, 114, 182;
+  --color-border: 51, 65, 85;
+}

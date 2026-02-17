@@ -1,0 +1,25 @@
+{
+  "root": {
+    "props": {
+      "title": "Корзина — Rose"
+    }
+  },
+  "content": [
+    {
+      "type": "CartPage",
+      "props": {
+        "showContinueShopping": true,
+        "continueShoppingLink": "/catalog",
+        "continueShoppingText": "Продолжить покупки",
+        "showOrderSummary": true,
+        "showPromoCode": false,
+        "checkoutButtonText": "Оформить заказ",
+        "emptyCartMessage": "Ваша корзина пуста",
+        "emptyCartButtonText": "Перейти в каталог",
+        "emptyCartButtonLink": "/catalog",
+        "colorScheme": "1"
+      }
+    }
+  ],
+  "zones": {}
+}

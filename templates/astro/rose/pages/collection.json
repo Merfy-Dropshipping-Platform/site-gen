@@ -1,0 +1,35 @@
+{
+  "root": {
+    "props": {
+      "title": "{{ collection.title }} — Rose"
+    }
+  },
+  "content": [
+    {
+      "type": "CollectionHeader",
+      "props": {
+        "showDescription": true,
+        "showImage": true,
+        "showProductCount": true,
+        "imageHeight": "medium",
+        "colorScheme": "1"
+      }
+    },
+    {
+      "type": "ProductGrid",
+      "props": {
+        "columns": 4,
+        "showFilters": true,
+        "showSort": true,
+        "filterPosition": "sidebar",
+        "pagination": "infinite-scroll",
+        "productsPerPage": 12,
+        "showPrice": true,
+        "showAddToCart": true,
+        "cardStyle": "minimal",
+        "colorScheme": "1"
+      }
+    }
+  ],
+  "zones": {}
+}

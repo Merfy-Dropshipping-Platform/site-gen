@@ -1,108 +1,108 @@
 ---
-const { eyebrow, title, description, align = 'center', backgroundImage } = Astro.props;
+interface Props {
+  heading?: any;
+  text?: any;
+  primaryButton?: { text?: string; link?: any };
+  secondaryButton?: { text?: string; link?: any };
+  overlay?: number;
+  backgroundImage?: string;
+  backgroundImage2?: string;
+  size?: string;
+  position?: string;
+  alignment?: string;
+  container?: string;
+  colorScheme?: string;
+}
+
+const {
+  heading = { text: 'Rose', size: 'medium' },
+  text = { content: 'Ваш стиль, ваша индивидуальность', size: 'medium' },
+  primaryButton = { text: 'В каталог', link: { href: '#collections' } },
+  secondaryButton = { text: '', link: { href: '#' } },
+  overlay = 10,
+  backgroundImage = '/images/first-section.png',
+  size = 'large',
+  position = 'center',
+  alignment = 'center',
+  container = 'true',
+} = Astro.props;
+
+const headingText = typeof heading === 'object' ? heading?.text : heading;
+const textContent = typeof text === 'object' ? text?.content : text;
+const primaryLink = typeof primaryButton?.link === 'object' ? primaryButton?.link?.href : (primaryButton?.link || '#');
+const secondaryLink = typeof secondaryButton?.link === 'object' ? secondaryButton?.link?.href : (secondaryButton?.link || '#');
+
+const sizeClasses: Record<string, string> = {
+  small: 'min-h-[300px] sm:min-h-[350px] md:min-h-[400px]',
+  medium: 'min-h-[400px] sm:min-h-[500px] md:min-h-[600px]',
+  large: 'min-h-[400px] sm:min-h-[500px] md:min-h-[600px] lg:min-h-[700px] xl:min-h-[800px] 2xl:min-h-[1080px]',
+};
+const sizeClass = sizeClasses[size || 'large'] || sizeClasses.large;
+
+const positionMap: Record<string, string> = {
+  'top-left': 'items-start justify-start text-left',
+  'top-center': 'items-start justify-center text-center',
+  'top-right': 'items-start justify-end text-right',
+  'center-left': 'items-center justify-start text-left',
+  'center': 'items-center justify-center text-center',
+  'center-right': 'items-center justify-end text-right',
+  'bottom-left': 'items-end justify-start text-left',
+  'bottom-center': 'items-end justify-center text-center',
+  'bottom-right': 'items-end justify-end text-right',
+};
+const posClass = positionMap[position || 'center'] || positionMap.center;
+
+const overlayOpacity = (overlay || 0) / 100;
 ---
 
-<section class="hero" style={backgroundImage ? `background-image: url(${backgroundImage})` : ''}>
-  <div class="hero-content" style={`text-align: ${align}`}>
-    {eyebrow && <p class="hero-eyebrow">{eyebrow}</p>}
-    <h1 class="hero-title">{title ?? 'Ваш стиль'}</h1>
-    {description && <p class="hero-description">{description}</p>}
-    <div class="hero-actions">
-      <a href="/catalog" class="btn btn-primary">Смотреть каталог</a>
-      <a href="/about" class="btn btn-secondary">О нас</a>
+<section class={`relative bg-white w-full ${sizeClass} overflow-hidden`}>
+  <div class="w-full max-w-[1920px] mx-auto relative min-h-[60vh] sm:min-h-[65vh] md:min-h-[70vh] lg:min-h-[75vh] xl:min-h-[80vh]">
+    <!-- Background Image -->
+    <div
+      class="absolute inset-0 bg-cover bg-center bg-no-repeat"
+      style={`background-image: url('${backgroundImage}');`}
+    ></div>
+
+    <!-- Overlay -->
+    {overlayOpacity > 0 && (
+      <div class="absolute inset-0" style={`background-color: rgba(0,0,0,${overlayOpacity});`}></div>
+    )}
+
+    <!-- Content -->
+    <div class={`relative z-10 w-full h-full flex ${posClass} py-8 sm:py-12 md:py-16 lg:py-20 xl:py-24`}>
+      <div class="flex flex-col items-center gap-4 sm:gap-5 md:gap-6 lg:gap-[20px] xl:gap-[25px] px-4 sm:px-6 md:px-8 w-full max-w-7xl">
+        <header class="flex flex-col items-center gap-1 sm:gap-2 md:gap-3 lg:gap-4 xl:gap-[5px]">
+          {headingText && (
+            <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-[48px] font-normal text-white uppercase leading-[1.115] text-center font-comfortaa">
+              {headingText}
+            </h1>
+          )}
+          {textContent && (
+            <p class="text-sm sm:text-base md:text-lg lg:text-xl xl:text-[24px] font-normal text-white leading-[1.366] text-center px-2 sm:px-4 md:px-6 lg:px-8 font-manrope">
+              {textContent}
+            </p>
+          )}
+        </header>
+
+        <div class="flex gap-4">
+          {primaryButton?.text && (
+            <a
+              href={primaryLink}
+              class="bg-white text-black rounded-lg sm:rounded-[8px] md:rounded-[10px] px-6 sm:px-8 md:px-[25px] lg:px-[30px] xl:px-[35px] h-12 sm:h-14 md:h-16 lg:h-[70px] xl:h-[80px] flex items-center justify-center gap-2 sm:gap-[8px] md:gap-[10px] text-sm sm:text-base md:text-lg lg:text-xl xl:text-[24px] font-normal uppercase leading-[1.366] hover:bg-gray-100 transition-colors font-manrope"
+            >
+              {primaryButton.text}
+            </a>
+          )}
+          {secondaryButton?.text && (
+            <a
+              href={secondaryLink}
+              class="border border-white text-white rounded-lg sm:rounded-[8px] md:rounded-[10px] px-6 sm:px-8 md:px-[25px] h-12 sm:h-14 md:h-16 lg:h-[70px] xl:h-[80px] flex items-center justify-center text-sm sm:text-base md:text-lg lg:text-xl xl:text-[24px] font-normal uppercase leading-[1.366] hover:bg-white/10 transition-colors font-manrope"
+            >
+              {secondaryButton.text}
+            </a>
+          )}
+        </div>
+      </div>
     </div>
   </div>
 </section>
-
-<style>
-  .hero {
-    position: relative;
-    min-height: 70vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 80px 20px;
-    background: linear-gradient(135deg, var(--rose-50) 0%, var(--rose-100) 100%);
-    background-size: cover;
-    background-position: center;
-    border-radius: 20px;
-    overflow: hidden;
-  }
-
-  .hero::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(255, 255, 255, 0.8);
-  }
-
-  .hero-content {
-    position: relative;
-    z-index: 1;
-    max-width: 700px;
-  }
-
-  .hero-eyebrow {
-    font-size: 0.85rem;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    color: var(--rose-600);
-    margin-bottom: 16px;
-  }
-
-  .hero-title {
-    font-family: var(--font-display);
-    font-size: clamp(2.5rem, 6vw, 4rem);
-    font-weight: 500;
-    color: var(--neutral-900);
-    line-height: 1.1;
-    margin-bottom: 20px;
-  }
-
-  .hero-description {
-    font-size: 1.1rem;
-    color: var(--neutral-600);
-    max-width: 500px;
-    margin: 0 auto 32px;
-  }
-
-  .hero-actions {
-    display: flex;
-    gap: 16px;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 14px 32px;
-    font-size: 0.95rem;
-    font-weight: 500;
-    border-radius: 8px;
-    text-decoration: none;
-    transition: all 0.2s;
-  }
-
-  .btn-primary {
-    background: var(--rose-600);
-    color: #fff;
-  }
-
-  .btn-primary:hover {
-    background: var(--rose-700);
-  }
-
-  .btn-secondary {
-    background: transparent;
-    color: var(--neutral-800);
-    border: 1px solid var(--neutral-300);
-  }
-
-  .btn-secondary:hover {
-    border-color: var(--rose-600);
-    color: var(--rose-600);
-  }
-</style>

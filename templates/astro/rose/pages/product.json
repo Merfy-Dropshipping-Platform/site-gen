@@ -1,0 +1,32 @@
+{
+  "root": {
+    "props": {
+      "title": "{{ product.title }} — Rose"
+    }
+  },
+  "content": [
+    {
+      "type": "ProductDetail",
+      "props": {
+        "showVariants": true,
+        "showQuantity": true,
+        "showDescription": true,
+        "showSku": false,
+        "imageGalleryStyle": "thumbnails",
+        "addToCartStyle": "full-width",
+        "colorScheme": "1"
+      }
+    },
+    {
+      "type": "ProductRecommendations",
+      "props": {
+        "heading": "Вам также может понравиться",
+        "maxProducts": 4,
+        "columns": 4,
+        "source": "related",
+        "colorScheme": "1"
+      }
+    }
+  ],
+  "zones": {}
+}

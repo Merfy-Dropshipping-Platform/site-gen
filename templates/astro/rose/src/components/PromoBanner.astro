@@ -1,61 +1,30 @@
 ---
 interface Props {
   text?: string;
-  size?: 'small' | 'medium' | 'large';
-  link?: { href?: string; text?: string };
+  link?: any;
+  size?: string;
   colorScheme?: string;
 }
 
-const { text = 'Специальное предложение', size = 'small', link, colorScheme } = Astro.props;
+const { text = 'Скидка 10% на общую сумму заказа от 9 000₽', link, size = 'small', colorScheme } = Astro.props;
+
+const href = typeof link === 'object' ? link?.href : (link || '#');
+
+const sizeClasses: Record<string, string> = {
+  small: 'py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm md:text-base',
+  medium: 'py-3 sm:py-3.5 md:py-4 text-sm sm:text-base md:text-lg',
+  large: 'py-4 sm:py-4.5 md:py-5 text-base sm:text-lg md:text-xl',
+};
+const sizeClass = sizeClasses[size] || sizeClasses.small;
 ---
 
-<section class={`promo-banner promo-banner--${size}`}>
-  <div class="promo-banner-content">
-    <p class="promo-banner-text">{text}</p>
-    {link?.href && (
-      <a href={link.href} class="promo-banner-link">{link.text ?? 'Подробнее'}</a>
-    )}
+<div class={`bg-black text-white w-full ${sizeClass}`}>
+  <div class="w-full max-w-[1920px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
+    <a
+      href={href}
+      class="block text-center hover:opacity-80 transition-opacity font-normal leading-tight font-manrope"
+    >
+      <span class="inline-block">{text}</span>
+    </a>
   </div>
-</section>
-
-<style>
-  .promo-banner {
-    background: var(--rose-600);
-    color: #fff;
-    text-align: center;
-  }
-
-  .promo-banner--small { padding: 12px 20px; }
-  .promo-banner--medium { padding: 20px 20px; }
-  .promo-banner--large { padding: 32px 20px; }
-
-  .promo-banner-content {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-
-  .promo-banner-text {
-    font-size: 0.95rem;
-    font-weight: 500;
-  }
-
-  .promo-banner--medium .promo-banner-text { font-size: 1.1rem; }
-  .promo-banner--large .promo-banner-text { font-size: 1.25rem; }
-
-  .promo-banner-link {
-    color: #fff;
-    text-decoration: underline;
-    font-weight: 600;
-    font-size: 0.9rem;
-    transition: opacity 0.2s;
-  }
-
-  .promo-banner-link:hover {
-    opacity: 0.8;
-  }
-</style>
+</div>

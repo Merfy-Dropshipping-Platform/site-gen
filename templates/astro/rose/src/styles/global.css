@@ -1,16 +1,16 @@
 @import "tailwindcss";
-@import url("https://fonts.googleapis.com/css2?family=Comfortaa:wght@300..700&family=Inter:wght@100..900&family=Manrope:wght@200..800&display=swap");
+@import "./tokens.css";
+@import url("https://fonts.googleapis.com/css2?family=Comfortaa:wght@300..700&family=Manrope:wght@200..800&display=swap");
 
 @theme {
   --font-family-sans: "Manrope", system-ui, -apple-system, sans-serif;
   --font-family-comfortaa: "Comfortaa", sans-serif;
   --font-family-manrope: "Manrope", sans-serif;
-  --font-family-inter: "Inter", sans-serif;
-  --color-primary: #000000;
+  --color-primary: #e11d48;
   --color-gray: #999999;
 }
 
-/* Утилиты для шрифтов */
+/* ── Font utility classes ── */
 .font-comfortaa {
   font-family: "Comfortaa", sans-serif;
 }
@@ -19,13 +19,62 @@
   font-family: "Manrope", sans-serif;
 }
 
-.font-inter {
-  font-family: "Inter", sans-serif;
+/* ── Token-based utility classes ── */
+.text-theme-foreground {
+  color: rgb(var(--color-foreground));
 }
 
-/* Search input fix - moved after normalize to override padding: 0 */
+.text-theme-primary {
+  color: rgb(var(--color-primary));
+}
 
-/* Menu icon animation */
+.text-theme-muted {
+  color: rgb(var(--color-muted));
+}
+
+.bg-theme-background {
+  background-color: rgb(var(--color-background));
+}
+
+.bg-theme-primary {
+  background-color: rgb(var(--color-primary));
+}
+
+.border-theme {
+  border-color: rgb(var(--color-border));
+}
+
+.btn-primary {
+  background-color: rgb(var(--color-primary));
+  color: rgb(var(--color-button-text));
+  border-radius: var(--radius-button);
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.card {
+  border-radius: var(--radius-card);
+  border: 1px solid rgb(var(--color-border));
+  background-color: rgb(var(--color-background));
+}
+
+.page-container {
+  max-width: var(--page-width);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.section-spacing {
+  padding-top: var(--spacing-section);
+  padding-bottom: var(--spacing-section);
+}
+
+/* ── Menu icon animation ── */
 #menu-line-1 {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   transform-origin: 20px 17px;
@@ -44,7 +93,7 @@
   transform: translate(0, -3px) rotate(-45deg);
 }
 
-/* CSS Normalize */
+/* ── CSS Normalize ── */
 *,
 *::before,
 *::after {
@@ -59,11 +108,18 @@ html {
     "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   line-height: 1.5;
+  scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
-  line-height: inherit;
+  line-height: 1.6;
+  font-family: var(--font-body);
+  color: rgb(var(--color-foreground));
+  background-color: rgb(var(--color-background));
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  font-size: 16px;
 }
 
 hr {
@@ -78,7 +134,7 @@ abbr[title] {
 
 b,
 strong {
-  font-weight: bolder;
+  font-weight: 700;
 }
 
 code,
@@ -114,6 +170,7 @@ table {
   text-indent: 0;
   border-color: inherit;
   border-collapse: collapse;
+  width: 100%;
 }
 
 button,
@@ -216,7 +273,7 @@ textarea {
 input::placeholder,
 textarea::placeholder {
   opacity: 1;
-  color: #9ca3af;
+  color: rgb(var(--color-muted));
 }
 
 button,
@@ -250,56 +307,39 @@ video {
   display: none;
 }
 
-/*
-  The CSS in this style tag is based off of Bear Blog's default CSS.
-  https://github.com/HermanMartinus/bearblog/blob/297026a877bc2ab2b3bdfbd6b9f7961c350917dd/templates/styles/blog/default.css
-  License MIT: https://github.com/HermanMartinus/bearblog/blob/master/LICENSE.md
- */
+/* ── Typography (token-based) ── */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  line-height: 1.2;
+}
+h1 { font-size: 3.052em; }
+h2 { font-size: 2.441em; }
+h3 { font-size: 1.953em; }
+h4 { font-size: 1.563em; }
+h5 { font-size: 1.25em; }
 
-:root {
-  --accent: #2337ff;
-  --accent-dark: #000d8a;
-  --black: 15, 18, 25;
-  --gray: 96, 115, 159;
-  --gray-light: 229, 233, 240;
-  --gray-dark: 34, 41, 57;
-  --gray-gradient: rgba(var(--gray-light), 50%), #fff;
-  --box-shadow: 0 2px 6px rgba(var(--gray), 25%),
-    0 8px 24px rgba(var(--gray), 33%), 0 16px 32px rgba(var(--gray), 33%);
-}
-
-@font-face {
-  font-family: "Atkinson";
-  src: url("/fonts/atkinson-regular.woff") format("woff");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Atkinson";
-  src: url("/fonts/atkinson-bold.woff") format("woff");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-html {
-  scroll-behavior: smooth;
+a {
+  color: rgb(var(--color-primary));
+  text-decoration: none;
+  transition: opacity 0.2s;
 }
 
-body {
-  font-family: "Manrope", system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, sans-serif;
+a:hover {
+  opacity: 0.8;
+}
+
+main {
+  width: 100%;
   margin: 0;
   padding: 0;
-  text-align: left;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  color: #000000;
-  font-size: 16px;
-  line-height: 1.6;
 }
 
-/* Анимации */
+/* ── Animations ── */
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -330,78 +370,7 @@ body {
   animation: scaleIn 0.5s ease-out forwards;
 }
 
-main {
-  width: 100%;
-  margin: 0;
-  padding: 0;
-}
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: "Comfortaa", sans-serif;
-  line-height: 1.2;
-}
-h1 {
-  font-size: 3.052em;
-}
-h2 {
-  font-size: 2.441em;
-}
-h3 {
-  font-size: 1.953em;
-}
-h4 {
-  font-size: 1.563em;
-}
-h5 {
-  font-size: 1.25em;
-}
-strong,
-b {
-  font-weight: 700;
-}
-
-table {
-  width: 100%;
-}
-img {
-  max-width: 100%;
-  height: auto;
-}
-code {
-  padding: 2px 5px;
-  background-color: rgb(var(--gray-light));
-  border-radius: 2px;
-}
-pre {
-  padding: 1.5em;
-  border-radius: 8px;
-}
-pre > code {
-  all: unset;
-}
-blockquote {
-  border-left: 4px solid var(--accent);
-  padding: 0 0 0 20px;
-  margin: 0px;
-  font-size: 1.333em;
-}
-hr {
-  border: none;
-  border-top: 1px solid rgb(var(--gray-light));
-}
-@media (max-width: 720px) {
-  body {
-    font-size: 18px;
-  }
-  main {
-    padding: 1em;
-  }
-}
-
+/* ── Accessibility ── */
 .sr-only {
   border: 0;
   padding: 0;
@@ -410,17 +379,13 @@ hr {
   height: 1px;
   width: 1px;
   overflow: hidden;
-  /* IE6, IE7 - a 0 height clip, off to the bottom right of the visible 1px box */
   clip: rect(1px 1px 1px 1px);
-  /* maybe deprecated but we need to support legacy browsers */
   clip: rect(1px, 1px, 1px, 1px);
-  /* modern browsers, clip-path works inwards from each corner */
   clip-path: inset(50%);
-  /* added line to stop words getting smushed together (as they go onto separate lines and some screen readers do not understand line feeds as a space */
   white-space: nowrap;
 }
 
-/* Search input fix - override Chrome user agent styles */
+/* ── Search input fix ── */
 input[type="search"] {
   -webkit-appearance: none !important;
   -moz-appearance: none !important;
@@ -435,4 +400,13 @@ input[type="search"]::-webkit-search-cancel-button,
 input[type="search"]::-webkit-search-results-button,
 input[type="search"]::-webkit-search-results-decoration {
   display: none;
+}
+
+@media (max-width: 720px) {
+  body {
+    font-size: 18px;
+  }
+  main {
+    padding: 1em;
+  }
 }

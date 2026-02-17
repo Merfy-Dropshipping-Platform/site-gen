@@ -1,0 +1,23 @@
+---
+interface Props {
+	href: string;
+	ariaLabel: string;
+}
+
+const { href, ariaLabel } = Astro.props;
+---
+
+<a
+	href={href}
+	aria-label={ariaLabel}
+	class="w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 flex items-center justify-center hover:opacity-70 transition-opacity"
+>
+	<svg
+		class="w-full h-full"
+		viewBox="0 0 40 40"
+		fill="none"
+		xmlns="http://www.w3.org/2000/svg"
+	>
+		<circle cx="20" cy="20" r="19.5" stroke="#999999" />
+	</svg>
+</a>

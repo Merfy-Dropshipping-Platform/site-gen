@@ -1,0 +1,64 @@
+---
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** Header props forwarded from page/merchant settings */
+  header?: Record<string, any>;
+  /** Footer props forwarded from page/merchant settings */
+  footer?: Record<string, any>;
+}
+
+const {
+  title = 'Мой магазин',
+  description,
+  header = {},
+  footer = {},
+} = Astro.props;
+---
+
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Google Fonts: Comfortaa (headings) + Manrope (body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300..700&family=Manrope:wght@200..800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body
+    class="min-h-screen flex flex-col"
+    style={`
+      font-family: var(--font-body);
+      color: rgb(var(--color-foreground));
+      background-color: rgb(var(--color-background));
+    `}
+  >
+    <!-- Header -->
+    <Header siteTitle={title} {...header} />
+
+    <!-- Main content area: pages inject sections here -->
+    <main class="flex-1 w-full">
+      <slot />
+    </main>
+
+    <!-- Footer -->
+    <Footer {...footer} />
+  </body>
+</html>
+
+<style is:global>
+  @import '../styles/global.css';
+</style>

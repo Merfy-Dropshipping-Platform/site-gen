@@ -29,6 +29,14 @@ import {
   type PageEntry,
 } from "./scaffold-builder";
 import type { ComponentRegistryEntry } from "./page-generator";
+import {
+  themeRegistryToGeneratorRegistry,
+  themeSettingsToMerchantSettings,
+  type ThemeRegistryEntry,
+  type ThemeSettingsGroup,
+  type ThemeColorScheme,
+  type ThemeFeatures,
+} from "./theme-bridge";
 import { S3StorageService } from "../storage/s3.service";
 
 const logger = new Logger("BuildPipeline");
@@ -92,8 +100,16 @@ export interface BuildParams {
   siteId: string;
   mode?: "draft" | "production";
   templateOverride?: string;
-  /** Component registry for page generation */
+  /** Component registry for page generation (pre-converted generator format) */
   registry?: Record<string, ComponentRegistryEntry>;
+  /** Theme registry entries (raw theme format — will be converted via theme-bridge) */
+  themeRegistry?: ThemeRegistryEntry[];
+  /** Theme feature flags for component filtering */
+  themeFeatures?: ThemeFeatures;
+  /** Theme settings schema for token generation */
+  themeSettingsSchema?: ThemeSettingsGroup[];
+  /** Theme color schemes */
+  themeColorSchemes?: ThemeColorScheme[];
 }
 
 export interface BuildResult {
@@ -401,7 +417,7 @@ async function stageMerge(
  * Searches through page content arrays for Header/Footer components and
  * returns their props as site-config.json data for the Astro theme.
  */
-function extractSiteConfig(
+export function extractSiteConfig(
   revisionData: Record<string, unknown>,
   pagesData?: Record<string, { content?: unknown[] }>,
 ): Record<string, unknown> {
@@ -453,7 +469,20 @@ async function stageGenerate(
   params: BuildParams,
   ctx: BuildContext,
 ): Promise<void> {
-  const registry = params.registry ?? {};
+  // Resolve registry: prefer pre-converted, then convert from theme entries
+  let registry: Record<string, ComponentRegistryEntry>;
+  if (params.registry && Object.keys(params.registry).length > 0) {
+    registry = params.registry;
+  } else if (params.themeRegistry && params.themeRegistry.length > 0) {
+    registry = themeRegistryToGeneratorRegistry(params.themeRegistry, {
+      features: params.themeFeatures,
+    });
+    logger.log(
+      `[generate] Converted ${Object.keys(registry).length} theme registry entries via bridge`,
+    );
+  } else {
+    registry = {};
+  }
 
   // Build page entries from revision content
   const pages: PageEntry[] = [];
@@ -500,13 +529,33 @@ async function stageGenerate(
   // Extract Header and Footer component props from revision data for site-config.json
   const siteConfig = extractSiteConfig(ctx.revisionData, revPagesData);
 
+  // Resolve merchant settings: prefer theme-bridge conversion when schema available
+  let merchantSettings = (ctx.revisionMeta as { merchantSettings?: any })
+    .merchantSettings;
+  if (
+    params.themeSettingsSchema &&
+    params.themeSettingsSchema.length > 0 &&
+    !merchantSettings
+  ) {
+    const overrides =
+      (ctx.revisionMeta as { settingsOverrides?: Record<string, unknown> })
+        .settingsOverrides ?? {};
+    merchantSettings = themeSettingsToMerchantSettings(
+      params.themeSettingsSchema,
+      overrides,
+      params.themeColorSchemes,
+    );
+    logger.log(
+      `[generate] Converted theme settings schema to merchant settings via bridge`,
+    );
+  }
+
   const scaffoldConfig: ScaffoldConfig = {
     outputDir: ctx.workingDir,
     themeName: ctx.templateId,
     pages,
     registry,
-    merchantSettings: (ctx.revisionMeta as { merchantSettings?: any })
-      .merchantSettings,
+    merchantSettings,
     themeDefaults: (ctx.revisionMeta as { themeDefaults?: any }).themeDefaults,
     buildData: {
       siteData: {

@@ -1,131 +1,164 @@
 ---
+import NavLink from './header/NavLink.astro';
+import IconButton from './header/IconButton.astro';
+
 interface Props {
-  siteName?: string;
-}
-const { siteName = 'ROSE' } = Astro.props;
-
-// Load dynamic site config (generated from constructor revision data)
-let siteConfig: any = { header: {} };
-try {
-  siteConfig = await import('../data/site-config.json');
-} catch {
-  // Fallback: site-config.json not present
+  siteTitle?: string;
+  logo?: string;
+  navigationLinks?: Array<{ label: string; href: string; submenu?: Array<{ label: string; href: string }> }>;
+  actionButtons?: { showSearch?: string; showCart?: string; showProfile?: string };
 }
 
-const header = siteConfig.header || {};
-const displayName = header.siteTitle || siteName;
-const navigationLinks: { label: string; href: string; submenu?: { label: string; href: string }[] }[] =
-  header.navigationLinks?.length > 0
-    ? header.navigationLinks
-    : [
-      { label: 'Главная', href: '/' },
-      { label: 'Каталог', href: '/catalog' },
-      { label: 'О нас', href: '/about' },
-      { label: 'Контакты', href: '/contacts' },
-    ];
-const currentPath = Astro.url.pathname;
+const {
+  siteTitle = 'Rose Theme',
+  logo = '/logo.svg',
+  navigationLinks = [
+    { label: 'Главная', href: '/', submenu: [] },
+    { label: 'Каталог', href: '#popular', submenu: [{ label: 'Популярные', href: '#popular' }, { label: 'Коллекции', href: '#collections' }, { label: 'Галерея', href: '#gallery' }] },
+    { label: 'Контакты', href: '#', submenu: [] },
+  ],
+  actionButtons = { showSearch: 'true', showCart: 'true', showProfile: 'true' },
+} = Astro.props;
+
+const showSearch = actionButtons?.showSearch === 'true';
+const showCart = actionButtons?.showCart === 'true';
+const showProfile = actionButtons?.showProfile === 'true';
 ---
 
-<header class="header">
-  <div class="header-container">
-    <a href="/" class="logo">{displayName}</a>
-    <nav class="nav">
-      {navigationLinks.map((link) => (
-        <a href={link.href} class:list={[{ active: currentPath === link.href }]}>{link.label}</a>
-      ))}
+<div class="w-full sticky top-0 z-50 bg-white shadow-sm">
+  <header class="bg-white w-full h-16 sm:h-20 md:h-24 lg:h-28 xl:h-[120px] flex items-center border-b border-gray-100">
+    <nav class="w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-16 xl:px-24 2xl:px-[300px] flex items-center justify-between">
+      <!-- Mobile: Hamburger Menu -->
+      <button
+        id="mobile-menu-button"
+        aria-label="Меню"
+        aria-expanded="false"
+        class="md:hidden w-10 h-10 flex items-center justify-center hover:opacity-70 transition-opacity"
+      >
+        <svg id="menu-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path id="menu-line-1" d="M11 17H29" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+          <path id="menu-line-2" d="M11 23H29" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+      <!-- Logo -->
+      <div class="absolute left-1/2 -translate-x-1/2 md:relative md:left-auto md:transform-none">
+        <a href="/" class="flex items-center hover:opacity-80 transition-opacity">
+          {logo ? (
+            <img src={logo} alt={siteTitle} class="h-5 sm:h-6 md:h-[26px] w-auto" />
+          ) : (
+            <span class="text-lg sm:text-xl md:text-2xl font-comfortaa font-normal">{siteTitle}</span>
+          )}
+        </a>
+      </div>
+
+      <!-- Desktop Navigation -->
+      <div class="hidden md:flex items-center gap-4 lg:gap-8 xl:gap-12 2xl:gap-[80px]">
+        {navigationLinks?.map((link, i) => (
+          <NavLink href={link.href} active={i === 0}>{link.label}</NavLink>
+        ))}
+      </div>
+
+      <!-- Mobile Navigation Menu -->
+      <div
+        id="mobile-menu"
+        class="hidden md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 z-50"
+      >
+        <nav class="flex flex-col" aria-label="Мобильная навигация">
+          {showSearch && (
+            <div class="px-4 pt-6 pb-4">
+              <div class="relative">
+                <input
+                  type="search"
+                  placeholder="Поиск..."
+                  class="block w-full h-12 pl-5 pr-12 bg-white border border-gray-300 rounded-lg text-sm font-normal text-black placeholder:text-gray-400 outline-none focus:border-gray-400 font-manrope"
+                />
+                <button class="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5">
+                  <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
+          <div class="flex flex-col">
+            {navigationLinks?.map((link) => {
+              const hasSubmenu = link.submenu && link.submenu.length > 0;
+              return hasSubmenu ? (
+                <div class="border-t border-gray-200">
+                  <button
+                    class="mobile-submenu-toggle w-full px-4 py-4 text-base font-normal text-black hover:bg-gray-50 transition-colors flex items-center justify-between font-manrope"
+                    data-target={`submenu-${link.label}`}
+                  >
+                    <span>{link.label}</span>
+                    <svg class="w-4 h-4 transition-transform submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                  </button>
+                  <div class="hidden bg-gray-50 mobile-submenu" data-id={`submenu-${link.label}`}>
+                    {link.submenu?.map((sub) => (
+                      <a href={sub.href} class="block px-8 py-3 text-sm font-normal text-gray-600 hover:text-black transition-colors font-manrope border-t border-gray-200">
+                        {sub.label}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <a href={link.href} class="px-4 py-4 text-base font-normal text-black hover:bg-gray-50 transition-colors border-t border-gray-200 font-manrope">
+                  {link.label}
+                </a>
+              );
+            })}
+          </div>
+        </nav>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-3 sm:gap-3 md:gap-4 lg:gap-5 xl:gap-[25px]">
+        {showSearch && (
+          <div class="hidden md:block">
+            <IconButton icon="/search.svg" label="Поиск" />
+          </div>
+        )}
+        {showCart && <IconButton icon="/cart.svg" label="Корзина" />}
+        {showProfile && <IconButton icon="/profile.svg" label="Аккаунт" />}
+      </div>
     </nav>
-    <div class="header-actions">
-      <button class="icon-btn" aria-label="Поиск">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="m21 21-4.35-4.35"/>
-        </svg>
-      </button>
-      <button class="icon-btn" aria-label="Корзина">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
-          <path d="M3 6h18"/>
-          <path d="M16 10a4 4 0 0 1-8 0"/>
-        </svg>
-      </button>
-    </div>
-  </div>
-</header>
+  </header>
+</div>
 
-<style>
-  .header {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(8px);
-    border-bottom: 1px solid var(--neutral-200);
+<script>
+  const mobileMenuButton = document.getElementById('mobile-menu-button');
+  const mobileMenu = document.getElementById('mobile-menu');
+
+  if (mobileMenuButton && mobileMenu) {
+    const menuIcon = document.getElementById('menu-icon');
+    mobileMenuButton.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+      const isOpen = !mobileMenu.classList.contains('hidden');
+      mobileMenuButton.setAttribute('aria-expanded', String(isOpen));
+      if (menuIcon) {
+        menuIcon.classList.toggle('menu-open', isOpen);
+      }
+    });
   }
 
-  .header-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 16px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 32px;
-  }
+  document.querySelectorAll('.mobile-submenu-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-target');
+      const submenu = document.querySelector(`.mobile-submenu[data-id="${targetId}"]`);
+      const arrow = btn.querySelector('.submenu-arrow');
+      if (submenu) submenu.classList.toggle('hidden');
+      if (arrow) arrow.classList.toggle('rotate-180');
+    });
+  });
 
-  .logo {
-    font-family: var(--font-display);
-    font-size: 1.75rem;
-    font-weight: 600;
-    color: var(--rose-600);
-    letter-spacing: 0.05em;
-    text-decoration: none;
-  }
-
-  .nav {
-    display: flex;
-    gap: 32px;
-  }
-
-  .nav a {
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--neutral-700);
-    text-decoration: none;
-    transition: color 0.2s;
-  }
-
-  .nav a:hover,
-  .nav a.active {
-    color: var(--rose-600);
-  }
-
-  .header-actions {
-    display: flex;
-    gap: 8px;
-  }
-
-  .icon-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border: none;
-    background: transparent;
-    border-radius: 50%;
-    cursor: pointer;
-    color: var(--neutral-700);
-    transition: background 0.2s, color 0.2s;
-  }
-
-  .icon-btn:hover {
-    background: var(--rose-50);
-    color: var(--rose-600);
-  }
-
-  @media (max-width: 768px) {
-    .nav {
-      display: none;
-    }
-  }
-</style>
+  const menuLinks = mobileMenu?.querySelectorAll('a');
+  menuLinks?.forEach(link => {
+    link.addEventListener('click', () => {
+      mobileMenu?.classList.add('hidden');
+      mobileMenuButton?.setAttribute('aria-expanded', 'false');
+      document.getElementById('menu-icon')?.classList.remove('menu-open');
+    });
+  });
+</script>

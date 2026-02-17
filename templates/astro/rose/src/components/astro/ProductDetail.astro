@@ -1,0 +1,197 @@
+---
+/**
+ * ProductDetail.astro -- Static SSG fallback.
+ *
+ * Renders basic product detail page at build time.
+ * At runtime, the React Island version (react/ProductDetail.tsx) takes over
+ * with interactive variant selection, quantity, and cart functionality.
+ */
+
+interface Props {
+  image?: string;
+  images?: Array<{ url: string; alt?: string }>;
+  badge?: { enabled?: string; text?: string };
+  title?: { enabled?: string; text?: string } | string;
+  price?: { enabled?: string; value?: string; oldValue?: string } | number;
+  compareAtPrice?: number;
+  description?: { enabled?: string; text?: string } | string;
+  buttons?: {
+    enabled?: string;
+    addToCart?: { enabled?: string; text?: string };
+    buyNow?: { enabled?: string; text?: string };
+  };
+  variants?: {
+    enabled?: string;
+    items?: Array<{ label: string; value: string }>;
+  };
+  handle?: string;
+}
+
+const props = Astro.props;
+
+// Normalize title
+const titleText = typeof props.title === 'string'
+  ? props.title
+  : props.title?.text ?? 'Товар';
+const showTitle = typeof props.title === 'string'
+  ? true
+  : props.title?.enabled !== 'false';
+
+// Normalize price
+function formatMoney(kopecks: number, currency = 'RUB'): string {
+  const amount = kopecks / 100;
+  return new Intl.NumberFormat('ru-RU', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
+let priceDisplay = '';
+let oldPriceDisplay = '';
+
+if (typeof props.price === 'number') {
+  priceDisplay = formatMoney(props.price);
+  if (props.compareAtPrice != null && props.compareAtPrice > 0) {
+    oldPriceDisplay = formatMoney(props.compareAtPrice);
+  }
+} else if (props.price && typeof props.price === 'object') {
+  priceDisplay = props.price.value ?? '';
+  oldPriceDisplay = props.price.oldValue ?? '';
+}
+
+const showPrice = typeof props.price === 'number' || (typeof props.price === 'object' && props.price?.enabled !== 'false');
+
+// Normalize description
+const descriptionText = typeof props.description === 'string'
+  ? props.description
+  : props.description?.text ?? '';
+const showDescription = typeof props.description === 'string'
+  ? !!props.description
+  : props.description?.enabled !== 'false' && !!props.description?.text;
+
+// Images
+const mainImage = props.images?.[0]?.url ?? props.image ?? '';
+const mainImageAlt = props.images?.[0]?.alt ?? titleText;
+
+// Badge
+const showBadge = props.badge?.enabled !== 'false' && !!props.badge?.text;
+
+// Buttons
+const showButtons = props.buttons?.enabled !== 'false';
+const addToCartText = props.buttons?.addToCart?.text ?? 'Добавить в корзину';
+const buyNowText = props.buttons?.buyNow?.text ?? 'Купить сейчас';
+const showAddToCart = showButtons && props.buttons?.addToCart?.enabled !== 'false';
+const showBuyNow = showButtons && props.buttons?.buyNow?.enabled !== 'false';
+
+// Variants
+const showVariants = props.variants?.enabled !== 'false' && (props.variants?.items?.length ?? 0) > 0;
+---
+
+<section class="max-w-[1200px] mx-auto px-4 sm:px-6 py-10 sm:py-16">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 lg:gap-16 items-start">
+    <!-- Left: Image -->
+    <div class="flex flex-col gap-4">
+      <div class="relative bg-gray-50 rounded-2xl overflow-hidden aspect-square">
+        {mainImage ? (
+          <img
+            src={mainImage}
+            alt={mainImageAlt}
+            class="w-full h-full object-cover"
+            loading="eager"
+          />
+        ) : (
+          <div class="w-full h-full flex items-center justify-center text-gray-300">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21,15 16,10 5,21" />
+            </svg>
+          </div>
+        )}
+        {showBadge && (
+          <span class="absolute top-4 left-4 bg-[var(--rose-600,#e11d48)] text-white px-3.5 py-1.5 rounded-md text-sm font-medium">
+            {props.badge!.text}
+          </span>
+        )}
+      </div>
+
+      <!-- Thumbnails (static: just show all images) -->
+      {props.images && props.images.length > 1 && (
+        <div class="flex gap-3 overflow-x-auto pb-2">
+          {props.images.map((image, index) => (
+            <div class={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 ${index === 0 ? 'border-black' : 'border-transparent'}`}>
+              <img
+                src={image.url}
+                alt={image.alt ?? `${titleText} ${index + 1}`}
+                class="w-full h-full object-cover"
+                loading="lazy"
+              />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+
+    <!-- Right: Product info -->
+    <div class="flex flex-col gap-6">
+      {showTitle && (
+        <h1 class="text-2xl sm:text-3xl md:text-4xl font-medium text-gray-900 leading-tight font-[family-name:var(--font-display)]">
+          {titleText}
+        </h1>
+      )}
+
+      {showPrice && (priceDisplay || oldPriceDisplay) && (
+        <div class="flex items-center gap-3">
+          {priceDisplay && (
+            <span class="text-xl sm:text-2xl font-semibold text-[var(--rose-600,#e11d48)]">
+              {priceDisplay}
+            </span>
+          )}
+          {oldPriceDisplay && (
+            <span class="text-base sm:text-lg text-gray-400 line-through">
+              {oldPriceDisplay}
+            </span>
+          )}
+        </div>
+      )}
+
+      {showVariants && (
+        <div class="flex flex-col gap-2">
+          <span class="text-sm font-medium text-gray-600">Размер</span>
+          <div class="flex flex-wrap gap-2">
+            {props.variants!.items!.map((v, i) => (
+              <span class={`px-4 py-2 rounded-lg border text-sm font-medium ${i === 0 ? 'border-black bg-black text-white' : 'border-gray-300 bg-white text-gray-800'}`}>
+                {v.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {(showAddToCart || showBuyNow) && (
+        <div class="flex flex-col sm:flex-row gap-3 mt-2">
+          {showAddToCart && (
+            <button class="flex-1 px-6 py-3.5 text-sm font-medium rounded-lg border border-gray-300 bg-white text-gray-800 hover:border-[var(--rose-600,#e11d48)] hover:text-[var(--rose-600,#e11d48)] transition-all">
+              {addToCartText}
+            </button>
+          )}
+          {showBuyNow && (
+            <button class="flex-1 px-6 py-3.5 text-sm font-medium rounded-lg border-none bg-[var(--rose-600,#e11d48)] text-white hover:bg-[var(--rose-700,#be123c)] transition-all">
+              {buyNowText}
+            </button>
+          )}
+        </div>
+      )}
+
+      {showDescription && (
+        <div class="mt-4 pt-6 border-t border-gray-200">
+          <p class="text-base text-gray-600 leading-relaxed font-[family-name:var(--font-body)]">
+            {descriptionText}
+          </p>
+        </div>
+      )}
+    </div>
+  </div>
+</section>

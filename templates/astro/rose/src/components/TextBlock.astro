@@ -2,6 +2,7 @@
 interface Props {
   heading?: string | { text?: string; size?: string };
   text?: string | { text?: string };
+  button?: { text?: string; link?: { href?: string } | string };
   align?: 'left' | 'center' | 'right';
   size?: 'small' | 'medium' | 'large';
   padding?: { top?: number; bottom?: number };
@@ -9,77 +10,53 @@ interface Props {
 
 const props = Astro.props;
 const headingText = typeof props.heading === 'object' ? props.heading?.text : props.heading;
-const bodyText = typeof props.text === 'object' ? props.text?.text : props.text;
+const bodyText = typeof props.text === 'object' ? (props.text as any)?.text : props.text;
 const headingSize = typeof props.heading === 'object' ? props.heading?.size : props.size;
 const align = (props.align ?? 'center') as string;
 const size = (headingSize ?? props.size ?? 'medium') as string;
 const padTop = props.padding?.top ?? 60;
 const padBottom = props.padding?.bottom ?? 60;
+
+const buttonLink = typeof props.button?.link === 'object'
+  ? (props.button?.link as any)?.href
+  : (props.button?.link || '#');
+
+const headingSizeClasses: Record<string, string> = {
+  small: 'text-2xl',
+  medium: 'text-[2rem]',
+  large: 'text-[2.5rem]',
+};
+const headingSizeClass = headingSizeClasses[size] || headingSizeClasses.medium;
+
+const textSizeClasses: Record<string, string> = {
+  small: 'text-base',
+  medium: 'text-lg',
+  large: 'text-xl',
+};
+const textSizeClass = textSizeClasses[size] || textSizeClasses.medium;
 ---
 
-<section class={`text-block text-block--${size}`} style={`text-align: ${align}; padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}>
-  {headingText && <h2 class="text-block-heading">{headingText}</h2>}
-  {bodyText && <p class="text-block-text">{bodyText}</p>}
+<section
+  class="max-w-[800px] mx-auto px-5"
+  style={`text-align: ${align}; padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}
+>
+  {headingText && (
+    <h2 class={`${headingSizeClass} font-medium text-gray-900 mb-5 leading-[1.2] font-comfortaa`}>
+      {headingText}
+    </h2>
+  )}
+  {bodyText && (
+    <p class={`${textSizeClass} text-gray-600 leading-[1.7] font-manrope`}>
+      {bodyText}
+    </p>
+  )}
+  {props.button?.text && (
+    <a
+      href={buttonLink}
+      class="inline-flex items-center mt-6 px-8 py-3.5 text-[0.95rem] font-medium rounded-lg bg-black text-white no-underline hover:bg-gray-800 transition-colors font-manrope"
+    >
+      {props.button.text}
+    </a>
+  )}
   <slot />
 </section>
-
-<style>
-  .text-block {
-    padding: 60px 20px;
-    max-width: 800px;
-    margin: 0 auto;
-  }
-
-  .text-block--small {
-    padding: 40px 20px;
-  }
-
-  .text-block--large {
-    padding: 80px 20px;
-  }
-
-  .text-block-heading {
-    font-family: var(--font-display);
-    font-size: 2rem;
-    font-weight: 500;
-    color: var(--neutral-900);
-    margin-bottom: 20px;
-    line-height: 1.2;
-  }
-
-  .text-block--large .text-block-heading {
-    font-size: 2.5rem;
-  }
-
-  .text-block--small .text-block-heading {
-    font-size: 1.5rem;
-  }
-
-  .text-block-text {
-    font-size: 1.1rem;
-    color: var(--neutral-600);
-    line-height: 1.7;
-  }
-
-  .text-block--large .text-block-text {
-    font-size: 1.2rem;
-  }
-
-  .text-block--small .text-block-text {
-    font-size: 1rem;
-  }
-
-  @media (max-width: 768px) {
-    .text-block {
-      padding: 40px 20px;
-    }
-
-    .text-block-heading {
-      font-size: 1.75rem;
-    }
-
-    .text-block--large .text-block-heading {
-      font-size: 2rem;
-    }
-  }
-</style>

@@ -22,6 +22,12 @@ import { S3StorageService } from "../storage/s3.service";
 import { runBuildPipeline, type BuildDependencies } from "./build.service";
 import { roseRegistry } from "./registries/rose";
 import { fetchProducts as rpcFetchProducts } from "./data-fetcher";
+import {
+  themeRegistryToGeneratorRegistry,
+  type ThemeRegistryEntry,
+  type ThemeSettingsGroup,
+  type ThemeColorScheme,
+} from "./theme-bridge";
 
 interface ProductData {
   id: string;
@@ -124,12 +130,91 @@ export class SiteGeneratorService {
         productClient: this.productClient,
         s3: this.s3,
       };
+
+      // Try to load theme data from disk (theme.json + registry.json)
+      let themeRegistry: ThemeRegistryEntry[] | undefined;
+      let themeSettingsSchema: ThemeSettingsGroup[] | undefined;
+      let themeColorSchemes: ThemeColorScheme[] | undefined;
+      let themeFeatures: Record<string, boolean> | undefined;
+
+      try {
+        // Resolve template ID from site -> theme -> templateId
+        const [siteTheme] = await this.db
+          .select({
+            templateId: schema.theme.templateId,
+          })
+          .from(schema.site)
+          .leftJoin(schema.theme, eq(schema.site.themeId, schema.theme.id))
+          .where(eq(schema.site.id, params.siteId));
+
+        const templateId =
+          params.templateOverride ?? siteTheme?.templateId ?? "default";
+        const themePath = path.join(
+          process.cwd(),
+          "templates",
+          "astro",
+          templateId,
+        );
+
+        // Read theme.json
+        const themeJsonPath = path.join(themePath, "theme.json");
+        const themeJsonRaw = await fs
+          .readFile(themeJsonPath, "utf8")
+          .catch(() => null);
+
+        if (themeJsonRaw) {
+          const manifest = JSON.parse(themeJsonRaw);
+          if (manifest.features) {
+            themeFeatures = manifest.features;
+          }
+          if (manifest.settings?.colorSchemes) {
+            themeColorSchemes = manifest.settings.colorSchemes;
+          }
+          if (Array.isArray(manifest.settings_schema)) {
+            themeSettingsSchema = manifest.settings_schema;
+          }
+        }
+
+        // Read registry.json
+        const registryPath = path.join(
+          themePath,
+          "src",
+          "components",
+          "registry.json",
+        );
+        const registryRaw = await fs
+          .readFile(registryPath, "utf8")
+          .catch(() => null);
+        if (registryRaw) {
+          themeRegistry = JSON.parse(registryRaw);
+        }
+
+        this.logger.log(
+          `Loaded theme from disk (${templateId}): ` +
+            `${themeRegistry?.length ?? 0} registry entries, ` +
+            `${themeSettingsSchema?.length ?? 0} settings groups`,
+        );
+      } catch (e) {
+        this.logger.warn(
+          `Failed to load theme from disk, falling back to rose registry: ${e instanceof Error ? e.message : e}`,
+        );
+      }
+
       const result = await runBuildPipeline(deps, {
         tenantId: params.tenantId,
         siteId: params.siteId,
         mode: params.mode,
         templateOverride: params.templateOverride,
-        registry: roseRegistry,
+        // Use theme bridge registry if available, fallback to hardcoded rose
+        registry: themeRegistry
+          ? themeRegistryToGeneratorRegistry(themeRegistry, {
+              features: themeFeatures,
+            })
+          : roseRegistry,
+        themeRegistry,
+        themeFeatures,
+        themeSettingsSchema,
+        themeColorSchemes,
       });
       return result;
     }

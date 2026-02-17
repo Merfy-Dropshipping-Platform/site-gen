@@ -1,0 +1,50 @@
+{
+  "root": {
+    "props": {
+      "title": "Rose — Fashion & Lifestyle"
+    }
+  },
+  "content": [
+    {
+      "type": "HeroBanner",
+      "props": {
+        "heading": { "text": "Новая коллекция", "size": "large" },
+        "text": { "content": "Откройте для себя мир элегантности и комфорта", "size": "medium" },
+        "primaryButton": { "text": "В каталог", "link": { "href": "/catalog" } },
+        "secondaryButton": { "text": "О нас", "link": { "href": "/about" } },
+        "backgroundImage": "/images/first-section.png",
+        "overlay": 20,
+        "size": "large",
+        "position": "center",
+        "alignment": "center",
+        "colorScheme": "1"
+      }
+    },
+    {
+      "type": "FeaturedCollection",
+      "props": {
+        "heading": "Популярное",
+        "description": "Самые востребованные товары этого сезона",
+        "collectionHandle": "popular",
+        "columns": 4,
+        "maxProducts": 8,
+        "showPrice": true,
+        "showAddToCart": true,
+        "colorScheme": "1"
+      }
+    },
+    {
+      "type": "ImageWithText",
+      "props": {
+        "heading": "О нашем бренде",
+        "text": "Мы создаём одежду, которая подчёркивает вашу индивидуальность. Каждая коллекция — это история о стиле, комфорте и уверенности в себе.",
+        "image": "/images/gallery-1.png",
+        "imagePosition": "left",
+        "buttonText": "Узнать больше",
+        "buttonLink": "/about",
+        "colorScheme": "1"
+      }
+    }
+  ],
+  "zones": {}
+}

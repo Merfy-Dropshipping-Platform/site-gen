@@ -1,0 +1,103 @@
+---
+/**
+ * ProductCard.astro -- Static SSG version.
+ *
+ * Displays a product card matching the React ProductCard visual design.
+ * Uses data from products.json or passed props.
+ *
+ * Props can be either:
+ * - Storefront Product type (id, handle, title, price in kopecks, images[], compareAtPrice)
+ * - Legacy format (name, price as string, oldPrice as string, image as string)
+ */
+
+interface Props {
+  /** Storefront product format */
+  id?: string;
+  handle?: string;
+  title?: string;
+  price?: number | string;
+  compareAtPrice?: number;
+  images?: Array<{ url: string; alt?: string }>;
+  /** Legacy format (from PopularProducts) */
+  name?: string;
+  oldPrice?: string;
+  image?: string;
+  href?: string;
+}
+
+const props = Astro.props;
+
+// Normalize between storefront and legacy formats
+const productTitle = props.title ?? props.name ?? 'Товар';
+const productHandle = props.handle ?? props.id ?? '#';
+const linkHref = props.href ?? `/product/${productHandle}`;
+
+// Image: storefront format uses images[], legacy uses image string
+const imageUrl = props.images?.[0]?.url ?? props.image ?? '';
+const imageAlt = props.images?.[0]?.alt ?? productTitle;
+
+// Price formatting
+function formatMoney(kopecks: number, currency = 'RUB'): string {
+  const amount = kopecks / 100;
+  return new Intl.NumberFormat('ru-RU', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
+// Price: storefront format uses number (kopecks), legacy uses string
+const priceDisplay =
+  typeof props.price === 'number'
+    ? formatMoney(props.price)
+    : props.price ?? '';
+
+// Compare/old price
+const oldPriceDisplay =
+  props.compareAtPrice != null && props.compareAtPrice > 0
+    ? formatMoney(props.compareAtPrice)
+    : props.oldPrice ?? '';
+---
+
+<a
+  href={linkHref}
+  class="group flex flex-col gap-4 sm:gap-5 md:gap-6 cursor-pointer no-underline text-inherit"
+>
+  <!-- Image container -->
+  <div class="bg-gray-100 rounded-lg overflow-hidden w-full aspect-square">
+    {imageUrl ? (
+      <img
+        src={imageUrl}
+        alt={imageAlt}
+        loading="lazy"
+        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+      />
+    ) : (
+      <div class="w-full h-full flex items-center justify-center text-gray-300">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <polyline points="21,15 16,10 5,21" />
+        </svg>
+      </div>
+    )}
+  </div>
+
+  <!-- Product info -->
+  <div class="flex flex-col gap-2 px-1">
+    <h3 class="text-base sm:text-lg md:text-xl font-normal text-black leading-snug font-[family-name:var(--font-body)]">
+      {productTitle}
+    </h3>
+    <div class="flex items-center gap-3 flex-wrap">
+      <span class="text-lg sm:text-xl md:text-2xl font-normal text-black leading-snug font-[family-name:var(--font-body)]">
+        {priceDisplay}
+      </span>
+      {oldPriceDisplay && (
+        <span class="text-sm sm:text-base md:text-lg font-medium text-gray-400 line-through leading-snug font-[family-name:var(--font-body)]">
+          {oldPriceDisplay}
+        </span>
+      )}
+    </div>
+  </div>
+</a>

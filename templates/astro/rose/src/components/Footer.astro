@@ -1,199 +1,111 @@
 ---
+import FooterColumn from './footer/FooterColumn.astro';
+import FooterLink from './footer/FooterLink.astro';
+import SocialIcon from './footer/SocialIcon.astro';
+
 interface Props {
-  siteName?: string;
-}
-const { siteName = 'ROSE' } = Astro.props;
-const year = new Date().getFullYear();
-
-// Load dynamic site config (generated from constructor revision data)
-let siteConfig: any = { footer: {} };
-try {
-  siteConfig = await import('../data/site-config.json');
-} catch {
-  // Fallback: site-config.json not present
+  newsletter?: { enabled?: string; heading?: string; description?: string; placeholder?: string };
+  navigationColumn?: { title?: string; links?: Array<{ label: string; href: string }> };
+  informationColumn?: { title?: string; links?: Array<{ label: string; href: string }> };
+  socialColumn?: { title?: string; email?: string; socialLinks?: Array<{ platform: string; href: string }> };
+  copyright?: { companyName?: string; showYear?: string; poweredBy?: string };
 }
 
-const footer = siteConfig.footer || {};
+const {
+  newsletter = { enabled: 'true', heading: 'Подпишитесь на нашу рассылку', description: 'Введите электронную почту и получайте информацию нашего бренда.', placeholder: 'rose@example.ru' },
+  navigationColumn = { title: 'Навигация', links: [{ label: 'Главная', href: '/' }, { label: 'Каталог', href: '#popular' }, { label: 'Контакты', href: '#' }] },
+  informationColumn = { title: 'Информация', links: [{ label: 'Политика доставки', href: '#' }, { label: 'Политика возврата', href: '#' }, { label: 'Условия обслуживания', href: '#' }] },
+  socialColumn = { title: 'Социальные сети', email: 'rose@example.ru', socialLinks: [{ platform: 'Facebook', href: '#' }, { platform: 'Instagram', href: '#' }, { platform: 'Twitter', href: '#' }] },
+  copyright = { companyName: 'Rose Theme', showYear: 'true', poweredBy: 'Powered by Merfy' },
+} = Astro.props;
 
-// Navigation column
-const navColumn = footer.navigationColumn || {
-  title: 'Магазин',
-  links: [
-    { label: 'Каталог', href: '/catalog' },
-    { label: 'Новинки', href: '/new' },
-    { label: 'Распродажа', href: '/sale' },
-  ],
-};
-
-// Information column
-const infoColumn = footer.informationColumn || {
-  title: 'Информация',
-  links: [
-    { label: 'О нас', href: '/about' },
-    { label: 'Доставка', href: '/delivery' },
-    { label: 'Возврат', href: '/returns' },
-  ],
-};
-
-// Social/contact column
-const socialColumn = footer.socialColumn || {
-  title: 'Контакты',
-  email: 'hello@example.com',
-  socialLinks: [],
-};
-
-// Copyright
-const copyright = footer.copyright || {
-  companyName: siteName,
-  showYear: 'true',
-  poweredBy: 'Powered by Merfy',
-};
-
-const displayName = copyright.companyName || siteName;
+const today = new Date();
+const showNewsletter = newsletter?.enabled === 'true';
+const yearStr = copyright?.showYear === 'true' ? ` ${today.getFullYear()}` : '';
 ---
 
-<footer class="footer">
-  <div class="footer-container">
-    <div class="footer-main">
-      <div class="footer-brand">
-        <span class="footer-logo">{displayName}</span>
-        <p class="footer-tagline">Ваш стиль, ваша индивидуальность</p>
+<footer class="bg-white w-full">
+  <div class="w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-[300px]">
+    {showNewsletter && (
+      <section class="pt-12 sm:pt-16 md:pt-20 lg:pt-24 xl:pt-28 2xl:pt-[100px] pb-10 sm:pb-12 md:pb-16 lg:pb-20 xl:pb-24">
+        <div class="max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-[809px] mx-auto">
+          <div class="flex flex-col items-center gap-3 sm:gap-4 lg:gap-[5px] mb-8 sm:mb-10 lg:mb-12">
+            <h2 class="text-2xl sm:text-3xl md:text-[32px] lg:text-[34px] xl:text-[36px] font-normal text-black uppercase leading-[1.115] text-center font-comfortaa">
+              {newsletter?.heading}
+            </h2>
+            {newsletter?.description && (
+              <p class="text-base sm:text-lg md:text-xl lg:text-[22px] xl:text-[24px] font-normal text-[#999999] leading-[1.366] text-center px-4 sm:px-0 font-manrope">
+                {newsletter.description}
+              </p>
+            )}
+          </div>
+          <form class="w-full max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-[600px] mx-auto h-auto sm:h-16 md:h-[70px] lg:h-[75px] xl:h-[80px] bg-white border border-[#999999] rounded-lg md:rounded-[10px] flex flex-col sm:flex-row justify-between items-stretch sm:items-center px-4 sm:px-5 lg:px-[25px] py-3 sm:py-2 lg:py-[10px] gap-3 sm:gap-2 lg:gap-[10px]">
+            <input
+              type="email"
+              name="email"
+              placeholder={newsletter?.placeholder || 'rose@example.ru'}
+              required
+              class="flex-1 bg-transparent text-lg sm:text-xl md:text-[22px] lg:text-2xl font-light text-[#999999] leading-[1.366] outline-none placeholder:text-[#999999] focus:text-black font-manrope"
+            />
+            <button
+              type="submit"
+              aria-label="Подписаться"
+              class="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center self-end sm:self-center hover:scale-110 transition-transform"
+            >
+              <svg class="w-full h-full" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="black" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </form>
+        </div>
+      </section>
+    )}
+
+    <section class="pb-6 sm:pb-8 md:pb-10 lg:pb-12 xl:pb-16">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10 md:gap-12 lg:gap-16 xl:gap-20">
+        {navigationColumn?.title && (
+          <FooterColumn title={navigationColumn.title}>
+            <nav class="flex flex-col gap-4 sm:gap-5 lg:gap-[25px]">
+              {navigationColumn.links?.map((link) => (
+                <FooterLink href={link.href}>{link.label}</FooterLink>
+              ))}
+            </nav>
+          </FooterColumn>
+        )}
+
+        {informationColumn?.title && (
+          <FooterColumn title={informationColumn.title}>
+            {informationColumn.links?.map((link) => (
+              <FooterLink href={link.href}>{link.label}</FooterLink>
+            ))}
+          </FooterColumn>
+        )}
+
+        {socialColumn?.title && (
+          <div class="sm:col-span-2 lg:col-span-1">
+            <FooterColumn title={socialColumn.title}>
+              {socialColumn.email && (
+                <a href={`mailto:${socialColumn.email}`} class="text-base sm:text-lg md:text-[18px] lg:text-[20px] font-normal text-[#999999] leading-[1.366] hover:text-black transition-colors font-manrope">
+                  {socialColumn.email}
+                </a>
+              )}
+              {socialColumn.socialLinks && socialColumn.socialLinks.length > 0 && (
+                <div class="flex gap-3 sm:gap-4 lg:gap-[15px]">
+                  {socialColumn.socialLinks.map((social) => (
+                    <SocialIcon href={social.href} ariaLabel={social.platform} />
+                  ))}
+                </div>
+              )}
+            </FooterColumn>
+          </div>
+        )}
       </div>
-      <div class="footer-links">
-        <div class="footer-column">
-          <h4>{navColumn.title}</h4>
-          {(navColumn.links || []).map((link: { label: string; href: string }) => (
-            <a href={link.href}>{link.label}</a>
-          ))}
-        </div>
-        <div class="footer-column">
-          <h4>{infoColumn.title}</h4>
-          {(infoColumn.links || []).map((link: { label: string; href: string }) => (
-            <a href={link.href}>{link.label}</a>
-          ))}
-        </div>
-        <div class="footer-column">
-          <h4>{socialColumn.title}</h4>
-          {socialColumn.email && (
-            <a href={`mailto:${socialColumn.email}`}>{socialColumn.email}</a>
-          )}
-          {(socialColumn.socialLinks || []).map((social: { platform: string; href: string }) => (
-            <a href={social.href}>{social.platform}</a>
-          ))}
-        </div>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <p>{copyright.showYear !== 'false' && `© ${year} `}{displayName}. Все права защищены.</p>
-      <p class="powered-by">
-        Создано на <a href="https://merfy.ru" target="_blank" rel="noopener">Merfy</a>
-      </p>
-    </div>
+    </section>
+  </div>
+
+  <div class="w-full h-auto sm:h-20 md:h-24 lg:h-[100px] bg-black flex items-center justify-center py-6 sm:py-0">
+    <p class="text-sm sm:text-base md:text-lg lg:text-[20px] font-light text-white leading-[1.21] text-center px-4 sm:px-6 font-inter">
+      &copy;{yearStr} {copyright?.companyName} Все права защищены. {copyright?.poweredBy}
+    </p>
   </div>
 </footer>
-
-<style>
-  .footer {
-    background: var(--neutral-900);
-    color: var(--neutral-300);
-    padding: 60px 20px 30px;
-    margin-top: auto;
-  }
-
-  .footer-container {
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-
-  .footer-main {
-    display: flex;
-    justify-content: space-between;
-    gap: 60px;
-    padding-bottom: 40px;
-    border-bottom: 1px solid var(--neutral-700);
-  }
-
-  .footer-brand {
-    max-width: 280px;
-  }
-
-  .footer-logo {
-    font-family: var(--font-display);
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--rose-400);
-    letter-spacing: 0.05em;
-  }
-
-  .footer-tagline {
-    margin-top: 12px;
-    font-size: 0.9rem;
-    color: var(--neutral-400);
-  }
-
-  .footer-links {
-    display: flex;
-    gap: 60px;
-  }
-
-  .footer-column {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .footer-column h4 {
-    font-family: var(--font-display);
-    font-size: 1rem;
-    font-weight: 500;
-    color: #fff;
-    margin-bottom: 4px;
-  }
-
-  .footer-column a {
-    font-size: 0.9rem;
-    color: var(--neutral-400);
-    text-decoration: none;
-    transition: color 0.2s;
-  }
-
-  .footer-column a:hover {
-    color: var(--rose-400);
-  }
-
-  .footer-bottom {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 24px;
-    font-size: 0.85rem;
-    color: var(--neutral-500);
-  }
-
-  .powered-by a {
-    color: var(--rose-400);
-    text-decoration: none;
-  }
-
-  .powered-by a:hover {
-    text-decoration: underline;
-  }
-
-  @media (max-width: 768px) {
-    .footer-main {
-      flex-direction: column;
-      gap: 40px;
-    }
-
-    .footer-links {
-      flex-wrap: wrap;
-      gap: 40px;
-    }
-
-    .footer-bottom {
-      flex-direction: column;
-      gap: 12px;
-      text-align: center;
-    }
-  }
-</style>

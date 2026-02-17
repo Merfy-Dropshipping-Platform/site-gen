@@ -3,13 +3,29 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "./types.ts",
-  "types": "./types.ts",
+  "main": "./index.ts",
+  "types": "./index.ts",
   "exports": {
-    ".": "./types.ts",
-    "./types": "./types.ts"
+    ".": "./index.ts",
+    "./types": "./types.ts",
+    "./hooks": "./hooks/index.ts",
+    "./stores": "./stores/index.ts",
+    "./provider": "./provider.tsx",
+    "./testing": "./testing/index.ts"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.62.0",
+    "nanostores": "^0.11.3",
+    "@nanostores/react": "^0.8.4",
+    "@nanostores/persistent": "^0.10.2"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
   },
   "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "typescript": "^5.7.0"
   }
 }

@@ -1,0 +1,17 @@
+{
+  "root": {
+    "props": {
+      "title": "Collection"
+    }
+  },
+  "content": [
+    {
+      "type": "PopularProducts",
+      "props": {
+        "heading": "Collection",
+        "columns": 3
+      }
+    }
+  ],
+  "zones": {}
+}

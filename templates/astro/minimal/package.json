@@ -1,0 +1,24 @@
+{
+  "name": "minimal-template",
+  "type": "module",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.1.17",
+    "astro": "^5.15.5",
+    "sharp": "^0.34.3",
+    "tailwindcss": "^4.1.17"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "typescript": "^5.7.0"
+  }
+}

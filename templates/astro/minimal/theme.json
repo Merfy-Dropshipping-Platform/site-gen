@@ -1,0 +1,57 @@
+{
+  "name": "Minimal",
+  "version": "0.1.0",
+  "description": "Clean, minimal theme for digital products and services",
+  "author": "Merfy",
+  "category": "digital",
+  "features": {
+    "variants": false,
+    "sizeGuide": false,
+    "colorSwatches": false,
+    "filterSidebar": false,
+    "cart": true,
+    "search": true,
+    "collections": true,
+    "newsletter": true,
+    "contactForm": true
+  },
+  "pages": ["index", "product", "collection", "cart"],
+  "settings_schema": [
+    {
+      "name": "Colors",
+      "settings": [
+        { "id": "color_primary", "type": "color", "label": "Primary", "default": "#000000" },
+        { "id": "color_secondary", "type": "color", "label": "Secondary", "default": "#6B7280" },
+        { "id": "color_accent", "type": "color", "label": "Accent", "default": "#2563EB" },
+        { "id": "color_background", "type": "color", "label": "Background", "default": "#FFFFFF" },
+        { "id": "color_foreground", "type": "color", "label": "Text", "default": "#111827" },
+        { "id": "color_border", "type": "color", "label": "Border", "default": "#E5E7EB" },
+        { "id": "color_button_text", "type": "color", "label": "Button text", "default": "#FFFFFF" }
+      ]
+    },
+    {
+      "name": "Typography",
+      "settings": [
+        { "id": "font_heading", "type": "font", "label": "Heading font", "default": "Inter" },
+        { "id": "font_body", "type": "font", "label": "Body font", "default": "Inter" },
+        { "id": "font_size_base", "type": "range", "label": "Base size", "default": 16, "min": 14, "max": 20, "unit": "px" }
+      ]
+    },
+    {
+      "name": "Layout",
+      "settings": [
+        { "id": "radius_button", "type": "range", "label": "Button radius", "default": "0.375rem" },
+        { "id": "radius_card", "type": "range", "label": "Card radius", "default": "0.5rem" },
+        { "id": "page_width", "type": "text", "label": "Page width", "default": "1024px" }
+      ]
+    }
+  ],
+  "color_schemes": {
+    "min": 1,
+    "max": 2,
+    "default": [
+      { "name": "Light", "background": "#FFFFFF", "foreground": "#111827", "primary": "#000000" },
+      { "name": "Dark", "background": "#111827", "foreground": "#F9FAFB", "primary": "#FFFFFF" }
+    ]
+  }
+}

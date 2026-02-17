@@ -1,0 +1,18 @@
+{
+  "root": {
+    "props": {
+      "title": "Cart"
+    }
+  },
+  "content": [
+    {
+      "type": "TextBlock",
+      "props": {
+        "heading": "Your cart",
+        "text": "Review your items before checkout.",
+        "align": "left"
+      }
+    }
+  ],
+  "zones": {}
+}

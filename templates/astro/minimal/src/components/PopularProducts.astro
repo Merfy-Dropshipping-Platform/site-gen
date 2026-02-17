@@ -1,0 +1,63 @@
+---
+interface ProductItem {
+  name: string;
+  price: string;
+  image: string;
+  href?: string;
+}
+
+interface Props {
+  heading?: string;
+  description?: string;
+  products?: ProductItem[];
+  columns?: number;
+}
+
+const {
+  heading = 'Products',
+  description,
+  products = [],
+  columns = 3,
+} = Astro.props;
+
+const gridCols: Record<number, string> = {
+  2: 'grid-cols-1 sm:grid-cols-2',
+  3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
+  4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4',
+};
+const gridClass = gridCols[columns] || gridCols[3];
+---
+
+<section class="section-spacing">
+  <div class="page-container">
+    <div class="mb-8">
+      <h2 class="text-2xl font-semibold text-theme-foreground">{heading}</h2>
+      {description && (
+        <p class="mt-2 text-theme-muted">{description}</p>
+      )}
+    </div>
+
+    <div class={`grid ${gridClass} gap-6`}>
+      {products.map((product) => (
+        <a href={product.href || '#'} class="group">
+          <div class="card overflow-hidden">
+            <div class="aspect-square bg-gray-50">
+              {product.image && (
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  loading="lazy"
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              )}
+            </div>
+            <div class="p-4">
+              <h3 class="text-sm font-medium text-theme-foreground">{product.name}</h3>
+              <p class="text-sm text-theme-muted mt-1">{product.price}</p>
+            </div>
+          </div>
+        </a>
+      ))}
+    </div>
+  </div>
+</section>

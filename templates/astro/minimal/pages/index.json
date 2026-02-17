@@ -1,0 +1,36 @@
+{
+  "root": {
+    "props": {
+      "title": "Minimal Store"
+    }
+  },
+  "content": [
+    {
+      "type": "Hero",
+      "props": {
+        "heading": "Digital products for modern teams",
+        "subheading": "Simple tools, clear pricing, no complexity.",
+        "buttonText": "Browse catalog",
+        "buttonLink": "/catalog",
+        "align": "center"
+      }
+    },
+    {
+      "type": "PopularProducts",
+      "props": {
+        "heading": "Featured",
+        "description": "Our most popular products",
+        "columns": 3
+      }
+    },
+    {
+      "type": "TextBlock",
+      "props": {
+        "heading": "Why choose us",
+        "text": "We focus on simplicity and quality. Every product is designed to solve a real problem without unnecessary complexity.",
+        "align": "center"
+      }
+    }
+  ],
+  "zones": {}
+}

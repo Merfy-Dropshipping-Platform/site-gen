@@ -1,0 +1,140 @@
+@import "tailwindcss";
+@import "./tokens.css";
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap");
+
+@theme {
+  --font-family-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --color-primary: #000000;
+  --color-gray: #6B7280;
+}
+
+/* -- Token-based utility classes -- */
+.text-theme-foreground {
+  color: rgb(var(--color-foreground));
+}
+
+.text-theme-primary {
+  color: rgb(var(--color-primary));
+}
+
+.text-theme-muted {
+  color: rgb(var(--color-muted));
+}
+
+.bg-theme-background {
+  background-color: rgb(var(--color-background));
+}
+
+.bg-theme-primary {
+  background-color: rgb(var(--color-primary));
+}
+
+.border-theme {
+  border-color: rgb(var(--color-border));
+}
+
+.btn-primary {
+  background-color: rgb(var(--color-primary));
+  color: rgb(var(--color-button-text));
+  border-radius: var(--radius-button);
+  transition: opacity 0.2s;
+}
+
+.btn-primary:hover {
+  opacity: 0.85;
+}
+
+.card {
+  border-radius: var(--radius-card);
+  border: 1px solid rgb(var(--color-border));
+  background-color: rgb(var(--color-background));
+}
+
+.page-container {
+  max-width: var(--page-width);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.section-spacing {
+  padding-top: var(--spacing-section);
+  padding-bottom: var(--spacing-section);
+}
+
+/* -- CSS Reset -- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  line-height: 1.5;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  line-height: 1.6;
+  font-family: var(--font-body);
+  color: rgb(var(--color-foreground));
+  background-color: rgb(var(--color-background));
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 0;
+}
+
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.5rem; }
+h4 { font-size: 1.25rem; }
+
+p { margin: 0; }
+
+a {
+  color: rgb(var(--color-primary));
+  text-decoration: none;
+}
+
+a:hover {
+  opacity: 0.7;
+}
+
+img, video {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+button, [role="button"] {
+  cursor: pointer;
+}
+
+ol, ul, menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* -- Accessibility -- */
+.sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

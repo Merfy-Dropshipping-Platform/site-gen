@@ -1,0 +1,20 @@
+{
+  "root": {
+    "props": {
+      "title": "Product"
+    }
+  },
+  "content": [
+    {
+      "type": "ImageWithText",
+      "props": {
+        "imagePosition": "left",
+        "heading": "Product Name",
+        "text": "Product description goes here.",
+        "buttonText": "Add to cart",
+        "buttonLink": "#"
+      }
+    }
+  ],
+  "zones": {}
+}

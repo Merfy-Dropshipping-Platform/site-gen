@@ -1,0 +1,38 @@
+---
+interface Props {
+  heading?: string;
+  text?: string;
+  align?: 'left' | 'center';
+  buttonText?: string;
+  buttonLink?: string;
+}
+
+const {
+  heading,
+  text,
+  align = 'left',
+  buttonText,
+  buttonLink = '#',
+} = Astro.props;
+
+const alignClass = align === 'center' ? 'text-center items-center' : 'text-left items-start';
+---
+
+<section class="section-spacing">
+  <div class={`page-container flex flex-col gap-4 ${alignClass} max-w-2xl ${align === 'center' ? 'mx-auto' : ''}`}>
+    {heading && (
+      <h2 class="text-2xl font-semibold text-theme-foreground">{heading}</h2>
+    )}
+    {text && (
+      <p class="text-base text-theme-muted leading-relaxed">{text}</p>
+    )}
+    {buttonText && (
+      <a
+        href={buttonLink}
+        class="btn-primary inline-flex items-center px-5 py-2.5 text-sm font-medium mt-2"
+      >
+        {buttonText}
+      </a>
+    )}
+  </div>
+</section>

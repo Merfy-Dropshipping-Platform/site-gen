@@ -1,17 +1,25 @@
 ---
 interface Props {
-  heading?: string;
-  text?: string;
+  heading?: string | { text?: string; size?: string };
+  text?: string | { text?: string };
   align?: 'left' | 'center' | 'right';
   size?: 'small' | 'medium' | 'large';
+  padding?: { top?: number; bottom?: number };
 }
 
-const { heading, text, align = 'center', size = 'medium' } = Astro.props;
+const props = Astro.props;
+const headingText = typeof props.heading === 'object' ? props.heading?.text : props.heading;
+const bodyText = typeof props.text === 'object' ? props.text?.text : props.text;
+const headingSize = typeof props.heading === 'object' ? props.heading?.size : props.size;
+const align = (props.align ?? 'center') as string;
+const size = (headingSize ?? props.size ?? 'medium') as string;
+const padTop = props.padding?.top ?? 60;
+const padBottom = props.padding?.bottom ?? 60;
 ---
 
-<section class={`text-block text-block--${size}`} style={`text-align: ${align}`}>
-  {heading && <h2 class="text-block-heading">{heading}</h2>}
-  {text && <p class="text-block-text">{text}</p>}
+<section class={`text-block text-block--${size}`} style={`text-align: ${align}; padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}>
+  {headingText && <h2 class="text-block-heading">{headingText}</h2>}
+  {bodyText && <p class="text-block-text">{bodyText}</p>}
   <slot />
 </section>
 

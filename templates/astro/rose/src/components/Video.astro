@@ -31,17 +31,37 @@ function getEmbedUrl(url: string): string {
 }
 
 const embedUrl = getEmbedUrl(videoUrl);
+
+const isFullscreen = position === 'fullscreen';
+
+const headingSizeClasses: Record<string, string> = {
+  small: 'text-2xl',
+  medium: 'text-[2rem]',
+  large: 'text-[2.5rem]',
+};
+const headingSizeClass = headingSizeClasses[contentSize] || headingSizeClasses.medium;
 ---
 
-<section class={`video-section video-section--${contentSize} video-section--${position}`} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}>
-  <div class="video-container">
+<section
+  class={isFullscreen ? 'w-full' : 'max-w-[1200px] mx-auto px-5'}
+  style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}
+>
+  <div>
     {(showHeading || showSubheading) && (
-      <div class="video-text">
-        {showHeading && <h2 class="video-heading">{content!.heading!.text}</h2>}
-        {showSubheading && <p class="video-subheading">{content!.subheading!.text}</p>}
+      <div class="text-center mb-10 max-w-[700px] mx-auto">
+        {showHeading && (
+          <h2 class={`${headingSizeClass} font-medium text-gray-900 mb-3 leading-[1.2] font-comfortaa`}>
+            {content!.heading!.text}
+          </h2>
+        )}
+        {showSubheading && (
+          <p class="text-[1.1rem] text-gray-600 leading-[1.6] font-manrope">
+            {content!.subheading!.text}
+          </p>
+        )}
       </div>
     )}
-    <div class="video-wrapper">
+    <div class={`relative aspect-video overflow-hidden bg-gray-900 ${isFullscreen ? 'rounded-none' : 'rounded-2xl'}`}>
       {embedUrl ? (
         <iframe
           src={embedUrl}
@@ -49,12 +69,12 @@ const embedUrl = getEmbedUrl(videoUrl);
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowfullscreen
           loading="lazy"
-          class="video-iframe"
+          class="w-full h-full"
         ></iframe>
       ) : coverImage ? (
-        <img src={coverImage} alt="Video cover" class="video-cover" loading="lazy" />
+        <img src={coverImage} alt="Video cover" class="w-full h-full object-cover" loading="lazy" />
       ) : (
-        <div class="video-placeholder">
+        <div class="w-full h-full flex items-center justify-center text-gray-500">
           <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <polygon points="5,3 19,12 5,21"/>
           </svg>
@@ -63,76 +83,3 @@ const embedUrl = getEmbedUrl(videoUrl);
     </div>
   </div>
 </section>
-
-<style>
-  .video-section {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding-left: 20px;
-    padding-right: 20px;
-  }
-
-  .video-section--fullscreen {
-    max-width: 100%;
-    padding-left: 0;
-    padding-right: 0;
-  }
-
-  .video-text {
-    text-align: center;
-    margin-bottom: 40px;
-    max-width: 700px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-
-  .video-heading {
-    font-family: var(--font-display);
-    font-weight: 500;
-    color: var(--neutral-900);
-    margin-bottom: 12px;
-    line-height: 1.2;
-  }
-
-  .video-section--small .video-heading { font-size: 1.5rem; }
-  .video-section--medium .video-heading { font-size: 2rem; }
-  .video-section--large .video-heading { font-size: 2.5rem; }
-
-  .video-subheading {
-    font-size: 1.1rem;
-    color: var(--neutral-600);
-    line-height: 1.6;
-  }
-
-  .video-wrapper {
-    position: relative;
-    aspect-ratio: 16/9;
-    border-radius: 16px;
-    overflow: hidden;
-    background: var(--neutral-900);
-  }
-
-  .video-section--fullscreen .video-wrapper {
-    border-radius: 0;
-  }
-
-  .video-iframe {
-    width: 100%;
-    height: 100%;
-  }
-
-  .video-cover {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .video-placeholder {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--neutral-500);
-  }
-</style>

@@ -28,135 +28,60 @@ const headingSize = heading?.size ?? 'medium';
 const padTop = padding?.top ?? 80;
 const padBottom = padding?.bottom ?? 80;
 const visibleRows = rows.filter((r) => !r.hidden);
+
+const headingSizeClass: Record<string, string> = {
+  small: 'text-2xl',
+  medium: 'text-[2rem]',
+  large: 'text-[2.5rem]',
+};
+
+const alignClass: Record<string, string> = {
+  left: 'text-left',
+  center: 'text-center',
+  right: 'text-right',
+};
+
+const btnPrimaryClass = 'bg-black text-white hover:bg-gray-800';
+const btnSecondaryClass = 'bg-transparent text-gray-800 border border-gray-300 hover:border-black hover:text-black';
 ---
 
-<section class={`multi-rows multi-rows--${headingSize}`} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}>
-  <div class="multi-rows-container">
-    {showHeading && <h2 class="multi-rows-heading">{heading!.text}</h2>}
+<section class="max-w-[1200px] mx-auto px-5" style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}>
+  <div>
+    {showHeading && (
+      <h2 class={`font-comfortaa font-medium text-gray-900 text-center mb-12 leading-[1.2] ${headingSizeClass[headingSize] ?? 'text-[2rem]'}`}>
+        {heading!.text}
+      </h2>
+    )}
 
-    <div class="multi-rows-list">
-      {visibleRows.map((row, i) => (
-        <div class={`row-item row-item--${i % 2 === 0 ? rowsPosition : rowsPosition === 'left' ? 'right' : 'left'}`} style={`text-align: ${alignment}`}>
-          {row.image && (
-            <div class="row-image">
-              <img src={row.image} alt={row.title ?? ''} loading="lazy" />
-            </div>
-          )}
-          <div class="row-content">
-            {row.title && <h3 class="row-title">{row.title}</h3>}
-            {row.description && <p class="row-description">{row.description}</p>}
-            {row.button?.enabled !== 'false' && row.button?.text && (
-              <a href={row.button.link ?? '#'} class={`row-btn row-btn--${buttonStyle}`}>{row.button.text}</a>
+    <div class="flex flex-col gap-[60px]">
+      {visibleRows.map((row, i) => {
+        const imageRight = (i % 2 === 0 ? rowsPosition : rowsPosition === 'left' ? 'right' : 'left') === 'right';
+        return (
+          <div class={`grid grid-cols-1 md:grid-cols-2 gap-[60px] md:gap-[60px] max-md:gap-6 items-center ${alignClass[alignment] ?? 'text-left'}`}>
+            {row.image && (
+              <div class={`overflow-hidden rounded-2xl ${imageRight ? 'md:order-2' : ''}`}>
+                <img src={row.image} alt={row.title ?? ''} loading="lazy" class="w-full h-auto object-cover rounded-2xl" />
+              </div>
             )}
+            <div class={imageRight ? 'md:order-1' : ''}>
+              {row.title && (
+                <h3 class="font-comfortaa text-2xl font-medium text-gray-900 mb-4 leading-[1.2]">{row.title}</h3>
+              )}
+              {row.description && (
+                <p class="text-[1.05rem] text-gray-600 leading-[1.7] mb-6">{row.description}</p>
+              )}
+              {row.button?.enabled !== 'false' && row.button?.text && (
+                <a
+                  href={row.button.link ?? '#'}
+                  class={`inline-flex py-3 px-7 text-[0.95rem] font-medium rounded-lg no-underline transition-all duration-200 ${buttonStyle === 'secondary' ? btnSecondaryClass : btnPrimaryClass}`}
+                >
+                  {row.button.text}
+                </a>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   </div>
 </section>
-
-<style>
-  .multi-rows {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding-left: 20px;
-    padding-right: 20px;
-  }
-
-  .multi-rows-heading {
-    font-family: var(--font-display);
-    font-weight: 500;
-    color: var(--neutral-900);
-    text-align: center;
-    margin-bottom: 48px;
-    line-height: 1.2;
-  }
-
-  .multi-rows--small .multi-rows-heading { font-size: 1.5rem; }
-  .multi-rows--medium .multi-rows-heading { font-size: 2rem; }
-  .multi-rows--large .multi-rows-heading { font-size: 2.5rem; }
-
-  .multi-rows-list {
-    display: flex;
-    flex-direction: column;
-    gap: 60px;
-  }
-
-  .row-item {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 60px;
-    align-items: center;
-  }
-
-  .row-item--right .row-image { order: 2; }
-  .row-item--right .row-content { order: 1; }
-
-  .row-image {
-    overflow: hidden;
-    border-radius: 16px;
-  }
-
-  .row-image img {
-    width: 100%;
-    height: auto;
-    object-fit: cover;
-    border-radius: 16px;
-  }
-
-  .row-title {
-    font-family: var(--font-display);
-    font-size: 1.5rem;
-    font-weight: 500;
-    color: var(--neutral-900);
-    margin-bottom: 16px;
-    line-height: 1.2;
-  }
-
-  .row-description {
-    font-size: 1.05rem;
-    color: var(--neutral-600);
-    line-height: 1.7;
-    margin-bottom: 24px;
-  }
-
-  .row-btn {
-    display: inline-flex;
-    padding: 12px 28px;
-    font-size: 0.95rem;
-    font-weight: 500;
-    border-radius: 8px;
-    text-decoration: none;
-    transition: all 0.2s;
-  }
-
-  .row-btn--primary {
-    background: var(--rose-600);
-    color: #fff;
-  }
-
-  .row-btn--primary:hover { background: var(--rose-700); }
-
-  .row-btn--secondary {
-    background: transparent;
-    color: var(--neutral-800);
-    border: 1px solid var(--neutral-300);
-  }
-
-  .row-btn--secondary:hover {
-    border-color: var(--rose-600);
-    color: var(--rose-600);
-  }
-
-  @media (max-width: 768px) {
-    .row-item {
-      grid-template-columns: 1fr;
-      gap: 24px;
-    }
-
-    .row-item--right .row-image,
-    .row-item--right .row-content {
-      order: unset;
-    }
-  }
-</style>

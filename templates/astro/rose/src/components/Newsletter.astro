@@ -15,95 +15,42 @@ const placeholder = form?.placeholder ?? 'email@example.com';
 const buttonText = form?.buttonText ?? 'Подписаться';
 const padTop = padding?.top ?? 80;
 const padBottom = padding?.bottom ?? 80;
+
+const headingSizeClasses: Record<string, string> = {
+  small: 'text-2xl',
+  medium: 'text-[2rem]',
+  large: 'text-[2.5rem]',
+};
+const headingSizeClass = headingSizeClasses[headingSize] || headingSizeClasses.small;
 ---
 
-<section class={`newsletter newsletter--${headingSize}`} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}>
-  <div class="newsletter-container">
-    <h2 class="newsletter-heading">{headingText}</h2>
-    {textContent && <p class="newsletter-text">{textContent}</p>}
-    <form class="newsletter-form" action="#" method="POST">
-      <input type="email" name="email" placeholder={placeholder} required class="newsletter-input" />
-      <button type="submit" class="newsletter-btn">{buttonText}</button>
+<section
+  class="bg-gray-50 text-center px-5"
+  style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}
+>
+  <div class="max-w-[600px] mx-auto">
+    <h2 class={`${headingSizeClass} font-medium text-gray-900 mb-4 leading-[1.2] font-comfortaa`}>
+      {headingText}
+    </h2>
+    {textContent && (
+      <p class="text-[1.1rem] text-gray-600 mb-8 leading-[1.6] font-manrope">
+        {textContent}
+      </p>
+    )}
+    <form class="flex gap-3 max-w-[480px] mx-auto max-[480px]:flex-col" action="#" method="POST">
+      <input
+        type="email"
+        name="email"
+        placeholder={placeholder}
+        required
+        class="flex-1 py-3.5 px-4 text-base border border-gray-300 rounded-lg bg-white text-gray-900 font-manrope focus:outline-none focus:border-black"
+      />
+      <button
+        type="submit"
+        class="py-3.5 px-7 text-[0.95rem] font-medium border-none rounded-lg bg-black text-white cursor-pointer transition-colors hover:bg-gray-800 font-manrope whitespace-nowrap"
+      >
+        {buttonText}
+      </button>
     </form>
   </div>
 </section>
-
-<style>
-  .newsletter {
-    background: var(--rose-50);
-    text-align: center;
-    padding-left: 20px;
-    padding-right: 20px;
-  }
-
-  .newsletter-container {
-    max-width: 600px;
-    margin: 0 auto;
-  }
-
-  .newsletter-heading {
-    font-family: var(--font-display);
-    font-weight: 500;
-    color: var(--neutral-900);
-    margin-bottom: 16px;
-    line-height: 1.2;
-  }
-
-  .newsletter--small .newsletter-heading { font-size: 1.5rem; }
-  .newsletter--medium .newsletter-heading { font-size: 2rem; }
-  .newsletter--large .newsletter-heading { font-size: 2.5rem; }
-
-  .newsletter-text {
-    font-size: 1.1rem;
-    color: var(--neutral-600);
-    margin-bottom: 32px;
-    line-height: 1.6;
-  }
-
-  .newsletter-form {
-    display: flex;
-    gap: 12px;
-    max-width: 480px;
-    margin: 0 auto;
-  }
-
-  .newsletter-input {
-    flex: 1;
-    padding: 14px 16px;
-    font-size: 1rem;
-    border: 1px solid var(--neutral-300);
-    border-radius: 8px;
-    background: #fff;
-    color: var(--neutral-900);
-    font-family: var(--font-body);
-  }
-
-  .newsletter-input:focus {
-    outline: none;
-    border-color: var(--rose-600);
-  }
-
-  .newsletter-btn {
-    padding: 14px 28px;
-    font-size: 0.95rem;
-    font-weight: 500;
-    border: none;
-    border-radius: 8px;
-    background: var(--rose-600);
-    color: #fff;
-    cursor: pointer;
-    transition: background 0.2s;
-    font-family: var(--font-body);
-    white-space: nowrap;
-  }
-
-  .newsletter-btn:hover {
-    background: var(--rose-700);
-  }
-
-  @media (max-width: 480px) {
-    .newsletter-form {
-      flex-direction: column;
-    }
-  }
-</style>

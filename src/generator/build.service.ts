@@ -403,7 +403,7 @@ async function stageMerge(
  */
 function extractSiteConfig(
   revisionData: Record<string, unknown>,
-  pagesData?: Record<string, { content?: unknown[] }> | undefined,
+  pagesData?: Record<string, { content?: unknown[] }>,
 ): Record<string, unknown> {
   const siteConfig: Record<string, unknown> = { header: {}, footer: {} };
 
@@ -416,7 +416,10 @@ function extractSiteConfig(
   }
 
   for (const component of homeContent) {
-    const comp = component as { type?: string; props?: Record<string, unknown> };
+    const comp = component as {
+      type?: string;
+      props?: Record<string, unknown>;
+    };
     if (!comp?.type || !comp?.props) continue;
 
     if (comp.type === "Header") {
@@ -456,8 +459,12 @@ async function stageGenerate(
   const pages: PageEntry[] = [];
 
   // New multipage format: { pages: PageMeta[], pagesData: Record<string, PuckData> }
-  const revPages = (ctx.revisionData as { pages?: { id: string; slug: string }[] }).pages;
-  const revPagesData = (ctx.revisionData as { pagesData?: Record<string, { content?: unknown[] }> }).pagesData;
+  const revPages = (
+    ctx.revisionData as { pages?: { id: string; slug: string }[] }
+  ).pages;
+  const revPagesData = (
+    ctx.revisionData as { pagesData?: Record<string, { content?: unknown[] }> }
+  ).pagesData;
 
   if (Array.isArray(revPages) && revPages.length > 0 && revPagesData) {
     for (const page of revPages) {
@@ -473,7 +480,9 @@ async function stageGenerate(
         data: { content: pageData.content as any[] },
       });
     }
-    logger.log(`[generate] Multipage format: ${pages.length} pages from revision`);
+    logger.log(
+      `[generate] Multipage format: ${pages.length} pages from revision`,
+    );
   } else {
     // Legacy single-page format: { content: [...] }
     const content = (ctx.revisionData as { content?: unknown[] }).content;
@@ -508,6 +517,10 @@ async function stageGenerate(
     dynamicPages: {
       apiUrl,
       shopId: ctx.siteId,
+    },
+    layout: {
+      importPath: "../layouts/BaseLayout.astro",
+      tagName: "BaseLayout",
     },
     extraFiles: {
       "src/data/site-config.json": JSON.stringify(siteConfig, null, 2),

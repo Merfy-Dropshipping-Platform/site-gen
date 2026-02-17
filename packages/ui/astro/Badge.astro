@@ -1,0 +1,12 @@
+---
+import { cn } from "../lib/cn";
+import { badgeVariants, type BadgeVariants } from "../variants/badge";
+
+type Props = BadgeVariants & {
+  class?: string;
+};
+
+const { variant, size, class: className, ...attrs } = Astro.props;
+const classes = cn(badgeVariants({ variant, size }), className);
+---
+<span class={classes} {...attrs}><slot /></span>

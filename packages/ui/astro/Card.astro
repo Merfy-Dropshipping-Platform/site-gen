@@ -1,0 +1,12 @@
+---
+import { cn } from "../lib/cn";
+import { cardVariants, type CardVariants } from "../variants/card";
+
+type Props = CardVariants & {
+  class?: string;
+};
+
+const { elevated, padding, class: className, ...attrs } = Astro.props;
+const classes = cn(cardVariants({ elevated, padding }), className);
+---
+<div class={classes} {...attrs}><slot /></div>

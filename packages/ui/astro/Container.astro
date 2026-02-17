@@ -1,0 +1,12 @@
+---
+import { cn } from "../lib/cn";
+import { containerVariants, type ContainerVariants } from "../variants/container";
+
+type Props = ContainerVariants & {
+  class?: string;
+};
+
+const { size, class: className, ...attrs } = Astro.props;
+const classes = cn(containerVariants({ size }), className);
+---
+<div class={classes} {...attrs}><slot /></div>

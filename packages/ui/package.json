@@ -12,6 +12,7 @@
     "./variants": "./variants/index.ts",
     "./variants/*": "./variants/*.ts",
     "./react": "./react/index.ts",
+    "./astro/*": "./astro/*.astro",
     "./tailwind.preset": "./tailwind.preset.ts"
   },
   "dependencies": {
@@ -19,8 +20,16 @@
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.6.0"
   },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": { "optional": true }
+  },
   "devDependencies": {
-    "typescript": "^5.7.0",
-    "tailwindcss": "^3.4.0"
+    "@types/react": "^19.2.14",
+    "react": "^19.2.4",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.7.0"
   }
 }

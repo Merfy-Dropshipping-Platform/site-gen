@@ -1,0 +1,109 @@
+---
+interface Props {
+  heading?: { text?: string; size?: 'small' | 'medium' | 'large' };
+  text?: { content?: string; size?: 'small' | 'medium' | 'large' };
+  form?: { placeholder?: string; buttonText?: string };
+  colorScheme?: string;
+  padding?: { top?: number; bottom?: number };
+}
+
+const { heading, text, form, padding } = Astro.props;
+const headingText = heading?.text ?? 'Подпишитесь на нашу рассылку';
+const headingSize = heading?.size ?? 'small';
+const textContent = text?.content ?? '';
+const placeholder = form?.placeholder ?? 'email@example.com';
+const buttonText = form?.buttonText ?? 'Подписаться';
+const padTop = padding?.top ?? 80;
+const padBottom = padding?.bottom ?? 80;
+---
+
+<section class={`newsletter newsletter--${headingSize}`} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}>
+  <div class="newsletter-container">
+    <h2 class="newsletter-heading">{headingText}</h2>
+    {textContent && <p class="newsletter-text">{textContent}</p>}
+    <form class="newsletter-form" action="#" method="POST">
+      <input type="email" name="email" placeholder={placeholder} required class="newsletter-input" />
+      <button type="submit" class="newsletter-btn">{buttonText}</button>
+    </form>
+  </div>
+</section>
+
+<style>
+  .newsletter {
+    background: var(--rose-50);
+    text-align: center;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .newsletter-container {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .newsletter-heading {
+    font-family: var(--font-display);
+    font-weight: 500;
+    color: var(--neutral-900);
+    margin-bottom: 16px;
+    line-height: 1.2;
+  }
+
+  .newsletter--small .newsletter-heading { font-size: 1.5rem; }
+  .newsletter--medium .newsletter-heading { font-size: 2rem; }
+  .newsletter--large .newsletter-heading { font-size: 2.5rem; }
+
+  .newsletter-text {
+    font-size: 1.1rem;
+    color: var(--neutral-600);
+    margin-bottom: 32px;
+    line-height: 1.6;
+  }
+
+  .newsletter-form {
+    display: flex;
+    gap: 12px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .newsletter-input {
+    flex: 1;
+    padding: 14px 16px;
+    font-size: 1rem;
+    border: 1px solid var(--neutral-300);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--neutral-900);
+    font-family: var(--font-body);
+  }
+
+  .newsletter-input:focus {
+    outline: none;
+    border-color: var(--rose-600);
+  }
+
+  .newsletter-btn {
+    padding: 14px 28px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border: none;
+    border-radius: 8px;
+    background: var(--rose-600);
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-family: var(--font-body);
+    white-space: nowrap;
+  }
+
+  .newsletter-btn:hover {
+    background: var(--rose-700);
+  }
+
+  @media (max-width: 480px) {
+    .newsletter-form {
+      flex-direction: column;
+    }
+  }
+</style>

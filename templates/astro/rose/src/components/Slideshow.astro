@@ -1,0 +1,155 @@
+---
+interface Slide {
+  id?: string;
+  image?: string;
+  heading?: { text?: string; size?: string };
+  text?: { content?: string; size?: string };
+  button?: { text?: string; link?: { href?: string } };
+  position?: 'left' | 'center' | 'right';
+  hidden?: boolean;
+}
+
+interface Props {
+  slides?: Slide[];
+  overlay?: number;
+  imagePosition?: 'fullscreen' | 'window';
+  size?: 'small' | 'medium' | 'large';
+  interval?: number;
+  pagination?: 'numbers' | 'dots' | 'counter';
+}
+
+const { slides = [], overlay = 30, size = 'medium', imagePosition = 'fullscreen' } = Astro.props;
+const visibleSlides = slides.filter((s) => !s.hidden);
+---
+
+<section class={`slideshow slideshow--${size} slideshow--${imagePosition}`}>
+  {visibleSlides.length === 0 ? (
+    <div class="slideshow-empty">
+      <p>Добавьте слайды</p>
+    </div>
+  ) : (
+    <div class="slideshow-track">
+      {visibleSlides.map((slide, i) => (
+        <div class={`slideshow-slide ${i === 0 ? 'slideshow-slide--active' : ''}`} style={slide.image ? `background-image: url(${slide.image})` : ''}>
+          <div class="slideshow-overlay" style={`opacity: ${overlay / 100}`}></div>
+          <div class={`slideshow-content slideshow-content--${slide.position ?? 'center'}`}>
+            {slide.heading?.text && <h2 class="slideshow-heading">{slide.heading.text}</h2>}
+            {slide.text?.content && <p class="slideshow-text">{slide.text.content}</p>}
+            {slide.button?.text && (
+              <a href={slide.button.link?.href ?? '#'} class="slideshow-btn">{slide.button.text}</a>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</section>
+
+<style>
+  .slideshow {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slideshow--fullscreen {
+    min-height: 80vh;
+  }
+
+  .slideshow--window {
+    max-width: 1200px;
+    margin: 0 auto;
+    border-radius: 16px;
+    min-height: 60vh;
+  }
+
+  .slideshow-empty {
+    min-height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--rose-50);
+    color: var(--neutral-500);
+    font-size: 1.1rem;
+  }
+
+  .slideshow-track {
+    position: relative;
+    min-height: inherit;
+  }
+
+  .slideshow-slide {
+    min-height: 80vh;
+    background-size: cover;
+    background-position: center;
+    background-color: var(--neutral-800);
+    display: flex;
+    align-items: center;
+    position: relative;
+  }
+
+  .slideshow-slide:not(.slideshow-slide--active) {
+    display: none;
+  }
+
+  .slideshow-overlay {
+    position: absolute;
+    inset: 0;
+    background: #000;
+  }
+
+  .slideshow-content {
+    position: relative;
+    z-index: 1;
+    padding: 60px 40px;
+    max-width: 700px;
+    color: #fff;
+  }
+
+  .slideshow-content--left { margin-right: auto; }
+  .slideshow-content--center { margin: 0 auto; text-align: center; }
+  .slideshow-content--right { margin-left: auto; }
+
+  .slideshow-heading {
+    font-family: var(--font-display);
+    font-weight: 500;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+
+  .slideshow--small .slideshow-heading { font-size: 2rem; }
+  .slideshow--medium .slideshow-heading { font-size: 3rem; }
+  .slideshow--large .slideshow-heading { font-size: 4rem; }
+
+  .slideshow-text {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 24px;
+    opacity: 0.9;
+  }
+
+  .slideshow-btn {
+    display: inline-flex;
+    padding: 14px 32px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border-radius: 8px;
+    background: var(--rose-600);
+    color: #fff;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+
+  .slideshow-btn:hover {
+    background: var(--rose-700);
+  }
+
+  @media (max-width: 768px) {
+    .slideshow-slide {
+      min-height: 60vh;
+    }
+
+    .slideshow-content {
+      padding: 40px 20px;
+    }
+  }
+</style>

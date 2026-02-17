@@ -1,0 +1,220 @@
+---
+interface Props {
+  image?: string;
+  badge?: { enabled?: string; text?: string };
+  title?: { enabled?: string; text?: string };
+  price?: { enabled?: string; value?: string; oldValue?: string };
+  description?: { enabled?: string; text?: string };
+  buttons?: {
+    enabled?: string;
+    addToCart?: { enabled?: string; text?: string };
+    buyNow?: { enabled?: string; text?: string };
+  };
+  variants?: {
+    enabled?: string;
+    items?: Array<{ label: string; value: string }>;
+  };
+}
+
+const { image, badge, title, price, description, buttons, variants } = Astro.props;
+const showBadge = badge?.enabled !== 'false' && badge?.text;
+const showTitle = title?.enabled !== 'false' && title?.text;
+const showPrice = price?.enabled !== 'false' && price?.value;
+const showDescription = description?.enabled !== 'false' && description?.text;
+const showButtons = buttons?.enabled !== 'false';
+const showAddToCart = showButtons && buttons?.addToCart?.enabled !== 'false' && buttons?.addToCart?.text;
+const showBuyNow = showButtons && buttons?.buyNow?.enabled !== 'false' && buttons?.buyNow?.text;
+const showVariants = variants?.enabled !== 'false' && variants?.items && variants.items.length > 0;
+---
+
+<section class="product-detail">
+  <div class="product-detail-container">
+    <div class="product-detail-image">
+      {image ? (
+        <img src={image} alt={title?.text ?? 'Товар'} loading="lazy" />
+      ) : (
+        <div class="product-detail-placeholder">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21,15 16,10 5,21"/>
+          </svg>
+        </div>
+      )}
+      {showBadge && <span class="product-detail-badge">{badge!.text}</span>}
+    </div>
+    <div class="product-detail-info">
+      {showTitle && <h1 class="product-detail-title">{title!.text}</h1>}
+      {showPrice && (
+        <div class="product-detail-price">
+          <span class="product-detail-current-price">{price!.value}</span>
+          {price?.oldValue && <span class="product-detail-old-price">{price.oldValue}</span>}
+        </div>
+      )}
+      {showVariants && (
+        <div class="product-detail-variants">
+          {variants!.items!.map((v) => (
+            <button class="variant-btn">{v.label}</button>
+          ))}
+        </div>
+      )}
+      {showDescription && <p class="product-detail-description">{description!.text}</p>}
+      {(showAddToCart || showBuyNow) && (
+        <div class="product-detail-actions">
+          {showAddToCart && <button class="btn-cart">{buttons!.addToCart!.text}</button>}
+          {showBuyNow && <button class="btn-buy">{buttons!.buyNow!.text}</button>}
+        </div>
+      )}
+    </div>
+  </div>
+</section>
+
+<style>
+  .product-detail {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 60px 20px;
+  }
+
+  .product-detail-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: start;
+  }
+
+  .product-detail-image {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--rose-50);
+  }
+
+  .product-detail-image img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+  }
+
+  .product-detail-placeholder {
+    aspect-ratio: 1/1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--rose-300);
+  }
+
+  .product-detail-badge {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    background: var(--rose-600);
+    color: #fff;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .product-detail-title {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 500;
+    color: var(--neutral-900);
+    margin-bottom: 16px;
+    line-height: 1.2;
+  }
+
+  .product-detail-price {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .product-detail-current-price {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--rose-600);
+  }
+
+  .product-detail-old-price {
+    font-size: 1.1rem;
+    color: var(--neutral-400);
+    text-decoration: line-through;
+  }
+
+  .product-detail-variants {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .variant-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--neutral-300);
+    border-radius: 8px;
+    background: #fff;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .variant-btn:hover {
+    border-color: var(--rose-600);
+  }
+
+  .product-detail-description {
+    font-size: 1.05rem;
+    color: var(--neutral-600);
+    line-height: 1.7;
+    margin-bottom: 32px;
+  }
+
+  .product-detail-actions {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .btn-cart {
+    padding: 14px 32px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border-radius: 8px;
+    border: 1px solid var(--neutral-300);
+    background: #fff;
+    color: var(--neutral-800);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-cart:hover {
+    border-color: var(--rose-600);
+    color: var(--rose-600);
+  }
+
+  .btn-buy {
+    padding: 14px 32px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border-radius: 8px;
+    border: none;
+    background: var(--rose-600);
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .btn-buy:hover {
+    background: var(--rose-700);
+  }
+
+  @media (max-width: 768px) {
+    .product-detail-container {
+      grid-template-columns: 1fr;
+      gap: 30px;
+    }
+  }
+</style>

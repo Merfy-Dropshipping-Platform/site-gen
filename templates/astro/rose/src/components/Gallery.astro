@@ -1,0 +1,121 @@
+---
+interface Props {
+  heading?: { text?: string; size?: 'small' | 'medium' | 'large' };
+  text?: { content?: string; size?: 'small' | 'medium' | 'large' };
+  featuredImage?: { url?: string; alt?: string };
+  imagePosition?: 'left' | 'right';
+  colorScheme?: string;
+  padding?: { top?: number; bottom?: number };
+  title?: string;
+  subtitle?: string;
+}
+
+const { heading, text, featuredImage, imagePosition = 'left', padding, title, subtitle } = Astro.props;
+const headingText = heading?.text ?? title ?? '';
+const headingSize = heading?.size ?? 'medium';
+const textContent = text?.content ?? subtitle ?? '';
+const padTop = padding?.top ?? 80;
+const padBottom = padding?.bottom ?? 80;
+---
+
+<section class={`gallery gallery--${headingSize} gallery--${imagePosition}`} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}>
+  <div class="gallery-container">
+    {featuredImage?.url ? (
+      <div class="gallery-layout">
+        <div class="gallery-image">
+          <img src={featuredImage.url} alt={featuredImage.alt ?? headingText} loading="lazy" />
+        </div>
+        <div class="gallery-content">
+          {headingText && <h2 class="gallery-heading">{headingText}</h2>}
+          {textContent && <p class="gallery-text">{textContent}</p>}
+        </div>
+      </div>
+    ) : (
+      <div class="gallery-center">
+        {headingText && <h2 class="gallery-heading">{headingText}</h2>}
+        {textContent && <p class="gallery-text">{textContent}</p>}
+        <div class="gallery-placeholder">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21,15 16,10 5,21"/>
+          </svg>
+        </div>
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  .gallery {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .gallery-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+  }
+
+  .gallery--right .gallery-image { order: 2; }
+  .gallery--right .gallery-content { order: 1; }
+
+  .gallery-image img {
+    width: 100%;
+    height: auto;
+    border-radius: 16px;
+    object-fit: cover;
+  }
+
+  .gallery-center {
+    text-align: center;
+  }
+
+  .gallery-heading {
+    font-family: var(--font-display);
+    font-weight: 500;
+    color: var(--neutral-900);
+    margin-bottom: 16px;
+    line-height: 1.2;
+  }
+
+  .gallery--small .gallery-heading { font-size: 1.5rem; }
+  .gallery--medium .gallery-heading { font-size: 2rem; }
+  .gallery--large .gallery-heading { font-size: 2.5rem; }
+
+  .gallery-text {
+    font-size: 1.1rem;
+    color: var(--neutral-600);
+    line-height: 1.7;
+  }
+
+  .gallery-placeholder {
+    margin-top: 40px;
+    aspect-ratio: 16/9;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    background: var(--rose-50);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--rose-300);
+  }
+
+  @media (max-width: 768px) {
+    .gallery-layout {
+      grid-template-columns: 1fr;
+      gap: 30px;
+    }
+
+    .gallery--right .gallery-image,
+    .gallery--right .gallery-content {
+      order: unset;
+    }
+  }
+</style>

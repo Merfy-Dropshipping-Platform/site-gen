@@ -1,0 +1,127 @@
+---
+interface Props {
+  heading?: { text?: string; size?: 'small' | 'medium' | 'large' };
+  colorScheme?: string;
+  padding?: { top?: number; bottom?: number };
+}
+
+const { heading, colorScheme, padding } = Astro.props;
+const headingText = heading?.text ?? 'Свяжитесь с нами';
+const headingSize = heading?.size ?? 'medium';
+const padTop = padding?.top ?? 80;
+const padBottom = padding?.bottom ?? 80;
+---
+
+<section class={`contact-form contact-form--${headingSize}`} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}>
+  <div class="contact-form-container">
+    <h2 class="contact-form-heading">{headingText}</h2>
+    <form class="contact-form-fields" action="#" method="POST">
+      <div class="form-group">
+        <label for="contact-name">Имя</label>
+        <input type="text" id="contact-name" name="name" placeholder="Ваше имя" required />
+      </div>
+      <div class="form-group">
+        <label for="contact-email">Email</label>
+        <input type="email" id="contact-email" name="email" placeholder="email@example.com" required />
+      </div>
+      <div class="form-group">
+        <label for="contact-message">Сообщение</label>
+        <textarea id="contact-message" name="message" rows="5" placeholder="Ваше сообщение..." required></textarea>
+      </div>
+      <button type="submit" class="contact-submit">Отправить</button>
+    </form>
+  </div>
+</section>
+
+<style>
+  .contact-form {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .contact-form-container {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .contact-form-heading {
+    font-family: var(--font-display);
+    font-weight: 500;
+    color: var(--neutral-900);
+    text-align: center;
+    margin-bottom: 40px;
+    line-height: 1.2;
+  }
+
+  .contact-form--small .contact-form-heading { font-size: 1.5rem; }
+  .contact-form--medium .contact-form-heading { font-size: 2rem; }
+  .contact-form--large .contact-form-heading { font-size: 2.5rem; }
+
+  .contact-form-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-group label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--neutral-700);
+  }
+
+  .form-group input,
+  .form-group textarea {
+    padding: 12px 16px;
+    font-size: 1rem;
+    border: 1px solid var(--neutral-300);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--neutral-900);
+    font-family: var(--font-body);
+    transition: border-color 0.2s;
+  }
+
+  .form-group input:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: var(--rose-600);
+  }
+
+  .form-group textarea {
+    resize: vertical;
+  }
+
+  .contact-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 32px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border-radius: 8px;
+    border: none;
+    background: var(--rose-600);
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-family: var(--font-body);
+  }
+
+  .contact-submit:hover {
+    background: var(--rose-700);
+  }
+
+  @media (max-width: 768px) {
+    .contact-form-heading {
+      font-size: 1.75rem;
+    }
+  }
+</style>

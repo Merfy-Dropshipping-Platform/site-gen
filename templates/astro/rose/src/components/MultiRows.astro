@@ -1,0 +1,162 @@
+---
+interface Row {
+  id?: string;
+  image?: string;
+  title?: string;
+  headingSize?: 'small' | 'medium' | 'large';
+  description?: string;
+  textSize?: 'small' | 'medium' | 'large';
+  button?: { enabled?: string; text?: string; link?: string };
+  hidden?: boolean;
+}
+
+interface Props {
+  heading?: { enabled?: string; text?: string; size?: 'small' | 'medium' | 'large' };
+  rows?: Row[];
+  size?: 'small' | 'medium' | 'large';
+  width?: 'small' | 'medium' | 'large';
+  rowsPosition?: 'left' | 'right';
+  alignment?: 'left' | 'center' | 'right';
+  buttonStyle?: 'primary' | 'secondary';
+  colorScheme?: string;
+  padding?: { top?: number; bottom?: number };
+}
+
+const { heading, rows = [], size = 'medium', rowsPosition = 'left', alignment = 'left', buttonStyle = 'primary', padding } = Astro.props;
+const showHeading = heading?.enabled !== 'false' && heading?.text;
+const headingSize = heading?.size ?? 'medium';
+const padTop = padding?.top ?? 80;
+const padBottom = padding?.bottom ?? 80;
+const visibleRows = rows.filter((r) => !r.hidden);
+---
+
+<section class={`multi-rows multi-rows--${headingSize}`} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}>
+  <div class="multi-rows-container">
+    {showHeading && <h2 class="multi-rows-heading">{heading!.text}</h2>}
+
+    <div class="multi-rows-list">
+      {visibleRows.map((row, i) => (
+        <div class={`row-item row-item--${i % 2 === 0 ? rowsPosition : rowsPosition === 'left' ? 'right' : 'left'}`} style={`text-align: ${alignment}`}>
+          {row.image && (
+            <div class="row-image">
+              <img src={row.image} alt={row.title ?? ''} loading="lazy" />
+            </div>
+          )}
+          <div class="row-content">
+            {row.title && <h3 class="row-title">{row.title}</h3>}
+            {row.description && <p class="row-description">{row.description}</p>}
+            {row.button?.enabled !== 'false' && row.button?.text && (
+              <a href={row.button.link ?? '#'} class={`row-btn row-btn--${buttonStyle}`}>{row.button.text}</a>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .multi-rows {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .multi-rows-heading {
+    font-family: var(--font-display);
+    font-weight: 500;
+    color: var(--neutral-900);
+    text-align: center;
+    margin-bottom: 48px;
+    line-height: 1.2;
+  }
+
+  .multi-rows--small .multi-rows-heading { font-size: 1.5rem; }
+  .multi-rows--medium .multi-rows-heading { font-size: 2rem; }
+  .multi-rows--large .multi-rows-heading { font-size: 2.5rem; }
+
+  .multi-rows-list {
+    display: flex;
+    flex-direction: column;
+    gap: 60px;
+  }
+
+  .row-item {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+  }
+
+  .row-item--right .row-image { order: 2; }
+  .row-item--right .row-content { order: 1; }
+
+  .row-image {
+    overflow: hidden;
+    border-radius: 16px;
+  }
+
+  .row-image img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    border-radius: 16px;
+  }
+
+  .row-title {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--neutral-900);
+    margin-bottom: 16px;
+    line-height: 1.2;
+  }
+
+  .row-description {
+    font-size: 1.05rem;
+    color: var(--neutral-600);
+    line-height: 1.7;
+    margin-bottom: 24px;
+  }
+
+  .row-btn {
+    display: inline-flex;
+    padding: 12px 28px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .row-btn--primary {
+    background: var(--rose-600);
+    color: #fff;
+  }
+
+  .row-btn--primary:hover { background: var(--rose-700); }
+
+  .row-btn--secondary {
+    background: transparent;
+    color: var(--neutral-800);
+    border: 1px solid var(--neutral-300);
+  }
+
+  .row-btn--secondary:hover {
+    border-color: var(--rose-600);
+    color: var(--rose-600);
+  }
+
+  @media (max-width: 768px) {
+    .row-item {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    .row-item--right .row-image,
+    .row-item--right .row-content {
+      order: unset;
+    }
+  }
+</style>

@@ -1,0 +1,140 @@
+---
+interface Column {
+  title?: string;
+  description?: string;
+  image?: string;
+  imageSize?: 'small' | 'medium' | 'large';
+  headingSize?: 'small' | 'medium' | 'large';
+  textSize?: 'small' | 'medium' | 'large';
+  link?: { enabled?: string; text?: string; href?: string };
+  hidden?: boolean;
+}
+
+interface Props {
+  heading?: { enabled?: string; text?: string; size?: 'small' | 'medium' | 'large' };
+  columns?: Column[];
+  columnsCount?: string;
+  width?: 'small' | 'medium' | 'large';
+  imageAspectRatio?: 'adapt' | 'square' | 'portrait' | 'landscape';
+  textPosition?: 'left' | 'center';
+  colorScheme?: string;
+  padding?: { top?: number; bottom?: number };
+}
+
+const { heading, columns = [], columnsCount = '3', width = 'medium', imageAspectRatio = 'square', textPosition = 'center', padding } = Astro.props;
+const showHeading = heading?.enabled !== 'false' && heading?.text;
+const headingSize = heading?.size ?? 'medium';
+const cols = parseInt(columnsCount) || 3;
+const padTop = padding?.top ?? 80;
+const padBottom = padding?.bottom ?? 80;
+const visibleColumns = columns.filter((c) => !c.hidden);
+
+const aspectMap: Record<string, string> = {
+  adapt: 'auto',
+  square: '1/1',
+  portrait: '3/4',
+  landscape: '4/3',
+};
+---
+
+<section class={`multi-columns multi-columns--${headingSize}`} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}>
+  <div class="multi-columns-container">
+    {showHeading && <h2 class="multi-columns-heading">{heading!.text}</h2>}
+
+    <div class="multi-columns-grid" style={`--columns: ${cols}; text-align: ${textPosition}`}>
+      {visibleColumns.map((col) => (
+        <div class="column-card">
+          {col.image && (
+            <div class="column-image" style={`aspect-ratio: ${aspectMap[imageAspectRatio] ?? '1/1'}`}>
+              <img src={col.image} alt={col.title ?? ''} loading="lazy" />
+            </div>
+          )}
+          {col.title && <h3 class="column-title">{col.title}</h3>}
+          {col.description && <p class="column-description">{col.description}</p>}
+          {col.link?.enabled !== 'false' && col.link?.text && col.link?.href && (
+            <a href={col.link.href} class="column-link">{col.link.text}</a>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .multi-columns {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .multi-columns-heading {
+    font-family: var(--font-display);
+    font-weight: 500;
+    color: var(--neutral-900);
+    text-align: center;
+    margin-bottom: 48px;
+    line-height: 1.2;
+  }
+
+  .multi-columns--small .multi-columns-heading { font-size: 1.5rem; }
+  .multi-columns--medium .multi-columns-heading { font-size: 2rem; }
+  .multi-columns--large .multi-columns-heading { font-size: 2.5rem; }
+
+  .multi-columns-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--columns), 1fr);
+    gap: 32px;
+  }
+
+  @media (max-width: 768px) {
+    .multi-columns-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+  }
+
+  @media (max-width: 480px) {
+    .multi-columns-grid { grid-template-columns: 1fr; }
+  }
+
+  .column-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .column-image {
+    overflow: hidden;
+    border-radius: 12px;
+    background: var(--rose-50);
+  }
+
+  .column-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .column-title {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: var(--neutral-900);
+  }
+
+  .column-description {
+    font-size: 0.95rem;
+    color: var(--neutral-600);
+    line-height: 1.6;
+  }
+
+  .column-link {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--rose-600);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .column-link:hover {
+    color: var(--rose-700);
+  }
+</style>

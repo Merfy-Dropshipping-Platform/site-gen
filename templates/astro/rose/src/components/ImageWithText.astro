@@ -1,0 +1,143 @@
+---
+interface Props {
+  image?: string;
+  size?: 'small' | 'medium' | 'large';
+  width?: 'small' | 'medium' | 'large';
+  photoPosition?: 'left' | 'right';
+  heading?: { enabled?: string; text?: string };
+  text?: { enabled?: string; content?: string };
+  button?: { enabled?: string; text?: string; link?: string };
+  colorScheme?: string;
+  padding?: { top?: number; bottom?: number };
+}
+
+const {
+  image,
+  size = 'medium',
+  photoPosition = 'left',
+  heading,
+  text,
+  button,
+  padding,
+} = Astro.props;
+
+const padTop = padding?.top ?? 80;
+const padBottom = padding?.bottom ?? 80;
+const showHeading = heading?.enabled !== 'false' && heading?.text;
+const showText = text?.enabled !== 'false' && text?.content;
+const showButton = button?.enabled !== 'false' && button?.text;
+---
+
+<section class={`image-text image-text--${size} image-text--${photoPosition}`} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}>
+  <div class="image-text-container">
+    <div class="image-text-image">
+      {image ? (
+        <img src={image} alt={heading?.text ?? ''} loading="lazy" />
+      ) : (
+        <div class="image-text-placeholder">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21,15 16,10 5,21"/>
+          </svg>
+        </div>
+      )}
+    </div>
+    <div class="image-text-content">
+      {showHeading && <h2 class="image-text-heading">{heading!.text}</h2>}
+      {showText && <p class="image-text-text">{text!.content}</p>}
+      {showButton && (
+        <a href={button!.link ?? '#'} class="image-text-btn">{button!.text}</a>
+      )}
+    </div>
+  </div>
+</section>
+
+<style>
+  .image-text {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .image-text-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+  }
+
+  .image-text--right .image-text-image {
+    order: 2;
+  }
+
+  .image-text--right .image-text-content {
+    order: 1;
+  }
+
+  .image-text-image img {
+    width: 100%;
+    height: auto;
+    border-radius: 16px;
+    object-fit: cover;
+  }
+
+  .image-text-placeholder {
+    aspect-ratio: 4/3;
+    background: var(--rose-50);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--rose-300);
+  }
+
+  .image-text-heading {
+    font-family: var(--font-display);
+    font-weight: 500;
+    color: var(--neutral-900);
+    margin-bottom: 16px;
+    line-height: 1.2;
+  }
+
+  .image-text--small .image-text-heading { font-size: 1.5rem; }
+  .image-text--medium .image-text-heading { font-size: 2rem; }
+  .image-text--large .image-text-heading { font-size: 2.5rem; }
+
+  .image-text-text {
+    font-size: 1.1rem;
+    color: var(--neutral-600);
+    line-height: 1.7;
+    margin-bottom: 24px;
+  }
+
+  .image-text-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 14px 32px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border-radius: 8px;
+    background: var(--rose-600);
+    color: #fff;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+
+  .image-text-btn:hover {
+    background: var(--rose-700);
+  }
+
+  @media (max-width: 768px) {
+    .image-text-container {
+      grid-template-columns: 1fr;
+      gap: 30px;
+    }
+
+    .image-text--right .image-text-image,
+    .image-text--right .image-text-content {
+      order: unset;
+    }
+  }
+</style>

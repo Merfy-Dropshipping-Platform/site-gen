@@ -1,0 +1,61 @@
+---
+interface Props {
+  text?: string;
+  size?: 'small' | 'medium' | 'large';
+  link?: { href?: string; text?: string };
+  colorScheme?: string;
+}
+
+const { text = 'Специальное предложение', size = 'small', link, colorScheme } = Astro.props;
+---
+
+<section class={`promo-banner promo-banner--${size}`}>
+  <div class="promo-banner-content">
+    <p class="promo-banner-text">{text}</p>
+    {link?.href && (
+      <a href={link.href} class="promo-banner-link">{link.text ?? 'Подробнее'}</a>
+    )}
+  </div>
+</section>
+
+<style>
+  .promo-banner {
+    background: var(--rose-600);
+    color: #fff;
+    text-align: center;
+  }
+
+  .promo-banner--small { padding: 12px 20px; }
+  .promo-banner--medium { padding: 20px 20px; }
+  .promo-banner--large { padding: 32px 20px; }
+
+  .promo-banner-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .promo-banner-text {
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+
+  .promo-banner--medium .promo-banner-text { font-size: 1.1rem; }
+  .promo-banner--large .promo-banner-text { font-size: 1.25rem; }
+
+  .promo-banner-link {
+    color: #fff;
+    text-decoration: underline;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: opacity 0.2s;
+  }
+
+  .promo-banner-link:hover {
+    opacity: 0.8;
+  }
+</style>

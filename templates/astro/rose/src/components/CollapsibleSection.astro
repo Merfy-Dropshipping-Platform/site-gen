@@ -1,0 +1,111 @@
+---
+interface Item {
+  title?: string;
+  content?: string;
+  hidden?: boolean;
+}
+
+interface Props {
+  heading?: { enabled?: string; text?: string };
+  items?: Item[];
+}
+
+const { heading, items = [] } = Astro.props;
+const showHeading = heading?.enabled !== 'false' && heading?.text;
+const visibleItems = items.filter((item) => !item.hidden);
+---
+
+<section class="collapsible-section">
+  <div class="collapsible-container">
+    {showHeading && <h2 class="collapsible-heading">{heading!.text}</h2>}
+
+    {visibleItems.length === 0 ? (
+      <p class="collapsible-empty">Вопросы скоро появятся</p>
+    ) : (
+      <div class="collapsible-list">
+        {visibleItems.map((item) => (
+          <details class="collapsible-item">
+            <summary class="collapsible-title">{item.title ?? 'Вопрос'}</summary>
+            <div class="collapsible-content">
+              <p>{item.content ?? ''}</p>
+            </div>
+          </details>
+        ))}
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  .collapsible-section {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 80px 20px;
+  }
+
+  .collapsible-heading {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 500;
+    color: var(--neutral-900);
+    text-align: center;
+    margin-bottom: 48px;
+    line-height: 1.2;
+  }
+
+  .collapsible-empty {
+    text-align: center;
+    color: var(--neutral-500);
+    font-size: 1.1rem;
+  }
+
+  .collapsible-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .collapsible-item {
+    border-bottom: 1px solid var(--neutral-200);
+  }
+
+  .collapsible-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0;
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: var(--neutral-900);
+    cursor: pointer;
+    list-style: none;
+    transition: color 0.2s;
+  }
+
+  .collapsible-title::-webkit-details-marker {
+    display: none;
+  }
+
+  .collapsible-title::after {
+    content: '+';
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: var(--neutral-400);
+    transition: transform 0.2s;
+  }
+
+  .collapsible-item[open] .collapsible-title::after {
+    content: '−';
+  }
+
+  .collapsible-title:hover {
+    color: var(--rose-600);
+  }
+
+  .collapsible-content {
+    padding: 0 0 20px;
+    font-size: 1rem;
+    color: var(--neutral-600);
+    line-height: 1.7;
+  }
+</style>

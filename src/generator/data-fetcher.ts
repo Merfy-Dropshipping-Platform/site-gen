@@ -55,7 +55,9 @@ export async function fetchProducts(
   try {
     const result = await firstValueFrom(
       productClient
-        .send<RpcResponse<FetchedProduct[]>>("product.list", { tenantId, siteId })
+        .send<
+          RpcResponse<FetchedProduct[]>
+        >("product.list", { tenantId, siteId })
         .pipe(
           timeout(RPC_TIMEOUT_MS),
           retry({

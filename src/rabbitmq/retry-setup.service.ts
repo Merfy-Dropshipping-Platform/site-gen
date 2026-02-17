@@ -99,7 +99,11 @@ export class RetrySetupService implements OnModuleInit {
           `${SITES_QUEUE} does not exist yet — will be created by NestJS microservice`,
         );
       } finally {
-        try { await ch2?.close(); } catch { /* ignore */ }
+        try {
+          await ch2?.close();
+        } catch {
+          /* ignore */
+        }
       }
     } finally {
       await ch.close();
@@ -129,7 +133,9 @@ export function getRetryCountFromHeaders(
   const headers = properties?.headers as Record<string, unknown> | undefined;
   if (!headers) return 0;
 
-  const xDeath = headers["x-death"] as Array<Record<string, unknown>> | undefined;
+  const xDeath = headers["x-death"] as
+    | Array<Record<string, unknown>>
+    | undefined;
   if (!Array.isArray(xDeath) || xDeath.length === 0) return 0;
 
   // Sum up all death counts across all retry queues

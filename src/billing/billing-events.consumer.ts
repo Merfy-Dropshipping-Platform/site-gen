@@ -14,17 +14,17 @@ import {
   OnModuleInit,
   OnModuleDestroy,
   Inject,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import * as amqp from 'amqp-connection-manager';
-import type { ChannelWrapper } from 'amqp-connection-manager';
-import type { Channel, ConsumeMessage } from 'amqplib';
-import { ClientProxy } from '@nestjs/microservices';
-import { USER_RMQ_SERVICE } from '../constants';
-import { SitesDomainService } from '../sites.service';
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import * as amqp from "amqp-connection-manager";
+import type { ChannelWrapper } from "amqp-connection-manager";
+import type { Channel, ConsumeMessage } from "amqplib";
+import { ClientProxy } from "@nestjs/microservices";
+import { USER_RMQ_SERVICE } from "../constants";
+import { SitesDomainService } from "../sites.service";
 
-const BILLING_EVENTS_EXCHANGE = 'billing.events';
-const SITES_BILLING_QUEUE = 'sites_billing_events';
+const BILLING_EVENTS_EXCHANGE = "billing.events";
+const SITES_BILLING_QUEUE = "sites_billing_events";
 
 interface SubscriptionUpdatedPayload {
   event?: string;
@@ -57,27 +57,31 @@ export class BillingEventsConsumer implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   async onModuleInit() {
-    const rabbitmqUrl = this.configService.get<string>('RABBITMQ_URL');
+    const rabbitmqUrl = this.configService.get<string>("RABBITMQ_URL");
     if (!rabbitmqUrl) {
-      this.logger.warn('RABBITMQ_URL not configured, billing events consumer disabled');
+      this.logger.warn(
+        "RABBITMQ_URL not configured, billing events consumer disabled",
+      );
       return;
     }
 
     try {
       this.connection = amqp.connect([rabbitmqUrl]);
 
-      this.connection.on('connect', () => {
-        this.logger.log('BillingEventsConsumer connected to RabbitMQ');
+      this.connection.on("connect", () => {
+        this.logger.log("BillingEventsConsumer connected to RabbitMQ");
       });
 
-      this.connection.on('disconnect', (params: { err?: Error }) => {
-        this.logger.warn(`BillingEventsConsumer disconnected: ${params.err?.message ?? 'unknown'}`);
+      this.connection.on("disconnect", (params: { err?: Error }) => {
+        this.logger.warn(
+          `BillingEventsConsumer disconnected: ${params.err?.message ?? "unknown"}`,
+        );
       });
 
       this.channelWrapper = this.connection.createChannel({
         setup: async (channel: Channel) => {
           // Создаём/проверяем exchange (должен уже существовать от publisher)
-          await channel.assertExchange(BILLING_EVENTS_EXCHANGE, 'fanout', {
+          await channel.assertExchange(BILLING_EVENTS_EXCHANGE, "fanout", {
             durable: true,
           });
 
@@ -88,7 +92,7 @@ export class BillingEventsConsumer implements OnModuleInit, OnModuleDestroy {
           });
 
           // Привязываем очередь к exchange (для fanout routing key игнорируется)
-          await channel.bindQueue(q.queue, BILLING_EVENTS_EXCHANGE, '');
+          await channel.bindQueue(q.queue, BILLING_EVENTS_EXCHANGE, "");
 
           // Начинаем потребление сообщений
           await channel.consume(
@@ -136,10 +140,10 @@ export class BillingEventsConsumer implements OnModuleInit, OnModuleDestroy {
       this.logger.debug(`Received event: ${eventName}`);
 
       switch (eventName) {
-        case 'billing.subscription.updated':
+        case "billing.subscription.updated":
           await this.handleSubscriptionUpdated(content);
           break;
-        case 'sites.unfreeze_tenant':
+        case "sites.unfreeze_tenant":
           await this.handleUnfreezeTenant(content);
           break;
         default:
@@ -177,11 +181,13 @@ export class BillingEventsConsumer implements OnModuleInit, OnModuleDestroy {
         return;
       }
 
-      const status = String(payload?.status ?? '').toLowerCase();
-      const previousStatus = String(payload?.previousStatus ?? '').toLowerCase();
+      const status = String(payload?.status ?? "").toLowerCase();
+      const previousStatus = String(
+        payload?.previousStatus ?? "",
+      ).toLowerCase();
 
       // Определяем нужно ли заморозить или разморозить
-      const freezeStatuses = ['past_due', 'frozen', 'canceled'];
+      const freezeStatuses = ["past_due", "frozen", "canceled"];
       const shouldFreeze = freezeStatuses.includes(status);
       const wasFreeze = freezeStatuses.includes(previousStatus);
 
@@ -214,7 +220,7 @@ export class BillingEventsConsumer implements OnModuleInit, OnModuleDestroy {
     try {
       const tenantId = payload.tenantId;
       if (!tenantId) {
-        this.logger.warn('sites.unfreeze_tenant: tenantId is missing');
+        this.logger.warn("sites.unfreeze_tenant: tenantId is missing");
         return;
       }
 
@@ -232,11 +238,13 @@ export class BillingEventsConsumer implements OnModuleInit, OnModuleDestroy {
   /**
    * Получает tenantId по accountId через user service.
    */
-  private async getTenantIdByAccountId(accountId: string): Promise<string | undefined> {
+  private async getTenantIdByAccountId(
+    accountId: string,
+  ): Promise<string | undefined> {
     try {
       const res: any = await new Promise((resolve, reject) => {
         const sub = this.userClient
-          .send('user.get_active_organization', { accountId })
+          .send("user.get_active_organization", { accountId })
           .subscribe({
             next: (v) => resolve(v),
             error: reject,

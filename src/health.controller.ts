@@ -416,9 +416,8 @@ export class HealthController {
     this.logger.log(`Starting bulk regeneration with template: ${templateId}`);
 
     try {
-      const result = await this.sitesService.regenerateAllWithTemplate(
-        templateId,
-      );
+      const result =
+        await this.sitesService.regenerateAllWithTemplate(templateId);
       return {
         success: true,
         ...result,

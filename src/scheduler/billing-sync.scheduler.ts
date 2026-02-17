@@ -34,7 +34,9 @@ export class BillingSyncScheduler implements OnModuleInit {
     setTimeout(() => {
       this.logger.log("Running initial billing sync on startup...");
       this.reconcileBilling().catch((e) => {
-        this.logger.warn(`Initial billing sync failed: ${e instanceof Error ? e.message : e}`);
+        this.logger.warn(
+          `Initial billing sync failed: ${e instanceof Error ? e.message : e}`,
+        );
       });
     }, 10000); // 10 секунд после старта
   }

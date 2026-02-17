@@ -165,9 +165,7 @@ export class CoolifyProvider {
         clearTimeout(timer);
 
         const hasPayload = res.status !== 204;
-        const payload = hasPayload
-          ? await res.json().catch(() => null)
-          : null;
+        const payload = hasPayload ? await res.json().catch(() => null) : null;
 
         if (!res.ok) {
           const errMsg = `coolify_api_${res.status}`;
@@ -263,8 +261,7 @@ export class CoolifyProvider {
 
     // 3) Not found — create with nginx-minio-proxy if server is configured
     if (this.serverUuid) {
-      const projectUuid =
-        createOptions?.projectUuid || this.projectUuid || "";
+      const projectUuid = createOptions?.projectUuid || this.projectUuid || "";
       const subdomain =
         createOptions?.subdomain || `${siteId}.${this.wildcardDomain}`;
       const sitePath = `sites/${siteId}`;

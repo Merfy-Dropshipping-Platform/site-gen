@@ -33,7 +33,9 @@ export class ContentSyncScheduler implements OnModuleInit {
     setTimeout(() => {
       this.logger.log("Running initial content sync on startup...");
       this.syncContent().catch((e) => {
-        this.logger.warn(`Initial content sync failed: ${e instanceof Error ? e.message : e}`);
+        this.logger.warn(
+          `Initial content sync failed: ${e instanceof Error ? e.message : e}`,
+        );
       });
     }, 15000); // 15 секунд после старта
   }
@@ -45,7 +47,8 @@ export class ContentSyncScheduler implements OnModuleInit {
   @Cron(CronExpression.EVERY_10_MINUTES)
   async syncContent() {
     if (
-      (process.env.CONTENT_SYNC_CRON_ENABLED ?? "true").toLowerCase() === "false"
+      (process.env.CONTENT_SYNC_CRON_ENABLED ?? "true").toLowerCase() ===
+      "false"
     ) {
       return;
     }

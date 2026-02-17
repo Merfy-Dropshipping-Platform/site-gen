@@ -20,6 +20,7 @@ import * as schema from "../db/schema";
 import { buildWithAstro } from "./astro.builder";
 import { S3StorageService } from "../storage/s3.service";
 import { runBuildPipeline, type BuildDependencies } from "./build.service";
+import { roseRegistry } from "./registries/rose";
 import { fetchProducts as rpcFetchProducts } from "./data-fetcher";
 
 interface ProductData {
@@ -128,6 +129,7 @@ export class SiteGeneratorService {
         siteId: params.siteId,
         mode: params.mode,
         templateOverride: params.templateOverride,
+        registry: roseRegistry,
       });
       return result;
     }

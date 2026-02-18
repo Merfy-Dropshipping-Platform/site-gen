@@ -591,7 +591,8 @@ async function stageGenerate(
     logger.log(`[generate] Legacy format: ${pages.length} page(s)`);
   }
 
-  const apiUrl = process.env.API_GATEWAY_URL ?? "https://gateway.merfy.ru/api";
+  const rawApiUrl = process.env.API_GATEWAY_URL ?? "https://gateway.merfy.ru";
+  const apiUrl = rawApiUrl.endsWith("/api") ? rawApiUrl : `${rawApiUrl}/api`;
 
   // Extract Header and Footer component props from revision data for site-config.json
   const siteConfig = extractSiteConfig(ctx.revisionData, revPagesData);

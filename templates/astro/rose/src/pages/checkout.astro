@@ -31,6 +31,30 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
       <div class="bg-white p-6 rounded-2xl mb-8 shadow-sm" id="product-summary">
         <p class="text-gray-500">Загрузка...</p>
       </div>
+      <!-- Промокод -->
+      <div class="mb-6" id="promo-section">
+        <div class="flex gap-2" id="promo-input-row">
+          <input type="text" id="promo-input" placeholder="Промокод"
+            class="flex-1 py-3 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-[#f43f5e] focus:ring-2 focus:ring-[#ffe4e6]">
+          <button type="button" id="btn-apply-promo"
+            class="py-3 px-6 bg-gray-800 text-white rounded-xl font-medium hover:bg-gray-700 transition-colors text-sm whitespace-nowrap">
+            Применить
+          </button>
+        </div>
+        <div id="promo-applied" class="hidden mt-3 p-3 bg-green-50 border border-green-200 rounded-xl">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-green-700 font-medium text-sm" id="promo-applied-code"></span>
+              <span class="text-green-600 text-sm ml-2" id="promo-applied-discount"></span>
+            </div>
+            <button type="button" id="btn-remove-promo" class="text-red-500 hover:text-red-700 text-sm underline">
+              Удалить
+            </button>
+          </div>
+        </div>
+        <div id="promo-error" class="text-red-600 mt-2 text-sm hidden"></div>
+      </div>
+
       <button class="w-full py-4 px-8 bg-[#e11d48] text-white rounded-xl font-medium hover:bg-[#be123c] transition-colors" id="btn-to-contacts">Продолжить</button>
       <a href="/" class="block text-center mt-4 text-gray-500 hover:text-[#e11d48] text-sm">Вернуться в магазин</a>
     </div>

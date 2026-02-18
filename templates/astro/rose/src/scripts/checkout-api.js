@@ -118,6 +118,30 @@ export const CheckoutAPI = {
   async getPaymentStatus(orderId) {
     return request(`/orders/${orderId}/payment-status`);
   },
+
+  /**
+   * Применить промокод к корзине
+   * @param {string} cartId
+   * @param {string} promoCode
+   * @returns {Promise<{success: boolean, data: object, message?: string}>}
+   */
+  async applyPromo(cartId, promoCode) {
+    return request(`/orders/cart/${cartId}/promo`, {
+      method: 'POST',
+      body: JSON.stringify({ promoCode }),
+    });
+  },
+
+  /**
+   * Убрать промокод из корзины
+   * @param {string} cartId
+   * @returns {Promise<{success: boolean, data: object}>}
+   */
+  async removePromo(cartId) {
+    return request(`/orders/cart/${cartId}/promo`, {
+      method: 'DELETE',
+    });
+  },
 };
 
 export default CheckoutAPI;

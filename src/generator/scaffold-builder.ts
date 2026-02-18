@@ -323,6 +323,14 @@ export async function buildScaffold(
         JSON.stringify(config.buildData.products, null, 2),
       );
       generatedFiles.push("src/data/products.json");
+
+      // Also write to public/data/ for runtime access by checkout.js
+      const publicProductsPath = path.join(outputDir, "public", "data", "products.json");
+      await writeFile(
+        publicProductsPath,
+        JSON.stringify(config.buildData.products, null, 2),
+      );
+      generatedFiles.push("public/data/products.json");
     }
   }
 

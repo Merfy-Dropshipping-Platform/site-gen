@@ -307,30 +307,32 @@ video {
   display: none;
 }
 
-/* ── Typography (token-based) ── */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: var(--font-heading);
-  line-height: 1.2;
-}
-h1 { font-size: 3.052em; }
-h2 { font-size: 2.441em; }
-h3 { font-size: 1.953em; }
-h4 { font-size: 1.563em; }
-h5 { font-size: 1.25em; }
+/* ── Typography (token-based, in @layer base so TW utilities can override) ── */
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+    line-height: 1.2;
+  }
+  h1 { font-size: 3.052em; }
+  h2 { font-size: 2.441em; }
+  h3 { font-size: 1.953em; }
+  h4 { font-size: 1.563em; }
+  h5 { font-size: 1.25em; }
 
-a {
-  color: rgb(var(--color-primary));
-  text-decoration: none;
-  transition: opacity 0.2s;
-}
+  a {
+    color: rgb(var(--color-primary));
+    text-decoration: none;
+    transition: opacity 0.2s;
+  }
 
-a:hover {
-  opacity: 0.8;
+  a:hover {
+    opacity: 0.8;
+  }
 }
 
 main {

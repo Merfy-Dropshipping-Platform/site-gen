@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import data from '../data/data.json';
+import siteConfig from '../data/site-config.json';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 
@@ -8,9 +9,11 @@ const meta = data?.meta ?? {};
 const blocks = data?.content ?? [];
 const headerBlock = blocks.find((b: any) => b.type === 'Header');
 const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
+const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 ---
 <BaseLayout title={`О нас — ${meta?.title ?? 'Мой сайт'}`} description={meta?.description}>
-  <Header {...(headerBlock?.props ?? {})} />
+  <Header {...headerProps} />
 
   <main class="flex-1 w-full max-w-[800px] mx-auto px-5 py-10">
     <div class="text-center mb-10">
@@ -36,5 +39,5 @@ const footerBlock = blocks.find((b: any) => b.type === 'Footer');
     </div>
   </main>
 
-  <Footer {...(footerBlock?.props ?? {})} />
+  <Footer {...footerProps} />
 </BaseLayout>

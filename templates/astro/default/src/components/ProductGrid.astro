@@ -4,6 +4,7 @@ interface Product {
   name: string;
   description?: string;
   price: number;
+  compareAtPrice?: number;
   images?: string[];
   slug?: string;
 }
@@ -53,7 +54,12 @@ function formatPrice(price: number): string {
             {product.description && (
               <p class="product-description">{product.description}</p>
             )}
-            <div class="product-price">{formatPrice(product.price)}</div>
+            <div class="product-price-row">
+              <span class="product-price">{formatPrice(product.price)}</span>
+              {product.compareAtPrice != null && product.compareAtPrice > product.price && (
+                <span class="product-old-price">{formatPrice(product.compareAtPrice)}</span>
+              )}
+            </div>
             <a href={`/product/${product.slug ?? product.id}`} class="product-link">
               Подробнее
             </a>
@@ -154,11 +160,24 @@ function formatPrice(price: number): string {
     overflow: hidden;
   }
 
+  .product-price-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
   .product-price {
     font-size: 1.25rem;
     font-weight: 700;
     color: #222;
-    margin-bottom: 12px;
+  }
+
+  .product-old-price {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #999;
+    text-decoration: line-through;
   }
 
   .product-link {

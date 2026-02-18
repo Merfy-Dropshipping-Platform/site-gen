@@ -1,0 +1,40 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import data from '../data/data.json';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+const meta = data?.meta ?? {};
+const blocks = data?.content ?? [];
+const headerBlock = blocks.find((b: any) => b.type === 'Header');
+const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+---
+<BaseLayout title={`О нас — ${meta?.title ?? 'Мой сайт'}`} description={meta?.description}>
+  <Header {...(headerBlock?.props ?? {})} />
+
+  <main class="flex-1 w-full max-w-[800px] mx-auto px-5 py-10">
+    <div class="text-center mb-10">
+      <p class="mb-4 text-sm text-gray-500 font-manrope">
+        <a href="/" class="text-gray-500 hover:text-black">Главная</a> / О нас
+      </p>
+      <h1 class="text-4xl font-comfortaa">О нас</h1>
+    </div>
+
+    <div class="space-y-6 text-gray-700 font-manrope leading-relaxed">
+      <p>
+        Добро пожаловать в наш интернет-магазин! Мы рады предложить вам широкий ассортимент
+        качественных товаров по доступным ценам.
+      </p>
+      <p>
+        Наша команда тщательно отбирает каждый товар, чтобы вы получали только лучшее.
+        Мы ценим доверие наших клиентов и стремимся обеспечить высокий уровень сервиса.
+      </p>
+      <p>
+        Если у вас есть вопросы или предложения, не стесняйтесь обращаться к нам через
+        страницу <a href="/contacts" class="text-black underline hover:no-underline">контактов</a>.
+      </p>
+    </div>
+  </main>
+
+  <Footer {...(footerBlock?.props ?? {})} />
+</BaseLayout>

@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import data from '../data/data.json';
+import siteConfig from '../data/site-config.json';
 import products from '../data/products.json';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
@@ -10,12 +11,14 @@ const blocks = data?.content ?? [];
 const meta = data?.meta ?? {};
 const hasProducts = products && products.length > 0;
 
-// Extract header/footer config from data
+// Extract header/footer config from data, fallback to site-config.json
 const headerBlock = blocks.find((b: any) => b.type === 'Header');
 const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
+const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 ---
 <BaseLayout title={meta?.title ?? 'Мой сайт'} description={meta?.description}>
-  <Header {...(headerBlock?.props ?? {})} />
+  <Header {...headerProps} />
 
   <main class="flex-1 w-full">
     {blocks.length === 0 && !hasProducts && (
@@ -30,5 +33,5 @@ const footerBlock = blocks.find((b: any) => b.type === 'Footer');
     )}
   </main>
 
-  <Footer {...(footerBlock?.props ?? {})} />
+  <Footer {...footerProps} />
 </BaseLayout>

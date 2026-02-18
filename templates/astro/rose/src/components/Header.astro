@@ -13,9 +13,10 @@ const {
   siteTitle = 'Rose Theme',
   logo = '/logo.svg',
   navigationLinks = [
-    { label: 'Главная', href: '/', submenu: [] },
-    { label: 'Каталог', href: '#popular', submenu: [{ label: 'Популярные', href: '#popular' }, { label: 'Коллекции', href: '#collections' }, { label: 'Галерея', href: '#gallery' }] },
-    { label: 'Контакты', href: '#', submenu: [] },
+    { label: 'Главная', href: '/' },
+    { label: 'Каталог', href: '/catalog' },
+    { label: 'О нас', href: '/about' },
+    { label: 'Контакты', href: '/contacts' },
   ],
   actionButtons = { showSearch: 'true', showCart: 'true', showProfile: 'true' },
 } = Astro.props;

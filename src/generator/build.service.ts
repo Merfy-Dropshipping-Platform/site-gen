@@ -550,6 +550,36 @@ async function stageGenerate(
     logger.log(
       `[generate] Resolved page links: ${Object.keys(pageIdToSlug).length} page IDs mapped`,
     );
+
+    // Synchronize Header/Footer from home page to all other pages
+    // so navigation is consistent across the entire site
+    const homePage = pages.find((p) => p.fileName === "index.astro");
+    if (homePage) {
+      const homeContent = homePage.data.content as any[];
+      const homeHeader = homeContent.find(
+        (c: any) => c?.type === "Header",
+      );
+      const homeFooter = homeContent.find(
+        (c: any) => c?.type === "Footer",
+      );
+
+      for (const page of pages) {
+        if (page.fileName === "index.astro") continue;
+        const content = page.data.content as any[];
+        for (let i = 0; i < content.length; i++) {
+          if (content[i]?.type === "Header" && homeHeader) {
+            content[i] = { ...homeHeader };
+          }
+          if (content[i]?.type === "Footer" && homeFooter) {
+            content[i] = { ...homeFooter };
+          }
+        }
+      }
+      logger.log(
+        `[generate] Synchronized Header/Footer from home page to ${pages.length - 1} other pages`,
+      );
+    }
+
     logger.log(
       `[generate] Multipage format: ${pages.length} pages from revision`,
     );

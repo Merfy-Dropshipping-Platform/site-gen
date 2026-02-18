@@ -58,7 +58,12 @@ function formatPrice(price: number): string {
       <!-- Детали -->
       <div class="pt-0 md:pt-5">
         <h1 class="text-4xl font-comfortaa mb-4 leading-tight">{product?.name}</h1>
-        <div class="text-2xl font-semibold text-[#e11d48] mb-6">{formatPrice(product?.price ?? 0)}</div>
+        <div class="flex items-center gap-3 mb-6">
+          <span class="text-2xl font-semibold text-[#e11d48]">{formatPrice(product?.price ?? 0)}</span>
+          {product?.compareAtPrice != null && product.compareAtPrice > (product?.price ?? 0) && (
+            <span class="text-lg text-gray-400 line-through">{formatPrice(product.compareAtPrice)}</span>
+          )}
+        </div>
         {product?.description && (
           <p class="text-base text-gray-600 leading-relaxed mb-8">{product.description}</p>
         )}

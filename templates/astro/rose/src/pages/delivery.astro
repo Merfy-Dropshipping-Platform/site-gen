@@ -1,0 +1,49 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import data from '../data/data.json';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+const meta = data?.meta ?? {};
+const blocks = data?.content ?? [];
+const headerBlock = blocks.find((b: any) => b.type === 'Header');
+const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+---
+<BaseLayout title={`Доставка и оплата — ${meta?.title ?? 'Мой сайт'}`} description={meta?.description}>
+  <Header {...(headerBlock?.props ?? {})} />
+
+  <main class="flex-1 w-full max-w-[800px] mx-auto px-5 py-10">
+    <div class="text-center mb-10">
+      <p class="mb-4 text-sm text-gray-500 font-manrope">
+        <a href="/" class="text-gray-500 hover:text-black">Главная</a> / Доставка и оплата
+      </p>
+      <h1 class="text-4xl font-comfortaa">Доставка и оплата</h1>
+    </div>
+
+    <div class="space-y-6 text-gray-700 font-manrope leading-relaxed">
+      <h2 class="text-2xl font-comfortaa text-black">Доставка</h2>
+      <p>
+        Мы осуществляем доставку по всей России. Сроки доставки зависят от вашего региона
+        и обычно составляют от 3 до 14 рабочих дней.
+      </p>
+      <p>
+        После оформления заказа вы получите трек-номер для отслеживания посылки.
+      </p>
+
+      <h2 class="text-2xl font-comfortaa text-black">Оплата</h2>
+      <p>
+        Мы принимаем оплату банковскими картами (Visa, Mastercard, МИР) и другими
+        удобными способами. Все платежи проходят через защищённое соединение.
+      </p>
+
+      <h2 class="text-2xl font-comfortaa text-black">Возврат и обмен</h2>
+      <p>
+        Вы можете вернуть или обменять товар в течение 14 дней с момента получения.
+        Для этого свяжитесь с нами через страницу
+        <a href="/contacts" class="text-black underline hover:no-underline">контактов</a>.
+      </p>
+    </div>
+  </main>
+
+  <Footer {...(footerBlock?.props ?? {})} />
+</BaseLayout>

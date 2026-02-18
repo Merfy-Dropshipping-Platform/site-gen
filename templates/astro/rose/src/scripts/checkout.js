@@ -186,6 +186,22 @@ class CheckoutFlow {
     document.getElementById('btn-pay').addEventListener('click', async () => {
       await this.processPayment();
     });
+
+    // Промокод
+    document.getElementById('btn-apply-promo').addEventListener('click', () => {
+      this.applyPromo();
+    });
+
+    document.getElementById('promo-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        this.applyPromo();
+      }
+    });
+
+    document.getElementById('btn-remove-promo').addEventListener('click', () => {
+      this.removePromo();
+    });
   }
 
   async processPayment() {
@@ -225,11 +241,94 @@ class CheckoutFlow {
     }
   }
 
+  async applyPromo() {
+    const input = document.getElementById('promo-input');
+    const errorEl = document.getElementById('promo-error');
+    const btn = document.getElementById('btn-apply-promo');
+    const code = input.value.trim();
+
+    if (!code) return;
+    if (!this.cartId) {
+      errorEl.textContent = 'Корзина ещё не создана';
+      errorEl.classList.remove('hidden');
+      return;
+    }
+
+    btn.disabled = true;
+    errorEl.classList.add('hidden');
+
+    try {
+      const res = await CheckoutAPI.applyPromo(this.cartId, code);
+      if (!res.success) {
+        throw new Error(res.message || 'Промокод недействителен');
+      }
+      this.cart = res.data;
+      this.updatePromoUI();
+    } catch (e) {
+      errorEl.textContent = e.message;
+      errorEl.classList.remove('hidden');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async removePromo() {
+    if (!this.cartId) return;
+
+    const btn = document.getElementById('btn-remove-promo');
+    btn.disabled = true;
+
+    try {
+      const res = await CheckoutAPI.removePromo(this.cartId);
+      if (!res.success) {
+        throw new Error(res.message || 'Не удалось убрать промокод');
+      }
+      this.cart = res.data;
+      this.updatePromoUI();
+    } catch (e) {
+      const errorEl = document.getElementById('promo-error');
+      errorEl.textContent = e.message;
+      errorEl.classList.remove('hidden');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  updatePromoUI() {
+    const inputRow = document.getElementById('promo-input-row');
+    const appliedEl = document.getElementById('promo-applied');
+    const errorEl = document.getElementById('promo-error');
+    const input = document.getElementById('promo-input');
+
+    errorEl.classList.add('hidden');
+
+    if (this.cart?.promoCode) {
+      inputRow.classList.add('hidden');
+      appliedEl.classList.remove('hidden');
+      document.getElementById('promo-applied-code').textContent = this.cart.promoCode;
+      const discount = this.cart.discountCents ?? 0;
+      document.getElementById('promo-applied-discount').textContent =
+        discount > 0 ? `Скидка: -${this.formatPrice(discount / 100)}` : 'Скидка применена';
+    } else {
+      inputRow.classList.remove('hidden');
+      appliedEl.classList.add('hidden');
+      input.value = '';
+    }
+  }
+
   renderOrderSummary() {
     const container = document.getElementById('order-summary');
     const subtotal = this.cart?.subtotalCents ?? this.product.price * 100;
     const delivery = this.cart?.deliveryCostCents ?? 0;
-    const total = this.cart?.totalCents ?? subtotal + delivery;
+    const discount = this.cart?.discountCents ?? 0;
+    const total = this.cart?.totalCents ?? subtotal + delivery - discount;
+
+    const discountRow = discount > 0
+      ? `<div class="order-summary-row" style="color: #16a34a;">
+          <span>Скидка${this.cart?.promoCode ? ` (${this.cart.promoCode})` : ''}</span>
+          <span>-${this.formatPrice(discount / 100)}</span>
+        </div>`
+      : '';
 
     container.innerHTML = `
       <div class="product-summary-item" style="margin-bottom: 20px;">
@@ -250,6 +349,7 @@ class CheckoutFlow {
         <span>Доставка</span>
         <span>${delivery > 0 ? this.formatPrice(delivery / 100) : 'Бесплатно'}</span>
       </div>
+      ${discountRow}
       <div class="order-summary-row total">
         <span>Итого</span>
         <span class="price">${this.formatPrice(total / 100)}</span>

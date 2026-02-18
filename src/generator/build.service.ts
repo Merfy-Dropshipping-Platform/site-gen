@@ -556,12 +556,8 @@ async function stageGenerate(
     const homePage = pages.find((p) => p.fileName === "index.astro");
     if (homePage) {
       const homeContent = homePage.data.content as any[];
-      const homeHeader = homeContent.find(
-        (c: any) => c?.type === "Header",
-      );
-      const homeFooter = homeContent.find(
-        (c: any) => c?.type === "Footer",
-      );
+      const homeHeader = homeContent.find((c: any) => c?.type === "Header");
+      const homeFooter = homeContent.find((c: any) => c?.type === "Footer");
 
       for (const page of pages) {
         if (page.fileName === "index.astro") continue;
@@ -631,7 +627,11 @@ async function stageGenerate(
     buildData: {
       siteData: {
         ...ctx.revisionData,
-        meta: ctx.revisionMeta,
+        meta: {
+          ...ctx.revisionMeta,
+          shopId: ctx.tenantId,
+          apiUrl,
+        },
       },
     },
     dynamicPages: {
@@ -702,6 +702,16 @@ async function stageFetchData(
   );
   await fs.mkdir(path.dirname(productsPath), { recursive: true });
   await fs.writeFile(productsPath, JSON.stringify(products, null, 2), "utf8");
+
+  // Also write to public/data/ for runtime access by checkout.js
+  const publicProductsPath = path.join(
+    ctx.workingDir,
+    "public",
+    "data",
+    "products.json",
+  );
+  await fs.mkdir(path.dirname(publicProductsPath), { recursive: true });
+  await fs.writeFile(publicProductsPath, JSON.stringify(products, null, 2), "utf8");
 
   // Write collections.json
   if (ctx.storeData.collections.length > 0) {

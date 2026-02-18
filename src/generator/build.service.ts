@@ -630,7 +630,7 @@ async function stageGenerate(
         ...ctx.revisionData,
         meta: {
           ...ctx.revisionMeta,
-          shopId: ctx.tenantId,
+          shopId: ctx.siteId,
           apiUrl,
         },
       },

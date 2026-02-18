@@ -1,0 +1,41 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import data from '../data/data.json';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+const meta = data?.meta ?? {};
+const blocks = data?.content ?? [];
+const headerBlock = blocks.find((b: any) => b.type === 'Header');
+const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+---
+<BaseLayout title={`Контакты — ${meta?.title ?? 'Мой сайт'}`} description={meta?.description}>
+  <Header {...(headerBlock?.props ?? {})} />
+
+  <main class="flex-1 w-full max-w-[800px] mx-auto px-5 py-10">
+    <div class="text-center mb-10">
+      <p class="mb-4 text-sm text-gray-500 font-manrope">
+        <a href="/" class="text-gray-500 hover:text-black">Главная</a> / Контакты
+      </p>
+      <h1 class="text-4xl font-comfortaa">Контакты</h1>
+    </div>
+
+    <div class="space-y-6 text-gray-700 font-manrope leading-relaxed">
+      <p>
+        Мы всегда рады ответить на ваши вопросы и помочь с выбором товара.
+        Свяжитесь с нами любым удобным способом.
+      </p>
+      <div class="space-y-3">
+        <p><span class="font-semibold text-black">Email:</span> info@example.com</p>
+        <p><span class="font-semibold text-black">Телефон:</span> +7 (999) 123-45-67</p>
+        <p><span class="font-semibold text-black">Режим работы:</span> Пн–Пт, 9:00–18:00</p>
+      </div>
+      <p>
+        Также вы можете написать нам через форму обратной связи, и мы ответим
+        в течение 24 часов.
+      </p>
+    </div>
+  </main>
+
+  <Footer {...(footerBlock?.props ?? {})} />
+</BaseLayout>

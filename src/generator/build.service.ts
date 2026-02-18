@@ -509,6 +509,47 @@ async function stageGenerate(
         data: { content: pageData.content as any[] },
       });
     }
+
+    // Resolve page ID references to actual slugs in component props
+    // PagePicker may save page.id (e.g. "page-about") instead of slug ("/about")
+    const pageIdToSlug: Record<string, string> = {};
+    for (const p of revPages) {
+      if (p.id && p.slug) {
+        pageIdToSlug[p.id] = p.slug.startsWith("/") ? p.slug : `/${p.slug}`;
+      }
+    }
+
+    function resolvePageLinks(obj: unknown): unknown {
+      if (Array.isArray(obj)) {
+        return obj.map((item) => resolvePageLinks(item));
+      }
+      if (obj !== null && typeof obj === "object") {
+        const result: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(
+          obj as Record<string, unknown>,
+        )) {
+          if (
+            key === "href" &&
+            typeof value === "string" &&
+            value in pageIdToSlug
+          ) {
+            result[key] = pageIdToSlug[value];
+          } else {
+            result[key] = resolvePageLinks(value);
+          }
+        }
+        return result;
+      }
+      return obj;
+    }
+
+    for (const page of pages) {
+      page.data = resolvePageLinks(page.data) as typeof page.data;
+    }
+
+    logger.log(
+      `[generate] Resolved page links: ${Object.keys(pageIdToSlug).length} page IDs mapped`,
+    );
     logger.log(
       `[generate] Multipage format: ${pages.length} pages from revision`,
     );

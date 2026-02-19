@@ -13,7 +13,7 @@ import * as Minio from "minio";
 import { createHash } from "crypto";
 
 /** Fragment components that need re-rendering on product updates */
-const ISLAND_COMPONENTS = ["PopularProducts", "ProductGrid"] as const;
+const ISLAND_COMPONENTS = ["PopularProducts"] as const;
 
 /** Manifest stored at {siteId}/_islands/manifest.json */
 interface IslandsManifest {
@@ -125,8 +125,8 @@ export class FragmentPatcher {
 
     for (const component of ISLAND_COMPONENTS) {
       try {
-        // 1. Call islands server to re-render the component
-        const html = await this.renderFragment(component, tenantId);
+        // 1. Call islands server to re-render the component (use siteId as storeId)
+        const html = await this.renderFragment(component, siteId);
         if (!html) {
           this.logger.warn(
             `Empty response from islands server for ${component} (site ${siteId})`,
@@ -175,7 +175,7 @@ export class FragmentPatcher {
    */
   private async renderFragment(
     component: string,
-    tenantId: string,
+    storeId: string,
   ): Promise<string | null> {
     const url = `${this.islandsServerUrl}/islands/${component}`;
 
@@ -183,7 +183,7 @@ export class FragmentPatcher {
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ storeId: tenantId }),
+        body: JSON.stringify({ storeId }),
       });
 
       if (!response.ok) {

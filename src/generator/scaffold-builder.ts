@@ -281,10 +281,14 @@ export async function buildScaffold(
   }
 
   // 5. Generate static pages from Puck JSON
+  // Use "initial" as buildHash for server-island components so the Web Component
+  // always fetches fresh data on first page load (fallback is skeleton HTML).
+  const buildHash = config.islands?.enabled ? "initial" : undefined;
   for (const page of config.pages) {
     const pageContent = generateAstroPage(page.data, config.registry, {
       layoutImport: config.layout?.importPath,
       layoutTag: config.layout?.tagName,
+      buildHash,
     });
     const pagePath = path.join(outputDir, "src", "pages", page.fileName);
     await writeFile(pagePath, pageContent);

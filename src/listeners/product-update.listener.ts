@@ -171,7 +171,7 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
 
       // Find all published (non-frozen) sites for this tenant
       const sites = await this.db
-        .select({ id: schema.site.id, status: schema.site.status })
+        .select({ id: schema.site.id, status: schema.site.status, islandsEnabled: schema.site.islandsEnabled })
         .from(schema.site)
         .where(
           and(
@@ -191,6 +191,14 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
 
         // Skip draft/archived sites — only rebuild published sites
         if (site.status !== "published") {
+          continue;
+        }
+
+        // Island-enabled sites skip full rebuild — fragment patching handles updates
+        if (site.islandsEnabled) {
+          this.logger.log(
+            `Site ${site.id} uses islands — skipping rebuild, will patch fragments`,
+          );
           continue;
         }
 

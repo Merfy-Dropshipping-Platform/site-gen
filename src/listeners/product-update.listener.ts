@@ -26,10 +26,12 @@ import { and, eq, sql } from "drizzle-orm";
 import { PG_CONNECTION } from "../constants";
 import * as schema from "../db/schema";
 import { BuildQueuePublisher } from "../rabbitmq/build-queue.service";
+import { FragmentPatcher } from "./fragment-patcher.service";
 
 const PRODUCT_EVENTS_EXCHANGE = "product.events";
 const SITES_PRODUCT_EVENTS_QUEUE = "sites_product_events";
 const DEBOUNCE_MS = 30_000; // 30 seconds
+const FRAGMENT_PATCH_DEBOUNCE_MS = 10_000; // 10 seconds (faster than full rebuild)
 const REBUILD_PRIORITY = 5;
 
 /** Accumulated changes during debounce window */
@@ -52,11 +54,18 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
   /** Debounce map: siteId → pending rebuild */
   private readonly debounceMap = new Map<string, DebouncedEntry>();
 
+  /** Debounce map: siteId → pending fragment patch */
+  private readonly fragmentPatchMap = new Map<
+    string,
+    { timer: ReturnType<typeof setTimeout>; tenantId: string }
+  >();
+
   constructor(
     private readonly config: ConfigService,
     @Inject(PG_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
     private readonly buildQueue: BuildQueuePublisher,
+    private readonly fragmentPatcher: FragmentPatcher,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -95,6 +104,12 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
       clearTimeout(entry.timer);
     }
     this.debounceMap.clear();
+
+    // Clear all fragment patch timers
+    for (const [, entry] of this.fragmentPatchMap) {
+      clearTimeout(entry.timer);
+    }
+    this.fragmentPatchMap.clear();
 
     await this.channelWrapper?.close();
     await this.connection?.close();
@@ -194,11 +209,9 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
           continue;
         }
 
-        // Island-enabled sites skip full rebuild — fragment patching handles updates
+        // Island-enabled sites use fragment patching instead of full rebuild
         if (site.islandsEnabled) {
-          this.logger.log(
-            `Site ${site.id} uses islands — skipping rebuild, will patch fragments`,
-          );
+          this.debounceFragmentPatch(site.id, tenantId);
           continue;
         }
 
@@ -279,5 +292,49 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
       priority: REBUILD_PRIORITY,
       trigger: "product_update",
     });
+  }
+
+  /**
+   * Debounce fragment patching for an island-enabled site.
+   * Uses a shorter 10s window since patching is much faster than a full rebuild.
+   */
+  private debounceFragmentPatch(siteId: string, tenantId: string): void {
+    const existing = this.fragmentPatchMap.get(siteId);
+
+    if (existing) {
+      clearTimeout(existing.timer);
+      existing.timer = setTimeout(() => {
+        void this.flushFragmentPatch(siteId);
+      }, FRAGMENT_PATCH_DEBOUNCE_MS);
+      this.logger.debug(
+        `Fragment patch debounce reset for site ${siteId}`,
+      );
+    } else {
+      this.fragmentPatchMap.set(siteId, {
+        timer: setTimeout(() => {
+          void this.flushFragmentPatch(siteId);
+        }, FRAGMENT_PATCH_DEBOUNCE_MS),
+        tenantId,
+      });
+      this.logger.log(
+        `Fragment patch debounce started for site ${siteId} (10s window)`,
+      );
+    }
+  }
+
+  /**
+   * Flush: patch fragments for an island-enabled site after debounce window expires.
+   */
+  private async flushFragmentPatch(siteId: string): Promise<void> {
+    const entry = this.fragmentPatchMap.get(siteId);
+    if (!entry) return;
+
+    this.fragmentPatchMap.delete(siteId);
+
+    this.logger.log(
+      `Fragment patch debounce expired for site ${siteId}: patching fragments`,
+    );
+
+    await this.fragmentPatcher.patchFragments(siteId, entry.tenantId);
   }
 }

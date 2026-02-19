@@ -51,6 +51,12 @@ const mockBuildQueue = {
   queueBuild: mockQueueBuild,
 };
 
+// Mock FragmentPatcher
+const mockPatchFragments = jest.fn().mockResolvedValue(undefined);
+const mockFragmentPatcher = {
+  patchFragments: mockPatchFragments,
+};
+
 // Mock ConfigService
 function mockConfigService(overrides: Record<string, string> = {}) {
   const defaults: Record<string, string> = {
@@ -67,9 +73,7 @@ function mockConfigService(overrides: Record<string, string> = {}) {
 function mockDb() {
   const selectResult = {
     from: jest.fn().mockReturnThis(),
-    where: jest.fn().mockResolvedValue([
-      { id: "site-1", status: "published" },
-    ]),
+    where: jest.fn().mockResolvedValue([{ id: "site-1", status: "published" }]),
   };
   return {
     select: jest.fn().mockReturnValue(selectResult),
@@ -89,6 +93,7 @@ describe("ProductUpdateListener", () => {
       mockConfigService(),
       db,
       mockBuildQueue as any,
+      mockFragmentPatcher as any,
     );
   });
 
@@ -108,6 +113,7 @@ describe("ProductUpdateListener", () => {
         mockConfigService({ PRODUCT_UPDATE_LISTENER_ENABLED: "false" }),
         db,
         mockBuildQueue as any,
+        mockFragmentPatcher as any,
       );
       await disabledListener.onModuleInit();
 
@@ -122,6 +128,7 @@ describe("ProductUpdateListener", () => {
         }),
         db,
         mockBuildQueue as any,
+        mockFragmentPatcher as any,
       );
       await noUrlListener.onModuleInit();
 
@@ -160,10 +167,9 @@ describe("ProductUpdateListener", () => {
       };
       await channelSetupFn!(fakeChannel);
 
-      expect(mockAssertQueue).toHaveBeenCalledWith(
-        "sites_product_events",
-        { durable: true },
-      );
+      expect(mockAssertQueue).toHaveBeenCalledWith("sites_product_events", {
+        durable: true,
+      });
       expect(mockBindQueue).toHaveBeenCalledWith(
         "sites_product_events",
         "product.events",

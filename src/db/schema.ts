@@ -79,6 +79,8 @@ export const site = pgTable("site", {
   domainId: text("domain_id"),
   // Публичный URL сайта (например, abc123.merfy.ru)
   publicUrl: text("public_url"),
+  // Флаг включения server-islands (smart revalidation)
+  islandsEnabled: boolean("islands_enabled").default(false).notNull(),
 });
 
 export const siteDomain = pgTable("site_domain", {

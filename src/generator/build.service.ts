@@ -601,7 +601,8 @@ async function stageFetchData(
     .orderBy(deps.schema.siteProduct.sortOrder);
 
   // Try RPC fetch for full catalog (may fail if product-service unavailable)
-  const rpcData = await fetchStoreData(deps.productClient, ctx.tenantId);
+  // Pass siteId so product-service returns products for this specific site
+  const rpcData = await fetchStoreData(deps.productClient, ctx.tenantId, ctx.siteId);
 
   // Merge: RPC products take priority, local products as fallback
   const products =

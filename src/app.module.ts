@@ -56,6 +56,7 @@ import { RetrySetupService } from "./rabbitmq/retry-setup.service";
 import { BuildQueueConsumer } from "./rabbitmq/build-queue.consumer";
 import { BuildQueuePublisher } from "./rabbitmq/build-queue.service";
 import { ProductUpdateListener } from "./listeners/product-update.listener";
+import { FragmentPatcher } from "./listeners/fragment-patcher.service";
 
 @Module({
   imports: [
@@ -102,6 +103,7 @@ import { ProductUpdateListener } from "./listeners/product-update.listener";
     BuildQueueConsumer,
     BuildQueuePublisher,
     ProductUpdateListener,
+    FragmentPatcher,
   ],
 })
 export class AppModule {}

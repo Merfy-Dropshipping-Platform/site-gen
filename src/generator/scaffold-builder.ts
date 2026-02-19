@@ -70,6 +70,12 @@ export interface ScaffoldConfig {
   };
   /** Additional raw files to write (path relative to outputDir → content) */
   extraFiles?: Record<string, string>;
+  /** Islands (smart revalidation) configuration */
+  islands?: {
+    enabled: boolean;
+    serverUrl: string;
+    storeId: string;
+  };
 }
 
 /**
@@ -213,6 +219,33 @@ export async function buildScaffold(
   if (themeExists) {
     await copyDir(templateRoot, outputDir);
     generatedFiles.push("[theme copied]");
+  }
+
+  // 1b. Inject islands meta tags and script into layout
+  if (config.islands?.enabled) {
+    const layoutCandidates = ["StoreLayout.astro", "BaseLayout.astro"];
+    const layoutsDir = path.join(outputDir, "src", "layouts");
+    for (const layoutName of layoutCandidates) {
+      const layoutPath = path.join(layoutsDir, layoutName);
+      if (await fileExists(layoutPath)) {
+        let layoutContent = await fs.readFile(layoutPath, "utf8");
+        const metaTags =
+          `<meta name="merfy-islands-url" content="${config.islands.serverUrl}" />\n` +
+          `    <meta name="merfy-store-id" content="${config.islands.storeId}" />`;
+        const scriptTag = `<script src="${config.islands.serverUrl}/islands.js" defer><\/script>`;
+        layoutContent = layoutContent.replace(
+          "</head>",
+          `    ${metaTags}\n  </head>`,
+        );
+        layoutContent = layoutContent.replace(
+          "</body>",
+          `    ${scriptTag}\n  </body>`,
+        );
+        await fs.writeFile(layoutPath, layoutContent, "utf8");
+        generatedFiles.push(`src/layouts/${layoutName} [islands injected]`);
+        break; // only inject into the first found layout
+      }
+    }
   }
 
   // 2. package.json — write only if not already from theme

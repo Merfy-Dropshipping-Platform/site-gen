@@ -670,7 +670,7 @@ async function stageGenerate(
             enabled: true,
             serverUrl:
               process.env.ISLANDS_SERVER_URL ?? "https://islands.merfy.ru",
-            storeId: ctx.tenantId,
+            storeId: ctx.siteId,
           },
         }
       : {}),

@@ -38,6 +38,7 @@ import {
   type ThemeFeatures,
 } from "./theme-bridge";
 import { S3StorageService } from "../storage/s3.service";
+import { roseServerRegistry } from "./registries/rose";
 
 const logger = new Logger("BuildPipeline");
 
@@ -84,6 +85,8 @@ interface BuildContext {
   artifactPath: string;
   artifactUrl: string;
   storeData: FetchedStoreData;
+  /** Whether the site uses server-island smart revalidation */
+  islandsEnabled: boolean;
 }
 
 /** Dependencies injected into the pipeline */
@@ -268,6 +271,7 @@ export async function runBuildPipeline(
     artifactPath: path.join(artifactsDir, `${buildId}.zip`),
     artifactUrl: "",
     storeData: { products: [], collections: [] },
+    islandsEnabled: false,
   };
 
   // Transition to running
@@ -347,6 +351,7 @@ async function stageMerge(
       themeId: schema.site.themeId,
       currentRevisionId: schema.site.currentRevisionId,
       publicUrl: schema.site.publicUrl,
+      islandsEnabled: schema.site.islandsEnabled,
       templateId: schema.theme.templateId,
     })
     .from(schema.site)
@@ -359,6 +364,7 @@ async function stageMerge(
 
   ctx.templateId = params.templateOverride ?? siteRow.templateId ?? "default";
   ctx.publicUrl = siteRow.publicUrl;
+  ctx.islandsEnabled = siteRow.islandsEnabled ?? false;
 
   // Load or create revision
   let revisionId: string | null = null;
@@ -482,6 +488,18 @@ async function stageGenerate(
     );
   } else {
     registry = {};
+  }
+
+  // Override product components with server-island variants when islands are enabled
+  if (ctx.islandsEnabled) {
+    for (const [name, entry] of Object.entries(roseServerRegistry)) {
+      if (entry.kind === "server-island") {
+        registry[name] = entry;
+      }
+    }
+    logger.log(
+      `[generate] Islands enabled — merged server-island registry overrides`,
+    );
   }
 
   // Build page entries from revision content
@@ -646,6 +664,16 @@ async function stageGenerate(
     extraFiles: {
       "src/data/site-config.json": JSON.stringify(siteConfig, null, 2),
     },
+    ...(ctx.islandsEnabled
+      ? {
+          islands: {
+            enabled: true,
+            serverUrl:
+              process.env.ISLANDS_SERVER_URL ?? "https://islands.merfy.ru",
+            storeId: ctx.tenantId,
+          },
+        }
+      : {}),
   };
 
   const { generatedFiles } = await buildScaffold(scaffoldConfig);

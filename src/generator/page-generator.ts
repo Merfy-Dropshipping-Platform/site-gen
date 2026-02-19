@@ -10,7 +10,7 @@
  */
 
 /** How a component should be rendered in Astro */
-export type ComponentKind = "island" | "static";
+export type ComponentKind = "island" | "static" | "server-island";
 
 /** Hydration directive for React Islands */
 export type ClientDirective = "client:load" | "client:visible" | "client:idle";
@@ -25,6 +25,8 @@ export interface ComponentRegistryEntry {
   importPath: string;
   /** Hydration directive for islands; defaults to "client:load" */
   clientDirective?: ClientDirective;
+  /** Skeleton HTML shown while server-island content loads */
+  fallbackHtml?: string;
 }
 
 /** Shape of Puck JSON content item */
@@ -108,6 +110,16 @@ function processContentItems(
     if (!entry) {
       // Unknown component — render a placeholder comment
       lines.push(`${indent}<!-- Unknown component: ${item.type} -->`);
+      continue;
+    }
+
+    // Server-island components: emit <merfy-island> Web Component, no import needed
+    if (entry.kind === "server-island") {
+      const propsJson = item.props ? JSON.stringify(item.props).replace(/"/g, "&quot;") : "";
+      const fallback = entry.fallbackHtml ?? "";
+      lines.push(`${indent}<merfy-island component="${entry.name}" hash="{buildHash}" data-merfy-props="${propsJson}">`);
+      lines.push(`${indent}  <div slot="content">${fallback}</div>`);
+      lines.push(`${indent}</merfy-island>`);
       continue;
     }
 

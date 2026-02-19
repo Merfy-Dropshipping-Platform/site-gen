@@ -36,6 +36,8 @@ export interface ThemeRegistryEntry {
   schema: Record<string, unknown>;
   requiredFeatures?: string[];
   thumbnail?: string;
+  serverIsland?: boolean;
+  fallbackHtml?: string;
 }
 
 /** Shape matching packages/themes/lib/generateTokensCss SettingEntry */
@@ -134,6 +136,20 @@ export function themeRegistryToGeneratorRegistry(
   const registry: Record<string, GeneratorRegistryEntry> = {};
 
   for (const entry of filtered) {
+    // Server-island components: no import, rendered as <merfy-island> at build time
+    if (entry.serverIsland === true) {
+      const genEntry: GeneratorRegistryEntry = {
+        name: entry.name,
+        kind: "server-island",
+        importPath: "",
+      };
+      if (entry.fallbackHtml) {
+        genEntry.fallbackHtml = entry.fallbackHtml;
+      }
+      registry[entry.name] = genEntry;
+      continue;
+    }
+
     const isIsland = entry.island === true;
 
     let importPath: string;

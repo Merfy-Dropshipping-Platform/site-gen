@@ -102,6 +102,7 @@ function processContentItems(
   usedNames: Set<string>,
   imports: Map<string, ImportEntry>, // keyed by component type
   indent: string,
+  buildHash: string,
 ): string[] {
   const lines: string[] = [];
 
@@ -115,9 +116,13 @@ function processContentItems(
 
     // Server-island components: emit <merfy-island> Web Component, no import needed
     if (entry.kind === "server-island") {
-      const propsJson = item.props ? JSON.stringify(item.props).replace(/"/g, "&quot;") : "";
+      const propsAttr = item.props && Object.keys(item.props).length > 0
+        ? ` data-merfy-props='${JSON.stringify(item.props).replace(/'/g, "&#39;")}'`
+        : "";
       const fallback = entry.fallbackHtml ?? "";
-      lines.push(`${indent}<merfy-island component="${entry.name}" hash="{buildHash}" data-merfy-props="${propsJson}">`);
+      lines.push(
+        `${indent}<merfy-island component="${entry.name}" hash="${buildHash}"${propsAttr}>`,
+      );
       lines.push(`${indent}  <div slot="content">${fallback}</div>`);
       lines.push(`${indent}</merfy-island>`);
       continue;
@@ -148,6 +153,7 @@ function processContentItems(
         usedNames,
         imports,
         indent + "  ",
+        buildHash,
       );
       lines.push(...childLines);
       lines.push(`${indent}</${importEntry.alias}>`);
@@ -173,6 +179,7 @@ export function generateAstroPage(
   options?: {
     layoutImport?: string; // e.g. "../layouts/StoreLayout.astro"
     layoutTag?: string; // e.g. "StoreLayout"
+    buildHash?: string; // hash for server-island cache busting
   },
 ): string {
   const content = pageData.content ?? [];
@@ -186,12 +193,14 @@ export function generateAstroPage(
 
   // Process all content items and collect imports
   const baseIndent = options?.layoutTag ? "  " : "";
+  const hash = options?.buildHash ?? Date.now().toString(36);
   const bodyLines = processContentItems(
     content,
     registry,
     usedNames,
     imports,
     baseIndent,
+    hash,
   );
 
   // Build import statements

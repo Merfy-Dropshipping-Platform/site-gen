@@ -38,7 +38,7 @@ import {
   type ThemeFeatures,
 } from "./theme-bridge";
 import { S3StorageService } from "../storage/s3.service";
-import { roseServerRegistry } from "./registries/rose";
+import { roseRegistry, roseServerRegistry } from "./registries/rose";
 
 const logger = new Logger("BuildPipeline");
 
@@ -487,7 +487,37 @@ async function stageGenerate(
       `[generate] Converted ${Object.keys(registry).length} theme registry entries via bridge`,
     );
   } else {
-    registry = {};
+    // No registry provided (e.g. build triggered via queue consumer).
+    // Try loading from theme template on disk, fallback to hardcoded roseRegistry.
+    const registryPath = path.join(
+      process.cwd(),
+      "templates",
+      "astro",
+      ctx.templateId,
+      "src",
+      "components",
+      "registry.json",
+    );
+    try {
+      const raw = await fs.readFile(registryPath, "utf8");
+      const entries = JSON.parse(raw) as ThemeRegistryEntry[];
+      if (Array.isArray(entries) && entries.length > 0) {
+        registry = themeRegistryToGeneratorRegistry(entries, {});
+        logger.log(
+          `[generate] Loaded ${Object.keys(registry).length} registry entries from disk (${ctx.templateId})`,
+        );
+      } else {
+        registry = roseRegistry;
+        logger.log(
+          `[generate] Empty registry.json on disk, using roseRegistry fallback (${Object.keys(registry).length} entries)`,
+        );
+      }
+    } catch {
+      registry = roseRegistry;
+      logger.log(
+        `[generate] No registry.json on disk, using roseRegistry fallback (${Object.keys(registry).length} entries)`,
+      );
+    }
   }
 
   // Override product components with server-island variants when islands are enabled

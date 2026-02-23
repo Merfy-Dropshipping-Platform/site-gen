@@ -792,23 +792,69 @@ async function stageFetchData(
   );
 }
 
+/** Global npm cache directory for shared node_modules per theme */
+const NPM_CACHE_DIR = "/app/.npm-cache";
+
 /**
  * Stage 4: ASTRO_BUILD — Install dependencies and run `astro build`.
+ *
+ * Optimization: caches node_modules per theme to avoid 15s npm install on every build.
+ * First build for a theme does a full npm install and copies node_modules to cache.
+ * Subsequent builds copy from cache and skip install entirely.
  */
 async function stageAstroBuild(ctx: BuildContext): Promise<void> {
-  // npm install
-  const install = await runCommand(
-    "npm",
-    ["install", "--prefer-offline"],
-    ctx.workingDir,
-    120_000,
-  );
-  if (install.code !== 0) {
-    throw new Error(
-      `npm install failed (exit ${install.code}): ${install.stderr.slice(0, 500)}`,
-    );
+  const cacheModulesDir = path.join(NPM_CACHE_DIR, ctx.templateId, "node_modules");
+  const buildModulesDir = path.join(ctx.workingDir, "node_modules");
+  const cachePackageLock = path.join(NPM_CACHE_DIR, ctx.templateId, "package-lock.json");
+  const buildPackageLock = path.join(ctx.workingDir, "package-lock.json");
+
+  // Check if cached node_modules exists and package-lock matches
+  const cacheExists = await fs.stat(cacheModulesDir).then(() => true).catch(() => false);
+  let cacheValid = false;
+
+  if (cacheExists) {
+    try {
+      const cachedLock = await fs.readFile(cachePackageLock, "utf8").catch(() => "");
+      const currentLock = await fs.readFile(buildPackageLock, "utf8").catch(() => "");
+      cacheValid = cachedLock.length > 0 && cachedLock === currentLock;
+    } catch {
+      cacheValid = false;
+    }
   }
-  logger.log(`[astro_build] npm install completed`);
+
+  if (cacheValid) {
+    // Fast path: copy cached node_modules (< 1s vs 15s npm install)
+    await runCommand("cp", ["-r", cacheModulesDir, buildModulesDir], ctx.workingDir, 30_000);
+    logger.log(`[astro_build] node_modules restored from cache (${ctx.templateId})`);
+  } else {
+    // Slow path: full npm install, then cache the result
+    const install = await runCommand(
+      "npm",
+      ["install", "--prefer-offline"],
+      ctx.workingDir,
+      120_000,
+    );
+    if (install.code !== 0) {
+      throw new Error(
+        `npm install failed (exit ${install.code}): ${install.stderr.slice(0, 500)}`,
+      );
+    }
+    logger.log(`[astro_build] npm install completed`);
+
+    // Cache node_modules for next build
+    try {
+      await fs.mkdir(path.join(NPM_CACHE_DIR, ctx.templateId), { recursive: true });
+      await runCommand("cp", ["-r", buildModulesDir, cacheModulesDir], ctx.workingDir, 60_000);
+      // Also cache package-lock.json for invalidation
+      const lockContent = await fs.readFile(buildPackageLock, "utf8").catch(() => "");
+      if (lockContent) {
+        await fs.writeFile(cachePackageLock, lockContent, "utf8");
+      }
+      logger.log(`[astro_build] node_modules cached for ${ctx.templateId}`);
+    } catch (e) {
+      logger.warn(`[astro_build] Failed to cache node_modules: ${e instanceof Error ? e.message : e}`);
+    }
+  }
 
   // astro build
   const build = await runCommand(

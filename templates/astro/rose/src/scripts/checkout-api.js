@@ -20,7 +20,14 @@ async function request(path, options = {}) {
     },
     ...options,
   });
-  return res.json();
+  const data = await res.json();
+
+  // NestJS error responses have { statusCode, message } instead of { success, data }
+  if (!res.ok && data.statusCode && !('success' in data)) {
+    return { success: false, message: data.message || `Ошибка сервера (${data.statusCode})` };
+  }
+
+  return data;
 }
 
 export const CheckoutAPI = {

@@ -15,7 +15,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 <BaseLayout title={`Контакты — ${meta?.title ?? 'Мой сайт'}`} description={meta?.description}>
   <Header {...headerProps} />
 
-  <main class="flex-1 w-full max-w-[800px] mx-auto px-5 py-10">
+  <main class="flex-1 w-full max-w-[1200px] mx-auto px-5 py-10">
     <div class="text-center mb-10">
       <p class="mb-4 text-sm text-gray-500 font-manrope">
         <a href="/" class="text-gray-500 hover:text-black">Главная</a> / Контакты
@@ -23,20 +23,44 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
       <h1 class="text-4xl font-comfortaa">Контакты</h1>
     </div>
 
-    <div class="space-y-6 text-gray-700 font-manrope leading-relaxed">
-      <p>
-        Мы всегда рады ответить на ваши вопросы и помочь с выбором товара.
-        Свяжитесь с нами любым удобным способом.
-      </p>
-      <div class="space-y-3">
-        <p><span class="font-semibold text-black">Email:</span> info@example.com</p>
-        <p><span class="font-semibold text-black">Телефон:</span> +7 (999) 123-45-67</p>
-        <p><span class="font-semibold text-black">Режим работы:</span> Пн–Пт, 9:00–18:00</p>
+    <div class="grid md:grid-cols-2 gap-10 font-manrope">
+      <div class="space-y-6 text-gray-700 leading-relaxed">
+        <p>
+          Мы всегда рады ответить на ваши вопросы и помочь с выбором товара.
+          Свяжитесь с нами любым удобным способом.
+        </p>
+        <div class="space-y-3">
+          <p><span class="font-semibold text-black">Email:</span> info@example.com</p>
+          <p><span class="font-semibold text-black">Телефон:</span> +7 (999) 123-45-67</p>
+          <p><span class="font-semibold text-black">Режим работы:</span> Пн–Пт, 9:00–18:00</p>
+        </div>
       </div>
-      <p>
-        Также вы можете написать нам через форму обратной связи, и мы ответим
-        в течение 24 часов.
-      </p>
+
+      <div>
+        <h2 class="text-2xl font-comfortaa mb-6">Напишите нам</h2>
+        <form class="space-y-4" id="contact-form">
+          <div>
+            <label for="contact-name" class="block mb-2 text-sm font-medium text-gray-700">Имя</label>
+            <input type="text" id="contact-name" name="name" required placeholder="Ваше имя"
+              class="w-full py-3 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-[#e11d48] focus:ring-2 focus:ring-[#ffe4e6]" />
+          </div>
+          <div>
+            <label for="contact-email" class="block mb-2 text-sm font-medium text-gray-700">Email</label>
+            <input type="email" id="contact-email" name="email" required placeholder="your@email.com"
+              class="w-full py-3 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-[#e11d48] focus:ring-2 focus:ring-[#ffe4e6]" />
+          </div>
+          <div>
+            <label for="contact-message" class="block mb-2 text-sm font-medium text-gray-700">Сообщение</label>
+            <textarea id="contact-message" name="message" required rows="5" placeholder="Ваше сообщение..."
+              class="w-full py-3 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-[#e11d48] focus:ring-2 focus:ring-[#ffe4e6] resize-y"></textarea>
+          </div>
+          <button type="submit"
+            class="w-full py-3.5 px-8 bg-[#e11d48] text-white rounded-xl font-medium hover:bg-[#be123c] transition-colors">
+            Отправить
+          </button>
+          <p class="text-sm text-gray-500 text-center hidden" id="contact-success">Спасибо! Ваше сообщение отправлено.</p>
+        </form>
+      </div>
     </div>
   </main>
 

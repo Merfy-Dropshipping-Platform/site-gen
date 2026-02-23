@@ -184,13 +184,16 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
         `Product event: ${event}, tenant=${tenantId}, products=${productIds.length}`,
       );
 
-      // Find all published (non-frozen) sites for this tenant
+      // Find all published (non-frozen) sites for this tenant.
+      // Note: tenantId may be either the organization ID (site.tenantId)
+      // or the site ID itself (site.id) — the product service stores
+      // shopId which may be either, depending on the frontend context.
       const sites = await this.db
         .select({ id: schema.site.id, status: schema.site.status, islandsEnabled: schema.site.islandsEnabled })
         .from(schema.site)
         .where(
           and(
-            eq(schema.site.tenantId, tenantId),
+            sql`(${schema.site.tenantId} = ${tenantId} OR ${schema.site.id} = ${tenantId})`,
             sql`${schema.site.deletedAt} IS NULL`,
           ),
         );

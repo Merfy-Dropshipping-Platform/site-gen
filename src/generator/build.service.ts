@@ -752,7 +752,25 @@ async function stageFetchData(
     collections: rpcData.collections,
   };
 
-  // Write products.json for Astro build-time consumption
+  // Transform products for Astro components (PopularProducts.astro expects { name, price: string, oldPrice: string, image: string })
+  const formatPrice = (price: number | string | null | undefined): string => {
+    if (price === null || price === undefined) return "0 ₽";
+    const num = typeof price === "string" ? parseFloat(price) : price;
+    return `${num.toLocaleString("ru-RU")} ₽`;
+  };
+
+  const astroProducts = products.map((p: any) => ({
+    id: p.id,
+    name: p.name,
+    description: p.description,
+    price: formatPrice(p.price),
+    oldPrice: p.compareAtPrice ? formatPrice(p.compareAtPrice) : undefined,
+    image: (p.images as string[])?.[0] || "/images/placeholder.png",
+    href: `/product/${p.slug || p.id}`,
+    slug: p.slug || p.id,
+  }));
+
+  // Write products.json for Astro build-time consumption (formatted for components)
   const productsPath = path.join(
     ctx.workingDir,
     "src",
@@ -760,9 +778,9 @@ async function stageFetchData(
     "products.json",
   );
   await fs.mkdir(path.dirname(productsPath), { recursive: true });
-  await fs.writeFile(productsPath, JSON.stringify(products, null, 2), "utf8");
+  await fs.writeFile(productsPath, JSON.stringify(astroProducts, null, 2), "utf8");
 
-  // Also write to public/data/ for runtime access by checkout.js
+  // Also write to public/data/ for runtime access by checkout.js (raw format)
   const publicProductsPath = path.join(
     ctx.workingDir,
     "public",
@@ -772,20 +790,27 @@ async function stageFetchData(
   await fs.mkdir(path.dirname(publicProductsPath), { recursive: true });
   await fs.writeFile(publicProductsPath, JSON.stringify(products, null, 2), "utf8");
 
-  // Write collections.json
-  if (ctx.storeData.collections.length > 0) {
-    const collectionsPath = path.join(
-      ctx.workingDir,
-      "src",
-      "data",
-      "collections.json",
-    );
-    await fs.writeFile(
-      collectionsPath,
-      JSON.stringify(ctx.storeData.collections, null, 2),
-      "utf8",
-    );
-  }
+  // Write collections.json (always, even empty — so Astro import doesn't throw)
+  const astroCollections = ctx.storeData.collections.map((c: any) => ({
+    id: c.id,
+    name: c.name,
+    description: c.description,
+    image: (c.images as string[])?.[0] || "/images/placeholder.png",
+    slug: c.slug || c.id,
+    href: `/collection/${c.slug || c.id}`,
+  }));
+  const collectionsPath = path.join(
+    ctx.workingDir,
+    "src",
+    "data",
+    "collections.json",
+  );
+  await fs.mkdir(path.dirname(collectionsPath), { recursive: true });
+  await fs.writeFile(
+    collectionsPath,
+    JSON.stringify(astroCollections, null, 2),
+    "utf8",
+  );
 
   logger.log(
     `[fetch_data] ${products.length} products, ${ctx.storeData.collections.length} collections`,

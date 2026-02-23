@@ -4,13 +4,14 @@ interface Props {
 	price: string;
 	oldPrice?: string;
 	image: string;
+	href?: string;
 }
 
-const { name, price, oldPrice, image } = Astro.props;
+const { name, price, oldPrice, image, href } = Astro.props;
 ---
 
-<article class="flex flex-col gap-4 sm:gap-5 md:gap-6 lg:gap-[25px]">
-	<div class="w-full aspect-square lg:aspect-[400/400] bg-gray-100 rounded-lg sm:rounded-[8px] md:rounded-[10px] overflow-hidden cursor-pointer group">
+<a href={href || '#'} class="flex flex-col gap-4 sm:gap-5 md:gap-6 lg:gap-[25px] group cursor-pointer no-underline text-inherit">
+	<div class="w-full aspect-square lg:aspect-[400/400] bg-gray-100 rounded-lg sm:rounded-[8px] md:rounded-[10px] overflow-hidden">
 		<img
 			src={image}
 			alt={name}
@@ -33,4 +34,4 @@ const { name, price, oldPrice, image } = Astro.props;
 			)}
 		</div>
 	</div>
-</article>
+</a>

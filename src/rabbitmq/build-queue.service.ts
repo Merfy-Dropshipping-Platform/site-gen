@@ -18,7 +18,7 @@ import { ConfigService } from "@nestjs/config";
 import * as amqp from "amqp-connection-manager";
 import type { ChannelWrapper } from "amqp-connection-manager";
 import type { Channel } from "amqplib";
-import { SITES_QUEUE } from "./retry-setup.service";
+import { SITES_BUILD_QUEUE } from "./retry-setup.service";
 
 export interface QueueBuildParams {
   tenantId: string;
@@ -47,12 +47,9 @@ export class BuildQueuePublisher implements OnModuleInit, OnModuleDestroy {
     this.connection = amqp.connect([rabbitmqUrl]);
     this.channel = this.connection.createChannel({
       setup: async (channel: Channel) => {
-        // Do NOT assertQueue here — the queue is already created by the
-        // NestJS microservice transport (without x-max-priority).
-        // Asserting with different args causes PRECONDITION_FAILED which
-        // closes the amqplib channel, breaking sendToQueue silently.
-        await channel.checkQueue(SITES_QUEUE);
-        this.logger.log(`Build queue publisher channel ready (queue: ${SITES_QUEUE})`);
+        // Use a dedicated build queue to avoid competition with NestJS RPC consumer
+        await channel.assertQueue(SITES_BUILD_QUEUE, { durable: true });
+        this.logger.log(`Build queue publisher channel ready (queue: ${SITES_BUILD_QUEUE})`);
       },
     });
 
@@ -92,7 +89,7 @@ export class BuildQueuePublisher implements OnModuleInit, OnModuleDestroy {
 
     try {
       await this.channel.sendToQueue(
-        SITES_QUEUE,
+        SITES_BUILD_QUEUE,
         Buffer.from(JSON.stringify(message)),
         {
           persistent: true,

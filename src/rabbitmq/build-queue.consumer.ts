@@ -17,7 +17,7 @@ import { ClientProxy } from "@nestjs/microservices";
 import {
   DLX_EXCHANGE,
   DEAD_LETTER_QUEUE,
-  SITES_QUEUE,
+  SITES_BUILD_QUEUE,
   getRetryCountFromHeaders,
   getRetryRoutingKey,
 } from "./retry-setup.service";
@@ -85,7 +85,7 @@ export class BuildQueueConsumer implements OnModuleInit {
 
     // Ensure queue exists (idempotent — do NOT pass x-max-priority to avoid
     // PRECONDITION_FAILED if queue already exists without priority support)
-    await this.channel.assertQueue(SITES_QUEUE, {
+    await this.channel.assertQueue(SITES_BUILD_QUEUE, {
       durable: true,
     });
 
@@ -94,7 +94,7 @@ export class BuildQueueConsumer implements OnModuleInit {
     );
 
     await this.channel.consume(
-      SITES_QUEUE,
+      SITES_BUILD_QUEUE,
       async (msg) => {
         if (!msg) return;
 
@@ -112,10 +112,8 @@ export class BuildQueueConsumer implements OnModuleInit {
         // Only handle build pattern messages
         const pattern = data.pattern as string | undefined;
         if (pattern !== "sites.build_queued") {
-          // Not a build message — let NestJS RPC handle it via its own consumer
-          // We nack without requeue so it goes back to the queue for other consumers
-          // Actually, we should NOT consume these — this consumer only handles build_queued
-          this.channel?.nack(msg, false, true); // requeue for NestJS
+          this.logger.warn(`Unexpected pattern in build queue: ${pattern}, discarding`);
+          this.channel?.ack(msg);
           return;
         }
 
@@ -217,7 +215,7 @@ export class BuildQueueConsumer implements OnModuleInit {
                   ...(((msg.properties.headers?.["x-death"] as unknown[]) ??
                     []) as Array<Record<string, unknown>>),
                   {
-                    queue: SITES_QUEUE,
+                    queue: SITES_BUILD_QUEUE,
                     reason: "rejected",
                     count: 1,
                     time: new Date(),

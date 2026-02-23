@@ -19,13 +19,23 @@ const blocks = data?.content ?? [];
 const headerBlock = blocks.find((b: any) => b.type === 'Header');
 const footerBlock = blocks.find((b: any) => b.type === 'Footer');
 
-function formatPrice(price: number): string {
+function formatPrice(price: string | number | null | undefined): string {
+  if (price === null || price === undefined) return '0 ₽';
+  if (typeof price === 'string') return price;
   return new Intl.NumberFormat('ru-RU', {
     style: 'currency',
     currency: 'RUB',
     minimumFractionDigits: 0,
   }).format(price);
 }
+
+// Handle both astro format (image: string) and raw format (images: string[])
+const productImages: string[] = Array.isArray(product?.images)
+  ? product.images
+  : product?.image
+    ? [product.image]
+    : [];
+const mainImage = productImages[0] || null;
 ---
 <BaseLayout title={`${product?.name ?? 'Товар'} — ${meta?.title ?? 'Мой магазин'}`} description={product?.description}>
   <Header {...(headerBlock?.props ?? {})} />
@@ -41,8 +51,8 @@ function formatPrice(price: number): string {
       <!-- Галерея -->
       <div class="flex flex-col gap-4">
         <div class="aspect-[3/4] bg-rose-50 rounded-2xl overflow-hidden">
-          {product?.images && product.images[0] ? (
-            <img src={product.images[0]} alt={product.name} class="w-full h-full object-cover" />
+          {mainImage ? (
+            <img src={mainImage} alt={product.name} class="w-full h-full object-cover" />
           ) : (
             <div class="w-full h-full flex items-center justify-center text-rose-300">
               <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
@@ -53,6 +63,15 @@ function formatPrice(price: number): string {
             </div>
           )}
         </div>
+        {productImages.length > 1 && (
+          <div class="flex gap-2 overflow-x-auto">
+            {productImages.map((img: string, i: number) => (
+              <div class="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 border-transparent hover:border-[#e11d48] transition-colors cursor-pointer">
+                <img src={img} alt={`${product.name} — фото ${i + 1}`} class="w-full h-full object-cover" />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <!-- Детали -->
@@ -60,8 +79,8 @@ function formatPrice(price: number): string {
         <h1 class="text-4xl font-comfortaa mb-4 leading-tight">{product?.name}</h1>
         <div class="flex items-center gap-3 mb-6">
           <span class="text-2xl font-semibold text-[#e11d48]">{formatPrice(product?.price ?? 0)}</span>
-          {product?.compareAtPrice != null && product.compareAtPrice > (product?.price ?? 0) && (
-            <span class="text-lg text-gray-400 line-through">{formatPrice(product.compareAtPrice)}</span>
+          {(product?.compareAtPrice ?? product?.oldPrice) && (
+            <span class="text-lg text-gray-400 line-through">{formatPrice(product.compareAtPrice ?? product.oldPrice)}</span>
           )}
         </div>
         {product?.description && (

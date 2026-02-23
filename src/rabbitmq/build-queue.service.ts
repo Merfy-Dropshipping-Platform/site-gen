@@ -47,14 +47,12 @@ export class BuildQueuePublisher implements OnModuleInit, OnModuleDestroy {
     this.connection = amqp.connect([rabbitmqUrl]);
     this.channel = this.connection.createChannel({
       setup: async (channel: Channel) => {
-        try {
-          await channel.assertQueue(SITES_QUEUE, {
-            durable: true,
-            arguments: { "x-max-priority": 10 },
-          });
-        } catch {
-          // Queue may already exist with different args — OK
-        }
+        // Do NOT assertQueue here — the queue is already created by the
+        // NestJS microservice transport (without x-max-priority).
+        // Asserting with different args causes PRECONDITION_FAILED which
+        // closes the amqplib channel, breaking sendToQueue silently.
+        await channel.checkQueue(SITES_QUEUE);
+        this.logger.log(`Build queue publisher channel ready (queue: ${SITES_QUEUE})`);
       },
     });
 

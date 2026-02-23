@@ -805,18 +805,18 @@ const NPM_CACHE_DIR = "/app/.npm-cache";
 async function stageAstroBuild(ctx: BuildContext): Promise<void> {
   const cacheModulesDir = path.join(NPM_CACHE_DIR, ctx.templateId, "node_modules");
   const buildModulesDir = path.join(ctx.workingDir, "node_modules");
-  const cachePackageLock = path.join(NPM_CACHE_DIR, ctx.templateId, "package-lock.json");
-  const buildPackageLock = path.join(ctx.workingDir, "package-lock.json");
+  const cachePackageJson = path.join(NPM_CACHE_DIR, ctx.templateId, "package.json");
+  const buildPackageJson = path.join(ctx.workingDir, "package.json");
 
-  // Check if cached node_modules exists and package-lock matches
+  // Check if cached node_modules exists and package.json matches
   const cacheExists = await fs.stat(cacheModulesDir).then(() => true).catch(() => false);
   let cacheValid = false;
 
   if (cacheExists) {
     try {
-      const cachedLock = await fs.readFile(cachePackageLock, "utf8").catch(() => "");
-      const currentLock = await fs.readFile(buildPackageLock, "utf8").catch(() => "");
-      cacheValid = cachedLock.length > 0 && cachedLock === currentLock;
+      const cachedPkg = await fs.readFile(cachePackageJson, "utf8").catch(() => "");
+      const currentPkg = await fs.readFile(buildPackageJson, "utf8").catch(() => "");
+      cacheValid = cachedPkg.length > 0 && cachedPkg === currentPkg;
     } catch {
       cacheValid = false;
     }
@@ -845,10 +845,10 @@ async function stageAstroBuild(ctx: BuildContext): Promise<void> {
     try {
       await fs.mkdir(path.join(NPM_CACHE_DIR, ctx.templateId), { recursive: true });
       await runCommand("cp", ["-r", buildModulesDir, cacheModulesDir], ctx.workingDir, 60_000);
-      // Also cache package-lock.json for invalidation
-      const lockContent = await fs.readFile(buildPackageLock, "utf8").catch(() => "");
-      if (lockContent) {
-        await fs.writeFile(cachePackageLock, lockContent, "utf8");
+      // Also cache package.json for invalidation
+      const pkgContent = await fs.readFile(buildPackageJson, "utf8").catch(() => "");
+      if (pkgContent) {
+        await fs.writeFile(cachePackageJson, pkgContent, "utf8");
       }
       logger.log(`[astro_build] node_modules cached for ${ctx.templateId}`);
     } catch (e) {

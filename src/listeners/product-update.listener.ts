@@ -237,7 +237,7 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Debounce build for a site: accumulate changes over 30s window,
+   * Debounce build for a site: accumulate changes over debounce window,
    * then queue a single rebuild.
    */
   private debounceBuild(
@@ -267,7 +267,7 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
         changes: [change],
       };
       this.debounceMap.set(siteId, entry);
-      this.logger.log(`Debounce started for site ${siteId} (30s window)`);
+      this.logger.log(`Debounce started for site ${siteId} (${DEBOUNCE_MS / 1000}s window)`);
     }
   }
 

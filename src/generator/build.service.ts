@@ -516,7 +516,7 @@ async function stageGenerate(
   if (Array.isArray(revPages) && revPages.length > 0 && revPagesData) {
     for (const page of revPages) {
       const pageData = revPagesData[page.id];
-      if (!pageData?.content || !Array.isArray(pageData.content)) continue;
+      if (!pageData?.content || !Array.isArray(pageData.content) || pageData.content.length === 0) continue;
 
       // Convert slug to filename: "/" → "index.astro", "/about" → "about.astro"
       const slug = (page.slug || "/").replace(/^\/+/, "");

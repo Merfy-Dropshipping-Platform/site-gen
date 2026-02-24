@@ -341,6 +341,18 @@ export async function buildScaffold(
     const tokensPath = path.join(outputDir, "src", "styles", "override.css");
     await writeFile(tokensPath, tokensCss);
     generatedFiles.push("src/styles/override.css");
+
+    // Ensure global.css imports override.css so tokens take effect
+    const globalCssPath = path.join(outputDir, "src", "styles", "global.css");
+    try {
+      let globalCss = await fs.readFile(globalCssPath, "utf8");
+      if (!globalCss.includes("override.css")) {
+        globalCss += '\n@import "./override.css";\n';
+        await fs.writeFile(globalCssPath, globalCss, "utf8");
+      }
+    } catch {
+      // global.css may not exist in all themes — skip silently
+    }
   }
 
   // 8. Write build-time data

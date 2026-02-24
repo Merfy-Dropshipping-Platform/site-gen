@@ -415,9 +415,9 @@ export class SitesDomainService {
       // Legacy: accept { theme: { id: 'rose' } } and extract themeId
       updates.themeId = params.patch.theme.id;
     }
-    // Handle branding (logo + colors)
-    if (params.patch?.branding && typeof params.patch.branding === "object") {
-      updates.branding = params.patch.branding;
+    // Handle branding (logo + colors); null clears branding
+    if ("branding" in (params.patch ?? {})) {
+      updates.branding = params.patch.branding ?? null;
     }
 
     updates.updatedAt = new Date();

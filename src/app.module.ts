@@ -57,6 +57,7 @@ import { BuildQueueConsumer } from "./rabbitmq/build-queue.consumer";
 import { BuildQueuePublisher } from "./rabbitmq/build-queue.service";
 import { ProductUpdateListener } from "./listeners/product-update.listener";
 import { FragmentPatcher } from "./listeners/fragment-patcher.service";
+import { BrandingController } from "./branding/branding.controller";
 
 @Module({
   imports: [
@@ -85,6 +86,7 @@ import { FragmentPatcher } from "./listeners/fragment-patcher.service";
     BillingListenerController,
     UserListenerController,
     SitesEventsListenerController,
+    BrandingController,
   ],
   providers: [
     SitesDomainService,

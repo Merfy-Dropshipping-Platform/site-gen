@@ -128,7 +128,10 @@ export class S3StorageService {
           Effect: "Allow",
           Principal: "*",
           Action: ["s3:GetObject"],
-          Resource: [`arn:aws:s3:::${bucket}/sites/*`],
+          Resource: [
+            `arn:aws:s3:::${bucket}/sites/*`,
+            `arn:aws:s3:::${bucket}/branding/*`,
+          ],
         },
       ],
     };
@@ -146,6 +149,19 @@ export class S3StorageService {
   async uploadFile(bucket: string, key: string, filePath: string) {
     if (!this.client) throw new Error("S3 client not initialized");
     await this.client.fPutObject(bucket, key, filePath, {});
+    return this.getPublicUrl(bucket, key);
+  }
+
+  async uploadBuffer(
+    bucket: string,
+    key: string,
+    buffer: Buffer,
+    contentType: string,
+  ): Promise<string> {
+    if (!this.client) throw new Error("S3 client not initialized");
+    await this.client.putObject(bucket, key, buffer, buffer.length, {
+      "Content-Type": contentType,
+    });
     return this.getPublicUrl(bucket, key);
   }
 

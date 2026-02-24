@@ -187,6 +187,34 @@ const showProfile = actionButtons?.showProfile === 'true';
     setTimeout(updateCartBadge, 100);
   });
 
+  // Mark buttons for products already in cart
+  function syncCartButtons() {
+    if (!window.cartStore) return;
+    const items = window.cartStore.getItems();
+    const inCartIds = new Set(items.map((i: any) => i.productId));
+    document.querySelectorAll('.add-to-cart-btn').forEach((btn) => {
+      if (!(btn instanceof HTMLButtonElement)) return;
+      const pid = btn.dataset.productId;
+      if (pid && inCartIds.has(pid)) {
+        btn.textContent = 'В корзине ✓';
+        btn.classList.remove('bg-[#e11d48]', 'hover:bg-[#be123c]');
+        btn.classList.add('bg-gray-500');
+        btn.disabled = false;
+      } else if (pid) {
+        btn.textContent = 'В корзину';
+        btn.classList.remove('bg-gray-500');
+        btn.classList.add('bg-[#e11d48]', 'hover:bg-[#be123c]');
+        btn.disabled = false;
+      }
+    });
+  }
+
+  // Sync on cart updates and page load
+  document.addEventListener('cart:updated', syncCartButtons);
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(syncCartButtons, 200);
+  });
+
   // Add-to-cart button handler (delegated)
   document.addEventListener('click', async (e) => {
     const btn = (e.target as Element).closest('.add-to-cart-btn');
@@ -195,26 +223,27 @@ const showProfile = actionButtons?.showProfile === 'true';
     const productId = btn.dataset.productId;
     if (!productId || !window.cartStore) return;
 
-    const originalText = btn.textContent;
+    // If already in cart, open drawer instead
+    const items = window.cartStore.getItems();
+    if (items.some((i: any) => i.productId === productId)) {
+      if (window.cartDrawer) window.cartDrawer.open();
+      return;
+    }
+
     btn.disabled = true;
     btn.textContent = 'Добавляем...';
 
     const ok = await window.cartStore.addItem(productId, null, 1);
 
     if (ok) {
-      btn.textContent = 'Добавлено ✓';
+      btn.textContent = 'В корзине ✓';
       btn.classList.remove('bg-[#e11d48]', 'hover:bg-[#be123c]');
-      btn.classList.add('bg-green-600');
-      setTimeout(() => {
-        btn.textContent = originalText;
-        btn.classList.remove('bg-green-600');
-        btn.classList.add('bg-[#e11d48]', 'hover:bg-[#be123c]');
-        btn.disabled = false;
-      }, 1500);
+      btn.classList.add('bg-gray-500');
+      btn.disabled = false;
     } else {
       btn.textContent = 'Ошибка';
       setTimeout(() => {
-        btn.textContent = originalText;
+        btn.textContent = 'В корзину';
         btn.disabled = false;
       }, 1500);
     }

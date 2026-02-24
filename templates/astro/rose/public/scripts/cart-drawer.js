@@ -5,7 +5,7 @@
 
 function formatPrice(cents) {
   if (!cents && cents !== 0) return '0 ₽';
-  const rub = Math.round(cents) ;
+  const rub = cents / 100;
   return new Intl.NumberFormat('ru-RU', {
     style: 'currency',
     currency: 'RUB',
@@ -273,9 +273,9 @@ function renderDrawerItems() {
   }
 
   container.innerHTML = items.map(function(item) {
-    var img = (item.images && item.images[0]) || item.image || '';
-    var name = item.productName || item.name || 'Товар';
-    var price = item.priceCents || item.price || 0;
+    var img = item.imageUrl || (item.images && item.images[0]) || item.image || '';
+    var name = item.name || item.productName || 'Товар';
+    var price = item.unitPriceCents || item.priceCents || item.price || 0;
     var qty = item.quantity || 1;
     var imgHtml = img
       ? '<img src="' + img + '" alt="' + name + '" class="cart-drawer-item-img" />'

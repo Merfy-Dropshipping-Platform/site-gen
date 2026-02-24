@@ -81,7 +81,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 <script is:inline>
   function formatCartPrice(cents) {
     if (!cents && cents !== 0) return '0 ₽';
-    var rub = Math.round(cents);
+    var rub = cents / 100;
     return new Intl.NumberFormat('ru-RU', {
       style: 'currency',
       currency: 'RUB',
@@ -111,9 +111,9 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
     // Desktop rows
     if (desktopContainer) {
       desktopContainer.innerHTML = items.map(function(item) {
-        var img = (item.images && item.images[0]) || item.image || '';
-        var name = item.productName || item.name || 'Товар';
-        var price = item.priceCents || item.price || 0;
+        var img = item.imageUrl || (item.images && item.images[0]) || item.image || '';
+        var name = item.name || item.productName || 'Товар';
+        var price = item.unitPriceCents || item.priceCents || item.price || 0;
         var qty = item.quantity || 1;
         var lineTotal = price * qty;
         var imgHtml = img
@@ -146,9 +146,9 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
     // Mobile rows
     if (mobileContainer) {
       mobileContainer.innerHTML = items.map(function(item) {
-        var img = (item.images && item.images[0]) || item.image || '';
-        var name = item.productName || item.name || 'Товар';
-        var price = item.priceCents || item.price || 0;
+        var img = item.imageUrl || (item.images && item.images[0]) || item.image || '';
+        var name = item.name || item.productName || 'Товар';
+        var price = item.unitPriceCents || item.priceCents || item.price || 0;
         var qty = item.quantity || 1;
         var lineTotal = price * qty;
         var imgHtml = img

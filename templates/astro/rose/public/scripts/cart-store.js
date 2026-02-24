@@ -204,7 +204,7 @@ export const cartStore = {
    */
   getTotal() {
     return state.items.reduce((sum, item) => {
-      const price = item.priceCents || item.price || 0;
+      const price = item.unitPriceCents || item.priceCents || item.price || 0;
       return sum + price * (item.quantity || 0);
     }, 0);
   },

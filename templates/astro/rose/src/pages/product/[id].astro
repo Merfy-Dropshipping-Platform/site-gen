@@ -103,12 +103,21 @@ const hasMultipleImages = productImages.length > 1;
           <p class="text-base text-gray-600 leading-relaxed mb-8">{product.description}</p>
         )}
 
-        <a
-          href={`/checkout?productId=${product.slug ?? product.id}`}
-          class="inline-flex items-center justify-center py-4 px-12 bg-[#e11d48] text-white rounded-xl font-medium hover:bg-[#be123c] transition-colors no-underline mt-auto"
-        >
-          Купить сейчас
-        </a>
+        <div class="flex flex-col gap-3 mt-auto">
+          <button
+            type="button"
+            class="add-to-cart-btn inline-flex items-center justify-center py-4 px-12 bg-[#e11d48] text-white rounded-xl font-medium hover:bg-[#be123c] transition-colors cursor-pointer"
+            data-product-id={product.id}
+          >
+            В корзину
+          </button>
+          <a
+            href={`/checkout?productId=${product.slug ?? product.id}`}
+            class="inline-flex items-center justify-center py-3 px-12 border border-[#e11d48] text-[#e11d48] rounded-xl font-medium hover:bg-rose-50 transition-colors no-underline text-center"
+          >
+            Купить сейчас
+          </a>
+        </div>
       </div>
     </div>
   </main>

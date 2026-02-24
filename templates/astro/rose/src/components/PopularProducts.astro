@@ -26,7 +26,7 @@ const headingText = typeof heading === 'object' ? heading?.text : heading;
 const textContent = typeof text === 'object' ? text?.content : text;
 const columns = productCard?.columns || 4;
 
-let products: Array<{ name: string; price: string; oldPrice: string; image: string; href?: string }> = [];
+let products: Array<{ id?: string; name: string; price: string; oldPrice: string; image: string; href?: string }> = [];
 try {
   const productsData = await import('../data/products.json');
   products = productsData.default || [];
@@ -47,6 +47,7 @@ try {
     <div class="grid product-grid-dynamic gap-4 sm:gap-5 md:gap-6 xl:gap-[16px]">
       {(cards ? products.slice(0, cards) : products).map((product) => (
         <ProductCardItem
+          id={product.id}
           name={product.name}
           price={product.price}
           oldPrice={product.oldPrice}

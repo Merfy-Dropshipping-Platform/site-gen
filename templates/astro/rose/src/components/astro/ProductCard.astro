@@ -30,6 +30,7 @@ const props = Astro.props;
 // Normalize between storefront and legacy formats
 const productTitle = props.title ?? props.name ?? 'Товар';
 const productHandle = props.handle ?? props.id ?? '#';
+const productId = props.id || '';
 const linkHref = props.href ?? `/product/${productHandle}`;
 
 // Image: storefront format uses images[], legacy uses image string
@@ -60,35 +61,36 @@ const oldPriceDisplay =
     : props.oldPrice ?? '';
 ---
 
-<a
-  href={linkHref}
-  class="group flex flex-col gap-4 sm:gap-5 md:gap-6 cursor-pointer no-underline text-inherit"
->
+<div class="group flex flex-col gap-4 sm:gap-5 md:gap-6">
   <!-- Image container -->
-  <div class="bg-gray-100 rounded-lg overflow-hidden w-full aspect-square">
-    {imageUrl ? (
-      <img
-        src={imageUrl}
-        alt={imageAlt}
-        loading="lazy"
-        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-      />
-    ) : (
-      <div class="w-full h-full flex items-center justify-center text-gray-300">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-          <circle cx="8.5" cy="8.5" r="1.5" />
-          <polyline points="21,15 16,10 5,21" />
-        </svg>
-      </div>
-    )}
-  </div>
+  <a href={linkHref} class="block cursor-pointer no-underline text-inherit">
+    <div class="bg-gray-100 rounded-lg overflow-hidden w-full aspect-square">
+      {imageUrl ? (
+        <img
+          src={imageUrl}
+          alt={imageAlt}
+          loading="lazy"
+          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+        />
+      ) : (
+        <div class="w-full h-full flex items-center justify-center text-gray-300">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21,15 16,10 5,21" />
+          </svg>
+        </div>
+      )}
+    </div>
+  </a>
 
   <!-- Product info -->
   <div class="flex flex-col gap-2 px-1">
-    <h3 class="text-base sm:text-lg md:text-xl font-normal text-black leading-snug font-[family-name:var(--font-body)]">
-      {productTitle}
-    </h3>
+    <a href={linkHref} class="no-underline text-inherit">
+      <h3 class="text-base sm:text-lg md:text-xl font-normal text-black leading-snug font-[family-name:var(--font-body)]">
+        {productTitle}
+      </h3>
+    </a>
     <div class="flex items-center gap-3 flex-wrap">
       <span class="text-lg sm:text-xl md:text-2xl font-normal text-black leading-snug font-[family-name:var(--font-body)]">
         {priceDisplay}
@@ -99,5 +101,14 @@ const oldPriceDisplay =
         </span>
       )}
     </div>
+    {productId && (
+      <button
+        type="button"
+        class="add-to-cart-btn mt-2 py-2.5 px-5 bg-[#e11d48] text-white text-sm font-medium rounded-lg hover:bg-[#be123c] transition-colors"
+        data-product-id={productId}
+      >
+        В корзину
+      </button>
+    )}
   </div>
-</a>
+</div>

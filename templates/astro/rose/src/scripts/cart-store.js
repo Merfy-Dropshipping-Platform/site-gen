@@ -54,13 +54,9 @@ function syncFromCartData(cartData) {
 async function refreshCart() {
   if (!state.cartId) return;
   try {
-    const apiUrl = window.__MERFY_CONFIG__?.apiUrl || 'https://gateway.merfy.ru/api';
-    const res = await fetch(`${apiUrl}/orders/cart/${state.cartId}?_t=${Date.now()}`, {
-      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
-    });
-    const data = await res.json();
-    if (data.success && data.data) {
-      syncFromCartData(data.data);
+    const res = await CartAPI.getCart(state.cartId);
+    if (res.success && res.data) {
+      syncFromCartData(res.data);
     }
   } catch (e) {
     // ignore refresh errors

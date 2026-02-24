@@ -14,6 +14,7 @@ function getConfig() {
 async function request(path, options = {}) {
   const { apiUrl } = getConfig();
   const res = await fetch(`${apiUrl}${path}`, {
+    cache: 'no-store',
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,

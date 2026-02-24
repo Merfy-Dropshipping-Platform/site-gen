@@ -25,10 +25,13 @@ class CheckoutFlow {
       const savedCartId = this.getSavedCartId();
       if (savedCartId) {
         const cartRes = await CheckoutAPI.getCart(savedCartId);
-        if (cartRes.success && cartRes.data && cartRes.data.items && cartRes.data.items.length > 0) {
+        // API returns { success, data: { cart: {...}, items: [...] } }
+        const cartData = cartRes.data?.cart || cartRes.data;
+        const cartItems = cartRes.data?.items || cartData?.items || [];
+        if (cartRes.success && cartItems.length > 0) {
           this.cartId = savedCartId;
-          this.cart = cartRes.data;
-          this.items = cartRes.data.items.map(item => ({
+          this.cart = cartData;
+          this.items = cartItems.map(item => ({
             id: item.id,
             productId: item.productId,
             name: item.name || item.productName || 'Товар',

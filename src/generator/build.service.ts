@@ -693,6 +693,35 @@ async function stageGenerate(
     );
   }
 
+  // Apply branding color overrides from site.branding
+  if (ctx.branding?.primaryColor || ctx.branding?.secondaryColor) {
+    merchantSettings = merchantSettings ?? {};
+    merchantSettings.tokens = merchantSettings.tokens ?? {};
+
+    if (ctx.branding.primaryColor) {
+      merchantSettings.tokens["color-primary"] = ctx.branding.primaryColor;
+      merchantSettings.tokens["color-primary-rgb"] = ctx.branding.primaryColor;
+    }
+    if (ctx.branding.secondaryColor) {
+      merchantSettings.tokens["color-secondary"] = ctx.branding.secondaryColor;
+    }
+
+    // Also override primary color in color schemes if they exist
+    if (
+      ctx.branding.primaryColor &&
+      merchantSettings.colorSchemes &&
+      merchantSettings.colorSchemes.length > 0
+    ) {
+      const scheme = merchantSettings.colorSchemes[0];
+      scheme.colors = scheme.colors ?? {};
+      scheme.colors["primary"] = ctx.branding.primaryColor;
+    }
+
+    logger.log(
+      `[generate] Applied branding color overrides: primary=${ctx.branding.primaryColor ?? "none"}, secondary=${ctx.branding.secondaryColor ?? "none"}`,
+    );
+  }
+
   const scaffoldConfig: ScaffoldConfig = {
     outputDir: ctx.workingDir,
     themeName: ctx.templateId,

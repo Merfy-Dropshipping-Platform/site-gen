@@ -44,11 +44,23 @@ function notify(eventName, detail) {
 }
 
 function syncFromCartData(cartData) {
-  if (cartData && cartData.items) {
+  if (cartData && Array.isArray(cartData.items)) {
     state.items = cartData.items;
   }
   saveToStorage();
   notify('cart:updated', { items: state.items });
+}
+
+async function refreshCart() {
+  if (!state.cartId) return;
+  try {
+    const res = await CartAPI.getCart(state.cartId);
+    if (res.success && res.data) {
+      syncFromCartData(res.data);
+    }
+  } catch (e) {
+    // ignore refresh errors
+  }
 }
 
 async function ensureCart() {
@@ -102,8 +114,8 @@ export const cartStore = {
     try {
       const cartId = await ensureCart();
       const res = await CartAPI.addItem(cartId, productId, qty, variantId);
-      if (res.success && res.data) {
-        syncFromCartData(res.data);
+      if (res.success) {
+        await refreshCart();
         notify('cart:item-added', { productId, variantId, quantity: qty });
         return true;
       }
@@ -116,8 +128,8 @@ export const cartStore = {
         try {
           const cartId = await ensureCart();
           const res = await CartAPI.addItem(cartId, productId, qty, variantId);
-          if (res.success && res.data) {
-            syncFromCartData(res.data);
+          if (res.success) {
+            await refreshCart();
             notify('cart:item-added', { productId, variantId, quantity: qty });
             return true;
           }
@@ -140,8 +152,8 @@ export const cartStore = {
 
     try {
       const res = await CartAPI.removeItem(state.cartId, itemId);
-      if (res.success && res.data) {
-        syncFromCartData(res.data);
+      if (res.success) {
+        await refreshCart();
         return true;
       }
       return false;
@@ -160,8 +172,8 @@ export const cartStore = {
 
     try {
       const res = await CartAPI.updateItem(state.cartId, itemId, quantity);
-      if (res.success && res.data) {
-        syncFromCartData(res.data);
+      if (res.success) {
+        await refreshCart();
         return true;
       }
       return false;

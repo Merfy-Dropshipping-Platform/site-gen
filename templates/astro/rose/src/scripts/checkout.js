@@ -1,6 +1,9 @@
 /**
  * Checkout page logic
  * Управление шагами оформления заказа
+ * Поддерживает два режима:
+ *   1. Корзина (cartId из localStorage) — multi-item
+ *   2. Одиночный товар (?productId из URL) — backward compat
  */
 
 import { CheckoutAPI } from './checkout-api.js';
@@ -9,8 +12,7 @@ class CheckoutFlow {
   constructor() {
     this.cartId = null;
     this.orderId = null;
-    this.productId = null;
-    this.product = null;
+    this.items = []; // [{name, imageUrl, unitPriceCents, quantity, id, productId}]
     this.cart = null;
     this.currentStep = 1;
 
@@ -18,35 +20,77 @@ class CheckoutFlow {
   }
 
   async init() {
-    // Получить productId из URL
-    const params = new URLSearchParams(window.location.search);
-    this.productId = params.get('productId');
-
-    if (!this.productId) {
-      this.showError('Товар не выбран', 'Вернитесь в каталог и выберите товар');
-      return;
-    }
-
     try {
+      // Режим 1: Существующая корзина из localStorage
+      const savedCartId = this.getSavedCartId();
+      if (savedCartId) {
+        const cartRes = await CheckoutAPI.getCart(savedCartId);
+        if (cartRes.success && cartRes.data && cartRes.data.items && cartRes.data.items.length > 0) {
+          this.cartId = savedCartId;
+          this.cart = cartRes.data;
+          this.items = cartRes.data.items.map(item => ({
+            id: item.id,
+            productId: item.productId,
+            name: item.name || item.productName || 'Товар',
+            imageUrl: item.imageUrl || (item.images && item.images[0]) || item.image || '',
+            unitPriceCents: item.unitPriceCents || item.priceCents || item.price || 0,
+            quantity: item.quantity || 1,
+          }));
+          this.renderProductSummary();
+          this.bindEvents();
+          // Установить доставку по умолчанию
+          await CheckoutAPI.setDelivery(this.cartId, 'pickup', 0);
+          return;
+        }
+      }
+
+      // Режим 2: Одиночный товар из URL
+      const params = new URLSearchParams(window.location.search);
+      const productId = params.get('productId');
+
+      if (!productId) {
+        this.showError('Корзина пуста', 'Добавьте товары в корзину или выберите товар в каталоге');
+        return;
+      }
+
       // Загрузить данные товара из products.json
       const productsRes = await fetch('/data/products.json');
       const products = await productsRes.json();
-      this.product = products.find(
-        (p) => p.id === this.productId || p.slug === this.productId
+      const product = products.find(
+        (p) => p.id === productId || p.slug === productId
       );
 
-      if (!this.product) {
+      if (!product) {
         this.showError('Товар не найден', 'Возможно, товар больше не доступен');
         return;
       }
 
-      // Показать информацию о товаре
-      this.renderProductSummary();
-
       // Создать корзину и добавить товар
-      await this.initCart();
+      const cartRes = await CheckoutAPI.createCart();
+      if (!cartRes.success) {
+        throw new Error(cartRes.message || 'Не удалось создать корзину');
+      }
+      this.cartId = cartRes.data.id;
 
-      // Привязать обработчики
+      const addRes = await CheckoutAPI.addItem(this.cartId, product.id, 1);
+      if (!addRes.success) {
+        throw new Error(addRes.message || 'Не удалось добавить товар');
+      }
+      this.cart = addRes.data;
+
+      this.items = [{
+        id: null,
+        productId: product.id,
+        name: product.name,
+        imageUrl: product.images?.[0] || '',
+        unitPriceCents: product.price * 100,
+        quantity: 1,
+      }];
+
+      // Установить доставку по умолчанию
+      await CheckoutAPI.setDelivery(this.cartId, 'pickup', 0);
+
+      this.renderProductSummary();
       this.bindEvents();
     } catch (e) {
       console.error('Checkout init error:', e);
@@ -54,47 +98,66 @@ class CheckoutFlow {
     }
   }
 
-  async initCart() {
-    // Создать корзину
-    const cartRes = await CheckoutAPI.createCart();
-    if (!cartRes.success) {
-      throw new Error(cartRes.message || 'Не удалось создать корзину');
+  getSavedCartId() {
+    try {
+      return localStorage.getItem('merfy_cart_id') || null;
+    } catch (e) {
+      return null;
     }
-    this.cartId = cartRes.data.id;
+  }
 
-    // Добавить товар
-    const addRes = await CheckoutAPI.addItem(this.cartId, this.product.id, 1);
-    if (!addRes.success) {
-      throw new Error(addRes.message || 'Не удалось добавить товар');
+  clearSavedCart() {
+    try {
+      localStorage.removeItem('merfy_cart_id');
+      localStorage.removeItem('merfy_cart_items');
+    } catch (e) {
+      // ignore
     }
-    this.cart = addRes.data;
-
-    // Установить доставку по умолчанию (самовывоз, 0 руб)
-    await CheckoutAPI.setDelivery(this.cartId, 'pickup', 0);
+    // Notify cart components
+    document.dispatchEvent(new CustomEvent('cart:updated', { detail: { items: [] } }));
   }
 
   renderProductSummary() {
     const container = document.getElementById('product-summary');
-    const image = this.product.images?.[0];
+
+    if (this.items.length === 0) {
+      container.innerHTML = '<p class="text-gray-500">Корзина пуста</p>';
+      return;
+    }
+
+    const itemsHtml = this.items.map(item => {
+      const imgHtml = item.imageUrl
+        ? `<img src="${item.imageUrl}" alt="${item.name}" class="product-summary-image">`
+        : `<div class="product-summary-image" style="display: flex; align-items: center; justify-content: center; color: var(--rose-300);">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21,15 16,10 5,21"/>
+            </svg>
+          </div>`;
+
+      const qtyLabel = item.quantity > 1 ? ` × ${item.quantity}` : '';
+      const lineTotal = item.unitPriceCents * item.quantity;
+
+      return `
+        <div class="product-summary-item" style="margin-bottom: 12px;">
+          ${imgHtml}
+          <div class="product-summary-info" style="flex: 1;">
+            <h3>${item.name}${qtyLabel}</h3>
+            <div class="product-summary-price">${this.formatPrice(lineTotal / 100)}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    const subtotal = this.items.reduce((s, i) => s + i.unitPriceCents * i.quantity, 0);
 
     container.innerHTML = `
-      <div class="product-summary-item">
-        ${
-          image
-            ? `<img src="${image}" alt="${this.product.name}" class="product-summary-image">`
-            : `<div class="product-summary-image" style="display: flex; align-items: center; justify-content: center; color: var(--rose-300);">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                  <circle cx="8.5" cy="8.5" r="1.5"/>
-                  <polyline points="21,15 16,10 5,21"/>
-                </svg>
-              </div>`
-        }
-        <div class="product-summary-info">
-          <h3>${this.product.name}</h3>
-          <div class="product-summary-price">${this.formatPrice(this.product.price)}</div>
-        </div>
-      </div>
+      ${itemsHtml}
+      ${this.items.length > 1 ? `
+        <div style="border-top: 1px solid #f3f4f6; margin-top: 8px; padding-top: 12px; display: flex; justify-content: space-between; font-weight: 600;">
+          <span>Подытог (${this.items.reduce((s, i) => s + i.quantity, 0)} шт.)</span>
+          <span>${this.formatPrice(subtotal / 100)}</span>
+        </div>` : ''}
     `;
   }
 
@@ -223,7 +286,10 @@ class CheckoutFlow {
       }
       this.orderId = checkoutRes.data.id;
 
-      // 2. Создать платёж
+      // 2. Очистить корзину в localStorage (заказ уже создан)
+      this.clearSavedCart();
+
+      // 3. Создать платёж
       const returnUrl = `${window.location.origin}/checkout/result?orderId=${this.orderId}`;
       const paymentRes = await CheckoutAPI.createPayment(this.orderId, returnUrl);
 
@@ -231,7 +297,7 @@ class CheckoutFlow {
         throw new Error(paymentRes.message || 'Не удалось создать платёж');
       }
 
-      // 3. Редирект на ЮKassa
+      // 4. Редирект на ЮKassa
       window.location.href = paymentRes.data.confirmationUrl;
     } catch (e) {
       errorEl.textContent = e.message;
@@ -318,10 +384,27 @@ class CheckoutFlow {
 
   renderOrderSummary() {
     const container = document.getElementById('order-summary');
-    const subtotal = this.cart?.subtotalCents ?? this.product.price * 100;
+    const subtotal = this.cart?.subtotalCents ?? this.items.reduce((s, i) => s + i.unitPriceCents * i.quantity, 0);
     const delivery = this.cart?.deliveryCostCents ?? 0;
     const discount = this.cart?.discountCents ?? 0;
     const total = this.cart?.totalCents ?? subtotal + delivery - discount;
+
+    const itemsHtml = this.items.map(item => {
+      const lineTotal = item.unitPriceCents * item.quantity;
+      const imgHtml = item.imageUrl
+        ? `<img src="${item.imageUrl}" alt="${item.name}" class="product-summary-image" style="width: 60px; height: 60px;">`
+        : '';
+      const qtyLabel = item.quantity > 1 ? ` × ${item.quantity}` : '';
+
+      return `
+        <div class="product-summary-item" style="margin-bottom: 12px;">
+          ${imgHtml}
+          <div class="product-summary-info">
+            <h3 style="font-size: 1rem;">${item.name}${qtyLabel}</h3>
+            <div style="font-size: 0.875rem; color: #e11d48; font-weight: 600;">${this.formatPrice(lineTotal / 100)}</div>
+          </div>
+        </div>`;
+    }).join('');
 
     const discountRow = discount > 0
       ? `<div class="order-summary-row" style="color: #16a34a;">
@@ -331,28 +414,21 @@ class CheckoutFlow {
       : '';
 
     container.innerHTML = `
-      <div class="product-summary-item" style="margin-bottom: 20px;">
-        ${
-          this.product.images?.[0]
-            ? `<img src="${this.product.images[0]}" alt="${this.product.name}" class="product-summary-image" style="width: 60px; height: 60px;">`
-            : ''
-        }
-        <div class="product-summary-info">
-          <h3 style="font-size: 1rem;">${this.product.name}</h3>
+      ${itemsHtml}
+      <div style="border-top: 1px solid #f3f4f6; margin-top: 8px; padding-top: 12px;">
+        <div class="order-summary-row">
+          <span>Товары (${this.items.reduce((s, i) => s + i.quantity, 0)} шт.)</span>
+          <span>${this.formatPrice(subtotal / 100)}</span>
         </div>
-      </div>
-      <div class="order-summary-row">
-        <span>Товар</span>
-        <span>${this.formatPrice(subtotal / 100)}</span>
-      </div>
-      <div class="order-summary-row">
-        <span>Доставка</span>
-        <span>${delivery > 0 ? this.formatPrice(delivery / 100) : 'Бесплатно'}</span>
-      </div>
-      ${discountRow}
-      <div class="order-summary-row total">
-        <span>Итого</span>
-        <span class="price">${this.formatPrice(total / 100)}</span>
+        <div class="order-summary-row">
+          <span>Доставка</span>
+          <span>${delivery > 0 ? this.formatPrice(delivery / 100) : 'Бесплатно'}</span>
+        </div>
+        ${discountRow}
+        <div class="order-summary-row total">
+          <span>Итого</span>
+          <span class="price">${this.formatPrice(total / 100)}</span>
+        </div>
       </div>
     `;
   }

@@ -44,6 +44,15 @@ export const CheckoutAPI = {
   },
 
   /**
+   * Получить корзину по ID
+   * @param {string} cartId
+   * @returns {Promise<{success: boolean, data: object}>}
+   */
+  async getCart(cartId) {
+    return request(`/orders/cart/${cartId}`);
+  },
+
+  /**
    * Добавить товар в корзину
    * @param {string} cartId
    * @param {string} productId

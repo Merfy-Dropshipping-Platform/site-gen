@@ -332,26 +332,25 @@ export async function buildScaffold(
     generatedFiles.push("src/pages/collections/[handle].astro");
   }
 
-  // 7. Generate override.css tokens
+  // 7. Generate override.css tokens and append to tokens.css
   if (config.merchantSettings) {
     const tokensCss = generateTokensCss(
       config.merchantSettings,
       config.themeDefaults ?? {},
     );
-    const tokensPath = path.join(outputDir, "src", "styles", "override.css");
-    await writeFile(tokensPath, tokensCss);
+    const overridePath = path.join(outputDir, "src", "styles", "override.css");
+    await writeFile(overridePath, tokensCss);
     generatedFiles.push("src/styles/override.css");
 
-    // Ensure global.css imports override.css so tokens take effect
-    const globalCssPath = path.join(outputDir, "src", "styles", "global.css");
+    // Append override tokens to tokens.css so they take effect
+    // (tokens.css is imported by global.css and defines :root + color-scheme vars)
+    const tokensCssPath = path.join(outputDir, "src", "styles", "tokens.css");
     try {
-      let globalCss = await fs.readFile(globalCssPath, "utf8");
-      if (!globalCss.includes("override.css")) {
-        globalCss += '\n@import "./override.css";\n';
-        await fs.writeFile(globalCssPath, globalCss, "utf8");
-      }
+      let existing = await fs.readFile(tokensCssPath, "utf8");
+      existing += "\n/* Merchant overrides */\n" + tokensCss;
+      await fs.writeFile(tokensCssPath, existing, "utf8");
     } catch {
-      // global.css may not exist in all themes — skip silently
+      // tokens.css may not exist in all themes — skip silently
     }
   }
 

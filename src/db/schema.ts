@@ -188,6 +188,24 @@ export const siteProduct = pgTable("site_product", {
 });
 
 /**
+ * История доменов сайта.
+ * Отслеживает смену доменов (generated → purchased → external).
+ * При переключении домена предыдущий помечается inactive.
+ */
+export const siteDomainHistory = pgTable("site_domain_history", {
+  id: text("id").primaryKey(),
+  siteId: text("site_id").notNull(),
+  domainName: text("domain_name").notNull(),
+  domainId: text("domain_id"), // ID from domain service (nullable for external)
+  type: text("type").notNull(), // 'generated' | 'purchased' | 'external'
+  status: text("status").notNull(), // 'active' | 'inactive'
+  attachedAt: timestamp("attached_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+  detachedAt: timestamp("detached_at"),
+});
+
+/**
  * Маппинг тенантов на Coolify Projects.
  * Каждый тенант = отдельный проект в Coolify.
  * Используется для изоляции сайтов разных компаний.

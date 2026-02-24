@@ -359,6 +359,22 @@ export class SitesDomainService {
       coolifyProjectUuid,
     });
 
+    // Record initial domain in history (generated subdomain)
+    if (domainId && publicUrl) {
+      const subdomainName = publicUrl
+        .replace(/^https?:\/\//, "")
+        .replace(/\/$/, "");
+      await this.db.insert(schema.siteDomainHistory).values({
+        id: randomUUID(),
+        siteId: id,
+        domainName: subdomainName,
+        domainId,
+        type: "generated",
+        status: "active",
+        attachedAt: now,
+      });
+    }
+
     this.events.emit("sites.site.created", {
       tenantId: params.tenantId,
       siteId: id,
@@ -1996,5 +2012,100 @@ export class SitesDomainService {
       completedAt: build.completedAt,
       createdAt: build.createdAt,
     };
+  }
+
+  // ==================== Domain Switching ====================
+
+  /**
+   * Switch site to a purchased domain.
+   * Deactivates current domain in history, adds new entry,
+   * updates site record and Coolify domain.
+   */
+  async switchDomain(params: {
+    siteId: string;
+    domainId: string;
+    domainName: string;
+  }): Promise<void> {
+    const { siteId, domainId, domainName } = params;
+    this.logger.log(
+      `Switching domain for site ${siteId} to ${domainName}`,
+    );
+
+    // 1. Find site
+    const [siteRow] = await this.db
+      .select()
+      .from(schema.site)
+      .where(eq(schema.site.id, siteId))
+      .limit(1);
+
+    if (!siteRow) {
+      this.logger.warn(`switchDomain: site ${siteId} not found`);
+      return;
+    }
+
+    const now = new Date();
+
+    // 2. Deactivate current active domain in history
+    await this.db
+      .update(schema.siteDomainHistory)
+      .set({ status: "inactive", detachedAt: now })
+      .where(
+        and(
+          eq(schema.siteDomainHistory.siteId, siteId),
+          eq(schema.siteDomainHistory.status, "active"),
+        ),
+      );
+
+    // 3. Add new domain history entry
+    await this.db.insert(schema.siteDomainHistory).values({
+      id: randomUUID(),
+      siteId,
+      domainName,
+      domainId,
+      type: "purchased",
+      status: "active",
+      attachedAt: now,
+    });
+
+    // 4. Update site: domainId, publicUrl
+    const newPublicUrl = `https://${domainName}`;
+    await this.db
+      .update(schema.site)
+      .set({
+        domainId,
+        publicUrl: newPublicUrl,
+        updatedAt: now,
+      })
+      .where(eq(schema.site.id, siteId));
+
+    // 5. Update Coolify domain (best-effort)
+    if (siteRow.coolifyAppUuid) {
+      try {
+        await this.callCoolify("coolify.set_domain", {
+          appUuid: siteRow.coolifyAppUuid,
+          domain: domainName,
+        });
+        this.logger.log(
+          `Coolify domain updated for site ${siteId}: ${domainName}`,
+        );
+      } catch (e) {
+        this.logger.warn(
+          `Failed to set Coolify domain for ${siteId}: ${e instanceof Error ? e.message : e}`,
+        );
+      }
+    }
+
+    // 6. Emit event
+    this.events.emit("sites.domain.switched", {
+      tenantId: siteRow.tenantId,
+      siteId,
+      domainName,
+      domainId,
+      previousPublicUrl: siteRow.publicUrl,
+    });
+
+    this.logger.log(
+      `Domain switched for site ${siteId}: ${siteRow.publicUrl} -> ${newPublicUrl}`,
+    );
   }
 }

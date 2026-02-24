@@ -11,6 +11,7 @@
 import { Controller, Logger } from "@nestjs/common";
 import {
   Ctx,
+  EventPattern,
   MessagePattern,
   Payload,
   RmqContext,
@@ -533,6 +534,28 @@ export class SitesMicroserviceController {
     } catch (e: any) {
       this.logger.error("products.get failed", e);
       return { success: false, message: e?.message ?? "internal_error" };
+    }
+  }
+
+  // ==================== Domain Events ====================
+
+  /**
+   * Обработка события от Domain Service: домен готов (DNS настроен).
+   * Переключает сайт на купленный домен.
+   */
+  @EventPattern("site-gen.domain_ready")
+  async handleDomainReady(@Payload() data: any) {
+    const { domainId, domainName, siteId } = data ?? {};
+    this.logger.log(
+      `domain_ready event: domain=${domainName}, siteId=${siteId}`,
+    );
+    if (!siteId || !domainName) return;
+    try {
+      await this.service.switchDomain({ siteId, domainId, domainName });
+    } catch (e: any) {
+      this.logger.error(
+        `handleDomainReady failed for site ${siteId}: ${e?.message}`,
+      );
     }
   }
 }

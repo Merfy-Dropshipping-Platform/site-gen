@@ -693,9 +693,39 @@ export class SitesDomainService {
       }
     }
 
-    // 2. Определить публичный URL (если не установлен — fallback)
+    // 2. Определить публичный URL (если не установлен — генерируем subdomain)
     if (!finalUrl) {
-      finalUrl = this.storage.getSitePublicUrl(params.tenantId, params.siteId);
+      try {
+        const domainResult = await this.domainClient.generateSubdomain(
+          params.tenantId,
+        );
+        const subdomain = domainResult.name;
+        finalUrl = this.storage.getSitePublicUrlBySubdomain(subdomain);
+
+        // Сохраняем domainId и publicUrl
+        await this.db
+          .update(schema.site)
+          .set({
+            domainId: domainResult.id,
+            publicUrl: finalUrl,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(schema.site.id, params.siteId),
+              eq(schema.site.tenantId, params.tenantId),
+            ),
+          );
+
+        this.logger.log(
+          `Generated subdomain on publish: ${subdomain}, publicUrl: ${finalUrl}`,
+        );
+      } catch (e) {
+        this.logger.warn(
+          `Failed to generate subdomain on publish, using fallback: ${e instanceof Error ? e.message : e}`,
+        );
+        finalUrl = this.storage.getSitePublicUrl(params.tenantId, params.siteId);
+      }
     }
 
     // 3. Build: queued (async) or synchronous depending on feature flags
@@ -725,11 +755,12 @@ export class SitesDomainService {
         trigger: "publish",
       });
 
-      // Update site status to published (build will complete asynchronously)
+      // Update site status to published + publicUrl (build will complete asynchronously)
       await this.db
         .update(schema.site)
         .set({
           status: "published",
+          ...(finalUrl ? { publicUrl: finalUrl } : {}),
           updatedAt: new Date(),
         })
         .where(
@@ -780,12 +811,13 @@ export class SitesDomainService {
       }
     }
 
-    // Обновить статус сайта
+    // Обновить статус сайта + publicUrl
     await this.db
       .update(schema.site)
       .set({
         status: "published",
         currentRevisionId: revisionId,
+        ...(finalUrl ? { publicUrl: finalUrl } : {}),
         updatedAt: new Date(),
       })
       .where(

@@ -85,6 +85,7 @@ export class SitesDomainService {
         status: schema.site.status,
         themeId: schema.site.themeId,
         publicUrl: schema.site.publicUrl,
+        branding: schema.site.branding,
         createdAt: schema.site.createdAt,
         // JOIN: theme data
         theme: {
@@ -131,6 +132,7 @@ export class SitesDomainService {
         coolifyAppUuid: schema.site.coolifyAppUuid,
         coolifyProjectUuid: schema.site.coolifyProjectUuid,
         domainId: schema.site.domainId,
+        branding: schema.site.branding,
         // JOIN: theme data
         theme: {
           id: schema.theme.id,
@@ -166,6 +168,7 @@ export class SitesDomainService {
         status: schema.site.status,
         themeId: schema.site.themeId,
         publicUrl: schema.site.publicUrl,
+        branding: schema.site.branding,
         createdAt: schema.site.createdAt,
         updatedAt: schema.site.updatedAt,
         // JOIN: theme data
@@ -208,6 +211,7 @@ export class SitesDomainService {
         status: schema.site.status,
         themeId: schema.site.themeId,
         publicUrl: schema.site.publicUrl,
+        branding: schema.site.branding,
         createdAt: schema.site.createdAt,
         updatedAt: schema.site.updatedAt,
         theme: {
@@ -426,6 +430,10 @@ export class SitesDomainService {
     } else if (params.patch?.theme?.id) {
       // Legacy: accept { theme: { id: 'rose' } } and extract themeId
       updates.themeId = params.patch.theme.id;
+    }
+    // Handle branding (logo + colors); null clears branding
+    if ("branding" in (params.patch ?? {})) {
+      updates.branding = params.patch.branding ?? null;
     }
 
     updates.updatedAt = new Date();

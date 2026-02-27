@@ -87,6 +87,8 @@ interface BuildContext {
   storeData: FetchedStoreData;
   /** Whether the site uses server-island smart revalidation */
   islandsEnabled: boolean;
+  /** Branding overrides (logo, colors) from site table */
+  branding?: { logoUrl?: string; primaryColor?: string; secondaryColor?: string };
 }
 
 /** Dependencies injected into the pipeline */
@@ -352,6 +354,7 @@ async function stageMerge(
       currentRevisionId: schema.site.currentRevisionId,
       publicUrl: schema.site.publicUrl,
       islandsEnabled: schema.site.islandsEnabled,
+      branding: schema.site.branding,
       templateId: schema.theme.templateId,
     })
     .from(schema.site)
@@ -365,6 +368,7 @@ async function stageMerge(
   ctx.templateId = params.templateOverride ?? siteRow.templateId ?? "default";
   ctx.publicUrl = siteRow.publicUrl;
   ctx.islandsEnabled = siteRow.islandsEnabled ?? false;
+  ctx.branding = (siteRow.branding as BuildContext["branding"]) ?? undefined;
 
   // Load or create revision
   let revisionId: string | null = null;
@@ -639,11 +643,34 @@ async function stageGenerate(
     logger.log(`[generate] Legacy format: ${pages.length} page(s)`);
   }
 
+  // Override Header logo with branding logoUrl in page content arrays
+  if (ctx.branding?.logoUrl && pages.length > 0) {
+    for (const page of pages) {
+      const content = page.data.content as any[];
+      for (const comp of content) {
+        if (comp?.type === "Header" && comp.props) {
+          comp.props.logo = ctx.branding.logoUrl;
+        }
+      }
+    }
+    logger.log(
+      `[generate] Overriding Header.logo in ${pages.length} page(s) with branding: ${ctx.branding.logoUrl}`,
+    );
+  }
+
   const rawApiUrl = process.env.API_GATEWAY_URL ?? "https://gateway.merfy.ru";
   const apiUrl = rawApiUrl.endsWith("/api") ? rawApiUrl : `${rawApiUrl}/api`;
 
   // Extract Header and Footer component props from revision data for site-config.json
   const siteConfig = extractSiteConfig(ctx.revisionData, revPagesData);
+
+  // Override header logo with branding logo if available
+  if (ctx.branding?.logoUrl) {
+    (siteConfig.header as Record<string, unknown>).logo = ctx.branding.logoUrl;
+    logger.log(
+      `[generate] Overriding header logo with branding: ${ctx.branding.logoUrl}`,
+    );
+  }
 
   // Resolve merchant settings: prefer theme-bridge conversion when schema available
   let merchantSettings = (ctx.revisionMeta as { merchantSettings?: any })
@@ -663,6 +690,35 @@ async function stageGenerate(
     );
     logger.log(
       `[generate] Converted theme settings schema to merchant settings via bridge`,
+    );
+  }
+
+  // Apply branding color overrides from site.branding
+  if (ctx.branding?.primaryColor || ctx.branding?.secondaryColor) {
+    merchantSettings = merchantSettings ?? {};
+    merchantSettings.tokens = merchantSettings.tokens ?? {};
+
+    if (ctx.branding.primaryColor) {
+      merchantSettings.tokens["color-primary"] = ctx.branding.primaryColor;
+      merchantSettings.tokens["color-primary-rgb"] = ctx.branding.primaryColor;
+    }
+    if (ctx.branding.secondaryColor) {
+      merchantSettings.tokens["color-secondary"] = ctx.branding.secondaryColor;
+    }
+
+    // Also override primary color in color schemes if they exist
+    if (
+      ctx.branding.primaryColor &&
+      merchantSettings.colorSchemes &&
+      merchantSettings.colorSchemes.length > 0
+    ) {
+      const scheme = merchantSettings.colorSchemes[0];
+      scheme.colors = scheme.colors ?? {};
+      scheme.colors["primary"] = ctx.branding.primaryColor;
+    }
+
+    logger.log(
+      `[generate] Applied branding color overrides: primary=${ctx.branding.primaryColor ?? "none"}, secondary=${ctx.branding.secondaryColor ?? "none"}`,
     );
   }
 

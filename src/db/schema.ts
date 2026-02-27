@@ -81,6 +81,12 @@ export const site = pgTable("site", {
   publicUrl: text("public_url"),
   // Флаг включения server-islands (smart revalidation)
   islandsEnabled: boolean("islands_enabled").default(false).notNull(),
+  // Брендинг: логотип и цвета магазина
+  branding: jsonb("branding").$type<{
+    logoUrl?: string;
+    primaryColor?: string;
+    secondaryColor?: string;
+  }>(),
 });
 
 export const siteDomain = pgTable("site_domain", {

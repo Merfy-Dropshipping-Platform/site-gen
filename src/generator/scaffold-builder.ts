@@ -332,15 +332,26 @@ export async function buildScaffold(
     generatedFiles.push("src/pages/collections/[handle].astro");
   }
 
-  // 7. Generate override.css tokens
+  // 7. Generate override.css tokens and append to tokens.css
   if (config.merchantSettings) {
     const tokensCss = generateTokensCss(
       config.merchantSettings,
       config.themeDefaults ?? {},
     );
-    const tokensPath = path.join(outputDir, "src", "styles", "override.css");
-    await writeFile(tokensPath, tokensCss);
+    const overridePath = path.join(outputDir, "src", "styles", "override.css");
+    await writeFile(overridePath, tokensCss);
     generatedFiles.push("src/styles/override.css");
+
+    // Append override tokens to tokens.css so they take effect
+    // (tokens.css is imported by global.css and defines :root + color-scheme vars)
+    const tokensCssPath = path.join(outputDir, "src", "styles", "tokens.css");
+    try {
+      let existing = await fs.readFile(tokensCssPath, "utf8");
+      existing += "\n/* Merchant overrides */\n" + tokensCss;
+      await fs.writeFile(tokensCssPath, existing, "utf8");
+    } catch {
+      // tokens.css may not exist in all themes — skip silently
+    }
   }
 
   // 8. Write build-time data

@@ -693,39 +693,27 @@ export class SitesDomainService {
       }
     }
 
-    // 2. Определить публичный URL (если не установлен — генерируем subdomain)
+    // 2. Определить публичный URL (если не установлен — генерируем subdomain локально)
     if (!finalUrl) {
-      try {
-        const domainResult = await this.domainClient.generateSubdomain(
-          params.tenantId,
-        );
-        const subdomain = domainResult.name;
-        finalUrl = this.storage.getSitePublicUrlBySubdomain(subdomain);
+      const slug = params.tenantId.replace(/-/g, "").slice(0, 12);
+      finalUrl = `https://${slug}.merfy.ru`;
 
-        // Сохраняем domainId и publicUrl
-        await this.db
-          .update(schema.site)
-          .set({
-            domainId: domainResult.id,
-            publicUrl: finalUrl,
-            updatedAt: new Date(),
-          })
-          .where(
-            and(
-              eq(schema.site.id, params.siteId),
-              eq(schema.site.tenantId, params.tenantId),
-            ),
-          );
+      await this.db
+        .update(schema.site)
+        .set({
+          publicUrl: finalUrl,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(schema.site.id, params.siteId),
+            eq(schema.site.tenantId, params.tenantId),
+          ),
+        );
 
-        this.logger.log(
-          `Generated subdomain on publish: ${subdomain}, publicUrl: ${finalUrl}`,
-        );
-      } catch (e) {
-        this.logger.warn(
-          `Failed to generate subdomain on publish, using fallback: ${e instanceof Error ? e.message : e}`,
-        );
-        finalUrl = this.storage.getSitePublicUrl(params.tenantId, params.siteId);
-      }
+      this.logger.log(
+        `Generated local subdomain on publish: ${slug}.merfy.ru, publicUrl: ${finalUrl}`,
+      );
     }
 
     // 3. Build: queued (async) or synchronous depending on feature flags

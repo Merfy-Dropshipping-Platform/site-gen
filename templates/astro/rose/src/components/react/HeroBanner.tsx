@@ -61,6 +61,12 @@ export function HeroBanner({
   const posClass = positionMap[position || "center"] || positionMap.center;
   const overlayOpacity = (overlay || 0) / 100;
 
+  const alignItems = (position || "center").includes("left")
+    ? "items-start"
+    : (position || "center").includes("right")
+      ? "items-end"
+      : "items-center";
+
   return (
     <section className={`relative bg-white w-full ${sizeClass} overflow-hidden`}>
       <div className="w-full max-w-[1920px] mx-auto relative min-h-[60vh] sm:min-h-[65vh] md:min-h-[70vh] lg:min-h-[75vh] xl:min-h-[80vh]">
@@ -82,8 +88,8 @@ export function HeroBanner({
         <div
           className={`relative z-10 w-full h-full flex ${posClass} py-8 sm:py-12 md:py-16 lg:py-20 xl:py-24`}
         >
-          <div className="flex flex-col items-center gap-4 sm:gap-5 md:gap-6 lg:gap-[20px] xl:gap-[25px] px-4 sm:px-6 md:px-8 w-full max-w-7xl">
-            <header className="flex flex-col items-center gap-1 sm:gap-2 md:gap-3 lg:gap-4 xl:gap-[5px]">
+          <div className={`flex flex-col ${alignItems} gap-4 sm:gap-5 md:gap-6 lg:gap-[20px] xl:gap-[25px] px-4 sm:px-6 md:px-8 w-full max-w-7xl`}>
+            <header className={`flex flex-col ${alignItems} gap-1 sm:gap-2 md:gap-3 lg:gap-4 xl:gap-[5px]`}>
               {headingText && (
                 <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-[48px] font-normal text-white uppercase leading-[1.115] text-center font-comfortaa">
                   {headingText}

@@ -910,7 +910,7 @@ async function stageAstroBuild(ctx: BuildContext): Promise<void> {
   const buildPackageJson = path.join(ctx.workingDir, "package.json");
 
   // Check if cached node_modules exists and package.json matches
-  const cacheExists = await fs.stat(cacheModulesDir).then(() => true).catch(() => false);
+  let cacheExists = await fs.stat(cacheModulesDir).then(() => true).catch(() => false);
   let cacheValid = false;
 
   if (cacheExists) {

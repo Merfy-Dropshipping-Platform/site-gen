@@ -933,12 +933,30 @@ async function stageAstroBuild(ctx: BuildContext): Promise<void> {
     }
   }
 
+  let needsInstall = !cacheValid;
+
   if (cacheValid) {
     // Fast path: remove existing node_modules (may come from template copy), then restore from cache
     await fs.rm(buildModulesDir, { recursive: true, force: true }).catch(() => {});
     await runCommand("cp", ["-r", cacheModulesDir, buildModulesDir], ctx.workingDir, 30_000);
-    logger.log(`[astro_build] node_modules restored from cache (${ctx.templateId})`);
-  } else {
+
+    // Validate: check key modules exist in restored cache
+    const KEY_MODULES = ["rollup", "astro", "vite"];
+    const checks = await Promise.all(
+      KEY_MODULES.map(m => fs.stat(path.join(buildModulesDir, m)).then(() => true).catch(() => false)),
+    );
+    const missing = KEY_MODULES.filter((_, i) => !checks[i]);
+    if (missing.length > 0) {
+      logger.warn(`[astro_build] Cache incomplete (missing: ${missing.join(", ")}), clearing and reinstalling`);
+      await fs.rm(cacheModulesDir, { recursive: true, force: true }).catch(() => {});
+      await fs.rm(buildModulesDir, { recursive: true, force: true }).catch(() => {});
+      needsInstall = true;
+    } else {
+      logger.log(`[astro_build] node_modules restored from cache (${ctx.templateId})`);
+    }
+  }
+
+  if (needsInstall) {
     // Slow path: full npm install, then cache the result
     const install = await runCommand(
       "npm",

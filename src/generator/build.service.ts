@@ -934,7 +934,8 @@ async function stageAstroBuild(ctx: BuildContext): Promise<void> {
   }
 
   if (cacheValid) {
-    // Fast path: copy cached node_modules
+    // Fast path: remove existing node_modules (may come from template copy), then restore from cache
+    await fs.rm(buildModulesDir, { recursive: true, force: true }).catch(() => {});
     await runCommand("cp", ["-r", cacheModulesDir, buildModulesDir], ctx.workingDir, 30_000);
     logger.log(`[astro_build] node_modules restored from cache (${ctx.templateId})`);
   } else {

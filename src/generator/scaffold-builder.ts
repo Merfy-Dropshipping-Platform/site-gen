@@ -87,12 +87,14 @@ async function writeFile(filePath: string, content: string): Promise<void> {
 }
 
 /**
- * Recursively copy a directory.
+ * Recursively copy a directory, skipping node_modules/dist/.astro.
  */
+const COPY_SKIP = new Set(["node_modules", "dist", ".astro"]);
 async function copyDir(src: string, dest: string): Promise<void> {
   await fs.mkdir(dest, { recursive: true });
   const entries = await fs.readdir(src, { withFileTypes: true });
   for (const entry of entries) {
+    if (COPY_SKIP.has(entry.name)) continue;
     const srcPath = path.join(src, entry.name);
     const destPath = path.join(dest, entry.name);
     if (entry.isDirectory()) {

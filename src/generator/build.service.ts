@@ -334,8 +334,8 @@ export async function runBuildPipeline(
       artifactUrl: ctx.artifactUrl,
     };
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    logger.error(`Build ${buildId} failed: ${message}`);
+    const message = err instanceof Error ? err.message : (typeof err === 'object' ? JSON.stringify(err) : String(err));
+    logger.error(`Build ${buildId} failed: ${message || '[no error message]'}`);
 
     await updateBuildStatus(deps, buildId, "failed", {
       error: message.slice(0, 2000),
@@ -1037,7 +1037,15 @@ async function stageUpload(
     return;
   }
 
-  const bucket = await deps.s3.ensureBucket();
+  // ensureBucket with retry (transient MinIO errors)
+  let bucket: string;
+  try {
+    bucket = await deps.s3.ensureBucket();
+  } catch (e1) {
+    logger.warn(`[upload] ensureBucket failed (retry in 1s): ${e1 instanceof Error ? e1.message : String(e1)}`);
+    await new Promise((r) => setTimeout(r, 1000));
+    bucket = await deps.s3.ensureBucket();
+  }
 
   // Determine the site prefix for live serving
   const siteSlug = ctx.publicUrl

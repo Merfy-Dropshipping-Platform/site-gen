@@ -915,9 +915,19 @@ async function stageAstroBuild(ctx: BuildContext): Promise<void> {
 
   if (cacheExists) {
     try {
-      const cachedPkg = await fs.readFile(cachePackageJson, "utf8").catch(() => "");
-      const currentPkg = await fs.readFile(buildPackageJson, "utf8").catch(() => "");
-      cacheValid = cachedPkg.length > 0 && cachedPkg === currentPkg;
+      // Check for corrupted cache (double node_modules nesting from old bug)
+      const nestedModules = path.join(cacheModulesDir, "node_modules");
+      const hasNesting = await fs.stat(nestedModules).then(() => true).catch(() => false);
+      if (hasNesting) {
+        logger.warn(`[astro_build] Corrupted cache detected (double nesting), clearing`);
+        await fs.rm(cacheModulesDir, { recursive: true, force: true });
+        cacheExists = false;
+        cacheValid = false;
+      } else {
+        const cachedPkg = await fs.readFile(cachePackageJson, "utf8").catch(() => "");
+        const currentPkg = await fs.readFile(buildPackageJson, "utf8").catch(() => "");
+        cacheValid = cachedPkg.length > 0 && cachedPkg === currentPkg;
+      }
     } catch {
       cacheValid = false;
     }

@@ -217,7 +217,7 @@ function runCommand(
  */
 async function zipDirectory(srcDir: string, outZipPath: string): Promise<void> {
   await fs.mkdir(path.dirname(outZipPath), { recursive: true });
-  const archive = archiver("zip", { zlib: { level: 9 } });
+  const archive = archiver("zip", { zlib: { level: 1 } });
   const stream = (await fs.open(outZipPath, "w")).createWriteStream();
   return new Promise<void>((resolve, reject) => {
     archive.directory(srcDir, false).on("error", reject).pipe(stream);
@@ -280,33 +280,53 @@ export async function runBuildPipeline(
   await updateBuildStatus(deps, buildId, "running");
 
   try {
+    const pipelineStart = Date.now();
+    const time = (label: string, start: number) =>
+      logger.log(`[timing] ${label}: ${Date.now() - start}ms`);
+
     // === Stage 1: MERGE ===
+    let t = Date.now();
     emitProgress(deps, ctx, "merge", "Loading revision and site data");
     await stageMerge(deps, params, ctx);
+    time("merge", t);
 
     // === Stage 2: GENERATE ===
+    t = Date.now();
     emitProgress(deps, ctx, "generate", "Generating Astro project");
     await stageGenerate(deps, params, ctx);
+    time("generate", t);
 
     // === Stage 3: FETCH_DATA ===
+    t = Date.now();
     emitProgress(deps, ctx, "fetch_data", "Fetching products and collections");
     await stageFetchData(deps, ctx);
+    time("fetch_data", t);
 
     // === Stage 4: ASTRO_BUILD ===
+    t = Date.now();
     emitProgress(deps, ctx, "astro_build", "Running astro build");
     await stageAstroBuild(ctx);
+    time("astro_build", t);
 
     // === Stage 5: ZIP ===
+    t = Date.now();
     emitProgress(deps, ctx, "zip", "Packaging artifact");
     await stageZip(ctx);
+    time("zip", t);
 
     // === Stage 6: UPLOAD ===
+    t = Date.now();
     emitProgress(deps, ctx, "upload", "Uploading to S3");
     await stageUpload(deps, ctx);
+    time("upload", t);
 
     // === Stage 7: DEPLOY ===
+    t = Date.now();
     emitProgress(deps, ctx, "deploy", "Finalizing build");
     await stageDeploy(deps, ctx);
+    time("deploy", t);
+
+    logger.log(`[timing] TOTAL pipeline: ${Date.now() - pipelineStart}ms`);
 
     return {
       buildId,
@@ -904,8 +924,8 @@ async function stageAstroBuild(ctx: BuildContext): Promise<void> {
   }
 
   if (cacheValid) {
-    // Fast path: copy cached node_modules (< 1s vs 15s npm install)
-    await runCommand("cp", ["-r", cacheModulesDir, buildModulesDir], ctx.workingDir, 30_000);
+    // Fast path: symlink cached node_modules (~10ms vs 1s cp -r)
+    await fs.symlink(cacheModulesDir, buildModulesDir, "dir");
     logger.log(`[astro_build] node_modules restored from cache (${ctx.templateId})`);
   } else {
     // Slow path: full npm install, then cache the result

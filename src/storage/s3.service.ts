@@ -287,29 +287,41 @@ export class S3StorageService {
     const fs = await import("fs/promises");
     const path = await import("path");
 
-    let uploaded = 0;
+    // Collect all files first, then upload in parallel batches
+    const files: { localPath: string; s3Key: string }[] = [];
 
-    const uploadRecursive = async (dir: string, keyPrefix: string) => {
+    const collectFiles = async (dir: string, keyPrefix: string) => {
       const entries = await fs.readdir(dir, { withFileTypes: true });
-
       for (const entry of entries) {
         const localPath = path.join(dir, entry.name);
         const s3Key = `${keyPrefix}${entry.name}`;
-
         if (entry.isDirectory()) {
-          await uploadRecursive(localPath, `${s3Key}/`);
+          await collectFiles(localPath, `${s3Key}/`);
         } else if (entry.isFile()) {
-          await this.client!.fPutObject(bucket, s3Key, localPath, {
-            "Content-Type": this.getContentType(entry.name),
-          });
-          uploaded++;
+          files.push({ localPath, s3Key });
         }
       }
     };
 
-    await uploadRecursive(localDir, prefix);
-    this.logger.log(`Uploaded ${uploaded} files to s3://${bucket}/${prefix}`);
-    return { uploaded };
+    await collectFiles(localDir, prefix);
+
+    // Upload in parallel batches of 10
+    const BATCH_SIZE = 10;
+    for (let i = 0; i < files.length; i += BATCH_SIZE) {
+      const batch = files.slice(i, i + BATCH_SIZE);
+      await Promise.all(
+        batch.map((f) =>
+          this.client!.fPutObject(bucket, f.s3Key, f.localPath, {
+            "Content-Type": this.getContentType(
+              f.localPath.split("/").pop() || "",
+            ),
+          }),
+        ),
+      );
+    }
+
+    this.logger.log(`Uploaded ${files.length} files to s3://${bucket}/${prefix}`);
+    return { uploaded: files.length };
   }
 
   /**
@@ -503,13 +515,8 @@ export class S3StorageService {
   ): Promise<{ uploaded: number; livePrefix: string }> {
     const bucket = await this.ensureBucket();
 
-    // Upload to build-specific prefix (archive)
-    const buildPrefix = `sites/${siteId}/${buildId}/`;
-    await this.uploadDirectory(bucket, buildPrefix, distDir);
-
-    // Upload to live prefix (overwrite current serving files)
+    // Upload directly to live prefix (overwrite in place, no delete step)
     const livePrefix = `sites/${siteId}/`;
-    await this.removePrefix(bucket, livePrefix).catch(() => {});
     const { uploaded } = await this.uploadDirectory(
       bucket,
       livePrefix,

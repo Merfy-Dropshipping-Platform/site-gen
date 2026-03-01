@@ -623,77 +623,10 @@ export class SitesDomainService {
     const site = await this.get(params.tenantId, params.siteId);
     if (!site) throw new Error("site_not_found");
 
-    // 1. Проверяем/создаём Coolify app для раздачи статики
     let coolifyAppUuid = site.coolifyAppUuid;
     let finalUrl = site.publicUrl;
 
-    if (!coolifyAppUuid && finalUrl) {
-      // Создаём Coolify app (nginx-minio-proxy) для этого сайта
-      try {
-        const subdomain = this.storage.extractSubdomainSlug(finalUrl);
-
-        // Получаем или создаём Coolify Project для этого тенанта
-        const projectUuid =
-          site.coolifyProjectUuid ||
-          (await this.getOrCreateTenantProject(params.tenantId));
-
-        if (!projectUuid) {
-          this.logger.warn(
-            "Failed to get Coolify project, skipping Coolify app creation",
-          );
-        } else {
-          const sitePath = this.storage
-            .getSitePrefixBySubdomain(finalUrl)
-            .replace(/\/$/, "");
-
-          this.logger.log(
-            `Creating Coolify static site app for ${subdomain}.merfy.ru`,
-          );
-          const coolifyResult = await this.callCoolify<{
-            success: boolean;
-            appUuid?: string;
-            url?: string;
-            message?: string;
-          }>("coolify.create_static_site_app", {
-            projectUuid,
-            name: `site-${subdomain}`,
-            subdomain: `${subdomain}.merfy.ru`,
-            sitePath,
-          });
-
-          if (!coolifyResult.success || !coolifyResult.appUuid) {
-            throw new Error(coolifyResult.message || "coolify_create_failed");
-          }
-
-          coolifyAppUuid = coolifyResult.appUuid;
-
-          // Сохраняем UUID приложения и проекта
-          await this.db
-            .update(schema.site)
-            .set({
-              coolifyAppUuid,
-              coolifyProjectUuid: projectUuid,
-              updatedAt: new Date(),
-            })
-            .where(
-              and(
-                eq(schema.site.id, params.siteId),
-                eq(schema.site.tenantId, params.tenantId),
-              ),
-            );
-
-          this.logger.log(
-            `Created Coolify app ${coolifyAppUuid} in project ${projectUuid} for site ${params.siteId}`,
-          );
-        }
-      } catch (e) {
-        this.logger.warn(
-          `Failed to create Coolify app (site will still be built): ${e instanceof Error ? e.message : e}`,
-        );
-      }
-    }
-
-    // 2. Определить публичный URL (если не установлен — генерируем subdomain локально)
+    // 1. Определить публичный URL (если не установлен — генерируем subdomain)
     if (!finalUrl) {
       const slug = params.tenantId.replace(/-/g, "").slice(0, 12);
       finalUrl = `https://${slug}.merfy.ru`;
@@ -716,6 +649,69 @@ export class SitesDomainService {
       );
     }
 
+    // 2. Fire Coolify app creation in background (parallel with build)
+    let coolifyPromise: Promise<void> | null = null;
+    if (!coolifyAppUuid && finalUrl) {
+      coolifyPromise = (async () => {
+        try {
+          const subdomain = this.storage.extractSubdomainSlug(finalUrl!);
+          const projectUuid =
+            site.coolifyProjectUuid ||
+            (await this.getOrCreateTenantProject(params.tenantId));
+
+          if (!projectUuid) {
+            this.logger.warn(
+              "Failed to get Coolify project, skipping Coolify app creation",
+            );
+            return;
+          }
+
+          const sitePath = this.storage
+            .getSitePrefixBySubdomain(finalUrl!)
+            .replace(/\/$/, "");
+
+          this.logger.log(
+            `Creating Coolify static site app for ${subdomain}.merfy.ru`,
+          );
+          const coolifyResult = await this.callCoolify<{
+            success: boolean;
+            appUuid?: string;
+            url?: string;
+            message?: string;
+          }>("coolify.create_static_site_app", {
+            projectUuid,
+            name: `site-${subdomain}`,
+            subdomain: `${subdomain}.merfy.ru`,
+            sitePath,
+          });
+
+          if (coolifyResult.success && coolifyResult.appUuid) {
+            coolifyAppUuid = coolifyResult.appUuid;
+            await this.db
+              .update(schema.site)
+              .set({
+                coolifyAppUuid,
+                coolifyProjectUuid: projectUuid,
+                updatedAt: new Date(),
+              })
+              .where(
+                and(
+                  eq(schema.site.id, params.siteId),
+                  eq(schema.site.tenantId, params.tenantId),
+                ),
+              );
+            this.logger.log(
+              `Created Coolify app ${coolifyAppUuid} in project ${projectUuid} for site ${params.siteId}`,
+            );
+          }
+        } catch (e) {
+          this.logger.warn(
+            `Failed to create Coolify app (site will still be built): ${e instanceof Error ? e.message : e}`,
+          );
+        }
+      })();
+    }
+
     // 3. Build: queued (async) or synchronous depending on feature flags
     const queueEnabled =
       (process.env.BUILD_QUEUE_CONSUMER_ENABLED ?? "false").toLowerCase() ===
@@ -723,7 +719,6 @@ export class SitesDomainService {
 
     if (queueEnabled) {
       // === QUEUED BUILD PATH ===
-      // Determine priority based on billing plan (paid=10, free/trial=1)
       let priority = 1;
       try {
         const entitlements = await this.billingClient.getEntitlements(
@@ -743,7 +738,6 @@ export class SitesDomainService {
         trigger: "publish",
       });
 
-      // Update site status to published + publicUrl (build will complete asynchronously)
       await this.db
         .update(schema.site)
         .set({
@@ -777,26 +771,16 @@ export class SitesDomainService {
     }
 
     // === SYNCHRONOUS BUILD PATH (legacy) ===
-    // SiteGeneratorService загружает все файлы из dist/ в S3 по пути sites/{subdomain}/
+    // Build runs in parallel with Coolify app creation
     const { buildId, artifactUrl, revisionId } = await this.generator.build({
       tenantId: params.tenantId,
       siteId: params.siteId,
       mode: params.mode,
     });
 
-    // Если Coolify app уже существовал, перезапускаем его для обновления
-    if (coolifyAppUuid) {
-      try {
-        await this.callCoolify("coolify.restart_application", {
-          appUuid: coolifyAppUuid,
-        });
-        this.logger.log(`Restarted Coolify app ${coolifyAppUuid}`);
-      } catch (e) {
-        // Не критично — nginx подхватит новые файлы из MinIO автоматически
-        this.logger.warn(
-          `Failed to restart Coolify app: ${e instanceof Error ? e.message : e}`,
-        );
-      }
+    // Wait for Coolify creation to finish (if it was running)
+    if (coolifyPromise) {
+      await coolifyPromise;
     }
 
     // Обновить статус сайта + publicUrl

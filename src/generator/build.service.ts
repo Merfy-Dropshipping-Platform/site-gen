@@ -924,8 +924,8 @@ async function stageAstroBuild(ctx: BuildContext): Promise<void> {
   }
 
   if (cacheValid) {
-    // Fast path: symlink cached node_modules (~10ms vs 1s cp -r)
-    await fs.symlink(cacheModulesDir, buildModulesDir, "dir");
+    // Fast path: copy cached node_modules
+    await runCommand("cp", ["-r", cacheModulesDir, buildModulesDir], ctx.workingDir, 30_000);
     logger.log(`[astro_build] node_modules restored from cache (${ctx.templateId})`);
   } else {
     // Slow path: full npm install, then cache the result
@@ -942,8 +942,9 @@ async function stageAstroBuild(ctx: BuildContext): Promise<void> {
     }
     logger.log(`[astro_build] npm install completed`);
 
-    // Cache node_modules for next build
+    // Cache node_modules for next build (remove old cache first to avoid nesting)
     try {
+      await fs.rm(cacheModulesDir, { recursive: true, force: true }).catch(() => {});
       await fs.mkdir(path.join(NPM_CACHE_DIR, ctx.templateId), { recursive: true });
       await runCommand("cp", ["-r", buildModulesDir, cacheModulesDir], ctx.workingDir, 60_000);
       // Also cache package.json for invalidation

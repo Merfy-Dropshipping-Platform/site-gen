@@ -443,8 +443,18 @@ export async function trySnapshotDeploy(
     emitProgress(deps, ctx, "zip", "Packaging snapshot artifact");
     await stageZip(ctx);
 
+    // Upload with extra retry (MinIO may need warm-up)
     emitProgress(deps, ctx, "upload", "Uploading snapshot to S3");
-    await stageUpload(deps, ctx);
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        await stageUpload(deps, ctx);
+        break;
+      } catch (uploadErr) {
+        if (attempt === 3) throw uploadErr;
+        logger.warn(`[snapshot] Upload attempt ${attempt} failed, retrying in ${attempt}s...`);
+        await new Promise((r) => setTimeout(r, attempt * 1000));
+      }
+    }
 
     emitProgress(deps, ctx, "deploy", "Finalizing snapshot deploy");
     await stageDeploy(deps, ctx);
@@ -458,9 +468,9 @@ export async function trySnapshotDeploy(
       artifactUrl: ctx.artifactUrl,
     };
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    logger.error(`[snapshot] Failed for site ${params.siteId}: ${message}`);
-    await updateBuildStatus(deps, buildId, "failed", { error: message.slice(0, 2000) });
+    const message = err instanceof Error ? err.message : (typeof err === 'object' ? JSON.stringify(err) : String(err));
+    logger.error(`[snapshot] Failed for site ${params.siteId}: ${message || '[no error message]'}`);
+    await updateBuildStatus(deps, buildId, "failed", { error: (message || 'unknown error').slice(0, 2000) });
     throw err;
   } finally {
     // Cleanup working directory

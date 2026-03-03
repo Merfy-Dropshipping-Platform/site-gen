@@ -81,6 +81,12 @@ export const site = pgTable("site", {
   publicUrl: text("public_url"),
   // Флаг включения server-islands (smart revalidation)
   islandsEnabled: boolean("islands_enabled").default(false).notNull(),
+  // Брендинг: логотип и цвета магазина
+  branding: jsonb("branding").$type<{
+    logoUrl?: string;
+    primaryColor?: string;
+    secondaryColor?: string;
+  }>(),
 });
 
 export const siteDomain = pgTable("site_domain", {
@@ -185,6 +191,24 @@ export const siteProduct = pgTable("site_product", {
   updatedAt: timestamp("updated_at")
     .$defaultFn(() => new Date())
     .notNull(),
+});
+
+/**
+ * История доменов сайта.
+ * Отслеживает смену доменов (generated → purchased → external).
+ * При переключении домена предыдущий помечается inactive.
+ */
+export const siteDomainHistory = pgTable("site_domain_history", {
+  id: text("id").primaryKey(),
+  siteId: text("site_id").notNull(),
+  domainName: text("domain_name").notNull(),
+  domainId: text("domain_id"), // ID from domain service (nullable for external)
+  type: text("type").notNull(), // 'generated' | 'purchased' | 'external'
+  status: text("status").notNull(), // 'active' | 'inactive'
+  attachedAt: timestamp("attached_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+  detachedAt: timestamp("detached_at"),
 });
 
 /**

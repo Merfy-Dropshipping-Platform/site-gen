@@ -41,19 +41,19 @@ const textSizeClass = textSizeClasses[size] || textSizeClasses.medium;
   style={`text-align: ${align}; padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}
 >
   {headingText && (
-    <h2 class={`${headingSizeClass} font-medium text-gray-900 mb-5 leading-[1.2] font-comfortaa`}>
+    <h2 class={`${headingSizeClass} font-medium text-theme-foreground mb-5 leading-[1.2] font-heading`}>
       {headingText}
     </h2>
   )}
   {bodyText && (
-    <p class={`${textSizeClass} text-gray-600 leading-[1.7] font-manrope`}>
+    <p class={`${textSizeClass} text-theme-muted leading-[1.7] font-body`}>
       {bodyText}
     </p>
   )}
   {props.button?.text && (
     <a
       href={buttonLink}
-      class="inline-flex items-center mt-6 px-8 py-3.5 text-[0.95rem] font-medium rounded-lg bg-black text-white no-underline hover:bg-gray-800 transition-colors font-manrope"
+      class="inline-flex items-center mt-6 px-8 py-3.5 text-[0.95rem] font-medium rounded-lg bg-theme-primary text-theme-button-text no-underline hover:opacity-90 transition-colors font-body"
     >
       {props.button.text}
     </a>

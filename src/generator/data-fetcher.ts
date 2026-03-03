@@ -98,12 +98,14 @@ export async function fetchProducts(
 export async function fetchCollections(
   productClient: ClientProxy,
   tenantId: string,
+  siteId?: string,
 ): Promise<FetchedCollection[]> {
   try {
     const result = await firstValueFrom(
       productClient
         .send<RpcResponse<FetchedCollection[]>>("product.collections.list", {
           tenantId,
+          siteId,
         })
         .pipe(
           timeout(RPC_TIMEOUT_MS),
@@ -149,7 +151,7 @@ export async function fetchStoreData(
 ): Promise<FetchedStoreData> {
   const [products, collections] = await Promise.all([
     fetchProducts(productClient, tenantId, siteId),
-    fetchCollections(productClient, tenantId),
+    fetchCollections(productClient, tenantId, siteId),
   ]);
 
   logger.log(

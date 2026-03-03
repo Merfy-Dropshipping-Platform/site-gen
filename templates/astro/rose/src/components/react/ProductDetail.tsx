@@ -130,7 +130,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
         {/* Right: Product info */}
         <div className="flex flex-col gap-6">
           {/* Title */}
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-medium text-gray-900 leading-tight font-[family-name:var(--font-display)]">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-medium text-theme-foreground leading-tight font-[family-name:var(--font-display)]">
             {product.title}
           </h1>
 
@@ -140,7 +140,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
               {formatMoney(currentPrice)}
             </span>
             {currentCompareAtPrice != null && currentCompareAtPrice > 0 && (
-              <span className="text-base sm:text-lg text-gray-400 line-through">
+              <span className="text-base sm:text-lg text-theme-muted line-through">
                 {formatMoney(currentCompareAtPrice)}
               </span>
             )}
@@ -149,7 +149,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
           {/* Variant selector */}
           {product.variants.length > 1 && (
             <div className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-gray-600">
+              <span className="text-sm font-medium text-theme-muted">
                 Размер
               </span>
               <div className="flex flex-wrap gap-2">
@@ -162,8 +162,8 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
                       selectedVariant?.id === variant.id
                         ? 'border-black bg-black text-white'
                         : variant.available
-                          ? 'border-gray-300 bg-white text-gray-800 hover:border-gray-500'
-                          : 'border-gray-200 bg-gray-50 text-gray-300 opacity-50 cursor-not-allowed'
+                          ? 'border-theme bg-white text-theme-foreground hover:border-theme-foreground'
+                          : 'border-theme bg-gray-50 text-gray-300 opacity-50 cursor-not-allowed'
                     }`}
                   >
                     {variant.title}
@@ -175,17 +175,17 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
 
           {/* Quantity selector */}
           <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-gray-600">
+            <span className="text-sm font-medium text-theme-muted">
               Количество
             </span>
-            <div className="flex items-center gap-0 w-fit border border-gray-300 rounded-lg overflow-hidden">
+            <div className="flex items-center gap-0 w-fit border border-theme rounded-lg overflow-hidden">
               <button
                 onClick={decrementQuantity}
                 className="w-10 h-10 flex items-center justify-center text-lg font-medium text-gray-600 hover:bg-gray-100 transition-colors"
               >
                 -
               </button>
-              <span className="w-12 h-10 flex items-center justify-center text-base font-medium border-x border-gray-300">
+              <span className="w-12 h-10 flex items-center justify-center text-base font-medium border-x border-theme">
                 {quantity}
               </span>
               <button
@@ -201,7 +201,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
           <div className="flex flex-col sm:flex-row gap-3 mt-2">
             <button
               onClick={handleAddToCart}
-              className="flex-1 px-6 py-3.5 text-sm font-medium rounded-lg border border-gray-300 bg-white text-gray-800 hover:border-[var(--rose-600,#e11d48)] hover:text-[var(--rose-600,#e11d48)] transition-all"
+              className="flex-1 px-6 py-3.5 text-sm font-medium rounded-lg border border-theme bg-white text-theme-foreground hover:border-theme-primary hover:text-theme-primary transition-all"
             >
               Добавить в корзину
             </button>
@@ -215,8 +215,8 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
 
           {/* Description */}
           {product.description && (
-            <div className="mt-4 pt-6 border-t border-gray-200">
-              <p className="text-base text-gray-600 leading-relaxed font-[family-name:var(--font-body)]">
+            <div className="mt-4 pt-6 border-t border-theme">
+              <p className="text-base text-theme-muted leading-relaxed font-[family-name:var(--font-body)]">
                 {product.description}
               </p>
             </div>

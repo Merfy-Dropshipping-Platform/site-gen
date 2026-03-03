@@ -48,7 +48,7 @@ const textAlignClass = textPosition === 'center' ? 'text-center' : 'text-left';
 <section class="max-w-[1200px] mx-auto px-5" style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}>
   <div>
     {showHeading && (
-      <h2 class={`font-comfortaa font-medium text-gray-900 text-center mb-12 leading-[1.2] ${headingSizeClass[headingSize] ?? 'text-[2rem]'}`}>
+      <h2 class={`font-heading font-medium text-theme-foreground text-center mb-12 leading-[1.2] ${headingSizeClass[headingSize] ?? 'text-[2rem]'}`}>
         {heading!.text}
       </h2>
     )}
@@ -61,10 +61,10 @@ const textAlignClass = textPosition === 'center' ? 'text-center' : 'text-left';
               <img src={col.image} alt={col.title ?? ''} loading="lazy" class="w-full h-full object-cover" />
             </div>
           )}
-          {col.title && <h3 class="font-comfortaa text-[1.15rem] font-medium text-gray-900">{col.title}</h3>}
-          {col.description && <p class="text-[0.95rem] text-gray-600 leading-relaxed">{col.description}</p>}
+          {col.title && <h3 class="font-heading text-[1.15rem] font-medium text-theme-foreground">{col.title}</h3>}
+          {col.description && <p class="text-[0.95rem] text-theme-muted leading-relaxed">{col.description}</p>}
           {col.link?.enabled !== 'false' && col.link?.text && col.link?.href && (
-            <a href={col.link.href} class="text-sm font-medium text-black no-underline transition-colors duration-200 hover:text-gray-800">
+            <a href={col.link.href} class="text-sm font-medium text-theme-foreground no-underline transition-colors duration-200 hover:text-theme-foreground">
               {col.link.text}
             </a>
           )}

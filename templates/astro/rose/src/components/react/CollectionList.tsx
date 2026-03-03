@@ -32,12 +32,12 @@ export const CollectionList: React.FC<CollectionListProps> = ({
       {(title || subtitle) && (
         <div className="flex flex-col items-center gap-1 mb-8 sm:mb-10 md:mb-14">
           {title && (
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-normal text-black uppercase leading-tight text-center font-[family-name:var(--font-display)]">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-normal text-theme-foreground uppercase leading-tight text-center font-[family-name:var(--font-display)]">
               {title}
             </h2>
           )}
           {subtitle && (
-            <p className="text-sm sm:text-base md:text-lg text-gray-400 leading-relaxed text-center px-4 font-[family-name:var(--font-body)] mt-2">
+            <p className="text-sm sm:text-base md:text-lg text-theme-muted leading-relaxed text-center px-4 font-[family-name:var(--font-body)] mt-2">
               {subtitle}
             </p>
           )}
@@ -96,7 +96,7 @@ export const CollectionList: React.FC<CollectionListProps> = ({
 
             {/* Collection title */}
             <div className="px-1 sm:px-2">
-              <h3 className="text-lg sm:text-xl md:text-2xl font-normal text-black group-hover:text-gray-700 transition-colors duration-200 font-[family-name:var(--font-body)]">
+              <h3 className="text-lg sm:text-xl md:text-2xl font-normal text-theme-foreground group-hover:text-theme-foreground transition-colors duration-200 font-[family-name:var(--font-body)]">
                 {collection.title}
               </h3>
             </div>

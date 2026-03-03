@@ -1,5 +1,6 @@
 node_modules
 dist
+!templates/**/dist
 .git
 .env
 .env.local

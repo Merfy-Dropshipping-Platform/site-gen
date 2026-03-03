@@ -152,7 +152,7 @@ export default function SearchBar() {
             results.map((product) => (
               <a
                 key={product.id}
-                href={`/products/${product.handle}`}
+                href={`/product/${product.handle}`}
                 className="flex items-center gap-3 px-4 py-3 hover:bg-[rgb(var(--color-primary-rgb)/0.05)] transition-colors"
                 role="option"
                 onClick={() => setIsOpen(false)}

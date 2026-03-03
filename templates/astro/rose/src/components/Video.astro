@@ -50,12 +50,12 @@ const headingSizeClass = headingSizeClasses[contentSize] || headingSizeClasses.m
     {(showHeading || showSubheading) && (
       <div class="text-center mb-10 max-w-[700px] mx-auto">
         {showHeading && (
-          <h2 class={`${headingSizeClass} font-medium text-gray-900 mb-3 leading-[1.2] font-comfortaa`}>
+          <h2 class={`${headingSizeClass} font-medium text-theme-foreground mb-3 leading-[1.2] font-heading`}>
             {content!.heading!.text}
           </h2>
         )}
         {showSubheading && (
-          <p class="text-[1.1rem] text-gray-600 leading-[1.6] font-manrope">
+          <p class="text-[1.1rem] text-theme-muted leading-[1.6] font-body">
             {content!.subheading!.text}
           </p>
         )}
@@ -74,7 +74,7 @@ const headingSizeClass = headingSizeClasses[contentSize] || headingSizeClasses.m
       ) : coverImage ? (
         <img src={coverImage} alt="Video cover" class="w-full h-full object-cover" loading="lazy" />
       ) : (
-        <div class="w-full h-full flex items-center justify-center text-gray-500">
+        <div class="w-full h-full flex items-center justify-center text-theme-muted">
           <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <polygon points="5,3 19,12 5,21"/>
           </svg>

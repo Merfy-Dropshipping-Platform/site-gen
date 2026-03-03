@@ -54,7 +54,7 @@ const containerClass = imagePosition === 'window'
           <div class="absolute inset-0 bg-black" style={`opacity: ${overlay / 100}`}></div>
           <div class={`relative z-10 py-[60px] px-[40px] max-md:py-[40px] max-md:px-[20px] max-w-[700px] text-white ${positionClass[slide.position ?? 'center']}`}>
             {slide.heading?.text && (
-              <h2 class={`font-comfortaa font-medium leading-[1.1] mb-4 ${headingSizeClass[size] ?? 'text-[3rem]'}`}>
+              <h2 class={`font-heading font-medium leading-[1.1] mb-4 ${headingSizeClass[size] ?? 'text-[3rem]'}`}>
                 {slide.heading.text}
               </h2>
             )}
@@ -64,7 +64,7 @@ const containerClass = imagePosition === 'window'
             {slide.button?.text && (
               <a
                 href={slide.button.link?.href ?? '#'}
-                class="inline-flex py-3.5 px-8 text-[0.95rem] font-medium rounded-lg bg-black text-white no-underline transition-colors duration-200 hover:bg-gray-800"
+                class="inline-flex py-3.5 px-8 text-[0.95rem] font-medium rounded-lg bg-theme-primary text-theme-button-text no-underline transition-colors duration-200 hover:opacity-90"
               >
                 {slide.button.text}
               </a>

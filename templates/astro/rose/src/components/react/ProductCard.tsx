@@ -70,15 +70,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, href }) => {
 
       {/* Product info */}
       <div className="flex flex-col gap-2 px-1">
-        <h3 className="text-base sm:text-lg md:text-xl font-normal text-black leading-snug font-[family-name:var(--font-body)]">
+        <h3 className="text-base sm:text-lg md:text-xl font-normal text-theme-foreground leading-snug font-[family-name:var(--font-body)]">
           {product.title}
         </h3>
         <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-lg sm:text-xl md:text-2xl font-normal text-black leading-snug font-[family-name:var(--font-body)]">
+          <span className="text-lg sm:text-xl md:text-2xl font-normal text-theme-foreground leading-snug font-[family-name:var(--font-body)]">
             {formatMoney(product.price)}
           </span>
           {product.compareAtPrice != null && product.compareAtPrice > 0 && (
-            <span className="text-sm sm:text-base md:text-lg font-medium text-gray-400 line-through leading-snug font-[family-name:var(--font-body)]">
+            <span className="text-sm sm:text-base md:text-lg font-medium text-theme-muted line-through leading-snug font-[family-name:var(--font-body)]">
               {formatMoney(product.compareAtPrice)}
             </span>
           )}

@@ -37,8 +37,13 @@ import {
   type ThemeColorScheme,
   type ThemeFeatures,
 } from "./theme-bridge";
+import {
+  constructorThemeToMerchantSettings,
+  generateGoogleFontsUrl,
+  type ConstructorThemeSettings,
+} from "./constructor-theme-bridge";
 import { S3StorageService } from "../storage/s3.service";
-import { roseServerRegistry } from "./registries/rose";
+import { roseRegistry, roseServerRegistry } from "./registries/rose";
 
 const logger = new Logger("BuildPipeline");
 
@@ -67,7 +72,7 @@ const STAGE_PERCENT: Record<BuildStage, number> = {
 };
 
 /** Context passed through the pipeline */
-interface BuildContext {
+export interface BuildContext {
   buildId: string;
   siteId: string;
   tenantId: string;
@@ -87,6 +92,8 @@ interface BuildContext {
   storeData: FetchedStoreData;
   /** Whether the site uses server-island smart revalidation */
   islandsEnabled: boolean;
+  /** Branding overrides (logo, colors) from site table */
+  branding?: { logoUrl?: string; primaryColor?: string; secondaryColor?: string };
 }
 
 /** Dependencies injected into the pipeline */
@@ -215,13 +222,269 @@ function runCommand(
  */
 async function zipDirectory(srcDir: string, outZipPath: string): Promise<void> {
   await fs.mkdir(path.dirname(outZipPath), { recursive: true });
-  const archive = archiver("zip", { zlib: { level: 9 } });
+  const archive = archiver("zip", { zlib: { level: 1 } });
   const stream = (await fs.open(outZipPath, "w")).createWriteStream();
   return new Promise<void>((resolve, reject) => {
     archive.directory(srcDir, false).on("error", reject).pipe(stream);
     stream.on("close", () => resolve());
     archive.finalize().catch(reject);
   });
+}
+
+// ─── SNAPSHOT DEPLOY ───────────────────────────────────────────────────
+
+interface SnapshotParams {
+  tenantId: string;
+  siteId: string;
+  mode?: "draft" | "production";
+  templateId: string;
+}
+
+/**
+ * Try a fast "snapshot" deploy for sites with default/empty content.
+ *
+ * Instead of running the full 7-stage pipeline (merge→generate→fetch_data→
+ * astro_build→zip→upload→deploy), we copy the pre-built template dist/,
+ * patch shopId into HTML files, inject real products, then zip→upload→deploy.
+ *
+ * Returns BuildResult if snapshot was used, null if conditions not met
+ * (caller should fall through to full pipeline).
+ */
+export async function trySnapshotDeploy(
+  deps: BuildDependencies,
+  params: SnapshotParams,
+): Promise<BuildResult | null> {
+  const t0 = Date.now();
+  const { schema } = deps;
+
+  // 1. Check if pre-built dist/ exists for this template
+  const templateDistDir = path.join(
+    process.cwd(),
+    "templates",
+    "astro",
+    params.templateId,
+    "dist",
+  );
+  const distExists = await fs
+    .stat(templateDistDir)
+    .then((s) => s.isDirectory())
+    .catch(() => false);
+  if (!distExists) {
+    logger.log(`[snapshot] No pre-built dist/ for template ${params.templateId}, skipping`);
+    return null;
+  }
+
+  // 2. Load site data — check revision & branding
+  const [siteRow] = await deps.db
+    .select({
+      id: schema.site.id,
+      currentRevisionId: schema.site.currentRevisionId,
+      publicUrl: schema.site.publicUrl,
+      branding: schema.site.branding,
+    })
+    .from(schema.site)
+    .where(eq(schema.site.id, params.siteId));
+
+  if (!siteRow) {
+    logger.warn(`[snapshot] Site ${params.siteId} not found`);
+    return null;
+  }
+
+  // 3. Check branding — if custom colors or logo, need full build
+  const branding = siteRow.branding as BuildContext["branding"] | null;
+  if (branding?.primaryColor || branding?.logoUrl) {
+    logger.log(`[snapshot] Site has custom branding, skipping snapshot`);
+    return null;
+  }
+
+  // 4. Check revision — must be empty/default or absent
+  let revisionId: string | null = null;
+  if (siteRow.currentRevisionId) {
+    const [rev] = await deps.db
+      .select({
+        id: schema.siteRevision.id,
+        data: schema.siteRevision.data,
+      })
+      .from(schema.siteRevision)
+      .where(
+        and(
+          eq(schema.siteRevision.id, siteRow.currentRevisionId),
+          eq(schema.siteRevision.siteId, params.siteId),
+        ),
+      );
+
+    if (rev) {
+      revisionId = rev.id;
+      // Check if content is non-default (has real user edits)
+      const data = rev.data as { content?: unknown[]; pages?: unknown[] } | null;
+      const hasContent =
+        (Array.isArray(data?.content) && data!.content.length > 0) ||
+        (Array.isArray(data?.pages) && data!.pages.length > 0);
+      if (hasContent) {
+        logger.log(`[snapshot] Revision has custom content, skipping snapshot`);
+        return null;
+      }
+    }
+  }
+
+  // Create revision if missing
+  if (!revisionId) {
+    revisionId = randomUUID();
+    await deps.db.insert(schema.siteRevision).values({
+      id: revisionId,
+      siteId: params.siteId,
+      data: { content: [], meta: { title: "Мой сайт" } },
+      meta: { title: "Мой сайт", mode: params.mode ?? "draft" },
+      createdAt: new Date(),
+    });
+  }
+
+  // ── All conditions met → snapshot deploy ──
+  logger.log(`[snapshot] Conditions met for site ${params.siteId}, deploying from template dist/`);
+
+  const buildId = randomUUID();
+  const now = new Date();
+
+  // Create build record
+  await deps.db.insert(schema.siteBuild).values({
+    id: buildId,
+    siteId: params.siteId,
+    revisionId,
+    status: "queued",
+    createdAt: now,
+  });
+  await updateBuildStatus(deps, buildId, "running");
+
+  const artifactsDir = path.join(process.cwd(), "artifacts", params.siteId);
+  await fs.mkdir(artifactsDir, { recursive: true });
+
+  // Copy template dist/ to a temp working directory
+  const workingDir = path.join(
+    process.cwd(),
+    ".astro-builds",
+    params.siteId,
+    buildId,
+  );
+  const distDir = path.join(workingDir, "dist");
+  await fs.mkdir(workingDir, { recursive: true });
+  await fs.cp(templateDistDir, distDir, { recursive: true });
+
+  const ctx: BuildContext = {
+    buildId,
+    siteId: params.siteId,
+    tenantId: params.tenantId,
+    mode: params.mode ?? "draft",
+    revisionId,
+    revisionData: {},
+    revisionMeta: {},
+    templateId: params.templateId,
+    publicUrl: siteRow.publicUrl,
+    workingDir,
+    artifactsDir,
+    distDir,
+    artifactPath: path.join(artifactsDir, `${buildId}.zip`),
+    artifactUrl: "",
+    storeData: { products: [], collections: [] },
+    islandsEnabled: false,
+  };
+
+  try {
+    // ── Patch shopId in all HTML files ──
+    const htmlFiles: string[] = [];
+    async function findHtml(dir: string) {
+      const entries = await fs.readdir(dir, { withFileTypes: true });
+      for (const e of entries) {
+        const full = path.join(dir, e.name);
+        if (e.isDirectory()) await findHtml(full);
+        else if (e.name.endsWith(".html")) htmlFiles.push(full);
+      }
+    }
+    await findHtml(distDir);
+
+    for (const file of htmlFiles) {
+      let html = await fs.readFile(file, "utf8");
+      html = html.replace(
+        /const shopId = "";/g,
+        `const shopId = "${params.siteId}";`,
+      );
+      html = html.replace(
+        /const shopId = undefined;/g,
+        `const shopId = "${params.siteId}";`,
+      );
+      await fs.writeFile(file, html, "utf8");
+    }
+    logger.log(`[snapshot] Patched shopId in ${htmlFiles.length} HTML files`);
+
+    // ── Inject real products ──
+    const rpcData = await fetchStoreData(deps.productClient, params.tenantId, params.siteId);
+    ctx.storeData = rpcData;
+
+    if (rpcData.products.length > 0) {
+      // Format for Astro components (same as stageFetchData)
+      const formatPrice = (price: number | string | null | undefined): string => {
+        if (price === null || price === undefined) return "0 ₽";
+        const num = typeof price === "string" ? parseFloat(price) : price;
+        return `${num.toLocaleString("ru-RU")} ₽`;
+      };
+
+      const astroProducts = rpcData.products.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        price: formatPrice(p.price),
+        oldPrice: p.compareAtPrice ? formatPrice(p.compareAtPrice) : undefined,
+        image: (p.images as string[])?.[0] || "/images/placeholder.png",
+        href: `/product/${p.slug || p.id}`,
+        slug: p.slug || p.id,
+      }));
+
+      const productsJsonPath = path.join(distDir, "data", "products.json");
+      await fs.mkdir(path.dirname(productsJsonPath), { recursive: true });
+      await fs.writeFile(productsJsonPath, JSON.stringify(astroProducts, null, 2), "utf8");
+      logger.log(`[snapshot] Injected ${astroProducts.length} products into data/products.json`);
+    }
+
+    // ── Zip → Upload → Deploy (reuse existing stages) ──
+    emitProgress(deps, ctx, "zip", "Packaging snapshot artifact");
+    await stageZip(ctx);
+
+    // Upload with extra retry (MinIO may need warm-up)
+    emitProgress(deps, ctx, "upload", "Uploading snapshot to S3");
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        await stageUpload(deps, ctx);
+        break;
+      } catch (uploadErr) {
+        if (attempt === 3) throw uploadErr;
+        logger.warn(`[snapshot] Upload attempt ${attempt} failed, retrying in ${attempt}s...`);
+        await new Promise((r) => setTimeout(r, attempt * 1000));
+      }
+    }
+
+    emitProgress(deps, ctx, "deploy", "Finalizing snapshot deploy");
+    await stageDeploy(deps, ctx);
+
+    const elapsed = Date.now() - t0;
+    logger.log(`[snapshot] Deployed site ${params.siteId} in ${elapsed}ms (vs full pipeline ~6500ms)`);
+
+    return {
+      buildId,
+      revisionId,
+      artifactUrl: ctx.artifactUrl,
+    };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : (typeof err === 'object' ? JSON.stringify(err) : String(err));
+    logger.error(`[snapshot] Failed for site ${params.siteId}: ${message || '[no error message]'}`);
+    await updateBuildStatus(deps, buildId, "failed", { error: (message || 'unknown error').slice(0, 2000) });
+    throw err;
+  } finally {
+    // Cleanup working directory
+    try {
+      await fs.rm(workingDir, { recursive: true, force: true });
+    } catch {
+      // ignore
+    }
+  }
 }
 
 /**
@@ -278,33 +541,53 @@ export async function runBuildPipeline(
   await updateBuildStatus(deps, buildId, "running");
 
   try {
+    const pipelineStart = Date.now();
+    const time = (label: string, start: number) =>
+      logger.log(`[timing] ${label}: ${Date.now() - start}ms`);
+
     // === Stage 1: MERGE ===
+    let t = Date.now();
     emitProgress(deps, ctx, "merge", "Loading revision and site data");
     await stageMerge(deps, params, ctx);
+    time("merge", t);
 
     // === Stage 2: GENERATE ===
+    t = Date.now();
     emitProgress(deps, ctx, "generate", "Generating Astro project");
     await stageGenerate(deps, params, ctx);
+    time("generate", t);
 
     // === Stage 3: FETCH_DATA ===
+    t = Date.now();
     emitProgress(deps, ctx, "fetch_data", "Fetching products and collections");
     await stageFetchData(deps, ctx);
+    time("fetch_data", t);
 
     // === Stage 4: ASTRO_BUILD ===
+    t = Date.now();
     emitProgress(deps, ctx, "astro_build", "Running astro build");
     await stageAstroBuild(ctx);
+    time("astro_build", t);
 
     // === Stage 5: ZIP ===
+    t = Date.now();
     emitProgress(deps, ctx, "zip", "Packaging artifact");
     await stageZip(ctx);
+    time("zip", t);
 
     // === Stage 6: UPLOAD ===
+    t = Date.now();
     emitProgress(deps, ctx, "upload", "Uploading to S3");
     await stageUpload(deps, ctx);
+    time("upload", t);
 
     // === Stage 7: DEPLOY ===
+    t = Date.now();
     emitProgress(deps, ctx, "deploy", "Finalizing build");
     await stageDeploy(deps, ctx);
+    time("deploy", t);
+
+    logger.log(`[timing] TOTAL pipeline: ${Date.now() - pipelineStart}ms`);
 
     return {
       buildId,
@@ -312,8 +595,8 @@ export async function runBuildPipeline(
       artifactUrl: ctx.artifactUrl,
     };
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    logger.error(`Build ${buildId} failed: ${message}`);
+    const message = err instanceof Error ? err.message : (typeof err === 'object' ? JSON.stringify(err) : String(err));
+    logger.error(`Build ${buildId} failed: ${message || '[no error message]'}`);
 
     await updateBuildStatus(deps, buildId, "failed", {
       error: message.slice(0, 2000),
@@ -352,6 +635,7 @@ async function stageMerge(
       currentRevisionId: schema.site.currentRevisionId,
       publicUrl: schema.site.publicUrl,
       islandsEnabled: schema.site.islandsEnabled,
+      branding: schema.site.branding,
       templateId: schema.theme.templateId,
     })
     .from(schema.site)
@@ -365,6 +649,7 @@ async function stageMerge(
   ctx.templateId = params.templateOverride ?? siteRow.templateId ?? "default";
   ctx.publicUrl = siteRow.publicUrl;
   ctx.islandsEnabled = siteRow.islandsEnabled ?? false;
+  ctx.branding = (siteRow.branding as BuildContext["branding"]) ?? undefined;
 
   // Load or create revision
   let revisionId: string | null = null;
@@ -487,7 +772,37 @@ async function stageGenerate(
       `[generate] Converted ${Object.keys(registry).length} theme registry entries via bridge`,
     );
   } else {
-    registry = {};
+    // No registry provided (e.g. build triggered via queue consumer).
+    // Try loading from theme template on disk, fallback to hardcoded roseRegistry.
+    const registryPath = path.join(
+      process.cwd(),
+      "templates",
+      "astro",
+      ctx.templateId,
+      "src",
+      "components",
+      "registry.json",
+    );
+    try {
+      const raw = await fs.readFile(registryPath, "utf8");
+      const entries = JSON.parse(raw) as ThemeRegistryEntry[];
+      if (Array.isArray(entries) && entries.length > 0) {
+        registry = themeRegistryToGeneratorRegistry(entries, {});
+        logger.log(
+          `[generate] Loaded ${Object.keys(registry).length} registry entries from disk (${ctx.templateId})`,
+        );
+      } else {
+        registry = roseRegistry;
+        logger.log(
+          `[generate] Empty registry.json on disk, using roseRegistry fallback (${Object.keys(registry).length} entries)`,
+        );
+      }
+    } catch {
+      registry = roseRegistry;
+      logger.log(
+        `[generate] No registry.json on disk, using roseRegistry fallback (${Object.keys(registry).length} entries)`,
+      );
+    }
   }
 
   // Override product components with server-island variants when islands are enabled
@@ -516,7 +831,7 @@ async function stageGenerate(
   if (Array.isArray(revPages) && revPages.length > 0 && revPagesData) {
     for (const page of revPages) {
       const pageData = revPagesData[page.id];
-      if (!pageData?.content || !Array.isArray(pageData.content)) continue;
+      if (!pageData?.content || !Array.isArray(pageData.content) || pageData.content.length === 0) continue;
 
       // Convert slug to filename: "/" → "index.astro", "/about" → "about.astro"
       const slug = (page.slug || "/").replace(/^\/+/, "");
@@ -609,19 +924,57 @@ async function stageGenerate(
     logger.log(`[generate] Legacy format: ${pages.length} page(s)`);
   }
 
+  // Override Header logo with branding logoUrl in page content arrays
+  if (ctx.branding?.logoUrl && pages.length > 0) {
+    for (const page of pages) {
+      const content = page.data.content as any[];
+      for (const comp of content) {
+        if (comp?.type === "Header" && comp.props) {
+          comp.props.logo = ctx.branding.logoUrl;
+        }
+      }
+    }
+    logger.log(
+      `[generate] Overriding Header.logo in ${pages.length} page(s) with branding: ${ctx.branding.logoUrl}`,
+    );
+  }
+
   const rawApiUrl = process.env.API_GATEWAY_URL ?? "https://gateway.merfy.ru";
   const apiUrl = rawApiUrl.endsWith("/api") ? rawApiUrl : `${rawApiUrl}/api`;
 
   // Extract Header and Footer component props from revision data for site-config.json
   const siteConfig = extractSiteConfig(ctx.revisionData, revPagesData);
 
-  // Resolve merchant settings: prefer theme-bridge conversion when schema available
+  // Override header logo with branding logo if available
+  if (ctx.branding?.logoUrl) {
+    (siteConfig.header as Record<string, unknown>).logo = ctx.branding.logoUrl;
+    logger.log(
+      `[generate] Overriding header logo with branding: ${ctx.branding.logoUrl}`,
+    );
+  }
+
+  // Resolve merchant settings — three paths in priority order:
+  // 1. Direct merchantSettings from revision meta (legacy)
+  // 2. Constructor ThemeSettings object (new: from constructor's ThemeContext)
+  // 3. Theme settings schema + overrides (from theme manifest)
   let merchantSettings = (ctx.revisionMeta as { merchantSettings?: any })
     .merchantSettings;
+
+  // Path 2: Constructor ThemeSettings → MerchantSettings
+  const constructorTheme = (ctx.revisionMeta as { themeSettings?: ConstructorThemeSettings })
+    .themeSettings;
+  if (!merchantSettings && constructorTheme?.colorSchemes?.length) {
+    merchantSettings = constructorThemeToMerchantSettings(constructorTheme);
+    logger.log(
+      `[generate] Converted constructor ThemeSettings to merchant settings via constructor-theme-bridge`,
+    );
+  }
+
+  // Path 3: Theme settings schema + overrides → MerchantSettings
   if (
+    !merchantSettings &&
     params.themeSettingsSchema &&
-    params.themeSettingsSchema.length > 0 &&
-    !merchantSettings
+    params.themeSettingsSchema.length > 0
   ) {
     const overrides =
       (ctx.revisionMeta as { settingsOverrides?: Record<string, unknown> })
@@ -633,6 +986,39 @@ async function stageGenerate(
     );
     logger.log(
       `[generate] Converted theme settings schema to merchant settings via bridge`,
+    );
+  }
+
+  // Apply branding colors as FALLBACK (only if not already set by ThemeSettings)
+  // Priority: ThemeSettings (constructor) > Branding (admin) > Rose defaults
+  if (ctx.branding?.primaryColor || ctx.branding?.secondaryColor) {
+    merchantSettings = merchantSettings ?? {};
+    merchantSettings.tokens = merchantSettings.tokens ?? {};
+
+    if (ctx.branding.primaryColor && !merchantSettings.tokens["color-primary"]) {
+      merchantSettings.tokens["color-primary"] = ctx.branding.primaryColor;
+      merchantSettings.tokens["color-primary-rgb"] = ctx.branding.primaryColor;
+      merchantSettings.tokens["color-button"] = ctx.branding.primaryColor;
+    }
+    if (ctx.branding.secondaryColor && !merchantSettings.tokens["color-background"]) {
+      merchantSettings.tokens["color-background"] = ctx.branding.secondaryColor;
+    }
+
+    // Also set primary color in first color scheme if not already set
+    if (
+      ctx.branding.primaryColor &&
+      merchantSettings.colorSchemes &&
+      merchantSettings.colorSchemes.length > 0
+    ) {
+      const scheme = merchantSettings.colorSchemes[0];
+      scheme.colors = scheme.colors ?? {};
+      if (!scheme.colors["primary"]) {
+        scheme.colors["primary"] = ctx.branding.primaryColor;
+      }
+    }
+
+    logger.log(
+      `[generate] Applied branding color fallbacks: primary=${ctx.branding.primaryColor ?? "none"}, secondary→background=${ctx.branding.secondaryColor ?? "none"}`,
     );
   }
 
@@ -701,6 +1087,7 @@ async function stageFetchData(
     .orderBy(deps.schema.siteProduct.sortOrder);
 
   // Try RPC fetch for full catalog (may fail if product-service unavailable)
+  // Pass siteId so product-service returns products for this specific site
   const rpcData = await fetchStoreData(deps.productClient, ctx.tenantId, ctx.siteId);
 
   // Merge: RPC products take priority, local products as fallback
@@ -786,23 +1173,99 @@ async function stageFetchData(
   );
 }
 
+/** Global npm cache directory for shared node_modules per theme */
+const NPM_CACHE_DIR = "/app/.npm-cache";
+
 /**
  * Stage 4: ASTRO_BUILD — Install dependencies and run `astro build`.
+ *
+ * Optimization: caches node_modules per theme to avoid 15s npm install on every build.
+ * First build for a theme does a full npm install and copies node_modules to cache.
+ * Subsequent builds copy from cache and skip install entirely.
  */
 async function stageAstroBuild(ctx: BuildContext): Promise<void> {
-  // npm install
-  const install = await runCommand(
-    "npm",
-    ["install", "--prefer-offline"],
-    ctx.workingDir,
-    120_000,
-  );
-  if (install.code !== 0) {
-    throw new Error(
-      `npm install failed (exit ${install.code}): ${install.stderr.slice(0, 500)}`,
-    );
+  const cacheModulesDir = path.join(NPM_CACHE_DIR, ctx.templateId, "node_modules");
+  const buildModulesDir = path.join(ctx.workingDir, "node_modules");
+  const cachePackageJson = path.join(NPM_CACHE_DIR, ctx.templateId, "package.json");
+  const buildPackageJson = path.join(ctx.workingDir, "package.json");
+
+  // Check if cached node_modules exists and package.json matches
+  let cacheExists = await fs.stat(cacheModulesDir).then(() => true).catch(() => false);
+  let cacheValid = false;
+
+  if (cacheExists) {
+    try {
+      // Check for corrupted cache (double node_modules nesting from old bug)
+      const nestedModules = path.join(cacheModulesDir, "node_modules");
+      const hasNesting = await fs.stat(nestedModules).then(() => true).catch(() => false);
+      if (hasNesting) {
+        logger.warn(`[astro_build] Corrupted cache detected (double nesting), clearing`);
+        await fs.rm(cacheModulesDir, { recursive: true, force: true });
+        cacheExists = false;
+        cacheValid = false;
+      } else {
+        const cachedPkg = await fs.readFile(cachePackageJson, "utf8").catch(() => "");
+        const currentPkg = await fs.readFile(buildPackageJson, "utf8").catch(() => "");
+        cacheValid = cachedPkg.length > 0 && cachedPkg === currentPkg;
+      }
+    } catch {
+      cacheValid = false;
+    }
   }
-  logger.log(`[astro_build] npm install completed`);
+
+  let needsInstall = !cacheValid;
+
+  if (cacheValid) {
+    // Fast path: remove existing node_modules (may come from template copy), then restore from cache
+    await fs.rm(buildModulesDir, { recursive: true, force: true }).catch(() => {});
+    await runCommand("cp", ["-r", cacheModulesDir, buildModulesDir], ctx.workingDir, 30_000);
+
+    // Validate: check key modules exist in restored cache
+    const KEY_MODULES = ["rollup", "astro", "vite"];
+    const checks = await Promise.all(
+      KEY_MODULES.map(m => fs.stat(path.join(buildModulesDir, m)).then(() => true).catch(() => false)),
+    );
+    const missing = KEY_MODULES.filter((_, i) => !checks[i]);
+    if (missing.length > 0) {
+      logger.warn(`[astro_build] Cache incomplete (missing: ${missing.join(", ")}), clearing and reinstalling`);
+      await fs.rm(cacheModulesDir, { recursive: true, force: true }).catch(() => {});
+      await fs.rm(buildModulesDir, { recursive: true, force: true }).catch(() => {});
+      needsInstall = true;
+    } else {
+      logger.log(`[astro_build] node_modules restored from cache (${ctx.templateId})`);
+    }
+  }
+
+  if (needsInstall) {
+    // Slow path: full npm install, then cache the result
+    const install = await runCommand(
+      "npm",
+      ["install", "--prefer-offline"],
+      ctx.workingDir,
+      120_000,
+    );
+    if (install.code !== 0) {
+      throw new Error(
+        `npm install failed (exit ${install.code}): ${install.stderr.slice(0, 500)}`,
+      );
+    }
+    logger.log(`[astro_build] npm install completed`);
+
+    // Cache node_modules for next build (remove old cache first to avoid nesting)
+    try {
+      await fs.rm(cacheModulesDir, { recursive: true, force: true }).catch(() => {});
+      await fs.mkdir(path.join(NPM_CACHE_DIR, ctx.templateId), { recursive: true });
+      await runCommand("cp", ["-r", buildModulesDir, cacheModulesDir], ctx.workingDir, 60_000);
+      // Also cache package.json for invalidation
+      const pkgContent = await fs.readFile(buildPackageJson, "utf8").catch(() => "");
+      if (pkgContent) {
+        await fs.writeFile(cachePackageJson, pkgContent, "utf8");
+      }
+      logger.log(`[astro_build] node_modules cached for ${ctx.templateId}`);
+    } catch (e) {
+      logger.warn(`[astro_build] Failed to cache node_modules: ${e instanceof Error ? e.message : e}`);
+    }
+  }
 
   // astro build
   const build = await runCommand(
@@ -854,7 +1317,15 @@ async function stageUpload(
     return;
   }
 
-  const bucket = await deps.s3.ensureBucket();
+  // ensureBucket with retry (transient MinIO errors)
+  let bucket: string;
+  try {
+    bucket = await deps.s3.ensureBucket();
+  } catch (e1) {
+    logger.warn(`[upload] ensureBucket failed (retry in 1s): ${e1 instanceof Error ? e1.message : String(e1)}`);
+    await new Promise((r) => setTimeout(r, 1000));
+    bucket = await deps.s3.ensureBucket();
+  }
 
   // Determine the site prefix for live serving
   const siteSlug = ctx.publicUrl

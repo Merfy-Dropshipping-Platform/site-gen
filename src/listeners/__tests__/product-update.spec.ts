@@ -184,7 +184,7 @@ describe("ProductUpdateListener", () => {
 
       // Access internal debounceMap through prototype
       const debounceMap = (listener as any).debounceMap as Map<string, any>;
-      const timer = setTimeout(() => {}, 30000);
+      const timer = setTimeout(() => {}, 5000);
       debounceMap.set("test-site", {
         timer,
         tenantId: "t1",
@@ -229,7 +229,7 @@ describe("ProductUpdateListener", () => {
       });
 
       // Fast-forward 30 seconds
-      jest.advanceTimersByTime(30_000);
+      jest.advanceTimersByTime(5_000);
       // Need to flush the microtask queue for the async flushBuild
       await Promise.resolve();
       await Promise.resolve();
@@ -254,8 +254,8 @@ describe("ProductUpdateListener", () => {
 
       const firstTimer = debounceMap.get("site-1").timer;
 
-      // Advance 15 seconds (half of debounce window)
-      jest.advanceTimersByTime(15_000);
+      // Advance 2 seconds (less than 5s debounce window)
+      jest.advanceTimersByTime(2_000);
 
       // Add another event — should reset timer
       (listener as any).debounceBuild("site-1", "tenant-1", {
@@ -267,8 +267,8 @@ describe("ProductUpdateListener", () => {
       const secondTimer = debounceMap.get("site-1").timer;
       expect(secondTimer).not.toBe(firstTimer);
 
-      // After another 15 seconds (30s from first, but only 15s from reset) — should NOT fire
-      jest.advanceTimersByTime(15_000);
+      // After another 3 seconds (5s from first, but only 3s from reset) — should NOT fire
+      jest.advanceTimersByTime(3_000);
       expect(mockQueueBuild).not.toHaveBeenCalled();
     });
 
@@ -279,8 +279,8 @@ describe("ProductUpdateListener", () => {
         timestamp: new Date().toISOString(),
       });
 
-      // Advance 15 seconds
-      jest.advanceTimersByTime(15_000);
+      // Advance 2 seconds (less than 5s debounce)
+      jest.advanceTimersByTime(2_000);
 
       // New event resets timer
       (listener as any).debounceBuild("site-1", "tenant-1", {
@@ -289,8 +289,8 @@ describe("ProductUpdateListener", () => {
         timestamp: new Date().toISOString(),
       });
 
-      // Advance full 30 seconds from reset
-      jest.advanceTimersByTime(30_000);
+      // Advance full 5 seconds from reset
+      jest.advanceTimersByTime(5_000);
       await Promise.resolve();
       await Promise.resolve();
 
@@ -310,7 +310,7 @@ describe("ProductUpdateListener", () => {
         timestamp: new Date().toISOString(),
       });
 
-      jest.advanceTimersByTime(30_000);
+      jest.advanceTimersByTime(5_000);
       await Promise.resolve();
       await Promise.resolve();
       await Promise.resolve();
@@ -325,7 +325,7 @@ describe("ProductUpdateListener", () => {
         timestamp: new Date().toISOString(),
       });
 
-      jest.advanceTimersByTime(30_000);
+      jest.advanceTimersByTime(5_000);
       await Promise.resolve();
       await Promise.resolve();
 
@@ -345,7 +345,7 @@ describe("ProductUpdateListener", () => {
 
       expect(debounceMap.has("site-1")).toBe(true);
 
-      jest.advanceTimersByTime(30_000);
+      jest.advanceTimersByTime(5_000);
       await Promise.resolve();
       await Promise.resolve();
 

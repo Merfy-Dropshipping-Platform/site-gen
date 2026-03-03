@@ -24,6 +24,7 @@ import {
   type MerchantSettings,
   type ThemeDefaults,
 } from "./tokens-generator";
+import { generateGoogleFontsUrl } from "./constructor-theme-bridge";
 import {
   generateProductPage,
   generateCollectionPage,
@@ -87,12 +88,14 @@ async function writeFile(filePath: string, content: string): Promise<void> {
 }
 
 /**
- * Recursively copy a directory.
+ * Recursively copy a directory, skipping node_modules/dist/.astro.
  */
+const COPY_SKIP = new Set(["node_modules", "dist", ".astro"]);
 async function copyDir(src: string, dest: string): Promise<void> {
   await fs.mkdir(dest, { recursive: true });
   const entries = await fs.readdir(src, { withFileTypes: true });
   for (const entry of entries) {
+    if (COPY_SKIP.has(entry.name)) continue;
     const srcPath = path.join(src, entry.name);
     const destPath = path.join(dest, entry.name);
     if (entry.isDirectory()) {
@@ -332,15 +335,75 @@ export async function buildScaffold(
     generatedFiles.push("src/pages/collections/[handle].astro");
   }
 
-  // 7. Generate override.css tokens
+  // 7. Generate override.css tokens and append to tokens.css
   if (config.merchantSettings) {
     const tokensCss = generateTokensCss(
       config.merchantSettings,
       config.themeDefaults ?? {},
     );
-    const tokensPath = path.join(outputDir, "src", "styles", "override.css");
-    await writeFile(tokensPath, tokensCss);
+    const overridePath = path.join(outputDir, "src", "styles", "override.css");
+    await writeFile(overridePath, tokensCss);
     generatedFiles.push("src/styles/override.css");
+
+    // Append override tokens to tokens.css so they take effect
+    // (tokens.css is imported by global.css and defines :root + color-scheme vars)
+    const tokensCssPath = path.join(outputDir, "src", "styles", "tokens.css");
+    try {
+      let existing = await fs.readFile(tokensCssPath, "utf8");
+      existing += "\n/* Merchant overrides */\n" + tokensCss;
+      await fs.writeFile(tokensCssPath, existing, "utf8");
+    } catch {
+      // tokens.css may not exist in all themes — skip silently
+    }
+  }
+
+  // 7b. Update Google Fonts URL if custom fonts are set
+  if (config.merchantSettings?.tokens?.["font-heading"] || config.merchantSettings?.tokens?.["font-body"]) {
+    const globalCssPath = path.join(outputDir, "src", "styles", "global.css");
+    try {
+      let globalCss = await fs.readFile(globalCssPath, "utf8");
+      // Extract font keys from merchantSettings tokens (they contain CSS family strings)
+      // We need the font key names to generate the URL — parse from CSS family string
+      const headingFamily = config.merchantSettings.tokens["font-heading"] ?? "";
+      const bodyFamily = config.merchantSettings.tokens["font-body"] ?? "";
+      // Extract first quoted font name from CSS family string (e.g., '"Inter Variable", sans-serif' → "Inter Variable")
+      const extractName = (css: string) => {
+        const match = css.match(/["']([^"']+)["']/);
+        return match?.[1]?.replace(" Variable", "") ?? "";
+      };
+      const headingName = extractName(headingFamily);
+      const bodyName = extractName(bodyFamily);
+      if (headingName || bodyName) {
+        const families = new Set<string>();
+        if (headingName) families.add(headingName);
+        if (bodyName) families.add(bodyName);
+        const familyParams = [...families]
+          .map((name) => `family=${name.replace(/ /g, "+")}:wght@100..900`)
+          .join("&");
+        const newUrl = `https://fonts.googleapis.com/css2?${familyParams}&display=swap`;
+        // Replace existing Google Fonts import in global.css
+        globalCss = globalCss.replace(
+          /@import url\("https:\/\/fonts\.googleapis\.com\/css2\?[^"]+"\);/,
+          `@import url("${newUrl}");`,
+        );
+        await fs.writeFile(globalCssPath, globalCss, "utf8");
+
+        // Also replace Google Fonts <link> in BaseLayout.astro
+        const layoutPath = path.join(outputDir, "src", "layouts", "BaseLayout.astro");
+        try {
+          let layout = await fs.readFile(layoutPath, "utf8");
+          layout = layout.replace(
+            /href="https:\/\/fonts\.googleapis\.com\/css2\?[^"]+"/,
+            `href="${newUrl}"`,
+          );
+          await fs.writeFile(layoutPath, layout, "utf8");
+        } catch {
+          // BaseLayout.astro may not exist — skip
+        }
+      }
+    } catch {
+      // global.css may not exist — skip
+    }
   }
 
   // 8. Write build-time data

@@ -29,11 +29,11 @@ export const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({
     <section className="w-full py-10 sm:py-14 md:py-20">
       {/* Section header */}
       <div className="flex flex-col items-center gap-1 mb-8 sm:mb-10 md:mb-14">
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-normal text-black uppercase leading-tight text-center font-[family-name:var(--font-display)]">
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-normal text-theme-foreground uppercase leading-tight text-center font-[family-name:var(--font-display)]">
           {collection.title}
         </h2>
         {collection.description && (
-          <p className="text-sm sm:text-base md:text-lg text-gray-400 leading-relaxed text-center px-4 font-[family-name:var(--font-body)] mt-2">
+          <p className="text-sm sm:text-base md:text-lg text-theme-muted leading-relaxed text-center px-4 font-[family-name:var(--font-body)] mt-2">
             {collection.description}
           </p>
         )}
@@ -41,7 +41,7 @@ export const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({
 
       {/* Products grid */}
       {products.length === 0 ? (
-        <p className="text-center text-gray-500 text-lg py-8">
+        <p className="text-center text-theme-muted text-lg py-8">
           Товары скоро появятся
         </p>
       ) : (
@@ -71,7 +71,7 @@ export const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({
         <div className="flex justify-center mt-8">
           <a
             href={`/collections/${collection.handle}`}
-            className="px-6 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:border-gray-500 hover:text-black transition-colors no-underline"
+            className="px-6 py-3 border border-theme rounded-lg text-sm font-medium text-theme-foreground hover:border-theme-foreground hover:text-theme-foreground transition-colors no-underline"
           >
             Смотреть все
           </a>

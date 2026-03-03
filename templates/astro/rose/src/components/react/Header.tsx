@@ -40,8 +40,8 @@ export function Header({
   const showProfile = actionButtons?.showProfile === "true";
 
   return (
-    <div className="w-full sticky top-0 z-50 bg-white shadow-sm">
-      <header className="bg-white w-full h-16 sm:h-20 md:h-24 lg:h-28 xl:h-[120px] flex items-center border-b border-gray-100">
+    <div className="w-full sticky top-0 z-50 bg-theme-background shadow-sm">
+      <header className="bg-theme-background w-full h-16 sm:h-20 md:h-24 lg:h-28 xl:h-[120px] flex items-center border-b border-theme">
         <nav className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-16 xl:px-24 2xl:px-[300px] flex items-center justify-between">
           {/* Mobile: Hamburger Menu */}
           <button
@@ -83,7 +83,7 @@ export function Header({
                   className="h-5 sm:h-6 md:h-[26px] w-auto"
                 />
               ) : (
-                <span className="text-lg sm:text-xl md:text-2xl font-comfortaa font-normal">
+                <span className="text-lg sm:text-xl md:text-2xl font-heading font-normal">
                   {siteTitle}
                 </span>
               )}
@@ -96,9 +96,9 @@ export function Header({
               <a
                 key={index}
                 href={link.href}
-                className={`text-sm lg:text-base xl:text-[20px] font-normal text-black hover:opacity-70 transition-opacity leading-[1.366] relative font-manrope ${
+                className={`text-sm lg:text-base xl:text-[20px] font-normal text-theme-foreground hover:opacity-70 transition-opacity leading-[1.366] relative font-body ${
                   index === 0
-                    ? "after:absolute after:bottom-[-10px] after:left-0 after:w-full after:h-px after:bg-black"
+                    ? "after:absolute after:bottom-[-10px] after:left-0 after:w-full after:h-px after:bg-theme-foreground"
                     : ""
                 }`}
               >

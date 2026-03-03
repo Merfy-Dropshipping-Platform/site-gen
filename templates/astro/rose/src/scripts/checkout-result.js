@@ -23,6 +23,11 @@ async function checkPaymentStatus() {
       const res = await fetch(`${API_BASE}/orders/${orderId}/payment-status`);
       const data = await res.json();
 
+      // NestJS error responses: { statusCode, message }
+      if (!res.ok && data.statusCode && !('success' in data)) {
+        throw new Error(data.message || `Ошибка сервера (${data.statusCode})`);
+      }
+
       if (!data.success) {
         throw new Error(data.message || 'Ошибка проверки статуса');
       }

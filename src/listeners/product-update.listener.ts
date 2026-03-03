@@ -30,7 +30,7 @@ import { FragmentPatcher } from "./fragment-patcher.service";
 
 const PRODUCT_EVENTS_EXCHANGE = "product.events";
 const SITES_PRODUCT_EVENTS_QUEUE = "sites_product_events";
-const DEBOUNCE_MS = 30_000; // 30 seconds
+const DEBOUNCE_MS = 5_000; // 5 seconds — fast feedback for merchants
 const FRAGMENT_PATCH_DEBOUNCE_MS = 10_000; // 10 seconds (faster than full rebuild)
 const REBUILD_PRIORITY = 5;
 
@@ -184,13 +184,16 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
         `Product event: ${event}, tenant=${tenantId}, products=${productIds.length}`,
       );
 
-      // Find all published (non-frozen) sites for this tenant
+      // Find all published (non-frozen) sites for this tenant.
+      // Note: tenantId may be either the organization ID (site.tenantId)
+      // or the site ID itself (site.id) — the product service stores
+      // shopId which may be either, depending on the frontend context.
       const sites = await this.db
         .select({ id: schema.site.id, status: schema.site.status, islandsEnabled: schema.site.islandsEnabled })
         .from(schema.site)
         .where(
           and(
-            eq(schema.site.tenantId, tenantId),
+            sql`(${schema.site.tenantId} = ${tenantId} OR ${schema.site.id} = ${tenantId})`,
             sql`${schema.site.deletedAt} IS NULL`,
           ),
         );
@@ -234,7 +237,7 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Debounce build for a site: accumulate changes over 30s window,
+   * Debounce build for a site: accumulate changes over debounce window,
    * then queue a single rebuild.
    */
   private debounceBuild(
@@ -264,7 +267,7 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
         changes: [change],
       };
       this.debounceMap.set(siteId, entry);
-      this.logger.log(`Debounce started for site ${siteId} (30s window)`);
+      this.logger.log(`Debounce started for site ${siteId} (${DEBOUNCE_MS / 1000}s window)`);
     }
   }
 

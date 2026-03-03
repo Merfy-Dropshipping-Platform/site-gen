@@ -74,11 +74,11 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   if (isError) {
     return (
       <section className="w-full py-12 text-center">
-        <p className="text-gray-500 text-lg">
+        <p className="text-theme-muted text-lg">
           Произошла ошибка при загрузке товаров
         </p>
         {error?.message && (
-          <p className="text-gray-400 text-sm mt-2">{error.message}</p>
+          <p className="text-theme-muted text-sm mt-2">{error.message}</p>
         )}
       </section>
     );
@@ -89,11 +89,11 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
     return (
       <section className="w-full py-12 text-center">
         {title && (
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-normal text-black uppercase leading-tight text-center mb-8 font-[family-name:var(--font-display)]">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-normal text-theme-foreground uppercase leading-tight text-center mb-8 font-[family-name:var(--font-display)]">
             {title}
           </h2>
         )}
-        <p className="text-gray-500 text-lg">Товары скоро появятся</p>
+        <p className="text-theme-muted text-lg">Товары скоро появятся</p>
       </section>
     );
   }
@@ -101,7 +101,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   return (
     <section className="w-full">
       {title && (
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-normal text-black uppercase leading-tight text-center mb-8 sm:mb-12 font-[family-name:var(--font-display)]">
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-normal text-theme-foreground uppercase leading-tight text-center mb-8 sm:mb-12 font-[family-name:var(--font-display)]">
           {title}
         </h2>
       )}
@@ -132,7 +132,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
         <div className="flex justify-center mt-8 sm:mt-12">
           <button
             onClick={() => setPage(page + 1)}
-            className="px-6 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:border-gray-500 hover:text-black transition-colors"
+            className="px-6 py-3 border border-theme rounded-lg text-sm font-medium text-theme-foreground hover:border-theme-foreground hover:text-theme-foreground transition-colors"
           >
             Показать ещё
           </button>

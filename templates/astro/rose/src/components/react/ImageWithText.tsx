@@ -76,20 +76,20 @@ export function ImageWithText({
         >
           {showHeading && (
             <h2
-              className={`${headingSizeMap[size] || "text-3xl"} font-medium text-gray-900 mb-4 leading-[1.2] font-comfortaa`}
+              className={`${headingSizeMap[size] || "text-3xl"} font-medium text-theme-foreground mb-4 leading-[1.2] font-heading`}
             >
               {heading!.text}
             </h2>
           )}
           {showText && (
-            <p className="text-lg text-gray-600 leading-[1.7] mb-6 font-manrope">
+            <p className="text-lg text-theme-muted leading-[1.7] mb-6 font-body">
               {text!.content}
             </p>
           )}
           {showButton && (
             <a
               href={button!.link ?? "#"}
-              className="inline-flex items-center px-8 py-3.5 text-[0.95rem] font-medium rounded-lg bg-black text-white no-underline hover:bg-gray-800 transition-colors font-manrope"
+              className="inline-flex items-center px-8 py-3.5 text-[0.95rem] font-medium rounded-lg bg-theme-primary text-theme-button-text no-underline hover:opacity-90 transition-colors font-body"
             >
               {button!.text}
             </a>

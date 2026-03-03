@@ -19,7 +19,7 @@ import { PG_CONNECTION, PRODUCT_RMQ_SERVICE } from "../constants";
 import * as schema from "../db/schema";
 import { buildWithAstro } from "./astro.builder";
 import { S3StorageService } from "../storage/s3.service";
-import { runBuildPipeline, type BuildDependencies } from "./build.service";
+import { runBuildPipeline, trySnapshotDeploy, type BuildDependencies } from "./build.service";
 import { roseRegistry } from "./registries/rose";
 import { fetchProducts as rpcFetchProducts } from "./data-fetcher";
 import {
@@ -131,6 +131,29 @@ export class SiteGeneratorService {
         s3: this.s3,
       };
 
+      // Resolve template ID for snapshot check
+      const [siteThemeRow] = await this.db
+        .select({ templateId: schema.theme.templateId })
+        .from(schema.site)
+        .leftJoin(schema.theme, eq(schema.site.themeId, schema.theme.id))
+        .where(eq(schema.site.id, params.siteId));
+      const resolvedTemplateId =
+        params.templateOverride ?? siteThemeRow?.templateId ?? "default";
+
+      // Try snapshot deploy for default sites (skips full astro build)
+      const snapshotResult = await trySnapshotDeploy(deps, {
+        tenantId: params.tenantId,
+        siteId: params.siteId,
+        mode: params.mode,
+        templateId: resolvedTemplateId,
+      });
+      if (snapshotResult) {
+        this.logger.log(
+          `Snapshot deploy for site ${params.siteId} (template: ${resolvedTemplateId})`,
+        );
+        return snapshotResult;
+      }
+
       // Try to load theme data from disk (theme.json + registry.json)
       let themeRegistry: ThemeRegistryEntry[] | undefined;
       let themeSettingsSchema: ThemeSettingsGroup[] | undefined;
@@ -138,17 +161,8 @@ export class SiteGeneratorService {
       let themeFeatures: Record<string, boolean> | undefined;
 
       try {
-        // Resolve template ID from site -> theme -> templateId
-        const [siteTheme] = await this.db
-          .select({
-            templateId: schema.theme.templateId,
-          })
-          .from(schema.site)
-          .leftJoin(schema.theme, eq(schema.site.themeId, schema.theme.id))
-          .where(eq(schema.site.id, params.siteId));
-
-        const templateId =
-          params.templateOverride ?? siteTheme?.templateId ?? "default";
+        // Reuse resolvedTemplateId from snapshot check above
+        const templateId = resolvedTemplateId;
         const themePath = path.join(
           process.cwd(),
           "templates",

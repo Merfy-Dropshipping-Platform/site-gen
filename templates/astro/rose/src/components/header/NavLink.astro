@@ -10,8 +10,8 @@ const { href, active = false } = Astro.props;
 <a
 	href={href}
 	class:list={[
-		"text-sm lg:text-base xl:text-[20px] font-normal text-black hover:opacity-70 transition-opacity leading-[1.366] relative font-manrope",
-		{ "after:absolute after:bottom-[-10px] after:left-0 after:w-full after:h-px after:bg-black": active }
+		"text-sm lg:text-base xl:text-[20px] font-normal text-theme-foreground hover:opacity-70 transition-opacity leading-[1.366] relative font-body",
+		{ "after:absolute after:bottom-[-10px] after:left-0 after:w-full after:h-px after:bg-theme-foreground": active }
 	]}
 >
 	<slot />

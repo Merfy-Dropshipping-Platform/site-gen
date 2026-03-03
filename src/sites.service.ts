@@ -85,6 +85,7 @@ export class SitesDomainService {
         status: schema.site.status,
         themeId: schema.site.themeId,
         publicUrl: schema.site.publicUrl,
+        branding: schema.site.branding,
         createdAt: schema.site.createdAt,
         // JOIN: theme data
         theme: {
@@ -131,6 +132,7 @@ export class SitesDomainService {
         coolifyAppUuid: schema.site.coolifyAppUuid,
         coolifyProjectUuid: schema.site.coolifyProjectUuid,
         domainId: schema.site.domainId,
+        branding: schema.site.branding,
         // JOIN: theme data
         theme: {
           id: schema.theme.id,
@@ -166,6 +168,7 @@ export class SitesDomainService {
         status: schema.site.status,
         themeId: schema.site.themeId,
         publicUrl: schema.site.publicUrl,
+        branding: schema.site.branding,
         createdAt: schema.site.createdAt,
         updatedAt: schema.site.updatedAt,
         // JOIN: theme data
@@ -208,6 +211,7 @@ export class SitesDomainService {
         status: schema.site.status,
         themeId: schema.site.themeId,
         publicUrl: schema.site.publicUrl,
+        branding: schema.site.branding,
         createdAt: schema.site.createdAt,
         updatedAt: schema.site.updatedAt,
         theme: {
@@ -359,6 +363,22 @@ export class SitesDomainService {
       coolifyProjectUuid,
     });
 
+    // Record initial domain in history (generated subdomain)
+    if (domainId && publicUrl) {
+      const subdomainName = publicUrl
+        .replace(/^https?:\/\//, "")
+        .replace(/\/$/, "");
+      await this.db.insert(schema.siteDomainHistory).values({
+        id: randomUUID(),
+        siteId: id,
+        domainName: subdomainName,
+        domainId,
+        type: "generated",
+        status: "active",
+        attachedAt: now,
+      });
+    }
+
     this.events.emit("sites.site.created", {
       tenantId: params.tenantId,
       siteId: id,
@@ -410,6 +430,10 @@ export class SitesDomainService {
     } else if (params.patch?.theme?.id) {
       // Legacy: accept { theme: { id: 'rose' } } and extract themeId
       updates.themeId = params.patch.theme.id;
+    }
+    // Handle branding (logo + colors); null clears branding
+    if ("branding" in (params.patch ?? {})) {
+      updates.branding = params.patch.branding ?? null;
     }
 
     updates.updatedAt = new Date();
@@ -599,27 +623,51 @@ export class SitesDomainService {
     const site = await this.get(params.tenantId, params.siteId);
     if (!site) throw new Error("site_not_found");
 
-    // 1. Проверяем/создаём Coolify app для раздачи статики
     let coolifyAppUuid = site.coolifyAppUuid;
     let finalUrl = site.publicUrl;
 
+    // 1. Определить публичный URL (если не установлен — генерируем subdomain)
+    if (!finalUrl) {
+      const slug = params.tenantId.replace(/-/g, "").slice(0, 12);
+      finalUrl = `https://${slug}.merfy.ru`;
+
+      await this.db
+        .update(schema.site)
+        .set({
+          publicUrl: finalUrl,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(schema.site.id, params.siteId),
+            eq(schema.site.tenantId, params.tenantId),
+          ),
+        );
+
+      this.logger.log(
+        `Generated local subdomain on publish: ${slug}.merfy.ru, publicUrl: ${finalUrl}`,
+      );
+    }
+
+    // 2. Fire Coolify app creation in background (parallel with build)
+    let coolifyPromise: Promise<void> | null = null;
     if (!coolifyAppUuid && finalUrl) {
-      // Создаём Coolify app (nginx-minio-proxy) для этого сайта
-      try {
-        const subdomain = this.storage.extractSubdomainSlug(finalUrl);
+      coolifyPromise = (async () => {
+        try {
+          const subdomain = this.storage.extractSubdomainSlug(finalUrl!);
+          const projectUuid =
+            site.coolifyProjectUuid ||
+            (await this.getOrCreateTenantProject(params.tenantId));
 
-        // Получаем или создаём Coolify Project для этого тенанта
-        const projectUuid =
-          site.coolifyProjectUuid ||
-          (await this.getOrCreateTenantProject(params.tenantId));
+          if (!projectUuid) {
+            this.logger.warn(
+              "Failed to get Coolify project, skipping Coolify app creation",
+            );
+            return;
+          }
 
-        if (!projectUuid) {
-          this.logger.warn(
-            "Failed to get Coolify project, skipping Coolify app creation",
-          );
-        } else {
           const sitePath = this.storage
-            .getSitePrefixBySubdomain(finalUrl)
+            .getSitePrefixBySubdomain(finalUrl!)
             .replace(/\/$/, "");
 
           this.logger.log(
@@ -637,41 +685,31 @@ export class SitesDomainService {
             sitePath,
           });
 
-          if (!coolifyResult.success || !coolifyResult.appUuid) {
-            throw new Error(coolifyResult.message || "coolify_create_failed");
-          }
-
-          coolifyAppUuid = coolifyResult.appUuid;
-
-          // Сохраняем UUID приложения и проекта
-          await this.db
-            .update(schema.site)
-            .set({
-              coolifyAppUuid,
-              coolifyProjectUuid: projectUuid,
-              updatedAt: new Date(),
-            })
-            .where(
-              and(
-                eq(schema.site.id, params.siteId),
-                eq(schema.site.tenantId, params.tenantId),
-              ),
+          if (coolifyResult.success && coolifyResult.appUuid) {
+            coolifyAppUuid = coolifyResult.appUuid;
+            await this.db
+              .update(schema.site)
+              .set({
+                coolifyAppUuid,
+                coolifyProjectUuid: projectUuid,
+                updatedAt: new Date(),
+              })
+              .where(
+                and(
+                  eq(schema.site.id, params.siteId),
+                  eq(schema.site.tenantId, params.tenantId),
+                ),
+              );
+            this.logger.log(
+              `Created Coolify app ${coolifyAppUuid} in project ${projectUuid} for site ${params.siteId}`,
             );
-
-          this.logger.log(
-            `Created Coolify app ${coolifyAppUuid} in project ${projectUuid} for site ${params.siteId}`,
+          }
+        } catch (e) {
+          this.logger.warn(
+            `Failed to create Coolify app (site will still be built): ${e instanceof Error ? e.message : e}`,
           );
         }
-      } catch (e) {
-        this.logger.warn(
-          `Failed to create Coolify app (site will still be built): ${e instanceof Error ? e.message : e}`,
-        );
-      }
-    }
-
-    // 2. Определить публичный URL (если не установлен — fallback)
-    if (!finalUrl) {
-      finalUrl = this.storage.getSitePublicUrl(params.tenantId, params.siteId);
+      })();
     }
 
     // 3. Build: queued (async) or synchronous depending on feature flags
@@ -681,7 +719,6 @@ export class SitesDomainService {
 
     if (queueEnabled) {
       // === QUEUED BUILD PATH ===
-      // Determine priority based on billing plan (paid=10, free/trial=1)
       let priority = 1;
       try {
         const entitlements = await this.billingClient.getEntitlements(
@@ -701,11 +738,11 @@ export class SitesDomainService {
         trigger: "publish",
       });
 
-      // Update site status to published (build will complete asynchronously)
       await this.db
         .update(schema.site)
         .set({
           status: "published",
+          ...(finalUrl ? { publicUrl: finalUrl } : {}),
           updatedAt: new Date(),
         })
         .where(
@@ -734,34 +771,25 @@ export class SitesDomainService {
     }
 
     // === SYNCHRONOUS BUILD PATH (legacy) ===
-    // SiteGeneratorService загружает все файлы из dist/ в S3 по пути sites/{subdomain}/
+    // Build runs in parallel with Coolify app creation
     const { buildId, artifactUrl, revisionId } = await this.generator.build({
       tenantId: params.tenantId,
       siteId: params.siteId,
       mode: params.mode,
     });
 
-    // Если Coolify app уже существовал, перезапускаем его для обновления
-    if (coolifyAppUuid) {
-      try {
-        await this.callCoolify("coolify.restart_application", {
-          appUuid: coolifyAppUuid,
-        });
-        this.logger.log(`Restarted Coolify app ${coolifyAppUuid}`);
-      } catch (e) {
-        // Не критично — nginx подхватит новые файлы из MinIO автоматически
-        this.logger.warn(
-          `Failed to restart Coolify app: ${e instanceof Error ? e.message : e}`,
-        );
-      }
+    // Wait for Coolify creation to finish (if it was running)
+    if (coolifyPromise) {
+      await coolifyPromise;
     }
 
-    // Обновить статус сайта
+    // Обновить статус сайта + publicUrl
     await this.db
       .update(schema.site)
       .set({
         status: "published",
         currentRevisionId: revisionId,
+        ...(finalUrl ? { publicUrl: finalUrl } : {}),
         updatedAt: new Date(),
       })
       .where(
@@ -1996,5 +2024,100 @@ export class SitesDomainService {
       completedAt: build.completedAt,
       createdAt: build.createdAt,
     };
+  }
+
+  // ==================== Domain Switching ====================
+
+  /**
+   * Switch site to a purchased domain.
+   * Deactivates current domain in history, adds new entry,
+   * updates site record and Coolify domain.
+   */
+  async switchDomain(params: {
+    siteId: string;
+    domainId: string;
+    domainName: string;
+  }): Promise<void> {
+    const { siteId, domainId, domainName } = params;
+    this.logger.log(
+      `Switching domain for site ${siteId} to ${domainName}`,
+    );
+
+    // 1. Find site
+    const [siteRow] = await this.db
+      .select()
+      .from(schema.site)
+      .where(eq(schema.site.id, siteId))
+      .limit(1);
+
+    if (!siteRow) {
+      this.logger.warn(`switchDomain: site ${siteId} not found`);
+      return;
+    }
+
+    const now = new Date();
+
+    // 2. Deactivate current active domain in history
+    await this.db
+      .update(schema.siteDomainHistory)
+      .set({ status: "inactive", detachedAt: now })
+      .where(
+        and(
+          eq(schema.siteDomainHistory.siteId, siteId),
+          eq(schema.siteDomainHistory.status, "active"),
+        ),
+      );
+
+    // 3. Add new domain history entry
+    await this.db.insert(schema.siteDomainHistory).values({
+      id: randomUUID(),
+      siteId,
+      domainName,
+      domainId,
+      type: "purchased",
+      status: "active",
+      attachedAt: now,
+    });
+
+    // 4. Update site: domainId, publicUrl
+    const newPublicUrl = `https://${domainName}`;
+    await this.db
+      .update(schema.site)
+      .set({
+        domainId,
+        publicUrl: newPublicUrl,
+        updatedAt: now,
+      })
+      .where(eq(schema.site.id, siteId));
+
+    // 5. Update Coolify domain (best-effort)
+    if (siteRow.coolifyAppUuid) {
+      try {
+        await this.callCoolify("coolify.set_domain", {
+          appUuid: siteRow.coolifyAppUuid,
+          domain: domainName,
+        });
+        this.logger.log(
+          `Coolify domain updated for site ${siteId}: ${domainName}`,
+        );
+      } catch (e) {
+        this.logger.warn(
+          `Failed to set Coolify domain for ${siteId}: ${e instanceof Error ? e.message : e}`,
+        );
+      }
+    }
+
+    // 6. Emit event
+    this.events.emit("sites.domain.switched", {
+      tenantId: siteRow.tenantId,
+      siteId,
+      domainName,
+      domainId,
+      previousPublicUrl: siteRow.publicUrl,
+    });
+
+    this.logger.log(
+      `Domain switched for site ${siteId}: ${siteRow.publicUrl} -> ${newPublicUrl}`,
+    );
   }
 }

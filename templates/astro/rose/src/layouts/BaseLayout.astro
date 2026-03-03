@@ -1,10 +1,15 @@
 ---
+import data from '../data/data.json';
+
 interface Props {
   title?: string;
   description?: string;
 }
 
 const { title = 'Мой магазин', description } = Astro.props;
+const meta = data?.meta ?? {};
+const shopId = (meta as any)?.shopId || '';
+const apiUrl = (meta as any)?.apiUrl || 'https://gateway.merfy.ru/api';
 ---
 <html lang="ru">
   <head>
@@ -17,8 +22,24 @@ const { title = 'Мой магазин', description } = Astro.props;
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300..700&family=Inter:wght@100..900&family=Manrope:wght@200..800&display=swap" rel="stylesheet" />
   </head>
-  <body class="font-manrope text-black bg-white leading-relaxed">
+  <body class="font-body text-theme-foreground bg-theme-background leading-relaxed">
     <slot />
+    <script is:inline define:vars={{ shopId, apiUrl }}>
+      window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
+        shopId: shopId || '',
+        apiUrl: apiUrl || 'https://gateway.merfy.ru/api',
+      };
+    </script>
+    <script type="module" src="/scripts/cart-api.js"></script>
+    <script type="module" src="/scripts/cart-store.js"></script>
+    <script is:inline>
+      document.addEventListener('DOMContentLoaded', function() {
+        if (window.cartStore && window.cartStore.init) {
+          window.cartStore.init();
+        }
+      });
+    </script>
+    <script src="/scripts/cart-drawer.js" defer></script>
   </body>
 </html>
 

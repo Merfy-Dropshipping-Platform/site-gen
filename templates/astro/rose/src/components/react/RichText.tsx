@@ -60,14 +60,14 @@ export function RichText({
     >
       {headingText && (
         <h2
-          className={`${headingSizeClasses[resolvedSize] || headingSizeClasses.medium} font-medium text-gray-900 mb-5 leading-[1.2] font-comfortaa`}
+          className={`${headingSizeClasses[resolvedSize] || headingSizeClasses.medium} font-medium text-theme-foreground mb-5 leading-[1.2] font-heading`}
         >
           {headingText}
         </h2>
       )}
       {bodyText && (
         <p
-          className={`${textSizeClasses[resolvedSize] || textSizeClasses.medium} text-gray-600 leading-[1.7] font-manrope`}
+          className={`${textSizeClasses[resolvedSize] || textSizeClasses.medium} text-theme-muted leading-[1.7] font-body`}
         >
           {bodyText}
         </p>
@@ -75,7 +75,7 @@ export function RichText({
       {button?.text && (
         <a
           href={buttonLink}
-          className="inline-flex items-center mt-6 px-8 py-3.5 text-[0.95rem] font-medium rounded-lg bg-black text-white no-underline hover:bg-gray-800 transition-colors font-manrope"
+          className="inline-flex items-center mt-6 px-8 py-3.5 text-[0.95rem] font-medium rounded-lg bg-theme-primary text-theme-button-text no-underline hover:opacity-90 transition-colors font-body"
         >
           {button.text}
         </a>

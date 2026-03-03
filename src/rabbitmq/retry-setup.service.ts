@@ -27,6 +27,7 @@ export const RETRY_TIERS: RetryTier[] = [
 
 export const DEAD_LETTER_QUEUE = "sites_build_dead_letter";
 export const SITES_QUEUE = "sites_queue";
+export const SITES_BUILD_QUEUE = "sites_build_queue";
 export const DLX_EXCHANGE = "sites_build_dlx";
 export const MAX_RETRIES = 3;
 

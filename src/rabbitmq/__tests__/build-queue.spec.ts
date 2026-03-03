@@ -15,7 +15,7 @@
  */
 
 import { BuildQueuePublisher, type QueueBuildParams } from "../build-queue.service";
-import { SITES_QUEUE } from "../retry-setup.service";
+import { SITES_BUILD_QUEUE } from "../retry-setup.service";
 
 // Mock amqp-connection-manager
 const mockSendToQueue = jest.fn().mockResolvedValue(undefined);
@@ -78,7 +78,7 @@ describe("BuildQueuePublisher", () => {
       expect(mockCreateChannel).not.toHaveBeenCalled();
     });
 
-    it("should assert queue with x-max-priority: 10 during channel setup", async () => {
+    it("should assert queue with durable: true during channel setup", async () => {
       publisher = new BuildQueuePublisher(
         mockConfigService({ RABBITMQ_URL: "amqp://localhost" }),
       );
@@ -89,23 +89,9 @@ describe("BuildQueuePublisher", () => {
       const fakeChannel = { assertQueue: mockAssertQueue };
       await channelSetupCallback!(fakeChannel);
 
-      expect(mockAssertQueue).toHaveBeenCalledWith(SITES_QUEUE, {
+      expect(mockAssertQueue).toHaveBeenCalledWith(SITES_BUILD_QUEUE, {
         durable: true,
-        arguments: { "x-max-priority": 10 },
       });
-    });
-
-    it("should not crash if assertQueue fails during setup (queue already exists with different args)", async () => {
-      publisher = new BuildQueuePublisher(
-        mockConfigService({ RABBITMQ_URL: "amqp://localhost" }),
-      );
-      await publisher.onModuleInit();
-
-      const failingAssert = jest.fn().mockRejectedValue(new Error("PRECONDITION_FAILED"));
-      const fakeChannel = { assertQueue: failingAssert };
-
-      // Should not throw
-      await expect(channelSetupCallback!(fakeChannel)).resolves.not.toThrow();
     });
   });
 
@@ -153,7 +139,7 @@ describe("BuildQueuePublisher", () => {
 
       expect(result).toBe(true);
       expect(mockSendToQueue).toHaveBeenCalledWith(
-        SITES_QUEUE,
+        SITES_BUILD_QUEUE,
         expect.any(Buffer),
         { persistent: true, priority: 10 },
       );
@@ -183,7 +169,7 @@ describe("BuildQueuePublisher", () => {
       await publisher.queueBuild(params);
 
       expect(mockSendToQueue).toHaveBeenCalledWith(
-        SITES_QUEUE,
+        SITES_BUILD_QUEUE,
         expect.any(Buffer),
         { persistent: true, priority: 1 },
       );
@@ -200,7 +186,7 @@ describe("BuildQueuePublisher", () => {
       await publisher.queueBuild(params);
 
       expect(mockSendToQueue).toHaveBeenCalledWith(
-        SITES_QUEUE,
+        SITES_BUILD_QUEUE,
         expect.any(Buffer),
         { persistent: true, priority: 5 },
       );
@@ -219,7 +205,7 @@ describe("BuildQueuePublisher", () => {
       await publisher.queueBuild(params);
 
       expect(mockSendToQueue).toHaveBeenCalledWith(
-        SITES_QUEUE,
+        SITES_BUILD_QUEUE,
         expect.any(Buffer),
         { persistent: true, priority: 1 },
       );

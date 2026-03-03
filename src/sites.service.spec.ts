@@ -40,6 +40,9 @@ class MockStorage {
   getSitePrefixBySubdomain(_subdomain: string) {
     return "sites/test/";
   }
+  extractSubdomainSlug(_url: string) {
+    return "t1";
+  }
   async checkSiteFiles(_prefix: string) {
     return {
       exists: true,
@@ -95,6 +98,13 @@ describe("SitesDomainService (unit)", () => {
     const db: any = {
       select: () => ({
         from: (tbl: TableAny) => ({
+          leftJoin: () => ({
+            where: (_w: any) => {
+              if (tbl === schema.site)
+                return Promise.resolve([{ id: "s1", tenantId: "t1", theme: null }]);
+              return Promise.resolve([]);
+            },
+          }),
           where: (_w: any) => {
             if (tbl === schema.site)
               return Promise.resolve([{ id: "s1", tenantId: "t1" }]);
@@ -139,7 +149,7 @@ describe("SitesDomainService (unit)", () => {
     });
 
     // Assert
-    expect(res.url).toBe("https://site.preview.local");
+    expect(res.url).toBe("https://t1.merfy.ru");
     expect(
       events.events.some((e) => e.pattern === "sites.site.published"),
     ).toBe(true);
@@ -149,6 +159,9 @@ describe("SitesDomainService (unit)", () => {
     const db: any = {
       select: () => ({
         from: (tbl: TableAny) => ({
+          leftJoin: () => ({
+            where: (_: any) => Promise.resolve([{ id: "s1", theme: null }]),
+          }),
           where: (_: any) => Promise.resolve([{ id: "s1" }]),
         }),
       }),
@@ -191,6 +204,9 @@ describe("SitesDomainService (unit)", () => {
     const db: any = {
       select: () => ({
         from: (tbl: TableAny) => ({
+          leftJoin: () => ({
+            where: (_: any) => Promise.resolve([{ id: "s1", theme: null }]),
+          }),
           where: (_: any) => {
             if (tbl === schema.site) return Promise.resolve([{ id: "s1" }]);
             if (tbl === schema.siteDomain)

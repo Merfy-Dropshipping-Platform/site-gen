@@ -22,7 +22,7 @@ const apiUrl = (meta as any)?.apiUrl || 'https://gateway.merfy.ru/api';
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300..700&family=Inter:wght@100..900&family=Manrope:wght@200..800&display=swap" rel="stylesheet" />
   </head>
-  <body class="font-manrope text-black bg-white leading-relaxed">
+  <body class="font-body text-theme-foreground bg-theme-background leading-relaxed">
     <slot />
     <script is:inline define:vars={{ shopId, apiUrl }}>
       window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {

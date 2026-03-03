@@ -24,16 +24,16 @@ const { id, name, price, oldPrice, image, href = '#' } = Astro.props;
 	</a>
 	<div class="flex flex-col gap-2 sm:gap-2.5 md:gap-3 lg:gap-[10px] px-2 sm:px-3 md:px-4 lg:px-[15px]">
 		<a href={href} class="no-underline text-inherit">
-			<h3 class="text-base sm:text-lg md:text-xl lg:text-[24px] font-normal text-black leading-[1.366] font-manrope">
+			<h3 class="text-base sm:text-lg md:text-xl lg:text-[24px] font-normal text-theme-foreground leading-[1.366] font-body">
 				{name}
 			</h3>
 		</a>
 		<div class="flex items-center gap-2 sm:gap-3 md:gap-4 lg:gap-[15px] flex-wrap">
-			<span class="text-lg sm:text-xl md:text-2xl lg:text-[32px] font-normal text-black leading-[1.366] font-manrope">
+			<span class="text-lg sm:text-xl md:text-2xl lg:text-[32px] font-normal text-theme-foreground leading-[1.366] font-body">
 				{price}
 			</span>
 			{oldPrice && (
-				<span class="text-sm sm:text-base md:text-lg lg:text-[20px] font-medium text-[#999999] line-through leading-[1.366] font-manrope">
+				<span class="text-sm sm:text-base md:text-lg lg:text-[20px] font-medium text-theme-muted line-through leading-[1.366] font-body">
 					{oldPrice}
 				</span>
 			)}
@@ -41,7 +41,7 @@ const { id, name, price, oldPrice, image, href = '#' } = Astro.props;
 		{id && (
 			<button
 				type="button"
-				class="add-to-cart-btn mt-2 py-2.5 px-5 bg-[#e11d48] text-white text-sm font-medium rounded-lg hover:bg-[#be123c] transition-colors"
+				class="add-to-cart-btn mt-2 py-2.5 px-5 bg-theme-primary text-white text-sm font-medium rounded-lg hover:opacity-90 transition-colors"
 				data-product-id={id}
 			>
 				В корзину

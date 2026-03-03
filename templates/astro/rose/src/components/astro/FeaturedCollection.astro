@@ -47,7 +47,7 @@ const {
     <SectionHeader title={title} subtitle={description} />
 
     {products.length === 0 ? (
-      <p class="text-center text-gray-500 text-lg py-8">Товары скоро появятся</p>
+      <p class="text-center text-theme-muted text-lg py-8">Товары скоро появятся</p>
     ) : (
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 md:gap-6 featured-collection-grid">
         {products.map((product) => (
@@ -69,7 +69,7 @@ const {
       <div class="flex justify-center mt-8">
         <a
           href={`/collections/${collectionHandle}`}
-          class="px-6 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:border-gray-500 hover:text-black transition-colors no-underline"
+          class="px-6 py-3 border border-theme rounded-lg text-sm font-medium text-theme-foreground hover:border-theme-foreground hover:text-theme-foreground transition-colors no-underline"
         >
           Смотреть все
         </a>

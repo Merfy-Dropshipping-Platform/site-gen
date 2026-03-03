@@ -18,7 +18,7 @@ const visibleItems = items.filter((item) => !item.hidden);
 <section class="max-w-[800px] mx-auto py-20 px-5">
   <div>
     {showHeading && (
-      <h2 class="font-comfortaa text-[2rem] font-medium text-gray-900 text-center mb-12 leading-[1.2]">
+      <h2 class="font-heading text-[2rem] font-medium text-theme-foreground text-center mb-12 leading-[1.2]">
         {heading!.text}
       </h2>
     )}
@@ -28,13 +28,13 @@ const visibleItems = items.filter((item) => !item.hidden);
     ) : (
       <div class="flex flex-col">
         {visibleItems.map((item) => (
-          <details class="border-b border-gray-200 group">
-            <summary class="flex items-center justify-between py-5 text-[1.05rem] font-medium text-gray-900 cursor-pointer list-none transition-colors duration-200 hover:text-black [&::-webkit-details-marker]:hidden">
+          <details class="border-b border-theme group">
+            <summary class="flex items-center justify-between py-5 text-[1.05rem] font-medium text-theme-foreground cursor-pointer list-none transition-colors duration-200 hover:text-theme-foreground [&::-webkit-details-marker]:hidden">
               {item.title ?? 'Вопрос'}
-              <span class="text-2xl font-light text-gray-400 group-open:hidden">+</span>
-              <span class="text-2xl font-light text-gray-400 hidden group-open:inline">&minus;</span>
+              <span class="text-2xl font-light text-theme-muted group-open:hidden">+</span>
+              <span class="text-2xl font-light text-theme-muted hidden group-open:inline">&minus;</span>
             </summary>
-            <div class="pb-5 text-base text-gray-600 leading-[1.7]">
+            <div class="pb-5 text-base text-theme-muted leading-[1.7]">
               <p>{item.content ?? ''}</p>
             </div>
           </details>

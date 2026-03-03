@@ -80,29 +80,29 @@ export function Footer({
   const yearStr = copyright?.showYear === "true" ? ` ${currentYear}` : "";
 
   return (
-    <footer className="bg-white w-full">
+    <footer className="bg-theme-background w-full">
       <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-[300px]">
         {/* Newsletter */}
         {showNewsletter && (
           <section className="pt-12 sm:pt-16 md:pt-20 lg:pt-24 xl:pt-28 2xl:pt-[100px] pb-10 sm:pb-12 md:pb-16 lg:pb-20 xl:pb-24">
             <div className="max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-[809px] mx-auto">
               <div className="flex flex-col items-center gap-3 sm:gap-4 lg:gap-[5px] mb-8 sm:mb-10 lg:mb-12">
-                <h2 className="text-2xl sm:text-3xl md:text-[32px] lg:text-[34px] xl:text-[36px] font-normal text-black uppercase leading-[1.115] text-center font-comfortaa">
+                <h2 className="text-2xl sm:text-3xl md:text-[32px] lg:text-[34px] xl:text-[36px] font-normal text-theme-foreground uppercase leading-[1.115] text-center font-heading">
                   {newsletter?.heading}
                 </h2>
                 {newsletter?.description && (
-                  <p className="text-base sm:text-lg md:text-xl lg:text-[22px] xl:text-[24px] font-normal text-[#999999] leading-[1.366] text-center px-4 sm:px-0 font-manrope">
+                  <p className="text-base sm:text-lg md:text-xl lg:text-[22px] xl:text-[24px] font-normal text-theme-muted leading-[1.366] text-center px-4 sm:px-0 font-body">
                     {newsletter.description}
                   </p>
                 )}
               </div>
-              <form className="w-full max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-[600px] mx-auto h-auto sm:h-16 md:h-[70px] lg:h-[75px] xl:h-[80px] bg-white border border-[#999999] rounded-lg md:rounded-[10px] flex flex-col sm:flex-row justify-between items-stretch sm:items-center px-4 sm:px-5 lg:px-[25px] py-3 sm:py-2 lg:py-[10px] gap-3 sm:gap-2 lg:gap-[10px]">
+              <form className="w-full max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-[600px] mx-auto h-auto sm:h-16 md:h-[70px] lg:h-[75px] xl:h-[80px] bg-theme-background border border-theme rounded-lg md:rounded-[10px] flex flex-col sm:flex-row justify-between items-stretch sm:items-center px-4 sm:px-5 lg:px-[25px] py-3 sm:py-2 lg:py-[10px] gap-3 sm:gap-2 lg:gap-[10px]">
                 <input
                   type="email"
                   name="email"
                   placeholder={newsletter?.placeholder || "rose@example.ru"}
                   required
-                  className="flex-1 bg-transparent text-lg sm:text-xl md:text-[22px] lg:text-2xl font-light text-[#999999] leading-[1.366] outline-none placeholder:text-[#999999] focus:text-black font-manrope"
+                  className="flex-1 bg-transparent text-lg sm:text-xl md:text-[22px] lg:text-2xl font-light text-theme-muted leading-[1.366] outline-none placeholder:text-theme-muted focus:text-theme-foreground font-body"
                 />
                 <button
                   type="submit"
@@ -135,7 +135,7 @@ export function Footer({
             {/* Navigation Column */}
             {navigationColumn?.title && (
               <div className="flex flex-col gap-4 sm:gap-5 lg:gap-[25px]">
-                <h3 className="text-lg sm:text-xl md:text-[22px] lg:text-[24px] font-normal text-black uppercase leading-[1.115] font-comfortaa">
+                <h3 className="text-lg sm:text-xl md:text-[22px] lg:text-[24px] font-normal text-theme-foreground uppercase leading-[1.115] font-heading">
                   {navigationColumn.title}
                 </h3>
                 <nav className="flex flex-col gap-4 sm:gap-5 lg:gap-[25px]">
@@ -143,7 +143,7 @@ export function Footer({
                     <a
                       key={index}
                       href={link.href}
-                      className="text-base sm:text-lg md:text-[18px] lg:text-[20px] font-normal text-[#999999] leading-[1.366] hover:text-black transition-colors font-manrope"
+                      className="text-base sm:text-lg md:text-[18px] lg:text-[20px] font-normal text-theme-muted leading-[1.366] hover:text-theme-foreground transition-colors font-body"
                     >
                       {link.label}
                     </a>
@@ -155,7 +155,7 @@ export function Footer({
             {/* Information Column */}
             {informationColumn?.title && (
               <div className="flex flex-col gap-4 sm:gap-5 lg:gap-[25px]">
-                <h3 className="text-lg sm:text-xl md:text-[22px] lg:text-[24px] font-normal text-black uppercase leading-[1.115] font-comfortaa">
+                <h3 className="text-lg sm:text-xl md:text-[22px] lg:text-[24px] font-normal text-theme-foreground uppercase leading-[1.115] font-heading">
                   {informationColumn.title}
                 </h3>
                 <div className="flex flex-col gap-4 sm:gap-5 lg:gap-[25px]">
@@ -163,7 +163,7 @@ export function Footer({
                     <a
                       key={index}
                       href={link.href}
-                      className="text-base sm:text-lg md:text-[18px] lg:text-[20px] font-normal text-[#999999] leading-[1.366] hover:text-black transition-colors font-manrope"
+                      className="text-base sm:text-lg md:text-[18px] lg:text-[20px] font-normal text-theme-muted leading-[1.366] hover:text-theme-foreground transition-colors font-body"
                     >
                       {link.label}
                     </a>
@@ -176,13 +176,13 @@ export function Footer({
             {socialColumn?.title && (
               <div className="sm:col-span-2 lg:col-span-1">
                 <div className="flex flex-col gap-4 sm:gap-5 lg:gap-[25px]">
-                  <h3 className="text-lg sm:text-xl md:text-[22px] lg:text-[24px] font-normal text-black uppercase leading-[1.115] font-comfortaa">
+                  <h3 className="text-lg sm:text-xl md:text-[22px] lg:text-[24px] font-normal text-theme-foreground uppercase leading-[1.115] font-heading">
                     {socialColumn.title}
                   </h3>
                   {socialColumn.email && (
                     <a
                       href={`mailto:${socialColumn.email}`}
-                      className="text-base sm:text-lg md:text-[18px] lg:text-[20px] font-normal text-[#999999] leading-[1.366] hover:text-black transition-colors font-manrope"
+                      className="text-base sm:text-lg md:text-[18px] lg:text-[20px] font-normal text-theme-muted leading-[1.366] hover:text-theme-foreground transition-colors font-body"
                     >
                       {socialColumn.email}
                     </a>

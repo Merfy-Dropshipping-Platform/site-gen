@@ -27,7 +27,7 @@ export function AnnouncementBar({
       <div className="w-full max-w-[1920px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
         <a
           href={href}
-          className="block text-center hover:opacity-80 transition-opacity font-normal leading-tight font-manrope"
+          className="block text-center hover:opacity-80 transition-opacity font-normal leading-tight font-body"
         >
           <span className="inline-block">{text}</span>
         </a>

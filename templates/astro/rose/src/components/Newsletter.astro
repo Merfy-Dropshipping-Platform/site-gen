@@ -29,11 +29,11 @@ const headingSizeClass = headingSizeClasses[headingSize] || headingSizeClasses.s
   style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}
 >
   <div class="max-w-[600px] mx-auto">
-    <h2 class={`${headingSizeClass} font-medium text-gray-900 mb-4 leading-[1.2] font-comfortaa`}>
+    <h2 class={`${headingSizeClass} font-medium text-theme-foreground mb-4 leading-[1.2] font-heading`}>
       {headingText}
     </h2>
     {textContent && (
-      <p class="text-[1.1rem] text-gray-600 mb-8 leading-[1.6] font-manrope">
+      <p class="text-[1.1rem] text-theme-muted mb-8 leading-[1.6] font-body">
         {textContent}
       </p>
     )}
@@ -43,11 +43,11 @@ const headingSizeClass = headingSizeClasses[headingSize] || headingSizeClasses.s
         name="email"
         placeholder={placeholder}
         required
-        class="flex-1 py-3.5 px-4 text-base border border-gray-300 rounded-lg bg-white text-gray-900 font-manrope focus:outline-none focus:border-black"
+        class="flex-1 py-3.5 px-4 text-base border border-theme rounded-lg bg-white text-gray-900 font-body focus:outline-none focus:border-theme-foreground"
       />
       <button
         type="submit"
-        class="py-3.5 px-7 text-[0.95rem] font-medium border-none rounded-lg bg-black text-white cursor-pointer transition-colors hover:bg-gray-800 font-manrope whitespace-nowrap"
+        class="py-3.5 px-7 text-[0.95rem] font-medium border-none rounded-lg bg-theme-primary text-theme-button-text cursor-pointer transition-colors hover:opacity-90 font-body whitespace-nowrap"
       >
         {buttonText}
       </button>

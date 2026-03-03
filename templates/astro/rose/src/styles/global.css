@@ -6,17 +6,31 @@
   --font-family-sans: "Manrope", system-ui, -apple-system, sans-serif;
   --font-family-comfortaa: "Comfortaa", sans-serif;
   --font-family-manrope: "Manrope", sans-serif;
+  --font-family-heading: var(--font-heading);
+  --font-family-body: var(--font-body);
   --color-primary: #e11d48;
   --color-gray: #999999;
+  --color-theme-background: rgb(var(--color-background));
+  --color-theme-foreground: rgb(var(--color-foreground));
+  --color-theme-primary: rgb(var(--color-primary));
+  --color-theme-button: rgb(var(--color-button));
+  --color-theme-button-text: rgb(var(--color-button-text));
+  --color-theme-muted: rgb(var(--color-muted));
+  --color-theme-border: rgb(var(--color-border));
+  --color-theme-secondary: rgb(var(--color-secondary));
+  --radius-button: var(--radius-button);
+  --radius-card: var(--radius-card);
 }
 
 /* ── Font utility classes ── */
-.font-comfortaa {
-  font-family: "Comfortaa", sans-serif;
+.font-comfortaa,
+.font-heading {
+  font-family: var(--font-heading);
 }
 
-.font-manrope {
-  font-family: "Manrope", sans-serif;
+.font-manrope,
+.font-body {
+  font-family: var(--font-body);
 }
 
 /* ── Token-based utility classes ── */
@@ -40,6 +54,14 @@
   background-color: rgb(var(--color-primary));
 }
 
+.bg-theme-secondary {
+  background-color: rgb(var(--color-secondary));
+}
+
+.text-theme-button-text {
+  color: rgb(var(--color-button-text));
+}
+
 .border-theme {
   border-color: rgb(var(--color-border));
 }
@@ -53,6 +75,21 @@
 
 .btn-primary:hover {
   opacity: 0.9;
+}
+
+.add-to-cart-btn {
+  background-color: rgb(var(--color-button));
+  color: rgb(var(--color-button-text));
+  border-radius: var(--radius-button);
+  transition: opacity 0.2s;
+}
+
+.add-to-cart-btn:hover {
+  opacity: 0.9;
+}
+
+.add-to-cart-btn.in-cart {
+  background-color: rgb(var(--color-muted));
 }
 
 .card {

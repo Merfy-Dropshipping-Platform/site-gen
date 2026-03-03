@@ -137,7 +137,7 @@ const showVariants = props.variants?.enabled !== 'false' && (props.variants?.ite
     <!-- Right: Product info -->
     <div class="flex flex-col gap-6">
       {showTitle && (
-        <h1 class="text-2xl sm:text-3xl md:text-4xl font-medium text-gray-900 leading-tight font-[family-name:var(--font-display)]">
+        <h1 class="text-2xl sm:text-3xl md:text-4xl font-medium text-theme-foreground leading-tight font-heading">
           {titleText}
         </h1>
       )}
@@ -150,7 +150,7 @@ const showVariants = props.variants?.enabled !== 'false' && (props.variants?.ite
             </span>
           )}
           {oldPriceDisplay && (
-            <span class="text-base sm:text-lg text-gray-400 line-through">
+            <span class="text-base sm:text-lg text-theme-muted line-through">
               {oldPriceDisplay}
             </span>
           )}
@@ -159,10 +159,10 @@ const showVariants = props.variants?.enabled !== 'false' && (props.variants?.ite
 
       {showVariants && (
         <div class="flex flex-col gap-2">
-          <span class="text-sm font-medium text-gray-600">Размер</span>
+          <span class="text-sm font-medium text-theme-muted">Размер</span>
           <div class="flex flex-wrap gap-2">
             {props.variants!.items!.map((v, i) => (
-              <span class={`px-4 py-2 rounded-lg border text-sm font-medium ${i === 0 ? 'border-black bg-black text-white' : 'border-gray-300 bg-white text-gray-800'}`}>
+              <span class={`px-4 py-2 rounded-lg border text-sm font-medium ${i === 0 ? 'border-black bg-black text-white' : 'border-theme bg-white text-theme-foreground'}`}>
                 {v.label}
               </span>
             ))}
@@ -173,7 +173,7 @@ const showVariants = props.variants?.enabled !== 'false' && (props.variants?.ite
       {(showAddToCart || showBuyNow) && (
         <div class="flex flex-col sm:flex-row gap-3 mt-2">
           {showAddToCart && (
-            <button class="flex-1 px-6 py-3.5 text-sm font-medium rounded-lg border border-gray-300 bg-white text-gray-800 hover:border-[var(--rose-600,#e11d48)] hover:text-[var(--rose-600,#e11d48)] transition-all">
+            <button class="flex-1 px-6 py-3.5 text-sm font-medium rounded-lg border border-theme bg-white text-theme-foreground hover:border-theme-primary hover:text-theme-primary transition-all">
               {addToCartText}
             </button>
           )}
@@ -186,8 +186,8 @@ const showVariants = props.variants?.enabled !== 'false' && (props.variants?.ite
       )}
 
       {showDescription && (
-        <div class="mt-4 pt-6 border-t border-gray-200">
-          <p class="text-base text-gray-600 leading-relaxed font-[family-name:var(--font-body)]">
+        <div class="mt-4 pt-6 border-t border-theme">
+          <p class="text-base text-theme-muted leading-relaxed font-body">
             {descriptionText}
           </p>
         </div>

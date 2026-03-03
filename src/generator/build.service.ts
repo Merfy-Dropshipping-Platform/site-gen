@@ -37,6 +37,11 @@ import {
   type ThemeColorScheme,
   type ThemeFeatures,
 } from "./theme-bridge";
+import {
+  constructorThemeToMerchantSettings,
+  generateGoogleFontsUrl,
+  type ConstructorThemeSettings,
+} from "./constructor-theme-bridge";
 import { S3StorageService } from "../storage/s3.service";
 import { roseRegistry, roseServerRegistry } from "./registries/rose";
 
@@ -948,13 +953,28 @@ async function stageGenerate(
     );
   }
 
-  // Resolve merchant settings: prefer theme-bridge conversion when schema available
+  // Resolve merchant settings — three paths in priority order:
+  // 1. Direct merchantSettings from revision meta (legacy)
+  // 2. Constructor ThemeSettings object (new: from constructor's ThemeContext)
+  // 3. Theme settings schema + overrides (from theme manifest)
   let merchantSettings = (ctx.revisionMeta as { merchantSettings?: any })
     .merchantSettings;
+
+  // Path 2: Constructor ThemeSettings → MerchantSettings
+  const constructorTheme = (ctx.revisionMeta as { themeSettings?: ConstructorThemeSettings })
+    .themeSettings;
+  if (!merchantSettings && constructorTheme?.colorSchemes?.length) {
+    merchantSettings = constructorThemeToMerchantSettings(constructorTheme);
+    logger.log(
+      `[generate] Converted constructor ThemeSettings to merchant settings via constructor-theme-bridge`,
+    );
+  }
+
+  // Path 3: Theme settings schema + overrides → MerchantSettings
   if (
+    !merchantSettings &&
     params.themeSettingsSchema &&
-    params.themeSettingsSchema.length > 0 &&
-    !merchantSettings
+    params.themeSettingsSchema.length > 0
   ) {
     const overrides =
       (ctx.revisionMeta as { settingsOverrides?: Record<string, unknown> })
@@ -969,20 +989,22 @@ async function stageGenerate(
     );
   }
 
-  // Apply branding color overrides from site.branding
+  // Apply branding colors as FALLBACK (only if not already set by ThemeSettings)
+  // Priority: ThemeSettings (constructor) > Branding (admin) > Rose defaults
   if (ctx.branding?.primaryColor || ctx.branding?.secondaryColor) {
     merchantSettings = merchantSettings ?? {};
     merchantSettings.tokens = merchantSettings.tokens ?? {};
 
-    if (ctx.branding.primaryColor) {
+    if (ctx.branding.primaryColor && !merchantSettings.tokens["color-primary"]) {
       merchantSettings.tokens["color-primary"] = ctx.branding.primaryColor;
       merchantSettings.tokens["color-primary-rgb"] = ctx.branding.primaryColor;
+      merchantSettings.tokens["color-button"] = ctx.branding.primaryColor;
     }
-    if (ctx.branding.secondaryColor) {
-      merchantSettings.tokens["color-secondary"] = ctx.branding.secondaryColor;
+    if (ctx.branding.secondaryColor && !merchantSettings.tokens["color-background"]) {
+      merchantSettings.tokens["color-background"] = ctx.branding.secondaryColor;
     }
 
-    // Also override primary color in color schemes if they exist
+    // Also set primary color in first color scheme if not already set
     if (
       ctx.branding.primaryColor &&
       merchantSettings.colorSchemes &&
@@ -990,11 +1012,13 @@ async function stageGenerate(
     ) {
       const scheme = merchantSettings.colorSchemes[0];
       scheme.colors = scheme.colors ?? {};
-      scheme.colors["primary"] = ctx.branding.primaryColor;
+      if (!scheme.colors["primary"]) {
+        scheme.colors["primary"] = ctx.branding.primaryColor;
+      }
     }
 
     logger.log(
-      `[generate] Applied branding color overrides: primary=${ctx.branding.primaryColor ?? "none"}, secondary=${ctx.branding.secondaryColor ?? "none"}`,
+      `[generate] Applied branding color fallbacks: primary=${ctx.branding.primaryColor ?? "none"}, secondary→background=${ctx.branding.secondaryColor ?? "none"}`,
     );
   }
 

@@ -42,44 +42,44 @@ const showVariants = variants?.enabled !== 'false' && variants?.items && variant
         </div>
       )}
       {showBadge && (
-        <span class="absolute top-4 left-4 bg-black text-white py-1.5 px-3.5 rounded-md text-[0.85rem] font-medium">
+        <span class="absolute top-4 left-4 bg-theme-primary text-theme-button-text py-1.5 px-3.5 rounded-md text-[0.85rem] font-medium">
           {badge!.text}
         </span>
       )}
     </div>
     <div>
       {showTitle && (
-        <h1 class="font-comfortaa text-[2rem] font-medium text-gray-900 mb-4 leading-[1.2]">{title!.text}</h1>
+        <h1 class="font-heading text-[2rem] font-medium text-theme-foreground mb-4 leading-[1.2]">{title!.text}</h1>
       )}
       {showPrice && (
         <div class="flex items-center gap-3 mb-6">
-          <span class="text-2xl font-semibold text-black">{price!.value}</span>
+          <span class="text-2xl font-semibold text-theme-foreground">{price!.value}</span>
           {price?.oldValue && (
-            <span class="text-lg text-gray-400 line-through">{price.oldValue}</span>
+            <span class="text-lg text-theme-muted line-through">{price.oldValue}</span>
           )}
         </div>
       )}
       {showVariants && (
         <div class="flex flex-wrap gap-2 mb-6">
           {variants!.items!.map((v) => (
-            <button class="py-2 px-4 border border-gray-300 rounded-lg bg-white text-sm cursor-pointer transition-colors duration-200 hover:border-black">
+            <button class="py-2 px-4 border border-theme rounded-lg bg-white text-sm cursor-pointer transition-colors duration-200 hover:border-theme-foreground">
               {v.label}
             </button>
           ))}
         </div>
       )}
       {showDescription && (
-        <p class="text-[1.05rem] text-gray-600 leading-[1.7] mb-8">{description!.text}</p>
+        <p class="text-[1.05rem] text-theme-muted leading-[1.7] mb-8">{description!.text}</p>
       )}
       {(showAddToCart || showBuyNow) && (
         <div class="flex gap-4 flex-wrap">
           {showAddToCart && (
-            <button class="py-3.5 px-8 text-[0.95rem] font-medium rounded-lg border border-gray-300 bg-white text-gray-800 cursor-pointer transition-all duration-200 hover:border-black hover:text-black">
+            <button class="py-3.5 px-8 text-[0.95rem] font-medium rounded-lg border border-theme bg-white text-theme-foreground cursor-pointer transition-all duration-200 hover:border-theme-foreground hover:text-theme-foreground">
               {buttons!.addToCart!.text}
             </button>
           )}
           {showBuyNow && (
-            <button class="py-3.5 px-8 text-[0.95rem] font-medium rounded-lg border-none bg-black text-white cursor-pointer transition-colors duration-200 hover:bg-gray-800">
+            <button class="py-3.5 px-8 text-[0.95rem] font-medium rounded-lg border-none bg-theme-primary text-theme-button-text cursor-pointer transition-colors duration-200 hover:opacity-90">
               {buttons!.buyNow!.text}
             </button>
           )}

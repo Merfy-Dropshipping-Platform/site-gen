@@ -24,46 +24,46 @@ const headingSizeClass = headingSizeClasses[headingSize] || headingSizeClasses.m
   style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}
 >
   <div class="max-w-[600px] mx-auto">
-    <h2 class={`${headingSizeClass} font-medium text-gray-900 text-center mb-10 leading-[1.2] font-comfortaa max-md:text-[1.75rem]`}>
+    <h2 class={`${headingSizeClass} font-medium text-theme-foreground text-center mb-10 leading-[1.2] font-heading max-md:text-[1.75rem]`}>
       {headingText}
     </h2>
     <form class="flex flex-col gap-5" action="#" method="POST">
       <div class="flex flex-col gap-1.5">
-        <label for="contact-name" class="text-[0.9rem] font-medium text-gray-700 font-manrope">Имя</label>
+        <label for="contact-name" class="text-[0.9rem] font-medium text-theme-foreground font-body">Имя</label>
         <input
           type="text"
           id="contact-name"
           name="name"
           placeholder="Ваше имя"
           required
-          class="py-3 px-4 text-base border border-gray-300 rounded-lg bg-white text-gray-900 font-manrope transition-colors focus:outline-none focus:border-black"
+          class="py-3 px-4 text-base border border-theme rounded-lg bg-white text-gray-900 font-body transition-colors focus:outline-none focus:border-theme-foreground"
         />
       </div>
       <div class="flex flex-col gap-1.5">
-        <label for="contact-email" class="text-[0.9rem] font-medium text-gray-700 font-manrope">Email</label>
+        <label for="contact-email" class="text-[0.9rem] font-medium text-theme-foreground font-body">Email</label>
         <input
           type="email"
           id="contact-email"
           name="email"
           placeholder="email@example.com"
           required
-          class="py-3 px-4 text-base border border-gray-300 rounded-lg bg-white text-gray-900 font-manrope transition-colors focus:outline-none focus:border-black"
+          class="py-3 px-4 text-base border border-theme rounded-lg bg-white text-gray-900 font-body transition-colors focus:outline-none focus:border-theme-foreground"
         />
       </div>
       <div class="flex flex-col gap-1.5">
-        <label for="contact-message" class="text-[0.9rem] font-medium text-gray-700 font-manrope">Сообщение</label>
+        <label for="contact-message" class="text-[0.9rem] font-medium text-theme-foreground font-body">Сообщение</label>
         <textarea
           id="contact-message"
           name="message"
           rows="5"
           placeholder="Ваше сообщение..."
           required
-          class="py-3 px-4 text-base border border-gray-300 rounded-lg bg-white text-gray-900 font-manrope transition-colors resize-y focus:outline-none focus:border-black"
+          class="py-3 px-4 text-base border border-theme rounded-lg bg-white text-gray-900 font-body transition-colors resize-y focus:outline-none focus:border-theme-foreground"
         ></textarea>
       </div>
       <button
         type="submit"
-        class="inline-flex items-center justify-center py-3.5 px-8 text-[0.95rem] font-medium rounded-lg border-none bg-black text-white cursor-pointer transition-colors hover:bg-gray-800 font-manrope"
+        class="inline-flex items-center justify-center py-3.5 px-8 text-[0.95rem] font-medium rounded-lg border-none bg-theme-primary text-theme-button-text cursor-pointer transition-colors hover:opacity-90 font-body"
       >
         Отправить
       </button>

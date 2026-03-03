@@ -87,16 +87,16 @@ const oldPriceDisplay =
   <!-- Product info -->
   <div class="flex flex-col gap-2 px-1">
     <a href={linkHref} class="no-underline text-inherit">
-      <h3 class="text-base sm:text-lg md:text-xl font-normal text-black leading-snug font-[family-name:var(--font-body)]">
+      <h3 class="text-base sm:text-lg md:text-xl font-normal text-theme-foreground leading-snug font-body">
         {productTitle}
       </h3>
     </a>
     <div class="flex items-center gap-3 flex-wrap">
-      <span class="text-lg sm:text-xl md:text-2xl font-normal text-black leading-snug font-[family-name:var(--font-body)]">
+      <span class="text-lg sm:text-xl md:text-2xl font-normal text-theme-foreground leading-snug font-body">
         {priceDisplay}
       </span>
       {oldPriceDisplay && (
-        <span class="text-sm sm:text-base md:text-lg font-medium text-gray-400 line-through leading-snug font-[family-name:var(--font-body)]">
+        <span class="text-sm sm:text-base md:text-lg font-medium text-theme-muted line-through leading-snug font-body">
           {oldPriceDisplay}
         </span>
       )}
@@ -104,7 +104,7 @@ const oldPriceDisplay =
     {productId && (
       <button
         type="button"
-        class="add-to-cart-btn mt-2 py-2.5 px-5 bg-[#e11d48] text-white text-sm font-medium rounded-lg hover:bg-[#be123c] transition-colors"
+        class="add-to-cart-btn mt-2 py-2.5 px-5 bg-theme-primary text-white text-sm font-medium rounded-lg hover:opacity-90 transition-colors"
         data-product-id={productId}
       >
         В корзину

@@ -41,14 +41,14 @@ const alignClass: Record<string, string> = {
   right: 'text-right',
 };
 
-const btnPrimaryClass = 'bg-black text-white hover:bg-gray-800';
-const btnSecondaryClass = 'bg-transparent text-gray-800 border border-gray-300 hover:border-black hover:text-black';
+const btnPrimaryClass = 'bg-theme-primary text-theme-button-text hover:opacity-90';
+const btnSecondaryClass = 'bg-transparent text-theme-foreground border border-theme hover:border-theme-foreground hover:text-theme-foreground';
 ---
 
 <section class="max-w-[1200px] mx-auto px-5" style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}>
   <div>
     {showHeading && (
-      <h2 class={`font-comfortaa font-medium text-gray-900 text-center mb-12 leading-[1.2] ${headingSizeClass[headingSize] ?? 'text-[2rem]'}`}>
+      <h2 class={`font-heading font-medium text-theme-foreground text-center mb-12 leading-[1.2] ${headingSizeClass[headingSize] ?? 'text-[2rem]'}`}>
         {heading!.text}
       </h2>
     )}
@@ -65,10 +65,10 @@ const btnSecondaryClass = 'bg-transparent text-gray-800 border border-gray-300 h
             )}
             <div class={imageRight ? 'md:order-1' : ''}>
               {row.title && (
-                <h3 class="font-comfortaa text-2xl font-medium text-gray-900 mb-4 leading-[1.2]">{row.title}</h3>
+                <h3 class="font-heading text-2xl font-medium text-theme-foreground mb-4 leading-[1.2]">{row.title}</h3>
               )}
               {row.description && (
-                <p class="text-[1.05rem] text-gray-600 leading-[1.7] mb-6">{row.description}</p>
+                <p class="text-[1.05rem] text-theme-muted leading-[1.7] mb-6">{row.description}</p>
               )}
               {row.button?.enabled !== 'false' && row.button?.text && (
                 <a

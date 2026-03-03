@@ -91,12 +91,12 @@ export function HeroBanner({
           <div className={`flex flex-col ${alignItems} gap-4 sm:gap-5 md:gap-6 lg:gap-[20px] xl:gap-[25px] px-4 sm:px-6 md:px-8 w-full max-w-7xl`}>
             <header className={`flex flex-col ${alignItems} gap-1 sm:gap-2 md:gap-3 lg:gap-4 xl:gap-[5px]`}>
               {headingText && (
-                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-[48px] font-normal text-white uppercase leading-[1.115] text-center font-comfortaa">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-[48px] font-normal text-white uppercase leading-[1.115] text-center font-heading">
                   {headingText}
                 </h1>
               )}
               {textContent && (
-                <p className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-[24px] font-normal text-white leading-[1.366] text-center px-2 sm:px-4 md:px-6 lg:px-8 font-manrope">
+                <p className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-[24px] font-normal text-white leading-[1.366] text-center px-2 sm:px-4 md:px-6 lg:px-8 font-body">
                   {textContent}
                 </p>
               )}
@@ -106,7 +106,7 @@ export function HeroBanner({
               {primaryButton?.text && (
                 <a
                   href={primaryLink}
-                  className="bg-white text-black rounded-lg sm:rounded-[8px] md:rounded-[10px] px-6 sm:px-8 md:px-[25px] lg:px-[30px] xl:px-[35px] h-12 sm:h-14 md:h-16 lg:h-[70px] xl:h-[80px] flex items-center justify-center gap-2 sm:gap-[8px] md:gap-[10px] text-sm sm:text-base md:text-lg lg:text-xl xl:text-[24px] font-normal uppercase leading-[1.366] hover:bg-gray-100 transition-colors font-manrope"
+                  className="bg-white text-black rounded-lg sm:rounded-[8px] md:rounded-[10px] px-6 sm:px-8 md:px-[25px] lg:px-[30px] xl:px-[35px] h-12 sm:h-14 md:h-16 lg:h-[70px] xl:h-[80px] flex items-center justify-center gap-2 sm:gap-[8px] md:gap-[10px] text-sm sm:text-base md:text-lg lg:text-xl xl:text-[24px] font-normal uppercase leading-[1.366] hover:bg-gray-100 transition-colors font-body"
                 >
                   {primaryButton.text}
                 </a>
@@ -114,7 +114,7 @@ export function HeroBanner({
               {secondaryButton?.text && (
                 <a
                   href={secondaryLink}
-                  className="border border-white text-white rounded-lg sm:rounded-[8px] md:rounded-[10px] px-6 sm:px-8 md:px-[25px] h-12 sm:h-14 md:h-16 lg:h-[70px] xl:h-[80px] flex items-center justify-center text-sm sm:text-base md:text-lg lg:text-xl xl:text-[24px] font-normal uppercase leading-[1.366] hover:bg-white/10 transition-colors font-manrope"
+                  className="border border-white text-white rounded-lg sm:rounded-[8px] md:rounded-[10px] px-6 sm:px-8 md:px-[25px] h-12 sm:h-14 md:h-16 lg:h-[70px] xl:h-[80px] flex items-center justify-center text-sm sm:text-base md:text-lg lg:text-xl xl:text-[24px] font-normal uppercase leading-[1.366] hover:bg-white/10 transition-colors font-body"
                 >
                   {secondaryButton.text}
                 </a>

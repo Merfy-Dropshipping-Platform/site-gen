@@ -961,8 +961,10 @@ async function stageGenerate(
     .merchantSettings;
 
   // Path 2: Constructor ThemeSettings → MerchantSettings
-  const constructorTheme = (ctx.revisionMeta as { themeSettings?: ConstructorThemeSettings })
-    .themeSettings;
+  // Constructor saves themeSettings in revision.data (not revision.meta)
+  const constructorTheme =
+    (ctx.revisionData as { themeSettings?: ConstructorThemeSettings }).themeSettings ??
+    (ctx.revisionMeta as { themeSettings?: ConstructorThemeSettings }).themeSettings;
   if (!merchantSettings && constructorTheme?.colorSchemes?.length) {
     merchantSettings = constructorThemeToMerchantSettings(constructorTheme);
     logger.log(

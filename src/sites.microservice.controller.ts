@@ -197,7 +197,7 @@ export class SitesMicroserviceController {
       const res = await this.service.publish({ tenantId, siteId, mode });
       return { success: true, ...res };
     } catch (e: any) {
-      this.logger.error("publish failed", e);
+      this.logger.error(`publish failed: ${e?.message}`, e?.stack);
       return { success: false, message: e?.message ?? "internal_error" };
     }
   }
@@ -287,7 +287,7 @@ export class SitesMicroserviceController {
       });
       return { success: true, ...res };
     } catch (e: any) {
-      this.logger.error("revisions.create failed", e);
+      this.logger.error(`revisions.create failed: ${e?.message}`, e?.stack);
       return { success: false, message: e?.message ?? "internal_error" };
     }
   }

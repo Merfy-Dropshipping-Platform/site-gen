@@ -80,6 +80,22 @@ const menuStyle = [
 const navLinkStyle = menuText ? `color: ${menuText};` : '';
 const textStyle = textColor ? `color: ${textColor};` : '';
 
+// Logo filter: if textColor is light (on dark bg), invert the logo SVG via CSS filter
+// Parse hex color to determine if it's light
+function isLightColor(hex: string | null): boolean {
+  if (!hex) return false;
+  const clean = hex.replace('#', '');
+  if (clean.length < 6) return false;
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.5;
+}
+
+const logoNeedsInvert = isLightColor(textColor);
+const logoStyle = logoNeedsInvert ? 'filter: brightness(0) invert(1);' : '';
+
 const isCenterLeft = logoPosition === 'center-left';
 ---
 
@@ -119,7 +135,7 @@ const isCenterLeft = logoPosition === 'center-left';
           <div class="absolute left-1/2 -translate-x-1/2 md:relative md:left-auto md:transform-none">
             <a href="/" class="flex items-center hover:opacity-80 transition-opacity">
               {logo ? (
-                <img src={logo} alt={siteTitle} class="h-5 sm:h-6 md:h-[26px] w-auto" />
+                <img src={logo} alt={siteTitle} class="h-5 sm:h-6 md:h-[26px] w-auto" style={logoStyle || undefined} />
               ) : (
                 <span class:list={['text-lg sm:text-xl md:text-2xl font-bold tracking-wide font-body', !textColor && 'text-theme-foreground']} style={textStyle}>{siteTitle}</span>
               )}
@@ -210,7 +226,7 @@ const isCenterLeft = logoPosition === 'center-left';
           <div class="absolute left-1/2 -translate-x-1/2">
             <a href="/" class="flex items-center hover:opacity-80 transition-opacity">
               {logo ? (
-                <img src={logo} alt={siteTitle} class="h-5 sm:h-6 md:h-[26px] w-auto" />
+                <img src={logo} alt={siteTitle} class="h-5 sm:h-6 md:h-[26px] w-auto" style={logoStyle || undefined} />
               ) : (
                 <span class:list={['text-lg sm:text-xl md:text-2xl font-bold tracking-wide font-body', !textColor && 'text-theme-foreground']} style={textStyle}>{siteTitle}</span>
               )}
@@ -299,7 +315,7 @@ const isCenterLeft = logoPosition === 'center-left';
           <div class="hidden md:flex">
             <a href="/" class="flex items-center hover:opacity-80 transition-opacity">
               {logo ? (
-                <img src={logo} alt={siteTitle} class="h-5 sm:h-6 md:h-[26px] w-auto" />
+                <img src={logo} alt={siteTitle} class="h-5 sm:h-6 md:h-[26px] w-auto" style={logoStyle || undefined} />
               ) : (
                 <span class:list={['text-lg sm:text-xl md:text-2xl font-bold tracking-wide font-body', !textColor && 'text-theme-foreground']} style={textStyle}>{siteTitle}</span>
               )}
@@ -329,7 +345,7 @@ const isCenterLeft = logoPosition === 'center-left';
             {/* Logo */}
             <a href="/" class="flex items-center hover:opacity-80 transition-opacity">
               {logo ? (
-                <img src={logo} alt={siteTitle} class="h-5 sm:h-6 md:h-[26px] w-auto" />
+                <img src={logo} alt={siteTitle} class="h-5 sm:h-6 md:h-[26px] w-auto" style={logoStyle || undefined} />
               ) : (
                 <span class:list={['text-lg sm:text-xl md:text-2xl font-bold tracking-wide font-body', !textColor && 'text-theme-foreground']} style={textStyle}>{siteTitle}</span>
               )}

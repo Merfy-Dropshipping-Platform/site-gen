@@ -5,6 +5,11 @@ import SocialIcon from './footer/SocialIcon.astro';
 
 interface Props {
   newsletter?: { enabled?: string; heading?: string; description?: string; placeholder?: string };
+  heading?: { text?: string; size?: string };
+  text?: { content?: string; size?: string };
+  colorScheme?: string;
+  copyrightColorScheme?: string;
+  padding?: { top?: number; bottom?: number };
   navigationColumn?: { title?: string; links?: Array<{ label: string; href: string }> };
   informationColumn?: { title?: string; links?: Array<{ label: string; href: string }> };
   socialColumn?: { title?: string; email?: string; socialLinks?: Array<{ platform: string; href: string }> };
@@ -13,6 +18,11 @@ interface Props {
 
 const {
   newsletter = { enabled: 'true', heading: 'Подпишитесь на нашу рассылку', description: 'Введите электронную почту и получайте информацию нашего бренда.', placeholder: 'rose@example.ru' },
+  heading,
+  text,
+  colorScheme,
+  copyrightColorScheme,
+  padding,
   navigationColumn = { title: 'Навигация', links: [{ label: 'Главная', href: '/' }, { label: 'Каталог', href: '#popular' }, { label: 'Контакты', href: '#' }] },
   informationColumn = { title: 'Информация', links: [{ label: 'Политика доставки', href: '#' }, { label: 'Политика возврата', href: '#' }, { label: 'Условия обслуживания', href: '#' }] },
   socialColumn = { title: 'Социальные сети', email: 'rose@example.ru', socialLinks: [{ platform: 'Facebook', href: '#' }, { platform: 'Instagram', href: '#' }, { platform: 'Twitter', href: '#' }] },
@@ -22,35 +32,49 @@ const {
 const today = new Date();
 const showNewsletter = newsletter?.enabled === 'true';
 const yearStr = copyright?.showYear === 'true' ? ` ${today.getFullYear()}` : '';
+
+// New fields from constructor take priority over legacy newsletter fields
+const newsletterHeading = heading?.text || newsletter?.heading;
+const newsletterDescription = text?.content || newsletter?.description;
+
+// Padding from constructor (default 80px matching sectionPadding)
+const padTop = padding?.top ?? 80;
+const padBottom = padding?.bottom ?? 80;
+
+// Color scheme CSS classes
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
+const copyrightSchemeClass = copyrightColorScheme ? `color-scheme-${copyrightColorScheme.replace('scheme-', '')}` : '';
 ---
 
-<footer class="bg-theme-background w-full">
+<footer class={`w-full ${schemeClass}`} style={`background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}>
   <div class="w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-[300px]">
     {showNewsletter && (
-      <section class="pt-12 sm:pt-16 md:pt-20 lg:pt-24 xl:pt-28 2xl:pt-[100px] pb-10 sm:pb-12 md:pb-16 lg:pb-20 xl:pb-24">
+      <section class="pb-10 sm:pb-12 md:pb-16 lg:pb-20 xl:pb-24">
         <div class="max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-[809px] mx-auto">
           <div class="flex flex-col items-center gap-3 sm:gap-4 lg:gap-[5px] mb-8 sm:mb-10 lg:mb-12">
-            <h2 class="text-2xl sm:text-3xl md:text-[32px] lg:text-[34px] xl:text-[36px] font-normal text-theme-foreground uppercase leading-[1.115] text-center font-heading">
-              {newsletter?.heading}
+            <h2 class="text-2xl sm:text-3xl md:text-[32px] lg:text-[34px] xl:text-[36px] font-normal uppercase leading-[1.115] text-center font-heading" style="color: rgb(var(--color-foreground));">
+              {newsletterHeading}
             </h2>
-            {newsletter?.description && (
-              <p class="text-base sm:text-lg md:text-xl lg:text-[22px] xl:text-[24px] font-normal text-theme-muted leading-[1.366] text-center px-4 sm:px-0 font-body">
-                {newsletter.description}
+            {newsletterDescription && (
+              <p class="text-base sm:text-lg md:text-xl lg:text-[22px] xl:text-[24px] font-normal leading-[1.366] text-center px-4 sm:px-0 font-body" style="color: rgb(var(--color-foreground)); opacity: 0.7;">
+                {newsletterDescription}
               </p>
             )}
           </div>
-          <form class="w-full max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-[600px] mx-auto h-auto sm:h-16 md:h-[70px] lg:h-[75px] xl:h-[80px] bg-theme-background border border-theme rounded-lg md:rounded-[10px] flex flex-col sm:flex-row justify-between items-stretch sm:items-center px-4 sm:px-5 lg:px-[25px] py-3 sm:py-2 lg:py-[10px] gap-3 sm:gap-2 lg:gap-[10px]">
+          <form class="w-full max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-[600px] mx-auto h-auto sm:h-16 md:h-[70px] lg:h-[75px] xl:h-[80px] border rounded-lg md:rounded-[10px] flex flex-col sm:flex-row justify-between items-stretch sm:items-center px-4 sm:px-5 lg:px-[25px] py-3 sm:py-2 lg:py-[10px] gap-3 sm:gap-2 lg:gap-[10px]" style="background: rgb(var(--color-background)); border-color: rgb(var(--color-foreground)); border-radius: var(--radius-input, 10px);">
             <input
               type="email"
               name="email"
               placeholder={newsletter?.placeholder || 'rose@example.ru'}
               required
-              class="flex-1 bg-transparent text-lg sm:text-xl md:text-[22px] lg:text-2xl font-light text-theme-muted leading-[1.366] outline-none placeholder:text-theme-muted focus:text-theme-foreground font-body"
+              class="flex-1 bg-transparent text-lg sm:text-xl md:text-[22px] lg:text-2xl font-light leading-[1.366] outline-none font-body"
+              style="color: rgb(var(--color-foreground)); opacity: 0.7;"
             />
             <button
               type="submit"
               aria-label="Подписаться"
-              class="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center self-end sm:self-center hover:scale-110 transition-transform text-theme-foreground"
+              class="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center self-end sm:self-center hover:scale-110 transition-transform"
+              style="color: rgb(var(--color-foreground));"
             >
               <svg class="w-full h-full" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
@@ -103,8 +127,8 @@ const yearStr = copyright?.showYear === 'true' ? ` ${today.getFullYear()}` : '';
     </section>
   </div>
 
-  <div class="w-full h-auto sm:h-20 md:h-24 lg:h-[100px] bg-black flex items-center justify-center py-6 sm:py-0">
-    <p class="text-sm sm:text-base md:text-lg lg:text-[20px] font-light text-white leading-[1.21] text-center px-4 sm:px-6 font-body">
+  <div class={`w-full h-auto sm:h-20 md:h-24 lg:h-[100px] flex items-center justify-center py-6 sm:py-0 ${copyrightSchemeClass}`} style={copyrightSchemeClass ? `background: rgb(var(--color-background)); color: rgb(var(--color-foreground));` : 'background: black; color: white;'}>
+    <p class="text-sm sm:text-base md:text-lg lg:text-[20px] font-light leading-[1.21] text-center px-4 sm:px-6 font-body">
       &copy;{yearStr} {copyright?.companyName} Все права защищены. {copyright?.poweredBy}
     </p>
   </div>

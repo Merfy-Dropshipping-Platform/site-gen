@@ -733,6 +733,11 @@ export function extractSiteConfig(
       siteConfig.header = {
         siteTitle: comp.props.siteTitle ?? "Rose",
         logo: comp.props.logo ?? "/logo.svg",
+        logoPosition: comp.props.logoPosition ?? "top-left",
+        stickiness: comp.props.stickiness ?? "scroll-up",
+        colorScheme: comp.props.colorScheme ?? undefined,
+        menuColorScheme: comp.props.menuColorScheme ?? undefined,
+        padding: comp.props.padding ?? { top: 0, bottom: 0 },
         navigationLinks: comp.props.navigationLinks ?? [],
         actionButtons: comp.props.actionButtons ?? {},
       };
@@ -944,6 +949,18 @@ async function stageGenerate(
 
   // Extract Header and Footer component props from revision data for site-config.json
   const siteConfig = extractSiteConfig(ctx.revisionData, revPagesData);
+
+  // Inject colorSchemes from constructor theme into site-config.json
+  const constructorThemeForColors =
+    (ctx.revisionData as { themeSettings?: { colorSchemes?: any[] } }).themeSettings ??
+    (ctx.revisionMeta as { themeSettings?: { colorSchemes?: any[] } }).themeSettings;
+  if (constructorThemeForColors?.colorSchemes?.length) {
+    (siteConfig as Record<string, unknown>).colorSchemes =
+      constructorThemeForColors.colorSchemes;
+    logger.log(
+      `[generate] Injected ${constructorThemeForColors.colorSchemes.length} colorSchemes into site-config.json`,
+    );
+  }
 
   // Override header logo with branding logo if available
   if (ctx.branding?.logoUrl) {

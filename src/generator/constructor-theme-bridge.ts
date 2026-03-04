@@ -172,22 +172,22 @@ export function constructorThemeToMerchantSettings(
     tokens["color-border"] = defaultScheme.primaryButton.border ?? defaultScheme.text;
   }
 
-  // Convert color schemes
+  // Convert color schemes — keys MUST match CSS var names (with "color-" prefix)
   const colorSchemes: GeneratorColorScheme[] = theme.colorSchemes.map(
     (scheme, index) => ({
       id: index + 1,
       label: scheme.name,
       colors: {
-        background: scheme.background,
-        foreground: scheme.text,
-        heading: scheme.heading,
-        primary: scheme.primaryButton.background,
-        button: scheme.primaryButton.background,
-        "button-text": scheme.primaryButton.text,
-        "button-hover": scheme.primaryButton.backgroundHover ?? scheme.primaryButton.background,
-        "secondary-button": scheme.secondaryButton.background,
-        "secondary-button-text": scheme.secondaryButton.text,
-        border: scheme.primaryButton.border ?? scheme.text,
+        "color-background": scheme.background,
+        "color-foreground": scheme.text,
+        "color-heading": scheme.heading,
+        "color-primary": scheme.primaryButton.background,
+        "color-button": scheme.primaryButton.background,
+        "color-button-text": scheme.primaryButton.text,
+        "color-button-hover": scheme.primaryButton.backgroundHover ?? scheme.primaryButton.background,
+        "color-secondary": scheme.secondaryButton.background,
+        "color-secondary-button-text": scheme.secondaryButton.text,
+        "color-border": scheme.primaryButton.border ?? scheme.text,
       },
     }),
   );

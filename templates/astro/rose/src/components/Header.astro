@@ -1,139 +1,449 @@
 ---
 import NavLink from './header/NavLink.astro';
-import IconButton from './header/IconButton.astro';
+import siteConfig from '../data/site-config.json';
 
 interface Props {
   siteTitle?: string;
   logo?: string;
+  logoPosition?: "top-left" | "top-center" | "top-right" | "center-left";
+  stickiness?: "scroll-up" | "always" | "none";
+  colorScheme?: string;
+  padding?: { top: number; bottom: number };
   navigationLinks?: Array<{ label: string; href: string; submenu?: Array<{ label: string; href: string }> }>;
+  menuColorScheme?: string;
+  menuType?: "dropdown" | "mega-menu" | "sidebar";
   actionButtons?: { showSearch?: string; showCart?: string; showProfile?: string };
 }
 
 const {
   siteTitle = 'Rose Theme',
   logo = '/logo.svg',
+  logoPosition = 'top-left',
+  stickiness = 'scroll-up',
+  colorScheme,
+  padding,
   navigationLinks = [
     { label: 'Главная', href: '/' },
     { label: 'Каталог', href: '/catalog' },
     { label: 'О нас', href: '/about' },
     { label: 'Контакты', href: '/contacts' },
   ],
+  menuColorScheme,
   actionButtons = { showSearch: 'true', showCart: 'true', showProfile: 'true' },
 } = Astro.props;
 
 const showSearch = actionButtons?.showSearch === 'true';
 const showCart = actionButtons?.showCart === 'true';
 const showProfile = actionButtons?.showProfile === 'true';
+
+// Resolve color schemes from site-config.json
+const colorSchemes = (siteConfig as any)?.colorSchemes ?? [];
+const scheme = colorScheme
+  ? colorSchemes.find((s: any) => s.id === colorScheme) || colorSchemes[0]
+  : colorSchemes[0] || null;
+const menuScheme = menuColorScheme
+  ? colorSchemes.find((s: any) => s.id === menuColorScheme) || scheme
+  : scheme;
+
+const bgColor = scheme?.background ?? null;
+const textColor = scheme?.text ?? null;
+const menuBg = menuScheme?.background ?? bgColor;
+const menuText = menuScheme?.text ?? textColor;
+
+// Stickiness
+const stickyClass = stickiness === "always"
+  ? "sticky top-0 z-50"
+  : stickiness === "scroll-up"
+    ? "sticky top-0 z-50 transition-transform duration-300"
+    : "relative z-50";
+
+// Padding
+const paddingTop = padding?.top ?? 0;
+const paddingBottom = padding?.bottom ?? 0;
+const useCustomPadding = paddingTop > 0 || paddingBottom > 0;
+
+// Style objects
+const headerStyle = [
+  bgColor ? `background-color: ${bgColor};` : '',
+  textColor ? `color: ${textColor};` : '',
+  textColor ? `border-color: ${textColor}15;` : '',
+  useCustomPadding ? `padding-top: ${paddingTop}px; padding-bottom: ${paddingBottom}px;` : '',
+].filter(Boolean).join(' ');
+
+const wrapperStyle = bgColor ? `background-color: ${bgColor};` : '';
+
+const menuStyle = [
+  menuBg ? `background-color: ${menuBg};` : '',
+  textColor ? `border-color: ${textColor}15;` : '',
+].filter(Boolean).join(' ');
+
+const navLinkStyle = menuText ? `color: ${menuText};` : '';
+const textStyle = textColor ? `color: ${textColor};` : '';
+
+const isCenterLeft = logoPosition === 'center-left';
 ---
 
-<div class="w-full sticky top-0 z-50 bg-theme-background shadow-sm">
-  <header class="bg-theme-background w-full h-16 sm:h-20 md:h-24 lg:h-28 xl:h-[120px] flex items-center border-b border-theme">
-    <nav class="w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-16 xl:px-24 2xl:px-[300px] flex items-center justify-between">
-      <!-- Mobile: Hamburger Menu -->
-      <button
-        id="mobile-menu-button"
-        aria-label="Меню"
-        aria-expanded="false"
-        class="md:hidden w-10 h-10 flex items-center justify-center hover:opacity-70 transition-opacity text-theme-foreground"
-      >
-        <svg id="menu-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path id="menu-line-1" d="M11 17H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
-          <path id="menu-line-2" d="M11 23H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
+<div class={`w-full shadow-sm ${stickyClass}`} style={wrapperStyle} data-header-wrapper>
+  <header
+    class:list={[
+      'w-full flex items-center border-b',
+      !bgColor && 'bg-theme-background border-theme',
+      !useCustomPadding && !isCenterLeft && 'min-h-[64px]',
+    ]}
+    style={headerStyle}
+  >
+    <nav
+      class:list={[
+        'w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-16 xl:px-24 2xl:px-[300px] flex items-center relative',
+        !isCenterLeft && 'justify-between',
+      ]}
+    >
+      {/* ============ LAYOUT: top-left (default) ============ */}
+      {logoPosition === 'top-left' && (
+        <>
+          {/* Mobile hamburger */}
+          <button
+            id="mobile-menu-button"
+            aria-label="Меню"
+            aria-expanded="false"
+            class:list={['md:hidden w-10 h-10 flex items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']}
+            style={textStyle}
+          >
+            <svg id="menu-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M11 17H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M11 23H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
 
-      <!-- Logo -->
-      <div class="absolute left-1/2 -translate-x-1/2 md:relative md:left-auto md:transform-none">
-        <a href="/" class="flex items-center hover:opacity-80 transition-opacity">
-          {logo ? (
-            <img src={logo} alt={siteTitle} class="h-5 sm:h-6 md:h-[26px] w-auto" />
-          ) : (
-            <span class="text-lg sm:text-xl md:text-2xl font-heading font-normal text-theme-foreground">{siteTitle}</span>
-          )}
-        </a>
-      </div>
-
-      <!-- Desktop Navigation -->
-      <div class="hidden md:flex items-center gap-4 lg:gap-8 xl:gap-12 2xl:gap-[80px]">
-        {navigationLinks?.map((link, i) => (
-          <NavLink href={link.href} active={i === 0}>{link.label}</NavLink>
-        ))}
-      </div>
-
-      <!-- Mobile Navigation Menu -->
-      <div
-        id="mobile-menu"
-        class="hidden md:hidden absolute top-full left-0 right-0 bg-theme-background border-b border-theme z-50"
-      >
-        <nav class="flex flex-col" aria-label="Мобильная навигация">
-          {showSearch && (
-            <div class="px-4 pt-6 pb-4">
-              <div class="relative">
-                <input
-                  type="search"
-                  placeholder="Поиск..."
-                  class="block w-full h-12 pl-5 pr-12 bg-theme-background border border-theme rounded-lg text-sm font-normal text-theme-foreground placeholder:text-theme-muted outline-none font-body"
-                />
-                <button class="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5">
-                  <svg class="w-5 h-5 text-theme-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                  </svg>
-                </button>
-              </div>
-            </div>
-          )}
-          <div class="flex flex-col">
-            {navigationLinks?.map((link) => {
-              const hasSubmenu = link.submenu && link.submenu.length > 0;
-              return hasSubmenu ? (
-                <div class="border-t border-theme">
-                  <button
-                    class="mobile-submenu-toggle w-full px-4 py-4 text-base font-normal text-theme-foreground hover:opacity-80 transition-colors flex items-center justify-between font-body"
-                    data-target={`submenu-${link.label}`}
-                  >
-                    <span>{link.label}</span>
-                    <svg class="w-4 h-4 transition-transform submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                    </svg>
-                  </button>
-                  <div class="hidden bg-theme-secondary mobile-submenu" data-id={`submenu-${link.label}`}>
-                    {link.submenu?.map((sub) => (
-                      <a href={sub.href} class="block px-8 py-3 text-sm font-normal text-theme-muted hover:text-theme-foreground transition-colors font-body border-t border-theme">
-                        {sub.label}
-                      </a>
-                    ))}
-                  </div>
-                </div>
+          {/* Logo */}
+          <div class="absolute left-1/2 -translate-x-1/2 md:relative md:left-auto md:transform-none">
+            <a href="/" class="flex items-center hover:opacity-80 transition-opacity">
+              {logo ? (
+                <img src={logo} alt={siteTitle} class="h-5 sm:h-6 md:h-[26px] w-auto" />
               ) : (
-                <a href={link.href} class="px-4 py-4 text-base font-normal text-theme-foreground hover:opacity-80 transition-colors border-t border-theme font-body">
-                  {link.label}
-                </a>
-              );
-            })}
+                <span class:list={['text-lg sm:text-xl md:text-2xl font-bold tracking-wide font-body', !textColor && 'text-theme-foreground']} style={textStyle}>{siteTitle}</span>
+              )}
+            </a>
           </div>
-        </nav>
-      </div>
 
-      <!-- Action Buttons -->
-      <div class="flex items-center gap-3 sm:gap-3 md:gap-4 lg:gap-5 xl:gap-[25px]">
-        {showSearch && (
-          <div class="hidden md:block">
-            <IconButton icon="/search.svg" label="Поиск" />
+          {/* Desktop nav */}
+          <div class="hidden md:flex items-center gap-4 lg:gap-8 xl:gap-12 2xl:gap-[80px]">
+            {navigationLinks?.map((link) => (
+              <a
+                href={link.href}
+                class:list={['text-sm md:text-base lg:text-lg xl:text-[20px] font-normal hover:opacity-70 transition-opacity font-body', !menuText && 'text-theme-foreground']}
+                style={navLinkStyle}
+              >
+                {link.label}
+              </a>
+            ))}
           </div>
-        )}
-        {showCart && (
-          <a href="/cart" id="header-cart-link" class="relative w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 flex items-center justify-center hover:opacity-70 transition-opacity" aria-label="Корзина">
-            <img src="/cart.svg" alt="Корзина" class="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10" />
-            <span id="cart-badge" class="hidden absolute -top-1 -right-1 bg-theme-primary text-theme-button-text text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center leading-none px-1">0</span>
-          </a>
-        )}
-        {showProfile && <IconButton icon="/profile.svg" label="Аккаунт" />}
-      </div>
+
+          {/* Actions */}
+          <div class="flex items-center gap-3 sm:gap-3 md:gap-4 lg:gap-5 xl:gap-[25px]">
+            {showSearch && (
+              <button
+                aria-label="Поиск"
+                class:list={['hidden md:flex w-8 h-8 lg:w-10 lg:h-10 items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']}
+                style={textStyle}
+              >
+                <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+              </button>
+            )}
+            {showCart && (
+              <a href="/cart" id="header-cart-link" class:list={['relative w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 flex items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']} style={textStyle} aria-label="Корзина">
+                <svg class="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M18.0295 11.6923C16.8004 11.6923 15.6678 12.3587 15.0708 13.4332C13.8175 15.6892 15.4488 18.4615 18.0295 18.4615H21.9704C24.5511 18.4615 26.1824 15.6892 24.9291 13.4332C24.3321 12.3587 23.1996 11.6923 21.9704 11.6923H18.0295ZM16.6847 14.3298C16.956 13.8414 17.4708 13.5385 18.0295 13.5385H21.9704C22.5291 13.5385 23.0439 13.8414 23.3152 14.3298C23.8849 15.3552 23.1434 16.6154 21.9704 16.6154H18.0295C16.8565 16.6154 16.115 15.3552 16.6847 14.3298Z" fill="currentColor"/>
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M17.2489 8C15.1954 8 13.2924 9.07744 12.2359 10.8383L8.83312 16.5096C8.28797 17.4182 8 18.4579 8 19.5175V26.1538C8 29.3826 10.6174 32 13.8462 32H26.1538C29.3826 32 32 29.3826 32 26.1538V19.5175C32 18.4579 31.712 17.4182 31.1669 16.5096L27.7641 10.8383C26.7076 9.07744 24.8046 8 22.7511 8H17.2489ZM13.819 11.7882C14.5419 10.5833 15.8439 9.84615 17.2489 9.84615H22.7511C24.1561 9.84615 25.4581 10.5833 26.181 11.7882L29.5838 17.4595C29.9568 18.0811 30.1538 18.7925 30.1538 19.5175V26.1538C30.1538 28.363 28.363 30.1538 26.1538 30.1538H13.8462C11.637 30.1538 9.84615 28.363 9.84615 26.1538V19.5175C9.84615 18.7925 10.0432 18.0811 10.4162 17.4595L13.819 11.7882Z" fill="currentColor"/>
+                </svg>
+                <span id="cart-badge" class="hidden absolute -top-1 -right-1 bg-theme-primary text-theme-button-text text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center leading-none px-1">0</span>
+              </a>
+            )}
+            {showProfile && (
+              <button
+                aria-label="Аккаунт"
+                class:list={['w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']}
+                style={textStyle}
+              >
+                <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+              </button>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ============ LAYOUT: top-center ============ */}
+      {logoPosition === 'top-center' && (
+        <>
+          {/* Mobile hamburger */}
+          <button
+            id="mobile-menu-button"
+            aria-label="Меню"
+            aria-expanded="false"
+            class:list={['md:hidden w-10 h-10 flex items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']}
+            style={textStyle}
+          >
+            <svg id="menu-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M11 17H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M11 23H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+
+          {/* Desktop nav (left) */}
+          <div class="hidden md:flex items-center gap-4 lg:gap-8 xl:gap-12 2xl:gap-[80px]">
+            {navigationLinks?.map((link) => (
+              <a
+                href={link.href}
+                class:list={['text-sm md:text-base lg:text-lg xl:text-[20px] font-normal hover:opacity-70 transition-opacity font-body', !menuText && 'text-theme-foreground']}
+                style={navLinkStyle}
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
+
+          {/* Logo (absolute center) */}
+          <div class="absolute left-1/2 -translate-x-1/2">
+            <a href="/" class="flex items-center hover:opacity-80 transition-opacity">
+              {logo ? (
+                <img src={logo} alt={siteTitle} class="h-5 sm:h-6 md:h-[26px] w-auto" />
+              ) : (
+                <span class:list={['text-lg sm:text-xl md:text-2xl font-bold tracking-wide font-body', !textColor && 'text-theme-foreground']} style={textStyle}>{siteTitle}</span>
+              )}
+            </a>
+          </div>
+
+          {/* Actions (right) */}
+          <div class="flex items-center gap-3 sm:gap-3 md:gap-4 lg:gap-5 xl:gap-[25px]">
+            {showSearch && (
+              <button aria-label="Поиск" class:list={['hidden md:flex w-8 h-8 lg:w-10 lg:h-10 items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']} style={textStyle}>
+                <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              </button>
+            )}
+            {showCart && (
+              <a href="/cart" id="header-cart-link" class:list={['relative w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 flex items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']} style={textStyle} aria-label="Корзина">
+                <svg class="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M18.0295 11.6923C16.8004 11.6923 15.6678 12.3587 15.0708 13.4332C13.8175 15.6892 15.4488 18.4615 18.0295 18.4615H21.9704C24.5511 18.4615 26.1824 15.6892 24.9291 13.4332C24.3321 12.3587 23.1996 11.6923 21.9704 11.6923H18.0295ZM16.6847 14.3298C16.956 13.8414 17.4708 13.5385 18.0295 13.5385H21.9704C22.5291 13.5385 23.0439 13.8414 23.3152 14.3298C23.8849 15.3552 23.1434 16.6154 21.9704 16.6154H18.0295C16.8565 16.6154 16.115 15.3552 16.6847 14.3298Z" fill="currentColor"/>
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M17.2489 8C15.1954 8 13.2924 9.07744 12.2359 10.8383L8.83312 16.5096C8.28797 17.4182 8 18.4579 8 19.5175V26.1538C8 29.3826 10.6174 32 13.8462 32H26.1538C29.3826 32 32 29.3826 32 26.1538V19.5175C32 18.4579 31.712 17.4182 31.1669 16.5096L27.7641 10.8383C26.7076 9.07744 24.8046 8 22.7511 8H17.2489ZM13.819 11.7882C14.5419 10.5833 15.8439 9.84615 17.2489 9.84615H22.7511C24.1561 9.84615 25.4581 10.5833 26.181 11.7882L29.5838 17.4595C29.9568 18.0811 30.1538 18.7925 30.1538 19.5175V26.1538C30.1538 28.363 28.363 30.1538 26.1538 30.1538H13.8462C11.637 30.1538 9.84615 28.363 9.84615 26.1538V19.5175C9.84615 18.7925 10.0432 18.0811 10.4162 17.4595L13.819 11.7882Z" fill="currentColor"/>
+                </svg>
+                <span id="cart-badge" class="hidden absolute -top-1 -right-1 bg-theme-primary text-theme-button-text text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center leading-none px-1">0</span>
+              </a>
+            )}
+            {showProfile && (
+              <button aria-label="Аккаунт" class:list={['w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']} style={textStyle}>
+                <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+              </button>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ============ LAYOUT: top-right ============ */}
+      {logoPosition === 'top-right' && (
+        <>
+          {/* Mobile hamburger */}
+          <button
+            id="mobile-menu-button"
+            aria-label="Меню"
+            aria-expanded="false"
+            class:list={['md:hidden w-10 h-10 flex items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']}
+            style={textStyle}
+          >
+            <svg id="menu-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M11 17H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M11 23H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+
+          {/* Desktop nav (left) */}
+          <div class="hidden md:flex items-center gap-4 lg:gap-8 xl:gap-12 2xl:gap-[80px]">
+            {navigationLinks?.map((link) => (
+              <a
+                href={link.href}
+                class:list={['text-sm md:text-base lg:text-lg xl:text-[20px] font-normal hover:opacity-70 transition-opacity font-body', !menuText && 'text-theme-foreground']}
+                style={navLinkStyle}
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
+
+          {/* Actions */}
+          <div class="flex items-center gap-3 sm:gap-3 md:gap-4 lg:gap-5 xl:gap-[25px]">
+            {showSearch && (
+              <button aria-label="Поиск" class:list={['hidden md:flex w-8 h-8 lg:w-10 lg:h-10 items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']} style={textStyle}>
+                <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              </button>
+            )}
+            {showCart && (
+              <a href="/cart" id="header-cart-link" class:list={['relative w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 flex items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']} style={textStyle} aria-label="Корзина">
+                <svg class="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M18.0295 11.6923C16.8004 11.6923 15.6678 12.3587 15.0708 13.4332C13.8175 15.6892 15.4488 18.4615 18.0295 18.4615H21.9704C24.5511 18.4615 26.1824 15.6892 24.9291 13.4332C24.3321 12.3587 23.1996 11.6923 21.9704 11.6923H18.0295ZM16.6847 14.3298C16.956 13.8414 17.4708 13.5385 18.0295 13.5385H21.9704C22.5291 13.5385 23.0439 13.8414 23.3152 14.3298C23.8849 15.3552 23.1434 16.6154 21.9704 16.6154H18.0295C16.8565 16.6154 16.115 15.3552 16.6847 14.3298Z" fill="currentColor"/>
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M17.2489 8C15.1954 8 13.2924 9.07744 12.2359 10.8383L8.83312 16.5096C8.28797 17.4182 8 18.4579 8 19.5175V26.1538C8 29.3826 10.6174 32 13.8462 32H26.1538C29.3826 32 32 29.3826 32 26.1538V19.5175C32 18.4579 31.712 17.4182 31.1669 16.5096L27.7641 10.8383C26.7076 9.07744 24.8046 8 22.7511 8H17.2489ZM13.819 11.7882C14.5419 10.5833 15.8439 9.84615 17.2489 9.84615H22.7511C24.1561 9.84615 25.4581 10.5833 26.181 11.7882L29.5838 17.4595C29.9568 18.0811 30.1538 18.7925 30.1538 19.5175V26.1538C30.1538 28.363 28.363 30.1538 26.1538 30.1538H13.8462C11.637 30.1538 9.84615 28.363 9.84615 26.1538V19.5175C9.84615 18.7925 10.0432 18.0811 10.4162 17.4595L13.819 11.7882Z" fill="currentColor"/>
+                </svg>
+                <span id="cart-badge" class="hidden absolute -top-1 -right-1 bg-theme-primary text-theme-button-text text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center leading-none px-1">0</span>
+              </a>
+            )}
+            {showProfile && (
+              <button aria-label="Аккаунт" class:list={['w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']} style={textStyle}>
+                <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+              </button>
+            )}
+          </div>
+
+          {/* Logo (right) */}
+          <div class="hidden md:flex">
+            <a href="/" class="flex items-center hover:opacity-80 transition-opacity">
+              {logo ? (
+                <img src={logo} alt={siteTitle} class="h-5 sm:h-6 md:h-[26px] w-auto" />
+              ) : (
+                <span class:list={['text-lg sm:text-xl md:text-2xl font-bold tracking-wide font-body', !textColor && 'text-theme-foreground']} style={textStyle}>{siteTitle}</span>
+              )}
+            </a>
+          </div>
+        </>
+      )}
+
+      {/* ============ LAYOUT: center-left ============ */}
+      {logoPosition === 'center-left' && (
+        <div class="flex flex-col w-full">
+          <div class="flex items-center justify-between w-full">
+            {/* Mobile hamburger */}
+            <button
+              id="mobile-menu-button"
+              aria-label="Меню"
+              aria-expanded="false"
+              class:list={['md:hidden w-10 h-10 flex items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']}
+              style={textStyle}
+            >
+              <svg id="menu-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M11 17H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M11 23H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+
+            {/* Logo */}
+            <a href="/" class="flex items-center hover:opacity-80 transition-opacity">
+              {logo ? (
+                <img src={logo} alt={siteTitle} class="h-5 sm:h-6 md:h-[26px] w-auto" />
+              ) : (
+                <span class:list={['text-lg sm:text-xl md:text-2xl font-bold tracking-wide font-body', !textColor && 'text-theme-foreground']} style={textStyle}>{siteTitle}</span>
+              )}
+            </a>
+
+            {/* Actions */}
+            <div class="flex items-center gap-3 sm:gap-3 md:gap-4 lg:gap-5 xl:gap-[25px]">
+              {showSearch && (
+                <button aria-label="Поиск" class:list={['hidden md:flex w-8 h-8 lg:w-10 lg:h-10 items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']} style={textStyle}>
+                  <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </button>
+              )}
+              {showCart && (
+                <a href="/cart" id="header-cart-link" class:list={['relative w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 flex items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']} style={textStyle} aria-label="Корзина">
+                  <svg class="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M18.0295 11.6923C16.8004 11.6923 15.6678 12.3587 15.0708 13.4332C13.8175 15.6892 15.4488 18.4615 18.0295 18.4615H21.9704C24.5511 18.4615 26.1824 15.6892 24.9291 13.4332C24.3321 12.3587 23.1996 11.6923 21.9704 11.6923H18.0295ZM16.6847 14.3298C16.956 13.8414 17.4708 13.5385 18.0295 13.5385H21.9704C22.5291 13.5385 23.0439 13.8414 23.3152 14.3298C23.8849 15.3552 23.1434 16.6154 21.9704 16.6154H18.0295C16.8565 16.6154 16.115 15.3552 16.6847 14.3298Z" fill="currentColor"/>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M17.2489 8C15.1954 8 13.2924 9.07744 12.2359 10.8383L8.83312 16.5096C8.28797 17.4182 8 18.4579 8 19.5175V26.1538C8 29.3826 10.6174 32 13.8462 32H26.1538C29.3826 32 32 29.3826 32 26.1538V19.5175C32 18.4579 31.712 17.4182 31.1669 16.5096L27.7641 10.8383C26.7076 9.07744 24.8046 8 22.7511 8H17.2489ZM13.819 11.7882C14.5419 10.5833 15.8439 9.84615 17.2489 9.84615H22.7511C24.1561 9.84615 25.4581 10.5833 26.181 11.7882L29.5838 17.4595C29.9568 18.0811 30.1538 18.7925 30.1538 19.5175V26.1538C30.1538 28.363 28.363 30.1538 26.1538 30.1538H13.8462C11.637 30.1538 9.84615 28.363 9.84615 26.1538V19.5175C9.84615 18.7925 10.0432 18.0811 10.4162 17.4595L13.819 11.7882Z" fill="currentColor"/>
+                  </svg>
+                  <span id="cart-badge" class="hidden absolute -top-1 -right-1 bg-theme-primary text-theme-button-text text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center leading-none px-1">0</span>
+                </a>
+              )}
+              {showProfile && (
+                <button aria-label="Аккаунт" class:list={['w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']} style={textStyle}>
+                  <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Desktop nav (centered, second row) */}
+          <div class="hidden md:flex items-center justify-center gap-4 lg:gap-8 xl:gap-12 2xl:gap-[80px] mt-2">
+            {navigationLinks?.map((link) => (
+              <a
+                href={link.href}
+                class:list={['text-sm md:text-base lg:text-lg xl:text-[20px] font-normal hover:opacity-70 transition-opacity font-body', !menuText && 'text-theme-foreground']}
+                style={navLinkStyle}
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
     </nav>
   </header>
+
+  {/* ============ Mobile Navigation Menu ============ */}
+  <div
+    id="mobile-menu"
+    class="hidden md:hidden absolute top-full left-0 right-0 border-b shadow-lg z-50"
+    style={menuStyle || undefined}
+  >
+    <nav class:list={['flex flex-col', !menuBg && 'bg-theme-background']} aria-label="Мобильная навигация">
+      {showSearch && (
+        <div class="px-4 pt-6 pb-4">
+          <div class="relative">
+            <input
+              type="search"
+              placeholder="Поиск..."
+              class:list={['block w-full h-12 pl-5 pr-12 border rounded-lg text-sm font-normal outline-none font-body', !menuBg && 'bg-theme-background border-theme text-theme-foreground placeholder:text-theme-muted']}
+              style={menuBg ? `background-color: ${menuBg}; color: ${menuText}; border-color: ${menuText}30;` : undefined}
+            />
+            <button class="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5">
+              <svg class:list={['w-5 h-5', !menuText && 'text-theme-muted']} fill="none" stroke={menuText || 'currentColor'} viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+      <div class="flex flex-col">
+        {navigationLinks?.map((link) => {
+          const hasSubmenu = link.submenu && link.submenu.length > 0;
+          return hasSubmenu ? (
+            <div class="border-t" style={menuText ? `border-color: ${menuText}15;` : undefined}>
+              <button
+                class:list={['mobile-submenu-toggle w-full px-4 py-4 text-base font-normal hover:opacity-80 transition-colors flex items-center justify-between font-body', !menuText && 'text-theme-foreground border-theme']}
+                style={menuText ? `color: ${menuText};` : undefined}
+                data-target={`submenu-${link.label}`}
+              >
+                <span>{link.label}</span>
+                <svg class="w-4 h-4 transition-transform submenu-arrow" fill="none" stroke={menuText || 'currentColor'} viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+              <div class="hidden mobile-submenu" style={menuText ? `background-color: ${menuText}08;` : undefined} data-id={`submenu-${link.label}`}>
+                {link.submenu?.map((sub) => (
+                  <a
+                    href={sub.href}
+                    class:list={['block px-8 py-3 text-sm font-normal hover:opacity-70 transition-colors font-body border-t', !menuText && 'text-theme-muted hover:text-theme-foreground border-theme']}
+                    style={menuText ? `color: ${menuText}99; border-color: ${menuText}15;` : undefined}
+                  >
+                    {sub.label}
+                  </a>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <a
+              href={link.href}
+              class:list={['px-4 py-4 text-base font-normal hover:opacity-80 transition-colors border-t font-body', !menuText && 'text-theme-foreground border-theme']}
+              style={menuText ? `color: ${menuText}; border-color: ${menuText}15;` : undefined}
+            >
+              {link.label}
+            </a>
+          );
+        })}
+      </div>
+    </nav>
+  </div>
 </div>
 
 <script>
+  // Mobile menu toggle
   const mobileMenuButton = document.getElementById('mobile-menu-button');
   const mobileMenu = document.getElementById('mobile-menu');
 
@@ -149,6 +459,7 @@ const showProfile = actionButtons?.showProfile === 'true';
     });
   }
 
+  // Submenu toggles
   document.querySelectorAll('.mobile-submenu-toggle').forEach(btn => {
     btn.addEventListener('click', () => {
       const targetId = btn.getAttribute('data-target');
@@ -159,6 +470,7 @@ const showProfile = actionButtons?.showProfile === 'true';
     });
   });
 
+  // Close mobile menu on link click
   const menuLinks = mobileMenu?.querySelectorAll('a');
   menuLinks?.forEach(link => {
     link.addEventListener('click', () => {
@@ -168,11 +480,28 @@ const showProfile = actionButtons?.showProfile === 'true';
     });
   });
 
+  // Scroll-up stickiness logic
+  (function() {
+    const wrapper = document.querySelector('[data-header-wrapper]') as HTMLElement;
+    if (!wrapper || !wrapper.classList.contains('transition-transform')) return;
+
+    let lastScrollY = 0;
+    window.addEventListener('scroll', () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY < lastScrollY || currentScrollY < 10) {
+        wrapper.style.transform = 'translateY(0)';
+      } else {
+        wrapper.style.transform = 'translateY(-100%)';
+      }
+      lastScrollY = currentScrollY;
+    }, { passive: true });
+  })();
+
   // Cart badge update
   function updateCartBadge() {
     const badge = document.getElementById('cart-badge');
     if (!badge) return;
-    const count = window.cartStore ? window.cartStore.getCount() : 0;
+    const count = (window as any).cartStore ? (window as any).cartStore.getCount() : 0;
     if (count > 0) {
       badge.textContent = String(count > 99 ? '99+' : count);
       badge.classList.remove('hidden');
@@ -182,15 +511,14 @@ const showProfile = actionButtons?.showProfile === 'true';
   }
 
   document.addEventListener('cart:updated', updateCartBadge);
-  // Initial badge state after cart init
   document.addEventListener('DOMContentLoaded', () => {
     setTimeout(updateCartBadge, 100);
   });
 
   // Mark buttons for products already in cart
   function syncCartButtons() {
-    if (!window.cartStore) return;
-    const items = window.cartStore.getItems();
+    if (!(window as any).cartStore) return;
+    const items = (window as any).cartStore.getItems();
     const inCartIds = new Set(items.map((i: any) => i.productId));
     document.querySelectorAll('.add-to-cart-btn').forEach((btn) => {
       if (!(btn instanceof HTMLButtonElement)) return;
@@ -207,7 +535,6 @@ const showProfile = actionButtons?.showProfile === 'true';
     });
   }
 
-  // Sync on cart updates and page load
   document.addEventListener('cart:updated', syncCartButtons);
   document.addEventListener('DOMContentLoaded', () => {
     setTimeout(syncCartButtons, 200);
@@ -219,19 +546,18 @@ const showProfile = actionButtons?.showProfile === 'true';
     if (!btn || !(btn instanceof HTMLButtonElement)) return;
 
     const productId = btn.dataset.productId;
-    if (!productId || !window.cartStore) return;
+    if (!productId || !(window as any).cartStore) return;
 
-    // If already in cart, open drawer instead
-    const items = window.cartStore.getItems();
+    const items = (window as any).cartStore.getItems();
     if (items.some((i: any) => i.productId === productId)) {
-      if (window.cartDrawer) window.cartDrawer.open();
+      if ((window as any).cartDrawer) (window as any).cartDrawer.open();
       return;
     }
 
     btn.disabled = true;
     btn.textContent = 'Добавляем...';
 
-    const ok = await window.cartStore.addItem(productId, null, 1);
+    const ok = await (window as any).cartStore.addItem(productId, null, 1);
 
     if (ok) {
       btn.textContent = 'В корзине ✓';

@@ -136,7 +136,7 @@ export class SiteProvisioningScheduler implements OnModuleInit {
       // Проверяем что у пользователя реально нет сайтов
       const existingSites = await this.sites.list(tenantId, 1);
       if (existingSites.items.length > 0) {
-        this.logger.log(
+        this.logger.debug(
           `User ${userId} (tenant ${tenantId}) already has ${existingSites.items.length} site(s), skip`,
         );
         return;
@@ -144,12 +144,12 @@ export class SiteProvisioningScheduler implements OnModuleInit {
 
       // Проверяем биллинг
       const entitlements = await this.getEntitlements(accountId);
-      this.logger.log(
+      this.logger.debug(
         `User ${userId} entitlements: frozen=${entitlements.frozen}, shopsLimit=${entitlements.shopsLimit}, success=${entitlements.success}`,
       );
 
       if (!this.canCreateSite(entitlements)) {
-        this.logger.log(
+        this.logger.debug(
           `User ${userId} cannot create site: frozen or no quota`,
         );
         return;

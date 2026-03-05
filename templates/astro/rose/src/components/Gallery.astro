@@ -29,9 +29,12 @@ const textContent = typeof text === 'object' ? text?.content : text;
 const showProduct = productCard?.enabled !== 'false';
 const showCollection = collectionCard?.enabled !== 'false';
 const isRight = imagePosition === 'right';
+
+const colorScheme = Astro.props.colorScheme;
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
 ---
 
-<section class="bg-theme-background w-full" style={`padding: ${padding?.top || 80}px 0 ${padding?.bottom || 80}px;`}>
+<section class={`w-full ${schemeClass}`} style={`background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); padding: ${padding?.top || 80}px 0 ${padding?.bottom || 80}px;`}>
   <div class="w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-[300px]">
     <SectionHeader title={headingText || ''} subtitle={textContent} />
 

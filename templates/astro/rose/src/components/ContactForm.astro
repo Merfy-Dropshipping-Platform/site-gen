@@ -6,6 +6,7 @@ interface Props {
 }
 
 const { heading, colorScheme, padding } = Astro.props;
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
 const headingText = heading?.text ?? 'Свяжитесь с нами';
 const headingSize = heading?.size ?? 'medium';
 const padTop = padding?.top ?? 80;
@@ -20,8 +21,8 @@ const headingSizeClass = headingSizeClasses[headingSize] || headingSizeClasses.m
 ---
 
 <section
-  class="max-w-[1200px] mx-auto px-5"
-  style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}
+  class={`max-w-[1200px] mx-auto px-5 ${schemeClass}`}
+  style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}
 >
   <div class="max-w-[600px] mx-auto">
     <h2 class={`${headingSizeClass} font-medium text-theme-foreground text-center mb-10 leading-[1.2] font-heading max-md:text-[1.75rem]`}>

@@ -11,7 +11,8 @@ interface Props {
   padding?: { top?: number; bottom?: number };
 }
 
-const { video, position = 'window', content, padding } = Astro.props;
+const { video, position = 'window', content, colorScheme, padding } = Astro.props;
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
 const videoUrl = video?.url ?? '';
 const coverImage = video?.coverImage ?? '';
 const showHeading = content?.heading?.enabled !== 'false' && content?.heading?.text;
@@ -43,8 +44,8 @@ const headingSizeClass = headingSizeClasses[contentSize] || headingSizeClasses.m
 ---
 
 <section
-  class={isFullscreen ? 'w-full' : 'max-w-[1200px] mx-auto px-5'}
-  style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}
+  class={`${isFullscreen ? 'w-full' : 'max-w-[1200px] mx-auto px-5'} ${schemeClass}`}
+  style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}
 >
   <div>
     {(showHeading || showSubheading) && (

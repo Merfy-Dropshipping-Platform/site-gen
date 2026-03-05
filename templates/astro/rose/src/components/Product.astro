@@ -1,8 +1,17 @@
 ---
 interface Props {
+  productId?: string | null;
+  layout?: 'stacked' | 'two-columns' | 'carousel' | 'thumbnail';
+  size?: 'small' | 'medium' | 'large';
+  photoPosition?: 'left' | 'right';
+  zoomMode?: 'click' | 'hover';
+  dynamicButton?: { enabled?: string };
+  colorScheme?: string;
+  padding?: { top?: number; bottom?: number };
   image?: string;
-  badge?: { enabled?: string; text?: string };
-  title?: { enabled?: string; text?: string };
+  images?: Array<{ url: string }>;
+  badge?: { enabled?: string; text?: string; textSize?: 'small' | 'medium' | 'large' };
+  title?: { enabled?: string; text?: string; size?: 'small' | 'medium' | 'large' };
   price?: { enabled?: string; value?: string; oldValue?: string };
   description?: { enabled?: string; text?: string };
   buttons?: {
@@ -12,11 +21,34 @@ interface Props {
   };
   variants?: {
     enabled?: string;
+    style?: 'button' | 'list';
+    shape?: 'circle' | 'square' | 'none';
     items?: Array<{ label: string; value: string }>;
   };
+  quantity?: { enabled?: string };
+  share?: { enabled?: string; text?: string };
 }
 
-const { image, badge, title, price, description, buttons, variants } = Astro.props;
+const {
+  layout = 'stacked',
+  size = 'medium',
+  photoPosition = 'left',
+  dynamicButton,
+  colorScheme,
+  padding,
+  image,
+  images,
+  badge,
+  title,
+  price,
+  description,
+  buttons,
+  variants,
+  quantity,
+  share,
+} = Astro.props;
+
+// Visibility flags
 const showBadge = badge?.enabled !== 'false' && badge?.text;
 const showTitle = title?.enabled !== 'false' && title?.text;
 const showPrice = price?.enabled !== 'false' && price?.value;
@@ -25,66 +57,200 @@ const showButtons = buttons?.enabled !== 'false';
 const showAddToCart = showButtons && buttons?.addToCart?.enabled !== 'false' && buttons?.addToCart?.text;
 const showBuyNow = showButtons && buttons?.buyNow?.enabled !== 'false' && buttons?.buyNow?.text;
 const showVariants = variants?.enabled !== 'false' && variants?.items && variants.items.length > 0;
+const showQuantity = quantity?.enabled === 'true';
+const showShare = share?.enabled === 'true' && share?.text;
+const isDynamicButton = dynamicButton?.enabled === 'true';
+
+// Collect all images: images array → single image → empty
+const allImages: string[] = [];
+if (images && images.length > 0) {
+  for (const img of images) {
+    if (img.url) allImages.push(img.url);
+  }
+}
+if (allImages.length === 0 && image) {
+  allImages.push(image);
+}
+
+// Padding from constructor
+const padTop = padding?.top ?? 80;
+const padBottom = padding?.bottom ?? 80;
+
+// Color scheme
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
+
+// Image size class
+const imageSize = size === 'large' ? 'lg:w-[540px]' : size === 'medium' ? 'lg:w-[480px]' : 'lg:w-[420px]';
+
+// Flex direction based on photo position
+const flexDirection = photoPosition === 'right' ? 'lg:flex-row-reverse' : 'lg:flex-row';
+
+// Badge text size
+const badgeFontSize = badge?.textSize === 'large' ? '18px' : badge?.textSize === 'medium' ? '16px' : '14px';
+
+// Title size
+const titleFontSize = title?.size === 'large' ? '32px' : title?.size === 'medium' ? '28px' : '24px';
+const titleLineHeight = title?.size === 'large' ? '38px' : title?.size === 'medium' ? '33px' : '28px';
 ---
 
-<section class="max-w-[1200px] mx-auto py-[60px] px-5">
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-[60px] max-md:gap-[30px] items-start">
-    <div class="relative rounded-2xl overflow-hidden bg-gray-50">
-      {image ? (
-        <img src={image} alt={title?.text ?? 'Товар'} loading="lazy" class="w-full h-auto object-cover" />
-      ) : (
-        <div class="aspect-square flex items-center justify-center text-gray-300">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-            <circle cx="8.5" cy="8.5" r="1.5"/>
-            <polyline points="21,15 16,10 5,21"/>
-          </svg>
-        </div>
-      )}
-      {showBadge && (
-        <span class="absolute top-4 left-4 bg-theme-primary text-theme-button-text py-1.5 px-3.5 rounded-md text-[0.85rem] font-medium">
-          {badge!.text}
-        </span>
-      )}
-    </div>
-    <div>
-      {showTitle && (
-        <h1 class="font-heading text-[2rem] font-medium text-theme-foreground mb-4 leading-[1.2]">{title!.text}</h1>
-      )}
-      {showPrice && (
-        <div class="flex items-center gap-3 mb-6">
-          <span class="text-2xl font-semibold text-theme-foreground">{price!.value}</span>
-          {price?.oldValue && (
-            <span class="text-lg text-theme-muted line-through">{price.oldValue}</span>
-          )}
-        </div>
-      )}
-      {showVariants && (
-        <div class="flex flex-wrap gap-2 mb-6">
-          {variants!.items!.map((v) => (
-            <button class="py-2 px-4 border border-theme rounded-lg bg-white text-sm cursor-pointer transition-colors duration-200 hover:border-theme-foreground">
-              {v.label}
-            </button>
-          ))}
-        </div>
-      )}
-      {showDescription && (
-        <p class="text-[1.05rem] text-theme-muted leading-[1.7] mb-8">{description!.text}</p>
-      )}
-      {(showAddToCart || showBuyNow) && (
-        <div class="flex gap-4 flex-wrap">
-          {showAddToCart && (
-            <button class="py-3.5 px-8 text-[0.95rem] font-medium rounded-lg border border-theme bg-white text-theme-foreground cursor-pointer transition-all duration-200 hover:border-theme-foreground hover:text-theme-foreground">
-              {buttons!.addToCart!.text}
-            </button>
-          )}
-          {showBuyNow && (
-            <button class="py-3.5 px-8 text-[0.95rem] font-medium rounded-lg border-none bg-theme-primary text-theme-button-text cursor-pointer transition-colors duration-200 hover:opacity-90">
-              {buttons!.buyNow!.text}
-            </button>
-          )}
-        </div>
-      )}
+<section class={`w-full ${schemeClass}`} style={`background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}>
+  <div class="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-0">
+    <div class={`flex flex-col ${flexDirection} lg:justify-center gap-10`}>
+      <!-- Image block -->
+      <div class={`w-full ${imageSize} lg:shrink-0`}>
+        {layout === 'two-columns' ? (
+          <!-- Two columns grid -->
+          <div class="grid grid-cols-2 gap-3">
+            {allImages.map((src, i) => (
+              <div class="overflow-hidden aspect-square flex items-center justify-center" style="background: #FBFBFB; border-radius: var(--radius-card, 12px);">
+                <img src={src} alt={`${title?.text || 'Товар'} ${i + 1}`} loading="lazy" class="w-full h-full object-cover" />
+              </div>
+            ))}
+            {allImages.length === 0 && (
+              <div class="aspect-square flex items-center justify-center text-gray-300" style="background: #FBFBFB; border-radius: var(--radius-card, 12px);">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/>
+                </svg>
+              </div>
+            )}
+          </div>
+        ) : layout === 'carousel' || layout === 'thumbnail' ? (
+          <!-- Carousel/Thumbnail: show main image + thumbnails below -->
+          <div>
+            <div class="overflow-hidden w-full aspect-square flex items-center justify-center" style="background: #FBFBFB; border-radius: var(--radius-card, 12px);">
+              {allImages.length > 0 ? (
+                <img src={allImages[0]} alt={title?.text || 'Товар'} loading="lazy" class="w-full h-full object-cover" />
+              ) : (
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" class="text-gray-300">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/>
+                </svg>
+              )}
+            </div>
+            {allImages.length > 1 && (
+              <div class={`grid gap-2 mt-3 ${layout === 'thumbnail' ? 'grid-cols-5' : 'grid-cols-4'}`}>
+                {allImages.slice(0, layout === 'thumbnail' ? 5 : 4).map((src, i) => (
+                  <div class="overflow-hidden aspect-square flex items-center justify-center" style="background: #FBFBFB; border-radius: var(--radius-card, 12px);">
+                    <img src={src} alt={`${title?.text || 'Товар'} ${i + 1}`} loading="lazy" class="w-full h-full object-cover" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <!-- Stacked: main image + smaller grid -->
+          <div>
+            <div class="overflow-hidden w-full aspect-square flex items-center justify-center" style="background: #FBFBFB; border-radius: var(--radius-card, 12px);">
+              {allImages.length > 0 ? (
+                <img src={allImages[0]} alt={title?.text || 'Товар'} loading="lazy" class="w-full h-full object-cover" />
+              ) : (
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" class="text-gray-300">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/>
+                </svg>
+              )}
+            </div>
+            {allImages.length > 1 && (
+              <div class="grid grid-cols-2 gap-3 mt-3">
+                {allImages.slice(1).map((src, i) => (
+                  <div class="overflow-hidden aspect-square flex items-center justify-center" style="background: #FBFBFB; border-radius: var(--radius-card, 12px);">
+                    <img src={src} alt={`${title?.text || 'Товар'} ${i + 2}`} loading="lazy" class="w-full h-full object-cover" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <!-- Product info -->
+      <div class="flex flex-col lg:w-[352px]">
+        {showBadge && (
+          <span class="font-body" style={`color: rgb(var(--color-foreground)); font-size: ${badgeFontSize};`}>
+            {badge!.text}
+          </span>
+        )}
+
+        {showTitle && (
+          <h1 class={`font-heading ${showBadge ? 'mt-6' : ''}`} style={`color: rgb(var(--color-foreground)); font-size: ${titleFontSize}; line-height: ${titleLineHeight};`}>
+            {title!.text}
+          </h1>
+        )}
+
+        {showPrice && (
+          <div class="flex items-baseline gap-3 mt-2">
+            <span class="text-xl leading-[23px] font-body" style="color: rgb(var(--color-foreground));">
+              {price!.value}
+            </span>
+            {price?.oldValue && (
+              <span class="text-base leading-[19px] line-through opacity-50 font-body" style="color: rgb(var(--color-foreground));">
+                {price.oldValue}
+              </span>
+            )}
+          </div>
+        )}
+
+        {showVariants && (
+          <div class="flex flex-wrap gap-2 mt-6">
+            {variants!.items!.map((v, i) => (
+              <span
+                class="h-10 px-5 text-base leading-[19px] inline-flex items-center font-body"
+                style={`border-radius: var(--radius-button, 8px); background: ${i === 0 ? 'rgb(var(--color-primary))' : 'rgb(var(--color-secondary))'}; color: ${i === 0 ? 'rgb(var(--color-background))' : 'rgb(var(--color-foreground))'};`}
+              >
+                {v.label}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {showQuantity && (
+          <div class="flex items-center mt-6">
+            <span class="w-10 h-10 flex items-center justify-center" style="border-radius: var(--radius-button, 8px); background: #FBFBFB; color: rgb(var(--color-foreground));">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M6 12H18" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            </span>
+            <span class="w-10 h-10 flex items-center justify-center mx-[5px] text-base font-body" style="border-radius: 10px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));">
+              1
+            </span>
+            <span class="w-10 h-10 flex items-center justify-center" style="border-radius: var(--radius-button, 8px); background: #FBFBFB; color: rgb(var(--color-foreground));">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 6V18M6 12H18" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            </span>
+          </div>
+        )}
+
+        {(showAddToCart || showBuyNow) && (
+          <div class="flex flex-col mt-6">
+            {(showAddToCart || !isDynamicButton) && (
+              <button
+                class="w-full h-14 flex items-center justify-center text-base font-body transition-colors"
+                style={`border-radius: var(--radius-button, 8px); background: ${isDynamicButton ? 'rgb(var(--color-secondary))' : 'rgb(var(--color-primary))'}; color: ${isDynamicButton ? 'rgb(var(--color-foreground))' : 'rgb(var(--color-button-text))'};`}
+              >
+                {buttons?.addToCart?.text || 'Добавить в корзину'}
+              </button>
+            )}
+            {isDynamicButton && showBuyNow && (
+              <button
+                class={`w-full h-14 flex items-center justify-center text-base font-body transition-colors ${showAddToCart ? 'mt-3' : ''}`}
+                style="border-radius: var(--radius-button, 8px); background: rgb(var(--color-primary)); color: rgb(var(--color-button-text));"
+              >
+                {buttons!.buyNow!.text}
+              </button>
+            )}
+          </div>
+        )}
+
+        {showDescription && (
+          <p class="text-base leading-6 mt-6 opacity-70 whitespace-pre-line font-body" style="color: rgb(var(--color-foreground));">
+            {description!.text}
+          </p>
+        )}
+
+        {showShare && (
+          <button class="flex items-center gap-3 mt-8 opacity-80 hover:opacity-100 transition-opacity font-body" style="color: rgb(var(--color-foreground)); font-size: 16px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9 6L12 3M12 3L15 6M12 3V13M7.00023 10C6.06835 10 5.60241 10 5.23486 10.1522C4.74481 10.3552 4.35523 10.7448 4.15224 11.2349C4 11.6024 4 12.0681 4 13V17.8C4 18.9201 4 19.4798 4.21799 19.9076C4.40973 20.2839 4.71547 20.5905 5.0918 20.7822C5.5192 21 6.07899 21 7.19691 21H16.8036C17.9215 21 18.4805 21 18.9079 20.7822C19.2842 20.5905 19.5905 20.2839 19.7822 19.9076C20 19.4802 20 18.921 20 17.8031V13C20 12.0681 19.9999 11.6024 19.8477 11.2349C19.6447 10.7448 19.2554 10.3552 18.7654 10.1522C18.3978 10 17.9319 10 17 10" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>{share!.text}</span>
+          </button>
+        )}
+      </div>
     </div>
   </div>
 </section>

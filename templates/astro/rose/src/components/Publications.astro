@@ -16,7 +16,8 @@ interface Props {
   padding?: { top?: number; bottom?: number };
 }
 
-const { heading, posts = [], columnsCount = 3, padding } = Astro.props;
+const { heading, posts = [], columnsCount = 3, colorScheme, padding } = Astro.props;
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
 const showHeading = heading?.enabled !== 'false' && heading?.text;
 const headingSize = heading?.size ?? 'medium';
 const padTop = padding?.top ?? 80;
@@ -32,7 +33,7 @@ const headingSizeClass: Record<string, string> = {
 const cols = columnsCount;
 ---
 
-<section class="max-w-[1200px] mx-auto px-5" style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}>
+<section class={`max-w-[1200px] mx-auto px-5 ${schemeClass}`} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
   <div>
     {showHeading && (
       <h2 class={`font-heading font-medium text-theme-foreground text-center mb-12 leading-[1.2] ${headingSizeClass[headingSize] ?? 'text-[2rem]'}`}>

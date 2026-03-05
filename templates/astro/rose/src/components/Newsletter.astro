@@ -7,7 +7,8 @@ interface Props {
   padding?: { top?: number; bottom?: number };
 }
 
-const { heading, text, form, padding } = Astro.props;
+const { heading, text, form, colorScheme, padding } = Astro.props;
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
 const headingText = heading?.text ?? 'Подпишитесь на нашу рассылку';
 const headingSize = heading?.size ?? 'small';
 const textContent = text?.content ?? '';
@@ -25,8 +26,8 @@ const headingSizeClass = headingSizeClasses[headingSize] || headingSizeClasses.s
 ---
 
 <section
-  class="bg-gray-50 text-center px-5"
-  style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}
+  class={`text-center px-5 ${schemeClass}`}
+  style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: ${schemeClass ? 'rgb(var(--color-background))' : '#F9FAFB'}; color: rgb(var(--color-foreground));`}
 >
   <div class="max-w-[600px] mx-auto">
     <h2 class={`${headingSizeClass} font-medium text-theme-foreground mb-4 leading-[1.2] font-heading`}>

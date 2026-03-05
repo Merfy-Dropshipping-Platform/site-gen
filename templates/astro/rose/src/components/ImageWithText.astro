@@ -18,8 +18,11 @@ const {
   heading,
   text,
   button,
+  colorScheme,
   padding,
 } = Astro.props;
+
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
 
 const padTop = padding?.top ?? 80;
 const padBottom = padding?.bottom ?? 80;
@@ -38,8 +41,8 @@ const isRight = photoPosition === 'right';
 ---
 
 <section
-  class="max-w-[1200px] mx-auto px-5"
-  style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}
+  class={`max-w-[1200px] mx-auto px-5 ${schemeClass}`}
+  style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}
 >
   <div class="grid grid-cols-1 md:grid-cols-2 gap-[60px] items-center">
     <!-- Image -->

@@ -545,16 +545,28 @@ export class SitesMicroserviceController {
    */
   @EventPattern("site-gen.domain_ready")
   async handleDomainReady(@Payload() data: any) {
+    this.logger.log(
+      `domain_ready raw payload: ${JSON.stringify(data)}`,
+    );
     const { domainId, domainName, siteId } = data ?? {};
     this.logger.log(
-      `domain_ready event: domain=${domainName}, siteId=${siteId}`,
+      `domain_ready parsed: domainId=${domainId}, domainName=${domainName}, siteId=${siteId}`,
     );
-    if (!siteId || !domainName) return;
+    if (!siteId || !domainName) {
+      this.logger.warn(
+        `domain_ready skipped: missing siteId=${siteId} or domainName=${domainName}`,
+      );
+      return;
+    }
     try {
       await this.service.switchDomain({ siteId, domainId, domainName });
+      this.logger.log(
+        `domain_ready completed: site ${siteId} -> ${domainName}`,
+      );
     } catch (e: any) {
       this.logger.error(
         `handleDomainReady failed for site ${siteId}: ${e?.message}`,
+        e?.stack,
       );
     }
   }

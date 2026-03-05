@@ -2040,7 +2040,7 @@ export class SitesDomainService {
   }): Promise<void> {
     const { siteId, domainId, domainName } = params;
     this.logger.log(
-      `Switching domain for site ${siteId} to ${domainName}`,
+      `[switchDomain] START siteId=${siteId}, domainId=${domainId}, domainName=${domainName}`,
     );
 
     // 1. Find site
@@ -2051,14 +2051,18 @@ export class SitesDomainService {
       .limit(1);
 
     if (!siteRow) {
-      this.logger.warn(`switchDomain: site ${siteId} not found`);
+      this.logger.warn(`[switchDomain] site ${siteId} NOT FOUND in DB — aborting`);
       return;
     }
+
+    this.logger.log(
+      `[switchDomain] found site: status=${siteRow.status}, currentPublicUrl=${siteRow.publicUrl}, coolifyAppUuid=${siteRow.coolifyAppUuid ?? "NONE"}, domainId=${siteRow.domainId ?? "NONE"}`,
+    );
 
     const now = new Date();
 
     // 2. Deactivate current active domain in history
-    await this.db
+    const deactivated = await this.db
       .update(schema.siteDomainHistory)
       .set({ status: "inactive", detachedAt: now })
       .where(
@@ -2067,10 +2071,14 @@ export class SitesDomainService {
           eq(schema.siteDomainHistory.status, "active"),
         ),
       );
+    this.logger.log(
+      `[switchDomain] deactivated ${deactivated.rowCount ?? 0} previous domain history entries`,
+    );
 
     // 3. Add new domain history entry
+    const historyId = randomUUID();
     await this.db.insert(schema.siteDomainHistory).values({
-      id: randomUUID(),
+      id: historyId,
       siteId,
       domainName,
       domainId,
@@ -2078,10 +2086,13 @@ export class SitesDomainService {
       status: "active",
       attachedAt: now,
     });
+    this.logger.log(
+      `[switchDomain] inserted domain history: id=${historyId}, domain=${domainName}`,
+    );
 
     // 4. Update site: domainId, publicUrl
     const newPublicUrl = `https://${domainName}`;
-    await this.db
+    const updateResult = await this.db
       .update(schema.site)
       .set({
         domainId,
@@ -2089,22 +2100,32 @@ export class SitesDomainService {
         updatedAt: now,
       })
       .where(eq(schema.site.id, siteId));
+    this.logger.log(
+      `[switchDomain] updated site record: rowCount=${updateResult.rowCount ?? 0}, newPublicUrl=${newPublicUrl}`,
+    );
 
     // 5. Update Coolify domain (best-effort)
     if (siteRow.coolifyAppUuid) {
+      this.logger.log(
+        `[switchDomain] calling coolify.set_domain: appUuid=${siteRow.coolifyAppUuid}, domain=${domainName}`,
+      );
       try {
-        await this.callCoolify("coolify.set_domain", {
+        const coolifyResult = await this.callCoolify("coolify.set_domain", {
           appUuid: siteRow.coolifyAppUuid,
           domain: domainName,
         });
         this.logger.log(
-          `Coolify domain updated for site ${siteId}: ${domainName}`,
+          `[switchDomain] coolify.set_domain result: ${JSON.stringify(coolifyResult)}`,
         );
       } catch (e) {
-        this.logger.warn(
-          `Failed to set Coolify domain for ${siteId}: ${e instanceof Error ? e.message : e}`,
+        this.logger.error(
+          `[switchDomain] coolify.set_domain FAILED for ${siteId}: ${e instanceof Error ? e.message : e}`,
         );
       }
+    } else {
+      this.logger.warn(
+        `[switchDomain] no coolifyAppUuid for site ${siteId} — skipping Coolify domain update`,
+      );
     }
 
     // 6. Emit event
@@ -2117,7 +2138,7 @@ export class SitesDomainService {
     });
 
     this.logger.log(
-      `Domain switched for site ${siteId}: ${siteRow.publicUrl} -> ${newPublicUrl}`,
+      `[switchDomain] DONE site ${siteId}: ${siteRow.publicUrl} -> ${newPublicUrl}`,
     );
   }
 }

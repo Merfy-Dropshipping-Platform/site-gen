@@ -30,6 +30,7 @@ interface Props {
 }
 
 const {
+  productId,
   layout = 'stacked',
   size = 'medium',
   photoPosition = 'left',
@@ -48,10 +49,28 @@ const {
   share,
 } = Astro.props;
 
+// Resolve linked product from products.json (same pattern as PopularProducts)
+let linkedProduct: { id?: string; name?: string; price?: string; oldPrice?: string; image?: string; images?: string[] } | null = null;
+if (productId) {
+  try {
+    const productsData = await import('../data/products.json');
+    const allProducts = productsData.default || [];
+    linkedProduct = allProducts.find((p: any) => p.id === productId) || null;
+  } catch {
+    linkedProduct = null;
+  }
+}
+
+// Use linked product data with fallback to static props
+const finalTitle = linkedProduct?.name || title?.text;
+const finalPrice = linkedProduct?.price || price?.value;
+const finalOldPrice = linkedProduct?.oldPrice || price?.oldValue;
+const finalImages = linkedProduct?.images?.length ? linkedProduct.images.map((url: string) => ({ url })) : images;
+
 // Visibility flags
 const showBadge = badge?.enabled !== 'false' && badge?.text;
-const showTitle = title?.enabled !== 'false' && title?.text;
-const showPrice = price?.enabled !== 'false' && price?.value;
+const showTitle = title?.enabled !== 'false' && finalTitle;
+const showPrice = price?.enabled !== 'false' && finalPrice;
 const showDescription = description?.enabled !== 'false' && description?.text;
 const showButtons = buttons?.enabled !== 'false';
 const showAddToCart = showButtons && buttons?.addToCart?.enabled !== 'false' && buttons?.addToCart?.text;
@@ -61,10 +80,10 @@ const showQuantity = quantity?.enabled === 'true';
 const showShare = share?.enabled === 'true' && share?.text;
 const isDynamicButton = dynamicButton?.enabled === 'true';
 
-// Collect all images: images array → single image → empty
+// Collect all images: linked product images → images array → single image → empty
 const allImages: string[] = [];
-if (images && images.length > 0) {
-  for (const img of images) {
+if (finalImages && finalImages.length > 0) {
+  for (const img of finalImages) {
     if (img.url) allImages.push(img.url);
   }
 }
@@ -171,18 +190,18 @@ const titleLineHeight = title?.size === 'large' ? '38px' : title?.size === 'medi
 
         {showTitle && (
           <h1 class={`font-heading ${showBadge ? 'mt-6' : ''}`} style={`color: rgb(var(--color-foreground)); font-size: ${titleFontSize}; line-height: ${titleLineHeight};`}>
-            {title!.text}
+            {finalTitle}
           </h1>
         )}
 
         {showPrice && (
           <div class="flex items-baseline gap-3 mt-2">
             <span class="text-xl leading-[23px] font-body" style="color: rgb(var(--color-foreground));">
-              {price!.value}
+              {finalPrice}
             </span>
-            {price?.oldValue && (
+            {finalOldPrice && (
               <span class="text-base leading-[19px] line-through opacity-50 font-body" style="color: rgb(var(--color-foreground));">
-                {price.oldValue}
+                {finalOldPrice}
               </span>
             )}
           </div>

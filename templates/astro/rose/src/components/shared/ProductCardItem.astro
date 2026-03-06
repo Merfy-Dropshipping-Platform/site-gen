@@ -7,15 +7,16 @@ interface Props {
 	image: string;
 	href?: string;
 	quantity?: number;
+	quickAdd?: boolean;
 }
 
-const { id, name, price, oldPrice, image, href = '#', quantity } = Astro.props;
+const { id, name, price, oldPrice, image, href = '#', quantity, quickAdd = false } = Astro.props;
 const hasImage = image && !image.includes('placeholder');
 ---
 
-<div class="flex flex-col gap-4 sm:gap-5 md:gap-6 lg:gap-[25px] group">
+<div class="flex flex-col h-full overflow-hidden group">
 	<a href={href} class="cursor-pointer">
-		<div class="bg-gray-100 rounded-lg sm:rounded-[8px] md:rounded-[10px] overflow-hidden w-full aspect-[318/515]">
+		<div class="relative bg-gray-100 overflow-hidden w-full aspect-[3/4]" style="border-radius: var(--card-radius, 10px);">
 			{hasImage ? (
 				<img
 					src={image}
@@ -34,26 +35,27 @@ const hasImage = image && !image.includes('placeholder');
 			)}
 		</div>
 	</a>
-	<div class="flex flex-col gap-2 sm:gap-2.5 md:gap-3 lg:gap-[10px] px-2 sm:px-3 md:px-4 lg:px-[15px]">
+	<div class="pb-4 pt-3 flex flex-col gap-1 flex-1">
 		<a href={href} class="no-underline text-inherit">
-			<h3 class="text-base sm:text-lg md:text-xl lg:text-[24px] font-normal text-theme-foreground leading-[1.366] font-body line-clamp-2">
+			<span class="text-base font-light text-theme-foreground font-body line-clamp-2">
 				{name}
-			</h3>
-		</a>
-		<div class="flex items-center gap-2 sm:gap-3 md:gap-4 lg:gap-[15px] flex-wrap">
-			<span class="text-lg sm:text-xl md:text-2xl lg:text-[32px] font-normal text-theme-foreground leading-[1.366] font-body">
-				{price}
 			</span>
-			{oldPrice && (
-				<span class="text-sm sm:text-base md:text-lg lg:text-[20px] font-medium text-theme-muted line-through leading-[1.366] font-body">
-					{oldPrice}
-				</span>
-			)}
-		</div>
-		{id && (
+		</a>
+		<span class="text-base font-light text-theme-foreground font-body">
+			{price}
+		</span>
+		{oldPrice && (
+			<span class="text-sm font-light text-theme-muted line-through font-body">
+				{oldPrice}
+			</span>
+		)}
+		<a href={href} class="text-sm font-light underline mt-1 cursor-pointer text-theme-foreground font-body no-underline-offset">
+			Подробнее
+		</a>
+		{quickAdd && id && (
 			<button
 				type="button"
-				class="add-to-cart-btn mt-2 py-2.5 px-5 bg-theme-primary text-white text-sm font-medium rounded-lg hover:opacity-90 transition-colors"
+				class="add-to-cart-btn mt-auto w-full py-2 px-4 bg-theme-primary text-white text-sm font-light rounded-lg hover:opacity-90 transition-colors"
 				data-product-id={id}
 				data-stock={quantity != null ? quantity : undefined}
 			>

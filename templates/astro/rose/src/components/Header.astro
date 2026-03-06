@@ -565,8 +565,25 @@ const isCenterLeft = logoPosition === 'center-left';
     if (!productId || !(window as any).cartStore) return;
 
     const items = (window as any).cartStore.getItems();
-    if (items.some((i: any) => i.productId === productId)) {
+    const existingItem = items.find((i: any) => i.productId === productId);
+
+    // Stock limit check
+    const maxStock = btn.dataset.stock ? parseInt(btn.dataset.stock, 10) : null;
+    if (existingItem) {
+      if (maxStock !== null && existingItem.quantity >= maxStock) {
+        btn.textContent = `Макс. ${maxStock} шт.`;
+        setTimeout(() => {
+          btn.textContent = 'В корзине ✓';
+        }, 1500);
+        return;
+      }
       if ((window as any).cartDrawer) (window as any).cartDrawer.open();
+      return;
+    }
+
+    if (maxStock !== null && maxStock <= 0) {
+      btn.textContent = 'Нет в наличии';
+      btn.disabled = true;
       return;
     }
 

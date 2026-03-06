@@ -427,16 +427,19 @@ export async function trySnapshotDeploy(
         return `${num.toLocaleString("ru-RU")} ₽`;
       };
 
-      const astroProducts = rpcData.products.map((p: any) => ({
-        id: p.id,
-        name: p.name,
-        description: p.description,
-        price: formatPrice(p.price),
-        oldPrice: p.compareAtPrice ? formatPrice(p.compareAtPrice) : undefined,
-        image: (p.images as string[])?.[0] || "/images/placeholder.png",
-        href: `/product/${p.slug || p.id}`,
-        slug: p.slug || p.id,
-      }));
+      const astroProducts = rpcData.products
+        .filter((p: any) => p.quantity == null || p.quantity > 0)
+        .map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          price: formatPrice(p.price),
+          oldPrice: p.compareAtPrice ? formatPrice(p.compareAtPrice) : undefined,
+          image: (p.images as string[])?.[0] || "/images/placeholder.png",
+          href: `/product/${p.slug || p.id}`,
+          slug: p.slug || p.id,
+          quantity: p.quantity ?? null,
+        }));
 
       const productsJsonPath = path.join(distDir, "data", "products.json");
       await fs.mkdir(path.dirname(productsJsonPath), { recursive: true });
@@ -1134,16 +1137,19 @@ async function stageFetchData(
     return `${num.toLocaleString("ru-RU")} ₽`;
   };
 
-  const astroProducts = products.map((p: any) => ({
-    id: p.id,
-    name: p.name,
-    description: p.description,
-    price: formatPrice(p.price),
-    oldPrice: p.compareAtPrice ? formatPrice(p.compareAtPrice) : undefined,
-    image: (p.images as string[])?.[0] || "/images/placeholder.png",
-    href: `/product/${p.slug || p.id}`,
-    slug: p.slug || p.id,
-  }));
+  const astroProducts = products
+    .filter((p: any) => p.quantity == null || p.quantity > 0)
+    .map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      price: formatPrice(p.price),
+      oldPrice: p.compareAtPrice ? formatPrice(p.compareAtPrice) : undefined,
+      image: (p.images as string[])?.[0] || "/images/placeholder.png",
+      href: `/product/${p.slug || p.id}`,
+      slug: p.slug || p.id,
+      quantity: p.quantity ?? null,
+    }));
 
   // Write products.json for Astro build-time consumption (formatted for components)
   const productsPath = path.join(

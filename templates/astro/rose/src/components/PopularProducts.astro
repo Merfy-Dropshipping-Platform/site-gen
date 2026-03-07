@@ -18,6 +18,7 @@ const {
   productCard = { columns: 4 },
   padding = { top: 80, bottom: 80 },
   dataSource = 'auto',
+  collection,
   cards,
 } = Astro.props;
 
@@ -27,17 +28,39 @@ const columns = productCard?.columns || 4;
 const quickAdd = productCard?.quickAdd === 'true';
 const buttonStyle = productCard?.buttonStyle || 'link';
 
-let products: Array<{ id?: string; name: string; price: string; oldPrice: string; image: string; href?: string }> = [];
+let allProducts: Array<{ id?: string; name: string; price: string; oldPrice: string; image: string; href?: string }> = [];
 try {
   const productsData = await import('../data/products.json');
-  products = productsData.default || [];
+  allProducts = productsData.default || [];
 } catch {
-  products = [
+  allProducts = [
     { name: 'Товар', price: '5 990₽', oldPrice: '7 990₽', image: '/images/popular-1.png' },
     { name: 'Товар', price: '5 990₽', oldPrice: '7 990₽', image: '/images/popular-2.png' },
     { name: 'Товар', price: '5 990₽', oldPrice: '7 990₽', image: '/images/popular-3.png' },
     { name: 'Товар', price: '5 990₽', oldPrice: '7 990₽', image: '/images/popular-4.png' },
   ];
+}
+
+// Filter by collection if specified
+let products = allProducts;
+if (collection && allProducts.length > 0) {
+  try {
+    const collectionsData = await import('../data/collections.json');
+    const collections = collectionsData.default || [];
+    // Find collection by name (Puck stores collection name) or by ID/slug
+    const matched = collections.find((c: any) =>
+      c.name === collection || c.id === collection || c.slug === collection
+    );
+    if (matched?.productIds?.length) {
+      const idSet = new Set(matched.productIds);
+      const filtered = allProducts.filter((p: any) => p.id && idSet.has(p.id));
+      if (filtered.length > 0) {
+        products = filtered;
+      }
+    }
+  } catch {
+    // collections.json not available — use all products
+  }
 }
 ---
 

@@ -142,6 +142,88 @@ export async function fetchCollections(
 }
 
 /**
+ * Fetch products for a single collection via RPC.
+ * Returns array of product IDs belonging to the collection.
+ */
+export async function fetchCollectionProductIds(
+  productClient: ClientProxy,
+  collectionId: string,
+  shopId: string,
+): Promise<string[]> {
+  try {
+    const result = await firstValueFrom(
+      productClient
+        .send<RpcResponse<Array<{ id: string }>>>("collection.getProducts", {
+          collectionId,
+          shopId,
+          take: 100,
+        })
+        .pipe(
+          timeout(RPC_TIMEOUT_MS),
+          retry({
+            count: MAX_RETRIES,
+            delay: () => timer(RETRY_DELAY_MS),
+          }),
+          catchError((err) => {
+            logger.warn(
+              `RPC collection.getProducts failed for collection ${collectionId}: ${err?.message ?? err}`,
+            );
+            return of({
+              success: false,
+              data: [] as Array<{ id: string }>,
+              message: err?.message ?? "rpc_error",
+            });
+          }),
+        ),
+    );
+
+    if (!result?.success || !Array.isArray(result.data)) {
+      return [];
+    }
+
+    return result.data.map((p) => p.id);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error(`fetchCollectionProductIds unexpected error: ${msg}`);
+    return [];
+  }
+}
+
+/**
+ * Fetch product IDs for all collections.
+ * Returns a map of collectionId → productIds[].
+ */
+export async function fetchAllCollectionProducts(
+  productClient: ClientProxy,
+  collections: FetchedCollection[],
+  shopId: string,
+): Promise<Record<string, string[]>> {
+  const result: Record<string, string[]> = {};
+
+  // Fetch in parallel (bounded — collections are usually few)
+  const entries = await Promise.all(
+    collections.map(async (c) => {
+      const productIds = await fetchCollectionProductIds(
+        productClient,
+        c.id,
+        shopId,
+      );
+      return [c.id, productIds] as const;
+    }),
+  );
+
+  for (const [collectionId, productIds] of entries) {
+    result[collectionId] = productIds;
+  }
+
+  logger.log(
+    `Fetched collection-products mapping: ${Object.keys(result).length} collections`,
+  );
+
+  return result;
+}
+
+/**
  * Fetch all store data (products + collections) in parallel.
  */
 export async function fetchStoreData(

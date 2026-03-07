@@ -22,7 +22,7 @@ import { randomUUID } from "crypto";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { and, eq } from "drizzle-orm";
 import type * as schemaTypes from "../db/schema";
-import { fetchStoreData, type FetchedStoreData } from "./data-fetcher";
+import { fetchStoreData, fetchAllCollectionProducts, type FetchedStoreData } from "./data-fetcher";
 import {
   buildScaffold,
   type ScaffoldConfig,
@@ -1173,7 +1173,13 @@ async function stageFetchData(
   await fs.mkdir(path.dirname(publicProductsPath), { recursive: true });
   await fs.writeFile(publicProductsPath, JSON.stringify(products, null, 2), "utf8");
 
-  // Write collections.json (always, even empty — so Astro import doesn't throw)
+  // Fetch collection → product IDs mapping
+  const shopId = ctx.siteId || ctx.tenantId;
+  const collectionProductsMap = ctx.storeData.collections.length > 0
+    ? await fetchAllCollectionProducts(deps.productClient, ctx.storeData.collections, shopId)
+    : {};
+
+  // Write collections.json with productIds (always, even empty — so Astro import doesn't throw)
   const astroCollections = ctx.storeData.collections.map((c: any) => ({
     id: c.id,
     name: c.name,
@@ -1181,6 +1187,7 @@ async function stageFetchData(
     image: (c.images as string[])?.[0] || "/images/placeholder.png",
     slug: c.slug || c.id,
     href: `/collection/${c.slug || c.id}`,
+    productIds: collectionProductsMap[c.id] || [],
   }));
   const collectionsPath = path.join(
     ctx.workingDir,
@@ -1195,8 +1202,26 @@ async function stageFetchData(
     "utf8",
   );
 
+  // Write collection-products.json — slug-keyed mapping for Astro components
+  const collectionProductsBySlug: Record<string, string[]> = {};
+  for (const c of ctx.storeData.collections) {
+    const slug = (c as any).slug || c.id;
+    collectionProductsBySlug[slug] = collectionProductsMap[c.id] || [];
+  }
+  const collectionProductsPath = path.join(
+    ctx.workingDir,
+    "src",
+    "data",
+    "collection-products.json",
+  );
+  await fs.writeFile(
+    collectionProductsPath,
+    JSON.stringify(collectionProductsBySlug, null, 2),
+    "utf8",
+  );
+
   logger.log(
-    `[fetch_data] ${products.length} products, ${ctx.storeData.collections.length} collections`,
+    `[fetch_data] ${products.length} products, ${ctx.storeData.collections.length} collections, ${Object.keys(collectionProductsMap).length} collection-product mappings`,
   );
 }
 

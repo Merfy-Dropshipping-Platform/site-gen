@@ -83,6 +83,8 @@ export interface BuildContext {
   revisionMeta: Record<string, unknown>;
   templateId: string;
   publicUrl: string | null;
+  /** Immutable S3 storage slug (e.g. cdf63de393ab) */
+  storageSlug: string | null;
   /** Set during pipeline */
   workingDir: string;
   artifactsDir: string;
@@ -280,6 +282,7 @@ export async function trySnapshotDeploy(
       id: schema.site.id,
       currentRevisionId: schema.site.currentRevisionId,
       publicUrl: schema.site.publicUrl,
+      storageSlug: schema.site.storageSlug,
       branding: schema.site.branding,
     })
     .from(schema.site)
@@ -379,6 +382,7 @@ export async function trySnapshotDeploy(
     revisionMeta: {},
     templateId: params.templateId,
     publicUrl: siteRow.publicUrl,
+    storageSlug: siteRow.storageSlug,
     workingDir,
     artifactsDir,
     distDir,
@@ -532,6 +536,7 @@ export async function runBuildPipeline(
     revisionMeta: {},
     templateId: "default",
     publicUrl: null,
+    storageSlug: null,
     workingDir,
     artifactsDir,
     distDir: path.join(workingDir, "dist"),
@@ -638,6 +643,7 @@ async function stageMerge(
       themeId: schema.site.themeId,
       currentRevisionId: schema.site.currentRevisionId,
       publicUrl: schema.site.publicUrl,
+      storageSlug: schema.site.storageSlug,
       islandsEnabled: schema.site.islandsEnabled,
       branding: schema.site.branding,
       templateId: schema.theme.templateId,
@@ -652,6 +658,7 @@ async function stageMerge(
 
   ctx.templateId = params.templateOverride ?? siteRow.templateId ?? "default";
   ctx.publicUrl = siteRow.publicUrl;
+  ctx.storageSlug = siteRow.storageSlug;
   ctx.islandsEnabled = siteRow.islandsEnabled ?? false;
   ctx.branding = (siteRow.branding as BuildContext["branding"]) ?? undefined;
 
@@ -1380,9 +1387,8 @@ async function stageUpload(
   }
 
   // Determine the site prefix for live serving
-  const siteSlug = ctx.publicUrl
-    ? deps.s3.extractSubdomainSlug(ctx.publicUrl)
-    : ctx.siteId;
+  const siteSlug = ctx.storageSlug
+    ?? (ctx.publicUrl ? deps.s3.extractSubdomainSlug(ctx.publicUrl) : ctx.siteId);
 
   // 1. Upload zip artifact to sites/{siteId}/{buildId}/artifact.zip
   const artifactUrl = await deps.s3
@@ -1444,9 +1450,11 @@ async function stageDeploy(
   let logUrl = `file://${metadataFile}`;
   if (await deps.s3.isEnabled()) {
     const bucket = await deps.s3.ensureBucket();
-    const sitePrefix = ctx.publicUrl
-      ? deps.s3.getSitePrefixBySubdomain(ctx.publicUrl)
-      : `sites/${ctx.tenantId}/${ctx.siteId}/`;
+    const sitePrefix = ctx.storageSlug
+      ? `sites/${ctx.storageSlug}/`
+      : ctx.publicUrl
+        ? deps.s3.getSitePrefixBySubdomain(ctx.publicUrl)
+        : `sites/${ctx.tenantId}/${ctx.siteId}/`;
     const metaUrl = await deps.s3
       .uploadFile(bucket, `${sitePrefix}${ctx.buildId}.json`, metadataFile)
       .catch(() => null);

@@ -303,6 +303,7 @@ export class SitesDomainService {
     // Coolify не используется для статических сайтов — статика раздаётся напрямую из S3/MinIO
     let domainId: string | undefined;
     let publicUrl: string | undefined;
+    let storageSlug: string | undefined;
 
     if (!params.skipCoolify) {
       try {
@@ -317,8 +318,9 @@ export class SitesDomainService {
 
         // Публичный URL = поддомен (reverse proxy раздаёт статику из MinIO)
         publicUrl = this.storage.getSitePublicUrlBySubdomain(subdomain);
+        storageSlug = this.storage.extractSubdomainSlug(subdomain);
         this.logger.log(
-          `Generated subdomain ${subdomain} (id: ${domainId}), publicUrl: ${publicUrl}`,
+          `Generated subdomain ${subdomain} (id: ${domainId}), publicUrl: ${publicUrl}, storageSlug: ${storageSlug}`,
         );
       } catch (e) {
         this.logger.warn(
@@ -360,6 +362,7 @@ export class SitesDomainService {
       updatedBy: params.actorUserId,
       domainId,
       publicUrl,
+      storageSlug,
       coolifyProjectUuid,
     });
 
@@ -483,7 +486,7 @@ export class SitesDomainService {
   async hardDelete(tenantId: string, siteId: string) {
     // Сначала получаем publicUrl для определения S3 prefix
     const [siteRow] = await this.db
-      .select({ id: schema.site.id, publicUrl: schema.site.publicUrl })
+      .select({ id: schema.site.id, publicUrl: schema.site.publicUrl, storageSlug: schema.site.storageSlug })
       .from(schema.site)
       .where(
         and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)),
@@ -510,10 +513,11 @@ export class SitesDomainService {
       try {
         if (await this.storage.isEnabled()) {
           const bucket = await this.storage.ensureBucket();
-          // Используем subdomain-based путь если есть publicUrl, иначе fallback
-          const prefix = siteRow?.publicUrl
-            ? this.storage.getSitePrefixBySubdomain(siteRow.publicUrl)
-            : `sites/${tenantId}/${siteId}/`;
+          const prefix = siteRow?.storageSlug
+            ? `sites/${siteRow.storageSlug}/`
+            : siteRow?.publicUrl
+              ? this.storage.getSitePrefixBySubdomain(siteRow.publicUrl)
+              : `sites/${tenantId}/${siteId}/`;
           await this.storage.removePrefix(bucket, prefix);
         }
       } catch {}
@@ -635,6 +639,7 @@ export class SitesDomainService {
         .update(schema.site)
         .set({
           publicUrl: finalUrl,
+          ...(!site.storageSlug ? { storageSlug: slug } : {}),
           updatedAt: new Date(),
         })
         .where(
@@ -649,12 +654,14 @@ export class SitesDomainService {
       );
     }
 
+    const effectiveStorageSlug =
+      site.storageSlug ?? this.storage.extractSubdomainSlug(finalUrl!);
+
     // 2. Fire Coolify app creation in background (parallel with build)
     let coolifyPromise: Promise<void> | null = null;
     if (!coolifyAppUuid && finalUrl) {
       coolifyPromise = (async () => {
         try {
-          const subdomain = this.storage.extractSubdomainSlug(finalUrl!);
           const projectUuid =
             site.coolifyProjectUuid ||
             (await this.getOrCreateTenantProject(params.tenantId));
@@ -666,12 +673,10 @@ export class SitesDomainService {
             return;
           }
 
-          const sitePath = this.storage
-            .getSitePrefixBySubdomain(finalUrl!)
-            .replace(/\/$/, "");
+          const sitePath = `sites/${effectiveStorageSlug}`;
 
           this.logger.log(
-            `Creating Coolify static site app for ${subdomain}.merfy.ru`,
+            `Creating Coolify static site app for ${effectiveStorageSlug}.merfy.ru`,
           );
           const coolifyResult = await this.callCoolify<{
             success: boolean;
@@ -680,8 +685,8 @@ export class SitesDomainService {
             message?: string;
           }>("coolify.create_static_site_app", {
             projectUuid,
-            name: `site-${subdomain}`,
-            subdomain: `${subdomain}.merfy.ru`,
+            name: `site-${effectiveStorageSlug}`,
+            subdomain: `${effectiveStorageSlug}.merfy.ru`,
             sitePath,
           });
 
@@ -1022,10 +1027,11 @@ export class SitesDomainService {
     if (res.length > 0 && (await this.storage.isEnabled())) {
       const buildPromises = res.map(async (site) => {
         try {
-          // Определяем S3 prefix для сайта
-          const prefix = site.publicUrl
-            ? this.storage.getSitePrefixBySubdomain(site.publicUrl)
-            : `sites/${tenantId}/${site.id}/`;
+          const prefix = site.storageSlug
+            ? `sites/${site.storageSlug}/`
+            : site.publicUrl
+              ? this.storage.getSitePrefixBySubdomain(site.publicUrl)
+              : `sites/${tenantId}/${site.id}/`;
 
           // Проверяем наличие index.html
           const check = await this.storage.checkSiteFiles(prefix);
@@ -1503,6 +1509,7 @@ export class SitesDomainService {
           const publicUrl = this.storage.getSitePublicUrlBySubdomain(subdomain);
           updates.domainId = domainResult.id;
           updates.publicUrl = publicUrl;
+          updates.storageSlug = this.storage.extractSubdomainSlug(subdomain);
           this.logger.log(
             `Site ${site.id}: generated subdomain ${subdomain}, publicUrl: ${publicUrl}`,
           );
@@ -1523,15 +1530,14 @@ export class SitesDomainService {
 
         // 3. Создаём Coolify Application (nginx-minio-proxy) если нет
         const finalPublicUrl = site.publicUrl || updates.publicUrl;
-        if (!site.coolifyAppUuid && finalPublicUrl && projectUuid) {
+        const slug = site.storageSlug || updates.storageSlug
+          || (finalPublicUrl ? this.storage.extractSubdomainSlug(finalPublicUrl) : null);
+        if (!site.coolifyAppUuid && slug && projectUuid) {
           try {
-            const subdomain = this.storage.extractSubdomainSlug(finalPublicUrl);
-            const sitePath = this.storage
-              .getSitePrefixBySubdomain(finalPublicUrl)
-              .replace(/\/$/, "");
+            const sitePath = `sites/${slug}`;
 
             this.logger.log(
-              `Site ${site.id}: creating Coolify app for ${subdomain}.merfy.ru`,
+              `Site ${site.id}: creating Coolify app for ${slug}.merfy.ru`,
             );
 
             const coolifyResult = await this.callCoolify<{
@@ -1541,8 +1547,8 @@ export class SitesDomainService {
               message?: string;
             }>("coolify.create_static_site_app", {
               projectUuid,
-              name: `site-${subdomain}`,
-              subdomain: `${subdomain}.merfy.ru`,
+              name: `site-${slug}`,
+              subdomain: `${slug}.merfy.ru`,
               sitePath,
             });
 
@@ -2133,15 +2139,13 @@ export class SitesDomainService {
           (await this.getOrCreateTenantProject(siteRow.tenantId));
 
         if (projectUuid) {
-          const subdomain = this.storage.extractSubdomainSlug(
+          const slug = siteRow.storageSlug ?? this.storage.extractSubdomainSlug(
             siteRow.publicUrl || newPublicUrl,
           );
-          const sitePath = this.storage
-            .getSitePrefixBySubdomain(siteRow.publicUrl || newPublicUrl)
-            .replace(/\/$/, "");
+          const sitePath = `sites/${slug}`;
 
           this.logger.log(
-            `[switchDomain] creating Coolify app: project=${projectUuid}, subdomain=${subdomain}, domain=${domainName}`,
+            `[switchDomain] creating Coolify app: project=${projectUuid}, slug=${slug}, domain=${domainName}`,
           );
 
           const coolifyResult = await this.callCoolify<{
@@ -2151,7 +2155,7 @@ export class SitesDomainService {
             message?: string;
           }>("coolify.create_static_site_app", {
             projectUuid,
-            name: `site-${subdomain}`,
+            name: `site-${slug}`,
             subdomain: domainName,
             sitePath,
           });

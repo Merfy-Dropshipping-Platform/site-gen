@@ -77,8 +77,10 @@ export const site = pgTable("site", {
   coolifyProjectUuid: text("coolify_project_uuid"),
   // Domain Service интеграция
   domainId: text("domain_id"),
-  // Публичный URL сайта (например, abc123.merfy.ru)
+  // Публичный URL сайта (например, abc123.merfy.ru или merfy24.shop)
   publicUrl: text("public_url"),
+  // Неизменяемый slug для S3-хранилища (задаётся один раз при создании, например cdf63de393ab)
+  storageSlug: text("storage_slug"),
   // Флаг включения server-islands (smart revalidation)
   islandsEnabled: boolean("islands_enabled").default(false).notNull(),
   // Брендинг: логотип и цвета магазина

@@ -57,6 +57,13 @@
       "when": 1771945740000,
       "tag": "0007_site_domain_history",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1772970000000,
+      "tag": "0008_storage_slug",
+      "breakpoints": true
     }
   ]
 }

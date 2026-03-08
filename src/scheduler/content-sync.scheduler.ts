@@ -67,6 +67,7 @@ export class ContentSyncScheduler implements OnModuleInit {
           id: schema.site.id,
           tenantId: schema.site.tenantId,
           publicUrl: schema.site.publicUrl,
+          storageSlug: schema.site.storageSlug,
           status: schema.site.status,
         })
         .from(schema.site)
@@ -84,10 +85,11 @@ export class ContentSyncScheduler implements OnModuleInit {
 
       for (const site of sites) {
         try {
-          // Определяем S3 prefix для сайта
-          const prefix = site.publicUrl
-            ? this.storage.getSitePrefixBySubdomain(site.publicUrl)
-            : `sites/${site.tenantId}/${site.id}/`;
+          const prefix = site.storageSlug
+            ? `sites/${site.storageSlug}/`
+            : site.publicUrl
+              ? this.storage.getSitePrefixBySubdomain(site.publicUrl)
+              : `sites/${site.tenantId}/${site.id}/`;
 
           // Проверяем наличие index.html
           const check = await this.storage.checkSiteFiles(prefix);

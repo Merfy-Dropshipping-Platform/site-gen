@@ -246,6 +246,7 @@ export class SiteGeneratorService {
         themeId: schema.site.themeId,
         currentRevisionId: schema.site.currentRevisionId,
         publicUrl: schema.site.publicUrl,
+        storageSlug: schema.site.storageSlug,
         // JOIN: get templateId from theme table
         templateId: schema.theme.templateId,
       })
@@ -394,10 +395,12 @@ export class SiteGeneratorService {
         try {
           const bucket = await this.s3.ensureBucket();
           // Используем subdomain-based путь если есть publicUrl, иначе fallback на старый формат
-          this.logger.log(`Site publicUrl: ${siteRow?.publicUrl ?? "NOT SET"}`);
-          const sitePrefix = siteRow?.publicUrl
-            ? this.s3.getSitePrefixBySubdomain(siteRow.publicUrl)
-            : `sites/${params.tenantId}/${params.siteId}/`;
+          this.logger.log(`Site publicUrl: ${siteRow?.publicUrl ?? "NOT SET"}, storageSlug: ${siteRow?.storageSlug ?? "NOT SET"}`);
+          const sitePrefix = siteRow?.storageSlug
+            ? `sites/${siteRow.storageSlug}/`
+            : siteRow?.publicUrl
+              ? this.s3.getSitePrefixBySubdomain(siteRow.publicUrl)
+              : `sites/${params.tenantId}/${params.siteId}/`;
           this.logger.log(`Using S3 prefix: ${sitePrefix}`);
 
           // Удалить старые файлы сайта (если были)
@@ -439,10 +442,11 @@ export class SiteGeneratorService {
 
       if (await this.s3.isEnabled()) {
         const bucket = await this.s3.ensureBucket();
-        // Используем subdomain-based путь для артефактов
-        const prefix = siteRow?.publicUrl
-          ? this.s3.getSitePrefixBySubdomain(siteRow.publicUrl)
-          : `sites/${params.tenantId}/${params.siteId}/`;
+        const prefix = siteRow?.storageSlug
+          ? `sites/${siteRow.storageSlug}/`
+          : siteRow?.publicUrl
+            ? this.s3.getSitePrefixBySubdomain(siteRow.publicUrl)
+            : `sites/${params.tenantId}/${params.siteId}/`;
         const artifactKey = `${prefix}${buildId}.zip`;
         const metadataKey = `${prefix}${buildId}.json`;
 

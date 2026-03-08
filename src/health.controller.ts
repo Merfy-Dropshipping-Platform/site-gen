@@ -272,8 +272,10 @@ export class HealthController {
         totalSize: 0,
       };
 
-      if (site.publicUrl) {
-        const prefix = this.s3Storage.getSitePrefixBySubdomain(site.publicUrl);
+      if (site.storageSlug || site.publicUrl) {
+        const prefix = site.storageSlug
+          ? `sites/${site.storageSlug}/`
+          : this.s3Storage.getSitePrefixBySubdomain(site.publicUrl!);
         staticCheck = await this.s3Storage.checkSiteFiles(prefix);
       }
 

@@ -142,6 +142,7 @@ export class BillingSyncScheduler implements OnModuleInit {
           id: schema.site.id,
           tenantId: schema.site.tenantId,
           publicUrl: schema.site.publicUrl,
+          storageSlug: schema.site.storageSlug,
         })
         .from(schema.site)
         .where(
@@ -162,8 +163,9 @@ export class BillingSyncScheduler implements OnModuleInit {
         try {
           if (!site.publicUrl) continue;
 
-          // Проверяем наличие index.html в S3
-          const prefix = this.storage.getSitePrefixBySubdomain(site.publicUrl);
+          const prefix = site.storageSlug
+            ? `sites/${site.storageSlug}/`
+            : this.storage.getSitePrefixBySubdomain(site.publicUrl);
           const check = await this.storage.checkSiteFiles(prefix);
 
           if (!check.hasIndex) {

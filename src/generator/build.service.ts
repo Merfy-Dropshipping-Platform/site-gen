@@ -1158,6 +1158,15 @@ async function stageFetchData(
       href: `/product/${p.slug || p.id}`,
       slug: p.slug || p.id,
       quantity: p.quantity ?? null,
+      hasVariants: p.hasVariants ?? false,
+      variants: (p.hasVariants && Array.isArray(p.variantCombinations))
+        ? p.variantCombinations.map((v: any) => ({
+            id: v.id,
+            title: v.title,
+            price: formatPrice(v.price || p.price || p.basePrice),
+            available: v.available !== false,
+          }))
+        : [],
     }));
 
   // Write products.json for Astro build-time consumption (formatted for components)

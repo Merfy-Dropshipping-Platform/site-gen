@@ -12,7 +12,8 @@
     "@tailwindcss/vite": "^4.1.17",
     "astro": "^5.15.5",
     "sharp": "^0.34.3",
-    "tailwindcss": "^4.1.17"
+    "tailwindcss": "^4.1.17",
+    "glightbox": "^3.3.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",

@@ -129,6 +129,7 @@ export class SitesDomainService {
         createdAt: schema.site.createdAt,
         updatedAt: schema.site.updatedAt,
         publicUrl: schema.site.publicUrl,
+        storageSlug: schema.site.storageSlug,
         coolifyAppUuid: schema.site.coolifyAppUuid,
         coolifyProjectUuid: schema.site.coolifyProjectUuid,
         domainId: schema.site.domainId,
@@ -211,6 +212,7 @@ export class SitesDomainService {
         status: schema.site.status,
         themeId: schema.site.themeId,
         publicUrl: schema.site.publicUrl,
+        storageSlug: schema.site.storageSlug,
         branding: schema.site.branding,
         createdAt: schema.site.createdAt,
         updatedAt: schema.site.updatedAt,
@@ -973,6 +975,7 @@ export class SitesDomainService {
         id: schema.site.id,
         coolifyAppUuid: schema.site.coolifyAppUuid,
         publicUrl: schema.site.publicUrl,
+        storageSlug: schema.site.storageSlug,
       });
     this.events.emit("sites.tenant.unfrozen", { tenantId, count: res.length });
 
@@ -1482,6 +1485,7 @@ export class SitesDomainService {
         tenantId: schema.site.tenantId,
         name: schema.site.name,
         publicUrl: schema.site.publicUrl,
+        storageSlug: schema.site.storageSlug,
         coolifyProjectUuid: schema.site.coolifyProjectUuid,
         coolifyAppUuid: schema.site.coolifyAppUuid,
       })

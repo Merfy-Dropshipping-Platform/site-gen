@@ -2123,19 +2123,67 @@ export class SitesDomainService {
         );
       }
     } else {
+      // No Coolify app yet — create one with the new domain
       this.logger.warn(
-        `[switchDomain] no coolifyAppUuid for site ${siteId} — skipping Coolify domain update`,
+        `[switchDomain] no coolifyAppUuid for site ${siteId} — creating Coolify app`,
       );
-    }
+      try {
+        const projectUuid =
+          siteRow.coolifyProjectUuid ||
+          (await this.getOrCreateTenantProject(siteRow.tenantId));
 
-    // 6. Emit event
-    this.events.emit("sites.domain.switched", {
-      tenantId: siteRow.tenantId,
-      siteId,
-      domainName,
-      domainId,
-      previousPublicUrl: siteRow.publicUrl,
-    });
+        if (projectUuid) {
+          const subdomain = this.storage.extractSubdomainSlug(
+            siteRow.publicUrl || newPublicUrl,
+          );
+          const sitePath = this.storage
+            .getSitePrefixBySubdomain(siteRow.publicUrl || newPublicUrl)
+            .replace(/\/$/, "");
+
+          this.logger.log(
+            `[switchDomain] creating Coolify app: project=${projectUuid}, subdomain=${subdomain}, domain=${domainName}`,
+          );
+
+          const coolifyResult = await this.callCoolify<{
+            success: boolean;
+            appUuid?: string;
+            url?: string;
+            message?: string;
+          }>("coolify.create_static_site_app", {
+            projectUuid,
+            name: `site-${subdomain}`,
+            subdomain: domainName,
+            sitePath,
+          });
+
+          if (coolifyResult.success && coolifyResult.appUuid) {
+            await this.db
+              .update(schema.site)
+              .set({
+                coolifyAppUuid: coolifyResult.appUuid,
+                coolifyProjectUuid: projectUuid,
+                updatedAt: now,
+              })
+              .where(eq(schema.site.id, siteId));
+            this.logger.log(
+              `[switchDomain] created Coolify app ${coolifyResult.appUuid} for site ${siteId}`,
+            );
+          } else {
+            this.logger.warn(
+              `[switchDomain] Coolify app creation returned: ${coolifyResult.message}`,
+            );
+          }
+        } else {
+          this.logger.warn(
+            `[switchDomain] failed to get Coolify project for tenant ${siteRow.tenantId}`,
+          );
+        }
+      } catch (e) {
+        this.logger.error(
+          `[switchDomain] Coolify app creation FAILED for ${siteId}: ${e instanceof Error ? e.message : e}`,
+        );
+      }
+    }
 
     this.logger.log(
       `[switchDomain] DONE site ${siteId}: ${siteRow.publicUrl} -> ${newPublicUrl}`,

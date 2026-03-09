@@ -167,20 +167,20 @@ function createDrawerHTML() {
     .cart-drawer-qty-btn {
       width: 28px;
       height: 28px;
-      border: 1px solid #e5e7eb;
+      border: 1px solid rgba(var(--color-foreground, 18 18 18), 0.15);
       border-radius: 6px;
-      background: #fff;
+      background: rgba(var(--color-foreground, 18 18 18), 0.06);
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       font-size: 16px;
-      color: #374151;
+      color: rgb(var(--color-foreground, 18 18 18));
       line-height: 1;
     }
     .cart-drawer-qty-btn:hover {
-      background: #f9fafb;
-      border-color: #d1d5db;
+      background: rgba(var(--color-foreground, 18 18 18), 0.12);
+      border-color: rgba(var(--color-foreground, 18 18 18), 0.25);
     }
     .cart-drawer-qty-btn:disabled {
       opacity: 0.4;

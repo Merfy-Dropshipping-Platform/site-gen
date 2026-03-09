@@ -5,6 +5,7 @@ import { useUrlFilters, type CatalogFilters } from '../../lib/storefront/hooks/u
 import { useCollections } from '../../lib/storefront/hooks/useCollections';
 import type { Product } from '../../lib/storefront/types';
 import { ProductCard } from './ProductCard';
+import { PriceRangeFilter } from './PriceRangeFilter';
 
 // --- Sub-components ---
 
@@ -164,6 +165,25 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true, columns = 4
 
   const hasActiveFilters = !!(filters.collectionId || filters.priceMin !== undefined || filters.priceMax !== undefined || filters.sort !== 'newest');
 
+  // Scroll restore: save position on scroll, restore on mount if cache is warm
+  useEffect(() => {
+    const key = `catalog_scroll_${window.location.pathname}`;
+    const saved = sessionStorage.getItem(key);
+
+    if (saved && products.length > 0) {
+      requestAnimationFrame(() => {
+        window.scrollTo(0, parseInt(saved, 10));
+      });
+      sessionStorage.removeItem(key);
+    }
+
+    const onScroll = () => {
+      sessionStorage.setItem(key, String(window.scrollY));
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [products.length > 0]); // re-run once products load
+
   // Loading state
   if (isLoading) {
     return <SkeletonGrid />;
@@ -233,40 +253,50 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true, columns = 4
       {/* Content area */}
       <div className="flex gap-8">
         {/* Filters sidebar - shown on desktop when showCollectionFilter is true */}
-        {showCollectionFilter && collections.length > 0 && (
+        {/* Filters sidebar - desktop */}
+        {showCollectionFilter && (
           <aside className="hidden lg:block w-56 flex-shrink-0">
             <div className="sticky top-24">
-              <h3 className="text-sm font-semibold text-[var(--color-text)] mb-3 font-[family-name:var(--font-heading)]">
-                Коллекции
-              </h3>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer group">
-                  <input
-                    type="radio"
-                    name="collection"
-                    checked={!filters.collectionId}
-                    onChange={() => setFilters({ collectionId: undefined })}
-                    className="h-4 w-4 accent-[rgb(var(--color-primary-rgb))]"
-                  />
-                  <span className={`text-sm transition-colors ${!filters.collectionId ? 'text-[var(--color-text)] font-medium' : 'text-[var(--color-text-muted)] group-hover:text-[var(--color-text)]'}`}>
-                    Все товары
-                  </span>
-                </label>
-                {collections.map((c) => (
-                  <label key={c.id} className="flex items-center gap-2 cursor-pointer group">
-                    <input
-                      type="radio"
-                      name="collection"
-                      checked={filters.collectionId === c.id}
-                      onChange={() => setFilters({ collectionId: c.id })}
-                      className="h-4 w-4 accent-[rgb(var(--color-primary-rgb))]"
-                    />
-                    <span className={`text-sm transition-colors ${filters.collectionId === c.id ? 'text-[var(--color-text)] font-medium' : 'text-[var(--color-text-muted)] group-hover:text-[var(--color-text)]'}`}>
-                      {c.title}
-                    </span>
-                  </label>
-                ))}
-              </div>
+              {collections.length > 0 && (
+                <>
+                  <h3 className="text-sm font-semibold text-[var(--color-text)] mb-3 font-[family-name:var(--font-heading)]">
+                    Коллекции
+                  </h3>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="radio"
+                        name="collection"
+                        checked={!filters.collectionId}
+                        onChange={() => setFilters({ collectionId: undefined })}
+                        className="h-4 w-4 accent-[rgb(var(--color-primary-rgb))]"
+                      />
+                      <span className={`text-sm transition-colors ${!filters.collectionId ? 'text-[var(--color-text)] font-medium' : 'text-[var(--color-text-muted)] group-hover:text-[var(--color-text)]'}`}>
+                        Все товары
+                      </span>
+                    </label>
+                    {collections.map((c) => (
+                      <label key={c.id} className="flex items-center gap-2 cursor-pointer group">
+                        <input
+                          type="radio"
+                          name="collection"
+                          checked={filters.collectionId === c.id}
+                          onChange={() => setFilters({ collectionId: c.id })}
+                          className="h-4 w-4 accent-[rgb(var(--color-primary-rgb))]"
+                        />
+                        <span className={`text-sm transition-colors ${filters.collectionId === c.id ? 'text-[var(--color-text)] font-medium' : 'text-[var(--color-text-muted)] group-hover:text-[var(--color-text)]'}`}>
+                          {c.title}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </>
+              )}
+              <PriceRangeFilter
+                priceMin={filters.priceMin}
+                priceMax={filters.priceMax}
+                onChange={(min, max) => setFilters({ priceMin: min, priceMax: max })}
+              />
             </div>
           </aside>
         )}

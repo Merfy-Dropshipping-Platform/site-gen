@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Product } from '../../../../../../packages/storefront/types';
+import type { Product } from '../../lib/storefront/types';
 
 /**
  * Format price from kopecks to a human-readable currency string.

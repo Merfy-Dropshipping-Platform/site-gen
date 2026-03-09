@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useCallback } from 'react';
-import { StoreProvider } from '../../../../../../packages/storefront/provider';
-import { useProducts } from '../../../../../../packages/storefront/hooks/useProducts';
-import { useUrlFilters, type CatalogFilters } from '../../../../../../packages/storefront/hooks/useUrlFilters';
-import { useCollections } from '../../../../../../packages/storefront/hooks/useCollections';
-import type { Product } from '../../../../../../packages/storefront/types';
+import { StoreProvider } from '../../lib/storefront/provider';
+import { useProducts } from '../../lib/storefront/hooks/useProducts';
+import { useUrlFilters, type CatalogFilters } from '../../lib/storefront/hooks/useUrlFilters';
+import { useCollections } from '../../lib/storefront/hooks/useCollections';
+import type { Product } from '../../lib/storefront/types';
 import { ProductCard } from './ProductCard';
 
 // --- Sub-components ---

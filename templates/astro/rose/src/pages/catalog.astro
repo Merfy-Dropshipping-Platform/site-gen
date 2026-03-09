@@ -6,6 +6,7 @@ import products from '../data/products.json';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import PopularProducts from '../components/PopularProducts.astro';
+import CatalogIsland from '../components/react/CatalogIsland';
 
 const meta = data?.meta ?? {};
 const blocks = data?.content ?? [];
@@ -25,7 +26,11 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
       <h1 class="text-4xl font-comfortaa">Каталог</h1>
     </div>
 
-    <PopularProducts products={products} />
+    <CatalogIsland client:load />
+
+    <noscript>
+      <PopularProducts products={products} />
+    </noscript>
   </main>
 
   <Footer {...footerProps} />

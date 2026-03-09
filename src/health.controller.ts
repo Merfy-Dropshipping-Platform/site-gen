@@ -412,6 +412,29 @@ export class HealthController {
    * Регенерирует все активные сайты с принудительным использованием
    * указанного шаблона (по умолчанию 'rose').
    */
+  /**
+   * Регенерация одного сайта по ID
+   * POST /regenerate-site/:siteId?template=rose
+   */
+  @Post("regenerate-site/:siteId")
+  async regenerateSite(
+    @Param("siteId") siteId: string,
+    @Query("template") template?: string,
+  ) {
+    const templateId = template || "rose";
+    this.logger.log(`Regenerating single site ${siteId} with template: ${templateId}`);
+    try {
+      const result = await this.sitesService.regenerateSingleSite(siteId, templateId);
+      return { success: true, ...result };
+    } catch (error) {
+      this.logger.error(`Regeneration failed for ${siteId}: ${error}`);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "unknown",
+      };
+    }
+  }
+
   @Post("regenerate-all")
   async regenerateAll(@Query("template") template?: string) {
     const templateId = template || "rose";

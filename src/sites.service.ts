@@ -1879,6 +1879,34 @@ export class SitesDomainService {
   }
 
   /**
+   * Регенерировать один сайт по ID с указанным шаблоном.
+   */
+  async regenerateSingleSite(siteId: string, templateId: string) {
+    const [site] = await this.db
+      .select({ id: schema.site.id, tenantId: schema.site.tenantId, name: schema.site.name })
+      .from(schema.site)
+      .where(eq(schema.site.id, siteId));
+
+    if (!site) throw new Error(`Site ${siteId} not found`);
+
+    this.logger.log(`Regenerating site ${site.id} (${site.name}) with template: ${templateId}`);
+
+    await this.generator.build({
+      tenantId: site.tenantId,
+      siteId: site.id,
+      mode: "production",
+      templateOverride: templateId,
+    });
+
+    await this.db
+      .update(schema.site)
+      .set({ status: "published", updatedAt: new Date() })
+      .where(eq(schema.site.id, site.id));
+
+    return { siteId: site.id, name: site.name };
+  }
+
+  /**
    * Регенерировать все активные сайты с указанным шаблоном.
    * Используется для массового обновления шаблона всех сайтов.
    */

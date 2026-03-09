@@ -7,6 +7,9 @@
 import { ClientProxy } from "@nestjs/microservices";
 import { firstValueFrom, timeout, catchError, of, retry, timer } from "rxjs";
 import { Logger } from "@nestjs/common";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { and, eq, desc } from "drizzle-orm";
+import type * as schemaTypes from "../db/schema";
 
 const logger = new Logger("DataFetcher");
 
@@ -27,6 +30,17 @@ export interface FetchedCollection {
   slug?: string;
   handle?: string;
   productIds?: string[];
+}
+
+export interface FetchedPublication {
+  id: string;
+  title: string;
+  slug: string;
+  category: string;
+  content: string;
+  excerpt: string;
+  coverImageUrl: string | null;
+  publishedAt: string | null;
 }
 
 export interface FetchedStoreData {
@@ -241,4 +255,43 @@ export async function fetchStoreData(
   );
 
   return { products, collections };
+}
+
+/**
+ * Fetch published publications directly from DB (same service — no RPC needed).
+ */
+export async function fetchPublications(
+  db: NodePgDatabase<typeof schemaTypes>,
+  schema: typeof schemaTypes,
+  siteId: string,
+  organizationId: string,
+): Promise<FetchedPublication[]> {
+  try {
+    const rows = await db
+      .select()
+      .from(schema.publications)
+      .where(
+        and(
+          eq(schema.publications.siteId, siteId),
+          eq(schema.publications.organizationId, organizationId),
+          eq(schema.publications.status, "published"),
+        ),
+      )
+      .orderBy(desc(schema.publications.publishedAt));
+
+    return rows.map((r) => ({
+      id: r.id,
+      title: r.title,
+      slug: r.slug,
+      category: r.category,
+      content: r.content,
+      excerpt: r.excerpt ?? "",
+      coverImageUrl: r.coverImageUrl,
+      publishedAt: r.publishedAt?.toISOString() ?? null,
+    }));
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error(`fetchPublications error: ${msg}`);
+    return [];
+  }
 }

@@ -22,7 +22,7 @@ import { randomUUID } from "crypto";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { and, eq } from "drizzle-orm";
 import type * as schemaTypes from "../db/schema";
-import { fetchStoreData, fetchAllCollectionProducts, type FetchedStoreData } from "./data-fetcher";
+import { fetchStoreData, fetchAllCollectionProducts, fetchPublications, type FetchedStoreData } from "./data-fetcher";
 import {
   buildScaffold,
   type ScaffoldConfig,
@@ -450,6 +450,26 @@ export async function trySnapshotDeploy(
       await fs.mkdir(path.dirname(productsJsonPath), { recursive: true });
       await fs.writeFile(productsJsonPath, JSON.stringify(astroProducts, null, 2), "utf8");
       logger.log(`[snapshot] Injected ${astroProducts.length} products into data/products.json`);
+    }
+
+    // ── Inject real publications ──
+    const pubData = await fetchPublications(deps.db, deps.schema, params.siteId, params.tenantId);
+    if (pubData.length > 0) {
+      const fmtDate = (iso: string | null): string => {
+        if (!iso) return "";
+        return new Date(iso).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
+      };
+      const astroPubs = pubData.map((p) => ({
+        id: p.id, title: p.title, slug: p.slug, category: p.category,
+        content: p.content, excerpt: p.excerpt,
+        coverImageUrl: p.coverImageUrl || "/images/placeholder.png",
+        publishedAt: p.publishedAt, dateFormatted: fmtDate(p.publishedAt),
+        href: `/publications/${p.slug}`,
+      }));
+      const pubJsonPath = path.join(distDir, "data", "publications.json");
+      await fs.mkdir(path.dirname(pubJsonPath), { recursive: true });
+      await fs.writeFile(pubJsonPath, JSON.stringify(astroPubs, null, 2), "utf8");
+      logger.log(`[snapshot] Injected ${astroPubs.length} publications into data/publications.json`);
     }
 
     // ── Zip → Upload → Deploy (reuse existing stages) ──
@@ -1236,8 +1256,33 @@ async function stageFetchData(
     "utf8",
   );
 
+  // Fetch publications from local DB (same service)
+  const publicationsData = await fetchPublications(deps.db, deps.schema, ctx.siteId, ctx.tenantId);
+
+  const formatDate = (iso: string | null): string => {
+    if (!iso) return "";
+    return new Date(iso).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
+  };
+
+  const astroPublications = publicationsData.map((p) => ({
+    id: p.id,
+    title: p.title,
+    slug: p.slug,
+    category: p.category,
+    content: p.content,
+    excerpt: p.excerpt,
+    coverImageUrl: p.coverImageUrl || "/images/placeholder.png",
+    publishedAt: p.publishedAt,
+    dateFormatted: formatDate(p.publishedAt),
+    href: `/publications/${p.slug}`,
+  }));
+
+  const publicationsPath = path.join(ctx.workingDir, "src", "data", "publications.json");
+  await fs.mkdir(path.dirname(publicationsPath), { recursive: true });
+  await fs.writeFile(publicationsPath, JSON.stringify(astroPublications, null, 2), "utf8");
+
   logger.log(
-    `[fetch_data] ${products.length} products, ${ctx.storeData.collections.length} collections, ${Object.keys(collectionProductsMap).length} collection-product mappings`,
+    `[fetch_data] ${products.length} products, ${ctx.storeData.collections.length} collections, ${Object.keys(collectionProductsMap).length} collection-product mappings, ${publicationsData.length} publications`,
   );
 }
 

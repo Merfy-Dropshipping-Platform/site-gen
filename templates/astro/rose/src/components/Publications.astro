@@ -1,4 +1,6 @@
 ---
+import publicationsData from '../data/publications.json';
+
 interface Post {
   image?: string;
   title?: string;
@@ -14,15 +16,38 @@ interface Props {
   dateTime?: { enabled?: string };
   colorScheme?: string;
   padding?: { top?: number; bottom?: number };
+  cardsCount?: number;
+  categoryFilter?: string;
 }
 
-const { heading, posts = [], columnsCount = 3, colorScheme, padding } = Astro.props;
+const { heading, posts = [], columnsCount = 3, colorScheme, padding, cardsCount, categoryFilter } = Astro.props;
 const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
 const showHeading = heading?.enabled !== 'false' && heading?.text;
 const headingSize = heading?.size ?? 'medium';
 const padTop = padding?.top ?? 80;
 const padBottom = padding?.bottom ?? 80;
-const visiblePosts = posts.filter((p) => !p.hidden);
+const showDate = Astro.props.dateTime?.enabled !== 'false';
+
+// Merge: prefer real data from publications.json, fallback to Puck props
+let mergedPosts: Post[];
+if (publicationsData && publicationsData.length > 0) {
+  let filtered = publicationsData as any[];
+  if (categoryFilter && categoryFilter !== 'all') {
+    filtered = filtered.filter((p: any) => p.category === categoryFilter);
+  }
+  const limit = cardsCount ?? 6;
+  mergedPosts = filtered.slice(0, limit).map((p: any) => ({
+    image: p.coverImageUrl,
+    title: p.title,
+    description: p.excerpt,
+    date: p.dateFormatted,
+    link: { enabled: 'true', text: 'Читать далее', href: p.href },
+  }));
+} else {
+  mergedPosts = posts;
+}
+
+const visiblePosts = mergedPosts.filter((p: any) => !p.hidden);
 
 const headingSizeClass: Record<string, string> = {
   small: 'text-2xl',
@@ -45,7 +70,7 @@ const cols = columnsCount;
       <p class="text-center text-theme-muted text-lg py-10">Публикации скоро появятся</p>
     ) : (
       <div class="grid publications-grid gap-8 max-md:!grid-cols-2 max-md:gap-6 max-[480px]:!grid-cols-1">
-        {visiblePosts.map((post) => (
+        {visiblePosts.map((post: any) => (
           <article class="bg-theme-background rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_32px_rgba(0,0,0,0.08)] group">
             {post.image && (
               <div class="aspect-video overflow-hidden bg-gray-50">
@@ -58,6 +83,9 @@ const cols = columnsCount;
               </div>
             )}
             <div class="p-5">
+              {showDate && post.date && (
+                <time class="text-xs text-theme-muted mb-1 block">{post.date}</time>
+              )}
               {post.title && (
                 <h3 class="font-heading text-[1.15rem] font-medium text-theme-foreground mb-2 leading-[1.3]">{post.title}</h3>
               )}

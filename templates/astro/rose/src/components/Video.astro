@@ -35,12 +35,12 @@ const embedUrl = getEmbedUrl(videoUrl);
 
 const isFullscreen = position === 'fullscreen';
 
-const headingSizeClasses: Record<string, string> = {
-  small: 'text-2xl',
-  medium: 'text-[2rem]',
-  large: 'text-[2.5rem]',
+const headingFontSizes: Record<string, string> = {
+  small: '1.5rem',
+  medium: '2rem',
+  large: '2.5rem',
 };
-const headingSizeClass = headingSizeClasses[contentSize] || headingSizeClasses.medium;
+const headingFS = headingFontSizes[contentSize] || '2rem';
 ---
 
 <section
@@ -51,7 +51,7 @@ const headingSizeClass = headingSizeClasses[contentSize] || headingSizeClasses.m
     {(showHeading || showSubheading) && (
       <div class="text-center mb-10 max-w-[700px] mx-auto">
         {showHeading && (
-          <h2 class={`${headingSizeClass} font-medium text-theme-foreground mb-3 leading-[1.2] font-heading`}>
+          <h2 class="font-medium text-theme-foreground mb-3 font-heading" style={`font-size:${headingFS};line-height:1.2;`}>
             {content!.heading!.text}
           </h2>
         )}

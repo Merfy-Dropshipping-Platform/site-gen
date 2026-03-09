@@ -37,13 +37,13 @@ const textSize = typeof text === 'object' ? (text?.size || 'medium') : 'medium';
 const primaryLink = typeof primaryButton?.link === 'object' ? primaryButton?.link?.href : (primaryButton?.link || '#');
 const secondaryLink = typeof secondaryButton?.link === 'object' ? secondaryButton?.link?.href : (secondaryButton?.link || '#');
 
-/* ── Size → min-height ── */
-const sizeClasses: Record<string, string> = {
-  small: 'min-h-[300px] sm:min-h-[400px] md:min-h-[500px]',
-  medium: 'min-h-[400px] sm:min-h-[500px] md:min-h-[600px] lg:min-h-[700px]',
-  large: 'min-h-[500px] sm:min-h-[600px] md:min-h-[700px] lg:min-h-[800px]',
+/* ── Size → min-height (CSS custom props — Tailwind 4 skips frontmatter scanning) ── */
+const sizeMinH: Record<string, { base: number; sm: number; md: number; lg: number }> = {
+  small: { base: 300, sm: 400, md: 500, lg: 500 },
+  medium: { base: 400, sm: 500, md: 600, lg: 700 },
+  large: { base: 500, sm: 600, md: 700, lg: 800 },
 };
-const sizeClass = sizeClasses[size || 'large'] || sizeClasses.large;
+const sv = sizeMinH[size || 'large'] || sizeMinH.large;
 
 /* ── Position → flex alignment (matches constructor positionStyles) ── */
 const positionMap: Record<string, { justify: string; align: string }> = {
@@ -97,7 +97,7 @@ const singleBgImage = backgroundImage || backgroundImage2;
 const isContainer = container === 'true';
 ---
 
-<section class={`relative w-full ${sizeClass} overflow-hidden`}>
+<section class="relative w-full overflow-hidden hero-section" style={`--h-base:${sv.base}px;--h-sm:${sv.sm}px;--h-md:${sv.md}px;--h-lg:${sv.lg}px;`}>
   {/* Background Image(s) */}
   {hasBothImages ? (
     <div class="absolute inset-0 flex">
@@ -204,3 +204,10 @@ const isContainer = container === 'true';
     )}
   </div>
 </section>
+
+<style>
+  .hero-section { min-height: var(--h-base); }
+  @media (min-width: 640px) { .hero-section { min-height: var(--h-sm); } }
+  @media (min-width: 768px) { .hero-section { min-height: var(--h-md); } }
+  @media (min-width: 1024px) { .hero-section { min-height: var(--h-lg); } }
+</style>

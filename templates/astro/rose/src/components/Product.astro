@@ -98,8 +98,8 @@ const padBottom = padding?.bottom ?? 80;
 // Color scheme
 const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
 
-// Image size class
-const imageSize = size === 'large' ? 'lg:w-[540px]' : size === 'medium' ? 'lg:w-[480px]' : 'lg:w-[420px]';
+// Image size (inline style for Tailwind 4 compatibility)
+const imageSizePx = size === 'large' ? '540px' : size === 'medium' ? '480px' : '420px';
 
 // Flex direction based on photo position
 const flexDirection = photoPosition === 'right' ? 'lg:flex-row-reverse' : 'lg:flex-row';
@@ -116,7 +116,7 @@ const titleLineHeight = title?.size === 'large' ? '38px' : title?.size === 'medi
   <div class="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-0">
     <div class={`flex flex-col ${flexDirection} lg:justify-center gap-10`}>
       <!-- Image block -->
-      <div class={`w-full ${imageSize} lg:shrink-0`}>
+      <div class="w-full lg:shrink-0 product-image-col" style={`--img-w:${imageSizePx};`}>
         {layout === 'two-columns' ? (
           <!-- Two columns grid -->
           <div class="grid grid-cols-2 gap-3">
@@ -273,3 +273,7 @@ const titleLineHeight = title?.size === 'large' ? '38px' : title?.size === 'medi
     </div>
   </div>
 </section>
+
+<style>
+  @media (min-width: 1024px) { .product-image-col { width: var(--img-w); } }
+</style>

@@ -3,7 +3,7 @@ import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq, and, sql, desc, asc } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import * as schema from "../db/schema";
-import { PG_CONNECTION } from "../db/database.module";
+import { PG_CONNECTION } from "../constants";
 import { BuildQueuePublisher } from "../rabbitmq/build-queue.service";
 
 type PublicationStatus = "draft" | "scheduled" | "published" | "archived";

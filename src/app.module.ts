@@ -60,6 +60,7 @@ import { FragmentPatcher } from "./listeners/fragment-patcher.service";
 import { BrandingController } from "./branding/branding.controller";
 import { PublicationsService } from "./publications/publications.service";
 import { PublicationsMicroserviceController } from "./publications/publications.controller";
+import { PublicationsScheduler } from "./scheduler/publications.scheduler";
 
 @Module({
   imports: [
@@ -102,6 +103,7 @@ import { PublicationsMicroserviceController } from "./publications/publications.
     BillingSyncScheduler,
     SiteProvisioningScheduler,
     ContentSyncScheduler,
+    PublicationsScheduler,
     BillingClient,
     BillingEventsConsumer,
     RetrySetupService,

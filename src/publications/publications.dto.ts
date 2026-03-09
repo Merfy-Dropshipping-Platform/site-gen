@@ -9,17 +9,17 @@ import {
 
 export class CreatePublicationDto {
   @IsUUID()
-  shopId: string;
+  shopId!: string;
 
   @IsString()
   @MaxLength(255)
-  title: string;
+  title!: string;
 
   @IsIn(["news", "blog", "articles"])
-  category: "news" | "blog" | "articles";
+  category!: "news" | "blog" | "articles";
 
   @IsString()
-  content: string;
+  content!: string;
 
   @IsOptional()
   @IsString()

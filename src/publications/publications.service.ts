@@ -6,6 +6,9 @@ import * as schema from "../db/schema";
 import { PG_CONNECTION } from "../db/database.module";
 import { BuildQueuePublisher } from "../rabbitmq/build-queue.service";
 
+type PublicationStatus = "draft" | "scheduled" | "published" | "archived";
+type PublicationCategory = "news" | "blog" | "articles";
+
 // --- Slug generation (T007) ---
 
 const CYRILLIC_MAP: Record<string, string> = {
@@ -69,11 +72,11 @@ export class PublicationsService {
     organizationId: string;
     siteId: string;
     title: string;
-    category: "news" | "blog" | "articles";
+    category: PublicationCategory;
     content: string;
     excerpt?: string;
     coverImageUrl?: string;
-    status?: string;
+    status?: PublicationStatus;
     scheduledAt?: string;
   }) {
     const id = randomUUID();
@@ -84,7 +87,7 @@ export class PublicationsService {
       params.excerpt ||
       params.content.replace(/<[^>]*>/g, "").substring(0, 200);
 
-    const status = params.status || "draft";
+    const status: PublicationStatus = params.status || "draft";
 
     if (status === "scheduled" && !params.scheduledAt) {
       throw new Error("scheduledAt is required when status is 'scheduled'");

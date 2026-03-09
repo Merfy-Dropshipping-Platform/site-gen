@@ -131,6 +131,82 @@ export interface BuildResult {
 }
 
 /**
+ * Default revision data matching the constructor's initial state.
+ * Ensures the first build produces a site identical to what the constructor shows.
+ */
+function getDefaultRevisionData(): Record<string, unknown> {
+  return {
+    pages: [
+      { id: "home", name: "Главная страница", slug: "/", isCustom: false, createdAt: 0 },
+      { id: "page-about", name: "О нас", slug: "/about", isCustom: false, createdAt: 0 },
+      { id: "page-contacts", name: "Контакты", slug: "/contacts", isCustom: false, createdAt: 0 },
+    ],
+    pagesData: {
+      home: {
+        content: [
+          { type: "Header", props: { id: "Header-default" } },
+          {
+            type: "Hero",
+            props: {
+              id: "Hero-1",
+              backgroundImage: "/main-image.png",
+              backgroundImage2: "",
+              size: "large",
+              overlay: 10,
+              position: "center",
+              alignment: "center",
+              container: "true",
+              colorScheme: "scheme-1",
+              heading: { text: "Rose", size: "medium" },
+              text: { content: "Ваш стиль, ваша индивидуальность", size: "medium" },
+              primaryButton: { text: "В каталог", link: { href: "#collections" } },
+              secondaryButton: { text: "", link: { href: "#" } },
+            },
+          },
+          { type: "Footer", props: { id: "Footer-default" } },
+        ],
+        root: { props: { title: "Мой сайт" } },
+      },
+      "page-about": {
+        content: [
+          { type: "Header", props: { id: "Header-about" } },
+          {
+            type: "MainText",
+            props: {
+              id: "MainText-about",
+              position: "center",
+              colorScheme: "scheme-1",
+              padding: { top: 80, bottom: 80 },
+              heading: { enabled: "true", text: "О нас" },
+              text: { content: "Расскажите о вашем магазине" },
+            },
+          },
+          { type: "Footer", props: { id: "Footer-about" } },
+        ],
+        root: { props: { title: "О нас" } },
+      },
+      "page-contacts": {
+        content: [
+          { type: "Header", props: { id: "Header-contacts" } },
+          {
+            type: "ContactForm",
+            props: {
+              id: "ContactForm-contacts",
+              colorScheme: "scheme-1",
+              padding: { top: 80, bottom: 80 },
+              heading: { enabled: "true", text: "Контакты" },
+            },
+          },
+          { type: "Footer", props: { id: "Footer-contacts" } },
+        ],
+        root: { props: { title: "Контакты" } },
+      },
+    },
+    meta: { title: "Мой сайт" },
+  };
+}
+
+/**
  * Emit a progress event (best-effort) and persist to DB.
  */
 function emitProgress(
@@ -333,10 +409,11 @@ export async function trySnapshotDeploy(
   // Create revision if missing
   if (!revisionId) {
     revisionId = randomUUID();
+    const data = getDefaultRevisionData();
     await deps.db.insert(schema.siteRevision).values({
       id: revisionId,
       siteId: params.siteId,
-      data: { content: [], meta: { title: "Мой сайт" } },
+      data,
       meta: { title: "Мой сайт", mode: params.mode ?? "draft" },
       createdAt: new Date(),
     });
@@ -700,14 +777,15 @@ async function stageMerge(
 
   if (!revisionId) {
     revisionId = randomUUID();
-    const data = { content: [], meta: { title: "Мой сайт" } };
+    const data = getDefaultRevisionData();
     await deps.db.insert(schema.siteRevision).values({
       id: revisionId,
       siteId: params.siteId,
       data,
-      meta: { ...data.meta, mode: ctx.mode },
+      meta: { title: "Мой сайт", mode: ctx.mode },
       createdAt: new Date(),
     });
+    logger.log(`[merge] Created initial revision ${revisionId} with default theme blocks`);
   }
 
   // Load revision data
@@ -958,6 +1036,13 @@ async function stageGenerate(
       });
     }
     logger.log(`[generate] Legacy format: ${pages.length} page(s)`);
+  }
+
+  if (pages.length === 0) {
+    logger.warn(
+      `[generate] Pages array is empty for site ${ctx.siteId} — template index.astro will not be overwritten. ` +
+      `Revision data keys: ${Object.keys(ctx.revisionData).join(", ") || "(empty)"}`,
+    );
   }
 
   // Override Header logo with branding logoUrl in page content arrays

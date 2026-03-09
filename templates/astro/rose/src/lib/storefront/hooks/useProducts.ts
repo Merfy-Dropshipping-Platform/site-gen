@@ -57,9 +57,22 @@ export function useProducts(filters: CatalogFilters, options: UseProductsOptions
         `/store/products?${params.toString()}`,
       );
 
+      // Map backend fields to Product type (basePrice in rubles → price in kopecks)
+      const toKopecks = (v: any) => Math.round(parseFloat(v || '0') * 100);
+      const mapped = response.products.map((p: any) => ({
+        ...p,
+        price: p.price != null ? toKopecks(p.price) : toKopecks(p.basePrice),
+        compareAtPrice: p.compareAtPrice ? toKopecks(p.compareAtPrice) : undefined,
+        handle: p.handle ?? p.id,
+        images: (p.images ?? []).map((img: any) =>
+          typeof img === 'string' ? { url: img } : img,
+        ),
+        variants: p.variants ?? p.variantCombinations ?? [],
+      }));
+
       const offset = pageParam as number;
       return {
-        products: response.products,
+        products: mapped,
         total: response.total,
         hasMore: response.total > offset + PAGE_SIZE,
         offset,

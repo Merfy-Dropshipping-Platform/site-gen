@@ -57,7 +57,8 @@ export class BrandingController {
 
     const tenantId = site.tenantId;
     const ext = path.extname(file.originalname).replace(".", "") || "png";
-    const key = `branding/${tenantId}/${siteId}/logo.${ext}`;
+    const ts = Date.now();
+    const key = `branding/${tenantId}/${siteId}/logo-${ts}.${ext}`;
 
     try {
       await this.s3.ensureBucket();

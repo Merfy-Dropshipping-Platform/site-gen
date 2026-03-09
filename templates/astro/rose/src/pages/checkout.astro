@@ -35,7 +35,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
       <div class="mb-6" id="promo-section">
         <div class="flex gap-2" id="promo-input-row">
           <input type="text" id="promo-input" placeholder="Промокод"
-            class="flex-1 py-3 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-[#f43f5e] focus:ring-2 focus:ring-[#ffe4e6]">
+            class="flex-1 py-3 px-4 border border-gray-300 rounded-xl text-base focus:outline-none checkout-input-focus">
           <button type="button" id="btn-apply-promo"
             class="py-3 px-6 bg-gray-800 text-white rounded-xl font-medium hover:bg-gray-700 transition-colors text-sm whitespace-nowrap">
             Применить
@@ -65,15 +65,15 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
       <form id="customer-form">
         <div class="mb-5">
           <label for="email" class="block mb-2 font-medium text-gray-700">Email <span class="text-required">*</span></label>
-          <input type="email" id="email" name="email" required placeholder="your@email.com" autocomplete="email" class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-[#f43f5e] focus:ring-2 focus:ring-[#ffe4e6]">
+          <input type="email" id="email" name="email" required placeholder="your@email.com" autocomplete="email" class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none checkout-input-focus">
         </div>
         <div class="mb-5">
           <label for="phone" class="block mb-2 font-medium text-gray-700">Телефон <span class="text-required">*</span></label>
-          <input type="tel" id="phone" name="phone" required placeholder="+7 (999) 123-45-67" autocomplete="tel" class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-[#f43f5e] focus:ring-2 focus:ring-[#ffe4e6]">
+          <input type="tel" id="phone" name="phone" required placeholder="+7 (999) 123-45-67" autocomplete="tel" class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none checkout-input-focus">
         </div>
         <div class="mb-5">
           <label for="name" class="block mb-2 font-medium text-gray-700">Имя</label>
-          <input type="text" id="name" name="name" placeholder="Иван Иванов" autocomplete="name" class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-[#f43f5e] focus:ring-2 focus:ring-[#ffe4e6]">
+          <input type="text" id="name" name="name" placeholder="Иван Иванов" autocomplete="name" class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none checkout-input-focus">
         </div>
         <div class="text-red-600 mt-3 text-sm text-center" id="customer-error"></div>
         <button type="submit" class="btn-primary w-full py-4 px-8 rounded-xl font-medium transition-colors">Продолжить</button>
@@ -87,23 +87,23 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
       <form id="address-form">
         <div class="mb-5">
           <label for="city" class="block mb-2 font-medium text-gray-700">Город <span class="text-required">*</span></label>
-          <input type="text" id="city" name="city" required placeholder="Москва" autocomplete="address-level2" class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-[#f43f5e] focus:ring-2 focus:ring-[#ffe4e6]">
+          <input type="text" id="city" name="city" required placeholder="Москва" autocomplete="address-level2" class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none checkout-input-focus">
         </div>
         <div class="mb-5">
           <label for="street" class="block mb-2 font-medium text-gray-700">Улица <span class="text-required">*</span></label>
-          <input type="text" id="street" name="street" required placeholder="ул. Пушкина" autocomplete="street-address" class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-[#f43f5e] focus:ring-2 focus:ring-[#ffe4e6]">
+          <input type="text" id="street" name="street" required placeholder="ул. Пушкина" autocomplete="street-address" class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none checkout-input-focus">
         </div>
         <div class="mb-5">
           <label for="building" class="block mb-2 font-medium text-gray-700">Дом <span class="text-required">*</span></label>
-          <input type="text" id="building" name="building" required placeholder="10" class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-[#f43f5e] focus:ring-2 focus:ring-[#ffe4e6]">
+          <input type="text" id="building" name="building" required placeholder="10" class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none checkout-input-focus">
         </div>
         <div class="mb-5">
           <label for="apartment" class="block mb-2 font-medium text-gray-700">Квартира</label>
-          <input type="text" id="apartment" name="apartment" placeholder="42" class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-[#f43f5e] focus:ring-2 focus:ring-[#ffe4e6]">
+          <input type="text" id="apartment" name="apartment" placeholder="42" class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none checkout-input-focus">
         </div>
         <div class="mb-5">
           <label for="postalCode" class="block mb-2 font-medium text-gray-700">Индекс</label>
-          <input type="text" id="postalCode" name="postalCode" placeholder="101000" autocomplete="postal-code" class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-[#f43f5e] focus:ring-2 focus:ring-[#ffe4e6]">
+          <input type="text" id="postalCode" name="postalCode" placeholder="101000" autocomplete="postal-code" class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none checkout-input-focus">
         </div>
         <div class="text-red-600 mt-3 text-sm text-center" id="address-error"></div>
         <button type="submit" class="btn-primary w-full py-4 px-8 rounded-xl font-medium transition-colors">Продолжить</button>
@@ -154,4 +154,5 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
   .text-required { color: rgb(var(--color-primary)); }
   .step-dot.active { background-color: rgb(var(--color-primary)); }
   .step-dot.completed { background-color: rgb(var(--color-primary)); opacity: 0.5; }
+  .checkout-input-focus:focus { border-color: rgb(var(--color-primary)); box-shadow: 0 0 0 3px rgb(var(--color-primary) / 0.15); }
 </style>

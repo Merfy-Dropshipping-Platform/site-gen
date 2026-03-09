@@ -15,7 +15,7 @@ const footerBlock = blocks.find((b: any) => b.type === 'Footer');
   <main class="flex-1 max-w-[600px] mx-auto px-5 py-[60px] w-full text-center font-manrope">
     <!-- Загрузка -->
     <div class="result-section active" id="result-loading">
-      <div class="w-12 h-12 border-[3px] border-gray-200 rounded-full border-t-[#e11d48] animate-spin mx-auto mb-6"></div>
+      <div class="w-12 h-12 border-[3px] border-gray-200 rounded-full animate-spin mx-auto mb-6" style="border-top-color: rgb(var(--color-primary))"></div>
       <p class="text-gray-500">Проверяем статус оплаты...</p>
     </div>
 
@@ -27,9 +27,9 @@ const footerBlock = blocks.find((b: any) => b.type === 'Footer');
       </svg>
       <h1 class="text-3xl font-comfortaa mb-4">Спасибо за заказ!</h1>
       <p class="text-lg text-gray-600 mb-8">Ваш заказ успешно оплачен. Мы отправим подтверждение на вашу почту.</p>
-      <div class="inline-block bg-rose-50 py-3 px-6 rounded-xl text-lg font-medium text-[#e11d48] mb-8" id="order-number"></div>
+      <div class="inline-block bg-rose-50 py-3 px-6 rounded-xl text-lg font-medium mb-8" style="color: rgb(var(--color-primary))" id="order-number"></div>
       <br><br>
-      <a href="/" class="inline-flex items-center justify-center py-4 px-8 bg-[#e11d48] text-white rounded-xl font-medium hover:bg-[#be123c] transition-colors no-underline">Вернуться в магазин</a>
+      <a href="/" class="btn-primary inline-flex items-center justify-center py-4 px-8 rounded-xl font-medium transition-colors no-underline">Вернуться в магазин</a>
     </div>
 
     <!-- Ожидание -->
@@ -40,7 +40,7 @@ const footerBlock = blocks.find((b: any) => b.type === 'Footer');
       </svg>
       <h1 class="text-3xl font-comfortaa mb-4">Платёж обрабатывается</h1>
       <p class="text-lg text-gray-600 mb-8">Ваш платёж ещё обрабатывается. Мы отправим уведомление, когда оплата будет подтверждена.</p>
-      <a href="/" class="inline-flex items-center justify-center py-4 px-8 bg-[#e11d48] text-white rounded-xl font-medium hover:bg-[#be123c] transition-colors no-underline">Вернуться в магазин</a>
+      <a href="/" class="btn-primary inline-flex items-center justify-center py-4 px-8 rounded-xl font-medium transition-colors no-underline">Вернуться в магазин</a>
     </div>
 
     <!-- Ошибка -->
@@ -52,7 +52,7 @@ const footerBlock = blocks.find((b: any) => b.type === 'Footer');
       </svg>
       <h1 class="text-3xl font-comfortaa mb-4">Оплата не прошла</h1>
       <p class="text-lg text-gray-600 mb-8" id="error-message">К сожалению, платёж не был завершён. Попробуйте ещё раз.</p>
-      <a href="/" class="inline-flex items-center justify-center py-4 px-8 bg-[#e11d48] text-white rounded-xl font-medium hover:bg-[#be123c] transition-colors no-underline">Вернуться в магазин</a>
+      <a href="/" class="btn-primary inline-flex items-center justify-center py-4 px-8 rounded-xl font-medium transition-colors no-underline">Вернуться в магазин</a>
     </div>
   </main>
 
@@ -69,4 +69,6 @@ const footerBlock = blocks.find((b: any) => b.type === 'Footer');
 <style>
   .result-section { display: none; }
   .result-section.active { display: block; }
+  .btn-primary { background-color: rgb(var(--color-primary)); color: #fff; }
+  .btn-primary:hover { filter: brightness(0.85); }
 </style>

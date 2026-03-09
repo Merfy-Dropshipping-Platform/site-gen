@@ -34,7 +34,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
         </svg>
       </div>
       <p class="text-lg text-gray-500 mb-6">Корзина пуста</p>
-      <a href="/catalog" class="inline-flex items-center justify-center py-3 px-8 bg-[#e11d48] text-white rounded-xl font-medium hover:bg-[#be123c] transition-colors no-underline">
+      <a href="/catalog" class="cart-btn-primary inline-flex items-center justify-center py-3 px-8 text-white rounded-xl font-medium transition-colors no-underline" style="background-color: rgb(var(--color-primary))">
         Перейти в каталог
       </a>
     </div>
@@ -59,7 +59,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 
       <!-- Bottom section -->
       <div class="mt-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <a href="/catalog" class="text-gray-500 hover:text-[#e11d48] transition-colors text-sm no-underline">
+        <a href="/catalog" class="cart-link-primary text-gray-500 transition-colors text-sm no-underline">
           ← Продолжить покупки
         </a>
         <div class="flex flex-col items-end gap-4">
@@ -67,7 +67,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
             <span class="text-gray-500 text-sm">Итого: </span>
             <span id="cart-page-total" class="text-2xl font-bold text-black">0 ₽</span>
           </div>
-          <a href="/checkout" class="inline-flex items-center justify-center py-4 px-12 bg-[#e11d48] text-white rounded-xl font-medium hover:bg-[#be123c] transition-colors no-underline">
+          <a href="/checkout" class="cart-btn-primary inline-flex items-center justify-center py-4 px-12 text-white rounded-xl font-medium transition-colors no-underline" style="background-color: rgb(var(--color-primary))">
             Оформить заказ
           </a>
         </div>
@@ -77,6 +77,15 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 
   <Footer {...footerProps} />
 </BaseLayout>
+
+<style>
+  .cart-btn-primary:hover {
+    background-color: color-mix(in srgb, rgb(var(--color-primary)) 85%, black) !important;
+  }
+  .cart-link-primary:hover {
+    color: rgb(var(--color-primary));
+  }
+</style>
 
 <script is:inline>
   function formatCartPrice(cents) {
@@ -125,7 +134,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
             imgHtml +
             '<div class="min-w-0">' +
               '<div class="font-medium text-sm text-gray-900 truncate">' + name + '</div>' +
-              '<div class="text-sm text-[#e11d48] font-semibold mt-0.5">' + formatCartPrice(price) + '</div>' +
+              '<div class="text-sm font-semibold mt-0.5" style="color: rgb(var(--color-primary))">' + formatCartPrice(price) + '</div>' +
             '</div>' +
           '</div>' +
           '<div class="flex items-center gap-2 w-[140px] justify-center">' +
@@ -164,7 +173,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
                 '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>' +
               '</button>' +
             '</div>' +
-            '<div class="text-sm text-[#e11d48] font-semibold mt-1">' + formatCartPrice(price) + '</div>' +
+            '<div class="text-sm font-semibold mt-1" style="color: rgb(var(--color-primary))">' + formatCartPrice(price) + '</div>' +
             '<div class="flex items-center justify-between mt-2">' +
               '<div class="flex items-center gap-2">' +
                 '<button class="cart-page-qty-btn w-7 h-7 border border-gray-200 rounded-md flex items-center justify-center text-gray-600" data-action="decrease" data-item-id="' + item.id + '"' + (qty <= 1 ? ' disabled' : '') + '>−</button>' +

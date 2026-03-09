@@ -19,7 +19,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
     <h1 class="text-3xl font-comfortaa text-center mb-8">Оформление заказа</h1>
 
     <div class="step-indicator flex justify-center gap-3 mb-10">
-      <div class="step-dot w-3 h-3 rounded-full bg-[#e11d48] active" data-step="1"></div>
+      <div class="step-dot w-3 h-3 rounded-full active" data-step="1"></div>
       <div class="step-dot w-3 h-3 rounded-full bg-gray-300" data-step="2"></div>
       <div class="step-dot w-3 h-3 rounded-full bg-gray-300" data-step="3"></div>
       <div class="step-dot w-3 h-3 rounded-full bg-gray-300" data-step="4"></div>
@@ -55,8 +55,8 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
         <div id="promo-error" class="text-red-600 mt-2 text-sm hidden"></div>
       </div>
 
-      <button class="w-full py-4 px-8 bg-[#e11d48] text-white rounded-xl font-medium hover:bg-[#be123c] transition-colors" id="btn-to-contacts">Продолжить</button>
-      <a href="/" class="block text-center mt-4 text-gray-500 hover:text-[#e11d48] text-sm">Вернуться в магазин</a>
+      <button class="btn-primary w-full py-4 px-8 rounded-xl font-medium transition-colors" id="btn-to-contacts">Продолжить</button>
+      <a href="/" class="link-back block text-center mt-4 text-gray-500 text-sm">Вернуться в магазин</a>
     </div>
 
     <!-- Шаг 2: Контакты -->
@@ -64,11 +64,11 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
       <h2 class="text-2xl font-comfortaa mb-6">Контактные данные</h2>
       <form id="customer-form">
         <div class="mb-5">
-          <label for="email" class="block mb-2 font-medium text-gray-700">Email <span class="text-[#e11d48]">*</span></label>
+          <label for="email" class="block mb-2 font-medium text-gray-700">Email <span class="text-required">*</span></label>
           <input type="email" id="email" name="email" required placeholder="your@email.com" autocomplete="email" class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-[#f43f5e] focus:ring-2 focus:ring-[#ffe4e6]">
         </div>
         <div class="mb-5">
-          <label for="phone" class="block mb-2 font-medium text-gray-700">Телефон <span class="text-[#e11d48]">*</span></label>
+          <label for="phone" class="block mb-2 font-medium text-gray-700">Телефон <span class="text-required">*</span></label>
           <input type="tel" id="phone" name="phone" required placeholder="+7 (999) 123-45-67" autocomplete="tel" class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-[#f43f5e] focus:ring-2 focus:ring-[#ffe4e6]">
         </div>
         <div class="mb-5">
@@ -76,9 +76,9 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
           <input type="text" id="name" name="name" placeholder="Иван Иванов" autocomplete="name" class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-[#f43f5e] focus:ring-2 focus:ring-[#ffe4e6]">
         </div>
         <div class="text-red-600 mt-3 text-sm text-center" id="customer-error"></div>
-        <button type="submit" class="w-full py-4 px-8 bg-[#e11d48] text-white rounded-xl font-medium hover:bg-[#be123c] transition-colors">Продолжить</button>
+        <button type="submit" class="btn-primary w-full py-4 px-8 rounded-xl font-medium transition-colors">Продолжить</button>
       </form>
-      <button class="block text-center w-full mt-4 text-gray-500 hover:text-[#e11d48] text-sm" id="btn-back-to-product">Назад</button>
+      <button class="link-back block text-center w-full mt-4 text-gray-500 text-sm" id="btn-back-to-product">Назад</button>
     </div>
 
     <!-- Шаг 3: Адрес -->
@@ -86,15 +86,15 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
       <h2 class="text-2xl font-comfortaa mb-6">Адрес доставки</h2>
       <form id="address-form">
         <div class="mb-5">
-          <label for="city" class="block mb-2 font-medium text-gray-700">Город <span class="text-[#e11d48]">*</span></label>
+          <label for="city" class="block mb-2 font-medium text-gray-700">Город <span class="text-required">*</span></label>
           <input type="text" id="city" name="city" required placeholder="Москва" autocomplete="address-level2" class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-[#f43f5e] focus:ring-2 focus:ring-[#ffe4e6]">
         </div>
         <div class="mb-5">
-          <label for="street" class="block mb-2 font-medium text-gray-700">Улица <span class="text-[#e11d48]">*</span></label>
+          <label for="street" class="block mb-2 font-medium text-gray-700">Улица <span class="text-required">*</span></label>
           <input type="text" id="street" name="street" required placeholder="ул. Пушкина" autocomplete="street-address" class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-[#f43f5e] focus:ring-2 focus:ring-[#ffe4e6]">
         </div>
         <div class="mb-5">
-          <label for="building" class="block mb-2 font-medium text-gray-700">Дом <span class="text-[#e11d48]">*</span></label>
+          <label for="building" class="block mb-2 font-medium text-gray-700">Дом <span class="text-required">*</span></label>
           <input type="text" id="building" name="building" required placeholder="10" class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-[#f43f5e] focus:ring-2 focus:ring-[#ffe4e6]">
         </div>
         <div class="mb-5">
@@ -106,9 +106,9 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
           <input type="text" id="postalCode" name="postalCode" placeholder="101000" autocomplete="postal-code" class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none focus:border-[#f43f5e] focus:ring-2 focus:ring-[#ffe4e6]">
         </div>
         <div class="text-red-600 mt-3 text-sm text-center" id="address-error"></div>
-        <button type="submit" class="w-full py-4 px-8 bg-[#e11d48] text-white rounded-xl font-medium hover:bg-[#be123c] transition-colors">Продолжить</button>
+        <button type="submit" class="btn-primary w-full py-4 px-8 rounded-xl font-medium transition-colors">Продолжить</button>
       </form>
-      <button class="block text-center w-full mt-4 text-gray-500 hover:text-[#e11d48] text-sm" id="btn-back-to-contacts">Назад</button>
+      <button class="link-back block text-center w-full mt-4 text-gray-500 text-sm" id="btn-back-to-contacts">Назад</button>
     </div>
 
     <!-- Шаг 4: Оплата -->
@@ -118,18 +118,18 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
         <p class="text-gray-500">Загрузка...</p>
       </div>
       <div class="text-red-600 mt-3 text-sm text-center" id="payment-error"></div>
-      <button class="w-full py-4 px-8 bg-[#e11d48] text-white rounded-xl font-medium hover:bg-[#be123c] transition-colors" id="btn-pay">
+      <button class="btn-primary w-full py-4 px-8 rounded-xl font-medium transition-colors" id="btn-pay">
         <span class="loading hidden"><span class="loading-spinner inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></span>Создаём платёж...</span>
         <span class="text">Оплатить</span>
       </button>
-      <button class="block text-center w-full mt-4 text-gray-500 hover:text-[#e11d48] text-sm" id="btn-back-to-address">Назад</button>
+      <button class="link-back block text-center w-full mt-4 text-gray-500 text-sm" id="btn-back-to-address">Назад</button>
     </div>
 
     <!-- Ошибка -->
     <div class="checkout-step hidden text-center py-16" data-step="error">
       <h2 class="text-2xl font-comfortaa mb-4" id="error-title">Ошибка</h2>
       <p class="text-gray-500 mb-6" id="error-text">Что-то пошло не так</p>
-      <a href="/" class="inline-block py-4 px-8 bg-[#e11d48] text-white rounded-xl font-medium hover:bg-[#be123c] transition-colors">На главную</a>
+      <a href="/" class="btn-primary inline-block py-4 px-8 rounded-xl font-medium transition-colors">На главную</a>
     </div>
   </main>
 
@@ -147,4 +147,11 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 <style>
   .checkout-step { display: none; }
   .checkout-step.active { display: block; }
+
+  .btn-primary { background-color: rgb(var(--color-primary)); color: #fff; }
+  .btn-primary:hover { filter: brightness(0.85); }
+  .link-back:hover { color: rgb(var(--color-primary)); }
+  .text-required { color: rgb(var(--color-primary)); }
+  .step-dot.active { background-color: rgb(var(--color-primary)); }
+  .step-dot.completed { background-color: rgb(var(--color-primary)); opacity: 0.5; }
 </style>

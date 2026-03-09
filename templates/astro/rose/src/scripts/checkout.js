@@ -404,7 +404,7 @@ class CheckoutFlow {
           ${imgHtml}
           <div class="product-summary-info">
             <h3 style="font-size: 1rem;">${item.name}${qtyLabel}</h3>
-            <div style="font-size: 0.875rem; color: #e11d48; font-weight: 600;">${this.formatPrice(lineTotal / 100)}</div>
+            <div style="font-size: 0.875rem; color: rgb(var(--color-primary)); font-weight: 600;">${this.formatPrice(lineTotal / 100)}</div>
           </div>
         </div>`;
     }).join('');

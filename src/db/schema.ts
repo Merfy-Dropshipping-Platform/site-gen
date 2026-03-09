@@ -17,7 +17,23 @@ import {
   jsonb,
   integer,
   boolean,
+  varchar,
+  uniqueIndex,
+  index,
 } from "drizzle-orm/pg-core";
+
+export const publicationStatusEnum = pgEnum("publication_status", [
+  "draft",
+  "scheduled",
+  "published",
+  "archived",
+]);
+
+export const publicationCategoryEnum = pgEnum("publication_category", [
+  "news",
+  "blog",
+  "articles",
+]);
 
 export const siteStatusEnum = pgEnum("site_status", [
   "draft",
@@ -227,3 +243,41 @@ export const tenantProject = pgTable("tenant_project", {
     .$defaultFn(() => new Date())
     .notNull(),
 });
+
+/**
+ * Публикации сайта (новости, блог, статьи).
+ * Tenant isolation через organizationId.
+ * Slug уникален в рамках одного siteId.
+ */
+export const publications = pgTable(
+  "publications",
+  {
+    id: text("id").primaryKey(),
+    organizationId: varchar("organization_id", { length: 255 }).notNull(),
+    siteId: text("site_id").notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
+    slug: varchar("slug", { length: 255 }).notNull(),
+    category: publicationCategoryEnum("category").default("news").notNull(),
+    content: text("content").default("").notNull(),
+    excerpt: varchar("excerpt", { length: 500 }).default(""),
+    coverImageUrl: text("cover_image_url"),
+    status: publicationStatusEnum("status").default("draft").notNull(),
+    scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .$defaultFn(() => new Date())
+      .notNull(),
+  },
+  (table) => ({
+    orgIdx: index("idx_publications_org").on(table.organizationId),
+    siteIdx: index("idx_publications_site").on(table.siteId),
+    statusIdx: index("idx_publications_status").on(table.status),
+    slugSiteUniq: uniqueIndex("idx_publications_slug_site").on(
+      table.slug,
+      table.siteId,
+    ),
+  }),
+);

@@ -58,6 +58,8 @@ import { BuildQueuePublisher } from "./rabbitmq/build-queue.service";
 import { ProductUpdateListener } from "./listeners/product-update.listener";
 import { FragmentPatcher } from "./listeners/fragment-patcher.service";
 import { BrandingController } from "./branding/branding.controller";
+import { PublicationsService } from "./publications/publications.service";
+import { PublicationsMicroserviceController } from "./publications/publications.controller";
 
 @Module({
   imports: [
@@ -87,6 +89,7 @@ import { BrandingController } from "./branding/branding.controller";
     UserListenerController,
     SitesEventsListenerController,
     BrandingController,
+    PublicationsMicroserviceController,
   ],
   providers: [
     SitesDomainService,
@@ -106,6 +109,7 @@ import { BrandingController } from "./branding/branding.controller";
     BuildQueuePublisher,
     ProductUpdateListener,
     FragmentPatcher,
+    PublicationsService,
   ],
 })
 export class AppModule {}

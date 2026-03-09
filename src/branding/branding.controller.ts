@@ -23,6 +23,51 @@ const ALLOWED_MIME_TYPES = [
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
+/**
+ * Sanitize SVG by removing dangerous elements and attributes.
+ * Strips: <script>, <foreignObject>, <use> with external href,
+ * event handlers (onload, onclick, etc.), and external resource references.
+ */
+function sanitizeSvg(buffer: Buffer): Buffer {
+  let svg = buffer.toString("utf-8");
+
+  // Remove script tags and their content
+  svg = svg.replace(/<script[\s\S]*?<\/script>/gi, "");
+  svg = svg.replace(/<script[^>]*\/>/gi, "");
+
+  // Remove foreignObject (can embed HTML)
+  svg = svg.replace(/<foreignObject[\s\S]*?<\/foreignObject>/gi, "");
+
+  // Remove event handler attributes (on*)
+  svg = svg.replace(/\s+on\w+\s*=\s*"[^"]*"/gi, "");
+  svg = svg.replace(/\s+on\w+\s*=\s*'[^']*'/gi, "");
+
+  // Remove href/xlink:href to external URLs (keep internal #refs)
+  svg = svg.replace(
+    /\s+(xlink:)?href\s*=\s*"(?!#)[^"]*"/gi,
+    "",
+  );
+  svg = svg.replace(
+    /\s+(xlink:)?href\s*=\s*'(?!#)[^']*'/gi,
+    "",
+  );
+
+  // Remove <use> elements with external references
+  svg = svg.replace(/<use[^>]*>/gi, (match) => {
+    // Keep only <use> with internal #id references
+    if (/#/.test(match)) return match;
+    return "";
+  });
+
+  // Remove <image> elements with external src
+  svg = svg.replace(/<image[^>]*>/gi, "");
+
+  // Remove data: URIs in attributes (potential JS execution)
+  svg = svg.replace(/\s+\w+\s*=\s*"data:(?!image\/)[^"]*"/gi, "");
+
+  return Buffer.from(svg, "utf-8");
+}
+
 @Controller("branding")
 export class BrandingController {
   private readonly logger = new Logger(BrandingController.name);
@@ -60,6 +105,13 @@ export class BrandingController {
     const ts = Date.now();
     const key = `branding/${tenantId}/${siteId}/logo-${ts}.${ext}`;
 
+    // Sanitize SVG files to prevent XSS
+    let uploadBuffer = file.buffer;
+    if (file.mimetype === "image/svg+xml") {
+      uploadBuffer = sanitizeSvg(file.buffer);
+      this.logger.log(`SVG sanitized for site ${siteId}`);
+    }
+
     try {
       await this.s3.ensureBucket();
       const bucket = this.s3.getBucketName();
@@ -69,7 +121,7 @@ export class BrandingController {
       const logoUrl = await this.s3.uploadBuffer(
         bucket,
         key,
-        file.buffer,
+        uploadBuffer,
         file.mimetype,
       );
 

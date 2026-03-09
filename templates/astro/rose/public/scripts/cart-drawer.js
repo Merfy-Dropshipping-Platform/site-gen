@@ -167,9 +167,9 @@ function createDrawerHTML() {
     .cart-drawer-qty-btn {
       width: 28px;
       height: 28px;
-      border: 1px solid rgba(var(--color-foreground, 18 18 18), 0.15);
+      border: 1px solid rgba(var(--color-foreground, 18 18 18), 0.25);
       border-radius: 6px;
-      background: rgba(var(--color-foreground, 18 18 18), 0.06);
+      background: rgba(var(--color-foreground, 18 18 18), 0.15);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -179,8 +179,8 @@ function createDrawerHTML() {
       line-height: 1;
     }
     .cart-drawer-qty-btn:hover {
-      background: rgba(var(--color-foreground, 18 18 18), 0.12);
-      border-color: rgba(var(--color-foreground, 18 18 18), 0.25);
+      background: rgba(var(--color-foreground, 18 18 18), 0.20);
+      border-color: rgba(var(--color-foreground, 18 18 18), 0.35);
     }
     .cart-drawer-qty-btn:disabled {
       opacity: 0.4;

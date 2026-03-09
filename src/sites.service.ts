@@ -561,9 +561,17 @@ export class SitesDomainService {
       siteId: params.siteId,
       domain: params.domain,
     });
-    const dnsName = `_merfy-verify.${params.domain}`; // имя TXT‑записи у провайдера DNS
+    const dnsName = `_merfy-verify.${params.domain}`;
     const dnsValue = token;
-    return { id, challenge: { type: "dns", name: dnsName, value: dnsValue } };
+    const serverIp = process.env.MERFY_ZONE_IP || "";
+    return {
+      id,
+      challenge: { type: "dns", name: dnsName, value: dnsValue },
+      instructions: {
+        txtRecord: { name: dnsName, type: "TXT", value: dnsValue },
+        aRecord: { name: "@", type: "A", value: serverIp },
+      },
+    };
   }
 
   async verifyDomain(params: {

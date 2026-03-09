@@ -548,9 +548,9 @@ export class SitesMicroserviceController {
     this.logger.log(
       `domain_ready raw payload: ${JSON.stringify(data)}`,
     );
-    const { domainId, domainName, siteId } = data ?? {};
+    const { domainId, domainName, siteId, isExternal } = data ?? {};
     this.logger.log(
-      `domain_ready parsed: domainId=${domainId}, domainName=${domainName}, siteId=${siteId}`,
+      `domain_ready parsed: domainId=${domainId}, domainName=${domainName}, siteId=${siteId}, isExternal=${isExternal}`,
     );
     if (!siteId || !domainName) {
       this.logger.warn(
@@ -559,7 +559,7 @@ export class SitesMicroserviceController {
       return;
     }
     try {
-      await this.service.switchDomain({ siteId, domainId, domainName });
+      await this.service.switchDomain({ siteId, domainId, domainName, type: isExternal ? "external" : "purchased" });
       this.logger.log(
         `domain_ready completed: site ${siteId} -> ${domainName}`,
       );

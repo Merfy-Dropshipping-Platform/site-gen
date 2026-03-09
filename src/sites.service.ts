@@ -536,8 +536,15 @@ export class SitesDomainService {
     // Проверяем принадлежность сайта текущему tenant
     const site = await this.get(params.tenantId, params.siteId);
     if (!site) throw new Error("site_not_found");
+
+    // Делегируем создание домена в domain-сервис (DNS-проверки, токен, IP)
+    const domainResult = await this.domainClient.addExternalDomain(
+      params.domain,
+      params.siteId,
+    );
+
     const id = randomUUID();
-    const token = crypto.randomUUID().replace(/-/g, "");
+    const token = domainResult.instructions?.txtRecord?.value ?? "";
     try {
       await this.db.insert(schema.siteDomain).values({
         id,
@@ -549,7 +556,6 @@ export class SitesDomainService {
         createdAt: new Date(),
       });
     } catch (e: any) {
-      // Unique violation (domain) → дружелюбная ошибка
       const message = e?.message?.toLowerCase?.() ?? "";
       if (message.includes("duplicate") || message.includes("unique")) {
         throw new Error("domain_already_in_use");
@@ -561,19 +567,22 @@ export class SitesDomainService {
       siteId: params.siteId,
       domain: params.domain,
     });
-    const dnsName = `_merfy-verify.${params.domain}`;
-    const dnsValue = token;
-    const serverIp = process.env.MERFY_ZONE_IP || "";
     return {
       id,
-      challenge: { type: "dns", name: dnsName, value: dnsValue },
-      instructions: {
-        txtRecord: { name: dnsName, type: "TXT", value: dnsValue },
-        aRecord: { name: "@", type: "A", value: serverIp },
-      },
+      challenge: domainResult.instructions?.txtRecord
+        ? { type: "dns", name: domainResult.instructions.txtRecord.name, value: domainResult.instructions.txtRecord.value }
+        : undefined,
+      instructions: domainResult.instructions,
     };
   }
 
+  /**
+   * verifyDomain — устаревший метод, оставлен как заглушка.
+   * Реальная верификация (TXT) и активация (A-record) теперь происходят
+   * через domain-сервис напрямую (gateway → domain.verify_ownership / domain.activate).
+   * При успешной активации domain-сервис публикует DomainDnsReadyEvent →
+   * site-gen получает событие domain_ready → вызывает switchDomain.
+   */
   async verifyDomain(params: {
     tenantId: string;
     siteId: string;
@@ -585,11 +594,12 @@ export class SitesDomainService {
     if (!params.domain) {
       throw new Error("domain_required");
     }
-    // Проверяем конкретный домен и токен, если он установлен
+
+    // Проверяем наличие записи в siteDomain
     const [record] = await this.db
       .select({
         id: schema.siteDomain.id,
-        token: schema.siteDomain.verificationToken,
+        status: schema.siteDomain.status,
       })
       .from(schema.siteDomain)
       .where(
@@ -599,34 +609,10 @@ export class SitesDomainService {
         ),
       );
     if (!record) return false;
-    if (record.token && params.token && record.token !== params.token) {
-      throw new Error("verification_token_mismatch");
-    }
-    const [row] = await this.db
-      .update(schema.siteDomain)
-      .set({ status: "verified", verifiedAt: new Date() })
-      .where(
-        and(
-          eq(schema.siteDomain.siteId, params.siteId),
-          eq(schema.siteDomain.domain, params.domain),
-        ),
-      )
-      .returning({
-        id: schema.siteDomain.id,
-        domain: schema.siteDomain.domain,
-      });
-    if (row) {
-      this.events.emit("sites.domain.verified", {
-        tenantId: params.tenantId,
-        siteId: params.siteId,
-        domain: params.domain,
-      });
-      await this.callCoolify("coolify.set_domain", {
-        appUuid: params.siteId,
-        domain: params.domain,
-      });
-    }
-    return Boolean(row);
+
+    // Верификация делегирована domain-сервису.
+    // switchDomain будет вызван автоматически через событие domain_ready.
+    return record.status === "verified";
   }
 
   async publish(params: {
@@ -2055,8 +2041,9 @@ export class SitesDomainService {
     siteId: string;
     domainId: string;
     domainName: string;
+    type?: "purchased" | "external" | "generated";
   }): Promise<void> {
-    const { siteId, domainId, domainName } = params;
+    const { siteId, domainId, domainName, type = "purchased" } = params;
     this.logger.log(
       `[switchDomain] START siteId=${siteId}, domainId=${domainId}, domainName=${domainName}`,
     );
@@ -2100,7 +2087,7 @@ export class SitesDomainService {
       siteId,
       domainName,
       domainId,
-      type: "purchased",
+      type,
       status: "active",
       attachedAt: now,
     });

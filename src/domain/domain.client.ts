@@ -376,6 +376,66 @@ export class DomainClient implements OnModuleInit {
   }
 
   /**
+   * Добавляет внешний домен через domain-сервис.
+   * Domain-сервис создаёт запись, генерирует TXT-токен, возвращает инструкции.
+   */
+  async addExternalDomain(
+    domainName: string,
+    siteId?: string,
+  ): Promise<{
+    domain?: any;
+    instructions?: {
+      txtRecord: { name: string; type: string; value: string };
+      aRecord: { name: string; type: string; value: string };
+      steps: string[];
+    };
+  }> {
+    this.logger.log(`Adding external domain via domain-service: ${domainName} (siteId: ${siteId ?? 'none'})`);
+
+    if (this.rpcAvailable && this.domainClient) {
+      try {
+        const response = await firstValueFrom(
+          this.domainClient
+            .send<{
+              success: boolean;
+              domain?: any;
+              instructions?: any;
+              error?: string;
+            }>("domain.add_external", { domainName, siteId })
+            .pipe(
+              timeout(this.rpcTimeout),
+              catchError((err) => {
+                this.logger.warn(
+                  `RPC domain.add_external error: ${err.message}`,
+                );
+                return of(null);
+              }),
+            ),
+        );
+
+        if (response?.success) {
+          this.logger.log(`RPC: External domain added: ${domainName}`);
+          return {
+            domain: response.domain,
+            instructions: response.instructions,
+          };
+        }
+
+        if (response && !response.success) {
+          throw new Error(response.error ?? "add_external_failed");
+        }
+      } catch (error) {
+        this.logger.warn(
+          `RPC addExternalDomain failed: ${error instanceof Error ? error.message : error}`,
+        );
+        throw error;
+      }
+    }
+
+    throw new Error("domain_service_unavailable");
+  }
+
+  /**
    * Проверяет доступность Domain Service.
    */
   async healthCheck(): Promise<boolean> {

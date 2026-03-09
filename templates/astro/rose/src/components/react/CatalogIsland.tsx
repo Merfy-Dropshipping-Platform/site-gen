@@ -335,11 +335,7 @@ export default function CatalogIsland(props: CatalogIslandProps) {
     : { apiBase: '', storeId: '', currency: 'RUB', locale: 'ru-RU' };
 
   if (!config.storeId) {
-    return (
-      <div className="py-12 text-center">
-        <p className="text-[var(--color-text-muted)]">Магазин не настроен</p>
-      </div>
-    );
+    return <SkeletonGrid />;
   }
 
   return (

@@ -135,6 +135,72 @@ export interface BuildResult {
  * Ensures the first build produces a site identical to what the constructor shows.
  */
 function getDefaultRevisionData(): Record<string, unknown> {
+  const defaultHeader = {
+    type: "Header",
+    props: {
+      id: "Header-default",
+      siteTitle: "ROSE",
+      logo: "/logo.svg",
+      logoPosition: "top-left",
+      stickiness: "scroll-up",
+      colorScheme: "scheme-2",
+      padding: { top: 32, bottom: 32 },
+      navigationLinks: [
+        { label: "Каталог", href: "/catalog" },
+        { label: "О нас", href: "/about" },
+        { label: "Доставка", href: "/delivery" },
+        { label: "Контакты", href: "/contacts" },
+      ],
+      menuColorScheme: "scheme-2",
+      menuType: "dropdown",
+      actionButtons: { showSearch: "true", showCart: "true", showProfile: "true" },
+    },
+  };
+  const defaultFooter = {
+    type: "Footer",
+    props: {
+      id: "Footer-default",
+      colorScheme: "scheme-2",
+      copyrightColorScheme: "scheme-1",
+      padding: { top: 80, bottom: 80 },
+      heading: { text: "Подпишитесь на нашу рассылку", size: "small" },
+      text: { content: "Введите электронную почту и получайте информацию нашего бренда.", size: "small" },
+      newsletter: {
+        enabled: "true",
+        heading: "Подпишитесь на нашу рассылку",
+        description: "Введите электронную почту и получайте информацию нашего бренда.",
+        placeholder: "rose@example.ru",
+      },
+      copyright: { companyName: "ROSE", showYear: "true", poweredBy: "Powered by Merfy" },
+      navigationColumn: {
+        title: "Навигация",
+        links: [
+          { label: "Главная", href: "/" },
+          { label: "Каталог", href: "/catalog" },
+          { label: "Контакты", href: "/contacts" },
+          { label: "О нас", href: "/about" },
+        ],
+      },
+      informationColumn: {
+        title: "Информация",
+        links: [
+          { label: "Политика доставки", href: "#" },
+          { label: "Политика возврата", href: "#" },
+          { label: "Условия обслуживания", href: "#" },
+          { label: "Политика конфиденциальности", href: "#" },
+        ],
+      },
+      socialColumn: {
+        title: "Социальные сети",
+        email: "rose@example.ru",
+        socialLinks: [
+          { platform: "VK", href: "#" },
+          { platform: "Telegram", href: "#" },
+          { platform: "YouTube", href: "#" },
+        ],
+      },
+    },
+  };
   return {
     pages: [
       { id: "home", name: "Главная страница", slug: "/", isCustom: false, createdAt: 0 },
@@ -144,7 +210,7 @@ function getDefaultRevisionData(): Record<string, unknown> {
     pagesData: {
       home: {
         content: [
-          { type: "Header", props: { id: "Header-default" } },
+          defaultHeader,
           {
             type: "Hero",
             props: {
@@ -157,47 +223,47 @@ function getDefaultRevisionData(): Record<string, unknown> {
               alignment: "center",
               container: "true",
               colorScheme: "scheme-1",
-              heading: { text: "Rose", size: "medium" },
-              text: { content: "Ваш стиль, ваша индивидуальность", size: "medium" },
-              primaryButton: { text: "В каталог", link: { href: "#collections" } },
+              heading: { text: "ROSE", size: "medium" },
+              text: { content: "Там, где классика встречается с характером", size: "medium" },
+              primaryButton: { text: "В КАТАЛОГ", link: { href: "#collections" } },
               secondaryButton: { text: "", link: { href: "#" } },
             },
           },
-          { type: "Footer", props: { id: "Footer-default" } },
+          defaultFooter,
         ],
         root: { props: { title: "Мой сайт" } },
       },
       "page-about": {
         content: [
-          { type: "Header", props: { id: "Header-about" } },
+          { ...defaultHeader, props: { ...defaultHeader.props, id: "Header-about" } },
           {
             type: "MainText",
             props: {
               id: "MainText-about",
               position: "center",
-              colorScheme: "scheme-1",
+              colorScheme: "scheme-2",
               padding: { top: 80, bottom: 80 },
               heading: { enabled: "true", text: "О нас" },
               text: { content: "Расскажите о вашем магазине" },
             },
           },
-          { type: "Footer", props: { id: "Footer-about" } },
+          { ...defaultFooter, props: { ...defaultFooter.props, id: "Footer-about" } },
         ],
         root: { props: { title: "О нас" } },
       },
       "page-contacts": {
         content: [
-          { type: "Header", props: { id: "Header-contacts" } },
+          { ...defaultHeader, props: { ...defaultHeader.props, id: "Header-contacts" } },
           {
             type: "ContactForm",
             props: {
               id: "ContactForm-contacts",
-              colorScheme: "scheme-1",
+              colorScheme: "scheme-2",
               padding: { top: 80, bottom: 80 },
               heading: { enabled: "true", text: "Контакты" },
             },
           },
-          { type: "Footer", props: { id: "Footer-contacts" } },
+          { ...defaultFooter, props: { ...defaultFooter.props, id: "Footer-contacts" } },
         ],
         root: { props: { title: "Контакты" } },
       },

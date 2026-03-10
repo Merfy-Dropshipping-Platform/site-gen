@@ -39,7 +39,7 @@ function PaginationBar({ currentPage, totalPages, total, onPageChange }: Paginat
   const pages = getPageNumbers(currentPage, totalPages);
 
   const btnBase =
-    'inline-flex items-center justify-center w-10 h-10 rounded-[var(--radius-base)] text-sm font-medium transition-colors';
+    'inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-[var(--radius-base)] text-xs sm:text-sm font-medium transition-colors';
   const btnActive = `${btnBase} bg-[rgb(var(--color-primary-rgb))] text-[var(--color-button-text)]`;
   const btnInactive = `${btnBase} text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface)]`;
   const btnDisabled = `${btnBase} text-[var(--color-text-muted)] opacity-40 cursor-not-allowed`;
@@ -102,7 +102,7 @@ function SkeletonGrid({ count = 8 }: { count?: number }) {
   return (
     <div className="flex-1">
       <div className="bg-gray-200 rounded h-4 w-32 mb-4 animate-pulse" />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 md:gap-6">
         {Array.from({ length: count }).map((_, i) => (
           <div key={i} className="animate-pulse">
             <div className="bg-gray-200 rounded-lg aspect-square mb-4" />
@@ -212,7 +212,7 @@ interface FilterBarProps {
 
 function FilterBar({ filters, setFilters, resetFilters, variantGroups, hasActiveFilters }: FilterBarProps) {
   return (
-    <div className="flex flex-wrap items-center gap-3 mb-6">
+    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
       {/* Availability */}
       <AvailabilitySelect
         value={filters.availability || 'all'}
@@ -424,7 +424,7 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true, columns = 4
         {/* Product grid */}
         <div className="flex-1">
           <div
-            className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 md:gap-6"
+            className="grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-5 md:gap-6"
             style={{ '--grid-cols': columns } as React.CSSProperties}
           >
             <style>{`

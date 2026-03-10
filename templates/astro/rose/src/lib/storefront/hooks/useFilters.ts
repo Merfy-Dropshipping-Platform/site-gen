@@ -16,7 +16,12 @@ export interface FiltersData {
 
 interface FiltersApiResponse {
   success: boolean;
-  data: FiltersData;
+  data: {
+    groups?: VariantGroup[];
+    variantGroups?: VariantGroup[];
+    priceRange?: { min: number; max: number };
+    totalProducts?: number;
+  };
 }
 
 export function useFilters(filters: CatalogFilters) {
@@ -51,7 +56,12 @@ export function useFilters(filters: CatalogFilters) {
         storeId,
         `/store/filters?${params.toString()}`,
       );
-      return response.data ?? response;
+      const raw = response.data ?? response;
+      return {
+        variantGroups: raw.groups ?? raw.variantGroups ?? [],
+        priceRange: raw.priceRange ?? { min: 0, max: 0 },
+        totalProducts: raw.totalProducts ?? 0,
+      };
     },
     staleTime: 30_000,
     refetchOnWindowFocus: false,

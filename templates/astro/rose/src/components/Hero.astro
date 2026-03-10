@@ -15,17 +15,17 @@ interface Props {
 }
 
 const {
-  heading = { text: 'Rose', size: 'medium' },
-  text = { content: 'Ваш стиль, ваша индивидуальность', size: 'medium' },
-  primaryButton = { text: 'В каталог', link: { href: '#collections' } },
+  heading = { text: 'ROSE', size: 'large' },
+  text = { content: 'Там, где классика встречается с характером', size: 'large' },
+  primaryButton = { text: 'В КАТАЛОГ', link: { href: '/catalog' } },
   secondaryButton = { text: '', link: { href: '#' } },
-  overlay = 10,
+  overlay = 30,
   backgroundImage = '/images/first-section.png',
   backgroundImage2 = '',
   size = 'large',
-  position = 'center',
+  position = 'bottom-center',
   alignment = 'center',
-  container = 'true',
+  container = 'false',
   colorScheme = 'scheme-1',
 } = Astro.props;
 
@@ -162,11 +162,11 @@ const isContainer = container === 'true';
         </div>
       </div>
     ) : (
-      /* ── No container: text on background (matches constructor) ── */
-      <div class={`${schemeClass} flex flex-col ${alignClass} gap-4 sm:gap-6 max-w-[500px]`}>
+      /* ── No container: text on background (matches Figma) ── */
+      <div class={`${schemeClass} flex flex-col ${alignClass} gap-[25px] max-w-[671px]`} style="padding: 60px 80px; border-radius: 10px;">
         {headingText && (
           <h1
-            class={`${headingSizeClass} font-light font-heading`}
+            class={`${headingSizeClass} font-normal font-heading uppercase`}
             style="color: rgb(var(--color-primary));"
           >
             {headingText}
@@ -174,18 +174,18 @@ const isContainer = container === 'true';
         )}
         {textContent && (
           <p
-            class={`${textSizeClass} font-light font-body`}
+            class={`${textSizeClass} font-normal font-body`}
             style="color: rgb(var(--color-foreground));"
           >
             {textContent}
           </p>
         )}
-        <div class="flex flex-wrap gap-3">
+        <div class="flex flex-wrap gap-[25px]">
           {primaryButton?.text && (
             <a
               href={primaryLink}
-              class="inline-flex items-center justify-center font-light font-body hover:opacity-80 transition-opacity px-6 py-2.5 sm:px-8 sm:py-3 text-sm sm:text-base"
-              style="background-color: rgb(var(--color-button)); color: rgb(var(--color-button-text)); border-radius: var(--radius-button, 8px);"
+              class="inline-flex items-center justify-center font-normal font-body hover:opacity-80 transition-opacity uppercase"
+              style="padding: 10px 35px; min-height: 80px; font-size: 24px; line-height: 33px; background-color: rgb(var(--color-button)); color: rgb(var(--color-button-text)); border-radius: 10px;"
             >
               {primaryButton.text}
             </a>
@@ -193,8 +193,8 @@ const isContainer = container === 'true';
           {secondaryButton?.text && (
             <a
               href={secondaryLink}
-              class="inline-flex items-center justify-center font-light font-body hover:opacity-80 transition-opacity px-6 py-2.5 sm:px-8 sm:py-3 text-sm sm:text-base"
-              style="background-color: rgb(var(--color-secondary, 245 245 245)); color: rgb(var(--color-foreground)); border: 1px solid rgb(var(--color-border)); border-radius: var(--radius-button, 8px);"
+              class="inline-flex items-center justify-center font-normal font-body hover:opacity-80 transition-opacity uppercase"
+              style="padding: 10px 35px; min-height: 80px; font-size: 24px; line-height: 33px; background-color: rgb(var(--color-secondary, 245 245 245)); color: rgb(var(--color-foreground)); border: 1px solid rgb(var(--color-border)); border-radius: 10px;"
             >
               {secondaryButton.text}
             </a>

@@ -1267,9 +1267,12 @@ async function stageFetchData(
       variants: (p.hasVariants && Array.isArray(p.variantCombinations))
         ? p.variantCombinations.map((v: any) => ({
             id: v.id,
-            title: v.title,
+            title: v.title || v.id,
             price: formatPrice(v.price || p.price || p.basePrice),
+            compareAtPrice: v.compareAtPrice ? formatPrice(v.compareAtPrice) : undefined,
             available: v.available !== false,
+            quantity: v.quantity ?? 0,
+            options: v.options || {},
           }))
         : [],
     }));

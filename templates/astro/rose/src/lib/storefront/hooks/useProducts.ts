@@ -1,4 +1,4 @@
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useStoreConfig } from '../provider';
 import type { Product } from '../types';
 import { storeFetch } from '../lib/fetcher';
@@ -6,18 +6,25 @@ import type { CatalogFilters } from './useUrlFilters';
 
 export type SortOption = 'price_asc' | 'price_desc' | 'newest' | 'popular';
 
-const PAGE_SIZE = 20;
+export const PAGE_SIZE = 8;
+
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
 
 interface ProductsApiResponse {
   products: Product[];
   total: number;
+  pagination?: PaginationInfo;
 }
 
-interface InfiniteProductPage {
+interface ProductsResult {
   products: Product[];
   total: number;
-  hasMore: boolean;
-  offset: number;
+  pagination: PaginationInfo;
 }
 
 export interface UseProductsOptions {
@@ -30,26 +37,24 @@ export function useProducts(filters: CatalogFilters, options: UseProductsOptions
 
   const queryKey = ['products', storeId, filters];
 
-  const {
-    data,
-    isLoading,
-    isError,
-    error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useInfiniteQuery<InfiniteProductPage>({
+  const { data, isLoading, isError, error } = useQuery<ProductsResult>({
     queryKey,
-    queryFn: async ({ pageParam = 0 }) => {
+    queryFn: async () => {
       const params = new URLSearchParams();
       params.set('store_id', storeId);
+      params.set('page', String(filters.page));
       params.set('limit', String(PAGE_SIZE));
-      params.set('offset', String(pageParam));
 
       if (filters.sort) params.set('sort', filters.sort);
       if (filters.collectionId) params.set('collection_id', filters.collectionId);
       if (filters.priceMin !== undefined) params.set('min_price', String(filters.priceMin));
       if (filters.priceMax !== undefined) params.set('max_price', String(filters.priceMax));
+      if (filters.availability && filters.availability !== 'all') params.set('availability', filters.availability);
+      if (filters.variantFilters) {
+        for (const [key, value] of Object.entries(filters.variantFilters)) {
+          params.set(key, value);
+        }
+      }
 
       const response = await storeFetch<ProductsApiResponse>(
         apiBase,
@@ -57,7 +62,7 @@ export function useProducts(filters: CatalogFilters, options: UseProductsOptions
         `/store/products?${params.toString()}`,
       );
 
-      // Map backend fields to Product type (basePrice in rubles → price in kopecks)
+      // Map backend fields to Product type (basePrice in rubles -> price in kopecks)
       const toKopecks = (v: any) => Math.round(parseFloat(v || '0') * 100);
       const mapped = response.products.map((p: any) => ({
         ...p,
@@ -70,33 +75,26 @@ export function useProducts(filters: CatalogFilters, options: UseProductsOptions
         variants: p.variants ?? p.variantCombinations ?? [],
       }));
 
-      const offset = pageParam as number;
-      return {
-        products: mapped,
+      const pagination: PaginationInfo = response.pagination ?? {
+        page: filters.page,
+        limit: PAGE_SIZE,
         total: response.total,
-        hasMore: response.total > offset + PAGE_SIZE,
-        offset,
+        totalPages: Math.ceil(response.total / PAGE_SIZE),
       };
+
+      return { products: mapped, total: response.total, pagination };
     },
-    initialPageParam: 0,
-    getNextPageParam: (lastPage) =>
-      lastPage.hasMore ? lastPage.offset + PAGE_SIZE : undefined,
     staleTime: options.staleTime ?? 5 * 60 * 1000,
     gcTime: options.gcTime ?? 10 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 
-  const products = data?.pages.flatMap((page) => page.products) ?? [];
-  const total = data?.pages[0]?.total ?? 0;
-
   return {
-    products,
-    total,
+    products: data?.products ?? [],
+    total: data?.total ?? 0,
+    pagination: data?.pagination ?? { page: 1, limit: PAGE_SIZE, total: 0, totalPages: 0 },
     isLoading,
     isError,
     error: error as Error | null,
-    fetchNextPage,
-    hasNextPage: hasNextPage ?? false,
-    isFetchingNextPage,
   };
 }

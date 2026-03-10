@@ -1,90 +1,97 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect } from 'react';
 import { StoreProvider } from '../../lib/storefront/provider';
-import { useProducts } from '../../lib/storefront/hooks/useProducts';
+import { useProducts, PAGE_SIZE } from '../../lib/storefront/hooks/useProducts';
 import { useUrlFilters, type CatalogFilters } from '../../lib/storefront/hooks/useUrlFilters';
 import { useCollections } from '../../lib/storefront/hooks/useCollections';
+import { useFilters } from '../../lib/storefront/hooks/useFilters';
 import type { Product } from '../../lib/storefront/types';
 import { ProductCard } from './ProductCard';
 import { PriceRangeFilter } from './PriceRangeFilter';
 
-// --- Sub-components ---
+// --- Pagination Bar ---
 
-interface ProductGridInnerProps {
-  products: Product[];
+interface PaginationBarProps {
+  currentPage: number;
+  totalPages: number;
   total: number;
-  hasNextPage: boolean;
-  isFetchingNextPage: boolean;
-  fetchNextPage: () => void;
-  columns?: number;
+  onPageChange: (page: number) => void;
 }
 
-function ProductGridInner({
-  products,
-  total,
-  hasNextPage,
-  isFetchingNextPage,
-  fetchNextPage,
-  columns = 4,
-}: ProductGridInnerProps) {
-  const sentinelRef = useRef<HTMLDivElement>(null);
+function getPageNumbers(current: number, total: number): (number | 'ellipsis')[] {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  const pages: (number | 'ellipsis')[] = [1];
+  if (current > 3) pages.push('ellipsis');
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  for (let i = start; i <= end; i++) {
+    pages.push(i);
+  }
+  if (current < total - 2) pages.push('ellipsis');
+  pages.push(total);
+  return pages;
+}
 
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
+function PaginationBar({ currentPage, totalPages, total, onPageChange }: PaginationBarProps) {
+  if (totalPages <= 1) return null;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage();
-        }
-      },
-      { rootMargin: '200px' },
-    );
+  const pages = getPageNumbers(currentPage, totalPages);
 
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  const btnBase =
+    'inline-flex items-center justify-center w-10 h-10 rounded-[var(--radius-base)] text-sm font-medium transition-colors';
+  const btnActive = `${btnBase} bg-[rgb(var(--color-primary-rgb))] text-[var(--color-button-text)]`;
+  const btnInactive = `${btnBase} text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface)]`;
+  const btnDisabled = `${btnBase} text-[var(--color-text-muted)] opacity-40 cursor-not-allowed`;
 
   return (
-    <div className="flex-1">
-      {/* Product count */}
-      <p className="text-sm text-[var(--color-text-muted)] mb-4">
-        Найдено {total} товаров
-      </p>
-
-      {/* Grid */}
-      <div
-        className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 md:gap-6"
-        style={{ '--grid-cols': columns } as React.CSSProperties}
+    <div className="flex items-center justify-center gap-1 mt-8 flex-wrap">
+      {/* Prev */}
+      <button
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage <= 1}
+        className={currentPage <= 1 ? btnDisabled : btnInactive}
+        aria-label="Предыдущая страница"
       >
-        <style>{`
-          @media (min-width: 1024px) {
-            [style*="--grid-cols"] {
-              grid-template-columns: repeat(var(--grid-cols), 1fr) !important;
-            }
-          }
-        `}</style>
-        {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
-      </div>
+        <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+        </svg>
+      </button>
 
-      {/* Loading spinner for next page */}
-      {isFetchingNextPage && (
-        <div className="flex justify-center py-8">
-          <div className="w-8 h-8 border-2 border-[rgb(var(--color-primary-rgb))] border-t-transparent rounded-full animate-spin" />
-        </div>
+      {/* Page numbers */}
+      {pages.map((p, i) =>
+        p === 'ellipsis' ? (
+          <span key={`e${i}`} className="w-10 h-10 inline-flex items-center justify-center text-sm text-[var(--color-text-muted)]">
+            ...
+          </span>
+        ) : (
+          <button
+            key={p}
+            onClick={() => onPageChange(p)}
+            className={p === currentPage ? btnActive : btnInactive}
+            aria-current={p === currentPage ? 'page' : undefined}
+          >
+            {p}
+          </button>
+        ),
       )}
 
-      {/* All loaded message */}
-      {!hasNextPage && products.length > 0 && (
-        <p className="text-center text-sm text-[var(--color-text-muted)] py-8">
-          Все товары загружены
-        </p>
-      )}
+      {/* Next */}
+      <button
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage >= totalPages}
+        className={currentPage >= totalPages ? btnDisabled : btnInactive}
+        aria-label="Следующая страница"
+      >
+        <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+        </svg>
+      </button>
 
-      {/* Sentinel for IntersectionObserver */}
-      <div ref={sentinelRef} className="h-1" />
+      {/* Total count */}
+      <span className="ml-4 text-sm text-[var(--color-text-muted)]">
+        {total} товаров
+      </span>
     </div>
   );
 }
@@ -138,6 +145,121 @@ function SortSelect({ value, onChange }: SortSelectProps) {
   );
 }
 
+// --- Availability Select ---
+
+const AVAILABILITY_OPTIONS = [
+  { value: 'all', label: 'Все' },
+  { value: 'in_stock', label: 'В наличии' },
+  { value: 'sold_out', label: 'Нет в наличии' },
+] as const;
+
+interface AvailabilitySelectProps {
+  value: string;
+  onChange: (v: string) => void;
+}
+
+function AvailabilitySelect({ value, onChange }: AvailabilitySelectProps) {
+  return (
+    <select
+      value={value || 'all'}
+      onChange={(e) => onChange(e.target.value)}
+      className="px-3 py-2 border border-[var(--color-border)] rounded-[var(--radius-base)] bg-[var(--color-background)] text-sm text-[var(--color-text)] font-[family-name:var(--font-body)] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--color-primary-rgb))]"
+    >
+      {AVAILABILITY_OPTIONS.map((opt) => (
+        <option key={opt.value} value={opt.value}>
+          {opt.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+// --- Variant Filter Select ---
+
+interface VariantFilterSelectProps {
+  name: string;
+  values: string[];
+  selected?: string;
+  onChange: (value: string | undefined) => void;
+}
+
+function VariantFilterSelect({ name, values, selected, onChange }: VariantFilterSelectProps) {
+  return (
+    <select
+      value={selected || ''}
+      onChange={(e) => onChange(e.target.value || undefined)}
+      className="px-3 py-2 border border-[var(--color-border)] rounded-[var(--radius-base)] bg-[var(--color-background)] text-sm text-[var(--color-text)] font-[family-name:var(--font-body)] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--color-primary-rgb))]"
+    >
+      <option value="">{name}</option>
+      {values.map((v) => (
+        <option key={v} value={v}>
+          {v}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+// --- Filter Bar ---
+
+interface FilterBarProps {
+  filters: CatalogFilters;
+  setFilters: (update: Partial<CatalogFilters>) => void;
+  resetFilters: () => void;
+  variantGroups: { name: string; values: string[] }[];
+  hasActiveFilters: boolean;
+}
+
+function FilterBar({ filters, setFilters, resetFilters, variantGroups, hasActiveFilters }: FilterBarProps) {
+  return (
+    <div className="flex flex-wrap items-center gap-3 mb-6">
+      {/* Availability */}
+      <AvailabilitySelect
+        value={filters.availability || 'all'}
+        onChange={(v) => setFilters({ availability: v as CatalogFilters['availability'] })}
+      />
+
+      {/* Dynamic variant filters */}
+      {variantGroups.map((group) => (
+        <VariantFilterSelect
+          key={group.name}
+          name={group.name}
+          values={group.values}
+          selected={filters.variantFilters?.[group.name]}
+          onChange={(value) => {
+            const next = { ...(filters.variantFilters || {}) };
+            if (value) {
+              next[group.name] = value;
+            } else {
+              delete next[group.name];
+            }
+            setFilters({
+              variantFilters: Object.keys(next).length > 0 ? next : undefined,
+            });
+          }}
+        />
+      ))}
+
+      {/* Price range inline */}
+      <PriceRangeFilter
+        priceMin={filters.priceMin}
+        priceMax={filters.priceMax}
+        onChange={(min, max) => setFilters({ priceMin: min, priceMax: max })}
+      />
+
+      {/* Reset */}
+      {hasActiveFilters && (
+        <button
+          onClick={resetFilters}
+          className="px-3 py-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors underline"
+        >
+          Сбросить
+        </button>
+      )}
+    </div>
+  );
+}
+
 // --- Main CatalogIsland ---
 
 interface CatalogInnerProps {
@@ -149,8 +271,9 @@ interface CatalogInnerProps {
 function CatalogInner({ collectionSlug, showCollectionFilter = true, columns = 4 }: CatalogInnerProps) {
   const { filters, setFilters, resetFilters } = useUrlFilters();
   const { collections } = useCollections();
+  const { data: filtersData } = useFilters(filters);
 
-  // Resolve collectionSlug → collectionId
+  // Resolve collectionSlug -> collectionId
   useEffect(() => {
     if (collectionSlug && collections.length > 0 && !filters.collectionId) {
       const found = collections.find((c) => c.handle === collectionSlug);
@@ -160,29 +283,25 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true, columns = 4
     }
   }, [collectionSlug, collections, filters.collectionId, setFilters]);
 
-  const { products, total, isLoading, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useProducts(filters);
+  const { products, total, pagination, isLoading, isError, error } = useProducts(filters);
 
-  const hasActiveFilters = !!(filters.collectionId || filters.priceMin !== undefined || filters.priceMax !== undefined || filters.sort !== 'newest');
+  const variantGroups = filtersData?.variantGroups ?? [];
 
-  // Scroll restore: save position on scroll, restore on mount if cache is warm
+  const hasActiveFilters = !!(
+    filters.collectionId ||
+    filters.priceMin !== undefined ||
+    filters.priceMax !== undefined ||
+    filters.sort !== 'newest' ||
+    (filters.availability && filters.availability !== 'all') ||
+    (filters.variantFilters && Object.keys(filters.variantFilters).length > 0)
+  );
+
+  // Scroll to top on page change
   useEffect(() => {
-    const key = `catalog_scroll_${window.location.pathname}`;
-    const saved = sessionStorage.getItem(key);
-
-    if (saved && products.length > 0) {
-      requestAnimationFrame(() => {
-        window.scrollTo(0, parseInt(saved, 10));
-      });
-      sessionStorage.removeItem(key);
+    if (filters.page > 1) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-
-    const onScroll = () => {
-      sessionStorage.setItem(key, String(window.scrollY));
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [products.length > 0]); // re-run once products load
+  }, [filters.page]);
 
   // Loading state
   if (isLoading) {
@@ -212,7 +331,6 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true, columns = 4
   // Empty states
   if (products.length === 0) {
     if (hasActiveFilters) {
-      // FR-015: Filters active but 0 results
       return (
         <div className="flex-1 py-12 text-center">
           <p className="text-[var(--color-text-muted)] text-lg mb-4">
@@ -227,7 +345,6 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true, columns = 4
         </div>
       );
     }
-    // FR-006: No products at all
     return (
       <div className="flex-1 py-12 text-center">
         <p className="text-[var(--color-text-muted)] text-lg">
@@ -239,8 +356,8 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true, columns = 4
 
   return (
     <>
-      {/* Toolbar: sort + count */}
-      <div className="flex items-center justify-between mb-6">
+      {/* Toolbar: count + sort */}
+      <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-[var(--color-text-muted)]">
           Найдено {total} товаров
         </p>
@@ -250,10 +367,18 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true, columns = 4
         />
       </div>
 
+      {/* Filter bar */}
+      <FilterBar
+        filters={filters}
+        setFilters={setFilters}
+        resetFilters={resetFilters}
+        variantGroups={variantGroups}
+        hasActiveFilters={hasActiveFilters}
+      />
+
       {/* Content area */}
       <div className="flex gap-8">
-        {/* Filters sidebar - shown on desktop when showCollectionFilter is true */}
-        {/* Filters sidebar - desktop */}
+        {/* Collections sidebar - desktop */}
         {showCollectionFilter && (
           <aside className="hidden lg:block w-56 flex-shrink-0">
             <div className="sticky top-24">
@@ -292,24 +417,36 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true, columns = 4
                   </div>
                 </>
               )}
-              <PriceRangeFilter
-                priceMin={filters.priceMin}
-                priceMax={filters.priceMax}
-                onChange={(min, max) => setFilters({ priceMin: min, priceMax: max })}
-              />
             </div>
           </aside>
         )}
 
         {/* Product grid */}
-        <ProductGridInner
-          products={products}
-          total={total}
-          hasNextPage={hasNextPage}
-          isFetchingNextPage={isFetchingNextPage}
-          fetchNextPage={fetchNextPage}
-          columns={columns}
-        />
+        <div className="flex-1">
+          <div
+            className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 md:gap-6"
+            style={{ '--grid-cols': columns } as React.CSSProperties}
+          >
+            <style>{`
+              @media (min-width: 1024px) {
+                [style*="--grid-cols"] {
+                  grid-template-columns: repeat(var(--grid-cols), 1fr) !important;
+                }
+              }
+            `}</style>
+            {products.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          <PaginationBar
+            currentPage={pagination.page}
+            totalPages={pagination.totalPages}
+            total={total}
+            onPageChange={(page) => setFilters({ page })}
+          />
+        </div>
       </div>
     </>
   );

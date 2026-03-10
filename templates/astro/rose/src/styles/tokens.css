@@ -6,8 +6,8 @@
 
 :root {
   /* ── Colors (RGB triplets) ── */
-  --color-primary: 225, 29, 72;
-  --color-primary-rgb: 225, 29, 72;
+  --color-primary: 0, 0, 0;
+  --color-primary-rgb: 0, 0, 0;
   --color-background: 255, 255, 255;
   --color-foreground: 18, 18, 18;
   --color-border: 229, 231, 235;
@@ -20,8 +20,8 @@
 
   /* ── Border Radii ── */
   --radius-base: 0.5rem;
-  --radius-button: 9999px;
-  --radius-card: 1rem;
+  --radius-button: 8px;
+  --radius-card: 10px;
   --radius-input: 0.5rem;
 
   /* ── Layout ── */
@@ -29,18 +29,42 @@
   --spacing-section: 4rem;
 }
 
-/* ── Color Scheme 1: Light ── */
+/* ── Color Scheme 1: Dark (black bg, white text) ── */
 .color-scheme-1 {
+  --color-background: 0, 0, 0;
+  --color-foreground: 255, 255, 255;
+  --color-primary: 255, 255, 255;
+  --color-border: 51, 51, 51;
+}
+
+/* ── Color Scheme 2: Light (white bg, black text) ── */
+.color-scheme-2 {
   --color-background: 255, 255, 255;
   --color-foreground: 18, 18, 18;
-  --color-primary: 225, 29, 72;
+  --color-primary: 0, 0, 0;
   --color-border: 229, 231, 235;
 }
 
-/* ── Color Scheme 2: Dark accent ── */
-.color-scheme-2 {
-  --color-background: 26, 26, 46;
-  --color-foreground: 226, 232, 240;
-  --color-primary: 244, 114, 182;
-  --color-border: 51, 65, 85;
+/* ── Color Scheme 3: Blue accent ── */
+.color-scheme-3 {
+  --color-background: 113, 192, 255;
+  --color-foreground: 255, 255, 255;
+  --color-primary: 255, 255, 255;
+  --color-border: 142, 207, 255;
+}
+
+/* ── Color Scheme 4: Beige (warm light) ── */
+.color-scheme-4 {
+  --color-background: 245, 240, 235;
+  --color-foreground: 26, 26, 26;
+  --color-primary: 0, 0, 0;
+  --color-border: 220, 215, 210;
+}
+
+/* ── Color Scheme 5: Dark neutral ── */
+.color-scheme-5 {
+  --color-background: 26, 26, 26;
+  --color-foreground: 245, 240, 235;
+  --color-primary: 245, 240, 235;
+  --color-border: 51, 51, 51;
 }

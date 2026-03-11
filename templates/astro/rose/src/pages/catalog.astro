@@ -18,16 +18,16 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 <BaseLayout title={`Каталог — ${meta?.title ?? 'Мой сайт'}`} description={meta?.description}>
   <Header {...headerProps} />
 
-  <main class="flex-1 w-full max-w-[1320px] mx-auto px-5 lg:px-0" style="padding-top: 40px; padding-bottom: 60px;">
+  <main class="flex-1 w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-[300px]" style="padding-top: 40px; padding-bottom: 60px;">
     <!-- Page title block -->
     <div style="margin-bottom: 30px;">
       <h1
-        class="font-comfortaa"
-        style="font-size: 36px; line-height: 40px; font-weight: 400; text-transform: uppercase; color: rgb(var(--color-foreground)); margin: 0;"
+        class="font-comfortaa text-2xl sm:text-3xl xl:text-[36px]"
+        style="line-height: 1.1; font-weight: 400; text-transform: uppercase; color: rgb(var(--color-foreground)); margin: 0;"
       >КАТАЛОГ</h1>
       <p
-        class="font-manrope"
-        style="font-size: 24px; line-height: 33px; font-weight: 400; color: rgb(var(--color-muted)); margin-top: 5px;"
+        class="font-manrope text-base sm:text-lg xl:text-[24px]"
+        style="line-height: 1.38; font-weight: 400; color: rgb(var(--color-muted)); margin-top: 5px;"
       >Здесь начинается персональный стиль</p>
     </div>
 

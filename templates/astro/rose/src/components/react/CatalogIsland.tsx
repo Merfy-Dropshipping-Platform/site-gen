@@ -48,9 +48,8 @@ function PaginationBar({ currentPage, totalPages, total, onPageChange }: Paginat
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage <= 1}
-        className="flex items-center justify-center"
+        className="flex items-center justify-center w-10 h-10 sm:w-[60px] sm:h-[60px]"
         style={{
-          width: 60, height: 60,
           color: currentPage <= 1 ? 'rgb(var(--color-muted))' : 'rgb(var(--color-foreground))',
           opacity: currentPage <= 1 ? 0.4 : 1,
           cursor: currentPage <= 1 ? 'not-allowed' : 'pointer',
@@ -63,13 +62,13 @@ function PaginationBar({ currentPage, totalPages, total, onPageChange }: Paginat
       </button>
 
       {/* Page numbers */}
-      <div className="flex items-center" style={{ gap: 5 }}>
+      <div className="flex items-center" style={{ gap: 2 }}>
         {pages.map((p, i) =>
           p === 'ellipsis' ? (
             <span
               key={`e${i}`}
-              className="flex items-center justify-center"
-              style={{ width: 60, height: 60, fontSize: 24, lineHeight: '33px', color: 'rgb(var(--color-muted))' }}
+              className="flex items-center justify-center w-10 h-10 sm:w-[60px] sm:h-[60px] text-base sm:text-2xl"
+              style={{ lineHeight: '33px', color: 'rgb(var(--color-muted))' }}
             >
               ...
             </span>
@@ -77,10 +76,9 @@ function PaginationBar({ currentPage, totalPages, total, onPageChange }: Paginat
             <button
               key={p}
               onClick={() => onPageChange(p)}
-              className="flex items-center justify-center"
+              className="flex items-center justify-center w-10 h-10 sm:w-[60px] sm:h-[60px] text-base sm:text-2xl"
               style={{
-                width: 60, height: 60,
-                fontSize: 24, lineHeight: '33px',
+                lineHeight: '33px',
                 color: p === currentPage ? 'rgb(var(--color-foreground))' : 'rgb(var(--color-muted))',
                 cursor: 'pointer',
               }}
@@ -96,9 +94,8 @@ function PaginationBar({ currentPage, totalPages, total, onPageChange }: Paginat
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage >= totalPages}
-        className="flex items-center justify-center"
+        className="flex items-center justify-center w-10 h-10 sm:w-[60px] sm:h-[60px]"
         style={{
-          width: 60, height: 60,
           color: currentPage >= totalPages ? 'rgb(var(--color-muted))' : 'rgb(var(--color-foreground))',
           opacity: currentPage >= totalPages ? 0.4 : 1,
           cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
@@ -110,8 +107,8 @@ function PaginationBar({ currentPage, totalPages, total, onPageChange }: Paginat
         </svg>
       </button>
 
-      {/* Total count */}
-      <span style={{ fontSize: 20, lineHeight: '27px', color: 'rgb(var(--color-muted))', marginLeft: 20 }}>
+      {/* Total count — hidden on mobile (already shown in toolbar) */}
+      <span className="hidden sm:inline" style={{ fontSize: 20, lineHeight: '27px', color: 'rgb(var(--color-muted))', marginLeft: 20 }}>
         {total} товаров
       </span>
     </div>
@@ -436,7 +433,7 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true }: CatalogIn
 
       {/* Reset link */}
       {hasActiveFilters && (
-        <div className="mt-6 text-center lg:text-left" style={{ paddingLeft: 335 }}>
+        <div className="mt-6 text-center lg:text-left lg:pl-[335px]">
           <button
             onClick={resetFilters}
             className="font-[family-name:var(--font-body)] underline"

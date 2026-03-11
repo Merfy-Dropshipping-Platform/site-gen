@@ -52,19 +52,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, href }) => {
       {/* Product info */}
       <div className="flex flex-col font-[family-name:var(--font-body)]" style={{ gap: 10, padding: '0 15px' }}>
         <h3
-          className="font-normal"
-          style={{ fontSize: 24, lineHeight: '33px', color: 'rgb(var(--color-foreground))', margin: 0 }}
+          className="font-normal text-lg sm:text-2xl"
+          style={{ lineHeight: '1.38', color: 'rgb(var(--color-foreground))', margin: 0 }}
         >
           {product.title}
         </h3>
         <div className="flex items-center" style={{ gap: 15 }}>
-          <span style={{ fontSize: 32, lineHeight: '44px', color: 'rgb(var(--color-foreground))' }}>
+          <span className="text-2xl sm:text-[32px]" style={{ lineHeight: '44px', color: 'rgb(var(--color-foreground))' }}>
             {formatMoney(product.price)}
           </span>
           {product.compareAtPrice != null && product.compareAtPrice > 0 && (
             <span
-              className="line-through"
-              style={{ fontSize: 20, lineHeight: '27px', fontWeight: 500, color: 'rgb(var(--color-muted))' }}
+              className="line-through text-base sm:text-xl"
+              style={{ lineHeight: '27px', fontWeight: 500, color: 'rgb(var(--color-muted))' }}
             >
               {formatMoney(product.compareAtPrice)}
             </span>

@@ -18,36 +18,38 @@ const branding = (siteConfig as any)?.branding ?? {};
 const announcementText = branding.announcementText || 'Бесплатная доставка при заказе от 9 000 ₽';
 ---
 <BaseLayout title={`Каталог — ${meta?.title ?? 'Мой сайт'}`} description={meta?.description}>
-  <div class="bg-black text-white w-full py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm md:text-base">
-    <div class="w-full max-w-[1920px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
-      <a href="#" class="block text-center hover:opacity-80 transition-opacity font-normal leading-tight font-manrope">
-        <span>{announcementText}</span>
-      </a>
+  <div class="catalog-page color-scheme-2" style="background: #FFFFFF; color: #000000;">
+    <div class="bg-black text-white w-full py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm md:text-base">
+      <div class="w-full max-w-[1920px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
+        <a href="#" class="block text-center hover:opacity-80 transition-opacity font-normal leading-tight font-manrope">
+          <span>{announcementText}</span>
+        </a>
+      </div>
     </div>
+    <Header {...headerProps} colorScheme="scheme-2" />
+
+    <main class="catalog-main flex-1 w-full max-w-[1920px] mx-auto" style="padding-top: 40px; padding-bottom: 60px;">
+      <!-- Page title block -->
+      <div style="margin-bottom: 30px;">
+        <h1
+          class="font-comfortaa text-2xl sm:text-3xl xl:text-[36px]"
+          style="line-height: 1.1; font-weight: 400; text-transform: uppercase; color: #000000; margin: 0;"
+        >КАТАЛОГ</h1>
+        <p
+          class="font-manrope text-base sm:text-lg xl:text-[24px]"
+          style="line-height: 1.38; font-weight: 400; color: #999999; margin-top: 5px;"
+        >Здесь начинается персональный стиль</p>
+      </div>
+
+      <CatalogIsland client:load />
+
+      <noscript>
+        <PopularProducts products={products} />
+      </noscript>
+    </main>
+
+    <Footer {...footerProps} colorScheme="scheme-2" />
   </div>
-  <Header {...headerProps} />
-
-  <main class="catalog-main flex-1 w-full max-w-[1920px] mx-auto" style="padding-top: 40px; padding-bottom: 60px;">
-    <!-- Page title block -->
-    <div style="margin-bottom: 30px;">
-      <h1
-        class="font-comfortaa text-2xl sm:text-3xl xl:text-[36px]"
-        style="line-height: 1.1; font-weight: 400; text-transform: uppercase; color: rgb(var(--color-foreground)); margin: 0;"
-      >КАТАЛОГ</h1>
-      <p
-        class="font-manrope text-base sm:text-lg xl:text-[24px]"
-        style="line-height: 1.38; font-weight: 400; color: rgb(var(--color-muted)); margin-top: 5px;"
-      >Здесь начинается персональный стиль</p>
-    </div>
-
-    <CatalogIsland client:load />
-
-    <noscript>
-      <PopularProducts products={products} />
-    </noscript>
-  </main>
-
-  <Footer {...footerProps} />
 </BaseLayout>
 
 <style>

@@ -27,7 +27,7 @@ const announcementText = branding.announcementText || 'Бесплатная до
   </div>
   <Header {...headerProps} />
 
-  <main class="flex-1 w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-[300px]" style="padding-top: 40px; padding-bottom: 60px;">
+  <main class="catalog-main flex-1 w-full max-w-[1920px] mx-auto" style="padding-top: 40px; padding-bottom: 60px;">
     <!-- Page title block -->
     <div style="margin-bottom: 30px;">
       <h1
@@ -49,3 +49,25 @@ const announcementText = branding.announcementText || 'Бесплатная до
 
   <Footer {...footerProps} />
 </BaseLayout>
+
+<style>
+  .catalog-main {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  @media (min-width: 640px) {
+    .catalog-main { padding-left: 24px; padding-right: 24px; }
+  }
+  @media (min-width: 768px) {
+    .catalog-main { padding-left: 32px; padding-right: 32px; }
+  }
+  @media (min-width: 1024px) {
+    .catalog-main { padding-left: 48px; padding-right: 48px; }
+  }
+  @media (min-width: 1280px) {
+    .catalog-main { padding-left: 64px; padding-right: 64px; }
+  }
+  @media (min-width: 1536px) {
+    .catalog-main { padding-left: 300px; padding-right: 300px; }
+  }
+</style>

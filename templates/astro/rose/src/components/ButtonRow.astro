@@ -38,39 +38,39 @@ const { buttons = [], align = 'center' } = Astro.props;
     padding: 14px 32px;
     font-size: 0.95rem;
     font-weight: 500;
-    border-radius: 8px;
+    border-radius: var(--radius-button);
     text-decoration: none;
     transition: all 0.2s;
     cursor: pointer;
   }
 
   .btn--primary {
-    background: var(--rose-600);
-    color: #fff;
+    background: rgb(var(--color-primary));
+    color: rgb(var(--color-button-text));
   }
 
   .btn--primary:hover {
-    background: var(--rose-700);
+    opacity: 0.9;
   }
 
   .btn--secondary {
-    background: var(--neutral-800);
-    color: #fff;
+    background: rgb(var(--color-foreground));
+    color: rgb(var(--color-background));
   }
 
   .btn--secondary:hover {
-    background: var(--neutral-900);
+    opacity: 0.9;
   }
 
   .btn--outline {
     background: transparent;
-    color: var(--neutral-800);
-    border: 1px solid var(--neutral-300);
+    color: rgb(var(--color-foreground));
+    border: 1px solid rgb(var(--color-border));
   }
 
   .btn--outline:hover {
-    border-color: var(--rose-600);
-    color: var(--rose-600);
+    border-color: rgb(var(--color-primary));
+    color: rgb(var(--color-primary));
   }
 
   @media (max-width: 480px) {

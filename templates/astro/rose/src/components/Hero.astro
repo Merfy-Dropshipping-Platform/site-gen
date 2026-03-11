@@ -113,7 +113,7 @@ const isContainer = container === 'true';
 
   {/* Overlay */}
   {overlayOpacity > 0 && (
-    <div class="absolute inset-0" style={`background-color: rgba(0,0,0,${overlayOpacity});`}></div>
+    <div class="absolute inset-0" style={`background-color: rgb(var(--color-foreground) / ${overlayOpacity});`}></div>
   )}
 
   {/* Content — positioned via flex, matching constructor positionStyles */}
@@ -163,7 +163,7 @@ const isContainer = container === 'true';
       </div>
     ) : (
       /* ── No container: text on background (matches Figma) ── */
-      <div class={`${schemeClass} flex flex-col ${alignClass} gap-[25px] max-w-[671px]`} style="padding: 60px 80px; border-radius: 10px;">
+      <div class={`${schemeClass} flex flex-col ${alignClass} gap-[25px] max-w-[671px]`} style="padding: 60px 80px; border-radius: var(--radius-card, 12px);">
         {headingText && (
           <h1
             class={`${headingSizeClass} font-normal font-heading uppercase`}
@@ -185,7 +185,7 @@ const isContainer = container === 'true';
             <a
               href={primaryLink}
               class="inline-flex items-center justify-center font-normal font-body hover:opacity-80 transition-opacity uppercase"
-              style="padding: 10px 35px; min-height: 80px; font-size: 24px; line-height: 33px; background-color: rgb(var(--color-button)); color: rgb(var(--color-button-text)); border-radius: 10px;"
+              style="padding: 10px 35px; min-height: 80px; font-size: 24px; line-height: 33px; background-color: rgb(var(--color-button)); color: rgb(var(--color-button-text)); border-radius: var(--radius-button, 8px);"
             >
               {primaryButton.text}
             </a>
@@ -194,7 +194,7 @@ const isContainer = container === 'true';
             <a
               href={secondaryLink}
               class="inline-flex items-center justify-center font-normal font-body hover:opacity-80 transition-opacity uppercase"
-              style="padding: 10px 35px; min-height: 80px; font-size: 24px; line-height: 33px; background-color: rgb(var(--color-secondary, 245 245 245)); color: rgb(var(--color-foreground)); border: 1px solid rgb(var(--color-border)); border-radius: 10px;"
+              style="padding: 10px 35px; min-height: 80px; font-size: 24px; line-height: 33px; background-color: rgb(var(--color-secondary, 245 245 245)); color: rgb(var(--color-foreground)); border: 1px solid rgb(var(--color-border)); border-radius: var(--radius-button, 8px);"
             >
               {secondaryButton.text}
             </a>

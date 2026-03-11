@@ -65,7 +65,7 @@ const aspect = aspectMap[imageView] || aspectMap.portrait;
 <section id="collections" class={`w-full scroll-mt-16 sm:scroll-mt-20 ${schemeClass}`} style={`background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); padding: ${padding?.top || 80}px 0 ${padding?.bottom || 80}px;`}>
   <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12">
     <div class="flex flex-col items-center gap-2 sm:gap-3 md:gap-4 lg:gap-[5px] mb-8 sm:mb-10 md:mb-12 lg:mb-16 xl:mb-20">
-      <h2 class="font-normal uppercase text-center font-heading text-theme-accent collections-heading" style={`--fs-base:${hfs.base};--fs-sm:${hfs.sm};--fs-md:${hfs.md};`}>
+      <h2 class="font-normal uppercase text-center font-heading text-theme-foreground collections-heading" style={`--fs-base:${hfs.base};--fs-sm:${hfs.sm};--fs-md:${hfs.md};`}>
         {title}
       </h2>
       {subtitle && (

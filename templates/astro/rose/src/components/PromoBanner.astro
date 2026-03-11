@@ -19,7 +19,7 @@ const sizeClasses: Record<string, string> = {
 const sizeClass = sizeClasses[size] || sizeClasses.small;
 ---
 
-<div class={`w-full ${sizeClass} ${schemeClass}`} style={schemeClass ? `background: rgb(var(--color-background)); color: rgb(var(--color-foreground));` : 'background: black; color: white;'}>
+<div class={`w-full ${sizeClass} ${schemeClass}`} style={schemeClass ? `background: rgb(var(--color-background)); color: rgb(var(--color-foreground));` : `background: rgb(var(--color-foreground)); color: rgb(var(--color-background));`}>
   <div class="w-full max-w-[1920px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
     <a
       href={href}

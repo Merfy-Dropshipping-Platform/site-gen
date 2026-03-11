@@ -60,8 +60,8 @@ const btnSecondaryClass = 'bg-transparent text-theme-foreground border border-th
         return (
           <div class={`grid grid-cols-1 md:grid-cols-2 gap-[60px] md:gap-[60px] max-md:gap-6 items-center ${alignClass[alignment] ?? 'text-left'}`}>
             {row.image && (
-              <div class={`overflow-hidden rounded-2xl ${imageRight ? 'md:order-2' : ''}`}>
-                <img src={row.image} alt={row.title ?? ''} loading="lazy" class="w-full h-auto object-cover rounded-2xl" />
+              <div class={`overflow-hidden ${imageRight ? 'md:order-2' : ''}`} style="border-radius: var(--radius-card, 12px);">
+                <img src={row.image} alt={row.title ?? ''} loading="lazy" class="w-full h-auto object-cover" style="border-radius: var(--radius-card, 12px);" />
               </div>
             )}
             <div class={imageRight ? 'md:order-1' : ''}>

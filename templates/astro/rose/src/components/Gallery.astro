@@ -40,7 +40,7 @@ const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-',
 
     <div class={`grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-4 sm:gap-5 md:gap-6 lg:gap-[20px] ${isRight ? 'direction-rtl' : ''}`}>
       <!-- Featured Image -->
-      <div class={`w-full aspect-[920/900] lg:aspect-auto lg:h-[900px] bg-gray-100 rounded-lg sm:rounded-[8px] md:rounded-[10px] overflow-hidden ${isRight ? 'lg:order-2' : ''}`}>
+      <div class={`w-full aspect-[920/900] lg:aspect-auto lg:h-[900px] overflow-hidden ${isRight ? 'lg:order-2' : ''}`} style="background: rgb(var(--color-foreground) / 0.05); border-radius: var(--radius-card, 10px)">
         <img
           src={featuredImage?.url || '/images/gallery-1.png'}
           alt={featuredImage?.alt || 'Галерея'}

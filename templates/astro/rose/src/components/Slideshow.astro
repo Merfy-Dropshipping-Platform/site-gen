@@ -48,19 +48,19 @@ const containerStyle = imagePosition === 'window'
 
 <section class={`${containerClass} ${schemeClass}`} style={`${containerStyle}${padTop ? `padding-top: ${padTop}px;` : ''}${padBottom ? `padding-bottom: ${padBottom}px;` : ''}`} data-slideshow data-interval={interval}>
   {visibleSlides.length === 0 ? (
-    <div class="min-h-[400px] flex items-center justify-center bg-gray-50 text-gray-500 text-lg">
+    <div class="min-h-[400px] flex items-center justify-center text-theme-muted text-lg" style="background: rgb(var(--color-background))">
       <p>Добавьте слайды</p>
     </div>
   ) : (
     <div class="relative min-h-[inherit]">
       {visibleSlides.map((slide, i) => (
         <div
-          class={`min-h-[80vh] md:min-h-[80vh] max-md:min-h-[60vh] bg-cover bg-center bg-gray-800 flex items-center relative ${i === 0 ? '' : 'hidden'}`}
-          style={slide.image ? `background-image: url(${slide.image})` : ''}
+          class={`min-h-[80vh] md:min-h-[80vh] max-md:min-h-[60vh] bg-cover bg-center flex items-center relative ${i === 0 ? '' : 'hidden'}`}
+          style={`background-color: rgb(var(--color-foreground));${slide.image ? ` background-image: url(${slide.image})` : ''}`}
           data-slide
         >
-          <div class="absolute inset-0 bg-black" style={`opacity: ${overlay / 100}`}></div>
-          <div class={`relative z-10 py-[60px] px-[40px] max-md:py-[40px] max-md:px-[20px] max-w-[700px] text-white ${positionClass[slide.position ?? 'center']}`}>
+          <div class="absolute inset-0" style={`background: rgb(var(--color-foreground)); opacity: ${overlay / 100}`}></div>
+          <div class={`relative z-10 py-[60px] px-[40px] max-md:py-[40px] max-md:px-[20px] max-w-[700px] ${positionClass[slide.position ?? 'center']}`} style="color: rgb(var(--color-background))">
             {slide.heading?.text && (
               <h2 class="font-heading font-medium mb-4" style={`font-size:${headingFontSizes[size] ?? '3rem'};line-height:1.1;`}>
                 {slide.heading.text}
@@ -84,7 +84,7 @@ const containerStyle = imagePosition === 'window'
         <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2">
           {visibleSlides.map((_, i) => (
             <button
-              class={`w-3 h-3 rounded-full border-2 border-white transition-colors duration-200 ${i === 0 ? 'bg-white' : 'bg-transparent'}`}
+              class={`w-3 h-3 rounded-full border-2 transition-colors duration-200 slideshow-dot ${i === 0 ? 'slideshow-dot-active' : ''}`}
               data-slide-dot={i}
               aria-label={`Slide ${i + 1}`}
             />
@@ -106,14 +106,12 @@ const containerStyle = imagePosition === 'window'
 
     function goTo(index: number) {
       slides[current].classList.add('hidden');
-      dots[current]?.classList.remove('bg-white');
-      dots[current]?.classList.add('bg-transparent');
+      dots[current]?.classList.remove('slideshow-dot-active');
 
       current = (index + slides.length) % slides.length;
 
       slides[current].classList.remove('hidden');
-      dots[current]?.classList.add('bg-white');
-      dots[current]?.classList.remove('bg-transparent');
+      dots[current]?.classList.add('slideshow-dot-active');
     }
 
     dots.forEach((dot, i) => {
@@ -125,3 +123,13 @@ const containerStyle = imagePosition === 'window'
     }
   });
 </script>
+
+<style>
+  .slideshow-dot {
+    border-color: rgb(var(--color-background));
+    background: transparent;
+  }
+  .slideshow-dot-active {
+    background: rgb(var(--color-background));
+  }
+</style>

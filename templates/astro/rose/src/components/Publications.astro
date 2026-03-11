@@ -71,9 +71,9 @@ const cols = columnsCount;
     ) : (
       <div class="grid publications-grid gap-8 max-md:!grid-cols-2 max-md:gap-6 max-[480px]:!grid-cols-1">
         {visiblePosts.map((post: any) => (
-          <article class="bg-theme-background rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_32px_rgba(0,0,0,0.08)] group">
+          <article class="bg-theme-background overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_32px_rgba(0,0,0,0.08)] group" style="border-radius: var(--radius-card, 12px);">
             {post.image && (
-              <div class="aspect-video overflow-hidden bg-gray-50">
+              <div class="aspect-video overflow-hidden" style="background: rgb(var(--color-foreground) / 0.03);">
                 <img
                   src={post.image}
                   alt={post.title ?? ''}

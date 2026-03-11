@@ -11,7 +11,7 @@ const { name, price, oldPrice, image, href } = Astro.props;
 ---
 
 <a href={href || '#'} class="flex flex-col gap-4 sm:gap-5 md:gap-6 lg:gap-[25px] group cursor-pointer no-underline text-inherit">
-	<div class="w-full aspect-square lg:aspect-[400/400] bg-gray-100 rounded-lg sm:rounded-[8px] md:rounded-[10px] overflow-hidden">
+	<div class="w-full aspect-square lg:aspect-[400/400] overflow-hidden" style="background: rgb(var(--color-foreground) / 0.05); border-radius: var(--radius-card, 10px)">
 		<img
 			src={image}
 			alt={name}

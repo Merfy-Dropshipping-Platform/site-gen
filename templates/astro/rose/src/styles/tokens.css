@@ -12,7 +12,7 @@
   --color-foreground: 18, 18, 18;
   --color-border: 229, 231, 235;
   --color-button-text: 255, 255, 255;
-  --color-muted: 107, 114, 128;
+  --color-muted: 153, 153, 153;
 
   /* ── Typography ── */
   --font-heading: 'Comfortaa', cursive;
@@ -22,11 +22,11 @@
   --radius-base: 0.5rem;
   --radius-button: 8px;
   --radius-card: 10px;
-  --radius-input: 0.5rem;
+  --radius-input: 10px;
 
   /* ── Layout ── */
   --page-width: 1280px;
-  --spacing-section: 4rem;
+  --spacing-section: 6rem;
 }
 
 /* ── Color Scheme 1: Dark (black bg, white text) ── */

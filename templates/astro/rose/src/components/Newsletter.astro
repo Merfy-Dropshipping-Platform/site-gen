@@ -27,7 +27,7 @@ const headingFS = headingFontSizes[headingSize] || '1.5rem';
 
 <section
   class={`text-center px-5 ${schemeClass}`}
-  style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: ${schemeClass ? 'rgb(var(--color-background))' : '#F9FAFB'}; color: rgb(var(--color-foreground));`}
+  style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}
 >
   <div class="max-w-[600px] mx-auto">
     <h2 class="font-medium text-theme-foreground mb-4 font-heading" style={`font-size:${headingFS};line-height:1.2;`}>
@@ -44,7 +44,8 @@ const headingFS = headingFontSizes[headingSize] || '1.5rem';
         name="email"
         placeholder={placeholder}
         required
-        class="flex-1 py-3.5 px-4 text-base border border-theme rounded-lg bg-white text-gray-900 font-body focus:outline-none focus:border-theme-foreground"
+        class="flex-1 py-3.5 px-4 text-base border border-theme rounded-lg font-body focus:outline-none focus:border-theme-foreground"
+        style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));"
       />
       <button
         type="submit"

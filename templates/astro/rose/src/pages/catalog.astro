@@ -18,12 +18,17 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 <BaseLayout title={`Каталог — ${meta?.title ?? 'Мой сайт'}`} description={meta?.description}>
   <Header {...headerProps} />
 
-  <main class="flex-1 w-full max-w-[1200px] mx-auto px-5 py-10">
-    <div class="text-center mb-10">
-      <p class="mb-4 text-sm text-gray-500 font-manrope">
-        <a href="/" class="text-gray-500 hover:text-black">Главная</a> / Каталог
-      </p>
-      <h1 class="text-4xl font-comfortaa">Каталог</h1>
+  <main class="flex-1 w-full max-w-[1320px] mx-auto px-5 lg:px-0" style="padding-top: 40px; padding-bottom: 60px;">
+    <!-- Page title block -->
+    <div style="margin-bottom: 30px;">
+      <h1
+        class="font-comfortaa"
+        style="font-size: 36px; line-height: 40px; font-weight: 400; text-transform: uppercase; color: rgb(var(--color-foreground)); margin: 0;"
+      >КАТАЛОГ</h1>
+      <p
+        class="font-manrope"
+        style="font-size: 24px; line-height: 33px; font-weight: 400; color: rgb(var(--color-muted)); margin-top: 5px;"
+      >Здесь начинается персональный стиль</p>
     </div>
 
     <CatalogIsland client:load />

@@ -22,7 +22,6 @@ export function PriceRangeFilter({ priceMin, priceMax, onChange }: PriceRangeFil
       let minVal = newMin ? Number(newMin) : undefined;
       let maxVal = newMax ? Number(newMax) : undefined;
 
-      // Auto-swap if min > max
       if (minVal !== undefined && maxVal !== undefined && minVal > maxVal) {
         [minVal, maxVal] = [maxVal, minVal];
       }
@@ -43,46 +42,76 @@ export function PriceRangeFilter({ priceMin, priceMax, onChange }: PriceRangeFil
     applyFilter(min, val);
   };
 
-  const hasFilter = min !== '' || max !== '';
-
-  const reset = () => {
-    setMin('');
-    setMax('');
-    onChange(undefined, undefined);
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    height: 60,
+    padding: '10px 15px',
+    border: '1px solid rgb(var(--color-muted))',
+    borderRadius: 10,
+    backgroundColor: 'rgb(var(--color-background))',
+    fontSize: 20,
+    lineHeight: '27px',
+    fontWeight: 300,
+    color: 'rgb(var(--color-foreground))',
+    outline: 'none',
   };
 
   return (
-    <div className="mt-6">
-      <h3 className="text-sm font-semibold text-[var(--color-text)] mb-3 font-[family-name:var(--font-heading)]">
-        Цена
+    <div>
+      <h3
+        className="font-[family-name:var(--font-body)]"
+        style={{ fontSize: 20, lineHeight: '27px', color: 'rgb(var(--color-foreground))', marginBottom: 15 }}
+      >
+        Стоимость
       </h3>
-      <div className="flex gap-2 items-center">
-        <input
-          type="text"
-          inputMode="numeric"
-          placeholder="от"
-          value={min}
-          onChange={handleMinChange}
-          className="w-full px-3 py-2 border border-[var(--color-border)] rounded-[var(--radius-base)] bg-[var(--color-background)] text-sm text-[var(--color-text)] font-[family-name:var(--font-body)] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--color-primary-rgb))]"
-        />
-        <span className="text-[var(--color-text-muted)] text-sm">—</span>
-        <input
-          type="text"
-          inputMode="numeric"
-          placeholder="до"
-          value={max}
-          onChange={handleMaxChange}
-          className="w-full px-3 py-2 border border-[var(--color-border)] rounded-[var(--radius-base)] bg-[var(--color-background)] text-sm text-[var(--color-text)] font-[family-name:var(--font-body)] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--color-primary-rgb))]"
-        />
+      <div className="flex flex-col" style={{ gap: 10 }}>
+        {/* Min input */}
+        <div className="relative font-[family-name:var(--font-body)]">
+          <span
+            className="absolute left-[15px] top-1/2 -translate-y-1/2 pointer-events-none"
+            style={{ fontSize: 20, lineHeight: '27px', fontWeight: 300, color: 'rgb(var(--color-muted))' }}
+          >
+            от
+          </span>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={min}
+            onChange={handleMinChange}
+            className="font-[family-name:var(--font-body)]"
+            style={{ ...inputStyle, paddingLeft: 45 }}
+          />
+          <span
+            className="absolute right-[15px] top-1/2 -translate-y-1/2 pointer-events-none"
+            style={{ fontSize: 20, lineHeight: '27px', fontWeight: 300, color: 'rgb(var(--color-muted))' }}
+          >
+            ₽
+          </span>
+        </div>
+        {/* Max input */}
+        <div className="relative font-[family-name:var(--font-body)]">
+          <span
+            className="absolute left-[15px] top-1/2 -translate-y-1/2 pointer-events-none"
+            style={{ fontSize: 20, lineHeight: '27px', fontWeight: 300, color: 'rgb(var(--color-muted))' }}
+          >
+            до
+          </span>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={max}
+            onChange={handleMaxChange}
+            className="font-[family-name:var(--font-body)]"
+            style={{ ...inputStyle, paddingLeft: 45 }}
+          />
+          <span
+            className="absolute right-[15px] top-1/2 -translate-y-1/2 pointer-events-none"
+            style={{ fontSize: 20, lineHeight: '27px', fontWeight: 300, color: 'rgb(var(--color-muted))' }}
+          >
+            ₽
+          </span>
+        </div>
       </div>
-      {hasFilter && (
-        <button
-          onClick={reset}
-          className="mt-2 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors underline"
-        >
-          Сбросить цену
-        </button>
-      )}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import PopularProducts from '../components/PopularProducts.astro';
 import CatalogIsland from '../components/react/CatalogIsland';
+import { AnnouncementBar } from '../components/react/AnnouncementBar';
 
 const meta = data?.meta ?? {};
 const blocks = data?.content ?? [];
@@ -14,8 +15,11 @@ const headerBlock = blocks.find((b: any) => b.type === 'Header');
 const footerBlock = blocks.find((b: any) => b.type === 'Footer');
 const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
 const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
+const branding = (siteConfig as any)?.branding ?? {};
+const announcementText = branding.announcementText || 'Бесплатная доставка при заказе от 9 000 ₽';
 ---
 <BaseLayout title={`Каталог — ${meta?.title ?? 'Мой сайт'}`} description={meta?.description}>
+  <AnnouncementBar text={announcementText} size="small" />
   <Header {...headerProps} />
 
   <main class="flex-1 w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-[300px]" style="padding-top: 40px; padding-bottom: 60px;">

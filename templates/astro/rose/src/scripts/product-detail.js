@@ -17,6 +17,8 @@
   var selectedOptions = {}; // { "Цвет": "Черный", "Размер": "S" }
   var selectedVariantId = null;
   var allVariants = []; // Full variants array from data-variants
+  var basePrice = 0; // Numeric base price for quantity calculation
+  var basePriceSuffix = ' ₽'; // Currency suffix
 
   // --- DOM refs ---
   var mainImage = document.getElementById('main-product-image');
@@ -31,6 +33,33 @@
   var variantsContainer = document.getElementById('variants-container');
   var variantsContainerFlat = document.getElementById('variants-container-flat');
   var shareBtn = document.getElementById('share-btn');
+
+  // --- Price helpers ---
+  function parsePrice(text) {
+    if (!text) return 0;
+    var cleaned = text.replace(/[^\d.,]/g, '').replace(',', '.');
+    return parseFloat(cleaned) || 0;
+  }
+
+  function formatPrice(num) {
+    var rounded = Math.round(num);
+    var str = rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return str + basePriceSuffix;
+  }
+
+  function updateDisplayedPrice() {
+    if (!priceDisplay || !basePrice) return;
+    priceDisplay.textContent = formatPrice(basePrice * quantity);
+  }
+
+  // Initialize base price from DOM
+  if (priceDisplay) {
+    var match = priceDisplay.textContent.match(/([\d\s.,]+)\s*(₽|руб|р\.?)?/);
+    if (match) {
+      basePrice = parsePrice(match[1]);
+      basePriceSuffix = match[2] ? ' ' + match[2] : ' ₽';
+    }
+  }
 
   // --- Styles ---
   var STYLE_SELECTED = 'background: rgb(var(--color-foreground)); border: 1px solid rgb(var(--color-foreground)); color: rgb(var(--color-background));';
@@ -172,8 +201,9 @@
       });
 
       var variantPrice = btn.dataset.price;
-      if (variantPrice && priceDisplay) {
-        priceDisplay.textContent = variantPrice;
+      if (variantPrice) {
+        basePrice = parsePrice(variantPrice);
+        updateDisplayedPrice();
       }
     });
   }
@@ -206,8 +236,9 @@
 
     if (match) {
       selectedVariantId = match.id;
-      if (priceDisplay && match.price) {
-        priceDisplay.textContent = match.price;
+      if (match.price) {
+        basePrice = parsePrice(match.price);
+        updateDisplayedPrice();
       }
     } else {
       selectedVariantId = null;
@@ -220,6 +251,7 @@
       if (quantity > 1) {
         quantity--;
         if (qtyDisplay) qtyDisplay.textContent = quantity;
+        updateDisplayedPrice();
       }
     });
   }
@@ -228,6 +260,7 @@
     qtyPlus.addEventListener('click', function () {
       quantity++;
       if (qtyDisplay) qtyDisplay.textContent = quantity;
+      updateDisplayedPrice();
     });
   }
 

@@ -111,6 +111,34 @@ function resolveFontFamily(fontKey: string): string {
   return FONT_FAMILIES[fontKey]?.cssFamily ?? `"${fontKey}", sans-serif`;
 }
 
+/**
+ * Parse a hex color (#RRGGBB) to [R, G, B].
+ * Returns null if parsing fails.
+ */
+function parseHexToRgb(hex: string): [number, number, number] | null {
+  const m = hex.trim().match(/^#([0-9a-fA-F]{6})$/);
+  if (!m) return null;
+  return [
+    parseInt(m[1].slice(0, 2), 16),
+    parseInt(m[1].slice(2, 4), 16),
+    parseInt(m[1].slice(4, 6), 16),
+  ];
+}
+
+/**
+ * Blend two hex colors: result = fg * ratio + bg * (1 - ratio).
+ * Returns hex string "#RRGGBB".
+ */
+function blendColors(fg: string, bg: string, ratio: number): string {
+  const fgRgb = parseHexToRgb(fg);
+  const bgRgb = parseHexToRgb(bg);
+  if (!fgRgb || !bgRgb) return "#999999"; // safe fallback gray
+  const r = Math.round(fgRgb[0] * ratio + bgRgb[0] * (1 - ratio));
+  const g = Math.round(fgRgb[1] * ratio + bgRgb[1] * (1 - ratio));
+  const b = Math.round(fgRgb[2] * ratio + bgRgb[2] * (1 - ratio));
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+}
+
 function resolveFontName(fontKey: string): string {
   return FONT_FAMILIES[fontKey]?.name ?? fontKey;
 }
@@ -168,8 +196,11 @@ export function constructorThemeToMerchantSettings(
     tokens["color-button"] = defaultScheme.primaryButton.background;
     tokens["color-button-text"] = defaultScheme.primaryButton.text;
     tokens["color-secondary"] = defaultScheme.secondaryButton.background;
-    tokens["color-muted"] = defaultScheme.text; // fallback
-    tokens["color-border"] = defaultScheme.primaryButton.border ?? defaultScheme.text;
+    // Muted = 40% foreground blended on background (always readable)
+    tokens["color-muted"] = blendColors(defaultScheme.text, defaultScheme.background, 0.4);
+    // Border = 20% foreground blended on background (subtle but visible)
+    tokens["color-border"] = defaultScheme.primaryButton.border
+      ?? blendColors(defaultScheme.text, defaultScheme.background, 0.2);
   }
 
   // Convert color schemes — keys MUST match CSS var names (with "color-" prefix)
@@ -187,7 +218,9 @@ export function constructorThemeToMerchantSettings(
         "color-button-hover": scheme.primaryButton.backgroundHover ?? scheme.primaryButton.background,
         "color-secondary": scheme.secondaryButton.background,
         "color-secondary-button-text": scheme.secondaryButton.text,
-        "color-border": scheme.primaryButton.border ?? scheme.text,
+        "color-muted": blendColors(scheme.text, scheme.background, 0.4),
+        "color-border": scheme.primaryButton.border
+          ?? blendColors(scheme.text, scheme.background, 0.2),
       },
     }),
   );

@@ -37,8 +37,9 @@ export function useProducts(filters: CatalogFilters, options: UseProductsOptions
 
   const queryKey = ['products', storeId, filters];
 
-  const { data, isLoading, isError, error } = useQuery<ProductsResult>({
+  const { data, isLoading, isFetching, isError, error, isPlaceholderData } = useQuery<ProductsResult>({
     queryKey,
+    placeholderData: (prev) => prev,
     queryFn: async () => {
       const params = new URLSearchParams();
       params.set('store_id', storeId);
@@ -92,6 +93,7 @@ export function useProducts(filters: CatalogFilters, options: UseProductsOptions
   return {
     products: data?.products ?? [],
     total: data?.total ?? 0,
+    isFetching,
     pagination: data?.pagination ?? { page: 1, limit: PAGE_SIZE, total: 0, totalPages: 0 },
     isLoading,
     isError,

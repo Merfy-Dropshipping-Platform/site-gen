@@ -303,7 +303,7 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true }: CatalogIn
     }
   }, [collectionSlug, collections, filters.collectionId, setFilters]);
 
-  const { products, total, pagination, isLoading, isError, error } = useProducts(filters);
+  const { products, total, pagination, isLoading, isFetching, isError, error } = useProducts(filters);
   const variantGroups = filtersData?.variantGroups ?? [];
 
   const hasActiveFilters = !!(
@@ -322,41 +322,52 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true }: CatalogIn
     }
   }, [filters.page]);
 
-  // Loading
-  if (isLoading) return <SkeletonGrid />;
+  // Product grid content — skeleton only on first load, opacity on refetch
+  const renderProductGrid = () => {
+    if (isLoading && products.length === 0) {
+      return (
+        <div className="flex-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" style={{ gap: 20 }}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="rounded-[10px]" style={{ aspectRatio: '315/515', backgroundColor: '#FBFBFB' }} />
+                <div className="mt-4 bg-gray-200 rounded h-5 w-3/4" />
+                <div className="mt-2 bg-gray-200 rounded h-6 w-1/3" />
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
 
-  // Error
-  if (isError) {
-    return (
-      <div className="flex-1 py-12 text-center">
-        <p className="font-[family-name:var(--font-body)]" style={{ fontSize: 20, color: 'rgb(var(--color-muted))', marginBottom: 16 }}>
-          Произошла ошибка при загрузке товаров
-        </p>
-        {error?.message && (
-          <p className="font-[family-name:var(--font-body)]" style={{ fontSize: 16, color: 'rgb(var(--color-muted))', marginBottom: 16 }}>{error.message}</p>
-        )}
-        <button
-          onClick={() => window.location.reload()}
-          className="font-[family-name:var(--font-body)]"
-          style={{
-            padding: '12px 24px',
-            border: '1px solid rgb(var(--color-muted))',
-            borderRadius: 10,
-            fontSize: 16,
-            color: 'rgb(var(--color-foreground))',
-          }}
-        >
-          Попробовать снова
-        </button>
-      </div>
-    );
-  }
+    if (isError) {
+      return (
+        <div className="flex-1 py-12 text-center">
+          <p className="font-[family-name:var(--font-body)]" style={{ fontSize: 20, color: 'rgb(var(--color-muted))', marginBottom: 16 }}>
+            Произошла ошибка при загрузке товаров
+          </p>
+          {error?.message && (
+            <p className="font-[family-name:var(--font-body)]" style={{ fontSize: 16, color: 'rgb(var(--color-muted))', marginBottom: 16 }}>{error.message}</p>
+          )}
+          <button
+            onClick={() => window.location.reload()}
+            className="font-[family-name:var(--font-body)]"
+            style={{
+              padding: '12px 24px',
+              border: '1px solid rgb(var(--color-muted))',
+              borderRadius: 10,
+              fontSize: 16,
+              color: 'rgb(var(--color-foreground))',
+            }}
+          >
+            Попробовать снова
+          </button>
+        </div>
+      );
+    }
 
-  // Empty
-  if (products.length === 0) {
-    return (
-      <div className="flex gap-[50px]">
-        <FilterSidebar filters={filters} setFilters={setFilters} variantGroups={variantGroups} />
+    if (products.length === 0) {
+      return (
         <div className="flex-1 py-12 text-center">
           <p className="font-[family-name:var(--font-body)]" style={{ fontSize: 20, color: 'rgb(var(--color-muted))', marginBottom: 16 }}>
             Товаров не найдено
@@ -377,9 +388,29 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true }: CatalogIn
             </button>
           )}
         </div>
+      );
+    }
+
+    return (
+      <div className="flex-1" style={{ opacity: isFetching ? 0.5 : 1, transition: 'opacity 0.2s ease' }}>
+        <div
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+          style={{ gap: 20 }}
+        >
+          {products.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+
+        <PaginationBar
+          currentPage={pagination.page}
+          totalPages={pagination.totalPages}
+          total={total}
+          onPageChange={(page) => setFilters({ page })}
+        />
       </div>
     );
-  }
+  };
 
   return (
     <>
@@ -408,27 +439,11 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true }: CatalogIn
 
       {/* Main layout: sidebar + grid */}
       <div className="flex" style={{ gap: 50 }}>
-        {/* Filter Sidebar — desktop */}
+        {/* Filter Sidebar — desktop (always visible) */}
         <FilterSidebar filters={filters} setFilters={setFilters} variantGroups={variantGroups} />
 
         {/* Product grid + pagination */}
-        <div className="flex-1">
-          <div
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-            style={{ gap: 20 }}
-          >
-            {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-
-          <PaginationBar
-            currentPage={pagination.page}
-            totalPages={pagination.totalPages}
-            total={total}
-            onPageChange={(page) => setFilters({ page })}
-          />
-        </div>
+        {renderProductGrid()}
       </div>
 
       {/* Reset link */}

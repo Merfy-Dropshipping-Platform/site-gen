@@ -10,10 +10,14 @@ export function PriceRangeFilter({ priceMin, priceMax, onChange }: PriceRangeFil
   const [min, setMin] = useState(priceMin?.toString() ?? '');
   const [max, setMax] = useState(priceMax?.toString() ?? '');
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const focusedRef = useRef(false);
 
+  // Sync from props only when inputs are NOT focused (avoid overwriting user typing)
   useEffect(() => {
-    setMin(priceMin?.toString() ?? '');
-    setMax(priceMax?.toString() ?? '');
+    if (!focusedRef.current) {
+      setMin(priceMin?.toString() ?? '');
+      setMax(priceMax?.toString() ?? '');
+    }
   }, [priceMin, priceMax]);
 
   const applyFilter = (newMin: string, newMax: string) => {
@@ -27,7 +31,7 @@ export function PriceRangeFilter({ priceMin, priceMax, onChange }: PriceRangeFil
       }
 
       onChange(minVal, maxVal);
-    }, 300);
+    }, 800);
   };
 
   const handleMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,6 +82,8 @@ export function PriceRangeFilter({ priceMin, priceMax, onChange }: PriceRangeFil
             inputMode="numeric"
             value={min}
             onChange={handleMinChange}
+            onFocus={() => { focusedRef.current = true; }}
+            onBlur={() => { focusedRef.current = false; }}
             className="font-[family-name:var(--font-body)]"
             style={{ ...inputStyle, paddingLeft: 45 }}
           />
@@ -101,6 +107,8 @@ export function PriceRangeFilter({ priceMin, priceMax, onChange }: PriceRangeFil
             inputMode="numeric"
             value={max}
             onChange={handleMaxChange}
+            onFocus={() => { focusedRef.current = true; }}
+            onBlur={() => { focusedRef.current = false; }}
             className="font-[family-name:var(--font-body)]"
             style={{ ...inputStyle, paddingLeft: 45 }}
           />

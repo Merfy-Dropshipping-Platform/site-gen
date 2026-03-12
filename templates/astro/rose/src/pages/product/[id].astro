@@ -75,11 +75,11 @@ const variantsJson = JSON.stringify(productVariants);
   <Header {...headerProps} />
 
   <main class="flex-1 w-full" style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));">
-    <div class="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-0 py-10">
+    <div class="max-w-[768px] mx-auto px-4 sm:px-6 py-[75px]">
 
       <div class="flex flex-col lg:flex-row gap-[50px]">
-        <!-- Image gallery (left column — 700px on desktop) -->
-        <div class="w-full lg:w-[700px] lg:shrink-0">
+        <!-- Image gallery (left column — 400px on desktop) -->
+        <div class="w-full lg:w-[400px] lg:shrink-0">
           <!-- Main image -->
           <div
             class="overflow-hidden w-full aspect-square flex items-center justify-center cursor-pointer"
@@ -124,27 +124,27 @@ const variantsJson = JSON.stringify(productVariants);
           )}
         </div>
 
-        <!-- Product info (right column — 570px on desktop) -->
-        <div class="flex flex-col w-full lg:w-[570px]" id="product-info">
+        <!-- Product info (right column — 318px on desktop) -->
+        <div class="flex flex-col w-full lg:w-[318px]" id="product-info">
           <!-- Brand name -->
           {brandName && (
-            <span class="font-body" style="font-size: 20px; line-height: 27px; color: rgb(var(--color-muted));">
+            <span class="font-body" style="font-size: 16px; line-height: 22px; color: rgb(var(--color-muted));">
               {brandName}
             </span>
           )}
 
           <!-- Product name -->
-          <h1 class="font-heading uppercase" style="font-size: 40px; line-height: 55px; color: rgb(var(--color-foreground)); margin: 0;">
+          <h1 class="font-body uppercase" style="font-size: 32px; line-height: 44px; color: rgb(var(--color-foreground)); margin: 0;">
             {product?.name}
           </h1>
 
           <!-- Price -->
           <div class="flex items-center gap-[15px] mt-[5px]">
-            <span class="font-body" id="price-display" style="font-size: 32px; line-height: 44px; color: rgb(var(--color-foreground));">
+            <span class="font-body" id="price-display" style="font-size: 24px; line-height: 33px; color: rgb(var(--color-foreground));">
               {product?.price ?? '0 ₽'}
             </span>
             {(product?.oldPrice) && (
-              <span class="font-body line-through" id="old-price-display" style="font-size: 20px; line-height: 27px; font-weight: 500; color: rgb(var(--color-muted));">
+              <span class="font-body line-through" id="old-price-display" style="font-size: 16px; line-height: 22px; font-weight: 500; color: rgb(var(--color-muted));">
                 {product.oldPrice}
               </span>
             )}
@@ -152,10 +152,10 @@ const variantsJson = JSON.stringify(productVariants);
 
           <!-- Variant groups -->
           {hasVariants && variantGroups.length > 0 && (
-            <div id="variants-container" data-variants={variantsJson} class="flex flex-col gap-6 mt-8">
+            <div id="variants-container" data-variants={variantsJson} class="flex flex-col gap-[25px] mt-[25px]">
               {variantGroups.map((group, gi) => (
                 <div class="flex flex-col gap-[15px]" data-group-key={group.key}>
-                  <span class="font-body" style="font-size: 24px; line-height: 33px; color: rgb(var(--color-muted));">
+                  <span class="font-body" style="font-size: 20px; line-height: 27px; color: rgb(var(--color-muted));">
                     {group.key}
                   </span>
                   <div class="flex flex-wrap gap-[10px]">
@@ -164,11 +164,11 @@ const variantsJson = JSON.stringify(productVariants);
                         type="button"
                         class="variant-pill font-body cursor-pointer transition-colors"
                         style={`
-                          height: 60px;
-                          padding: 10px 20px;
-                          font-size: 20px;
-                          line-height: 27px;
-                          border-radius: 10px;
+                          height: 40px;
+                          padding: 10px;
+                          font-size: 16px;
+                          line-height: 22px;
+                          border-radius: 8px;
                           ${!opt.available
                             ? 'background: rgba(153,153,153,0.05); border: 1px solid rgb(var(--color-muted)); color: rgb(var(--color-muted)); text-decoration: line-through; cursor: not-allowed;'
                             : gi === 0 && oi === 0
@@ -192,17 +192,17 @@ const variantsJson = JSON.stringify(productVariants);
 
           <!-- Fallback: flat variant list if no options map -->
           {hasVariants && variantGroups.length === 0 && (
-            <div class="flex flex-wrap gap-[10px] mt-8" id="variants-container-flat">
+            <div class="flex flex-wrap gap-[10px] mt-[25px]" id="variants-container-flat">
               {productVariants.map((v, i) => (
                 <button
                   type="button"
                   class="variant-btn font-body cursor-pointer transition-colors"
                   style={`
-                    height: 60px;
-                    padding: 10px 20px;
-                    font-size: 20px;
-                    line-height: 27px;
-                    border-radius: 10px;
+                    height: 40px;
+                    padding: 10px;
+                    font-size: 16px;
+                    line-height: 22px;
+                    border-radius: 8px;
                     ${!v.available
                       ? 'background: rgba(153,153,153,0.05); border: 1px solid rgb(var(--color-muted)); color: rgb(var(--color-muted)); text-decoration: line-through; cursor: not-allowed;'
                       : i === 0
@@ -222,30 +222,32 @@ const variantsJson = JSON.stringify(productVariants);
           )}
 
           <!-- Quantity -->
-          <div class="flex flex-col gap-[15px] mt-8">
-            <span class="font-body" style="font-size: 24px; line-height: 33px; color: rgb(var(--color-muted));">
+          <div class="flex flex-col gap-[15px] mt-[25px]">
+            <span class="font-body" style="font-size: 20px; line-height: 27px; color: rgb(var(--color-muted));">
               Количество
             </span>
-            <div class="flex items-center gap-[25px]">
-              <button type="button" id="qty-minus" class="w-[60px] h-[60px] flex items-center justify-center cursor-pointer" style="border-radius: 10px; border: 1px solid rgb(var(--color-foreground)); background: transparent; color: rgb(var(--color-foreground));">
-                <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M8 16H24" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            <div class="flex items-center gap-[5px]">
+              <button type="button" id="qty-minus" class="w-[40px] h-[40px] flex items-center justify-center cursor-pointer" style="border-radius: 8px; border: 1px solid rgb(var(--color-foreground)); background: rgb(var(--color-background)); color: rgb(var(--color-foreground));">
+                <svg width="20" height="20" viewBox="0 0 32 32" fill="none"><path d="M8 16H24" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
               </button>
-              <span id="qty-display" class="font-body" style="font-size: 24px; line-height: 33px; color: rgb(var(--color-foreground));">
-                1
-              </span>
-              <button type="button" id="qty-plus" class="w-[60px] h-[60px] flex items-center justify-center cursor-pointer" style="border-radius: 10px; border: 1px solid rgb(var(--color-foreground)); background: transparent; color: rgb(var(--color-foreground));">
-                <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M16 8V24M8 16H24" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+              <div class="w-[40px] h-[40px] flex items-center justify-center" style="border-radius: 10px; background: rgb(var(--color-background));">
+                <span id="qty-display" class="font-body" style="font-size: 16px; line-height: 22px; color: rgb(var(--color-foreground));">
+                  1
+                </span>
+              </div>
+              <button type="button" id="qty-plus" class="w-[40px] h-[40px] flex items-center justify-center cursor-pointer" style="border-radius: 8px; border: 1px solid rgb(var(--color-foreground)); background: rgb(var(--color-background)); color: rgb(var(--color-foreground));">
+                <svg width="20" height="20" viewBox="0 0 32 32" fill="none"><path d="M16 8V24M8 16H24" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
               </button>
             </div>
           </div>
 
           <!-- Cart buttons -->
-          <div class="flex flex-col gap-[25px] mt-8">
+          <div class="flex flex-col gap-[15px] mt-[25px]">
             <button
               type="button"
               id="add-to-cart-btn"
               class="w-full flex items-center justify-center font-body cursor-pointer transition-colors"
-              style="height: 80px; font-size: 24px; line-height: 33px; border-radius: 10px; background: transparent; border: 1px solid rgb(var(--color-foreground)); color: rgb(var(--color-foreground));"
+              style="height: 60px; font-size: 20px; line-height: 27px; border-radius: 10px; background: transparent; border: 1px solid rgb(var(--color-foreground)); color: rgb(var(--color-foreground));"
               data-product-id={product?.id}
               data-product-slug={product?.slug ?? product?.id}
             >
@@ -255,7 +257,7 @@ const variantsJson = JSON.stringify(productVariants);
               type="button"
               id="buy-now-btn"
               class="w-full flex items-center justify-center font-body cursor-pointer transition-colors border-0"
-              style="height: 80px; font-size: 24px; line-height: 33px; border-radius: 10px; background: rgb(var(--color-foreground)); color: rgb(var(--color-background));"
+              style="height: 60px; font-size: 20px; line-height: 27px; border-radius: 10px; background: rgb(var(--color-foreground)); color: rgb(var(--color-background));"
               data-product-id={product?.id}
               data-product-slug={product?.slug ?? product?.id}
             >
@@ -265,22 +267,22 @@ const variantsJson = JSON.stringify(productVariants);
 
           <!-- Description -->
           {product?.description && (
-            <div class="flex flex-col gap-[15px] mt-10">
-              <h2 class="font-heading uppercase" style="font-size: 40px; line-height: 55px; color: rgb(var(--color-foreground)); margin: 0;">
+            <div class="flex flex-col gap-[15px] mt-[25px]">
+              <h2 class="font-body uppercase" style="font-size: 20px; line-height: 27px; color: rgb(var(--color-foreground)); margin: 0;">
                 Описание
               </h2>
-              <p class="font-body whitespace-pre-line" style="font-size: 24px; line-height: 33px; color: rgb(var(--color-muted)); margin: 0;">
+              <p class="font-body whitespace-pre-line" style="font-size: 16px; line-height: 22px; color: rgb(var(--color-muted)); margin: 0;">
                 {product.description}
               </p>
             </div>
           )}
 
           <!-- Share -->
-          <button type="button" id="share-btn" class="flex items-center gap-[15px] mt-10 bg-transparent p-0 border-0 cursor-pointer hover:opacity-80 transition-opacity" style="color: rgb(var(--color-foreground));">
+          <button type="button" id="share-btn" class="flex items-center gap-[15px] mt-[25px] bg-transparent p-0 border-0 cursor-pointer hover:opacity-80 transition-opacity" style="color: rgb(var(--color-foreground));">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M9 6L12 3M12 3L15 6M12 3V13M7.00023 10C6.06835 10 5.60241 10 5.23486 10.1522C4.74481 10.3552 4.35523 10.7448 4.15224 11.2349C4 11.6024 4 12.0681 4 13V17.8C4 18.9201 4 19.4798 4.21799 19.9076C4.40973 20.2839 4.71547 20.5905 5.0918 20.7822C5.5192 21 6.07899 21 7.19691 21H16.8036C17.9215 21 18.4805 21 18.9079 20.7822C19.2842 20.5905 19.5905 20.2839 19.7822 19.9076C20 19.4802 20 18.921 20 17.8031V13C20 12.0681 19.9999 11.6024 19.8477 11.2349C19.6447 10.7448 19.2554 10.3552 18.7654 10.1522C18.3978 10 17.9319 10 17 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            <span class="font-body" style="font-size: 20px; line-height: 27px;">Поделиться</span>
+            <span class="font-body" style="font-size: 16px; line-height: 22px;">Поделиться</span>
           </button>
         </div>
       </div>

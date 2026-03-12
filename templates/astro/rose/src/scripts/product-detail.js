@@ -18,6 +18,7 @@
   var selectedVariantId = null;
   var allVariants = []; // Full variants array from data-variants
   var basePrice = 0; // Numeric base price for quantity calculation
+  var baseOldPrice = 0; // Numeric old (strikethrough) price
   var basePriceSuffix = ' ₽'; // Currency suffix
 
   // --- DOM refs ---
@@ -30,6 +31,7 @@
   var addToCartBtn = document.getElementById('add-to-cart-btn');
   var buyNowBtn = document.getElementById('buy-now-btn');
   var priceDisplay = document.getElementById('price-display');
+  var oldPriceDisplay = document.getElementById('old-price-display');
   var variantsContainer = document.getElementById('variants-container');
   var variantsContainerFlat = document.getElementById('variants-container-flat');
   var shareBtn = document.getElementById('share-btn');
@@ -50,15 +52,21 @@
   function updateDisplayedPrice() {
     if (!priceDisplay || !basePrice) return;
     priceDisplay.textContent = formatPrice(basePrice * quantity);
+    if (oldPriceDisplay && baseOldPrice) {
+      oldPriceDisplay.textContent = formatPrice(baseOldPrice * quantity);
+    }
   }
 
-  // Initialize base price from DOM
+  // Initialize base prices from DOM
   if (priceDisplay) {
     var match = priceDisplay.textContent.match(/([\d\s.,]+)\s*(₽|руб|р\.?)?/);
     if (match) {
       basePrice = parsePrice(match[1]);
       basePriceSuffix = match[2] ? ' ' + match[2] : ' ₽';
     }
+  }
+  if (oldPriceDisplay) {
+    baseOldPrice = parsePrice(oldPriceDisplay.textContent);
   }
 
   // --- Styles ---

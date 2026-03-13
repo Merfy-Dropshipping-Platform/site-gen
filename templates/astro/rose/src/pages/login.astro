@@ -1,0 +1,118 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import data from '../data/data.json';
+import siteConfig from '../data/site-config.json';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+const meta = data?.meta ?? {};
+const blocks = data?.content ?? [];
+const headerBlock = blocks.find((b: any) => b.type === 'Header');
+const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
+const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
+---
+<BaseLayout title={`Вход — ${meta?.title ?? 'Мой сайт'}`}>
+  <Header {...headerProps} />
+
+  <main class="flex-1 max-w-[440px] mx-auto px-5 py-10 w-full font-manrope">
+    <h1 class="text-3xl font-comfortaa text-center mb-8">Вход</h1>
+
+    <form id="login-form" class="space-y-5">
+      <div>
+        <label for="login-email" class="block mb-2 font-medium text-gray-700">Email <span class="text-required">*</span></label>
+        <input type="email" id="login-email" name="email" required placeholder="your@email.com" autocomplete="email"
+          class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none auth-input-focus">
+      </div>
+
+      <div>
+        <label for="login-password" class="block mb-2 font-medium text-gray-700">Пароль <span class="text-required">*</span></label>
+        <input type="password" id="login-password" name="password" required placeholder="Введите пароль" autocomplete="current-password"
+          class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none auth-input-focus">
+      </div>
+
+      <div class="text-red-600 text-sm text-center hidden" id="login-error"></div>
+
+      <button type="submit" class="btn-primary w-full py-4 px-8 rounded-xl font-medium transition-colors" id="btn-login">
+        <span class="loading hidden"><span class="loading-spinner inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></span>Вход...</span>
+        <span class="text">Войти</span>
+      </button>
+    </form>
+
+    <div class="text-center text-sm mt-6 space-y-2">
+      <p>
+        <a href="/reset-password" class="auth-link">Забыли пароль?</a>
+      </p>
+      <p class="text-gray-500">
+        Нет аккаунта? <a href="/register" class="auth-link font-medium">Зарегистрироваться</a>
+      </p>
+    </div>
+  </main>
+
+  <Footer {...footerProps} />
+
+  <script src="/scripts/customer-store.js"></script>
+  <script src="/scripts/customer-auth.js"></script>
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', function() {
+      // If already logged in, redirect
+      if (window.CustomerStore && window.CustomerStore.isLoggedIn()) {
+        var params = new URLSearchParams(window.location.search);
+        window.location.href = params.get('redirect') || '/account';
+        return;
+      }
+
+      var form = document.getElementById('login-form');
+      var errorEl = document.getElementById('login-error');
+      var btn = document.getElementById('btn-login');
+
+      form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        errorEl.classList.add('hidden');
+        errorEl.textContent = '';
+
+        var email = document.getElementById('login-email').value.trim();
+        var password = document.getElementById('login-password').value;
+
+        // Show loading
+        btn.querySelector('.loading').classList.remove('hidden');
+        btn.querySelector('.text').classList.add('hidden');
+        btn.disabled = true;
+
+        try {
+          var result = await window.CustomerAuth.login({ email: email, password: password });
+
+          if (result.success) {
+            var params = new URLSearchParams(window.location.search);
+            window.location.href = params.get('redirect') || '/account';
+          } else {
+            throw result;
+          }
+        } catch (err) {
+          var msg = 'Неверный email или пароль';
+          if (err.error === 'ACCOUNT_LOCKED' || err.code === 'RATE_LIMIT_EXCEEDED') {
+            msg = 'Слишком много попыток. Попробуйте через 30 минут';
+          } else if (err.message) {
+            msg = err.message;
+          }
+          errorEl.textContent = msg;
+          errorEl.classList.remove('hidden');
+        } finally {
+          btn.querySelector('.loading').classList.add('hidden');
+          btn.querySelector('.text').classList.remove('hidden');
+          btn.disabled = false;
+        }
+      });
+    });
+  </script>
+</BaseLayout>
+
+<style>
+  .btn-primary { background-color: rgb(var(--color-primary)); color: #fff; }
+  .btn-primary:hover { filter: brightness(0.85); }
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+  .text-required { color: rgb(var(--color-primary)); }
+  .auth-link { color: rgb(var(--color-primary)); }
+  .auth-link:hover { text-decoration: underline; }
+  .auth-input-focus:focus { border-color: rgb(var(--color-primary)); box-shadow: 0 0 0 3px rgb(var(--color-primary) / 0.15); }
+</style>

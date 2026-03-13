@@ -1,0 +1,90 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import data from '../../data/data.json';
+import siteConfig from '../../data/site-config.json';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import AccountNav from '../../components/AccountNav.astro';
+
+const meta = data?.meta ?? {};
+const blocks = data?.content ?? [];
+const headerBlock = blocks.find((b: any) => b.type === 'Header');
+const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
+const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
+---
+<BaseLayout title={`Личный кабинет — ${meta?.title ?? 'Мой сайт'}`}>
+  <Header {...headerProps} />
+
+  <main class="flex-1 max-w-[960px] mx-auto px-5 py-10 w-full font-manrope">
+    <h1 class="text-3xl font-comfortaa mb-8">Личный кабинет</h1>
+
+    <div class="md:flex md:gap-10">
+      <AccountNav />
+
+      <div class="flex-1">
+        <div class="bg-white p-6 rounded-2xl shadow-sm" id="account-welcome">
+          <p class="text-gray-500">Загрузка...</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <Footer {...footerProps} />
+
+  <script src="/scripts/customer-store.js"></script>
+  <script src="/scripts/customer-auth.js"></script>
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', async function() {
+      // Auth check
+      if (!window.CustomerStore || !window.CustomerStore.isLoggedIn()) {
+        window.location.href = '/login';
+        return;
+      }
+
+      var welcomeEl = document.getElementById('account-welcome');
+      var logoutBtn = document.getElementById('btn-logout');
+
+      // Load profile
+      try {
+        var result = await window.CustomerAuth.me();
+        if (result.success && result.data) {
+          var customer = result.data;
+          welcomeEl.innerHTML =
+            '<h2 class="text-xl font-comfortaa mb-2">Привет, ' + (customer.name || 'покупатель') + '!</h2>' +
+            '<p class="text-gray-500 mb-4">' + (customer.email || '') + '</p>' +
+            '<div class="flex flex-wrap gap-3">' +
+              '<a href="/account/orders" class="inline-flex items-center gap-2 py-2.5 px-5 rounded-xl text-sm font-medium transition-colors btn-primary">Мои заказы</a>' +
+              '<a href="/account/profile" class="inline-flex items-center gap-2 py-2.5 px-5 rounded-xl text-sm font-medium border border-gray-300 hover:bg-gray-50 transition-colors">Профиль</a>' +
+            '</div>';
+
+          // Show email verification banner if needed
+          if (!customer.emailVerified) {
+            var banner = document.getElementById('email-verify-banner');
+            if (banner) banner.classList.remove('hidden');
+          }
+        } else {
+          throw new Error('Failed to load profile');
+        }
+      } catch (err) {
+        // Token might be invalid
+        window.CustomerStore.clearToken();
+        window.location.href = '/login';
+        return;
+      }
+
+      // Logout handler
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', async function() {
+          await window.CustomerAuth.logout();
+          window.location.href = '/login';
+        });
+      }
+    });
+  </script>
+</BaseLayout>
+
+<style>
+  .btn-primary { background-color: rgb(var(--color-primary)); color: #fff; }
+  .btn-primary:hover { filter: brightness(0.85); }
+</style>

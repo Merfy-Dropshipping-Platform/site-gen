@@ -1,0 +1,190 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import data from '../../../data/data.json';
+import siteConfig from '../../../data/site-config.json';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import AccountNav from '../../../components/AccountNav.astro';
+
+const meta = data?.meta ?? {};
+const blocks = data?.content ?? [];
+const headerBlock = blocks.find((b: any) => b.type === 'Header');
+const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
+const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
+
+const { number } = Astro.params;
+---
+<BaseLayout title={`Заказ №${number} — ${meta?.title ?? 'Мой сайт'}`}>
+  <Header {...headerProps} />
+
+  <main class="flex-1 max-w-[960px] mx-auto px-5 py-10 w-full font-manrope">
+    <div class="mb-6">
+      <a href="/account/orders" class="text-sm auth-link">&larr; Назад к заказам</a>
+    </div>
+
+    <h1 class="text-3xl font-comfortaa mb-8" id="order-title">Заказ</h1>
+
+    <div class="md:flex md:gap-10">
+      <AccountNav active="orders" />
+
+      <div class="flex-1">
+        <div id="order-loading" class="text-gray-500 text-center py-10">Загрузка...</div>
+        <div id="order-not-found" class="hidden text-center py-10">
+          <p class="text-gray-400 text-lg">Заказ не найден</p>
+        </div>
+        <div id="order-detail" class="hidden space-y-6"></div>
+      </div>
+    </div>
+  </main>
+
+  <Footer {...footerProps} />
+
+  <script src="/scripts/customer-store.js"></script>
+  <script src="/scripts/customer-auth.js"></script>
+  <script is:inline define:vars={{ orderNumber: number }}>
+    document.addEventListener('DOMContentLoaded', async function() {
+      if (!window.CustomerStore || !window.CustomerStore.isLoggedIn()) {
+        window.location.href = '/login?redirect=/account/order/' + orderNumber;
+        return;
+      }
+
+      var loadingEl = document.getElementById('order-loading');
+      var notFoundEl = document.getElementById('order-not-found');
+      var detailEl = document.getElementById('order-detail');
+      var titleEl = document.getElementById('order-title');
+      var logoutBtn = document.getElementById('btn-logout');
+
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', async function() {
+          await window.CustomerAuth.logout();
+          window.location.href = '/login';
+        });
+      }
+
+      try {
+        var config = window.__MERFY_CONFIG__ || {};
+        var apiUrl = config.apiUrl || '';
+        var token = window.CustomerStore.getToken();
+
+        var resp = await fetch(apiUrl + '/store/orders/' + orderNumber, {
+          headers: { 'Authorization': 'Bearer ' + token },
+        });
+
+        loadingEl.classList.add('hidden');
+
+        if (resp.status === 404) {
+          notFoundEl.classList.remove('hidden');
+          return;
+        }
+
+        var result = await resp.json();
+        if (!result.success) {
+          notFoundEl.classList.remove('hidden');
+          return;
+        }
+
+        var order = result.data;
+        titleEl.textContent = 'Заказ №' + order.orderNumber;
+        detailEl.classList.remove('hidden');
+
+        var statusLabels = {
+          pending: 'Ожидает оплаты',
+          paid: 'Оплачен',
+          processing: 'В обработке',
+          sent: 'Отправлен',
+          delivered: 'Доставлен',
+          cancelled: 'Отменён',
+        };
+
+        var statusColors = {
+          pending: 'bg-yellow-100 text-yellow-800',
+          paid: 'bg-green-100 text-green-800',
+          processing: 'bg-blue-100 text-blue-800',
+          sent: 'bg-indigo-100 text-indigo-800',
+          delivered: 'bg-emerald-100 text-emerald-800',
+          cancelled: 'bg-red-100 text-red-800',
+        };
+
+        var date = new Date(order.createdAt).toLocaleDateString('ru-RU', {
+          day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
+        });
+        var total = order.totalCents ? (order.totalCents / 100).toLocaleString('ru-RU') + ' ₽' : '—';
+        var status = statusLabels[order.status] || order.status;
+        var statusClass = statusColors[order.status] || 'bg-gray-100 text-gray-800';
+
+        // Order info card
+        var infoHtml =
+          '<div class="bg-white p-5 rounded-2xl shadow-sm">' +
+            '<div class="flex items-center justify-between mb-4">' +
+              '<span class="text-sm text-gray-500">' + date + '</span>' +
+              '<span class="text-xs px-2.5 py-1 rounded-full font-medium ' + statusClass + '">' + status + '</span>' +
+            '</div>' +
+            '<div class="text-2xl font-comfortaa">' + total + '</div>' +
+          '</div>';
+
+        // Items table
+        var itemsHtml = '<div class="bg-white p-5 rounded-2xl shadow-sm"><h3 class="font-comfortaa text-lg mb-4">Товары</h3>';
+        if (order.items && order.items.length) {
+          itemsHtml += '<div class="divide-y">';
+          order.items.forEach(function(item) {
+            var itemTotal = item.priceCents ? (item.priceCents * item.quantity / 100).toLocaleString('ru-RU') + ' ₽' : '';
+            itemsHtml +=
+              '<div class="py-3 flex justify-between items-center">' +
+                '<div>' +
+                  '<p class="font-medium">' + (item.productName || 'Товар') + '</p>' +
+                  '<p class="text-sm text-gray-500">' + item.quantity + ' шт.' +
+                    (item.variantLabel ? ' · ' + item.variantLabel : '') +
+                  '</p>' +
+                '</div>' +
+                '<span class="font-medium">' + itemTotal + '</span>' +
+              '</div>';
+          });
+          itemsHtml += '</div>';
+        }
+        itemsHtml += '</div>';
+
+        // Shipping address
+        var addressHtml = '';
+        if (order.shippingAddress) {
+          var addr = order.shippingAddress;
+          var addrParts = [addr.city, addr.street, addr.building, addr.apartment ? 'кв. ' + addr.apartment : ''].filter(Boolean);
+          addressHtml =
+            '<div class="bg-white p-5 rounded-2xl shadow-sm">' +
+              '<h3 class="font-comfortaa text-lg mb-3">Адрес доставки</h3>' +
+              '<p class="text-gray-700">' + addrParts.join(', ') + '</p>' +
+              (addr.postalCode ? '<p class="text-gray-500 text-sm mt-1">' + addr.postalCode + '</p>' : '') +
+            '</div>';
+        }
+
+        // Status history
+        var historyHtml = '';
+        if (order.statusHistory && order.statusHistory.length) {
+          historyHtml = '<div class="bg-white p-5 rounded-2xl shadow-sm"><h3 class="font-comfortaa text-lg mb-3">История</h3><div class="space-y-2">';
+          order.statusHistory.forEach(function(h) {
+            var hDate = new Date(h.createdAt).toLocaleDateString('ru-RU', {
+              day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+            });
+            var hStatus = statusLabels[h.toStatus] || h.toStatus;
+            historyHtml +=
+              '<div class="flex items-center gap-3 text-sm">' +
+                '<span class="text-gray-400 w-[110px]">' + hDate + '</span>' +
+                '<span>' + hStatus + '</span>' +
+              '</div>';
+          });
+          historyHtml += '</div></div>';
+        }
+
+        detailEl.innerHTML = infoHtml + itemsHtml + addressHtml + historyHtml;
+      } catch (err) {
+        loadingEl.textContent = 'Не удалось загрузить заказ';
+        loadingEl.classList.remove('hidden');
+      }
+    });
+  </script>
+</BaseLayout>
+
+<style>
+  .auth-link { color: rgb(var(--color-primary)); }
+  .auth-link:hover { text-decoration: underline; }
+</style>

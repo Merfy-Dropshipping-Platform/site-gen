@@ -1,0 +1,159 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import data from '../../data/data.json';
+import siteConfig from '../../data/site-config.json';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import AccountNav from '../../components/AccountNav.astro';
+
+const meta = data?.meta ?? {};
+const blocks = data?.content ?? [];
+const headerBlock = blocks.find((b: any) => b.type === 'Header');
+const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
+const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
+---
+<BaseLayout title={`Мои заказы — ${meta?.title ?? 'Мой сайт'}`}>
+  <Header {...headerProps} />
+
+  <main class="flex-1 max-w-[960px] mx-auto px-5 py-10 w-full font-manrope">
+    <h1 class="text-3xl font-comfortaa mb-8">Мои заказы</h1>
+
+    <div class="md:flex md:gap-10">
+      <AccountNav active="orders" />
+
+      <div class="flex-1">
+        <div id="orders-loading" class="text-gray-500 text-center py-10">Загрузка...</div>
+        <div id="orders-empty" class="hidden text-center py-10">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-4 text-gray-300"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="8" x2="16" y1="10" y2="10"/><line x1="8" x2="12" y1="14" y2="14"/></svg>
+          <p class="text-gray-400 text-lg mb-4">У вас пока нет заказов</p>
+          <a href="/katalog" class="inline-block py-3 px-6 rounded-xl font-medium transition-colors btn-primary">Перейти в каталог</a>
+        </div>
+        <div id="orders-error" class="hidden text-center py-10">
+          <p class="text-red-400 text-lg mb-4">Не удалось загрузить заказы</p>
+          <button onclick="window.location.reload()" class="inline-block py-2.5 px-5 rounded-xl text-sm font-medium border border-gray-300 hover:bg-gray-50 transition-colors">Попробовать снова</button>
+        </div>
+        <div id="orders-list" class="hidden space-y-4"></div>
+      </div>
+    </div>
+  </main>
+
+  <Footer {...footerProps} />
+
+  <script src="/scripts/customer-store.js"></script>
+  <script src="/scripts/customer-auth.js"></script>
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', async function() {
+      if (!window.CustomerStore || !window.CustomerStore.isLoggedIn()) {
+        window.location.href = '/login?redirect=/account/orders';
+        return;
+      }
+
+      var loadingEl = document.getElementById('orders-loading');
+      var emptyEl = document.getElementById('orders-empty');
+      var errorEl = document.getElementById('orders-error');
+      var listEl = document.getElementById('orders-list');
+      var logoutBtn = document.getElementById('btn-logout');
+
+      // Logout handler
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', async function() {
+          await window.CustomerAuth.logout();
+          window.location.href = '/login';
+        });
+      }
+
+      try {
+        var config = window.__MERFY_CONFIG__ || {};
+        var apiUrl = config.apiUrl || '';
+        var storeId = config.shopId || config.storeId || config.siteId || '';
+        var token = window.CustomerStore.getToken();
+
+        var url = apiUrl + '/store/orders?skip=0&take=20';
+        if (storeId) url += '&store_id=' + encodeURIComponent(storeId);
+
+        var resp = await fetch(url, {
+          headers: { 'Authorization': 'Bearer ' + token },
+        });
+        var result = await resp.json();
+
+        loadingEl.classList.add('hidden');
+
+        if (!result.success || !result.data?.items?.length) {
+          emptyEl.classList.remove('hidden');
+          return;
+        }
+
+        var orders = result.data.items;
+        listEl.classList.remove('hidden');
+
+        var statusLabels = {
+          cart: 'Корзина',
+          pending: 'Ожидает оплаты',
+          paid: 'Оплачен',
+          processing: 'В сборке',
+          sent: 'Отправлен',
+          delivered: 'Доставлен',
+          cancelled: 'Отменён',
+          refunded: 'Возврат',
+        };
+
+        var statusColors = {
+          cart: 'bg-gray-100 text-gray-600',
+          pending: 'bg-yellow-100 text-yellow-800',
+          paid: 'bg-green-100 text-green-800',
+          processing: 'bg-blue-100 text-blue-800',
+          sent: 'bg-indigo-100 text-indigo-800',
+          delivered: 'bg-emerald-100 text-emerald-800',
+          cancelled: 'bg-red-100 text-red-800',
+          refunded: 'bg-orange-100 text-orange-800',
+        };
+
+        orders.forEach(function(order) {
+          var date = new Date(order.createdAt).toLocaleDateString('ru-RU', {
+            day: 'numeric', month: 'long', year: 'numeric',
+          });
+          var total = order.totalCents
+            ? (order.totalCents / 100).toLocaleString('ru-RU') + ' \u20BD'
+            : '\u2014';
+          var status = statusLabels[order.status] || order.status;
+          var statusClass = statusColors[order.status] || 'bg-gray-100 text-gray-800';
+
+          var itemsCount = order.itemsCount || (order.items ? order.items.length : 0);
+          var itemsText = '';
+          if (itemsCount > 0) {
+            var lastDigit = itemsCount % 10;
+            var lastTwoDigits = itemsCount % 100;
+            var word = 'товаров';
+            if (lastTwoDigits >= 11 && lastTwoDigits <= 19) word = 'товаров';
+            else if (lastDigit === 1) word = 'товар';
+            else if (lastDigit >= 2 && lastDigit <= 4) word = 'товара';
+            itemsText = itemsCount + ' ' + word;
+          }
+
+          var card = document.createElement('a');
+          card.href = '/account/order/' + order.orderNumber;
+          card.className = 'block bg-white p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow';
+          card.innerHTML =
+            '<div class="flex items-center justify-between mb-2">' +
+              '<span class="font-medium">\u0417\u0430\u043A\u0430\u0437 \u2116' + order.orderNumber + '</span>' +
+              '<span class="text-xs px-2.5 py-1 rounded-full font-medium ' + statusClass + '">' + status + '</span>' +
+            '</div>' +
+            '<div class="flex items-center justify-between text-sm text-gray-500">' +
+              '<span>' + date + (itemsText ? ' \u00B7 ' + itemsText : '') + '</span>' +
+              '<span class="font-medium text-gray-900">' + total + '</span>' +
+            '</div>';
+          listEl.appendChild(card);
+        });
+      } catch (err) {
+        loadingEl.classList.add('hidden');
+        errorEl.classList.remove('hidden');
+      }
+    });
+  </script>
+</BaseLayout>
+
+<style>
+  .btn-primary { background-color: rgb(var(--color-primary)); color: #fff; }
+  .btn-primary:hover { filter: brightness(0.85); }
+</style>

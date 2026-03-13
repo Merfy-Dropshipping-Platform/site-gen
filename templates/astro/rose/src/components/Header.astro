@@ -178,15 +178,16 @@ const isCenterLeft = logoPosition === 'center-left';
               </a>
             )}
             {showProfile && (
-              <button
+              <a
+                href="/login"
                 aria-label="Аккаунт"
-                class:list={['w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']}
+                class:list={['auth-nav-btn w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']}
                 style={textStyle}
               >
                 <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                 </svg>
-              </button>
+              </a>
             )}
           </div>
         </>
@@ -250,9 +251,9 @@ const isCenterLeft = logoPosition === 'center-left';
               </a>
             )}
             {showProfile && (
-              <button aria-label="Аккаунт" class:list={['w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']} style={textStyle}>
+              <a href="/login" aria-label="Аккаунт" class:list={['auth-nav-btn w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']} style={textStyle}>
                 <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-              </button>
+              </a>
             )}
           </div>
         </>
@@ -305,9 +306,9 @@ const isCenterLeft = logoPosition === 'center-left';
               </a>
             )}
             {showProfile && (
-              <button aria-label="Аккаунт" class:list={['w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']} style={textStyle}>
+              <a href="/login" aria-label="Аккаунт" class:list={['auth-nav-btn w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']} style={textStyle}>
                 <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-              </button>
+              </a>
             )}
           </div>
 
@@ -368,9 +369,9 @@ const isCenterLeft = logoPosition === 'center-left';
                 </a>
               )}
               {showProfile && (
-                <button aria-label="Аккаунт" class:list={['w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']} style={textStyle}>
+                <a href="/login" aria-label="Аккаунт" class:list={['auth-nav-btn w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']} style={textStyle}>
                   <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                </button>
+                </a>
               )}
             </div>
           </div>
@@ -454,6 +455,18 @@ const isCenterLeft = logoPosition === 'center-left';
           );
         })}
       </div>
+      {showProfile && (
+        <div class="border-t" style={menuText ? `border-color: ${menuText}15;` : undefined}>
+          <a
+            href="/login"
+            class:list={['auth-nav-btn px-4 py-4 text-base font-normal hover:opacity-80 transition-colors flex items-center gap-2 font-body', !menuText && 'text-theme-foreground']}
+            style={menuText ? `color: ${menuText};` : undefined}
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            <span class="auth-nav-label">Войти</span>
+          </a>
+        </div>
+      )}
     </nav>
   </div>
 </div>
@@ -602,6 +615,16 @@ const isCenterLeft = logoPosition === 'center-left';
         btn.textContent = 'В корзину';
         btn.disabled = false;
       }, 1500);
+    }
+  });
+
+  // Update auth nav links based on login state
+  document.querySelectorAll('.auth-nav-btn').forEach(link => {
+    if ((window as any).CustomerStore?.isLoggedIn()) {
+      link.setAttribute('href', '/account');
+      link.setAttribute('aria-label', 'Личный кабинет');
+      const label = link.querySelector('.auth-nav-label');
+      if (label) label.textContent = 'Личный кабинет';
     }
   });
 </script>

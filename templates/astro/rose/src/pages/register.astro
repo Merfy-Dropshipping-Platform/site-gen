@@ -1,0 +1,156 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import data from '../data/data.json';
+import siteConfig from '../data/site-config.json';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+const meta = data?.meta ?? {};
+const blocks = data?.content ?? [];
+const headerBlock = blocks.find((b: any) => b.type === 'Header');
+const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
+const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
+---
+<BaseLayout title={`Регистрация — ${meta?.title ?? 'Мой сайт'}`}>
+  <Header {...headerProps} />
+
+  <main class="flex-1 max-w-[440px] mx-auto px-5 py-10 w-full font-manrope">
+    <h1 class="text-3xl font-comfortaa text-center mb-8">Регистрация</h1>
+
+    <form id="register-form" class="space-y-5">
+      <div>
+        <label for="reg-email" class="block mb-2 font-medium text-gray-700">Email <span class="text-required">*</span></label>
+        <input type="email" id="reg-email" name="email" required placeholder="your@email.com" autocomplete="email"
+          class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none auth-input-focus">
+      </div>
+
+      <div>
+        <label for="reg-name" class="block mb-2 font-medium text-gray-700">Имя <span class="text-required">*</span></label>
+        <input type="text" id="reg-name" name="name" required placeholder="Иван Иванов" autocomplete="name"
+          class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none auth-input-focus">
+      </div>
+
+      <div>
+        <label for="reg-password" class="block mb-2 font-medium text-gray-700">Пароль <span class="text-required">*</span></label>
+        <input type="password" id="reg-password" name="password" required minlength="8" placeholder="Минимум 8 символов" autocomplete="new-password"
+          class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none auth-input-focus">
+      </div>
+
+      <div>
+        <label for="reg-confirm" class="block mb-2 font-medium text-gray-700">Подтвердите пароль <span class="text-required">*</span></label>
+        <input type="password" id="reg-confirm" name="confirmPassword" required minlength="8" placeholder="Повторите пароль" autocomplete="new-password"
+          class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none auth-input-focus">
+      </div>
+
+      <div class="text-red-600 text-sm text-center hidden" id="register-error"></div>
+
+      <button type="submit" class="btn-primary w-full py-4 px-8 rounded-xl font-medium transition-colors" id="btn-register">
+        <span class="loading hidden"><span class="loading-spinner inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></span>Регистрация...</span>
+        <span class="text">Создать аккаунт</span>
+      </button>
+    </form>
+
+    <p class="text-center text-gray-500 text-sm mt-6">
+      Уже есть аккаунт? <a href="/login" class="auth-link font-medium">Войти</a>
+    </p>
+  </main>
+
+  <Footer {...footerProps} />
+
+  <script src="/scripts/customer-store.js"></script>
+  <script src="/scripts/customer-auth.js"></script>
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', function() {
+      // If already logged in, redirect to account
+      if (window.CustomerStore && window.CustomerStore.isLoggedIn()) {
+        window.location.href = '/account';
+        return;
+      }
+
+      var form = document.getElementById('register-form');
+      var errorEl = document.getElementById('register-error');
+      var btn = document.getElementById('btn-register');
+
+      form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        errorEl.classList.add('hidden');
+        errorEl.textContent = '';
+
+        var email = document.getElementById('reg-email').value.trim();
+        var name = document.getElementById('reg-name').value.trim();
+        var password = document.getElementById('reg-password').value;
+        var confirm = document.getElementById('reg-confirm').value;
+
+        // Client-side validation
+        if (!email || !name || !password || !confirm) {
+          errorEl.textContent = 'Заполните все обязательные поля';
+          errorEl.classList.remove('hidden');
+          return;
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          errorEl.textContent = 'Введите корректный email';
+          errorEl.classList.remove('hidden');
+          return;
+        }
+
+        if (password.length < 8) {
+          errorEl.textContent = 'Пароль должен содержать минимум 8 символов';
+          errorEl.classList.remove('hidden');
+          return;
+        }
+
+        if (password !== confirm) {
+          errorEl.textContent = 'Пароли не совпадают';
+          errorEl.classList.remove('hidden');
+          return;
+        }
+
+        // Show loading
+        btn.querySelector('.loading').classList.remove('hidden');
+        btn.querySelector('.text').classList.add('hidden');
+        btn.disabled = true;
+
+        try {
+          var result = await window.CustomerAuth.register({ email: email, name: name, password: password });
+
+          if (result.success) {
+            window.location.href = '/account';
+          } else {
+            throw result;
+          }
+        } catch (err) {
+          var msg = 'Не удалось зарегистрироваться. Попробуйте позже.';
+          if (err.code === 'CUSTOMER_ALREADY_EXISTS' || err.error === 'EMAIL_EXISTS') {
+            msg = 'Пользователь с таким email уже зарегистрирован';
+          } else if (err.code === 'PASSWORD_TOO_SHORT') {
+            msg = 'Пароль должен содержать минимум 8 символов';
+          } else if (err.code === 'VALIDATION_ERROR') {
+            msg = err.error || 'Проверьте введённые данные';
+          } else if (err.error) {
+            msg = err.error;
+          } else if (err.message) {
+            msg = err.message;
+          }
+          errorEl.textContent = msg;
+          errorEl.classList.remove('hidden');
+        } finally {
+          btn.querySelector('.loading').classList.add('hidden');
+          btn.querySelector('.text').classList.remove('hidden');
+          btn.disabled = false;
+        }
+      });
+    });
+  </script>
+</BaseLayout>
+
+<style>
+  .btn-primary { background-color: rgb(var(--color-primary)); color: #fff; }
+  .btn-primary:hover { filter: brightness(0.85); }
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+  .text-required { color: rgb(var(--color-primary)); }
+  .auth-link { color: rgb(var(--color-primary)); }
+  .auth-link:hover { text-decoration: underline; }
+  .auth-input-focus:focus { border-color: rgb(var(--color-primary)); box-shadow: 0 0 0 3px rgb(var(--color-primary) / 0.15); }
+</style>

@@ -1008,6 +1008,13 @@ async function stageGenerate(
     ctx.revisionData as { pagesData?: Record<string, { content?: unknown[] }> }
   ).pagesData;
 
+  // Pages with full static implementations in theme templates — never overwrite with Puck stubs
+  const STATIC_TEMPLATE_PAGES = new Set([
+    "cart", "catalog", "checkout", "checkout/result",
+    "login", "register", "reset-password",
+    "account", "account/orders", "account/order", "account/profile",
+  ]);
+
   if (Array.isArray(revPages) && revPages.length > 0 && revPagesData) {
     for (const page of revPages) {
       const pageData = revPagesData[page.id];
@@ -1016,6 +1023,12 @@ async function stageGenerate(
       // Convert slug to filename: "/" → "index.astro", "/about" → "about.astro"
       const slug = (page.slug || "/").replace(/^\/+/, "");
       const fileName = slug === "" ? "index.astro" : `${slug}.astro`;
+
+      // Skip pages that have full static template implementations in the theme
+      if (ctx.templateId && ctx.templateId !== "default" && STATIC_TEMPLATE_PAGES.has(slug)) {
+        logger.log(`[generate] Skipping static template page: ${fileName} (theme: ${ctx.templateId})`);
+        continue;
+      }
 
       pages.push({
         fileName,

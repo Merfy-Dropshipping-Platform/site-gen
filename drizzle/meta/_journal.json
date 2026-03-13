@@ -64,6 +64,13 @@
       "when": 1772970000000,
       "tag": "0008_storage_slug",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1773442755569,
+      "tag": "0009_add_site_settings",
+      "breakpoints": true
     }
   ]
 }

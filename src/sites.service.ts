@@ -440,6 +440,10 @@ export class SitesDomainService {
     if ("branding" in (params.patch ?? {})) {
       updates.branding = params.patch.branding ?? null;
     }
+    // Handle settings (checkout config, etc.)
+    if ("settings" in (params.patch ?? {})) {
+      updates.settings = params.patch.settings ?? null;
+    }
 
     updates.updatedAt = new Date();
     if (params.actorUserId) updates.updatedBy = params.actorUserId;

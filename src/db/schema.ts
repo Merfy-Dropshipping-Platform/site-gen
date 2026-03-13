@@ -105,6 +105,10 @@ export const site = pgTable("site", {
     primaryColor?: string;
     secondaryColor?: string;
   }>(),
+  // Настройки магазина (checkout, регистрация и т.д.)
+  settings: jsonb("settings").$type<{
+    requireCustomerAuth?: boolean;
+  }>(),
 });
 
 export const siteDomain = pgTable("site_domain", {

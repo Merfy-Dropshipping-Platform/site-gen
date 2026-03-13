@@ -135,11 +135,19 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 
   <Footer {...footerProps} />
 
-  <script is:inline define:vars={{ shopId: meta?.shopId, apiUrl: meta?.apiUrl }}>
+  <script is:inline define:vars={{ shopId: meta?.shopId, apiUrl: meta?.apiUrl, requireCustomerAuth: !!(meta as any)?.requireCustomerAuth }}>
     window.__MERFY_CONFIG__ = {
       shopId: shopId || '',
       apiUrl: apiUrl || 'https://gateway.merfy.ru/api',
+      requireCustomerAuth: requireCustomerAuth || false,
     };
+    // T059: Checkout auth gate — redirect to login if requireCustomerAuth and not logged in
+    if (requireCustomerAuth) {
+      var token = localStorage.getItem('customer_token');
+      if (!token) {
+        window.location.href = '/login?redirect=/checkout';
+      }
+    }
   </script>
   <script type="module" src="/scripts/checkout.js"></script>
 </BaseLayout>

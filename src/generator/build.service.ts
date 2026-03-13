@@ -96,6 +96,8 @@ export interface BuildContext {
   islandsEnabled: boolean;
   /** Branding overrides (logo, colors) from site table */
   branding?: { logoUrl?: string; primaryColor?: string; secondaryColor?: string };
+  /** Site settings (checkout config, etc.) */
+  settings?: { requireCustomerAuth?: boolean };
 }
 
 /** Dependencies injected into the pipeline */
@@ -809,6 +811,7 @@ async function stageMerge(
       storageSlug: schema.site.storageSlug,
       islandsEnabled: schema.site.islandsEnabled,
       branding: schema.site.branding,
+      settings: schema.site.settings,
       templateId: schema.theme.templateId,
     })
     .from(schema.site)
@@ -824,6 +827,7 @@ async function stageMerge(
   ctx.storageSlug = siteRow.storageSlug;
   ctx.islandsEnabled = siteRow.islandsEnabled ?? false;
   ctx.branding = (siteRow.branding as BuildContext["branding"]) ?? undefined;
+  ctx.settings = (siteRow.settings as BuildContext["settings"]) ?? undefined;
 
   // Load or create revision
   let revisionId: string | null = null;
@@ -1250,6 +1254,7 @@ async function stageGenerate(
           ...ctx.revisionMeta,
           shopId: ctx.siteId,
           apiUrl,
+          ...(ctx.settings?.requireCustomerAuth ? { requireCustomerAuth: true } : {}),
         },
       },
     },

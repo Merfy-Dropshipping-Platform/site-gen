@@ -119,7 +119,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
         var result = await window.CustomerAuth.me();
         if (!result.success) throw new Error('Failed');
 
-        var c = result.data;
+        var c = result.data.customer || result.data;
         loadingEl.classList.add('hidden');
         formEl.classList.remove('hidden');
 

@@ -49,7 +49,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
       try {
         var result = await window.CustomerAuth.me();
         if (result.success && result.data) {
-          var customer = result.data;
+          var customer = result.data.customer || result.data;
           welcomeEl.innerHTML =
             '<h2 class="text-xl font-comfortaa mb-2">Привет, ' + (customer.name || 'покупатель') + '!</h2>' +
             '<p class="text-gray-500 mb-4">' + (customer.email || '') + '</p>' +

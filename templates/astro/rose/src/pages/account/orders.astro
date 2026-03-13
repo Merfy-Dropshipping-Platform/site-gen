@@ -63,6 +63,28 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
         });
       }
 
+      var statusLabels = {
+        cart: '\u041a\u043e\u0440\u0437\u0438\u043d\u0430',
+        pending: '\u041e\u0436\u0438\u0434\u0430\u0435\u0442 \u043e\u043f\u043b\u0430\u0442\u044b',
+        paid: '\u041e\u043f\u043b\u0430\u0447\u0435\u043d',
+        processing: '\u0412 \u0441\u0431\u043e\u0440\u043a\u0435',
+        sent: '\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d',
+        delivered: '\u0414\u043e\u0441\u0442\u0430\u0432\u043b\u0435\u043d',
+        cancelled: '\u041e\u0442\u043c\u0435\u043d\u0451\u043d',
+        refunded: '\u0412\u043e\u0437\u0432\u0440\u0430\u0442',
+      };
+
+      var statusColors = {
+        cart: 'bg-gray-100 text-gray-600',
+        pending: 'bg-yellow-100 text-yellow-800',
+        paid: 'bg-green-100 text-green-800',
+        processing: 'bg-blue-100 text-blue-800',
+        sent: 'bg-indigo-100 text-indigo-800',
+        delivered: 'bg-emerald-100 text-emerald-800',
+        cancelled: 'bg-red-100 text-red-800',
+        refunded: 'bg-orange-100 text-orange-800',
+      };
+
       try {
         var config = window.__MERFY_CONFIG__ || {};
         var apiUrl = config.apiUrl || '';
@@ -87,34 +109,12 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
         var orders = result.data.items;
         listEl.classList.remove('hidden');
 
-        var statusLabels = {
-          cart: 'Корзина',
-          pending: 'Ожидает оплаты',
-          paid: 'Оплачен',
-          processing: 'В сборке',
-          sent: 'Отправлен',
-          delivered: 'Доставлен',
-          cancelled: 'Отменён',
-          refunded: 'Возврат',
-        };
-
-        var statusColors = {
-          cart: 'bg-gray-100 text-gray-600',
-          pending: 'bg-yellow-100 text-yellow-800',
-          paid: 'bg-green-100 text-green-800',
-          processing: 'bg-blue-100 text-blue-800',
-          sent: 'bg-indigo-100 text-indigo-800',
-          delivered: 'bg-emerald-100 text-emerald-800',
-          cancelled: 'bg-red-100 text-red-800',
-          refunded: 'bg-orange-100 text-orange-800',
-        };
-
         orders.forEach(function(order) {
           var date = new Date(order.createdAt).toLocaleDateString('ru-RU', {
             day: 'numeric', month: 'long', year: 'numeric',
           });
           var total = order.totalCents
-            ? (order.totalCents / 100).toLocaleString('ru-RU') + ' \u20BD'
+            ? (order.totalCents / 100).toLocaleString('ru-RU') + ' \u20bd'
             : '\u2014';
           var status = statusLabels[order.status] || order.status;
           var statusClass = statusColors[order.status] || 'bg-gray-100 text-gray-800';
@@ -123,24 +123,24 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
           var itemsText = '';
           if (itemsCount > 0) {
             var lastDigit = itemsCount % 10;
-            var lastTwoDigits = itemsCount % 100;
-            var word = 'товаров';
-            if (lastTwoDigits >= 11 && lastTwoDigits <= 19) word = 'товаров';
-            else if (lastDigit === 1) word = 'товар';
-            else if (lastDigit >= 2 && lastDigit <= 4) word = 'товара';
+            var lastTwo = itemsCount % 100;
+            var word = '\u0442\u043e\u0432\u0430\u0440\u043e\u0432';
+            if (lastTwo >= 11 && lastTwo <= 19) word = '\u0442\u043e\u0432\u0430\u0440\u043e\u0432';
+            else if (lastDigit === 1) word = '\u0442\u043e\u0432\u0430\u0440';
+            else if (lastDigit >= 2 && lastDigit <= 4) word = '\u0442\u043e\u0432\u0430\u0440\u0430';
             itemsText = itemsCount + ' ' + word;
           }
 
           var card = document.createElement('a');
-          card.href = '/account/order/' + order.orderNumber;
+          card.href = '/account/order?n=' + encodeURIComponent(order.orderNumber);
           card.className = 'block bg-white p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow';
           card.innerHTML =
             '<div class="flex items-center justify-between mb-2">' +
-              '<span class="font-medium">\u0417\u0430\u043A\u0430\u0437 \u2116' + order.orderNumber + '</span>' +
+              '<span class="font-medium">\u0417\u0430\u043a\u0430\u0437 \u2116' + order.orderNumber + '</span>' +
               '<span class="text-xs px-2.5 py-1 rounded-full font-medium ' + statusClass + '">' + status + '</span>' +
             '</div>' +
             '<div class="flex items-center justify-between text-sm text-gray-500">' +
-              '<span>' + date + (itemsText ? ' \u00B7 ' + itemsText : '') + '</span>' +
+              '<span>' + date + (itemsText ? ' \u00b7 ' + itemsText : '') + '</span>' +
               '<span class="font-medium text-gray-900">' + total + '</span>' +
             '</div>';
           listEl.appendChild(card);

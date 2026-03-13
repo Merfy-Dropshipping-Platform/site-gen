@@ -1,0 +1,282 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import data from '../../data/data.json';
+import siteConfig from '../../data/site-config.json';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import AccountNav from '../../components/AccountNav.astro';
+
+const meta = data?.meta ?? {};
+const blocks = data?.content ?? [];
+const headerBlock = blocks.find((b: any) => b.type === 'Header');
+const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
+const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
+---
+<BaseLayout title={`Заказ — ${meta?.title ?? 'Мой сайт'}`}>
+  <Header {...headerProps} />
+
+  <main class="flex-1 max-w-[960px] mx-auto px-5 py-10 w-full font-manrope">
+    <div class="mb-6">
+      <a href="/account/orders" class="text-sm auth-link inline-flex items-center gap-1">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        Мои заказы
+      </a>
+    </div>
+
+    <h1 class="text-3xl font-comfortaa mb-8" id="order-title">Заказ</h1>
+
+    <div class="md:flex md:gap-10">
+      <AccountNav active="orders" />
+
+      <div class="flex-1">
+        <div id="order-loading" class="text-gray-500 text-center py-10">Загрузка...</div>
+        <div id="order-not-found" class="hidden text-center py-10">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-4 text-gray-300"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+          <p class="text-gray-400 text-lg mb-2">Заказ не найден</p>
+          <a href="/account/orders" class="text-sm auth-link">Вернуться к заказам</a>
+        </div>
+        <div id="order-detail" class="hidden space-y-6"></div>
+      </div>
+    </div>
+  </main>
+
+  <Footer {...footerProps} />
+
+  <script src="/scripts/customer-store.js"></script>
+  <script src="/scripts/customer-auth.js"></script>
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', async function() {
+      if (!window.CustomerStore || !window.CustomerStore.isLoggedIn()) {
+        var currentPath = window.location.pathname + window.location.search;
+        window.location.href = '/login?redirect=' + encodeURIComponent(currentPath);
+        return;
+      }
+
+      // Extract order number from query param ?n=ORDER_NUMBER
+      var params = new URLSearchParams(window.location.search);
+      var orderNumber = params.get('n');
+
+      if (!orderNumber) {
+        document.getElementById('order-loading').classList.add('hidden');
+        document.getElementById('order-not-found').classList.remove('hidden');
+        return;
+      }
+
+      var loadingEl = document.getElementById('order-loading');
+      var notFoundEl = document.getElementById('order-not-found');
+      var detailEl = document.getElementById('order-detail');
+      var titleEl = document.getElementById('order-title');
+      var logoutBtn = document.getElementById('btn-logout');
+
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', async function() {
+          await window.CustomerAuth.logout();
+          window.location.href = '/login';
+        });
+      }
+
+      var statusLabels = {
+        cart: '\u041a\u043e\u0440\u0437\u0438\u043d\u0430',
+        pending: '\u041e\u0436\u0438\u0434\u0430\u0435\u0442 \u043e\u043f\u043b\u0430\u0442\u044b',
+        paid: '\u041e\u043f\u043b\u0430\u0447\u0435\u043d',
+        processing: '\u0412 \u0441\u0431\u043e\u0440\u043a\u0435',
+        sent: '\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d',
+        delivered: '\u0414\u043e\u0441\u0442\u0430\u0432\u043b\u0435\u043d',
+        cancelled: '\u041e\u0442\u043c\u0435\u043d\u0451\u043d',
+        refunded: '\u0412\u043e\u0437\u0432\u0440\u0430\u0442',
+      };
+
+      var statusColors = {
+        cart: 'bg-gray-100 text-gray-600',
+        pending: 'bg-yellow-100 text-yellow-800',
+        paid: 'bg-green-100 text-green-800',
+        processing: 'bg-blue-100 text-blue-800',
+        sent: 'bg-indigo-100 text-indigo-800',
+        delivered: 'bg-emerald-100 text-emerald-800',
+        cancelled: 'bg-red-100 text-red-800',
+        refunded: 'bg-orange-100 text-orange-800',
+      };
+
+      function formatPrice(cents) {
+        if (!cents && cents !== 0) return '\u2014';
+        return (cents / 100).toLocaleString('ru-RU') + ' \u20bd';
+      }
+
+      try {
+        var config = window.__MERFY_CONFIG__ || {};
+        var apiUrl = config.apiUrl || '';
+        var storeId = config.shopId || config.storeId || config.siteId || '';
+        var token = window.CustomerStore.getToken();
+
+        var url = apiUrl + '/store/orders/' + encodeURIComponent(orderNumber);
+        if (storeId) url += '?store_id=' + encodeURIComponent(storeId);
+
+        var resp = await fetch(url, {
+          headers: { 'Authorization': 'Bearer ' + token },
+        });
+
+        loadingEl.classList.add('hidden');
+
+        if (resp.status === 404) {
+          notFoundEl.classList.remove('hidden');
+          return;
+        }
+
+        var result = await resp.json();
+        if (!result.success || !result.data) {
+          notFoundEl.classList.remove('hidden');
+          return;
+        }
+
+        var order = result.data;
+        titleEl.textContent = '\u0417\u0430\u043a\u0430\u0437 \u2116' + order.orderNumber;
+        detailEl.classList.remove('hidden');
+
+        var date = new Date(order.createdAt).toLocaleDateString('ru-RU', {
+          day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
+        });
+        var status = statusLabels[order.status] || order.status;
+        var statusClass = statusColors[order.status] || 'bg-gray-100 text-gray-800';
+
+        // Order info card
+        var infoHtml =
+          '<div class="bg-white p-5 rounded-2xl shadow-sm">' +
+            '<div class="flex items-center justify-between mb-4">' +
+              '<span class="text-sm text-gray-500">' + date + '</span>' +
+              '<span class="text-xs px-2.5 py-1 rounded-full font-medium ' + statusClass + '">' + status + '</span>' +
+            '</div>' +
+            '<div class="text-2xl font-comfortaa">' + formatPrice(order.totalCents) + '</div>' +
+          '</div>';
+
+        // Items table
+        var itemsHtml = '<div class="bg-white p-5 rounded-2xl shadow-sm">' +
+          '<h3 class="font-comfortaa text-lg mb-4">\u0422\u043e\u0432\u0430\u0440\u044b</h3>';
+        if (order.items && order.items.length) {
+          itemsHtml += '<div class="divide-y">';
+          order.items.forEach(function(item) {
+            var itemTotal = item.priceCents ? formatPrice(item.priceCents * item.quantity) : '';
+            var itemPrice = item.priceCents ? formatPrice(item.priceCents) : '';
+            var imgHtml = '';
+            if (item.imageUrl) {
+              imgHtml = '<img src="' + item.imageUrl + '" alt="" class="w-14 h-14 object-cover rounded-lg shrink-0" loading="lazy">';
+            } else {
+              imgHtml = '<div class="w-14 h-14 bg-gray-100 rounded-lg shrink-0 flex items-center justify-center">' +
+                '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-gray-300">' +
+                '<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/>' +
+                '<path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div>';
+            }
+            itemsHtml +=
+              '<div class="py-3 flex gap-3 items-center">' +
+                imgHtml +
+                '<div class="flex-1 min-w-0">' +
+                  '<p class="font-medium truncate">' + (item.productName || '\u0422\u043e\u0432\u0430\u0440') + '</p>' +
+                  '<p class="text-sm text-gray-500">' +
+                    item.quantity + ' \u0448\u0442.' +
+                    (item.variantLabel ? ' \u00b7 ' + item.variantLabel : '') +
+                    (item.priceCents ? ' \u00b7 ' + itemPrice + '/\u0448\u0442.' : '') +
+                  '</p>' +
+                '</div>' +
+                '<span class="font-medium shrink-0">' + itemTotal + '</span>' +
+              '</div>';
+          });
+          itemsHtml += '</div>';
+        } else {
+          itemsHtml += '<p class="text-gray-400 text-sm">\u041d\u0435\u0442 \u0434\u0430\u043d\u043d\u044b\u0445 \u043e \u0442\u043e\u0432\u0430\u0440\u0430\u0445</p>';
+        }
+        itemsHtml += '</div>';
+
+        // Order totals breakdown
+        var totalsHtml = '<div class="bg-white p-5 rounded-2xl shadow-sm">' +
+          '<h3 class="font-comfortaa text-lg mb-4">\u0418\u0442\u043e\u0433\u043e</h3>' +
+          '<div class="space-y-2 text-sm">';
+
+        if (order.subtotalCents != null) {
+          totalsHtml += '<div class="flex justify-between"><span class="text-gray-500">\u041f\u043e\u0434\u0438\u0442\u043e\u0433</span><span>' + formatPrice(order.subtotalCents) + '</span></div>';
+        }
+        if (order.deliveryCents != null && order.deliveryCents > 0) {
+          totalsHtml += '<div class="flex justify-between"><span class="text-gray-500">\u0414\u043e\u0441\u0442\u0430\u0432\u043a\u0430</span><span>' + formatPrice(order.deliveryCents) + '</span></div>';
+        }
+        if (order.discountCents != null && order.discountCents > 0) {
+          totalsHtml += '<div class="flex justify-between"><span class="text-gray-500">\u0421\u043a\u0438\u0434\u043a\u0430</span><span class="text-green-600">\u2212' + formatPrice(order.discountCents) + '</span></div>';
+        }
+
+        totalsHtml += '<div class="flex justify-between pt-2 border-t font-medium text-base">' +
+          '<span>\u0418\u0442\u043e\u0433\u043e</span><span>' + formatPrice(order.totalCents) + '</span></div>';
+        totalsHtml += '</div></div>';
+
+        // Customer info
+        var customerHtml = '';
+        if (order.customerName || order.customerEmail || order.customerPhone) {
+          customerHtml = '<div class="bg-white p-5 rounded-2xl shadow-sm">' +
+            '<h3 class="font-comfortaa text-lg mb-3">\u041f\u043e\u043a\u0443\u043f\u0430\u0442\u0435\u043b\u044c</h3>' +
+            '<div class="space-y-1 text-sm">';
+          if (order.customerName) {
+            customerHtml += '<p class="text-gray-700">' + order.customerName + '</p>';
+          }
+          if (order.customerEmail) {
+            customerHtml += '<p class="text-gray-500">' + order.customerEmail + '</p>';
+          }
+          if (order.customerPhone) {
+            customerHtml += '<p class="text-gray-500">' + order.customerPhone + '</p>';
+          }
+          customerHtml += '</div></div>';
+        }
+
+        // Shipping address
+        var addressHtml = '';
+        if (order.shippingAddress) {
+          var addr = order.shippingAddress;
+          var addrParts = [addr.city, addr.street, addr.building, addr.apartment ? '\u043a\u0432. ' + addr.apartment : ''].filter(Boolean);
+          if (addrParts.length > 0) {
+            addressHtml =
+              '<div class="bg-white p-5 rounded-2xl shadow-sm">' +
+                '<h3 class="font-comfortaa text-lg mb-3">\u0410\u0434\u0440\u0435\u0441 \u0434\u043e\u0441\u0442\u0430\u0432\u043a\u0438</h3>' +
+                '<p class="text-gray-700 text-sm">' + addrParts.join(', ') + '</p>' +
+                (addr.postalCode ? '<p class="text-gray-500 text-sm mt-1">' + addr.postalCode + '</p>' : '') +
+              '</div>';
+          }
+        }
+
+        // Status history timeline
+        var historyHtml = '';
+        if (order.statusHistory && order.statusHistory.length) {
+          historyHtml = '<div class="bg-white p-5 rounded-2xl shadow-sm">' +
+            '<h3 class="font-comfortaa text-lg mb-4">\u0418\u0441\u0442\u043e\u0440\u0438\u044f</h3>' +
+            '<div class="relative pl-6">' +
+            '<div class="absolute left-[7px] top-2 bottom-2 w-px bg-gray-200"></div>';
+
+          order.statusHistory.forEach(function(h, i) {
+            var hDate = new Date(h.createdAt).toLocaleDateString('ru-RU', {
+              day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+            });
+            var hStatus = statusLabels[h.toStatus] || h.toStatus;
+            var isLast = i === order.statusHistory.length - 1;
+            var dotColor = isLast ? 'bg-[rgb(var(--color-primary))]' : 'bg-gray-300';
+
+            historyHtml +=
+              '<div class="relative flex items-start gap-3 pb-4">' +
+                '<div class="absolute left-[-20px] top-1.5 w-3 h-3 rounded-full ' + dotColor + '"></div>' +
+                '<div>' +
+                  '<p class="text-sm font-medium">' + hStatus + '</p>' +
+                  '<p class="text-xs text-gray-400">' + hDate + '</p>' +
+                '</div>' +
+              '</div>';
+          });
+
+          historyHtml += '</div></div>';
+        }
+
+        detailEl.innerHTML = infoHtml + itemsHtml + totalsHtml + customerHtml + addressHtml + historyHtml;
+      } catch (err) {
+        loadingEl.textContent = '\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0437\u0430\u043a\u0430\u0437';
+        loadingEl.classList.remove('hidden');
+      }
+    });
+  </script>
+</BaseLayout>
+
+<style>
+  .auth-link { color: rgb(var(--color-primary)); }
+  .auth-link:hover { text-decoration: underline; }
+</style>

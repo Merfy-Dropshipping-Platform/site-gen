@@ -42,6 +42,7 @@ export const roseRegistry: Record<string, ComponentRegistryEntry> = {
   ),
   Publications: staticComponent("Publications", "Publications.astro"),
   Product: staticComponent("Product", "Product.astro"),
+  CartSection: staticComponent("CartSection", "CartSection.astro"),
 };
 
 /**

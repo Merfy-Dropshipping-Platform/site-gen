@@ -384,14 +384,8 @@ function initDrawer() {
     }
   });
 
-  // Cart icon click toggles drawer (intercept header cart link)
-  document.addEventListener('click', function(e) {
-    var cartLink = e.target.closest('#header-cart-link');
-    if (cartLink) {
-      e.preventDefault();
-      openDrawer();
-    }
-  });
+  // Cart icon navigates to /cart page (native <a href="/cart"> link)
+  // Drawer interception removed — cart is a full page now
 }
 
 // Init when DOM is ready

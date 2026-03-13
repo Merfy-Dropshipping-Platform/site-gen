@@ -21,6 +21,7 @@ export enum BulkOperationType {
   DEPLOY = "deploy",
   DELETE = "delete",
   EXPORT = "export",
+  REBUILD = "rebuild",
 }
 
 /**
@@ -306,4 +307,17 @@ export class BulkExportDto extends BulkOperationBaseDto {
   @ValidateNested()
   @Type(() => ExportParams)
   params!: ExportParams;
+}
+
+/**
+ * Filter for bulk rebuild — queries sites by themeId and/or status
+ */
+export class BulkRebuildFilterDto {
+  @IsOptional()
+  @IsString()
+  themeId?: string;
+
+  @IsOptional()
+  @IsString()
+  status?: string;
 }

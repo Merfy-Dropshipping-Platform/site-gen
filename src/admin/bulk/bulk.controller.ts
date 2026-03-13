@@ -9,6 +9,7 @@ import type {
   BulkDeployDto,
   BulkDeleteDto,
   BulkExportDto,
+  BulkRebuildFilterDto,
 } from "./bulk.dto";
 
 @Controller()
@@ -76,5 +77,14 @@ export class BulkOperationsController {
   @MessagePattern("admin.bulk.sites.export")
   async bulkExport(@Payload() data: BulkExportDto) {
     return this.bulkService.bulkExport(data);
+  }
+
+  /**
+   * Bulk rebuild sites matching a filter (themeId, status)
+   * RPC: sites.bulk_rebuild
+   */
+  @MessagePattern("sites.bulk_rebuild")
+  async bulkRebuild(@Payload() data: BulkRebuildFilterDto) {
+    return this.bulkService.bulkRebuild(data);
   }
 }

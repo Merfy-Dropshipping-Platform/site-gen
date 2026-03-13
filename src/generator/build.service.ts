@@ -743,6 +743,12 @@ export async function runBuildPipeline(
     await stageAstroBuild(ctx);
     time("astro_build", t);
 
+    // === Stage 4.5: VALIDATE BUILD OUTPUT ===
+    const validationResult = await validateBuildOutput(ctx);
+    if (validationResult) {
+      emitProgress(deps, ctx, "astro_build", `Build complete. ${validationResult}`);
+    }
+
     // === Stage 5: ZIP ===
     t = Date.now();
     emitProgress(deps, ctx, "zip", "Packaging artifact");
@@ -1574,6 +1580,49 @@ async function stageAstroBuild(ctx: BuildContext): Promise<void> {
   if (!distExists) {
     throw new Error("astro build did not produce a dist/ directory");
   }
+}
+
+/**
+ * Post-build validation: check that special pages contain expected markers.
+ * Returns a summary string if there are warnings, or null if all OK / skipped.
+ * Never throws — validation issues are warnings only, they do not block the build.
+ */
+async function validateBuildOutput(ctx: BuildContext): Promise<string | null> {
+  // Only validate themed builds (rose, etc.), skip "default" or unset templates
+  if (!ctx.templateId || ctx.templateId === "default") {
+    return null;
+  }
+
+  const markers: Array<{ page: string; file: string; marker: string }> = [
+    { page: "/cart", file: "cart/index.html", marker: "cart-page-content" },
+    { page: "/catalog", file: "catalog/index.html", marker: "catalog-page" },
+    { page: "/checkout", file: "checkout/index.html", marker: "<main" },
+  ];
+
+  const warnings: string[] = [];
+
+  for (const { page, file, marker } of markers) {
+    const filePath = path.join(ctx.distDir, file);
+    try {
+      const html = await fs.readFile(filePath, "utf8");
+      if (!html.includes(marker)) {
+        const msg = `[validate] ${page}: missing expected marker ${marker}`;
+        logger.warn(msg);
+        warnings.push(msg);
+      }
+    } catch {
+      const msg = `[validate] ${page}: file not found (${file})`;
+      logger.warn(msg);
+      warnings.push(msg);
+    }
+  }
+
+  if (warnings.length === 0) {
+    logger.log("[validate] All special pages passed marker checks");
+    return null;
+  }
+
+  return `Validation warnings: ${warnings.join("; ")}`;
 }
 
 /**

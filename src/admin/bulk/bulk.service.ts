@@ -28,9 +28,11 @@ import {
   type BulkDeployDto,
   type BulkDeleteDto,
   type BulkExportDto,
+  type BulkRebuildFilterDto,
   type BulkOperationResult,
   type BulkItemResult,
 } from "./bulk.dto";
+import { SiteGeneratorService } from "../../generator/generator.service";
 
 type SiteRow = typeof schema.site.$inferSelect;
 type SiteDomainRow = typeof schema.siteDomain.$inferSelect;
@@ -51,6 +53,7 @@ export class BulkOperationsService {
     private readonly coolifyClient: ClientProxy,
     @Inject(DOMAIN_RMQ_SERVICE)
     private readonly domainClient: ClientProxy,
+    private readonly generator: SiteGeneratorService,
   ) {}
 
   /**
@@ -1165,5 +1168,52 @@ export class BulkOperationsService {
       this.logger.error(`Failed to emit event ${event}: ${error}`);
       // Don't throw - events are best-effort
     }
+  }
+
+  /**
+   * Bulk rebuild sites matching filter (themeId, status).
+   * Runs builds sequentially to avoid overwhelming the build pipeline.
+   */
+  async bulkRebuild(filter: { themeId?: string; status?: string }): Promise<BulkOperationResult> {
+    this.logger.log(`[AUDIT] Bulk rebuild: filter=${JSON.stringify(filter)}`);
+
+    const conditions: ReturnType<typeof eq>[] = [];
+    if (filter.themeId) {
+      conditions.push(eq(schema.site.themeId, filter.themeId));
+    }
+    const statusFilter = (filter.status ?? SiteStatus.PUBLISHED) as SiteStatus;
+    conditions.push(eq(schema.site.status, statusFilter));
+    conditions.push(isNull(schema.site.deletedAt));
+
+    const sites = await this.db
+      .select({ id: schema.site.id, tenantId: schema.site.tenantId, storageSlug: schema.site.storageSlug })
+      .from(schema.site)
+      .where(and(...conditions));
+
+    if (sites.length === 0) {
+      this.logger.log("[bulkRebuild] No matching sites found");
+      return this.buildResult(BulkOperationType.REBUILD, 0, []);
+    }
+
+    this.logger.log(`[bulkRebuild] Found ${sites.length} sites, starting sequential builds`);
+    const results: BulkItemResult[] = [];
+
+    for (const site of sites) {
+      try {
+        await this.generator.build({
+          tenantId: site.tenantId,
+          siteId: site.id,
+          mode: "production",
+        });
+        results.push({ id: site.id, success: true, details: { storageSlug: site.storageSlug } });
+        this.logger.log(`[bulkRebuild] OK ${site.storageSlug}`);
+      } catch (error: unknown) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        results.push({ id: site.id, success: false, error: err.message });
+        this.logger.error(`[bulkRebuild] FAIL ${site.storageSlug}: ${err.message}`);
+      }
+    }
+
+    return this.buildResult(BulkOperationType.REBUILD, sites.length, results);
   }
 }

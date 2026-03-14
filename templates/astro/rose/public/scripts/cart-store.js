@@ -154,14 +154,25 @@ export const cartStore = {
   async removeItem(itemId) {
     if (!state.cartId) return false;
 
+    // Optimistic update — товар исчезает из UI мгновенно
+    const prevItems = [...state.items];
+    state.items = state.items.filter(i => i.id !== itemId);
+    saveToStorage();
+    notify('cart:updated', { items: state.items });
+
     try {
       const res = await CartAPI.removeItem(state.cartId, itemId);
-      if (res.success) {
-        await refreshCart();
-        return true;
+      if (!res.success) {
+        state.items = prevItems;
+        saveToStorage();
+        notify('cart:updated', { items: state.items });
+        return false;
       }
-      return false;
+      return true;
     } catch (e) {
+      state.items = prevItems;
+      saveToStorage();
+      notify('cart:updated', { items: state.items });
       return false;
     }
   },
@@ -174,14 +185,30 @@ export const cartStore = {
   async updateQuantity(itemId, quantity) {
     if (!state.cartId || quantity < 1) return false;
 
+    // Optimistic update — UI обновляется мгновенно
+    const prevItems = [...state.items];
+    const item = state.items.find(i => i.id === itemId);
+    if (item) {
+      item.quantity = quantity;
+      saveToStorage();
+      notify('cart:updated', { items: state.items });
+    }
+
     try {
       const res = await CartAPI.updateItem(state.cartId, itemId, quantity);
-      if (res.success) {
-        await refreshCart();
-        return true;
+      if (!res.success) {
+        // Откат при ошибке
+        state.items = prevItems;
+        saveToStorage();
+        notify('cart:updated', { items: state.items });
+        return false;
       }
-      return false;
+      return true;
     } catch (e) {
+      // Откат при ошибке сети
+      state.items = prevItems;
+      saveToStorage();
+      notify('cart:updated', { items: state.items });
       return false;
     }
   },

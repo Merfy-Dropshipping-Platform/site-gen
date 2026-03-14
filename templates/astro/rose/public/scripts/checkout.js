@@ -50,6 +50,10 @@ class CheckoutFlow {
           this.updatePromoUI();
           this.recalcTotals();
           this.bindEvents();
+          // Analytics: track checkout_start
+          if (window._mfy && window._mfy.trackCheckout) {
+            window._mfy.trackCheckout();
+          }
           // Set default delivery
           await CheckoutAPI.setDelivery(this.cartId, 'economy', 0).catch(() => {});
           return;
@@ -85,6 +89,10 @@ class CheckoutFlow {
         this.renderProducts();
         this.recalcTotals();
         this.bindEvents();
+        // Analytics: track checkout_start (single product mode)
+        if (window._mfy && window._mfy.trackCheckout) {
+          window._mfy.trackCheckout();
+        }
         await CheckoutAPI.setDelivery(this.cartId, 'economy', 0).catch(() => {});
         return;
       }

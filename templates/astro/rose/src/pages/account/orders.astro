@@ -142,7 +142,8 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
             '<div class="flex items-center justify-between text-sm text-gray-500">' +
               '<span>' + date + (itemsText ? ' \u00b7 ' + itemsText : '') + '</span>' +
               '<span class="font-medium text-gray-900">' + total + '</span>' +
-            '</div>';
+            '</div>' +
+            (order.promoCode ? '<div class="mt-1 text-xs text-green-600">\u041f\u0440\u043e\u043c\u043e\u043a\u043e\u0434: ' + order.promoCode + '</div>' : '');
           listEl.appendChild(card);
         });
       } catch (err) {

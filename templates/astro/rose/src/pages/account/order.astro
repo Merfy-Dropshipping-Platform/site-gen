@@ -198,7 +198,10 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
           totalsHtml += '<div class="flex justify-between"><span class="text-gray-500">\u0414\u043e\u0441\u0442\u0430\u0432\u043a\u0430</span><span>' + formatPrice(order.deliveryCents) + '</span></div>';
         }
         if (order.discountCents != null && order.discountCents > 0) {
-          totalsHtml += '<div class="flex justify-between"><span class="text-gray-500">\u0421\u043a\u0438\u0434\u043a\u0430</span><span class="text-green-600">\u2212' + formatPrice(order.discountCents) + '</span></div>';
+          var discountLabel = order.promoCode
+            ? '\u0421\u043a\u0438\u0434\u043a\u0430 (' + order.promoCode + ')'
+            : '\u0421\u043a\u0438\u0434\u043a\u0430';
+          totalsHtml += '<div class="flex justify-between"><span class="text-gray-500">' + discountLabel + '</span><span class="text-green-600">\u2212' + formatPrice(order.discountCents) + '</span></div>';
         }
 
         totalsHtml += '<div class="flex justify-between pt-2 border-t font-medium text-base">' +

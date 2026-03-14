@@ -47,6 +47,7 @@ class CheckoutFlow {
           this.discountCents = cartData?.discountCents || 0;
           this.deliveryCostCents = cartData?.deliveryCostCents || 0;
           this.renderProducts();
+          this.updatePromoUI();
           this.recalcTotals();
           this.bindEvents();
           // Set default delivery

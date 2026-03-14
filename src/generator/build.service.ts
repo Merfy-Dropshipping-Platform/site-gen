@@ -100,6 +100,32 @@ export interface BuildContext {
   settings?: { requireCustomerAuth?: boolean };
 }
 
+const ANALYTICS_COLLECTOR_URL = "https://iowcg0sw4wsoo0s4k8g0ws0o.176.57.218.121.sslip.io";
+
+/** Inject tracker.js + loader.js into all HTML files before </head> */
+async function injectAnalyticsTracker(distDir: string, siteId: string): Promise<void> {
+  const htmlFiles: string[] = [];
+  async function findHtml(dir: string) {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    for (const e of entries) {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) await findHtml(full);
+      else if (e.name.endsWith(".html")) htmlFiles.push(full);
+    }
+  }
+  await findHtml(distDir);
+
+  const trackerSnippet = `<script src="${ANALYTICS_COLLECTOR_URL}/tracker.js?shop=${siteId}" defer></script>\n<script src="${ANALYTICS_COLLECTOR_URL}/loader.js?shop=${siteId}" defer></script>`;
+
+  for (const file of htmlFiles) {
+    let html = await fs.readFile(file, "utf8");
+    if (html.includes("tracker.js")) continue; // already injected
+    html = html.replace(/<\/head>/i, `${trackerSnippet}\n</head>`);
+    await fs.writeFile(file, html, "utf8");
+  }
+  logger.log(`[analytics] Injected tracker into ${htmlFiles.length} HTML files for site ${siteId}`);
+}
+
 /** Dependencies injected into the pipeline */
 export interface BuildDependencies {
   db: NodePgDatabase<typeof schemaTypes>;
@@ -560,16 +586,12 @@ export async function trySnapshotDeploy(
         /const shopId = undefined;/g,
         `const shopId = "${params.siteId}";`,
       );
-      // ── Inject analytics tracker + pixel loader before </head> ──
-      const analyticsCollectorUrl = "https://iowcg0sw4wsoo0s4k8g0ws0o.176.57.218.121.sslip.io";
-      const trackerSnippet = `<script src="${analyticsCollectorUrl}/tracker.js?shop=${params.siteId}" defer></script>\n<script src="${analyticsCollectorUrl}/loader.js?shop=${params.siteId}" defer></script>`;
-      html = html.replace(
-        /<\/head>/i,
-        `${trackerSnippet}\n</head>`,
-      );
       await fs.writeFile(file, html, "utf8");
     }
     logger.log(`[snapshot] Patched shopId in ${htmlFiles.length} HTML files`);
+
+    // ── Inject analytics tracker + pixel loader ──
+    await injectAnalyticsTracker(distDir, params.siteId);
 
     // ── Inject real products ──
     const rpcData = await fetchStoreData(deps.productClient, params.tenantId, params.siteId);
@@ -755,6 +777,9 @@ export async function runBuildPipeline(
     if (validationResult) {
       emitProgress(deps, ctx, "astro_build", `Build complete. ${validationResult}`);
     }
+
+    // === Stage 4.6: INJECT ANALYTICS TRACKER ===
+    await injectAnalyticsTracker(ctx.distDir, params.siteId);
 
     // === Stage 5: ZIP ===
     t = Date.now();

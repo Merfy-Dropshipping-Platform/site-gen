@@ -542,3 +542,14 @@ const padBottom = padding?.bottom ?? 40;
     }
   }
 </style>
+
+<script is:inline>
+  // Auth gate for checkout (if requireCustomerAuth enabled)
+  if (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.requireCustomerAuth) {
+    var token = localStorage.getItem('customer_token');
+    if (!token) {
+      window.location.href = '/login?redirect=/checkout';
+    }
+  }
+</script>
+<script type="module" src="/scripts/checkout.js"></script>

@@ -117,6 +117,10 @@ export const cartStore = {
       if (res.success) {
         await refreshCart();
         notify('cart:item-added', { productId, variantId, quantity: qty });
+        // Analytics: track add_to_cart
+        if (window._mfy && window._mfy.trackAddToCart) {
+          window._mfy.trackAddToCart(productId, '', qty);
+        }
         return true;
       }
       throw new Error(res.message || 'Ошибка добавления');

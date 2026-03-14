@@ -36,6 +36,17 @@
   var variantsContainerFlat = document.getElementById('variants-container-flat');
   var shareBtn = document.getElementById('share-btn');
 
+  // --- Analytics: track product view ---
+  (function trackView() {
+    if (!window._mfy || !addToCartBtn) return;
+    var pid = addToCartBtn.dataset.productId;
+    var title = document.querySelector('h1');
+    var price = priceDisplay ? priceDisplay.textContent : '';
+    if (pid) {
+      window._mfy.trackProductView(pid, title ? title.textContent.trim() : '', price);
+    }
+  })();
+
   // --- Price helpers ---
   function parsePrice(text) {
     if (!text) return 0;

@@ -41,6 +41,10 @@ class CheckoutFlow {
           }));
           this.renderProductSummary();
           this.bindEvents();
+          // Analytics: track checkout_start
+          if (window._mfy && window._mfy.trackCheckout) {
+            window._mfy.trackCheckout();
+          }
           // Установить доставку по умолчанию
           await CheckoutAPI.setDelivery(this.cartId, 'pickup', 0);
           return;
@@ -95,6 +99,10 @@ class CheckoutFlow {
 
       this.renderProductSummary();
       this.bindEvents();
+      // Analytics: track checkout_start (single product mode)
+      if (window._mfy && window._mfy.trackCheckout) {
+        window._mfy.trackCheckout();
+      }
     } catch (e) {
       console.error('Checkout init error:', e);
       this.showError('Ошибка загрузки', e.message || 'Попробуйте обновить страницу');

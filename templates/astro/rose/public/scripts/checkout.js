@@ -1,9 +1,6 @@
 /**
- * Checkout page logic
- * Управление шагами оформления заказа
- * Поддерживает два режима:
- *   1. Корзина (cartId из localStorage) — multi-item
- *   2. Одиночный товар (?productId из URL) — backward compat
+ * Checkout page logic — Single-page two-column form
+ * Replaces old 4-step wizard with Figma-aligned single page
  */
 
 import { CheckoutAPI } from './checkout-api.js';
@@ -12,22 +9,28 @@ class CheckoutFlow {
   constructor() {
     this.cartId = null;
     this.orderId = null;
-    this.items = []; // [{name, imageUrl, unitPriceCents, quantity, id, productId}]
+    this.items = [];
     this.cart = null;
-    this.currentStep = 1;
+    this.deliveryType = 'economy';
+    this.deliveryCostCents = 0;
+    this.discountCents = 0;
+    this.subtotalCents = 0;
+    this.submitting = false;
 
     this.init();
   }
 
   async init() {
     try {
-      // Режим 1: Существующая корзина из localStorage
+      // Read cart from localStorage
       const savedCartId = this.getSavedCartId();
+      const savedItems = this.getSavedCartItems();
+
       if (savedCartId) {
         const cartRes = await CheckoutAPI.getCart(savedCartId);
-        // API returns { success, data: { cart: {...}, items: [...] } }
         const cartData = cartRes.data?.cart || cartRes.data;
         const cartItems = cartRes.data?.items || cartData?.items || [];
+
         if (cartRes.success && cartItems.length > 0) {
           this.cartId = savedCartId;
           this.cart = cartData;
@@ -37,455 +40,353 @@ class CheckoutFlow {
             name: item.name || item.productName || 'Товар',
             imageUrl: item.imageUrl || (item.images && item.images[0]) || item.image || '',
             unitPriceCents: item.unitPriceCents || item.priceCents || item.price || 0,
+            compareAtPriceCents: item.compareAtPriceCents || 0,
             quantity: item.quantity || 1,
+            variants: item.variants || {},
           }));
-          this.renderProductSummary();
+          this.discountCents = cartData?.discountCents || 0;
+          this.deliveryCostCents = cartData?.deliveryCostCents || 0;
+          this.renderProducts();
+          this.recalcTotals();
           this.bindEvents();
-          // Установить доставку по умолчанию
-          await CheckoutAPI.setDelivery(this.cartId, 'pickup', 0);
+          // Set default delivery
+          await CheckoutAPI.setDelivery(this.cartId, 'economy', 0).catch(() => {});
           return;
         }
       }
 
-      // Режим 2: Одиночный товар из URL
-      const params = new URLSearchParams(window.location.search);
-      const productId = params.get('productId');
+      // Fallback: try localStorage items
+      if (savedItems && savedItems.length > 0) {
+        const cartRes = await CheckoutAPI.createCart();
+        if (!cartRes.success) throw new Error('Не удалось создать корзину');
+        this.cartId = cartRes.data.id;
 
-      if (!productId) {
-        this.showError('Корзина пуста', 'Добавьте товары в корзину или выберите товар в каталоге');
+        for (const item of savedItems) {
+          await CheckoutAPI.addItem(this.cartId, item.productId || item.id, item.quantity || 1);
+        }
+        // Re-fetch cart to get server items
+        const refreshed = await CheckoutAPI.getCart(this.cartId);
+        if (refreshed.success) {
+          const cartData = refreshed.data?.cart || refreshed.data;
+          const cartItems = refreshed.data?.items || cartData?.items || [];
+          this.cart = cartData;
+          this.items = cartItems.map(item => ({
+            id: item.id,
+            productId: item.productId,
+            name: item.name || item.productName || 'Товар',
+            imageUrl: item.imageUrl || (item.images && item.images[0]) || item.image || '',
+            unitPriceCents: item.unitPriceCents || item.priceCents || item.price || 0,
+            compareAtPriceCents: item.compareAtPriceCents || 0,
+            quantity: item.quantity || 1,
+            variants: item.variants || {},
+          }));
+        }
+        this.renderProducts();
+        this.recalcTotals();
+        this.bindEvents();
+        await CheckoutAPI.setDelivery(this.cartId, 'economy', 0).catch(() => {});
         return;
       }
 
-      // Загрузить данные товара из products.json
-      const productsRes = await fetch('/data/products.json');
-      const products = await productsRes.json();
-      const product = products.find(
-        (p) => p.id === productId || p.slug === productId
-      );
-
-      if (!product) {
-        this.showError('Товар не найден', 'Возможно, товар больше не доступен');
-        return;
-      }
-
-      // Создать корзину и добавить товар
-      const cartRes = await CheckoutAPI.createCart();
-      if (!cartRes.success) {
-        throw new Error(cartRes.message || 'Не удалось создать корзину');
-      }
-      this.cartId = cartRes.data.id;
-
-      const addRes = await CheckoutAPI.addItem(this.cartId, product.id, 1);
-      if (!addRes.success) {
-        throw new Error(addRes.message || 'Не удалось добавить товар');
-      }
-      this.cart = addRes.data;
-
-      this.items = [{
-        id: null,
-        productId: product.id,
-        name: product.name,
-        imageUrl: product.images?.[0] || '',
-        unitPriceCents: product.price * 100,
-        quantity: 1,
-      }];
-
-      // Установить доставку по умолчанию
-      await CheckoutAPI.setDelivery(this.cartId, 'pickup', 0);
-
-      this.renderProductSummary();
-      this.bindEvents();
+      // No cart — redirect to cart page
+      window.location.href = '/cart';
     } catch (e) {
       console.error('Checkout init error:', e);
-      this.showError('Ошибка загрузки', e.message || 'Попробуйте обновить страницу');
+      this.showError(e.message || 'Не удалось загрузить корзину');
     }
   }
 
   getSavedCartId() {
+    try { return localStorage.getItem('merfy_cart_id') || null; } catch { return null; }
+  }
+
+  getSavedCartItems() {
     try {
-      return localStorage.getItem('merfy_cart_id') || null;
-    } catch (e) {
-      return null;
-    }
+      const raw = localStorage.getItem('merfy_cart_items');
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
   }
 
   clearSavedCart() {
     try {
       localStorage.removeItem('merfy_cart_id');
       localStorage.removeItem('merfy_cart_items');
-    } catch (e) {
-      // ignore
-    }
-    // Notify cart components
+    } catch {}
     document.dispatchEvent(new CustomEvent('cart:updated', { detail: { items: [] } }));
   }
 
-  renderProductSummary() {
-    const container = document.getElementById('product-summary');
+  // ---- Render products in right panel ----
+  renderProducts() {
+    const container = document.getElementById('co-product-list');
+    if (!container) return;
 
     if (this.items.length === 0) {
-      container.innerHTML = '<p class="text-gray-500">Корзина пуста</p>';
+      container.innerHTML = '<p class="font-body" style="color: rgb(var(--color-muted));">Корзина пуста</p>';
       return;
     }
 
-    const itemsHtml = this.items.map(item => {
-      const imgHtml = item.imageUrl
-        ? `<img src="${item.imageUrl}" alt="${item.name}" class="product-summary-image">`
-        : `<div class="product-summary-image" style="display: flex; align-items: center; justify-content: center; color: var(--rose-300);">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-              <circle cx="8.5" cy="8.5" r="1.5"/>
-              <polyline points="21,15 16,10 5,21"/>
-            </svg>
-          </div>`;
+    container.innerHTML = this.items.map(item => {
+      const imgSrc = item.imageUrl || '';
+      const imgHtml = imgSrc
+        ? `<img src="${this.esc(imgSrc)}" alt="${this.esc(item.name)}" class="checkout-product-img">`
+        : `<div class="checkout-product-img" style="display:flex;align-items:center;justify-content:center;color:rgb(var(--color-muted));"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg></div>`;
 
-      const qtyLabel = item.quantity > 1 ? ` × ${item.quantity}` : '';
-      const lineTotal = item.unitPriceCents * item.quantity;
+      const variantsHtml = Object.entries(item.variants || {})
+        .filter(([, v]) => v)
+        .map(([k, v]) => `<div class="checkout-product-variant"><span class="checkout-product-variant-label font-body">${this.esc(k)}:</span> <span class="checkout-product-variant-value font-body">${this.esc(String(v))}</span></div>`)
+        .join('');
+
+      const oldPriceHtml = item.compareAtPriceCents && item.compareAtPriceCents > item.unitPriceCents
+        ? `<span class="checkout-product-price-old font-body">${this.formatPrice(item.compareAtPriceCents)}</span>`
+        : '';
 
       return `
-        <div class="product-summary-item" style="margin-bottom: 12px;">
-          ${imgHtml}
-          <div class="product-summary-info" style="flex: 1;">
-            <h3>${item.name}${qtyLabel}</h3>
-            <div class="product-summary-price">${this.formatPrice(lineTotal / 100)}</div>
+        <div class="checkout-product-item">
+          <div class="checkout-product-img-wrap">
+            ${imgHtml}
+            ${item.quantity > 1 ? `<div class="checkout-product-counter font-body">${item.quantity}</div>` : ''}
+          </div>
+          <div class="checkout-product-info">
+            <div>
+              <div class="checkout-product-name font-body">${this.esc(item.name)}</div>
+              ${variantsHtml ? `<div class="checkout-product-variants">${variantsHtml}</div>` : ''}
+            </div>
+            <div class="checkout-product-price">
+              <span class="checkout-product-price-current font-body">${this.formatPrice(item.unitPriceCents * item.quantity)}</span>
+              ${oldPriceHtml}
+            </div>
           </div>
         </div>`;
     }).join('');
-
-    const subtotal = this.items.reduce((s, i) => s + i.unitPriceCents * i.quantity, 0);
-
-    container.innerHTML = `
-      ${itemsHtml}
-      ${this.items.length > 1 ? `
-        <div style="border-top: 1px solid #f3f4f6; margin-top: 8px; padding-top: 12px; display: flex; justify-content: space-between; font-weight: 600;">
-          <span>Подытог (${this.items.reduce((s, i) => s + i.quantity, 0)} шт.)</span>
-          <span>${this.formatPrice(subtotal / 100)}</span>
-        </div>` : ''}
-    `;
   }
 
+  // ---- Totals ----
+  recalcTotals() {
+    this.subtotalCents = this.items.reduce((s, i) => s + i.unitPriceCents * i.quantity, 0);
+    const total = this.subtotalCents - this.discountCents + this.deliveryCostCents;
+
+    const deliveryEl = document.getElementById('co-delivery-cost');
+    if (deliveryEl) {
+      deliveryEl.textContent = this.deliveryCostCents > 0 ? this.formatPrice(this.deliveryCostCents) : 'Бесплатно';
+    }
+
+    const discountRow = document.getElementById('co-discount-row');
+    const discountVal = document.getElementById('co-discount-value');
+    if (discountRow && discountVal) {
+      if (this.discountCents > 0) {
+        discountRow.style.display = 'flex';
+        discountVal.textContent = `-${this.formatPrice(this.discountCents)}`;
+      } else {
+        discountRow.style.display = 'none';
+      }
+    }
+
+    const totalEl = document.getElementById('co-total');
+    if (totalEl) totalEl.textContent = this.formatPrice(Math.max(0, total));
+  }
+
+  // ---- Events ----
   bindEvents() {
-    // Шаг 1 -> 2
-    document.getElementById('btn-to-contacts').addEventListener('click', () => {
-      this.goToStep(2);
+    // Delivery option selection
+    const deliveryOptions = document.querySelectorAll('.checkout-shipping-option');
+    deliveryOptions.forEach(opt => {
+      opt.addEventListener('click', () => {
+        deliveryOptions.forEach(o => o.classList.remove('checkout-shipping-option--selected'));
+        opt.classList.add('checkout-shipping-option--selected');
+        const radio = opt.querySelector('input[type="radio"]');
+        if (radio) radio.checked = true;
+        this.deliveryType = opt.dataset.delivery || 'economy';
+        this.deliveryCostCents = parseInt(opt.dataset.cost || '0', 10);
+        this.recalcTotals();
+      });
     });
 
-    // Шаг 2 -> 1
-    document.getElementById('btn-back-to-product').addEventListener('click', () => {
-      this.goToStep(1);
+    // Promo code
+    const applyBtn = document.getElementById('co-btn-apply-promo');
+    if (applyBtn) applyBtn.addEventListener('click', () => this.applyPromo());
+
+    const promoInput = document.getElementById('co-promo-input');
+    if (promoInput) promoInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); this.applyPromo(); }
     });
 
-    // Шаг 2: Контакты
-    document.getElementById('customer-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const form = e.target;
-      const btn = form.querySelector('button[type="submit"]');
-      const errorEl = document.getElementById('customer-error');
+    const removeBtn = document.getElementById('co-btn-remove-promo');
+    if (removeBtn) removeBtn.addEventListener('click', () => this.removePromo());
 
-      btn.disabled = true;
-      errorEl.textContent = '';
-
-      try {
-        const res = await CheckoutAPI.setCustomer(this.cartId, {
-          email: form.email.value.trim(),
-          phone: form.phone.value.trim(),
-          name: form.name.value.trim() || undefined,
-        });
-
-        if (!res.success) {
-          throw new Error(res.message || 'Ошибка сохранения');
-        }
-
-        this.cart = res.data;
-        this.goToStep(3);
-      } catch (e) {
-        errorEl.textContent = e.message;
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-    // Шаг 3 -> 2
-    document.getElementById('btn-back-to-contacts').addEventListener('click', () => {
-      this.goToStep(2);
-    });
-
-    // Шаг 3: Адрес
-    document.getElementById('address-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const form = e.target;
-      const btn = form.querySelector('button[type="submit"]');
-      const errorEl = document.getElementById('address-error');
-
-      btn.disabled = true;
-      errorEl.textContent = '';
-
-      try {
-        const res = await CheckoutAPI.setAddress(this.cartId, {
-          city: form.city.value.trim(),
-          street: form.street.value.trim(),
-          building: form.building.value.trim(),
-          apartment: form.apartment.value.trim() || undefined,
-          postalCode: form.postalCode.value.trim() || undefined,
-        });
-
-        if (!res.success) {
-          throw new Error(res.message || 'Ошибка сохранения');
-        }
-
-        this.cart = res.data;
-        this.renderOrderSummary();
-        this.goToStep(4);
-      } catch (e) {
-        errorEl.textContent = e.message;
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-    // Шаг 4 -> 3
-    document.getElementById('btn-back-to-address').addEventListener('click', () => {
-      this.goToStep(3);
-    });
-
-    // Шаг 4: Оплата
-    document.getElementById('btn-pay').addEventListener('click', async () => {
-      await this.processPayment();
-    });
-
-    // Промокод
-    document.getElementById('btn-apply-promo').addEventListener('click', () => {
-      this.applyPromo();
-    });
-
-    document.getElementById('promo-input').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        this.applyPromo();
-      }
-    });
-
-    document.getElementById('btn-remove-promo').addEventListener('click', () => {
-      this.removePromo();
-    });
+    // Submit
+    const submitBtn = document.getElementById('co-submit-btn');
+    if (submitBtn) submitBtn.addEventListener('click', () => this.handleSubmit());
   }
 
-  async processPayment() {
-    const btn = document.getElementById('btn-pay');
-    const loadingEl = btn.querySelector('.loading');
-    const textEl = btn.querySelector('.text');
-    const errorEl = document.getElementById('payment-error');
-
-    btn.disabled = true;
-    loadingEl.style.display = 'flex';
-    textEl.style.display = 'none';
-    errorEl.textContent = '';
-
-    try {
-      // 1. Оформить заказ
-      const checkoutRes = await CheckoutAPI.checkout(this.cartId);
-      if (!checkoutRes.success) {
-        throw new Error(checkoutRes.message || 'Не удалось оформить заказ');
-      }
-      this.orderId = checkoutRes.data.id;
-
-      // 2. Очистить корзину в localStorage (заказ уже создан)
-      this.clearSavedCart();
-
-      // 3. Создать платёж
-      const returnUrl = `${window.location.origin}/checkout/result?orderId=${this.orderId}`;
-      const paymentRes = await CheckoutAPI.createPayment(this.orderId, returnUrl);
-
-      if (!paymentRes.success) {
-        throw new Error(paymentRes.message || 'Не удалось создать платёж');
-      }
-
-      // 4. Редирект на ЮKassa
-      window.location.href = paymentRes.data.confirmationUrl;
-    } catch (e) {
-      errorEl.textContent = e.message;
-      btn.disabled = false;
-      loadingEl.style.display = 'none';
-      textEl.style.display = 'inline';
-    }
-  }
-
+  // ---- Promo ----
   async applyPromo() {
-    const input = document.getElementById('promo-input');
-    const errorEl = document.getElementById('promo-error');
-    const btn = document.getElementById('btn-apply-promo');
-    const code = input.value.trim();
-
-    if (!code) return;
-    if (!this.cartId) {
-      errorEl.textContent = 'Корзина ещё не создана';
-      errorEl.classList.remove('hidden');
-      return;
-    }
-
-    btn.disabled = true;
-    errorEl.classList.add('hidden');
+    const input = document.getElementById('co-promo-input');
+    const errorEl = document.getElementById('co-promo-error');
+    const code = input?.value?.trim();
+    if (!code || !this.cartId) return;
 
     try {
       const res = await CheckoutAPI.applyPromo(this.cartId, code);
-      if (!res.success) {
-        throw new Error(res.message || 'Промокод недействителен');
-      }
+      if (!res.success) throw new Error(res.message || 'Промокод недействителен');
       this.cart = res.data;
+      this.discountCents = res.data?.discountCents || 0;
       this.updatePromoUI();
+      this.recalcTotals();
     } catch (e) {
-      errorEl.textContent = e.message;
-      errorEl.classList.remove('hidden');
-    } finally {
-      btn.disabled = false;
+      if (errorEl) { errorEl.textContent = e.message; errorEl.style.display = 'block'; }
     }
   }
 
   async removePromo() {
     if (!this.cartId) return;
-
-    const btn = document.getElementById('btn-remove-promo');
-    btn.disabled = true;
-
     try {
       const res = await CheckoutAPI.removePromo(this.cartId);
-      if (!res.success) {
-        throw new Error(res.message || 'Не удалось убрать промокод');
+      if (res.success) {
+        this.cart = res.data;
+        this.discountCents = 0;
+        this.updatePromoUI();
+        this.recalcTotals();
       }
-      this.cart = res.data;
-      this.updatePromoUI();
-    } catch (e) {
-      const errorEl = document.getElementById('promo-error');
-      errorEl.textContent = e.message;
-      errorEl.classList.remove('hidden');
-    } finally {
-      btn.disabled = false;
-    }
+    } catch {}
   }
 
   updatePromoUI() {
-    const inputRow = document.getElementById('promo-input-row');
-    const appliedEl = document.getElementById('promo-applied');
-    const errorEl = document.getElementById('promo-error');
-    const input = document.getElementById('promo-input');
+    const inputRow = document.getElementById('co-promo-input-row');
+    const applied = document.getElementById('co-promo-applied');
+    const errorEl = document.getElementById('co-promo-error');
+    const codeEl = document.getElementById('co-promo-code');
+    const input = document.getElementById('co-promo-input');
 
-    errorEl.classList.add('hidden');
+    if (errorEl) errorEl.style.display = 'none';
 
-    if (this.cart?.promoCode) {
-      inputRow.classList.add('hidden');
-      appliedEl.classList.remove('hidden');
-      document.getElementById('promo-applied-code').textContent = this.cart.promoCode;
-      const discount = this.cart.discountCents ?? 0;
-      document.getElementById('promo-applied-discount').textContent =
-        discount > 0 ? `Скидка: -${this.formatPrice(discount / 100)}` : 'Скидка применена';
+    if (this.cart?.promoCode && this.discountCents > 0) {
+      if (inputRow) inputRow.style.display = 'none';
+      if (applied) applied.style.display = 'flex';
+      if (codeEl) codeEl.textContent = `${this.cart.promoCode} — скидка ${this.formatPrice(this.discountCents)}`;
     } else {
-      inputRow.classList.remove('hidden');
-      appliedEl.classList.add('hidden');
-      input.value = '';
+      if (inputRow) inputRow.style.display = 'flex';
+      if (applied) applied.style.display = 'none';
+      if (input) input.value = '';
     }
   }
 
-  renderOrderSummary() {
-    const container = document.getElementById('order-summary');
-    const subtotal = this.cart?.subtotalCents ?? this.items.reduce((s, i) => s + i.unitPriceCents * i.quantity, 0);
-    const delivery = this.cart?.deliveryCostCents ?? 0;
-    const discount = this.cart?.discountCents ?? 0;
-    const total = this.cart?.totalCents ?? subtotal + delivery - discount;
+  // ---- Submit (single page) ----
+  async handleSubmit() {
+    if (this.submitting) return;
 
-    const itemsHtml = this.items.map(item => {
-      const lineTotal = item.unitPriceCents * item.quantity;
-      const imgHtml = item.imageUrl
-        ? `<img src="${item.imageUrl}" alt="${item.name}" class="product-summary-image" style="width: 60px; height: 60px;">`
-        : '';
-      const qtyLabel = item.quantity > 1 ? ` × ${item.quantity}` : '';
+    const errorEl = document.getElementById('co-error');
+    const btn = document.getElementById('co-submit-btn');
+    const btnText = btn?.querySelector('.co-btn-text');
+    const btnLoading = btn?.querySelector('.co-btn-loading');
 
-      return `
-        <div class="product-summary-item" style="margin-bottom: 12px;">
-          ${imgHtml}
-          <div class="product-summary-info">
-            <h3 style="font-size: 1rem;">${item.name}${qtyLabel}</h3>
-            <div style="font-size: 0.875rem; color: rgb(var(--color-primary)); font-weight: 600;">${this.formatPrice(lineTotal / 100)}</div>
-          </div>
-        </div>`;
-    }).join('');
+    // Validate
+    const fields = {
+      email: document.getElementById('co-email'),
+      phone: document.getElementById('co-phone'),
+      firstName: document.getElementById('co-firstName'),
+      lastName: document.getElementById('co-lastName'),
+      address: document.getElementById('co-address'),
+      city: document.getElementById('co-city'),
+    };
 
-    const discountRow = discount > 0
-      ? `<div class="order-summary-row" style="color: #16a34a;">
-          <span>Скидка${this.cart?.promoCode ? ` (${this.cart.promoCode})` : ''}</span>
-          <span>-${this.formatPrice(discount / 100)}</span>
-        </div>`
-      : '';
+    // Clear errors
+    Object.values(fields).forEach(f => f?.classList?.remove('checkout-input--error'));
+    if (errorEl) errorEl.style.display = 'none';
 
-    container.innerHTML = `
-      ${itemsHtml}
-      <div style="border-top: 1px solid #f3f4f6; margin-top: 8px; padding-top: 12px;">
-        <div class="order-summary-row">
-          <span>Товары (${this.items.reduce((s, i) => s + i.quantity, 0)} шт.)</span>
-          <span>${this.formatPrice(subtotal / 100)}</span>
-        </div>
-        <div class="order-summary-row">
-          <span>Доставка</span>
-          <span>${delivery > 0 ? this.formatPrice(delivery / 100) : 'Бесплатно'}</span>
-        </div>
-        ${discountRow}
-        <div class="order-summary-row total">
-          <span>Итого</span>
-          <span class="price">${this.formatPrice(total / 100)}</span>
-        </div>
-      </div>
-    `;
-  }
-
-  goToStep(step) {
-    // Скрыть все шаги
-    document.querySelectorAll('.checkout-step').forEach((el) => {
-      el.classList.remove('active');
-    });
-
-    // Показать нужный шаг
-    const stepEl = document.querySelector(`.checkout-step[data-step="${step}"]`);
-    if (stepEl) {
-      stepEl.classList.add('active');
+    // Check required
+    const missing = [];
+    for (const [name, el] of Object.entries(fields)) {
+      if (!el?.value?.trim()) {
+        el?.classList?.add('checkout-input--error');
+        missing.push(name);
+      }
+    }
+    if (missing.length > 0) {
+      if (errorEl) { errorEl.textContent = 'Заполните обязательные поля'; errorEl.style.display = 'block'; }
+      return;
     }
 
-    // Обновить индикатор
-    document.querySelectorAll('.step-dot').forEach((el) => {
-      const s = parseInt(el.dataset.step, 10);
-      el.classList.remove('active', 'completed');
-      if (s < step) el.classList.add('completed');
-      if (s === step) el.classList.add('active');
-    });
+    // Email format
+    const emailVal = fields.email.value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
+      fields.email.classList.add('checkout-input--error');
+      if (errorEl) { errorEl.textContent = 'Введите корректный email'; errorEl.style.display = 'block'; }
+      return;
+    }
 
-    this.currentStep = step;
+    // Start submit
+    this.submitting = true;
+    if (btn) btn.disabled = true;
+    if (btnText) btnText.style.display = 'none';
+    if (btnLoading) btnLoading.style.display = 'inline';
 
-    // Прокрутить вверх
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    try {
+      const customerName = `${fields.firstName.value.trim()} ${fields.lastName.value.trim()}`.trim();
+      const country = document.getElementById('co-country')?.value?.trim() || 'Россия';
+      const postalCode = document.getElementById('co-postalCode')?.value?.trim() || '';
+
+      // 1. Set customer
+      const custRes = await CheckoutAPI.setCustomer(this.cartId, {
+        email: emailVal,
+        phone: fields.phone.value.trim(),
+        name: customerName,
+      });
+      if (!custRes.success) throw new Error(custRes.message || 'Ошибка сохранения контактов');
+
+      // 2. Set address
+      const addrRes = await CheckoutAPI.setAddress(this.cartId, {
+        country,
+        city: fields.city.value.trim(),
+        street: fields.address.value.trim(),
+        building: '',
+        postalCode,
+      });
+      if (!addrRes.success) throw new Error(addrRes.message || 'Ошибка сохранения адреса');
+
+      // 3. Set delivery
+      const delRes = await CheckoutAPI.setDelivery(this.cartId, this.deliveryType, this.deliveryCostCents);
+      if (!delRes.success) throw new Error(delRes.message || 'Ошибка установки доставки');
+
+      // 4. Checkout
+      const checkoutRes = await CheckoutAPI.checkout(this.cartId);
+      if (!checkoutRes.success) throw new Error(checkoutRes.message || 'Не удалось оформить заказ');
+      this.orderId = checkoutRes.data.id;
+
+      // 5. Clear cart
+      this.clearSavedCart();
+
+      // 6. Create payment
+      const returnUrl = `${window.location.origin}/checkout/result?orderId=${this.orderId}`;
+      const paymentRes = await CheckoutAPI.createPayment(this.orderId, returnUrl);
+      if (!paymentRes.success) throw new Error(paymentRes.message || 'Сервис оплаты временно недоступен');
+
+      // 7. Redirect to YooKassa
+      window.location.href = paymentRes.data.confirmationUrl;
+    } catch (e) {
+      if (errorEl) { errorEl.textContent = e.message; errorEl.style.display = 'block'; }
+      this.submitting = false;
+      if (btn) btn.disabled = false;
+      if (btnText) btnText.style.display = 'inline';
+      if (btnLoading) btnLoading.style.display = 'none';
+    }
   }
 
-  showError(title, message) {
-    document.getElementById('error-title').textContent = title;
-    document.getElementById('error-text').textContent = message;
-
-    // Скрыть все шаги
-    document.querySelectorAll('.checkout-step').forEach((el) => {
-      el.classList.remove('active');
-    });
-
-    // Показать страницу ошибки
-    document.querySelector('.checkout-step[data-step="error"]').classList.add('active');
-
-    // Скрыть индикатор шагов
-    document.querySelector('.step-indicator').style.display = 'none';
+  showError(msg) {
+    const errorEl = document.getElementById('co-error');
+    if (errorEl) { errorEl.textContent = msg; errorEl.style.display = 'block'; }
   }
 
-  formatPrice(price) {
-    return new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'RUB',
-      minimumFractionDigits: 0,
-    }).format(price);
+  formatPrice(cents) {
+    const rub = Math.round(cents / 100);
+    return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 }).format(rub);
+  }
+
+  esc(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
   }
 }
 
-// Запуск
+// Init
 new CheckoutFlow();

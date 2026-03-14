@@ -1,0 +1,131 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import data from '../data/data.json';
+import siteConfig from '../data/site-config.json';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+const meta = data?.meta ?? {};
+const blocks = data?.content ?? [];
+const headerBlock = blocks.find((b: any) => b.type === 'Header');
+const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
+const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
+---
+<BaseLayout title={`Результат оплаты — ${meta?.title ?? 'Мой сайт'}`}>
+  <Header {...headerProps} />
+
+  <main class="flex-1 flex items-center justify-center px-5 py-16 w-full font-body" style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); min-height: 60vh;">
+    <div class="text-center max-w-[480px]">
+      <!-- Loading -->
+      <div id="cr-loading">
+        <div class="cr-spinner"></div>
+        <h1 class="font-heading" style="font-size: 24px; margin: 24px 0 8px;">Проверяем оплату...</h1>
+        <p style="font-size: 16px; color: rgb(var(--color-muted));">Пожалуйста, подождите</p>
+      </div>
+
+      <!-- Success -->
+      <div id="cr-success" style="display:none;">
+        <div style="font-size: 64px; margin-bottom: 16px;">✓</div>
+        <h1 class="font-heading" style="font-size: 24px; margin: 0 0 8px;">Заказ оформлен!</h1>
+        <p id="cr-order-number" style="font-size: 16px; color: rgb(var(--color-muted)); margin: 0 0 24px;"></p>
+        <a href="/" class="cr-btn font-body">На главную</a>
+      </div>
+
+      <!-- Error -->
+      <div id="cr-error" style="display:none;">
+        <div style="font-size: 64px; margin-bottom: 16px;">✗</div>
+        <h1 class="font-heading" style="font-size: 24px; margin: 0 0 8px;">Оплата не прошла</h1>
+        <p id="cr-error-text" style="font-size: 16px; color: rgb(var(--color-muted)); margin: 0 0 24px;">Попробуйте снова или выберите другой способ оплаты</p>
+        <a href="/checkout" class="cr-btn font-body">Попробовать снова</a>
+      </div>
+    </div>
+  </main>
+
+  <Footer {...footerProps} />
+
+  <script is:inline define:vars={{ apiUrl: meta?.apiUrl }}>
+    window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {};
+    window.__MERFY_CONFIG__.apiUrl = apiUrl || 'https://gateway.merfy.ru/api';
+
+    (async function() {
+      const params = new URLSearchParams(window.location.search);
+      const orderId = params.get('orderId');
+
+      if (!orderId) {
+        showError('Заказ не найден');
+        return;
+      }
+
+      const baseUrl = window.__MERFY_CONFIG__.apiUrl;
+      let attempts = 0;
+      const maxAttempts = 10;
+
+      async function checkStatus() {
+        try {
+          const res = await fetch(`${baseUrl}/orders/${orderId}/payment-status`);
+          const data = await res.json();
+
+          if (data.success && data.data) {
+            const status = data.data.status;
+            if (status === 'succeeded' || status === 'paid') {
+              showSuccess(data.data.orderNumber || orderId);
+              return;
+            }
+            if (status === 'canceled' || status === 'cancelled') {
+              showError('Платёж отменён');
+              return;
+            }
+          }
+
+          attempts++;
+          if (attempts < maxAttempts) {
+            setTimeout(checkStatus, 3000);
+          } else {
+            showError('Не удалось получить статус оплаты. Проверьте email для подтверждения.');
+          }
+        } catch (e) {
+          showError('Ошибка сети. Попробуйте обновить страницу.');
+        }
+      }
+
+      function showSuccess(orderNumber) {
+        document.getElementById('cr-loading').style.display = 'none';
+        document.getElementById('cr-success').style.display = 'block';
+        document.getElementById('cr-order-number').textContent = `Номер заказа: ${orderNumber}`;
+      }
+
+      function showError(msg) {
+        document.getElementById('cr-loading').style.display = 'none';
+        document.getElementById('cr-error').style.display = 'block';
+        if (msg) document.getElementById('cr-error-text').textContent = msg;
+      }
+
+      checkStatus();
+    })();
+  </script>
+</BaseLayout>
+
+<style>
+  .cr-spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid rgb(var(--color-muted) / 0.3);
+    border-top-color: rgb(var(--color-foreground));
+    border-radius: 50%;
+    animation: cr-spin 0.8s linear infinite;
+    margin: 0 auto;
+  }
+  @keyframes cr-spin { to { transform: rotate(360deg); } }
+  .cr-btn {
+    display: inline-block;
+    padding: 14px 32px;
+    background: rgb(var(--color-foreground));
+    color: rgb(var(--color-background));
+    border-radius: 4px;
+    font-size: 16px;
+    text-decoration: none;
+    transition: filter 0.15s;
+  }
+  .cr-btn:hover { filter: brightness(0.85); }
+</style>

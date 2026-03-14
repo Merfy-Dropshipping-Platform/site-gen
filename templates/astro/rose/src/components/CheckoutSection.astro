@@ -1,0 +1,544 @@
+---
+interface Props {
+  colorScheme?: string;
+  padding?: { top?: number; bottom?: number };
+}
+
+const { colorScheme, padding } = Astro.props;
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
+const padTop = padding?.top ?? 40;
+const padBottom = padding?.bottom ?? 40;
+---
+
+<section class={schemeClass} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
+  <div class="checkout-layout">
+    <!-- LEFT: Form -->
+    <div class="checkout-form-col">
+
+      <!-- Контакты -->
+      <div class="checkout-section">
+        <div class="checkout-section-header">
+          <h2 class="checkout-section-title font-body">Контакты</h2>
+          <a href="/login?redirect=/checkout" class="checkout-login-link font-body">Войти в аккаунт</a>
+        </div>
+        <div class="checkout-fields-row">
+          <input type="email" id="co-email" name="email" required placeholder="E-mail" class="checkout-input checkout-input--half font-body" autocomplete="email">
+          <input type="tel" id="co-phone" name="phone" required placeholder="Телефон" class="checkout-input checkout-input--half font-body" autocomplete="tel">
+        </div>
+      </div>
+
+      <!-- Доставка -->
+      <div class="checkout-section">
+        <h2 class="checkout-section-title font-body">Доставка</h2>
+        <input type="text" id="co-country" name="country" placeholder="Страна / Регион" class="checkout-input checkout-input--full font-body" autocomplete="country-name">
+        <div class="checkout-fields-row">
+          <input type="text" id="co-firstName" name="firstName" required placeholder="Имя" class="checkout-input checkout-input--half font-body" autocomplete="given-name">
+          <input type="text" id="co-lastName" name="lastName" required placeholder="Фамилия" class="checkout-input checkout-input--half font-body" autocomplete="family-name">
+        </div>
+        <input type="text" id="co-address" name="address" required placeholder="Полный адрес" class="checkout-input checkout-input--full font-body" autocomplete="street-address">
+        <div class="checkout-fields-row">
+          <input type="text" id="co-city" name="city" required placeholder="Город" class="checkout-input checkout-input--half font-body" autocomplete="address-level2">
+          <input type="text" id="co-postalCode" name="postalCode" placeholder="Индекс" class="checkout-input checkout-input--half font-body" autocomplete="postal-code">
+        </div>
+      </div>
+
+      <!-- Способ доставки -->
+      <div class="checkout-section">
+        <h2 class="checkout-section-title font-body">Способ доставки</h2>
+        <div id="co-delivery-options" class="checkout-delivery-options">
+          <label class="checkout-shipping-option checkout-shipping-option--selected" data-delivery="economy" data-cost="0">
+            <div class="checkout-shipping-left">
+              <input type="radio" name="delivery" value="economy" checked class="checkout-radio">
+              <span class="checkout-shipping-name font-body">Эконом</span>
+            </div>
+            <div class="checkout-shipping-right">
+              <span class="checkout-shipping-price font-body">Бесплатно</span>
+              <span class="checkout-shipping-days font-body">5-8 рабочих дней</span>
+            </div>
+          </label>
+          <label class="checkout-shipping-option" data-delivery="standard" data-cost="70000">
+            <div class="checkout-shipping-left">
+              <input type="radio" name="delivery" value="standard" class="checkout-radio">
+              <span class="checkout-shipping-name font-body">Стандарт</span>
+            </div>
+            <div class="checkout-shipping-right">
+              <span class="checkout-shipping-price font-body">700 ₽</span>
+              <span class="checkout-shipping-days font-body">3-5 рабочих дней</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Оплата -->
+      <div class="checkout-section">
+        <h2 class="checkout-section-title font-body">Оплата</h2>
+        <p class="checkout-payment-subtitle font-body">Все транзакции безопасны и зашифрованы</p>
+        <div class="checkout-payment-method">
+          <div class="checkout-payment-method-text">
+            <input type="radio" name="payment" value="yookassa" checked class="checkout-radio">
+            <span class="font-body" style="font-size: 16px;">Оплата через ЮKassa</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Кнопка Оплатить -->
+      <button id="co-submit-btn" class="checkout-submit-btn font-body" type="button">
+        <span class="co-btn-text">Оплатить</span>
+        <span class="co-btn-loading" style="display:none;">Создаём платёж...</span>
+      </button>
+
+      <div id="co-error" class="checkout-error font-body" style="display:none;"></div>
+
+      <p class="checkout-terms font-body">
+        Размещая заказ, вы соглашаетесь с <a href="/terms">условиями использования</a> и <a href="/privacy">политикой конфиденциальности</a>.
+      </p>
+    </div>
+
+    <!-- RIGHT: Products panel -->
+    <div class="checkout-products-panel">
+      <div class="checkout-products-inner">
+        <div id="co-product-list" class="checkout-product-list">
+          <p class="font-body" style="color: rgb(var(--color-muted));">Загрузка...</p>
+        </div>
+
+        <!-- Промокод -->
+        <div id="co-promo-section" class="checkout-promo-wrap">
+          <div id="co-promo-input-row" class="checkout-promo-row">
+            <input type="text" id="co-promo-input" placeholder="У меня есть промокод" class="checkout-promo-input font-body">
+            <button type="button" id="co-btn-apply-promo" class="checkout-promo-btn font-body">Применить</button>
+          </div>
+          <div id="co-promo-applied" class="checkout-promo-applied" style="display:none;">
+            <span id="co-promo-code" class="font-body"></span>
+            <button type="button" id="co-btn-remove-promo" class="checkout-promo-remove font-body">Удалить</button>
+          </div>
+          <div id="co-promo-error" class="checkout-promo-error font-body" style="display:none;"></div>
+        </div>
+
+        <!-- Итого -->
+        <div class="checkout-totals">
+          <div class="checkout-totals-row">
+            <span class="font-body" style="font-size: 16px;">Доставка</span>
+            <span id="co-delivery-cost" class="font-body" style="font-size: 14px;">Бесплатно</span>
+          </div>
+          <div id="co-discount-row" class="checkout-totals-row" style="display:none;">
+            <span class="font-body" style="font-size: 16px;">Скидка</span>
+            <span id="co-discount-value" class="font-body" style="font-size: 14px;">0 ₽</span>
+          </div>
+          <div class="checkout-totals-row checkout-totals-row--total">
+            <span class="font-body" style="font-size: 20px;">Итого</span>
+            <span id="co-total" class="font-body" style="font-size: 20px;">0 ₽</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .checkout-layout {
+    display: flex;
+    width: 100%;
+    min-height: calc(100vh - 80px);
+  }
+
+  .checkout-form-col {
+    flex: 0 0 auto;
+    width: 652px;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 64px;
+    padding: 64px 0 64px 300px;
+    box-sizing: border-box;
+  }
+
+  .checkout-products-panel {
+    flex: 1;
+    background: rgb(var(--color-background-secondary, var(--color-background)));
+    min-height: 100%;
+  }
+
+  .checkout-products-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 50px;
+    width: 520px;
+    max-width: 100%;
+    padding: 64px;
+    box-sizing: border-box;
+  }
+
+  .checkout-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .checkout-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .checkout-section-title {
+    font-size: 16px;
+    line-height: 22px;
+    color: rgb(var(--color-foreground));
+    margin: 0;
+    font-weight: 400;
+  }
+
+  .checkout-login-link {
+    font-size: 14px;
+    line-height: 19px;
+    text-decoration: underline;
+    color: rgb(var(--color-muted));
+  }
+
+  .checkout-fields-row {
+    display: flex;
+    gap: 16px;
+  }
+
+  .checkout-input {
+    box-sizing: border-box;
+    height: 56px;
+    padding: 0 12px;
+    background: rgb(var(--color-background));
+    border: 1px solid rgb(var(--color-muted));
+    border-radius: 4px;
+    font-size: 16px;
+    line-height: 22px;
+    color: rgb(var(--color-foreground));
+    outline: none;
+  }
+  .checkout-input::placeholder {
+    color: rgb(var(--color-muted));
+  }
+  .checkout-input:focus {
+    border-color: rgb(var(--color-foreground));
+  }
+  .checkout-input--half {
+    flex: 1;
+    min-width: 0;
+  }
+  .checkout-input--full {
+    width: 100%;
+  }
+  .checkout-input.checkout-input--error {
+    border-color: #e53e3e;
+  }
+
+  .checkout-delivery-options {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .checkout-shipping-option {
+    box-sizing: border-box;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 12px;
+    height: 60px;
+    border: 1px solid rgb(var(--color-muted));
+    border-radius: 4px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .checkout-shipping-option--selected {
+    border-color: rgb(var(--color-foreground));
+  }
+
+  .checkout-shipping-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .checkout-shipping-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+  .checkout-shipping-name {
+    font-size: 14px;
+    color: rgb(var(--color-foreground));
+  }
+  .checkout-shipping-price {
+    font-size: 12px;
+    color: rgb(var(--color-foreground));
+  }
+  .checkout-shipping-days {
+    font-size: 12px;
+    color: rgb(var(--color-muted));
+  }
+
+  .checkout-radio {
+    width: 20px;
+    height: 20px;
+    accent-color: rgb(var(--color-foreground));
+  }
+
+  .checkout-payment-subtitle {
+    font-size: 14px;
+    line-height: 19px;
+    color: rgb(var(--color-muted));
+    margin: 0;
+  }
+  .checkout-payment-method {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0;
+  }
+  .checkout-payment-method-text {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .checkout-submit-btn {
+    width: 100%;
+    height: 56px;
+    background: rgb(var(--color-foreground));
+    color: rgb(var(--color-background));
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: filter 0.15s;
+  }
+  .checkout-submit-btn:hover { filter: brightness(0.85); }
+  .checkout-submit-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  .checkout-error {
+    text-align: center;
+    font-size: 14px;
+    color: #e53e3e;
+    margin: -48px 0 0 0;
+  }
+
+  .checkout-terms {
+    font-size: 12px;
+    line-height: 16px;
+    color: rgb(var(--color-muted));
+    margin: -48px 0 0 0;
+  }
+  .checkout-terms a {
+    color: rgb(var(--color-muted));
+    text-decoration: underline;
+  }
+
+  /* Products */
+  .checkout-product-list {
+    display: flex;
+    flex-direction: column;
+    gap: 50px;
+  }
+
+  .checkout-product-item {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+  }
+  .checkout-product-img-wrap {
+    position: relative;
+    flex-shrink: 0;
+    width: 120px;
+    height: 120px;
+  }
+  .checkout-product-img {
+    width: 120px;
+    height: 120px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: rgb(var(--color-muted) / 0.15);
+  }
+  .checkout-product-counter {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 24px;
+    height: 24px;
+    border-radius: 100px;
+    background: rgb(var(--color-foreground));
+    color: rgb(var(--color-background));
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+  }
+  .checkout-product-info {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-top: 4px;
+  }
+  .checkout-product-name {
+    font-size: 16px;
+    line-height: 22px;
+    color: rgb(var(--color-foreground));
+  }
+  .checkout-product-variants {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .checkout-product-variant {
+    font-size: 14px;
+    line-height: 19px;
+  }
+  .checkout-product-variant-label {
+    color: rgb(var(--color-muted));
+  }
+  .checkout-product-variant-value {
+    color: rgb(var(--color-foreground));
+  }
+  .checkout-product-price {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .checkout-product-price-current {
+    font-size: 16px;
+    line-height: 22px;
+    color: rgb(var(--color-foreground));
+  }
+  .checkout-product-price-old {
+    font-size: 12px;
+    line-height: 16px;
+    text-decoration: line-through;
+    color: rgb(var(--color-muted));
+  }
+
+  /* Promo */
+  .checkout-promo-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .checkout-promo-row {
+    display: flex;
+    height: 56px;
+    border: 1px solid rgb(var(--color-muted));
+    border-radius: 4px;
+    overflow: hidden;
+    background: rgb(var(--color-background));
+  }
+  .checkout-promo-input {
+    flex: 1;
+    border: none;
+    padding: 0 12px;
+    font-size: 16px;
+    background: transparent;
+    color: rgb(var(--color-foreground));
+    outline: none;
+  }
+  .checkout-promo-input::placeholder {
+    color: rgb(var(--color-muted));
+  }
+  .checkout-promo-btn {
+    padding: 0 12px;
+    margin: 6px;
+    height: 44px;
+    background: rgb(var(--color-foreground));
+    color: rgb(var(--color-background));
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .checkout-promo-applied {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: rgb(var(--color-muted) / 0.1);
+    border-radius: 4px;
+    font-size: 14px;
+    color: rgb(var(--color-foreground));
+  }
+  .checkout-promo-remove {
+    background: none;
+    border: none;
+    color: #e53e3e;
+    font-size: 14px;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .checkout-promo-error {
+    font-size: 14px;
+    color: #e53e3e;
+  }
+
+  /* Totals */
+  .checkout-totals {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .checkout-totals-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: rgb(var(--color-foreground));
+  }
+  .checkout-totals-row--total {
+    padding-top: 12px;
+    border-top: 1px solid rgb(var(--color-muted) / 0.2);
+  }
+
+  /* Mobile responsive */
+  @media (max-width: 767px) {
+    .checkout-layout {
+      flex-direction: column;
+    }
+    .checkout-products-panel {
+      order: -1;
+    }
+    .checkout-form-col {
+      width: 100%;
+      padding: 32px 20px;
+      gap: 32px;
+    }
+    .checkout-products-inner {
+      width: 100%;
+      padding: 32px 20px;
+      gap: 32px;
+    }
+    .checkout-fields-row {
+      flex-direction: column;
+    }
+    .checkout-input--half {
+      width: 100%;
+    }
+    .checkout-error {
+      margin: -16px 0 0 0;
+    }
+    .checkout-terms {
+      margin: -16px 0 0 0;
+    }
+  }
+
+  @media (min-width: 768px) and (max-width: 1440px) {
+    .checkout-form-col {
+      padding-left: 5%;
+      width: 45%;
+    }
+    .checkout-products-inner {
+      width: 100%;
+      max-width: 520px;
+    }
+  }
+</style>

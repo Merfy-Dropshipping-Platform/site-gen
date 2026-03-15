@@ -1,0 +1,147 @@
+{
+  "pages": [
+    {
+      "id": "home",
+      "name": "Главная страница",
+      "slug": "/",
+      "isCustom": false,
+      "createdAt": 0
+    }
+  ],
+  "pagesData": {
+    "home": {
+      "content": [
+        {
+          "type": "Header",
+          "props": {
+            "id": "Header-1",
+            "siteTitle": "Мой магазин",
+            "logo": "/logo.svg",
+            "logoPosition": "top-left",
+            "stickiness": "scroll-up",
+            "colorScheme": "scheme-2",
+            "padding": { "top": 32, "bottom": 32 },
+            "navigationLinks": [
+              { "label": "Каталог", "href": "/catalog" },
+              { "label": "О нас", "href": "/about" },
+              { "label": "Доставка", "href": "/delivery" },
+              { "label": "Контакты", "href": "/contacts" }
+            ],
+            "menuColorScheme": "scheme-2",
+            "menuType": "dropdown",
+            "actionButtons": {
+              "showSearch": "true",
+              "showCart": "true",
+              "showProfile": "true"
+            }
+          }
+        },
+        {
+          "type": "Hero",
+          "props": {
+            "id": "Hero-1",
+            "backgroundImage": "/main-image.png",
+            "backgroundImage2": "",
+            "size": "large",
+            "overlay": 30,
+            "position": "bottom-center",
+            "alignment": "center",
+            "container": "false",
+            "colorScheme": "scheme-1",
+            "heading": { "text": "Добро пожаловать", "size": "large" },
+            "text": { "content": "Откройте для себя нашу коллекцию товаров", "size": "large" },
+            "primaryButton": { "text": "В КАТАЛОГ", "link": { "href": "/catalog" } },
+            "secondaryButton": { "text": "", "link": { "href": "#" } }
+          }
+        },
+        {
+          "type": "PopularProducts",
+          "props": {
+            "id": "PopularProducts-1",
+            "dataSource": "auto",
+            "collection": "",
+            "cards": 8,
+            "heading": { "text": "ПОПУЛЯРНЫЕ ТОВАРЫ", "size": "small" },
+            "text": { "content": "Лучшие товары нашего магазина", "size": "small" },
+            "productCard": {
+              "buttonStyle": "primary",
+              "cardStyle": "portrait",
+              "nextPhoto": "false",
+              "quickAdd": "false",
+              "columns": 4
+            },
+            "colorScheme": "scheme-2",
+            "padding": { "top": 80, "bottom": 80 }
+          }
+        },
+        {
+          "type": "ContactForm",
+          "props": {
+            "id": "ContactForm-1",
+            "heading": {
+              "text": "Свяжитесь с нами",
+              "size": "small"
+            },
+            "colorScheme": "scheme-2",
+            "padding": { "top": 80, "bottom": 80 }
+          }
+        },
+        {
+          "type": "Footer",
+          "props": {
+            "id": "Footer-1",
+            "newsletter": {
+              "enabled": "true",
+              "heading": "Подпишитесь на нашу рассылку",
+              "description": "Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.",
+              "placeholder": "email@example.com"
+            },
+            "heading": { "text": "Подпишитесь на нашу рассылку", "size": "small" },
+            "text": { "content": "Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.", "size": "small" },
+            "colorScheme": "scheme-2",
+            "copyrightColorScheme": "scheme-1",
+            "padding": { "top": 80, "bottom": 80 },
+            "navigationColumn": {
+              "title": "Навигация",
+              "links": [
+                { "label": "Каталог", "href": "/catalog" },
+                { "label": "О нас", "href": "/about" },
+                { "label": "Доставка", "href": "/delivery" },
+                { "label": "Контакты", "href": "/contacts" }
+              ]
+            },
+            "informationColumn": {
+              "title": "Информация",
+              "links": [
+                { "label": "Политика доставки", "href": "#" },
+                { "label": "Политика возврата", "href": "#" },
+                { "label": "Условия обслуживания", "href": "#" },
+                { "label": "Политика конфиденциальности", "href": "#" }
+              ]
+            },
+            "socialColumn": {
+              "title": "Социальные сети",
+              "email": "info@example.ru",
+              "socialLinks": [
+                { "platform": "VK", "href": "#" },
+                { "platform": "Telegram", "href": "#" }
+              ]
+            },
+            "copyright": {
+              "companyName": "Мой магазин",
+              "showYear": "true",
+              "poweredBy": "Powered by Merfy"
+            }
+          }
+        }
+      ],
+      "root": {
+        "props": {
+          "title": "Мой магазин"
+        }
+      },
+      "zones": {}
+    }
+  },
+  "currentPageId": "home"
+}

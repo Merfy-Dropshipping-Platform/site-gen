@@ -16,6 +16,7 @@ import { Logger } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
 import * as path from "path";
 import * as fs from "fs/promises";
+import * as fsSync from "fs";
 import { spawn } from "child_process";
 import archiver from "archiver";
 import { randomUUID } from "crypto";
@@ -163,6 +164,17 @@ export interface BuildResult {
  * Ensures the first build produces a site identical to what the constructor shows.
  */
 function getDefaultRevisionData(): Record<string, unknown> {
+  // Try loading from rose.json template first
+  try {
+    const defaultPath = path.join(__dirname, "templates", "defaults", "rose.json");
+    if (fsSync.existsSync(defaultPath)) {
+      return JSON.parse(fsSync.readFileSync(defaultPath, "utf-8"));
+    }
+  } catch {
+    // Fall through to hardcoded defaults
+  }
+
+  // Hardcoded fallback (legacy)
   const defaultHeader = {
     type: "Header",
     props: {

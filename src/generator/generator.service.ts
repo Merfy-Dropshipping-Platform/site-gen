@@ -12,6 +12,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
 import * as path from "path";
 import * as fs from "fs/promises";
+import * as fsSync from "fs";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { and, eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -270,9 +271,17 @@ export class SiteGeneratorService {
       }
     }
 
-    // Если текущая ревизия не найдена — создаём новую с базовыми данными
+    // Если текущая ревизия не найдена — создаём новую с дефолтным контентом темы
     if (!revisionId) {
-      const data = { content: [], meta: { title: "Мой сайт" } };
+      let data: any = { content: [], meta: { title: "Мой сайт" } };
+      try {
+        const defaultPath = path.join(__dirname, "templates", "defaults", "rose.json");
+        if (fsSync.existsSync(defaultPath)) {
+          data = JSON.parse(fsSync.readFileSync(defaultPath, "utf-8"));
+        }
+      } catch (e) {
+        this.logger.warn(`Failed to load default content: ${e instanceof Error ? e.message : e}`);
+      }
       revisionId = randomUUID();
       await this.db.insert(schema.siteRevision).values({
         id: revisionId,

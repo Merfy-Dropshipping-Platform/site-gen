@@ -17,6 +17,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
 import { firstValueFrom, timeout, catchError, of } from "rxjs";
 import { randomUUID } from "crypto";
+import * as fs from "fs";
 import * as path from "path";
 import * as fsp from "fs/promises";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
@@ -367,6 +368,25 @@ export class SitesDomainService {
       storageSlug,
       coolifyProjectUuid,
     });
+
+    // Create default revision with theme content (best-effort)
+    try {
+      const defaultContent = this.getDefaultContent("rose");
+      if (defaultContent) {
+        await this.createRevision({
+          tenantId: params.tenantId,
+          siteId: id,
+          data: defaultContent,
+          meta: { title: params.name || "Мой магазин" },
+          actorUserId: params.actorUserId,
+          setCurrent: true,
+        });
+      }
+    } catch (e) {
+      this.logger.warn(
+        `Failed to create default revision for site ${id} (site created anyway): ${e instanceof Error ? e.message : e}`,
+      );
+    }
 
     // Record initial domain in history (generated subdomain)
     if (domainId && publicUrl) {
@@ -844,6 +864,33 @@ export class SitesDomainService {
       );
     if (!rev) throw new Error("revision_not_found");
     return { item: rev };
+  }
+
+  /**
+   * Загружает дефолтный контент для указанной темы из JSON-файла.
+   * Если файл темы не найден, используется rose.json как fallback.
+   */
+  private getDefaultContent(theme?: string): any {
+    const themeName = theme || "rose";
+    const defaultsDir = path.join(
+      __dirname,
+      "generator",
+      "templates",
+      "defaults",
+    );
+    let filePath = path.join(defaultsDir, `${themeName}.json`);
+    if (!fs.existsSync(filePath)) {
+      filePath = path.join(defaultsDir, "rose.json");
+    }
+    try {
+      const raw = fs.readFileSync(filePath, "utf-8");
+      return JSON.parse(raw);
+    } catch (e) {
+      this.logger.warn(
+        `Failed to load default content for theme "${themeName}": ${e instanceof Error ? e.message : e}`,
+      );
+      return null;
+    }
   }
 
   async createRevision(params: {

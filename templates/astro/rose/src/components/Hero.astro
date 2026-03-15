@@ -87,7 +87,7 @@ const textSizeClass = textSizeClasses[textSize] || textSizeClasses.medium;
 const overlayOpacity = (overlay || 0) / 100;
 
 /* ── Color scheme CSS class: "scheme-1" → "color-scheme-1" ── */
-const schemeClass = colorScheme ? `color-${colorScheme}` : 'color-scheme-1';
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
 
 /* ── Background images ── */
 const hasBothImages = !!backgroundImage && !!backgroundImage2;

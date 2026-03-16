@@ -847,26 +847,24 @@ class CheckoutFlow {
       }
       this.cart = customerRes.data;
 
-      // 2. Сохранить адрес доставки
+      // 2. Сохранить адрес доставки (необязательно)
       const addressData = this.getAddressData();
-      if (!addressData.city) {
-        throw new Error('Укажите город доставки');
-      }
+      if (addressData.city) {
+        const addressRes = await CheckoutAPI.setAddress(this.cartId, {
+          city: addressData.city,
+          street: addressData.street,
+          building: addressData.building,
+          apartment: addressData.apartment || undefined,
+          postalCode: addressData.postalCode || undefined,
+          fiasId: addressData.fiasId || undefined,
+          cityFiasId: addressData.cityFiasId || undefined,
+        });
 
-      const addressRes = await CheckoutAPI.setAddress(this.cartId, {
-        city: addressData.city,
-        street: addressData.street,
-        building: addressData.building,
-        apartment: addressData.apartment || undefined,
-        postalCode: addressData.postalCode || undefined,
-        fiasId: addressData.fiasId || undefined,
-        cityFiasId: addressData.cityFiasId || undefined,
-      });
-
-      if (!addressRes.success) {
-        throw new Error(addressRes.message || 'Ошибка сохранения адреса');
+        if (!addressRes.success) {
+          throw new Error(addressRes.message || 'Ошибка сохранения адреса');
+        }
+        this.cart = addressRes.data;
       }
-      this.cart = addressRes.data;
 
       // 3. Оформить заказ
       const checkoutRes = await CheckoutAPI.checkout(this.cartId);

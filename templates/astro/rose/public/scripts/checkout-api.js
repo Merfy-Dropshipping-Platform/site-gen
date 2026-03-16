@@ -166,7 +166,8 @@ export const CheckoutAPI = {
    * @returns {Promise<{success: boolean, data: {tariffs: Array, pickupAvailable: boolean, pickupAddress?: string}}>}
    */
   async calculateDelivery(cartId, data) {
-    return request(`/orders/cart/${cartId}/delivery/calculate`, {
+    const { shopId } = getConfig();
+    return request(`/store/carts/${cartId}/delivery/calculate?store_id=${encodeURIComponent(shopId)}`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -179,7 +180,7 @@ export const CheckoutAPI = {
    * @returns {Promise<{success: boolean, data: object}>}
    */
   async selectDelivery(cartId, data) {
-    return request(`/orders/cart/${cartId}/delivery/select`, {
+    return request(`/store/carts/${cartId}/delivery/select`, {
       method: 'POST',
       body: JSON.stringify(data),
     });

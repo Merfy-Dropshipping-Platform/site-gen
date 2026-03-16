@@ -1305,6 +1305,7 @@ async function stageGenerate(
           shopId: ctx.siteId,
           apiUrl,
           ...(ctx.settings?.requireCustomerAuth ? { requireCustomerAuth: true } : {}),
+          ...(process.env.DADATA_API_KEY ? { dadataToken: process.env.DADATA_API_KEY } : {}),
         },
       },
     },

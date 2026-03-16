@@ -22,12 +22,15 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 
   <Footer {...footerProps} />
 
-  <script is:inline define:vars={{ shopId: meta?.shopId, apiUrl: meta?.apiUrl, requireCustomerAuth: !!(meta as any)?.requireCustomerAuth }}>
+  <script is:inline define:vars={{ shopId: meta?.shopId, apiUrl: meta?.apiUrl, requireCustomerAuth: !!(meta as any)?.requireCustomerAuth, dadataToken: (meta as any)?.dadataToken || '' }}>
     window.__MERFY_CONFIG__ = {
       shopId: shopId || '',
       apiUrl: apiUrl || 'https://gateway.merfy.ru/api',
       requireCustomerAuth: requireCustomerAuth || false,
     };
+    if (dadataToken) {
+      window.__DADATA_TOKEN__ = dadataToken;
+    }
     if (requireCustomerAuth) {
       var token = localStorage.getItem('customer_token');
       if (!token) {

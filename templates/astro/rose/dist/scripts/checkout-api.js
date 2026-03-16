@@ -44,6 +44,15 @@ export const CheckoutAPI = {
   },
 
   /**
+   * Получить корзину по ID
+   * @param {string} cartId
+   * @returns {Promise<{success: boolean, data: object}>}
+   */
+  async getCart(cartId) {
+    return request(`/orders/cart/${cartId}`);
+  },
+
+  /**
    * Добавить товар в корзину
    * @param {string} cartId
    * @param {string} productId
@@ -147,6 +156,32 @@ export const CheckoutAPI = {
   async removePromo(cartId) {
     return request(`/orders/cart/${cartId}/promo`, {
       method: 'DELETE',
+    });
+  },
+
+  /**
+   * Рассчитать тарифы доставки СДЭК
+   * @param {string} cartId
+   * @param {{cityFiasId: string, postalCode?: string}} data
+   * @returns {Promise<{success: boolean, data: {tariffs: Array, pickupAvailable: boolean, pickupAddress?: string}}>}
+   */
+  async calculateDelivery(cartId, data) {
+    return request(`/orders/cart/${cartId}/delivery/calculate`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Выбрать способ доставки
+   * @param {string} cartId
+   * @param {{type: string, tariffCode?: number|null, deliveryCostCents: number}} data
+   * @returns {Promise<{success: boolean, data: object}>}
+   */
+  async selectDelivery(cartId, data) {
+    return request(`/orders/cart/${cartId}/delivery/select`, {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   },
 };

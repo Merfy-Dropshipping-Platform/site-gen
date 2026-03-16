@@ -35,37 +35,111 @@ const padBottom = padding?.bottom ?? 40;
           <input type="text" id="co-firstName" name="firstName" required placeholder="Имя" class="checkout-input checkout-input--half font-body" autocomplete="given-name">
           <input type="text" id="co-lastName" name="lastName" required placeholder="Фамилия" class="checkout-input checkout-input--half font-body" autocomplete="family-name">
         </div>
-        <input type="text" id="co-address" name="address" required placeholder="Полный адрес" class="checkout-input checkout-input--full font-body" autocomplete="street-address">
-        <div class="checkout-fields-row">
-          <input type="text" id="co-city" name="city" required placeholder="Город" class="checkout-input checkout-input--half font-body" autocomplete="address-level2">
-          <input type="text" id="co-postalCode" name="postalCode" placeholder="Индекс" class="checkout-input checkout-input--half font-body" autocomplete="postal-code">
+
+        <!-- DaData address autocomplete -->
+        <div class="checkout-address-wrap" id="co-address-wrap">
+          <div class="checkout-address-search-wrap">
+            <input type="text" id="co-address-search" name="addressSearch" placeholder="Начните вводить адрес..." class="checkout-input checkout-input--full font-body" autocomplete="off">
+            <div id="dadata-suggestions" class="checkout-dadata-suggestions hidden"></div>
+          </div>
+
+          <!-- Hidden structured fields populated by DaData -->
+          <input type="hidden" id="co-city" name="city">
+          <input type="hidden" id="co-street" name="street">
+          <input type="hidden" id="co-house" name="house">
+          <input type="hidden" id="co-postal-code" name="postalCode">
+          <input type="hidden" id="co-fias-id" name="fiasId">
+          <input type="hidden" id="co-city-fias-id" name="cityFiasId">
+
+          <!-- Apartment — always visible, DaData may prefill but user can edit -->
+          <input type="text" id="co-apartment" name="apartment" placeholder="Квартира / офис" class="checkout-input checkout-input--full font-body" autocomplete="off">
+
+          <!-- Selected address display -->
+          <div id="co-address-selected" class="checkout-address-selected hidden">
+            <span id="co-address-selected-text" class="font-body"></span>
+            <button type="button" id="co-address-change" class="checkout-address-change font-body">Изменить</button>
+          </div>
+        </div>
+
+        <!-- Fallback manual fields (shown when DaData unavailable) -->
+        <div id="co-address-manual" class="checkout-address-manual hidden">
+          <input type="text" id="co-manual-city" name="manualCity" required placeholder="Город" class="checkout-input checkout-input--full font-body" autocomplete="address-level2">
+          <input type="text" id="co-manual-street" name="manualStreet" required placeholder="Улица" class="checkout-input checkout-input--full font-body" autocomplete="street-address">
+          <div class="checkout-fields-row">
+            <input type="text" id="co-manual-house" name="manualHouse" required placeholder="Дом" class="checkout-input checkout-input--half font-body">
+            <input type="text" id="co-manual-apartment" name="manualApartment" placeholder="Квартира / офис" class="checkout-input checkout-input--half font-body">
+          </div>
+          <input type="text" id="co-manual-postal-code" name="manualPostalCode" placeholder="Индекс" class="checkout-input checkout-input--full font-body" autocomplete="postal-code">
         </div>
       </div>
 
       <!-- Способ доставки -->
       <div class="checkout-section">
         <h2 class="checkout-section-title font-body">Способ доставки</h2>
-        <div id="co-delivery-options" class="checkout-delivery-options">
-          <label class="checkout-shipping-option checkout-shipping-option--selected" data-delivery="economy" data-cost="0">
+
+        <!-- Placeholder: показывается до выбора адреса -->
+        <div id="co-delivery-placeholder" class="checkout-delivery-placeholder">
+          <p class="font-body" style="font-size: 14px; color: rgb(var(--color-muted)); margin: 0;">
+            Укажите адрес доставки, чтобы рассчитать стоимость
+          </p>
+        </div>
+
+        <!-- Loading: расчёт тарифов -->
+        <div id="co-delivery-loading" class="checkout-delivery-loading hidden">
+          <div class="checkout-delivery-spinner"></div>
+          <span class="font-body" style="font-size: 14px; color: rgb(var(--color-muted));">Рассчитываем доставку...</span>
+        </div>
+
+        <!-- Tariff list: заполняется динамически -->
+        <div id="co-delivery-tariffs" class="checkout-delivery-options hidden"></div>
+
+        <!-- Self-pickup option -->
+        <div id="co-delivery-pickup" class="hidden" style="margin-top: 8px;">
+          <label class="checkout-shipping-option" data-delivery="pickup" data-cost="0">
             <div class="checkout-shipping-left">
-              <input type="radio" name="delivery" value="economy" checked class="checkout-radio">
-              <span class="checkout-shipping-name font-body">Эконом</span>
+              <input type="radio" name="delivery" value="pickup" class="checkout-radio">
+              <span class="checkout-shipping-name font-body">Самовывоз</span>
             </div>
             <div class="checkout-shipping-right">
               <span class="checkout-shipping-price font-body">Бесплатно</span>
-              <span class="checkout-shipping-days font-body">5-8 рабочих дней</span>
+              <span id="co-pickup-address" class="checkout-shipping-days font-body"></span>
             </div>
           </label>
-          <label class="checkout-shipping-option" data-delivery="standard" data-cost="70000">
-            <div class="checkout-shipping-left">
-              <input type="radio" name="delivery" value="standard" class="checkout-radio">
-              <span class="checkout-shipping-name font-body">Стандарт</span>
-            </div>
-            <div class="checkout-shipping-right">
-              <span class="checkout-shipping-price font-body">700 ₽</span>
-              <span class="checkout-shipping-days font-body">3-5 рабочих дней</span>
-            </div>
-          </label>
+        </div>
+
+        <!-- ПВЗ selection (shown when pickup tariff selected) -->
+        <div id="co-pvz-section" class="checkout-pvz-section hidden">
+          <h3 class="checkout-pvz-title font-body">Выберите пункт выдачи</h3>
+
+          <!-- Loading spinner -->
+          <div id="co-pvz-loading" class="checkout-delivery-loading hidden">
+            <div class="checkout-delivery-spinner"></div>
+            <span class="font-body" style="font-size: 14px; color: rgb(var(--color-muted));">Загружаем пункты выдачи...</span>
+          </div>
+
+          <!-- PVZ list (rendered by JS) -->
+          <div id="co-pvz-list" class="checkout-pvz-list hidden"></div>
+
+          <!-- Error state -->
+          <div id="co-pvz-error" class="checkout-pvz-error hidden">
+            <p class="font-body" style="font-size: 14px; color: #e53e3e; margin: 0;">
+              Не удалось загрузить пункты выдачи. Попробуйте позже.
+            </p>
+          </div>
+        </div>
+
+        <!-- Error state -->
+        <div id="co-delivery-error" class="checkout-delivery-error hidden">
+          <p class="font-body" style="font-size: 14px; color: #e53e3e; margin: 0;">
+            Не удалось рассчитать доставку. Попробуйте изменить адрес.
+          </p>
+        </div>
+
+        <!-- No delivery available -->
+        <div id="co-delivery-unavailable" class="checkout-delivery-unavailable hidden">
+          <p class="font-body" style="font-size: 14px; color: rgb(var(--color-muted)); margin: 0;">
+            Доставка в этот город недоступна
+          </p>
         </div>
       </div>
 
@@ -229,6 +303,83 @@ const padBottom = padding?.bottom ?? 40;
     border-color: #e53e3e;
   }
 
+  /* DaData address autocomplete */
+  .checkout-address-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .checkout-address-search-wrap {
+    position: relative;
+  }
+  .checkout-dadata-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background: rgb(var(--color-background));
+    border: 1px solid rgb(var(--color-muted));
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    max-height: 240px;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  .checkout-dadata-suggestions.hidden {
+    display: none;
+  }
+  .checkout-dadata-item {
+    padding: 12px;
+    font-size: 14px;
+    line-height: 20px;
+    color: rgb(var(--color-foreground));
+    cursor: pointer;
+    transition: background 0.1s;
+    border-bottom: 1px solid rgb(var(--color-muted) / 0.15);
+  }
+  .checkout-dadata-item:last-child {
+    border-bottom: none;
+  }
+  .checkout-dadata-item:hover {
+    background: rgb(var(--color-muted) / 0.1);
+  }
+  .checkout-address-selected {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: rgb(var(--color-muted) / 0.08);
+    border-radius: 4px;
+    gap: 12px;
+  }
+  .checkout-address-selected.hidden {
+    display: none;
+  }
+  .checkout-address-selected span {
+    font-size: 14px;
+    line-height: 20px;
+    color: rgb(var(--color-foreground));
+  }
+  .checkout-address-change {
+    background: none;
+    border: none;
+    font-size: 14px;
+    color: rgb(var(--color-muted));
+    text-decoration: underline;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .checkout-address-manual {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .checkout-address-manual.hidden {
+    display: none;
+  }
+
   .checkout-delivery-options {
     display: flex;
     flex-direction: column;
@@ -273,6 +424,45 @@ const padBottom = padding?.bottom ?? 40;
   .checkout-shipping-days {
     font-size: 12px;
     color: rgb(var(--color-muted));
+  }
+
+  .checkout-section .hidden {
+    display: none !important;
+  }
+  .checkout-delivery-placeholder,
+  .checkout-delivery-error,
+  .checkout-delivery-unavailable {
+    padding: 16px 12px;
+    border: 1px dashed rgb(var(--color-muted) / 0.4);
+    border-radius: 4px;
+    text-align: center;
+  }
+  .checkout-delivery-loading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 12px;
+    border: 1px solid rgb(var(--color-muted) / 0.3);
+    border-radius: 4px;
+  }
+  .checkout-delivery-loading.hidden {
+    display: none;
+  }
+  .checkout-delivery-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgb(var(--color-muted) / 0.3);
+    border-top-color: rgb(var(--color-foreground));
+    border-radius: 50%;
+    animation: co-spin 0.6s linear infinite;
+  }
+  @keyframes co-spin {
+    to { transform: rotate(360deg); }
+  }
+  .checkout-shipping-mode {
+    font-size: 11px;
+    color: rgb(var(--color-muted));
+    margin-top: 2px;
   }
 
   .checkout-radio {
@@ -497,6 +687,93 @@ const padBottom = padding?.bottom ?? 40;
   .checkout-totals-row--total {
     padding-top: 12px;
     border-top: 1px solid rgb(var(--color-muted) / 0.2);
+  }
+
+  /* PVZ (pickup point) selection */
+  .checkout-pvz-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .checkout-pvz-section.hidden {
+    display: none;
+  }
+  .checkout-pvz-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: rgb(var(--color-foreground));
+    margin: 0;
+  }
+  .checkout-pvz-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  .checkout-pvz-list.hidden {
+    display: none;
+  }
+  .checkout-pvz-item {
+    box-sizing: border-box;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid rgb(var(--color-muted));
+    border-radius: 4px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .checkout-pvz-item:hover {
+    border-color: rgb(var(--color-foreground) / 0.5);
+  }
+  .checkout-pvz-item--selected {
+    border-color: rgb(var(--color-foreground));
+  }
+  .checkout-pvz-item-radio {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .checkout-pvz-item-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .checkout-pvz-item-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: rgb(var(--color-foreground));
+    margin: 0 0 4px 0;
+  }
+  .checkout-pvz-item-address {
+    font-size: 13px;
+    color: rgb(var(--color-foreground));
+    margin: 0 0 4px 0;
+    line-height: 1.4;
+  }
+  .checkout-pvz-item-worktime {
+    font-size: 12px;
+    color: rgb(var(--color-muted));
+    margin: 0;
+  }
+  .checkout-pvz-badge {
+    flex-shrink: 0;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgb(var(--color-muted) / 0.12);
+    color: rgb(var(--color-muted));
+    white-space: nowrap;
+  }
+  .checkout-pvz-error {
+    padding: 12px;
+    border: 1px dashed rgb(var(--color-muted) / 0.4);
+    border-radius: 4px;
+    text-align: center;
+  }
+  .checkout-pvz-error.hidden {
+    display: none;
   }
 
   /* Mobile responsive */

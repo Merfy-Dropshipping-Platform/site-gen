@@ -158,6 +158,44 @@ export const CheckoutAPI = {
       method: 'DELETE',
     });
   },
+
+  /**
+   * Рассчитать тарифы доставки СДЭК
+   * @param {string} cartId
+   * @param {{cityFiasId: string, postalCode?: string}} data
+   * @returns {Promise<{success: boolean, data: {tariffs: Array, pickupAvailable: boolean, pickupAddress?: string}}>}
+   */
+  async calculateDelivery(cartId, data) {
+    return request(`/orders/cart/${cartId}/delivery/calculate`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Выбрать способ доставки
+   * @param {string} cartId
+   * @param {{type: string, tariffCode?: number|null, deliveryCostCents: number, pickupPointCode?: string, pickupPointAddress?: string}} data
+   * @returns {Promise<{success: boolean, data: object}>}
+   */
+  async selectDelivery(cartId, data) {
+    return request(`/orders/cart/${cartId}/delivery/select`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Получить пункты выдачи СДЭК для города
+   * @param {string} cartId
+   * @param {string} cityFiasId
+   * @returns {Promise<{success: boolean, data: Array<{code: string, name: string, address: string, workTime: string, type: 'PVZ'|'POSTAMAT'}>}>}
+   */
+  async getPickupPoints(cartId, cityFiasId) {
+    const { shopId } = getConfig();
+    const params = new URLSearchParams({ cityFiasId, store_id: shopId });
+    return request(`/store/carts/${cartId}/delivery/pickup-points?${params}`);
+  },
 };
 
 export default CheckoutAPI;

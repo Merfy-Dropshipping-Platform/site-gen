@@ -508,7 +508,7 @@ class CheckoutFlow {
       const modeText = t.deliveryMode === 'door' ? 'Курьер' : t.deliveryMode === 'pickup' ? 'ПВЗ' : '';
 
       return `
-        <label class="checkout-shipping-option" data-delivery="cdek" data-tariff-code="${t.tariffCode}" data-cost="${priceCents}" data-delivery-mode="${t.deliveryMode || ''}" data-index="${i}">
+        <label class="checkout-shipping-option" data-delivery="cdek" data-tariff-code="${t.tariffCode}" data-cost="${priceCents}" data-delivery-mode="${t.deliveryMode || ''}" data-period-min="${t.periodMin || ''}" data-period-max="${t.periodMax || ''}" data-index="${i}">
           <div class="checkout-shipping-left">
             <input type="radio" name="delivery" value="cdek-${t.tariffCode}" class="checkout-radio">
             <div>
@@ -557,14 +557,16 @@ class CheckoutFlow {
         const costCents = parseInt(option.dataset.cost || '0', 10);
         const tariffCode = option.dataset.tariffCode ? parseInt(option.dataset.tariffCode, 10) : null;
         const deliveryMode = option.dataset.deliveryMode || 'door';
+        const periodMin = option.dataset.periodMin ? parseInt(option.dataset.periodMin, 10) : null;
+        const periodMax = option.dataset.periodMax ? parseInt(option.dataset.periodMax, 10) : null;
 
-        this.selectDeliveryOption(deliveryType, tariffCode, costCents, deliveryMode);
+        this.selectDeliveryOption(deliveryType, tariffCode, costCents, deliveryMode, periodMin, periodMax);
       });
     });
   }
 
-  async selectDeliveryOption(type, tariffCode, deliveryCostCents, deliveryMode) {
-    this.selectedDelivery = { type, tariffCode, deliveryCostCents, deliveryMode };
+  async selectDeliveryOption(type, tariffCode, deliveryCostCents, deliveryMode, periodMin, periodMax) {
+    this.selectedDelivery = { type, tariffCode, deliveryCostCents, deliveryMode, periodMin, periodMax };
     this.deliveryCostCents = deliveryCostCents;
 
     // Update totals UI immediately
@@ -581,10 +583,10 @@ class CheckoutFlow {
     // Door delivery — hide PVZ section and send selection immediately
     this.hidePvzSection();
     this.selectedPvz = null;
-    await this.sendDeliverySelection(type, tariffCode, deliveryCostCents);
+    await this.sendDeliverySelection(type, tariffCode, deliveryCostCents, null, null, periodMin, periodMax);
   }
 
-  async sendDeliverySelection(type, tariffCode, deliveryCostCents, pickupPointCode, pickupPointAddress) {
+  async sendDeliverySelection(type, tariffCode, deliveryCostCents, pickupPointCode, pickupPointAddress, periodMin, periodMax) {
     try {
       const payload = {
         type,
@@ -593,6 +595,8 @@ class CheckoutFlow {
       };
       if (pickupPointCode) payload.pickupPointCode = pickupPointCode;
       if (pickupPointAddress) payload.pickupPointAddress = pickupPointAddress;
+      if (periodMin != null) payload.periodMin = periodMin;
+      if (periodMax != null) payload.periodMax = periodMax;
 
       const res = await CheckoutAPI.selectDelivery(this.cartId, payload);
 
@@ -729,6 +733,8 @@ class CheckoutFlow {
             this.selectedDelivery.deliveryCostCents,
             point.code,
             point.address,
+            this.selectedDelivery.periodMin,
+            this.selectedDelivery.periodMax,
           );
         }
       });

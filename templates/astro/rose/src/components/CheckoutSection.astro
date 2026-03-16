@@ -1,4 +1,6 @@
 ---
+import data from '../data/data.json';
+
 interface Props {
   colorScheme?: string;
   padding?: { top?: number; bottom?: number };
@@ -8,9 +10,10 @@ const { colorScheme, padding } = Astro.props;
 const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
 const padTop = padding?.top ?? 40;
 const padBottom = padding?.bottom ?? 40;
+const dadataToken = (data?.meta as any)?.dadataToken || '';
 ---
 
-<section class={schemeClass} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
+<section class={schemeClass} data-dadata-token={dadataToken} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
   <div class="checkout-layout">
     <!-- LEFT: Form -->
     <div class="checkout-form-col">

@@ -792,7 +792,7 @@ class CheckoutFlow {
     if (totalEl) {
       const subtotal = this.cart?.subtotalCents
         ?? this.items.reduce((s, i) => s + i.unitPriceCents * i.quantity, 0);
-      const total = subtotal + this.deliveryCostCents - discount;
+      const total = subtotal - discount;
       totalEl.textContent = this.formatPrice(total / 100);
     }
   }
@@ -847,24 +847,26 @@ class CheckoutFlow {
       }
       this.cart = customerRes.data;
 
-      // 2. Сохранить адрес доставки (необязательно)
+      // 2. Сохранить адрес доставки
       const addressData = this.getAddressData();
-      if (addressData.city) {
-        const addressRes = await CheckoutAPI.setAddress(this.cartId, {
-          city: addressData.city,
-          street: addressData.street,
-          building: addressData.building,
-          apartment: addressData.apartment || undefined,
-          postalCode: addressData.postalCode || undefined,
-          fiasId: addressData.fiasId || undefined,
-          cityFiasId: addressData.cityFiasId || undefined,
-        });
-
-        if (!addressRes.success) {
-          throw new Error(addressRes.message || 'Ошибка сохранения адреса');
-        }
-        this.cart = addressRes.data;
+      if (!addressData.city) {
+        throw new Error('Укажите город доставки');
       }
+
+      const addressRes = await CheckoutAPI.setAddress(this.cartId, {
+        city: addressData.city,
+        street: addressData.street,
+        building: addressData.building,
+        apartment: addressData.apartment || undefined,
+        postalCode: addressData.postalCode || undefined,
+        fiasId: addressData.fiasId || undefined,
+        cityFiasId: addressData.cityFiasId || undefined,
+      });
+
+      if (!addressRes.success) {
+        throw new Error(addressRes.message || 'Ошибка сохранения адреса');
+      }
+      this.cart = addressRes.data;
 
       // 3. Оформить заказ
       const checkoutRes = await CheckoutAPI.checkout(this.cartId);

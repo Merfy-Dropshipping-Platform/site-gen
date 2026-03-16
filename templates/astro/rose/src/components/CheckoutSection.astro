@@ -851,6 +851,19 @@ const dadataToken = (data?.meta as any)?.dadataToken || '';
     color: #8E99A4;
     line-height: 1.3;
   }
+  .checkout-shipping-addr {
+    font-size: 13px;
+    color: #5B6B7D;
+    line-height: 1.3;
+    text-decoration: underline;
+    text-decoration-color: #D0D5DD;
+    text-underline-offset: 2px;
+    transition: color 0.15s;
+  }
+  .checkout-shipping-addr:hover {
+    color: rgb(var(--color-foreground));
+    text-decoration-color: currentColor;
+  }
 
   /* Mobile responsive */
   @media (max-width: 767px) {

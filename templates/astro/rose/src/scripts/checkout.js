@@ -497,9 +497,12 @@ class CheckoutFlow {
 
     if (!container) return;
 
-    // Destination city from selected address
+    // Destination address from selected DaData suggestion
+    const selectedText = document.getElementById('co-address-selected-text');
+    const fullAddress = selectedText ? selectedText.textContent : '';
     const cityEl = document.getElementById('co-city');
     const destCity = cityEl ? cityEl.value : '';
+    const mapsUrl = fullAddress ? `https://yandex.ru/maps/?text=${encodeURIComponent(fullAddress)}` : '';
 
     // Render CDEK tariffs
     container.innerHTML = (tariffs || []).map((t, i) => {
@@ -510,12 +513,16 @@ class CheckoutFlow {
         ? `${t.periodMin}-${t.periodMax} дн.`
         : t.periodMin ? `от ${t.periodMin} дн.` : '';
 
-      // Mode badge and description
+      // Mode badge and description with address
       let modeBadge = '';
       let modeDesc = '';
       if (t.deliveryMode === 'door') {
         modeBadge = '<span class="checkout-shipping-badge checkout-shipping-badge--door font-body">Курьер</span>';
-        modeDesc = destCity ? `Доставка курьером до двери в ${destCity}` : 'Доставка курьером до двери';
+        if (fullAddress) {
+          modeDesc = `<a href="${mapsUrl}" target="_blank" rel="noopener" class="checkout-shipping-addr">${fullAddress}</a>`;
+        } else {
+          modeDesc = destCity ? `Доставка курьером в ${destCity}` : 'Доставка курьером до двери';
+        }
       } else if (t.deliveryMode === 'pickup') {
         modeBadge = '<span class="checkout-shipping-badge checkout-shipping-badge--pvz font-body">ПВЗ</span>';
         modeDesc = destCity ? `Пункт выдачи СДЭК в ${destCity}` : 'Пункт выдачи СДЭК';

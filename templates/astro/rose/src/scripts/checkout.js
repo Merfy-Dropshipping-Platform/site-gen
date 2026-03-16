@@ -497,6 +497,10 @@ class CheckoutFlow {
 
     if (!container) return;
 
+    // Destination city from selected address
+    const cityEl = document.getElementById('co-city');
+    const destCity = cityEl ? cityEl.value : '';
+
     // Render CDEK tariffs
     container.innerHTML = (tariffs || []).map((t, i) => {
       const deliverySum = t.deliverySumRub ?? t.deliverySum ?? 0;
@@ -505,15 +509,28 @@ class CheckoutFlow {
       const periodText = t.periodMin && t.periodMax
         ? `${t.periodMin}-${t.periodMax} дн.`
         : t.periodMin ? `от ${t.periodMin} дн.` : '';
-      const modeText = t.deliveryMode === 'door' ? 'Курьер' : t.deliveryMode === 'pickup' ? 'ПВЗ' : '';
+
+      // Mode badge and description
+      let modeBadge = '';
+      let modeDesc = '';
+      if (t.deliveryMode === 'door') {
+        modeBadge = '<span class="checkout-shipping-badge checkout-shipping-badge--door font-body">Курьер</span>';
+        modeDesc = destCity ? `Доставка курьером до двери в ${destCity}` : 'Доставка курьером до двери';
+      } else if (t.deliveryMode === 'pickup') {
+        modeBadge = '<span class="checkout-shipping-badge checkout-shipping-badge--pvz font-body">ПВЗ</span>';
+        modeDesc = destCity ? `Пункт выдачи СДЭК в ${destCity}` : 'Пункт выдачи СДЭК';
+      }
 
       return `
         <label class="checkout-shipping-option" data-delivery="cdek" data-tariff-code="${t.tariffCode}" data-cost="${priceCents}" data-delivery-mode="${t.deliveryMode || ''}" data-period-min="${t.periodMin || ''}" data-period-max="${t.periodMax || ''}" data-index="${i}">
           <div class="checkout-shipping-left">
             <input type="radio" name="delivery" value="cdek-${t.tariffCode}" class="checkout-radio">
-            <div>
-              <span class="checkout-shipping-name font-body">${t.tariffName || 'СДЭК'}</span>
-              ${modeText ? `<div class="checkout-shipping-mode font-body">${modeText}</div>` : ''}
+            <div class="checkout-shipping-info">
+              <div class="checkout-shipping-name-row">
+                <span class="checkout-shipping-name font-body">${t.tariffName || 'СДЭК'}</span>
+                ${modeBadge}
+              </div>
+              ${modeDesc ? `<div class="checkout-shipping-desc font-body">${modeDesc}</div>` : ''}
             </div>
           </div>
           <div class="checkout-shipping-right">

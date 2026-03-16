@@ -815,6 +815,43 @@ const dadataToken = (data?.meta as any)?.dadataToken || '';
     display: none;
   }
 
+  /* Shipping tariff enhancements */
+  .checkout-shipping-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+  .checkout-shipping-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .checkout-shipping-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+    line-height: 1.4;
+  }
+  .checkout-shipping-badge--door {
+    background: #E8F0FE;
+    color: #3B6CB5;
+  }
+  .checkout-shipping-badge--pvz {
+    background: #E6F4EA;
+    color: #2E7D42;
+  }
+  .checkout-shipping-desc {
+    font-size: 13px;
+    color: #8E99A4;
+    line-height: 1.3;
+  }
+
   /* Mobile responsive */
   @media (max-width: 767px) {
     .checkout-layout {

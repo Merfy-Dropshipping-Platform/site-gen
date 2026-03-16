@@ -1,6 +1,6 @@
 /**
  * Checkout page logic
- * Управление шагами оформления заказа
+ * Single-page checkout form (no multi-step navigation)
  * Поддерживает два режима:
  *   1. Корзина (cartId из localStorage) — multi-item
  *   2. Одиночный товар (?productId из URL) — backward compat
@@ -15,7 +15,6 @@ class CheckoutFlow {
     this.orderId = null;
     this.items = []; // [{name, imageUrl, unitPriceCents, quantity, id, productId}]
     this.cart = null;
-    this.currentStep = 1;
     this.dadataToken = null;
     this.selectedAddress = null; // Stores full DaData suggestion data
     this.deliveryTariffs = []; // CDEK tariffs from calculation
@@ -138,163 +137,87 @@ class CheckoutFlow {
   }
 
   renderProductSummary() {
-    const container = document.getElementById('product-summary');
+    const container = document.getElementById('co-product-list');
+    if (!container) return;
 
     if (this.items.length === 0) {
-      container.innerHTML = '<p class="text-gray-500">Корзина пуста</p>';
+      container.innerHTML = '<p class="font-body" style="color: rgb(var(--color-muted));">Корзина пуста</p>';
       return;
     }
 
     const itemsHtml = this.items.map(item => {
       const imgHtml = item.imageUrl
-        ? `<img src="${item.imageUrl}" alt="${item.name}" class="product-summary-image">`
-        : `<div class="product-summary-image" style="display: flex; align-items: center; justify-content: center; color: var(--rose-300);">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-              <circle cx="8.5" cy="8.5" r="1.5"/>
-              <polyline points="21,15 16,10 5,21"/>
-            </svg>
+        ? `<div class="checkout-product-img-wrap">
+            <img src="${item.imageUrl}" alt="${item.name}" class="checkout-product-img">
+            ${item.quantity > 1 ? `<span class="checkout-product-counter">${item.quantity}</span>` : ''}
+          </div>`
+        : `<div class="checkout-product-img-wrap">
+            <div class="checkout-product-img" style="display: flex; align-items: center; justify-content: center; color: rgb(var(--color-muted));">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21,15 16,10 5,21"/>
+              </svg>
+            </div>
+            ${item.quantity > 1 ? `<span class="checkout-product-counter">${item.quantity}</span>` : ''}
           </div>`;
 
-      const qtyLabel = item.quantity > 1 ? ` × ${item.quantity}` : '';
       const lineTotal = item.unitPriceCents * item.quantity;
 
       return `
-        <div class="product-summary-item" style="margin-bottom: 12px;">
+        <div class="checkout-product-item">
           ${imgHtml}
-          <div class="product-summary-info" style="flex: 1;">
-            <h3>${item.name}${qtyLabel}</h3>
-            <div class="product-summary-price">${this.formatPrice(lineTotal / 100)}</div>
+          <div class="checkout-product-info">
+            <span class="checkout-product-name font-body">${item.name}</span>
+            <div class="checkout-product-price">
+              <span class="checkout-product-price-current font-body">${this.formatPrice(lineTotal / 100)}</span>
+            </div>
           </div>
         </div>`;
     }).join('');
 
-    const subtotal = this.items.reduce((s, i) => s + i.unitPriceCents * i.quantity, 0);
+    container.innerHTML = itemsHtml;
 
-    container.innerHTML = `
-      ${itemsHtml}
-      ${this.items.length > 1 ? `
-        <div style="border-top: 1px solid #f3f4f6; margin-top: 8px; padding-top: 12px; display: flex; justify-content: space-between; font-weight: 600;">
-          <span>Подытог (${this.items.reduce((s, i) => s + i.quantity, 0)} шт.)</span>
-          <span>${this.formatPrice(subtotal / 100)}</span>
-        </div>` : ''}
-    `;
+    // Update totals after rendering
+    this.updateDeliveryTotals();
   }
 
   bindEvents() {
-    // Шаг 1 -> 2
-    document.getElementById('btn-to-contacts').addEventListener('click', () => {
-      this.goToStep(2);
-    });
+    // Single-page checkout — no step navigation buttons needed
+    // All form submission happens via the pay button
 
-    // Шаг 2 -> 1
-    document.getElementById('btn-back-to-product').addEventListener('click', () => {
-      this.goToStep(1);
-    });
+    // Pay button
+    const payBtn = document.getElementById('co-submit-btn');
+    if (payBtn) {
+      payBtn.addEventListener('click', async () => {
+        await this.processPayment();
+      });
+    }
 
-    // Шаг 2: Контакты
-    document.getElementById('customer-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const form = e.target;
-      const btn = form.querySelector('button[type="submit"]');
-      const errorEl = document.getElementById('customer-error');
+    // Промокод
+    const applyPromoBtn = document.getElementById('co-btn-apply-promo');
+    if (applyPromoBtn) {
+      applyPromoBtn.addEventListener('click', () => {
+        this.applyPromo();
+      });
+    }
 
-      btn.disabled = true;
-      errorEl.textContent = '';
-
-      try {
-        const res = await CheckoutAPI.setCustomer(this.cartId, {
-          email: form.email.value.trim(),
-          phone: form.phone.value.trim(),
-          name: form.name.value.trim() || undefined,
-        });
-
-        if (!res.success) {
-          throw new Error(res.message || 'Ошибка сохранения');
-        }
-
-        this.cart = res.data;
-        this.goToStep(3);
-      } catch (e) {
-        errorEl.textContent = e.message;
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-    // Шаг 3 -> 2
-    document.getElementById('btn-back-to-contacts').addEventListener('click', () => {
-      this.goToStep(2);
-    });
-
-    // Шаг 3: Адрес
-    const addressForm = document.getElementById('address-form');
-    if (addressForm) {
-      addressForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const form = e.target;
-        const btn = form.querySelector('button[type="submit"]');
-        const errorEl = document.getElementById('address-error');
-
-        btn.disabled = true;
-        errorEl.textContent = '';
-
-        try {
-          const addressData = this.getAddressData();
-
-          // Validate that at least city is filled
-          if (!addressData.city) {
-            throw new Error('Укажите город доставки');
-          }
-
-          const res = await CheckoutAPI.setAddress(this.cartId, {
-            city: addressData.city,
-            street: addressData.street,
-            building: addressData.building,
-            apartment: addressData.apartment || undefined,
-            postalCode: addressData.postalCode || undefined,
-          });
-
-          if (!res.success) {
-            throw new Error(res.message || 'Ошибка сохранения');
-          }
-
-          this.cart = res.data;
-          this.renderOrderSummary();
-          this.goToStep(4);
-        } catch (e) {
-          errorEl.textContent = e.message;
-        } finally {
-          btn.disabled = false;
+    const promoInput = document.getElementById('co-promo-input');
+    if (promoInput) {
+      promoInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.applyPromo();
         }
       });
     }
 
-    // Шаг 4 -> 3
-    document.getElementById('btn-back-to-address').addEventListener('click', () => {
-      this.goToStep(3);
-    });
-
-    // Шаг 4: Оплата
-    document.getElementById('btn-pay').addEventListener('click', async () => {
-      await this.processPayment();
-    });
-
-    // Промокод
-    document.getElementById('btn-apply-promo').addEventListener('click', () => {
-      this.applyPromo();
-    });
-
-    document.getElementById('promo-input').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        this.applyPromo();
-      }
-    });
-
-    document.getElementById('btn-remove-promo').addEventListener('click', () => {
-      this.removePromo();
-    });
+    const removePromoBtn = document.getElementById('co-btn-remove-promo');
+    if (removePromoBtn) {
+      removePromoBtn.addEventListener('click', () => {
+        this.removePromo();
+      });
+    }
   }
 
   // --- DaData Address Autocomplete ---
@@ -823,12 +746,22 @@ class CheckoutFlow {
         : 'Бесплатно';
     }
 
+    // Update discount row
+    const discount = this.cart?.discountCents ?? 0;
+    const discountRow = document.getElementById('co-discount-row');
+    const discountValue = document.getElementById('co-discount-value');
+    if (discountRow) {
+      discountRow.style.display = discount > 0 ? '' : 'none';
+    }
+    if (discountValue && discount > 0) {
+      discountValue.textContent = `-${this.formatPrice(discount / 100)}`;
+    }
+
     // Update total
     const totalEl = document.getElementById('co-total');
     if (totalEl) {
       const subtotal = this.cart?.subtotalCents
         ?? this.items.reduce((s, i) => s + i.unitPriceCents * i.quantity, 0);
-      const discount = this.cart?.discountCents ?? 0;
       const total = subtotal + this.deliveryCostCents - discount;
       totalEl.textContent = this.formatPrice(total / 100);
     }
@@ -836,29 +769,86 @@ class CheckoutFlow {
 
   // --- End CDEK Delivery ---
 
+  /**
+   * Collect customer and address data from single-page form fields.
+   */
+  getCustomerData() {
+    return {
+      email: document.getElementById('co-email')?.value?.trim() || '',
+      phone: document.getElementById('co-phone')?.value?.trim() || '',
+      firstName: document.getElementById('co-firstName')?.value?.trim() || '',
+      lastName: document.getElementById('co-lastName')?.value?.trim() || '',
+    };
+  }
+
   async processPayment() {
-    const btn = document.getElementById('btn-pay');
-    const loadingEl = btn.querySelector('.loading');
-    const textEl = btn.querySelector('.text');
-    const errorEl = document.getElementById('payment-error');
+    const btn = document.getElementById('co-submit-btn');
+    if (!btn) return;
+
+    const loadingEl = btn.querySelector('.co-btn-loading');
+    const textEl = btn.querySelector('.co-btn-text');
+    const errorEl = document.getElementById('co-error');
 
     btn.disabled = true;
-    loadingEl.style.display = 'flex';
-    textEl.style.display = 'none';
-    errorEl.textContent = '';
+    if (loadingEl) loadingEl.style.display = 'inline';
+    if (textEl) textEl.style.display = 'none';
+    if (errorEl) {
+      errorEl.textContent = '';
+      errorEl.style.display = 'none';
+    }
 
     try {
-      // 1. Оформить заказ
+      // 1. Сохранить данные покупателя
+      const customerData = this.getCustomerData();
+      if (!customerData.email || !customerData.phone) {
+        throw new Error('Укажите email и телефон');
+      }
+
+      const customerRes = await CheckoutAPI.setCustomer(this.cartId, {
+        email: customerData.email,
+        phone: customerData.phone,
+        name: [customerData.firstName, customerData.lastName].filter(Boolean).join(' ') || undefined,
+        firstName: customerData.firstName || undefined,
+        lastName: customerData.lastName || undefined,
+      });
+
+      if (!customerRes.success) {
+        throw new Error(customerRes.message || 'Ошибка сохранения контактов');
+      }
+      this.cart = customerRes.data;
+
+      // 2. Сохранить адрес доставки
+      const addressData = this.getAddressData();
+      if (!addressData.city) {
+        throw new Error('Укажите город доставки');
+      }
+
+      const addressRes = await CheckoutAPI.setAddress(this.cartId, {
+        city: addressData.city,
+        street: addressData.street,
+        building: addressData.building,
+        apartment: addressData.apartment || undefined,
+        postalCode: addressData.postalCode || undefined,
+        fiasId: addressData.fiasId || undefined,
+        cityFiasId: addressData.cityFiasId || undefined,
+      });
+
+      if (!addressRes.success) {
+        throw new Error(addressRes.message || 'Ошибка сохранения адреса');
+      }
+      this.cart = addressRes.data;
+
+      // 3. Оформить заказ
       const checkoutRes = await CheckoutAPI.checkout(this.cartId);
       if (!checkoutRes.success) {
         throw new Error(checkoutRes.message || 'Не удалось оформить заказ');
       }
       this.orderId = checkoutRes.data.id;
 
-      // 2. Очистить корзину в localStorage (заказ уже создан)
+      // 4. Очистить корзину в localStorage (заказ уже создан)
       this.clearSavedCart();
 
-      // 3. Создать платёж
+      // 5. Создать платёж
       const returnUrl = `${window.location.origin}/checkout/result?orderId=${this.orderId}`;
       const paymentRes = await CheckoutAPI.createPayment(this.orderId, returnUrl);
 
@@ -866,31 +856,40 @@ class CheckoutFlow {
         throw new Error(paymentRes.message || 'Не удалось создать платёж');
       }
 
-      // 4. Редирект на ЮKassa
+      // 6. Редирект на ЮKassa
       window.location.href = paymentRes.data.confirmationUrl;
     } catch (e) {
-      errorEl.textContent = e.message;
+      if (errorEl) {
+        errorEl.textContent = e.message;
+        errorEl.style.display = 'block';
+      } else {
+        console.error('Payment error:', e.message);
+      }
       btn.disabled = false;
-      loadingEl.style.display = 'none';
-      textEl.style.display = 'inline';
+      if (loadingEl) loadingEl.style.display = 'none';
+      if (textEl) textEl.style.display = 'inline';
     }
   }
 
   async applyPromo() {
-    const input = document.getElementById('promo-input');
-    const errorEl = document.getElementById('promo-error');
-    const btn = document.getElementById('btn-apply-promo');
+    const input = document.getElementById('co-promo-input');
+    const errorEl = document.getElementById('co-promo-error');
+    const btn = document.getElementById('co-btn-apply-promo');
+    if (!input || !btn) return;
+
     const code = input.value.trim();
 
     if (!code) return;
     if (!this.cartId) {
-      errorEl.textContent = 'Корзина ещё не создана';
-      errorEl.classList.remove('hidden');
+      if (errorEl) {
+        errorEl.textContent = 'Корзина ещё не создана';
+        errorEl.style.display = 'block';
+      }
       return;
     }
 
     btn.disabled = true;
-    errorEl.classList.add('hidden');
+    if (errorEl) errorEl.style.display = 'none';
 
     try {
       const res = await CheckoutAPI.applyPromo(this.cartId, code);
@@ -899,9 +898,12 @@ class CheckoutFlow {
       }
       this.cart = res.data;
       this.updatePromoUI();
+      this.updateDeliveryTotals();
     } catch (e) {
-      errorEl.textContent = e.message;
-      errorEl.classList.remove('hidden');
+      if (errorEl) {
+        errorEl.textContent = e.message;
+        errorEl.style.display = 'block';
+      }
     } finally {
       btn.disabled = false;
     }
@@ -910,7 +912,8 @@ class CheckoutFlow {
   async removePromo() {
     if (!this.cartId) return;
 
-    const btn = document.getElementById('btn-remove-promo');
+    const btn = document.getElementById('co-btn-remove-promo');
+    if (!btn) return;
     btn.disabled = true;
 
     try {
@@ -920,128 +923,56 @@ class CheckoutFlow {
       }
       this.cart = res.data;
       this.updatePromoUI();
+      this.updateDeliveryTotals();
     } catch (e) {
-      const errorEl = document.getElementById('promo-error');
-      errorEl.textContent = e.message;
-      errorEl.classList.remove('hidden');
+      const errorEl = document.getElementById('co-promo-error');
+      if (errorEl) {
+        errorEl.textContent = e.message;
+        errorEl.style.display = 'block';
+      }
     } finally {
       btn.disabled = false;
     }
   }
 
   updatePromoUI() {
-    const inputRow = document.getElementById('promo-input-row');
-    const appliedEl = document.getElementById('promo-applied');
-    const errorEl = document.getElementById('promo-error');
-    const input = document.getElementById('promo-input');
+    const inputRow = document.getElementById('co-promo-input-row');
+    const appliedEl = document.getElementById('co-promo-applied');
+    const errorEl = document.getElementById('co-promo-error');
+    const input = document.getElementById('co-promo-input');
 
-    errorEl.classList.add('hidden');
+    if (errorEl) errorEl.style.display = 'none';
 
     if (this.cart?.promoCode) {
-      inputRow.classList.add('hidden');
-      appliedEl.classList.remove('hidden');
-      document.getElementById('promo-applied-code').textContent = this.cart.promoCode;
+      if (inputRow) inputRow.style.display = 'none';
+      if (appliedEl) appliedEl.style.display = '';
+
+      const codeEl = document.getElementById('co-promo-code');
+      if (codeEl) codeEl.textContent = this.cart.promoCode;
+
       const discount = this.cart.discountCents ?? 0;
-      document.getElementById('promo-applied-discount').textContent =
-        discount > 0 ? `Скидка: -${this.formatPrice(discount / 100)}` : 'Скидка применена';
+      const discountValue = document.getElementById('co-discount-value');
+      if (discountValue) {
+        discountValue.textContent = discount > 0
+          ? `-${this.formatPrice(discount / 100)}`
+          : 'Скидка применена';
+      }
     } else {
-      inputRow.classList.remove('hidden');
-      appliedEl.classList.add('hidden');
-      input.value = '';
+      if (inputRow) inputRow.style.display = '';
+      if (appliedEl) appliedEl.style.display = 'none';
+      if (input) input.value = '';
     }
-  }
-
-  renderOrderSummary() {
-    const container = document.getElementById('order-summary');
-    const subtotal = this.cart?.subtotalCents ?? this.items.reduce((s, i) => s + i.unitPriceCents * i.quantity, 0);
-    const delivery = this.cart?.deliveryCostCents ?? 0;
-    const discount = this.cart?.discountCents ?? 0;
-    const total = this.cart?.totalCents ?? subtotal + delivery - discount;
-
-    const itemsHtml = this.items.map(item => {
-      const lineTotal = item.unitPriceCents * item.quantity;
-      const imgHtml = item.imageUrl
-        ? `<img src="${item.imageUrl}" alt="${item.name}" class="product-summary-image" style="width: 60px; height: 60px;">`
-        : '';
-      const qtyLabel = item.quantity > 1 ? ` × ${item.quantity}` : '';
-
-      return `
-        <div class="product-summary-item" style="margin-bottom: 12px;">
-          ${imgHtml}
-          <div class="product-summary-info">
-            <h3 style="font-size: 1rem;">${item.name}${qtyLabel}</h3>
-            <div style="font-size: 0.875rem; color: rgb(var(--color-primary)); font-weight: 600;">${this.formatPrice(lineTotal / 100)}</div>
-          </div>
-        </div>`;
-    }).join('');
-
-    const discountRow = discount > 0
-      ? `<div class="order-summary-row" style="color: #16a34a;">
-          <span>Скидка${this.cart?.promoCode ? ` (${this.cart.promoCode})` : ''}</span>
-          <span>-${this.formatPrice(discount / 100)}</span>
-        </div>`
-      : '';
-
-    container.innerHTML = `
-      ${itemsHtml}
-      <div style="border-top: 1px solid #f3f4f6; margin-top: 8px; padding-top: 12px;">
-        <div class="order-summary-row">
-          <span>Товары (${this.items.reduce((s, i) => s + i.quantity, 0)} шт.)</span>
-          <span>${this.formatPrice(subtotal / 100)}</span>
-        </div>
-        <div class="order-summary-row">
-          <span>Доставка</span>
-          <span>${delivery > 0 ? this.formatPrice(delivery / 100) : 'Бесплатно'}</span>
-        </div>
-        ${discountRow}
-        <div class="order-summary-row total">
-          <span>Итого</span>
-          <span class="price">${this.formatPrice(total / 100)}</span>
-        </div>
-      </div>
-    `;
-  }
-
-  goToStep(step) {
-    // Скрыть все шаги
-    document.querySelectorAll('.checkout-step').forEach((el) => {
-      el.classList.remove('active');
-    });
-
-    // Показать нужный шаг
-    const stepEl = document.querySelector(`.checkout-step[data-step="${step}"]`);
-    if (stepEl) {
-      stepEl.classList.add('active');
-    }
-
-    // Обновить индикатор
-    document.querySelectorAll('.step-dot').forEach((el) => {
-      const s = parseInt(el.dataset.step, 10);
-      el.classList.remove('active', 'completed');
-      if (s < step) el.classList.add('completed');
-      if (s === step) el.classList.add('active');
-    });
-
-    this.currentStep = step;
-
-    // Прокрутить вверх
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   showError(title, message) {
-    document.getElementById('error-title').textContent = title;
-    document.getElementById('error-text').textContent = message;
-
-    // Скрыть все шаги
-    document.querySelectorAll('.checkout-step').forEach((el) => {
-      el.classList.remove('active');
-    });
-
-    // Показать страницу ошибки
-    document.querySelector('.checkout-step[data-step="error"]').classList.add('active');
-
-    // Скрыть индикатор шагов
-    document.querySelector('.step-indicator').style.display = 'none';
+    // Single-page checkout: show error in co-error element
+    const errorEl = document.getElementById('co-error');
+    if (errorEl) {
+      errorEl.textContent = `${title}: ${message}`;
+      errorEl.style.display = 'block';
+    } else {
+      console.error(`Checkout error — ${title}: ${message}`);
+    }
   }
 
   formatPrice(price) {

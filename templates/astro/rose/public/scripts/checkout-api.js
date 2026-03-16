@@ -175,7 +175,7 @@ export const CheckoutAPI = {
   /**
    * Выбрать способ доставки
    * @param {string} cartId
-   * @param {{type: string, tariffCode?: number|null, deliveryCostCents: number}} data
+   * @param {{type: string, tariffCode?: number|null, deliveryCostCents: number, pickupPointCode?: string, pickupPointAddress?: string}} data
    * @returns {Promise<{success: boolean, data: object}>}
    */
   async selectDelivery(cartId, data) {
@@ -183,6 +183,18 @@ export const CheckoutAPI = {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  },
+
+  /**
+   * Получить пункты выдачи СДЭК для города
+   * @param {string} cartId
+   * @param {string} cityFiasId
+   * @returns {Promise<{success: boolean, data: Array<{code: string, name: string, address: string, workTime: string, type: 'PVZ'|'POSTAMAT'}>}>}
+   */
+  async getPickupPoints(cartId, cityFiasId) {
+    const { shopId } = getConfig();
+    const params = new URLSearchParams({ cityFiasId, store_id: shopId });
+    return request(`/store/carts/${cartId}/delivery/pickup-points?${params}`);
   },
 };
 

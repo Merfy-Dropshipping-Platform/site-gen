@@ -755,6 +755,11 @@ export class SitesDomainService {
         // Default to low priority on billing error
       }
 
+      // Wait for Coolify app creation before returning to avoid race with migrateOrphanedSites
+      if (coolifyPromise) {
+        await coolifyPromise;
+      }
+
       await this.buildQueue.queueBuild({
         tenantId: params.tenantId,
         siteId: params.siteId,
@@ -1578,10 +1583,18 @@ export class SitesDomainService {
         }
 
         // 3. Создаём Coolify Application (nginx-minio-proxy) если нет
+        // Re-read from DB to avoid race with concurrent publish()
+        const freshSite = await this.db
+          .select({ coolifyAppUuid: schema.site.coolifyAppUuid })
+          .from(schema.site)
+          .where(eq(schema.site.id, site.id))
+          .then((r) => r[0]);
+        const currentCoolifyAppUuid = freshSite?.coolifyAppUuid || site.coolifyAppUuid;
+
         const finalPublicUrl = site.publicUrl || updates.publicUrl;
         const slug = site.storageSlug || updates.storageSlug
           || (finalPublicUrl ? this.storage.extractSubdomainSlug(finalPublicUrl) : null);
-        if (!site.coolifyAppUuid && slug && projectUuid) {
+        if (!currentCoolifyAppUuid && slug && projectUuid) {
           try {
             const sitePath = `sites/${slug}`;
 

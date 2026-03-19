@@ -1,0 +1,30 @@
+CREATE TYPE "public"."policy_type" AS ENUM('refund', 'privacy', 'tos', 'shipping');--> statement-breakpoint
+CREATE TABLE "site_contacts" (
+	"id" text PRIMARY KEY NOT NULL,
+	"site_id" text NOT NULL,
+	"fields" jsonb DEFAULT '[]'::jsonb,
+	"updated_at" timestamp NOT NULL,
+	CONSTRAINT "site_contacts_site_id_unique" UNIQUE("site_id")
+);
+--> statement-breakpoint
+CREATE TABLE "site_domain_history" (
+	"id" text PRIMARY KEY NOT NULL,
+	"site_id" text NOT NULL,
+	"domain_name" text NOT NULL,
+	"domain_id" text,
+	"type" text NOT NULL,
+	"status" text NOT NULL,
+	"attached_at" timestamp NOT NULL,
+	"detached_at" timestamp
+);
+--> statement-breakpoint
+CREATE TABLE "site_policy" (
+	"id" text PRIMARY KEY NOT NULL,
+	"site_id" text NOT NULL,
+	"type" "policy_type" NOT NULL,
+	"content" text DEFAULT '',
+	"created_at" timestamp NOT NULL,
+	"updated_at" timestamp NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "site" ADD COLUMN "branding" jsonb;

@@ -58,6 +58,7 @@ import { BuildQueuePublisher } from "./rabbitmq/build-queue.service";
 import { ProductUpdateListener } from "./listeners/product-update.listener";
 import { FragmentPatcher } from "./listeners/fragment-patcher.service";
 import { BrandingController } from "./branding/branding.controller";
+import { PolicyModule } from "./policy/policy.module";
 
 @Module({
   imports: [
@@ -77,6 +78,7 @@ import { BrandingController } from "./branding/branding.controller";
     DatabaseModule,
     DomainModule,
     BulkModule,
+    PolicyModule,
   ],
   controllers: [
     HealthController,

@@ -50,6 +50,13 @@
       "when": 1771513692488,
       "tag": "0006_islands_enabled",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1773928454710,
+      "tag": "0007_sloppy_blur",
+      "breakpoints": true
     }
   ]
 }

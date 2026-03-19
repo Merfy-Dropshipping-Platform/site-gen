@@ -1171,6 +1171,98 @@ async function stageGenerate(
     logger.log(`[generate] Legacy format: ${pages.length} page(s)`);
   }
 
+  // ── Генерация страниц политик из site_policy ──
+  try {
+    const policies = await deps.db
+      .select()
+      .from(deps.schema.sitePolicy)
+      .where(eq(deps.schema.sitePolicy.siteId, ctx.siteId));
+
+    const POLICY_SLUG_MAP: Record<string, string> = {
+      refund: "refund",
+      privacy: "privacy",
+      tos: "terms",
+      shipping: "shipping-policy",
+    };
+
+    const POLICY_TITLE_MAP: Record<string, string> = {
+      refund: "Политика возврата",
+      privacy: "Политика конфиденциальности",
+      tos: "Условия обслуживания",
+      shipping: "Политика доставки",
+    };
+
+    // Берём Header/Footer из домашней страницы
+    const homePage = pages.find((p) => p.fileName === "index.astro");
+    const homeContent = (homePage?.data?.content as any[]) ?? [];
+    const headerComponent = homeContent.find((c: any) => c?.type === "Header");
+    const footerComponent = homeContent.find((c: any) => c?.type === "Footer");
+
+    let policyPagesCount = 0;
+    for (const policy of policies) {
+      if (!policy.content || policy.content.trim() === "") continue;
+
+      const slug = POLICY_SLUG_MAP[policy.type] ?? policy.type;
+      const title = POLICY_TITLE_MAP[policy.type] ?? policy.type;
+      const fileName = `${slug}.astro`;
+
+      const content: any[] = [];
+      if (headerComponent) content.push({ ...headerComponent });
+      content.push({
+        type: "MainText",
+        props: {
+          heading: { text: title, size: "large" },
+          text: { content: policy.content },
+          padding: { top: 80, bottom: 80 },
+        },
+      });
+      if (footerComponent) content.push({ ...footerComponent });
+
+      pages.push({ fileName, data: { content } });
+      policyPagesCount++;
+    }
+
+    if (policyPagesCount > 0) {
+      logger.log(`[generate] Added ${policyPagesCount} policy page(s)`);
+
+      // Обновляем ссылки в Footer всех страниц на реальные пути политик
+      const policyLinks = policies
+        .filter((p) => p.content && p.content.trim() !== "")
+        .map((p) => ({
+          label: POLICY_TITLE_MAP[p.type] ?? p.type,
+          href: `/${POLICY_SLUG_MAP[p.type] ?? p.type}`,
+        }));
+
+      if (policyLinks.length > 0) {
+        for (const page of pages) {
+          const content = page.data.content as any[];
+          for (const component of content) {
+            if (component?.type === "Footer" && component?.props) {
+              // Обновляем informationColumn с реальными ссылками
+              const infoCol = component.props.informationColumn;
+              if (infoCol?.links && Array.isArray(infoCol.links)) {
+                component.props.informationColumn = {
+                  ...infoCol,
+                  links: policyLinks,
+                };
+              } else {
+                component.props.informationColumn = {
+                  title: "Информация",
+                  links: policyLinks,
+                };
+              }
+            }
+          }
+        }
+        logger.log(`[generate] Updated Footer policy links in ${pages.length} page(s)`);
+      }
+    }
+  } catch (err) {
+    logger.warn(
+      `[generate] Failed to load policy pages: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
   if (pages.length === 0) {
     logger.warn(
       `[generate] Pages array is empty for site ${ctx.siteId} — template index.astro will not be overwritten. ` +

@@ -834,13 +834,18 @@ class CheckoutFlow {
         throw new Error('Укажите email и телефон');
       }
 
-      const customerRes = await CheckoutAPI.setCustomer(this.cartId, {
+      const setCustomerPayload = {
         email: customerData.email,
         phone: customerData.phone,
         name: [customerData.firstName, customerData.lastName].filter(Boolean).join(' ') || undefined,
         firstName: customerData.firstName || undefined,
         lastName: customerData.lastName || undefined,
-      });
+      };
+      // Pass customerId if customer is logged in
+      if (window.__MERFY_CUSTOMER_ID__) {
+        setCustomerPayload.customerId = window.__MERFY_CUSTOMER_ID__;
+      }
+      const customerRes = await CheckoutAPI.setCustomer(this.cartId, setCustomerPayload);
 
       if (!customerRes.success) {
         throw new Error(customerRes.message || 'Ошибка сохранения контактов');
@@ -877,6 +882,33 @@ class CheckoutFlow {
 
       // 4. Очистить корзину в localStorage (заказ уже создан)
       this.clearSavedCart();
+
+      // 4.5. Обновить профиль покупателя (адрес, телефон) — best effort
+      if (window.__MERFY_CUSTOMER_ID__ && window.CustomerStore && window.CustomerStore.getToken()) {
+        try {
+          var profileUpdate = {};
+          if (customerData.phone) profileUpdate.phone = customerData.phone;
+          if (addressData.city) {
+            profileUpdate.defaultAddress = {
+              city: addressData.city,
+              street: addressData.street || '',
+              building: addressData.building || '',
+              apartment: addressData.apartment || '',
+              postalCode: addressData.postalCode || '',
+            };
+          }
+          var profileConfig = window.__MERFY_CONFIG__ || {};
+          var profileApiBase = profileConfig.apiBase || '';
+          fetch(profileApiBase + '/store/auth/profile', {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + window.CustomerStore.getToken(),
+            },
+            body: JSON.stringify(profileUpdate),
+          }).catch(function() { /* silent — best effort */ });
+        } catch (_) { /* silent */ }
+      }
 
       // 5. Создать платёж
       const returnUrl = `${window.location.origin}/checkout/result?orderId=${this.orderId}`;

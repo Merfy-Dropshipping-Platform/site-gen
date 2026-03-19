@@ -18,11 +18,43 @@ const dadataToken = (data?.meta as any)?.dadataToken || '';
     <!-- LEFT: Form -->
     <div class="checkout-form-col">
 
+      <!-- Auth Gate (shown when requireCustomerAuth=true and not logged in) -->
+      <div id="co-auth-gate" class="checkout-auth-gate" style="display:none;">
+        <h2 class="checkout-section-title font-body" style="text-align:center;margin-bottom:8px;">Войдите или зарегистрируйтесь</h2>
+        <p class="font-body" style="text-align:center;font-size:14px;color:rgb(var(--color-muted));margin:0 0 24px 0;">Для оформления заказа необходим аккаунт</p>
+
+        <div class="co-auth-tabs">
+          <button type="button" class="co-auth-tab co-auth-tab--active font-body" data-tab="login">Вход</button>
+          <button type="button" class="co-auth-tab font-body" data-tab="register">Регистрация</button>
+        </div>
+
+        <!-- Login form -->
+        <div id="co-auth-login" class="co-auth-form">
+          <input type="email" id="co-auth-email" placeholder="E-mail" class="checkout-input checkout-input--full font-body" autocomplete="email">
+          <input type="password" id="co-auth-password" placeholder="Пароль" class="checkout-input checkout-input--full font-body" autocomplete="current-password">
+          <button type="button" id="co-auth-login-btn" class="checkout-submit-btn font-body">Войти</button>
+          <div id="co-auth-login-error" class="co-auth-error font-body" style="display:none;"></div>
+        </div>
+
+        <!-- Register form -->
+        <div id="co-auth-register" class="co-auth-form" style="display:none;">
+          <input type="email" id="co-auth-reg-email" placeholder="E-mail" class="checkout-input checkout-input--full font-body" autocomplete="email">
+          <input type="text" id="co-auth-reg-name" placeholder="Имя" class="checkout-input checkout-input--full font-body" autocomplete="name">
+          <input type="password" id="co-auth-reg-password" placeholder="Пароль (мин. 8 символов)" class="checkout-input checkout-input--full font-body" autocomplete="new-password">
+          <input type="password" id="co-auth-reg-confirm" placeholder="Подтвердите пароль" class="checkout-input checkout-input--full font-body" autocomplete="new-password">
+          <button type="button" id="co-auth-register-btn" class="checkout-submit-btn font-body">Зарегистрироваться</button>
+          <div id="co-auth-register-error" class="co-auth-error font-body" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- Checkout form (hidden when auth gate is shown) -->
+      <div id="co-checkout-form">
+
       <!-- Контакты -->
       <div class="checkout-section">
         <div class="checkout-section-header">
           <h2 class="checkout-section-title font-body">Контакты</h2>
-          <a href="/login?redirect=/checkout" class="checkout-login-link font-body">Войти в аккаунт</a>
+          <a href="#" id="co-login-link" class="checkout-login-link font-body" style="display:none;">Уже есть аккаунт? Войти</a>
         </div>
         <div class="checkout-fields-row">
           <input type="email" id="co-email" name="email" required placeholder="E-mail" class="checkout-input checkout-input--half font-body" autocomplete="email">
@@ -169,6 +201,8 @@ const dadataToken = (data?.meta as any)?.dadataToken || '';
       <p class="checkout-terms font-body">
         Размещая заказ, вы соглашаетесь с <a href="/terms">условиями использования</a> и <a href="/privacy">политикой конфиденциальности</a>.
       </p>
+
+      </div><!-- /co-checkout-form -->
     </div>
 
     <!-- RIGHT: Products panel -->
@@ -865,6 +899,47 @@ const dadataToken = (data?.meta as any)?.dadataToken || '';
     text-decoration-color: currentColor;
   }
 
+  /* Auth gate */
+  .checkout-auth-gate {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 40px 0;
+  }
+  .co-auth-tabs {
+    display: flex;
+    border-bottom: 1.5px solid #E0E4EA;
+    margin-bottom: 8px;
+  }
+  .co-auth-tab {
+    flex: 1;
+    padding: 12px 0;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 16px;
+    font-weight: 500;
+    color: #8E99A4;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .co-auth-tab--active {
+    color: rgb(var(--color-foreground));
+    border-bottom-color: rgb(var(--color-foreground));
+  }
+  .co-auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .co-auth-error {
+    text-align: center;
+    font-size: 14px;
+    color: #e53e3e;
+  }
+
   /* Mobile responsive */
   @media (max-width: 767px) {
     .checkout-layout {
@@ -909,13 +984,3 @@ const dadataToken = (data?.meta as any)?.dadataToken || '';
   }
 </style>
 
-<script is:inline>
-  // Auth gate for checkout (if requireCustomerAuth enabled)
-  if (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.requireCustomerAuth) {
-    var token = localStorage.getItem('customer_token');
-    if (!token) {
-      window.location.href = '/login?redirect=/checkout';
-    }
-  }
-</script>
-<script type="module" src="/scripts/checkout.js"></script>

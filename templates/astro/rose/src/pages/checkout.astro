@@ -31,12 +31,9 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
     if (dadataToken) {
       window.__DADATA_TOKEN__ = dadataToken;
     }
-    if (requireCustomerAuth) {
-      var token = localStorage.getItem('customer_token');
-      if (!token) {
-        window.location.href = '/login?redirect=/checkout';
-      }
-    }
   </script>
+  <script src="/scripts/customer-store.js" is:inline></script>
+  <script src="/scripts/customer-auth.js" is:inline></script>
+  <script src="/scripts/checkout-auth.js" is:inline></script>
   <script type="module" src="/scripts/checkout.js"></script>
 </BaseLayout>

@@ -12,7 +12,7 @@ interface Props {
   padding?: { top?: number; bottom?: number };
   navigationColumn?: { title?: string; links?: Array<{ label: string; href: string }> };
   informationColumn?: { title?: string; links?: Array<{ label: string; href: string }> };
-  socialColumn?: { title?: string; email?: string; socialLinks?: Array<{ platform: string; href: string }> };
+  socialColumn?: { title?: string; email?: string; phone?: string; contactFields?: Array<{ label: string; value: string }>; socialLinks?: Array<{ platform: string; href: string }> };
   copyright?: { companyName?: string; showYear?: string; poweredBy?: string };
 }
 
@@ -108,7 +108,17 @@ const copyrightSchemeClass = copyrightColorScheme ? `color-scheme-${copyrightCol
         {socialColumn?.title && (
           <div class="sm:col-span-2 lg:col-span-1">
             <FooterColumn title={socialColumn.title}>
-              {socialColumn.email && (
+              {socialColumn.contactFields && socialColumn.contactFields.length > 0 && (
+                <div class="flex flex-col gap-2 sm:gap-3">
+                  {socialColumn.contactFields.map((field) => (
+                    <div class="flex flex-col">
+                      <span class="text-xs sm:text-sm font-normal text-theme-muted opacity-60 font-body">{field.label}</span>
+                      <span class="text-base sm:text-lg md:text-[18px] lg:text-[20px] font-normal text-theme-muted leading-[1.366] font-body">{field.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {!socialColumn.contactFields && socialColumn.email && (
                 <a href={`mailto:${socialColumn.email}`} class="text-base sm:text-lg md:text-[18px] lg:text-[20px] font-normal text-theme-muted leading-[1.366] hover:text-theme-foreground transition-colors font-body">
                   {socialColumn.email}
                 </a>

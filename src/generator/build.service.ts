@@ -1257,6 +1257,50 @@ async function stageGenerate(
         logger.log(`[generate] Updated Footer policy links in ${pages.length} page(s)`);
       }
     }
+    // ── Контактная информация компании в Footer ──
+    const contactsRows = await deps.db
+      .select()
+      .from(deps.schema.siteContacts)
+      .where(eq(deps.schema.siteContacts.siteId, ctx.siteId));
+
+    const contacts = contactsRows[0];
+    if (contacts?.fields && Array.isArray(contacts.fields) && contacts.fields.length > 0) {
+      // Ищем email и телефон среди полей контактов
+      const contactFields = contacts.fields as { id: string; label: string; value: string; order: number }[];
+      const sortedFields = [...contactFields].sort((a, b) => a.order - b.order);
+
+      // Формируем данные для socialColumn: email + контактные поля + соцсети
+      for (const page of pages) {
+        const content = page.data.content as any[];
+        for (const component of content) {
+          if (component?.type === "Footer" && component?.props) {
+            const existingSocial = component.props.socialColumn ?? {};
+
+            // Ищем email в контактах (по label)
+            const emailField = sortedFields.find(
+              (f) => f.label.toLowerCase().includes("email") || f.label.toLowerCase().includes("почта"),
+            );
+            // Ищем телефон
+            const phoneField = sortedFields.find(
+              (f) => f.label.toLowerCase().includes("телефон") || f.label.toLowerCase().includes("phone"),
+            );
+
+            component.props.socialColumn = {
+              ...existingSocial,
+              title: existingSocial.title ?? "Контакты",
+              ...(emailField ? { email: emailField.value } : {}),
+              ...(phoneField ? { phone: phoneField.value } : {}),
+              // Все контактные поля как дополнительная информация
+              contactFields: sortedFields.map((f) => ({
+                label: f.label,
+                value: f.value,
+              })),
+            };
+          }
+        }
+      }
+      logger.log(`[generate] Updated Footer contacts in ${pages.length} page(s) with ${sortedFields.length} field(s)`);
+    }
   } catch (err) {
     logger.warn(
       `[generate] Failed to load policy pages: ${err instanceof Error ? err.message : String(err)}`,

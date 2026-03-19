@@ -61,6 +61,7 @@ import { BrandingController } from "./branding/branding.controller";
 import { PublicationsService } from "./publications/publications.service";
 import { PublicationsMicroserviceController } from "./publications/publications.controller";
 import { PublicationsScheduler } from "./scheduler/publications.scheduler";
+import { PolicyModule } from "./policy/policy.module";
 
 @Module({
   imports: [
@@ -80,6 +81,7 @@ import { PublicationsScheduler } from "./scheduler/publications.scheduler";
     DatabaseModule,
     DomainModule,
     BulkModule,
+    PolicyModule,
   ],
   controllers: [
     HealthController,

@@ -8,6 +8,8 @@
  * - site_revision — JSON‑структура (совместима с Puck) и SEO/метаданные
  * - site_build — жизненный цикл сборки и ссылки на артефакты
  * - site_deployment — снимок деплоя (ID приложения/окружения провайдера и публичный URL)
+ * - site_policy — тексты политик магазина (доставка, возврат, конфиденциальность, условия)
+ * - site_contacts — контактная информация компании
  */
 import {
   pgEnum,
@@ -285,3 +287,46 @@ export const publications = pgTable(
     ),
   }),
 );
+
+// ── Политики и контакты магазина ──
+
+export const policyTypeEnum = pgEnum("policy_type", [
+  "refund",
+  "privacy",
+  "tos",
+  "shipping",
+]);
+
+/**
+ * Тексты политик магазина.
+ * Каждый сайт может иметь по одному тексту каждого типа.
+ * При билде генерируются статические страницы /refund, /privacy, /terms, /shipping.
+ */
+export const sitePolicy = pgTable("site_policy", {
+  id: text("id").primaryKey(),
+  siteId: text("site_id").notNull(),
+  type: policyTypeEnum("type").notNull(),
+  content: text("content").default(""),
+  createdAt: timestamp("created_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+  updatedAt: timestamp("updated_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
+
+/**
+ * Контактная информация компании.
+ * Пользователь может добавлять произвольные поля (телефон, email, адрес и т.д.)
+ * с возможностью перетаскивания для изменения порядка.
+ */
+export const siteContacts = pgTable("site_contacts", {
+  id: text("id").primaryKey(),
+  siteId: text("site_id").notNull().unique(),
+  fields: jsonb("fields")
+    .$type<{ id: string; label: string; value: string; order: number }[]>()
+    .default([]),
+  updatedAt: timestamp("updated_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+});

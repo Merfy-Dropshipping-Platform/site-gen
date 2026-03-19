@@ -1269,28 +1269,16 @@ async function stageGenerate(
       const contactFields = contacts.fields as { id: string; label: string; value: string; order: number }[];
       const sortedFields = [...contactFields].sort((a, b) => a.order - b.order);
 
-      // Формируем данные для socialColumn: email + контактные поля + соцсети
+      // Формируем данные для socialColumn: контактные поля + соцсети
       for (const page of pages) {
         const content = page.data.content as any[];
         for (const component of content) {
           if (component?.type === "Footer" && component?.props) {
             const existingSocial = component.props.socialColumn ?? {};
 
-            // Ищем email в контактах (по label)
-            const emailField = sortedFields.find(
-              (f) => f.label.toLowerCase().includes("email") || f.label.toLowerCase().includes("почта"),
-            );
-            // Ищем телефон
-            const phoneField = sortedFields.find(
-              (f) => f.label.toLowerCase().includes("телефон") || f.label.toLowerCase().includes("phone"),
-            );
-
             component.props.socialColumn = {
               ...existingSocial,
               title: existingSocial.title ?? "Контакты",
-              ...(emailField ? { email: emailField.value } : {}),
-              ...(phoneField ? { phone: phoneField.value } : {}),
-              // Все контактные поля как дополнительная информация
               contactFields: sortedFields.map((f) => ({
                 label: f.label,
                 value: f.value,

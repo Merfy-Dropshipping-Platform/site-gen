@@ -1212,7 +1212,7 @@ async function stageGenerate(
         type: "MainText",
         props: {
           heading: { text: title, size: "large" },
-          text: { content: policy.content },
+          text: { text: policy.content },
           padding: { top: 80, bottom: 80 },
         },
       });

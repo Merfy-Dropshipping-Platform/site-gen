@@ -46,6 +46,7 @@ class CheckoutFlow {
             imageUrl: item.imageUrl || (item.images && item.images[0]) || item.image || '',
             unitPriceCents: item.unitPriceCents || item.priceCents || item.price || 0,
             quantity: item.quantity || 1,
+            options: item.options || null,
           }));
           this.renderProductSummary();
           this.bindEvents();
@@ -169,6 +170,7 @@ class CheckoutFlow {
           ${imgHtml}
           <div class="checkout-product-info">
             <span class="checkout-product-name font-body">${item.name}</span>
+            ${item.options ? `<span class="checkout-product-variant font-body" style="font-size: 12px; color: rgb(var(--color-muted));">${Object.entries(item.options).map(([k,v]) => k + ': ' + v).join(', ')}</span>` : ''}
             <div class="checkout-product-price">
               <span class="checkout-product-price-current font-body">${this.formatPrice(lineTotal / 100)}</span>
             </div>

@@ -281,10 +281,15 @@ function renderDrawerItems() {
       ? '<img src="' + img + '" alt="' + name + '" class="cart-drawer-item-img" />'
       : '<div class="cart-drawer-item-img" style="display:flex;align-items:center;justify-content:center;color:#d1d5db;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg></div>';
 
+    var variantText = item.options && typeof item.options === 'object'
+      ? Object.entries(item.options).map(function(e) { return e[0] + ': ' + e[1]; }).join(', ')
+      : '';
+
     return '<div class="cart-drawer-item" data-item-id="' + item.id + '">' +
       imgHtml +
       '<div class="cart-drawer-item-info">' +
         '<div class="cart-drawer-item-name">' + name + '</div>' +
+        (variantText ? '<div class="cart-drawer-item-variant" style="font-size:12px;color:rgb(var(--color-muted));">' + variantText + '</div>' : '') +
         '<div class="cart-drawer-item-price">' + formatPrice(price) + '</div>' +
         '<div class="cart-drawer-item-controls">' +
           '<button class="cart-drawer-qty-btn" data-action="decrease" data-item-id="' + item.id + '"' + (qty <= 1 ? ' disabled' : '') + '>−</button>' +

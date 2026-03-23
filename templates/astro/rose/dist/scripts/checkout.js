@@ -44,6 +44,7 @@ class CheckoutFlow {
             imageUrl: item.imageUrl || (item.images && item.images[0]) || item.image || '',
             unitPriceCents: item.unitPriceCents || item.priceCents || item.price || 0,
             quantity: item.quantity || 1,
+            options: item.options || null,
           }));
           this.renderProductSummary();
           this.bindEvents();
@@ -161,6 +162,7 @@ class CheckoutFlow {
           ${imgHtml}
           <div class="product-summary-info" style="flex: 1;">
             <h3>${item.name}${qtyLabel}</h3>
+            ${item.options ? `<div style="font-size: 12px; color: rgb(var(--color-muted));">${Object.entries(item.options).map(([k,v]) => k + ': ' + v).join(', ')}</div>` : ''}
             <div class="product-summary-price">${this.formatPrice(lineTotal / 100)}</div>
           </div>
         </div>`;
@@ -808,6 +810,7 @@ class CheckoutFlow {
           ${imgHtml}
           <div class="product-summary-info">
             <h3 style="font-size: 1rem;">${item.name}${qtyLabel}</h3>
+            ${item.options ? `<div style="font-size: 0.75rem; color: rgb(var(--color-muted));">${Object.entries(item.options).map(([k,v]) => k + ': ' + v).join(', ')}</div>` : ''}
             <div style="font-size: 0.875rem; color: rgb(var(--color-primary)); font-weight: 600;">${this.formatPrice(lineTotal / 100)}</div>
           </div>
         </div>`;

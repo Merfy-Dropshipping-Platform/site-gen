@@ -94,24 +94,11 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
   }
 
   function parseVariantInfo(item) {
-    // Try to parse variant title like "Чёрный / S" into separate lines
     var lines = [];
-    var title = item.variantTitle || '';
-    if (!title && item.name) {
-      // Some items have variant info embedded
-    }
-    if (title) {
-      var parts = title.split(/\s*\/\s*/);
-      // Try to map to known labels
-      if (parts.length === 2) {
-        lines.push('Цвет: ' + parts[0]);
-        lines.push('Размер: ' + parts[1]);
-      } else if (parts.length === 1 && parts[0]) {
-        lines.push(parts[0]);
-      } else {
-        for (var i = 0; i < parts.length; i++) {
-          if (parts[i]) lines.push(parts[i]);
-        }
+    if (item.options && typeof item.options === 'object') {
+      var keys = Object.keys(item.options);
+      for (var i = 0; i < keys.length; i++) {
+        lines.push(keys[i] + ': ' + item.options[keys[i]]);
       }
     }
     return lines;

@@ -134,10 +134,29 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
           var card = document.createElement('a');
           card.href = '/account/order?n=' + encodeURIComponent(order.orderNumber);
           card.className = 'block bg-white p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow';
+          // Delivery status badge
+          var deliveryBadge = '';
+          if (order.deliveryStatusName && order.deliveryType && order.deliveryType.includes('cdek')) {
+            var dColors = {
+              CREATED: 'bg-gray-100 text-gray-600',
+              ACCEPTED: 'bg-blue-50 text-blue-600',
+              IN_TRANSIT: 'bg-blue-100 text-blue-700',
+              READY_FOR_PICK_UP: 'bg-green-100 text-green-700',
+              DELIVERED: 'bg-emerald-100 text-emerald-700',
+              NOT_DELIVERED: 'bg-red-100 text-red-600',
+              RETURNED: 'bg-orange-100 text-orange-600',
+            };
+            var dClass = dColors[order.deliveryStatus] || 'bg-gray-100 text-gray-600';
+            deliveryBadge = '<span class="text-xs px-2 py-0.5 rounded-full font-medium ' + dClass + '">\u0421\u0414\u042d\u041a: ' + order.deliveryStatusName + '</span>';
+          }
+
           card.innerHTML =
             '<div class="flex items-center justify-between mb-2">' +
               '<span class="font-medium">\u0417\u0430\u043a\u0430\u0437 \u2116' + order.orderNumber + '</span>' +
-              '<span class="text-xs px-2.5 py-1 rounded-full font-medium ' + statusClass + '">' + status + '</span>' +
+              '<div class="flex items-center gap-2">' +
+                deliveryBadge +
+                '<span class="text-xs px-2.5 py-1 rounded-full font-medium ' + statusClass + '">' + status + '</span>' +
+              '</div>' +
             '</div>' +
             '<div class="flex items-center justify-between text-sm text-gray-500">' +
               '<span>' + date + (itemsText ? ' \u00b7 ' + itemsText : '') + '</span>' +

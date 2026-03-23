@@ -135,13 +135,69 @@ function SkeletonGrid({ count = 6 }: { count?: number }) {
 
 // --- Filter Sidebar ---
 
+interface CollectionFilterProps {
+  collections: { id: string; title?: string; name?: string }[];
+  selected?: string;
+  onChange: (collectionId?: string) => void;
+}
+
+function CollectionFilter({ collections, selected, onChange }: CollectionFilterProps) {
+  if (collections.length === 0) return null;
+
+  return (
+    <div>
+      <h3
+        className="font-[family-name:var(--font-heading)]"
+        style={{ fontSize: 20, lineHeight: '27px', color: 'rgb(var(--color-foreground))', marginBottom: 15 }}
+      >
+        Коллекции
+      </h3>
+      <div className="flex flex-col" style={{ gap: 10 }}>
+        <label className="flex items-center cursor-pointer" style={{ gap: 10 }}>
+          <span
+            className="font-[family-name:var(--font-body)]"
+            style={{ fontSize: 18, lineHeight: '24px', color: 'rgb(var(--color-foreground))' }}
+          >
+            Все
+          </span>
+          <input
+            type="radio"
+            name="collection"
+            checked={!selected}
+            onChange={() => onChange(undefined)}
+            className="accent-current"
+          />
+        </label>
+        {collections.map((c) => (
+          <label key={c.id} className="flex items-center cursor-pointer" style={{ gap: 10 }}>
+            <span
+              className="font-[family-name:var(--font-body)]"
+              style={{ fontSize: 18, lineHeight: '24px', color: 'rgb(var(--color-foreground))' }}
+            >
+              {c.title || (c as any).name}
+            </span>
+            <input
+              type="radio"
+              name="collection"
+              checked={selected === c.id}
+              onChange={() => onChange(c.id)}
+              className="accent-current"
+            />
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 interface FilterSidebarProps {
   filters: CatalogFilters;
   setFilters: (update: Partial<CatalogFilters>) => void;
   variantGroups: { name: string; values: string[] }[];
+  collections: { id: string; title?: string; name?: string }[];
 }
 
-function FilterSidebar({ filters, setFilters, variantGroups }: FilterSidebarProps) {
+function FilterSidebar({ filters, setFilters, variantGroups, collections }: FilterSidebarProps) {
   // Extract color group if it exists
   const colorGroup = variantGroups.find(
     (g) => g.name.toLowerCase() === 'цвет' || g.name.toLowerCase() === 'color',
@@ -163,6 +219,13 @@ function FilterSidebar({ filters, setFilters, variantGroups }: FilterSidebarProp
         </p>
 
         <div className="flex flex-col" style={{ gap: 50 }}>
+          {/* Collections */}
+          <CollectionFilter
+            collections={collections}
+            selected={filters.collectionId}
+            onChange={(collectionId) => setFilters({ collectionId, page: 1 })}
+          />
+
           {/* Availability */}
           <AvailabilityRadio
             value={filters.availability || 'all'}
@@ -206,11 +269,12 @@ interface MobileFiltersProps {
   filters: CatalogFilters;
   setFilters: (update: Partial<CatalogFilters>) => void;
   variantGroups: { name: string; values: string[] }[];
+  collections: { id: string; title?: string; name?: string }[];
   hasActiveFilters: boolean;
   resetFilters: () => void;
 }
 
-function MobileFilters({ filters, setFilters, variantGroups, hasActiveFilters, resetFilters }: MobileFiltersProps) {
+function MobileFilters({ filters, setFilters, variantGroups, collections, hasActiveFilters, resetFilters }: MobileFiltersProps) {
   const [open, setOpen] = React.useState(false);
   const colorGroup = variantGroups.find(
     (g) => g.name.toLowerCase() === 'цвет' || g.name.toLowerCase() === 'color',
@@ -240,6 +304,11 @@ function MobileFilters({ filters, setFilters, variantGroups, hasActiveFilters, r
 
       {open && (
         <div className="flex flex-col" style={{ gap: 30, padding: '15px 0' }}>
+          <CollectionFilter
+            collections={collections}
+            selected={filters.collectionId}
+            onChange={(collectionId) => setFilters({ collectionId, page: 1 })}
+          />
           <AvailabilityRadio
             value={filters.availability || 'all'}
             onChange={(v) => setFilters({ availability: v as CatalogFilters['availability'] })}
@@ -419,6 +488,7 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true }: CatalogIn
         filters={filters}
         setFilters={setFilters}
         variantGroups={variantGroups}
+        collections={collections}
         hasActiveFilters={hasActiveFilters}
         resetFilters={resetFilters}
       />
@@ -440,7 +510,7 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true }: CatalogIn
       {/* Main layout: sidebar + grid */}
       <div className="flex" style={{ gap: 50 }}>
         {/* Filter Sidebar — desktop (always visible) */}
-        <FilterSidebar filters={filters} setFilters={setFilters} variantGroups={variantGroups} />
+        <FilterSidebar filters={filters} setFilters={setFilters} variantGroups={variantGroups} collections={collections} />
 
         {/* Product grid + pagination */}
         {renderProductGrid()}

@@ -33,7 +33,7 @@ const branding = (siteConfig as any)?.branding ?? {};
         >Здесь начинается персональный стиль</p>
       </div>
 
-      <CatalogIsland client:load />
+      <CatalogIsland client:only="react" />
 
       <noscript>
         <PopularProducts products={products} />

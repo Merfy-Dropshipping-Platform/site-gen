@@ -794,7 +794,7 @@ class CheckoutFlow {
     if (totalEl) {
       const subtotal = this.cart?.subtotalCents
         ?? this.items.reduce((s, i) => s + i.unitPriceCents * i.quantity, 0);
-      const total = subtotal - discount;
+      const total = subtotal + (this.deliveryCostCents || 0) - discount;
       totalEl.textContent = this.formatPrice(total / 100);
     }
   }

@@ -70,8 +70,36 @@ if (hasVariants) {
 // JSON for JS interactivity
 const imagesJson = JSON.stringify(productImages);
 const variantsJson = JSON.stringify(productVariants);
+
+// SEO meta tags with fallback logic (T054/T055)
+const shopTitle = meta?.title ?? 'Мой магазин';
+const rawMetaTitle = product?.metaTitle;
+const rawMetaDescription = product?.metaDescription;
+const productName = product?.name ?? 'Товар';
+const productDescription = product?.description ?? '';
+
+// Title: metaTitle (if non-empty) -> product name
+const seoTitle = (rawMetaTitle && rawMetaTitle.trim())
+  ? rawMetaTitle.trim()
+  : productName;
+
+// Description: metaDescription (if non-empty, as-is) -> truncated product description (160 chars) -> ""
+const seoDescription = (rawMetaDescription && rawMetaDescription.trim())
+  ? rawMetaDescription.trim()
+  : (productDescription && productDescription.trim())
+    ? productDescription.trim().slice(0, 160)
+    : '';
+
+// Page title includes shop name suffix
+const pageTitle = `${seoTitle} — ${shopTitle}`;
 ---
-<BaseLayout title={`${product?.name ?? 'Товар'} — ${meta?.title ?? 'Мой магазин'}`} description={product?.description}>
+<BaseLayout
+  title={pageTitle}
+  description={seoDescription}
+  ogTitle={seoTitle}
+  ogDescription={seoDescription}
+  ogImage={mainImage ?? undefined}
+>
   <Header {...headerProps} />
 
   <main class="flex-1 w-full" style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));">

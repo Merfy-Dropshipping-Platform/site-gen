@@ -4,9 +4,12 @@ import data from '../data/data.json';
 interface Props {
   title?: string;
   description?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
 }
 
-const { title = 'Мой магазин', description } = Astro.props;
+const { title = 'Мой магазин', description, ogTitle, ogDescription, ogImage } = Astro.props;
 const meta = data?.meta ?? {};
 const shopId = (meta as any)?.shopId || '';
 const apiUrl = (meta as any)?.apiUrl || 'https://gateway.merfy.ru/api';
@@ -18,6 +21,9 @@ const requireCustomerAuth = !!(meta as any)?.requireCustomerAuth;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
+    {ogTitle && <meta property="og:title" content={ogTitle} />}
+    {ogDescription && <meta property="og:description" content={ogDescription} />}
+    {ogImage && <meta property="og:image" content={ogImage} />}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

@@ -48,6 +48,7 @@ class CheckoutFlow {
             quantity: item.quantity || 1,
             options: item.options || null,
           }));
+          await this.revalidatePrices();
           this.renderProductSummary();
           this.bindEvents();
           this.initDaData();
@@ -123,6 +124,39 @@ class CheckoutFlow {
       return localStorage.getItem('merfy_cart_id') || null;
     } catch (e) {
       return null;
+    }
+  }
+
+  async revalidatePrices() {
+    try {
+      const res = await fetch('/data/products.json');
+      if (!res.ok) return;
+      const products = await res.json();
+      const priceMap = new Map();
+      for (const p of products) {
+        priceMap.set(p.id, Math.round(p.price * 100));
+      }
+      const staleItems = [];
+      for (const item of this.items) {
+        const currentCents = priceMap.get(item.productId);
+        if (currentCents !== undefined && currentCents !== item.unitPriceCents) {
+          staleItems.push({ name: item.name, oldCents: item.unitPriceCents, newCents: currentCents });
+          item.unitPriceCents = currentCents;
+        }
+      }
+      if (staleItems.length > 0) {
+        const banner = document.createElement('div');
+        banner.className = 'checkout-price-warning';
+        banner.style.cssText = 'background: #FEF3C7; border: 1px solid #F59E0B; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-family: var(--font-body, sans-serif); font-size: 14px; color: #92400E;';
+        const lines = staleItems.map(s =>
+          `${s.name}: ${this.formatPrice(s.oldCents / 100)} → ${this.formatPrice(s.newCents / 100)}`
+        );
+        banner.innerHTML = `<strong>Цены обновились</strong><br>${lines.join('<br>')}`;
+        const form = document.getElementById('co-product-list');
+        if (form) form.parentNode.insertBefore(banner, form);
+      }
+    } catch (e) {
+      // Non-critical — proceed with cart prices
     }
   }
 

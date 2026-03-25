@@ -2,7 +2,7 @@
  * Tests for ProductUpdateListener (product-update.listener.ts)
  *
  * Validates:
- * - Debounce: multiple events within 30s window result in single rebuild
+ * - Debounce: multiple events within 2s window result in single rebuild
  * - Debounce: timer reset on subsequent events
  * - Only published sites trigger rebuilds
  * - Frozen sites are skipped
@@ -254,8 +254,8 @@ describe("ProductUpdateListener", () => {
 
       const firstTimer = debounceMap.get("site-1").timer;
 
-      // Advance 2 seconds (less than 5s debounce window)
-      jest.advanceTimersByTime(2_000);
+      // Advance 1 second (less than 2s debounce window)
+      jest.advanceTimersByTime(1_000);
 
       // Add another event — should reset timer
       (listener as any).debounceBuild("site-1", "tenant-1", {
@@ -267,8 +267,8 @@ describe("ProductUpdateListener", () => {
       const secondTimer = debounceMap.get("site-1").timer;
       expect(secondTimer).not.toBe(firstTimer);
 
-      // After another 3 seconds (5s from first, but only 3s from reset) — should NOT fire
-      jest.advanceTimersByTime(3_000);
+      // After another 1.5 seconds (2.5s from first, but only 1.5s from reset) — should NOT fire
+      jest.advanceTimersByTime(1_500);
       expect(mockQueueBuild).not.toHaveBeenCalled();
     });
 
@@ -279,8 +279,8 @@ describe("ProductUpdateListener", () => {
         timestamp: new Date().toISOString(),
       });
 
-      // Advance 2 seconds (less than 5s debounce)
-      jest.advanceTimersByTime(2_000);
+      // Advance 1 second (less than 2s debounce)
+      jest.advanceTimersByTime(1_000);
 
       // New event resets timer
       (listener as any).debounceBuild("site-1", "tenant-1", {
@@ -289,8 +289,8 @@ describe("ProductUpdateListener", () => {
         timestamp: new Date().toISOString(),
       });
 
-      // Advance full 5 seconds from reset
-      jest.advanceTimersByTime(5_000);
+      // Advance full 2 seconds from reset
+      jest.advanceTimersByTime(2_000);
       await Promise.resolve();
       await Promise.resolve();
 

@@ -630,6 +630,9 @@ export async function trySnapshotDeploy(
           href: `/product/${p.slug || p.id}`,
           slug: p.slug || p.id,
           quantity: p.quantity ?? null,
+          sku: p.sku ?? null,
+          metaTitle: p.metaTitle ?? null,
+          metaDescription: p.metaDescription ?? null,
         }));
 
       const productsJsonPath = path.join(distDir, "data", "products.json");
@@ -1522,6 +1525,9 @@ async function stageFetchData(
       href: `/product/${p.slug || p.id}`,
       slug: p.slug || p.id,
       quantity: p.quantity ?? null,
+      sku: p.sku ?? null,
+      metaTitle: p.metaTitle ?? null,
+      metaDescription: p.metaDescription ?? null,
       hasVariants: p.hasVariants ?? false,
       variants: (p.hasVariants && Array.isArray(p.variantCombinations))
         ? p.variantCombinations.map((v: any) => ({

@@ -13,7 +13,7 @@ import * as Minio from "minio";
 import { createHash } from "crypto";
 
 /** Fragment components that need re-rendering on product updates */
-const ISLAND_COMPONENTS = ["PopularProducts"] as const;
+const ISLAND_COMPONENTS = ["PopularProducts", "ProductGrid", "ProductDetail"] as const;
 
 /** Manifest stored at {siteId}/_islands/manifest.json */
 interface IslandsManifest {

@@ -21,6 +21,12 @@ export interface FetchedProduct {
   images?: string[];
   slug?: string;
   handle?: string;
+  sku?: string | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  isPhysicalProduct?: boolean;
+  quantity?: number;
+  hasVariants?: boolean;
 }
 
 export interface FetchedCollection {

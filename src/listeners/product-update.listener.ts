@@ -30,7 +30,7 @@ import { FragmentPatcher } from "./fragment-patcher.service";
 
 const PRODUCT_EVENTS_EXCHANGE = "product.events";
 const SITES_PRODUCT_EVENTS_QUEUE = "sites_product_events";
-const DEBOUNCE_MS = 5_000; // 5 seconds — fast feedback for merchants
+const DEBOUNCE_MS = 2_000; // 2 seconds — fast feedback for single product updates
 const FRAGMENT_PATCH_DEBOUNCE_MS = 10_000; // 10 seconds (faster than full rebuild)
 const REBUILD_PRIORITY = 5;
 
@@ -267,7 +267,7 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
         changes: [change],
       };
       this.debounceMap.set(siteId, entry);
-      this.logger.log(`Debounce started for site ${siteId} (${DEBOUNCE_MS / 1000}s window)`);
+      this.logger.log(`Debounce started for site ${siteId} (${DEBOUNCE_MS / 1_000}s window)`);
     }
   }
 

@@ -56,7 +56,8 @@ class CheckoutFlow {
           if (window._mfy && window._mfy.trackCheckout) {
             window._mfy.trackCheckout();
           }
-          // Delivery will be calculated dynamically after address selection
+          // Check if pickup-only (no CDEK) — show pickup immediately without address
+          this.checkPickupOnly();
           return;
         }
       }
@@ -454,6 +455,34 @@ class CheckoutFlow {
   }
 
   // --- End DaData ---
+
+  // --- Pickup-only check (no CDEK) ---
+
+  async checkPickupOnly() {
+    try {
+      const res = await CheckoutAPI.calculateDelivery(this.cartId, {});
+      if (!res.success) return;
+      const { tariffs, pickupAvailable, pickupAddress } = res.data;
+      // If no CDEK tariffs but pickup available — show pickup immediately, hide address input
+      if ((!tariffs || tariffs.length === 0) && pickupAvailable) {
+        this.renderDeliveryTariffs([], true, pickupAddress);
+        this.setDeliveryState('tariffs');
+        // Hide address section since pickup doesn't need it
+        const addressBlock = document.querySelector('.checkout-address-block, #co-address-group');
+        if (addressBlock) addressBlock.style.display = 'none';
+        const placeholder = document.getElementById('co-delivery-placeholder');
+        if (placeholder) placeholder.classList.add('hidden');
+      }
+      // If neither CDEK nor pickup — show "delivery not configured"
+      if ((!tariffs || tariffs.length === 0) && !pickupAvailable) {
+        this.setDeliveryState('unavailable');
+        return;
+      }
+      // Otherwise: CDEK available — wait for address input to calculate CDEK tariffs
+    } catch (e) {
+      // Silently fail — user can still enter address for CDEK calculation
+    }
+  }
 
   // --- CDEK Delivery Calculation & Selection ---
 

@@ -116,6 +116,8 @@ class CheckoutFlow {
       if (window._mfy && window._mfy.trackCheckout) {
         window._mfy.trackCheckout();
       }
+      // Check delivery method availability (CDEK / pickup / both)
+      this.checkDeliveryOptions();
     } catch (e) {
       console.error('Checkout init error:', e);
       this.showError('Ошибка загрузки', e.message || 'Попробуйте обновить страницу');

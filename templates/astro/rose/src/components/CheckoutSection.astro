@@ -71,6 +71,34 @@ const dadataToken = (data?.meta as any)?.dadataToken || '';
           <input type="text" id="co-lastName" name="lastName" required placeholder="Фамилия" class="checkout-input checkout-input--half font-body" autocomplete="family-name">
         </div>
 
+        <!-- Выбор типа доставки (СДЭК / Самовывоз) — показывается если оба метода доступны -->
+        <div id="co-delivery-method" class="checkout-delivery-method hidden">
+          <label class="checkout-shipping-option checkout-delivery-method-option" data-method="cdek">
+            <div class="checkout-shipping-left">
+              <input type="radio" name="delivery-method" value="cdek" class="checkout-radio">
+              <div>
+                <span class="checkout-shipping-name font-body">СДЭК</span>
+                <span class="checkout-delivery-method-desc font-body">Курьер или пункт выдачи</span>
+              </div>
+            </div>
+          </label>
+          <label class="checkout-shipping-option checkout-delivery-method-option" data-method="pickup">
+            <div class="checkout-shipping-left">
+              <input type="radio" name="delivery-method" value="pickup" class="checkout-radio">
+              <div>
+                <span class="checkout-shipping-name font-body">Самовывоз</span>
+                <span class="checkout-delivery-method-desc font-body">Бесплатно</span>
+              </div>
+            </div>
+            <div class="checkout-shipping-right">
+              <span id="co-delivery-method-pickup-addr" class="checkout-shipping-days font-body"></span>
+            </div>
+          </label>
+        </div>
+
+        <!-- Адресный блок (скрыт до выбора СДЭК) -->
+        <div id="co-address-group">
+
         <!-- DaData address autocomplete -->
         <div class="checkout-address-wrap" id="co-address-wrap">
           <div class="checkout-address-search-wrap">
@@ -106,6 +134,8 @@ const dadataToken = (data?.meta as any)?.dadataToken || '';
           </div>
           <input type="text" id="co-manual-postal-code" name="manualPostalCode" placeholder="Индекс" class="checkout-input checkout-input--full font-body" autocomplete="postal-code">
         </div>
+
+        </div><!-- /co-address-group -->
       </div>
 
       <!-- Способ доставки -->
@@ -438,6 +468,19 @@ const dadataToken = (data?.meta as any)?.dadataToken || '';
     display: flex;
     flex-direction: column;
     gap: 12px;
+  }
+
+  .checkout-delivery-method {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .checkout-delivery-method-desc {
+    display: block;
+    font-size: 13px;
+    color: rgb(var(--color-muted));
+    margin-top: 2px;
   }
 
   .checkout-shipping-option {

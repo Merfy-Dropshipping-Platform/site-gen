@@ -48,6 +48,7 @@ class CheckoutFlow {
             quantity: item.quantity || 1,
             options: item.options || null,
           }));
+          await this.revalidatePrices();
           this.renderProductSummary();
           this.bindEvents();
           this.initDaData();
@@ -123,6 +124,39 @@ class CheckoutFlow {
       return localStorage.getItem('merfy_cart_id') || null;
     } catch (e) {
       return null;
+    }
+  }
+
+  async revalidatePrices() {
+    try {
+      const res = await fetch('/data/products.json');
+      if (!res.ok) return;
+      const products = await res.json();
+      const priceMap = new Map();
+      for (const p of products) {
+        priceMap.set(p.id, Math.round(p.price * 100));
+      }
+      const staleItems = [];
+      for (const item of this.items) {
+        const currentCents = priceMap.get(item.productId);
+        if (currentCents !== undefined && currentCents !== item.unitPriceCents) {
+          staleItems.push({ name: item.name, oldCents: item.unitPriceCents, newCents: currentCents });
+          item.unitPriceCents = currentCents;
+        }
+      }
+      if (staleItems.length > 0) {
+        const banner = document.createElement('div');
+        banner.className = 'checkout-price-warning';
+        banner.style.cssText = 'background: #FEF3C7; border: 1px solid #F59E0B; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-family: var(--font-body, sans-serif); font-size: 14px; color: #92400E;';
+        const lines = staleItems.map(s =>
+          `${s.name}: ${this.formatPrice(s.oldCents / 100)} → ${this.formatPrice(s.newCents / 100)}`
+        );
+        banner.innerHTML = `<strong>Цены обновились</strong><br>${lines.join('<br>')}`;
+        const form = document.getElementById('co-product-list');
+        if (form) form.parentNode.insertBefore(banner, form);
+      }
+    } catch (e) {
+      // Non-critical — proceed with cart prices
     }
   }
 
@@ -467,27 +501,31 @@ class CheckoutFlow {
     const error = document.getElementById('co-delivery-error');
     const unavailable = document.getElementById('co-delivery-unavailable');
 
-    // Hide all
-    [placeholder, loading, tariffs, pickup, error, unavailable].forEach(el => {
+    // Hide all (except pickup — managed by renderDeliveryTariffs)
+    [placeholder, loading, tariffs, error, unavailable].forEach(el => {
       if (el) el.classList.add('hidden');
     });
 
     // Show the right one
     switch (state) {
       case 'placeholder':
+        if (pickup) pickup.classList.add('hidden');
         if (placeholder) placeholder.classList.remove('hidden');
         break;
       case 'loading':
+        if (pickup) pickup.classList.add('hidden');
         if (loading) loading.classList.remove('hidden');
         break;
       case 'tariffs':
         if (tariffs) tariffs.classList.remove('hidden');
-        // pickup is shown/hidden independently by renderDeliveryTariffs
+        // pickup is shown/hidden independently by renderDeliveryTariffs (called before setDeliveryState)
         break;
       case 'error':
+        if (pickup) pickup.classList.add('hidden');
         if (error) error.classList.remove('hidden');
         break;
       case 'unavailable':
+        if (pickup) pickup.classList.add('hidden');
         if (unavailable) unavailable.classList.remove('hidden');
         break;
     }
@@ -836,13 +874,18 @@ class CheckoutFlow {
         throw new Error('Укажите email и телефон');
       }
 
-      const customerRes = await CheckoutAPI.setCustomer(this.cartId, {
+      const setCustomerPayload = {
         email: customerData.email,
         phone: customerData.phone,
         name: [customerData.firstName, customerData.lastName].filter(Boolean).join(' ') || undefined,
         firstName: customerData.firstName || undefined,
         lastName: customerData.lastName || undefined,
-      });
+      };
+      // Pass customerId if customer is logged in
+      if (window.__MERFY_CUSTOMER_ID__) {
+        setCustomerPayload.customerId = window.__MERFY_CUSTOMER_ID__;
+      }
+      const customerRes = await CheckoutAPI.setCustomer(this.cartId, setCustomerPayload);
 
       if (!customerRes.success) {
         throw new Error(customerRes.message || 'Ошибка сохранения контактов');
@@ -879,6 +922,33 @@ class CheckoutFlow {
 
       // 4. Очистить корзину в localStorage (заказ уже создан)
       this.clearSavedCart();
+
+      // 4.5. Обновить профиль покупателя (адрес, телефон) — best effort
+      if (window.__MERFY_CUSTOMER_ID__ && window.CustomerStore && window.CustomerStore.getToken()) {
+        try {
+          var profileUpdate = {};
+          if (customerData.phone) profileUpdate.phone = customerData.phone;
+          if (addressData.city) {
+            profileUpdate.defaultAddress = {
+              city: addressData.city,
+              street: addressData.street || '',
+              building: addressData.building || '',
+              apartment: addressData.apartment || '',
+              postalCode: addressData.postalCode || '',
+            };
+          }
+          var profileConfig = window.__MERFY_CONFIG__ || {};
+          var profileApiBase = profileConfig.apiBase || '';
+          fetch(profileApiBase + '/store/auth/profile', {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + window.CustomerStore.getToken(),
+            },
+            body: JSON.stringify(profileUpdate),
+          }).catch(function() { /* silent — best effort */ });
+        } catch (_) { /* silent */ }
+      }
 
       // 5. Создать платёж
       const returnUrl = `${window.location.origin}/checkout/result?orderId=${this.orderId}`;

@@ -986,6 +986,21 @@ export function extractSiteConfig(
     }
   }
 
+  // Extract CheckoutSection props from page-checkout
+  const checkoutContent = pagesData?.["page-checkout"]?.content;
+  if (Array.isArray(checkoutContent)) {
+    for (const component of checkoutContent) {
+      const comp = component as { type?: string; props?: Record<string, unknown> };
+      if (comp?.type === "CheckoutSection" && comp?.props) {
+        siteConfig.checkout = {
+          colorScheme: comp.props.colorScheme ?? undefined,
+          padding: comp.props.padding ?? { top: 40, bottom: 40 },
+        };
+        break;
+      }
+    }
+  }
+
   return siteConfig;
 }
 

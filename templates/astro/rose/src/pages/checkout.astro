@@ -12,12 +12,13 @@ const headerBlock = blocks.find((b: any) => b.type === 'Header');
 const footerBlock = blocks.find((b: any) => b.type === 'Footer');
 const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
 const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
+const checkoutProps = (siteConfig as any)?.checkout ?? {};
 ---
 <BaseLayout title={`Оформление заказа — ${meta?.title ?? 'Мой сайт'}`}>
   <Header {...headerProps} />
 
   <main class="flex-1 w-full" style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));">
-    <CheckoutSection />
+    <CheckoutSection {...checkoutProps} />
   </main>
 
   <Footer {...footerProps} />

@@ -23,6 +23,8 @@ class CheckoutFlow {
     this.pickupPoints = []; // CDEK pickup points for selected city
     this.selectedPvz = null; // { code, name, address, workTime, type }
     this.lastCityFiasId = null; // Cache to avoid re-fetching PVZ for same city
+    this.deliveryMethods = { cdekAvailable: false, pickupAvailable: false, pickupAddress: null };
+    this.selectedDeliveryMethod = null; // 'cdek' | 'pickup' | null
 
     this.init();
   }
@@ -56,8 +58,8 @@ class CheckoutFlow {
           if (window._mfy && window._mfy.trackCheckout) {
             window._mfy.trackCheckout();
           }
-          // Check if pickup-only (no CDEK) — show pickup immediately without address
-          this.checkPickupOnly();
+          // Check delivery method availability (CDEK / pickup / both)
+          this.checkDeliveryOptions();
           return;
         }
       }
@@ -114,6 +116,8 @@ class CheckoutFlow {
       if (window._mfy && window._mfy.trackCheckout) {
         window._mfy.trackCheckout();
       }
+      // Check delivery method availability (CDEK / pickup / both)
+      this.checkDeliveryOptions();
     } catch (e) {
       console.error('Checkout init error:', e);
       this.showError('Ошибка загрузки', e.message || 'Попробуйте обновить страницу');
@@ -458,30 +462,102 @@ class CheckoutFlow {
 
   // --- Pickup-only check (no CDEK) ---
 
-  async checkPickupOnly() {
+  async checkDeliveryOptions() {
     try {
       const res = await CheckoutAPI.calculateDelivery(this.cartId, {});
       if (!res.success) return;
-      const { tariffs, pickupAvailable, pickupAddress } = res.data;
-      // If no CDEK tariffs but pickup available — show pickup immediately, hide address input
-      if ((!tariffs || tariffs.length === 0) && pickupAvailable) {
-        this.renderDeliveryTariffs([], true, pickupAddress);
-        this.setDeliveryState('tariffs');
-        // Hide address section since pickup doesn't need it
-        const addressBlock = document.querySelector('.checkout-address-block, #co-address-group');
-        if (addressBlock) addressBlock.style.display = 'none';
-        const placeholder = document.getElementById('co-delivery-placeholder');
+
+      const { cdekAvailable, pickupAvailable, pickupAddress } = res.data;
+      this.deliveryMethods = { cdekAvailable, pickupAvailable, pickupAddress };
+
+      const methodEl = document.getElementById('co-delivery-method');
+      const addressGroup = document.getElementById('co-address-group');
+      const placeholder = document.getElementById('co-delivery-placeholder');
+
+      // Case 1: Both available — show delivery method radio selector
+      if (cdekAvailable && pickupAvailable) {
         if (placeholder) placeholder.classList.add('hidden');
-      }
-      // If neither CDEK nor pickup — show "delivery not configured"
-      if ((!tariffs || tariffs.length === 0) && !pickupAvailable) {
-        this.setDeliveryState('unavailable');
+        if (methodEl) methodEl.classList.remove('hidden');
+        if (addressGroup) addressGroup.style.display = 'none';
+        // Fill pickup address in method selector
+        const addrEl = document.getElementById('co-delivery-method-pickup-addr');
+        if (addrEl && pickupAddress) addrEl.textContent = pickupAddress;
+        this.bindDeliveryMethodSelection();
         return;
       }
-      // Otherwise: CDEK available — wait for address input to calculate CDEK tariffs
+
+      // Case 2: CDEK only — show address immediately (old behavior)
+      if (cdekAvailable && !pickupAvailable) {
+        // Address block visible, wait for address input → calculate tariffs
+        return;
+      }
+
+      // Case 3: Pickup only — auto-select pickup, hide address
+      if (!cdekAvailable && pickupAvailable) {
+        if (placeholder) placeholder.classList.add('hidden');
+        if (addressGroup) addressGroup.style.display = 'none';
+        this.renderDeliveryTariffs([], true, pickupAddress);
+        this.setDeliveryState('tariffs');
+        return;
+      }
+
+      // Case 4: Nothing available
+      this.setDeliveryState('unavailable');
     } catch (e) {
-      // Silently fail — user can still enter address for CDEK calculation
+      // Silently fail — user can still try address for CDEK calculation
     }
+  }
+
+  bindDeliveryMethodSelection() {
+    const methodEl = document.getElementById('co-delivery-method');
+    if (!methodEl) return;
+
+    const options = methodEl.querySelectorAll('.checkout-delivery-method-option');
+    options.forEach(option => {
+      option.addEventListener('click', () => {
+        // Visual selection
+        options.forEach(o => o.classList.remove('checkout-shipping-option--selected'));
+        option.classList.add('checkout-shipping-option--selected');
+        const radio = option.querySelector('input[type="radio"]');
+        if (radio) radio.checked = true;
+
+        const method = option.dataset.method;
+        this.selectedDeliveryMethod = method;
+
+        const addressGroup = document.getElementById('co-address-group');
+        const tariffs = document.getElementById('co-delivery-tariffs');
+        const pickupEl = document.getElementById('co-delivery-pickup');
+        const placeholder = document.getElementById('co-delivery-placeholder');
+        const pvzSection = document.getElementById('co-pvz-section');
+
+        if (method === 'cdek') {
+          // Show address block, hide pickup, reset tariffs
+          if (addressGroup) addressGroup.style.display = '';
+          if (pickupEl) pickupEl.classList.add('hidden');
+          if (tariffs) { tariffs.classList.add('hidden'); tariffs.innerHTML = ''; }
+          if (pvzSection) pvzSection.classList.add('hidden');
+          if (placeholder) {
+            placeholder.classList.remove('hidden');
+          }
+          // Reset delivery selection
+          this.selectedDelivery = null;
+          this.deliveryCostCents = 0;
+          this.updateDeliveryTotals();
+        } else if (method === 'pickup') {
+          // Hide address, hide tariffs, select pickup immediately
+          if (addressGroup) addressGroup.style.display = 'none';
+          if (tariffs) { tariffs.classList.add('hidden'); tariffs.innerHTML = ''; }
+          if (pvzSection) pvzSection.classList.add('hidden');
+          if (pickupEl) pickupEl.classList.add('hidden');
+          if (placeholder) placeholder.classList.add('hidden');
+          // Send pickup selection to backend
+          this.selectedDelivery = { type: 'pickup', tariffCode: null, deliveryCostCents: 0 };
+          this.deliveryCostCents = 0;
+          this.updateDeliveryTotals();
+          this.sendDeliverySelection('pickup', null, 0, null, null, null, null);
+        }
+      });
+    });
   }
 
   // --- CDEK Delivery Calculation & Selection ---

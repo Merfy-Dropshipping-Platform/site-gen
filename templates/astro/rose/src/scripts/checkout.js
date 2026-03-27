@@ -501,27 +501,31 @@ class CheckoutFlow {
     const error = document.getElementById('co-delivery-error');
     const unavailable = document.getElementById('co-delivery-unavailable');
 
-    // Hide all
-    [placeholder, loading, tariffs, pickup, error, unavailable].forEach(el => {
+    // Hide all (except pickup — managed by renderDeliveryTariffs)
+    [placeholder, loading, tariffs, error, unavailable].forEach(el => {
       if (el) el.classList.add('hidden');
     });
 
     // Show the right one
     switch (state) {
       case 'placeholder':
+        if (pickup) pickup.classList.add('hidden');
         if (placeholder) placeholder.classList.remove('hidden');
         break;
       case 'loading':
+        if (pickup) pickup.classList.add('hidden');
         if (loading) loading.classList.remove('hidden');
         break;
       case 'tariffs':
         if (tariffs) tariffs.classList.remove('hidden');
-        // pickup is shown/hidden independently by renderDeliveryTariffs
+        // pickup is shown/hidden independently by renderDeliveryTariffs (called before setDeliveryState)
         break;
       case 'error':
+        if (pickup) pickup.classList.add('hidden');
         if (error) error.classList.remove('hidden');
         break;
       case 'unavailable':
+        if (pickup) pickup.classList.add('hidden');
         if (unavailable) unavailable.classList.remove('hidden');
         break;
     }

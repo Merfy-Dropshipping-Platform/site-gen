@@ -16,7 +16,7 @@
     "db:migrate:manual:js": "node src/db/manual-migrate.js"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.978.0",
+    "@aws-sdk/client-s3": "^3.1006.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",

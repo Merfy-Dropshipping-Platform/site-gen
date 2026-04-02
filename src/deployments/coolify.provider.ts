@@ -426,6 +426,25 @@ export class CoolifyProvider {
         throw new Error("Application UUID not returned");
       }
 
+      // Enable health check so Coolify auto-restarts crashed containers
+      try {
+        await this.http(`/applications/${appUuid}`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            health_check_enabled: true,
+            health_check_path: "/",
+            health_check_interval: 30,
+            health_check_retries: 5,
+            health_check_timeout: 10,
+            health_check_start_period: 30,
+          }),
+        });
+      } catch (e) {
+        this.logger.warn(
+          `Failed to enable health check for ${appUuid}: ${e instanceof Error ? e.message : e}`,
+        );
+      }
+
       this.logger.log(
         `Created Coolify application ${appUuid} with fqdn ${fqdn}`,
       );

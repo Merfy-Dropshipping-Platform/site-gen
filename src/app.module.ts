@@ -62,6 +62,7 @@ import { PublicationsService } from "./publications/publications.service";
 import { PublicationsMicroserviceController } from "./publications/publications.controller";
 import { PublicationsScheduler } from "./scheduler/publications.scheduler";
 import { PolicyModule } from "./policy/policy.module";
+import { HealthMonitorService } from "./health-monitor/health-monitor.service";
 
 @Module({
   imports: [
@@ -114,6 +115,7 @@ import { PolicyModule } from "./policy/policy.module";
     ProductUpdateListener,
     FragmentPatcher,
     PublicationsService,
+    HealthMonitorService,
   ],
 })
 export class AppModule {}

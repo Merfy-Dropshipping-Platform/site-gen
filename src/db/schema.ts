@@ -330,3 +330,48 @@ export const siteContacts = pgTable("site_contacts", {
     .$defaultFn(() => new Date())
     .notNull(),
 });
+
+// ── Health Monitor: Auto-Repair Log ──
+
+export const repairActionEnum = pgEnum("repair_action", [
+  "rebuild_queued",
+  "skipped_limit",
+  "skipped_grace_period",
+  "skipped_minio_down",
+]);
+
+export const repairResultEnum = pgEnum("repair_result", [
+  "success",
+  "failure",
+  "pending",
+]);
+
+/**
+ * Лог автоматического восстановления сайтов.
+ * Записывается при каждом обнаружении деградации и каждом действии.
+ * Retry counter вычисляется как COUNT(action='rebuild_queued') за последние 24ч.
+ */
+export const siteRepairLog = pgTable(
+  "site_repair_log",
+  {
+    id: text("id").primaryKey(),
+    siteId: text("site_id").notNull(),
+    detectedAt: timestamp("detected_at")
+      .$defaultFn(() => new Date())
+      .notNull(),
+    action: repairActionEnum("action").notNull(),
+    siteStatusCode: integer("site_status_code"),
+    healthStatusCode: integer("health_status_code"),
+    buildId: text("build_id"),
+    result: repairResultEnum("result"),
+    resolvedAt: timestamp("resolved_at"),
+    errorMessage: text("error_message"),
+    createdAt: timestamp("created_at")
+      .$defaultFn(() => new Date())
+      .notNull(),
+  },
+  (table) => ({
+    siteIdx: index("idx_repair_log_site_id").on(table.siteId),
+    detectedIdx: index("idx_repair_log_detected_at").on(table.detectedAt),
+  }),
+);

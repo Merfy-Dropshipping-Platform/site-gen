@@ -380,6 +380,32 @@ export class CoolifyProvider {
   }
 
   /**
+   * configureAppDefaults — applies standard config to a Coolify app:
+   * health check on /health, memory limit 128MB.
+   */
+  private async configureAppDefaults(appUuid: string): Promise<void> {
+    try {
+      await this.http(`/applications/${appUuid}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          health_check_enabled: true,
+          health_check_path: "/health",
+          health_check_interval: 30,
+          health_check_retries: 3,
+          health_check_timeout: 10,
+          health_check_start_period: 60,
+          limits_memory: "128",
+        }),
+      });
+      this.logger.log(`Configured app defaults for ${appUuid}: healthcheck /health, memory 128MB`);
+    } catch (e) {
+      this.logger.warn(
+        `Failed to configure app defaults for ${appUuid}: ${e instanceof Error ? e.message : e}`,
+      );
+    }
+  }
+
+  /**
    * createApplication — создаёт новое приложение в Coolify для сайта.
    *
    * Использует Docker Image build pack. Приложение получает домен вида:
@@ -426,24 +452,7 @@ export class CoolifyProvider {
         throw new Error("Application UUID not returned");
       }
 
-      // Enable health check so Coolify auto-restarts crashed containers
-      try {
-        await this.http(`/applications/${appUuid}`, {
-          method: "PATCH",
-          body: JSON.stringify({
-            health_check_enabled: true,
-            health_check_path: "/",
-            health_check_interval: 30,
-            health_check_retries: 5,
-            health_check_timeout: 10,
-            health_check_start_period: 30,
-          }),
-        });
-      } catch (e) {
-        this.logger.warn(
-          `Failed to enable health check for ${appUuid}: ${e instanceof Error ? e.message : e}`,
-        );
-      }
+      await this.configureAppDefaults(appUuid);
 
       this.logger.log(
         `Created Coolify application ${appUuid} with fqdn ${fqdn}`,
@@ -656,6 +665,7 @@ export class CoolifyProvider {
       this.logger.log(
         `Created Coolify site application ${appUuid} with URL ${fqdn}`,
       );
+      await this.configureAppDefaults(appUuid);
       return { uuid: appUuid, url: fqdn };
     } catch (e) {
       this.logger.error(
@@ -768,6 +778,9 @@ export class CoolifyProvider {
         method: "PATCH",
         body: JSON.stringify({ domains: fqdn }),
       });
+
+      // 3.5. Apply standard config (healthcheck, memory limits)
+      await this.configureAppDefaults(appUuid);
 
       // 4. Запускаем деплой
       await this.http(`/applications/${appUuid}/start`, { method: "POST" });

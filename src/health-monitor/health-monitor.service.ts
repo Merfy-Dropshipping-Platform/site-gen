@@ -33,6 +33,7 @@ const MAX_REPAIRS_PER_24H = 3;
 export class HealthMonitorService {
   private readonly logger = new Logger(HealthMonitorService.name);
   private running = false;
+  private cycleStartedAt: number | null = null;
 
   constructor(
     @Inject(PG_CONNECTION)
@@ -42,13 +43,23 @@ export class HealthMonitorService {
 
   @Cron("0 */15 * * * *")
   async checkSitesHealth(): Promise<void> {
-    if (process.env.HEALTH_MONITOR_ENABLED !== "true") return;
+    if (process.env.HEALTH_MONITOR_ENABLED !== "true") {
+      this.logger.debug("HealthMonitor: disabled (HEALTH_MONITOR_ENABLED != true)");
+      return;
+    }
     if (this.running) {
       this.logger.warn("HealthMonitor: previous cycle still running, skipping");
-      return;
+      // Safety: reset running flag if stuck for > 10 min
+      if (this.cycleStartedAt && Date.now() - this.cycleStartedAt > 10 * 60 * 1000) {
+        this.logger.error("HealthMonitor: cycle stuck for >10min, force-resetting running flag");
+        this.running = false;
+      } else {
+        return;
+      }
     }
 
     this.running = true;
+    this.cycleStartedAt = Date.now();
     this.logger.log("HealthMonitor: check cycle started");
 
     const summary: HealthCheckSummary = {
@@ -120,6 +131,7 @@ export class HealthMonitorService {
       );
     } finally {
       this.running = false;
+      this.cycleStartedAt = null;
     }
   }
 

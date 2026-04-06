@@ -330,7 +330,106 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
           historyHtml += '</div></div>';
         }
 
-        detailEl.innerHTML = infoHtml + itemsHtml + totalsHtml + deliveryHtml + customerHtml + addressHtml + historyHtml;
+        // Cancel button (only for paid/processing, not if delivery in transit+)
+        var cancelHtml = '';
+        var cancellableStatuses = ['paid', 'processing'];
+        var blockedDelivery = ['IN_TRANSIT', 'DELIVERED', 'NOT_DELIVERED', 'RECEIVED', 'RETURNED'];
+        var canCancel = cancellableStatuses.indexOf(order.status) !== -1 &&
+          (!order.deliveryStatus || blockedDelivery.indexOf(order.deliveryStatus) === -1);
+
+        if (canCancel) {
+          cancelHtml =
+            '<div class="bg-white p-5 rounded-2xl shadow-sm">' +
+              '<button id="btn-cancel-order" type="button" class="w-full py-3 px-4 rounded-xl border-2 border-red-200 text-red-600 font-medium hover:bg-red-50 transition-colors">' +
+                '\u041e\u0442\u043c\u0435\u043d\u0438\u0442\u044c \u0437\u0430\u043a\u0430\u0437' +
+              '</button>' +
+            '</div>';
+        }
+
+        // Cancel confirmation modal (always in DOM, hidden)
+        var modalHtml =
+          '<div id="cancel-modal" class="fixed inset-0 z-50 hidden">' +
+            '<div class="fixed inset-0 bg-black/40" id="cancel-modal-overlay"></div>' +
+            '<div class="fixed inset-0 flex items-center justify-center p-4">' +
+              '<div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 relative">' +
+                '<h3 class="font-comfortaa text-lg mb-2">\u041e\u0442\u043c\u0435\u043d\u0430 \u0437\u0430\u043a\u0430\u0437\u0430</h3>' +
+                '<p class="text-sm text-gray-500 mb-4">\u041f\u043e\u0441\u043b\u0435 \u043e\u0442\u043c\u0435\u043d\u044b \u0432\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u044c \u0437\u0430\u043a\u0430\u0437 \u043d\u0435\u0432\u043e\u0437\u043c\u043e\u0436\u043d\u043e.</p>' +
+                '<textarea id="cancel-reason" rows="3" maxlength="500" required ' +
+                  'placeholder="\u0423\u043a\u0430\u0436\u0438\u0442\u0435 \u043f\u0440\u0438\u0447\u0438\u043d\u0443 \u043e\u0442\u043c\u0435\u043d\u044b" ' +
+                  'class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-300 resize-none mb-2"></textarea>' +
+                '<p id="cancel-error" class="text-red-500 text-xs mb-3 hidden"></p>' +
+                '<div class="flex gap-3">' +
+                  '<button id="btn-cancel-confirm" type="button" class="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors disabled:opacity-50">' +
+                    '\u041f\u043e\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u044c \u043e\u0442\u043c\u0435\u043d\u0443' +
+                  '</button>' +
+                  '<button id="btn-cancel-close" type="button" class="flex-1 py-2.5 rounded-xl border border-gray-300 text-gray-600 font-medium hover:bg-gray-50 transition-colors">' +
+                    '\u041d\u0435\u0442, \u043e\u0441\u0442\u0430\u0432\u0438\u0442\u044c' +
+                  '</button>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+
+        detailEl.innerHTML = infoHtml + itemsHtml + totalsHtml + deliveryHtml + customerHtml + addressHtml + historyHtml + cancelHtml + modalHtml;
+
+        // Wire cancel button + modal interactions
+        var btnCancel = document.getElementById('btn-cancel-order');
+        var modal = document.getElementById('cancel-modal');
+        var overlay = document.getElementById('cancel-modal-overlay');
+        var btnClose = document.getElementById('btn-cancel-close');
+        var btnConfirm = document.getElementById('btn-cancel-confirm');
+        var reasonEl = document.getElementById('cancel-reason');
+        var errorEl = document.getElementById('cancel-error');
+
+        function openModal() { modal && modal.classList.remove('hidden'); }
+        function closeModal() { modal && modal.classList.add('hidden'); errorEl && errorEl.classList.add('hidden'); }
+
+        if (btnCancel) btnCancel.addEventListener('click', openModal);
+        if (overlay) overlay.addEventListener('click', closeModal);
+        if (btnClose) btnClose.addEventListener('click', closeModal);
+
+        if (btnConfirm) {
+          btnConfirm.addEventListener('click', async function() {
+            var reason = (reasonEl.value || '').trim();
+            if (!reason) {
+              errorEl.textContent = '\u0423\u043a\u0430\u0436\u0438\u0442\u0435 \u043f\u0440\u0438\u0447\u0438\u043d\u0443 \u043e\u0442\u043c\u0435\u043d\u044b';
+              errorEl.classList.remove('hidden');
+              return;
+            }
+            btnConfirm.disabled = true;
+            btnConfirm.textContent = '\u041e\u0442\u043c\u0435\u043d\u044f\u0435\u043c...';
+            errorEl.classList.add('hidden');
+
+            try {
+              var cancelUrl = apiUrl + '/store/orders/' + encodeURIComponent(orderNumber) + '/cancel';
+              if (storeId) cancelUrl += '?store_id=' + encodeURIComponent(storeId);
+
+              var cancelResp = await fetch(cancelUrl, {
+                method: 'POST',
+                headers: {
+                  'Authorization': 'Bearer ' + token,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ reason: reason }),
+              });
+
+              var cancelResult = await cancelResp.json();
+              if (cancelResult.success) {
+                window.location.reload();
+              } else {
+                errorEl.textContent = cancelResult.error || '\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0442\u043c\u0435\u043d\u0438\u0442\u044c \u0437\u0430\u043a\u0430\u0437';
+                errorEl.classList.remove('hidden');
+                btnConfirm.disabled = false;
+                btnConfirm.textContent = '\u041f\u043e\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u044c \u043e\u0442\u043c\u0435\u043d\u0443';
+              }
+            } catch (e) {
+              errorEl.textContent = '\u041e\u0448\u0438\u0431\u043a\u0430 \u0441\u0435\u0442\u0438. \u041f\u043e\u043f\u0440\u043e\u0431\u0443\u0439\u0442\u0435 \u043f\u043e\u0437\u0436\u0435.';
+              errorEl.classList.remove('hidden');
+              btnConfirm.disabled = false;
+              btnConfirm.textContent = '\u041f\u043e\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u044c \u043e\u0442\u043c\u0435\u043d\u0443';
+            }
+          });
+        }
       } catch (err) {
         loadingEl.textContent = '\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0437\u0430\u043a\u0430\u0437';
         loadingEl.classList.remove('hidden');

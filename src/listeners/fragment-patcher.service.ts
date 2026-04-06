@@ -4,7 +4,7 @@
  *
  * When a product update arrives for an island-enabled site, this service:
  * 1. POSTs to the islands server for each component (PopularProducts, ProductGrid)
- * 2. Writes the returned HTML to MinIO at {siteId}/_islands/{component}.html
+ * 2. Writes the returned HTML to MinIO at sites/{storageSlug}/_islands/{component}.html
  * 3. Updates a manifest.json with fragment hashes for cache-busting
  */
 import { Injectable, Logger } from "@nestjs/common";
@@ -114,13 +114,16 @@ export class FragmentPatcher {
    * Uses batch endpoint (1 HTTP call) + hash comparison (skip unchanged).
    * Errors are caught and logged — never throws.
    */
-  async patchFragments(siteId: string, tenantId: string): Promise<void> {
+  async patchFragments(siteId: string, tenantId: string, storageSlug?: string): Promise<void> {
+    // storageSlug is the MinIO path prefix (e.g. "9c1c6fa8be34")
+    // siteId is used for islands server requests, storageSlug for MinIO writes
+    const slug = storageSlug ?? siteId;
     this.logger.log(
-      `Patching fragments for site ${siteId} (tenant ${tenantId})`,
+      `Patching fragments for site ${siteId} (tenant ${tenantId}, slug ${slug})`,
     );
 
     // 1. Read existing manifest for hash comparison
-    const existingManifest = await this.readManifest(siteId);
+    const existingManifest = await this.readManifest(slug);
 
     // 2. Batch render all components (1 HTTP call instead of 3)
     let rendered: Record<string, string | null>;
@@ -157,7 +160,7 @@ export class FragmentPatcher {
       }
 
       try {
-        await this.writeFragment(siteId, component, html);
+        await this.writeFragment(slug, component, html);
         updatedFragments[component] = {
           hash,
           updatedAt: new Date().toISOString(),
@@ -175,7 +178,7 @@ export class FragmentPatcher {
     // 4. Update manifest only if something changed
     if (Object.keys(updatedFragments).length > 0) {
       try {
-        await this.updateManifest(siteId, updatedFragments);
+        await this.updateManifest(slug, updatedFragments);
       } catch (err) {
         this.logger.error(
           `Failed to update manifest for site ${siteId}: ${err instanceof Error ? err.message : err}`,

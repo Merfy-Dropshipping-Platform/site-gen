@@ -57,7 +57,7 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
   /** Debounce map: siteId → pending fragment patch */
   private readonly fragmentPatchMap = new Map<
     string,
-    { timer: ReturnType<typeof setTimeout>; tenantId: string; flushing: boolean }
+    { timer: ReturnType<typeof setTimeout>; tenantId: string; storageSlug: string; flushing: boolean }
   >();
 
   constructor(
@@ -189,7 +189,7 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
       // or the site ID itself (site.id) — the product service stores
       // shopId which may be either, depending on the frontend context.
       const sites = await this.db
-        .select({ id: schema.site.id, status: schema.site.status, islandsEnabled: schema.site.islandsEnabled })
+        .select({ id: schema.site.id, status: schema.site.status, islandsEnabled: schema.site.islandsEnabled, storageSlug: schema.site.storageSlug })
         .from(schema.site)
         .where(
           and(
@@ -214,7 +214,7 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
 
         // All published sites use fragment patching for product events (fast path).
         // Full rebuild is only used for non-product changes (design, theme, structure).
-        this.debounceFragmentPatch(site.id, tenantId);
+        this.debounceFragmentPatch(site.id, tenantId, site.storageSlug ?? site.id);
       }
 
       channel.ack(msg);
@@ -292,7 +292,7 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
    * Leading-edge debounce: first event fires immediately, subsequent events
    * within the window are batched into one trailing call.
    */
-  private debounceFragmentPatch(siteId: string, tenantId: string): void {
+  private debounceFragmentPatch(siteId: string, tenantId: string, storageSlug: string): void {
     const existing = this.fragmentPatchMap.get(siteId);
 
     if (existing) {
@@ -309,6 +309,7 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
       const entry = {
         timer: null as unknown as ReturnType<typeof setTimeout>,
         tenantId,
+        storageSlug,
         flushing: true,
       };
       this.fragmentPatchMap.set(siteId, entry);
@@ -331,7 +332,7 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
     );
 
     try {
-      await this.fragmentPatcher.patchFragments(siteId, entry.tenantId);
+      await this.fragmentPatcher.patchFragments(siteId, entry.tenantId, entry.storageSlug);
     } finally {
       // After flush, set a cooldown — if more events arrived during flush,
       // the timer is already set. If not, clean up.

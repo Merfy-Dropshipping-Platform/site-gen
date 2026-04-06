@@ -57,7 +57,7 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
   /** Debounce map: siteId → pending fragment patch */
   private readonly fragmentPatchMap = new Map<
     string,
-    { timer: ReturnType<typeof setTimeout>; tenantId: string }
+    { timer: ReturnType<typeof setTimeout>; tenantId: string; flushing: boolean }
   >();
 
   constructor(
@@ -289,13 +289,14 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Debounce fragment patching for an island-enabled site.
-   * Uses a shorter 10s window since patching is much faster than a full rebuild.
+   * Leading-edge debounce: first event fires immediately, subsequent events
+   * within the window are batched into one trailing call.
    */
   private debounceFragmentPatch(siteId: string, tenantId: string): void {
     const existing = this.fragmentPatchMap.get(siteId);
 
     if (existing) {
+      // Already processing or waiting — reset trailing timer
       clearTimeout(existing.timer);
       existing.timer = setTimeout(() => {
         void this.flushFragmentPatch(siteId);
@@ -304,31 +305,43 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
         `Fragment patch debounce reset for site ${siteId}`,
       );
     } else {
-      this.fragmentPatchMap.set(siteId, {
-        timer: setTimeout(() => {
-          void this.flushFragmentPatch(siteId);
-        }, FRAGMENT_PATCH_DEBOUNCE_MS),
+      // First event — fire immediately (leading edge)
+      const entry = {
+        timer: null as unknown as ReturnType<typeof setTimeout>,
         tenantId,
-      });
+        flushing: true,
+      };
+      this.fragmentPatchMap.set(siteId, entry);
       this.logger.log(
-        `Fragment patch debounce started for site ${siteId} (10s window)`,
+        `Fragment patch: immediate trigger for site ${siteId}`,
       );
+      void this.flushFragmentPatch(siteId);
     }
   }
 
   /**
-   * Flush: patch fragments for an island-enabled site after debounce window expires.
+   * Flush: patch fragments, then set a cooldown window for subsequent events.
    */
   private async flushFragmentPatch(siteId: string): Promise<void> {
     const entry = this.fragmentPatchMap.get(siteId);
     if (!entry) return;
 
-    this.fragmentPatchMap.delete(siteId);
-
     this.logger.log(
-      `Fragment patch debounce expired for site ${siteId}: patching fragments`,
+      `Fragment patch executing for site ${siteId}`,
     );
 
-    await this.fragmentPatcher.patchFragments(siteId, entry.tenantId);
+    try {
+      await this.fragmentPatcher.patchFragments(siteId, entry.tenantId);
+    } finally {
+      // After flush, set a cooldown — if more events arrived during flush,
+      // the timer is already set. If not, clean up.
+      const current = this.fragmentPatchMap.get(siteId);
+      if (current && !current.timer) {
+        // No pending events during flush — set cooldown then clean up
+        current.timer = setTimeout(() => {
+          this.fragmentPatchMap.delete(siteId);
+        }, FRAGMENT_PATCH_DEBOUNCE_MS);
+      }
+    }
   }
 }

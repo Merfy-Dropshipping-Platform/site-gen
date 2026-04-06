@@ -1,142 +1,139 @@
-# Codebase Report: Product Creation — Category Handling
-Generated: 2026-03-23
+# Codebase Report: Delivery Switching Logic — T070-T075 (spec 055)
+Generated: 2026-04-06
 
 ## Summary
 
-The product creation form requires an explicit category selection — there is no auto-assignment of a default category. The `categoryId` is a non-nullable required UUID both in the DTO and the DB schema. The backend validates that the category exists before creating the product. Categories are seeded at module init from a static JSON file (333 lines, Russian e-commerce tree).
+All backend logic (T070) is fully implemented. Frontend (T071-T073) is substantially implemented but has 3 specific gaps. T074-T075 are deployment/E2E steps not yet done.
 
 ---
 
-## Questions Answered
+## T070: `calculateDelivery()` returns unified response
 
-### Q1: Product creation/edit form component
+**Status: FULLY IMPLEMENTED**
 
-**Location:** `frontend/MerfyFrontend/src/components/OnProductsPage/MainBlockAdd/MainBlockAdd.tsx`
-**Constants/types:** `frontend/MerfyFrontend/src/components/OnProductsPage/MainBlockAdd/mainBlockAdd.ts`
+File: `backend/services/orders/src/delivery/delivery.service.ts`
 
-Single component handles both create and edit modes (controlled by `productId` prop).
-
----
-
-### Q2: How categoryId is set when creating a product
-
-The form stores `values.category` (display label, e.g. "Одежда") and `values.subcategory` (sublabel) as strings.
-On submit (`handleSubmit`, line 344), the categoryId is resolved from a local lookup map:
-
-```
-// MainBlockAdd.tsx lines 363-369
-const categoryKey = values.subcategory || values.category;
-const categoryId =
-  (categoryKey && categoryIdByName[categoryKey])
-    ? categoryIdByName[categoryKey]
-    : (values.category && categoryIdByName[values.category])
-      ? categoryIdByName[values.category]
-      : undefined;
-```
-
-`categoryIdByName` is a `Record<string, string>` (name → UUID) built at mount time by calling `GET /products/categories` (`getCategories()`, lines 122-167). If the API call fails, the map stays empty and submission is blocked.
-
----
-
-### Q3: Is there a category selector/dropdown in the form?
-
-Yes. There is a custom dropdown (not a `<select>`) with:
-- A text search input (`categorySearch` state, line 88)
-- Filtered list of `MainBlockAddCategory` items from `MAIN_BLOCK_ADD_CATEGORIES` (static list in `mainBlockAdd.ts`, 183+)
-- Two-level picker: clicking a category with subcategories shows a sub-panel; clicking one without closes immediately
-
-The dropdown items come from the **static hardcoded list** in `mainBlockAdd.ts` (Russian category labels). The **UUIDs** come separately from the API at mount. The static labels must match the API names for the lookup to work.
-
----
-
-### Q4: What happens if no category is selected — is "default" auto-assigned?
-
-**No default is auto-assigned.** Category is required. On submit (lines 404-406):
-
+The `CalculateDeliveryResult` interface (lines 37-46) includes all 3 types:
 ```typescript
-if (!categoryId) {
-  nextErrors.category = "Выберите категорию для товара";
+export interface CalculateDeliveryResult {
+  cdekAvailable: boolean;
+  cdekError?: string;
+  tariffs: CdekTariffOption[];        // CDEK tariffs
+  pickupAvailable: boolean;
+  pickupAddress: string | null;
+  pickupNotification?: string | null;
+  pickupExpectedDate?: string | null;
+  customProfiles?: CustomDeliveryProfile[];  // Custom profiles
 }
 ```
 
-Zod also validates it (line 38):
-```typescript
-categoryId: z.string().min(1, "Выберите категорию для товара"),
-```
+The `calculateDelivery()` method (lines 126-275):
+- Reads shop settings, checks `cdekEnabled` + `pickupEnabled`
+- Calls `getCustomProfilesForCart()` (lines 482-572) — queries `deliveryProfiles` + `deliveryTariffs` tables, applies product restrictions and conditional pricing (weight/subtotal rules)
+- Attaches `customProfiles` to result at both the early-return `baseResult` path (lines 144-148) and the CDEK success path (lines 262-264)
+- CDEK error paths all return `baseResult` which includes customProfiles via spread
 
-There is also a special error when categories failed to load (lines 395-402):
-```typescript
-if (!categoryId && Object.keys(categoryIdByName).length === 0 && !nextErrors.category) {
-  nextErrors.category = "Категории не загружены. Проверьте, что сервис товаров запущен.";
-}
-```
-
-The backend also validates: `products.service.ts` line 113 calls `this.categoryService.findOne(createProductDto.categoryId)` which throws `NotFoundException` if the UUID doesn't exist.
-
----
-
-### Q5: Backend — how createProduct handles categoryId
-
-**File:** `backend/services/product/src/modules/products/products.service.ts`
-
-```typescript
-// line 113
-await this.categoryService.findOne(createProductDto.categoryId);
-```
-
-This is a hard validation — if the category UUID doesn't exist, the entire transaction is rolled back and a 404 is thrown.
-
-The `categoryId` column in the `products` table is `NOT NULL` with a `RESTRICT` foreign key:
-```sql
-FOREIGN KEY ("categoryId") REFERENCES "categories"("id") ON DELETE RESTRICT ON UPDATE NO ACTION
-```
+**Edge cases handled in backend:**
+- No CDEK credentials → returns `baseResult` with customProfiles intact (line 162-165)
+- CDEK auth fail → returns `cdekError: "Не удалось авторизоваться в СДЭК..."` (lines 172-176)
+- Empty cart → `cdekError: "Корзина пуста"` (lines 192-196)
+- Digital-only cart → skips CDEK, returns pickup/custom (lines 199-210)
+- CDEK API exception → `cdekError: "Не удалось рассчитать доставку..."` (lines 266-273)
 
 ---
 
-### Q6: Is there a default category creation logic?
+## T071: `renderDeliveryTariffs()` renders all 3 types
 
-**No default category auto-creation** exists in the product creation flow.
+**Status: FULLY IMPLEMENTED**
 
-There **is** a default **collection** auto-creation (`collectionsService.ensureDefaultCollection(shopId)`, line 178) — but that is separate from categories.
+File: `backend/services/sites/templates/astro/rose/src/scripts/checkout.js`
 
-For categories, the backend seeds a static tree at module init (`CategoriesService.onModuleInit()` calls `seedCategories()`), which runs once when the DB is empty. The seed data comes from `categories.json` — a 333-line Russian product taxonomy with no "default" entry.
+`renderDeliveryTariffs(tariffs, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate, customProfiles)` (lines 658-775):
 
----
-
-## Schema
-
-```sql
-CREATE TABLE "categories" (
-  "id"       uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  "name"     varchar(150) NOT NULL,
-  "parentId" uuid,           -- self-reference, nullable for root
-  "level"    integer DEFAULT 0,
-  "slug"     varchar UNIQUE NOT NULL,
-  FOREIGN KEY ("parentId") REFERENCES "categories"("id") ON DELETE CASCADE
-);
-
-CREATE TABLE "products" (
-  ...
-  "categoryId" uuid NOT NULL,
-  FOREIGN KEY ("categoryId") REFERENCES "categories"("id") ON DELETE RESTRICT
-);
-```
-
-Tree is 3 levels deep: level 0 = root (e.g. "Одежда и аксессуары"), level 1 = mid (e.g. "Одежда"), level 2 = leaf (e.g. "Верхняя одежда").
+- CDEK tariffs rendered as radio labels with `data-delivery="cdek"`, mode badges (Курьер/ПВЗ), price, period (lines 672-713)
+- Custom profiles rendered (lines 716-739): iterates `customProfiles[].tariffs[]`, each tariff gets `data-delivery="custom"`, `data-tariff-code="{t.id}"` (string UUID, not integer), profile name shown as badge
+- Pickup shown/hidden based on `pickupAvailable` flag (lines 744-770), shows `pickupAddress`, `pickupNotification`, `pickupExpectedDate`
+- Ends by calling `this.bindDeliverySelection()` (line 774)
 
 ---
 
-## Key Files
+## T072: Switching logic
 
-| File | Purpose |
-|------|---------|
-| `frontend/MerfyFrontend/src/components/OnProductsPage/MainBlockAdd/MainBlockAdd.tsx` | Product create/edit form — full component |
-| `frontend/MerfyFrontend/src/components/OnProductsPage/MainBlockAdd/mainBlockAdd.ts` | Static category list, form state types, text constants |
-| `frontend/MerfyFrontend/src/lib/products.ts` | `getCategories()` API call → `GET /products/categories` |
-| `backend/services/product/src/modules/products/dto/create-product.dto.ts` | `CreateProductDto` — `categoryId: string` (required UUID) |
-| `backend/services/product/src/modules/products/products.service.ts` | `create()` — validates categoryId exists, wraps in transaction |
-| `backend/services/product/src/modules/categories/categories.service.ts` | `findAll()`, `findOne()`, seeds categories on init |
-| `backend/services/product/src/modules/categories/entities/category.entity.ts` | TypeORM entity — id, name, parentId, level, slug |
-| `backend/services/product/src/common/database/seeds/categories.seed.ts` | Seed runner — creates tree from JSON, skips if any rows exist |
-| `backend/services/product/src/common/database/seeds/categories.json` | 333-line Russian e-commerce taxonomy |
+**Status: SUBSTANTIALLY IMPLEMENTED — 1 gap**
 
+### CDEK → pickup (bindDeliveryMethodSelection, line 564-576)
+- Hides address group, clears tariffs HTML, hides PVZ section
+- Immediately sends `type: 'pickup'`, cost 0 to backend
+- Updates totals UI
+- VERIFIED CORRECT
+
+### pickup → CDEK (bindDeliveryMethodSelection, line 551-563)
+- Shows address group, clears tariffs HTML, resets `selectedDelivery = null`
+- Calls `updateDeliveryTotals()` to show 0 cost
+- User must re-enter address to recalculate CDEK tariffs
+- VERIFIED CORRECT
+
+### Custom tariff selection (bindDeliverySelection, lines 790-799)
+- `deliveryType = 'custom'`, `tariffCode` kept as string (UUID) via line 794: `deliveryType === 'custom' ? rawTariffCode : parseInt(...)`
+- Calls `selectDeliveryOption('custom', tariffId, costCents, 'custom', null, null)`
+- In `selectDeliveryOption` (lines 804-823): `deliveryMode === 'pickup'` check is `false` (mode is `'custom'`), so goes directly to `sendDeliverySelection`
+- `sendDeliverySelection` sends `{type: 'custom', tariffCode: 'uuid-string', deliveryCostCents: N}` to backend
+- `updateDeliveryTotals()` called immediately on selection — cost updates in UI
+- VERIFIED CORRECT
+
+### GAP: CDEK + custom in method-selector flow (Case 1 in checkDeliveryOptions, lines 479-493)
+When both CDEK and pickup are available (`cdekAvailable && pickupAvailable`):
+- Shows the method radio (CDEK vs самовывоз)
+- If `hasCustom`: immediately calls `renderDeliveryTariffs([], ...)` for custom profiles
+- BUT: when user clicks CDEK method radio, tariffs are CLEARED (`tariffs.innerHTML = ''`, line 555) without re-rendering custom profiles. Custom tariffs disappear from the UI when user switches to CDEK method and back.
+
+---
+
+## T073: Edge cases
+
+**Status: PARTIALLY IMPLEMENTED — 2 gaps**
+
+### "No delivery options" → show message
+IMPLEMENTED. `checkDeliveryOptions()` line 522-523: falls through to `setDeliveryState('unavailable')` when none of the cases match (no CDEK, no pickup, no custom). The `#co-delivery-unavailable` element is shown.
+
+Also in `calculateDelivery()` (line 606-608): if no tariffs + no pickup + no custom → `setDeliveryState('unavailable')`.
+
+### "Invalid CDEK keys" → hide CDEK option
+GAP. The backend returns `cdekError` in the response (e.g. `"Не удалось авторизоваться в СДЭК"`), and `cdekAvailable: false`. In `checkDeliveryOptions()` the `cdekError` field is destructured (line 470) but is NOT stored or displayed. The code only looks at `cdekAvailable` boolean. There is no UI message shown to the shop owner/user explaining why CDEK is absent. The CDEK option is correctly hidden (because `cdekAvailable=false`), but there's no user-facing error message.
+
+Also in `calculateDelivery()` (lines 603-617): `cdekError` is not checked from the response at all — only `tariffs`, `pickupAvailable`, `customProfiles` are used to decide the state. If CDEK keys are invalid but other options exist, the user sees those options with no explanation for missing CDEK.
+
+### "No custom profile for product" → show general options
+IMPLEMENTED. The backend's `getCustomProfilesForCart()` (lines 514-519) filters profiles by `productIds` — if no profile matches, returns empty array. The frontend's `checkDeliveryOptions()` stores `customProfiles: customProfiles || []` (line 471) and uses `const hasCustom = customProfiles && customProfiles.length > 0` (line 476). If empty, the code proceeds to show CDEK/pickup without custom options. No special handling needed.
+
+---
+
+## T074: Deploy
+
+**Status: NOT DONE** (deployment task)
+
+---
+
+## T075: E2E verification
+
+**Status: NOT DONE** (requires T074)
+
+---
+
+## Summary Table
+
+| Task | Status | Gap |
+|------|--------|-----|
+| T070 | DONE | None — all 3 types in unified response |
+| T071 | DONE | None — all 3 types rendered |
+| T072 | MOSTLY DONE | Custom profiles disappear when switching in CDEK+pickup combined mode |
+| T073 | MOSTLY DONE | No UI display of `cdekError` message; `cdekError` field ignored in `calculateDelivery()` flow |
+| T074 | NOT DONE | Deployment pending |
+| T075 | NOT DONE | E2E pending |
+
+## Key File Locations
+
+| File | Lines |
+|------|-------|
+| `backend/services/orders/src/delivery/delivery.service.ts` | 37-46 (interface), 126-275 (calculateDelivery), 482-572 (getCustomProfilesForCart) |
+| `backend/services/sites/templates/astro/rose/src/scripts/checkout.js` | 465-527 (checkDeliveryOptions), 529-578 (bindDeliveryMethodSelection), 583-618 (calculateDelivery), 658-775 (renderDeliveryTariffs), 777-801 (bindDeliverySelection), 804-823 (selectDeliveryOption) |

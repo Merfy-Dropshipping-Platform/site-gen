@@ -467,8 +467,8 @@ class CheckoutFlow {
       const res = await CheckoutAPI.calculateDelivery(this.cartId, {});
       if (!res.success) return;
 
-      const { cdekAvailable, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate, customProfiles } = res.data;
-      this.deliveryMethods = { cdekAvailable, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate, customProfiles: customProfiles || [] };
+      const { cdekAvailable, cdekError, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate, customProfiles } = res.data;
+      this.deliveryMethods = { cdekAvailable, cdekError, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate, customProfiles: customProfiles || [] };
 
       const methodEl = document.getElementById('co-delivery-method');
       const addressGroup = document.getElementById('co-address-group');
@@ -507,6 +507,7 @@ class CheckoutFlow {
         if (addressGroup) addressGroup.style.display = 'none';
         this.renderDeliveryTariffs([], true, pickupAddress, pickupNotification, pickupExpectedDate, customProfiles);
         this.setDeliveryState('tariffs');
+        if (cdekError) this.showCdekErrorNote(cdekError);
         return;
       }
 
@@ -516,6 +517,7 @@ class CheckoutFlow {
         if (addressGroup) addressGroup.style.display = 'none';
         this.renderDeliveryTariffs([], false, null, null, null, customProfiles);
         this.setDeliveryState('tariffs');
+        if (cdekError) this.showCdekErrorNote(cdekError);
         return;
       }
 
@@ -549,26 +551,39 @@ class CheckoutFlow {
         const pvzSection = document.getElementById('co-pvz-section');
 
         if (method === 'cdek') {
-          // Show address block, hide pickup, reset tariffs
+          // Show address block, hide pickup, reset CDEK tariffs
           if (addressGroup) addressGroup.style.display = '';
           if (pickupEl) pickupEl.classList.add('hidden');
-          if (tariffs) { tariffs.classList.add('hidden'); tariffs.innerHTML = ''; }
           if (pvzSection) pvzSection.classList.add('hidden');
-          if (placeholder) {
+          // Re-render custom profiles (if any) while clearing CDEK tariffs
+          const dm = this.deliveryMethods || {};
+          const hasCustom = dm.customProfiles && dm.customProfiles.length > 0;
+          if (hasCustom) {
+            this.renderDeliveryTariffs([], false, null, null, null, dm.customProfiles);
+            if (tariffs) tariffs.classList.remove('hidden');
+          } else {
+            if (tariffs) { tariffs.classList.add('hidden'); tariffs.innerHTML = ''; }
+          }
+          if (placeholder && !hasCustom) {
             placeholder.classList.remove('hidden');
+          } else if (placeholder) {
+            placeholder.classList.add('hidden');
           }
           // Reset delivery selection
           this.selectedDelivery = null;
           this.deliveryCostCents = 0;
           this.updateDeliveryTotals();
         } else if (method === 'pickup') {
-          // Hide address, hide tariffs, select pickup immediately
+          // Hide address, show pickup + custom profiles
           if (addressGroup) addressGroup.style.display = 'none';
-          if (tariffs) { tariffs.classList.add('hidden'); tariffs.innerHTML = ''; }
           if (pvzSection) pvzSection.classList.add('hidden');
-          if (pickupEl) pickupEl.classList.add('hidden');
           if (placeholder) placeholder.classList.add('hidden');
-          // Send pickup selection to backend
+          // Render pickup + custom profiles together
+          const dm = this.deliveryMethods || {};
+          this.renderDeliveryTariffs([], true, dm.pickupAddress, dm.pickupNotification, dm.pickupExpectedDate, dm.customProfiles);
+          if (tariffs) tariffs.classList.remove('hidden');
+          if (pickupEl) pickupEl.classList.remove('hidden');
+          // Auto-select pickup
           this.selectedDelivery = { type: 'pickup', tariffCode: null, deliveryCostCents: 0 };
           this.deliveryCostCents = 0;
           this.updateDeliveryTotals();
@@ -653,6 +668,19 @@ class CheckoutFlow {
         if (unavailable) unavailable.classList.remove('hidden');
         break;
     }
+  }
+
+  showCdekErrorNote(errorMsg) {
+    const tariffs = document.getElementById('co-delivery-tariffs');
+    if (!tariffs) return;
+    // Remove existing note if any
+    const existing = tariffs.querySelector('.checkout-cdek-error-note');
+    if (existing) existing.remove();
+    const note = document.createElement('div');
+    note.className = 'checkout-cdek-error-note';
+    note.style.cssText = 'padding: 8px 12px; margin-top: 8px; font-size: 13px; color: var(--color-muted, #6b7280); background: var(--color-surface-alt, #f9fafb); border-radius: 8px;';
+    note.textContent = `Доставка СДЭК недоступна: ${errorMsg}`;
+    tariffs.appendChild(note);
   }
 
   renderDeliveryTariffs(tariffs, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate, customProfiles) {

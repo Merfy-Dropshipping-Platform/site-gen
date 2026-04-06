@@ -96,7 +96,7 @@ export interface BuildContext {
   /** Whether the site uses server-island smart revalidation */
   islandsEnabled: boolean;
   /** Branding overrides (logo, colors) from site table */
-  branding?: { logoUrl?: string; primaryColor?: string; secondaryColor?: string };
+  branding?: { logoUrl?: string; primaryColor?: string; secondaryColor?: string; favicons?: { universal?: string; dark?: string; light?: string; apple?: string } };
   /** Site settings (checkout config, etc.) */
   settings?: { requireCustomerAuth?: boolean };
 }

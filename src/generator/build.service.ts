@@ -499,6 +499,7 @@ export async function trySnapshotDeploy(
       publicUrl: schema.site.publicUrl,
       storageSlug: schema.site.storageSlug,
       branding: schema.site.branding,
+      islandsEnabled: schema.site.islandsEnabled,
     })
     .from(schema.site)
     .where(eq(schema.site.id, params.siteId));

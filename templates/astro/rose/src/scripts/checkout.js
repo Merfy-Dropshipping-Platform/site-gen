@@ -23,7 +23,7 @@ class CheckoutFlow {
     this.pickupPoints = []; // CDEK pickup points for selected city
     this.selectedPvz = null; // { code, name, address, workTime, type }
     this.lastCityFiasId = null; // Cache to avoid re-fetching PVZ for same city
-    this.deliveryMethods = { cdekAvailable: false, pickupAvailable: false, pickupAddress: null, pickupNotification: null, pickupExpectedDate: null };
+    this.deliveryMethods = { cdekAvailable: false, pickupAvailable: false, pickupAddress: null, pickupNotification: null, pickupExpectedDate: null, customProfiles: [] };
     this.selectedDeliveryMethod = null; // 'cdek' | 'pickup' | null
 
     this.init();
@@ -467,12 +467,13 @@ class CheckoutFlow {
       const res = await CheckoutAPI.calculateDelivery(this.cartId, {});
       if (!res.success) return;
 
-      const { cdekAvailable, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate } = res.data;
-      this.deliveryMethods = { cdekAvailable, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate };
+      const { cdekAvailable, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate, customProfiles } = res.data;
+      this.deliveryMethods = { cdekAvailable, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate, customProfiles: customProfiles || [] };
 
       const methodEl = document.getElementById('co-delivery-method');
       const addressGroup = document.getElementById('co-address-group');
       const placeholder = document.getElementById('co-delivery-placeholder');
+      const hasCustom = customProfiles && customProfiles.length > 0;
 
       // Case 1: Both available — show delivery method radio selector
       if (cdekAvailable && pickupAvailable) {
@@ -483,12 +484,20 @@ class CheckoutFlow {
         const addrEl = document.getElementById('co-delivery-method-pickup-addr');
         if (addrEl && pickupAddress) addrEl.textContent = pickupAddress;
         this.bindDeliveryMethodSelection();
+        // If custom profiles exist, render them immediately (no address needed)
+        if (hasCustom) {
+          this.renderDeliveryTariffs([], pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate, customProfiles);
+          this.setDeliveryState('tariffs');
+        }
         return;
       }
 
       // Case 2: CDEK only — show address immediately (old behavior)
       if (cdekAvailable && !pickupAvailable) {
-        // Address block visible, wait for address input → calculate tariffs
+        if (hasCustom) {
+          this.renderDeliveryTariffs([], false, null, null, null, customProfiles);
+          this.setDeliveryState('tariffs');
+        }
         return;
       }
 
@@ -496,7 +505,16 @@ class CheckoutFlow {
       if (!cdekAvailable && pickupAvailable) {
         if (placeholder) placeholder.classList.add('hidden');
         if (addressGroup) addressGroup.style.display = 'none';
-        this.renderDeliveryTariffs([], true, pickupAddress, pickupNotification, pickupExpectedDate);
+        this.renderDeliveryTariffs([], true, pickupAddress, pickupNotification, pickupExpectedDate, customProfiles);
+        this.setDeliveryState('tariffs');
+        return;
+      }
+
+      // Case 5: Custom profiles only — no CDEK, no pickup
+      if (!cdekAvailable && !pickupAvailable && hasCustom) {
+        if (placeholder) placeholder.classList.add('hidden');
+        if (addressGroup) addressGroup.style.display = 'none';
+        this.renderDeliveryTariffs([], false, null, null, null, customProfiles);
         this.setDeliveryState('tariffs');
         return;
       }
@@ -582,15 +600,16 @@ class CheckoutFlow {
         return;
       }
 
-      const { tariffs, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate } = res.data;
+      const { tariffs, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate, customProfiles } = res.data;
 
-      if ((!tariffs || tariffs.length === 0) && !pickupAvailable) {
+      const hasCustom = customProfiles && customProfiles.length > 0;
+      if ((!tariffs || tariffs.length === 0) && !pickupAvailable && !hasCustom) {
         this.setDeliveryState('unavailable');
         return;
       }
 
       this.deliveryTariffs = tariffs || [];
-      this.renderDeliveryTariffs(tariffs, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate);
+      this.renderDeliveryTariffs(tariffs, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate, customProfiles);
       this.setDeliveryState('tariffs');
     } catch (e) {
       console.error('Delivery calculation error:', e);
@@ -636,7 +655,7 @@ class CheckoutFlow {
     }
   }
 
-  renderDeliveryTariffs(tariffs, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate) {
+  renderDeliveryTariffs(tariffs, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate, customProfiles) {
     const container = document.getElementById('co-delivery-tariffs');
     const pickupEl = document.getElementById('co-delivery-pickup');
 
@@ -650,7 +669,7 @@ class CheckoutFlow {
     const mapsUrl = fullAddress ? `https://yandex.ru/maps/?text=${encodeURIComponent(fullAddress)}` : '';
 
     // Render CDEK tariffs
-    container.innerHTML = (tariffs || []).map((t, i) => {
+    let html = (tariffs || []).map((t, i) => {
       const deliverySum = t.deliverySumRub ?? t.deliverySum ?? 0;
       const priceCents = Math.round(deliverySum * 100);
       const priceText = priceCents > 0 ? `${Math.round(priceCents / 100)} ₽` : 'Бесплатно';
@@ -692,6 +711,34 @@ class CheckoutFlow {
         </label>
       `;
     }).join('');
+
+    // Render custom profile tariffs
+    if (customProfiles && customProfiles.length > 0) {
+      for (const profile of customProfiles) {
+        for (const t of profile.tariffs) {
+          const priceText = t.priceCents > 0 ? `${Math.round(t.priceCents / 100)} ₽` : 'Бесплатно';
+          html += `
+            <label class="checkout-shipping-option" data-delivery="custom" data-tariff-code="${t.id}" data-cost="${t.priceCents}" data-delivery-mode="custom" data-period-min="" data-period-max="">
+              <div class="checkout-shipping-left">
+                <input type="radio" name="delivery" value="custom-${t.id}" class="checkout-radio">
+                <div class="checkout-shipping-info">
+                  <div class="checkout-shipping-name-row">
+                    <span class="checkout-shipping-name font-body">${t.name}</span>
+                    <span class="checkout-shipping-badge checkout-shipping-badge--custom font-body">${profile.name}</span>
+                  </div>
+                  ${t.description ? `<div class="checkout-shipping-desc font-body">${t.description}</div>` : ''}
+                </div>
+              </div>
+              <div class="checkout-shipping-right">
+                <span class="checkout-shipping-price font-body">${priceText}</span>
+              </div>
+            </label>
+          `;
+        }
+      }
+    }
+
+    container.innerHTML = html;
 
     // Show/hide pickup
     if (pickupEl) {
@@ -743,7 +790,8 @@ class CheckoutFlow {
         // Determine selection
         const deliveryType = option.dataset.delivery;
         const costCents = parseInt(option.dataset.cost || '0', 10);
-        const tariffCode = option.dataset.tariffCode ? parseInt(option.dataset.tariffCode, 10) : null;
+        const rawTariffCode = option.dataset.tariffCode;
+        const tariffCode = deliveryType === 'custom' ? rawTariffCode : (rawTariffCode ? parseInt(rawTariffCode, 10) : null);
         const deliveryMode = option.dataset.deliveryMode || 'door';
         const periodMin = option.dataset.periodMin ? parseInt(option.dataset.periodMin, 10) : null;
         const periodMax = option.dataset.periodMax ? parseInt(option.dataset.periodMax, 10) : null;

@@ -92,7 +92,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
         pending: 'bg-yellow-100 text-yellow-800',
         paid: 'bg-green-100 text-green-800',
         processing: 'bg-blue-100 text-blue-800',
-        sent: 'bg-indigo-100 text-indigo-800',
+        sent: 'bg-purple-100 text-purple-800',
         delivered: 'bg-emerald-100 text-emerald-800',
         cancelled: 'bg-red-100 text-red-800',
         refunded: 'bg-orange-100 text-orange-800',
@@ -298,6 +298,46 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
               '<span class="text-gray-400">' + updDate + '</span></div>';
           }
 
+          deliveryHtml += '</div></div>';
+        }
+
+        // T030: Pickup delivery info
+        if (!deliveryHtml && order.deliveryType === 'pickup') {
+          deliveryHtml = '<div class="bg-white p-5 rounded-2xl shadow-sm">' +
+            '<h3 class="font-comfortaa text-lg mb-3">\u0421\u0430\u043c\u043e\u0432\u044b\u0432\u043e\u0437</h3>' +
+            '<div class="space-y-2 text-sm">';
+          if (order.pickupAddress) {
+            deliveryHtml += '<div class="flex items-start gap-2">' +
+              '<span class="text-gray-500 shrink-0">\u0410\u0434\u0440\u0435\u0441:</span>' +
+              '<span class="text-gray-700">' + order.pickupAddress + '</span></div>';
+          }
+          if (order.deliveryNote) {
+            deliveryHtml += '<p class="text-gray-500 mt-2">' + order.deliveryNote + '</p>';
+          }
+          deliveryHtml += '</div></div>';
+        }
+
+        // T031: Custom delivery profile info
+        if (!deliveryHtml && order.deliveryType && order.deliveryType !== 'pickup' && !order.deliveryType.includes('cdek')) {
+          deliveryHtml = '<div class="bg-white p-5 rounded-2xl shadow-sm">' +
+            '<h3 class="font-comfortaa text-lg mb-3">\u0414\u043e\u0441\u0442\u0430\u0432\u043a\u0430</h3>' +
+            '<div class="space-y-2 text-sm">';
+          deliveryHtml += '<div class="flex items-center justify-between">' +
+            '<span class="text-gray-500">\u0421\u043f\u043e\u0441\u043e\u0431</span>' +
+            '<span>' + (order.deliveryProfileName || order.deliveryType) + '</span></div>';
+          if (order.deliveryTariffName) {
+            deliveryHtml += '<div class="flex items-center justify-between">' +
+              '<span class="text-gray-500">\u0422\u0430\u0440\u0438\u0444</span>' +
+              '<span>' + order.deliveryTariffName + '</span></div>';
+          }
+          if (order.deliveryCents != null && order.deliveryCents > 0) {
+            deliveryHtml += '<div class="flex items-center justify-between">' +
+              '<span class="text-gray-500">\u0421\u0442\u043e\u0438\u043c\u043e\u0441\u0442\u044c</span>' +
+              '<span>' + formatPrice(order.deliveryCents) + '</span></div>';
+          }
+          if (order.deliveryNote) {
+            deliveryHtml += '<p class="text-gray-500 mt-2">' + order.deliveryNote + '</p>';
+          }
           deliveryHtml += '</div></div>';
         }
 

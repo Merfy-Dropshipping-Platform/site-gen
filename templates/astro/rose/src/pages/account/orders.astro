@@ -79,7 +79,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
         pending: 'bg-yellow-100 text-yellow-800',
         paid: 'bg-green-100 text-green-800',
         processing: 'bg-blue-100 text-blue-800',
-        sent: 'bg-indigo-100 text-indigo-800',
+        sent: 'bg-purple-100 text-purple-800',
         delivered: 'bg-emerald-100 text-emerald-800',
         cancelled: 'bg-red-100 text-red-800',
         refunded: 'bg-orange-100 text-orange-800',
@@ -91,10 +91,16 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
         var storeId = config.shopId || config.storeId || config.siteId || '';
         var token = window.CustomerStore.getToken();
 
-        var url = apiUrl + '/store/orders?skip=0&take=20';
-        if (storeId) url += '&store_id=' + encodeURIComponent(storeId);
+        var PAGE_SIZE = 10;
+        var currentSkip = 0;
 
-        var resp = await fetch(url, {
+        function buildUrl(skip) {
+          var u = apiUrl + '/store/orders?skip=' + skip + '&take=' + PAGE_SIZE;
+          if (storeId) u += '&store_id=' + encodeURIComponent(storeId);
+          return u;
+        }
+
+        var resp = await fetch(buildUrl(0), {
           headers: { 'Authorization': 'Bearer ' + token },
         });
         var result = await resp.json();
@@ -107,9 +113,11 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
         }
 
         var orders = result.data.items;
+        var totalCount = result.data.total || orders.length;
+        currentSkip = orders.length;
         listEl.classList.remove('hidden');
 
-        orders.forEach(function(order) {
+        function renderOrder(order) {
           var date = new Date(order.createdAt).toLocaleDateString('ru-RU', {
             day: 'numeric', month: 'long', year: 'numeric',
           });
@@ -164,7 +172,44 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
             '</div>' +
             (order.promoCode ? '<div class="mt-1 text-xs text-green-600">\u041f\u0440\u043e\u043c\u043e\u043a\u043e\u0434: ' + order.promoCode + '</div>' : '');
           listEl.appendChild(card);
-        });
+        }
+
+        orders.forEach(renderOrder);
+
+        // "Показать ещё" button
+        if (currentSkip < totalCount) {
+          var loadMoreBtn = document.createElement('button');
+          loadMoreBtn.id = 'btn-load-more';
+          loadMoreBtn.className = 'w-full py-3 px-4 rounded-xl border border-gray-300 text-gray-600 font-medium hover:bg-gray-50 transition-colors mt-4';
+          loadMoreBtn.textContent = '\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u0435\u0449\u0451';
+          listEl.parentElement.appendChild(loadMoreBtn);
+
+          loadMoreBtn.addEventListener('click', async function() {
+            loadMoreBtn.disabled = true;
+            loadMoreBtn.textContent = '\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430...';
+            try {
+              var moreResp = await fetch(buildUrl(currentSkip), {
+                headers: { 'Authorization': 'Bearer ' + token },
+              });
+              var moreResult = await moreResp.json();
+              if (moreResult.success && moreResult.data?.items?.length) {
+                moreResult.data.items.forEach(renderOrder);
+                currentSkip += moreResult.data.items.length;
+                if (currentSkip >= totalCount || moreResult.data.items.length < PAGE_SIZE) {
+                  loadMoreBtn.remove();
+                } else {
+                  loadMoreBtn.disabled = false;
+                  loadMoreBtn.textContent = '\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u0435\u0449\u0451';
+                }
+              } else {
+                loadMoreBtn.remove();
+              }
+            } catch (e) {
+              loadMoreBtn.disabled = false;
+              loadMoreBtn.textContent = '\u041f\u043e\u043f\u0440\u043e\u0431\u043e\u0432\u0430\u0442\u044c \u0441\u043d\u043e\u0432\u0430';
+            }
+          });
+        }
       } catch (err) {
         loadingEl.classList.add('hidden');
         errorEl.classList.remove('hidden');

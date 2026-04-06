@@ -111,6 +111,7 @@ export class FragmentPatcher {
 
   /**
    * Re-render island fragments for a site and write them to MinIO.
+   * Uses batch endpoint (1 HTTP call) + hash comparison (skip unchanged).
    * Errors are caught and logged — never throws.
    */
   async patchFragments(siteId: string, tenantId: string): Promise<void> {
@@ -118,47 +119,60 @@ export class FragmentPatcher {
       `Patching fragments for site ${siteId} (tenant ${tenantId})`,
     );
 
+    // 1. Read existing manifest for hash comparison
+    const existingManifest = await this.readManifest(siteId);
+
+    // 2. Batch render all components (1 HTTP call instead of 3)
+    let rendered: Record<string, string | null>;
+    try {
+      rendered = await this.batchRender(siteId);
+    } catch (err) {
+      this.logger.warn(
+        `Batch render failed, falling back to sequential: ${err instanceof Error ? err.message : err}`,
+      );
+      rendered = await this.sequentialRender(siteId);
+    }
+
+    // 3. Hash-compare and write only changed fragments
     const updatedFragments: Record<
       string,
       { hash: string; updatedAt: string }
     > = {};
 
     for (const component of ISLAND_COMPONENTS) {
+      const html = rendered[component];
+      if (!html) continue;
+
+      const hash = createHash("sha256")
+        .update(html)
+        .digest("hex")
+        .slice(0, 8);
+
+      // Skip if hash matches existing manifest
+      if (existingManifest?.fragments[component]?.hash === hash) {
+        this.logger.log(
+          `Fragment ${component} unchanged for site ${siteId} (hash: ${hash}) — skipping write`,
+        );
+        continue;
+      }
+
       try {
-        // 1. Call islands server to re-render the component (use siteId as storeId)
-        const html = await this.renderFragment(component, siteId);
-        if (!html) {
-          this.logger.warn(
-            `Empty response from islands server for ${component} (site ${siteId})`,
-          );
-          continue;
-        }
-
-        // 2. Compute SHA256 hash (first 8 chars)
-        const hash = createHash("sha256")
-          .update(html)
-          .digest("hex")
-          .slice(0, 8);
-
-        // 3. Write HTML to MinIO
         await this.writeFragment(siteId, component, html);
-
         updatedFragments[component] = {
           hash,
           updatedAt: new Date().toISOString(),
         };
-
         this.logger.log(
           `Fragment ${component} patched for site ${siteId} (hash: ${hash})`,
         );
       } catch (err) {
         this.logger.error(
-          `Failed to patch fragment ${component} for site ${siteId}: ${err instanceof Error ? err.message : err}`,
+          `Failed to write fragment ${component} for site ${siteId}: ${err instanceof Error ? err.message : err}`,
         );
       }
     }
 
-    // 4. Update manifest if any fragments were patched
+    // 4. Update manifest only if something changed
     if (Object.keys(updatedFragments).length > 0) {
       try {
         await this.updateManifest(siteId, updatedFragments);
@@ -167,6 +181,66 @@ export class FragmentPatcher {
           `Failed to update manifest for site ${siteId}: ${err instanceof Error ? err.message : err}`,
         );
       }
+    } else {
+      this.logger.log(`No fragments changed for site ${siteId} — 0 writes`);
+    }
+  }
+
+  /**
+   * Batch render all components in 1 HTTP call.
+   */
+  private async batchRender(
+    storeId: string,
+  ): Promise<Record<string, string | null>> {
+    const url = `${this.islandsServerUrl}/islands/batch`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        storeId,
+        components: [...ISLAND_COMPONENTS],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Batch render returned ${response.status}`);
+    }
+
+    return (await response.json()) as Record<string, string | null>;
+  }
+
+  /**
+   * Fallback: render components sequentially (old behavior).
+   */
+  private async sequentialRender(
+    storeId: string,
+  ): Promise<Record<string, string | null>> {
+    const result: Record<string, string | null> = {};
+    for (const component of ISLAND_COMPONENTS) {
+      result[component] = await this.renderFragment(component, storeId);
+    }
+    return result;
+  }
+
+  /**
+   * Read existing manifest from MinIO (returns null if not found).
+   */
+  private async readManifest(siteId: string): Promise<IslandsManifest | null> {
+    if (!this.minioClient) return null;
+
+    const manifestKey = `sites/${siteId}/_islands/manifest.json`;
+    try {
+      const stream = await this.minioClient.getObject(
+        this.bucketName,
+        manifestKey,
+      );
+      const chunks: Buffer[] = [];
+      for await (const chunk of stream) {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      }
+      return JSON.parse(Buffer.concat(chunks).toString("utf-8"));
+    } catch {
+      return null;
     }
   }
 

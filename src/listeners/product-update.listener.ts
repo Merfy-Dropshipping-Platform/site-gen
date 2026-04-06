@@ -31,7 +31,7 @@ import { FragmentPatcher } from "./fragment-patcher.service";
 const PRODUCT_EVENTS_EXCHANGE = "product.events";
 const SITES_PRODUCT_EVENTS_QUEUE = "sites_product_events";
 const DEBOUNCE_MS = 2_000; // 2 seconds — fast feedback for single product updates
-const FRAGMENT_PATCH_DEBOUNCE_MS = 10_000; // 10 seconds (faster than full rebuild)
+const FRAGMENT_PATCH_DEBOUNCE_MS = 5_000; // 5 seconds — fast fragment patching
 const REBUILD_PRIORITY = 5;
 
 /** Accumulated changes during debounce window */
@@ -212,18 +212,9 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
           continue;
         }
 
-        // Island-enabled sites use fragment patching instead of full rebuild
-        if (site.islandsEnabled) {
-          this.debounceFragmentPatch(site.id, tenantId);
-          continue;
-        }
-
-        // Debounce: accumulate changes and delay rebuild
-        this.debounceBuild(site.id, tenantId, {
-          event,
-          productIds,
-          timestamp: new Date().toISOString(),
-        });
+        // All published sites use fragment patching for product events (fast path).
+        // Full rebuild is only used for non-product changes (design, theme, structure).
+        this.debounceFragmentPatch(site.id, tenantId);
       }
 
       channel.ack(msg);

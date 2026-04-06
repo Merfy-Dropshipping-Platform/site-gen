@@ -839,7 +839,6 @@ export async function runBuildPipeline(
     await injectAnalyticsTracker(ctx.distDir, params.siteId);
 
     // === Stage 4.7: INJECT ISLANDS SCRIPT ===
-    logger.log(`[islands] islandsEnabled=${ctx.islandsEnabled} for site ${ctx.siteId}`);
     if (ctx.islandsEnabled) {
       const islandsServerUrl =
         process.env.ISLANDS_SERVER_URL ?? "https://islands.merfy.ru";

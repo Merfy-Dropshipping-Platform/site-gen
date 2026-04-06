@@ -14,6 +14,7 @@ const meta = data?.meta ?? {};
 const shopId = (meta as any)?.shopId || '';
 const apiUrl = (meta as any)?.apiUrl || 'https://gateway.merfy.ru/api';
 const requireCustomerAuth = !!(meta as any)?.requireCustomerAuth;
+const favicons = (meta as any)?.favicons ?? {};
 ---
 <html lang="ru">
   <head>
@@ -24,7 +25,20 @@ const requireCustomerAuth = !!(meta as any)?.requireCustomerAuth;
     {ogTitle && <meta property="og:title" content={ogTitle} />}
     {ogDescription && <meta property="og:description" content={ogDescription} />}
     {ogImage && <meta property="og:image" content={ogImage} />}
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    {favicons.universal ? (
+      <link rel="icon" href={favicons.universal} />
+    ) : (
+      <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    )}
+    {favicons.dark && (
+      <link rel="icon" href={favicons.dark} media="(prefers-color-scheme: dark)" />
+    )}
+    {favicons.light && (
+      <link rel="icon" href={favicons.light} media="(prefers-color-scheme: light)" />
+    )}
+    {favicons.apple && (
+      <link rel="apple-touch-icon" href={favicons.apple} />
+    )}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300..700&family=Inter:wght@100..900&family=Manrope:wght@200..800&display=swap" rel="stylesheet" />

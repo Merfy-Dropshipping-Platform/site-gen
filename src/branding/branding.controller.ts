@@ -1,10 +1,12 @@
 import {
   Controller,
+  Delete,
   HttpException,
   HttpStatus,
   Logger,
   Param,
   Post,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from "@nestjs/common";
@@ -20,6 +22,15 @@ const ALLOWED_MIME_TYPES = [
   "image/webp",
   "image/svg+xml",
 ];
+
+const FAVICON_ALLOWED_MIME_TYPES = [
+  ...ALLOWED_MIME_TYPES,
+  "image/x-icon",
+  "image/vnd.microsoft.icon",
+];
+
+const FAVICON_TYPES = ['universal', 'dark', 'light', 'apple'] as const;
+type FaviconType = (typeof FAVICON_TYPES)[number];
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
@@ -144,6 +155,140 @@ export class BrandingController {
       );
       throw new HttpException(
         "upload_failed",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post(":siteId/favicon")
+  @UseInterceptors(
+    FileInterceptor("favicon", {
+      limits: { fileSize: MAX_FILE_SIZE },
+      fileFilter: (_req, file, cb) => {
+        cb(null, FAVICON_ALLOWED_MIME_TYPES.includes(file.mimetype));
+      },
+    }),
+  )
+  async uploadFavicon(
+    @Param("siteId") siteId: string,
+    @Query("type") faviconType: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!faviconType || !FAVICON_TYPES.includes(faviconType as FaviconType)) {
+      throw new HttpException(
+        `invalid_favicon_type. Allowed: ${FAVICON_TYPES.join(", ")}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (!file) {
+      throw new HttpException("no_file_uploaded", HttpStatus.BAD_REQUEST);
+    }
+
+    // Look up site to get tenantId
+    const site = await this.sitesService.getById(siteId);
+    if (!site) {
+      throw new HttpException("site_not_found", HttpStatus.NOT_FOUND);
+    }
+
+    const tenantId = site.tenantId;
+    const ext = path.extname(file.originalname).replace(".", "") || "png";
+    const ts = Date.now();
+    const key = `branding/${tenantId}/${siteId}/favicon-${faviconType}-${ts}.${ext}`;
+
+    // Sanitize SVG files to prevent XSS
+    let uploadBuffer = file.buffer;
+    if (file.mimetype === "image/svg+xml") {
+      uploadBuffer = sanitizeSvg(file.buffer);
+      this.logger.log(`SVG favicon sanitized for site ${siteId}`);
+    }
+
+    try {
+      await this.s3.ensureBucket();
+      const bucket = this.s3.getBucketName();
+      if (!bucket) {
+        throw new HttpException("s3_not_configured", HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+      const faviconUrl = await this.s3.uploadBuffer(
+        bucket,
+        key,
+        uploadBuffer,
+        file.mimetype,
+      );
+
+      // Update site.branding.favicons.{type}
+      const currentBranding =
+        (site.branding as Record<string, unknown>) ?? {};
+      const currentFavicons =
+        (currentBranding.favicons as Record<string, unknown>) ?? {};
+      await this.sitesService.update({
+        tenantId,
+        siteId,
+        patch: {
+          branding: {
+            ...currentBranding,
+            favicons: { ...currentFavicons, [faviconType]: faviconUrl },
+          },
+        },
+      });
+
+      this.logger.log(
+        `Favicon (${faviconType}) uploaded for site ${siteId}: ${faviconUrl}`,
+      );
+      return { success: true, faviconUrl, type: faviconType };
+    } catch (error) {
+      this.logger.error(
+        `Favicon upload failed for site ${siteId}: ${error instanceof Error ? error.message : error}`,
+      );
+      throw new HttpException(
+        "upload_failed",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Delete(":siteId/favicon")
+  async deleteFavicon(
+    @Param("siteId") siteId: string,
+    @Query("type") faviconType: string,
+  ) {
+    if (!faviconType || !FAVICON_TYPES.includes(faviconType as FaviconType)) {
+      throw new HttpException(
+        `invalid_favicon_type. Allowed: ${FAVICON_TYPES.join(", ")}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Look up site to get tenantId
+    const site = await this.sitesService.getById(siteId);
+    if (!site) {
+      throw new HttpException("site_not_found", HttpStatus.NOT_FOUND);
+    }
+
+    const tenantId = site.tenantId;
+
+    try {
+      const currentBranding =
+        (site.branding as Record<string, unknown>) ?? {};
+      const currentFavicons =
+        (currentBranding.favicons as Record<string, unknown>) ?? {};
+      delete currentFavicons[faviconType];
+      await this.sitesService.update({
+        tenantId,
+        siteId,
+        patch: {
+          branding: { ...currentBranding, favicons: currentFavicons },
+        },
+      });
+
+      this.logger.log(`Favicon (${faviconType}) deleted for site ${siteId}`);
+      return { success: true };
+    } catch (error) {
+      this.logger.error(
+        `Favicon delete failed for site ${siteId}: ${error instanceof Error ? error.message : error}`,
+      );
+      throw new HttpException(
+        "delete_failed",
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

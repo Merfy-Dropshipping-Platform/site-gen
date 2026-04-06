@@ -1448,6 +1448,7 @@ async function stageGenerate(
           apiUrl,
           ...(ctx.settings?.requireCustomerAuth ? { requireCustomerAuth: true } : {}),
           ...(process.env.DADATA_API_KEY ? { dadataToken: process.env.DADATA_API_KEY } : {}),
+          ...(ctx.branding?.favicons ? { favicons: ctx.branding.favicons } : {}),
         },
       },
     },

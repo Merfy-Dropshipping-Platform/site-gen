@@ -106,6 +106,12 @@ export const site = pgTable("site", {
     logoUrl?: string;
     primaryColor?: string;
     secondaryColor?: string;
+    favicons?: {
+      universal?: string;
+      dark?: string;
+      light?: string;
+      apple?: string;
+    };
   }>(),
   // Настройки магазина (checkout, регистрация и т.д.)
   settings: jsonb("settings").$type<{

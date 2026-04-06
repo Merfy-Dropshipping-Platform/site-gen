@@ -1,6 +1,7 @@
 ---
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import data from '../data/data.json';
 
 interface Props {
   title?: string;
@@ -15,6 +16,7 @@ const {
   header = {},
   footer = {},
 } = Astro.props;
+const favicons = (data?.meta as any)?.favicons ?? {};
 ---
 
 <html lang="ru">
@@ -23,7 +25,20 @@ const {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    {favicons.universal ? (
+      <link rel="icon" href={favicons.universal} />
+    ) : (
+      <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    )}
+    {favicons.dark && (
+      <link rel="icon" href={favicons.dark} media="(prefers-color-scheme: dark)" />
+    )}
+    {favicons.light && (
+      <link rel="icon" href={favicons.light} media="(prefers-color-scheme: light)" />
+    )}
+    {favicons.apple && (
+      <link rel="apple-touch-icon" href={favicons.apple} />
+    )}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap" rel="stylesheet" />

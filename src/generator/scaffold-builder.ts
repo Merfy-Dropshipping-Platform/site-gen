@@ -225,6 +225,7 @@ export async function buildScaffold(
   }
 
   // 1b. Inject islands meta tags and script into layout
+  console.log(`[scaffold] islands config: ${JSON.stringify(config.islands)}`);
   if (config.islands?.enabled) {
     const layoutCandidates = ["StoreLayout.astro", "BaseLayout.astro"];
     const layoutsDir = path.join(outputDir, "src", "layouts");
@@ -235,7 +236,7 @@ export async function buildScaffold(
         const metaTags =
           `<meta name="merfy-islands-url" content="${config.islands.serverUrl}" />\n` +
           `    <meta name="merfy-store-id" content="${config.islands.storeId}" />`;
-        const scriptTag = `<script src="${config.islands.serverUrl}/islands.js" defer><\/script>`;
+        const scriptTag = `<script src="${config.islands.serverUrl}/islands.js" defer></script>`;
         layoutContent = layoutContent.replace(
           "</head>",
           `    ${metaTags}\n  </head>`,

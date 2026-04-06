@@ -11,6 +11,7 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install
 
 COPY . .
+# cache-bust: 2026-04-06-islands-fix
 RUN pnpm build
 
 # ========================

@@ -163,11 +163,15 @@ const dadataToken = (data?.meta as any)?.dadataToken || '';
           <label class="checkout-shipping-option" data-delivery="pickup" data-cost="0">
             <div class="checkout-shipping-left">
               <input type="radio" name="delivery" value="pickup" class="checkout-radio">
-              <span class="checkout-shipping-name font-body">Самовывоз</span>
+              <div class="checkout-shipping-info">
+                <span class="checkout-shipping-name font-body">Самовывоз</span>
+                <span id="co-pickup-address" class="checkout-shipping-desc font-body" style="font-size: 13px;"></span>
+                <span id="co-pickup-notification" class="checkout-shipping-desc font-body hidden" style="font-size: 12px; color: rgb(var(--color-muted));"></span>
+                <span id="co-pickup-expected-date" class="checkout-shipping-desc font-body hidden" style="font-size: 12px; color: rgb(var(--color-muted));"></span>
+              </div>
             </div>
             <div class="checkout-shipping-right">
               <span class="checkout-shipping-price font-body">Бесплатно</span>
-              <span id="co-pickup-address" class="checkout-shipping-days font-body"></span>
             </div>
           </label>
         </div>

@@ -23,7 +23,7 @@ class CheckoutFlow {
     this.pickupPoints = []; // CDEK pickup points for selected city
     this.selectedPvz = null; // { code, name, address, workTime, type }
     this.lastCityFiasId = null; // Cache to avoid re-fetching PVZ for same city
-    this.deliveryMethods = { cdekAvailable: false, pickupAvailable: false, pickupAddress: null };
+    this.deliveryMethods = { cdekAvailable: false, pickupAvailable: false, pickupAddress: null, pickupNotification: null, pickupExpectedDate: null };
     this.selectedDeliveryMethod = null; // 'cdek' | 'pickup' | null
 
     this.init();
@@ -467,8 +467,8 @@ class CheckoutFlow {
       const res = await CheckoutAPI.calculateDelivery(this.cartId, {});
       if (!res.success) return;
 
-      const { cdekAvailable, pickupAvailable, pickupAddress } = res.data;
-      this.deliveryMethods = { cdekAvailable, pickupAvailable, pickupAddress };
+      const { cdekAvailable, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate } = res.data;
+      this.deliveryMethods = { cdekAvailable, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate };
 
       const methodEl = document.getElementById('co-delivery-method');
       const addressGroup = document.getElementById('co-address-group');
@@ -496,7 +496,7 @@ class CheckoutFlow {
       if (!cdekAvailable && pickupAvailable) {
         if (placeholder) placeholder.classList.add('hidden');
         if (addressGroup) addressGroup.style.display = 'none';
-        this.renderDeliveryTariffs([], true, pickupAddress);
+        this.renderDeliveryTariffs([], true, pickupAddress, pickupNotification, pickupExpectedDate);
         this.setDeliveryState('tariffs');
         return;
       }
@@ -582,7 +582,7 @@ class CheckoutFlow {
         return;
       }
 
-      const { tariffs, pickupAvailable, pickupAddress } = res.data;
+      const { tariffs, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate } = res.data;
 
       if ((!tariffs || tariffs.length === 0) && !pickupAvailable) {
         this.setDeliveryState('unavailable');
@@ -590,7 +590,7 @@ class CheckoutFlow {
       }
 
       this.deliveryTariffs = tariffs || [];
-      this.renderDeliveryTariffs(tariffs, pickupAvailable, pickupAddress);
+      this.renderDeliveryTariffs(tariffs, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate);
       this.setDeliveryState('tariffs');
     } catch (e) {
       console.error('Delivery calculation error:', e);
@@ -636,7 +636,7 @@ class CheckoutFlow {
     }
   }
 
-  renderDeliveryTariffs(tariffs, pickupAvailable, pickupAddress) {
+  renderDeliveryTariffs(tariffs, pickupAvailable, pickupAddress, pickupNotification, pickupExpectedDate) {
     const container = document.getElementById('co-delivery-tariffs');
     const pickupEl = document.getElementById('co-delivery-pickup');
 
@@ -699,6 +699,25 @@ class CheckoutFlow {
         pickupEl.classList.remove('hidden');
         const addrEl = document.getElementById('co-pickup-address');
         if (addrEl && pickupAddress) addrEl.textContent = pickupAddress;
+        // Show notification and expected date if set by shop owner
+        const notifEl = document.getElementById('co-pickup-notification');
+        if (notifEl) {
+          if (pickupNotification) {
+            notifEl.textContent = pickupNotification;
+            notifEl.classList.remove('hidden');
+          } else {
+            notifEl.classList.add('hidden');
+          }
+        }
+        const dateEl = document.getElementById('co-pickup-expected-date');
+        if (dateEl) {
+          if (pickupExpectedDate) {
+            dateEl.textContent = `Ожидаемая дата: ${pickupExpectedDate}`;
+            dateEl.classList.remove('hidden');
+          } else {
+            dateEl.classList.add('hidden');
+          }
+        }
       } else {
         pickupEl.classList.add('hidden');
       }

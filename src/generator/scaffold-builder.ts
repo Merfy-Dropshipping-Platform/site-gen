@@ -229,10 +229,15 @@ export async function buildScaffold(
   if (config.islands?.enabled) {
     const layoutCandidates = ["StoreLayout.astro", "BaseLayout.astro"];
     const layoutsDir = path.join(outputDir, "src", "layouts");
+    console.log(`[scaffold] layoutsDir: ${layoutsDir}`);
+    let injected = false;
     for (const layoutName of layoutCandidates) {
       const layoutPath = path.join(layoutsDir, layoutName);
-      if (await fileExists(layoutPath)) {
+      const exists = await fileExists(layoutPath);
+      console.log(`[scaffold] checking ${layoutName}: exists=${exists}, path=${layoutPath}`);
+      if (exists) {
         let layoutContent = await fs.readFile(layoutPath, "utf8");
+        console.log(`[scaffold] layout length: ${layoutContent.length}, has </head>: ${layoutContent.includes("</head>")}, has </body>: ${layoutContent.includes("</body>")}`);
         const metaTags =
           `<meta name="merfy-islands-url" content="${config.islands.serverUrl}" />\n` +
           `    <meta name="merfy-store-id" content="${config.islands.storeId}" />`;
@@ -245,10 +250,18 @@ export async function buildScaffold(
           "</body>",
           `    ${scriptTag}\n  </body>`,
         );
+        console.log(`[scaffold] after injection: has islands.js=${layoutContent.includes("islands.js")}, has merfy-islands-url=${layoutContent.includes("merfy-islands-url")}`);
         await fs.writeFile(layoutPath, layoutContent, "utf8");
+        // Verify write
+        const verify = await fs.readFile(layoutPath, "utf8");
+        console.log(`[scaffold] VERIFY after write: has islands.js=${verify.includes("islands.js")}`);
         generatedFiles.push(`src/layouts/${layoutName} [islands injected]`);
+        injected = true;
         break; // only inject into the first found layout
       }
+    }
+    if (!injected) {
+      console.log(`[scaffold] WARNING: no layout found for islands injection`);
     }
   }
 

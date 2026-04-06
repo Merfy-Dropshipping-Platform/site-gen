@@ -1,0 +1,135 @@
+---
+interface Slide {
+  id?: string;
+  image?: string;
+  heading?: { text?: string; size?: string };
+  text?: { content?: string; size?: string };
+  button?: { text?: string; link?: { href?: string } };
+  position?: 'left' | 'center' | 'right';
+  hidden?: boolean;
+}
+
+interface Props {
+  slides?: Slide[];
+  overlay?: number;
+  imagePosition?: 'fullscreen' | 'window';
+  size?: 'small' | 'medium' | 'large';
+  interval?: number;
+  pagination?: 'numbers' | 'dots' | 'counter';
+  colorScheme?: string;
+  padding?: { top?: number; bottom?: number };
+}
+
+const { slides = [], overlay = 30, size = 'medium', imagePosition = 'fullscreen', interval = 0, pagination = 'dots', colorScheme, padding } = Astro.props;
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
+const padTop = padding?.top ?? 0;
+const padBottom = padding?.bottom ?? 0;
+const visibleSlides = slides.filter((s) => !s.hidden);
+
+const headingFontSizes: Record<string, string> = {
+  small: '2rem',
+  medium: '3rem',
+  large: '4rem',
+};
+
+const positionClass: Record<string, string> = {
+  left: 'mr-auto',
+  center: 'mx-auto text-center',
+  right: 'ml-auto',
+};
+
+const containerClass = imagePosition === 'window'
+  ? 'relative overflow-hidden mx-auto rounded-2xl'
+  : 'relative overflow-hidden w-full';
+const containerStyle = imagePosition === 'window'
+  ? 'max-width:1200px;min-height:60vh;'
+  : 'min-height:80vh;';
+---
+
+<section class={`${containerClass} ${schemeClass}`} style={`${containerStyle}${padTop ? `padding-top: ${padTop}px;` : ''}${padBottom ? `padding-bottom: ${padBottom}px;` : ''}`} data-slideshow data-interval={interval}>
+  {visibleSlides.length === 0 ? (
+    <div class="min-h-[400px] flex items-center justify-center text-theme-muted text-lg" style="background: rgb(var(--color-background))">
+      <p>Добавьте слайды</p>
+    </div>
+  ) : (
+    <div class="relative min-h-[inherit]">
+      {visibleSlides.map((slide, i) => (
+        <div
+          class={`min-h-[80vh] md:min-h-[80vh] max-md:min-h-[60vh] bg-cover bg-center flex items-center relative ${i === 0 ? '' : 'hidden'}`}
+          style={`background-color: rgb(var(--color-foreground));${slide.image ? ` background-image: url(${slide.image})` : ''}`}
+          data-slide
+        >
+          <div class="absolute inset-0" style={`background: rgb(var(--color-foreground)); opacity: ${overlay / 100}`}></div>
+          <div class={`relative z-10 py-[60px] px-[40px] max-md:py-[40px] max-md:px-[20px] max-w-[700px] ${positionClass[slide.position ?? 'center']}`} style="color: rgb(var(--color-background))">
+            {slide.heading?.text && (
+              <h2 class="font-heading font-medium mb-4" style={`font-size:${headingFontSizes[size] ?? '3rem'};line-height:1.1;`}>
+                {slide.heading.text}
+              </h2>
+            )}
+            {slide.text?.content && (
+              <p class="text-lg leading-relaxed mb-6 opacity-90">{slide.text.content}</p>
+            )}
+            {slide.button?.text && (
+              <a
+                href={slide.button.link?.href ?? '#'}
+                class="inline-flex py-3.5 px-8 text-[0.95rem] font-medium rounded-lg bg-theme-primary text-theme-button-text no-underline transition-colors duration-200 hover:opacity-90"
+              >
+                {slide.button.text}
+              </a>
+            )}
+          </div>
+        </div>
+      ))}
+      {visibleSlides.length > 1 && (
+        <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2">
+          {visibleSlides.map((_, i) => (
+            <button
+              class={`w-3 h-3 rounded-full border-2 transition-colors duration-200 slideshow-dot ${i === 0 ? 'slideshow-dot-active' : ''}`}
+              data-slide-dot={i}
+              aria-label={`Slide ${i + 1}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )}
+</section>
+
+<script>
+  document.querySelectorAll('[data-slideshow]').forEach((slideshow) => {
+    const slides = slideshow.querySelectorAll('[data-slide]') as NodeListOf<HTMLElement>;
+    const dots = slideshow.querySelectorAll('[data-slide-dot]') as NodeListOf<HTMLElement>;
+    if (slides.length <= 1) return;
+
+    let current = 0;
+    const interval = parseInt(slideshow.getAttribute('data-interval') || '0');
+
+    function goTo(index: number) {
+      slides[current].classList.add('hidden');
+      dots[current]?.classList.remove('slideshow-dot-active');
+
+      current = (index + slides.length) % slides.length;
+
+      slides[current].classList.remove('hidden');
+      dots[current]?.classList.add('slideshow-dot-active');
+    }
+
+    dots.forEach((dot, i) => {
+      dot.addEventListener('click', () => goTo(i));
+    });
+
+    if (interval > 0) {
+      setInterval(() => goTo(current + 1), interval);
+    }
+  });
+</script>
+
+<style>
+  .slideshow-dot {
+    border-color: rgb(var(--color-background));
+    background: transparent;
+  }
+  .slideshow-dot-active {
+    background: rgb(var(--color-background));
+  }
+</style>

@@ -1,0 +1,82 @@
+---
+interface Column {
+  title?: string;
+  description?: string;
+  image?: string;
+  imageSize?: 'small' | 'medium' | 'large';
+  headingSize?: 'small' | 'medium' | 'large';
+  textSize?: 'small' | 'medium' | 'large';
+  link?: { enabled?: string; text?: string; href?: string };
+  hidden?: boolean;
+}
+
+interface Props {
+  heading?: { enabled?: string; text?: string; size?: 'small' | 'medium' | 'large' };
+  columns?: Column[];
+  columnsCount?: string;
+  width?: 'small' | 'medium' | 'large';
+  imageAspectRatio?: 'adapt' | 'square' | 'portrait' | 'landscape';
+  textPosition?: 'left' | 'center';
+  colorScheme?: string;
+  padding?: { top?: number; bottom?: number };
+}
+
+const { heading, columns = [], columnsCount = '3', width = 'medium', imageAspectRatio = 'square', textPosition = 'center', colorScheme, padding } = Astro.props;
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
+const showHeading = heading?.enabled !== 'false' && heading?.text;
+const headingSize = heading?.size ?? 'medium';
+const cols = parseInt(columnsCount) || 3;
+const padTop = padding?.top ?? 80;
+const padBottom = padding?.bottom ?? 80;
+const visibleColumns = columns.filter((c) => !c.hidden);
+
+const aspectMap: Record<string, string> = {
+  adapt: 'auto',
+  square: '1/1',
+  portrait: '3/4',
+  landscape: '4/3',
+};
+
+const headingFontSize: Record<string, string> = {
+  small: '1.5rem',
+  medium: '2rem',
+  large: '2.5rem',
+};
+
+const textAlignClass = textPosition === 'center' ? 'text-center' : 'text-left';
+---
+
+<section class={`max-w-[1200px] mx-auto px-5 ${schemeClass}`} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
+  <div>
+    {showHeading && (
+      <h2 class="font-heading font-medium text-theme-foreground text-center mb-12" style={`font-size:${headingFontSize[headingSize] ?? '2rem'};line-height:1.2;`}>
+        {heading!.text}
+      </h2>
+    )}
+
+    <div class={`grid multi-columns-grid gap-8 max-md:!grid-cols-2 max-md:gap-6 max-[480px]:!grid-cols-1 ${textAlignClass}`}>
+      {visibleColumns.map((col) => (
+        <div class="flex flex-col gap-3">
+          {col.image && (
+            <div class="overflow-hidden" style={`aspect-ratio: ${aspectMap[imageAspectRatio] ?? '1/1'}; background: rgb(var(--color-foreground) / 0.03); border-radius: var(--radius-card, 12px);`}>
+              <img src={col.image} alt={col.title ?? ''} loading="lazy" class="w-full h-full object-cover" />
+            </div>
+          )}
+          {col.title && <h3 class="font-heading text-[1.15rem] font-medium text-theme-foreground">{col.title}</h3>}
+          {col.description && <p class="text-[0.95rem] text-theme-muted leading-relaxed">{col.description}</p>}
+          {col.link?.enabled !== 'false' && col.link?.text && col.link?.href && (
+            <a href={col.link.href} class="text-sm font-medium text-theme-foreground no-underline transition-colors duration-200 hover:text-theme-foreground">
+              {col.link.text}
+            </a>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style define:vars={{ cols }}>
+  .multi-columns-grid {
+    grid-template-columns: repeat(var(--cols), 1fr);
+  }
+</style>

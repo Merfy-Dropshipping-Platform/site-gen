@@ -1,0 +1,88 @@
+---
+interface Row {
+  id?: string;
+  image?: string;
+  title?: string;
+  headingSize?: 'small' | 'medium' | 'large';
+  description?: string;
+  textSize?: 'small' | 'medium' | 'large';
+  button?: { enabled?: string; text?: string; link?: string };
+  hidden?: boolean;
+}
+
+interface Props {
+  heading?: { enabled?: string; text?: string; size?: 'small' | 'medium' | 'large' };
+  rows?: Row[];
+  size?: 'small' | 'medium' | 'large';
+  width?: 'small' | 'medium' | 'large';
+  rowsPosition?: 'left' | 'right';
+  alignment?: 'left' | 'center' | 'right';
+  buttonStyle?: 'primary' | 'secondary';
+  colorScheme?: string;
+  padding?: { top?: number; bottom?: number };
+}
+
+const { heading, rows = [], size = 'medium', rowsPosition = 'left', alignment = 'left', buttonStyle = 'primary', colorScheme, padding } = Astro.props;
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
+const showHeading = heading?.enabled !== 'false' && heading?.text;
+const headingSize = heading?.size ?? 'medium';
+const padTop = padding?.top ?? 80;
+const padBottom = padding?.bottom ?? 80;
+const visibleRows = rows.filter((r) => !r.hidden);
+
+const headingFontSize: Record<string, string> = {
+  small: '1.5rem',
+  medium: '2rem',
+  large: '2.5rem',
+};
+
+const alignClass: Record<string, string> = {
+  left: 'text-left',
+  center: 'text-center',
+  right: 'text-right',
+};
+
+const btnPrimaryClass = 'bg-theme-primary text-theme-button-text hover:opacity-90';
+const btnSecondaryClass = 'bg-transparent text-theme-foreground border border-theme hover:border-theme-foreground hover:text-theme-foreground';
+---
+
+<section class={`max-w-[1200px] mx-auto px-5 ${schemeClass}`} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
+  <div>
+    {showHeading && (
+      <h2 class="font-heading font-medium text-theme-foreground text-center mb-12" style={`font-size:${headingFontSize[headingSize] ?? '2rem'};line-height:1.2;`}>
+        {heading!.text}
+      </h2>
+    )}
+
+    <div class="flex flex-col gap-[60px]">
+      {visibleRows.map((row, i) => {
+        const imageRight = (i % 2 === 0 ? rowsPosition : rowsPosition === 'left' ? 'right' : 'left') === 'right';
+        return (
+          <div class={`grid grid-cols-1 md:grid-cols-2 gap-[60px] md:gap-[60px] max-md:gap-6 items-center ${alignClass[alignment] ?? 'text-left'}`}>
+            {row.image && (
+              <div class={`overflow-hidden ${imageRight ? 'md:order-2' : ''}`} style="border-radius: var(--radius-card, 12px);">
+                <img src={row.image} alt={row.title ?? ''} loading="lazy" class="w-full h-auto object-cover" style="border-radius: var(--radius-card, 12px);" />
+              </div>
+            )}
+            <div class={imageRight ? 'md:order-1' : ''}>
+              {row.title && (
+                <h3 class="font-heading text-2xl font-medium text-theme-foreground mb-4 leading-[1.2]">{row.title}</h3>
+              )}
+              {row.description && (
+                <p class="text-[1.05rem] text-theme-muted leading-[1.7] mb-6">{row.description}</p>
+              )}
+              {row.button?.enabled !== 'false' && row.button?.text && (
+                <a
+                  href={row.button.link ?? '#'}
+                  class={`inline-flex py-3 px-7 text-[0.95rem] font-medium rounded-lg no-underline transition-all duration-200 ${buttonStyle === 'secondary' ? btnSecondaryClass : btnPrimaryClass}`}
+                >
+                  {row.button.text}
+                </a>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+</section>

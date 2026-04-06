@@ -1,0 +1,21 @@
+---
+interface Props {
+  companyName?: string;
+  showYear?: boolean;
+}
+
+const {
+  companyName = 'Store',
+  showYear = true,
+} = Astro.props;
+
+const year = showYear ? ` ${new Date().getFullYear()}` : '';
+---
+
+<footer class="w-full border-t border-theme mt-auto">
+  <div class="page-container py-8 text-center">
+    <p class="text-sm text-theme-muted">
+      &copy;{year} {companyName}. All rights reserved.
+    </p>
+  </div>
+</footer>

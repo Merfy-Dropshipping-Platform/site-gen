@@ -224,46 +224,9 @@ export async function buildScaffold(
     generatedFiles.push("[theme copied]");
   }
 
-  // 1b. Inject islands meta tags and script into layout
-  console.log(`[scaffold] islands config: ${JSON.stringify(config.islands)}`);
-  if (config.islands?.enabled) {
-    const layoutCandidates = ["StoreLayout.astro", "BaseLayout.astro"];
-    const layoutsDir = path.join(outputDir, "src", "layouts");
-    console.log(`[scaffold] layoutsDir: ${layoutsDir}`);
-    let injected = false;
-    for (const layoutName of layoutCandidates) {
-      const layoutPath = path.join(layoutsDir, layoutName);
-      const exists = await fileExists(layoutPath);
-      console.log(`[scaffold] checking ${layoutName}: exists=${exists}, path=${layoutPath}`);
-      if (exists) {
-        let layoutContent = await fs.readFile(layoutPath, "utf8");
-        console.log(`[scaffold] layout length: ${layoutContent.length}, has </head>: ${layoutContent.includes("</head>")}, has </body>: ${layoutContent.includes("</body>")}`);
-        const metaTags =
-          `<meta name="merfy-islands-url" content="${config.islands.serverUrl}" />\n` +
-          `    <meta name="merfy-store-id" content="${config.islands.storeId}" />`;
-        const scriptTag = `<script src="${config.islands.serverUrl}/islands.js" defer></script>`;
-        layoutContent = layoutContent.replace(
-          "</head>",
-          `    ${metaTags}\n  </head>`,
-        );
-        layoutContent = layoutContent.replace(
-          "</body>",
-          `    ${scriptTag}\n  </body>`,
-        );
-        console.log(`[scaffold] after injection: has islands.js=${layoutContent.includes("islands.js")}, has merfy-islands-url=${layoutContent.includes("merfy-islands-url")}`);
-        await fs.writeFile(layoutPath, layoutContent, "utf8");
-        // Verify write
-        const verify = await fs.readFile(layoutPath, "utf8");
-        console.log(`[scaffold] VERIFY after write: has islands.js=${verify.includes("islands.js")}`);
-        generatedFiles.push(`src/layouts/${layoutName} [islands injected]`);
-        injected = true;
-        break; // only inject into the first found layout
-      }
-    }
-    if (!injected) {
-      console.log(`[scaffold] WARNING: no layout found for islands injection`);
-    }
-  }
+  // 1b. Islands injection moved to post-build step (stage 4.7 in build.service.ts)
+  // Astro's bundler strips external <script> tags from .astro source files,
+  // so we inject into the final dist/ HTML instead.
 
   // 2. package.json — write only if not already from theme
   const pkgPath = path.join(outputDir, "package.json");

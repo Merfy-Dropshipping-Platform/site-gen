@@ -127,6 +127,39 @@ async function injectAnalyticsTracker(distDir: string, siteId: string): Promise<
   logger.log(`[analytics] Injected tracker into ${htmlFiles.length} HTML files for site ${siteId}`);
 }
 
+/** Inject islands.js script + meta tags into all HTML files before </head> */
+async function injectIslandsScript(
+  distDir: string,
+  siteId: string,
+  serverUrl: string,
+): Promise<void> {
+  const htmlFiles: string[] = [];
+  async function findHtml(dir: string) {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    for (const e of entries) {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) await findHtml(full);
+      else if (e.name.endsWith(".html")) htmlFiles.push(full);
+    }
+  }
+  await findHtml(distDir);
+
+  const snippet =
+    `<meta name="merfy-islands-url" content="${serverUrl}" />\n` +
+    `<meta name="merfy-store-id" content="${siteId}" />\n` +
+    `<script src="${serverUrl}/islands.js" defer></script>`;
+
+  let injected = 0;
+  for (const file of htmlFiles) {
+    let html = await fs.readFile(file, "utf8");
+    if (html.includes("islands.js")) continue; // already injected
+    html = html.replace(/<\/head>/i, `${snippet}\n</head>`);
+    await fs.writeFile(file, html, "utf8");
+    injected++;
+  }
+  logger.log(`[islands] Injected islands.js into ${injected}/${htmlFiles.length} HTML files for site ${siteId}`);
+}
+
 /** Dependencies injected into the pipeline */
 export interface BuildDependencies {
   db: NodePgDatabase<typeof schemaTypes>;
@@ -605,6 +638,14 @@ export async function trySnapshotDeploy(
     // ── Inject analytics tracker + pixel loader ──
     await injectAnalyticsTracker(distDir, params.siteId);
 
+    // ── Inject islands script if enabled ──
+    const siteIslandsEnabled = siteRow.islandsEnabled ?? false;
+    if (siteIslandsEnabled) {
+      const islandsUrl =
+        process.env.ISLANDS_SERVER_URL ?? "https://islands.merfy.ru";
+      await injectIslandsScript(distDir, params.siteId, islandsUrl);
+    }
+
     // ── Inject real products ──
     const rpcData = await fetchStoreData(deps.productClient, params.tenantId, params.siteId);
     ctx.storeData = rpcData;
@@ -795,6 +836,13 @@ export async function runBuildPipeline(
 
     // === Stage 4.6: INJECT ANALYTICS TRACKER ===
     await injectAnalyticsTracker(ctx.distDir, params.siteId);
+
+    // === Stage 4.7: INJECT ISLANDS SCRIPT ===
+    if (ctx.islandsEnabled) {
+      const islandsServerUrl =
+        process.env.ISLANDS_SERVER_URL ?? "https://islands.merfy.ru";
+      await injectIslandsScript(ctx.distDir, ctx.siteId, islandsServerUrl);
+    }
 
     // === Stage 5: ZIP ===
     t = Date.now();

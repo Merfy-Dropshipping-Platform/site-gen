@@ -1390,6 +1390,11 @@ async function stageGenerate(
   // Extract Header and Footer component props from revision data for site-config.json
   const siteConfig = extractSiteConfig(ctx.revisionData, revPagesData);
 
+  // Inject siteUrl so RSS/sitemap can use it
+  if (ctx.publicUrl) {
+    (siteConfig as Record<string, unknown>).siteUrl = ctx.publicUrl;
+  }
+
   // Inject colorSchemes from constructor theme into site-config.json
   const constructorThemeForColors =
     (ctx.revisionData as { themeSettings?: { colorSchemes?: any[] } }).themeSettings ??

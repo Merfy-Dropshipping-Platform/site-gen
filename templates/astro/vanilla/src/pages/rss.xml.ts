@@ -9,7 +9,7 @@ import siteConfig from '../data/site-config.json';
 export function GET(context: APIContext) {
   const config = siteConfig as any;
   const siteTitle = config?.siteName || config?.title || 'Мой магазин';
-  const siteUrl = context.site?.toString() || config?.siteUrl || '';
+  const siteUrl = context.site?.toString() || config?.siteUrl || 'https://example.com';
 
   const posts = (publications || [])
     .filter((p: any) => p.status === 'published')

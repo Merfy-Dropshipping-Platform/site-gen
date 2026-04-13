@@ -22,6 +22,7 @@ import { buildWithAstro } from "./astro.builder";
 import { S3StorageService } from "../storage/s3.service";
 import { runBuildPipeline, trySnapshotDeploy, type BuildDependencies } from "./build.service";
 import { roseRegistry } from "./registries/rose";
+import { vanillaRegistry } from "./registries/vanilla";
 import { fetchProducts as rpcFetchProducts } from "./data-fetcher";
 import {
   themeRegistryToGeneratorRegistry,
@@ -220,12 +221,14 @@ export class SiteGeneratorService {
         siteId: params.siteId,
         mode: params.mode,
         templateOverride: params.templateOverride,
-        // Use theme bridge registry if available, fallback to hardcoded rose
+        // Use theme bridge registry if available, fallback to hardcoded registries
         registry: themeRegistry
           ? themeRegistryToGeneratorRegistry(themeRegistry, {
               features: themeFeatures,
             })
-          : roseRegistry,
+          : resolvedTemplateId === "vanilla"
+            ? vanillaRegistry
+            : roseRegistry,
         themeRegistry,
         themeFeatures,
         themeSettingsSchema,

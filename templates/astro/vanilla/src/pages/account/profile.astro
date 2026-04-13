@@ -1,0 +1,198 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import data from '../../data/data.json';
+import siteConfig from '../../data/site-config.json';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import AccountNav from '../../components/AccountNav.astro';
+
+const meta = data?.meta ?? {};
+const blocks = data?.content ?? [];
+const headerBlock = blocks.find((b: any) => b.type === 'Header');
+const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
+const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
+---
+<BaseLayout title={`Профиль — ${meta?.title ?? 'Мой сайт'}`}>
+  <Header {...headerProps} />
+
+  <main class="flex-1 max-w-[960px] mx-auto px-5 py-10 w-full font-manrope">
+    <h1 class="text-3xl font-comfortaa mb-8">Профиль</h1>
+
+    <div class="md:flex md:gap-10">
+      <AccountNav active="profile" />
+
+      <div class="flex-1">
+        <div id="profile-loading" class="text-gray-500 text-center py-10">Загрузка...</div>
+
+        <form id="profile-form" class="hidden space-y-5 max-w-[500px]">
+          <div>
+            <label for="profile-email" class="block mb-2 font-medium text-gray-700">Email</label>
+            <input type="email" id="profile-email" disabled
+              class="w-full py-3.5 px-4 border border-gray-200 rounded-xl text-base bg-gray-50 text-gray-500">
+          </div>
+
+          <div>
+            <label for="profile-name" class="block mb-2 font-medium text-gray-700">Имя</label>
+            <input type="text" id="profile-name" placeholder="Ваше имя" autocomplete="name"
+              class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none auth-input-focus">
+          </div>
+
+          <div>
+            <label for="profile-phone" class="block mb-2 font-medium text-gray-700">Телефон</label>
+            <input type="tel" id="profile-phone" placeholder="+7 (999) 123-45-67" autocomplete="tel"
+              class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none auth-input-focus">
+          </div>
+
+          <h3 class="font-comfortaa text-lg pt-4">Адрес по умолчанию</h3>
+
+          <div>
+            <label for="addr-city" class="block mb-2 font-medium text-gray-700">Город</label>
+            <input type="text" id="addr-city" placeholder="Москва" autocomplete="address-level2"
+              class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none auth-input-focus">
+          </div>
+
+          <div>
+            <label for="addr-street" class="block mb-2 font-medium text-gray-700">Улица</label>
+            <input type="text" id="addr-street" placeholder="ул. Пушкина" autocomplete="street-address"
+              class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none auth-input-focus">
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="addr-building" class="block mb-2 font-medium text-gray-700">Дом</label>
+              <input type="text" id="addr-building" placeholder="10"
+                class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none auth-input-focus">
+            </div>
+            <div>
+              <label for="addr-apartment" class="block mb-2 font-medium text-gray-700">Квартира</label>
+              <input type="text" id="addr-apartment" placeholder="42"
+                class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none auth-input-focus">
+            </div>
+          </div>
+
+          <div>
+            <label for="addr-postal" class="block mb-2 font-medium text-gray-700">Индекс</label>
+            <input type="text" id="addr-postal" placeholder="101000" autocomplete="postal-code"
+              class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none auth-input-focus">
+          </div>
+
+          <div class="text-green-600 text-sm text-center hidden" id="profile-success">Сохранено!</div>
+          <div class="text-red-600 text-sm text-center hidden" id="profile-error"></div>
+
+          <button type="submit" class="btn-primary w-full py-4 px-8 rounded-xl font-medium transition-colors" id="btn-save">
+            <span class="loading hidden"><span class="loading-spinner inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></span>Сохранение...</span>
+            <span class="text">Сохранить</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <Footer {...footerProps} />
+
+  <script is:inline src="/scripts/customer-store.js"></script>
+  <script is:inline src="/scripts/customer-auth.js"></script>
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', async function() {
+      if (!window.CustomerStore || !window.CustomerStore.isLoggedIn()) {
+        window.location.href = '/login?redirect=/account/profile';
+        return;
+      }
+
+      var loadingEl = document.getElementById('profile-loading');
+      var formEl = document.getElementById('profile-form');
+      var successEl = document.getElementById('profile-success');
+      var errorEl = document.getElementById('profile-error');
+      var btn = document.getElementById('btn-save');
+      var logoutBtn = document.getElementById('btn-logout');
+
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', async function() {
+          await window.CustomerAuth.logout();
+          window.location.href = '/login';
+        });
+      }
+
+      // Load profile
+      try {
+        var result = await window.CustomerAuth.me();
+        if (!result.success) throw new Error('Failed');
+
+        var c = result.data.customer || result.data;
+        loadingEl.classList.add('hidden');
+        formEl.classList.remove('hidden');
+
+        document.getElementById('profile-email').value = c.email || '';
+        document.getElementById('profile-name').value = c.name || '';
+        document.getElementById('profile-phone').value = c.phone || '';
+
+        if (c.defaultAddress) {
+          document.getElementById('addr-city').value = c.defaultAddress.city || '';
+          document.getElementById('addr-street').value = c.defaultAddress.street || '';
+          document.getElementById('addr-building').value = c.defaultAddress.building || '';
+          document.getElementById('addr-apartment').value = c.defaultAddress.apartment || '';
+          document.getElementById('addr-postal').value = c.defaultAddress.postalCode || '';
+        }
+
+        // Show email verification banner if needed
+        if (!c.emailVerified) {
+          var banner = document.getElementById('email-verify-banner');
+          if (banner) banner.classList.remove('hidden');
+        }
+      } catch (err) {
+        window.CustomerStore.clearToken();
+        window.location.href = '/login';
+        return;
+      }
+
+      // Save handler
+      formEl.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        successEl.classList.add('hidden');
+        errorEl.classList.add('hidden');
+
+        btn.querySelector('.loading').classList.remove('hidden');
+        btn.querySelector('.text').classList.add('hidden');
+        btn.disabled = true;
+
+        try {
+          var payload = {
+            name: document.getElementById('profile-name').value.trim(),
+            phone: document.getElementById('profile-phone').value.trim(),
+            defaultAddress: {
+              city: document.getElementById('addr-city').value.trim(),
+              street: document.getElementById('addr-street').value.trim(),
+              building: document.getElementById('addr-building').value.trim(),
+              apartment: document.getElementById('addr-apartment').value.trim(),
+              postalCode: document.getElementById('addr-postal').value.trim(),
+            },
+          };
+
+          var result = await window.CustomerAuth.updateProfile(payload);
+
+          if (result.success) {
+            successEl.classList.remove('hidden');
+            setTimeout(function() { successEl.classList.add('hidden'); }, 3000);
+          } else {
+            throw result;
+          }
+        } catch (err) {
+          errorEl.textContent = err.message || 'Не удалось сохранить';
+          errorEl.classList.remove('hidden');
+        } finally {
+          btn.querySelector('.loading').classList.add('hidden');
+          btn.querySelector('.text').classList.remove('hidden');
+          btn.disabled = false;
+        }
+      });
+    });
+  </script>
+</BaseLayout>
+
+<style>
+  .btn-primary { background-color: rgb(var(--color-primary)); color: #fff; }
+  .btn-primary:hover { filter: brightness(0.85); }
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+  .auth-input-focus:focus { border-color: rgb(var(--color-primary)); box-shadow: 0 0 0 3px rgb(var(--color-primary) / 0.15); }
+</style>

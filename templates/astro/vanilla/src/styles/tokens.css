@@ -1,0 +1,80 @@
+/* Vanilla Theme — Design Tokens
+ * Warm beige neutral palette for decor & interior stores.
+ * Colors stored as RGB triplets for rgba() support:
+ *   background: rgba(var(--color-primary), 0.5);
+ */
+
+:root {
+  /* ── Colors (RGB triplets) ── */
+  --color-primary: 41, 37, 36;        /* #292524 stone-800 */
+  --color-primary-rgb: 41, 37, 36;
+  --color-background: 255, 255, 255;   /* #FFFFFF */
+  --color-foreground: 41, 37, 36;      /* #292524 */
+  --color-border: 214, 211, 209;       /* #d6d3d1 stone-300 */
+  --color-button: 139, 115, 85;        /* #8b7355 accent */
+  --color-button-text: 255, 255, 255;  /* #FFFFFF */
+  --color-muted: 120, 113, 108;        /* #78716c stone-500 */
+  --color-secondary: 245, 240, 235;    /* #f5f0eb warm beige */
+
+  /* ── Typography ── */
+  --font-heading: system-ui, -apple-system, sans-serif;
+  --font-body: system-ui, -apple-system, sans-serif;
+
+  /* ── Border Radii ── */
+  --radius-base: 0.5rem;
+  --radius-button: 8px;
+  --radius-card: 10px;
+  --radius-input: 10px;
+
+  /* ── Layout ── */
+  --page-width: 1280px;
+  --spacing-section: 6rem;
+}
+
+/* ── Color Scheme 1: Light (white bg, dark text, accent buttons) ── */
+.color-scheme-1 {
+  --color-background: 255, 255, 255;   /* #FFFFFF */
+  --color-foreground: 41, 37, 36;      /* #292524 */
+  --color-primary: 139, 115, 85;       /* #8b7355 accent */
+  --color-border: 214, 211, 209;       /* #d6d3d1 */
+  --color-button: 139, 115, 85;        /* #8b7355 */
+  --color-button-text: 255, 255, 255;
+  --color-muted: 120, 113, 108;        /* #78716c */
+  --color-secondary: 245, 240, 235;    /* #f5f0eb */
+}
+
+/* ── Color Scheme 2: Dark (dark bg, light text) ── */
+.color-scheme-2 {
+  --color-background: 41, 37, 36;      /* #292524 */
+  --color-foreground: 245, 240, 235;   /* #f5f0eb */
+  --color-primary: 212, 165, 116;      /* #d4a574 light accent */
+  --color-border: 68, 64, 60;          /* #44403c stone-700 */
+  --color-button: 212, 165, 116;       /* #d4a574 */
+  --color-button-text: 41, 37, 36;     /* #292524 */
+  --color-muted: 168, 162, 158;        /* #a8a29e stone-400 */
+  --color-secondary: 68, 64, 60;       /* #44403c */
+}
+
+/* ── Color Scheme 3: Warm (beige bg, dark text) ── */
+.color-scheme-3 {
+  --color-background: 245, 240, 235;   /* #f5f0eb */
+  --color-foreground: 41, 37, 36;      /* #292524 */
+  --color-primary: 139, 115, 85;       /* #8b7355 accent */
+  --color-border: 214, 211, 209;       /* #d6d3d1 */
+  --color-button: 139, 115, 85;        /* #8b7355 */
+  --color-button-text: 255, 255, 255;
+  --color-muted: 120, 113, 108;        /* #78716c */
+  --color-secondary: 231, 224, 217;    /* #e7e0d9 */
+}
+
+/* ── Color Scheme 4: Accent (accent bg, white text) ── */
+.color-scheme-4 {
+  --color-background: 139, 115, 85;    /* #8b7355 */
+  --color-foreground: 255, 255, 255;   /* #FFFFFF */
+  --color-primary: 255, 255, 255;      /* #FFFFFF */
+  --color-border: 168, 147, 121;       /* #a89379 */
+  --color-button: 41, 37, 36;          /* #292524 */
+  --color-button-text: 255, 255, 255;
+  --color-muted: 214, 199, 181;        /* #d6c7b5 */
+  --color-secondary: 168, 147, 121;    /* #a89379 */
+}

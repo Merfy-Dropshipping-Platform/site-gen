@@ -1,0 +1,23 @@
+{
+  "meta": {
+    "title": "ROSE",
+    "description": "Магазин стильной одежды"
+  },
+  "content": [
+    {
+      "type": "Hero",
+      "props": {
+        "eyebrow": "Новая коллекция",
+        "title": "Ваш стиль",
+        "description": "Откройте для себя мир элегантности и комфорта"
+      }
+    },
+    {
+      "type": "ProductGrid",
+      "props": {
+        "title": "Каталог",
+        "columns": 4
+      }
+    }
+  ]
+}

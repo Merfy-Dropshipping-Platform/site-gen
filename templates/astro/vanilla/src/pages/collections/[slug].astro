@@ -1,0 +1,71 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import data from '../../data/data.json';
+import siteConfig from '../../data/site-config.json';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import CatalogIsland from '../../components/react/CatalogIsland';
+
+let collectionsData: any[] = [];
+try {
+  const mod = await import('../../data/collections.json');
+  collectionsData = mod.default ?? [];
+} catch {
+  collectionsData = [];
+}
+
+export function getStaticPaths() {
+  let cols: any[] = [];
+  try {
+    // Dynamic import not available in getStaticPaths, use fs
+    cols = collectionsData;
+  } catch {
+    cols = [];
+  }
+
+  // Always generate at least a fallback path
+  if (cols.length === 0) {
+    return [{ params: { slug: '_placeholder' }, props: { collection: null } }];
+  }
+
+  return cols.map((c: any) => ({
+    params: { slug: c.handle || c.id },
+    props: { collection: c },
+  }));
+}
+
+const { slug } = Astro.params;
+const { collection } = Astro.props;
+
+const meta = data?.meta ?? {};
+const blocks = data?.content ?? [];
+const headerBlock = blocks.find((b: any) => b.type === 'Header');
+const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
+const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
+
+const title = collection?.title ?? slug ?? 'Коллекция';
+---
+<BaseLayout title={`${title} — ${meta?.title ?? 'Мой сайт'}`} description={collection?.description ?? meta?.description}>
+  <Header {...headerProps} />
+
+  <main class="flex-1 w-full max-w-[1200px] mx-auto px-5 py-10">
+    <div class="text-center mb-10">
+      <p class="mb-4 text-sm text-gray-500 font-manrope">
+        <a href="/" class="text-gray-500 hover:text-black">Главная</a>
+        <span class="mx-1">/</span>
+        <a href="/catalog" class="text-gray-500 hover:text-black">Каталог</a>
+        <span class="mx-1">/</span>
+        {title}
+      </p>
+      <h1 class="text-4xl font-comfortaa">{title}</h1>
+      {collection?.description && (
+        <p class="mt-3 text-gray-500 font-manrope max-w-2xl mx-auto">{collection.description}</p>
+      )}
+    </div>
+
+    <CatalogIsland client:load collectionSlug={slug} showCollectionFilter={false} />
+  </main>
+
+  <Footer {...footerProps} />
+</BaseLayout>

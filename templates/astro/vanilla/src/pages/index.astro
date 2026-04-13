@@ -1,0 +1,86 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import data from '../data/data.json';
+import siteConfig from '../data/site-config.json';
+import products from '../data/products.json';
+
+// Component imports — all 18 Rose block types
+import Header from '../components/Header.astro';
+import Hero from '../components/Hero.astro';
+import Footer from '../components/Footer.astro';
+import PopularProducts from '../components/PopularProducts.astro';
+import Gallery from '../components/Gallery.astro';
+import TextBlock from '../components/TextBlock.astro';
+import MultiColumns from '../components/MultiColumns.astro';
+import MultiRows from '../components/MultiRows.astro';
+import Slideshow from '../components/Slideshow.astro';
+import Video from '../components/Video.astro';
+import ImageWithText from '../components/ImageWithText.astro';
+import ContactForm from '../components/ContactForm.astro';
+import PromoBanner from '../components/PromoBanner.astro';
+import Publications from '../components/Publications.astro';
+import CollapsibleSection from '../components/CollapsibleSection.astro';
+import Collections from '../components/Collections.astro';
+import Newsletter from '../components/Newsletter.astro';
+import Product from '../components/Product.astro';
+
+const blocks = data?.content ?? [];
+const meta = data?.meta ?? {};
+const hasProducts = products && products.length > 0;
+
+// Separate blocks by role: Header before <main>, content inside <main>, Footer after <main>
+const headerBlock = blocks.find((b: any) => b.type === 'Header');
+const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+const contentBlocks = blocks.filter((b: any) => b.type !== 'Header' && b.type !== 'Footer');
+
+// Fallback to site-config.json for Header/Footer if not in blocks
+const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
+const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
+
+// Map block type to component — MainText uses TextBlock.astro, CollapsibleSection maps directly
+const componentMap: Record<string, any> = {
+  Hero,
+  PopularProducts,
+  Gallery,
+  MainText: TextBlock,
+  MultiColumns,
+  MultiRows,
+  Slideshow,
+  Video,
+  ImageWithText,
+  ContactForm,
+  PromoBanner,
+  Publications,
+  CollapsibleSection,
+  Collections,
+  Newsletter,
+  Product,
+};
+---
+<BaseLayout title={meta?.title ?? 'Мой сайт'} description={meta?.description}>
+  <Header {...headerProps} />
+
+  <main class="flex-1 w-full">
+    {contentBlocks.length === 0 && !hasProducts && (
+      <section class="text-center py-20 px-5">
+        <h1 class="text-5xl font-comfortaa mb-5">Добро пожаловать</h1>
+        <p class="text-gray-500 text-lg font-manrope">Ваш стиль, ваша индивидуальность</p>
+      </section>
+    )}
+
+    {contentBlocks.map((block: any) => {
+      const Component = componentMap[block.type];
+      if (!Component) {
+        console.warn(`[index.astro] Unknown block type: ${block.type} — skipping`);
+        return null;
+      }
+      return <Component {...(block.props ?? {})} />;
+    })}
+
+    {hasProducts && !contentBlocks.some((b: any) => b.type === 'PopularProducts') && (
+      <PopularProducts products={products} />
+    )}
+  </main>
+
+  <Footer {...footerProps} />
+</BaseLayout>

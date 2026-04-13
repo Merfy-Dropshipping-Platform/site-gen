@@ -1,0 +1,145 @@
+---
+import FooterColumn from './footer/FooterColumn.astro';
+import FooterLink from './footer/FooterLink.astro';
+import SocialIcon from './footer/SocialIcon.astro';
+
+interface Props {
+  newsletter?: { enabled?: string; heading?: string; description?: string; placeholder?: string };
+  heading?: { text?: string; size?: string };
+  text?: { content?: string; size?: string };
+  colorScheme?: string;
+  copyrightColorScheme?: string;
+  padding?: { top?: number; bottom?: number };
+  navigationColumn?: { title?: string; links?: Array<{ label: string; href: string }> };
+  informationColumn?: { title?: string; links?: Array<{ label: string; href: string }> };
+  socialColumn?: { title?: string; email?: string; contactFields?: Array<{ label: string; value: string }>; socialLinks?: Array<{ platform: string; href: string }> };
+  copyright?: { companyName?: string; showYear?: string; poweredBy?: string };
+}
+
+const {
+  newsletter = { enabled: 'true', heading: 'Подпишитесь на нашу рассылку', description: 'Введите электронную почту и получайте информацию нашего бренда.', placeholder: 'rose@example.ru' },
+  heading,
+  text,
+  colorScheme,
+  copyrightColorScheme,
+  padding,
+  navigationColumn = { title: 'Навигация', links: [{ label: 'Главная', href: '/' }, { label: 'Каталог', href: '#popular' }, { label: 'Контакты', href: '#' }] },
+  informationColumn = { title: 'Информация', links: [{ label: 'Политика доставки', href: '#' }, { label: 'Политика возврата', href: '#' }, { label: 'Условия обслуживания', href: '#' }] },
+  socialColumn = { title: 'Социальные сети', email: 'rose@example.ru', socialLinks: [{ platform: 'Facebook', href: '#' }, { platform: 'Instagram', href: '#' }, { platform: 'Twitter', href: '#' }] },
+  copyright = { companyName: 'Rose Theme', showYear: 'true', poweredBy: 'Powered by Merfy' },
+} = Astro.props;
+
+const today = new Date();
+const showNewsletter = newsletter?.enabled === 'true';
+const yearStr = copyright?.showYear === 'true' ? ` ${today.getFullYear()}` : '';
+
+// New fields from constructor take priority over legacy newsletter fields
+const newsletterHeading = heading?.text || newsletter?.heading;
+const newsletterDescription = text?.content || newsletter?.description;
+
+// Padding from constructor (default 80px matching sectionPadding)
+const padTop = padding?.top ?? 80;
+const padBottom = padding?.bottom ?? 80;
+
+// Color scheme CSS classes
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
+const copyrightSchemeClass = copyrightColorScheme ? `color-scheme-${copyrightColorScheme.replace('scheme-', '')}` : '';
+---
+
+<footer class={`w-full ${schemeClass}`} style={`background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}>
+  <div class="w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-[300px]">
+    {showNewsletter && (
+      <section class="pb-10 sm:pb-12 md:pb-16 lg:pb-20 xl:pb-24">
+        <div class="max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-[809px] mx-auto">
+          <div class="flex flex-col items-center gap-3 sm:gap-4 lg:gap-[5px] mb-8 sm:mb-10 lg:mb-12">
+            <h2 class="text-2xl sm:text-3xl md:text-[32px] lg:text-[34px] xl:text-[36px] font-normal uppercase leading-[1.115] text-center font-heading" style="color: rgb(var(--color-foreground));">
+              {newsletterHeading}
+            </h2>
+            {newsletterDescription && (
+              <p class="text-base sm:text-lg md:text-xl lg:text-[22px] xl:text-[24px] font-normal leading-[1.366] text-center px-4 sm:px-0 font-body" style="color: rgb(var(--color-foreground)); opacity: 0.7;">
+                {newsletterDescription}
+              </p>
+            )}
+          </div>
+          <form class="w-full max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-[600px] mx-auto h-auto sm:h-16 md:h-[70px] lg:h-[75px] xl:h-[80px] border rounded-lg md:rounded-[10px] flex flex-col sm:flex-row justify-between items-stretch sm:items-center px-4 sm:px-5 lg:px-[25px] py-3 sm:py-2 lg:py-[10px] gap-3 sm:gap-2 lg:gap-[10px]" style="background: rgb(var(--color-background)); border-color: rgb(var(--color-foreground)); border-radius: var(--radius-input, 10px);">
+            <input
+              type="email"
+              name="email"
+              placeholder={newsletter?.placeholder || 'rose@example.ru'}
+              required
+              class="flex-1 bg-transparent text-lg sm:text-xl md:text-[22px] lg:text-2xl font-light leading-[1.366] outline-none font-body"
+              style="color: rgb(var(--color-foreground)); opacity: 0.7;"
+            />
+            <button
+              type="submit"
+              aria-label="Подписаться"
+              class="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center self-end sm:self-center hover:scale-110 transition-transform"
+              style="color: rgb(var(--color-foreground));"
+            >
+              <svg class="w-full h-full" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </form>
+        </div>
+      </section>
+    )}
+
+    <section class="pb-6 sm:pb-8 md:pb-10 lg:pb-12 xl:pb-16">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10 md:gap-12 lg:gap-16 xl:gap-20">
+        {navigationColumn?.title && (
+          <FooterColumn title={navigationColumn.title}>
+            <nav class="flex flex-col gap-4 sm:gap-5 lg:gap-[25px]">
+              {navigationColumn.links?.map((link) => (
+                <FooterLink href={link.href}>{link.label}</FooterLink>
+              ))}
+            </nav>
+          </FooterColumn>
+        )}
+
+        {informationColumn?.title && (
+          <FooterColumn title={informationColumn.title}>
+            {informationColumn.links?.map((link) => (
+              <FooterLink href={link.href}>{link.label}</FooterLink>
+            ))}
+          </FooterColumn>
+        )}
+
+        {socialColumn?.title && (
+          <div class="sm:col-span-2 lg:col-span-1">
+            <FooterColumn title={socialColumn.title}>
+              {socialColumn.contactFields && socialColumn.contactFields.length > 0 && (
+                <div class="flex flex-col gap-2 sm:gap-3">
+                  {socialColumn.contactFields.map((field) => (
+                    <div class="flex flex-col">
+                      <span class="text-xs sm:text-sm font-normal text-theme-muted opacity-60 font-body">{field.label}</span>
+                      <span class="text-base sm:text-lg md:text-[18px] lg:text-[20px] font-normal text-theme-muted leading-[1.366] font-body">{field.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {!socialColumn.contactFields && socialColumn.email && (
+                <a href={`mailto:${socialColumn.email}`} class="text-base sm:text-lg md:text-[18px] lg:text-[20px] font-normal text-theme-muted leading-[1.366] hover:text-theme-foreground transition-colors font-body">
+                  {socialColumn.email}
+                </a>
+              )}
+              {socialColumn.socialLinks && socialColumn.socialLinks.length > 0 && (
+                <div class="flex gap-3 sm:gap-4 lg:gap-[15px]">
+                  {socialColumn.socialLinks.map((social) => (
+                    <SocialIcon href={social.href} ariaLabel={social.platform} />
+                  ))}
+                </div>
+              )}
+            </FooterColumn>
+          </div>
+        )}
+      </div>
+    </section>
+  </div>
+
+  <div class={`w-full h-auto sm:h-20 md:h-24 lg:h-[100px] flex items-center justify-center py-6 sm:py-0 ${copyrightSchemeClass}`} style={copyrightSchemeClass ? `background: rgb(var(--color-background)); color: rgb(var(--color-foreground));` : `background: rgb(var(--color-foreground)); color: rgb(var(--color-background));`}>
+    <p class="text-sm sm:text-base md:text-lg lg:text-[20px] font-light leading-[1.21] text-center px-4 sm:px-6 font-body">
+      &copy;{yearStr} {copyright?.companyName} Все права защищены. {copyright?.poweredBy}
+    </p>
+  </div>
+</footer>

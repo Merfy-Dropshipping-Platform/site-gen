@@ -1,0 +1,63 @@
+{
+  "name": "rose",
+  "label": "Rose — Fashion & Lifestyle",
+  "version": "1.0.0",
+  "category": "fashion",
+  "description": "Elegant fashion and lifestyle theme with Comfortaa + Manrope fonts",
+  "author": "Merfy",
+  "features": {
+    "variants": true,
+    "collections": true,
+    "sizeGuide": false,
+    "colorSwatches": true,
+    "filterSidebar": true,
+    "newsletter": true,
+    "wishlist": false
+  },
+  "pages": ["index", "product", "collection", "cart"],
+  "settings_schema": [
+    {
+      "name": "colors",
+      "settings": [
+        { "id": "color_primary", "type": "color", "label": "Primary color", "default": "#e11d48" },
+        { "id": "color_background", "type": "color", "label": "Background", "default": "#ffffff" },
+        { "id": "color_foreground", "type": "color", "label": "Text", "default": "#121212" },
+        { "id": "color_border", "type": "color", "label": "Border", "default": "#e5e7eb" },
+        { "id": "color_button_text", "type": "color", "label": "Button text", "default": "#ffffff" }
+      ]
+    },
+    {
+      "name": "typography",
+      "settings": [
+        { "id": "font_heading", "type": "font", "label": "Heading font", "default": "Comfortaa" },
+        { "id": "font_body", "type": "font", "label": "Body font", "default": "Manrope" }
+      ]
+    },
+    {
+      "name": "layout",
+      "settings": [
+        { "id": "radius_button", "type": "range", "label": "Button radius", "default": "9999px" },
+        { "id": "radius_card", "type": "range", "label": "Card radius", "default": "1rem" },
+        { "id": "page_width", "type": "text", "label": "Page width", "default": "1280px" }
+      ]
+    }
+  ],
+  "color_schemes": [
+    {
+      "id": 1,
+      "name": "Light",
+      "background": "#ffffff",
+      "foreground": "#121212",
+      "primary": "#e11d48",
+      "border": "#e5e7eb"
+    },
+    {
+      "id": 2,
+      "name": "Dark accent",
+      "background": "#1a1a2e",
+      "foreground": "#e2e8f0",
+      "primary": "#f472b6",
+      "border": "#334155"
+    }
+  ]
+}

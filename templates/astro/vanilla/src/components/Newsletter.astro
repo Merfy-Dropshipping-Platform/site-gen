@@ -1,0 +1,58 @@
+---
+interface Props {
+  heading?: { text?: string; size?: 'small' | 'medium' | 'large' };
+  text?: { content?: string; size?: 'small' | 'medium' | 'large' };
+  form?: { placeholder?: string; buttonText?: string };
+  colorScheme?: string;
+  padding?: { top?: number; bottom?: number };
+}
+
+const { heading, text, form, colorScheme, padding } = Astro.props;
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
+const headingText = heading?.text ?? 'Подпишитесь на нашу рассылку';
+const headingSize = heading?.size ?? 'small';
+const textContent = text?.content ?? '';
+const placeholder = form?.placeholder ?? 'email@example.com';
+const buttonText = form?.buttonText ?? 'Подписаться';
+const padTop = padding?.top ?? 80;
+const padBottom = padding?.bottom ?? 80;
+
+const headingFontSizes: Record<string, string> = {
+  small: '1.5rem',
+  medium: '2rem',
+  large: '2.5rem',
+};
+const headingFS = headingFontSizes[headingSize] || '1.5rem';
+---
+
+<section
+  class={`text-center px-5 ${schemeClass}`}
+  style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}
+>
+  <div class="max-w-[600px] mx-auto">
+    <h2 class="font-medium text-theme-foreground mb-4 font-heading" style={`font-size:${headingFS};line-height:1.2;`}>
+      {headingText}
+    </h2>
+    {textContent && (
+      <p class="text-[1.1rem] text-theme-muted mb-8 leading-[1.6] font-body">
+        {textContent}
+      </p>
+    )}
+    <form class="flex gap-3 max-w-[480px] mx-auto max-[480px]:flex-col" action="#" method="POST">
+      <input
+        type="email"
+        name="email"
+        placeholder={placeholder}
+        required
+        class="flex-1 py-3.5 px-4 text-base border border-theme rounded-lg font-body focus:outline-none focus:border-theme-foreground"
+        style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));"
+      />
+      <button
+        type="submit"
+        class="py-3.5 px-7 text-[0.95rem] font-medium border-none rounded-lg bg-theme-primary text-theme-button-text cursor-pointer transition-colors hover:opacity-90 font-body whitespace-nowrap"
+      >
+        {buttonText}
+      </button>
+    </form>
+  </div>
+</section>

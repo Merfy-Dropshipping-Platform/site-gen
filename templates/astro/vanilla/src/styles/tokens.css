@@ -28,8 +28,8 @@
   --radius-input: 0;
 
   /* ── Layout ── */
-  --page-width: 1280px;
-  --spacing-section: 6rem;
+  --page-width: 1320px;
+  --spacing-section: 120px;
 }
 
 /* ── Color Scheme 1: Dark olive (hero, footer, video) ── */

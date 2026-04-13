@@ -24,19 +24,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, href }) => {
     <a
       href={linkHref}
       className="group flex flex-col cursor-pointer no-underline text-inherit"
-      style={{ gap: 25 }}
+      style={{ gap: 20 }}
     >
-      {/* Image — portrait 315:515 ≈ 1:1.635 */}
+      {/* Image — 1:1 square per Figma */}
       <div
         className="overflow-hidden w-full"
-        style={{ aspectRatio: '315 / 515', borderRadius: 10, backgroundColor: '#FBFBFB' }}
+        style={{ aspectRatio: '1 / 1', borderRadius: 'var(--radius-card)', backgroundColor: '#FBFBFB' }}
       >
         {firstImage ? (
           <img
             src={firstImage.url}
             alt={firstImage.alt ?? product.title}
             loading="lazy"
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center" style={{ color: 'rgb(var(--color-muted))' }}>
@@ -50,21 +50,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, href }) => {
       </div>
 
       {/* Product info */}
-      <div className="flex flex-col font-[family-name:var(--font-body)]" style={{ gap: 10, padding: '0 15px' }}>
+      <div className="flex flex-col font-[family-name:var(--font-body)]" style={{ gap: 4 }}>
         <h3
-          className="font-normal text-lg sm:text-2xl"
-          style={{ lineHeight: '1.38', color: 'rgb(var(--color-foreground))', margin: 0 }}
+          className="font-normal"
+          style={{ fontSize: 16, lineHeight: 1.4, color: 'rgb(var(--color-foreground))', margin: 0 }}
         >
           {product.title}
         </h3>
-        <div className="flex items-center" style={{ gap: 15 }}>
-          <span className="text-2xl sm:text-[32px]" style={{ lineHeight: '44px', color: 'rgb(var(--color-foreground))' }}>
+        <div className="flex items-center" style={{ gap: 8 }}>
+          <span style={{ fontSize: 16, lineHeight: 'normal', color: 'rgb(var(--color-foreground))' }}>
             {formatMoney(product.price)}
           </span>
           {product.compareAtPrice != null && product.compareAtPrice > 0 && (
             <span
-              className="line-through text-base sm:text-xl"
-              style={{ lineHeight: '27px', fontWeight: 500, color: 'rgb(var(--color-muted))' }}
+              className="line-through"
+              style={{ fontSize: 14, lineHeight: 'normal', color: '#444444' }}
             >
               {formatMoney(product.compareAtPrice)}
             </span>

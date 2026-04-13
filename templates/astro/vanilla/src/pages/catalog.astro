@@ -17,19 +17,19 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 const branding = (siteConfig as any)?.branding ?? {};
 ---
 <BaseLayout title={`Каталог — ${meta?.title ?? 'Мой сайт'}`} description={meta?.description}>
-  <div class="catalog-page color-scheme-2 flex flex-col flex-1" style="background: #FFFFFF; color: #000000;">
+  <div class="catalog-page color-scheme-3 flex flex-col flex-1" style="background: #eeeeee; color: #26311c;">
     <Header {...headerProps} colorScheme="scheme-2" />
 
     <main class="catalog-main flex-1 w-full max-w-[1920px] mx-auto" style="padding-top: 40px; padding-bottom: 60px;">
       <!-- Page title block -->
       <div style="margin-bottom: 30px;">
         <h1
-          class="font-heading text-2xl sm:text-3xl xl:text-[36px]"
-          style="line-height: 1.1; font-weight: 400; text-transform: uppercase; color: #000000; margin: 0;"
+          class="font-heading text-[20px]"
+          style="line-height: 1.2; font-weight: 400; text-transform: uppercase; color: #26311c; margin: 0;"
         >КАТАЛОГ</h1>
         <p
-          class="font-body text-base sm:text-lg xl:text-[24px]"
-          style="line-height: 1.38; font-weight: 400; color: #999999; margin-top: 5px;"
+          class="font-body text-[16px]"
+          style="line-height: 1.4; font-weight: 400; color: #999999; margin-top: 5px;"
         >Здесь начинается персональный стиль</p>
       </div>
 
@@ -49,19 +49,10 @@ const branding = (siteConfig as any)?.branding ?? {};
     padding-left: 16px;
     padding-right: 16px;
   }
-  @media (min-width: 640px) {
-    .catalog-main { padding-left: 24px; padding-right: 24px; }
-  }
-  @media (min-width: 768px) {
-    .catalog-main { padding-left: 32px; padding-right: 32px; }
-  }
-  @media (min-width: 1024px) {
-    .catalog-main { padding-left: 48px; padding-right: 48px; }
-  }
   @media (min-width: 1280px) {
-    .catalog-main { padding-left: 64px; padding-right: 64px; }
+    .catalog-main { padding-left: 256px; padding-right: 256px; }
   }
-  @media (min-width: 1536px) {
+  @media (min-width: 1920px) {
     .catalog-main { padding-left: 300px; padding-right: 300px; }
   }
 </style>

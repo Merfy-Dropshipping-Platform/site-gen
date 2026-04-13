@@ -8,9 +8,9 @@ interface AnnouncementBarProps {
 }
 
 const sizeClasses: Record<string, string> = {
-  small: "py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm md:text-base",
-  medium: "py-3 sm:py-3.5 md:py-4 text-sm sm:text-base md:text-lg",
-  large: "py-4 sm:py-4.5 md:py-5 text-base sm:text-lg md:text-xl",
+  small: "h-[32px] md:h-[44px] lg:h-[48px] text-[14px]",
+  medium: "h-[32px] md:h-[44px] lg:h-[48px] text-[14px]",
+  large: "h-[32px] md:h-[44px] lg:h-[48px] text-[16px]",
 };
 
 export function AnnouncementBar({
@@ -23,8 +23,8 @@ export function AnnouncementBar({
   const sizeClass = sizeClasses[size] || sizeClasses.small;
 
   return (
-    <div className={`w-full ${sizeClass}`} style={{ backgroundColor: '#26311c', color: '#ffffff' }}>
-      <div className="w-full max-w-[1920px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
+    <div className={`w-full flex items-center justify-center ${sizeClass}`} style={{ backgroundColor: '#26311c', color: '#ffffff' }}>
+      <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-16 xl:px-24 2xl:px-[300px]">
         <a
           href={href}
           className="block text-center hover:opacity-80 transition-opacity font-normal leading-tight font-body"

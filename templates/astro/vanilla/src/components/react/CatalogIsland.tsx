@@ -120,10 +120,10 @@ function PaginationBar({ currentPage, totalPages, total, onPageChange }: Paginat
 function SkeletonGrid({ count = 6 }: { count?: number }) {
   return (
     <div className="flex-1">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" style={{ gap: 20 }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2" style={{ gap: 16 }}>
         {Array.from({ length: count }).map((_, i) => (
           <div key={i} className="animate-pulse">
-            <div className="rounded-[10px]" style={{ aspectRatio: '315/515', backgroundColor: '#FBFBFB' }} />
+            <div style={{ aspectRatio: '1/1', backgroundColor: '#FBFBFB', borderRadius: 0 }} />
             <div className="mt-4 bg-gray-200 rounded h-5 w-3/4" />
             <div className="mt-2 bg-gray-200 rounded h-6 w-1/3" />
           </div>
@@ -207,7 +207,7 @@ function FilterSidebar({ filters, setFilters, variantGroups, collections }: Filt
   return (
     <aside
       className="hidden lg:block shrink-0"
-      style={{ width: 285 }}
+      style={{ width: 294 }}
     >
       <div className="sticky" style={{ top: 100 }}>
         {/* Label */}
@@ -396,10 +396,10 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true }: CatalogIn
     if (isLoading && products.length === 0) {
       return (
         <div className="flex-1">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" style={{ gap: 20 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2" style={{ gap: 16 }}>
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="animate-pulse">
-                <div className="rounded-[10px]" style={{ aspectRatio: '315/515', backgroundColor: '#FBFBFB' }} />
+                <div style={{ aspectRatio: '1/1', backgroundColor: '#FBFBFB', borderRadius: 0 }} />
                 <div className="mt-4 bg-gray-200 rounded h-5 w-3/4" />
                 <div className="mt-2 bg-gray-200 rounded h-6 w-1/3" />
               </div>
@@ -463,8 +463,8 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true }: CatalogIn
     return (
       <div className="flex-1" style={{ opacity: isFetching ? 0.5 : 1, transition: 'opacity 0.2s ease' }}>
         <div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-          style={{ gap: 20 }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2"
+          style={{ gap: 16 }}
         >
           {products.map((product) => (
             <ProductCard key={product.id} product={product} />
@@ -508,7 +508,7 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true }: CatalogIn
       </div>
 
       {/* Main layout: sidebar + grid */}
-      <div className="flex" style={{ gap: 50 }}>
+      <div className="flex" style={{ gap: 104 }}>
         {/* Filter Sidebar — desktop (always visible) */}
         <FilterSidebar filters={filters} setFilters={setFilters} variantGroups={variantGroups} collections={collections} />
 

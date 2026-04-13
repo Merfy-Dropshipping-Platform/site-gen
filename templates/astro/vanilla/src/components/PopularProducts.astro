@@ -69,20 +69,20 @@ if (collection && allProducts.length > 0) {
 
 <section id="popular" class={`w-full scroll-mt-20 ${schemeClass}`} style={`padding: ${padding?.top || 80}px 0 ${padding?.bottom || 80}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
   <div class="w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-[300px]">
-    <div class="flex flex-col items-start gap-2 mb-8 sm:mb-10 md:mb-12">
+    <div class="flex flex-col items-start gap-[4px] mb-[40px]">
       {headingText && (
-        <h2 class="text-lg sm:text-xl md:text-2xl lg:text-[24px] font-light text-theme-foreground leading-[1.17] font-heading">
+        <h2 class="text-[20px] font-normal text-theme-foreground leading-[1.2] font-heading">
           {headingText}
         </h2>
       )}
       {textContent && (
-        <p class="text-xs sm:text-sm md:text-base lg:text-lg xl:text-[20px] font-light text-theme-foreground leading-[1.15] font-body">
+        <p class="text-[16px] font-normal text-theme-foreground leading-[1.4] font-body">
           {textContent}
         </p>
       )}
     </div>
 
-    <div class="grid product-grid-dynamic gap-4 sm:gap-5 md:gap-6 xl:gap-[16px]">
+    <div class="grid product-grid-dynamic gap-[16px]">
       {(cards ? products.slice(0, cards) : products).map((product) => (
         <ProductCardItem
           id={product.id}

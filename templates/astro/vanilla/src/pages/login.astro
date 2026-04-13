@@ -13,43 +13,49 @@ const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
 const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 ---
 <BaseLayout title={`Вход — ${meta?.title ?? 'Мой сайт'}`}>
-  <Header {...headerProps} />
+  <!-- Full-screen popup overlay layout per Figma -->
+  <div class="login-overlay">
+    <!-- Hero background with dark overlay -->
+    <div class="login-bg" style="background-image: url('/main-image.png');"></div>
+    <div class="login-dark-overlay"></div>
 
-  <main class="flex-1 max-w-[440px] mx-auto px-5 py-10 w-full font-body">
-    <h1 class="text-3xl font-heading text-center mb-8">Вход</h1>
+    <!-- Right panel -->
+    <div class="login-panel">
+      <div class="login-panel-inner">
+        <h1 class="font-heading" style="font-size: 20px; font-weight: 400; color: #26311c; margin-bottom: 32px;">Вход</h1>
 
-    <form id="login-form" class="space-y-5">
-      <div>
-        <label for="login-email" class="block mb-2 font-medium text-gray-700">Email <span class="text-required">*</span></label>
-        <input type="email" id="login-email" name="email" required placeholder="your@email.com" autocomplete="email"
-          class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none auth-input-focus">
+        <form id="login-form" class="flex flex-col gap-[16px]">
+          <div>
+            <label for="login-email" class="block mb-2 font-body" style="font-size: 14px; color: #26311c;">Email</label>
+            <input type="email" id="login-email" name="email" required placeholder="your@email.com" autocomplete="email"
+              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: #26311c30; border-radius: 0; background: transparent; color: #26311c;">
+          </div>
+
+          <div>
+            <label for="login-password" class="block mb-2 font-body" style="font-size: 14px; color: #26311c;">Пароль</label>
+            <input type="password" id="login-password" name="password" required placeholder="Введите пароль" autocomplete="current-password"
+              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: #26311c30; border-radius: 0; background: transparent; color: #26311c;">
+          </div>
+
+          <div class="text-red-600 text-sm text-center hidden" id="login-error"></div>
+
+          <button type="submit" class="login-submit-btn w-full font-body font-normal transition-colors" id="btn-login">
+            <span class="loading hidden"><span class="loading-spinner inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></span>Вход...</span>
+            <span class="text">Войти</span>
+          </button>
+        </form>
+
+        <div class="text-center text-[14px] mt-6 space-y-2 font-body" style="color: #26311c;">
+          <p>
+            <a href="/reset-password" class="auth-link">Забыли пароль?</a>
+          </p>
+          <p style="color: #999;">
+            Нет аккаунта? <a href="/register" class="auth-link font-medium">Зарегистрироваться</a>
+          </p>
+        </div>
       </div>
-
-      <div>
-        <label for="login-password" class="block mb-2 font-medium text-gray-700">Пароль <span class="text-required">*</span></label>
-        <input type="password" id="login-password" name="password" required placeholder="Введите пароль" autocomplete="current-password"
-          class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none auth-input-focus">
-      </div>
-
-      <div class="text-red-600 text-sm text-center hidden" id="login-error"></div>
-
-      <button type="submit" class="btn-primary w-full py-4 px-8 rounded-xl font-medium transition-colors" id="btn-login">
-        <span class="loading hidden"><span class="loading-spinner inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></span>Вход...</span>
-        <span class="text">Войти</span>
-      </button>
-    </form>
-
-    <div class="text-center text-sm mt-6 space-y-2">
-      <p>
-        <a href="/reset-password" class="auth-link">Забыли пароль?</a>
-      </p>
-      <p class="text-gray-500">
-        Нет аккаунта? <a href="/register" class="auth-link font-medium">Зарегистрироваться</a>
-      </p>
     </div>
-  </main>
-
-  <Footer {...footerProps} />
+  </div>
 
   <script is:inline src="/scripts/customer-store.js"></script>
   <script is:inline src="/scripts/customer-auth.js"></script>
@@ -108,11 +114,61 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 </BaseLayout>
 
 <style>
-  .btn-primary { background-color: rgb(var(--color-primary)); color: #fff; }
-  .btn-primary:hover { filter: brightness(0.85); }
-  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-  .text-required { color: rgb(var(--color-primary)); }
-  .auth-link { color: rgb(var(--color-primary)); }
+  .login-overlay {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+  }
+  .login-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    z-index: 0;
+  }
+  .login-dark-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1;
+  }
+  .login-panel {
+    position: relative;
+    z-index: 2;
+    margin-left: auto;
+    width: 100%;
+    max-width: 590px;
+    background: #eeeeee;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+  }
+  .login-panel-inner {
+    width: 100%;
+    max-width: 430px;
+  }
+  .login-submit-btn {
+    height: 56px;
+    font-size: 16px;
+    background: #26311c;
+    color: #ffffff;
+    border: none;
+    border-radius: 0;
+    cursor: pointer;
+  }
+  .login-submit-btn:hover { filter: brightness(0.85); }
+  .login-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .auth-link { color: #3a4530; }
   .auth-link:hover { text-decoration: underline; }
-  .auth-input-focus:focus { border-color: rgb(var(--color-primary)); box-shadow: 0 0 0 3px rgb(var(--color-primary) / 0.15); }
+  .auth-input-focus:focus { border-color: #26311c; box-shadow: 0 0 0 2px rgba(38, 49, 28, 0.15); }
+
+  @media (max-width: 768px) {
+    .login-panel {
+      max-width: 100%;
+    }
+    .login-bg, .login-dark-overlay {
+      display: none;
+    }
+  }
 </style>

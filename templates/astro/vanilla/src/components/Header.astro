@@ -104,7 +104,7 @@ const isCenterLeft = logoPosition === 'center-left';
     class:list={[
       'w-full flex items-center border-b',
       !bgColor && 'bg-theme-background border-theme',
-      !useCustomPadding && !isCenterLeft && 'h-[56px] md:h-[64px] lg:h-[80px]',
+      !useCustomPadding && !isCenterLeft && 'h-16 sm:h-20 md:h-24 lg:h-28 xl:h-[120px]',
     ]}
     style={headerStyle}
   >
@@ -137,17 +137,17 @@ const isCenterLeft = logoPosition === 'center-left';
               {logo ? (
                 <img src={logo} alt={siteTitle} class="h-5 sm:h-6 md:h-[26px] w-auto" style={logoStyle || undefined} />
               ) : (
-                <span class:list={['text-lg sm:text-xl md:text-2xl font-bold tracking-wide font-body', !textColor && 'text-theme-foreground']} style={textStyle}>{siteTitle}</span>
+                <span class:list={['text-base sm:text-lg md:text-[26px] font-semibold tracking-[0.2em] uppercase leading-none font-body', !textColor && 'text-theme-foreground']} style={textStyle}>{siteTitle}</span>
               )}
             </a>
           </div>
 
           {/* Desktop nav */}
-          <div class="hidden md:flex items-center gap-[40px]">
+          <div class="hidden md:flex items-center gap-4 lg:gap-8 xl:gap-12 2xl:gap-[80px]">
             {navigationLinks?.map((link) => (
               <a
                 href={link.href}
-                class:list={['text-[16px] font-normal hover:opacity-70 transition-opacity font-body', !menuText && 'text-theme-foreground']}
+                class:list={['text-sm lg:text-base xl:text-[20px] font-normal hover:opacity-70 transition-opacity leading-[1.366] font-body', !menuText && 'text-theme-foreground']}
                 style={navLinkStyle}
               >
                 {link.label}
@@ -156,7 +156,7 @@ const isCenterLeft = logoPosition === 'center-left';
           </div>
 
           {/* Actions */}
-          <div class="flex items-center gap-[24px]">
+          <div class="flex items-center gap-3 sm:gap-3 md:gap-4 lg:gap-5 xl:gap-[25px]">
             {showSearch && (
               <button
                 aria-label="Поиск"
@@ -211,11 +211,11 @@ const isCenterLeft = logoPosition === 'center-left';
           </button>
 
           {/* Desktop nav (left) */}
-          <div class="hidden md:flex items-center gap-[40px]">
+          <div class="hidden md:flex items-center gap-4 lg:gap-8 xl:gap-12 2xl:gap-[80px]">
             {navigationLinks?.map((link) => (
               <a
                 href={link.href}
-                class:list={['text-[16px] font-normal hover:opacity-70 transition-opacity font-body', !menuText && 'text-theme-foreground']}
+                class:list={['text-sm lg:text-base xl:text-[20px] font-normal hover:opacity-70 transition-opacity leading-[1.366] font-body', !menuText && 'text-theme-foreground']}
                 style={navLinkStyle}
               >
                 {link.label}
@@ -229,13 +229,13 @@ const isCenterLeft = logoPosition === 'center-left';
               {logo ? (
                 <img src={logo} alt={siteTitle} class="h-5 sm:h-6 md:h-[26px] w-auto" style={logoStyle || undefined} />
               ) : (
-                <span class:list={['text-lg sm:text-xl md:text-2xl font-bold tracking-wide font-body', !textColor && 'text-theme-foreground']} style={textStyle}>{siteTitle}</span>
+                <span class:list={['text-base sm:text-lg md:text-[26px] font-semibold tracking-[0.2em] uppercase leading-none font-body', !textColor && 'text-theme-foreground']} style={textStyle}>{siteTitle}</span>
               )}
             </a>
           </div>
 
           {/* Actions (right) */}
-          <div class="flex items-center gap-[24px]">
+          <div class="flex items-center gap-3 sm:gap-3 md:gap-4 lg:gap-5 xl:gap-[25px]">
             {showSearch && (
               <button aria-label="Поиск" class:list={['hidden md:flex w-8 h-8 items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']} style={textStyle}>
                 <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
@@ -277,11 +277,11 @@ const isCenterLeft = logoPosition === 'center-left';
           </button>
 
           {/* Desktop nav (left) */}
-          <div class="hidden md:flex items-center gap-[40px]">
+          <div class="hidden md:flex items-center gap-4 lg:gap-8 xl:gap-12 2xl:gap-[80px]">
             {navigationLinks?.map((link) => (
               <a
                 href={link.href}
-                class:list={['text-[16px] font-normal hover:opacity-70 transition-opacity font-body', !menuText && 'text-theme-foreground']}
+                class:list={['text-sm lg:text-base xl:text-[20px] font-normal hover:opacity-70 transition-opacity leading-[1.366] font-body', !menuText && 'text-theme-foreground']}
                 style={navLinkStyle}
               >
                 {link.label}
@@ -290,7 +290,7 @@ const isCenterLeft = logoPosition === 'center-left';
           </div>
 
           {/* Actions */}
-          <div class="flex items-center gap-[24px]">
+          <div class="flex items-center gap-3 sm:gap-3 md:gap-4 lg:gap-5 xl:gap-[25px]">
             {showSearch && (
               <button aria-label="Поиск" class:list={['hidden md:flex w-8 h-8 items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']} style={textStyle}>
                 <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
@@ -318,7 +318,7 @@ const isCenterLeft = logoPosition === 'center-left';
               {logo ? (
                 <img src={logo} alt={siteTitle} class="h-5 sm:h-6 md:h-[26px] w-auto" style={logoStyle || undefined} />
               ) : (
-                <span class:list={['text-lg sm:text-xl md:text-2xl font-bold tracking-wide font-body', !textColor && 'text-theme-foreground']} style={textStyle}>{siteTitle}</span>
+                <span class:list={['text-base sm:text-lg md:text-[26px] font-semibold tracking-[0.2em] uppercase leading-none font-body', !textColor && 'text-theme-foreground']} style={textStyle}>{siteTitle}</span>
               )}
             </a>
           </div>
@@ -348,12 +348,12 @@ const isCenterLeft = logoPosition === 'center-left';
               {logo ? (
                 <img src={logo} alt={siteTitle} class="h-5 sm:h-6 md:h-[26px] w-auto" style={logoStyle || undefined} />
               ) : (
-                <span class:list={['text-lg sm:text-xl md:text-2xl font-bold tracking-wide font-body', !textColor && 'text-theme-foreground']} style={textStyle}>{siteTitle}</span>
+                <span class:list={['text-base sm:text-lg md:text-[26px] font-semibold tracking-[0.2em] uppercase leading-none font-body', !textColor && 'text-theme-foreground']} style={textStyle}>{siteTitle}</span>
               )}
             </a>
 
             {/* Actions */}
-            <div class="flex items-center gap-[24px]">
+            <div class="flex items-center gap-3 sm:gap-3 md:gap-4 lg:gap-5 xl:gap-[25px]">
               {showSearch && (
                 <button aria-label="Поиск" class:list={['hidden md:flex w-8 h-8 items-center justify-center hover:opacity-70 transition-opacity', !textColor && 'text-theme-foreground']} style={textStyle}>
                   <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
@@ -377,11 +377,11 @@ const isCenterLeft = logoPosition === 'center-left';
           </div>
 
           {/* Desktop nav (centered, second row) */}
-          <div class="hidden md:flex items-center justify-center gap-[40px] mt-2">
+          <div class="hidden md:flex items-center justify-center gap-4 lg:gap-8 xl:gap-12 2xl:gap-[80px] mt-2">
             {navigationLinks?.map((link) => (
               <a
                 href={link.href}
-                class:list={['text-[16px] font-normal hover:opacity-70 transition-opacity font-body', !menuText && 'text-theme-foreground']}
+                class:list={['text-sm lg:text-base xl:text-[20px] font-normal hover:opacity-70 transition-opacity leading-[1.366] font-body', !menuText && 'text-theme-foreground']}
                 style={navLinkStyle}
               >
                 {link.label}

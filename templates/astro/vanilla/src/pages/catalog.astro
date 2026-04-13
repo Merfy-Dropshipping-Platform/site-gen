@@ -24,12 +24,12 @@ const branding = (siteConfig as any)?.branding ?? {};
       <!-- Page title block -->
       <div class="mb-8 sm:mb-10 md:mb-12 lg:mb-16 xl:mb-20">
         <h1
-          class="text-xl sm:text-2xl md:text-3xl lg:text-[32px] font-normal uppercase leading-[1.115] font-comfortaa"
+          class="text-xl sm:text-2xl md:text-3xl lg:text-[32px] font-normal uppercase leading-[1.115] font-heading"
           style="color: rgb(var(--color-foreground)); margin: 0;"
         >КАТАЛОГ</h1>
         <p
-          class="text-sm sm:text-base md:text-lg lg:text-xl xl:text-[24px] font-normal leading-[1.366] font-manrope mt-1 sm:mt-2"
-          style="color: #999999;"
+          class="text-sm sm:text-base md:text-lg lg:text-xl xl:text-[24px] font-normal leading-[1.366] font-body mt-1 sm:mt-2"
+          style="color: rgb(var(--color-muted));"
         >Здесь начинается персональный стиль</p>
       </div>
 
@@ -49,10 +49,19 @@ const branding = (siteConfig as any)?.branding ?? {};
     padding-left: 16px;
     padding-right: 16px;
   }
-  @media (min-width: 1280px) {
-    .catalog-main { padding-left: 256px; padding-right: 256px; }
+  @media (min-width: 640px) {
+    .catalog-main { padding-left: 24px; padding-right: 24px; }
   }
-  @media (min-width: 1920px) {
+  @media (min-width: 768px) {
+    .catalog-main { padding-left: 32px; padding-right: 32px; }
+  }
+  @media (min-width: 1024px) {
+    .catalog-main { padding-left: 64px; padding-right: 64px; }
+  }
+  @media (min-width: 1280px) {
+    .catalog-main { padding-left: 96px; padding-right: 96px; }
+  }
+  @media (min-width: 1536px) {
     .catalog-main { padding-left: 300px; padding-right: 300px; }
   }
 </style>

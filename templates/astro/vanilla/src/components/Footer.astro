@@ -137,8 +137,8 @@ const copyrightSchemeClass = copyrightColorScheme ? `color-scheme-${copyrightCol
     </section>
   </div>
 
-  <div class={`w-full h-auto sm:h-20 md:h-24 lg:h-[100px] flex items-center justify-center py-6 sm:py-0 ${copyrightSchemeClass}`} style={copyrightSchemeClass ? `background: rgb(var(--color-background)); color: rgb(var(--color-foreground));` : `background: rgb(var(--color-foreground)); color: rgb(var(--color-background));`}>
-    <p class="text-sm sm:text-base md:text-lg lg:text-[20px] font-light leading-[1.21] text-center px-4 sm:px-6 font-body">
+  <div class="w-full h-auto sm:h-20 md:h-24 lg:h-[100px] flex items-center justify-center py-6 sm:py-0" style="background: #000000; color: #ffffff;">
+    <p class="text-sm sm:text-base md:text-lg lg:text-[20px] leading-[1.21] text-center px-4 sm:px-6" style="font-family: 'Inter', sans-serif; font-weight: 300;">
       &copy;{yearStr} {copyright?.companyName} Все права защищены. {copyright?.poweredBy}
     </p>
   </div>

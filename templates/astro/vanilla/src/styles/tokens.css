@@ -1,80 +1,81 @@
 /* Vanilla Theme — Design Tokens
- * Warm beige neutral palette for decor & interior stores.
+ * Olive green palette for decor & interior stores.
+ * Figma: QfF9NPZBoQX6vCRg560Qcb / 590-11640
  * Colors stored as RGB triplets for rgba() support:
  *   background: rgba(var(--color-primary), 0.5);
  */
 
 :root {
   /* ── Colors (RGB triplets) ── */
-  --color-primary: 41, 37, 36;        /* #292524 stone-800 */
-  --color-primary-rgb: 41, 37, 36;
-  --color-background: 255, 255, 255;   /* #FFFFFF */
-  --color-foreground: 41, 37, 36;      /* #292524 */
-  --color-border: 214, 211, 209;       /* #d6d3d1 stone-300 */
-  --color-button: 139, 115, 85;        /* #8b7355 accent */
-  --color-button-text: 255, 255, 255;  /* #FFFFFF */
-  --color-muted: 120, 113, 108;        /* #78716c stone-500 */
-  --color-secondary: 245, 240, 235;    /* #f5f0eb warm beige */
+  --color-primary: 38, 49, 28;        /* #26311c olive dark */
+  --color-primary-rgb: 38, 49, 28;
+  --color-background: 238, 238, 238;  /* #eeeeee light gray */
+  --color-foreground: 38, 49, 28;     /* #26311c */
+  --color-border: 200, 200, 200;      /* #c8c8c8 */
+  --color-button: 58, 69, 48;         /* #3a4530 olive medium */
+  --color-button-text: 255, 255, 255; /* #FFFFFF */
+  --color-muted: 120, 120, 110;       /* #78786e */
+  --color-secondary: 58, 69, 48;      /* #3a4530 */
 
   /* ── Typography ── */
-  --font-heading: system-ui, -apple-system, sans-serif;
-  --font-body: system-ui, -apple-system, sans-serif;
+  --font-heading: 'Bitter', serif;
+  --font-body: 'Arsenal', sans-serif;
 
   /* ── Border Radii ── */
-  --radius-base: 0.5rem;
-  --radius-button: 8px;
-  --radius-card: 10px;
-  --radius-input: 10px;
+  --radius-base: 0;
+  --radius-button: 0;
+  --radius-card: 0;
+  --radius-input: 0;
 
   /* ── Layout ── */
   --page-width: 1280px;
   --spacing-section: 6rem;
 }
 
-/* ── Color Scheme 1: Light (white bg, dark text, accent buttons) ── */
+/* ── Color Scheme 1: Dark olive (hero, footer, video) ── */
 .color-scheme-1 {
-  --color-background: 255, 255, 255;   /* #FFFFFF */
-  --color-foreground: 41, 37, 36;      /* #292524 */
-  --color-primary: 139, 115, 85;       /* #8b7355 accent */
-  --color-border: 214, 211, 209;       /* #d6d3d1 */
-  --color-button: 139, 115, 85;        /* #8b7355 */
-  --color-button-text: 255, 255, 255;
-  --color-muted: 120, 113, 108;        /* #78716c */
-  --color-secondary: 245, 240, 235;    /* #f5f0eb */
+  --color-background: 38, 49, 28;     /* #26311c */
+  --color-foreground: 255, 255, 255;  /* #ffffff */
+  --color-primary: 238, 238, 238;     /* #eeeeee */
+  --color-border: 68, 80, 55;         /* #445037 */
+  --color-button: 238, 238, 238;      /* #eeeeee */
+  --color-button-text: 38, 49, 28;    /* #26311c */
+  --color-muted: 180, 190, 170;       /* #b4beaa */
+  --color-secondary: 58, 69, 48;      /* #3a4530 */
 }
 
-/* ── Color Scheme 2: Dark (dark bg, light text) ── */
+/* ── Color Scheme 2: Medium olive (header, text sections) ── */
 .color-scheme-2 {
-  --color-background: 41, 37, 36;      /* #292524 */
-  --color-foreground: 245, 240, 235;   /* #f5f0eb */
-  --color-primary: 212, 165, 116;      /* #d4a574 light accent */
-  --color-border: 68, 64, 60;          /* #44403c stone-700 */
-  --color-button: 212, 165, 116;       /* #d4a574 */
-  --color-button-text: 41, 37, 36;     /* #292524 */
-  --color-muted: 168, 162, 158;        /* #a8a29e stone-400 */
-  --color-secondary: 68, 64, 60;       /* #44403c */
+  --color-background: 58, 69, 48;     /* #3a4530 */
+  --color-foreground: 255, 255, 255;  /* #ffffff */
+  --color-primary: 238, 238, 238;     /* #eeeeee */
+  --color-border: 80, 92, 65;         /* #505c41 */
+  --color-button: 238, 238, 238;      /* #eeeeee */
+  --color-button-text: 38, 49, 28;    /* #26311c */
+  --color-muted: 180, 190, 170;       /* #b4beaa */
+  --color-secondary: 38, 49, 28;      /* #26311c */
 }
 
-/* ── Color Scheme 3: Warm (beige bg, dark text) ── */
+/* ── Color Scheme 3: Light gray (content areas, catalog) ── */
 .color-scheme-3 {
-  --color-background: 245, 240, 235;   /* #f5f0eb */
-  --color-foreground: 41, 37, 36;      /* #292524 */
-  --color-primary: 139, 115, 85;       /* #8b7355 accent */
-  --color-border: 214, 211, 209;       /* #d6d3d1 */
-  --color-button: 139, 115, 85;        /* #8b7355 */
-  --color-button-text: 255, 255, 255;
-  --color-muted: 120, 113, 108;        /* #78716c */
-  --color-secondary: 231, 224, 217;    /* #e7e0d9 */
+  --color-background: 238, 238, 238;  /* #eeeeee */
+  --color-foreground: 38, 49, 28;     /* #26311c */
+  --color-primary: 58, 69, 48;        /* #3a4530 */
+  --color-border: 200, 200, 200;      /* #c8c8c8 */
+  --color-button: 58, 69, 48;         /* #3a4530 */
+  --color-button-text: 255, 255, 255; /* #ffffff */
+  --color-muted: 120, 120, 110;       /* #78786e */
+  --color-secondary: 220, 220, 215;   /* #dcdcd7 */
 }
 
-/* ── Color Scheme 4: Accent (accent bg, white text) ── */
+/* ── Color Scheme 4: White (product cards, forms) ── */
 .color-scheme-4 {
-  --color-background: 139, 115, 85;    /* #8b7355 */
-  --color-foreground: 255, 255, 255;   /* #FFFFFF */
-  --color-primary: 255, 255, 255;      /* #FFFFFF */
-  --color-border: 168, 147, 121;       /* #a89379 */
-  --color-button: 41, 37, 36;          /* #292524 */
-  --color-button-text: 255, 255, 255;
-  --color-muted: 214, 199, 181;        /* #d6c7b5 */
-  --color-secondary: 168, 147, 121;    /* #a89379 */
+  --color-background: 255, 255, 255;  /* #ffffff */
+  --color-foreground: 38, 49, 28;     /* #26311c */
+  --color-primary: 58, 69, 48;        /* #3a4530 */
+  --color-border: 220, 220, 215;      /* #dcdcd7 */
+  --color-button: 58, 69, 48;         /* #3a4530 */
+  --color-button-text: 255, 255, 255; /* #ffffff */
+  --color-muted: 120, 120, 110;       /* #78786e */
+  --color-secondary: 238, 238, 238;   /* #eeeeee */
 }

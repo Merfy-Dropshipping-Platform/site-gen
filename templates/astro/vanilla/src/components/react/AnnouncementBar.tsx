@@ -23,7 +23,7 @@ export function AnnouncementBar({
   const sizeClass = sizeClasses[size] || sizeClasses.small;
 
   return (
-    <div className={`bg-black text-white w-full ${sizeClass}`}>
+    <div className={`w-full ${sizeClass}`} style={{ backgroundColor: '#26311c', color: '#ffffff' }}>
       <div className="w-full max-w-[1920px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
         <a
           href={href}

@@ -2,11 +2,11 @@
 @import "./tokens.css";
 
 @theme {
-  --font-family-sans: system-ui, -apple-system, sans-serif;
+  --font-family-sans: 'Arsenal', sans-serif;
   --font-family-heading: var(--font-heading);
   --font-family-body: var(--font-body);
-  --color-primary: #292524;
-  --color-gray: #78716c;
+  --color-primary: #26311c;
+  --color-gray: #78786e;
   --color-theme-background: rgb(var(--color-background));
   --color-theme-foreground: rgb(var(--color-foreground));
   --color-theme-primary: rgb(var(--color-primary));

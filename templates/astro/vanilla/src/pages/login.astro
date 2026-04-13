@@ -22,19 +22,19 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
     <!-- Right panel -->
     <div class="login-panel">
       <div class="login-panel-inner">
-        <h1 class="font-heading" style="font-size: 20px; font-weight: 400; color: #26311c; margin-bottom: 32px;">Вход</h1>
+        <h1 class="font-heading" style="font-size: 20px; font-weight: 400; color: rgb(var(--color-foreground)); margin-bottom: 32px;">Вход</h1>
 
         <form id="login-form" class="flex flex-col gap-[16px]">
           <div>
-            <label for="login-email" class="block mb-2 font-body" style="font-size: 14px; color: #26311c;">Email</label>
+            <label for="login-email" class="block mb-2 font-body" style="font-size: 14px; color: rgb(var(--color-foreground));">Email</label>
             <input type="email" id="login-email" name="email" required placeholder="your@email.com" autocomplete="email"
-              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: #26311c30; border-radius: 0; background: transparent; color: #26311c;">
+              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground))30; border-radius: 10px; background: transparent; color: rgb(var(--color-foreground));">
           </div>
 
           <div>
-            <label for="login-password" class="block mb-2 font-body" style="font-size: 14px; color: #26311c;">Пароль</label>
+            <label for="login-password" class="block mb-2 font-body" style="font-size: 14px; color: rgb(var(--color-foreground));">Пароль</label>
             <input type="password" id="login-password" name="password" required placeholder="Введите пароль" autocomplete="current-password"
-              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: #26311c30; border-radius: 0; background: transparent; color: #26311c;">
+              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground))30; border-radius: 10px; background: transparent; color: rgb(var(--color-foreground));">
           </div>
 
           <div class="text-red-600 text-sm text-center hidden" id="login-error"></div>
@@ -45,7 +45,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
           </button>
         </form>
 
-        <div class="text-center text-[14px] mt-6 space-y-2 font-body" style="color: #26311c;">
+        <div class="text-center text-[14px] mt-6 space-y-2 font-body" style="color: rgb(var(--color-foreground));">
           <p>
             <a href="/reset-password" class="auth-link">Забыли пароль?</a>
           </p>
@@ -138,7 +138,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
     margin-left: auto;
     width: 100%;
     max-width: 590px;
-    background: #eeeeee;
+    background: rgb(var(--color-background));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -151,17 +151,17 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
   .login-submit-btn {
     height: 56px;
     font-size: 16px;
-    background: #26311c;
+    background: rgb(var(--color-foreground));
     color: #ffffff;
     border: none;
-    border-radius: 0;
+    border-radius: 10px;
     cursor: pointer;
   }
   .login-submit-btn:hover { filter: brightness(0.85); }
   .login-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-  .auth-link { color: #3a4530; }
+  .auth-link { color: rgb(var(--color-primary)); }
   .auth-link:hover { text-decoration: underline; }
-  .auth-input-focus:focus { border-color: #26311c; box-shadow: 0 0 0 2px rgba(38, 49, 28, 0.15); }
+  .auth-input-focus:focus { border-color: rgb(var(--color-foreground)); box-shadow: 0 0 0 2px rgba(41, 37, 36, 0.15); }
 
   @media (max-width: 768px) {
     .login-panel {

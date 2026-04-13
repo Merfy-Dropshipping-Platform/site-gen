@@ -19,7 +19,7 @@
             "logo": "/logo.svg",
             "logoPosition": "top-center",
             "stickiness": "scroll-up",
-            "colorScheme": "scheme-2",
+            "colorScheme": "scheme-4",
             "padding": { "top": 32, "bottom": 32 },
             "navigationLinks": [
               { "label": "Каталог", "href": "/catalog" },
@@ -28,7 +28,7 @@
               { "label": "Доставка", "href": "/delivery" },
               { "label": "Контакты", "href": "/contacts" }
             ],
-            "menuColorScheme": "scheme-2",
+            "menuColorScheme": "scheme-4",
             "menuType": "dropdown",
             "actionButtons": {
               "showSearch": "true",
@@ -71,8 +71,8 @@
               "quickAdd": "false",
               "columns": 4
             },
-            "colorScheme": "scheme-3",
-            "padding": { "top": 120, "bottom": 120 }
+            "colorScheme": "scheme-4",
+            "padding": { "top": 100, "bottom": 100 }
           }
         },
         {
@@ -84,7 +84,7 @@
               "size": "small"
             },
             "colorScheme": "scheme-1",
-            "padding": { "top": 120, "bottom": 120 }
+            "padding": { "top": 100, "bottom": 100 }
           }
         },
         {
@@ -99,9 +99,9 @@
             },
             "heading": { "text": "Подпишитесь на нашу рассылку", "size": "small" },
             "text": { "content": "Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.", "size": "small" },
-            "colorScheme": "scheme-1",
+            "colorScheme": "scheme-4",
             "copyrightColorScheme": "scheme-1",
-            "padding": { "top": 120, "bottom": 120 },
+            "padding": { "top": 100, "bottom": 100 },
             "navigationColumn": {
               "title": "Навигация",
               "links": [

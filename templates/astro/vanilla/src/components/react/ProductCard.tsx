@@ -23,20 +23,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, href }) => {
   return (
     <a
       href={linkHref}
-      className="group flex flex-col cursor-pointer no-underline text-inherit"
-      style={{ gap: 20 }}
+      className="group flex flex-col cursor-pointer no-underline text-inherit gap-4 sm:gap-5 md:gap-6 lg:gap-[25px]"
     >
-      {/* Image — 1:1 square per Figma */}
+      {/* Image — portrait 318:515 per reference repo */}
       <div
-        className="overflow-hidden w-full"
-        style={{ aspectRatio: '1 / 1', borderRadius: 'var(--radius-card)', backgroundColor: '#FBFBFB' }}
+        className="overflow-hidden w-full bg-gray-100 rounded-lg sm:rounded-[8px] md:rounded-[10px]"
+        style={{ aspectRatio: '318 / 515' }}
       >
         {firstImage ? (
           <img
             src={firstImage.url}
             alt={firstImage.alt ?? product.title}
             loading="lazy"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center" style={{ color: 'rgb(var(--color-muted))' }}>
@@ -50,21 +49,24 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, href }) => {
       </div>
 
       {/* Product info */}
-      <div className="flex flex-col font-[family-name:var(--font-body)]" style={{ gap: 4 }}>
+      <div className="flex flex-col gap-2 sm:gap-2.5 md:gap-3 lg:gap-[10px] px-2 sm:px-3 md:px-4 lg:px-[15px]">
         <h3
-          className="font-normal"
-          style={{ fontSize: 16, lineHeight: 1.4, color: 'rgb(var(--color-foreground))', margin: 0 }}
+          className="text-base sm:text-lg md:text-xl lg:text-[24px] font-normal leading-[1.366]"
+          style={{ color: 'rgb(var(--color-foreground))', margin: 0, fontFamily: "'Manrope', sans-serif" }}
         >
           {product.title}
         </h3>
-        <div className="flex items-center" style={{ gap: 8 }}>
-          <span style={{ fontSize: 16, lineHeight: 'normal', color: 'rgb(var(--color-foreground))' }}>
+        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 lg:gap-[15px] flex-wrap">
+          <span
+            className="text-lg sm:text-xl md:text-2xl lg:text-[32px] font-normal leading-[1.366]"
+            style={{ color: 'rgb(var(--color-foreground))', fontFamily: "'Manrope', sans-serif" }}
+          >
             {formatMoney(product.price)}
           </span>
           {product.compareAtPrice != null && product.compareAtPrice > 0 && (
             <span
-              className="line-through"
-              style={{ fontSize: 14, lineHeight: 'normal', color: '#444444' }}
+              className="text-sm sm:text-base md:text-lg lg:text-[20px] font-medium line-through leading-[1.366]"
+              style={{ color: '#999999', fontFamily: "'Manrope', sans-serif" }}
             >
               {formatMoney(product.compareAtPrice)}
             </span>

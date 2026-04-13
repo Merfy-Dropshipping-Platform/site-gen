@@ -2,11 +2,12 @@
 @import "./tokens.css";
 
 @theme {
-  --font-family-sans: 'Arsenal', sans-serif;
+  --font-family-sans: 'Manrope', system-ui, sans-serif;
   --font-family-heading: var(--font-heading);
   --font-family-body: var(--font-body);
-  --color-primary: #26311c;
-  --color-gray: #78786e;
+  --color-primary: #292524;
+  --color-gray: #78716c;
+  --color-accent: #8b7355;
   --color-theme-background: rgb(var(--color-background));
   --color-theme-foreground: rgb(var(--color-foreground));
   --color-theme-primary: rgb(var(--color-primary));
@@ -26,6 +27,18 @@
 
 .font-body {
   font-family: var(--font-body);
+}
+
+.font-comfortaa {
+  font-family: 'Comfortaa', system-ui, sans-serif;
+}
+
+.font-manrope {
+  font-family: 'Manrope', system-ui, sans-serif;
+}
+
+.font-inter {
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
 /* ── Token-based utility classes ── */
@@ -383,11 +396,11 @@ video {
     font-family: var(--font-heading);
     line-height: 1.2;
   }
-  h1 { font-size: 20px; font-weight: 400; }
-  h2 { font-size: 20px; font-weight: 400; }
-  h3 { font-size: 20px; font-weight: 400; }
+  h1 { font-size: 48px; font-weight: 400; text-transform: uppercase; }
+  h2 { font-size: 32px; font-weight: 400; text-transform: uppercase; }
+  h3 { font-size: 24px; font-weight: 400; }
   h4 { font-size: 20px; font-weight: 400; }
-  h5 { font-size: 20px; font-weight: 400; }
+  h5 { font-size: 18px; font-weight: 400; }
 
   a {
     color: rgb(var(--color-primary));

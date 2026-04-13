@@ -23,11 +23,12 @@ export function AnnouncementBar({
   const sizeClass = sizeClasses[size] || sizeClasses.small;
 
   return (
-    <div className={`w-full flex items-center justify-center ${sizeClass}`} style={{ backgroundColor: '#26311c', color: '#ffffff' }}>
-      <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-16 xl:px-24 2xl:px-[300px]">
+    <div className={`w-full flex items-center justify-center ${sizeClass}`} style={{ backgroundColor: '#000000', color: '#ffffff' }}>
+      <div className="w-full max-w-[1920px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
         <a
           href={href}
-          className="block text-center hover:opacity-80 transition-opacity font-normal leading-tight font-body"
+          className="block text-center hover:opacity-80 transition-opacity font-normal leading-tight"
+          style={{ fontFamily: "'Manrope', sans-serif" }}
         >
           <span className="inline-block">{text}</span>
         </a>

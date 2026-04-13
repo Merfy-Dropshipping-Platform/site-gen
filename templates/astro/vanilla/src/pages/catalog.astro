@@ -17,19 +17,19 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 const branding = (siteConfig as any)?.branding ?? {};
 ---
 <BaseLayout title={`Каталог — ${meta?.title ?? 'Мой сайт'}`} description={meta?.description}>
-  <div class="catalog-page color-scheme-3 flex flex-col flex-1" style="background: #eeeeee; color: #26311c;">
-    <Header {...headerProps} colorScheme="scheme-2" />
+  <div class="catalog-page flex flex-col flex-1" style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));">
+    <Header {...headerProps} />
 
-    <main class="catalog-main flex-1 w-full max-w-[1920px] mx-auto" style="padding-top: 40px; padding-bottom: 60px;">
+    <main class="catalog-main flex-1 w-full max-w-[1920px] mx-auto py-8 sm:py-12 md:py-16 lg:py-20 xl:py-24 2xl:py-[100px]">
       <!-- Page title block -->
-      <div style="margin-bottom: 30px;">
+      <div class="mb-8 sm:mb-10 md:mb-12 lg:mb-16 xl:mb-20">
         <h1
-          class="font-heading text-[20px]"
-          style="line-height: 1.2; font-weight: 400; text-transform: uppercase; color: #26311c; margin: 0;"
+          class="text-xl sm:text-2xl md:text-3xl lg:text-[32px] font-normal uppercase leading-[1.115] font-comfortaa"
+          style="color: rgb(var(--color-foreground)); margin: 0;"
         >КАТАЛОГ</h1>
         <p
-          class="font-body text-[16px]"
-          style="line-height: 1.4; font-weight: 400; color: #999999; margin-top: 5px;"
+          class="text-sm sm:text-base md:text-lg lg:text-xl xl:text-[24px] font-normal leading-[1.366] font-manrope mt-1 sm:mt-2"
+          style="color: #999999;"
         >Здесь начинается персональный стиль</p>
       </div>
 
@@ -40,7 +40,7 @@ const branding = (siteConfig as any)?.branding ?? {};
       </noscript>
     </main>
 
-    <Footer {...footerProps} colorScheme="scheme-2" />
+    <Footer {...footerProps} />
   </div>
 </BaseLayout>
 

@@ -17,7 +17,7 @@ interface Props {
 }
 
 const {
-  newsletter = { enabled: 'true', heading: 'Подпишитесь на нашу рассылку', description: 'Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.', placeholder: 'email@example.com' },
+  newsletter = { enabled: 'true', heading: 'Подпишитесь на нашу рассылку', description: 'Введите электронную почту и получайте информацию нашего бренда.', placeholder: 'email@example.com' },
   heading,
   text,
   colorScheme,
@@ -37,47 +37,41 @@ const yearStr = copyright?.showYear === 'true' ? ` ${today.getFullYear()}` : '';
 const newsletterHeading = heading?.text || newsletter?.heading;
 const newsletterDescription = text?.content || newsletter?.description;
 
-// Padding from constructor (default 80px matching sectionPadding)
-const padTop = padding?.top ?? 80;
-const padBottom = padding?.bottom ?? 80;
-
 // Color scheme CSS classes
 const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
-const copyrightSchemeClass = copyrightColorScheme ? `color-scheme-${copyrightColorScheme.replace('scheme-', '')}` : '';
 ---
 
-<footer class={`w-full ${schemeClass}`} style={`background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}>
+<footer class={`w-full ${schemeClass}`} style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));">
   <div class="w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-[300px]">
     {showNewsletter && (
-      <section class="pb-[40px]">
-        <div class="max-w-[430px] mx-auto">
-          <div class="flex flex-col items-center gap-[8px] mb-[24px]">
-            <h2 class="text-[20px] font-light leading-[1.2] text-center" style="font-family: 'Urbanist', sans-serif; color: rgb(var(--color-foreground));">
+      <section class="pt-12 sm:pt-16 md:pt-20 lg:pt-24 xl:pt-28 2xl:pt-[100px] pb-10 sm:pb-12 md:pb-16 lg:pb-20 xl:pb-24">
+        <div class="max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-[809px] mx-auto">
+          <div class="flex flex-col items-center gap-3 sm:gap-4 lg:gap-[5px] mb-8 sm:mb-10 lg:mb-12">
+            <h2 class="text-2xl sm:text-3xl md:text-[32px] lg:text-[34px] xl:text-[36px] font-normal uppercase leading-[1.115] text-center font-comfortaa" style="color: rgb(var(--color-foreground));">
               {newsletterHeading}
             </h2>
             {newsletterDescription && (
-              <p class="text-[14px] font-normal leading-[1.4] text-center" style="font-family: 'Inter', sans-serif; color: #999999;">
+              <p class="text-base sm:text-lg md:text-xl lg:text-[22px] xl:text-[24px] font-normal leading-[1.366] text-center px-4 sm:px-0 font-manrope" style="color: #999999;">
                 {newsletterDescription}
               </p>
             )}
           </div>
-          <form class="w-full max-w-[430px] mx-auto h-[56px] border flex flex-row justify-between items-center px-[16px] gap-[8px]" style="background: rgb(var(--color-background)); border-color: rgb(var(--color-foreground)); border-radius: 4px;">
+          <form class="w-full max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-[600px] mx-auto h-auto sm:h-16 md:h-[70px] lg:h-[75px] xl:h-[80px] bg-white border border-[#999999] rounded-lg md:rounded-[10px] flex flex-col sm:flex-row justify-between items-stretch sm:items-center px-4 sm:px-5 lg:px-[25px] py-3 sm:py-2 lg:py-[10px] gap-3 sm:gap-2 lg:gap-[10px]">
             <input
               type="email"
               name="email"
               placeholder={newsletter?.placeholder || 'email@example.com'}
               required
-              class="flex-1 bg-transparent text-[14px] font-normal leading-[1.4] outline-none font-body"
-              style="color: rgb(var(--color-foreground)); opacity: 0.7;"
+              class="flex-1 bg-transparent text-lg sm:text-xl md:text-[22px] lg:text-2xl font-light leading-[1.366] outline-none placeholder:text-[#999999] focus:text-black font-manrope"
+              style="color: #999999;"
             />
             <button
               type="submit"
               aria-label="Подписаться"
-              class="w-5 h-5 flex items-center justify-center hover:scale-110 transition-transform"
-              style="color: rgb(var(--color-foreground));"
+              class="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center self-end sm:self-center hover:scale-110 transition-transform"
             >
               <svg class="w-full h-full" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="black" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </button>
           </form>
@@ -112,14 +106,14 @@ const copyrightSchemeClass = copyrightColorScheme ? `color-scheme-${copyrightCol
                 <div class="flex flex-col gap-2 sm:gap-3">
                   {socialColumn.contactFields.map((field) => (
                     <div class="flex flex-col">
-                      <span class="text-xs sm:text-sm font-normal text-theme-muted opacity-60 font-body">{field.label}</span>
-                      <span class="text-base sm:text-lg md:text-[18px] lg:text-[20px] font-normal text-theme-muted leading-[1.366] font-body">{field.value}</span>
+                      <span class="text-xs sm:text-sm font-normal opacity-60 font-manrope" style="color: #999999;">{field.label}</span>
+                      <span class="text-base sm:text-lg md:text-[18px] lg:text-[20px] font-normal leading-[1.366] font-manrope" style="color: #999999;">{field.value}</span>
                     </div>
                   ))}
                 </div>
               )}
               {!socialColumn.contactFields && socialColumn.email && (
-                <a href={`mailto:${socialColumn.email}`} class="text-base sm:text-lg md:text-[18px] lg:text-[20px] font-normal text-theme-muted leading-[1.366] hover:text-theme-foreground transition-colors font-body">
+                <a href={`mailto:${socialColumn.email}`} class="text-base sm:text-lg md:text-[18px] lg:text-[20px] font-normal leading-[1.366] hover:text-theme-foreground transition-colors font-manrope" style="color: #999999;">
                   {socialColumn.email}
                 </a>
               )}
@@ -137,8 +131,8 @@ const copyrightSchemeClass = copyrightColorScheme ? `color-scheme-${copyrightCol
     </section>
   </div>
 
-  <div class="w-full h-[64px] flex items-center justify-center" style="background: #000000; color: #ffffff;">
-    <p class="text-[16px] leading-[1.2] text-center px-4" style="font-family: 'Inter', sans-serif; font-weight: 300;">
+  <div class="w-full h-auto sm:h-20 md:h-24 lg:h-[100px] bg-black flex items-center justify-center py-6 sm:py-0">
+    <p class="text-sm sm:text-base md:text-lg lg:text-[20px] font-light text-white leading-[1.21] text-center px-4 sm:px-6 font-inter">
       &copy;{yearStr} {copyright?.companyName} Все права защищены. {copyright?.poweredBy}
     </p>
   </div>

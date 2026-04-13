@@ -3,7 +3,7 @@
   "label": "Vanilla — Decor & Interior",
   "version": "1.0.0",
   "category": "decor",
-  "description": "Olive green theme for decor and interior stores with Arsenal/Bitter fonts",
+  "description": "Warm brown theme for decor and interior stores with Comfortaa/Manrope fonts",
   "author": "Merfy",
   "features": {
     "variants": true,
@@ -21,62 +21,62 @@
     {
       "name": "colors",
       "settings": [
-        { "id": "color_primary", "type": "color", "label": "Primary color", "default": "#26311c" },
-        { "id": "color_background", "type": "color", "label": "Background", "default": "#eeeeee" },
-        { "id": "color_foreground", "type": "color", "label": "Text", "default": "#26311c" },
-        { "id": "color_border", "type": "color", "label": "Border", "default": "#c8c8c8" },
-        { "id": "color_button", "type": "color", "label": "Button", "default": "#3a4530" },
+        { "id": "color_primary", "type": "color", "label": "Primary color", "default": "#292524" },
+        { "id": "color_background", "type": "color", "label": "Background", "default": "#ffffff" },
+        { "id": "color_foreground", "type": "color", "label": "Text", "default": "#000000" },
+        { "id": "color_border", "type": "color", "label": "Border", "default": "#e5e7eb" },
+        { "id": "color_button", "type": "color", "label": "Button", "default": "#8b7355" },
         { "id": "color_button_text", "type": "color", "label": "Button text", "default": "#ffffff" }
       ]
     },
     {
       "name": "typography",
       "settings": [
-        { "id": "font_heading", "type": "font", "label": "Heading font", "default": "Bitter" },
-        { "id": "font_body", "type": "font", "label": "Body font", "default": "Arsenal" }
+        { "id": "font_heading", "type": "font", "label": "Heading font", "default": "Comfortaa" },
+        { "id": "font_body", "type": "font", "label": "Body font", "default": "Manrope" }
       ]
     },
     {
       "name": "layout",
       "settings": [
-        { "id": "radius_button", "type": "range", "label": "Button radius", "default": "0" },
-        { "id": "radius_card", "type": "range", "label": "Card radius", "default": "0" },
-        { "id": "page_width", "type": "text", "label": "Page width", "default": "1280px" }
+        { "id": "radius_button", "type": "range", "label": "Button radius", "default": "10" },
+        { "id": "radius_card", "type": "range", "label": "Card radius", "default": "10" },
+        { "id": "page_width", "type": "text", "label": "Page width", "default": "1920px" }
       ]
     }
   ],
   "color_schemes": [
     {
       "id": 1,
-      "name": "Dark olive",
-      "background": "#26311c",
+      "name": "Dark",
+      "background": "#000000",
       "foreground": "#ffffff",
-      "primary": "#eeeeee",
-      "border": "#445037"
+      "primary": "#ffffff",
+      "border": "#444444"
     },
     {
       "id": 2,
-      "name": "Medium olive",
-      "background": "#3a4530",
+      "name": "Warm brown",
+      "background": "#8b7355",
       "foreground": "#ffffff",
-      "primary": "#eeeeee",
-      "border": "#505c41"
+      "primary": "#ffffff",
+      "border": "#a08c73"
     },
     {
       "id": 3,
       "name": "Light gray",
-      "background": "#eeeeee",
-      "foreground": "#26311c",
-      "primary": "#3a4530",
-      "border": "#c8c8c8"
+      "background": "#f5f5f5",
+      "foreground": "#000000",
+      "primary": "#292524",
+      "border": "#e5e7eb"
     },
     {
       "id": 4,
       "name": "White",
       "background": "#ffffff",
-      "foreground": "#26311c",
-      "primary": "#3a4530",
-      "border": "#dcdcd7"
+      "foreground": "#000000",
+      "primary": "#292524",
+      "border": "#e5e7eb"
     }
   ]
 }

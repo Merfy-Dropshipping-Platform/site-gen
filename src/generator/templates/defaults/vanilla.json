@@ -144,5 +144,108 @@
       "zones": {}
     }
   },
-  "currentPageId": "home"
+  "currentPageId": "home",
+  "themeSettings": {
+    "logoUrl": null,
+    "bodyFont": "manrope",
+    "cartType": "drawer",
+    "logoWidth": 40,
+    "bodyWeight": 400,
+    "cardBorder": 0,
+    "cardRadius": 10,
+    "headingFont": "comfortaa",
+    "inputRadius": 10,
+    "mediaRadius": 10,
+    "buttonRadius": 10,
+    "colorSchemes": [
+      {
+        "id": "scheme-1",
+        "name": "Dark",
+        "text": "#FFFFFF",
+        "heading": "#FFFFFF",
+        "background": "#000000",
+        "primaryButton": {
+          "text": "#000000",
+          "border": "#ffffff",
+          "textHover": "#000000",
+          "background": "#ffffff",
+          "backgroundHover": "#e5e5e5"
+        },
+        "secondaryButton": {
+          "text": "#ffffff",
+          "border": "#ffffff",
+          "textHover": "#ffffff",
+          "background": "#000000",
+          "backgroundHover": "#1a1a1a"
+        }
+      },
+      {
+        "id": "scheme-2",
+        "name": "Warm brown",
+        "text": "#FFFFFF",
+        "heading": "#FFFFFF",
+        "background": "#8b7355",
+        "primaryButton": {
+          "text": "#8b7355",
+          "border": "#ffffff",
+          "textHover": "#8b7355",
+          "background": "#ffffff",
+          "backgroundHover": "#e5e5e5"
+        },
+        "secondaryButton": {
+          "text": "#ffffff",
+          "border": "#ffffff",
+          "textHover": "#ffffff",
+          "background": "#8b7355",
+          "backgroundHover": "#7a644a"
+        }
+      },
+      {
+        "id": "scheme-3",
+        "name": "Light gray",
+        "text": "#292524",
+        "heading": "#292524",
+        "background": "#f5f5f5",
+        "primaryButton": {
+          "text": "#ffffff",
+          "border": "#8b7355",
+          "textHover": "#ffffff",
+          "background": "#8b7355",
+          "backgroundHover": "#7a644a"
+        },
+        "secondaryButton": {
+          "text": "#292524",
+          "border": "#292524",
+          "textHover": "#292524",
+          "background": "#f5f5f5",
+          "backgroundHover": "#e5e5e5"
+        }
+      },
+      {
+        "id": "scheme-4",
+        "name": "White",
+        "text": "#292524",
+        "heading": "#292524",
+        "background": "#ffffff",
+        "primaryButton": {
+          "text": "#ffffff",
+          "border": "#8b7355",
+          "textHover": "#ffffff",
+          "background": "#8b7355",
+          "backgroundHover": "#7a644a"
+        },
+        "secondaryButton": {
+          "text": "#292524",
+          "border": "#292524",
+          "textHover": "#292524",
+          "background": "#ffffff",
+          "backgroundHover": "#f5f5f5"
+        }
+      }
+    ],
+    "headingWeight": 400,
+    "sectionPadding": 100,
+    "productCardStyle": "standard",
+    "productCardAlignment": "left"
+  }
 }

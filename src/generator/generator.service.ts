@@ -183,7 +183,9 @@ export class SiteGeneratorService {
           if (manifest.features) {
             themeFeatures = manifest.features;
           }
-          if (manifest.settings?.colorSchemes) {
+          if (Array.isArray(manifest.color_schemes)) {
+            themeColorSchemes = manifest.color_schemes;
+          } else if (manifest.settings?.colorSchemes) {
             themeColorSchemes = manifest.settings.colorSchemes;
           }
           if (Array.isArray(manifest.settings_schema)) {

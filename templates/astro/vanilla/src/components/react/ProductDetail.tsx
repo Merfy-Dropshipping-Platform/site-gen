@@ -112,8 +112,8 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
                   onClick={() => setSelectedImageIndex(index)}
                   className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 transition-colors ${
                     index === selectedImageIndex
-                      ? 'border-black'
-                      : 'border-transparent hover:border-gray-300'
+                      ? 'border-current'
+                      : 'border-transparent hover:border-current/30'
                   }`}
                 >
                   <img
@@ -160,10 +160,10 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
                     disabled={!variant.available}
                     className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
                       selectedVariant?.id === variant.id
-                        ? 'border-black bg-black text-white'
+                        ? 'border-current'
                         : variant.available
-                          ? 'border-theme bg-white text-theme-foreground hover:border-theme-foreground'
-                          : 'border-theme bg-gray-50 text-gray-300 opacity-50 cursor-not-allowed'
+                          ? 'border-theme text-theme-foreground hover:border-theme-foreground'
+                          : 'border-theme opacity-50 cursor-not-allowed'
                     }`}
                   >
                     {variant.title}
@@ -201,13 +201,15 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
           <div className="flex flex-col sm:flex-row gap-3 mt-2">
             <button
               onClick={handleAddToCart}
-              className="flex-1 px-6 py-3.5 text-sm font-medium rounded-lg border border-theme bg-white text-theme-foreground hover:border-theme-primary hover:text-theme-primary transition-all"
+              className="flex-1 px-6 py-3.5 text-sm font-medium rounded-lg border border-theme text-theme-foreground hover:opacity-80 transition-all"
+              style={{ background: 'rgb(var(--color-background))', borderColor: 'rgb(var(--color-border))' }}
             >
               Добавить в корзину
             </button>
             <button
               onClick={handleBuyNow}
-              className="flex-1 px-6 py-3.5 text-sm font-medium rounded-lg border-none bg-theme-primary text-white hover:opacity-90 transition-all"
+              className="flex-1 px-6 py-3.5 text-sm font-medium rounded-lg border-none hover:opacity-90 transition-all"
+              style={{ background: 'rgb(var(--color-button))', color: 'rgb(var(--color-button-text))' }}
             >
               Купить сейчас
             </button>

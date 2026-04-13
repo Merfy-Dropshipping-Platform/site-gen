@@ -224,7 +224,7 @@ export function Footer({
 
       {/* Copyright Bar */}
       <div className="w-full h-auto sm:h-20 md:h-24 lg:h-[100px] bg-black flex items-center justify-center py-6 sm:py-0">
-        <p className="text-sm sm:text-base md:text-lg lg:text-[20px] font-light text-white leading-[1.21] text-center px-4 sm:px-6 font-inter">
+        <p className="text-sm sm:text-base md:text-lg lg:text-[20px] font-light text-white leading-[1.21] text-center px-4 sm:px-6 font-body">
           &copy;{yearStr} {copyright?.companyName} All rights reserved.{" "}
           {copyright?.poweredBy}
         </p>

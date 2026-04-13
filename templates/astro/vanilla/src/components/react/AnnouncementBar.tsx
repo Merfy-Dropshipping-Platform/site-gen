@@ -28,7 +28,7 @@ export function AnnouncementBar({
         <a
           href={href}
           className="block text-center hover:opacity-80 transition-opacity font-normal leading-tight"
-          style={{ fontFamily: "'Manrope', sans-serif" }}
+          style={{ fontFamily: "var(--font-body)" }}
         >
           <span className="inline-block">{text}</span>
         </a>

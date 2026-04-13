@@ -37,16 +37,16 @@ const hasImage = image && !image.includes('placeholder');
 	</a>
 	<div class="flex flex-col gap-2 sm:gap-2.5 md:gap-3 lg:gap-[10px] px-2 sm:px-3 md:px-4 lg:px-[15px]">
 		<a href={href} class="no-underline text-inherit">
-			<h3 class="text-base sm:text-lg md:text-xl lg:text-[24px] font-normal text-theme-foreground leading-[1.366] font-manrope line-clamp-2">
+			<h3 class="text-base sm:text-lg md:text-xl lg:text-[24px] font-normal text-theme-foreground leading-[1.366] font-body line-clamp-2">
 				{name}
 			</h3>
 		</a>
 		<div class="flex items-center gap-2 sm:gap-3 md:gap-4 lg:gap-[15px] flex-wrap">
-			<span class="text-lg sm:text-xl md:text-2xl lg:text-[32px] font-normal text-theme-foreground leading-[1.366] font-manrope">
+			<span class="text-lg sm:text-xl md:text-2xl lg:text-[32px] font-normal text-theme-foreground leading-[1.366] font-body">
 				{price}
 			</span>
 			{oldPrice && (
-				<span class="text-sm sm:text-base md:text-lg lg:text-[20px] font-medium text-[#999999] line-through leading-[1.366] font-manrope">
+				<span class="text-sm sm:text-base md:text-lg lg:text-[20px] font-medium text-[#999999] line-through leading-[1.366] font-body">
 					{oldPrice}
 				</span>
 			)}
@@ -54,7 +54,7 @@ const hasImage = image && !image.includes('placeholder');
 		{quickAdd && id && (
 			<button
 				type="button"
-				class="add-to-cart-btn mt-2 w-full py-2 px-4 text-sm font-normal rounded-[10px] hover:opacity-90 transition-colors font-manrope"
+				class="add-to-cart-btn mt-2 w-full py-2 px-4 text-sm font-normal rounded-[10px] hover:opacity-90 transition-colors font-body"
 				style="background: rgb(var(--color-button)); color: rgb(var(--color-button-text));"
 				data-product-id={id}
 				data-stock={quantity != null ? quantity : undefined}

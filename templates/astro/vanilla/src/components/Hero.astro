@@ -97,7 +97,7 @@ const singleBgImage = backgroundImage || backgroundImage2;
 const isContainer = container === 'true';
 ---
 
-<section class="relative w-full overflow-hidden bg-white hero-section" style={`--h-base:${sv.base}px;--h-sm:${sv.sm}px;--h-md:${sv.md}px;--h-lg:${sv.lg}px;--h-xl:${sv.xl}px;--h-xxl:${sv.xxl}px;`} aria-labelledby="hero-title">
+<section class="relative w-full overflow-hidden hero-section" style={`--h-base:${sv.base}px;--h-sm:${sv.sm}px;--h-md:${sv.md}px;--h-lg:${sv.lg}px;--h-xl:${sv.xl}px;--h-xxl:${sv.xxl}px;`} aria-labelledby="hero-title">
   {/* Background Image(s) */}
   {hasBothImages ? (
     <div class="absolute inset-0 flex">
@@ -188,7 +188,7 @@ const isContainer = container === 'true';
           {primaryButton?.text && (
             <a
               href={primaryLink}
-              class="flex items-center justify-center gap-2 sm:gap-[8px] md:gap-[10px] font-normal font-body uppercase leading-[1.366] hover:bg-gray-100 transition-colors h-12 sm:h-14 md:h-16 lg:h-[70px] xl:h-[80px] px-6 sm:px-8 md:px-[25px] lg:px-[30px] xl:px-[35px] text-sm sm:text-base md:text-lg lg:text-xl xl:text-[24px] rounded-lg sm:rounded-[8px] md:rounded-[10px]"
+              class="flex items-center justify-center gap-2 sm:gap-[8px] md:gap-[10px] font-normal font-body uppercase leading-[1.366] hover:opacity-80 transition-colors h-12 sm:h-14 md:h-16 lg:h-[70px] xl:h-[80px] px-6 sm:px-8 md:px-[25px] lg:px-[30px] xl:px-[35px] text-sm sm:text-base md:text-lg lg:text-xl xl:text-[24px] rounded-lg sm:rounded-[8px] md:rounded-[10px]"
               style="background-color: rgb(var(--color-button)); color: rgb(var(--color-button-text));"
             >
               {primaryButton.text}
@@ -197,7 +197,7 @@ const isContainer = container === 'true';
           {secondaryButton?.text && (
             <a
               href={secondaryLink}
-              class="flex items-center justify-center gap-2 sm:gap-[8px] md:gap-[10px] font-normal font-body uppercase leading-[1.366] hover:bg-gray-100 transition-colors h-12 sm:h-14 md:h-16 lg:h-[70px] xl:h-[80px] px-6 sm:px-8 md:px-[25px] lg:px-[30px] xl:px-[35px] text-sm sm:text-base md:text-lg lg:text-xl xl:text-[24px] rounded-lg sm:rounded-[8px] md:rounded-[10px]"
+              class="flex items-center justify-center gap-2 sm:gap-[8px] md:gap-[10px] font-normal font-body uppercase leading-[1.366] hover:opacity-80 transition-colors h-12 sm:h-14 md:h-16 lg:h-[70px] xl:h-[80px] px-6 sm:px-8 md:px-[25px] lg:px-[30px] xl:px-[35px] text-sm sm:text-base md:text-lg lg:text-xl xl:text-[24px] rounded-lg sm:rounded-[8px] md:rounded-[10px]"
               style="background-color: rgb(var(--color-secondary, 245 245 245)); color: rgb(var(--color-foreground)); border: 1px solid rgb(var(--color-border));"
             >
               {secondaryButton.text}

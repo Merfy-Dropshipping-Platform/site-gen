@@ -17,7 +17,7 @@ interface Props {
 }
 
 const {
-  newsletter = { enabled: 'true', heading: 'Подпишитесь на нашу рассылку', description: 'Введите электронную почту и получайте информацию нашего бренда.', placeholder: 'rose@example.ru' },
+  newsletter = { enabled: 'true', heading: 'Подпишитесь на нашу рассылку', description: 'Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.', placeholder: 'email@example.com' },
   heading,
   text,
   colorScheme,
@@ -25,8 +25,8 @@ const {
   padding,
   navigationColumn = { title: 'Навигация', links: [{ label: 'Главная', href: '/' }, { label: 'Каталог', href: '#popular' }, { label: 'Контакты', href: '#' }] },
   informationColumn = { title: 'Информация', links: [{ label: 'Политика доставки', href: '#' }, { label: 'Политика возврата', href: '#' }, { label: 'Условия обслуживания', href: '#' }] },
-  socialColumn = { title: 'Социальные сети', email: 'rose@example.ru', socialLinks: [{ platform: 'Facebook', href: '#' }, { platform: 'Instagram', href: '#' }, { platform: 'Twitter', href: '#' }] },
-  copyright = { companyName: 'Rose Theme', showYear: 'true', poweredBy: 'Powered by Merfy' },
+  socialColumn = { title: 'Социальные сети', email: 'info@example.ru', socialLinks: [{ platform: 'VK', href: '#' }, { platform: 'Telegram', href: '#' }] },
+  copyright = { companyName: 'Мой магазин', showYear: 'true', poweredBy: 'Powered by Merfy' },
 } = Astro.props;
 
 const today = new Date();
@@ -65,7 +65,7 @@ const copyrightSchemeClass = copyrightColorScheme ? `color-scheme-${copyrightCol
             <input
               type="email"
               name="email"
-              placeholder={newsletter?.placeholder || 'rose@example.ru'}
+              placeholder={newsletter?.placeholder || 'email@example.com'}
               required
               class="flex-1 bg-transparent text-lg sm:text-xl md:text-[22px] lg:text-2xl font-light leading-[1.366] outline-none font-body"
               style="color: rgb(var(--color-foreground)); opacity: 0.7;"

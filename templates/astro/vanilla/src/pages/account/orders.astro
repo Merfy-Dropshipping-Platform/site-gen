@@ -16,8 +16,8 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 <BaseLayout title={`Мои заказы — ${meta?.title ?? 'Мой сайт'}`}>
   <Header {...headerProps} />
 
-  <main class="flex-1 max-w-[960px] mx-auto px-5 py-10 w-full font-manrope">
-    <h1 class="text-3xl font-comfortaa mb-8">Мои заказы</h1>
+  <main class="flex-1 max-w-[960px] mx-auto px-5 py-10 w-full font-body">
+    <h1 class="text-3xl font-heading mb-8">Мои заказы</h1>
 
     <div class="md:flex md:gap-10">
       <AccountNav active="orders" />

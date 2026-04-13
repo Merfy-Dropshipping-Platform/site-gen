@@ -77,7 +77,7 @@ function createDrawerHTML() {
       border-bottom: 1px solid #f3f4f6;
     }
     .cart-drawer-title {
-      font-family: 'Comfortaa', sans-serif;
+      font-family: var(--font-heading, system-ui);
       font-size: 20px;
       font-weight: 500;
       margin: 0;
@@ -106,7 +106,7 @@ function createDrawerHTML() {
       text-align: center;
       padding: 48px 0;
       color: #9ca3af;
-      font-family: 'Manrope', sans-serif;
+      font-family: var(--font-body, system-ui);
     }
     .cart-drawer-empty p {
       margin-bottom: 16px;
@@ -125,7 +125,7 @@ function createDrawerHTML() {
       gap: 12px;
       padding: 12px 0;
       border-bottom: 1px solid #f3f4f6;
-      font-family: 'Manrope', sans-serif;
+      font-family: var(--font-body, system-ui);
     }
     .cart-drawer-item:last-child {
       border-bottom: none;
@@ -213,7 +213,7 @@ function createDrawerHTML() {
       justify-content: space-between;
       align-items: center;
       margin-bottom: 16px;
-      font-family: 'Manrope', sans-serif;
+      font-family: var(--font-body, system-ui);
       font-size: 16px;
     }
     .cart-drawer-total-value {
@@ -229,7 +229,7 @@ function createDrawerHTML() {
       color: #fff;
       text-align: center;
       border-radius: 12px;
-      font-family: 'Manrope', sans-serif;
+      font-family: var(--font-body, system-ui);
       font-size: 15px;
       font-weight: 600;
       text-decoration: none;
@@ -244,7 +244,7 @@ function createDrawerHTML() {
       text-align: center;
       margin-top: 12px;
       color: #6b7280;
-      font-family: 'Manrope', sans-serif;
+      font-family: var(--font-body, system-ui);
       font-size: 14px;
       text-decoration: none;
     }

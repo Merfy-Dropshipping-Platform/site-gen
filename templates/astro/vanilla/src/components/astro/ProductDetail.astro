@@ -111,7 +111,7 @@ const showVariants = props.variants?.enabled !== 'false' && (props.variants?.ite
           </div>
         )}
         {showBadge && (
-          <span class="absolute top-4 left-4 bg-[var(--rose-600,#e11d48)] text-white px-3.5 py-1.5 rounded-md text-sm font-medium">
+          <span class="absolute top-4 left-4 bg-theme-primary text-white px-3.5 py-1.5 rounded-md text-sm font-medium">
             {props.badge!.text}
           </span>
         )}
@@ -145,7 +145,7 @@ const showVariants = props.variants?.enabled !== 'false' && (props.variants?.ite
       {showPrice && (priceDisplay || oldPriceDisplay) && (
         <div class="flex items-center gap-3">
           {priceDisplay && (
-            <span class="text-xl sm:text-2xl font-semibold text-[var(--rose-600,#e11d48)]">
+            <span class="text-xl sm:text-2xl font-semibold text-theme-primary">
               {priceDisplay}
             </span>
           )}
@@ -178,7 +178,7 @@ const showVariants = props.variants?.enabled !== 'false' && (props.variants?.ite
             </button>
           )}
           {showBuyNow && (
-            <button class="flex-1 px-6 py-3.5 text-sm font-medium rounded-lg border-none bg-[var(--rose-600,#e11d48)] text-white hover:bg-[var(--rose-700,#be123c)] transition-all">
+            <button class="flex-1 px-6 py-3.5 text-sm font-medium rounded-lg border-none bg-theme-primary text-white hover:opacity-90 transition-all">
               {buyNowText}
             </button>
           )}

@@ -42,7 +42,7 @@ export function Footer({
     enabled: "true",
     heading: "Subscribe to our newsletter",
     description: "Enter your email to receive updates from our brand.",
-    placeholder: "rose@example.ru",
+    placeholder: "email@example.com",
   },
   navigationColumn = {
     title: "Navigation",
@@ -62,7 +62,7 @@ export function Footer({
   },
   socialColumn = {
     title: "Social Networks",
-    email: "rose@example.ru",
+    email: "email@example.com",
     socialLinks: [
       { platform: "Facebook", href: "#" },
       { platform: "Instagram", href: "#" },
@@ -70,7 +70,7 @@ export function Footer({
     ],
   },
   copyright = {
-    companyName: "Rose Theme",
+    companyName: "Мой магазин",
     showYear: "true",
     poweredBy: "Powered by Merfy",
   },
@@ -100,7 +100,7 @@ export function Footer({
                 <input
                   type="email"
                   name="email"
-                  placeholder={newsletter?.placeholder || "rose@example.ru"}
+                  placeholder={newsletter?.placeholder || "email@example.com"}
                   required
                   className="flex-1 bg-transparent text-lg sm:text-xl md:text-[22px] lg:text-2xl font-light text-theme-muted leading-[1.366] outline-none placeholder:text-theme-muted focus:text-theme-foreground font-body"
                 />
@@ -207,7 +207,8 @@ export function Footer({
                                 cx="20"
                                 cy="20"
                                 r="19.5"
-                                stroke="#999999"
+                                stroke="currentColor"
+                                opacity="0.4"
                               />
                             </svg>
                           </a>

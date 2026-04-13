@@ -16,7 +16,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 <BaseLayout title={`Заказ — ${meta?.title ?? 'Мой сайт'}`}>
   <Header {...headerProps} />
 
-  <main class="flex-1 max-w-[960px] mx-auto px-5 py-10 w-full font-manrope">
+  <main class="flex-1 max-w-[960px] mx-auto px-5 py-10 w-full font-body">
     <div class="mb-6">
       <a href="/account/orders" class="text-sm auth-link inline-flex items-center gap-1">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
@@ -24,7 +24,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
       </a>
     </div>
 
-    <h1 class="text-3xl font-comfortaa mb-8" id="order-title">Заказ</h1>
+    <h1 class="text-3xl font-heading mb-8" id="order-title">Заказ</h1>
 
     <div class="md:flex md:gap-10">
       <AccountNav active="orders" />
@@ -146,12 +146,12 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
               '<span class="text-sm text-gray-500">' + date + '</span>' +
               '<span class="text-xs px-2.5 py-1 rounded-full font-medium ' + statusClass + '">' + status + '</span>' +
             '</div>' +
-            '<div class="text-2xl font-comfortaa">' + formatPrice(order.totalCents) + '</div>' +
+            '<div class="text-2xl font-heading">' + formatPrice(order.totalCents) + '</div>' +
           '</div>';
 
         // Items table
         var itemsHtml = '<div class="bg-white p-5 rounded-2xl shadow-sm">' +
-          '<h3 class="font-comfortaa text-lg mb-4">\u0422\u043e\u0432\u0430\u0440\u044b</h3>';
+          '<h3 class="font-heading text-lg mb-4">\u0422\u043e\u0432\u0430\u0440\u044b</h3>';
         if (order.items && order.items.length) {
           itemsHtml += '<div class="divide-y">';
           order.items.forEach(function(item) {
@@ -188,7 +188,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 
         // Order totals breakdown
         var totalsHtml = '<div class="bg-white p-5 rounded-2xl shadow-sm">' +
-          '<h3 class="font-comfortaa text-lg mb-4">\u0418\u0442\u043e\u0433\u043e</h3>' +
+          '<h3 class="font-heading text-lg mb-4">\u0418\u0442\u043e\u0433\u043e</h3>' +
           '<div class="space-y-2 text-sm">';
 
         if (order.subtotalCents != null) {
@@ -212,7 +212,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
         var customerHtml = '';
         if (order.customerName || order.customerEmail || order.customerPhone) {
           customerHtml = '<div class="bg-white p-5 rounded-2xl shadow-sm">' +
-            '<h3 class="font-comfortaa text-lg mb-3">\u041f\u043e\u043a\u0443\u043f\u0430\u0442\u0435\u043b\u044c</h3>' +
+            '<h3 class="font-heading text-lg mb-3">\u041f\u043e\u043a\u0443\u043f\u0430\u0442\u0435\u043b\u044c</h3>' +
             '<div class="space-y-1 text-sm">';
           if (order.customerName) {
             customerHtml += '<p class="text-gray-700">' + order.customerName + '</p>';
@@ -234,7 +234,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
           if (addrParts.length > 0) {
             addressHtml =
               '<div class="bg-white p-5 rounded-2xl shadow-sm">' +
-                '<h3 class="font-comfortaa text-lg mb-3">\u0410\u0434\u0440\u0435\u0441 \u0434\u043e\u0441\u0442\u0430\u0432\u043a\u0438</h3>' +
+                '<h3 class="font-heading text-lg mb-3">\u0410\u0434\u0440\u0435\u0441 \u0434\u043e\u0441\u0442\u0430\u0432\u043a\u0438</h3>' +
                 '<p class="text-gray-700 text-sm">' + addrParts.join(', ') + '</p>' +
                 (addr.postalCode ? '<p class="text-gray-500 text-sm mt-1">' + addr.postalCode + '</p>' : '') +
               '</div>';
@@ -257,7 +257,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
           var dStatusName = order.deliveryStatusName || order.deliveryStatus;
 
           deliveryHtml = '<div class="bg-white p-5 rounded-2xl shadow-sm">' +
-            '<h3 class="font-comfortaa text-lg mb-3">\u0414\u043e\u0441\u0442\u0430\u0432\u043a\u0430 \u0421\u0414\u042d\u041a</h3>' +
+            '<h3 class="font-heading text-lg mb-3">\u0414\u043e\u0441\u0442\u0430\u0432\u043a\u0430 \u0421\u0414\u042d\u041a</h3>' +
             '<div class="space-y-2 text-sm">';
 
           deliveryHtml += '<div class="flex items-center justify-between">' +
@@ -304,7 +304,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
         // T030: Pickup delivery info
         if (!deliveryHtml && order.deliveryType === 'pickup') {
           deliveryHtml = '<div class="bg-white p-5 rounded-2xl shadow-sm">' +
-            '<h3 class="font-comfortaa text-lg mb-3">\u0421\u0430\u043c\u043e\u0432\u044b\u0432\u043e\u0437</h3>' +
+            '<h3 class="font-heading text-lg mb-3">\u0421\u0430\u043c\u043e\u0432\u044b\u0432\u043e\u0437</h3>' +
             '<div class="space-y-2 text-sm">';
           if (order.pickupAddress) {
             deliveryHtml += '<div class="flex items-start gap-2">' +
@@ -320,7 +320,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
         // T031: Custom delivery profile info
         if (!deliveryHtml && order.deliveryType && order.deliveryType !== 'pickup' && !order.deliveryType.includes('cdek')) {
           deliveryHtml = '<div class="bg-white p-5 rounded-2xl shadow-sm">' +
-            '<h3 class="font-comfortaa text-lg mb-3">\u0414\u043e\u0441\u0442\u0430\u0432\u043a\u0430</h3>' +
+            '<h3 class="font-heading text-lg mb-3">\u0414\u043e\u0441\u0442\u0430\u0432\u043a\u0430</h3>' +
             '<div class="space-y-2 text-sm">';
           deliveryHtml += '<div class="flex items-center justify-between">' +
             '<span class="text-gray-500">\u0421\u043f\u043e\u0441\u043e\u0431</span>' +
@@ -345,7 +345,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
         var historyHtml = '';
         if (order.statusHistory && order.statusHistory.length) {
           historyHtml = '<div class="bg-white p-5 rounded-2xl shadow-sm">' +
-            '<h3 class="font-comfortaa text-lg mb-4">\u0418\u0441\u0442\u043e\u0440\u0438\u044f</h3>' +
+            '<h3 class="font-heading text-lg mb-4">\u0418\u0441\u0442\u043e\u0440\u0438\u044f</h3>' +
             '<div class="relative pl-6">' +
             '<div class="absolute left-[7px] top-2 bottom-2 w-px bg-gray-200"></div>';
 
@@ -392,7 +392,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
             '<div class="fixed inset-0 bg-black/40" id="cancel-modal-overlay"></div>' +
             '<div class="fixed inset-0 flex items-center justify-center p-4">' +
               '<div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 relative">' +
-                '<h3 class="font-comfortaa text-lg mb-2">\u041e\u0442\u043c\u0435\u043d\u0430 \u0437\u0430\u043a\u0430\u0437\u0430</h3>' +
+                '<h3 class="font-heading text-lg mb-2">\u041e\u0442\u043c\u0435\u043d\u0430 \u0437\u0430\u043a\u0430\u0437\u0430</h3>' +
                 '<p class="text-sm text-gray-500 mb-4">\u041f\u043e\u0441\u043b\u0435 \u043e\u0442\u043c\u0435\u043d\u044b \u0432\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u044c \u0437\u0430\u043a\u0430\u0437 \u043d\u0435\u0432\u043e\u0437\u043c\u043e\u0436\u043d\u043e.</p>' +
                 '<textarea id="cancel-reason" rows="3" maxlength="500" required ' +
                   'placeholder="\u0423\u043a\u0430\u0436\u0438\u0442\u0435 \u043f\u0440\u0438\u0447\u0438\u043d\u0443 \u043e\u0442\u043c\u0435\u043d\u044b" ' +

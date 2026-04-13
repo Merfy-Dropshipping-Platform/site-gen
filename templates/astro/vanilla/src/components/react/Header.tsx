@@ -18,7 +18,7 @@ interface HeaderProps {
 }
 
 export function Header({
-  siteTitle = "Rose Theme",
+  siteTitle = "Мой магазин",
   logo = "/logo.svg",
   navigationLinks = [
     { label: "Glavnaya", href: "/", submenu: [] },

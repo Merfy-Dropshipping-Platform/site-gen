@@ -35,7 +35,7 @@ const positionMap: Record<string, string> = {
 };
 
 export function HeroBanner({
-  heading = { text: "Rose", size: "medium" },
+  heading = { text: "Добро пожаловать", size: "medium" },
   text = { content: "Your style, your individuality", size: "medium" },
   primaryButton = { text: "View catalog", link: { href: "#collections" } },
   secondaryButton = { text: "", link: { href: "#" } },

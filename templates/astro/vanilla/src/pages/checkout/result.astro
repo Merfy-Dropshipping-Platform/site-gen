@@ -12,7 +12,7 @@ const footerBlock = blocks.find((b: any) => b.type === 'Footer');
 <BaseLayout title={`Результат оплаты — ${meta?.title ?? 'Мой магазин'}`}>
   <Header {...(headerBlock?.props ?? {})} />
 
-  <main class="flex-1 max-w-[600px] mx-auto px-5 py-[60px] w-full text-center font-manrope">
+  <main class="flex-1 max-w-[600px] mx-auto px-5 py-[60px] w-full text-center font-body">
     <!-- Загрузка -->
     <div class="result-section active" id="result-loading">
       <div class="w-12 h-12 border-[3px] border-gray-200 rounded-full animate-spin mx-auto mb-6" style="border-top-color: rgb(var(--color-primary))"></div>
@@ -25,7 +25,7 @@ const footerBlock = blocks.find((b: any) => b.type === 'Footer');
         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
         <polyline points="22 4 12 14.01 9 11.01"/>
       </svg>
-      <h1 class="text-3xl font-comfortaa mb-4">Спасибо за заказ!</h1>
+      <h1 class="text-3xl font-heading mb-4">Спасибо за заказ!</h1>
       <p class="text-lg text-gray-600 mb-8">Ваш заказ успешно оплачен. Мы отправим подтверждение на вашу почту.</p>
       <div class="inline-block bg-rose-50 py-3 px-6 rounded-xl text-lg font-medium mb-8" style="color: rgb(var(--color-primary))" id="order-number"></div>
       <br><br>
@@ -38,7 +38,7 @@ const footerBlock = blocks.find((b: any) => b.type === 'Footer');
         <circle cx="12" cy="12" r="10"/>
         <polyline points="12 6 12 12 16 14"/>
       </svg>
-      <h1 class="text-3xl font-comfortaa mb-4">Платёж обрабатывается</h1>
+      <h1 class="text-3xl font-heading mb-4">Платёж обрабатывается</h1>
       <p class="text-lg text-gray-600 mb-8">Ваш платёж ещё обрабатывается. Мы отправим уведомление, когда оплата будет подтверждена.</p>
       <a href="/" class="btn-primary inline-flex items-center justify-center py-4 px-8 rounded-xl font-medium transition-colors no-underline">Вернуться в магазин</a>
     </div>
@@ -50,7 +50,7 @@ const footerBlock = blocks.find((b: any) => b.type === 'Footer');
         <line x1="15" y1="9" x2="9" y2="15"/>
         <line x1="9" y1="9" x2="15" y2="15"/>
       </svg>
-      <h1 class="text-3xl font-comfortaa mb-4">Оплата не прошла</h1>
+      <h1 class="text-3xl font-heading mb-4">Оплата не прошла</h1>
       <p class="text-lg text-gray-600 mb-8" id="error-message">К сожалению, платёж не был завершён. Попробуйте ещё раз.</p>
       <a href="/" class="btn-primary inline-flex items-center justify-center py-4 px-8 rounded-xl font-medium transition-colors no-underline">Вернуться в магазин</a>
     </div>

@@ -16,8 +16,8 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 <BaseLayout title={`Профиль — ${meta?.title ?? 'Мой сайт'}`}>
   <Header {...headerProps} />
 
-  <main class="flex-1 max-w-[960px] mx-auto px-5 py-10 w-full font-manrope">
-    <h1 class="text-3xl font-comfortaa mb-8">Профиль</h1>
+  <main class="flex-1 max-w-[960px] mx-auto px-5 py-10 w-full font-body">
+    <h1 class="text-3xl font-heading mb-8">Профиль</h1>
 
     <div class="md:flex md:gap-10">
       <AccountNav active="profile" />
@@ -44,7 +44,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
               class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none auth-input-focus">
           </div>
 
-          <h3 class="font-comfortaa text-lg pt-4">Адрес по умолчанию</h3>
+          <h3 class="font-heading text-lg pt-4">Адрес по умолчанию</h3>
 
           <div>
             <label for="addr-city" class="block mb-2 font-medium text-gray-700">Город</label>

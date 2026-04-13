@@ -1,9 +1,9 @@
 {
-  "name": "rose",
-  "label": "Rose — Fashion & Lifestyle",
+  "name": "vanilla",
+  "label": "Vanilla — Decor & Interior",
   "version": "1.0.0",
-  "category": "fashion",
-  "description": "Elegant fashion and lifestyle theme with Comfortaa + Manrope fonts",
+  "category": "decor",
+  "description": "Warm beige neutral theme for decor and interior stores with system-ui fonts",
   "author": "Merfy",
   "features": {
     "variants": true,
@@ -12,32 +12,35 @@
     "colorSwatches": true,
     "filterSidebar": true,
     "newsletter": true,
-    "wishlist": false
+    "wishlist": false,
+    "blog": true,
+    "rss": true
   },
-  "pages": ["index", "product", "collection", "cart"],
+  "pages": ["index", "product", "collection", "cart", "blog"],
   "settings_schema": [
     {
       "name": "colors",
       "settings": [
-        { "id": "color_primary", "type": "color", "label": "Primary color", "default": "#e11d48" },
+        { "id": "color_primary", "type": "color", "label": "Primary color", "default": "#292524" },
         { "id": "color_background", "type": "color", "label": "Background", "default": "#ffffff" },
-        { "id": "color_foreground", "type": "color", "label": "Text", "default": "#121212" },
-        { "id": "color_border", "type": "color", "label": "Border", "default": "#e5e7eb" },
+        { "id": "color_foreground", "type": "color", "label": "Text", "default": "#292524" },
+        { "id": "color_border", "type": "color", "label": "Border", "default": "#d6d3d1" },
+        { "id": "color_button", "type": "color", "label": "Button", "default": "#8b7355" },
         { "id": "color_button_text", "type": "color", "label": "Button text", "default": "#ffffff" }
       ]
     },
     {
       "name": "typography",
       "settings": [
-        { "id": "font_heading", "type": "font", "label": "Heading font", "default": "Comfortaa" },
-        { "id": "font_body", "type": "font", "label": "Body font", "default": "Manrope" }
+        { "id": "font_heading", "type": "font", "label": "Heading font", "default": "system-ui" },
+        { "id": "font_body", "type": "font", "label": "Body font", "default": "system-ui" }
       ]
     },
     {
       "name": "layout",
       "settings": [
-        { "id": "radius_button", "type": "range", "label": "Button radius", "default": "9999px" },
-        { "id": "radius_card", "type": "range", "label": "Card radius", "default": "1rem" },
+        { "id": "radius_button", "type": "range", "label": "Button radius", "default": "8px" },
+        { "id": "radius_card", "type": "range", "label": "Card radius", "default": "10px" },
         { "id": "page_width", "type": "text", "label": "Page width", "default": "1280px" }
       ]
     }
@@ -47,17 +50,33 @@
       "id": 1,
       "name": "Light",
       "background": "#ffffff",
-      "foreground": "#121212",
-      "primary": "#e11d48",
-      "border": "#e5e7eb"
+      "foreground": "#292524",
+      "primary": "#8b7355",
+      "border": "#d6d3d1"
     },
     {
       "id": 2,
-      "name": "Dark accent",
-      "background": "#1a1a2e",
-      "foreground": "#e2e8f0",
-      "primary": "#f472b6",
-      "border": "#334155"
+      "name": "Dark",
+      "background": "#292524",
+      "foreground": "#f5f0eb",
+      "primary": "#d4a574",
+      "border": "#44403c"
+    },
+    {
+      "id": 3,
+      "name": "Warm",
+      "background": "#f5f0eb",
+      "foreground": "#292524",
+      "primary": "#8b7355",
+      "border": "#d6d3d1"
+    },
+    {
+      "id": 4,
+      "name": "Accent",
+      "background": "#8b7355",
+      "foreground": "#ffffff",
+      "primary": "#ffffff",
+      "border": "#a89379"
     }
   ]
 }

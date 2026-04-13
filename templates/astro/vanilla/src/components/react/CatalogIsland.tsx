@@ -9,7 +9,7 @@ import { ProductCard } from './ProductCard';
 import { PriceRangeFilter } from './PriceRangeFilter';
 import { AvailabilityRadio } from './AvailabilityRadio';
 import { ColorFilterDropdown } from './ColorFilterDropdown';
-import { SortDropdown } from './SortDropdown';
+import { SortRadios } from './SortRadios';
 
 // --- Pagination Bar (redesigned) ---
 
@@ -501,7 +501,7 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true }: CatalogIn
         >
           {total} товаров
         </span>
-        <SortDropdown
+        <SortRadios
           value={filters.sort}
           onChange={(sort) => setFilters({ sort: sort as CatalogFilters['sort'] })}
         />

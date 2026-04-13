@@ -1,0 +1,83 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import data from '../../data/data.json';
+import siteConfig from '../../data/site-config.json';
+import publications from '../../data/publications.json';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+
+export function getStaticPaths() {
+  const list = publications || [];
+  return list.map((pub: any) => ({
+    params: { slug: pub.slug },
+    props: { publication: pub },
+  }));
+}
+
+const { publication } = Astro.props;
+const meta = data?.meta ?? {};
+const blocks = data?.content ?? [];
+const headerBlock = blocks.find((b: any) => b.type === 'Header');
+const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
+const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
+---
+<BaseLayout title={`${publication?.title ?? 'Публикация'} — ${meta?.title ?? 'Мой магазин'}`} description={publication?.excerpt}>
+  <Header {...headerProps} />
+
+  <main class="flex-1 w-full" style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));">
+    <article class="max-w-[800px] mx-auto px-4 sm:px-6 py-10">
+      <nav class="mb-8 font-body text-sm" style="color: rgb(var(--color-muted));">
+        <a href="/" class="hover:opacity-80 transition-opacity" style="color: rgb(var(--color-muted));">Главная</a>
+        <span class="mx-1">/</span>
+        <a href="/blog/" class="hover:opacity-80 transition-opacity" style="color: rgb(var(--color-muted));">Блог</a>
+        <span class="mx-1">/</span>
+        <span style="color: rgb(var(--color-foreground));">{publication?.title}</span>
+      </nav>
+
+      {publication?.dateFormatted && (
+        <time class="text-sm font-body block mb-4" style="color: rgb(var(--color-muted));">
+          {publication.dateFormatted}
+        </time>
+      )}
+
+      <h1 class="font-heading text-3xl sm:text-4xl font-medium leading-tight mb-6" style="color: rgb(var(--color-foreground));">
+        {publication?.title}
+      </h1>
+
+      {publication?.coverImageUrl && publication.coverImageUrl !== '/images/placeholder.png' && (
+        <div class="mb-8 overflow-hidden" style="border-radius: var(--radius-card, 12px);">
+          <img
+            src={publication.coverImageUrl}
+            alt={publication.title}
+            class="w-full h-auto object-cover"
+            loading="eager"
+          />
+        </div>
+      )}
+
+      <div class="publication-content font-body text-base leading-relaxed" set:html={publication?.content ?? ''} style="color: rgb(var(--color-foreground));" />
+
+      <div class="mt-12 pt-8" style="border-top: 1px solid rgb(var(--color-foreground) / 0.1);">
+        <a href="/blog/" class="text-sm font-body font-medium transition-opacity hover:opacity-80" style="color: rgb(var(--color-foreground));">
+          &larr; Все статьи
+        </a>
+      </div>
+    </article>
+  </main>
+
+  <Footer {...footerProps} />
+</BaseLayout>
+
+<style>
+  .publication-content h2 { font-size: 1.5rem; font-weight: 600; margin: 1.5em 0 0.75em; }
+  .publication-content h3 { font-size: 1.25rem; font-weight: 600; margin: 1.25em 0 0.5em; }
+  .publication-content h4 { font-size: 1.1rem; font-weight: 600; margin: 1em 0 0.5em; }
+  .publication-content p { margin: 0.75em 0; }
+  .publication-content ul, .publication-content ol { margin: 0.75em 0; padding-left: 1.5em; }
+  .publication-content li { margin: 0.25em 0; }
+  .publication-content a { text-decoration: underline; opacity: 0.85; }
+  .publication-content a:hover { opacity: 1; }
+  .publication-content img { max-width: 100%; height: auto; border-radius: var(--radius-card, 12px); margin: 1em 0; }
+  .publication-content blockquote { border-left: 3px solid rgb(var(--color-foreground) / 0.2); padding-left: 1em; margin: 1em 0; opacity: 0.8; }
+</style>

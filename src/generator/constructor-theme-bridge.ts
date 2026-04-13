@@ -105,6 +105,9 @@ const FONT_FAMILIES: Record<string, FontDef> = {
   "josefin-sans": { name: "Josefin Sans", cssFamily: '"Josefin Sans Variable", sans-serif' },
   "caveat": { name: "Caveat", cssFamily: '"Caveat Variable", cursive' },
   "bad-script": { name: "Bad Script", cssFamily: '"Bad Script", cursive' },
+  arsenal: { name: "Arsenal", cssFamily: '"Arsenal", sans-serif' },
+  bitter: { name: "Bitter", cssFamily: '"Bitter", serif' },
+  "exo-2": { name: "Exo 2", cssFamily: '"Exo 2", sans-serif' },
 };
 
 function resolveFontFamily(fontKey: string): string {

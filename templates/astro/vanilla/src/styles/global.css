@@ -3,21 +3,8 @@
 
 @theme {
   --font-family-sans: 'Arsenal', sans-serif;
-  --font-family-heading: var(--font-heading);
-  --font-family-body: var(--font-body);
-  --color-primary: #26311c;
-  --color-gray: #787878;
-  --color-accent: #3a4530;
-  --color-theme-background: rgb(var(--color-background));
-  --color-theme-foreground: rgb(var(--color-foreground));
-  --color-theme-primary: rgb(var(--color-primary));
-  --color-theme-button: rgb(var(--color-button));
-  --color-theme-button-text: rgb(var(--color-button-text));
-  --color-theme-muted: rgb(var(--color-muted));
-  --color-theme-border: rgb(var(--color-border));
-  --color-theme-secondary: rgb(var(--color-secondary));
-  --radius-button: var(--radius-button);
-  --radius-card: var(--radius-card);
+  --font-family-heading: 'Bitter', serif;
+  --font-family-body: 'Arsenal', sans-serif;
 }
 
 /* ── Font utility classes ── */

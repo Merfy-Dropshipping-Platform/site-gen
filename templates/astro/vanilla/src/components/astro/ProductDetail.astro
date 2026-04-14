@@ -93,7 +93,7 @@ const showVariants = props.variants?.enabled !== 'false' && (props.variants?.ite
   <div class="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 lg:gap-16 items-start">
     <!-- Left: Image -->
     <div class="flex flex-col gap-4">
-      <div class="relative rounded-2xl overflow-hidden aspect-square" style="background: rgb(var(--color-foreground) / 0.05);">
+      <div class="relative overflow-hidden aspect-square" style="background: rgb(var(--color-foreground) / 0.05);">
         {mainImage ? (
           <img
             src={mainImage}
@@ -111,7 +111,7 @@ const showVariants = props.variants?.enabled !== 'false' && (props.variants?.ite
           </div>
         )}
         {showBadge && (
-          <span class="absolute top-4 left-4 px-3.5 py-1.5 rounded-md text-sm font-medium" style="background: rgb(var(--color-button)); color: rgb(var(--color-button-text));">
+          <span class="absolute top-4 left-4 px-3.5 py-1.5 text-sm font-medium" style="background: rgb(var(--color-button)); color: rgb(var(--color-button-text));">
             {props.badge!.text}
           </span>
         )}

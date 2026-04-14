@@ -78,7 +78,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
         {/* Left: Image gallery */}
         <div className="flex flex-col gap-4">
           {/* Main image */}
-          <div className="relative bg-gray-50 overflow-hidden aspect-square" style={{ maxWidth: 552, maxHeight: 552 }}>
+          <div className="relative overflow-hidden aspect-square" style={{ maxWidth: 552, maxHeight: 552, background: 'rgb(var(--color-foreground) / 0.03)' }}>
             {currentImage ? (
               <img
                 src={currentImage.url}
@@ -86,7 +86,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-300">
+              <div className="w-full h-full flex items-center justify-center" style={{ color: 'rgb(var(--color-muted))' }}>
                 <svg
                   width="64"
                   height="64"
@@ -178,7 +178,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
             <div className="flex items-center gap-0 w-fit border border-theme rounded-none overflow-hidden">
               <button
                 onClick={decrementQuantity}
-                className="w-10 h-10 flex items-center justify-center text-lg font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+                className="w-10 h-10 flex items-center justify-center text-lg font-medium transition-colors" style={{ color: 'rgb(var(--color-foreground))', cursor: 'pointer' }}
               >
                 -
               </button>
@@ -187,7 +187,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
               </span>
               <button
                 onClick={incrementQuantity}
-                className="w-10 h-10 flex items-center justify-center text-lg font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+                className="w-10 h-10 flex items-center justify-center text-lg font-medium transition-colors" style={{ color: 'rgb(var(--color-foreground))', cursor: 'pointer' }}
               >
                 +
               </button>

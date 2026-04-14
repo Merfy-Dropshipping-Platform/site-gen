@@ -143,7 +143,8 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 
           var card = document.createElement('a');
           card.href = '/account/order?n=' + encodeURIComponent(order.orderNumber);
-          card.className = 'block bg-white p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow';
+          card.className = 'block p-5 shadow-sm hover:shadow-md transition-shadow';
+          card.style.cssText = 'background: rgb(var(--color-card)); border-radius: 0;';
           // Delivery status badge
           var deliveryBadge = '';
           if (order.deliveryStatusName && order.deliveryType && order.deliveryType.includes('cdek')) {
@@ -182,7 +183,8 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
         if (currentSkip < totalCount) {
           var loadMoreBtn = document.createElement('button');
           loadMoreBtn.id = 'btn-load-more';
-          loadMoreBtn.className = 'w-full py-3 px-4 rounded-xl border border-gray-300 text-gray-600 font-medium hover:bg-gray-50 transition-colors mt-4';
+          loadMoreBtn.className = 'w-full py-3 px-4 font-medium transition-colors mt-4';
+          loadMoreBtn.style.cssText = 'border: 1px solid rgb(var(--color-foreground) / 0.19); color: rgb(var(--color-foreground)); border-radius: 0;';
           loadMoreBtn.textContent = '\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u0435\u0449\u0451';
           listEl.parentElement.appendChild(loadMoreBtn);
 

@@ -67,7 +67,7 @@ export const CollectionList: React.FC<CollectionListProps> = ({
             className="group cursor-pointer no-underline text-inherit"
           >
             {/* Collection image */}
-            <div className="relative w-full aspect-[430/500] bg-gray-100 rounded-xl sm:rounded-2xl overflow-hidden mb-4 sm:mb-5 md:mb-6 shadow-sm hover:shadow-lg transition-shadow duration-300">
+            <div className="relative w-full aspect-[430/500] overflow-hidden mb-4 sm:mb-5 md:mb-6 shadow-sm hover:shadow-lg transition-shadow duration-300" style={{ background: 'rgb(var(--color-foreground) / 0.03)' }}>
               {collection.image?.url ? (
                 <img
                   src={collection.image.url}
@@ -76,7 +76,7 @@ export const CollectionList: React.FC<CollectionListProps> = ({
                   loading="lazy"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-300">
+                <div className="w-full h-full flex items-center justify-center" style={{ color: 'rgb(var(--color-muted))' }}>
                   <svg
                     width="48"
                     height="48"

@@ -123,7 +123,7 @@ function SkeletonGrid({ count = 6 }: { count?: number }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2" style={{ gap: 16 }}>
         {Array.from({ length: count }).map((_, i) => (
           <div key={i} className="animate-pulse">
-            <div style={{ aspectRatio: '1/1', backgroundColor: '#FBFBFB', borderRadius: 0 }} />
+            <div style={{ aspectRatio: '1/1', backgroundColor: 'rgb(var(--color-foreground) / 0.05)', borderRadius: 0 }} />
             <div className="mt-4 rounded-none h-5 w-3/4" style={{ background: 'rgb(var(--color-foreground) / 0.06)' }} />
             <div className="mt-2 rounded-none h-6 w-1/3" style={{ background: 'rgb(var(--color-foreground) / 0.06)' }} />
           </div>
@@ -399,7 +399,7 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true }: CatalogIn
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2" style={{ gap: 16 }}>
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="animate-pulse">
-                <div style={{ aspectRatio: '1/1', backgroundColor: '#FBFBFB', borderRadius: 0 }} />
+                <div style={{ aspectRatio: '1/1', backgroundColor: 'rgb(var(--color-foreground) / 0.05)', borderRadius: 0 }} />
                 <div className="mt-4 rounded-none h-5 w-3/4" style={{ background: 'rgb(var(--color-foreground) / 0.06)' }} />
                 <div className="mt-2 rounded-none h-6 w-1/3" style={{ background: 'rgb(var(--color-foreground) / 0.06)' }} />
               </div>
@@ -424,7 +424,7 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true }: CatalogIn
             style={{
               padding: '12px 24px',
               border: '1px solid rgb(var(--color-muted))',
-              borderRadius: 10,
+              borderRadius: 0,
               fontSize: 16,
               color: 'rgb(var(--color-foreground))',
             }}
@@ -449,7 +449,7 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true }: CatalogIn
                 padding: '12px 24px',
                 backgroundColor: 'rgb(var(--color-foreground))',
                 color: 'rgb(var(--color-background))',
-                borderRadius: 10,
+                borderRadius: 0,
                 fontSize: 16,
               }}
             >

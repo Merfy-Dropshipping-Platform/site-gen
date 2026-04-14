@@ -50,10 +50,10 @@ export function ImageWithText({
               src={image}
               alt={heading?.text ?? ""}
               loading="lazy"
-              className="w-full h-auto rounded-2xl object-cover"
+              className="w-full h-auto object-cover"
             />
           ) : (
-            <div className="aspect-[4/3] bg-gray-50 rounded-2xl flex items-center justify-center text-gray-300">
+            <div className="aspect-[4/3] flex items-center justify-center" style={{ background: 'rgb(var(--color-foreground) / 0.03)', color: 'rgb(var(--color-muted))' }}>
               <svg
                 width="64"
                 height="64"

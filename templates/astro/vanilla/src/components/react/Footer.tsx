@@ -102,7 +102,7 @@ export function Footer({
                   name="email"
                   placeholder={newsletter?.placeholder || "email@example.com"}
                   required
-                  className="flex-1 bg-transparent text-[14px] outline-none placeholder:text-gray-400"
+                  className="flex-1 bg-transparent text-[14px] outline-none" style={{ color: 'inherit' }}
                   style={{ fontFamily: "'Arsenal', sans-serif" }}
                 />
                 <button

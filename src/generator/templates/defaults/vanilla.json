@@ -16,7 +16,7 @@
           "props": {
             "id": "Header-1",
             "siteTitle": "Мой магазин",
-            "logo": "/logo.svg",
+            "logo": "",
             "logoPosition": "top-center",
             "stickiness": "scroll-up",
             "colorScheme": "scheme-2",

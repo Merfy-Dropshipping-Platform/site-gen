@@ -10,46 +10,45 @@ interface Props {
 const { heading, text, form, colorScheme, padding } = Astro.props;
 const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
 const headingText = heading?.text ?? 'Подпишитесь на нашу рассылку';
-const headingSize = heading?.size ?? 'small';
 const textContent = text?.content ?? '';
-const placeholder = form?.placeholder ?? 'email@example.com';
-const buttonText = form?.buttonText ?? 'Подписаться';
-const padTop = padding?.top ?? 80;
-const padBottom = padding?.bottom ?? 80;
-
-const headingFontSizes: Record<string, string> = {
-  small: '1.5rem',
-  medium: '2rem',
-  large: '2.5rem',
-};
-const headingFS = headingFontSizes[headingSize] || '1.5rem';
+const placeholder = form?.placeholder ?? 'E-mail';
+const buttonText = form?.buttonText ?? 'Отправить';
+const padTop = padding?.top ?? 120;
+const padBottom = padding?.bottom ?? 120;
 ---
 
 <section
-  class={`text-center px-5 ${schemeClass}`}
+  class={`w-full ${schemeClass}`}
   style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}
 >
-  <div class="max-w-[652px] mx-auto">
-    <h2 class="font-normal text-center mb-4 font-heading" style={`font-size:20px;line-height:1.2;color:rgb(var(--color-foreground));`}>
-      {headingText}
-    </h2>
-    {textContent && (
-      <p class="text-[16px] text-center mb-8 leading-[1.6] font-body" style="color: rgb(var(--color-foreground) / 0.8);">
-        {textContent}
-      </p>
-    )}
-    <form class="flex items-center max-w-[652px] mx-auto h-[56px]" action="#" method="POST" style="border: 1px solid rgb(var(--color-foreground)); border-radius: 0;">
+  <div class="max-w-[1320px] mx-auto px-5 flex flex-col md:flex-row md:items-center gap-10">
+    <div class="flex-1 flex flex-col gap-10">
+      <h2 class="font-heading font-normal text-[20px] leading-[1.2]" style="color: rgb(var(--color-foreground));">
+        {headingText}
+      </h2>
+      {textContent && (
+        <p class="text-[16px] font-body leading-[1.25]" style="color: rgb(var(--color-foreground) / 0.9);">
+          {textContent}
+        </p>
+      )}
+    </div>
+    <form
+      class="w-full md:w-auto md:min-w-[652px] h-[56px] flex items-center shrink-0"
+      action="#"
+      method="POST"
+      style="border: 1px solid rgb(var(--color-foreground)); border-radius: 0;"
+    >
       <input
         type="email"
         name="email"
         placeholder={placeholder}
         required
-        class="flex-1 h-full px-4 text-[14px] bg-transparent font-body focus:outline-none"
-        style="color: rgb(var(--color-foreground)); border: none;"
+        class="flex-1 h-full px-4 text-[16px] bg-transparent font-body focus:outline-none"
+        style="color: rgb(var(--color-foreground) / 0.9); border: none;"
       />
       <button
         type="submit"
-        class="h-[32px] px-4 mx-3 text-[14px] font-normal cursor-pointer transition-opacity hover:opacity-80 font-body whitespace-nowrap"
+        class="h-[32px] px-2 mx-3 text-[12px] font-normal uppercase cursor-pointer transition-opacity hover:opacity-80 font-body whitespace-nowrap"
         style="background: rgb(var(--color-foreground)); color: rgb(var(--color-background)); border: none; border-radius: 0;"
       >
         {buttonText}

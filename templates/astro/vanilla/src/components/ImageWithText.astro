@@ -31,9 +31,9 @@ const showText = text?.enabled !== 'false' && text?.content;
 const showButton = button?.enabled !== 'false' && button?.text;
 
 const headingSizeMap: Record<string, string> = {
-  small: 'text-2xl',
-  medium: 'text-3xl',
-  large: 'text-4xl',
+  small: 'text-[16px]',
+  medium: 'text-[20px]',
+  large: 'text-[28px]',
 };
 const headingSizeClass = headingSizeMap[size] || headingSizeMap.medium;
 
@@ -44,7 +44,7 @@ const isRight = photoPosition === 'right';
   class={`w-full ${schemeClass}`}
   style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}
 >
-  <div class="max-w-[1320px] mx-auto px-5 grid grid-cols-1 md:grid-cols-2 gap-[60px] items-center">
+  <div class="max-w-[1320px] mx-auto px-5 grid grid-cols-1 md:grid-cols-2 gap-[40px] items-center">
     <!-- Image -->
     <div class={isRight ? 'order-1 md:order-2' : ''}>
       {image ? (
@@ -69,7 +69,7 @@ const isRight = photoPosition === 'right';
     <!-- Content -->
     <div class={isRight ? 'order-2 md:order-1' : ''}>
       {showHeading && (
-        <h2 class={`${headingSizeClass} font-medium text-theme-foreground mb-4 leading-[1.2] font-heading`}>
+        <h2 class={`${headingSizeClass} font-normal text-theme-foreground mb-4 leading-[1.2] font-heading`}>
           {heading!.text}
         </h2>
       )}
@@ -81,8 +81,8 @@ const isRight = photoPosition === 'right';
       {showButton && (
         <a
           href={button!.link ?? '#'}
-          class="inline-flex items-center justify-center h-[48px] px-[25px] text-[16px] font-normal uppercase no-underline hover:opacity-90 transition-colors font-body"
-          style="background-color: rgb(var(--color-button)); color: rgb(var(--color-button-text)); border-radius: 0;"
+          class="inline-flex items-center justify-center h-[48px] px-[16px] text-[16px] font-normal uppercase no-underline hover:opacity-90 transition-colors font-body"
+          style="border: 1.3px solid rgb(var(--color-foreground)); background: transparent; color: rgb(var(--color-foreground)); border-radius: 0;"
         >
           {button!.text}
         </a>

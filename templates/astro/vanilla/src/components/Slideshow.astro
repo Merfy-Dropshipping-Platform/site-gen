@@ -27,9 +27,9 @@ const padBottom = padding?.bottom ?? 0;
 const visibleSlides = slides.filter((s) => !s.hidden);
 
 const headingFontSizes: Record<string, string> = {
-  small: '2rem',
-  medium: '3rem',
-  large: '4rem',
+  small: '1rem',
+  medium: '1.125rem',
+  large: '1.25rem',
 };
 
 const positionClass: Record<string, string> = {
@@ -60,24 +60,26 @@ const containerStyle = imagePosition === 'window'
           data-slide
         >
           <div class="absolute inset-0" style={`background: rgb(var(--color-foreground)); opacity: ${overlay / 100}`}></div>
-          <div class={`relative z-10 py-[60px] px-[40px] max-md:py-[40px] max-md:px-[20px] max-w-[700px] ${positionClass[slide.position ?? 'center']}`} style="color: rgb(var(--color-background))">
-            {slide.heading?.text && (
-              <h2 class="font-heading font-medium mb-4" style={`font-size:${headingFontSizes[size] ?? '3rem'};line-height:1.1;`}>
-                {slide.heading.text}
-              </h2>
-            )}
-            {slide.text?.content && (
-              <p class="text-lg leading-relaxed mb-6 opacity-90">{slide.text.content}</p>
-            )}
-            {slide.button?.text && (
-              <a
-                href={slide.button.link?.href ?? '#'}
-                class="inline-flex items-center justify-center h-[48px] px-[25px] text-[16px] font-normal uppercase font-body no-underline transition-colors duration-200 hover:opacity-90"
-                style="background-color: rgb(var(--color-button)); color: rgb(var(--color-button-text)); border-radius: 0;"
-              >
-                {slide.button.text}
-              </a>
-            )}
+          <div class="relative z-10 w-full max-w-[1320px] mx-auto px-5 py-[120px] max-md:py-[40px]" style="color: rgb(var(--color-background))">
+            <div class={`max-w-[300px] max-md:max-w-full ${positionClass[slide.position ?? 'center']}`}>
+              {slide.heading?.text && (
+                <h2 class="font-heading font-normal" style={`font-size:${headingFontSizes[size] ?? '1.25rem'};line-height:1.2;margin-bottom:32px;`}>
+                  {slide.heading.text}
+                </h2>
+              )}
+              {slide.text?.content && (
+                <p class="text-[16px] leading-[1.25] font-body" style="opacity:0.9;margin-bottom:32px;">{slide.text.content}</p>
+              )}
+              {slide.button?.text && (
+                <a
+                  href={slide.button.link?.href ?? '#'}
+                  class="inline-flex items-center justify-center h-[48px] px-[16px] text-[16px] font-normal uppercase font-body no-underline transition-colors duration-200 hover:opacity-90"
+                  style="background-color: rgb(var(--color-button)); color: rgb(var(--color-button-text)); border-radius: 0;"
+                >
+                  {slide.button.text}
+                </a>
+              )}
+            </div>
           </div>
         </div>
       ))}
@@ -93,13 +95,13 @@ const containerStyle = imagePosition === 'window'
         </div>
       )}
       {visibleSlides.length > 1 && pagination === 'numbers' && (
-        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex items-center gap-4 slideshow-numbers-nav">
+        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex items-center gap-[20px] slideshow-numbers-nav">
           <button data-slide-prev class="slideshow-arrow" aria-label="Previous slide">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
             </svg>
           </button>
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-[16px]">
             {visibleSlides.map((_, i) => (
               <button
                 class={`slideshow-num text-[16px] font-body transition-opacity duration-200 ${i === 0 ? 'slideshow-num-active' : ''}`}

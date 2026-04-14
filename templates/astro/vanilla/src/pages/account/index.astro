@@ -98,7 +98,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
                 recentHtml +=
                   '<a href="/account/order?n=' + encodeURIComponent(order.orderNumber) + '" class="block p-4 transition-colors" style="background:rgb(var(--color-foreground) / 0.03);border-radius:0">' +
                     '<div class="flex items-center justify-between">' +
-                      '<span class="font-medium text-sm">\u2116' + order.orderNumber + ' <span class="text-gray-400 font-normal">' + date + '</span></span>' +
+                      '<span class="font-medium text-sm">\u2116' + order.orderNumber + ' <span class="font-normal" style="color:rgb(var(--color-muted))">' + date + '</span></span>' +
                       '<span class="text-xs px-2 py-0.5 rounded-full font-medium ' + sClass + '">' + status + '</span>' +
                     '</div>' +
                     '<div class="text-sm mt-1 font-medium" style="color:rgb(var(--color-foreground))">' + total + '</div>' +

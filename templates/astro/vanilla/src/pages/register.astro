@@ -102,7 +102,8 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
         // Invite mode: prefill email (readonly), hide name field
         emailField.value = inviteEmail;
         emailField.readOnly = true;
-        emailField.classList.add('bg-gray-100', 'cursor-not-allowed');
+        emailField.style.background = 'rgb(var(--color-foreground) / 0.04)';
+        emailField.classList.add('cursor-not-allowed');
         nameGroup.style.display = 'none';
         document.getElementById('reg-name').removeAttribute('required');
         titleEl.textContent = 'Создайте пароль для аккаунта';

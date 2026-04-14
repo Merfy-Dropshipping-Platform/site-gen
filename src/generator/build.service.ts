@@ -45,6 +45,7 @@ import {
 } from "./constructor-theme-bridge";
 import { S3StorageService } from "../storage/s3.service";
 import { roseRegistry, roseServerRegistry } from "./registries/rose";
+import { vanillaServerRegistry } from "./registries/vanilla";
 
 const logger = new Logger("BuildPipeline");
 
@@ -1108,13 +1109,15 @@ async function stageGenerate(
 
   // Override product components with server-island variants when islands are enabled
   if (ctx.islandsEnabled) {
-    for (const [name, entry] of Object.entries(roseServerRegistry)) {
+    const serverRegistry =
+      ctx.templateId === "vanilla" ? vanillaServerRegistry : roseServerRegistry;
+    for (const [name, entry] of Object.entries(serverRegistry)) {
       if (entry.kind === "server-island") {
         registry[name] = entry;
       }
     }
     logger.log(
-      `[generate] Islands enabled — merged server-island registry overrides`,
+      `[generate] Islands enabled — merged server-island registry overrides (${ctx.templateId})`,
     );
   }
 

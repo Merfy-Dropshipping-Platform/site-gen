@@ -75,7 +75,8 @@ export function RichText({
       {button?.text && (
         <a
           href={buttonLink}
-          className="inline-flex items-center mt-6 px-8 py-3.5 text-[0.95rem] font-medium rounded-lg bg-theme-primary text-theme-button-text no-underline hover:opacity-90 transition-colors font-body"
+          className="inline-flex items-center mt-6 h-[48px] px-[25px] text-[16px] font-normal uppercase bg-theme-primary text-theme-button-text no-underline hover:opacity-90 transition-colors font-body"
+          style={{ borderRadius: 0 }}
         >
           {button.text}
         </a>

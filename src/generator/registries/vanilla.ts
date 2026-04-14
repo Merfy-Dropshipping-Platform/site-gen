@@ -56,6 +56,6 @@ export const vanillaServerRegistry: Record<string, ComponentRegistryEntry> = {
     name: "PopularProducts",
     kind: "server-island",
     importPath: "",
-    fallbackHtml: `<section class="py-12 px-4"><h2 class="text-2xl font-bold mb-6 bg-gray-100 rounded h-8 w-48 animate-pulse"></h2><div class="grid grid-cols-2 md:grid-cols-4 gap-4">${Array(4).fill('<div class="space-y-3"><div class="aspect-[318/515] bg-gray-100 rounded-lg animate-pulse"></div><div class="h-4 bg-gray-100 rounded w-3/4 animate-pulse"></div><div class="h-4 bg-gray-100 rounded w-1/2 animate-pulse"></div></div>').join("")}</div></section>`,
+    fallbackHtml: `<section class="w-full" style="background:rgb(var(--color-background));padding:120px 0"><div class="max-w-[1320px] mx-auto px-4 md:px-6"><div class="grid grid-cols-2 md:grid-cols-4 gap-4">${Array(4).fill('<div class="space-y-4"><div style="aspect-ratio:1/1;background:rgb(var(--color-foreground)/0.06)" class="animate-pulse w-full"></div><div class="h-4 w-3/4 animate-pulse" style="background:rgb(var(--color-foreground)/0.06)"></div><div class="h-4 w-1/2 animate-pulse" style="background:rgb(var(--color-foreground)/0.06)"></div></div>').join("")}</div></div></section>`,
   },
 };

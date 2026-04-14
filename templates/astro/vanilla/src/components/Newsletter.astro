@@ -44,12 +44,13 @@ const headingFS = headingFontSizes[headingSize] || '1.5rem';
         name="email"
         placeholder={placeholder}
         required
-        class="flex-1 py-3.5 px-4 text-base border border-theme rounded-lg font-body focus:outline-none focus:border-theme-foreground"
+        class="flex-1 py-3.5 px-4 text-base border border-theme rounded-none font-body focus:outline-none focus:border-theme-foreground"
         style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));"
       />
       <button
         type="submit"
-        class="py-3.5 px-7 text-[0.95rem] font-medium border-none rounded-lg bg-theme-primary text-theme-button-text cursor-pointer transition-colors hover:opacity-90 font-body whitespace-nowrap"
+        class="h-[48px] px-[25px] text-[16px] font-normal uppercase border-none bg-theme-primary text-theme-button-text cursor-pointer transition-colors hover:opacity-90 font-body whitespace-nowrap"
+        style="border-radius: 0;"
       >
         {buttonText}
       </button>

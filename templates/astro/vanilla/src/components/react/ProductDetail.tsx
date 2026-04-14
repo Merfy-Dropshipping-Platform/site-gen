@@ -155,7 +155,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
                     key={variant.id}
                     onClick={() => variant.available && setSelectedVariant(variant)}
                     disabled={!variant.available}
-                    className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
+                    className={`px-4 py-2 rounded-none border text-sm font-medium transition-all ${
                       selectedVariant?.id === variant.id
                         ? 'border-current'
                         : variant.available
@@ -175,7 +175,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
             <span className="text-sm font-medium text-theme-muted">
               Количество
             </span>
-            <div className="flex items-center gap-0 w-fit border border-theme rounded-lg overflow-hidden">
+            <div className="flex items-center gap-0 w-fit border border-theme rounded-none overflow-hidden">
               <button
                 onClick={decrementQuantity}
                 className="w-10 h-10 flex items-center justify-center text-lg font-medium text-gray-600 hover:bg-gray-100 transition-colors"

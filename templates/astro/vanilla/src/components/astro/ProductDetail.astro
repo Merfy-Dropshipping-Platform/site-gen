@@ -121,7 +121,7 @@ const showVariants = props.variants?.enabled !== 'false' && (props.variants?.ite
       {props.images && props.images.length > 1 && (
         <div class="flex gap-3 overflow-x-auto pb-2">
           {props.images.map((image, index) => (
-            <div class={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 ${index === 0 ? 'border-current' : 'border-transparent'}`} style={index === 0 ? 'border-color: rgb(var(--color-foreground));' : ''}>
+            <div class={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-none overflow-hidden border-2 ${index === 0 ? 'border-current' : 'border-transparent'}`} style={index === 0 ? 'border-color: rgb(var(--color-foreground));' : ''}>
               <img
                 src={image.url}
                 alt={image.alt ?? `${titleText} ${index + 1}`}
@@ -162,7 +162,7 @@ const showVariants = props.variants?.enabled !== 'false' && (props.variants?.ite
           <span class="text-sm font-medium text-theme-muted">Размер</span>
           <div class="flex flex-wrap gap-2">
             {props.variants!.items!.map((v, i) => (
-              <span class={`px-4 py-2 rounded-lg border text-sm font-medium`} style={i === 0 ? 'background: rgb(var(--color-foreground)); color: rgb(var(--color-background)); border-color: rgb(var(--color-foreground));' : 'background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); border-color: rgb(var(--color-border));'}>
+              <span class={`px-4 py-2 rounded-none border text-sm font-medium`} style={i === 0 ? 'background: rgb(var(--color-foreground)); color: rgb(var(--color-background)); border-color: rgb(var(--color-foreground));' : 'background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); border-color: rgb(var(--color-border));'}>
                 {v.label}
               </span>
             ))}
@@ -173,12 +173,12 @@ const showVariants = props.variants?.enabled !== 'false' && (props.variants?.ite
       {(showAddToCart || showBuyNow) && (
         <div class="flex flex-col sm:flex-row gap-3 mt-2">
           {showAddToCart && (
-            <button class="flex-1 px-6 py-3.5 text-sm font-medium rounded-lg border hover:opacity-80 transition-all" style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); border-color: rgb(var(--color-border));">
+            <button class="flex-1 px-6 py-3.5 text-sm font-medium rounded-none border hover:opacity-80 transition-all" style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); border-color: rgb(var(--color-border));">
               {addToCartText}
             </button>
           )}
           {showBuyNow && (
-            <button class="flex-1 px-6 py-3.5 text-sm font-medium rounded-lg border-none hover:opacity-90 transition-all" style="background: rgb(var(--color-button)); color: rgb(var(--color-button-text));">
+            <button class="flex-1 px-6 py-3.5 text-sm font-medium rounded-none border-none hover:opacity-90 transition-all" style="background: rgb(var(--color-button)); color: rgb(var(--color-button-text));">
               {buyNowText}
             </button>
           )}

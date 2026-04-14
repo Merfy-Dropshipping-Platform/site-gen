@@ -60,9 +60,9 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
         >
           {Array.from({ length: limit > 8 ? 8 : limit }).map((_, i) => (
             <div key={i} className="animate-pulse">
-              <div className="bg-gray-200 rounded-lg aspect-square mb-4" />
-              <div className="bg-gray-200 rounded h-4 w-3/4 mb-2" />
-              <div className="bg-gray-200 rounded h-5 w-1/3" />
+              <div className="rounded-none aspect-square mb-4" style={{ background: 'rgb(var(--color-foreground) / 0.06)' }} />
+              <div className="rounded-none h-4 w-3/4 mb-2" style={{ background: 'rgb(var(--color-foreground) / 0.06)' }} />
+              <div className="rounded-none h-5 w-1/3" style={{ background: 'rgb(var(--color-foreground) / 0.06)' }} />
             </div>
           ))}
         </div>
@@ -132,7 +132,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
         <div className="flex justify-center mt-8 sm:mt-12">
           <button
             onClick={() => setPage(page + 1)}
-            className="px-6 py-3 border border-theme rounded-lg text-sm font-medium text-theme-foreground hover:border-theme-foreground hover:text-theme-foreground transition-colors"
+            className="px-6 py-3 border border-theme rounded-none text-sm font-medium text-theme-foreground hover:border-theme-foreground hover:text-theme-foreground transition-colors"
           >
             Показать ещё
           </button>

@@ -71,7 +71,7 @@ export const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({
         <div className="flex justify-center mt-8">
           <a
             href={`/collections/${collection.handle}`}
-            className="px-6 py-3 border border-theme rounded-lg text-sm font-medium text-theme-foreground hover:border-theme-foreground hover:text-theme-foreground transition-colors no-underline"
+            className="px-6 py-3 border border-theme rounded-none text-sm font-medium text-theme-foreground hover:border-theme-foreground hover:text-theme-foreground transition-colors no-underline"
           >
             Смотреть все
           </a>

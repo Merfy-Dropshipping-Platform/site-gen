@@ -60,8 +60,8 @@ const btnSecondaryClass = 'bg-transparent text-theme-foreground border border-th
         return (
           <div class={`grid grid-cols-1 md:grid-cols-2 gap-[60px] md:gap-[60px] max-md:gap-6 items-center ${alignClass[alignment] ?? 'text-left'}`}>
             {row.image && (
-              <div class={`overflow-hidden ${imageRight ? 'md:order-2' : ''}`} style="border-radius: var(--radius-card, 12px);">
-                <img src={row.image} alt={row.title ?? ''} loading="lazy" class="w-full h-auto object-cover" style="border-radius: var(--radius-card, 12px);" />
+              <div class={`overflow-hidden ${imageRight ? 'md:order-2' : ''}`} style="border-radius: var(--radius-card, 0px);">
+                <img src={row.image} alt={row.title ?? ''} loading="lazy" class="w-full h-auto object-cover" style="border-radius: var(--radius-card, 0px);" />
               </div>
             )}
             <div class={imageRight ? 'md:order-1' : ''}>
@@ -74,7 +74,8 @@ const btnSecondaryClass = 'bg-transparent text-theme-foreground border border-th
               {row.button?.enabled !== 'false' && row.button?.text && (
                 <a
                   href={row.button.link ?? '#'}
-                  class={`inline-flex py-3 px-7 text-[0.95rem] font-medium rounded-lg no-underline transition-all duration-200 ${buttonStyle === 'secondary' ? btnSecondaryClass : btnPrimaryClass}`}
+                  class={`inline-flex h-[48px] items-center px-[25px] text-[16px] font-normal uppercase no-underline transition-all duration-200 font-body ${buttonStyle === 'secondary' ? btnSecondaryClass : btnPrimaryClass}`}
+                  style="border-radius: 0;"
                 >
                   {row.button.text}
                 </a>

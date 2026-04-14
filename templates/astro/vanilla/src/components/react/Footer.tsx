@@ -81,7 +81,7 @@ export function Footer({
 
   return (
     <footer className="bg-theme-background w-full">
-      <div className="w-full max-w-[1320px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-[300px]">
+      <div className="w-full max-w-[1320px] mx-auto px-4 md:px-6">
         {/* Newsletter */}
         {showNewsletter && (
           <section className="pt-12 sm:pt-16 md:pt-20 lg:pt-24 xl:pt-28 2xl:pt-[100px] pb-10 sm:pb-12 md:pb-16 lg:pb-20 xl:pb-24">

@@ -72,7 +72,8 @@ const containerStyle = imagePosition === 'window'
             {slide.button?.text && (
               <a
                 href={slide.button.link?.href ?? '#'}
-                class="inline-flex py-3.5 px-8 text-[0.95rem] font-medium rounded-lg bg-theme-primary text-theme-button-text no-underline transition-colors duration-200 hover:opacity-90"
+                class="inline-flex items-center justify-center h-[48px] px-[25px] text-[16px] font-normal uppercase font-body no-underline transition-colors duration-200 hover:opacity-90"
+                style="background-color: rgb(var(--color-button)); color: rgb(var(--color-button-text)); border-radius: 0;"
               >
                 {slide.button.text}
               </a>

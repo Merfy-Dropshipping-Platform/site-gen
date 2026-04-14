@@ -42,7 +42,7 @@ const posts = (publications || [])
             <a
               href={`/blog/${post.slug}`}
               class="group block overflow-hidden transition-transform hover:-translate-y-1"
-              style={`border-radius: var(--radius-card, 10px); border: 1px solid rgb(var(--color-border));`}
+              style={`border-radius: var(--radius-card, 0px); border: 1px solid rgb(var(--color-border));`}
             >
               {post.coverImageUrl && post.coverImageUrl !== '/images/placeholder.png' && (
                 <div class="aspect-[16/10] overflow-hidden">

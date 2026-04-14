@@ -69,7 +69,7 @@ export function HeroBanner({
 
   return (
     <section className={`relative w-full ${sizeClass} overflow-hidden`}>
-      <div className="w-full max-w-[1920px] mx-auto relative min-h-[60vh] sm:min-h-[65vh] md:min-h-[70vh] lg:min-h-[75vh] xl:min-h-[80vh]">
+      <div className="w-full max-w-[1320px] mx-auto relative min-h-[60vh] sm:min-h-[65vh] md:min-h-[70vh] lg:min-h-[75vh] xl:min-h-[80vh]">
         {/* Background Image */}
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -106,8 +106,8 @@ export function HeroBanner({
               {primaryButton?.text && (
                 <a
                   href={primaryLink}
-                  className="rounded-lg sm:rounded-[8px] md:rounded-[10px] px-6 sm:px-8 md:px-[25px] lg:px-[30px] xl:px-[35px] h-12 sm:h-14 md:h-16 lg:h-[70px] xl:h-[80px] flex items-center justify-center gap-2 sm:gap-[8px] md:gap-[10px] text-sm sm:text-base md:text-lg lg:text-xl xl:text-[24px] font-normal uppercase leading-[1.366] hover:opacity-80 transition-colors font-body"
-                  style={{ backgroundColor: 'rgb(var(--color-button))', color: 'rgb(var(--color-button-text))' }}
+                  className="px-6 sm:px-8 md:px-[25px] h-[48px] flex items-center justify-center gap-2 text-[16px] font-normal uppercase leading-[1.366] hover:opacity-80 transition-colors font-body"
+                  style={{ backgroundColor: 'rgb(var(--color-button))', color: 'rgb(var(--color-button-text))', borderRadius: 0 }}
                 >
                   {primaryButton.text}
                 </a>
@@ -115,8 +115,8 @@ export function HeroBanner({
               {secondaryButton?.text && (
                 <a
                   href={secondaryLink}
-                  className="border rounded-lg sm:rounded-[8px] md:rounded-[10px] px-6 sm:px-8 md:px-[25px] h-12 sm:h-14 md:h-16 lg:h-[70px] xl:h-[80px] flex items-center justify-center text-sm sm:text-base md:text-lg lg:text-xl xl:text-[24px] font-normal uppercase leading-[1.366] hover:opacity-80 transition-colors font-body"
-                  style={{ backgroundColor: 'rgb(var(--color-secondary, 245 245 245))', color: 'rgb(var(--color-foreground))', borderColor: 'rgb(var(--color-border))' }}
+                  className="border px-6 sm:px-8 md:px-[25px] h-[48px] flex items-center justify-center text-[16px] font-normal uppercase leading-[1.366] hover:opacity-80 transition-colors font-body"
+                  style={{ backgroundColor: 'rgb(var(--color-secondary, 245 245 245))', color: 'rgb(var(--color-foreground))', borderColor: 'rgb(var(--color-border))', borderRadius: 0 }}
                 >
                   {secondaryButton.text}
                 </a>

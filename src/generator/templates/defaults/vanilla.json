@@ -38,21 +38,34 @@
           }
         },
         {
-          "type": "Hero",
+          "type": "Slideshow",
           "props": {
-            "id": "Hero-1",
-            "backgroundImage": "/main-image.png",
-            "backgroundImage2": "",
+            "id": "Slideshow-1",
+            "slides": [
+              {
+                "id": "slide-1",
+                "image": "/main-image.png",
+                "heading": { "text": "Добро пожаловать", "size": "large" },
+                "text": { "content": "Откройте для себя нашу коллекцию товаров", "size": "medium" },
+                "button": { "text": "В КАТАЛОГ", "link": { "href": "/catalog" } },
+                "position": "center"
+              },
+              {
+                "id": "slide-2",
+                "image": "/main-image.png",
+                "heading": { "text": "Новая коллекция", "size": "large" },
+                "text": { "content": "Стиль и качество для каждого", "size": "medium" },
+                "button": { "text": "ПОДРОБНЕЕ", "link": { "href": "/catalog" } },
+                "position": "center"
+              }
+            ],
+            "overlay": 30,
+            "imagePosition": "fullscreen",
             "size": "large",
-            "overlay": 0,
-            "position": "center",
-            "alignment": "center",
-            "container": "false",
+            "interval": 5000,
+            "pagination": "dots",
             "colorScheme": "scheme-1",
-            "heading": { "text": "Добро пожаловать", "size": "large" },
-            "text": { "content": "Откройте для себя нашу коллекцию товаров", "size": "large" },
-            "primaryButton": { "text": "В КАТАЛОГ", "link": { "href": "/catalog" } },
-            "secondaryButton": { "text": "", "link": { "href": "#" } }
+            "padding": { "top": 0, "bottom": 0 }
           }
         },
         {

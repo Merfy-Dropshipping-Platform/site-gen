@@ -62,7 +62,7 @@ const headingFS = headingFontSizes[contentSize] || '2rem';
         )}
       </div>
     )}
-    <div class={`relative aspect-video overflow-hidden ${isFullscreen ? 'rounded-none' : ''}`} style={`background: rgb(var(--color-foreground));${isFullscreen ? '' : ' border-radius: var(--radius-card, 12px);'}`}>
+    <div class={`relative aspect-video overflow-hidden ${isFullscreen ? 'rounded-none' : ''}`} style={`background: rgb(var(--color-foreground));${isFullscreen ? '' : ' border-radius: var(--radius-card, 0px);'}`}>
       {embedUrl ? (
         <iframe
           src={embedUrl}

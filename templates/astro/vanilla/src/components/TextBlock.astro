@@ -55,7 +55,8 @@ const textSizeClass = textSizeClasses[size] || textSizeClasses.medium;
   {props.button?.text && (
     <a
       href={buttonLink}
-      class="inline-flex items-center mt-6 px-8 py-3.5 text-[0.95rem] font-medium rounded-lg bg-theme-primary text-theme-button-text no-underline hover:opacity-90 transition-colors font-body"
+      class="inline-flex items-center mt-6 h-[48px] px-[25px] text-[16px] font-normal uppercase bg-theme-primary text-theme-button-text no-underline hover:opacity-90 transition-colors font-body"
+      style="border-radius: 0;"
     >
       {props.button.text}
     </a>

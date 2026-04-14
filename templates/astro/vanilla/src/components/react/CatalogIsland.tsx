@@ -124,8 +124,8 @@ function SkeletonGrid({ count = 6 }: { count?: number }) {
         {Array.from({ length: count }).map((_, i) => (
           <div key={i} className="animate-pulse">
             <div style={{ aspectRatio: '1/1', backgroundColor: '#FBFBFB', borderRadius: 0 }} />
-            <div className="mt-4 bg-gray-200 rounded h-5 w-3/4" />
-            <div className="mt-2 bg-gray-200 rounded h-6 w-1/3" />
+            <div className="mt-4 rounded-none h-5 w-3/4" style={{ background: 'rgb(var(--color-foreground) / 0.06)' }} />
+            <div className="mt-2 rounded-none h-6 w-1/3" style={{ background: 'rgb(var(--color-foreground) / 0.06)' }} />
           </div>
         ))}
       </div>
@@ -400,8 +400,8 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true }: CatalogIn
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="animate-pulse">
                 <div style={{ aspectRatio: '1/1', backgroundColor: '#FBFBFB', borderRadius: 0 }} />
-                <div className="mt-4 bg-gray-200 rounded h-5 w-3/4" />
-                <div className="mt-2 bg-gray-200 rounded h-6 w-1/3" />
+                <div className="mt-4 rounded-none h-5 w-3/4" style={{ background: 'rgb(var(--color-foreground) / 0.06)' }} />
+                <div className="mt-2 rounded-none h-6 w-1/3" style={{ background: 'rgb(var(--color-foreground) / 0.06)' }} />
               </div>
             ))}
           </div>

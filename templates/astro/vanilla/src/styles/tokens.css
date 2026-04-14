@@ -14,13 +14,12 @@
   --color-button-text: 255, 255, 255; /* #ffffff */
   --color-muted: 120, 120, 120;       /* #787878 */
   --color-secondary: 58, 69, 48;      /* #3a4530 */
-  --color-accent-pink: 227, 142, 159; /* #e38e9f */
+  --color-accent: 58, 69, 48;         /* #3a4530 — same as secondary */
 
   /* ── Typography ── */
   --font-heading: 'Bitter', serif;
   --font-body: 'Arsenal', sans-serif;
   --font-badge: 'Exo 2', sans-serif;
-  --font-newsletter: 'Urbanist', sans-serif;
   --font-powered: 'Inter', sans-serif;
 
   /* ── Border Radii ── */

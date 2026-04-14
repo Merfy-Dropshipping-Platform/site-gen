@@ -24,7 +24,7 @@ export function SortRadios({ value, onChange }: SortRadiosProps) {
             className="text-xs sm:text-sm transition-all"
             style={{
               padding: '6px 14px',
-              borderRadius: 'var(--radius-button, 8px)',
+              borderRadius: 'var(--radius-button, 0px)',
               border: `1px solid ${isActive ? 'rgb(var(--color-foreground))' : 'rgb(var(--color-border))'}`,
               backgroundColor: isActive ? 'rgb(var(--color-foreground))' : 'transparent',
               color: isActive ? 'rgb(var(--color-background))' : 'rgb(var(--color-muted))',

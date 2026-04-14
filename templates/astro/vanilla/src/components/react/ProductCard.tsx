@@ -48,25 +48,25 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, href }) => {
         )}
       </div>
 
-      {/* Product info */}
-      <div className="flex flex-col gap-2 sm:gap-2.5 md:gap-3 lg:gap-[10px] px-2 sm:px-3 md:px-4 lg:px-[15px]">
+      {/* Product info — Figma: 20px gap, Arsenal 16px UPPERCASE title, 16px price */}
+      <div className="flex flex-col" style={{ gap: 4, paddingTop: 20 }}>
         <h3
-          className="text-base sm:text-lg md:text-xl lg:text-[24px] font-normal leading-[1.366] line-clamp-2"
+          className="text-[16px] font-normal leading-[1.26] line-clamp-2 uppercase"
           style={{ color: 'rgb(var(--color-foreground))', margin: 0, fontFamily: "var(--font-body)" }}
         >
           {product.title}
         </h3>
-        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 lg:gap-[15px] flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           <span
-            className="text-lg sm:text-xl md:text-2xl lg:text-[32px] font-normal leading-[1.366]"
+            className="text-[16px] font-normal leading-[1.26]"
             style={{ color: 'rgb(var(--color-foreground))', fontFamily: "var(--font-body)" }}
           >
             {formatMoney(product.price)}
           </span>
           {product.compareAtPrice != null && product.compareAtPrice > 0 && (
             <span
-              className="text-sm sm:text-base md:text-lg lg:text-[20px] font-medium line-through leading-[1.366]"
-              style={{ color: 'rgb(var(--color-muted))', fontFamily: "var(--font-body)" }}
+              className="text-[14px] font-normal line-through leading-[1.26]"
+              style={{ color: '#444444', fontFamily: "var(--font-body)" }}
             >
               {formatMoney(product.compareAtPrice)}
             </span>

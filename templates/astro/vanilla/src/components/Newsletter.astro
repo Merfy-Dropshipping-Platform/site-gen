@@ -29,28 +29,28 @@ const headingFS = headingFontSizes[headingSize] || '1.5rem';
   class={`text-center px-5 ${schemeClass}`}
   style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}
 >
-  <div class="max-w-[600px] mx-auto">
-    <h2 class="font-medium text-theme-foreground mb-4 font-heading" style={`font-size:${headingFS};line-height:1.2;`}>
+  <div class="max-w-[652px] mx-auto">
+    <h2 class="font-normal text-center mb-4 font-heading" style={`font-size:20px;line-height:1.2;color:rgb(var(--color-foreground));`}>
       {headingText}
     </h2>
     {textContent && (
-      <p class="text-[1.1rem] text-theme-muted mb-8 leading-[1.6] font-body">
+      <p class="text-[16px] text-center mb-8 leading-[1.6] font-body" style="color: rgb(var(--color-foreground) / 0.8);">
         {textContent}
       </p>
     )}
-    <form class="flex gap-3 max-w-[480px] mx-auto max-[480px]:flex-col" action="#" method="POST">
+    <form class="flex items-center max-w-[652px] mx-auto h-[56px]" action="#" method="POST" style="border: 1px solid rgb(var(--color-foreground)); border-radius: 0;">
       <input
         type="email"
         name="email"
         placeholder={placeholder}
         required
-        class="flex-1 py-3.5 px-4 text-base border border-theme rounded-none font-body focus:outline-none focus:border-theme-foreground"
-        style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));"
+        class="flex-1 h-full px-4 text-[14px] bg-transparent font-body focus:outline-none"
+        style="color: rgb(var(--color-foreground)); border: none;"
       />
       <button
         type="submit"
-        class="h-[48px] px-[25px] text-[16px] font-normal uppercase border-none bg-theme-primary text-theme-button-text cursor-pointer transition-colors hover:opacity-90 font-body whitespace-nowrap"
-        style="border-radius: 0;"
+        class="h-[32px] px-4 mx-3 text-[14px] font-normal cursor-pointer transition-opacity hover:opacity-80 font-body whitespace-nowrap"
+        style="background: rgb(var(--color-foreground)); color: rgb(var(--color-background)); border: none; border-radius: 0;"
       >
         {buttonText}
       </button>

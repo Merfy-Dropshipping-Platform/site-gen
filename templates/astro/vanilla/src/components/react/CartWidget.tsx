@@ -81,7 +81,7 @@ export default function CartWidget() {
         {badgeCount > 0 && (
           <span
             className="absolute -top-1 -right-1 flex items-center justify-center rounded-full text-white text-[10px]"
-            style={{ minWidth: '16px', height: '16px', backgroundColor: '#e38e9f', fontFamily: "'Exo 2', sans-serif" }}
+            style={{ minWidth: '16px', height: '16px', backgroundColor: 'rgb(var(--color-accent, var(--color-secondary)))', fontFamily: "'Exo 2', sans-serif" }}
           >
             {badgeCount > 99 ? '99+' : badgeCount}
           </span>

@@ -310,11 +310,11 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
             '<div class="space-y-2 text-sm">';
           if (order.pickupAddress) {
             deliveryHtml += '<div class="flex items-start gap-2">' +
-              '<span class="text-gray-500 shrink-0">\u0410\u0434\u0440\u0435\u0441:</span>' +
+              '<span style="color:rgb(var(--color-muted))" class="shrink-0">\u0410\u0434\u0440\u0435\u0441:</span>' +
               '<span style="color:rgb(var(--color-foreground))">' + order.pickupAddress + '</span></div>';
           }
           if (order.deliveryNote) {
-            deliveryHtml += '<p class="text-gray-500 mt-2">' + order.deliveryNote + '</p>';
+            deliveryHtml += '<p style="color:rgb(var(--color-muted))" class="mt-2">' + order.deliveryNote + '</p>';
           }
           deliveryHtml += '</div></div>';
         }
@@ -338,7 +338,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
               '<span>' + formatPrice(order.deliveryCents) + '</span></div>';
           }
           if (order.deliveryNote) {
-            deliveryHtml += '<p class="text-gray-500 mt-2">' + order.deliveryNote + '</p>';
+            deliveryHtml += '<p style="color:rgb(var(--color-muted))" class="mt-2">' + order.deliveryNote + '</p>';
           }
           deliveryHtml += '</div></div>';
         }
@@ -364,7 +364,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
                 '<div class="absolute left-[-20px] top-1.5 w-3 h-3 rounded-full ' + dotColor + '"></div>' +
                 '<div>' +
                   '<p class="text-sm font-medium">' + hStatus + '</p>' +
-                  '<p class="text-xs text-gray-400">' + hDate + '</p>' +
+                  '<p class="text-xs" style="color:rgb(var(--color-muted))">' + hDate + '</p>' +
                 '</div>' +
               '</div>';
           });
@@ -395,16 +395,16 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
             '<div class="fixed inset-0 flex items-center justify-center p-4">' +
               '<div class="shadow-xl" style="background:rgb(var(--color-card));border-radius:0 max-w-md w-full p-6 relative">' +
                 '<h3 class="font-heading text-lg mb-2">\u041e\u0442\u043c\u0435\u043d\u0430 \u0437\u0430\u043a\u0430\u0437\u0430</h3>' +
-                '<p class="text-sm text-gray-500 mb-4">\u041f\u043e\u0441\u043b\u0435 \u043e\u0442\u043c\u0435\u043d\u044b \u0432\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u044c \u0437\u0430\u043a\u0430\u0437 \u043d\u0435\u0432\u043e\u0437\u043c\u043e\u0436\u043d\u043e.</p>' +
+                '<p class="text-sm mb-4" style="color:rgb(var(--color-muted))">\u041f\u043e\u0441\u043b\u0435 \u043e\u0442\u043c\u0435\u043d\u044b \u0432\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u044c \u0437\u0430\u043a\u0430\u0437 \u043d\u0435\u0432\u043e\u0437\u043c\u043e\u0436\u043d\u043e.</p>' +
                 '<textarea id="cancel-reason" rows="3" maxlength="500" required ' +
                   'placeholder="\u0423\u043a\u0430\u0436\u0438\u0442\u0435 \u043f\u0440\u0438\u0447\u0438\u043d\u0443 \u043e\u0442\u043c\u0435\u043d\u044b" ' +
-                  'class="w-full border border-gray-300 rounded-none px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-300 resize-none mb-2"></textarea>' +
+                  'class="w-full w-full rounded-none px-4 py-3 text-sm focus:outline-none resize-none mb-2" style="border:1px solid rgb(var(--color-foreground) / 0.19);color:rgb(var(--color-foreground))"></textarea>' +
                 '<p id="cancel-error" class="text-red-500 text-xs mb-3 hidden"></p>' +
                 '<div class="flex gap-3">' +
                   '<button id="btn-cancel-confirm" type="button" class="flex-1 py-2.5 rounded-none bg-red-500 text-white font-medium hover:bg-red-600 transition-colors disabled:opacity-50">' +
                     '\u041f\u043e\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u044c \u043e\u0442\u043c\u0435\u043d\u0443' +
                   '</button>' +
-                  '<button id="btn-cancel-close" type="button" class="flex-1 py-2.5 rounded-none border border-gray-300 text-gray-600 font-medium hover:bg-gray-50 transition-colors">' +
+                  '<button id="btn-cancel-close" type="button" class="flex-1 py-2.5 rounded-none font-medium transition-colors" style="border:1px solid rgb(var(--color-foreground) / 0.19);color:rgb(var(--color-foreground))">' +
                     '\u041d\u0435\u0442, \u043e\u0441\u0442\u0430\u0432\u0438\u0442\u044c' +
                   '</button>' +
                 '</div>' +

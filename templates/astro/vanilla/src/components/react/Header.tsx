@@ -41,8 +41,8 @@ export function Header({
 
   return (
     <div className="w-full sticky top-0 z-50 bg-theme-background shadow-sm">
-      <header className="bg-theme-background w-full h-16 sm:h-20 md:h-24 lg:h-28 xl:h-[120px] flex items-center border-b border-theme">
-        <nav className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-16 xl:px-24 2xl:px-[300px] flex items-center justify-between">
+      <header className="bg-theme-background w-full h-16 md:h-[80px] flex items-center border-b border-theme">
+        <nav className="w-full max-w-[1320px] mx-auto px-4 md:px-6 flex items-center justify-between">
           {/* Mobile: Hamburger Menu */}
           <button
             aria-label="Menu"
@@ -91,16 +91,12 @@ export function Header({
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-4 lg:gap-8 xl:gap-12 2xl:gap-[80px]">
+          <div className="hidden md:flex items-center gap-[40px]">
             {navigationLinks?.map((link, index) => (
               <a
                 key={index}
                 href={link.href}
-                className={`text-sm lg:text-base xl:text-[20px] font-normal text-theme-foreground hover:opacity-70 transition-opacity leading-[1.366] relative font-body ${
-                  index === 0
-                    ? "after:absolute after:bottom-[-10px] after:left-0 after:w-full after:h-px after:bg-theme-foreground"
-                    : ""
-                }`}
+                className="text-[16px] font-normal text-theme-foreground hover:opacity-70 transition-opacity leading-[1.4] font-body"
               >
                 {link.label}
               </a>
@@ -108,40 +104,40 @@ export function Header({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-3 sm:gap-3 md:gap-4 lg:gap-5 xl:gap-[25px]">
+          <div className="flex items-center gap-[24px]">
             {showSearch && (
               <button
                 aria-label="Search"
-                className="hidden md:flex w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 items-center justify-center hover:opacity-70 transition-opacity"
+                className="hidden md:flex w-8 h-8 items-center justify-center hover:opacity-70 transition-opacity"
               >
                 <img
                   src="/search.svg"
                   alt="Search"
-                  className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10"
+                  className="w-8 h-8"
                 />
               </button>
             )}
             {showCart && (
               <button
                 aria-label="Cart"
-                className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 flex items-center justify-center hover:opacity-70 transition-opacity"
+                className="w-8 h-8 flex items-center justify-center hover:opacity-70 transition-opacity"
               >
                 <img
                   src="/cart.svg"
                   alt="Cart"
-                  className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10"
+                  className="w-8 h-8"
                 />
               </button>
             )}
             {showProfile && (
               <button
                 aria-label="Profile"
-                className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 flex items-center justify-center hover:opacity-70 transition-opacity"
+                className="w-8 h-8 flex items-center justify-center hover:opacity-70 transition-opacity"
               >
                 <img
                   src="/profile.svg"
                   alt="Profile"
-                  className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10"
+                  className="w-8 h-8"
                 />
               </button>
             )}

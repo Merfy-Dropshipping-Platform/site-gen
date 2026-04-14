@@ -19,8 +19,8 @@
             "logo": "/logo.svg",
             "logoPosition": "top-center",
             "stickiness": "scroll-up",
-            "colorScheme": "scheme-4",
-            "padding": { "top": 32, "bottom": 32 },
+            "colorScheme": "scheme-2",
+            "padding": { "top": 0, "bottom": 0 },
             "navigationLinks": [
               { "label": "Каталог", "href": "/catalog" },
               { "label": "Блог", "href": "/blog" },
@@ -28,7 +28,7 @@
               { "label": "Доставка", "href": "/delivery" },
               { "label": "Контакты", "href": "/contacts" }
             ],
-            "menuColorScheme": "scheme-4",
+            "menuColorScheme": "scheme-2",
             "menuType": "dropdown",
             "actionButtons": {
               "showSearch": "true",
@@ -71,8 +71,8 @@
               "quickAdd": "false",
               "columns": 4
             },
-            "colorScheme": "scheme-4",
-            "padding": { "top": 100, "bottom": 100 }
+            "colorScheme": "scheme-3",
+            "padding": { "top": 120, "bottom": 120 }
           }
         },
         {
@@ -84,7 +84,7 @@
               "size": "small"
             },
             "colorScheme": "scheme-1",
-            "padding": { "top": 100, "bottom": 100 }
+            "padding": { "top": 120, "bottom": 120 }
           }
         },
         {
@@ -99,9 +99,9 @@
             },
             "heading": { "text": "Подпишитесь на нашу рассылку", "size": "small" },
             "text": { "content": "Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.", "size": "small" },
-            "colorScheme": "scheme-4",
+            "colorScheme": "scheme-1",
             "copyrightColorScheme": "scheme-1",
-            "padding": { "top": 100, "bottom": 100 },
+            "padding": { "top": 120, "bottom": 60 },
             "navigationColumn": {
               "title": "Навигация",
               "links": [
@@ -147,104 +147,104 @@
   "currentPageId": "home",
   "themeSettings": {
     "logoUrl": null,
-    "bodyFont": "manrope",
+    "bodyFont": "arsenal",
     "cartType": "drawer",
     "logoWidth": 40,
     "bodyWeight": 400,
     "cardBorder": 0,
-    "cardRadius": 10,
-    "headingFont": "comfortaa",
-    "inputRadius": 10,
-    "mediaRadius": 10,
-    "buttonRadius": 10,
+    "cardRadius": 0,
+    "headingFont": "bitter",
+    "inputRadius": 0,
+    "mediaRadius": 0,
+    "buttonRadius": 0,
     "colorSchemes": [
       {
         "id": "scheme-1",
-        "name": "Dark",
+        "name": "Dark Olive",
         "text": "#FFFFFF",
         "heading": "#FFFFFF",
-        "background": "#000000",
+        "background": "#26311c",
         "primaryButton": {
-          "text": "#000000",
-          "border": "#ffffff",
-          "textHover": "#000000",
-          "background": "#ffffff",
-          "backgroundHover": "#e5e5e5"
+          "text": "#ffffff",
+          "border": "#3a4530",
+          "textHover": "#ffffff",
+          "background": "#3a4530",
+          "backgroundHover": "#2d3824"
         },
         "secondaryButton": {
           "text": "#ffffff",
           "border": "#ffffff",
           "textHover": "#ffffff",
-          "background": "#000000",
-          "backgroundHover": "#1a1a1a"
+          "background": "#26311c",
+          "backgroundHover": "#1e2816"
         }
       },
       {
         "id": "scheme-2",
-        "name": "Warm brown",
+        "name": "Medium Olive",
         "text": "#FFFFFF",
         "heading": "#FFFFFF",
-        "background": "#8b7355",
+        "background": "#3a4530",
         "primaryButton": {
-          "text": "#8b7355",
+          "text": "#3a4530",
           "border": "#ffffff",
-          "textHover": "#8b7355",
+          "textHover": "#3a4530",
           "background": "#ffffff",
-          "backgroundHover": "#e5e5e5"
+          "backgroundHover": "#eeeeee"
         },
         "secondaryButton": {
           "text": "#ffffff",
           "border": "#ffffff",
           "textHover": "#ffffff",
-          "background": "#8b7355",
-          "backgroundHover": "#7a644a"
+          "background": "#3a4530",
+          "backgroundHover": "#2d3824"
         }
       },
       {
         "id": "scheme-3",
-        "name": "Light gray",
-        "text": "#292524",
-        "heading": "#292524",
-        "background": "#f5f5f5",
+        "name": "Light Gray",
+        "text": "#26311c",
+        "heading": "#26311c",
+        "background": "#eeeeee",
         "primaryButton": {
           "text": "#ffffff",
-          "border": "#8b7355",
+          "border": "#3a4530",
           "textHover": "#ffffff",
-          "background": "#8b7355",
-          "backgroundHover": "#7a644a"
+          "background": "#3a4530",
+          "backgroundHover": "#2d3824"
         },
         "secondaryButton": {
-          "text": "#292524",
-          "border": "#292524",
-          "textHover": "#292524",
-          "background": "#f5f5f5",
-          "backgroundHover": "#e5e5e5"
+          "text": "#26311c",
+          "border": "#26311c",
+          "textHover": "#26311c",
+          "background": "#eeeeee",
+          "backgroundHover": "#e0e0e0"
         }
       },
       {
         "id": "scheme-4",
         "name": "White",
-        "text": "#292524",
-        "heading": "#292524",
+        "text": "#26311c",
+        "heading": "#26311c",
         "background": "#ffffff",
         "primaryButton": {
           "text": "#ffffff",
-          "border": "#8b7355",
+          "border": "#3a4530",
           "textHover": "#ffffff",
-          "background": "#8b7355",
-          "backgroundHover": "#7a644a"
+          "background": "#3a4530",
+          "backgroundHover": "#2d3824"
         },
         "secondaryButton": {
-          "text": "#292524",
-          "border": "#292524",
-          "textHover": "#292524",
+          "text": "#26311c",
+          "border": "#26311c",
+          "textHover": "#26311c",
           "background": "#ffffff",
           "backgroundHover": "#f5f5f5"
         }
       }
     ],
-    "headingWeight": 400,
-    "sectionPadding": 100,
+    "headingWeight": 500,
+    "sectionPadding": 120,
     "productCardStyle": "standard",
     "productCardAlignment": "left"
   }

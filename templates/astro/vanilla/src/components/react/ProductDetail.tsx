@@ -73,12 +73,12 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
   }, []);
 
   return (
-    <section className="max-w-[1200px] mx-auto px-4 sm:px-6 py-10 sm:py-16">
+    <section className="max-w-[1320px] mx-auto px-4 sm:px-6 py-10 sm:py-16">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 lg:gap-16 items-start">
         {/* Left: Image gallery */}
         <div className="flex flex-col gap-4">
           {/* Main image */}
-          <div className="relative bg-gray-50 rounded-2xl overflow-hidden aspect-square">
+          <div className="relative bg-gray-50 overflow-hidden aspect-square" style={{ maxWidth: 552, maxHeight: 552 }}>
             {currentImage ? (
               <img
                 src={currentImage.url}
@@ -110,11 +110,8 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
                 <button
                   key={index}
                   onClick={() => setSelectedImageIndex(index)}
-                  className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 transition-colors ${
-                    index === selectedImageIndex
-                      ? 'border-current'
-                      : 'border-transparent hover:border-current/30'
-                  }`}
+                  style={{ width: 88, height: 88, flexShrink: 0, overflow: 'hidden', borderWidth: 2, borderStyle: 'solid', borderRadius: 0, transition: 'border-color 0.15s' }}
+                  className={index === selectedImageIndex ? 'border-current' : 'border-transparent hover:border-current/30'}
                 >
                   <img
                     src={image.url}
@@ -201,15 +198,27 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
           <div className="flex flex-col sm:flex-row gap-3 mt-2">
             <button
               onClick={handleAddToCart}
-              className="flex-1 px-6 py-3.5 text-sm font-medium rounded-lg border border-theme text-theme-foreground hover:opacity-80 transition-all"
-              style={{ background: 'rgb(var(--color-background))', borderColor: 'rgb(var(--color-border))' }}
+              className="flex-1 px-6 text-sm font-medium hover:opacity-80 transition-all font-[family-name:var(--font-body)]"
+              style={{
+                height: 56,
+                borderRadius: 0,
+                background: 'rgb(var(--color-button))',
+                color: 'rgb(var(--color-button-text))',
+                border: 'none',
+              }}
             >
               Добавить в корзину
             </button>
             <button
               onClick={handleBuyNow}
-              className="flex-1 px-6 py-3.5 text-sm font-medium rounded-lg border-none hover:opacity-90 transition-all"
-              style={{ background: 'rgb(var(--color-button))', color: 'rgb(var(--color-button-text))' }}
+              className="flex-1 px-6 text-sm font-medium hover:opacity-90 transition-all font-[family-name:var(--font-body)]"
+              style={{
+                height: 56,
+                borderRadius: 0,
+                background: 'transparent',
+                color: 'rgb(var(--color-primary))',
+                border: '1px solid rgb(var(--color-primary))',
+              }}
             >
               Купить сейчас
             </button>

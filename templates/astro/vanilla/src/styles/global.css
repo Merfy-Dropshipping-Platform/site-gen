@@ -2,12 +2,12 @@
 @import "./tokens.css";
 
 @theme {
-  --font-family-sans: 'Manrope', system-ui, sans-serif;
+  --font-family-sans: 'Arsenal', sans-serif;
   --font-family-heading: var(--font-heading);
   --font-family-body: var(--font-body);
-  --color-primary: #292524;
-  --color-gray: #78716c;
-  --color-accent: #8b7355;
+  --color-primary: #26311c;
+  --color-gray: #787878;
+  --color-accent: #3a4530;
   --color-theme-background: rgb(var(--color-background));
   --color-theme-foreground: rgb(var(--color-foreground));
   --color-theme-primary: rgb(var(--color-primary));
@@ -29,12 +29,20 @@
   font-family: var(--font-body);
 }
 
-.font-comfortaa {
-  font-family: 'Comfortaa', system-ui, sans-serif;
+.font-arsenal {
+  font-family: 'Arsenal', sans-serif;
 }
 
-.font-manrope {
-  font-family: 'Manrope', system-ui, sans-serif;
+.font-bitter {
+  font-family: 'Bitter', serif;
+}
+
+.font-exo2 {
+  font-family: 'Exo 2', sans-serif;
+}
+
+.font-urbanist {
+  font-family: 'Urbanist', sans-serif;
 }
 
 .font-inter {
@@ -131,25 +139,23 @@
   padding-right: 16px;
 }
 
-@media (min-width: 1280px) {
+@media (min-width: 768px) {
   .page-container {
-    padding-left: 256px;
-    padding-right: 256px;
-    max-width: none;
-  }
-}
-
-@media (min-width: 1920px) {
-  .page-container {
-    padding-left: 300px;
-    padding-right: 300px;
-    max-width: none;
+    padding-left: 24px;
+    padding-right: 24px;
   }
 }
 
 .section-spacing {
-  padding-top: var(--spacing-section);
-  padding-bottom: var(--spacing-section);
+  padding-top: var(--spacing-section-mobile);
+  padding-bottom: var(--spacing-section-mobile);
+}
+
+@media (min-width: 768px) {
+  .section-spacing {
+    padding-top: var(--spacing-section);
+    padding-bottom: var(--spacing-section);
+  }
 }
 
 /* ── Menu icon animation ── */
@@ -396,10 +402,10 @@ video {
     font-family: var(--font-heading);
     line-height: 1.2;
   }
-  h1 { font-size: 48px; font-weight: 400; text-transform: uppercase; }
-  h2 { font-size: 32px; font-weight: 400; text-transform: uppercase; }
-  h3 { font-size: 24px; font-weight: 400; }
-  h4 { font-size: 20px; font-weight: 400; }
+  h1 { font-size: 48px; font-weight: 500; }
+  h2 { font-size: 32px; font-weight: 500; }
+  h3 { font-size: 24px; font-weight: 500; }
+  h4 { font-size: 20px; font-weight: 500; }
   h5 { font-size: 18px; font-weight: 400; }
 
   a {

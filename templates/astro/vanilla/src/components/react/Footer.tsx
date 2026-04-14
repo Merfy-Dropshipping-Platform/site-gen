@@ -81,33 +81,34 @@ export function Footer({
 
   return (
     <footer className="bg-theme-background w-full">
-      <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-[300px]">
+      <div className="w-full max-w-[1320px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-[300px]">
         {/* Newsletter */}
         {showNewsletter && (
           <section className="pt-12 sm:pt-16 md:pt-20 lg:pt-24 xl:pt-28 2xl:pt-[100px] pb-10 sm:pb-12 md:pb-16 lg:pb-20 xl:pb-24">
             <div className="max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-[809px] mx-auto">
               <div className="flex flex-col items-center gap-3 sm:gap-4 lg:gap-[5px] mb-8 sm:mb-10 lg:mb-12">
-                <h2 className="text-2xl sm:text-3xl md:text-[32px] lg:text-[34px] xl:text-[36px] font-normal text-theme-foreground uppercase leading-[1.115] text-center font-heading">
+                <h2 className="text-[20px] font-light text-center" style={{ fontFamily: "'Urbanist', sans-serif", color: '#e38e9f', fontWeight: 300 }}>
                   {newsletter?.heading}
                 </h2>
                 {newsletter?.description && (
-                  <p className="text-base sm:text-lg md:text-xl lg:text-[22px] xl:text-[24px] font-normal text-theme-muted leading-[1.366] text-center px-4 sm:px-0 font-body">
+                  <p className="text-[14px] text-center px-4 sm:px-0" style={{ fontFamily: "'Inter', sans-serif", color: 'rgba(255,255,255,0.5)' }}>
                     {newsletter.description}
                   </p>
                 )}
               </div>
-              <form className="w-full max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-[600px] mx-auto h-auto sm:h-16 md:h-[70px] lg:h-[75px] xl:h-[80px] bg-theme-background border border-theme rounded-lg md:rounded-[10px] flex flex-col sm:flex-row justify-between items-stretch sm:items-center px-4 sm:px-5 lg:px-[25px] py-3 sm:py-2 lg:py-[10px] gap-3 sm:gap-2 lg:gap-[10px]">
+              <form className="w-full max-w-[430px] mx-auto h-[56px] flex flex-row justify-between items-center px-4 gap-2" style={{ backgroundColor: '#fff5f7', borderRadius: '4px' }}>
                 <input
                   type="email"
                   name="email"
                   placeholder={newsletter?.placeholder || "email@example.com"}
                   required
-                  className="flex-1 bg-transparent text-lg sm:text-xl md:text-[22px] lg:text-2xl font-light text-theme-muted leading-[1.366] outline-none placeholder:text-theme-muted focus:text-theme-foreground font-body"
+                  className="flex-1 bg-transparent text-[14px] outline-none placeholder:text-gray-400"
+                  style={{ fontFamily: "'Arsenal', sans-serif" }}
                 />
                 <button
                   type="submit"
                   aria-label="Subscribe"
-                  className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center self-end sm:self-center hover:scale-110 transition-transform"
+                  className="w-5 h-5 flex items-center justify-center hover:scale-110 transition-transform"
                 >
                   <svg
                     className="w-full h-full"
@@ -143,7 +144,7 @@ export function Footer({
                     <a
                       key={index}
                       href={link.href}
-                      className="text-base sm:text-lg md:text-[18px] lg:text-[20px] font-normal text-theme-muted leading-[1.366] hover:text-theme-foreground transition-colors font-body"
+                      className="text-[14px] font-normal text-theme-muted leading-[1.366] hover:text-theme-foreground transition-colors" style={{ fontFamily: "'Arsenal', sans-serif" } as React.CSSProperties}
                     >
                       {link.label}
                     </a>
@@ -163,7 +164,7 @@ export function Footer({
                     <a
                       key={index}
                       href={link.href}
-                      className="text-base sm:text-lg md:text-[18px] lg:text-[20px] font-normal text-theme-muted leading-[1.366] hover:text-theme-foreground transition-colors font-body"
+                      className="text-[14px] font-normal text-theme-muted leading-[1.366] hover:text-theme-foreground transition-colors" style={{ fontFamily: "'Arsenal', sans-serif" } as React.CSSProperties}
                     >
                       {link.label}
                     </a>
@@ -182,7 +183,7 @@ export function Footer({
                   {socialColumn.email && (
                     <a
                       href={`mailto:${socialColumn.email}`}
-                      className="text-base sm:text-lg md:text-[18px] lg:text-[20px] font-normal text-theme-muted leading-[1.366] hover:text-theme-foreground transition-colors font-body"
+                      className="text-[14px] font-normal text-theme-muted leading-[1.366] hover:text-theme-foreground transition-colors" style={{ fontFamily: "'Arsenal', sans-serif" } as React.CSSProperties}
                     >
                       {socialColumn.email}
                     </a>
@@ -223,8 +224,8 @@ export function Footer({
       </div>
 
       {/* Copyright Bar */}
-      <div className="w-full h-auto sm:h-20 md:h-24 lg:h-[100px] bg-black flex items-center justify-center py-6 sm:py-0">
-        <p className="text-sm sm:text-base md:text-lg lg:text-[20px] font-light text-white leading-[1.21] text-center px-4 sm:px-6 font-body">
+      <div className="w-full h-[64px] bg-black flex items-center justify-center">
+        <p className="text-[16px] font-light text-white text-center px-4" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 300 }}>
           &copy;{yearStr} {copyright?.companyName} All rights reserved.{" "}
           {copyright?.poweredBy}
         </p>

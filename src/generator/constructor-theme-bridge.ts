@@ -62,6 +62,8 @@ export interface ConstructorThemeSettings {
   productCardStyle?: "standard" | "card";
   productCardAlignment?: "left" | "center" | "right";
   colorSchemes: ConstructorColorScheme[];
+  /** Index of the color scheme to use for :root defaults (0-based). Defaults to 0. */
+  defaultSchemeIndex?: number;
 }
 
 /**
@@ -190,8 +192,9 @@ export function constructorThemeToMerchantSettings(
     tokens["spacing-section"] = `${theme.sectionPadding}px`;
   }
 
-  // Extract global colors from first color scheme (default scheme)
-  const defaultScheme = theme.colorSchemes[0];
+  // Extract global colors from the default color scheme (root :root values)
+  const rootIdx = theme.defaultSchemeIndex ?? 0;
+  const defaultScheme = theme.colorSchemes[rootIdx] ?? theme.colorSchemes[0];
   if (defaultScheme) {
     tokens["color-primary"] = defaultScheme.primaryButton.background;
     tokens["color-background"] = defaultScheme.background;

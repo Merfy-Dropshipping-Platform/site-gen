@@ -259,6 +259,7 @@
     "headingWeight": 500,
     "sectionPadding": 120,
     "productCardStyle": "standard",
-    "productCardAlignment": "left"
+    "productCardAlignment": "left",
+    "defaultSchemeIndex": 2
   }
 }

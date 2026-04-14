@@ -51,7 +51,7 @@ export function PriceRangeFilter({ priceMin, priceMax, onChange }: PriceRangeFil
     height: 60,
     padding: '10px 15px',
     border: '1px solid rgb(var(--color-muted))',
-    borderRadius: 10,
+    borderRadius: 0,
     backgroundColor: 'rgb(var(--color-background))',
     fontSize: 20,
     lineHeight: '27px',

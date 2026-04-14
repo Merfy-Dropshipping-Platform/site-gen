@@ -66,7 +66,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, href }) => {
           {product.compareAtPrice != null && product.compareAtPrice > 0 && (
             <span
               className="text-[14px] font-normal line-through leading-[1.26]"
-              style={{ color: '#444444', fontFamily: "var(--font-body)" }}
+              style={{ color: 'rgb(var(--color-muted))', fontFamily: "var(--font-body)" }}
             >
               {formatMoney(product.compareAtPrice)}
             </span>

@@ -62,7 +62,7 @@ function createDrawerHTML() {
       width: 100%;
       max-width: 420px;
       height: 100%;
-      background: #fff;
+      background: rgb(var(--color-card));
       z-index: 999;
       display: flex;
       flex-direction: column;
@@ -74,7 +74,7 @@ function createDrawerHTML() {
       align-items: center;
       justify-content: space-between;
       padding: 20px 24px;
-      border-bottom: 1px solid #f3f4f6;
+      border-bottom: 1px solid rgb(var(--color-foreground) / 0.08);
     }
     .cart-drawer-title {
       font-family: var(--font-heading, system-ui);
@@ -91,11 +91,11 @@ function createDrawerHTML() {
       border: none;
       background: none;
       cursor: pointer;
-      border-radius: 8px;
-      color: #374151;
+      border-radius: 0;
+      color: rgb(var(--color-foreground));
     }
     .cart-drawer-close:hover {
-      background: #f3f4f6;
+      background: rgb(var(--color-foreground) / 0.05);
     }
     .cart-drawer-items {
       flex: 1;
@@ -105,7 +105,7 @@ function createDrawerHTML() {
     .cart-drawer-empty {
       text-align: center;
       padding: 48px 0;
-      color: #9ca3af;
+      color: rgb(var(--color-muted));
       font-family: var(--font-body, system-ui);
     }
     .cart-drawer-empty p {
@@ -124,7 +124,7 @@ function createDrawerHTML() {
       display: flex;
       gap: 12px;
       padding: 12px 0;
-      border-bottom: 1px solid #f3f4f6;
+      border-bottom: 1px solid rgb(var(--color-foreground) / 0.08);
       font-family: var(--font-body, system-ui);
     }
     .cart-drawer-item:last-child {
@@ -133,9 +133,9 @@ function createDrawerHTML() {
     .cart-drawer-item-img {
       width: 72px;
       height: 72px;
-      border-radius: 8px;
+      border-radius: 0;
       object-fit: cover;
-      background: #f3f4f6;
+      background: rgb(var(--color-foreground) / 0.05);
       flex-shrink: 0;
     }
     .cart-drawer-item-info {
@@ -148,7 +148,7 @@ function createDrawerHTML() {
     .cart-drawer-item-name {
       font-size: 14px;
       font-weight: 500;
-      color: #111827;
+      color: rgb(var(--color-foreground));
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -168,7 +168,7 @@ function createDrawerHTML() {
       width: 28px;
       height: 28px;
       border: 1px solid rgb(var(--color-foreground, 18 18 18) / 0.25);
-      border-radius: 6px;
+      border-radius: 0;
       background: rgb(var(--color-foreground, 18 18 18) / 0.15);
       display: flex;
       align-items: center;
@@ -195,7 +195,7 @@ function createDrawerHTML() {
     .cart-drawer-item-remove {
       background: none;
       border: none;
-      color: #9ca3af;
+      color: rgb(var(--color-muted));
       cursor: pointer;
       padding: 4px;
       align-self: flex-start;
@@ -206,7 +206,7 @@ function createDrawerHTML() {
     }
     .cart-drawer-footer {
       padding: 16px 24px 24px;
-      border-top: 1px solid #f3f4f6;
+      border-top: 1px solid rgb(var(--color-foreground) / 0.08);
     }
     .cart-drawer-subtotal {
       display: flex;
@@ -219,16 +219,16 @@ function createDrawerHTML() {
     .cart-drawer-total-value {
       font-weight: 700;
       font-size: 18px;
-      color: #111827;
+      color: rgb(var(--color-foreground));
     }
     .cart-drawer-checkout-btn {
       display: block;
       width: 100%;
       padding: 14px;
       background: rgb(var(--color-primary));
-      color: #fff;
+      color: rgb(var(--color-button-text, 255 255 255));
       text-align: center;
-      border-radius: 12px;
+      border-radius: 0;
       font-family: var(--font-body, system-ui);
       font-size: 15px;
       font-weight: 600;
@@ -237,13 +237,13 @@ function createDrawerHTML() {
     }
     .cart-drawer-checkout-btn:hover {
       filter: brightness(0.85);
-      color: #fff;
+      color: rgb(var(--color-button-text, 255 255 255));
     }
     .cart-drawer-continue {
       display: block;
       text-align: center;
       margin-top: 12px;
-      color: #6b7280;
+      color: rgb(var(--color-muted));
       font-family: var(--font-body, system-ui);
       font-size: 14px;
       text-decoration: none;

@@ -54,7 +54,7 @@ export function SortDropdown({ value, onChange }: SortDropdownProps) {
           style={{
             top: 36,
             border: '1px solid rgb(var(--color-muted))',
-            borderRadius: 10,
+            borderRadius: 0,
             backgroundColor: 'rgb(var(--color-background))',
             minWidth: 180,
             padding: '8px 0',

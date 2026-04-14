@@ -41,10 +41,10 @@ const isRight = photoPosition === 'right';
 ---
 
 <section
-  class={`max-w-[1200px] mx-auto px-5 ${schemeClass}`}
+  class={`w-full ${schemeClass}`}
   style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}
 >
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-[60px] items-center">
+  <div class="max-w-[1320px] mx-auto px-5 grid grid-cols-1 md:grid-cols-2 gap-[60px] items-center">
     <!-- Image -->
     <div class={isRight ? 'order-1 md:order-2' : ''}>
       {image ? (

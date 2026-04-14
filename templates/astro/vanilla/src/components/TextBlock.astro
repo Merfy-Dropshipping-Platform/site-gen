@@ -39,27 +39,29 @@ const textSizeClass = textSizeClasses[size] || textSizeClasses.medium;
 ---
 
 <section
-  class={`max-w-[800px] mx-auto px-5 ${schemeClass}`}
-  style={`text-align: ${align}; padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}
+  class={`w-full ${schemeClass}`}
+  style={`background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}
 >
-  {headingText && (
-    <h2 class="font-medium text-theme-foreground mb-5 font-heading" style={`font-size:${headingFS};line-height:1.2;`}>
-      {headingText}
-    </h2>
-  )}
-  {bodyText && (
-    <p class={`${textSizeClass} text-theme-muted leading-[1.7] font-body`}>
-      {bodyText}
-    </p>
-  )}
-  {props.button?.text && (
-    <a
-      href={buttonLink}
-      class="inline-flex items-center mt-6 h-[48px] px-[25px] text-[16px] font-normal uppercase bg-theme-primary text-theme-button-text no-underline hover:opacity-90 transition-colors font-body"
-      style="border-radius: 0;"
-    >
-      {props.button.text}
-    </a>
-  )}
-  <slot />
+  <div class="max-w-[800px] mx-auto px-5" style={`text-align: ${align};`}>
+    {headingText && (
+      <h2 class="font-medium text-theme-foreground mb-5 font-heading" style={`font-size:${headingFS};line-height:1.2;`}>
+        {headingText}
+      </h2>
+    )}
+    {bodyText && (
+      <p class={`${textSizeClass} text-theme-muted leading-[1.7] font-body`}>
+        {bodyText}
+      </p>
+    )}
+    {props.button?.text && (
+      <a
+        href={buttonLink}
+        class="inline-flex items-center mt-6 h-[48px] px-[25px] text-[16px] font-normal uppercase bg-theme-primary text-theme-button-text no-underline hover:opacity-90 transition-colors font-body"
+        style="border-radius: 0;"
+      >
+        {props.button.text}
+      </a>
+    )}
+    <slot />
+  </div>
 </section>

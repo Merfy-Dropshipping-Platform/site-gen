@@ -81,7 +81,7 @@ const containerStyle = imagePosition === 'window'
           </div>
         </div>
       ))}
-      {visibleSlides.length > 1 && (
+      {visibleSlides.length > 1 && pagination === 'dots' && (
         <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2">
           {visibleSlides.map((_, i) => (
             <button
@@ -92,6 +92,31 @@ const containerStyle = imagePosition === 'window'
           ))}
         </div>
       )}
+      {visibleSlides.length > 1 && pagination === 'numbers' && (
+        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex items-center gap-4 slideshow-numbers-nav">
+          <button data-slide-prev class="slideshow-arrow" aria-label="Previous slide">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+            </svg>
+          </button>
+          <div class="flex items-center gap-3">
+            {visibleSlides.map((_, i) => (
+              <button
+                class={`slideshow-num text-[16px] font-body transition-opacity duration-200 ${i === 0 ? 'slideshow-num-active' : ''}`}
+                data-slide-num={i}
+                aria-label={`Slide ${i + 1}`}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
+          <button data-slide-next class="slideshow-arrow" aria-label="Next slide">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </button>
+        </div>
+      )}
     </div>
   )}
 </section>
@@ -100,6 +125,9 @@ const containerStyle = imagePosition === 'window'
   document.querySelectorAll('[data-slideshow]').forEach((slideshow) => {
     const slides = slideshow.querySelectorAll('[data-slide]') as NodeListOf<HTMLElement>;
     const dots = slideshow.querySelectorAll('[data-slide-dot]') as NodeListOf<HTMLElement>;
+    const nums = slideshow.querySelectorAll('[data-slide-num]') as NodeListOf<HTMLElement>;
+    const prevBtn = slideshow.querySelector('[data-slide-prev]') as HTMLElement | null;
+    const nextBtn = slideshow.querySelector('[data-slide-next]') as HTMLElement | null;
     if (slides.length <= 1) return;
 
     let current = 0;
@@ -108,16 +136,23 @@ const containerStyle = imagePosition === 'window'
     function goTo(index: number) {
       slides[current].classList.add('hidden');
       dots[current]?.classList.remove('slideshow-dot-active');
+      nums[current]?.classList.remove('slideshow-num-active');
 
       current = (index + slides.length) % slides.length;
 
       slides[current].classList.remove('hidden');
       dots[current]?.classList.add('slideshow-dot-active');
+      nums[current]?.classList.add('slideshow-num-active');
     }
 
     dots.forEach((dot, i) => {
       dot.addEventListener('click', () => goTo(i));
     });
+    nums.forEach((num, i) => {
+      num.addEventListener('click', () => goTo(i));
+    });
+    prevBtn?.addEventListener('click', () => goTo(current - 1));
+    nextBtn?.addEventListener('click', () => goTo(current + 1));
 
     if (interval > 0) {
       setInterval(() => goTo(current + 1), interval);
@@ -132,5 +167,34 @@ const containerStyle = imagePosition === 'window'
   }
   .slideshow-dot-active {
     background: rgb(var(--color-background));
+  }
+  .slideshow-arrow {
+    color: rgb(var(--color-background));
+    opacity: 0.6;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .slideshow-arrow:hover {
+    opacity: 1;
+  }
+  .slideshow-num {
+    color: rgb(var(--color-background));
+    opacity: 0.4;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px 4px;
+    font-weight: 400;
+    line-height: 1;
+  }
+  .slideshow-num-active {
+    opacity: 1;
+    font-weight: 700;
   }
 </style>

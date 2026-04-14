@@ -15,7 +15,7 @@
           "type": "Header",
           "props": {
             "id": "Header-1",
-            "siteTitle": "Мой магазин",
+            "siteTitle": "Vanila",
             "logo": "",
             "logoPosition": "top-center",
             "stickiness": "scroll-up",
@@ -23,9 +23,7 @@
             "padding": { "top": 0, "bottom": 0 },
             "navigationLinks": [
               { "label": "Каталог", "href": "/catalog" },
-              { "label": "Блог", "href": "/blog" },
               { "label": "О нас", "href": "/about" },
-              { "label": "Доставка", "href": "/delivery" },
               { "label": "Контакты", "href": "/contacts" }
             ],
             "menuColorScheme": "scheme-2",
@@ -45,27 +43,91 @@
               {
                 "id": "slide-1",
                 "image": "/main-image.png",
-                "heading": { "text": "Добро пожаловать", "size": "large" },
-                "text": { "content": "Откройте для себя нашу коллекцию товаров", "size": "medium" },
-                "button": { "text": "В КАТАЛОГ", "link": { "href": "/catalog" } },
-                "position": "center"
+                "heading": { "text": "Новая коллекция", "size": "medium" },
+                "text": { "content": "Откройте для себя нашу коллекцию товаров для дома", "size": "medium" },
+                "button": { "text": "СМОТРЕТЬ", "link": { "href": "/catalog" } },
+                "position": "left"
               },
               {
                 "id": "slide-2",
                 "image": "/main-image.png",
-                "heading": { "text": "Новая коллекция", "size": "large" },
-                "text": { "content": "Стиль и качество для каждого", "size": "medium" },
+                "heading": { "text": "Стиль и комфорт", "size": "medium" },
+                "text": { "content": "Создайте уют в каждой комнате с нашими товарами", "size": "medium" },
+                "button": { "text": "В КАТАЛОГ", "link": { "href": "/catalog" } },
+                "position": "left"
+              },
+              {
+                "id": "slide-3",
+                "image": "/main-image.png",
+                "heading": { "text": "Лучшие материалы", "size": "medium" },
+                "text": { "content": "Качественные ткани и натуральные материалы", "size": "medium" },
                 "button": { "text": "ПОДРОБНЕЕ", "link": { "href": "/catalog" } },
-                "position": "center"
+                "position": "left"
               }
             ],
             "overlay": 30,
             "imagePosition": "fullscreen",
             "size": "large",
             "interval": 5000,
-            "pagination": "dots",
+            "pagination": "numbers",
             "colorScheme": "scheme-1",
             "padding": { "top": 0, "bottom": 0 }
+          }
+        },
+        {
+          "type": "Collections",
+          "props": {
+            "id": "Collections-1",
+            "title": "Снова в продаже",
+            "subtitle": "Стиль для каждой ситуации — найдите свой в каталоге.",
+            "titleSize": "small",
+            "subtitleSize": "small",
+            "dataSource": "auto",
+            "collections": [],
+            "columnsCount": 2,
+            "imageView": "portrait",
+            "colorScheme": "scheme-3",
+            "padding": { "top": 100, "bottom": 100 }
+          }
+        },
+        {
+          "type": "MainText",
+          "props": {
+            "id": "MainText-1",
+            "heading": { "text": "Мы создаём вещи с душой", "size": "medium" },
+            "text": { "text": "Каждый товар в нашем магазине — это история о качестве, стиле и заботе о деталях. Мы тщательно отбираем поставщиков и материалы, чтобы предложить вам только лучшее." },
+            "align": "center",
+            "colorScheme": "scheme-2",
+            "padding": { "top": 120, "bottom": 120 }
+          }
+        },
+        {
+          "type": "Video",
+          "props": {
+            "id": "Video-1",
+            "video": { "url": "", "coverImage": "" },
+            "position": "fullscreen",
+            "content": {
+              "size": "medium",
+              "heading": { "enabled": "false", "text": "" },
+              "subheading": { "enabled": "false", "text": "" }
+            },
+            "colorScheme": "scheme-1",
+            "padding": { "top": 0, "bottom": 0 }
+          }
+        },
+        {
+          "type": "ImageWithText",
+          "props": {
+            "id": "ImageWithText-1",
+            "image": "",
+            "size": "medium",
+            "photoPosition": "left",
+            "heading": { "enabled": "true", "text": "О нашем бренде" },
+            "text": { "enabled": "true", "content": "Мы стремимся создавать продукты, которые вдохновляют и приносят радость в повседневную жизнь. Каждая деталь продумана с заботой о вас." },
+            "button": { "enabled": "true", "text": "УЗНАТЬ БОЛЬШЕ", "link": "/about" },
+            "colorScheme": "scheme-2",
+            "padding": { "top": 100, "bottom": 100 }
           }
         },
         {
@@ -74,7 +136,7 @@
             "id": "PopularProducts-1",
             "dataSource": "auto",
             "collection": "",
-            "cards": 8,
+            "cards": 6,
             "heading": { "text": "ПОПУЛЯРНЫЕ ТОВАРЫ", "size": "small" },
             "text": { "content": "Лучшие товары нашего магазина", "size": "small" },
             "productCard": {
@@ -82,22 +144,21 @@
               "cardStyle": "portrait",
               "nextPhoto": "false",
               "quickAdd": "false",
-              "columns": 4
+              "columns": 3
             },
             "colorScheme": "scheme-3",
-            "padding": { "top": 120, "bottom": 120 }
+            "padding": { "top": 100, "bottom": 100 }
           }
         },
         {
-          "type": "ContactForm",
+          "type": "Newsletter",
           "props": {
-            "id": "ContactForm-1",
-            "heading": {
-              "text": "Свяжитесь с нами",
-              "size": "small"
-            },
-            "colorScheme": "scheme-1",
-            "padding": { "top": 120, "bottom": 120 }
+            "id": "Newsletter-1",
+            "heading": { "text": "Подпишитесь на рассылку", "size": "small" },
+            "text": { "content": "Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.", "size": "small" },
+            "form": { "placeholder": "E-mail", "buttonText": "Отправить" },
+            "colorScheme": "scheme-2",
+            "padding": { "top": 100, "bottom": 100 }
           }
         },
         {
@@ -105,22 +166,16 @@
           "props": {
             "id": "Footer-1",
             "newsletter": {
-              "enabled": "true",
-              "heading": "Подпишитесь на нашу рассылку",
-              "description": "Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.",
-              "placeholder": "email@example.com"
+              "enabled": "false"
             },
-            "heading": { "text": "Подпишитесь на нашу рассылку", "size": "small" },
-            "text": { "content": "Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.", "size": "small" },
             "colorScheme": "scheme-1",
             "copyrightColorScheme": "scheme-1",
-            "padding": { "top": 120, "bottom": 60 },
+            "padding": { "top": 80, "bottom": 40 },
             "navigationColumn": {
               "title": "Навигация",
               "links": [
                 { "label": "Каталог", "href": "/catalog" },
                 { "label": "О нас", "href": "/about" },
-                { "label": "Доставка", "href": "/delivery" },
                 { "label": "Контакты", "href": "/contacts" }
               ]
             },
@@ -129,8 +184,7 @@
               "links": [
                 { "label": "Политика доставки", "href": "#" },
                 { "label": "Политика возврата", "href": "#" },
-                { "label": "Условия обслуживания", "href": "#" },
-                { "label": "Политика конфиденциальности", "href": "#" }
+                { "label": "Условия обслуживания", "href": "#" }
               ]
             },
             "socialColumn": {

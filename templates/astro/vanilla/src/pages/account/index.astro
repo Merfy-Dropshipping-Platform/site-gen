@@ -16,15 +16,17 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 <BaseLayout title={`Личный кабинет — ${meta?.title ?? 'Мой сайт'}`}>
   <Header {...headerProps} />
 
-  <main class="flex-1 max-w-[960px] mx-auto px-5 py-10 w-full font-body">
-    <h1 class="text-3xl font-heading mb-8">Личный кабинет</h1>
+  <main class="flex-1 w-full font-body" style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));">
+    <div class="max-w-[960px] mx-auto px-5 py-10 w-full">
+      <h1 class="text-3xl font-heading mb-8" style="color: rgb(var(--color-foreground));">Личный кабинет</h1>
 
-    <div class="md:flex md:gap-10">
-      <AccountNav />
+      <div class="md:flex md:gap-10">
+        <AccountNav />
 
-      <div class="flex-1">
-        <div class="bg-white p-6 rounded-2xl shadow-sm" id="account-welcome">
-          <p class="text-gray-500">Загрузка...</p>
+        <div class="flex-1">
+          <div class="p-6" style="background: rgb(var(--color-card)); border-radius: 0;" id="account-welcome">
+            <p style="color: rgb(var(--color-muted));">Загрузка...</p>
+          </div>
         </div>
       </div>
     </div>

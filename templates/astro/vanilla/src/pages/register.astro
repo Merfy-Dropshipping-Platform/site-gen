@@ -15,52 +15,62 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 <BaseLayout title={`Регистрация — ${meta?.title ?? 'Мой сайт'}`}>
   <Header {...headerProps} />
 
-  <main class="flex-1 max-w-[440px] mx-auto px-5 py-10 w-full font-body">
-    <h1 class="text-3xl font-heading text-center mb-8" id="register-title">Регистрация</h1>
+  <!-- Full-screen popup overlay layout per Figma -->
+  <div class="register-overlay">
+    <!-- Hero background with dark overlay -->
+    <div class="register-bg" style="background-image: url('/main-image.png');"></div>
+    <div class="register-dark-overlay"></div>
 
-    <!-- Invite expired / already used message -->
-    <div id="invite-expired-msg" class="hidden text-center py-8">
-      <p class="text-gray-600 text-lg mb-4">Ссылка для регистрации устарела или уже была использована.</p>
-      <a href="/register" class="auth-link font-medium text-base">Зарегистрироваться самостоятельно</a>
+    <!-- Right panel -->
+    <div class="register-panel">
+      <div class="register-panel-inner">
+        <h1 class="font-heading" style="font-size: 20px; font-weight: 400; color: rgb(var(--color-foreground)); margin-bottom: 32px;" id="register-title">Регистрация</h1>
+
+        <!-- Invite expired / already used message -->
+        <div id="invite-expired-msg" class="hidden text-center py-8">
+          <p class="font-body" style="font-size: 16px; color: rgb(var(--color-muted)); margin-bottom: 16px;">Ссылка для регистрации устарела или уже была использована.</p>
+          <a href="/register" class="auth-link font-medium text-base">Зарегистрироваться самостоятельно</a>
+        </div>
+
+        <form id="register-form" class="flex flex-col gap-[16px]">
+          <div>
+            <label for="reg-email" class="block mb-2 font-body" style="font-size: 14px; color: rgb(var(--color-foreground));">Email <span class="text-required">*</span></label>
+            <input type="email" id="reg-email" name="email" required placeholder="your@email.com" autocomplete="email"
+              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: 0; background: transparent; color: rgb(var(--color-foreground));">
+          </div>
+
+          <div id="reg-name-group">
+            <label for="reg-name" class="block mb-2 font-body" style="font-size: 14px; color: rgb(var(--color-foreground));">Имя <span class="text-required">*</span></label>
+            <input type="text" id="reg-name" name="name" required placeholder="Иван Иванов" autocomplete="name"
+              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: 0; background: transparent; color: rgb(var(--color-foreground));">
+          </div>
+
+          <div>
+            <label for="reg-password" class="block mb-2 font-body" style="font-size: 14px; color: rgb(var(--color-foreground));">Пароль <span class="text-required">*</span></label>
+            <input type="password" id="reg-password" name="password" required minlength="8" placeholder="Минимум 8 символов" autocomplete="new-password"
+              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: 0; background: transparent; color: rgb(var(--color-foreground));">
+          </div>
+
+          <div>
+            <label for="reg-confirm" class="block mb-2 font-body" style="font-size: 14px; color: rgb(var(--color-foreground));">Подтвердите пароль <span class="text-required">*</span></label>
+            <input type="password" id="reg-confirm" name="confirmPassword" required minlength="8" placeholder="Повторите пароль" autocomplete="new-password"
+              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: 0; background: transparent; color: rgb(var(--color-foreground));">
+          </div>
+
+          <div class="text-red-600 text-sm text-center hidden" id="register-error"></div>
+
+          <button type="submit" class="login-submit-btn w-full font-body font-normal transition-colors" id="btn-register">
+            <span class="loading hidden"><span class="loading-spinner inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></span>Регистрация...</span>
+            <span class="text">Создать аккаунт</span>
+          </button>
+        </form>
+
+        <div class="text-center text-[14px] mt-6 font-body" style="color: rgb(var(--color-muted));">
+          <p>Уже есть аккаунт? <a href="/login" class="auth-link font-medium">Войти</a></p>
+        </div>
+      </div>
     </div>
-
-    <form id="register-form" class="space-y-5">
-      <div>
-        <label for="reg-email" class="block mb-2 font-medium text-gray-700">Email <span class="text-required">*</span></label>
-        <input type="email" id="reg-email" name="email" required placeholder="your@email.com" autocomplete="email"
-          class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none auth-input-focus">
-      </div>
-
-      <div id="reg-name-group">
-        <label for="reg-name" class="block mb-2 font-medium text-gray-700">Имя <span class="text-required">*</span></label>
-        <input type="text" id="reg-name" name="name" required placeholder="Иван Иванов" autocomplete="name"
-          class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none auth-input-focus">
-      </div>
-
-      <div>
-        <label for="reg-password" class="block mb-2 font-medium text-gray-700">Пароль <span class="text-required">*</span></label>
-        <input type="password" id="reg-password" name="password" required minlength="8" placeholder="Минимум 8 символов" autocomplete="new-password"
-          class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none auth-input-focus">
-      </div>
-
-      <div>
-        <label for="reg-confirm" class="block mb-2 font-medium text-gray-700">Подтвердите пароль <span class="text-required">*</span></label>
-        <input type="password" id="reg-confirm" name="confirmPassword" required minlength="8" placeholder="Повторите пароль" autocomplete="new-password"
-          class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none auth-input-focus">
-      </div>
-
-      <div class="text-red-600 text-sm text-center hidden" id="register-error"></div>
-
-      <button type="submit" class="btn-primary w-full py-4 px-8 rounded-xl font-medium transition-colors" id="btn-register">
-        <span class="loading hidden"><span class="loading-spinner inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></span>Регистрация...</span>
-        <span class="text">Создать аккаунт</span>
-      </button>
-    </form>
-
-    <p class="text-center text-gray-500 text-sm mt-6">
-      Уже есть аккаунт? <a href="/login" class="auth-link font-medium">Войти</a>
-    </p>
-  </main>
+  </div>
 
   <Footer {...footerProps} />
 
@@ -210,11 +220,62 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 </BaseLayout>
 
 <style>
-  .btn-primary { background-color: rgb(var(--color-primary)); color: #fff; }
-  .btn-primary:hover { filter: brightness(0.85); }
-  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+  .register-overlay {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+  }
+  .register-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    z-index: 0;
+  }
+  .register-dark-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1;
+  }
+  .register-panel {
+    position: relative;
+    z-index: 2;
+    margin-left: auto;
+    width: 100%;
+    max-width: 590px;
+    background: rgb(var(--color-background));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+  }
+  .register-panel-inner {
+    width: 100%;
+    max-width: 430px;
+  }
+  .login-submit-btn {
+    height: 56px;
+    font-size: 16px;
+    background: rgb(var(--color-foreground));
+    color: #ffffff;
+    border: none;
+    border-radius: 0;
+    cursor: pointer;
+  }
+  .login-submit-btn:hover { filter: brightness(0.85); }
+  .login-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
   .text-required { color: rgb(var(--color-primary)); }
   .auth-link { color: rgb(var(--color-primary)); }
   .auth-link:hover { text-decoration: underline; }
-  .auth-input-focus:focus { border-color: rgb(var(--color-primary)); box-shadow: 0 0 0 3px rgb(var(--color-primary) / 0.15); }
+  .auth-input-focus:focus { border-color: rgb(var(--color-foreground)); box-shadow: 0 0 0 2px rgba(41, 37, 36, 0.15); }
+
+  @media (max-width: 768px) {
+    .register-panel {
+      max-width: 100%;
+    }
+    .register-bg, .register-dark-overlay {
+      display: none;
+    }
+  }
 </style>

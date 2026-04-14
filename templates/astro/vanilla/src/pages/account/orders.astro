@@ -16,24 +16,26 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 <BaseLayout title={`Мои заказы — ${meta?.title ?? 'Мой сайт'}`}>
   <Header {...headerProps} />
 
-  <main class="flex-1 max-w-[960px] mx-auto px-5 py-10 w-full font-body">
-    <h1 class="text-3xl font-heading mb-8">Мои заказы</h1>
+  <main class="flex-1 w-full font-body" style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));">
+    <div class="max-w-[960px] mx-auto px-5 py-10 w-full">
+      <h1 class="text-3xl font-heading mb-8" style="color: rgb(var(--color-foreground));">Мои заказы</h1>
 
-    <div class="md:flex md:gap-10">
-      <AccountNav active="orders" />
+      <div class="md:flex md:gap-10">
+        <AccountNav active="orders" />
 
-      <div class="flex-1">
-        <div id="orders-loading" class="text-gray-500 text-center py-10">Загрузка...</div>
-        <div id="orders-empty" class="hidden text-center py-10">
-          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-4 text-gray-300"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="8" x2="16" y1="10" y2="10"/><line x1="8" x2="12" y1="14" y2="14"/></svg>
-          <p class="text-gray-400 text-lg mb-4">У вас пока нет заказов</p>
-          <a href="/katalog" class="inline-block py-3 px-6 rounded-xl font-medium transition-colors btn-primary">Перейти в каталог</a>
+        <div class="flex-1">
+          <div id="orders-loading" class="text-center py-10" style="color: rgb(var(--color-muted));">Загрузка...</div>
+          <div id="orders-empty" class="hidden text-center py-10">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-4" style="color: rgb(var(--color-muted) / 0.4);"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="8" x2="16" y1="10" y2="10"/><line x1="8" x2="12" y1="14" y2="14"/></svg>
+            <p class="text-lg mb-4" style="color: rgb(var(--color-muted));">У вас пока нет заказов</p>
+            <a href="/catalog" class="inline-block py-3 px-6 font-medium transition-colors btn-primary" style="border-radius: 0;">Перейти в каталог</a>
+          </div>
+          <div id="orders-error" class="hidden text-center py-10">
+            <p class="text-red-400 text-lg mb-4">Не удалось загрузить заказы</p>
+            <button onclick="window.location.reload()" class="inline-block py-2.5 px-5 text-sm font-medium border transition-colors" style="border-radius: 0; border-color: rgb(var(--color-foreground) / 0.19); color: rgb(var(--color-foreground));">Попробовать снова</button>
+          </div>
+          <div id="orders-list" class="hidden space-y-4"></div>
         </div>
-        <div id="orders-error" class="hidden text-center py-10">
-          <p class="text-red-400 text-lg mb-4">Не удалось загрузить заказы</p>
-          <button onclick="window.location.reload()" class="inline-block py-2.5 px-5 rounded-xl text-sm font-medium border border-gray-300 hover:bg-gray-50 transition-colors">Попробовать снова</button>
-        </div>
-        <div id="orders-list" class="hidden space-y-4"></div>
       </div>
     </div>
   </main>

@@ -15,27 +15,29 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 <BaseLayout title={`О нас — ${meta?.title ?? 'Мой сайт'}`} description={meta?.description}>
   <Header {...headerProps} />
 
-  <main class="flex-1 w-full max-w-[1200px] mx-auto px-5 py-10">
-    <div class="text-center mb-10">
-      <p class="mb-4 text-sm text-gray-500 font-body">
-        <a href="/" class="text-gray-500 hover:text-black">Главная</a> / О нас
-      </p>
-      <h1 class="text-4xl font-heading">О нас</h1>
-    </div>
+  <main class="flex-1 w-full" style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));">
+    <div class="max-w-[1320px] mx-auto px-4 sm:px-6 py-[75px]">
+      <div class="text-center mb-10">
+        <p class="mb-4 text-sm font-body" style="color: rgb(var(--color-muted));">
+          <a href="/" class="hover:underline" style="color: rgb(var(--color-muted));">Главная</a> / О нас
+        </p>
+        <h1 class="text-4xl font-heading" style="color: rgb(var(--color-foreground));">О нас</h1>
+      </div>
 
-    <div class="space-y-6 text-gray-700 font-body leading-relaxed">
-      <p>
-        Добро пожаловать в наш интернет-магазин! Мы рады предложить вам широкий ассортимент
-        качественных товаров по доступным ценам.
-      </p>
-      <p>
-        Наша команда тщательно отбирает каждый товар, чтобы вы получали только лучшее.
-        Мы ценим доверие наших клиентов и стремимся обеспечить высокий уровень сервиса.
-      </p>
-      <p>
-        Если у вас есть вопросы или предложения, не стесняйтесь обращаться к нам через
-        страницу <a href="/contacts" class="text-black underline hover:no-underline">контактов</a>.
-      </p>
+      <div class="space-y-6 font-body leading-relaxed" style="color: rgb(var(--color-muted));">
+        <p>
+          Добро пожаловать в наш интернет-магазин! Мы рады предложить вам широкий ассортимент
+          качественных товаров по доступным ценам.
+        </p>
+        <p>
+          Наша команда тщательно отбирает каждый товар, чтобы вы получали только лучшее.
+          Мы ценим доверие наших клиентов и стремимся обеспечить высокий уровень сервиса.
+        </p>
+        <p>
+          Если у вас есть вопросы или предложения, не стесняйтесь обращаться к нам через
+          страницу <a href="/contacts" class="underline hover:no-underline" style="color: rgb(var(--color-foreground));">контактов</a>.
+        </p>
+      </div>
     </div>
   </main>
 

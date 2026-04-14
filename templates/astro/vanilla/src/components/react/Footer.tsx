@@ -87,28 +87,28 @@ export function Footer({
           <section className="pt-12 sm:pt-16 md:pt-20 lg:pt-24 xl:pt-28 2xl:pt-[100px] pb-10 sm:pb-12 md:pb-16 lg:pb-20 xl:pb-24">
             <div className="max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-[809px] mx-auto">
               <div className="flex flex-col items-center gap-3 sm:gap-4 lg:gap-[5px] mb-8 sm:mb-10 lg:mb-12">
-                <h2 className="text-[20px] font-normal text-center" style={{ fontFamily: "'Bitter', serif", color: '#ffffff', fontWeight: 400 }}>
+                <h2 className="text-[20px] font-normal text-center" style={{ fontFamily: "'Bitter', serif", color: 'rgb(var(--color-foreground))', fontWeight: 400 }}>
                   {newsletter?.heading}
                 </h2>
                 {newsletter?.description && (
-                  <p className="text-[16px] text-center px-4 sm:px-0" style={{ fontFamily: "'Arsenal', sans-serif", color: '#f0f0f0' }}>
+                  <p className="text-[16px] text-center px-4 sm:px-0" style={{ fontFamily: "'Arsenal', sans-serif", color: 'rgb(var(--color-foreground) / 0.8)' }}>
                     {newsletter.description}
                   </p>
                 )}
               </div>
-              <form className="w-full max-w-[652px] mx-auto h-[56px] flex flex-row items-center" style={{ border: '1px solid #ffffff', borderRadius: 0 }}>
+              <form className="w-full max-w-[652px] mx-auto h-[56px] flex flex-row items-center" style={{ border: '1px solid rgb(var(--color-foreground))', borderRadius: 0 }}>
                 <input
                   type="email"
                   name="email"
                   placeholder={newsletter?.placeholder || "email@example.com"}
                   required
                   className="flex-1 bg-transparent text-[14px] outline-none h-full px-4"
-                  style={{ fontFamily: "'Arsenal', sans-serif", color: '#ffffff' }}
+                  style={{ fontFamily: "'Arsenal', sans-serif", color: 'rgb(var(--color-foreground))' }}
                 />
                 <button
                   type="submit"
                   className="h-[32px] px-4 mx-3 text-[14px] font-normal transition-opacity hover:opacity-80 whitespace-nowrap"
-                  style={{ background: '#ffffff', color: '#000000', border: 'none', borderRadius: 0, fontFamily: "'Arsenal', sans-serif" }}
+                  style={{ background: 'rgb(var(--color-foreground))', color: 'rgb(var(--color-background))', border: 'none', borderRadius: 0, fontFamily: "'Arsenal', sans-serif" }}
                 >
                   {newsletter?.buttonText || '→'}
                 </button>

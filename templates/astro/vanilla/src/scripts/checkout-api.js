@@ -108,8 +108,18 @@ export const CheckoutAPI = {
    * @returns {Promise<{success: boolean, data: {id: string, orderNumber: string}}>}
    */
   async checkout(cartId) {
+    // Pass browser analytics session/visitor IDs for accurate conversion tracking
+    const metadata = {};
+    try {
+      const sid = document.cookie.match(/(?:^|;\s*)_mfy_sid=([^;]+)/);
+      const vid = document.cookie.match(/(?:^|;\s*)_mfy_vid=([^;]+)/);
+      if (sid) metadata.sessionId = sid[1];
+      if (vid) metadata.visitorId = vid[1];
+    } catch { /* best-effort */ }
+
     return request(`/orders/cart/${cartId}/checkout`, {
       method: 'POST',
+      body: Object.keys(metadata).length > 0 ? JSON.stringify({ metadata }) : undefined,
     });
   },
 

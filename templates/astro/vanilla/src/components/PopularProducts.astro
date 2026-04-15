@@ -68,7 +68,7 @@ if (collection && allProducts.length > 0) {
 ---
 
 <section id="popular" class={`w-full scroll-mt-20 ${schemeClass}`} style={`background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
-  <div class="w-full max-w-[1320px] mx-auto px-4 md:px-6" style={`padding-top: ${padding?.top ?? 120}px; padding-bottom: ${padding?.bottom ?? 120}px;`}>
+  <div class="w-full max-w-[1320px] mx-auto px-5" style={`padding-top: ${padding?.top ?? 120}px; padding-bottom: ${padding?.bottom ?? 120}px;`}>
     <div class="flex flex-col items-start gap-[8px] mb-[40px]">
       {headingText && (
         <h2 class="text-[20px] font-normal leading-[1.2] font-heading" style="color: rgb(var(--color-foreground));">
@@ -82,7 +82,7 @@ if (collection && allProducts.length > 0) {
       )}
     </div>
 
-    <div class="grid product-grid-dynamic gap-4 sm:gap-5 md:gap-6 lg:gap-4 xl:gap-[16px]">
+    <div class="grid product-grid-dynamic gap-[16px]">
       {(cards ? products.slice(0, cards) : products).map((product) => (
         <ProductCardItem
           id={product.id}

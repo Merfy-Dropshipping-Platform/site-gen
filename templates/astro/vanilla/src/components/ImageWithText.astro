@@ -67,26 +67,30 @@ const isRight = photoPosition === 'right';
     </div>
 
     <!-- Content -->
-    <div class={isRight ? 'order-2 md:order-1' : ''}>
-      {showHeading && (
-        <h2 class={`${headingSizeClass} font-normal text-theme-foreground mb-4 leading-[1.2] font-heading`}>
-          {heading!.text}
-        </h2>
-      )}
-      {showText && (
-        <p class="text-lg text-theme-muted leading-[1.7] mb-6 font-body">
-          {text!.content}
-        </p>
-      )}
-      {showButton && (
-        <a
-          href={button!.link ?? '#'}
-          class="inline-flex items-center justify-center h-[48px] px-[16px] text-[16px] font-normal uppercase no-underline hover:opacity-90 transition-colors font-body"
-          style="border: 1.3px solid rgb(var(--color-foreground)); background: transparent; color: rgb(var(--color-foreground)); border-radius: 0;"
-        >
-          {button!.text}
-        </a>
-      )}
+    <div class={`py-[16px] ${isRight ? 'order-2 md:order-1' : ''}`}>
+      <div class="flex flex-col" style="gap:64px;">
+        <div>
+          {showHeading && (
+            <h2 class={`${headingSizeClass} font-normal leading-[1.2] font-heading`} style="color:rgb(var(--color-foreground));margin-bottom:12px;">
+              {heading!.text}
+            </h2>
+          )}
+          {showText && (
+            <p class="text-[16px] leading-[1.25] font-body" style="color:rgb(var(--color-foreground) / 0.94);">
+              {text!.content}
+            </p>
+          )}
+        </div>
+        {showButton && (
+          <a
+            href={button!.link ?? '#'}
+            class="inline-flex items-center justify-center h-[48px] px-[16px] text-[16px] font-normal uppercase no-underline hover:opacity-90 transition-colors font-body self-start"
+            style="border: 1.3px solid rgb(var(--color-foreground)); background: transparent; color: rgb(var(--color-foreground)); border-radius: 0;"
+          >
+            {button!.text}
+          </a>
+        )}
+      </div>
     </div>
   </div>
 </section>

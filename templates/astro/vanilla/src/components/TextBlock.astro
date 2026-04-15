@@ -43,25 +43,29 @@ const textSizeClass = textSizeClasses[size] || textSizeClasses.medium;
   style={`background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}
 >
   <div class="max-w-[1320px] mx-auto px-5" style={`text-align: ${align};`}>
-    {headingText && (
-      <h2 class="font-normal text-theme-foreground mb-5 font-heading" style={`font-size:${headingFS};line-height:1.2;`}>
-        {headingText}
-      </h2>
-    )}
-    {bodyText && (
-      <p class={`${textSizeClass} text-theme-muted leading-[1.7] font-body`}>
-        {bodyText}
-      </p>
-    )}
-    {props.button?.text && (
-      <a
-        href={buttonLink}
-        class="inline-flex items-center mt-6 h-[48px] px-[16px] text-[16px] font-normal uppercase no-underline hover:opacity-90 transition-colors font-body"
-        style="border: 1.3px solid rgb(var(--color-foreground)); background: transparent; color: rgb(var(--color-foreground)); border-radius: 0;"
-      >
-        {props.button.text}
-      </a>
-    )}
+    <div class="flex flex-col" style="gap:64px; max-md:gap:40px;">
+      <div>
+        {headingText && (
+          <h2 class="font-normal font-heading" style={`font-size:${headingFS};line-height:1.2;color:rgb(var(--color-foreground));margin-bottom:12px;`}>
+            {headingText}
+          </h2>
+        )}
+        {bodyText && (
+          <p class="text-[16px] leading-[1.25] font-body" style="color:rgb(var(--color-foreground) / 0.94);">
+            {bodyText}
+          </p>
+        )}
+      </div>
+      {props.button?.text && (
+        <a
+          href={buttonLink}
+          class="inline-flex items-center justify-center h-[48px] px-[16px] text-[16px] font-normal uppercase no-underline hover:opacity-90 transition-colors font-body"
+          style="border: 1.3px solid rgb(var(--color-foreground)); background: transparent; color: rgb(var(--color-foreground)); border-radius: 0;"
+        >
+          {props.button.text}
+        </a>
+      )}
+    </div>
     <slot />
   </div>
 </section>

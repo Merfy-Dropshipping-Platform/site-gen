@@ -1,44 +1,78 @@
 /* Bloom Theme — Design Tokens
- * Soft feminine palette with #cf7a8b / #e38e9f pink accent.
- * Urbanist headings, Inter body, 5px button radius + pill variants.
+ * Pixel-perfect values from Figma spec.
+ * Soft feminine palette with #CF7A8B / #E38E9F pink accent.
+ * Urbanist headings, Inter body, Roboto product names, Manrope pagination.
  * Colors stored as RGB triplets for rgba() support.
  */
 
 :root {
-  /* ── Colors (RGB triplets) ── */
+  /* ── Core Colors (RGB triplets) ── */
   --color-primary: 0, 0, 0;            /* #000000 */
   --color-primary-rgb: 0, 0, 0;
-  --color-background: 255, 255, 255;    /* #ffffff */
+  --color-background: 255, 255, 255;    /* #FFFFFF */
   --color-foreground: 0, 0, 0;          /* #000000 */
-  --color-border: 238, 238, 238;        /* #eeeeee */
-  --color-button: 0, 0, 0;             /* #000000 */
-  --color-button-text: 255, 255, 255;   /* #ffffff */
   --color-muted: 153, 153, 153;         /* #999999 */
-  --color-secondary: 207, 122, 139;     /* #cf7a8b pink accent */
-  --color-accent: 207, 122, 139;        /* #cf7a8b */
+  --color-secondary: 207, 122, 139;     /* #CF7A8B */
+
+  /* ── Accent Palette ── */
+  --color-accent: 207, 122, 139;        /* #CF7A8B — brand, announcement bar, primary button */
+  --color-accent-light: 227, 142, 159;  /* #E38E9F — section bg (text/advantages/FAQ), sale badge, input accent border */
+  --color-accent-text: 247, 162, 179;   /* #F7A2B3 — subtitles, newsletter placeholder, icon strokes */
+  --color-accent-rose: 255, 148, 148;   /* #FF9494 — sale badge variant */
+  --color-accent-peach: 255, 181, 175;  /* #FFB5AF — decorative */
+
+  /* ── Surface Colors ── */
+  --color-surface: 247, 247, 249;       /* #F7F7F9 — hero bg, warm gray */
+  --color-surface-alt: 240, 240, 240;   /* #F0F0F0 — pagination, size selectors */
+  --color-surface-light: 245, 245, 245; /* #F5F5F5 — text block bg */
+
+  /* ── Input & Border ── */
+  --color-input-bg: 255, 245, 247;      /* #FFF5F7 — very light pink */
+  --color-border: 217, 217, 217;        /* #D9D9D9 */
+  --color-border-default: 217, 217, 217;/* #D9D9D9 */
+  --color-button: 207, 122, 139;        /* #CF7A8B — primary CTA */
+  --color-button-text: 255, 255, 255;   /* #FFFFFF */
+
+  /* ── Badge Colors ── */
+  --color-badge-sale: 255, 148, 148;    /* #FF9494 */
+  --color-badge-text: 255, 255, 255;    /* #FFFFFF */
 
   /* ── Typography ── */
   --font-heading: 'Urbanist', sans-serif;
   --font-body: 'Inter', sans-serif;
+  --font-product: 'Roboto', sans-serif;       /* product names on cards */
+  --font-pagination: 'Manrope', sans-serif;   /* pagination numbers */
   --font-badge: 'Inter', sans-serif;
+  --font-auth: 'Involve', sans-serif;         /* auth links */
   --font-powered: 'Inter', sans-serif;
 
   /* ── Border Radii ── */
-  --radius-base: 5px;
-  --radius-button: 5px;
-  --radius-card: 12px;
-  --radius-input: 4px;
-  --radius-filter: 4px;
+  --radius-button: 100px;       /* pill for primary CTA */
+  --radius-button-base: 6px;    /* component buttons (sm/md/lg Fill) */
+  --radius-card: 12px;          /* product card container */
+  --radius-card-image: 12px;    /* product card image */
+  --radius-badge: 16px;         /* pill sale badges */
+  --radius-input: 4px;          /* form inputs */
+  --radius-login: 8px;          /* login button */
+  --radius-icon: 8px;           /* header icons */
+  --radius-pagination: 4px;     /* pagination buttons */
+  --radius-payment-icon: 2px;   /* payment method icons */
+  --radius-base: 6px;           /* base/default */
+  --radius-filter: 4px;         /* filter controls */
+  --radius-gallery: 12px;       /* gallery images */
 
   /* ── Layout ── */
   --page-width: 1320px;
   --spacing-section: 120px;
   --spacing-section-mobile: 80px;
+  --header-height: 115px;
+  --header-padding: 24px;
+  --header-gap: 16px;
 }
 
 /* ── Color Scheme 1: Pink Accent (Announcement bar, Cart badge) ── */
 .color-scheme-1 {
-  --color-background: 207, 122, 139;    /* #cf7a8b */
+  --color-background: 207, 122, 139;    /* #CF7A8B */
   --color-foreground: 255, 255, 255;
   --color-primary: 255, 255, 255;
   --color-border: 227, 142, 159;
@@ -48,9 +82,9 @@
   --color-secondary: 255, 255, 255;
 }
 
-/* ── Color Scheme 2: Pink Section (Main text, Advantages) ── */
+/* ── Color Scheme 2: Pink Section (Main text, Advantages, FAQ, Collapsible) ── */
 .color-scheme-2 {
-  --color-background: 227, 142, 159;    /* #e38e9f */
+  --color-background: 227, 142, 159;    /* #E38E9F */
   --color-foreground: 255, 255, 255;
   --color-primary: 255, 255, 255;
   --color-border: 247, 162, 179;
@@ -65,20 +99,20 @@
   --color-background: 255, 255, 255;
   --color-foreground: 0, 0, 0;
   --color-primary: 0, 0, 0;
-  --color-border: 238, 238, 238;
-  --color-button: 0, 0, 0;
+  --color-border: 217, 217, 217;        /* #D9D9D9 */
+  --color-button: 207, 122, 139;        /* #CF7A8B accent */
   --color-button-text: 255, 255, 255;
   --color-muted: 153, 153, 153;
   --color-secondary: 207, 122, 139;
 }
 
-/* ── Color Scheme 4: Light Hero (Hero overlay) ── */
+/* ── Color Scheme 4: Light Hero (Hero overlay, warm gray) ── */
 .color-scheme-4 {
-  --color-background: 247, 247, 249;    /* #f7f7f9 */
+  --color-background: 247, 247, 249;    /* #F7F7F9 */
   --color-foreground: 0, 0, 0;
   --color-primary: 0, 0, 0;
-  --color-border: 238, 238, 238;
-  --color-button: 0, 0, 0;
+  --color-border: 217, 217, 217;        /* #D9D9D9 */
+  --color-button: 207, 122, 139;        /* #CF7A8B accent */
   --color-button-text: 255, 255, 255;
   --color-muted: 153, 153, 153;
   --color-secondary: 207, 122, 139;

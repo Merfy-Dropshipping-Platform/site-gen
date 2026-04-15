@@ -28,6 +28,71 @@
   font-family: 'Inter', system-ui, sans-serif;
 }
 
+.font-manrope {
+  font-family: 'Manrope', sans-serif;
+}
+
+.font-tinos {
+  font-family: 'Tinos', serif;
+}
+
+.font-roboto {
+  font-family: 'Roboto', sans-serif;
+}
+
+.font-involve {
+  font-family: 'Involve', sans-serif;
+}
+
+/* ── Text transform utilities ── */
+.text-uppercase {
+  text-transform: uppercase;
+}
+
+.text-normal-case {
+  text-transform: none;
+}
+
+/* ── Button typography (Figma: Manrope Medium 500) ── */
+.btn-typography {
+  font-family: var(--font-button);
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 21.9px;
+  text-transform: uppercase;
+}
+
+.btn-typography-sm {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17.6px;
+  text-transform: uppercase;
+}
+
+/* ── Badge typography (Figma: Manrope Medium 500, 12px) ── */
+.badge-typography {
+  font-family: var(--font-badge, 'Manrope', sans-serif);
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 16.4px;
+  text-transform: uppercase;
+}
+
+/* ── Outline button (product card "Add to Cart") ── */
+.btn-outline {
+  background-color: transparent;
+  color: rgb(var(--color-foreground));
+  border: 1px solid rgb(var(--color-foreground));
+  border-radius: var(--radius-button);
+  transition: opacity 0.2s, background-color 0.2s;
+}
+
+.btn-outline:hover {
+  background-color: rgb(var(--color-foreground));
+  color: rgb(var(--color-button-text));
+}
+
 /* ── Token-based utility classes ── */
 .text-theme-foreground {
   color: rgb(var(--color-foreground));
@@ -68,6 +133,22 @@
 
 .border-theme {
   border-color: rgb(var(--color-border));
+}
+
+.bg-theme-surface {
+  background-color: rgb(var(--color-surface));
+}
+
+.bg-theme-badge {
+  background-color: rgb(var(--color-badge-bg));
+}
+
+.border-error {
+  border-color: rgb(var(--color-error));
+}
+
+.text-theme-error {
+  color: rgb(var(--color-error));
 }
 
 .rounded-button {

@@ -24,8 +24,28 @@
   font-family: 'Inter', system-ui, sans-serif;
 }
 
+.font-roboto {
+  font-family: 'Roboto', sans-serif;
+}
+
 .font-manrope {
   font-family: 'Manrope', sans-serif;
+}
+
+.font-involve {
+  font-family: 'Involve', sans-serif;
+}
+
+.font-product {
+  font-family: var(--font-product);
+}
+
+.font-pagination {
+  font-family: var(--font-pagination);
+}
+
+.font-auth {
+  font-family: var(--font-auth);
 }
 
 /* ── Token-based utility classes ── */
@@ -87,6 +107,33 @@
 
 .btn-primary:hover {
   opacity: 0.9;
+}
+
+.btn-pill {
+  border-radius: var(--radius-button);
+  background-color: rgb(var(--color-accent));
+  color: rgb(var(--color-button-text));
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+.btn-pill:hover {
+  opacity: 0.9;
+}
+
+.btn-login {
+  border-radius: var(--radius-login);
+  background-color: rgb(var(--color-accent));
+  color: rgb(var(--color-button-text));
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+.btn-login:hover {
+  opacity: 0.9;
+}
+
+.btn-base {
+  border-radius: var(--radius-button-base);
+  transition: opacity 0.2s, transform 0.15s;
 }
 
 .add-to-cart-btn {

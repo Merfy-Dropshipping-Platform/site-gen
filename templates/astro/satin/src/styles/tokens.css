@@ -1,27 +1,44 @@
 /* Satin Theme — Design Tokens
  * Monochrome black/white palette matching Figma design.
- * Kelly Slab headings, Arsenal body, ALL UPPERCASE text.
+ * Kelly Slab headings, Arsenal body, Manrope buttons, ALL UPPERCASE text.
  * Colors stored as RGB triplets for rgba() support.
+ *
+ * Figma typography map:
+ *   Heading    → Kelly Slab 400
+ *   Body/Nav   → Arsenal 400
+ *   Button     → Manrope 500
+ *   Accent     → Tinos 400  (collection subcategory labels)
+ *   Announce   → Roboto 300 (desktop), Arsenal 400 (mobile)
+ *   Copyright  → Inter 300
+ *   Badge      → Manrope 500
+ *   Auth links → Involve 400
  */
 
 :root {
   /* ── Colors (RGB triplets) ── */
   --color-primary: 0, 0, 0;            /* #000000 */
   --color-primary-rgb: 0, 0, 0;
-  --color-background: 255, 255, 255;    /* #ffffff */
+  --color-background: 255, 255, 255;    /* #FFFFFF */
   --color-foreground: 0, 0, 0;          /* #000000 */
-  --color-border: 238, 238, 238;        /* #eeeeee */
+  --color-border: 238, 238, 238;        /* #EEEEEE */
   --color-button: 0, 0, 0;             /* #000000 */
-  --color-button-text: 255, 255, 255;   /* #ffffff */
+  --color-button-text: 255, 255, 255;   /* #FFFFFF */
   --color-muted: 153, 153, 153;         /* #999999 */
-  --color-secondary: 245, 245, 245;     /* #f5f5f5 */
+  --color-secondary: 245, 245, 245;     /* #F5F5F5 */
   --color-accent: 0, 0, 0;             /* #000000 */
+  --color-surface: 245, 245, 245;       /* #F5F5F5 — footer bg */
+  --color-badge-bg: 238, 238, 238;      /* #EEEEEE — badge background */
+  --color-error: 255, 148, 148;         /* #FF9494 — error/validation */
 
   /* ── Typography ── */
   --font-heading: 'Kelly Slab', serif;
   --font-body: 'Arsenal', sans-serif;
-  --font-badge: 'Arsenal', sans-serif;
+  --font-button: 'Manrope', sans-serif;
+  --font-accent: 'Tinos', serif;
+  --font-announcement: 'Roboto', sans-serif;
+  --font-badge: 'Manrope', sans-serif;
   --font-powered: 'Inter', sans-serif;
+  --font-auth: 'Involve', sans-serif;
 
   /* ── Border Radii ── */
   --radius-base: 0px;
@@ -29,11 +46,19 @@
   --radius-card: 0px;
   --radius-input: 0px;
   --radius-filter: 0px;
+  --radius-icon: 8px;              /* header icons */
+  --radius-payment: 4px;           /* payment method icons */
+  --radius-order-card: 4px;        /* order detail cards */
 
   /* ── Layout ── */
   --page-width: 1320px;
-  --spacing-section: 120px;
-  --spacing-section-mobile: 80px;
+  --spacing-section: 40px;
+  --spacing-section-mobile: 40px;
+  --header-height: 80px;
+  --header-height-mobile: 56px;
+  --announcement-height: 40px;
+  --announcement-height-mobile: 32px;
+  --hero-height: 800px;
 }
 
 /* ── Color Scheme 1: Black (Hero, Announcement bar) ── */
@@ -46,6 +71,9 @@
   --color-button-text: 0, 0, 0;
   --color-muted: 200, 200, 200;
   --color-secondary: 245, 245, 245;
+  --color-surface: 8, 2, 0;
+  --color-badge-bg: 68, 68, 68;
+  --color-error: 255, 148, 148;
 }
 
 /* ── Color Scheme 2: White (Main content, Product grid) ── */
@@ -58,6 +86,9 @@
   --color-button-text: 255, 255, 255;
   --color-muted: 153, 153, 153;
   --color-secondary: 245, 245, 245;
+  --color-surface: 245, 245, 245;
+  --color-badge-bg: 238, 238, 238;
+  --color-error: 255, 148, 148;
 }
 
 /* ── Color Scheme 3: Light Gray (Footer, Cart drawer, Account) ── */
@@ -70,6 +101,9 @@
   --color-button-text: 255, 255, 255;
   --color-muted: 153, 153, 153;
   --color-secondary: 255, 255, 255;
+  --color-surface: 245, 245, 245;
+  --color-badge-bg: 238, 238, 238;
+  --color-error: 255, 148, 148;
 }
 
 /* ── Color Scheme 4: Dark Gray (Dividers, Outer wrapper) ── */
@@ -82,4 +116,7 @@
   --color-button-text: 68, 68, 68;
   --color-muted: 200, 200, 200;
   --color-secondary: 245, 245, 245;
+  --color-surface: 68, 68, 68;
+  --color-badge-bg: 100, 100, 100;
+  --color-error: 255, 148, 148;
 }

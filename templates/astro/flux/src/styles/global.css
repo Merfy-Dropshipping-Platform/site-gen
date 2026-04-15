@@ -28,6 +28,24 @@
   font-family: 'Inter', system-ui, sans-serif;
 }
 
+.font-involve {
+  font-family: 'Involve', sans-serif;
+}
+
+/* ── Font weight utilities ── */
+.font-light {
+  font-weight: 300;
+}
+
+.font-normal {
+  font-weight: 400;
+}
+
+/* ── Text transform utilities ── */
+.text-uppercase {
+  text-transform: uppercase;
+}
+
 /* ── Token-based utility classes ── */
 .text-theme-foreground {
   color: rgb(var(--color-foreground));
@@ -102,6 +120,41 @@
 
 .add-to-cart-btn.in-cart {
   background-color: rgb(var(--color-muted));
+}
+
+.btn-accent {
+  background-color: rgb(var(--color-accent));
+  color: rgb(var(--color-button-text));
+  border-radius: var(--radius-button-lg);
+  transition: opacity 0.2s;
+}
+
+.btn-accent:hover {
+  opacity: 0.9;
+}
+
+.btn-sm {
+  border-radius: var(--radius-button-sm);
+  font-size: 14px;
+  line-height: 16.4px;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+.btn-md {
+  border-radius: var(--radius-button-md);
+  font-size: 16px;
+  line-height: 18.8px;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+.btn-lg {
+  border-radius: var(--radius-button-lg);
+  font-size: 20px;
+  line-height: 23.4px;
+  font-weight: 400;
+  text-transform: uppercase;
 }
 
 .card {

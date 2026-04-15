@@ -24,22 +24,27 @@
         { "id": "color_primary", "type": "color", "label": "Primary color", "default": "#000000" },
         { "id": "color_background", "type": "color", "label": "Background", "default": "#ffffff" },
         { "id": "color_foreground", "type": "color", "label": "Text", "default": "#000000" },
-        { "id": "color_border", "type": "color", "label": "Border", "default": "#eeeeee" },
-        { "id": "color_button", "type": "color", "label": "Button", "default": "#000000" },
-        { "id": "color_button_text", "type": "color", "label": "Button text", "default": "#ffffff" }
+        { "id": "color_border", "type": "color", "label": "Border", "default": "#d9d9d9" },
+        { "id": "color_button", "type": "color", "label": "Button", "default": "#cf7a8b" },
+        { "id": "color_button_text", "type": "color", "label": "Button text", "default": "#ffffff" },
+        { "id": "color_accent", "type": "color", "label": "Accent", "default": "#cf7a8b" },
+        { "id": "color_accent_light", "type": "color", "label": "Accent light", "default": "#e38e9f" },
+        { "id": "color_accent_text", "type": "color", "label": "Accent text", "default": "#f7a2b3" },
+        { "id": "color_muted", "type": "color", "label": "Muted", "default": "#999999" }
       ]
     },
     {
       "name": "typography",
       "settings": [
         { "id": "font_heading", "type": "font", "label": "Heading font", "default": "Urbanist" },
-        { "id": "font_body", "type": "font", "label": "Body font", "default": "Inter" }
+        { "id": "font_body", "type": "font", "label": "Body font", "default": "Inter" },
+        { "id": "font_product", "type": "font", "label": "Product name font", "default": "Roboto" }
       ]
     },
     {
       "name": "layout",
       "settings": [
-        { "id": "radius_button", "type": "range", "label": "Button radius", "default": "5" },
+        { "id": "radius_button", "type": "range", "label": "Button radius", "default": "100" },
         { "id": "radius_card", "type": "range", "label": "Card radius", "default": "12" },
         { "id": "page_width", "type": "text", "label": "Page width", "default": "1320px" }
       ]
@@ -72,8 +77,8 @@
       "background": "#ffffff",
       "foreground": "#000000",
       "primary": "#000000",
-      "border": "#eeeeee",
-      "button": "#000000",
+      "border": "#d9d9d9",
+      "button": "#cf7a8b",
       "button_text": "#ffffff"
     },
     {
@@ -82,8 +87,8 @@
       "background": "#f7f7f9",
       "foreground": "#000000",
       "primary": "#000000",
-      "border": "#eeeeee",
-      "button": "#000000",
+      "border": "#d9d9d9",
+      "button": "#cf7a8b",
       "button_text": "#ffffff"
     }
   ]

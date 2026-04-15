@@ -111,6 +111,8 @@ const FONT_FAMILIES: Record<string, FontDef> = {
   bitter: { name: "Bitter", cssFamily: '"Bitter", serif' },
   "exo-2": { name: "Exo 2", cssFamily: '"Exo 2", sans-serif' },
   "kelly-slab": { name: "Kelly Slab", cssFamily: '"Kelly Slab", serif' },
+  tinos: { name: "Tinos", cssFamily: '"Tinos", serif' },
+  involve: { name: "Involve", cssFamily: '"Involve", sans-serif' },
 };
 
 function resolveFontFamily(fontKey: string): string {

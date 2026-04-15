@@ -26,14 +26,20 @@
         { "id": "color_foreground", "type": "color", "label": "Text", "default": "#000000" },
         { "id": "color_border", "type": "color", "label": "Border", "default": "#eeeeee" },
         { "id": "color_button", "type": "color", "label": "Button", "default": "#000000" },
-        { "id": "color_button_text", "type": "color", "label": "Button text", "default": "#ffffff" }
+        { "id": "color_button_text", "type": "color", "label": "Button text", "default": "#ffffff" },
+        { "id": "color_muted", "type": "color", "label": "Muted text", "default": "#999999" },
+        { "id": "color_surface", "type": "color", "label": "Surface (footer)", "default": "#f5f5f5" },
+        { "id": "color_error", "type": "color", "label": "Error", "default": "#ff9494" }
       ]
     },
     {
       "name": "typography",
       "settings": [
         { "id": "font_heading", "type": "font", "label": "Heading font", "default": "Kelly Slab" },
-        { "id": "font_body", "type": "font", "label": "Body font", "default": "Arsenal" }
+        { "id": "font_body", "type": "font", "label": "Body font", "default": "Arsenal" },
+        { "id": "font_button", "type": "font", "label": "Button font", "default": "Manrope" },
+        { "id": "font_accent", "type": "font", "label": "Accent font", "default": "Tinos" },
+        { "id": "font_announcement", "type": "font", "label": "Announcement font", "default": "Roboto" }
       ]
     },
     {
@@ -54,7 +60,9 @@
       "primary": "#ffffff",
       "border": "#444444",
       "button": "#ffffff",
-      "button_text": "#000000"
+      "button_text": "#000000",
+      "muted": "#c8c8c8",
+      "surface": "#080200"
     },
     {
       "id": 2,
@@ -64,7 +72,9 @@
       "primary": "#000000",
       "border": "#eeeeee",
       "button": "#000000",
-      "button_text": "#ffffff"
+      "button_text": "#ffffff",
+      "muted": "#999999",
+      "surface": "#f5f5f5"
     },
     {
       "id": 3,
@@ -74,7 +84,9 @@
       "primary": "#000000",
       "border": "#eeeeee",
       "button": "#000000",
-      "button_text": "#ffffff"
+      "button_text": "#ffffff",
+      "muted": "#999999",
+      "surface": "#f5f5f5"
     },
     {
       "id": 4,
@@ -84,7 +96,9 @@
       "primary": "#ffffff",
       "border": "#646464",
       "button": "#ffffff",
-      "button_text": "#444444"
+      "button_text": "#444444",
+      "muted": "#c8c8c8",
+      "surface": "#444444"
     }
   ]
 }

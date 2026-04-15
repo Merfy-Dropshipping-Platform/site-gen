@@ -171,7 +171,7 @@
     "cardBorder": 0,
     "cardRadius": 12,
     "headingFont": "roboto-flex",
-    "inputRadius": 4,
+    "inputRadius": 8,
     "mediaRadius": 8,
     "buttonRadius": 6,
     "colorSchemes": [
@@ -261,7 +261,7 @@
       }
     ],
     "headingWeight": 400,
-    "sectionPadding": 120,
+    "sectionPadding": 64,
     "productCardStyle": "standard",
     "productCardAlignment": "left",
     "defaultSchemeIndex": 1

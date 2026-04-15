@@ -26,14 +26,18 @@
         { "id": "color_foreground", "type": "color", "label": "Text", "default": "#000000" },
         { "id": "color_border", "type": "color", "label": "Border", "default": "#f5f5f5" },
         { "id": "color_button", "type": "color", "label": "Button (accent)", "default": "#fa5109" },
-        { "id": "color_button_text", "type": "color", "label": "Button text", "default": "#ffffff" }
+        { "id": "color_button_text", "type": "color", "label": "Button text", "default": "#ffffff" },
+        { "id": "color_accent", "type": "color", "label": "Accent", "default": "#fa5109" },
+        { "id": "color_muted", "type": "color", "label": "Muted text", "default": "#cccccc" }
       ]
     },
     {
       "name": "typography",
       "settings": [
         { "id": "font_heading", "type": "font", "label": "Heading font", "default": "Roboto Flex" },
-        { "id": "font_body", "type": "font", "label": "Body font", "default": "Roboto Flex" }
+        { "id": "font_body", "type": "font", "label": "Body font", "default": "Roboto Flex" },
+        { "id": "font_announcement", "type": "font", "label": "Announcement font", "default": "Barlow" },
+        { "id": "font_footer", "type": "font", "label": "Footer font", "default": "Barlow" }
       ]
     },
     {
@@ -41,6 +45,8 @@
       "settings": [
         { "id": "radius_button", "type": "range", "label": "Button radius", "default": "6" },
         { "id": "radius_card", "type": "range", "label": "Card radius", "default": "12" },
+        { "id": "radius_input", "type": "range", "label": "Input radius", "default": "8" },
+        { "id": "section_padding", "type": "range", "label": "Section padding", "default": "64" },
         { "id": "page_width", "type": "text", "label": "Page width", "default": "1320px" }
       ]
     }

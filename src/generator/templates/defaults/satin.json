@@ -262,7 +262,7 @@
       }
     ],
     "headingWeight": 400,
-    "sectionPadding": 120,
+    "sectionPadding": 40,
     "productCardStyle": "standard",
     "productCardAlignment": "left",
     "defaultSchemeIndex": 1

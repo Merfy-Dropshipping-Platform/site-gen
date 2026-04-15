@@ -167,8 +167,8 @@
     "cardRadius": 12,
     "headingFont": "urbanist",
     "inputRadius": 4,
-    "mediaRadius": 4,
-    "buttonRadius": 5,
+    "mediaRadius": 12,
+    "buttonRadius": 100,
     "colorSchemes": [
       {
         "id": "scheme-1",
@@ -220,10 +220,10 @@
         "background": "#ffffff",
         "primaryButton": {
           "text": "#ffffff",
-          "border": "#000000",
+          "border": "#cf7a8b",
           "textHover": "#ffffff",
-          "background": "#000000",
-          "backgroundHover": "#333333"
+          "background": "#cf7a8b",
+          "backgroundHover": "#c06e7f"
         },
         "secondaryButton": {
           "text": "#000000",
@@ -241,10 +241,10 @@
         "background": "#f7f7f9",
         "primaryButton": {
           "text": "#ffffff",
-          "border": "#000000",
+          "border": "#cf7a8b",
           "textHover": "#ffffff",
-          "background": "#000000",
-          "backgroundHover": "#333333"
+          "background": "#cf7a8b",
+          "backgroundHover": "#c06e7f"
         },
         "secondaryButton": {
           "text": "#000000",

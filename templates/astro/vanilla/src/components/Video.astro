@@ -17,7 +17,6 @@ const videoUrl = video?.url ?? '';
 const coverImage = video?.coverImage ?? '';
 const showHeading = content?.heading?.enabled !== 'false' && content?.heading?.text;
 const showSubheading = content?.subheading?.enabled !== 'false' && content?.subheading?.text;
-const contentSize = content?.size ?? 'medium';
 const padTop = padding?.top ?? 80;
 const padBottom = padding?.bottom ?? 80;
 
@@ -32,31 +31,23 @@ function getEmbedUrl(url: string): string {
 }
 
 const embedUrl = getEmbedUrl(videoUrl);
-
 const isFullscreen = position === 'fullscreen';
-
-const headingFontSizes: Record<string, string> = {
-  small: '1.5rem',
-  medium: '2rem',
-  large: '2.5rem',
-};
-const headingFS = headingFontSizes[contentSize] || '2rem';
 ---
 
 <section
-  class={`${isFullscreen ? 'w-full' : 'max-w-[1200px] mx-auto px-5'} ${schemeClass}`}
+  class={`w-full ${schemeClass}`}
   style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}
 >
-  <div>
+  <div class={isFullscreen ? 'w-full' : 'max-w-[1320px] mx-auto px-5'}>
     {(showHeading || showSubheading) && (
-      <div class="text-center mb-10 max-w-[700px] mx-auto">
+      <div class="flex flex-col items-start gap-[8px] mb-[40px]">
         {showHeading && (
-          <h2 class="font-medium text-theme-foreground mb-3 font-heading" style={`font-size:${headingFS};line-height:1.2;`}>
+          <h2 class="text-[20px] font-normal leading-[1.2] font-heading" style="color: rgb(var(--color-foreground));">
             {content!.heading!.text}
           </h2>
         )}
         {showSubheading && (
-          <p class="text-[1.1rem] text-theme-muted leading-[1.6] font-body">
+          <p class="text-[16px] font-normal leading-[1.25] font-body" style="color: rgb(var(--color-muted));">
             {content!.subheading!.text}
           </p>
         )}

@@ -13,29 +13,13 @@ const props = Astro.props;
 const schemeClass = props.colorScheme ? `color-scheme-${props.colorScheme.replace('scheme-', '')}` : '';
 const headingText = typeof props.heading === 'object' ? props.heading?.text : props.heading;
 const bodyText = typeof props.text === 'object' ? (props.text as any)?.text : props.text;
-const headingSize = typeof props.heading === 'object' ? props.heading?.size : props.size;
 const align = (props.align ?? 'center') as string;
-const size = (headingSize ?? props.size ?? 'medium') as string;
 const padTop = props.padding?.top ?? 60;
 const padBottom = props.padding?.bottom ?? 60;
 
 const buttonLink = typeof props.button?.link === 'object'
   ? (props.button?.link as any)?.href
   : (props.button?.link || '#');
-
-const headingFontSizes: Record<string, string> = {
-  small: '1rem',
-  medium: '1.25rem',
-  large: '1.75rem',
-};
-const headingFS = headingFontSizes[size] || '2rem';
-
-const textSizeClasses: Record<string, string> = {
-  small: 'text-base',
-  medium: 'text-lg',
-  large: 'text-xl',
-};
-const textSizeClass = textSizeClasses[size] || textSizeClasses.medium;
 ---
 
 <section
@@ -43,10 +27,10 @@ const textSizeClass = textSizeClasses[size] || textSizeClasses.medium;
   style={`background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}
 >
   <div class="max-w-[1320px] mx-auto px-5" style={`text-align: ${align};`}>
-    <div class="flex flex-col" style="gap:64px; max-md:gap:40px;">
+    <div class="flex flex-col textblock-inner">
       <div>
         {headingText && (
-          <h2 class="font-normal font-heading" style={`font-size:${headingFS};line-height:1.2;color:rgb(var(--color-foreground));margin-bottom:12px;`}>
+          <h2 class="text-[20px] font-normal leading-[1.2] font-heading" style="color:rgb(var(--color-foreground));margin-bottom:12px;">
             {headingText}
           </h2>
         )}
@@ -69,3 +53,14 @@ const textSizeClass = textSizeClasses[size] || textSizeClasses.medium;
     <slot />
   </div>
 </section>
+
+<style>
+  .textblock-inner {
+    gap: 64px;
+  }
+  @media (max-width: 767px) {
+    .textblock-inner {
+      gap: 40px;
+    }
+  }
+</style>

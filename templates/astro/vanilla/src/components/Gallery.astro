@@ -1,5 +1,4 @@
 ---
-import SectionHeader from './shared/SectionHeader.astro';
 import GalleryProductCard from './gallery/GalleryProductCard.astro';
 import GalleryCollection from './gallery/GalleryCollection.astro';
 
@@ -29,16 +28,29 @@ const textContent = typeof text === 'object' ? text?.content : text;
 const showProduct = productCard?.enabled !== 'false';
 const showCollection = collectionCard?.enabled !== 'false';
 const isRight = imagePosition === 'right';
+const padTop = padding?.top ?? 80;
+const padBottom = padding?.bottom ?? 80;
 
 const colorScheme = Astro.props.colorScheme;
 const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
 ---
 
-<section class={`w-full py-8 sm:py-12 md:py-16 lg:py-20 xl:py-24 2xl:py-[100px] ${schemeClass}`} style={`background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
-  <div class="w-full max-w-[1320px] mx-auto px-4 md:px-6">
-    <SectionHeader title={headingText || ''} subtitle={textContent} />
+<section class={`w-full ${schemeClass}`} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
+  <div class="w-full max-w-[1320px] mx-auto px-5">
+    <div class="flex flex-col items-start gap-[8px] mb-[40px]">
+      {headingText && (
+        <h2 class="text-[20px] font-normal leading-[1.2] font-heading" style="color: rgb(var(--color-foreground));">
+          {headingText}
+        </h2>
+      )}
+      {textContent && (
+        <p class="text-[16px] font-normal leading-[1.25] font-body" style="color: rgb(var(--color-muted));">
+          {textContent}
+        </p>
+      )}
+    </div>
 
-    <div class={`grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-4 sm:gap-5 md:gap-6 lg:gap-[20px] ${isRight ? 'direction-rtl' : ''}`}>
+    <div class={`grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-[16px] ${isRight ? 'direction-rtl' : ''}`}>
       <!-- Featured Image -->
       <div class={`w-full aspect-[920/900] lg:aspect-auto lg:h-[900px] overflow-hidden ${isRight ? 'lg:order-2' : ''}`} style="background: rgb(var(--color-foreground) / 0.05); border-radius: var(--radius-card, 0px)">
         <img
@@ -50,7 +62,7 @@ const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-',
       </div>
 
       <!-- Right Column -->
-      <div class={`flex flex-col gap-4 sm:gap-5 md:gap-6 lg:gap-[20px] ${isRight ? 'lg:order-1' : ''}`}>
+      <div class={`flex flex-col gap-[16px] ${isRight ? 'lg:order-1' : ''}`}>
         {showProduct && (
           <GalleryProductCard
             name={productCard?.name || 'Товар'}

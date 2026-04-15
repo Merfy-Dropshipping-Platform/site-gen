@@ -24,7 +24,6 @@ interface Props {
 const { heading, columns = [], columnsCount = '3', width = 'medium', imageAspectRatio = 'square', textPosition = 'center', colorScheme, padding } = Astro.props;
 const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
 const showHeading = heading?.enabled !== 'false' && heading?.text;
-const headingSize = heading?.size ?? 'medium';
 const cols = parseInt(columnsCount) || 3;
 const padTop = padding?.top ?? 80;
 const padBottom = padding?.bottom ?? 80;
@@ -37,35 +36,31 @@ const aspectMap: Record<string, string> = {
   landscape: '4/3',
 };
 
-const headingFontSize: Record<string, string> = {
-  small: '1.5rem',
-  medium: '2rem',
-  large: '2.5rem',
-};
-
 const textAlignClass = textPosition === 'center' ? 'text-center' : 'text-left';
 ---
 
-<section class={`max-w-[1200px] mx-auto px-5 ${schemeClass}`} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
-  <div>
+<section class={`w-full ${schemeClass}`} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
+  <div class="max-w-[1320px] mx-auto px-5">
     {showHeading && (
-      <h2 class="font-heading font-medium text-theme-foreground text-center mb-12" style={`font-size:${headingFontSize[headingSize] ?? '2rem'};line-height:1.2;`}>
-        {heading!.text}
-      </h2>
+      <div class="flex flex-col items-start gap-[8px] mb-[40px]">
+        <h2 class="text-[20px] font-normal leading-[1.2] font-heading" style="color: rgb(var(--color-foreground));">
+          {heading!.text}
+        </h2>
+      </div>
     )}
 
-    <div class={`grid multi-columns-grid gap-8 max-md:!grid-cols-2 max-md:gap-6 max-[480px]:!grid-cols-1 ${textAlignClass}`}>
+    <div class={`grid multi-columns-grid gap-[16px] max-md:!grid-cols-2 max-[480px]:!grid-cols-1 ${textAlignClass}`}>
       {visibleColumns.map((col) => (
-        <div class="flex flex-col gap-3">
+        <div class="flex flex-col gap-[20px]">
           {col.image && (
             <div class="overflow-hidden" style={`aspect-ratio: ${aspectMap[imageAspectRatio] ?? '1/1'}; background: rgb(var(--color-foreground) / 0.03); border-radius: var(--radius-card, 0px);`}>
               <img src={col.image} alt={col.title ?? ''} loading="lazy" class="w-full h-full object-cover" />
             </div>
           )}
-          {col.title && <h3 class="font-heading text-[1.15rem] font-medium text-theme-foreground">{col.title}</h3>}
-          {col.description && <p class="text-[0.95rem] text-theme-muted leading-relaxed">{col.description}</p>}
+          {col.title && <h3 class="font-heading text-[16px] font-normal uppercase" style="color: rgb(var(--color-foreground));">{col.title}</h3>}
+          {col.description && <p class="text-[16px] font-normal leading-[1.25] font-body" style="color: rgb(var(--color-muted));">{col.description}</p>}
           {col.link?.enabled !== 'false' && col.link?.text && col.link?.href && (
-            <a href={col.link.href} class="text-sm font-medium text-theme-foreground no-underline transition-colors duration-200 hover:text-theme-foreground">
+            <a href={col.link.href} class="text-[16px] font-normal underline font-body transition-opacity duration-200 hover:opacity-80" style="color: rgb(var(--color-foreground));">
               {col.link.text}
             </a>
           )}

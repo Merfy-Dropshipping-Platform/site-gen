@@ -12,7 +12,7 @@
   --color-border: 200, 200, 200;      /* #c8c8c8 */
   --color-button: 58, 69, 48;         /* #3a4530 medium olive */
   --color-button-text: 255, 255, 255; /* #ffffff */
-  --color-muted: 120, 120, 120;       /* #787878 */
+  --color-muted: 68, 68, 68;          /* #444444 */
   --color-secondary: 58, 69, 48;      /* #3a4530 */
   --color-accent: 58, 69, 48;         /* #3a4530 — same as secondary */
 
@@ -32,7 +32,7 @@
   /* ── Layout ── */
   --page-width: 1320px;
   --spacing-section: 120px;
-  --spacing-section-mobile: 60px;
+  --spacing-section-mobile: 80px;
 }
 
 /* ── Color Scheme 1: Dark Olive (Hero, Footer, Video) ── */
@@ -67,7 +67,7 @@
   --color-border: 200, 200, 200;
   --color-button: 58, 69, 48;           /* #3a4530 */
   --color-button-text: 255, 255, 255;
-  --color-muted: 120, 120, 120;
+  --color-muted: 68, 68, 68;
   --color-secondary: 58, 69, 48;
 }
 
@@ -79,6 +79,6 @@
   --color-border: 200, 200, 200;
   --color-button: 58, 69, 48;           /* #3a4530 */
   --color-button-text: 255, 255, 255;
-  --color-muted: 120, 120, 120;
+  --color-muted: 68, 68, 68;
   --color-secondary: 58, 69, 48;
 }

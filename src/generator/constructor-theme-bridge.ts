@@ -110,6 +110,7 @@ const FONT_FAMILIES: Record<string, FontDef> = {
   arsenal: { name: "Arsenal", cssFamily: '"Arsenal", sans-serif' },
   bitter: { name: "Bitter", cssFamily: '"Bitter", serif' },
   "exo-2": { name: "Exo 2", cssFamily: '"Exo 2", sans-serif' },
+  "kelly-slab": { name: "Kelly Slab", cssFamily: '"Kelly Slab", serif' },
 };
 
 function resolveFontFamily(fontKey: string): string {

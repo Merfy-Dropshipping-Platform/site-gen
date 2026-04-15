@@ -262,7 +262,7 @@ describe("buildScaffold", () => {
 
     const { generatedFiles } = await buildScaffold(config);
 
-    expect(generatedFiles).toContain("src/pages/products/[handle].astro");
+    expect(generatedFiles).toContain("src/pages/product/[handle].astro");
     expect(generatedFiles).toContain("src/pages/collections/[handle].astro");
 
     const productPage = await fs.readFile(
@@ -396,7 +396,7 @@ describe("buildScaffold", () => {
     // Should contain theme marker, page, dynamic pages, tokens, configs
     expect(generatedFiles).toContain("[theme copied]");
     expect(generatedFiles).toContain("src/pages/index.astro");
-    expect(generatedFiles).toContain("src/pages/products/[handle].astro");
+    expect(generatedFiles).toContain("src/pages/product/[handle].astro");
     expect(generatedFiles).toContain("src/pages/collections/[handle].astro");
     expect(generatedFiles).toContain("src/styles/override.css");
   });

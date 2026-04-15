@@ -135,9 +135,12 @@ const containerStyle = imagePosition === 'window'
     if (slides.length <= 1) return;
 
     let current = 0;
+    let isNavigating = false;
     const interval = parseInt(slideshow.getAttribute('data-interval') || '0');
 
     function goTo(index: number) {
+      if (isNavigating) return;
+      isNavigating = true;
       slides[current].classList.add('hidden');
       dots[current]?.classList.remove('slideshow-dot-active');
       nums[current]?.classList.remove('slideshow-num-active');
@@ -147,6 +150,7 @@ const containerStyle = imagePosition === 'window'
       slides[current].classList.remove('hidden');
       dots[current]?.classList.add('slideshow-dot-active');
       nums[current]?.classList.add('slideshow-num-active');
+      setTimeout(() => { isNavigating = false; }, 300);
     }
 
     dots.forEach((dot, i) => {

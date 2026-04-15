@@ -288,11 +288,11 @@ export async function buildScaffold(
       outputDir,
       "src",
       "pages",
-      "products",
+      "product",
       "[handle].astro",
     );
     await writeFile(productPagePath, productPage);
-    generatedFiles.push("src/pages/products/[handle].astro");
+    generatedFiles.push("src/pages/product/[handle].astro");
 
     const collectionPage = generateCollectionPage({
       ...config.dynamicPages,

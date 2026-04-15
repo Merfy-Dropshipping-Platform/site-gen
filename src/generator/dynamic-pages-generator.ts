@@ -163,7 +163,7 @@ ${indent}  ) : (
 ${indent}    <div class="product-grid">
 ${indent}      {products.map((product) => (
 ${indent}        <article class="product-card">
-${indent}          <a href={'/products/' + (product.slug || product.handle || product.id)}>
+${indent}          <a href={'/product/' + (product.slug || product.handle || product.id)}>
 ${indent}            <div class="product-image-wrapper">
 ${indent}              {product.images && product.images[0] ? (
 ${indent}                <img src={product.images[0]} alt={product.name} class="product-image" loading="lazy" />

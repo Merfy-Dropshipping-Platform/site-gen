@@ -87,6 +87,8 @@ function showSection(id) {
 
 function showSuccess(orderId) {
   document.getElementById('order-number').textContent = `Заказ #${orderId.slice(-8).toUpperCase()}`;
+  // Очищаем корзину после успешной оплаты
+  try { localStorage.removeItem('merfy-cart'); } catch (e) { /* ignore */ }
   showSection('result-success');
 }
 

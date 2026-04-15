@@ -24,7 +24,7 @@ export function AnnouncementBar({
 
   return (
     <div className={`w-full flex items-center justify-center ${sizeClass}`} style={{ backgroundColor: 'rgb(var(--color-background))', color: 'rgb(var(--color-foreground))' }}>
-      <div className="w-full max-w-[1320px] mx-auto px-4 md:px-6">
+      <div className="w-full max-w-[1320px] mx-auto px-5">
         <a
           href={href}
           className="block text-center hover:opacity-80 transition-opacity font-normal leading-tight uppercase"

@@ -357,7 +357,7 @@ export async function buildScaffold(
         const familyParams = [...families]
           .map((name) => `family=${name.replace(/ /g, "+")}:wght@100..900`)
           .join("&");
-        const newUrl = `https://fonts.googleapis.com/css2?${familyParams}&display=swap`;
+        const newUrl = `https://fonts.googleapis.com/css2?${familyParams}&display=optional`;
         // Replace existing Google Fonts import in global.css
         globalCss = globalCss.replace(
           /@import url\("https:\/\/fonts\.googleapis\.com\/css2\?[^"]+"\);/,

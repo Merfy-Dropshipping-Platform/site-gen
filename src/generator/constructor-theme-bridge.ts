@@ -166,7 +166,7 @@ export function generateGoogleFontsUrl(
     .map((name) => `family=${name.replace(/ /g, "+")}:wght@100..900`)
     .join("&");
 
-  return `https://fonts.googleapis.com/css2?${families}&display=swap`;
+  return `https://fonts.googleapis.com/css2?${families}&display=optional`;
 }
 
 /**

@@ -1,0 +1,67 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import data from '../data/data.json';
+import siteConfig from '../data/site-config.json';
+import products from '../data/products.json';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import PopularProducts from '../components/PopularProducts.astro';
+import CatalogIsland from '../components/react/CatalogIsland';
+
+const meta = data?.meta ?? {};
+const blocks = data?.content ?? [];
+const headerBlock = blocks.find((b: any) => b.type === 'Header');
+const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
+const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
+const branding = (siteConfig as any)?.branding ?? {};
+---
+<BaseLayout title={`Каталог — ${meta?.title ?? 'Мой сайт'}`} description={meta?.description}>
+  <div class="catalog-page flex flex-col flex-1" style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));">
+    <Header {...headerProps} />
+
+    <main class="catalog-main flex-1 w-full max-w-[1320px] mx-auto py-8 sm:py-12 md:py-16 lg:py-20 xl:py-24">
+      <!-- Page title block -->
+      <div class="mb-8 sm:mb-10 md:mb-12 lg:mb-16 xl:mb-20">
+        <h1
+          class="text-xl sm:text-2xl md:text-3xl lg:text-[32px] font-normal uppercase leading-[1.115] font-heading"
+          style="color: rgb(var(--color-foreground)); margin: 0;"
+        >КАТАЛОГ</h1>
+        <p
+          class="text-sm sm:text-base md:text-lg lg:text-xl xl:text-[24px] font-normal leading-[1.366] font-body mt-1 sm:mt-2"
+          style="color: rgb(var(--color-muted));"
+        >Здесь начинается персональный стиль</p>
+      </div>
+
+      <CatalogIsland client:only="react" />
+
+      <noscript>
+        <PopularProducts products={products} />
+      </noscript>
+    </main>
+
+    <Footer {...footerProps} />
+  </div>
+</BaseLayout>
+
+<style>
+  .catalog-main {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  @media (min-width: 640px) {
+    .catalog-main { padding-left: 24px; padding-right: 24px; }
+  }
+  @media (min-width: 768px) {
+    .catalog-main { padding-left: 32px; padding-right: 32px; }
+  }
+  @media (min-width: 1024px) {
+    .catalog-main { padding-left: 64px; padding-right: 64px; }
+  }
+  @media (min-width: 1280px) {
+    .catalog-main { padding-left: 96px; padding-right: 96px; }
+  }
+  @media (min-width: 1536px) {
+    .catalog-main { padding-left: 300px; padding-right: 300px; }
+  }
+</style>

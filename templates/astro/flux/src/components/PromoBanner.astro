@@ -1,0 +1,30 @@
+---
+interface Props {
+  text?: string;
+  link?: any;
+  linkText?: string;
+  size?: string;
+  colorScheme?: string;
+}
+
+const { text = 'Скидка 10% на общую сумму заказа от 9 000₽', link, linkText = 'Перейти', size = 'small', colorScheme } = Astro.props;
+
+const href = typeof link === 'object' ? link?.href : (link || '#');
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
+---
+
+<div class={`w-full py-3 ${schemeClass}`} style={schemeClass ? `background: rgb(var(--color-background)); color: rgb(var(--color-foreground));` : `background: rgb(var(--color-foreground)); color: rgb(var(--color-background));`}>
+  <div class="w-full max-w-[1320px] mx-auto px-5">
+    <a
+      href={href}
+      class="block text-center hover:opacity-80 transition-opacity text-[16px] font-normal leading-tight font-body"
+    >
+      <span class="inline-block">{text}</span>
+      {linkText && (
+        <span class="inline-block ml-2 underline decoration-1 underline-offset-2">
+          {linkText}
+        </span>
+      )}
+    </a>
+  </div>
+</div>

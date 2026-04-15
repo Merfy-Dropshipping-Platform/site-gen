@@ -1,0 +1,18 @@
+---
+interface Props {
+  colorScheme?: string;
+  padding?: { top?: number; bottom?: number };
+  [key: string]: any;
+}
+
+const { colorScheme, padding } = Astro.props;
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
+const padTop = padding?.top ?? 40;
+const padBottom = padding?.bottom ?? 40;
+---
+
+<section class={`interactive-section w-full ${schemeClass}`} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
+  <div class="max-w-[1200px] mx-auto px-5">
+    <slot />
+  </div>
+</section>

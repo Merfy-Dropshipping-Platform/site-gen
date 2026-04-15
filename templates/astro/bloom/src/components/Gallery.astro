@@ -1,0 +1,84 @@
+---
+import GalleryProductCard from './gallery/GalleryProductCard.astro';
+import GalleryCollection from './gallery/GalleryCollection.astro';
+
+interface Props {
+  heading?: any;
+  text?: any;
+  imagePosition?: string;
+  featuredImage?: { url?: string; alt?: string };
+  productCard?: { enabled?: string; name?: string; price?: string; oldPrice?: string; image?: string };
+  collectionCard?: { enabled?: string; name?: string; image?: string };
+  padding?: { top?: number; bottom?: number };
+  colorScheme?: string;
+}
+
+const {
+  heading = { text: 'Галерея', size: 'small' },
+  text = { content: 'Стиль для каждой ситуации - найдите свой в каталоге.', size: 'small' },
+  imagePosition = 'left',
+  featuredImage = { url: '/images/gallery-1.png', alt: 'Галерея' },
+  productCard = { enabled: 'true', name: 'Сумка', price: '5 990₽', oldPrice: '7 990₽', image: '/images/gallery-2.png' },
+  collectionCard = { enabled: 'true', name: 'Коллекция FUTURISM', image: '/images/gallery-3.png' },
+  padding = { top: 80, bottom: 80 },
+} = Astro.props;
+
+const headingText = typeof heading === 'object' ? heading?.text : heading;
+const textContent = typeof text === 'object' ? text?.content : text;
+const showProduct = productCard?.enabled !== 'false';
+const showCollection = collectionCard?.enabled !== 'false';
+const isRight = imagePosition === 'right';
+const padTop = padding?.top ?? 80;
+const padBottom = padding?.bottom ?? 80;
+
+const colorScheme = Astro.props.colorScheme;
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
+---
+
+<section class={`w-full ${schemeClass}`} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
+  <div class="w-full max-w-[1320px] mx-auto px-5">
+    <div class="flex flex-col items-start gap-[8px] mb-[40px]">
+      {headingText && (
+        <h2 class="text-[20px] font-normal leading-[1.2] font-heading" style="color: rgb(var(--color-foreground));">
+          {headingText}
+        </h2>
+      )}
+      {textContent && (
+        <p class="text-[16px] font-normal leading-[1.25] font-body" style="color: rgb(var(--color-muted));">
+          {textContent}
+        </p>
+      )}
+    </div>
+
+    <div class={`grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-[16px] ${isRight ? 'direction-rtl' : ''}`}>
+      <!-- Featured Image -->
+      <div class={`w-full aspect-[920/900] lg:aspect-auto lg:h-[900px] overflow-hidden ${isRight ? 'lg:order-2' : ''}`} style="background: rgb(var(--color-foreground) / 0.05); border-radius: var(--radius-card, 0px)">
+        <img
+          src={featuredImage?.url || '/images/gallery-1.png'}
+          alt={featuredImage?.alt || 'Галерея'}
+          loading="lazy"
+          class="w-full h-full object-cover"
+        />
+      </div>
+
+      <!-- Right Column -->
+      <div class={`flex flex-col gap-[16px] ${isRight ? 'lg:order-1' : ''}`}>
+        {showProduct && (
+          <GalleryProductCard
+            name={productCard?.name || 'Товар'}
+            price={productCard?.price || '0₽'}
+            oldPrice={productCard?.oldPrice}
+            image={productCard?.image || '/images/gallery-2.png'}
+          />
+        )}
+
+        {showCollection && (
+          <GalleryCollection
+            name={collectionCard?.name || 'Коллекция'}
+            image={collectionCard?.image || '/images/gallery-3.png'}
+          />
+        )}
+      </div>
+    </div>
+  </div>
+</section>

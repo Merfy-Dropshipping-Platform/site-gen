@@ -1,0 +1,95 @@
+---
+import CollectionCardItem from './shared/CollectionCardItem.astro';
+
+interface Props {
+  title?: string;
+  subtitle?: string;
+  titleSize?: string;
+  subtitleSize?: string;
+  dataSource?: string;
+  collections?: Array<{ name: string; image: string; slug?: string }>;
+  columnsCount?: number;
+  imageView?: string;
+  colorScheme?: string;
+  padding?: { top?: number; bottom?: number };
+}
+
+const {
+  title = 'Снова в продаже',
+  subtitle = 'Стиль для каждой ситуации - найдите свой в каталоге.',
+  titleSize = 'small',
+  subtitleSize = 'small',
+  dataSource = 'auto',
+  collections = [],
+  columnsCount = 3,
+  imageView = 'portrait',
+  colorScheme,
+  padding = { top: 80, bottom: 80 },
+} = Astro.props;
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
+
+const aspectMap: Record<string, string> = {
+  portrait: '430/500',
+  square: '1/1',
+  wide: '16/9',
+};
+
+let collectionsData = collections || [];
+
+if (dataSource === 'auto' || collectionsData.length === 0) {
+  try {
+    const imported = await import('../data/collections.json');
+    collectionsData = imported.default || [];
+  } catch {
+    collectionsData = [];
+  }
+}
+
+const cols = columnsCount || 3;
+const aspect = aspectMap[imageView] || aspectMap.portrait;
+---
+
+<section id="collections" class={`w-full scroll-mt-16 sm:scroll-mt-20 ${schemeClass}`} style={`background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
+  <div class="w-full max-w-[1320px] mx-auto px-5 py-[120px] max-md:py-[80px]">
+    <div class="flex flex-col items-start gap-[8px] mb-[40px]">
+      <h2 class="text-[20px] font-normal leading-[1.2] font-heading" style="color: rgb(var(--color-foreground));">
+        {title}
+      </h2>
+      {subtitle && (
+        <p class="text-[16px] font-normal leading-[1.25] font-body" style="color: rgb(var(--color-muted));">
+          {subtitle}
+        </p>
+      )}
+    </div>
+
+    {collectionsData.length > 0 && (
+    <div class="grid collections-grid gap-[16px]" role="list">
+      {collectionsData.map((collection, index) => (
+        <CollectionCardItem
+          name={collection.name}
+          image={collection.image}
+          slug={collection.slug}
+          aspect={aspect}
+          eager={index < 2}
+        />
+      ))}
+    </div>
+    )}
+  </div>
+</section>
+
+<style define:vars={{ cols }}>
+  .collections-grid {
+    grid-template-columns: repeat(1, 1fr);
+  }
+  @media (min-width: 640px) {
+    .collections-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  @media (min-width: 1024px) {
+    .collections-grid {
+      grid-template-columns: repeat(var(--cols), 1fr);
+    }
+  }
+</style>

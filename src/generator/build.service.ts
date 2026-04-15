@@ -1110,7 +1110,7 @@ async function stageGenerate(
   // Override product components with server-island variants when islands are enabled
   if (ctx.islandsEnabled) {
     const serverRegistry =
-      ctx.templateId === "vanilla" ? vanillaServerRegistry : roseServerRegistry;
+      ["vanilla", "satin", "flux", "bloom"].includes(ctx.templateId) ? vanillaServerRegistry : roseServerRegistry;
     for (const [name, entry] of Object.entries(serverRegistry)) {
       if (entry.kind === "server-island") {
         registry[name] = entry;

@@ -1,0 +1,174 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import data from '../data/data.json';
+import siteConfig from '../data/site-config.json';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+const meta = data?.meta ?? {};
+const blocks = data?.content ?? [];
+const headerBlock = blocks.find((b: any) => b.type === 'Header');
+const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
+const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
+---
+<BaseLayout title={`Вход — ${meta?.title ?? 'Мой сайт'}`}>
+  <!-- Full-screen popup overlay layout per Figma -->
+  <div class="login-overlay">
+    <!-- Hero background with dark overlay -->
+    <div class="login-bg" style="background-image: url('/main-image.png');"></div>
+    <div class="login-dark-overlay"></div>
+
+    <!-- Right panel -->
+    <div class="login-panel">
+      <div class="login-panel-inner">
+        <h1 class="font-heading" style="font-size: 20px; font-weight: 400; color: rgb(var(--color-foreground)); margin-bottom: 32px;">Вход</h1>
+
+        <form id="login-form" class="flex flex-col gap-[16px]">
+          <div>
+            <label for="login-email" class="block mb-2 font-body" style="font-size: 14px; color: rgb(var(--color-foreground));">Email</label>
+            <input type="email" id="login-email" name="email" required placeholder="your@email.com" autocomplete="email"
+              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: 0; background: transparent; color: rgb(var(--color-foreground));">
+          </div>
+
+          <div>
+            <label for="login-password" class="block mb-2 font-body" style="font-size: 14px; color: rgb(var(--color-foreground));">Пароль</label>
+            <input type="password" id="login-password" name="password" required placeholder="Введите пароль" autocomplete="current-password"
+              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: 0; background: transparent; color: rgb(var(--color-foreground));">
+          </div>
+
+          <div class="text-red-600 text-sm text-center hidden" id="login-error"></div>
+
+          <button type="submit" class="login-submit-btn w-full font-body font-normal transition-colors" id="btn-login">
+            <span class="loading hidden"><span class="loading-spinner inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></span>Вход...</span>
+            <span class="text">Войти</span>
+          </button>
+        </form>
+
+        <div class="text-center text-[14px] mt-6 space-y-2 font-body" style="color: rgb(var(--color-foreground));">
+          <p>
+            <a href="/reset-password" class="auth-link">Забыли пароль?</a>
+          </p>
+          <p style="color: rgb(var(--color-muted));">
+            Нет аккаунта? <a href="/register" class="auth-link font-medium">Зарегистрироваться</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline src="/scripts/customer-store.js"></script>
+  <script is:inline src="/scripts/customer-auth.js"></script>
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', function() {
+      // If already logged in, redirect
+      if (window.CustomerStore && window.CustomerStore.isLoggedIn()) {
+        var params = new URLSearchParams(window.location.search);
+        window.location.href = params.get('redirect') || '/account';
+        return;
+      }
+
+      var form = document.getElementById('login-form');
+      var errorEl = document.getElementById('login-error');
+      var btn = document.getElementById('btn-login');
+
+      form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        errorEl.classList.add('hidden');
+        errorEl.textContent = '';
+
+        var email = document.getElementById('login-email').value.trim();
+        var password = document.getElementById('login-password').value;
+
+        // Show loading
+        btn.querySelector('.loading').classList.remove('hidden');
+        btn.querySelector('.text').classList.add('hidden');
+        btn.disabled = true;
+
+        try {
+          var result = await window.CustomerAuth.login({ email: email, password: password });
+
+          if (result.success) {
+            var params = new URLSearchParams(window.location.search);
+            window.location.href = params.get('redirect') || '/account';
+          } else {
+            throw result;
+          }
+        } catch (err) {
+          var msg = 'Неверный email или пароль';
+          if (err.error === 'ACCOUNT_LOCKED' || err.code === 'RATE_LIMIT_EXCEEDED') {
+            msg = 'Слишком много попыток. Попробуйте через 30 минут';
+          } else if (err.message) {
+            msg = err.message;
+          }
+          errorEl.textContent = msg;
+          errorEl.classList.remove('hidden');
+        } finally {
+          btn.querySelector('.loading').classList.add('hidden');
+          btn.querySelector('.text').classList.remove('hidden');
+          btn.disabled = false;
+        }
+      });
+    });
+  </script>
+</BaseLayout>
+
+<style>
+  .login-overlay {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+  }
+  .login-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    z-index: 0;
+  }
+  .login-dark-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1;
+  }
+  .login-panel {
+    position: relative;
+    z-index: 2;
+    margin-left: auto;
+    width: 100%;
+    max-width: 590px;
+    background: rgb(var(--color-background));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+  }
+  .login-panel-inner {
+    width: 100%;
+    max-width: 430px;
+  }
+  .login-submit-btn {
+    height: 56px;
+    font-size: 16px;
+    background: rgb(var(--color-foreground));
+    color: #ffffff;
+    border: none;
+    border-radius: 0;
+    cursor: pointer;
+  }
+  .login-submit-btn:hover { filter: brightness(0.85); }
+  .login-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .auth-link { color: rgb(var(--color-primary)); }
+  .auth-link:hover { text-decoration: underline; }
+  .auth-input-focus:focus { border-color: rgb(var(--color-foreground)); box-shadow: 0 0 0 2px rgba(41, 37, 36, 0.15); }
+
+  @media (max-width: 768px) {
+    .login-panel {
+      max-width: 100%;
+    }
+    .login-bg, .login-dark-overlay {
+      display: none;
+    }
+  }
+</style>

@@ -1,0 +1,278 @@
+---
+interface Props {
+  productId?: string | null;
+  layout?: 'stacked' | 'two-columns' | 'carousel' | 'thumbnail';
+  size?: 'small' | 'medium' | 'large';
+  photoPosition?: 'left' | 'right';
+  zoomMode?: 'click' | 'hover';
+  dynamicButton?: { enabled?: string };
+  colorScheme?: string;
+  padding?: { top?: number; bottom?: number };
+  image?: string;
+  images?: Array<{ url: string }>;
+  badge?: { enabled?: string; text?: string; textSize?: 'small' | 'medium' | 'large' };
+  title?: { enabled?: string; text?: string; size?: 'small' | 'medium' | 'large' };
+  price?: { enabled?: string; value?: string; oldValue?: string };
+  description?: { enabled?: string; text?: string };
+  buttons?: {
+    enabled?: string;
+    addToCart?: { enabled?: string; text?: string };
+    buyNow?: { enabled?: string; text?: string };
+  };
+  variants?: {
+    enabled?: string;
+    style?: 'button' | 'list';
+    shape?: 'circle' | 'square' | 'none';
+    items?: Array<{ label: string; value: string }>;
+  };
+  quantity?: { enabled?: string };
+  share?: { enabled?: string; text?: string };
+}
+
+const {
+  productId,
+  layout = 'stacked',
+  size = 'medium',
+  photoPosition = 'left',
+  dynamicButton,
+  colorScheme,
+  padding,
+  image,
+  images,
+  badge,
+  title,
+  price,
+  description,
+  buttons,
+  variants,
+  quantity,
+  share,
+} = Astro.props;
+
+// Resolve linked product from products.json (same pattern as PopularProducts)
+let linkedProduct: { id?: string; name?: string; price?: string; oldPrice?: string; image?: string; images?: string[] } | null = null;
+if (productId) {
+  try {
+    const productsData = await import('../data/products.json');
+    const allProducts = productsData.default || [];
+    linkedProduct = allProducts.find((p: any) => p.id === productId) || null;
+  } catch {
+    linkedProduct = null;
+  }
+}
+
+// Use linked product data with fallback to static props
+const finalTitle = linkedProduct?.name || title?.text;
+const finalPrice = linkedProduct?.price || price?.value;
+const finalOldPrice = linkedProduct?.oldPrice || price?.oldValue;
+const finalImages = linkedProduct?.images?.length ? linkedProduct.images.map((url: string) => ({ url })) : images;
+
+// Visibility flags
+const showBadge = badge?.enabled !== 'false' && badge?.text;
+const showTitle = title?.enabled !== 'false' && finalTitle;
+const showPrice = price?.enabled !== 'false' && finalPrice;
+const showDescription = description?.enabled !== 'false' && description?.text;
+const showButtons = buttons?.enabled !== 'false';
+const showAddToCart = showButtons && buttons?.addToCart?.enabled !== 'false' && buttons?.addToCart?.text;
+const showBuyNow = showButtons && buttons?.buyNow?.enabled !== 'false' && buttons?.buyNow?.text;
+const showVariants = variants?.enabled !== 'false' && variants?.items && variants.items.length > 0;
+const showQuantity = quantity?.enabled === 'true';
+const showShare = share?.enabled === 'true' && share?.text;
+const isDynamicButton = dynamicButton?.enabled === 'true';
+
+// Collect all images: linked product images → images array → single image → empty
+const allImages: string[] = [];
+if (finalImages && finalImages.length > 0) {
+  for (const img of finalImages) {
+    if (img.url) allImages.push(img.url);
+  }
+}
+if (allImages.length === 0 && image) {
+  allImages.push(image);
+}
+
+// Padding from constructor
+const padTop = padding?.top ?? 80;
+const padBottom = padding?.bottom ?? 80;
+
+// Color scheme
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
+
+// Flex direction based on photo position
+const flexDirection = photoPosition === 'right' ? 'lg:flex-row-reverse' : 'lg:flex-row';
+
+// Badge text size
+const badgeFontSize = badge?.textSize === 'large' ? '18px' : badge?.textSize === 'medium' ? '16px' : '14px';
+
+// Title size
+const titleFontSize = title?.size === 'large' ? '40px' : title?.size === 'medium' ? '32px' : '28px';
+const titleLineHeight = title?.size === 'large' ? '48px' : title?.size === 'medium' ? '38px' : '33px';
+---
+
+<section class={`w-full ${schemeClass}`} style={`background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}>
+  <div class="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-0">
+    <div class={`flex flex-col ${flexDirection} lg:justify-center gap-10`}>
+      <!-- Image block -->
+      <div class="w-full lg:shrink-0 lg:w-[700px]">
+        {layout === 'two-columns' ? (
+          <!-- Two columns grid -->
+          <div class="grid grid-cols-2 gap-3">
+            {allImages.map((src, i) => (
+              <div class="overflow-hidden aspect-square flex items-center justify-center" style="background: rgb(var(--color-foreground) / 0.03); border-radius: 0;">
+                <img src={src} alt={`${title?.text || 'Товар'} ${i + 1}`} loading="lazy" class="w-full h-full object-cover" />
+              </div>
+            ))}
+            {allImages.length === 0 && (
+              <div class="aspect-square flex items-center justify-center text-theme-muted" style="background: rgb(var(--color-foreground) / 0.03); border-radius: 0;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/>
+                </svg>
+              </div>
+            )}
+          </div>
+        ) : layout === 'carousel' || layout === 'thumbnail' ? (
+          <!-- Carousel/Thumbnail: show main image + thumbnails below -->
+          <div>
+            <div class="overflow-hidden w-full aspect-square flex items-center justify-center" style="background: rgb(var(--color-foreground) / 0.03); border-radius: 0;">
+              {allImages.length > 0 ? (
+                <img src={allImages[0]} alt={title?.text || 'Товар'} loading="lazy" class="w-full h-full object-cover" />
+              ) : (
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" class="text-theme-muted">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/>
+                </svg>
+              )}
+            </div>
+            {allImages.length > 1 && (
+              <div class={`grid gap-2 mt-3 ${layout === 'thumbnail' ? 'grid-cols-5' : 'grid-cols-4'}`}>
+                {allImages.slice(0, layout === 'thumbnail' ? 5 : 4).map((src, i) => (
+                  <div class="overflow-hidden aspect-square flex items-center justify-center" style="background: rgb(var(--color-foreground) / 0.03); border-radius: 0;">
+                    <img src={src} alt={`${title?.text || 'Товар'} ${i + 1}`} loading="lazy" class="w-full h-full object-cover" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <!-- Stacked: main image + smaller grid -->
+          <div>
+            <div class="overflow-hidden w-full aspect-square flex items-center justify-center" style="background: rgb(var(--color-foreground) / 0.03); border-radius: 0;">
+              {allImages.length > 0 ? (
+                <img src={allImages[0]} alt={title?.text || 'Товар'} loading="lazy" class="w-full h-full object-cover" />
+              ) : (
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" class="text-theme-muted">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/>
+                </svg>
+              )}
+            </div>
+            {allImages.length > 1 && (
+              <div class="grid grid-cols-2 gap-5 mt-5">
+                {allImages.slice(1).map((src, i) => (
+                  <div class="overflow-hidden aspect-square flex items-center justify-center" style="background: rgb(var(--color-foreground) / 0.03); border-radius: 0;">
+                    <img src={src} alt={`${title?.text || 'Товар'} ${i + 2}`} loading="lazy" class="w-full h-full object-cover" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <!-- Product info -->
+      <div class="flex flex-col lg:w-[570px]">
+        {showBadge && (
+          <span class="font-body" style={`color: rgb(var(--color-foreground)); font-size: ${badgeFontSize};`}>
+            {badge!.text}
+          </span>
+        )}
+
+        {showTitle && (
+          <h1 class={`font-heading ${showBadge ? 'mt-6' : ''}`} style={`color: rgb(var(--color-foreground)); font-size: ${titleFontSize}; line-height: ${titleLineHeight}; text-transform: uppercase;`}>
+            {finalTitle}
+          </h1>
+        )}
+
+        {showPrice && (
+          <div class="flex items-baseline gap-3 mt-2">
+            <span class="font-body" style="color: rgb(var(--color-foreground)); font-size: 32px; line-height: 44px;">
+              {finalPrice}
+            </span>
+            {finalOldPrice && (
+              <span class="line-through font-body" style="color: rgb(var(--color-muted)); font-size: 20px; line-height: 27px; font-weight: 500;">
+                {finalOldPrice}
+              </span>
+            )}
+          </div>
+        )}
+
+        {showVariants && (
+          <div class="flex flex-wrap gap-2 mt-6">
+            {variants!.items!.map((v, i) => (
+              <span
+                class="inline-flex items-center font-body"
+                style={`height: 60px; padding: 10px 20px; font-size: 20px; line-height: 27px; border-radius: 0; background: ${i === 0 ? 'rgb(var(--color-foreground))' : 'transparent'}; color: ${i === 0 ? 'rgb(var(--color-background))' : 'rgb(var(--color-foreground))'}; border: 1px solid rgb(var(--color-foreground));`}
+              >
+                {v.label}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {showQuantity && (
+          <div class="flex flex-col mt-6">
+            <span class="font-body" style="font-size: 24px; line-height: 33px; color: rgb(var(--color-muted)); margin-bottom: 8px;">Количество</span>
+            <div class="flex items-center">
+              <span class="flex items-center justify-center" style="width: 60px; height: 60px; border-radius: 0; border: 1px solid rgb(var(--color-foreground)); background: transparent; color: rgb(var(--color-foreground)); cursor: pointer;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M6 12H18" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+              </span>
+              <span class="flex items-center justify-center mx-[5px] font-body" style="width: 60px; height: 60px; font-size: 20px; color: rgb(var(--color-foreground));">
+                1
+              </span>
+              <span class="flex items-center justify-center" style="width: 60px; height: 60px; border-radius: 0; border: 1px solid rgb(var(--color-foreground)); background: transparent; color: rgb(var(--color-foreground)); cursor: pointer;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M12 6V18M6 12H18" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+              </span>
+            </div>
+          </div>
+        )}
+
+        {(showAddToCart || showBuyNow) && (
+          <div class="flex flex-col mt-6" style="gap: 25px;">
+            {(showAddToCart || !isDynamicButton) && (
+              <button
+                class="w-full flex items-center justify-center font-body transition-colors"
+                style="height: 80px; font-size: 24px; border-radius: 0; background: transparent; color: rgb(var(--color-foreground)); border: 1px solid rgb(var(--color-foreground));"
+              >
+                {buttons?.addToCart?.text || 'Добавить в корзину'}
+              </button>
+            )}
+            {isDynamicButton && showBuyNow && (
+              <button
+                class="w-full flex items-center justify-center font-body transition-colors"
+                style="height: 80px; font-size: 24px; border-radius: 0; background: rgb(var(--color-foreground)); color: rgb(var(--color-background)); border: 1px solid rgb(var(--color-foreground));"
+              >
+                {buttons!.buyNow!.text}
+              </button>
+            )}
+          </div>
+        )}
+
+        {showDescription && (
+          <div class="mt-6">
+            <h2 class="font-heading" style="font-size: 40px; line-height: 48px; text-transform: uppercase; color: rgb(var(--color-foreground));">Описание</h2>
+            <p class="mt-4 whitespace-pre-line font-body" style="font-size: 24px; line-height: 33px; color: rgb(var(--color-muted));">
+              {description!.text}
+            </p>
+          </div>
+        )}
+
+        {showShare && (
+          <button class="flex items-center mt-8 opacity-80 hover:opacity-100 transition-opacity font-body" style="color: rgb(var(--color-foreground)); font-size: 20px; gap: 15px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9 6L12 3M12 3L15 6M12 3V13M7.00023 10C6.06835 10 5.60241 10 5.23486 10.1522C4.74481 10.3552 4.35523 10.7448 4.15224 11.2349C4 11.6024 4 12.0681 4 13V17.8C4 18.9201 4 19.4798 4.21799 19.9076C4.40973 20.2839 4.71547 20.5905 5.0918 20.7822C5.5192 21 6.07899 21 7.19691 21H16.8036C17.9215 21 18.4805 21 18.9079 20.7822C19.2842 20.5905 19.5905 20.2839 19.7822 19.9076C20 19.4802 20 18.921 20 17.8031V13C20 12.0681 19.9999 11.6024 19.8477 11.2349C19.6447 10.7448 19.2554 10.3552 18.7654 10.1522C18.3978 10 17.9319 10 17 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>{share!.text}</span>
+          </button>
+        )}
+      </div>
+    </div>
+  </div>
+</section>

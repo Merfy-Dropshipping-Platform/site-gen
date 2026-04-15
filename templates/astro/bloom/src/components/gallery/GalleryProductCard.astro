@@ -1,0 +1,37 @@
+---
+interface Props {
+	name: string;
+	price: string;
+	oldPrice?: string;
+	image: string;
+	href?: string;
+}
+
+const { name, price, oldPrice, image, href } = Astro.props;
+---
+
+<a href={href || '#'} class="flex flex-col gap-[20px] group cursor-pointer no-underline text-inherit">
+	<div class="w-full aspect-square overflow-hidden" style="background: rgb(var(--color-foreground) / 0.05); border-radius: var(--radius-card, 0px)">
+		<img
+			src={image}
+			alt={name}
+			loading="lazy"
+			class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+		/>
+	</div>
+	<div class="flex flex-col gap-[4px]">
+		<h3 class="text-[16px] font-normal uppercase leading-[1.2] font-body" style="color: rgb(var(--color-foreground));">
+			{name}
+		</h3>
+		<div class="flex items-center gap-[8px] flex-wrap">
+			<span class="text-[16px] font-normal leading-[1.2] font-body" style="color: rgb(var(--color-foreground));">
+				{price}
+			</span>
+			{oldPrice && (
+				<span class="text-[14px] font-normal line-through leading-[1.2] font-body" style="color: rgb(var(--color-muted));">
+					{oldPrice}
+				</span>
+			)}
+		</div>
+	</div>
+</a>

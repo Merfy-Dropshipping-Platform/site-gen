@@ -1,0 +1,220 @@
+---
+interface Props {
+  heading?: any;
+  text?: any;
+  primaryButton?: { text?: string; link?: any };
+  secondaryButton?: { text?: string; link?: any };
+  overlay?: number;
+  backgroundImage?: string;
+  backgroundImage2?: string;
+  size?: string;
+  position?: string;
+  alignment?: string;
+  container?: string;
+  colorScheme?: string;
+}
+
+const {
+  heading = { text: 'Добро пожаловать', size: 'large' },
+  text = { content: 'Откройте для себя нашу коллекцию товаров', size: 'large' },
+  primaryButton = { text: 'В КАТАЛОГ', link: { href: '/catalog' } },
+  secondaryButton = { text: '', link: { href: '#' } },
+  overlay = 0,
+  backgroundImage = '/images/first-section.png',
+  backgroundImage2 = '',
+  size = 'large',
+  position = 'center',
+  alignment = 'center',
+  container = 'false',
+  colorScheme = 'scheme-1',
+} = Astro.props;
+
+/* ── Parse nested props ── */
+const headingText = typeof heading === 'object' ? heading?.text : heading;
+const headingSize = typeof heading === 'object' ? (heading?.size || 'medium') : 'medium';
+const textContent = typeof text === 'object' ? text?.content : text;
+const textSize = typeof text === 'object' ? (text?.size || 'medium') : 'medium';
+const primaryLink = typeof primaryButton?.link === 'object' ? primaryButton?.link?.href : (primaryButton?.link || '#');
+const secondaryLink = typeof secondaryButton?.link === 'object' ? secondaryButton?.link?.href : (secondaryButton?.link || '#');
+
+/* ── Size → min-height (CSS custom props — Tailwind 4 skips frontmatter scanning) ── */
+const sizeMinH: Record<string, { base: number; sm: number; md: number; lg: number; xl: number; xxl: number }> = {
+  small: { base: 300, sm: 400, md: 500, lg: 500, xl: 600, xxl: 700 },
+  medium: { base: 350, sm: 450, md: 550, lg: 650, xl: 750, xxl: 900 },
+  large: { base: 400, sm: 500, md: 600, lg: 700, xl: 800, xxl: 1080 },
+};
+const sv = sizeMinH[size || 'large'] || sizeMinH.large;
+
+/* ── Position → flex alignment (matches constructor positionStyles) ── */
+const positionMap: Record<string, { justify: string; align: string }> = {
+  'top-left':      { justify: 'justify-start', align: 'items-start' },
+  'top-center':    { justify: 'justify-center', align: 'items-start' },
+  'top-right':     { justify: 'justify-end',   align: 'items-start' },
+  'center-left':   { justify: 'justify-start', align: 'items-center' },
+  'center':        { justify: 'justify-center', align: 'items-center' },
+  'center-right':  { justify: 'justify-end',   align: 'items-center' },
+  'bottom-left':   { justify: 'justify-start', align: 'items-end' },
+  'bottom-center': { justify: 'justify-center', align: 'items-end' },
+  'bottom-right':  { justify: 'justify-end',   align: 'items-end' },
+};
+const pos = positionMap[position || 'center'] || positionMap.center;
+
+/* ── Alignment → text/items alignment (matches constructor alignmentClasses) ── */
+const alignmentMap: Record<string, string> = {
+  left:   'items-start text-left',
+  center: 'items-center text-center',
+  right:  'items-end text-right',
+};
+const alignClass = alignmentMap[alignment || 'center'] || alignmentMap.center;
+
+/* ── Heading font sizes (responsive, by size prop) ── */
+const headingSizeClasses: Record<string, string> = {
+  small:  'text-xl sm:text-2xl md:text-3xl lg:text-[36px]',
+  medium: 'text-2xl sm:text-3xl md:text-4xl lg:text-[42px]',
+  large:  'text-3xl sm:text-4xl md:text-[48px] lg:text-[48px]',
+};
+const headingSizeClass = headingSizeClasses[headingSize] || headingSizeClasses.medium;
+
+/* ── Text font sizes (responsive, by size prop) ── */
+const textSizeClasses: Record<string, string> = {
+  small:  'text-xs sm:text-sm md:text-[14px]',
+  medium: 'text-sm sm:text-base md:text-[16px]',
+  large:  'text-sm sm:text-base md:text-[18px]',
+};
+const textSizeClass = textSizeClasses[textSize] || textSizeClasses.medium;
+
+/* ── Overlay ── */
+const overlayOpacity = (overlay || 0) / 100;
+
+/* ── Color scheme CSS class: "scheme-1" → "color-scheme-1" ── */
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
+
+/* ── Background images ── */
+const hasBothImages = !!backgroundImage && !!backgroundImage2;
+const singleBgImage = backgroundImage || backgroundImage2;
+
+/* ── Container mode ── */
+const isContainer = container === 'true';
+---
+
+<section class="relative w-full overflow-hidden hero-section" style={`--h-base:${sv.base}px;--h-sm:${sv.sm}px;--h-md:${sv.md}px;--h-lg:${sv.lg}px;--h-xl:${sv.xl}px;--h-xxl:${sv.xxl}px;`} aria-labelledby="hero-title">
+  {/* Background Image(s) */}
+  {hasBothImages ? (
+    <div class="absolute inset-0 flex">
+      <div class="w-1/2 h-full bg-cover bg-center bg-no-repeat" style={`background-image: url('${backgroundImage}');`}></div>
+      <div class="w-1/2 h-full bg-cover bg-center bg-no-repeat" style={`background-image: url('${backgroundImage2}');`}></div>
+    </div>
+  ) : singleBgImage ? (
+    <div
+      class="absolute inset-0 bg-cover bg-center bg-no-repeat"
+      style={`background-image: url('${singleBgImage}');`}
+    ></div>
+  ) : null}
+
+  {/* Overlay */}
+  {overlayOpacity > 0 && (
+    <div class="absolute inset-0" style={`background-color: rgb(var(--color-foreground) / ${overlayOpacity});`}></div>
+  )}
+
+  {/* Content — positioned via flex, matching constructor positionStyles */}
+  <div class="w-full max-w-[1320px] mx-auto relative" style="min-height: inherit;">
+  <div class={`relative z-10 w-full h-full flex ${pos.justify} ${pos.align} px-4 sm:px-6 md:px-8`} style="min-height: inherit; padding-top: var(--spacing-section, 120px); padding-bottom: var(--spacing-section, 120px);">
+    {isContainer ? (
+      /* ── Container mode: card with scheme background (matches constructor) ── */
+      <div
+        class={`${schemeClass} flex flex-col ${alignClass} gap-4 sm:gap-6 py-6 sm:py-8 px-5 sm:px-6 md:px-10 w-[90%] sm:w-[380px] md:w-[415px] max-h-full overflow-auto`}
+        style={`background-color: rgb(var(--color-background)); border-radius: var(--radius-card, 0px);`}
+      >
+        {headingText && (
+          <h1
+            class={`${headingSizeClass} font-light font-heading`}
+            style="color: rgb(var(--color-primary));"
+          >
+            {headingText}
+          </h1>
+        )}
+        {textContent && (
+          <p
+            class={`${textSizeClass} font-light font-body max-w-[332px]`}
+            style="color: rgb(var(--color-foreground));"
+          >
+            {textContent}
+          </p>
+        )}
+        <div class="flex flex-wrap gap-3">
+          {primaryButton?.text && (
+            <a
+              href={primaryLink}
+              class="inline-flex items-center justify-center font-light font-body hover:opacity-80 transition-opacity px-6 py-2.5 sm:px-8 sm:py-3 text-sm sm:text-base"
+              style="background-color: rgb(var(--color-button)); color: rgb(var(--color-button-text)); border-radius: var(--radius-button, 0px);"
+            >
+              {primaryButton.text}
+            </a>
+          )}
+          {secondaryButton?.text && (
+            <a
+              href={secondaryLink}
+              class="inline-flex items-center justify-center font-light font-body hover:opacity-80 transition-opacity px-6 py-2.5 sm:px-8 sm:py-3 text-sm sm:text-base"
+              style="background-color: rgb(var(--color-secondary, 245 245 245)); color: rgb(var(--color-foreground)); border: 1px solid rgb(var(--color-border)); border-radius: var(--radius-button, 0px);"
+            >
+              {secondaryButton.text}
+            </a>
+          )}
+        </div>
+      </div>
+    ) : (
+      /* ── No container: text on background (matches Figma) ── */
+      <div class={`${schemeClass} flex flex-col ${alignClass} gap-4 sm:gap-5 md:gap-6 lg:gap-[20px] xl:gap-[25px] w-full max-w-7xl px-4 sm:px-6 md:px-8`}>
+        <header class="flex flex-col gap-1 sm:gap-2 md:gap-3 lg:gap-4 xl:gap-[5px]">
+        {headingText && (
+          <h1
+            id="hero-title"
+            class={`${headingSizeClass} font-normal font-heading uppercase leading-[1.115]`}
+            style="color: rgb(var(--color-primary));"
+          >
+            {headingText}
+          </h1>
+        )}
+        {textContent && (
+          <p
+            class={`${textSizeClass} font-normal font-body leading-[1.366] px-2 sm:px-4 md:px-6 lg:px-8`}
+            style="color: rgb(var(--color-foreground));"
+          >
+            {textContent}
+          </p>
+        )}
+        </header>
+        <div class="flex flex-wrap gap-[25px]">
+          {primaryButton?.text && (
+            <a
+              href={primaryLink}
+              class="flex items-center justify-center font-normal font-body uppercase leading-[1.366] hover:opacity-80 transition-colors h-[48px] px-6 sm:px-8 md:px-[25px] text-[16px]"
+              style="background-color: var(--color-button-bg, #3a4530); color: #ffffff; border-radius: 0; font-family: var(--font-body, 'Arsenal', sans-serif);"
+            >
+              {primaryButton.text}
+            </a>
+          )}
+          {secondaryButton?.text && (
+            <a
+              href={secondaryLink}
+              class="flex items-center justify-center font-normal font-body uppercase leading-[1.366] hover:opacity-80 transition-colors h-[48px] px-6 sm:px-8 md:px-[25px] text-[16px]"
+              style="background-color: rgb(var(--color-secondary, 245 245 245)); color: rgb(var(--color-foreground)); border: 1px solid rgb(var(--color-border)); border-radius: 0; font-family: var(--font-body, 'Arsenal', sans-serif);"
+            >
+              {secondaryButton.text}
+            </a>
+          )}
+        </div>
+      </div>
+    )}
+  </div>
+  </div>
+</section>
+
+<style>
+  .hero-section { min-height: var(--h-base); }
+  @media (min-width: 640px) { .hero-section { min-height: var(--h-sm); } }
+  @media (min-width: 768px) { .hero-section { min-height: var(--h-md); } }
+  @media (min-width: 1024px) { .hero-section { min-height: var(--h-lg); } }
+  @media (min-width: 1280px) { .hero-section { min-height: var(--h-xl); } }
+  @media (min-width: 1536px) { .hero-section { min-height: var(--h-xxl); } }
+</style>

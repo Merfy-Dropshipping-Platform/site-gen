@@ -1,0 +1,90 @@
+{
+  "name": "flux",
+  "label": "Flux — Tech & Electronics",
+  "version": "1.0.0",
+  "category": "tech",
+  "description": "Modern dark theme with orange accent for tech and electronics stores",
+  "author": "Merfy",
+  "features": {
+    "variants": true,
+    "collections": true,
+    "sizeGuide": false,
+    "colorSwatches": true,
+    "filterSidebar": true,
+    "newsletter": true,
+    "wishlist": false,
+    "blog": true,
+    "rss": true
+  },
+  "pages": ["index", "product", "collection", "cart", "blog"],
+  "settings_schema": [
+    {
+      "name": "colors",
+      "settings": [
+        { "id": "color_primary", "type": "color", "label": "Primary color", "default": "#000000" },
+        { "id": "color_background", "type": "color", "label": "Background", "default": "#ffffff" },
+        { "id": "color_foreground", "type": "color", "label": "Text", "default": "#000000" },
+        { "id": "color_border", "type": "color", "label": "Border", "default": "#f5f5f5" },
+        { "id": "color_button", "type": "color", "label": "Button (accent)", "default": "#fa5109" },
+        { "id": "color_button_text", "type": "color", "label": "Button text", "default": "#ffffff" }
+      ]
+    },
+    {
+      "name": "typography",
+      "settings": [
+        { "id": "font_heading", "type": "font", "label": "Heading font", "default": "Roboto Flex" },
+        { "id": "font_body", "type": "font", "label": "Body font", "default": "Roboto Flex" }
+      ]
+    },
+    {
+      "name": "layout",
+      "settings": [
+        { "id": "radius_button", "type": "range", "label": "Button radius", "default": "6" },
+        { "id": "radius_card", "type": "range", "label": "Card radius", "default": "12" },
+        { "id": "page_width", "type": "text", "label": "Page width", "default": "1320px" }
+      ]
+    }
+  ],
+  "color_schemes": [
+    {
+      "id": 1,
+      "name": "Black",
+      "background": "#000000",
+      "foreground": "#ffffff",
+      "primary": "#ffffff",
+      "border": "#333333",
+      "button": "#fa5109",
+      "button_text": "#ffffff"
+    },
+    {
+      "id": 2,
+      "name": "White",
+      "background": "#ffffff",
+      "foreground": "#000000",
+      "primary": "#000000",
+      "border": "#f5f5f5",
+      "button": "#fa5109",
+      "button_text": "#ffffff"
+    },
+    {
+      "id": 3,
+      "name": "Light Gray",
+      "background": "#fafafa",
+      "foreground": "#000000",
+      "primary": "#000000",
+      "border": "#f5f5f5",
+      "button": "#fa5109",
+      "button_text": "#ffffff"
+    },
+    {
+      "id": 4,
+      "name": "Dark",
+      "background": "#0b0b0b",
+      "foreground": "#ffffff",
+      "primary": "#ffffff",
+      "border": "#333333",
+      "button": "#fa5109",
+      "button_text": "#ffffff"
+    }
+  ]
+}

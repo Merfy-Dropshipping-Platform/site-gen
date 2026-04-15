@@ -1,0 +1,86 @@
+---
+interface Button {
+  label: string;
+  href: string;
+  variant?: 'primary' | 'secondary' | 'outline';
+}
+
+interface Props {
+  buttons?: Button[];
+  align?: 'left' | 'center' | 'right';
+}
+
+const { buttons = [], align = 'center' } = Astro.props;
+---
+
+{buttons.length > 0 && (
+  <div class="button-row" style={`justify-content: ${align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center'}`}>
+    {buttons.map((btn) => (
+      <a href={btn.href} class={`btn btn--${btn.variant ?? 'primary'}`}>
+        {btn.label}
+      </a>
+    ))}
+  </div>
+)}
+
+<style>
+  .button-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 20px 0;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 32px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border-radius: var(--radius-button);
+    text-decoration: none;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .btn--primary {
+    background: rgb(var(--color-primary));
+    color: rgb(var(--color-button-text));
+  }
+
+  .btn--primary:hover {
+    opacity: 0.9;
+  }
+
+  .btn--secondary {
+    background: rgb(var(--color-foreground));
+    color: rgb(var(--color-background));
+  }
+
+  .btn--secondary:hover {
+    opacity: 0.9;
+  }
+
+  .btn--outline {
+    background: transparent;
+    color: rgb(var(--color-foreground));
+    border: 1px solid rgb(var(--color-border));
+  }
+
+  .btn--outline:hover {
+    border-color: rgb(var(--color-primary));
+    color: rgb(var(--color-primary));
+  }
+
+  @media (max-width: 480px) {
+    .button-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .btn {
+      text-align: center;
+    }
+  }
+</style>

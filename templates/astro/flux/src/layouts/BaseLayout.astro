@@ -1,0 +1,71 @@
+---
+import data from '../data/data.json';
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
+}
+
+const { title = 'Мой магазин', description, ogTitle, ogDescription, ogImage } = Astro.props;
+const meta = data?.meta ?? {};
+const shopId = (meta as any)?.shopId || '';
+const apiUrl = (meta as any)?.apiUrl || 'https://gateway.merfy.ru/api';
+const requireCustomerAuth = !!(meta as any)?.requireCustomerAuth;
+const favicons = (meta as any)?.favicons ?? {};
+---
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    {ogTitle && <meta property="og:title" content={ogTitle} />}
+    {ogDescription && <meta property="og:description" content={ogDescription} />}
+    {ogImage && <meta property="og:image" content={ogImage} />}
+    {favicons.universal ? (
+      <link rel="icon" href={favicons.universal} />
+    ) : (
+      <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    )}
+    {favicons.dark && (
+      <link rel="icon" href={favicons.dark} media="(prefers-color-scheme: dark)" />
+    )}
+    {favicons.light && (
+      <link rel="icon" href={favicons.light} media="(prefers-color-scheme: light)" />
+    )}
+    {favicons.apple && (
+      <link rel="apple-touch-icon" href={favicons.apple} />
+    )}
+    <!-- Google Fonts: Roboto Flex (headings/body), Barlow (announcement), Inter (powered-by) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:wght@300;400;500;700&family=Barlow:wght@300;400&family=Inter:wght@300;400&display=optional" rel="stylesheet">
+  </head>
+  <body class="font-body text-theme-foreground bg-theme-background leading-relaxed min-h-screen flex flex-col">
+    <slot />
+    <script is:inline define:vars={{ shopId, apiUrl, requireCustomerAuth }}>
+      window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
+        shopId: shopId || '',
+        apiUrl: apiUrl || 'https://gateway.merfy.ru/api',
+        requireCustomerAuth: requireCustomerAuth || false,
+      };
+    </script>
+    <script type="module" src="/scripts/cart-api.js"></script>
+    <script type="module" src="/scripts/cart-store.js"></script>
+    <script is:inline>
+      document.addEventListener('DOMContentLoaded', function() {
+        if (window.cartStore && window.cartStore.init) {
+          window.cartStore.init();
+        }
+      });
+    </script>
+    <script src="/scripts/cart-drawer.js" defer></script>
+  </body>
+</html>
+
+<style is:global>
+  @import '../styles/global.css';
+</style>

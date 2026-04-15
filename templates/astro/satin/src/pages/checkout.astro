@@ -1,0 +1,40 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import data from '../data/data.json';
+import siteConfig from '../data/site-config.json';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import CheckoutSection from '../components/CheckoutSection.astro';
+
+const meta = data?.meta ?? {};
+const blocks = data?.content ?? [];
+const headerBlock = blocks.find((b: any) => b.type === 'Header');
+const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
+const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
+const checkoutProps = (siteConfig as any)?.checkout ?? {};
+---
+<BaseLayout title={`Оформление заказа — ${meta?.title ?? 'Мой сайт'}`}>
+  <Header {...headerProps} />
+
+  <main class="flex-1 w-full" style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));">
+    <CheckoutSection {...checkoutProps} />
+  </main>
+
+  <Footer {...footerProps} />
+
+  <script is:inline define:vars={{ shopId: meta?.shopId, apiUrl: meta?.apiUrl, requireCustomerAuth: !!(meta as any)?.requireCustomerAuth, dadataToken: (meta as any)?.dadataToken || '' }}>
+    window.__MERFY_CONFIG__ = {
+      shopId: shopId || '',
+      apiUrl: apiUrl || 'https://gateway.merfy.ru/api',
+      requireCustomerAuth: requireCustomerAuth || false,
+    };
+    if (dadataToken) {
+      window.__DADATA_TOKEN__ = dadataToken;
+    }
+  </script>
+  <script src="/scripts/customer-store.js" is:inline></script>
+  <script src="/scripts/customer-auth.js" is:inline></script>
+  <script src="/scripts/checkout-auth.js" is:inline></script>
+  <script type="module" src="/scripts/checkout.js"></script>
+</BaseLayout>

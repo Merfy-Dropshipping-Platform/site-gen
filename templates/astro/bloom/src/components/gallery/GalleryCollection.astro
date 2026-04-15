@@ -1,0 +1,22 @@
+---
+interface Props {
+	name: string;
+	image: string;
+}
+
+const { name, image } = Astro.props;
+---
+
+<article class="flex flex-col gap-[20px]">
+	<div class="w-full aspect-[400/320] overflow-hidden cursor-pointer group" style="background: rgb(var(--color-foreground) / 0.05); border-radius: var(--radius-card, 0px)">
+		<img
+			src={image}
+			alt={name}
+			loading="lazy"
+			class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+		/>
+	</div>
+	<h3 class="text-[16px] font-normal uppercase leading-[1.2] font-body" style="color: rgb(var(--color-foreground));">
+		{name}
+	</h3>
+</article>

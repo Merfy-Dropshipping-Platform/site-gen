@@ -1,0 +1,1033 @@
+---
+import data from '../data/data.json';
+
+interface Props {
+  colorScheme?: string;
+  padding?: { top?: number; bottom?: number };
+}
+
+const { colorScheme, padding } = Astro.props;
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
+const padTop = padding?.top ?? 40;
+const padBottom = padding?.bottom ?? 40;
+const dadataToken = (data?.meta as any)?.dadataToken || '';
+---
+
+<section class={schemeClass} data-dadata-token={dadataToken} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
+  <div class="checkout-layout">
+    <!-- LEFT: Form -->
+    <div class="checkout-form-col">
+
+      <!-- Auth Gate (shown when requireCustomerAuth=true and not logged in) -->
+      <div id="co-auth-gate" class="checkout-auth-gate" style="display:none;">
+        <h2 class="checkout-section-title font-body" style="text-align:center;margin-bottom:8px;">Войдите или зарегистрируйтесь</h2>
+        <p class="font-body" style="text-align:center;font-size:14px;color:rgb(var(--color-muted));margin:0 0 24px 0;">Для оформления заказа необходим аккаунт</p>
+
+        <div class="co-auth-tabs">
+          <button type="button" class="co-auth-tab co-auth-tab--active font-body" data-tab="login">Вход</button>
+          <button type="button" class="co-auth-tab font-body" data-tab="register">Регистрация</button>
+        </div>
+
+        <!-- Login form -->
+        <div id="co-auth-login" class="co-auth-form">
+          <input type="email" id="co-auth-email" placeholder="E-mail" class="checkout-input checkout-input--full font-body" autocomplete="email">
+          <input type="password" id="co-auth-password" placeholder="Пароль" class="checkout-input checkout-input--full font-body" autocomplete="current-password">
+          <button type="button" id="co-auth-login-btn" class="checkout-submit-btn font-body">Войти</button>
+          <div id="co-auth-login-error" class="co-auth-error font-body" style="display:none;"></div>
+        </div>
+
+        <!-- Register form -->
+        <div id="co-auth-register" class="co-auth-form" style="display:none;">
+          <input type="email" id="co-auth-reg-email" placeholder="E-mail" class="checkout-input checkout-input--full font-body" autocomplete="email">
+          <input type="text" id="co-auth-reg-name" placeholder="Имя" class="checkout-input checkout-input--full font-body" autocomplete="name">
+          <input type="password" id="co-auth-reg-password" placeholder="Пароль (мин. 8 символов)" class="checkout-input checkout-input--full font-body" autocomplete="new-password">
+          <input type="password" id="co-auth-reg-confirm" placeholder="Подтвердите пароль" class="checkout-input checkout-input--full font-body" autocomplete="new-password">
+          <button type="button" id="co-auth-register-btn" class="checkout-submit-btn font-body">Зарегистрироваться</button>
+          <div id="co-auth-register-error" class="co-auth-error font-body" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- Checkout form (hidden when auth gate is shown) -->
+      <div id="co-checkout-form">
+
+      <!-- Контакты -->
+      <div class="checkout-section">
+        <div class="checkout-section-header">
+          <h2 class="checkout-section-title font-body">Контакты</h2>
+          <a href="#" id="co-login-link" class="checkout-login-link font-body" style="display:none;">Уже есть аккаунт? Войти</a>
+        </div>
+        <div class="checkout-fields-row">
+          <input type="email" id="co-email" name="email" required placeholder="E-mail" class="checkout-input checkout-input--half font-body" autocomplete="email">
+          <input type="tel" id="co-phone" name="phone" required placeholder="Телефон" class="checkout-input checkout-input--half font-body" autocomplete="tel">
+        </div>
+      </div>
+
+      <!-- Доставка -->
+      <div class="checkout-section">
+        <h2 class="checkout-section-title font-body">Доставка</h2>
+        <input type="text" id="co-country" name="country" placeholder="Страна / Регион" class="checkout-input checkout-input--full font-body" autocomplete="country-name">
+        <div class="checkout-fields-row">
+          <input type="text" id="co-firstName" name="firstName" required placeholder="Имя" class="checkout-input checkout-input--half font-body" autocomplete="given-name">
+          <input type="text" id="co-lastName" name="lastName" required placeholder="Фамилия" class="checkout-input checkout-input--half font-body" autocomplete="family-name">
+        </div>
+
+        <!-- Выбор типа доставки (СДЭК / Самовывоз) — показывается если оба метода доступны -->
+        <div id="co-delivery-method" class="checkout-delivery-method hidden">
+          <label class="checkout-shipping-option checkout-delivery-method-option" data-method="cdek">
+            <div class="checkout-shipping-left">
+              <input type="radio" name="delivery-method" value="cdek" class="checkout-radio">
+              <div>
+                <span class="checkout-shipping-name font-body">СДЭК</span>
+                <span class="checkout-delivery-method-desc font-body">Курьер или пункт выдачи</span>
+              </div>
+            </div>
+          </label>
+          <label class="checkout-shipping-option checkout-delivery-method-option" data-method="pickup">
+            <div class="checkout-shipping-left">
+              <input type="radio" name="delivery-method" value="pickup" class="checkout-radio">
+              <div>
+                <span class="checkout-shipping-name font-body">Самовывоз</span>
+                <span class="checkout-delivery-method-desc font-body">Бесплатно</span>
+              </div>
+            </div>
+            <div class="checkout-shipping-right">
+              <span id="co-delivery-method-pickup-addr" class="checkout-shipping-days font-body"></span>
+            </div>
+          </label>
+        </div>
+
+        <!-- Адресный блок (скрыт до выбора СДЭК) -->
+        <div id="co-address-group">
+
+        <!-- DaData address autocomplete -->
+        <div class="checkout-address-wrap" id="co-address-wrap">
+          <div class="checkout-address-search-wrap">
+            <input type="text" id="co-address-search" name="addressSearch" placeholder="Начните вводить адрес..." class="checkout-input checkout-input--full font-body" autocomplete="off">
+            <div id="dadata-suggestions" class="checkout-dadata-suggestions hidden"></div>
+          </div>
+
+          <!-- Hidden structured fields populated by DaData -->
+          <input type="hidden" id="co-city" name="city">
+          <input type="hidden" id="co-street" name="street">
+          <input type="hidden" id="co-house" name="house">
+          <input type="hidden" id="co-postal-code" name="postalCode">
+          <input type="hidden" id="co-fias-id" name="fiasId">
+          <input type="hidden" id="co-city-fias-id" name="cityFiasId">
+
+          <!-- Apartment — always visible, DaData may prefill but user can edit -->
+          <input type="text" id="co-apartment" name="apartment" placeholder="Квартира / офис" class="checkout-input checkout-input--full font-body" autocomplete="off">
+
+          <!-- Selected address display -->
+          <div id="co-address-selected" class="checkout-address-selected hidden">
+            <span id="co-address-selected-text" class="font-body"></span>
+            <button type="button" id="co-address-change" class="checkout-address-change font-body">Изменить</button>
+          </div>
+        </div>
+
+        <!-- Fallback manual fields (shown when DaData unavailable) -->
+        <div id="co-address-manual" class="checkout-address-manual hidden">
+          <input type="text" id="co-manual-city" name="manualCity" required placeholder="Город" class="checkout-input checkout-input--full font-body" autocomplete="address-level2">
+          <input type="text" id="co-manual-street" name="manualStreet" required placeholder="Улица" class="checkout-input checkout-input--full font-body" autocomplete="street-address">
+          <div class="checkout-fields-row">
+            <input type="text" id="co-manual-house" name="manualHouse" required placeholder="Дом" class="checkout-input checkout-input--half font-body">
+            <input type="text" id="co-manual-apartment" name="manualApartment" placeholder="Квартира / офис" class="checkout-input checkout-input--half font-body">
+          </div>
+          <input type="text" id="co-manual-postal-code" name="manualPostalCode" placeholder="Индекс" class="checkout-input checkout-input--full font-body" autocomplete="postal-code">
+        </div>
+
+        </div><!-- /co-address-group -->
+      </div>
+
+      <!-- Способ доставки -->
+      <div class="checkout-section">
+        <h2 class="checkout-section-title font-body">Способ доставки</h2>
+
+        <!-- Placeholder: показывается до выбора адреса -->
+        <div id="co-delivery-placeholder" class="checkout-delivery-placeholder">
+          <p class="font-body" style="font-size: 14px; color: rgb(var(--color-muted)); margin: 0;">
+            Укажите адрес доставки, чтобы рассчитать стоимость
+          </p>
+        </div>
+
+        <!-- Loading: расчёт тарифов -->
+        <div id="co-delivery-loading" class="checkout-delivery-loading hidden">
+          <div class="checkout-delivery-spinner"></div>
+          <span class="font-body" style="font-size: 14px; color: rgb(var(--color-muted));">Рассчитываем доставку...</span>
+        </div>
+
+        <!-- Tariff list: заполняется динамически -->
+        <div id="co-delivery-tariffs" class="checkout-delivery-options hidden"></div>
+
+        <!-- Self-pickup option -->
+        <div id="co-delivery-pickup" class="hidden" style="margin-top: 8px;">
+          <label class="checkout-shipping-option" data-delivery="pickup" data-cost="0">
+            <div class="checkout-shipping-left">
+              <input type="radio" name="delivery" value="pickup" class="checkout-radio">
+              <div class="checkout-shipping-info">
+                <span class="checkout-shipping-name font-body">Самовывоз</span>
+                <span id="co-pickup-address" class="checkout-shipping-desc font-body" style="font-size: 13px;"></span>
+                <span id="co-pickup-notification" class="checkout-shipping-desc font-body hidden" style="font-size: 12px; color: rgb(var(--color-muted));"></span>
+                <span id="co-pickup-expected-date" class="checkout-shipping-desc font-body hidden" style="font-size: 12px; color: rgb(var(--color-muted));"></span>
+              </div>
+            </div>
+            <div class="checkout-shipping-right">
+              <span class="checkout-shipping-price font-body">Бесплатно</span>
+            </div>
+          </label>
+        </div>
+
+        <!-- ПВЗ selection (shown when pickup tariff selected) -->
+        <div id="co-pvz-section" class="checkout-pvz-section hidden">
+          <h3 class="checkout-pvz-title font-body">Выберите пункт выдачи</h3>
+
+          <!-- Loading spinner -->
+          <div id="co-pvz-loading" class="checkout-delivery-loading hidden">
+            <div class="checkout-delivery-spinner"></div>
+            <span class="font-body" style="font-size: 14px; color: rgb(var(--color-muted));">Загружаем пункты выдачи...</span>
+          </div>
+
+          <!-- PVZ list (rendered by JS) -->
+          <div id="co-pvz-list" class="checkout-pvz-list hidden"></div>
+
+          <!-- Error state -->
+          <div id="co-pvz-error" class="checkout-pvz-error hidden">
+            <p class="font-body" style="font-size: 14px; color: #e53e3e; margin: 0;">
+              Не удалось загрузить пункты выдачи. Попробуйте позже.
+            </p>
+          </div>
+        </div>
+
+        <!-- Error state -->
+        <div id="co-delivery-error" class="checkout-delivery-error hidden">
+          <p class="font-body" style="font-size: 14px; color: #e53e3e; margin: 0;">
+            Не удалось рассчитать доставку. Попробуйте изменить адрес.
+          </p>
+        </div>
+
+        <!-- No delivery available -->
+        <div id="co-delivery-unavailable" class="checkout-delivery-unavailable hidden">
+          <p class="font-body" style="font-size: 14px; color: rgb(var(--color-muted)); margin: 0;">
+            Доставка в этот город недоступна
+          </p>
+        </div>
+      </div>
+
+      <!-- Оплата -->
+      <div class="checkout-section">
+        <h2 class="checkout-section-title font-body">Оплата</h2>
+        <p class="checkout-payment-subtitle font-body">Все транзакции безопасны и зашифрованы</p>
+        <div class="checkout-payment-method">
+          <div class="checkout-payment-method-text">
+            <input type="radio" name="payment" value="yookassa" checked class="checkout-radio">
+            <span class="font-body" style="font-size: 16px;">Оплата через ЮKassa</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Кнопка Оплатить -->
+      <button id="co-submit-btn" class="checkout-submit-btn font-body" type="button">
+        <span class="co-btn-text">Оплатить</span>
+        <span class="co-btn-loading" style="display:none;">Создаём платёж...</span>
+      </button>
+
+      <div id="co-error" class="checkout-error font-body" style="display:none;"></div>
+
+      <p class="checkout-terms font-body">
+        Размещая заказ, вы соглашаетесь с <a href="/terms">условиями использования</a> и <a href="/privacy">политикой конфиденциальности</a>.
+      </p>
+
+      </div><!-- /co-checkout-form -->
+    </div>
+
+    <!-- RIGHT: Products panel -->
+    <div class="checkout-products-panel">
+      <div class="checkout-products-inner">
+        <div id="co-product-list" class="checkout-product-list">
+          <p class="font-body" style="color: rgb(var(--color-muted));">Загрузка...</p>
+        </div>
+
+        <!-- Промокод -->
+        <div id="co-promo-section" class="checkout-promo-wrap">
+          <div id="co-promo-input-row" class="checkout-promo-row">
+            <input type="text" id="co-promo-input" placeholder="У меня есть промокод" class="checkout-promo-input font-body">
+            <button type="button" id="co-btn-apply-promo" class="checkout-promo-btn font-body">Применить</button>
+          </div>
+          <div id="co-promo-applied" class="checkout-promo-applied" style="display:none;">
+            <span id="co-promo-code" class="font-body"></span>
+            <button type="button" id="co-btn-remove-promo" class="checkout-promo-remove font-body">Удалить</button>
+          </div>
+          <div id="co-promo-error" class="checkout-promo-error font-body" style="display:none;"></div>
+        </div>
+
+        <!-- Итого -->
+        <div class="checkout-totals">
+          <div class="checkout-totals-row">
+            <span class="font-body" style="font-size: 16px;">Доставка</span>
+            <span id="co-delivery-cost" class="font-body" style="font-size: 14px;">Бесплатно</span>
+          </div>
+          <div id="co-discount-row" class="checkout-totals-row" style="display:none;">
+            <span class="font-body" style="font-size: 16px;">Скидка</span>
+            <span id="co-discount-value" class="font-body" style="font-size: 14px;">0 ₽</span>
+          </div>
+          <div class="checkout-totals-row checkout-totals-row--total">
+            <span class="font-body" style="font-size: 20px;">Итого</span>
+            <span id="co-total" class="font-body" style="font-size: 20px;">0 ₽</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style is:global>
+  .checkout-layout {
+    display: flex;
+    width: 100%;
+    min-height: calc(100vh - 80px);
+  }
+
+  .checkout-form-col {
+    flex: 0 0 auto;
+    width: 652px;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 64px;
+    padding: 64px 0 64px 300px;
+    box-sizing: border-box;
+  }
+
+  .checkout-products-panel {
+    flex: 1;
+    background: rgb(var(--color-background-secondary, var(--color-background)));
+    min-height: 100%;
+  }
+
+  .checkout-products-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 50px;
+    width: 520px;
+    max-width: 100%;
+    padding: 64px;
+    box-sizing: border-box;
+  }
+
+  .checkout-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .checkout-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .checkout-section-title {
+    font-size: 18px;
+    line-height: 24px;
+    color: rgb(var(--color-foreground));
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .checkout-login-link {
+    font-size: 14px;
+    line-height: 19px;
+    text-decoration: underline;
+    color: rgb(var(--color-muted));
+    transition: color 0.15s;
+  }
+  .checkout-login-link:hover {
+    color: rgb(var(--color-foreground));
+  }
+
+  .checkout-fields-row {
+    display: flex;
+    gap: 16px;
+  }
+
+  .checkout-input {
+    box-sizing: border-box;
+    height: 56px;
+    padding: 0 16px;
+    background: rgb(var(--color-foreground) / 0.06);
+    border: 1.5px solid transparent;
+    border-radius: 0;
+    font-size: 16px;
+    line-height: 22px;
+    color: rgb(var(--color-foreground));
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .checkout-input::placeholder {
+    color: rgb(var(--color-muted));
+  }
+  .checkout-input:focus {
+    border-color: rgb(var(--color-foreground));
+    background: #E3E9F0;
+  }
+  .checkout-input--half {
+    flex: 1;
+    min-width: 0;
+  }
+  .checkout-input--full {
+    width: 100%;
+  }
+  .checkout-input.checkout-input--error {
+    border-color: #e53e3e;
+    background: #FDF2F2;
+  }
+
+  /* DaData address autocomplete */
+  .checkout-address-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .checkout-address-search-wrap {
+    position: relative;
+  }
+  .checkout-dadata-suggestions {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background: #fff;
+    border: 1px solid rgb(var(--color-foreground) / 0.12);
+    border-radius: 0;
+    max-height: 240px;
+    overflow-y: auto;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+  .checkout-dadata-suggestions.hidden {
+    display: none;
+  }
+  .checkout-dadata-item {
+    padding: 12px 16px;
+    font-size: 14px;
+    line-height: 20px;
+    color: rgb(var(--color-foreground));
+    cursor: pointer;
+    transition: background 0.1s;
+    border-bottom: 1px solid #F0F2F5;
+  }
+  .checkout-dadata-item:first-child {
+    border-radius: 0;
+  }
+  .checkout-dadata-item:last-child {
+    border-bottom: none;
+    border-radius: 0 0 12px 12px;
+  }
+  .checkout-dadata-item:only-child {
+    border-radius: 0;
+  }
+  .checkout-dadata-item:hover {
+    background: rgb(var(--color-foreground) / 0.03);
+  }
+  .checkout-address-selected {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    background: rgb(var(--color-foreground) / 0.06);
+    border-radius: 0;
+    gap: 12px;
+  }
+  .checkout-address-selected.hidden {
+    display: none;
+  }
+  .checkout-address-selected span {
+    font-size: 14px;
+    line-height: 20px;
+    color: rgb(var(--color-foreground));
+  }
+  .checkout-address-change {
+    background: none;
+    border: none;
+    font-size: 14px;
+    color: rgb(var(--color-muted));
+    text-decoration: underline;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: color 0.15s;
+  }
+  .checkout-address-change:hover {
+    color: rgb(var(--color-foreground));
+  }
+  .checkout-address-manual {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .checkout-address-manual.hidden {
+    display: none;
+  }
+
+  .checkout-delivery-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .checkout-delivery-method {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .checkout-delivery-method-desc {
+    display: block;
+    font-size: 13px;
+    color: rgb(var(--color-muted));
+    margin-top: 2px;
+  }
+
+  .checkout-shipping-option {
+    box-sizing: border-box;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    min-height: 60px;
+    border: 1.5px solid rgb(var(--color-foreground) / 0.12);
+    border-radius: 0;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .checkout-shipping-option:hover {
+    border-color: #B0B8C4;
+  }
+  .checkout-shipping-option--selected {
+    border-color: rgb(var(--color-foreground));
+    background: rgb(var(--color-foreground) / 0.03);
+  }
+
+  .checkout-shipping-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .checkout-shipping-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+  .checkout-shipping-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: rgb(var(--color-foreground));
+  }
+  .checkout-shipping-price {
+    font-size: 15px;
+    font-weight: 500;
+    color: rgb(var(--color-foreground));
+  }
+  .checkout-shipping-days {
+    font-size: 13px;
+    color: rgb(var(--color-muted));
+  }
+
+  .checkout-section .hidden {
+    display: none !important;
+  }
+  .checkout-delivery-placeholder,
+  .checkout-delivery-error,
+  .checkout-delivery-unavailable {
+    padding: 16px;
+    border: 1.5px dashed rgb(var(--color-foreground) / 0.18);
+    border-radius: 0;
+    text-align: center;
+    background: rgb(var(--color-foreground) / 0.02);
+  }
+  .checkout-delivery-loading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    border: 1.5px solid rgb(var(--color-foreground) / 0.12);
+    border-radius: 0;
+    background: rgb(var(--color-foreground) / 0.02);
+  }
+  .checkout-delivery-loading.hidden {
+    display: none;
+  }
+  .checkout-delivery-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgb(var(--color-muted) / 0.3);
+    border-top-color: rgb(var(--color-foreground));
+    border-radius: 50%;
+    animation: co-spin 0.6s linear infinite;
+  }
+  @keyframes co-spin {
+    to { transform: rotate(360deg); }
+  }
+  .checkout-shipping-mode {
+    font-size: 12px;
+    color: rgb(var(--color-muted));
+    margin-top: 2px;
+  }
+
+  .checkout-radio {
+    width: 20px;
+    height: 20px;
+    accent-color: rgb(var(--color-foreground));
+    cursor: pointer;
+  }
+
+  .checkout-payment-subtitle {
+    font-size: 14px;
+    line-height: 19px;
+    color: rgb(var(--color-muted));
+    margin: 0;
+  }
+  .checkout-payment-method {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0;
+  }
+  .checkout-payment-method-text {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .checkout-submit-btn {
+    width: 100%;
+    height: 56px;
+    background: rgb(var(--color-foreground));
+    color: rgb(var(--color-background));
+    border: none;
+    border-radius: 0;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: filter 0.15s;
+  }
+  .checkout-submit-btn:hover { filter: brightness(0.85); }
+  .checkout-submit-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  .checkout-error {
+    text-align: center;
+    font-size: 14px;
+    color: #e53e3e;
+    margin: -48px 0 0 0;
+  }
+
+  .checkout-terms {
+    font-size: 12px;
+    line-height: 16px;
+    color: rgb(var(--color-muted));
+    margin: -48px 0 0 0;
+  }
+  .checkout-terms a {
+    color: rgb(var(--color-muted));
+    text-decoration: underline;
+  }
+
+  /* Products */
+  .checkout-product-list {
+    display: flex;
+    flex-direction: column;
+    gap: 50px;
+  }
+
+  .checkout-product-item {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+  }
+  .checkout-product-img-wrap {
+    position: relative;
+    flex-shrink: 0;
+    width: 120px;
+    height: 120px;
+  }
+  .checkout-product-img {
+    width: 120px;
+    height: 120px;
+    border-radius: 0;
+    object-fit: cover;
+    background: rgb(var(--color-foreground) / 0.06);
+  }
+  .checkout-product-counter {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 24px;
+    height: 24px;
+    border-radius: 100px;
+    background: rgb(var(--color-foreground));
+    color: rgb(var(--color-background));
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+  }
+  .checkout-product-info {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-top: 4px;
+  }
+  .checkout-product-name {
+    font-size: 16px;
+    line-height: 22px;
+    color: rgb(var(--color-foreground));
+  }
+  .checkout-product-variants {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .checkout-product-variant {
+    font-size: 14px;
+    line-height: 19px;
+  }
+  .checkout-product-variant-label {
+    color: rgb(var(--color-muted));
+  }
+  .checkout-product-variant-value {
+    color: rgb(var(--color-foreground));
+  }
+  .checkout-product-price {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .checkout-product-price-current {
+    font-size: 16px;
+    line-height: 22px;
+    color: rgb(var(--color-foreground));
+  }
+  .checkout-product-price-old {
+    font-size: 12px;
+    line-height: 16px;
+    text-decoration: line-through;
+    color: rgb(var(--color-muted));
+  }
+
+  /* Promo */
+  .checkout-promo-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .checkout-promo-row {
+    display: flex;
+    height: 56px;
+    border: 1.5px solid rgb(var(--color-foreground) / 0.12);
+    border-radius: 0;
+    overflow: hidden;
+    background: #fff;
+  }
+  .checkout-promo-input {
+    flex: 1;
+    border: none;
+    padding: 0 12px;
+    font-size: 16px;
+    background: transparent;
+    color: rgb(var(--color-foreground));
+    outline: none;
+  }
+  .checkout-promo-input::placeholder {
+    color: rgb(var(--color-muted));
+  }
+  .checkout-promo-btn {
+    padding: 0 16px;
+    margin: 6px;
+    height: 44px;
+    background: rgb(var(--color-foreground));
+    color: rgb(var(--color-background));
+    border: none;
+    border-radius: 0;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: filter 0.15s;
+  }
+  .checkout-promo-btn:hover {
+    filter: brightness(0.85);
+  }
+  .checkout-promo-applied {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    background: rgb(var(--color-foreground) / 0.06);
+    border-radius: 0;
+    font-size: 14px;
+    color: rgb(var(--color-foreground));
+  }
+  .checkout-promo-remove {
+    background: none;
+    border: none;
+    color: #e53e3e;
+    font-size: 14px;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .checkout-promo-error {
+    font-size: 14px;
+    color: #e53e3e;
+  }
+
+  /* Totals */
+  .checkout-totals {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .checkout-totals-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: rgb(var(--color-foreground));
+  }
+  .checkout-totals-row--total {
+    padding-top: 16px;
+    border-top: 1.5px solid rgb(var(--color-foreground) / 0.12);
+    font-weight: 600;
+  }
+
+  /* PVZ (pickup point) selection */
+  .checkout-pvz-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .checkout-pvz-section.hidden {
+    display: none;
+  }
+  .checkout-pvz-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: rgb(var(--color-foreground));
+    margin: 0;
+  }
+  .checkout-pvz-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  .checkout-pvz-list.hidden {
+    display: none;
+  }
+  .checkout-pvz-item {
+    box-sizing: border-box;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    border: 1.5px solid rgb(var(--color-foreground) / 0.12);
+    border-radius: 0;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .checkout-pvz-item:hover {
+    border-color: #B0B8C4;
+  }
+  .checkout-pvz-item--selected {
+    border-color: rgb(var(--color-foreground));
+    background: rgb(var(--color-foreground) / 0.03);
+  }
+  .checkout-pvz-item-radio {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .checkout-pvz-item-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .checkout-pvz-item-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: rgb(var(--color-foreground));
+    margin: 0 0 4px 0;
+  }
+  .checkout-pvz-item-address {
+    font-size: 13px;
+    color: rgb(var(--color-foreground));
+    margin: 0 0 4px 0;
+    line-height: 1.4;
+  }
+  .checkout-pvz-item-worktime {
+    font-size: 12px;
+    color: rgb(var(--color-muted));
+    margin: 0;
+  }
+  .checkout-pvz-badge {
+    flex-shrink: 0;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 0;
+    background: rgb(var(--color-foreground) / 0.06);
+    color: rgb(var(--color-muted));
+    white-space: nowrap;
+    font-weight: 500;
+  }
+  .checkout-pvz-error {
+    padding: 14px 16px;
+    border: 1.5px dashed rgb(var(--color-foreground) / 0.18);
+    border-radius: 0;
+    text-align: center;
+    background: rgb(var(--color-foreground) / 0.02);
+  }
+  .checkout-pvz-error.hidden {
+    display: none;
+  }
+
+  /* Shipping tariff enhancements */
+  .checkout-shipping-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+  .checkout-shipping-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .checkout-shipping-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 0;
+    white-space: nowrap;
+    line-height: 1.4;
+  }
+  .checkout-shipping-badge--door {
+    background: #E8F0FE;
+    color: #3B6CB5;
+  }
+  .checkout-shipping-badge--pvz {
+    background: #E6F4EA;
+    color: #2E7D42;
+  }
+  .checkout-shipping-desc {
+    font-size: 13px;
+    color: rgb(var(--color-muted));
+    line-height: 1.3;
+  }
+  .checkout-shipping-option .checkout-shipping-addr {
+    font-size: 13px;
+    color: rgb(var(--color-muted)) !important;
+    line-height: 1.3;
+    text-decoration: underline;
+    text-decoration-color: rgb(var(--color-foreground) / 0.18);
+    text-underline-offset: 2px;
+    transition: color 0.15s;
+  }
+  .checkout-shipping-option .checkout-shipping-addr:hover {
+    color: rgb(var(--color-foreground)) !important;
+    text-decoration-color: currentColor;
+  }
+
+  /* Auth gate */
+  .checkout-auth-gate {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 40px 0;
+  }
+  .co-auth-tabs {
+    display: flex;
+    border-bottom: 1.5px solid rgb(var(--color-foreground) / 0.12);
+    margin-bottom: 8px;
+  }
+  .co-auth-tab {
+    flex: 1;
+    padding: 12px 0;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 16px;
+    font-weight: 500;
+    color: rgb(var(--color-muted));
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .co-auth-tab--active {
+    color: rgb(var(--color-foreground));
+    border-bottom-color: rgb(var(--color-foreground));
+  }
+  .co-auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .co-auth-error {
+    text-align: center;
+    font-size: 14px;
+    color: #e53e3e;
+  }
+
+  /* Mobile responsive */
+  @media (max-width: 767px) {
+    .checkout-layout {
+      flex-direction: column;
+    }
+    .checkout-products-panel {
+      order: -1;
+    }
+    .checkout-form-col {
+      width: 100%;
+      padding: 32px 20px;
+      gap: 32px;
+    }
+    .checkout-products-inner {
+      width: 100%;
+      padding: 32px 20px;
+      gap: 32px;
+    }
+    .checkout-fields-row {
+      flex-direction: column;
+    }
+    .checkout-input--half {
+      width: 100%;
+    }
+    .checkout-error {
+      margin: -16px 0 0 0;
+    }
+    .checkout-terms {
+      margin: -16px 0 0 0;
+    }
+  }
+
+  @media (min-width: 768px) and (max-width: 1440px) {
+    .checkout-form-col {
+      padding-left: 5%;
+      width: 45%;
+    }
+    .checkout-products-inner {
+      width: 100%;
+      max-width: 520px;
+    }
+  }
+</style>
+

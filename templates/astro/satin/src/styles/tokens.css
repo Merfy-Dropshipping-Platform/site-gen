@@ -1,0 +1,85 @@
+/* Satin Theme — Design Tokens
+ * Monochrome black/white palette matching Figma design.
+ * Kelly Slab headings, Arsenal body, ALL UPPERCASE text.
+ * Colors stored as RGB triplets for rgba() support.
+ */
+
+:root {
+  /* ── Colors (RGB triplets) ── */
+  --color-primary: 0, 0, 0;            /* #000000 */
+  --color-primary-rgb: 0, 0, 0;
+  --color-background: 255, 255, 255;    /* #ffffff */
+  --color-foreground: 0, 0, 0;          /* #000000 */
+  --color-border: 238, 238, 238;        /* #eeeeee */
+  --color-button: 0, 0, 0;             /* #000000 */
+  --color-button-text: 255, 255, 255;   /* #ffffff */
+  --color-muted: 153, 153, 153;         /* #999999 */
+  --color-secondary: 245, 245, 245;     /* #f5f5f5 */
+  --color-accent: 0, 0, 0;             /* #000000 */
+
+  /* ── Typography ── */
+  --font-heading: 'Kelly Slab', serif;
+  --font-body: 'Arsenal', sans-serif;
+  --font-badge: 'Arsenal', sans-serif;
+  --font-powered: 'Inter', sans-serif;
+
+  /* ── Border Radii ── */
+  --radius-base: 0px;
+  --radius-button: 0px;
+  --radius-card: 0px;
+  --radius-input: 0px;
+  --radius-filter: 0px;
+
+  /* ── Layout ── */
+  --page-width: 1320px;
+  --spacing-section: 120px;
+  --spacing-section-mobile: 80px;
+}
+
+/* ── Color Scheme 1: Black (Hero, Announcement bar) ── */
+.color-scheme-1 {
+  --color-background: 8, 2, 0;          /* #080200 near-black */
+  --color-foreground: 255, 255, 255;
+  --color-primary: 255, 255, 255;
+  --color-border: 68, 68, 68;
+  --color-button: 255, 255, 255;
+  --color-button-text: 0, 0, 0;
+  --color-muted: 200, 200, 200;
+  --color-secondary: 245, 245, 245;
+}
+
+/* ── Color Scheme 2: White (Main content, Product grid) ── */
+.color-scheme-2 {
+  --color-background: 255, 255, 255;
+  --color-foreground: 0, 0, 0;
+  --color-primary: 0, 0, 0;
+  --color-border: 238, 238, 238;
+  --color-button: 0, 0, 0;
+  --color-button-text: 255, 255, 255;
+  --color-muted: 153, 153, 153;
+  --color-secondary: 245, 245, 245;
+}
+
+/* ── Color Scheme 3: Light Gray (Footer, Cart drawer, Account) ── */
+.color-scheme-3 {
+  --color-background: 245, 245, 245;    /* #f5f5f5 */
+  --color-foreground: 0, 0, 0;
+  --color-primary: 0, 0, 0;
+  --color-border: 238, 238, 238;
+  --color-button: 0, 0, 0;
+  --color-button-text: 255, 255, 255;
+  --color-muted: 153, 153, 153;
+  --color-secondary: 255, 255, 255;
+}
+
+/* ── Color Scheme 4: Dark Gray (Dividers, Outer wrapper) ── */
+.color-scheme-4 {
+  --color-background: 68, 68, 68;       /* #444444 */
+  --color-foreground: 255, 255, 255;
+  --color-primary: 255, 255, 255;
+  --color-border: 100, 100, 100;
+  --color-button: 255, 255, 255;
+  --color-button-text: 68, 68, 68;
+  --color-muted: 200, 200, 200;
+  --color-secondary: 245, 245, 245;
+}

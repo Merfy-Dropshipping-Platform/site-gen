@@ -1,0 +1,76 @@
+---
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import data from '../data/data.json';
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** Header props forwarded from page/merchant settings */
+  header?: Record<string, any>;
+  /** Footer props forwarded from page/merchant settings */
+  footer?: Record<string, any>;
+}
+
+const {
+  title = 'Мой магазин',
+  description,
+  header = {},
+  footer = {},
+} = Astro.props;
+const favicons = (data?.meta as any)?.favicons ?? {};
+---
+
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+
+    <!-- Favicon -->
+    {favicons.universal ? (
+      <link rel="icon" href={favicons.universal} />
+    ) : (
+      <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    )}
+    {favicons.dark && (
+      <link rel="icon" href={favicons.dark} media="(prefers-color-scheme: dark)" />
+    )}
+    {favicons.light && (
+      <link rel="icon" href={favicons.light} media="(prefers-color-scheme: light)" />
+    )}
+    {favicons.apple && (
+      <link rel="apple-touch-icon" href={favicons.apple} />
+    )}
+
+    <!-- Google Fonts: Kelly Slab (headings), Arsenal (body), Inter (powered-by) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kelly+Slab&family=Arsenal:wght@400;700&family=Inter:wght@300;400&display=optional" rel="stylesheet">
+  </head>
+
+  <body
+    class="min-h-screen flex flex-col"
+    style={`
+      font-family: var(--font-body);
+      color: rgb(var(--color-foreground));
+      background-color: rgb(var(--color-background));
+    `}
+  >
+    <!-- Header -->
+    <Header siteTitle={title} {...header} />
+
+    <!-- Main content area: pages inject sections here -->
+    <main class="flex-1 w-full">
+      <slot />
+    </main>
+
+    <!-- Footer -->
+    <Footer {...footer} />
+  </body>
+</html>
+
+<style is:global>
+  @import '../styles/global.css';
+</style>

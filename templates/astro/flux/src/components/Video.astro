@@ -1,0 +1,77 @@
+---
+interface Props {
+  video?: { url?: string; coverImage?: string };
+  position?: 'fullscreen' | 'window';
+  content?: {
+    size?: 'small' | 'medium' | 'large';
+    heading?: { enabled?: string; text?: string; size?: string };
+    subheading?: { enabled?: string; text?: string };
+  };
+  colorScheme?: string;
+  padding?: { top?: number; bottom?: number };
+}
+
+const { video, position = 'window', content, colorScheme, padding } = Astro.props;
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
+const videoUrl = video?.url ?? '';
+const coverImage = video?.coverImage ?? '';
+const showHeading = content?.heading?.enabled !== 'false' && content?.heading?.text;
+const showSubheading = content?.subheading?.enabled !== 'false' && content?.subheading?.text;
+const padTop = padding?.top ?? 80;
+const padBottom = padding?.bottom ?? 80;
+
+// Extract YouTube/Vimeo embed URL
+function getEmbedUrl(url: string): string {
+  if (!url) return '';
+  const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
+  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+  return url;
+}
+
+const embedUrl = getEmbedUrl(videoUrl);
+const isFullscreen = position === 'fullscreen';
+---
+
+<section
+  class={`w-full ${schemeClass}`}
+  style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}
+>
+  <div class={isFullscreen ? 'w-full' : 'max-w-[1320px] mx-auto px-5'}>
+    {(showHeading || showSubheading) && (
+      <div class="flex flex-col items-start gap-[8px] mb-[40px]">
+        {showHeading && (
+          <h2 class="text-[20px] font-normal leading-[1.2] font-heading" style="color: rgb(var(--color-foreground));">
+            {content!.heading!.text}
+          </h2>
+        )}
+        {showSubheading && (
+          <p class="text-[16px] font-normal leading-[1.25] font-body" style="color: rgb(var(--color-muted));">
+            {content!.subheading!.text}
+          </p>
+        )}
+      </div>
+    )}
+    <div class={`relative aspect-video overflow-hidden ${isFullscreen ? 'rounded-none' : ''}`} style={`background: rgb(var(--color-foreground));${isFullscreen ? '' : ' border-radius: var(--radius-card, 0px);'}`}>
+      {embedUrl ? (
+        <iframe
+          src={embedUrl}
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen
+          loading="lazy"
+          class="w-full h-full"
+        ></iframe>
+      ) : coverImage ? (
+        <img src={coverImage} alt="Video cover" class="w-full h-full object-cover" loading="lazy" />
+      ) : (
+        <div class="w-full h-full flex items-center justify-center text-theme-muted">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <polygon points="5,3 19,12 5,21"/>
+          </svg>
+        </div>
+      )}
+    </div>
+  </div>
+</section>

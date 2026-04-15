@@ -1,0 +1,134 @@
+---
+import ProductCardItem from './shared/ProductCardItem.astro';
+
+interface Props {
+  heading?: any;
+  text?: any;
+  productCard?: { columns?: number; buttonStyle?: string; cardStyle?: string; nextPhoto?: string; quickAdd?: string };
+  padding?: { top?: number; bottom?: number };
+  dataSource?: string;
+  collection?: string;
+  cards?: number;
+  colorScheme?: string;
+}
+
+const {
+  heading = { text: 'Коллекция товаров', size: 'small' },
+  text = { content: 'Текст', size: 'small' },
+  productCard = { columns: 4 },
+  padding = { top: 80, bottom: 80 },
+  dataSource = 'auto',
+  collection,
+  cards,
+  colorScheme,
+} = Astro.props;
+
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
+
+const headingText = typeof heading === 'object' ? heading?.text : heading;
+const textContent = typeof text === 'object' ? text?.content : text;
+const columns = productCard?.columns || 4;
+const quickAdd = productCard?.quickAdd === 'true';
+const buttonStyle = productCard?.buttonStyle || 'link';
+
+let allProducts: Array<{ id?: string; name: string; price: string; oldPrice: string; image: string; href?: string }> = [];
+try {
+  const productsData = await import('../data/products.json');
+  allProducts = productsData.default || [];
+} catch {
+  allProducts = [
+    { name: 'Товар', price: '5 990₽', oldPrice: '7 990₽', image: '/images/popular-1.png' },
+    { name: 'Товар', price: '5 990₽', oldPrice: '7 990₽', image: '/images/popular-2.png' },
+    { name: 'Товар', price: '5 990₽', oldPrice: '7 990₽', image: '/images/popular-3.png' },
+    { name: 'Товар', price: '5 990₽', oldPrice: '7 990₽', image: '/images/popular-4.png' },
+  ];
+}
+
+// Filter by collection if specified
+let products = allProducts;
+if (collection && allProducts.length > 0) {
+  try {
+    const collectionsData = await import('../data/collections.json');
+    const collections = collectionsData.default || [];
+    // Find collection by name (Puck stores collection name) or by ID/slug
+    const matched = collections.find((c: any) =>
+      c.name === collection || c.id === collection || c.slug === collection
+    );
+    if (matched?.productIds?.length) {
+      const idSet = new Set(matched.productIds);
+      const filtered = allProducts.filter((p: any) => p.id && idSet.has(p.id));
+      if (filtered.length > 0) {
+        products = filtered;
+      }
+    }
+  } catch {
+    // collections.json not available — use all products
+  }
+}
+---
+
+<section id="popular" class={`w-full scroll-mt-20 ${schemeClass}`} style={`background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
+  <div class="w-full max-w-[1320px] mx-auto px-5" style={`padding-top: ${padding?.top ?? 120}px; padding-bottom: ${padding?.bottom ?? 120}px;`}>
+    <div class="flex flex-col items-start gap-[8px] mb-[40px]">
+      {headingText && (
+        <h2 class="text-[20px] font-normal leading-[1.2] font-heading" style="color: rgb(var(--color-foreground));">
+          {headingText}
+        </h2>
+      )}
+      {textContent && (
+        <p class="text-[16px] font-normal leading-[1.25] font-body" style="color: rgb(var(--color-muted));">
+          {textContent}
+        </p>
+      )}
+    </div>
+
+    <div class="grid product-grid-dynamic gap-[16px]">
+      {(cards ? products.slice(0, cards) : products).map((product) => (
+        <ProductCardItem
+          id={product.id}
+          name={product.name}
+          price={product.price}
+          oldPrice={product.oldPrice}
+          image={product.image}
+          href={product.href}
+          quantity={product.quantity}
+          quickAdd={quickAdd}
+        />
+      ))}
+    </div>
+
+    <div class="mt-8">
+      {buttonStyle === 'link' && (
+        <a href="#popular" class="text-base font-normal underline text-theme-foreground font-body">
+          Смотреть все
+        </a>
+      )}
+      {buttonStyle === 'primary' && (
+        <a href="#popular" class="inline-block px-6 py-2.5 text-base font-normal rounded-none hover:opacity-90 transition-colors no-underline font-body" style="background: rgb(var(--color-button)); color: rgb(var(--color-button-text));">
+          Смотреть все
+        </a>
+      )}
+      {buttonStyle === 'secondary' && (
+        <a href="#popular" class="inline-block px-6 py-2.5 text-base font-normal border rounded-none hover:opacity-90 transition-colors no-underline font-body" style="border-color: rgb(var(--color-primary)); color: rgb(var(--color-primary));">
+          Смотреть все
+        </a>
+      )}
+    </div>
+  </div>
+</section>
+
+<style define:vars={{ cols: columns }}>
+  .product-grid-dynamic {
+    grid-template-columns: repeat(1, 1fr);
+  }
+  @media (min-width: 640px) {
+    .product-grid-dynamic {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  @media (min-width: 1024px) {
+    .product-grid-dynamic {
+      grid-template-columns: repeat(var(--cols), 1fr);
+    }
+  }
+</style>

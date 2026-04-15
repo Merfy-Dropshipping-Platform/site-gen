@@ -1,0 +1,269 @@
+{
+  "pages": [
+    {
+      "id": "home",
+      "name": "Главная страница",
+      "slug": "/",
+      "isCustom": false,
+      "createdAt": 0
+    }
+  ],
+  "pagesData": {
+    "home": {
+      "content": [
+        {
+          "type": "Header",
+          "props": {
+            "id": "Header-1",
+            "siteTitle": "Flux",
+            "logo": "",
+            "logoPosition": "top-left",
+            "stickiness": "scroll-up",
+            "colorScheme": "scheme-2",
+            "padding": { "top": 0, "bottom": 0 },
+            "navigationLinks": [
+              { "label": "Каталог", "href": "/catalog" },
+              { "label": "О нас", "href": "/about" },
+              { "label": "Контакты", "href": "/contacts" }
+            ],
+            "menuColorScheme": "scheme-1",
+            "menuType": "dropdown",
+            "actionButtons": {
+              "showSearch": "true",
+              "showCart": "true",
+              "showProfile": "true"
+            }
+          }
+        },
+        {
+          "type": "Hero",
+          "props": {
+            "id": "Hero-1",
+            "image": "/main-image.png",
+            "overlay": 40,
+            "imagePosition": "fullscreen",
+            "size": "large",
+            "heading": { "text": "НОВИНКИ ТЕХНОЛОГИЙ", "size": "medium" },
+            "text": { "content": "Лучшие гаджеты и электроника для вашей жизни", "size": "medium" },
+            "button": { "text": "СМОТРЕТЬ КАТАЛОГ", "style": "primary", "link": { "href": "/catalog" } },
+            "position": "left",
+            "colorScheme": "scheme-1",
+            "padding": { "top": 0, "bottom": 0 }
+          }
+        },
+        {
+          "type": "Collections",
+          "props": {
+            "id": "Collections-1",
+            "title": "КАТЕГОРИИ",
+            "subtitle": "Выберите интересующую категорию",
+            "titleSize": "small",
+            "subtitleSize": "small",
+            "dataSource": "auto",
+            "collections": [],
+            "columnsCount": 3,
+            "imageView": "square",
+            "colorScheme": "scheme-2",
+            "padding": { "top": 120, "bottom": 120 }
+          }
+        },
+        {
+          "type": "PopularProducts",
+          "props": {
+            "id": "PopularProducts-1",
+            "dataSource": "auto",
+            "collection": "",
+            "cards": 8,
+            "heading": { "text": "ПОПУЛЯРНЫЕ ТОВАРЫ", "size": "small" },
+            "text": { "content": "Хиты продаж этого месяца", "size": "small" },
+            "productCard": {
+              "buttonStyle": "primary",
+              "cardStyle": "portrait",
+              "nextPhoto": "false",
+              "quickAdd": "false",
+              "columns": 4
+            },
+            "colorScheme": "scheme-2",
+            "padding": { "top": 120, "bottom": 120 }
+          }
+        },
+        {
+          "type": "MainText",
+          "props": {
+            "id": "MainText-1",
+            "heading": { "text": "ТЕХНОЛОГИИ ДЛЯ ЖИЗНИ", "size": "medium" },
+            "text": { "text": "Мы предлагаем только проверенную технику от ведущих производителей. Каждый товар проходит тщательный отбор, чтобы вы получили лучшее." },
+            "align": "center",
+            "colorScheme": "scheme-3",
+            "padding": { "top": 120, "bottom": 120 }
+          }
+        },
+        {
+          "type": "Gallery",
+          "props": {
+            "id": "Gallery-1",
+            "heading": { "text": "ГАЛЕРЕЯ", "size": "small" },
+            "text": { "content": "", "size": "small" },
+            "displayMode": "products",
+            "columnsCount": 3,
+            "imageView": "square",
+            "colorScheme": "scheme-2",
+            "padding": { "top": 120, "bottom": 120 }
+          }
+        },
+        {
+          "type": "Footer",
+          "props": {
+            "id": "Footer-1",
+            "newsletter": {
+              "enabled": "false"
+            },
+            "colorScheme": "scheme-2",
+            "copyrightColorScheme": "scheme-1",
+            "padding": { "top": 80, "bottom": 40 },
+            "navigationColumn": {
+              "title": "Навигация",
+              "links": [
+                { "label": "Каталог", "href": "/catalog" },
+                { "label": "О нас", "href": "/about" },
+                { "label": "Контакты", "href": "/contacts" }
+              ]
+            },
+            "informationColumn": {
+              "title": "Информация",
+              "links": [
+                { "label": "Доставка", "href": "#" },
+                { "label": "Возврат", "href": "#" },
+                { "label": "Гарантия", "href": "#" }
+              ]
+            },
+            "socialColumn": {
+              "title": "Контакты",
+              "email": "info@example.ru",
+              "socialLinks": [
+                { "platform": "VK", "href": "#" },
+                { "platform": "Telegram", "href": "#" }
+              ]
+            },
+            "copyright": {
+              "companyName": "Flux",
+              "showYear": "true",
+              "poweredBy": "Powered by Merfy"
+            }
+          }
+        }
+      ],
+      "root": {
+        "props": {
+          "title": "Flux"
+        }
+      },
+      "zones": {}
+    }
+  },
+  "currentPageId": "home",
+  "themeSettings": {
+    "logoUrl": null,
+    "bodyFont": "roboto-flex",
+    "cartType": "drawer",
+    "logoWidth": 40,
+    "bodyWeight": 300,
+    "cardBorder": 0,
+    "cardRadius": 12,
+    "headingFont": "roboto-flex",
+    "inputRadius": 4,
+    "mediaRadius": 8,
+    "buttonRadius": 6,
+    "colorSchemes": [
+      {
+        "id": "scheme-1",
+        "name": "Black",
+        "text": "#FFFFFF",
+        "heading": "#FFFFFF",
+        "background": "#000000",
+        "primaryButton": {
+          "text": "#ffffff",
+          "border": "#fa5109",
+          "textHover": "#ffffff",
+          "background": "#fa5109",
+          "backgroundHover": "#e04808"
+        },
+        "secondaryButton": {
+          "text": "#ffffff",
+          "border": "#ffffff",
+          "textHover": "#ffffff",
+          "background": "#000000",
+          "backgroundHover": "#1a1a1a"
+        }
+      },
+      {
+        "id": "scheme-2",
+        "name": "White",
+        "text": "#000000",
+        "heading": "#000000",
+        "background": "#ffffff",
+        "primaryButton": {
+          "text": "#ffffff",
+          "border": "#fa5109",
+          "textHover": "#ffffff",
+          "background": "#fa5109",
+          "backgroundHover": "#e04808"
+        },
+        "secondaryButton": {
+          "text": "#000000",
+          "border": "#000000",
+          "textHover": "#000000",
+          "background": "#ffffff",
+          "backgroundHover": "#f5f5f5"
+        }
+      },
+      {
+        "id": "scheme-3",
+        "name": "Light Gray",
+        "text": "#000000",
+        "heading": "#000000",
+        "background": "#fafafa",
+        "primaryButton": {
+          "text": "#ffffff",
+          "border": "#fa5109",
+          "textHover": "#ffffff",
+          "background": "#fa5109",
+          "backgroundHover": "#e04808"
+        },
+        "secondaryButton": {
+          "text": "#000000",
+          "border": "#000000",
+          "textHover": "#000000",
+          "background": "#fafafa",
+          "backgroundHover": "#f0f0f0"
+        }
+      },
+      {
+        "id": "scheme-4",
+        "name": "Dark",
+        "text": "#FFFFFF",
+        "heading": "#FFFFFF",
+        "background": "#0b0b0b",
+        "primaryButton": {
+          "text": "#ffffff",
+          "border": "#fa5109",
+          "textHover": "#ffffff",
+          "background": "#fa5109",
+          "backgroundHover": "#e04808"
+        },
+        "secondaryButton": {
+          "text": "#ffffff",
+          "border": "#ffffff",
+          "textHover": "#ffffff",
+          "background": "#0b0b0b",
+          "backgroundHover": "#1f1f1f"
+        }
+      }
+    ],
+    "headingWeight": 400,
+    "sectionPadding": 120,
+    "productCardStyle": "standard",
+    "productCardAlignment": "left",
+    "defaultSchemeIndex": 1
+  }
+}

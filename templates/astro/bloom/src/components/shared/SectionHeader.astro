@@ -1,0 +1,19 @@
+---
+interface Props {
+	title: string;
+	subtitle?: string;
+}
+
+const { title, subtitle } = Astro.props;
+---
+
+<div class="flex flex-col items-start gap-[8px] mb-[40px]">
+	<h2 class="text-[20px] font-normal leading-[1.2] font-heading" style="color: rgb(var(--color-foreground));">
+		{title}
+	</h2>
+	{subtitle && (
+		<p class="text-[16px] font-normal leading-[1.25] font-body" style="color: rgb(var(--color-muted));">
+			{subtitle}
+		</p>
+	)}
+</div>

@@ -23,6 +23,9 @@ import { S3StorageService } from "../storage/s3.service";
 import { runBuildPipeline, trySnapshotDeploy, type BuildDependencies } from "./build.service";
 import { roseRegistry } from "./registries/rose";
 import { vanillaRegistry } from "./registries/vanilla";
+import { satinRegistry } from "./registries/satin";
+import { fluxRegistry } from "./registries/flux";
+import { bloomRegistry } from "./registries/bloom";
 import { fetchProducts as rpcFetchProducts } from "./data-fetcher";
 import {
   themeRegistryToGeneratorRegistry,
@@ -228,9 +231,7 @@ export class SiteGeneratorService {
           ? themeRegistryToGeneratorRegistry(themeRegistry, {
               features: themeFeatures,
             })
-          : resolvedTemplateId === "vanilla"
-            ? vanillaRegistry
-            : roseRegistry,
+          : { vanilla: vanillaRegistry, satin: satinRegistry, flux: fluxRegistry, bloom: bloomRegistry }[resolvedTemplateId] ?? roseRegistry,
         themeRegistry,
         themeFeatures,
         themeSettingsSchema,

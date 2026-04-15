@@ -1,0 +1,90 @@
+{
+  "name": "satin",
+  "label": "Satin — Fashion & Clothing",
+  "version": "1.0.0",
+  "category": "fashion",
+  "description": "Elegant monochrome theme with Kelly Slab headings and uppercase text for fashion stores",
+  "author": "Merfy",
+  "features": {
+    "variants": true,
+    "collections": true,
+    "sizeGuide": false,
+    "colorSwatches": true,
+    "filterSidebar": true,
+    "newsletter": true,
+    "wishlist": false,
+    "blog": true,
+    "rss": true
+  },
+  "pages": ["index", "product", "collection", "cart", "blog"],
+  "settings_schema": [
+    {
+      "name": "colors",
+      "settings": [
+        { "id": "color_primary", "type": "color", "label": "Primary color", "default": "#000000" },
+        { "id": "color_background", "type": "color", "label": "Background", "default": "#ffffff" },
+        { "id": "color_foreground", "type": "color", "label": "Text", "default": "#000000" },
+        { "id": "color_border", "type": "color", "label": "Border", "default": "#eeeeee" },
+        { "id": "color_button", "type": "color", "label": "Button", "default": "#000000" },
+        { "id": "color_button_text", "type": "color", "label": "Button text", "default": "#ffffff" }
+      ]
+    },
+    {
+      "name": "typography",
+      "settings": [
+        { "id": "font_heading", "type": "font", "label": "Heading font", "default": "Kelly Slab" },
+        { "id": "font_body", "type": "font", "label": "Body font", "default": "Arsenal" }
+      ]
+    },
+    {
+      "name": "layout",
+      "settings": [
+        { "id": "radius_button", "type": "range", "label": "Button radius", "default": "0" },
+        { "id": "radius_card", "type": "range", "label": "Card radius", "default": "0" },
+        { "id": "page_width", "type": "text", "label": "Page width", "default": "1320px" }
+      ]
+    }
+  ],
+  "color_schemes": [
+    {
+      "id": 1,
+      "name": "Black",
+      "background": "#080200",
+      "foreground": "#ffffff",
+      "primary": "#ffffff",
+      "border": "#444444",
+      "button": "#ffffff",
+      "button_text": "#000000"
+    },
+    {
+      "id": 2,
+      "name": "White",
+      "background": "#ffffff",
+      "foreground": "#000000",
+      "primary": "#000000",
+      "border": "#eeeeee",
+      "button": "#000000",
+      "button_text": "#ffffff"
+    },
+    {
+      "id": 3,
+      "name": "Light Gray",
+      "background": "#f5f5f5",
+      "foreground": "#000000",
+      "primary": "#000000",
+      "border": "#eeeeee",
+      "button": "#000000",
+      "button_text": "#ffffff"
+    },
+    {
+      "id": 4,
+      "name": "Dark Gray",
+      "background": "#444444",
+      "foreground": "#ffffff",
+      "primary": "#ffffff",
+      "border": "#646464",
+      "button": "#ffffff",
+      "button_text": "#444444"
+    }
+  ]
+}

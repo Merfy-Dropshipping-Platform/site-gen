@@ -1,0 +1,76 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import data from '../../data/data.json';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+
+const meta = data?.meta ?? {};
+const blocks = data?.content ?? [];
+const headerBlock = blocks.find((b: any) => b.type === 'Header');
+const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+---
+<BaseLayout title={`Результат оплаты — ${meta?.title ?? 'Мой магазин'}`}>
+  <Header {...(headerBlock?.props ?? {})} />
+
+  <main class="flex-1 w-full text-center font-body" style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));">
+    <div class="max-w-[600px] mx-auto px-5 py-[60px] w-full">
+      <!-- Загрузка -->
+      <div class="result-section active" id="result-loading">
+        <div class="w-12 h-12 border-[3px] rounded-full animate-spin mx-auto mb-6" style="border-color: rgb(var(--color-foreground) / 0.12); border-top-color: rgb(var(--color-foreground))"></div>
+        <p style="color: rgb(var(--color-muted));">Проверяем статус оплаты...</p>
+      </div>
+
+      <!-- Успех -->
+      <div class="result-section" id="result-success">
+        <svg class="w-20 h-20 mx-auto mb-6 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        <h1 class="text-3xl font-heading mb-4" style="color: rgb(var(--color-foreground));">Спасибо за заказ!</h1>
+        <p class="text-lg mb-8" style="color: rgb(var(--color-muted));">Ваш заказ успешно оплачен. Мы отправим подтверждение на вашу почту.</p>
+        <div class="inline-block py-3 px-6 text-lg font-medium mb-8" style="background: rgb(var(--color-foreground) / 0.05); color: rgb(var(--color-primary)); border-radius: 0;" id="order-number"></div>
+        <br><br>
+        <a href="/" class="btn-primary inline-flex items-center justify-center font-medium transition-colors no-underline" style="height: 56px; padding: 0 32px; border-radius: 0;">Вернуться в магазин</a>
+      </div>
+
+      <!-- Ожидание -->
+      <div class="result-section" id="result-pending">
+        <svg class="w-20 h-20 mx-auto mb-6 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <h1 class="text-3xl font-heading mb-4" style="color: rgb(var(--color-foreground));">Платёж обрабатывается</h1>
+        <p class="text-lg mb-8" style="color: rgb(var(--color-muted));">Ваш платёж ещё обрабатывается. Мы отправим уведомление, когда оплата будет подтверждена.</p>
+        <a href="/" class="btn-primary inline-flex items-center justify-center font-medium transition-colors no-underline" style="height: 56px; padding: 0 32px; border-radius: 0;">Вернуться в магазин</a>
+      </div>
+
+      <!-- Ошибка -->
+      <div class="result-section" id="result-failed">
+        <svg class="w-20 h-20 mx-auto mb-6 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="15" y1="9" x2="9" y2="15"/>
+          <line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+        <h1 class="text-3xl font-heading mb-4" style="color: rgb(var(--color-foreground));">Оплата не прошла</h1>
+        <p class="text-lg mb-8" style="color: rgb(var(--color-muted));" id="error-message">К сожалению, платёж не был завершён. Попробуйте ещё раз.</p>
+        <a href="/" class="btn-primary inline-flex items-center justify-center font-medium transition-colors no-underline" style="height: 56px; padding: 0 32px; border-radius: 0;">Вернуться в магазин</a>
+      </div>
+    </div>
+  </main>
+
+  <Footer {...(footerBlock?.props ?? {})} />
+
+  <script is:inline define:vars={{ apiUrl: meta?.apiUrl }}>
+    window.__MERFY_CONFIG__ = {
+      apiUrl: apiUrl || 'https://gateway.merfy.ru/api',
+    };
+  </script>
+  <script type="module" src="/scripts/checkout-result.js"></script>
+</BaseLayout>
+
+<style>
+  .result-section { display: none; }
+  .result-section.active { display: block; }
+  .btn-primary { background-color: rgb(var(--color-primary)); color: #fff; }
+  .btn-primary:hover { filter: brightness(0.85); }
+</style>

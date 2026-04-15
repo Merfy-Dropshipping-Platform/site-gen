@@ -1,0 +1,100 @@
+---
+import SocialIcon from './footer/SocialIcon.astro';
+
+interface Props {
+  newsletter?: { enabled?: string; heading?: string; description?: string; placeholder?: string };
+  heading?: { text?: string; size?: string };
+  text?: { content?: string; size?: string };
+  colorScheme?: string;
+  copyrightColorScheme?: string;
+  padding?: { top?: number; bottom?: number };
+  navigationColumn?: { title?: string; links?: Array<{ label: string; href: string }> };
+  informationColumn?: { title?: string; links?: Array<{ label: string; href: string }> };
+  socialColumn?: { title?: string; email?: string; contactFields?: Array<{ label: string; value: string }>; socialLinks?: Array<{ platform: string; href: string }> };
+  copyright?: { companyName?: string; showYear?: string; poweredBy?: string };
+}
+
+const {
+  colorScheme = 'scheme-1',
+  padding,
+  navigationColumn = { title: 'Навигация', links: [{ label: 'Каталог', href: '/catalog' }, { label: 'О нас', href: '/about' }, { label: 'Контакты', href: '/contacts' }] },
+  informationColumn = { title: 'Информация', links: [{ label: 'Политика доставки', href: '#' }, { label: 'Политика возврата', href: '#' }, { label: 'Условия обслуживания', href: '#' }] },
+  socialColumn = { title: 'Социальные сети', email: 'info@example.ru', socialLinks: [{ platform: 'VK', href: '#' }, { platform: 'Telegram', href: '#' }] },
+  copyright = { companyName: 'Мой магазин', showYear: 'true', poweredBy: 'Powered by Merfy' },
+} = Astro.props;
+
+const today = new Date();
+const yearStr = copyright?.showYear === 'true' ? ` ${today.getFullYear()}` : '';
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
+---
+
+<footer class={`w-full ${schemeClass}`} style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));">
+  <div class="w-full max-w-[1320px] mx-auto px-5 pt-[80px] pb-[80px]">
+    <!-- Top Row: Logo+Nav (left) — Contact+Social (right) -->
+    <div class="flex flex-col md:flex-row justify-between gap-10 md:gap-20">
+      <!-- Left: Logo + Nav -->
+      <div class="flex flex-col gap-6">
+        <div class="text-[20px] font-heading font-normal leading-[1.2]" style="color: rgb(var(--color-foreground));">
+          {copyright?.companyName ?? 'Мой магазин'}
+        </div>
+        {navigationColumn?.links && (
+          <nav class="flex flex-col gap-[8px]">
+            {navigationColumn.links.map((link) => (
+              <a href={link.href} class="text-[16px] font-body font-normal hover:opacity-80 transition-opacity" style="color: rgb(var(--color-foreground));">
+                {link.label}
+              </a>
+            ))}
+          </nav>
+        )}
+      </div>
+
+      <!-- Right: Contact + Social -->
+      <div class="flex flex-col gap-[64px]">
+        <div class="flex flex-col gap-[8px]">
+          {socialColumn?.contactFields && socialColumn.contactFields.length > 0 ? (
+            socialColumn.contactFields.map((field) => (
+              <span class="text-[16px] font-body font-normal" style="color: rgb(var(--color-foreground));">{field.value}</span>
+            ))
+          ) : socialColumn?.email ? (
+            <a href={`mailto:${socialColumn.email}`} class="text-[16px] font-body font-normal hover:opacity-80 transition-opacity" style="color: rgb(var(--color-foreground));">
+              {socialColumn.email}
+            </a>
+          ) : null}
+        </div>
+
+        {socialColumn?.socialLinks && socialColumn.socialLinks.length > 0 && (
+          <div class="flex flex-col gap-[24px]">
+            <div class="flex gap-[8px]">
+              {socialColumn.socialLinks.map((social) => (
+                <SocialIcon href={social.href} ariaLabel={social.platform} />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+
+    <!-- Copyright Bar -->
+    <div class="flex flex-col md:flex-row justify-between gap-4 mt-[32px]">
+      <span class="text-[16px] font-body font-normal" style="color: rgb(var(--color-foreground));">
+        &copy;{yearStr} {copyright?.companyName} Все права защищены.
+      </span>
+      {informationColumn?.links && (
+        <div class="flex flex-wrap gap-[24px]">
+          {informationColumn.links.map((link) => (
+            <a href={link.href} class="text-[16px] font-body font-normal hover:opacity-80 transition-opacity" style="color: rgb(var(--color-foreground));">
+              {link.label}
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+
+  <!-- Powered-by Bar -->
+  <div class="w-full h-[64px] flex items-center justify-center" style="background: #000000;">
+    <p class="text-[16px] font-light text-white leading-[1.2] text-center px-4" style="font-family: 'Inter', sans-serif;">
+      &copy;{yearStr} {copyright?.companyName} Все права защищены. {copyright?.poweredBy}
+    </p>
+  </div>
+</footer>

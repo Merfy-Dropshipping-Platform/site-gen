@@ -1,0 +1,96 @@
+---
+interface Props {
+  image?: string;
+  size?: 'small' | 'medium' | 'large';
+  width?: 'small' | 'medium' | 'large';
+  photoPosition?: 'left' | 'right';
+  heading?: { enabled?: string; text?: string };
+  text?: { enabled?: string; content?: string };
+  button?: { enabled?: string; text?: string; link?: string };
+  colorScheme?: string;
+  padding?: { top?: number; bottom?: number };
+}
+
+const {
+  image,
+  size = 'medium',
+  photoPosition = 'left',
+  heading,
+  text,
+  button,
+  colorScheme,
+  padding,
+} = Astro.props;
+
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
+
+const padTop = padding?.top ?? 80;
+const padBottom = padding?.bottom ?? 80;
+const showHeading = heading?.enabled !== 'false' && heading?.text;
+const showText = text?.enabled !== 'false' && text?.content;
+const showButton = button?.enabled !== 'false' && button?.text;
+
+const headingSizeMap: Record<string, string> = {
+  small: 'text-[16px]',
+  medium: 'text-[20px]',
+  large: 'text-[28px]',
+};
+const headingSizeClass = headingSizeMap[size] || headingSizeMap.medium;
+
+const isRight = photoPosition === 'right';
+---
+
+<section
+  class={`w-full ${schemeClass}`}
+  style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}
+>
+  <div class="max-w-[1320px] mx-auto px-5 grid grid-cols-1 md:grid-cols-2 gap-[40px] items-center">
+    <!-- Image -->
+    <div class={isRight ? 'order-1 md:order-2' : ''}>
+      {image ? (
+        <img
+          src={image}
+          alt={heading?.text ?? ''}
+          loading="lazy"
+          class="w-full h-auto object-cover"
+          style="border-radius: var(--radius-card, 0px);"
+        />
+      ) : (
+        <div class="aspect-[652/366] flex items-center justify-center text-theme-muted" style="background: rgb(var(--color-foreground) / 0.03); border-radius: var(--radius-card, 0px);">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21,15 16,10 5,21"/>
+          </svg>
+        </div>
+      )}
+    </div>
+
+    <!-- Content -->
+    <div class={`py-[16px] ${isRight ? 'order-2 md:order-1' : ''}`}>
+      <div class="flex flex-col" style="gap:64px;">
+        <div>
+          {showHeading && (
+            <h2 class={`${headingSizeClass} font-normal leading-[1.2] font-heading`} style="color:rgb(var(--color-foreground));margin-bottom:12px;">
+              {heading!.text}
+            </h2>
+          )}
+          {showText && (
+            <p class="text-[16px] leading-[1.25] font-body" style="color:rgb(var(--color-foreground) / 0.94);">
+              {text!.content}
+            </p>
+          )}
+        </div>
+        {showButton && (
+          <a
+            href={button!.link ?? '#'}
+            class="inline-flex items-center justify-center h-[48px] px-[16px] text-[16px] font-normal uppercase no-underline hover:opacity-90 transition-colors font-body self-start"
+            style="border: 1.3px solid rgb(var(--color-foreground)); background: transparent; color: rgb(var(--color-foreground)); border-radius: 0;"
+          >
+            {button!.text}
+          </a>
+        )}
+      </div>
+    </div>
+  </div>
+</section>

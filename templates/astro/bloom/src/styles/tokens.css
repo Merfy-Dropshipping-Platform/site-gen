@@ -1,0 +1,85 @@
+/* Bloom Theme — Design Tokens
+ * Soft feminine palette with #cf7a8b / #e38e9f pink accent.
+ * Urbanist headings, Inter body, 5px button radius + pill variants.
+ * Colors stored as RGB triplets for rgba() support.
+ */
+
+:root {
+  /* ── Colors (RGB triplets) ── */
+  --color-primary: 0, 0, 0;            /* #000000 */
+  --color-primary-rgb: 0, 0, 0;
+  --color-background: 255, 255, 255;    /* #ffffff */
+  --color-foreground: 0, 0, 0;          /* #000000 */
+  --color-border: 238, 238, 238;        /* #eeeeee */
+  --color-button: 0, 0, 0;             /* #000000 */
+  --color-button-text: 255, 255, 255;   /* #ffffff */
+  --color-muted: 153, 153, 153;         /* #999999 */
+  --color-secondary: 207, 122, 139;     /* #cf7a8b pink accent */
+  --color-accent: 207, 122, 139;        /* #cf7a8b */
+
+  /* ── Typography ── */
+  --font-heading: 'Urbanist', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-badge: 'Inter', sans-serif;
+  --font-powered: 'Inter', sans-serif;
+
+  /* ── Border Radii ── */
+  --radius-base: 5px;
+  --radius-button: 5px;
+  --radius-card: 12px;
+  --radius-input: 4px;
+  --radius-filter: 4px;
+
+  /* ── Layout ── */
+  --page-width: 1320px;
+  --spacing-section: 120px;
+  --spacing-section-mobile: 80px;
+}
+
+/* ── Color Scheme 1: Pink Accent (Announcement bar, Cart badge) ── */
+.color-scheme-1 {
+  --color-background: 207, 122, 139;    /* #cf7a8b */
+  --color-foreground: 255, 255, 255;
+  --color-primary: 255, 255, 255;
+  --color-border: 227, 142, 159;
+  --color-button: 255, 255, 255;
+  --color-button-text: 207, 122, 139;
+  --color-muted: 245, 245, 245;
+  --color-secondary: 255, 255, 255;
+}
+
+/* ── Color Scheme 2: Pink Section (Main text, Advantages) ── */
+.color-scheme-2 {
+  --color-background: 227, 142, 159;    /* #e38e9f */
+  --color-foreground: 255, 255, 255;
+  --color-primary: 255, 255, 255;
+  --color-border: 247, 162, 179;
+  --color-button: 255, 255, 255;
+  --color-button-text: 227, 142, 159;
+  --color-muted: 245, 245, 245;
+  --color-secondary: 255, 255, 255;
+}
+
+/* ── Color Scheme 3: White (Main content, Product grid) ── */
+.color-scheme-3 {
+  --color-background: 255, 255, 255;
+  --color-foreground: 0, 0, 0;
+  --color-primary: 0, 0, 0;
+  --color-border: 238, 238, 238;
+  --color-button: 0, 0, 0;
+  --color-button-text: 255, 255, 255;
+  --color-muted: 153, 153, 153;
+  --color-secondary: 207, 122, 139;
+}
+
+/* ── Color Scheme 4: Light Hero (Hero overlay) ── */
+.color-scheme-4 {
+  --color-background: 247, 247, 249;    /* #f7f7f9 */
+  --color-foreground: 0, 0, 0;
+  --color-primary: 0, 0, 0;
+  --color-border: 238, 238, 238;
+  --color-button: 0, 0, 0;
+  --color-button-text: 255, 255, 255;
+  --color-muted: 153, 153, 153;
+  --color-secondary: 207, 122, 139;
+}

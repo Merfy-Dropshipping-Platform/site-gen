@@ -1,0 +1,270 @@
+{
+  "pages": [
+    {
+      "id": "home",
+      "name": "Главная страница",
+      "slug": "/",
+      "isCustom": false,
+      "createdAt": 0
+    }
+  ],
+  "pagesData": {
+    "home": {
+      "content": [
+        {
+          "type": "Header",
+          "props": {
+            "id": "Header-1",
+            "siteTitle": "Satin",
+            "logo": "",
+            "logoPosition": "top-center",
+            "stickiness": "scroll-up",
+            "colorScheme": "scheme-2",
+            "padding": { "top": 0, "bottom": 0 },
+            "navigationLinks": [
+              { "label": "Каталог", "href": "/catalog" },
+              { "label": "О нас", "href": "/about" },
+              { "label": "Контакты", "href": "/contacts" }
+            ],
+            "menuColorScheme": "scheme-2",
+            "menuType": "dropdown",
+            "actionButtons": {
+              "showSearch": "true",
+              "showCart": "true",
+              "showProfile": "true"
+            }
+          }
+        },
+        {
+          "type": "Hero",
+          "props": {
+            "id": "Hero-1",
+            "image": "/main-image.png",
+            "overlay": 30,
+            "imagePosition": "fullscreen",
+            "size": "large",
+            "heading": { "text": "НОВАЯ КОЛЛЕКЦИЯ", "size": "medium" },
+            "text": { "content": "ОТКРОЙТЕ ДЛЯ СЕБЯ ЭЛЕГАНТНОСТЬ В КАЖДОЙ ДЕТАЛИ", "size": "medium" },
+            "button": { "text": "СМОТРЕТЬ", "style": "primary", "link": { "href": "/catalog" } },
+            "position": "left",
+            "colorScheme": "scheme-1",
+            "padding": { "top": 0, "bottom": 0 }
+          }
+        },
+        {
+          "type": "Collections",
+          "props": {
+            "id": "Collections-1",
+            "title": "КОЛЛЕКЦИИ",
+            "subtitle": "Актуальные коллекции этого сезона",
+            "titleSize": "small",
+            "subtitleSize": "small",
+            "dataSource": "auto",
+            "collections": [],
+            "columnsCount": 3,
+            "imageView": "square",
+            "colorScheme": "scheme-2",
+            "padding": { "top": 120, "bottom": 120 }
+          }
+        },
+        {
+          "type": "PopularProducts",
+          "props": {
+            "id": "PopularProducts-1",
+            "dataSource": "auto",
+            "collection": "",
+            "cards": 6,
+            "heading": { "text": "КОЛЛЕКЦИЯ ТОВАРОВ", "size": "small" },
+            "text": { "content": "ЛУЧШИЕ ТОВАРЫ НАШЕГО МАГАЗИНА", "size": "small" },
+            "productCard": {
+              "buttonStyle": "primary",
+              "cardStyle": "portrait",
+              "nextPhoto": "false",
+              "quickAdd": "false",
+              "columns": 3
+            },
+            "colorScheme": "scheme-2",
+            "padding": { "top": 120, "bottom": 120 }
+          }
+        },
+        {
+          "type": "MainText",
+          "props": {
+            "id": "MainText-1",
+            "heading": { "text": "ЭЛЕГАНТНОСТЬ В ДЕТАЛЯХ", "size": "medium" },
+            "text": { "text": "Мы создаём одежду, которая подчёркивает вашу индивидуальность. Каждая модель продумана до мелочей — от выбора ткани до финальной строчки." },
+            "align": "left",
+            "colorScheme": "scheme-2",
+            "padding": { "top": 120, "bottom": 120 }
+          }
+        },
+        {
+          "type": "ImageWithText",
+          "props": {
+            "id": "ImageWithText-1",
+            "image": "",
+            "size": "medium",
+            "photoPosition": "left",
+            "heading": { "enabled": "true", "text": "НАША ИСТОРИЯ" },
+            "text": { "enabled": "true", "content": "Каждая коллекция — это путешествие в мир стиля и комфорта. Мы выбираем лучшие материалы и работаем с лучшими мастерами." },
+            "button": { "enabled": "true", "text": "ПОДРОБНЕЕ", "link": "/about" },
+            "colorScheme": "scheme-2",
+            "padding": { "top": 120, "bottom": 120 }
+          }
+        },
+        {
+          "type": "Footer",
+          "props": {
+            "id": "Footer-1",
+            "newsletter": {
+              "enabled": "false"
+            },
+            "colorScheme": "scheme-3",
+            "copyrightColorScheme": "scheme-1",
+            "padding": { "top": 80, "bottom": 40 },
+            "navigationColumn": {
+              "title": "НАВИГАЦИЯ",
+              "links": [
+                { "label": "Каталог", "href": "/catalog" },
+                { "label": "О нас", "href": "/about" },
+                { "label": "Контакты", "href": "/contacts" }
+              ]
+            },
+            "informationColumn": {
+              "title": "ИНФОРМАЦИЯ",
+              "links": [
+                { "label": "Доставка", "href": "#" },
+                { "label": "Возврат", "href": "#" },
+                { "label": "Условия", "href": "#" }
+              ]
+            },
+            "socialColumn": {
+              "title": "КОНТАКТЫ",
+              "email": "info@example.ru",
+              "socialLinks": [
+                { "platform": "VK", "href": "#" },
+                { "platform": "Telegram", "href": "#" }
+              ]
+            },
+            "copyright": {
+              "companyName": "Satin",
+              "showYear": "true",
+              "poweredBy": "Powered by Merfy"
+            }
+          }
+        }
+      ],
+      "root": {
+        "props": {
+          "title": "Satin"
+        }
+      },
+      "zones": {}
+    }
+  },
+  "currentPageId": "home",
+  "themeSettings": {
+    "logoUrl": null,
+    "bodyFont": "arsenal",
+    "cartType": "drawer",
+    "logoWidth": 40,
+    "bodyWeight": 400,
+    "cardBorder": 0,
+    "cardRadius": 0,
+    "headingFont": "kelly-slab",
+    "inputRadius": 0,
+    "mediaRadius": 0,
+    "buttonRadius": 0,
+    "colorSchemes": [
+      {
+        "id": "scheme-1",
+        "name": "Black",
+        "text": "#FFFFFF",
+        "heading": "#FFFFFF",
+        "background": "#080200",
+        "primaryButton": {
+          "text": "#000000",
+          "border": "#ffffff",
+          "textHover": "#000000",
+          "background": "#ffffff",
+          "backgroundHover": "#eeeeee"
+        },
+        "secondaryButton": {
+          "text": "#ffffff",
+          "border": "#ffffff",
+          "textHover": "#ffffff",
+          "background": "#080200",
+          "backgroundHover": "#1a1a1a"
+        }
+      },
+      {
+        "id": "scheme-2",
+        "name": "White",
+        "text": "#000000",
+        "heading": "#000000",
+        "background": "#ffffff",
+        "primaryButton": {
+          "text": "#ffffff",
+          "border": "#000000",
+          "textHover": "#ffffff",
+          "background": "#000000",
+          "backgroundHover": "#333333"
+        },
+        "secondaryButton": {
+          "text": "#000000",
+          "border": "#000000",
+          "textHover": "#000000",
+          "background": "#ffffff",
+          "backgroundHover": "#f5f5f5"
+        }
+      },
+      {
+        "id": "scheme-3",
+        "name": "Light Gray",
+        "text": "#000000",
+        "heading": "#000000",
+        "background": "#f5f5f5",
+        "primaryButton": {
+          "text": "#ffffff",
+          "border": "#000000",
+          "textHover": "#ffffff",
+          "background": "#000000",
+          "backgroundHover": "#333333"
+        },
+        "secondaryButton": {
+          "text": "#000000",
+          "border": "#000000",
+          "textHover": "#000000",
+          "background": "#f5f5f5",
+          "backgroundHover": "#e8e8e8"
+        }
+      },
+      {
+        "id": "scheme-4",
+        "name": "Dark Gray",
+        "text": "#FFFFFF",
+        "heading": "#FFFFFF",
+        "background": "#444444",
+        "primaryButton": {
+          "text": "#444444",
+          "border": "#ffffff",
+          "textHover": "#444444",
+          "background": "#ffffff",
+          "backgroundHover": "#eeeeee"
+        },
+        "secondaryButton": {
+          "text": "#ffffff",
+          "border": "#ffffff",
+          "textHover": "#ffffff",
+          "background": "#444444",
+          "backgroundHover": "#555555"
+        }
+      }
+    ],
+    "headingWeight": 400,
+    "sectionPadding": 120,
+    "productCardStyle": "standard",
+    "productCardAlignment": "left",
+    "defaultSchemeIndex": 1
+  }
+}

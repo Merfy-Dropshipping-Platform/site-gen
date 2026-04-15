@@ -1,0 +1,264 @@
+{
+  "pages": [
+    {
+      "id": "home",
+      "name": "Главная страница",
+      "slug": "/",
+      "isCustom": false,
+      "createdAt": 0
+    }
+  ],
+  "pagesData": {
+    "home": {
+      "content": [
+        {
+          "type": "Header",
+          "props": {
+            "id": "Header-1",
+            "siteTitle": "Bloom",
+            "logo": "",
+            "logoPosition": "top-center",
+            "stickiness": "scroll-up",
+            "colorScheme": "scheme-3",
+            "padding": { "top": 0, "bottom": 0 },
+            "navigationLinks": [
+              { "label": "Каталог", "href": "/catalog" },
+              { "label": "О нас", "href": "/about" },
+              { "label": "Контакты", "href": "/contacts" }
+            ],
+            "menuColorScheme": "scheme-3",
+            "menuType": "dropdown",
+            "actionButtons": {
+              "showSearch": "true",
+              "showCart": "true",
+              "showProfile": "true"
+            }
+          }
+        },
+        {
+          "type": "Hero",
+          "props": {
+            "id": "Hero-1",
+            "image": "/main-image.png",
+            "overlay": 20,
+            "imagePosition": "fullscreen",
+            "size": "large",
+            "heading": { "text": "КРАСОТА НАЧИНАЕТСЯ С ЗАБОТЫ", "size": "medium" },
+            "text": { "content": "Откройте для себя лучшие средства для ухода за собой", "size": "medium" },
+            "button": { "text": "Смотреть каталог", "style": "primary", "link": { "href": "/catalog" } },
+            "position": "center",
+            "colorScheme": "scheme-4",
+            "padding": { "top": 0, "bottom": 0 }
+          }
+        },
+        {
+          "type": "PopularProducts",
+          "props": {
+            "id": "PopularProducts-1",
+            "dataSource": "auto",
+            "collection": "",
+            "cards": 6,
+            "heading": { "text": "ПОПУЛЯРНЫЕ ТОВАРЫ", "size": "small" },
+            "text": { "content": "Бестселлеры нашего магазина", "size": "small" },
+            "productCard": {
+              "buttonStyle": "primary",
+              "cardStyle": "portrait",
+              "nextPhoto": "false",
+              "quickAdd": "false",
+              "columns": 3
+            },
+            "colorScheme": "scheme-3",
+            "padding": { "top": 120, "bottom": 120 }
+          }
+        },
+        {
+          "type": "MainText",
+          "props": {
+            "id": "MainText-1",
+            "heading": { "text": "НАТУРАЛЬНАЯ КРАСОТА", "size": "medium" },
+            "text": { "text": "Мы верим, что настоящая красота — это забота о себе. Наши продукты созданы из натуральных ингредиентов, чтобы подчеркнуть вашу природную красоту." },
+            "align": "center",
+            "colorScheme": "scheme-2",
+            "padding": { "top": 120, "bottom": 120 }
+          }
+        },
+        {
+          "type": "Gallery",
+          "props": {
+            "id": "Gallery-1",
+            "heading": { "text": "ГАЛЕРЕЯ", "size": "small" },
+            "text": { "content": "", "size": "small" },
+            "displayMode": "products",
+            "columnsCount": 3,
+            "imageView": "square",
+            "colorScheme": "scheme-3",
+            "padding": { "top": 120, "bottom": 120 }
+          }
+        },
+        {
+          "type": "Newsletter",
+          "props": {
+            "id": "Newsletter-1",
+            "heading": { "text": "БУДЬТЕ В КУРСЕ НОВИНОК", "size": "small" },
+            "text": { "content": "Подпишитесь на рассылку и узнавайте первыми о новых коллекциях и акциях.", "size": "small" },
+            "form": { "placeholder": "E-mail", "buttonText": "Подписаться" },
+            "colorScheme": "scheme-2",
+            "padding": { "top": 120, "bottom": 120 }
+          }
+        },
+        {
+          "type": "Footer",
+          "props": {
+            "id": "Footer-1",
+            "newsletter": {
+              "enabled": "false"
+            },
+            "colorScheme": "scheme-3",
+            "copyrightColorScheme": "scheme-1",
+            "padding": { "top": 80, "bottom": 40 },
+            "navigationColumn": {
+              "title": "Навигация",
+              "links": [
+                { "label": "Каталог", "href": "/catalog" },
+                { "label": "О нас", "href": "/about" },
+                { "label": "Контакты", "href": "/contacts" }
+              ]
+            },
+            "informationColumn": {
+              "title": "Информация",
+              "links": [
+                { "label": "Доставка", "href": "#" },
+                { "label": "Возврат", "href": "#" },
+                { "label": "Условия", "href": "#" }
+              ]
+            },
+            "socialColumn": {
+              "title": "Контакты",
+              "email": "info@example.ru",
+              "socialLinks": [
+                { "platform": "VK", "href": "#" },
+                { "platform": "Telegram", "href": "#" }
+              ]
+            },
+            "copyright": {
+              "companyName": "Bloom",
+              "showYear": "true",
+              "poweredBy": "Powered by Merfy"
+            }
+          }
+        }
+      ],
+      "root": {
+        "props": {
+          "title": "Bloom"
+        }
+      },
+      "zones": {}
+    }
+  },
+  "currentPageId": "home",
+  "themeSettings": {
+    "logoUrl": null,
+    "bodyFont": "inter",
+    "cartType": "drawer",
+    "logoWidth": 40,
+    "bodyWeight": 300,
+    "cardBorder": 0,
+    "cardRadius": 12,
+    "headingFont": "urbanist",
+    "inputRadius": 4,
+    "mediaRadius": 4,
+    "buttonRadius": 5,
+    "colorSchemes": [
+      {
+        "id": "scheme-1",
+        "name": "Pink Accent",
+        "text": "#FFFFFF",
+        "heading": "#FFFFFF",
+        "background": "#cf7a8b",
+        "primaryButton": {
+          "text": "#cf7a8b",
+          "border": "#ffffff",
+          "textHover": "#cf7a8b",
+          "background": "#ffffff",
+          "backgroundHover": "#f5f5f5"
+        },
+        "secondaryButton": {
+          "text": "#ffffff",
+          "border": "#ffffff",
+          "textHover": "#ffffff",
+          "background": "#cf7a8b",
+          "backgroundHover": "#c06e7f"
+        }
+      },
+      {
+        "id": "scheme-2",
+        "name": "Pink Section",
+        "text": "#FFFFFF",
+        "heading": "#FFFFFF",
+        "background": "#e38e9f",
+        "primaryButton": {
+          "text": "#e38e9f",
+          "border": "#ffffff",
+          "textHover": "#e38e9f",
+          "background": "#ffffff",
+          "backgroundHover": "#f5f5f5"
+        },
+        "secondaryButton": {
+          "text": "#ffffff",
+          "border": "#ffffff",
+          "textHover": "#ffffff",
+          "background": "#e38e9f",
+          "backgroundHover": "#d97f90"
+        }
+      },
+      {
+        "id": "scheme-3",
+        "name": "White",
+        "text": "#000000",
+        "heading": "#000000",
+        "background": "#ffffff",
+        "primaryButton": {
+          "text": "#ffffff",
+          "border": "#000000",
+          "textHover": "#ffffff",
+          "background": "#000000",
+          "backgroundHover": "#333333"
+        },
+        "secondaryButton": {
+          "text": "#000000",
+          "border": "#000000",
+          "textHover": "#000000",
+          "background": "#ffffff",
+          "backgroundHover": "#f5f5f5"
+        }
+      },
+      {
+        "id": "scheme-4",
+        "name": "Light Hero",
+        "text": "#000000",
+        "heading": "#000000",
+        "background": "#f7f7f9",
+        "primaryButton": {
+          "text": "#ffffff",
+          "border": "#000000",
+          "textHover": "#ffffff",
+          "background": "#000000",
+          "backgroundHover": "#333333"
+        },
+        "secondaryButton": {
+          "text": "#000000",
+          "border": "#000000",
+          "textHover": "#000000",
+          "background": "#f7f7f9",
+          "backgroundHover": "#ececee"
+        }
+      }
+    ],
+    "headingWeight": 300,
+    "sectionPadding": 120,
+    "productCardStyle": "standard",
+    "productCardAlignment": "left",
+    "defaultSchemeIndex": 2
+  }
+}

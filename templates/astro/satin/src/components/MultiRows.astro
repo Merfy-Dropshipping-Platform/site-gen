@@ -1,0 +1,87 @@
+---
+interface Row {
+  id?: string;
+  image?: string;
+  title?: string;
+  headingSize?: 'small' | 'medium' | 'large';
+  description?: string;
+  textSize?: 'small' | 'medium' | 'large';
+  button?: { enabled?: string; text?: string; link?: string };
+  hidden?: boolean;
+}
+
+interface Props {
+  heading?: { enabled?: string; text?: string; size?: 'small' | 'medium' | 'large' };
+  rows?: Row[];
+  size?: 'small' | 'medium' | 'large';
+  width?: 'small' | 'medium' | 'large';
+  rowsPosition?: 'left' | 'right';
+  alignment?: 'left' | 'center' | 'right';
+  buttonStyle?: 'primary' | 'secondary';
+  colorScheme?: string;
+  padding?: { top?: number; bottom?: number };
+}
+
+const { heading, rows = [], size = 'medium', rowsPosition = 'left', alignment = 'left', buttonStyle = 'primary', colorScheme, padding } = Astro.props;
+const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
+const showHeading = heading?.enabled !== 'false' && heading?.text;
+const padTop = padding?.top ?? 80;
+const padBottom = padding?.bottom ?? 80;
+const visibleRows = rows.filter((r) => !r.hidden);
+
+const alignClass: Record<string, string> = {
+  left: 'text-left',
+  center: 'text-center',
+  right: 'text-right',
+};
+---
+
+<section class={`w-full ${schemeClass}`} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
+  <div class="max-w-[1320px] mx-auto px-5">
+    {showHeading && (
+      <div class="flex flex-col items-start gap-[8px] mb-[40px]">
+        <h2 class="text-[20px] font-normal leading-[1.2] font-heading" style="color: rgb(var(--color-foreground));">
+          {heading!.text}
+        </h2>
+      </div>
+    )}
+
+    <div class="flex flex-col gap-[60px]">
+      {visibleRows.map((row, i) => {
+        const imageRight = (i % 2 === 0 ? rowsPosition : rowsPosition === 'left' ? 'right' : 'left') === 'right';
+        return (
+          <div class={`grid grid-cols-1 md:grid-cols-2 gap-[40px] items-center ${alignClass[alignment] ?? 'text-left'}`}>
+            {row.image && (
+              <div class={`overflow-hidden ${imageRight ? 'md:order-2' : ''}`} style="border-radius: var(--radius-card, 0px);">
+                <img src={row.image} alt={row.title ?? ''} loading="lazy" class="w-full h-auto object-cover" style="border-radius: var(--radius-card, 0px);" />
+              </div>
+            )}
+            <div class={imageRight ? 'md:order-1' : ''}>
+              <div class="flex flex-col" style="gap:64px;">
+                <div>
+                  {row.title && (
+                    <h3 class="text-[20px] font-normal leading-[1.2] font-heading" style="color: rgb(var(--color-foreground)); margin-bottom:12px;">{row.title}</h3>
+                  )}
+                  {row.description && (
+                    <p class="text-[16px] font-normal leading-[1.25] font-body" style="color: rgb(var(--color-foreground) / 0.94);">{row.description}</p>
+                  )}
+                </div>
+                {row.button?.enabled !== 'false' && row.button?.text && (
+                  <a
+                    href={row.button.link ?? '#'}
+                    class="inline-flex items-center justify-center h-[48px] px-[16px] text-[16px] font-normal uppercase no-underline transition-colors duration-200 hover:opacity-90 font-body self-start"
+                    style={buttonStyle === 'secondary'
+                      ? 'border: 1.3px solid rgb(var(--color-foreground)); background: transparent; color: rgb(var(--color-foreground)); border-radius: 0;'
+                      : 'background: rgb(var(--color-button)); color: rgb(var(--color-button-text)); border-radius: 0;'}
+                  >
+                    {row.button.text}
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+</section>

@@ -1,0 +1,66 @@
+---
+interface Props {
+  heading?: string | { text?: string; size?: string };
+  text?: string | { text?: string };
+  button?: { text?: string; link?: { href?: string } | string };
+  align?: 'left' | 'center' | 'right';
+  size?: 'small' | 'medium' | 'large';
+  colorScheme?: string;
+  padding?: { top?: number; bottom?: number };
+}
+
+const props = Astro.props;
+const schemeClass = props.colorScheme ? `color-scheme-${props.colorScheme.replace('scheme-', '')}` : '';
+const headingText = typeof props.heading === 'object' ? props.heading?.text : props.heading;
+const bodyText = typeof props.text === 'object' ? (props.text as any)?.text : props.text;
+const align = (props.align ?? 'center') as string;
+const padTop = props.padding?.top ?? 60;
+const padBottom = props.padding?.bottom ?? 60;
+
+const buttonLink = typeof props.button?.link === 'object'
+  ? (props.button?.link as any)?.href
+  : (props.button?.link || '#');
+---
+
+<section
+  class={`w-full ${schemeClass}`}
+  style={`background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}
+>
+  <div class="max-w-[1320px] mx-auto px-5" style={`text-align: ${align};`}>
+    <div class="flex flex-col textblock-inner">
+      <div>
+        {headingText && (
+          <h2 class="text-[20px] font-normal leading-[1.2] font-heading" style="color:rgb(var(--color-foreground));margin-bottom:12px;">
+            {headingText}
+          </h2>
+        )}
+        {bodyText && (
+          <p class="text-[16px] leading-[1.25] font-body" style="color:rgb(var(--color-foreground) / 0.94);">
+            {bodyText}
+          </p>
+        )}
+      </div>
+      {props.button?.text && (
+        <a
+          href={buttonLink}
+          class="inline-flex items-center justify-center h-[48px] px-[16px] text-[16px] font-normal uppercase no-underline hover:opacity-90 transition-colors font-body"
+          style="border: 1.3px solid rgb(var(--color-foreground)); background: transparent; color: rgb(var(--color-foreground)); border-radius: 0;"
+        >
+          {props.button.text}
+        </a>
+      )}
+    </div>
+    <slot />
+  </div>
+</section>
+
+<style>
+  .textblock-inner {
+    gap: 64px;
+  }
+  @media (max-width: 767px) {
+    .textblock-inner {
+      gap: 40px;
+    }
+  }
+</style>

@@ -87,6 +87,16 @@ function showSection(id) {
 
 function showSuccess(orderId) {
   document.getElementById('order-number').textContent = `Заказ #${orderId.slice(-8).toUpperCase()}`;
+  // Трекинг покупки для воронки конверсии
+  if (window._mfy && window._mfy.trackPurchase) {
+    try {
+      const cart = JSON.parse(localStorage.getItem('merfy-cart') || '[]');
+      const totalCents = cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
+      window._mfy.trackPurchase(orderId, totalCents, cart.map(item => ({
+        id: item.id, name: item.name, price: item.price, qty: item.quantity || 1
+      })));
+    } catch (e) { /* cart may already be cleared */ }
+  }
   // Очищаем корзину после успешной оплаты
   try { localStorage.removeItem('merfy-cart'); } catch (e) { /* ignore */ }
   showSection('result-success');

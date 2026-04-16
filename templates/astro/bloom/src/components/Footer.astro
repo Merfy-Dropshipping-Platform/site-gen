@@ -15,6 +15,9 @@ interface Props {
 }
 
 const {
+  newsletter = { enabled: 'true', heading: 'Подпишитесь на рассылку', description: 'Получайте новости и специальные предложения.', placeholder: 'email@example.ru' },
+  heading,
+  text,
   colorScheme = 'scheme-1',
   padding,
   navigationColumn = { title: 'Навигация', links: [{ label: 'Каталог', href: '/catalog' }, { label: 'О нас', href: '/about' }, { label: 'Контакты', href: '/contacts' }] },
@@ -24,12 +27,47 @@ const {
 } = Astro.props;
 
 const today = new Date();
+const showNewsletter = newsletter?.enabled === 'true';
 const yearStr = copyright?.showYear === 'true' ? ` ${today.getFullYear()}` : '';
 const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
+const newsletterHeading = heading?.text || newsletter?.heading;
+const newsletterDescription = text?.content || newsletter?.description;
 ---
 
 <footer class={`w-full ${schemeClass}`} style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));">
   <div class="w-full max-w-[1320px] mx-auto px-5 pt-[80px] pb-[80px]">
+    {showNewsletter && (
+      <section class="pb-[48px] mb-[48px]" style="border-bottom: 1px solid rgb(var(--color-border));">
+        <div class="max-w-[600px] mx-auto text-center">
+          <h2 class="text-[24px] md:text-[28px] font-heading font-normal leading-[1.2] mb-[8px]" style="color: rgb(var(--color-foreground));">
+            {newsletterHeading}
+          </h2>
+          {newsletterDescription && (
+            <p class="text-[16px] font-body font-normal leading-[1.5] mb-[24px]" style="color: rgb(var(--color-foreground)); opacity: 0.7;">
+              {newsletterDescription}
+            </p>
+          )}
+          <form class="flex flex-col sm:flex-row gap-[12px] max-w-[480px] mx-auto">
+            <input
+              type="email"
+              name="email"
+              placeholder={newsletter?.placeholder || 'email@example.ru'}
+              required
+              class="flex-1 h-[48px] px-[16px] text-[16px] font-body outline-none"
+              style={`background: rgb(var(--color-background)); border: 1px solid rgb(var(--color-border)); border-radius: var(--radius-input, var(--radius-button)); color: rgb(var(--color-foreground));`}
+            />
+            <button
+              type="submit"
+              class="h-[48px] px-[24px] text-[16px] font-body font-normal hover:opacity-90 transition-opacity"
+              style={`background: rgb(var(--color-button)); color: rgb(var(--color-button-text)); border-radius: var(--radius-button);`}
+            >
+              Подписаться
+            </button>
+          </form>
+        </div>
+      </section>
+    )}
+
     <!-- Top Row: Logo+Nav (left) — Contact+Social (right) -->
     <div class="flex flex-col md:flex-row justify-between gap-10 md:gap-20">
       <!-- Left: Logo + Nav -->

@@ -57,7 +57,7 @@ const containerStyle = imagePosition === 'window'
         {visibleSlides.map((slide, i) => (
           <div
             class={`h-[880px] max-md:h-[680px] bg-cover bg-center flex items-end relative ${i === 0 ? '' : 'hidden'}`}
-            style={`background-color:#26311c;${slide.image ? ` background-image: url(${slide.image})` : ''}`}
+            style={`background-color: rgb(var(--color-primary, 0 0 0));${slide.image ? ` background-image: url(${slide.image})` : ''}`}
             data-slide
           >
             <div class="absolute inset-0" style={`background:#000000; opacity: ${overlay / 100}`}></div>
@@ -75,7 +75,7 @@ const containerStyle = imagePosition === 'window'
                   <a
                     href={slide.button.link?.href ?? '#'}
                     class="inline-flex items-center justify-center h-[48px] px-[16px] text-[16px] font-normal uppercase font-body no-underline transition-colors duration-200 hover:opacity-90"
-                    style="background-color:#3a4530; color:#ffffff; border-radius: 0;"
+                    style="background-color: rgb(var(--color-accent, 250 81 9)); color: #ffffff; border-radius: var(--radius-button, 6px);"
                   >
                     {slide.button.text}
                   </a>

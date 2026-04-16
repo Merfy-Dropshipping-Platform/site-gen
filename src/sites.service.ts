@@ -246,6 +246,7 @@ export class SitesDomainService {
     slug?: string;
     companyName?: string;
     skipCoolify?: boolean;
+    themeId?: string;
   }) {
     // Проверяем лимит сайтов по тарифу
     const currentSiteCount = await this.db
@@ -353,6 +354,8 @@ export class SitesDomainService {
       }
     }
 
+    const effectiveThemeId = params.themeId?.trim() || "rose";
+
     await this.db.insert(schema.site).values({
       id,
       tenantId: params.tenantId,
@@ -367,11 +370,12 @@ export class SitesDomainService {
       publicUrl,
       storageSlug,
       coolifyProjectUuid,
+      themeId: effectiveThemeId,
     });
 
     // Create default revision with theme content (best-effort)
     try {
-      const defaultContent = this.getDefaultContent("rose");
+      const defaultContent = this.getDefaultContent(effectiveThemeId);
       if (defaultContent) {
         await this.createRevision({
           tenantId: params.tenantId,

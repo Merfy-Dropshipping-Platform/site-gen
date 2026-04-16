@@ -27,7 +27,7 @@ export class SitesMicroserviceController {
   async createSite(@Payload() data: any, @Ctx() _ctx: RmqContext) {
     try {
       this.logger.log(`create_site request: ${JSON.stringify(data)}`);
-      const { tenantId, actorUserId, name, slug, companyName } = data ?? {};
+      const { tenantId, actorUserId, name, slug, companyName, themeId } = data ?? {};
       if (!tenantId || !actorUserId || !name) {
         return {
           success: false,
@@ -40,6 +40,7 @@ export class SitesMicroserviceController {
         name,
         slug,
         companyName,
+        themeId,
       });
       return { success: true, siteId: result.id, publicUrl: result.publicUrl };
     } catch (e: any) {

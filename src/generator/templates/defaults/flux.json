@@ -64,7 +64,7 @@
             "columnsCount": 3,
             "imageView": "square",
             "colorScheme": "scheme-2",
-            "padding": { "top": 120, "bottom": 120 }
+            "padding": { "top": 64, "bottom": 64 }
           }
         },
         {
@@ -84,7 +84,7 @@
               "columns": 4
             },
             "colorScheme": "scheme-2",
-            "padding": { "top": 120, "bottom": 120 }
+            "padding": { "top": 64, "bottom": 64 }
           }
         },
         {
@@ -95,7 +95,7 @@
             "text": { "text": "Мы предлагаем только проверенную технику от ведущих производителей. Каждый товар проходит тщательный отбор, чтобы вы получили лучшее." },
             "align": "center",
             "colorScheme": "scheme-3",
-            "padding": { "top": 120, "bottom": 120 }
+            "padding": { "top": 64, "bottom": 64 }
           }
         },
         {
@@ -108,7 +108,7 @@
             "columnsCount": 3,
             "imageView": "square",
             "colorScheme": "scheme-2",
-            "padding": { "top": 120, "bottom": 120 }
+            "padding": { "top": 64, "bottom": 64 }
           }
         },
         {

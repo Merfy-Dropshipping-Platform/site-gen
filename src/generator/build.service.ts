@@ -197,12 +197,20 @@ export interface BuildResult {
  * Default revision data matching the constructor's initial state.
  * Ensures the first build produces a site identical to what the constructor shows.
  */
-function getDefaultRevisionData(): Record<string, unknown> {
-  // Try loading from rose.json template first
+function getDefaultRevisionData(templateId?: string): Record<string, unknown> {
+  // Try loading theme-specific defaults first, fallback to rose.json
   try {
-    const defaultPath = path.join(__dirname, "templates", "defaults", "rose.json");
+    const templateFile = `${templateId || "rose"}.json`;
+    const defaultPath = path.join(__dirname, "templates", "defaults", templateFile);
     if (fsSync.existsSync(defaultPath)) {
       return JSON.parse(fsSync.readFileSync(defaultPath, "utf-8"));
+    }
+    // Fallback to rose.json if theme-specific file not found
+    if (templateId && templateId !== "rose") {
+      const fallbackPath = path.join(__dirname, "templates", "defaults", "rose.json");
+      if (fsSync.existsSync(fallbackPath)) {
+        return JSON.parse(fsSync.readFileSync(fallbackPath, "utf-8"));
+      }
     }
   } catch {
     // Fall through to hardcoded defaults
@@ -550,7 +558,7 @@ export async function trySnapshotDeploy(
   // Create revision if missing
   if (!revisionId) {
     revisionId = randomUUID();
-    const data = getDefaultRevisionData();
+    const data = getDefaultRevisionData(params.templateId);
     await deps.db.insert(schema.siteRevision).values({
       id: revisionId,
       siteId: params.siteId,
@@ -950,7 +958,7 @@ async function stageMerge(
 
   if (!revisionId) {
     revisionId = randomUUID();
-    const data = getDefaultRevisionData();
+    const data = getDefaultRevisionData(ctx.templateId);
     await deps.db.insert(schema.siteRevision).values({
       id: revisionId,
       siteId: params.siteId,
@@ -958,7 +966,7 @@ async function stageMerge(
       meta: { title: "Мой сайт", mode: ctx.mode },
       createdAt: new Date(),
     });
-    logger.log(`[merge] Created initial revision ${revisionId} with default theme blocks`);
+    logger.log(`[merge] Created initial revision ${revisionId} with default theme blocks (template: ${ctx.templateId})`);
   }
 
   // Load revision data

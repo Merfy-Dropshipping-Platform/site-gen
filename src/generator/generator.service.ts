@@ -280,8 +280,9 @@ export class SiteGeneratorService {
     // Если текущая ревизия не найдена — создаём новую с дефолтным контентом темы
     if (!revisionId) {
       let data: any = { content: [], meta: { title: "Мой сайт" } };
+      const templateFile = `${siteRow?.templateId || "rose"}.json`;
       try {
-        const defaultPath = path.join(__dirname, "templates", "defaults", "rose.json");
+        const defaultPath = path.join(__dirname, "templates", "defaults", templateFile);
         if (fsSync.existsSync(defaultPath)) {
           data = JSON.parse(fsSync.readFileSync(defaultPath, "utf-8"));
         }

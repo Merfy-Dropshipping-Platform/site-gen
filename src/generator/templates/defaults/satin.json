@@ -64,7 +64,7 @@
             "columnsCount": 3,
             "imageView": "square",
             "colorScheme": "scheme-2",
-            "padding": { "top": 120, "bottom": 120 }
+            "padding": { "top": 40, "bottom": 40 }
           }
         },
         {
@@ -84,7 +84,7 @@
               "columns": 3
             },
             "colorScheme": "scheme-2",
-            "padding": { "top": 120, "bottom": 120 }
+            "padding": { "top": 40, "bottom": 40 }
           }
         },
         {
@@ -95,7 +95,7 @@
             "text": { "text": "Мы создаём одежду, которая подчёркивает вашу индивидуальность. Каждая модель продумана до мелочей — от выбора ткани до финальной строчки." },
             "align": "left",
             "colorScheme": "scheme-2",
-            "padding": { "top": 120, "bottom": 120 }
+            "padding": { "top": 40, "bottom": 40 }
           }
         },
         {
@@ -109,7 +109,7 @@
             "text": { "enabled": "true", "content": "Каждая коллекция — это путешествие в мир стиля и комфорта. Мы выбираем лучшие материалы и работаем с лучшими мастерами." },
             "button": { "enabled": "true", "text": "ПОДРОБНЕЕ", "link": "/about" },
             "colorScheme": "scheme-2",
-            "padding": { "top": 120, "bottom": 120 }
+            "padding": { "top": 40, "bottom": 40 }
           }
         },
         {

@@ -28,13 +28,13 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
           <div>
             <label for="login-email" class="block mb-2 font-body" style="font-size: 14px; color: rgb(var(--color-foreground));">Email</label>
             <input type="email" id="login-email" name="email" required placeholder="your@email.com" autocomplete="email"
-              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: 0; background: transparent; color: rgb(var(--color-foreground));">
+              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: var(--radius-input, var(--radius-button)); background: transparent; color: rgb(var(--color-foreground));">
           </div>
 
           <div>
             <label for="login-password" class="block mb-2 font-body" style="font-size: 14px; color: rgb(var(--color-foreground));">Пароль</label>
             <input type="password" id="login-password" name="password" required placeholder="Введите пароль" autocomplete="current-password"
-              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: 0; background: transparent; color: rgb(var(--color-foreground));">
+              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: var(--radius-input, var(--radius-button)); background: transparent; color: rgb(var(--color-foreground));">
           </div>
 
           <div class="text-red-600 text-sm text-center hidden" id="login-error"></div>
@@ -151,10 +151,10 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
   .login-submit-btn {
     height: 56px;
     font-size: 16px;
-    background: rgb(var(--color-foreground));
-    color: #ffffff;
+    background-color: rgb(var(--color-button));
+    color: rgb(var(--color-button-text));
     border: none;
-    border-radius: 0;
+    border-radius: var(--radius-button);
     cursor: pointer;
   }
   .login-submit-btn:hover { filter: brightness(0.85); }

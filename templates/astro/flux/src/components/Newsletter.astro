@@ -36,7 +36,7 @@ const padBottom = padding?.bottom ?? 120;
       class="w-full md:w-auto md:min-w-[652px] h-[56px] flex items-center shrink-0"
       action="#"
       method="POST"
-      style="border: 1px solid rgb(var(--color-foreground)); border-radius: 0;"
+      style="border: 1px solid rgb(var(--color-foreground)); border-radius: var(--radius-input, var(--radius-button));"
     >
       <input
         type="email"
@@ -49,7 +49,7 @@ const padBottom = padding?.bottom ?? 120;
       <button
         type="submit"
         class="h-[32px] px-2 mx-3 text-[12px] font-normal uppercase cursor-pointer transition-opacity hover:opacity-80 font-body whitespace-nowrap"
-        style="background: rgb(var(--color-foreground)); color: rgb(var(--color-background)); border: none; border-radius: 0;"
+        style="background: rgb(var(--color-foreground)); color: rgb(var(--color-background)); border: none; border-radius: var(--radius-button);"
       >
         {buttonText}
       </button>

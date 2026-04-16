@@ -24,7 +24,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
         <AccountNav />
 
         <div class="flex-1">
-          <div class="p-6" style="background: rgb(var(--color-card)); border-radius: 0;" id="account-welcome">
+          <div class="p-6" style="background: rgb(var(--color-card)); border-radius: var(--radius-card);" id="account-welcome">
             <p style="color: rgb(var(--color-muted));">Загрузка...</p>
           </div>
         </div>
@@ -56,8 +56,8 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
             '<h2 class="text-xl font-heading mb-2">Привет, ' + (customer.name || 'покупатель') + '!</h2>' +
             '<p style="color:rgb(var(--color-muted))" class="mb-4">' + (customer.email || '') + '</p>' +
             '<div class="flex flex-wrap gap-3">' +
-              '<a href="/account/orders" class="inline-flex items-center gap-2 py-2.5 px-5 text-sm font-medium transition-colors btn-primary" style="border-radius:0">Мои заказы</a>' +
-              '<a href="/account/profile" class="inline-flex items-center gap-2 py-2.5 px-5 text-sm font-medium transition-colors" style="border:1px solid rgb(var(--color-foreground) / 0.19);border-radius:0;color:rgb(var(--color-foreground))">Профиль</a>' +
+              '<a href="/account/orders" class="inline-flex items-center gap-2 py-2.5 px-5 text-sm font-medium transition-colors btn-primary" style="border-radius:var(--radius-button)">Мои заказы</a>' +
+              '<a href="/account/profile" class="inline-flex items-center gap-2 py-2.5 px-5 text-sm font-medium transition-colors" style="border:1px solid rgb(var(--color-foreground) / 0.19);border-radius:var(--radius-button);color:rgb(var(--color-foreground))">Профиль</a>' +
             '</div>';
 
           // T028: Load recent orders (last 3)
@@ -96,7 +96,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
                 var sClass = statusColors[order.status] || 'bg-gray-100 text-gray-800';
 
                 recentHtml +=
-                  '<a href="/account/order?n=' + encodeURIComponent(order.orderNumber) + '" class="block p-4 transition-colors" style="background:rgb(var(--color-foreground) / 0.03);border-radius:0">' +
+                  '<a href="/account/order?n=' + encodeURIComponent(order.orderNumber) + '" class="block p-4 transition-colors" style="background:rgb(var(--color-foreground) / 0.03);border-radius:var(--radius-card)">' +
                     '<div class="flex items-center justify-between">' +
                       '<span class="font-medium text-sm">\u2116' + order.orderNumber + ' <span class="font-normal" style="color:rgb(var(--color-muted))">' + date + '</span></span>' +
                       '<span class="text-xs px-2 py-0.5 rounded-full font-medium ' + sClass + '">' + status + '</span>' +

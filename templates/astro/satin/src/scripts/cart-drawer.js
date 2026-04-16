@@ -91,7 +91,7 @@ function createDrawerHTML() {
       border: none;
       background: none;
       cursor: pointer;
-      border-radius: 0;
+      border-radius: var(--radius-button);
       color: rgb(var(--color-foreground));
     }
     .cart-drawer-close:hover {
@@ -133,7 +133,7 @@ function createDrawerHTML() {
     .cart-drawer-item-img {
       width: 72px;
       height: 72px;
-      border-radius: 0;
+      border-radius: var(--radius-card);
       object-fit: cover;
       background: rgb(var(--color-foreground) / 0.05);
       flex-shrink: 0;
@@ -168,7 +168,7 @@ function createDrawerHTML() {
       width: 28px;
       height: 28px;
       border: 1px solid rgb(var(--color-foreground, 18 18 18) / 0.25);
-      border-radius: 0;
+      border-radius: var(--radius-button);
       background: rgb(var(--color-foreground, 18 18 18) / 0.15);
       display: flex;
       align-items: center;
@@ -228,7 +228,7 @@ function createDrawerHTML() {
       background: rgb(var(--color-primary));
       color: rgb(var(--color-button-text, 255 255 255));
       text-align: center;
-      border-radius: 0;
+      border-radius: var(--radius-button);
       font-family: var(--font-body, system-ui);
       font-size: 15px;
       font-weight: 600;

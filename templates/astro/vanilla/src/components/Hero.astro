@@ -189,7 +189,7 @@ const isContainer = container === 'true';
             <a
               href={primaryLink}
               class="flex items-center justify-center font-normal font-body uppercase leading-[1.366] hover:opacity-80 transition-colors h-[48px] px-6 sm:px-8 md:px-[25px] text-[16px]"
-              style="background-color: var(--color-button-bg, #3a4530); color: #ffffff; border-radius: 0; font-family: var(--font-body, 'Arsenal', sans-serif);"
+              style="background-color: rgb(var(--color-button)); color: rgb(var(--color-button-text)); border-radius: var(--radius-button, 0px); font-family: var(--font-body, 'Arsenal', sans-serif);"
             >
               {primaryButton.text}
             </a>
@@ -198,7 +198,7 @@ const isContainer = container === 'true';
             <a
               href={secondaryLink}
               class="flex items-center justify-center font-normal font-body uppercase leading-[1.366] hover:opacity-80 transition-colors h-[48px] px-6 sm:px-8 md:px-[25px] text-[16px]"
-              style="background-color: rgb(var(--color-secondary, 245 245 245)); color: rgb(var(--color-foreground)); border: 1px solid rgb(var(--color-border)); border-radius: 0; font-family: var(--font-body, 'Arsenal', sans-serif);"
+              style="background-color: rgb(var(--color-secondary, 245 245 245)); color: rgb(var(--color-foreground)); border: 1px solid rgb(var(--color-border)); border-radius: var(--radius-button, 0px); font-family: var(--font-body, 'Arsenal', sans-serif);"
             >
               {secondaryButton.text}
             </a>

@@ -19,7 +19,7 @@
     {
       "name": "colors",
       "settings": [
-        { "id": "color_primary", "type": "color", "label": "Primary color", "default": "#e11d48" },
+        { "id": "color_primary", "type": "color", "label": "Primary color", "default": "#000000" },
         { "id": "color_background", "type": "color", "label": "Background", "default": "#ffffff" },
         { "id": "color_foreground", "type": "color", "label": "Text", "default": "#121212" },
         { "id": "color_border", "type": "color", "label": "Border", "default": "#e5e7eb" },
@@ -36,7 +36,7 @@
     {
       "name": "layout",
       "settings": [
-        { "id": "radius_button", "type": "range", "label": "Button radius", "default": "9999px" },
+        { "id": "radius_button", "type": "range", "label": "Button radius", "default": "8px" },
         { "id": "radius_card", "type": "range", "label": "Card radius", "default": "1rem" },
         { "id": "page_width", "type": "text", "label": "Page width", "default": "1280px" }
       ]

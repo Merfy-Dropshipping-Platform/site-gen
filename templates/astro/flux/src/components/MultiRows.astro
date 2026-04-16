@@ -71,8 +71,8 @@ const alignClass: Record<string, string> = {
                     href={row.button.link ?? '#'}
                     class="inline-flex items-center justify-center h-[48px] px-[16px] text-[16px] font-normal uppercase no-underline transition-colors duration-200 hover:opacity-90 font-body self-start"
                     style={buttonStyle === 'secondary'
-                      ? 'border: 1.3px solid rgb(var(--color-foreground)); background: transparent; color: rgb(var(--color-foreground)); border-radius: 0;'
-                      : 'background: rgb(var(--color-button)); color: rgb(var(--color-button-text)); border-radius: 0;'}
+                      ? 'border: 1.3px solid rgb(var(--color-foreground)); background: transparent; color: rgb(var(--color-foreground)); border-radius: var(--radius-button);'
+                      : 'background: rgb(var(--color-button)); color: rgb(var(--color-button-text)); border-radius: var(--radius-button);'}
                   >
                     {row.button.text}
                   </a>

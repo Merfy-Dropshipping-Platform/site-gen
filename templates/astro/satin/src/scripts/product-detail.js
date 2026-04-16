@@ -84,7 +84,7 @@
   var STYLE_SELECTED = 'background: rgb(var(--color-foreground)); border: 1px solid rgb(var(--color-foreground)); color: rgb(var(--color-background));';
   var STYLE_OUTLINED = 'background: transparent; border: 1px solid rgb(var(--color-foreground)); color: rgb(var(--color-foreground));';
   var STYLE_DISABLED = 'background: rgba(153,153,153,0.05); border: 1px solid rgb(var(--color-muted)); color: rgb(var(--color-muted)); text-decoration: line-through; cursor: not-allowed;';
-  var STYLE_BASE = 'height: 40px; padding: 10px; font-size: 16px; line-height: 22px; border-radius: 0; ';
+  var STYLE_BASE = 'height: 40px; padding: 10px; font-size: 16px; line-height: 22px; border-radius: var(--radius-button); ';
 
   // --- Gallery: thumbnail switching ---
   if (thumbnailStrip) {

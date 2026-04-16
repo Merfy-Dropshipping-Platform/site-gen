@@ -143,7 +143,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 
         // Order info card
         var infoHtml =
-          '<div class="p-5 shadow-sm" style="background:rgb(var(--color-card));border-radius:0">' +
+          '<div class="p-5 shadow-sm" style="background:rgb(var(--color-card));border-radius:var(--radius-card)">' +
             '<div class="flex items-center justify-between mb-4">' +
               '<span class="text-sm" style="color:rgb(var(--color-muted))">' + date + '</span>' +
               '<span class="text-xs px-2.5 py-1 rounded-full font-medium ' + statusClass + '">' + status + '</span>' +
@@ -152,7 +152,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
           '</div>';
 
         // Items table
-        var itemsHtml = '<div class="p-5 shadow-sm" style="background:rgb(var(--color-card));border-radius:0">' +
+        var itemsHtml = '<div class="p-5 shadow-sm" style="background:rgb(var(--color-card));border-radius:var(--radius-card)">' +
           '<h3 class="font-heading text-lg mb-4">\u0422\u043e\u0432\u0430\u0440\u044b</h3>';
         if (order.items && order.items.length) {
           itemsHtml += '<div class="divide-y">';
@@ -189,7 +189,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
         itemsHtml += '</div>';
 
         // Order totals breakdown
-        var totalsHtml = '<div class="p-5 shadow-sm" style="background:rgb(var(--color-card));border-radius:0">' +
+        var totalsHtml = '<div class="p-5 shadow-sm" style="background:rgb(var(--color-card));border-radius:var(--radius-card)">' +
           '<h3 class="font-heading text-lg mb-4">\u0418\u0442\u043e\u0433\u043e</h3>' +
           '<div class="space-y-2 text-sm">';
 
@@ -213,7 +213,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
         // Customer info
         var customerHtml = '';
         if (order.customerName || order.customerEmail || order.customerPhone) {
-          customerHtml = '<div class="p-5 shadow-sm" style="background:rgb(var(--color-card));border-radius:0">' +
+          customerHtml = '<div class="p-5 shadow-sm" style="background:rgb(var(--color-card));border-radius:var(--radius-card)">' +
             '<h3 class="font-heading text-lg mb-3">\u041f\u043e\u043a\u0443\u043f\u0430\u0442\u0435\u043b\u044c</h3>' +
             '<div class="space-y-1 text-sm">';
           if (order.customerName) {
@@ -235,7 +235,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
           var addrParts = [addr.city, addr.street, addr.building, addr.apartment ? '\u043a\u0432. ' + addr.apartment : ''].filter(Boolean);
           if (addrParts.length > 0) {
             addressHtml =
-              '<div class="p-5 shadow-sm" style="background:rgb(var(--color-card));border-radius:0">' +
+              '<div class="p-5 shadow-sm" style="background:rgb(var(--color-card));border-radius:var(--radius-card)">' +
                 '<h3 class="font-heading text-lg mb-3">\u0410\u0434\u0440\u0435\u0441 \u0434\u043e\u0441\u0442\u0430\u0432\u043a\u0438</h3>' +
                 '<p class="text-sm" style="color:rgb(var(--color-foreground))">' + addrParts.join(', ') + '</p>' +
                 (addr.postalCode ? '<p class="text-sm" style="color:rgb(var(--color-muted)) mt-1">' + addr.postalCode + '</p>' : '') +
@@ -258,7 +258,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
           var dStatusClass = deliveryStatusColors[order.deliveryStatus] || 'bg-gray-100 text-gray-700';
           var dStatusName = order.deliveryStatusName || order.deliveryStatus;
 
-          deliveryHtml = '<div class="p-5 shadow-sm" style="background:rgb(var(--color-card));border-radius:0">' +
+          deliveryHtml = '<div class="p-5 shadow-sm" style="background:rgb(var(--color-card));border-radius:var(--radius-card)">' +
             '<h3 class="font-heading text-lg mb-3">\u0414\u043e\u0441\u0442\u0430\u0432\u043a\u0430 \u0421\u0414\u042d\u041a</h3>' +
             '<div class="space-y-2 text-sm">';
 
@@ -305,7 +305,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 
         // T030: Pickup delivery info
         if (!deliveryHtml && order.deliveryType === 'pickup') {
-          deliveryHtml = '<div class="p-5 shadow-sm" style="background:rgb(var(--color-card));border-radius:0">' +
+          deliveryHtml = '<div class="p-5 shadow-sm" style="background:rgb(var(--color-card));border-radius:var(--radius-card)">' +
             '<h3 class="font-heading text-lg mb-3">\u0421\u0430\u043c\u043e\u0432\u044b\u0432\u043e\u0437</h3>' +
             '<div class="space-y-2 text-sm">';
           if (order.pickupAddress) {
@@ -321,7 +321,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 
         // T031: Custom delivery profile info
         if (!deliveryHtml && order.deliveryType && order.deliveryType !== 'pickup' && !order.deliveryType.includes('cdek')) {
-          deliveryHtml = '<div class="p-5 shadow-sm" style="background:rgb(var(--color-card));border-radius:0">' +
+          deliveryHtml = '<div class="p-5 shadow-sm" style="background:rgb(var(--color-card));border-radius:var(--radius-card)">' +
             '<h3 class="font-heading text-lg mb-3">\u0414\u043e\u0441\u0442\u0430\u0432\u043a\u0430</h3>' +
             '<div class="space-y-2 text-sm">';
           deliveryHtml += '<div class="flex items-center justify-between">' +
@@ -346,7 +346,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
         // Status history timeline
         var historyHtml = '';
         if (order.statusHistory && order.statusHistory.length) {
-          historyHtml = '<div class="p-5 shadow-sm" style="background:rgb(var(--color-card));border-radius:0">' +
+          historyHtml = '<div class="p-5 shadow-sm" style="background:rgb(var(--color-card));border-radius:var(--radius-card)">' +
             '<h3 class="font-heading text-lg mb-4">\u0418\u0441\u0442\u043e\u0440\u0438\u044f</h3>' +
             '<div class="relative pl-6">' +
             '<div class="absolute left-[7px] top-2 bottom-2 w-px " style="background:rgb(var(--color-foreground) / 0.12)"></div>';
@@ -381,7 +381,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 
         if (canCancel) {
           cancelHtml =
-            '<div class="p-5 shadow-sm" style="background:rgb(var(--color-card));border-radius:0">' +
+            '<div class="p-5 shadow-sm" style="background:rgb(var(--color-card));border-radius:var(--radius-card)">' +
               '<button id="btn-cancel-order" type="button" class="w-full py-3 px-4 rounded-none border-2 border-red-200 text-red-600 font-medium hover:bg-red-50 transition-colors">' +
                 '\u041e\u0442\u043c\u0435\u043d\u0438\u0442\u044c \u0437\u0430\u043a\u0430\u0437' +
               '</button>' +
@@ -393,7 +393,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
           '<div id="cancel-modal" class="fixed inset-0 z-50 hidden">' +
             '<div class="fixed inset-0 bg-black/40" id="cancel-modal-overlay"></div>' +
             '<div class="fixed inset-0 flex items-center justify-center p-4">' +
-              '<div class="shadow-xl" style="background:rgb(var(--color-card));border-radius:0 max-w-md w-full p-6 relative">' +
+              '<div class="shadow-xl max-w-md w-full p-6 relative" style="background:rgb(var(--color-card));border-radius:var(--radius-card)">' +
                 '<h3 class="font-heading text-lg mb-2">\u041e\u0442\u043c\u0435\u043d\u0430 \u0437\u0430\u043a\u0430\u0437\u0430</h3>' +
                 '<p class="text-sm mb-4" style="color:rgb(var(--color-muted))">\u041f\u043e\u0441\u043b\u0435 \u043e\u0442\u043c\u0435\u043d\u044b \u0432\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u044c \u0437\u0430\u043a\u0430\u0437 \u043d\u0435\u0432\u043e\u0437\u043c\u043e\u0436\u043d\u043e.</p>' +
                 '<textarea id="cancel-reason" rows="3" maxlength="500" required ' +

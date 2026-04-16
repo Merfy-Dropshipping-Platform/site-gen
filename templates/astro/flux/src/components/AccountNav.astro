@@ -28,9 +28,9 @@ const { active } = Astro.props;
     </li>
   </ul>
 
-  <div id="email-verify-banner" class="hidden mt-4 p-3 border text-sm" style="background: #fefce8; border-color: #fde68a; border-radius: 0;">
-    <p class="font-medium" style="color: #854d0e;">Подтвердите email</p>
-    <p class="mt-1" style="color: #ca8a04;">Проверьте почту для подтверждения аккаунта.</p>
+  <div id="email-verify-banner" class="hidden mt-4 p-3 border text-sm" style="background: rgb(var(--color-muted)); border-color: rgb(var(--color-muted)); border-radius: var(--radius-card);">
+    <p class="font-medium" style="color: rgb(var(--color-foreground));">Подтвердите email</p>
+    <p class="mt-1" style="color: rgb(var(--color-accent, var(--color-button)));">Проверьте почту для подтверждения аккаунта.</p>
   </div>
 </nav>
 
@@ -40,7 +40,7 @@ const { active } = Astro.props;
     align-items: center;
     gap: 0.5rem;
     padding: 0.625rem 1rem;
-    border-radius: 0;
+    border-radius: var(--radius-button);
     font-size: 0.9375rem;
     transition: background-color 0.15s, color 0.15s;
     text-decoration: none;

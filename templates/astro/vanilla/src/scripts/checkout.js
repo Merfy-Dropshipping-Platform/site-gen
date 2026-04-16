@@ -152,7 +152,7 @@ class CheckoutFlow {
       if (staleItems.length > 0) {
         const banner = document.createElement('div');
         banner.className = 'checkout-price-warning';
-        banner.style.cssText = 'background: #FEF3C7; border: 1px solid #F59E0B; border-radius: 0; padding: 12px 16px; margin-bottom: 16px; font-family: var(--font-body, sans-serif); font-size: 14px; color: #92400E;';
+        banner.style.cssText = 'background: #FEF3C7; border: 1px solid #F59E0B; border-radius: var(--radius-card); padding: 12px 16px; margin-bottom: 16px; font-family: var(--font-body, sans-serif); font-size: 14px; color: #92400E;';
         const lines = staleItems.map(s =>
           `${s.name}: ${this.formatPrice(s.oldCents / 100)} → ${this.formatPrice(s.newCents / 100)}`
         );
@@ -678,7 +678,7 @@ class CheckoutFlow {
     if (existing) existing.remove();
     const note = document.createElement('div');
     note.className = 'checkout-cdek-error-note';
-    note.style.cssText = 'padding: 8px 12px; margin-top: 8px; font-size: 13px; color: rgb(var(--color-muted)); background: rgb(var(--color-foreground) / 0.02); border-radius: 0;';
+    note.style.cssText = 'padding: 8px 12px; margin-top: 8px; font-size: 13px; color: rgb(var(--color-muted)); background: rgb(var(--color-foreground) / 0.02); border-radius: var(--radius-card);';
     note.textContent = `Доставка СДЭК недоступна: ${errorMsg}`;
     tariffs.appendChild(note);
   }

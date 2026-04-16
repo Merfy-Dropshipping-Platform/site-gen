@@ -28,11 +28,11 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
           <div id="orders-empty" class="hidden text-center py-10">
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-4" style="color: rgb(var(--color-muted) / 0.4);"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="8" x2="16" y1="10" y2="10"/><line x1="8" x2="12" y1="14" y2="14"/></svg>
             <p class="text-lg mb-4" style="color: rgb(var(--color-muted));">У вас пока нет заказов</p>
-            <a href="/catalog" class="inline-block py-3 px-6 font-medium transition-colors btn-primary" style="border-radius: 0;">Перейти в каталог</a>
+            <a href="/catalog" class="inline-block py-3 px-6 font-medium transition-colors btn-primary" style="border-radius: var(--radius-button);">Перейти в каталог</a>
           </div>
           <div id="orders-error" class="hidden text-center py-10">
             <p class="text-red-400 text-lg mb-4">Не удалось загрузить заказы</p>
-            <button onclick="window.location.reload()" class="inline-block py-2.5 px-5 text-sm font-medium border transition-colors" style="border-radius: 0; border-color: rgb(var(--color-foreground) / 0.19); color: rgb(var(--color-foreground));">Попробовать снова</button>
+            <button onclick="window.location.reload()" class="inline-block py-2.5 px-5 text-sm font-medium border transition-colors" style="border-radius: var(--radius-button); border-color: rgb(var(--color-foreground) / 0.19); color: rgb(var(--color-foreground));">Попробовать снова</button>
           </div>
           <div id="orders-list" class="hidden space-y-4"></div>
         </div>
@@ -144,7 +144,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
           var card = document.createElement('a');
           card.href = '/account/order?n=' + encodeURIComponent(order.orderNumber);
           card.className = 'block p-5 shadow-sm hover:shadow-md transition-shadow';
-          card.style.cssText = 'background: rgb(var(--color-card)); border-radius: 0;';
+          card.style.cssText = 'background: rgb(var(--color-card)); border-radius: var(--radius-card);';
           // Delivery status badge
           var deliveryBadge = '';
           if (order.deliveryStatusName && order.deliveryType && order.deliveryType.includes('cdek')) {
@@ -184,7 +184,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
           var loadMoreBtn = document.createElement('button');
           loadMoreBtn.id = 'btn-load-more';
           loadMoreBtn.className = 'w-full py-3 px-4 font-medium transition-colors mt-4';
-          loadMoreBtn.style.cssText = 'border: 1px solid rgb(var(--color-foreground) / 0.19); color: rgb(var(--color-foreground)); border-radius: 0;';
+          loadMoreBtn.style.cssText = 'border: 1px solid rgb(var(--color-foreground) / 0.19); color: rgb(var(--color-foreground)); border-radius: var(--radius-button);';
           loadMoreBtn.textContent = '\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u0435\u0449\u0451';
           listEl.parentElement.appendChild(loadMoreBtn);
 

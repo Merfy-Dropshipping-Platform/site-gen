@@ -60,8 +60,8 @@ const containerStyle = imagePosition === 'window'
             style={`background-color: rgb(var(--color-primary, 0 0 0));${slide.image ? ` background-image: url(${slide.image})` : ''}`}
             data-slide
           >
-            <div class="absolute inset-0" style={`background:#000000; opacity: ${overlay / 100}`}></div>
-            <div class="relative z-10 w-full max-w-[1320px] mx-auto px-5 py-[120px] max-md:py-[16px] max-md:pb-[16px]" style="color:#ffffff;">
+            <div class="absolute inset-0" style={`background: rgb(var(--color-foreground)); opacity: ${overlay / 100}`}></div>
+            <div class="relative z-10 w-full max-w-[1320px] mx-auto px-5 py-[120px] max-md:py-[16px] max-md:pb-[16px]" style="color: rgb(var(--color-background));">
               <div class={`max-w-[420px] max-md:max-w-full ${positionClass[slide.position ?? 'center']}`}>
                 {slide.heading?.text && (
                   <h2 class="font-heading font-normal" style={`font-size:${headingFontSizes[size] ?? '1.25rem'};line-height:1.2;margin-bottom:4px;`}>
@@ -69,13 +69,13 @@ const containerStyle = imagePosition === 'window'
                   </h2>
                 )}
                 {slide.text?.content && (
-                  <p class="text-[16px] leading-[1.25] font-body" style="color:#f0f0f0;margin-bottom:32px;">{slide.text.content}</p>
+                  <p class="text-[16px] leading-[1.25] font-body" style="color: rgb(var(--color-muted));margin-bottom:32px;">{slide.text.content}</p>
                 )}
                 {slide.button?.text && (
                   <a
                     href={slide.button.link?.href ?? '#'}
                     class="inline-flex items-center justify-center h-[48px] px-[16px] text-[16px] font-normal uppercase font-body no-underline transition-colors duration-200 hover:opacity-90"
-                    style="background-color: rgb(var(--color-accent, 250 81 9)); color: #ffffff; border-radius: var(--radius-button, 6px);"
+                    style="background-color: rgb(var(--color-accent, 250 81 9)); color: rgb(var(--color-button-text, var(--color-background))); border-radius: var(--radius-button, 6px);"
                   >
                     {slide.button.text}
                   </a>

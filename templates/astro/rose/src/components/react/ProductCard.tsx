@@ -29,7 +29,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, href }) => {
       {/* Image — portrait 315:515 ≈ 1:1.635 */}
       <div
         className="overflow-hidden w-full"
-        style={{ aspectRatio: '315 / 515', borderRadius: 10, backgroundColor: '#FBFBFB' }}
+        style={{ aspectRatio: '315 / 515', borderRadius: 10, backgroundColor: 'rgb(var(--color-muted) / 0.1)' }}
       >
         {firstImage ? (
           <img

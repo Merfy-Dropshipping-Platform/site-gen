@@ -136,7 +136,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
 
           {/* Price */}
           <div className="flex items-center gap-3">
-            <span className="text-xl sm:text-2xl font-semibold text-[var(--rose-600,#e11d48)]">
+            <span className="text-xl sm:text-2xl font-semibold" style={{ color: 'rgb(var(--color-primary))' }}>
               {formatMoney(currentPrice)}
             </span>
             {currentCompareAtPrice != null && currentCompareAtPrice > 0 && (
@@ -207,7 +207,8 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
             </button>
             <button
               onClick={handleBuyNow}
-              className="flex-1 px-6 py-3.5 text-sm font-medium rounded-lg border-none bg-[var(--rose-600,#e11d48)] text-white hover:bg-[var(--rose-700,#be123c)] transition-all"
+              className="flex-1 px-6 py-3.5 text-sm font-medium rounded-lg border-none transition-all"
+              style={{ backgroundColor: 'rgb(var(--color-button))', color: 'rgb(var(--color-button-text))' }}
             >
               Купить сейчас
             </button>

@@ -28,9 +28,9 @@ const footerBlock = blocks.find((b: any) => b.type === 'Footer');
         </svg>
         <h1 class="text-3xl font-heading mb-4" style="color: rgb(var(--color-foreground));">Спасибо за заказ!</h1>
         <p class="text-lg mb-8" style="color: rgb(var(--color-muted));">Ваш заказ успешно оплачен. Мы отправим подтверждение на вашу почту.</p>
-        <div class="inline-block py-3 px-6 text-lg font-medium mb-8" style="background: rgb(var(--color-foreground) / 0.05); color: rgb(var(--color-primary)); border-radius: 0;" id="order-number"></div>
+        <div class="inline-block py-3 px-6 text-lg font-medium mb-8" style="background: rgb(var(--color-foreground) / 0.05); color: rgb(var(--color-primary)); border-radius: var(--radius-card);" id="order-number"></div>
         <br><br>
-        <a href="/" class="btn-primary inline-flex items-center justify-center font-medium transition-colors no-underline" style="height: 56px; padding: 0 32px; border-radius: 0;">Вернуться в магазин</a>
+        <a href="/" class="btn-primary inline-flex items-center justify-center font-medium transition-colors no-underline" style="height: 56px; padding: 0 32px; border-radius: var(--radius-button);">Вернуться в магазин</a>
       </div>
 
       <!-- Ожидание -->
@@ -41,7 +41,7 @@ const footerBlock = blocks.find((b: any) => b.type === 'Footer');
         </svg>
         <h1 class="text-3xl font-heading mb-4" style="color: rgb(var(--color-foreground));">Платёж обрабатывается</h1>
         <p class="text-lg mb-8" style="color: rgb(var(--color-muted));">Ваш платёж ещё обрабатывается. Мы отправим уведомление, когда оплата будет подтверждена.</p>
-        <a href="/" class="btn-primary inline-flex items-center justify-center font-medium transition-colors no-underline" style="height: 56px; padding: 0 32px; border-radius: 0;">Вернуться в магазин</a>
+        <a href="/" class="btn-primary inline-flex items-center justify-center font-medium transition-colors no-underline" style="height: 56px; padding: 0 32px; border-radius: var(--radius-button);">Вернуться в магазин</a>
       </div>
 
       <!-- Ошибка -->
@@ -53,7 +53,7 @@ const footerBlock = blocks.find((b: any) => b.type === 'Footer');
         </svg>
         <h1 class="text-3xl font-heading mb-4" style="color: rgb(var(--color-foreground));">Оплата не прошла</h1>
         <p class="text-lg mb-8" style="color: rgb(var(--color-muted));" id="error-message">К сожалению, платёж не был завершён. Попробуйте ещё раз.</p>
-        <a href="/" class="btn-primary inline-flex items-center justify-center font-medium transition-colors no-underline" style="height: 56px; padding: 0 32px; border-radius: 0;">Вернуться в магазин</a>
+        <a href="/" class="btn-primary inline-flex items-center justify-center font-medium transition-colors no-underline" style="height: 56px; padding: 0 32px; border-radius: var(--radius-button);">Вернуться в магазин</a>
       </div>
     </div>
   </main>

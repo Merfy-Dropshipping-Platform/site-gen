@@ -113,7 +113,7 @@ const isContainer = container === 'true';
 
   {/* Overlay */}
   {overlayOpacity > 0 && (
-    <div class="absolute inset-0" style={`background-color: rgb(var(--color-foreground) / ${overlayOpacity});`}></div>
+    <div class="absolute inset-0" style={`background-color: rgb(0 0 0 / ${overlayOpacity});`}></div>
   )}
 
   {/* Content — positioned via flex, matching constructor positionStyles */}
@@ -177,7 +177,7 @@ const isContainer = container === 'true';
         )}
         {textContent && (
           <p
-            class={`${textSizeClass} font-normal font-body leading-[1.366] px-2 sm:px-4 md:px-6 lg:px-8`}
+            class={`${textSizeClass} font-normal font-body leading-[1.366]`}
             style="color: rgb(var(--color-foreground));"
           >
             {textContent}

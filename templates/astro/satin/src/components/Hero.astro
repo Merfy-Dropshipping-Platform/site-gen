@@ -23,7 +23,7 @@ const {
   backgroundImage = '/images/first-section.png',
   backgroundImage2 = '',
   size = 'large',
-  position = 'center',
+  position = 'bottom-center',
   alignment = 'center',
   container = 'false',
   colorScheme = 'scheme-1',
@@ -177,7 +177,7 @@ const isContainer = container === 'true';
         )}
         {textContent && (
           <p
-            class={`${textSizeClass} font-normal font-body leading-[1.366] px-2 sm:px-4 md:px-6 lg:px-8`}
+            class={`${textSizeClass} font-normal font-body leading-[1.366]`}
             style="color: rgb(var(--color-foreground));"
           >
             {textContent}

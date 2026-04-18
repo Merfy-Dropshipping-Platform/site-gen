@@ -162,13 +162,35 @@
       });
     },
 
-    /** Resend email verification link */
+    /** Resend email verification link (legacy token-link) */
     async resendVerification({ email }) {
       const { storeId } = getConfig();
       return request('/store/auth/resend-verification', {
         method: 'POST',
         body: JSON.stringify({ shopId: storeId, email }),
       });
+    },
+
+    /** Request email verification OTP (resend 4-digit code) */
+    async requestEmailVerifyOTP({ email, shopName }) {
+      const { storeId } = getConfig();
+      return request('/store/auth/request-email-verify-otp', {
+        method: 'POST',
+        body: JSON.stringify({ shopId: storeId, email, shopName }),
+      });
+    },
+
+    /** Verify email OTP — on success returns { sessionToken, customerId } and auto-login */
+    async verifyEmailOTP({ email, code }) {
+      const { storeId } = getConfig();
+      const result = await request('/store/auth/verify-email-otp', {
+        method: 'POST',
+        body: JSON.stringify({ shopId: storeId, email, code }),
+      });
+      if (result.success && result.data?.sessionToken) {
+        window.CustomerStore.saveToken(result.data.sessionToken);
+      }
+      return result;
     },
   };
 })();

@@ -44,7 +44,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
     </form>
 
     <div class="w-full flex flex-col items-center gap-10">
-      <AuthButton id="btn-login" loadingLabel="Вход...">Войти</AuthButton>
+      <AuthButton id="btn-login" form="login-form" loadingLabel="Вход...">Войти</AuthButton>
       <div class="flex flex-col items-center gap-3">
         <AuthSecondaryLink href="/register" helper="Нет аккаунта?">Зарегистрироваться</AuthSecondaryLink>
         <AuthSecondaryLink href="/reset-password">Забыл пароль?</AuthSecondaryLink>

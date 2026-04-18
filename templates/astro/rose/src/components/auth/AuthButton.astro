@@ -2,18 +2,26 @@
 /**
  * AuthButton — primary CTA кнопка для auth-форм.
  * Figma: h-14, rounded-lg [--radius-button] (8px), bg-primary, text-white, Manrope 16 font-normal.
+ *
+ * Важно: когда кнопка рендерится ВНЕ тега <form> (как у нас — AuthShell
+ * кладёт form и CTA как отдельные children slot'а), стандартный
+ * type="submit" не триггерит submit. HTML5 позволяет привязать button к
+ * form через атрибут `form="<form-id>"`. Проп `form` именно для этого.
  */
 interface Props {
   type?: 'submit' | 'button';
   id?: string;
   disabled?: boolean;
   loadingLabel?: string;
+  /** id формы, которую должна submit'ить кнопка (если она не вложена в <form>) */
+  form?: string;
 }
-const { type = 'submit', id, disabled, loadingLabel = 'Загрузка...' } = Astro.props;
+const { type = 'submit', id, disabled, loadingLabel = 'Загрузка...', form } = Astro.props;
 ---
 <button
   type={type}
   id={id}
+  form={form}
   disabled={disabled}
   class="auth-button-primary"
   data-testid={id ?? 'auth-button'}

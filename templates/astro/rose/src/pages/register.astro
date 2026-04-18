@@ -1,15 +1,24 @@
 ---
-import MinimalLayout from '../layouts/MinimalLayout.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
 import AuthShell from '../components/auth/AuthShell.astro';
 import AuthInput from '../components/auth/AuthInput.astro';
 import PasswordField from '../components/auth/PasswordField.astro';
 import AuthButton from '../components/auth/AuthButton.astro';
 import AuthSecondaryLink from '../components/auth/AuthSecondaryLink.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
 import data from '../data/data.json';
+import siteConfig from '../data/site-config.json';
 
 const meta = data?.meta ?? {};
+const blocks = data?.content ?? [];
+const headerBlock = blocks.find((b: any) => b.type === 'Header');
+const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
+const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 ---
-<MinimalLayout title={`Регистрация — ${meta?.title ?? 'Мой сайт'}`}>
+<BaseLayout title={`Регистрация — ${meta?.title ?? 'Мой сайт'}`}>
+  <Header {...headerProps} />
   <AuthShell
     title="Регистрация аккаунта"
     description="Введите свои данные чтобы создать аккаунт"
@@ -47,6 +56,8 @@ const meta = data?.meta ?? {};
       <AuthSecondaryLink href="/login" helper="Уже есть аккаунт?">Войти</AuthSecondaryLink>
     </div>
   </AuthShell>
+
+  <Footer {...footerProps} />
 
   <script is:inline src="/scripts/customer-store.js"></script>
   <script is:inline src="/scripts/customer-auth.js"></script>
@@ -171,4 +182,4 @@ const meta = data?.meta ?? {};
       });
     });
   </script>
-</MinimalLayout>
+</BaseLayout>

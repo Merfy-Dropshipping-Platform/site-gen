@@ -3,6 +3,10 @@
  * AuthShell — центрированная колонка 384px (w-96) с заголовком и slot для контента.
  * Дочерние элементы slot'а становятся прямыми детьми flex-контейнера
  * с gap-20 (80px) между ними — как указано в Figma.
+ *
+ * Форма ВСЕГДА на белом фоне с чёрным текстом (по Figma), независимо от
+ * merchant color-scheme. Это достигается через локальный override CSS vars
+ * (не меняет scheme у Header/Footer выше и ниже).
  */
 interface Props {
   title: string;
@@ -10,12 +14,27 @@ interface Props {
 }
 const { title, description } = Astro.props;
 ---
-<main class="flex-1 flex items-start justify-center px-5 py-28 min-h-screen">
+<main
+  class="auth-shell flex-1 flex items-start justify-center px-5 py-28 min-h-[80vh]"
+  style="
+    --color-background: 255, 255, 255;
+    --color-foreground: 0, 0, 0;
+    --color-text-muted: 163, 163, 163;
+    --color-border: 163, 163, 163;
+    --color-border-active: 0, 0, 0;
+    --color-surface-muted: 245, 245, 245;
+    --color-primary: 0, 0, 0;
+    --color-button: 0, 0, 0;
+    --color-button-text: 255, 255, 255;
+    background: #FFFFFF;
+    color: #000000;
+  "
+>
   <div class="w-96 max-w-full flex flex-col items-center gap-20">
     <div class="flex flex-col items-center gap-2 text-center">
-      <h1 class="font-heading text-xl uppercase font-normal text-theme-foreground">{title}</h1>
+      <h1 class="font-heading text-xl uppercase font-normal" style="color: #000000;">{title}</h1>
       {description && (
-        <p class="text-base font-normal text-theme-text-muted">{description}</p>
+        <p class="text-base font-normal" style="color: rgb(163, 163, 163);">{description}</p>
       )}
     </div>
     <slot />

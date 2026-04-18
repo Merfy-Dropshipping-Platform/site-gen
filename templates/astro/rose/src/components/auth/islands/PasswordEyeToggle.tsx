@@ -26,6 +26,7 @@ export default function PasswordEyeToggle({ targetId, initialHidden = true }: Pr
       className="auth-eye-toggle"
       aria-label={hidden ? 'Показать пароль' : 'Скрыть пароль'}
       onClick={() => setHidden((h) => !h)}
+      data-testid={`password-eye-toggle-${targetId}`}
     >
       {hidden ? (
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">

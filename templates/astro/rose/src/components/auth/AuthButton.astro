@@ -11,7 +11,7 @@ interface Props {
 }
 const { type = 'submit', id, disabled, loadingLabel = 'Загрузка...' } = Astro.props;
 ---
-<button type={type} id={id} disabled={disabled} class="auth-button-primary">
+<button type={type} id={id} disabled={disabled} class="auth-button-primary" data-testid={id ?? 'auth-button'}>
   <span class="auth-button-loading hidden inline-flex items-center gap-2" data-loading>
     <span
       class="inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"

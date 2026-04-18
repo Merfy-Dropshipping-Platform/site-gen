@@ -46,6 +46,7 @@ const {
     minlength={minlength}
     readonly={readonly}
     data-error={error ? 'true' : 'false'}
+    data-testid={`auth-input-${name}`}
     class="auth-input"
   />
   {error && <span class="auth-helper-error" data-error-for={id}>{error}</span>}

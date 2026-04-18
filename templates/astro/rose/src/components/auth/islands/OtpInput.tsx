@@ -116,6 +116,7 @@ export default function OtpInput({ length = 4, autoFocus = true, name = 'otp', i
           value={digit}
           placeholder="0"
           data-filled={digit ? 'true' : 'false'}
+          data-testid={`otp-cell-${index}`}
           aria-label={`Цифра ${index + 1}`}
           className="auth-otp-cell"
           onChange={(e) => handleChange(index, e)}
@@ -123,7 +124,7 @@ export default function OtpInput({ length = 4, autoFocus = true, name = 'otp', i
           onPaste={handlePaste}
         />
       ))}
-      <input type="hidden" name={name} value={joined} />
+      <input type="hidden" name={name} value={joined} data-testid="otp-value" />
     </div>
   );
 }

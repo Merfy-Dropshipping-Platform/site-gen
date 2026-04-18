@@ -52,18 +52,19 @@ export default function ResendTimer({ seconds = 60, id = 'otp-resend' }: Props) 
   const active = remaining === 0 && !sending;
 
   return (
-    <div id={id} className="flex flex-col items-center gap-2">
+    <div id={id} className="flex flex-col items-center gap-2" data-testid="resend-timer">
       <button
         type="button"
         className={active ? 'auth-link' : 'auth-link-muted'}
         disabled={!active}
         onClick={handleClick}
         aria-disabled={!active}
+        data-testid="resend-button"
       >
         {label}
       </button>
       {remaining > 0 && !sending && (
-        <span className="text-center text-base text-theme-text-muted">{remaining} сек.</span>
+        <span className="text-center text-base text-theme-text-muted" data-testid="resend-countdown">{remaining} сек.</span>
       )}
     </div>
   );

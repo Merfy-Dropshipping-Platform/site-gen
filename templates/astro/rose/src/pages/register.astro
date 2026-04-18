@@ -97,22 +97,38 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
         var email = emailField.value.trim();
         var password = document.getElementById('reg-password').value;
 
+        var passwordField = document.getElementById('reg-password');
+        function mark(field, ok) {
+          if (field) field.setAttribute('data-error', ok ? 'false' : 'true');
+        }
+
         // Client-side validation
-        if (!email || !password) {
-          errorEl.textContent = 'Заполните все обязательные поля';
+        mark(emailField, true);
+        mark(passwordField, true);
+
+        if (!email) {
+          mark(emailField, false);
+          errorEl.textContent = 'Введите e-mail';
           errorEl.classList.remove('hidden');
           return;
         }
 
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-          emailField.setAttribute('data-error', 'true');
+          mark(emailField, false);
           errorEl.textContent = 'Введите корректный e-mail';
           errorEl.classList.remove('hidden');
           return;
         }
-        emailField.setAttribute('data-error', 'false');
+
+        if (!password) {
+          mark(passwordField, false);
+          errorEl.textContent = 'Введите пароль';
+          errorEl.classList.remove('hidden');
+          return;
+        }
 
         if (password.length < 8) {
+          mark(passwordField, false);
           errorEl.textContent = 'Пароль должен содержать минимум 8 символов';
           errorEl.classList.remove('hidden');
           return;

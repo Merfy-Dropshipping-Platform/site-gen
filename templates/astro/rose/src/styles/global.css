@@ -18,8 +18,190 @@
   --color-theme-muted: rgb(var(--color-muted));
   --color-theme-border: rgb(var(--color-border));
   --color-theme-secondary: rgb(var(--color-secondary));
+  --color-theme-text-muted: rgb(var(--color-text-muted));
+  --color-theme-border-active: rgb(var(--color-border-active));
+  --color-theme-border-error: rgb(var(--color-border-error));
+  --color-theme-error: rgb(var(--color-error));
+  --color-theme-surface-muted: rgb(var(--color-surface-muted));
   --radius-button: var(--radius-button);
   --radius-card: var(--radius-card);
+  --radius-field: var(--radius-field);
+}
+
+/* ── Auth utility classes (login, register, reset-password, verify-email) ── */
+.auth-page {
+  background-color: rgb(var(--color-background));
+  min-height: 100vh;
+}
+
+.auth-label {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 300;
+  color: rgb(var(--color-foreground));
+}
+
+.auth-required {
+  color: rgb(var(--color-error));
+}
+
+.auth-input {
+  width: 100%;
+  height: 3.5rem;
+  padding: 0 1rem;
+  border-radius: var(--radius-field);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 300;
+  color: rgb(var(--color-foreground));
+  outline: 1px solid rgb(var(--color-text-muted));
+  outline-offset: -1px;
+  background: transparent;
+  transition: outline-color 0.15s ease;
+}
+
+.auth-input::placeholder {
+  color: rgb(var(--color-text-muted));
+}
+
+.auth-input:focus,
+.auth-input:not(:placeholder-shown) {
+  outline: 1px solid rgb(var(--color-border-active));
+  outline-offset: -1px;
+}
+
+.auth-input[data-error="true"] {
+  outline: 1px solid rgb(var(--color-border-error));
+}
+
+.auth-input[readonly] {
+  background: rgb(var(--color-surface-muted));
+  cursor: not-allowed;
+}
+
+.auth-helper-error {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 300;
+  color: rgb(var(--color-error));
+}
+
+.auth-button-primary {
+  width: 100%;
+  height: 3.5rem;
+  padding: 0 1.25rem;
+  border-radius: var(--radius-button);
+  background: rgb(var(--color-primary));
+  color: rgb(var(--color-button-text));
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 400;
+  transition: filter 0.15s ease, opacity 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+}
+
+.auth-button-primary:hover:not(:disabled) {
+  filter: brightness(0.85);
+}
+
+.auth-button-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-link {
+  color: rgb(var(--color-foreground));
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 400;
+  text-decoration: none;
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+}
+
+.auth-link-muted {
+  color: rgb(var(--color-text-muted));
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 300;
+  text-decoration: none;
+}
+
+.auth-link-muted:hover {
+  color: rgb(var(--color-foreground));
+}
+
+.auth-helper {
+  color: rgb(var(--color-text-muted));
+}
+
+.auth-otp-cell {
+  width: 6rem;
+  height: 6rem;
+  border-radius: var(--radius-button);
+  background: rgb(var(--color-surface-muted));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-body);
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: rgb(var(--color-foreground));
+  border: 1px solid transparent;
+  outline: none;
+  text-align: center;
+}
+
+.auth-otp-cell[data-filled="false"] {
+  color: rgb(var(--color-text-muted));
+}
+
+.auth-otp-cell:focus {
+  border-color: rgb(var(--color-border-active));
+}
+
+.auth-password-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.auth-password-wrapper .auth-input {
+  padding-right: 3rem;
+}
+
+.auth-eye-toggle {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  color: rgb(var(--color-text-muted));
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.auth-eye-toggle:hover {
+  color: rgb(var(--color-foreground));
+}
+
+@media (max-width: 640px) {
+  .auth-otp-cell {
+    width: 4.5rem;
+    height: 4.5rem;
+    font-size: 1.25rem;
+  }
 }
 
 /* ── Font utility classes ── */

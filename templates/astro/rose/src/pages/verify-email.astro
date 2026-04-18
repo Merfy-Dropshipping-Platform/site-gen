@@ -1,0 +1,153 @@
+---
+import MinimalLayout from '../layouts/MinimalLayout.astro';
+import AuthShell from '../components/auth/AuthShell.astro';
+import AuthButton from '../components/auth/AuthButton.astro';
+import AuthSecondaryLink from '../components/auth/AuthSecondaryLink.astro';
+import data from '../data/data.json';
+
+const meta = data?.meta ?? {};
+---
+<MinimalLayout title={`Подтверждение почты — ${meta?.title ?? 'Мой сайт'}`}>
+  <AuthShell
+    title="Подтверждение почты"
+    description="Проверяем вашу ссылку..."
+  >
+    <!-- State: pending (default on load if token present) -->
+    <div id="state-pending" class="w-full flex flex-col items-center gap-4">
+      <div
+        class="inline-block w-10 h-10 border-2 border-gray-200 border-t-black rounded-full animate-spin"
+        aria-hidden="true"
+      ></div>
+      <p class="text-base text-theme-text-muted">Подождите, идёт проверка...</p>
+    </div>
+
+    <!-- State: success -->
+    <div id="state-success" class="hidden w-full flex flex-col items-center gap-8">
+      <p class="text-base text-theme-foreground text-center">Почта подтверждена. Можно войти в аккаунт.</p>
+      <a href="/login" class="auth-button-primary" style="max-width:100%">Войти</a>
+    </div>
+
+    <!-- State: already verified -->
+    <div id="state-already" class="hidden w-full flex flex-col items-center gap-8">
+      <p class="text-base text-theme-foreground text-center">Почта уже подтверждена.</p>
+      <a href="/login" class="auth-button-primary" style="max-width:100%">Войти</a>
+    </div>
+
+    <!-- State: expired/invalid — show resend CTA -->
+    <div id="state-expired" class="hidden w-full flex flex-col items-center gap-8">
+      <p class="text-base text-theme-foreground text-center" id="expired-message">
+        Ссылка устарела или недействительна.
+      </p>
+      <div class="w-full flex flex-col items-center gap-3">
+        <AuthButton id="btn-resend" loadingLabel="Отправка...">Отправить новое письмо</AuthButton>
+        <p class="auth-helper-error hidden text-center" id="resend-error" role="alert"></p>
+        <p class="hidden text-base text-theme-text-muted text-center" id="resend-success">Письмо отправлено повторно</p>
+      </div>
+      <AuthSecondaryLink href="/login" variant="muted">Вернуться ко входу</AuthSecondaryLink>
+    </div>
+
+    <!-- State: no token in URL — info-only -->
+    <div id="state-notoken" class="hidden w-full flex flex-col items-center gap-4">
+      <p class="text-base text-theme-foreground text-center">
+        Проверьте почту — мы отправили ссылку для подтверждения.
+      </p>
+      <p class="text-base text-theme-text-muted text-center">
+        Если письмо не пришло, проверьте папку "Спам".
+      </p>
+      <AuthSecondaryLink href="/login" variant="muted">Вернуться ко входу</AuthSecondaryLink>
+    </div>
+  </AuthShell>
+
+  <script is:inline src="/scripts/customer-store.js"></script>
+  <script is:inline src="/scripts/customer-auth.js"></script>
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', async function() {
+      var params = new URLSearchParams(window.location.search);
+      var token = params.get('token');
+      var emailFromUrl = params.get('email') || '';
+
+      var statePending = document.getElementById('state-pending');
+      var stateSuccess = document.getElementById('state-success');
+      var stateAlready = document.getElementById('state-already');
+      var stateExpired = document.getElementById('state-expired');
+      var stateNoToken = document.getElementById('state-notoken');
+      var expiredMessage = document.getElementById('expired-message');
+
+      function showState(el) {
+        [statePending, stateSuccess, stateAlready, stateExpired, stateNoToken].forEach(function(s) {
+          s.classList.add('hidden');
+        });
+        el.classList.remove('hidden');
+      }
+
+      if (!token) {
+        showState(stateNoToken);
+        return;
+      }
+
+      try {
+        var result = await window.CustomerAuth.verifyEmail({ token: token });
+        if (result.success) {
+          if (result.data && result.data.alreadyVerified) {
+            showState(stateAlready);
+          } else {
+            showState(stateSuccess);
+          }
+        } else {
+          throw result;
+        }
+      } catch (err) {
+        var code = (err && (err.code || err.error)) || '';
+        if (code === 'ALREADY_VERIFIED') {
+          showState(stateAlready);
+        } else if (code === 'TOKEN_EXPIRED') {
+          expiredMessage.textContent = 'Ссылка устарела. Запросите новое письмо.';
+          showState(stateExpired);
+        } else {
+          expiredMessage.textContent = 'Неверная ссылка для подтверждения.';
+          showState(stateExpired);
+        }
+      }
+
+      // Resend handler — will call customerAuth.resendVerification (method added in US8)
+      var btnResend = document.getElementById('btn-resend');
+      var resendError = document.getElementById('resend-error');
+      var resendSuccess = document.getElementById('resend-success');
+      var loadingEl = btnResend.querySelector('[data-loading]');
+      var textEl = btnResend.querySelector('[data-button-text]');
+
+      btnResend.addEventListener('click', async function() {
+        resendError.classList.add('hidden');
+        resendSuccess.classList.add('hidden');
+
+        if (!window.CustomerAuth.resendVerification) {
+          resendError.textContent = 'Функция временно недоступна. Зарегистрируйтесь повторно.';
+          resendError.classList.remove('hidden');
+          return;
+        }
+
+        if (!emailFromUrl) {
+          resendError.textContent = 'Email не указан. Зарегистрируйтесь заново.';
+          resendError.classList.remove('hidden');
+          return;
+        }
+
+        loadingEl.classList.remove('hidden');
+        textEl.classList.add('hidden');
+        btnResend.disabled = true;
+
+        try {
+          await window.CustomerAuth.resendVerification({ email: emailFromUrl });
+          resendSuccess.classList.remove('hidden');
+        } catch (err) {
+          resendError.textContent = 'Не удалось отправить письмо';
+          resendError.classList.remove('hidden');
+        } finally {
+          loadingEl.classList.add('hidden');
+          textEl.classList.remove('hidden');
+          btnResend.disabled = false;
+        }
+      });
+    });
+  </script>
+</MinimalLayout>

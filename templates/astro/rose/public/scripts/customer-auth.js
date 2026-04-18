@@ -124,5 +124,51 @@
         body: JSON.stringify({ token }),
       });
     },
+
+    // ==================== OTP Password Reset (новый flow) ====================
+
+    /** Request 4-digit OTP code for password reset */
+    async requestResetOTP({ email, shopName }) {
+      const { storeId } = getConfig();
+      return request('/store/auth/request-reset-otp', {
+        method: 'POST',
+        body: JSON.stringify({ shopId: storeId, email, shopName }),
+      });
+    },
+
+    /** Verify OTP — returns { resetCredential, expiresAt } */
+    async verifyResetOTP({ email, code }) {
+      const { storeId } = getConfig();
+      return request('/store/auth/verify-reset-otp', {
+        method: 'POST',
+        body: JSON.stringify({ shopId: storeId, email, code }),
+      });
+    },
+
+    /** Resend OTP */
+    async resendResetOTP({ email, shopName }) {
+      const { storeId } = getConfig();
+      return request('/store/auth/resend-reset-otp', {
+        method: 'POST',
+        body: JSON.stringify({ shopId: storeId, email, shopName }),
+      });
+    },
+
+    /** Set new password using reset credential */
+    async setNewPassword({ resetCredential, password }) {
+      return request('/store/auth/set-new-password', {
+        method: 'POST',
+        body: JSON.stringify({ resetCredential, password }),
+      });
+    },
+
+    /** Resend email verification link */
+    async resendVerification({ email }) {
+      const { storeId } = getConfig();
+      return request('/store/auth/resend-verification', {
+        method: 'POST',
+        body: JSON.stringify({ shopId: storeId, email }),
+      });
+    },
   };
 })();

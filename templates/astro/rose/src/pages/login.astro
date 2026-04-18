@@ -1,55 +1,47 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
+import MinimalLayout from '../layouts/MinimalLayout.astro';
+import AuthShell from '../components/auth/AuthShell.astro';
+import AuthInput from '../components/auth/AuthInput.astro';
+import PasswordField from '../components/auth/PasswordField.astro';
+import AuthButton from '../components/auth/AuthButton.astro';
+import AuthSecondaryLink from '../components/auth/AuthSecondaryLink.astro';
 import data from '../data/data.json';
-import siteConfig from '../data/site-config.json';
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
 
 const meta = data?.meta ?? {};
-const blocks = data?.content ?? [];
-const headerBlock = blocks.find((b: any) => b.type === 'Header');
-const footerBlock = blocks.find((b: any) => b.type === 'Footer');
-const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
-const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 ---
-<BaseLayout title={`Вход — ${meta?.title ?? 'Мой сайт'}`}>
-  <Header {...headerProps} />
-
-  <main class="flex-1 max-w-[440px] mx-auto px-5 py-10 w-full font-manrope">
-    <h1 class="text-3xl font-comfortaa text-center mb-8">Вход</h1>
-
-    <form id="login-form" class="space-y-5">
-      <div>
-        <label for="login-email" class="block mb-2 font-medium text-gray-700">Email <span class="text-required">*</span></label>
-        <input type="email" id="login-email" name="email" required placeholder="your@email.com" autocomplete="email"
-          class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none auth-input-focus">
-      </div>
-
-      <div>
-        <label for="login-password" class="block mb-2 font-medium text-gray-700">Пароль <span class="text-required">*</span></label>
-        <input type="password" id="login-password" name="password" required placeholder="Введите пароль" autocomplete="current-password"
-          class="w-full py-3.5 px-4 border border-gray-300 rounded-xl text-base focus:outline-none auth-input-focus">
-      </div>
-
-      <div class="text-red-600 text-sm text-center hidden" id="login-error"></div>
-
-      <button type="submit" class="btn-primary w-full py-4 px-8 rounded-xl font-medium transition-colors" id="btn-login">
-        <span class="loading hidden"><span class="loading-spinner inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></span>Вход...</span>
-        <span class="text">Войти</span>
-      </button>
+<MinimalLayout title={`Вход — ${meta?.title ?? 'Мой сайт'}`}>
+  <AuthShell
+    title="Вход в аккаунт"
+    description="Введите свои данные чтобы войти в аккаунт"
+  >
+    <form id="login-form" class="w-full flex flex-col gap-6" novalidate>
+      <AuthInput
+        label="E-mail"
+        type="email"
+        name="email"
+        id="login-email"
+        placeholder="example@merfy.ru"
+        required
+        autocomplete="email"
+      />
+      <PasswordField
+        label="Пароль"
+        name="password"
+        id="login-password"
+        placeholder="Введите пароль"
+        required
+      />
+      <div class="auth-helper-error hidden text-center" id="login-error" role="alert"></div>
     </form>
 
-    <div class="text-center text-sm mt-6 space-y-2">
-      <p>
-        <a href="/reset-password" class="auth-link">Забыли пароль?</a>
-      </p>
-      <p class="text-gray-500">
-        Нет аккаунта? <a href="/register" class="auth-link font-medium">Зарегистрироваться</a>
-      </p>
+    <div class="w-full flex flex-col items-center gap-10">
+      <AuthButton id="btn-login" loadingLabel="Вход...">Войти</AuthButton>
+      <div class="flex flex-col items-center gap-3">
+        <AuthSecondaryLink href="/register" helper="Нет аккаунта?">Зарегистрироваться</AuthSecondaryLink>
+        <AuthSecondaryLink href="/reset-password">Забыл пароль?</AuthSecondaryLink>
+      </div>
     </div>
-  </main>
-
-  <Footer {...footerProps} />
+  </AuthShell>
 
   <script is:inline src="/scripts/customer-store.js"></script>
   <script is:inline src="/scripts/customer-auth.js"></script>
@@ -65,6 +57,16 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
       var form = document.getElementById('login-form');
       var errorEl = document.getElementById('login-error');
       var btn = document.getElementById('btn-login');
+      var loadingEl = btn.querySelector('[data-loading]');
+      var textEl = btn.querySelector('[data-button-text]');
+
+      // Prefill email from ?email=... (e.g. after redirect from invite-register ALREADY_REGISTERED)
+      var initialParams = new URLSearchParams(window.location.search);
+      var prefillEmail = initialParams.get('email');
+      if (prefillEmail) {
+        var emailField = document.getElementById('login-email');
+        if (emailField) emailField.value = prefillEmail;
+      }
 
       form.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -74,9 +76,8 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
         var email = document.getElementById('login-email').value.trim();
         var password = document.getElementById('login-password').value;
 
-        // Show loading
-        btn.querySelector('.loading').classList.remove('hidden');
-        btn.querySelector('.text').classList.add('hidden');
+        loadingEl.classList.remove('hidden');
+        textEl.classList.add('hidden');
         btn.disabled = true;
 
         try {
@@ -98,21 +99,11 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
           errorEl.textContent = msg;
           errorEl.classList.remove('hidden');
         } finally {
-          btn.querySelector('.loading').classList.add('hidden');
-          btn.querySelector('.text').classList.remove('hidden');
+          loadingEl.classList.add('hidden');
+          textEl.classList.remove('hidden');
           btn.disabled = false;
         }
       });
     });
   </script>
-</BaseLayout>
-
-<style>
-  .btn-primary { background-color: rgb(var(--color-primary)); color: #fff; }
-  .btn-primary:hover { filter: brightness(0.85); }
-  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-  .text-required { color: rgb(var(--color-primary)); }
-  .auth-link { color: rgb(var(--color-primary)); }
-  .auth-link:hover { text-decoration: underline; }
-  .auth-input-focus:focus { border-color: rgb(var(--color-primary)); box-shadow: 0 0 0 3px rgb(var(--color-primary) / 0.15); }
-</style>
+</MinimalLayout>

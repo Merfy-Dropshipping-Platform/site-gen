@@ -1,0 +1,53 @@
+---
+/**
+ * AuthInput — поле ввода с label, состояниями default/filled/error и error-helper.
+ * Figma: h-14, rounded [--radius-field] (4px), outline-1 с цветом из theme tokens,
+ * label Manrope 16 font-light, error helper text-xs red-300 font-light.
+ */
+interface Props {
+  label: string;
+  type?: string;
+  name: string;
+  id?: string;
+  placeholder?: string;
+  required?: boolean;
+  autocomplete?: string;
+  value?: string;
+  error?: string;
+  minlength?: number;
+  readonly?: boolean;
+}
+const {
+  label,
+  type = 'text',
+  name,
+  id = name,
+  placeholder,
+  required,
+  autocomplete,
+  value,
+  error,
+  minlength,
+  readonly,
+} = Astro.props;
+---
+<div class="flex flex-col items-start gap-2 w-full">
+  <label for={id} class="auth-label">
+    {label}{required && <span class="auth-required"> *</span>}
+  </label>
+  <input
+    type={type}
+    id={id}
+    name={name}
+    placeholder={placeholder}
+    required={required}
+    autocomplete={autocomplete}
+    value={value}
+    minlength={minlength}
+    readonly={readonly}
+    data-error={error ? 'true' : 'false'}
+    class="auth-input"
+  />
+  {error && <span class="auth-helper-error" data-error-for={id}>{error}</span>}
+  {!error && <span class="auth-helper-error hidden" data-error-for={id}></span>}
+</div>

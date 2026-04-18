@@ -15,6 +15,13 @@
   --color-button-text: 255, 255, 255;
   --color-muted: 153, 153, 153;
 
+  /* ── Semantic colors (auth / forms) ── */
+  --color-text-muted: 163, 163, 163;       /* neutral-400 — description, placeholder, helper */
+  --color-border-active: 0, 0, 0;          /* filled/focused input border */
+  --color-border-error: 252, 165, 165;     /* red-300 — error input border */
+  --color-error: 252, 165, 165;            /* red-300 — helper error text */
+  --color-surface-muted: 245, 245, 245;    /* neutral-100 — OTP cell bg, subtle surfaces */
+
   /* ── Typography ── */
   --font-heading: 'Comfortaa', cursive;
   --font-body: 'Manrope', sans-serif;
@@ -24,6 +31,7 @@
   --radius-button: 8px;
   --radius-card: 10px;
   --radius-input: 10px;
+  --radius-field: 4px;                     /* auth input fields — Figma spec */
 
   /* ── Layout ── */
   --page-width: 1280px;

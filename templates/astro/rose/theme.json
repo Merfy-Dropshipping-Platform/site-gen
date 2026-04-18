@@ -23,7 +23,12 @@
         { "id": "color_background", "type": "color", "label": "Background", "default": "#ffffff" },
         { "id": "color_foreground", "type": "color", "label": "Text", "default": "#121212" },
         { "id": "color_border", "type": "color", "label": "Border", "default": "#e5e7eb" },
-        { "id": "color_button_text", "type": "color", "label": "Button text", "default": "#ffffff" }
+        { "id": "color_button_text", "type": "color", "label": "Button text", "default": "#ffffff" },
+        { "id": "color_text_muted", "type": "color", "label": "Muted text (placeholders, helpers)", "default": "#A3A3A3" },
+        { "id": "color_border_active", "type": "color", "label": "Input border — active", "default": "#000000" },
+        { "id": "color_border_error", "type": "color", "label": "Input border — error", "default": "#FCA5A5" },
+        { "id": "color_error", "type": "color", "label": "Error text", "default": "#FCA5A5" },
+        { "id": "color_surface_muted", "type": "color", "label": "Muted surface (OTP cells)", "default": "#F5F5F5" }
       ]
     },
     {
@@ -38,6 +43,7 @@
       "settings": [
         { "id": "radius_button", "type": "range", "label": "Button radius", "default": "8px" },
         { "id": "radius_card", "type": "range", "label": "Card radius", "default": "1rem" },
+        { "id": "radius_field", "type": "range", "label": "Input field radius", "default": "4px" },
         { "id": "page_width", "type": "text", "label": "Page width", "default": "1280px" }
       ]
     }

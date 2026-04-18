@@ -56,11 +56,15 @@ export interface ConstructorThemeSettings {
   sectionPadding?: number;
   buttonRadius: number;
   inputRadius: number;
+  /** Auth form field radius (separate from inputRadius for catalog inputs). Figma default: 4px */
+  fieldRadius?: number;
   cardBorder?: number;
   cardRadius: number;
   mediaRadius: number;
   productCardStyle?: "standard" | "card";
   productCardAlignment?: "left" | "center" | "right";
+  /** Semantic error color (auth forms, validation helpers). Default: #FCA5A5 (red-300). */
+  errorColor?: string;
   colorSchemes: ConstructorColorScheme[];
   /** Index of the color scheme to use for :root defaults (0-based). Defaults to 0. */
   defaultSchemeIndex?: number;
@@ -189,6 +193,7 @@ export function constructorThemeToMerchantSettings(
   tokens["radius-input"] = `${theme.inputRadius}px`;
   tokens["radius-card"] = `${theme.cardRadius}px`;
   tokens["radius-media"] = `${theme.mediaRadius}px`;
+  tokens["radius-field"] = `${theme.fieldRadius ?? 4}px`;
 
   // Spacing
   if (theme.sectionPadding !== undefined) {
@@ -210,6 +215,14 @@ export function constructorThemeToMerchantSettings(
     // Border = 20% foreground blended on background (subtle but visible)
     tokens["color-border"] = defaultScheme.primaryButton.border
       ?? blendColors(defaultScheme.text, defaultScheme.background, 0.2);
+
+    // Semantic tokens for auth / forms
+    tokens["color-text-muted"] = blendColors(defaultScheme.text, defaultScheme.background, 0.4);
+    tokens["color-border-active"] = defaultScheme.text;
+    const errorColor = theme.errorColor ?? "#FCA5A5"; // red-300
+    tokens["color-border-error"] = errorColor;
+    tokens["color-error"] = errorColor;
+    tokens["color-surface-muted"] = blendColors(defaultScheme.text, defaultScheme.background, 0.05);
   }
 
   // Convert color schemes — keys MUST match CSS var names (with "color-" prefix)

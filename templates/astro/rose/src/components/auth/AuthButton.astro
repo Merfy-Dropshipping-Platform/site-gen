@@ -1,0 +1,24 @@
+---
+/**
+ * AuthButton — primary CTA кнопка для auth-форм.
+ * Figma: h-14, rounded-lg [--radius-button] (8px), bg-primary, text-white, Manrope 16 font-normal.
+ */
+interface Props {
+  type?: 'submit' | 'button';
+  id?: string;
+  disabled?: boolean;
+  loadingLabel?: string;
+}
+const { type = 'submit', id, disabled, loadingLabel = 'Загрузка...' } = Astro.props;
+---
+<button type={type} id={id} disabled={disabled} class="auth-button-primary">
+  <span class="auth-button-loading hidden inline-flex items-center gap-2" data-loading>
+    <span
+      class="inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
+    ></span>
+    <span>{loadingLabel}</span>
+  </span>
+  <span class="auth-button-text" data-button-text>
+    <slot />
+  </span>
+</button>

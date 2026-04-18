@@ -29,6 +29,36 @@
 }
 
 /* ── Auth utility classes (login, register, reset-password, verify-email) ── */
+/* Ensure .hidden wins against inline-flex / block auth utilities */
+.auth-button-primary .hidden,
+.auth-input + .hidden,
+.auth-password-wrapper + .hidden,
+#login-error.hidden,
+#register-error.hidden,
+#email-error.hidden,
+#otp-error.hidden,
+#new-password-error.hidden,
+#legacy-error.hidden,
+#forgot-error.hidden,
+#reset-error.hidden,
+#resend-error.hidden,
+#invite-expired-msg.hidden,
+#forgot-form.hidden,
+#forgot-success.hidden,
+#mode-email.hidden,
+#mode-otp.hidden,
+#mode-new-password.hidden,
+#mode-legacy-token.hidden,
+#state-pending.hidden,
+#state-success.hidden,
+#state-already.hidden,
+#state-expired.hidden,
+#state-notoken.hidden,
+[data-loading].hidden,
+[data-button-text].hidden {
+  display: none !important;
+}
+
 .auth-page {
   background-color: rgb(var(--color-background));
   min-height: 100vh;

@@ -33,10 +33,11 @@ async function checkPaymentStatus() {
       }
 
       const status = data.data.status;
+      const paymentMethod = data.data.paymentMethod;
 
       switch (status) {
         case 'succeeded':
-          showSuccess(orderId);
+          showSuccess(orderId, paymentMethod);
           return;
 
         case 'canceled':
@@ -85,9 +86,14 @@ function showSection(id) {
   document.getElementById(id).classList.add('active');
 }
 
-function showSuccess(orderId) {
+function showSuccess(orderId, paymentMethod) {
   document.getElementById('order-number').textContent = `Заказ #${orderId.slice(-8).toUpperCase()}`;
-  // Очищаем корзину после успешной оплаты
+  if (paymentMethod === 'auto_confirm') {
+    const h1 = document.querySelector('#result-success h1');
+    const p = document.querySelector('#result-success p');
+    if (h1) h1.textContent = 'Заказ оформлен!';
+    if (p) p.textContent = 'Мы получили ваш заказ и скоро свяжемся с вами для подтверждения.';
+  }
   try { localStorage.removeItem('merfy-cart'); } catch (e) { /* ignore */ }
   showSection('result-success');
 }

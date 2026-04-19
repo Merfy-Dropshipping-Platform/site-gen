@@ -1153,16 +1153,17 @@ class CheckoutFlow {
         } catch (_) { /* silent */ }
       }
 
-      // 5. Создать платёж
+      // 5. Создать платёж (если YooKassa настроена)
       const returnUrl = `${window.location.origin}/checkout/result?orderId=${this.orderId}`;
       const paymentRes = await CheckoutAPI.createPayment(this.orderId, returnUrl);
 
-      if (!paymentRes.success) {
-        throw new Error(paymentRes.message || 'Не удалось создать платёж');
+      if (paymentRes.success && paymentRes.data?.confirmationUrl) {
+        // 6. Редирект на ЮKassa
+        window.location.href = paymentRes.data.confirmationUrl;
+      } else {
+        // Оплата не настроена — заказ оформлен, переходим на результат
+        window.location.href = returnUrl;
       }
-
-      // 6. Редирект на ЮKassa
-      window.location.href = paymentRes.data.confirmationUrl;
     } catch (e) {
       if (errorEl) {
         errorEl.textContent = e.message;

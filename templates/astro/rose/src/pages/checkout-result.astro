@@ -83,6 +83,15 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
               showError('Платёж отменён');
               return;
             }
+            // No payment created (auto-confirm / no YooKassa) — treat pending as success
+            if (status === 'pending' && !data.data.paymentMethod && attempts >= 2) {
+              showSuccess(data.data.orderNumber || orderId, {
+                cdekNumber: data.data.cdekNumber,
+                cdekUuid: data.data.cdekUuid,
+                deliveryType: data.data.deliveryType,
+              });
+              return;
+            }
           }
 
           attempts++;

@@ -1,0 +1,80 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import data from '../../data/data.json';
+import siteConfig from '../../data/site-config.json';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+
+const meta = data?.meta ?? {};
+const blocks = data?.content ?? [];
+const headerBlock = blocks.find((b: any) => b.type === 'Header');
+const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
+const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
+---
+<BaseLayout title={`Рассылка — ${meta?.title ?? 'Мой сайт'}`}>
+  <Header {...headerProps} />
+
+  <main class="account-page-container">
+    <a href="/account" class="account-back-link">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      Вернуться назад
+    </a>
+
+    <div class="account-title">
+      <h1>Рассылка</h1>
+      <span class="account-subtitle" id="newsletter-email"></span>
+    </div>
+
+    <div class="account-form">
+      <div class="account-field">
+        <label for="newsletter-email-input">E-mail</label>
+        <input type="email" id="newsletter-email-input" class="auth-input" placeholder="example@mail.ru">
+      </div>
+    </div>
+
+    <div class="account-actions">
+      <button type="button" class="account-button" id="btn-save">Сохранить</button>
+      <button type="button" class="account-text-link" id="btn-unsubscribe">Отписаться от рассылки</button>
+    </div>
+  </main>
+
+  <Footer {...footerProps} />
+
+  <script is:inline src="/scripts/customer-store.js"></script>
+  <script is:inline src="/scripts/customer-auth.js"></script>
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', async function() {
+      if (!window.CustomerStore || !window.CustomerStore.isLoggedIn()) {
+        window.location.href = '/login?redirect=/account/newsletter';
+        return;
+      }
+
+      var emailDisplay = document.getElementById('newsletter-email');
+      var emailInput = document.getElementById('newsletter-email-input');
+      var saveBtn = document.getElementById('btn-save');
+      var unsubBtn = document.getElementById('btn-unsubscribe');
+
+      try {
+        var result = await window.CustomerAuth.me();
+        if (result.success && result.data) {
+          var customer = result.data.customer || result.data;
+          emailDisplay.textContent = customer.email || '';
+          emailInput.value = customer.email || '';
+        }
+      } catch (err) {
+        window.CustomerStore.clearToken();
+        window.location.href = '/login';
+        return;
+      }
+
+      saveBtn.addEventListener('click', function() {
+        alert('Функция рассылки будет доступна в ближайшее время.');
+      });
+
+      unsubBtn.addEventListener('click', function() {
+        alert('Функция отписки будет доступна в ближайшее время.');
+      });
+    });
+  </script>
+</BaseLayout>

@@ -9,6 +9,8 @@ export interface FeaturedCollectionProps {
   products: Product[];
   /** Number of columns on desktop (default: 4) */
   columns?: number;
+  /** Color scheme for this section */
+  colorScheme?: string;
 }
 
 /**
@@ -24,16 +26,18 @@ export const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({
   collection,
   products,
   columns = 4,
+  colorScheme,
 }) => {
+  const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
   return (
-    <section className="w-full py-10 sm:py-14 md:py-20">
+    <section className={`w-full py-10 sm:py-14 md:py-20 ${schemeClass}`} style={{ backgroundColor: 'rgb(var(--color-background))', color: 'rgb(var(--color-foreground))' }}>
       {/* Section header */}
       <div className="flex flex-col items-center gap-1 mb-8 sm:mb-10 md:mb-14">
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-normal text-theme-foreground uppercase leading-tight text-center font-[family-name:var(--font-display)]">
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-normal text-theme-foreground uppercase leading-tight text-center font-heading">
           {collection.title}
         </h2>
         {collection.description && (
-          <p className="text-sm sm:text-base md:text-lg text-theme-muted leading-relaxed text-center px-4 font-[family-name:var(--font-body)] mt-2">
+          <p className="text-sm sm:text-base md:text-lg text-theme-muted leading-relaxed text-center px-4 font-body mt-2">
             {collection.description}
           </p>
         )}
@@ -71,7 +75,8 @@ export const FeaturedCollection: React.FC<FeaturedCollectionProps> = ({
         <div className="flex justify-center mt-8">
           <a
             href={`/collections/${collection.handle}`}
-            className="px-6 py-3 border border-theme rounded-none text-sm font-medium text-theme-foreground hover:border-theme-foreground hover:text-theme-foreground transition-colors no-underline"
+            className="px-6 py-3 text-sm font-medium transition-colors no-underline"
+            style={{ border: '1px solid rgb(var(--color-border))', borderRadius: 'var(--radius-button, 0px)', color: 'rgb(var(--color-foreground))' }}
           >
             Смотреть все
           </a>

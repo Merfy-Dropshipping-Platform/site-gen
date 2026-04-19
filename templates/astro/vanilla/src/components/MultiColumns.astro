@@ -39,11 +39,11 @@ const aspectMap: Record<string, string> = {
 const textAlignClass = textPosition === 'center' ? 'text-center' : 'text-left';
 ---
 
-<section class={`w-full ${schemeClass}`} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
+<section class={`multicol-section w-full ${schemeClass}`} style={`--pad-top: ${padTop}px; --pad-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
   <div class="max-w-[1320px] mx-auto px-5">
     {showHeading && (
       <div class="flex flex-col items-start gap-[8px] mb-[40px]">
-        <h2 class="text-[20px] font-normal leading-[1.2] font-heading" style="color: rgb(var(--color-foreground));">
+        <h2 class="text-[20px] font-normal italic leading-[1.2] font-heading" style="color: rgb(var(--color-foreground));">
           {heading!.text}
         </h2>
       </div>
@@ -57,8 +57,8 @@ const textAlignClass = textPosition === 'center' ? 'text-center' : 'text-left';
               <img src={col.image} alt={col.title ?? ''} loading="lazy" class="w-full h-full object-cover" />
             </div>
           )}
-          {col.title && <h3 class="font-heading text-[16px] font-normal uppercase" style="color: rgb(var(--color-foreground));">{col.title}</h3>}
-          {col.description && <p class="text-[16px] font-normal leading-[1.25] font-body" style="color: rgb(var(--color-muted));">{col.description}</p>}
+          {col.title && <h3 class="font-heading italic text-[16px] font-normal uppercase" style="color: rgb(var(--color-foreground));">{col.title}</h3>}
+          {col.description && <p class="text-[16px] font-normal leading-[1.25] font-body" style="color: #444444;">{col.description}</p>}
           {col.link?.enabled !== 'false' && col.link?.text && col.link?.href && (
             <a href={col.link.href} class="text-[16px] font-normal underline font-body transition-opacity duration-200 hover:opacity-80" style="color: rgb(var(--color-foreground));">
               {col.link.text}
@@ -73,5 +73,15 @@ const textAlignClass = textPosition === 'center' ? 'text-center' : 'text-left';
 <style define:vars={{ cols }}>
   .multi-columns-grid {
     grid-template-columns: repeat(var(--cols), 1fr);
+  }
+  .multicol-section {
+    padding-top: var(--spacing-section-mobile, 80px);
+    padding-bottom: var(--spacing-section-mobile, 80px);
+  }
+  @media (min-width: 768px) {
+    .multicol-section {
+      padding-top: var(--spacing-section, 120px);
+      padding-bottom: var(--spacing-section, 120px);
+    }
   }
 </style>

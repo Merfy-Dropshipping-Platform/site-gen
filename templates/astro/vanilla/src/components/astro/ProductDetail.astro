@@ -89,11 +89,76 @@ const showBuyNow = showButtons && props.buttons?.buyNow?.enabled !== 'false';
 const showVariants = props.variants?.enabled !== 'false' && (props.variants?.items?.length ?? 0) > 0;
 ---
 
-<section class="max-w-[1200px] mx-auto px-4 sm:px-6 py-10 sm:py-16">
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 lg:gap-16 items-start">
-    <!-- Left: Image -->
-    <div class="flex flex-col gap-4">
-      <div class="relative overflow-hidden aspect-square" style="background: rgb(var(--color-foreground) / 0.05);">
+<section class="max-w-[1320px] mx-auto px-4 sm:px-6 py-[75px]">
+  <div class="flex flex-col lg:flex-row gap-[40px] items-start">
+    <!-- Left: Product info -->
+    <div class="flex flex-col w-full lg:flex-1" style="gap: 40px;">
+      {showTitle && (
+        <div class="flex flex-col">
+          <h1 class="font-body" style="font-size: 24px; line-height: 1.366; color: rgb(var(--color-foreground)); margin: 0;">
+            {titleText}
+          </h1>
+
+          {showPrice && (priceDisplay || oldPriceDisplay) && (
+            <div class="flex items-center gap-[8px] mt-[5px]">
+              {priceDisplay && (
+                <span class="font-body" style="font-size: 16px; line-height: 1.4; color: rgb(var(--color-foreground));">
+                  {priceDisplay}
+                </span>
+              )}
+              {oldPriceDisplay && (
+                <span class="font-body line-through" style="font-size: 14px; line-height: 1.4; color: rgb(var(--color-muted));">
+                  {oldPriceDisplay}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {showVariants && (
+        <div class="flex flex-col gap-[15px]">
+          <span class="font-body" style="font-size: 20px; line-height: 27px; color: rgb(var(--color-muted));">Размер</span>
+          <div class="flex flex-wrap gap-[10px]">
+            {props.variants!.items!.map((v, i) => (
+              <span class="font-body" style={`height: 40px; padding: 10px; font-size: 16px; line-height: 22px; border-radius: var(--radius-button); ${i === 0 ? 'background: rgb(var(--color-foreground)); color: rgb(var(--color-background)); border: 1px solid rgb(var(--color-foreground));' : 'background: transparent; color: rgb(var(--color-foreground)); border: 1px solid rgb(var(--color-foreground));'}`}>
+                {v.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {(showAddToCart || showBuyNow) && (
+        <div class="flex flex-col gap-[12px]">
+          {showAddToCart && (
+            <button class="w-full flex items-center justify-center font-body cursor-pointer transition-colors" style="height: 56px; font-size: 16px; line-height: 22px; border-radius: var(--radius-button); background: transparent; border: 1px solid rgb(var(--color-foreground)); color: rgb(var(--color-foreground));">
+              {addToCartText}
+            </button>
+          )}
+          {showBuyNow && (
+            <button class="w-full flex items-center justify-center font-body cursor-pointer transition-colors border-0" style="height: 56px; font-size: 16px; line-height: 22px; border-radius: var(--radius-button); background: rgb(var(--color-button)); color: rgb(var(--color-button-text));">
+              {buyNowText}
+            </button>
+          )}
+        </div>
+      )}
+
+      {showDescription && (
+        <div class="flex flex-col gap-[15px]">
+          <h2 class="font-body uppercase" style="font-size: 20px; line-height: 27px; color: rgb(var(--color-foreground)); margin: 0;">
+            Описание
+          </h2>
+          <p class="font-body whitespace-pre-line" style="font-size: 16px; line-height: 22px; color: rgb(var(--color-muted)); margin: 0;">
+            {descriptionText}
+          </p>
+        </div>
+      )}
+    </div>
+
+    <!-- Right: Image gallery -->
+    <div class="w-full lg:shrink-0 flex flex-col lg:flex-row gap-[8px]" style="max-width: 648px;">
+      <div class="relative overflow-hidden aspect-square" style="width: 100%; max-width: 552px; background: rgb(var(--color-foreground) / 0.03);">
         {mainImage ? (
           <img
             src={mainImage}
@@ -117,11 +182,11 @@ const showVariants = props.variants?.enabled !== 'false' && (props.variants?.ite
         )}
       </div>
 
-      <!-- Thumbnails (static: just show all images) -->
+      <!-- Thumbnails: vertical strip to the right of main image -->
       {props.images && props.images.length > 1 && (
-        <div class="flex gap-3 overflow-x-auto pb-2">
+        <div class="hidden lg:flex flex-col gap-[8px] w-[88px] shrink-0 overflow-y-auto" style="max-height: 552px;">
           {props.images.map((image, index) => (
-            <div class={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-none overflow-hidden border-2 ${index === 0 ? 'border-current' : 'border-transparent'}`} style={index === 0 ? 'border-color: rgb(var(--color-foreground));' : ''}>
+            <div class="flex-shrink-0 w-[88px] h-[88px] overflow-hidden border-2 transition-colors" style={`border-radius: var(--radius-card); background: rgb(var(--color-foreground) / 0.03); border-color: ${index === 0 ? 'rgb(var(--color-foreground))' : 'transparent'};`}>
               <img
                 src={image.url}
                 alt={image.alt ?? `${titleText} ${index + 1}`}
@@ -130,66 +195,6 @@ const showVariants = props.variants?.enabled !== 'false' && (props.variants?.ite
               />
             </div>
           ))}
-        </div>
-      )}
-    </div>
-
-    <!-- Right: Product info -->
-    <div class="flex flex-col gap-6">
-      {showTitle && (
-        <h1 class="text-2xl sm:text-3xl md:text-4xl font-medium text-theme-foreground leading-tight font-heading">
-          {titleText}
-        </h1>
-      )}
-
-      {showPrice && (priceDisplay || oldPriceDisplay) && (
-        <div class="flex items-center gap-3">
-          {priceDisplay && (
-            <span class="text-xl sm:text-2xl font-semibold text-theme-primary">
-              {priceDisplay}
-            </span>
-          )}
-          {oldPriceDisplay && (
-            <span class="text-base sm:text-lg text-theme-muted line-through">
-              {oldPriceDisplay}
-            </span>
-          )}
-        </div>
-      )}
-
-      {showVariants && (
-        <div class="flex flex-col gap-2">
-          <span class="text-sm font-medium text-theme-muted">Размер</span>
-          <div class="flex flex-wrap gap-2">
-            {props.variants!.items!.map((v, i) => (
-              <span class={`px-4 py-2 rounded-none border text-sm font-medium`} style={i === 0 ? 'background: rgb(var(--color-foreground)); color: rgb(var(--color-background)); border-color: rgb(var(--color-foreground));' : 'background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); border-color: rgb(var(--color-border));'}>
-                {v.label}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {(showAddToCart || showBuyNow) && (
-        <div class="flex flex-col sm:flex-row gap-3 mt-2">
-          {showAddToCart && (
-            <button class="flex-1 px-6 py-3.5 text-sm font-medium rounded-none border hover:opacity-80 transition-all" style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); border-color: rgb(var(--color-border));">
-              {addToCartText}
-            </button>
-          )}
-          {showBuyNow && (
-            <button class="flex-1 px-6 py-3.5 text-sm font-medium rounded-none border-none hover:opacity-90 transition-all" style="background: rgb(var(--color-button)); color: rgb(var(--color-button-text));">
-              {buyNowText}
-            </button>
-          )}
-        </div>
-      )}
-
-      {showDescription && (
-        <div class="mt-4 pt-6 border-t border-theme">
-          <p class="text-base text-theme-muted leading-relaxed font-body">
-            {descriptionText}
-          </p>
         </div>
       )}
     </div>

@@ -20,12 +20,13 @@ interface Props {
   padding?: { top?: number; bottom?: number };
 }
 
-const { slides = [], overlay = 30, size = 'medium', imagePosition = 'fullscreen', interval = 0, pagination = 'dots', colorScheme, padding } = Astro.props;
+const { slides = [], overlay = 10, size = 'medium', imagePosition = 'fullscreen', interval = 0, pagination = 'numbers', colorScheme, padding } = Astro.props;
 const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
 const padTop = padding?.top ?? 0;
 const padBottom = padding?.bottom ?? 0;
 const visibleSlides = slides.filter((s) => !s.hidden);
 
+/* Figma: Bitter Italic 20px for heading */
 const headingFontSizes: Record<string, string> = {
   small: '1rem',
   medium: '1.125rem',
@@ -52,7 +53,7 @@ const containerStyle = imagePosition === 'window'
       <p>Добавьте слайды</p>
     </div>
   ) : (
-    <div class="flex flex-col" style="gap:24px;padding-bottom:24px;">
+    <div class="flex flex-col" style="gap:24px;padding-bottom:24px;background-color:rgb(var(--color-primary));">
       <div class="relative">
         {visibleSlides.map((slide, i) => (
           <div
@@ -60,22 +61,23 @@ const containerStyle = imagePosition === 'window'
             style={`background-color: rgb(var(--color-primary));${slide.image ? ` background-image: url(${slide.image})` : ''}`}
             data-slide
           >
-            <div class="absolute inset-0" style={`background: rgb(var(--color-foreground)); opacity: ${overlay / 100}`}></div>
-            <div class="relative z-10 w-full max-w-[1320px] mx-auto px-5 py-[120px] max-md:py-[16px] max-md:pb-[16px]" style="color: rgb(var(--color-background));">
+            {/* Overlay — Figma: rgba(0,0,0,0.1) black overlay */}
+            <div class="absolute inset-0" style={`background: rgba(0, 0, 0, ${overlay / 100})`}></div>
+            <div class="slideshow-content relative z-10 w-full" style="color: rgb(var(--color-background));">
               <div class={`max-w-[420px] max-md:max-w-full ${positionClass[slide.position ?? 'center']}`}>
                 {slide.heading?.text && (
-                  <h2 class="font-heading font-normal" style={`font-size:${headingFontSizes[size] ?? '1.25rem'};line-height:1.2;margin-bottom:4px;`}>
+                  <h2 class="font-heading font-normal italic" style={`font-size:${headingFontSizes[size] ?? '1.25rem'};line-height:1.2;margin-bottom:4px;font-family:var(--font-heading, 'Bitter', serif);`}>
                     {slide.heading.text}
                   </h2>
                 )}
                 {slide.text?.content && (
-                  <p class="text-[16px] leading-[1.25] font-body" style="color: rgb(var(--color-muted));margin-bottom:32px;">{slide.text.content}</p>
+                  <p class="text-[16px] leading-[1.4] font-body italic" style="color: #f0f0f0; margin-bottom:32px; font-family: var(--font-body, 'Arsenal', sans-serif);">{slide.text.content}</p>
                 )}
                 {slide.button?.text && (
                   <a
                     href={slide.button.link?.href ?? '#'}
-                    class="inline-flex items-center justify-center h-[48px] px-[16px] text-[16px] font-normal uppercase font-body no-underline transition-colors duration-200 hover:opacity-90"
-                    style="background-color: rgb(var(--color-button)); color: rgb(var(--color-button-text, var(--color-background))); border-radius: var(--radius-button);"
+                    class="inline-flex items-center justify-center h-[48px] px-[25px] text-[16px] font-normal uppercase no-underline transition-colors duration-200 hover:opacity-90"
+                    style="background-color: rgb(var(--color-button)); color: rgb(var(--color-button-text, var(--color-background))); border-radius: var(--radius-button); font-family: var(--font-body, 'Arsenal', sans-serif);"
                   >
                     {slide.button.text}
                   </a>
@@ -169,6 +171,22 @@ const containerStyle = imagePosition === 'window'
 </script>
 
 <style>
+  /* Slideshow content padding — Figma: 300px left/right, 120px top/bottom */
+  .slideshow-content {
+    padding: 16px 20px;
+  }
+  @media (min-width: 768px) {
+    .slideshow-content {
+      padding: var(--spacing-section, 120px) 80px;
+    }
+  }
+  @media (min-width: 1280px) {
+    .slideshow-content {
+      padding: var(--spacing-section, 120px) var(--content-padding, 300px);
+    }
+  }
+
+  /* Dot pagination */
   .slideshow-dot {
     border-color: rgb(var(--color-foreground));
     background: transparent;
@@ -176,6 +194,8 @@ const containerStyle = imagePosition === 'window'
   .slideshow-dot-active {
     background: rgb(var(--color-foreground));
   }
+
+  /* Arrow navigation — white on dark olive bg */
   .slideshow-arrow {
     color: rgb(var(--color-foreground));
     opacity: 0.6;
@@ -191,6 +211,8 @@ const containerStyle = imagePosition === 'window'
   .slideshow-arrow:hover {
     opacity: 1;
   }
+
+  /* Number pagination — Figma: Arsenal 16px white, gap 16px */
   .slideshow-num {
     color: rgb(var(--color-foreground));
     opacity: 0.4;
@@ -199,10 +221,17 @@ const containerStyle = imagePosition === 'window'
     cursor: pointer;
     padding: 2px 4px;
     font-weight: 400;
+    font-size: 16px;
     line-height: 1;
+    font-family: var(--font-body, 'Arsenal', sans-serif);
   }
   .slideshow-num-active {
     opacity: 1;
     font-weight: 700;
+  }
+
+  /* Numbers nav container — inherits color scheme from parent */
+  .slideshow-numbers-nav {
+    padding: 12px 0;
   }
 </style>

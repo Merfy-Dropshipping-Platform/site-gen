@@ -10,6 +10,8 @@ export interface CollectionListProps {
   subtitle?: string;
   /** Number of grid columns on desktop (default: 3) */
   columns?: number;
+  /** Color scheme for this section */
+  colorScheme?: string;
 }
 
 /**
@@ -25,19 +27,21 @@ export const CollectionList: React.FC<CollectionListProps> = ({
   title,
   subtitle,
   columns = 3,
+  colorScheme,
 }) => {
+  const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
   return (
-    <section className="w-full py-10 sm:py-14 md:py-20">
+    <section className={`w-full py-10 sm:py-14 md:py-20 ${schemeClass}`} style={{ backgroundColor: 'rgb(var(--color-background))', color: 'rgb(var(--color-foreground))' }}>
       {/* Section header */}
       {(title || subtitle) && (
         <div className="flex flex-col items-center gap-1 mb-8 sm:mb-10 md:mb-14">
           {title && (
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-normal text-theme-foreground uppercase leading-tight text-center font-[family-name:var(--font-display)]">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-normal text-theme-foreground uppercase leading-tight text-center font-heading">
               {title}
             </h2>
           )}
           {subtitle && (
-            <p className="text-sm sm:text-base md:text-lg text-theme-muted leading-relaxed text-center px-4 font-[family-name:var(--font-body)] mt-2">
+            <p className="text-sm sm:text-base md:text-lg text-theme-muted leading-relaxed text-center px-4 font-body mt-2">
               {subtitle}
             </p>
           )}
@@ -96,7 +100,7 @@ export const CollectionList: React.FC<CollectionListProps> = ({
 
             {/* Collection title */}
             <div className="px-1 sm:px-2">
-              <h3 className="text-lg sm:text-xl md:text-2xl font-normal text-theme-foreground group-hover:text-theme-foreground transition-colors duration-200 font-[family-name:var(--font-body)]">
+              <h3 className="text-lg sm:text-xl md:text-2xl font-normal text-theme-foreground group-hover:text-theme-foreground transition-colors duration-200 font-body">
                 {collection.title}
               </h3>
             </div>

@@ -15,7 +15,7 @@
           "type": "Header",
           "props": {
             "id": "Header-1",
-            "siteTitle": "Vanila",
+            "siteTitle": "Vanilla",
             "logo": "",
             "logoPosition": "top-center",
             "stickiness": "scroll-up",
@@ -65,7 +65,7 @@
                 "position": "left"
               }
             ],
-            "overlay": 30,
+            "overlay": 10,
             "imagePosition": "fullscreen",
             "size": "large",
             "interval": 5000,

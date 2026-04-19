@@ -15,8 +15,8 @@ interface Props {
 const {
   heading = { text: 'Коллекция товаров', size: 'small' },
   text = { content: 'Текст', size: 'small' },
-  productCard = { columns: 4 },
-  padding = { top: 80, bottom: 80 },
+  productCard = { columns: 3 },
+  padding = { top: 120, bottom: 120 },
   dataSource = 'auto',
   collection,
   cards,
@@ -27,7 +27,7 @@ const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-',
 
 const headingText = typeof heading === 'object' ? heading?.text : heading;
 const textContent = typeof text === 'object' ? text?.content : text;
-const columns = productCard?.columns || 4;
+const columns = productCard?.columns || 3;
 const quickAdd = productCard?.quickAdd === 'true';
 const buttonStyle = productCard?.buttonStyle || 'link';
 
@@ -67,22 +67,22 @@ if (collection && allProducts.length > 0) {
 }
 ---
 
-<section id="popular" class={`w-full scroll-mt-20 ${schemeClass}`} style={`background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
-  <div class="w-full max-w-[1320px] mx-auto px-5" style={`padding-top: ${padding?.top ?? 120}px; padding-bottom: ${padding?.bottom ?? 120}px;`}>
+<section id="popular" class={`popular-section w-full scroll-mt-20 ${schemeClass}`} style={`background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
+  <div class="popular-inner" style={`padding-top: ${padding?.top ?? 120}px; padding-bottom: ${padding?.bottom ?? 120}px;`}>
     <div class="flex flex-col items-start gap-[8px] mb-[40px]">
       {headingText && (
-        <h2 class="text-[20px] font-normal leading-[1.2] font-heading" style="color: rgb(var(--color-foreground));">
+        <h2 class="text-[20px] italic font-normal leading-[1.2] font-heading" style="color: rgb(var(--color-foreground));">
           {headingText}
         </h2>
       )}
       {textContent && (
-        <p class="text-[16px] font-normal leading-[1.25] font-body" style="color: rgb(var(--color-muted));">
+        <p class="text-[16px] italic font-normal leading-[1.25] font-body" style="color: rgb(var(--color-muted));">
           {textContent}
         </p>
       )}
     </div>
 
-    <div class="grid product-grid-dynamic gap-[16px]">
+    <div class="product-grid-dynamic">
       {(cards ? products.slice(0, cards) : products).map((product) => (
         <ProductCardItem
           id={product.id}
@@ -118,17 +118,44 @@ if (collection && allProducts.length > 0) {
 </section>
 
 <style define:vars={{ cols: columns }}>
-  .product-grid-dynamic {
-    grid-template-columns: repeat(1, 1fr);
+  .popular-inner {
+    width: 100%;
+    padding-left: 20px;
+    padding-right: 20px;
+    box-sizing: border-box;
   }
+
+  .product-grid-dynamic {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    column-gap: 16px;
+    row-gap: 40px;
+  }
+
   @media (min-width: 640px) {
     .product-grid-dynamic {
       grid-template-columns: repeat(2, 1fr);
     }
   }
+
   @media (min-width: 1024px) {
     .product-grid-dynamic {
       grid-template-columns: repeat(var(--cols), 1fr);
+    }
+  }
+
+  /* ── Responsive padding ── */
+  @media (min-width: 768px) {
+    .popular-inner {
+      padding-left: 80px;
+      padding-right: 80px;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .popular-inner {
+      padding-left: var(--content-padding, 300px);
+      padding-right: var(--content-padding, 300px);
     }
   }
 </style>

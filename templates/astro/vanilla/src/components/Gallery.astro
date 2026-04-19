@@ -35,16 +35,16 @@ const colorScheme = Astro.props.colorScheme;
 const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
 ---
 
-<section class={`w-full ${schemeClass}`} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
+<section class={`gallery-section w-full ${schemeClass}`} style={`--pad-top: ${padTop}px; --pad-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
   <div class="w-full max-w-[1320px] mx-auto px-5">
     <div class="flex flex-col items-start gap-[8px] mb-[40px]">
       {headingText && (
-        <h2 class="text-[20px] font-normal leading-[1.2] font-heading" style="color: rgb(var(--color-foreground));">
+        <h2 class="text-[20px] font-normal italic leading-[1.2] font-heading" style="color: rgb(var(--color-foreground));">
           {headingText}
         </h2>
       )}
       {textContent && (
-        <p class="text-[16px] font-normal leading-[1.25] font-body" style="color: rgb(var(--color-muted));">
+        <p class="text-[16px] font-normal leading-[1.25] font-body" style="color: #444444;">
           {textContent}
         </p>
       )}
@@ -52,7 +52,7 @@ const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-',
 
     <div class={`grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-[16px] ${isRight ? 'direction-rtl' : ''}`}>
       <!-- Featured Image -->
-      <div class={`w-full aspect-[920/900] lg:aspect-auto lg:h-[900px] overflow-hidden ${isRight ? 'lg:order-2' : ''}`} style="background: rgb(var(--color-foreground) / 0.05); border-radius: var(--radius-card, 0px)">
+      <div class={`w-full aspect-[920/900] lg:aspect-auto lg:h-[900px] overflow-hidden ${isRight ? 'lg:order-2' : ''}`} style="background: rgb(var(--color-foreground) / 0.05); border-radius: var(--radius-card, 0px);">
         <img
           src={featuredImage?.url || '/images/gallery-1.png'}
           alt={featuredImage?.alt || 'Галерея'}
@@ -82,3 +82,16 @@ const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-',
     </div>
   </div>
 </section>
+
+<style>
+  .gallery-section {
+    padding-top: var(--spacing-section-mobile, 80px);
+    padding-bottom: var(--spacing-section-mobile, 80px);
+  }
+  @media (min-width: 768px) {
+    .gallery-section {
+      padding-top: var(--spacing-section, 120px);
+      padding-bottom: var(--spacing-section, 120px);
+    }
+  }
+</style>

@@ -27,15 +27,15 @@ const buttonLink = typeof props.button?.link === 'object'
   style={`background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); padding-top: ${padTop}px; padding-bottom: ${padBottom}px;`}
 >
   <div class="max-w-[1320px] mx-auto px-5" style={`text-align: ${align};`}>
-    <div class="flex flex-col textblock-inner">
+    <div class={`flex flex-col textblock-inner ${align === 'center' ? 'items-center' : align === 'right' ? 'items-end' : 'items-start'}`}>
       <div>
         {headingText && (
-          <h2 class="text-[20px] font-normal leading-[1.2] font-heading" style="color:rgb(var(--color-foreground));margin-bottom:12px;">
+          <h2 class="text-[20px] font-normal italic leading-[1.2] font-heading" style="color:rgb(var(--color-foreground));margin-bottom:12px;">
             {headingText}
           </h2>
         )}
         {bodyText && (
-          <p class="text-[16px] leading-[1.25] font-body" style="color:rgb(var(--color-foreground) / 0.94);">
+          <p class="text-[16px] italic leading-[1.5] font-body" style="color:rgb(var(--color-foreground) / 0.94);">
             {bodyText}
           </p>
         )}

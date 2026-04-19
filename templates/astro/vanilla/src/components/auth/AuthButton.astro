@@ -1,0 +1,33 @@
+---
+/**
+ * AuthButton — primary CTA button for auth forms.
+ * Vanilla: h-14 (56px), radius 0, bg olive (#3A4530), white text, Arsenal 16px uppercase.
+ */
+interface Props {
+  type?: 'submit' | 'button';
+  id?: string;
+  disabled?: boolean;
+  loadingLabel?: string;
+  /** id of the form this button should submit (when outside <form>) */
+  form?: string;
+}
+const { type = 'submit', id, disabled, loadingLabel = 'Загрузка...', form } = Astro.props;
+---
+<button
+  type={type}
+  id={id}
+  form={form}
+  disabled={disabled}
+  class="auth-button-primary"
+  data-testid={id ?? 'auth-button'}
+>
+  <span class="auth-button-loading hidden inline-flex items-center gap-2" data-loading>
+    <span
+      class="inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
+    ></span>
+    <span>{loadingLabel}</span>
+  </span>
+  <span class="auth-button-text" data-button-text>
+    <slot />
+  </span>
+</button>

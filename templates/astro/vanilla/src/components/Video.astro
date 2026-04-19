@@ -17,8 +17,8 @@ const videoUrl = video?.url ?? '';
 const coverImage = video?.coverImage ?? '';
 const showHeading = content?.heading?.enabled !== 'false' && content?.heading?.text;
 const showSubheading = content?.subheading?.enabled !== 'false' && content?.subheading?.text;
-const padTop = padding?.top ?? 80;
-const padBottom = padding?.bottom ?? 80;
+const padTop = padding?.top ?? undefined;
+const padBottom = padding?.bottom ?? undefined;
 
 // Extract YouTube/Vimeo embed URL
 function getEmbedUrl(url: string): string {
@@ -35,10 +35,10 @@ const isFullscreen = position === 'fullscreen';
 ---
 
 <section
-  class={`w-full ${schemeClass}`}
-  style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}
+  class={`video-section w-full ${schemeClass}`}
+  style={`${padTop !== undefined ? `padding-top: ${padTop}px;` : ''} ${padBottom !== undefined ? `padding-bottom: ${padBottom}px;` : ''} background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}
 >
-  <div class={isFullscreen ? 'w-full' : 'max-w-[1320px] mx-auto px-5'}>
+  <div class={isFullscreen ? 'w-full' : 'video-container'}>
     {(showHeading || showSubheading) && (
       <div class="flex flex-col items-start gap-[8px] mb-[40px]">
         {showHeading && (
@@ -53,25 +53,104 @@ const isFullscreen = position === 'fullscreen';
         )}
       </div>
     )}
-    <div class={`relative aspect-video overflow-hidden ${isFullscreen ? 'rounded-none' : ''}`} style={`background: rgb(var(--color-foreground));${isFullscreen ? '' : ' border-radius: var(--radius-card, 0px);'}`}>
+    <div
+      class={`video-player relative overflow-hidden ${isFullscreen ? 'rounded-none' : ''}`}
+      style={isFullscreen ? '' : 'border-radius: var(--radius-card, 0px);'}
+      data-video-url={embedUrl}
+    >
       {embedUrl ? (
-        <iframe
-          src={embedUrl}
-          frameborder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen
-          loading="lazy"
-          class="w-full h-full"
-        ></iframe>
+        <>
+          {/* Cover image with overlay + play button (click to load iframe) */}
+          {coverImage ? (
+            <div class="video-cover absolute inset-0 z-10 cursor-pointer" data-embed-url={embedUrl}>
+              <img src={coverImage} alt="Video cover" class="w-full h-full object-cover" loading="lazy" />
+              <div class="absolute inset-0" style="background: rgba(0, 0, 0, 0.1);"></div>
+              <button
+                class="video-play-btn absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex items-center justify-center"
+                aria-label="Play video"
+                type="button"
+              >
+                <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <polygon points="16,10 36,22 16,34" fill="white"/>
+                </svg>
+              </button>
+            </div>
+          ) : null}
+          <iframe
+            src={coverImage ? '' : embedUrl}
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+            loading="lazy"
+            class="w-full h-full absolute inset-0"
+          ></iframe>
+        </>
       ) : coverImage ? (
-        <img src={coverImage} alt="Video cover" class="w-full h-full object-cover" loading="lazy" />
+        <div class="relative w-full h-full">
+          <img src={coverImage} alt="Video cover" class="w-full h-full object-cover" loading="lazy" />
+          <div class="absolute inset-0" style="background: rgba(0, 0, 0, 0.1);"></div>
+          <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
+            <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <polygon points="16,10 36,22 16,34" fill="white"/>
+            </svg>
+          </div>
+        </div>
       ) : (
-        <div class="w-full h-full flex items-center justify-center text-theme-muted">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <polygon points="5,3 19,12 5,21"/>
+        <div class="w-full h-full flex items-center justify-center" style="background: rgb(var(--color-foreground) / 0.05);">
+          <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="16,10 36,22 16,34" fill="rgb(var(--color-foreground))" opacity="0.3"/>
           </svg>
         </div>
       )}
     </div>
   </div>
 </section>
+
+<style>
+  .video-section {
+    padding-top: var(--spacing-section-mobile, 80px);
+    padding-bottom: var(--spacing-section-mobile, 80px);
+  }
+  @media (min-width: 768px) {
+    .video-section {
+      padding-top: var(--spacing-section, 120px);
+      padding-bottom: var(--spacing-section, 120px);
+    }
+  }
+
+  .video-container {
+    max-width: calc(100% - 40px);
+    margin: 0 auto;
+  }
+  @media (min-width: 768px) {
+    .video-container {
+      max-width: none;
+      margin: 0;
+      padding-left: var(--content-padding, 300px);
+      padding-right: var(--content-padding, 300px);
+    }
+  }
+
+  .video-player {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1319 / 742;
+    background: rgb(var(--color-foreground));
+  }
+</style>
+
+<script>
+  document.querySelectorAll('.video-cover').forEach((cover) => {
+    cover.addEventListener('click', () => {
+      const embedUrl = cover.getAttribute('data-embed-url');
+      if (!embedUrl) return;
+      const player = cover.closest('.video-player');
+      if (!player) return;
+      const iframe = player.querySelector('iframe');
+      if (iframe) {
+        iframe.src = embedUrl + (embedUrl.includes('?') ? '&' : '?') + 'autoplay=1';
+      }
+      cover.remove();
+    });
+  });
+</script>

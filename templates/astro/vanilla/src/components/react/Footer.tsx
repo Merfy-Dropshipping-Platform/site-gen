@@ -87,11 +87,11 @@ export function Footer({
           <section className="pt-12 sm:pt-16 md:pt-20 lg:pt-24 xl:pt-28 2xl:pt-[100px] pb-10 sm:pb-12 md:pb-16 lg:pb-20 xl:pb-24">
             <div className="max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-[809px] mx-auto">
               <div className="flex flex-col items-center gap-3 sm:gap-4 lg:gap-[5px] mb-8 sm:mb-10 lg:mb-12">
-                <h2 className="text-[20px] font-normal text-center" style={{ fontFamily: "'Bitter', serif", color: 'rgb(var(--color-foreground))', fontWeight: 400 }}>
+                <h2 className="text-[20px] font-normal text-center font-heading" style={{ color: 'rgb(var(--color-foreground))', fontWeight: 400 }}>
                   {newsletter?.heading}
                 </h2>
                 {newsletter?.description && (
-                  <p className="text-[16px] text-center px-4 sm:px-0" style={{ fontFamily: "'Arsenal', sans-serif", color: 'rgb(var(--color-foreground) / 0.8)' }}>
+                  <p className="text-[16px] text-center px-4 sm:px-0 font-body" style={{ color: 'rgb(var(--color-foreground) / 0.8)' }}>
                     {newsletter.description}
                   </p>
                 )}
@@ -102,13 +102,13 @@ export function Footer({
                   name="email"
                   placeholder={newsletter?.placeholder || "email@example.com"}
                   required
-                  className="flex-1 bg-transparent text-[14px] outline-none h-full px-4"
-                  style={{ fontFamily: "'Arsenal', sans-serif", color: 'rgb(var(--color-foreground))' }}
+                  className="flex-1 bg-transparent text-[14px] outline-none h-full px-4 font-body"
+                  style={{ color: 'rgb(var(--color-foreground))' }}
                 />
                 <button
                   type="submit"
-                  className="h-[32px] px-4 mx-3 text-[14px] font-normal transition-opacity hover:opacity-80 whitespace-nowrap"
-                  style={{ background: 'rgb(var(--color-foreground))', color: 'rgb(var(--color-background))', border: 'none', borderRadius: 0, fontFamily: "'Arsenal', sans-serif" }}
+                  className="h-[32px] px-4 mx-3 text-[14px] font-normal transition-opacity hover:opacity-80 whitespace-nowrap font-body"
+                  style={{ background: 'rgb(var(--color-foreground))', color: 'rgb(var(--color-background))', border: 'none', borderRadius: 'var(--radius-button, 0px)' }}
                 >
                   {newsletter?.buttonText || '→'}
                 </button>
@@ -131,7 +131,7 @@ export function Footer({
                     <a
                       key={index}
                       href={link.href}
-                      className="text-[14px] font-normal text-theme-muted leading-[1.366] hover:text-theme-foreground transition-colors" style={{ fontFamily: "'Arsenal', sans-serif" } as React.CSSProperties}
+                      className="text-[14px] font-normal text-theme-muted leading-[1.366] hover:text-theme-foreground transition-colors font-body"
                     >
                       {link.label}
                     </a>
@@ -151,7 +151,7 @@ export function Footer({
                     <a
                       key={index}
                       href={link.href}
-                      className="text-[14px] font-normal text-theme-muted leading-[1.366] hover:text-theme-foreground transition-colors" style={{ fontFamily: "'Arsenal', sans-serif" } as React.CSSProperties}
+                      className="text-[14px] font-normal text-theme-muted leading-[1.366] hover:text-theme-foreground transition-colors font-body"
                     >
                       {link.label}
                     </a>
@@ -170,7 +170,7 @@ export function Footer({
                   {socialColumn.email && (
                     <a
                       href={`mailto:${socialColumn.email}`}
-                      className="text-[14px] font-normal text-theme-muted leading-[1.366] hover:text-theme-foreground transition-colors" style={{ fontFamily: "'Arsenal', sans-serif" } as React.CSSProperties}
+                      className="text-[14px] font-normal text-theme-muted leading-[1.366] hover:text-theme-foreground transition-colors font-body"
                     >
                       {socialColumn.email}
                     </a>
@@ -211,8 +211,8 @@ export function Footer({
       </div>
 
       {/* Copyright Bar */}
-      <div className="w-full h-[64px] bg-black flex items-center justify-center">
-        <p className="text-[16px] font-light text-white text-center px-4" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 300 }}>
+      <div className="w-full h-[64px] flex items-center justify-center" style={{ backgroundColor: 'rgb(var(--color-foreground))' }}>
+        <p className="text-[16px] font-light text-center px-4" style={{ fontFamily: 'var(--font-powered)', fontWeight: 300, color: 'rgb(var(--color-background))' }}>
           &copy;{yearStr} {copyright?.companyName} All rights reserved.{" "}
           {copyright?.poweredBy}
         </p>

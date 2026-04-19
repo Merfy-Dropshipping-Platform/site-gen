@@ -106,53 +106,7 @@ const pageTitle = `${seoTitle} — ${shopTitle}`;
     <div class="max-w-[1320px] mx-auto px-4 sm:px-6 py-[75px]">
 
       <div class="flex flex-col lg:flex-row gap-[40px]">
-        <!-- Image gallery (left column — 552px on desktop) -->
-        <div class="w-full lg:w-[552px] lg:shrink-0 flex flex-row-reverse gap-[8px]">
-          <!-- Main image -->
-          <div
-            class="overflow-hidden flex-1 aspect-square flex items-center justify-center cursor-pointer"
-            style="background: rgb(var(--color-foreground) / 0.03);"
-            id="main-image-container"
-            data-images={imagesJson}
-          >
-            {mainImage ? (
-              <img
-                id="main-product-image"
-                src={mainImage}
-                alt={product?.name ?? 'Товар'}
-                class="w-full h-full object-cover"
-                loading="eager"
-              />
-            ) : (
-              <div class="w-full h-full flex items-center justify-center" style="color: rgb(var(--color-muted));">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                  <circle cx="8.5" cy="8.5" r="1.5"/>
-                  <polyline points="21,15 16,10 5,21"/>
-                </svg>
-              </div>
-            )}
-          </div>
-
-          <!-- Thumbnails: vertical strip (88px wide) on left side -->
-          {hasMultipleImages && (
-            <div class="hidden lg:flex flex-col gap-[8px] w-[88px] shrink-0 overflow-y-auto" id="thumbnail-strip" style="max-height: 552px;">
-              {productImages.map((img: string, i: number) => (
-                <button
-                  type="button"
-                  class="thumb-btn overflow-hidden flex-shrink-0 w-[88px] h-[88px] flex items-center justify-center cursor-pointer border-2 transition-colors"
-                  style={`border-radius: var(--radius-card); background: rgb(var(--color-foreground) / 0.03); border-color: ${i === 0 ? 'rgb(var(--color-foreground))' : 'transparent'};`}
-                  data-index={i}
-                  data-src={img}
-                >
-                  <img src={img} alt={`${product?.name} — фото ${i + 1}`} class="w-full h-full object-cover" loading="lazy" />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <!-- Product info (right column) -->
+        <!-- Product info (left column) -->
         <div class="flex flex-col w-full lg:flex-1" id="product-info" style="gap: 40px;">
           <div class="flex flex-col">
             <!-- Brand name / category -->
@@ -315,7 +269,88 @@ const pageTitle = `${seoTitle} — ${shopTitle}`;
             <span class="font-body" style="font-size: 16px; line-height: 22px;">Поделиться</span>
           </button>
         </div>
+
+        <!-- Image gallery (right column) -->
+        <div class="w-full lg:shrink-0 flex flex-col lg:flex-row gap-[8px]" style="max-width: 648px;">
+          <!-- Main image -->
+          <div
+            class="overflow-hidden aspect-square flex items-center justify-center cursor-pointer"
+            style="width: 100%; max-width: 552px; background: rgb(var(--color-foreground) / 0.03);"
+            id="main-image-container"
+            data-images={imagesJson}
+          >
+            {mainImage ? (
+              <img
+                id="main-product-image"
+                src={mainImage}
+                alt={product?.name ?? 'Товар'}
+                class="w-full h-full object-cover"
+                loading="eager"
+              />
+            ) : (
+              <div class="w-full h-full flex items-center justify-center" style="color: rgb(var(--color-muted));">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21,15 16,10 5,21"/>
+                </svg>
+              </div>
+            )}
+          </div>
+
+          <!-- Thumbnails: vertical strip (88px wide) to the right of main image -->
+          {hasMultipleImages && (
+            <div class="hidden lg:flex flex-col gap-[8px] w-[88px] shrink-0 overflow-y-auto" id="thumbnail-strip" style="max-height: 552px;">
+              {productImages.map((img: string, i: number) => (
+                <button
+                  type="button"
+                  class="thumb-btn overflow-hidden flex-shrink-0 w-[88px] h-[88px] flex items-center justify-center cursor-pointer border-2 transition-colors"
+                  style={`border-radius: var(--radius-card); background: rgb(var(--color-foreground) / 0.03); border-color: ${i === 0 ? 'rgb(var(--color-foreground))' : 'transparent'};`}
+                  data-index={i}
+                  data-src={img}
+                >
+                  <img src={img} alt={`${product?.name} — фото ${i + 1}`} class="w-full h-full object-cover" loading="lazy" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+
+      <!-- Related products -->
+      {products && products.length > 1 && (() => {
+        const related = products.filter((p: any) => p.id !== product?.id).slice(0, 6);
+        if (related.length === 0) return null;
+        return (
+          <div style="padding-top: 120px; padding-bottom: 120px;">
+            <div style="margin-bottom: 40px;">
+              <h2 class="font-heading italic" style="font-size: 20px; line-height: 1.2; color: rgb(var(--color-foreground)); margin: 0 0 8px 0;">Похожие товары</h2>
+            </div>
+            <div class="grid grid-cols-2 lg:grid-cols-3" style="column-gap: 16px; row-gap: 40px;">
+              {related.map((p: any) => {
+                const img = Array.isArray(p.images) ? p.images[0] : p.image;
+                return (
+                  <a href={`/product/${p.slug ?? p.id}`} class="group flex flex-col cursor-pointer no-underline" style="color: inherit;">
+                    <div class="overflow-hidden" style="aspect-ratio: 1/1; background: rgb(var(--color-foreground) / 0.05);">
+                      {img ? (
+                        <img src={img} alt={p.name} loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      ) : (
+                        <div class="w-full h-full flex items-center justify-center" style="color: rgb(var(--color-muted));">
+                          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
+                        </div>
+                      )}
+                    </div>
+                    <div class="flex flex-col" style="gap: 4px; padding-top: 20px;">
+                      <h3 class="font-body text-[16px] font-normal leading-[1.26] line-clamp-2 uppercase" style="color: #000; margin: 0;">{p.name}</h3>
+                      <span class="font-body text-[16px] font-normal leading-[1.26]" style="color: #000;">{p.price ?? '0 ₽'}</span>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   </main>
 

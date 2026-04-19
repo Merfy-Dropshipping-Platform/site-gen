@@ -19,8 +19,10 @@ export function ImageWithText({
   heading,
   text,
   button,
+  colorScheme,
   padding,
 }: ImageWithTextProps) {
+  const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
   const padTop = padding?.top ?? 80;
   const padBottom = padding?.bottom ?? 80;
   const showHeading = heading?.enabled !== "false" && heading?.text;
@@ -35,8 +37,8 @@ export function ImageWithText({
 
   return (
     <section
-      className={`max-w-[1200px] mx-auto px-5`}
-      style={{ paddingTop: `${padTop}px`, paddingBottom: `${padBottom}px` }}
+      className={`max-w-[1200px] mx-auto px-5 ${schemeClass}`}
+      style={{ paddingTop: `${padTop}px`, paddingBottom: `${padBottom}px`, backgroundColor: 'rgb(var(--color-background))', color: 'rgb(var(--color-foreground))' }}
     >
       <div
         className={`grid grid-cols-1 md:grid-cols-2 gap-[60px] items-center`}
@@ -89,8 +91,8 @@ export function ImageWithText({
           {showButton && (
             <a
               href={button!.link ?? "#"}
-              className="inline-flex items-center h-[48px] px-[25px] text-[16px] font-normal uppercase bg-theme-primary text-theme-button-text no-underline hover:opacity-90 transition-colors font-body"
-              style={{ borderRadius: 0 }}
+              className="inline-flex items-center h-[48px] px-[25px] text-[16px] font-normal uppercase no-underline hover:opacity-90 transition-colors font-body"
+              style={{ backgroundColor: 'rgb(var(--color-button))', color: 'rgb(var(--color-button-text))', borderRadius: 'var(--radius-button, 0px)' }}
             >
               {button!.text}
             </a>

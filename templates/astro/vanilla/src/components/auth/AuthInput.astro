@@ -1,0 +1,53 @@
+---
+/**
+ * AuthInput — input field with label, default/filled/error states and error helper.
+ * Vanilla: h-14 (56px), border 1px solid #444444, radius 0, Arsenal 16px.
+ */
+interface Props {
+  label: string;
+  type?: string;
+  name: string;
+  id?: string;
+  placeholder?: string;
+  required?: boolean;
+  autocomplete?: string;
+  value?: string;
+  error?: string;
+  minlength?: number;
+  readonly?: boolean;
+}
+const {
+  label,
+  type = 'text',
+  name,
+  id = name,
+  placeholder,
+  required,
+  autocomplete,
+  value,
+  error,
+  minlength,
+  readonly,
+} = Astro.props;
+---
+<div class="flex flex-col items-start gap-2 w-full">
+  <label for={id} class="auth-label">
+    {label}{required && <span class="auth-required"> *</span>}
+  </label>
+  <input
+    type={type}
+    id={id}
+    name={name}
+    placeholder={placeholder}
+    required={required}
+    autocomplete={autocomplete}
+    value={value}
+    minlength={minlength}
+    readonly={readonly}
+    data-error={error ? 'true' : 'false'}
+    data-testid={`auth-input-${name}`}
+    class="auth-input"
+  />
+  {error && <span class="auth-helper-error" data-error-for={id}>{error}</span>}
+  {!error && <span class="auth-helper-error hidden" data-error-for={id}></span>}
+</div>

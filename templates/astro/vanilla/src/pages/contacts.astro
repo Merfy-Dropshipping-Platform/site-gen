@@ -16,50 +16,50 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
   <Header {...headerProps} />
 
   <main class="flex-1 w-full" style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));">
-    <div class="max-w-[1320px] mx-auto px-4 sm:px-6 py-[75px]">
-      <div class="text-center mb-10">
-        <p class="mb-4 text-sm font-body" style="color: rgb(var(--color-muted));">
-          <a href="/" class="hover:underline" style="color: rgb(var(--color-muted));">Главная</a> / Контакты
+    <div class="max-w-[1320px] mx-auto px-4 sm:px-6" style="padding-top: 120px; padding-bottom: 120px;">
+      <div class="mb-[40px]">
+        <p class="mb-4 text-[14px] font-body" style="color: #444444;">
+          <a href="/" class="hover:underline" style="color: #444444;">Главная</a> / Контакты
         </p>
-        <h1 class="text-4xl font-heading" style="color: rgb(var(--color-foreground));">Контакты</h1>
+        <h1 class="text-[20px] font-heading italic font-normal leading-[1.2]" style="color: rgb(var(--color-foreground));">Контакты</h1>
       </div>
 
       <div class="grid md:grid-cols-2 gap-10 font-body">
-        <div class="space-y-6 leading-relaxed" style="color: rgb(var(--color-muted));">
+        <div class="space-y-6 leading-relaxed text-[16px]" style="color: #444444;">
           <p>
             Мы всегда рады ответить на ваши вопросы и помочь с выбором товара.
             Свяжитесь с нами любым удобным способом.
           </p>
           <div class="space-y-3">
-            <p><span class="font-semibold" style="color: rgb(var(--color-foreground));">Email:</span> info@example.com</p>
-            <p><span class="font-semibold" style="color: rgb(var(--color-foreground));">Телефон:</span> +7 (999) 123-45-67</p>
-            <p><span class="font-semibold" style="color: rgb(var(--color-foreground));">Режим работы:</span> Пн–Пт, 9:00–18:00</p>
+            <p><span class="font-normal" style="color: rgb(var(--color-foreground));">Email:</span> info@example.com</p>
+            <p><span class="font-normal" style="color: rgb(var(--color-foreground));">Телефон:</span> +7 (999) 123-45-67</p>
+            <p><span class="font-normal" style="color: rgb(var(--color-foreground));">Режим работы:</span> Пн-Пт, 9:00-18:00</p>
           </div>
         </div>
 
         <div>
-          <h2 class="text-2xl font-heading mb-6" style="color: rgb(var(--color-foreground));">Напишите нам</h2>
+          <h2 class="text-[20px] font-heading italic font-normal leading-[1.2] mb-6" style="color: rgb(var(--color-foreground));">Напишите нам</h2>
           <form class="space-y-4" id="contact-form">
             <div>
-              <label for="contact-name" class="block mb-2 text-sm font-medium font-body" style="color: rgb(var(--color-foreground));">Имя</label>
+              <label for="contact-name" class="block mb-2 text-[14px] font-normal font-body" style="color: rgb(var(--color-foreground));">Имя</label>
               <input type="text" id="contact-name" name="name" required placeholder="Ваше имя"
-                class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: var(--radius-input, var(--radius-button)); background: transparent; color: rgb(var(--color-foreground));" />
+                class="w-full h-[56px] px-4 font-body text-[16px] focus:outline-none" style="border: 1px solid #444444; border-radius: var(--radius-button, 0px); background: transparent; color: rgb(var(--color-foreground));" />
             </div>
             <div>
-              <label for="contact-email" class="block mb-2 text-sm font-medium font-body" style="color: rgb(var(--color-foreground));">Email</label>
+              <label for="contact-email" class="block mb-2 text-[14px] font-normal font-body" style="color: rgb(var(--color-foreground));">Email</label>
               <input type="email" id="contact-email" name="email" required placeholder="your@email.com"
-                class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: var(--radius-input, var(--radius-button)); background: transparent; color: rgb(var(--color-foreground));" />
+                class="w-full h-[56px] px-4 font-body text-[16px] focus:outline-none" style="border: 1px solid #444444; border-radius: var(--radius-button, 0px); background: transparent; color: rgb(var(--color-foreground));" />
             </div>
             <div>
-              <label for="contact-message" class="block mb-2 text-sm font-medium font-body" style="color: rgb(var(--color-foreground));">Сообщение</label>
+              <label for="contact-message" class="block mb-2 text-[14px] font-normal font-body" style="color: rgb(var(--color-foreground));">Сообщение</label>
               <textarea id="contact-message" name="message" required rows="5" placeholder="Ваше сообщение..."
-                class="w-full px-4 py-3 border font-body text-[14px] focus:outline-none resize-y" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: var(--radius-input, var(--radius-button)); background: transparent; color: rgb(var(--color-foreground));"></textarea>
+                class="w-full px-4 py-3 font-body text-[16px] focus:outline-none resize-y" style="border: 1px solid #444444; border-radius: var(--radius-button, 0px); background: transparent; color: rgb(var(--color-foreground));"></textarea>
             </div>
             <button type="submit"
-              class="w-full font-body font-normal transition-colors border-0 cursor-pointer" style="height: 56px; font-size: 16px; background-color: rgb(var(--color-button)); color: rgb(var(--color-button-text)); border-radius: var(--radius-button);">
+              class="w-full font-body font-normal uppercase transition-colors border-0 cursor-pointer" style="height: 56px; font-size: 16px; background-color: rgb(var(--color-button)); color: rgb(var(--color-button-text)); border-radius: var(--radius-button, 0px);">
               Отправить
             </button>
-            <p class="text-sm text-center hidden font-body" style="color: rgb(var(--color-muted));" id="contact-success">Спасибо! Ваше сообщение отправлено.</p>
+            <p class="text-[14px] text-center hidden font-body" style="color: #444444;" id="contact-success">Спасибо! Ваше сообщение отправлено.</p>
           </form>
         </div>
       </div>

@@ -7,6 +7,7 @@ interface RichTextProps {
   align?: "left" | "center" | "right";
   size?: "small" | "medium" | "large";
   padding?: { top?: number; bottom?: number };
+  colorScheme?: string;
 }
 
 const sizeClasses: Record<string, string> = {
@@ -34,7 +35,9 @@ export function RichText({
   align = "center",
   size = "medium",
   padding,
+  colorScheme,
 }: RichTextProps) {
+  const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
   const headingText =
     typeof heading === "object" ? heading?.text : heading;
   const bodyText = typeof text === "object" ? (text as any)?.text : text;
@@ -51,11 +54,13 @@ export function RichText({
 
   return (
     <section
-      className={`${sizeClasses[resolvedSize] || sizeClasses.medium} mx-auto px-5`}
+      className={`${sizeClasses[resolvedSize] || sizeClasses.medium} mx-auto px-5 ${schemeClass}`}
       style={{
         textAlign: align as any,
         paddingTop: `${padTop}px`,
         paddingBottom: `${padBottom}px`,
+        backgroundColor: 'rgb(var(--color-background))',
+        color: 'rgb(var(--color-foreground))',
       }}
     >
       {headingText && (
@@ -75,8 +80,8 @@ export function RichText({
       {button?.text && (
         <a
           href={buttonLink}
-          className="inline-flex items-center mt-6 h-[48px] px-[25px] text-[16px] font-normal uppercase bg-theme-primary text-theme-button-text no-underline hover:opacity-90 transition-colors font-body"
-          style={{ borderRadius: 0 }}
+          className="inline-flex items-center mt-6 h-[48px] px-[25px] text-[16px] font-normal uppercase no-underline hover:opacity-90 transition-colors font-body"
+          style={{ backgroundColor: 'rgb(var(--color-button))', color: 'rgb(var(--color-button-text))', borderRadius: 'var(--radius-button, 0px)' }}
         >
           {button.text}
         </a>

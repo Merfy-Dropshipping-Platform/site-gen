@@ -24,8 +24,8 @@ const {
 
 const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
 
-const padTop = padding?.top ?? 80;
-const padBottom = padding?.bottom ?? 80;
+const padTop = padding?.top ?? undefined;
+const padBottom = padding?.bottom ?? undefined;
 const showHeading = heading?.enabled !== 'false' && heading?.text;
 const showText = text?.enabled !== 'false' && text?.content;
 const showButton = button?.enabled !== 'false' && button?.text;
@@ -38,25 +38,27 @@ const headingSizeMap: Record<string, string> = {
 const headingSizeClass = headingSizeMap[size] || headingSizeMap.medium;
 
 const isRight = photoPosition === 'right';
+
+/* Split multi-paragraph text on double newlines */
+const textParagraphs = text?.content ? text.content.split(/\n\n+/).filter(Boolean) : [];
 ---
 
 <section
-  class={`w-full ${schemeClass}`}
-  style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}
+  class={`iwt-section w-full ${schemeClass}`}
+  style={`${padTop !== undefined ? `padding-top: ${padTop}px;` : ''} ${padBottom !== undefined ? `padding-bottom: ${padBottom}px;` : ''} background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}
 >
-  <div class="max-w-[1320px] mx-auto px-5 grid grid-cols-1 md:grid-cols-2 gap-[40px] items-center">
+  <div class={`iwt-container flex flex-col gap-[40px] ${isRight ? 'md:flex-row-reverse' : 'md:flex-row'}`}>
     <!-- Image -->
-    <div class={isRight ? 'order-1 md:order-2' : ''}>
+    <div class="iwt-image-col">
       {image ? (
         <img
           src={image}
           alt={heading?.text ?? ''}
           loading="lazy"
-          class="w-full h-auto object-cover"
-          style="border-radius: var(--radius-card, 0px);"
+          class="w-full h-full object-cover"
         />
       ) : (
-        <div class="aspect-[652/366] flex items-center justify-center text-theme-muted" style="background: rgb(var(--color-foreground) / 0.03); border-radius: var(--radius-card, 0px);">
+        <div class="w-full h-full min-h-[300px] flex items-center justify-center" style="background: rgb(var(--color-foreground) / 0.03);">
           <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
             <circle cx="8.5" cy="8.5" r="1.5"/>
@@ -67,30 +69,84 @@ const isRight = photoPosition === 'right';
     </div>
 
     <!-- Content -->
-    <div class={`py-[16px] ${isRight ? 'order-2 md:order-1' : ''}`}>
-      <div class="flex flex-col" style="gap:64px;">
-        <div>
-          {showHeading && (
-            <h2 class={`${headingSizeClass} font-normal leading-[1.2] font-heading`} style="color:rgb(var(--color-foreground));margin-bottom:12px;">
-              {heading!.text}
-            </h2>
-          )}
-          {showText && (
-            <p class="text-[16px] leading-[1.25] font-body" style="color:rgb(var(--color-foreground) / 0.94);">
-              {text!.content}
-            </p>
-          )}
-        </div>
-        {showButton && (
-          <a
-            href={button!.link ?? '#'}
-            class="inline-flex items-center justify-center h-[48px] px-[16px] text-[16px] font-normal uppercase no-underline hover:opacity-90 transition-colors font-body self-start"
-            style="border: 1.3px solid rgb(var(--color-foreground)); background: transparent; color: rgb(var(--color-foreground)); border-radius: var(--radius-button);"
+    <div class="iwt-text-col flex flex-col justify-between py-[16px]">
+      <div>
+        {showHeading && (
+          <h2
+            class={`${headingSizeClass} font-normal italic leading-[1.2] font-heading`}
+            style="color: rgb(var(--color-foreground)); margin-bottom: 12px;"
           >
-            {button!.text}
-          </a>
+            {heading!.text}
+          </h2>
         )}
+        {showText && textParagraphs.length > 1 ? (
+          <div class="flex flex-col gap-[12px]">
+            {textParagraphs.map((para) => (
+              <p
+                class="text-[16px] italic leading-[1.25] font-body"
+                style="color: rgb(var(--color-foreground) / 0.94); margin: 0;"
+              >
+                {para}
+              </p>
+            ))}
+          </div>
+        ) : showText ? (
+          <p class="text-[16px] italic leading-[1.25] font-body" style="color: rgb(var(--color-foreground) / 0.94);">
+            {text!.content}
+          </p>
+        ) : null}
       </div>
+      {showButton && (
+        <a
+          href={button!.link ?? '#'}
+          class="inline-flex items-center justify-center h-[48px] px-[16px] text-[16px] font-normal uppercase no-underline hover:opacity-90 transition-colors font-body self-start mt-[40px]"
+          style="border: 1.3px solid rgb(var(--color-foreground)); background: transparent; color: rgb(var(--color-foreground)); border-radius: var(--radius-button, 0px);"
+        >
+          {button!.text}
+        </a>
+      )}
     </div>
   </div>
 </section>
+
+<style>
+  .iwt-section {
+    padding-top: var(--spacing-section-mobile, 80px);
+    padding-bottom: var(--spacing-section-mobile, 80px);
+  }
+  @media (min-width: 768px) {
+    .iwt-section {
+      padding-top: var(--spacing-section, 120px);
+      padding-bottom: var(--spacing-section, 120px);
+    }
+  }
+
+  .iwt-container {
+    max-width: calc(100% - 40px);
+    margin: 0 auto;
+  }
+  @media (min-width: 768px) {
+    .iwt-container {
+      max-width: none;
+      margin: 0;
+      padding-left: var(--content-padding, 300px);
+      padding-right: var(--content-padding, 300px);
+    }
+  }
+
+  .iwt-image-col {
+    width: 100%;
+  }
+  @media (min-width: 768px) {
+    .iwt-image-col {
+      width: 652px;
+      min-width: 652px;
+      flex-shrink: 0;
+    }
+  }
+
+  .iwt-text-col {
+    flex: 1;
+    min-width: 0;
+  }
+</style>

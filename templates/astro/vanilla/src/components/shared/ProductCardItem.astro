@@ -8,15 +8,19 @@ interface Props {
 	href?: string;
 	quantity?: number;
 	quickAdd?: boolean;
+	discountPercent?: number;
+	colorOptions?: Array<{ color: string; label?: string }>;
 }
 
-const { id, name, price, oldPrice, image, href = '#', quantity, quickAdd = false } = Astro.props;
+const { id, name, price, oldPrice, image, href = '#', quantity, quickAdd = false, discountPercent, colorOptions } = Astro.props;
 const hasImage = image && !image.includes('placeholder');
+const hasDiscount = discountPercent && discountPercent > 0;
+const hasColors = colorOptions && colorOptions.length > 0;
 ---
 
-<article class="flex flex-col gap-[20px] group cursor-pointer">
+<article class="product-card flex flex-col gap-[20px] group cursor-pointer">
 	<a href={href} class="cursor-pointer">
-		<div class="overflow-hidden w-full" style="aspect-ratio: 1 / 1; background: rgb(var(--color-background));">
+		<div class="product-card-image-wrap relative overflow-hidden w-full" style="aspect-ratio: 1 / 1; background: rgb(var(--color-foreground) / 0.05);">
 			{hasImage ? (
 				<img
 					src={image}
@@ -33,20 +37,40 @@ const hasImage = image && !image.includes('placeholder');
 					</svg>
 				</div>
 			)}
+
+			{/* Discount badge — top-left */}
+			{hasDiscount && (
+				<span class="product-card-badge">
+					-{discountPercent}%
+				</span>
+			)}
+
+			{/* Color dots — bottom-right */}
+			{hasColors && (
+				<div class="product-card-colors">
+					{colorOptions.map((opt) => (
+						<span
+							class="product-card-color-dot"
+							style={`background: ${opt.color};`}
+							title={opt.label || opt.color}
+						/>
+					))}
+				</div>
+			)}
 		</div>
 	</a>
 	<div class="flex flex-col gap-[4px]">
 		<a href={href} class="no-underline text-inherit">
-			<h3 class="text-[16px] font-normal uppercase text-theme-foreground leading-[1.25] font-body line-clamp-2">
+			<h3 class="text-[16px] font-normal uppercase leading-[1.25] font-body line-clamp-2" style="color: #000;">
 				{name}
 			</h3>
 		</a>
 		<div class="flex items-center gap-[8px] flex-wrap">
-			<span class="text-[16px] font-normal text-theme-foreground leading-[1.25] font-body">
+			<span class="text-[16px] font-normal leading-[1.25] font-body" style="color: #000;">
 				{price}
 			</span>
 			{oldPrice && (
-				<span class="text-[14px] font-normal text-theme-muted line-through leading-[1.25] font-body">
+				<span class="text-[14px] font-normal line-through leading-[1.25] font-body" style="color: #444;">
 					{oldPrice}
 				</span>
 			)}
@@ -64,3 +88,45 @@ const hasImage = image && !image.includes('placeholder');
 		)}
 	</div>
 </article>
+
+<style>
+	/* Discount badge */
+	.product-card-badge {
+		position: absolute;
+		top: 8px;
+		left: 8px;
+		background: #26311C;
+		color: #fff;
+		font-family: var(--font-body, 'Arsenal', sans-serif);
+		font-size: 12px;
+		line-height: 24px;
+		height: 24px;
+		padding: 0 6px;
+		text-align: center;
+		white-space: nowrap;
+		border-radius: 0;
+		z-index: 1;
+	}
+
+	/* Color dots container */
+	.product-card-colors {
+		position: absolute;
+		bottom: 8px;
+		right: 8px;
+		display: flex;
+		align-items: center;
+		gap: 2px;
+		background: #fff;
+		padding: 2px;
+		z-index: 1;
+	}
+
+	/* Individual color dot — square, not circle */
+	.product-card-color-dot {
+		display: block;
+		width: 8px;
+		height: 8px;
+		border-radius: 0;
+		flex-shrink: 0;
+	}
+</style>

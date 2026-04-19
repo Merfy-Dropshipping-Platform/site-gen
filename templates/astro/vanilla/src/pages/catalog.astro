@@ -17,20 +17,16 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 const branding = (siteConfig as any)?.branding ?? {};
 ---
 <BaseLayout title={`Каталог — ${meta?.title ?? 'Мой сайт'}`} description={meta?.description}>
-  <div class="catalog-page flex flex-col flex-1" style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));">
+  <div class="catalog-page flex flex-col flex-1" style="background: #EEEEEE; color: rgb(var(--color-foreground));">
     <Header {...headerProps} />
 
-    <main class="catalog-main flex-1 w-full max-w-[1320px] mx-auto py-8 sm:py-12 md:py-16 lg:py-20 xl:py-24">
+    <main class="catalog-main flex-1 w-full max-w-[1320px] mx-auto">
       <!-- Page title block -->
-      <div class="mb-8 sm:mb-10 md:mb-12 lg:mb-16 xl:mb-20">
+      <div style="margin-bottom: 40px;">
         <h1
-          class="text-xl sm:text-2xl md:text-3xl lg:text-[32px] font-normal uppercase leading-[1.115] font-heading"
-          style="color: rgb(var(--color-foreground)); margin: 0;"
+          class="font-heading italic"
+          style="font-size: 20px; font-weight: 400; text-transform: uppercase; line-height: 1.2; color: rgb(var(--color-foreground)); margin: 0;"
         >КАТАЛОГ</h1>
-        <p
-          class="text-sm sm:text-base md:text-lg lg:text-xl xl:text-[24px] font-normal leading-[1.366] font-body mt-1 sm:mt-2"
-          style="color: rgb(var(--color-muted));"
-        >Здесь начинается персональный стиль</p>
       </div>
 
       <CatalogIsland client:only="react" />
@@ -48,20 +44,47 @@ const branding = (siteConfig as any)?.branding ?? {};
   .catalog-main {
     padding-left: 16px;
     padding-right: 16px;
+    padding-top: 40px;
+    padding-bottom: 40px;
   }
   @media (min-width: 640px) {
-    .catalog-main { padding-left: 24px; padding-right: 24px; }
+    .catalog-main {
+      padding-left: 24px;
+      padding-right: 24px;
+      padding-top: 60px;
+      padding-bottom: 60px;
+    }
   }
   @media (min-width: 768px) {
-    .catalog-main { padding-left: 32px; padding-right: 32px; }
+    .catalog-main {
+      padding-left: 32px;
+      padding-right: 32px;
+      padding-top: 80px;
+      padding-bottom: 80px;
+    }
   }
   @media (min-width: 1024px) {
-    .catalog-main { padding-left: 64px; padding-right: 64px; }
+    .catalog-main {
+      padding-left: 64px;
+      padding-right: 64px;
+      padding-top: 100px;
+      padding-bottom: 100px;
+    }
   }
   @media (min-width: 1280px) {
-    .catalog-main { padding-left: 96px; padding-right: 96px; }
+    .catalog-main {
+      padding-left: 96px;
+      padding-right: 96px;
+      padding-top: 120px;
+      padding-bottom: 120px;
+    }
   }
   @media (min-width: 1536px) {
-    .catalog-main { padding-left: 300px; padding-right: 300px; }
+    .catalog-main {
+      padding-left: 300px;
+      padding-right: 300px;
+      padding-top: 120px;
+      padding-bottom: 120px;
+    }
   }
 </style>

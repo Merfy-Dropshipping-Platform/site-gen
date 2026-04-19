@@ -46,78 +46,81 @@ export function PriceRangeFilter({ priceMin, priceMax, onChange }: PriceRangeFil
     applyFilter(min, val);
   };
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    height: 60,
-    padding: '10px 15px',
-    border: '1px solid rgb(var(--color-muted))',
-    borderRadius: 0,
-    backgroundColor: 'rgb(var(--color-background))',
-    fontSize: 20,
-    lineHeight: '27px',
-    fontWeight: 300,
-    color: 'rgb(var(--color-foreground))',
-    outline: 'none',
+  const formatDisplay = (val: string) => {
+    if (!val) return '0';
+    return new Intl.NumberFormat('ru-RU').format(Number(val));
+  };
+
+  const rowStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    height: 40,
+    borderBottom: '1px solid rgb(var(--color-muted))',
   };
 
   return (
     <div>
       <h3
         className="font-[family-name:var(--font-body)]"
-        style={{ fontSize: 20, lineHeight: '27px', color: 'rgb(var(--color-foreground))', marginBottom: 15 }}
+        style={{ fontSize: 16, lineHeight: '22px', color: 'rgb(var(--color-foreground))', marginBottom: 12 }}
       >
         Стоимость
       </h3>
-      <div className="flex flex-col" style={{ gap: 10 }}>
-        {/* Min input */}
-        <div className="relative font-[family-name:var(--font-body)]">
-          <span
-            className="absolute left-[15px] top-1/2 -translate-y-1/2 pointer-events-none"
-            style={{ fontSize: 20, lineHeight: '27px', fontWeight: 300, color: 'rgb(var(--color-muted))' }}
-          >
-            от
-          </span>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={min}
-            onChange={handleMinChange}
-            onFocus={() => { focusedRef.current = true; }}
-            onBlur={() => { focusedRef.current = false; }}
-            className="font-[family-name:var(--font-body)]"
-            style={{ ...inputStyle, paddingLeft: 45 }}
-          />
-          <span
-            className="absolute right-[15px] top-1/2 -translate-y-1/2 pointer-events-none"
-            style={{ fontSize: 20, lineHeight: '27px', fontWeight: 300, color: 'rgb(var(--color-muted))' }}
-          >
-            ₽
-          </span>
+      <div className="flex flex-col" style={{ gap: 0 }}>
+        {/* Min row */}
+        <div style={rowStyle} className="font-[family-name:var(--font-body)]">
+          <span style={{ fontSize: 16, color: 'rgb(var(--color-muted))' }}>от</span>
+          <div className="relative" style={{ display: 'flex', alignItems: 'center' }}>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={min}
+              onChange={handleMinChange}
+              onFocus={() => { focusedRef.current = true; }}
+              onBlur={() => { focusedRef.current = false; }}
+              placeholder="0"
+              className="font-[family-name:var(--font-body)]"
+              style={{
+                border: 'none',
+                outline: 'none',
+                background: 'transparent',
+                fontSize: 16,
+                color: 'rgb(var(--color-muted))',
+                textAlign: 'right',
+                width: 80,
+                padding: 0,
+              }}
+            />
+            <span style={{ fontSize: 16, color: 'rgb(var(--color-muted))', marginLeft: 4 }}>&#8381;</span>
+          </div>
         </div>
-        {/* Max input */}
-        <div className="relative font-[family-name:var(--font-body)]">
-          <span
-            className="absolute left-[15px] top-1/2 -translate-y-1/2 pointer-events-none"
-            style={{ fontSize: 20, lineHeight: '27px', fontWeight: 300, color: 'rgb(var(--color-muted))' }}
-          >
-            до
-          </span>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={max}
-            onChange={handleMaxChange}
-            onFocus={() => { focusedRef.current = true; }}
-            onBlur={() => { focusedRef.current = false; }}
-            className="font-[family-name:var(--font-body)]"
-            style={{ ...inputStyle, paddingLeft: 45 }}
-          />
-          <span
-            className="absolute right-[15px] top-1/2 -translate-y-1/2 pointer-events-none"
-            style={{ fontSize: 20, lineHeight: '27px', fontWeight: 300, color: 'rgb(var(--color-muted))' }}
-          >
-            ₽
-          </span>
+        {/* Max row */}
+        <div style={rowStyle} className="font-[family-name:var(--font-body)]">
+          <span style={{ fontSize: 16, color: 'rgb(var(--color-muted))' }}>до</span>
+          <div className="relative" style={{ display: 'flex', alignItems: 'center' }}>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={max}
+              onChange={handleMaxChange}
+              onFocus={() => { focusedRef.current = true; }}
+              onBlur={() => { focusedRef.current = false; }}
+              placeholder="0"
+              className="font-[family-name:var(--font-body)]"
+              style={{
+                border: 'none',
+                outline: 'none',
+                background: 'transparent',
+                fontSize: 16,
+                color: 'rgb(var(--color-muted))',
+                textAlign: 'right',
+                width: 80,
+                padding: 0,
+              }}
+            />
+            <span style={{ fontSize: 16, color: 'rgb(var(--color-muted))', marginLeft: 4 }}>&#8381;</span>
+          </div>
         </div>
       </div>
     </div>

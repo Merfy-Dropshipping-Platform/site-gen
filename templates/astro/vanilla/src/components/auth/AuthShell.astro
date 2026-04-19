@@ -1,0 +1,38 @@
+---
+/**
+ * AuthShell — centered column 384px (w-96) with title and slot for content.
+ * Vanilla theme: Arsenal body font, Bitter heading font, olive colors, radius 0.
+ * White background with dark text for auth pages (independent of merchant scheme).
+ */
+interface Props {
+  title: string;
+  description?: string;
+}
+const { title, description } = Astro.props;
+---
+<main
+  class="auth-shell flex-1 flex items-start justify-center px-5 py-28 min-h-[80vh]"
+  style="
+    --color-background: 255, 255, 255;
+    --color-foreground: 38, 49, 28;
+    --color-text-muted: 68, 68, 68;
+    --color-border: 200, 200, 200;
+    --color-border-active: 58, 69, 48;
+    --color-surface-muted: 245, 245, 245;
+    --color-primary: 58, 69, 48;
+    --color-button: 58, 69, 48;
+    --color-button-text: 255, 255, 255;
+    background: #FFFFFF;
+    color: #26311C;
+  "
+>
+  <div class="w-96 max-w-full flex flex-col items-center gap-20">
+    <div class="flex flex-col items-center gap-2 text-center">
+      <h1 class="font-heading text-xl uppercase font-normal" style="color: #26311C;">{title}</h1>
+      {description && (
+        <p class="text-base font-normal" style="color: #444444;">{description}</p>
+      )}
+    </div>
+    <slot />
+  </div>
+</main>

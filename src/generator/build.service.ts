@@ -1143,8 +1143,8 @@ async function stageGenerate(
   // Pages with full static implementations in theme templates — never overwrite with Puck stubs
   const STATIC_TEMPLATE_PAGES = new Set([
     "cart", "catalog", "checkout", "checkout/result",
-    "login", "register", "reset-password",
-    "account", "account/orders", "account/order", "account/profile",
+    "login", "register", "reset-password", "verify-email",
+    "account", "account/orders", "account/order", "account/profile", "account/newsletter",
   ]);
 
   if (Array.isArray(revPages) && revPages.length > 0 && revPagesData) {

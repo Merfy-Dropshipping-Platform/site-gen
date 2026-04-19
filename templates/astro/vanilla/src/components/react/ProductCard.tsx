@@ -11,6 +11,30 @@ export function formatMoney(kopecks: number, currency = 'RUB'): string {
   }).format(amount);
 }
 
+function getDiscountPercent(price: number, compareAtPrice: number): number {
+  if (!compareAtPrice || compareAtPrice <= price) return 0;
+  return Math.round(((compareAtPrice - price) / compareAtPrice) * 100);
+}
+
+/** Extract unique color hex values from product variant options */
+function getColorDots(product: Product): string[] {
+  const colors: string[] = [];
+  const variants = (product as any).variants ?? (product as any).variantCombinations ?? [];
+  for (const v of variants) {
+    const opts = v.options ?? v.optionValues ?? [];
+    for (const o of opts) {
+      const name = (o.groupName ?? o.name ?? '').toLowerCase();
+      if (name === 'цвет' || name === 'color') {
+        const hex = o.colorHex ?? o.hex ?? o.value;
+        if (hex && /^#[0-9a-fA-F]{3,8}$/.test(hex) && !colors.includes(hex)) {
+          colors.push(hex);
+        }
+      }
+    }
+  }
+  return colors;
+}
+
 export interface ProductCardProps {
   product: Product;
   href?: string;
@@ -19,15 +43,20 @@ export interface ProductCardProps {
 export const ProductCard: React.FC<ProductCardProps> = ({ product, href }) => {
   const linkHref = href ?? `/product/${product.handle}`;
   const firstImage = product.images?.[0];
+  const discountPercent = product.compareAtPrice
+    ? getDiscountPercent(product.price, product.compareAtPrice)
+    : 0;
+  const colorDots = getColorDots(product);
 
   return (
     <a
       href={linkHref}
-      className="group flex flex-col cursor-pointer no-underline text-inherit gap-4 sm:gap-5 md:gap-6 lg:gap-[25px]"
+      className="group flex flex-col cursor-pointer no-underline text-inherit"
+      style={{ gap: 12 }}
     >
-      {/* Image — 1:1 square per Figma */}
+      {/* Image container — 1:1 square */}
       <div
-        className="overflow-hidden w-full"
+        className="relative overflow-hidden w-full"
         style={{ aspectRatio: '1 / 1', backgroundColor: 'rgb(var(--color-background))' }}
       >
         {firstImage ? (
@@ -46,27 +75,85 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, href }) => {
             </svg>
           </div>
         )}
+
+        {/* Discount badge — top-left */}
+        {discountPercent > 0 && (
+          <span
+            className="absolute font-[family-name:var(--font-body)]"
+            style={{
+              top: 8,
+              left: 8,
+              height: 24,
+              padding: '0 8px',
+              display: 'flex',
+              alignItems: 'center',
+              backgroundColor: 'rgb(var(--color-foreground))',
+              color: 'rgb(var(--color-background))',
+              fontSize: 12,
+              lineHeight: '24px',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            -{discountPercent}%
+          </span>
+        )}
+
+        {/* Color dots — bottom-right */}
+        {colorDots.length > 0 && (
+          <div
+            className="absolute flex"
+            style={{ bottom: 8, right: 8, gap: 4 }}
+          >
+            {colorDots.map((hex) => (
+              <span
+                key={hex}
+                style={{
+                  width: 8,
+                  height: 8,
+                  backgroundColor: hex,
+                  display: 'block',
+                }}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Product info — Figma: 20px gap, Arsenal 16px UPPERCASE title, 16px price */}
-      <div className="flex flex-col" style={{ gap: 4, paddingTop: 20 }}>
+      {/* Product info */}
+      <div className="flex flex-col" style={{ gap: 4 }}>
         <h3
-          className="text-[16px] font-normal leading-[1.26] line-clamp-2 uppercase"
-          style={{ color: 'rgb(var(--color-foreground))', margin: 0, fontFamily: "var(--font-body)" }}
+          className="font-normal line-clamp-2 uppercase"
+          style={{
+            fontSize: 16,
+            lineHeight: 1.26,
+            color: 'rgb(var(--color-foreground))',
+            margin: 0,
+            fontFamily: 'var(--font-body)',
+          }}
         >
           {product.title}
         </h3>
         <div className="flex items-center gap-2 flex-wrap">
           <span
-            className="text-[16px] font-normal leading-[1.26]"
-            style={{ color: 'rgb(var(--color-foreground))', fontFamily: "var(--font-body)" }}
+            className="font-normal"
+            style={{
+              fontSize: 16,
+              lineHeight: 1.26,
+              color: 'rgb(var(--color-foreground))',
+              fontFamily: 'var(--font-body)',
+            }}
           >
             {formatMoney(product.price)}
           </span>
           {product.compareAtPrice != null && product.compareAtPrice > 0 && (
             <span
-              className="text-[14px] font-normal line-through leading-[1.26]"
-              style={{ color: 'rgb(var(--color-muted))', fontFamily: "var(--font-body)" }}
+              className="font-normal line-through"
+              style={{
+                fontSize: 14,
+                lineHeight: 1.26,
+                color: 'rgb(var(--color-muted))',
+                fontFamily: 'var(--font-body)',
+              }}
             >
               {formatMoney(product.compareAtPrice)}
             </span>

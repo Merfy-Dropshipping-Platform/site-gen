@@ -1,4 +1,5 @@
 ---
+import SectionHeader from './shared/SectionHeader.astro';
 import CollectionCardItem from './shared/CollectionCardItem.astro';
 
 interface Props {
@@ -21,31 +22,12 @@ const {
   subtitleSize = 'small',
   dataSource = 'auto',
   collections = [],
-  columnsCount = 3,
-  imageView = 'portrait',
+  columnsCount = 2,
+  imageView = 'square',
   colorScheme,
-  padding = { top: 80, bottom: 80 },
+  padding = { top: 120, bottom: 120 },
 } = Astro.props;
 const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
-
-const headingFS: Record<string, { base: string; sm: string; md: string }> = {
-  small: { base: '1.125rem', sm: '1.25rem', md: '1.5rem' },
-  medium: { base: '1.25rem', sm: '1.5rem', md: '2rem' },
-  large: { base: '1.5rem', sm: '1.875rem', md: '2.5rem' },
-};
-const textFS: Record<string, { base: string; sm: string; md: string }> = {
-  small: { base: '0.75rem', sm: '0.875rem', md: '1rem' },
-  medium: { base: '0.875rem', sm: '1rem', md: '1.25rem' },
-  large: { base: '1rem', sm: '1.125rem', md: '1.5rem' },
-};
-const hfs = headingFS[titleSize] || headingFS.small;
-const tfs = textFS[subtitleSize] || textFS.small;
-
-const aspectMap: Record<string, string> = {
-  portrait: '430/500',
-  square: '1/1',
-  wide: '16/9',
-};
 
 let collectionsData = collections || [];
 
@@ -58,25 +40,27 @@ if (dataSource === 'auto' || collectionsData.length === 0) {
   }
 }
 
-const cols = columnsCount || 3;
-const aspect = aspectMap[imageView] || aspectMap.portrait;
+const cols = columnsCount || 2;
+const aspectMap: Record<string, string> = {
+  portrait: '430/500',
+  square: '1/1',
+  wide: '16/9',
+};
+const aspect = aspectMap[imageView] || aspectMap.square;
+const padTop = padding?.top ?? 120;
+const padBottom = padding?.bottom ?? 120;
 ---
 
-<section id="collections" class={`w-full scroll-mt-16 sm:scroll-mt-20 ${schemeClass}`} style={`background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
-  <div class="w-full max-w-[1320px] mx-auto px-5 py-[120px] max-md:py-[80px]">
-    <div class="flex flex-col items-start gap-2 sm:gap-3 md:gap-4 mb-8 sm:mb-10 md:mb-12">
-      <h2 class="font-normal leading-[1.2] font-heading collections-heading" style={`color: rgb(var(--color-foreground)); --fs-base:${hfs.base};--fs-sm:${hfs.sm};--fs-md:${hfs.md};`}>
-        {title}
-      </h2>
-      {subtitle && (
-        <p class="font-normal leading-[1.25] font-body collections-subtitle" style={`color: rgb(var(--color-muted)); --ts-base:${tfs.base};--ts-sm:${tfs.sm};--ts-md:${tfs.md};`}>
-          {subtitle}
-        </p>
-      )}
-    </div>
+<section
+  id="collections"
+  class={`w-full scroll-mt-16 sm:scroll-mt-20 ${schemeClass}`}
+  style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}
+>
+  <div class="max-w-[1320px] mx-auto px-5">
+    <SectionHeader title={title} subtitle={subtitle} />
 
     {collectionsData.length > 0 && (
-    <div class="grid collections-grid" role="list">
+    <div class="collections-grid" role="list">
       {collectionsData.map((collection, index) => (
         <CollectionCardItem
           name={collection.name}
@@ -93,25 +77,14 @@ const aspect = aspectMap[imageView] || aspectMap.portrait;
 
 <style define:vars={{ cols }}>
   .collections-grid {
-    grid-template-columns: repeat(1, 1fr);
-    gap: 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
   }
-  .collections-heading { font-size: var(--fs-base); line-height: 1.115; }
-  .collections-subtitle { font-size: var(--ts-base); line-height: 1.366; }
   @media (min-width: 640px) {
     .collections-grid {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 2rem;
-    }
-    .collections-heading { font-size: var(--fs-sm); }
-    .collections-subtitle { font-size: var(--ts-sm); }
-  }
-  @media (min-width: 1024px) {
-    .collections-grid {
       grid-template-columns: repeat(var(--cols), 1fr);
-      gap: 2.5rem;
+      gap: 16px;
     }
-    .collections-heading { font-size: var(--fs-md); }
-    .collections-subtitle { font-size: var(--ts-md); }
   }
 </style>

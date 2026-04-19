@@ -73,12 +73,142 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
   }, []);
 
   return (
-    <section className="max-w-[1320px] mx-auto px-4 sm:px-6 py-10 sm:py-16">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 lg:gap-16 items-start">
-        {/* Left: Image gallery */}
-        <div className="flex flex-col gap-4">
+    <section className="max-w-[1320px] mx-auto px-4 sm:px-6 py-[75px]">
+      <div className="flex flex-col lg:flex-row gap-[40px] items-start">
+        {/* Left: Product info */}
+        <div className="flex flex-col w-full lg:flex-1" style={{ gap: 40 }}>
+          <div className="flex flex-col">
+            {/* Title */}
+            <h1 className="font-[family-name:var(--font-body)]" style={{ fontSize: 24, lineHeight: 1.366, color: 'rgb(var(--color-foreground))', margin: 0 }}>
+              {product.title}
+            </h1>
+
+            {/* Price */}
+            <div className="flex items-center gap-[8px]" style={{ marginTop: 5 }}>
+              <span className="font-[family-name:var(--font-body)]" style={{ fontSize: 16, lineHeight: 1.4, color: 'rgb(var(--color-foreground))' }}>
+                {formatMoney(currentPrice)}
+              </span>
+              {currentCompareAtPrice != null && currentCompareAtPrice > 0 && (
+                <span className="font-[family-name:var(--font-body)] line-through" style={{ fontSize: 14, lineHeight: 1.4, color: 'rgb(var(--color-muted))' }}>
+                  {formatMoney(currentCompareAtPrice)}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Variant selector */}
+          {product.variants.length > 1 && (
+            <div className="flex flex-col gap-[15px]">
+              <span className="font-[family-name:var(--font-body)]" style={{ fontSize: 20, lineHeight: '27px', color: 'rgb(var(--color-muted))' }}>
+                Размер
+              </span>
+              <div className="flex flex-wrap gap-[10px]">
+                {product.variants.map((variant) => (
+                  <button
+                    key={variant.id}
+                    onClick={() => variant.available && setSelectedVariant(variant)}
+                    disabled={!variant.available}
+                    className="font-[family-name:var(--font-body)] cursor-pointer transition-colors"
+                    style={{
+                      height: 40,
+                      padding: 10,
+                      fontSize: 16,
+                      lineHeight: '22px',
+                      borderRadius: 'var(--radius-button)',
+                      ...(selectedVariant?.id === variant.id
+                        ? { background: 'rgb(var(--color-foreground))', border: '1px solid rgb(var(--color-foreground))', color: 'rgb(var(--color-background))' }
+                        : !variant.available
+                          ? { background: 'rgba(153,153,153,0.05)', border: '1px solid rgb(var(--color-muted))', color: 'rgb(var(--color-muted))', textDecoration: 'line-through', cursor: 'not-allowed' }
+                          : { background: 'transparent', border: '1px solid rgb(var(--color-foreground))', color: 'rgb(var(--color-foreground))' }
+                      ),
+                    }}
+                  >
+                    {variant.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Quantity selector */}
+          <div className="flex flex-col gap-[15px]">
+            <span className="font-[family-name:var(--font-body)]" style={{ fontSize: 20, lineHeight: '27px', color: 'rgb(var(--color-muted))' }}>
+              Количество
+            </span>
+            <div className="flex items-center gap-[5px]">
+              <button
+                onClick={decrementQuantity}
+                className="w-[40px] h-[40px] flex items-center justify-center cursor-pointer"
+                style={{ borderRadius: 'var(--radius-button)', border: '1px solid rgb(var(--color-foreground))', background: 'rgb(var(--color-background))', color: 'rgb(var(--color-foreground))' }}
+              >
+                <svg width="20" height="20" viewBox="0 0 32 32" fill="none"><path d="M8 16H24" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
+              </button>
+              <div className="w-[40px] h-[40px] flex items-center justify-center" style={{ borderRadius: 'var(--radius-button)', background: 'rgb(var(--color-background))' }}>
+                <span className="font-[family-name:var(--font-body)]" style={{ fontSize: 16, lineHeight: '22px', color: 'rgb(var(--color-foreground))' }}>
+                  {quantity}
+                </span>
+              </div>
+              <button
+                onClick={incrementQuantity}
+                className="w-[40px] h-[40px] flex items-center justify-center cursor-pointer"
+                style={{ borderRadius: 'var(--radius-button)', border: '1px solid rgb(var(--color-foreground))', background: 'rgb(var(--color-background))', color: 'rgb(var(--color-foreground))' }}
+              >
+                <svg width="20" height="20" viewBox="0 0 32 32" fill="none"><path d="M16 8V24M8 16H24" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex flex-col gap-[12px]">
+            <button
+              onClick={handleAddToCart}
+              className="w-full flex items-center justify-center font-[family-name:var(--font-body)] cursor-pointer transition-colors"
+              style={{
+                height: 56,
+                fontSize: 16,
+                lineHeight: '22px',
+                borderRadius: 'var(--radius-button)',
+                background: 'transparent',
+                border: '1px solid rgb(var(--color-foreground))',
+                color: 'rgb(var(--color-foreground))',
+              }}
+            >
+              Добавить в корзину
+            </button>
+            <button
+              onClick={handleBuyNow}
+              className="w-full flex items-center justify-center font-[family-name:var(--font-body)] cursor-pointer transition-colors"
+              style={{
+                height: 56,
+                fontSize: 16,
+                lineHeight: '22px',
+                borderRadius: 'var(--radius-button)',
+                background: 'rgb(var(--color-button))',
+                color: 'rgb(var(--color-button-text))',
+                border: 'none',
+              }}
+            >
+              Купить сейчас
+            </button>
+          </div>
+
+          {/* Description */}
+          {product.description && (
+            <div className="flex flex-col gap-[15px]">
+              <h2 className="font-[family-name:var(--font-body)] uppercase" style={{ fontSize: 20, lineHeight: '27px', color: 'rgb(var(--color-foreground))', margin: 0 }}>
+                Описание
+              </h2>
+              <p className="font-[family-name:var(--font-body)] whitespace-pre-line" style={{ fontSize: 16, lineHeight: '22px', color: 'rgb(var(--color-muted))', margin: 0 }}>
+                {product.description}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Right: Image gallery */}
+        <div className="w-full lg:shrink-0 flex flex-col lg:flex-row gap-[8px]" style={{ maxWidth: 648 }}>
           {/* Main image */}
-          <div className="relative overflow-hidden aspect-square" style={{ maxWidth: 552, maxHeight: 552, background: 'rgb(var(--color-foreground) / 0.03)' }}>
+          <div className="overflow-hidden aspect-square flex items-center justify-center cursor-pointer" style={{ width: '100%', maxWidth: 552, background: 'rgb(var(--color-foreground) / 0.03)' }}>
             {currentImage ? (
               <img
                 src={currentImage.url}
@@ -103,15 +233,19 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
             )}
           </div>
 
-          {/* Thumbnails */}
+          {/* Thumbnails: vertical strip to the right of main image */}
           {product.images.length > 1 && (
-            <div className="flex gap-3 overflow-x-auto pb-2">
+            <div className="hidden lg:flex flex-col gap-[8px] w-[88px] shrink-0 overflow-y-auto" style={{ maxHeight: 552 }}>
               {product.images.map((image, index) => (
                 <button
                   key={index}
                   onClick={() => setSelectedImageIndex(index)}
-                  style={{ width: 88, height: 88, flexShrink: 0, overflow: 'hidden', borderWidth: 2, borderStyle: 'solid', borderRadius: 0, transition: 'border-color 0.15s' }}
-                  className={index === selectedImageIndex ? 'border-current' : 'border-transparent hover:border-current/30'}
+                  className="flex-shrink-0 w-[88px] h-[88px] flex items-center justify-center cursor-pointer overflow-hidden border-2 transition-colors"
+                  style={{
+                    borderRadius: 'var(--radius-card)',
+                    background: 'rgb(var(--color-foreground) / 0.03)',
+                    borderColor: index === selectedImageIndex ? 'rgb(var(--color-foreground))' : 'transparent',
+                  }}
                 >
                   <img
                     src={image.url}
@@ -120,116 +254,6 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
                   />
                 </button>
               ))}
-            </div>
-          )}
-        </div>
-
-        {/* Right: Product info */}
-        <div className="flex flex-col gap-6">
-          {/* Title */}
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-medium text-theme-foreground leading-tight font-[family-name:var(--font-display)]">
-            {product.title}
-          </h1>
-
-          {/* Price */}
-          <div className="flex items-center gap-3">
-            <span className="text-xl sm:text-2xl font-semibold text-theme-primary">
-              {formatMoney(currentPrice)}
-            </span>
-            {currentCompareAtPrice != null && currentCompareAtPrice > 0 && (
-              <span className="text-base sm:text-lg text-theme-muted line-through">
-                {formatMoney(currentCompareAtPrice)}
-              </span>
-            )}
-          </div>
-
-          {/* Variant selector */}
-          {product.variants.length > 1 && (
-            <div className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-theme-muted">
-                Размер
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {product.variants.map((variant) => (
-                  <button
-                    key={variant.id}
-                    onClick={() => variant.available && setSelectedVariant(variant)}
-                    disabled={!variant.available}
-                    className={`px-4 py-2 rounded-none border text-sm font-medium transition-all ${
-                      selectedVariant?.id === variant.id
-                        ? 'border-current'
-                        : variant.available
-                          ? 'border-theme text-theme-foreground hover:border-theme-foreground'
-                          : 'border-theme opacity-50 cursor-not-allowed'
-                    }`}
-                  >
-                    {variant.title}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Quantity selector */}
-          <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-theme-muted">
-              Количество
-            </span>
-            <div className="flex items-center gap-0 w-fit border border-theme rounded-none overflow-hidden">
-              <button
-                onClick={decrementQuantity}
-                className="w-10 h-10 flex items-center justify-center text-lg font-medium transition-colors" style={{ color: 'rgb(var(--color-foreground))', cursor: 'pointer' }}
-              >
-                -
-              </button>
-              <span className="w-12 h-10 flex items-center justify-center text-base font-medium border-x border-theme">
-                {quantity}
-              </span>
-              <button
-                onClick={incrementQuantity}
-                className="w-10 h-10 flex items-center justify-center text-lg font-medium transition-colors" style={{ color: 'rgb(var(--color-foreground))', cursor: 'pointer' }}
-              >
-                +
-              </button>
-            </div>
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 mt-2">
-            <button
-              onClick={handleAddToCart}
-              className="flex-1 px-6 text-sm font-medium hover:opacity-80 transition-all font-[family-name:var(--font-body)]"
-              style={{
-                height: 56,
-                borderRadius: 0,
-                background: 'rgb(var(--color-button))',
-                color: 'rgb(var(--color-button-text))',
-                border: 'none',
-              }}
-            >
-              Добавить в корзину
-            </button>
-            <button
-              onClick={handleBuyNow}
-              className="flex-1 px-6 text-sm font-medium hover:opacity-90 transition-all font-[family-name:var(--font-body)]"
-              style={{
-                height: 56,
-                borderRadius: 0,
-                background: 'transparent',
-                color: 'rgb(var(--color-primary))',
-                border: '1px solid rgb(var(--color-primary))',
-              }}
-            >
-              Купить сейчас
-            </button>
-          </div>
-
-          {/* Description */}
-          {product.description && (
-            <div className="mt-4 pt-6 border-t border-theme">
-              <p className="text-base text-theme-muted leading-relaxed font-[family-name:var(--font-body)]">
-                {product.description}
-              </p>
             </div>
           )}
         </div>

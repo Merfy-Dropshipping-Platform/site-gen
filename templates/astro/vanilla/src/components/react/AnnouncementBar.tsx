@@ -8,22 +8,24 @@ interface AnnouncementBarProps {
 }
 
 const sizeClasses: Record<string, string> = {
-  small: "h-[32px] md:h-[44px] lg:h-[48px] text-[14px]",
-  medium: "h-[32px] md:h-[44px] lg:h-[48px] text-[14px]",
-  large: "h-[32px] md:h-[44px] lg:h-[48px] text-[16px]",
+  small: "h-[36px] md:h-[48px] text-[14px] md:text-[16px]",
+  medium: "h-[36px] md:h-[48px] text-[14px] md:text-[16px]",
+  large: "h-[40px] md:h-[48px] text-[16px]",
 };
 
 export function AnnouncementBar({
   text = "10% discount on orders over 9,000 RUB",
   link,
   size = "small",
+  colorScheme,
 }: AnnouncementBarProps) {
   const href =
     typeof link === "object" ? (link as any)?.href : link || "#";
   const sizeClass = sizeClasses[size] || sizeClasses.small;
+  const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
 
   return (
-    <div className={`w-full flex items-center justify-center ${sizeClass}`} style={{ backgroundColor: 'rgb(var(--color-background))', color: 'rgb(var(--color-foreground))' }}>
+    <div className={`w-full flex items-center justify-center ${sizeClass} ${schemeClass}`} style={{ backgroundColor: 'rgb(var(--color-background))', color: 'rgb(var(--color-foreground))' }}>
       <div className="w-full max-w-[1320px] mx-auto px-5">
         <a
           href={href}

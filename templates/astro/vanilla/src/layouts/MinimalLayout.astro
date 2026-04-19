@@ -1,0 +1,49 @@
+---
+/**
+ * MinimalLayout — layout для auth-страниц (login, register, reset-password, verify-email).
+ * Без Header/Footer, без cart скриптов, noindex/nofollow.
+ */
+import data from '../data/data.json';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title = 'Мой магазин', description } = Astro.props;
+const meta = data?.meta ?? {};
+const shopId = (meta as any)?.shopId || '';
+const apiUrl = (meta as any)?.apiUrl || 'https://gateway.merfy.ru/api';
+const favicons = (meta as any)?.favicons ?? {};
+---
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    {favicons.universal ? (
+      <link rel="icon" href={favicons.universal} />
+    ) : (
+      <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    )}
+    {favicons.apple && <link rel="apple-touch-icon" href={favicons.apple} />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Arsenal:wght@400;700&family=Bitter:wght@400;500;600;700&family=Exo+2:wght@400;500;600&family=Inter:wght@300;400&display=optional" rel="stylesheet" />
+  </head>
+  <body class="auth-page font-body">
+    <slot />
+    <script is:inline define:vars={{ shopId, apiUrl }}>
+      window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
+        shopId: shopId || '',
+        apiUrl: apiUrl || 'https://gateway.merfy.ru/api',
+      };
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  @import '../styles/global.css';
+</style>

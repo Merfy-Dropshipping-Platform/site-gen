@@ -1,6 +1,6 @@
 ---
 interface Props {
-  active?: 'orders' | 'profile';
+  active?: 'orders' | 'profile' | 'newsletter';
 }
 const { active } = Astro.props;
 ---
@@ -21,7 +21,14 @@ const { active } = Astro.props;
       </a>
     </li>
     <li>
-      <button type="button" id="btn-logout" class="account-nav-link text-red-500 hover:text-red-600 w-full">
+      <a href="/account/newsletter"
+        class:list={["account-nav-link", { active: active === 'newsletter' }]}>
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        <span>Рассылка</span>
+      </a>
+    </li>
+    <li>
+      <button type="button" id="btn-logout" class="account-nav-link w-full" style="color: rgb(var(--color-error))">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
         <span>Выйти</span>
       </button>

@@ -8,62 +8,114 @@ interface Props {
 const { heading, colorScheme, padding } = Astro.props;
 const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
 const headingText = heading?.text ?? 'Свяжитесь с нами';
-const padTop = padding?.top ?? 80;
-const padBottom = padding?.bottom ?? 80;
+const padTop = padding?.top ?? 120;
+const padBottom = padding?.bottom ?? 120;
 ---
 
 <section
   class={`w-full ${schemeClass}`}
   style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}
 >
-  <div class="max-w-[600px] mx-auto px-5">
-    <h2 class="text-[20px] font-normal leading-[1.2] font-heading text-center mb-[40px]" style="color: rgb(var(--color-foreground));">
+  <div class="max-w-[1320px] mx-auto px-5">
+    <h2 class="text-[20px] font-normal italic leading-[1.2] font-heading mb-[40px]" style="color: rgb(var(--color-foreground));">
       {headingText}
     </h2>
-    <form class="flex flex-col gap-5" action="#" method="POST">
-      <div class="flex flex-col gap-1.5">
-        <label for="contact-name" class="text-[14px] font-normal font-body" style="color: rgb(var(--color-foreground));">Имя</label>
-        <input
-          type="text"
-          id="contact-name"
-          name="name"
-          placeholder="Ваше имя"
-          required
-          class="py-3 px-4 text-base border border-theme rounded-none font-body transition-colors focus:outline-none focus:border-theme-foreground"
-          style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));"
-        />
+    <form class="contact-form" action="#" method="POST">
+      <div class="contact-form-left flex flex-col gap-[16px]">
+        <div class="flex flex-col gap-[8px]">
+          <label for="contact-name" class="text-[16px] font-normal font-body" style="color: #444444;">Имя</label>
+          <input
+            type="text"
+            id="contact-name"
+            name="name"
+            placeholder="Ваше имя"
+            required
+            class="font-body"
+            style="height: 56px; padding: 0 16px; font-size: 16px; border: 1px solid #444444; border-radius: 0; background: transparent; color: rgb(var(--color-foreground)); outline: none;"
+          />
+        </div>
+        <div class="flex flex-col gap-[8px]">
+          <label for="contact-email" class="text-[16px] font-normal font-body" style="color: #444444;">Email</label>
+          <input
+            type="email"
+            id="contact-email"
+            name="email"
+            placeholder="email@example.com"
+            required
+            class="font-body"
+            style="height: 56px; padding: 0 16px; font-size: 16px; border: 1px solid #444444; border-radius: 0; background: transparent; color: rgb(var(--color-foreground)); outline: none;"
+          />
+        </div>
+        <div class="flex flex-col gap-[8px]">
+          <label for="contact-phone" class="text-[16px] font-normal font-body" style="color: #444444;">Телефон</label>
+          <input
+            type="tel"
+            id="contact-phone"
+            name="phone"
+            placeholder="+7 (___) ___-__-__"
+            class="font-body"
+            style="height: 56px; padding: 0 16px; font-size: 16px; border: 1px solid #444444; border-radius: 0; background: transparent; color: rgb(var(--color-foreground)); outline: none;"
+          />
+        </div>
       </div>
-      <div class="flex flex-col gap-1.5">
-        <label for="contact-email" class="text-[14px] font-normal font-body" style="color: rgb(var(--color-foreground));">Email</label>
-        <input
-          type="email"
-          id="contact-email"
-          name="email"
-          placeholder="email@example.com"
-          required
-          class="py-3 px-4 text-base border border-theme rounded-none font-body transition-colors focus:outline-none focus:border-theme-foreground"
-          style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));"
-        />
-      </div>
-      <div class="flex flex-col gap-1.5">
-        <label for="contact-message" class="text-[14px] font-normal font-body" style="color: rgb(var(--color-foreground));">Сообщение</label>
+      <div class="contact-form-right flex flex-col gap-[8px]">
+        <label for="contact-message" class="text-[16px] font-normal font-body" style="color: #444444;">Сообщение</label>
         <textarea
           id="contact-message"
           name="message"
-          rows="5"
           placeholder="Ваше сообщение..."
           required
-          class="py-3 px-4 text-base border border-theme rounded-none font-body transition-colors resize-y focus:outline-none focus:border-theme-foreground"
-          style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));"
+          class="font-body flex-1"
+          style="padding: 16px; font-size: 16px; border: 1px solid #444444; border-radius: 0; background: transparent; color: rgb(var(--color-foreground)); outline: none; resize: none; min-height: 200px;"
         ></textarea>
       </div>
-      <button
-        type="submit"
-        class="inline-flex items-center justify-center h-[48px] px-[16px] text-[16px] font-normal uppercase rounded-none border-none cursor-pointer transition-colors hover:opacity-90 font-body"
-        style="background: rgb(var(--color-button)); color: rgb(var(--color-button-text));"
-      >
-        Отправить
-      </button>
+      <div class="contact-form-submit">
+        <button
+          type="submit"
+          class="inline-flex items-center justify-center h-[56px] px-[24px] text-[16px] font-normal uppercase cursor-pointer transition-colors hover:opacity-90 font-body"
+          style="background: rgb(var(--color-button)); color: rgb(var(--color-button-text)); border: none; border-radius: 0;"
+        >
+          Отправить
+        </button>
+      </div>
     </form>
   </div>
 </section>
+
+<style>
+  .contact-form {
+    display: grid;
+    grid-template-columns: 429px 1fr;
+    gap: 16px;
+  }
+  .contact-form-right {
+    grid-row: 1 / 3;
+    grid-column: 2;
+  }
+  .contact-form-submit {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-start;
+    margin-top: 24px;
+  }
+  .contact-form input:focus,
+  .contact-form textarea:focus {
+    border-color: rgb(var(--color-foreground)) !important;
+  }
+  .contact-form input.error,
+  .contact-form textarea.error {
+    border-color: #FF9494 !important;
+  }
+  @media (max-width: 767px) {
+    .contact-form {
+      grid-template-columns: 1fr;
+    }
+    .contact-form-right {
+      grid-row: auto;
+      grid-column: 1;
+    }
+    .contact-form-submit {
+      grid-column: 1;
+    }
+  }
+</style>

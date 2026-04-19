@@ -16,27 +16,31 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
   <Header {...headerProps} />
 
   <main class="flex-1 w-full" style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));">
-    <div class="max-w-[1320px] mx-auto px-4 sm:px-6 py-[75px]">
-      <div class="text-center mb-10">
-        <p class="mb-4 text-sm font-body" style="color: rgb(var(--color-muted));">
-          <a href="/" class="hover:underline" style="color: rgb(var(--color-muted));">Главная</a> / О нас
+    <div class="max-w-[1320px] mx-auto px-4 sm:px-6" style="padding-top: 120px; padding-bottom: 120px;">
+      <div class="mb-[40px]">
+        <p class="mb-4 text-[14px] font-body" style="color: #444444;">
+          <a href="/" class="hover:underline" style="color: #444444;">Главная</a> / О нас
         </p>
-        <h1 class="text-4xl font-heading" style="color: rgb(var(--color-foreground));">О нас</h1>
+        <h1 class="text-[20px] font-heading italic font-normal leading-[1.2]" style="color: rgb(var(--color-foreground));">О нас</h1>
       </div>
 
-      <div class="space-y-6 font-body leading-relaxed" style="color: rgb(var(--color-muted));">
-        <p>
-          Добро пожаловать в наш интернет-магазин! Мы рады предложить вам широкий ассортимент
-          качественных товаров по доступным ценам.
-        </p>
-        <p>
-          Наша команда тщательно отбирает каждый товар, чтобы вы получали только лучшее.
-          Мы ценим доверие наших клиентов и стремимся обеспечить высокий уровень сервиса.
-        </p>
-        <p>
-          Если у вас есть вопросы или предложения, не стесняйтесь обращаться к нам через
-          страницу <a href="/contacts" class="underline hover:no-underline" style="color: rgb(var(--color-foreground));">контактов</a>.
-        </p>
+      <div class="flex flex-col lg:flex-row gap-[40px]">
+        <div class="flex-1 space-y-6 font-body leading-relaxed text-[16px]" style="color: #444444; max-width: 851px;">
+          <p>
+            Добро пожаловать в наш интернет-магазин! Мы рады предложить вам широкий ассортимент
+            качественных товаров по доступным ценам.
+          </p>
+          <p>
+            Наша команда тщательно отбирает каждый товар, чтобы вы получали только лучшее.
+            Мы ценим доверие наших клиентов и стремимся обеспечить высокий уровень сервиса.
+          </p>
+          <p>
+            Если у вас есть вопросы или предложения, не стесняйтесь обращаться к нам через
+            страницу <a href="/contacts" class="underline hover:no-underline" style="color: rgb(var(--color-foreground));">контактов</a>.
+          </p>
+        </div>
+        <div class="lg:w-[429px] lg:shrink-0 aspect-square" style="background: rgb(var(--color-foreground) / 0.05);">
+        </div>
       </div>
     </div>
   </main>

@@ -89,7 +89,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
     return (
       <section className="w-full py-12 text-center">
         {title && (
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-normal text-theme-foreground uppercase leading-tight text-center mb-8 font-[family-name:var(--font-display)]">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-normal text-theme-foreground uppercase leading-tight text-center mb-8 font-heading">
             {title}
           </h2>
         )}
@@ -101,7 +101,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   return (
     <section className="w-full">
       {title && (
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-normal text-theme-foreground uppercase leading-tight text-center mb-8 sm:mb-12 font-[family-name:var(--font-display)]">
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-normal text-theme-foreground uppercase leading-tight text-center mb-8 sm:mb-12 font-heading">
           {title}
         </h2>
       )}

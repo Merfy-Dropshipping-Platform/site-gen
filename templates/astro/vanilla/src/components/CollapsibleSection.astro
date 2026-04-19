@@ -18,35 +18,28 @@ const visibleItems = items.filter((item) => !item.hidden);
 const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
 const padTop = padding?.top ?? 80;
 const padBottom = padding?.bottom ?? 80;
-
-const headingFontSize: Record<string, string> = {
-  small: '1.5rem',
-  medium: '2rem',
-  large: '2.5rem',
-};
-const headingSize = heading?.size ?? 'medium';
 ---
 
-<section class={`max-w-[800px] mx-auto px-5 ${schemeClass}`} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
+<section class={`collapsible-section max-w-[800px] mx-auto px-5 ${schemeClass}`} style={`--pad-top: ${padTop}px; --pad-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
   <div>
     {showHeading && (
-      <h2 class="font-heading font-medium text-theme-foreground text-center mb-12" style={`font-size:${headingFontSize[headingSize] ?? '2rem'};line-height:1.2;`}>
+      <h2 class="font-heading italic font-normal text-center mb-12 text-[20px] leading-[1.2]" style="color: rgb(var(--color-foreground));">
         {heading!.text}
       </h2>
     )}
 
     {visibleItems.length === 0 ? (
-      <p class="text-center text-theme-muted text-lg">Вопросы скоро появятся</p>
+      <p class="text-center text-[16px] font-body" style="color: #444444;">Вопросы скоро появятся</p>
     ) : (
       <div class="flex flex-col">
         {visibleItems.map((item) => (
-          <details class="border-b border-theme group">
-            <summary class="flex items-center justify-between py-5 text-[1.05rem] font-medium text-theme-foreground cursor-pointer list-none transition-colors duration-200 hover:text-theme-foreground [&::-webkit-details-marker]:hidden">
+          <details class="group" style="border-bottom: 1px solid rgb(var(--color-foreground) / 0.15);">
+            <summary class="flex items-center justify-between py-5 text-[16px] font-normal font-body cursor-pointer list-none transition-colors duration-200 hover:opacity-80 [&::-webkit-details-marker]:hidden" style="color: rgb(var(--color-foreground));">
               {item.title ?? 'Вопрос'}
-              <span class="text-2xl font-light text-theme-muted group-open:hidden">+</span>
-              <span class="text-2xl font-light text-theme-muted hidden group-open:inline">&minus;</span>
+              <span class="text-2xl font-light group-open:hidden" style="color: #444444;">+</span>
+              <span class="text-2xl font-light hidden group-open:inline" style="color: #444444;">&minus;</span>
             </summary>
-            <div class="pb-5 text-base text-theme-muted leading-[1.7]">
+            <div class="pb-5 text-[16px] font-body leading-[1.7]" style="color: #444444;">
               <p>{item.content ?? ''}</p>
             </div>
           </details>
@@ -55,3 +48,16 @@ const headingSize = heading?.size ?? 'medium';
     )}
   </div>
 </section>
+
+<style>
+  .collapsible-section {
+    padding-top: var(--spacing-section-mobile, 80px);
+    padding-bottom: var(--spacing-section-mobile, 80px);
+  }
+  @media (min-width: 768px) {
+    .collapsible-section {
+      padding-top: var(--spacing-section, 120px);
+      padding-bottom: var(--spacing-section, 120px);
+    }
+  }
+</style>

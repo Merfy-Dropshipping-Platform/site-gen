@@ -86,9 +86,9 @@ const newsletterDescription = text?.content || newsletter?.description;
         )}
       </div>
 
-      <!-- Right: Contact + Social -->
-      <div class="flex flex-col gap-[64px]">
-        <div class="flex flex-col gap-[8px]">
+      <!-- Right: Contact + Social + Payment -->
+      <div class="flex flex-col gap-[64px] md:items-end">
+        <div class="flex flex-col gap-[8px] md:items-end">
           {socialColumn?.contactFields && socialColumn.contactFields.length > 0 ? (
             socialColumn.contactFields.map((field) => (
               <span class="text-[16px] font-body font-normal" style="color: rgb(var(--color-foreground));">{field.value}</span>
@@ -100,15 +100,26 @@ const newsletterDescription = text?.content || newsletter?.description;
           ) : null}
         </div>
 
-        {socialColumn?.socialLinks && socialColumn.socialLinks.length > 0 && (
-          <div class="flex flex-col gap-[24px]">
+        <div class="flex flex-col gap-[24px] md:items-end">
+          {socialColumn?.socialLinks && socialColumn.socialLinks.length > 0 && (
             <div class="flex gap-[8px]">
               {socialColumn.socialLinks.map((social) => (
                 <SocialIcon href={social.href} ariaLabel={social.platform} />
               ))}
             </div>
+          )}
+          <div class="flex gap-[8px]">
+            <div class="bg-[#fafafa] h-[24px] px-1 flex items-center justify-center rounded-[4px]">
+              <span class="text-[10px] font-bold text-gray-800">MC</span>
+            </div>
+            <div class="bg-[#fafafa] h-[24px] px-1 flex items-center justify-center rounded-[4px]">
+              <span class="text-[10px] font-bold text-blue-700">VISA</span>
+            </div>
+            <div class="bg-[#fafafa] h-[24px] px-1 flex items-center justify-center rounded-[4px]">
+              <span class="text-[10px] font-bold text-green-600">МИР</span>
+            </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
 
@@ -130,8 +141,8 @@ const newsletterDescription = text?.content || newsletter?.description;
   </div>
 
   <!-- Powered-by Bar -->
-  <div class="w-full h-[64px] flex items-center justify-center" style="background: rgb(var(--color-foreground));">
-    <p class="text-[16px] font-light leading-[1.2] text-center px-4" style="font-family: 'Inter', sans-serif; color: rgb(var(--color-background));">
+  <div class="w-full h-[64px] flex items-center justify-center" style="background: #000000;">
+    <p class="text-[16px] font-light leading-[1.2] text-center text-white px-4" style="font-family: 'Inter', sans-serif;">
       &copy;{yearStr} {copyright?.companyName} Все права защищены. {copyright?.poweredBy}
     </p>
   </div>

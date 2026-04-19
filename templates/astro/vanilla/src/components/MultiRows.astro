@@ -36,11 +36,11 @@ const alignClass: Record<string, string> = {
 };
 ---
 
-<section class={`w-full ${schemeClass}`} style={`padding-top: ${padTop}px; padding-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
+<section class={`multirow-section w-full ${schemeClass}`} style={`--pad-top: ${padTop}px; --pad-bottom: ${padBottom}px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}>
   <div class="max-w-[1320px] mx-auto px-5">
     {showHeading && (
       <div class="flex flex-col items-start gap-[8px] mb-[40px]">
-        <h2 class="text-[20px] font-normal leading-[1.2] font-heading" style="color: rgb(var(--color-foreground));">
+        <h2 class="text-[20px] font-normal italic leading-[1.2] font-heading" style="color: rgb(var(--color-foreground));">
           {heading!.text}
         </h2>
       </div>
@@ -60,10 +60,10 @@ const alignClass: Record<string, string> = {
               <div class="flex flex-col" style="gap:64px;">
                 <div>
                   {row.title && (
-                    <h3 class="text-[20px] font-normal leading-[1.2] font-heading" style="color: rgb(var(--color-foreground)); margin-bottom:12px;">{row.title}</h3>
+                    <h3 class="text-[20px] font-normal italic leading-[1.2] font-heading" style="color: rgb(var(--color-foreground)); margin-bottom:12px;">{row.title}</h3>
                   )}
                   {row.description && (
-                    <p class="text-[16px] font-normal leading-[1.25] font-body" style="color: rgb(var(--color-foreground) / 0.94);">{row.description}</p>
+                    <p class="text-[16px] font-normal leading-[1.25] font-body" style="color: #444444;">{row.description}</p>
                   )}
                 </div>
                 {row.button?.enabled !== 'false' && row.button?.text && (
@@ -71,8 +71,8 @@ const alignClass: Record<string, string> = {
                     href={row.button.link ?? '#'}
                     class="inline-flex items-center justify-center h-[48px] px-[16px] text-[16px] font-normal uppercase no-underline transition-colors duration-200 hover:opacity-90 font-body self-start"
                     style={buttonStyle === 'secondary'
-                      ? 'border: 1.3px solid rgb(var(--color-foreground)); background: transparent; color: rgb(var(--color-foreground)); border-radius: var(--radius-button);'
-                      : 'background: rgb(var(--color-button)); color: rgb(var(--color-button-text)); border-radius: var(--radius-button);'}
+                      ? 'border: 1.3px solid rgb(var(--color-foreground)); background: transparent; color: rgb(var(--color-foreground)); border-radius: var(--radius-button, 0px);'
+                      : 'background: rgb(var(--color-button)); color: rgb(var(--color-button-text)); border-radius: var(--radius-button, 0px);'}
                   >
                     {row.button.text}
                   </a>
@@ -85,3 +85,16 @@ const alignClass: Record<string, string> = {
     </div>
   </div>
 </section>
+
+<style>
+  .multirow-section {
+    padding-top: var(--spacing-section-mobile, 80px);
+    padding-bottom: var(--spacing-section-mobile, 80px);
+  }
+  @media (min-width: 768px) {
+    .multirow-section {
+      padding-top: var(--spacing-section, 120px);
+      padding-bottom: var(--spacing-section, 120px);
+    }
+  }
+</style>

@@ -46,7 +46,7 @@ export function Header({
           {/* Mobile: Hamburger Menu */}
           <button
             aria-label="Menu"
-            className="md:hidden w-10 h-10 flex items-center justify-center hover:opacity-70 transition-opacity"
+            className="md:hidden w-10 h-10 flex items-center justify-center hover:opacity-70 transition-opacity text-theme-foreground"
           >
             <svg
               width="40"
@@ -57,13 +57,13 @@ export function Header({
             >
               <path
                 d="M11 17H29"
-                stroke="black"
+                stroke="currentColor"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
               <path
                 d="M11 23H29"
-                stroke="black"
+                stroke="currentColor"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />

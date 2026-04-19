@@ -57,7 +57,8 @@ export default function SearchBar() {
       <div className="relative">
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-text-muted)]"
+          className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4"
+          style={{ color: 'rgb(var(--color-muted))' }}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -72,13 +73,18 @@ export default function SearchBar() {
         <input
           ref={inputRef}
           className={cn(
-            'h-9 w-48 rounded-[var(--radius-input)] border border-[var(--color-border)]',
-            'bg-[var(--color-background)] pl-9 pr-3 text-sm text-[var(--color-text)]',
-            'placeholder:text-[var(--color-text-muted)]',
-            'focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary-rgb)/0.2)] focus:border-[rgb(var(--color-primary-rgb))]',
+            'h-9 w-48 pl-9 pr-3 text-sm',
+            'focus:outline-none focus:ring-2',
             'transition-all duration-300',
             isOpen && 'w-64',
           )}
+          style={{
+            borderRadius: 'var(--radius-input, 0px)',
+            border: '1px solid rgb(var(--color-border))',
+            backgroundColor: 'rgb(var(--color-background))',
+            color: 'rgb(var(--color-foreground))',
+            fontFamily: 'var(--font-body)',
+          }}
           type="text"
           placeholder="Поиск товаров..."
           value={query}
@@ -95,7 +101,7 @@ export default function SearchBar() {
         {isLoading && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
             <svg
-              className="h-4 w-4 animate-spin text-[var(--color-text-muted)]"
+              className="h-4 w-4 animate-spin text-theme-muted"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
@@ -121,13 +127,14 @@ export default function SearchBar() {
       {/* Search results dropdown */}
       {showDropdown && (
         <div
-          className="absolute top-full right-0 mt-2 w-80 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-background)] shadow-lg overflow-hidden z-50"
+          className="absolute top-full right-0 mt-2 w-80 shadow-lg overflow-hidden z-50"
+          style={{ borderRadius: 'var(--radius-card, 0px)', border: '1px solid rgb(var(--color-border))', backgroundColor: 'rgb(var(--color-background))' }}
           role="listbox"
         >
           {isLoading && !hasResults ? (
             <div className="px-4 py-6 text-center">
               <svg
-                className="h-5 w-5 animate-spin text-[var(--color-text-muted)] mx-auto mb-2"
+                className="h-5 w-5 animate-spin text-theme-muted mx-auto mb-2"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -146,14 +153,17 @@ export default function SearchBar() {
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 />
               </svg>
-              <p className="text-sm text-[var(--color-text-muted)]">Поиск...</p>
+              <p className="text-sm text-theme-muted">Поиск...</p>
             </div>
           ) : hasResults ? (
             results.map((product) => (
               <a
                 key={product.id}
                 href={`/product/${product.handle}`}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-[rgb(var(--color-primary-rgb)/0.05)] transition-colors"
+                className="flex items-center gap-3 px-4 py-3 transition-colors"
+                style={{ fontFamily: 'var(--font-body)' }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgb(var(--color-foreground) / 0.05)')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                 role="option"
                 onClick={() => setIsOpen(false)}
               >
@@ -161,13 +171,14 @@ export default function SearchBar() {
                   <img
                     src={product.images[0].url}
                     alt={product.title}
-                    className="h-10 w-10 rounded-[var(--radius-base)] object-cover flex-shrink-0"
+                    className="h-10 w-10 object-cover flex-shrink-0"
+                    style={{ borderRadius: 'var(--radius-base, 0px)' }}
                   />
                 ) : (
-                  <div className="h-10 w-10 rounded-[var(--radius-base)] bg-[var(--color-border)] flex items-center justify-center flex-shrink-0">
+                  <div className="h-10 w-10 flex items-center justify-center flex-shrink-0" style={{ borderRadius: 'var(--radius-base, 0px)', backgroundColor: 'rgb(var(--color-border))' }}>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 text-[var(--color-text-muted)]"
+                      className="h-5 w-5 text-theme-muted"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -182,15 +193,15 @@ export default function SearchBar() {
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[var(--color-text)] truncate">
+                  <p className="text-sm font-medium text-theme-foreground truncate">
                     {product.title}
                   </p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-sm font-semibold text-[var(--color-text)]">
+                    <span className="text-sm font-semibold text-theme-foreground">
                       {formatMoney(product.price)}
                     </span>
                     {product.compareAtPrice && product.compareAtPrice > product.price && (
-                      <span className="text-xs text-[var(--color-text-muted)] line-through">
+                      <span className="text-xs text-theme-muted line-through">
                         {formatMoney(product.compareAtPrice)}
                       </span>
                     )}
@@ -200,10 +211,10 @@ export default function SearchBar() {
             ))
           ) : (
             <div className="px-4 py-6 text-center">
-              <p className="text-sm text-[var(--color-text-muted)]">
+              <p className="text-sm text-theme-muted">
                 Ничего не найдено
               </p>
-              <p className="text-xs text-[var(--color-text-muted)] mt-1">
+              <p className="text-xs text-theme-muted mt-1">
                 Попробуйте изменить запрос
               </p>
             </div>

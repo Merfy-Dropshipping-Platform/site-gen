@@ -1,9 +1,16 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import data from '../data/data.json';
-import siteConfig from '../data/site-config.json';
+import AuthShell from '../components/auth/AuthShell.astro';
+import AuthInput from '../components/auth/AuthInput.astro';
+import PasswordField from '../components/auth/PasswordField.astro';
+import AuthButton from '../components/auth/AuthButton.astro';
+import AuthSecondaryLink from '../components/auth/AuthSecondaryLink.astro';
+import OtpInput from '../components/auth/islands/OtpInput.tsx';
+import ResendTimer from '../components/auth/islands/ResendTimer.tsx';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import data from '../data/data.json';
+import siteConfig from '../data/site-config.json';
 
 const meta = data?.meta ?? {};
 const blocks = data?.content ?? [];
@@ -15,61 +22,63 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 <BaseLayout title={`Регистрация — ${meta?.title ?? 'Мой сайт'}`}>
   <Header {...headerProps} />
 
-  <!-- Full-screen popup overlay layout per Figma -->
-  <div class="register-overlay">
-    <!-- Hero background with dark overlay -->
-    <div class="register-bg" style="background-image: url('/main-image.png');"></div>
-    <div class="register-dark-overlay"></div>
-
-    <!-- Right panel -->
-    <div class="register-panel">
-      <div class="register-panel-inner">
-        <h1 class="font-heading" style="font-size: 20px; font-weight: 400; color: rgb(var(--color-foreground)); margin-bottom: 32px;" id="register-title">Регистрация</h1>
-
-        <!-- Invite expired / already used message -->
-        <div id="invite-expired-msg" class="hidden text-center py-8">
-          <p class="font-body" style="font-size: 16px; color: rgb(var(--color-muted)); margin-bottom: 16px;">Ссылка для регистрации устарела или уже была использована.</p>
-          <a href="/register" class="auth-link font-medium text-base">Зарегистрироваться самостоятельно</a>
-        </div>
-
-        <form id="register-form" class="flex flex-col gap-[16px]">
-          <div>
-            <label for="reg-email" class="block mb-2 font-body" style="font-size: 14px; color: rgb(var(--color-foreground));">Email <span class="text-required">*</span></label>
-            <input type="email" id="reg-email" name="email" required placeholder="your@email.com" autocomplete="email"
-              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: var(--radius-input, var(--radius-button)); background: transparent; color: rgb(var(--color-foreground));">
-          </div>
-
-          <div id="reg-name-group">
-            <label for="reg-name" class="block mb-2 font-body" style="font-size: 14px; color: rgb(var(--color-foreground));">Имя <span class="text-required">*</span></label>
-            <input type="text" id="reg-name" name="name" required placeholder="Иван Иванов" autocomplete="name"
-              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: var(--radius-input, var(--radius-button)); background: transparent; color: rgb(var(--color-foreground));">
-          </div>
-
-          <div>
-            <label for="reg-password" class="block mb-2 font-body" style="font-size: 14px; color: rgb(var(--color-foreground));">Пароль <span class="text-required">*</span></label>
-            <input type="password" id="reg-password" name="password" required minlength="8" placeholder="Минимум 8 символов" autocomplete="new-password"
-              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: var(--radius-input, var(--radius-button)); background: transparent; color: rgb(var(--color-foreground));">
-          </div>
-
-          <div>
-            <label for="reg-confirm" class="block mb-2 font-body" style="font-size: 14px; color: rgb(var(--color-foreground));">Подтвердите пароль <span class="text-required">*</span></label>
-            <input type="password" id="reg-confirm" name="confirmPassword" required minlength="8" placeholder="Повторите пароль" autocomplete="new-password"
-              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: var(--radius-input, var(--radius-button)); background: transparent; color: rgb(var(--color-foreground));">
-          </div>
-
-          <div class="text-red-600 text-sm text-center hidden" id="register-error"></div>
-
-          <button type="submit" class="login-submit-btn w-full font-body font-normal transition-colors" id="btn-register">
-            <span class="loading hidden"><span class="loading-spinner inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></span>Регистрация...</span>
-            <span class="text">Создать аккаунт</span>
-          </button>
-        </form>
-
-        <div class="text-center text-[14px] mt-6 font-body" style="color: rgb(var(--color-muted));">
-          <p>Уже есть аккаунт? <a href="/login" class="auth-link font-medium">Войти</a></p>
-        </div>
+  <!-- Step 1 — register form (email + password) -->
+  <div id="mode-register" class="contents">
+    <AuthShell
+      title="Регистрация аккаунта"
+      description="Введите свои данные чтобы создать аккаунт"
+    >
+      <div id="invite-expired-msg" class="hidden w-full text-center flex flex-col items-center gap-4">
+        <p class="text-base" style="color: #444444;">Ссылка для регистрации устарела или уже была использована.</p>
+        <AuthSecondaryLink href="/register">Зарегистрироваться самостоятельно</AuthSecondaryLink>
       </div>
-    </div>
+
+      <form id="register-form" class="w-full flex flex-col gap-6" novalidate>
+        <AuthInput
+          label="E-mail"
+          type="email"
+          name="email"
+          id="reg-email"
+          placeholder="example@merfy.ru"
+          required
+          autocomplete="email"
+        />
+        <PasswordField
+          label="Пароль"
+          name="password"
+          id="reg-password"
+          placeholder="Минимум 8 символов"
+          required
+          minlength={8}
+          autocomplete="new-password"
+        />
+        <div class="auth-helper-error hidden text-center" id="register-error" role="alert"></div>
+      </form>
+
+      <div class="w-full flex flex-col items-center gap-10">
+        <AuthButton id="btn-register" form="register-form" loadingLabel="Регистрация...">Зарегистрироваться</AuthButton>
+        <AuthSecondaryLink href="/login" helper="Уже есть аккаунт?">Войти</AuthSecondaryLink>
+      </div>
+    </AuthShell>
+  </div>
+
+  <!-- Step 2 — email verification via 4-digit OTP -->
+  <div id="mode-verify-email" class="hidden contents">
+    <AuthShell
+      title="Подтверждение почты"
+      description="Введите код подтверждения с вашего e-mail"
+    >
+      <div class="w-full flex flex-col items-center gap-20">
+        <OtpInput client:load id="register-verify-otp" name="code" length={4} />
+        <ResendTimer client:load id="register-verify-resend" seconds={60} />
+      </div>
+
+      <div class="w-full flex flex-col items-center gap-8">
+        <div class="auth-helper-error hidden text-center" id="verify-error" role="alert"></div>
+        <AuthButton id="btn-verify-continue" type="button" loadingLabel="Проверка...">Продолжить</AuthButton>
+        <AuthSecondaryLink href="#" id="verify-back" variant="muted">Вернуться назад</AuthSecondaryLink>
+      </div>
+    </AuthShell>
   </div>
 
   <Footer {...footerProps} />
@@ -78,205 +87,219 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
   <script is:inline src="/scripts/customer-auth.js"></script>
   <script is:inline>
     document.addEventListener('DOMContentLoaded', function() {
-      // If already logged in, redirect to account
       if (window.CustomerStore && window.CustomerStore.isLoggedIn()) {
         window.location.href = '/account';
         return;
       }
 
-      var form = document.getElementById('register-form');
-      var errorEl = document.getElementById('register-error');
-      var btn = document.getElementById('btn-register');
-      var emailField = document.getElementById('reg-email');
-      var nameGroup = document.getElementById('reg-name-group');
-      var titleEl = document.getElementById('register-title');
-      var expiredMsg = document.getElementById('invite-expired-msg');
-
-      // Check for invite token in URL params
-      var params = new URLSearchParams(window.location.search);
-      var inviteToken = params.get('invite');
-      var inviteEmail = params.get('email');
-      var isInviteMode = !!(inviteToken && inviteEmail);
-
-      if (isInviteMode) {
-        // Invite mode: prefill email (readonly), hide name field
-        emailField.value = inviteEmail;
-        emailField.readOnly = true;
-        emailField.style.background = 'rgb(var(--color-foreground) / 0.04)';
-        emailField.classList.add('cursor-not-allowed');
-        nameGroup.style.display = 'none';
-        document.getElementById('reg-name').removeAttribute('required');
-        titleEl.textContent = 'Создайте пароль для аккаунта';
+      var modeRegister = document.getElementById('mode-register');
+      var modeVerify = document.getElementById('mode-verify-email');
+      function showMode(m) {
+        [modeRegister, modeVerify].forEach(function(x) { x.classList.add('hidden'); });
+        m.classList.remove('hidden');
       }
 
-      form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        errorEl.classList.add('hidden');
-        errorEl.textContent = '';
+      var params = new URLSearchParams(window.location.search);
+      var step = params.get('step');
+      var verifyEmail = params.get('email') || sessionStorage.getItem('verifyEmail');
 
-        var email = emailField.value.trim();
-        var name = document.getElementById('reg-name').value.trim();
-        var password = document.getElementById('reg-password').value;
-        var confirm = document.getElementById('reg-confirm').value;
+      if (step === 'verify-email' && verifyEmail) {
+        sessionStorage.setItem('verifyEmail', verifyEmail);
+        showMode(modeVerify);
+        setupVerifyHandlers(verifyEmail);
+      } else {
+        showMode(modeRegister);
+        setupRegisterHandlers();
+      }
 
-        // Client-side validation
-        if (!isInviteMode && (!email || !name || !password || !confirm)) {
-          errorEl.textContent = 'Заполните все обязательные поля';
-          errorEl.classList.remove('hidden');
-          return;
+      // ============ STEP 1 register ============
+      function setupRegisterHandlers() {
+        var form = document.getElementById('register-form');
+        var errorEl = document.getElementById('register-error');
+        var btn = document.getElementById('btn-register');
+        var loadingEl = btn.querySelector('[data-loading]');
+        var textEl = btn.querySelector('[data-button-text]');
+        var emailField = document.getElementById('reg-email');
+        var passwordField = document.getElementById('reg-password');
+        var expiredMsg = document.getElementById('invite-expired-msg');
+
+        var inviteToken = params.get('invite');
+        var inviteEmail = params.get('email');
+        var isInviteMode = !!(inviteToken && inviteEmail);
+        if (isInviteMode) {
+          emailField.value = inviteEmail;
+          emailField.readOnly = true;
+          emailField.setAttribute('data-error', 'false');
         }
 
-        if (isInviteMode && (!password || !confirm)) {
-          errorEl.textContent = 'Введите пароль';
-          errorEl.classList.remove('hidden');
-          return;
-        }
+        function mark(field, ok) { if (field) field.setAttribute('data-error', ok ? 'false' : 'true'); }
 
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-          errorEl.textContent = 'Введите корректный email';
-          errorEl.classList.remove('hidden');
-          return;
-        }
+        form.addEventListener('submit', async function(e) {
+          e.preventDefault();
+          errorEl.classList.add('hidden');
+          errorEl.textContent = '';
+          mark(emailField, true);
+          mark(passwordField, true);
 
-        if (password.length < 8) {
-          errorEl.textContent = 'Пароль должен содержать минимум 8 символов';
-          errorEl.classList.remove('hidden');
-          return;
-        }
+          var email = emailField.value.trim();
+          var password = passwordField.value;
 
-        if (password !== confirm) {
-          errorEl.textContent = 'Пароли не совпадают';
-          errorEl.classList.remove('hidden');
-          return;
-        }
+          if (!email) { mark(emailField, false); errorEl.textContent = 'Введите e-mail'; errorEl.classList.remove('hidden'); return; }
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { mark(emailField, false); errorEl.textContent = 'Введите корректный e-mail'; errorEl.classList.remove('hidden'); return; }
+          if (!password) { mark(passwordField, false); errorEl.textContent = 'Введите пароль'; errorEl.classList.remove('hidden'); return; }
+          if (password.length < 8) { mark(passwordField, false); errorEl.textContent = 'Пароль должен содержать минимум 8 символов'; errorEl.classList.remove('hidden'); return; }
 
-        // Show loading
-        btn.querySelector('.loading').classList.remove('hidden');
-        btn.querySelector('.text').classList.add('hidden');
-        btn.disabled = true;
+          loadingEl.classList.remove('hidden');
+          textEl.classList.add('hidden');
+          btn.disabled = true;
 
-        try {
-          var result;
-
-          if (isInviteMode) {
-            // Invite registration: POST /store/auth/invite-register
-            var config = window.__MERFY_CONFIG__ || {};
-            var apiBase = config.apiBase || '';
-            var resp = await fetch(apiBase + '/store/auth/invite-register', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ token: inviteToken, password: password }),
-            });
-            result = await resp.json();
-            if (!resp.ok || !result.success) {
-              throw result;
-            }
-            // Save customer token from invite-register response
-            if (result.data && result.data.token) {
-              window.CustomerStore.saveToken(result.data.token);
-            }
-            window.location.href = '/account';
-          } else {
-            // Normal registration
-            result = await window.CustomerAuth.register({ email: email, name: name, password: password });
-            if (result.success) {
+          try {
+            if (isInviteMode) {
+              var config = window.__MERFY_CONFIG__ || {};
+              var apiBase = config.apiUrl || '';
+              var resp = await fetch(apiBase + '/store/auth/invite-register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: inviteToken, password: password }),
+              });
+              var ir = await resp.json();
+              if (!resp.ok || !ir.success) throw ir;
+              if (ir.data && ir.data.token) window.CustomerStore.saveToken(ir.data.token);
               window.location.href = '/account';
-            } else {
-              throw result;
+              return;
             }
-          }
-        } catch (err) {
-          var msg = 'Не удалось зарегистрироваться. Попробуйте позже.';
 
-          if (err.error === 'INVITE_EXPIRED' || err.error === 'INVITE_USED') {
-            // Show expired message, hide form
-            form.style.display = 'none';
-            expiredMsg.classList.remove('hidden');
-            return;
-          } else if (err.error === 'ALREADY_REGISTERED') {
-            // Redirect to login with email prefilled
-            window.location.href = '/login?email=' + encodeURIComponent(inviteEmail || email);
-            return;
-          } else if (err.code === 'CUSTOMER_ALREADY_EXISTS' || err.error === 'EMAIL_EXISTS') {
-            msg = 'Пользователь с таким email уже зарегистрирован';
-          } else if (err.code === 'PASSWORD_TOO_SHORT') {
-            msg = 'Пароль должен содержать минимум 8 символов';
-          } else if (err.code === 'VALIDATION_ERROR') {
-            msg = err.error || 'Проверьте введённые данные';
-          } else if (err.error) {
-            msg = err.error;
-          } else if (err.message) {
-            msg = err.message;
+            var derivedName = email.split('@')[0];
+            var result = await window.CustomerAuth.register({ email: email, name: derivedName, password: password });
+            if (!result.success) throw result;
+
+            if (result.data && result.data.requiresEmailVerification) {
+              sessionStorage.setItem('verifyEmail', email);
+              window.location.search = '?step=verify-email&email=' + encodeURIComponent(email);
+              return;
+            }
+            // Legacy path — session immediately (old backend)
+            window.location.href = '/account';
+          } catch (err) {
+            var msg = 'Не удалось зарегистрироваться. Попробуйте позже.';
+            if (err.error === 'INVITE_EXPIRED' || err.error === 'INVITE_USED') {
+              form.classList.add('hidden');
+              expiredMsg.classList.remove('hidden');
+              return;
+            } else if (err.error === 'ALREADY_REGISTERED') {
+              window.location.href = '/login?email=' + encodeURIComponent(inviteEmail || email);
+              return;
+            } else if (err.code === 'CUSTOMER_ALREADY_EXISTS' || err.error === 'EMAIL_EXISTS') {
+              msg = 'Пользователь с таким email уже зарегистрирован';
+            } else if (err.code === 'PASSWORD_TOO_SHORT') {
+              msg = 'Пароль должен содержать минимум 8 символов';
+            } else if (err.code === 'VALIDATION_ERROR' || err.error === 'VALIDATION_ERROR') {
+              msg = err.error || 'Проверьте введённые данные';
+            } else if (err.error) {
+              msg = err.error;
+            } else if (err.message) {
+              msg = err.message;
+            }
+            errorEl.textContent = msg;
+            errorEl.classList.remove('hidden');
+          } finally {
+            loadingEl.classList.add('hidden');
+            textEl.classList.remove('hidden');
+            btn.disabled = false;
           }
-          errorEl.textContent = msg;
-          errorEl.classList.remove('hidden');
-        } finally {
-          btn.querySelector('.loading').classList.remove('hidden');
-          btn.querySelector('.text').classList.remove('hidden');
-          btn.disabled = false;
+        });
+      }
+
+      // ============ STEP 2 verify email OTP ============
+      function setupVerifyHandlers(email) {
+        var errorEl = document.getElementById('verify-error');
+        var btn = document.getElementById('btn-verify-continue');
+        var loadingEl = btn.querySelector('[data-loading]');
+        var textEl = btn.querySelector('[data-button-text]');
+        var backLink = document.getElementById('verify-back');
+        var currentCode = '';
+        var submitting = false;
+
+        function clearCellsError() {
+          document.querySelectorAll('.auth-otp-cell').forEach(function(c) {
+            c.style.borderColor = '';
+          });
         }
-      });
+        function markCellsError() {
+          document.querySelectorAll('.auth-otp-cell').forEach(function(c) {
+            c.style.borderColor = '#FCA5A5';
+          });
+        }
+
+        window.addEventListener('otp:complete', function(e) {
+          currentCode = e.detail.value;
+          clearCellsError();
+          if (!submitting) { submitting = true; submitVerify(); }
+        });
+
+        document.querySelectorAll('.auth-otp-cell').forEach(function(cell) {
+          cell.addEventListener('input', function() { errorEl.classList.add('hidden'); clearCellsError(); });
+        });
+
+        window.addEventListener('otp:resend-request', async function() {
+          errorEl.classList.add('hidden');
+          try {
+            await window.CustomerAuth.requestEmailVerifyOTP({ email: email });
+            window.dispatchEvent(new CustomEvent('otp:resend-ack', { detail: { id: 'register-verify-resend', seconds: 60 } }));
+          } catch (err) {
+            errorEl.textContent = 'Не удалось отправить код повторно';
+            errorEl.classList.remove('hidden');
+          }
+        });
+
+        async function submitVerify() {
+          errorEl.classList.add('hidden');
+          if (!currentCode || currentCode.length !== 4) {
+            errorEl.textContent = 'Введите все 4 цифры';
+            errorEl.classList.remove('hidden');
+            submitting = false;
+            return;
+          }
+          loadingEl.classList.remove('hidden');
+          textEl.classList.add('hidden');
+          btn.disabled = true;
+          try {
+            var result = await window.CustomerAuth.verifyEmailOTP({ email: email, code: currentCode });
+            if (result.success) {
+              sessionStorage.removeItem('verifyEmail');
+              window.location.href = '/account';
+              return;
+            }
+            throw result;
+          } catch (err) {
+            var code = err && err.error && err.error.code;
+            var msg = 'Неверный код';
+            if (code === 'OTP_EXPIRED') msg = 'Код устарел. Запросите новый';
+            else if (code === 'OTP_INVALIDATED') msg = 'Слишком много неверных попыток. Запросите новый код';
+            else if (err.error && err.error.attemptsRemaining !== undefined) {
+              msg = 'Неверный код. Осталось попыток: ' + err.error.attemptsRemaining;
+            }
+            errorEl.textContent = msg;
+            errorEl.classList.remove('hidden');
+            markCellsError();
+            loadingEl.classList.add('hidden');
+            textEl.classList.remove('hidden');
+            btn.disabled = false;
+            submitting = false;
+          }
+        }
+
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          if (!submitting) { submitting = true; submitVerify(); }
+        });
+
+        backLink.addEventListener('click', function(e) {
+          e.preventDefault();
+          sessionStorage.removeItem('verifyEmail');
+          window.location.search = '';
+        });
+      }
     });
   </script>
 </BaseLayout>
-
-<style>
-  .register-overlay {
-    position: relative;
-    min-height: 100vh;
-    display: flex;
-  }
-  .register-bg {
-    position: absolute;
-    inset: 0;
-    background-size: cover;
-    background-position: center;
-    z-index: 0;
-  }
-  .register-dark-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1;
-  }
-  .register-panel {
-    position: relative;
-    z-index: 2;
-    margin-left: auto;
-    width: 100%;
-    max-width: 590px;
-    background: rgb(var(--color-background));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 40px;
-  }
-  .register-panel-inner {
-    width: 100%;
-    max-width: 430px;
-  }
-  .login-submit-btn {
-    height: 56px;
-    font-size: 16px;
-    background-color: rgb(var(--color-button));
-    color: rgb(var(--color-button-text));
-    border: none;
-    border-radius: var(--radius-button);
-    cursor: pointer;
-  }
-  .login-submit-btn:hover { filter: brightness(0.85); }
-  .login-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-  .text-required { color: rgb(var(--color-primary)); }
-  .auth-link { color: rgb(var(--color-primary)); }
-  .auth-link:hover { text-decoration: underline; }
-  .auth-input-focus:focus { border-color: rgb(var(--color-foreground)); box-shadow: 0 0 0 2px rgba(41, 37, 36, 0.15); }
-
-  @media (max-width: 768px) {
-    .register-panel {
-      max-width: 100%;
-    }
-    .register-bg, .register-dark-overlay {
-      display: none;
-    }
-  }
-</style>

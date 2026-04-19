@@ -1,9 +1,14 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import data from '../data/data.json';
-import siteConfig from '../data/site-config.json';
+import AuthShell from '../components/auth/AuthShell.astro';
+import AuthInput from '../components/auth/AuthInput.astro';
+import PasswordField from '../components/auth/PasswordField.astro';
+import AuthButton from '../components/auth/AuthButton.astro';
+import AuthSecondaryLink from '../components/auth/AuthSecondaryLink.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import data from '../data/data.json';
+import siteConfig from '../data/site-config.json';
 
 const meta = data?.meta ?? {};
 const blocks = data?.content ?? [];
@@ -13,49 +18,41 @@ const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
 const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 ---
 <BaseLayout title={`Вход — ${meta?.title ?? 'Мой сайт'}`}>
-  <!-- Full-screen popup overlay layout per Figma -->
-  <div class="login-overlay">
-    <!-- Hero background with dark overlay -->
-    <div class="login-bg" style="background-image: url('/main-image.png');"></div>
-    <div class="login-dark-overlay"></div>
+  <Header {...headerProps} />
+  <AuthShell
+    title="Вход в аккаунт"
+    description="Введите свои данные чтобы войти в аккаунт"
+  >
+    <form id="login-form" class="w-full flex flex-col gap-6" novalidate>
+      <AuthInput
+        label="E-mail"
+        type="email"
+        name="email"
+        id="login-email"
+        placeholder="example@merfy.ru"
+        required
+        autocomplete="email"
+      />
+      <PasswordField
+        label="Пароль"
+        name="password"
+        id="login-password"
+        placeholder="Введите пароль"
+        required
+      />
+      <div class="auth-helper-error hidden text-center" id="login-error" role="alert"></div>
+    </form>
 
-    <!-- Right panel -->
-    <div class="login-panel">
-      <div class="login-panel-inner">
-        <h1 class="font-heading" style="font-size: 20px; font-weight: 400; color: rgb(var(--color-foreground)); margin-bottom: 32px;">Вход</h1>
-
-        <form id="login-form" class="flex flex-col gap-[16px]">
-          <div>
-            <label for="login-email" class="block mb-2 font-body" style="font-size: 14px; color: rgb(var(--color-foreground));">Email</label>
-            <input type="email" id="login-email" name="email" required placeholder="your@email.com" autocomplete="email"
-              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: var(--radius-input, var(--radius-button)); background: transparent; color: rgb(var(--color-foreground));">
-          </div>
-
-          <div>
-            <label for="login-password" class="block mb-2 font-body" style="font-size: 14px; color: rgb(var(--color-foreground));">Пароль</label>
-            <input type="password" id="login-password" name="password" required placeholder="Введите пароль" autocomplete="current-password"
-              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: var(--radius-input, var(--radius-button)); background: transparent; color: rgb(var(--color-foreground));">
-          </div>
-
-          <div class="text-red-600 text-sm text-center hidden" id="login-error"></div>
-
-          <button type="submit" class="login-submit-btn w-full font-body font-normal transition-colors" id="btn-login">
-            <span class="loading hidden"><span class="loading-spinner inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></span>Вход...</span>
-            <span class="text">Войти</span>
-          </button>
-        </form>
-
-        <div class="text-center text-[14px] mt-6 space-y-2 font-body" style="color: rgb(var(--color-foreground));">
-          <p>
-            <a href="/reset-password" class="auth-link">Забыли пароль?</a>
-          </p>
-          <p style="color: rgb(var(--color-muted));">
-            Нет аккаунта? <a href="/register" class="auth-link font-medium">Зарегистрироваться</a>
-          </p>
-        </div>
+    <div class="w-full flex flex-col items-center gap-10">
+      <AuthButton id="btn-login" form="login-form" loadingLabel="Вход...">Войти</AuthButton>
+      <div class="flex flex-col items-center gap-3">
+        <AuthSecondaryLink href="/register" helper="Нет аккаунта?">Зарегистрироваться</AuthSecondaryLink>
+        <AuthSecondaryLink href="/reset-password">Забыл пароль?</AuthSecondaryLink>
       </div>
     </div>
-  </div>
+  </AuthShell>
+
+  <Footer {...footerProps} />
 
   <script is:inline src="/scripts/customer-store.js"></script>
   <script is:inline src="/scripts/customer-auth.js"></script>
@@ -71,18 +68,54 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
       var form = document.getElementById('login-form');
       var errorEl = document.getElementById('login-error');
       var btn = document.getElementById('btn-login');
+      var loadingEl = btn.querySelector('[data-loading]');
+      var textEl = btn.querySelector('[data-button-text]');
+
+      // Prefill email from ?email=... (e.g. after redirect from invite-register ALREADY_REGISTERED)
+      var initialParams = new URLSearchParams(window.location.search);
+      var prefillEmail = initialParams.get('email');
+      if (prefillEmail) {
+        var emailField = document.getElementById('login-email');
+        if (emailField) emailField.value = prefillEmail;
+      }
+
+      function setFieldError(id, hasError) {
+        var el = document.getElementById(id);
+        if (el) el.setAttribute('data-error', hasError ? 'true' : 'false');
+      }
 
       form.addEventListener('submit', async function(e) {
         e.preventDefault();
         errorEl.classList.add('hidden');
         errorEl.textContent = '';
+        setFieldError('login-email', false);
+        setFieldError('login-password', false);
 
         var email = document.getElementById('login-email').value.trim();
         var password = document.getElementById('login-password').value;
 
-        // Show loading
-        btn.querySelector('.loading').classList.remove('hidden');
-        btn.querySelector('.text').classList.add('hidden');
+        // Client-side validation
+        if (!email) {
+          setFieldError('login-email', true);
+          errorEl.textContent = 'Введите e-mail';
+          errorEl.classList.remove('hidden');
+          return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          setFieldError('login-email', true);
+          errorEl.textContent = 'Введите корректный e-mail';
+          errorEl.classList.remove('hidden');
+          return;
+        }
+        if (!password) {
+          setFieldError('login-password', true);
+          errorEl.textContent = 'Введите пароль';
+          errorEl.classList.remove('hidden');
+          return;
+        }
+
+        loadingEl.classList.remove('hidden');
+        textEl.classList.add('hidden');
         btn.disabled = true;
 
         try {
@@ -104,71 +137,11 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
           errorEl.textContent = msg;
           errorEl.classList.remove('hidden');
         } finally {
-          btn.querySelector('.loading').classList.add('hidden');
-          btn.querySelector('.text').classList.remove('hidden');
+          loadingEl.classList.add('hidden');
+          textEl.classList.remove('hidden');
           btn.disabled = false;
         }
       });
     });
   </script>
 </BaseLayout>
-
-<style>
-  .login-overlay {
-    position: relative;
-    min-height: 100vh;
-    display: flex;
-  }
-  .login-bg {
-    position: absolute;
-    inset: 0;
-    background-size: cover;
-    background-position: center;
-    z-index: 0;
-  }
-  .login-dark-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1;
-  }
-  .login-panel {
-    position: relative;
-    z-index: 2;
-    margin-left: auto;
-    width: 100%;
-    max-width: 590px;
-    background: rgb(var(--color-background));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 40px;
-  }
-  .login-panel-inner {
-    width: 100%;
-    max-width: 430px;
-  }
-  .login-submit-btn {
-    height: 56px;
-    font-size: 16px;
-    background-color: rgb(var(--color-button));
-    color: rgb(var(--color-button-text));
-    border: none;
-    border-radius: var(--radius-button);
-    cursor: pointer;
-  }
-  .login-submit-btn:hover { filter: brightness(0.85); }
-  .login-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-  .auth-link { color: rgb(var(--color-primary)); }
-  .auth-link:hover { text-decoration: underline; }
-  .auth-input-focus:focus { border-color: rgb(var(--color-foreground)); box-shadow: 0 0 0 2px rgba(41, 37, 36, 0.15); }
-
-  @media (max-width: 768px) {
-    .login-panel {
-      max-width: 100%;
-    }
-    .login-bg, .login-dark-overlay {
-      display: none;
-    }
-  }
-</style>

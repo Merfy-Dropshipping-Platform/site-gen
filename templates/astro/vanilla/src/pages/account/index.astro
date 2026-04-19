@@ -4,7 +4,6 @@ import data from '../../data/data.json';
 import siteConfig from '../../data/site-config.json';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
-import AccountNav from '../../components/AccountNav.astro';
 
 const meta = data?.meta ?? {};
 const blocks = data?.content ?? [];
@@ -13,23 +12,22 @@ const footerBlock = blocks.find((b: any) => b.type === 'Footer');
 const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
 const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 ---
-<BaseLayout title={`Личный кабинет — ${meta?.title ?? 'Мой сайт'}`}>
+<BaseLayout title={`Учётная запись — ${meta?.title ?? 'Мой сайт'}`}>
   <Header {...headerProps} />
 
-  <main class="flex-1 w-full font-body" style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));">
-    <div class="max-w-[960px] mx-auto px-5 py-10 w-full">
-      <h1 class="text-3xl font-heading mb-8" style="color: rgb(var(--color-foreground));">Личный кабинет</h1>
-
-      <div class="md:flex md:gap-10">
-        <AccountNav />
-
-        <div class="flex-1">
-          <div class="p-6" style="background: rgb(var(--color-card)); border-radius: var(--radius-card);" id="account-welcome">
-            <p style="color: rgb(var(--color-muted));">Загрузка...</p>
-          </div>
-        </div>
-      </div>
+  <main class="account-page-container" style="padding-top: 7rem;">
+    <div class="account-title">
+      <h1>Учётная запись</h1>
+      <span class="account-subtitle" id="account-email">Загрузка...</span>
     </div>
+
+    <div class="account-nav-links" id="account-nav">
+      <a href="/account/profile" class="active">Основные данные</a>
+      <a href="/account/orders">Активные заказы</a>
+      <a href="/account/newsletter">Рассылка</a>
+    </div>
+
+    <button type="button" class="account-text-link" id="btn-logout">Выйти из аккаунта</button>
   </main>
 
   <Footer {...footerProps} />
@@ -38,95 +36,28 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
   <script is:inline src="/scripts/customer-auth.js"></script>
   <script is:inline>
     document.addEventListener('DOMContentLoaded', async function() {
-      // Auth check
       if (!window.CustomerStore || !window.CustomerStore.isLoggedIn()) {
         window.location.href = '/login';
         return;
       }
 
-      var welcomeEl = document.getElementById('account-welcome');
+      var emailEl = document.getElementById('account-email');
       var logoutBtn = document.getElementById('btn-logout');
 
-      // Load profile
       try {
         var result = await window.CustomerAuth.me();
         if (result.success && result.data) {
           var customer = result.data.customer || result.data;
-          welcomeEl.innerHTML =
-            '<h2 class="text-xl font-heading mb-2">Привет, ' + (customer.name || 'покупатель') + '!</h2>' +
-            '<p style="color:rgb(var(--color-muted))" class="mb-4">' + (customer.email || '') + '</p>' +
-            '<div class="flex flex-wrap gap-3">' +
-              '<a href="/account/orders" class="inline-flex items-center gap-2 py-2.5 px-5 text-sm font-medium transition-colors btn-primary" style="border-radius:var(--radius-button)">Мои заказы</a>' +
-              '<a href="/account/profile" class="inline-flex items-center gap-2 py-2.5 px-5 text-sm font-medium transition-colors" style="border:1px solid rgb(var(--color-foreground) / 0.19);border-radius:var(--radius-button);color:rgb(var(--color-foreground))">Профиль</a>' +
-            '</div>';
-
-          // T028: Load recent orders (last 3)
-          try {
-            var config = window.__MERFY_CONFIG__ || {};
-            var apiUrl = config.apiUrl || '';
-            var storeId = config.shopId || config.storeId || config.siteId || '';
-            var token = window.CustomerStore.getToken();
-
-            var ordersUrl = apiUrl + '/store/orders?skip=0&take=3';
-            if (storeId) ordersUrl += '&store_id=' + encodeURIComponent(storeId);
-
-            var ordersResp = await fetch(ordersUrl, {
-              headers: { 'Authorization': 'Bearer ' + token },
-            });
-            var ordersResult = await ordersResp.json();
-
-            if (ordersResult.success && ordersResult.data && ordersResult.data.items && ordersResult.data.items.length > 0) {
-              var statusLabels = {
-                cart: 'Корзина', pending: 'Ожидает оплаты', paid: 'Оплачен',
-                processing: 'В сборке', sent: 'Отправлен', delivered: 'Доставлен',
-                cancelled: 'Отменён', refunded: 'Возврат',
-              };
-              var statusColors = {
-                cart: 'bg-gray-100 text-gray-600', pending: 'bg-yellow-100 text-yellow-800',
-                paid: 'bg-green-100 text-green-800', processing: 'bg-blue-100 text-blue-800',
-                sent: 'bg-purple-100 text-purple-800', delivered: 'bg-emerald-100 text-emerald-800',
-                cancelled: 'bg-red-100 text-red-800', refunded: 'bg-orange-100 text-orange-800',
-              };
-
-              var recentHtml = '<div class="mt-6"><h3 class="font-heading text-lg mb-3">Последние заказы</h3><div class="space-y-3">';
-              ordersResult.data.items.forEach(function(order) {
-                var date = new Date(order.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-                var total = order.totalCents ? (order.totalCents / 100).toLocaleString('ru-RU') + ' \u20bd' : '\u2014';
-                var status = statusLabels[order.status] || order.status;
-                var sClass = statusColors[order.status] || 'bg-gray-100 text-gray-800';
-
-                recentHtml +=
-                  '<a href="/account/order?n=' + encodeURIComponent(order.orderNumber) + '" class="block p-4 transition-colors" style="background:rgb(var(--color-foreground) / 0.03);border-radius:var(--radius-card)">' +
-                    '<div class="flex items-center justify-between">' +
-                      '<span class="font-medium text-sm">\u2116' + order.orderNumber + ' <span class="font-normal" style="color:rgb(var(--color-muted))">' + date + '</span></span>' +
-                      '<span class="text-xs px-2 py-0.5 rounded-full font-medium ' + sClass + '">' + status + '</span>' +
-                    '</div>' +
-                    '<div class="text-sm mt-1 font-medium" style="color:rgb(var(--color-foreground))">' + total + '</div>' +
-                  '</a>';
-              });
-              recentHtml += '</div><a href="/account/orders" class="inline-block mt-3 text-sm auth-link">Все заказы \u2192</a></div>';
-              welcomeEl.insertAdjacentHTML('beforeend', recentHtml);
-            }
-          } catch (ordersErr) {
-            // Non-critical — dashboard still works without recent orders
-          }
-
-          // Show email verification banner if needed
-          if (!customer.emailVerified) {
-            var banner = document.getElementById('email-verify-banner');
-            if (banner) banner.classList.remove('hidden');
-          }
+          emailEl.textContent = customer.email || '';
         } else {
           throw new Error('Failed to load profile');
         }
       } catch (err) {
-        // Token might be invalid
         window.CustomerStore.clearToken();
         window.location.href = '/login';
         return;
       }
 
-      // Logout handler
       if (logoutBtn) {
         logoutBtn.addEventListener('click', async function() {
           await window.CustomerAuth.logout();
@@ -136,10 +67,3 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
     });
   </script>
 </BaseLayout>
-
-<style>
-  .btn-primary { background-color: rgb(var(--color-primary)); color: #fff; }
-  .btn-primary:hover { filter: brightness(0.85); }
-  .auth-link { color: rgb(var(--color-primary)); }
-  .auth-link:hover { text-decoration: underline; }
-</style>

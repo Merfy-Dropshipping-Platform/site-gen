@@ -43,7 +43,9 @@ export function HeroBanner({
   backgroundImage = "/images/first-section.png",
   size = "large",
   position = "center",
+  colorScheme,
 }: HeroBannerProps) {
+  const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
   const headingText =
     typeof heading === "object" ? heading?.text : heading;
   const textContent =
@@ -68,7 +70,7 @@ export function HeroBanner({
       : "items-center";
 
   return (
-    <section className={`relative w-full ${sizeClass} overflow-hidden`}>
+    <section className={`relative w-full ${sizeClass} overflow-hidden ${schemeClass}`}>
       <div className="w-full max-w-[1320px] mx-auto relative min-h-[60vh] sm:min-h-[65vh] md:min-h-[70vh] lg:min-h-[75vh] xl:min-h-[80vh]">
         {/* Background Image */}
         <div

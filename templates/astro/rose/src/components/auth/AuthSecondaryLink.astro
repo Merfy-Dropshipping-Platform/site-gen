@@ -11,13 +11,14 @@ interface Props {
   href?: string;
   helper?: string;
   variant?: 'default' | 'muted';
+  id?: string;
 }
-const { href = '#', helper, variant = 'default' } = Astro.props;
+const { href = '#', helper, variant = 'default', id } = Astro.props;
 const linkClass = variant === 'muted' ? 'auth-link-muted' : 'auth-link';
 ---
 <div class="text-center">
   {helper && <span class="auth-helper">{helper} </span>}
-  <a href={href} class={linkClass}>
+  <a href={href} class={linkClass} id={id}>
     <slot />
   </a>
 </div>

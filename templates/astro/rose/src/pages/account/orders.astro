@@ -75,12 +75,11 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 
         loadingEl.classList.add('hidden');
 
-        if (!result.success || !result.data?.items?.length) {
+        var orders = Array.isArray(result.data) ? result.data : result.data?.items;
+        if (!result.success || !orders?.length) {
           emptyEl.classList.remove('hidden');
           return;
         }
-
-        var orders = result.data.items;
         listEl.classList.remove('hidden');
         listEl.style.display = 'flex';
         listEl.style.flexDirection = 'column';

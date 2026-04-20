@@ -16,7 +16,8 @@
     "./cli/add-component": "./cli/add-component.ts",
     "./cli/validate": "./cli/validate.ts",
     "./cli/dev": "./cli/dev.ts",
-    "./schema": "./schema/theme-manifest.schema.json"
+    "./schema": "./schema/theme-manifest.schema.json",
+    "./tokens/registry": "./tokens/registry.ts"
   },
   "scripts": {
     "theme:create": "tsx cli/create.ts",

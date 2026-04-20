@@ -53,6 +53,31 @@ export class SiteProvisioningScheduler implements OnModuleInit {
     }
   }
 
+  /**
+   * Reaper for sites whose async provisioning failed. The async signup
+   * flow (`sites.reserve()` + `sites.site.provision_requested`) may leave
+   * a row with `domainId IS NULL` if REG.RU is temporarily down. Without
+   * this cron, the row stays orphaned until the next service restart
+   * (onModuleInit above). Runs every 10 minutes — idempotent,
+   * `migrateOrphanedSites` guards against concurrent runs via
+   * `clearMockCache` + per-site try/catch.
+   */
+  @Cron("*/10 * * * *")
+  async reapOrphanedSites() {
+    try {
+      const result = await this.sites.migrateOrphanedSites();
+      if (result.migrated > 0 || result.failed > 0) {
+        this.logger.log(
+          `Reaper tick: ${result.migrated} migrated, ${result.failed} failed`,
+        );
+      }
+    } catch (e) {
+      this.logger.error(
+        `Reaper tick failed: ${e instanceof Error ? e.message : e}`,
+      );
+    }
+  }
+
   private rpc<T>(
     client: ClientProxy,
     pattern: string,

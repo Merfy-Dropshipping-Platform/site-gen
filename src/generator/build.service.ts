@@ -1907,6 +1907,18 @@ async function stageUpload(
     return;
   }
 
+  // Guard: if the site has not been provisioned yet (no storageSlug and no
+  // publicUrl from which to derive it), refuse to publish — otherwise we
+  // would upload to `sites/<siteId>/` and the subsequent real slug would
+  // orphan these files. The async signup flow (`sites.reserve()`) leaves
+  // this state briefly; the orphan reaper will complete provisioning and
+  // the next publish attempt succeeds.
+  if (!ctx.storageSlug && !ctx.publicUrl) {
+    throw new Error(
+      `site_still_provisioning: site ${ctx.siteId} has no storageSlug/publicUrl yet; try again shortly`,
+    );
+  }
+
   // ensureBucket with retry (transient MinIO errors)
   let bucket: string;
   try {

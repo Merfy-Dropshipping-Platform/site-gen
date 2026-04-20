@@ -239,7 +239,20 @@ export class SitesDomainService {
     };
   }
 
-  async create(params: {
+  /**
+   * Fast signup path: creates the site row + default revision synchronously
+   * (~100ms) and emits `sites.site.created` so downstream consumers (e.g.
+   * user-service team-sync) can react immediately. External provisioning
+   * (REG.RU subdomain, Coolify project) is NOT performed here —
+   * `publicUrl`/`storageSlug`/`domainId`/`coolifyProjectUuid` remain null
+   * until a subsequent `finishProvisioning()` call populates them.
+   *
+   * Pair with `triggerAsyncProvisioning()` from the caller (see
+   * `user.listener.ts`) to kick off the slow path via RMQ. For admin/cron
+   * paths that need the final publicUrl synchronously, use the `create()`
+   * facade instead.
+   */
+  async reserve(params: {
     tenantId: string;
     actorUserId: string;
     name: string;
@@ -247,7 +260,7 @@ export class SitesDomainService {
     companyName?: string;
     skipCoolify?: boolean;
     themeId?: string;
-  }) {
+  }): Promise<{ id: string; publicUrl: null }> {
     // Проверяем лимит сайтов по тарифу
     const currentSiteCount = await this.db
       .select({ count: sql<number>`count(*)::int` })
@@ -302,60 +315,9 @@ export class SitesDomainService {
     }
 
     const now = new Date();
-
-    // Интеграция с Domain Service для генерации поддомена
-    // Coolify не используется для статических сайтов — статика раздаётся напрямую из S3/MinIO
-    let domainId: string | undefined;
-    let publicUrl: string | undefined;
-    let storageSlug: string | undefined;
-
-    if (!params.skipCoolify) {
-      try {
-        // Сгенерировать поддомен через Domain Service
-        // Domain Service автоматически создаёт A-record в REG.RU DNS → IP reverse proxy
-        // Subdomain будет на основе tenantId (первые 12 символов UUID без дефисов)
-        const domainResult = await this.domainClient.generateSubdomain(
-          params.tenantId,
-        );
-        domainId = domainResult.id;
-        const subdomain = domainResult.name; // abc123.merfy.ru
-
-        // Публичный URL = поддомен (reverse proxy раздаёт статику из MinIO)
-        publicUrl = this.storage.getSitePublicUrlBySubdomain(subdomain);
-        storageSlug = this.storage.extractSubdomainSlug(subdomain);
-        this.logger.log(
-          `Generated subdomain ${subdomain} (id: ${domainId}), publicUrl: ${publicUrl}, storageSlug: ${storageSlug}`,
-        );
-      } catch (e) {
-        this.logger.warn(
-          `Domain Service integration failed (site will be created without subdomain): ${
-            e instanceof Error ? e.message : e
-          }`,
-        );
-        // Продолжаем создание сайта без поддомена — можно будет добавить позже
-      }
-    }
-
-    // Создаём или получаем Coolify проект для тенанта (best-effort)
-    let coolifyProjectUuid: string | undefined;
-    if (!params.skipCoolify) {
-      try {
-        coolifyProjectUuid = await this.getOrCreateTenantProject(
-          params.tenantId,
-          params.companyName,
-        );
-        this.logger.log(
-          `Coolify project ${coolifyProjectUuid} ready for tenant ${params.tenantId}`,
-        );
-      } catch (e) {
-        this.logger.warn(
-          `Failed to create Coolify project (site will be created anyway): ${e instanceof Error ? e.message : e}`,
-        );
-      }
-    }
-
     const effectiveThemeId = params.themeId?.trim() || "rose";
 
+    // Insert site with null provisioning fields — finishProvisioning fills them later
     await this.db.insert(schema.site).values({
       id,
       tenantId: params.tenantId,
@@ -366,14 +328,15 @@ export class SitesDomainService {
       updatedAt: now,
       createdBy: params.actorUserId,
       updatedBy: params.actorUserId,
-      domainId,
-      publicUrl,
-      storageSlug,
-      coolifyProjectUuid,
+      domainId: undefined,
+      publicUrl: undefined,
+      storageSlug: undefined,
+      coolifyProjectUuid: undefined,
       themeId: effectiveThemeId,
     });
 
-    // Create default revision with theme content (best-effort)
+    // Default revision is theme content from bundled JSON — local, fast, no network.
+    // Must happen synchronously so the theme editor has content from t=0.
     try {
       const defaultContent = this.getDefaultContent(effectiveThemeId);
       if (defaultContent) {
@@ -388,24 +351,8 @@ export class SitesDomainService {
       }
     } catch (e) {
       this.logger.warn(
-        `Failed to create default revision for site ${id} (site created anyway): ${e instanceof Error ? e.message : e}`,
+        `Failed to create default revision for site ${id} (site reserved anyway): ${e instanceof Error ? e.message : e}`,
       );
-    }
-
-    // Record initial domain in history (generated subdomain)
-    if (domainId && publicUrl) {
-      const subdomainName = publicUrl
-        .replace(/^https?:\/\//, "")
-        .replace(/\/$/, "");
-      await this.db.insert(schema.siteDomainHistory).values({
-        id: randomUUID(),
-        siteId: id,
-        domainName: subdomainName,
-        domainId,
-        type: "generated",
-        status: "active",
-        attachedAt: now,
-      });
     }
 
     this.events.emit("sites.site.created", {
@@ -413,9 +360,202 @@ export class SitesDomainService {
       siteId: id,
       name: params.name,
       slug: candidate,
-      publicUrl,
+      publicUrl: null,
     });
 
+    return { id, publicUrl: null };
+  }
+
+  /**
+   * Fire-and-forget: publishes `sites.site.provision_requested` on the
+   * sites queue. The same service consumes it via `@EventPattern` in
+   * `SitesMicroserviceController` and invokes `finishProvisioning()`.
+   *
+   * Used by the signup flow so the user's HTTP response is not blocked
+   * by the 3s REG.RU saga. The RMQ hop provides crash-safety: if site-gen
+   * is restarted between reserve and provision, the broker redelivers the
+   * message.
+   */
+  triggerAsyncProvisioning(
+    siteId: string,
+    tenantId: string,
+    companyName?: string,
+  ): void {
+    this.events.emit("sites.site.provision_requested", {
+      siteId,
+      tenantId,
+      companyName,
+    });
+  }
+
+  /**
+   * Slow provisioning path (idempotent): generates the REG.RU subdomain
+   * (~3s via domain-service), creates the Coolify project (~200ms),
+   * UPDATEs the site row with resolved URL fields, records siteDomainHistory,
+   * and emits `sites.site.provisioned`.
+   *
+   * Safe to call multiple times for the same siteId — short-circuits via a
+   * SELECT on the site row if both `domainId` AND `coolifyProjectUuid` are
+   * already populated. Partial failures (one step succeeded, another did
+   * not) leave the row in an inconsistent state which the cron reaper at
+   * `site-provisioning.scheduler.ts` picks up and retries.
+   *
+   * Called by:
+   *   - `create()` facade synchronously (admin RPC + site-provisioning cron)
+   *   - `@EventPattern('sites.site.provision_requested')` handler (signup)
+   */
+  async finishProvisioning(
+    siteId: string,
+    tenantId: string,
+    companyName?: string,
+    skipCoolify?: boolean,
+  ): Promise<{ publicUrl: string | undefined }> {
+    const existingRows = await this.db
+      .select({
+        domainId: schema.site.domainId,
+        publicUrl: schema.site.publicUrl,
+        storageSlug: schema.site.storageSlug,
+        coolifyProjectUuid: schema.site.coolifyProjectUuid,
+      })
+      .from(schema.site)
+      .where(eq(schema.site.id, siteId))
+      .limit(1);
+    const existing = existingRows[0];
+    if (!existing) {
+      this.logger.warn(
+        `finishProvisioning: site ${siteId} not found, skipping`,
+      );
+      return { publicUrl: undefined };
+    }
+
+    // Idempotency: fully provisioned → no-op
+    if (existing.domainId && existing.coolifyProjectUuid) {
+      return { publicUrl: existing.publicUrl ?? undefined };
+    }
+
+    let domainId: string | undefined = existing.domainId ?? undefined;
+    let publicUrl: string | undefined = existing.publicUrl ?? undefined;
+    let storageSlug: string | undefined = existing.storageSlug ?? undefined;
+    let coolifyProjectUuid: string | undefined =
+      existing.coolifyProjectUuid ?? undefined;
+
+    // Generate subdomain via Domain Service (if not already done)
+    if (!skipCoolify && !domainId) {
+      try {
+        const domainResult =
+          await this.domainClient.generateSubdomain(tenantId);
+        domainId = domainResult.id;
+        const subdomain = domainResult.name;
+        publicUrl = this.storage.getSitePublicUrlBySubdomain(subdomain);
+        storageSlug = this.storage.extractSubdomainSlug(subdomain);
+        this.logger.log(
+          `finishProvisioning: generated subdomain ${subdomain} (id: ${domainId}) for site ${siteId} tenant ${tenantId}`,
+        );
+      } catch (e) {
+        this.logger.warn(
+          `finishProvisioning: Domain Service failed for site ${siteId}: ${e instanceof Error ? e.message : e}`,
+        );
+      }
+    }
+
+    // Create or get Coolify project (if not already done)
+    if (!skipCoolify && !coolifyProjectUuid) {
+      try {
+        coolifyProjectUuid = await this.getOrCreateTenantProject(
+          tenantId,
+          companyName,
+        );
+        this.logger.log(
+          `finishProvisioning: Coolify project ${coolifyProjectUuid} ready for tenant ${tenantId} site ${siteId}`,
+        );
+      } catch (e) {
+        this.logger.warn(
+          `finishProvisioning: Coolify project failed for site ${siteId}: ${e instanceof Error ? e.message : e}`,
+        );
+      }
+    }
+
+    // UPDATE site with resolved fields (partial updates ok — reaper will retry missing bits)
+    await this.db
+      .update(schema.site)
+      .set({
+        domainId,
+        publicUrl,
+        storageSlug,
+        coolifyProjectUuid,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.site.id, siteId));
+
+    // Record initial domain in history — SELECT-before-INSERT guard
+    // (no unique constraint on siteDomainHistory(siteId, domainId))
+    if (domainId && publicUrl) {
+      const subdomainName = publicUrl
+        .replace(/^https?:\/\//, "")
+        .replace(/\/$/, "");
+      const historyExists = await this.db
+        .select({ id: schema.siteDomainHistory.id })
+        .from(schema.siteDomainHistory)
+        .where(
+          and(
+            eq(schema.siteDomainHistory.siteId, siteId),
+            eq(schema.siteDomainHistory.domainId, domainId),
+          ),
+        )
+        .limit(1);
+      if (historyExists.length === 0) {
+        await this.db.insert(schema.siteDomainHistory).values({
+          id: randomUUID(),
+          siteId,
+          domainName: subdomainName,
+          domainId,
+          type: "generated",
+          status: "active",
+          attachedAt: new Date(),
+        });
+      }
+    }
+
+    // Emit provisioned event only when something actually resolved
+    if (domainId || coolifyProjectUuid) {
+      this.events.emit("sites.site.provisioned", {
+        tenantId,
+        siteId,
+        publicUrl,
+        storageSlug,
+        domainId,
+        coolifyProjectUuid,
+      });
+    }
+
+    return { publicUrl };
+  }
+
+  /**
+   * Backward-compat facade: synchronously creates AND provisions a site.
+   * Used by the admin RPC (`sites.create_site`) and the site-provisioning
+   * cron fallback — both of which expect `publicUrl` in the response.
+   *
+   * The signup flow must NOT use this — it calls `reserve()` +
+   * `triggerAsyncProvisioning()` to keep signup fast (~300ms instead of
+   * 3500ms).
+   */
+  async create(params: {
+    tenantId: string;
+    actorUserId: string;
+    name: string;
+    slug?: string;
+    companyName?: string;
+    skipCoolify?: boolean;
+    themeId?: string;
+  }): Promise<{ id: string; publicUrl: string | undefined }> {
+    const { id } = await this.reserve(params);
+    const { publicUrl } = await this.finishProvisioning(
+      id,
+      params.tenantId,
+      params.companyName,
+      params.skipCoolify,
+    );
     return { id, publicUrl };
   }
 
@@ -1532,7 +1672,10 @@ export class SitesDomainService {
     // Сначала очищаем mock кэш
     await this.clearMockCache();
 
-    // Находим сайты без publicUrl, coolifyProjectUuid ИЛИ coolifyAppUuid
+    // Находим сайты без domainId, coolifyProjectUuid ИЛИ coolifyAppUuid.
+    // domainId — authoritative marker: publicUrl/storageSlug derive from the
+    // domain record, so `domainId IS NULL` covers all not-yet-provisioned cases
+    // (including sites reserved by the async signup flow).
     const orphanedSites = await this.db
       .select({
         id: schema.site.id,
@@ -1545,11 +1688,11 @@ export class SitesDomainService {
       })
       .from(schema.site)
       .where(
-        sql`${schema.site.deletedAt} IS NULL AND (${schema.site.publicUrl} IS NULL OR ${schema.site.coolifyProjectUuid} IS NULL OR ${schema.site.coolifyAppUuid} IS NULL)`,
+        sql`${schema.site.deletedAt} IS NULL AND (${schema.site.domainId} IS NULL OR ${schema.site.coolifyProjectUuid} IS NULL OR ${schema.site.coolifyAppUuid} IS NULL)`,
       );
 
     this.logger.log(
-      `Found ${orphanedSites.length} sites to migrate (no publicUrl, coolifyProjectUuid, or coolifyAppUuid)`,
+      `Found ${orphanedSites.length} sites to migrate (no domainId, coolifyProjectUuid, or coolifyAppUuid)`,
     );
 
     for (const site of orphanedSites) {

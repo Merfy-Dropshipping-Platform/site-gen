@@ -47,4 +47,16 @@ describe('parseW3CTokens', () => {
       '--x-foo': { value: 'bar', type: undefined },
     });
   });
+
+  it('parses pilot-tokens.json correctly', () => {
+    const fs = require('node:fs');
+    const path = require('node:path');
+    const raw = fs.readFileSync(path.join(__dirname, '../tokens/pilot-tokens.json'), 'utf-8');
+    const json = JSON.parse(raw);
+    const result = parseW3CTokens(json);
+    expect(result['--color-primary'].value).toBe('#111111');
+    expect(result['--radius-button'].value).toBe('0px');
+    expect(result['--size-hero-heading'].value).toBe('48px');
+    expect(result['--font-heading'].value).toBe("'Bitter', serif");
+  });
 });

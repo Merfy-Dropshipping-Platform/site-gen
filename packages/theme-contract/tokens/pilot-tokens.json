@@ -1,0 +1,24 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "color": {
+    "primary": { "$value": "#111111", "$type": "color" },
+    "bg": { "$value": "#ffffff", "$type": "color" },
+    "heading": { "$value": "#111111", "$type": "color" },
+    "text": { "$value": "#333333", "$type": "color" }
+  },
+  "radius": {
+    "button": { "$value": "0px", "$type": "dimension" },
+    "card": { "$value": "0px", "$type": "dimension" }
+  },
+  "size": {
+    "hero": {
+      "heading": { "$value": "48px", "$type": "dimension" },
+      "button-h": { "$value": "48px", "$type": "dimension" }
+    },
+    "container-max": { "$value": "1320px", "$type": "dimension" }
+  },
+  "font": {
+    "heading": { "$value": "'Bitter', serif", "$type": "fontFamily" },
+    "body": { "$value": "'Arsenal', sans-serif", "$type": "fontFamily" }
+  }
+}

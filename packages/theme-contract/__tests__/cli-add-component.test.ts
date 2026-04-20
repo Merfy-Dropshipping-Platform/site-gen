@@ -22,7 +22,7 @@ async function createMinimalTheme(themesDir: string, themeName: string): Promise
   );
   await fs.writeFile(
     path.join(themeDir, 'components', 'registry.ts'),
-    `import type { ComponentRegistryEntry } from '@merfy/themes/types';
+    `import type { ComponentRegistryEntry } from '@merfy/theme-contract/types';
 
 const registry: ComponentRegistryEntry[] = [];
 

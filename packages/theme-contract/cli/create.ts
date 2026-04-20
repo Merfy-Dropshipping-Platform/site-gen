@@ -120,7 +120,7 @@ function createDefaultTokensCss(): string {
  * Creates a minimal registry.ts file.
  */
 function createRegistryFile(): string {
-  return `import type { ComponentRegistryEntry } from '@merfy/themes/types';
+  return `import type { ComponentRegistryEntry } from '@merfy/theme-contract/types';
 
 const registry: ComponentRegistryEntry[] = [];
 

@@ -1,4 +1,4 @@
-# @merfy/themes
+# @merfy/theme-contract
 
 Theme system for Merfy storefronts. Provides theme validation, token generation, component resolution, and CLI tools for theme development.
 

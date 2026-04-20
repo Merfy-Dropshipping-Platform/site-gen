@@ -1,5 +1,5 @@
 /**
- * Utility functions for the @merfy/themes package.
+ * Utility functions for the @merfy/theme-contract package.
  */
 
 /**

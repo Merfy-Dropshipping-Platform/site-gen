@@ -1,6 +1,6 @@
 {
-  "name": "@merfy/themes",
-  "version": "0.2.0",
+  "name": "@merfy/theme-contract",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "main": "./types.ts",

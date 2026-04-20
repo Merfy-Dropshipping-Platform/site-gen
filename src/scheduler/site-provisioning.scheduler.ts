@@ -26,6 +26,7 @@ interface EntitlementsResponse {
 export class SiteProvisioningScheduler implements OnModuleInit {
   private readonly logger = new Logger(SiteProvisioningScheduler.name);
   private isRunning = false;
+  private isReaperRunning = false;
   private migrationDone = false;
 
   constructor(
@@ -58,12 +59,22 @@ export class SiteProvisioningScheduler implements OnModuleInit {
    * flow (`sites.reserve()` + `sites.site.provision_requested`) may leave
    * a row with `domainId IS NULL` if REG.RU is temporarily down. Without
    * this cron, the row stays orphaned until the next service restart
-   * (onModuleInit above). Runs every 10 minutes — idempotent,
-   * `migrateOrphanedSites` guards against concurrent runs via
-   * `clearMockCache` + per-site try/catch.
+   * (onModuleInit above).
+   *
+   * Runs every 10 minutes. Guards:
+   *  - `migrationDone`: skip until onModuleInit's boot migration has
+   *    completed, otherwise two instances of `migrateOrphanedSites` could
+   *    run in parallel and double-allocate REG.RU subdomains.
+   *  - `isReaperRunning`: prevents a slow tick (e.g. 50 orphans during a
+   *    REG.RU recovery burst) from overlapping with the next scheduled
+   *    tick for the same reason.
    */
   @Cron("*/10 * * * *")
   async reapOrphanedSites() {
+    if (!this.migrationDone || this.isReaperRunning) {
+      return;
+    }
+    this.isReaperRunning = true;
     try {
       const result = await this.sites.migrateOrphanedSites();
       if (result.migrated > 0 || result.failed > 0) {
@@ -75,6 +86,8 @@ export class SiteProvisioningScheduler implements OnModuleInit {
       this.logger.error(
         `Reaper tick failed: ${e instanceof Error ? e.message : e}`,
       );
+    } finally {
+      this.isReaperRunning = false;
     }
   }
 

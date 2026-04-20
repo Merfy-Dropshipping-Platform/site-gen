@@ -1,0 +1,7 @@
+---
+import { HeroClasses as C } from './Hero.classes';
+const { title } = Astro.props;
+---
+<section class={C.root}>
+  <button style="color: #ff0000">{title}</button>
+</section>

@@ -63,6 +63,7 @@ import { PublicationsMicroserviceController } from "./publications/publications.
 import { PublicationsScheduler } from "./scheduler/publications.scheduler";
 import { PolicyModule } from "./policy/policy.module";
 import { HealthMonitorService } from "./health-monitor/health-monitor.service";
+import { PreviewModule } from "./modules/preview.module";
 
 @Module({
   imports: [
@@ -83,6 +84,7 @@ import { HealthMonitorService } from "./health-monitor/health-monitor.service";
     DomainModule,
     BulkModule,
     PolicyModule,
+    PreviewModule,
   ],
   controllers: [
     HealthController,

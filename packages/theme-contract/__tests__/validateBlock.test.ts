@@ -27,4 +27,12 @@ describe('validateBlock', () => {
     expect(result.ok).toBe(false);
     expect(result.errors.some(e => /hex/i.test(e))).toBe(true);
   });
+
+  it('fails when file has MIXED valid and invalid rgb usage', async () => {
+    // This fixture has rgb(var(--color-bg)) AND rgb(255, 0, 0) in same file
+    const dir = path.join(fixtures, 'mixed-rgb');
+    const result = await validateBlock(dir);
+    expect(result.ok).toBe(false);
+    expect(result.errors.some(e => /rgb/i.test(e))).toBe(true);
+  });
 });

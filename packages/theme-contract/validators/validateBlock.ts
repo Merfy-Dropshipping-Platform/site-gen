@@ -59,8 +59,13 @@ export async function validateBlock(blockDir: string): Promise<ValidateBlockResu
       if (HEX_RE.test(body)) {
         errors.push(`Hex color literal found in ${f}. Use rgb(var(--color-*)) instead.`);
       }
-      if (RGB_RE.test(body) && !/rgb\(\s*var\(/.test(body)) {
-        errors.push(`Raw rgb() with numbers found in ${f}. Use rgb(var(--color-*)) instead.`);
+      if (RGB_RE.test(body)) {
+        const hasRawRgb = body.split('\n').some(
+          line => RGB_RE.test(line) && !/rgb\(\s*var\(/.test(line)
+        );
+        if (hasRawRgb) {
+          errors.push(`Raw rgb() with numbers found in ${f}. Use rgb(var(--color-*)) instead.`);
+        }
       }
       if (HSL_RE.test(body)) {
         errors.push(`Raw hsl() with numbers found in ${f}.`);

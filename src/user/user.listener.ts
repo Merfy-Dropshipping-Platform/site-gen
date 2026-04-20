@@ -89,17 +89,23 @@ export class UserListenerController {
       const canCreate = shopsLimit === null || existingSitesCount < shopsLimit;
 
       if (existingSitesCount === 0 && canCreate) {
-        this.logger.log(`Creating default site for tenantId=${tenantId}`);
+        this.logger.log(`Reserving default site for tenantId=${tenantId}`);
 
-        const { id: siteId, publicUrl } = await this.sites.create({
+        // Reserve the site row synchronously (~50-100ms) so user-service can
+        // create the team row from the `sites.site.created` event immediately.
+        // External provisioning (REG.RU subdomain, Coolify) happens in the
+        // background via `sites.site.provision_requested` → finishProvisioning.
+        const { id: siteId } = await this.sites.reserve({
           tenantId,
           actorUserId: userId,
           name: "Мой сайт",
           slug: undefined,
         });
 
+        this.sites.triggerAsyncProvisioning(siteId, tenantId);
+
         this.logger.log(
-          `Default site created: siteId=${siteId} publicUrl=${publicUrl} for tenantId=${tenantId}`,
+          `Default site reserved: siteId=${siteId} tenantId=${tenantId}, provisioning in background`,
         );
       } else {
         this.logger.log(

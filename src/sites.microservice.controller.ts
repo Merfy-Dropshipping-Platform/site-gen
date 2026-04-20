@@ -571,4 +571,37 @@ export class SitesMicroserviceController {
       );
     }
   }
+
+  /**
+   * Async-provisioning entry point for sites reserved during signup.
+   * Published by `SitesDomainService.triggerAsyncProvisioning()` on the
+   * sites queue; consumed here via the same queue (self-loop). The
+   * handler is idempotent — safe to redeliver — and never re-throws, so
+   * RMQ will ack on failure to avoid retry storms during REG.RU outages.
+   * The orphan reaper in `SiteProvisioningScheduler` picks up any sites
+   * left with `domainId IS NULL` and retries on its cron tick.
+   */
+  @EventPattern("sites.site.provision_requested")
+  async handleProvisionRequested(@Payload() data: any) {
+    const { siteId, tenantId, companyName } = data ?? {};
+    if (!siteId || !tenantId) {
+      this.logger.warn(
+        `provision_requested skipped: missing siteId/tenantId — ${JSON.stringify(data)}`,
+      );
+      return;
+    }
+    try {
+      await this.service.finishProvisioning(siteId, tenantId, companyName);
+      this.logger.log(
+        `provision_requested completed: site ${siteId} tenant ${tenantId}`,
+      );
+    } catch (e: any) {
+      this.logger.error(
+        `provision_requested failed for site ${siteId}: ${e?.message}. Orphan reaper will retry.`,
+        e?.stack,
+      );
+      // Swallow the error so Nest acks the message — re-throwing would
+      // cause infinite requeue on transient failures (e.g. REG.RU down).
+    }
+  }
 }

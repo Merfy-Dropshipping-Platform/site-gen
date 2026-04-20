@@ -1,0 +1,32 @@
+{
+  "name": "@merfy/theme-base",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./blocks/*": "./blocks/*/index.ts",
+    "./primitives/*": "./primitives/*.astro",
+    "./seo/*": "./seo/*.astro",
+    "./runtime/*": "./runtime/*.ts",
+    "./fonts/loader": "./fonts/loader.ts",
+    "./layouts/*": "./layouts/*.astro"
+  },
+  "scripts": {
+    "test": "jest --config jest.config.ts",
+    "tsc": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@merfy/theme-contract": "workspace:*",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.0",
+    "ts-jest": "^29.2.0"
+  }
+}

@@ -71,7 +71,7 @@ const containerStyle = imagePosition === 'window'
                   </h2>
                 )}
                 {slide.text?.content && (
-                  <p class="text-[16px] leading-[1.4] font-body italic" style="color: #f0f0f0; margin-bottom:32px; font-family: var(--font-body, 'Arsenal', sans-serif);">{slide.text.content}</p>
+                  <p class="text-[16px] leading-[1.4] font-body italic" style="color: rgb(var(--color-background) / 0.9); margin-bottom:32px; font-family: var(--font-body, 'Arsenal', sans-serif);">{slide.text.content}</p>
                 )}
                 {slide.button?.text && (
                   <a
@@ -171,7 +171,6 @@ const containerStyle = imagePosition === 'window'
 </script>
 
 <style>
-  /* Slideshow content padding — Figma: 300px left/right, 120px top/bottom */
   .slideshow-content {
     padding: 16px 20px;
   }
@@ -180,7 +179,7 @@ const containerStyle = imagePosition === 'window'
       padding: var(--spacing-section, 120px) 80px;
     }
   }
-  @media (min-width: 1280px) {
+  @media (min-width: 1920px) {
     .slideshow-content {
       padding: var(--spacing-section, 120px) var(--content-padding, 300px);
     }

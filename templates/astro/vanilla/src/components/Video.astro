@@ -124,6 +124,13 @@ const isFullscreen = position === 'fullscreen';
   }
   @media (min-width: 768px) {
     .video-container {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+  }
+  @media (min-width: 1920px) {
+    .video-container {
       max-width: none;
       margin: 0;
       padding-left: var(--content-padding, 300px);

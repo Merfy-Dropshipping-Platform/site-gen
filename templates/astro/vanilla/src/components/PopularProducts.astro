@@ -144,16 +144,18 @@ if (collection && allProducts.length > 0) {
     }
   }
 
-  /* ── Responsive padding ── */
   @media (min-width: 768px) {
     .popular-inner {
-      padding-left: 80px;
-      padding-right: 80px;
+      max-width: 1320px;
+      margin: 0 auto;
+      padding-left: 20px;
+      padding-right: 20px;
     }
   }
-
-  @media (min-width: 1280px) {
+  @media (min-width: 1920px) {
     .popular-inner {
+      max-width: none;
+      margin: 0;
       padding-left: var(--content-padding, 300px);
       padding-right: var(--content-padding, 300px);
     }

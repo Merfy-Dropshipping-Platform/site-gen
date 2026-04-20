@@ -58,7 +58,7 @@ const textAlignClass = textPosition === 'center' ? 'text-center' : 'text-left';
             </div>
           )}
           {col.title && <h3 class="font-heading italic text-[16px] font-normal uppercase" style="color: rgb(var(--color-foreground));">{col.title}</h3>}
-          {col.description && <p class="text-[16px] font-normal leading-[1.25] font-body" style="color: #444444;">{col.description}</p>}
+          {col.description && <p class="text-[16px] font-normal leading-[1.25] font-body" style="color: rgb(var(--color-foreground) / 0.7);">{col.description}</p>}
           {col.link?.enabled !== 'false' && col.link?.text && col.link?.href && (
             <a href={col.link.href} class="text-[16px] font-normal underline font-body transition-opacity duration-200 hover:opacity-80" style="color: rgb(var(--color-foreground));">
               {col.link.text}

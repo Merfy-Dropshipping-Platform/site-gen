@@ -27,7 +27,7 @@ const padBottom = padding?.bottom ?? 120;
         {headingText}
       </h2>
       {textContent && (
-        <p class="text-[16px] italic font-body leading-[1.25]" style="color: #f0f0f0;">
+        <p class="text-[16px] italic font-body leading-[1.25]" style="color: rgb(var(--color-foreground) / 0.7);">
           {textContent}
         </p>
       )}
@@ -43,7 +43,7 @@ const padBottom = padding?.bottom ?? 120;
         placeholder={placeholder}
         required
         class="newsletter-input font-body focus:outline-none"
-        style="color: #f0f0f0; border: none; background: transparent;"
+        style="color: rgb(var(--color-foreground)); border: none; background: transparent;"
       />
       <button
         type="submit"
@@ -85,11 +85,11 @@ const padBottom = padding?.bottom ?? 120;
     padding-right: 12px;
     font-size: 16px;
     line-height: 1.25;
-    color: #f0f0f0;
+    color: rgb(var(--color-foreground));
   }
 
   .newsletter-input::placeholder {
-    color: #f0f0f0;
+    color: rgb(var(--color-foreground) / 0.5);
     font-family: var(--font-body, 'Arsenal', sans-serif);
     font-size: 16px;
     font-style: normal;
@@ -109,16 +109,18 @@ const padBottom = padding?.bottom ?? 120;
     flex-shrink: 0;
   }
 
-  /* ── Responsive ── */
   @media (min-width: 768px) {
     .newsletter-inner {
-      padding-left: 80px;
-      padding-right: 80px;
+      max-width: 1320px;
+      margin: 0 auto;
+      padding-left: 20px;
+      padding-right: 20px;
     }
   }
-
-  @media (min-width: 1280px) {
+  @media (min-width: 1920px) {
     .newsletter-inner {
+      max-width: none;
+      margin: 0;
       padding-left: var(--content-padding, 300px);
       padding-right: var(--content-padding, 300px);
     }

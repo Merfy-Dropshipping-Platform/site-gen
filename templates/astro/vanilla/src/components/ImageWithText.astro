@@ -127,6 +127,13 @@ const textParagraphs = text?.content ? text.content.split(/\n\n+/).filter(Boolea
   }
   @media (min-width: 768px) {
     .iwt-container {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+  }
+  @media (min-width: 1920px) {
+    .iwt-container {
       max-width: none;
       margin: 0;
       padding-left: var(--content-padding, 300px);
@@ -139,9 +146,14 @@ const textParagraphs = text?.content ? text.content.split(/\n\n+/).filter(Boolea
   }
   @media (min-width: 768px) {
     .iwt-image-col {
+      width: 50%;
+      flex-shrink: 0;
+    }
+  }
+  @media (min-width: 1440px) {
+    .iwt-image-col {
       width: 652px;
       min-width: 652px;
-      flex-shrink: 0;
     }
   }
 

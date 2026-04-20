@@ -29,17 +29,17 @@ const padBottom = padding?.bottom ?? 80;
     )}
 
     {visibleItems.length === 0 ? (
-      <p class="text-center text-[16px] font-body" style="color: #444444;">Вопросы скоро появятся</p>
+      <p class="text-center text-[16px] font-body" style="color: rgb(var(--color-foreground) / 0.7);">Вопросы скоро появятся</p>
     ) : (
       <div class="flex flex-col">
         {visibleItems.map((item) => (
           <details class="group" style="border-bottom: 1px solid rgb(var(--color-foreground) / 0.15);">
             <summary class="flex items-center justify-between py-5 text-[16px] font-normal font-body cursor-pointer list-none transition-colors duration-200 hover:opacity-80 [&::-webkit-details-marker]:hidden" style="color: rgb(var(--color-foreground));">
               {item.title ?? 'Вопрос'}
-              <span class="text-2xl font-light group-open:hidden" style="color: #444444;">+</span>
-              <span class="text-2xl font-light hidden group-open:inline" style="color: #444444;">&minus;</span>
+              <span class="text-2xl font-light group-open:hidden" style="color: rgb(var(--color-foreground) / 0.5);">+</span>
+              <span class="text-2xl font-light hidden group-open:inline" style="color: rgb(var(--color-foreground) / 0.5);">&minus;</span>
             </summary>
-            <div class="pb-5 text-[16px] font-body leading-[1.7]" style="color: #444444;">
+            <div class="pb-5 text-[16px] font-body leading-[1.7]" style="color: rgb(var(--color-foreground) / 0.7);">
               <p>{item.content ?? ''}</p>
             </div>
           </details>

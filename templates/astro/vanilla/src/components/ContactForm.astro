@@ -23,7 +23,7 @@ const padBottom = padding?.bottom ?? 120;
     <form class="contact-form" action="#" method="POST">
       <div class="contact-form-left flex flex-col gap-[16px]">
         <div class="flex flex-col gap-[8px]">
-          <label for="contact-name" class="text-[16px] font-normal font-body" style="color: #444444;">Имя</label>
+          <label for="contact-name" class="text-[16px] font-normal font-body" style="color: rgb(var(--color-foreground) / 0.7);">Имя</label>
           <input
             type="text"
             id="contact-name"
@@ -31,11 +31,11 @@ const padBottom = padding?.bottom ?? 120;
             placeholder="Ваше имя"
             required
             class="font-body"
-            style="height: 56px; padding: 0 16px; font-size: 16px; border: 1px solid #444444; border-radius: 0; background: transparent; color: rgb(var(--color-foreground)); outline: none;"
+            style="height: 56px; padding: 0 16px; font-size: 16px; border: 1px solid rgb(var(--color-foreground) / 0.3); border-radius: 0; background: transparent; color: rgb(var(--color-foreground)); outline: none;"
           />
         </div>
         <div class="flex flex-col gap-[8px]">
-          <label for="contact-email" class="text-[16px] font-normal font-body" style="color: #444444;">Email</label>
+          <label for="contact-email" class="text-[16px] font-normal font-body" style="color: rgb(var(--color-foreground) / 0.7);">Email</label>
           <input
             type="email"
             id="contact-email"
@@ -43,30 +43,30 @@ const padBottom = padding?.bottom ?? 120;
             placeholder="email@example.com"
             required
             class="font-body"
-            style="height: 56px; padding: 0 16px; font-size: 16px; border: 1px solid #444444; border-radius: 0; background: transparent; color: rgb(var(--color-foreground)); outline: none;"
+            style="height: 56px; padding: 0 16px; font-size: 16px; border: 1px solid rgb(var(--color-foreground) / 0.3); border-radius: 0; background: transparent; color: rgb(var(--color-foreground)); outline: none;"
           />
         </div>
         <div class="flex flex-col gap-[8px]">
-          <label for="contact-phone" class="text-[16px] font-normal font-body" style="color: #444444;">Телефон</label>
+          <label for="contact-phone" class="text-[16px] font-normal font-body" style="color: rgb(var(--color-foreground) / 0.7);">Телефон</label>
           <input
             type="tel"
             id="contact-phone"
             name="phone"
             placeholder="+7 (___) ___-__-__"
             class="font-body"
-            style="height: 56px; padding: 0 16px; font-size: 16px; border: 1px solid #444444; border-radius: 0; background: transparent; color: rgb(var(--color-foreground)); outline: none;"
+            style="height: 56px; padding: 0 16px; font-size: 16px; border: 1px solid rgb(var(--color-foreground) / 0.3); border-radius: 0; background: transparent; color: rgb(var(--color-foreground)); outline: none;"
           />
         </div>
       </div>
       <div class="contact-form-right flex flex-col gap-[8px]">
-        <label for="contact-message" class="text-[16px] font-normal font-body" style="color: #444444;">Сообщение</label>
+        <label for="contact-message" class="text-[16px] font-normal font-body" style="color: rgb(var(--color-foreground) / 0.7);">Сообщение</label>
         <textarea
           id="contact-message"
           name="message"
           placeholder="Ваше сообщение..."
           required
           class="font-body flex-1"
-          style="padding: 16px; font-size: 16px; border: 1px solid #444444; border-radius: 0; background: transparent; color: rgb(var(--color-foreground)); outline: none; resize: none; min-height: 200px;"
+          style="padding: 16px; font-size: 16px; border: 1px solid rgb(var(--color-foreground) / 0.3); border-radius: 0; background: transparent; color: rgb(var(--color-foreground)); outline: none; resize: none; min-height: 200px;"
         ></textarea>
       </div>
       <div class="contact-form-submit">

@@ -1,7 +1,7 @@
 /**
  * Tests for theme-bridge.ts
  *
- * Bridge module that adapts the themes library types (packages/themes/types)
+ * Bridge module that adapts the themes library types (packages/theme-contract/types)
  * to the generator types used by page-generator, tokens-generator, etc.
  *
  * Validates:
@@ -18,7 +18,7 @@ import {
   type ThemeRegistryEntry,
 } from "../theme-bridge";
 
-// -- Theme registry entry (from packages/themes/types) shape --
+// -- Theme registry entry (from packages/theme-contract/types) shape --
 
 const STATIC_ENTRY: ThemeRegistryEntry = {
   name: "Hero",

@@ -1,7 +1,7 @@
 /**
- * Theme Bridge — adapts packages/themes/ types to generator types.
+ * Theme Bridge — adapts packages/theme-contract/ types to generator types.
  *
- * The themes library (packages/themes/types.ts) defines ComponentRegistryEntry
+ * The themes library (packages/theme-contract/types.ts) defines ComponentRegistryEntry
  * with fields like `island`, `islandDirective`, `astroTemplate`.
  *
  * The generator (page-generator.ts) expects ComponentRegistryEntry with
@@ -24,7 +24,7 @@ import type {
 // Re-export the theme library types under a distinct name so tests can
 // import them without depending on the themes package path.
 
-/** Shape matching packages/themes/types ComponentRegistryEntry */
+/** Shape matching packages/theme-contract/types ComponentRegistryEntry */
 export interface ThemeRegistryEntry {
   name: string;
   label: string;
@@ -40,7 +40,7 @@ export interface ThemeRegistryEntry {
   fallbackHtml?: string;
 }
 
-/** Shape matching packages/themes/lib/generateTokensCss SettingEntry */
+/** Shape matching packages/theme-contract/lib/generateTokensCss SettingEntry */
 export interface ThemeSettingEntry {
   id: string;
   type: "color" | "font" | "range" | "select" | "text" | "checkbox";
@@ -52,13 +52,13 @@ export interface ThemeSettingEntry {
   enum?: string[];
 }
 
-/** Shape matching packages/themes/lib/generateTokensCss SettingsGroup */
+/** Shape matching packages/theme-contract/lib/generateTokensCss SettingsGroup */
 export interface ThemeSettingsGroup {
   name: string;
   settings: ThemeSettingEntry[];
 }
 
-/** Shape matching packages/themes/types ColorScheme */
+/** Shape matching packages/theme-contract/types ColorScheme */
 export interface ThemeColorScheme {
   name: string;
   background: string;

@@ -91,7 +91,7 @@ export class UserListenerController {
       if (existingSitesCount === 0 && canCreate) {
         this.logger.log(`Creating default site for tenantId=${tenantId}`);
 
-        const siteId = await this.sites.create({
+        const { id: siteId, publicUrl } = await this.sites.create({
           tenantId,
           actorUserId: userId,
           name: "Мой сайт",
@@ -99,7 +99,7 @@ export class UserListenerController {
         });
 
         this.logger.log(
-          `Default site created: siteId=${siteId} for tenantId=${tenantId}`,
+          `Default site created: siteId=${siteId} publicUrl=${publicUrl} for tenantId=${tenantId}`,
         );
       } else {
         this.logger.log(

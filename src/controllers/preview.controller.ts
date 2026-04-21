@@ -433,6 +433,11 @@ function buildTokensCss(settings: unknown): string {
   const sectionPadding = typeof s.sectionPadding === 'number'
     ? `${s.sectionPadding}px`
     : '80px';
+  const bodyWeight = typeof s.bodyWeight === 'number' ? s.bodyWeight : 400;
+  const headingWeight =
+    typeof s.headingWeight === 'number' ? s.headingWeight : 400;
+  const logoWidth = toPx(s.logoWidth, 40);
+  const errorColor = hexToRgbTriple(s.errorColor) ?? '252 165 165';
 
   const rootRules = `
 :root {
@@ -443,10 +448,21 @@ function buildTokensCss(settings: unknown): string {
   --radius-field: ${fieldRadius};
   --font-heading: ${headingFont};
   --font-body: ${bodyFont};
+  --weight-body: ${bodyWeight};
+  --weight-heading: ${headingWeight};
   --section-padding: ${sectionPadding};
+  --spacing-section-y: ${sectionPadding};
+  --spacing-grid-col-gap: 24px;
+  --spacing-grid-row-gap: 32px;
   --size-hero-heading: 48px;
   --size-hero-button-h: 48px;
+  --size-nav-link: 14px;
+  --size-logo-width: ${logoWidth};
+  --size-newsletter-form-w: 420px;
   --container-max-width: 1320px;
+  --color-error: ${errorColor};
+  --color-muted: 156 163 175;
+  --color-primary: 17 17 17;
 }`;
 
   const schemes = Array.isArray(s.colorSchemes) ? s.colorSchemes : [];
@@ -516,7 +532,12 @@ function schemeToVars(scheme: Record<string, unknown>): string {
 
   const parts: string[] = [];
   if (bg) parts.push(`--color-bg: ${bg}`);
-  if (surface) parts.push(`--color-bg-alt: ${surface}`);
+  if (surface) {
+    parts.push(`--color-bg-alt: ${surface}`);
+    // theme-base .classes.ts files read `--color-surface` (not bg-alt) —
+    // emit both until the block classes are renamed in Phase 2.
+    parts.push(`--color-surface: ${surface}`);
+  }
   if (heading) parts.push(`--color-heading: ${heading}`);
   if (text) parts.push(`--color-text: ${text}`);
   const primaryBg = hexToRgbTriple(primary.background);

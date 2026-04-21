@@ -1,0 +1,48 @@
+---
+import type { CartDrawerProps } from './CartDrawer.puckConfig';
+import { CartDrawerClasses as C } from './CartDrawer.classes';
+
+interface Props extends CartDrawerProps {
+  id?: string;
+}
+
+const {
+  id,
+  position,
+  showCheckoutButton,
+  colorScheme = 1,
+  padding,
+} = Astro.props as Props;
+
+const scheme = `color-scheme-${colorScheme}`;
+const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+---
+<aside
+  class:list={[C.root, C.position[position], scheme]}
+  data-puck-component-id={id}
+  data-position={position}
+  style={paddingStyle}
+  aria-label="Корзина"
+>
+  <header class={C.header}>
+    <h2 class={C.heading}>Корзина</h2>
+    <button type="button" class={C.closeBtn} aria-label="Закрыть" data-action="close-cart">×</button>
+  </header>
+
+  <div class={C.items} data-cart-items>
+    {/* Phase 1c: React island populates with real cart state */}
+    <div class={C.empty}>Корзина пуста</div>
+  </div>
+
+  <footer class={C.footer}>
+    <div class={C.total}>
+      <span>Итого</span>
+      <span data-cart-total>0 ₽</span>
+    </div>
+    {showCheckoutButton && (
+      <a href="/checkout" class={C.checkoutBtn}>Оформить заказ</a>
+    )}
+  </footer>
+
+  {/* Phase 1c: React island handles open/close animation + cart updates */}
+</aside>

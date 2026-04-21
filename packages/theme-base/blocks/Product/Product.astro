@@ -1,0 +1,69 @@
+---
+import type { ProductProps } from './Product.puckConfig';
+import { ProductClasses as C } from './Product.classes';
+
+interface Props extends ProductProps {
+  id?: string;
+}
+
+const {
+  id,
+  productId,
+  colorScheme = 1,
+  padding,
+} = Astro.props as Props;
+
+const scheme = `color-scheme-${colorScheme}`;
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+
+// SEO invariant per spec §11: emit JSON-LD Product schema.
+// Phase 1a: placeholder values. Phase 1c hydrates from product service.
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: 'Product Name (hydrated in Phase 1c)',
+  description: 'Product description placeholder',
+  sku: productId,
+};
+---
+<section
+  class:list={[C.root, scheme]}
+  data-puck-component-id={id}
+  data-block="product-pdp"
+  data-product-id={productId}
+  style={paddingStyle}
+>
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)}></script>
+  <div class={C.container}>
+    <div class={C.grid}>
+      <div class={C.galleryCol}>
+        <div class={C.galleryMedia} aria-label="Product gallery placeholder"></div>
+        <div class={C.galleryThumbs}>
+          <div class={C.galleryThumb}></div>
+          <div class={C.galleryThumb}></div>
+          <div class={C.galleryThumb}></div>
+          <div class={C.galleryThumb}></div>
+        </div>
+      </div>
+      <div class={C.infoCol}>
+        <h1 class={C.title}>Product Name</h1>
+        <div class={C.price}>— ₽</div>
+        <div class={C.variants}>
+          <div class={C.variantsLabel}>Варианты</div>
+          <div class={C.variantsRow}>
+            <div class={C.variantPlaceholder}></div>
+            <div class={C.variantPlaceholder}></div>
+            <div class={C.variantPlaceholder}></div>
+          </div>
+        </div>
+        <button type="button" class={C.addToCart}>В корзину</button>
+      </div>
+    </div>
+    <div class={C.description}>
+      <h2 class={C.descriptionHeading}>Описание</h2>
+      <p>Описание товара будет доступно после привязки данных в Phase 1c.</p>
+    </div>
+  </div>
+</section>

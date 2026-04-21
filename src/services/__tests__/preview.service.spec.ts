@@ -87,7 +87,9 @@ describe('PreviewService', () => {
     });
     expect(html).toContain('<!DOCTYPE html>');
     expect(html).toContain('PageTitle');
-    expect(html).toContain('installPreviewNavAgent');
+    // Inline postMessage bridge replaces the external preview-nav-agent.js —
+    // verify the bridge's signature call instead of the import.
+    expect(html).toContain("type: 'ready'");
     expect(html).toContain('--radius-button: 0px');
     expect(html).toContain('fonts.googleapis.com/test');
   });

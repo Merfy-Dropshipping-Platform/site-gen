@@ -176,11 +176,79 @@ export class PreviewService {
 </head>
 <body>
   ${renderedBlocks.join('\n')}
-  <script type="module">
-    import { installPreviewNavAgent } from '/runtime/preview-nav-agent.js';
-    installPreviewNavAgent({ origin: '*' });
-  </script>
+  <script>${PREVIEW_NAV_AGENT_INLINE}</script>
 </body>
 </html>`;
   }
 }
+
+/**
+ * Inline postMessage bridge for the constructor iframe. Sent as part of the
+ * preview HTML instead of a separate `/runtime/preview-nav-agent.js` file —
+ * (a) one fewer asset endpoint to wire through the gateway, (b) lives with
+ * the HTML it augments, (c) no bundling step needed.
+ *
+ * Parent (constructor) contract — keep in sync with
+ *   constructor/src/lib/postMessageProtocol.ts
+ *
+ *   iframe → parent:
+ *     { type: 'ready' }
+ *     { type: 'navigate',  path: string }
+ *     { type: 'select-block', blockId: string }
+ *     { type: 'form-submit-blocked', formId: string }
+ *     { type: 'render-error', message: string }
+ *   parent → iframe:
+ *     { type: 'init', siteId, themeId, pageId, data }
+ *     { type: 'update-block', blockId, props }
+ *
+ * Design notes:
+ *  - postMessage origin is `*` for now; tightening it requires the parent to
+ *    send the expected origin in `init`, out of scope for Phase 1c.
+ *  - `select-block` reads `data-puck-component-id` which every Astro block
+ *    in theme-base already stamps on its root element.
+ *  - Forms are blocked (preventDefault) because the iframe runs inside the
+ *    editor, not a live storefront — submitting would either 404 or trigger
+ *    real orders. An empty `formId` falls back to the form's index.
+ */
+const PREVIEW_NAV_AGENT_INLINE = `
+(function () {
+  var TARGET = '*';
+  function post(msg) { try { parent.postMessage(msg, TARGET); } catch (e) {} }
+
+  // Intercept in-document navigation so the parent can swap pages without a
+  // full iframe reload (preserves editor state).
+  document.addEventListener('click', function (e) {
+    var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+    if (a) {
+      var href = a.getAttribute('href') || '';
+      if (href.startsWith('/') && !href.startsWith('//')) {
+        e.preventDefault();
+        post({ type: 'navigate', path: href });
+        return;
+      }
+    }
+    var block = e.target && e.target.closest ? e.target.closest('[data-puck-component-id]') : null;
+    if (block) {
+      post({ type: 'select-block', blockId: block.getAttribute('data-puck-component-id') });
+    }
+  }, true);
+
+  // Block form submissions — preview shouldn't hit real order/newsletter
+  // endpoints from inside the editor.
+  document.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var form = e.target;
+    var id = (form && (form.id || form.getAttribute('name'))) || '';
+    post({ type: 'form-submit-blocked', formId: id });
+  }, true);
+
+  // Parent → iframe: currently just logs; Phase 2 will apply updates live.
+  window.addEventListener('message', function (ev) {
+    if (!ev.data || typeof ev.data !== 'object') return;
+    // Accept init from any origin (parent sets TARGET on its side).
+  });
+
+  // Signal readiness so the parent can send 'init'.
+  post({ type: 'ready' });
+})();
+`;

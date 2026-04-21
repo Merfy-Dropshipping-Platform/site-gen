@@ -1,0 +1,18 @@
+export const ContactFormTokens = [
+  '--color-bg',
+  '--color-heading',
+  '--color-text',
+  '--color-button-bg',
+  '--color-button-text',
+  '--color-button-border',
+  '--color-error',
+  '--radius-button',
+  '--radius-input',
+  '--radius-field',
+  '--font-heading',
+  '--font-body',
+  '--size-hero-heading',
+  '--size-hero-button-h',
+  '--spacing-section-y',
+  '--container-max-width',
+] as const satisfies readonly `--${string}`[];

@@ -2,7 +2,7 @@ export const PopularProductsClasses = {
   root: 'relative w-full',
   container: 'mx-auto max-w-[var(--container-max-width)] px-4',
   heading:
-    'font-[var(--font-heading)] text-[var(--size-hero-heading)] text-[rgb(var(--color-heading))] mb-8 text-center',
+    '[font-family:var(--font-heading)] text-[var(--size-hero-heading)] text-[rgb(var(--color-heading))] mb-8 text-center',
   grid:
     'grid gap-x-[var(--spacing-grid-col-gap)] gap-y-[var(--spacing-grid-row-gap)]',
   placeholderCard:

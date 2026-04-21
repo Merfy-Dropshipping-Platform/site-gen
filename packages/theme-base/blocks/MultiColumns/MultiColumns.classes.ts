@@ -6,7 +6,7 @@ export const MultiColumnsClasses = {
   image:
     'w-full aspect-video object-cover rounded-[var(--radius-media)] mb-4',
   columnHeading:
-    'font-[var(--font-heading)] text-xl text-[rgb(var(--color-heading))] mb-2',
+    '[font-family:var(--font-heading)] text-xl text-[rgb(var(--color-heading))] mb-2',
   columnText:
-    'font-[var(--font-body)] text-base text-[rgb(var(--color-text))] leading-relaxed',
+    '[font-family:var(--font-body)] text-base text-[rgb(var(--color-text))] leading-relaxed',
 } as const;

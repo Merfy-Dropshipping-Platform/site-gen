@@ -12,9 +12,9 @@ export const HeaderClasses = {
     'top-right': 'justify-end',
     'center-left': 'justify-start',
   },
-  logo: 'max-w-[var(--size-logo-width)] h-auto font-[var(--font-heading)] text-xl text-[rgb(var(--color-heading))]',
+  logo: 'max-w-[var(--size-logo-width)] h-auto [font-family:var(--font-heading)] text-xl text-[rgb(var(--color-heading))]',
   nav: 'flex items-center gap-6',
-  navLink: 'font-[var(--font-body)] text-[length:var(--size-nav-link)] text-[rgb(var(--color-text))] hover:text-[rgb(var(--color-primary))]',
+  navLink: '[font-family:var(--font-body)] text-[length:var(--size-nav-link)] text-[rgb(var(--color-text))] hover:text-[rgb(var(--color-primary))]',
   actions: 'ml-auto flex items-center gap-4',
   actionButton: 'p-2 text-[rgb(var(--color-text))] hover:text-[rgb(var(--color-primary))] transition-colors',
 } as const;

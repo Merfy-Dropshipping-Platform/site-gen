@@ -18,8 +18,8 @@ export const ImageWithTextClasses = {
   image:
     'w-full aspect-[4/3] object-cover rounded-[var(--radius-media)]',
   heading:
-    'font-[var(--font-heading)] text-[var(--size-hero-heading)] text-[rgb(var(--color-heading))] leading-tight mb-6',
-  text: 'font-[var(--font-body)] text-[rgb(var(--color-text))] leading-relaxed mb-6',
+    '[font-family:var(--font-heading)] text-[var(--size-hero-heading)] text-[rgb(var(--color-heading))] leading-tight mb-6',
+  text: '[font-family:var(--font-body)] text-[rgb(var(--color-text))] leading-relaxed mb-6',
   button:
-    'inline-flex items-center justify-center h-[var(--size-hero-button-h)] rounded-[var(--radius-button)] px-8 border border-[rgb(var(--color-button-border))] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] font-[var(--font-body)]',
+    'inline-flex items-center justify-center h-[var(--size-hero-button-h)] rounded-[var(--radius-button)] px-8 border border-[rgb(var(--color-button-border))] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] [font-family:var(--font-body)]',
 } as const;

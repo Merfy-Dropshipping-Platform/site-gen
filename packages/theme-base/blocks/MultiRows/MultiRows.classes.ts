@@ -19,9 +19,9 @@ export const MultiRowsClasses = {
   image:
     'w-full aspect-video object-cover rounded-[var(--radius-media)]',
   rowHeading:
-    'font-[var(--font-heading)] text-[var(--size-hero-heading)] leading-tight text-[rgb(var(--color-heading))] mb-4',
+    '[font-family:var(--font-heading)] text-[var(--size-hero-heading)] leading-tight text-[rgb(var(--color-heading))] mb-4',
   rowText:
-    'font-[var(--font-body)] text-base text-[rgb(var(--color-text))] leading-relaxed mb-6',
+    '[font-family:var(--font-body)] text-base text-[rgb(var(--color-text))] leading-relaxed mb-6',
   button:
     'inline-flex items-center justify-center h-[var(--size-hero-button-h)] rounded-[var(--radius-button)] px-8 border border-[rgb(var(--color-button-border))] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))]',
 } as const;

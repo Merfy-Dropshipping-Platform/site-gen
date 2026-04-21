@@ -7,7 +7,7 @@ export const HeroClasses = {
     overlay: 'relative min-h-[60vh] flex flex-col items-center justify-center text-center py-12',
   },
   title:
-    'font-[var(--font-heading)] text-[var(--size-hero-heading)] leading-tight text-[rgb(var(--color-heading))]',
+    '[font-family:var(--font-heading)] text-[var(--size-hero-heading)] leading-tight text-[rgb(var(--color-heading))]',
   subtitle: 'text-lg mt-4 text-[rgb(var(--color-text))] opacity-80',
   ctaButton:
     'inline-flex items-center justify-center h-[var(--size-hero-button-h)] rounded-[var(--radius-button)] px-8 mt-8 border border-[rgb(var(--color-button-border))] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))]',

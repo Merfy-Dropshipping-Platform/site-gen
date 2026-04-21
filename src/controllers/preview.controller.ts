@@ -205,14 +205,93 @@ function adaptLegacyProps(
     case 'Footer':
       coerceFooterProps(out);
       break;
-    // MainText / Newsletter / ImageWithText / Publications / Slideshow /
-    // MultiColumns / MultiRows / CollapsibleSection / Gallery / Video /
-    // PromoBanner / Product / CartSection / CheckoutSection / AuthModal /
-    // CartDrawer / CheckoutLayout / CheckoutHeader / AccountLayout —
-    // covered only by the generic URL rewrite for now; add coercers as
-    // blocks start getting exercised by real revisions.
+    default:
+      // Generic fallback for the 19 blocks without a hand-written coercer
+      // (MainText, Newsletter, ImageWithText, Slideshow, MultiColumns,
+      // MultiRows, CollapsibleSection, Gallery, Video, Publications,
+      // Product, PromoBanner, CartSection, CheckoutSection, AuthModal,
+      // CartDrawer, CheckoutLayout, CheckoutHeader, AccountLayout).
+      // Any legacy `{text|content, size|enabled, ...}` envelope that
+      // theme-base schemas expect as a flat string gets unwrapped so the
+      // Astro template doesn't render "[object Object]".
+      coerceGenericLegacyProps(out);
+      break;
   }
   return out;
+}
+
+/**
+ * Unwrap `{text|content, size|enabled}` envelopes across any field
+ * including nested arrayFields. Leaves structural objects alone
+ * (anything with keys other than text/content/size/enabled/alignment).
+ *
+ * Also flattens the legacy button envelope `{text, link|href}` to
+ * `{text, href}` — matches what Hero's cta expects across other blocks
+ * like ImageWithText / CollapsibleSection.
+ *
+ * colorScheme "scheme-N" strings are converted to numbers.
+ */
+function coerceGenericLegacyProps(out: Record<string, unknown>): void {
+  for (const [k, v] of Object.entries(out)) {
+    out[k] = coerceLegacyValue(v);
+  }
+  if (typeof out.colorScheme === 'string') {
+    out.colorScheme = coerceSchemeNumber(out.colorScheme);
+  }
+  if (typeof out.containerColorScheme === 'string') {
+    out.containerColorScheme = coerceSchemeNumber(out.containerColorScheme);
+  }
+  if (typeof out.copyrightColorScheme === 'string') {
+    out.copyrightColorScheme = coerceSchemeNumber(out.copyrightColorScheme);
+  }
+}
+
+function coerceLegacyValue(v: unknown): unknown {
+  if (v === null || typeof v !== 'object') return v;
+  if (Array.isArray(v)) return v.map(coerceLegacyValue);
+  const obj = v as Record<string, unknown>;
+  const keys = Object.keys(obj);
+
+  // {text: "...", size?, enabled?, alignment?} → text
+  if (
+    typeof obj.text === 'string' &&
+    keys.every((k) => ['text', 'size', 'enabled', 'alignment'].includes(k))
+  ) {
+    return obj.text;
+  }
+  // {content: "...", size?, enabled?} → content
+  if (
+    typeof obj.content === 'string' &&
+    keys.every((k) => ['content', 'size', 'enabled', 'alignment'].includes(k))
+  ) {
+    return obj.content;
+  }
+  // {text, link, enabled?} → {text, href}
+  if (
+    typeof obj.text === 'string' &&
+    typeof obj.link === 'string' &&
+    keys.every((k) => ['text', 'link', 'enabled', 'href'].includes(k))
+  ) {
+    return { text: obj.text, href: obj.link };
+  }
+  // {text, link:{href}, enabled?} → {text, href}
+  if (
+    typeof obj.text === 'string' &&
+    isPlainObject(obj.link) &&
+    typeof (obj.link as Record<string, unknown>).href === 'string'
+  ) {
+    return {
+      text: obj.text,
+      href: String((obj.link as Record<string, unknown>).href),
+    };
+  }
+  // Otherwise recurse — preserves structural objects (image{url,alt},
+  // padding{top,bottom}, newsletter{...}, *Column{...}, etc.).
+  const next: Record<string, unknown> = {};
+  for (const [k, val] of Object.entries(obj)) {
+    next[k] = coerceLegacyValue(val);
+  }
+  return next;
 }
 
 function unwrapTextSize(

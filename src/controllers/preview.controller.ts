@@ -548,45 +548,40 @@ function buildTokensCss(settings: unknown, themeId: string | null): string {
   const logoWidth = toPx(s.logoWidth, 40);
   const errorColor = hexToRgbTriple(s.errorColor) ?? '252 165 165';
 
-  // Theme manifest defaults (Bitter/Arsenal for Rose, Urbanist/Inter for
-  // Bloom, Kelly Slab/Arsenal for Satin, Roboto Flex for Flux, Bitter/
-  // Arsenal for Vanilla) sit between BASE_DEFAULTS and merchant overrides.
-  // If a merchant hasn't touched a font/radius in ThemeSettings, we fall
-  // back to the theme's default. If they have, their value wins.
+  // Theme manifest is the SOURCE OF TRUTH for fonts/radii/spacing/sizes.
+  // Theme defaults (Bitter/Arsenal for Rose, Urbanist/Inter for Bloom,
+  // Kelly Slab/Arsenal for Satin, Roboto Flex for Flux, Bitter/Arsenal
+  // for Vanilla) always win over merchant-generic values from
+  // themeSettings — merchant's ThemeSettings UI doesn't yet expose these
+  // fields per-site so letting their defaults override theme identity
+  // makes every theme visually indistinguishable. Merchant retains
+  // control over colorSchemes (which ARE exposed) and per-block props.
+  //
+  // Hardcoded Phase 0 fallbacks apply only when BOTH theme manifest and
+  // merchant settings omit a token.
   const themeDefaults = (manifest?.defaults ?? {}) as Record<string, string>;
-  const pick = (
-    themeKey: string,
-    merchantValue: string | undefined,
-    hardcoded: string,
-  ): string =>
-    merchantValue !== undefined && merchantValue !== ''
-      ? merchantValue
-      : (themeDefaults[themeKey] ?? hardcoded);
-
-  const merchantDidSetFontHeading =
-    typeof s.headingFont === 'string' && s.headingFont !== '';
-  const merchantDidSetFontBody =
-    typeof s.bodyFont === 'string' && s.bodyFont !== '';
+  const themeFirst = (themeKey: string, hardcoded: string): string =>
+    themeDefaults[themeKey] ?? hardcoded;
 
   const rootRules = `
 :root {
-  --radius-button: ${pick('--radius-button', undefined, buttonRadius)};
-  --radius-card: ${pick('--radius-card', undefined, cardRadius)};
-  --radius-input: ${pick('--radius-input', undefined, inputRadius)};
-  --radius-media: ${pick('--radius-media', undefined, mediaRadius)};
-  --radius-field: ${pick('--radius-field', undefined, fieldRadius)};
-  --font-heading: ${merchantDidSetFontHeading ? headingFont : (themeDefaults['--font-heading'] ?? headingFont)};
-  --font-body: ${merchantDidSetFontBody ? bodyFont : (themeDefaults['--font-body'] ?? bodyFont)};
+  --radius-button: ${themeFirst('--radius-button', buttonRadius)};
+  --radius-card: ${themeFirst('--radius-card', cardRadius)};
+  --radius-input: ${themeFirst('--radius-input', inputRadius)};
+  --radius-media: ${themeFirst('--radius-media', mediaRadius)};
+  --radius-field: ${themeFirst('--radius-field', fieldRadius)};
+  --font-heading: ${themeFirst('--font-heading', headingFont)};
+  --font-body: ${themeFirst('--font-body', bodyFont)};
   --weight-body: ${themeDefaults['--weight-body'] ?? bodyWeight};
   --weight-heading: ${themeDefaults['--weight-heading'] ?? headingWeight};
-  --section-padding: ${pick('--spacing-section-y', undefined, sectionPadding)};
-  --spacing-section-y: ${pick('--spacing-section-y', undefined, sectionPadding)};
+  --section-padding: ${themeFirst('--spacing-section-y', sectionPadding)};
+  --spacing-section-y: ${themeFirst('--spacing-section-y', sectionPadding)};
   --spacing-grid-col-gap: ${themeDefaults['--spacing-grid-col-gap'] ?? '24px'};
   --spacing-grid-row-gap: ${themeDefaults['--spacing-grid-row-gap'] ?? '32px'};
   --size-hero-heading: ${themeDefaults['--size-hero-heading'] ?? '48px'};
   --size-hero-button-h: ${themeDefaults['--size-hero-button-h'] ?? '48px'};
   --size-nav-link: ${themeDefaults['--size-nav-link'] ?? '14px'};
-  --size-logo-width: ${pick('--size-logo-width', undefined, logoWidth)};
+  --size-logo-width: ${themeFirst('--size-logo-width', logoWidth)};
   --size-newsletter-form-w: ${themeDefaults['--size-newsletter-form-w'] ?? '420px'};
   --container-max-width: ${themeDefaults['--container-max-width'] ?? '1320px'};
   --color-error: ${errorColor};

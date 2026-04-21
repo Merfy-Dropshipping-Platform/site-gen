@@ -1,0 +1,17 @@
+export const CheckoutSectionTokens = [
+  '--color-bg',
+  '--color-heading',
+  '--color-text',
+  '--color-button-bg',
+  '--color-button-text',
+  '--color-button-border',
+  '--font-heading',
+  '--font-body',
+  '--size-hero-heading',
+  '--size-hero-button-h',
+  '--radius-button',
+  '--radius-input',
+  '--radius-field',
+  '--spacing-section-y',
+  '--container-max-width',
+] as const satisfies readonly `--${string}`[];

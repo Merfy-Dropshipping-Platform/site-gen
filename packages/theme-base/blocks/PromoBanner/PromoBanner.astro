@@ -1,0 +1,24 @@
+---
+import type { PromoBannerProps } from './PromoBanner.puckConfig';
+import { PromoBannerClasses as C } from './PromoBanner.classes';
+
+interface Props extends PromoBannerProps {
+  id?: string;
+}
+
+const { id, text, linkText, linkUrl, colorScheme = 1, padding } = Astro.props as Props;
+const scheme = `color-scheme-${colorScheme}`;
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+---
+<section
+  class:list={[C.root, scheme]}
+  data-puck-component-id={id}
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    <span class={C.text}>{text}</span>
+    {linkText && <a href={linkUrl} class={C.link}>{linkText}</a>}
+  </div>
+</section>

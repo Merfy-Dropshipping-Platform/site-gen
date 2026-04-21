@@ -4,7 +4,7 @@ export const HeroClasses = {
   inner: {
     centered: 'flex flex-col items-center text-center py-12',
     split: 'grid grid-cols-1 md:grid-cols-2 items-center gap-8 py-12',
-    overlay: 'relative min-h-[60vh] flex items-center justify-center',
+    overlay: 'relative min-h-[60vh] flex flex-col items-center justify-center text-center py-12',
   },
   title:
     'font-[var(--font-heading)] text-[var(--size-hero-heading)] leading-tight text-[rgb(var(--color-heading))]',

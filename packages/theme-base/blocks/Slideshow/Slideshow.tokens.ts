@@ -1,0 +1,16 @@
+export const SlideshowTokens = [
+  '--color-bg',
+  '--color-heading',
+  '--color-text',
+  '--color-button-bg',
+  '--color-button-text',
+  '--color-button-border',
+  '--radius-button',
+  '--radius-media',
+  '--font-heading',
+  '--font-body',
+  '--size-hero-heading',
+  '--size-hero-button-h',
+  '--spacing-section-y',
+  '--container-max-width',
+] as const satisfies readonly `--${string}`[];

@@ -112,7 +112,13 @@ for (const theme of THEMES) {
       }
 
       if (loadStatus !== 'ok') {
-        results.push({ key, status: 'load-failed', detail: loadStatus, threshold });
+        // Preview 404 + missing reference = this page isn't expected yet for
+        // the seed site. Informational, not a fail.
+        const refPath = path.join(REFS, theme, `${page}.${vp.w}.png`);
+        let refExists = true;
+        try { await fs.access(refPath); } catch { refExists = false; }
+        const status = refExists ? 'load-failed' : 'no-reference-no-page';
+        results.push({ key, status, detail: loadStatus, threshold });
         await ctx.close();
         continue;
       }
@@ -167,8 +173,12 @@ for (const theme of THEMES) {
 await browser.close();
 
 const fails = results.filter((r) => r.status === 'fail');
-const missing = results.filter((r) => r.status === 'no-reference');
-const loadFails = results.filter((r) => r.status === 'load-failed' || r.status === 'shot-failed');
+const missing = results.filter(
+  (r) => r.status === 'no-reference' || r.status === 'no-reference-no-page',
+);
+const loadFails = results.filter(
+  (r) => r.status === 'load-failed' || r.status === 'shot-failed',
+);
 const passes = results.filter((r) => r.status === 'pass');
 const skipped = results.filter((r) => r.status === 'skip-config');
 
@@ -184,7 +194,8 @@ for (const f of loadFails) {
   console.log(` LOAD ${f.key} — ${f.detail}`);
 }
 
-// Exit non-zero on fail OR load-failure; missing references are informational.
+// Exit non-zero on fail OR load-failure (and there IS a reference); missing
+// references and load-failed-without-reference are informational.
 process.exit(fails.length > 0 || loadFails.length > 0 ? 1 : 0);
 
 function cropTopLeft(png, width, height) {

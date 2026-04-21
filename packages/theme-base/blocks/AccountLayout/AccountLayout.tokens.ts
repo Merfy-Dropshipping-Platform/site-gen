@@ -1,0 +1,15 @@
+export const AccountLayoutTokens = [
+  '--color-bg',
+  '--color-surface',
+  '--color-heading',
+  '--color-text',
+  '--color-primary',
+  '--color-error',
+  '--font-heading',
+  '--font-body',
+  '--size-hero-heading',
+  '--size-nav-link',
+  '--container-max-width',
+  '--spacing-section-y',
+  '--radius-card',
+] as const satisfies readonly `--${string}`[];

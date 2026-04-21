@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 
 /**
  * Input for rendering a single block to HTML.
@@ -120,11 +120,16 @@ const defaultContainerFactory: ContainerFactory = async () => {
 @Injectable()
 export class PreviewService {
   private container: IAstroContainer | null = null;
+  private readonly containerFactory: ContainerFactory;
+  private readonly componentResolver: ComponentResolver;
 
   constructor(
-    private readonly containerFactory: ContainerFactory = defaultContainerFactory,
-    private readonly componentResolver: ComponentResolver = defaultComponentResolver,
-  ) {}
+    @Optional() containerFactory?: ContainerFactory,
+    @Optional() componentResolver?: ComponentResolver,
+  ) {
+    this.containerFactory = containerFactory ?? defaultContainerFactory;
+    this.componentResolver = componentResolver ?? defaultComponentResolver;
+  }
 
   private async getContainer(): Promise<IAstroContainer> {
     if (!this.container) {

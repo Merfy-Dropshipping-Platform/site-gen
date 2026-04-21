@@ -9,18 +9,21 @@ import {
   resolveConstructorConfig,
   type BlockConfigLoader,
 } from '../../packages/theme-contract/resolver/resolveConstructorConfig';
-// Theme manifests — loaded via require (CommonJS target). Resolved relative
-// to dist/src/controllers → ../../packages/theme-<name>/theme.json at runtime.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const roseManifestJson = require('../../packages/theme-rose/theme.json') as ThemeConfigForResolver;
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const vanillaManifestJson = require('../../packages/theme-vanilla/theme.json') as ThemeConfigForResolver;
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const bloomManifestJson = require('../../packages/theme-bloom/theme.json') as ThemeConfigForResolver;
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const satinManifestJson = require('../../packages/theme-satin/theme.json') as ThemeConfigForResolver;
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const fluxManifestJson = require('../../packages/theme-flux/theme.json') as ThemeConfigForResolver;
+// Theme manifests — imported via TS resolveJsonModule so JSON content is
+// INLINED into compiled JS at build time (no runtime file lookup). Required
+// because nest-cli doesn't copy packages/*/theme.json into dist/ (relative
+// require() from dist/src/controllers/ would miss dist/packages/theme-*).
+import roseManifestJsonRaw from '../../packages/theme-rose/theme.json';
+import vanillaManifestJsonRaw from '../../packages/theme-vanilla/theme.json';
+import bloomManifestJsonRaw from '../../packages/theme-bloom/theme.json';
+import satinManifestJsonRaw from '../../packages/theme-satin/theme.json';
+import fluxManifestJsonRaw from '../../packages/theme-flux/theme.json';
+
+const roseManifestJson = roseManifestJsonRaw as unknown as ThemeConfigForResolver;
+const vanillaManifestJson = vanillaManifestJsonRaw as unknown as ThemeConfigForResolver;
+const bloomManifestJson = bloomManifestJsonRaw as unknown as ThemeConfigForResolver;
+const satinManifestJson = satinManifestJsonRaw as unknown as ThemeConfigForResolver;
+const fluxManifestJson = fluxManifestJsonRaw as unknown as ThemeConfigForResolver;
 
 /**
  * JSON-serializable shape of a Puck component config — render function is

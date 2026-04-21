@@ -154,38 +154,30 @@ function createBlockLoader(themeId: string): BlockConfigLoader {
     flux: 'theme-flux',
   };
 
+  // Blocks are precompiled to flat ESM by `pnpm build:blocks` (see
+  // scripts/compile-astro-blocks.mjs). Layout on disk:
+  //   dist/astro-blocks/<pkg>__<BlockName>__index.mjs
+  // We dynamic-import them because .mjs is ESM-only; require() would fail.
+  // The `resolveConstructorConfig` expects a sync-or-async loader that returns
+  // a record of named exports — dynamic import's namespace object is exactly
+  // that.
+  const blocksDir = resolve(__dirname, '..', '..', 'astro-blocks');
+
   return async (pathOrName: string) => {
     // Theme override path starts with "./blocks/<Name>" per manifest convention.
     const themePackage = themePackageByThemeId[themeId];
+    let pkg: string;
+    let blockName: string;
     if (pathOrName.startsWith('./blocks/') && themePackage) {
-      const blockName = pathOrName.split('/').pop() as string;
-      const absPath = resolve(
-        __dirname,
-        '..',
-        '..',
-        'packages',
-        themePackage,
-        'blocks',
-        blockName,
-        'index.ts',
-      );
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      return require(absPath) as Record<string, unknown>;
+      pkg = themePackage;
+      blockName = pathOrName.split('/').pop() as string;
+    } else {
+      pkg = 'theme-base';
+      blockName = pathOrName;
     }
-
-    // Fall through: base block lookup by name.
-    const absPath = resolve(
-      __dirname,
-      '..',
-      '..',
-      'packages',
-      'theme-base',
-      'blocks',
-      pathOrName,
-      'index.ts',
-    );
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require(absPath) as Record<string, unknown>;
+    const absPath = resolve(blocksDir, `${pkg}__${blockName}__index.mjs`);
+    const mod = (await import(absPath)) as Record<string, unknown>;
+    return mod;
   };
 }
 

@@ -11,8 +11,12 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install
 
 COPY . .
-# cache-bust: 2026-04-06-islands-fix
+# cache-bust: 2026-04-21-blocks-compile
 RUN pnpm build
+# Precompile theme blocks (.astro + sibling .ts) to flat ESM under
+# dist/astro-blocks/. Required for both PreviewService (Astro Container)
+# and ThemePuckConfigController (dynamic-imports <pkg>__<block>__index.mjs).
+RUN pnpm build:blocks
 
 # ========================
 # Stage 2: Production

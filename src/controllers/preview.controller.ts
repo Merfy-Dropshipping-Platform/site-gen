@@ -590,18 +590,14 @@ function buildTokensCss(settings: unknown, themeId: string | null): string {
   --color-primary: 17 17 17;
 }`;
 
-  // Theme manifest schemes are the canonical per-theme palette. Merchant's
-  // themeSettings.colorSchemes override theme values for IDs the merchant
-  // actually edited through the admin ThemeSettings UI — but only if the
-  // theme defines a matching id, so generic seed values from site creation
-  // don't mask the theme's identity.
-  //
-  // When merchant themeSettings omits an id that theme defines, we emit
-  // the theme's scheme. When theme doesn't define an id, we pass the
-  // merchant's through — the generic hex→RGB path still works for those.
+  // Merchant colorSchemes win — they're editable via the admin ThemeSettings
+  // UI, so flipping precedence would retroactively change the look of every
+  // existing site. Theme manifest schemes fill the gap only for ids the
+  // merchant hasn't defined (rare: themes ship 3-4 schemes, merchants seed 5).
   //
   // TODO(079 Phase 2): back-fill existing sites' themeSettings from theme
-  // manifests so this adapter can be removed.
+  // manifests so themes own the palette by default, merchants opt-in to
+  // edits explicitly, and we can drop this compatibility shim.
   const merchantSchemes = Array.isArray(s.colorSchemes) ? s.colorSchemes : [];
   const merchantById = new Map<string, Record<string, unknown>>();
   for (const raw of merchantSchemes) {
@@ -615,15 +611,16 @@ function buildTokensCss(settings: unknown, themeId: string | null): string {
   const themeSchemes = manifest?.colorSchemes ?? [];
 
   const schemeRuleLines: string[] = [];
-  // Theme defines a scheme — emit theme's version. Merchant overrides drop
-  // to a secondary precedence until we can distinguish seed-defaults from
-  // real edits.
   for (const themeScheme of themeSchemes) {
-    schemeRuleLines.push(buildThemeSchemeRule(themeScheme));
-    merchantById.delete(themeScheme.id);
+    const merchant = merchantById.get(themeScheme.id);
+    if (merchant) {
+      const rule = buildSchemeRule(merchant);
+      if (rule) schemeRuleLines.push(rule);
+      merchantById.delete(themeScheme.id);
+    } else {
+      schemeRuleLines.push(buildThemeSchemeRule(themeScheme));
+    }
   }
-  // Merchant-only schemes — themes that don't define this id get the
-  // merchant's version (still useful for scheme-5 etc.).
   for (const remaining of merchantById.values()) {
     const rule = buildSchemeRule(remaining);
     if (rule) schemeRuleLines.push(rule);

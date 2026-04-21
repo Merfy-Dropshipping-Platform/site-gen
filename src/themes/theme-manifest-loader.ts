@@ -52,6 +52,87 @@ export function listThemeIds(): string[] {
   return Object.keys(MANIFESTS);
 }
 
+/**
+ * Convert a theme manifest's colour schemes (RGB-triple tokens) into the
+ * merchant-shape (hex-based, nested primaryButton / secondaryButton) used
+ * by `themeSettings.colorSchemes` in site_revision. Called by the Phase 0b
+ * back-fill migration to seed each site with its theme's canonical palette.
+ *
+ * Returns `[]` for unknown themeIds so callers can always iterate.
+ */
+export interface MerchantSchemeShape {
+  id: string;
+  name: string;
+  text: string;
+  heading: string;
+  surfaceBg: string;
+  background: string;
+  primaryButton: {
+    text: string;
+    border: string;
+    textHover: string;
+    background: string;
+    backgroundHover: string;
+  };
+  secondaryButton: {
+    text: string;
+    border: string;
+    textHover: string;
+    background: string;
+    backgroundHover: string;
+  };
+}
+
+export function themeToMerchantColorSchemes(
+  themeId: string,
+): MerchantSchemeShape[] {
+  const m = getThemeManifest(themeId);
+  if (!m?.colorSchemes) return [];
+
+  const tripleToHex = (triple: string | undefined, fallback = '#000000'): string => {
+    if (typeof triple !== 'string') return fallback;
+    const parts = triple.trim().split(/\s+/).map((n) => parseInt(n, 10));
+    if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return fallback;
+    const [r, g, b] = parts;
+    return '#' + [r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('').toUpperCase();
+  };
+
+  return m.colorSchemes.map((s) => {
+    const t = s.tokens;
+    const bg = tripleToHex(t['--color-bg']);
+    const surface = tripleToHex(t['--color-surface'], bg);
+    const primaryBg = tripleToHex(t['--color-button-bg']);
+    const primaryText = tripleToHex(t['--color-button-text']);
+    const primaryBorder = tripleToHex(t['--color-button-border'], primaryBg);
+    const secondaryBg = tripleToHex(t['--color-button-2-bg'], bg);
+    const secondaryText = tripleToHex(t['--color-button-2-text']);
+    const secondaryBorder = tripleToHex(t['--color-button-2-border'], secondaryText);
+
+    return {
+      id: s.id,
+      name: s.name,
+      text: tripleToHex(t['--color-text']),
+      heading: tripleToHex(t['--color-heading']),
+      surfaceBg: surface,
+      background: bg,
+      primaryButton: {
+        background: primaryBg,
+        text: primaryText,
+        border: primaryBorder,
+        textHover: primaryText,
+        backgroundHover: primaryBg,
+      },
+      secondaryButton: {
+        background: secondaryBg,
+        text: secondaryText,
+        border: secondaryBorder,
+        textHover: secondaryText,
+        backgroundHover: secondaryBg,
+      },
+    };
+  });
+}
+
 interface FontSpec {
   family: string;
   weights?: number[];

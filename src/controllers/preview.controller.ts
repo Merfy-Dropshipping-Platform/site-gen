@@ -124,11 +124,7 @@ export class PreviewController {
   }
 
   private tokensCssFromSettings(data: Record<string, unknown>): string {
-    // TODO(078 Phase 2): derive real CSS custom properties from
-    // data.themeSettings once the token pipeline lands. For now, keep the
-    // Phase 0 defaults so blocks still render with sane values.
-    void data;
-    return ':root { --radius-button: 0px; --color-bg: 255 255 255; --color-heading: 17 17 17; --color-text: 51 51 51; --color-button-bg: 17 17 17; --color-button-text: 255 255 255; --color-button-border: 17 17 17; --font-heading: system-ui; --font-body: system-ui; --size-hero-heading: 48px; --size-hero-button-h: 48px; --container-max-width: 1320px; }';
+    return buildTokensCss(data.themeSettings);
   }
 
   private errorPage(message: string): string {
@@ -301,6 +297,154 @@ function normaliseValue(v: unknown, publicUrl: string | null): unknown {
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === 'object' && !Array.isArray(v);
+}
+
+/**
+ * Convert `data.themeSettings` into the CSS custom-property bundle theme-base
+ * blocks expect. Blocks reference colours through `rgb(var(--color-*))` so
+ * each hex value must be emitted as a space-separated R G B triple.
+ *
+ * Scheme scoping: blocks stamp `color-scheme-scheme-<N>` on their root
+ * element (see Hero.astro et al). Output one rule per scheme plus a :root
+ * block with radii / fonts / sizes that don't vary per scheme.
+ *
+ * Defaults (when themeSettings is missing) mirror the Phase 0 constants
+ * so downstream rendering never sees undefined vars.
+ */
+function buildTokensCss(settings: unknown): string {
+  const s = isPlainObject(settings) ? settings : {};
+  const buttonRadius = toPx(s.buttonRadius, 0);
+  const cardRadius = toPx(s.cardRadius, 8);
+  const inputRadius = toPx(s.inputRadius, 8);
+  const mediaRadius = toPx(s.mediaRadius, 8);
+  const fieldRadius = toPx(s.fieldRadius, 4);
+  const headingFont = fontFamily(s.headingFont, 'system-ui');
+  const bodyFont = fontFamily(s.bodyFont, 'system-ui');
+  const sectionPadding = typeof s.sectionPadding === 'number'
+    ? `${s.sectionPadding}px`
+    : '80px';
+
+  const rootRules = `
+:root {
+  --radius-button: ${buttonRadius};
+  --radius-card: ${cardRadius};
+  --radius-input: ${inputRadius};
+  --radius-media: ${mediaRadius};
+  --radius-field: ${fieldRadius};
+  --font-heading: ${headingFont};
+  --font-body: ${bodyFont};
+  --section-padding: ${sectionPadding};
+  --size-hero-heading: 48px;
+  --size-hero-button-h: 48px;
+  --container-max-width: 1320px;
+}`;
+
+  const schemes = Array.isArray(s.colorSchemes) ? s.colorSchemes : [];
+  const schemeRules = schemes
+    .map((raw) => (isPlainObject(raw) ? buildSchemeRule(raw) : ''))
+    .filter((r) => r.length > 0)
+    .join('\n');
+
+  // Root also gets the default scheme's vars so blocks without an explicit
+  // `color-scheme-scheme-N` class (shouldn't happen, but defensive) still
+  // render legibly.
+  const defaultIdx =
+    typeof s.defaultSchemeIndex === 'number' ? s.defaultSchemeIndex : 1;
+  const defaultScheme = isPlainObject(schemes[defaultIdx])
+    ? (schemes[defaultIdx] as Record<string, unknown>)
+    : isPlainObject(schemes[0])
+      ? (schemes[0] as Record<string, unknown>)
+      : null;
+  const rootColorRules = defaultScheme
+    ? schemeVarsInRoot(defaultScheme)
+    : '';
+
+  return [rootRules, rootColorRules, schemeRules].filter(Boolean).join('\n');
+}
+
+function toPx(v: unknown, fallback: number): string {
+  return `${typeof v === 'number' ? v : fallback}px`;
+}
+
+function fontFamily(v: unknown, fallback: string): string {
+  if (typeof v !== 'string' || !v) return fallback;
+  // Known keys → real font stacks (matches existing font loader convention).
+  const known: Record<string, string> = {
+    comfortaa: '"Comfortaa", system-ui, sans-serif',
+    manrope: '"Manrope", system-ui, sans-serif',
+    inter: '"Inter", system-ui, sans-serif',
+    'playfair-display': '"Playfair Display", Georgia, serif',
+    roboto: '"Roboto", system-ui, sans-serif',
+  };
+  return known[v] ?? `"${v}", ${fallback}`;
+}
+
+function buildSchemeRule(scheme: Record<string, unknown>): string {
+  const id = typeof scheme.id === 'string' ? scheme.id : '';
+  if (!id) return '';
+  const vars = schemeToVars(scheme);
+  if (!vars) return '';
+  return `.color-scheme-${id} {${vars}}`;
+}
+
+function schemeVarsInRoot(scheme: Record<string, unknown>): string {
+  const vars = schemeToVars(scheme);
+  return vars ? `:root {${vars}}` : '';
+}
+
+function schemeToVars(scheme: Record<string, unknown>): string {
+  const bg = hexToRgbTriple(scheme.background);
+  const surface = hexToRgbTriple(scheme.surfaceBg);
+  const heading = hexToRgbTriple(scheme.heading);
+  const text = hexToRgbTriple(scheme.text);
+  const primary = isPlainObject(scheme.primaryButton)
+    ? (scheme.primaryButton as Record<string, unknown>)
+    : {};
+  const secondary = isPlainObject(scheme.secondaryButton)
+    ? (scheme.secondaryButton as Record<string, unknown>)
+    : {};
+
+  const parts: string[] = [];
+  if (bg) parts.push(`--color-bg: ${bg}`);
+  if (surface) parts.push(`--color-bg-alt: ${surface}`);
+  if (heading) parts.push(`--color-heading: ${heading}`);
+  if (text) parts.push(`--color-text: ${text}`);
+  const primaryBg = hexToRgbTriple(primary.background);
+  const primaryText = hexToRgbTriple(primary.text);
+  const primaryBorder = hexToRgbTriple(primary.border);
+  if (primaryBg) parts.push(`--color-button-bg: ${primaryBg}`);
+  if (primaryText) parts.push(`--color-button-text: ${primaryText}`);
+  if (primaryBorder) parts.push(`--color-button-border: ${primaryBorder}`);
+  const secondaryBg = hexToRgbTriple(secondary.background);
+  const secondaryText = hexToRgbTriple(secondary.text);
+  if (secondaryBg) parts.push(`--color-button-secondary-bg: ${secondaryBg}`);
+  if (secondaryText) {
+    parts.push(`--color-button-secondary-text: ${secondaryText}`);
+  }
+
+  return parts.length > 0 ? ' ' + parts.join('; ') + ';' : '';
+}
+
+/**
+ * Convert `#RRGGBB` or `#RGB` into `R G B` (space-separated decimals) so
+ * it can be consumed as `rgb(var(--color-bg))` in component CSS. Returns
+ * null for invalid / missing input so callers can skip emitting the var.
+ */
+function hexToRgbTriple(v: unknown): string | null {
+  if (typeof v !== 'string') return null;
+  const hex = v.trim().replace(/^#/, '');
+  if (!/^[0-9a-f]{3}([0-9a-f]{3})?$/i.test(hex)) return null;
+  const full =
+    hex.length === 3
+      ? hex
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : hex;
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  return `${r} ${g} ${b}`;
 }
 
 const ASSET_EXT_RE = /\.(svg|png|jpe?g|gif|webp|avif|ico|mp4|webm|pdf)$/i;

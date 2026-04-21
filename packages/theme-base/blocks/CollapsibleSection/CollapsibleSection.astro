@@ -1,0 +1,40 @@
+---
+import type { CollapsibleSectionProps } from './CollapsibleSection.puckConfig';
+import { CollapsibleSectionClasses as C } from './CollapsibleSection.classes';
+
+interface Props extends CollapsibleSectionProps {
+  id?: string;
+}
+
+const {
+  id,
+  heading,
+  sections,
+  colorScheme = 1,
+  padding,
+} = Astro.props as Props;
+
+const scheme = `color-scheme-${colorScheme}`;
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+// NOTE: `section.content` supports basic HTML via set:html.
+// Constructor inputs should sanitize HTML before persisting to DB to prevent XSS.
+---
+<section
+  class:list={[C.root, scheme]}
+  data-puck-component-id={id}
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    {heading && <h2 class={C.heading}>{heading}</h2>}
+    <div class={C.list}>
+      {sections.map((section) => (
+        <details class={C.item} data-section-id={section.id}>
+          <summary class={C.summary}>{section.heading}</summary>
+          <div class={C.content} set:html={section.content} />
+        </details>
+      ))}
+    </div>
+  </div>
+</section>

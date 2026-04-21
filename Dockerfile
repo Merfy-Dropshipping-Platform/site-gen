@@ -11,12 +11,16 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install
 
 COPY . .
-# cache-bust: 2026-04-21-blocks-compile
+# cache-bust: 2026-04-21-preview-tailwind
 RUN pnpm build
 # Precompile theme blocks (.astro + sibling .ts) to flat ESM under
 # dist/astro-blocks/. Required for both PreviewService (Astro Container)
 # and ThemePuckConfigController (dynamic-imports <pkg>__<block>__index.mjs).
 RUN pnpm build:blocks
+# Compile Tailwind utility bundle for the preview iframe — theme-base
+# blocks use Tailwind classes in their .astro templates, and PreviewService
+# injects this CSS so the iframe looks like the live site.
+RUN pnpm build:preview-tailwind
 
 # ========================
 # Stage 2: Production

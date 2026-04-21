@@ -165,6 +165,8 @@ export class PreviewService {
       renderedBlocks.push(html);
     }
 
+    const previewTailwind = await loadPreviewTailwindCss();
+
     return `<!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -172,6 +174,7 @@ export class PreviewService {
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Preview</title>
   ${input.fontHead}
+  <style>${previewTailwind}</style>
   <style>${input.tokensCss}</style>
 </head>
 <body>
@@ -180,6 +183,45 @@ export class PreviewService {
 </body>
 </html>`;
   }
+}
+
+/**
+ * Read the precompiled Tailwind bundle from disk once per process. Built
+ * by scripts/compile-preview-tailwind.mjs during the Docker image build;
+ * location is dist/preview-tailwind.css relative to the sites service
+ * root. Returns an empty string if the file is missing so renders don't
+ * crash — they just fall back to unstyled (same behaviour as before this
+ * hook existed).
+ */
+let _cachedPreviewTailwind: string | null = null;
+async function loadPreviewTailwindCss(): Promise<string> {
+  if (_cachedPreviewTailwind !== null) return _cachedPreviewTailwind;
+  const { readFile } = await import('node:fs/promises');
+  const { resolve } = await import('node:path');
+  // dist/src/services/preview.service.js → ../../preview-tailwind.css
+  const candidates = [
+    resolve(__dirname, '..', '..', 'preview-tailwind.css'),
+    resolve(process.cwd(), 'dist', 'preview-tailwind.css'),
+    resolve(
+      process.cwd(),
+      'backend',
+      'services',
+      'sites',
+      'dist',
+      'preview-tailwind.css',
+    ),
+  ];
+  for (const p of candidates) {
+    try {
+      const css = await readFile(p, 'utf-8');
+      _cachedPreviewTailwind = css;
+      return css;
+    } catch {
+      // try next candidate
+    }
+  }
+  _cachedPreviewTailwind = '';
+  return '';
 }
 
 /**

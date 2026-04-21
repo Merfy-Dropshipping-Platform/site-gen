@@ -136,25 +136,16 @@ export class PreviewController {
 }
 
 /**
- * Legacy props written by the original constructor (circa Phase 0) use a
- * nested shape — e.g. `heading: { text, size }`, `text: { content, size }`,
- * `primaryButton: { text, link: { href } }`, `backgroundImage: string`.
+ * Adapter: legacy site_revision props → theme-base Astro contract.
  *
- * theme-base blocks in 078 use a flatter contract — e.g. `heading: string`,
- * `title: string`, `cta: { text, href }`, `image: { url, alt }`. Rendering
- * old data against the new Astro templates produces `[object Object]` in
- * headers.
+ * Different blocks treat the same-looking legacy shape differently —
+ * e.g. `heading: {text, size}` is a string in Hero/PopularProducts but
+ * an object in Footer. A single global flatten would break one to fix the
+ * other, so flattening lives in per-block coercers; the only cross-block
+ * normalisation done here is asset-URL rewriting.
  *
- * This adapter normalises on read ONLY for the preview iframe — it does not
- * touch DB rows. The heuristics below are intentionally conservative:
- *
- *   - `{text, size}`      → `text`        (drop size)
- *   - `{content, size}`   → `content`     (drop size)
- *   - `{text, link:{href}}`→ `{text, href}` (flatten CTA)
- *
- * Top-level renames (`backgroundImage` → `image.url`, `primaryButton` →
- * `cta`, `text` → `subtitle`) only apply when the target key is absent so
- * we never clobber already-migrated data.
+ * Per-block coercers run AFTER the generic walk and clobber anything the
+ * walk produced.
  *
  * TODO(078 Phase 2): back-fill site_revision rows with a one-off migration,
  * then delete this adapter.
@@ -166,41 +157,203 @@ function adaptLegacyProps(
 ): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(props)) {
-    out[k] = normaliseValue(v, publicUrl);
+    out[k] = rewriteValueUrls(v, publicUrl);
   }
-  // Legacy → new top-level renames (only if target not already present).
-  if (out.backgroundImage && !out.image) {
+  switch (blockType) {
+    case 'Hero':
+      coerceHeroProps(out, publicUrl);
+      break;
+    case 'Header':
+      coerceHeaderProps(out);
+      break;
+    case 'PopularProducts':
+      coercePopularProductsProps(out);
+      break;
+    case 'ContactForm':
+      coerceContactFormProps(out);
+      break;
+    case 'Collections':
+      coerceCollectionsProps(out, publicUrl);
+      break;
+    case 'Footer':
+      coerceFooterProps(out);
+      break;
+    // MainText / Newsletter / ImageWithText / Publications / Slideshow /
+    // MultiColumns / MultiRows / CollapsibleSection / Gallery / Video /
+    // PromoBanner / Product / CartSection / CheckoutSection / AuthModal /
+    // CartDrawer / CheckoutLayout / CheckoutHeader / AccountLayout —
+    // covered only by the generic URL rewrite for now; add coercers as
+    // blocks start getting exercised by real revisions.
+  }
+  return out;
+}
+
+function unwrapTextSize(
+  v: unknown,
+): { value: string; present: boolean } {
+  if (typeof v === 'string') return { value: v, present: true };
+  if (isPlainObject(v)) {
+    const obj = v as Record<string, unknown>;
+    if (typeof obj.text === 'string') return { value: obj.text, present: true };
+    if (typeof obj.content === 'string')
+      return { value: obj.content, present: true };
+  }
+  return { value: '', present: false };
+}
+
+function coerceSchemeNumber(v: unknown, fallback = 1): number {
+  if (typeof v === 'number' && v >= 1 && v <= 4) return v;
+  if (typeof v === 'string') {
+    const m = /^scheme-(\d+)$/.exec(v);
+    if (m) {
+      const n = Number(m[1]);
+      return n >= 1 && n <= 4 ? n : fallback;
+    }
+  }
+  return fallback;
+}
+
+function coerceHeroProps(
+  out: Record<string, unknown>,
+  publicUrl: string | null,
+): void {
+  // heading {text,size} OR top-level heading string → title
+  const heading = unwrapTextSize(out.heading);
+  if (heading.present && !out.title) out.title = heading.value;
+  // text {content,size} → subtitle
+  const subtitle = unwrapTextSize(out.text);
+  if (subtitle.present && !out.subtitle) out.subtitle = subtitle.value;
+  // backgroundImage → image.url
+  if (!out.image && typeof out.backgroundImage === 'string') {
     out.image = {
-      url: rewriteAssetUrl(String(out.backgroundImage), publicUrl),
+      url: rewriteAssetUrl(out.backgroundImage, publicUrl),
       alt: '',
     };
   }
-  if (out.primaryButton && !out.cta && isPlainObject(out.primaryButton)) {
-    const btn = out.primaryButton as Record<string, unknown>;
-    out.cta = { text: String(btn.text ?? ''), href: String(btn.href ?? '') };
+  // primaryButton{text, link:{href}} → cta{text, href}
+  if (!out.cta && isPlainObject(out.primaryButton)) {
+    const b = out.primaryButton as Record<string, unknown>;
+    const href =
+      typeof b.href === 'string'
+        ? b.href
+        : isPlainObject(b.link) &&
+            typeof (b.link as Record<string, unknown>).href === 'string'
+          ? String((b.link as Record<string, unknown>).href)
+          : '';
+    out.cta = { text: String(b.text ?? ''), href };
   }
-  if (
-    typeof out.heading === 'string' &&
-    !out.title &&
-    // Hero/MainText expect `title` not `heading` in theme-base — but we
-    // can't tell from here which block we're in. Leave both populated;
-    // Astro frontmatter destructures whichever it declares.
-    out.heading.length > 0
-  ) {
-    out.title = out.heading;
+  // position|alignment|size|container → variant
+  const position = String(out.position ?? '');
+  if (!out.variant) {
+    if (position.includes('bottom') || position.includes('overlay')) {
+      out.variant = 'overlay';
+    } else if (position.includes('split')) {
+      out.variant = 'split';
+    } else {
+      out.variant = 'centered';
+    }
   }
-  if (
-    typeof out.text === 'string' &&
-    !out.subtitle &&
-    out.text.length > 0
-  ) {
-    out.subtitle = out.text;
-  }
+  out.colorScheme = coerceSchemeNumber(out.colorScheme);
+  if (!out.padding) out.padding = { top: 80, bottom: 80 };
+  if (typeof out.title !== 'string') out.title = '';
+  if (typeof out.subtitle !== 'string') out.subtitle = '';
+  if (!out.image) out.image = { url: '', alt: '' };
+  if (!out.cta) out.cta = { text: '', href: '#' };
+}
 
-  // Block-specific legacy→new shape coercion (for schemas where per-item
-  // field names differ, not just nested→flat).
-  if (blockType === 'Collections') {
-    coerceCollectionsProps(out, publicUrl);
+function coerceHeaderProps(out: Record<string, unknown>): void {
+  out.colorScheme = coerceSchemeNumber(out.colorScheme);
+  out.menuColorScheme = coerceSchemeNumber(out.menuColorScheme);
+  // actionButtons: legacy has "true"/"false" strings, theme-base wants boolean.
+  if (isPlainObject(out.actionButtons)) {
+    const ab = out.actionButtons as Record<string, unknown>;
+    out.actionButtons = {
+      showSearch: truthy(ab.showSearch),
+      showCart: truthy(ab.showCart),
+      showProfile: truthy(ab.showProfile),
+    };
+  } else {
+    out.actionButtons = { showSearch: true, showCart: true, showProfile: true };
+  }
+  if (typeof out.siteTitle !== 'string') out.siteTitle = '';
+  if (typeof out.logo !== 'string') out.logo = '';
+  if (!Array.isArray(out.navigationLinks)) out.navigationLinks = [];
+  if (!out.padding) out.padding = { top: 16, bottom: 16 };
+  // logoPosition/stickiness/menuType — enums; accept legacy values verbatim.
+}
+
+function coercePopularProductsProps(out: Record<string, unknown>): void {
+  const heading = unwrapTextSize(out.heading);
+  out.heading = heading.present ? heading.value : 'Популярные товары';
+  // productCard.columns → columns, legacy `cards` stays
+  if (!out.columns && isPlainObject(out.productCard)) {
+    const pc = out.productCard as Record<string, unknown>;
+    if (typeof pc.columns === 'number') out.columns = pc.columns;
+  }
+  if (typeof out.cards !== 'number') out.cards = 4;
+  if (typeof out.columns !== 'number') out.columns = 4;
+  out.colorScheme = coerceSchemeNumber(out.colorScheme);
+  if (!out.padding) out.padding = { top: 80, bottom: 80 };
+}
+
+function coerceContactFormProps(out: Record<string, unknown>): void {
+  const heading = unwrapTextSize(out.heading);
+  out.heading = heading.present ? heading.value : 'Связаться с нами';
+  if (typeof out.description !== 'string') out.description = '';
+  if (typeof out.buttonText !== 'string') out.buttonText = 'Отправить';
+  if (!isPlainObject(out.fields)) {
+    out.fields = {
+      name: { enabled: true, required: true, label: 'Имя' },
+      email: { enabled: true, required: true, label: 'Email' },
+      phone: { enabled: false, required: false, label: 'Телефон' },
+      message: { enabled: true, required: false, label: 'Сообщение' },
+    };
+  }
+  out.colorScheme = coerceSchemeNumber(out.colorScheme);
+  if (!out.padding) out.padding = { top: 80, bottom: 80 };
+}
+
+function coerceFooterProps(out: Record<string, unknown>): void {
+  // Footer schema expects nested heading/text/newsletter, which is what the
+  // legacy data already has. The only mismatches are scalar colour schemes
+  // and missing defaults.
+  out.colorScheme = coerceSchemeNumber(out.colorScheme);
+  out.copyrightColorScheme = coerceSchemeNumber(out.copyrightColorScheme);
+  if (!isPlainObject(out.heading)) {
+    out.heading = { text: '', size: 'small', alignment: 'center' };
+  } else {
+    const h = out.heading as Record<string, unknown>;
+    if (typeof h.alignment !== 'string') h.alignment = 'center';
+  }
+  if (!isPlainObject(out.text)) {
+    out.text = { content: '', size: 'small' };
+  }
+  // newsletter.enabled may be "true"/"false" string
+  if (isPlainObject(out.newsletter)) {
+    const n = out.newsletter as Record<string, unknown>;
+    n.enabled = truthy(n.enabled);
+  }
+  if (!out.padding) out.padding = { top: 80, bottom: 80 };
+}
+
+function truthy(v: unknown): boolean {
+  if (typeof v === 'boolean') return v;
+  if (typeof v === 'string') return v === 'true' || v === '1';
+  if (typeof v === 'number') return v !== 0;
+  return false;
+}
+
+/**
+ * Generic pass: rewrite asset URLs inside props. Does NOT flatten any
+ * shape — per-block coercers handle that.
+ */
+function rewriteValueUrls(v: unknown, publicUrl: string | null): unknown {
+  if (typeof v === 'string') return rewriteAssetUrl(v, publicUrl);
+  if (v === null || typeof v !== 'object') return v;
+  if (Array.isArray(v)) return v.map((x) => rewriteValueUrls(x, publicUrl));
+  const out: Record<string, unknown> = {};
+  for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+    out[k] = rewriteValueUrls(val, publicUrl);
   }
   return out;
 }
@@ -250,49 +403,6 @@ function coerceCollectionsProps(
       })
       .filter((x): x is Record<string, unknown> => x !== null);
   }
-}
-
-function normaliseValue(v: unknown, publicUrl: string | null): unknown {
-  if (typeof v === 'string') return rewriteAssetUrl(v, publicUrl);
-  if (v === null || typeof v !== 'object') return v;
-  if (Array.isArray(v)) return v.map((x) => normaliseValue(x, publicUrl));
-  const obj = v as Record<string, unknown>;
-  const keys = Object.keys(obj);
-
-  // `{text, size}` → text
-  if (
-    keys.length <= 2 &&
-    typeof obj.text === 'string' &&
-    (keys.length === 1 || 'size' in obj)
-  ) {
-    return obj.text;
-  }
-  // `{content, size}` → content
-  if (
-    keys.length <= 2 &&
-    typeof obj.content === 'string' &&
-    (keys.length === 1 || 'size' in obj)
-  ) {
-    return obj.content;
-  }
-  // `{text, link:{href}}` → `{text, href}`
-  if (
-    typeof obj.text === 'string' &&
-    obj.link &&
-    isPlainObject(obj.link) &&
-    typeof (obj.link as Record<string, unknown>).href === 'string'
-  ) {
-    return {
-      text: obj.text,
-      href: (obj.link as Record<string, unknown>).href,
-    };
-  }
-  // Recurse through plain object values.
-  const out: Record<string, unknown> = {};
-  for (const [k, val] of Object.entries(obj)) {
-    out[k] = normaliseValue(val, publicUrl);
-  }
-  return out;
 }
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {

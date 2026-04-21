@@ -16,7 +16,8 @@
     "db:migrate:manual:js": "node src/db/manual-migrate.js",
     "build:blocks": "node scripts/compile-astro-blocks.mjs",
     "verify:astro": "node scripts/verify-astro-runtime.mjs",
-    "build:preview-tailwind": "node scripts/compile-preview-tailwind.mjs"
+    "build:preview-tailwind": "node scripts/compile-preview-tailwind.mjs",
+    "backfill:theme-schemes": "tsx scripts/backfill-theme-colorschemes.ts"
   },
   "dependencies": {
     "@astrojs/compiler": "^3.0.1",

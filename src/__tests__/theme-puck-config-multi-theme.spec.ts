@@ -19,7 +19,7 @@ import {
 
 const ROOT = resolve(__dirname, '..', '..');
 
-function loadManifest(theme: 'rose' | 'vanilla'): ThemeConfigForResolver {
+function loadManifest(theme: 'rose' | 'vanilla' | 'bloom'): ThemeConfigForResolver {
   const raw = readFileSync(resolve(ROOT, 'packages', `theme-${theme}`, 'theme.json'), 'utf-8');
   const json = JSON.parse(raw);
   return {
@@ -66,5 +66,21 @@ describe('Theme manifest resolver (Phase 2a multi-theme wiring)', () => {
     expect(rose.defaults['--container-max-width']).toBe('1280px');
     expect(vanilla.defaults['--radius-button']).toBe('0px');
     expect(rose.defaults['--radius-button']).toBe('8px');
+  });
+
+  it('bloom manifest overrides Header + Footer with pill-radius + pink palette signature', () => {
+    const bloom = loadManifest('bloom');
+    const resolved = resolveBlocks(BASE_BLOCKS, bloom);
+
+    expect(resolved.Header.source).toBe('theme');
+    expect(resolved.Header.path).toBe('./blocks/Header');
+    expect(resolved.Footer.source).toBe('theme');
+    expect(resolved.Footer.path).toBe('./blocks/Footer');
+
+    const bloomJson = JSON.parse(readFileSync(resolve(ROOT, 'packages', 'theme-bloom', 'theme.json'), 'utf-8'));
+    expect(bloomJson.id).toBe('bloom');
+    expect(bloomJson.defaults['--container-max-width']).toBe('1320px');
+    expect(bloomJson.defaults['--radius-button']).toBe('100px');
+    expect(bloomJson.defaults['--radius-card']).toBe('12px');
   });
 });

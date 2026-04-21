@@ -15,6 +15,8 @@ import {
 const roseManifestJson = require('../../packages/theme-rose/theme.json') as ThemeConfigForResolver;
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const vanillaManifestJson = require('../../packages/theme-vanilla/theme.json') as ThemeConfigForResolver;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const bloomManifestJson = require('../../packages/theme-bloom/theme.json') as ThemeConfigForResolver;
 
 /**
  * JSON-serializable shape of a Puck component config — render function is
@@ -85,9 +87,8 @@ const DEFAULT_THEME_CONFIG: ThemeConfigForResolver = {
 };
 
 /**
- * Map a themeId to its manifest. Currently wired for 'rose' and 'vanilla';
- * 'base' (and unknown ids) fall back to DEFAULT_THEME_CONFIG. Future themes
- * (bloom, satin, flux) plug in here.
+ * Map a themeId to its manifest. Wired for rose, vanilla, bloom, satin, flux.
+ * 'base' (and unknown ids) fall back to DEFAULT_THEME_CONFIG.
  */
 function getThemeManifest(themeId: string): ThemeConfigForResolver {
   if (themeId === 'rose') {
@@ -102,6 +103,13 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       blocks: vanillaManifestJson.blocks ?? {},
       features: vanillaManifestJson.features ?? {},
       customBlocks: vanillaManifestJson.customBlocks ?? {},
+    };
+  }
+  if (themeId === 'bloom') {
+    return {
+      blocks: bloomManifestJson.blocks ?? {},
+      features: bloomManifestJson.features ?? {},
+      customBlocks: bloomManifestJson.customBlocks ?? {},
     };
   }
   return DEFAULT_THEME_CONFIG;
@@ -120,6 +128,7 @@ function createBlockLoader(themeId: string): BlockConfigLoader {
   const themePackageByThemeId: Record<string, string> = {
     rose: 'theme-rose',
     vanilla: 'theme-vanilla',
+    bloom: 'theme-bloom',
   };
 
   return async (pathOrName: string) => {
@@ -163,10 +172,10 @@ function createBlockLoader(themeId: string): BlockConfigLoader {
  * Returns the Puck editor config as JSON. Constructor fetches and wires its
  * own React render function client-side (see constructor/src/lib/puckConfigResolver.ts).
  *
- * For themeId=rose, the rose manifest is loaded and its block overrides
- * (Header, Footer) replace the base implementations. For themeId=vanilla,
- * the vanilla manifest is loaded (Header, Footer overrides). For unknown
- * themeIds, an empty manifest is used (all base blocks, no overrides).
+ * Supported themeIds: rose, vanilla, bloom (Phase 2b in progress: satin,
+ * flux to follow). Each ships a manifest with Header + Footer block
+ * overrides (same prop shape as base). For unknown themeIds, an empty
+ * manifest is used (all base blocks, no overrides).
  */
 @Controller('api/themes/:themeId/puck-config')
 export class ThemePuckConfigController {

@@ -49,4 +49,28 @@ describe('GET /api/themes/:id/puck-config (e2e)', () => {
       expect(cfg.defaultProps).toBeDefined();
     }
   }, 30000);
+
+  it('returns rose-overridden Header with rose-specific fields', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/themes/rose/puck-config')
+      .expect(200);
+
+    expect(res.body.components.Header).toBeDefined();
+    // Rose Header should have same props as base Header — data compat guaranteed.
+    // Categorization from Rose's Header.puckConfig.ts → must be 'navigation'.
+    expect(res.body.components.Header.label).toBeDefined();
+    expect(res.body.components.Header.category).toBe('navigation');
+    // Rose Footer also overridden.
+    expect(res.body.components.Footer).toBeDefined();
+    expect(res.body.components.Footer.category).toBeDefined();
+  }, 30000);
+
+  it('base theme returns default Header (no override)', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/themes/base/puck-config')
+      .expect(200);
+
+    expect(res.body.components.Header).toBeDefined();
+    expect(res.body.components.Footer).toBeDefined();
+  }, 30000);
 });

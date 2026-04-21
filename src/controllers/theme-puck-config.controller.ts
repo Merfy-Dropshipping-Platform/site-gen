@@ -9,6 +9,10 @@ import {
   resolveConstructorConfig,
   type BlockConfigLoader,
 } from '../../packages/theme-contract/resolver/resolveConstructorConfig';
+// Rose theme manifest — loaded via require (CommonJS target). Resolved relative
+// to dist/src/controllers → ../../packages/theme-rose/theme.json at runtime.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const roseManifestJson = require('../../packages/theme-rose/theme.json') as ThemeConfigForResolver;
 
 /**
  * JSON-serializable shape of a Puck component config — render function is
@@ -79,46 +83,93 @@ const DEFAULT_THEME_CONFIG: ThemeConfigForResolver = {
 };
 
 /**
- * Loader: dynamically imports a block's index.ts from packages/theme-base.
- * The path field in BaseBlockEntry is the block name (e.g. "Hero"); we resolve
- * it to the on-disk TS source here.
+ * Map a themeId to its manifest. Currently wired for 'rose'; 'base' (and
+ * unknown ids) fall back to DEFAULT_THEME_CONFIG. Future themes (vanilla,
+ * bloom, satin, flux) plug in here.
  */
-const blockLoader: BlockConfigLoader = async (blockName: string) => {
-  const absPath = resolve(
-    __dirname,
-    '..',
-    '..',
-    'packages',
-    'theme-base',
-    'blocks',
-    blockName,
-    'index.ts',
-  );
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return require(absPath) as Record<string, unknown>;
-};
+function getThemeManifest(themeId: string): ThemeConfigForResolver {
+  if (themeId === 'rose') {
+    return {
+      blocks: roseManifestJson.blocks ?? {},
+      features: roseManifestJson.features ?? {},
+      customBlocks: roseManifestJson.customBlocks ?? {},
+    };
+  }
+  return DEFAULT_THEME_CONFIG;
+}
 
 /**
- * GET /api/themes/:id/puck-config — Phase 1c Task 3a (revised).
+ * Build a block loader that resolves overridden blocks from the theme package
+ * and everything else from @merfy/theme-base. The loader receives the `path`
+ * field from ResolvedBlockEntry — for base blocks this is just the block name
+ * (convention from BASE_BLOCKS), for theme overrides it's the relative path
+ * declared in theme.json (e.g. "./blocks/Header" for rose).
+ */
+function createBlockLoader(themeId: string): BlockConfigLoader {
+  return async (pathOrName: string) => {
+    // Theme override path starts with "./blocks/<Name>" per manifest convention.
+    if (pathOrName.startsWith('./blocks/') && themeId === 'rose') {
+      const blockName = pathOrName.split('/').pop() as string;
+      const absPath = resolve(
+        __dirname,
+        '..',
+        '..',
+        'packages',
+        'theme-rose',
+        'blocks',
+        blockName,
+        'index.ts',
+      );
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      return require(absPath) as Record<string, unknown>;
+    }
+
+    // Fall through: base block lookup by name.
+    const absPath = resolve(
+      __dirname,
+      '..',
+      '..',
+      'packages',
+      'theme-base',
+      'blocks',
+      pathOrName,
+      'index.ts',
+    );
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require(absPath) as Record<string, unknown>;
+  };
+}
+
+/**
+ * GET /api/themes/:id/puck-config — Phase 1c Task 3a (revised), Phase 1d Task 11.
  *
  * Returns the Puck editor config as JSON. Constructor fetches and wires its
  * own React render function client-side (see constructor/src/lib/puckConfigResolver.ts).
  *
- * The themeId param is currently accepted but unused: all 25 base blocks are
- * always exposed. Future work will apply theme-specific overrides/variants via
- * ThemesService + resolveBlocks.
+ * For themeId=rose, the rose manifest is loaded and its block overrides
+ * (Header, Footer) replace the base implementations. For unknown themeIds,
+ * an empty manifest is used (all base blocks, no overrides).
  */
 @Controller('api/themes/:themeId/puck-config')
 export class ThemePuckConfigController {
   @Get()
   async getPuckConfig(
-    @Param('themeId') _themeId: string,
+    @Param('themeId') themeId: string,
   ): Promise<PuckConfigJson> {
-    const resolvedBlocks = resolveBlocks(BASE_BLOCKS, DEFAULT_THEME_CONFIG);
-    const puckConfig = await resolveConstructorConfig(
-      resolvedBlocks,
-      blockLoader,
-    );
+    const themeManifest = getThemeManifest(themeId);
+    const resolvedBlocks = resolveBlocks(BASE_BLOCKS, themeManifest);
+    const loader = createBlockLoader(themeId);
+    const puckConfig = await resolveConstructorConfig(resolvedBlocks, loader);
+
+    // Build a reverse map from categories → component name so each component
+    // carries its own `category` field (in addition to the top-level categories
+    // grouping). Constructor UI reads this directly for per-block chips.
+    const componentToCategory: Record<string, string> = {};
+    for (const [cat, group] of Object.entries(puckConfig.categories ?? {})) {
+      for (const name of group.components) {
+        componentToCategory[name] = cat;
+      }
+    }
 
     // Strip render function — it's a placeholder (() => null) on the server
     // and cannot be JSON-serialized. Constructor re-attaches AstroBlockBridge.
@@ -126,6 +177,7 @@ export class ThemePuckConfigController {
     for (const [name, cfg] of Object.entries(puckConfig.components)) {
       components[name] = {
         label: cfg.label,
+        category: componentToCategory[name] ?? 'other',
         fields: cfg.fields,
         defaultProps: cfg.defaultProps,
       };

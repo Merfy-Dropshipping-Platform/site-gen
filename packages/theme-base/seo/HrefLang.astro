@@ -1,0 +1,12 @@
+---
+interface Props {
+  alternates: Array<{ locale: string; url: string }>;
+  xDefault?: string;
+}
+
+const { alternates, xDefault } = Astro.props as Props;
+---
+{alternates.map(({ locale, url }) => (
+  <link rel="alternate" hreflang={locale} href={url} />
+))}
+{xDefault && <link rel="alternate" hreflang="x-default" href={xDefault} />}

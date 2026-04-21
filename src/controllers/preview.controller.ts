@@ -63,6 +63,7 @@ export class PreviewController {
       blocks,
       tokensCss: this.tokensCssFromSettings(loaded.data, loaded.themeId),
       fontHead: googleFontHead(loaded.themeId),
+      themeId: loaded.themeId,
     });
     res.type('text/html').send(html);
   }

@@ -6,6 +6,12 @@ import { Injectable, Optional } from '@nestjs/common';
 export interface RenderBlockInput {
   blockName: string;
   props: Record<string, unknown>;
+  /**
+   * Theme id whose packages/theme-<id>/blocks/<blockName>/ should win if it
+   * ships an override. When omitted (or set to 'base') resolver skips straight
+   * to theme-base.
+   */
+  themeId?: string | null;
 }
 
 /**
@@ -15,6 +21,7 @@ export interface RenderPreviewPageInput {
   blocks: Array<{ type: string; props: Record<string, unknown> }>;
   tokensCss: string;
   fontHead: string;
+  themeId?: string | null;
 }
 
 /**
@@ -31,10 +38,14 @@ export interface IAstroContainer {
 
 /**
  * Resolves a block name to an Astro component module default export.
- * In production this dynamically imports from @merfy/theme-base. In tests
- * this is injected so we can return a fake component without parsing .astro.
+ * In production this dynamically imports from the right packages/theme-<id>/
+ * override if one exists, falling back to @merfy/theme-base. Tests inject a
+ * stub to avoid parsing .astro.
  */
-export type ComponentResolver = (blockName: string) => Promise<unknown>;
+export type ComponentResolver = (
+  blockName: string,
+  themeId?: string | null,
+) => Promise<unknown>;
 
 /**
  * Factory that creates an Astro container. In production this calls
@@ -54,17 +65,19 @@ export type ContainerFactory = () => Promise<IAstroContainer>;
  * Phase 0: only theme-base is searched. Phase 1 will add theme cascade
  * (theme-<name> ?? theme-base).
  */
-const defaultComponentResolver: ComponentResolver = async (blockName) => {
-  const pkg = 'theme-base';
-  const fileName = blockName;
-  const moduleName = `${pkg}__${blockName}__${fileName}.mjs`;
+const defaultComponentResolver: ComponentResolver = async (
+  blockName,
+  themeId,
+) => {
+  // Cascade theme-<id> override → theme-base. Skip the override tier for
+  // themeId 'base' or when none is provided.
+  const packages: string[] = [];
+  if (themeId && themeId !== 'base') packages.push(`theme-${themeId}`);
+  packages.push('theme-base');
 
-  // Path relative to this compiled service file at runtime. NestJS typically
-  // runs with cwd=sites-root, so dist/astro-blocks/ is directly accessible.
-  // Second candidate handles running from monorepo root.
   const { resolve } = await import('node:path');
-  const candidates = [
-    resolve(process.cwd(), 'dist', 'astro-blocks', moduleName),
+  const roots = [
+    resolve(process.cwd(), 'dist', 'astro-blocks'),
     resolve(
       process.cwd(),
       'backend',
@@ -72,27 +85,26 @@ const defaultComponentResolver: ComponentResolver = async (blockName) => {
       'sites',
       'dist',
       'astro-blocks',
-      moduleName,
     ),
   ];
 
   let lastErr: unknown;
-  for (const p of candidates) {
-    try {
-      const mod = (await import(p)) as { default?: unknown };
-      if (!mod.default) {
-        throw new Error(
-          `Compiled module ${moduleName} has no default export`,
-        );
+  for (const pkg of packages) {
+    const moduleName = `${pkg}__${blockName}__${blockName}.mjs`;
+    for (const root of roots) {
+      const p = resolve(root, moduleName);
+      try {
+        const mod = (await import(p)) as { default?: unknown };
+        if (mod.default) return mod.default;
+        throw new Error(`Compiled module ${moduleName} has no default export`);
+      } catch (err) {
+        lastErr = err;
       }
-      return mod.default;
-    } catch (err) {
-      lastErr = err;
     }
   }
 
   throw new Error(
-    `Block "${blockName}" not resolvable. Tried ${candidates.length} paths. ` +
+    `Block "${blockName}" not resolvable for themeId="${themeId ?? 'base'}". ` +
       `Run 'pnpm build:blocks' first. Last error: ${String(lastErr)}`,
   );
 };
@@ -143,7 +155,10 @@ export class PreviewService {
    */
   async renderBlock(input: RenderBlockInput): Promise<string> {
     // Resolve first so unknown blocks fail fast without initializing the container.
-    const Component = await this.componentResolver(input.blockName);
+    const Component = await this.componentResolver(
+      input.blockName,
+      input.themeId ?? null,
+    );
     const container = await this.getContainer();
     const html = await container.renderToString(Component, {
       props: input.props,
@@ -161,6 +176,7 @@ export class PreviewService {
       const html = await this.renderBlock({
         blockName: b.type,
         props: b.props,
+        themeId: input.themeId ?? null,
       });
       renderedBlocks.push(html);
     }

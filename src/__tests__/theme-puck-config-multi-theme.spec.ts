@@ -19,7 +19,7 @@ import {
 
 const ROOT = resolve(__dirname, '..', '..');
 
-function loadManifest(theme: 'rose' | 'vanilla' | 'bloom'): ThemeConfigForResolver {
+function loadManifest(theme: 'rose' | 'vanilla' | 'bloom' | 'satin'): ThemeConfigForResolver {
   const raw = readFileSync(resolve(ROOT, 'packages', `theme-${theme}`, 'theme.json'), 'utf-8');
   const json = JSON.parse(raw);
   return {
@@ -82,5 +82,21 @@ describe('Theme manifest resolver (Phase 2a multi-theme wiring)', () => {
     expect(bloomJson.defaults['--container-max-width']).toBe('1320px');
     expect(bloomJson.defaults['--radius-button']).toBe('100px');
     expect(bloomJson.defaults['--radius-card']).toBe('12px');
+  });
+
+  it('satin manifest overrides Header + Footer with monochrome + flat (0px) radii signature', () => {
+    const satin = loadManifest('satin');
+    const resolved = resolveBlocks(BASE_BLOCKS, satin);
+
+    expect(resolved.Header.source).toBe('theme');
+    expect(resolved.Header.path).toBe('./blocks/Header');
+    expect(resolved.Footer.source).toBe('theme');
+    expect(resolved.Footer.path).toBe('./blocks/Footer');
+
+    const satinJson = JSON.parse(readFileSync(resolve(ROOT, 'packages', 'theme-satin', 'theme.json'), 'utf-8'));
+    expect(satinJson.id).toBe('satin');
+    expect(satinJson.defaults['--container-max-width']).toBe('1320px');
+    expect(satinJson.defaults['--radius-button']).toBe('0px');
+    expect(satinJson.defaults['--radius-card']).toBe('0px');
   });
 });

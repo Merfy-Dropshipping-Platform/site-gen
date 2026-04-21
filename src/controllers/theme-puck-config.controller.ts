@@ -17,6 +17,8 @@ const roseManifestJson = require('../../packages/theme-rose/theme.json') as Them
 const vanillaManifestJson = require('../../packages/theme-vanilla/theme.json') as ThemeConfigForResolver;
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const bloomManifestJson = require('../../packages/theme-bloom/theme.json') as ThemeConfigForResolver;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const satinManifestJson = require('../../packages/theme-satin/theme.json') as ThemeConfigForResolver;
 
 /**
  * JSON-serializable shape of a Puck component config — render function is
@@ -112,6 +114,13 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       customBlocks: bloomManifestJson.customBlocks ?? {},
     };
   }
+  if (themeId === 'satin') {
+    return {
+      blocks: satinManifestJson.blocks ?? {},
+      features: satinManifestJson.features ?? {},
+      customBlocks: satinManifestJson.customBlocks ?? {},
+    };
+  }
   return DEFAULT_THEME_CONFIG;
 }
 
@@ -129,6 +138,7 @@ function createBlockLoader(themeId: string): BlockConfigLoader {
     rose: 'theme-rose',
     vanilla: 'theme-vanilla',
     bloom: 'theme-bloom',
+    satin: 'theme-satin',
   };
 
   return async (pathOrName: string) => {
@@ -172,7 +182,7 @@ function createBlockLoader(themeId: string): BlockConfigLoader {
  * Returns the Puck editor config as JSON. Constructor fetches and wires its
  * own React render function client-side (see constructor/src/lib/puckConfigResolver.ts).
  *
- * Supported themeIds: rose, vanilla, bloom (Phase 2b in progress: satin,
+ * Supported themeIds: rose, vanilla, bloom, satin (Phase 2b in progress:
  * flux to follow). Each ships a manifest with Header + Footer block
  * overrides (same prop shape as base). For unknown themeIds, an empty
  * manifest is used (all base blocks, no overrides).

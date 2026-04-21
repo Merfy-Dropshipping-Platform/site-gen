@@ -1,0 +1,116 @@
+{
+  "$schema": "https://merfy.ru/schemas/theme-manifest.v2.json",
+  "id": "rose",
+  "name": "Rose",
+  "version": "1.0.0",
+  "extends": "@merfy/theme-base@workspace:*",
+  "category": "fashion",
+  "description": "Elegant rose theme — Merfy flagship storefront template (fashion & lifestyle)",
+  "author": "Merfy",
+  "tokens": "./tokens.json",
+
+  "defaults": {
+    "--font-heading": "'Bitter', serif",
+    "--font-body": "'Arsenal', sans-serif",
+    "--weight-heading": "400",
+    "--weight-body": "400",
+    "--container-max-width": "1280px",
+    "--radius-button": "8px",
+    "--radius-input": "10px",
+    "--radius-card": "10px",
+    "--radius-media": "10px",
+    "--radius-field": "4px",
+    "--size-hero-heading": "72px",
+    "--size-hero-button-h": "80px",
+    "--size-nav-link": "16px",
+    "--size-newsletter-form-w": "600px",
+    "--size-logo-width": "120px",
+    "--size-card-border": "1px",
+    "--spacing-section-y": "96px",
+    "--spacing-grid-col-gap": "40px",
+    "--spacing-grid-row-gap": "48px",
+    "--button-style": "solid",
+    "--footer-layout": "3-column",
+    "--contact-form-layout": "wide",
+    "--cart-type": "drawer",
+    "--card-style": "standard",
+    "--card-alignment": "left",
+    "--color-error": "252 165 165"
+  },
+
+  "colorSchemes": [
+    {
+      "id": "scheme-1",
+      "name": "Light",
+      "tokens": {
+        "--color-bg": "255 255 255",
+        "--color-surface": "245 245 245",
+        "--color-heading": "18 18 18",
+        "--color-text": "18 18 18",
+        "--color-muted": "153 153 153",
+        "--color-primary": "0 0 0",
+        "--color-accent": "0 0 0",
+        "--color-button-bg": "0 0 0",
+        "--color-button-text": "255 255 255",
+        "--color-button-border": "0 0 0",
+        "--color-button-2-bg": "255 255 255",
+        "--color-button-2-text": "0 0 0",
+        "--color-button-2-border": "229 231 235"
+      }
+    },
+    {
+      "id": "scheme-2",
+      "name": "Dark",
+      "tokens": {
+        "--color-bg": "0 0 0",
+        "--color-surface": "26 26 26",
+        "--color-heading": "255 255 255",
+        "--color-text": "255 255 255",
+        "--color-muted": "163 163 163",
+        "--color-primary": "255 255 255",
+        "--color-accent": "255 255 255",
+        "--color-button-bg": "255 255 255",
+        "--color-button-text": "0 0 0",
+        "--color-button-border": "255 255 255",
+        "--color-button-2-bg": "0 0 0",
+        "--color-button-2-text": "255 255 255",
+        "--color-button-2-border": "51 51 51"
+      }
+    },
+    {
+      "id": "scheme-3",
+      "name": "Beige",
+      "tokens": {
+        "--color-bg": "245 240 235",
+        "--color-surface": "230 225 220",
+        "--color-heading": "26 26 26",
+        "--color-text": "26 26 26",
+        "--color-muted": "153 153 153",
+        "--color-primary": "0 0 0",
+        "--color-accent": "0 0 0",
+        "--color-button-bg": "0 0 0",
+        "--color-button-text": "245 240 235",
+        "--color-button-border": "0 0 0",
+        "--color-button-2-bg": "245 240 235",
+        "--color-button-2-text": "26 26 26",
+        "--color-button-2-border": "220 215 210"
+      }
+    }
+  ],
+
+  "blocks": {},
+
+  "features": {
+    "newsletter": true,
+    "cart-drawer": true,
+    "otp-auth": true,
+    "wishlist": false,
+    "color-swatches": true,
+    "filter-sidebar": true
+  },
+
+  "fonts": [
+    { "family": "Bitter",  "weights": [400, 600, 700], "italic": true, "source": "google" },
+    { "family": "Arsenal", "weights": [400, 700],                      "source": "google" }
+  ]
+}

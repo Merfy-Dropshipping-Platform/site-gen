@@ -35,8 +35,8 @@ export class PreviewController {
     @Query('page') page: string = 'home',
     @Res() res: Response,
   ): Promise<void> {
-    const data = await this.loadRevisionData(siteId);
-    if (!data) {
+    const loaded = await this.loadRevisionData(siteId);
+    if (!loaded) {
       res
         .status(404)
         .type('text/html')
@@ -44,7 +44,7 @@ export class PreviewController {
       return;
     }
 
-    const blocks = this.extractPageBlocks(data, page);
+    const blocks = this.extractPageBlocks(loaded.data, page, loaded.publicUrl);
     if (!blocks) {
       res
         .status(404)
@@ -55,18 +55,20 @@ export class PreviewController {
 
     const html = await this.preview.renderPreviewPage({
       blocks,
-      tokensCss: this.tokensCssFromSettings(data),
+      tokensCss: this.tokensCssFromSettings(loaded.data),
       fontHead: '',
     });
     res.type('text/html').send(html);
   }
 
-  private async loadRevisionData(
-    siteId: string,
-  ): Promise<Record<string, unknown> | null> {
+  private async loadRevisionData(siteId: string): Promise<{
+    data: Record<string, unknown>;
+    publicUrl: string | null;
+  } | null> {
     const [site] = await this.db
       .select({
         currentRevisionId: schema.site.currentRevisionId,
+        publicUrl: schema.site.publicUrl,
       })
       .from(schema.site)
       .where(eq(schema.site.id, siteId));
@@ -78,12 +80,16 @@ export class PreviewController {
       .where(eq(schema.siteRevision.id, site.currentRevisionId));
     if (!rev?.data) return null;
 
-    return rev.data as Record<string, unknown>;
+    return {
+      data: rev.data as Record<string, unknown>,
+      publicUrl: site.publicUrl ?? null,
+    };
   }
 
   private extractPageBlocks(
     data: Record<string, unknown>,
     page: string,
+    publicUrl: string | null,
   ): Array<{ type: string; props: Record<string, unknown> }> | null {
     const pagesData = (data.pagesData ?? {}) as Record<string, unknown>;
     const pageData = pagesData[page] as Record<string, unknown> | undefined;
@@ -111,6 +117,7 @@ export class PreviewController {
         type: b.type,
         props: adaptLegacyProps(
           (b.props ?? {}) as Record<string, unknown>,
+          publicUrl,
         ),
       }));
   }
@@ -157,14 +164,18 @@ export class PreviewController {
  */
 function adaptLegacyProps(
   props: Record<string, unknown>,
+  publicUrl: string | null,
 ): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(props)) {
-    out[k] = normaliseValue(v);
+    out[k] = normaliseValue(v, publicUrl);
   }
   // Legacy → new top-level renames (only if target not already present).
   if (out.backgroundImage && !out.image) {
-    out.image = { url: out.backgroundImage, alt: '' };
+    out.image = {
+      url: rewriteAssetUrl(String(out.backgroundImage), publicUrl),
+      alt: '',
+    };
   }
   if (out.primaryButton && !out.cta && isPlainObject(out.primaryButton)) {
     const btn = out.primaryButton as Record<string, unknown>;
@@ -190,9 +201,10 @@ function adaptLegacyProps(
   return out;
 }
 
-function normaliseValue(v: unknown): unknown {
+function normaliseValue(v: unknown, publicUrl: string | null): unknown {
+  if (typeof v === 'string') return rewriteAssetUrl(v, publicUrl);
   if (v === null || typeof v !== 'object') return v;
-  if (Array.isArray(v)) return v.map(normaliseValue);
+  if (Array.isArray(v)) return v.map((x) => normaliseValue(x, publicUrl));
   const obj = v as Record<string, unknown>;
   const keys = Object.keys(obj);
 
@@ -227,11 +239,31 @@ function normaliseValue(v: unknown): unknown {
   // Recurse through plain object values.
   const out: Record<string, unknown> = {};
   for (const [k, val] of Object.entries(obj)) {
-    out[k] = normaliseValue(val);
+    out[k] = normaliseValue(val, publicUrl);
   }
   return out;
 }
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === 'object' && !Array.isArray(v);
+}
+
+const ASSET_EXT_RE = /\.(svg|png|jpe?g|gif|webp|avif|ico|mp4|webm|pdf)$/i;
+
+/**
+ * Rewrite a site-relative asset path (`/logo.svg`, `/uploads/hero.png`) to
+ * the site's publicUrl so the iframe fetches from the live nginx instead of
+ * `gateway.merfy.ru` (which doesn't serve these files and returns 404).
+ *
+ * Heuristic: only paths that START with `/` (but not `//`, not absolute
+ * URLs) AND end in a recognised asset extension get rewritten. Navigation
+ * hrefs like `/catalog` or `/about` stay untouched.
+ */
+function rewriteAssetUrl(url: string, publicUrl: string | null): string {
+  if (!publicUrl) return url;
+  if (!url.startsWith('/')) return url;
+  if (url.startsWith('//')) return url;
+  if (!ASSET_EXT_RE.test(url)) return url;
+  const origin = publicUrl.replace(/\/$/, '');
+  return origin + url;
 }

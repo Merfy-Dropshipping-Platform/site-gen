@@ -14,7 +14,8 @@
     "db:migrate:fix": "node -r ts-node/register src/db/migrate-fix.ts",
     "db:migrate:manual": "node -r ts-node/register src/db/manual-migrate.ts",
     "db:migrate:manual:js": "node src/db/manual-migrate.js",
-    "build:blocks": "node scripts/compile-astro-blocks.mjs"
+    "build:blocks": "node scripts/compile-astro-blocks.mjs",
+    "verify:astro": "node scripts/verify-astro-runtime.mjs"
   },
   "dependencies": {
     "@astrojs/compiler": "^3.0.1",

@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { PreviewService } from '../services/preview.service';
 import * as schema from '../db/schema';
 import { PG_CONNECTION } from '../constants';
+import { getThemeManifest } from '../themes/theme-manifest-loader';
 
 /**
  * GET /api/sites/:id/preview — renders the constructor's iframe preview for
@@ -55,7 +56,7 @@ export class PreviewController {
 
     const html = await this.preview.renderPreviewPage({
       blocks,
-      tokensCss: this.tokensCssFromSettings(loaded.data),
+      tokensCss: this.tokensCssFromSettings(loaded.data, loaded.themeId),
       fontHead: '',
     });
     res.type('text/html').send(html);
@@ -64,11 +65,13 @@ export class PreviewController {
   private async loadRevisionData(siteId: string): Promise<{
     data: Record<string, unknown>;
     publicUrl: string | null;
+    themeId: string | null;
   } | null> {
     const [site] = await this.db
       .select({
         currentRevisionId: schema.site.currentRevisionId,
         publicUrl: schema.site.publicUrl,
+        themeId: schema.site.themeId,
       })
       .from(schema.site)
       .where(eq(schema.site.id, siteId));
@@ -83,6 +86,7 @@ export class PreviewController {
     return {
       data: rev.data as Record<string, unknown>,
       publicUrl: site.publicUrl ?? null,
+      themeId: site.themeId ?? null,
     };
   }
 
@@ -123,8 +127,11 @@ export class PreviewController {
       }));
   }
 
-  private tokensCssFromSettings(data: Record<string, unknown>): string {
-    return buildTokensCss(data.themeSettings);
+  private tokensCssFromSettings(
+    data: Record<string, unknown>,
+    themeId: string | null,
+  ): string {
+    return buildTokensCss(data.themeSettings, themeId);
   }
 
   private errorPage(message: string): string {
@@ -421,7 +428,8 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
  * Defaults (when themeSettings is missing) mirror the Phase 0 constants
  * so downstream rendering never sees undefined vars.
  */
-function buildTokensCss(settings: unknown): string {
+function buildTokensCss(settings: unknown, themeId: string | null): string {
+  const manifest = themeId ? getThemeManifest(themeId) : null;
   const s = isPlainObject(settings) ? settings : {};
   const buttonRadius = toPx(s.buttonRadius, 0);
   const cardRadius = toPx(s.cardRadius, 8);
@@ -439,37 +447,98 @@ function buildTokensCss(settings: unknown): string {
   const logoWidth = toPx(s.logoWidth, 40);
   const errorColor = hexToRgbTriple(s.errorColor) ?? '252 165 165';
 
+  // Theme manifest defaults (Bitter/Arsenal for Rose, Urbanist/Inter for
+  // Bloom, Kelly Slab/Arsenal for Satin, Roboto Flex for Flux, Bitter/
+  // Arsenal for Vanilla) sit between BASE_DEFAULTS and merchant overrides.
+  // If a merchant hasn't touched a font/radius in ThemeSettings, we fall
+  // back to the theme's default. If they have, their value wins.
+  const themeDefaults = (manifest?.defaults ?? {}) as Record<string, string>;
+  const pick = (
+    themeKey: string,
+    merchantValue: string | undefined,
+    hardcoded: string,
+  ): string =>
+    merchantValue !== undefined && merchantValue !== ''
+      ? merchantValue
+      : (themeDefaults[themeKey] ?? hardcoded);
+
+  const merchantDidSetFontHeading =
+    typeof s.headingFont === 'string' && s.headingFont !== '';
+  const merchantDidSetFontBody =
+    typeof s.bodyFont === 'string' && s.bodyFont !== '';
+
   const rootRules = `
 :root {
-  --radius-button: ${buttonRadius};
-  --radius-card: ${cardRadius};
-  --radius-input: ${inputRadius};
-  --radius-media: ${mediaRadius};
-  --radius-field: ${fieldRadius};
-  --font-heading: ${headingFont};
-  --font-body: ${bodyFont};
-  --weight-body: ${bodyWeight};
-  --weight-heading: ${headingWeight};
-  --section-padding: ${sectionPadding};
-  --spacing-section-y: ${sectionPadding};
-  --spacing-grid-col-gap: 24px;
-  --spacing-grid-row-gap: 32px;
-  --size-hero-heading: 48px;
-  --size-hero-button-h: 48px;
-  --size-nav-link: 14px;
-  --size-logo-width: ${logoWidth};
-  --size-newsletter-form-w: 420px;
-  --container-max-width: 1320px;
+  --radius-button: ${pick('--radius-button', undefined, buttonRadius)};
+  --radius-card: ${pick('--radius-card', undefined, cardRadius)};
+  --radius-input: ${pick('--radius-input', undefined, inputRadius)};
+  --radius-media: ${pick('--radius-media', undefined, mediaRadius)};
+  --radius-field: ${pick('--radius-field', undefined, fieldRadius)};
+  --font-heading: ${merchantDidSetFontHeading ? headingFont : (themeDefaults['--font-heading'] ?? headingFont)};
+  --font-body: ${merchantDidSetFontBody ? bodyFont : (themeDefaults['--font-body'] ?? bodyFont)};
+  --weight-body: ${themeDefaults['--weight-body'] ?? bodyWeight};
+  --weight-heading: ${themeDefaults['--weight-heading'] ?? headingWeight};
+  --section-padding: ${pick('--spacing-section-y', undefined, sectionPadding)};
+  --spacing-section-y: ${pick('--spacing-section-y', undefined, sectionPadding)};
+  --spacing-grid-col-gap: ${themeDefaults['--spacing-grid-col-gap'] ?? '24px'};
+  --spacing-grid-row-gap: ${themeDefaults['--spacing-grid-row-gap'] ?? '32px'};
+  --size-hero-heading: ${themeDefaults['--size-hero-heading'] ?? '48px'};
+  --size-hero-button-h: ${themeDefaults['--size-hero-button-h'] ?? '48px'};
+  --size-nav-link: ${themeDefaults['--size-nav-link'] ?? '14px'};
+  --size-logo-width: ${pick('--size-logo-width', undefined, logoWidth)};
+  --size-newsletter-form-w: ${themeDefaults['--size-newsletter-form-w'] ?? '420px'};
+  --container-max-width: ${themeDefaults['--container-max-width'] ?? '1320px'};
   --color-error: ${errorColor};
   --color-muted: 156 163 175;
   --color-primary: 17 17 17;
 }`;
 
-  const schemes = Array.isArray(s.colorSchemes) ? s.colorSchemes : [];
-  const schemeRules = schemes
-    .map((raw) => (isPlainObject(raw) ? buildSchemeRule(raw) : ''))
-    .filter((r) => r.length > 0)
-    .join('\n');
+  // Merchant schemes win; theme manifest schemes fill the gap for IDs the
+  // merchant hasn't touched. Theme schemes use the {id, name, tokens:{...}}
+  // shape (RGB triples already baked in); merchant schemes use the legacy
+  // hex-based {background, surfaceBg, heading, primaryButton:{...}} shape
+  // and go through buildSchemeRule + hexToRgbTriple.
+  const merchantSchemes = Array.isArray(s.colorSchemes) ? s.colorSchemes : [];
+  const merchantById = new Map<string, Record<string, unknown>>();
+  for (const raw of merchantSchemes) {
+    if (isPlainObject(raw) && typeof (raw as Record<string, unknown>).id === 'string') {
+      merchantById.set(
+        String((raw as Record<string, unknown>).id),
+        raw as Record<string, unknown>,
+      );
+    }
+  }
+  const themeSchemes = manifest?.colorSchemes ?? [];
+  const themeSchemeIds = new Set(themeSchemes.map((t) => t.id));
+
+  const schemeRuleLines: string[] = [];
+  // Theme schemes first — one block each, merchant override takes precedence
+  // but keeps the same scheme id so blocks stamped `color-scheme-scheme-N`
+  // get consistent vars across schemes that only exist in one source.
+  for (const themeScheme of themeSchemes) {
+    const merchant = merchantById.get(themeScheme.id);
+    if (merchant) {
+      const rule = buildSchemeRule(merchant);
+      if (rule) schemeRuleLines.push(rule);
+      merchantById.delete(themeScheme.id);
+    } else {
+      schemeRuleLines.push(buildThemeSchemeRule(themeScheme));
+    }
+  }
+  // Merchant-only schemes (id not present in manifest) — append as-is.
+  for (const remaining of merchantById.values()) {
+    const rule = buildSchemeRule(remaining);
+    if (rule) schemeRuleLines.push(rule);
+  }
+  const schemeRules = schemeRuleLines.filter((r) => r.length > 0).join('\n');
+
+  // Default scheme lookup: prefer merchant.defaultSchemeIndex, else fall
+  // back to theme manifest's first scheme, else first available.
+  const schemes: Record<string, unknown>[] = [
+    ...merchantSchemes.filter(isPlainObject) as Record<string, unknown>[],
+    ...themeSchemes.map((ts) => themeSchemeToMerchantShape(ts)),
+  ];
+  void themeSchemeIds; // reserved for future per-theme filter
 
   // Root also gets the default scheme's vars so blocks without an explicit
   // `color-scheme-scheme-N` class (shouldn't happen, but defensive) still
@@ -503,6 +572,60 @@ function fontFamily(v: unknown, fallback: string): string {
     roboto: '"Roboto", system-ui, sans-serif',
   };
   return known[v] ?? `"${v}", ${fallback}`;
+}
+
+/**
+ * Theme-manifest scheme format already has RGB-triple values in its
+ * `tokens` map. We emit them straight into a `.color-scheme-<id>` block —
+ * no hex → rgb conversion needed.
+ */
+function buildThemeSchemeRule(scheme: {
+  id: string;
+  tokens: Record<string, string>;
+}): string {
+  const pairs = Object.entries(scheme.tokens).map(
+    ([k, v]) => `${k}: ${v}`,
+  );
+  if (pairs.length === 0) return '';
+  return `.color-scheme-${scheme.id} { ${pairs.join('; ')}; }`;
+}
+
+/**
+ * Convert a theme-manifest scheme ({id, name, tokens: {--color-bg: "255 255 255"...}})
+ * into the merchant-shape ({id, background: "#ffffff", ...}) so default-scheme
+ * :root injection picks up theme defaults when the merchant hasn't touched a scheme.
+ */
+function themeSchemeToMerchantShape(scheme: {
+  id: string;
+  name: string;
+  tokens: Record<string, string>;
+}): Record<string, unknown> {
+  const t = scheme.tokens;
+  const rgbTripleToHex = (v: string | undefined): string | undefined => {
+    if (typeof v !== 'string') return undefined;
+    const parts = v.trim().split(/\s+/).map((n) => parseInt(n, 10));
+    if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return undefined;
+    const [r, g, b] = parts;
+    return '#' + [r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('');
+  };
+  return {
+    id: scheme.id,
+    name: scheme.name,
+    background: rgbTripleToHex(t['--color-bg']),
+    surfaceBg: rgbTripleToHex(t['--color-surface']),
+    heading: rgbTripleToHex(t['--color-heading']),
+    text: rgbTripleToHex(t['--color-text']),
+    primaryButton: {
+      background: rgbTripleToHex(t['--color-button-bg']),
+      text: rgbTripleToHex(t['--color-button-text']),
+      border: rgbTripleToHex(t['--color-button-border']),
+    },
+    secondaryButton: {
+      background: rgbTripleToHex(t['--color-button-2-bg']),
+      text: rgbTripleToHex(t['--color-button-2-text']),
+      border: rgbTripleToHex(t['--color-button-2-border']),
+    },
+  };
 }
 
 function buildSchemeRule(scheme: Record<string, unknown>): string {

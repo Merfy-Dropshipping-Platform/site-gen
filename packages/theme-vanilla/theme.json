@@ -1,0 +1,150 @@
+{
+  "$schema": "https://merfy.ru/schemas/theme-manifest.v2.json",
+  "id": "vanilla",
+  "name": "Vanilla",
+  "version": "1.0.0",
+  "extends": "@merfy/theme-base@workspace:*",
+  "category": "general",
+  "description": "Vanilla flat theme — olive-green palette with square radii (Merfy universal storefront template).",
+  "author": "Merfy",
+  "tokens": "./tokens.json",
+
+  "defaults": {
+    "--font-heading": "'Bitter', serif",
+    "--font-body": "'Arsenal', sans-serif",
+    "--weight-heading": "400",
+    "--weight-body": "400",
+    "--container-max-width": "1320px",
+    "--radius-button": "0px",
+    "--radius-input": "0px",
+    "--radius-card": "0px",
+    "--radius-media": "0px",
+    "--radius-field": "0px",
+    "--size-hero-heading": "72px",
+    "--size-hero-button-h": "48px",
+    "--size-nav-link": "16px",
+    "--size-newsletter-form-w": "480px",
+    "--size-logo-width": "120px",
+    "--size-card-border": "1px",
+    "--spacing-section-y": "80px",
+    "--spacing-grid-col-gap": "40px",
+    "--spacing-grid-row-gap": "40px",
+    "--button-style": "solid",
+    "--footer-layout": "2-part",
+    "--contact-form-layout": "wide",
+    "--cart-type": "drawer",
+    "--card-style": "standard",
+    "--card-alignment": "left",
+    "--color-error": "255 148 148"
+  },
+
+  "colorSchemes": [
+    {
+      "id": "scheme-1",
+      "name": "Dark Olive",
+      "tokens": {
+        "--color-bg": "38 49 28",
+        "--color-surface": "38 49 28",
+        "--color-heading": "255 255 255",
+        "--color-text": "255 255 255",
+        "--color-muted": "200 200 200",
+        "--color-primary": "255 255 255",
+        "--color-accent": "58 69 48",
+        "--color-button-bg": "58 69 48",
+        "--color-button-text": "255 255 255",
+        "--color-button-border": "58 69 48",
+        "--color-button-2-bg": "238 238 238",
+        "--color-button-2-text": "38 49 28",
+        "--color-button-2-border": "200 200 200"
+      }
+    },
+    {
+      "id": "scheme-2",
+      "name": "Medium Olive",
+      "tokens": {
+        "--color-bg": "58 69 48",
+        "--color-surface": "58 69 48",
+        "--color-heading": "255 255 255",
+        "--color-text": "255 255 255",
+        "--color-muted": "200 200 200",
+        "--color-primary": "255 255 255",
+        "--color-accent": "38 49 28",
+        "--color-button-bg": "255 255 255",
+        "--color-button-text": "58 69 48",
+        "--color-button-border": "255 255 255",
+        "--color-button-2-bg": "38 49 28",
+        "--color-button-2-text": "255 255 255",
+        "--color-button-2-border": "80 90 70"
+      }
+    },
+    {
+      "id": "scheme-3",
+      "name": "Light Gray",
+      "tokens": {
+        "--color-bg": "238 238 238",
+        "--color-surface": "238 238 238",
+        "--color-heading": "38 49 28",
+        "--color-text": "38 49 28",
+        "--color-muted": "68 68 68",
+        "--color-primary": "38 49 28",
+        "--color-accent": "58 69 48",
+        "--color-button-bg": "58 69 48",
+        "--color-button-text": "255 255 255",
+        "--color-button-border": "58 69 48",
+        "--color-button-2-bg": "238 238 238",
+        "--color-button-2-text": "38 49 28",
+        "--color-button-2-border": "200 200 200"
+      }
+    },
+    {
+      "id": "scheme-4",
+      "name": "White",
+      "tokens": {
+        "--color-bg": "255 255 255",
+        "--color-surface": "255 255 255",
+        "--color-heading": "38 49 28",
+        "--color-text": "38 49 28",
+        "--color-muted": "68 68 68",
+        "--color-primary": "38 49 28",
+        "--color-accent": "58 69 48",
+        "--color-button-bg": "58 69 48",
+        "--color-button-text": "255 255 255",
+        "--color-button-border": "58 69 48",
+        "--color-button-2-bg": "255 255 255",
+        "--color-button-2-text": "38 49 28",
+        "--color-button-2-border": "200 200 200"
+      }
+    }
+  ],
+
+  "blocks": {
+    "Header": {
+      "override": {
+        "path": "./blocks/Header",
+        "reason": "Vanilla uses 1320px container, 4 logo-position layouts with isLightColor() logo inversion, Exo 2 cart badge font, and custom olive-themed iconography."
+      }
+    },
+    "Footer": {
+      "override": {
+        "path": "./blocks/Footer",
+        "reason": "Vanilla uses 2-part grid (logo+nav LEFT, contact+social+payment RIGHT) plus a unique powered-by black strip below copyright, with MC/VISA/МИР payment badges."
+      }
+    }
+  },
+
+  "features": {
+    "newsletter": true,
+    "cart-drawer": true,
+    "otp-auth": true,
+    "wishlist": false,
+    "color-swatches": false,
+    "filter-sidebar": true
+  },
+
+  "fonts": [
+    { "family": "Bitter",  "weights": [400, 600, 700], "italic": true, "source": "google" },
+    { "family": "Arsenal", "weights": [400, 700],                       "source": "google" },
+    { "family": "Exo 2",   "weights": [700],                            "source": "google" },
+    { "family": "Inter",   "weights": [300, 400],                       "source": "google" }
+  ]
+}

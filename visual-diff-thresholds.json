@@ -1,0 +1,23 @@
+{
+  "$comment": "Per-(theme, page, viewport) pixelmatch thresholds. Ratio of differing pixels to total. Default 0.05 = 5%. Keys encode as <theme>/<page>/<viewport>.",
+  "default": 0.05,
+  "per_key": {
+    "$comment": "Tighter / looser overrides when we expect more variance (e.g. mobile crops, product imagery).",
+    "rose/product/375": 0.08,
+    "bloom/checkout/375": 0.08,
+    "flux/home/1920": 0.06
+  },
+  "skip": [
+    "$comment: tuples we cannot reliably diff yet — e.g. routes that depend on real product data",
+    "rose/order-tracking/1920",
+    "rose/order-tracking/375",
+    "vanilla/order-tracking/1920",
+    "vanilla/order-tracking/375",
+    "bloom/order-tracking/1920",
+    "bloom/order-tracking/375",
+    "satin/order-tracking/1920",
+    "satin/order-tracking/375",
+    "flux/order-tracking/1920",
+    "flux/order-tracking/375"
+  ]
+}

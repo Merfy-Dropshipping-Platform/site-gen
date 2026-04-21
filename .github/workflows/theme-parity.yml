@@ -1,0 +1,68 @@
+name: theme-parity
+
+on:
+  pull_request:
+    paths:
+      - 'packages/theme-**'
+      - 'src/controllers/preview*'
+      - 'src/services/preview*'
+      - 'src/themes/**'
+      - '.github/workflows/theme-parity.yml'
+      - 'scripts/visual-diff-themes.mjs'
+      - 'visual-diff-thresholds.json'
+
+jobs:
+  visual-diff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile --ignore-workspace
+
+      - name: Install Playwright chromium
+        run: npx playwright install chromium --with-deps
+
+      - name: Checkout monorepo figma-references (separate repo)
+        # The super-repo commits the figma-references folder. In CI we run
+        # from inside the sites repo only, so the references aren't present
+        # by default. Clone shallow into the expected relative path.
+        env:
+          MONOREPO_REF: ${{ secrets.MONOREPO_REF_TOKEN }}
+        run: |
+          if [ -n "$MONOREPO_REF" ]; then
+            mkdir -p ../../../specs/079-themes-figma-parity
+            git clone --depth 1 \
+              "https://x-access-token:$MONOREPO_REF@github.com/Merfy-Dropshipping-Platform/merfy-super-repo.git" \
+              /tmp/monorepo
+            cp -r /tmp/monorepo/specs/079-themes-figma-parity/figma-references \
+                  ../../../specs/079-themes-figma-parity/figma-references
+          else
+            echo "::warning::MONOREPO_REF_TOKEN not set — all references will be missing, diff will pass by default"
+          fi
+
+      - name: Run visual-diff
+        env:
+          PREVIEW_BASE: https://gateway.merfy.ru
+        run: pnpm visual-diff:themes
+
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diff-report
+          path: visual-diff-report
+          retention-days: 7

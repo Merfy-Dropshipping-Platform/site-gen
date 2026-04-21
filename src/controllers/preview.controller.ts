@@ -109,7 +109,9 @@ export class PreviewController {
       )
       .map((b) => ({
         type: b.type,
-        props: (b.props ?? {}) as Record<string, unknown>,
+        props: adaptLegacyProps(
+          (b.props ?? {}) as Record<string, unknown>,
+        ),
       }));
   }
 
@@ -127,4 +129,109 @@ export class PreviewController {
     );
     return `<!DOCTYPE html><html><body style="font-family:system-ui;padding:24px;color:#666"><h1 style="margin:0 0 8px">Preview error</h1><p>${safe}</p></body></html>`;
   }
+}
+
+/**
+ * Legacy props written by the original constructor (circa Phase 0) use a
+ * nested shape — e.g. `heading: { text, size }`, `text: { content, size }`,
+ * `primaryButton: { text, link: { href } }`, `backgroundImage: string`.
+ *
+ * theme-base blocks in 078 use a flatter contract — e.g. `heading: string`,
+ * `title: string`, `cta: { text, href }`, `image: { url, alt }`. Rendering
+ * old data against the new Astro templates produces `[object Object]` in
+ * headers.
+ *
+ * This adapter normalises on read ONLY for the preview iframe — it does not
+ * touch DB rows. The heuristics below are intentionally conservative:
+ *
+ *   - `{text, size}`      → `text`        (drop size)
+ *   - `{content, size}`   → `content`     (drop size)
+ *   - `{text, link:{href}}`→ `{text, href}` (flatten CTA)
+ *
+ * Top-level renames (`backgroundImage` → `image.url`, `primaryButton` →
+ * `cta`, `text` → `subtitle`) only apply when the target key is absent so
+ * we never clobber already-migrated data.
+ *
+ * TODO(078 Phase 2): back-fill site_revision rows with a one-off migration,
+ * then delete this adapter.
+ */
+function adaptLegacyProps(
+  props: Record<string, unknown>,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(props)) {
+    out[k] = normaliseValue(v);
+  }
+  // Legacy → new top-level renames (only if target not already present).
+  if (out.backgroundImage && !out.image) {
+    out.image = { url: out.backgroundImage, alt: '' };
+  }
+  if (out.primaryButton && !out.cta && isPlainObject(out.primaryButton)) {
+    const btn = out.primaryButton as Record<string, unknown>;
+    out.cta = { text: String(btn.text ?? ''), href: String(btn.href ?? '') };
+  }
+  if (
+    typeof out.heading === 'string' &&
+    !out.title &&
+    // Hero/MainText expect `title` not `heading` in theme-base — but we
+    // can't tell from here which block we're in. Leave both populated;
+    // Astro frontmatter destructures whichever it declares.
+    out.heading.length > 0
+  ) {
+    out.title = out.heading;
+  }
+  if (
+    typeof out.text === 'string' &&
+    !out.subtitle &&
+    out.text.length > 0
+  ) {
+    out.subtitle = out.text;
+  }
+  return out;
+}
+
+function normaliseValue(v: unknown): unknown {
+  if (v === null || typeof v !== 'object') return v;
+  if (Array.isArray(v)) return v.map(normaliseValue);
+  const obj = v as Record<string, unknown>;
+  const keys = Object.keys(obj);
+
+  // `{text, size}` → text
+  if (
+    keys.length <= 2 &&
+    typeof obj.text === 'string' &&
+    (keys.length === 1 || 'size' in obj)
+  ) {
+    return obj.text;
+  }
+  // `{content, size}` → content
+  if (
+    keys.length <= 2 &&
+    typeof obj.content === 'string' &&
+    (keys.length === 1 || 'size' in obj)
+  ) {
+    return obj.content;
+  }
+  // `{text, link:{href}}` → `{text, href}`
+  if (
+    typeof obj.text === 'string' &&
+    obj.link &&
+    isPlainObject(obj.link) &&
+    typeof (obj.link as Record<string, unknown>).href === 'string'
+  ) {
+    return {
+      text: obj.text,
+      href: (obj.link as Record<string, unknown>).href,
+    };
+  }
+  // Recurse through plain object values.
+  const out: Record<string, unknown> = {};
+  for (const [k, val] of Object.entries(obj)) {
+    out[k] = normaliseValue(val);
+  }
+  return out;
+}
+
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return !!v && typeof v === 'object' && !Array.isArray(v);
 }

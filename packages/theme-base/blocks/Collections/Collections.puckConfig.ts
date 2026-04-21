@@ -6,6 +6,9 @@ const CollectionItemSchema = z.object({
   collectionId: z.string().nullable(), // nullable until merchant picks
   heading: z.string(),
   description: z.string().optional(),
+  // Merchant-uploaded image URL; when absent the Astro template falls back
+  // to `/placeholder-collection-<id>.jpg`.
+  image: z.string().optional(),
 });
 
 export const CollectionsSchema = z.object({

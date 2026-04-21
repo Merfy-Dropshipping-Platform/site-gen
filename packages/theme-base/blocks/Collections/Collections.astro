@@ -32,7 +32,7 @@ const gridTemplateCols = `grid-template-columns: repeat(${columns}, minmax(0, 1f
       {collections.map((item) => (
         <a href={item.collectionId ? `/collection/${item.collectionId}` : '#'} class={C.card}>
           <img
-            src={`/placeholder-collection-${item.id}.jpg`}
+            src={item.image || `/placeholder-collection-${item.id}.jpg`}
             alt={item.heading}
             class={C.image}
           />

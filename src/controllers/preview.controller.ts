@@ -118,6 +118,7 @@ export class PreviewController {
         props: adaptLegacyProps(
           (b.props ?? {}) as Record<string, unknown>,
           publicUrl,
+          b.type,
         ),
       }));
   }
@@ -165,6 +166,7 @@ export class PreviewController {
 function adaptLegacyProps(
   props: Record<string, unknown>,
   publicUrl: string | null,
+  blockType: string,
 ): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(props)) {
@@ -198,7 +200,60 @@ function adaptLegacyProps(
   ) {
     out.subtitle = out.text;
   }
+
+  // Block-specific legacy→new shape coercion (for schemas where per-item
+  // field names differ, not just nested→flat).
+  if (blockType === 'Collections') {
+    coerceCollectionsProps(out, publicUrl);
+  }
   return out;
+}
+
+/**
+ * Legacy Collections block used `{title, subtitle, columnsCount, colorScheme:"scheme-N",
+ * collections:[{name, image, hidden}]}`; theme-base's Collections expects
+ * `{heading, columns, colorScheme:N, collections:[{id, collectionId, heading, image}]}`.
+ * Coerce in place so the Astro template receives valid props.
+ */
+function coerceCollectionsProps(
+  out: Record<string, unknown>,
+  publicUrl: string | null,
+): void {
+  if (typeof out.title === 'string' && !out.heading) {
+    out.heading = out.title;
+  }
+  if (typeof out.columnsCount === 'number' && !out.columns) {
+    out.columns = out.columnsCount;
+  }
+  if (typeof out.colorScheme === 'string') {
+    const m = /^scheme-(\d+)$/.exec(out.colorScheme);
+    out.colorScheme = m ? Number(m[1]) : 1;
+  }
+  if (Array.isArray(out.collections)) {
+    out.collections = out.collections
+      .map((item, i) => {
+        if (!isPlainObject(item)) return null;
+        const raw = item as Record<string, unknown>;
+        if (raw.hidden === true) return null;
+        const heading = String(raw.heading ?? raw.name ?? '');
+        const imageSrc = raw.image
+          ? rewriteAssetUrl(String(raw.image), publicUrl)
+          : undefined;
+        const id = String(raw.id ?? `col-${i + 1}`);
+        const result: Record<string, unknown> = {
+          id,
+          collectionId:
+            typeof raw.collectionId === 'string' ? raw.collectionId : null,
+          heading,
+        };
+        if (typeof raw.description === 'string') {
+          result.description = raw.description;
+        }
+        if (imageSrc) result.image = imageSrc;
+        return result;
+      })
+      .filter((x): x is Record<string, unknown> => x !== null);
+  }
 }
 
 function normaliseValue(v: unknown, publicUrl: string | null): unknown {

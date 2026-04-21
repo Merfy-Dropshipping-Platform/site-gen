@@ -19,7 +19,7 @@ import {
 
 const ROOT = resolve(__dirname, '..', '..');
 
-function loadManifest(theme: 'rose' | 'vanilla' | 'bloom' | 'satin'): ThemeConfigForResolver {
+function loadManifest(theme: 'rose' | 'vanilla' | 'bloom' | 'satin' | 'flux'): ThemeConfigForResolver {
   const raw = readFileSync(resolve(ROOT, 'packages', `theme-${theme}`, 'theme.json'), 'utf-8');
   const json = JSON.parse(raw);
   return {
@@ -98,5 +98,35 @@ describe('Theme manifest resolver (Phase 2a multi-theme wiring)', () => {
     expect(satinJson.defaults['--container-max-width']).toBe('1320px');
     expect(satinJson.defaults['--radius-button']).toBe('0px');
     expect(satinJson.defaults['--radius-card']).toBe('0px');
+  });
+
+  it('flux manifest overrides Header + Footer with dark + orange accent signature', () => {
+    const flux = loadManifest('flux');
+    const resolved = resolveBlocks(BASE_BLOCKS, flux);
+
+    expect(resolved.Header.source).toBe('theme');
+    expect(resolved.Header.path).toBe('./blocks/Header');
+    expect(resolved.Footer.source).toBe('theme');
+    expect(resolved.Footer.path).toBe('./blocks/Footer');
+
+    const fluxJson = JSON.parse(readFileSync(resolve(ROOT, 'packages', 'theme-flux', 'theme.json'), 'utf-8'));
+    expect(fluxJson.id).toBe('flux');
+    expect(fluxJson.defaults['--container-max-width']).toBe('1320px');
+    expect(fluxJson.defaults['--radius-button']).toBe('6px');
+    expect(fluxJson.defaults['--radius-card']).toBe('12px');
+    // Orange accent signature
+    expect(fluxJson.colorSchemes[0].tokens['--color-accent']).toBe('250 81 9');
+  });
+
+  it('all 5 themes resolve Header + Footer overrides (rose, vanilla, bloom, satin, flux)', () => {
+    const themeIds: Array<'rose' | 'vanilla' | 'bloom' | 'satin' | 'flux'> = ['rose', 'vanilla', 'bloom', 'satin', 'flux'];
+    for (const id of themeIds) {
+      const manifest = loadManifest(id);
+      const resolved = resolveBlocks(BASE_BLOCKS, manifest);
+      expect(resolved.Header.source).toBe('theme');
+      expect(resolved.Footer.source).toBe('theme');
+      expect(resolved.Hero.source).toBe('base');
+      expect(resolved.AuthModal.source).toBe('base');
+    }
   });
 });

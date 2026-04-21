@@ -44,25 +44,56 @@ export type ComponentResolver = (blockName: string) => Promise<unknown>;
 export type ContainerFactory = () => Promise<IAstroContainer>;
 
 /**
- * Default component resolver. Phase 0 only wires the Hero block.
+ * Default component resolver: dynamic-imports the precompiled block module
+ * produced by `pnpm build:blocks` (see scripts/compile-astro-blocks.mjs).
  *
- * NOTE: This loads the real `.astro` module via dynamic import. It works at
- * service runtime (Astro Container configures its own loader), but will throw
- * under ts-jest — which is why the service accepts `componentResolver` via
- * constructor for testability.
+ * Expected output layout (flat, under dist/astro-blocks/):
+ *   <pkg>__<blockName>__<fileName>.mjs
+ * e.g. `theme-base__Hero__Hero.mjs`
+ *
+ * Phase 0: only theme-base is searched. Phase 1 will add theme cascade
+ * (theme-<name> ?? theme-base).
  */
 const defaultComponentResolver: ComponentResolver = async (blockName) => {
-  if (blockName === 'Hero') {
-    // Dynamic import string built at runtime so TS/ts-jest doesn't try to
-    // resolve .astro at type-check time.
-    const specifier = '@merfy/theme-base/blocks/Hero/Hero.astro';
-    const mod: { default: unknown } = await import(
-      /* @vite-ignore */ specifier as string
-    );
-    return mod.default;
+  const pkg = 'theme-base';
+  const fileName = blockName;
+  const moduleName = `${pkg}__${blockName}__${fileName}.mjs`;
+
+  // Path relative to this compiled service file at runtime. NestJS typically
+  // runs with cwd=sites-root, so dist/astro-blocks/ is directly accessible.
+  // Second candidate handles running from monorepo root.
+  const { resolve } = await import('node:path');
+  const candidates = [
+    resolve(process.cwd(), 'dist', 'astro-blocks', moduleName),
+    resolve(
+      process.cwd(),
+      'backend',
+      'services',
+      'sites',
+      'dist',
+      'astro-blocks',
+      moduleName,
+    ),
+  ];
+
+  let lastErr: unknown;
+  for (const p of candidates) {
+    try {
+      const mod = (await import(p)) as { default?: unknown };
+      if (!mod.default) {
+        throw new Error(
+          `Compiled module ${moduleName} has no default export`,
+        );
+      }
+      return mod.default;
+    } catch (err) {
+      lastErr = err;
+    }
   }
+
   throw new Error(
-    `Block "${blockName}" not available in Phase 0 preview (only Hero wired)`,
+    `Block "${blockName}" not resolvable. Tried ${candidates.length} paths. ` +
+      `Run 'pnpm build:blocks' first. Last error: ${String(lastErr)}`,
   );
 };
 

@@ -3,6 +3,13 @@
  * Precompile all .astro blocks from @merfy/theme-base (and theme-<name> packages)
  * into dist/astro-blocks/*.mjs — standard Node ESM that Astro Container can import.
  *
+ * Pipeline:
+ *   1. Compile each .astro to .mjs via @astrojs/compiler (retains TS in frontmatter)
+ *   2. Strip TypeScript syntax with ts.transpileModule (interfaces, types, as casts)
+ *   3. Compile sibling .ts files (Hero.classes.ts, Hero.tokens.ts, etc.) to .mjs
+ *   4. Rewrite relative imports like './Hero.classes' to './Hero.classes.mjs'
+ *      (so Node's ESM resolver can find them)
+ *
  * Usage: node scripts/compile-astro-blocks.mjs  (or: pnpm build:blocks)
  */
 
@@ -10,6 +17,10 @@ import { transform } from '@astrojs/compiler';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const ts = require('typescript');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SITES_ROOT = path.resolve(__dirname, '..');
@@ -30,14 +41,16 @@ async function findAstroBlocks() {
       const blockDirs = await fs.readdir(blocksDir, { withFileTypes: true });
       for (const blockDir of blockDirs) {
         if (!blockDir.isDirectory()) continue;
-        const blockFiles = await fs.readdir(path.join(blocksDir, blockDir.name));
+        const blockDirPath = path.join(blocksDir, blockDir.name);
+        const blockFiles = await fs.readdir(blockDirPath);
         for (const f of blockFiles) {
           if (f.endsWith('.astro')) {
             entries.push({
               pkg: pkg.name,
               blockName: blockDir.name,
               fileName: f,
-              fullPath: path.join(blocksDir, blockDir.name, f),
+              blockDirPath,
+              fullPath: path.join(blockDirPath, f),
             });
           }
         }
@@ -49,6 +62,82 @@ async function findAstroBlocks() {
   return entries;
 }
 
+/**
+ * Strip TypeScript syntax from a JS-with-TS-in-it source. Uses
+ * ts.transpileModule which erases types/interfaces/as-casts but leaves
+ * runtime code intact.
+ */
+function stripTypes(source, filename) {
+  const out = ts.transpileModule(source, {
+    compilerOptions: {
+      target: ts.ScriptTarget.ES2022,
+      module: ts.ModuleKind.ESNext,
+      // Verbatim: keep everything as-is, just drop the types.
+      isolatedModules: true,
+    },
+    fileName: filename,
+  });
+  return out.outputText;
+}
+
+/**
+ * Rewrite relative imports that lack an extension (or end in .ts) to point
+ * to sibling .mjs files in the flat dist/astro-blocks/ layout.
+ *
+ * `./Hero.classes` or `./Hero.classes.ts` → `./<pkg>__<blockName>__Hero.classes.mjs`
+ */
+function rewriteRelativeImports(source, pkg, blockName) {
+  return source.replace(
+    /(from\s+["'])(\.\/)([A-Za-z0-9_.-]+?)(\.ts)?(["'])/g,
+    (match, prefix, dot, modName, _tsExt, suffix) => {
+      // Don't touch .json, .css, etc.
+      if (modName.endsWith('.json') || modName.endsWith('.css') || modName.endsWith('.mjs')) {
+        return match;
+      }
+      return `${prefix}./${pkg}__${blockName}__${modName}.mjs${suffix}`;
+    },
+  );
+}
+
+/**
+ * Patch the createAstro call in compiled output.
+ *
+ * @astrojs/compiler@3.0.1 emits `$$result.createAstro($$props, $$slots)` — the
+ * legacy 2-arg form. But astro@4.16 runtime's `renderContext.createAstro`
+ * wrapper expects 3 args `(astroGlobal, props, slots)`.
+ *
+ * Without this patch `Astro.props` resolves empty (props gets treated as the
+ * static astroGlobal). Astro's own vite pipeline doesn't hit this because it
+ * post-processes via esbuild + result wrappers; here we use raw Node ESM.
+ *
+ * Rewrite `createAstro($$props, $$slots)` → `createAstro($$Astro, $$props, $$slots)`.
+ */
+function patchCreateAstroCall(source) {
+  // NOTE: in String.replace replacement strings, `$$` means literal `$`. So to
+  // produce `$$Astro` in the output we need `$$$$Astro` in the replacement.
+  return source.replace(
+    /createAstro\(\$\$props,\s*\$\$slots\)/g,
+    'createAstro($$$$Astro, $$$$props, $$$$slots)',
+  );
+}
+
+/**
+ * Compile one sibling .ts file (Hero.classes.ts, Hero.puckConfig.ts, etc.)
+ * to dist/astro-blocks/<pkg>__<blockName>__<name>.mjs.
+ */
+async function compileSiblingTs(pkg, blockName, blockDirPath, tsFileName) {
+  const srcPath = path.join(blockDirPath, tsFileName);
+  const source = await fs.readFile(srcPath, 'utf-8');
+  const stripped = stripTypes(source, srcPath);
+  const rewritten = rewriteRelativeImports(stripped, pkg, blockName);
+
+  const baseName = tsFileName.replace(/\.ts$/, '');
+  const outName = `${pkg}__${blockName}__${baseName}.mjs`;
+  const outPath = path.join(DIST_DIR, outName);
+  await fs.writeFile(outPath, rewritten, 'utf-8');
+  return outPath;
+}
+
 async function compileOne(entry) {
   const source = await fs.readFile(entry.fullPath, 'utf-8');
   const result = await transform(source, {
@@ -58,13 +147,40 @@ async function compileOne(entry) {
     resolvePath: (specifier) => specifier,
   });
 
+  // The .astro compiler leaves TS in the frontmatter (interfaces, `as Props`,
+  // `import type`, etc.). Strip all TS syntax via tsc in transpileModule mode.
+  const stripped = stripTypes(result.code, entry.fullPath);
+
+  // Rewrite relative imports so they point to our flat dist/ layout with .mjs.
+  const imports_rewritten = rewriteRelativeImports(stripped, entry.pkg, entry.blockName);
+
+  // Fix the compiler/runtime mismatch in createAstro call.
+  const rewritten = patchCreateAstroCall(imports_rewritten);
+
   // Output filename: <pkg>__<blockName>__<fileName>.mjs
   // Flat to avoid deep paths in dist/
   const outName = `${entry.pkg}__${entry.blockName}__${entry.fileName.replace(/\.astro$/, '')}.mjs`;
   const outPath = path.join(DIST_DIR, outName);
   await fs.mkdir(DIST_DIR, { recursive: true });
-  await fs.writeFile(outPath, result.code, 'utf-8');
-  return { entry, outPath, byteLength: result.code.length };
+  await fs.writeFile(outPath, rewritten, 'utf-8');
+
+  // Also compile all sibling .ts files (Hero.classes.ts, etc.) so the
+  // rewritten relative imports resolve.
+  const siblings = await fs.readdir(entry.blockDirPath);
+  const siblingOutputs = [];
+  for (const sib of siblings) {
+    if (sib.endsWith('.ts') && !sib.endsWith('.d.ts')) {
+      const sibOut = await compileSiblingTs(entry.pkg, entry.blockName, entry.blockDirPath, sib);
+      siblingOutputs.push(sibOut);
+    }
+  }
+
+  return {
+    entry,
+    outPath,
+    byteLength: rewritten.length,
+    siblings: siblingOutputs,
+  };
 }
 
 async function main() {
@@ -74,12 +190,15 @@ async function main() {
     process.exit(1);
   }
 
+  await fs.mkdir(DIST_DIR, { recursive: true });
+
   console.log(`Compiling ${entries.length} .astro block(s)...`);
   const results = [];
   for (const entry of entries) {
     try {
       const r = await compileOne(entry);
-      console.log(`  ✓ ${entry.pkg}/${entry.blockName}/${entry.fileName} → ${path.basename(r.outPath)} (${r.byteLength}B)`);
+      const sibCount = r.siblings.length;
+      console.log(`  ✓ ${entry.pkg}/${entry.blockName}/${entry.fileName} → ${path.basename(r.outPath)} (${r.byteLength}B) + ${sibCount} sibling .ts`);
       results.push(r);
     } catch (err) {
       console.error(`  ✗ ${entry.pkg}/${entry.blockName}/${entry.fileName}: ${err.message}`);
@@ -95,6 +214,7 @@ async function main() {
       blockName: r.entry.blockName,
       fileName: r.entry.fileName,
       outputName: path.basename(r.outPath),
+      siblings: r.siblings.map(p => path.basename(p)),
     })),
   };
   await fs.writeFile(path.join(DIST_DIR, 'manifest.json'), JSON.stringify(manifest, null, 2), 'utf-8');

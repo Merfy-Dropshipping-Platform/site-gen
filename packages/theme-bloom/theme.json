@@ -1,0 +1,150 @@
+{
+  "$schema": "https://merfy.ru/schemas/theme-manifest.v2.json",
+  "id": "bloom",
+  "name": "Bloom",
+  "version": "1.0.0",
+  "extends": "@merfy/theme-base@workspace:*",
+  "category": "beauty",
+  "description": "Bloom — soft feminine theme with pink pastel accents (#CF7A8B / #E38E9F), Urbanist headings, pill-shaped buttons for beauty and cosmetics stores.",
+  "author": "Merfy",
+  "tokens": "./tokens.json",
+
+  "defaults": {
+    "--font-heading": "'Urbanist', sans-serif",
+    "--font-body": "'Inter', sans-serif",
+    "--weight-heading": "400",
+    "--weight-body": "400",
+    "--container-max-width": "1320px",
+    "--radius-button": "100px",
+    "--radius-input": "4px",
+    "--radius-card": "12px",
+    "--radius-media": "12px",
+    "--radius-field": "4px",
+    "--size-hero-heading": "72px",
+    "--size-hero-button-h": "48px",
+    "--size-nav-link": "16px",
+    "--size-newsletter-form-w": "480px",
+    "--size-logo-width": "120px",
+    "--size-card-border": "1px",
+    "--spacing-section-y": "120px",
+    "--spacing-grid-col-gap": "40px",
+    "--spacing-grid-row-gap": "40px",
+    "--button-style": "solid",
+    "--footer-layout": "2-part",
+    "--contact-form-layout": "wide",
+    "--cart-type": "drawer",
+    "--card-style": "standard",
+    "--card-alignment": "left",
+    "--color-error": "255 148 148"
+  },
+
+  "colorSchemes": [
+    {
+      "id": "scheme-1",
+      "name": "Pink Accent",
+      "tokens": {
+        "--color-bg": "207 122 139",
+        "--color-surface": "207 122 139",
+        "--color-heading": "255 255 255",
+        "--color-text": "255 255 255",
+        "--color-muted": "245 245 245",
+        "--color-primary": "255 255 255",
+        "--color-accent": "227 142 159",
+        "--color-button-bg": "255 255 255",
+        "--color-button-text": "207 122 139",
+        "--color-button-border": "227 142 159",
+        "--color-button-2-bg": "207 122 139",
+        "--color-button-2-text": "255 255 255",
+        "--color-button-2-border": "247 162 179"
+      }
+    },
+    {
+      "id": "scheme-2",
+      "name": "Pink Section",
+      "tokens": {
+        "--color-bg": "227 142 159",
+        "--color-surface": "227 142 159",
+        "--color-heading": "255 255 255",
+        "--color-text": "255 255 255",
+        "--color-muted": "245 245 245",
+        "--color-primary": "255 255 255",
+        "--color-accent": "247 162 179",
+        "--color-button-bg": "255 255 255",
+        "--color-button-text": "227 142 159",
+        "--color-button-border": "247 162 179",
+        "--color-button-2-bg": "227 142 159",
+        "--color-button-2-text": "255 255 255",
+        "--color-button-2-border": "255 181 175"
+      }
+    },
+    {
+      "id": "scheme-3",
+      "name": "White",
+      "tokens": {
+        "--color-bg": "255 255 255",
+        "--color-surface": "255 255 255",
+        "--color-heading": "0 0 0",
+        "--color-text": "0 0 0",
+        "--color-muted": "153 153 153",
+        "--color-primary": "0 0 0",
+        "--color-accent": "207 122 139",
+        "--color-button-bg": "207 122 139",
+        "--color-button-text": "255 255 255",
+        "--color-button-border": "207 122 139",
+        "--color-button-2-bg": "255 255 255",
+        "--color-button-2-text": "0 0 0",
+        "--color-button-2-border": "217 217 217"
+      }
+    },
+    {
+      "id": "scheme-4",
+      "name": "Light Hero",
+      "tokens": {
+        "--color-bg": "247 247 249",
+        "--color-surface": "247 247 249",
+        "--color-heading": "0 0 0",
+        "--color-text": "0 0 0",
+        "--color-muted": "153 153 153",
+        "--color-primary": "0 0 0",
+        "--color-accent": "207 122 139",
+        "--color-button-bg": "207 122 139",
+        "--color-button-text": "255 255 255",
+        "--color-button-border": "207 122 139",
+        "--color-button-2-bg": "255 255 255",
+        "--color-button-2-text": "0 0 0",
+        "--color-button-2-border": "217 217 217"
+      }
+    }
+  ],
+
+  "blocks": {
+    "Header": {
+      "override": {
+        "path": "./blocks/Header",
+        "reason": "Bloom uses 1320px container, Urbanist font, pill-radius buttons, and a pink accent cart badge distinct from base Header."
+      }
+    },
+    "Footer": {
+      "override": {
+        "path": "./blocks/Footer",
+        "reason": "Bloom uses 2-part grid (logo+nav LEFT, contact+social RIGHT), pink-palette newsletter with pill submit, and a powered-by black strip below copyright."
+      }
+    }
+  },
+
+  "features": {
+    "newsletter": true,
+    "cart-drawer": true,
+    "otp-auth": true,
+    "wishlist": false,
+    "color-swatches": true,
+    "filter-sidebar": true
+  },
+
+  "fonts": [
+    { "family": "Urbanist", "weights": [400, 500, 600, 700], "source": "google" },
+    { "family": "Inter",    "weights": [300, 400, 500, 600], "source": "google" },
+    { "family": "Roboto",   "weights": [400, 500],           "source": "google" },
+    { "family": "Manrope",  "weights": [400, 500],           "source": "google" }
+  ]
+}

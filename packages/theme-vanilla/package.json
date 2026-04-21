@@ -1,0 +1,41 @@
+{
+  "name": "@merfy/theme-vanilla",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./manifest": "./theme.json",
+    "./tokens": "./tokens.json",
+    "./blocks/*": "./blocks/*/index.ts",
+    "./customBlocks/*": "./customBlocks/*/index.ts"
+  },
+  "scripts": {
+    "test": "jest --config jest.config.ts",
+    "test:visual": "playwright test --config playwright.config.ts",
+    "test:visual:update": "playwright test --config playwright.config.ts --update-snapshots",
+    "tsc": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@merfy/theme-base": "workspace:*",
+    "@merfy/theme-contract": "workspace:*",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/jest": "^29.5.0",
+    "@types/node": "^22.0.0",
+    "@types/pixelmatch": "^5.2.6",
+    "@types/pngjs": "^6.0.5",
+    "astro": "^4.16.0",
+    "jest": "^29.7.0",
+    "pixelmatch": "^5.3.0",
+    "pngjs": "^7.0.0",
+    "sharp": "^0.33.0",
+    "tailwindcss": "^3.4.0",
+    "ts-jest": "^29.2.0",
+    "typescript": "^5.7.0"
+  }
+}

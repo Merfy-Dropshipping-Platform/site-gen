@@ -1,0 +1,44 @@
+---
+import type { HeroProps } from './Hero.puckConfig';
+import { HeroClasses as C } from './Hero.classes';
+
+interface Props extends HeroProps {
+  id?: string;
+}
+
+const {
+  id,
+  title,
+  subtitle,
+  image,
+  cta,
+  variant = 'centered',
+  colorScheme = 1,
+  padding,
+} = Astro.props as Props;
+const scheme = `color-scheme-${colorScheme}`;
+const innerClass = C.inner[variant];
+const imageClass = C.image[variant];
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+---
+<section
+  class:list={[C.root, scheme]}
+  data-puck-component-id={id}
+  data-variant={variant}
+  style={paddingStyle}
+>
+  <div class:list={[C.container, innerClass]}>
+    {image?.url && (
+      <img src={image.url} alt={image.alt ?? ''} class={imageClass} />
+    )}
+    <div>
+      <h1 class={C.title}>{title}</h1>
+      {subtitle && <p class={C.subtitle}>{subtitle}</p>}
+      {cta?.text && (
+        <a href={cta.href} class={C.ctaButton}>{cta.text}</a>
+      )}
+    </div>
+  </div>
+</section>

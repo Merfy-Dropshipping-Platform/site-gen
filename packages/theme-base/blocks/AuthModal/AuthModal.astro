@@ -1,0 +1,92 @@
+---
+import type { AuthModalProps } from './AuthModal.puckConfig';
+import { AuthModalClasses as C } from './AuthModal.classes';
+
+interface Props extends AuthModalProps {
+  id?: string;
+}
+
+const {
+  id,
+  mode,
+  siteTitle,
+  showSocialLogin,
+  colorScheme = 1,
+  padding,
+} = Astro.props as Props;
+
+const scheme = `color-scheme-${colorScheme}`;
+const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+const isOpen = mode !== 'closed';
+---
+<dialog
+  class:list={[C.root, scheme]}
+  data-puck-component-id={id}
+  data-mode={mode}
+  open={isOpen}
+  style={paddingStyle}
+  aria-labelledby={`auth-modal-heading-${id ?? 'default'}`}
+>
+  <form method="dialog">
+    <button type="submit" class={C.closeBtn} aria-label="Закрыть">×</button>
+  </form>
+
+  {mode === 'login' && (
+    <form class={C.loginForm} data-auth-form="login">
+      <h2 class={C.heading} id={`auth-modal-heading-${id ?? 'default'}`}>Вход в {siteTitle}</h2>
+      <label class={C.field}>
+        Email
+        <input class={C.input} type="email" name="email" autocomplete="email" required />
+      </label>
+      <label class={C.field}>
+        Пароль
+        <input class={C.input} type="password" name="password" autocomplete="current-password" required />
+      </label>
+      <button type="submit" class={C.submitBtn}>Войти</button>
+      {showSocialLogin && (
+        <div class={C.socialLogin}>
+          {/* Phase 1c: React island renders social login buttons */}
+        </div>
+      )}
+      <a href="#register" class={C.switchLink}>Нет аккаунта? Зарегистрироваться</a>
+    </form>
+  )}
+
+  {mode === 'register' && (
+    <form class={C.registerForm} data-auth-form="register">
+      <h2 class={C.heading} id={`auth-modal-heading-${id ?? 'default'}`}>Регистрация в {siteTitle}</h2>
+      <label class={C.field}>
+        Имя
+        <input class={C.input} type="text" name="name" autocomplete="name" required />
+      </label>
+      <label class={C.field}>
+        Email
+        <input class={C.input} type="email" name="email" autocomplete="email" required />
+      </label>
+      <label class={C.field}>
+        Пароль
+        <input class={C.input} type="password" name="password" autocomplete="new-password" required />
+      </label>
+      <button type="submit" class={C.submitBtn}>Создать аккаунт</button>
+      {showSocialLogin && (
+        <div class={C.socialLogin}>
+          {/* Phase 1c: React island renders social login buttons */}
+        </div>
+      )}
+      <a href="#login" class={C.switchLink}>Уже есть аккаунт? Войти</a>
+    </form>
+  )}
+
+  {mode === 'otp' && (
+    <form class={C.otpForm} data-auth-form="otp">
+      <h2 class={C.heading} id={`auth-modal-heading-${id ?? 'default'}`}>Код подтверждения</h2>
+      <label class={C.field}>
+        Введите код из письма
+        <input class={C.input} type="text" name="code" inputmode="numeric" autocomplete="one-time-code" required />
+      </label>
+      <button type="submit" class={C.submitBtn}>Подтвердить</button>
+    </form>
+  )}
+
+  {/* Phase 1c: React island handles open/close state + API submission */}
+</dialog>

@@ -63,6 +63,8 @@ import { PublicationsMicroserviceController } from "./publications/publications.
 import { PublicationsScheduler } from "./scheduler/publications.scheduler";
 import { PolicyModule } from "./policy/policy.module";
 import { HealthMonitorService } from "./health-monitor/health-monitor.service";
+import { PreviewModule } from "./modules/preview.module";
+import { ThemePuckConfigModule } from "./modules/theme-puck-config.module";
 
 @Module({
   imports: [
@@ -83,6 +85,8 @@ import { HealthMonitorService } from "./health-monitor/health-monitor.service";
     DomainModule,
     BulkModule,
     PolicyModule,
+    PreviewModule,
+    ThemePuckConfigModule,
   ],
   controllers: [
     HealthController,

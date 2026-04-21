@@ -1,0 +1,45 @@
+---
+import type { CheckoutSectionProps } from './CheckoutSection.puckConfig';
+import { CheckoutSectionClasses as C } from './CheckoutSection.classes';
+
+interface Props extends CheckoutSectionProps {
+  id?: string;
+}
+
+const {
+  id,
+  colorScheme = 1,
+  padding,
+} = Astro.props as Props;
+
+const scheme = `color-scheme-${colorScheme}`;
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+// NOTE: Full checkout logic (delivery, payment, DaData, СДЭК, YooKassa) is
+// hydrated in Phase 1c via React island. This scaffold emits semantic structure only.
+---
+<section
+  id="checkout-section"
+  class:list={[C.root, scheme]}
+  data-puck-component-id={id}
+  data-block="checkout-section"
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    <h1 class={C.heading}>Оформление заказа</h1>
+    <form class={C.form} data-checkout-form method="POST" action="/api/checkout">
+      <fieldset class={C.fieldset}>
+        <legend class={C.legend}>Контакты</legend>
+      </fieldset>
+      <fieldset class={C.fieldset}>
+        <legend class={C.legend}>Доставка</legend>
+      </fieldset>
+      <fieldset class={C.fieldset}>
+        <legend class={C.legend}>Оплата</legend>
+      </fieldset>
+      <div class={C.totals} data-checkout-totals></div>
+      <button type="submit" class={C.submit} disabled>Загрузка...</button>
+    </form>
+  </div>
+</section>

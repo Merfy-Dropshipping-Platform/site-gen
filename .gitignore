@@ -1,5 +1,6 @@
 node_modules
 dist/
+dist/astro-blocks/
 !templates/**/dist/
 *.log
 .env
@@ -12,3 +13,10 @@ artifacts/
 
 # Drizzle backups
 drizzle_backup/
+
+# Playwright visual-diff ephemeral outputs (keep committed snapshots, ignore per-run results)
+packages/theme-*/test-results/
+packages/theme-*/playwright-report/
+
+# Compiled Tailwind CSS used by visual snapshots (rebuilt on each run)
+packages/theme-*/__snapshots__/tailwind-compiled.css

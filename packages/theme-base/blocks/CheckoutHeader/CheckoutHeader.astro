@@ -1,0 +1,29 @@
+---
+import type { CheckoutHeaderProps } from './CheckoutHeader.puckConfig';
+import { CheckoutHeaderClasses as C } from './CheckoutHeader.classes';
+
+interface Props extends CheckoutHeaderProps {
+  id?: string;
+}
+
+const {
+  id,
+  siteTitle,
+  colorScheme = 1,
+  padding,
+} = Astro.props as Props;
+
+const scheme = `color-scheme-${colorScheme}`;
+const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+---
+<header
+  class:list={[C.root, scheme]}
+  data-puck-component-id={id}
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    <a href="/" class={C.title} aria-label={siteTitle}>
+      {siteTitle}
+    </a>
+  </div>
+</header>

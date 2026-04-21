@@ -1,0 +1,62 @@
+---
+interface Props {
+  title: string;
+  description: string;
+  locale?: string;               // default 'ru'
+  canonicalUrl?: string;
+  ogImage?: string;
+  noIndex?: boolean;
+  bodyClass?: string;
+  tokensCss?: string;            // injected tokens.css
+  fontHead?: string;             // injected font <link>s
+}
+
+const {
+  title,
+  description,
+  locale = 'ru',
+  canonicalUrl,
+  ogImage,
+  noIndex = false,
+  bodyClass = '',
+  tokensCss = '',
+  fontHead = '',
+} = Astro.props as Props;
+---
+<!DOCTYPE html>
+<html lang={locale}>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{title}</title>
+  <meta name="description" content={description}>
+  {canonicalUrl && <link rel="canonical" href={canonicalUrl}>}
+  {noIndex && <meta name="robots" content="noindex, nofollow">}
+
+  {/* Font preload injection point */}
+  <Fragment set:html={fontHead} />
+
+  {/* Tokens CSS injection point */}
+  <style set:html={tokensCss}></style>
+
+  {/* Open Graph */}
+  <meta property="og:type" content="website">
+  <meta property="og:title" content={title}>
+  <meta property="og:description" content={description}>
+  {canonicalUrl && <meta property="og:url" content={canonicalUrl}>}
+  {ogImage && <meta property="og:image" content={ogImage}>}
+
+  {/* Twitter Card */}
+  <meta name="twitter:card" content={ogImage ? 'summary_large_image' : 'summary'}>
+  <meta name="twitter:title" content={title}>
+  <meta name="twitter:description" content={description}>
+  {ogImage && <meta name="twitter:image" content={ogImage}>}
+
+  {/* Tracking scripts slot — TrackingScripts.astro injects here */}
+  <slot name="head" />
+</head>
+<body class={bodyClass}>
+  <slot />
+  <slot name="body-end" />
+</body>
+</html>

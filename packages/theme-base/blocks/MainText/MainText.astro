@@ -1,0 +1,36 @@
+---
+import type { MainTextProps } from './MainText.puckConfig';
+import { MainTextClasses as C } from './MainText.classes';
+
+interface Props extends MainTextProps {
+  id?: string;
+}
+
+const {
+  id,
+  heading,
+  text,
+  alignment = 'center',
+  colorScheme = 1,
+  padding,
+} = Astro.props as Props;
+
+const scheme = `color-scheme-${colorScheme}`;
+const alignClass = C.align[alignment];
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+// NOTE: `text` supports basic HTML (<b>, <i>) via set:html.
+// Constructor inputs should sanitize HTML before persisting to DB to prevent XSS.
+---
+<section
+  class:list={[C.root, scheme]}
+  data-puck-component-id={id}
+  data-alignment={alignment}
+  style={paddingStyle}
+>
+  <div class:list={[C.container, alignClass]}>
+    {heading && <h2 class={C.heading}>{heading}</h2>}
+    {text && <div class={C.text} set:html={text} />}
+  </div>
+</section>

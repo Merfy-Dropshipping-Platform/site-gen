@@ -1,0 +1,118 @@
+---
+interface OrganizationData {
+  type: 'Organization';
+  name: string;
+  url: string;
+  logo?: string;
+  sameAs?: string[];
+}
+
+interface WebSiteData {
+  type: 'WebSite';
+  name: string;
+  url: string;
+  searchUrlTemplate?: string;
+}
+
+interface ProductData {
+  type: 'Product';
+  name: string;
+  description: string;
+  image: string | string[];
+  sku: string;
+  gtin?: string;
+  brand?: string;
+  offers: {
+    price: string;
+    priceCurrency: string;
+    availability: 'InStock' | 'OutOfStock' | 'PreOrder';
+    url: string;
+  };
+  aggregateRating?: { ratingValue: number; reviewCount: number };
+}
+
+interface BreadcrumbData {
+  type: 'BreadcrumbList';
+  items: Array<{ name: string; url: string }>;
+}
+
+type Props = OrganizationData | WebSiteData | ProductData | BreadcrumbData;
+
+function buildOrganization(d: OrganizationData) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: d.name,
+    url: d.url,
+    ...(d.logo && { logo: d.logo }),
+    ...(d.sameAs && d.sameAs.length > 0 && { sameAs: d.sameAs }),
+  };
+}
+
+function buildWebSite(d: WebSiteData) {
+  const base: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: d.name,
+    url: d.url,
+  };
+  if (d.searchUrlTemplate) {
+    base.potentialAction = {
+      '@type': 'SearchAction',
+      target: d.searchUrlTemplate,
+      'query-input': 'required name=search_term_string',
+    };
+  }
+  return base;
+}
+
+function buildProduct(d: ProductData) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: d.name,
+    description: d.description,
+    image: Array.isArray(d.image) ? d.image : [d.image],
+    sku: d.sku,
+    ...(d.gtin && { gtin: d.gtin }),
+    ...(d.brand && { brand: { '@type': 'Brand', name: d.brand } }),
+    offers: {
+      '@type': 'Offer',
+      price: d.offers.price,
+      priceCurrency: d.offers.priceCurrency,
+      availability: `https://schema.org/${d.offers.availability}`,
+      url: d.offers.url,
+    },
+    ...(d.aggregateRating && {
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: d.aggregateRating.ratingValue,
+        reviewCount: d.aggregateRating.reviewCount,
+      },
+    }),
+  };
+}
+
+function buildBreadcrumb(d: BreadcrumbData) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: d.items.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: item.name,
+      item: item.url,
+    })),
+  };
+}
+
+const data = Astro.props as Props;
+let json: Record<string, unknown> = {};
+switch (data.type) {
+  case 'Organization':   json = buildOrganization(data); break;
+  case 'WebSite':        json = buildWebSite(data); break;
+  case 'Product':        json = buildProduct(data); break;
+  case 'BreadcrumbList': json = buildBreadcrumb(data); break;
+}
+---
+<script type="application/ld+json" set:html={JSON.stringify(json)}></script>

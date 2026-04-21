@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://merfy.ru/schemas/theme-manifest.v2.json",
+  "title": "Merfy Theme Manifest v2",
+  "type": "object",
+  "required": ["id", "name", "version", "extends", "defaults", "colorSchemes", "blocks", "features", "fonts"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9.]+)?$" },
+    "extends": { "type": "string", "pattern": "^@merfy/theme-base@" },
+    "defaults": { "type": "object", "additionalProperties": { "type": "string" } },
+    "colorSchemes": {
+      "type": "array", "minItems": 1, "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "tokens"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^scheme-\\d+$" },
+          "name": { "type": "string" },
+          "tokens": { "type": "object", "additionalProperties": { "type": "string" } }
+        }
+      }
+    },
+    "blocks": { "type": "object" },
+    "features": { "type": "object", "additionalProperties": { "type": "boolean" } },
+    "fonts": { "type": "array" }
+  }
+}

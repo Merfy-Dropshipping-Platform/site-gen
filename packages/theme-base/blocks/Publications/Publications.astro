@@ -1,0 +1,52 @@
+---
+import type { PublicationsProps } from './Publications.puckConfig';
+import { PublicationsClasses as C } from './Publications.classes';
+
+interface Props extends PublicationsProps {
+  id?: string;
+}
+
+const {
+  id,
+  heading,
+  columns = 3,
+  cards = 3,
+  colorScheme = 1,
+  padding,
+} = Astro.props as Props;
+
+const scheme = `color-scheme-${colorScheme}`;
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+const gridTemplateCols = `grid-template-columns: repeat(${columns}, minmax(0, 1fr));`;
+const placeholders = Array.from({ length: cards }, (_, i) => i);
+// NOTE: Real article data is hydrated in Phase 1c via constructor rewire.
+// For now we render `cards` skeleton placeholders.
+---
+<section
+  class:list={[C.root, scheme]}
+  data-puck-component-id={id}
+  data-block="publications"
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    {heading && <h2 class={C.heading}>{heading}</h2>}
+    <div class={C.grid} style={gridTemplateCols}>
+      {placeholders.map((i) => (
+        <article
+          class={C.placeholderCard}
+          aria-label="Article placeholder"
+          data-article-index={i}
+        >
+          <div class={C.placeholderMedia}></div>
+          <div class={C.placeholderBody}>
+            <div class={C.placeholderDate}></div>
+            <div class={C.placeholderTitle}></div>
+            <div class={C.placeholderExcerpt}></div>
+          </div>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>

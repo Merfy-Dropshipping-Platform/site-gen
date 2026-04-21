@@ -1,0 +1,15 @@
+{
+  "id": "minimal",
+  "name": "Minimal",
+  "version": "1.0.0",
+  "extends": "@merfy/theme-base@workspace:*",
+  "defaults": { "--radius-button": "0px" },
+  "colorSchemes": [
+    { "id": "scheme-1", "name": "Light", "tokens": { "--color-bg": "255 255 255", "--color-heading": "17 17 17" } }
+  ],
+  "blocks": {
+    "Hero": { "override": { "path": "./blocks/Hero", "reason": "minimal layout" } }
+  },
+  "features": { "newsletter": false },
+  "fonts": [{ "family": "Inter", "weights": [400, 600], "source": "google" }]
+}

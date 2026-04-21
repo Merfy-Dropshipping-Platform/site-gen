@@ -1,0 +1,152 @@
+{
+  "$schema": "https://merfy.ru/schemas/theme-manifest.v2.json",
+  "id": "satin",
+  "name": "Satin",
+  "version": "1.0.0",
+  "extends": "@merfy/theme-base@workspace:*",
+  "category": "fashion",
+  "description": "Satin — elegant monochrome theme with Kelly Slab headings, Arsenal body, uppercase Manrope buttons, and flat (0px) radii for fashion and clothing stores.",
+  "author": "Merfy",
+  "tokens": "./tokens.json",
+
+  "defaults": {
+    "--font-heading": "'Kelly Slab', serif",
+    "--font-body": "'Arsenal', sans-serif",
+    "--weight-heading": "400",
+    "--weight-body": "400",
+    "--container-max-width": "1320px",
+    "--radius-button": "0px",
+    "--radius-input": "0px",
+    "--radius-card": "0px",
+    "--radius-media": "0px",
+    "--radius-field": "0px",
+    "--size-hero-heading": "72px",
+    "--size-hero-button-h": "48px",
+    "--size-nav-link": "16px",
+    "--size-newsletter-form-w": "480px",
+    "--size-logo-width": "120px",
+    "--size-card-border": "1px",
+    "--spacing-section-y": "40px",
+    "--spacing-grid-col-gap": "40px",
+    "--spacing-grid-row-gap": "40px",
+    "--button-style": "solid",
+    "--footer-layout": "2-part",
+    "--contact-form-layout": "wide",
+    "--cart-type": "drawer",
+    "--card-style": "standard",
+    "--card-alignment": "left",
+    "--color-error": "255 148 148"
+  },
+
+  "colorSchemes": [
+    {
+      "id": "scheme-1",
+      "name": "Black",
+      "tokens": {
+        "--color-bg": "8 2 0",
+        "--color-surface": "8 2 0",
+        "--color-heading": "255 255 255",
+        "--color-text": "255 255 255",
+        "--color-muted": "200 200 200",
+        "--color-primary": "255 255 255",
+        "--color-accent": "68 68 68",
+        "--color-button-bg": "255 255 255",
+        "--color-button-text": "0 0 0",
+        "--color-button-border": "255 255 255",
+        "--color-button-2-bg": "0 0 0",
+        "--color-button-2-text": "255 255 255",
+        "--color-button-2-border": "68 68 68"
+      }
+    },
+    {
+      "id": "scheme-2",
+      "name": "White",
+      "tokens": {
+        "--color-bg": "255 255 255",
+        "--color-surface": "255 255 255",
+        "--color-heading": "0 0 0",
+        "--color-text": "0 0 0",
+        "--color-muted": "153 153 153",
+        "--color-primary": "0 0 0",
+        "--color-accent": "0 0 0",
+        "--color-button-bg": "0 0 0",
+        "--color-button-text": "255 255 255",
+        "--color-button-border": "0 0 0",
+        "--color-button-2-bg": "255 255 255",
+        "--color-button-2-text": "0 0 0",
+        "--color-button-2-border": "238 238 238"
+      }
+    },
+    {
+      "id": "scheme-3",
+      "name": "Light Gray",
+      "tokens": {
+        "--color-bg": "245 245 245",
+        "--color-surface": "245 245 245",
+        "--color-heading": "0 0 0",
+        "--color-text": "0 0 0",
+        "--color-muted": "153 153 153",
+        "--color-primary": "0 0 0",
+        "--color-accent": "0 0 0",
+        "--color-button-bg": "0 0 0",
+        "--color-button-text": "255 255 255",
+        "--color-button-border": "0 0 0",
+        "--color-button-2-bg": "255 255 255",
+        "--color-button-2-text": "0 0 0",
+        "--color-button-2-border": "238 238 238"
+      }
+    },
+    {
+      "id": "scheme-4",
+      "name": "Dark Gray",
+      "tokens": {
+        "--color-bg": "68 68 68",
+        "--color-surface": "68 68 68",
+        "--color-heading": "255 255 255",
+        "--color-text": "255 255 255",
+        "--color-muted": "200 200 200",
+        "--color-primary": "255 255 255",
+        "--color-accent": "100 100 100",
+        "--color-button-bg": "255 255 255",
+        "--color-button-text": "68 68 68",
+        "--color-button-border": "255 255 255",
+        "--color-button-2-bg": "68 68 68",
+        "--color-button-2-text": "255 255 255",
+        "--color-button-2-border": "100 100 100"
+      }
+    }
+  ],
+
+  "blocks": {
+    "Header": {
+      "override": {
+        "path": "./blocks/Header",
+        "reason": "Satin uses 1320px container, Kelly Slab heading font, flat (0px) radii, Manrope uppercase cart badge font, and monochrome iconography."
+      }
+    },
+    "Footer": {
+      "override": {
+        "path": "./blocks/Footer",
+        "reason": "Satin uses 2-part grid (logo+nav LEFT, contact+social RIGHT), uppercase tracking-0.05em on newsletter heading + submit, and a powered-by black strip below copyright."
+      }
+    }
+  },
+
+  "features": {
+    "newsletter": true,
+    "cart-drawer": true,
+    "otp-auth": true,
+    "wishlist": false,
+    "color-swatches": true,
+    "filter-sidebar": true
+  },
+
+  "fonts": [
+    { "family": "Kelly Slab", "weights": [400],       "source": "google" },
+    { "family": "Arsenal",    "weights": [400, 700],  "source": "google" },
+    { "family": "Manrope",    "weights": [400, 500],  "source": "google" },
+    { "family": "Tinos",      "weights": [400],       "italic": true, "source": "google" },
+    { "family": "Roboto",     "weights": [300, 400],  "source": "google" },
+    { "family": "Inter",      "weights": [300, 400],  "source": "google" }
+  ]
+}

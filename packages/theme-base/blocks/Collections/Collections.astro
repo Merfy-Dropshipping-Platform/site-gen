@@ -1,0 +1,45 @@
+---
+import type { CollectionsProps } from './Collections.puckConfig';
+import { CollectionsClasses as C } from './Collections.classes';
+
+interface Props extends CollectionsProps {
+  id?: string;
+}
+
+const {
+  id,
+  heading,
+  collections,
+  columns = 3,
+  colorScheme = 1,
+  padding,
+} = Astro.props as Props;
+
+const scheme = `color-scheme-${colorScheme}`;
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+const gridTemplateCols = `grid-template-columns: repeat(${columns}, minmax(0, 1fr));`;
+---
+<section
+  class:list={[C.root, scheme]}
+  data-puck-component-id={id}
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    {heading && <h2 class={C.heading}>{heading}</h2>}
+    <div class={C.grid} style={gridTemplateCols}>
+      {collections.map((item) => (
+        <a href={item.collectionId ? `/collection/${item.collectionId}` : '#'} class={C.card}>
+          <img
+            src={`/placeholder-collection-${item.id}.jpg`}
+            alt={item.heading}
+            class={C.image}
+          />
+          <h3 class={C.cardHeading}>{item.heading}</h3>
+          {item.description && <p class={C.cardDescription}>{item.description}</p>}
+        </a>
+      ))}
+    </div>
+  </div>
+</section>

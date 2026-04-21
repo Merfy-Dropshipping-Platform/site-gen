@@ -1,0 +1,39 @@
+---
+import type { NewsletterProps } from './Newsletter.puckConfig';
+import { NewsletterClasses as C } from './Newsletter.classes';
+
+interface Props extends NewsletterProps {
+  id?: string;
+}
+
+const {
+  id,
+  heading,
+  description,
+  placeholder,
+  buttonText,
+  colorScheme = 1,
+  padding,
+} = Astro.props as Props;
+
+const scheme = `color-scheme-${colorScheme}`;
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+---
+<section
+  class:list={[C.root, scheme]}
+  data-puck-component-id={id}
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    <div class={C.inner}>
+      {heading && <h2 class={C.heading}>{heading}</h2>}
+      {description && <p class={C.description}>{description}</p>}
+      <form class={C.form} method="POST" action="/api/newsletter/subscribe">
+        <input type="email" name="email" placeholder={placeholder} required class={C.input} />
+        <button type="submit" class={C.button}>{buttonText}</button>
+      </form>
+    </div>
+  </div>
+</section>

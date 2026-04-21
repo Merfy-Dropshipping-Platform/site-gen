@@ -1,0 +1,76 @@
+---
+import type { HeaderProps } from './Header.puckConfig';
+import { HeaderClasses as C } from './Header.classes';
+
+interface Props extends HeaderProps {
+  id?: string;
+}
+
+const {
+  id,
+  siteTitle,
+  logo,
+  logoPosition,
+  stickiness,
+  menuType,
+  navigationLinks,
+  actionButtons,
+  colorScheme = 1,
+  padding,
+} = Astro.props as Props;
+
+const scheme = `color-scheme-${colorScheme}`;
+const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+---
+<header
+  class:list={[C.root, C.sticky[stickiness], scheme]}
+  data-puck-component-id={id}
+  data-menu-type={menuType}
+  style={paddingStyle}
+>
+  <div class:list={[C.container]}>
+    <div class:list={[C.logoBox[logoPosition], 'flex-1']}>
+      <a href="/" class={C.logo}>
+        {logo ? <img src={logo} alt={siteTitle} /> : <span>{siteTitle}</span>}
+      </a>
+    </div>
+
+    <nav class={C.nav} aria-label="Primary navigation">
+      {navigationLinks.map((link) => (
+        <a href={link.href} class={C.navLink}>{link.label}</a>
+      ))}
+      {/* Phase 1c: submenu dropdown logic via React island */}
+    </nav>
+
+    <div class={C.actions}>
+      {actionButtons.showSearch && (
+        <button type="button" class={C.actionButton} aria-label="Поиск" data-action="search">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+            <path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </button>
+      )}
+      {actionButtons.showCart && (
+        <a href="/cart" class={C.actionButton} aria-label="Корзина" data-action="cart">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" stroke="currentColor" stroke-width="2"/>
+            <path d="M3 6h18" stroke="currentColor" stroke-width="2"/>
+            <path d="M16 10a4 4 0 0 1-8 0" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </a>
+      )}
+      {actionButtons.showProfile && (
+        <a href="/account" class={C.actionButton} aria-label="Личный кабинет" data-action="profile">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
+            <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </a>
+      )}
+    </div>
+  </div>
+
+  {/* Phase 1c: scroll-up stickiness detection via React island or vanilla JS */}
+  {/* Phase 1c: mobile hamburger menu + sidebar toggle via React island */}
+</header>

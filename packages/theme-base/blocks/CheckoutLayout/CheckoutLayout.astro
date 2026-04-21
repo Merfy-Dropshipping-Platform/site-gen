@@ -1,0 +1,47 @@
+---
+import type { CheckoutLayoutProps } from './CheckoutLayout.puckConfig';
+import { CheckoutLayoutClasses as C } from './CheckoutLayout.classes';
+
+interface Props extends CheckoutLayoutProps {
+  id?: string;
+}
+
+const {
+  id,
+  showOrderSummary,
+  showTrustBadges,
+  colorScheme = 1,
+  padding,
+} = Astro.props as Props;
+
+const scheme = `color-scheme-${colorScheme}`;
+const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+---
+<div
+  class:list={[C.root, scheme]}
+  data-puck-component-id={id}
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    <div class={C.grid}>
+      <main class={C.form}>
+        <slot />
+      </main>
+      {showOrderSummary && (
+        <aside class={C.summary} aria-label="Сводка заказа">
+          <h3 class={C.summaryHeading}>Ваш заказ</h3>
+          <div data-order-summary>
+            {/* Phase 1c: React island renders cart items + total */}
+          </div>
+        </aside>
+      )}
+    </div>
+    {showTrustBadges && (
+      <div class={C.trustBadges} aria-label="Гарантии оплаты">
+        <span>🔒 SSL</span>
+        <span>💳 Visa/Mastercard</span>
+        <span>🏦 YooKassa</span>
+      </div>
+    )}
+  </div>
+</div>

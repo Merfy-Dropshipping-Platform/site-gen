@@ -1,0 +1,87 @@
+---
+import type { VideoProps } from './Video.puckConfig';
+import { VideoClasses as C } from './Video.classes';
+
+interface Props extends VideoProps {
+  id?: string;
+}
+
+const {
+  id,
+  heading,
+  videoUrl,
+  poster,
+  colorScheme = 1,
+  padding,
+} = Astro.props as Props;
+
+const scheme = `color-scheme-${colorScheme}`;
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+
+// Detect provider by URL. Return { kind, embedUrl } or null for self-hosted.
+type Kind = 'youtube' | 'vimeo' | 'file';
+function parseVideo(url: string): { kind: Kind; embedUrl: string } {
+  if (!url) return { kind: 'file', embedUrl: '' };
+
+  // YouTube: youtube.com/watch?v=<ID> or youtu.be/<ID>
+  const ytMatch =
+    url.match(/youtu\.be\/([A-Za-z0-9_-]{6,})/) ||
+    url.match(/youtube\.com\/watch\?v=([A-Za-z0-9_-]{6,})/) ||
+    url.match(/youtube\.com\/embed\/([A-Za-z0-9_-]{6,})/);
+  if (ytMatch) {
+    return { kind: 'youtube', embedUrl: `https://www.youtube.com/embed/${ytMatch[1]}` };
+  }
+
+  // Vimeo: vimeo.com/<ID>
+  const vmMatch =
+    url.match(/vimeo\.com\/(?:video\/)?(\d{6,})/) ||
+    url.match(/player\.vimeo\.com\/video\/(\d{6,})/);
+  if (vmMatch) {
+    return { kind: 'vimeo', embedUrl: `https://player.vimeo.com/video/${vmMatch[1]}` };
+  }
+
+  return { kind: 'file', embedUrl: url };
+}
+
+const video = parseVideo(videoUrl);
+---
+<section
+  class:list={[C.root, scheme]}
+  data-puck-component-id={id}
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    {heading && <h2 class={C.heading}>{heading}</h2>}
+    <div class={C.media}>
+      {video.kind === 'youtube' && (
+        <iframe
+          class={C.iframe}
+          src={video.embedUrl}
+          loading="lazy"
+          allowfullscreen
+          allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        ></iframe>
+      )}
+      {video.kind === 'vimeo' && (
+        <iframe
+          class={C.iframe}
+          src={video.embedUrl}
+          loading="lazy"
+          allowfullscreen
+          allow="autoplay; fullscreen; picture-in-picture"
+        ></iframe>
+      )}
+      {video.kind === 'file' && video.embedUrl && (
+        <video
+          class={C.video}
+          src={video.embedUrl}
+          poster={poster}
+          controls
+          preload="metadata"
+        ></video>
+      )}
+    </div>
+  </div>
+</section>

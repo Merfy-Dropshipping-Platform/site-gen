@@ -1,0 +1,23 @@
+---
+interface FontDef {
+  family: string;
+  url: string;
+  type?: 'font/woff2' | 'font/woff';
+  crossorigin?: 'anonymous';
+}
+
+interface Props {
+  fonts: FontDef[];
+}
+
+const { fonts } = Astro.props as Props;
+---
+{fonts.map(f => (
+  <link
+    rel="preload"
+    href={f.url}
+    as="font"
+    type={f.type ?? 'font/woff2'}
+    crossorigin={f.crossorigin ?? 'anonymous'}
+  />
+))}

@@ -1,0 +1,51 @@
+---
+import type { ImageWithTextProps } from './ImageWithText.puckConfig';
+import { ImageWithTextClasses as C } from './ImageWithText.classes';
+
+interface Props extends ImageWithTextProps {
+  id?: string;
+}
+
+const {
+  id,
+  image,
+  heading,
+  text,
+  button,
+  imagePosition = 'left',
+  colorScheme = 1,
+  padding,
+} = Astro.props as Props;
+
+const variantKey = imagePosition === 'left' ? 'imageLeft' : 'imageRight';
+const scheme = `color-scheme-${colorScheme}`;
+const innerClass = C.inner[variantKey];
+const imageColClass = C.imageCol[variantKey];
+const textColClass = C.textCol[variantKey];
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+---
+<section
+  class:list={[C.root, scheme]}
+  data-puck-component-id={id}
+  data-image-position={imagePosition}
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    <div class={innerClass}>
+      <div class={imageColClass}>
+        {image?.url && (
+          <img src={image.url} alt={image.alt ?? ''} class={C.image} />
+        )}
+      </div>
+      <div class={textColClass}>
+        {heading && <h2 class={C.heading}>{heading}</h2>}
+        {text && <p class={C.text}>{text}</p>}
+        {button?.text && (
+          <a href={button.href} class={C.button}>{button.text}</a>
+        )}
+      </div>
+    </div>
+  </div>
+</section>

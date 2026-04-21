@@ -1,0 +1,15 @@
+export const AuthModalTokens = [
+  '--color-bg',
+  '--color-heading',
+  '--color-text',
+  '--color-button-bg',
+  '--color-button-text',
+  '--color-button-border',
+  '--color-error',
+  '--radius-button',
+  '--radius-input',
+  '--font-heading',
+  '--font-body',
+  '--size-hero-heading',
+  '--size-hero-button-h',
+] as const satisfies readonly `--${string}`[];

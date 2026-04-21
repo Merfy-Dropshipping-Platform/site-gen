@@ -1,0 +1,16 @@
+export const NewsletterTokens = [
+  '--color-bg',
+  '--color-heading',
+  '--color-text',
+  '--color-button-bg',
+  '--color-button-text',
+  '--color-button-border',
+  '--radius-button',
+  '--radius-input',
+  '--font-heading',
+  '--font-body',
+  '--size-hero-heading',
+  '--size-hero-button-h',
+  '--size-newsletter-form-w',
+  '--container-max-width',
+] as const satisfies readonly `--${string}`[];

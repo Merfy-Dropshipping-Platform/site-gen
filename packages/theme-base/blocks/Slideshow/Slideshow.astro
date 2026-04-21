@@ -1,0 +1,54 @@
+---
+import type { SlideshowProps } from './Slideshow.puckConfig';
+import { SlideshowClasses as C } from './Slideshow.classes';
+
+interface Props extends SlideshowProps {
+  id?: string;
+}
+
+const {
+  id,
+  slides,
+  interval = 5,
+  autoplay = true,
+  colorScheme = 1,
+  padding,
+} = Astro.props as Props;
+
+// Normalize autoplay: "true"|"false" string → boolean (constructor sometimes sends strings).
+const normalizedAutoplay =
+  typeof autoplay === 'string' ? autoplay === 'true' : Boolean(autoplay);
+
+const scheme = `color-scheme-${colorScheme}`;
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+
+// Phase 1a: first-slide-only. Carousel rotation JS wired in Phase 1c via React island.
+const firstSlide = slides?.[0];
+---
+<section
+  class:list={[C.root, scheme]}
+  data-puck-component-id={id}
+  data-autoplay={String(normalizedAutoplay)}
+  data-interval={interval}
+  style={paddingStyle}
+>
+  {/* Phase 1a: first-slide-only. Carousel rotation JS wired in Phase 1c via React island. */}
+  <div class={C.container}>
+    {firstSlide && (
+      <div class={C.slide} data-slide-id={firstSlide.id}>
+        {firstSlide.imageUrl && (
+          <img src={firstSlide.imageUrl} alt={firstSlide.heading} class={C.image} />
+        )}
+        <div class={C.content}>
+          {firstSlide.heading && <h2 class={C.heading}>{firstSlide.heading}</h2>}
+          {firstSlide.subtitle && <p class={C.subtitle}>{firstSlide.subtitle}</p>}
+          {firstSlide.ctaText && (
+            <a href={firstSlide.ctaUrl} class={C.ctaButton}>{firstSlide.ctaText}</a>
+          )}
+        </div>
+      </div>
+    )}
+  </div>
+</section>

@@ -117,6 +117,10 @@ export const site = pgTable("site", {
   settings: jsonb("settings").$type<{
     requireCustomerAuth?: boolean;
   }>(),
+  // Закреплённая версия темы (e.g. "1.2.0"). Null = использовать latest.
+  themeVersion: text("theme_version"),
+  // Флаг необходимости перестроить сайт после смены темы/версии
+  needsRebuild: boolean("needs_rebuild").default(false).notNull(),
 });
 
 export const siteDomain = pgTable("site_domain", {
@@ -381,3 +385,37 @@ export const siteRepairLog = pgTable(
     detectedIdx: index("idx_repair_log_detected_at").on(table.detectedAt),
   }),
 );
+
+// ── Theme System: Migration Audit Trail ──
+
+/**
+ * Аудит-лог миграций тем (смена темы или версии темы для сайта).
+ * Записывается при каждом переключении theme/theme_version на сайте.
+ * `report` хранит JSON с деталями diff-а (что изменилось в настройках/данных).
+ */
+export const siteThemeMigrations = pgTable(
+  "site_theme_migrations",
+  {
+    id: text("id").primaryKey(),
+    siteId: text("site_id")
+      .notNull()
+      .references(() => site.id, { onDelete: "cascade" }),
+    fromTheme: text("from_theme").notNull(),
+    fromVersion: text("from_version").notNull(),
+    toTheme: text("to_theme").notNull(),
+    toVersion: text("to_version").notNull(),
+    report: jsonb("report").notNull(),
+    timestamp: timestamp("timestamp")
+      .$defaultFn(() => new Date())
+      .notNull(),
+  },
+  (table) => ({
+    siteIdx: index("idx_site_theme_migrations_site_id").on(table.siteId),
+    timestampIdx: index("idx_site_theme_migrations_timestamp").on(
+      table.timestamp,
+    ),
+  }),
+);
+
+export type SiteThemeMigration = typeof siteThemeMigrations.$inferSelect;
+export type NewSiteThemeMigration = typeof siteThemeMigrations.$inferInsert;

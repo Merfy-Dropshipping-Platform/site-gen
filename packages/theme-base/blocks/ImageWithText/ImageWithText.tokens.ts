@@ -1,0 +1,18 @@
+export const ImageWithTextTokens = [
+  '--color-bg',
+  '--color-heading',
+  '--color-text',
+  '--color-button-bg',
+  '--color-button-text',
+  '--color-button-border',
+  '--font-heading',
+  '--font-body',
+  '--size-hero-heading',
+  '--size-hero-button-h',
+  '--radius-button',
+  '--radius-media',
+  '--radius-card',
+  '--spacing-section-y',
+  '--spacing-grid-col-gap',
+  '--container-max-width',
+] as const satisfies readonly `--${string}`[];

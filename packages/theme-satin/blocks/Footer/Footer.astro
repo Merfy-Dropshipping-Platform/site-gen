@@ -1,0 +1,140 @@
+---
+import type { FooterProps } from './Footer.puckConfig';
+import { FooterClasses as C } from './Footer.classes';
+
+interface Props extends FooterProps {
+  id?: string;
+}
+
+const {
+  id,
+  newsletter,
+  heading,
+  text,
+  navigationColumn,
+  informationColumn,
+  socialColumn,
+  colorScheme = 3,
+  copyrightColorScheme,
+  padding,
+} = Astro.props as Props;
+
+const scheme = `color-scheme-${colorScheme}`;
+const copyScheme = copyrightColorScheme ? `color-scheme-${copyrightColorScheme}` : '';
+const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+
+// New constructor fields take priority over legacy newsletter heading/description.
+const newsletterHeading = heading?.text || newsletter?.heading;
+const newsletterDescription = text?.content || newsletter?.description;
+
+// Vanilla social icons — inline SVG per platform. Each shape uses currentColor
+// so it inherits from --color-text (default) and shifts on hover.
+const SOCIAL_ICONS: Record<string, string> = {
+  telegram: '<path d="M21.198 2.433a2.242 2.242 0 0 0-1.022.215L2.684 9.896a2.25 2.25 0 0 0 .1 4.163l3.917 1.218 1.93 6.19a1.5 1.5 0 0 0 2.55.575l2.68-2.68 4.84 3.564a1.5 1.5 0 0 0 2.37-.866l3.2-16.515a2.25 2.25 0 0 0-3.073-2.112Z" stroke="currentColor" stroke-width="1.5" fill="none"/>',
+  vk: '<path d="M2 6h20v12H2z" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M7 10v4M12 10v4M17 10v4" stroke="currentColor" stroke-width="1.5"/>',
+  youtube: '<rect x="2" y="6" width="20" height="12" rx="3" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="m10 9 5 3-5 3V9Z" stroke="currentColor" stroke-width="1.5" fill="none"/>',
+  tiktok: '<path d="M14 4v10a4 4 0 1 1-4-4" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M14 4a4 4 0 0 0 4 4" stroke="currentColor" stroke-width="1.5" fill="none"/>',
+  dzen: '<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M12 2a10 10 0 0 0 0 20M2 12a10 10 0 0 1 20 0" stroke="currentColor" stroke-width="1.5" fill="none"/>',
+};
+
+// Brand name for copyright / powered-by — fall back when navigationColumn.title is not the brand.
+const brandName = navigationColumn?.title && navigationColumn.title !== 'Навигация'
+  ? navigationColumn.title
+  : 'Мой магазин';
+---
+<footer class:list={[C.root, scheme]} data-puck-component-id={id} style={paddingStyle}>
+  <div class={C.container}>
+    {newsletter?.enabled && (
+      <section class={C.newsletter.wrapper} aria-labelledby="newsletter-heading">
+        <div class={C.newsletter.inner}>
+          <div class={C.newsletter.copy}>
+            {newsletterHeading && (
+              <h2 id="newsletter-heading" class={C.newsletter.heading}>{newsletterHeading}</h2>
+            )}
+            {newsletterDescription && (
+              <p class={C.newsletter.description}>{newsletterDescription}</p>
+            )}
+          </div>
+          {/* Phase 1c: React island handles newsletter submit */}
+          <form class={C.newsletter.form} data-action="newsletter">
+            <input
+              type="email"
+              name="email"
+              placeholder={newsletter.placeholder}
+              aria-label="Email адрес для рассылки"
+              required
+              class={C.newsletter.input}
+            />
+            <button type="submit" class={C.newsletter.submit}>Подписаться</button>
+          </form>
+        </div>
+      </section>
+    )}
+
+    {/* Top row: vanilla's 2-part layout (logo+nav LEFT, contact+social+payment RIGHT) */}
+    <section class={C.main.section} aria-label="Информация и навигация">
+      <div class={C.main.leftCol}>
+        <div class={C.brand}>{brandName}</div>
+        {navigationColumn?.links && navigationColumn.links.length > 0 && (
+          <nav class={C.navColumn.root} aria-label="Footer navigation">
+            {navigationColumn.links.map((link) => (
+              <a href={link.href} class={C.navColumn.link}>{link.label}</a>
+            ))}
+          </nav>
+        )}
+      </div>
+
+      <div class={C.main.rightCol}>
+        <div class={C.infoColumn.wrap}>
+          {socialColumn?.email && (
+            <a href={`mailto:${socialColumn.email}`} class={C.infoColumn.emailLink}>{socialColumn.email}</a>
+          )}
+        </div>
+
+        <div class="flex flex-col gap-[24px] md:items-end">
+          {socialColumn?.socialLinks && socialColumn.socialLinks.length > 0 && (
+            <div class={C.socialRow}>
+              {socialColumn.socialLinks.map((social) => (
+                <a
+                  href={social.href}
+                  aria-label={social.platform}
+                  class={C.socialLink}
+                  data-platform={social.platform}
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true" set:html={SOCIAL_ICONS[social.platform] ?? ''} />
+                </a>
+              ))}
+            </div>
+          )}
+          {/* Vanilla-specific: payment method badges row */}
+          <div class={C.paymentRow}>
+            <div class={C.paymentBadge}><span class={C.paymentBadgeText}>MC</span></div>
+            <div class={C.paymentBadge}><span class={C.paymentBadgeText}>VISA</span></div>
+            <div class={C.paymentBadge}><span class={C.paymentBadgeText}>МИР</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    {/* Copyright bar with information links */}
+    <div class={C.copyrightBar.root}>
+      <span class={C.copyrightBar.text}>
+        &copy; {new Date().getFullYear()} {brandName}. Все права защищены.
+      </span>
+      {informationColumn?.links && informationColumn.links.length > 0 && (
+        <div class={C.copyrightBar.links}>
+          {informationColumn.links.map((link) => (
+            <a href={link.href} class={C.copyrightBar.link}>{link.label}</a>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+
+  {/* Vanilla-specific: powered-by black strip at the very bottom */}
+  <div class:list={[C.poweredBy.bar, copyScheme]}>
+    <p class={C.poweredBy.text}>
+      &copy; {new Date().getFullYear()} {brandName}. Все права защищены. Powered by Merfy
+    </p>
+  </div>
+</footer>

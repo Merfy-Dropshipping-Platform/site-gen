@@ -1,0 +1,35 @@
+---
+import type { CartSectionProps } from './CartSection.puckConfig';
+import { CartSectionClasses as C } from './CartSection.classes';
+
+interface Props extends CartSectionProps {
+  id?: string;
+}
+
+const {
+  id,
+  colorScheme = 1,
+  padding,
+} = Astro.props as Props;
+
+const scheme = `color-scheme-${colorScheme}`;
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+// NOTE: Real cart items are hydrated in Phase 1c via React island
+// (reads from localStorage cart-store + orders API for server totals).
+---
+<section
+  id="cart-section"
+  class:list={[C.root, scheme]}
+  data-puck-component-id={id}
+  data-block="cart-section"
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    <h1 class={C.heading}>Корзина</h1>
+    <div class={C.empty} data-cart-loading>
+      <p>Загрузка корзины...</p>
+    </div>
+  </div>
+</section>

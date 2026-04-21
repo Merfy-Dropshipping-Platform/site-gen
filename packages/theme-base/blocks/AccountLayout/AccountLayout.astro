@@ -1,0 +1,55 @@
+---
+import type { AccountLayoutProps } from './AccountLayout.puckConfig';
+import { AccountLayoutClasses as C } from './AccountLayout.classes';
+
+interface Props extends AccountLayoutProps {
+  id?: string;
+}
+
+const {
+  id,
+  showGreeting,
+  sidebarPosition,
+  activePage,
+  colorScheme = 1,
+  padding,
+} = Astro.props as Props;
+
+const scheme = `color-scheme-${colorScheme}`;
+const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+
+// data-active renders only the string "true" on the active link; absent on others.
+const active = (page: AccountLayoutProps['activePage']): 'true' | undefined =>
+  activePage === page ? 'true' : undefined;
+---
+<div
+  class:list={[C.root, scheme]}
+  data-puck-component-id={id}
+  data-sidebar-position={sidebarPosition}
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    {showGreeting && (
+      <div class={C.greeting} data-greeting>
+        {/* Phase 1c: React island injects user name */}
+        <h1 class={C.heading}>Личный кабинет</h1>
+      </div>
+    )}
+
+    <div class:list={[C.grid, C.sidebar[sidebarPosition]]}>
+      <aside class={C.navPanel} aria-label="Меню личного кабинета">
+        <nav class={C.nav}>
+          <a href="/account" class={C.navLink} data-active={active('dashboard')}>Главная</a>
+          <a href="/account/orders" class={C.navLink} data-active={active('orders')}>Заказы</a>
+          <a href="/account/profile" class={C.navLink} data-active={active('profile')}>Профиль</a>
+          <a href="/account/settings" class={C.navLink} data-active={active('settings')}>Настройки</a>
+          <button type="button" class={C.logoutBtn} data-action="logout" data-active={active('logout')}>Выйти</button>
+        </nav>
+      </aside>
+
+      <main class={C.content}>
+        <slot />
+      </main>
+    </div>
+  </div>
+</div>

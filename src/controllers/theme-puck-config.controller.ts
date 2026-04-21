@@ -217,10 +217,11 @@ export class ThemePuckConfigController {
     // and cannot be JSON-serialized. Constructor re-attaches AstroBlockBridge.
     const components: Record<string, PuckComponentJson> = {};
     for (const [name, cfg] of Object.entries(puckConfig.components)) {
+      const hydratedFields = hydrateFields(cfg.fields, cfg.defaultProps);
       components[name] = {
         label: cfg.label,
         category: componentToCategory[name] ?? 'other',
-        fields: cfg.fields,
+        fields: hydratedFields,
         defaultProps: cfg.defaultProps,
       };
     }
@@ -230,4 +231,85 @@ export class ThemePuckConfigController {
       categories: puckConfig.categories ?? {},
     };
   }
+}
+
+/**
+ * Phase 1c hotfix — Puck's field walker crashes with
+ * `Cannot read properties of undefined (reading '<subKey>')` when a field has
+ * `type: 'object'` but no `objectFields`. Same for `array`/`arrayFields` and
+ * `radio`/`select`/`options`.
+ *
+ * Theme-base block configs were authored with minimal `{ type: 'object',
+ * label: '…' }` definitions on the assumption the runtime would derive the
+ * sub-schema. We do that here: walk the defaultProps for each field and infer
+ * (a) sub-field names and (b) primitive sub-types. For array/radio/select, we
+ * synthesize empty collections so Puck doesn't trip on an `undefined` lookup.
+ *
+ * This is safe because:
+ *  - Field VALUES still come from defaultProps or user data — inferred
+ *    objectFields only describe the editor UI, not what ships to the block.
+ *  - Empty options/arrayFields render as "no sub-editor" in Puck's UI (worse
+ *    UX than the hand-authored config, but no crash).
+ *
+ * TODO(078-theme-system Phase 2): authoring-pass over theme-base to add real
+ * `objectFields`/`options` so the editor UI is fully usable, not just crash-
+ * free.
+ */
+function inferFieldTypeFromValue(value: unknown): string {
+  if (typeof value === 'string') return 'text';
+  if (typeof value === 'number') return 'number';
+  if (typeof value === 'boolean') return 'radio';
+  if (Array.isArray(value)) return 'array';
+  if (value !== null && typeof value === 'object') return 'object';
+  return 'text';
+}
+
+/**
+ * Recursively hydrate field definitions so Puck's walker can descend into
+ * nested objects/arrays without tripping on missing `objectFields` /
+ * `arrayFields`. Depth is bounded by the shape of `defaultProps` — we stop
+ * recursing when there's no value to inspect.
+ */
+function hydrateFields(
+  fields: Record<string, unknown>,
+  defaultProps: unknown,
+): Record<string, unknown> {
+  const defaults = (defaultProps ?? {}) as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const [fieldName, rawDef] of Object.entries(fields ?? {})) {
+    const def = { ...(rawDef as Record<string, unknown>) };
+    const type = def.type as string | undefined;
+    const defaultVal = defaults[fieldName];
+
+    if (type === 'object') {
+      const existing = def.objectFields as Record<string, unknown> | undefined;
+      const seed = existing ?? inferObjectFields(defaultVal);
+      // Recurse: nested object sub-fields might themselves be objects/arrays.
+      def.objectFields = hydrateFields(seed, defaultVal);
+    } else if (type === 'array') {
+      const first = Array.isArray(defaultVal) ? defaultVal[0] : undefined;
+      const existing = def.arrayFields as Record<string, unknown> | undefined;
+      const seed = existing ?? inferObjectFields(first);
+      def.arrayFields = hydrateFields(seed, first);
+      if (def.defaultItemProps === undefined && first !== undefined) {
+        def.defaultItemProps = first;
+      }
+    } else if ((type === 'radio' || type === 'select') && !def.options) {
+      const val = typeof defaultVal === 'string' ? defaultVal : '';
+      def.options = [{ label: val || '(default)', value: val }];
+    }
+    out[fieldName] = def;
+  }
+  return out;
+}
+
+function inferObjectFields(
+  value: unknown,
+): Record<string, { type: string; label?: string }> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const entries: Record<string, { type: string; label?: string }> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    entries[k] = { type: inferFieldTypeFromValue(v), label: k };
+  }
+  return entries;
 }

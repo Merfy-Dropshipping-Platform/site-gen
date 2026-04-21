@@ -1,0 +1,18 @@
+export const MultiRowsTokens = [
+  '--color-bg',
+  '--color-heading',
+  '--color-text',
+  '--color-button-bg',
+  '--color-button-text',
+  '--color-button-border',
+  '--font-heading',
+  '--font-body',
+  '--size-hero-heading',
+  '--size-hero-button-h',
+  '--radius-media',
+  '--radius-button',
+  '--spacing-section-y',
+  '--spacing-grid-col-gap',
+  '--spacing-grid-row-gap',
+  '--container-max-width',
+] as const satisfies readonly `--${string}`[];

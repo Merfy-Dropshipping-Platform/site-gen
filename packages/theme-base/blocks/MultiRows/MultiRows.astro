@@ -1,0 +1,53 @@
+---
+import type { MultiRowsProps } from './MultiRows.puckConfig';
+import { MultiRowsClasses as C } from './MultiRows.classes';
+
+interface Props extends MultiRowsProps {
+  id?: string;
+}
+
+const {
+  id,
+  rows,
+  colorScheme = 1,
+  padding,
+} = Astro.props as Props;
+
+const scheme = `color-scheme-${colorScheme}`;
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+---
+<section
+  class:list={[C.root, scheme]}
+  data-puck-component-id={id}
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    <div class={C.stack}>
+      {rows.map((row) => {
+        const variantKey = row.imagePosition === 'right' ? 'imageRight' : 'imageLeft';
+        return (
+          <div
+            class={C.row[variantKey]}
+            data-row-id={row.id}
+            data-image-position={row.imagePosition}
+          >
+            <div class={C.imageCol[variantKey]}>
+              {row.imageUrl && (
+                <img src={row.imageUrl} alt={row.heading} class={C.image} />
+              )}
+            </div>
+            <div class={C.textCol[variantKey]}>
+              {row.heading && <h3 class={C.rowHeading}>{row.heading}</h3>}
+              {row.text && <p class={C.rowText}>{row.text}</p>}
+              {row.button?.text && (
+                <a href={row.button.href} class={C.button}>{row.button.text}</a>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+</section>

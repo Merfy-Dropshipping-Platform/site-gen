@@ -104,6 +104,12 @@
         "path": "./blocks/Header",
         "reason": "Rose uses 1920px container, 4 logo-position layouts, rose-specific SVG iconography, and scroll-up sticky transform."
       }
+    },
+    "Footer": {
+      "override": {
+        "path": "./blocks/Footer",
+        "reason": "Rose uses 3-column grid (navigation / information / social) with inline-titled columns and unique social iconography."
+      }
     }
   },
 

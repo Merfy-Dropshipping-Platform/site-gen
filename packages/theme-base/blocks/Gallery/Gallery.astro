@@ -1,0 +1,60 @@
+---
+import type { GalleryProps } from './Gallery.puckConfig';
+import { GalleryClasses as C } from './Gallery.classes';
+
+interface Props extends GalleryProps {
+  id?: string;
+}
+
+const {
+  id,
+  heading,
+  items,
+  layout = 'grid',
+  colorScheme = 1,
+  padding,
+} = Astro.props as Props;
+
+const scheme = `color-scheme-${colorScheme}`;
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+const innerClass = C.inner[layout];
+---
+<section
+  class:list={[C.root, scheme]}
+  data-puck-component-id={id}
+  data-layout={layout}
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    {heading && <h2 class={C.heading}>{heading}</h2>}
+    <div class={innerClass}>
+      {items.map((item) => {
+        if (item.type === 'image') {
+          return (
+            <div class={C.item}>
+              <img src={item.url} alt={item.alt} class={C.image} />
+            </div>
+          );
+        }
+        if (item.type === 'product') {
+          const href = item.productId ? `/product/${item.productId}` : '#';
+          return (
+            <a href={href} class={C.card}>
+              <div class={C.cardMedia}></div>
+              <div class={C.cardLabel}>Товар</div>
+            </a>
+          );
+        }
+        const href = item.collectionId ? `/collection/${item.collectionId}` : '#';
+        return (
+          <a href={href} class={C.card}>
+            <div class={C.cardMedia}></div>
+            <div class={C.cardLabel}>Коллекция</div>
+          </a>
+        );
+      })}
+    </div>
+  </div>
+</section>

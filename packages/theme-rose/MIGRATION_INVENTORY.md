@@ -26,8 +26,8 @@
 | Rose file | Base equivalent | Classification | Decision | Notes |
 |-----------|-----------------|----------------|----------|-------|
 | `Hero.astro` | `blocks/Hero` | Token-only | base + rose tokens | Props shape differs (uses `heading.size`, `text.content`, `primaryButton.link.href`) — base migration adapter needed, but visual identity comes from tokens (Bitter/Arsenal + pink palette). ✓ VERIFIED by reading both files. |
-| `Header.astro` | `blocks/Header` | Override | `theme-rose/blocks/Header` | 34 KB of markup with rose-specific dropdown, center-aligned logo, custom search/cart/profile SVGs, burger menu, auth modal integration. Base Header is ~80 lines, rose Header is ~900 lines. ✓ VERIFIED. |
-| `Footer.astro` | `blocks/Footer` | Override | `theme-rose/blocks/Footer` | Uses 3-column grid (`nav`, `info`, `social`) + `FooterColumn`/`FooterLink`/`SocialIcon` helpers. Base Footer uses 2-part layout (logo+nav LEFT, contact+social RIGHT). Reason to override: `reason: "Rose uses 3-column grid with unique social icons and platform SVGs"`. ✓ VERIFIED. |
+| `Header.astro` | `blocks/Header` | Override | `theme-rose/blocks/Header` | 34 KB of markup with rose-specific dropdown, center-aligned logo, custom search/cart/profile SVGs, burger menu, auth modal integration. Base Header is ~80 lines, rose Header is ~900 lines. ✓ VERIFIED. **DONE in Task 5 (commit 06ea598)**. |
+| `Footer.astro` | `blocks/Footer` | Override | `theme-rose/blocks/Footer` | Uses 3-column grid (`nav`, `info`, `social`) + `FooterColumn`/`FooterLink`/`SocialIcon` helpers. Base Footer uses 2-part layout (logo+nav LEFT, contact+social RIGHT). Reason to override: `reason: "Rose uses 3-column grid with unique social icons and platform SVGs"`. ✓ VERIFIED. **DONE in Task 6 (commit 396b63a)**. |
 | `Collections.astro` | `blocks/Collections` | Token-only | base + tokens | Rose has richer styling (titleSize/subtitleSize/imageView/aspect) but base supports comparable props. Rose-specific pink hue + uppercase Bitter headings → tokens only. ✓ VERIFIED. |
 | `PopularProducts.astro` | `blocks/PopularProducts` | Token-only | base + tokens | TBD verify — assume token-only pending diff. |
 | `ProductGrid.astro` | _(no direct base)_ | Custom | `theme-rose/customBlocks/ProductGrid` | Catalog listing. Base has `Product` (single-item view) but not a listing grid — treat as custom. TBD verify whether base actually has this hidden. |
@@ -59,12 +59,18 @@
 
 ## Notes on rose auth flow
 
-`auth/AuthShell.astro`, `AuthInput.astro`, `AuthButton.astro`, `AuthOtpInput.astro` are NOT standalone Puck blocks. They compose a custom auth experience invoked from the Header. Two options:
+`auth/AuthShell.astro`, `AuthInput.astro`, `AuthButton.astro`, `AuthOtpInput.astro`, `PasswordField.astro`, `AuthSecondaryLink.astro` are NOT standalone Puck blocks. They compose a custom auth experience invoked from the Header.
 
-1. Treat all auth chrome as **override of `AuthModal`** in `theme-rose/blocks/AuthModal/` — combine the sub-files into that block's 5-file layout. Recommended.
-2. Leave in base `AuthModal` and ship rose-specific design tokens only.
+### DEFERRED: use base AuthModal for Phase 1d
 
-Decision deferred to Task 5+ — inventory lists as Helper so we do not scaffold a block yet.
+**Task 7 decision (Phase 1d):** DEFERRED. Do NOT scaffold `theme-rose/blocks/AuthModal/`.
+
+Rationale:
+- The custom rose AuthShell design depends on 5+ sub-components (AuthShell, AuthInput, AuthButton, PasswordField, AuthSecondaryLink, AuthOtpInput) that must be wired together as a 5-file block override (.astro + Schema + Component + Config + index).
+- Phase 1d scope is limited to the 2 confirmed high-value overrides (Header, Footer) + tokens + integration. Auth override is significantly more complex and not required for first rose release.
+- Base `AuthModal` already works and renders correctly under rose tokens — the visual identity (pink/Bitter/Arsenal) carries over through the cascade, which is acceptable for Phase 1d.
+
+**Follow-up (Phase 1d+):** custom rose AuthShell design is a candidate for a dedicated override in a later PR, after Stage 0 manual verification confirms the base AuthModal + rose tokens is sub-par.
 
 ## Naming reconciliation
 
@@ -74,13 +80,13 @@ Decision deferred to Task 5+ — inventory lists as Helper so we do not scaffold
 | `ProductGrid.astro` | _(missing in base)_ | Register as custom block OR lobby to add to base in Phase 2. |
 | `InteractiveSection.astro` | _(no equivalent)_ | Examine Phase 2 whether to drop or promote. |
 
-## Action items for Tasks 5–8
+## Action items for Tasks 5–10 (Phase 1d)
 
-- [ ] Task 5: Build `theme-rose/blocks/Header/` override — merge legacy Header + header/ helpers.
-- [ ] Task 6: Build `theme-rose/blocks/Footer/` override — merge legacy Footer + footer/ helpers, 3-column grid.
-- [ ] Task 7 (optional): Override `theme-rose/blocks/AuthModal/` with merged auth/ helpers.
-- [ ] Task 8: Declare variants (Hero: centered-overlay, Newsletter: wide, Collections: masonry) in theme.json.
-- [ ] Tasks 9–12: Precompile, verify, resolver wiring.
+- [x] Task 5: Build `theme-rose/blocks/Header/` override — merge legacy Header + header/ helpers. **DONE (06ea598)**.
+- [x] Task 6: Build `theme-rose/blocks/Footer/` override — merge legacy Footer + footer/ helpers, 3-column grid. **DONE (396b63a)**.
+- [x] Task 7: AuthModal override **DEFERRED** — use base AuthModal for Phase 1d.
+- [ ] Task 8: Declare variants in theme.json (or document decision).
+- [ ] Tasks 9–10: Precompile + verify integration.
 
 ## Confidence markers
 

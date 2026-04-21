@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm';
 import { PreviewService } from '../services/preview.service';
 import * as schema from '../db/schema';
 import { PG_CONNECTION } from '../constants';
-import { getThemeManifest } from '../themes/theme-manifest-loader';
+import { getThemeManifest, googleFontHead } from '../themes/theme-manifest-loader';
 
 /**
  * GET /api/sites/:id/preview — renders the constructor's iframe preview for
@@ -62,7 +62,7 @@ export class PreviewController {
     const html = await this.preview.renderPreviewPage({
       blocks,
       tokensCss: this.tokensCssFromSettings(loaded.data, loaded.themeId),
-      fontHead: '',
+      fontHead: googleFontHead(loaded.themeId),
     });
     res.type('text/html').send(html);
   }

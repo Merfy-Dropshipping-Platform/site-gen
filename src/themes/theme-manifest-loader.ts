@@ -51,3 +51,56 @@ export function getThemeManifest(themeId: string): ThemeManifest | null {
 export function listThemeIds(): string[] {
   return Object.keys(MANIFESTS);
 }
+
+interface FontSpec {
+  family: string;
+  weights?: number[];
+  italic?: boolean;
+  source?: string;
+}
+
+/**
+ * Build a single `<link>` tag that pulls every Google font the theme
+ * declares. Theme-base blocks reference `var(--font-heading)` /
+ * `var(--font-body)` which resolve to `'Bitter', serif` etc. — if the
+ * browser can't find Bitter, it silently drops back to serif. Preview
+ * iframe has no way to include fonts unless we inject them.
+ *
+ * Output:
+ *   <link rel="preconnect" href="https://fonts.googleapis.com">
+ *   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+ *   <link href="https://fonts.googleapis.com/css2?family=Bitter:...&family=Arsenal:..."
+ *         rel="stylesheet">
+ *
+ * Returns an empty string when the theme has no Google fonts (or no
+ * manifest at all), so callers can always interpolate the result.
+ */
+export function googleFontHead(themeId: string | null): string {
+  if (!themeId) return '';
+  const m = getThemeManifest(themeId);
+  if (!m) return '';
+  const fontsRaw = (m as unknown as { fonts?: FontSpec[] }).fonts ?? [];
+  const googleFonts = fontsRaw.filter(
+    (f) => !f.source || f.source === 'google',
+  );
+  if (googleFonts.length === 0) return '';
+
+  const specs = googleFonts.map((f) => {
+    const weights = (f.weights && f.weights.length > 0 ? f.weights : [400])
+      .slice()
+      .sort((a, b) => a - b);
+    const family = encodeURIComponent(f.family).replace(/%20/g, '+');
+    if (f.italic) {
+      const ital = weights.map((w) => `0,${w}`).concat(weights.map((w) => `1,${w}`)).join(';');
+      return `family=${family}:ital,wght@${ital}`;
+    }
+    return `family=${family}:wght@${weights.join(';')}`;
+  });
+  const url =
+    'https://fonts.googleapis.com/css2?' + specs.join('&') + '&display=swap';
+  return [
+    '<link rel="preconnect" href="https://fonts.googleapis.com">',
+    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
+    `<link href="${url}" rel="stylesheet">`,
+  ].join('\n  ');
+}

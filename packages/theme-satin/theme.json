@@ -129,6 +129,9 @@
         "path": "./blocks/Footer",
         "reason": "Satin uses 2-part grid (logo+nav LEFT, contact+social RIGHT), uppercase tracking-0.05em on newsletter heading + submit, and a powered-by black strip below copyright."
       }
+    },
+    "Hero": {
+      "variant": "overlay"
     }
   },
 

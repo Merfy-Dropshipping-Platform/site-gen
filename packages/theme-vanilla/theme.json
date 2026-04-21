@@ -129,6 +129,9 @@
         "path": "./blocks/Footer",
         "reason": "Vanilla uses 2-part grid (logo+nav LEFT, contact+social+payment RIGHT) plus a unique powered-by black strip below copyright, with MC/VISA/МИР payment badges."
       }
+    },
+    "Hero": {
+      "variant": "overlay"
     }
   },
 

@@ -1,0 +1,48 @@
+---
+import type { MultiColumnsProps } from './MultiColumns.puckConfig';
+import { MultiColumnsClasses as C } from './MultiColumns.classes';
+
+interface Props extends MultiColumnsProps {
+  id?: string;
+}
+
+const {
+  id,
+  columns,
+  displayColumns = 3,
+  colorScheme = 1,
+  padding,
+} = Astro.props as Props;
+
+// Normalize displayColumns: constructor sends "1"|"2"|"3"|"4" (string) — coerce to number.
+const normalizedDisplayColumns =
+  typeof displayColumns === 'string'
+    ? parseInt(displayColumns, 10)
+    : Number(displayColumns);
+
+const scheme = `color-scheme-${colorScheme}`;
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+const gridTemplateCols = `grid-template-columns: repeat(${normalizedDisplayColumns}, minmax(0, 1fr));`;
+---
+<section
+  class:list={[C.root, scheme]}
+  data-puck-component-id={id}
+  data-display-columns={normalizedDisplayColumns}
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    <div class={C.grid} style={gridTemplateCols}>
+      {columns.map((column) => (
+        <div class={C.column} data-column-id={column.id}>
+          {column.imageUrl && (
+            <img src={column.imageUrl} alt={column.heading} class={C.image} />
+          )}
+          {column.heading && <h3 class={C.columnHeading}>{column.heading}</h3>}
+          {column.text && <p class={C.columnText}>{column.text}</p>}
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

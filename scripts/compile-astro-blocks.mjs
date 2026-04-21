@@ -51,6 +51,7 @@ async function findAstroBlocks() {
               fileName: f,
               blockDirPath,
               fullPath: path.join(blockDirPath, f),
+              kind: 'block',
             });
           }
         }
@@ -60,6 +61,62 @@ async function findAstroBlocks() {
     }
   }
   return entries;
+}
+
+/**
+ * Find non-block .astro entries — theme-base/layouts/*.astro and theme-base/seo/*.astro
+ * (plus nested CoreWebVitals/*.astro). These do not live in blocks/ dirs, so they do not
+ * have a per-block folder containing sibling .ts files — any TS they need is imported
+ * by file path (e.g. SEO astros import ../SomeBuilder.ts via relative path).
+ *
+ * Naming convention for output: <pkg>__<category>__<relPath>.mjs (where relPath uses
+ * '__' as path separator so the file stays flat in dist/astro-blocks/).
+ * Example: theme-base__layouts__BaseLayout.mjs
+ *          theme-base__seo__MetaTags.mjs
+ *          theme-base__seo__CoreWebVitals__FontPreload.mjs
+ */
+async function findAstroNonBlocks() {
+  const entries = [];
+  const basePkg = 'theme-base';
+  const basePath = path.join(PACKAGES_DIR, basePkg);
+
+  const locations = [
+    { subdir: 'layouts', category: 'layouts' },
+    { subdir: 'seo', category: 'seo' },
+  ];
+
+  for (const loc of locations) {
+    const dir = path.join(basePath, loc.subdir);
+    try {
+      await walkAstroFiles(dir, basePkg, loc.category, entries, '');
+    } catch {
+      // skip missing dir
+    }
+  }
+
+  return entries;
+}
+
+async function walkAstroFiles(dir, pkg, category, entries, prefix) {
+  const items = await fs.readdir(dir, { withFileTypes: true });
+  for (const item of items) {
+    const itemPath = path.join(dir, item.name);
+    if (item.isDirectory()) {
+      await walkAstroFiles(itemPath, pkg, category, entries, `${prefix}${item.name}__`);
+    } else if (item.name.endsWith('.astro')) {
+      const baseName = item.name.replace(/\.astro$/, '');
+      // blockName here is used purely for output naming + manifest identity.
+      const blockName = `${category}__${prefix}${baseName}`;
+      entries.push({
+        pkg,
+        blockName,
+        fileName: item.name,
+        blockDirPath: path.dirname(itemPath),
+        fullPath: itemPath,
+        kind: category,
+      });
+    }
+  }
 }
 
 /**
@@ -85,6 +142,13 @@ function stripTypes(source, filename) {
  * to sibling .mjs files in the flat dist/astro-blocks/ layout.
  *
  * `./Hero.classes` or `./Hero.classes.ts` → `./<pkg>__<blockName>__Hero.classes.mjs`
+ *
+ * For non-block entries (layouts, seo), we keep the simple `<pkg>__<blockName>__<mod>.mjs`
+ * flattening, but these entries may import `.astro` sibling files and `../` grandparent
+ * paths (e.g. StoreLayout.astro imports `./BaseLayout.astro` and `../blocks/Header/Header.astro`).
+ * These cross-file .astro imports can't be trivially resolved in the flat dist/ layout,
+ * so such astros will fail to render via the Container and will surface in verify:astro.
+ * That's acceptable in Phase 1b — Phase 1c wires the real integration.
  */
 function rewriteRelativeImports(source, pkg, blockName) {
   return source.replace(
@@ -93,6 +157,19 @@ function rewriteRelativeImports(source, pkg, blockName) {
       // Don't touch .json, .css, etc.
       if (modName.endsWith('.json') || modName.endsWith('.css') || modName.endsWith('.mjs')) {
         return match;
+      }
+      // .astro sibling imports are rewritten to the flat dist naming as well.
+      // This only resolves correctly when the referenced sibling .astro is itself
+      // part of the same output dir with matching flat name — e.g. layouts/StoreLayout
+      // importing `./BaseLayout.astro` → `./theme-base__layouts__BaseLayout.mjs`.
+      if (modName.endsWith('.astro')) {
+        const bare = modName.replace(/\.astro$/, '');
+        // If entry is a non-block (layouts__X or seo__X), its siblings use the same category prefix.
+        // E.g. StoreLayout blockName = 'layouts__StoreLayout' → prefix = 'layouts__'
+        // Sibling './BaseLayout.astro' should resolve to 'theme-base__layouts__BaseLayout.mjs'.
+        const catMatch = /^([a-z]+__)/i.exec(blockName);
+        const category = catMatch ? catMatch[1] : '';
+        return `${prefix}./${pkg}__${category}${bare}.mjs${suffix}`;
       }
       return `${prefix}./${pkg}__${blockName}__${modName}.mjs${suffix}`;
     },
@@ -159,19 +236,28 @@ async function compileOne(entry) {
 
   // Output filename: <pkg>__<blockName>__<fileName>.mjs
   // Flat to avoid deep paths in dist/
-  const outName = `${entry.pkg}__${entry.blockName}__${entry.fileName.replace(/\.astro$/, '')}.mjs`;
+  // For non-block entries, blockName already contains the category (e.g. 'layouts__BaseLayout'),
+  // so fileName is the same as blockName's trailing segment — to avoid double-suffix we still
+  // append the bare file base just once.
+  const baseName = entry.fileName.replace(/\.astro$/, '');
+  const outName = entry.kind === 'block'
+    ? `${entry.pkg}__${entry.blockName}__${baseName}.mjs`
+    : `${entry.pkg}__${entry.blockName}.mjs`;
   const outPath = path.join(DIST_DIR, outName);
   await fs.mkdir(DIST_DIR, { recursive: true });
   await fs.writeFile(outPath, rewritten, 'utf-8');
 
   // Also compile all sibling .ts files (Hero.classes.ts, etc.) so the
-  // rewritten relative imports resolve.
-  const siblings = await fs.readdir(entry.blockDirPath);
+  // rewritten relative imports resolve. Only for block entries — layouts/seo
+  // share a flat directory where .ts files are not per-entry siblings.
   const siblingOutputs = [];
-  for (const sib of siblings) {
-    if (sib.endsWith('.ts') && !sib.endsWith('.d.ts')) {
-      const sibOut = await compileSiblingTs(entry.pkg, entry.blockName, entry.blockDirPath, sib);
-      siblingOutputs.push(sibOut);
+  if (entry.kind === 'block') {
+    const siblings = await fs.readdir(entry.blockDirPath);
+    for (const sib of siblings) {
+      if (sib.endsWith('.ts') && !sib.endsWith('.d.ts')) {
+        const sibOut = await compileSiblingTs(entry.pkg, entry.blockName, entry.blockDirPath, sib);
+        siblingOutputs.push(sibOut);
+      }
     }
   }
 
@@ -184,21 +270,27 @@ async function compileOne(entry) {
 }
 
 async function main() {
-  const entries = await findAstroBlocks();
+  const blockEntries = await findAstroBlocks();
+  const nonBlockEntries = await findAstroNonBlocks();
+  const entries = [...blockEntries, ...nonBlockEntries];
   if (entries.length === 0) {
-    console.error('No .astro blocks found under packages/theme-*/blocks/');
+    console.error('No .astro files found under packages/theme-*/');
     process.exit(1);
   }
 
   await fs.mkdir(DIST_DIR, { recursive: true });
 
-  console.log(`Compiling ${entries.length} .astro block(s)...`);
+  console.log(
+    `Compiling ${blockEntries.length} block(s) + ${nonBlockEntries.length} non-block(s) — total ${entries.length}...`,
+  );
   const results = [];
   for (const entry of entries) {
     try {
       const r = await compileOne(entry);
       const sibCount = r.siblings.length;
-      console.log(`  ✓ ${entry.pkg}/${entry.blockName}/${entry.fileName} → ${path.basename(r.outPath)} (${r.byteLength}B) + ${sibCount} sibling .ts`);
+      console.log(
+        `  ✓ ${entry.pkg}/${entry.blockName}/${entry.fileName} → ${path.basename(r.outPath)} (${r.byteLength}B) + ${sibCount} sibling .ts [${entry.kind}]`,
+      );
       results.push(r);
     } catch (err) {
       console.error(`  ✗ ${entry.pkg}/${entry.blockName}/${entry.fileName}: ${err.message}`);
@@ -215,10 +307,11 @@ async function main() {
       fileName: r.entry.fileName,
       outputName: path.basename(r.outPath),
       siblings: r.siblings.map(p => path.basename(p)),
+      kind: r.entry.kind,
     })),
   };
   await fs.writeFile(path.join(DIST_DIR, 'manifest.json'), JSON.stringify(manifest, null, 2), 'utf-8');
-  console.log(`Manifest: ${path.join(DIST_DIR, 'manifest.json')} (${results.length} blocks)`);
+  console.log(`Manifest: ${path.join(DIST_DIR, 'manifest.json')} (${results.length} entries)`);
 }
 
 main().catch(err => {

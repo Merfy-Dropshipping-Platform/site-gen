@@ -13,3 +13,7 @@ artifacts/
 
 # Drizzle backups
 drizzle_backup/
+
+# Playwright visual-diff ephemeral outputs (keep committed snapshots, ignore per-run results)
+packages/theme-*/test-results/
+packages/theme-*/playwright-report/

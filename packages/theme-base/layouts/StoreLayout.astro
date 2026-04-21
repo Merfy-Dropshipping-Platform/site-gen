@@ -1,0 +1,38 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Header from '../blocks/Header/Header.astro';
+import Footer from '../blocks/Footer/Footer.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  canonicalUrl?: string;
+  ogImage?: string;
+  noIndex?: boolean;
+  tokensCss?: string;
+  fontHead?: string;
+  headerProps: Record<string, unknown>;   // Header block props
+  footerProps: Record<string, unknown>;   // Footer block props
+}
+
+const {
+  title, description, canonicalUrl, ogImage, noIndex,
+  tokensCss, fontHead, headerProps, footerProps,
+} = Astro.props as Props;
+---
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalUrl={canonicalUrl}
+  ogImage={ogImage}
+  noIndex={noIndex}
+  tokensCss={tokensCss}
+  fontHead={fontHead}
+  bodyClass="store-layout"
+>
+  <Header {...headerProps} />
+  <main>
+    <slot />
+  </main>
+  <Footer {...footerProps} />
+</BaseLayout>

@@ -632,11 +632,11 @@ function buildTokensCss(settings: unknown, themeId: string | null): string {
 
   // Default scheme lookup: prefer merchant.defaultSchemeIndex, else fall
   // back to theme manifest's first scheme, else first available.
+  // Default scheme source for :root — prefer theme, fall back to merchant.
   const schemes: Record<string, unknown>[] = [
-    ...merchantSchemes.filter(isPlainObject) as Record<string, unknown>[],
     ...themeSchemes.map((ts) => themeSchemeToMerchantShape(ts)),
+    ...(merchantSchemes.filter(isPlainObject) as Record<string, unknown>[]),
   ];
-  void themeSchemeIds; // reserved for future per-theme filter
 
   // Root also gets the default scheme's vars so blocks without an explicit
   // `color-scheme-scheme-N` class (shouldn't happen, but defensive) still

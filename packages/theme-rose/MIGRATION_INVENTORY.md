@@ -80,12 +80,23 @@ Rationale:
 | `ProductGrid.astro` | _(missing in base)_ | Register as custom block OR lobby to add to base in Phase 2. |
 | `InteractiveSection.astro` | _(no equivalent)_ | Examine Phase 2 whether to drop or promote. |
 
+## Phase 1d variant declarations
+
+None. Base defaults are acceptable for initial Phase 1d release. Post-Stage 0 verification may reveal specific blocks wanting variants — addressed as spot fixes.
+
+**Task 8 decision:** Leave `theme.json → blocks` with only Header+Footer overrides (added in Tasks 5-6). Do NOT declare variants (`Hero.variant`, `Newsletter.variant`, `Gallery.variant`, etc.) for content blocks at this stage.
+
+Rationale:
+- All 17 content blocks (Hero, Collections, PopularProducts, Gallery, ImageWithText, MainText, MultiColumns, MultiRows, CollapsibleSection, Newsletter, ContactForm, Slideshow, Video, Publications, CartSection, CheckoutSection, PromoBanner, Product) work correctly with base defaults + rose `tokens.json` cascade.
+- Variants like "centered", "wide", "masonry", "portrait" require base blocks to actually implement those variant branches — that work is out of Phase 1d scope.
+- Post-Stage 0 manual verification may reveal specific blocks wanting variants — those are addressed as spot fixes in Phase 1d+ follow-up.
+
 ## Action items for Tasks 5–10 (Phase 1d)
 
 - [x] Task 5: Build `theme-rose/blocks/Header/` override — merge legacy Header + header/ helpers. **DONE (06ea598)**.
 - [x] Task 6: Build `theme-rose/blocks/Footer/` override — merge legacy Footer + footer/ helpers, 3-column grid. **DONE (396b63a)**.
 - [x] Task 7: AuthModal override **DEFERRED** — use base AuthModal for Phase 1d.
-- [ ] Task 8: Declare variants in theme.json (or document decision).
+- [x] Task 8: Variant declarations **NONE** for Phase 1d — base defaults acceptable.
 - [ ] Tasks 9–10: Precompile + verify integration.
 
 ## Confidence markers

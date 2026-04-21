@@ -69,7 +69,7 @@ let skipped = 0;
 for (const [pageName, pagePath] of Object.entries(PAGES)) {
   for (const vp of VIEWPORTS) {
     const ctx = await browser.newContext({
-      viewport: { width: vp.w, height: vp.h },
+      viewport: { width: vp.w, height: vp.h }, ignoreHTTPSErrors: true,
     });
     const tab = await ctx.newPage();
     const url = `${baseUrl}${pagePath}`;

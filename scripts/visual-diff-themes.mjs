@@ -105,7 +105,13 @@ for (const theme of THEMES) {
       const url = `${PREVIEW_BASE}/api/sites/${siteId}/preview?page=${encodeURIComponent(pageParam)}`;
       let loadStatus = 'ok';
       try {
-        const resp = await tab.goto(url, { waitUntil: 'networkidle', timeout: 20_000 });
+        // First run on a cold Astro container regularly takes 20-30s to
+        // render a preview HTML; subsequent hits are <2s. Use a generous
+        // timeout and domcontentloaded (networkidle can hang on trackers).
+        const resp = await tab.goto(url, {
+          waitUntil: 'domcontentloaded',
+          timeout: 45_000,
+        });
         if (!resp || !resp.ok()) loadStatus = `http-${resp?.status() ?? '???'}`;
       } catch (e) {
         loadStatus = `load-error: ${e instanceof Error ? e.message : String(e)}`;

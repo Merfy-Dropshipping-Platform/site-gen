@@ -113,12 +113,6 @@
     },
     "Hero": {
       "variant": "overlay"
-    },
-    "PopularProducts": {
-      "variant": "with-subtitle"
-    },
-    "Collections": {
-      "variant": "with-subtitle"
     }
   },
 

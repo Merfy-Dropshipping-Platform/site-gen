@@ -9,7 +9,7 @@ interface Props extends CollapsibleSectionProps {
 const {
   id,
   heading,
-  sections,
+  sections = [],
   colorScheme = 1,
   padding,
 } = Astro.props as Props;

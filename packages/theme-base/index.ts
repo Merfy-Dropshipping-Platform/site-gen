@@ -1,6 +1,6 @@
 // @merfy/theme-base — barrel exports
-// Public re-exports of all blocks.
 
+// Content blocks (Phase 1a)
 export * as Hero from './blocks/Hero';
 export * as PromoBanner from './blocks/PromoBanner';
 export * as PopularProducts from './blocks/PopularProducts';
@@ -19,3 +19,26 @@ export * as Video from './blocks/Video';
 export * as Publications from './blocks/Publications';
 export * as CartSection from './blocks/CartSection';
 export * as CheckoutSection from './blocks/CheckoutSection';
+
+// Chrome blocks (Phase 1b)
+export * as Header from './blocks/Header';
+export * as Footer from './blocks/Footer';
+export * as CheckoutHeader from './blocks/CheckoutHeader';
+export * as AuthModal from './blocks/AuthModal';
+export * as CartDrawer from './blocks/CartDrawer';
+export * as CheckoutLayout from './blocks/CheckoutLayout';
+export * as AccountLayout from './blocks/AccountLayout';
+
+// SEO TS modules (Phase 1b)
+export { buildSitemap } from './seo/SitemapBuilder';
+export type { SitemapUrl } from './seo/SitemapBuilder';
+export { buildRobots } from './seo/RobotsBuilder';
+export type { RobotsConfig } from './seo/RobotsBuilder';
+export { buildYandexFeed } from './seo/YandexFeed';
+export type { YmlOffer, YmlCategory, YmlShop } from './seo/YandexFeed';
+export { extractCriticalCss } from './seo/CoreWebVitals/CriticalCss';
+export type { CriticalCssOptions, CriticalCssResult } from './seo/CoreWebVitals/CriticalCss';
+
+// Astro components (BaseLayout, StoreLayout, MetaTags, JsonLd, etc.)
+// are imported directly by consumers via their file paths — no TS barrel re-export needed
+// since .astro files are not importable as TS modules.

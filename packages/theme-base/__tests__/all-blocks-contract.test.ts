@@ -11,7 +11,7 @@ describe('All theme-base blocks', () => {
       .filter(e => e.isDirectory())
       .map(e => e.name);
 
-    expect(blockDirs.length).toBeGreaterThanOrEqual(18);
+    expect(blockDirs.length).toBeGreaterThanOrEqual(25);
 
     const failures: Array<{ block: string; errors: string[] }> = [];
     for (const block of blockDirs) {

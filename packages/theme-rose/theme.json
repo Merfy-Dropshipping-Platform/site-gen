@@ -110,6 +110,15 @@
         "path": "./blocks/Footer",
         "reason": "Rose uses 3-column grid (navigation / information / social) with inline-titled columns and unique social iconography."
       }
+    },
+    "Hero": {
+      "variant": "overlay"
+    },
+    "PopularProducts": {
+      "variant": "with-subtitle"
+    },
+    "Collections": {
+      "variant": "with-subtitle"
     }
   },
 

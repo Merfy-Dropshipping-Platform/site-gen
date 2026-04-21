@@ -45,7 +45,12 @@ export class PreviewController {
       return;
     }
 
-    const blocks = this.extractPageBlocks(loaded.data, page, loaded.publicUrl);
+    const blocks = this.extractPageBlocks(
+      loaded.data,
+      page,
+      loaded.publicUrl,
+      loaded.themeId,
+    );
     if (!blocks) {
       res
         .status(404)
@@ -94,6 +99,7 @@ export class PreviewController {
     data: Record<string, unknown>,
     page: string,
     publicUrl: string | null,
+    themeId: string | null,
   ): Array<{ type: string; props: Record<string, unknown> }> | null {
     const pagesData = (data.pagesData ?? {}) as Record<string, unknown>;
     const pageData = pagesData[page] as Record<string, unknown> | undefined;
@@ -110,6 +116,10 @@ export class PreviewController {
       parsed = raw;
     }
     if (!Array.isArray(parsed)) return null;
+
+    const manifest = themeId ? getThemeManifest(themeId) : null;
+    const themeBlocks = manifest?.blocks ?? {};
+
     return parsed
       .filter(
         (b): b is { type: string; props: Record<string, unknown> } =>
@@ -117,14 +127,24 @@ export class PreviewController {
           typeof b === 'object' &&
           typeof (b as { type?: unknown }).type === 'string',
       )
-      .map((b) => ({
-        type: b.type,
-        props: adaptLegacyProps(
+      .map((b) => {
+        const props = adaptLegacyProps(
           (b.props ?? {}) as Record<string, unknown>,
           publicUrl,
           b.type,
-        ),
-      }));
+        );
+        // Theme-level block defaults fill gaps merchant hasn't overridden.
+        // Currently: `variant` picks which base layout to render (Hero
+        // overlay vs centered, PopularProducts with-subtitle vs plain).
+        const themeCfg = themeBlocks[b.type];
+        if (themeCfg && !('override' in themeCfg)) {
+          const v = (themeCfg as { variant?: string }).variant;
+          if (v && !props.variant) {
+            props.variant = v;
+          }
+        }
+        return { type: b.type, props };
+      });
   }
 
   private tokensCssFromSettings(
@@ -249,16 +269,18 @@ function coerceHeroProps(
           : '';
     out.cta = { text: String(b.text ?? ''), href };
   }
-  // position|alignment|size|container → variant
+  // Legacy `position` ('bottom-center', 'overlay') → variant hint. Only
+  // set when we can derive meaning from it — leaving variant undefined
+  // lets theme-manifest's block.variant default take effect (e.g. Rose
+  // forces 'overlay' theme-wide).
   const position = String(out.position ?? '');
   if (!out.variant) {
     if (position.includes('bottom') || position.includes('overlay')) {
       out.variant = 'overlay';
     } else if (position.includes('split')) {
       out.variant = 'split';
-    } else {
-      out.variant = 'centered';
     }
+    // else: leave undefined for theme manifest or Astro frontmatter default
   }
   out.colorScheme = coerceSchemeNumber(out.colorScheme);
   if (!out.padding) out.padding = { top: 80, bottom: 80 };

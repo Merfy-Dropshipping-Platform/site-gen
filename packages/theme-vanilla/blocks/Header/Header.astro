@@ -15,7 +15,10 @@ const {
   menuType,
   navigationLinks = [],
   actionButtons,
-  colorScheme = 1,
+  // Vanilla default = scheme-2 (Medium Olive), matching the Figma hero
+  // frame 590:22875 where the header bar is dark olive green with white
+  // logo/nav/icons. Merchants can still override per site.
+  colorScheme = 2,
   padding,
 } = Astro.props as Props;
 

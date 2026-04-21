@@ -1,0 +1,62 @@
+---
+interface Props {
+  titleTemplate?: string;
+  pageTitle: string;
+  siteName: string;
+  description: string;
+  canonicalUrl?: string;
+  ogType?: 'website' | 'article' | 'product' | 'profile';
+  ogImage?: string;
+  ogImageAlt?: string;
+  ogLocale?: string;
+  twitterCard?: 'summary' | 'summary_large_image';
+  twitterSite?: string;
+  robots?: 'index, follow' | 'noindex, nofollow' | 'noindex, follow';
+  author?: string;
+  keywords?: string[];
+}
+
+const {
+  titleTemplate = '{pageTitle} — {siteName}',
+  pageTitle,
+  siteName,
+  description,
+  canonicalUrl,
+  ogType = 'website',
+  ogImage,
+  ogImageAlt,
+  ogLocale = 'ru_RU',
+  twitterCard = 'summary',
+  twitterSite,
+  robots = 'index, follow',
+  author,
+  keywords,
+} = Astro.props as Props;
+
+const finalTitle = titleTemplate
+  .replace('{pageTitle}', pageTitle)
+  .replace('{siteName}', siteName);
+---
+<title>{finalTitle}</title>
+<meta name="description" content={description} />
+<meta name="robots" content={robots} />
+{author && <meta name="author" content={author} />}
+{keywords && keywords.length > 0 && <meta name="keywords" content={keywords.join(', ')} />}
+{canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+
+{/* Open Graph */}
+<meta property="og:type" content={ogType} />
+<meta property="og:title" content={finalTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:locale" content={ogLocale} />
+{canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
+{ogImage && <meta property="og:image" content={ogImage} />}
+{ogImageAlt && <meta property="og:image:alt" content={ogImageAlt} />}
+<meta property="og:site_name" content={siteName} />
+
+{/* Twitter Card */}
+<meta name="twitter:card" content={twitterCard} />
+<meta name="twitter:title" content={finalTitle} />
+<meta name="twitter:description" content={description} />
+{twitterSite && <meta name="twitter:site" content={twitterSite} />}
+{ogImage && <meta name="twitter:image" content={ogImage} />}

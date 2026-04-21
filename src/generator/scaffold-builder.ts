@@ -30,6 +30,10 @@ import {
   generateCollectionPage,
   type DynamicPageConfig,
 } from "./dynamic-pages-generator";
+import {
+  isNewPackagesFlagEnabled,
+  assembleFromPackages,
+} from "./assemble-from-packages";
 
 /** A page to generate from Puck JSON data */
 export interface PageEntry {
@@ -210,18 +214,47 @@ export async function buildScaffold(
   await fs.mkdir(outputDir, { recursive: true });
 
   // 1. Copy theme files
-  const templateRoot =
-    config.templateRoot ??
-    path.join(
-      process.cwd(),
-      "templates",
-      "astro",
-      config.themeName ?? "default",
-    );
-  const themeExists = await dirExists(templateRoot);
-  if (themeExists) {
-    await copyDir(templateRoot, outputDir);
-    generatedFiles.push("[theme copied]");
+  //
+  // DUAL-MODE (Phase 3a, flag-gated):
+  //   - Default (flag OFF): LEGACY — copy from `templates/astro/<theme>/`
+  //   - BUILD_USE_NEW_PACKAGES=true: NEW — assemble from `packages/theme-<theme>/`
+  //                                  overlaid on `packages/theme-base/`.
+  //
+  // The new path is ADDITIVE and SAFE — legacy behavior is untouched when the
+  // flag is absent or "false". Caller can pass `templateRoot` explicitly to
+  // force the legacy copy regardless of the flag (used by tests).
+  //
+  // Phase 3b/3c will flip the flag; Phase 3d removes legacy. See
+  // backend/services/sites/src/generator/README.md for the migration plan.
+  const useNewPackages =
+    isNewPackagesFlagEnabled() && !config.templateRoot && config.themeName;
+
+  if (useNewPackages) {
+    const assembleResult = await assembleFromPackages({
+      themeName: config.themeName as string,
+      outputDir,
+    });
+    if (assembleResult.baseCopied || assembleResult.themeCopied) {
+      generatedFiles.push("[assembled from packages]");
+    }
+    // Surface warnings into the list so callers can inspect what was missing
+    for (const w of assembleResult.warnings) {
+      generatedFiles.push(`[assemble warning] ${w}`);
+    }
+  } else {
+    const templateRoot =
+      config.templateRoot ??
+      path.join(
+        process.cwd(),
+        "templates",
+        "astro",
+        config.themeName ?? "default",
+      );
+    const themeExists = await dirExists(templateRoot);
+    if (themeExists) {
+      await copyDir(templateRoot, outputDir);
+      generatedFiles.push("[theme copied]");
+    }
   }
 
   // 1b. Islands injection moved to post-build step (stage 4.7 in build.service.ts)

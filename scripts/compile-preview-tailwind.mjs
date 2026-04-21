@@ -41,10 +41,14 @@ mkdirSync(OUT_DIR, { recursive: true });
 
 const cli = requireFromHere.resolve('tailwindcss/lib/cli.js');
 
+// Tailwind `content` paths in tailwind.config.cjs are relative to the CWD
+// of the running process (not the config file). Run the CLI from the
+// theme-base root so it scans the right directories — otherwise it sees
+// no source files and emits only ~5 KB of base utilities.
 execFileSync(
   process.execPath,
   [cli, '-c', CONFIG, '-i', INPUT, '-o', OUT, '--minify'],
-  { stdio: 'inherit' },
+  { stdio: 'inherit', cwd: path.join(SNAPSHOTS_DIR, '..') },
 );
 
 console.log(`✓ preview-tailwind.css → ${OUT}`);

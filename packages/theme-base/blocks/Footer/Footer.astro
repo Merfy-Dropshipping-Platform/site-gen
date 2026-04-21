@@ -1,0 +1,125 @@
+---
+import type { FooterProps } from './Footer.puckConfig';
+import { FooterClasses as C } from './Footer.classes';
+
+interface Props extends FooterProps {
+  id?: string;
+}
+
+const {
+  id,
+  newsletter,
+  heading,
+  text,
+  navigationColumn,
+  informationColumn,
+  socialColumn,
+  colorScheme = 1,
+  padding,
+} = Astro.props as Props;
+
+const scheme = `color-scheme-${colorScheme}`;
+const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+
+// Inline SVG paths per social platform; stroke uses currentColor → inherits from Tailwind text color.
+const SOCIAL_ICONS: Record<string, string> = {
+  telegram: '<path d="M21.198 2.433a2.242 2.242 0 0 0-1.022.215L2.684 9.896a2.25 2.25 0 0 0 .1 4.163l3.917 1.218 1.93 6.19a1.5 1.5 0 0 0 2.55.575l2.68-2.68 4.84 3.564a1.5 1.5 0 0 0 2.37-.866l3.2-16.515a2.25 2.25 0 0 0-3.073-2.112Z" stroke="currentColor" stroke-width="1.5" fill="none"/>',
+  vk: '<path d="M2 6h20v12H2z" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M7 10v4M12 10v4M17 10v4" stroke="currentColor" stroke-width="1.5"/>',
+  youtube: '<rect x="2" y="6" width="20" height="12" rx="3" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="m10 9 5 3-5 3V9Z" stroke="currentColor" stroke-width="1.5" fill="none"/>',
+  tiktok: '<path d="M14 4v10a4 4 0 1 1-4-4" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M14 4a4 4 0 0 0 4 4" stroke="currentColor" stroke-width="1.5" fill="none"/>',
+  dzen: '<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M12 2a10 10 0 0 0 0 20M2 12a10 10 0 0 1 20 0" stroke="currentColor" stroke-width="1.5" fill="none"/>',
+};
+---
+<footer
+  class:list={[C.root, scheme]}
+  data-puck-component-id={id}
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    {newsletter?.enabled && (
+      <section class={C.newsletter.wrapper} aria-labelledby="newsletter-heading">
+        <div class={C.newsletter.inner}>
+          <div class={C.newsletter.copy}>
+            {(heading?.text || newsletter.heading) && (
+              <h2 id="newsletter-heading" class={C.newsletter.heading}>
+                {heading?.text || newsletter.heading}
+              </h2>
+            )}
+            {(text?.content || newsletter.description) && (
+              <p class={C.newsletter.description}>
+                {text?.content || newsletter.description}
+              </p>
+            )}
+          </div>
+          {/* Phase 1c: React island handles newsletter submit */}
+          <form class={C.newsletter.form} data-action="newsletter">
+            <input
+              type="email"
+              name="email"
+              placeholder={newsletter.placeholder}
+              aria-label="Email адрес для рассылки"
+              required
+              class={C.newsletter.input}
+            />
+            <button
+              type="submit"
+              aria-label="Подписаться"
+              class={C.newsletter.submit}
+            >
+              <svg class="w-full h-full" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </form>
+        </div>
+      </section>
+    )}
+
+    {/* Main footer: 2-part layout per FR-011 (logo+nav LEFT, contact+social RIGHT) */}
+    <section class={C.main.section} aria-label="Информация и навигация">
+      <div class={C.main.twoPart}>
+        <div class={C.main.leftGroup}>
+          {navigationColumn?.title && (
+            <span class={C.main.leftTitle}>{navigationColumn.title}</span>
+          )}
+          <nav class={C.main.leftNav} aria-label="Footer navigation">
+            {(navigationColumn?.links ?? []).map((link) => (
+              <a href={link.href} class={C.main.leftLink}>{link.label}</a>
+            ))}
+            {(informationColumn?.links ?? []).map((link) => (
+              <a href={link.href} class={C.main.leftLink}>{link.label}</a>
+            ))}
+          </nav>
+        </div>
+
+        <div class={C.main.rightGroup}>
+          {socialColumn?.email && (
+            <a href={`mailto:${socialColumn.email}`} class={C.main.rightEmail}>
+              {socialColumn.email}
+            </a>
+          )}
+          {(socialColumn?.socialLinks ?? []).length > 0 && (
+            <div class={C.main.socialRow}>
+              {(socialColumn?.socialLinks ?? []).map((social) => (
+                <a
+                  href={social.href}
+                  aria-label={social.platform}
+                  class={C.main.socialLink}
+                  data-platform={social.platform}
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true" set:html={SOCIAL_ICONS[social.platform] ?? ''} />
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class={C.copyright.bar}>
+    <p class={C.copyright.text}>
+      © {new Date().getFullYear()} Все права защищены.
+    </p>
+  </div>
+</footer>

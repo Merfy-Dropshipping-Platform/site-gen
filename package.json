@@ -17,7 +17,8 @@
     "build:blocks": "node scripts/compile-astro-blocks.mjs",
     "verify:astro": "node scripts/verify-astro-runtime.mjs",
     "build:preview-tailwind": "node scripts/compile-preview-tailwind.mjs",
-    "backfill:theme-schemes": "tsx scripts/backfill-theme-colorschemes.ts"
+    "backfill:theme-schemes": "tsx scripts/backfill-theme-colorschemes.ts",
+    "rollback:theme-schemes": "tsx scripts/rollback-theme-colorschemes.ts"
   },
   "dependencies": {
     "@astrojs/compiler": "^3.0.1",
@@ -75,6 +76,7 @@
     "tailwindcss": "^3.4.19",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.6.3",
     "typescript-eslint": "^8.53.0"
   }

@@ -31,11 +31,11 @@ const gridTemplateCols = `grid-template-columns: repeat(${columns}, minmax(0, 1f
     <div class={C.grid} style={gridTemplateCols}>
       {collections.map((item) => (
         <a href={item.collectionId ? `/collection/${item.collectionId}` : '#'} class={C.card}>
-          <img
-            src={item.image || `/placeholder-collection-${item.id}.jpg`}
-            alt={item.heading}
-            class={C.image}
-          />
+          {item.image ? (
+            <img src={item.image} alt={item.heading} class={C.image} loading="lazy" />
+          ) : (
+            <div class={C.image} aria-hidden="true" style="background:rgb(var(--color-bg-alt, 240 240 240))"></div>
+          )}
           <h3 class={C.cardHeading}>{item.heading}</h3>
           {item.description && <p class={C.cardDescription}>{item.description}</p>}
         </a>

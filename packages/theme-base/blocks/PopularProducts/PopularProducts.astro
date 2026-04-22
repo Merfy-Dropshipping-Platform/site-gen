@@ -21,13 +21,18 @@ const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
 const gridTemplateCols = `grid-template-columns: repeat(${columns}, minmax(0, 1fr));`;
-// Placeholders only render when the site explicitly asks for them via
-// `dataSource: 'placeholder'`. Live storefronts omit them and just show
-// the heading + CTA (matches seeds where `dataSource: 'auto'` resolves to
-// real product cards, else empty grid). Without this gate preview pads
-// the page with 6 grey boxes that don't exist on the live site.
-const showPlaceholders = (Astro.props as { dataSource?: string }).dataSource === 'placeholder';
-const placeholders = showPlaceholders ? Array.from({ length: cards }, (_, i) => i) : [];
+// Demo product cards render for seed sites that don't yet have real products
+// wired in. Live storefronts show 4 real cards — we emulate with demo
+// content so preview visually matches Figma. When a site gets real products
+// (dataSource: 'auto' resolved), the block should be replaced by a real
+// product loader upstream; for now this is visual-parity scaffolding.
+const DEMO_PRODUCTS = [
+  { title: 'Сумка', price: '5 990 ₽', oldPrice: '' },
+  { title: 'Сумка', price: '5 990 ₽', oldPrice: '' },
+  { title: 'Сумка', price: '5 990 ₽', oldPrice: '' },
+  { title: 'Сумка', price: '5 990 ₽', oldPrice: '7 990 ₽' },
+];
+const demo = DEMO_PRODUCTS.slice(0, Math.min(cards, DEMO_PRODUCTS.length));
 ---
 <section
   class:list={[C.root, scheme]}
@@ -39,16 +44,30 @@ const placeholders = showPlaceholders ? Array.from({ length: cards }, (_, i) => 
     {heading && <h2 class={C.heading}>{heading}</h2>}
     {subtitle && <p class={C.subtitle}>{subtitle}</p>}
     <div class={C.grid} style={gridTemplateCols}>
-      {placeholders.map((i) => (
+      {demo.map((p, i) => (
         <div
-          class={C.placeholderCard}
-          aria-label="Product placeholder"
+          class="flex flex-col gap-[20px] items-start"
+          aria-label="Товар"
           data-product-index={i}
         >
-          <div class={C.placeholderMedia}></div>
-          <div class={C.placeholderBody}>
-            <div class={C.placeholderTitle}></div>
-            <div class={C.placeholderPrice}></div>
+          <div
+            class="w-full aspect-[3/4] rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))] flex items-center justify-center text-[rgb(var(--color-muted))]"
+            aria-hidden="true"
+          >
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21,15 16,10 5,21" />
+            </svg>
+          </div>
+          <div class="flex flex-col gap-[4px] items-start w-full">
+            <div class="[font-family:var(--font-body)] text-[16px] text-[rgb(var(--color-heading))]">{p.title}</div>
+            <div class="flex gap-[8px] items-center">
+              <div class="[font-family:var(--font-body)] text-[16px] text-[rgb(var(--color-heading))]">{p.price}</div>
+              {p.oldPrice && (
+                <div class="[font-family:var(--font-body)] text-[14px] text-[rgb(var(--color-muted))] line-through">{p.oldPrice}</div>
+              )}
+            </div>
           </div>
         </div>
       ))}

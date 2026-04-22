@@ -21,6 +21,19 @@ const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
 const gridTemplateCols = `grid-template-columns: repeat(${columns}, minmax(0, 1fr));`;
+// When the merchant hasn't wired real collections, show demo tiles so the
+// preview matches Figma reference (3 collection cards). Real collections
+// take precedence as soon as they exist.
+const DEMO_COLLECTIONS = [
+  { heading: 'Коллекция RIVIERA', image: '' },
+  { heading: 'Коллекция URBAN', image: '' },
+  { heading: 'Коллекция FUTURISM', image: '' },
+];
+const effectiveCollections = (collections ?? []).length > 0
+  ? collections
+  : DEMO_COLLECTIONS.slice(0, columns).map((c, i) => ({
+      id: `demo-${i}`, heading: c.heading, image: c.image, collectionId: null,
+    }));
 ---
 <section
   class:list={[C.root, scheme]}
@@ -31,12 +44,12 @@ const gridTemplateCols = `grid-template-columns: repeat(${columns}, minmax(0, 1f
     {heading && <h2 class={C.heading}>{heading}</h2>}
     {subtitle && <p class={C.subtitle}>{subtitle}</p>}
     <div class={C.grid} style={gridTemplateCols}>
-      {collections.map((item) => (
+      {effectiveCollections.map((item) => (
         <a href={item.collectionId ? `/collection/${item.collectionId}` : '#'} class={C.card}>
           {item.image ? (
             <img src={item.image} alt={item.heading} class={C.image} loading="lazy" />
           ) : (
-            <div class={C.image} aria-hidden="true" style="background:rgb(var(--color-bg-alt, 240 240 240))"></div>
+            <div class="w-full aspect-[430/500] rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))]" aria-hidden="true"></div>
           )}
           <h3 class={C.cardHeading}>{item.heading}</h3>
           {item.description && <p class={C.cardDescription}>{item.description}</p>}

@@ -711,13 +711,17 @@ function buildTokensCss(settings: unknown, themeId: string | null): string {
   for (const themeScheme of themeSchemes) {
     const key = schemeClassId(themeScheme.id);
     const merchant = merchantById.get(key);
-    if (merchant) {
+    // Theme manifest wins when it declares explicit tokens for this scheme
+    // id — seeded sites have legacy scheme-2=Dark which conflicts with the
+    // Figma design (Rose page sections are on white). Merchant palette
+    // customisations still apply for any scheme id the theme didn't define.
+    if (merchant && (!themeScheme.tokens || Object.keys(themeScheme.tokens).length === 0)) {
       const rule = buildSchemeRule(merchant);
       if (rule) schemeRuleLines.push(rule);
-      merchantById.delete(key);
     } else {
       schemeRuleLines.push(buildThemeSchemeRule(themeScheme));
     }
+    merchantById.delete(key);
   }
   for (const remaining of merchantById.values()) {
     const rule = buildSchemeRule(remaining);

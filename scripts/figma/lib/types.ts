@@ -106,9 +106,9 @@ export interface FigmaImagesResponse {
 
 export type Viewport = '1920' | '1280' | '375';
 
-export type ThemeId = 'rose' | 'vanila' | 'satin' | 'bloom' | 'flux';
+export type ThemeId = 'rose' | 'vanilla' | 'satin' | 'bloom' | 'flux';
 
-export const THEME_IDS: readonly ThemeId[] = ['rose', 'vanila', 'satin', 'bloom', 'flux'] as const;
+export const THEME_IDS: readonly ThemeId[] = ['rose', 'vanilla', 'satin', 'bloom', 'flux'] as const;
 
 /** Canonical block names — aligned with `packages/theme-base/blocks/`. */
 export const BLOCK_WHITELIST = [

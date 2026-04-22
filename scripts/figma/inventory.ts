@@ -31,7 +31,9 @@ loadEnv();
 
 const FIGMA_PAGE_TO_THEME: Record<string, ThemeId> = {
   Rose: 'rose',
-  Vanila: 'vanila',
+  // Figma page is "Vanila" (typo in designer's file); code package is theme-vanilla.
+  Vanila: 'vanilla',
+  Vanilla: 'vanilla',
   Satin: 'satin',
   Bloom: 'bloom',
   Flux: 'flux',

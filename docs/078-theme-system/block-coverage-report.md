@@ -1,7 +1,7 @@
 # Block Coverage Report — Phase 2c Audit
 
 **Figma file:** `QfF9NPZBoQX6vCRg560Qcb` (New Themes)
-**Generated:** 2026-04-22T17:50:31.012Z
+**Generated:** 2026-04-22T18:21:30.905Z
 
 **Legend:** ✓ — block exists in Figma | ⊘ — missing, backend-only (OK) | ❓ — missing, design-pending
 
@@ -12,26 +12,26 @@ Figma viewports: **1920, 1280, 375**
 | Block | 1920 | 1280 | 375 | Code variants | Observations |
 |-------|:----:|:----:|:---:|---------------|--------------|
 | **AccountLayout** | · | · | · | — | ⊘ backend-only |
-| **AuthModal** | ✓ | · | ✓ | — | has-form |
-| **CartDrawer** | ✓ | ✓ | ✓ | — | has-form; multi-image (grid/collage) |
+| **AuthModal** | ✓ | · | ✓ | — | — |
+| **CartDrawer** | ✓ | ✓ | ✓ | — | multi-image (grid/collage) |
 | **CartSection** | · | · | · | — | ⊘ backend-only |
 | **CheckoutHeader** | · | · | · | — | ⊘ backend-only |
 | **CheckoutLayout** | · | · | · | — | ⊘ backend-only |
-| **CheckoutSection** | ✓ | · | ✓ | — | has-form |
+| **CheckoutSection** | ✓ | · | ✓ | — | — |
 | **CollapsibleSection** | · | · | · | — | ❓ design pending |
 | **Collections** | ✓ | ✓ | ✓ | — | grid-3col; multi-image (grid/collage) |
 | **ContactForm** | · | · | · | — | ❓ design pending |
-| **Footer** | ✓ | ✓ | ✓ | — | has-form |
+| **Footer** | ✓ | ✓ | ✓ | — | — |
 | **Gallery** | ✓ | ✓ | ✓ | — | — |
 | **Header** | ✓ | ✓ | ✓ | — | grid-3col; grid-2col |
-| **Hero** | ✓ | ✓ | ✓ | centered, split, overlay, grid-4 | multi-image (grid/collage); has-form |
+| **Hero** | ✓ | ✓ | ✓ | centered, split, overlay, grid-4 | multi-image (grid/collage) |
 | **ImageWithText** | · | · | ✓ | — | — |
 | **MainText** | ✓ | ✓ | ✓ | — | — |
 | **MultiColumns** | · | · | · | — | ❓ design pending |
 | **MultiRows** | · | · | · | — | ❓ design pending |
 | **Newsletter** | ✓ | · | ✓ | — | has-form |
 | **PopularProducts** | · | · | · | — | ❓ design pending |
-| **Product** | ✓ | ✓ | ✓ | — | grid-3col; multi-image (grid/collage); has-form |
+| **Product** | ✓ | ✓ | ✓ | — | grid-3col; multi-image (grid/collage) |
 | **PromoBanner** | ✓ | ✓ | ✓ | — | — |
 | **Publications** | · | · | · | — | ❓ design pending |
 | **Slideshow** | · | · | · | — | ❓ design pending |
@@ -41,7 +41,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### AuthModal
 
-- **Code props:** mode, siteTitle, showSocialLogin, colorScheme, padding, top, bottom
+- **Code props:** mode, siteTitle, showSocialLogin, colorScheme, padding
 
 **@ 1920:** `669:18893` (1920×1503) — *Регистрация*
 
@@ -50,7 +50,6 @@ Figma viewports: **1920, 1280, 375**
 - Primary font: `Roboto`
 - Font sizes: 24, 20, 16, 14 px
 - Corner radii: 4, 8 px
-- Variant hints: **has-form**
 
 **@ 375:** `669:16323` (375×812) — *Регистрация*
 
@@ -62,7 +61,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### CartDrawer
 
-- **Code props:** position, showCheckoutButton, colorScheme, padding, top, bottom
+- **Code props:** position, showCheckoutButton, colorScheme, padding
 
 **@ 1920:** `669:18142` (1920×2015) — *Пустая Корзина 1*
 
@@ -71,7 +70,6 @@ Figma viewports: **1920, 1280, 375**
 - Primary font: `Roboto`
 - Font sizes: 24, 20, 16, 14 px
 - Corner radii: 4, 8 px
-- Variant hints: **has-form**
 
 **@ 1280:** `669:17795` (1280×1486) — *Пустая Корзина 1*
 
@@ -80,7 +78,7 @@ Figma viewports: **1920, 1280, 375**
 - Primary font: `Manrope`
 - Font sizes: 20, 16, 14, 12 px
 - Corner radii: 4, 6 px
-- Variant hints: **multi-image (grid/collage)**, **has-form**
+- Variant hints: **multi-image (grid/collage)**
 
 **@ 375:** `669:16769` (375×1847) — *Пустая Корзина 1*
 
@@ -89,11 +87,10 @@ Figma viewports: **1920, 1280, 375**
 - Primary font: `Manrope`
 - Font sizes: 16, 14, 12, 10 px
 - Corner radii: 4, 6 px
-- Variant hints: **has-form**
 
 #### CheckoutSection
 
-- **Code props:** colorScheme, padding, top, bottom
+- **Code props:** colorScheme, padding
 
 **@ 1920:** `669:18685` (1920×1645) — *Оформление заказа*
 
@@ -102,7 +99,6 @@ Figma viewports: **1920, 1280, 375**
 - Primary font: `Inter`
 - Font sizes: 24, 16, 12 px
 - Corner radii: 4, 8 px
-- Variant hints: **has-form**
 
 **@ 375:** `669:16447` (375×2028) — *Оформление заказа*
 
@@ -114,7 +110,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### Collections
 
-- **Code props:** id, collectionId, heading, description, image
+- **Code props:** heading, collections, columns, colorScheme, padding
 
 **@ 1920:** `669:17955` (1322×542) — *Коллекции*
 
@@ -144,7 +140,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### Footer
 
-- **Code props:** label, href
+- **Code props:** siteTitle, newsletter, heading, text, navigationColumn, informationColumn, socialColumn, colorScheme, copyrightColorScheme, padding
 
 **@ 1920:** `669:17992` (1920×600) — *Footer*
 
@@ -153,7 +149,6 @@ Figma viewports: **1920, 1280, 375**
 - Primary font: `Comfortaa`
 - Font sizes: 20, 16 px
 - Corner radii: 4 px
-- Variant hints: **has-form**
 
 **@ 1280:** `64:3899` (1280×506) — *Footer*
 
@@ -162,7 +157,6 @@ Figma viewports: **1920, 1280, 375**
 - Primary font: `Comfortaa`
 - Font sizes: 14, 12 px
 - Corner radii: 4 px
-- Variant hints: **has-form**
 
 **@ 375:** `480:4650` (375×719) — *Footer*
 
@@ -171,11 +165,10 @@ Figma viewports: **1920, 1280, 375**
 - Primary font: `Comfortaa`
 - Font sizes: 12, 10 px
 - Corner radii: 4 px
-- Variant hints: **has-form**
 
 #### Gallery
 
-- **Code props:** heading, items, layout, colorScheme, padding, top, bottom
+- **Code props:** heading, items, layout, colorScheme, padding
 
 **@ 1920:** `669:17976` (1920×1207) — *Галерея*
 
@@ -203,7 +196,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### Header
 
-- **Code props:** label, href, submenu
+- **Code props:** siteTitle, logo, logoPosition, stickiness, menuType, navigationLinks, actionButtons, colorScheme, menuColorScheme, padding
 
 **@ 1920:** `669:17941` (1920×72) — *Header; Слева*
 
@@ -234,7 +227,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### Hero
 
-- **Code props:** title, subtitle, image, images, cta, variant, colorScheme, padding, top, bottom
+- **Code props:** title, subtitle, image, images, cta, variant, colorScheme, padding
 - **Code variants:** `centered`, `split`, `overlay`, `grid-4`
 
 **@ 1920:** `669:17938` (1920×4579) — *Rose Hero 1920*
@@ -244,7 +237,7 @@ Figma viewports: **1920, 1280, 375**
 - Primary font: `Manrope`
 - Font sizes: 32, 20, 16, 14 px
 - Corner radii: 4, 6, 8 px
-- Variant hints: **multi-image (grid/collage)**, **has-form**
+- Variant hints: **multi-image (grid/collage)**
 
 **@ 1280:** `669:17587` (1280×3100) — *Rose Hero 1280*
 
@@ -253,7 +246,7 @@ Figma viewports: **1920, 1280, 375**
 - Primary font: `Manrope`
 - Font sizes: 24, 20, 16, 14, 12 px
 - Corner radii: 4, 6 px
-- Variant hints: **multi-image (grid/collage)**, **has-form**
+- Variant hints: **multi-image (grid/collage)**
 
 **@ 375:** `669:16599` (375×4882) — *Rose Hero 375*
 
@@ -262,11 +255,11 @@ Figma viewports: **1920, 1280, 375**
 - Primary font: `Manrope`
 - Font sizes: 16, 14, 12, 10 px
 - Corner radii: 4, 6, 8 px
-- Variant hints: **multi-image (grid/collage)**, **has-form**
+- Variant hints: **multi-image (grid/collage)**
 
 #### ImageWithText
 
-- **Code props:** image, heading, text, button, imagePosition, colorScheme, padding, top, bottom
+- **Code props:** image, heading, text, button, imagePosition, colorScheme, padding
 
 **@ 375:** `669:18944` (375×716) — *Изображение и текст*
 
@@ -278,7 +271,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### MainText
 
-- **Code props:** heading, text, alignment, colorScheme, padding, top, bottom
+- **Code props:** heading, text, alignment, colorScheme, padding
 
 **@ 1920:** `669:17942` (1920×968) — *Фото & Текст*
 
@@ -305,7 +298,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### Newsletter
 
-- **Code props:** heading, description, placeholder, buttonText, colorScheme, padding, top, bottom
+- **Code props:** heading, description, placeholder, buttonText, colorScheme, padding
 
 **@ 1920:** `947:11507` (1920×1219) — *Рассылка*
 
@@ -323,11 +316,10 @@ Figma viewports: **1920, 1280, 375**
 - Primary font: `Comfortaa`
 - Font sizes: 16, 14 px
 - Corner radii: 4 px
-- Variant hints: **has-form**
 
 #### Product
 
-- **Code props:** productId, colorScheme, padding, top, bottom
+- **Code props:** productId, colorScheme, padding
 
 **@ 1920:** `669:18024` (1320×48) — *Страницы & Кол-во товаров*
 
@@ -354,11 +346,11 @@ Figma viewports: **1920, 1280, 375**
 - Primary font: `Manrope`
 - Font sizes: 16, 14, 12, 10 px
 - Corner radii: 4, 6, 8 px
-- Variant hints: **multi-image (grid/collage)**, **has-form**
+- Variant hints: **multi-image (grid/collage)**
 
 #### PromoBanner
 
-- **Code props:** text, linkText, linkUrl, colorScheme, padding, top, bottom
+- **Code props:** text, linkText, linkUrl, colorScheme, padding
 
 **@ 1920:** `669:17940` (1920×40) — *Панель объявлений; Размер текста - Средний*
 
@@ -399,7 +391,7 @@ Figma viewports: **1920, 1280, 375**
 
 ---
 
-## Theme: vanila
+## Theme: vanilla
 
 Figma viewports: **1920, 1280, 375**
 
@@ -415,7 +407,7 @@ Figma viewports: **1920, 1280, 375**
 | **CollapsibleSection** | · | · | · | — | ❓ design pending |
 | **Collections** | ✓ | ✓ | ✓ | — | multi-image (grid/collage) |
 | **ContactForm** | · | · | · | — | ❓ design pending |
-| **Footer** | ✓ | ✓ | ✓ | — | has-form |
+| **Footer** | ✓ | ✓ | ✓ | — | — |
 | **Gallery** | · | · | · | — | ❓ design pending |
 | **Header** | ✓ | ✓ | ✓ | — | grid-4col; grid-3col |
 | **Hero** | ✓ | ✓ | ✓ | centered, split, overlay, grid-4 | — |
@@ -425,17 +417,17 @@ Figma viewports: **1920, 1280, 375**
 | **MultiRows** | ✓ | ✓ | ✓ | — | — |
 | **Newsletter** | · | · | · | — | ❓ design pending |
 | **PopularProducts** | · | · | · | — | ❓ design pending |
-| **Product** | ✓ | ✓ | · | — | multi-image (grid/collage); has-form |
+| **Product** | ✓ | ✓ | · | — | multi-image (grid/collage) |
 | **PromoBanner** | ✓ | ✓ | ✓ | — | — |
 | **Publications** | · | · | · | — | ❓ design pending |
 | **Slideshow** | · | · | · | — | ❓ design pending |
 | **Video** | ✓ | ✓ | ✓ | — | — |
 
-### Details — vanila
+### Details — vanilla
 
 #### CartDrawer
 
-- **Code props:** position, showCheckoutButton, colorScheme, padding, top, bottom
+- **Code props:** position, showCheckoutButton, colorScheme, padding
 
 **@ 1920:** `I590:22979;549:5264` (32×32) — *icon_cart_md*
 
@@ -447,7 +439,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### Collections
 
-- **Code props:** id, collectionId, heading, description, image
+- **Code props:** heading, collections, columns, colorScheme, padding
 
 **@ 1920:** `590:22613` (1920×1547) — *Коллекция товаров*
 
@@ -475,7 +467,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### Footer
 
-- **Code props:** label, href
+- **Code props:** siteTitle, newsletter, heading, text, navigationColumn, informationColumn, socialColumn, colorScheme, copyrightColorScheme, padding
 
 **@ 1920:** `566:11767` (1920×460) — *Footer*
 
@@ -484,7 +476,6 @@ Figma viewports: **1920, 1280, 375**
 - Primary font: `Urbanist`
 - Font sizes: 20, 16, 14 px
 - Corner radii: 4 px
-- Variant hints: **has-form**
 
 **@ 1280:** `590:22873` (1280×332) — *Footer*
 
@@ -502,7 +493,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### Header
 
-- **Code props:** label, href, submenu
+- **Code props:** siteTitle, logo, logoPosition, stickiness, menuType, navigationLinks, actionButtons, colorScheme, menuColorScheme, padding
 
 **@ 1920:** `590:22549` (1920×80) — *Header*
 
@@ -531,7 +522,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### Hero
 
-- **Code props:** title, subtitle, image, images, cta, variant, colorScheme, padding, top, bottom
+- **Code props:** title, subtitle, image, images, cta, variant, colorScheme, padding
 - **Code variants:** `centered`, `split`, `overlay`, `grid-4`
 
 **@ 1920:** `590:22547` (1920×1080) — *Vanila Hero Deckstop*
@@ -560,7 +551,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### ImageWithText
 
-- **Code props:** image, heading, text, button, imagePosition, colorScheme, padding, top, bottom
+- **Code props:** image, heading, text, button, imagePosition, colorScheme, padding
 
 **@ 1280:** `590:23945` (317×316) — *Главное изображение*
 
@@ -575,7 +566,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### MainText
 
-- **Code props:** heading, text, alignment, colorScheme, padding, top, bottom
+- **Code props:** heading, text, alignment, colorScheme, padding
 
 **@ 1920:** `590:22565` (689×52) — *Заголовок & Текст*
 
@@ -601,7 +592,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### MultiRows
 
-- **Code props:** id, heading, text, imageUrl, imagePosition, button
+- **Code props:** rows, colorScheme, padding
 
 **@ 1920:** `590:22988` (24×24) — *icon_arrows*
 
@@ -617,7 +608,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### Product
 
-- **Code props:** productId, colorScheme, padding, top, bottom
+- **Code props:** productId, colorScheme, padding
 
 **@ 1920:** `590:22720` (1920×2658) — *Товар*
 
@@ -626,7 +617,7 @@ Figma viewports: **1920, 1280, 375**
 - Primary font: `Arsenal`
 - Font sizes: 20, 16, 14, 12 px
 - Corner radii: 4, 8 px
-- Variant hints: **multi-image (grid/collage)**, **has-form**
+- Variant hints: **multi-image (grid/collage)**
 
 **@ 1280:** `590:22923` (245×315) — *Товар*
 
@@ -637,7 +628,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### PromoBanner
 
-- **Code props:** text, linkText, linkUrl, colorScheme, padding, top, bottom
+- **Code props:** text, linkText, linkUrl, colorScheme, padding
 
 **@ 1920:** `590:22548` (1920×48) — *Панель объявлений; Размер текста - Большой*
 
@@ -662,7 +653,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### Video
 
-- **Code props:** heading, videoUrl, poster, colorScheme, padding, top, bottom
+- **Code props:** heading, videoUrl, poster, colorScheme, padding
 
 **@ 1920:** `590:22580` (1920×982) — *Видео*
 
@@ -679,7 +670,7 @@ Figma viewports: **1920, 1280, 375**
 - Layout: VERTICAL · children: 2 · images: 1 · texts: 0 · CTAs: 0
 - Primary fill: `#000000`
 
-### Unmapped frames in vanila (top 10 by size, total 161)
+### Unmapped frames in vanilla (top 10 by size, total 161)
 
 | Figma name | nodeId | size | reason |
 |------------|--------|------|--------|
@@ -713,7 +704,7 @@ Figma viewports: **1920, 375**
 | **CollapsibleSection** | · | · | · | — | ❓ design pending |
 | **Collections** | ✓ | · | ✓ | — | grid-3col; grid-2col |
 | **ContactForm** | · | · | · | — | ❓ design pending |
-| **Footer** | ✓ | · | ✓ | — | has-form |
+| **Footer** | ✓ | · | ✓ | — | — |
 | **Gallery** | · | · | · | — | ❓ design pending |
 | **Header** | ✓ | · | ✓ | — | grid-4col |
 | **Hero** | ✓ | · | ✓ | centered, split, overlay, grid-4 | — |
@@ -721,7 +712,7 @@ Figma viewports: **1920, 375**
 | **MainText** | ✓ | · | ✓ | — | — |
 | **MultiColumns** | · | · | · | — | ❓ design pending |
 | **MultiRows** | · | · | · | — | ❓ design pending |
-| **Newsletter** | ✓ | · | ✓ | — | has-form |
+| **Newsletter** | ✓ | · | ✓ | — | — |
 | **PopularProducts** | · | · | · | — | ❓ design pending |
 | **Product** | ✓ | · | ✓ | — | multi-image (grid/collage) |
 | **PromoBanner** | ✓ | · | ✓ | — | — |
@@ -733,7 +724,7 @@ Figma viewports: **1920, 375**
 
 #### CartDrawer
 
-- **Code props:** position, showCheckoutButton, colorScheme, padding, top, bottom
+- **Code props:** position, showCheckoutButton, colorScheme, padding
 
 **@ 1920:** `770:4926` (590×960) — *Пустая Корзина №2*
 
@@ -753,7 +744,7 @@ Figma viewports: **1920, 375**
 
 #### Collections
 
-- **Code props:** id, collectionId, heading, description, image
+- **Code props:** heading, collections, columns, colorScheme, padding
 
 **@ 1920:** `681:11705` (1322×604) — *Коллекции*
 
@@ -773,7 +764,7 @@ Figma viewports: **1920, 375**
 
 #### Footer
 
-- **Code props:** label, href
+- **Code props:** siteTitle, newsletter, heading, text, navigationColumn, informationColumn, socialColumn, colorScheme, copyrightColorScheme, padding
 
 **@ 1920:** `731:11328` (1920×500) — *Footer*
 
@@ -782,7 +773,6 @@ Figma viewports: **1920, 375**
 - Primary font: `Inter`
 - Font sizes: 16, 14, 12 px
 - Corner radii: 4 px
-- Variant hints: **has-form**
 
 **@ 375:** `772:11500` (375×589) — *Footer*
 
@@ -791,11 +781,10 @@ Figma viewports: **1920, 375**
 - Primary font: `Inter`
 - Font sizes: 14, 12 px
 - Corner radii: 2 px
-- Variant hints: **has-form**
 
 #### Header
 
-- **Code props:** label, href, submenu
+- **Code props:** siteTitle, logo, logoPosition, stickiness, menuType, navigationLinks, actionButtons, colorScheme, menuColorScheme, padding
 
 **@ 1920:** `806:660` (1920×80) — *Header; 1920; Сверху слева*
 
@@ -814,7 +803,7 @@ Figma viewports: **1920, 375**
 
 #### Hero
 
-- **Code props:** title, subtitle, image, images, cta, variant, colorScheme, padding, top, bottom
+- **Code props:** title, subtitle, image, images, cta, variant, colorScheme, padding
 - **Code variants:** `centered`, `split`, `overlay`, `grid-4`
 
 **@ 1920:** `681:11674` (1920×800) — *Hero Satin Deckstop*
@@ -835,7 +824,7 @@ Figma viewports: **1920, 375**
 
 #### ImageWithText
 
-- **Code props:** image, heading, text, button, imagePosition, colorScheme, padding, top, bottom
+- **Code props:** image, heading, text, button, imagePosition, colorScheme, padding
 
 **@ 1920:** `726:6117` (1920×680) — *Изображение*
 
@@ -854,7 +843,7 @@ Figma viewports: **1920, 375**
 
 #### MainText
 
-- **Code props:** heading, text, alignment, colorScheme, padding, top, bottom
+- **Code props:** heading, text, alignment, colorScheme, padding
 
 **@ 1920:** `681:11687` (960×680) — *Текст*
 
@@ -872,7 +861,7 @@ Figma viewports: **1920, 375**
 
 #### Newsletter
 
-- **Code props:** heading, description, placeholder, buttonText, colorScheme, padding, top, bottom
+- **Code props:** heading, description, placeholder, buttonText, colorScheme, padding
 
 **@ 1920:** `681:11821` (318×69) — *Рассылка*
 
@@ -880,7 +869,6 @@ Figma viewports: **1920, 375**
 - Primary fill: `#000000`
 - Primary font: `Kelly Slab`
 - Font sizes: 14, 12 px
-- Variant hints: **has-form**
 
 **@ 375:** `772:11466` (343×69) — *Рассылка*
 
@@ -888,11 +876,10 @@ Figma viewports: **1920, 375**
 - Primary fill: `#000000`
 - Primary font: `Kelly Slab`
 - Font sizes: 14, 12 px
-- Variant hints: **has-form**
 
 #### Product
 
-- **Code props:** productId, colorScheme, padding, top, bottom
+- **Code props:** productId, colorScheme, padding
 
 **@ 1920:** `734:10867` (1920×1080) — *Любимые товары*
 
@@ -911,7 +898,7 @@ Figma viewports: **1920, 375**
 
 #### PromoBanner
 
-- **Code props:** text, linkText, linkUrl, colorScheme, padding, top, bottom
+- **Code props:** text, linkText, linkUrl, colorScheme, padding
 
 **@ 1920:** `681:11675` (1920×40) — *Панель объявлений; 1920; Размер текста - Средний*
 
@@ -929,7 +916,7 @@ Figma viewports: **1920, 375**
 
 #### Publications
 
-- **Code props:** heading, columns, cards, colorScheme, padding, top, bottom
+- **Code props:** heading, columns, cards, colorScheme, padding
 
 **@ 375:** `772:11310` (375×1627) — *Публикации*
 
@@ -972,15 +959,15 @@ Figma viewports: **1920, 1280, 375**
 | **CollapsibleSection** | · | · | · | — | ❓ design pending |
 | **Collections** | ✓ | ✓ | ✓ | — | pill (radius≥60) |
 | **ContactForm** | · | · | · | — | ❓ design pending |
-| **Footer** | ✓ | ✓ | ✓ | — | has-form; pill (radius≥60) |
+| **Footer** | ✓ | ✓ | ✓ | — | pill (radius≥60) |
 | **Gallery** | ✓ | ✓ | ✓ | — | — |
 | **Header** | ✓ | ✓ | ✓ | — | grid-4col |
-| **Hero** | ✓ | ✓ | ✓ | centered, split, overlay, grid-4 | multi-image (grid/collage); has-form; pill (radius≥60) |
+| **Hero** | ✓ | ✓ | ✓ | centered, split, overlay, grid-4 | multi-image (grid/collage); pill (radius≥60) |
 | **ImageWithText** | · | · | ✓ | — | — |
 | **MainText** | ✓ | ✓ | ✓ | — | pill (radius≥60) |
 | **MultiColumns** | · | · | · | — | ❓ design pending |
 | **MultiRows** | · | · | · | — | ❓ design pending |
-| **Newsletter** | ✓ | · | · | — | has-form; pill (radius≥60) |
+| **Newsletter** | ✓ | · | · | — | pill (radius≥60) |
 | **PopularProducts** | · | · | · | — | ❓ design pending |
 | **Product** | ✓ | ✓ | ✓ | — | multi-image (grid/collage); grid-2col; pill (radius≥60) |
 | **PromoBanner** | ✓ | ✓ | ✓ | — | — |
@@ -992,7 +979,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### CartDrawer
 
-- **Code props:** position, showCheckoutButton, colorScheme, padding, top, bottom
+- **Code props:** position, showCheckoutButton, colorScheme, padding
 
 **@ 375:** `377:6668` (14×24) — *icon_cart_md*
 
@@ -1004,7 +991,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### Collections
 
-- **Code props:** id, collectionId, heading, description, image
+- **Code props:** heading, collections, columns, colorScheme, padding
 
 **@ 1920:** `669:15295` (1920×795) — *Коллекция товаров*
 
@@ -1033,7 +1020,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### Footer
 
-- **Code props:** label, href
+- **Code props:** siteTitle, newsletter, heading, text, navigationColumn, informationColumn, socialColumn, colorScheme, copyrightColorScheme, padding
 
 **@ 1920:** `971:11043` (1920×560) — *Footer*
 
@@ -1042,7 +1029,7 @@ Figma viewports: **1920, 1280, 375**
 - Primary font: `Inter`
 - Font sizes: 16, 14, 12 px
 - Corner radii: 4, 100 px
-- Variant hints: **has-form**, **pill (radius≥60)**
+- Variant hints: **pill (radius≥60)**
 
 **@ 1280:** `669:15256` (1280×314) — *Footer*
 
@@ -1060,7 +1047,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### Gallery
 
-- **Code props:** heading, items, layout, colorScheme, padding, top, bottom
+- **Code props:** heading, items, layout, colorScheme, padding
 
 **@ 1920:** `669:15358` (1920×1115) — *Галерея*
 
@@ -1088,7 +1075,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### Header
 
-- **Code props:** label, href, submenu
+- **Code props:** siteTitle, logo, logoPosition, stickiness, menuType, navigationLinks, actionButtons, colorScheme, menuColorScheme, padding
 
 **@ 1920:** `669:15289` (1920×115) — *Header; 1920; Сверху в центре*
 
@@ -1117,7 +1104,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### Hero
 
-- **Code props:** title, subtitle, image, images, cta, variant, colorScheme, padding, top, bottom
+- **Code props:** title, subtitle, image, images, cta, variant, colorScheme, padding
 - **Code variants:** `centered`, `split`, `overlay`, `grid-4`
 
 **@ 1920:** `669:15286` (1920×4462) — *Hero Bloom Deckstop*
@@ -1127,7 +1114,7 @@ Figma viewports: **1920, 1280, 375**
 - Primary font: `Inter`
 - Font sizes: 20, 16, 14, 12 px
 - Corner radii: 4, 12, 100 px
-- Variant hints: **multi-image (grid/collage)**, **has-form**, **pill (radius≥60)**
+- Variant hints: **multi-image (grid/collage)**, **pill (radius≥60)**
 
 **@ 1280:** `669:15195` (1280×720) — *Главный экран*
 
@@ -1147,7 +1134,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### ImageWithText
 
-- **Code props:** image, heading, text, button, imagePosition, colorScheme, padding, top, bottom
+- **Code props:** image, heading, text, button, imagePosition, colorScheme, padding
 
 **@ 375:** `669:15046` (375×716) — *Изображение и текст*
 
@@ -1158,7 +1145,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### MainText
 
-- **Code props:** heading, text, alignment, colorScheme, padding, top, bottom
+- **Code props:** heading, text, alignment, colorScheme, padding
 
 **@ 1920:** `669:15290` (1920×925) — *Фото & Текст*
 
@@ -1185,7 +1172,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### Newsletter
 
-- **Code props:** heading, description, placeholder, buttonText, colorScheme, padding, top, bottom
+- **Code props:** heading, description, placeholder, buttonText, colorScheme, padding
 
 **@ 1920:** `971:11017` (318×69) — *Рассылка*
 
@@ -1194,11 +1181,11 @@ Figma viewports: **1920, 1280, 375**
 - Primary font: `Urbanist`
 - Font sizes: 14, 12 px
 - Corner radii: 100 px
-- Variant hints: **has-form**, **pill (radius≥60)**
+- Variant hints: **pill (radius≥60)**
 
 #### Product
 
-- **Code props:** productId, colorScheme, padding, top, bottom
+- **Code props:** productId, colorScheme, padding
 
 **@ 1920:** `971:16397` (1920×712) — *Товар; 1920; Макет - Карусель сбоку; Размер названия - Средний; Размер текста - Средний; Позиция фото - слева*
 
@@ -1228,7 +1215,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### PromoBanner
 
-- **Code props:** text, linkText, linkUrl, colorScheme, padding, top, bottom
+- **Code props:** text, linkText, linkUrl, colorScheme, padding
 
 **@ 1920:** `669:15288` (1920×40) — *Панель объявлений; 1920; Размер текста - Средний*
 
@@ -1286,11 +1273,11 @@ Figma viewports: **1920, 1280, 375**
 | **Collections** | ✓ | · | ✓ | — | multi-image (grid/collage) |
 | **ContactForm** | · | · | · | — | ❓ design pending |
 | **Footer** | ✓ | · | ✓ | — | has-form |
-| **Gallery** | ✓ | · | ✓ | — | has-form |
+| **Gallery** | ✓ | · | ✓ | — | — |
 | **Header** | ✓ | ✓ | ✓ | — | grid-2col; grid-4col |
 | **Hero** | ✓ | · | ✓ | centered, split, overlay, grid-4 | — |
 | **ImageWithText** | ✓ | · | · | — | — |
-| **MainText** | ✓ | · | ✓ | — | grid-2col; has-form |
+| **MainText** | ✓ | · | ✓ | — | grid-2col |
 | **MultiColumns** | · | · | · | — | ❓ design pending |
 | **MultiRows** | · | · | · | — | ❓ design pending |
 | **Newsletter** | · | · | ✓ | — | has-form |
@@ -1305,7 +1292,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### AuthModal
 
-- **Code props:** mode, siteTitle, showSocialLogin, colorScheme, padding, top, bottom
+- **Code props:** mode, siteTitle, showSocialLogin, colorScheme, padding
 
 **@ 1920:** `919:6184` (1920×1276) — *Регистрация*
 
@@ -1327,7 +1314,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### CartDrawer
 
-- **Code props:** position, showCheckoutButton, colorScheme, padding, top, bottom
+- **Code props:** position, showCheckoutButton, colorScheme, padding
 
 **@ 1920:** `919:5479` (1920×1481) — *Корзина*
 
@@ -1336,7 +1323,6 @@ Figma viewports: **1920, 1280, 375**
 - Primary font: `Roboto Flex`
 - Font sizes: 20, 16, 14 px
 - Corner radii: 6, 8 px
-- Variant hints: **has-form**
 
 **@ 375:** `919:2784` (375×1437) — *Корзина*
 
@@ -1349,7 +1335,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### Collections
 
-- **Code props:** id, collectionId, heading, description, image
+- **Code props:** heading, collections, columns, colorScheme, padding
 
 **@ 1920:** `919:6014` (1920×685) — *Коллекция товаров*
 
@@ -1371,7 +1357,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### Footer
 
-- **Code props:** label, href
+- **Code props:** siteTitle, newsletter, heading, text, navigationColumn, informationColumn, socialColumn, colorScheme, copyrightColorScheme, padding
 
 **@ 1920:** `919:5478` (1920×553) — *Footer*
 
@@ -1393,7 +1379,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### Gallery
 
-- **Code props:** heading, items, layout, colorScheme, padding, top, bottom
+- **Code props:** heading, items, layout, colorScheme, padding
 
 **@ 1920:** `1037:16868` (1920×1186) — *Галерея*
 
@@ -1409,11 +1395,10 @@ Figma viewports: **1920, 1280, 375**
 - Primary font: `Roboto Flex`
 - Font sizes: 12, 8 px
 - Corner radii: 2, 4, 8 px
-- Variant hints: **has-form**
 
 #### Header
 
-- **Code props:** label, href, submenu
+- **Code props:** siteTitle, logo, logoPosition, stickiness, menuType, navigationLinks, actionButtons, colorScheme, menuColorScheme, padding
 
 **@ 1920:** `919:5475` (1920×124) — *Header*
 
@@ -1442,7 +1427,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### Hero
 
-- **Code props:** title, subtitle, image, images, cta, variant, colorScheme, padding, top, bottom
+- **Code props:** title, subtitle, image, images, cta, variant, colorScheme, padding
 - **Code variants:** `centered`, `split`, `overlay`, `grid-4`
 
 **@ 1920:** `919:5473` (1920×1439) — *Главный экран*
@@ -1463,7 +1448,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### ImageWithText
 
-- **Code props:** image, heading, text, button, imagePosition, colorScheme, padding, top, bottom
+- **Code props:** image, heading, text, button, imagePosition, colorScheme, padding
 
 **@ 1920:** `1025:16314` (1920×640) — *Изображение*
 
@@ -1474,7 +1459,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### MainText
 
-- **Code props:** heading, text, alignment, colorScheme, padding, top, bottom
+- **Code props:** heading, text, alignment, colorScheme, padding
 
 **@ 1920:** `919:5615` (697×23) — *Заголовок & Текст*
 
@@ -1490,11 +1475,10 @@ Figma viewports: **1920, 1280, 375**
 - Primary fill: `#cccccc`
 - Primary font: `Roboto Flex`
 - Font sizes: 16, 14, 12 px
-- Variant hints: **has-form**
 
 #### Newsletter
 
-- **Code props:** heading, description, placeholder, buttonText, colorScheme, padding, top, bottom
+- **Code props:** heading, description, placeholder, buttonText, colorScheme, padding
 
 **@ 375:** `I919:2783;919:3773` (343×123) — *Рассылка*
 
@@ -1507,7 +1491,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### Product
 
-- **Code props:** productId, colorScheme, padding, top, bottom
+- **Code props:** productId, colorScheme, padding
 
 **@ 1920:** `919:5560` (697×207) — *Товар*
 
@@ -1526,7 +1510,7 @@ Figma viewports: **1920, 1280, 375**
 
 #### PromoBanner
 
-- **Code props:** text, linkText, linkUrl, colorScheme, padding, top, bottom
+- **Code props:** text, linkText, linkUrl, colorScheme, padding
 
 **@ 1920:** `919:5476` (1920×48) — *Панель объявлений 1920px*
 

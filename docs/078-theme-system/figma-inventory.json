@@ -1,7 +1,7 @@
 {
   "fileKey": "QfF9NPZBoQX6vCRg560Qcb",
   "fileName": "New Themes",
-  "pulledAt": "2026-04-22T17:21:41.071Z",
+  "pulledAt": "2026-04-22T18:11:15.808Z",
   "figmaUserHandle": "Алексей Просвиров",
   "sharedComponents": {
     "pageNodeId": "0:1",
@@ -4392,7 +4392,7 @@
         "Video"
       ]
     },
-    "vanila": {
+    "vanilla": {
       "pageNodeId": "590:11640",
       "pageName": "Vanila",
       "viewports": [

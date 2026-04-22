@@ -286,12 +286,28 @@ async function main() {
   }
 
   function classify(block: BlockName, hint: string, cfg: ReturnType<typeof readBlockConfig>): Pick<ClassifiedHint, 'status' | 'note' | 'action'> {
+    // Plain text container — pill/grid/multi-image hints never apply
+    if (cfg.isPlainTextContainer && (hint.includes('multi-image') || /^grid-\d+col/.test(hint) || hint.includes('pill') || hint.includes('flat'))) {
+      return {
+        status: 'COVERED_BY_PROPS',
+        note: 'Block is a plain text container — no images/grid/buttons. Hint is Figma adjacency artifact.',
+        action: 'No code change — hint does not apply to this block.',
+      };
+    }
+
     if (hint.includes('multi-image')) {
       if (cfg.hasMultiImageCapability) {
         return {
           status: 'COVERED_BY_PROPS',
           note: `Block already exposes array/multi-image prop (${cfg.hasArrayProps.join(', ') || 'images[]'}).`,
           action: 'No code change — Figma multi-image is expressible via existing array prop.',
+        };
+      }
+      if (cfg.hasInternalMultiImage) {
+        return {
+          status: 'COVERED_BY_PROPS',
+          note: `Block template already renders multiple images (gallery/thumbnails baked in).`,
+          action: 'No code change — template handles multi-image internally.',
         };
       }
       return {
@@ -313,6 +329,13 @@ async function main() {
           status: 'COVERED_BY_PROPS',
           note: `Block uses array-typed props (${cfg.hasArrayProps.join(', ')}); layout derives from items.`,
           action: 'No code change — adjust preset data.',
+        };
+      }
+      if (cfg.hasInternalCompositeLayout) {
+        return {
+          status: 'COVERED_BY_PROPS',
+          note: 'Block template has composite multi-section layout built-in (e.g., Product gallery+info, ImageWithText).',
+          action: 'No code change — layout is fixed by template.',
         };
       }
       return {

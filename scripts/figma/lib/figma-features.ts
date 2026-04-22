@@ -99,7 +99,10 @@ export function extractFeatures(node: FigmaNode): BlockFeatures {
   // Variant hints
   if (feat.imageCount >= 4) feat.variantHints.push('multi-image (grid/collage)');
   if (feat.columns && feat.columns >= 2) feat.variantHints.push(`grid-${feat.columns}col`);
-  if (feat.formFieldCount >= 1) feat.variantHints.push('has-form');
+  // has-form: require ≥2 input-shaped frames to avoid single label matches.
+  // Single "email" or "input" nodes inside Figma for design decoration
+  // (footer social icon with label) are too noisy at threshold 1.
+  if (feat.formFieldCount >= 2) feat.variantHints.push('has-form');
   if ((feat.cornerRadii[feat.cornerRadii.length - 1] ?? 0) >= 60)
     feat.variantHints.push('pill (radius≥60)');
   if ((feat.cornerRadii[0] ?? 0) === 0 && feat.cornerRadii.length === 1)

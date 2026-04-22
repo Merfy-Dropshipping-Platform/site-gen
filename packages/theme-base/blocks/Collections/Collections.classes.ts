@@ -2,7 +2,7 @@ export const CollectionsClasses = {
   root: 'relative w-full',
   container: 'mx-auto max-w-[var(--container-max-width)] px-4',
   heading:
-    '[font-family:var(--font-heading)] text-[20px] font-normal uppercase tracking-[0.05em] leading-[1.2] text-[rgb(var(--color-heading))] mb-2 text-left',
+    '[font-family:var(--font-heading)] text-[length:var(--size-section-heading,1.25rem)] font-normal leading-[1.2] text-[rgb(var(--color-heading))] mb-2 text-left',
   subtitle:
     '[font-family:var(--font-body)] text-[16px] font-normal leading-[1.25] text-[rgb(var(--color-muted))] mb-8 text-left',
   grid: 'grid gap-x-[var(--spacing-grid-col-gap)] gap-y-[var(--spacing-grid-row-gap)]',

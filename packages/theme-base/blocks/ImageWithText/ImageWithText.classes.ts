@@ -18,7 +18,7 @@ export const ImageWithTextClasses = {
   image:
     'w-full aspect-[4/3] object-cover rounded-[var(--radius-media)]',
   heading:
-    '[font-family:var(--font-heading)] text-[20px] font-normal uppercase tracking-[0.05em] leading-[1.2] text-[rgb(var(--color-heading))] mb-3',
+    '[font-family:var(--font-heading)] text-[length:var(--size-section-heading,1.25rem)] font-normal leading-[1.2] text-[rgb(var(--color-heading))] mb-3',
   text: '[font-family:var(--font-body)] text-[16px] font-normal leading-[1.25] text-[rgb(var(--color-text))] mb-6',
   button:
     'inline-flex items-center justify-center h-[48px] px-4 text-[16px] font-normal uppercase no-underline hover:opacity-90 transition-colors [font-family:var(--font-body)] self-start border border-[rgb(var(--color-foreground,0,0,0))] rounded-[var(--radius-button)] bg-transparent text-[rgb(var(--color-heading))]',

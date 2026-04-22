@@ -1,0 +1,461 @@
+[
+  {
+    "key": "rose/home/1920",
+    "status": "fail",
+    "threshold": 0.05,
+    "diff": 0.5899112962223996
+  },
+  {
+    "key": "rose/home/375",
+    "status": "no-reference",
+    "threshold": 0.05
+  },
+  {
+    "key": "rose/catalog/1920",
+    "status": "fail",
+    "threshold": 0.05,
+    "diff": 0.6745309479425573
+  },
+  {
+    "key": "rose/catalog/375",
+    "status": "fail",
+    "threshold": 0.05,
+    "diff": 0.7865884597043395
+  },
+  {
+    "key": "rose/product/1920",
+    "status": "no-reference",
+    "threshold": 0.05
+  },
+  {
+    "key": "rose/product/375",
+    "status": "no-reference",
+    "threshold": 0.08
+  },
+  {
+    "key": "rose/cart/1920",
+    "status": "fail",
+    "threshold": 0.05,
+    "diff": 0.7231540340320911
+  },
+  {
+    "key": "rose/cart/375",
+    "status": "fail",
+    "threshold": 0.05,
+    "diff": 0.7197655677655678
+  },
+  {
+    "key": "rose/checkout/1920",
+    "status": "fail",
+    "threshold": 0.05,
+    "diff": 0.9514284336419753
+  },
+  {
+    "key": "rose/checkout/375",
+    "status": "fail",
+    "threshold": 0.05,
+    "diff": 0.802768472906404
+  },
+  {
+    "key": "rose/contacts/1920",
+    "status": "fail",
+    "threshold": 0.05,
+    "diff": 0.8751038519637462
+  },
+  {
+    "key": "rose/contacts/375",
+    "status": "fail",
+    "threshold": 0.05,
+    "diff": 0.8470469848316685
+  },
+  {
+    "key": "rose/about/1920",
+    "status": "fail",
+    "threshold": 0.05,
+    "diff": 0.7336295628183361
+  },
+  {
+    "key": "rose/about/375",
+    "status": "fail",
+    "threshold": 0.05,
+    "diff": 0.7851535802469136
+  },
+  {
+    "key": "rose/auth/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "rose/auth/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "rose/account-dashboard/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "rose/account-dashboard/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "rose/order-tracking/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "rose/order-tracking/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "vanilla/home/1920",
+    "status": "no-reference",
+    "threshold": 0.05
+  },
+  {
+    "key": "vanilla/home/375",
+    "status": "no-reference",
+    "threshold": 0.05
+  },
+  {
+    "key": "vanilla/catalog/1920",
+    "status": "fail",
+    "threshold": 0.05,
+    "diff": 0.6203640878567431
+  },
+  {
+    "key": "vanilla/catalog/375",
+    "status": "fail",
+    "threshold": 0.05,
+    "diff": 0.8314361675445197
+  },
+  {
+    "key": "vanilla/product/1920",
+    "status": "no-reference",
+    "threshold": 0.05
+  },
+  {
+    "key": "vanilla/product/375",
+    "status": "no-reference",
+    "threshold": 0.05
+  },
+  {
+    "key": "vanilla/cart/1920",
+    "status": "fail",
+    "threshold": 0.05,
+    "diff": 0.9851621398761443
+  },
+  {
+    "key": "vanilla/cart/375",
+    "status": "fail",
+    "threshold": 0.05,
+    "diff": 0.9409895582329317
+  },
+  {
+    "key": "vanilla/checkout/1920",
+    "status": "fail",
+    "threshold": 0.05,
+    "diff": 0.9736048418209876
+  },
+  {
+    "key": "vanilla/checkout/375",
+    "status": "fail",
+    "threshold": 0.05,
+    "diff": 0.9067848932676519
+  },
+  {
+    "key": "vanilla/contacts/1920",
+    "status": "fail",
+    "threshold": 0.05,
+    "diff": 0.9632450331125828
+  },
+  {
+    "key": "vanilla/contacts/375",
+    "status": "fail",
+    "threshold": 0.05,
+    "diff": 0.9437550452331246
+  },
+  {
+    "key": "vanilla/about/1920",
+    "status": "fail",
+    "threshold": 0.05,
+    "diff": 0.9629132908950617
+  },
+  {
+    "key": "vanilla/about/375",
+    "status": "fail",
+    "threshold": 0.05,
+    "diff": 0.8597233489339574
+  },
+  {
+    "key": "vanilla/auth/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "vanilla/auth/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "vanilla/account-dashboard/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "vanilla/account-dashboard/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "vanilla/order-tracking/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "vanilla/order-tracking/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "bloom/home/1920",
+    "status": "no-reference",
+    "threshold": 0.05
+  },
+  {
+    "key": "bloom/home/375",
+    "status": "no-reference",
+    "threshold": 0.05
+  },
+  {
+    "key": "bloom/catalog/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "bloom/catalog/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "bloom/product/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "bloom/product/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "bloom/cart/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "bloom/cart/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "bloom/checkout/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "bloom/checkout/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "bloom/contacts/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "bloom/contacts/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "bloom/about/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "bloom/about/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "bloom/auth/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "bloom/auth/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "bloom/account-dashboard/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "bloom/account-dashboard/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "bloom/order-tracking/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "bloom/order-tracking/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "satin/home/1920",
+    "status": "fail",
+    "threshold": 0.05,
+    "diff": 0.38289838836477985
+  },
+  {
+    "key": "satin/home/375",
+    "status": "fail",
+    "threshold": 0.05,
+    "diff": 0.19987396061269147
+  },
+  {
+    "key": "satin/catalog/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "satin/catalog/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "satin/product/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "satin/product/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "satin/cart/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "satin/cart/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "satin/checkout/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "satin/checkout/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "satin/contacts/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "satin/contacts/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "satin/about/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "satin/about/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "satin/auth/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "satin/auth/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "satin/account-dashboard/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "satin/account-dashboard/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "satin/order-tracking/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "satin/order-tracking/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "flux/home/1920",
+    "status": "fail",
+    "threshold": 0.06,
+    "diff": 0.40805656299682036
+  },
+  {
+    "key": "flux/home/375",
+    "status": "fail",
+    "threshold": 0.05,
+    "diff": 0.1919132075471698
+  },
+  {
+    "key": "flux/catalog/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "flux/catalog/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "flux/product/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "flux/product/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "flux/cart/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "flux/cart/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "flux/checkout/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "flux/checkout/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "flux/contacts/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "flux/contacts/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "flux/about/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "flux/about/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "flux/auth/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "flux/auth/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "flux/account-dashboard/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "flux/account-dashboard/375",
+    "status": "skip-config"
+  },
+  {
+    "key": "flux/order-tracking/1920",
+    "status": "skip-config"
+  },
+  {
+    "key": "flux/order-tracking/375",
+    "status": "skip-config"
+  }
+]

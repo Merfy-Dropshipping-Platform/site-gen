@@ -23,6 +23,7 @@
     "--size-hero-heading": "72px",
     "--size-hero-button-h": "48px",
     "--size-nav-link": "16px",
+    "--size-section-heading": "20px",
     "--size-newsletter-form-w": "480px",
     "--size-logo-width": "120px",
     "--size-card-border": "1px",

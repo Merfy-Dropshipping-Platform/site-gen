@@ -113,6 +113,11 @@ for (const theme of THEMES) {
           timeout: 45_000,
         });
         if (!resp || !resp.ok()) loadStatus = `http-${resp?.status() ?? '???'}`;
+        // Wait for fonts + images to settle so pixel-diff has stable content
+        // (domcontentloaded fires before hero background-image loads). Use a
+        // short budget so 3rd-party trackers don't hang the run.
+        await tab.waitForLoadState('load', { timeout: 10_000 }).catch(() => {});
+        await tab.waitForTimeout(1500);
       } catch (e) {
         loadStatus = `load-error: ${e instanceof Error ? e.message : String(e)}`;
       }

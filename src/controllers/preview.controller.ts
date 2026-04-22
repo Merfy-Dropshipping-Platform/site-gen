@@ -632,8 +632,10 @@ function buildTokensCss(settings: unknown, themeId: string | null): string {
   const merchantById = new Map<string, Record<string, unknown>>();
   for (const raw of merchantSchemes) {
     if (isPlainObject(raw) && typeof (raw as Record<string, unknown>).id === 'string') {
+      // Key by normalised class id so lookups hit regardless of whether the
+      // merchant stored "scheme-1" (legacy) or "1" (new shape).
       merchantById.set(
-        String((raw as Record<string, unknown>).id),
+        schemeClassId(String((raw as Record<string, unknown>).id)),
         raw as Record<string, unknown>,
       );
     }
@@ -642,11 +644,12 @@ function buildTokensCss(settings: unknown, themeId: string | null): string {
 
   const schemeRuleLines: string[] = [];
   for (const themeScheme of themeSchemes) {
-    const merchant = merchantById.get(themeScheme.id);
+    const key = schemeClassId(themeScheme.id);
+    const merchant = merchantById.get(key);
     if (merchant) {
       const rule = buildSchemeRule(merchant);
       if (rule) schemeRuleLines.push(rule);
-      merchantById.delete(themeScheme.id);
+      merchantById.delete(key);
     } else {
       schemeRuleLines.push(buildThemeSchemeRule(themeScheme));
     }
@@ -704,6 +707,13 @@ function fontFamily(v: unknown, fallback: string): string {
  * `tokens` map. We emit them straight into a `.color-scheme-<id>` block —
  * no hex → rgb conversion needed.
  */
+function schemeClassId(id: string): string {
+  // Both "scheme-1" and "1" should become "1" so blocks (which use a numeric
+  // colorScheme) and merchant schemes (legacy "scheme-N" strings) produce the
+  // same `.color-scheme-<n>` selector.
+  return id.replace(/^scheme-/, '');
+}
+
 function buildThemeSchemeRule(scheme: {
   id: string;
   tokens: Record<string, string>;
@@ -712,7 +722,7 @@ function buildThemeSchemeRule(scheme: {
     ([k, v]) => `${k}: ${v}`,
   );
   if (pairs.length === 0) return '';
-  return `.color-scheme-${scheme.id} { ${pairs.join('; ')}; }`;
+  return `.color-scheme-${schemeClassId(scheme.id)} { ${pairs.join('; ')}; }`;
 }
 
 /**
@@ -758,7 +768,7 @@ function buildSchemeRule(scheme: Record<string, unknown>): string {
   if (!id) return '';
   const vars = schemeToVars(scheme);
   if (!vars) return '';
-  return `.color-scheme-${id} {${vars}}`;
+  return `.color-scheme-${schemeClassId(id)} {${vars}}`;
 }
 
 function schemeVarsInRoot(scheme: Record<string, unknown>): string {

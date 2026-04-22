@@ -8,6 +8,8 @@ interface Props extends FooterProps {
 
 const {
   id,
+  siteTitle,
+  copyright,
   newsletter,
   heading,
   text,
@@ -37,10 +39,16 @@ const SOCIAL_ICONS: Record<string, string> = {
   dzen: '<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M12 2a10 10 0 0 0 0 20M2 12a10 10 0 0 1 20 0" stroke="currentColor" stroke-width="1.5" fill="none"/>',
 };
 
-// Brand name for copyright / powered-by — fall back when navigationColumn.title is not the brand.
-const brandName = navigationColumn?.title && navigationColumn.title !== 'Навигация'
-  ? navigationColumn.title
-  : 'Мой магазин';
+// Brand name sourced from explicit copyright.companyName / siteTitle,
+// falling back to navigationColumn.title only when it looks brand-like
+// (not the default "Навигация"/"НАВИГАЦИЯ" menu heading).
+const navTitle = (navigationColumn?.title ?? '').trim();
+const isNavLabel = !navTitle || /^навигация$/i.test(navTitle);
+const brandName =
+  (copyright?.companyName ?? '').trim() ||
+  (siteTitle ?? '').trim() ||
+  (isNavLabel ? 'Мой магазин' : navTitle);
+const poweredBy = (copyright?.poweredBy ?? 'Powered by Merfy').trim();
 ---
 <footer class:list={[C.root, scheme]} data-puck-component-id={id} style={paddingStyle}>
   <div class={C.container}>
@@ -134,7 +142,7 @@ const brandName = navigationColumn?.title && navigationColumn.title !== 'Нав�
   {/* Vanilla-specific: powered-by black strip at the very bottom */}
   <div class:list={[C.poweredBy.bar, copyScheme]}>
     <p class={C.poweredBy.text}>
-      &copy; {new Date().getFullYear()} {brandName}. Все права защищены. Powered by Merfy
+      &copy; {new Date().getFullYear()} {brandName}. Все права защищены. {poweredBy}
     </p>
   </div>
 </footer>

@@ -383,6 +383,16 @@ function coerceHeroProps(
   if (typeof out.subtitle !== 'string') out.subtitle = '';
   if (!out.image) out.image = { url: '', alt: '' };
   if (!out.cta) out.cta = { text: '', href: '#' };
+  // size: "small"|"medium"|"large" is preserved as-is.
+  if (typeof out.size !== 'string') out.size = 'medium';
+  // overlay: numeric 0-100. legacy overlayOpacity may be 0..1 float.
+  if (typeof out.overlay !== 'number') {
+    if (typeof out.overlayOpacity === 'number') {
+      out.overlay = Math.round(out.overlayOpacity * 100);
+    } else {
+      out.overlay = 30;
+    }
+  }
 }
 
 function coerceHeaderProps(out: Record<string, unknown>): void {

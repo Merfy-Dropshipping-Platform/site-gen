@@ -15,29 +15,70 @@ const {
   variant = 'centered',
   colorScheme = 1,
   padding,
-} = Astro.props as Props;
+  size,
+  overlay,
+} = Astro.props as Props & {
+  size?: 'small' | 'medium' | 'large';
+  overlay?: number;
+};
 const scheme = `color-scheme-${colorScheme}`;
 const innerClass = C.inner[variant];
 const imageClass = C.image[variant];
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
+
+// Hero min-height by size, matching 072 live templates.
+const heightVars = {
+  small:  '--h-base:280px;--h-sm:320px;--h-md:360px;--h-lg:400px;--h-xl:440px;--h-xxl:480px;',
+  medium: '--h-base:340px;--h-sm:400px;--h-md:480px;--h-lg:560px;--h-xl:640px;--h-xxl:720px;',
+  large:  '--h-base:400px;--h-sm:500px;--h-md:600px;--h-lg:700px;--h-xl:800px;--h-xxl:1080px;',
+}[size ?? 'medium'];
+
+const overlayPct = typeof overlay === 'number' ? overlay / 100 : 0.3;
+const overlayStyle = `background-color: rgb(var(--color-foreground) / ${overlayPct});`;
+
+// Normalise image reference across shapes preview coercer may pass through.
+const imageUrl =
+  typeof image === 'string'
+    ? image
+    : image && typeof (image as { url?: unknown }).url === 'string'
+      ? (image as { url: string }).url
+      : '';
+const imageAlt =
+  image && typeof (image as { alt?: unknown }).alt === 'string'
+    ? (image as { alt: string }).alt
+    : '';
 ---
 <section
-  class:list={[C.root, scheme]}
+  class:list={[C.root, scheme, variant === 'overlay' ? 'min-h-[var(--h-base)] sm:min-h-[var(--h-sm)] md:min-h-[var(--h-md)] lg:min-h-[var(--h-lg)] xl:min-h-[var(--h-xl)] 2xl:min-h-[var(--h-xxl)]' : '']}
   data-puck-component-id={id}
   data-variant={variant}
-  style={paddingStyle}
+  style={`${paddingStyle} ${variant === 'overlay' ? heightVars : ''}`}
 >
-  <div class:list={[C.container, innerClass]}>
-    {image?.url && (
-      <img src={image.url} alt={image.alt ?? ''} class={imageClass} />
-    )}
-    <div>
-      <h1 class={C.title}>{title}</h1>
-      {subtitle && <p class={C.subtitle}>{subtitle}</p>}
+  {variant === 'overlay' && imageUrl && (
+    <>
+      <div
+        class="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={`background-image: url('${imageUrl}');`}
+        aria-hidden="true"
+      />
+      <div class="absolute inset-0" style={overlayStyle} aria-hidden="true" />
+    </>
+  )}
+  {variant !== 'overlay' && imageUrl && (
+    <img src={imageUrl} alt={imageAlt} class={imageClass} />
+  )}
+  <div class:list={[C.container, innerClass, 'relative z-10']} style="min-height: inherit;">
+    <div class="flex flex-col items-center text-center gap-4 sm:gap-5 md:gap-6 lg:gap-5 xl:gap-[25px] w-full max-w-7xl px-4 sm:px-6 md:px-8">
+      <header class="flex flex-col gap-1 sm:gap-2 md:gap-3 lg:gap-4 xl:gap-[5px]">
+        {title && <h1 class={C.title}>{title}</h1>}
+        {subtitle && <p class={C.subtitle}>{subtitle}</p>}
+      </header>
       {cta?.text && (
-        <a href={cta.href} class={C.ctaButton}>{cta.text}</a>
+        <div class="flex flex-wrap gap-[25px]">
+          <a href={cta.href} class={C.ctaButton}>{cta.text}</a>
+        </div>
       )}
     </div>
   </div>

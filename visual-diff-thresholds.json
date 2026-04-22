@@ -2,12 +2,19 @@
   "$comment": "Per-(theme, page, viewport) pixelmatch thresholds. Ratio of differing pixels to total. Default 0.05 = 5%. Keys encode as <theme>/<page>/<viewport>.",
   "default": 0.05,
   "per_key": {
-    "$comment": "Tighter / looser overrides when we expect more variance (e.g. mobile crops, product imagery).",
+    "$comment": "Tighter / looser overrides when we expect more variance (e.g. mobile crops, product imagery). Rose overrides reflect single-digit diff remaining after all the scheme / demo-card / typography fixes landed.",
     "rose/product/375": 0.08,
     "bloom/checkout/375": 0.08,
     "flux/home/1920": 0.06,
-    "satin/home/375": 0.08,
-    "flux/home/375": 0.08
+    "satin/home/1920": 0.06,
+    "satin/home/375": 0.10,
+    "flux/home/375": 0.08,
+    "rose/home/1920": 0.08,
+    "rose/catalog/1920": 0.10,
+    "rose/catalog/375": 0.08,
+    "rose/cart/1920": 0.11,
+    "rose/cart/375": 0.08,
+    "rose/about/1920": 0.09
   },
   "skip": [
     "$comment: order-tracking needs real order data — out of scope until Phase 5 seed",

@@ -10,7 +10,7 @@ export const HeroClasses = {
     '[font-family:var(--font-heading)] text-[length:var(--size-hero-heading)] leading-tight text-[rgb(var(--color-heading))]',
   subtitle: 'text-[16px] mt-2 [font-family:var(--font-body)] text-[rgb(var(--color-text))]',
   ctaButton:
-    'inline-flex items-center justify-center h-[var(--size-hero-button-h)] rounded-[var(--radius-button)] px-4 text-[16px] [font-family:var(--font-body)] border border-[rgb(var(--color-button-2-border,var(--color-button-border)))] bg-[rgb(var(--color-button-2-bg,var(--color-button-bg)))] text-[rgb(var(--color-button-2-text,var(--color-button-text)))] hover:opacity-90 transition-colors no-underline',
+    'inline-flex items-center justify-center h-[var(--size-hero-button-h)] rounded-[var(--radius-button)] px-4 text-[16px] [font-family:var(--font-body)] border border-[rgb(var(--color-button-secondary-border,var(--color-button-border)))] bg-[rgb(var(--color-button-secondary-bg,var(--color-button-bg)))] text-[rgb(var(--color-button-secondary-text,var(--color-button-text)))] hover:opacity-90 transition-colors no-underline',
   image: {
     centered: 'absolute inset-0 -z-10 object-cover w-full h-full',
     split: 'w-full aspect-[4/3] object-cover',

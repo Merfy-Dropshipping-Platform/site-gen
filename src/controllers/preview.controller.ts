@@ -871,9 +871,13 @@ function schemeToVars(scheme: Record<string, unknown>): string {
   if (primaryBorder) parts.push(`--color-button-border: ${primaryBorder}`);
   const secondaryBg = hexToRgbTriple(secondary.background);
   const secondaryText = hexToRgbTriple(secondary.text);
+  const secondaryBorder = hexToRgbTriple(secondary.border);
   if (secondaryBg) parts.push(`--color-button-secondary-bg: ${secondaryBg}`);
   if (secondaryText) {
     parts.push(`--color-button-secondary-text: ${secondaryText}`);
+  }
+  if (secondaryBorder) {
+    parts.push(`--color-button-secondary-border: ${secondaryBorder}`);
   }
 
   return parts.length > 0 ? ' ' + parts.join('; ') + ';' : '';

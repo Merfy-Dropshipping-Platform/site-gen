@@ -206,6 +206,12 @@ function adaptLegacyProps(
     case 'Footer':
       coerceFooterProps(out);
       break;
+    case 'ImageWithText':
+      coerceImageWithTextProps(out, publicUrl);
+      break;
+    case 'MainText':
+      coerceMainTextProps(out);
+      break;
     default:
       // Generic fallback for the 19 blocks without a hand-written coercer
       // (MainText, Newsletter, ImageWithText, Slideshow, MultiColumns,
@@ -449,6 +455,59 @@ function coerceContactFormProps(out: Record<string, unknown>): void {
   }
   out.colorScheme = coerceSchemeNumber(out.colorScheme);
   if (!out.padding) out.padding = { top: 80, bottom: 80 };
+}
+
+function coerceImageWithTextProps(
+  out: Record<string, unknown>,
+  publicUrl: string | null,
+): void {
+  // heading: {text, enabled} → flat string
+  const h = unwrapTextSize(out.heading);
+  if (h.present) out.heading = h.value;
+  else if (typeof out.heading !== 'string') out.heading = '';
+  // text: {content, enabled} → flat string
+  const t = unwrapTextSize(out.text);
+  if (t.present) out.text = t.value;
+  else if (typeof out.text !== 'string') out.text = '';
+  // image: "" (legacy) → undefined, so Astro renders placeholder SVG
+  if (typeof out.image === 'string') {
+    out.image = out.image
+      ? { url: rewriteAssetUrl(out.image as string, publicUrl), alt: '' }
+      : undefined;
+  }
+  // button: {link: "/about", text, enabled} → {href, text}
+  if (isPlainObject(out.button)) {
+    const b = out.button as Record<string, unknown>;
+    const href =
+      typeof b.href === 'string'
+        ? b.href
+        : typeof b.link === 'string'
+          ? b.link
+          : isPlainObject(b.link) &&
+              typeof (b.link as Record<string, unknown>).href === 'string'
+            ? String((b.link as Record<string, unknown>).href)
+            : '#';
+    out.button = { text: String(b.text ?? ''), href };
+  }
+  out.colorScheme = coerceSchemeNumber(out.colorScheme);
+  // photoPosition: "left"|"right" → imagePosition
+  if (!out.imagePosition) {
+    const pp = typeof out.photoPosition === 'string' ? out.photoPosition : '';
+    out.imagePosition = pp === 'right' ? 'right' : 'left';
+  }
+  if (!out.padding) out.padding = { top: 40, bottom: 40 };
+}
+
+function coerceMainTextProps(out: Record<string, unknown>): void {
+  const h = unwrapTextSize(out.heading);
+  if (h.present) out.heading = h.value;
+  else if (typeof out.heading !== 'string') out.heading = '';
+  const t = unwrapTextSize(out.text);
+  if (t.present) out.text = t.value;
+  else if (typeof out.text !== 'string') out.text = '';
+  out.colorScheme = coerceSchemeNumber(out.colorScheme);
+  if (!out.align) out.align = 'left';
+  if (!out.padding) out.padding = { top: 40, bottom: 40 };
 }
 
 function coerceFooterProps(out: Record<string, unknown>): void {

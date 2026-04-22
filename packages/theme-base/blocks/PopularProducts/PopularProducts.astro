@@ -21,9 +21,13 @@ const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
 const gridTemplateCols = `grid-template-columns: repeat(${columns}, minmax(0, 1fr));`;
-const placeholders = Array.from({ length: cards }, (_, i) => i);
-// NOTE: Real product data is hydrated in Phase 1c via constructor rewire.
-// For now we render `cards` skeleton placeholders.
+// Placeholders only render when the site explicitly asks for them via
+// `dataSource: 'placeholder'`. Live storefronts omit them and just show
+// the heading + CTA (matches seeds where `dataSource: 'auto'` resolves to
+// real product cards, else empty grid). Without this gate preview pads
+// the page with 6 grey boxes that don't exist on the live site.
+const showPlaceholders = (Astro.props as { dataSource?: string }).dataSource === 'placeholder';
+const placeholders = showPlaceholders ? Array.from({ length: cards }, (_, i) => i) : [];
 ---
 <section
   class:list={[C.root, scheme]}
@@ -48,6 +52,14 @@ const placeholders = Array.from({ length: cards }, (_, i) => i);
           </div>
         </div>
       ))}
+    </div>
+    <div class="mt-8">
+      <a
+        href="#popular"
+        class="inline-block px-6 py-2.5 text-[16px] font-normal [font-family:var(--font-body)] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] rounded-[var(--radius-button)] hover:opacity-90 transition-colors no-underline"
+      >
+        Смотреть все
+      </a>
     </div>
   </div>
 </section>

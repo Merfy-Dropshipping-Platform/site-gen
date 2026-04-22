@@ -676,6 +676,7 @@ function buildTokensCss(settings: unknown, themeId: string | null): string {
   --size-hero-heading: ${themeDefaults['--size-hero-heading'] ?? '48px'};
   --size-hero-button-h: ${themeDefaults['--size-hero-button-h'] ?? '48px'};
   --size-nav-link: ${themeDefaults['--size-nav-link'] ?? '14px'};
+  --size-section-heading: ${themeDefaults['--size-section-heading'] ?? '20px'};
   --size-logo-width: ${themeFirst('--size-logo-width', logoWidth)};
   --size-newsletter-form-w: ${themeDefaults['--size-newsletter-form-w'] ?? '420px'};
   --container-max-width: ${themeDefaults['--container-max-width'] ?? '1320px'};

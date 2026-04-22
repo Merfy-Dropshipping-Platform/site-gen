@@ -21,3 +21,4 @@ packages/theme-*/playwright-report/
 # Compiled Tailwind CSS used by visual snapshots (rebuilt on each run)
 packages/theme-*/__snapshots__/tailwind-compiled.css
 visual-diff-report/
+visual-diff-report-*

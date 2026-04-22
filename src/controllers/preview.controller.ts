@@ -330,35 +330,50 @@ function coerceHeroProps(
   // text {content,size} → subtitle
   const subtitle = unwrapTextSize(out.text);
   if (subtitle.present && !out.subtitle) out.subtitle = subtitle.value;
-  // backgroundImage → image.url
+  // image: "/path.png" (string legacy) → {url, alt}
+  if (typeof out.image === 'string' && out.image) {
+    out.image = {
+      url: rewriteAssetUrl(out.image as string, publicUrl),
+      alt: '',
+    };
+  }
+  // backgroundImage → image.url (older legacy)
   if (!out.image && typeof out.backgroundImage === 'string') {
     out.image = {
       url: rewriteAssetUrl(out.backgroundImage, publicUrl),
       alt: '',
     };
   }
-  // primaryButton{text, link:{href}} → cta{text, href}
-  if (!out.cta && isPlainObject(out.primaryButton)) {
-    const b = out.primaryButton as Record<string, unknown>;
+  // primaryButton OR button {text, link:{href}} → cta{text, href}
+  const legacyBtn =
+    isPlainObject(out.primaryButton)
+      ? (out.primaryButton as Record<string, unknown>)
+      : isPlainObject(out.button)
+        ? (out.button as Record<string, unknown>)
+        : null;
+  if (!out.cta && legacyBtn) {
     const href =
-      typeof b.href === 'string'
-        ? b.href
-        : isPlainObject(b.link) &&
-            typeof (b.link as Record<string, unknown>).href === 'string'
-          ? String((b.link as Record<string, unknown>).href)
+      typeof legacyBtn.href === 'string'
+        ? legacyBtn.href
+        : isPlainObject(legacyBtn.link) &&
+            typeof (legacyBtn.link as Record<string, unknown>).href === 'string'
+          ? String((legacyBtn.link as Record<string, unknown>).href)
           : '';
-    out.cta = { text: String(b.text ?? ''), href };
+    out.cta = { text: String(legacyBtn.text ?? ''), href };
   }
   // Legacy `position` ('bottom-center', 'overlay') → variant hint. Only
   // set when we can derive meaning from it — leaving variant undefined
   // lets theme-manifest's block.variant default take effect (e.g. Rose
   // forces 'overlay' theme-wide).
   const position = String(out.position ?? '');
+  const imagePosition = String(out.imagePosition ?? '');
   if (!out.variant) {
-    if (position.includes('bottom') || position.includes('overlay')) {
+    if (imagePosition === 'fullscreen' || position.includes('overlay')) {
       out.variant = 'overlay';
-    } else if (position.includes('split')) {
+    } else if (imagePosition === 'split' || position.includes('split')) {
       out.variant = 'split';
+    } else if (position === 'left' || position === 'right' || position === 'center') {
+      out.variant = 'overlay';
     }
     // else: leave undefined for theme manifest or Astro frontmatter default
   }
@@ -441,6 +456,11 @@ function coerceFooterProps(out: Record<string, unknown>): void {
   if (isPlainObject(out.newsletter)) {
     const n = out.newsletter as Record<string, unknown>;
     n.enabled = truthy(n.enabled);
+  }
+  // copyright.showYear may be string "true"/"false"
+  if (isPlainObject(out.copyright)) {
+    const c = out.copyright as Record<string, unknown>;
+    c.showYear = truthy(c.showYear);
   }
   if (!out.padding) out.padding = { top: 80, bottom: 80 };
 }

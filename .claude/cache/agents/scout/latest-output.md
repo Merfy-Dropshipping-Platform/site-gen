@@ -1,470 +1,270 @@
-# Codebase Report: Vanila Theme Homepage — Figma Pixel-Perfect Specs (1920px)
-Generated: 2026-04-14
+# Codebase Report: Constructor-Theme-Bridge → Tokens-Generator Pipeline (T078)
+Generated: 2026-04-16
 
-## Source
-- File key: `QfF9NPZBoQX6vCRg560Qcb`
-- Canvas: `590:11640` (Vanila)
-- Homepage frame: `590:22546` ("Главная страница") inside section `590:22545` (1920)
-- Total page size: **1920 × 6346 px**
+## Summary
 
-## Color Palette (Global)
+The pipeline has two distinct code paths that serve different purposes:
+1. **constructor-theme-bridge.ts** — converts the constructor's live `ThemeSettings` object (from `revision.data.themeSettings`) into `MerchantSettings`. This is the **primary path for all new sites using the visual constructor**.
+2. **theme-bridge.ts** — converts a legacy `settingsSchema + overrides` format into `MerchantSettings`. Used only when no constructor ThemeSettings exist.
 
-| Token | Hex | Usage |
-|-------|-----|-------|
-| Dark green (primary) | `#26311c` | Announcement bar bg, badge bg, dark accents |
-| Medium green | `#3a4530` | Header bg, hero button bg, MainText bg, Newsletter bg |
-| Light grey bg | `#eeeeee` | Collections bg, Popular Products bg |
-| White | `#ffffff` | Text on dark, logo, button text |
-| Body text dark | `#000000` | Product titles |
-| Body text medium | `#444444` | Subtitles, old price text |
-| Body text subtle | `#f0f0f0` | Body text on dark sections |
-| Placeholder grey | `#999999` | Search placeholder |
+The `tokens-generator.ts` is the final CSS emitter: it takes `MerchantSettings` + `ThemeDefaults`, merges them, and outputs `:root { }` + `.color-scheme-N { }` CSS blocks written to `override.css` (then appended to `tokens.css`).
 
-## Typography System
-
-All type is **no letter-spacing (0)** unless noted.
-
-| Role | Font Family | Weight | Size | Line-height |
-|------|-------------|--------|------|-------------|
-| Section Heading | Bitter | 400 | 20px | 24px |
-| Body / Nav / Button | Arsenal | 400 | 16px | 20.06px |
-| Old price / badge text | Arsenal | 400 | 14px | 17.56px |
-| Badge label | Arsenal | 400 | 12px | 15.05px |
-| Cart badge counter | Exo 2 | 700 | 12px | 14.4px |
-
-**Text-transform:**
-- Buttons: `UPPER` (text-transform: uppercase)
-- Product titles: `UPPER`
-- Collection tile labels: `UPPER`
-- Headings: none
-- Nav links: none
+**Critical finding**: `vanilla.json` and `rose.json` have NO `themeSettings` key at all. The pipeline would fall through to Path 3 (schema) or produce no merchant overrides for those themes. This means vanilla and rose do NOT drive their tokens.css via the constructor bridge.
 
 ---
 
-## Section 1 — Announcement Bar
+## Pipeline Flow (verified from build.service.ts:1429–1465)
 
-| Property | Value |
-|----------|-------|
-| Height | **48px** |
-| Background | `#26311c` |
-| Layout | HORIZONTAL, paddingLeft/Right 680px, paddingTop/Bottom 16px, itemSpacing 10px |
-| Alignment | CENTER × CENTER |
-| Text | "Бесплатная доставка на весь ассортимент" |
-| Font | Arsenal 16px / 400 / 20.06px lh |
-| Text color | `#ffffff` |
-| Text-transform | `UPPER` (uppercase) |
+```
+revision.data.themeSettings? (ConstructorThemeSettings)
+  → Path 2: constructorThemeToMerchantSettings()   ← used by bloom, satin, flux
+  
+revision.meta.merchantSettings?
+  → Path 1: direct (legacy)
+  
+params.themeSettingsSchema?.length > 0
+  → Path 3: themeSettingsToMerchantSettings()       ← schema-based fallback
+  
+none of the above
+  → no merchant overrides (tokens.css is static)    ← rose, vanilla behave this way
+                                                       unless schema is provided
+```
 
----
-
-## Section 2 — Header / Navigation
-
-| Property | Value |
-|----------|-------|
-| Height | **80px** |
-| Background | `#3a4530` |
-| Layout | HORIZONTAL SPACE_BETWEEN, paddingLeft/Right **300px**, paddingTop/Bottom **32px**, itemSpacing 24px |
-
-### Logo
-- Element: SVG vector "Vanila"
-- Size: **89 × 28px**
-- Color: `#ffffff`
-- Position: **horizontally centered** (x=916 from page left; center at x=960.5 ≈ 50% of 1920px)
-
-### Navigation (left group)
-- Position: x=300 from page left (flush to padding edge)
-- Layout: HORIZONTAL, gap between nav items = **40px**
-- Each nav item: text + 24×24 dropdown icon, itemSpacing=4px
-
-| Item | Width |
-|------|-------|
-| Текстиль (+ icon) | 59+4+24=87px total |
-| Декор (+ icon) | 41+4+24=69px total |
-| История (+ icon) | 56+4+24=84px total |
-
-- Nav link font: Arsenal 16px / 400 / `#ffffff`
-- Active underline (Line): 59×0px, stroke `#ffffff` 1px width, positioned below nav items at y=102 in section
-
-### Icon Group (right side)
-- Position: right edge at x=1620 (= 1920 − 300), total group width **144×32px**, gap=24px
-- Icons (left to right):
-  - `icon_search_md` — 32×32px, inner vector 19.2×19.2px, stroke `#ffffff` 1.6px
-  - `icon_cart_md` — 32×32px
-    - Cart icon vector: 19.2×19.2px, fill `#ffffff`
-    - Badge (Ellipse): **18×18px**, bg `#26311c`, centered at top-right of icon
-    - Badge counter: "1", Exo 2 12px w700, `#ffffff`, center-aligned
-    - Badge has cornerRadius: **8px**
-  - `icon_user_md` — 32×32px, inner vector 16×20px, stroke `#ffffff` 1.2px
+scaffold-builder.ts:317 — calls `generateTokensCss(config.merchantSettings, config.themeDefaults)` and appends result to `tokens.css`.
 
 ---
 
-## Section 3 — Hero / Slideshow
+## Per-Theme: defaults JSON → tokens.css Alignment
 
-| Property | Value |
-|----------|-------|
-| Total section height | **952px** (48 announcement + 80 header = 128px above, so hero is at y=128 in page) |
-| Inner slide frame height | **880px** |
-| Pagination strip height | **24px** (below slide frame, with 24px gap → 880+24+24=952 — waitactually paddingBottom=24 only: 880+48+24=952 per VERTICAL itemSpacing=24, paddingBottom=24) |
-| Slide frame background | `IMAGE` (background image, full bleed) |
-| Hero section layout | VERTICAL, CENTER × CENTER |
+### BLOOM (defaultSchemeIndex: 2 = scheme-3 "White")
 
-### Slide Frame (880px tall)
-- Padding: left/right **300px**, top/bottom **120px**, itemSpacing 24px
-- Layout: VERTICAL CENTER × None (left-aligned content)
+The bridge uses scheme at index 2 for `:root` globals.
 
-### Content Block (bottom-left of slide)
-- Size: 275×128px
-- Position relative to page: x=300, y=504 (from hero section top)
-- Layout: VERTICAL, itemSpacing=32px
+**Scheme-3 "White" from bloom.json:**
+- background: `#ffffff`
+- text: `#000000`
+- primaryButton.background: `#cf7a8b`
+- primaryButton.text: `#ffffff`
+- primaryButton.border: `#cf7a8b`
+- secondaryButton.background: `#ffffff`
 
-**Heading:**
-- Text: "Искусство жить уютно"
-- Font: Bitter 20px / 400 / `#ffffff` / lh=24px
-- Width: 238px
+**What bridge generates for :root:**
+- `--color-primary`: `#cf7a8b` → RGB `207 122 139`
+- `--color-background`: `#ffffff` → `255 255 255`
+- `--color-foreground`: `#000000` → `0 0 0`
+- `--color-button`: `#cf7a8b` → `207 122 139`
+- `--color-button-text`: `#ffffff` → `255 255 255`
+- `--color-secondary`: `#ffffff` → `255 255 255`
+- `--color-muted`: blend(`#000000`, `#ffffff`, 0.4) = `#666666` → `102 102 102`
+- `--color-border`: `#cf7a8b` (from primaryButton.border) → `207 122 139`
 
-**Subtext:**
-- Text: "Товары, которые делают дом особенным"
-- Font: Arsenal 16px / 400 / `#f0f0f0` / lh=20.06px
-- Width: 275px
+**tokens.css :root actual:**
+- `--color-primary: 0, 0, 0` ← MISMATCH (tokens.css uses black; bridge sets #cf7a8b)
+- `--color-background: 255, 255, 255` ← MATCH
+- `--color-foreground: 0, 0, 0` ← MATCH
+- `--color-button: 207, 122, 139` ← MATCH
+- `--color-button-text: 255, 255, 255` ← MATCH
+- `--color-secondary: 207, 122, 139` ← MISMATCH (tokens.css has #CF7A8B; bridge sets #ffffff = secondary button bg)
+- `--color-muted: 153, 153, 153` ← MISMATCH (tokens.css has #999; bridge generates #666)
+- `--color-border: 217, 217, 217` ← MISMATCH (tokens.css has #D9D9D9; bridge sets #cf7a8b)
 
-**CTA Button (below text, gap=32px):**
-- Size: **200×48px**
-- Background: `#3a4530`
-- Padding: left/right 16px (no explicit top/bottom → content-determined → 48h with 20h text = 14px each side)
-- Layout: HORIZONTAL CENTER × CENTER
-- Text: "Перейти к коллекции"
-- Font: Arsenal 16px / 400 / `#ffffff` / UPPERCASE
-- No border-radius specified (default = 0)
+**Color scheme classes — bridge vs tokens.css:**
 
-### Search Bar (top of slide content area)
-- Position: x=300 (left padding), y=8 from top of slide frame (essentially flush top inside padding)
-- Size: **1320×48px**
-- Background: `#ffffff`
-- Padding: left=12, right=4, top/bottom=12
-- Layout: HORIZONTAL SPACE_BETWEEN × CENTER
-- Placeholder: "Поиск...", Arsenal 16px, `#999999`
+| Scheme | Token | Bridge (from JSON) | tokens.css | Match? |
+|--------|-------|--------------------|-----------|--------|
+| scheme-1 (.color-scheme-1) | background | #cf7a8b → `207 122 139` | `207 122 139` | ✓ |
+| scheme-1 | foreground | #FFFFFF → `255 255 255` | `255 255 255` | ✓ |
+| scheme-1 | button | #ffffff → `255 255 255` | `255 255 255` | ✓ |
+| scheme-1 | button-text | #cf7a8b → `207 122 139` | `207 122 139` | ✓ |
+| scheme-1 | border | #ffffff (primaryButton.border) → `255 255 255` | `227 142 159` | ✗ MISMATCH |
+| scheme-1 | muted | blend(#fff,#cf7a8b,0.4) = `#e6c5cb` → `230 197 203` | `245 245 245` | ✗ MISMATCH |
+| scheme-2 (.color-scheme-2) | background | #e38e9f → `227 142 159` | `227 142 159` | ✓ |
+| scheme-2 | button | #ffffff → `255 255 255` | `255 255 255` | ✓ |
+| scheme-2 | button-text | #e38e9f → `227 142 159` | `227 142 159` | ✓ |
+| scheme-2 | border | #ffffff (primaryButton.border) | `247 162 179` | ✗ MISMATCH |
+| scheme-2 | muted | blend(#fff,#e38e9f,0.4) ≈ `230 210 214` | `245 245 245` | ✗ MISMATCH |
+| scheme-3 (.color-scheme-3) | background | #ffffff | `255 255 255` | ✓ |
+| scheme-3 | button | #cf7a8b | `207 122 139` | ✓ |
+| scheme-3 | border | #cf7a8b (primaryButton.border) | `217 217 217` | ✗ MISMATCH |
+| scheme-3 | muted | blend(#000,#fff,0.4) = `#666666` | `153 153 153` | ✗ MISMATCH |
+| scheme-4 (.color-scheme-4) | background | #f7f7f9 → `247 247 249` | `247 247 249` | ✓ |
+| scheme-4 | button | #cf7a8b | `207 122 139` | ✓ |
+| scheme-4 | border | #cf7a8b (primaryButton.border) | `217 217 217` | ✗ MISMATCH |
+| scheme-4 | muted | blend(#000,#f7f7f9,0.4) ≈ `#929296` | `153 153 153` | ✗ MISMATCH |
 
-**Search button (inside right):**
-- Size: **66×40px**
-- Background: `#3a4530`
-- Padding: left/right=12, top/bottom=10, itemSpacing=10
-- Text: "Найти", Arsenal 14px / 400 / `#ffffff` / UPPERCASE
-
-### Pagination Strip
-- Total width of pagination bar: **142×24px**
-- Centered horizontally at page center (x=889 from left)
-- y=1032 from page top (= 128 + 880 + 24 spacing)
-- Layout: HORIZONTAL, itemSpacing=20px
-
-| Element | Size | Details |
-|---------|------|---------|
-| Left arrow icon | 24×24px | Vector 14×8px, stroke `#ffffff` 1px |
-| Numbers container | 54×20px | itemSpacing=16px |
-| "1", "2", "3" texts | 6, 8, 8px wide | Arsenal 16px / `#ffffff` |
-| Right arrow icon | 24×24px | Vector 14×8px, stroke `#ffffff` 1px |
-
----
-
-## Section 4 — Collections (2-tile)
-
-| Property | Value |
-|----------|-------|
-| Height | **1024px** |
-| Background | `#eeeeee` |
-| Padding | left/right=300px, top/bottom=120px |
-| Inner layout | VERTICAL, itemSpacing=40px |
-
-### Section Header
-- Container: 689×52px, VERTICAL layout, itemSpacing=8px
-
-**Heading:**
-- Text: "Коллекции, которые становятся любимыми"
-- Font: Bitter 20px / 400 / `#26311c` / lh=24px
-- Width: 438px
-
-**Subtext:**
-- Text: "Вдохновение для каждого дня — актуальные коллекции..."
-- Font: Arsenal 16px / 400 / `#444444` / lh=20.06px
-- Width: 689px
-
-### Tiles Layout
-- Container: **1320×692px**, HORIZONTAL, itemSpacing=**16px**, counterAxisAlignItems=CENTER
-- 2 tiles × (652 + 16) = 1320px ✓
-
-**Each Tile:**
-- Size: **652×692px**, VERTICAL layout, itemSpacing=20px
-- Image: **652×652px** (1:1 square ratio)
-- Label: Arsenal 16px / 400 / `#26311c` / **UPPERCASE**
-  - "Текстиль и постельные принадлежности" (322px wide)
-  - "Декор и предметы интерьера" (223px wide)
+**Summary for Bloom:**
+- Background and button/button-text colors: mostly MATCH
+- `--color-primary` in :root: MISMATCH (bridge outputs accent color, tokens.css has black)
+- `--color-border` in ALL schemes: MISMATCH (bridge uses primaryButton.border #cf7a8b; tokens.css has theme-specific grays)
+- `--color-muted` in ALL schemes: MISMATCH (bridge uses 40% blend formula; tokens.css has hardcoded #999/#F5F5F5)
+- `--color-secondary` in :root: MISMATCH (bridge uses secondaryButton.background; tokens.css has accent)
 
 ---
 
-## Section 5 — MainText / Brand Statement (First)
+### SATIN (defaultSchemeIndex: 1 = scheme-2 "White")
 
-| Property | Value |
-|----------|-------|
-| Height | **428px** |
-| Background | `#3a4530` |
-| Padding | left/right=300px, top/bottom=120px |
-| Layout | VERTICAL CENTER × CENTER, itemSpacing=64px |
+Bridge uses scheme at index 1 (scheme-2 "White") for :root.
 
-**Heading:**
-- Text: "Тепло вашего дома начинается здесь"
-- Font: Bitter 20px / 400 / `#ffffff` / lh=24px
-- Width: 360px
-- Alignment: CENTER
+**Scheme-2 "White" from satin.json:**
+- background: `#ffffff`, text: `#000000`
+- primaryButton.background: `#000000`, text: `#ffffff`, border: `#000000`
 
-**Body text:**
-- Font: Arsenal 16px / 400 / `#f0f0f0` / lh=20.06px
-- Width: 1320px (full content width)
+**Bridge :root output:**
+- `--color-primary`: `#000000` → `0 0 0`
+- `--color-background`: `#ffffff` → `255 255 255`
+- `--color-foreground`: `#000000` → `0 0 0`
+- `--color-button`: `#000000` → `0 0 0`
+- `--color-button-text`: `#ffffff` → `255 255 255`
+- `--color-secondary`: `#ffffff` (secondaryButton.bg) → `255 255 255`
+- `--color-muted`: blend(#000,#fff,0.4) = `#666666` → `102 102 102`
+- `--color-border`: `#000000` (primaryButton.border)
 
-**Button:**
-- Size: **127×48px**
-- Background: none (transparent)
-- Stroke: `#ffffff` 1.3px (outlined button)
-- Padding: left/right=16px
-- Text: "К покупкам" / Arsenal 16px / `#ffffff` / UPPERCASE
-- No border-radius
+**tokens.css :root:**
+- `--color-primary: 0, 0, 0` ← MATCH
+- `--color-background: 255, 255, 255` ← MATCH
+- `--color-foreground: 0, 0, 0` ← MATCH
+- `--color-button: 0, 0, 0` ← MATCH
+- `--color-button-text: 255, 255, 255` ← MATCH
+- `--color-secondary: 245, 245, 245` ← MISMATCH (bridge: #fff; CSS: #f5f5f5)
+- `--color-muted: 153, 153, 153` ← MISMATCH (bridge: #666; CSS: #999)
+- `--color-border: 238, 238, 238` ← MISMATCH (bridge: #000; CSS: #eeeeee)
 
----
-
-## Section 6 — Video
-
-| Property | Value |
-|----------|-------|
-| Height | **982px** |
-| Background | `#26311c` |
-| Padding | left/right=300px, top/bottom=120px |
-| Layout | VERTICAL, itemSpacing=10px |
-
-**Video container:**
-- Size: **1319×742px**
-- Background: `#000000` (placeholder)
-
-**Play button icon:**
-- Size: **44×44px**
-- Positioned centered over video (absolute in Figma)
-- Inner vector: 25.4×26.9px, stroke `#ffffff` 3px (play triangle)
+**Scheme class mismatches (key ones):**
+- All schemes: `--color-muted` always mismatches (bridge formula vs hardcoded CSS values)
+- All schemes: `--color-border` mismatches (bridge uses primaryButton.border; CSS uses theme grays)
+- scheme-1 border: bridge=`#ffffff`, CSS=`68 68 68` — MISMATCH
+- scheme-3 bg: bridge=`#f5f5f5`, CSS=`245 245 245` — MATCH (numerical match)
+- scheme-4 bg: bridge=`#444444` → `68 68 68`, CSS=`68 68 68` — MATCH
 
 ---
 
-## Section 7 — ImageWithText
+### FLUX (defaultSchemeIndex: 1 = scheme-2 "White")
 
-| Property | Value |
-|----------|-------|
-| Height | **606px** |
-| Background | `#3a4530` |
-| Padding | left/right=300px, top/bottom=120px |
-| Layout | HORIZONTAL, itemSpacing=0 (gap computed: 40px) |
+Bridge uses scheme at index 1 (scheme-2 "White") for :root.
 
-### Left Column — Text Block
-- Size: **628×366px**
-- Padding: top/bottom=16px
-- Layout: VERTICAL SPACE_BETWEEN, itemSpacing=64px
+**Scheme-2 "White" from flux.json:**
+- background: `#ffffff`, text: `#000000`
+- primaryButton.background: `#fa5109`, text: `#ffffff`, border: `#fa5109`
 
-**Heading:**
-- Text: "Ваш дом — наша забота"
-- Font: Bitter 20px / 400 / `#ffffff` / lh=24px
-- Width: 241px
+**Bridge :root output:**
+- `--color-primary`: `#fa5109` → `250 81 9`
+- `--color-background`: `#ffffff` → `255 255 255`
+- `--color-button`: `#fa5109` → `250 81 9`
+- `--color-button-text`: `#ffffff` → `255 255 255`
+- `--color-secondary`: `#ffffff` (secondaryButton.bg) → `255 255 255`
+- `--color-muted`: blend(#000,#fff,0.4) = `#666666` → `102 102 102`
+- `--color-border`: `#fa5109` (primaryButton.border) → `250 81 9`
 
-**Body text:**
-- Font: Arsenal 16px / 400 / `#f0f0f0` / lh=20.06px
-- Width: 628px, height=140px (7 lines)
+**tokens.css :root:**
+- `--color-primary: 0, 0, 0` ← MISMATCH (bridge: orange; CSS: black)
+- `--color-button: 250, 81, 9` ← MATCH
+- `--color-button-text: 255, 255, 255` ← MATCH
+- `--color-secondary: 250, 250, 250` ← MISMATCH (bridge: #fff; CSS: #fafafa)
+- `--color-muted: 204, 204, 204` ← MISMATCH (bridge: #666; CSS: #cccccc)
+- `--color-border: 245, 245, 245` ← MISMATCH (bridge: orange #fa5109; CSS: #f5f5f5)
 
-**Button:**
-- Size: **167×48px**
-- Border: stroke `#ffffff` 1.3px (outlined)
-- Padding: left/right=16px
-- Text: "Смотреть больше" / Arsenal 16px / `#ffffff` / UPPERCASE
-
-### Right Column — Image
-- Size: **652×366px**
-- Gap between text and image: **40px** (1320 − 628 − 652 = 40)
+**Scheme class alignment (Flux all 4 schemes use #fa5109 button):**
+- background and button colors: MATCH across all 4 schemes
+- border: always mismatches (bridge outputs orange; CSS has dark grays for dark schemes)
+- muted: always mismatches (bridge formula vs CSS hardcoded values)
 
 ---
 
-## Section 8 — Popular Products
+### VANILLA (defaultSchemeIndex: 2 = scheme-3 "Light Gray")
 
-| Property | Value |
-|----------|-------|
-| Height | **1358px** |
-| Background | `#eeeeee` |
-| Padding | left/right=300px, top/bottom=120px |
-| Layout | VERTICAL, itemSpacing=40px |
+**CRITICAL: vanilla.json has NO `themeSettings` key.** The build pipeline Path 2 never triggers. The tokens.css is the static ground truth — no override.css is generated unless a schema path is configured.
 
-### Section Header
-- Same structure as Collections header (689×52px)
+The tokens.css aligns with scheme-3 "Light Gray" as :root default (background `#eeeeee`, foreground `#26311c`), which is consistent with `defaultSchemeIndex: 2` in principle, but the pipeline does NOT use vanilla.json themeSettings at all.
 
-**Heading:**
-- Text: "Популярные товары"
-- Font: Bitter 20px / 400 / `#26311c` / lh=24px
-- Width: 202px
-
-**Subtext:**
-- Font: Arsenal 16px / 400 / `#444444`
-
-### Product Grid
-- Container: **1320×1026px**, HORIZONTAL WRAP, itemSpacing=**16px** (col gap), counterAxisSpacing=**40px** (row gap)
-- **3 columns × 2 rows**
-- Each card: **429×493px**, VERTICAL layout, itemSpacing=20px
-
-**Card Anatomy:**
-
-| Element | Dimensions | Details |
-|---------|------------|---------|
-| Product image | **429×429px** (1:1) | RECTANGLE |
-| Discount badge | **48×24px** | Positioned at top-left: x=8, y=8 from image corner |
-| Gap (image→text) | 20px | itemSpacing |
-| Title | varies × 20px | Arsenal 16px / w400 / `#000000` / UPPERCASE |
-| Price row | 90×20px container | HORIZONTAL, itemSpacing=8px |
-| Current price | varies × 20px | Arsenal 16px / w400 / `#000000` |
-| Old/crossed price | 39×18px | Arsenal 14px / w400 / `#444444` |
-
-**Discount Badge:**
-- Size: **48×24px**
-- Background: `#26311c`
-- Padding: left/right=6px
-- Layout: HORIZONTAL CENTER × CENTER
-- Text: "Скидка" / Arsenal 12px / `#ffffff`
-- Position from card top-left: **x=8, y=8**
-
-**Image variant dots (carousel indicator on card):**
-- Container: **32×12px**, bg `#ffffff`
-- Padding: 2px all sides, itemSpacing=2px
-- 3 dots: each **8×8px** (rounded)
-  - Active: `#26311c`
-  - Inactive: `#eeeeee`
-- Positioned: bottom-right of image area, y=−20 from image bottom (overlapping image)
+If vanilla gains a `themeSettings` key in the future, bridge would compute:
+- `--color-primary`: scheme-3's primaryButton.bg = `#3a4530` (medium olive)
+- tokens.css has `--color-primary: 38, 49, 28` (#26311c) ← would MISMATCH
 
 ---
 
-## Section 9 — Newsletter
+### ROSE (defaultSchemeIndex: not present)
 
-| Property | Value |
-|----------|-------|
-| Height | **408px** |
-| Background | `#3a4530` |
-| Padding | left/right=300px, top/bottom=120px |
-| Layout | HORIZONTAL, itemSpacing=40px |
+**CRITICAL: rose.json has NO `themeSettings` key.** Same as vanilla — pipeline Path 2 does not trigger. tokens.css is purely static.
 
-### Left Content Block (1320×168px)
-- Layout: VERTICAL, itemSpacing=40px
-
-**Heading:**
-- Text: "Будьте в курсе уютных новостей"
-- Font: Bitter 20px / 400 / `#ffffff` / lh=24px
-- Width: 328px
-
-**Body text:**
-- Font: Arsenal 16px / 400 / `#f0f0f0` / lh=20.06px
-- Width: 1320px, height=40px (2 lines)
-
-### Email Input
-- Size: **652×56px**
-- Border: stroke `#ffffff` 1px
-- Background: transparent (none)
-- Padding: left=16, right=12
-- Layout: HORIZONTAL SPACE_BETWEEN × CENTER
-- Placeholder: "E-mail" / Arsenal 16px / `#f0f0f0`
-
-**Submit button (inside input):**
-- Size: **76×32px**
-- Background: `#ffffff`
-- Padding: left/right=8, top/bottom=10
-- Text: "Отправить" / Arsenal 12px / `#000000` / UPPERCASE
+Additionally, rose.json's `themeSettings` absence means the color schemes in tokens.css (5 schemes including a blue accent scheme-3) are completely independent of any JSON definition. Rose has 5 color scheme classes, while the constructor supports 4 per its ConstructorColorScheme interface.
 
 ---
 
-## Section 10 — Footer
+## Consolidated Mismatch Summary
 
-| Property | Value |
-|----------|-------|
-| Total height | **460px** |
-| Background | `#26311c` |
-| Padding | paddingTop=80px, itemSpacing=80px (gap between content and powered-by) |
-| Layout | VERTICAL CENTER × CENTER |
-
-### Main Footer Content (1320×236px)
-- Layout: VERTICAL, itemSpacing=32px
-
-#### Top Row (1320×184px, HORIZONTAL SPACE_BETWEEN)
-
-**Left: Logo + Nav Column (124×128px)**
-- Logo: "Vanila" SVG, 89×28px, `#ffffff`
-- Gap below logo: part of 24px itemSpacing
-- Nav links (VERTICAL, itemSpacing=8px):
-  - "Текстиль" / "Декор" / "Домашняя одежда"
-  - Font: Arsenal 16px / 400 / `#ffffff`
-
-**Right: Contact + Social Column (152×184px, VERTICAL, itemSpacing=64px)**
-
-Contact info (VERTICAL, itemSpacing=8px):
-- "+7 (000) 000-00-00" / Arsenal 16px / `#ffffff`
-- "example@vanila.merfy" / Arsenal 16px / `#ffffff`
-
-Social + Payment row (VERTICAL, itemSpacing=24px):
-- Social icons row: **152×24px**, HORIZONTAL, itemSpacing=8px
-  - 5 social icons, each **24×24px**, fill `#ffffff`
-- Payment icons row (Платёжные системы): 139×24px, itemSpacing=8px
-  - MasterCard: 31×24px, bg `#fafafa`, inner 23×14px (`#f79e1b`)
-  - Visa: 44×24px, bg `#fafafa`, inner 36×12px (`#1434cb`)
-  - MIR: 48×24px, bg `#fafafa`, inner 40×10px
-
-#### Bottom Row — Copyright bar (1320×20px, HORIZONTAL SPACE_BETWEEN)
-
-**Left:**
-- "© 2025 Vanila Theme Все права защищены."
-- Font: Arsenal 16px / 400 / `#ffffff`
-- Width: 284px
-
-**Right — footer links (696×20px, HORIZONTAL, gap=24px):**
-- "Политика доставки" | "Политика возврата" | "Условия обслуживания" | "Политика конфиденциальности"
-- Font: Arsenal 16px / 400 / `#ffffff`
-
-### Powered-by Bar
-- Height: **64px**
-- Background: `#000000`
-- Text: "© 2025 Vanila Theme Все права защищены. Powered by Merfy"
-- Font: Inter 16px / 300 / `#ffffff` / lh=19.36px
-- Centered (480px wide text, centered in 1920px)
+| Theme | Path | :root color-primary | :root color-secondary | :root color-muted | :root color-border | Scheme bg/button |
+|-------|------|---------------------|----------------------|-------------------|-------------------|-----------------|
+| Bloom | Bridge | MISMATCH (pink vs black) | MISMATCH | MISMATCH (formula vs #999) | MISMATCH (accent vs gray) | bg/button MATCH |
+| Satin | Bridge | MATCH | MISMATCH (#fff vs #f5f5f5) | MISMATCH (#666 vs #999) | MISMATCH (#000 vs #eee) | bg/button MATCH |
+| Flux  | Bridge | MISMATCH (orange vs black) | MISMATCH | MISMATCH (#666 vs #ccc) | MISMATCH (orange vs #f5f5f5) | bg/button MATCH |
+| Vanilla | None | N/A (no themeSettings) | N/A | N/A | N/A | N/A (static CSS) |
+| Rose  | None | N/A (no themeSettings) | N/A | N/A | N/A | N/A (static CSS) |
 
 ---
 
-## Summary: All Section Heights (verified sum = 6346px)
+## Root Cause Analysis
 
-| # | Section | Height | Background |
-|---|---------|--------|------------|
-| 1 | Announcement Bar | 48px | `#26311c` |
-| 2 | Header | 80px | `#3a4530` |
-| 3 | Hero / Slideshow | 952px | IMAGE + `#000000` |
-| 4 | Collections (2-tile) | 1024px | `#eeeeee` |
-| 5 | MainText / Brand Statement | 428px | `#3a4530` |
-| 6 | Video | 982px | `#26311c` |
-| 7 | ImageWithText | 606px | `#3a4530` |
-| 8 | Popular Products | 1358px | `#eeeeee` |
-| 9 | Newsletter | 408px | `#3a4530` |
-| 10 | Footer | 460px | `#26311c` + `#000000` bar |
-| | **TOTAL** | **6346px** | |
+### Issue 1: `--color-primary` is ambiguous
 
-## Content Width System
-- Page width: **1920px**
-- Horizontal padding (most sections): **300px left + 300px right**
-- **Content width: 1320px**
-- Content starts at: x=300px from left
+In `tokens-generator.ts`, `--color-primary` is treated as a color token (contains "primary") and converted to RGB triplet. In `constructor-theme-bridge.ts`, it is set to `primaryButton.background` (the accent color). But tokens.css for Bloom and Flux defines `--color-primary` as black (`0, 0, 0`) — interpreted as the text/heading primary color, not the button accent.
 
-## Key Figma Node IDs (for drilling deeper)
-| Section | Node ID |
-|---------|---------|
-| Homepage frame | `590:22546` |
-| Hero (full) | `590:22547` |
-| Announcement bar | `590:22548` |
-| Header | `590:22549` |
-| Slideshow frame | `590:22550` |
-| Slide inner (image bg) | `590:22551` |
-| Collections section | `590:22564` |
-| MainText 1 | `590:22575` |
-| Video | `590:22580` |
-| ImageWithText | `590:22583` |
-| Popular Products | `590:22590` |
-| Newsletter | `590:22601` |
-| Footer component | `566:11767` |
+The semantic mismatch: themes use `--color-primary` for text/heading foreground; the bridge maps it to the primary button background color.
+
+### Issue 2: `--color-border` computed incorrectly
+
+The bridge sets `--color-border` to `primaryButton.border ?? blend(text, bg, 0.2)`. But tokens.css for all themes uses subtle neutral grays for borders that are independent of button accent colors. When primaryButton.border is the accent color (#cf7a8b for bloom, #fa5109 for flux), the bridge overrides borders with bright accent colors.
+
+### Issue 3: `--color-muted` formula mismatch
+
+Bridge computes muted as `blend(text, background, 0.4)` — e.g., 40% black on white = #666666 = `102 102 102`. But tokens.css files use:
+- Bloom: `153 153 153` (#999) for dark-bg schemes, `245 245 245` for light-bg schemes
+- Satin: `153 153 153` and `200 200 200`
+- Flux: `153 153 153` and `204 204 204`
+- Vanilla: `68 68 68` and `200 200 200`
+
+The formula gives different values from the hand-crafted Figma values.
+
+### Issue 4: `--color-secondary` semantic mismatch
+
+Bridge sets `:root --color-secondary` to `secondaryButton.background`. But tokens.css defines `--color-secondary` as an accent variant or surface color:
+- Bloom tokens.css: `207 122 139` (the brand pink) — but bridge sets it to `#ffffff` (white button bg from scheme-3)
+- Satin tokens.css: `245 245 245` (light gray surface) — bridge sets `#ffffff`
+- Flux tokens.css: `250 250 250` (#fafafa) — bridge sets `#ffffff`
+
+### Issue 5: Vanilla and Rose have no themeSettings in defaults JSON
+
+These two themes have no `themeSettings` object in their `.json` defaults, so the constructor bridge never fires for them. Their tokens.css values are authoritative and not overridable via the constructor's color scheme picker unless the JSON is updated.
+
+---
+
+## Whether the Pipeline Produces Correct CSS for Constructor Preview
+
+**For bloom, satin, flux:** The pipeline fires correctly — bridge converts `revision.data.themeSettings`, and `generateTokensCss` appends an `override.css` to `tokens.css`. The background and button colors per-scheme are largely correct. However the `:root` level `--color-primary`, `--color-border`, `--color-muted`, and `--color-secondary` are all wrong relative to what the static tokens.css defines. Since override.css is appended AFTER the static tokens.css, the bridge values WIN, which means:
+
+- Constructor preview will show orange borders on Flux and pink borders on Bloom (instead of neutral grays)
+- Muted text will be darker (#666) than Figma (#999)
+- color-primary will show as accent color not black on Bloom/Flux
+
+**For vanilla and rose:** The bridge does not fire. The static tokens.css is used as-is. Constructor color picker changes have no effect on the generated CSS unless the defaults JSON is updated to include `themeSettings`.
+
+---
+
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| `/Users/alexey/projects/merfy/backend/services/sites/src/generator/constructor-theme-bridge.ts` | Main bridge: ConstructorThemeSettings → MerchantSettings |
+| `/Users/alexey/projects/merfy/backend/services/sites/src/generator/tokens-generator.ts` | CSS emitter: MerchantSettings + ThemeDefaults → override.css |
+| `/Users/alexey/projects/merfy/backend/services/sites/src/generator/theme-bridge.ts` | Legacy bridge: settingsSchema + overrides → MerchantSettings |
+| `/Users/alexey/projects/merfy/backend/services/sites/src/generator/build.service.ts` | Orchestrates the 3 paths, line ~1429–1465 |
+| `/Users/alexey/projects/merfy/backend/services/sites/src/generator/scaffold-builder.ts` | Calls generateTokensCss and appends to tokens.css, line ~317 |
+| `/Users/alexey/projects/merfy/backend/services/sites/src/generator/templates/defaults/bloom.json` | Bloom defaults with themeSettings + colorSchemes |
+| `/Users/alexey/projects/merfy/backend/services/sites/src/generator/templates/defaults/satin.json` | Satin defaults with themeSettings |
+| `/Users/alexey/projects/merfy/backend/services/sites/src/generator/templates/defaults/flux.json` | Flux defaults with themeSettings |
+| `/Users/alexey/projects/merfy/backend/services/sites/src/generator/templates/defaults/vanilla.json` | Vanilla defaults — NO themeSettings key |
+| `/Users/alexey/projects/merfy/backend/services/sites/src/generator/templates/defaults/rose.json` | Rose defaults — NO themeSettings key |
+| `/Users/alexey/projects/merfy/backend/services/sites/templates/astro/bloom/src/styles/tokens.css` | Bloom static tokens (ground truth for Figma design) |
+| `/Users/alexey/projects/merfy/backend/services/sites/templates/astro/satin/src/styles/tokens.css` | Satin static tokens |
+| `/Users/alexey/projects/merfy/backend/services/sites/templates/astro/flux/src/styles/tokens.css` | Flux static tokens |
+| `/Users/alexey/projects/merfy/backend/services/sites/templates/astro/vanilla/src/styles/tokens.css` | Vanilla static tokens |
+| `/Users/alexey/projects/merfy/backend/services/sites/templates/astro/rose/src/styles/tokens.css` | Rose static tokens |

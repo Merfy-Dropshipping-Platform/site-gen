@@ -8,6 +8,8 @@ interface Props extends FooterProps {
 
 const {
   id,
+  siteTitle,
+  copyright,
   newsletter,
   heading,
   text,
@@ -20,6 +22,12 @@ const {
 
 const scheme = `color-scheme-${colorScheme}`;
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+const year = new Date().getFullYear();
+const logoLabel = (siteTitle ?? '').trim() || (copyright?.companyName ?? '').trim();
+const showYear = copyright?.showYear !== false;
+const copyCompany = (copyright?.companyName ?? '').trim();
+const copyText = `© ${showYear ? year + ' ' : ''}${copyCompany ? copyCompany + ' ' : ''}Все права защищены.`;
+const poweredBy = (copyright?.poweredBy ?? '').trim();
 
 // Inline SVG paths per social platform; stroke uses currentColor → inherits from Tailwind text color.
 const SOCIAL_ICONS: Record<string, string> = {
@@ -79,14 +87,11 @@ const SOCIAL_ICONS: Record<string, string> = {
     <section class={C.main.section} aria-label="Информация и навигация">
       <div class={C.main.twoPart}>
         <div class={C.main.leftGroup}>
-          {navigationColumn?.title && (
-            <span class={C.main.leftTitle}>{navigationColumn.title}</span>
+          {logoLabel && (
+            <span class={C.main.leftTitle}>{logoLabel}</span>
           )}
           <nav class={C.main.leftNav} aria-label="Footer navigation">
             {(navigationColumn?.links ?? []).map((link) => (
-              <a href={link.href} class={C.main.leftLink}>{link.label}</a>
-            ))}
-            {(informationColumn?.links ?? []).map((link) => (
               <a href={link.href} class={C.main.leftLink}>{link.label}</a>
             ))}
           </nav>
@@ -117,9 +122,23 @@ const SOCIAL_ICONS: Record<string, string> = {
     </section>
   </div>
 
+  {/* Secondary row: copyright (left) + information links (right) */}
+  {(informationColumn?.links ?? []).length > 0 && (
+    <div class={C.main.section} aria-label="Правовая информация">
+      <div class={C.main.twoPart}>
+        <span class={C.main.leftLink}>{copyText}</span>
+        <div class={C.main.socialRow}>
+          {(informationColumn?.links ?? []).map((link) => (
+            <a href={link.href} class={C.main.leftLink}>{link.label}</a>
+          ))}
+        </div>
+      </div>
+    </div>
+  )}
+
   <div class={C.copyright.bar}>
     <p class={C.copyright.text}>
-      © {new Date().getFullYear()} Все права защищены.
+      {copyText}{poweredBy ? ` ${poweredBy}` : ''}
     </p>
   </div>
 </footer>

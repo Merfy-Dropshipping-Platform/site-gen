@@ -14,6 +14,14 @@ const SocialLinkSchema = z.object({
 });
 
 export const FooterSchema = z.object({
+  siteTitle: z.string().optional(),
+  copyright: z
+    .object({
+      companyName: z.string().optional(),
+      poweredBy: z.string().optional(),
+      showYear: z.boolean().optional(),
+    })
+    .optional(),
   newsletter: z.object({
     enabled: z.boolean(),
     heading: z.string(),
@@ -56,6 +64,8 @@ export const FooterPuckConfig: BlockPuckConfig<FooterProps> = {
   label: 'Подвал',
   category: 'navigation',
   fields: {
+    siteTitle: { type: 'text', label: 'Название сайта' },
+    copyright: { type: 'object', label: 'Копирайт' },
     newsletter: { type: 'object', label: 'Рассылка' },
     heading: { type: 'object', label: 'Заголовок' },
     text: { type: 'object', label: 'Текст' },
@@ -67,6 +77,12 @@ export const FooterPuckConfig: BlockPuckConfig<FooterProps> = {
     padding: { type: 'object', label: 'Отступы' },
   },
   defaults: {
+    siteTitle: '',
+    copyright: {
+      companyName: '',
+      poweredBy: 'Powered by Merfy',
+      showYear: true,
+    },
     newsletter: {
       enabled: false,
       heading: 'Подпишитесь на рассылку',

@@ -7,7 +7,7 @@ export const FooterClasses = {
     copy: 'flex flex-col items-center gap-3 sm:gap-4 lg:gap-[5px] mb-8 sm:mb-10 lg:mb-12',
     heading: '[font-family:var(--font-heading)] font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading))] text-center',
     description: '[font-family:var(--font-body)] font-normal leading-[1.366] text-[rgb(var(--color-text))] opacity-70 px-4 sm:px-0 text-center',
-    form: 'w-full max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-[600px] mx-auto h-auto sm:h-16 md:h-[70px] lg:h-[75px] xl:h-[80px] flex flex-col sm:flex-row justify-between items-stretch sm:items-center px-4 sm:px-5 lg:px-[25px] py-3 sm:py-2 lg:py-[10px] gap-3 sm:gap-2 lg:gap-[10px] border border-[rgb(var(--color-muted))] rounded-md',
+    form: 'w-full max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-[600px] mx-auto h-auto sm:h-16 md:h-[70px] lg:h-[75px] xl:h-[80px] flex flex-col sm:flex-row justify-between items-stretch sm:items-center px-4 sm:px-5 lg:px-[25px] py-3 sm:py-2 lg:py-[10px] gap-3 sm:gap-2 lg:gap-[10px] border border-[rgb(var(--color-muted))] rounded-[var(--radius-input)]',
     input: 'flex-1 bg-transparent text-lg sm:text-xl md:text-[22px] lg:text-2xl [font-family:var(--font-body)] font-light leading-[1.366] outline-none text-[rgb(var(--color-text))] placeholder:text-[rgb(var(--color-muted))]',
     submit: 'w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center self-end sm:self-center text-[rgb(var(--color-text))] hover:scale-110 transition-transform',
   },

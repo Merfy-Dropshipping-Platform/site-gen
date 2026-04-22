@@ -50,6 +50,17 @@ const BACKEND_ONLY_BLOCKS: BlockName[] = [
   'CheckoutLayout',
 ];
 
+/**
+ * Runtime interactive blocks (React islands — modals/drawers/checkout).
+ * Figma may mock them, but they're not content-editable via Puck props.
+ * Audit hints for these are informational, not gaps to fix in Phase 2d.
+ */
+const RUNTIME_INTERACTIVE_BLOCKS: BlockName[] = [
+  'AuthModal',
+  'CartDrawer',
+  'CheckoutSection',
+];
+
 async function main() {
   console.log(`\n🔍 figma:audit`);
 
@@ -260,26 +271,141 @@ async function main() {
     }
   }
 
+  // Classification — each hint becomes either a real gap or a false positive
+  interface ClassifiedHint {
+    hint: string;
+    themes: string[];
+    status: 'REAL_GAP' | 'COVERED_BY_PROPS' | 'COVERED_BY_TOKENS' | 'REVIEW';
+    note: string;
+    action: string;
+  }
+
+  function classifyHint(block: BlockName, hint: string, cfg: ReturnType<typeof readBlockConfig>): ClassifiedHint['status'] & ClassifiedHint {
+    // Noop — satisfy TS; real impl in classify()
+    return {} as never;
+  }
+
+  function classify(block: BlockName, hint: string, cfg: ReturnType<typeof readBlockConfig>): Pick<ClassifiedHint, 'status' | 'note' | 'action'> {
+    if (hint.includes('multi-image')) {
+      if (cfg.hasMultiImageCapability) {
+        return {
+          status: 'COVERED_BY_PROPS',
+          note: `Block already exposes array/multi-image prop (${cfg.hasArrayProps.join(', ') || 'images[]'}).`,
+          action: 'No code change — Figma multi-image is expressible via existing array prop.',
+        };
+      }
+      return {
+        status: 'REAL_GAP',
+        note: 'Block only accepts a single image shape.',
+        action: 'Add `images: string[]` array prop + corresponding grid variant.',
+      };
+    }
+    if (/^grid-(\d+)col/.test(hint)) {
+      if (cfg.hasColumnsProp) {
+        return {
+          status: 'COVERED_BY_PROPS',
+          note: 'Block has numeric `columns` prop — any grid-Ncol is achievable.',
+          action: 'No code change — set preset `columns` to required value in Phase 2e.',
+        };
+      }
+      if (cfg.hasArrayProps.length > 0) {
+        return {
+          status: 'COVERED_BY_PROPS',
+          note: `Block uses array-typed props (${cfg.hasArrayProps.join(', ')}); layout derives from items.`,
+          action: 'No code change — adjust preset data.',
+        };
+      }
+      return {
+        status: 'REAL_GAP',
+        note: 'Block has a fixed layout with no columns/array control.',
+        action: `Add variant or columns prop supporting ${hint}.`,
+      };
+    }
+    if (hint.includes('pill') || hint.includes('flat')) {
+      const hasRadiusToken = cfg.tokensUsed.some((t) => t.startsWith('--radius-'));
+      if (hasRadiusToken) {
+        return {
+          status: 'COVERED_BY_TOKENS',
+          note: `Block reads radius via CSS tokens (${cfg.tokensUsed
+            .filter((t) => t.startsWith('--radius'))
+            .join(', ')}). Per-theme tokens.json controls corner style.`,
+          action: 'No code change — set the theme\'s radius token to desired value.',
+        };
+      }
+      return {
+        status: 'REAL_GAP',
+        note: 'Corner radii appear hardcoded in classes.ts.',
+        action: 'Replace hardcoded rounded-* classes with `rounded-[var(--radius-*)]`.',
+      };
+    }
+    if (hint.includes('has-form')) {
+      if (cfg.hasFormCapability) {
+        return {
+          status: 'COVERED_BY_PROPS',
+          note: 'Block already supports embedded form (newsletter.enabled, form prop, or similar).',
+          action: 'No code change — enable the form flag in preset.',
+        };
+      }
+      return {
+        status: 'REAL_GAP',
+        note: 'No form-shaped props on the block.',
+        action: 'Add `form: { enabled, placeholder, submitLabel }` prop + rendering.',
+      };
+    }
+    return {
+      status: 'REVIEW',
+      note: 'Unrecognized hint pattern.',
+      action: 'Manual review against Figma frame.',
+    };
+  }
+
+  // Emit per-block: Real gaps first, then covered-by-* (as reassurance notes), then REVIEW
   for (const block of BLOCK_WHITELIST) {
     const hints = blockToHints.get(block);
     if (!hints || hints.size === 0) continue;
-    const codeVariants = new Set(configs[block].variants);
+    const cfg = configs[block];
+    const isRuntime = RUNTIME_INTERACTIVE_BLOCKS.includes(block);
+    const classified: ClassifiedHint[] = [];
+    for (const [hint, themes] of hints) {
+      const { status, note, action } = classify(block, hint, cfg);
+      // Runtime blocks — downgrade REAL_GAP to REVIEW
+      if (isRuntime && status === 'REAL_GAP') {
+        classified.push({
+          hint,
+          themes: [...themes].sort(),
+          status: 'REVIEW',
+          note: `${note} (runtime-interactive block — typically not extended via Puck props)`,
+          action: 'No Phase 2d change expected. Figma mock is reference only.',
+        });
+        continue;
+      }
+      classified.push({ hint, themes: [...themes].sort(), status, note, action });
+    }
+    classified.sort((a, b) => {
+      const order = { REAL_GAP: 0, REVIEW: 1, COVERED_BY_PROPS: 2, COVERED_BY_TOKENS: 3 };
+      return order[a.status] - order[b.status];
+    });
 
     gapLines.push(`## ${block}`);
     gapLines.push('');
-    gapLines.push(`**Code variants today:** ${[...codeVariants].join(', ') || '—'}`);
+    gapLines.push(`**Code variants today:** ${[...new Set(cfg.variants)].join(', ') || '—'}`);
+    const caps: string[] = [];
+    if (cfg.hasColumnsProp) caps.push('columns prop');
+    if (cfg.hasMultiImageCapability) caps.push(`multi-image (${cfg.hasArrayProps.join(',')})`);
+    if (cfg.hasFormCapability) caps.push('form capability');
+    if (cfg.tokensUsed.some((t) => t.startsWith('--radius')))
+      caps.push(`radius tokens (${cfg.tokensUsed.filter((t) => t.startsWith('--radius')).join(',')})`);
+    gapLines.push(`**Existing capabilities:** ${caps.join('; ') || '—'}`);
     gapLines.push('');
-    gapLines.push('| Figma hint | Themes | Likely action |');
-    gapLines.push('|------------|--------|---------------|');
-    for (const [hint, themes] of hints) {
-      let action = 'review — is this expressible via existing variants/props?';
-      if (hint.includes('multi-image')) action = 'Add `images: string[]` prop (array) + variant';
-      if (hint.includes('grid-')) action = `Add variant with ${hint} layout`;
-      if (hint.includes('pill')) action = 'Add style-layer override or variant with radius≥60 for CTAs';
-      if (hint.includes('flat')) action = 'Add style-layer override for radius=0 elements';
-      if (hint.includes('has-form')) action = 'Ensure block supports embedded form fields (Newsletter/ContactForm variants)';
-      const themesList = [...themes].sort().join(', ');
-      gapLines.push(`| ${hint} | ${themesList} | ${action} |`);
+    gapLines.push('| Figma hint | Themes | Status | Note | Action |');
+    gapLines.push('|------------|--------|--------|------|--------|');
+    for (const c of classified) {
+      const tag =
+        c.status === 'REAL_GAP' ? '🔴 REAL GAP' :
+        c.status === 'COVERED_BY_PROPS' ? '🟢 covered (props)' :
+        c.status === 'COVERED_BY_TOKENS' ? '🟢 covered (tokens)' :
+        '🟡 review';
+      gapLines.push(`| ${c.hint} | ${c.themes.join(', ')} | ${tag} | ${c.note} | ${c.action} |`);
     }
     gapLines.push('');
   }

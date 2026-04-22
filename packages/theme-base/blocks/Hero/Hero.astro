@@ -11,6 +11,7 @@ const {
   title,
   subtitle,
   image,
+  images,
   cta,
   variant = 'centered',
   colorScheme = 1,
@@ -49,6 +50,25 @@ const imageAlt =
   image && typeof (image as { alt?: unknown }).alt === 'string'
     ? (image as { alt: string }).alt
     : '';
+
+// grid-4: take up to 4 images from `images[]`; fall back to duplicating the
+// single `image` prop so previews never look broken before the merchant
+// configures all 4 slots.
+type ImageShape = { url: string; alt: string };
+const gridFallback: ImageShape = { url: imageUrl, alt: imageAlt };
+const gridImages: ImageShape[] =
+  variant === 'grid-4'
+    ? (Array.isArray(images) && images.length > 0
+        ? images.slice(0, 4).map((i) => ({
+            url: typeof i === 'string' ? i : ((i as ImageShape)?.url ?? ''),
+            alt: typeof i === 'string' ? '' : ((i as ImageShape)?.alt ?? ''),
+          }))
+        : [gridFallback, gridFallback, gridFallback, gridFallback])
+    : [];
+// Pad to exactly 4 tiles (empty tiles render as placeholder background)
+while (gridImages.length < 4 && variant === 'grid-4') {
+  gridImages.push(gridFallback);
+}
 ---
 <section
   class:list={[C.root, scheme, variant === 'overlay' ? 'min-h-[var(--h-base)] sm:min-h-[var(--h-sm)] md:min-h-[var(--h-md)] lg:min-h-[var(--h-lg)] xl:min-h-[var(--h-xl)] 2xl:min-h-[var(--h-xxl)]' : '']}
@@ -66,7 +86,7 @@ const imageAlt =
       <div class="absolute inset-0" style={overlayStyle} aria-hidden="true" />
     </>
   )}
-  {variant !== 'overlay' && imageUrl && (
+  {variant !== 'overlay' && variant !== 'grid-4' && imageUrl && (
     <img src={imageUrl} alt={imageAlt} class={imageClass} />
   )}
   <div class:list={[C.container, innerClass, 'relative z-10']} style="min-height: inherit;">
@@ -75,6 +95,24 @@ const imageAlt =
         {title && <h1 class={C.title}>{title}</h1>}
         {subtitle && <p class={C.subtitle}>{subtitle}</p>}
       </header>
+      {variant === 'grid-4' && (
+        <div class={C.gridContainer} role="group" aria-label="Hero image grid">
+          {gridImages.map((img, i) => (
+            <div class={C.gridTile}>
+              {img.url ? (
+                <img
+                  src={img.url}
+                  alt={img.alt || `Hero image ${i + 1}`}
+                  class="absolute inset-0 w-full h-full object-cover"
+                  loading={i < 2 ? 'eager' : 'lazy'}
+                />
+              ) : (
+                <span class="sr-only">Пустой слот изображения</span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
       {cta?.text && (
         <div class="flex flex-wrap gap-[25px]">
           <a href={cta.href} class={C.ctaButton}>{cta.text}</a>

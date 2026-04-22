@@ -1,7 +1,7 @@
 # Block Coverage Report — Phase 2c Audit
 
 **Figma file:** `QfF9NPZBoQX6vCRg560Qcb` (New Themes)
-**Generated:** 2026-04-22T17:25:33.457Z
+**Generated:** 2026-04-22T17:50:31.012Z
 
 **Legend:** ✓ — block exists in Figma | ⊘ — missing, backend-only (OK) | ❓ — missing, design-pending
 
@@ -24,7 +24,7 @@ Figma viewports: **1920, 1280, 375**
 | **Footer** | ✓ | ✓ | ✓ | — | has-form |
 | **Gallery** | ✓ | ✓ | ✓ | — | — |
 | **Header** | ✓ | ✓ | ✓ | — | grid-3col; grid-2col |
-| **Hero** | ✓ | ✓ | ✓ | centered, split, overlay | multi-image (grid/collage); has-form |
+| **Hero** | ✓ | ✓ | ✓ | centered, split, overlay, grid-4 | multi-image (grid/collage); has-form |
 | **ImageWithText** | · | · | ✓ | — | — |
 | **MainText** | ✓ | ✓ | ✓ | — | — |
 | **MultiColumns** | · | · | · | — | ❓ design pending |
@@ -234,8 +234,8 @@ Figma viewports: **1920, 1280, 375**
 
 #### Hero
 
-- **Code props:** title, subtitle, image, cta, variant, colorScheme, padding, top, bottom
-- **Code variants:** `centered`, `split`, `overlay`
+- **Code props:** title, subtitle, image, images, cta, variant, colorScheme, padding, top, bottom
+- **Code variants:** `centered`, `split`, `overlay`, `grid-4`
 
 **@ 1920:** `669:17938` (1920×4579) — *Rose Hero 1920*
 
@@ -418,7 +418,7 @@ Figma viewports: **1920, 1280, 375**
 | **Footer** | ✓ | ✓ | ✓ | — | has-form |
 | **Gallery** | · | · | · | — | ❓ design pending |
 | **Header** | ✓ | ✓ | ✓ | — | grid-4col; grid-3col |
-| **Hero** | ✓ | ✓ | ✓ | centered, split, overlay | — |
+| **Hero** | ✓ | ✓ | ✓ | centered, split, overlay, grid-4 | — |
 | **ImageWithText** | · | ✓ | ✓ | — | — |
 | **MainText** | ✓ | ✓ | ✓ | — | — |
 | **MultiColumns** | · | · | · | — | ❓ design pending |
@@ -531,8 +531,8 @@ Figma viewports: **1920, 1280, 375**
 
 #### Hero
 
-- **Code props:** title, subtitle, image, cta, variant, colorScheme, padding, top, bottom
-- **Code variants:** `centered`, `split`, `overlay`
+- **Code props:** title, subtitle, image, images, cta, variant, colorScheme, padding, top, bottom
+- **Code variants:** `centered`, `split`, `overlay`, `grid-4`
 
 **@ 1920:** `590:22547` (1920×1080) — *Vanila Hero Deckstop*
 
@@ -716,7 +716,7 @@ Figma viewports: **1920, 375**
 | **Footer** | ✓ | · | ✓ | — | has-form |
 | **Gallery** | · | · | · | — | ❓ design pending |
 | **Header** | ✓ | · | ✓ | — | grid-4col |
-| **Hero** | ✓ | · | ✓ | centered, split, overlay | — |
+| **Hero** | ✓ | · | ✓ | centered, split, overlay, grid-4 | — |
 | **ImageWithText** | ✓ | · | ✓ | — | grid-2col |
 | **MainText** | ✓ | · | ✓ | — | — |
 | **MultiColumns** | · | · | · | — | ❓ design pending |
@@ -814,8 +814,8 @@ Figma viewports: **1920, 375**
 
 #### Hero
 
-- **Code props:** title, subtitle, image, cta, variant, colorScheme, padding, top, bottom
-- **Code variants:** `centered`, `split`, `overlay`
+- **Code props:** title, subtitle, image, images, cta, variant, colorScheme, padding, top, bottom
+- **Code variants:** `centered`, `split`, `overlay`, `grid-4`
 
 **@ 1920:** `681:11674` (1920×800) — *Hero Satin Deckstop*
 
@@ -975,7 +975,7 @@ Figma viewports: **1920, 1280, 375**
 | **Footer** | ✓ | ✓ | ✓ | — | has-form; pill (radius≥60) |
 | **Gallery** | ✓ | ✓ | ✓ | — | — |
 | **Header** | ✓ | ✓ | ✓ | — | grid-4col |
-| **Hero** | ✓ | ✓ | ✓ | centered, split, overlay | multi-image (grid/collage); has-form; pill (radius≥60) |
+| **Hero** | ✓ | ✓ | ✓ | centered, split, overlay, grid-4 | multi-image (grid/collage); has-form; pill (radius≥60) |
 | **ImageWithText** | · | · | ✓ | — | — |
 | **MainText** | ✓ | ✓ | ✓ | — | pill (radius≥60) |
 | **MultiColumns** | · | · | · | — | ❓ design pending |
@@ -1117,8 +1117,8 @@ Figma viewports: **1920, 1280, 375**
 
 #### Hero
 
-- **Code props:** title, subtitle, image, cta, variant, colorScheme, padding, top, bottom
-- **Code variants:** `centered`, `split`, `overlay`
+- **Code props:** title, subtitle, image, images, cta, variant, colorScheme, padding, top, bottom
+- **Code variants:** `centered`, `split`, `overlay`, `grid-4`
 
 **@ 1920:** `669:15286` (1920×4462) — *Hero Bloom Deckstop*
 
@@ -1288,7 +1288,7 @@ Figma viewports: **1920, 1280, 375**
 | **Footer** | ✓ | · | ✓ | — | has-form |
 | **Gallery** | ✓ | · | ✓ | — | has-form |
 | **Header** | ✓ | ✓ | ✓ | — | grid-2col; grid-4col |
-| **Hero** | ✓ | · | ✓ | centered, split, overlay | — |
+| **Hero** | ✓ | · | ✓ | centered, split, overlay, grid-4 | — |
 | **ImageWithText** | ✓ | · | · | — | — |
 | **MainText** | ✓ | · | ✓ | — | grid-2col; has-form |
 | **MultiColumns** | · | · | · | — | ❓ design pending |
@@ -1442,8 +1442,8 @@ Figma viewports: **1920, 1280, 375**
 
 #### Hero
 
-- **Code props:** title, subtitle, image, cta, variant, colorScheme, padding, top, bottom
-- **Code variants:** `centered`, `split`, `overlay`
+- **Code props:** title, subtitle, image, images, cta, variant, colorScheme, padding, top, bottom
+- **Code variants:** `centered`, `split`, `overlay`, `grid-4`
 
 **@ 1920:** `919:5473` (1920×1439) — *Главный экран*
 

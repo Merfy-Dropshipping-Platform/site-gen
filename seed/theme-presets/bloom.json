@@ -1,0 +1,424 @@
+{
+  "id": "bloom",
+  "presetVersion": 1,
+  "name": "Bloom",
+  "slug": "bloom",
+  "description": "Пастельная тема с розовыми акцентами и пилюльными кнопками.",
+  "templateId": "bloom-1.0",
+  "price": 0,
+  "tags": [
+    "pastel",
+    "pink",
+    "playful",
+    "rounded"
+  ],
+  "badge": "new",
+  "author": "merfy",
+  "isActive": true,
+  "tokens": {
+    "$schema": "https://design-tokens.github.io/community-group/format/",
+    "color": {
+      "bg": {
+        "$value": "#ffffff",
+        "$type": "color"
+      },
+      "surface": {
+        "$value": "#f7f7f9",
+        "$type": "color"
+      },
+      "heading": {
+        "$value": "#000000",
+        "$type": "color"
+      },
+      "text": {
+        "$value": "#000000",
+        "$type": "color"
+      },
+      "muted": {
+        "$value": "#999999",
+        "$type": "color"
+      },
+      "primary": {
+        "$value": "#000000",
+        "$type": "color"
+      },
+      "accent": {
+        "$value": "#cf7a8b",
+        "$type": "color"
+      },
+      "accent-light": {
+        "$value": "#e38e9f",
+        "$type": "color"
+      },
+      "accent-text": {
+        "$value": "#f7a2b3",
+        "$type": "color"
+      },
+      "button-bg": {
+        "$value": "#cf7a8b",
+        "$type": "color"
+      },
+      "button-text": {
+        "$value": "#ffffff",
+        "$type": "color"
+      },
+      "button-border": {
+        "$value": "#cf7a8b",
+        "$type": "color"
+      },
+      "button-2-bg": {
+        "$value": "#ffffff",
+        "$type": "color"
+      },
+      "button-2-text": {
+        "$value": "#cf7a8b",
+        "$type": "color"
+      },
+      "button-2-border": {
+        "$value": "#e38e9f",
+        "$type": "color"
+      },
+      "input-bg": {
+        "$value": "#fff5f7",
+        "$type": "color"
+      },
+      "badge-sale": {
+        "$value": "#ff9494",
+        "$type": "color"
+      },
+      "error": {
+        "$value": "#ff9494",
+        "$type": "color"
+      }
+    },
+    "radius": {
+      "button": {
+        "$value": "100px",
+        "$type": "dimension"
+      },
+      "input": {
+        "$value": "4px",
+        "$type": "dimension"
+      },
+      "card": {
+        "$value": "12px",
+        "$type": "dimension"
+      },
+      "media": {
+        "$value": "12px",
+        "$type": "dimension"
+      },
+      "field": {
+        "$value": "4px",
+        "$type": "dimension"
+      },
+      "badge": {
+        "$value": "16px",
+        "$type": "dimension"
+      },
+      "icon": {
+        "$value": "8px",
+        "$type": "dimension"
+      }
+    },
+    "size": {
+      "hero": {
+        "heading": {
+          "$value": "72px",
+          "$type": "dimension"
+        },
+        "button-h": {
+          "$value": "48px",
+          "$type": "dimension"
+        }
+      },
+      "nav-link": {
+        "$value": "16px",
+        "$type": "dimension"
+      },
+      "newsletter-form-w": {
+        "$value": "480px",
+        "$type": "dimension"
+      },
+      "logo-width": {
+        "$value": "120px",
+        "$type": "dimension"
+      },
+      "card-border": {
+        "$value": "1px",
+        "$type": "dimension"
+      },
+      "container-max": {
+        "$value": "1320px",
+        "$type": "dimension"
+      },
+      "header-height": {
+        "$value": "115px",
+        "$type": "dimension"
+      },
+      "input-height": {
+        "$value": "56px",
+        "$type": "dimension"
+      }
+    },
+    "spacing": {
+      "section-y": {
+        "$value": "120px",
+        "$type": "dimension"
+      },
+      "grid-col-gap": {
+        "$value": "40px",
+        "$type": "dimension"
+      },
+      "grid-row-gap": {
+        "$value": "40px",
+        "$type": "dimension"
+      }
+    },
+    "font": {
+      "heading": {
+        "$value": "'Urbanist', sans-serif",
+        "$type": "fontFamily"
+      },
+      "body": {
+        "$value": "'Inter', sans-serif",
+        "$type": "fontFamily"
+      },
+      "product": {
+        "$value": "'Roboto', sans-serif",
+        "$type": "fontFamily"
+      },
+      "pagination": {
+        "$value": "'Manrope', sans-serif",
+        "$type": "fontFamily"
+      },
+      "badge": {
+        "$value": "'Inter', sans-serif",
+        "$type": "fontFamily"
+      },
+      "powered": {
+        "$value": "'Inter', sans-serif",
+        "$type": "fontFamily"
+      }
+    },
+    "weight": {
+      "heading": {
+        "$value": "400",
+        "$type": "fontWeight"
+      },
+      "body": {
+        "$value": "400",
+        "$type": "fontWeight"
+      }
+    }
+  },
+  "content": {
+    "root": {
+      "props": {}
+    },
+    "content": [
+      {
+        "type": "Header",
+        "props": {
+          "id": "header-bloom",
+          "siteTitle": "Bloom",
+          "logo": "",
+          "logoPosition": "top-left",
+          "stickiness": "scroll-up",
+          "menuType": "dropdown",
+          "navigationLinks": [
+            {
+              "label": "Магазин",
+              "href": "/catalog"
+            },
+            {
+              "label": "О нас",
+              "href": "/about"
+            },
+            {
+              "label": "Контакты",
+              "href": "/contacts"
+            }
+          ],
+          "actionButtons": {
+            "showSearch": true,
+            "showCart": true,
+            "showProfile": true
+          },
+          "colorScheme": 1,
+          "menuColorScheme": 1,
+          "padding": {
+            "top": 16,
+            "bottom": 16
+          }
+        }
+      },
+      {
+        "type": "Hero",
+        "props": {
+          "id": "hero-bloom",
+          "title": "Добро пожаловать в Bloom",
+          "subtitle": "Новая коллекция уже в магазине",
+          "image": {
+            "url": "",
+            "alt": ""
+          },
+          "cta": {
+            "text": "Смотреть каталог",
+            "href": "/catalog"
+          },
+          "variant": "centered",
+          "colorScheme": 1,
+          "padding": {
+            "top": 80,
+            "bottom": 80
+          }
+        }
+      },
+      {
+        "type": "Collections",
+        "props": {
+          "id": "collections-bloom",
+          "heading": "Коллекции",
+          "collections": [
+            {
+              "id": "col-1",
+              "collectionId": null,
+              "heading": "Коллекция 1",
+              "description": ""
+            },
+            {
+              "id": "col-2",
+              "collectionId": null,
+              "heading": "Коллекция 2",
+              "description": ""
+            },
+            {
+              "id": "col-3",
+              "collectionId": null,
+              "heading": "Коллекция 3",
+              "description": ""
+            }
+          ],
+          "columns": 3,
+          "colorScheme": 1,
+          "padding": {
+            "top": 80,
+            "bottom": 80
+          }
+        }
+      },
+      {
+        "type": "PopularProducts",
+        "props": {
+          "id": "popular-bloom",
+          "dataSource": "auto",
+          "collection": "",
+          "cards": 4,
+          "heading": {
+            "text": "Популярное",
+            "size": "medium",
+            "alignment": "center"
+          },
+          "text": {
+            "content": "",
+            "size": "small"
+          },
+          "productCard": {
+            "buttonStyle": "primary",
+            "cardStyle": "auto",
+            "nextPhoto": "false",
+            "quickAdd": "true",
+            "columns": 4,
+            "buttonText": "В корзину"
+          },
+          "colorScheme": 1,
+          "containerColorScheme": 1,
+          "padding": {
+            "top": 80,
+            "bottom": 80
+          }
+        }
+      },
+      {
+        "type": "Footer",
+        "props": {
+          "id": "footer-bloom",
+          "siteTitle": "Bloom",
+          "copyright": {
+            "companyName": "Bloom",
+            "poweredBy": "Powered by Merfy",
+            "showYear": true
+          },
+          "newsletter": {
+            "enabled": true,
+            "heading": "Подпишитесь на рассылку",
+            "description": "Будьте в курсе новых поступлений и акций",
+            "placeholder": "Ваш email"
+          },
+          "heading": {
+            "text": "",
+            "size": "small",
+            "alignment": "center"
+          },
+          "text": {
+            "content": "",
+            "size": "small"
+          },
+          "navigationColumn": {
+            "title": "Навигация",
+            "links": [
+              {
+                "label": "Магазин",
+                "href": "/catalog"
+              },
+              {
+                "label": "О нас",
+                "href": "/about"
+              },
+              {
+                "label": "Контакты",
+                "href": "/contacts"
+              }
+            ]
+          },
+          "informationColumn": {
+            "title": "Информация",
+            "links": [
+              {
+                "label": "Доставка",
+                "href": "/delivery"
+              },
+              {
+                "label": "Возврат",
+                "href": "/returns"
+              },
+              {
+                "label": "Оплата",
+                "href": "/payment"
+              }
+            ]
+          },
+          "socialColumn": {
+            "title": "Соцсети",
+            "email": "",
+            "socialLinks": []
+          },
+          "colorScheme": 1,
+          "copyrightColorScheme": 1,
+          "padding": {
+            "top": 80,
+            "bottom": 80
+          }
+        }
+      }
+    ],
+    "zones": {}
+  },
+  "fontsPreload": [
+    "Urbanist",
+    "Inter",
+    "Roboto",
+    "Manrope"
+  ]
+}

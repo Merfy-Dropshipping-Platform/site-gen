@@ -19,7 +19,13 @@
     "build:preview-tailwind": "node scripts/compile-preview-tailwind.mjs",
     "backfill:theme-schemes": "tsx scripts/backfill-theme-colorschemes.ts",
     "rollback:theme-schemes": "tsx scripts/rollback-theme-colorschemes.ts",
-    "visual-diff:themes": "node scripts/visual-diff-themes.mjs"
+    "visual-diff:themes": "node scripts/visual-diff-themes.mjs",
+    "sites:seed-presets": "tsx scripts/seed-theme-presets.ts",
+    "sites:generate-seed-presets": "tsx scripts/generate-seed-presets.ts",
+    "figma:inventory": "tsx scripts/figma/inventory.ts",
+    "figma:snapshot": "tsx scripts/figma/snapshot.ts",
+    "figma:audit": "tsx scripts/figma/audit.ts",
+    "figma:theme-readiness": "tsx scripts/figma/theme-readiness.ts"
   },
   "dependencies": {
     "@astrojs/compiler": "^3.0.1",

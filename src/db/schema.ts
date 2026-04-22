@@ -62,6 +62,17 @@ export const theme = pgTable("theme", {
   author: text("author").default("merfy"),
   viewCount: integer("view_count").default(0),
   isActive: boolean("is_active").default(true),
+  // Phase 2e: theme becomes a full preset — design tokens, default Puck content,
+  // and a list of Google Fonts to preload live alongside the display metadata.
+  // `tokens` follows W3C Design Tokens shape (same as packages/theme-*/tokens.json).
+  tokens: jsonb("tokens"),
+  // `content` is a full Puck JSON (shape matches siteRevision.data) used as the
+  // starting state when a tenant applies this theme to a site.
+  content: jsonb("content"),
+  // Google Fonts families to preload in the storefront `<head>` for this theme.
+  fontsPreload: jsonb("fonts_preload").$type<string[]>(),
+  // Bump when preset schema changes in a breaking way. Seed loader compares.
+  presetVersion: integer("preset_version").default(1).notNull(),
   createdAt: timestamp("created_at").$defaultFn(() => new Date()),
   updatedAt: timestamp("updated_at").$defaultFn(() => new Date()),
 });
@@ -121,6 +132,10 @@ export const site = pgTable("site", {
   themeVersion: text("theme_version"),
   // Флаг необходимости перестроить сайт после смены темы/версии
   needsRebuild: boolean("needs_rebuild").default(false).notNull(),
+  // Phase 2e: per-tenant overrides of theme-level tokens. When present, these
+  // take precedence over packages/theme-<name>/tokens.json during the build.
+  // Shape: W3C Design Tokens (partial — only overridden keys).
+  customTokens: jsonb("custom_tokens"),
 });
 
 export const siteDomain = pgTable("site_domain", {

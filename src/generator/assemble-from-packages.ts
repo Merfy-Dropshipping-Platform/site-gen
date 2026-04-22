@@ -53,6 +53,13 @@ export interface AssembleOptions {
    * Useful for tests.
    */
   packagesRoot?: string;
+  /**
+   * Phase 2e: per-site token overrides (typically `site.customTokens` from DB
+   * or the applied preset's `tokens` field). Merged on top of per-theme
+   * `packages/theme-<name>/tokens.json` before generating tokens.css.
+   * Shape: W3C Design Tokens, partial — only overridden keys.
+   */
+  customTokens?: Record<string, unknown>;
 }
 
 /**
@@ -323,14 +330,20 @@ async function generateTokensFromTheme(
   outputDir: string,
   tracked: string[],
   warnings: string[],
+  customTokens?: Record<string, unknown>,
 ): Promise<boolean> {
   const tokensPath = path.join(themePkgDir, "tokens.json");
   const tokensJson = await readJsonSafe(tokensPath);
-  if (!tokensJson) {
+  if (!tokensJson && !customTokens) {
     warnings.push(`tokens.json not found/invalid at ${tokensPath}`);
     return false;
   }
-  const css = generateTokensCssV2(tokensJson);
+  // Phase 2e: merge custom tokens over package defaults (deep merge at top-level
+  // categories: color / font / radius / spacing / size). This lets a tenant's
+  // preset tokens override specific values without rewriting the whole file.
+  const baseTokens = (tokensJson as Record<string, unknown> | null) ?? {};
+  const merged = customTokens ? deepMergeTokens(baseTokens, customTokens) : baseTokens;
+  const css = generateTokensCssV2(merged);
   const tokensCssPath = path.join(outputDir, "src", "styles", "tokens.css");
   await fs.mkdir(path.dirname(tokensCssPath), { recursive: true });
   // Write only if not already from copyStyles step, else append
@@ -410,6 +423,7 @@ export async function assembleFromPackages(
       opts.outputDir,
       tracked,
       warnings,
+      opts.customTokens,
     );
   }
 
@@ -421,4 +435,34 @@ export async function assembleFromPackages(
     themeCopied,
     tokensCssGenerated,
   };
+}
+
+/**
+ * Deep-merge design token objects: W3C format expects 2 levels
+ * (category → name → { $value, $type }). Custom tokens override base per leaf.
+ */
+function deepMergeTokens(
+  base: Record<string, unknown>,
+  override: Record<string, unknown>,
+): Record<string, unknown> {
+  const result: Record<string, unknown> = { ...base };
+  for (const [category, overrideGroup] of Object.entries(override)) {
+    const baseGroup = result[category];
+    if (
+      baseGroup &&
+      typeof baseGroup === 'object' &&
+      !Array.isArray(baseGroup) &&
+      overrideGroup &&
+      typeof overrideGroup === 'object' &&
+      !Array.isArray(overrideGroup)
+    ) {
+      result[category] = {
+        ...(baseGroup as Record<string, unknown>),
+        ...(overrideGroup as Record<string, unknown>),
+      };
+    } else {
+      result[category] = overrideGroup;
+    }
+  }
+  return result;
 }

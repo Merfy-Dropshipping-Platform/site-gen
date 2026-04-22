@@ -65,6 +65,7 @@ import { PolicyModule } from "./policy/policy.module";
 import { HealthMonitorService } from "./health-monitor/health-monitor.service";
 import { PreviewModule } from "./modules/preview.module";
 import { ThemePuckConfigModule } from "./modules/theme-puck-config.module";
+import { ThemePresetModule } from "./modules/theme-preset/theme-preset.module";
 
 @Module({
   imports: [
@@ -87,6 +88,7 @@ import { ThemePuckConfigModule } from "./modules/theme-puck-config.module";
     PolicyModule,
     PreviewModule,
     ThemePuckConfigModule,
+    ThemePresetModule,
   ],
   controllers: [
     HealthController,

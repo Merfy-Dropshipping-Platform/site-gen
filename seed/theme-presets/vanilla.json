@@ -1,0 +1,391 @@
+{
+  "id": "vanilla",
+  "presetVersion": 1,
+  "name": "Vanilla",
+  "slug": "vanilla",
+  "description": "Оливковая минимальная тема, плоские формы, акцент на типографике.",
+  "templateId": "vanilla-1.0",
+  "price": 0,
+  "tags": [
+    "minimal",
+    "olive",
+    "flat",
+    "modern"
+  ],
+  "author": "merfy",
+  "isActive": true,
+  "tokens": {
+    "$schema": "https://design-tokens.github.io/community-group/format/",
+    "color": {
+      "bg": {
+        "$value": "#eeeeee",
+        "$type": "color"
+      },
+      "surface": {
+        "$value": "#ffffff",
+        "$type": "color"
+      },
+      "heading": {
+        "$value": "#26311c",
+        "$type": "color"
+      },
+      "text": {
+        "$value": "#26311c",
+        "$type": "color"
+      },
+      "muted": {
+        "$value": "#444444",
+        "$type": "color"
+      },
+      "primary": {
+        "$value": "#26311c",
+        "$type": "color"
+      },
+      "accent": {
+        "$value": "#3a4530",
+        "$type": "color"
+      },
+      "button-bg": {
+        "$value": "#3a4530",
+        "$type": "color"
+      },
+      "button-text": {
+        "$value": "#ffffff",
+        "$type": "color"
+      },
+      "button-border": {
+        "$value": "#3a4530",
+        "$type": "color"
+      },
+      "button-2-bg": {
+        "$value": "#eeeeee",
+        "$type": "color"
+      },
+      "button-2-text": {
+        "$value": "#26311c",
+        "$type": "color"
+      },
+      "button-2-border": {
+        "$value": "#c8c8c8",
+        "$type": "color"
+      },
+      "error": {
+        "$value": "#ff9494",
+        "$type": "color"
+      }
+    },
+    "radius": {
+      "button": {
+        "$value": "0px",
+        "$type": "dimension"
+      },
+      "input": {
+        "$value": "0px",
+        "$type": "dimension"
+      },
+      "card": {
+        "$value": "0px",
+        "$type": "dimension"
+      },
+      "media": {
+        "$value": "0px",
+        "$type": "dimension"
+      },
+      "field": {
+        "$value": "0px",
+        "$type": "dimension"
+      }
+    },
+    "size": {
+      "hero": {
+        "heading": {
+          "$value": "72px",
+          "$type": "dimension"
+        },
+        "button-h": {
+          "$value": "48px",
+          "$type": "dimension"
+        }
+      },
+      "nav-link": {
+        "$value": "16px",
+        "$type": "dimension"
+      },
+      "newsletter-form-w": {
+        "$value": "480px",
+        "$type": "dimension"
+      },
+      "logo-width": {
+        "$value": "120px",
+        "$type": "dimension"
+      },
+      "card-border": {
+        "$value": "1px",
+        "$type": "dimension"
+      },
+      "container-max": {
+        "$value": "1320px",
+        "$type": "dimension"
+      },
+      "header-height": {
+        "$value": "80px",
+        "$type": "dimension"
+      },
+      "input-height": {
+        "$value": "56px",
+        "$type": "dimension"
+      }
+    },
+    "spacing": {
+      "section-y": {
+        "$value": "80px",
+        "$type": "dimension"
+      },
+      "grid-col-gap": {
+        "$value": "40px",
+        "$type": "dimension"
+      },
+      "grid-row-gap": {
+        "$value": "40px",
+        "$type": "dimension"
+      }
+    },
+    "font": {
+      "heading": {
+        "$value": "'Bitter', serif",
+        "$type": "fontFamily"
+      },
+      "body": {
+        "$value": "'Arsenal', sans-serif",
+        "$type": "fontFamily"
+      },
+      "badge": {
+        "$value": "'Exo 2', sans-serif",
+        "$type": "fontFamily"
+      },
+      "powered": {
+        "$value": "'Inter', sans-serif",
+        "$type": "fontFamily"
+      }
+    },
+    "weight": {
+      "heading": {
+        "$value": "400",
+        "$type": "fontWeight"
+      },
+      "body": {
+        "$value": "400",
+        "$type": "fontWeight"
+      }
+    }
+  },
+  "content": {
+    "root": {
+      "props": {}
+    },
+    "content": [
+      {
+        "type": "Header",
+        "props": {
+          "id": "header-vanilla",
+          "siteTitle": "Vanilla",
+          "logo": "",
+          "logoPosition": "top-left",
+          "stickiness": "scroll-up",
+          "menuType": "dropdown",
+          "navigationLinks": [
+            {
+              "label": "Магазин",
+              "href": "/catalog"
+            },
+            {
+              "label": "О нас",
+              "href": "/about"
+            },
+            {
+              "label": "Контакты",
+              "href": "/contacts"
+            }
+          ],
+          "actionButtons": {
+            "showSearch": true,
+            "showCart": true,
+            "showProfile": true
+          },
+          "colorScheme": 1,
+          "menuColorScheme": 1,
+          "padding": {
+            "top": 16,
+            "bottom": 16
+          }
+        }
+      },
+      {
+        "type": "Hero",
+        "props": {
+          "id": "hero-vanilla",
+          "title": "Добро пожаловать в Vanilla",
+          "subtitle": "Новая коллекция уже в магазине",
+          "image": {
+            "url": "",
+            "alt": ""
+          },
+          "cta": {
+            "text": "Смотреть каталог",
+            "href": "/catalog"
+          },
+          "variant": "split",
+          "colorScheme": 1,
+          "padding": {
+            "top": 80,
+            "bottom": 80
+          }
+        }
+      },
+      {
+        "type": "Collections",
+        "props": {
+          "id": "collections-vanilla",
+          "heading": "Коллекции",
+          "collections": [
+            {
+              "id": "col-1",
+              "collectionId": null,
+              "heading": "Коллекция 1",
+              "description": ""
+            },
+            {
+              "id": "col-2",
+              "collectionId": null,
+              "heading": "Коллекция 2",
+              "description": ""
+            },
+            {
+              "id": "col-3",
+              "collectionId": null,
+              "heading": "Коллекция 3",
+              "description": ""
+            }
+          ],
+          "columns": 3,
+          "colorScheme": 1,
+          "padding": {
+            "top": 80,
+            "bottom": 80
+          }
+        }
+      },
+      {
+        "type": "PopularProducts",
+        "props": {
+          "id": "popular-vanilla",
+          "dataSource": "auto",
+          "collection": "",
+          "cards": 4,
+          "heading": {
+            "text": "Популярное",
+            "size": "medium",
+            "alignment": "center"
+          },
+          "text": {
+            "content": "",
+            "size": "small"
+          },
+          "productCard": {
+            "buttonStyle": "primary",
+            "cardStyle": "auto",
+            "nextPhoto": "false",
+            "quickAdd": "true",
+            "columns": 4,
+            "buttonText": "В корзину"
+          },
+          "colorScheme": 1,
+          "containerColorScheme": 1,
+          "padding": {
+            "top": 80,
+            "bottom": 80
+          }
+        }
+      },
+      {
+        "type": "Footer",
+        "props": {
+          "id": "footer-vanilla",
+          "siteTitle": "Vanilla",
+          "copyright": {
+            "companyName": "Vanilla",
+            "poweredBy": "Powered by Merfy",
+            "showYear": true
+          },
+          "newsletter": {
+            "enabled": true,
+            "heading": "Подпишитесь на рассылку",
+            "description": "Будьте в курсе новых поступлений и акций",
+            "placeholder": "Ваш email"
+          },
+          "heading": {
+            "text": "",
+            "size": "small",
+            "alignment": "center"
+          },
+          "text": {
+            "content": "",
+            "size": "small"
+          },
+          "navigationColumn": {
+            "title": "Навигация",
+            "links": [
+              {
+                "label": "Магазин",
+                "href": "/catalog"
+              },
+              {
+                "label": "О нас",
+                "href": "/about"
+              },
+              {
+                "label": "Контакты",
+                "href": "/contacts"
+              }
+            ]
+          },
+          "informationColumn": {
+            "title": "Информация",
+            "links": [
+              {
+                "label": "Доставка",
+                "href": "/delivery"
+              },
+              {
+                "label": "Возврат",
+                "href": "/returns"
+              },
+              {
+                "label": "Оплата",
+                "href": "/payment"
+              }
+            ]
+          },
+          "socialColumn": {
+            "title": "Соцсети",
+            "email": "",
+            "socialLinks": []
+          },
+          "colorScheme": 1,
+          "copyrightColorScheme": 1,
+          "padding": {
+            "top": 80,
+            "bottom": 80
+          }
+        }
+      }
+    ],
+    "zones": {}
+  },
+  "fontsPreload": [
+    "Bitter",
+    "Arsenal",
+    "Exo 2",
+    "Inter"
+  ]
+}

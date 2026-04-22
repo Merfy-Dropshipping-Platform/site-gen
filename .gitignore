@@ -22,3 +22,7 @@ packages/theme-*/playwright-report/
 packages/theme-*/__snapshots__/tailwind-compiled.css
 visual-diff-report/
 visual-diff-report-*
+
+# Phase 2c — developer's local Figma reference (gitignored, personal workspace)
+docs/figma-snapshots/
+.figma-cache/

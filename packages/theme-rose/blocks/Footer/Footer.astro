@@ -8,6 +8,8 @@ interface Props extends FooterProps {
 
 const {
   id,
+  siteTitle,
+  copyright,
   newsletter,
   heading,
   text,
@@ -22,6 +24,12 @@ const {
 const scheme = `color-scheme-${colorScheme}`;
 const copyScheme = copyrightColorScheme ? `color-scheme-${copyrightColorScheme}` : '';
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+
+// Rose copyright matches Figma footer: "© 2025 Rose Theme Все права защищены. Powered by Merfy"
+const year = new Date().getFullYear();
+const brandName = (copyright?.companyName ?? '').trim() || (siteTitle ?? '').trim();
+const poweredBy = (copyright?.poweredBy ?? 'Powered by Merfy').trim();
+const copyText = `© ${year} ${brandName ? brandName + ' ' : ''}Все права защищены.`;
 
 // New constructor fields take priority over legacy newsletter heading/description.
 const newsletterHeading = heading?.text || newsletter?.heading;
@@ -131,7 +139,7 @@ const SOCIAL_ICONS: Record<string, string> = {
 
   <div class:list={[C.copyright.bar, copyScheme]}>
     <p class={C.copyright.text}>
-      © {new Date().getFullYear()} Все права защищены.
+      {copyText}{poweredBy ? ` ${poweredBy}` : ''}
     </p>
   </div>
 </footer>

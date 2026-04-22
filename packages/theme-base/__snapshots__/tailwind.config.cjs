@@ -15,6 +15,19 @@ module.exports = {
     './layouts/**/*.astro',
     './seo/**/*.{astro,ts}',
     './primitives/**/*.astro',
+    // Per-theme block overrides and custom blocks live outside theme-base but
+    // render in the same preview surface. Without these globs Tailwind prunes
+    // any class they use (e.g. satin/vanilla header's `hidden md:flex`).
+    '../theme-rose/blocks/**/*.{astro,ts,tsx}',
+    '../theme-rose/customBlocks/**/*.{astro,ts,tsx}',
+    '../theme-vanilla/blocks/**/*.{astro,ts,tsx}',
+    '../theme-vanilla/customBlocks/**/*.{astro,ts,tsx}',
+    '../theme-satin/blocks/**/*.{astro,ts,tsx}',
+    '../theme-satin/customBlocks/**/*.{astro,ts,tsx}',
+    '../theme-bloom/blocks/**/*.{astro,ts,tsx}',
+    '../theme-bloom/customBlocks/**/*.{astro,ts,tsx}',
+    '../theme-flux/blocks/**/*.{astro,ts,tsx}',
+    '../theme-flux/customBlocks/**/*.{astro,ts,tsx}',
   ],
   theme: {
     extend: {},

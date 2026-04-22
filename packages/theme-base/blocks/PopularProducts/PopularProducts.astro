@@ -9,11 +9,12 @@ interface Props extends PopularProductsProps {
 const {
   id,
   heading,
+  subtitle,
   cards = 4,
   columns = 4,
   colorScheme = 1,
   padding,
-} = Astro.props as Props;
+} = Astro.props as Props & { subtitle?: string };
 
 const scheme = `color-scheme-${colorScheme}`;
 const paddingStyle = padding
@@ -32,6 +33,7 @@ const placeholders = Array.from({ length: cards }, (_, i) => i);
 >
   <div class={C.container}>
     {heading && <h2 class={C.heading}>{heading}</h2>}
+    {subtitle && <p class={C.subtitle}>{subtitle}</p>}
     <div class={C.grid} style={gridTemplateCols}>
       {placeholders.map((i) => (
         <div

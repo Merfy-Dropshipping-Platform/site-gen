@@ -419,6 +419,10 @@ function coerceHeaderProps(out: Record<string, unknown>): void {
 function coercePopularProductsProps(out: Record<string, unknown>): void {
   const heading = unwrapTextSize(out.heading);
   out.heading = heading.present ? heading.value : 'Популярные товары';
+  // subtitle legacy shape: {text} or {content} envelope OR flat string
+  const subtitle = unwrapTextSize(out.text);
+  if (subtitle.present) out.subtitle = subtitle.value;
+  if (typeof out.subtitle !== 'string') out.subtitle = '';
   // productCard.columns → columns, legacy `cards` stays
   if (!out.columns && isPlainObject(out.productCard)) {
     const pc = out.productCard as Record<string, unknown>;
@@ -510,6 +514,7 @@ function coerceCollectionsProps(
   if (typeof out.title === 'string' && !out.heading) {
     out.heading = out.title;
   }
+  if (typeof out.subtitle !== 'string') out.subtitle = '';
   if (typeof out.columnsCount === 'number' && !out.columns) {
     out.columns = out.columnsCount;
   }

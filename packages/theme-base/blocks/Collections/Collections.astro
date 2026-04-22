@@ -9,11 +9,12 @@ interface Props extends CollectionsProps {
 const {
   id,
   heading,
+  subtitle,
   collections = [],
   columns = 3,
   colorScheme = 1,
   padding,
-} = Astro.props as Props;
+} = Astro.props as Props & { subtitle?: string };
 
 const scheme = `color-scheme-${colorScheme}`;
 const paddingStyle = padding
@@ -28,6 +29,7 @@ const gridTemplateCols = `grid-template-columns: repeat(${columns}, minmax(0, 1f
 >
   <div class={C.container}>
     {heading && <h2 class={C.heading}>{heading}</h2>}
+    {subtitle && <p class={C.subtitle}>{subtitle}</p>}
     <div class={C.grid} style={gridTemplateCols}>
       {collections.map((item) => (
         <a href={item.collectionId ? `/collection/${item.collectionId}` : '#'} class={C.card}>

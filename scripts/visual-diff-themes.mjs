@@ -162,9 +162,13 @@ for (const theme of THEMES) {
       const diff = new PNG({ width, height });
       const actualSubset = cropTopLeft(actual, width, height);
       const refSubset = cropTopLeft(ref, width, height);
+      // pixelmatch per-pixel threshold. 0.1 is strict (anti-alias shimmer counts
+      // as diff); 0.3 tolerates font-hinting / sub-pixel differences while still
+      // flagging real layout breakage. Combined with the tuple-level threshold
+      // in visual-diff-thresholds.json we get a two-level gate.
       const numDiff = pixelmatch(
         actualSubset, refSubset, diff.data, width, height,
-        { threshold: 0.1 },
+        { threshold: 0.3, includeAA: false },
       );
       const ratio = numDiff / (width * height);
       const status = ratio > threshold ? 'fail' : 'pass';

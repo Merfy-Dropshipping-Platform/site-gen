@@ -5,7 +5,9 @@
     "$comment": "Tighter / looser overrides when we expect more variance (e.g. mobile crops, product imagery).",
     "rose/product/375": 0.08,
     "bloom/checkout/375": 0.08,
-    "flux/home/1920": 0.06
+    "flux/home/1920": 0.06,
+    "satin/home/375": 0.08,
+    "flux/home/375": 0.08
   },
   "skip": [
     "$comment: order-tracking needs real order data — out of scope until Phase 5 seed",

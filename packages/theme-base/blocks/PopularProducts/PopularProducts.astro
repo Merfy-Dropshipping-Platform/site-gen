@@ -6,17 +6,35 @@ interface Props extends PopularProductsProps {
   id?: string;
 }
 
+const raw = Astro.props as Record<string, unknown>;
 const {
   id,
   heading,
-  subtitle,
+  subtitle: subtitleProp,
   cards = 4,
   columns = 4,
   colorScheme = 1,
   padding,
 } = Astro.props as Props & { subtitle?: string };
 
-const scheme = `color-scheme-${colorScheme}`;
+// Constructor legacy schema writes subtitle as `text.content`; accept both.
+const subtitle =
+  (typeof subtitleProp === 'string' && subtitleProp) ||
+  (() => {
+    const t = raw.text;
+    if (typeof t === 'string') return t;
+    if (t && typeof t === 'object' && typeof (t as { content?: unknown }).content === 'string') {
+      return (t as { content: string }).content;
+    }
+    return undefined;
+  })();
+
+const schemeNum = (() => {
+  if (typeof colorScheme === 'number') return colorScheme;
+  const m = String(colorScheme).match(/(\d+)/);
+  return m ? Number(m[1]) : 1;
+})();
+const scheme = `color-scheme-${schemeNum}`;
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';

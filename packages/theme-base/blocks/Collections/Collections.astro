@@ -6,17 +6,35 @@ interface Props extends CollectionsProps {
   id?: string;
 }
 
+const raw = Astro.props as Record<string, unknown>;
 const {
   id,
-  heading,
-  subtitle,
+  heading: headingProp,
+  subtitle: subtitleProp,
   collections = [],
-  columns = 3,
+  columns: columnsProp,
   colorScheme = 1,
   padding,
 } = Astro.props as Props & { subtitle?: string };
 
-const scheme = `color-scheme-${colorScheme}`;
+// Constructor legacy schema uses title/titleSize/subtitleSize/columnsCount/imageView.
+// Normalise both shapes so sites edited via the constructor render correctly.
+const heading =
+  (typeof headingProp === 'string' && headingProp) ||
+  (typeof raw.title === 'string' ? raw.title : undefined);
+const subtitle =
+  (typeof subtitleProp === 'string' && subtitleProp) ||
+  (typeof raw.subtitle === 'string' ? raw.subtitle : undefined);
+const columns = typeof columnsProp === 'number'
+  ? columnsProp
+  : (typeof raw.columnsCount === 'number' ? raw.columnsCount : 3);
+
+const schemeNum = (() => {
+  if (typeof colorScheme === 'number') return colorScheme;
+  const m = String(colorScheme).match(/(\d+)/);
+  return m ? Number(m[1]) : 1;
+})();
+const scheme = `color-scheme-${schemeNum}`;
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';

@@ -20,7 +20,12 @@ const {
   padding,
 } = Astro.props as Props;
 
-const scheme = `color-scheme-${colorScheme}`;
+const schemeNum = (() => {
+  if (typeof colorScheme === 'number') return colorScheme;
+  const m = String(colorScheme).match(/(\d+)/);
+  return m ? Number(m[1]) : 1;
+})();
+const scheme = `color-scheme-${schemeNum}`;
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
 const year = new Date().getFullYear();
 const logoLabel = (siteTitle ?? '').trim() || (copyright?.companyName ?? '').trim();

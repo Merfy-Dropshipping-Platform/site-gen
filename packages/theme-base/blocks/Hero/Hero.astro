@@ -53,7 +53,12 @@ const resolvedCta = cta ?? (primaryButton?.text
 const variant = (variantProp as HeroProps['variant'])
   ?? (backgroundImage ? 'overlay' : 'centered');
 
-const scheme = `color-scheme-${colorScheme}`;
+const schemeNum = (() => {
+  if (typeof colorScheme === 'number') return colorScheme;
+  const m = String(colorScheme).match(/(\d+)/);
+  return m ? Number(m[1]) : 1;
+})();
+const scheme = `color-scheme-${schemeNum}`;
 const innerClass = C.inner[variant];
 const imageClass = C.image[variant];
 const paddingStyle = padding

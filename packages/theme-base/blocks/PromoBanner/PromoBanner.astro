@@ -7,7 +7,15 @@ interface Props extends PromoBannerProps {
 }
 
 const { id, text, linkText, linkUrl, colorScheme = 1, padding } = Astro.props as Props;
-const scheme = `color-scheme-${colorScheme}`;
+
+// Constructor may pass colorScheme as "scheme-1" or just 1. Normalise.
+const schemeNum = (() => {
+  if (typeof colorScheme === 'number') return colorScheme;
+  const s = String(colorScheme);
+  const m = s.match(/(\d+)/);
+  return m ? Number(m[1]) : 1;
+})();
+const scheme = `color-scheme-${schemeNum}`;
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';

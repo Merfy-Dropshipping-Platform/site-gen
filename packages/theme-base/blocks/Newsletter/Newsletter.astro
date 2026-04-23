@@ -6,17 +6,35 @@ interface Props extends NewsletterProps {
   id?: string;
 }
 
+const raw = Astro.props as Record<string, unknown>;
 const {
   id,
-  heading,
-  description,
-  placeholder,
-  buttonText,
+  heading: headingProp,
+  description: descriptionProp,
+  placeholder: placeholderProp,
+  buttonText: buttonTextProp,
   colorScheme = 1,
   padding,
 } = Astro.props as Props;
 
-const scheme = `color-scheme-${colorScheme}`;
+// Constructor legacy schema writes heading as { text }, description as text.content,
+// placeholder/buttonText inside form.*. Accept both shapes.
+const h = headingProp ?? (raw.heading as { text?: string } | string | undefined);
+const heading =
+  typeof h === 'string' ? h : (h?.text ?? undefined);
+const t = raw.text as { content?: string } | string | undefined;
+const description =
+  descriptionProp ?? (typeof t === 'string' ? t : t?.content) ?? '';
+const form = raw.form as { placeholder?: string; buttonText?: string } | undefined;
+const placeholder = placeholderProp ?? form?.placeholder ?? 'email@example.com';
+const buttonText = buttonTextProp ?? form?.buttonText ?? 'Подписаться';
+
+const schemeNum = (() => {
+  if (typeof colorScheme === 'number') return colorScheme;
+  const m = String(colorScheme).match(/(\d+)/);
+  return m ? Number(m[1]) : 1;
+})();
+const scheme = `color-scheme-${schemeNum}`;
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';

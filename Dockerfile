@@ -37,6 +37,8 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/templates ./templates
 COPY --from=builder /app/src/generator/templates/defaults ./dist/src/generator/templates/defaults
+# Phase 2e: preset JSONs loaded on bootstrap by ThemePresetService.seedFromFiles
+COPY --from=builder /app/seed ./seed
 COPY --from=builder /app/node_modules ./node_modules
 
 EXPOSE 3114

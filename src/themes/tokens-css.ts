@@ -99,13 +99,16 @@ export function buildTokensCss(
   for (const themeScheme of themeSchemes) {
     const key = schemeClassId(themeScheme.id);
     const merchant = merchantById.get(key);
-    // Theme manifest wins when it declares explicit tokens for this scheme id.
-    if (
-      merchant &&
-      (!themeScheme.tokens || Object.keys(themeScheme.tokens).length === 0)
-    ) {
+    // Merchant override wins when present — matches the "what you see in
+    // constructor is what lands on live" contract. Fall back to theme
+    // manifest tokens only when merchant didn't touch this scheme id.
+    if (merchant) {
       const rule = buildSchemeRule(merchant);
-      if (rule) schemeRuleLines.push(rule);
+      if (rule) {
+        schemeRuleLines.push(rule);
+      } else {
+        schemeRuleLines.push(buildThemeSchemeRule(themeScheme));
+      }
     } else {
       schemeRuleLines.push(buildThemeSchemeRule(themeScheme));
     }

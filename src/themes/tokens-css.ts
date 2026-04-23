@@ -120,14 +120,15 @@ export function buildTokensCss(
   }
   const schemeRules = schemeRuleLines.filter((r) => r.length > 0).join('\n');
 
-  // Default scheme :root vars so blocks without an explicit
-  // `color-scheme-scheme-N` class still render legibly.
+  // :root получает активную цветовую схему. Merchant-scheme'ы идут первыми —
+  // `themeSettings.defaultSchemeIndex` ссылается на merchant порядок. Fallback
+  // на theme-manifest only when merchant didn't seed any scheme.
   const schemes: Record<string, unknown>[] = [
-    ...themeSchemes.map((ts) => themeSchemeToMerchantShape(ts)),
     ...(merchantSchemes.filter(isPlainObject) as Record<string, unknown>[]),
+    ...themeSchemes.map((ts) => themeSchemeToMerchantShape(ts)),
   ];
   const defaultIdx =
-    typeof s.defaultSchemeIndex === 'number' ? s.defaultSchemeIndex : 1;
+    typeof s.defaultSchemeIndex === 'number' ? s.defaultSchemeIndex : 0;
   const defaultScheme = isPlainObject(schemes[defaultIdx])
     ? (schemes[defaultIdx] as Record<string, unknown>)
     : isPlainObject(schemes[0])

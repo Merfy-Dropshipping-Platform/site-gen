@@ -9,14 +9,23 @@ interface Props extends PopularProductsProps {
 const raw = Astro.props as Record<string, unknown>;
 const {
   id,
-  heading,
+  heading: headingProp,
   subtitle: subtitleProp,
   cards = 4,
   columns = 4,
   padding,
 } = Astro.props as Props & { subtitle?: string };
 
-// Constructor legacy schema writes subtitle as `text.content`; accept both.
+// Constructor legacy schema writes heading as { text } and subtitle as
+// { content }; accept both shapes so nothing renders as [object Object].
+const heading = (() => {
+  if (typeof headingProp === 'string') return headingProp || undefined;
+  if (headingProp && typeof headingProp === 'object') {
+    const h = headingProp as { text?: string };
+    return h.text || undefined;
+  }
+  return undefined;
+})();
 const subtitle =
   (typeof subtitleProp === 'string' && subtitleProp) ||
   (() => {

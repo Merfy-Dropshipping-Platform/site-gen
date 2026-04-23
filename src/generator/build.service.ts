@@ -1497,9 +1497,14 @@ async function stageGenerate(
     );
   }
 
+  // Theme folder name doesn't include version suffix — `theme.template_id`
+  // is "rose-1.0" but `templates/astro/rose/` and `packages/theme-rose/` use
+  // the bare name. Strip "-<version>" before passing to scaffold-builder.
+  const bareThemeName = (ctx.templateId ?? 'default').replace(/-\d[\d.a-z]*$/, '');
+
   const scaffoldConfig: ScaffoldConfig = {
     outputDir: ctx.workingDir,
-    themeName: ctx.templateId,
+    themeName: bareThemeName,
     pages,
     registry,
     merchantSettings,

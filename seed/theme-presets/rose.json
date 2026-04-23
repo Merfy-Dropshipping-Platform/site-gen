@@ -16,13 +16,13 @@
   "author": "merfy",
   "isActive": true,
   "themeSettings": {
-    "buttonRadius": 8,
+    "buttonRadius": 6,
     "cardRadius": 10,
     "inputRadius": 10,
     "mediaRadius": 10,
     "fieldRadius": 4,
-    "headingFont": "Bitter",
-    "bodyFont": "Arsenal",
+    "headingFont": "Comfortaa",
+    "bodyFont": "Manrope",
     "sectionPadding": 96,
     "colorSchemes": [
       {
@@ -82,8 +82,8 @@
           "colorScheme": "1",
           "menuColorScheme": "1",
           "padding": {
-            "top": 16,
-            "bottom": 16
+            "top": 24,
+            "bottom": 24
           }
         }
       },
@@ -91,8 +91,8 @@
         "type": "Hero",
         "props": {
           "id": "hero-rose",
-          "title": "Добро пожаловать в Rose",
-          "subtitle": "Новая коллекция уже в магазине",
+          "title": "Rose",
+          "subtitle": "Там, где классика встречается с характером",
           "image": {
             "url": "",
             "alt": ""
@@ -116,7 +116,7 @@
             }
           ],
           "cta": {
-            "text": "Смотреть каталог",
+            "text": "В каталог",
             "href": "/catalog"
           },
           "variant": "centered",
@@ -131,24 +131,25 @@
         "type": "Collections",
         "props": {
           "id": "collections-rose",
-          "heading": "Коллекции",
+          "heading": "Коллекции, которые становятся любимыми",
+          "subheading": "Вдохновение для каждого дня — актуальные коллекции сумок, созданные, чтобы радовать и удивлять.",
           "collections": [
             {
               "id": "col-1",
               "collectionId": null,
-              "heading": "Коллекция 1",
+              "heading": "Коллекция Riviera",
               "description": ""
             },
             {
               "id": "col-2",
               "collectionId": null,
-              "heading": "Коллекция 2",
+              "heading": "Коллекция Urban",
               "description": ""
             },
             {
               "id": "col-3",
               "collectionId": null,
-              "heading": "Коллекция 3",
+              "heading": "Коллекция Futurism",
               "description": ""
             }
           ],
@@ -167,7 +168,8 @@
           "dataSource": "auto",
           "collection": "",
           "cards": 4,
-          "heading": "Популярное",
+          "heading": "Главные хиты",
+          "subheading": "Найдите стиль на каждый случай — коллекции, которые помогают выразить себя вне времени и трендов.",
           "productCard": {
             "buttonStyle": "primary",
             "cardStyle": "auto",
@@ -252,7 +254,7 @@
     "zones": {}
   },
   "fontsPreload": [
-    "Bitter",
-    "Arsenal"
+    "Comfortaa",
+    "Manrope"
   ]
 }

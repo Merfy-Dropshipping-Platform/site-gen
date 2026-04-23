@@ -107,21 +107,22 @@ function processContentItems(
 ): string[] {
   const lines: string[] = [];
 
-  for (const item of items) {
-    const entry = registry[item.type];
+  for (const rawItem of items) {
+    const entry = registry[rawItem.type];
     if (!entry) {
       // Unknown component — render a placeholder comment
-      lines.push(`${indent}<!-- Unknown component: ${item.type} -->`);
+      lines.push(`${indent}<!-- Unknown component: ${rawItem.type} -->`);
       continue;
     }
 
     // Merge theme-level block defaults (from theme.json → blockDefaults[type]) UNDER
     // merchant props. Merchant values win. Used so e.g. rose gets Footer variant
     // '3-col' without the merchant ever having to set it in Puck.
-    const themeDefaults = blockDefaults[item.type];
-    if (themeDefaults && Object.keys(themeDefaults).length > 0) {
-      item = { ...item, props: { ...themeDefaults, ...(item.props ?? {}) } };
-    }
+    const themeDefaults = blockDefaults[rawItem.type];
+    const item =
+      themeDefaults && Object.keys(themeDefaults).length > 0
+        ? { ...rawItem, props: { ...themeDefaults, ...(rawItem.props ?? {}) } }
+        : rawItem;
 
     // Server-island components: emit <merfy-island> Web Component, no import needed
     if (entry.kind === "server-island") {

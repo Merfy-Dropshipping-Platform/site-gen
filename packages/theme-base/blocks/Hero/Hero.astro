@@ -6,6 +6,7 @@ interface Props extends HeroProps {
   id?: string;
 }
 
+const raw = Astro.props as Record<string, unknown>;
 const {
   id,
   title,
@@ -13,15 +14,45 @@ const {
   image,
   images,
   cta,
-  variant = 'centered',
+  variant: variantProp,
   colorScheme = 1,
   padding,
   size,
-  overlay,
-} = Astro.props as Props & {
+  overlay: overlayRaw,
+} = raw as Props & {
   size?: 'small' | 'medium' | 'large';
   overlay?: number;
+  [k: string]: unknown;
 };
+
+// Legacy constructor schema passes heading/text as nested objects (heading.text, text.content)
+// plus backgroundImage + primaryButton.link.href. Normalise both shapes so any revision works.
+const heading = raw.heading as { text?: string } | string | undefined;
+const textObj = raw.text as { content?: string } | string | undefined;
+const primaryButton = raw.primaryButton as
+  | { text?: string; link?: { href?: string } | string }
+  | undefined;
+const backgroundImage = typeof raw.backgroundImage === 'string' ? raw.backgroundImage : '';
+
+const resolvedTitle =
+  (typeof title === 'string' && title) ||
+  (typeof heading === 'string' ? heading : heading?.text) ||
+  '';
+const resolvedSubtitle =
+  (typeof subtitle === 'string' && subtitle) ||
+  (typeof textObj === 'string' ? textObj : textObj?.content) ||
+  '';
+const primaryLink = typeof primaryButton?.link === 'object'
+  ? primaryButton.link?.href
+  : primaryButton?.link;
+const resolvedCta = cta ?? (primaryButton?.text
+  ? { text: primaryButton.text, href: primaryLink ?? '#' }
+  : undefined);
+
+// Determine variant: explicit prop wins, else if any background image → overlay.
+const variant = (variantProp as HeroProps['variant'])
+  ?? (backgroundImage ? 'overlay' : 'centered');
+
 const scheme = `color-scheme-${colorScheme}`;
 const innerClass = C.inner[variant];
 const imageClass = C.image[variant];
@@ -36,16 +67,17 @@ const heightVars = {
   large:  '--h-base:400px;--h-sm:500px;--h-md:600px;--h-lg:700px;--h-xl:800px;--h-xxl:1080px;',
 }[size ?? 'medium'];
 
-const overlayPct = typeof overlay === 'number' ? overlay / 100 : 0.3;
+const overlayPct = typeof overlayRaw === 'number' ? overlayRaw / 100 : 0.3;
 const overlayStyle = `background-color: rgb(var(--color-foreground) / ${overlayPct});`;
 
 // Normalise image reference across shapes preview coercer may pass through.
-const imageUrl =
+const imageUrlFromObj =
   typeof image === 'string'
     ? image
     : image && typeof (image as { url?: unknown }).url === 'string'
       ? (image as { url: string }).url
       : '';
+const imageUrl = imageUrlFromObj || backgroundImage;
 const imageAlt =
   image && typeof (image as { alt?: unknown }).alt === 'string'
     ? (image as { alt: string }).alt
@@ -92,8 +124,8 @@ while (gridImages.length < 4 && variant === 'grid-4') {
   <div class:list={[C.container, innerClass, 'relative z-10']} style="min-height: inherit;">
     <div class="flex flex-col items-center text-center gap-4 sm:gap-5 md:gap-6 lg:gap-5 xl:gap-[25px] w-full max-w-7xl px-4 sm:px-6 md:px-8">
       <header class="flex flex-col gap-1 sm:gap-2 md:gap-3 lg:gap-4 xl:gap-[5px]">
-        {title && <h1 class={C.title}>{title}</h1>}
-        {subtitle && <p class={C.subtitle}>{subtitle}</p>}
+        {resolvedTitle && <h1 class={C.title}>{resolvedTitle}</h1>}
+        {resolvedSubtitle && <p class={C.subtitle}>{resolvedSubtitle}</p>}
       </header>
       {variant === 'grid-4' && (
         <div class={C.gridContainer} role="group" aria-label="Hero image grid">
@@ -113,9 +145,9 @@ while (gridImages.length < 4 && variant === 'grid-4') {
           ))}
         </div>
       )}
-      {cta?.text && (
+      {resolvedCta?.text && (
         <div class="flex flex-wrap gap-[25px]">
-          <a href={cta.href} class={C.ctaButton}>{cta.text}</a>
+          <a href={resolvedCta.href} class={C.ctaButton}>{resolvedCta.text}</a>
         </div>
       )}
     </div>

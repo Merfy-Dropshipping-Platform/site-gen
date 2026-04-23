@@ -10,11 +10,9 @@ const {
   id,
   heading,
   sections = [],
-  colorScheme = 1,
   padding,
 } = Astro.props as Props;
 
-const scheme = `color-scheme-${colorScheme}`;
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
@@ -22,7 +20,7 @@ const paddingStyle = padding
 // Constructor inputs should sanitize HTML before persisting to DB to prevent XSS.
 ---
 <section
-  class:list={[C.root, scheme]}
+  class={C.root}
   data-puck-component-id={id}
   style={paddingStyle}
 >

@@ -11,16 +11,14 @@ const {
   mode,
   siteTitle,
   showSocialLogin,
-  colorScheme = 1,
   padding,
 } = Astro.props as Props;
 
-const scheme = `color-scheme-${colorScheme}`;
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
 const isOpen = mode !== 'closed';
 ---
 <dialog
-  class:list={[C.root, scheme]}
+  class={C.root}
   data-puck-component-id={id}
   data-mode={mode}
   open={isOpen}

@@ -16,16 +16,9 @@ const {
   navigationColumn,
   informationColumn,
   socialColumn,
-  colorScheme = 1,
   padding,
 } = Astro.props as Props;
 
-const schemeNum = (() => {
-  if (typeof colorScheme === 'number') return colorScheme;
-  const m = String(colorScheme).match(/(\d+)/);
-  return m ? Number(m[1]) : 1;
-})();
-const scheme = `color-scheme-${schemeNum}`;
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
 const year = new Date().getFullYear();
 const logoLabel = (siteTitle ?? '').trim() || (copyright?.companyName ?? '').trim();
@@ -44,7 +37,7 @@ const SOCIAL_ICONS: Record<string, string> = {
 };
 ---
 <footer
-  class:list={[C.root, scheme]}
+  class={C.root}
   data-puck-component-id={id}
   style={paddingStyle}
 >

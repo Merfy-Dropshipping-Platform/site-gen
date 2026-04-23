@@ -15,20 +15,13 @@ const {
   menuType,
   navigationLinks = [],
   actionButtons,
-  colorScheme = 1,
   padding,
 } = Astro.props as Props;
 
-const schemeNum = (() => {
-  if (typeof colorScheme === 'number') return colorScheme;
-  const m = String(colorScheme).match(/(\d+)/);
-  return m ? Number(m[1]) : 1;
-})();
-const scheme = `color-scheme-${schemeNum}`;
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
 ---
 <header
-  class:list={[C.root, C.sticky[stickiness], scheme]}
+  class:list={[C.root, C.sticky[stickiness]]}
   data-puck-component-id={id}
   data-menu-type={menuType}
   style={paddingStyle}

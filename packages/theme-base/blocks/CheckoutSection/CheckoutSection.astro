@@ -8,11 +8,9 @@ interface Props extends CheckoutSectionProps {
 
 const {
   id,
-  colorScheme = 1,
   padding,
 } = Astro.props as Props;
 
-const scheme = `color-scheme-${colorScheme}`;
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
@@ -21,7 +19,7 @@ const paddingStyle = padding
 ---
 <section
   id="checkout-section"
-  class:list={[C.root, scheme]}
+  class={C.root}
   data-puck-component-id={id}
   data-block="checkout-section"
   style={paddingStyle}

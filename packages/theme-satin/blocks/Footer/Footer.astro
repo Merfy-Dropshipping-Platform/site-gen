@@ -16,13 +16,9 @@ const {
   navigationColumn,
   informationColumn,
   socialColumn,
-  colorScheme = 3,
-  copyrightColorScheme,
   padding,
 } = Astro.props as Props;
 
-const scheme = `color-scheme-${colorScheme}`;
-const copyScheme = copyrightColorScheme ? `color-scheme-${copyrightColorScheme}` : '';
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
 
 // New constructor fields take priority over legacy newsletter heading/description.
@@ -50,7 +46,7 @@ const brandName =
   (isNavLabel ? 'Мой магазин' : navTitle);
 const poweredBy = (copyright?.poweredBy ?? 'Powered by Merfy').trim();
 ---
-<footer class:list={[C.root, scheme]} data-puck-component-id={id} style={paddingStyle}>
+<footer class={C.root} data-puck-component-id={id} style={paddingStyle}>
   <div class={C.container}>
     {newsletter?.enabled && (
       <section class={C.newsletter.wrapper} aria-labelledby="newsletter-heading">
@@ -140,7 +136,7 @@ const poweredBy = (copyright?.poweredBy ?? 'Powered by Merfy').trim();
   </div>
 
   {/* Vanilla-specific: powered-by black strip at the very bottom */}
-  <div class:list={[C.poweredBy.bar, copyScheme]}>
+  <div class={C.poweredBy.bar}>
     <p class={C.poweredBy.text}>
       &copy; {new Date().getFullYear()} {brandName}. Все права защищены. {poweredBy}
     </p>

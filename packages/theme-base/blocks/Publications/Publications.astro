@@ -11,11 +11,9 @@ const {
   heading,
   columns = 3,
   cards = 3,
-  colorScheme = 1,
   padding,
 } = Astro.props as Props;
 
-const scheme = `color-scheme-${colorScheme}`;
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
@@ -25,7 +23,7 @@ const placeholders = Array.from({ length: cards }, (_, i) => i);
 // For now we render `cards` skeleton placeholders.
 ---
 <section
-  class:list={[C.root, scheme]}
+  class={C.root}
   data-puck-component-id={id}
   data-block="publications"
   style={paddingStyle}

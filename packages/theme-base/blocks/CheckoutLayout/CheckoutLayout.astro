@@ -10,15 +10,13 @@ const {
   id,
   showOrderSummary,
   showTrustBadges,
-  colorScheme = 1,
   padding,
 } = Astro.props as Props;
 
-const scheme = `color-scheme-${colorScheme}`;
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
 ---
 <div
-  class:list={[C.root, scheme]}
+  class={C.root}
   data-puck-component-id={id}
   style={paddingStyle}
 >

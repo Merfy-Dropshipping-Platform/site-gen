@@ -11,11 +11,9 @@ const {
   showGreeting,
   sidebarPosition,
   activePage,
-  colorScheme = 1,
   padding,
 } = Astro.props as Props;
 
-const scheme = `color-scheme-${colorScheme}`;
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
 
 // data-active renders only the string "true" on the active link; absent on others.
@@ -23,7 +21,7 @@ const active = (page: AccountLayoutProps['activePage']): 'true' | undefined =>
   activePage === page ? 'true' : undefined;
 ---
 <div
-  class:list={[C.root, scheme]}
+  class={C.root}
   data-puck-component-id={id}
   data-sidebar-position={sidebarPosition}
   style={paddingStyle}

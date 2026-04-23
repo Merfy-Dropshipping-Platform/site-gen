@@ -11,11 +11,9 @@ const {
   heading,
   videoUrl,
   poster,
-  colorScheme = 1,
   padding,
 } = Astro.props as Props;
 
-const scheme = `color-scheme-${colorScheme}`;
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
@@ -48,7 +46,7 @@ function parseVideo(url: string): { kind: Kind; embedUrl: string } {
 const video = parseVideo(videoUrl);
 ---
 <section
-  class:list={[C.root, scheme]}
+  class={C.root}
   data-puck-component-id={id}
   style={paddingStyle}
 >

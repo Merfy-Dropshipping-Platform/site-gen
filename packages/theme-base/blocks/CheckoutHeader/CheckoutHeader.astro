@@ -9,15 +9,13 @@ interface Props extends CheckoutHeaderProps {
 const {
   id,
   siteTitle,
-  colorScheme = 1,
   padding,
 } = Astro.props as Props;
 
-const scheme = `color-scheme-${colorScheme}`;
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
 ---
 <header
-  class:list={[C.root, scheme]}
+  class={C.root}
   data-puck-component-id={id}
   style={paddingStyle}
 >

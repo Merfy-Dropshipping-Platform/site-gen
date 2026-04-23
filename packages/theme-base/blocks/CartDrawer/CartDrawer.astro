@@ -10,15 +10,13 @@ const {
   id,
   position,
   showCheckoutButton,
-  colorScheme = 1,
   padding,
 } = Astro.props as Props;
 
-const scheme = `color-scheme-${colorScheme}`;
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
 ---
 <aside
-  class:list={[C.root, C.position[position], scheme]}
+  class:list={[C.root, C.position[position]]}
   data-puck-component-id={id}
   data-position={position}
   style={paddingStyle}

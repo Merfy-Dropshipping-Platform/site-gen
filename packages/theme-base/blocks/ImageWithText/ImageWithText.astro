@@ -13,17 +13,10 @@ const {
   text,
   button,
   imagePosition = 'left',
-  colorScheme = 1,
   padding,
 } = Astro.props as Props;
 
 const variantKey = imagePosition === 'left' ? 'imageLeft' : 'imageRight';
-const schemeNum = (() => {
-  if (typeof colorScheme === 'number') return colorScheme;
-  const m = String(colorScheme).match(/(\d+)/);
-  return m ? Number(m[1]) : 1;
-})();
-const scheme = `color-scheme-${schemeNum}`;
 const innerClass = C.inner[variantKey];
 const imageColClass = C.imageCol[variantKey];
 const textColClass = C.textCol[variantKey];
@@ -32,7 +25,7 @@ const paddingStyle = padding
   : '';
 ---
 <section
-  class:list={[C.root, scheme]}
+  class={C.root}
   data-puck-component-id={id}
   data-image-position={imagePosition}
   style={paddingStyle}

@@ -9,11 +9,9 @@ interface Props extends ProductProps {
 const {
   id,
   productId,
-  colorScheme = 1,
   padding,
 } = Astro.props as Props;
 
-const scheme = `color-scheme-${colorScheme}`;
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
@@ -29,7 +27,7 @@ const jsonLd = {
 };
 ---
 <section
-  class:list={[C.root, scheme]}
+  class={C.root}
   data-puck-component-id={id}
   data-block="product-pdp"
   data-product-id={productId}

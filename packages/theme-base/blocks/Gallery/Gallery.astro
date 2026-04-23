@@ -11,18 +11,16 @@ const {
   heading,
   items = [],
   layout = 'grid',
-  colorScheme = 1,
   padding,
 } = Astro.props as Props;
 
-const scheme = `color-scheme-${colorScheme}`;
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
 const innerClass = C.inner[layout];
 ---
 <section
-  class:list={[C.root, scheme]}
+  class={C.root}
   data-puck-component-id={id}
   data-layout={layout}
   style={paddingStyle}

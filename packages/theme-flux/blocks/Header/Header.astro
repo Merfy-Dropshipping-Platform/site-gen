@@ -15,15 +15,13 @@ const {
   menuType,
   navigationLinks = [],
   actionButtons,
-  colorScheme = 1,
   padding,
 } = Astro.props as Props;
 
-const scheme = `color-scheme-${colorScheme}`;
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
 const isCenterLeft = logoPosition === 'center-left';
 ---
-<div class:list={[C.wrapper, C.sticky[stickiness], scheme]} data-header-wrapper data-puck-component-id={id}>
+<div class:list={[C.wrapper, C.sticky[stickiness]]} data-header-wrapper data-puck-component-id={id}>
   <header
     class:list={[C.header, !padding && 'min-h-[64px]']}
     data-menu-type={menuType}

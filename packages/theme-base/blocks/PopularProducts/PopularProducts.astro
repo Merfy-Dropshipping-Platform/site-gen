@@ -13,7 +13,6 @@ const {
   subtitle: subtitleProp,
   cards = 4,
   columns = 4,
-  colorScheme = 1,
   padding,
 } = Astro.props as Props & { subtitle?: string };
 
@@ -29,12 +28,6 @@ const subtitle =
     return undefined;
   })();
 
-const schemeNum = (() => {
-  if (typeof colorScheme === 'number') return colorScheme;
-  const m = String(colorScheme).match(/(\d+)/);
-  return m ? Number(m[1]) : 1;
-})();
-const scheme = `color-scheme-${schemeNum}`;
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
@@ -53,7 +46,7 @@ const DEMO_PRODUCTS = [
 const demo = DEMO_PRODUCTS.slice(0, Math.min(cards, DEMO_PRODUCTS.length));
 ---
 <section
-  class:list={[C.root, scheme]}
+  class={C.root}
   data-puck-component-id={id}
   data-block="popular-products"
   style={paddingStyle}

@@ -15,7 +15,6 @@ const {
   images,
   cta,
   variant: variantProp,
-  colorScheme = 1,
   padding,
   size,
   overlay: overlayRaw,
@@ -53,12 +52,6 @@ const resolvedCta = cta ?? (primaryButton?.text
 const variant = (variantProp as HeroProps['variant'])
   ?? (backgroundImage ? 'overlay' : 'centered');
 
-const schemeNum = (() => {
-  if (typeof colorScheme === 'number') return colorScheme;
-  const m = String(colorScheme).match(/(\d+)/);
-  return m ? Number(m[1]) : 1;
-})();
-const scheme = `color-scheme-${schemeNum}`;
 const innerClass = C.inner[variant];
 const imageClass = C.image[variant];
 const paddingStyle = padding
@@ -108,7 +101,7 @@ while (gridImages.length < 4 && variant === 'grid-4') {
 }
 ---
 <section
-  class:list={[C.root, scheme, variant === 'overlay' ? 'min-h-[var(--h-base)] sm:min-h-[var(--h-sm)] md:min-h-[var(--h-md)] lg:min-h-[var(--h-lg)] xl:min-h-[var(--h-xl)] 2xl:min-h-[var(--h-xxl)]' : '']}
+  class:list={[C.root, variant === 'overlay' ? 'min-h-[var(--h-base)] sm:min-h-[var(--h-sm)] md:min-h-[var(--h-md)] lg:min-h-[var(--h-lg)] xl:min-h-[var(--h-xl)] 2xl:min-h-[var(--h-xxl)]' : '']}
   data-puck-component-id={id}
   data-variant={variant}
   style={`${paddingStyle} ${variant === 'overlay' ? heightVars : ''}`}

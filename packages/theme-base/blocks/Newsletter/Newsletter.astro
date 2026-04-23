@@ -13,7 +13,6 @@ const {
   description: descriptionProp,
   placeholder: placeholderProp,
   buttonText: buttonTextProp,
-  colorScheme = 1,
   padding,
 } = Astro.props as Props;
 
@@ -29,18 +28,12 @@ const form = raw.form as { placeholder?: string; buttonText?: string } | undefin
 const placeholder = placeholderProp ?? form?.placeholder ?? 'email@example.com';
 const buttonText = buttonTextProp ?? form?.buttonText ?? 'Подписаться';
 
-const schemeNum = (() => {
-  if (typeof colorScheme === 'number') return colorScheme;
-  const m = String(colorScheme).match(/(\d+)/);
-  return m ? Number(m[1]) : 1;
-})();
-const scheme = `color-scheme-${schemeNum}`;
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
 ---
 <section
-  class:list={[C.root, scheme]}
+  class={C.root}
   data-puck-component-id={id}
   style={paddingStyle}
 >

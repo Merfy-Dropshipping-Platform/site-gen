@@ -2117,6 +2117,21 @@ export class SitesDomainService {
     return { siteId: site.id, name: site.name };
   }
 
+  async adminPublish(siteId: string) {
+    const [site] = await this.db
+      .select({ id: schema.site.id, tenantId: schema.site.tenantId })
+      .from(schema.site)
+      .where(eq(schema.site.id, siteId));
+
+    if (!site) throw new Error(`Site ${siteId} not found`);
+
+    return this.publish({
+      tenantId: site.tenantId,
+      siteId: site.id,
+      mode: "production",
+    });
+  }
+
   /**
    * Регенерировать все активные сайты с указанным шаблоном.
    * Используется для массового обновления шаблона всех сайтов.

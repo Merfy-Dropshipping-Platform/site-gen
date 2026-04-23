@@ -455,4 +455,19 @@ export class HealthController {
       };
     }
   }
+
+  @Post("admin-publish/:siteId")
+  async adminPublish(@Param("siteId") siteId: string) {
+    this.logger.log(`Admin publish for site ${siteId}`);
+    try {
+      const result = await this.sitesService.adminPublish(siteId);
+      return { success: true, ...result };
+    } catch (error) {
+      this.logger.error(`Admin publish failed for ${siteId}: ${error}`);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "unknown",
+      };
+    }
+  }
 }

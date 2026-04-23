@@ -6,15 +6,46 @@ interface Props extends ImageWithTextProps {
   id?: string;
 }
 
-const {
-  id,
-  image,
-  heading,
-  text,
-  button,
-  imagePosition = 'left',
-  padding,
-} = Astro.props as Props;
+// Constructor legacy schema writes heading/text/button as objects with
+// optional { enabled: 'true'|'false' } flags, image as bare URL string, and
+// uses photoPosition instead of imagePosition. Normalize here to a flat
+// shape matching the new puckConfig.
+const raw = Astro.props as Record<string, unknown>;
+const id = raw.id as string | undefined;
+const padding = raw.padding as { top: number; bottom: number } | undefined;
+
+const imgRaw = raw.image as string | { url?: string; alt?: string } | undefined;
+const imageUrl = typeof imgRaw === 'string' ? imgRaw : imgRaw?.url;
+const imageAlt = typeof imgRaw === 'string' ? '' : (imgRaw?.alt ?? '');
+
+const readText = (v: unknown): string | undefined => {
+  if (typeof v === 'string') return v || undefined;
+  if (v && typeof v === 'object') {
+    const o = v as { enabled?: string; text?: string; content?: string };
+    if (o.enabled === 'false') return undefined;
+    return o.text ?? o.content ?? undefined;
+  }
+  return undefined;
+};
+const heading = readText(raw.heading);
+const text = readText(raw.text);
+
+const btnRaw = raw.button as
+  | { enabled?: string; text?: string; href?: string; link?: string | { href?: string } }
+  | undefined;
+const buttonEnabled = btnRaw?.enabled !== 'false';
+const buttonText = buttonEnabled ? btnRaw?.text : undefined;
+const buttonHref = (() => {
+  if (!btnRaw) return undefined;
+  if (typeof btnRaw.link === 'string') return btnRaw.link;
+  if (btnRaw.link && typeof btnRaw.link === 'object') return btnRaw.link.href;
+  return btnRaw.href;
+})();
+
+const imagePosition =
+  (raw.imagePosition as string | undefined) ??
+  (raw.photoPosition as string | undefined) ??
+  'left';
 
 const variantKey = imagePosition === 'left' ? 'imageLeft' : 'imageRight';
 const innerClass = C.inner[variantKey];
@@ -33,8 +64,8 @@ const paddingStyle = padding
   <div class={C.container}>
     <div class={innerClass}>
       <div class={imageColClass}>
-        {image?.url ? (
-          <img src={image.url} alt={image.alt ?? ''} class={C.image} />
+        {imageUrl ? (
+          <img src={imageUrl} alt={imageAlt} class={C.image} />
         ) : (
           <div class="aspect-[652/366] flex items-center justify-center bg-[rgb(var(--color-foreground,0,0,0))]/5 rounded-[var(--radius-media)] text-[rgb(var(--color-muted))]">
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true">
@@ -48,8 +79,8 @@ const paddingStyle = padding
       <div class={textColClass}>
         {heading && <h2 class={C.heading}>{heading}</h2>}
         {text && <p class={C.text}>{text}</p>}
-        {button?.text && (
-          <a href={button.href} class={C.button}>{button.text}</a>
+        {buttonText && (
+          <a href={buttonHref} class={C.button}>{buttonText}</a>
         )}
       </div>
     </div>

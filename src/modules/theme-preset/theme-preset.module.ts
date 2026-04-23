@@ -1,10 +1,12 @@
 import { Module, OnApplicationBootstrap, Logger } from '@nestjs/common';
 
+import { DatabaseModule } from '../../db/database.module';
 import { ThemePresetController } from './theme-preset.controller';
 import { ThemePresetMicroserviceController } from './theme-preset.microservice.controller';
 import { ThemePresetService } from './theme-preset.service';
 
 @Module({
+  imports: [DatabaseModule],
   controllers: [ThemePresetController, ThemePresetMicroserviceController],
   providers: [ThemePresetService],
   exports: [ThemePresetService],

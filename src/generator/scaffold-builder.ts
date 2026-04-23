@@ -148,8 +148,8 @@ function generatePackageJson(): string {
         react: "^18.3.1",
         "react-dom": "^18.3.1",
         "@astrojs/react": "^3.0.0",
-        "@astrojs/tailwind": "^5.0.0",
-        tailwindcss: "^3.4.0",
+        "@tailwindcss/vite": "^4.1.17",
+        tailwindcss: "^4.1.17",
         "@nanostores/react": "^0.7.0",
         nanostores: "^0.10.0",
       },
@@ -167,16 +167,15 @@ function generatePackageJson(): string {
  * Generate astro.config.ts with React + Tailwind integrations.
  */
 function generateAstroConfig(): string {
-  return `import { defineConfig } from 'astro/config';
+  return `import tailwindcss from '@tailwindcss/vite';
+import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
-import tailwind from '@astrojs/tailwind';
 
 export default defineConfig({
-  integrations: [
-    react(),
-    tailwind(),
-  ],
   output: 'static',
+  build: { assets: '_assets' },
+  integrations: [react()],
+  vite: { plugins: [tailwindcss()] },
 });
 `;
 }

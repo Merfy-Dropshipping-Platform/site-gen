@@ -42,6 +42,24 @@
           "text": "#000000",
           "border": "#e5e7eb"
         }
+      },
+      {
+        "id": "2",
+        "name": "Inverse",
+        "background": "#121212",
+        "surfaceBg": "#1a1a1a",
+        "heading": "#ffffff",
+        "text": "#ffffff",
+        "primaryButton": {
+          "background": "#ffffff",
+          "text": "#000000",
+          "border": "#ffffff"
+        },
+        "secondaryButton": {
+          "background": "transparent",
+          "text": "#ffffff",
+          "border": "#ffffff"
+        }
       }
     ],
     "defaultSchemeIndex": 0
@@ -51,6 +69,17 @@
       "props": {}
     },
     "content": [
+      {
+        "type": "PromoBanner",
+        "props": {
+          "id": "promo-rose",
+          "text": "Скидка 10% на общую сумму заказа от 9 000₽.",
+          "linkText": "Перейти",
+          "linkUrl": "/catalog",
+          "colorScheme": "2",
+          "padding": { "top": 12, "bottom": 12 }
+        }
+      },
       {
         "type": "Header",
         "props": {
@@ -62,12 +91,12 @@
           "menuType": "dropdown",
           "navigationLinks": [
             {
-              "label": "Магазин",
-              "href": "/catalog"
+              "label": "Главная",
+              "href": "/"
             },
             {
-              "label": "О нас",
-              "href": "/about"
+              "label": "Каталог",
+              "href": "/catalog"
             },
             {
               "label": "Контакты",
@@ -119,7 +148,8 @@
             "text": "В каталог",
             "href": "/catalog"
           },
-          "variant": "centered",
+          "variant": "overlay",
+          "overlay": 30,
           "colorScheme": "1",
           "padding": {
             "top": 80,

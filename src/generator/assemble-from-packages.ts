@@ -30,6 +30,7 @@
 
 import * as fs from "fs/promises";
 import * as path from "path";
+import { buildTokensCss } from "../themes/tokens-css";
 
 /**
  * Env-var flag for new assembly path.
@@ -54,12 +55,16 @@ export interface AssembleOptions {
    */
   packagesRoot?: string;
   /**
-   * Phase 2e: per-site token overrides (typically `site.customTokens` from DB
-   * or the applied preset's `tokens` field). Merged on top of per-theme
-   * `packages/theme-<name>/tokens.json` before generating tokens.css.
-   * Shape: W3C Design Tokens, partial — only overridden keys.
+   * Merchant's theme customizations (typically `revision.data.themeSettings`).
+   * Used by the shared `buildTokensCss` generator to emit the same CSS that
+   * the preview iframe uses. When omitted, theme defaults (from manifest)
+   * still win — parity is preserved.
+   *
+   * Shape: Constructor's ThemeSettings — `{ colorSchemes, buttonRadius,
+   * headingFont, ... }`. See `src/themes/tokens-css.ts` for the full list
+   * of fields consumed.
    */
-  customTokens?: Record<string, unknown>;
+  themeSettings?: Record<string, unknown>;
 }
 
 /**
@@ -321,29 +326,30 @@ async function readJsonSafe(filePath: string): Promise<unknown | null> {
 }
 
 /**
- * Read theme-<name>/tokens.json → emit src/styles/tokens.css.
+ * Emit src/styles/tokens.css using the shared `buildTokensCss` generator
+ * (same one the preview iframe uses). This gives the live build byte-for-byte
+ * identical CSS to what the constructor's preview shows for the same
+ * themeSettings + themeId.
  *
- * PHASE3A-STATUS: IMPLEMENTED (minimal emission — see generateTokensCssV2)
+ * Source precedence inside buildTokensCss:
+ *   1. Theme manifest defaults (from packages/theme-<name>/theme.json)
+ *   2. Merchant themeSettings colorSchemes (constructor customizations)
+ *   3. Hardcoded Phase 0 fallbacks
+ *
+ * If no themeSettings is supplied, defaults from the manifest drive the output.
  */
 async function generateTokensFromTheme(
-  themePkgDir: string,
+  themeName: string,
   outputDir: string,
   tracked: string[],
   warnings: string[],
-  customTokens?: Record<string, unknown>,
+  themeSettings?: Record<string, unknown>,
 ): Promise<boolean> {
-  const tokensPath = path.join(themePkgDir, "tokens.json");
-  const tokensJson = await readJsonSafe(tokensPath);
-  if (!tokensJson && !customTokens) {
-    warnings.push(`tokens.json not found/invalid at ${tokensPath}`);
+  const css = buildTokensCss(themeSettings ?? null, themeName);
+  if (!css || css.trim().length === 0) {
+    warnings.push(`buildTokensCss produced empty output for theme "${themeName}"`);
     return false;
   }
-  // Phase 2e: merge custom tokens over package defaults (deep merge at top-level
-  // categories: color / font / radius / spacing / size). This lets a tenant's
-  // preset tokens override specific values without rewriting the whole file.
-  const baseTokens = (tokensJson as Record<string, unknown> | null) ?? {};
-  const merged = customTokens ? deepMergeTokens(baseTokens, customTokens) : baseTokens;
-  const css = generateTokensCssV2(merged);
   const tokensCssPath = path.join(outputDir, "src", "styles", "tokens.css");
   await fs.mkdir(path.dirname(tokensCssPath), { recursive: true });
   // Write only if not already from copyStyles step, else append
@@ -351,7 +357,7 @@ async function generateTokensFromTheme(
     const existing = await fs.readFile(tokensCssPath, "utf8");
     await fs.writeFile(
       tokensCssPath,
-      existing + "\n/* Tokens from tokens.json (v2) */\n" + css,
+      existing + "\n/* Tokens (shared generator — preview ↔ live parity) */\n" + css,
       "utf8",
     );
   } else {
@@ -419,11 +425,11 @@ export async function assembleFromPackages(
   // ---- TOKENS ----
   if (themeCopied) {
     tokensCssGenerated = await generateTokensFromTheme(
-      themeDir,
+      opts.themeName,
       opts.outputDir,
       tracked,
       warnings,
-      opts.customTokens,
+      opts.themeSettings,
     );
   }
 
@@ -435,34 +441,4 @@ export async function assembleFromPackages(
     themeCopied,
     tokensCssGenerated,
   };
-}
-
-/**
- * Deep-merge design token objects: W3C format expects 2 levels
- * (category → name → { $value, $type }). Custom tokens override base per leaf.
- */
-function deepMergeTokens(
-  base: Record<string, unknown>,
-  override: Record<string, unknown>,
-): Record<string, unknown> {
-  const result: Record<string, unknown> = { ...base };
-  for (const [category, overrideGroup] of Object.entries(override)) {
-    const baseGroup = result[category];
-    if (
-      baseGroup &&
-      typeof baseGroup === 'object' &&
-      !Array.isArray(baseGroup) &&
-      overrideGroup &&
-      typeof overrideGroup === 'object' &&
-      !Array.isArray(overrideGroup)
-    ) {
-      result[category] = {
-        ...(baseGroup as Record<string, unknown>),
-        ...(overrideGroup as Record<string, unknown>),
-      };
-    } else {
-      result[category] = overrideGroup;
-    }
-  }
-  return result;
 }

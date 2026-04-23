@@ -13,194 +13,36 @@
   ],
   "author": "merfy",
   "isActive": true,
-  "tokens": {
-    "$schema": "https://design-tokens.github.io/community-group/format/",
-    "color": {
-      "bg": {
-        "$value": "#ffffff",
-        "$type": "color"
-      },
-      "surface": {
-        "$value": "#f5f5f5",
-        "$type": "color"
-      },
-      "heading": {
-        "$value": "#000000",
-        "$type": "color"
-      },
-      "text": {
-        "$value": "#000000",
-        "$type": "color"
-      },
-      "muted": {
-        "$value": "#999999",
-        "$type": "color"
-      },
-      "primary": {
-        "$value": "#000000",
-        "$type": "color"
-      },
-      "accent": {
-        "$value": "#000000",
-        "$type": "color"
-      },
-      "button-bg": {
-        "$value": "#000000",
-        "$type": "color"
-      },
-      "button-text": {
-        "$value": "#ffffff",
-        "$type": "color"
-      },
-      "button-border": {
-        "$value": "#000000",
-        "$type": "color"
-      },
-      "button-2-bg": {
-        "$value": "#ffffff",
-        "$type": "color"
-      },
-      "button-2-text": {
-        "$value": "#000000",
-        "$type": "color"
-      },
-      "button-2-border": {
-        "$value": "#eeeeee",
-        "$type": "color"
-      },
-      "badge-bg": {
-        "$value": "#eeeeee",
-        "$type": "color"
-      },
-      "error": {
-        "$value": "#ff9494",
-        "$type": "color"
-      }
-    },
-    "radius": {
-      "button": {
-        "$value": "0px",
-        "$type": "dimension"
-      },
-      "input": {
-        "$value": "0px",
-        "$type": "dimension"
-      },
-      "card": {
-        "$value": "0px",
-        "$type": "dimension"
-      },
-      "media": {
-        "$value": "0px",
-        "$type": "dimension"
-      },
-      "field": {
-        "$value": "0px",
-        "$type": "dimension"
-      },
-      "icon": {
-        "$value": "8px",
-        "$type": "dimension"
-      },
-      "payment": {
-        "$value": "4px",
-        "$type": "dimension"
-      }
-    },
-    "size": {
-      "hero": {
-        "heading": {
-          "$value": "72px",
-          "$type": "dimension"
+  "themeSettings": {
+    "buttonRadius": 0,
+    "cardRadius": 0,
+    "inputRadius": 0,
+    "mediaRadius": 0,
+    "fieldRadius": 0,
+    "headingFont": "Kelly Slab",
+    "bodyFont": "Arsenal",
+    "sectionPadding": 40,
+    "colorSchemes": [
+      {
+        "id": "1",
+        "name": "Default",
+        "background": "#ffffff",
+        "surfaceBg": "#f5f5f5",
+        "heading": "#000000",
+        "text": "#000000",
+        "primaryButton": {
+          "background": "#000000",
+          "text": "#ffffff",
+          "border": "#000000"
         },
-        "button-h": {
-          "$value": "48px",
-          "$type": "dimension"
+        "secondaryButton": {
+          "background": "#ffffff",
+          "text": "#000000",
+          "border": "#eeeeee"
         }
-      },
-      "nav-link": {
-        "$value": "16px",
-        "$type": "dimension"
-      },
-      "newsletter-form-w": {
-        "$value": "480px",
-        "$type": "dimension"
-      },
-      "logo-width": {
-        "$value": "120px",
-        "$type": "dimension"
-      },
-      "card-border": {
-        "$value": "1px",
-        "$type": "dimension"
-      },
-      "container-max": {
-        "$value": "1320px",
-        "$type": "dimension"
-      },
-      "header-height": {
-        "$value": "80px",
-        "$type": "dimension"
-      },
-      "input-height": {
-        "$value": "56px",
-        "$type": "dimension"
       }
-    },
-    "spacing": {
-      "section-y": {
-        "$value": "40px",
-        "$type": "dimension"
-      },
-      "grid-col-gap": {
-        "$value": "40px",
-        "$type": "dimension"
-      },
-      "grid-row-gap": {
-        "$value": "40px",
-        "$type": "dimension"
-      }
-    },
-    "font": {
-      "heading": {
-        "$value": "'Kelly Slab', serif",
-        "$type": "fontFamily"
-      },
-      "body": {
-        "$value": "'Arsenal', sans-serif",
-        "$type": "fontFamily"
-      },
-      "button": {
-        "$value": "'Manrope', sans-serif",
-        "$type": "fontFamily"
-      },
-      "accent": {
-        "$value": "'Tinos', serif",
-        "$type": "fontFamily"
-      },
-      "announcement": {
-        "$value": "'Roboto', sans-serif",
-        "$type": "fontFamily"
-      },
-      "badge": {
-        "$value": "'Manrope', sans-serif",
-        "$type": "fontFamily"
-      },
-      "powered": {
-        "$value": "'Inter', sans-serif",
-        "$type": "fontFamily"
-      }
-    },
-    "weight": {
-      "heading": {
-        "$value": "400",
-        "$type": "fontWeight"
-      },
-      "body": {
-        "$value": "400",
-        "$type": "fontWeight"
-      }
-    }
+    ],
+    "defaultSchemeIndex": 0
   },
   "content": {
     "root": {

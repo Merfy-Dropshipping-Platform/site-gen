@@ -59,6 +59,14 @@ export interface ScaffoldConfig {
   merchantSettings?: MerchantSettings;
   /** Theme default tokens */
   themeDefaults?: ThemeDefaults;
+  /**
+   * Raw constructor ThemeSettings (from revision.data.themeSettings) — used by
+   * the shared `buildTokensCss` generator via assembleFromPackages to produce
+   * tokens.css byte-for-byte identical to the preview iframe.
+   *
+   * Set this in build.service.ts from the same source preview reads.
+   */
+  themeSettings?: Record<string, unknown>;
   /** Build-time data written to src/data/ */
   buildData?: {
     /** data.json — site/page metadata and Puck content */
@@ -233,6 +241,7 @@ export async function buildScaffold(
     const assembleResult = await assembleFromPackages({
       themeName: config.themeName as string,
       outputDir,
+      themeSettings: config.themeSettings,
     });
     if (assembleResult.baseCopied || assembleResult.themeCopied) {
       generatedFiles.push("[assembled from packages]");

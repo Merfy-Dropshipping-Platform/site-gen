@@ -81,6 +81,90 @@ function readTokens(themeId: string): Record<string, unknown> {
   return JSON.parse(readFileSync(path, 'utf8'));
 }
 
+/**
+ * Convert W3C Design Tokens (packages/theme-<id>/tokens.json shape) to the
+ * constructor ThemeSettings shape expected by `buildTokensCss`.
+ *
+ * W3C:                          ThemeSettings:
+ *   radius.button.$value = 8px    buttonRadius: 8    (number, px)
+ *   font.heading.$value = "'Bitter', serif"  →  headingFont: "Bitter" (key)
+ *
+ * Fields not in W3C → omit; buildTokensCss falls back to manifest defaults.
+ */
+function w3cTokensToThemeSettings(tokens: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  const pxValue = (group: string, key: string): number | undefined => {
+    const g = tokens[group] as Record<string, { $value?: string }> | undefined;
+    const raw = g?.[key]?.$value;
+    if (typeof raw !== 'string') return undefined;
+    const m = raw.match(/^(\d+(?:\.\d+)?)px$/);
+    return m ? parseFloat(m[1]) : undefined;
+  };
+  const fontName = (key: string): string | undefined => {
+    const g = tokens.font as Record<string, { $value?: string }> | undefined;
+    const raw = g?.[key]?.$value;
+    if (typeof raw !== 'string') return undefined;
+    const m = raw.match(/^['"]([^'"]+)['"]/);
+    return m ? m[1] : undefined;
+  };
+
+  const buttonR = pxValue('radius', 'button');
+  if (buttonR !== undefined) out.buttonRadius = buttonR;
+  const cardR = pxValue('radius', 'card');
+  if (cardR !== undefined) out.cardRadius = cardR;
+  const inputR = pxValue('radius', 'input');
+  if (inputR !== undefined) out.inputRadius = inputR;
+  const mediaR = pxValue('radius', 'media');
+  if (mediaR !== undefined) out.mediaRadius = mediaR;
+  const fieldR = pxValue('radius', 'field');
+  if (fieldR !== undefined) out.fieldRadius = fieldR;
+  const headingF = fontName('heading');
+  if (headingF) out.headingFont = headingF;
+  const bodyF = fontName('body');
+  if (bodyF) out.bodyFont = bodyF;
+  const sectionY = pxValue('spacing', 'section-y');
+  if (sectionY !== undefined) out.sectionPadding = sectionY;
+
+  // Color schemes: derive a single default scheme from color.bg / color.heading /
+  // color.text / color.button-*. This gives `buildTokensCss` enough to emit a
+  // non-empty `.color-scheme-1` block. Full scheme-N variants live in the theme
+  // manifest and fill in automatically.
+  const colorGroup = tokens.color as Record<string, { $value?: string }> | undefined;
+  if (colorGroup) {
+    const hex = (k: string): string | undefined =>
+      typeof colorGroup[k]?.$value === 'string' ? colorGroup[k].$value : undefined;
+    const scheme1: Record<string, unknown> = { id: '1', name: 'Default' };
+    const bg = hex('bg'); if (bg) scheme1.background = bg;
+    const surface = hex('surface'); if (surface) scheme1.surfaceBg = surface;
+    const heading = hex('heading'); if (heading) scheme1.heading = heading;
+    const text = hex('text'); if (text) scheme1.text = text;
+    const primaryBg = hex('button-bg');
+    const primaryText = hex('button-text');
+    const primaryBorder = hex('button-border');
+    if (primaryBg || primaryText || primaryBorder) {
+      scheme1.primaryButton = {
+        ...(primaryBg ? { background: primaryBg } : {}),
+        ...(primaryText ? { text: primaryText } : {}),
+        ...(primaryBorder ? { border: primaryBorder } : {}),
+      };
+    }
+    const secondaryBg = hex('button-2-bg');
+    const secondaryText = hex('button-2-text');
+    const secondaryBorder = hex('button-2-border');
+    if (secondaryBg || secondaryText || secondaryBorder) {
+      scheme1.secondaryButton = {
+        ...(secondaryBg ? { background: secondaryBg } : {}),
+        ...(secondaryText ? { text: secondaryText } : {}),
+        ...(secondaryBorder ? { border: secondaryBorder } : {}),
+      };
+    }
+    out.colorSchemes = [scheme1];
+    out.defaultSchemeIndex = 0;
+  }
+
+  return out;
+}
+
 function extractFonts(tokens: Record<string, unknown>): string[] {
   const fonts: string[] = [];
   const fontGroup = tokens.font as Record<string, { $value?: string } | undefined> | undefined;
@@ -230,6 +314,7 @@ function main() {
   for (const theme of THEMES) {
     const tokens = readTokens(theme.id);
     const fontsPreload = extractFonts(tokens);
+    const themeSettings = w3cTokensToThemeSettings(tokens);
     const content = buildDefaultContent(theme.id, theme.name);
 
     const preset = {
@@ -244,7 +329,7 @@ function main() {
       badge: theme.badge,
       author: 'merfy',
       isActive: true,
-      tokens,
+      themeSettings,
       content,
       fontsPreload,
     };
@@ -253,7 +338,7 @@ function main() {
 
     const outPath = resolve(OUT_DIR, `${theme.id}.json`);
     writeFileSync(outPath, JSON.stringify(clean, null, 2) + '\n');
-    console.log(`   ✓ ${theme.id.padEnd(8)} — tokens:${Object.keys(tokens).length ? 'yes' : 'no'}  fonts:${fontsPreload.length}  blocks:${content.content.length}`);
+    console.log(`   ✓ ${theme.id.padEnd(8)} — settings:${Object.keys(themeSettings).length}  fonts:${fontsPreload.length}  blocks:${content.content.length}`);
   }
 
   console.log(`\n✅ 5 seed presets generated. Commit & run \`pnpm sites:seed-presets\` to load into DB.`);

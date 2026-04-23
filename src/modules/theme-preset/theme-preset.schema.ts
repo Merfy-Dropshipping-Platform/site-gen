@@ -9,7 +9,7 @@ import { z } from 'zod';
  * additional `content` + `fontsPreload` fields are preset-specific.
  */
 
-const DesignTokenValue = z.record(z.string(), z.any());
+const ThemeSettingsValue = z.record(z.string(), z.any());
 
 export const ThemePresetSchema = z.object({
   /** kebab-case id — matches `packages/theme-<id>/` folder name. */
@@ -36,8 +36,12 @@ export const ThemePresetSchema = z.object({
   tags: z.array(z.string()).default([]),
   /** Optional marketing badge ("new", "popular"). */
   badge: z.string().optional(),
-  /** Design tokens — W3C shape, merged with theme-base defaults at render time. */
-  tokens: DesignTokenValue,
+  /**
+   * Constructor ThemeSettings (colorSchemes / buttonRadius / headingFont / …).
+   * Used AS-IS by both preview (buildTokensCss) and live build
+   * (assembleFromPackages → same buildTokensCss). Identical render guaranteed.
+   */
+  themeSettings: ThemeSettingsValue,
   /** Default Puck content — copied into `site_revision.data` on apply. */
   content: z.record(z.string(), z.any()),
   /** Google Fonts families to preload in storefront `<head>`. */

@@ -14,190 +14,36 @@
   ],
   "author": "merfy",
   "isActive": true,
-  "tokens": {
-    "$schema": "https://design-tokens.github.io/community-group/format/",
-    "color": {
-      "bg": {
-        "$value": "#ffffff",
-        "$type": "color"
-      },
-      "surface": {
-        "$value": "#fafafa",
-        "$type": "color"
-      },
-      "heading": {
-        "$value": "#000000",
-        "$type": "color"
-      },
-      "text": {
-        "$value": "#000000",
-        "$type": "color"
-      },
-      "muted": {
-        "$value": "#cccccc",
-        "$type": "color"
-      },
-      "primary": {
-        "$value": "#000000",
-        "$type": "color"
-      },
-      "accent": {
-        "$value": "#fa5109",
-        "$type": "color"
-      },
-      "button-bg": {
-        "$value": "#fa5109",
-        "$type": "color"
-      },
-      "button-text": {
-        "$value": "#ffffff",
-        "$type": "color"
-      },
-      "button-border": {
-        "$value": "#fa5109",
-        "$type": "color"
-      },
-      "button-2-bg": {
-        "$value": "#ffffff",
-        "$type": "color"
-      },
-      "button-2-text": {
-        "$value": "#000000",
-        "$type": "color"
-      },
-      "button-2-border": {
-        "$value": "#f5f5f5",
-        "$type": "color"
-      },
-      "icon-bg": {
-        "$value": "#efefef",
-        "$type": "color"
-      },
-      "error": {
-        "$value": "#ff9494",
-        "$type": "color"
-      }
-    },
-    "radius": {
-      "button": {
-        "$value": "6px",
-        "$type": "dimension"
-      },
-      "input": {
-        "$value": "8px",
-        "$type": "dimension"
-      },
-      "card": {
-        "$value": "12px",
-        "$type": "dimension"
-      },
-      "media": {
-        "$value": "8px",
-        "$type": "dimension"
-      },
-      "field": {
-        "$value": "4px",
-        "$type": "dimension"
-      },
-      "badge": {
-        "$value": "2px",
-        "$type": "dimension"
-      },
-      "icon": {
-        "$value": "4px",
-        "$type": "dimension"
-      }
-    },
-    "size": {
-      "hero": {
-        "heading": {
-          "$value": "72px",
-          "$type": "dimension"
+  "themeSettings": {
+    "buttonRadius": 6,
+    "cardRadius": 12,
+    "inputRadius": 8,
+    "mediaRadius": 8,
+    "fieldRadius": 4,
+    "headingFont": "Roboto Flex",
+    "bodyFont": "Roboto Flex",
+    "sectionPadding": 64,
+    "colorSchemes": [
+      {
+        "id": "1",
+        "name": "Default",
+        "background": "#ffffff",
+        "surfaceBg": "#fafafa",
+        "heading": "#000000",
+        "text": "#000000",
+        "primaryButton": {
+          "background": "#fa5109",
+          "text": "#ffffff",
+          "border": "#fa5109"
         },
-        "button-h": {
-          "$value": "48px",
-          "$type": "dimension"
+        "secondaryButton": {
+          "background": "#ffffff",
+          "text": "#000000",
+          "border": "#f5f5f5"
         }
-      },
-      "nav-link": {
-        "$value": "16px",
-        "$type": "dimension"
-      },
-      "newsletter-form-w": {
-        "$value": "480px",
-        "$type": "dimension"
-      },
-      "logo-width": {
-        "$value": "120px",
-        "$type": "dimension"
-      },
-      "card-border": {
-        "$value": "1px",
-        "$type": "dimension"
-      },
-      "container-max": {
-        "$value": "1320px",
-        "$type": "dimension"
-      },
-      "header-height": {
-        "$value": "124px",
-        "$type": "dimension"
-      },
-      "input-height": {
-        "$value": "56px",
-        "$type": "dimension"
       }
-    },
-    "spacing": {
-      "section-y": {
-        "$value": "64px",
-        "$type": "dimension"
-      },
-      "grid-col-gap": {
-        "$value": "40px",
-        "$type": "dimension"
-      },
-      "grid-row-gap": {
-        "$value": "40px",
-        "$type": "dimension"
-      }
-    },
-    "font": {
-      "heading": {
-        "$value": "'Roboto Flex', sans-serif",
-        "$type": "fontFamily"
-      },
-      "body": {
-        "$value": "'Roboto Flex', sans-serif",
-        "$type": "fontFamily"
-      },
-      "badge": {
-        "$value": "'Roboto Flex', sans-serif",
-        "$type": "fontFamily"
-      },
-      "announcement": {
-        "$value": "'Barlow', sans-serif",
-        "$type": "fontFamily"
-      },
-      "footer": {
-        "$value": "'Barlow', sans-serif",
-        "$type": "fontFamily"
-      },
-      "powered": {
-        "$value": "'Inter', sans-serif",
-        "$type": "fontFamily"
-      }
-    },
-    "weight": {
-      "heading": {
-        "$value": "600",
-        "$type": "fontWeight"
-      },
-      "body": {
-        "$value": "400",
-        "$type": "fontWeight"
-      }
-    }
+    ],
+    "defaultSchemeIndex": 0
   },
   "content": {
     "root": {

@@ -246,7 +246,15 @@ describe("assembleFromPackages", () => {
     expect(logoExists).toBe(true);
   });
 
-  it("generates tokens.css from tokens.json", async () => {
+  it("generates tokens.css via shared buildTokensCss (manifest-driven)", async () => {
+    // After the parity refactor, tokens.css is emitted by the same generator
+    // the preview endpoint uses. Source of truth is the theme manifest +
+    // merchant themeSettings; package tokens.json is no longer read directly
+    // by assembleFromPackages. This test asserts:
+    //   1. tokensCssGenerated flag is true
+    //   2. Output contains required CSS var keys (values come from manifest
+    //      or hardcoded Phase 0 fallbacks — specific hex colors are theme
+    //      manifest responsibility, covered by preview endpoint tests).
     const outputDir = path.join(tmpDir, "out");
     const res = await assembleFromPackages({
       themeName: "testtheme",
@@ -259,8 +267,9 @@ describe("assembleFromPackages", () => {
       path.join(outputDir, "src", "styles", "tokens.css"),
       "utf8",
     );
-    expect(tokensCss).toContain("--color-bg: #ffffff;");
-    expect(tokensCss).toContain("--radius-button: 8px;");
+    expect(tokensCss).toMatch(/--radius-button:/);
+    expect(tokensCss).toMatch(/--font-heading:/);
+    expect(tokensCss).toMatch(/--color-primary:/);
   });
 
   it("emits warnings when a theme package is missing", async () => {

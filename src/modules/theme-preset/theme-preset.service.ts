@@ -80,7 +80,7 @@ export class ThemePresetService {
     if (!row) throw new NotFoundException(`Theme preset "${id}" not found`);
     if (!row.content || !row.tokens) {
       throw new BadRequestException(
-        `Theme "${id}" exists but has no preset data (content/tokens missing). Re-run seed migration.`,
+        `Theme "${id}" exists but has no preset data (content/themeSettings missing). Re-run seed migration.`,
       );
     }
     return {
@@ -97,7 +97,9 @@ export class ThemePresetService {
       badge: row.badge ?? undefined,
       author: row.author ?? 'merfy',
       isActive: row.isActive ?? true,
-      tokens: row.tokens as Record<string, unknown>,
+      // `theme.tokens` column stores themeSettings (constructor shape) —
+      // legacy column name kept for backward compatibility with Phase 2e DB.
+      themeSettings: row.tokens as Record<string, unknown>,
       content: row.content as Record<string, unknown>,
       fontsPreload: (row.fontsPreload as string[] | null) ?? [],
     };
@@ -134,10 +136,20 @@ export class ThemePresetService {
     await this.db.transaction(async (tx) => {
       if (replaceContent) {
         newRevisionId = randomUUID();
+        // Merge preset.themeSettings INTO the content root so the canonical
+        // source (revision.data.themeSettings — already read by preview AND
+        // by the live build pipeline) gets the preset's token customization.
+        const contentWithSettings = {
+          ...(preset.content as Record<string, unknown>),
+          themeSettings: {
+            ...((preset.content as { themeSettings?: object }).themeSettings ?? {}),
+            ...(preset.themeSettings as object),
+          },
+        };
         await tx.insert(schema.siteRevision).values({
           id: newRevisionId,
           siteId,
-          data: preset.content as object,
+          data: contentWithSettings,
           meta: {
             source: 'theme-preset',
             presetId,
@@ -152,7 +164,8 @@ export class ThemePresetService {
         .update(schema.site)
         .set({
           themeId: presetId,
-          customTokens: preset.tokens as object,
+          // customTokens column kept for future use but not populated here —
+          // single source of truth is revision.data.themeSettings (see above).
           currentRevisionId: newRevisionId ?? site.currentRevisionId,
           needsRebuild: true,
           updatedAt: new Date(),
@@ -226,7 +239,7 @@ export class ThemePresetService {
               badge: preset.badge ?? null,
               author: preset.author,
               isActive: preset.isActive,
-              tokens: preset.tokens as object,
+              tokens: preset.themeSettings as object,
               content: preset.content as object,
               fontsPreload: preset.fontsPreload,
               presetVersion: preset.presetVersion,
@@ -248,7 +261,7 @@ export class ThemePresetService {
             author: preset.author,
             viewCount: 0,
             isActive: preset.isActive,
-            tokens: preset.tokens as object,
+            tokens: preset.themeSettings as object,
             content: preset.content as object,
             fontsPreload: preset.fontsPreload,
             presetVersion: preset.presetVersion,

@@ -14,170 +14,36 @@
   ],
   "author": "merfy",
   "isActive": true,
-  "tokens": {
-    "$schema": "https://design-tokens.github.io/community-group/format/",
-    "color": {
-      "bg": {
-        "$value": "#eeeeee",
-        "$type": "color"
-      },
-      "surface": {
-        "$value": "#ffffff",
-        "$type": "color"
-      },
-      "heading": {
-        "$value": "#26311c",
-        "$type": "color"
-      },
-      "text": {
-        "$value": "#26311c",
-        "$type": "color"
-      },
-      "muted": {
-        "$value": "#444444",
-        "$type": "color"
-      },
-      "primary": {
-        "$value": "#26311c",
-        "$type": "color"
-      },
-      "accent": {
-        "$value": "#3a4530",
-        "$type": "color"
-      },
-      "button-bg": {
-        "$value": "#3a4530",
-        "$type": "color"
-      },
-      "button-text": {
-        "$value": "#ffffff",
-        "$type": "color"
-      },
-      "button-border": {
-        "$value": "#3a4530",
-        "$type": "color"
-      },
-      "button-2-bg": {
-        "$value": "#eeeeee",
-        "$type": "color"
-      },
-      "button-2-text": {
-        "$value": "#26311c",
-        "$type": "color"
-      },
-      "button-2-border": {
-        "$value": "#c8c8c8",
-        "$type": "color"
-      },
-      "error": {
-        "$value": "#ff9494",
-        "$type": "color"
-      }
-    },
-    "radius": {
-      "button": {
-        "$value": "0px",
-        "$type": "dimension"
-      },
-      "input": {
-        "$value": "0px",
-        "$type": "dimension"
-      },
-      "card": {
-        "$value": "0px",
-        "$type": "dimension"
-      },
-      "media": {
-        "$value": "0px",
-        "$type": "dimension"
-      },
-      "field": {
-        "$value": "0px",
-        "$type": "dimension"
-      }
-    },
-    "size": {
-      "hero": {
-        "heading": {
-          "$value": "72px",
-          "$type": "dimension"
+  "themeSettings": {
+    "buttonRadius": 0,
+    "cardRadius": 0,
+    "inputRadius": 0,
+    "mediaRadius": 0,
+    "fieldRadius": 0,
+    "headingFont": "Bitter",
+    "bodyFont": "Arsenal",
+    "sectionPadding": 80,
+    "colorSchemes": [
+      {
+        "id": "1",
+        "name": "Default",
+        "background": "#eeeeee",
+        "surfaceBg": "#ffffff",
+        "heading": "#26311c",
+        "text": "#26311c",
+        "primaryButton": {
+          "background": "#3a4530",
+          "text": "#ffffff",
+          "border": "#3a4530"
         },
-        "button-h": {
-          "$value": "48px",
-          "$type": "dimension"
+        "secondaryButton": {
+          "background": "#eeeeee",
+          "text": "#26311c",
+          "border": "#c8c8c8"
         }
-      },
-      "nav-link": {
-        "$value": "16px",
-        "$type": "dimension"
-      },
-      "newsletter-form-w": {
-        "$value": "480px",
-        "$type": "dimension"
-      },
-      "logo-width": {
-        "$value": "120px",
-        "$type": "dimension"
-      },
-      "card-border": {
-        "$value": "1px",
-        "$type": "dimension"
-      },
-      "container-max": {
-        "$value": "1320px",
-        "$type": "dimension"
-      },
-      "header-height": {
-        "$value": "80px",
-        "$type": "dimension"
-      },
-      "input-height": {
-        "$value": "56px",
-        "$type": "dimension"
       }
-    },
-    "spacing": {
-      "section-y": {
-        "$value": "80px",
-        "$type": "dimension"
-      },
-      "grid-col-gap": {
-        "$value": "40px",
-        "$type": "dimension"
-      },
-      "grid-row-gap": {
-        "$value": "40px",
-        "$type": "dimension"
-      }
-    },
-    "font": {
-      "heading": {
-        "$value": "'Bitter', serif",
-        "$type": "fontFamily"
-      },
-      "body": {
-        "$value": "'Arsenal', sans-serif",
-        "$type": "fontFamily"
-      },
-      "badge": {
-        "$value": "'Exo 2', sans-serif",
-        "$type": "fontFamily"
-      },
-      "powered": {
-        "$value": "'Inter', sans-serif",
-        "$type": "fontFamily"
-      }
-    },
-    "weight": {
-      "heading": {
-        "$value": "400",
-        "$type": "fontWeight"
-      },
-      "body": {
-        "$value": "400",
-        "$type": "fontWeight"
-      }
-    }
+    ],
+    "defaultSchemeIndex": 0
   },
   "content": {
     "root": {

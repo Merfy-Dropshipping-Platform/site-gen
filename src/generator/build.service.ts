@@ -1504,6 +1504,14 @@ async function stageGenerate(
     registry,
     merchantSettings,
     themeDefaults: (ctx.revisionMeta as { themeDefaults?: any }).themeDefaults,
+    // Preview ↔ live parity: pass the exact same themeSettings the preview
+    // endpoint reads so assembleFromPackages → buildTokensCss produces
+    // identical tokens.css. Preview source: loadRevisionData().data.themeSettings.
+    themeSettings:
+      (ctx.revisionData as { themeSettings?: Record<string, unknown> })
+        .themeSettings ??
+      (ctx.revisionMeta as { themeSettings?: Record<string, unknown> })
+        .themeSettings,
     buildData: {
       siteData: {
         ...ctx.revisionData,

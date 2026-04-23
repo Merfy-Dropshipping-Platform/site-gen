@@ -217,14 +217,19 @@ async function copyBlocksFromPackage(
     if (bd.name === "BLOCK_INVENTORY.md") continue;
     const blockSrcDir = path.join(blocksRoot, bd.name);
     const astroFile = path.join(blockSrcDir, `${bd.name}.astro`);
-    if (!(await fileExists(astroFile))) continue;
+    const hasAstro = await fileExists(astroFile);
     const destAstro = path.join(componentsDir, `${bd.name}.astro`);
-    const alreadyExists = await fileExists(destAstro);
-    if (alreadyExists && !overwrite) continue;
-    await fs.copyFile(astroFile, destAstro);
-    tracked.push(path.relative(outputDir, destAstro));
+    const astroAlready = await fileExists(destAstro);
+
+    if (hasAstro && (overwrite || !astroAlready)) {
+      await fs.copyFile(astroFile, destAstro);
+      tracked.push(path.relative(outputDir, destAstro));
+    }
 
     // Copy companion files (.classes.ts, .tokens.ts, .variants.ts, etc.)
+    // Theme override packages may ship ONLY companions (no .astro) so the
+    // unified base .astro picks up the theme-specific classes map. Copy
+    // them regardless of whether this package has the .astro itself.
     const companions = await fs.readdir(blockSrcDir);
     for (const file of companions) {
       if (file === `${bd.name}.astro`) continue;
@@ -233,11 +238,15 @@ async function copyBlocksFromPackage(
       const stat = await fs.stat(srcPath);
       if (!stat.isFile()) continue;
       const destPath = path.join(componentsDir, file);
+      const destExists = await fileExists(destPath);
+      if (destExists && !overwrite) continue;
       await fs.copyFile(srcPath, destPath);
       tracked.push(path.relative(outputDir, destPath));
     }
 
-    copiedBlocks.push(bd.name);
+    if (hasAstro || (await fs.readdir(blockSrcDir)).length > 0) {
+      copiedBlocks.push(bd.name);
+    }
   }
   return copiedBlocks;
 }

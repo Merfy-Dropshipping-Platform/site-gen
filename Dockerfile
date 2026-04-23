@@ -36,6 +36,8 @@ COPY --from=builder /app/package.json /app/pnpm-lock.yaml ./
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/templates ./templates
+# Phase 3a: new-path assembler reads packages/ for layouts, blocks, styles, tokens
+COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/src/generator/templates/defaults ./dist/src/generator/templates/defaults
 # Phase 2e: preset JSONs loaded on bootstrap by ThemePresetService.seedFromFiles
 COPY --from=builder /app/seed ./seed

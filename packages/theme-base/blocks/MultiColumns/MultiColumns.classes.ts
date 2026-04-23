@@ -1,5 +1,5 @@
 export const MultiColumnsClasses = {
-  root: 'relative w-full',
+  root: 'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
   container: 'mx-auto max-w-[var(--container-max-width)] px-4',
   grid: 'grid gap-x-[var(--spacing-grid-col-gap)] gap-y-[var(--spacing-grid-row-gap)]',
   column: 'flex flex-col',

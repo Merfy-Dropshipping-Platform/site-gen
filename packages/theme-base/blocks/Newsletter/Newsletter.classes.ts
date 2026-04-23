@@ -1,5 +1,5 @@
 export const NewsletterClasses = {
-  root: 'relative w-full',
+  root: 'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
   container: 'mx-auto max-w-[var(--container-max-width)] px-4 text-center',
   inner: 'mx-auto max-w-[var(--size-newsletter-form-w)]',
   heading:

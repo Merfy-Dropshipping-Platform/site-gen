@@ -1,5 +1,5 @@
 export const MultiRowsClasses = {
-  root: 'relative w-full',
+  root: 'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
   container: 'mx-auto max-w-[var(--container-max-width)] px-4',
   stack: 'flex flex-col gap-y-[var(--spacing-grid-row-gap)]',
   row: {

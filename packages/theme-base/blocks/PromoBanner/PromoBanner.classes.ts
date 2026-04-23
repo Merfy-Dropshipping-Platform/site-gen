@@ -1,5 +1,5 @@
 export const PromoBannerClasses = {
-  root: 'relative w-full',
+  root: 'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
   container:
     'mx-auto max-w-[var(--container-max-width)] px-4 flex items-center justify-center gap-4 text-center',
   text: '[font-family:var(--font-body)] font-[var(--weight-body)] text-[rgb(var(--color-text))]',

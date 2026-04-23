@@ -1,5 +1,5 @@
 export const ContactFormClasses = {
-  root: 'relative w-full',
+  root: 'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
   container: 'mx-auto max-w-[var(--container-max-width)] px-4',
   inner: 'mx-auto max-w-2xl',
   heading:

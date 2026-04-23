@@ -1,5 +1,5 @@
 export const ProductClasses = {
-  root: 'relative w-full',
+  root: 'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
   container: 'mx-auto max-w-[var(--container-max-width)] px-4',
   grid:
     'grid grid-cols-1 md:grid-cols-2 gap-[var(--spacing-grid-col-gap)] items-start',

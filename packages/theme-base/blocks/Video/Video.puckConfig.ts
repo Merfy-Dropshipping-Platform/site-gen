@@ -5,7 +5,6 @@ export const VideoSchema = z.object({
   heading: z.string(),
   videoUrl: z.string(),
   poster: z.string(),
-  colorScheme: z.number().int().min(1).max(4),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -21,14 +20,12 @@ export const VideoPuckConfig: BlockPuckConfig<VideoProps> = {
     heading: { type: 'text', label: 'Заголовок' },
     videoUrl: { type: 'text', label: 'Ссылка на видео (YouTube / Vimeo / MP4)' },
     poster: { type: 'text', label: 'Постер (URL)' },
-    colorScheme: { type: 'number', label: 'Цветовая схема' },
     padding: { type: 'object', label: 'Отступы' },
   },
   defaults: {
     heading: '',
     videoUrl: '',
     poster: '',
-    colorScheme: 1,
     padding: { top: 80, bottom: 80 },
   },
   schema: VideoSchema,

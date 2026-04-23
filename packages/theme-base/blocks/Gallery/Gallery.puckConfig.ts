@@ -24,7 +24,6 @@ export const GallerySchema = z.object({
   heading: z.string().optional(),
   items: z.array(GalleryItemSchema).min(1).max(3),
   layout: z.enum(['grid', 'side-by-side']),
-  colorScheme: z.number().int().min(1).max(4),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -40,7 +39,6 @@ export const GalleryPuckConfig: BlockPuckConfig<GalleryProps> = {
     heading: { type: 'text', label: 'Заголовок' },
     items: { type: 'array', label: 'Элементы (макс 3)' },
     layout: { type: 'radio', label: 'Расположение' },
-    colorScheme: { type: 'number', label: 'Цветовая схема' },
     padding: { type: 'object', label: 'Отступы' },
   },
   defaults: {
@@ -51,7 +49,6 @@ export const GalleryPuckConfig: BlockPuckConfig<GalleryProps> = {
       { type: 'image', id: 'item-3', url: '', alt: 'Image 3' },
     ],
     layout: 'grid',
-    colorScheme: 1,
     padding: { top: 80, bottom: 80 },
   },
   schema: GallerySchema,

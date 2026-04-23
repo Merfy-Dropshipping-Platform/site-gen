@@ -16,7 +16,6 @@ export const MultiColumnsSchema = z.object({
     z.literal(3),
     z.literal(4),
   ]),
-  colorScheme: z.number().int().min(1).max(4),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -31,7 +30,6 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
   fields: {
     columns: { type: 'array', label: 'Колонки' },
     displayColumns: { type: 'number', label: 'Колонок в ряд (1-4)' },
-    colorScheme: { type: 'number', label: 'Цветовая схема' },
     padding: { type: 'object', label: 'Отступы' },
   },
   defaults: {
@@ -41,7 +39,6 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
       { id: 'col-3', heading: 'Колонка 3', text: 'Описание третьей колонки.', imageUrl: '' },
     ],
     displayColumns: 3,
-    colorScheme: 1,
     padding: { top: 80, bottom: 80 },
   },
   schema: MultiColumnsSchema,

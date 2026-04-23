@@ -18,7 +18,6 @@ export const HeroSchema = z.object({
   images: z.array(z.object({ url: z.string(), alt: z.string() })).max(8).optional(),
   cta: z.object({ text: z.string(), href: z.string() }),
   variant: z.enum(['centered', 'split', 'overlay', 'grid-4']),
-  colorScheme: z.number().int().min(1).max(4),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -37,7 +36,6 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     images: { type: 'array', label: 'Сетка изображений (grid-4)' },
     cta: { type: 'object', label: 'Кнопка' },
     variant: { type: 'radio', label: 'Вариант' },
-    colorScheme: { type: 'number', label: 'Цветовая схема' },
     padding: { type: 'object', label: 'Отступы' },
   },
   defaults: {
@@ -47,7 +45,6 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     images: undefined,
     cta: { text: 'Смотреть каталог', href: '/catalog' },
     variant: 'centered',
-    colorScheme: 1,
     padding: { top: 80, bottom: 80 },
   },
   schema: HeroSchema,

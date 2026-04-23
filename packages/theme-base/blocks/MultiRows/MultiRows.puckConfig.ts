@@ -12,7 +12,6 @@ const MultiRowItemSchema = z.object({
 
 export const MultiRowsSchema = z.object({
   rows: z.array(MultiRowItemSchema).min(1).max(10),
-  colorScheme: z.number().int().min(1).max(4),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -26,7 +25,6 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
   category: 'layout',
   fields: {
     rows: { type: 'array', label: 'Ряды' },
-    colorScheme: { type: 'number', label: 'Цветовая схема' },
     padding: { type: 'object', label: 'Отступы' },
   },
   defaults: {
@@ -48,7 +46,6 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
         button: { text: 'Узнать больше', href: '/about' },
       },
     ],
-    colorScheme: 1,
     padding: { top: 80, bottom: 80 },
   },
   schema: MultiRowsSchema,

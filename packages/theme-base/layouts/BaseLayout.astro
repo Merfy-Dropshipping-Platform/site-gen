@@ -1,4 +1,6 @@
 ---
+import '../styles/global.css';
+
 interface Props {
   title: string;
   description: string;
@@ -36,10 +38,6 @@ const {
   {/* Font preload injection point */}
   <Fragment set:html={fontHead} />
 
-  {/* Global styles — tokens, Tailwind, normalize, auth, utilities */}
-  <style>
-    @import '../styles/global.css';
-  </style>
   {/* Inline token overrides from preview/constructor (may be empty in live builds) */}
   {tokensCss && <style set:html={tokensCss}></style>}
 

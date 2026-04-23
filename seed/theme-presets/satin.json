@@ -77,8 +77,8 @@
             "showCart": true,
             "showProfile": true
           },
-          "colorScheme": 1,
-          "menuColorScheme": 1,
+          "colorScheme": "1",
+          "menuColorScheme": "1",
           "padding": {
             "top": 16,
             "bottom": 16
@@ -100,7 +100,7 @@
             "href": "/catalog"
           },
           "variant": "centered",
-          "colorScheme": 1,
+          "colorScheme": "1",
           "padding": {
             "top": 80,
             "bottom": 80
@@ -133,7 +133,7 @@
             }
           ],
           "columns": 3,
-          "colorScheme": 1,
+          "colorScheme": "1",
           "padding": {
             "top": 80,
             "bottom": 80
@@ -164,8 +164,8 @@
             "columns": 4,
             "buttonText": "В корзину"
           },
-          "colorScheme": 1,
-          "containerColorScheme": 1,
+          "colorScheme": "1",
+          "containerColorScheme": "1",
           "padding": {
             "top": 80,
             "bottom": 80
@@ -236,8 +236,8 @@
             "email": "",
             "socialLinks": []
           },
-          "colorScheme": 1,
-          "copyrightColorScheme": 1,
+          "colorScheme": "1",
+          "copyrightColorScheme": "1",
           "padding": {
             "top": 80,
             "bottom": 80

@@ -223,6 +223,20 @@ async function copyBlocksFromPackage(
     if (alreadyExists && !overwrite) continue;
     await fs.copyFile(astroFile, destAstro);
     tracked.push(path.relative(outputDir, destAstro));
+
+    // Copy companion files (.classes.ts, .tokens.ts, .variants.ts, etc.)
+    const companions = await fs.readdir(blockSrcDir);
+    for (const file of companions) {
+      if (file === `${bd.name}.astro`) continue;
+      if (shouldSkipFile(file)) continue;
+      const srcPath = path.join(blockSrcDir, file);
+      const stat = await fs.stat(srcPath);
+      if (!stat.isFile()) continue;
+      const destPath = path.join(componentsDir, file);
+      await fs.copyFile(srcPath, destPath);
+      tracked.push(path.relative(outputDir, destPath));
+    }
+
     copiedBlocks.push(bd.name);
   }
   return copiedBlocks;

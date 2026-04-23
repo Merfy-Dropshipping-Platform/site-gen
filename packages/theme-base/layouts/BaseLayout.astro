@@ -35,7 +35,13 @@ const {
   {canonicalUrl && <link rel="canonical" href={canonicalUrl}>}
   {noIndex && <meta name="robots" content="noindex, nofollow">}
 
-  {/* Font preload injection point */}
+  {/* Google Fonts — default theme fonts; scaffold-builder step 7b replaces
+     this href when merchant customises fonts via themeSettings. */}
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300..700&family=Manrope:wght@200..800&display=swap" rel="stylesheet" />
+
+  {/* Font preload injection point (constructor preview overrides) */}
   <Fragment set:html={fontHead} />
 
   {/* Inline token overrides from preview/constructor (may be empty in live builds) */}

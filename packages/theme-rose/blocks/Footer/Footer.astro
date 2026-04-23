@@ -21,8 +21,13 @@ const {
   padding,
 } = Astro.props as Props;
 
-const scheme = `color-scheme-${colorScheme}`;
-const copyScheme = copyrightColorScheme ? `color-scheme-${copyrightColorScheme}` : '';
+const toSchemeNum = (v: unknown): number => {
+  if (typeof v === 'number') return v;
+  const m = String(v ?? '').match(/(\d+)/);
+  return m ? Number(m[1]) : 1;
+};
+const scheme = `color-scheme-${toSchemeNum(colorScheme)}`;
+const copyScheme = copyrightColorScheme ? `color-scheme-${toSchemeNum(copyrightColorScheme)}` : '';
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
 
 // Rose copyright matches Figma footer: "© 2025 Rose Theme Все права защищены. Powered by Merfy"

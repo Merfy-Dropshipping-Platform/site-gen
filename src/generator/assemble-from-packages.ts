@@ -279,6 +279,14 @@ async function copyAssets(
     const fontDest = path.join(outputDir, "public", "fonts");
     await copyRecursive(fontSrc, fontDest, tracked, outputDir);
   }
+
+  // Copy public/ files (e.g. logo.svg, favicon.svg) to outputDir/public/ root.
+  // Needed so merchant headers referencing `/logo.svg` resolve on live site.
+  const publicSrc = path.join(pkgDir, "public");
+  if (await dirExists(publicSrc)) {
+    const publicDest = path.join(outputDir, "public");
+    await copyRecursive(publicSrc, publicDest, tracked, outputDir);
+  }
 }
 
 /**

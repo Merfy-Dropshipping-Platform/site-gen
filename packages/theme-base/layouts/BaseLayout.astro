@@ -36,8 +36,12 @@ const {
   {/* Font preload injection point */}
   <Fragment set:html={fontHead} />
 
-  {/* Tokens CSS injection point */}
-  <style set:html={tokensCss}></style>
+  {/* Global styles — tokens, Tailwind, normalize, auth, utilities */}
+  <style>
+    @import '../styles/global.css';
+  </style>
+  {/* Inline token overrides from preview/constructor (may be empty in live builds) */}
+  {tokensCss && <style set:html={tokensCss}></style>}
 
   {/* Open Graph */}
   <meta property="og:type" content="website">

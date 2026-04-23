@@ -217,6 +217,20 @@
         }
       },
       {
+        "type": "Gallery",
+        "props": {
+          "id": "gallery-rose",
+          "heading": "Снова в наличии!",
+          "items": [
+            { "type": "product", "id": "gal-1", "productId": null },
+            { "type": "collection", "id": "gal-2", "collectionId": null }
+          ],
+          "layout": "side-by-side",
+          "colorScheme": 1,
+          "padding": { "top": 80, "bottom": 80 }
+        }
+      },
+      {
         "type": "Footer",
         "props": {
           "id": "footer-rose",
@@ -237,12 +251,12 @@
             "title": "Навигация",
             "links": [
               {
-                "label": "Магазин",
-                "href": "/catalog"
+                "label": "Главная",
+                "href": "/"
               },
               {
-                "label": "О нас",
-                "href": "/about"
+                "label": "Каталог",
+                "href": "/catalog"
               },
               {
                 "label": "Контакты",

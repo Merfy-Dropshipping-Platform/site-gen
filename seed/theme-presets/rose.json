@@ -119,7 +119,7 @@
             "text": "Смотреть каталог",
             "href": "/catalog"
           },
-          "variant": "grid-4",
+          "variant": "centered",
           "colorScheme": "1",
           "padding": {
             "top": 80,
@@ -167,15 +167,7 @@
           "dataSource": "auto",
           "collection": "",
           "cards": 4,
-          "heading": {
-            "text": "Популярное",
-            "size": "medium",
-            "alignment": "center"
-          },
-          "text": {
-            "content": "",
-            "size": "small"
-          },
+          "heading": "Популярное",
           "productCard": {
             "buttonStyle": "primary",
             "cardStyle": "auto",
@@ -208,15 +200,7 @@
             "description": "Будьте в курсе новых поступлений и акций",
             "placeholder": "Ваш email"
           },
-          "heading": {
-            "text": "",
-            "size": "small",
-            "alignment": "center"
-          },
-          "text": {
-            "content": "",
-            "size": "small"
-          },
+          "heading": "",
           "navigationColumn": {
             "title": "Навигация",
             "links": [

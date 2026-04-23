@@ -305,11 +305,34 @@ export async function buildScaffold(
   // Use "initial" as buildHash for server-island components so the Web Component
   // always fetches fresh data on first page load (fallback is skeleton HTML).
   const buildHash = config.islands?.enabled ? "initial" : undefined;
+
+  // Load blockDefaults from theme.json so pages pick up theme-level prop defaults
+  // (e.g. rose.Footer.variant = '3-col'). Merchant props always win over these.
+  let blockDefaults: Record<string, Record<string, unknown>> = {};
+  if (useNewPackages && config.themeName) {
+    const themeJsonPath = path.join(
+      process.cwd(),
+      "packages",
+      `theme-${config.themeName}`,
+      "theme.json",
+    );
+    try {
+      const raw = await fs.readFile(themeJsonPath, "utf8");
+      const parsed = JSON.parse(raw) as { blockDefaults?: Record<string, Record<string, unknown>> };
+      if (parsed.blockDefaults && typeof parsed.blockDefaults === "object") {
+        blockDefaults = parsed.blockDefaults;
+      }
+    } catch {
+      // theme.json missing or malformed — proceed without defaults
+    }
+  }
+
   for (const page of config.pages) {
     const pageContent = generateAstroPage(page.data, config.registry, {
       layoutImport: config.layout?.importPath,
       layoutTag: config.layout?.tagName,
       buildHash,
+      blockDefaults,
     });
     const pagePath = path.join(outputDir, "src", "pages", page.fileName);
     await writeFile(pagePath, pageContent);

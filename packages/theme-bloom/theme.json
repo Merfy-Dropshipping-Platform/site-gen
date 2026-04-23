@@ -39,6 +39,12 @@
     "--color-error": "255 148 148"
   },
 
+  "blockDefaults": {
+    "Footer": {
+      "variant": "2-part"
+    }
+  },
+
   "colorSchemes": [
     {
       "id": "scheme-1",

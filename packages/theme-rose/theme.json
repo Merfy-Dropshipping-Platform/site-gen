@@ -39,6 +39,12 @@
     "--color-error": "252 165 165"
   },
 
+  "blockDefaults": {
+    "Footer": {
+      "variant": "3-col"
+    }
+  },
+
   "colorSchemes": [
     {
       "id": "scheme-1",

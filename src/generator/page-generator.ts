@@ -103,6 +103,7 @@ function processContentItems(
   imports: Map<string, ImportEntry>, // keyed by component type
   indent: string,
   buildHash: string,
+  blockDefaults: Record<string, Record<string, unknown>> = {},
 ): string[] {
   const lines: string[] = [];
 
@@ -112,6 +113,14 @@ function processContentItems(
       // Unknown component — render a placeholder comment
       lines.push(`${indent}<!-- Unknown component: ${item.type} -->`);
       continue;
+    }
+
+    // Merge theme-level block defaults (from theme.json → blockDefaults[type]) UNDER
+    // merchant props. Merchant values win. Used so e.g. rose gets Footer variant
+    // '3-col' without the merchant ever having to set it in Puck.
+    const themeDefaults = blockDefaults[item.type];
+    if (themeDefaults && Object.keys(themeDefaults).length > 0) {
+      item = { ...item, props: { ...themeDefaults, ...(item.props ?? {}) } };
     }
 
     // Server-island components: emit <merfy-island> Web Component, no import needed
@@ -154,6 +163,7 @@ function processContentItems(
         imports,
         indent + "  ",
         buildHash,
+        blockDefaults,
       );
       lines.push(...childLines);
       lines.push(`${indent}</${importEntry.alias}>`);
@@ -180,6 +190,7 @@ export function generateAstroPage(
     layoutImport?: string; // e.g. "../layouts/StoreLayout.astro"
     layoutTag?: string; // e.g. "StoreLayout"
     buildHash?: string; // hash for server-island cache busting
+    blockDefaults?: Record<string, Record<string, unknown>>; // theme.json blockDefaults
   },
 ): string {
   const content = pageData.content ?? [];
@@ -201,6 +212,7 @@ export function generateAstroPage(
     imports,
     baseIndent,
     hash,
+    options?.blockDefaults ?? {},
   );
 
   // Build import statements

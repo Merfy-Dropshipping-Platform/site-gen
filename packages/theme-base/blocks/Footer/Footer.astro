@@ -4,10 +4,13 @@ import { FooterClasses as C } from './Footer.classes';
 
 interface Props extends FooterProps {
   id?: string;
+  /** Internal theme-level layout switch. Themes set this via theme.json → blockDefaults.Footer.variant. */
+  variant?: '3-col' | '2-part' | 'minimal';
 }
 
 const {
   id,
+  variant = 'minimal',
   siteTitle,
   copyright,
   newsletter,
@@ -20,14 +23,29 @@ const {
 } = Astro.props as Props;
 
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
-const year = new Date().getFullYear();
-const logoLabel = (siteTitle ?? '').trim() || (copyright?.companyName ?? '').trim();
-const showYear = copyright?.showYear !== false;
-const copyCompany = (copyright?.companyName ?? '').trim();
-const copyText = `© ${showYear ? year + ' ' : ''}${copyCompany ? copyCompany + ' ' : ''}Все права защищены.`;
-const poweredBy = (copyright?.poweredBy ?? '').trim();
 
-// Inline SVG paths per social platform; stroke uses currentColor → inherits from Tailwind text color.
+// Unified brand resolution. Priority:
+//   copyright.companyName → siteTitle → (for 2-part legacy) navigationColumn.title (when brand-like).
+const year = new Date().getFullYear();
+const navTitle = (navigationColumn?.title ?? '').trim();
+const isNavLabel = !navTitle || /^навигация$/i.test(navTitle);
+const brandName =
+  (copyright?.companyName ?? '').trim() ||
+  (siteTitle ?? '').trim() ||
+  (isNavLabel ? 'Мой магазин' : navTitle);
+const poweredBy = (copyright?.poweredBy ?? 'Powered by Merfy').trim();
+const showYear = copyright?.showYear !== false;
+const copyText = `© ${showYear ? year + ' ' : ''}${brandName ? brandName + ' ' : ''}Все права защищены.`;
+
+// New constructor fields take priority over legacy newsletter heading/description.
+const newsletterHeading = heading?.text || newsletter?.heading;
+const newsletterDescription = text?.content || newsletter?.description;
+
+// Newsletter submit style: icon-arrow for 3-col (rose) and minimal (base); text "Подписаться" for 2-part.
+const submitStyle: 'icon' | 'text' = variant === '2-part' ? 'text' : 'icon';
+
+// Inline SVG paths per social platform — strokes inherit via currentColor.
+// Single source of truth for all themes (prev. duplicated across 6 files).
 const SOCIAL_ICONS: Record<string, string> = {
   telegram: '<path d="M21.198 2.433a2.242 2.242 0 0 0-1.022.215L2.684 9.896a2.25 2.25 0 0 0 .1 4.163l3.917 1.218 1.93 6.19a1.5 1.5 0 0 0 2.55.575l2.68-2.68 4.84 3.564a1.5 1.5 0 0 0 2.37-.866l3.2-16.515a2.25 2.25 0 0 0-3.073-2.112Z" stroke="currentColor" stroke-width="1.5" fill="none"/>',
   vk: '<path d="M2 6h20v12H2z" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M7 10v4M12 10v4M17 10v4" stroke="currentColor" stroke-width="1.5"/>',
@@ -35,26 +53,26 @@ const SOCIAL_ICONS: Record<string, string> = {
   tiktok: '<path d="M14 4v10a4 4 0 1 1-4-4" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M14 4a4 4 0 0 0 4 4" stroke="currentColor" stroke-width="1.5" fill="none"/>',
   dzen: '<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M12 2a10 10 0 0 0 0 20M2 12a10 10 0 0 1 20 0" stroke="currentColor" stroke-width="1.5" fill="none"/>',
 };
+
+// FooterClasses is shared across themes; each theme ships its own Footer.classes.ts with
+// only the sub-tree of keys relevant to its variant. Access via optional-chaining so a
+// theme using variant='minimal' doesn't need C.main.grid (and vice versa).
+const Cm = C.main as Record<string, string>;
+const Ccopy = (C as any).copyright ?? {};
+const CcopyBar = (C as any).copyrightBar ?? {};
+const CpoweredBy = (C as any).poweredBy ?? {};
 ---
-<footer
-  class={C.root}
-  data-puck-component-id={id}
-  style={paddingStyle}
->
+<footer class={C.root} data-puck-component-id={id} style={paddingStyle}>
   <div class={C.container}>
     {newsletter?.enabled && (
       <section class={C.newsletter.wrapper} aria-labelledby="newsletter-heading">
         <div class={C.newsletter.inner}>
           <div class={C.newsletter.copy}>
-            {(heading?.text || newsletter.heading) && (
-              <h2 id="newsletter-heading" class={C.newsletter.heading}>
-                {heading?.text || newsletter.heading}
-              </h2>
+            {newsletterHeading && (
+              <h2 id="newsletter-heading" class={C.newsletter.heading}>{newsletterHeading}</h2>
             )}
-            {(text?.content || newsletter.description) && (
-              <p class={C.newsletter.description}>
-                {text?.content || newsletter.description}
-              </p>
+            {newsletterDescription && (
+              <p class={C.newsletter.description}>{newsletterDescription}</p>
             )}
           </div>
           {/* Phase 1c: React island handles newsletter submit */}
@@ -67,76 +85,201 @@ const SOCIAL_ICONS: Record<string, string> = {
               required
               class={C.newsletter.input}
             />
-            <button
-              type="submit"
-              aria-label="Подписаться"
-              class={C.newsletter.submit}
-            >
-              <svg class="w-full h-full" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
+            {submitStyle === 'icon' ? (
+              <button type="submit" aria-label="Подписаться" class={C.newsletter.submit}>
+                <svg class="w-full h-full" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            ) : (
+              <button type="submit" class={C.newsletter.submit}>Подписаться</button>
+            )}
           </form>
         </div>
       </section>
     )}
 
-    {/* Main footer: 2-part layout per FR-011 (logo+nav LEFT, contact+social RIGHT) */}
-    <section class={C.main.section} aria-label="Информация и навигация">
-      <div class={C.main.twoPart}>
-        <div class={C.main.leftGroup}>
-          {logoLabel && (
-            <span class={C.main.leftTitle}>{logoLabel}</span>
+    {variant === '3-col' && (
+      <section class={Cm.section} aria-label="Информация и навигация">
+        <div class={Cm.grid}>
+          {navigationColumn?.title && (
+            <div class={(C as any).column?.root}>
+              <h3 class={(C as any).column?.title}>{navigationColumn.title}</h3>
+              <nav class={(C as any).column?.nav} aria-label="Footer navigation">
+                {(navigationColumn.links ?? []).map((link) => (
+                  <a href={link.href} class={(C as any).link}>{link.label}</a>
+                ))}
+              </nav>
+            </div>
           )}
-          <nav class={C.main.leftNav} aria-label="Footer navigation">
-            {(navigationColumn?.links ?? []).map((link) => (
-              <a href={link.href} class={C.main.leftLink}>{link.label}</a>
-            ))}
-          </nav>
-        </div>
-
-        <div class={C.main.rightGroup}>
-          {socialColumn?.email && (
-            <a href={`mailto:${socialColumn.email}`} class={C.main.rightEmail}>
-              {socialColumn.email}
-            </a>
+          {informationColumn?.title && (
+            <div class={(C as any).column?.root}>
+              <h3 class={(C as any).column?.title}>{informationColumn.title}</h3>
+              <div class={(C as any).column?.body}>
+                {(informationColumn.links ?? []).map((link) => (
+                  <a href={link.href} class={(C as any).link}>{link.label}</a>
+                ))}
+              </div>
+            </div>
           )}
-          {(socialColumn?.socialLinks ?? []).length > 0 && (
-            <div class={C.main.socialRow}>
-              {(socialColumn?.socialLinks ?? []).map((social) => (
-                <a
-                  href={social.href}
-                  aria-label={social.platform}
-                  class={C.main.socialLink}
-                  data-platform={social.platform}
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true" set:html={SOCIAL_ICONS[social.platform] ?? ''} />
-                </a>
-              ))}
+          {socialColumn?.title && (
+            <div class={Cm.socialColumnWrap}>
+              <div class={(C as any).column?.root}>
+                <h3 class={(C as any).column?.title}>{socialColumn.title}</h3>
+                <div class={(C as any).column?.body}>
+                  {socialColumn.email && (
+                    <a href={`mailto:${socialColumn.email}`} class={(C as any).email}>{socialColumn.email}</a>
+                  )}
+                  {(socialColumn.socialLinks ?? []).length > 0 && (
+                    <div class={(C as any).socialRow}>
+                      {(socialColumn.socialLinks ?? []).map((social) => (
+                        <a
+                          href={social.href}
+                          aria-label={social.platform}
+                          class={(C as any).socialLink}
+                          data-platform={social.platform}
+                        >
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true" set:html={SOCIAL_ICONS[social.platform] ?? ''} />
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>
+      </section>
+    )}
+
+    {variant === '2-part' && (
+      <section class={Cm.section} aria-label="Информация и навигация">
+        <div class={Cm.leftCol}>
+          <div class={(C as any).brand}>{brandName}</div>
+          {navigationColumn?.links && navigationColumn.links.length > 0 && (
+            <nav class={(C as any).navColumn?.root} aria-label="Footer navigation">
+              {navigationColumn.links.map((link) => (
+                <a href={link.href} class={(C as any).navColumn?.link}>{link.label}</a>
+              ))}
+            </nav>
+          )}
+        </div>
+
+        <div class={Cm.rightCol}>
+          <div class={(C as any).infoColumn?.wrap}>
+            {socialColumn?.email && (
+              <a href={`mailto:${socialColumn.email}`} class={(C as any).infoColumn?.emailLink}>{socialColumn.email}</a>
+            )}
+          </div>
+
+          <div class="flex flex-col gap-[24px] md:items-end">
+            {socialColumn?.socialLinks && socialColumn.socialLinks.length > 0 && (
+              <div class={(C as any).socialRow}>
+                {socialColumn.socialLinks.map((social) => (
+                  <a
+                    href={social.href}
+                    aria-label={social.platform}
+                    class={(C as any).socialLink}
+                    data-platform={social.platform}
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true" set:html={SOCIAL_ICONS[social.platform] ?? ''} />
+                  </a>
+                ))}
+              </div>
+            )}
+            {/* Vanilla-family signature: payment method badges (MC / VISA / МИР) */}
+            <div class={(C as any).paymentRow}>
+              <div class={(C as any).paymentBadge}><span class={(C as any).paymentBadgeText}>MC</span></div>
+              <div class={(C as any).paymentBadge}><span class={(C as any).paymentBadgeText}>VISA</span></div>
+              <div class={(C as any).paymentBadge}><span class={(C as any).paymentBadgeText}>МИР</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    )}
+
+    {variant === 'minimal' && (
+      <>
+        <section class={Cm.section} aria-label="Информация и навигация">
+          <div class={Cm.twoPart}>
+            <div class={Cm.leftGroup}>
+              {brandName && (
+                <span class={Cm.leftTitle}>{brandName}</span>
+              )}
+              <nav class={Cm.leftNav} aria-label="Footer navigation">
+                {(navigationColumn?.links ?? []).map((link) => (
+                  <a href={link.href} class={Cm.leftLink}>{link.label}</a>
+                ))}
+              </nav>
+            </div>
+
+            <div class={Cm.rightGroup}>
+              {socialColumn?.email && (
+                <a href={`mailto:${socialColumn.email}`} class={Cm.rightEmail}>
+                  {socialColumn.email}
+                </a>
+              )}
+              {(socialColumn?.socialLinks ?? []).length > 0 && (
+                <div class={Cm.socialRow}>
+                  {(socialColumn?.socialLinks ?? []).map((social) => (
+                    <a
+                      href={social.href}
+                      aria-label={social.platform}
+                      class={Cm.socialLink}
+                      data-platform={social.platform}
+                    >
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true" set:html={SOCIAL_ICONS[social.platform] ?? ''} />
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* Secondary row: copyright (left) + information links (right) — minimal only */}
+        {(informationColumn?.links ?? []).length > 0 && (
+          <div class={Cm.section} aria-label="Правовая информация">
+            <div class={Cm.twoPart}>
+              <span class={Cm.leftLink}>{copyText}</span>
+              <div class={Cm.socialRow}>
+                {(informationColumn?.links ?? []).map((link) => (
+                  <a href={link.href} class={Cm.leftLink}>{link.label}</a>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    )}
+
+    {variant === '2-part' && (
+      <div class={CcopyBar.root}>
+        <span class={CcopyBar.text}>
+          &copy; {year} {brandName}. Все права защищены.
+        </span>
+        {informationColumn?.links && informationColumn.links.length > 0 && (
+          <div class={CcopyBar.links}>
+            {informationColumn.links.map((link) => (
+              <a href={link.href} class={CcopyBar.link}>{link.label}</a>
+            ))}
+          </div>
+        )}
       </div>
-    </section>
+    )}
   </div>
 
-  {/* Secondary row: copyright (left) + information links (right) */}
-  {(informationColumn?.links ?? []).length > 0 && (
-    <div class={C.main.section} aria-label="Правовая информация">
-      <div class={C.main.twoPart}>
-        <span class={C.main.leftLink}>{copyText}</span>
-        <div class={C.main.socialRow}>
-          {(informationColumn?.links ?? []).map((link) => (
-            <a href={link.href} class={C.main.leftLink}>{link.label}</a>
-          ))}
-        </div>
-      </div>
+  {variant === '2-part' ? (
+    <div class={CpoweredBy.bar}>
+      <p class={CpoweredBy.text}>
+        &copy; {year} {brandName}. Все права защищены. {poweredBy}
+      </p>
+    </div>
+  ) : (
+    <div class={Ccopy.bar}>
+      <p class={Ccopy.text}>
+        {copyText}{poweredBy ? ` ${poweredBy}` : ''}
+      </p>
     </div>
   )}
-
-  <div class={C.copyright.bar}>
-    <p class={C.copyright.text}>
-      {copyText}{poweredBy ? ` ${poweredBy}` : ''}
-    </p>
-  </div>
 </footer>

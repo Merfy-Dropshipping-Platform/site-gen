@@ -15,6 +15,8 @@ const SocialLinkSchema = z.object({
 
 export const FooterSchema = z.object({
   siteTitle: z.string().optional(),
+  /** Theme-level layout switch (set via theme.json → blockDefaults.Footer.variant). */
+  variant: z.enum(['3-col', '2-part', 'minimal']).optional(),
   copyright: z
     .object({
       companyName: z.string().optional(),
@@ -74,6 +76,7 @@ export const FooterPuckConfig: BlockPuckConfig<FooterProps> = {
   },
   defaults: {
     siteTitle: '',
+    variant: 'minimal',
     copyright: {
       companyName: '',
       poweredBy: 'Powered by Merfy',

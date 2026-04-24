@@ -62,7 +62,7 @@
             "collections": [],
             "columnsCount": 2,
             "imageView": "square",
-            "colorScheme": "scheme-3",
+            "colorScheme": "scheme-4",
             "padding": { "top": 120, "bottom": 120 }
           }
         },
@@ -73,7 +73,7 @@
             "heading": { "text": "Тепло вашего дома начинается здесь", "size": "medium" },
             "text": { "text": "Мы стремимся создавать продукты, которые вдохновляют и приносят радость в повседневную жизнь. Каждая деталь продумана с заботой о вас. Наши товары — это сочетание качества, стиля и функциональности для вашего комфорта." },
             "align": "center",
-            "colorScheme": "scheme-2",
+            "colorScheme": "scheme-3",
             "padding": { "top": 120, "bottom": 120 }
           }
         },

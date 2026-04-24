@@ -26,9 +26,45 @@
     "colorSchemes": [
       {
         "id": "1",
-        "name": "Default",
+        "name": "Dark Olive",
+        "background": "#26311c",
+        "surfaceBg": "#26311c",
+        "heading": "#ffffff",
+        "text": "#ffffff",
+        "primaryButton": {
+          "background": "#3a4530",
+          "text": "#ffffff",
+          "border": "#3a4530"
+        },
+        "secondaryButton": {
+          "background": "#eeeeee",
+          "text": "#26311c",
+          "border": "#c8c8c8"
+        }
+      },
+      {
+        "id": "2",
+        "name": "Medium Olive",
+        "background": "#3a4530",
+        "surfaceBg": "#3a4530",
+        "heading": "#ffffff",
+        "text": "#ffffff",
+        "primaryButton": {
+          "background": "#ffffff",
+          "text": "#3a4530",
+          "border": "#ffffff"
+        },
+        "secondaryButton": {
+          "background": "#26311c",
+          "text": "#ffffff",
+          "border": "#505a46"
+        }
+      },
+      {
+        "id": "3",
+        "name": "Light Gray",
         "background": "#eeeeee",
-        "surfaceBg": "#ffffff",
+        "surfaceBg": "#eeeeee",
         "heading": "#26311c",
         "text": "#26311c",
         "primaryButton": {
@@ -38,6 +74,24 @@
         },
         "secondaryButton": {
           "background": "#eeeeee",
+          "text": "#26311c",
+          "border": "#c8c8c8"
+        }
+      },
+      {
+        "id": "4",
+        "name": "White",
+        "background": "#ffffff",
+        "surfaceBg": "#ffffff",
+        "heading": "#26311c",
+        "text": "#26311c",
+        "primaryButton": {
+          "background": "#3a4530",
+          "text": "#ffffff",
+          "border": "#3a4530"
+        },
+        "secondaryButton": {
+          "background": "#ffffff",
           "text": "#26311c",
           "border": "#c8c8c8"
         }

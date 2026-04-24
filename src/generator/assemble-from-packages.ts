@@ -471,6 +471,76 @@ async function generateTokensFromTheme(
 }
 
 /**
+ * Extract font family name from CSS value like `'Bitter', serif` → `Bitter`.
+ * Returns null if no quoted name found.
+ */
+function extractFontName(cssValue: string): string | null {
+  const match = cssValue.match(/["']([^"']+)["']/);
+  return match?.[1]?.replace(" Variable", "") ?? null;
+}
+
+/**
+ * Rewrite Google Fonts `<link>` in `BaseLayout.astro` to use the theme's
+ * default fonts from `packages/theme-<name>/theme.json` `defaults` block
+ * (`--font-heading`, `--font-body`).
+ *
+ * WHY: theme-base/layouts/BaseLayout.astro hardcodes rose-theme fonts
+ * (Comfortaa + Manrope). Without this step, every non-rose theme renders
+ * with rose fonts on live sites whenever the merchant hasn't customised
+ * fonts via themeSettings (scaffold-builder step 7b only fires on custom).
+ *
+ * This runs AFTER `copyBaseLayouts` (so the BaseLayout file is present)
+ * and BEFORE scaffold-builder's step 7b (whose regex still matches and
+ * overrides this on merchant-custom font selection).
+ */
+async function applyThemeDefaultFonts(
+  themeDir: string,
+  outputDir: string,
+  warnings: string[],
+): Promise<void> {
+  const manifestPath = path.join(themeDir, "theme.json");
+  const manifest = (await readJsonSafe(manifestPath)) as
+    | { defaults?: Record<string, string> }
+    | null;
+  if (!manifest?.defaults) return;
+
+  const headingCss = manifest.defaults["--font-heading"] ?? "";
+  const bodyCss = manifest.defaults["--font-body"] ?? "";
+  const headingName = extractFontName(headingCss);
+  const bodyName = extractFontName(bodyCss);
+  if (!headingName && !bodyName) return;
+
+  const families = new Set<string>();
+  if (headingName) families.add(headingName);
+  if (bodyName) families.add(bodyName);
+  const familyParams = [...families]
+    .map((name) => `family=${name.replace(/ /g, "+")}:wght@100..900`)
+    .join("&");
+  const newUrl = `https://fonts.googleapis.com/css2?${familyParams}&display=swap`;
+
+  const layoutPath = path.join(outputDir, "src", "layouts", "BaseLayout.astro");
+  try {
+    let layout = await fs.readFile(layoutPath, "utf8");
+    const before = layout;
+    layout = layout.replace(
+      /href="https:\/\/fonts\.googleapis\.com\/css2\?[^"]+"/,
+      `href="${newUrl}"`,
+    );
+    if (layout === before) {
+      warnings.push(
+        `applyThemeDefaultFonts: no Google Fonts <link> match in BaseLayout.astro`,
+      );
+      return;
+    }
+    await fs.writeFile(layoutPath, layout, "utf8");
+  } catch (e) {
+    warnings.push(
+      `applyThemeDefaultFonts: failed to patch BaseLayout.astro — ${(e as Error).message}`,
+    );
+  }
+}
+
+/**
  * Main entry point: assemble an Astro project from new-style packages.
  *
  * Flow:
@@ -540,6 +610,9 @@ export async function assembleFromPackages(
     await copyCustomBlocks(themeDir, opts.outputDir, tracked);
     await copyAssets(themeDir, opts.outputDir, tracked);
     await copyStyles(themeDir, opts.outputDir, tracked);
+    // Rewrite Google Fonts <link> in BaseLayout to match theme.json defaults
+    // (prevents all non-rose themes from inheriting rose's Comfortaa+Manrope)
+    await applyThemeDefaultFonts(themeDir, opts.outputDir, warnings);
   } else {
     warnings.push(`theme-${opts.themeName} package not found at ${themeDir}`);
   }

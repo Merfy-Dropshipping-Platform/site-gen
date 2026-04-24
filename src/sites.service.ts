@@ -594,11 +594,14 @@ export class SitesDomainService {
       }
     }
     // Handle themeId (new) or theme (legacy, for backward compatibility during migration)
+    let nextThemeId: string | null | undefined;
     if (typeof params.patch?.themeId === "string") {
-      updates.themeId = params.patch.themeId || null;
+      nextThemeId = params.patch.themeId || null;
+      updates.themeId = nextThemeId;
     } else if (params.patch?.theme?.id) {
       // Legacy: accept { theme: { id: 'rose' } } and extract themeId
-      updates.themeId = params.patch.theme.id;
+      nextThemeId = params.patch.theme.id;
+      updates.themeId = nextThemeId;
     }
     // Handle branding (logo + colors); null clears branding
     if ("branding" in (params.patch ?? {})) {
@@ -622,6 +625,62 @@ export class SitesDomainService {
         ),
       )
       .returning({ id: schema.site.id });
+
+    // Rose-style re-seed: при смене themeId пересеиваем revision из defaults/{theme}.json
+    // если текущая revision не содержит themeSettings (сайт-новичок, которого
+    // переключили с темы-дефолта, где themeSettings не сеялся).
+    // Это гарантирует что merchant-уровень colorSchemes + pagesData соответствуют
+    // новой теме — без этого :root получает fallback scheme из theme.json, и контент
+    // остаётся в старой семантике scheme-IDs.
+    if (row && typeof nextThemeId === "string" && nextThemeId) {
+      try {
+        const [current] = await this.db
+          .select({
+            id: schema.site.id,
+            currentRevisionId: schema.site.currentRevisionId,
+          })
+          .from(schema.site)
+          .where(eq(schema.site.id, params.siteId))
+          .limit(1);
+        let shouldReseed = !current?.currentRevisionId;
+        if (current?.currentRevisionId) {
+          const [rev] = await this.db
+            .select({ data: schema.siteRevision.data })
+            .from(schema.siteRevision)
+            .where(eq(schema.siteRevision.id, current.currentRevisionId))
+            .limit(1);
+          const d = (rev?.data ?? {}) as Record<string, unknown>;
+          const ts = (d as any).themeSettings;
+          const hasThemeSettings =
+            ts &&
+            typeof ts === "object" &&
+            Array.isArray((ts as any).colorSchemes) &&
+            (ts as any).colorSchemes.length > 0;
+          shouldReseed = !hasThemeSettings;
+        }
+        if (shouldReseed) {
+          const defaultContent = this.getDefaultContent(nextThemeId);
+          if (defaultContent) {
+            await this.createRevision({
+              tenantId: params.tenantId,
+              siteId: params.siteId,
+              data: defaultContent,
+              meta: { title: "Theme reseed" },
+              actorUserId: params.actorUserId,
+              setCurrent: true,
+            });
+            this.logger.log(
+              `theme-switch reseed: site=${params.siteId} theme=${nextThemeId}`,
+            );
+          }
+        }
+      } catch (e) {
+        this.logger.warn(
+          `theme-switch reseed failed for ${params.siteId}: ${e instanceof Error ? e.message : e}`,
+        );
+      }
+    }
+
     if (row)
       this.events.emit("sites.site.updated", {
         tenantId: params.tenantId,

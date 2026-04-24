@@ -99,4 +99,45 @@ describe('PreviewService', () => {
       svc.renderBlock({ blockName: 'NonExistent', props: {} }),
     ).rejects.toThrow(/not available|Block/i);
   });
+
+  it('wraps block HTML in color-scheme-N div when colorScheme prop set', async () => {
+    const html = await svc.renderPreviewPage({
+      blocks: [
+        {
+          type: 'Hero',
+          props: { id: 'hero-scheme', title: 'WrappedHero', colorScheme: 3 },
+        },
+      ],
+      tokensCss: '',
+      fontHead: '',
+    });
+    expect(html).toContain('<div class="color-scheme-3" data-block-scheme="3">');
+    expect(html).toContain('WrappedHero');
+  });
+
+  it('accepts string scheme-N form and strips the prefix', async () => {
+    const html = await svc.renderPreviewPage({
+      blocks: [
+        {
+          type: 'Hero',
+          props: { id: 'hero-str', title: 'StringScheme', colorScheme: 'scheme-2' },
+        },
+      ],
+      tokensCss: '',
+      fontHead: '',
+    });
+    expect(html).toContain('data-block-scheme="2"');
+  });
+
+  it('does NOT add wrapper when colorScheme prop missing', async () => {
+    const html = await svc.renderPreviewPage({
+      blocks: [
+        { type: 'Hero', props: { id: 'hero-none', title: 'NoScheme' } },
+      ],
+      tokensCss: '',
+      fontHead: '',
+    });
+    expect(html).toContain('NoScheme');
+    expect(html).not.toContain('data-block-scheme');
+  });
 });

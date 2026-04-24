@@ -178,7 +178,23 @@ export class PreviewService {
         props: b.props,
         themeId: input.themeId ?? null,
       });
-      renderedBlocks.push(html);
+      // Mirror live build: wrap block in color-scheme-N so tokens-css.ts
+      // .color-scheme-N overrides apply per-block. Keeps iframe preview at
+      // parity with the baked Astro page (see page-generator.ts).
+      const rawScheme = b.props?.colorScheme;
+      let schemeId: string | null = null;
+      if (typeof rawScheme === 'number' && Number.isFinite(rawScheme)) {
+        schemeId = String(rawScheme);
+      } else if (typeof rawScheme === 'string' && rawScheme.length > 0) {
+        schemeId = rawScheme.replace(/^scheme-/, '');
+      }
+      if (schemeId) {
+        renderedBlocks.push(
+          `<div class="color-scheme-${schemeId}" data-block-scheme="${schemeId}">${html}</div>`,
+        );
+      } else {
+        renderedBlocks.push(html);
+      }
     }
 
     const previewTailwind = await loadPreviewTailwindCss();

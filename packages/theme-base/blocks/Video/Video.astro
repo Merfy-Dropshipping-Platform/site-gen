@@ -43,6 +43,14 @@ const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
 
+// `position=fullscreen` removes the container clamp so video spans the
+// viewport. Default contained → merchants get Figma-style padded video.
+const positionProp = typeof raw.position === 'string' ? raw.position : 'contained';
+const containerClass =
+  positionProp === 'fullscreen'
+    ? 'w-full'
+    : C.container;
+
 // Detect provider by URL. Return { kind, embedUrl } or null for self-hosted.
 type Kind = 'youtube' | 'vimeo' | 'file';
 function parseVideo(url: string): { kind: Kind; embedUrl: string } {
@@ -84,7 +92,7 @@ const video = parseVideo(videoUrl);
   data-media-block-id={id}
   style={paddingStyle}
 >
-  <div class={C.container}>
+  <div class={containerClass}>
     {heading && <h2 class={C.heading}>{heading}</h2>}
     <div class={C.media} data-media-target>
       {video.kind === 'youtube' && (

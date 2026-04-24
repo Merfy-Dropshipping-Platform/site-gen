@@ -28,8 +28,24 @@ const readText = (v: unknown): string | undefined => {
 const heading = readText(raw.heading);
 const text = readText(raw.text);
 const alignment = (alignmentProp as 'left' | 'center' | 'right' | undefined)
+  ?? (raw.align as 'left' | 'center' | 'right' | undefined)
   ?? (raw.position as 'left' | 'center' | 'right' | undefined)
   ?? 'center';
+
+// Heading size: plain prop OR nested heading.size (legacy). Falls back to
+// small (existing var-based size) for backwards-compatibility.
+type HeadingSize = 'small' | 'medium' | 'large';
+const readHeadingSize = (): HeadingSize => {
+  const direct = raw.headingSize;
+  if (direct === 'small' || direct === 'medium' || direct === 'large') return direct;
+  if (raw.heading && typeof raw.heading === 'object') {
+    const size = (raw.heading as { size?: string }).size;
+    if (size === 'small' || size === 'medium' || size === 'large') return size;
+  }
+  return 'small';
+};
+const headingSize = readHeadingSize();
+const headingSizeClass = C.headingSize[headingSize];
 
 type CtaVariant = 'primary' | 'black' | 'white';
 const readCta = (v: unknown): { text: string; href: string; variant: CtaVariant } | undefined => {
@@ -59,7 +75,7 @@ const paddingStyle = padding
   style={paddingStyle}
 >
   <div class:list={[C.container, alignClass]}>
-    {heading && <h2 class={C.heading}>{heading}</h2>}
+    {heading && <h2 class:list={[C.heading, headingSizeClass]}>{heading}</h2>}
     {text && <div class={C.text} set:html={text} />}
     {cta && (
       <div class:list={[C.ctaWrap, ctaAlignClass]}>

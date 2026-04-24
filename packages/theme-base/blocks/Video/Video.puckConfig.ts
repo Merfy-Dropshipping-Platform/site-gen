@@ -5,6 +5,11 @@ export const VideoSchema = z.object({
   heading: z.string(),
   videoUrl: z.string(),
   poster: z.string(),
+  /**
+   * `contained` clamps the media to max-width (Figma vanilla — video with
+   * scheme-1 dark olive padding around). `fullscreen` = edge-to-edge.
+   */
+  position: z.enum(['contained', 'fullscreen']).optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -20,12 +25,21 @@ export const VideoPuckConfig: BlockPuckConfig<VideoProps> = {
     heading: { type: 'text', label: 'Заголовок' },
     videoUrl: { type: 'text', label: 'Ссылка на видео (YouTube / Vimeo / MP4)' },
     poster: { type: 'text', label: 'Постер (URL)' },
+    position: {
+      type: 'radio',
+      label: 'Размер',
+      options: [
+        { label: 'В контейнере', value: 'contained' },
+        { label: 'На всю ширину', value: 'fullscreen' },
+      ],
+    },
     padding: { type: 'object', label: 'Отступы' },
   },
   defaults: {
     heading: '',
     videoUrl: '',
     poster: '',
+    position: 'contained',
     padding: { top: 80, bottom: 80 },
   },
   schema: VideoSchema,

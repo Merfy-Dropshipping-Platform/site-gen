@@ -5,6 +5,7 @@ export const MainTextSchema = z.object({
   heading: z.string(),
   text: z.string(),
   alignment: z.enum(['left', 'center', 'right']),
+  headingSize: z.enum(['small', 'medium', 'large']).optional(),
   cta: z
     .object({
       text: z.string(),
@@ -27,6 +28,15 @@ export const MainTextPuckConfig: BlockPuckConfig<MainTextProps> = {
     heading: { type: 'text', label: 'Заголовок' },
     text: { type: 'text', label: 'Текст' },
     alignment: { type: 'radio', label: 'Выравнивание' },
+    headingSize: {
+      type: 'radio',
+      label: 'Размер заголовка',
+      options: [
+        { label: 'Маленький', value: 'small' },
+        { label: 'Средний', value: 'medium' },
+        { label: 'Большой', value: 'large' },
+      ],
+    },
     cta: { type: 'object', label: 'Кнопка (опционально)' },
     padding: { type: 'object', label: 'Отступы' },
   },

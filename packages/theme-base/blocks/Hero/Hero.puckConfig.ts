@@ -30,13 +30,52 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
   label: 'Hero',
   category: 'hero',
   fields: {
+    variant: {
+      type: 'radio',
+      label: 'Вариант',
+      options: [
+        { label: 'По центру', value: 'centered' },
+        { label: 'Сплит (фото сбоку)', value: 'split' },
+        { label: 'Фон на всю ширину', value: 'overlay' },
+        { label: 'Сетка 2x2', value: 'grid-4' },
+      ],
+    },
     title: { type: 'text', label: 'Заголовок' },
     subtitle: { type: 'text', label: 'Подзаголовок' },
-    image: { type: 'object', label: 'Изображение' },
-    images: { type: 'array', label: 'Сетка изображений (grid-4)' },
-    cta: { type: 'object', label: 'Кнопка' },
-    variant: { type: 'radio', label: 'Вариант' },
-    padding: { type: 'object', label: 'Отступы' },
+    image: {
+      type: 'object',
+      label: 'Изображение',
+      objectFields: {
+        url: { type: 'text', label: 'URL' },
+        alt: { type: 'text', label: 'Alt текст' },
+      },
+    },
+    images: {
+      type: 'array',
+      label: 'Сетка изображений (grid-4)',
+      arrayFields: {
+        url: { type: 'text', label: 'URL' },
+        alt: { type: 'text', label: 'Alt текст' },
+      },
+      defaultItemProps: { url: '', alt: '' },
+      max: 8,
+    },
+    cta: {
+      type: 'object',
+      label: 'Кнопка',
+      objectFields: {
+        text: { type: 'text', label: 'Текст' },
+        href: { type: 'text', label: 'Ссылка' },
+      },
+    },
+    padding: {
+      type: 'object',
+      label: 'Отступы',
+      objectFields: {
+        top: { type: 'number', label: 'Сверху (px)', min: 0, max: 160 },
+        bottom: { type: 'number', label: 'Снизу (px)', min: 0, max: 160 },
+      },
+    },
   },
   defaults: {
     title: 'Добро пожаловать',

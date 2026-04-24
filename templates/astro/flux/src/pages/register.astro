@@ -36,25 +36,25 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
           <div>
             <label for="reg-email" class="block mb-2 font-body" style="font-size: 14px; color: rgb(var(--color-foreground));">Email <span class="text-required">*</span></label>
             <input type="email" id="reg-email" name="email" required placeholder="your@email.com" autocomplete="email"
-              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: var(--radius-input, var(--radius-button)); background: transparent; color: rgb(var(--color-foreground));">
+              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: 0; background: transparent; color: rgb(var(--color-foreground));">
           </div>
 
           <div id="reg-name-group">
             <label for="reg-name" class="block mb-2 font-body" style="font-size: 14px; color: rgb(var(--color-foreground));">Имя <span class="text-required">*</span></label>
             <input type="text" id="reg-name" name="name" required placeholder="Иван Иванов" autocomplete="name"
-              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: var(--radius-input, var(--radius-button)); background: transparent; color: rgb(var(--color-foreground));">
+              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: 0; background: transparent; color: rgb(var(--color-foreground));">
           </div>
 
           <div>
             <label for="reg-password" class="block mb-2 font-body" style="font-size: 14px; color: rgb(var(--color-foreground));">Пароль <span class="text-required">*</span></label>
             <input type="password" id="reg-password" name="password" required minlength="8" placeholder="Минимум 8 символов" autocomplete="new-password"
-              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: var(--radius-input, var(--radius-button)); background: transparent; color: rgb(var(--color-foreground));">
+              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: 0; background: transparent; color: rgb(var(--color-foreground));">
           </div>
 
           <div>
             <label for="reg-confirm" class="block mb-2 font-body" style="font-size: 14px; color: rgb(var(--color-foreground));">Подтвердите пароль <span class="text-required">*</span></label>
             <input type="password" id="reg-confirm" name="confirmPassword" required minlength="8" placeholder="Повторите пароль" autocomplete="new-password"
-              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: var(--radius-input, var(--radius-button)); background: transparent; color: rgb(var(--color-foreground));">
+              class="w-full h-[48px] px-4 border font-body text-[14px] focus:outline-none auth-input-focus" style="border-color: rgb(var(--color-foreground) / 0.19); border-radius: 0; background: transparent; color: rgb(var(--color-foreground));">
           </div>
 
           <div class="text-red-600 text-sm text-center hidden" id="register-error"></div>

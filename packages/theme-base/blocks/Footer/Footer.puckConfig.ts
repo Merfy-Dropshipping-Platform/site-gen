@@ -52,6 +52,7 @@ export const FooterSchema = z.object({
     email: z.string(),
     socialLinks: z.array(SocialLinkSchema),
   }),
+  colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -60,28 +61,124 @@ export const FooterSchema = z.object({
 
 export type FooterProps = z.infer<typeof FooterSchema>;
 
+const sizeOptions = [
+  { label: 'Маленький', value: 'small' },
+  { label: 'Средний', value: 'medium' },
+  { label: 'Большой', value: 'large' },
+];
+
+const linkArrayField = {
+  type: 'array' as const,
+  label: 'Ссылки',
+  arrayFields: {
+    label: { type: 'text' as const, label: 'Название' },
+    href: { type: 'pagePicker' as const, label: 'Ссылка' },
+  },
+  defaultItemProps: { label: 'Новая ссылка', href: '/' },
+  max: 10,
+};
+
 export const FooterPuckConfig: BlockPuckConfig<FooterProps> = {
   label: 'Подвал',
   category: 'navigation',
   fields: {
     siteTitle: { type: 'text', label: 'Название сайта' },
-    variant: {
-      type: 'radio',
-      label: 'Вариант подвала',
-      options: [
-        { label: '3 колонки', value: '3-col' },
-        { label: '2 части (лого + ссылки / контакты)', value: '2-part' },
-        { label: 'Минимал', value: 'minimal' },
-      ],
+    heading: {
+      type: 'object',
+      label: 'Заголовок',
+      objectFields: {
+        text: { type: 'text', label: 'Текст' },
+        size: { type: 'radio', label: 'Размер', options: sizeOptions },
+        alignment: { type: 'alignment', label: 'Выравнивание' },
+      },
     },
-    copyright: { type: 'object', label: 'Копирайт' },
-    newsletter: { type: 'object', label: 'Рассылка' },
-    heading: { type: 'object', label: 'Заголовок' },
-    text: { type: 'object', label: 'Текст' },
-    navigationColumn: { type: 'object', label: 'Навигация' },
-    informationColumn: { type: 'object', label: 'Информация' },
-    socialColumn: { type: 'object', label: 'Соц. сети' },
-    padding: { type: 'object', label: 'Отступы' },
+    text: {
+      type: 'object',
+      label: 'Описание',
+      objectFields: {
+        content: { type: 'textarea', label: 'Текст' },
+        size: { type: 'radio', label: 'Размер', options: sizeOptions },
+      },
+    },
+    newsletter: {
+      type: 'object',
+      label: 'Рассылка',
+      objectFields: {
+        enabled: {
+          type: 'radio',
+          label: 'Показывать форму',
+          options: [
+            { label: 'Да', value: 'true' },
+            { label: 'Нет', value: 'false' },
+          ],
+        },
+        heading: { type: 'text', label: 'Заголовок' },
+        description: { type: 'textarea', label: 'Описание' },
+        placeholder: { type: 'text', label: 'Плейсхолдер поля' },
+      },
+    },
+    navigationColumn: {
+      type: 'object',
+      label: 'Колонка: Навигация',
+      objectFields: {
+        title: { type: 'text', label: 'Заголовок колонки' },
+        links: linkArrayField,
+      },
+    },
+    informationColumn: {
+      type: 'object',
+      label: 'Колонка: Информация',
+      objectFields: {
+        title: { type: 'text', label: 'Заголовок колонки' },
+        links: linkArrayField,
+      },
+    },
+    socialColumn: {
+      type: 'object',
+      label: 'Колонка: Соцсети',
+      objectFields: {
+        title: { type: 'text', label: 'Заголовок колонки' },
+        email: { type: 'text', label: 'Email для связи' },
+        socialLinks: {
+          type: 'array',
+          label: 'Соц. сети',
+          arrayFields: {
+            platform: {
+              type: 'radio',
+              label: 'Платформа',
+              options: [
+                { label: 'Telegram', value: 'telegram' },
+                { label: 'VK', value: 'vk' },
+                { label: 'YouTube', value: 'youtube' },
+                { label: 'TikTok', value: 'tiktok' },
+                { label: 'Дзен', value: 'dzen' },
+              ],
+            },
+            href: { type: 'text', label: 'Ссылка' },
+          },
+          defaultItemProps: { platform: 'telegram', href: '' },
+          max: 5,
+        },
+      },
+    },
+    copyright: {
+      type: 'object',
+      label: 'Копирайт',
+      objectFields: {
+        companyName: { type: 'text', label: 'Название компании' },
+        poweredBy: { type: 'text', label: 'Powered by текст' },
+        showYear: {
+          type: 'radio',
+          label: 'Показывать год',
+          options: [
+            { label: 'Да', value: 'true' },
+            { label: 'Нет', value: 'false' },
+          ],
+        },
+      },
+    },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     siteTitle: '',

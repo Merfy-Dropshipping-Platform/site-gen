@@ -9,6 +9,7 @@ const MultiColumnItemSchema = z.object({
 });
 
 export const MultiColumnsSchema = z.object({
+  heading: z.string().optional(),
   columns: z.array(MultiColumnItemSchema).min(1).max(10),
   displayColumns: z.union([
     z.literal(1),
@@ -16,6 +17,7 @@ export const MultiColumnsSchema = z.object({
     z.literal(3),
     z.literal(4),
   ]),
+  colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -28,11 +30,30 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
   label: 'Мультиколонны',
   category: 'layout',
   fields: {
-    columns: { type: 'array', label: 'Колонки' },
-    displayColumns: { type: 'number', label: 'Колонок в ряд (1-4)' },
-    padding: { type: 'object', label: 'Отступы' },
+    heading: { type: 'text', label: 'Заголовок секции' },
+    columns: {
+      type: 'array',
+      label: 'Колонки (макс 10)',
+      arrayFields: {
+        heading: { type: 'text', label: 'Заголовок' },
+        text: { type: 'textarea', label: 'Описание' },
+        imageUrl: { type: 'image', label: 'Иконка / изображение' },
+      },
+      defaultItemProps: { id: '', heading: 'Новая колонка', text: '', imageUrl: '' },
+      max: 10,
+    },
+    displayColumns: {
+      type: 'slider',
+      label: 'Колонок в ряд',
+      min: 1,
+      max: 4,
+      step: 1,
+    },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
+    heading: '',
     columns: [
       { id: 'col-1', heading: 'Колонка 1', text: 'Описание первой колонки.', imageUrl: '' },
       { id: 'col-2', heading: 'Колонка 2', text: 'Описание второй колонки.', imageUrl: '' },

@@ -3,8 +3,10 @@ import type { BlockPuckConfig } from '@merfy/theme-contract';
 
 export const PopularProductsSchema = z.object({
   heading: z.string(),
+  subtitle: z.string().optional(),
   cards: z.number().int().min(2).max(24),
   columns: z.number().int().min(1).max(6),
+  colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -20,14 +22,24 @@ export const PopularProductsPuckConfig: BlockPuckConfig<PopularProductsProps> = 
   category: 'products',
   fields: {
     heading: { type: 'text', label: 'Заголовок' },
-    cards: { type: 'number', label: 'Карточки (2-24)' },
-    columns: { type: 'number', label: 'Колонки (1-6)' },
-    padding: { type: 'object', label: 'Отступы' },
-    quickAdd: { type: 'radio', label: 'Кнопка "в корзину"' },
+    subtitle: { type: 'textarea', label: 'Подзаголовок (опционально)' },
+    cards: { type: 'slider', label: 'Количество карточек', min: 2, max: 24, step: 1 },
+    columns: { type: 'slider', label: 'Колонок в ряд', min: 1, max: 6, step: 1 },
+    quickAdd: {
+      type: 'radio',
+      label: 'Кнопка "В корзину"',
+      options: [
+        { label: 'Показать', value: 'true' },
+        { label: 'Скрыть', value: 'false' },
+      ],
+    },
     quickAddText: { type: 'text', label: 'Текст кнопки' },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     heading: 'Популярные товары',
+    subtitle: '',
     cards: 4,
     columns: 4,
     padding: { top: 80, bottom: 80 },

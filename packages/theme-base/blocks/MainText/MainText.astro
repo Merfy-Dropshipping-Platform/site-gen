@@ -6,13 +6,29 @@ interface Props extends MainTextProps {
   id?: string;
 }
 
+const raw = Astro.props as Record<string, unknown>;
 const {
   id,
-  heading,
-  text,
-  alignment = 'center',
+  alignment: alignmentProp,
   padding,
-} = Astro.props as Props;
+} = Astro.props as Props & { alignment?: string };
+
+// Constructor legacy schema wraps heading as { text, size } and text as
+// { content, size }. Accept both shapes so merchant revisions written by
+// the constructor don't render as "[object Object]".
+const readText = (v: unknown): string | undefined => {
+  if (typeof v === 'string') return v || undefined;
+  if (v && typeof v === 'object') {
+    const o = v as { text?: string; content?: string };
+    return o.text ?? o.content ?? undefined;
+  }
+  return undefined;
+};
+const heading = readText(raw.heading);
+const text = readText(raw.text);
+const alignment = (alignmentProp as 'left' | 'center' | 'right' | undefined)
+  ?? (raw.position as 'left' | 'center' | 'right' | undefined)
+  ?? 'center';
 
 const alignClass = C.align[alignment];
 const paddingStyle = padding

@@ -58,6 +58,7 @@ import { BuildQueuePublisher } from "./rabbitmq/build-queue.service";
 import { ProductUpdateListener } from "./listeners/product-update.listener";
 import { FragmentPatcher } from "./listeners/fragment-patcher.service";
 import { BrandingController } from "./branding/branding.controller";
+import { MediaUploadController } from "./controllers/media-upload.controller";
 import { PublicationsService } from "./publications/publications.service";
 import { PublicationsMicroserviceController } from "./publications/publications.controller";
 import { PublicationsScheduler } from "./scheduler/publications.scheduler";
@@ -99,6 +100,7 @@ import { ThemePresetModule } from "./modules/theme-preset/theme-preset.module";
     UserListenerController,
     SitesEventsListenerController,
     BrandingController,
+    MediaUploadController,
     PublicationsMicroserviceController,
   ],
   providers: [

@@ -12,19 +12,31 @@
     "home": {
       "content": [
         {
+          "type": "PromoBanner",
+          "props": {
+            "id": "PromoBanner-1",
+            "text": "БЕСПЛАТНАЯ ДОСТАВКА НА ВЕСЬ АССОРТИМЕНТ",
+            "linkText": "",
+            "linkUrl": "",
+            "colorScheme": "scheme-1",
+            "padding": { "top": 12, "bottom": 12 }
+          }
+        },
+        {
           "type": "Header",
           "props": {
             "id": "Header-1",
-            "siteTitle": "Vanilla",
+            "siteTitle": "Vanila",
             "logo": "",
             "logoPosition": "top-center",
+            "logoFont": "caveat",
             "stickiness": "scroll-up",
             "colorScheme": "scheme-2",
             "padding": { "top": 0, "bottom": 0 },
             "navigationLinks": [
-              { "label": "Каталог", "href": "/catalog" },
-              { "label": "О нас", "href": "/about" },
-              { "label": "Контакты", "href": "/contacts" }
+              { "label": "Текстиль", "href": "/catalog" },
+              { "label": "Декор", "href": "/catalog?collection=decor" },
+              { "label": "История", "href": "/about" }
             ],
             "menuColorScheme": "scheme-2",
             "menuType": "dropdown",

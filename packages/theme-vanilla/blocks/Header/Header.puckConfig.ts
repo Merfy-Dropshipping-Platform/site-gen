@@ -18,6 +18,12 @@ export const HeaderSchema = z.object({
   siteTitle: z.string(),
   logo: z.string(),
   logoPosition: z.enum(['top-left', 'top-center', 'top-right', 'center-left']),
+  /**
+   * Font for the text logo (used when `logo` is empty). Vanilla default =
+   * "caveat" (script) to match Figma Header mark. Constructor exposes this
+   * as a select so merchants can switch to a serif or sans-serif wordmark.
+   */
+  logoFont: z.enum(['default', 'caveat', 'bad-script', 'playfair-display', 'cormorant-garamond']).optional(),
   stickiness: z.enum(['scroll-up', 'always', 'none']),
   menuType: z.enum(['dropdown', 'mega-menu', 'sidebar']),
   navigationLinks: z.array(NavigationLinkSchema),
@@ -40,6 +46,7 @@ export const HeaderPuckConfig: BlockPuckConfig<HeaderProps> = {
   fields: {
     siteTitle: { type: 'text', label: 'Название магазина' },
     logo: { type: 'text', label: 'URL логотипа' },
+    logoFont: { type: 'select', label: 'Шрифт текстового лого' },
     logoPosition: { type: 'radio', label: 'Позиция логотипа' },
     stickiness: { type: 'radio', label: 'Прилипание' },
     menuType: { type: 'radio', label: 'Тип меню' },
@@ -48,19 +55,19 @@ export const HeaderPuckConfig: BlockPuckConfig<HeaderProps> = {
     padding: { type: 'object', label: 'Отступы' },
   },
   defaults: {
-    siteTitle: 'Vanilla Store',
+    siteTitle: 'Vanila',
     logo: '',
-    logoPosition: 'top-left',
+    logoPosition: 'top-center',
+    logoFont: 'caveat',
     stickiness: 'scroll-up',
     menuType: 'dropdown',
     navigationLinks: [
-      { label: 'Главная', href: '/' },
-      { label: 'Каталог', href: '/catalog' },
-      { label: 'О нас', href: '/about' },
-      { label: 'Контакты', href: '/contacts' },
+      { label: 'Текстиль', href: '/catalog' },
+      { label: 'Декор', href: '/catalog?collection=decor' },
+      { label: 'История', href: '/about' },
     ],
     actionButtons: { showSearch: true, showCart: true, showProfile: true },
-    padding: { top: 16, bottom: 16 },
+    padding: { top: 0, bottom: 0 },
   },
   schema: HeaderSchema,
   maxInstances: 1,

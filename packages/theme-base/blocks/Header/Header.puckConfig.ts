@@ -14,6 +14,12 @@ export const HeaderSchema = z.object({
   siteTitle: z.string(),
   logo: z.string(),
   logoPosition: z.enum(['top-left', 'top-center', 'top-right', 'center-left']),
+  /**
+   * Font for the text logo (used when `logo` is empty). Maps to a family key
+   * known to constructor-theme-bridge — see FONT_FAMILIES there. Leave
+   * undefined to use the theme's body font.
+   */
+  logoFont: z.enum(['default', 'caveat', 'bad-script', 'playfair-display', 'cormorant-garamond']).optional(),
   stickiness: z.enum(['scroll-up', 'always', 'none']),
   menuType: z.enum(['dropdown', 'mega-menu', 'sidebar']),
   navigationLinks: z.array(NavigationLinkSchema),
@@ -36,6 +42,7 @@ export const HeaderPuckConfig: BlockPuckConfig<HeaderProps> = {
   fields: {
     siteTitle: { type: 'text', label: 'Название магазина' },
     logo: { type: 'text', label: 'URL логотипа' },
+    logoFont: { type: 'select', label: 'Шрифт текстового лого' },
     logoPosition: { type: 'radio', label: 'Позиция логотипа' },
     stickiness: { type: 'radio', label: 'Прилипание' },
     menuType: { type: 'radio', label: 'Тип меню' },

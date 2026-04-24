@@ -1,30 +1,50 @@
 ---
+// Accepts BOTH new (linkUrl) and legacy (link) prop shapes so Puck config
+// (which uses linkUrl) and any legacy Puck JSON still in the wild keep working.
 interface Props {
+  id?: string;
   text?: string;
   link?: any;
+  linkUrl?: string;
   linkText?: string;
   size?: string;
   colorScheme?: string;
+  padding?: { top?: number; bottom?: number };
 }
 
-const { text = 'Скидка 10% на общую сумму заказа от 9 000₽', link, linkText = 'Перейти', size = 'small', colorScheme } = Astro.props;
+const {
+  id,
+  text = 'БЕСПЛАТНАЯ ДОСТАВКА НА ВЕСЬ АССОРТИМЕНТ',
+  link,
+  linkUrl,
+  linkText = '',
+  colorScheme,
+  padding,
+} = Astro.props;
 
-const href = typeof link === 'object' ? link?.href : (link || '#');
-const schemeClass = colorScheme ? `color-scheme-${colorScheme.replace('scheme-', '')}` : '';
+// Resolve href: prefer linkUrl (new), fall back to link (legacy object/string).
+const rawHref = linkUrl || (typeof link === 'object' ? link?.href : link) || '';
+const hasLink = Boolean(linkText && rawHref);
+const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
+const paddingStyle = padding
+  ? `padding-top:${padding.top ?? 12}px;padding-bottom:${padding.bottom ?? 12}px;`
+  : 'padding-top:12px;padding-bottom:12px;';
 ---
 
-<div class={`w-full py-3 ${schemeClass}`} style={schemeClass ? `background: rgb(var(--color-background)); color: rgb(var(--color-foreground));` : `background: rgb(var(--color-foreground)); color: rgb(var(--color-background));`}>
-  <div class="w-full max-w-[1320px] mx-auto px-5">
-    <a
-      href={href}
-      class="block text-center hover:opacity-80 transition-opacity text-[16px] font-normal leading-tight font-body"
-    >
-      <span class="inline-block">{text}</span>
-      {linkText && (
-        <span class="inline-block ml-2 underline decoration-1 underline-offset-2">
-          {linkText}
-        </span>
-      )}
-    </a>
+<section
+  class={`w-full ${schemeClass}`}
+  data-puck-component-id={id}
+  style={`${paddingStyle} background: rgb(var(--color-background)); color: rgb(var(--color-foreground));`}
+>
+  <div class="w-full max-w-[1320px] mx-auto px-5 flex items-center justify-center gap-2 text-center text-[13px] uppercase tracking-[0.08em] font-body">
+    <span>{text}</span>
+    {hasLink && (
+      <a
+        href={rawHref}
+        class="underline underline-offset-2 hover:opacity-70 transition-opacity"
+      >
+        {linkText}
+      </a>
+    )}
   </div>
-</div>
+</section>

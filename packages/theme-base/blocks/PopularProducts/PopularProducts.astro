@@ -54,6 +54,8 @@ const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
 const gridTemplateCols = `grid-template-columns: repeat(${columns}, minmax(0, 1fr));`;
+const colorSchemeRaw = typeof raw.colorScheme === 'string' ? raw.colorScheme : undefined;
+const schemeClass = colorSchemeRaw ? `color-scheme-${colorSchemeRaw.replace('scheme-', '')}` : '';
 // Demo product cards render for seed sites that don't yet have real products
 // wired in. Live storefronts show 4 real cards — we emulate with demo
 // content so preview visually matches Figma. When a site gets real products
@@ -68,7 +70,7 @@ const DEMO_PRODUCTS = [
 const demo = DEMO_PRODUCTS.slice(0, Math.min(cards, DEMO_PRODUCTS.length));
 ---
 <section
-  class={C.root}
+  class:list={[C.root, schemeClass]}
   data-puck-component-id={id}
   data-block="popular-products"
   style={paddingStyle}

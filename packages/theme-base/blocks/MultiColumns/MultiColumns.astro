@@ -10,6 +10,7 @@ const {
   id,
   columns = [],
   displayColumns = 3,
+  colorScheme,
   padding,
 } = Astro.props as Props;
 
@@ -23,9 +24,10 @@ const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
 const gridTemplateCols = `grid-template-columns: repeat(${normalizedDisplayColumns}, minmax(0, 1fr));`;
+const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
 ---
 <section
-  class={C.root}
+  class:list={[C.root, schemeClass]}
   data-puck-component-id={id}
   data-display-columns={normalizedDisplayColumns}
   style={paddingStyle}

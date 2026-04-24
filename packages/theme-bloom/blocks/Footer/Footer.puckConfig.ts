@@ -46,6 +46,7 @@ export const FooterSchema = z.object({
     email: z.string(),
     socialLinks: z.array(SocialLinkSchema),
   }),
+  colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -64,6 +65,7 @@ export const FooterPuckConfig: BlockPuckConfig<FooterProps> = {
     navigationColumn: { type: 'object', label: 'Навигация' },
     informationColumn: { type: 'object', label: 'Информация' },
     socialColumn: { type: 'object', label: 'Соц. сети' },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'object', label: 'Отступы' },
   },
   defaults: {

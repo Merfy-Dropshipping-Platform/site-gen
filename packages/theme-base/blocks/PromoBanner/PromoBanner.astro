@@ -6,14 +6,15 @@ interface Props extends PromoBannerProps {
   id?: string;
 }
 
-const { id, text, linkText, linkUrl, padding } = Astro.props as Props;
+const { id, text, linkText, linkUrl, colorScheme, padding } = Astro.props as Props;
 
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
+const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
 ---
 <section
-  class={C.root}
+  class:list={[C.root, schemeClass]}
   data-puck-component-id={id}
   style={paddingStyle}
 >

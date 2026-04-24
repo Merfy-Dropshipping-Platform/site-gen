@@ -25,6 +25,7 @@ export const HeroSchema = z.object({
   contentPosition: z
     .enum(['center', 'bottom-left', 'bottom-center', 'bottom-right'])
     .optional(),
+  colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -85,6 +86,7 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
         href: { type: 'text', label: 'Ссылка' },
       },
     },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: {
       type: 'object',
       label: 'Отступы',

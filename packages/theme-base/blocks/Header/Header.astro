@@ -15,10 +15,12 @@ const {
   menuType = 'dropdown',
   navigationLinks = [],
   actionButtons = { showSearch: true, showCart: true, showProfile: true },
+  colorScheme,
   padding,
 } = Astro.props as Props;
 
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
 const isCenterLeft = logoPosition === 'center-left';
 
 // Treat the seed default `/logo.svg` as "merchant hasn't set a custom logo"
@@ -29,7 +31,7 @@ const isCenterLeft = logoPosition === 'center-left';
 // always uses text and honors --color-heading.
 const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/logo.svg';
 ---
-<div class:list={[C.wrapper, C.sticky[stickiness]]} data-header-wrapper data-puck-component-id={id}>
+<div class:list={[C.wrapper, C.sticky[stickiness], schemeClass]} data-header-wrapper data-puck-component-id={id}>
   <header
     class:list={[C.header, !padding && 'min-h-[64px]']}
     data-menu-type={menuType}

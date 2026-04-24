@@ -19,10 +19,12 @@ const {
   navigationColumn,
   informationColumn,
   socialColumn,
+  colorScheme,
   padding,
 } = Astro.props as Props;
 
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
 
 // Unified brand resolution. Priority:
 //   copyright.companyName → siteTitle → (for 2-part legacy) navigationColumn.title (when brand-like).
@@ -62,7 +64,7 @@ const Ccopy = (C as any).copyright ?? {};
 const CcopyBar = (C as any).copyrightBar ?? {};
 const CpoweredBy = (C as any).poweredBy ?? {};
 ---
-<footer class={C.root} data-puck-component-id={id} style={paddingStyle}>
+<footer class:list={[C.root, schemeClass]} data-puck-component-id={id} style={paddingStyle}>
   <div class={C.container}>
     {newsletter?.enabled && (
       <section class={C.newsletter.wrapper} aria-labelledby="newsletter-heading">

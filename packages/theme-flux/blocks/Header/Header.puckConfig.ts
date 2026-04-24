@@ -26,6 +26,7 @@ export const HeaderSchema = z.object({
     showCart: z.boolean(),
     showProfile: z.boolean(),
   }),
+  colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -45,6 +46,7 @@ export const HeaderPuckConfig: BlockPuckConfig<HeaderProps> = {
     menuType: { type: 'radio', label: 'Тип меню' },
     navigationLinks: { type: 'array', label: 'Ссылки меню' },
     actionButtons: { type: 'object', label: 'Кнопки' },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'object', label: 'Отступы' },
   },
   defaults: {

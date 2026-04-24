@@ -42,6 +42,8 @@ const poster = (videoObj?.coverImage as string | undefined) ?? (raw.poster as st
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
+const colorSchemeRaw = typeof raw.colorScheme === 'string' ? raw.colorScheme : undefined;
+const schemeClass = colorSchemeRaw ? `color-scheme-${colorSchemeRaw.replace('scheme-', '')}` : '';
 
 // `position=fullscreen` removes the container clamp so video spans the
 // viewport. Default contained → merchants get Figma-style padded video.
@@ -86,7 +88,7 @@ const video = parseVideo(videoUrl);
   for legacy revisions where no live slot exists yet.
 */}
 <section
-  class={C.root}
+  class:list={[C.root, schemeClass]}
   data-puck-component-id={id}
   data-media-slot="video"
   data-media-block-id={id}

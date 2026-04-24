@@ -15,8 +15,12 @@ const {
   images,
   cta,
   variant: variantProp,
+  colorScheme,
   padding,
 } = raw as Props & { [k: string]: unknown };
+const schemeClass = typeof colorScheme === 'string' && colorScheme
+  ? `color-scheme-${colorScheme.replace('scheme-', '')}`
+  : '';
 
 // Normalise legacy shapes (heading/text objects, primaryButton link objects).
 const heading = raw.heading as { text?: string } | string | undefined;
@@ -78,7 +82,7 @@ while (gridImages.length < 4 && variant === 'grid-4') {
 }
 ---
 <section
-  class={C.root}
+  class:list={[C.root, schemeClass]}
   data-puck-component-id={id}
   data-variant={variant}
   style={paddingStyle}

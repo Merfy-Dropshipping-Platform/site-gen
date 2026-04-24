@@ -16,6 +16,7 @@ const {
   cta,
   variant: variantProp,
   contentPosition: contentPositionProp,
+  colorScheme,
   padding,
   size,
   overlay: overlayRaw,
@@ -24,6 +25,9 @@ const {
   overlay?: number;
   [k: string]: unknown;
 };
+const schemeClass = typeof colorScheme === 'string' && colorScheme
+  ? `color-scheme-${colorScheme.replace('scheme-', '')}`
+  : '';
 
 // Legacy constructor schema passes heading/text as nested objects (heading.text, text.content)
 // plus backgroundImage + primaryButton.link.href. Normalise both shapes so any revision works.
@@ -113,7 +117,7 @@ while (gridImages.length < 4 && variant === 'grid-4') {
 }
 ---
 <section
-  class:list={[C.root, variant === 'overlay' ? 'min-h-[var(--h-base)] sm:min-h-[var(--h-sm)] md:min-h-[var(--h-md)] lg:min-h-[var(--h-lg)] xl:min-h-[var(--h-xl)] 2xl:min-h-[var(--h-xxl)]' : '']}
+  class:list={[C.root, variant === 'overlay' ? 'min-h-[var(--h-base)] sm:min-h-[var(--h-sm)] md:min-h-[var(--h-md)] lg:min-h-[var(--h-lg)] xl:min-h-[var(--h-xl)] 2xl:min-h-[var(--h-xxl)]' : '', schemeClass]}
   data-puck-component-id={id}
   data-variant={variant}
   style={`${paddingStyle} ${variant === 'overlay' ? heightVars : ''}`}

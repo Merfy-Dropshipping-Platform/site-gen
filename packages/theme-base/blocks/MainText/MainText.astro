@@ -65,11 +65,13 @@ const ctaAlignClass = C.ctaWrapAlign[alignment];
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
+const colorSchemeRaw = typeof raw.colorScheme === 'string' ? raw.colorScheme : undefined;
+const schemeClass = colorSchemeRaw ? `color-scheme-${colorSchemeRaw.replace('scheme-', '')}` : '';
 // NOTE: `text` supports basic HTML (<b>, <i>) via set:html.
 // Constructor inputs should sanitize HTML before persisting to DB to prevent XSS.
 ---
 <section
-  class={C.root}
+  class:list={[C.root, schemeClass]}
   data-puck-component-id={id}
   data-alignment={alignment}
   style={paddingStyle}

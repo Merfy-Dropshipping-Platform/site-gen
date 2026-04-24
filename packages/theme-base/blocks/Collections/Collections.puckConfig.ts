@@ -25,6 +25,7 @@ export const CollectionsSchema = z.object({
   dataSource: z.enum(['auto', 'manual']).optional(),
   collections: z.array(CollectionItemSchema).min(1).max(10),
   columns: z.number().int().min(1).max(6),
+  colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -76,6 +77,7 @@ export const CollectionsPuckConfig: BlockPuckConfig<CollectionsProps> = {
     },
     collections: { type: 'array', label: 'Коллекции' },
     columns: { type: 'number', label: 'Колонки (1-6)' },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'object', label: 'Отступы' },
   },
   defaults: {

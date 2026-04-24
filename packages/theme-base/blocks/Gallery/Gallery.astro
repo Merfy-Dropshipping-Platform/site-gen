@@ -45,6 +45,8 @@ const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
 const innerClass = C.inner[layout];
+const colorSchemeRaw = typeof raw.colorScheme === 'string' ? raw.colorScheme : undefined;
+const schemeClass = colorSchemeRaw ? `color-scheme-${colorSchemeRaw.replace('scheme-', '')}` : '';
 
 // Demo fallback so seed sites match Figma even before merchant configures.
 type ItemDemo = { type: 'image' | 'product' | 'collection'; url?: string; alt?: string; label?: string; price?: string };
@@ -66,7 +68,7 @@ function labelFor(item: { type?: string; label?: string; price?: string }): { la
 }
 ---
 <section
-  class={C.root}
+  class:list={[C.root, schemeClass]}
   data-puck-component-id={id}
   data-layout={layout}
   style={paddingStyle}

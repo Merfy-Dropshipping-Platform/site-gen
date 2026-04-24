@@ -13,6 +13,7 @@ const {
   subtitle: subtitleProp,
   collections = [],
   columns: columnsProp,
+  colorScheme,
   padding,
 } = Astro.props as Props & { subtitle?: string };
 
@@ -32,6 +33,7 @@ const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
 const gridTemplateCols = `grid-template-columns: repeat(${columns}, minmax(0, 1fr));`;
+const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
 
 // imageView → aspect-ratio for tiles (falls back to portrait 430/500 for
 // parity with legacy vanilla template).
@@ -61,7 +63,7 @@ const effectiveCollections = (collections ?? []).length > 0
     }));
 ---
 <section
-  class={C.root}
+  class:list={[C.root, schemeClass]}
   data-puck-component-id={id}
   style={paddingStyle}
 >

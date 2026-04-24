@@ -64,7 +64,7 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
       type: 'object',
       label: 'Изображение',
       objectFields: {
-        url: { type: 'text', label: 'URL' },
+        url: { type: 'image', label: 'Фото' },
         alt: { type: 'text', label: 'Alt текст' },
       },
     },
@@ -72,7 +72,7 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
       type: 'array',
       label: 'Сетка изображений (grid-4)',
       arrayFields: {
-        url: { type: 'text', label: 'URL' },
+        url: { type: 'image', label: 'Фото' },
         alt: { type: 'text', label: 'Alt текст' },
       },
       defaultItemProps: { url: '', alt: '' },

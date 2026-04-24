@@ -19,7 +19,14 @@ export const ImageWithTextPuckConfig: BlockPuckConfig<ImageWithTextProps> = {
   label: 'Изображение с текстом',
   category: 'content',
   fields: {
-    image: { type: 'object', label: 'Изображение' },
+    image: {
+      type: 'object',
+      label: 'Изображение',
+      objectFields: {
+        url: { type: 'image', label: 'Фото' },
+        alt: { type: 'text', label: 'Alt текст' },
+      },
+    },
     heading: { type: 'text', label: 'Заголовок' },
     text: { type: 'text', label: 'Текст' },
     button: { type: 'object', label: 'Кнопка' },

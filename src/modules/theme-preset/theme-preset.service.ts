@@ -136,16 +136,40 @@ export class ThemePresetService {
     await this.db.transaction(async (tx) => {
       if (replaceContent) {
         newRevisionId = randomUUID();
-        // Merge preset.themeSettings INTO the content root so the canonical
-        // source (revision.data.themeSettings — already read by preview AND
-        // by the live build pipeline) gets the preset's token customization.
-        const contentWithSettings = {
-          ...(preset.content as Record<string, unknown>),
-          themeSettings: {
-            ...((preset.content as { themeSettings?: object }).themeSettings ?? {}),
-            ...(preset.themeSettings as object),
-          },
+        // Preset JSON stores Puck-native single-page shape ({ root, content[], zones }).
+        // The constructor/preview/build pipeline use multi-page shape
+        // ({ currentPageId, pages, pagesData: { <pageId>: { content: [...] } } }).
+        // Wrap preset content into the canonical multi-page shape; keep
+        // themeSettings merged at root.
+        const presetContent = preset.content as {
+          root?: unknown;
+          content?: unknown;
+          zones?: unknown;
+          themeSettings?: object;
         };
+        const mergedThemeSettings = {
+          ...(presetContent.themeSettings ?? {}),
+          ...(preset.themeSettings as object),
+        };
+        const contentWithSettings = 'pagesData' in presetContent
+          ? {
+              ...(presetContent as Record<string, unknown>),
+              themeSettings: mergedThemeSettings,
+            }
+          : {
+              currentPageId: 'home',
+              pages: [{ id: 'home', name: 'Главная', slug: '/' }],
+              pagesData: {
+                home: {
+                  content: Array.isArray(presetContent.content)
+                    ? presetContent.content
+                    : [],
+                  root: presetContent.root ?? { props: {} },
+                  zones: presetContent.zones ?? {},
+                },
+              },
+              themeSettings: mergedThemeSettings,
+            };
         await tx.insert(schema.siteRevision).values({
           id: newRevisionId,
           siteId,

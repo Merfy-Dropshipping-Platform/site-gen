@@ -5,7 +5,12 @@ export const MainTextClasses = {
   root: 'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
   container: 'mx-auto max-w-[var(--container-max-width)] px-[40px]',
   heading:
-    '[font-family:var(--font-heading)] text-[40px] leading-[normal] uppercase text-[rgb(var(--color-heading))] mb-4',
+    '[font-family:var(--font-heading)] leading-[normal] uppercase text-[rgb(var(--color-heading))] mb-4',
+  headingSize: {
+    small: 'text-[32px]',
+    medium: 'text-[40px]',
+    large: 'text-[48px] sm:text-[56px]',
+  },
   text: '[font-family:var(--font-body)] text-[16px] font-normal leading-[1.5] text-[rgb(var(--color-text))]',
   align: {
     left: 'text-left',

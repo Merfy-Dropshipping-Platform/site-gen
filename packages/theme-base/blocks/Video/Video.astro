@@ -9,14 +9,12 @@ interface Props extends VideoProps {
 const raw = Astro.props as Record<string, unknown>;
 const {
   id,
-  videoUrl,
-  poster,
   padding,
 } = Astro.props as Props;
 
 // Accept legacy {text,size} heading envelope.
 const heading = (() => {
-  const h = raw.heading;
+  const h = raw.heading ?? (raw.content as { heading?: unknown } | undefined)?.heading;
   if (typeof h === 'string') return h || undefined;
   if (h && typeof h === 'object') {
     const o = h as { text?: string };
@@ -24,6 +22,22 @@ const heading = (() => {
   }
   return undefined;
 })();
+
+// Merchant uploads go through the constructor which currently writes
+// video props as { video: { url, coverImage } } — older revisions used a
+// top-level `videoUrl` string. Accept both shapes. Critical: reject
+// `blob:` URLs (transient ObjectURLs created in the constructor's
+// browser tab — they do not survive the page closing, so live storefront
+// would 404). Falls back to the placeholder so merchant sees "Видео
+// появится здесь" instead of a broken video element.
+const videoObj = raw.video as { url?: string; coverImage?: string } | undefined;
+const rawVideoUrl = typeof videoObj?.url === 'string'
+  ? videoObj.url
+  : typeof raw.videoUrl === 'string'
+    ? (raw.videoUrl as string)
+    : '';
+const videoUrl = rawVideoUrl.startsWith('blob:') ? '' : rawVideoUrl;
+const poster = (videoObj?.coverImage as string | undefined) ?? (raw.poster as string | undefined) ?? undefined;
 
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
@@ -98,7 +112,11 @@ const video = parseVideo(videoUrl);
               <path d="M8 5v14l11-7L8 5z"/>
             </svg>
           </div>
-          <div class={C.placeholderText}>Видео появится здесь</div>
+          <div class={C.placeholderText}>
+            {rawVideoUrl.startsWith('blob:')
+              ? 'Загрузите видео заново — предыдущая ссылка устарела'
+              : 'Видео появится здесь'}
+          </div>
         </div>
       )}
     </div>

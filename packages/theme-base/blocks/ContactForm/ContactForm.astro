@@ -6,41 +6,67 @@ interface Props extends ContactFormProps {
   id?: string;
 }
 
+const raw = Astro.props as Record<string, unknown>;
 const {
   id,
-  heading,
-  description,
-  fields,
-  buttonText,
   padding,
 } = Astro.props as Props;
+
+// Constructor legacy schema wraps heading as {text, size} and description as
+// {content, size}. Also `fields` may be absent (seed revision) — fall back
+// to sane defaults so live doesn't render "[object Object]" + an empty form.
+const readText = (v: unknown): string | undefined => {
+  if (typeof v === 'string') return v || undefined;
+  if (v && typeof v === 'object') {
+    const o = v as { text?: string; content?: string };
+    return o.text ?? o.content ?? undefined;
+  }
+  return undefined;
+};
+const heading = readText(raw.heading) ?? 'Свяжитесь с нами';
+const description = readText(raw.description);
+const buttonText =
+  typeof raw.buttonText === 'string' && raw.buttonText.length > 0
+    ? raw.buttonText
+    : 'Отправить';
+const fields = raw.fields as
+  | {
+      name?: { enabled?: unknown; required?: unknown; label?: string };
+      email?: { enabled?: unknown; required?: unknown; label?: string };
+      phone?: { enabled?: unknown; required?: unknown; label?: string };
+      message?: { enabled?: unknown; required?: unknown; label?: string };
+    }
+  | undefined;
+const hasFields = !!fields && typeof fields === 'object';
 
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
 
 // Constructor passes enabled/required as "true"/"false" strings.
-// Normalize to booleans at render time so conditional blocks work correctly.
-const toBool = (v: unknown): boolean => (typeof v === 'boolean' ? v : v === 'true');
+// Normalize to booleans; when fields is absent altogether, fall back to the
+// default field set (name + email + message enabled; phone disabled).
+const toBool = (v: unknown, fallback = false): boolean =>
+  typeof v === 'boolean' ? v : v === 'true' ? true : v === 'false' ? false : fallback;
 const norm = {
   name: {
-    enabled: toBool(fields?.name?.enabled),
-    required: toBool(fields?.name?.required),
+    enabled: hasFields ? toBool(fields?.name?.enabled) : true,
+    required: hasFields ? toBool(fields?.name?.required) : true,
     label: fields?.name?.label ?? 'Имя',
   },
   email: {
-    enabled: toBool(fields?.email?.enabled),
-    required: toBool(fields?.email?.required),
+    enabled: hasFields ? toBool(fields?.email?.enabled) : true,
+    required: hasFields ? toBool(fields?.email?.required) : true,
     label: fields?.email?.label ?? 'Email',
   },
   phone: {
-    enabled: toBool(fields?.phone?.enabled),
-    required: toBool(fields?.phone?.required),
+    enabled: hasFields ? toBool(fields?.phone?.enabled) : false,
+    required: hasFields ? toBool(fields?.phone?.required) : false,
     label: fields?.phone?.label ?? 'Телефон',
   },
   message: {
-    enabled: toBool(fields?.message?.enabled),
-    required: toBool(fields?.message?.required),
+    enabled: hasFields ? toBool(fields?.message?.enabled) : true,
+    required: hasFields ? toBool(fields?.message?.required) : false,
     label: fields?.message?.label ?? 'Сообщение',
   },
 };

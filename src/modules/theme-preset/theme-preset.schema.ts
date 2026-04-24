@@ -17,7 +17,7 @@ export const ThemePresetSchema = z.object({
     .string()
     .regex(/^[a-z][a-z0-9-]*$/, 'id must be kebab-case (a-z, 0-9, hyphens)'),
   /** preset schema version. Bump on breaking changes. */
-  presetVersion: z.literal(1).default(1),
+  presetVersion: z.number().int().positive().default(1),
   /** Display name. */
   name: z.string().min(1),
   /** kebab-case slug (admin URLs). */

@@ -85,7 +85,7 @@ export class ThemePresetService {
     }
     return {
       id: row.id,
-      presetVersion: 1 as const,
+      presetVersion: row.presetVersion ?? 1,
       name: row.name,
       slug: row.slug,
       description: row.description ?? undefined,

@@ -138,7 +138,52 @@
       }
     },
     "Hero": {
-      "variant": "overlay"
+      "override": {
+        "path": "./blocks/Hero",
+        "reason": "Satin uses edge-to-edge split-fullbleed layout (50/50 text+image, 680px fixed height), Kelly Slab 32px uppercase title, grey #999 Arsenal kicker above title, 10% dark overlay on image, zero radii on solid-black CTA."
+      }
+    },
+    "Collections": {
+      "override": {
+        "path": "./blocks/Collections",
+        "reason": "Satin 3-col portrait grid (430x564 aspect), Arsenal 16px uppercase LEFT-aligned card label, 20px gap between image and label, zero radii, 1320px container with 40px side padding."
+      }
+    },
+    "PopularProducts": {
+      "override": {
+        "path": "./blocks/PopularProducts",
+        "reason": "Satin 3-col portrait grid (430x564 aspect), Arsenal 16px uppercase LEFT-aligned title, strikethrough grey old price, black 'Скидка' badge top-left, zero radii."
+      }
+    },
+    "MultiRows": {
+      "override": {
+        "path": "./blocks/MultiRows",
+        "reason": "Satin alternating 50/50 rows with 640x560 image aspect, Kelly Slab 32px uppercase row headings, Arsenal 16px body, black Manrope uppercase CTA, zero radii."
+      }
+    },
+    "MainText": {
+      "override": {
+        "path": "./blocks/MainText",
+        "reason": "Satin 40px Kelly Slab uppercase heading, Arsenal 16px body, 1320px container with 40px gutters, zero-radius CTA."
+      }
+    },
+    "ImageWithText": {
+      "override": {
+        "path": "./blocks/ImageWithText",
+        "reason": "Satin 50/50 split with 640x560 image, Kelly Slab 32px uppercase heading, Arsenal 16px body, zero-radius black CTA."
+      }
+    },
+    "MultiColumns": {
+      "override": {
+        "path": "./blocks/MultiColumns",
+        "reason": "Satin 3-col grid with 24px gap, Arsenal 16px uppercase left-aligned column titles, flat imagery with zero radii."
+      }
+    },
+    "CollapsibleSection": {
+      "override": {
+        "path": "./blocks/CollapsibleSection",
+        "reason": "Satin FAQ style — hairline dividers instead of rounded cards, Kelly Slab 32px uppercase section heading, Arsenal 16px uppercase summary rows, zero radii."
+      }
     }
   },
 

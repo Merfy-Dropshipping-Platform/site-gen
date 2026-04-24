@@ -1,0 +1,165 @@
+---
+import type { HeroProps } from '@merfy/theme-base/blocks/Hero/Hero.puckConfig';
+import { HeroClasses as C } from './Hero.classes';
+
+interface Props extends HeroProps {
+  id?: string;
+}
+
+const raw = Astro.props as Record<string, unknown>;
+const {
+  id,
+  title,
+  subtitle,
+  image,
+  images,
+  cta,
+  variant: variantProp,
+  padding,
+} = raw as Props & { [k: string]: unknown };
+
+// Normalise legacy shapes (constructor revisions may use heading/text objects
+// and primaryButton link objects). Same pattern as base Hero for safety.
+const heading = raw.heading as { text?: string } | string | undefined;
+const textObj = raw.text as { content?: string } | string | undefined;
+const primaryButton = raw.primaryButton as
+  | { text?: string; link?: { href?: string } | string }
+  | undefined;
+const backgroundImage = typeof raw.backgroundImage === 'string' ? raw.backgroundImage : '';
+
+const resolvedTitle =
+  (typeof title === 'string' && title) ||
+  (typeof heading === 'string' ? heading : heading?.text) ||
+  '';
+const resolvedSubtitle =
+  (typeof subtitle === 'string' && subtitle) ||
+  (typeof textObj === 'string' ? textObj : textObj?.content) ||
+  '';
+const primaryLink = typeof primaryButton?.link === 'object'
+  ? primaryButton.link?.href
+  : primaryButton?.link;
+const resolvedCta = cta ?? (primaryButton?.text
+  ? { text: primaryButton.text, href: primaryLink ?? '#' }
+  : undefined);
+
+const variant = (variantProp as HeroProps['variant'])
+  ?? (backgroundImage ? 'overlay' : 'split');
+
+const innerClass = C.inner[variant];
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+
+// Normalise image reference.
+const imageUrlFromObj =
+  typeof image === 'string'
+    ? image
+    : image && typeof (image as { url?: unknown }).url === 'string'
+      ? (image as { url: string }).url
+      : '';
+const imageUrl = imageUrlFromObj || backgroundImage;
+const imageAlt =
+  image && typeof (image as { alt?: unknown }).alt === 'string'
+    ? (image as { alt: string }).alt
+    : '';
+
+type ImageShape = { url: string; alt: string };
+const gridFallback: ImageShape = { url: imageUrl, alt: imageAlt };
+const gridImages: ImageShape[] =
+  variant === 'grid-4'
+    ? (Array.isArray(images) && images.length > 0
+        ? images.slice(0, 4).map((i) => ({
+            url: typeof i === 'string' ? i : ((i as ImageShape)?.url ?? ''),
+            alt: typeof i === 'string' ? '' : ((i as ImageShape)?.alt ?? ''),
+          }))
+        : [gridFallback, gridFallback, gridFallback, gridFallback])
+    : [];
+while (gridImages.length < 4 && variant === 'grid-4') {
+  gridImages.push(gridFallback);
+}
+---
+<section
+  class={C.root}
+  data-puck-component-id={id}
+  data-variant={variant}
+  style={paddingStyle}
+>
+  {variant === 'split' && (
+    <div class:list={[C.container, innerClass]}>
+      <div class={C.textCol}>
+        {resolvedSubtitle && <p class={C.kicker}>{resolvedSubtitle}</p>}
+        {resolvedTitle && <h1 class={C.title}>{resolvedTitle}</h1>}
+        {resolvedCta?.text && (
+          <a href={resolvedCta.href} class={C.ctaButton}>{resolvedCta.text}</a>
+        )}
+      </div>
+      <div class={C.imageCol}>
+        {imageUrl && (
+          <>
+            <img src={imageUrl} alt={imageAlt} class={C.image.split} />
+            <div class={C.overlay} aria-hidden="true" />
+          </>
+        )}
+      </div>
+    </div>
+  )}
+
+  {variant === 'overlay' && (
+    <>
+      {imageUrl && (
+        <>
+          <div
+            class="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={`background-image: url('${imageUrl}');`}
+            aria-hidden="true"
+          />
+          <div class="absolute inset-0 bg-black/30" aria-hidden="true" />
+        </>
+      )}
+      <div class:list={[C.container, innerClass, 'relative z-10']}>
+        {resolvedSubtitle && <p class={C.kicker}>{resolvedSubtitle}</p>}
+        {resolvedTitle && <h1 class={C.title}>{resolvedTitle}</h1>}
+        {resolvedCta?.text && (
+          <a href={resolvedCta.href} class={C.ctaButton}>{resolvedCta.text}</a>
+        )}
+      </div>
+    </>
+  )}
+
+  {variant === 'centered' && (
+    <div class:list={[C.container, innerClass]}>
+      {imageUrl && <img src={imageUrl} alt={imageAlt} class={C.image.centered} />}
+      {resolvedSubtitle && <p class={C.kicker}>{resolvedSubtitle}</p>}
+      {resolvedTitle && <h1 class={C.title}>{resolvedTitle}</h1>}
+      {resolvedCta?.text && (
+        <a href={resolvedCta.href} class={C.ctaButton}>{resolvedCta.text}</a>
+      )}
+    </div>
+  )}
+
+  {variant === 'grid-4' && (
+    <div class:list={[C.container, innerClass]}>
+      {resolvedSubtitle && <p class={C.kicker}>{resolvedSubtitle}</p>}
+      {resolvedTitle && <h1 class={C.title}>{resolvedTitle}</h1>}
+      <div class={C.gridContainer} role="group" aria-label="Hero image grid">
+        {gridImages.map((img, i) => (
+          <div class={C.gridTile}>
+            {img.url ? (
+              <img
+                src={img.url}
+                alt={img.alt || `Hero image ${i + 1}`}
+                class="absolute inset-0 w-full h-full object-cover"
+                loading={i < 2 ? 'eager' : 'lazy'}
+              />
+            ) : (
+              <span class="sr-only">Пустой слот изображения</span>
+            )}
+          </div>
+        ))}
+      </div>
+      {resolvedCta?.text && (
+        <a href={resolvedCta.href} class={C.ctaButton}>{resolvedCta.text}</a>
+      )}
+    </div>
+  )}
+</section>

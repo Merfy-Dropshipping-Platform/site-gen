@@ -260,7 +260,7 @@ async function compileOne(entry) {
     filename: entry.fullPath,
     sourcemap: 'external',
     internalURL: 'astro/runtime/server/index.js',
-    resolvePath: (specifier) => specifier,
+    resolvePath: async (specifier) => specifier,
   });
 
   // The .astro compiler leaves TS in the frontmatter (interfaces, `as Props`,

@@ -36,40 +36,16 @@
           }
         },
         {
-          "type": "Slideshow",
+          "type": "Hero",
           "props": {
-            "id": "Slideshow-1",
-            "slides": [
-              {
-                "id": "slide-1",
-                "image": "/main-image.png",
-                "heading": { "text": "Новая коллекция", "size": "medium" },
-                "text": { "content": "Откройте для себя нашу коллекцию товаров для дома", "size": "medium" },
-                "button": { "text": "СМОТРЕТЬ", "link": { "href": "/catalog" } },
-                "position": "left"
-              },
-              {
-                "id": "slide-2",
-                "image": "/main-image.png",
-                "heading": { "text": "Стиль и комфорт", "size": "medium" },
-                "text": { "content": "Создайте уют в каждой комнате с нашими товарами", "size": "medium" },
-                "button": { "text": "В КАТАЛОГ", "link": { "href": "/catalog" } },
-                "position": "left"
-              },
-              {
-                "id": "slide-3",
-                "image": "/main-image.png",
-                "heading": { "text": "Лучшие материалы", "size": "medium" },
-                "text": { "content": "Качественные ткани и натуральные материалы", "size": "medium" },
-                "button": { "text": "ПОДРОБНЕЕ", "link": { "href": "/catalog" } },
-                "position": "left"
-              }
-            ],
-            "overlay": 10,
-            "imagePosition": "fullscreen",
+            "id": "Hero-1",
+            "title": "Новая коллекция",
+            "subtitle": "Откройте для себя нашу коллекцию товаров для дома",
+            "image": { "url": "/main-image.png", "alt": "" },
+            "cta": { "text": "СМОТРЕТЬ", "href": "/catalog" },
+            "variant": "overlay",
             "size": "large",
-            "interval": 5000,
-            "pagination": "numbers",
+            "overlay": 20,
             "colorScheme": "scheme-1",
             "padding": { "top": 0, "bottom": 0 }
           }

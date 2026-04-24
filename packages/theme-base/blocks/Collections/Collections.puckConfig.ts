@@ -13,6 +13,16 @@ const CollectionItemSchema = z.object({
 
 export const CollectionsSchema = z.object({
   heading: z.string(),
+  subtitle: z.string().optional(),
+  headingSize: z.enum(['small', 'medium', 'large']).optional(),
+  subtitleSize: z.enum(['small', 'medium', 'large']).optional(),
+  /** Visual aspect ratio of tiles — square / portrait (Figma) / wide. */
+  imageView: z.enum(['square', 'portrait', 'wide']).optional(),
+  /**
+   * `auto` pulls from the shop's collections feed at build time; `manual`
+   * uses only the items in `collections[]`. Default auto.
+   */
+  dataSource: z.enum(['auto', 'manual']).optional(),
   collections: z.array(CollectionItemSchema).min(1).max(10),
   columns: z.number().int().min(1).max(6),
   padding: z.object({
@@ -28,12 +38,53 @@ export const CollectionsPuckConfig: BlockPuckConfig<CollectionsProps> = {
   category: 'products',
   fields: {
     heading: { type: 'text', label: 'Заголовок' },
+    subtitle: { type: 'text', label: 'Подзаголовок' },
+    headingSize: {
+      type: 'radio',
+      label: 'Размер заголовка',
+      options: [
+        { label: 'Маленький', value: 'small' },
+        { label: 'Средний', value: 'medium' },
+        { label: 'Большой', value: 'large' },
+      ],
+    },
+    subtitleSize: {
+      type: 'radio',
+      label: 'Размер подзаголовка',
+      options: [
+        { label: 'Маленький', value: 'small' },
+        { label: 'Средний', value: 'medium' },
+        { label: 'Большой', value: 'large' },
+      ],
+    },
+    imageView: {
+      type: 'radio',
+      label: 'Форма карточек',
+      options: [
+        { label: 'Квадрат', value: 'square' },
+        { label: 'Портрет', value: 'portrait' },
+        { label: 'Широкая', value: 'wide' },
+      ],
+    },
+    dataSource: {
+      type: 'radio',
+      label: 'Источник данных',
+      options: [
+        { label: 'Автоматически', value: 'auto' },
+        { label: 'Вручную', value: 'manual' },
+      ],
+    },
     collections: { type: 'array', label: 'Коллекции' },
     columns: { type: 'number', label: 'Колонки (1-6)' },
     padding: { type: 'object', label: 'Отступы' },
   },
   defaults: {
     heading: 'Коллекции',
+    subtitle: '',
+    headingSize: 'medium',
+    subtitleSize: 'small',
+    imageView: 'square',
+    dataSource: 'auto',
     collections: [
       { id: 'col-1', collectionId: null, heading: 'Коллекция 1', description: '' },
       { id: 'col-2', collectionId: null, heading: 'Коллекция 2', description: '' },

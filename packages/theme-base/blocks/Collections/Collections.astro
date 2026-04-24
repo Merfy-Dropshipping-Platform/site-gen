@@ -32,6 +32,20 @@ const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
 const gridTemplateCols = `grid-template-columns: repeat(${columns}, minmax(0, 1fr));`;
+
+// imageView → aspect-ratio for tiles (falls back to portrait 430/500 for
+// parity with legacy vanilla template).
+const imageViewProp =
+  typeof raw.imageView === 'string' &&
+  ['square', 'portrait', 'wide'].includes(raw.imageView)
+    ? (raw.imageView as 'square' | 'portrait' | 'wide')
+    : 'portrait';
+const aspectMap: Record<string, string> = {
+  square: '1 / 1',
+  portrait: '430 / 500',
+  wide: '16 / 9',
+};
+const tileAspect = aspectMap[imageViewProp];
 // When the merchant hasn't wired real collections, show demo tiles so the
 // preview matches Figma reference (3 collection cards). Real collections
 // take precedence as soon as they exist.
@@ -58,9 +72,9 @@ const effectiveCollections = (collections ?? []).length > 0
       {effectiveCollections.map((item) => (
         <a href={item.collectionId ? `/collection/${item.collectionId}` : '#'} class={C.card}>
           {item.image ? (
-            <img src={item.image} alt={item.heading} class={C.image} loading="lazy" />
+            <img src={item.image} alt={item.heading} class={C.image} loading="lazy" style={`aspect-ratio: ${tileAspect};`} />
           ) : (
-            <div class="w-full aspect-[430/500] rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))]" aria-hidden="true"></div>
+            <div class="w-full rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))]" style={`aspect-ratio: ${tileAspect};`} aria-hidden="true"></div>
           )}
           <h3 class={C.cardHeading}>{item.heading}</h3>
           {item.description && <p class={C.cardDescription}>{item.description}</p>}

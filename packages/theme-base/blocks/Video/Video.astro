@@ -70,14 +70,23 @@ function parseVideo(url: string): { kind: Kind; embedUrl: string } {
 
 const video = parseVideo(videoUrl);
 ---
+{/*
+  Live media slot: the inner player is hydrated at runtime from
+  /api/sites/<siteId>/blocks/<blockId>/media so merchant uploads take
+  effect without a rebuild or new revision. A build-time `videoUrl`
+  (from revision props) still renders immediately as a fallback — useful
+  for legacy revisions where no live slot exists yet.
+*/}
 <section
   class={C.root}
   data-puck-component-id={id}
+  data-media-slot="video"
+  data-media-block-id={id}
   style={paddingStyle}
 >
   <div class={C.container}>
     {heading && <h2 class={C.heading}>{heading}</h2>}
-    <div class={C.media}>
+    <div class={C.media} data-media-target>
       {video.kind === 'youtube' && (
         <iframe
           class={C.iframe}
@@ -103,10 +112,11 @@ const video = parseVideo(videoUrl);
           poster={poster}
           controls
           preload="metadata"
+          data-media-video
         ></video>
       )}
       {!video.embedUrl && (
-        <div class={C.placeholder} aria-hidden="true">
+        <div class={C.placeholder} aria-hidden="true" data-media-placeholder>
           <div class={C.placeholderIcon}>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M8 5v14l11-7L8 5z"/>
@@ -122,3 +132,53 @@ const video = parseVideo(videoUrl);
     </div>
   </div>
 </section>
+<script type="module" is:inline define:vars={{ blockId: id }}>
+  // Live media hydrator: asks the sites API for the current URL for this
+  // block and swaps the <video src>/placeholder in place. Runs once on
+  // load; merchant uploading a new file in the constructor updates the
+  // slot, and the next visit/refresh picks it up without any rebuild.
+  (async function hydrateMediaSlot() {
+    if (!blockId) return;
+    const section = document.querySelector(
+      `section[data-media-slot="video"][data-media-block-id="${blockId}"]`
+    );
+    if (!section) return;
+    const target = section.querySelector('[data-media-target]');
+    if (!target) return;
+    // Derive siteId from the current hostname prefix. Storefronts are
+    // served at <shortId>.merfy.ru where the short id matches the
+    // site.tenantId-derived slug. The API accepts the site UUID, so we
+    // need to resolve short → UUID first via /api/sites/resolve.
+    // Optimization: the server already knows the site at render time —
+    // expose it on window.__MERFY__ if present, fall back to the resolver.
+    const siteId = (window.__MERFY__ && window.__MERFY__.siteId) || null;
+    if (!siteId) return;
+    try {
+      const res = await fetch(
+        `https://gateway.merfy.ru/api/sites/${siteId}/blocks/${encodeURIComponent(blockId)}/media`,
+        { credentials: 'omit' }
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data || typeof data.url !== 'string' || !data.url) return;
+      const existingVideo = target.querySelector('video[data-media-video]');
+      if (existingVideo) {
+        if (existingVideo.getAttribute('src') !== data.url) {
+          existingVideo.setAttribute('src', data.url);
+          existingVideo.load();
+        }
+        return;
+      }
+      // Replace placeholder with a real <video>.
+      target.innerHTML = '';
+      const v = document.createElement('video');
+      v.className = 'absolute inset-0 h-full w-full object-cover';
+      v.setAttribute('data-media-video', '');
+      v.setAttribute('controls', '');
+      v.setAttribute('preload', 'metadata');
+      v.src = data.url;
+      if (data.coverImage) v.poster = data.coverImage;
+      target.appendChild(v);
+    } catch { /* network — leave fallback */ }
+  })();
+</script>

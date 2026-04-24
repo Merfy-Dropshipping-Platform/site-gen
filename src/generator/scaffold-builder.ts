@@ -47,6 +47,12 @@ export interface PageEntry {
 export interface ScaffoldConfig {
   /** Output directory for the assembled Astro project */
   outputDir: string;
+  /**
+   * Site UUID — emitted into `public/site-meta.js` as window.__MERFY__.siteId
+   * so client-side scripts (Video media-slot hydrator, etc.) can call the
+   * site-scoped API endpoints without hardcoding IDs in theme templates.
+   */
+  siteId?: string;
   /** Theme name — looks for templates/astro/<theme> directory */
   themeName?: string;
   /** Custom template root override (instead of templates/astro/<theme>) */
@@ -473,6 +479,17 @@ export async function buildScaffold(
       );
       generatedFiles.push("public/data/products.json");
     }
+  }
+
+  // 8b. Emit public/site-meta.js with siteId so client-side scripts
+  // (Video media-slot hydrator etc.) can reach site-scoped API endpoints.
+  if (config.siteId) {
+    const metaPath = path.join(outputDir, "public", "site-meta.js");
+    const content = `window.__MERFY__ = window.__MERFY__ || {}; window.__MERFY__.siteId = ${JSON.stringify(
+      config.siteId,
+    )};\n`;
+    await writeFile(metaPath, content);
+    generatedFiles.push("public/site-meta.js");
   }
 
   // 9. Write extra files

@@ -1504,6 +1504,7 @@ async function stageGenerate(
 
   const scaffoldConfig: ScaffoldConfig = {
     outputDir: ctx.workingDir,
+    siteId: ctx.siteId,
     themeName: bareThemeName,
     pages,
     registry,

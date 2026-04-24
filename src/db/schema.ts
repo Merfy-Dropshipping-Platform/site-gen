@@ -163,6 +163,26 @@ export const siteRevision = pgTable("site_revision", {
   createdBy: text("created_by"),
 });
 
+/**
+ * Live media slots — merchant uploads from the constructor keyed by
+ * (site_id, block_id). Live storefront fetches the current URL at runtime
+ * via `/api/sites/:id/blocks/:blockId/media`, so changing a video or
+ * image does NOT require rebuilding the Astro artifact or writing a new
+ * site_revision row. The constructor writes to this table directly
+ * whenever a file is uploaded — Save/Publish stay pure workflow steps
+ * for structural changes (block order, copy, etc.), not for media refresh.
+ */
+export const siteMedia = pgTable("site_media", {
+  siteId: text("site_id").notNull(),
+  blockId: text("block_id").notNull(),
+  url: text("url").notNull(),
+  mimeType: text("mime_type"),
+  coverImage: text("cover_image"),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
+
 export const siteBuildStatusEnum = pgEnum("site_build_status", [
   "queued",
   "running",

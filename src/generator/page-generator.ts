@@ -6,8 +6,12 @@
  * - React Islands get client:* directives (client:load, client:visible, client:idle)
  * - Astro components import directly (.astro)
  *
- * Props from JSON are passed through to each component.
+ * Props from JSON are passed through to each component — after being
+ * unwrapped by `normalizeLegacyProps` to collapse the constructor's
+ * `{text,size}` / `{content,size}` / `{text, link}` envelopes into the
+ * flat strings / {text,href} shape theme-base .astro templates expect.
  */
+import { normalizeLegacyProps } from "./legacy-prop-normalizer";
 
 /** How a component should be rendered in Astro */
 export type ComponentKind = "island" | "static" | "server-island";
@@ -119,10 +123,14 @@ function processContentItems(
     // merchant props. Merchant values win. Used so e.g. rose gets Footer variant
     // '3-col' without the merchant ever having to set it in Puck.
     const themeDefaults = blockDefaults[rawItem.type];
-    const item =
+    const mergedProps =
       themeDefaults && Object.keys(themeDefaults).length > 0
-        ? { ...rawItem, props: { ...themeDefaults, ...(rawItem.props ?? {}) } }
-        : rawItem;
+        ? { ...themeDefaults, ...(rawItem.props ?? {}) }
+        : (rawItem.props ?? {});
+    // Unwrap legacy envelopes so the generated .astro receives flat strings
+    // instead of "[object Object]" when the Astro template serialises them.
+    const normalized = normalizeLegacyProps(mergedProps);
+    const item = { ...rawItem, props: normalized };
 
     // Server-island components: emit <merfy-island> Web Component, no import needed
     if (entry.kind === "server-island") {

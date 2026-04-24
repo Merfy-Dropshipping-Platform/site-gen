@@ -203,13 +203,13 @@ async function copyLegacyScaffold(
   tracked: string[],
   warnings: string[],
 ): Promise<void> {
-  const src = path.join(
+  const themeRoot = path.join(
     process.cwd(),
     "templates",
     "astro",
     themeName,
-    "src",
   );
+  const src = path.join(themeRoot, "src");
   if (!(await dirExists(src))) {
     warnings.push(
       `[assemble] no legacy scaffold at ${src} — static routes and auxiliary components will not resolve`,
@@ -218,6 +218,16 @@ async function copyLegacyScaffold(
   }
   const dest = path.join(outputDir, "src");
   await copyRecursive(src, dest, tracked, outputDir);
+
+  // Static assets (main-image.png, etc.) live next to src/ in the legacy
+  // theme. Without this copy, Hero backgroundImage = "/main-image.png"
+  // 404s on live. Package-level public/ (logo.svg) still overlays on top
+  // via `copyAssets` after this step.
+  const legacyPublic = path.join(themeRoot, "public");
+  if (await dirExists(legacyPublic)) {
+    const publicDest = path.join(outputDir, "public");
+    await copyRecursive(legacyPublic, publicDest, tracked, outputDir);
+  }
 }
 
 /**

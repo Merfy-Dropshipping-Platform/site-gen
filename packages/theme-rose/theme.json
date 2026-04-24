@@ -48,7 +48,7 @@
   "colorSchemes": [
     {
       "id": "scheme-1",
-      "name": "Light",
+      "name": "1",
       "tokens": {
         "--color-bg": "255 255 255",
         "--color-surface": "245 245 245",
@@ -68,7 +68,7 @@
     {
       "$comment": "Scheme-2 is Light in Figma (sections use white background with dark text). Previous 'Dark' was wrong — all seed sites save scheme-2 for PopularProducts/Collections/ContactForm/Footer and they must stay light.",
       "id": "scheme-2",
-      "name": "Light",
+      "name": "2",
       "tokens": {
         "--color-bg": "255 255 255",
         "--color-surface": "245 245 245",
@@ -87,7 +87,7 @@
     },
     {
       "id": "scheme-3",
-      "name": "Beige",
+      "name": "3",
       "tokens": {
         "--color-bg": "245 240 235",
         "--color-surface": "230 225 220",
@@ -106,7 +106,7 @@
     },
     {
       "id": "scheme-4",
-      "name": "Dark",
+      "name": "4",
       "tokens": {
         "--color-bg": "0 0 0",
         "--color-surface": "26 26 26",

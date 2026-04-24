@@ -28,7 +28,7 @@ describe('@merfy/theme-vanilla theme.json', () => {
   it('has exactly 4 olive color schemes', () => {
     expect(manifest.colorSchemes.length).toBe(4);
     const names = manifest.colorSchemes.map((s: { name: string }) => s.name);
-    expect(names).toEqual(['Dark Olive', 'Medium Olive', 'Light Gray', 'White']);
+    expect(names).toEqual(['1', '2', '3', '4']);
   });
 
   it('first scheme has required color tokens', () => {

@@ -48,7 +48,7 @@
   "colorSchemes": [
     {
       "id": "scheme-1",
-      "name": "Pink Accent",
+      "name": "1",
       "tokens": {
         "--color-bg": "207 122 139",
         "--color-surface": "207 122 139",
@@ -67,7 +67,7 @@
     },
     {
       "id": "scheme-2",
-      "name": "Pink Section",
+      "name": "2",
       "tokens": {
         "--color-bg": "227 142 159",
         "--color-surface": "227 142 159",
@@ -86,7 +86,7 @@
     },
     {
       "id": "scheme-3",
-      "name": "White",
+      "name": "3",
       "tokens": {
         "--color-bg": "255 255 255",
         "--color-surface": "255 255 255",
@@ -105,7 +105,7 @@
     },
     {
       "id": "scheme-4",
-      "name": "Light Hero",
+      "name": "4",
       "tokens": {
         "--color-bg": "247 247 249",
         "--color-surface": "247 247 249",

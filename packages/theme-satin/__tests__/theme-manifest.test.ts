@@ -27,7 +27,7 @@ describe('@merfy/theme-satin theme.json', () => {
   it('has exactly 4 monochrome color schemes', () => {
     expect(manifest.colorSchemes.length).toBe(4);
     const names = manifest.colorSchemes.map((s: { name: string }) => s.name);
-    expect(names).toEqual(['Black', 'White', 'Light Gray', 'Dark Gray']);
+    expect(names).toEqual(['1', '2', '3', '4']);
   });
 
   it('first scheme has required color tokens', () => {

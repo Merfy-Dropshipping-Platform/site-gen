@@ -48,7 +48,7 @@
   "colorSchemes": [
     {
       "id": "scheme-1",
-      "name": "Black",
+      "name": "1",
       "tokens": {
         "--color-bg": "8 2 0",
         "--color-surface": "8 2 0",
@@ -67,7 +67,7 @@
     },
     {
       "id": "scheme-2",
-      "name": "White",
+      "name": "2",
       "tokens": {
         "--color-bg": "255 255 255",
         "--color-surface": "255 255 255",
@@ -86,7 +86,7 @@
     },
     {
       "id": "scheme-3",
-      "name": "Light Gray",
+      "name": "3",
       "tokens": {
         "--color-bg": "245 245 245",
         "--color-surface": "245 245 245",
@@ -105,7 +105,7 @@
     },
     {
       "id": "scheme-4",
-      "name": "Dark Gray",
+      "name": "4",
       "tokens": {
         "--color-bg": "68 68 68",
         "--color-surface": "68 68 68",

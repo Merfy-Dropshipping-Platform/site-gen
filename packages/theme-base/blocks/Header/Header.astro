@@ -20,6 +20,14 @@ const {
 
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
 const isCenterLeft = logoPosition === 'center-left';
+
+// Treat the seed default `/logo.svg` as "merchant hasn't set a custom logo"
+// and fall through to the styled text logo. The SVG file itself uses
+// `fill="currentColor"` but <img> loads SVGs in an isolated context that
+// doesn't inherit the parent `color`, so the mark renders black on dark
+// schemes. Styled `<span>` matches the constructor's React render, which
+// always uses text and honors --color-heading.
+const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/logo.svg';
 ---
 <div class:list={[C.wrapper, C.sticky[stickiness]]} data-header-wrapper data-puck-component-id={id}>
   <header
@@ -42,7 +50,7 @@ const isCenterLeft = logoPosition === 'center-left';
 
           <div class={C.logoWrap['top-left']}>
             <a href="/" class={C.logoLink}>
-              {logo ? <img src={logo} alt={siteTitle} class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
+              {hasCustomLogo ? <img src={logo} alt={siteTitle} class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
             </a>
           </div>
 
@@ -98,7 +106,7 @@ const isCenterLeft = logoPosition === 'center-left';
 
           <div class={C.logoWrap['top-center']}>
             <a href="/" class={C.logoLink}>
-              {logo ? <img src={logo} alt={siteTitle} class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
+              {hasCustomLogo ? <img src={logo} alt={siteTitle} class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
             </a>
           </div>
 
@@ -174,7 +182,7 @@ const isCenterLeft = logoPosition === 'center-left';
 
           <div class={C.logoWrap['top-right']}>
             <a href="/" class={C.logoLink}>
-              {logo ? <img src={logo} alt={siteTitle} class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
+              {hasCustomLogo ? <img src={logo} alt={siteTitle} class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
             </a>
           </div>
         </>
@@ -192,7 +200,7 @@ const isCenterLeft = logoPosition === 'center-left';
             </button>
 
             <a href="/" class={C.logoLink}>
-              {logo ? <img src={logo} alt={siteTitle} class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
+              {hasCustomLogo ? <img src={logo} alt={siteTitle} class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
             </a>
 
             <div class={C.actions}>

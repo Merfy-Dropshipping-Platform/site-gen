@@ -4,20 +4,66 @@ import { GalleryClasses as C } from './Gallery.classes';
 
 interface Props extends GalleryProps {
   id?: string;
+  subheading?: string;
 }
 
+const raw = Astro.props as Record<string, unknown>;
 const {
   id,
-  heading,
   items = [],
-  layout = 'grid',
   padding,
 } = Astro.props as Props;
+
+// Accept both flat heading + object envelope from legacy revisions.
+const headingText = (() => {
+  const h = raw.heading;
+  if (typeof h === 'string') return h || undefined;
+  if (h && typeof h === 'object') {
+    const o = h as { text?: string };
+    return o.text || undefined;
+  }
+  return undefined;
+})();
+const subheadingText = (() => {
+  const s = raw.subheading ?? raw.text;
+  if (typeof s === 'string') return s || undefined;
+  if (s && typeof s === 'object') {
+    const o = s as { content?: string; text?: string };
+    return o.content || o.text || undefined;
+  }
+  return undefined;
+})();
+
+// Figma Rose default is "featured": big left + 2 small right (when there
+// are at least 3 items). Fall back to "grid" when the merchant picked it
+// explicitly or there are fewer than 3 items.
+const requestedLayout = raw.layout as 'grid' | 'side-by-side' | 'featured' | undefined;
+const layout: 'grid' | 'side-by-side' | 'featured' =
+  requestedLayout ?? (items.length >= 3 ? 'featured' : 'grid');
 
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
 const innerClass = C.inner[layout];
+
+// Demo fallback so seed sites match Figma even before merchant configures.
+type ItemDemo = { type: 'image' | 'product' | 'collection'; url?: string; alt?: string; label?: string; price?: string };
+const DEMO_ITEMS: ItemDemo[] = [
+  { type: 'image', url: '', alt: '' },
+  { type: 'product', label: 'Сумка', price: '5 990 ₽' },
+  { type: 'collection', label: 'Коллекция FUTURISM' },
+];
+const effectiveItems = items.length > 0 ? items : DEMO_ITEMS;
+
+function labelFor(item: { type?: string; label?: string; price?: string }): { label: string; price?: string } {
+  if (item.type === 'product') {
+    return { label: item.label ?? 'Товар', price: item.price };
+  }
+  if (item.type === 'collection') {
+    return { label: item.label ?? 'Коллекция' };
+  }
+  return { label: '' };
+}
 ---
 <section
   class={C.root}
@@ -26,33 +72,65 @@ const innerClass = C.inner[layout];
   style={paddingStyle}
 >
   <div class={C.container}>
-    {heading && <h2 class={C.heading}>{heading}</h2>}
+    {headingText && <h2 class={C.heading}>{headingText}</h2>}
+    {subheadingText && <p class={C.subheading}>{subheadingText}</p>}
     <div class={innerClass}>
-      {items.map((item) => {
-        if (item.type === 'image') {
-          return (
-            <div class={C.item}>
-              <img src={item.url} alt={item.alt} class={C.image} />
-            </div>
-          );
-        }
-        if (item.type === 'product') {
-          const href = item.productId ? `/product/${item.productId}` : '#';
-          return (
-            <a href={href} class={C.card}>
-              <div class={C.cardMedia}></div>
-              <div class={C.cardLabel}>Товар</div>
-            </a>
-          );
-        }
-        const href = item.collectionId ? `/collection/${item.collectionId}` : '#';
-        return (
-          <a href={href} class={C.card}>
-            <div class={C.cardMedia}></div>
-            <div class={C.cardLabel}>Коллекция</div>
-          </a>
-        );
-      })}
+      {layout === 'featured'
+        ? effectiveItems.map((rawItem, idx) => {
+            const item = rawItem as ItemDemo;
+            const isPrimary = idx === 0;
+            const { label, price } = labelFor(item);
+            if (isPrimary) {
+              return (
+                <div class={C.itemPrimary}>
+                  {item.url ? (
+                    <img src={item.url} alt={item.alt ?? ''} class={C.image} />
+                  ) : (
+                    <div class="w-full aspect-[3/4] bg-[rgb(var(--color-surface))]" aria-hidden="true"></div>
+                  )}
+                </div>
+              );
+            }
+            const href = item.type === 'product'
+              ? '/catalog'
+              : item.type === 'collection'
+                ? '/catalog'
+                : '#';
+            return (
+              <a href={href} class={C.itemSmall}>
+                {item.url ? (
+                  <img src={item.url} alt={item.alt ?? ''} class={C.imageSmall} />
+                ) : (
+                  <div class={C.cardMedia} aria-hidden="true"></div>
+                )}
+                {label && <div class={C.cardLabel}>{label}</div>}
+                {price && <div class={C.cardPrice}>{price}</div>}
+              </a>
+            );
+          })
+        : effectiveItems.map((rawItem) => {
+            const item = rawItem as ItemDemo;
+            if (item.type === 'image') {
+              return (
+                <div class={C.item}>
+                  {item.url ? (
+                    <img src={item.url} alt={item.alt ?? ''} class={C.image} />
+                  ) : (
+                    <div class="w-full aspect-square bg-[rgb(var(--color-surface))]" aria-hidden="true"></div>
+                  )}
+                </div>
+              );
+            }
+            const href = '/catalog';
+            const { label, price } = labelFor(item);
+            return (
+              <a href={href} class={C.card}>
+                <div class={C.cardMedia}></div>
+                {label && <div class={C.cardLabel}>{label}</div>}
+                {price && <div class={C.cardPrice}>{price}</div>}
+              </a>
+            );
+          })}
     </div>
   </div>
 </section>

@@ -1,6 +1,6 @@
 {
   "id": "flux",
-  "presetVersion": 2,
+  "presetVersion": 3,
   "name": "Flux",
   "slug": "flux",
   "description": "Техно-тема с оранжевым акцентом и Roboto Flex. Подходит для электроники и гаджетов.",
@@ -186,8 +186,8 @@
           "title": "ТЕХНОЛОГИИ БЕЗ ПАУЗЫ",
           "subtitle": "Будущее — в режиме онлайн. Ваш новый гаджет — уже в наличии.",
           "image": {
-            "url": "",
-            "alt": "Flux hero"
+            "url": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=1920&q=85&auto=format&fit=crop",
+            "alt": "Flux — orange-lit tech lifestyle"
           },
           "images": [
             { "url": "", "alt": "Изображение 1" },
@@ -196,16 +196,16 @@
             { "url": "", "alt": "Изображение 4" }
           ],
           "cta": {
-            "text": "НОВИНКИ 2026",
+            "text": "КУПИТЬ СЕЙЧАС",
             "href": "/catalog?sort=new"
           },
-          "variant": "centered",
+          "variant": "overlay",
           "size": "large",
-          "overlay": 0,
-          "colorScheme": "5",
+          "overlay": 40,
+          "colorScheme": "2",
           "padding": {
-            "top": 96,
-            "bottom": 96
+            "top": 0,
+            "bottom": 0
           }
         }
       },
@@ -256,15 +256,17 @@
           "dataSource": "auto",
           "collection": "",
           "cards": 4,
-          "heading": "Хиты продаж",
+          "heading": "БЕСТСЕЛЛЕРЫ",
           "subtitle": "Выбор покупателей — самые востребованные товары этого месяца.",
+          "quickAdd": true,
+          "quickAddText": "В КОРЗИНУ",
           "productCard": {
             "buttonStyle": "primary",
             "cardStyle": "auto",
             "nextPhoto": "false",
             "quickAdd": "true",
             "columns": 4,
-            "buttonText": "В корзину"
+            "buttonText": "В КОРЗИНУ"
           },
           "colorScheme": "3",
           "containerColorScheme": "3",
@@ -297,13 +299,13 @@
         "type": "Gallery",
         "props": {
           "id": "gallery-flux",
-          "heading": "В центре внимания",
+          "heading": "",
           "items": [
-            { "type": "image", "id": "gal-1", "url": "", "alt": "Изображение 1" },
-            { "type": "image", "id": "gal-2", "url": "", "alt": "Изображение 2" },
-            { "type": "image", "id": "gal-3", "url": "", "alt": "Изображение 3" }
+            { "type": "image", "id": "gal-1", "url": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=1200&q=85&auto=format&fit=crop", "alt": "Flux — наушники в тёмной эстетике" },
+            { "type": "product", "id": "gal-2", "label": "M Phone 17", "price": "140 990 ₽" },
+            { "type": "collection", "id": "gal-3", "label": "Коллекция «Смартфоны»" }
           ],
-          "layout": "side-by-side",
+          "layout": "featured",
           "colorScheme": "1",
           "padding": {
             "top": 80,

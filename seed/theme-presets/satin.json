@@ -53,22 +53,22 @@
         "type": "Header",
         "props": {
           "id": "header-satin",
-          "siteTitle": "Satin",
+          "siteTitle": "SATIN",
           "logo": "",
-          "logoPosition": "top-left",
+          "logoPosition": "top-center",
           "stickiness": "scroll-up",
           "menuType": "dropdown",
           "navigationLinks": [
             {
-              "label": "Магазин",
+              "label": "КОЛЛЕКЦИИ",
               "href": "/catalog"
             },
             {
-              "label": "О нас",
+              "label": "ИСТОРИЯ",
               "href": "/about"
             },
             {
-              "label": "Контакты",
+              "label": "КОНТАКТЫ",
               "href": "/contacts"
             }
           ],
@@ -89,20 +89,21 @@
         "type": "Hero",
         "props": {
           "id": "hero-satin",
-          "title": "Добро пожаловать в Satin",
-          "subtitle": "Новая коллекция уже в магазине",
+          "title": "STYLE'S WEAR COLLECTION SINCE 90'",
+          "subtitle": "ОСТАВАЙТЕСЬ В ЦЕНТРЕ ВНИМАНИЯ",
           "image": {
-            "url": "",
-            "alt": ""
+            "url": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1200&q=80",
+            "alt": "Девушка в платке"
           },
           "cta": {
-            "text": "Смотреть каталог",
+            "text": "НОВЫЕ ПОСТУПЛЕНИЯ",
             "href": "/catalog"
           },
-          "variant": "centered",
+          "variant": "split",
+          "size": "large",
           "colorScheme": "1",
           "padding": {
-            "top": 80,
+            "top": 40,
             "bottom": 80
           }
         }
@@ -111,25 +112,28 @@
         "type": "Collections",
         "props": {
           "id": "collections-satin",
-          "heading": "Коллекции",
+          "heading": "",
           "collections": [
             {
               "id": "col-1",
               "collectionId": null,
-              "heading": "Коллекция 1",
-              "description": ""
+              "heading": "ВЕРХНЯЯ ОДЕЖДА",
+              "description": "",
+              "image": "https://images.unsplash.com/photo-1551232864-3f0890e580d9?auto=format&fit=crop&w=800&q=80"
             },
             {
               "id": "col-2",
               "collectionId": null,
-              "heading": "Коллекция 2",
-              "description": ""
+              "heading": "ДЖЕМПЕРЫ И КАРДИГАНЫ",
+              "description": "",
+              "image": "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?auto=format&fit=crop&w=800&q=80"
             },
             {
               "id": "col-3",
               "collectionId": null,
-              "heading": "Коллекция 3",
-              "description": ""
+              "heading": "ФУТБОЛКИ И ТОПЫ",
+              "description": "",
+              "image": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=800&q=80"
             }
           ],
           "columns": 3,
@@ -146,9 +150,10 @@
           "id": "popular-satin",
           "dataSource": "auto",
           "collection": "",
-          "cards": 4,
+          "cards": 3,
+          "columns": 3,
           "heading": {
-            "text": "Популярное",
+            "text": "",
             "size": "medium",
             "alignment": "center"
           },
@@ -161,8 +166,8 @@
             "cardStyle": "auto",
             "nextPhoto": "false",
             "quickAdd": "true",
-            "columns": 4,
-            "buttonText": "В корзину"
+            "columns": 3,
+            "buttonText": "В КОРЗИНУ"
           },
           "colorScheme": "1",
           "containerColorScheme": "1",
@@ -176,17 +181,17 @@
         "type": "Footer",
         "props": {
           "id": "footer-satin",
-          "siteTitle": "Satin",
+          "siteTitle": "SATIN",
           "copyright": {
-            "companyName": "Satin",
+            "companyName": "SATIN",
             "poweredBy": "Powered by Merfy",
             "showYear": true
           },
           "newsletter": {
-            "enabled": true,
-            "heading": "Подпишитесь на рассылку",
-            "description": "Будьте в курсе новых поступлений и акций",
-            "placeholder": "Ваш email"
+            "enabled": false,
+            "heading": "",
+            "description": "",
+            "placeholder": ""
           },
           "heading": {
             "text": "",
@@ -198,24 +203,24 @@
             "size": "small"
           },
           "navigationColumn": {
-            "title": "Навигация",
+            "title": "МАГАЗИН",
             "links": [
               {
-                "label": "Магазин",
+                "label": "Коллекции",
                 "href": "/catalog"
               },
               {
-                "label": "О нас",
-                "href": "/about"
+                "label": "Новые поступления",
+                "href": "/catalog"
               },
               {
-                "label": "Контакты",
-                "href": "/contacts"
+                "label": "О бренде",
+                "href": "/about"
               }
             ]
           },
           "informationColumn": {
-            "title": "Информация",
+            "title": "ИНФОРМАЦИЯ",
             "links": [
               {
                 "label": "Доставка",
@@ -232,8 +237,8 @@
             ]
           },
           "socialColumn": {
-            "title": "Соцсети",
-            "email": "",
+            "title": "СВЯЗЬ",
+            "email": "hello@satin.example",
             "socialLinks": []
           },
           "colorScheme": "1",

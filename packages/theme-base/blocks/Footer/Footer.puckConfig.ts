@@ -65,6 +65,15 @@ export const FooterPuckConfig: BlockPuckConfig<FooterProps> = {
   category: 'navigation',
   fields: {
     siteTitle: { type: 'text', label: 'Название сайта' },
+    variant: {
+      type: 'radio',
+      label: 'Вариант подвала',
+      options: [
+        { label: '3 колонки', value: '3-col' },
+        { label: '2 части (лого + ссылки / контакты)', value: '2-part' },
+        { label: 'Минимал', value: 'minimal' },
+      ],
+    },
     copyright: { type: 'object', label: 'Копирайт' },
     newsletter: { type: 'object', label: 'Рассылка' },
     heading: { type: 'object', label: 'Заголовок' },

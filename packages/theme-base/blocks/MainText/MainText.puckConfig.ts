@@ -13,6 +13,7 @@ export const MainTextSchema = z.object({
       variant: z.enum(['primary', 'black', 'white']).optional(),
     })
     .optional(),
+  colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -26,8 +27,11 @@ export const MainTextPuckConfig: BlockPuckConfig<MainTextProps> = {
   category: 'content',
   fields: {
     heading: { type: 'text', label: 'Заголовок' },
-    text: { type: 'text', label: 'Текст' },
-    alignment: { type: 'radio', label: 'Выравнивание' },
+    text: { type: 'textarea', label: 'Текст' },
+    alignment: {
+      type: 'alignment',
+      label: 'Выравнивание',
+    },
     headingSize: {
       type: 'radio',
       label: 'Размер заголовка',
@@ -37,8 +41,25 @@ export const MainTextPuckConfig: BlockPuckConfig<MainTextProps> = {
         { label: 'Большой', value: 'large' },
       ],
     },
-    cta: { type: 'object', label: 'Кнопка (опционально)' },
-    padding: { type: 'object', label: 'Отступы' },
+    cta: {
+      type: 'object',
+      label: 'Кнопка (опционально)',
+      objectFields: {
+        text: { type: 'text', label: 'Текст кнопки' },
+        href: { type: 'pagePicker', label: 'Ссылка' },
+        variant: {
+          type: 'radio',
+          label: 'Стиль',
+          options: [
+            { label: 'Акцент', value: 'primary' },
+            { label: 'Чёрная', value: 'black' },
+            { label: 'Белая', value: 'white' },
+          ],
+        },
+      },
+    },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     heading: 'Заголовок раздела',

@@ -168,18 +168,18 @@
           "type": "Footer",
           "props": {
             "id": "Footer-1",
-            "newsletter": {
-              "enabled": "false"
-            },
+            "siteTitle": "Vanila",
+            "variant": "2-part",
+            "newsletter": { "enabled": false },
             "colorScheme": "scheme-1",
             "copyrightColorScheme": "scheme-1",
             "padding": { "top": 80, "bottom": 40 },
             "navigationColumn": {
               "title": "Навигация",
               "links": [
-                { "label": "Каталог", "href": "/catalog" },
-                { "label": "О нас", "href": "/about" },
-                { "label": "Контакты", "href": "/contacts" }
+                { "label": "Текстиль", "href": "/catalog" },
+                { "label": "Декор", "href": "/catalog?collection=decor" },
+                { "label": "Домашняя одежда", "href": "/catalog?collection=home-wear" }
               ]
             },
             "informationColumn": {
@@ -187,20 +187,24 @@
               "links": [
                 { "label": "Политика доставки", "href": "#" },
                 { "label": "Политика возврата", "href": "#" },
-                { "label": "Условия обслуживания", "href": "#" }
+                { "label": "Условия обслуживания", "href": "#" },
+                { "label": "Политика конфиденциальности", "href": "#" }
               ]
             },
             "socialColumn": {
               "title": "Социальные сети",
-              "email": "info@example.ru",
+              "email": "example@vanila.merfy",
               "socialLinks": [
-                { "platform": "VK", "href": "#" },
-                { "platform": "Telegram", "href": "#" }
+                { "platform": "telegram", "href": "#" },
+                { "platform": "vk", "href": "#" },
+                { "platform": "tiktok", "href": "#" },
+                { "platform": "youtube", "href": "#" },
+                { "platform": "dzen", "href": "#" }
               ]
             },
             "copyright": {
-              "companyName": "Мой магазин",
-              "showYear": "true",
+              "companyName": "Vanila Theme",
+              "showYear": true,
               "poweredBy": "Powered by Merfy"
             }
           }

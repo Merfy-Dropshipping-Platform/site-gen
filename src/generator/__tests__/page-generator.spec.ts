@@ -351,4 +351,61 @@ describe("generateAstroPage", () => {
 
     expect(result).toContain("<Hero");
   });
+
+  it("wraps block in color-scheme-N div when colorScheme prop set", () => {
+    const registry: Record<string, ComponentRegistryEntry> = {
+      Hero: STATIC_HERO,
+    };
+    const page: PuckPageData = {
+      content: [
+        { type: "Hero", props: { title: "Hi", colorScheme: "scheme-2" } },
+      ],
+    };
+
+    const result = generateAstroPage(page, registry);
+
+    expect(result).toContain('<div class="color-scheme-2"');
+    expect(result).toContain('data-block-scheme="2"');
+    expect(result).toMatch(/<div class="color-scheme-2"[^>]*>\s*<Hero[^>]+\/>\s*<\/div>/s);
+  });
+
+  it("does NOT wrap block when colorScheme prop missing", () => {
+    const registry: Record<string, ComponentRegistryEntry> = {
+      Hero: STATIC_HERO,
+    };
+    const page: PuckPageData = {
+      content: [{ type: "Hero", props: { title: "Hi" } }],
+    };
+
+    const result = generateAstroPage(page, registry);
+
+    expect(result).not.toContain("color-scheme-");
+    expect(result).not.toContain("data-block-scheme");
+  });
+
+  it("wraps nested-content block in color-scheme-N div too", () => {
+    const registry: Record<string, ComponentRegistryEntry> = {
+      Section: {
+        name: "Section",
+        kind: "static",
+        importPath: "../components/Section.astro",
+      },
+      Hero: STATIC_HERO,
+    };
+    const page: PuckPageData = {
+      content: [
+        {
+          type: "Section",
+          props: { id: "main", colorScheme: "scheme-3" },
+          content: [{ type: "Hero", props: { title: "Nested" } }],
+        },
+      ],
+    };
+
+    const result = generateAstroPage(page, registry);
+
+    expect(result).toContain('<div class="color-scheme-3"');
+    expect(result).toContain("<Section");
+    expect(result).toContain("</Section>");
+  });
 });

@@ -162,22 +162,50 @@ function processContentItems(
       ? ` ${importEntry.directive}`
       : "";
 
+    // Per-block colorScheme → wrap in <div class="color-scheme-N"> so the
+    // CSS rules from tokens-css.ts (.color-scheme-N { --color-bg: ...; ... })
+    // override :root vars for this block only. theme-base blocks don't read
+    // colorScheme themselves; the wrapper delegates the override to CSS
+    // cascade, avoiding changes to shared theme-base/*.astro sources.
+    // normalizeLegacyProps coerces "scheme-3" → 3 (number) already.
+    const rawScheme = (item.props as Record<string, unknown>)?.colorScheme;
+    let schemeId: string | null = null;
+    if (typeof rawScheme === "number" && Number.isFinite(rawScheme)) {
+      schemeId = String(rawScheme);
+    } else if (typeof rawScheme === "string" && rawScheme.length > 0) {
+      schemeId = rawScheme.replace(/^scheme-/, "");
+    }
+    const schemeClass = schemeId ? `color-scheme-${schemeId}` : null;
+    const openWrapper = schemeClass
+      ? `${indent}<div class="${schemeClass}" data-block-scheme="${schemeId}">`
+      : null;
+    const closeWrapper = schemeClass ? `${indent}</div>` : null;
+    const innerIndent = schemeClass ? indent + "  " : indent;
+
     // Check for nested content (slots)
     if (item.content && item.content.length > 0) {
-      lines.push(`${indent}<${importEntry.alias}${propsStr}${directiveStr}>`);
+      if (openWrapper) lines.push(openWrapper);
+      lines.push(
+        `${innerIndent}<${importEntry.alias}${propsStr}${directiveStr}>`,
+      );
       const childLines = processContentItems(
         item.content,
         registry,
         usedNames,
         imports,
-        indent + "  ",
+        innerIndent + "  ",
         buildHash,
         blockDefaults,
       );
       lines.push(...childLines);
-      lines.push(`${indent}</${importEntry.alias}>`);
+      lines.push(`${innerIndent}</${importEntry.alias}>`);
+      if (closeWrapper) lines.push(closeWrapper);
     } else {
-      lines.push(`${indent}<${importEntry.alias}${propsStr}${directiveStr} />`);
+      if (openWrapper) lines.push(openWrapper);
+      lines.push(
+        `${innerIndent}<${importEntry.alias}${propsStr}${directiveStr} />`,
+      );
+      if (closeWrapper) lines.push(closeWrapper);
     }
   }
 

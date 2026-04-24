@@ -658,6 +658,9 @@ export class SitesDomainService {
             (ts as any).colorSchemes.length > 0;
           shouldReseed = !hasThemeSettings;
         }
+        if ((params.patch as any)?.resetContent === true) {
+          shouldReseed = true;
+        }
         if (shouldReseed) {
           const defaultContent = this.getDefaultContent(nextThemeId);
           if (defaultContent) {

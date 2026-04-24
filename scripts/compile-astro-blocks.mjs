@@ -64,6 +64,45 @@ async function findAstroBlocks() {
 }
 
 /**
+ * Find theme-override block directories that contain only TS siblings (no .astro).
+ * Post-refactor (e532276), theme-rose/vanilla/satin/flux/bloom ship only .ts overrides
+ * (classes/tokens/puckConfig/index) — their rendering falls through to theme-base .astro.
+ * But the puck-config loader imports `<pkg>__<blockName>__index.mjs` to pick up the
+ * override's exports, so we need to compile these TS files too.
+ */
+async function findTsOnlyBlocks() {
+  const entries = [];
+  const pkgs = await fs.readdir(PACKAGES_DIR, { withFileTypes: true });
+  for (const pkg of pkgs) {
+    if (!pkg.isDirectory()) continue;
+    if (!pkg.name.startsWith('theme-')) continue;
+    if (pkg.name === 'theme-base') continue; // base is covered by findAstroBlocks
+
+    const blocksDir = path.join(PACKAGES_DIR, pkg.name, 'blocks');
+    try {
+      const blockDirs = await fs.readdir(blocksDir, { withFileTypes: true });
+      for (const blockDir of blockDirs) {
+        if (!blockDir.isDirectory()) continue;
+        const blockDirPath = path.join(blocksDir, blockDir.name);
+        const blockFiles = await fs.readdir(blockDirPath);
+        const hasAstro = blockFiles.some((f) => f.endsWith('.astro'));
+        const hasIndex = blockFiles.includes('index.ts');
+        if (hasAstro) continue; // handled by findAstroBlocks
+        if (!hasIndex) continue; // nothing for loader to pick up
+        entries.push({
+          pkg: pkg.name,
+          blockName: blockDir.name,
+          blockDirPath,
+        });
+      }
+    } catch {
+      // skip
+    }
+  }
+  return entries;
+}
+
+/**
  * Find non-block .astro entries — theme-base/layouts/*.astro and theme-base/seo/*.astro
  * (plus nested CoreWebVitals/*.astro). These do not live in blocks/ dirs, so they do not
  * have a per-block folder containing sibling .ts files — any TS they need is imported
@@ -269,19 +308,37 @@ async function compileOne(entry) {
   };
 }
 
+async function compileTsOnlyBlock(entry) {
+  const siblings = await fs.readdir(entry.blockDirPath);
+  const siblingOutputs = [];
+  for (const sib of siblings) {
+    if (sib.endsWith('.ts') && !sib.endsWith('.d.ts')) {
+      const sibOut = await compileSiblingTs(entry.pkg, entry.blockName, entry.blockDirPath, sib);
+      siblingOutputs.push(sibOut);
+    }
+  }
+  return {
+    entry: { ...entry, fileName: 'index.ts', kind: 'ts-only-block' },
+    outPath: path.join(DIST_DIR, `${entry.pkg}__${entry.blockName}__index.mjs`),
+    byteLength: 0,
+    siblings: siblingOutputs,
+  };
+}
+
 async function main() {
   const blockEntries = await findAstroBlocks();
+  const tsOnlyEntries = await findTsOnlyBlocks();
   const nonBlockEntries = await findAstroNonBlocks();
   const entries = [...blockEntries, ...nonBlockEntries];
-  if (entries.length === 0) {
-    console.error('No .astro files found under packages/theme-*/');
+  if (entries.length === 0 && tsOnlyEntries.length === 0) {
+    console.error('No .astro files or TS block overrides found under packages/theme-*/');
     process.exit(1);
   }
 
   await fs.mkdir(DIST_DIR, { recursive: true });
 
   console.log(
-    `Compiling ${blockEntries.length} block(s) + ${nonBlockEntries.length} non-block(s) — total ${entries.length}...`,
+    `Compiling ${blockEntries.length} block(s) + ${nonBlockEntries.length} non-block(s) + ${tsOnlyEntries.length} ts-only override(s)...`,
   );
   const results = [];
   for (const entry of entries) {
@@ -294,6 +351,18 @@ async function main() {
       results.push(r);
     } catch (err) {
       console.error(`  ✗ ${entry.pkg}/${entry.blockName}/${entry.fileName}: ${err.message}`);
+      process.exit(1);
+    }
+  }
+  for (const entry of tsOnlyEntries) {
+    try {
+      const r = await compileTsOnlyBlock(entry);
+      console.log(
+        `  ✓ ${entry.pkg}/${entry.blockName}/ (ts-only) → ${r.siblings.length} sibling .mjs [ts-only-block]`,
+      );
+      results.push(r);
+    } catch (err) {
+      console.error(`  ✗ ${entry.pkg}/${entry.blockName}/ (ts-only): ${err.message}`);
       process.exit(1);
     }
   }

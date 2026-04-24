@@ -6,21 +6,44 @@ interface Props extends PublicationsProps {
   id?: string;
 }
 
+const raw = Astro.props as Record<string, unknown>;
 const {
   id,
-  heading,
   columns = 3,
   cards = 3,
   padding,
 } = Astro.props as Props;
 
+// Accept legacy {text,size} heading envelope.
+const headingText = (() => {
+  const h = raw.heading;
+  if (typeof h === 'string') return h || undefined;
+  if (h && typeof h === 'object') {
+    const o = h as { text?: string };
+    return o.text || undefined;
+  }
+  return undefined;
+})();
+
+// Demo fallback so seed sites don't show empty skeleton bars. Merchant
+// content (once wired in Phase 1c) overrides by passing `items` prop.
+type Article = { date: string; title: string; excerpt: string };
+const DEMO_ARTICLES: Article[] = [
+  { date: '15 марта 2025', title: 'Новая коллекция весна 2025', excerpt: 'Рассказываем о вдохновении и ключевых силуэтах новой коллекции.' },
+  { date: '28 февраля 2025', title: 'Как ухаживать за кожаными изделиями', excerpt: 'Простые правила, чтобы ваши вещи служили долгие годы.' },
+  { date: '10 февраля 2025', title: 'История бренда: от идеи до магазина', excerpt: 'Путь от первой сумки, сшитой вручную, до собственной коллекции.' },
+  { date: '25 января 2025', title: 'Тренды аксессуаров 2025', excerpt: 'Обзор ключевых трендов сезона — от цветов до фактур.' },
+];
+const rawItems = raw.items as Article[] | undefined;
+const items: Article[] = (Array.isArray(rawItems) && rawItems.length > 0
+  ? rawItems
+  : DEMO_ARTICLES
+).slice(0, cards);
+
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
 const gridTemplateCols = `grid-template-columns: repeat(${columns}, minmax(0, 1fr));`;
-const placeholders = Array.from({ length: cards }, (_, i) => i);
-// NOTE: Real article data is hydrated in Phase 1c via constructor rewire.
-// For now we render `cards` skeleton placeholders.
 ---
 <section
   class={C.root}
@@ -29,19 +52,21 @@ const placeholders = Array.from({ length: cards }, (_, i) => i);
   style={paddingStyle}
 >
   <div class={C.container}>
-    {heading && <h2 class={C.heading}>{heading}</h2>}
+    {headingText && <h2 class={C.heading}>{headingText}</h2>}
     <div class={C.grid} style={gridTemplateCols}>
-      {placeholders.map((i) => (
-        <article
-          class={C.placeholderCard}
-          aria-label="Article placeholder"
-          data-article-index={i}
-        >
-          <div class={C.placeholderMedia}></div>
-          <div class={C.placeholderBody}>
-            <div class={C.placeholderDate}></div>
-            <div class={C.placeholderTitle}></div>
-            <div class={C.placeholderExcerpt}></div>
+      {items.map((item, i) => (
+        <article class={C.card} data-article-index={i}>
+          <div class={C.cardMedia} aria-hidden="true">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21,15 16,10 5,21" />
+            </svg>
+          </div>
+          <div class={C.cardBody}>
+            <div class={C.cardDate}>{item.date}</div>
+            <div class={C.cardTitle}>{item.title}</div>
+            <div class={C.cardExcerpt}>{item.excerpt}</div>
           </div>
         </article>
       ))}

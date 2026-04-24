@@ -6,13 +6,24 @@ interface Props extends VideoProps {
   id?: string;
 }
 
+const raw = Astro.props as Record<string, unknown>;
 const {
   id,
-  heading,
   videoUrl,
   poster,
   padding,
 } = Astro.props as Props;
+
+// Accept legacy {text,size} heading envelope.
+const heading = (() => {
+  const h = raw.heading;
+  if (typeof h === 'string') return h || undefined;
+  if (h && typeof h === 'object') {
+    const o = h as { text?: string };
+    return o.text || undefined;
+  }
+  return undefined;
+})();
 
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
@@ -79,6 +90,16 @@ const video = parseVideo(videoUrl);
           controls
           preload="metadata"
         ></video>
+      )}
+      {!video.embedUrl && (
+        <div class={C.placeholder} aria-hidden="true">
+          <div class={C.placeholderIcon}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M8 5v14l11-7L8 5z"/>
+            </svg>
+          </div>
+          <div class={C.placeholderText}>Видео появится здесь</div>
+        </div>
       )}
     </div>
   </div>

@@ -1,15 +1,24 @@
+// Collections — pixel-matched to Figma Rose 669:17951. Section title is
+// centered 14px uppercase tracked, subheading grey and centered, then an
+// equal-width grid of tall portrait tiles (aspect 3:4) with a small
+// centered label under each ("Коллекция RIVIERA", etc.).
 export const CollectionsClasses = {
-  root: 'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
-  container: 'mx-auto max-w-[var(--container-max-width)] px-4',
+  root:
+    'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
+  container:
+    'mx-auto max-w-[var(--container-max-width)] px-4',
   heading:
-    '[font-family:var(--font-heading)] text-[length:var(--size-section-heading,1.25rem)] font-normal leading-[1.2] text-[rgb(var(--color-heading))] mb-2 text-left',
+    '[font-family:var(--font-heading)] text-[14px] leading-[16px] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] text-center mb-2',
   subtitle:
-    '[font-family:var(--font-body)] text-[16px] font-normal leading-[1.25] text-[rgb(var(--color-muted))] mb-8 text-left',
-  grid: 'grid gap-x-[var(--spacing-grid-col-gap)] gap-y-[var(--spacing-grid-row-gap)]',
-  card: 'block overflow-hidden rounded-[var(--radius-card)]',
-  image: 'w-full aspect-square object-cover rounded-[var(--radius-media)]',
+    '[font-family:var(--font-body)] text-[12px] leading-[15px] text-[rgb(var(--color-text))]/60 text-center mb-10',
+  grid:
+    'grid gap-x-[var(--spacing-grid-col-gap)] gap-y-[var(--spacing-grid-row-gap)]',
+  card:
+    'block overflow-hidden group',
+  image:
+    'w-full aspect-[3/4] object-cover rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))] transition-transform duration-500 ease-out group-hover:scale-105',
   cardHeading:
-    'mt-4 [font-family:var(--font-heading)] text-xl text-[rgb(var(--color-heading))]',
+    'mt-3 [font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-heading))] text-center',
   cardDescription:
-    'mt-2 text-sm [font-family:var(--font-body)] text-[rgb(var(--color-muted))]',
+    'mt-1 text-[12px] leading-[15px] [font-family:var(--font-body)] text-[rgb(var(--color-text))]/60 text-center',
 } as const;

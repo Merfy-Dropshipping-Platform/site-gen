@@ -1,12 +1,33 @@
+// PopularProducts — pixel-matched to Figma Rose 669:17968. Centered
+// section title (14px uppercase tracked) + grey subheading, then a row
+// of square product tiles with "Сумка" label + "5990 ₽" price (optional
+// grey strikethrough oldPrice for discounted items).
 export const PopularProductsClasses = {
-  root: 'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
-  container: 'mx-auto max-w-[var(--container-max-width)] px-4',
+  root:
+    'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
+  container:
+    'mx-auto max-w-[var(--container-max-width)] px-4',
   heading:
-    '[font-family:var(--font-heading)] text-[length:var(--size-section-heading,1.25rem)] font-normal leading-[1.2] text-[rgb(var(--color-heading))] mb-2',
+    '[font-family:var(--font-heading)] text-[14px] leading-[16px] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] text-center mb-2',
   subtitle:
-    '[font-family:var(--font-body)] text-[16px] font-normal leading-[1.25] text-[rgb(var(--color-muted))] mb-8',
+    '[font-family:var(--font-body)] text-[12px] leading-[15px] text-[rgb(var(--color-text))]/60 text-center mb-10',
   grid:
     'grid gap-x-[var(--spacing-grid-col-gap)] gap-y-[var(--spacing-grid-row-gap)]',
+  card:
+    'flex flex-col gap-3 items-stretch group',
+  cardMedia:
+    'relative w-full aspect-square rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))] overflow-hidden flex items-center justify-center text-[rgb(var(--color-text))]/40',
+  cardBadge:
+    'absolute top-3 left-3 inline-flex items-center justify-center h-6 px-2 rounded-[var(--radius-button)] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] [font-family:var(--font-body)] text-[11px] leading-none',
+  cardTitle:
+    '[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-heading))]',
+  cardPriceRow:
+    'flex gap-2 items-center',
+  cardPrice:
+    '[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-heading))]',
+  cardOldPrice:
+    '[font-family:var(--font-body)] text-[12px] leading-[15px] text-[rgb(var(--color-text))]/50 line-through',
+  // Legacy skeleton placeholders, still referenced by older render paths.
   placeholderCard:
     'block overflow-hidden rounded-[var(--radius-card)] bg-[rgb(var(--color-surface))]',
   placeholderMedia:

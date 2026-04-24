@@ -66,39 +66,27 @@ const demo = DEMO_PRODUCTS.slice(0, Math.min(cards, DEMO_PRODUCTS.length));
     <div class={C.grid} style={gridTemplateCols}>
       {demo.map((p, i) => (
         <div
-          class="flex flex-col gap-[20px] items-start"
+          class={C.card}
           aria-label="Товар"
           data-product-index={i}
         >
-          <div
-            class="w-full aspect-[3/4] rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))] flex items-center justify-center text-[rgb(var(--color-muted))]"
-            aria-hidden="true"
-          >
+          <div class={C.cardMedia} aria-hidden="true">
+            {p.oldPrice && <span class={C.cardBadge}>Скидка</span>}
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
               <circle cx="8.5" cy="8.5" r="1.5" />
               <polyline points="21,15 16,10 5,21" />
             </svg>
           </div>
-          <div class="flex flex-col gap-[4px] items-start w-full">
-            <div class="[font-family:var(--font-body)] text-[16px] text-[rgb(var(--color-heading))]">{p.title}</div>
-            <div class="flex gap-[8px] items-center">
-              <div class="[font-family:var(--font-body)] text-[16px] text-[rgb(var(--color-heading))]">{p.price}</div>
-              {p.oldPrice && (
-                <div class="[font-family:var(--font-body)] text-[14px] text-[rgb(var(--color-muted))] line-through">{p.oldPrice}</div>
-              )}
+          <div class="flex flex-col gap-1 items-start w-full">
+            <div class={C.cardTitle}>{p.title}</div>
+            <div class={C.cardPriceRow}>
+              <div class={C.cardPrice}>{p.price}</div>
+              {p.oldPrice && <div class={C.cardOldPrice}>{p.oldPrice}</div>}
             </div>
           </div>
         </div>
       ))}
-    </div>
-    <div class="mt-8">
-      <a
-        href="#popular"
-        class="inline-block px-6 py-2.5 text-[16px] font-normal [font-family:var(--font-body)] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] rounded-[var(--radius-button)] hover:opacity-90 transition-colors no-underline"
-      >
-        Смотреть все
-      </a>
     </div>
   </div>
 </section>

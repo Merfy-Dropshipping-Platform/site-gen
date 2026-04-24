@@ -18,6 +18,13 @@ export const HeroSchema = z.object({
   images: z.array(z.object({ url: z.string(), alt: z.string() })).max(8).optional(),
   cta: z.object({ text: z.string(), href: z.string() }),
   variant: z.enum(['centered', 'split', 'overlay', 'grid-4']),
+  /**
+   * Placement of the heading/CTA block inside overlay / centered variants.
+   * Default = 'center' (legacy behaviour). Vanilla Figma uses 'bottom-left'.
+   */
+  contentPosition: z
+    .enum(['center', 'bottom-left', 'bottom-center', 'bottom-right'])
+    .optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -38,6 +45,16 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
         { label: 'Сплит (фото сбоку)', value: 'split' },
         { label: 'Фон на всю ширину', value: 'overlay' },
         { label: 'Сетка 2x2', value: 'grid-4' },
+      ],
+    },
+    contentPosition: {
+      type: 'radio',
+      label: 'Положение текста (overlay/centered)',
+      options: [
+        { label: 'По центру', value: 'center' },
+        { label: 'Снизу-слева', value: 'bottom-left' },
+        { label: 'Снизу-по-центру', value: 'bottom-center' },
+        { label: 'Снизу-справа', value: 'bottom-right' },
       ],
     },
     title: { type: 'text', label: 'Заголовок' },
@@ -84,6 +101,7 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     images: undefined,
     cta: { text: 'Смотреть каталог', href: '/catalog' },
     variant: 'centered',
+    contentPosition: 'center',
     padding: { top: 80, bottom: 80 },
   },
   schema: HeroSchema,

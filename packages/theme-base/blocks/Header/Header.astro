@@ -8,13 +8,13 @@ interface Props extends HeaderProps {
 
 const {
   id,
-  siteTitle,
+  siteTitle = 'Store',
   logo,
-  logoPosition,
-  stickiness,
-  menuType,
+  logoPosition = 'top-left',
+  stickiness = 'none',
+  menuType = 'dropdown',
   navigationLinks = [],
-  actionButtons,
+  actionButtons = { showSearch: true, showCart: true, showProfile: true },
   padding,
 } = Astro.props as Props;
 

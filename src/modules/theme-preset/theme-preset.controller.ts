@@ -42,4 +42,9 @@ export class ThemePresetController {
       actorId: body.actorId,
     });
   }
+
+  @Post('api/theme-presets/reseed')
+  async reseed() {
+    return this.presets.seedFromFiles();
+  }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Inject, Param, Query, Res } from '@nestjs/common';
+import { Controller, Get, Inject, Logger, Param, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { eq } from 'drizzle-orm';
@@ -25,6 +25,8 @@ import { buildTokensCss } from '../themes/tokens-css';
  */
 @Controller('api/sites/:id/preview')
 export class PreviewController {
+  private readonly logger = new Logger(PreviewController.name);
+
   constructor(
     private readonly preview: PreviewService,
     @Inject(PG_CONNECTION)
@@ -60,13 +62,28 @@ export class PreviewController {
       return;
     }
 
-    const html = await this.preview.renderPreviewPage({
-      blocks,
-      tokensCss: this.tokensCssFromSettings(loaded.data, loaded.themeId),
-      fontHead: googleFontHead(loaded.themeId),
-      themeId: loaded.themeId,
-    });
-    res.type('text/html').send(html);
+    try {
+      const html = await this.preview.renderPreviewPage({
+        blocks,
+        tokensCss: this.tokensCssFromSettings(loaded.data, loaded.themeId),
+        fontHead: googleFontHead(loaded.themeId),
+        themeId: loaded.themeId,
+      });
+      res.type('text/html').send(html);
+    } catch (err: unknown) {
+      // Log full stack so ops can diagnose; send a readable 500 body to the
+      // iframe instead of the generic NestJS JSON so the constructor shows
+      // something debuggable.
+      const e = err as Error;
+      this.logger.error(
+        `Preview render failed for site=${siteId} page=${page}: ${e?.message ?? e}`,
+        e?.stack,
+      );
+      res
+        .status(500)
+        .type('text/html')
+        .send(this.errorPage(`Render failed: ${e?.message ?? 'unknown'}`));
+    }
   }
 
   private async loadRevisionData(siteId: string): Promise<{

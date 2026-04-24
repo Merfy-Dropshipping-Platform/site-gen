@@ -149,6 +149,43 @@ async function copyRecursive(
 }
 
 /**
+ * Copy static pages from the legacy `templates/astro/<themeName>/src/pages/`
+ * directory into `<outputDir>/src/pages/`. Bridges the gap until Phase 3d
+ * moves these pages into `packages/theme-<name>/pages/`.
+ *
+ * Rationale: routes like `/catalog`, `/cart`, `/checkout`, `/login` have
+ * complex page-level logic (getStaticPaths, API fetches, layout composition)
+ * that Puck content can't replicate. `build.service.ts`'s STATIC_TEMPLATE_PAGES
+ * set expects those .astro files to already exist in the scaffolded output —
+ * we deliver them here so nginx serves 200 on those routes instead of 404.
+ *
+ * PHASE3A-STATUS: BRIDGE (remove after Phase 3d migrates static pages)
+ */
+async function copyStaticPagesFromLegacy(
+  themeName: string,
+  outputDir: string,
+  tracked: string[],
+  warnings: string[],
+): Promise<void> {
+  const src = path.join(
+    process.cwd(),
+    "templates",
+    "astro",
+    themeName,
+    "src",
+    "pages",
+  );
+  if (!(await dirExists(src))) {
+    warnings.push(
+      `[assemble] no legacy pages at ${src} — static routes (catalog/cart/checkout/…) will 404`,
+    );
+    return;
+  }
+  const dest = path.join(outputDir, "src", "pages");
+  await copyRecursive(src, dest, tracked, outputDir);
+}
+
+/**
  * Copy layouts from `packages/theme-base/layouts/` → `<outputDir>/src/layouts/`.
  *
  * PHASE3A-STATUS: IMPLEMENTED
@@ -452,6 +489,22 @@ export async function assembleFromPackages(
   } else {
     warnings.push(`theme-${opts.themeName} package not found at ${themeDir}`);
   }
+
+  // ---- STATIC PAGES BRIDGE ----
+  // Copy non-Puck static pages (catalog, cart, checkout, account/*, login,
+  // register, etc.) from the legacy `templates/astro/<theme>/src/pages/`
+  // location until Phase 3d migrates them into `packages/theme-<name>/pages/`.
+  // Without this bridge, build.service.ts's STATIC_TEMPLATE_PAGES skip rule
+  // leaves these routes with no generated .astro file → nginx 404.
+  // Puck pages (home/about/contacts/etc.) are still written AFTER this step
+  // by build.service.ts::buildScaffold, and their fileName overwrites any
+  // static file of the same slug.
+  await copyStaticPagesFromLegacy(
+    opts.themeName,
+    opts.outputDir,
+    tracked,
+    warnings,
+  );
 
   // ---- TOKENS ----
   if (themeCopied) {

@@ -15,11 +15,11 @@
           "type": "PromoBanner",
           "props": {
             "id": "PromoBanner-1",
-            "text": "АКЦИЯ НА НОВУЮ КОЛЛЕКЦИЮ",
-            "linkText": "УЗНАТЬ БОЛЬШЕ",
+            "text": "Акция на новую коллекцию",
+            "linkText": "Узнать больше",
             "linkUrl": "/catalog",
             "colorScheme": "scheme-2",
-            "padding": { "top": 16, "bottom": 16 }
+            "padding": { "top": 12, "bottom": 12 }
           }
         },
         {
@@ -50,15 +50,12 @@
           "type": "Hero",
           "props": {
             "id": "Hero-1",
-            "image": "/main-image.png",
-            "overlay": 20,
-            "imagePosition": "fullscreen",
-            "size": "large",
-            "heading": { "text": "ИСКУССТВО ЗАБОТЫ О СЕБЕ", "size": "medium" },
-            "text": { "content": "Уходовая косметика, которая дарит здоровье и сияние твоей коже и волосам", "size": "medium" },
-            "button": { "text": "Начать ритуал", "style": "primary", "link": { "href": "/catalog" } },
-            "position": "center",
-            "colorScheme": "scheme-4",
+            "variant": "split",
+            "title": "ИСКУССТВО ЗАБОТЫ О СЕБЕ",
+            "subtitle": "Уходовая косметика, которая дарит здоровье и сияние твоей коже и волосам",
+            "image": { "url": "/main-image.png", "alt": "Bloom hero" },
+            "cta": { "text": "Начать ритуал", "href": "/catalog" },
+            "colorScheme": "scheme-3",
             "padding": { "top": 0, "bottom": 0 }
           }
         },

@@ -19,6 +19,11 @@ const paddingStyle = padding
 >
   <div class={C.container}>
     <span class={C.text}>{text}</span>
-    {linkText && <a href={linkUrl} class={C.link}>{linkText}</a>}
+    {linkText && (
+      <>
+        <span aria-hidden="true">.</span>
+        <a href={linkUrl} class={C.link}>{linkText}</a>
+      </>
+    )}
   </div>
 </section>

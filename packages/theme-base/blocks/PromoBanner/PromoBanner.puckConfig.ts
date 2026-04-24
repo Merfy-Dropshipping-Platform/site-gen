@@ -26,7 +26,7 @@ export const PromoBannerPuckConfig: BlockPuckConfig<PromoBannerProps> = {
     text: 'Бесплатная доставка от 3000 ₽',
     linkText: 'Подробнее',
     linkUrl: '/delivery',
-    padding: { top: 40, bottom: 40 },
+    padding: { top: 12, bottom: 12 },
   },
   schema: PromoBannerSchema,
   maxInstances: null,

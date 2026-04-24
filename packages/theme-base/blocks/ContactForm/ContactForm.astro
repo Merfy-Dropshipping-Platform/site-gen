@@ -23,7 +23,7 @@ const readText = (v: unknown): string | undefined => {
   }
   return undefined;
 };
-const heading = readText(raw.heading) ?? 'Свяжитесь с нами';
+const heading = readText(raw.heading) ?? 'Остались вопросы?';
 const description = readText(raw.description);
 const buttonText =
   typeof raw.buttonText === 'string' && raw.buttonText.length > 0
@@ -85,66 +85,72 @@ const norm = {
       {heading && <h2 class={C.heading}>{heading}</h2>}
       {description && <p class={C.description}>{description}</p>}
       <form class={C.form} method="POST" action="/api/contact/submit">
-        {norm.name.enabled && (
-          <div class={C.field}>
-            <label class={C.label} for="contact-name">
-              {norm.name.label}
-              {norm.name.required && <span class={C.required}>*</span>}
-            </label>
-            <input
-              id="contact-name"
-              type="text"
-              name="name"
-              class={C.input}
-              required={norm.name.required}
-            />
+        <div class={C.leftColumn}>
+          {norm.name.enabled && (
+            <div class={C.field}>
+              <label class={C.label} for="contact-name">
+                {norm.name.label}
+                {norm.name.required && <span class={C.required}>*</span>}
+              </label>
+              <input
+                id="contact-name"
+                type="text"
+                name="name"
+                class={C.input}
+                required={norm.name.required}
+              />
+            </div>
+          )}
+          {norm.email.enabled && (
+            <div class={C.field}>
+              <label class={C.label} for="contact-email">
+                {norm.email.label}
+                {norm.email.required && <span class={C.required}>*</span>}
+              </label>
+              <input
+                id="contact-email"
+                type="email"
+                name="email"
+                class={C.input}
+                required={norm.email.required}
+              />
+            </div>
+          )}
+          {norm.phone.enabled && (
+            <div class={C.field}>
+              <label class={C.label} for="contact-phone">
+                {norm.phone.label}
+                {norm.phone.required && <span class={C.required}>*</span>}
+              </label>
+              <input
+                id="contact-phone"
+                type="tel"
+                name="phone"
+                class={C.input}
+                required={norm.phone.required}
+              />
+            </div>
+          )}
+        </div>
+        <div class={C.rightColumn}>
+          {norm.message.enabled && (
+            <div class={C.field + ' flex-1'}>
+              <label class={C.label} for="contact-message">
+                {norm.message.label}
+                {norm.message.required && <span class={C.required}>*</span>}
+              </label>
+              <textarea
+                id="contact-message"
+                name="message"
+                class={C.textarea}
+                required={norm.message.required}
+              ></textarea>
+            </div>
+          )}
+          <div class={C.buttonRow}>
+            <button type="submit" class={C.button}>{buttonText}</button>
           </div>
-        )}
-        {norm.email.enabled && (
-          <div class={C.field}>
-            <label class={C.label} for="contact-email">
-              {norm.email.label}
-              {norm.email.required && <span class={C.required}>*</span>}
-            </label>
-            <input
-              id="contact-email"
-              type="email"
-              name="email"
-              class={C.input}
-              required={norm.email.required}
-            />
-          </div>
-        )}
-        {norm.phone.enabled && (
-          <div class={C.field}>
-            <label class={C.label} for="contact-phone">
-              {norm.phone.label}
-              {norm.phone.required && <span class={C.required}>*</span>}
-            </label>
-            <input
-              id="contact-phone"
-              type="tel"
-              name="phone"
-              class={C.input}
-              required={norm.phone.required}
-            />
-          </div>
-        )}
-        {norm.message.enabled && (
-          <div class={C.field}>
-            <label class={C.label} for="contact-message">
-              {norm.message.label}
-              {norm.message.required && <span class={C.required}>*</span>}
-            </label>
-            <textarea
-              id="contact-message"
-              name="message"
-              class={C.textarea}
-              required={norm.message.required}
-            ></textarea>
-          </div>
-        )}
-        <button type="submit" class={C.button}>{buttonText}</button>
+        </div>
       </form>
     </div>
   </div>

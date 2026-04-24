@@ -14,6 +14,7 @@ export const HeroSchema = z.object({
   images: z.array(z.object({ url: z.string(), alt: z.string() })).max(8).optional(),
   cta: z.object({ text: z.string(), href: z.string() }),
   variant: z.enum(['centered', 'split', 'overlay', 'grid-4']),
+  colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(200),
     bottom: z.number().int().min(0).max(200),
@@ -42,20 +43,21 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
       type: 'object',
       label: 'Изображение',
       objectFields: {
-        url: { type: 'text', label: 'URL' },
-        alt: { type: 'text', label: 'Alt текст' },
+        url: { type: 'image', label: 'Загрузить фото' },
+        alt: { type: 'text', label: 'Alt текст (для SEO)' },
       },
     },
     images: {
       type: 'array',
       label: 'Сетка изображений (grid-4)',
       arrayFields: {
-        url: { type: 'text', label: 'URL' },
+        url: { type: 'image', label: 'Загрузить фото' },
         alt: { type: 'text', label: 'Alt текст' },
       },
       defaultItemProps: { url: '', alt: '' },
       max: 8,
     },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     cta: {
       type: 'object',
       label: 'Кнопка',
@@ -64,14 +66,7 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
         href: { type: 'text', label: 'Ссылка' },
       },
     },
-    padding: {
-      type: 'object',
-      label: 'Отступы',
-      objectFields: {
-        top: { type: 'number', label: 'Сверху (px)', min: 0, max: 200 },
-        bottom: { type: 'number', label: 'Снизу (px)', min: 0, max: 200 },
-      },
-    },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     title: 'ИСКУССТВО ЗАБОТЫ О СЕБЕ',

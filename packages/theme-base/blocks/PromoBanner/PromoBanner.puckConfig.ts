@@ -5,6 +5,7 @@ export const PromoBannerSchema = z.object({
   text: z.string(),
   linkText: z.string(),
   linkUrl: z.string(),
+  colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -19,8 +20,9 @@ export const PromoBannerPuckConfig: BlockPuckConfig<PromoBannerProps> = {
   fields: {
     text: { type: 'text', label: 'Текст' },
     linkText: { type: 'text', label: 'Текст ссылки' },
-    linkUrl: { type: 'text', label: 'URL ссылки' },
-    padding: { type: 'object', label: 'Отступы' },
+    linkUrl: { type: 'pagePicker', label: 'Ссылка' },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     text: 'Бесплатная доставка от 3000 ₽',

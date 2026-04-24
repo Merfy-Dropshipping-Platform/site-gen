@@ -5,6 +5,13 @@ export const MainTextSchema = z.object({
   heading: z.string(),
   text: z.string(),
   alignment: z.enum(['left', 'center', 'right']),
+  cta: z
+    .object({
+      text: z.string(),
+      href: z.string(),
+      variant: z.enum(['primary', 'black', 'white']).optional(),
+    })
+    .optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -20,6 +27,7 @@ export const MainTextPuckConfig: BlockPuckConfig<MainTextProps> = {
     heading: { type: 'text', label: 'Заголовок' },
     text: { type: 'text', label: 'Текст' },
     alignment: { type: 'radio', label: 'Выравнивание' },
+    cta: { type: 'object', label: 'Кнопка (опционально)' },
     padding: { type: 'object', label: 'Отступы' },
   },
   defaults: {

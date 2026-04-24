@@ -10,8 +10,10 @@
     "./types": "./types.ts",
     "./lib/validateTheme": "./lib/validateTheme.ts",
     "./lib/resolveComponents": "./lib/resolveComponents.ts",
+    "./lib/resolveComponent": "./lib/resolveComponent.ts",
     "./lib/generateTokensCss": "./lib/generateTokensCss.ts",
     "./lib/loadTheme": "./lib/loadTheme.ts",
+    "./lib/utils": "./lib/utils.ts",
     "./cli/create": "./cli/create.ts",
     "./cli/add-component": "./cli/add-component.ts",
     "./cli/validate": "./cli/validate.ts",
@@ -35,6 +37,7 @@
     "@types/node": "^22.0.0",
     "jest": "^29.7.0",
     "ts-jest": "^29.2.0",
+    "tsx": "^4.7.0",
     "typescript": "^5.7.0"
   }
 }

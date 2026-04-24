@@ -1,6 +1,6 @@
 {
   "id": "flux",
-  "presetVersion": 1,
+  "presetVersion": 2,
   "name": "Flux",
   "slug": "flux",
   "description": "Техно-тема с оранжевым акцентом и Roboto Flex. Подходит для электроники и гаджетов.",
@@ -28,13 +28,13 @@
         "id": "1",
         "name": "White",
         "background": "#ffffff",
-        "surfaceBg": "#fafafa",
+        "surfaceBg": "#fbfbfb",
         "heading": "#0a0a0a",
         "text": "#0a0a0a",
         "primaryButton": {
-          "background": "#fa5109",
+          "background": "#0a0a0a",
           "text": "#ffffff",
-          "border": "#fa5109"
+          "border": "#0a0a0a"
         },
         "secondaryButton": {
           "background": "#ffffff",
@@ -63,14 +63,14 @@
       {
         "id": "3",
         "name": "Light Gray",
-        "background": "#f5f5f5",
+        "background": "#fbfbfb",
         "surfaceBg": "#ffffff",
         "heading": "#0a0a0a",
         "text": "#0a0a0a",
         "primaryButton": {
-          "background": "#fa5109",
+          "background": "#0a0a0a",
           "text": "#ffffff",
-          "border": "#fa5109"
+          "border": "#0a0a0a"
         },
         "secondaryButton": {
           "background": "#ffffff",
@@ -95,6 +95,24 @@
           "text": "#fa5109",
           "border": "#fa5109"
         }
+      },
+      {
+        "id": "5",
+        "name": "Orange",
+        "background": "#fa5109",
+        "surfaceBg": "#e54807",
+        "heading": "#ffffff",
+        "text": "#ffffff",
+        "primaryButton": {
+          "background": "#0a0a0a",
+          "text": "#ffffff",
+          "border": "#0a0a0a"
+        },
+        "secondaryButton": {
+          "background": "transparent",
+          "text": "#ffffff",
+          "border": "#ffffff"
+        }
       }
     ],
     "defaultSchemeIndex": 0
@@ -105,30 +123,47 @@
     },
     "content": [
       {
+        "type": "PromoBanner",
+        "props": {
+          "id": "promo-flux",
+          "text": "БЕСПЛАТНАЯ ДОСТАВКА НА ВЕСЬ АССОРТИМЕНТ ДО 30.06.2026",
+          "linkText": "СМОТРЕТЬ БОЛЬШЕ",
+          "linkUrl": "/catalog",
+          "padding": {
+            "top": 16,
+            "bottom": 16
+          }
+        }
+      },
+      {
         "type": "Header",
         "props": {
           "id": "header-flux",
-          "siteTitle": "Flux",
+          "siteTitle": "FLUX",
           "logo": "",
-          "logoPosition": "top-left",
+          "logoPosition": "center-left",
           "stickiness": "scroll-up",
           "menuType": "dropdown",
           "navigationLinks": [
             {
-              "label": "Магазин",
-              "href": "/catalog"
+              "label": "Главная",
+              "href": "/"
             },
             {
-              "label": "Новинки",
-              "href": "/catalog?sort=new"
+              "label": "Смартфоны",
+              "href": "/catalog?collection=smartphones"
             },
             {
-              "label": "О нас",
-              "href": "/about"
+              "label": "Наушники",
+              "href": "/catalog?collection=headphones"
             },
             {
-              "label": "Контакты",
-              "href": "/contacts"
+              "label": "Ноутбуки",
+              "href": "/catalog?collection=laptops"
+            },
+            {
+              "label": "Аксессуары",
+              "href": "/catalog?collection=accessories"
             }
           ],
           "actionButtons": {
@@ -139,8 +174,8 @@
           "colorScheme": "1",
           "menuColorScheme": "1",
           "padding": {
-            "top": 16,
-            "bottom": 16
+            "top": 24,
+            "bottom": 24
           }
         }
       },
@@ -148,37 +183,26 @@
         "type": "Hero",
         "props": {
           "id": "hero-flux",
-          "title": "НОВИНКИ ТЕХНОЛОГИЙ",
-          "subtitle": "Лучшие гаджеты и электроника для вашей жизни",
+          "title": "ТЕХНОЛОГИИ БЕЗ ПАУЗЫ",
+          "subtitle": "Будущее — в режиме онлайн. Ваш новый гаджет — уже в наличии.",
           "image": {
             "url": "",
-            "alt": "Flux hero background"
+            "alt": "Flux hero"
           },
           "images": [
-            {
-              "url": "",
-              "alt": "Изображение 1"
-            },
-            {
-              "url": "",
-              "alt": "Изображение 2"
-            },
-            {
-              "url": "",
-              "alt": "Изображение 3"
-            },
-            {
-              "url": "",
-              "alt": "Изображение 4"
-            }
+            { "url": "", "alt": "Изображение 1" },
+            { "url": "", "alt": "Изображение 2" },
+            { "url": "", "alt": "Изображение 3" },
+            { "url": "", "alt": "Изображение 4" }
           ],
           "cta": {
-            "text": "В КАТАЛОГ",
-            "href": "/catalog"
+            "text": "НОВИНКИ 2026",
+            "href": "/catalog?sort=new"
           },
-          "variant": "overlay",
-          "overlay": 40,
-          "colorScheme": "2",
+          "variant": "centered",
+          "size": "large",
+          "overlay": 0,
+          "colorScheme": "5",
           "padding": {
             "top": 96,
             "bottom": 96
@@ -190,7 +214,7 @@
         "props": {
           "id": "collections-flux",
           "heading": "Коллекции",
-          "subtitle": "Категории, собранные для вашего удобства",
+          "subtitle": "Всё для вашего образа жизни — от смартфонов до аксессуаров.",
           "collections": [
             {
               "id": "col-1",
@@ -201,18 +225,24 @@
             {
               "id": "col-2",
               "collectionId": null,
-              "heading": "Ноутбуки",
+              "heading": "Наушники",
               "description": ""
             },
             {
               "id": "col-3",
               "collectionId": null,
+              "heading": "Ноутбуки",
+              "description": ""
+            },
+            {
+              "id": "col-4",
+              "collectionId": null,
               "heading": "Аксессуары",
               "description": ""
             }
           ],
-          "columns": 3,
-          "colorScheme": "1",
+          "columns": 4,
+          "colorScheme": "3",
           "padding": {
             "top": 80,
             "bottom": 80
@@ -236,8 +266,8 @@
             "columns": 4,
             "buttonText": "В корзину"
           },
-          "colorScheme": "1",
-          "containerColorScheme": "1",
+          "colorScheme": "3",
+          "containerColorScheme": "3",
           "padding": {
             "top": 80,
             "bottom": 80
@@ -248,13 +278,18 @@
         "type": "MainText",
         "props": {
           "id": "maintext-flux",
-          "heading": "ТЕХНОЛОГИИ ДЛЯ ЖИЗНИ",
+          "heading": "СЛЕДУЮЩЕЕ ПОКОЛЕНИЕ УЖЕ С ВАМИ!",
           "text": "Flux — это магазин электроники нового поколения. Мы выбираем только проверенные бренды и предлагаем быструю доставку, гарантию и экспертную поддержку на каждом этапе покупки.",
           "alignment": "center",
-          "colorScheme": "1",
+          "cta": {
+            "text": "смотреть новинки",
+            "href": "/catalog?sort=new",
+            "variant": "black"
+          },
+          "colorScheme": "3",
           "padding": {
-            "top": 80,
-            "bottom": 80
+            "top": 64,
+            "bottom": 64
           }
         }
       },
@@ -280,9 +315,9 @@
         "type": "Footer",
         "props": {
           "id": "footer-flux",
-          "siteTitle": "Flux",
+          "siteTitle": "FLUX",
           "copyright": {
-            "companyName": "Flux",
+            "companyName": "FLUX",
             "poweredBy": "Powered by Merfy",
             "showYear": true
           },
@@ -297,20 +332,24 @@
             "title": "Навигация",
             "links": [
               {
-                "label": "Магазин",
-                "href": "/catalog"
+                "label": "Главная",
+                "href": "/"
               },
               {
-                "label": "Новинки",
-                "href": "/catalog?sort=new"
+                "label": "Смартфоны",
+                "href": "/catalog?collection=smartphones"
               },
               {
-                "label": "О нас",
-                "href": "/about"
+                "label": "Наушники",
+                "href": "/catalog?collection=headphones"
               },
               {
-                "label": "Контакты",
-                "href": "/contacts"
+                "label": "Ноутбуки",
+                "href": "/catalog?collection=laptops"
+              },
+              {
+                "label": "Аксессуары",
+                "href": "/catalog?collection=accessories"
               }
             ]
           },
@@ -340,11 +379,11 @@
             "email": "",
             "socialLinks": []
           },
-          "colorScheme": "2",
+          "colorScheme": "1",
           "copyrightColorScheme": "2",
           "padding": {
             "top": 80,
-            "bottom": 80
+            "bottom": 40
           }
         }
       }

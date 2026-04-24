@@ -109,3 +109,30 @@ export interface BlockMigrations<Props> {
   /** Keyed by source theme id ("rose", "base", "*" = any). Values map source fields → target field names. */
   from: Record<string, Partial<Record<keyof Props & string, string>>>;
 }
+
+// ──────────── Settings / Validation types ────────────
+
+/** A single setting entry from the settings_schema */
+export interface SettingEntry {
+  id: string;
+  type: 'color' | 'font' | 'range' | 'select' | 'text' | 'checkbox';
+  label: string;
+  default?: unknown;
+  unit?: string;
+  min?: number;
+  max?: number;
+  enum?: string[];
+}
+
+/** A group of settings from settings_schema */
+export interface SettingsGroup {
+  name: string;
+  settings: SettingEntry[];
+}
+
+/** Result of theme validation */
+export interface ValidationResult {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+}

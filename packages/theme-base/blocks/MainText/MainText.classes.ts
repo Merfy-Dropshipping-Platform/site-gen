@@ -9,4 +9,18 @@ export const MainTextClasses = {
     center: 'text-center',
     right: 'text-right',
   },
+  ctaWrap: 'mt-6 flex',
+  ctaWrapAlign: {
+    left: 'justify-start',
+    center: 'justify-center',
+    right: 'justify-end',
+  },
+  cta: {
+    primary:
+      '[font-family:var(--font-body)] inline-flex h-14 items-center justify-center rounded-[var(--radius-button)] px-6 text-[14px] font-medium uppercase tracking-wide transition-opacity hover:opacity-90 bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] border border-[rgb(var(--color-button-border))]',
+    black:
+      '[font-family:var(--font-body)] inline-flex h-14 items-center justify-center rounded-[var(--radius-button)] px-6 text-[14px] font-medium uppercase tracking-wide transition-opacity hover:opacity-90 bg-[#0a0a0a] text-[#ffffff] border border-[#0a0a0a]',
+    white:
+      '[font-family:var(--font-body)] inline-flex h-14 items-center justify-center rounded-[var(--radius-button)] px-6 text-[14px] font-medium uppercase tracking-wide transition-opacity hover:opacity-90 bg-[#ffffff] text-[#0a0a0a] border border-[#e5e5e5]',
+  },
 } as const;

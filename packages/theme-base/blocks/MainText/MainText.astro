@@ -10,6 +10,7 @@ const raw = Astro.props as Record<string, unknown>;
 const {
   id,
   alignment: alignmentProp,
+  cta: ctaProp,
   padding,
 } = Astro.props as Props & { alignment?: string };
 
@@ -30,7 +31,21 @@ const alignment = (alignmentProp as 'left' | 'center' | 'right' | undefined)
   ?? (raw.position as 'left' | 'center' | 'right' | undefined)
   ?? 'center';
 
+type CtaVariant = 'primary' | 'black' | 'white';
+const readCta = (v: unknown): { text: string; href: string; variant: CtaVariant } | undefined => {
+  if (!v || typeof v !== 'object') return undefined;
+  const o = v as { text?: string; href?: string; variant?: string };
+  const ctaText = typeof o.text === 'string' ? o.text.trim() : '';
+  const ctaHref = typeof o.href === 'string' ? o.href.trim() : '';
+  if (!ctaText || !ctaHref) return undefined;
+  const variant: CtaVariant =
+    o.variant === 'black' || o.variant === 'white' ? o.variant : 'primary';
+  return { text: ctaText, href: ctaHref, variant };
+};
+const cta = readCta(ctaProp);
+
 const alignClass = C.align[alignment];
+const ctaAlignClass = C.ctaWrapAlign[alignment];
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
@@ -46,5 +61,10 @@ const paddingStyle = padding
   <div class:list={[C.container, alignClass]}>
     {heading && <h2 class={C.heading}>{heading}</h2>}
     {text && <div class={C.text} set:html={text} />}
+    {cta && (
+      <div class:list={[C.ctaWrap, ctaAlignClass]}>
+        <a href={cta.href} class={C.cta[cta.variant]}>{cta.text}</a>
+      </div>
+    )}
   </div>
 </section>

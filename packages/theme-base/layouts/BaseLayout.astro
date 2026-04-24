@@ -47,10 +47,7 @@ const {
   {/* Inline token overrides from preview/constructor (may be empty in live builds) */}
   {tokensCss && <style set:html={tokensCss}></style>}
 
-  {/* Site metadata for client-side scripts (media slot hydrator etc.).
-     Emitted by scaffold-builder as public/site-meta.js containing
-     window.__MERFY__.siteId = "<uuid>". Harmless if missing. */}
-  <script src="/site-meta.js"></script>
+  <script is:inline src="/site-meta.js"></script>
 
   {/* Open Graph */}
   <meta property="og:type" content="website">

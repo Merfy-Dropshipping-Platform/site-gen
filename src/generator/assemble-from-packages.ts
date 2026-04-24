@@ -149,6 +149,36 @@ async function copyRecursive(
 }
 
 /**
+ * Copy the theme's curated `package.json` from templates/astro/<themeName>/.
+ * Carries the full dependency set (@tanstack/react-query, glightbox,
+ * testing tooling) the legacy scaffold needs. scaffold-builder.ts will
+ * skip its own package.json generation because this file already exists.
+ *
+ * PHASE3A-STATUS: BRIDGE
+ */
+async function copyLegacyPackageJson(
+  themeName: string,
+  outputDir: string,
+  tracked: string[],
+  warnings: string[],
+): Promise<void> {
+  const src = path.join(
+    process.cwd(),
+    "templates",
+    "astro",
+    themeName,
+    "package.json",
+  );
+  if (!(await fileExists(src))) {
+    warnings.push(`[assemble] no legacy package.json at ${src}`);
+    return;
+  }
+  const dest = path.join(outputDir, "package.json");
+  await fs.copyFile(src, dest);
+  tracked.push(path.relative(outputDir, dest));
+}
+
+/**
  * Copy the legacy `templates/astro/<themeName>/src/` scaffold into
  * `<outputDir>/src/`. Bridges the gap until Phase 3d migrates pages,
  * auxiliary components (auth/, react/ islands), data fixtures, and
@@ -473,9 +503,17 @@ export async function assembleFromPackages(
 
   // ---- LEGACY SCAFFOLD BRIDGE ----
   // Seed the output with the theme's legacy src/ (pages, auth/, react/
-  // islands, data fixtures, scripts). The package overlays below then
-  // overwrite layouts, blocks, styles, seo with the newer implementation.
+  // islands, data fixtures, scripts) and its curated package.json (holds
+  // deps like @tanstack/react-query, glightbox that the generated minimal
+  // one doesn't). The package overlays below then overwrite layouts,
+  // blocks, styles, seo with the newer implementation.
   await copyLegacyScaffold(
+    opts.themeName,
+    opts.outputDir,
+    tracked,
+    warnings,
+  );
+  await copyLegacyPackageJson(
     opts.themeName,
     opts.outputDir,
     tracked,

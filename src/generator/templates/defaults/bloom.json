@@ -12,6 +12,17 @@
     "home": {
       "content": [
         {
+          "type": "PromoBanner",
+          "props": {
+            "id": "PromoBanner-1",
+            "text": "АКЦИЯ НА НОВУЮ КОЛЛЕКЦИЮ",
+            "linkText": "УЗНАТЬ БОЛЬШЕ",
+            "linkUrl": "/catalog",
+            "colorScheme": "scheme-2",
+            "padding": { "top": 16, "bottom": 16 }
+          }
+        },
+        {
           "type": "Header",
           "props": {
             "id": "Header-1",
@@ -43,9 +54,9 @@
             "overlay": 20,
             "imagePosition": "fullscreen",
             "size": "large",
-            "heading": { "text": "КРАСОТА НАЧИНАЕТСЯ С ЗАБОТЫ", "size": "medium" },
-            "text": { "content": "Откройте для себя лучшие средства для ухода за собой", "size": "medium" },
-            "button": { "text": "Смотреть каталог", "style": "primary", "link": { "href": "/catalog" } },
+            "heading": { "text": "ИСКУССТВО ЗАБОТЫ О СЕБЕ", "size": "medium" },
+            "text": { "content": "Уходовая косметика, которая дарит здоровье и сияние твоей коже и волосам", "size": "medium" },
+            "button": { "text": "Начать ритуал", "style": "primary", "link": { "href": "/catalog" } },
             "position": "center",
             "colorScheme": "scheme-4",
             "padding": { "top": 0, "bottom": 0 }
@@ -57,9 +68,9 @@
             "id": "PopularProducts-1",
             "dataSource": "auto",
             "collection": "",
-            "cards": 6,
-            "heading": { "text": "ПОПУЛЯРНЫЕ ТОВАРЫ", "size": "small" },
-            "text": { "content": "Бестселлеры нашего магазина", "size": "small" },
+            "cards": 3,
+            "heading": { "text": "СЕЙЧАС В ТРЕНДЕ", "size": "small" },
+            "text": { "content": "Откройте для себя наши самые любимые средства", "size": "small" },
             "productCard": {
               "buttonStyle": "primary",
               "cardStyle": "portrait",
@@ -75,8 +86,8 @@
           "type": "MainText",
           "props": {
             "id": "MainText-1",
-            "heading": { "text": "НАТУРАЛЬНАЯ КРАСОТА", "size": "medium" },
-            "text": { "text": "Мы верим, что настоящая красота — это забота о себе. Наши продукты созданы из натуральных ингредиентов, чтобы подчеркнуть вашу природную красоту." },
+            "heading": { "text": "ФИЛОСОФИЯ ВАШЕЙ КРАСОТЫ", "size": "medium" },
+            "text": { "text": "Мы верим, что красота — это ритуал заботы. Каждое наше средство создано на основе натуральных ингредиентов, чтобы подчеркнуть вашу природную красоту и вернуть коже здоровое сияние." },
             "align": "center",
             "colorScheme": "scheme-2",
             "padding": { "top": 120, "bottom": 120 }
@@ -86,7 +97,7 @@
           "type": "Gallery",
           "props": {
             "id": "Gallery-1",
-            "heading": { "text": "ГАЛЕРЕЯ", "size": "small" },
+            "heading": { "text": "НАШИ КОЛЛЕКЦИИ", "size": "small" },
             "text": { "content": "", "size": "small" },
             "displayMode": "products",
             "columnsCount": 3,
@@ -96,14 +107,32 @@
           }
         },
         {
-          "type": "Newsletter",
+          "type": "MultiColumns",
           "props": {
-            "id": "Newsletter-1",
-            "heading": { "text": "БУДЬТЕ В КУРСЕ НОВИНОК", "size": "small" },
-            "text": { "content": "Подпишитесь на рассылку и узнавайте первыми о новых коллекциях и акциях.", "size": "small" },
-            "form": { "placeholder": "E-mail", "buttonText": "Подписаться" },
-            "colorScheme": "scheme-2",
-            "padding": { "top": 120, "bottom": 120 }
+            "id": "MultiColumns-1",
+            "columns": [
+              {
+                "id": "feat-1",
+                "heading": "Натуральные ингредиенты",
+                "text": "Только органические компоненты без парабенов и сульфатов.",
+                "imageUrl": ""
+              },
+              {
+                "id": "feat-2",
+                "heading": "Эксперты рекомендуют",
+                "text": "Формулы разработаны совместно с дерматологами.",
+                "imageUrl": ""
+              },
+              {
+                "id": "feat-3",
+                "heading": "Качественный состав",
+                "text": "Проверенная эффективность и бережный уход каждый день.",
+                "imageUrl": ""
+              }
+            ],
+            "displayColumns": 3,
+            "colorScheme": "scheme-3",
+            "padding": { "top": 80, "bottom": 80 }
           }
         },
         {
@@ -111,7 +140,10 @@
           "props": {
             "id": "Footer-1",
             "newsletter": {
-              "enabled": "false"
+              "enabled": "true",
+              "heading": "БУДЬТЕ В КУРСЕ НОВИНОК",
+              "description": "Подпишитесь на рассылку и узнавайте первыми о новых коллекциях и акциях.",
+              "placeholder": "E-mail"
             },
             "colorScheme": "scheme-3",
             "copyrightColorScheme": "scheme-1",

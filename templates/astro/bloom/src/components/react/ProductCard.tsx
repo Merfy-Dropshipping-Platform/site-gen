@@ -24,35 +24,42 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, href }) => {
 
   return (
     <div className="flex flex-col gap-5 w-full">
-      {/* Image — 429:564 portrait per Figma 897:11521 */}
+      {/* Image — 429:564 portrait per Figma 897:11521.
+          Image is clipped via inner div (overflow-hidden); badge and ❤
+          are siblings on the link itself so they aren't clipped. */}
       <a
         href={linkHref}
-        className="relative block w-full overflow-hidden no-underline group"
-        style={{
-          aspectRatio: '429 / 564',
-          backgroundColor: 'rgb(var(--color-background))',
-          borderRadius: 'var(--radius-card, 0px)',
-        }}
+        className="relative block w-full no-underline group"
+        style={{ borderRadius: 'var(--radius-card, 0px)' }}
       >
-        {firstImage ? (
-          <img
-            src={firstImage.url}
-            alt={firstImage.alt ?? product.title}
-            loading="lazy"
-            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-        ) : (
-          <div
-            className="absolute inset-0 flex items-center justify-center"
-            style={{ color: 'rgb(var(--color-muted))' }}
-          >
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <polyline points="21,15 16,10 5,21" />
-            </svg>
-          </div>
-        )}
+        <div
+          className="relative w-full overflow-hidden"
+          style={{
+            aspectRatio: '429 / 564',
+            backgroundColor: 'rgb(var(--color-background))',
+            borderRadius: 'var(--radius-card, 0px)',
+          }}
+        >
+          {firstImage ? (
+            <img
+              src={firstImage.url}
+              alt={firstImage.alt ?? product.title}
+              loading="lazy"
+              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <div
+              className="absolute inset-0 flex items-center justify-center"
+              style={{ color: 'rgb(var(--color-muted))' }}
+            >
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21,15 16,10 5,21" />
+              </svg>
+            </div>
+          )}
+        </div>
 
         {hasDiscount && (
           <span

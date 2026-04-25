@@ -1,14 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StoreProvider } from '../../lib/storefront/provider';
-import { useProducts, PAGE_SIZE } from '../../lib/storefront/hooks/useProducts';
+import { useProducts } from '../../lib/storefront/hooks/useProducts';
 import { useUrlFilters, type CatalogFilters } from '../../lib/storefront/hooks/useUrlFilters';
 import { useCollections } from '../../lib/storefront/hooks/useCollections';
 import { useFilters } from '../../lib/storefront/hooks/useFilters';
 import type { Product } from '../../lib/storefront/types';
 import { ProductCard } from './ProductCard';
-import { PriceRangeFilter } from './PriceRangeFilter';
-import { AvailabilityRadio } from './AvailabilityRadio';
-import { ColorFilterDropdown } from './ColorFilterDropdown';
 
 // --- Filter Dropdown wrapper (per Figma 897:11521 toolbar) ---
 
@@ -73,13 +70,193 @@ function FilterDropdown({ label, active = false, width = 180, align = 'left', ch
             width,
             padding: 12,
             backgroundColor: 'rgb(var(--color-background))',
-            border: '1px solid rgb(var(--color-border, var(--color-muted)))',
+            border: '1px solid rgb(var(--color-foreground) / 0.08)',
             borderRadius: 'var(--radius-card, 0px)',
+            boxShadow: '0 4px 24px -8px rgb(var(--color-foreground) / 0.08)',
           }}
         >
           {children}
         </div>
       )}
+    </div>
+  );
+}
+
+// --- Filter content per Figma 897:11566 / 11567 / 11568 ---
+// Minimal vertical text lists (Bloom font tokens kept) — replaces the
+// fuller AvailabilityRadio / PriceRangeFilter / ColorFilterDropdown
+// components in the catalog popovers.
+
+const AVAILABILITY_OPTIONS: { value: CatalogFilters['availability']; label: string }[] = [
+  { value: 'all', label: 'Все' },
+  { value: 'in_stock', label: 'В наличии' },
+  { value: 'sold_out', label: 'Распродано' },
+];
+
+function AvailabilityList({
+  value,
+  onChange,
+}: {
+  value: CatalogFilters['availability'];
+  onChange: (v: CatalogFilters['availability']) => void;
+}) {
+  const current = value || 'all';
+  return (
+    <div className="flex flex-col" style={{ gap: 8 }}>
+      {AVAILABILITY_OPTIONS.map((opt) => {
+        const active = current === opt.value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(opt.value)}
+            className="text-left font-[family-name:var(--font-body)] uppercase"
+            style={{
+              fontSize: 14,
+              lineHeight: 1.2,
+              color: active ? 'rgb(var(--color-foreground))' : 'rgb(var(--color-muted))',
+            }}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function PriceInputsRow({
+  label,
+  value,
+  active,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  active: boolean;
+  onChange: (v: string) => void;
+}) {
+  const color = active ? 'rgb(var(--color-foreground))' : 'rgb(var(--color-muted))';
+  return (
+    <div
+      className="flex items-center justify-between"
+      style={{
+        height: 32,
+        borderBottom: `1px solid ${color}`,
+      }}
+    >
+      <span
+        className="font-[family-name:var(--font-body)] uppercase"
+        style={{ fontSize: 14, color }}
+      >
+        {label}
+      </span>
+      <div className="flex items-center" style={{ gap: 4 }}>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={value}
+          onChange={(e) => onChange(e.target.value.replace(/[^0-9]/g, ''))}
+          className="font-[family-name:var(--font-body)] text-right"
+          style={{
+            width: 70,
+            fontSize: 14,
+            color,
+            border: 'none',
+            outline: 'none',
+            backgroundColor: 'transparent',
+            padding: 0,
+          }}
+        />
+        <span className="font-[family-name:var(--font-body)]" style={{ fontSize: 14, color }}>
+          ₽
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function PriceInputs({
+  priceMin,
+  priceMax,
+  onChange,
+}: {
+  priceMin?: number;
+  priceMax?: number;
+  onChange: (min?: number, max?: number) => void;
+}) {
+  const [minStr, setMinStr] = useState(priceMin?.toString() ?? '');
+  const [maxStr, setMaxStr] = useState(priceMax?.toString() ?? '');
+  const focusedRef = useRef(false);
+
+  useEffect(() => {
+    if (!focusedRef.current) {
+      setMinStr(priceMin?.toString() ?? '');
+      setMaxStr(priceMax?.toString() ?? '');
+    }
+  }, [priceMin, priceMax]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      let m = minStr ? Number(minStr) : undefined;
+      let mx = maxStr ? Number(maxStr) : undefined;
+      if (m !== undefined && mx !== undefined && m > mx) {
+        const tmp = m;
+        m = mx;
+        mx = tmp;
+      }
+      onChange(m, mx);
+    }, 600);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [minStr, maxStr]);
+
+  return (
+    <div
+      className="flex flex-col"
+      style={{ gap: 8 }}
+      onFocus={() => {
+        focusedRef.current = true;
+      }}
+      onBlur={() => {
+        focusedRef.current = false;
+      }}
+    >
+      <PriceInputsRow label="от" value={minStr} active={minStr !== ''} onChange={setMinStr} />
+      <PriceInputsRow label="до" value={maxStr} active={maxStr !== ''} onChange={setMaxStr} />
+    </div>
+  );
+}
+
+function ColorList({
+  colors,
+  selected,
+  onChange,
+}: {
+  colors: string[];
+  selected?: string;
+  onChange: (color?: string) => void;
+}) {
+  return (
+    <div className="flex flex-col" style={{ gap: 8 }}>
+      {colors.map((color) => {
+        const active = selected === color;
+        return (
+          <button
+            key={color}
+            type="button"
+            onClick={() => onChange(active ? undefined : color)}
+            className="text-left font-[family-name:var(--font-body)] uppercase"
+            style={{
+              fontSize: 14,
+              lineHeight: 1.2,
+              color: active ? 'rgb(var(--color-foreground))' : 'rgb(var(--color-muted))',
+            }}
+          >
+            {color}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -97,7 +274,7 @@ function SortDropdownInline({ value, onChange }: { value: string; onChange: (s: 
   const activeLabel = SORT_OPTIONS.find((o) => o.value === value)?.label ?? 'По популярности';
 
   return (
-    <FilterDropdown label={activeLabel} active align="right" width={200}>
+    <FilterDropdown label={activeLabel} active align="right" width={180}>
       <div className="flex flex-col" style={{ gap: 8 }}>
         {SORT_OPTIONS.map((opt) => (
           <button
@@ -239,18 +416,17 @@ function CatalogInner({ collectionSlug }: CatalogInnerProps) {
           label="Наличие"
           active={!!filters.availability && filters.availability !== 'all'}
         >
-          <AvailabilityRadio
+          <AvailabilityList
             value={filters.availability || 'all'}
-            onChange={(v) => setFilters({ availability: v as CatalogFilters['availability'] })}
+            onChange={(v) => setFilters({ availability: v })}
           />
         </FilterDropdown>
 
         <FilterDropdown
           label="Стоимость"
           active={filters.priceMin !== undefined || filters.priceMax !== undefined}
-          width={220}
         >
-          <PriceRangeFilter
+          <PriceInputs
             priceMin={filters.priceMin}
             priceMax={filters.priceMax}
             onChange={(min, max) => setFilters({ priceMin: min, priceMax: max })}
@@ -259,7 +435,7 @@ function CatalogInner({ collectionSlug }: CatalogInnerProps) {
 
         {colorGroup && (
           <FilterDropdown label="Цвет" active={!!colorSelected}>
-            <ColorFilterDropdown
+            <ColorList
               colors={colorGroup.values}
               selected={colorSelected}
               onChange={(color) => {

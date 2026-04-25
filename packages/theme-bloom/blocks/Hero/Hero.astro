@@ -28,6 +28,9 @@ const textObj = raw.text as { content?: string } | string | undefined;
 const primaryButton = raw.primaryButton as
   | { text?: string; link?: { href?: string } | string }
   | undefined;
+const secondaryButton = raw.secondaryButton as
+  | { text?: string; link?: { href?: string } | string }
+  | undefined;
 const backgroundImage = typeof raw.backgroundImage === 'string' ? raw.backgroundImage : '';
 
 const resolvedTitle =
@@ -44,6 +47,26 @@ const primaryLink = typeof primaryButton?.link === 'object'
 const resolvedCta = cta ?? (primaryButton?.text
   ? { text: primaryButton.text, href: primaryLink ?? '#' }
   : undefined);
+const secondaryLink = typeof secondaryButton?.link === 'object'
+  ? secondaryButton.link?.href
+  : secondaryButton?.link;
+const resolvedSecondaryCta = secondaryButton?.text
+  ? { text: secondaryButton.text, href: secondaryLink ?? '#' }
+  : undefined;
+
+// Pupa parity.
+const sizeProp = typeof raw.size === 'string' ? raw.size : 'medium';
+const overlayPctRaw = typeof raw.overlay === 'number' ? raw.overlay : 0;
+const overlayPct = overlayPctRaw / 100;
+const alignmentRaw = typeof raw.alignment === 'string' ? raw.alignment : '';
+const alignmentClass =
+  alignmentRaw === 'left' ? 'text-left' :
+  alignmentRaw === 'right' ? 'text-right' :
+  alignmentRaw === 'center' ? 'text-center' : '';
+const sizeMinHeight =
+  sizeProp === 'small' ? '320px' :
+  sizeProp === 'medium' ? '480px' :
+  sizeProp === 'large' ? '640px' : '';
 
 const variant = (variantProp as HeroProps['variant'])
   ?? (backgroundImage ? 'overlay' : 'split');
@@ -86,18 +109,24 @@ while (gridImages.length < 4 && variant === 'grid-4') {
 }
 ---
 <section
-  class:list={[C.root, schemeClass]}
+  class:list={[C.root, schemeClass, alignmentClass]}
   data-puck-component-id={id}
   data-variant={variant}
-  style={paddingStyle}
+  data-size={sizeProp}
+  style={`${paddingStyle} ${sizeMinHeight ? `min-height:${sizeMinHeight};` : ''}`}
 >
   {variant === 'split' && (
     <div class:list={[C.container, innerClass]}>
       <div class={C.textCol}>
         {resolvedTitle && <h1 class={C.title}>{resolvedTitle}</h1>}
         {resolvedSubtitle && <p class={C.subtitle}>{resolvedSubtitle}</p>}
-        {resolvedCta?.text && (
-          <a href={resolvedCta.href} class={C.ctaButton}>{resolvedCta.text}</a>
+        {(resolvedCta?.text || resolvedSecondaryCta?.text) && (
+          <div class="flex flex-wrap gap-3">
+            {resolvedCta?.text && <a href={resolvedCta.href} class={C.ctaButton}>{resolvedCta.text}</a>}
+            {resolvedSecondaryCta?.text && (
+              <a href={resolvedSecondaryCta.href} class:list={[C.ctaButton, 'opacity-90 underline']}>{resolvedSecondaryCta.text}</a>
+            )}
+          </div>
         )}
       </div>
       <div class={C.imageCol}>

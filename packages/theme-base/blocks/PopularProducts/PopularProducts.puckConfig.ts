@@ -43,7 +43,23 @@ export const PopularProductsPuckConfig: BlockPuckConfig<PopularProductsProps> = 
   label: 'Популярные товары',
   category: 'products',
   fields: {
-    heading: { type: 'text', label: 'Заголовок' },
+    heading: {
+      type: 'object',
+      label: 'Заголовок',
+      objectFields: {
+        text: { type: 'text', label: 'Текст' },
+        alignment: { type: 'alignment', label: 'Выравнивание' },
+        size: {
+          type: 'radio',
+          label: 'Размер',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
+      },
+    },
     subtitle: { type: 'textarea', label: 'Подзаголовок (опционально)' },
     text: {
       type: 'object',

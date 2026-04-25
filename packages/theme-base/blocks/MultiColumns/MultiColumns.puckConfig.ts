@@ -20,7 +20,14 @@ const MultiColumnItemSchema = z.object({
 });
 
 export const MultiColumnsSchema = z.object({
-  heading: z.string().optional(),
+  heading: z.union([
+    z.string(),
+    z.object({
+      text: z.string().optional(),
+      alignment: z.enum(['left', 'center', 'right']).optional(),
+      size: z.enum(['small', 'medium', 'large']).optional(),
+    }),
+  ]).optional(),
   // Pupa parity: heading object с alignment + size (legacy `heading` text — fallback).
   headingAlignment: z.enum(['left', 'center', 'right']).optional(),
   headingSize: z.enum(['small', 'medium', 'large']).optional(),
@@ -53,7 +60,23 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
   label: 'Мультиколонны',
   category: 'layout',
   fields: {
-    heading: { type: 'text', label: 'Заголовок секции' },
+    heading: {
+      type: 'object',
+      label: 'Заголовок',
+      objectFields: {
+        text: { type: 'text', label: 'Текст' },
+        alignment: { type: 'alignment', label: 'Выравнивание' },
+        size: {
+          type: 'radio',
+          label: 'Размер',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
+      },
+    },
     headingAlignment: { type: 'alignment', label: 'Выравнивание заголовка' },
     headingSize: {
       type: 'radio',

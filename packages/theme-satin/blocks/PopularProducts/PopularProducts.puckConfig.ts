@@ -41,7 +41,7 @@ export const PopularProductsSchema = z.object({
 export type PopularProductsProps = z.infer<typeof PopularProductsSchema>;
 
 export const PopularProductsPuckConfig: BlockPuckConfig<PopularProductsProps> = {
-  label: 'Популярные товары (Satin)',
+  label: 'Коллекция товаров',
   category: 'products',
   fields: {
     heading: {

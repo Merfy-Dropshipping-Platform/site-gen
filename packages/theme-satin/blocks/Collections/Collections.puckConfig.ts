@@ -33,7 +33,7 @@ export const CollectionsSchema = z.object({
 export type CollectionsProps = z.infer<typeof CollectionsSchema>;
 
 export const CollectionsPuckConfig: BlockPuckConfig<CollectionsProps> = {
-  label: 'Список коллекций (Satin)',
+  label: 'Список коллекций',
   category: 'products',
   fields: {
     heading: { type: 'text', label: 'Заголовок (опционально)' },

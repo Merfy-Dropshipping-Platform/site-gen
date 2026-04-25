@@ -38,7 +38,7 @@ export const CollapsibleSectionSchema = z.object({
 export type CollapsibleSectionProps = z.infer<typeof CollapsibleSectionSchema>;
 
 export const CollapsibleSectionPuckConfig: BlockPuckConfig<CollapsibleSectionProps> = {
-  label: 'Сворачиваемый раздел (Satin)',
+  label: 'Сворачиваемый раздел',
   category: 'content',
   fields: {
     heading: {

@@ -38,7 +38,7 @@ export const ImageWithTextSchema = z.object({
 export type ImageWithTextProps = z.infer<typeof ImageWithTextSchema>;
 
 export const ImageWithTextPuckConfig: BlockPuckConfig<ImageWithTextProps> = {
-  label: 'Изображение с текстом (Satin)',
+  label: 'Изображение с текстом',
   category: 'content',
   fields: {
     image: {

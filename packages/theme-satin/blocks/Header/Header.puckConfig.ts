@@ -35,7 +35,7 @@ export const HeaderSchema = z.object({
 export type HeaderProps = z.infer<typeof HeaderSchema>;
 
 export const HeaderPuckConfig: BlockPuckConfig<HeaderProps> = {
-  label: 'Шапка (Satin)',
+  label: 'Header',
   category: 'navigation',
   fields: {
     siteTitle: { type: 'text', label: 'Название магазина' },

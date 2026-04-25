@@ -67,7 +67,7 @@ export const HeroSchema = z.object({
 export type HeroProps = z.infer<typeof HeroSchema>;
 
 export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
-  label: 'Hero',
+  label: 'Изображение',
   category: 'hero',
   fields: {
     variant: {

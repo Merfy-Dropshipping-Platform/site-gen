@@ -40,7 +40,7 @@ export const ContactFormSchema = z.object({
 export type ContactFormProps = z.infer<typeof ContactFormSchema>;
 
 export const ContactFormPuckConfig: BlockPuckConfig<ContactFormProps> = {
-  label: 'Форма обратной связи',
+  label: 'Контактная форма',
   category: 'form',
   fields: {
     heading: {

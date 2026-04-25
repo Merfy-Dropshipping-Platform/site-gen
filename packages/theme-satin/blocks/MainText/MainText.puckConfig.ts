@@ -41,7 +41,7 @@ export const MainTextSchema = z.object({
 export type MainTextProps = z.infer<typeof MainTextSchema>;
 
 export const MainTextPuckConfig: BlockPuckConfig<MainTextProps> = {
-  label: 'Основной текст (Satin)',
+  label: 'Основной текст',
   category: 'content',
   fields: {
     heading: {

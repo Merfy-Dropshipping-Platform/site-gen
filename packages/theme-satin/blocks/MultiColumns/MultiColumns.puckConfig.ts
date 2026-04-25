@@ -57,7 +57,7 @@ export const MultiColumnsSchema = z.object({
 export type MultiColumnsProps = z.infer<typeof MultiColumnsSchema>;
 
 export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
-  label: 'Мультиколонны (Satin)',
+  label: 'Мультиколонны',
   category: 'layout',
   fields: {
     heading: {

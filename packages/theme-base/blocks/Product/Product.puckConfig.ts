@@ -36,7 +36,7 @@ export const ProductSchema = z.object({
 export type ProductProps = z.infer<typeof ProductSchema>;
 
 export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
-  label: 'Товар (PDP)',
+  label: 'Товар',
   category: 'products',
   fields: {
     productId: { type: 'productPicker', label: 'Выбор товара' },

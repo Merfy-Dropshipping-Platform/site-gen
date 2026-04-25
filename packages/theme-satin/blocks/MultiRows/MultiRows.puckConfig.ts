@@ -54,7 +54,7 @@ export const MultiRowsSchema = z.object({
 export type MultiRowsProps = z.infer<typeof MultiRowsSchema>;
 
 export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
-  label: 'Мультиряды (Satin)',
+  label: 'Мультиряды',
   category: 'layout',
   fields: {
     heading: {

@@ -28,7 +28,7 @@ export const NewsletterSchema = z.object({
 export type NewsletterProps = z.infer<typeof NewsletterSchema>;
 
 export const NewsletterPuckConfig: BlockPuckConfig<NewsletterProps> = {
-  label: 'Подписка',
+  label: 'Подписка на рассылку',
   category: 'form',
   fields: {
     heading: {

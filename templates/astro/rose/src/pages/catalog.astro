@@ -3,41 +3,117 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import data from '../data/data.json';
 import siteConfig from '../data/site-config.json';
 import products from '../data/products.json';
+
+// Puck block components — render content from pagesData['page-catalog'].content[]
 import Header from '../components/Header.astro';
+import Hero from '../components/Hero.astro';
 import Footer from '../components/Footer.astro';
 import PopularProducts from '../components/PopularProducts.astro';
+import Gallery from '../components/Gallery.astro';
+import TextBlock from '../components/TextBlock.astro';
+import MultiColumns from '../components/MultiColumns.astro';
+import MultiRows from '../components/MultiRows.astro';
+import Slideshow from '../components/Slideshow.astro';
+import Video from '../components/Video.astro';
+import ImageWithText from '../components/ImageWithText.astro';
+import ContactForm from '../components/ContactForm.astro';
+import PromoBanner from '../components/PromoBanner.astro';
+import Publications from '../components/Publications.astro';
+import CollapsibleSection from '../components/CollapsibleSection.astro';
+import Collections from '../components/Collections.astro';
+import Newsletter from '../components/Newsletter.astro';
+import Product from '../components/Product.astro';
 import CatalogIsland from '../components/react/CatalogIsland';
 
+// Resolve catalog page blocks from multipage revision shape
+const allPagesData = (data as any)?.pagesData ?? {};
+const catalogPage =
+  allPagesData['page-catalog'] ??
+  ((data as any)?.currentPageId === 'page-catalog' ? data : null);
+
+const contentBlocks = catalogPage?.content
+  ? (Array.isArray(catalogPage.content) ? catalogPage.content : [])
+  : Array.isArray((data as any)?.content) && (data as any)?.currentPageId === 'page-catalog'
+    ? (data as any).content
+    : [];
+
 const meta = data?.meta ?? {};
-const blocks = data?.content ?? [];
-const headerBlock = blocks.find((b: any) => b.type === 'Header');
-const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+
+// Header/Footer fallbacks from siteConfig
+const homePage = allPagesData['home'];
+const homeBlocks: any[] = (homePage?.content && Array.isArray(homePage.content)) ? homePage.content : [];
+const headerBlock = homeBlocks.find((b: any) => b.type === 'Header');
+const footerBlock = homeBlocks.find((b: any) => b.type === 'Footer');
 const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
 const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
-const branding = (siteConfig as any)?.branding ?? {};
+
+const componentMap: Record<string, any> = {
+  Hero, PopularProducts, Gallery, TextBlock, MultiColumns, MultiRows, Slideshow,
+  Video, ImageWithText, ContactForm, PromoBanner, Publications,
+  CollapsibleSection, Collections, Newsletter, Product,
+};
+
+const hasCatalogBlock = contentBlocks.some((b: any) => b.type === 'Catalog');
+const pageTitle = (meta?.title && `Каталог — ${meta.title}`) || 'Каталог';
 ---
-<BaseLayout title={`Каталог — ${meta?.title ?? 'Мой сайт'}`} description={meta?.description}>
+<BaseLayout title={pageTitle} description={meta?.description}>
   <div class="catalog-page color-scheme-2 flex flex-col flex-1" style="background: #FFFFFF; color: #000000;">
     <Header {...headerProps} colorScheme="scheme-2" />
 
     <main class="catalog-main flex-1 w-full max-w-[1920px] mx-auto" style="padding-top: 40px; padding-bottom: 60px;">
-      <!-- Page title block -->
-      <div style="margin-bottom: 30px;">
-        <h1
-          class="font-comfortaa text-2xl sm:text-3xl xl:text-[36px]"
-          style="line-height: 1.1; font-weight: 400; text-transform: uppercase; color: #000000; margin: 0;"
-        >КАТАЛОГ</h1>
-        <p
-          class="font-manrope text-base sm:text-lg xl:text-[24px]"
-          style="line-height: 1.38; font-weight: 400; color: #999999; margin-top: 5px;"
-        >Здесь начинается персональный стиль</p>
-      </div>
+      {contentBlocks.map((block: any) => {
+        if (block.type === 'Catalog') {
+          const props = block.props ?? {};
+          const padding = props.padding ?? { top: 40, bottom: 80 };
+          const showColl = props.showCollectionFilter !== 'false' && props.showCollectionFilter !== false;
+          return (
+            <section
+              data-puck-component-id={props.id}
+              data-block="catalog"
+              style={`padding-top:${padding.top ?? 40}px; padding-bottom:${padding.bottom ?? 80}px;`}
+            >
+              <div style="margin-bottom: 30px;">
+                <h1
+                  class="font-comfortaa text-2xl sm:text-3xl xl:text-[36px]"
+                  style="line-height: 1.1; font-weight: 400; text-transform: uppercase; color: #000000; margin: 0;"
+                >КАТАЛОГ</h1>
+                <p
+                  class="font-manrope text-base sm:text-lg xl:text-[24px]"
+                  style="line-height: 1.38; font-weight: 400; color: #999999; margin-top: 5px;"
+                >Здесь начинается персональный стиль</p>
+              </div>
+              <CatalogIsland
+                client:only="react"
+                collectionSlug={props.collectionSlug}
+                showCollectionFilter={showColl}
+              />
+            </section>
+          );
+        }
+        const Component = componentMap[block.type];
+        if (!Component) return null;
+        return <Component {...(block.props ?? {})} />;
+      })}
 
-      <CatalogIsland client:only="react" />
-
-      <noscript>
-        <PopularProducts products={products} />
-      </noscript>
+      {/* Fallback: revisions без Catalog блока — рендерим default rose layout */}
+      {!hasCatalogBlock && (
+        <>
+          <div style="margin-bottom: 30px;">
+            <h1
+              class="font-comfortaa text-2xl sm:text-3xl xl:text-[36px]"
+              style="line-height: 1.1; font-weight: 400; text-transform: uppercase; color: #000000; margin: 0;"
+            >КАТАЛОГ</h1>
+            <p
+              class="font-manrope text-base sm:text-lg xl:text-[24px]"
+              style="line-height: 1.38; font-weight: 400; color: #999999; margin-top: 5px;"
+            >Здесь начинается персональный стиль</p>
+          </div>
+          <CatalogIsland client:only="react" />
+          <noscript>
+            <PopularProducts products={products} />
+          </noscript>
+        </>
+      )}
     </main>
 
     <Footer {...footerProps} colorScheme="scheme-2" />

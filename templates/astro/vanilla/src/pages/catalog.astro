@@ -4,18 +4,78 @@ import data from '../data/data.json';
 import siteConfig from '../data/site-config.json';
 import products from '../data/products.json';
 import collections from '../data/collections.json';
+
+// Puck block components — render content from pagesData['page-catalog'].content[]
 import Header from '../components/Header.astro';
+import Hero from '../components/Hero.astro';
 import Footer from '../components/Footer.astro';
 import PopularProducts from '../components/PopularProducts.astro';
+import Gallery from '../components/Gallery.astro';
+import TextBlock from '../components/TextBlock.astro';
+import MultiColumns from '../components/MultiColumns.astro';
+import MultiRows from '../components/MultiRows.astro';
+import Slideshow from '../components/Slideshow.astro';
+import Video from '../components/Video.astro';
+import ImageWithText from '../components/ImageWithText.astro';
+import ContactForm from '../components/ContactForm.astro';
+import PromoBanner from '../components/PromoBanner.astro';
+import Publications from '../components/Publications.astro';
+import CollapsibleSection from '../components/CollapsibleSection.astro';
+import Collections from '../components/Collections.astro';
+import Newsletter from '../components/Newsletter.astro';
+import Product from '../components/Product.astro';
 import CatalogIsland from '../components/react/CatalogIsland';
 
+// Resolve catalog page blocks from multipage revision shape
+const allPagesData = (data as any)?.pagesData ?? {};
+const catalogPage =
+  allPagesData['page-catalog'] ??
+  ((data as any)?.currentPageId === 'page-catalog' ? data : null);
+
+const catalogBlocks: any[] = catalogPage?.content
+  ? (Array.isArray(catalogPage.content) ? catalogPage.content : [])
+  : Array.isArray((data as any)?.content) && (data as any)?.currentPageId === 'page-catalog'
+    ? (data as any).content
+    : [];
+
 const meta = data?.meta ?? {};
-const blocks = data?.content ?? [];
-const headerBlock = blocks.find((b: any) => b.type === 'Header');
-const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+
+// Header/Footer fallbacks from siteConfig (or home page)
+const homePage = allPagesData['home'];
+const homeBlocks: any[] = (homePage?.content && Array.isArray(homePage.content)) ? homePage.content : [];
+const headerBlock =
+  catalogBlocks.find((b: any) => b?.type === 'Header') ??
+  homeBlocks.find((b: any) => b?.type === 'Header');
+const footerBlock =
+  catalogBlocks.find((b: any) => b?.type === 'Footer') ??
+  homeBlocks.find((b: any) => b?.type === 'Footer');
 const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
 const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
-const branding = (siteConfig as any)?.branding ?? {};
+
+// Content blocks — exclude Header/Footer (rendered as chrome)
+const contentBlocks = catalogBlocks.filter(
+  (b: any) => b?.type && b.type !== 'Header' && b.type !== 'Footer',
+);
+
+const componentMap: Record<string, any> = {
+  Hero,
+  PopularProducts,
+  Gallery,
+  TextBlock,
+  MainText: TextBlock,
+  MultiColumns,
+  MultiRows,
+  Slideshow,
+  Video,
+  ImageWithText,
+  ContactForm,
+  PromoBanner,
+  Publications,
+  CollapsibleSection,
+  Collections,
+  Newsletter,
+  Product,
+};
 
 // Build-time data → initialProducts/initialCollections so the CatalogIsland
 // can render real product cards on first paint instead of a full-page
@@ -48,32 +108,72 @@ const initialCollections = (collections as any[]).map((c: any) => ({
   image: c.image ? (typeof c.image === 'string' ? { url: c.image } : c.image) : undefined,
 }));
 const initialTotal = (products as any[]).length;
+
+const hasCatalogBlock = contentBlocks.some((b: any) => b.type === 'Catalog');
+const pageTitle = (meta?.title && `Каталог — ${meta.title}`) || 'Каталог';
 ---
-<BaseLayout title={`Каталог — ${meta?.title ?? 'Мой сайт'}`} description={meta?.description}>
+<BaseLayout title={pageTitle} description={meta?.description}>
   <div class="catalog-page flex flex-col flex-1" style="background: #EEEEEE; color: rgb(var(--color-foreground));">
     <Header {...headerProps} />
 
     <main class="catalog-main flex-1 w-full max-w-[1320px] mx-auto">
-      <!-- Page title block -->
-      <div style="margin-bottom: 40px;">
-        <h1
-          class="font-heading italic"
-          style="font-size: 20px; font-weight: 400; text-transform: uppercase; line-height: 1.2; color: rgb(var(--color-foreground)); margin: 0;"
-        >КАТАЛОГ</h1>
-      </div>
+      {contentBlocks.map((block: any) => {
+        if (block.type === 'Catalog') {
+          const props = block.props ?? {};
+          const padding = props.padding ?? { top: 40, bottom: 80 };
+          const showColl = props.showCollectionFilter !== 'false' && props.showCollectionFilter !== false;
+          return (
+            <section
+              data-puck-component-id={props.id}
+              data-block="catalog"
+              style={`padding-top:${padding.top ?? 40}px; padding-bottom:${padding.bottom ?? 80}px;`}
+            >
+              <div style="margin-bottom: 40px;">
+                <h1
+                  class="font-heading italic"
+                  style="font-size: 20px; font-weight: 400; text-transform: uppercase; line-height: 1.2; color: rgb(var(--color-foreground)); margin: 0;"
+                >КАТАЛОГ</h1>
+              </div>
+              <CatalogIsland
+                client:load
+                shopId={shopId}
+                apiBase={apiUrl}
+                initialProducts={initialProducts}
+                initialTotal={initialTotal}
+                initialCollections={initialCollections}
+                collectionSlug={props.collectionSlug}
+                showCollectionFilter={showColl}
+              />
+            </section>
+          );
+        }
+        const Component = componentMap[block.type];
+        if (!Component) return null;
+        return <Component {...(block.props ?? {})} />;
+      })}
 
-      <CatalogIsland
-        client:load
-        shopId={shopId}
-        apiBase={apiUrl}
-        initialProducts={initialProducts}
-        initialTotal={initialTotal}
-        initialCollections={initialCollections}
-      />
-
-      <noscript>
-        <PopularProducts products={products} />
-      </noscript>
+      {/* Fallback: revisions без Catalog блока — рендерим default vanilla layout */}
+      {!hasCatalogBlock && (
+        <>
+          <div style="margin-bottom: 40px;">
+            <h1
+              class="font-heading italic"
+              style="font-size: 20px; font-weight: 400; text-transform: uppercase; line-height: 1.2; color: rgb(var(--color-foreground)); margin: 0;"
+            >КАТАЛОГ</h1>
+          </div>
+          <CatalogIsland
+            client:load
+            shopId={shopId}
+            apiBase={apiUrl}
+            initialProducts={initialProducts}
+            initialTotal={initialTotal}
+            initialCollections={initialCollections}
+          />
+          <noscript>
+            <PopularProducts products={products} />
+          </noscript>
+        </>
+      )}
     </main>
 
     <Footer {...footerProps} />

@@ -1,21 +1,26 @@
 import { z } from 'zod';
 import type { BlockPuckConfig } from '@merfy/theme-contract';
 
+/**
+ * Pupa parity: PromoBanner has exactly 5 fields.
+ *   text, link {text, href}, size, colorScheme, padding
+ * No more, no less. Legacy linkText/linkUrl preserved for back-compat read.
+ */
 export const PromoBannerSchema = z.object({
   text: z.string(),
-  linkText: z.string(),
-  linkUrl: z.string(),
-  colorScheme: z.string().optional(),
-  // Pupa parity.
-  size: z.enum(['small', 'medium', 'large']).optional(),
   link: z.object({
     text: z.string().optional(),
     href: z.string().optional(),
   }).optional(),
+  size: z.enum(['small', 'medium', 'large']).optional(),
+  colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
   }),
+  // Legacy back-compat fields (hidden from picker UI, read-only fallback in .astro).
+  linkText: z.string().optional(),
+  linkUrl: z.string().optional(),
 });
 
 export type PromoBannerProps = z.infer<typeof PromoBannerSchema>;
@@ -25,14 +30,12 @@ export const PromoBannerPuckConfig: BlockPuckConfig<PromoBannerProps> = {
   category: 'hero',
   fields: {
     text: { type: 'text', label: 'Текст' },
-    linkText: { type: 'text', label: 'Текст ссылки' },
-    linkUrl: { type: 'pagePicker', label: 'Ссылка' },
     link: {
       type: 'object',
-      label: 'Ссылка (pupa)',
+      label: 'Ссылка',
       objectFields: {
-        text: { type: 'text', label: 'Текст' },
-        href: { type: 'pagePicker', label: 'Ссылка' },
+        text: { type: 'text', label: 'Текст ссылки' },
+        href: { type: 'pagePicker', label: 'Адрес' },
       },
     },
     size: {
@@ -49,8 +52,8 @@ export const PromoBannerPuckConfig: BlockPuckConfig<PromoBannerProps> = {
   },
   defaults: {
     text: 'Бесплатная доставка от 3000 ₽',
-    linkText: 'Подробнее',
-    linkUrl: '/delivery',
+    link: { text: 'Подробнее', href: '/delivery' },
+    size: 'medium',
     padding: { top: 12, bottom: 12 },
   },
   schema: PromoBannerSchema,

@@ -71,6 +71,8 @@ const BASE_BLOCKS: Record<string, BaseBlockEntry> = Object.fromEntries(
     'Publications',
     'CartSection',
     'CheckoutSection',
+    // Catalog page-only block (filter sidebar + product grid + pagination)
+    'Catalog',
     // 7 chrome blocks
     'Header',
     'Footer',

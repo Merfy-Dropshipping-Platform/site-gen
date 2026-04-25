@@ -77,11 +77,15 @@ const schemeClass = colorSchemeRaw ? `color-scheme-${colorSchemeRaw.replace('sch
   style={paddingStyle}
 >
   <div class:list={[C.container, alignClass]}>
-    {heading && <h2 class:list={[C.heading, headingSizeClass]}>{heading}</h2>}
-    {text && <div class={C.text} set:html={text} />}
+    {heading && (
+      <h2 class:list={[C.heading, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{heading}</h2>
+    )}
+    {text && (
+      <div class={C.text} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text" set:html={text} />
+    )}
     {cta && (
       <div class:list={[C.ctaWrap, ctaAlignClass]}>
-        <a href={cta.href} class={C.cta[cta.variant]}>{cta.text}</a>
+        <a href={cta.href} class={C.cta[cta.variant]} data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="cta">{cta.text}</a>
       </div>
     )}
   </div>

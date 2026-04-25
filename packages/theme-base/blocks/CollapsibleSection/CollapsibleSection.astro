@@ -54,7 +54,9 @@ const allItems: any[] = (Array.isArray(raw.items) && (raw.items as any[]).length
   style={paddingStyle}
 >
   <div class:list={[C.container, containerEnabled ? containerSchemeClass : '']}>
-    {headingText && <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]}>{headingText}</h2>}
+    {headingText && (
+      <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{headingText}</h2>
+    )}
     <div class={C.list}>
       {allItems.map((item, i) => {
         const itemTitle = item.title ?? item.heading;

@@ -44,7 +44,7 @@ const rowsPosition = typeof raw.rowsPosition === 'string' ? raw.rowsPosition : '
 >
   <div class={C.container}>
     {headingText && (
-      <h2 class:list={[headingAlignClass, headingSizeClass, 'mb-8 font-medium']}>{headingText}</h2>
+      <h2 class:list={[headingAlignClass, headingSizeClass, 'mb-8 font-medium']} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{headingText}</h2>
     )}
     <div class={C.stack}>
       {rows.map((row: any, i: number) => {

@@ -105,8 +105,12 @@ const demo = DEMO_PRODUCTS.slice(0, Math.min(cards, DEMO_PRODUCTS.length));
   style={paddingStyle}
 >
   <div class:list={[C.container, containerSchemeClass]}>
-    {heading && <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]}>{heading}</h2>}
-    {subtitle && <p class:list={[C.subtitle, headingAlignClass, textSizeClass]}>{subtitle}</p>}
+    {heading && (
+      <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{heading}</h2>
+    )}
+    {subtitle && (
+      <p class:list={[C.subtitle, headingAlignClass, textSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{subtitle}</p>
+    )}
     <div class={C.grid} style={gridTemplateCols}>
       {demo.map((p, i) => (
         <div

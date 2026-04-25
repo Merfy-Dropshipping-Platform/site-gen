@@ -74,7 +74,9 @@ const gridTemplateCols = `grid-template-columns: repeat(${columnsResolved}, minm
   style={paddingStyle}
 >
   <div class={C.container}>
-    {headingText && <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]}>{headingText}</h2>}
+    {headingText && (
+      <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{headingText}</h2>
+    )}
     <div class={C.grid} style={gridTemplateCols}>
       {items.slice(0, cardsResolved).map((item, i) => (
         <article class={C.card} data-article-index={i}>

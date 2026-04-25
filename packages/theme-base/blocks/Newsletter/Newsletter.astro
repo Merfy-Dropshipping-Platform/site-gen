@@ -66,9 +66,13 @@ const positionClass =
 >
   <div class={C.container}>
     <div class:list={[C.inner, positionClass]}>
-      {heading && <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]}>{heading}</h2>}
-      {description && <p class:list={[C.description, textSizeClass]}>{description}</p>}
-      <form class={C.form} method="POST" action="/api/newsletter/subscribe">
+      {heading && (
+        <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{heading}</h2>
+      )}
+      {description && (
+        <p class:list={[C.description, textSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{description}</p>
+      )}
+      <form class={C.form} method="POST" action="/api/newsletter/subscribe" data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="form">
         <input type="email" name="email" placeholder={placeholder} required class={C.input} />
         <button type="submit" class={C.button} aria-label={buttonText}>
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">

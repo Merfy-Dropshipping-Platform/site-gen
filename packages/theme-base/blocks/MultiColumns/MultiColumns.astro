@@ -56,7 +56,7 @@ const buttonLink = typeof raw.buttonLink === 'string' ? raw.buttonLink : (typeof
 >
   <div class={C.container}>
     {headingText && (
-      <h2 class:list={[C.columnHeading, headingAlignClass, headingSizeClass, 'mb-8']}>{headingText}</h2>
+      <h2 class:list={[C.columnHeading, headingAlignClass, headingSizeClass, 'mb-8']} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{headingText}</h2>
     )}
     <div class={C.grid} style={gridTemplateCols}>
       {columns.map((column: any, i: number) => {

@@ -101,8 +101,12 @@ const norm = {
 >
   <div class={C.container}>
     <div class={C.inner}>
-      {heading && <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]}>{heading}</h2>}
-      {description && <p class={C.description}>{description}</p>}
+      {heading && (
+        <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{heading}</h2>
+      )}
+      {description && (
+        <p class={C.description} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="description">{description}</p>
+      )}
       <form class={C.form} method="POST" action="/api/contact/submit">
         <div class={C.leftColumn}>
           {norm.name.enabled && (

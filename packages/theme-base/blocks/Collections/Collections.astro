@@ -88,8 +88,12 @@ const effectiveCollections = hasRealCollections
   style={paddingStyle}
 >
   <div class={C.container}>
-    {heading && <h2 class:list={[C.heading, titleAlignClass, titleSizeClass]}>{heading}</h2>}
-    {subtitle && <p class:list={[C.subtitle, titleAlignClass, subtitleSizeClass]}>{subtitle}</p>}
+    {heading && (
+      <h2 class:list={[C.heading, titleAlignClass, titleSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="title">{heading}</h2>
+    )}
+    {subtitle && (
+      <p class:list={[C.subtitle, titleAlignClass, subtitleSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="subtitle">{subtitle}</p>
+    )}
     <div class={C.grid} style={gridTemplateCols}>
       {effectiveCollections.map((item, i) => (
         <a

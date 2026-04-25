@@ -175,9 +175,15 @@ while (gridImages.length < 4 && variant === 'grid-4') {
         : [hAlignClass, variant === 'overlay' ? 'max-w-7xl' : 'max-w-7xl']
     ]}>
       <header class="flex flex-col gap-1 sm:gap-2 md:gap-3 lg:gap-4 xl:gap-[5px]">
-        {variant === 'split' && resolvedSubtitle && <p class={C.subtitle}>{resolvedSubtitle}</p>}
-        {resolvedTitle && <h1 class={C.title}>{resolvedTitle}</h1>}
-        {variant !== 'split' && resolvedSubtitle && <p class={C.subtitle}>{resolvedSubtitle}</p>}
+        {variant === 'split' && resolvedSubtitle && (
+          <p class={C.subtitle} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{resolvedSubtitle}</p>
+        )}
+        {resolvedTitle && (
+          <h1 class={C.title} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{resolvedTitle}</h1>
+        )}
+        {variant !== 'split' && resolvedSubtitle && (
+          <p class={C.subtitle} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{resolvedSubtitle}</p>
+        )}
       </header>
       {variant === 'grid-4' && (
         <div class={C.gridContainer} role="group" aria-label="Hero image grid">
@@ -217,10 +223,10 @@ while (gridImages.length < 4 && variant === 'grid-4') {
           alignmentClass === 'text-center' ? 'justify-center' : '',
         ]}>
           {resolvedCta?.text && (
-            <a href={resolvedCta.href} class={C.ctaButton}>{resolvedCta.text}</a>
+            <a href={resolvedCta.href} class={C.ctaButton} data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="primaryButton">{resolvedCta.text}</a>
           )}
           {resolvedSecondaryCta?.text && (
-            <a href={resolvedSecondaryCta.href} class:list={[C.ctaButton, 'opacity-90 underline-offset-2']}>{resolvedSecondaryCta.text}</a>
+            <a href={resolvedSecondaryCta.href} class:list={[C.ctaButton, 'opacity-90 underline-offset-2']} data-puck-subsection-parent={id} data-puck-subsection-index="103" data-puck-subsection-field="secondaryButton">{resolvedSecondaryCta.text}</a>
           )}
         </div>
       )}

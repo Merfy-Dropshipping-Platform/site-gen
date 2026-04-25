@@ -75,8 +75,12 @@ function labelFor(item: { type?: string; label?: string; price?: string }): { la
   style={paddingStyle}
 >
   <div class={C.container}>
-    {headingText && <h2 class={C.heading}>{headingText}</h2>}
-    {subheadingText && <p class={C.subheading}>{subheadingText}</p>}
+    {headingText && (
+      <h2 class={C.heading} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{headingText}</h2>
+    )}
+    {subheadingText && (
+      <p class={C.subheading} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{subheadingText}</p>
+    )}
     <div class={innerClass}>
       {layout === 'featured'
         ? effectiveItems.map((rawItem, idx) => {

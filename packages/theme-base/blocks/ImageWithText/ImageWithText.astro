@@ -105,10 +105,14 @@ const widthClass =
         )}
       </div>
       <div class:list={[textColClass, headingAlignClass]}>
-        {heading && <h2 class:list={[C.heading, headingSizeClass]}>{heading}</h2>}
-        {text && <p class={C.text}>{text}</p>}
+        {heading && (
+          <h2 class:list={[C.heading, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="heading">{heading}</h2>
+        )}
+        {text && (
+          <p class={C.text} data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="text">{text}</p>
+        )}
         {buttonText && (
-          <a href={buttonHref} class={C.button}>{buttonText}</a>
+          <a href={buttonHref} class={C.button} data-puck-subsection-parent={id} data-puck-subsection-index="103" data-puck-subsection-field="button">{buttonText}</a>
         )}
       </div>
     </div>

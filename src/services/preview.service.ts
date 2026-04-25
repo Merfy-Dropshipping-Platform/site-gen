@@ -300,18 +300,23 @@ const PREVIEW_NAV_AGENT_INLINE = `
     var s = document.createElement('style');
     s.id = STYLE_ID;
     s.textContent = [
+      // Mirror Puck native overlay (pupa parity): hover dashed azure-04, selected solid azure-05.
       '[data-puck-component-id]{position:relative}',
-      '[data-puck-section-hover="true"]{outline:2px dashed #71C0FF !important;outline-offset:-2px;z-index:1}',
-      '[data-puck-section-selected="true"]{outline:2px solid #71C0FF !important;outline-offset:-2px;z-index:2}',
+      '[data-puck-section-hover="true"]{outline:2px dashed #6499cf !important;outline-offset:-2px;z-index:1}',
+      '[data-puck-section-selected="true"]{outline:2px solid #3479be !important;outline-offset:-2px;z-index:2}',
       '[data-puck-subsection-parent]{position:relative;cursor:pointer}',
-      '[data-puck-subsection-hover="true"]{outline:2px dashed #71C0FF !important;outline-offset:2px;z-index:3}',
-      '[data-puck-subsection-selected="true"]{outline:2px solid #71C0FF !important;outline-offset:2px;z-index:4}',
-      '.__merfy_pill{position:fixed;display:none;align-items:center;gap:4px;background:#1a1a1a;color:#fff;font:500 12px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:5px 6px 5px 10px;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,.25);pointer-events:auto;z-index:9999;user-select:none;white-space:nowrap}',
+      '[data-puck-subsection-hover="true"]{outline:2px dashed #6499cf !important;outline-offset:2px;z-index:3}',
+      '[data-puck-subsection-selected="true"]{outline:2px solid #3479be !important;outline-offset:2px;z-index:4}',
+      // Puck ActionBar styling (1:1 with @measured/puck DraggableComponent action overlay).
+      '.__merfy_pill{position:fixed;display:none;align-items:center;cursor:default;padding:4px;border-radius:8px;background:#181818;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.25);pointer-events:auto;z-index:9999;user-select:none;white-space:nowrap}',
       '.__merfy_pill[data-visible="true"]{display:inline-flex}',
-      '.__merfy_pill .__merfy_pill_label{margin-right:4px}',
-      '.__merfy_pill button{appearance:none;background:transparent;border:none;color:#fff;width:22px;height:22px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}',
-      '.__merfy_pill button:hover{background:rgba(255,255,255,.15)}',
-      '.__merfy_pill svg{width:14px;height:14px;display:block;pointer-events:none}'
+      '.__merfy_pill_group{align-items:center;display:flex;height:100%;padding:0 4px}',
+      '.__merfy_pill_group + .__merfy_pill_group{border-inline-start:0.5px solid #767676}',
+      '.__merfy_pill_label{color:#c3c3c3;font-size:12px;font-weight:500;padding:0 8px;margin:0 4px;text-overflow:ellipsis;white-space:nowrap;line-height:1}',
+      '.__merfy_pill_action{appearance:none;background:transparent;border:none;color:#c3c3c3;cursor:pointer;padding:6px 8px;margin:0 4px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;transition:color .15s}',
+      '.__merfy_pill_action:hover{color:#6499cf;transition:none}',
+      '.__merfy_pill_action:active{color:#3479be;transition:none}',
+      '.__merfy_pill_action svg{width:16px;height:16px;display:block;pointer-events:none}'
     ].join('');
     document.head.appendChild(s);
   }
@@ -332,14 +337,17 @@ const PREVIEW_NAV_AGENT_INLINE = `
     var pill = document.createElement('div');
     pill.className = '__merfy_pill';
     pill.setAttribute('data-merfy-pill', layer);
+    // Puck ActionBar layout: [label group] | [action group with copy + delete].
     pill.innerHTML =
-      '<span class="__merfy_pill_label"></span>' +
-      '<button type="button" data-action="duplicate" title="Скопировать" aria-label="Скопировать">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
-      '</button>' +
-      '<button type="button" data-action="delete" title="Удалить" aria-label="Удалить">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>' +
-      '</button>';
+      '<div class="__merfy_pill_group"><span class="__merfy_pill_label"></span></div>' +
+      '<div class="__merfy_pill_group">' +
+        '<button type="button" class="__merfy_pill_action" data-action="duplicate" title="Скопировать" aria-label="Скопировать">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
+        '</button>' +
+        '<button type="button" class="__merfy_pill_action" data-action="delete" title="Удалить" aria-label="Удалить">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>' +
+        '</button>' +
+      '</div>';
     document.body.appendChild(pill);
     pill.addEventListener('click', function (e) {
       e.stopPropagation();
@@ -394,6 +402,12 @@ const PREVIEW_NAV_AGENT_INLINE = `
       pill.__merfy_target = null;
       return;
     }
+    // If target is entirely above or below viewport — hide.
+    if (rect.bottom < 8 || rect.top > window.innerHeight - 8) {
+      pill.dataset.visible = 'false';
+      pill.__merfy_target = null;
+      return;
+    }
     var labelEl = pill.querySelector('.__merfy_pill_label');
     if (labelEl) labelEl.textContent = inferLabel(pill.getAttribute('data-merfy-pill'), target);
     pill.__merfy_target = target;
@@ -401,7 +415,11 @@ const PREVIEW_NAV_AGENT_INLINE = `
     requestAnimationFrame(function () {
       var pw = pill.offsetWidth || 120;
       var ph = pill.offsetHeight || 32;
-      var top = Math.max(8, Math.min(window.innerHeight - ph - 8, rect.top + 8));
+      // Puck-like sticky: anchor at section top + 8, clamped to remain inside section's visible bounds.
+      var anchorTop = rect.top + 8;
+      var topMin = 8;
+      var topMax = Math.max(8, rect.bottom - ph - 8);
+      var top = Math.max(topMin, Math.min(topMax, anchorTop));
       var rightAnchor = Math.max(pw + 8, Math.min(window.innerWidth - 8, rect.right - 8));
       var left = rightAnchor - pw;
       pill.style.top = top + 'px';

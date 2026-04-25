@@ -34,8 +34,14 @@ const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('s
 >
   <div class={C.container}>
     <div class={C.grid} style={gridTemplateCols}>
-      {columns.map((column) => (
-        <div class={C.column} data-column-id={column.id}>
+      {columns.map((column, i) => (
+        <div
+          class={C.column}
+          data-column-id={column.id}
+          data-puck-subsection-parent={id}
+          data-puck-subsection-index={i}
+          data-puck-subsection-field="columns"
+        >
           {column.imageUrl && (
             <img src={column.imageUrl} alt={column.heading} class={C.image} />
           )}

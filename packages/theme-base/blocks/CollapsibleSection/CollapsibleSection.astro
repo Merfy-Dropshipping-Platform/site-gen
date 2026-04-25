@@ -27,8 +27,14 @@ const paddingStyle = padding
   <div class={C.container}>
     {heading && <h2 class={C.heading}>{heading}</h2>}
     <div class={C.list}>
-      {sections.map((section) => (
-        <details class={C.item} data-section-id={section.id}>
+      {sections.map((section, i) => (
+        <details
+          class={C.item}
+          data-section-id={section.id}
+          data-puck-subsection-parent={id}
+          data-puck-subsection-index={i}
+          data-puck-subsection-field="sections"
+        >
           <summary class={C.summary}>{section.heading}</summary>
           <div class={C.content} set:html={section.content} />
         </details>

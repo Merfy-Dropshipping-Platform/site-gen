@@ -13,11 +13,23 @@ const GalleryItemSchema = z.object({
 });
 
 export const GallerySchema = z.object({
-  heading: z.string().optional(),
+  heading: z.union([
+    z.string(),
+    z.object({
+      text: z.string().optional(),
+      alignment: z.enum(['left', 'center', 'right']).optional(),
+      size: z.enum(['small', 'medium', 'large']).optional(),
+    }),
+  ]).optional(),
   subheading: z.string().optional(),
+  text: z.object({
+    content: z.string().optional(),
+    size: z.enum(['small', 'medium', 'large']).optional(),
+  }).optional(),
   items: z.array(GalleryItemSchema).min(1).max(3),
   layout: z.enum(['grid', 'side-by-side', 'featured']),
   // Pupa parity.
+  imagePosition: z.enum(['left', 'right']).optional(),
   headingAlignment: z.enum(['left', 'center', 'right']).optional(),
   headingSize: z.enum(['small', 'medium', 'large']).optional(),
   textSize: z.enum(['small', 'medium', 'large']).optional(),
@@ -34,7 +46,47 @@ export const GalleryPuckConfig: BlockPuckConfig<GalleryProps> = {
   label: 'Галерея',
   category: 'media',
   fields: {
-    heading: { type: 'text', label: 'Заголовок' },
+    heading: {
+      type: 'object',
+      label: 'Заголовок',
+      objectFields: {
+        text: { type: 'text', label: 'Текст' },
+        alignment: { type: 'alignment', label: 'Выравнивание' },
+        size: {
+          type: 'radio',
+          label: 'Размер',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
+      },
+    },
+    text: {
+      type: 'object',
+      label: 'Текст',
+      objectFields: {
+        content: { type: 'textarea', label: 'Содержание' },
+        size: {
+          type: 'radio',
+          label: 'Размер',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
+      },
+    },
+    imagePosition: {
+      type: 'radio',
+      label: 'Позиция изображения',
+      options: [
+        { label: 'Слева', value: 'left' },
+        { label: 'Справа', value: 'right' },
+      ],
+    },
     headingAlignment: { type: 'alignment', label: 'Выравнивание заголовка' },
     headingSize: {
       type: 'radio',

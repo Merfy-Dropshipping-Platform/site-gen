@@ -35,7 +35,13 @@ const firstSlide = slides?.[0];
   {/* Phase 1a: first-slide-only. Carousel rotation JS wired in Phase 1c via React island. */}
   <div class={C.container}>
     {firstSlide && (
-      <div class={C.slide} data-slide-id={firstSlide.id}>
+      <div
+        class={C.slide}
+        data-slide-id={firstSlide.id}
+        data-puck-subsection-parent={id}
+        data-puck-subsection-index="0"
+        data-puck-subsection-field="slides"
+      >
         {firstSlide.imageUrl && (
           <img src={firstSlide.imageUrl} alt={firstSlide.heading} class={C.image} />
         )}

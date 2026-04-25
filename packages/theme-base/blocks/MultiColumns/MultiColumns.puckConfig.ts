@@ -3,9 +3,20 @@ import type { BlockPuckConfig } from '@merfy/theme-contract';
 
 const MultiColumnItemSchema = z.object({
   id: z.string(),
-  heading: z.string(),
-  text: z.string(),
-  imageUrl: z.string(),
+  heading: z.string().optional(),
+  text: z.string().optional(),
+  imageUrl: z.string().optional(),
+  // Pupa parity per-column: image/title/headingSize/description/textSize/link.
+  image: z.string().optional(),
+  imageSize: z.enum(['small', 'medium', 'large']).optional(),
+  title: z.string().optional(),
+  headingSize: z.enum(['small', 'medium', 'large']).optional(),
+  description: z.string().optional(),
+  textSize: z.enum(['small', 'medium', 'large']).optional(),
+  link: z.object({
+    text: z.string().optional(),
+    href: z.string().optional(),
+  }).optional(),
 });
 
 export const MultiColumnsSchema = z.object({
@@ -17,6 +28,11 @@ export const MultiColumnsSchema = z.object({
   imageAspectRatio: z.enum(['adapt', 'square', 'portrait', 'landscape']).optional(),
   buttonText: z.string().optional(),
   buttonLink: z.string().optional(),
+  // Pupa parity: nested heading {text,alignment,size} + textPosition + background + containerColorScheme.
+  textPosition: z.enum(['left', 'center']).optional(),
+  background: z.object({ enabled: z.enum(['true', 'false']) }).optional(),
+  containerColorScheme: z.string().optional(),
+  link: z.string().optional(),
   columns: z.array(MultiColumnItemSchema).min(1).max(10),
   displayColumns: z.union([
     z.literal(1),
@@ -70,15 +86,80 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
     },
     buttonText: { type: 'text', label: 'Кнопка' },
     buttonLink: { type: 'pagePicker', label: 'Ссылка' },
+    textPosition: {
+      type: 'radio',
+      label: 'Положение текста',
+      options: [
+        { label: 'Слева', value: 'left' },
+        { label: 'По центру', value: 'center' },
+      ],
+    },
+    background: {
+      type: 'object',
+      label: 'Фон',
+      objectFields: {
+        enabled: {
+          type: 'radio',
+          label: 'Включён',
+          options: [
+            { label: 'Да', value: 'true' },
+            { label: 'Нет', value: 'false' },
+          ],
+        },
+      },
+    },
+    containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
+    link: { type: 'pagePicker', label: 'Ссылка секции' },
     columns: {
       type: 'array',
       label: 'Колонки (макс 10)',
       arrayFields: {
-        heading: { type: 'text', label: 'Заголовок' },
-        text: { type: 'textarea', label: 'Описание' },
-        imageUrl: { type: 'image', label: 'Иконка / изображение' },
+        image: { type: 'image', label: 'Изображение' },
+        imageSize: {
+          type: 'radio',
+          label: 'Размер изображения',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
+        title: { type: 'text', label: 'Заголовок' },
+        headingSize: {
+          type: 'radio',
+          label: 'Размер заголовка',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
+        description: { type: 'textarea', label: 'Описание' },
+        textSize: {
+          type: 'radio',
+          label: 'Размер текста',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
+        link: {
+          type: 'object',
+          label: 'Ссылка',
+          objectFields: {
+            text: { type: 'text', label: 'Текст' },
+            href: { type: 'pagePicker', label: 'Ссылка' },
+          },
+        },
       },
-      defaultItemProps: { id: '', heading: 'Новая колонка', text: '', imageUrl: '' },
+      defaultItemProps: {
+        id: '',
+        image: '',
+        title: 'Новая колонка',
+        description: '',
+        link: { text: '', href: '' },
+      },
       max: 10,
     },
     displayColumns: {

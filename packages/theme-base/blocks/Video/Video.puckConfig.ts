@@ -5,11 +5,20 @@ export const VideoSchema = z.object({
   heading: z.string(),
   videoUrl: z.string(),
   poster: z.string(),
-  /**
-   * `contained` clamps the media to max-width (Figma vanilla — video with
-   * scheme-1 dark olive padding around). `fullscreen` = edge-to-edge.
-   */
   position: z.enum(['contained', 'fullscreen']).optional(),
+  // Pupa parity.
+  size: z.enum(['small', 'medium', 'large']).optional(),
+  overlay: z.number().int().min(0).max(100).optional(),
+  video: z.object({ url: z.string() }).optional(),
+  content: z.object({
+    heading: z.object({
+      text: z.string().optional(),
+      alignment: z.enum(['left', 'center', 'right']).optional(),
+      enabled: z.enum(['true', 'false']).optional(),
+      size: z.enum(['small', 'medium', 'large']).optional(),
+    }).optional(),
+  }).optional(),
+  colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -27,13 +36,62 @@ export const VideoPuckConfig: BlockPuckConfig<VideoProps> = {
     poster: { type: 'text', label: 'Постер (URL)' },
     position: {
       type: 'radio',
-      label: 'Размер',
+      label: 'Положение',
       options: [
         { label: 'В контейнере', value: 'contained' },
         { label: 'На всю ширину', value: 'fullscreen' },
       ],
     },
-    padding: { type: 'object', label: 'Отступы' },
+    size: {
+      type: 'radio',
+      label: 'Размер',
+      options: [
+        { label: 'Маленький', value: 'small' },
+        { label: 'Средний', value: 'medium' },
+        { label: 'Большой', value: 'large' },
+      ],
+    },
+    overlay: { type: 'slider', label: 'Затемнение', min: 0, max: 100, step: 5 },
+    video: {
+      type: 'object',
+      label: 'Видео',
+      objectFields: {
+        url: { type: 'text', label: 'URL' },
+      },
+    },
+    content: {
+      type: 'object',
+      label: 'Содержимое',
+      objectFields: {
+        heading: {
+          type: 'object',
+          label: 'Заголовок',
+          objectFields: {
+            text: { type: 'text', label: 'Текст' },
+            alignment: { type: 'alignment', label: 'Выравнивание' },
+            enabled: {
+              type: 'radio',
+              label: 'Показывать',
+              options: [
+                { label: 'Да', value: 'true' },
+                { label: 'Нет', value: 'false' },
+              ],
+            },
+            size: {
+              type: 'radio',
+              label: 'Размер',
+              options: [
+                { label: 'Маленький', value: 'small' },
+                { label: 'Средний', value: 'medium' },
+                { label: 'Большой', value: 'large' },
+              ],
+            },
+          },
+        },
+      },
+    },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     heading: '',

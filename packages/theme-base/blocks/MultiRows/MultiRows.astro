@@ -23,13 +23,16 @@ const paddingStyle = padding
 >
   <div class={C.container}>
     <div class={C.stack}>
-      {rows.map((row) => {
+      {rows.map((row, i) => {
         const variantKey = row.imagePosition === 'right' ? 'imageRight' : 'imageLeft';
         return (
           <div
             class={C.row[variantKey]}
             data-row-id={row.id}
             data-image-position={row.imagePosition}
+            data-puck-subsection-parent={id}
+            data-puck-subsection-index={i}
+            data-puck-subsection-field="rows"
           >
             <div class={C.imageCol[variantKey]}>
               {row.imageUrl && (

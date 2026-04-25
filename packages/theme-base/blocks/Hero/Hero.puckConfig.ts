@@ -18,14 +18,37 @@ export const HeroSchema = z.object({
   images: z.array(z.object({ url: z.string(), alt: z.string() })).max(8).optional(),
   cta: z.object({ text: z.string(), href: z.string() }),
   variant: z.enum(['centered', 'split', 'overlay', 'grid-4']),
-  /**
-   * Placement of the heading/CTA block inside overlay / centered variants.
-   * Default = 'center' (legacy behaviour). Vanilla Figma uses 'bottom-left'.
-   */
-  contentPosition: z
-    .enum(['center', 'bottom-left', 'bottom-center', 'bottom-right'])
-    .optional(),
-  // Pupa parity: дополнительные параметры секции.
+  // Pupa parity: nested heading/text + primary/secondary buttons + extended position.
+  heading: z.object({
+    text: z.string(),
+    size: z.enum(['small', 'medium', 'large']),
+  }).optional(),
+  text: z.object({
+    content: z.string(),
+    size: z.enum(['small', 'medium', 'large']),
+  }).optional(),
+  primaryButton: z.object({
+    text: z.string(),
+    link: z.string(),
+  }).optional(),
+  secondaryButton: z.object({
+    text: z.string(),
+    link: z.string(),
+  }).optional(),
+  contentPosition: z.enum([
+    'center',
+    'top-left', 'top-center', 'top-right',
+    'center-left', 'center-right',
+    'bottom-left', 'bottom-center', 'bottom-right',
+  ]).optional(),
+  position: z.enum([
+    'center',
+    'top-left', 'top-center', 'top-right',
+    'center-left', 'center-right',
+    'bottom-left', 'bottom-center', 'bottom-right',
+  ]).optional(),
+  backgroundImage: z.string().optional(),
+  backgroundImage2: z.string().optional(),
   size: z.enum(['small', 'medium', 'large']).optional(),
   overlay: z.number().int().min(0).max(100).optional(),
   alignment: z.enum(['left', 'center', 'right']).optional(),
@@ -54,14 +77,84 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
       ],
     },
     contentPosition: {
-      type: 'radio',
-      label: 'Положение текста (overlay/centered)',
+      type: 'select',
+      label: 'Положение текста',
       options: [
+        { label: 'Сверху слева', value: 'top-left' },
+        { label: 'Сверху в центре', value: 'top-center' },
+        { label: 'Сверху справа', value: 'top-right' },
+        { label: 'По центру слева', value: 'center-left' },
         { label: 'По центру', value: 'center' },
-        { label: 'Снизу-слева', value: 'bottom-left' },
-        { label: 'Снизу-по-центру', value: 'bottom-center' },
-        { label: 'Снизу-справа', value: 'bottom-right' },
+        { label: 'По центру справа', value: 'center-right' },
+        { label: 'Снизу слева', value: 'bottom-left' },
+        { label: 'Снизу по центру', value: 'bottom-center' },
+        { label: 'Снизу справа', value: 'bottom-right' },
       ],
+    },
+    position: {
+      type: 'select',
+      label: 'Позиция',
+      options: [
+        { label: 'Сверху слева', value: 'top-left' },
+        { label: 'Сверху в центре', value: 'top-center' },
+        { label: 'Сверху справа', value: 'top-right' },
+        { label: 'По центру слева', value: 'center-left' },
+        { label: 'По центру', value: 'center' },
+        { label: 'По центру справа', value: 'center-right' },
+        { label: 'Снизу слева', value: 'bottom-left' },
+        { label: 'Снизу по центру', value: 'bottom-center' },
+        { label: 'Снизу справа', value: 'bottom-right' },
+      ],
+    },
+    backgroundImage: { type: 'image', label: 'Фоновое изображение' },
+    backgroundImage2: { type: 'image', label: 'Фоновое изображение 2' },
+    heading: {
+      type: 'object',
+      label: 'Заголовок',
+      objectFields: {
+        text: { type: 'text', label: 'Текст' },
+        size: {
+          type: 'radio',
+          label: 'Размер',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
+      },
+    },
+    text: {
+      type: 'object',
+      label: 'Текст',
+      objectFields: {
+        content: { type: 'textarea', label: 'Содержание' },
+        size: {
+          type: 'radio',
+          label: 'Размер',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
+      },
+    },
+    primaryButton: {
+      type: 'object',
+      label: 'Кнопка основная',
+      objectFields: {
+        text: { type: 'text', label: 'Текст' },
+        link: { type: 'pagePicker', label: 'Ссылка' },
+      },
+    },
+    secondaryButton: {
+      type: 'object',
+      label: 'Кнопка вторичная',
+      objectFields: {
+        text: { type: 'text', label: 'Текст' },
+        link: { type: 'pagePicker', label: 'Ссылка' },
+      },
     },
     title: { type: 'text', label: 'Заголовок' },
     subtitle: { type: 'text', label: 'Подзаголовок' },

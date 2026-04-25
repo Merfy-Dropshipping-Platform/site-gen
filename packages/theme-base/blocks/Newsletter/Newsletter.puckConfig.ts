@@ -2,11 +2,21 @@ import { z } from 'zod';
 import type { BlockPuckConfig } from '@merfy/theme-contract';
 
 export const NewsletterSchema = z.object({
-  heading: z.string(),
+  heading: z.union([
+    z.string(),
+    z.object({
+      text: z.string().optional(),
+      alignment: z.enum(['left', 'center', 'right']).optional(),
+      size: z.enum(['small', 'medium', 'large']).optional(),
+    }),
+  ]).optional(),
   description: z.string().optional(),
+  text: z.object({
+    content: z.string().optional(),
+    size: z.enum(['small', 'medium', 'large']).optional(),
+  }).optional(),
   placeholder: z.string(),
   buttonText: z.string(),
-  // Pupa parity.
   position: z.enum(['left', 'center', 'right']).optional(),
   colorScheme: z.string().optional(),
   padding: z.object({
@@ -21,7 +31,39 @@ export const NewsletterPuckConfig: BlockPuckConfig<NewsletterProps> = {
   label: 'Подписка',
   category: 'form',
   fields: {
-    heading: { type: 'text', label: 'Заголовок' },
+    heading: {
+      type: 'object',
+      label: 'Заголовок',
+      objectFields: {
+        text: { type: 'text', label: 'Текст' },
+        alignment: { type: 'alignment', label: 'Выравнивание' },
+        size: {
+          type: 'radio',
+          label: 'Размер',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
+      },
+    },
+    text: {
+      type: 'object',
+      label: 'Текст',
+      objectFields: {
+        content: { type: 'textarea', label: 'Содержание' },
+        size: {
+          type: 'radio',
+          label: 'Размер',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
+      },
+    },
     description: { type: 'text', label: 'Описание' },
     placeholder: { type: 'text', label: 'Плейсхолдер' },
     buttonText: { type: 'text', label: 'Кнопка' },

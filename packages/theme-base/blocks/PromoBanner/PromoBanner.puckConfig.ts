@@ -6,6 +6,12 @@ export const PromoBannerSchema = z.object({
   linkText: z.string(),
   linkUrl: z.string(),
   colorScheme: z.string().optional(),
+  // Pupa parity.
+  size: z.enum(['small', 'medium', 'large']).optional(),
+  link: z.object({
+    text: z.string().optional(),
+    href: z.string().optional(),
+  }).optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -21,6 +27,23 @@ export const PromoBannerPuckConfig: BlockPuckConfig<PromoBannerProps> = {
     text: { type: 'text', label: 'Текст' },
     linkText: { type: 'text', label: 'Текст ссылки' },
     linkUrl: { type: 'pagePicker', label: 'Ссылка' },
+    link: {
+      type: 'object',
+      label: 'Ссылка (pupa)',
+      objectFields: {
+        text: { type: 'text', label: 'Текст' },
+        href: { type: 'pagePicker', label: 'Ссылка' },
+      },
+    },
+    size: {
+      type: 'radio',
+      label: 'Размер',
+      options: [
+        { label: 'Маленький', value: 'small' },
+        { label: 'Средний', value: 'medium' },
+        { label: 'Большой', value: 'large' },
+      ],
+    },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
   },

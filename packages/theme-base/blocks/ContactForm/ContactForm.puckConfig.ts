@@ -12,7 +12,14 @@ const FieldSchema = z.object({
 });
 
 export const ContactFormSchema = z.object({
-  heading: z.string(),
+  heading: z.union([
+    z.string(),
+    z.object({
+      text: z.string().optional(),
+      alignment: z.enum(['left', 'center', 'right']).optional(),
+      size: z.enum(['small', 'medium', 'large']).optional(),
+    }),
+  ]).optional(),
   description: z.string(),
   fields: z.object({
     name: FieldSchema,
@@ -21,7 +28,6 @@ export const ContactFormSchema = z.object({
     message: FieldSchema,
   }),
   buttonText: z.string(),
-  // Pupa parity.
   headingAlignment: z.enum(['left', 'center', 'right']).optional(),
   headingSize: z.enum(['small', 'medium', 'large']).optional(),
   colorScheme: z.string().optional(),
@@ -37,7 +43,23 @@ export const ContactFormPuckConfig: BlockPuckConfig<ContactFormProps> = {
   label: 'Форма обратной связи',
   category: 'form',
   fields: {
-    heading: { type: 'text', label: 'Заголовок' },
+    heading: {
+      type: 'object',
+      label: 'Заголовок',
+      objectFields: {
+        text: { type: 'text', label: 'Текст' },
+        alignment: { type: 'alignment', label: 'Выравнивание' },
+        size: {
+          type: 'radio',
+          label: 'Размер',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
+      },
+    },
     headingAlignment: { type: 'alignment', label: 'Выравнивание заголовка' },
     headingSize: {
       type: 'radio',

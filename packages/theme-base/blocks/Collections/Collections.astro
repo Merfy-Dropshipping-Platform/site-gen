@@ -56,7 +56,8 @@ const DEMO_COLLECTIONS = [
   { heading: 'Коллекция URBAN', image: '' },
   { heading: 'Коллекция FUTURISM', image: '' },
 ];
-const effectiveCollections = (collections ?? []).length > 0
+const hasRealCollections = (collections ?? []).length > 0;
+const effectiveCollections = hasRealCollections
   ? collections
   : DEMO_COLLECTIONS.slice(0, columns).map((c, i) => ({
       id: `demo-${i}`, heading: c.heading, image: c.image, collectionId: null,
@@ -71,8 +72,14 @@ const effectiveCollections = (collections ?? []).length > 0
     {heading && <h2 class={C.heading}>{heading}</h2>}
     {subtitle && <p class={C.subtitle}>{subtitle}</p>}
     <div class={C.grid} style={gridTemplateCols}>
-      {effectiveCollections.map((item) => (
-        <a href={item.collectionId ? `/collection/${item.collectionId}` : '#'} class={C.card}>
+      {effectiveCollections.map((item, i) => (
+        <a
+          href={item.collectionId ? `/collection/${item.collectionId}` : '#'}
+          class={C.card}
+          data-puck-subsection-parent={hasRealCollections ? id : undefined}
+          data-puck-subsection-index={hasRealCollections ? i : undefined}
+          data-puck-subsection-field={hasRealCollections ? 'collections' : undefined}
+        >
           {item.image ? (
             <img src={item.image} alt={item.heading} class={C.image} loading="lazy" style={`aspect-ratio: ${tileAspect};`} />
           ) : (

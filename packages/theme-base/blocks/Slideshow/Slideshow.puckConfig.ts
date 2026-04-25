@@ -4,10 +4,30 @@ import type { BlockPuckConfig } from '@merfy/theme-contract';
 const SlideSchema = z.object({
   id: z.string(),
   imageUrl: z.string(),
-  heading: z.string(),
-  subtitle: z.string(),
-  ctaText: z.string(),
-  ctaUrl: z.string(),
+  heading: z.union([
+    z.string(),
+    z.object({
+      text: z.string().optional(),
+      size: z.enum(['small', 'medium', 'large']).optional(),
+    }),
+  ]).optional(),
+  subtitle: z.string().optional(),
+  text: z.object({
+    content: z.string().optional(),
+    size: z.enum(['small', 'medium', 'large']).optional(),
+  }).optional(),
+  ctaText: z.string().optional(),
+  ctaUrl: z.string().optional(),
+  button: z.object({
+    text: z.string().optional(),
+    link: z.string().optional(),
+  }).optional(),
+  // Pupa parity: per-slide layout + theme.
+  image: z.string().optional(),
+  container: z.enum(['true', 'false']).optional(),
+  position: z.enum(['left', 'center', 'right']).optional(),
+  alignment: z.enum(['left', 'center', 'right']).optional(),
+  colorScheme: z.string().optional(),
 });
 
 export const SlideshowSchema = z.object({
@@ -37,12 +57,77 @@ export const SlideshowPuckConfig: BlockPuckConfig<SlideshowProps> = {
       label: 'Слайды (макс 5)',
       arrayFields: {
         imageUrl: { type: 'image', label: 'Изображение' },
-        heading: { type: 'text', label: 'Заголовок' },
-        subtitle: { type: 'textarea', label: 'Подзаголовок' },
-        ctaText: { type: 'text', label: 'Текст кнопки' },
-        ctaUrl: { type: 'text', label: 'Ссылка кнопки' },
+        image: { type: 'image', label: 'Изображение (pupa)' },
+        heading: {
+          type: 'object',
+          label: 'Заголовок',
+          objectFields: {
+            text: { type: 'text', label: 'Текст' },
+            size: {
+              type: 'radio',
+              label: 'Размер',
+              options: [
+                { label: 'Маленький', value: 'small' },
+                { label: 'Средний', value: 'medium' },
+                { label: 'Большой', value: 'large' },
+              ],
+            },
+          },
+        },
+        text: {
+          type: 'object',
+          label: 'Текст',
+          objectFields: {
+            content: { type: 'textarea', label: 'Содержание' },
+            size: {
+              type: 'radio',
+              label: 'Размер',
+              options: [
+                { label: 'Маленький', value: 'small' },
+                { label: 'Средний', value: 'medium' },
+                { label: 'Большой', value: 'large' },
+              ],
+            },
+          },
+        },
+        button: {
+          type: 'object',
+          label: 'Кнопка',
+          objectFields: {
+            text: { type: 'text', label: 'Текст' },
+            link: { type: 'pagePicker', label: 'Ссылка' },
+          },
+        },
+        container: {
+          type: 'radio',
+          label: 'Контейнер',
+          options: [
+            { label: 'Показать', value: 'true' },
+            { label: 'Скрыть', value: 'false' },
+          ],
+        },
+        position: {
+          type: 'radio',
+          label: 'Позиция',
+          options: [
+            { label: 'Слева', value: 'left' },
+            { label: 'По центру', value: 'center' },
+            { label: 'Справа', value: 'right' },
+          ],
+        },
+        alignment: { type: 'alignment', label: 'Выравнивание' },
+        colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
       },
-      defaultItemProps: { id: '', imageUrl: '', heading: 'Новый слайд', subtitle: '', ctaText: 'Подробнее', ctaUrl: '/catalog' },
+      defaultItemProps: {
+        id: '',
+        imageUrl: '',
+        heading: { text: 'Новый слайд', size: 'medium' },
+        text: { content: '', size: 'medium' },
+        button: { text: 'Подробнее', link: '/catalog' },
+        container: 'true',
+        position: 'center',
+        alignment: 'center',
+      },
       max: 5,
     },
     imagePosition: {

@@ -2,17 +2,35 @@ import { z } from 'zod';
 import type { BlockPuckConfig } from '@merfy/theme-contract';
 
 export const MainTextSchema = z.object({
-  heading: z.string(),
-  text: z.string(),
-  alignment: z.enum(['left', 'center', 'right']),
+  heading: z.union([
+    z.string(),
+    z.object({
+      text: z.string().optional(),
+      size: z.enum(['small', 'medium', 'large']).optional(),
+    }),
+  ]).optional(),
+  text: z.union([
+    z.string(),
+    z.object({
+      content: z.string().optional(),
+      size: z.enum(['small', 'medium', 'large']).optional(),
+    }),
+  ]).optional(),
+  alignment: z.enum(['left', 'center', 'right']).optional(),
+  position: z.enum(['left', 'center', 'right']).optional(),
   headingSize: z.enum(['small', 'medium', 'large']).optional(),
   cta: z
     .object({
-      text: z.string(),
-      href: z.string(),
+      text: z.string().optional(),
+      href: z.string().optional(),
+      link: z.string().optional(),
       variant: z.enum(['primary', 'black', 'white']).optional(),
     })
     .optional(),
+  button: z.object({
+    text: z.string().optional(),
+    link: z.string().optional(),
+  }).optional(),
   colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
@@ -26,8 +44,47 @@ export const MainTextPuckConfig: BlockPuckConfig<MainTextProps> = {
   label: 'Основной текст',
   category: 'content',
   fields: {
-    heading: { type: 'text', label: 'Заголовок' },
-    text: { type: 'textarea', label: 'Текст' },
+    heading: {
+      type: 'object',
+      label: 'Заголовок',
+      objectFields: {
+        text: { type: 'text', label: 'Текст' },
+        size: {
+          type: 'radio',
+          label: 'Размер',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
+      },
+    },
+    text: {
+      type: 'object',
+      label: 'Текст',
+      objectFields: {
+        content: { type: 'textarea', label: 'Содержание' },
+        size: {
+          type: 'radio',
+          label: 'Размер',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
+      },
+    },
+    button: {
+      type: 'object',
+      label: 'Кнопка',
+      objectFields: {
+        text: { type: 'text', label: 'Текст' },
+        link: { type: 'pagePicker', label: 'Ссылка' },
+      },
+    },
+    position: { type: 'alignment', label: 'Позиция' },
     alignment: {
       type: 'alignment',
       label: 'Выравнивание',

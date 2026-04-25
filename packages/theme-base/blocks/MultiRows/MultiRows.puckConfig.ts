@@ -3,11 +3,23 @@ import type { BlockPuckConfig } from '@merfy/theme-contract';
 
 const MultiRowItemSchema = z.object({
   id: z.string(),
-  heading: z.string(),
-  text: z.string(),
-  imageUrl: z.string(),
-  imagePosition: z.enum(['left', 'right']),
-  button: z.object({ text: z.string(), href: z.string() }),
+  heading: z.string().optional(),
+  text: z.string().optional(),
+  imageUrl: z.string().optional(),
+  imagePosition: z.enum(['left', 'right']).optional(),
+  button: z.object({
+    text: z.string().optional(),
+    href: z.string().optional(),
+    link: z.string().optional(),
+  }).optional(),
+  // Pupa parity per-row.
+  image: z.string().optional(),
+  size: z.enum(['small', 'medium', 'large']).optional(),
+  width: z.enum(['small', 'medium', 'large', 'full']).optional(),
+  title: z.string().optional(),
+  headingSize: z.enum(['small', 'medium', 'large']).optional(),
+  description: z.string().optional(),
+  textSize: z.enum(['small', 'medium', 'large']).optional(),
 });
 
 export const MultiRowsSchema = z.object({
@@ -22,6 +34,7 @@ export const MultiRowsSchema = z.object({
   buttonStyle: z.enum(['primary', 'black', 'white']).optional(),
   alignment: z.enum(['left', 'center', 'right']).optional(),
   colorScheme: z.string().optional(),
+  containerColorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -84,19 +97,48 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
     },
     alignment: { type: 'alignment', label: 'Выравнивание' },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
     rows: {
       type: 'array',
       label: 'Ряды (макс 10)',
       arrayFields: {
-        heading: { type: 'text', label: 'Заголовок' },
-        text: { type: 'textarea', label: 'Описание' },
-        imageUrl: { type: 'image', label: 'Изображение' },
-        imagePosition: {
+        image: { type: 'image', label: 'Изображение' },
+        size: {
           type: 'radio',
-          label: 'Положение изображения',
+          label: 'Высота',
           options: [
-            { label: 'Слева', value: 'left' },
-            { label: 'Справа', value: 'right' },
+            { label: 'Маленькая', value: 'small' },
+            { label: 'Средняя', value: 'medium' },
+            { label: 'Большая', value: 'large' },
+          ],
+        },
+        width: {
+          type: 'radio',
+          label: 'Ширина изображения',
+          options: [
+            { label: 'Маленькая', value: 'small' },
+            { label: 'Средняя', value: 'medium' },
+            { label: 'Большая', value: 'large' },
+          ],
+        },
+        title: { type: 'text', label: 'Заголовок' },
+        headingSize: {
+          type: 'radio',
+          label: 'Размер заголовка',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
+        description: { type: 'textarea', label: 'Описание' },
+        textSize: {
+          type: 'radio',
+          label: 'Размер текста',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
           ],
         },
         button: {
@@ -104,17 +146,16 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
           label: 'Кнопка',
           objectFields: {
             text: { type: 'text', label: 'Текст' },
-            href: { type: 'text', label: 'Ссылка' },
+            link: { type: 'pagePicker', label: 'Ссылка' },
           },
         },
       },
       defaultItemProps: {
         id: '',
-        heading: 'Новый ряд',
-        text: '',
-        imageUrl: '',
-        imagePosition: 'left',
-        button: { text: 'Подробнее', href: '/catalog' },
+        image: '',
+        title: 'Новый ряд',
+        description: '',
+        button: { text: 'Подробнее', link: '/catalog' },
       },
       max: 10,
     },

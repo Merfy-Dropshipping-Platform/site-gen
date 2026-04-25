@@ -8,8 +8,21 @@ const CollapsibleItemSchema = z.object({
 });
 
 export const CollapsibleSectionSchema = z.object({
-  heading: z.string(),
+  heading: z.union([
+    z.string(),
+    z.object({
+      text: z.string().optional(),
+      alignment: z.enum(['left', 'center', 'right']).optional(),
+      size: z.enum(['small', 'medium', 'large']).optional(),
+    }),
+  ]).optional(),
   sections: z.array(CollapsibleItemSchema).min(1).max(10),
+  items: z.array(z.object({
+    id: z.string(),
+    title: z.string().optional(),
+    content: z.string().optional(),
+  })).optional(),
+  container: z.object({ enabled: z.enum(['true', 'false']) }).optional(),
   // Pupa parity.
   headingAlignment: z.enum(['left', 'center', 'right']).optional(),
   headingSize: z.enum(['small', 'medium', 'large']).optional(),
@@ -28,7 +41,47 @@ export const CollapsibleSectionPuckConfig: BlockPuckConfig<CollapsibleSectionPro
   label: 'Сворачиваемый раздел (Satin)',
   category: 'content',
   fields: {
-    heading: { type: 'text', label: 'Заголовок раздела' },
+    heading: {
+      type: 'object',
+      label: 'Заголовок',
+      objectFields: {
+        text: { type: 'text', label: 'Текст' },
+        alignment: { type: 'alignment', label: 'Выравнивание' },
+        size: {
+          type: 'radio',
+          label: 'Размер',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
+      },
+    },
+    container: {
+      type: 'object',
+      label: 'Контейнер',
+      objectFields: {
+        enabled: {
+          type: 'radio',
+          label: 'Включён',
+          options: [
+            { label: 'Да', value: 'true' },
+            { label: 'Нет', value: 'false' },
+          ],
+        },
+      },
+    },
+    items: {
+      type: 'array',
+      label: 'Элементы (pupa)',
+      arrayFields: {
+        title: { type: 'text', label: 'Заголовок' },
+        content: { type: 'textarea', label: 'Содержимое' },
+      },
+      defaultItemProps: { id: '', title: 'Новый элемент', content: '' },
+      max: 10,
+    },
     headingAlignment: { type: 'alignment', label: 'Выравнивание заголовка' },
     headingSize: {
       type: 'radio',

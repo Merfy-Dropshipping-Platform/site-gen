@@ -6,25 +6,45 @@ import type { BlockPuckConfig } from '@merfy/theme-contract';
 
 const MultiRowItemSchema = z.object({
   id: z.string(),
-  heading: z.string(),
-  text: z.string(),
-  imageUrl: z.string(),
-  imagePosition: z.enum(['left', 'right']),
-  button: z.object({ text: z.string(), href: z.string() }),
+  heading: z.string().optional(),
+  text: z.string().optional(),
+  imageUrl: z.string().optional(),
+  imagePosition: z.enum(['left', 'right']).optional(),
+  button: z.object({
+    text: z.string().optional(),
+    href: z.string().optional(),
+    link: z.string().optional(),
+  }).optional(),
+  // Pupa per-row.
+  image: z.string().optional(),
+  size: z.enum(['small', 'medium', 'large']).optional(),
+  width: z.enum(['small', 'medium', 'large', 'full']).optional(),
+  title: z.string().optional(),
+  headingSize: z.enum(['small', 'medium', 'large']).optional(),
+  description: z.string().optional(),
+  textSize: z.enum(['small', 'medium', 'large']).optional(),
 });
 
 export const MultiRowsSchema = z.object({
   rows: z.array(MultiRowItemSchema).min(1).max(10),
   // Pupa parity.
-  heading: z.string().optional(),
+  heading: z.union([
+    z.string(),
+    z.object({
+      text: z.string().optional(),
+      alignment: z.enum(['left', 'center', 'right']).optional(),
+      size: z.enum(['small', 'medium', 'large']).optional(),
+    }),
+  ]).optional(),
   headingAlignment: z.enum(['left', 'center', 'right']).optional(),
   headingSize: z.enum(['small', 'medium', 'large']).optional(),
   size: z.enum(['small', 'medium', 'large']).optional(),
   width: z.enum(['small', 'medium', 'large', 'full']).optional(),
   rowsPosition: z.enum(['left', 'right', 'alternate']).optional(),
-  buttonStyle: z.enum(['primary', 'black', 'white']).optional(),
+  buttonStyle: z.enum(['primary', 'black', 'white', 'secondary']).optional(),
   alignment: z.enum(['left', 'center', 'right']).optional(),
   colorScheme: z.string().optional(),
+  containerColorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -37,7 +57,24 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
   label: 'Мультиряды (Satin)',
   category: 'layout',
   fields: {
-    heading: { type: 'text', label: 'Заголовок' },
+    heading: {
+      type: 'object',
+      label: 'Заголовок',
+      objectFields: {
+        text: { type: 'text', label: 'Текст' },
+        alignment: { type: 'alignment', label: 'Выравнивание' },
+        size: {
+          type: 'radio',
+          label: 'Размер',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
+      },
+    },
+    containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
     headingAlignment: { type: 'alignment', label: 'Выравнивание заголовка' },
     headingSize: {
       type: 'radio',
@@ -91,10 +128,45 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
       type: 'array',
       label: 'Ряды',
       arrayFields: {
-        id: { type: 'text', label: 'ID' },
-        heading: { type: 'text', label: 'Заголовок' },
-        text: { type: 'textarea', label: 'Текст' },
-        imageUrl: { type: 'text', label: 'URL изображения' },
+        image: { type: 'image', label: 'Изображение' },
+        size: {
+          type: 'radio',
+          label: 'Высота',
+          options: [
+            { label: 'Маленькая', value: 'small' },
+            { label: 'Средняя', value: 'medium' },
+            { label: 'Большая', value: 'large' },
+          ],
+        },
+        width: {
+          type: 'radio',
+          label: 'Ширина изображения',
+          options: [
+            { label: 'Маленькая', value: 'small' },
+            { label: 'Средняя', value: 'medium' },
+            { label: 'Большая', value: 'large' },
+          ],
+        },
+        title: { type: 'text', label: 'Заголовок' },
+        headingSize: {
+          type: 'radio',
+          label: 'Размер заголовка',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
+        description: { type: 'textarea', label: 'Описание' },
+        textSize: {
+          type: 'radio',
+          label: 'Размер текста',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
         imagePosition: {
           type: 'radio',
           label: 'Позиция изображения',

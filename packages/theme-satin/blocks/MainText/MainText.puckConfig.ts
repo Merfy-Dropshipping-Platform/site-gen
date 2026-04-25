@@ -2,9 +2,25 @@ import { z } from 'zod';
 import type { BlockPuckConfig } from '@merfy/theme-contract';
 
 export const MainTextSchema = z.object({
-  heading: z.string(),
-  text: z.string(),
-  alignment: z.enum(['left', 'center', 'right']),
+  heading: z.union([
+    z.string(),
+    z.object({
+      text: z.string().optional(),
+      size: z.enum(['small', 'medium', 'large']).optional(),
+    }),
+  ]).optional(),
+  text: z.union([
+    z.string(),
+    z.object({
+      content: z.string().optional(),
+      size: z.enum(['small', 'medium', 'large']).optional(),
+    }),
+  ]).optional(),
+  alignment: z.enum(['left', 'center', 'right']).optional(),
+  button: z.object({
+    text: z.string().optional(),
+    link: z.string().optional(),
+  }).optional(),
   cta: z
     .object({
       text: z.string(),
@@ -28,8 +44,46 @@ export const MainTextPuckConfig: BlockPuckConfig<MainTextProps> = {
   label: 'Основной текст (Satin)',
   category: 'content',
   fields: {
-    heading: { type: 'text', label: 'Заголовок' },
-    text: { type: 'textarea', label: 'Текст (поддержка HTML <b>, <i>)' },
+    heading: {
+      type: 'object',
+      label: 'Заголовок',
+      objectFields: {
+        text: { type: 'text', label: 'Текст' },
+        size: {
+          type: 'radio',
+          label: 'Размер',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
+      },
+    },
+    text: {
+      type: 'object',
+      label: 'Текст',
+      objectFields: {
+        content: { type: 'textarea', label: 'Содержание' },
+        size: {
+          type: 'radio',
+          label: 'Размер',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
+      },
+    },
+    button: {
+      type: 'object',
+      label: 'Кнопка',
+      objectFields: {
+        text: { type: 'text', label: 'Текст' },
+        link: { type: 'pagePicker', label: 'Ссылка' },
+      },
+    },
     alignment: {
       type: 'radio',
       label: 'Выравнивание',

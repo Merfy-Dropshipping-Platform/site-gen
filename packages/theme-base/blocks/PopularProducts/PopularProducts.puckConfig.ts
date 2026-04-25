@@ -35,6 +35,11 @@ export const PopularProductsSchema = z.object({
   }),
   quickAdd: z.boolean().default(false),
   quickAddText: z.string().default('В КОРЗИНУ'),
+  viewAll: z.object({
+    show: z.boolean().optional(),
+    text: z.string().optional(),
+    href: z.string().optional(),
+  }).optional(),
 });
 
 export type PopularProductsProps = z.infer<typeof PopularProductsSchema>;
@@ -138,6 +143,22 @@ export const PopularProductsPuckConfig: BlockPuckConfig<PopularProductsProps> = 
       ],
     },
     quickAddText: { type: 'text', label: 'Текст кнопки' },
+    viewAll: {
+      type: 'object',
+      label: 'Кнопка "Смотреть ещё"',
+      objectFields: {
+        show: {
+          type: 'radio',
+          label: 'Показать',
+          options: [
+            { label: 'Да', value: true },
+            { label: 'Нет', value: false },
+          ],
+        },
+        text: { type: 'text', label: 'Текст' },
+        href: { type: 'text', label: 'Ссылка' },
+      },
+    },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
   },

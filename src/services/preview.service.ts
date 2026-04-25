@@ -447,28 +447,48 @@ const PREVIEW_NAV_AGENT_INLINE = `
     if (secTarget) positionPill(sectionPill, secTarget); else hidePill(sectionPill);
   }
 
-  // Hover handling
+  // Pupa parity: при hover на секцию подсвечиваем ВСЕ её subsection-параметры
+  // вторым слоем. У секции без параметров — подсвечивается только секция.
+  function hintAllSubsections(sectionEl) {
+    if (!sectionEl) return;
+    var sectionId = sectionEl.getAttribute('data-puck-component-id');
+    if (!sectionId) return;
+    var subs = document.querySelectorAll('[data-puck-subsection-parent="' + sectionId + '"]');
+    for (var i = 0; i < subs.length; i++) subs[i].setAttribute('data-puck-subsection-hover', 'true');
+  }
+  function clearAllSubsectionHints(sectionEl) {
+    if (!sectionEl) return;
+    var sectionId = sectionEl.getAttribute('data-puck-component-id');
+    if (!sectionId) return;
+    var subs = document.querySelectorAll('[data-puck-subsection-parent="' + sectionId + '"]');
+    for (var i = 0; i < subs.length; i++) subs[i].removeAttribute('data-puck-subsection-hover');
+  }
+
   document.addEventListener('mouseover', function (e) {
     var t = e.target;
     if (!t || !t.closest) return;
     if (t.closest && t.closest('[data-merfy-pill]')) return;
     var sec = t.closest('[data-puck-component-id]');
     if (sec !== hoveredSection) {
-      if (hoveredSection) hoveredSection.removeAttribute('data-puck-section-hover');
-      if (sec) sec.setAttribute('data-puck-section-hover', 'true');
+      if (hoveredSection) {
+        hoveredSection.removeAttribute('data-puck-section-hover');
+        clearAllSubsectionHints(hoveredSection);
+      }
+      if (sec) {
+        sec.setAttribute('data-puck-section-hover', 'true');
+        hintAllSubsections(sec);
+      }
       hoveredSection = sec;
     }
-    var sub = t.closest('[data-puck-subsection-parent]');
-    if (sub !== hoveredSubsection) {
-      if (hoveredSubsection) hoveredSubsection.removeAttribute('data-puck-subsection-hover');
-      if (sub) sub.setAttribute('data-puck-subsection-hover', 'true');
-      hoveredSubsection = sub;
-    }
+    // Track current direct subsection (для click handler).
+    hoveredSubsection = t.closest('[data-puck-subsection-parent]');
     refreshPills();
   }, true);
   document.addEventListener('mouseleave', function () {
-    if (hoveredSection) hoveredSection.removeAttribute('data-puck-section-hover');
-    if (hoveredSubsection) hoveredSubsection.removeAttribute('data-puck-subsection-hover');
+    if (hoveredSection) {
+      hoveredSection.removeAttribute('data-puck-section-hover');
+      clearAllSubsectionHints(hoveredSection);
+    }
     hoveredSection = null; hoveredSubsection = null;
     refreshPills();
   });

@@ -60,16 +60,32 @@ const variant = (variantProp as HeroProps['variant'])
 const innerClass = C.inner[variant];
 const imageClass = C.image[variant];
 
-// Normalise content alignment: legacy renders default to center for all
-// variants. Overlay/centered respect bottom-left/bottom-center/bottom-right.
+// Pupa parity: position has 9 values (top-* / center-* / bottom-*).
+// Map down to 4 supported by hAlign/vAlign tables, else 'center'.
 type ContentPos = 'center' | 'bottom-left' | 'bottom-center' | 'bottom-right';
-const contentPosition: ContentPos =
-  typeof contentPositionProp === 'string' &&
-  ['center', 'bottom-left', 'bottom-center', 'bottom-right'].includes(contentPositionProp)
-    ? (contentPositionProp as ContentPos)
-    : 'center';
-const hAlignClass = C.hAlign[contentPosition];
-const vAlignClass = variant === 'overlay' ? C.vAlign[contentPosition] : '';
+const positionRaw =
+  typeof raw.position === 'string' ? (raw.position as string) :
+  typeof contentPositionProp === 'string' ? (contentPositionProp as string) : 'center';
+const contentPositionMapped: ContentPos = (() => {
+  if (['center', 'bottom-left', 'bottom-center', 'bottom-right'].includes(positionRaw)) {
+    return positionRaw as ContentPos;
+  }
+  // Map 9-position pupa values to closest supported.
+  if (positionRaw.startsWith('bottom-')) return positionRaw as ContentPos;
+  return 'center';
+})();
+const hAlignClass = C.hAlign[contentPositionMapped];
+const vAlignClass = variant === 'overlay' ? C.vAlign[contentPositionMapped] : '';
+
+// Pupa parity: alignment field controls text-align inside content.
+const alignmentRaw = typeof raw.alignment === 'string' ? raw.alignment : '';
+const alignmentClass =
+  alignmentRaw === 'left' ? 'text-left' :
+  alignmentRaw === 'right' ? 'text-right' :
+  alignmentRaw === 'center' ? 'text-center' : '';
+
+// Pupa parity: container='false' → no max-width wrapping (full bleed).
+const containerEnabled = raw.container !== 'false';
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
@@ -179,11 +195,14 @@ while (gridImages.length < 4 && variant === 'grid-4') {
           'flex flex-wrap gap-[25px]',
           variant === 'split'
             ? 'justify-start'
-            : contentPosition === 'bottom-left'
+            : contentPositionMapped === 'bottom-left'
               ? 'justify-start'
-              : contentPosition === 'bottom-right'
+              : contentPositionMapped === 'bottom-right'
                 ? 'justify-end'
                 : 'justify-center',
+          alignmentClass === 'text-left' ? 'justify-start' :
+          alignmentClass === 'text-right' ? 'justify-end' :
+          alignmentClass === 'text-center' ? 'justify-center' : '',
         ]}>
           <a href={resolvedCta.href} class={C.ctaButton}>{resolvedCta.text}</a>
         </div>

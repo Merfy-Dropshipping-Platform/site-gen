@@ -43,6 +43,25 @@ const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
 
+// Pupa parity: heading.alignment, heading.size, colorScheme.
+const headingObj = raw.heading;
+const headingAlignment =
+  typeof headingObj === 'object' ? (headingObj as { alignment?: string })?.alignment : undefined;
+const headingAlignmentResolved = headingAlignment ?? raw.headingAlignment;
+const headingSize =
+  typeof headingObj === 'object' ? (headingObj as { size?: string })?.size : undefined;
+const headingSizeResolved = headingSize ?? raw.headingSize;
+const colorScheme = raw.colorScheme as string | undefined;
+const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
+const headingAlignClass =
+  headingAlignmentResolved === 'left' ? 'text-left' :
+  headingAlignmentResolved === 'right' ? 'text-right' :
+  headingAlignmentResolved === 'center' ? 'text-center' : '';
+const headingSizeClass =
+  headingSizeResolved === 'large' ? 'text-3xl md:text-4xl' :
+  headingSizeResolved === 'medium' ? 'text-2xl md:text-3xl' :
+  headingSizeResolved === 'small' ? 'text-xl md:text-2xl' : '';
+
 // Constructor passes enabled/required as "true"/"false" strings.
 // Normalize to booleans; when fields is absent altogether, fall back to the
 // default field set (name + email + message enabled; phone disabled).
@@ -76,13 +95,13 @@ const norm = {
 };
 ---
 <section
-  class={C.root}
+  class:list={[C.root, schemeClass]}
   data-puck-component-id={id}
   style={paddingStyle}
 >
   <div class={C.container}>
     <div class={C.inner}>
-      {heading && <h2 class={C.heading}>{heading}</h2>}
+      {heading && <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]}>{heading}</h2>}
       {description && <p class={C.description}>{description}</p>}
       <form class={C.form} method="POST" action="/api/contact/submit">
         <div class={C.leftColumn}>

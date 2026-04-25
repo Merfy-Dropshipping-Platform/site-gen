@@ -6,39 +6,71 @@ interface Props extends CollapsibleSectionProps {
   id?: string;
 }
 
+const raw = Astro.props as Record<string, unknown>;
 const {
   id,
-  heading,
+  heading: headingProp,
   sections = [],
   padding,
-} = Astro.props as Props;
+} = raw as Props;
+
+// Pupa parity: nested heading {text, alignment, size}, container.enabled, items[].
+const headingObj = headingProp ?? raw.heading;
+const headingText =
+  typeof headingObj === 'string' ? headingObj :
+  (headingObj as { text?: string } | undefined)?.text;
+const headingAlignment = typeof headingObj === 'object' ? (headingObj as { alignment?: string })?.alignment : undefined;
+const headingSize = typeof headingObj === 'object' ? (headingObj as { size?: string })?.size : undefined;
+
+const headingAlignClass =
+  headingAlignment === 'left' ? 'text-left' :
+  headingAlignment === 'right' ? 'text-right' :
+  headingAlignment === 'center' ? 'text-center' : '';
+const headingSizeClass =
+  headingSize === 'large' ? 'text-3xl md:text-4xl' :
+  headingSize === 'medium' ? 'text-2xl md:text-3xl' :
+  headingSize === 'small' ? 'text-xl md:text-2xl' : '';
+
+const containerObj = raw.container as { enabled?: string } | undefined;
+const containerEnabled = containerObj?.enabled !== 'false';
+const containerColorScheme = raw.containerColorScheme as string | undefined;
+const containerSchemeClass = containerColorScheme ? `color-scheme-${String(containerColorScheme).replace('scheme-', '')}` : '';
+
+const colorScheme = raw.colorScheme as string | undefined;
+const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
 
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
-// NOTE: `section.content` supports basic HTML via set:html.
-// Constructor inputs should sanitize HTML before persisting to DB to prevent XSS.
+
+// items[] is the pupa-style array name; sections[] is the legacy theme-base name.
+const allItems: any[] = (Array.isArray(raw.items) && (raw.items as any[]).length > 0)
+  ? (raw.items as any[])
+  : sections;
 ---
 <section
-  class={C.root}
+  class:list={[C.root, schemeClass]}
   data-puck-component-id={id}
   style={paddingStyle}
 >
-  <div class={C.container}>
-    {heading && <h2 class={C.heading}>{heading}</h2>}
+  <div class:list={[C.container, containerEnabled ? containerSchemeClass : '']}>
+    {headingText && <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]}>{headingText}</h2>}
     <div class={C.list}>
-      {sections.map((section, i) => (
-        <details
-          class={C.item}
-          data-section-id={section.id}
-          data-puck-subsection-parent={id}
-          data-puck-subsection-index={i}
-          data-puck-subsection-field="sections"
-        >
-          <summary class={C.summary}>{section.heading}</summary>
-          <div class={C.content} set:html={section.content} />
-        </details>
-      ))}
+      {allItems.map((item, i) => {
+        const itemTitle = item.title ?? item.heading;
+        return (
+          <details
+            class={C.item}
+            data-section-id={item.id}
+            data-puck-subsection-parent={id}
+            data-puck-subsection-index={i}
+            data-puck-subsection-field={Array.isArray(raw.items) ? 'items' : 'sections'}
+          >
+            <summary class={C.summary}>{itemTitle}</summary>
+            <div class={C.content} set:html={item.content} />
+          </details>
+        );
+      })}
     </div>
   </div>
 </section>

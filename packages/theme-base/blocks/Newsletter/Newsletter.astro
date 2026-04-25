@@ -31,16 +31,43 @@ const buttonText = buttonTextProp ?? form?.buttonText ?? 'Подписаться
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
+
+// Pupa parity: heading.alignment, heading.size, position, colorScheme.
+const headingObj = headingProp ?? raw.heading;
+const headingAlignment = typeof headingObj === 'object' ? (headingObj as { alignment?: string })?.alignment : undefined;
+const headingSize = typeof headingObj === 'object' ? (headingObj as { size?: string })?.size : undefined;
+const textObj = raw.text;
+const textSize = typeof textObj === 'object' ? (textObj as { size?: string })?.size : undefined;
+const position = typeof raw.position === 'string' ? raw.position : 'center';
+const colorScheme = raw.colorScheme as string | undefined;
+const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
+
+const headingAlignClass =
+  headingAlignment === 'left' ? 'text-left' :
+  headingAlignment === 'right' ? 'text-right' :
+  headingAlignment === 'center' ? 'text-center' : '';
+const headingSizeClass =
+  headingSize === 'large' ? 'text-3xl md:text-4xl' :
+  headingSize === 'medium' ? 'text-2xl md:text-3xl' :
+  headingSize === 'small' ? 'text-xl md:text-2xl' : '';
+const textSizeClass =
+  textSize === 'large' ? 'text-lg md:text-xl' :
+  textSize === 'medium' ? 'text-base md:text-lg' :
+  textSize === 'small' ? 'text-sm md:text-base' : '';
+const positionClass =
+  position === 'left' ? 'text-left items-start' :
+  position === 'right' ? 'text-right items-end' :
+  position === 'center' ? 'text-center items-center' : '';
 ---
 <section
-  class={C.root}
+  class:list={[C.root, schemeClass]}
   data-puck-component-id={id}
   style={paddingStyle}
 >
   <div class={C.container}>
-    <div class={C.inner}>
-      {heading && <h2 class={C.heading}>{heading}</h2>}
-      {description && <p class={C.description}>{description}</p>}
+    <div class:list={[C.inner, positionClass]}>
+      {heading && <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]}>{heading}</h2>}
+      {description && <p class:list={[C.description, textSizeClass]}>{description}</p>}
       <form class={C.form} method="POST" action="/api/newsletter/subscribe">
         <input type="email" name="email" placeholder={placeholder} required class={C.input} />
         <button type="submit" class={C.button} aria-label={buttonText}>

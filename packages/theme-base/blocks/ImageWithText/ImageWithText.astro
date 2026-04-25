@@ -54,14 +54,42 @@ const textColClass = C.textCol[variantKey];
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
+
+// Pupa parity: size, width, colorScheme, containerColorScheme, heading.alignment, heading.size.
+const size = typeof raw.size === 'string' ? raw.size : 'medium';
+const width = typeof raw.width === 'string' ? raw.width : 'large';
+const colorScheme = raw.colorScheme as string | undefined;
+const containerColorScheme = raw.containerColorScheme as string | undefined;
+const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
+const containerSchemeClass = containerColorScheme ? `color-scheme-${String(containerColorScheme).replace('scheme-', '')}` : '';
+
+const headingObj = raw.heading as { text?: string; alignment?: string; size?: string } | string | undefined;
+const headingAlignment = typeof headingObj === 'object' ? headingObj?.alignment : undefined;
+const headingSize = typeof headingObj === 'object' ? headingObj?.size : undefined;
+const headingAlignClass =
+  headingAlignment === 'left' ? 'text-left' :
+  headingAlignment === 'right' ? 'text-right' :
+  headingAlignment === 'center' ? 'text-center' : '';
+const headingSizeClass =
+  headingSize === 'large' ? 'text-3xl md:text-4xl' :
+  headingSize === 'medium' ? 'text-2xl md:text-3xl' :
+  headingSize === 'small' ? 'text-xl md:text-2xl' : '';
+
+const widthClass =
+  width === 'small' ? 'max-w-3xl mx-auto' :
+  width === 'medium' ? 'max-w-5xl mx-auto' :
+  width === 'large' ? 'max-w-7xl mx-auto' :
+  width === 'full' ? 'w-full' : '';
 ---
 <section
-  class={C.root}
+  class:list={[C.root, schemeClass]}
   data-puck-component-id={id}
   data-image-position={imagePosition}
+  data-size={size}
+  data-width={width}
   style={paddingStyle}
 >
-  <div class={C.container}>
+  <div class:list={[C.container, widthClass, containerSchemeClass]}>
     <div class={innerClass}>
       <div class={imageColClass}>
         {imageUrl ? (
@@ -76,8 +104,8 @@ const paddingStyle = padding
           </div>
         )}
       </div>
-      <div class={textColClass}>
-        {heading && <h2 class={C.heading}>{heading}</h2>}
+      <div class:list={[textColClass, headingAlignClass]}>
+        {heading && <h2 class:list={[C.heading, headingSizeClass]}>{heading}</h2>}
         {text && <p class={C.text}>{text}</p>}
         {buttonText && (
           <a href={buttonHref} class={C.button}>{buttonText}</a>

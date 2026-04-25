@@ -17,6 +17,10 @@ export const GallerySchema = z.object({
   subheading: z.string().optional(),
   items: z.array(GalleryItemSchema).min(1).max(3),
   layout: z.enum(['grid', 'side-by-side', 'featured']),
+  // Pupa parity.
+  headingAlignment: z.enum(['left', 'center', 'right']).optional(),
+  headingSize: z.enum(['small', 'medium', 'large']).optional(),
+  textSize: z.enum(['small', 'medium', 'large']).optional(),
   colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
@@ -31,7 +35,26 @@ export const GalleryPuckConfig: BlockPuckConfig<GalleryProps> = {
   category: 'media',
   fields: {
     heading: { type: 'text', label: 'Заголовок' },
+    headingAlignment: { type: 'alignment', label: 'Выравнивание заголовка' },
+    headingSize: {
+      type: 'radio',
+      label: 'Размер заголовка',
+      options: [
+        { label: 'Маленький', value: 'small' },
+        { label: 'Средний', value: 'medium' },
+        { label: 'Большой', value: 'large' },
+      ],
+    },
     subheading: { type: 'textarea', label: 'Подзаголовок' },
+    textSize: {
+      type: 'radio',
+      label: 'Размер текста',
+      options: [
+        { label: 'Маленький', value: 'small' },
+        { label: 'Средний', value: 'medium' },
+        { label: 'Большой', value: 'large' },
+      ],
+    },
     items: {
       type: 'array',
       label: 'Элементы (макс 3)',

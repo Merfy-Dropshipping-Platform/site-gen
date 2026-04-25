@@ -7,6 +7,11 @@ export const ImageWithTextSchema = z.object({
   text: z.string(),
   button: z.object({ text: z.string(), href: z.string() }),
   imagePosition: z.enum(['left', 'right']),
+  // Pupa parity.
+  size: z.enum(['small', 'medium', 'large']).optional(),
+  width: z.enum(['small', 'medium', 'large', 'full']).optional(),
+  colorScheme: z.string().optional(),
+  containerColorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -29,9 +34,44 @@ export const ImageWithTextPuckConfig: BlockPuckConfig<ImageWithTextProps> = {
     },
     heading: { type: 'text', label: 'Заголовок' },
     text: { type: 'text', label: 'Текст' },
-    button: { type: 'object', label: 'Кнопка' },
-    imagePosition: { type: 'radio', label: 'Позиция изображения' },
-    padding: { type: 'object', label: 'Отступы' },
+    button: {
+      type: 'object',
+      label: 'Кнопка',
+      objectFields: {
+        text: { type: 'text', label: 'Текст' },
+        href: { type: 'text', label: 'Ссылка' },
+      },
+    },
+    imagePosition: {
+      type: 'radio',
+      label: 'Позиция фото',
+      options: [
+        { label: 'Слева', value: 'left' },
+        { label: 'Справа', value: 'right' },
+      ],
+    },
+    size: {
+      type: 'radio',
+      label: 'Размер',
+      options: [
+        { label: 'Маленький', value: 'small' },
+        { label: 'Средний', value: 'medium' },
+        { label: 'Большой', value: 'large' },
+      ],
+    },
+    width: {
+      type: 'radio',
+      label: 'Ширина',
+      options: [
+        { label: 'Маленькая', value: 'small' },
+        { label: 'Средняя', value: 'medium' },
+        { label: 'Большая', value: 'large' },
+        { label: 'Во всю', value: 'full' },
+      ],
+    },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     image: { url: '', alt: '' },

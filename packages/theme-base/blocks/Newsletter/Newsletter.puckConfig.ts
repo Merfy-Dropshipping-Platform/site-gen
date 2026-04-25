@@ -6,6 +6,9 @@ export const NewsletterSchema = z.object({
   description: z.string().optional(),
   placeholder: z.string(),
   buttonText: z.string(),
+  // Pupa parity.
+  position: z.enum(['left', 'center', 'right']).optional(),
+  colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -22,7 +25,9 @@ export const NewsletterPuckConfig: BlockPuckConfig<NewsletterProps> = {
     description: { type: 'text', label: 'Описание' },
     placeholder: { type: 'text', label: 'Плейсхолдер' },
     buttonText: { type: 'text', label: 'Кнопка' },
-    padding: { type: 'object', label: 'Отступы' },
+    position: { type: 'alignment', label: 'Положение секции' },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     heading: 'Подпишись на новости',

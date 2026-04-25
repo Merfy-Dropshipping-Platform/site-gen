@@ -25,6 +25,11 @@ export const HeroSchema = z.object({
   contentPosition: z
     .enum(['center', 'bottom-left', 'bottom-center', 'bottom-right'])
     .optional(),
+  // Pupa parity: дополнительные параметры секции.
+  size: z.enum(['small', 'medium', 'large']).optional(),
+  overlay: z.number().int().min(0).max(100).optional(),
+  alignment: z.enum(['left', 'center', 'right']).optional(),
+  container: z.enum(['true', 'false']).optional(),
   colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
@@ -85,6 +90,26 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
         text: { type: 'text', label: 'Текст' },
         href: { type: 'text', label: 'Ссылка' },
       },
+    },
+    // Pupa parity: дополнительные параметры секции.
+    size: {
+      type: 'radio',
+      label: 'Размер',
+      options: [
+        { label: 'Маленький', value: 'small' },
+        { label: 'Средний', value: 'medium' },
+        { label: 'Большой', value: 'large' },
+      ],
+    },
+    overlay: { type: 'slider', label: 'Затемнение', min: 0, max: 100, step: 5 },
+    alignment: { type: 'alignment', label: 'Выравнивание' },
+    container: {
+      type: 'radio',
+      label: 'Контейнер',
+      options: [
+        { label: 'Показать', value: 'true' },
+        { label: 'Скрыть', value: 'false' },
+      ],
     },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: {

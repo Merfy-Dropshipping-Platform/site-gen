@@ -16,6 +16,8 @@ export const CollectionsSchema = z.object({
   subtitle: z.string().optional(),
   headingSize: z.enum(['small', 'medium', 'large']).optional(),
   subtitleSize: z.enum(['small', 'medium', 'large']).optional(),
+  // Pupa parity.
+  titleAlignment: z.enum(['left', 'center', 'right']).optional(),
   /** Visual aspect ratio of tiles — square / portrait (Figma) / wide. */
   imageView: z.enum(['square', 'portrait', 'wide']).optional(),
   /**
@@ -39,6 +41,7 @@ export const CollectionsPuckConfig: BlockPuckConfig<CollectionsProps> = {
   category: 'products',
   fields: {
     heading: { type: 'text', label: 'Заголовок' },
+    titleAlignment: { type: 'alignment', label: 'Выравнивание заголовка' },
     subtitle: { type: 'text', label: 'Подзаголовок' },
     headingSize: {
       type: 'radio',
@@ -89,7 +92,7 @@ export const CollectionsPuckConfig: BlockPuckConfig<CollectionsProps> = {
     },
     columns: { type: 'number', label: 'Колонки (1-6)' },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
-    padding: { type: 'object', label: 'Отступы' },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     heading: 'Коллекции',

@@ -10,6 +10,12 @@ const CollapsibleItemSchema = z.object({
 export const CollapsibleSectionSchema = z.object({
   heading: z.string(),
   sections: z.array(CollapsibleItemSchema).min(1).max(10),
+  // Pupa parity.
+  headingAlignment: z.enum(['left', 'center', 'right']).optional(),
+  headingSize: z.enum(['small', 'medium', 'large']).optional(),
+  containerEnabled: z.enum(['true', 'false']).optional(),
+  colorScheme: z.string().optional(),
+  containerColorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -23,8 +29,41 @@ export const CollapsibleSectionPuckConfig: BlockPuckConfig<CollapsibleSectionPro
   category: 'content',
   fields: {
     heading: { type: 'text', label: 'Заголовок раздела' },
-    sections: { type: 'array', label: 'Пункты' },
-    padding: { type: 'object', label: 'Отступы' },
+    headingAlignment: { type: 'alignment', label: 'Выравнивание заголовка' },
+    headingSize: {
+      type: 'radio',
+      label: 'Размер заголовка',
+      options: [
+        { label: 'Маленький', value: 'small' },
+        { label: 'Средний', value: 'medium' },
+        { label: 'Большой', value: 'large' },
+      ],
+    },
+    containerEnabled: {
+      type: 'radio',
+      label: 'Контейнер',
+      options: [
+        { label: 'Показать', value: 'true' },
+        { label: 'Скрыть', value: 'false' },
+      ],
+    },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
+    sections: {
+      type: 'array',
+      label: 'Пункты (макс 10)',
+      arrayFields: {
+        heading: { type: 'text', label: 'Вопрос / заголовок' },
+        content: { type: 'textarea', label: 'Ответ / содержимое' },
+      },
+      defaultItemProps: {
+        id: '',
+        heading: 'Новый пункт',
+        content: 'Содержимое пункта',
+      },
+      max: 10,
+    },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     heading: 'Часто задаваемые вопросы',

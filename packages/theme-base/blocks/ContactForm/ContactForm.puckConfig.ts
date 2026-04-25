@@ -21,6 +21,10 @@ export const ContactFormSchema = z.object({
     message: FieldSchema,
   }),
   buttonText: z.string(),
+  // Pupa parity.
+  headingAlignment: z.enum(['left', 'center', 'right']).optional(),
+  headingSize: z.enum(['small', 'medium', 'large']).optional(),
+  colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -34,10 +38,21 @@ export const ContactFormPuckConfig: BlockPuckConfig<ContactFormProps> = {
   category: 'form',
   fields: {
     heading: { type: 'text', label: 'Заголовок' },
+    headingAlignment: { type: 'alignment', label: 'Выравнивание заголовка' },
+    headingSize: {
+      type: 'radio',
+      label: 'Размер заголовка',
+      options: [
+        { label: 'Маленький', value: 'small' },
+        { label: 'Средний', value: 'medium' },
+        { label: 'Большой', value: 'large' },
+      ],
+    },
     description: { type: 'text', label: 'Описание' },
     fields: { type: 'object', label: 'Поля формы' },
     buttonText: { type: 'text', label: 'Кнопка' },
-    padding: { type: 'object', label: 'Отступы' },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     heading: 'Связаться с нами',

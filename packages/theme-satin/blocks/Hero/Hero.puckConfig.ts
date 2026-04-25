@@ -39,6 +39,10 @@ export const HeroSchema = z.object({
   ]).optional(),
   backgroundImage: z.string().optional(),
   backgroundImage2: z.string().optional(),
+  backgroundImages: z.object({
+    url1: z.string().optional(),
+    url2: z.string().optional(),
+  }).optional(),
   size: z.enum(['small', 'medium', 'large']).optional(),
   overlay: z.number().int().min(0).max(100).optional(),
   alignment: z.enum(['left', 'center', 'right']).optional(),
@@ -148,8 +152,9 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
         link: { type: 'pagePicker', label: 'Ссылка' },
       },
     },
-    backgroundImage: { type: 'image', label: 'Фоновое изображение' },
-    backgroundImage2: { type: 'image', label: 'Фоновое изображение 2' },
+    backgroundImages: { type: 'imagePair', label: 'Фоновые изображения' } as any,
+    backgroundImage: { type: 'image', label: 'Фоновое изображение (legacy)' },
+    backgroundImage2: { type: 'image', label: 'Фоновое изображение 2 (legacy)' },
     position: {
       type: 'select',
       label: 'Позиция',

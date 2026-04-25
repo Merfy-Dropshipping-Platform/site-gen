@@ -31,7 +31,9 @@ const primaryButton = raw.primaryButton as
 const secondaryButton = raw.secondaryButton as
   | { text?: string; link?: { href?: string } | string }
   | undefined;
-const backgroundImage = typeof raw.backgroundImage === 'string' ? raw.backgroundImage : '';
+const bgPair = raw.backgroundImages as { url1?: string; url2?: string } | undefined;
+const backgroundImage = (bgPair?.url1) || (typeof raw.backgroundImage === 'string' ? raw.backgroundImage : '');
+const backgroundImage2 = (bgPair?.url2) || (typeof raw.backgroundImage2 === 'string' ? (raw.backgroundImage2 as string) : '');
 
 const resolvedTitle =
   (typeof title === 'string' && title) ||

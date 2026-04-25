@@ -24,6 +24,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { and, eq } from "drizzle-orm";
 import type * as schemaTypes from "../db/schema";
 import { fetchStoreData, fetchAllCollectionProducts, fetchPublications, type FetchedStoreData } from "./data-fetcher";
+import { migrateRevisionData } from "../utils/revision-migrations";
 import {
   buildScaffold,
   type ScaffoldConfig,
@@ -1001,7 +1002,10 @@ async function stageMerge(
     .where(eq(schema.siteRevision.id, revisionId));
 
   ctx.revisionId = revisionId;
-  ctx.revisionData = (revRow?.data as Record<string, unknown>) ?? {};
+  // Apply server-side migrations (e.g. catalog page → Catalog block) so build
+  // pipeline sees the canonical shape regardless of when the revision was
+  // saved. Idempotent — running on already-migrated revisions is a no-op.
+  ctx.revisionData = migrateRevisionData(revRow?.data as Record<string, unknown> | undefined);
   ctx.revisionMeta = (revRow?.meta as Record<string, unknown>) ?? {};
 
   // Update build record with revisionId

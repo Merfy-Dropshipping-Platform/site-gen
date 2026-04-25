@@ -7,6 +7,7 @@ import * as schema from '../db/schema';
 import { PG_CONNECTION } from '../constants';
 import { getThemeManifest, googleFontHead } from '../themes/theme-manifest-loader';
 import { buildTokensCss } from '../themes/tokens-css';
+import { migrateRevisionData } from '../utils/revision-migrations';
 
 /**
  * GET /api/sites/:id/preview — renders the constructor's iframe preview for
@@ -108,7 +109,7 @@ export class PreviewController {
     if (!rev?.data) return null;
 
     return {
-      data: rev.data as Record<string, unknown>,
+      data: migrateRevisionData(rev.data as Record<string, unknown>),
       publicUrl: site.publicUrl ?? null,
       themeId: site.themeId ?? null,
     };

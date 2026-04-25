@@ -23,6 +23,7 @@ import * as fsp from "fs/promises";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { and, eq, ilike, or, sql } from "drizzle-orm";
 import { COOLIFY_RMQ_SERVICE, PG_CONNECTION } from "./constants";
+import { migrateRevisionData } from "./utils/revision-migrations";
 import * as schema from "./db/schema";
 import { SiteGeneratorService } from "./generator/generator.service";
 import { SitesEventsService } from "./events/events.service";
@@ -1074,7 +1075,11 @@ export class SitesDomainService {
         ),
       );
     if (!rev) throw new Error("revision_not_found");
-    return { item: rev };
+    // Apply server-side migrations (catalog page → Catalog block, etc.) so
+    // constructor and preview always see the canonical shape regardless of
+    // when the revision was saved. Idempotent.
+    const migratedData = migrateRevisionData(rev.data as Record<string, unknown> | undefined);
+    return { item: { ...rev, data: migratedData } };
   }
 
   /**

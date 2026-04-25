@@ -22,7 +22,6 @@ import CollapsibleSection from '../components/CollapsibleSection.astro';
 import Collections from '../components/Collections.astro';
 import Newsletter from '../components/Newsletter.astro';
 import Product from '../components/Product.astro';
-import Catalog from '../components/Catalog.astro';
 import CatalogIsland from '../components/react/CatalogIsland';
 
 // Resolve catalog page blocks from multipage revision shape:
@@ -85,7 +84,13 @@ const componentMap: Record<string, any> = {
   Collections,
   Newsletter,
   Product,
-  Catalog,
+  // Catalog is rendered inline below (not via componentMap) — see the
+  // mapper that mounts <CatalogIsland client:only="react" /> directly so
+  // the React island ships in the live bundle. The package-level
+  // packages/theme-satin/blocks/Catalog/Catalog.astro intentionally does
+  // NOT import the island (that file is also assembled into outputDir/src/
+  // components/Catalog.astro and would fail constructor Astro Container
+  // resolution if it tried to import a client:only React component).
 };
 
 const hasCatalogBlock = contentBlocks.some((b: any) => b.type === 'Catalog');
@@ -97,6 +102,32 @@ const pageTitle = (meta?.title && `Каталог — ${meta.title}`) || 'Кат
 
     <main class="catalog-main flex-1 w-full">
       {contentBlocks.map((block: any) => {
+        // Catalog block is rendered inline below — mounts CatalogIsland
+        // (pupa filter sidebar + grid + pagination) inside the standard
+        // Satin section chrome.
+        if (block.type === 'Catalog') {
+          const props = block.props ?? {};
+          const padding = props.padding ?? { top: 40, bottom: 80 };
+          const schemeRaw = typeof props.colorScheme === 'string' ? props.colorScheme : undefined;
+          const schemeClass = schemeRaw ? `color-scheme-${schemeRaw.replace('scheme-', '')}` : '';
+          const showColl = props.showCollectionFilter !== 'false' && props.showCollectionFilter !== false;
+          return (
+            <section
+              class:list={['relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]', schemeClass]}
+              data-puck-component-id={props.id}
+              data-block="catalog"
+              style={`padding-top:${padding.top ?? 40}px; padding-bottom:${padding.bottom ?? 80}px;`}
+            >
+              <div class="w-full max-w-[var(--container-max-width)] mx-auto px-[40px]">
+                <CatalogIsland
+                  client:only="react"
+                  collectionSlug={props.collectionSlug}
+                  showCollectionFilter={showColl}
+                />
+              </div>
+            </section>
+          );
+        }
         const Component = componentMap[block.type];
         if (!Component) {
           // Unknown block type — skip silently in production, dev tooling

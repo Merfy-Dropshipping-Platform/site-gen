@@ -540,14 +540,19 @@ export interface CatalogIslandProps {
 }
 
 export default function CatalogIsland(props: CatalogIslandProps) {
-  const config = typeof window !== 'undefined' && (window as any).__MERFY_CONFIG__
-    ? {
-        apiBase: (window as any).__MERFY_CONFIG__.apiUrl || 'https://gateway.merfy.ru/api',
-        storeId: (window as any).__MERFY_CONFIG__.shopId || '',
-        currency: 'RUB',
-        locale: 'ru-RU',
-      }
-    : { apiBase: '', storeId: '', currency: 'RUB', locale: 'ru-RU' };
+  // Resolve config from either __MERFY_CONFIG__ (preferred — emitted by build
+  // pipeline scaffold) or __MERFY__.siteId (fallback — older build artifacts
+  // or sites whose static site-meta.js hasn't been regenerated yet). Without
+  // this fallback the React island gets stuck on the skeleton state on sites
+  // with stale public/site-meta.js.
+  const win = typeof window !== 'undefined' ? (window as any) : null;
+  const cfgFromConfig = win?.__MERFY_CONFIG__;
+  const cfgFromMerfy = win?.__MERFY__;
+  const apiBase =
+    cfgFromConfig?.apiUrl || 'https://gateway.merfy.ru/api';
+  const storeId =
+    cfgFromConfig?.shopId || cfgFromMerfy?.siteId || '';
+  const config = { apiBase, storeId, currency: 'RUB', locale: 'ru-RU' };
 
   if (!config.storeId) {
     return <SkeletonGrid />;

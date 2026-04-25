@@ -143,7 +143,12 @@
         "reason": "Bloom uses edge-to-edge split layout (bottom-aligned text col + image col), 20px Urbanist uppercase accent-pink kicker heading, 16px body subtitle, pink pill CTA — all distinct from base Hero."
       },
       "variant": "split"
-    }
+    },
+    "PopularProducts": {},
+    "Collections": {},
+    "Product": {},
+    "Newsletter": {},
+    "ContactForm": {}
   },
 
   "features": {

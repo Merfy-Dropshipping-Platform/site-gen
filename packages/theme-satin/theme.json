@@ -184,7 +184,10 @@
         "path": "./blocks/CollapsibleSection",
         "reason": "Satin FAQ style — hairline dividers instead of rounded cards, Kelly Slab 32px uppercase section heading, Arsenal 16px uppercase summary rows, zero radii."
       }
-    }
+    },
+    "Product": {},
+    "Newsletter": {},
+    "ContactForm": {}
   },
 
   "features": {

@@ -138,9 +138,12 @@
         "reason": "Rose uses 3-column grid (navigation / information / social) with inline-titled columns and unique social iconography."
       }
     },
-    "Hero": {
-      "variant": "overlay"
-    }
+    "Hero": { "variant": "overlay" },
+    "PopularProducts": {},
+    "Collections": {},
+    "Product": {},
+    "Newsletter": {},
+    "ContactForm": {}
   },
 
   "features": {

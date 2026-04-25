@@ -56,8 +56,8 @@ export const SlideshowPuckConfig: BlockPuckConfig<SlideshowProps> = {
       type: 'array',
       label: 'Слайды (макс 5)',
       arrayFields: {
-        imageUrl: { type: 'image', label: 'Изображение' },
-        image: { type: 'image', label: 'Изображение (pupa)' },
+        imageUrl: { type: 'image', label: 'Изображение (старое)' },
+        image: { type: 'image', label: 'Изображение' },
         heading: {
           type: 'object',
           label: 'Заголовок',

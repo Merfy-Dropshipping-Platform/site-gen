@@ -63,7 +63,7 @@ export const PopularProductsPuckConfig: BlockPuckConfig<PopularProductsProps> = 
     subtitle: { type: 'textarea', label: 'Подзаголовок (опционально)' },
     text: {
       type: 'object',
-      label: 'Текст (pupa)',
+      label: 'Текст',
       objectFields: {
         content: { type: 'textarea', label: 'Содержание' },
         size: {

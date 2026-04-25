@@ -483,11 +483,15 @@ export async function buildScaffold(
 
   // 8b. Emit public/site-meta.js with siteId so client-side scripts
   // (Video media-slot hydrator etc.) can reach site-scoped API endpoints.
+  // Also emit window.__MERFY_CONFIG__ for React islands (CatalogIsland etc.)
+  // that read shopId/apiUrl to call /api/store/* endpoints.
   if (config.siteId) {
     const metaPath = path.join(outputDir, "public", "site-meta.js");
-    const content = `window.__MERFY__ = window.__MERFY__ || {}; window.__MERFY__.siteId = ${JSON.stringify(
-      config.siteId,
-    )};\n`;
+    const siteIdJson = JSON.stringify(config.siteId);
+    const apiUrlJson = JSON.stringify("https://gateway.merfy.ru/api");
+    const content =
+      `window.__MERFY__ = window.__MERFY__ || {}; window.__MERFY__.siteId = ${siteIdJson};\n` +
+      `window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || { shopId: ${siteIdJson}, apiUrl: ${apiUrlJson}, requireCustomerAuth: false };\n`;
     await writeFile(metaPath, content);
     generatedFiles.push("public/site-meta.js");
   }

@@ -14,6 +14,13 @@ export const HeroSchema = z.object({
   images: z.array(z.object({ url: z.string(), alt: z.string() })).max(8).optional(),
   cta: z.object({ text: z.string(), href: z.string() }),
   variant: z.enum(['centered', 'split', 'overlay', 'grid-4']),
+  // Pupa parity.
+  size: z.enum(['small', 'medium', 'large']).optional(),
+  overlay: z.number().int().min(0).max(100).optional(),
+  alignment: z.enum(['left', 'center', 'right']).optional(),
+  container: z.enum(['true', 'false']).optional(),
+  contentPosition: z.enum(['center', 'bottom-left', 'bottom-center', 'bottom-right']).optional(),
+  colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(200),
     bottom: z.number().int().min(0).max(200),
@@ -64,6 +71,36 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
         href: { type: 'text', label: 'Ссылка' },
       },
     },
+    size: {
+      type: 'radio',
+      label: 'Размер',
+      options: [
+        { label: 'Маленький', value: 'small' },
+        { label: 'Средний', value: 'medium' },
+        { label: 'Большой', value: 'large' },
+      ],
+    },
+    overlay: { type: 'slider', label: 'Затемнение', min: 0, max: 100, step: 5 },
+    alignment: { type: 'alignment', label: 'Выравнивание' },
+    container: {
+      type: 'radio',
+      label: 'Контейнер',
+      options: [
+        { label: 'Показать', value: 'true' },
+        { label: 'Скрыть', value: 'false' },
+      ],
+    },
+    contentPosition: {
+      type: 'radio',
+      label: 'Положение текста',
+      options: [
+        { label: 'По центру', value: 'center' },
+        { label: 'Снизу-слева', value: 'bottom-left' },
+        { label: 'Снизу-по-центру', value: 'bottom-center' },
+        { label: 'Снизу-справа', value: 'bottom-right' },
+      ],
+    },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: {
       type: 'object',
       label: 'Отступы',

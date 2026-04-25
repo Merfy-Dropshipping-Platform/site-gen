@@ -15,6 +15,16 @@ const MultiRowItemSchema = z.object({
 
 export const MultiRowsSchema = z.object({
   rows: z.array(MultiRowItemSchema).min(1).max(10),
+  // Pupa parity.
+  heading: z.string().optional(),
+  headingAlignment: z.enum(['left', 'center', 'right']).optional(),
+  headingSize: z.enum(['small', 'medium', 'large']).optional(),
+  size: z.enum(['small', 'medium', 'large']).optional(),
+  width: z.enum(['small', 'medium', 'large', 'full']).optional(),
+  rowsPosition: z.enum(['left', 'right', 'alternate']).optional(),
+  buttonStyle: z.enum(['primary', 'black', 'white']).optional(),
+  alignment: z.enum(['left', 'center', 'right']).optional(),
+  colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -27,6 +37,56 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
   label: 'Мультиряды (Satin)',
   category: 'layout',
   fields: {
+    heading: { type: 'text', label: 'Заголовок' },
+    headingAlignment: { type: 'alignment', label: 'Выравнивание заголовка' },
+    headingSize: {
+      type: 'radio',
+      label: 'Размер заголовка',
+      options: [
+        { label: 'Маленький', value: 'small' },
+        { label: 'Средний', value: 'medium' },
+        { label: 'Большой', value: 'large' },
+      ],
+    },
+    size: {
+      type: 'radio',
+      label: 'Высота',
+      options: [
+        { label: 'Маленькая', value: 'small' },
+        { label: 'Средняя', value: 'medium' },
+        { label: 'Большая', value: 'large' },
+      ],
+    },
+    width: {
+      type: 'radio',
+      label: 'Ширина',
+      options: [
+        { label: 'Маленькая', value: 'small' },
+        { label: 'Средняя', value: 'medium' },
+        { label: 'Большая', value: 'large' },
+        { label: 'Во всю', value: 'full' },
+      ],
+    },
+    rowsPosition: {
+      type: 'radio',
+      label: 'Позиция рядов',
+      options: [
+        { label: 'Слева', value: 'left' },
+        { label: 'Справа', value: 'right' },
+        { label: 'Чередовать', value: 'alternate' },
+      ],
+    },
+    buttonStyle: {
+      type: 'radio',
+      label: 'Стиль кнопки',
+      options: [
+        { label: 'Акцент', value: 'primary' },
+        { label: 'Чёрная', value: 'black' },
+        { label: 'Белая', value: 'white' },
+      ],
+    },
+    alignment: { type: 'alignment', label: 'Выравнивание' },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     rows: {
       type: 'array',
       label: 'Ряды',

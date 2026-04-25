@@ -12,6 +12,10 @@ export const MainTextSchema = z.object({
       variant: z.enum(['primary', 'black', 'white']).optional(),
     })
     .optional(),
+  // Pupa parity.
+  headingSize: z.enum(['small', 'medium', 'large']).optional(),
+  position: z.enum(['left', 'center', 'right']).optional(),
+  colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -52,6 +56,17 @@ export const MainTextPuckConfig: BlockPuckConfig<MainTextProps> = {
         },
       },
     },
+    headingSize: {
+      type: 'radio',
+      label: 'Размер заголовка',
+      options: [
+        { label: 'Маленький', value: 'small' },
+        { label: 'Средний', value: 'medium' },
+        { label: 'Большой', value: 'large' },
+      ],
+    },
+    position: { type: 'alignment', label: 'Положение секции' },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: {
       type: 'object',
       label: 'Отступы',

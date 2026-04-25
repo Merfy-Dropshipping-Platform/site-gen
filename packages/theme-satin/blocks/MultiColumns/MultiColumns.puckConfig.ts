@@ -16,6 +16,15 @@ export const MultiColumnsSchema = z.object({
     z.literal(3),
     z.literal(4),
   ]),
+  // Pupa parity.
+  heading: z.string().optional(),
+  headingAlignment: z.enum(['left', 'center', 'right']).optional(),
+  headingSize: z.enum(['small', 'medium', 'large']).optional(),
+  width: z.enum(['small', 'medium', 'large', 'full']).optional(),
+  imageAspectRatio: z.enum(['adapt', 'square', 'portrait', 'landscape']).optional(),
+  buttonText: z.string().optional(),
+  buttonLink: z.string().optional(),
+  colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -28,6 +37,40 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
   label: 'Мультиколонны (Satin)',
   category: 'layout',
   fields: {
+    heading: { type: 'text', label: 'Заголовок секции' },
+    headingAlignment: { type: 'alignment', label: 'Выравнивание заголовка' },
+    headingSize: {
+      type: 'radio',
+      label: 'Размер заголовка',
+      options: [
+        { label: 'Маленький', value: 'small' },
+        { label: 'Средний', value: 'medium' },
+        { label: 'Большой', value: 'large' },
+      ],
+    },
+    width: {
+      type: 'radio',
+      label: 'Ширина',
+      options: [
+        { label: 'Маленькая', value: 'small' },
+        { label: 'Средняя', value: 'medium' },
+        { label: 'Большая', value: 'large' },
+        { label: 'Во всю', value: 'full' },
+      ],
+    },
+    imageAspectRatio: {
+      type: 'radio',
+      label: 'Соотношение изображения',
+      options: [
+        { label: 'Адаптивное', value: 'adapt' },
+        { label: 'Квадрат', value: 'square' },
+        { label: 'Портрет', value: 'portrait' },
+        { label: 'Альбом', value: 'landscape' },
+      ],
+    },
+    buttonText: { type: 'text', label: 'Кнопка' },
+    buttonLink: { type: 'pagePicker', label: 'Ссылка' },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     columns: {
       type: 'array',
       label: 'Колонки',

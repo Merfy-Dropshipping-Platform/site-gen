@@ -15,6 +15,13 @@ const CollectionItemSchema = z.object({
 
 export const CollectionsSchema = z.object({
   heading: z.string(),
+  // Pupa parity.
+  titleAlignment: z.enum(['left', 'center', 'right']).optional(),
+  headingSize: z.enum(['small', 'medium', 'large']).optional(),
+  subtitle: z.string().optional(),
+  subtitleSize: z.enum(['small', 'medium', 'large']).optional(),
+  imageView: z.enum(['square', 'portrait', 'wide']).optional(),
+  colorScheme: z.string().optional(),
   collections: z.array(CollectionItemSchema).min(1).max(10),
   columns: z.number().int().min(1).max(6),
   padding: z.object({
@@ -30,6 +37,36 @@ export const CollectionsPuckConfig: BlockPuckConfig<CollectionsProps> = {
   category: 'products',
   fields: {
     heading: { type: 'text', label: 'Заголовок (опционально)' },
+    titleAlignment: { type: 'alignment', label: 'Выравнивание заголовка' },
+    headingSize: {
+      type: 'radio',
+      label: 'Размер заголовка',
+      options: [
+        { label: 'Маленький', value: 'small' },
+        { label: 'Средний', value: 'medium' },
+        { label: 'Большой', value: 'large' },
+      ],
+    },
+    subtitle: { type: 'text', label: 'Подзаголовок' },
+    subtitleSize: {
+      type: 'radio',
+      label: 'Размер подзаголовка',
+      options: [
+        { label: 'Маленький', value: 'small' },
+        { label: 'Средний', value: 'medium' },
+        { label: 'Большой', value: 'large' },
+      ],
+    },
+    imageView: {
+      type: 'radio',
+      label: 'Вид изображения',
+      options: [
+        { label: 'Квадрат', value: 'square' },
+        { label: 'Портрет', value: 'portrait' },
+        { label: 'Широкая', value: 'wide' },
+      ],
+    },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     collections: {
       type: 'array',
       label: 'Коллекции',

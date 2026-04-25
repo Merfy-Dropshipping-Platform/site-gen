@@ -65,6 +65,10 @@ const imageAlt =
 
 type ImageShape = { url: string; alt: string };
 const gridFallback: ImageShape = { url: imageUrl, alt: imageAlt };
+const realImagesCount =
+  variant === 'grid-4' && Array.isArray(images) && images.length > 0
+    ? Math.min(images.length, 4)
+    : 0;
 const gridImages: ImageShape[] =
   variant === 'grid-4'
     ? (Array.isArray(images) && images.length > 0
@@ -143,7 +147,12 @@ while (gridImages.length < 4 && variant === 'grid-4') {
       {resolvedTitle && <h1 class={C.title}>{resolvedTitle}</h1>}
       <div class={C.gridContainer} role="group" aria-label="Hero image grid">
         {gridImages.map((img, i) => (
-          <div class={C.gridTile}>
+          <div
+            class={C.gridTile}
+            data-puck-subsection-parent={i < realImagesCount ? id : undefined}
+            data-puck-subsection-index={i < realImagesCount ? i : undefined}
+            data-puck-subsection-field={i < realImagesCount ? 'images' : undefined}
+          >
             {img.url ? (
               <img
                 src={img.url}

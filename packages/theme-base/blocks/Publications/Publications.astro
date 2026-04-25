@@ -40,21 +40,43 @@ const items: Article[] = (Array.isArray(rawItems) && rawItems.length > 0
   : DEMO_ARTICLES
 ).slice(0, cards);
 
+// Pupa parity: cardsCount, columnsCount, headingAlignment, headingSize, dateTime.enabled, colorScheme.
+const cardsResolved = typeof raw.cardsCount === 'number' ? raw.cardsCount : cards;
+const columnsResolved = typeof raw.columnsCount === 'number' ? raw.columnsCount : columns;
+const headingObj = raw.heading;
+const headingAlignment =
+  (typeof headingObj === 'object' ? (headingObj as { alignment?: string })?.alignment : undefined) ??
+  (typeof raw.headingAlignment === 'string' ? raw.headingAlignment : undefined);
+const headingSize =
+  (typeof headingObj === 'object' ? (headingObj as { size?: string })?.size : undefined) ??
+  (typeof raw.headingSize === 'string' ? raw.headingSize : undefined);
+const dateTimeEnabled = (raw.dateTime as { enabled?: string } | undefined)?.enabled !== 'false';
+const colorScheme = raw.colorScheme as string | undefined;
+const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
+const headingAlignClass =
+  headingAlignment === 'left' ? 'text-left' :
+  headingAlignment === 'right' ? 'text-right' :
+  headingAlignment === 'center' ? 'text-center' : '';
+const headingSizeClass =
+  headingSize === 'large' ? 'text-3xl md:text-4xl' :
+  headingSize === 'medium' ? 'text-2xl md:text-3xl' :
+  headingSize === 'small' ? 'text-xl md:text-2xl' : '';
+
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
-const gridTemplateCols = `grid-template-columns: repeat(${columns}, minmax(0, 1fr));`;
+const gridTemplateCols = `grid-template-columns: repeat(${columnsResolved}, minmax(0, 1fr));`;
 ---
 <section
-  class={C.root}
+  class:list={[C.root, schemeClass]}
   data-puck-component-id={id}
   data-block="publications"
   style={paddingStyle}
 >
   <div class={C.container}>
-    {headingText && <h2 class={C.heading}>{headingText}</h2>}
+    {headingText && <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]}>{headingText}</h2>}
     <div class={C.grid} style={gridTemplateCols}>
-      {items.map((item, i) => (
+      {items.slice(0, cardsResolved).map((item, i) => (
         <article class={C.card} data-article-index={i}>
           <div class={C.cardMedia} aria-hidden="true">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
@@ -64,7 +86,7 @@ const gridTemplateCols = `grid-template-columns: repeat(${columns}, minmax(0, 1f
             </svg>
           </div>
           <div class={C.cardBody}>
-            <div class={C.cardDate}>{item.date}</div>
+            {dateTimeEnabled && <div class={C.cardDate}>{item.date}</div>}
             <div class={C.cardTitle}>{item.title}</div>
             <div class={C.cardExcerpt}>{item.excerpt}</div>
           </div>

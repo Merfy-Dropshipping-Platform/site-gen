@@ -50,10 +50,39 @@ const subtitle =
     return undefined;
   })();
 
+// Pupa parity: heading.alignment, heading.size, text.size, productCard.{cardStyle,buttonStyle}, containerColorScheme.
+const headingObj = headingProp ?? raw.heading;
+const headingAlignment = typeof headingObj === 'object' ? (headingObj as { alignment?: string })?.alignment : undefined;
+const headingSize = typeof headingObj === 'object' ? (headingObj as { size?: string })?.size : undefined;
+const textSize = (() => {
+  const t = raw.text;
+  if (t && typeof t === 'object') return (t as { size?: string }).size;
+  return undefined;
+})();
+const headingAlignClass =
+  headingAlignment === 'left' ? 'text-left' :
+  headingAlignment === 'right' ? 'text-right' :
+  headingAlignment === 'center' ? 'text-center' : '';
+const headingSizeClass =
+  headingSize === 'large' ? 'text-3xl md:text-4xl' :
+  headingSize === 'medium' ? 'text-2xl md:text-3xl' :
+  headingSize === 'small' ? 'text-xl md:text-2xl' : '';
+const textSizeClass =
+  textSize === 'large' ? 'text-lg md:text-xl' :
+  textSize === 'medium' ? 'text-base md:text-lg' :
+  textSize === 'small' ? 'text-sm' : '';
+const containerColorScheme = raw.containerColorScheme as string | undefined;
+const containerSchemeClass = containerColorScheme ? `color-scheme-${String(containerColorScheme).replace('scheme-', '')}` : '';
+
+// productCard columns override.
+const productCardCols = productCardObj && typeof productCardObj === 'object' && 'columns' in productCardObj && typeof (productCardObj as any).columns === 'number'
+  ? (productCardObj as any).columns as number
+  : columns;
+
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
-const gridTemplateCols = `grid-template-columns: repeat(${columns}, minmax(0, 1fr));`;
+const gridTemplateCols = `grid-template-columns: repeat(${productCardCols}, minmax(0, 1fr));`;
 const colorSchemeRaw = typeof raw.colorScheme === 'string' ? raw.colorScheme : undefined;
 const schemeClass = colorSchemeRaw ? `color-scheme-${colorSchemeRaw.replace('scheme-', '')}` : '';
 // Demo product cards render for seed sites that don't yet have real products
@@ -75,9 +104,9 @@ const demo = DEMO_PRODUCTS.slice(0, Math.min(cards, DEMO_PRODUCTS.length));
   data-block="popular-products"
   style={paddingStyle}
 >
-  <div class={C.container}>
-    {heading && <h2 class={C.heading}>{heading}</h2>}
-    {subtitle && <p class={C.subtitle}>{subtitle}</p>}
+  <div class:list={[C.container, containerSchemeClass]}>
+    {heading && <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]}>{heading}</h2>}
+    {subtitle && <p class:list={[C.subtitle, headingAlignClass, textSizeClass]}>{subtitle}</p>}
     <div class={C.grid} style={gridTemplateCols}>
       {demo.map((p, i) => (
         <div

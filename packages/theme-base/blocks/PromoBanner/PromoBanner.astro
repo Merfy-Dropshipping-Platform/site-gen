@@ -6,7 +6,18 @@ interface Props extends PromoBannerProps {
   id?: string;
 }
 
-const { id, text, linkText, linkUrl, colorScheme, padding } = Astro.props as Props;
+const raw = Astro.props as Record<string, unknown>;
+const { id, text, linkText, linkUrl, colorScheme, padding } = raw as Props;
+
+// Pupa parity: link {text, href} object preferred over linkText/linkUrl, plus size.
+const linkObj = raw.link as { text?: string; href?: string } | undefined;
+const resolvedLinkText = linkObj?.text ?? linkText;
+const resolvedLinkHref = linkObj?.href ?? linkUrl;
+const size = typeof raw.size === 'string' ? raw.size : 'medium';
+const sizeClass =
+  size === 'large' ? 'text-base py-4' :
+  size === 'medium' ? 'text-sm py-3' :
+  size === 'small' ? 'text-xs py-2' : '';
 
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
@@ -14,16 +25,16 @@ const paddingStyle = padding
 const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
 ---
 <section
-  class:list={[C.root, schemeClass]}
+  class:list={[C.root, schemeClass, sizeClass]}
   data-puck-component-id={id}
   style={paddingStyle}
 >
   <div class={C.container}>
     <span class={C.text}>{text}</span>
-    {linkText && (
+    {resolvedLinkText && (
       <>
         <span aria-hidden="true">.</span>
-        <a href={linkUrl} class={C.link}>{linkText}</a>
+        <a href={resolvedLinkHref} class={C.link}>{resolvedLinkText}</a>
       </>
     )}
   </div>

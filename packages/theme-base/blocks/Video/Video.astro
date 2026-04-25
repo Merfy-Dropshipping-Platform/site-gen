@@ -48,6 +48,32 @@ const schemeClass = colorSchemeRaw ? `color-scheme-${colorSchemeRaw.replace('sch
 // `position=fullscreen` removes the container clamp so video spans the
 // viewport. Default contained → merchants get Figma-style padded video.
 const positionProp = typeof raw.position === 'string' ? raw.position : 'contained';
+
+// Pupa parity: size, overlay, content.heading.{alignment,enabled,size}.
+const sizeProp = typeof raw.size === 'string' ? raw.size : 'medium';
+const overlayPctRaw = typeof raw.overlay === 'number' ? raw.overlay : 0;
+const overlayPct = overlayPctRaw / 100;
+const overlayStyle = overlayPctRaw > 0
+  ? `background-color: rgb(var(--color-foreground) / ${overlayPct});`
+  : '';
+
+const contentObj = raw.content as { heading?: { text?: string; alignment?: string; enabled?: string; size?: string } } | undefined;
+const headingAlignment = contentObj?.heading?.alignment;
+const headingEnabled = contentObj?.heading?.enabled !== 'false';
+const headingSize = contentObj?.heading?.size;
+const headingAlignClass =
+  headingAlignment === 'left' ? 'text-left' :
+  headingAlignment === 'right' ? 'text-right' :
+  headingAlignment === 'center' ? 'text-center' : '';
+const headingSizeClass =
+  headingSize === 'large' ? 'text-3xl md:text-4xl' :
+  headingSize === 'medium' ? 'text-2xl md:text-3xl' :
+  headingSize === 'small' ? 'text-xl md:text-2xl' : '';
+
+const sizeClass =
+  sizeProp === 'small' ? 'aspect-[16/8]' :
+  sizeProp === 'medium' ? 'aspect-video' :
+  sizeProp === 'large' ? 'aspect-[16/10]' : '';
 const containerClass =
   positionProp === 'fullscreen'
     ? 'w-full'

@@ -22,6 +22,25 @@ const {
 const heading =
   (typeof headingProp === 'string' && headingProp) ||
   (typeof raw.title === 'string' ? raw.title : undefined);
+
+// Pupa parity: titleAlignment, titleSize, subtitleSize.
+const titleAlignment = typeof raw.titleAlignment === 'string' ? raw.titleAlignment : 'center';
+const titleSize = typeof raw.titleSize === 'string' ? raw.titleSize :
+  (typeof raw.headingSize === 'string' ? raw.headingSize : 'medium');
+const subtitleSize = typeof raw.subtitleSize === 'string' ? raw.subtitleSize : 'small';
+
+const titleAlignClass =
+  titleAlignment === 'left' ? 'text-left' :
+  titleAlignment === 'right' ? 'text-right' :
+  'text-center';
+const titleSizeClass =
+  titleSize === 'large' ? 'text-3xl md:text-4xl' :
+  titleSize === 'medium' ? 'text-2xl md:text-3xl' :
+  'text-xl md:text-2xl';
+const subtitleSizeClass =
+  subtitleSize === 'large' ? 'text-lg md:text-xl' :
+  subtitleSize === 'medium' ? 'text-base md:text-lg' :
+  'text-sm md:text-base';
 const subtitle =
   (typeof subtitleProp === 'string' && subtitleProp) ||
   (typeof raw.subtitle === 'string' ? raw.subtitle : undefined);
@@ -69,8 +88,8 @@ const effectiveCollections = hasRealCollections
   style={paddingStyle}
 >
   <div class={C.container}>
-    {heading && <h2 class={C.heading}>{heading}</h2>}
-    {subtitle && <p class={C.subtitle}>{subtitle}</p>}
+    {heading && <h2 class:list={[C.heading, titleAlignClass, titleSizeClass]}>{heading}</h2>}
+    {subtitle && <p class:list={[C.subtitle, titleAlignClass, subtitleSizeClass]}>{subtitle}</p>}
     <div class={C.grid} style={gridTemplateCols}>
       {effectiveCollections.map((item, i) => (
         <a

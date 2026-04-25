@@ -1670,7 +1670,7 @@ async function stageFetchData(
     description: c.description,
     image: (c.images as string[])?.[0] || "/images/placeholder.png",
     slug: c.slug || c.id,
-    href: `/collection/${c.slug || c.id}`,
+    href: `/collections/${c.slug || c.id}`,
     productIds: collectionProductsMap[c.id] || [],
   }));
   const collectionsPath = path.join(

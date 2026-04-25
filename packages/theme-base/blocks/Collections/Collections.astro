@@ -97,7 +97,7 @@ const effectiveCollections = hasRealCollections
     <div class={C.grid} style={gridTemplateCols}>
       {effectiveCollections.map((item, i) => (
         <a
-          href={item.collectionId ? `/collection/${item.collectionId}` : '#'}
+          href={item.collectionId ? `/collections/${item.collectionId}` : '#'}
           class={C.card}
           data-puck-subsection-parent={hasRealCollections ? id : undefined}
           data-puck-subsection-index={hasRealCollections ? i : undefined}

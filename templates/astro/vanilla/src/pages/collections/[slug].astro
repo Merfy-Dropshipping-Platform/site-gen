@@ -5,33 +5,29 @@ import siteConfig from '../../data/site-config.json';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import CatalogIsland from '../../components/react/CatalogIsland';
-
-let collectionsData: any[] = [];
-try {
-  const mod = await import('../../data/collections.json');
-  collectionsData = mod.default ?? [];
-} catch {
-  collectionsData = [];
-}
+import collectionsData from '../../data/collections.json';
 
 export function getStaticPaths() {
-  let cols: any[] = [];
-  try {
-    // Dynamic import not available in getStaticPaths, use fs
-    cols = collectionsData;
-  } catch {
-    cols = [];
-  }
+  const cols: any[] = Array.isArray(collectionsData) ? collectionsData : [];
 
   // Always generate at least a fallback path
   if (cols.length === 0) {
     return [{ params: { slug: '_placeholder' }, props: { collection: null } }];
   }
 
-  return cols.map((c: any) => ({
-    params: { slug: c.handle || c.id },
-    props: { collection: c },
-  }));
+  // Generate a path for every reachable identifier (id, slug, handle)
+  // so that links from blocks/admin still resolve regardless of which one
+  // they used.
+  const paths: { params: { slug: string }; props: { collection: any } }[] = [];
+  const seen = new Set<string>();
+  for (const c of cols) {
+    for (const slug of [c.id, c.slug, c.handle].filter(Boolean) as string[]) {
+      if (seen.has(slug)) continue;
+      seen.add(slug);
+      paths.push({ params: { slug }, props: { collection: c } });
+    }
+  }
+  return paths;
 }
 
 const { slug } = Astro.params;

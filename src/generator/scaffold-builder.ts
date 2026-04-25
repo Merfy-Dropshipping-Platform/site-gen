@@ -364,22 +364,35 @@ export async function buildScaffold(
     await writeFile(productPagePath, productPage);
     generatedFiles.push("src/pages/product/[handle].astro");
 
-    const collectionPage = generateCollectionPage({
-      ...config.dynamicPages,
-      layoutImport: config.layout?.importPath
-        ? `../../layouts/${path.basename(config.layout.importPath)}`
-        : undefined,
-      layoutTag: config.layout?.tagName,
-    });
-    const collectionPagePath = path.join(
+    // Skip the generic [handle].astro when the theme template already ships
+    // its own collections route ([slug].astro) — having both creates an Astro
+    // route collision (`/collections/<x>` resolved by two files) which Astro
+    // either errors on or resolves unpredictably.
+    const themeSlugPath = path.join(
       outputDir,
       "src",
       "pages",
       "collections",
-      "[handle].astro",
+      "[slug].astro",
     );
-    await writeFile(collectionPagePath, collectionPage);
-    generatedFiles.push("src/pages/collections/[handle].astro");
+    if (!(await fileExists(themeSlugPath))) {
+      const collectionPage = generateCollectionPage({
+        ...config.dynamicPages,
+        layoutImport: config.layout?.importPath
+          ? `../../layouts/${path.basename(config.layout.importPath)}`
+          : undefined,
+        layoutTag: config.layout?.tagName,
+      });
+      const collectionPagePath = path.join(
+        outputDir,
+        "src",
+        "pages",
+        "collections",
+        "[handle].astro",
+      );
+      await writeFile(collectionPagePath, collectionPage);
+      generatedFiles.push("src/pages/collections/[handle].astro");
+    }
   }
 
   // 7. Generate override.css tokens and append to tokens.css

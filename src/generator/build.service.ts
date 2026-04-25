@@ -1140,9 +1140,10 @@ async function stageGenerate(
     ctx.revisionData as { pagesData?: Record<string, { content?: unknown[] }> }
   ).pagesData;
 
-  // Pages with full static implementations in theme templates — never overwrite with Puck stubs
+  // Pages with full static implementations in theme templates — never overwrite with Puck stubs.
+  // catalog NOT in list — manageable from constructor like home.
   const STATIC_TEMPLATE_PAGES = new Set([
-    "cart", "catalog", "checkout", "checkout/result",
+    "cart", "checkout", "checkout/result",
     "login", "register", "reset-password", "verify-email",
     "account", "account/orders", "account/order", "account/profile", "account/newsletter",
   ]);

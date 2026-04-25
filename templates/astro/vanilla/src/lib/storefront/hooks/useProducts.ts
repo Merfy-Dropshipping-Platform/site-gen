@@ -30,6 +30,8 @@ interface ProductsResult {
 export interface UseProductsOptions {
   staleTime?: number;
   gcTime?: number;
+  /** Build-time data for first paint. */
+  initialData?: ProductsResult;
 }
 
 export function useProducts(filters: CatalogFilters, options: UseProductsOptions = {}) {
@@ -40,6 +42,8 @@ export function useProducts(filters: CatalogFilters, options: UseProductsOptions
   const { data, isLoading, isFetching, isError, error, isPlaceholderData } = useQuery<ProductsResult>({
     queryKey,
     placeholderData: (prev) => prev,
+    initialData: options.initialData,
+    initialDataUpdatedAt: options.initialData ? 0 : undefined,
     queryFn: async () => {
       const params = new URLSearchParams();
       params.set('store_id', storeId);

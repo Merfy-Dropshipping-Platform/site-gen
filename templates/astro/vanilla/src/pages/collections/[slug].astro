@@ -6,6 +6,7 @@ import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import CatalogIsland from '../../components/react/CatalogIsland';
 import collectionsData from '../../data/collections.json';
+import productsData from '../../data/products.json';
 
 export function getStaticPaths() {
   const cols: any[] = Array.isArray(collectionsData) ? collectionsData : [];
@@ -40,7 +41,44 @@ const footerBlock = blocks.find((b: any) => b.type === 'Footer');
 const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
 const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 
-const title = collection?.title ?? slug ?? 'Коллекция';
+const title = collection?.title ?? collection?.name ?? slug ?? 'Коллекция';
+
+const apiUrl = ((meta as any)?.apiUrl as string) ?? 'https://gateway.merfy.ru/api';
+const shopId = ((meta as any)?.shopId as string) ?? '';
+const toKopecks = (v: unknown): number => {
+  const n = typeof v === 'string' ? parseFloat(v) : typeof v === 'number' ? v : 0;
+  return Number.isFinite(n) ? Math.round(n * 100) : 0;
+};
+const collectionId: string | undefined = (collection as any)?.id;
+const collectionProductIds: Set<string> = new Set(
+  (collection as any)?.productIds && Array.isArray((collection as any).productIds)
+    ? ((collection as any).productIds as string[])
+    : [],
+);
+const filteredProducts = (productsData as any[]).filter((p: any) => {
+  if (collectionProductIds.size > 0) return collectionProductIds.has(p.id);
+  return true;
+});
+const initialProducts = filteredProducts.slice(0, 8).map((p: any) => ({
+  id: p.id,
+  handle: p.handle ?? p.slug ?? p.id,
+  title: p.title ?? p.name,
+  description: p.description,
+  price: p.basePrice != null ? toKopecks(p.basePrice) : toKopecks(p.price),
+  compareAtPrice: p.compareAtPrice ? toKopecks(p.compareAtPrice) : undefined,
+  images: ((p.images ?? []) as any[]).map((img) =>
+    typeof img === 'string' ? { url: img } : img,
+  ),
+  variants: p.variants ?? p.variantCombinations ?? [],
+}));
+const initialCollections = (collectionsData as any[]).map((c: any) => ({
+  id: c.id,
+  handle: c.handle ?? c.slug ?? c.id,
+  title: c.title ?? c.name,
+  description: c.description,
+  image: c.image ? (typeof c.image === 'string' ? { url: c.image } : c.image) : undefined,
+}));
+const initialTotal = filteredProducts.length;
 ---
 <BaseLayout title={`${title} — ${meta?.title ?? 'Мой сайт'}`} description={collection?.description ?? meta?.description}>
   <Header {...headerProps} />
@@ -61,7 +99,17 @@ const title = collection?.title ?? slug ?? 'Коллекция';
         )}
       </div>
 
-    <CatalogIsland client:load collectionSlug={slug} showCollectionFilter={false} />
+    <CatalogIsland
+      client:load
+      collectionSlug={slug}
+      showCollectionFilter={false}
+      shopId={shopId}
+      apiBase={apiUrl}
+      initialProducts={initialProducts}
+      initialTotal={initialTotal}
+      initialCollections={initialCollections}
+      initialCollectionId={collectionId}
+    />
   </main>
 
   <Footer {...footerProps} />

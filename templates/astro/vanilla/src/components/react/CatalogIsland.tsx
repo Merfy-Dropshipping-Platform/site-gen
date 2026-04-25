@@ -329,24 +329,62 @@ function BottomBar({ currentPage, totalPages, total, isLoading, onLoadMore }: Bo
 interface CatalogInnerProps {
   collectionSlug?: string;
   showCollectionFilter?: boolean;
+  initialProducts?: Product[];
+  initialTotal?: number;
+  initialCollections?: { id: string; handle: string; title?: string; name?: string }[];
+  initialCollectionId?: string;
 }
 
-function CatalogInner({ collectionSlug, showCollectionFilter = true }: CatalogInnerProps) {
+function CatalogInner({
+  collectionSlug,
+  showCollectionFilter = true,
+  initialProducts = [],
+  initialTotal = 0,
+  initialCollections = [],
+  initialCollectionId,
+}: CatalogInnerProps) {
   const { filters, setFilters, resetFilters } = useUrlFilters();
-  const { collections } = useCollections();
+  const { collections: liveCollections } = useCollections();
+  const collections = liveCollections.length > 0 ? liveCollections : initialCollections as any;
   const { data: filtersData } = useFilters(filters);
 
   // Resolve collectionSlug -> collectionId
   useEffect(() => {
+    if (initialCollectionId && !filters.collectionId) {
+      setFilters({ collectionId: initialCollectionId });
+      return;
+    }
     if (collectionSlug && collections.length > 0 && !filters.collectionId) {
-      const found = collections.find((c) => c.handle === collectionSlug);
+      const found = collections.find((c: any) => c.handle === collectionSlug || c.slug === collectionSlug);
       if (found) {
         setFilters({ collectionId: found.id });
       }
     }
-  }, [collectionSlug, collections, filters.collectionId, setFilters]);
+  }, [collectionSlug, collections, filters.collectionId, initialCollectionId, setFilters]);
 
-  const { products, total, pagination, isLoading, isFetching, isError, error } = useProducts(filters);
+  const isDefaultFilters = filters.page === 1
+    && (filters.sort === 'newest' || filters.sort === undefined)
+    && filters.priceMin === undefined
+    && filters.priceMax === undefined
+    && (!filters.availability || filters.availability === 'all')
+    && (!filters.variantFilters || Object.keys(filters.variantFilters).length === 0)
+    && (initialCollectionId ? filters.collectionId === initialCollectionId : !filters.collectionId);
+
+  const { products: liveProducts, total: liveTotal, pagination, isLoading, isFetching, isError, error } = useProducts(filters, {
+    initialData: isDefaultFilters && initialProducts.length > 0
+      ? {
+          products: initialProducts,
+          total: initialTotal,
+          pagination: { page: 1, limit: PAGE_SIZE, total: initialTotal, totalPages: Math.ceil(initialTotal / PAGE_SIZE) },
+        }
+      : undefined,
+  });
+
+  // Until React Query has fetched fresh data and we're on default filters,
+  // show the build-time products so the first paint isn't a full skeleton.
+  const useInitial = isDefaultFilters && liveProducts.length === 0 && initialProducts.length > 0;
+  const products = useInitial ? initialProducts : liveProducts;
+  const total = useInitial ? initialTotal : liveTotal;
   const variantGroups = filtersData?.variantGroups ?? [];
 
   const hasActiveFilters = !!(
@@ -367,7 +405,9 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true }: CatalogIn
 
   // Product grid content
   const renderProductGrid = () => {
-    if (isLoading && products.length === 0) {
+    // Skeleton only when we genuinely have nothing to show — i.e. live API
+    // is loading AND there's no build-time fallback either.
+    if (isLoading && products.length === 0 && !useInitial) {
       return (
         <div className="flex-1">
           <div className="grid grid-cols-1 sm:grid-cols-2" style={{ columnGap: 16, rowGap: 40 }}>
@@ -498,19 +538,46 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true }: CatalogIn
 export interface CatalogIslandProps {
   collectionSlug?: string;
   showCollectionFilter?: boolean;
+  /** Server-side props from Astro page — make first paint instant. */
+  shopId?: string;
+  apiBase?: string;
+  initialProducts?: Product[];
+  initialTotal?: number;
+  initialCollections?: { id: string; handle: string; title?: string; name?: string }[];
+  initialCollectionId?: string;
 }
 
 export default function CatalogIsland(props: CatalogIslandProps) {
-  const config = typeof window !== 'undefined' && (window as any).__MERFY_CONFIG__
+  // Prefer Astro-passed props (works on SSR + first paint); fall back to
+  // window.__MERFY_CONFIG__ for backwards compatibility.
+  const propConfig = props.shopId && props.apiBase
+    ? { apiBase: props.apiBase, storeId: props.shopId }
+    : null;
+  const winConfig = typeof window !== 'undefined' && (window as any).__MERFY_CONFIG__
     ? {
         apiBase: (window as any).__MERFY_CONFIG__.apiUrl || 'https://gateway.merfy.ru/api',
         storeId: (window as any).__MERFY_CONFIG__.shopId || '',
-        currency: 'RUB',
-        locale: 'ru-RU',
       }
+    : null;
+  const resolved = propConfig ?? winConfig;
+  const config = resolved
+    ? { ...resolved, currency: 'RUB', locale: 'ru-RU' }
     : { apiBase: '', storeId: '', currency: 'RUB', locale: 'ru-RU' };
 
   if (!config.storeId) {
+    // No storeId at all — show build-time products if available, otherwise
+    // fall back to the loader skeleton.
+    if (props.initialProducts && props.initialProducts.length > 0) {
+      return (
+        <div className="flex-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2" style={{ columnGap: 16, rowGap: 40 }}>
+            {props.initialProducts.slice(0, 8).map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </div>
+      );
+    }
     return <SkeletonGrid />;
   }
 

@@ -3,6 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import data from '../data/data.json';
 import siteConfig from '../data/site-config.json';
 import products from '../data/products.json';
+import collections from '../data/collections.json';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import PopularProducts from '../components/PopularProducts.astro';
@@ -15,6 +16,38 @@ const footerBlock = blocks.find((b: any) => b.type === 'Footer');
 const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
 const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 const branding = (siteConfig as any)?.branding ?? {};
+
+// Build-time data → initialProducts/initialCollections so the CatalogIsland
+// can render real product cards on first paint instead of a full-page
+// skeleton while React Query is fetching.
+const apiUrl = ((meta as any)?.apiUrl as string) ?? 'https://gateway.merfy.ru/api';
+const shopId = ((meta as any)?.shopId as string) ?? '';
+const toKopecks = (v: unknown): number => {
+  const n = typeof v === 'string' ? parseFloat(v) : typeof v === 'number' ? v : 0;
+  return Number.isFinite(n) ? Math.round(n * 100) : 0;
+};
+const initialProducts = (products as any[])
+  .slice(0, 8)
+  .map((p: any) => ({
+    id: p.id,
+    handle: p.handle ?? p.slug ?? p.id,
+    title: p.title ?? p.name,
+    description: p.description,
+    price: p.basePrice != null ? toKopecks(p.basePrice) : toKopecks(p.price),
+    compareAtPrice: p.compareAtPrice ? toKopecks(p.compareAtPrice) : undefined,
+    images: ((p.images ?? []) as any[]).map((img) =>
+      typeof img === 'string' ? { url: img } : img,
+    ),
+    variants: p.variants ?? p.variantCombinations ?? [],
+  }));
+const initialCollections = (collections as any[]).map((c: any) => ({
+  id: c.id,
+  handle: c.handle ?? c.slug ?? c.id,
+  title: c.title ?? c.name,
+  description: c.description,
+  image: c.image ? (typeof c.image === 'string' ? { url: c.image } : c.image) : undefined,
+}));
+const initialTotal = (products as any[]).length;
 ---
 <BaseLayout title={`Каталог — ${meta?.title ?? 'Мой сайт'}`} description={meta?.description}>
   <div class="catalog-page flex flex-col flex-1" style="background: #EEEEEE; color: rgb(var(--color-foreground));">
@@ -29,7 +62,14 @@ const branding = (siteConfig as any)?.branding ?? {};
         >КАТАЛОГ</h1>
       </div>
 
-      <CatalogIsland client:only="react" />
+      <CatalogIsland
+        client:load
+        shopId={shopId}
+        apiBase={apiUrl}
+        initialProducts={initialProducts}
+        initialTotal={initialTotal}
+        initialCollections={initialCollections}
+      />
 
       <noscript>
         <PopularProducts products={products} />

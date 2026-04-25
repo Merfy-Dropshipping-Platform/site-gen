@@ -9,7 +9,7 @@ interface Props extends SlideshowProps {
 const raw = Astro.props as Record<string, unknown>;
 const {
   id,
-  slides,
+  slides = [],
   interval = 5,
   autoplay = true,
   padding,
@@ -40,6 +40,7 @@ function normalizeSlide(slide: any) {
   const buttonLink = buttonObj?.link ?? slide.ctaUrl;
   const image = slide.image || slide.imageUrl;
   return {
+    id: slide.id,
     headingText,
     headingSize,
     textContent,
@@ -54,43 +55,101 @@ function normalizeSlide(slide: any) {
   };
 }
 
-const firstSlide = slides?.[0];
-const firstNormalized = firstSlide ? normalizeSlide(firstSlide) : null;
-const slideAlignClass =
-  firstNormalized?.alignment === 'left' ? 'text-left' :
-  firstNormalized?.alignment === 'right' ? 'text-right' :
-  firstNormalized?.alignment === 'center' ? 'text-center' : '';
-const slideSchemeClass = firstNormalized?.colorScheme
-  ? `color-scheme-${String(firstNormalized.colorScheme).replace('scheme-', '')}`
-  : '';
+const allSlides = (slides ?? []).map(normalizeSlide);
+const pagination = typeof raw.pagination === 'string' ? raw.pagination : 'numbers';
 ---
 <section
   class:list={[C.root, schemeClass]}
   data-puck-component-id={id}
   data-autoplay={String(normalizedAutoplay)}
   data-interval={interval}
+  data-pagination={pagination}
   style={paddingStyle}
 >
   <div class={C.container}>
-    {firstSlide && firstNormalized && (
-      <div
-        class:list={[C.slide, slideAlignClass, slideSchemeClass]}
-        data-slide-id={firstSlide.id}
-        data-puck-subsection-parent={id}
-        data-puck-subsection-index="0"
-        data-puck-subsection-field="slides"
-      >
-        {firstNormalized.image && (
-          <img src={firstNormalized.image} alt={firstNormalized.headingText ?? ''} class={C.image} />
-        )}
-        <div class={C.content}>
-          {firstNormalized.headingText && <h2 class={C.heading}>{firstNormalized.headingText}</h2>}
-          {firstNormalized.textContent && <p class={C.subtitle}>{firstNormalized.textContent}</p>}
-          {firstNormalized.buttonText && (
-            <a href={firstNormalized.buttonLink ?? '#'} class={C.ctaButton}>{firstNormalized.buttonText}</a>
-          )}
+    <div class="relative" data-merfy-slideshow>
+      {allSlides.map((slide, idx) => {
+        const slideAlignClass =
+          slide.alignment === 'left' ? 'text-left' :
+          slide.alignment === 'right' ? 'text-right' :
+          slide.alignment === 'center' ? 'text-center' : '';
+        const slideSchemeClass = slide.colorScheme
+          ? `color-scheme-${String(slide.colorScheme).replace('scheme-', '')}`
+          : '';
+        return (
+          <div
+            class:list={[C.slide, slideAlignClass, slideSchemeClass, idx === 0 ? '' : 'hidden']}
+            data-slide-id={slide.id}
+            data-slide-index={idx}
+            data-puck-subsection-parent={id}
+            data-puck-subsection-index={idx}
+            data-puck-subsection-field="slides"
+          >
+            {slide.image && (
+              <img src={slide.image} alt={slide.headingText ?? ''} class={C.image} />
+            )}
+            <div class={C.content}>
+              {slide.headingText && <h2 class={C.heading}>{slide.headingText}</h2>}
+              {slide.textContent && <p class={C.subtitle}>{slide.textContent}</p>}
+              {slide.buttonText && (
+                <a href={slide.buttonLink ?? '#'} class={C.ctaButton}>{slide.buttonText}</a>
+              )}
+            </div>
+          </div>
+        );
+      })}
+      {allSlides.length > 1 && pagination !== 'none' && (
+        <div class="flex justify-center gap-2 mt-4" data-merfy-slideshow-pagination>
+          {allSlides.map((_, idx) => (
+            <button
+              type="button"
+              class:list={[
+                'transition-opacity',
+                pagination === 'dots' ? 'w-2 h-2 rounded-full bg-current' :
+                pagination === 'lines' ? 'w-8 h-1 bg-current' :
+                'min-w-[24px] h-6 px-2 text-xs',
+                idx === 0 ? 'opacity-100' : 'opacity-40',
+              ]}
+              data-slide-target={idx}
+              aria-label={`Слайд ${idx + 1}`}
+            >{pagination === 'numbers' ? idx + 1 : ''}</button>
+          ))}
         </div>
-      </div>
-    )}
+      )}
+    </div>
   </div>
 </section>
+
+<script>
+  // Pupa parity: simple carousel rotation (vanilla JS, no React island).
+  document.querySelectorAll<HTMLElement>('[data-merfy-slideshow]').forEach((root) => {
+    const slides = root.querySelectorAll<HTMLElement>('[data-slide-index]');
+    const pagination = root.querySelectorAll<HTMLElement>('[data-slide-target]');
+    if (slides.length <= 1) return;
+
+    const section = root.closest('section');
+    const autoplay = section?.dataset.autoplay === 'true';
+    const intervalSec = parseInt(section?.dataset.interval || '5', 10);
+
+    let current = 0;
+    const show = (idx: number) => {
+      slides.forEach((s, i) => s.classList.toggle('hidden', i !== idx));
+      pagination.forEach((p, i) => {
+        p.classList.toggle('opacity-100', i === idx);
+        p.classList.toggle('opacity-40', i !== idx);
+      });
+      current = idx;
+    };
+
+    pagination.forEach((p) => {
+      p.addEventListener('click', () => {
+        const target = parseInt(p.dataset.slideTarget || '0', 10);
+        show(target);
+      });
+    });
+
+    if (autoplay) {
+      setInterval(() => show((current + 1) % slides.length), intervalSec * 1000);
+    }
+  });
+</script>

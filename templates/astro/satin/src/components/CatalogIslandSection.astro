@@ -1,0 +1,54 @@
+---
+// CatalogIslandSection — live-render Astro component for the Catalog Puck
+// block on Satin. Mounts the pupa-branch CatalogIsland (filter dropdowns +
+// product grid + pagination) inside the standard Satin section chrome.
+//
+// This file is NOT used by the constructor preview (which renders the
+// package-level packages/theme-satin/blocks/Catalog/Catalog.astro through
+// Astro's Container API and would crash on a `client:only="react"` import).
+// It IS the file that the SSG page generator wires up via satinRegistry
+// (Catalog → CatalogIslandSection.astro), so live builds ship the React
+// island while the constructor uses a static placeholder.
+import CatalogIsland from './react/CatalogIsland';
+
+interface Props {
+  id?: string;
+  collectionSlug?: string;
+  showCollectionFilter?: boolean | string;
+  padding?: { top?: number; bottom?: number };
+  colorScheme?: string;
+}
+
+const {
+  id,
+  collectionSlug,
+  showCollectionFilter = 'true',
+  padding,
+  colorScheme,
+} = Astro.props as Props;
+
+const showColl =
+  showCollectionFilter === true ||
+  showCollectionFilter === 'true' ||
+  showCollectionFilter === undefined;
+
+const paddingStyle = padding
+  ? `padding-top:${padding.top ?? 40}px; padding-bottom:${padding.bottom ?? 80}px;`
+  : 'padding-top:40px; padding-bottom:80px;';
+const schemeRaw = typeof colorScheme === 'string' ? colorScheme : undefined;
+const schemeClass = schemeRaw ? `color-scheme-${schemeRaw.replace('scheme-', '')}` : '';
+---
+<section
+  class:list={['relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))] catalog-page', schemeClass]}
+  data-puck-component-id={id}
+  data-block="catalog"
+  style={paddingStyle}
+>
+  <div class="w-full max-w-[var(--container-max-width)] mx-auto px-[40px]">
+    <CatalogIsland
+      client:only="react"
+      collectionSlug={collectionSlug}
+      showCollectionFilter={showColl}
+    />
+  </div>
+</section>

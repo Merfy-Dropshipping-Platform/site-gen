@@ -41,5 +41,9 @@ export const satinRegistry: Record<string, ComponentRegistryEntry> = {
   Product: staticComponent("Product", "Product.astro"),
   CartSection: staticComponent("CartSection", "CartSection.astro"),
   CheckoutSection: staticComponent("CheckoutSection", "CheckoutSection.astro"),
-  Catalog: staticComponent("Catalog", "Catalog.astro"),
+  // Catalog block — live-render via CatalogIslandSection.astro (mounts the
+  // pupa CatalogIsland React island). Package-level Catalog.astro stays a
+  // static placeholder for constructor preview (Astro Container API can't
+  // resolve client:only).
+  Catalog: staticComponent("Catalog", "CatalogIslandSection.astro"),
 };

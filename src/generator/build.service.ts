@@ -1105,35 +1105,44 @@ async function stageGenerate(
     );
   } else {
     // No registry provided (e.g. build triggered via queue consumer).
-    // Try loading from theme template on disk, fallback to hardcoded roseRegistry.
-    const registryPath = path.join(
-      process.cwd(),
-      "templates",
-      "astro",
-      ctx.templateId,
-      "src",
-      "components",
-      "registry.json",
-    );
-    try {
-      const raw = await fs.readFile(registryPath, "utf8");
-      const entries = JSON.parse(raw) as ThemeRegistryEntry[];
-      if (Array.isArray(entries) && entries.length > 0) {
-        registry = themeRegistryToGeneratorRegistry(entries, {});
-        logger.log(
-          `[generate] Loaded ${Object.keys(registry).length} registry entries from disk (${ctx.templateId})`,
-        );
-      } else {
+    // Resolution order: theme-specific registry by templateId → registry.json
+    // on disk → roseRegistry as last-resort fallback.
+    const themeReg = pickRegistryByTemplateId(ctx.templateId);
+    if (themeReg) {
+      registry = themeReg;
+      logger.log(
+        `[generate] Using ${ctx.templateId}-specific registry (${Object.keys(registry).length} entries)`,
+      );
+    } else {
+      const registryPath = path.join(
+        process.cwd(),
+        "templates",
+        "astro",
+        ctx.templateId,
+        "src",
+        "components",
+        "registry.json",
+      );
+      try {
+        const raw = await fs.readFile(registryPath, "utf8");
+        const entries = JSON.parse(raw) as ThemeRegistryEntry[];
+        if (Array.isArray(entries) && entries.length > 0) {
+          registry = themeRegistryToGeneratorRegistry(entries, {});
+          logger.log(
+            `[generate] Loaded ${Object.keys(registry).length} registry entries from disk (${ctx.templateId})`,
+          );
+        } else {
+          registry = roseRegistry;
+          logger.log(
+            `[generate] Empty registry.json on disk, using roseRegistry fallback (${Object.keys(registry).length} entries)`,
+          );
+        }
+      } catch {
         registry = roseRegistry;
         logger.log(
-          `[generate] Empty registry.json on disk, using roseRegistry fallback (${Object.keys(registry).length} entries)`,
+          `[generate] No registry.json on disk, using roseRegistry fallback (${Object.keys(registry).length} entries)`,
         );
       }
-    } catch {
-      registry = roseRegistry;
-      logger.log(
-        `[generate] No registry.json on disk, using roseRegistry fallback (${Object.keys(registry).length} entries)`,
-      );
     }
   }
 

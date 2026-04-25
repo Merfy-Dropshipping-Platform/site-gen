@@ -45,7 +45,29 @@ import {
 } from "./constructor-theme-bridge";
 import { S3StorageService } from "../storage/s3.service";
 import { roseRegistry, roseServerRegistry } from "./registries/rose";
-import { vanillaServerRegistry } from "./registries/vanilla";
+import { vanillaRegistry, vanillaServerRegistry } from "./registries/vanilla";
+import { satinRegistry } from "./registries/satin";
+import { fluxRegistry } from "./registries/flux";
+import { bloomRegistry } from "./registries/bloom";
+
+// Map theme template IDs to their registries so the queue-consumer build path
+// (which doesn't go through generator.service.ts) can pick the right Astro
+// component map. Includes versionless and `theme-1.0` form variants.
+const THEME_REGISTRIES: Record<string, Record<string, ComponentRegistryEntry>> = {
+  satin: satinRegistry,
+  flux: fluxRegistry,
+  bloom: bloomRegistry,
+  vanilla: vanillaRegistry,
+  rose: roseRegistry,
+};
+
+function pickRegistryByTemplateId(
+  templateId: string | undefined,
+): Record<string, ComponentRegistryEntry> | null {
+  if (!templateId) return null;
+  const bare = templateId.replace(/-\d[\d.a-z]*$/, "");
+  return THEME_REGISTRIES[bare] ?? null;
+}
 
 const logger = new Logger("BuildPipeline");
 
@@ -1163,9 +1185,39 @@ async function stageGenerate(
         continue;
       }
 
+      // Auto-inject Catalog block on /catalog page if missing — merchants
+      // who haven't added a Catalog block in the constructor still get a
+      // working catalog (filters + grid). Block is appended; merchant blocks
+      // (Header, hero teasers, etc.) above remain editable.
+      let pageContent = pageData.content as any[];
+      if (slug === "catalog") {
+        const hasCatalog = pageContent.some((b: any) => b?.type === "Catalog");
+        if (!hasCatalog) {
+          const lastFooterIdx = pageContent.findIndex(
+            (b: any) => b?.type === "Footer",
+          );
+          const catalogBlock = {
+            type: "Catalog",
+            props: { padding: { top: 40, bottom: 80 } },
+          };
+          if (lastFooterIdx === -1) {
+            pageContent = [...pageContent, catalogBlock];
+          } else {
+            pageContent = [
+              ...pageContent.slice(0, lastFooterIdx),
+              catalogBlock,
+              ...pageContent.slice(lastFooterIdx),
+            ];
+          }
+          logger.log(
+            `[generate] Auto-injected Catalog block into ${fileName} (none was present)`,
+          );
+        }
+      }
+
       pages.push({
         fileName,
-        data: { content: pageData.content as any[] },
+        data: { content: pageContent },
       });
     }
 

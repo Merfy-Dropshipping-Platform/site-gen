@@ -1,0 +1,53 @@
+---
+// Catalog block — wraps the React CatalogIsland (top-toolbar dropdowns +
+// 3-col grid + Show More) inside Bloom section chrome. Used by the
+// scaffold-builder componentMap for `Catalog` blocks on /catalog (or any
+// other page where the merchant adds it from the constructor).
+import CatalogIsland from './react/CatalogIsland';
+
+interface Props {
+  id?: string;
+  collectionSlug?: string;
+  showCollectionFilter?: boolean | 'true' | 'false';
+  showSidebar?: boolean | 'true' | 'false';
+  colorScheme?: string | number;
+  padding?: { top?: number; bottom?: number };
+}
+
+const { id, padding, colorScheme, collectionSlug } = Astro.props as Props;
+
+const top = padding?.top ?? 40;
+const bottom = padding?.bottom ?? 80;
+const schemeRaw =
+  typeof colorScheme === 'string'
+    ? colorScheme
+    : typeof colorScheme === 'number'
+      ? String(colorScheme)
+      : undefined;
+const schemeClass = schemeRaw
+  ? `color-scheme-${schemeRaw.replace(/^scheme-/, '')}`
+  : '';
+---
+<section
+  class:list={[
+    'relative w-full bg-[rgb(var(--color-background))] text-[rgb(var(--color-foreground))]',
+    schemeClass,
+  ]}
+  data-puck-component-id={id}
+  data-block="catalog"
+  style={`padding-top:${top}px; padding-bottom:${bottom}px;`}
+>
+  <div class="w-full max-w-[1320px] mx-auto px-[16px] sm:px-[24px] md:px-[32px] lg:px-[64px] xl:px-[96px] 2xl:px-[40px]">
+    <div class="mb-[40px]">
+      <h1
+        class="text-xl sm:text-2xl md:text-3xl lg:text-[32px] font-normal uppercase leading-[1.115] [font-family:var(--font-heading)]"
+        style="color: rgb(var(--color-foreground)); margin: 0;"
+      >КАТАЛОГ</h1>
+      <p
+        class="text-sm sm:text-base md:text-lg lg:text-xl xl:text-[20px] font-normal leading-[1.366] [font-family:var(--font-body)] mt-1 sm:mt-2"
+        style="color: rgb(var(--color-muted));"
+      >Здесь начинается персональный стиль</p>
+    </div>
+    <CatalogIsland client:only="react" collectionSlug={collectionSlug} />
+  </div>
+</section>

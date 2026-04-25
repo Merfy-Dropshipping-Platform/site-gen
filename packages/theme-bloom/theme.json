@@ -148,7 +148,13 @@
     "Collections": {},
     "Product": {},
     "Newsletter": {},
-    "ContactForm": {}
+    "ContactForm": {},
+    "Catalog": {
+      "override": {
+        "path": "./blocks/Catalog",
+        "reason": "Bloom Catalog mirrors Satin's top-toolbar dropdowns + 3-col grid + Show More layout (Figma 897:11521) but keeps Bloom font tokens (--font-heading=Urbanist, --font-body=Inter) and pink color schemes."
+      }
+    }
   },
 
   "features": {

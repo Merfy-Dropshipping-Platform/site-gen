@@ -2,66 +2,151 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import data from '../data/data.json';
 import siteConfig from '../data/site-config.json';
-import products from '../data/products.json';
+
+// Block components — bloom maps the 078 architecture's Puck blocks. Catalog is
+// rendered inline (mounts <CatalogIsland client:only="react" />) so the React
+// island ships in the live bundle. Other blocks render via componentMap.
 import Header from '../components/Header.astro';
+import Hero from '../components/Hero.astro';
 import Footer from '../components/Footer.astro';
 import PopularProducts from '../components/PopularProducts.astro';
+import Gallery from '../components/Gallery.astro';
+import TextBlock from '../components/TextBlock.astro';
+import MultiColumns from '../components/MultiColumns.astro';
+import MultiRows from '../components/MultiRows.astro';
+import Slideshow from '../components/Slideshow.astro';
+import Video from '../components/Video.astro';
+import ImageWithText from '../components/ImageWithText.astro';
+import ContactForm from '../components/ContactForm.astro';
+import PromoBanner from '../components/PromoBanner.astro';
+import Publications from '../components/Publications.astro';
+import CollapsibleSection from '../components/CollapsibleSection.astro';
+import Collections from '../components/Collections.astro';
+import Newsletter from '../components/Newsletter.astro';
+import Product from '../components/Product.astro';
 import CatalogIsland from '../components/react/CatalogIsland';
 
-const meta = data?.meta ?? {};
-const blocks = data?.content ?? [];
-const headerBlock = blocks.find((b: any) => b.type === 'Header');
-const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+// Resolve catalog page blocks from multi-page revision shape:
+//   data.pagesData['page-catalog'].content[]
+// Fallback: legacy single-page revision (data.content[]) for sites that
+// haven't migrated yet. If neither has a Catalog block, inject the catalog
+// inline under the legacy header so the page is never blank.
+const allPagesData = (data as any)?.pagesData ?? {};
+const catalogPageData =
+  allPagesData['page-catalog'] ??
+  allPagesData['catalog'] ??
+  null;
+
+const catalogBlocks: any[] = Array.isArray(catalogPageData?.content)
+  ? catalogPageData.content
+  : Array.isArray((data as any)?.content) && (data as any)?.currentPageId === 'page-catalog'
+  ? (data as any).content
+  : [];
+
+const meta = (data as any)?.meta ?? {};
+
+// Header / Footer chrome — prefer catalog page's own header/footer (Puck), fall
+// back to home-page header/footer (data.content), then to siteConfig.
+const homeBlocks: any[] = Array.isArray((data as any)?.content)
+  ? (data as any).content
+  : Array.isArray(allPagesData?.home?.content)
+  ? allPagesData.home.content
+  : [];
+
+const headerBlock =
+  catalogBlocks.find((b: any) => b?.type === 'Header') ??
+  homeBlocks.find((b: any) => b?.type === 'Header');
+const footerBlock =
+  catalogBlocks.find((b: any) => b?.type === 'Footer') ??
+  homeBlocks.find((b: any) => b?.type === 'Footer');
+
 const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
 const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
-const branding = (siteConfig as any)?.branding ?? {};
+
+// Content blocks — exclude Header/Footer (rendered as chrome).
+const contentBlocks = catalogBlocks.filter(
+  (b: any) => b?.type && b.type !== 'Header' && b.type !== 'Footer',
+);
+
+const componentMap: Record<string, any> = {
+  Hero,
+  PopularProducts,
+  Gallery,
+  MainText: TextBlock,
+  MultiColumns,
+  MultiRows,
+  Slideshow,
+  Video,
+  ImageWithText,
+  ContactForm,
+  PromoBanner,
+  Publications,
+  CollapsibleSection,
+  Collections,
+  Newsletter,
+  Product,
+  // Catalog is rendered inline below (not via componentMap) — see the mapper
+  // that mounts <CatalogIsland client:only="react" /> directly.
+};
+
+const hasCatalogBlock = contentBlocks.some((b: any) => b.type === 'Catalog');
+const pageTitle = (meta?.title && `Каталог — ${meta.title}`) || 'Каталог — Мой сайт';
 ---
-<BaseLayout title={`Каталог — ${meta?.title ?? 'Мой сайт'}`} description={meta?.description}>
+<BaseLayout title={pageTitle} description={meta?.description}>
   <div class="catalog-page flex flex-col flex-1" style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));">
     <Header {...headerProps} />
 
-    <main class="catalog-main flex-1 w-full max-w-[1320px] mx-auto py-8 sm:py-12 md:py-16 lg:py-20 xl:py-24">
-      <!-- Page title block -->
-      <div class="mb-8 sm:mb-10 md:mb-12 lg:mb-16 xl:mb-20">
-        <h1
-          class="text-xl sm:text-2xl md:text-3xl lg:text-[32px] font-normal uppercase leading-[1.115] font-heading"
-          style="color: rgb(var(--color-foreground)); margin: 0;"
-        >КАТАЛОГ</h1>
-        <p
-          class="text-sm sm:text-base md:text-lg lg:text-xl xl:text-[24px] font-normal leading-[1.366] font-body mt-1 sm:mt-2"
-          style="color: rgb(var(--color-muted));"
-        >Здесь начинается персональный стиль</p>
-      </div>
+    <main class="catalog-main flex-1 w-full">
+      {contentBlocks.map((block: any) => {
+        // Catalog block is rendered inline — mounts CatalogIsland (top-toolbar
+        // dropdowns + 3-col grid + Show More) inside Bloom section chrome.
+        if (block.type === 'Catalog') {
+          const props = block.props ?? {};
+          const padding = props.padding ?? { top: 40, bottom: 80 };
+          const schemeRaw = typeof props.colorScheme === 'string' ? props.colorScheme : undefined;
+          const schemeClass = schemeRaw ? `color-scheme-${schemeRaw.replace('scheme-', '')}` : '';
+          return (
+            <section
+              class:list={['relative w-full bg-[rgb(var(--color-background))] text-[rgb(var(--color-foreground))]', schemeClass]}
+              data-puck-component-id={props.id}
+              data-block="catalog"
+              style={`padding-top:${padding.top ?? 40}px; padding-bottom:${padding.bottom ?? 80}px;`}
+            >
+              <div class="w-full max-w-[1320px] mx-auto px-[16px] sm:px-[24px] md:px-[32px] lg:px-[64px] xl:px-[96px] 2xl:px-[40px]">
+                <div class="mb-[40px]">
+                  <h1 class="text-xl sm:text-2xl md:text-3xl lg:text-[32px] font-normal uppercase leading-[1.115] [font-family:var(--font-heading)]" style="color: rgb(var(--color-foreground)); margin: 0;">КАТАЛОГ</h1>
+                  <p class="text-sm sm:text-base md:text-lg lg:text-xl xl:text-[20px] font-normal leading-[1.366] [font-family:var(--font-body)] mt-1 sm:mt-2" style="color: rgb(var(--color-muted));">Здесь начинается персональный стиль</p>
+                </div>
+                <CatalogIsland
+                  client:only="react"
+                  collectionSlug={props.collectionSlug}
+                />
+              </div>
+            </section>
+          );
+        }
+        const Component = componentMap[block.type];
+        if (!Component) {
+          return null;
+        }
+        return <Component {...(block.props ?? {})} />;
+      })}
 
-      <CatalogIsland client:only="react" />
-
-      <noscript>
-        <PopularProducts products={products} />
-      </noscript>
+      {/* Backwards compatibility: revisions without a Catalog Puck block still
+          need a working catalog page. Fall back to the historical inline
+          layout (heading + CatalogIsland) only when no Catalog block was
+          rendered above. */}
+      {!hasCatalogBlock && (
+        <div class="w-full max-w-[1320px] mx-auto px-[16px] sm:px-[24px] md:px-[32px] lg:px-[64px] xl:px-[96px] 2xl:px-[40px] py-8 sm:py-12 md:py-16 lg:py-20 xl:py-24">
+          <div class="mb-8 sm:mb-10 md:mb-12 lg:mb-16 xl:mb-20">
+            <h1 class="text-xl sm:text-2xl md:text-3xl lg:text-[32px] font-normal uppercase leading-[1.115] [font-family:var(--font-heading)]" style="color: rgb(var(--color-foreground)); margin: 0;">КАТАЛОГ</h1>
+            <p class="text-sm sm:text-base md:text-lg lg:text-xl xl:text-[20px] font-normal leading-[1.366] [font-family:var(--font-body)] mt-1 sm:mt-2" style="color: rgb(var(--color-muted));">Здесь начинается персональный стиль</p>
+          </div>
+          <CatalogIsland client:only="react" />
+        </div>
+      )}
     </main>
 
     <Footer {...footerProps} />
   </div>
 </BaseLayout>
-
-<style>
-  .catalog-main {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-  @media (min-width: 640px) {
-    .catalog-main { padding-left: 24px; padding-right: 24px; }
-  }
-  @media (min-width: 768px) {
-    .catalog-main { padding-left: 32px; padding-right: 32px; }
-  }
-  @media (min-width: 1024px) {
-    .catalog-main { padding-left: 64px; padding-right: 64px; }
-  }
-  @media (min-width: 1280px) {
-    .catalog-main { padding-left: 96px; padding-right: 96px; }
-  }
-  @media (min-width: 1536px) {
-    .catalog-main { padding-left: 300px; padding-right: 300px; }
-  }
-</style>

@@ -10,32 +10,45 @@ import { ProductCard } from './ProductCard';
 // --- Filter Dropdown wrapper (per Figma 897:11521 toolbar) ---
 
 interface FilterDropdownProps {
+  id: string;
   label: string;
+  openId: string | null;
+  onToggle: (id: string | null) => void;
   active?: boolean;
   width?: number;
   align?: 'left' | 'right';
   children: React.ReactNode;
 }
 
-function FilterDropdown({ label, active = false, width = 180, align = 'left', children }: FilterDropdownProps) {
-  const [open, setOpen] = useState(false);
+function FilterDropdown({
+  id,
+  label,
+  openId,
+  onToggle,
+  active = false,
+  width = 180,
+  align = 'left',
+  children,
+}: FilterDropdownProps) {
+  const open = openId === id;
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!open) return;
     const handleClickOutside = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
+        onToggle(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [open, onToggle]);
 
   return (
     <div ref={ref} className="relative">
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => onToggle(open ? null : id)}
         className="flex items-center font-[family-name:var(--font-body)] uppercase"
         style={{
           fontSize: 16,
@@ -138,41 +151,42 @@ function PriceInputsRow({
 }) {
   const color = active ? 'rgb(var(--color-foreground))' : 'rgb(var(--color-muted))';
   return (
-    <div
-      className="flex items-center justify-between"
+    <label
+      className="flex items-center cursor-text"
       style={{
         height: 32,
+        gap: 8,
         borderBottom: `1px solid ${color}`,
       }}
     >
       <span
-        className="font-[family-name:var(--font-body)] uppercase"
+        className="font-[family-name:var(--font-body)] uppercase shrink-0"
         style={{ fontSize: 14, color }}
       >
         {label}
       </span>
-      <div className="flex items-center" style={{ gap: 4 }}>
-        <input
-          type="text"
-          inputMode="numeric"
-          value={value}
-          onChange={(e) => onChange(e.target.value.replace(/[^0-9]/g, ''))}
-          className="font-[family-name:var(--font-body)] text-right"
-          style={{
-            width: 70,
-            fontSize: 14,
-            color,
-            border: 'none',
-            outline: 'none',
-            backgroundColor: 'transparent',
-            padding: 0,
-          }}
-        />
-        <span className="font-[family-name:var(--font-body)]" style={{ fontSize: 14, color }}>
-          ₽
-        </span>
-      </div>
-    </div>
+      <input
+        type="text"
+        inputMode="numeric"
+        value={value}
+        onChange={(e) => onChange(e.target.value.replace(/[^0-9]/g, ''))}
+        className="font-[family-name:var(--font-body)] text-right flex-1 min-w-0"
+        style={{
+          fontSize: 14,
+          color,
+          border: 'none',
+          outline: 'none',
+          backgroundColor: 'transparent',
+          padding: 0,
+        }}
+      />
+      <span
+        className="font-[family-name:var(--font-body)] shrink-0"
+        style={{ fontSize: 14, color }}
+      >
+        ₽
+      </span>
+    </label>
   );
 }
 
@@ -270,17 +284,38 @@ const SORT_OPTIONS = [
   { value: 'price_desc', label: 'Сначала дорогие' },
 ] as const;
 
-function SortDropdownInline({ value, onChange }: { value: string; onChange: (s: string) => void }) {
+function SortDropdownInline({
+  value,
+  onChange,
+  openId,
+  onToggle,
+}: {
+  value: string;
+  onChange: (s: string) => void;
+  openId: string | null;
+  onToggle: (id: string | null) => void;
+}) {
   const activeLabel = SORT_OPTIONS.find((o) => o.value === value)?.label ?? 'По популярности';
 
   return (
-    <FilterDropdown label={activeLabel} active align="right" width={180}>
+    <FilterDropdown
+      id="sort"
+      label={activeLabel}
+      active
+      align="right"
+      width={180}
+      openId={openId}
+      onToggle={onToggle}
+    >
       <div className="flex flex-col" style={{ gap: 8 }}>
         {SORT_OPTIONS.map((opt) => (
           <button
             key={opt.value}
             type="button"
-            onClick={() => onChange(opt.value)}
+            onClick={() => {
+              onChange(opt.value);
+              onToggle(null);
+            }}
             className="text-left font-[family-name:var(--font-body)] uppercase"
             style={{
               fontSize: 14,
@@ -405,6 +440,9 @@ function CatalogInner({ collectionSlug }: CatalogInnerProps) {
     setFilters({ page: filters.page + 1 });
   };
 
+  // Single shared "which dropdown is open" state — opening one closes others.
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+
   // --- Render: Toolbar (Figma 897:11947) ---
   const renderToolbar = () => (
     <div
@@ -413,7 +451,10 @@ function CatalogInner({ collectionSlug }: CatalogInnerProps) {
     >
       <div className="flex flex-wrap items-end" style={{ gap: 12 }}>
         <FilterDropdown
+          id="availability"
           label="Наличие"
+          openId={openDropdownId}
+          onToggle={setOpenDropdownId}
           active={!!filters.availability && filters.availability !== 'all'}
         >
           <AvailabilityList
@@ -423,7 +464,10 @@ function CatalogInner({ collectionSlug }: CatalogInnerProps) {
         </FilterDropdown>
 
         <FilterDropdown
+          id="price"
           label="Стоимость"
+          openId={openDropdownId}
+          onToggle={setOpenDropdownId}
           active={filters.priceMin !== undefined || filters.priceMax !== undefined}
         >
           <PriceInputs
@@ -434,7 +478,13 @@ function CatalogInner({ collectionSlug }: CatalogInnerProps) {
         </FilterDropdown>
 
         {colorGroup && (
-          <FilterDropdown label="Цвет" active={!!colorSelected}>
+          <FilterDropdown
+            id="color"
+            label="Цвет"
+            openId={openDropdownId}
+            onToggle={setOpenDropdownId}
+            active={!!colorSelected}
+          >
             <ColorList
               colors={colorGroup.values}
               selected={colorSelected}
@@ -457,6 +507,8 @@ function CatalogInner({ collectionSlug }: CatalogInnerProps) {
       <SortDropdownInline
         value={filters.sort}
         onChange={(sort) => setFilters({ sort: sort as CatalogFilters['sort'] })}
+        openId={openDropdownId}
+        onToggle={setOpenDropdownId}
       />
     </div>
   );

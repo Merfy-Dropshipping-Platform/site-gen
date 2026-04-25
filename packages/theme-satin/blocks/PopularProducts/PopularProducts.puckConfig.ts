@@ -119,7 +119,11 @@ export const PopularProductsPuckConfig: BlockPuckConfig<PopularProductsProps> = 
             { label: 'Нет', value: 'false' },
           ],
         },
-        buttonText: { type: 'text', label: 'Текст кнопки' },
+        buttonText: {
+          type: 'text',
+          label: 'Текст кнопки',
+          visibleWhen: { field: 'quickAdd', equals: 'true' },
+        },
       },
     },
     containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },

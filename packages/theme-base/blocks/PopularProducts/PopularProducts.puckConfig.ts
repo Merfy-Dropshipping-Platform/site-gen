@@ -120,7 +120,12 @@ export const PopularProductsPuckConfig: BlockPuckConfig<PopularProductsProps> = 
             { label: 'Нет', value: 'false' },
           ],
         },
-        buttonText: { type: 'text', label: 'Текст кнопки' },
+        buttonText: {
+          type: 'text',
+          label: 'Текст кнопки',
+          // Pupa parity: показывать только когда quickAdd='true'.
+          visibleWhen: { field: 'quickAdd', equals: 'true' },
+        },
       },
     },
     containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },

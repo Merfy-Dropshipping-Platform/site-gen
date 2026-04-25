@@ -289,6 +289,57 @@ const PREVIEW_NAV_AGENT_INLINE = `
   var TARGET = '*';
   function post(msg) { try { parent.postMessage(msg, TARGET); } catch (e) {} }
 
+  // Pupa parity: hover/selected outlines for sections и подсекций. CSS
+  // инжектируется в head iframe, JS toggle data-puck-*-hover/selected на
+  // mouseover/mouseleave/click. Parent посылает set-selection при изменении
+  // Puck itemSelector / selectedArrayIndex.
+  var STYLE_ID = '__merfy_preview_overlay_styles';
+  function injectStyles() {
+    if (document.getElementById(STYLE_ID)) return;
+    var s = document.createElement('style');
+    s.id = STYLE_ID;
+    s.textContent = [
+      '[data-puck-component-id]{position:relative}',
+      '[data-puck-section-hover="true"]{outline:2px dashed #71C0FF !important;outline-offset:-2px;z-index:1}',
+      '[data-puck-section-selected="true"]{outline:2px solid #71C0FF !important;outline-offset:-2px;z-index:2}',
+      '[data-puck-subsection-parent]{position:relative;cursor:pointer}',
+      '[data-puck-subsection-hover="true"]{outline:2px dashed #71C0FF !important;outline-offset:2px;z-index:3}',
+      '[data-puck-subsection-selected="true"]{outline:2px solid #71C0FF !important;outline-offset:2px;z-index:4}'
+    ].join('');
+    document.head.appendChild(s);
+  }
+  injectStyles();
+
+  function clearAttr(attr) {
+    var els = document.querySelectorAll('[' + attr + ']');
+    for (var i = 0; i < els.length; i++) els[i].removeAttribute(attr);
+  }
+
+  // Hover handling
+  var lastSection = null;
+  var lastSubsection = null;
+  document.addEventListener('mouseover', function (e) {
+    var t = e.target;
+    if (!t || !t.closest) return;
+    var sec = t.closest('[data-puck-component-id]');
+    if (sec !== lastSection) {
+      if (lastSection) lastSection.removeAttribute('data-puck-section-hover');
+      if (sec) sec.setAttribute('data-puck-section-hover', 'true');
+      lastSection = sec;
+    }
+    var sub = t.closest('[data-puck-subsection-parent]');
+    if (sub !== lastSubsection) {
+      if (lastSubsection) lastSubsection.removeAttribute('data-puck-subsection-hover');
+      if (sub) sub.setAttribute('data-puck-subsection-hover', 'true');
+      lastSubsection = sub;
+    }
+  }, true);
+  document.addEventListener('mouseleave', function () {
+    if (lastSection) lastSection.removeAttribute('data-puck-section-hover');
+    if (lastSubsection) lastSubsection.removeAttribute('data-puck-subsection-hover');
+    lastSection = null; lastSubsection = null;
+  });
+
   // Intercept in-document navigation so the parent can swap pages without a
   // full iframe reload (preserves editor state).
   document.addEventListener('click', function (e) {
@@ -300,6 +351,22 @@ const PREVIEW_NAV_AGENT_INLINE = `
         post({ type: 'navigate', path: href });
         return;
       }
+      // External / mailto / unknown — block, no navigation.
+      e.preventDefault();
+      return;
+    }
+    // Subsection click (priority over section): heading/text/button/array-item.
+    var sub = e.target && e.target.closest ? e.target.closest('[data-puck-subsection-parent]') : null;
+    if (sub) {
+      e.stopPropagation();
+      var parentId = sub.getAttribute('data-puck-subsection-parent');
+      var indexStr = sub.getAttribute('data-puck-subsection-index');
+      var field = sub.getAttribute('data-puck-subsection-field');
+      var idx = parseInt(indexStr || '', 10);
+      if (parentId && !isNaN(idx)) {
+        post({ type: 'select-subsection', parentId: parentId, index: idx, field: field || null });
+      }
+      return;
     }
     var block = e.target && e.target.closest ? e.target.closest('[data-puck-component-id]') : null;
     if (block) {
@@ -316,10 +383,27 @@ const PREVIEW_NAV_AGENT_INLINE = `
     post({ type: 'form-submit-blocked', formId: id });
   }, true);
 
-  // Parent → iframe: currently just logs; Phase 2 will apply updates live.
+  // Parent → iframe: apply selection state (section + optional subsection).
   window.addEventListener('message', function (ev) {
     if (!ev.data || typeof ev.data !== 'object') return;
-    // Accept init from any origin (parent sets TARGET on its side).
+    if (ev.data.type === 'set-selection') {
+      clearAttr('data-puck-section-selected');
+      clearAttr('data-puck-subsection-selected');
+      var sectionId = ev.data.sectionId;
+      var subParent = ev.data.subsectionParentId;
+      var subIndex = ev.data.subsectionIndex;
+      if (sectionId) {
+        var sectionEl = document.querySelector('[data-puck-component-id="' + sectionId + '"]');
+        if (sectionEl) sectionEl.setAttribute('data-puck-section-selected', 'true');
+      }
+      if (subParent && (typeof subIndex === 'number' || typeof subIndex === 'string')) {
+        var subEl = document.querySelector('[data-puck-subsection-parent="' + subParent + '"][data-puck-subsection-index="' + subIndex + '"]');
+        if (subEl) {
+          subEl.setAttribute('data-puck-subsection-selected', 'true');
+          subEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }
   });
 
   // Signal readiness so the parent can send 'init'.

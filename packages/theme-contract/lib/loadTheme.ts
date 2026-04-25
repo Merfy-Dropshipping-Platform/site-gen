@@ -1,6 +1,7 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
-import type { ThemeManifest, ThemeExport, ComponentRegistryEntry } from '../types.js';
+import type { ThemeManifest, ThemeExport, ComponentRegistryEntry, ValidationResult } from '../types.js';
+import { validateTheme } from './validateTheme.js';
 
 /**
  * Checks if a file or directory exists at the given path.
@@ -133,4 +134,34 @@ export async function loadTheme(themePath: string): Promise<ThemeExport> {
     layouts,
     pages,
   };
+}
+
+/** Result of loadThemeWithValidation */
+export interface LoadThemeResult {
+  theme: ThemeExport | null;
+  validation: ValidationResult;
+}
+
+/**
+ * Loads a theme with validation. Runs validateTheme() first, then loads
+ * the theme data only if validation passes.
+ *
+ * - If validation fails: returns { theme: null, validation: { valid: false, errors: [...] } }
+ * - If validation passes: returns { theme: ThemeExport, validation: { valid: true } }
+ *
+ * @param themePath - Absolute path to the theme directory
+ * @returns LoadThemeResult with theme (or null) and validation details
+ */
+export async function loadThemeWithValidation(themePath: string): Promise<LoadThemeResult> {
+  // Run validation first
+  const validation = await validateTheme(themePath);
+
+  if (!validation.valid) {
+    return { theme: null, validation };
+  }
+
+  // Validation passed, load the theme
+  const theme = await loadTheme(themePath);
+
+  return { theme, validation };
 }

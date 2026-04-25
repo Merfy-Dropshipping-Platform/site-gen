@@ -1,22 +1,6 @@
-import type { ColorScheme } from '../types.js';
+import type { ColorScheme, SettingEntry, SettingsGroup } from '../types.js';
 
-/** A single setting entry from the settings_schema */
-export interface SettingEntry {
-  id: string;
-  type: 'color' | 'font' | 'range' | 'select' | 'text' | 'checkbox';
-  label: string;
-  default?: unknown;
-  unit?: string;
-  min?: number;
-  max?: number;
-  enum?: string[];
-}
-
-/** A group of settings from settings_schema */
-export interface SettingsGroup {
-  name: string;
-  settings: SettingEntry[];
-}
+export type { SettingEntry, SettingsGroup };
 
 /**
  * Converts a hex color string to an RGB triplet string.

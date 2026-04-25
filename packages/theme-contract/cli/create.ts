@@ -1,5 +1,7 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
+import { capitalize } from '../lib/utils.js';
+import { generateTokensCss, type SettingsGroup } from '../lib/generateTokensCss.js';
 
 export interface CreateThemeOptions {
   name: string;
@@ -44,9 +46,9 @@ async function copyDir(src: string, dest: string): Promise<void> {
  */
 function createManifest(name: string, category: string): object {
   return {
-    name,
-    version: '1.0.0',
-    description: `${name} theme for ${category} stores`,
+    name: capitalize(name),
+    version: '0.1.0',
+    description: `${capitalize(name)} theme for ${category} stores`,
     category,
     author: 'Merfy',
     features: {
@@ -54,8 +56,9 @@ function createManifest(name: string, category: string): object {
       collections: true,
       search: true,
     },
-    pages: ['index'],
-    settings_schema: [],
+    pages: ['index', 'product', 'collection'],
+    settings_schema: createDefaultSettingsSchema(),
+    color_schemes: createDefaultColorSchemes(),
   };
 }
 
@@ -90,30 +93,31 @@ function createDefaultSettingsSchema(): object[] {
 }
 
 /**
- * Creates default tokens.css content.
+ * Creates default color schemes.
+ */
+function createDefaultColorSchemes(): object[] {
+  return [
+    {
+      name: 'Light',
+      background: '#ffffff',
+      foreground: '#121212',
+      primary: '#e11d48',
+    },
+    {
+      name: 'Dark',
+      background: '#121212',
+      foreground: '#ffffff',
+      primary: '#f43f5e',
+    },
+  ];
+}
+
+/**
+ * Creates default tokens.css content using generateTokensCss.
  */
 function createDefaultTokensCss(): string {
-  return `:root {
-  --color-primary: #e11d48;
-  --color-primary-rgb: 225, 29, 72;
-  --color-background: #ffffff;
-  --color-background-rgb: 255, 255, 255;
-  --color-foreground: #121212;
-  --color-foreground-rgb: 18, 18, 18;
-  --color-border: #e5e7eb;
-  --color-border-rgb: 229, 231, 235;
-  --color-button-text: #ffffff;
-  --color-button-text-rgb: 255, 255, 255;
-  --font-heading: 'Inter', sans-serif;
-  --font-body: 'Inter', sans-serif;
-  --radius-base: 0.5rem;
-  --radius-button: 9999px;
-  --radius-card: 1rem;
-  --radius-input: 0.5rem;
-  --page-width: 1280px;
-  --spacing-section: 4rem;
-}
-`;
+  const schema = createDefaultSettingsSchema() as SettingsGroup[];
+  return generateTokensCss(schema, {});
 }
 
 /**
@@ -174,7 +178,7 @@ export async function createTheme(options: CreateThemeOptions): Promise<void> {
   if (await exists(themeDir)) {
     const hasManifest = await exists(path.join(themeDir, 'theme.json'));
     if (hasManifest) {
-      throw new Error(`Theme '${name}' already exists at ${themeDir}`);
+      throw new Error(`Error: Theme '${name}' already exists`);
     }
   }
 
@@ -182,18 +186,29 @@ export async function createTheme(options: CreateThemeOptions): Promise<void> {
     // Copy from existing theme
     const sourceDir = path.join(outputDir, from);
     if (!(await exists(sourceDir))) {
-      throw new Error(`Source theme '${from}' not found at ${sourceDir}`);
+      throw new Error(`Error: Source theme '${from}' not found`);
     }
 
     await copyDir(sourceDir, themeDir);
 
-    // Update theme.json with new name and category
+    // Update theme.json with new name, category, version
     const manifestPath = path.join(themeDir, 'theme.json');
     const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf-8'));
-    manifest.name = name;
+    manifest.name = capitalize(name);
     manifest.category = category;
-    manifest.description = `${name} theme for ${category} stores`;
+    manifest.version = '0.1.0';
+    manifest.description = `${capitalize(name)} theme for ${category} stores`;
     await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2), 'utf-8');
+
+    // Regenerate tokens.css from the settings_schema if available
+    if (manifest.settings_schema && Array.isArray(manifest.settings_schema)) {
+      const tokensContent = generateTokensCss(
+        manifest.settings_schema as SettingsGroup[],
+        {},
+        manifest.color_schemes,
+      );
+      await fs.writeFile(path.join(themeDir, 'tokens.css'), tokensContent, 'utf-8');
+    }
   } else {
     // Create minimal skeleton
     await fs.mkdir(themeDir, { recursive: true });
@@ -239,12 +254,14 @@ export async function createTheme(options: CreateThemeOptions): Promise<void> {
       'utf-8',
     );
 
-    // pages/index.json
-    await fs.writeFile(
-      path.join(themeDir, 'pages', 'index.json'),
-      JSON.stringify(createDefaultPageJson(), null, 2),
-      'utf-8',
-    );
+    // pages/index.json, product.json, collection.json
+    for (const page of ['index', 'product', 'collection']) {
+      await fs.writeFile(
+        path.join(themeDir, 'pages', `${page}.json`),
+        JSON.stringify(createDefaultPageJson(), null, 2),
+        'utf-8',
+      );
+    }
   }
 }
 

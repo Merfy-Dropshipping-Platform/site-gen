@@ -1,7 +1,7 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
-import { loadTheme } from '../lib/loadTheme.js';
+import { loadTheme, loadThemeWithValidation } from '../lib/loadTheme.js';
 
 let tmpDir: string;
 
@@ -156,5 +156,111 @@ describe('loadTheme', () => {
 
     expect(theme.layouts).toHaveProperty('default');
     expect(theme.layouts).toHaveProperty('store');
+  });
+});
+
+describe('loadThemeWithValidation', () => {
+  it('returns theme and valid validation for a valid theme', async () => {
+    const themeDir = await createThemeDir({
+      'theme.json': validManifest({ pages: ['index'] }),
+      'tokens.css': ':root { --color-primary: #e11d48; }',
+      'pages/index.json': { root: {}, content: [] },
+      'components/registry.json': '[]',
+      'layouts/default.astro': '<html><body><slot/></body></html>',
+    });
+
+    const result = await loadThemeWithValidation(themeDir);
+
+    expect(result.validation.valid).toBe(true);
+    expect(result.validation.errors).toHaveLength(0);
+    expect(result.theme).not.toBeNull();
+    expect(result.theme!.manifest.name).toBe('Test Theme');
+    expect(result.theme!.manifest.version).toBe('1.0.0');
+    expect(typeof result.theme!.tokens).toBe('string');
+  });
+
+  it('returns null theme and invalid validation when required fields are missing', async () => {
+    const themeDir = await createThemeDir({
+      'theme.json': { description: 'Missing name and version' },
+      'tokens.css': ':root {}',
+    });
+
+    const result = await loadThemeWithValidation(themeDir);
+
+    expect(result.validation.valid).toBe(false);
+    expect(result.validation.errors.length).toBeGreaterThan(0);
+    expect(result.theme).toBeNull();
+  });
+
+  it('returns valid theme with tokens containing :root and color-scheme classes', async () => {
+    const themeDir = await createThemeDir({
+      'theme.json': validManifest({
+        pages: [],
+        settings: {
+          colorSchemes: [
+            { name: 'Light', background: '#ffffff', foreground: '#000000' },
+            { name: 'Dark', background: '#121212', foreground: '#ffffff' },
+          ],
+        },
+      }),
+      'tokens.css': ':root { --base: 1; }',
+      'components/registry.json': '[]',
+    });
+
+    const result = await loadThemeWithValidation(themeDir);
+
+    expect(result.validation.valid).toBe(true);
+    expect(result.theme).not.toBeNull();
+    expect(typeof result.theme!.tokens).toBe('string');
+    expect(result.theme!.tokens).toContain(':root');
+  });
+
+  it('returns ThemeExport with manifest, registry, tokens, layouts, pages', async () => {
+    const themeDir = await createThemeDir({
+      'theme.json': validManifest({ pages: ['index'] }),
+      'tokens.css': ':root { --color-primary: #e11d48; }',
+      'pages/index.json': { root: {}, content: [] },
+      'components/registry.json': JSON.stringify([
+        {
+          name: 'HeroBanner',
+          label: 'Hero Banner',
+          category: 'hero',
+          astroTemplate: 'HeroBanner.astro',
+          schema: {},
+        },
+      ]),
+      'components/react/HeroBanner.tsx': 'export default function HeroBanner() {}',
+      'components/astro/HeroBanner.astro': '<div>Hero</div>',
+      'layouts/default.astro': '<html><body><slot/></body></html>',
+    });
+
+    const result = await loadThemeWithValidation(themeDir);
+
+    expect(result.theme).not.toBeNull();
+    const theme = result.theme!;
+
+    // Has all required fields
+    expect(theme.manifest).toBeDefined();
+    expect(theme.registry).toBeDefined();
+    expect(theme.tokens).toBeDefined();
+    expect(theme.layouts).toBeDefined();
+    expect(theme.pages).toBeDefined();
+
+    // Correct types
+    expect(Array.isArray(theme.registry)).toBe(true);
+    expect(typeof theme.tokens).toBe('string');
+    expect(typeof theme.layouts).toBe('object');
+    expect(typeof theme.pages).toBe('object');
+  });
+
+  it('returns null theme when theme.json is missing entirely', async () => {
+    const themeDir = await createThemeDir({
+      'tokens.css': ':root {}',
+    });
+
+    const result = await loadThemeWithValidation(themeDir);
+
+    expect(result.validation.valid).toBe(false);
+    expect(result.theme).toBeNull();
   });
 });

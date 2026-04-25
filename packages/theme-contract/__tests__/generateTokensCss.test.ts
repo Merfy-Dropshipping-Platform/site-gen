@@ -145,4 +145,69 @@ describe('generateTokensCss', () => {
     expect(css).toContain('--color-background: 255, 255, 255');
     expect(css).toContain('--color-foreground: 0, 0, 0');
   });
+
+  it('generates correct RGB for 3-char hex colors in settings', () => {
+    const schema = [
+      {
+        name: 'Colors',
+        settings: [
+          { id: 'color_accent', type: 'color' as const, label: 'Accent', default: '#fff' },
+        ],
+      },
+    ];
+
+    const css = generateTokensCss(schema, {});
+
+    expect(css).toContain('--color-accent: #fff');
+    expect(css).toContain('--color-accent-rgb: 255, 255, 255');
+  });
+
+  it('generates correct CSS properties for each setting type individually', () => {
+    // Test color
+    const colorSchema = [{
+      name: 'Colors',
+      settings: [
+        { id: 'color_primary', type: 'color' as const, label: 'Primary', default: '#e11d48' },
+      ],
+    }];
+    const colorCss = generateTokensCss(colorSchema, {});
+    expect(colorCss).toContain('--color-primary: #e11d48;');
+    expect(colorCss).toContain('--color-primary-rgb: 225, 29, 72;');
+
+    // Test font
+    const fontSchema = [{
+      name: 'Typography',
+      settings: [
+        { id: 'font_heading', type: 'font' as const, label: 'Heading', default: 'Inter' },
+      ],
+    }];
+    const fontCss = generateTokensCss(fontSchema, {});
+    expect(fontCss).toContain("--font-heading: 'Inter';");
+
+    // Test range
+    const rangeSchema = [{
+      name: 'Layout',
+      settings: [
+        { id: 'border_radius', type: 'range' as const, label: 'Border Radius', default: 8, unit: 'px' },
+      ],
+    }];
+    const rangeCss = generateTokensCss(rangeSchema, {});
+    expect(rangeCss).toContain('--border-radius: 8px;');
+  });
+
+  it('generates color scheme with primary field', () => {
+    const colorSchemes: ColorScheme[] = [
+      {
+        name: 'Accent',
+        background: '#ffffff',
+        foreground: '#000000',
+        primary: '#e11d48',
+      },
+    ];
+
+    const css = generateTokensCss([], {}, colorSchemes);
+
+    expect(css).toContain('.color-scheme-1 {');
+    expect(css).toContain('--color-primary: 225, 29, 72');
+  });
 });

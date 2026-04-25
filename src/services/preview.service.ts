@@ -378,8 +378,8 @@ const PREVIEW_NAV_AGENT_INLINE = `
     pill.addEventListener('mousedown', function (e) { e.stopPropagation(); }, true);
     return pill;
   }
+  // Pupa parity: pill только на section (subsection — только outline, без pill).
   var sectionPill = makePill('section');
-  var subsectionPill = makePill('subsection');
 
   function inferLabel(layer, target) {
     if (layer === 'section') {
@@ -444,9 +444,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
 
   function refreshPills() {
     var secTarget = hoveredSection || selectedSectionEl;
-    var subTarget = hoveredSubsection || selectedSubsectionEl;
     if (secTarget) positionPill(sectionPill, secTarget); else hidePill(sectionPill);
-    if (subTarget) positionPill(subsectionPill, subTarget); else hidePill(subsectionPill);
   }
 
   // Hover handling

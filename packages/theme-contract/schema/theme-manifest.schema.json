@@ -4,7 +4,7 @@
   "title": "Merfy Theme Manifest",
   "description": "Schema for theme.json manifest file that describes a Merfy storefront theme",
   "type": "object",
-  "required": ["name", "version"],
+  "required": ["name", "version", "features", "pages", "settings_schema"],
   "properties": {
     "name": {
       "type": "string",

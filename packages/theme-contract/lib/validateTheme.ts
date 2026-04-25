@@ -1,12 +1,8 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
-import type { ThemeManifest, ComponentRegistryEntry } from '../types.js';
+import type { ThemeManifest, ComponentRegistryEntry, ValidationResult } from '../types.js';
 
-export interface ValidationResult {
-  valid: boolean;
-  errors: string[];
-  warnings: string[];
-}
+export type { ValidationResult };
 
 /**
  * Checks if a file exists at the given path.
@@ -120,7 +116,40 @@ export async function validateTheme(themeDir: string): Promise<ValidationResult>
     }
   }
 
-  // 6. Check component registry
+  // 6. Validate settings_schema structure
+  const settingsSchema = manifest.settings_schema;
+  if (settingsSchema && Array.isArray(settingsSchema)) {
+    for (let gi = 0; gi < settingsSchema.length; gi++) {
+      const group = settingsSchema[gi] as Record<string, unknown>;
+
+      if (!group.name || typeof group.name !== 'string') {
+        errors.push(`Invalid settings_schema: group at index ${gi} is missing required 'name' field`);
+      }
+
+      const settings = group.settings as Array<Record<string, unknown>> | undefined;
+      if (!settings || !Array.isArray(settings)) {
+        errors.push(`Invalid settings_schema: group at index ${gi} is missing required 'settings' array`);
+      } else {
+        for (let si = 0; si < settings.length; si++) {
+          const setting = settings[si];
+          const groupName = (group.name as string) || `index ${gi}`;
+
+          if (!setting.type || typeof setting.type !== 'string') {
+            errors.push(
+              `Invalid settings_schema: setting at index ${si} in group '${groupName}' is missing required 'type' field`
+            );
+          }
+          if (!setting.label || typeof setting.label !== 'string') {
+            errors.push(
+              `Invalid settings_schema: setting at index ${si} in group '${groupName}' is missing required 'label' field`
+            );
+          }
+        }
+      }
+    }
+  }
+
+  // 7. Check component registry
   const registry = await readRegistry(themeDir);
   if (registry !== null && registry.length > 0) {
     for (const component of registry) {
@@ -140,10 +169,17 @@ export async function validateTheme(themeDir: string): Promise<ValidationResult>
           `Missing Astro template for component '${component.name}': expected at components/astro/${astroFileName}`
         );
       }
+
+      // Warn if island component lacks islandDirective
+      if (component.island === true && !component.islandDirective) {
+        warnings.push(
+          `Component '${component.name}' is marked as island but missing islandDirective (defaults to 'idle')`
+        );
+      }
     }
   }
 
-  // 7. Warnings for recommended files
+  // 8. Warnings for recommended files
   const layoutsDir = path.join(themeDir, 'layouts');
   if (!(await fileExists(layoutsDir))) {
     warnings.push('No layouts/ directory found - consider adding a default layout');

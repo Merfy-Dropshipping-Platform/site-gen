@@ -1,22 +1,12 @@
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { StoreContext, useStoreConfig } from '../provider';
 import type { StoreConfig, Product, Collection, PaginatedResponse } from '../types';
 import { mockProducts } from './mock-data/products';
 import { mockCollections } from './mock-data/collections';
 
-/**
- * Internal: Context that is reused from the main provider module.
- * We re-create it here to avoid circular dependency with the real provider.
- */
-const StoreContext = React.createContext<StoreConfig>(null!);
-
-export const useStoreConfig = (): StoreConfig => {
-  const config = React.useContext(StoreContext);
-  if (!config) {
-    throw new Error('useStoreConfig must be used within a MockStoreProvider');
-  }
-  return config;
-};
+// Re-export useStoreConfig from the real provider for backwards compatibility
+export { useStoreConfig };
 
 interface MockStoreProviderProps {
   config?: Partial<StoreConfig>;
@@ -185,15 +175,21 @@ export const MockStoreProvider: React.FC<MockStoreProviderProps> = ({
     ...configOverride,
   };
 
-  // Replace global fetch with mock
+  // Replace global fetch with mock synchronously so it's available on first render.
+  // We store the original in a ref to restore in cleanup.
   const originalFetch = React.useRef(globalThis.fetch);
+  // Set mock fetch immediately (synchronous) so queries on mount see it.
+  const mockFetch = React.useMemo(
+    () => createMockFetch(products, collections),
+    [products, collections],
+  );
+  globalThis.fetch = mockFetch;
+
   React.useEffect(() => {
-    const savedFetch = globalThis.fetch;
-    globalThis.fetch = createMockFetch(products, collections);
     return () => {
-      globalThis.fetch = savedFetch;
+      globalThis.fetch = originalFetch.current;
     };
-  }, [products, collections]);
+  }, []);
 
   const queryClient = React.useMemo(
     () =>

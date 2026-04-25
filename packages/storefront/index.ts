@@ -14,7 +14,7 @@ export type {
 } from './types';
 
 // Provider
-export { StoreProvider, useStoreConfig } from './provider';
+export { StoreProvider, useStoreConfig, StoreContext } from './provider';
 
 // Hooks
 export {

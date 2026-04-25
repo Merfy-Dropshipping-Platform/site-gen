@@ -220,6 +220,80 @@ describe('validateTheme', () => {
     expect(result.errors).toHaveLength(0);
   });
 
+  it('reports error when settings_schema has invalid structure', async () => {
+    const themeDir = await createThemeDir({
+      'theme.json': minimalManifest({
+        settings_schema: [
+          {
+            // Missing 'name' field
+            settings: [
+              { id: 'color_primary', type: 'color', label: 'Primary' },
+            ],
+          },
+        ],
+      }),
+      'tokens.css': ':root {}',
+      'pages/index.json': { root: {}, content: [] },
+    });
+
+    const result = await validateTheme(themeDir);
+
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => e.includes('settings_schema'))).toBe(true);
+  });
+
+  it('reports error when settings_schema setting is missing required fields', async () => {
+    const themeDir = await createThemeDir({
+      'theme.json': minimalManifest({
+        settings_schema: [
+          {
+            name: 'Colors',
+            settings: [
+              { id: 'color_primary' },
+              // Missing 'type' and 'label'
+            ],
+          },
+        ],
+      }),
+      'tokens.css': ':root {}',
+      'pages/index.json': { root: {}, content: [] },
+    });
+
+    const result = await validateTheme(themeDir);
+
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => e.includes('type') || e.includes('label'))).toBe(true);
+  });
+
+  it('warns when island component is missing islandDirective', async () => {
+    const themeDir = await createThemeDir({
+      'theme.json': minimalManifest(),
+      'tokens.css': ':root {}',
+      'pages/index.json': { root: {}, content: [] },
+      'components/registry.json': JSON.stringify([
+        {
+          name: 'CartWidget',
+          label: 'Cart Widget',
+          category: 'navigation',
+          astroTemplate: 'CartWidget.astro',
+          schema: {},
+          island: true,
+          // Missing islandDirective
+        },
+      ]),
+      'components/react/CartWidget.tsx': 'export default function CartWidget() { return null; }',
+      'components/astro/CartWidget.astro': '<div>Cart</div>',
+    });
+
+    const result = await validateTheme(themeDir);
+
+    // Should be valid (warning, not error)
+    expect(result.valid).toBe(true);
+    expect(result.warnings.some(w =>
+      w.includes('CartWidget') && (w.includes('island') || w.includes('islandDirective'))
+    )).toBe(true);
+  });
+
   it('provides human-readable error messages', async () => {
     const themeDir = await createThemeDir({
       'theme.json': minimalManifest({ pages: ['index', 'product'] }),

@@ -2,7 +2,8 @@ import React, { createContext, useContext } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { StoreConfig } from './types';
 
-const StoreContext = createContext<StoreConfig>(null!);
+/** @internal exported for MockStoreProvider; prefer useStoreConfig() in app code. */
+export const StoreContext = createContext<StoreConfig>(null!);
 
 /**
  * Access the store configuration from within StoreProvider.

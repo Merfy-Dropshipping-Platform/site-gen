@@ -122,11 +122,11 @@ while (gridImages.length < 4 && variant === 'grid-4') {
   {variant === 'split' && (
     <div class:list={[C.container, innerClass]}>
       <div class={C.textCol}>
-        {resolvedSubtitle && <p class={C.kicker}>{resolvedSubtitle}</p>}
-        {resolvedTitle && <h1 class={C.title}>{resolvedTitle}</h1>}
+        {resolvedSubtitle && <p class={C.kicker} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{resolvedSubtitle}</p>}
+        {resolvedTitle && <h1 class={C.title} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{resolvedTitle}</h1>}
         {(resolvedCta?.text || resolvedSecondaryCta?.text) && (
           <div class="flex flex-wrap gap-3">
-            {resolvedCta?.text && <a href={resolvedCta.href} class={C.ctaButton}>{resolvedCta.text}</a>}
+            {resolvedCta?.text && <a href={resolvedCta.href} class={C.ctaButton} data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="primaryButton">{resolvedCta.text}</a>}
             {resolvedSecondaryCta?.text && (
               <a href={resolvedSecondaryCta.href} class:list={[C.ctaButton, 'opacity-90 underline']}>{resolvedSecondaryCta.text}</a>
             )}
@@ -157,10 +157,10 @@ while (gridImages.length < 4 && variant === 'grid-4') {
         </>
       )}
       <div class:list={[C.container, innerClass, 'relative z-10']}>
-        {resolvedSubtitle && <p class={C.kicker}>{resolvedSubtitle}</p>}
-        {resolvedTitle && <h1 class={C.title}>{resolvedTitle}</h1>}
+        {resolvedSubtitle && <p class={C.kicker} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{resolvedSubtitle}</p>}
+        {resolvedTitle && <h1 class={C.title} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{resolvedTitle}</h1>}
         {resolvedCta?.text && (
-          <a href={resolvedCta.href} class={C.ctaButton}>{resolvedCta.text}</a>
+          <a href={resolvedCta.href} class={C.ctaButton} data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="primaryButton">{resolvedCta.text}</a>
         )}
       </div>
     </>
@@ -169,18 +169,18 @@ while (gridImages.length < 4 && variant === 'grid-4') {
   {variant === 'centered' && (
     <div class:list={[C.container, innerClass]}>
       {imageUrl && <img src={imageUrl} alt={imageAlt} class={C.image.centered} />}
-      {resolvedSubtitle && <p class={C.kicker}>{resolvedSubtitle}</p>}
-      {resolvedTitle && <h1 class={C.title}>{resolvedTitle}</h1>}
+      {resolvedSubtitle && <p class={C.kicker} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{resolvedSubtitle}</p>}
+      {resolvedTitle && <h1 class={C.title} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{resolvedTitle}</h1>}
       {resolvedCta?.text && (
-        <a href={resolvedCta.href} class={C.ctaButton}>{resolvedCta.text}</a>
+        <a href={resolvedCta.href} class={C.ctaButton} data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="primaryButton">{resolvedCta.text}</a>
       )}
     </div>
   )}
 
   {variant === 'grid-4' && (
     <div class:list={[C.container, innerClass]}>
-      {resolvedSubtitle && <p class={C.kicker}>{resolvedSubtitle}</p>}
-      {resolvedTitle && <h1 class={C.title}>{resolvedTitle}</h1>}
+      {resolvedSubtitle && <p class={C.kicker} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{resolvedSubtitle}</p>}
+      {resolvedTitle && <h1 class={C.title} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{resolvedTitle}</h1>}
       <div class={C.gridContainer} role="group" aria-label="Hero image grid">
         {gridImages.map((img, i) => (
           <div
@@ -203,7 +203,7 @@ while (gridImages.length < 4 && variant === 'grid-4') {
         ))}
       </div>
       {resolvedCta?.text && (
-        <a href={resolvedCta.href} class={C.ctaButton}>{resolvedCta.text}</a>
+        <a href={resolvedCta.href} class={C.ctaButton} data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="primaryButton">{resolvedCta.text}</a>
       )}
     </div>
   )}

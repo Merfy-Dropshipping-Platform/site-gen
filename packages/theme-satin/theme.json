@@ -42,6 +42,22 @@
   "blockDefaults": {
     "Footer": {
       "variant": "2-part"
+    },
+    "PopularProducts": {
+      "heading": { "text": "Коллекция товаров", "size": "medium", "alignment": "left" },
+      "text": { "content": "", "size": "small" },
+      "cards": 3,
+      "columns": 3,
+      "productCard": {
+        "columns": 3,
+        "buttonStyle": "primary",
+        "cardStyle": "portrait",
+        "nextPhoto": "false",
+        "quickAdd": "true",
+        "buttonText": "В корзину"
+      },
+      "padding": { "top": 80, "bottom": 80 },
+      "viewAll": { "show": true, "text": "Смотреть ещё", "href": "/catalog" }
     }
   },
 

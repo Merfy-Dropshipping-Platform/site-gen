@@ -97,6 +97,16 @@ const DEMO_PRODUCTS = [
   { title: 'Сумка', price: '5 990 ₽', oldPrice: '7 990 ₽', badgeNew: false, badgeSale: '20%' },
 ];
 const demo = DEMO_PRODUCTS.slice(0, Math.min(cards, DEMO_PRODUCTS.length));
+
+// Bottom "Смотреть ещё" CTA. Accept top-level viewAll object.
+const viewAllObj = raw.viewAll as { show?: boolean | string; text?: string; href?: string } | undefined;
+const viewAllShow =
+  viewAllObj?.show === true ||
+  viewAllObj?.show === 'true' ||
+  (typeof viewAllObj?.show === 'string' && viewAllObj.show.toLowerCase() === 'yes');
+const viewAllText = (viewAllObj?.text && String(viewAllObj.text)) || 'Смотреть ещё';
+const viewAllHref = (viewAllObj?.href && String(viewAllObj.href)) || '/catalog';
+const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
 ---
 <section
   class:list={[C.root, schemeClass]}
@@ -105,11 +115,15 @@ const demo = DEMO_PRODUCTS.slice(0, Math.min(cards, DEMO_PRODUCTS.length));
   style={paddingStyle}
 >
   <div class:list={[C.container, containerSchemeClass]}>
-    {heading && (
-      <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{heading}</h2>
-    )}
-    {subtitle && (
-      <p class:list={[C.subtitle, headingAlignClass, textSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{subtitle}</p>
+    {(heading || subtitle) && (
+      <div class={(C as Record<string, string>).headerGroup ?? 'contents'}>
+        {heading && (
+          <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{heading}</h2>
+        )}
+        {subtitle && (
+          <p class:list={[C.subtitle, headingAlignClass, textSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{subtitle}</p>
+        )}
+      </div>
     )}
     <div class={C.grid} style={gridTemplateCols}>
       {demo.map((p, i) => (
@@ -140,5 +154,8 @@ const demo = DEMO_PRODUCTS.slice(0, Math.min(cards, DEMO_PRODUCTS.length));
         </div>
       ))}
     </div>
+    {viewAllShow && viewAllCtaClass && (
+      <a href={viewAllHref} class={viewAllCtaClass}>{viewAllText}</a>
+    )}
   </div>
 </section>

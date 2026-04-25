@@ -36,6 +36,11 @@ export const PopularProductsSchema = z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
   }),
+  viewAll: z.object({
+    show: z.boolean().optional(),
+    text: z.string().optional(),
+    href: z.string().optional(),
+  }).optional(),
 });
 
 export type PopularProductsProps = z.infer<typeof PopularProductsSchema>;
@@ -127,6 +132,22 @@ export const PopularProductsPuckConfig: BlockPuckConfig<PopularProductsProps> = 
       },
     },
     containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
+    viewAll: {
+      type: 'object',
+      label: 'Кнопка "Смотреть ещё"',
+      objectFields: {
+        show: {
+          type: 'radio',
+          label: 'Показать',
+          options: [
+            { label: 'Да', value: true },
+            { label: 'Нет', value: false },
+          ],
+        },
+        text: { type: 'text', label: 'Текст' },
+        href: { type: 'text', label: 'Ссылка' },
+      },
+    },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     columns: {
       type: 'radio',
@@ -147,10 +168,20 @@ export const PopularProductsPuckConfig: BlockPuckConfig<PopularProductsProps> = 
     },
   },
   defaults: {
-    heading: 'Новые поступления',
+    heading: { text: 'Коллекция товаров', size: 'medium', alignment: 'left' },
+    text: { content: '', size: 'small' },
     cards: 3,
     columns: 3,
-    padding: { top: 40, bottom: 40 },
+    productCard: {
+      columns: 3,
+      buttonStyle: 'primary',
+      cardStyle: 'portrait',
+      nextPhoto: 'false',
+      quickAdd: 'true',
+      buttonText: 'В корзину',
+    },
+    padding: { top: 80, bottom: 80 },
+    viewAll: { show: true, text: 'Смотреть ещё', href: '/catalog' },
   },
   schema: PopularProductsSchema,
   maxInstances: null,

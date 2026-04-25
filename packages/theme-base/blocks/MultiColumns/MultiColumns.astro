@@ -6,15 +6,15 @@ interface Props extends MultiColumnsProps {
   id?: string;
 }
 
+const raw = Astro.props as Record<string, unknown>;
 const {
   id,
   columns = [],
   displayColumns = 3,
   colorScheme,
   padding,
-} = Astro.props as Props;
+} = raw as Props;
 
-// Normalize displayColumns: constructor sends "1"|"2"|"3"|"4" (string) — coerce to number.
 const normalizedDisplayColumns =
   typeof displayColumns === 'string'
     ? parseInt(displayColumns, 10)
@@ -25,6 +25,28 @@ const paddingStyle = padding
   : '';
 const gridTemplateCols = `grid-template-columns: repeat(${normalizedDisplayColumns}, minmax(0, 1fr));`;
 const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
+
+// Pupa parity: nested heading object {text, alignment, size}.
+const headingObj = raw.heading as { text?: string; alignment?: string; size?: string } | string | undefined;
+const headingText = typeof headingObj === 'string' ? headingObj : headingObj?.text;
+const headingAlignment = (typeof headingObj === 'object' ? headingObj?.alignment : undefined) ?? raw.headingAlignment;
+const headingSize = (typeof headingObj === 'object' ? headingObj?.size : undefined) ?? raw.headingSize;
+const headingAlignClass =
+  headingAlignment === 'left' ? 'text-left' :
+  headingAlignment === 'right' ? 'text-right' :
+  headingAlignment === 'center' ? 'text-center' : 'text-center';
+const headingSizeClass =
+  headingSize === 'large' ? 'text-4xl md:text-5xl' :
+  headingSize === 'medium' ? 'text-3xl md:text-4xl' :
+  headingSize === 'small' ? 'text-2xl md:text-3xl' : 'text-3xl md:text-4xl';
+
+// Pupa: textPosition (left/center) — alignment of column text.
+const textPosition = typeof raw.textPosition === 'string' ? raw.textPosition : 'center';
+const colTextAlignClass = textPosition === 'left' ? 'text-left items-start' : 'text-center items-center';
+
+// Pupa: section button (text + link).
+const buttonText = typeof raw.buttonText === 'string' ? raw.buttonText : (typeof raw.button === 'string' ? raw.button : '');
+const buttonLink = typeof raw.buttonLink === 'string' ? raw.buttonLink : (typeof raw.link === 'string' ? raw.link : '/');
 ---
 <section
   class:list={[C.root, schemeClass]}
@@ -33,22 +55,39 @@ const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('s
   style={paddingStyle}
 >
   <div class={C.container}>
+    {headingText && (
+      <h2 class:list={[C.columnHeading, headingAlignClass, headingSizeClass, 'mb-8']}>{headingText}</h2>
+    )}
     <div class={C.grid} style={gridTemplateCols}>
-      {columns.map((column, i) => (
-        <div
-          class={C.column}
-          data-column-id={column.id}
-          data-puck-subsection-parent={id}
-          data-puck-subsection-index={i}
-          data-puck-subsection-field="columns"
-        >
-          {column.imageUrl && (
-            <img src={column.imageUrl} alt={column.heading} class={C.image} />
-          )}
-          {column.heading && <h3 class={C.columnHeading}>{column.heading}</h3>}
-          {column.text && <p class={C.columnText}>{column.text}</p>}
-        </div>
-      ))}
+      {columns.map((column: any, i: number) => {
+        const colImage = column.image || column.imageUrl;
+        const colTitle = column.title ?? column.heading;
+        const colDescription = column.description ?? column.text;
+        const colLink = column.link as { text?: string; href?: string } | undefined;
+        return (
+          <div
+            class:list={[C.column, colTextAlignClass]}
+            data-column-id={column.id}
+            data-puck-subsection-parent={id}
+            data-puck-subsection-index={i}
+            data-puck-subsection-field="columns"
+          >
+            {colImage && (
+              <img src={colImage} alt={colTitle ?? ''} class={C.image} />
+            )}
+            {colTitle && <h3 class={C.columnHeading}>{colTitle}</h3>}
+            {colDescription && <p class={C.columnText}>{colDescription}</p>}
+            {colLink?.text && (
+              <a href={colLink.href ?? '#'} class="mt-2 inline-block underline">{colLink.text}</a>
+            )}
+          </div>
+        );
+      })}
     </div>
+    {buttonText && (
+      <div class={`mt-8 ${headingAlignClass}`}>
+        <a href={buttonLink} class="inline-block px-6 py-3 bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] rounded">{buttonText}</a>
+      </div>
+    )}
   </div>
 </section>

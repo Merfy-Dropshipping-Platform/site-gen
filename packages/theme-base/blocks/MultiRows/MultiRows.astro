@@ -6,44 +6,80 @@ interface Props extends MultiRowsProps {
   id?: string;
 }
 
+const raw = Astro.props as Record<string, unknown>;
 const {
   id,
   rows = [],
   padding,
-} = Astro.props as Props;
+} = raw as Props;
+
+const colorScheme = raw.colorScheme as string | undefined;
+const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
 
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
+
+// Pupa parity: nested heading object.
+const headingObj = raw.heading as { text?: string; alignment?: string; size?: string } | string | undefined;
+const headingText = typeof headingObj === 'string' ? headingObj : headingObj?.text;
+const headingAlignment = (typeof headingObj === 'object' ? headingObj?.alignment : undefined) ?? raw.headingAlignment;
+const headingSize = (typeof headingObj === 'object' ? headingObj?.size : undefined) ?? raw.headingSize;
+const headingAlignClass =
+  headingAlignment === 'left' ? 'text-left' :
+  headingAlignment === 'right' ? 'text-right' :
+  headingAlignment === 'center' ? 'text-center' : 'text-center';
+const headingSizeClass =
+  headingSize === 'large' ? 'text-4xl md:text-5xl' :
+  headingSize === 'medium' ? 'text-3xl md:text-4xl' :
+  headingSize === 'small' ? 'text-2xl md:text-3xl' : 'text-3xl md:text-4xl';
+
+// Pupa: rowsPosition (alternate, left, right).
+const rowsPosition = typeof raw.rowsPosition === 'string' ? raw.rowsPosition : '';
 ---
 <section
-  class={C.root}
+  class:list={[C.root, schemeClass]}
   data-puck-component-id={id}
   style={paddingStyle}
 >
   <div class={C.container}>
+    {headingText && (
+      <h2 class:list={[headingAlignClass, headingSizeClass, 'mb-8 font-medium']}>{headingText}</h2>
+    )}
     <div class={C.stack}>
-      {rows.map((row, i) => {
-        const variantKey = row.imagePosition === 'right' ? 'imageRight' : 'imageLeft';
+      {rows.map((row: any, i: number) => {
+        // Pupa: rowsPosition alternate → odd rows mirror.
+        let imagePos = row.imagePosition;
+        if (rowsPosition === 'alternate') imagePos = i % 2 === 0 ? 'left' : 'right';
+        else if (rowsPosition === 'left') imagePos = 'left';
+        else if (rowsPosition === 'right') imagePos = 'right';
+        const variantKey = imagePos === 'right' ? 'imageRight' : 'imageLeft';
+        const rowImage = row.image || row.imageUrl;
+        const rowTitle = row.title ?? row.heading;
+        const rowDescription = row.description ?? row.text;
+        const buttonHref =
+          (row.button && typeof row.button === 'object' && 'link' in row.button && typeof row.button.link === 'string')
+            ? row.button.link
+            : row.button?.href;
         return (
           <div
             class={C.row[variantKey]}
             data-row-id={row.id}
-            data-image-position={row.imagePosition}
+            data-image-position={imagePos}
             data-puck-subsection-parent={id}
             data-puck-subsection-index={i}
             data-puck-subsection-field="rows"
           >
             <div class={C.imageCol[variantKey]}>
-              {row.imageUrl && (
-                <img src={row.imageUrl} alt={row.heading} class={C.image} />
+              {rowImage && (
+                <img src={rowImage} alt={rowTitle ?? ''} class={C.image} />
               )}
             </div>
             <div class={C.textCol[variantKey]}>
-              {row.heading && <h3 class={C.rowHeading}>{row.heading}</h3>}
-              {row.text && <p class={C.rowText}>{row.text}</p>}
+              {rowTitle && <h3 class={C.rowHeading}>{rowTitle}</h3>}
+              {rowDescription && <p class={C.rowText}>{rowDescription}</p>}
               {row.button?.text && (
-                <a href={row.button.href} class={C.button}>{row.button.text}</a>
+                <a href={buttonHref ?? '#'} class={C.button}>{row.button.text}</a>
               )}
             </div>
           </div>

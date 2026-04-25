@@ -6,15 +6,15 @@ interface Props extends SlideshowProps {
   id?: string;
 }
 
+const raw = Astro.props as Record<string, unknown>;
 const {
   id,
   slides,
   interval = 5,
   autoplay = true,
   padding,
-} = Astro.props as Props;
+} = raw as Props;
 
-// Normalize autoplay: "true"|"false" string → boolean (constructor sometimes sends strings).
 const normalizedAutoplay =
   typeof autoplay === 'string' ? autoplay === 'true' : Boolean(autoplay);
 
@@ -22,34 +22,72 @@ const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
 
-// Phase 1a: first-slide-only. Carousel rotation JS wired in Phase 1c via React island.
+const colorScheme = raw.colorScheme as string | undefined;
+const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
+
+// Pupa parity: per-slide nested heading{text,size}, text{content,size}, button{text,link}.
+function normalizeSlide(slide: any) {
+  const headingObj = slide.heading;
+  const headingText =
+    typeof headingObj === 'object' ? headingObj?.text : (typeof headingObj === 'string' ? headingObj : '');
+  const headingSize = typeof headingObj === 'object' ? headingObj?.size : undefined;
+  const textObj = slide.text;
+  const textContent =
+    typeof textObj === 'object' ? textObj?.content : (slide.subtitle ?? '');
+  const textSize = typeof textObj === 'object' ? textObj?.size : undefined;
+  const buttonObj = slide.button;
+  const buttonText = buttonObj?.text ?? slide.ctaText;
+  const buttonLink = buttonObj?.link ?? slide.ctaUrl;
+  const image = slide.image || slide.imageUrl;
+  return {
+    headingText,
+    headingSize,
+    textContent,
+    textSize,
+    buttonText,
+    buttonLink,
+    image,
+    container: slide.container,
+    position: slide.position,
+    alignment: slide.alignment,
+    colorScheme: slide.colorScheme,
+  };
+}
+
 const firstSlide = slides?.[0];
+const firstNormalized = firstSlide ? normalizeSlide(firstSlide) : null;
+const slideAlignClass =
+  firstNormalized?.alignment === 'left' ? 'text-left' :
+  firstNormalized?.alignment === 'right' ? 'text-right' :
+  firstNormalized?.alignment === 'center' ? 'text-center' : '';
+const slideSchemeClass = firstNormalized?.colorScheme
+  ? `color-scheme-${String(firstNormalized.colorScheme).replace('scheme-', '')}`
+  : '';
 ---
 <section
-  class={C.root}
+  class:list={[C.root, schemeClass]}
   data-puck-component-id={id}
   data-autoplay={String(normalizedAutoplay)}
   data-interval={interval}
   style={paddingStyle}
 >
-  {/* Phase 1a: first-slide-only. Carousel rotation JS wired in Phase 1c via React island. */}
   <div class={C.container}>
-    {firstSlide && (
+    {firstSlide && firstNormalized && (
       <div
-        class={C.slide}
+        class:list={[C.slide, slideAlignClass, slideSchemeClass]}
         data-slide-id={firstSlide.id}
         data-puck-subsection-parent={id}
         data-puck-subsection-index="0"
         data-puck-subsection-field="slides"
       >
-        {firstSlide.imageUrl && (
-          <img src={firstSlide.imageUrl} alt={firstSlide.heading} class={C.image} />
+        {firstNormalized.image && (
+          <img src={firstNormalized.image} alt={firstNormalized.headingText ?? ''} class={C.image} />
         )}
         <div class={C.content}>
-          {firstSlide.heading && <h2 class={C.heading}>{firstSlide.heading}</h2>}
-          {firstSlide.subtitle && <p class={C.subtitle}>{firstSlide.subtitle}</p>}
-          {firstSlide.ctaText && (
-            <a href={firstSlide.ctaUrl} class={C.ctaButton}>{firstSlide.ctaText}</a>
+          {firstNormalized.headingText && <h2 class={C.heading}>{firstNormalized.headingText}</h2>}
+          {firstNormalized.textContent && <p class={C.subtitle}>{firstNormalized.textContent}</p>}
+          {firstNormalized.buttonText && (
+            <a href={firstNormalized.buttonLink ?? '#'} class={C.ctaButton}>{firstNormalized.buttonText}</a>
           )}
         </div>
       </div>

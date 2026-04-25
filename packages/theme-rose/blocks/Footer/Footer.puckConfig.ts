@@ -56,7 +56,7 @@ export const FooterSchema = z.object({
 export type FooterProps = z.infer<typeof FooterSchema>;
 
 export const FooterPuckConfig: BlockPuckConfig<FooterProps> = {
-  label: 'Подвал (Rose)',
+  label: 'Footer',
   category: 'navigation',
   fields: {
     newsletter: { type: 'object', label: 'Рассылка' },

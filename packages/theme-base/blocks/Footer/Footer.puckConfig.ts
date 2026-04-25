@@ -79,7 +79,7 @@ const linkArrayField = {
 };
 
 export const FooterPuckConfig: BlockPuckConfig<FooterProps> = {
-  label: 'Подвал',
+  label: 'Footer',
   category: 'navigation',
   fields: {
     siteTitle: { type: 'text', label: 'Название сайта' },

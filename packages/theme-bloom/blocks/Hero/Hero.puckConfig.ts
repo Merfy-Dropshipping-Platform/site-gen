@@ -107,7 +107,7 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     },
     heading: {
       type: 'object',
-      label: 'Заголовок (pupa)',
+      label: 'Заголовок',
       objectFields: {
         text: { type: 'text', label: 'Текст' },
         size: {
@@ -123,7 +123,7 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     },
     text: {
       type: 'object',
-      label: 'Текст (pupa)',
+      label: 'Текст',
       objectFields: {
         content: { type: 'textarea', label: 'Содержание' },
         size: {

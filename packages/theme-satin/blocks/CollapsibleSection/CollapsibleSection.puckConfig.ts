@@ -74,7 +74,7 @@ export const CollapsibleSectionPuckConfig: BlockPuckConfig<CollapsibleSectionPro
     },
     items: {
       type: 'array',
-      label: 'Элементы (pupa)',
+      label: 'Элементы',
       arrayFields: {
         title: { type: 'text', label: 'Заголовок' },
         content: { type: 'textarea', label: 'Содержимое' },

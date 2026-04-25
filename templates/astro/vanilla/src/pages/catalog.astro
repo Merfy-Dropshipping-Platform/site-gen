@@ -135,7 +135,7 @@ const pageTitle = (meta?.title && `Каталог — ${meta.title}`) || 'Кат
                 >КАТАЛОГ</h1>
               </div>
               <CatalogIsland
-                client:load
+                client:only="react"
                 shopId={shopId}
                 apiBase={apiUrl}
                 initialProducts={initialProducts}
@@ -162,7 +162,7 @@ const pageTitle = (meta?.title && `Каталог — ${meta.title}`) || 'Кат
             >КАТАЛОГ</h1>
           </div>
           <CatalogIsland
-            client:load
+            client:only="react"
             shopId={shopId}
             apiBase={apiUrl}
             initialProducts={initialProducts}

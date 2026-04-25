@@ -1172,9 +1172,9 @@ async function stageGenerate(
   ).pagesData;
 
   // Pages with full static implementations in theme templates — never overwrite with Puck stubs.
-  // catalog NOT in list — manageable from constructor like home.
+  // catalog: rich theme-specific template with filters/sort/pagination — keep static.
   const STATIC_TEMPLATE_PAGES = new Set([
-    "cart", "checkout", "checkout/result",
+    "cart", "catalog", "checkout", "checkout/result",
     "login", "register", "reset-password", "verify-email",
     "account", "account/orders", "account/order", "account/profile", "account/newsletter",
   ]);

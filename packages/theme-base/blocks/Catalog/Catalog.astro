@@ -1,0 +1,32 @@
+---
+// Catalog — base Astro shell. Themes that ship a CatalogIsland (pupa-branch
+// sidebar+grid+pagination) override this file in `theme-<name>/blocks/Catalog/
+// Catalog.astro` to mount the island. The base file emits a placeholder so
+// Puck preview / SSG don't crash if a theme has not provided an island yet.
+import { CatalogClasses as C } from './Catalog.classes';
+import type { CatalogProps } from './Catalog.puckConfig';
+
+interface Props extends CatalogProps {
+  id?: string;
+}
+
+const { id, padding, colorScheme } = Astro.props as Props;
+
+const paddingStyle = padding
+  ? `padding-top:${padding.top ?? 0}px; padding-bottom:${padding.bottom ?? 0}px;`
+  : '';
+const schemeRaw = typeof colorScheme === 'string' ? colorScheme : undefined;
+const schemeClass = schemeRaw ? `color-scheme-${schemeRaw.replace('scheme-', '')}` : '';
+---
+<section
+  class:list={[C.root, schemeClass]}
+  data-puck-component-id={id}
+  data-block="catalog"
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    <div class="py-12 text-center text-[rgb(var(--color-muted))] [font-family:var(--font-body)]">
+      Каталог (фильтры + товары) — реализация темы не подключена.
+    </div>
+  </div>
+</section>

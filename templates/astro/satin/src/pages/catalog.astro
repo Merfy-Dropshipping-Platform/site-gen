@@ -2,66 +2,127 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import data from '../data/data.json';
 import siteConfig from '../data/site-config.json';
-import products from '../data/products.json';
+
+// Block components — full set so Puck content drives the page (078 architecture).
 import Header from '../components/Header.astro';
+import Hero from '../components/Hero.astro';
 import Footer from '../components/Footer.astro';
 import PopularProducts from '../components/PopularProducts.astro';
+import Gallery from '../components/Gallery.astro';
+import TextBlock from '../components/TextBlock.astro';
+import MultiColumns from '../components/MultiColumns.astro';
+import MultiRows from '../components/MultiRows.astro';
+import Slideshow from '../components/Slideshow.astro';
+import Video from '../components/Video.astro';
+import ImageWithText from '../components/ImageWithText.astro';
+import ContactForm from '../components/ContactForm.astro';
+import PromoBanner from '../components/PromoBanner.astro';
+import Publications from '../components/Publications.astro';
+import CollapsibleSection from '../components/CollapsibleSection.astro';
+import Collections from '../components/Collections.astro';
+import Newsletter from '../components/Newsletter.astro';
+import Product from '../components/Product.astro';
+import Catalog from '../components/Catalog.astro';
 import CatalogIsland from '../components/react/CatalogIsland';
 
-const meta = data?.meta ?? {};
-const blocks = data?.content ?? [];
-const headerBlock = blocks.find((b: any) => b.type === 'Header');
-const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+// Resolve catalog page blocks from multipage revision shape:
+//   data.pagesData['page-catalog'].content[]
+// Fallback: legacy single-page revision (data.content[]) — only for sites that
+// haven't migrated to the multipage schema yet. If neither has a Catalog block,
+// inject the pupa CatalogIsland under a default header so the page is never
+// blank for older content.
+const allPagesData = (data as any)?.pagesData ?? {};
+const catalogPageData =
+  allPagesData['page-catalog'] ??
+  allPagesData['catalog'] ??
+  null;
+
+const catalogBlocks: any[] = Array.isArray(catalogPageData?.content)
+  ? catalogPageData.content
+  : Array.isArray((data as any)?.content) && (data as any)?.currentPageId === 'page-catalog'
+  ? (data as any).content
+  : [];
+
+const meta = (data as any)?.meta ?? {};
+
+// Header / Footer chrome — prefer catalog page's own header/footer (Puck), fall
+// back to home-page header/footer (data.content), then to siteConfig.
+const homeBlocks: any[] = Array.isArray((data as any)?.content)
+  ? (data as any).content
+  : Array.isArray(allPagesData?.home?.content)
+  ? allPagesData.home.content
+  : [];
+
+const headerBlock =
+  catalogBlocks.find((b: any) => b?.type === 'Header') ??
+  homeBlocks.find((b: any) => b?.type === 'Header');
+const footerBlock =
+  catalogBlocks.find((b: any) => b?.type === 'Footer') ??
+  homeBlocks.find((b: any) => b?.type === 'Footer');
+
 const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
 const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
-const branding = (siteConfig as any)?.branding ?? {};
+
+// Content blocks — exclude Header/Footer (rendered as chrome).
+const contentBlocks = catalogBlocks.filter(
+  (b: any) => b?.type && b.type !== 'Header' && b.type !== 'Footer',
+);
+
+const componentMap: Record<string, any> = {
+  Hero,
+  PopularProducts,
+  Gallery,
+  MainText: TextBlock,
+  MultiColumns,
+  MultiRows,
+  Slideshow,
+  Video,
+  ImageWithText,
+  ContactForm,
+  PromoBanner,
+  Publications,
+  CollapsibleSection,
+  Collections,
+  Newsletter,
+  Product,
+  Catalog,
+};
+
+const hasCatalogBlock = contentBlocks.some((b: any) => b.type === 'Catalog');
+const pageTitle = (meta?.title && `Каталог — ${meta.title}`) || 'Каталог';
 ---
-<BaseLayout title={`Каталог — ${meta?.title ?? 'Мой сайт'}`} description={meta?.description}>
-  <div class="catalog-page flex flex-col flex-1" style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));">
+<BaseLayout title={pageTitle} description={meta?.description}>
+  <div class="catalog-page flex flex-col flex-1" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">
     <Header {...headerProps} />
 
-    <main class="catalog-main flex-1 w-full max-w-[1320px] mx-auto py-8 sm:py-12 md:py-16 lg:py-20 xl:py-24">
-      <!-- Page title block -->
-      <div class="mb-8 sm:mb-10 md:mb-12 lg:mb-16 xl:mb-20">
-        <h1
-          class="text-xl sm:text-2xl md:text-3xl lg:text-[32px] font-normal uppercase leading-[1.115] font-heading"
-          style="color: rgb(var(--color-foreground)); margin: 0;"
-        >КАТАЛОГ</h1>
-        <p
-          class="text-sm sm:text-base md:text-lg lg:text-xl xl:text-[24px] font-normal leading-[1.366] font-body mt-1 sm:mt-2"
-          style="color: rgb(var(--color-muted));"
-        >Здесь начинается персональный стиль</p>
-      </div>
+    <main class="catalog-main flex-1 w-full">
+      {contentBlocks.map((block: any) => {
+        const Component = componentMap[block.type];
+        if (!Component) {
+          // Unknown block type — skip silently in production, dev tooling
+          // surfaces these via the build pipeline.
+          return null;
+        }
+        return <Component {...(block.props ?? {})} />;
+      })}
 
-      <CatalogIsland client:only="react" />
-
-      <noscript>
-        <PopularProducts products={products} />
-      </noscript>
+      {/*
+        Backwards compatibility: revisions that haven't been migrated to the
+        new "Catalog" Puck block still need a working catalog page. Fall back
+        to the historical inline pupa-island layout (header + sidebar+grid)
+        only when no Catalog block was rendered above.
+      */}
+      {!hasCatalogBlock && (
+        <div class="w-full max-w-[1320px] mx-auto px-[16px] sm:px-[24px] md:px-[32px] lg:px-[64px] xl:px-[96px] 2xl:px-[40px] py-8 sm:py-12 md:py-16 lg:py-20 xl:py-24">
+          <div class="mb-8 sm:mb-10 md:mb-12 lg:mb-16 xl:mb-20">
+            <h1 class="text-xl sm:text-2xl md:text-3xl lg:text-[32px] font-normal uppercase leading-[1.115] [font-family:var(--font-heading)]" style="color: rgb(var(--color-heading)); margin: 0;">КАТАЛОГ</h1>
+            <p class="text-sm sm:text-base md:text-lg lg:text-xl xl:text-[24px] font-normal leading-[1.366] [font-family:var(--font-body)] mt-1 sm:mt-2" style="color: rgb(var(--color-muted));">Здесь начинается персональный стиль</p>
+          </div>
+          <CatalogIsland client:only="react" />
+        </div>
+      )}
     </main>
 
     <Footer {...footerProps} />
   </div>
 </BaseLayout>
-
-<style>
-  .catalog-main {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-  @media (min-width: 640px) {
-    .catalog-main { padding-left: 24px; padding-right: 24px; }
-  }
-  @media (min-width: 768px) {
-    .catalog-main { padding-left: 32px; padding-right: 32px; }
-  }
-  @media (min-width: 1024px) {
-    .catalog-main { padding-left: 64px; padding-right: 64px; }
-  }
-  @media (min-width: 1280px) {
-    .catalog-main { padding-left: 96px; padding-right: 96px; }
-  }
-  @media (min-width: 1536px) {
-    .catalog-main { padding-left: 300px; padding-right: 300px; }
-  }
-</style>

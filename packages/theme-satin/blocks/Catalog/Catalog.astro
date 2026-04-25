@@ -1,0 +1,50 @@
+---
+// Satin Catalog — Puck-bound block. Mounts the pupa-branch CatalogIsland
+// (sidebar filters + grid + pagination) inside the standard Satin section
+// chrome (1320px container, 40px gutters, configurable padding/scheme).
+//
+// CatalogIsland lives under templates/astro/satin/src/components/react/.
+// During build, assemble-from-packages copies the legacy template scaffold
+// into outputDir BEFORE overlaying these block files, so the relative import
+// `../../components/react/CatalogIsland` resolves at the final outputDir
+// layout: `outputDir/src/components/react/CatalogIsland.tsx`.
+import CatalogIsland from '../../components/react/CatalogIsland';
+import { CatalogClasses as C } from './Catalog.classes';
+import type { CatalogProps } from './Catalog.puckConfig';
+
+interface Props extends CatalogProps {
+  id?: string;
+}
+
+const {
+  id,
+  collectionSlug,
+  showCollectionFilter = 'true',
+  padding,
+  colorScheme,
+} = Astro.props as Props;
+
+const showColl =
+  showCollectionFilter === true ||
+  showCollectionFilter === 'true';
+
+const paddingStyle = padding
+  ? `padding-top:${padding.top ?? 40}px; padding-bottom:${padding.bottom ?? 80}px;`
+  : 'padding-top:40px; padding-bottom:80px;';
+const schemeRaw = typeof colorScheme === 'string' ? colorScheme : undefined;
+const schemeClass = schemeRaw ? `color-scheme-${schemeRaw.replace('scheme-', '')}` : '';
+---
+<section
+  class:list={[C.root, schemeClass]}
+  data-puck-component-id={id}
+  data-block="catalog"
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    <CatalogIsland
+      client:only="react"
+      collectionSlug={collectionSlug}
+      showCollectionFilter={showColl}
+    />
+  </div>
+</section>

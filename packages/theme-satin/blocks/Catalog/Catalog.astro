@@ -4,11 +4,12 @@
 // chrome (1320px container, 40px gutters, configurable padding/scheme).
 //
 // CatalogIsland lives under templates/astro/satin/src/components/react/.
-// During build, assemble-from-packages copies the legacy template scaffold
-// into outputDir BEFORE overlaying these block files, so the relative import
-// `../../components/react/CatalogIsland` resolves at the final outputDir
-// layout: `outputDir/src/components/react/CatalogIsland.tsx`.
-import CatalogIsland from '../../components/react/CatalogIsland';
+// During build, assemble-from-packages flattens block .astro files into
+// `outputDir/src/components/<BlockName>.astro`. From that location the React
+// island sits at `./react/CatalogIsland.tsx`, so we import it via that
+// relative path (NOT `../../components/react/...` which would point one level
+// above outputDir/src and fail to resolve).
+import CatalogIsland from './react/CatalogIsland';
 import { CatalogClasses as C } from './Catalog.classes';
 import type { CatalogProps } from './Catalog.puckConfig';
 

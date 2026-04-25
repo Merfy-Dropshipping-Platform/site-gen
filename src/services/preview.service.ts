@@ -289,10 +289,11 @@ const PREVIEW_NAV_AGENT_INLINE = `
   var TARGET = '*';
   function post(msg) { try { parent.postMessage(msg, TARGET); } catch (e) {} }
 
-  // Pupa parity: hover/selected outlines for sections и подсекций. CSS
-  // инжектируется в head iframe, JS toggle data-puck-*-hover/selected на
-  // mouseover/mouseleave/click. Parent посылает set-selection при изменении
-  // Puck itemSelector / selectedArrayIndex.
+  // Pupa parity: hover/selected outlines + floating action pill (label + copy +
+  // delete) for sections и подсекций. CSS инжектируется в head iframe, JS
+  // toggle data-puck-*-hover/selected на mouseover/mouseleave/click. Parent
+  // посылает set-selection при изменении Puck itemSelector / selectedArrayIndex
+  // и set-labels при инициализации (componentLabels + subsectionItemLabels).
   var STYLE_ID = '__merfy_preview_overlay_styles';
   function injectStyles() {
     if (document.getElementById(STYLE_ID)) return;
@@ -304,7 +305,13 @@ const PREVIEW_NAV_AGENT_INLINE = `
       '[data-puck-section-selected="true"]{outline:2px solid #71C0FF !important;outline-offset:-2px;z-index:2}',
       '[data-puck-subsection-parent]{position:relative;cursor:pointer}',
       '[data-puck-subsection-hover="true"]{outline:2px dashed #71C0FF !important;outline-offset:2px;z-index:3}',
-      '[data-puck-subsection-selected="true"]{outline:2px solid #71C0FF !important;outline-offset:2px;z-index:4}'
+      '[data-puck-subsection-selected="true"]{outline:2px solid #71C0FF !important;outline-offset:2px;z-index:4}',
+      '.__merfy_pill{position:fixed;display:none;align-items:center;gap:4px;background:#1a1a1a;color:#fff;font:500 12px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:5px 6px 5px 10px;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,.25);pointer-events:auto;z-index:9999;user-select:none;white-space:nowrap}',
+      '.__merfy_pill[data-visible="true"]{display:inline-flex}',
+      '.__merfy_pill .__merfy_pill_label{margin-right:4px}',
+      '.__merfy_pill button{appearance:none;background:transparent;border:none;color:#fff;width:22px;height:22px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}',
+      '.__merfy_pill button:hover{background:rgba(255,255,255,.15)}',
+      '.__merfy_pill svg{width:14px;height:14px;display:block;pointer-events:none}'
     ].join('');
     document.head.appendChild(s);
   }
@@ -315,34 +322,143 @@ const PREVIEW_NAV_AGENT_INLINE = `
     for (var i = 0; i < els.length; i++) els[i].removeAttribute(attr);
   }
 
+  // Labels (filled by parent in 'init' / 'set-labels').
+  var componentLabels = {};
+  var subsectionItemLabels = {};
+
+  // Floating action pill — one instance per layer (section vs subsection),
+  // can be visible simultaneously.
+  function makePill(layer) {
+    var pill = document.createElement('div');
+    pill.className = '__merfy_pill';
+    pill.setAttribute('data-merfy-pill', layer);
+    pill.innerHTML =
+      '<span class="__merfy_pill_label"></span>' +
+      '<button type="button" data-action="duplicate" title="Скопировать" aria-label="Скопировать">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
+      '</button>' +
+      '<button type="button" data-action="delete" title="Удалить" aria-label="Удалить">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>' +
+      '</button>';
+    document.body.appendChild(pill);
+    pill.addEventListener('click', function (e) {
+      e.stopPropagation();
+      e.preventDefault();
+      var btn = e.target && e.target.closest ? e.target.closest('button[data-action]') : null;
+      if (!btn) return;
+      var action = btn.getAttribute('data-action');
+      var target = pill.__merfy_target;
+      if (!target) return;
+      if (layer === 'section') {
+        var blockId = target.getAttribute('data-puck-component-id');
+        if (!blockId) return;
+        if (action === 'duplicate') post({ type: 'duplicate-block', blockId: blockId });
+        else if (action === 'delete') post({ type: 'delete-block', blockId: blockId });
+      } else {
+        var parentId = target.getAttribute('data-puck-subsection-parent');
+        var idx = parseInt(target.getAttribute('data-puck-subsection-index') || '', 10);
+        if (!parentId || isNaN(idx)) return;
+        if (action === 'duplicate') post({ type: 'duplicate-subsection', parentId: parentId, index: idx });
+        else if (action === 'delete') post({ type: 'delete-subsection', parentId: parentId, index: idx });
+      }
+    }, true);
+    // Block hover state from leaking to underlying section while interacting with pill.
+    pill.addEventListener('mousedown', function (e) { e.stopPropagation(); }, true);
+    return pill;
+  }
+  var sectionPill = makePill('section');
+  var subsectionPill = makePill('subsection');
+
+  function inferLabel(layer, target) {
+    if (layer === 'section') {
+      var blockId = target.getAttribute('data-puck-component-id') || '';
+      var dashIdx = blockId.indexOf('-');
+      var type = dashIdx >= 0 ? blockId.slice(0, dashIdx) : blockId;
+      return componentLabels[type] || componentLabels[blockId] || type || 'Секция';
+    }
+    var parentId = target.getAttribute('data-puck-subsection-parent') || '';
+    var dashIdx2 = parentId.indexOf('-');
+    var parentType = dashIdx2 >= 0 ? parentId.slice(0, dashIdx2) : parentId;
+    return subsectionItemLabels[parentType] || 'Элемент';
+  }
+
+  function positionPill(pill, target) {
+    if (!target || !target.isConnected) {
+      pill.dataset.visible = 'false';
+      pill.__merfy_target = null;
+      return;
+    }
+    var rect = target.getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0) {
+      pill.dataset.visible = 'false';
+      pill.__merfy_target = null;
+      return;
+    }
+    var labelEl = pill.querySelector('.__merfy_pill_label');
+    if (labelEl) labelEl.textContent = inferLabel(pill.getAttribute('data-merfy-pill'), target);
+    pill.__merfy_target = target;
+    pill.dataset.visible = 'true';
+    requestAnimationFrame(function () {
+      var pw = pill.offsetWidth || 120;
+      var ph = pill.offsetHeight || 32;
+      var top = Math.max(8, Math.min(window.innerHeight - ph - 8, rect.top + 8));
+      var rightAnchor = Math.max(pw + 8, Math.min(window.innerWidth - 8, rect.right - 8));
+      var left = rightAnchor - pw;
+      pill.style.top = top + 'px';
+      pill.style.left = left + 'px';
+    });
+  }
+
+  function hidePill(pill) {
+    pill.dataset.visible = 'false';
+    pill.__merfy_target = null;
+  }
+
+  // Track current section/subsection (hover takes priority for visibility).
+  var hoveredSection = null;
+  var hoveredSubsection = null;
+  var selectedSectionEl = null;
+  var selectedSubsectionEl = null;
+
+  function refreshPills() {
+    var secTarget = hoveredSection || selectedSectionEl;
+    var subTarget = hoveredSubsection || selectedSubsectionEl;
+    if (secTarget) positionPill(sectionPill, secTarget); else hidePill(sectionPill);
+    if (subTarget) positionPill(subsectionPill, subTarget); else hidePill(subsectionPill);
+  }
+
   // Hover handling
-  var lastSection = null;
-  var lastSubsection = null;
   document.addEventListener('mouseover', function (e) {
     var t = e.target;
     if (!t || !t.closest) return;
+    if (t.closest && t.closest('[data-merfy-pill]')) return;
     var sec = t.closest('[data-puck-component-id]');
-    if (sec !== lastSection) {
-      if (lastSection) lastSection.removeAttribute('data-puck-section-hover');
+    if (sec !== hoveredSection) {
+      if (hoveredSection) hoveredSection.removeAttribute('data-puck-section-hover');
       if (sec) sec.setAttribute('data-puck-section-hover', 'true');
-      lastSection = sec;
+      hoveredSection = sec;
     }
     var sub = t.closest('[data-puck-subsection-parent]');
-    if (sub !== lastSubsection) {
-      if (lastSubsection) lastSubsection.removeAttribute('data-puck-subsection-hover');
+    if (sub !== hoveredSubsection) {
+      if (hoveredSubsection) hoveredSubsection.removeAttribute('data-puck-subsection-hover');
       if (sub) sub.setAttribute('data-puck-subsection-hover', 'true');
-      lastSubsection = sub;
+      hoveredSubsection = sub;
     }
+    refreshPills();
   }, true);
   document.addEventListener('mouseleave', function () {
-    if (lastSection) lastSection.removeAttribute('data-puck-section-hover');
-    if (lastSubsection) lastSubsection.removeAttribute('data-puck-subsection-hover');
-    lastSection = null; lastSubsection = null;
+    if (hoveredSection) hoveredSection.removeAttribute('data-puck-section-hover');
+    if (hoveredSubsection) hoveredSubsection.removeAttribute('data-puck-subsection-hover');
+    hoveredSection = null; hoveredSubsection = null;
+    refreshPills();
   });
 
   // Intercept in-document navigation so the parent can swap pages without a
   // full iframe reload (preserves editor state).
   document.addEventListener('click', function (e) {
+    if (e.target && e.target.closest && e.target.closest('[data-merfy-pill]')) {
+      return;
+    }
     var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
     if (a) {
       var href = a.getAttribute('href') || '';
@@ -351,11 +467,9 @@ const PREVIEW_NAV_AGENT_INLINE = `
         post({ type: 'navigate', path: href });
         return;
       }
-      // External / mailto / unknown — block, no navigation.
       e.preventDefault();
       return;
     }
-    // Subsection click (priority over section): heading/text/button/array-item.
     var sub = e.target && e.target.closest ? e.target.closest('[data-puck-subsection-parent]') : null;
     if (sub) {
       e.stopPropagation();
@@ -374,8 +488,6 @@ const PREVIEW_NAV_AGENT_INLINE = `
     }
   }, true);
 
-  // Block form submissions — preview shouldn't hit real order/newsletter
-  // endpoints from inside the editor.
   document.addEventListener('submit', function (e) {
     e.preventDefault();
     var form = e.target;
@@ -383,7 +495,6 @@ const PREVIEW_NAV_AGENT_INLINE = `
     post({ type: 'form-submit-blocked', formId: id });
   }, true);
 
-  // Parent → iframe: apply selection state (section + optional subsection).
   window.addEventListener('message', function (ev) {
     if (!ev.data || typeof ev.data !== 'object') return;
     if (ev.data.type === 'set-selection') {
@@ -392,19 +503,44 @@ const PREVIEW_NAV_AGENT_INLINE = `
       var sectionId = ev.data.sectionId;
       var subParent = ev.data.subsectionParentId;
       var subIndex = ev.data.subsectionIndex;
+      selectedSectionEl = null;
+      selectedSubsectionEl = null;
       if (sectionId) {
         var sectionEl = document.querySelector('[data-puck-component-id="' + sectionId + '"]');
-        if (sectionEl) sectionEl.setAttribute('data-puck-section-selected', 'true');
+        if (sectionEl) {
+          sectionEl.setAttribute('data-puck-section-selected', 'true');
+          selectedSectionEl = sectionEl;
+        }
       }
       if (subParent && (typeof subIndex === 'number' || typeof subIndex === 'string')) {
         var subEl = document.querySelector('[data-puck-subsection-parent="' + subParent + '"][data-puck-subsection-index="' + subIndex + '"]');
         if (subEl) {
           subEl.setAttribute('data-puck-subsection-selected', 'true');
           subEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          selectedSubsectionEl = subEl;
         }
       }
+      refreshPills();
+    } else if (ev.data.type === 'set-labels') {
+      if (ev.data.componentLabels && typeof ev.data.componentLabels === 'object') {
+        componentLabels = ev.data.componentLabels;
+      }
+      if (ev.data.subsectionItemLabels && typeof ev.data.subsectionItemLabels === 'object') {
+        subsectionItemLabels = ev.data.subsectionItemLabels;
+      }
+      refreshPills();
     }
   });
+
+  // Reposition pills on scroll/resize (target may move).
+  var rafScheduled = false;
+  function scheduleRefresh() {
+    if (rafScheduled) return;
+    rafScheduled = true;
+    requestAnimationFrame(function () { rafScheduled = false; refreshPills(); });
+  }
+  window.addEventListener('scroll', scheduleRefresh, true);
+  window.addEventListener('resize', scheduleRefresh);
 
   // Signal readiness so the parent can send 'init'.
   post({ type: 'ready' });

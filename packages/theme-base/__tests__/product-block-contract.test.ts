@@ -17,18 +17,52 @@ describe('Product block', () => {
   });
 
   it('exports ProductPuckConfig with required fields', () => {
-    expect(ProductPuckConfig.label).toBe('Товар (PDP)');
+    expect(ProductPuckConfig.label).toBe('Информация о товаре');
     expect(ProductPuckConfig.category).toBe('products');
     expect(ProductPuckConfig.defaults.productId).toBeDefined();
+  });
+
+  it('ProductPuckConfig declares new panel fields', () => {
+    expect(ProductPuckConfig.fields).toHaveProperty('text');
+    expect(ProductPuckConfig.fields).toHaveProperty('price');
+    expect(ProductPuckConfig.fields).toHaveProperty('quantity');
+    expect(ProductPuckConfig.fields).toHaveProperty('description');
+    // Legacy badge field kept for back-compat with old revisions.
+    expect(ProductPuckConfig.fields).toHaveProperty('badge');
+  });
+
+  it('ProductPuckConfig pins maxInstances to 1 (single PDP block per page)', () => {
+    expect(ProductPuckConfig.maxInstances).toBe(1);
   });
 
   it('ProductSchema parses valid props', () => {
     const ok = ProductSchema.safeParse({
       productId: 'prod-123',
-      colorScheme: 1,
+      colorScheme: '1',
       padding: { top: 40, bottom: 40 },
     });
     expect(ok.success).toBe(true);
+  });
+
+  it('ProductSchema parses old revision shape (back-compat with badge)', () => {
+    const oldRevision = {
+      productId: 'p-1',
+      badge: { text: 'Новинка', textSize: 'medium' },
+      padding: { top: 40, bottom: 80 },
+    };
+    expect(() => ProductSchema.parse(oldRevision)).not.toThrow();
+  });
+
+  it('ProductSchema parses new revision shape with text/price/quantity/description panels', () => {
+    const newRevision = {
+      productId: 'p-1',
+      text: { content: 'Новая коллекция!', size: 'medium' },
+      price: { show: 'true' },
+      quantity: { enabled: 'true' },
+      description: { content: 'Длинное описание', size: 'small' },
+      padding: { top: 40, bottom: 80 },
+    };
+    expect(() => ProductSchema.parse(newRevision)).not.toThrow();
   });
 
   it('ProductTokens includes button + media tokens', () => {

@@ -27,6 +27,8 @@ const {
   showFilter,
   filterPosition,
   showSort,
+  colorScheme,
+  collectionSlug,
   // Legacy aliases (revisions saved before Figma redesign).
   showCollectionFilter,
   showSidebar,
@@ -57,13 +59,36 @@ const cardAspect =
   : productCard?.cardStyle === 'wide' ? '4 / 3'
   : '3 / 4';
 
+// Card chrome — toggle background/border based on cardBackground.
+const cardBgOn =
+  productCard?.cardBackground === 'true' || productCard?.cardBackground === true;
+// Quick-add button (none / standard / cart).
+const quickAddMode = productCard?.quickAdd ?? 'none';
+const showQuickAdd = quickAddMode === 'standard' || quickAddMode === 'cart';
+const quickAddText = quickAddMode === 'cart' ? 'В КОРЗИНУ' : 'БЫСТРЫЙ ПРОСМОТР';
+// Button style affects pill colors.
+const btnStyle = productCard?.buttonStyle ?? 'primary';
+const btnBg = btnStyle === 'primary' ? '#000000' : btnStyle === 'secondary' ? '#ffffff' : 'transparent';
+const btnFg = btnStyle === 'primary' ? '#ffffff' : '#000000';
+const btnBorder = btnStyle === 'link' ? 'none' : btnStyle === 'secondary' ? '1px solid #000000' : '1px solid #000000';
+// Color scheme — apply CSS class so theme tokens swap.
+const schemeClass =
+  typeof colorScheme === 'string' && colorScheme
+    ? `color-scheme-${colorScheme.replace('scheme-', '')}`
+    : '';
+
 const apiBase = 'https://gateway.merfy.ru/api';
 ---
 <section
+  class:list={[schemeClass]}
   data-puck-component-id={id}
   data-block="catalog"
   data-site-id={siteId}
   data-api-base={apiBase}
+  data-collection-slug={collectionSlug}
+  data-card-bg={cardBgOn ? 'true' : 'false'}
+  data-quick-add={quickAddMode}
+  data-next-photo={(productCard?.nextPhoto === 'true' || productCard?.nextPhoto === true) ? 'true' : 'false'}
   style={`background:#ffffff;color:#000000;${paddingStyle}`}
 >
   <div style="max-width: 1320px; margin: 0 auto; padding-left: 24px; padding-right: 24px;">
@@ -150,7 +175,7 @@ const apiBase = 'https://gateway.merfy.ru/api';
         style={`display: grid; grid-template-columns: repeat(${colCount}, 1fr); gap: 16px;`}
       >
         {placeholderCards.map(() => (
-          <article style="display: flex; flex-direction: column; gap: 12px;">
+          <article style={`display: flex; flex-direction: column; gap: 12px; ${cardBgOn ? 'background:#fbfbfb;border:1px solid #f5f5f5;border-radius:8px;padding:8px;' : ''}`}>
             <div style={`aspect-ratio: ${cardAspect}; background: #f5f5f5; border-radius: 4px; display: flex; align-items: center; justify-content: center;`}>
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#cccccc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
             </div>
@@ -158,6 +183,14 @@ const apiBase = 'https://gateway.merfy.ru/api';
               <div style="font-size: 14px; color: #000;">Товар</div>
               <div style="font-size: 14px; color: #000;">2 500 ₽</div>
             </div>
+            {showQuickAdd && (
+              <button
+                type="button"
+                style={`margin-top:4px;padding:8px 12px;border-radius:4px;font-size:12px;cursor:pointer;background:${btnBg};color:${btnFg};border:${btnBorder};${btnStyle === 'link' ? 'text-decoration:underline;background:transparent;' : ''}`}
+              >
+                {quickAddText}
+              </button>
+            )}
           </article>
         ))}
       </div>
@@ -165,9 +198,10 @@ const apiBase = 'https://gateway.merfy.ru/api';
   </div>
 </section>
 
-<script is:inline define:vars={{ siteId, apiBase, cardCount }}>
+<script is:inline define:vars={{ siteId, apiBase, cardCount, cardBgOn, btnBg, btnFg, btnBorder, btnStyle, showQuickAdd, quickAddText, collectionSlug }}>
   // Mirror live storefront in constructor preview: fetch real products and
-  // replace placeholder grid with actual cards.
+  // replace placeholder grid with actual cards. Honor productCard.* settings
+  // so user changes (cardBackground, buttonStyle, quickAdd, etc) reflect.
   (function () {
     if (!siteId) return;
     const root = document.querySelector('section[data-block="catalog"]');
@@ -184,6 +218,15 @@ const apiBase = 'https://gateway.merfy.ru/api';
       return rubles.toLocaleString('ru-RU') + ' ₽';
     }
 
+    const cardChrome = cardBgOn
+      ? 'background:#fbfbfb;border:1px solid #f5f5f5;border-radius:8px;padding:8px;'
+      : '';
+    const buttonStyle = (
+      'margin-top:4px;padding:8px 12px;border-radius:4px;font-size:12px;cursor:pointer;' +
+      'background:' + btnBg + ';color:' + btnFg + ';border:' + btnBorder + ';' +
+      (btnStyle === 'link' ? 'text-decoration:underline;background:transparent;' : '')
+    );
+
     function cardHtml(p) {
       const img = (Array.isArray(p.images) && p.images[0])
         ? (typeof p.images[0] === 'string' ? p.images[0] : p.images[0].url)
@@ -192,7 +235,7 @@ const apiBase = 'https://gateway.merfy.ru/api';
       const price = fmtPrice(p.basePrice ?? p.price);
       const compare = p.compareAtPrice ? fmtPrice(p.compareAtPrice) : '';
       return (
-        '<article style="display:flex;flex-direction:column;gap:8px;">' +
+        '<article style="display:flex;flex-direction:column;gap:8px;' + cardChrome + '">' +
           (img
             ? '<div style="aspect-ratio:3/4;background-image:url(' + JSON.stringify(img) + ');background-size:cover;background-position:center;border-radius:4px;"></div>'
             : '<div style="aspect-ratio:3/4;background:rgba(0,0,0,0.05);border-radius:4px;"></div>') +
@@ -201,6 +244,7 @@ const apiBase = 'https://gateway.merfy.ru/api';
             '<span>' + price + '</span>' +
             (compare ? '<span style="text-decoration:line-through;color:#999;">' + compare + '</span>' : '') +
           '</div>' +
+          (showQuickAdd ? '<button type="button" style="' + buttonStyle + '">' + quickAddText + '</button>' : '') +
         '</article>'
       );
     }
@@ -210,18 +254,28 @@ const apiBase = 'https://gateway.merfy.ru/api';
       .then((r) => r && r.ok ? r.json() : null)
       .then((data) => {
         if (!data) return;
-        const products = (data.products || data.data?.products || []).slice(0, cardCount);
+        let products = data.products || data.data?.products || [];
         const colls = data.collections || data.data?.collections || [];
-        if (count && Number.isFinite(products.length)) {
-          count.textContent = products.length + ' товаров';
+        // Filter by selected collection (if collectionSlug set).
+        if (collectionSlug) {
+          const matchingColl = colls.find(function (c) {
+            return c.id === collectionSlug || c.handle === collectionSlug || c.slug === collectionSlug;
+          });
+          if (matchingColl && Array.isArray(matchingColl.productIds)) {
+            const allowed = new Set(matchingColl.productIds);
+            products = products.filter(function (p) { return allowed.has(p.id); });
+          }
         }
+        products = products.slice(0, cardCount);
+        if (count) count.textContent = products.length + ' товаров';
         if (collsEl && Array.isArray(colls) && colls.length) {
           const items = colls.map(function (c) {
-            return '<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;"><input type="radio" name="cat-coll" /><span>' + (c.title || c.name || c.handle || c.id) + '</span></label>';
+            const checked = c.id === collectionSlug || c.handle === collectionSlug ? 'checked' : '';
+            return '<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;"><input type="radio" name="cat-coll" ' + checked + ' /><span>' + (c.title || c.name || c.handle || c.id) + '</span></label>';
           }).join('');
           collsEl.innerHTML =
             '<div style="font-weight:500;margin-bottom:8px;">Коллекции</div>' +
-            '<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;"><input type="radio" name="cat-coll" checked /><span>Все</span></label>' +
+            '<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;"><input type="radio" name="cat-coll" ' + (collectionSlug ? '' : 'checked') + ' /><span>Все</span></label>' +
             items;
         }
         if (products.length) {

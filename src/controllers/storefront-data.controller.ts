@@ -3,6 +3,7 @@ import type { Response } from 'express';
 import type { ClientProxy } from '@nestjs/microservices';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { eq } from 'drizzle-orm';
+import { firstValueFrom, timeout, catchError, of } from 'rxjs';
 import * as pgModule from 'pg';
 const PgPoolCtor: typeof pgModule.Pool =
   (pgModule as any).Pool ?? (pgModule as any).default?.Pool;
@@ -160,87 +161,66 @@ export class StorefrontDataController {
       }
 
       // Fetch variants for the resolved product so storefront UI can render
-      // size/color pills. Variants live across 4 tables in product_service:
-      // product_variant_combinations × variant_combination_options →
-      // variant_options × variant_groups.
+      // size/color pills. Uses product-service RPC `product.getVariants`
+      // (works inside the docker network; direct DB on PRODUCT_DATABASE_URL
+      // is firewalled when called from sites-service container).
       if (product && (product as { id?: string }).id) {
-        const productPool = this.getProductPool();
-        if (productPool) {
-          try {
-            const productRowId = (product as { id: string }).id;
-            const varRes = await productPool.query(
-              `SELECT pvc.id,
-                      pvc.price,
-                      pvc."compareAtPrice",
-                      pvc.quantity,
-                      pvc."allowBackorder",
-                      pvc.images,
-                      pvc.sku,
-                      vg.name AS group_name,
-                      vo.value AS option_value
-                 FROM product_variant_combinations pvc
-                 LEFT JOIN variant_combination_options vco ON vco."combinationId" = pvc.id
-                 LEFT JOIN variant_options vo ON vo.id = vco."optionId"
-                 LEFT JOIN variant_groups vg ON vg.id = vo."variantGroupId"
-                WHERE pvc."productId" = $1
-                ORDER BY pvc.id, vg.position NULLS LAST, vo.position NULLS LAST`,
-              [productRowId],
-            );
-            // Group rows by combination id (one row per option within a combination)
-            const byId = new Map<string, {
-              id: string;
-              price: string;
-              compareAtPrice: string | null;
-              quantity: number;
-              allowBackorder: boolean;
-              images: string[];
-              sku: string | null;
-              options: Record<string, string>;
-            }>();
-            for (const row of varRes.rows as Array<Record<string, any>>) {
-              const cid = String(row.id);
-              let combo = byId.get(cid);
-              if (!combo) {
-                combo = {
-                  id: cid,
-                  price: row.price != null ? String(row.price) : '0',
-                  compareAtPrice: row.compareAtPrice != null ? String(row.compareAtPrice) : null,
-                  quantity: row.quantity != null ? Number(row.quantity) : 0,
-                  allowBackorder: !!row.allowBackorder,
-                  images: Array.isArray(row.images) ? row.images : [],
-                  sku: row.sku ?? null,
-                  options: {},
-                };
-                byId.set(cid, combo);
+        try {
+          const productRowId = (product as { id: string }).id;
+          const varResp = await firstValueFrom(
+            this.productClient
+              .send<{ success: boolean; data?: any[] }>(
+                'product.getVariants',
+                { productId: productRowId, shopId: siteId },
+              )
+              .pipe(
+                timeout(5000),
+                catchError(() => of(null)),
+              ),
+          );
+          const list: any[] = Array.isArray(varResp?.data) ? varResp!.data! : [];
+          const variants = list.map((v) => {
+            const optionsList: Array<{ groupName?: string; value?: string }> =
+              Array.isArray(v.optionsList) ? v.optionsList : [];
+            const options: Record<string, string> = {};
+            if (v.options && typeof v.options === 'object') {
+              for (const [k, val] of Object.entries(v.options)) {
+                options[String(k)] = String(val);
               }
-              if (row.group_name && row.option_value != null) {
-                combo.options[String(row.group_name)] = String(row.option_value);
+            } else {
+              for (const opt of optionsList) {
+                if (opt?.groupName != null && opt.value != null) {
+                  options[String(opt.groupName)] = String(opt.value);
+                }
               }
             }
-            const variants = Array.from(byId.values()).map((c) => {
-              const values = Object.values(c.options);
-              const title = values.length > 0 ? values.join(' / ') : '';
-              const available = c.quantity > 0 || c.allowBackorder;
-              return {
-                id: c.id,
-                title,
-                options: c.options,
-                price: c.price,
-                compareAtPrice: c.compareAtPrice,
-                quantity: c.quantity,
-                allowBackorder: c.allowBackorder,
-                images: c.images,
-                sku: c.sku,
-                available,
-              };
-            });
-            (product as Record<string, unknown>).variants = variants;
-            (product as Record<string, unknown>).hasVariants = variants.length > 0;
-          } catch (vErr) {
-            this.logger.warn(
-              `variant fetch failed for product=${(product as { id?: string }).id}: ${(vErr as Error)?.message ?? vErr}`,
-            );
-          }
+            const values = Object.values(options);
+            const title =
+              typeof v.title === 'string' && v.title
+                ? v.title
+                : values.join(' / ');
+            const quantity = typeof v.quantity === 'number' ? v.quantity : 0;
+            const allowBackorder = !!v.allowBackorder;
+            return {
+              id: String(v.id ?? ''),
+              title,
+              options,
+              price: v.price != null ? String(v.price) : '0',
+              compareAtPrice:
+                v.compareAtPrice != null ? String(v.compareAtPrice) : null,
+              quantity,
+              allowBackorder,
+              images: Array.isArray(v.images) ? v.images : [],
+              sku: v.sku ?? null,
+              available: quantity > 0 || allowBackorder,
+            };
+          });
+          (product as Record<string, unknown>).variants = variants;
+          (product as Record<string, unknown>).hasVariants = variants.length > 0;
+        } catch (vErr) {
+          this.logger.warn(
+            `variant RPC failed for product=${(product as { id?: string }).id}: ${(vErr as Error)?.message ?? vErr}`,
+          );
         }
       }
 

@@ -1,16 +1,15 @@
 ---
 // Catalog — pupa-style SSG render with optional client hydration.
 //
-// Renders the same visual structure as the live CatalogIsland (top sort
-// pills + sidebar filters + product grid) so the constructor preview
-// mirrors the live storefront. When `siteId` is injected by the preview
-// pipeline, an inline client script fetches real products from the
-// storefront API and replaces the placeholder cards — giving the
-// constructor a true mirror of what users see on the live site.
+// Renders the same visual structure as the live CatalogIsland (sort pills,
+// filter sidebar, product grid) so the constructor preview mirrors the live
+// storefront. When `siteId` is injected by the preview pipeline, an inline
+// client script fetches real products from the storefront API and replaces
+// placeholder cards.
 //
 // On live SSG bundles the theme catalog.astro intercepts Catalog blocks
 // before they reach this file and renders the interactive React island
-// directly, so this file is only used in preview pipelines.
+// directly, so this file is only used in preview.
 import type { CatalogProps } from './Catalog.puckConfig';
 
 interface Props extends CatalogProps {
@@ -18,16 +17,46 @@ interface Props extends CatalogProps {
   siteId?: string;
 }
 
-const { id, padding, showCollectionFilter, showSidebar, siteId } = Astro.props as Props;
+const {
+  id,
+  padding,
+  subtitle,
+  cards = 8,
+  columns = 4,
+  productCard,
+  showFilter,
+  filterPosition,
+  showSort,
+  // Legacy aliases (revisions saved before Figma redesign).
+  showCollectionFilter,
+  showSidebar,
+  siteId,
+} = Astro.props as Props;
 
 const paddingStyle = padding
-  ? `padding-top:${padding.top ?? 40}px; padding-bottom:${padding.bottom ?? 80}px;`
-  : 'padding-top:40px; padding-bottom:80px;';
+  ? `padding-top:${padding.top ?? 120}px; padding-bottom:${padding.bottom ?? 120}px;`
+  : 'padding-top:120px; padding-bottom:120px;';
 
-const sidebar = showSidebar !== 'false' && showSidebar !== false;
-const collFilter = showCollectionFilter !== 'false' && showCollectionFilter !== false;
+const subtitleVisible = subtitle !== 'false' && subtitle !== false;
+const filterVisible =
+  showFilter === undefined && showSidebar === undefined
+    ? true
+    : (showFilter !== 'false' && showFilter !== false) ||
+      (showSidebar !== 'false' && showSidebar !== false);
+const filterSide = (filterPosition ?? 'side') === 'side';
+const sortVisible = showSort !== 'false' && showSort !== false;
+const collFilterLegacy =
+  showCollectionFilter !== 'false' && showCollectionFilter !== false;
 
-const placeholderCards = Array.from({ length: 6 });
+const cardCount = Math.max(2, Math.min(24, Number(cards) || 8));
+const colCount = Math.max(1, Math.min(6, Number(columns) || 4));
+const placeholderCards = Array.from({ length: cardCount });
+
+const cardAspect =
+  productCard?.cardStyle === 'square' ? '1 / 1'
+  : productCard?.cardStyle === 'wide' ? '4 / 3'
+  : '3 / 4';
+
 const apiBase = 'https://gateway.merfy.ru/api';
 ---
 <section
@@ -40,24 +69,37 @@ const apiBase = 'https://gateway.merfy.ru/api';
   <div style="max-width: 1320px; margin: 0 auto; padding-left: 24px; padding-right: 24px;">
     <div style="margin-bottom: 24px;">
       <h1 style="font-size: clamp(20px, 3vw, 36px); font-weight: 400; text-transform: uppercase; line-height: 1.1; color: #000000; margin: 0; font-family: var(--font-heading);">КАТАЛОГ</h1>
-      <p style="font-size: clamp(14px, 1.5vw, 20px); font-weight: 400; line-height: 1.4; color: #999999; margin-top: 6px; font-family: var(--font-body);">Здесь начинается персональный стиль</p>
+      {subtitleVisible && (
+        <p style="font-size: clamp(14px, 1.5vw, 20px); font-weight: 400; line-height: 1.4; color: #999999; margin-top: 6px; font-family: var(--font-body);">Здесь начинается персональный стиль</p>
+      )}
     </div>
 
-    <div data-catalog-count style="margin-bottom: 16px; color: #000000; font-size: 14px;">{placeholderCards.length} товаров</div>
+    <div data-catalog-count style="margin-bottom: 16px; color: #000000; font-size: 14px;">{cardCount} товаров</div>
 
-    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;" data-catalog-sort>
-      <button type="button" data-sort="popularity" style="padding: 8px 18px; border: 1px solid #ff5a1f; background: #ffffff; color: #000000; border-radius: 999px; font-size: 14px; cursor: pointer;">По популярности</button>
-      <button type="button" data-sort="newest" data-active="true" style="padding: 8px 18px; border: 1px solid #000000; background: #000000; color: #ffffff; border-radius: 999px; font-size: 14px; cursor: pointer;">По новизне</button>
-      <button type="button" data-sort="price-asc" style="padding: 8px 18px; border: 1px solid #ff5a1f; background: #ffffff; color: #000000; border-radius: 999px; font-size: 14px; cursor: pointer;">По возрастанию цены</button>
-      <button type="button" data-sort="price-desc" style="padding: 8px 18px; border: 1px solid #ff5a1f; background: #ffffff; color: #000000; border-radius: 999px; font-size: 14px; cursor: pointer;">По убыванию цены</button>
-    </div>
+    {sortVisible && (
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;" data-catalog-sort>
+        <button type="button" data-sort="popularity" style="padding: 8px 18px; border: 1px solid #ff5a1f; background: #ffffff; color: #000000; border-radius: 999px; font-size: 14px; cursor: pointer;">По популярности</button>
+        <button type="button" data-sort="newest" data-active="true" style="padding: 8px 18px; border: 1px solid #000000; background: #000000; color: #ffffff; border-radius: 999px; font-size: 14px; cursor: pointer;">По новизне</button>
+        <button type="button" data-sort="price-asc" style="padding: 8px 18px; border: 1px solid #ff5a1f; background: #ffffff; color: #000000; border-radius: 999px; font-size: 14px; cursor: pointer;">По возрастанию цены</button>
+        <button type="button" data-sort="price-desc" style="padding: 8px 18px; border: 1px solid #ff5a1f; background: #ffffff; color: #000000; border-radius: 999px; font-size: 14px; cursor: pointer;">По убыванию цены</button>
+      </div>
+    )}
 
-    <div style={`display: grid; grid-template-columns: ${sidebar ? '220px 1fr' : '1fr'}; gap: 32px; align-items: start;`}>
-      {sidebar && (
+    {filterVisible && !filterSide && (
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgba(0,0,0,0.1);" data-catalog-filters-top>
+        <div style="font-weight: 500; color: #000;">Фильтры:</div>
+        <button type="button" disabled style="background: transparent; border: 0; color: #000; cursor: pointer;">Наличие ▾</button>
+        <button type="button" disabled style="background: transparent; border: 0; color: #000; cursor: pointer;">Стоимость ▾</button>
+        <button type="button" disabled style="background: transparent; border: 0; color: #000; cursor: pointer;">Цвет ▾</button>
+      </div>
+    )}
+
+    <div style={`display: grid; grid-template-columns: ${filterVisible && filterSide ? '220px 1fr' : '1fr'}; gap: 32px; align-items: start;`}>
+      {filterVisible && filterSide && (
         <aside style="display: flex; flex-direction: column; gap: 24px; font-size: 14px; color: #000000;">
           <div style="font-weight: 500; opacity: 0.7;">Фильтры:</div>
 
-          {collFilter && (
+          {collFilterLegacy && (
             <div data-catalog-collections>
               <div style="font-weight: 500; margin-bottom: 8px;">Коллекции</div>
               <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer;">
@@ -91,10 +133,10 @@ const apiBase = 'https://gateway.merfy.ru/api';
         </aside>
       )}
 
-      <div data-catalog-grid style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px;">
+      <div data-catalog-grid style={`display: grid; grid-template-columns: repeat(${colCount}, 1fr); gap: 16px;`}>
         {placeholderCards.map(() => (
           <article style="display: flex; flex-direction: column; gap: 8px;">
-            <div style="aspect-ratio: 3 / 4; background: rgba(0,0,0,0.05); border-radius: 4px;"></div>
+            <div style={`aspect-ratio: ${cardAspect}; background: rgba(0,0,0,0.05); border-radius: 4px;`}></div>
             <div style="height: 12px; width: 70%; background: rgba(0,0,0,0.06); border-radius: 2px;"></div>
             <div style="height: 12px; width: 30%; background: rgba(0,0,0,0.06); border-radius: 2px;"></div>
           </article>
@@ -104,9 +146,9 @@ const apiBase = 'https://gateway.merfy.ru/api';
   </div>
 </section>
 
-<script is:inline define:vars={{ siteId, apiBase }}>
+<script is:inline define:vars={{ siteId, apiBase, cardCount }}>
   // Mirror live storefront in constructor preview: fetch real products and
-  // collections, swap placeholder grid for actual cards.
+  // replace placeholder grid with actual cards.
   (function () {
     if (!siteId) return;
     const root = document.querySelector('section[data-block="catalog"]');
@@ -119,7 +161,6 @@ const apiBase = 'https://gateway.merfy.ru/api';
     function fmtPrice(p) {
       const num = typeof p === 'number' ? p : parseFloat(p);
       if (!Number.isFinite(num)) return '';
-      // Backend returns kopecks for some products, rubles for others. Normalise.
       const rubles = num > 1000000 ? Math.round(num / 100) : Math.round(num);
       return rubles.toLocaleString('ru-RU') + ' ₽';
     }
@@ -150,14 +191,14 @@ const apiBase = 'https://gateway.merfy.ru/api';
       .then((r) => r && r.ok ? r.json() : null)
       .then((data) => {
         if (!data) return;
-        const products = (data.products || data.data?.products || []).slice(0, 12);
+        const products = (data.products || data.data?.products || []).slice(0, cardCount);
         const colls = data.collections || data.data?.collections || [];
         if (count && Number.isFinite(products.length)) {
           count.textContent = products.length + ' товаров';
         }
         if (collsEl && Array.isArray(colls) && colls.length) {
-          const items = colls.map(function (c, i) {
-            return '<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;"><input type="radio" name="cat-coll" ' + (i === 0 ? '' : '') + ' /><span>' + (c.title || c.name || c.handle || c.id) + '</span></label>';
+          const items = colls.map(function (c) {
+            return '<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;"><input type="radio" name="cat-coll" /><span>' + (c.title || c.name || c.handle || c.id) + '</span></label>';
           }).join('');
           collsEl.innerHTML =
             '<div style="font-weight:500;margin-bottom:8px;">Коллекции</div>' +

@@ -170,6 +170,11 @@ export class PreviewController {
         if (b.type === 'Catalog') {
           props.siteId = siteId;
         }
+        // Product block: same — inline JS in Product.astro fetches the chosen
+        // (or first available) product from storefront-data?product=:id.
+        if (b.type === 'Product') {
+          props.siteId = siteId;
+        }
         return { type: b.type, props };
       });
   }

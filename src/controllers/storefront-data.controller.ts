@@ -180,16 +180,30 @@ export class StorefrontDataController {
           );
           const list: any[] = Array.isArray(varResp?.data) ? varResp!.data! : [];
           const variants = list.map((v) => {
-            const optionsList: Array<{ groupName?: string; value?: string }> =
-              Array.isArray(v.optionsList) ? v.optionsList : [];
+            // RPC returns TypeORM ProductVariantCombination with `options:
+            // VariantOption[]` (array of {id, value, variantGroupId,
+            // variantGroup:{id,name}}). Optional `optionsList`/`options` map
+            // shapes are also handled for forward-compatibility.
             const options: Record<string, string> = {};
-            if (v.options && typeof v.options === 'object') {
+            if (Array.isArray(v.options)) {
+              for (const opt of v.options) {
+                const groupName =
+                  opt?.variantGroup?.name ??
+                  opt?.groupName ??
+                  opt?.variantGroupName;
+                const value = opt?.value;
+                if (groupName != null && value != null) {
+                  options[String(groupName)] = String(value);
+                }
+              }
+            } else if (v.options && typeof v.options === 'object') {
               for (const [k, val] of Object.entries(v.options)) {
                 options[String(k)] = String(val);
               }
-            } else {
-              for (const opt of optionsList) {
-                if (opt?.groupName != null && opt.value != null) {
+            }
+            if (Object.keys(options).length === 0 && Array.isArray(v.optionsList)) {
+              for (const opt of v.optionsList) {
+                if (opt?.groupName != null && opt?.value != null) {
                   options[String(opt.groupName)] = String(opt.value);
                 }
               }

@@ -398,7 +398,7 @@ const apiBase = 'https://gateway.merfy.ru/api';
       if (inIframe) {
         try {
           window.parent.postMessage(
-            { type: 'navigate', href: target, productId: article.getAttribute('data-product-id') },
+            { type: 'navigate', path: target, productId: article.getAttribute('data-product-id') },
             '*'
           );
         } catch {

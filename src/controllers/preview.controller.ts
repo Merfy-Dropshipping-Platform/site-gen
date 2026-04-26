@@ -41,6 +41,9 @@ export class PreviewController {
     @Query('productId') productIdOverride: string | undefined,
     @Res() res: Response,
   ): Promise<void> {
+    this.logger.log(
+      `[preview] siteId=${siteId} page=${page} productIdOverride=${productIdOverride ?? 'NONE'}`,
+    );
     const loaded = await this.loadRevisionData(siteId);
     if (!loaded) {
       res
@@ -180,6 +183,9 @@ export class PreviewController {
         if (b.type === 'Product') {
           props.siteId = siteId;
           if (productIdOverride) {
+            this.logger.log(
+              `[preview] Product block: overriding productId ${props.productId} → ${productIdOverride}`,
+            );
             props.productId = productIdOverride;
           }
         }

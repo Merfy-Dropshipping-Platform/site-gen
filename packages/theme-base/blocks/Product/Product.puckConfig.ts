@@ -3,29 +3,45 @@ import type { BlockPuckConfig } from '@merfy/theme-contract';
 
 export const ProductSchema = z.object({
   productId: z.string(),
-  // Pupa parity.
+  // Pupa parity layout knobs.
   layout: z.enum(['stacked', 'two-columns', 'carousel', 'thumbnail', 'split']).optional(),
   size: z.enum(['small', 'medium', 'large']).optional(),
   photoPosition: z.enum(['left', 'right']).optional(),
   zoomMode: z.enum(['click', 'hover', 'none']).optional(),
-  // 8-panel subsystem.
-  badge: z.object({
-    text: z.string().optional(),
-    textSize: z.enum(['small', 'medium', 'large']).optional(),
+  // 8-panel subsystem (named subsections shown in constructor outline).
+  text: z.object({
+    content: z.string().optional(),
+    size: z.enum(['small', 'medium', 'large']).optional(),
   }).optional(),
   title: z.object({
     size: z.enum(['small', 'medium', 'large']).optional(),
+  }).optional(),
+  price: z.object({
+    show: z.union([z.boolean(), z.enum(['true', 'false'])]).optional(),
   }).optional(),
   variants: z.object({
     style: z.enum(['button', 'list']).optional(),
     shape: z.enum(['circle', 'square', 'none']).optional(),
   }).optional(),
+  quantity: z.object({
+    enabled: z.union([z.boolean(), z.enum(['true', 'false'])]).optional(),
+  }).optional(),
   buttons: z.object({
     addToCart: z.object({ text: z.string().optional() }).optional(),
     buyNow: z.object({ text: z.string().optional() }).optional(),
   }).optional(),
-  dynamicButton: z.object({ enabled: z.enum(['true', 'false']).optional() }).optional(),
+  description: z.object({
+    content: z.string().optional(),
+    size: z.enum(['small', 'medium', 'large']).optional(),
+  }).optional(),
   share: z.object({ text: z.string().optional() }).optional(),
+  // Legacy badge field (kept for back-compat with revisions saved before
+  // text was introduced — adapter in Product.astro merges badge.text into text.content).
+  badge: z.object({
+    text: z.string().optional(),
+    textSize: z.enum(['small', 'medium', 'large']).optional(),
+  }).optional(),
+  dynamicButton: z.object({ enabled: z.enum(['true', 'false']).optional() }).optional(),
   colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
@@ -35,49 +51,42 @@ export const ProductSchema = z.object({
 
 export type ProductProps = z.infer<typeof ProductSchema>;
 
+const sizeOptions = [
+  { label: 'Маленький', value: 'small' },
+  { label: 'Средний', value: 'medium' },
+  { label: 'Большой', value: 'large' },
+];
+
 export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
-  label: 'Товар',
+  label: 'Информация о товаре',
   category: 'products',
   fields: {
     productId: { type: 'productPicker', label: 'Выбор товара' },
-    layout: {
-      type: 'select',
-      label: 'Макет',
-      options: [
-        { label: 'Стопкой', value: 'stacked' },
-        { label: 'Две колонки', value: 'two-columns' },
-        { label: 'Карусель', value: 'carousel' },
-        { label: 'Миниатюры', value: 'thumbnail' },
-        { label: 'Сплит', value: 'split' },
-      ],
-    },
-    badge: {
+    text: {
       type: 'object',
-      label: 'Бейдж',
+      label: 'Текст',
       objectFields: {
-        text: { type: 'text', label: 'Текст' },
-        textSize: {
-          type: 'radio',
-          label: 'Размер текста',
-          options: [
-            { label: 'Маленький', value: 'small' },
-            { label: 'Средний', value: 'medium' },
-            { label: 'Большой', value: 'large' },
-          ],
-        },
+        content: { type: 'textarea', label: 'Содержание' },
+        size: { type: 'radio', label: 'Размер', options: sizeOptions },
       },
     },
     title: {
       type: 'object',
       label: 'Название',
       objectFields: {
-        size: {
-          type: 'radio',
-          label: 'Размер',
+        size: { type: 'radio', label: 'Размер', options: sizeOptions },
+      },
+    },
+    price: {
+      type: 'object',
+      label: 'Стоимость',
+      objectFields: {
+        show: {
+          type: 'toggle',
+          label: 'Показать',
           options: [
-            { label: 'Маленький', value: 'small' },
-            { label: 'Средний', value: 'medium' },
-            { label: 'Большой', value: 'large' },
+            { label: 'Показать', value: 'true' },
+            { label: 'Скрыть', value: 'false' },
           ],
         },
       },
@@ -105,6 +114,20 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
         },
       },
     },
+    quantity: {
+      type: 'object',
+      label: 'Количество',
+      objectFields: {
+        enabled: {
+          type: 'toggle',
+          label: 'Показать',
+          options: [
+            { label: 'Показать', value: 'true' },
+            { label: 'Скрыть', value: 'false' },
+          ],
+        },
+      },
+    },
     buttons: {
       type: 'object',
       label: 'Кнопки',
@@ -112,47 +135,37 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
         addToCart: {
           type: 'object',
           label: 'В корзину',
-          objectFields: {
-            text: { type: 'text', label: 'Текст' },
-          },
+          objectFields: { text: { type: 'text', label: 'Текст' } },
         },
         buyNow: {
           type: 'object',
           label: 'Купить сейчас',
-          objectFields: {
-            text: { type: 'text', label: 'Текст' },
-          },
+          objectFields: { text: { type: 'text', label: 'Текст' } },
         },
       },
     },
-    dynamicButton: {
+    description: {
       type: 'object',
-      label: 'Динамическая кнопка',
+      label: 'Описание',
       objectFields: {
-        enabled: {
-          type: 'radio',
-          label: 'Включена',
-          options: [
-            { label: 'Да', value: 'true' },
-            { label: 'Нет', value: 'false' },
-          ],
-        },
+        content: { type: 'textarea', label: 'Содержание' },
+        size: { type: 'radio', label: 'Размер', options: sizeOptions },
       },
     },
     share: {
       type: 'object',
       label: 'Поделиться',
-      objectFields: {
-        text: { type: 'text', label: 'Текст' },
-      },
+      objectFields: { text: { type: 'text', label: 'Текст' } },
     },
-    size: {
-      type: 'radio',
-      label: 'Размер',
+    layout: {
+      type: 'select',
+      label: 'Макет',
       options: [
-        { label: 'Маленький', value: 'small' },
-        { label: 'Средний', value: 'medium' },
-        { label: 'Большой', value: 'large' },
+        { label: 'Стопкой', value: 'stacked' },
+        { label: 'Две колонки', value: 'two-columns' },
+        { label: 'Карусель', value: 'carousel' },
+        { label: 'Миниатюры', value: 'thumbnail' },
+        { label: 'Сплит', value: 'split' },
       ],
     },
     photoPosition: {
@@ -172,14 +185,53 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
         { label: 'Выключено', value: 'none' },
       ],
     },
+    size: {
+      type: 'radio',
+      label: 'Размер блока',
+      options: sizeOptions,
+    },
+    badge: {
+      type: 'object',
+      label: 'Бейдж (legacy)',
+      objectFields: {
+        text: { type: 'text', label: 'Текст' },
+        textSize: { type: 'radio', label: 'Размер', options: sizeOptions },
+      },
+    },
+    dynamicButton: {
+      type: 'object',
+      label: 'Динамическая кнопка',
+      objectFields: {
+        enabled: {
+          type: 'toggle',
+          label: 'Включена',
+          options: [
+            { label: 'Да', value: 'true' },
+            { label: 'Нет', value: 'false' },
+          ],
+        },
+      },
+    },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     productId: '',
+    layout: 'two-columns',
+    photoPosition: 'left',
+    zoomMode: 'hover',
+    text: { content: '', size: 'medium' },
+    title: { size: 'medium' },
+    price: { show: 'true' },
+    variants: { style: 'button', shape: 'circle' },
+    quantity: { enabled: 'true' },
+    buttons: { addToCart: { text: 'В КОРЗИНУ' }, buyNow: { text: 'КУПИТЬ' } },
+    description: { content: '', size: 'medium' },
+    share: { text: 'Поделиться' },
+    colorScheme: 'scheme-1',
     padding: { top: 80, bottom: 80 },
   },
   schema: ProductSchema,
-  maxInstances: null,
+  maxInstances: 1,
   constraints: { padding: { min: 0, max: 160, step: 8 } },
 };

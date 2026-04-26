@@ -253,7 +253,7 @@ const apiBase = 'https://gateway.merfy.ru/api';
       );
     }
 
-    fetch(apiBase + '/storefront-data/' + siteId, { credentials: 'omit' })
+    fetch(apiBase + '/sites/' + siteId + '/storefront-data', { credentials: 'omit' })
       .catch(() => null)
       .then((r) => r && r.ok ? r.json() : null)
       .then((data) => {

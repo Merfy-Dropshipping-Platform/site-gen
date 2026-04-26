@@ -24,7 +24,7 @@ import {
  *      PRODUCT_DATABASE_URL — quicker and skips RPC roundtrip when the
  *      caller is just the preview iframe (read-only public data).
  */
-@Controller('api/storefront-data/:id')
+@Controller('api/sites/:id/storefront-data')
 export class StorefrontDataController {
   private readonly logger = new Logger(StorefrontDataController.name);
   private static productPool: PgPool | null = null;

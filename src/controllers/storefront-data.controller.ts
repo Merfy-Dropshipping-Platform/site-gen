@@ -38,9 +38,10 @@ export class StorefrontDataController {
     if (StorefrontDataController.productPool) {
       return StorefrontDataController.productPool;
     }
-    const url =
-      process.env.PRODUCT_DATABASE_URL ??
-      process.env.DATABASE_URL?.replace(/\/[^/?]+(\?|$)/, '/product_service$1');
+    // Both sites_service and product_service share the same prod PG database
+    // (different schemas/tables on one host). Use PRODUCT_DATABASE_URL when
+    // explicitly provided; otherwise reuse DATABASE_URL.
+    const url = process.env.PRODUCT_DATABASE_URL ?? process.env.DATABASE_URL;
     if (!url) return null;
     StorefrontDataController.productPool = new pg.Pool({ connectionString: url });
     return StorefrontDataController.productPool;

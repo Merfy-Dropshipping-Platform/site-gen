@@ -38,6 +38,7 @@ export class PreviewController {
   async getPreview(
     @Param('id') siteId: string,
     @Query('page') page: string = 'home',
+    @Query('productId') productIdOverride: string | undefined,
     @Res() res: Response,
   ): Promise<void> {
     const loaded = await this.loadRevisionData(siteId);
@@ -55,6 +56,7 @@ export class PreviewController {
       loaded.publicUrl,
       loaded.themeId,
       siteId,
+      productIdOverride,
     );
     if (!blocks) {
       res
@@ -122,6 +124,7 @@ export class PreviewController {
     publicUrl: string | null,
     themeId: string | null,
     siteId: string,
+    productIdOverride?: string,
   ): Array<{ type: string; props: Record<string, unknown> }> | null {
     const pagesData = (data.pagesData ?? {}) as Record<string, unknown>;
     const pageData = pagesData[page] as Record<string, unknown> | undefined;
@@ -172,8 +175,13 @@ export class PreviewController {
         }
         // Product block: same — inline JS in Product.astro fetches the chosen
         // (or first available) product from storefront-data?product=:id.
+        // When the constructor navigates from a Catalog card click, productId
+        // is provided as a query override and takes priority over Puck props.
         if (b.type === 'Product') {
           props.siteId = siteId;
+          if (productIdOverride) {
+            props.productId = productIdOverride;
+          }
         }
         return { type: b.type, props };
       });

@@ -3,8 +3,10 @@ import type { Response } from 'express';
 import type { ClientProxy } from '@nestjs/microservices';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { eq } from 'drizzle-orm';
-import pg from 'pg';
-type PgPool = InstanceType<typeof pg.Pool>;
+import * as pgModule from 'pg';
+const PgPoolCtor: typeof pgModule.Pool =
+  (pgModule as any).Pool ?? (pgModule as any).default?.Pool;
+type PgPool = InstanceType<typeof pgModule.Pool>;
 import * as schema from '../db/schema';
 import { PG_CONNECTION, PRODUCT_RMQ_SERVICE } from '../constants';
 import {
@@ -43,7 +45,7 @@ export class StorefrontDataController {
     // explicitly provided; otherwise reuse DATABASE_URL.
     const url = process.env.PRODUCT_DATABASE_URL ?? process.env.DATABASE_URL;
     if (!url) return null;
-    StorefrontDataController.productPool = new pg.Pool({ connectionString: url });
+    StorefrontDataController.productPool = new PgPoolCtor({ connectionString: url });
     return StorefrontDataController.productPool;
   }
 

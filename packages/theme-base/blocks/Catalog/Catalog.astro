@@ -68,16 +68,32 @@ const apiBase = 'https://gateway.merfy.ru/api';
 >
   <div style="max-width: 1320px; margin: 0 auto; padding-left: 24px; padding-right: 24px;">
     <div style="margin-bottom: 24px;">
-      <h1 style="font-size: clamp(20px, 3vw, 36px); font-weight: 400; text-transform: uppercase; line-height: 1.1; color: #000000; margin: 0; font-family: var(--font-heading);">КАТАЛОГ</h1>
+      <h1
+        data-puck-subsection-parent={id}
+        data-puck-subsection-index="100"
+        data-puck-subsection-field="heading"
+        style="font-size: clamp(20px, 3vw, 36px); font-weight: 400; text-transform: uppercase; line-height: 1.1; color: #000000; margin: 0; font-family: var(--font-heading); cursor: pointer;"
+      >КАТАЛОГ</h1>
       {subtitleVisible && (
-        <p style="font-size: clamp(14px, 1.5vw, 20px); font-weight: 400; line-height: 1.4; color: #999999; margin-top: 6px; font-family: var(--font-body);">Здесь начинается персональный стиль</p>
+        <p
+          data-puck-subsection-parent={id}
+          data-puck-subsection-index="101"
+          data-puck-subsection-field="subtitle"
+          style="font-size: clamp(14px, 1.5vw, 20px); font-weight: 400; line-height: 1.4; color: #999999; margin-top: 6px; font-family: var(--font-body); cursor: pointer;"
+        >Здесь начинается персональный стиль</p>
       )}
     </div>
 
     <div data-catalog-count style="margin-bottom: 16px; color: #000000; font-size: 14px;">{cardCount} товаров</div>
 
     {sortVisible && (
-      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;" data-catalog-sort>
+      <div
+        data-puck-subsection-parent={id}
+        data-puck-subsection-index="102"
+        data-puck-subsection-field="showSort"
+        data-catalog-sort
+        style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; cursor: pointer;"
+      >
         <button type="button" data-sort="popularity" style="padding: 8px 18px; border: 1px solid #ff5a1f; background: #ffffff; color: #000000; border-radius: 999px; font-size: 14px; cursor: pointer;">По популярности</button>
         <button type="button" data-sort="newest" data-active="true" style="padding: 8px 18px; border: 1px solid #000000; background: #000000; color: #ffffff; border-radius: 999px; font-size: 14px; cursor: pointer;">По новизне</button>
         <button type="button" data-sort="price-asc" style="padding: 8px 18px; border: 1px solid #ff5a1f; background: #ffffff; color: #000000; border-radius: 999px; font-size: 14px; cursor: pointer;">По возрастанию цены</button>
@@ -86,7 +102,13 @@ const apiBase = 'https://gateway.merfy.ru/api';
     )}
 
     {filterVisible && !filterSide && (
-      <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgba(0,0,0,0.1);" data-catalog-filters-top>
+      <div
+        data-puck-subsection-parent={id}
+        data-puck-subsection-index="103"
+        data-puck-subsection-field="showFilter"
+        data-catalog-filters-top
+        style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgba(0,0,0,0.1); cursor: pointer;"
+      >
         <div style="font-weight: 500; color: #000;">Фильтры:</div>
         <button type="button" disabled style="background: transparent; border: 0; color: #000; cursor: pointer;">Наличие ▾</button>
         <button type="button" disabled style="background: transparent; border: 0; color: #000; cursor: pointer;">Стоимость ▾</button>
@@ -96,7 +118,12 @@ const apiBase = 'https://gateway.merfy.ru/api';
 
     <div style={`display: grid; grid-template-columns: ${filterVisible && filterSide ? '220px 1fr' : '1fr'}; gap: 32px; align-items: start;`}>
       {filterVisible && filterSide && (
-        <aside style="display: flex; flex-direction: column; gap: 24px; font-size: 14px; color: #000000;">
+        <aside
+          data-puck-subsection-parent={id}
+          data-puck-subsection-index="103"
+          data-puck-subsection-field="showFilter"
+          style="display: flex; flex-direction: column; gap: 24px; font-size: 14px; color: #000000; cursor: pointer;"
+        >
           <div style="font-weight: 500; opacity: 0.7;">Фильтры:</div>
 
           {collFilterLegacy && (
@@ -133,7 +160,13 @@ const apiBase = 'https://gateway.merfy.ru/api';
         </aside>
       )}
 
-      <div data-catalog-grid style={`display: grid; grid-template-columns: repeat(${colCount}, 1fr); gap: 16px;`}>
+      <div
+        data-puck-subsection-parent={id}
+        data-puck-subsection-index="104"
+        data-puck-subsection-field="productCard"
+        data-catalog-grid
+        style={`display: grid; grid-template-columns: repeat(${colCount}, 1fr); gap: 16px; cursor: pointer;`}
+      >
         {placeholderCards.map(() => (
           <article style="display: flex; flex-direction: column; gap: 8px;">
             <div style={`aspect-ratio: ${cardAspect}; background: rgba(0,0,0,0.05); border-radius: 4px;`}></div>

@@ -127,9 +127,9 @@ const apiBase = 'https://gateway.merfy.ru/api';
         style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgba(0,0,0,0.1);"
       >
         <div style="font-weight: 500; color: #000;">Фильтры:</div>
-        <button type="button" disabled style="background: transparent; border: 0; color: #000;">Наличие ▾</button>
-        <button type="button" disabled style="background: transparent; border: 0; color: #000;">Стоимость ▾</button>
-        <button type="button" disabled style="background: transparent; border: 0; color: #000;">Цвет ▾</button>
+        <button type="button" data-filter-toggle="stock" style="background: transparent; border: 0; color: #000; cursor: pointer;">Наличие ▾</button>
+        <button type="button" data-filter-toggle="price" style="background: transparent; border: 0; color: #000; cursor: pointer;">Стоимость ▾</button>
+        <button type="button" data-filter-toggle="color" style="background: transparent; border: 0; color: #000; cursor: pointer;">Цвет ▾</button>
       </div>
     )}
 
@@ -241,65 +241,212 @@ const apiBase = 'https://gateway.merfy.ru/api';
       const title = p.title || p.name || '';
       const price = fmtPrice(p.basePrice ?? p.price);
       const compare = p.compareAtPrice ? fmtPrice(p.compareAtPrice) : '';
+      const handle = p.handle || p.slug || p.id;
       const imgBlock = img
         ? '<div style="aspect-ratio:3/4;overflow:hidden;border-radius:4px;background:rgba(0,0,0,0.05);">' +
           '<img src="' + escAttr(img) + '" alt="' + escAttr(title) + '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" />' +
           '</div>'
         : '<div style="aspect-ratio:3/4;background:rgba(0,0,0,0.05);border-radius:4px;"></div>';
       return (
-        '<article style="display:flex;flex-direction:column;gap:8px;' + cardChrome + '">' +
+        '<article data-product-id="' + escAttr(p.id) + '" data-product-handle="' + escAttr(handle) + '" style="display:flex;flex-direction:column;gap:8px;cursor:pointer;' + cardChrome + '">' +
           imgBlock +
           '<div style="font-size:14px;color:#000;">' + escAttr(title) + '</div>' +
           '<div style="font-size:14px;color:#000;display:flex;gap:8px;align-items:baseline;">' +
             '<span>' + price + '</span>' +
             (compare ? '<span style="text-decoration:line-through;color:#999;">' + compare + '</span>' : '') +
           '</div>' +
-          (showQuickAdd ? '<button type="button" style="' + buttonStyle + '">' + escAttr(quickAddText) + '</button>' : '') +
+          (showQuickAdd ? '<button type="button" data-quick-add-id="' + escAttr(p.id) + '" style="' + buttonStyle + '">' + escAttr(quickAddText) + '</button>' : '') +
         '</article>'
       );
     }
+
+    // Local state for client-side filter/sort (preview parity with live).
+    const state = {
+      allProducts: [],
+      sort: 'newest',
+      stock: 'all',          // 'all' | 'in' | 'out'
+      priceMin: null,
+      priceMax: null,
+      collection: collectionSlug || null,
+    };
+
+    function applyFilters(list) {
+      let result = list.slice();
+      // Collection filter
+      if (state.collection) {
+        result = result.filter(function (p) {
+          if (!Array.isArray(p.collections)) return false;
+          return p.collections.some(function (c) {
+            return c && (c.id === state.collection || c.slug === state.collection || c.handle === state.collection);
+          });
+        });
+      }
+      // Stock
+      if (state.stock === 'in') {
+        result = result.filter(function (p) {
+          const q = typeof p.quantity === 'number' ? p.quantity : 1;
+          return q > 0;
+        });
+      } else if (state.stock === 'out') {
+        result = result.filter(function (p) {
+          const q = typeof p.quantity === 'number' ? p.quantity : 1;
+          return q <= 0;
+        });
+      }
+      // Price range
+      if (state.priceMin != null) {
+        result = result.filter(function (p) {
+          return Number(p.basePrice ?? p.price ?? 0) >= state.priceMin;
+        });
+      }
+      if (state.priceMax != null) {
+        result = result.filter(function (p) {
+          return Number(p.basePrice ?? p.price ?? 0) <= state.priceMax;
+        });
+      }
+      // Sort
+      const priceOf = (p) => Number(p.basePrice ?? p.price ?? 0);
+      if (state.sort === 'price-asc') result.sort((a, b) => priceOf(a) - priceOf(b));
+      else if (state.sort === 'price-desc') result.sort((a, b) => priceOf(b) - priceOf(a));
+      else if (state.sort === 'newest') result.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+      else if (state.sort === 'popularity') result.sort((a, b) => (b.quantity || 0) - (a.quantity || 0));
+      return result.slice(0, cardCount);
+    }
+
+    function rerender() {
+      const filtered = applyFilters(state.allProducts);
+      if (count) count.textContent = filtered.length + ' товаров';
+      grid.innerHTML = filtered.length
+        ? filtered.map(cardHtml).join('')
+        : '<div style="grid-column:1/-1;padding:40px;text-align:center;color:#999;">Товары не найдены</div>';
+    }
+
+    // Sort pills click handler
+    const sortBar = root.querySelector('[data-catalog-sort]');
+    if (sortBar) {
+      sortBar.addEventListener('click', function (ev) {
+        const btn = ev.target.closest('[data-sort]');
+        if (!btn) return;
+        state.sort = btn.getAttribute('data-sort');
+        // Update visual selection
+        sortBar.querySelectorAll('[data-sort]').forEach(function (b) {
+          if (b === btn) {
+            b.style.background = '#000000';
+            b.style.color = '#ffffff';
+            b.style.border = '1px solid #000000';
+            b.setAttribute('data-active', 'true');
+          } else {
+            b.style.background = '#ffffff';
+            b.style.color = '#000000';
+            b.style.border = '1px solid #ff5a1f';
+            b.removeAttribute('data-active');
+          }
+        });
+        rerender();
+      });
+    }
+
+    // Side-bar filters (stock radios + price inputs)
+    function attachSideFilters() {
+      // Stock radios in aside
+      root.querySelectorAll('input[name="cat-stock"]').forEach(function (input, idx) {
+        input.addEventListener('change', function () {
+          state.stock = idx === 0 ? 'all' : idx === 1 ? 'in' : 'out';
+          rerender();
+        });
+      });
+      // Price inputs (от / до)
+      const priceInputs = root.querySelectorAll('aside input[type="text"]');
+      if (priceInputs[0]) {
+        priceInputs[0].addEventListener('input', function () {
+          const v = parseFloat(this.value);
+          state.priceMin = Number.isFinite(v) ? v : null;
+          rerender();
+        });
+      }
+      if (priceInputs[1]) {
+        priceInputs[1].addEventListener('input', function () {
+          const v = parseFloat(this.value);
+          state.priceMax = Number.isFinite(v) ? v : null;
+          rerender();
+        });
+      }
+    }
+
+    // Top-bar filter dropdown buttons (visual feedback only — actual control is in side panel)
+    root.querySelectorAll('[data-filter-toggle]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const orig = btn.textContent;
+        btn.textContent = orig.replace('▾', '▴');
+        setTimeout(function () { btn.textContent = orig; }, 800);
+      });
+    });
+
+    // Product card click → navigate to product page
+    grid.addEventListener('click', function (ev) {
+      const article = ev.target.closest('article[data-product-id]');
+      if (!article) return;
+      const button = ev.target.closest('button');
+      if (button) return; // let button handlers fire instead
+      const handle = article.getAttribute('data-product-handle') || article.getAttribute('data-product-id');
+      if (handle) window.location.href = '/product/' + encodeURIComponent(handle);
+    });
+
+    // Quick-add button click
+    grid.addEventListener('click', function (ev) {
+      const btn = ev.target.closest('button[data-quick-add-id]');
+      if (!btn) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      const productId = btn.getAttribute('data-quick-add-id');
+      if (window.cartStore && typeof window.cartStore.addItem === 'function') {
+        window.cartStore.addItem(productId, null, 1);
+      }
+      const orig = btn.textContent;
+      btn.textContent = '✓ Добавлено';
+      setTimeout(function () { btn.textContent = orig; }, 1500);
+    });
 
     fetch(apiBase + '/sites/' + siteId + '/storefront-data', { credentials: 'omit' })
       .catch(() => null)
       .then((r) => r && r.ok ? r.json() : null)
       .then((data) => {
         if (!data) return;
-        let products = data.products || data.data?.products || [];
+        const products = data.products || data.data?.products || [];
         const colls = data.collections || data.data?.collections || [];
-        // Filter by selected collection. Try both shapes:
-        //   1. collection.productIds (from direct DB fallback)
-        //   2. product.collections[] (from RPC product.list response)
-        if (collectionSlug) {
+        // Hydrate collection filter (legacy productIds → state)
+        if (state.collection && Array.isArray(colls)) {
           const matchingColl = colls.find(function (c) {
-            return c.id === collectionSlug || c.handle === collectionSlug || c.slug === collectionSlug;
+            return c.id === state.collection || c.handle === state.collection || c.slug === state.collection;
           });
           if (matchingColl && Array.isArray(matchingColl.productIds) && matchingColl.productIds.length) {
             const allowed = new Set(matchingColl.productIds);
-            products = products.filter(function (p) { return allowed.has(p.id); });
-          } else {
-            products = products.filter(function (p) {
-              if (!Array.isArray(p.collections)) return false;
-              return p.collections.some(function (c) {
-                return c && (c.id === collectionSlug || c.slug === collectionSlug || c.handle === collectionSlug);
-              });
+            products.forEach(function (p) {
+              if (allowed.has(p.id) && !Array.isArray(p.collections)) {
+                p.collections = [{ id: matchingColl.id, slug: matchingColl.handle }];
+              }
             });
           }
         }
-        products = products.slice(0, cardCount);
-        if (count) count.textContent = products.length + ' товаров';
+        state.allProducts = products;
         if (collsEl && Array.isArray(colls) && colls.length) {
           const items = colls.map(function (c) {
-            const checked = c.id === collectionSlug || c.handle === collectionSlug ? 'checked' : '';
-            return '<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;"><input type="radio" name="cat-coll" ' + checked + ' /><span>' + (c.title || c.name || c.handle || c.id) + '</span></label>';
+            const checked = c.id === state.collection || c.handle === state.collection ? 'checked' : '';
+            return '<label data-coll-id="' + escAttr(c.id) + '" style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;"><input type="radio" name="cat-coll" ' + checked + ' /><span>' + escAttr(c.title || c.name || c.handle || c.id) + '</span></label>';
           }).join('');
           collsEl.innerHTML =
             '<div style="font-weight:500;margin-bottom:8px;">Коллекции</div>' +
-            '<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;"><input type="radio" name="cat-coll" ' + (collectionSlug ? '' : 'checked') + ' /><span>Все</span></label>' +
+            '<label data-coll-id="" style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;"><input type="radio" name="cat-coll" ' + (state.collection ? '' : 'checked') + ' /><span>Все</span></label>' +
             items;
+          collsEl.addEventListener('click', function (ev) {
+            const lbl = ev.target.closest('label[data-coll-id]');
+            if (!lbl) return;
+            state.collection = lbl.getAttribute('data-coll-id') || null;
+            rerender();
+          });
         }
-        if (products.length) {
-          grid.innerHTML = products.map(cardHtml).join('');
-        }
+        attachSideFilters();
+        rerender();
       })
       .catch(() => {});
   })();

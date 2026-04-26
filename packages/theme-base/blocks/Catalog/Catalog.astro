@@ -1,14 +1,9 @@
 ---
-// Catalog — pupa-style SSG shell. Renders the same visual structure as the
-// live CatalogIsland (filter sidebar + product grid + sort header) without
-// React, so it works in both:
-//   - constructor preview (Astro Container, no client:only)
-//   - live SSG bundle (theme catalog.astro overrides this and mounts the
-//     interactive CatalogIsland for filtering/pagination)
-//
-// On preview the cards are placeholders; on live they're hydrated by the
-// theme's catalog.astro which intercepts Catalog blocks and renders
-// <CatalogIsland client:only="react" />.
+// Catalog — pupa-style SSG render. Mirrors the live CatalogIsland visual
+// structure (top sort pills + sidebar filters + product grid) so the
+// constructor preview shows the same layout that the live storefront
+// renders. The interactive island on the live site replaces this HTML
+// with React-driven filtering/pagination.
 import { CatalogClasses as C } from './Catalog.classes';
 import type { CatalogProps } from './Catalog.puckConfig';
 
@@ -16,53 +11,41 @@ interface Props extends CatalogProps {
   id?: string;
 }
 
-const { id, padding, colorScheme, showCollectionFilter, showSidebar } = Astro.props as Props;
+const { id, padding, showCollectionFilter, showSidebar } = Astro.props as Props;
 
 const paddingStyle = padding
   ? `padding-top:${padding.top ?? 40}px; padding-bottom:${padding.bottom ?? 80}px;`
   : 'padding-top:40px; padding-bottom:80px;';
-const schemeRaw = typeof colorScheme === 'string' ? colorScheme : undefined;
-const schemeClass = schemeRaw ? `color-scheme-${schemeRaw.replace('scheme-', '')}` : '';
 
-// Show sidebar by default unless explicitly disabled.
 const sidebar = showSidebar !== 'false' && showSidebar !== false;
 const collFilter = showCollectionFilter !== 'false' && showCollectionFilter !== false;
 
 const placeholderCards = Array.from({ length: 6 });
 ---
 <section
-  class:list={[C.root, schemeClass]}
   data-puck-component-id={id}
   data-block="catalog"
-  style={paddingStyle}
+  style={`background:#ffffff;color:#000000;${paddingStyle}`}
 >
   <div class={C.container}>
     <div style="margin-bottom: 24px;">
-      <h1 style="font-size: clamp(20px, 3vw, 36px); font-weight: 400; text-transform: uppercase; line-height: 1.1; color: rgb(var(--color-foreground)); margin: 0; [font-family:var(--font-heading)];">КАТАЛОГ</h1>
-      <p style="font-size: clamp(14px, 1.5vw, 20px); font-weight: 400; line-height: 1.4; color: rgb(var(--color-muted)); margin-top: 6px; [font-family:var(--font-body)];">Здесь начинается персональный стиль</p>
+      <h1 style="font-size: clamp(20px, 3vw, 36px); font-weight: 400; text-transform: uppercase; line-height: 1.1; color: #000000; margin: 0; font-family: var(--font-heading);">КАТАЛОГ</h1>
+      <p style="font-size: clamp(14px, 1.5vw, 20px); font-weight: 400; line-height: 1.4; color: #999999; margin-top: 6px; font-family: var(--font-body);">Здесь начинается персональный стиль</p>
     </div>
 
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
-      <div style="display: flex; gap: 16px; align-items: center; font-size: 14px; color: rgb(var(--color-foreground));">
-        <button type="button" disabled style="display: inline-flex; align-items: center; gap: 6px; background: transparent; border: 0; cursor: pointer; color: inherit; opacity: 0.85;">
-          Наличие <span aria-hidden="true">▾</span>
-        </button>
-        <button type="button" disabled style="display: inline-flex; align-items: center; gap: 6px; background: transparent; border: 0; cursor: pointer; color: inherit; opacity: 0.85;">
-          Стоимость <span aria-hidden="true">▾</span>
-        </button>
-      </div>
-      <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: rgb(var(--color-foreground)); opacity: 0.85;">
-        <span>Сортировать по:</span>
-        <button type="button" disabled style="display: inline-flex; align-items: center; gap: 6px; background: transparent; border: 0; cursor: pointer; color: inherit;">
-          Новинки <span aria-hidden="true">▾</span>
-        </button>
-      </div>
+    <div style="margin-bottom: 16px; color: #000000; font-size: 14px;">{placeholderCards.length} товаров</div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;">
+      <button type="button" disabled style="padding: 8px 18px; border: 1px solid #ff5a1f; background: #ffffff; color: #000000; border-radius: 999px; font-size: 14px; cursor: pointer;">По популярности</button>
+      <button type="button" disabled style="padding: 8px 18px; border: 1px solid #000000; background: #000000; color: #ffffff; border-radius: 999px; font-size: 14px; cursor: pointer;">По новизне</button>
+      <button type="button" disabled style="padding: 8px 18px; border: 1px solid #ff5a1f; background: #ffffff; color: #000000; border-radius: 999px; font-size: 14px; cursor: pointer;">По возрастанию цены</button>
+      <button type="button" disabled style="padding: 8px 18px; border: 1px solid #ff5a1f; background: #ffffff; color: #000000; border-radius: 999px; font-size: 14px; cursor: pointer;">По убыванию цены</button>
     </div>
 
     <div style={`display: grid; grid-template-columns: ${sidebar ? '220px 1fr' : '1fr'}; gap: 32px; align-items: start;`}>
       {sidebar && (
-        <aside style="display: flex; flex-direction: column; gap: 24px; font-size: 14px; color: rgb(var(--color-foreground));">
-          <div style="font-weight: 500; opacity: 0.7; letter-spacing: 0.04em; text-transform: uppercase;">Фильтры</div>
+        <aside style="display: flex; flex-direction: column; gap: 24px; font-size: 14px; color: #000000;">
+          <div style="font-weight: 500; opacity: 0.7;">Фильтры:</div>
 
           {collFilter && (
             <div>
@@ -70,6 +53,10 @@ const placeholderCards = Array.from({ length: 6 });
               <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer;">
                 <input type="radio" name="cat-coll" checked disabled />
                 <span>Все</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; opacity: 0.7;">
+                <input type="radio" name="cat-coll" disabled />
+                <span>Первая</span>
               </label>
               <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; opacity: 0.7;">
                 <input type="radio" name="cat-coll" disabled />
@@ -96,8 +83,8 @@ const placeholderCards = Array.from({ length: 6 });
 
           <div>
             <div style="font-weight: 500; margin-bottom: 8px;">Стоимость</div>
-            <input type="text" placeholder="от" disabled style="width: 100%; padding: 6px 8px; border: 1px solid rgba(0,0,0,0.15); margin-bottom: 6px; background: transparent; color: inherit;" />
-            <input type="text" placeholder="до" disabled style="width: 100%; padding: 6px 8px; border: 1px solid rgba(0,0,0,0.15); background: transparent; color: inherit;" />
+            <input type="text" placeholder="от" disabled style="width: 100%; padding: 6px 8px; border: 1px solid rgba(0,0,0,0.15); margin-bottom: 6px; background: #ffffff; color: #000000;" />
+            <input type="text" placeholder="до" disabled style="width: 100%; padding: 6px 8px; border: 1px solid rgba(0,0,0,0.15); background: #ffffff; color: #000000;" />
           </div>
         </aside>
       )}

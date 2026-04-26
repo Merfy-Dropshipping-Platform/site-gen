@@ -1,4 +1,4 @@
-import { Controller, Get, Inject, Logger, Param, Res } from '@nestjs/common';
+import { Controller, Get, Inject, Logger, Param, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import type { ClientProxy } from '@nestjs/microservices';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
@@ -50,7 +50,11 @@ export class StorefrontDataController {
   }
 
   @Get()
-  async get(@Param('id') siteId: string, @Res() res: Response): Promise<void> {
+  async get(
+    @Param('id') siteId: string,
+    @Query('product') productIdParam: string | undefined,
+    @Res() res: Response,
+  ): Promise<void> {
     try {
       const [site] = await this.db
         .select({ tenantId: schema.site.tenantId })
@@ -146,6 +150,15 @@ export class StorefrontDataController {
           }
         }
       }
+      let product: Record<string, unknown> | null = null;
+      if (productIdParam) {
+        const found = products.find((p: any) => p.id === productIdParam || p.handle === productIdParam || p.slug === productIdParam);
+        if (found) product = found as unknown as Record<string, unknown>;
+      }
+      if (!product && products.length > 0) {
+        product = products[0] as unknown as Record<string, unknown>;
+      }
+
       // Surface debug info in response so it's visible from the browser
       // when troubleshooting empty results. Strip in production once stable.
       const debugQuery = (req: Response & { req?: { query?: { debug?: string } } }) =>
@@ -156,6 +169,7 @@ export class StorefrontDataController {
           .json({
             products,
             collections,
+            product,
             _debug: {
               tenantId: site.tenantId,
               siteId,
@@ -170,7 +184,7 @@ export class StorefrontDataController {
 
       res
         .header('Cache-Control', 'public, max-age=30')
-        .json({ products, collections });
+        .json({ products, collections, product });
     } catch (err: unknown) {
       const e = err as Error;
       this.logger.warn(

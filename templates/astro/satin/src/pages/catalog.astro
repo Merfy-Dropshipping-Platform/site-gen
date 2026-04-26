@@ -97,7 +97,7 @@ const hasCatalogBlock = contentBlocks.some((b: any) => b.type === 'Catalog');
 const pageTitle = (meta?.title && `Каталог — ${meta.title}`) || 'Каталог';
 ---
 <BaseLayout title={pageTitle} description={meta?.description}>
-  <div class="catalog-page flex flex-col flex-1" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">
+  <div class="catalog-page flex flex-col flex-1" style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));">
     <Header {...headerProps} />
 
     <main class="catalog-main flex-1 w-full">
@@ -113,7 +113,7 @@ const pageTitle = (meta?.title && `Каталог — ${meta.title}`) || 'Кат
           const showColl = props.showCollectionFilter !== 'false' && props.showCollectionFilter !== false;
           return (
             <section
-              class:list={['relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]', schemeClass]}
+              class:list={['relative w-full bg-[rgb(var(--color-background))] text-[rgb(var(--color-foreground))]', schemeClass]}
               data-puck-component-id={props.id}
               data-block="catalog"
               style={`padding-top:${padding.top ?? 40}px; padding-bottom:${padding.bottom ?? 80}px;`}

@@ -39,7 +39,7 @@ const schemeRaw = typeof colorScheme === 'string' ? colorScheme : undefined;
 const schemeClass = schemeRaw ? `color-scheme-${schemeRaw.replace('scheme-', '')}` : '';
 ---
 <section
-  class:list={['relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))] catalog-page', schemeClass]}
+  class:list={['relative w-full bg-[rgb(var(--color-background))] text-[rgb(var(--color-foreground))] catalog-page', schemeClass]}
   data-puck-component-id={id}
   data-block="catalog"
   style={paddingStyle}

@@ -75,6 +75,79 @@ function migrateCatalogPage(pagesData: Record<string, unknown>): Record<string, 
 }
 
 /**
+ * 078 page-product: page-product is now a Puck-managed template like home/
+ * catalog. Existing sites may not have page-product in pagesData yet, so seed
+ * the canonical default block list. Idempotent: pages already containing a
+ * Product block are left untouched.
+ *
+ * Default seed: [Header, Product, PopularProducts, Newsletter, Footer]
+ * (Header/Footer fall back to home page chrome at render time, so we only
+ * seed Product/PopularProducts/Newsletter here.)
+ */
+function migrateProductPage(pagesData: Record<string, unknown>): Record<string, unknown> {
+  const existing = pagesData['page-product'] as PageData | undefined;
+  const ts = Date.now();
+  const productBlock: Block = {
+    type: 'Product',
+    props: {
+      id: `Product-${ts}`,
+      productId: '',
+      layout: 'two-columns',
+      photoPosition: 'left',
+      zoomMode: 'hover',
+      colorScheme: 'scheme-1',
+      padding: { top: 80, bottom: 80 },
+    } as Record<string, unknown>,
+  };
+  const popularBlock: Block = {
+    type: 'PopularProducts',
+    props: {
+      id: `PopularProducts-${ts + 1}`,
+      heading: 'Похожие товары',
+      cards: 4,
+      columns: 4,
+      colorScheme: 'scheme-1',
+      padding: { top: 60, bottom: 60 },
+    } as Record<string, unknown>,
+  };
+  const newsletterBlock: Block = {
+    type: 'Newsletter',
+    props: {
+      id: `Newsletter-${ts + 2}`,
+      colorScheme: 'scheme-1',
+      padding: { top: 40, bottom: 40 },
+    } as Record<string, unknown>,
+  };
+
+  if (!existing || !Array.isArray(existing.content)) {
+    return {
+      ...pagesData,
+      'page-product': {
+        content: [productBlock, popularBlock, newsletterBlock],
+        root: { props: { title: 'Товар' } },
+        zones: {},
+      } as PageData,
+    };
+  }
+
+  const hasProduct = existing.content.some((b) => b?.type === 'Product');
+  if (hasProduct) return pagesData;
+
+  // Has page-product but no Product block — insert before Footer or at end.
+  const footerIdx = existing.content.findIndex((b) => b?.type === 'Footer');
+  const nextContent = [...existing.content];
+  if (footerIdx >= 0) {
+    nextContent.splice(footerIdx, 0, productBlock);
+  } else {
+    nextContent.push(productBlock);
+  }
+  return {
+    ...pagesData,
+    'page-product': { ...existing, content: nextContent },
+  };
+}
+
+/**
  * Apply all server-side migrations to a revision data object. Mutates a
  * shallow copy — input is not modified.
  */
@@ -86,6 +159,9 @@ export function migrateRevisionData(
   const pagesData = out.pagesData;
   if (pagesData && typeof pagesData === 'object') {
     out.pagesData = migrateCatalogPage(pagesData as Record<string, unknown>);
+  }
+  if (out.pagesData && typeof out.pagesData === 'object') {
+    out.pagesData = migrateProductPage(out.pagesData as Record<string, unknown>);
   }
   return out;
 }

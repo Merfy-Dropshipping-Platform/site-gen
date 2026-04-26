@@ -3,7 +3,8 @@ import type { Response } from 'express';
 import type { ClientProxy } from '@nestjs/microservices';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { eq } from 'drizzle-orm';
-import { Pool } from 'pg';
+import pg from 'pg';
+type PgPool = InstanceType<typeof pg.Pool>;
 import * as schema from '../db/schema';
 import { PG_CONNECTION, PRODUCT_RMQ_SERVICE } from '../constants';
 import {
@@ -24,7 +25,7 @@ import {
 @Controller('api/storefront-data/:id')
 export class StorefrontDataController {
   private readonly logger = new Logger(StorefrontDataController.name);
-  private static productPool: Pool | null = null;
+  private static productPool: PgPool | null = null;
 
   constructor(
     @Inject(PG_CONNECTION)
@@ -33,7 +34,7 @@ export class StorefrontDataController {
     private readonly productClient: ClientProxy,
   ) {}
 
-  private getProductPool(): Pool | null {
+  private getProductPool(): PgPool | null {
     if (StorefrontDataController.productPool) {
       return StorefrontDataController.productPool;
     }
@@ -41,7 +42,7 @@ export class StorefrontDataController {
       process.env.PRODUCT_DATABASE_URL ??
       process.env.DATABASE_URL?.replace(/\/[^/?]+(\?|$)/, '/product_service$1');
     if (!url) return null;
-    StorefrontDataController.productPool = new Pool({ connectionString: url });
+    StorefrontDataController.productPool = new pg.Pool({ connectionString: url });
     return StorefrontDataController.productPool;
   }
 
@@ -79,7 +80,7 @@ export class StorefrontDataController {
                 LIMIT 100`,
               [siteId],
             );
-            products = prodRes.rows.map((r) => ({
+            products = prodRes.rows.map((r: Record<string, any>) => ({
               id: r.id,
               name: r.name,
               description: r.description ?? undefined,
@@ -102,7 +103,7 @@ export class StorefrontDataController {
                 LIMIT 100`,
               [siteId],
             );
-            collections = collRes.rows.map((r) => ({
+            collections = collRes.rows.map((r: Record<string, any>) => ({
               id: r.id,
               title: r.title,
               handle: r.handle ?? r.id,

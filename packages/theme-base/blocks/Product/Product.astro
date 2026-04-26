@@ -88,8 +88,8 @@ const photoOnLeft = photoPosition !== 'right';
           data-puck-subsection-index="100"
           data-puck-subsection-field="text"
           data-product-text
-          style="font-size:13px;color:rgb(var(--color-muted, 153 153 153));text-transform:uppercase;letter-spacing:0.05em;cursor:pointer;"
-        >{textContent || 'Новая коллекция!'}</div>
+          style={`font-size:13px;color:rgb(var(--color-muted, 153 153 153));text-transform:uppercase;letter-spacing:0.05em;cursor:pointer;${textContent ? '' : 'display:none;'}`}
+        >{textContent}</div>
 
         <h1
           data-puck-subsection-parent={id}
@@ -97,7 +97,7 @@ const photoOnLeft = photoPosition !== 'right';
           data-puck-subsection-field="title"
           data-product-title
           style={`font-size:${title?.size === 'large' ? '32px' : title?.size === 'small' ? '18px' : '22px'};font-weight:400;line-height:1.1;margin:0;color:rgb(var(--color-heading, 0 0 0));font-family:var(--font-heading);cursor:pointer;`}
-        >Товар</h1>
+        ></h1>
 
         {priceVisible && (
           <div
@@ -105,9 +105,9 @@ const photoOnLeft = photoPosition !== 'right';
             data-puck-subsection-index="102"
             data-puck-subsection-field="price"
             data-product-price
-            style="display:flex;gap:8px;align-items:baseline;font-size:18px;color:rgb(var(--color-heading, 0 0 0));cursor:pointer;"
+            style="display:none;gap:8px;align-items:baseline;font-size:18px;color:rgb(var(--color-heading, 0 0 0));cursor:pointer;"
           >
-            <span data-product-price-current>—</span>
+            <span data-product-price-current></span>
             <span data-product-price-compare style="text-decoration:line-through;color:rgb(var(--color-muted, 153 153 153));font-size:14px;display:none;"></span>
           </div>
         )}
@@ -117,12 +117,8 @@ const photoOnLeft = photoPosition !== 'right';
           data-puck-subsection-index="103"
           data-puck-subsection-field="variants"
           data-product-variants
-          style="display:flex;gap:8px;flex-wrap:wrap;cursor:pointer;"
-        >
-          <button type="button" disabled style="padding:6px 14px;border:1px solid rgb(var(--color-text, 0 0 0));background:rgb(var(--color-text, 0 0 0));color:rgb(var(--color-bg, 255 255 255));border-radius:999px;font-size:13px;">71</button>
-          <button type="button" disabled style="padding:6px 14px;border:1px solid rgba(0,0,0,0.15);background:transparent;color:rgb(var(--color-text, 0 0 0));border-radius:999px;font-size:13px;">51</button>
-          <button type="button" disabled style="padding:6px 14px;border:1px solid rgba(0,0,0,0.15);background:transparent;color:rgb(var(--color-text, 0 0 0));border-radius:999px;font-size:13px;">45</button>
-        </div>
+          style="display:none;gap:8px;flex-wrap:wrap;cursor:pointer;"
+        ></div>
 
         {quantityVisible && (
           <div
@@ -157,10 +153,10 @@ const photoOnLeft = photoPosition !== 'right';
           data-puck-subsection-index="106"
           data-puck-subsection-field="description"
           data-product-description
-          style={`font-size:${description?.size === 'large' ? '16px' : description?.size === 'small' ? '12px' : '14px'};color:rgb(var(--color-text, 0 0 0));line-height:1.5;cursor:pointer;`}
+          style={`font-size:${description?.size === 'large' ? '16px' : description?.size === 'small' ? '12px' : '14px'};color:rgb(var(--color-text, 0 0 0));line-height:1.5;cursor:pointer;${descContent ? '' : 'display:none;'}`}
         >
           <div style="font-weight:500;margin-bottom:6px;">Описание</div>
-          <p data-product-description-content style="margin:0;">{descContent || 'Описание товара появится здесь после выбора товара.'}</p>
+          <p data-product-description-content style="margin:0;">{descContent}</p>
         </div>
 
         <div
@@ -188,8 +184,11 @@ const photoOnLeft = photoPosition !== 'right';
     const heroEl = root.querySelector('[data-product-hero]');
     const thumbsEl = root.querySelector('[data-product-thumbs]');
     const titleEl = root.querySelector('[data-product-title]');
+    const priceWrap = root.querySelector('[data-product-price]');
     const priceCur = root.querySelector('[data-product-price-current]');
     const priceCmp = root.querySelector('[data-product-price-compare]');
+    const variantsEl = root.querySelector('[data-product-variants]');
+    const descWrap = root.querySelector('[data-product-description]');
     const descEl = root.querySelector('[data-product-description-content]');
     if (!heroEl || !titleEl) return;
 
@@ -229,7 +228,10 @@ const photoOnLeft = photoPosition !== 'right';
           .join('');
       }
       titleEl.textContent = p.title || p.name || '';
-      if (priceCur) priceCur.textContent = fmtPrice(p.basePrice ?? p.price);
+      // Price: show only if real price exists
+      const priceVal = fmtPrice(p.basePrice ?? p.price);
+      if (priceCur) priceCur.textContent = priceVal;
+      if (priceWrap) priceWrap.style.display = priceVal ? 'flex' : 'none';
       if (priceCmp) {
         if (p.compareAtPrice) {
           priceCmp.textContent = fmtPrice(p.compareAtPrice);
@@ -238,7 +240,43 @@ const photoOnLeft = photoPosition !== 'right';
           priceCmp.style.display = 'none';
         }
       }
-      if (descEl && p.description) descEl.textContent = p.description;
+      // Description: show only if real description exists (don't override with empty)
+      if (descEl && p.description) {
+        descEl.textContent = p.description;
+        if (descWrap) descWrap.style.display = '';
+      } else if (descWrap && !descEl?.textContent) {
+        descWrap.style.display = 'none';
+      }
+      // Variants: build pills from product.variants[] if present
+      if (variantsEl) {
+        const variants = Array.isArray(p.variants) ? p.variants.filter((v) => v && v.title) : [];
+        if (variants.length > 0) {
+          variantsEl.style.display = 'flex';
+          variantsEl.innerHTML = variants
+            .map(function (v, i) {
+              const selected = i === 0;
+              const bg = selected ? 'rgb(var(--color-text, 0 0 0))' : 'transparent';
+              const fg = selected ? 'rgb(var(--color-bg, 255 255 255))' : 'rgb(var(--color-text, 0 0 0))';
+              const border = selected
+                ? '1px solid rgb(var(--color-text, 0 0 0))'
+                : '1px solid rgba(0,0,0,0.15)';
+              return (
+                '<button type="button" disabled style="padding:6px 14px;border:' +
+                border +
+                ';background:' +
+                bg +
+                ';color:' +
+                fg +
+                ';border-radius:999px;font-size:13px;">' +
+                escAttr(v.title) +
+                '</button>'
+              );
+            })
+            .join('');
+        } else {
+          variantsEl.style.display = 'none';
+        }
+      }
     }
 
     const qs = productId ? '?product=' + encodeURIComponent(productId) : '';

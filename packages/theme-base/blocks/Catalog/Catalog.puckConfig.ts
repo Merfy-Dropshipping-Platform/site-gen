@@ -54,7 +54,7 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
   fields: {
     collectionSlug: { type: 'collectionPicker', label: 'Коллекция' },
     subtitle: {
-      type: 'radio',
+      type: 'toggle',
       label: 'Подзаголовок',
       options: [
         { label: 'Показать', value: 'true' },
@@ -77,7 +77,7 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
           ],
         },
         cardBackground: {
-          type: 'radio',
+          type: 'toggle',
           label: 'Фон карточки',
           options: [
             { label: 'Показать', value: 'true' },
@@ -95,7 +95,7 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
           ],
         },
         nextPhoto: {
-          type: 'radio',
+          type: 'toggle',
           label: 'Следующее фото при наведении',
           options: [
             { label: 'Вкл', value: 'true' },
@@ -114,7 +114,7 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
       },
     },
     showFilter: {
-      type: 'radio',
+      type: 'toggle',
       label: 'Фильтры',
       options: [
         { label: 'Показать', value: 'true' },
@@ -131,7 +131,7 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
       visibleWhen: { field: 'showFilter', equals: 'true' },
     },
     showSort: {
-      type: 'radio',
+      type: 'toggle',
       label: 'Сортировка',
       options: [
         { label: 'Показать', value: 'true' },

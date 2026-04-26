@@ -159,6 +159,91 @@ export class StorefrontDataController {
         product = products[0] as unknown as Record<string, unknown>;
       }
 
+      // Fetch variants for the resolved product so storefront UI can render
+      // size/color pills. Variants live across 4 tables in product_service:
+      // product_variant_combinations × variant_combination_options →
+      // variant_options × variant_groups.
+      if (product && (product as { id?: string }).id) {
+        const productPool = this.getProductPool();
+        if (productPool) {
+          try {
+            const productRowId = (product as { id: string }).id;
+            const varRes = await productPool.query(
+              `SELECT pvc.id,
+                      pvc.price,
+                      pvc."compareAtPrice",
+                      pvc.quantity,
+                      pvc."allowBackorder",
+                      pvc.images,
+                      pvc.sku,
+                      vg.name AS group_name,
+                      vo.value AS option_value
+                 FROM product_variant_combinations pvc
+                 LEFT JOIN variant_combination_options vco ON vco."combinationId" = pvc.id
+                 LEFT JOIN variant_options vo ON vo.id = vco."optionId"
+                 LEFT JOIN variant_groups vg ON vg.id = vo."variantGroupId"
+                WHERE pvc."productId" = $1
+                ORDER BY pvc.id, vg.position NULLS LAST, vo.position NULLS LAST`,
+              [productRowId],
+            );
+            // Group rows by combination id (one row per option within a combination)
+            const byId = new Map<string, {
+              id: string;
+              price: string;
+              compareAtPrice: string | null;
+              quantity: number;
+              allowBackorder: boolean;
+              images: string[];
+              sku: string | null;
+              options: Record<string, string>;
+            }>();
+            for (const row of varRes.rows as Array<Record<string, any>>) {
+              const cid = String(row.id);
+              let combo = byId.get(cid);
+              if (!combo) {
+                combo = {
+                  id: cid,
+                  price: row.price != null ? String(row.price) : '0',
+                  compareAtPrice: row.compareAtPrice != null ? String(row.compareAtPrice) : null,
+                  quantity: row.quantity != null ? Number(row.quantity) : 0,
+                  allowBackorder: !!row.allowBackorder,
+                  images: Array.isArray(row.images) ? row.images : [],
+                  sku: row.sku ?? null,
+                  options: {},
+                };
+                byId.set(cid, combo);
+              }
+              if (row.group_name && row.option_value != null) {
+                combo.options[String(row.group_name)] = String(row.option_value);
+              }
+            }
+            const variants = Array.from(byId.values()).map((c) => {
+              const values = Object.values(c.options);
+              const title = values.length > 0 ? values.join(' / ') : '';
+              const available = c.quantity > 0 || c.allowBackorder;
+              return {
+                id: c.id,
+                title,
+                options: c.options,
+                price: c.price,
+                compareAtPrice: c.compareAtPrice,
+                quantity: c.quantity,
+                allowBackorder: c.allowBackorder,
+                images: c.images,
+                sku: c.sku,
+                available,
+              };
+            });
+            (product as Record<string, unknown>).variants = variants;
+            (product as Record<string, unknown>).hasVariants = variants.length > 0;
+          } catch (vErr) {
+            this.logger.warn(
+              `variant fetch failed for product=${(product as { id?: string }).id}: ${(vErr as Error)?.message ?? vErr}`,
+            );
+          }
+        }
+      }
+
       // Surface debug info in response so it's visible from the browser
       // when troubleshooting empty results. Strip in production once stable.
       const debugQuery = (req: Response & { req?: { query?: { debug?: string } } }) =>

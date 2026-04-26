@@ -3,6 +3,7 @@ import type { Response } from 'express';
 import type { ClientProxy } from '@nestjs/microservices';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { eq } from 'drizzle-orm';
+import { Pool } from 'pg';
 import * as schema from '../db/schema';
 import { PG_CONNECTION, PRODUCT_RMQ_SERVICE } from '../constants';
 import {
@@ -11,17 +12,19 @@ import {
 } from '../generator/data-fetcher';
 
 /**
- * GET /api/sites/:id/storefront-data — public endpoint that returns the
- * site's products and collections, used by the Catalog block's inline
- * preview script to mirror the live storefront in the constructor iframe.
+ * GET /api/storefront-data/:id — public endpoint that returns the site's
+ * products + collections for the constructor preview Catalog block.
  *
- * The endpoint resolves siteId → tenantId by reading the site row, then
- * calls product-service via RPC (same path as the build pipeline). No
- * tenant auth required: data is already public on the live storefront.
+ * Strategy:
+ *   1. Try product-service RPC (build pipeline path).
+ *   2. If empty or unavailable, query product DB directly via
+ *      PRODUCT_DATABASE_URL — quicker and skips RPC roundtrip when the
+ *      caller is just the preview iframe (read-only public data).
  */
 @Controller('api/storefront-data/:id')
 export class StorefrontDataController {
   private readonly logger = new Logger(StorefrontDataController.name);
+  private static productPool: Pool | null = null;
 
   constructor(
     @Inject(PG_CONNECTION)
@@ -29,6 +32,18 @@ export class StorefrontDataController {
     @Inject(PRODUCT_RMQ_SERVICE)
     private readonly productClient: ClientProxy,
   ) {}
+
+  private getProductPool(): Pool | null {
+    if (StorefrontDataController.productPool) {
+      return StorefrontDataController.productPool;
+    }
+    const url =
+      process.env.PRODUCT_DATABASE_URL ??
+      process.env.DATABASE_URL?.replace(/\/[^/?]+(\?|$)/, '/product_service$1');
+    if (!url) return null;
+    StorefrontDataController.productPool = new Pool({ connectionString: url });
+    return StorefrontDataController.productPool;
+  }
 
   @Get()
   async get(@Param('id') siteId: string, @Res() res: Response): Promise<void> {
@@ -41,24 +56,85 @@ export class StorefrontDataController {
         res.status(404).json({ products: [], collections: [] });
         return;
       }
-      // product-service uses shopId = siteId when filtering products. Try
-      // tenantId first (org-level scope); if empty, retry with siteId as
-      // both tenantId+siteId so single-shop merchants whose products were
-      // attached at site-level still get returned.
+
+      // Try RPC first (build-pipeline path).
       let [products, collections] = await Promise.all([
         fetchProducts(this.productClient, site.tenantId, siteId),
         fetchCollections(this.productClient, site.tenantId, siteId),
       ]);
-      if ((!products || products.length === 0) && (!collections || collections.length === 0)) {
-        const [p2, c2] = await Promise.all([
-          fetchProducts(this.productClient, siteId, siteId),
-          fetchCollections(this.productClient, siteId, siteId),
-        ]);
-        if (p2.length || c2.length) {
-          products = p2;
-          collections = c2;
+
+      // Fallback: direct product DB query (RPC may be slow/empty for
+      // preview workloads). Products are stored with shopId = siteId.
+      if (!products?.length && !collections?.length) {
+        const pool = this.getProductPool();
+        if (pool) {
+          try {
+            const prodRes = await pool.query(
+              `SELECT id, title AS name, description, "basePrice", "compareAtPrice",
+                      sku, weight, "weightUnit", "isPhysicalProduct",
+                      "metaTitle", "metaDescription", images
+                 FROM products
+                WHERE "shopId" = $1 AND status = 'active' AND "deletedAt" IS NULL
+                ORDER BY "createdAt" DESC
+                LIMIT 100`,
+              [siteId],
+            );
+            products = prodRes.rows.map((r) => ({
+              id: r.id,
+              name: r.name,
+              description: r.description ?? undefined,
+              price: r.basePrice != null ? Number(r.basePrice) : 0,
+              basePrice: r.basePrice != null ? Number(r.basePrice) : 0,
+              compareAtPrice: r.compareAtPrice != null ? Number(r.compareAtPrice) : undefined,
+              sku: r.sku ?? null,
+              weight: r.weight != null ? Number(r.weight) : null,
+              weightUnit: r.weightUnit ?? null,
+              isPhysicalProduct: r.isPhysicalProduct ?? true,
+              metaTitle: r.metaTitle ?? null,
+              metaDescription: r.metaDescription ?? null,
+              images: Array.isArray(r.images) ? r.images : [],
+            }));
+            const collRes = await pool.query(
+              `SELECT id, name AS title, slug AS handle, description, image
+                 FROM collections
+                WHERE "shopId" = $1 AND ("deletedAt" IS NULL OR "deletedAt" IS NULL)
+                ORDER BY "createdAt" DESC
+                LIMIT 100`,
+              [siteId],
+            );
+            collections = collRes.rows.map((r) => ({
+              id: r.id,
+              title: r.title,
+              handle: r.handle ?? r.id,
+              description: r.description ?? undefined,
+              image: r.image ?? null,
+              productIds: [],
+            }));
+            // Populate productIds per collection.
+            if (collections.length > 0) {
+              const cpRes = await pool.query(
+                `SELECT "collectionId", "productId"
+                   FROM product_collections
+                  WHERE "collectionId" = ANY($1::uuid[])`,
+                [collections.map((c) => c.id)],
+              );
+              const groups: Record<string, string[]> = {};
+              for (const row of cpRes.rows) {
+                (groups[row.collectionId] ??= []).push(row.productId);
+              }
+              collections = collections.map((c) => ({
+                ...c,
+                productIds: groups[c.id] ?? [],
+              }));
+            }
+          } catch (poolErr: unknown) {
+            this.logger.warn(
+              `direct product DB query failed for site=${siteId}: ${(poolErr as Error)?.message ?? poolErr}`,
+            );
+          }
         }
       }
+
       res
         .header('Cache-Control', 'public, max-age=30')
         .json({ products, collections });

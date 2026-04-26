@@ -52,6 +52,7 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
   label: 'Группа товаров',
   category: 'products',
   fields: {
+    collectionSlug: { type: 'collectionPicker', label: 'Коллекция' },
     subtitle: {
       type: 'radio',
       label: 'Подзаголовок',

@@ -69,17 +69,11 @@ const apiBase = 'https://gateway.merfy.ru/api';
   <div style="max-width: 1320px; margin: 0 auto; padding-left: 24px; padding-right: 24px;">
     <div style="margin-bottom: 24px;">
       <h1
-        data-puck-subsection-parent={id}
-        data-puck-subsection-index="100"
-        data-puck-subsection-field="heading"
-        style="font-size: clamp(20px, 3vw, 36px); font-weight: 400; text-transform: uppercase; line-height: 1.1; color: #000000; margin: 0; font-family: var(--font-heading); cursor: pointer;"
+        style="font-size: clamp(20px, 3vw, 36px); font-weight: 400; text-transform: uppercase; line-height: 1.1; color: #000000; margin: 0; font-family: var(--font-heading);"
       >КАТАЛОГ</h1>
       {subtitleVisible && (
         <p
-          data-puck-subsection-parent={id}
-          data-puck-subsection-index="101"
-          data-puck-subsection-field="subtitle"
-          style="font-size: clamp(14px, 1.5vw, 20px); font-weight: 400; line-height: 1.4; color: #999999; margin-top: 6px; font-family: var(--font-body); cursor: pointer;"
+          style="font-size: clamp(14px, 1.5vw, 20px); font-weight: 400; line-height: 1.4; color: #999999; margin-top: 6px; font-family: var(--font-body);"
         >Здесь начинается персональный стиль</p>
       )}
     </div>
@@ -88,48 +82,39 @@ const apiBase = 'https://gateway.merfy.ru/api';
 
     {sortVisible && (
       <div
-        data-puck-subsection-parent={id}
-        data-puck-subsection-index="102"
-        data-puck-subsection-field="showSort"
         data-catalog-sort
-        style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; cursor: pointer;"
+        style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;"
       >
-        <button type="button" data-sort="popularity" style="padding: 8px 18px; border: 1px solid #ff5a1f; background: #ffffff; color: #000000; border-radius: 999px; font-size: 14px; cursor: pointer;">По популярности</button>
-        <button type="button" data-sort="newest" data-active="true" style="padding: 8px 18px; border: 1px solid #000000; background: #000000; color: #ffffff; border-radius: 999px; font-size: 14px; cursor: pointer;">По новизне</button>
-        <button type="button" data-sort="price-asc" style="padding: 8px 18px; border: 1px solid #ff5a1f; background: #ffffff; color: #000000; border-radius: 999px; font-size: 14px; cursor: pointer;">По возрастанию цены</button>
-        <button type="button" data-sort="price-desc" style="padding: 8px 18px; border: 1px solid #ff5a1f; background: #ffffff; color: #000000; border-radius: 999px; font-size: 14px; cursor: pointer;">По убыванию цены</button>
+        <button type="button" data-sort="popularity" style="padding: 8px 18px; border: 1px solid #ff5a1f; background: #ffffff; color: #000000; border-radius: 999px; font-size: 14px;">По популярности</button>
+        <button type="button" data-sort="newest" data-active="true" style="padding: 8px 18px; border: 1px solid #000000; background: #000000; color: #ffffff; border-radius: 999px; font-size: 14px;">По новизне</button>
+        <button type="button" data-sort="price-asc" style="padding: 8px 18px; border: 1px solid #ff5a1f; background: #ffffff; color: #000000; border-radius: 999px; font-size: 14px;">По возрастанию цены</button>
+        <button type="button" data-sort="price-desc" style="padding: 8px 18px; border: 1px solid #ff5a1f; background: #ffffff; color: #000000; border-radius: 999px; font-size: 14px;">По убыванию цены</button>
       </div>
     )}
 
     {filterVisible && !filterSide && (
       <div
-        data-puck-subsection-parent={id}
-        data-puck-subsection-index="103"
-        data-puck-subsection-field="showFilter"
         data-catalog-filters-top
-        style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgba(0,0,0,0.1); cursor: pointer;"
+        style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgba(0,0,0,0.1);"
       >
         <div style="font-weight: 500; color: #000;">Фильтры:</div>
-        <button type="button" disabled style="background: transparent; border: 0; color: #000; cursor: pointer;">Наличие ▾</button>
-        <button type="button" disabled style="background: transparent; border: 0; color: #000; cursor: pointer;">Стоимость ▾</button>
-        <button type="button" disabled style="background: transparent; border: 0; color: #000; cursor: pointer;">Цвет ▾</button>
+        <button type="button" disabled style="background: transparent; border: 0; color: #000;">Наличие ▾</button>
+        <button type="button" disabled style="background: transparent; border: 0; color: #000;">Стоимость ▾</button>
+        <button type="button" disabled style="background: transparent; border: 0; color: #000;">Цвет ▾</button>
       </div>
     )}
 
     <div style={`display: grid; grid-template-columns: ${filterVisible && filterSide ? '220px 1fr' : '1fr'}; gap: 32px; align-items: start;`}>
       {filterVisible && filterSide && (
         <aside
-          data-puck-subsection-parent={id}
-          data-puck-subsection-index="103"
-          data-puck-subsection-field="showFilter"
-          style="display: flex; flex-direction: column; gap: 24px; font-size: 14px; color: #000000; cursor: pointer;"
+          style="display: flex; flex-direction: column; gap: 24px; font-size: 14px; color: #000000;"
         >
           <div style="font-weight: 500; opacity: 0.7;">Фильтры:</div>
 
           {collFilterLegacy && (
             <div data-catalog-collections>
               <div style="font-weight: 500; margin-bottom: 8px;">Коллекции</div>
-              <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer;">
+              <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0;">
                 <input type="radio" name="cat-coll" checked />
                 <span>Все</span>
               </label>
@@ -138,15 +123,15 @@ const apiBase = 'https://gateway.merfy.ru/api';
 
           <div>
             <div style="font-weight: 500; margin-bottom: 8px;">Наличие</div>
-            <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer;">
+            <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0;">
               <input type="radio" name="cat-stock" checked />
               <span>Все</span>
             </label>
-            <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer;">
+            <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0;">
               <input type="radio" name="cat-stock" />
               <span>В наличии</span>
             </label>
-            <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer;">
+            <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0;">
               <input type="radio" name="cat-stock" />
               <span>Распродано</span>
             </label>
@@ -161,11 +146,8 @@ const apiBase = 'https://gateway.merfy.ru/api';
       )}
 
       <div
-        data-puck-subsection-parent={id}
-        data-puck-subsection-index="104"
-        data-puck-subsection-field="productCard"
         data-catalog-grid
-        style={`display: grid; grid-template-columns: repeat(${colCount}, 1fr); gap: 16px; cursor: pointer;`}
+        style={`display: grid; grid-template-columns: repeat(${colCount}, 1fr); gap: 16px;`}
       >
         {placeholderCards.map(() => (
           <article style="display: flex; flex-direction: column; gap: 8px;">

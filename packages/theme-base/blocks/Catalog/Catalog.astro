@@ -40,11 +40,15 @@ const paddingStyle = padding
   : 'padding-top:120px; padding-bottom:120px;';
 
 const subtitleVisible = subtitle !== 'false' && subtitle !== false;
+// Priority new field showFilter; fallback to legacy showSidebar only when
+// showFilter is not set (otherwise toggling filters off keeps showing them
+// because legacy default 'true' wins).
 const filterVisible =
-  showFilter === undefined && showSidebar === undefined
-    ? true
-    : (showFilter !== 'false' && showFilter !== false) ||
-      (showSidebar !== 'false' && showSidebar !== false);
+  showFilter !== undefined
+    ? showFilter !== 'false' && showFilter !== false
+    : showSidebar !== undefined
+      ? showSidebar !== 'false' && showSidebar !== false
+      : true;
 const filterSide = (filterPosition ?? 'side') === 'side';
 const sortVisible = showSort !== 'false' && showSort !== false;
 const collFilterLegacy =
@@ -89,16 +93,16 @@ const apiBase = 'https://gateway.merfy.ru/api';
   data-card-bg={cardBgOn ? 'true' : 'false'}
   data-quick-add={quickAddMode}
   data-next-photo={(productCard?.nextPhoto === 'true' || productCard?.nextPhoto === true) ? 'true' : 'false'}
-  style={`background:#ffffff;color:#000000;${paddingStyle}`}
+  style={`background:rgb(var(--color-bg, 255 255 255));color:rgb(var(--color-text, 0 0 0));${paddingStyle}`}
 >
   <div style="max-width: 1320px; margin: 0 auto; padding-left: 24px; padding-right: 24px;">
     <div style="margin-bottom: 24px;">
       <h1
-        style="font-size: clamp(20px, 3vw, 36px); font-weight: 400; text-transform: uppercase; line-height: 1.1; color: #000000; margin: 0; font-family: var(--font-heading);"
+        style="font-size: clamp(20px, 3vw, 36px); font-weight: 400; text-transform: uppercase; line-height: 1.1; color: rgb(var(--color-heading, 0 0 0)); margin: 0; font-family: var(--font-heading);"
       >КАТАЛОГ</h1>
       {subtitleVisible && (
         <p
-          style="font-size: clamp(14px, 1.5vw, 20px); font-weight: 400; line-height: 1.4; color: #999999; margin-top: 6px; font-family: var(--font-body);"
+          style="font-size: clamp(14px, 1.5vw, 20px); font-weight: 400; line-height: 1.4; color: rgb(var(--color-muted, 153 153 153)); margin-top: 6px; font-family: var(--font-body);"
         >Здесь начинается персональный стиль</p>
       )}
     </div>

@@ -260,14 +260,23 @@ const apiBase = 'https://gateway.merfy.ru/api';
         if (!data) return;
         let products = data.products || data.data?.products || [];
         const colls = data.collections || data.data?.collections || [];
-        // Filter by selected collection (if collectionSlug set).
+        // Filter by selected collection. Try both shapes:
+        //   1. collection.productIds (from direct DB fallback)
+        //   2. product.collections[] (from RPC product.list response)
         if (collectionSlug) {
           const matchingColl = colls.find(function (c) {
             return c.id === collectionSlug || c.handle === collectionSlug || c.slug === collectionSlug;
           });
-          if (matchingColl && Array.isArray(matchingColl.productIds)) {
+          if (matchingColl && Array.isArray(matchingColl.productIds) && matchingColl.productIds.length) {
             const allowed = new Set(matchingColl.productIds);
             products = products.filter(function (p) { return allowed.has(p.id); });
+          } else {
+            products = products.filter(function (p) {
+              if (!Array.isArray(p.collections)) return false;
+              return p.collections.some(function (c) {
+                return c && (c.id === collectionSlug || c.slug === collectionSlug || c.handle === collectionSlug);
+              });
+            });
           }
         }
         products = products.slice(0, cardCount);

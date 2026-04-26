@@ -67,8 +67,11 @@ export class StorefrontDataController {
 
       // Fallback: direct product DB query (RPC may be slow/empty for
       // preview workloads). Products are stored with shopId = siteId.
+      let dbgError: string | null = null;
+      let dbgPoolUrl: string | null = null;
       if (!products?.length && !collections?.length) {
         const pool = this.getProductPool();
+        dbgPoolUrl = pool ? 'configured' : 'no PRODUCT_DATABASE_URL/DATABASE_URL';
         if (pool) {
           try {
             const prodRes = await pool.query(
@@ -97,22 +100,26 @@ export class StorefrontDataController {
               images: Array.isArray(r.images) ? r.images : [],
             }));
             const collRes = await pool.query(
-              `SELECT id, name AS title, slug AS handle, description, image
+              `SELECT id, name AS title, slug AS handle, description, images
                  FROM collections
-                WHERE "shopId" = $1 AND ("deletedAt" IS NULL OR "deletedAt" IS NULL)
+                WHERE "shopId" = $1 AND "deletedAt" IS NULL
                 ORDER BY "createdAt" DESC
                 LIMIT 100`,
               [siteId],
             );
-            collections = collRes.rows.map((r: Record<string, any>) => ({
-              id: r.id,
-              title: r.title,
-              handle: r.handle ?? r.id,
-              description: r.description ?? undefined,
-              image: r.image ?? null,
-              productIds: [],
-            }));
-            // Populate productIds per collection.
+            collections = collRes.rows.map((r: Record<string, any>) => {
+              const img = Array.isArray(r.images) && r.images[0]
+                ? (typeof r.images[0] === 'string' ? r.images[0] : r.images[0].url)
+                : null;
+              return {
+                id: r.id,
+                title: r.title,
+                handle: r.handle ?? r.id,
+                description: r.description ?? undefined,
+                image: img,
+                productIds: [] as string[],
+              };
+            });
             if (collections.length > 0) {
               const cpRes = await pool.query(
                 `SELECT "collectionId", "productId"
@@ -130,11 +137,33 @@ export class StorefrontDataController {
               }));
             }
           } catch (poolErr: unknown) {
+            dbgError = (poolErr as Error)?.message ?? String(poolErr);
             this.logger.warn(
-              `direct product DB query failed for site=${siteId}: ${(poolErr as Error)?.message ?? poolErr}`,
+              `direct product DB query failed for site=${siteId}: ${dbgError}`,
             );
           }
         }
+      }
+      // Surface debug info in response so it's visible from the browser
+      // when troubleshooting empty results. Strip in production once stable.
+      const debugQuery = (req: Response & { req?: { query?: { debug?: string } } }) =>
+        req.req?.query?.debug === '1';
+      if (debugQuery(res)) {
+        res
+          .header('Cache-Control', 'no-cache')
+          .json({
+            products,
+            collections,
+            _debug: {
+              tenantId: site.tenantId,
+              siteId,
+              poolStatus: dbgPoolUrl,
+              poolError: dbgError,
+              hasProductDbUrl: !!process.env.PRODUCT_DATABASE_URL,
+              hasDatabaseUrl: !!process.env.DATABASE_URL,
+            },
+          });
+        return;
       }
 
       res

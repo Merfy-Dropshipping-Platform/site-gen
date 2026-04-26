@@ -19,7 +19,7 @@ import {
  * calls product-service via RPC (same path as the build pipeline). No
  * tenant auth required: data is already public on the live storefront.
  */
-@Controller('api/sites/:id/storefront-data')
+@Controller('api/storefront-data/:id')
 export class StorefrontDataController {
   private readonly logger = new Logger(StorefrontDataController.name);
 

@@ -1,67 +1,256 @@
 ---
+// Product — Puck-managed SSR card. Mirrors the live ProductIsland visual
+// structure (image gallery + info block) so the constructor preview matches
+// what the user sees on the live storefront. When `siteId` is injected by
+// the preview pipeline, an inline client script fetches the chosen product
+// (or first available) from the storefront API and replaces placeholder
+// values with real data.
+//
+// On live SSG bundles each theme's `/product/[id].astro` page intercepts
+// Product blocks before they reach this file and mounts the interactive
+// React island directly with `productId` from URL params. So this file is
+// only rendered in preview pipelines and as a graceful fallback.
 import type { ProductProps } from './Product.puckConfig';
-import { ProductClasses as C } from './Product.classes';
 
 interface Props extends ProductProps {
   id?: string;
+  siteId?: string;
 }
 
 const {
   id,
+  siteId,
   productId,
+  layout = 'two-columns',
+  photoPosition = 'left',
+  text,
+  title,
+  price,
+  variants,
+  quantity,
+  buttons,
+  description,
+  share,
+  badge,
+  colorScheme,
   padding,
 } = Astro.props as Props;
 
 const paddingStyle = padding
-  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
-  : '';
+  ? `padding-top:${padding.top ?? 80}px; padding-bottom:${padding.bottom ?? 80}px;`
+  : 'padding-top:80px; padding-bottom:80px;';
 
-// SEO invariant per spec §11: emit JSON-LD Product schema.
-// Phase 1a: placeholder values. Phase 1c hydrates from product service.
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Product',
-  name: 'Product Name (hydrated in Phase 1c)',
-  description: 'Product description placeholder',
-  sku: productId,
-};
+const schemeClass =
+  typeof colorScheme === 'string' && colorScheme
+    ? `color-scheme-${colorScheme.replace('scheme-', '')}`
+    : '';
+
+const apiBase = 'https://gateway.merfy.ru/api';
+
+const textContent = text?.content ?? badge?.text ?? '';
+const priceVisible = price?.show !== 'false' && price?.show !== false;
+const quantityVisible = quantity?.enabled !== 'false' && quantity?.enabled !== false;
+const addBtnText = buttons?.addToCart?.text ?? 'В КОРЗИНУ';
+const buyBtnText = buttons?.buyNow?.text ?? 'КУПИТЬ';
+const shareText = share?.text ?? 'Поделиться';
+const descContent = description?.content ?? '';
+
+const photoOnLeft = photoPosition !== 'right';
 ---
 <section
-  class={C.root}
+  class:list={[schemeClass]}
   data-puck-component-id={id}
-  data-block="product-pdp"
+  data-block="product"
+  data-site-id={siteId}
+  data-api-base={apiBase}
   data-product-id={productId}
-  style={paddingStyle}
+  data-layout={layout}
+  style={`background:rgb(var(--color-bg, 255 255 255));color:rgb(var(--color-text, 0 0 0));${paddingStyle}`}
 >
-  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)}></script>
-  <div class={C.container}>
-    <div class={C.grid}>
-      <div class={C.galleryCol}>
-        <div class={C.galleryMedia} aria-label="Product gallery placeholder"></div>
-        <div class={C.galleryThumbs}>
-          <div class={C.galleryThumb}></div>
-          <div class={C.galleryThumb}></div>
-          <div class={C.galleryThumb}></div>
-          <div class={C.galleryThumb}></div>
+  <div style="max-width:1280px;margin:0 auto;padding-left:24px;padding-right:24px;">
+    <div style={`display:grid;grid-template-columns:${photoOnLeft ? '435px 1fr' : '1fr 435px'};gap:80px;align-items:start;`}>
+      {/* Images gallery — Figma node 1:21373 */}
+      <div data-product-images style={`order:${photoOnLeft ? 0 : 1};display:flex;flex-direction:column;gap:11px;`}>
+        <div data-product-hero style="aspect-ratio:1/1;background:rgba(0,0,0,0.05);border-radius:4px;overflow:hidden;">
+          {/* Hero image filled by inline JS */}
+        </div>
+        <div data-product-thumbs style="display:grid;grid-template-columns:repeat(3,1fr);gap:11px;">
+          <div style="aspect-ratio:1/1;background:rgba(0,0,0,0.05);border-radius:4px;"></div>
+          <div style="aspect-ratio:1/1;background:rgba(0,0,0,0.05);border-radius:4px;"></div>
+          <div style="aspect-ratio:1/1;background:rgba(0,0,0,0.05);border-radius:4px;"></div>
         </div>
       </div>
-      <div class={C.infoCol}>
-        <h1 class={C.title}>Product Name</h1>
-        <div class={C.price}>— ₽</div>
-        <div class={C.variants}>
-          <div class={C.variantsLabel}>Варианты</div>
-          <div class={C.variantsRow}>
-            <div class={C.variantPlaceholder}></div>
-            <div class={C.variantPlaceholder}></div>
-            <div class={C.variantPlaceholder}></div>
+
+      {/* Info block — Figma node 1:21380 */}
+      <div style={`order:${photoOnLeft ? 1 : 0};display:flex;flex-direction:column;gap:14px;`}>
+        <div
+          data-puck-subsection-parent={id}
+          data-puck-subsection-index="100"
+          data-puck-subsection-field="text"
+          data-product-text
+          style="font-size:13px;color:rgb(var(--color-muted, 153 153 153));text-transform:uppercase;letter-spacing:0.05em;cursor:pointer;"
+        >{textContent || 'Новая коллекция!'}</div>
+
+        <h1
+          data-puck-subsection-parent={id}
+          data-puck-subsection-index="101"
+          data-puck-subsection-field="title"
+          data-product-title
+          style={`font-size:${title?.size === 'large' ? '32px' : title?.size === 'small' ? '18px' : '22px'};font-weight:400;line-height:1.1;margin:0;color:rgb(var(--color-heading, 0 0 0));font-family:var(--font-heading);cursor:pointer;`}
+        >Товар</h1>
+
+        {priceVisible && (
+          <div
+            data-puck-subsection-parent={id}
+            data-puck-subsection-index="102"
+            data-puck-subsection-field="price"
+            data-product-price
+            style="display:flex;gap:8px;align-items:baseline;font-size:18px;color:rgb(var(--color-heading, 0 0 0));cursor:pointer;"
+          >
+            <span data-product-price-current>—</span>
+            <span data-product-price-compare style="text-decoration:line-through;color:rgb(var(--color-muted, 153 153 153));font-size:14px;display:none;"></span>
           </div>
+        )}
+
+        <div
+          data-puck-subsection-parent={id}
+          data-puck-subsection-index="103"
+          data-puck-subsection-field="variants"
+          data-product-variants
+          style="display:flex;gap:8px;flex-wrap:wrap;cursor:pointer;"
+        >
+          <button type="button" disabled style="padding:6px 14px;border:1px solid rgb(var(--color-text, 0 0 0));background:rgb(var(--color-text, 0 0 0));color:rgb(var(--color-bg, 255 255 255));border-radius:999px;font-size:13px;">71</button>
+          <button type="button" disabled style="padding:6px 14px;border:1px solid rgba(0,0,0,0.15);background:transparent;color:rgb(var(--color-text, 0 0 0));border-radius:999px;font-size:13px;">51</button>
+          <button type="button" disabled style="padding:6px 14px;border:1px solid rgba(0,0,0,0.15);background:transparent;color:rgb(var(--color-text, 0 0 0));border-radius:999px;font-size:13px;">45</button>
         </div>
-        <button type="button" class={C.addToCart}>В корзину</button>
+
+        {quantityVisible && (
+          <div
+            data-puck-subsection-parent={id}
+            data-puck-subsection-index="104"
+            data-puck-subsection-field="quantity"
+            data-product-quantity
+            style="display:flex;align-items:center;gap:12px;cursor:pointer;"
+          >
+            <span style="font-size:14px;color:rgb(var(--color-muted, 153 153 153));">Количество:</span>
+            <div style="display:flex;align-items:center;border:1px solid rgba(0,0,0,0.15);border-radius:4px;">
+              <button type="button" disabled style="padding:4px 10px;background:transparent;border:0;cursor:pointer;">−</button>
+              <span style="padding:4px 12px;font-size:14px;">1</span>
+              <button type="button" disabled style="padding:4px 10px;background:transparent;border:0;cursor:pointer;">+</button>
+            </div>
+          </div>
+        )}
+
+        <div
+          data-puck-subsection-parent={id}
+          data-puck-subsection-index="105"
+          data-puck-subsection-field="buttons"
+          data-product-buttons
+          style="display:flex;flex-direction:column;gap:8px;cursor:pointer;"
+        >
+          <button type="button" style="padding:14px;border:1px solid rgb(var(--color-text, 0 0 0));background:transparent;color:rgb(var(--color-text, 0 0 0));border-radius:4px;font-size:14px;cursor:pointer;text-transform:uppercase;letter-spacing:0.04em;">{addBtnText}</button>
+          <button type="button" style="padding:14px;background:rgb(var(--color-text, 0 0 0));color:rgb(var(--color-bg, 255 255 255));border:0;border-radius:4px;font-size:14px;cursor:pointer;text-transform:uppercase;letter-spacing:0.04em;">{buyBtnText}</button>
+        </div>
+
+        <div
+          data-puck-subsection-parent={id}
+          data-puck-subsection-index="106"
+          data-puck-subsection-field="description"
+          data-product-description
+          style={`font-size:${description?.size === 'large' ? '16px' : description?.size === 'small' ? '12px' : '14px'};color:rgb(var(--color-text, 0 0 0));line-height:1.5;cursor:pointer;`}
+        >
+          <div style="font-weight:500;margin-bottom:6px;">Описание</div>
+          <p data-product-description-content style="margin:0;">{descContent || 'Описание товара появится здесь после выбора товара.'}</p>
+        </div>
+
+        <div
+          data-puck-subsection-parent={id}
+          data-puck-subsection-index="107"
+          data-puck-subsection-field="share"
+          style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:rgb(var(--color-muted, 153 153 153));cursor:pointer;"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          <span>{shareText}</span>
+        </div>
       </div>
-    </div>
-    <div class={C.description}>
-      <h2 class={C.descriptionHeading}>Описание</h2>
-      <p>Описание товара будет доступно после привязки данных в Phase 1c.</p>
     </div>
   </div>
 </section>
+
+<script is:inline define:vars={{ siteId, apiBase, productId }}>
+  // Mirror live storefront in constructor preview: fetch real product
+  // (chosen via productId picker, falling back to first available) and
+  // populate hero image, thumbs, title, price.
+  (function () {
+    if (!siteId) return;
+    const root = document.querySelector('section[data-block="product"]');
+    if (!root) return;
+    const heroEl = root.querySelector('[data-product-hero]');
+    const thumbsEl = root.querySelector('[data-product-thumbs]');
+    const titleEl = root.querySelector('[data-product-title]');
+    const priceCur = root.querySelector('[data-product-price-current]');
+    const priceCmp = root.querySelector('[data-product-price-compare]');
+    const descEl = root.querySelector('[data-product-description-content]');
+    if (!heroEl || !titleEl) return;
+
+    function fmtPrice(p) {
+      const num = typeof p === 'number' ? p : parseFloat(p);
+      if (!Number.isFinite(num)) return '';
+      const rubles = num > 1000000 ? Math.round(num / 100) : Math.round(num);
+      return rubles.toLocaleString('ru-RU') + ' ₽';
+    }
+
+    function escAttr(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function applyProduct(p) {
+      if (!p) return;
+      const imgs = (Array.isArray(p.images) ? p.images : [])
+        .map((it) => (typeof it === 'string' ? it : (it && it.url) || null))
+        .filter(Boolean);
+      const hero = imgs[0];
+      if (hero && heroEl) {
+        heroEl.innerHTML =
+          '<img src="' + escAttr(hero) +
+          '" alt="' + escAttr(p.title || p.name || '') +
+          '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" />';
+      }
+      if (thumbsEl) {
+        const thumbs = imgs.slice(1, 4);
+        thumbsEl.innerHTML = (thumbs.length ? thumbs : ['', '', ''])
+          .map(function (src) {
+            return src
+              ? '<div style="aspect-ratio:1/1;border-radius:4px;overflow:hidden;background:rgba(0,0,0,0.05);"><img src="' +
+                  escAttr(src) +
+                  '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>'
+              : '<div style="aspect-ratio:1/1;background:rgba(0,0,0,0.05);border-radius:4px;"></div>';
+          })
+          .join('');
+      }
+      titleEl.textContent = p.title || p.name || '';
+      if (priceCur) priceCur.textContent = fmtPrice(p.basePrice ?? p.price);
+      if (priceCmp) {
+        if (p.compareAtPrice) {
+          priceCmp.textContent = fmtPrice(p.compareAtPrice);
+          priceCmp.style.display = 'inline';
+        } else {
+          priceCmp.style.display = 'none';
+        }
+      }
+      if (descEl && p.description) descEl.textContent = p.description;
+    }
+
+    const qs = productId ? '?product=' + encodeURIComponent(productId) : '';
+    fetch(apiBase + '/sites/' + siteId + '/storefront-data' + qs, { credentials: 'omit' })
+      .catch(() => null)
+      .then((r) => (r && r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data) return;
+        const single = data.product;
+        const list = data.products || (data.data && data.data.products) || [];
+        applyProduct(single || list[0]);
+      })
+      .catch(() => {});
+  })();
+</script>

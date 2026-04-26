@@ -231,6 +231,9 @@ const apiBase = 'https://gateway.merfy.ru/api';
       (btnStyle === 'link' ? 'text-decoration:underline;background:transparent;' : '')
     );
 
+    function escAttr(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
     function cardHtml(p) {
       const img = (Array.isArray(p.images) && p.images[0])
         ? (typeof p.images[0] === 'string' ? p.images[0] : p.images[0].url)
@@ -238,17 +241,20 @@ const apiBase = 'https://gateway.merfy.ru/api';
       const title = p.title || p.name || '';
       const price = fmtPrice(p.basePrice ?? p.price);
       const compare = p.compareAtPrice ? fmtPrice(p.compareAtPrice) : '';
+      const imgBlock = img
+        ? '<div style="aspect-ratio:3/4;overflow:hidden;border-radius:4px;background:rgba(0,0,0,0.05);">' +
+          '<img src="' + escAttr(img) + '" alt="' + escAttr(title) + '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" />' +
+          '</div>'
+        : '<div style="aspect-ratio:3/4;background:rgba(0,0,0,0.05);border-radius:4px;"></div>';
       return (
         '<article style="display:flex;flex-direction:column;gap:8px;' + cardChrome + '">' +
-          (img
-            ? '<div style="aspect-ratio:3/4;background-image:url(' + JSON.stringify(img) + ');background-size:cover;background-position:center;border-radius:4px;"></div>'
-            : '<div style="aspect-ratio:3/4;background:rgba(0,0,0,0.05);border-radius:4px;"></div>') +
-          '<div style="font-size:14px;color:#000;">' + title + '</div>' +
+          imgBlock +
+          '<div style="font-size:14px;color:#000;">' + escAttr(title) + '</div>' +
           '<div style="font-size:14px;color:#000;display:flex;gap:8px;align-items:baseline;">' +
             '<span>' + price + '</span>' +
             (compare ? '<span style="text-decoration:line-through;color:#999;">' + compare + '</span>' : '') +
           '</div>' +
-          (showQuickAdd ? '<button type="button" style="' + buttonStyle + '">' + quickAddText + '</button>' : '') +
+          (showQuickAdd ? '<button type="button" style="' + buttonStyle + '">' + escAttr(quickAddText) + '</button>' : '') +
         '</article>'
       );
     }

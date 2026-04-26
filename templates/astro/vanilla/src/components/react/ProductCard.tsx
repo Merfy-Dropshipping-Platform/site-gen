@@ -42,7 +42,10 @@ export interface ProductCardProps {
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, href }) => {
   const linkHref = href ?? `/product/${product.handle}`;
-  const firstImage = product.images?.[0];
+  const rawImage = (product.images as unknown as Array<string | { url?: string; alt?: string }>)?.[0];
+  const firstImage = typeof rawImage === 'string'
+    ? { url: rawImage, alt: undefined as string | undefined }
+    : rawImage;
   const discountPercent = product.compareAtPrice
     ? getDiscountPercent(product.price, product.compareAtPrice)
     : 0;
@@ -59,7 +62,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, href }) => {
         className="relative overflow-hidden w-full"
         style={{ aspectRatio: '1 / 1', backgroundColor: 'rgb(var(--color-background))' }}
       >
-        {firstImage ? (
+        {firstImage?.url ? (
           <img
             src={firstImage.url}
             alt={firstImage.alt ?? product.title}

@@ -1,17 +1,24 @@
 ---
-// Catalog — pupa-style SSG render. Mirrors the live CatalogIsland visual
-// structure (top sort pills + sidebar filters + product grid) so the
-// constructor preview shows the same layout that the live storefront
-// renders. The interactive island on the live site replaces this HTML
-// with React-driven filtering/pagination.
-import { CatalogClasses as C } from './Catalog.classes';
+// Catalog — pupa-style SSG render with optional client hydration.
+//
+// Renders the same visual structure as the live CatalogIsland (top sort
+// pills + sidebar filters + product grid) so the constructor preview
+// mirrors the live storefront. When `siteId` is injected by the preview
+// pipeline, an inline client script fetches real products from the
+// storefront API and replaces the placeholder cards — giving the
+// constructor a true mirror of what users see on the live site.
+//
+// On live SSG bundles the theme catalog.astro intercepts Catalog blocks
+// before they reach this file and renders the interactive React island
+// directly, so this file is only used in preview pipelines.
 import type { CatalogProps } from './Catalog.puckConfig';
 
 interface Props extends CatalogProps {
   id?: string;
+  siteId?: string;
 }
 
-const { id, padding, showCollectionFilter, showSidebar } = Astro.props as Props;
+const { id, padding, showCollectionFilter, showSidebar, siteId } = Astro.props as Props;
 
 const paddingStyle = padding
   ? `padding-top:${padding.top ?? 40}px; padding-bottom:${padding.bottom ?? 80}px;`
@@ -21,25 +28,28 @@ const sidebar = showSidebar !== 'false' && showSidebar !== false;
 const collFilter = showCollectionFilter !== 'false' && showCollectionFilter !== false;
 
 const placeholderCards = Array.from({ length: 6 });
+const apiBase = 'https://gateway.merfy.ru/api';
 ---
 <section
   data-puck-component-id={id}
   data-block="catalog"
+  data-site-id={siteId}
+  data-api-base={apiBase}
   style={`background:#ffffff;color:#000000;${paddingStyle}`}
 >
-  <div class={C.container}>
+  <div style="max-width: 1320px; margin: 0 auto; padding-left: 24px; padding-right: 24px;">
     <div style="margin-bottom: 24px;">
       <h1 style="font-size: clamp(20px, 3vw, 36px); font-weight: 400; text-transform: uppercase; line-height: 1.1; color: #000000; margin: 0; font-family: var(--font-heading);">КАТАЛОГ</h1>
       <p style="font-size: clamp(14px, 1.5vw, 20px); font-weight: 400; line-height: 1.4; color: #999999; margin-top: 6px; font-family: var(--font-body);">Здесь начинается персональный стиль</p>
     </div>
 
-    <div style="margin-bottom: 16px; color: #000000; font-size: 14px;">{placeholderCards.length} товаров</div>
+    <div data-catalog-count style="margin-bottom: 16px; color: #000000; font-size: 14px;">{placeholderCards.length} товаров</div>
 
-    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;">
-      <button type="button" disabled style="padding: 8px 18px; border: 1px solid #ff5a1f; background: #ffffff; color: #000000; border-radius: 999px; font-size: 14px; cursor: pointer;">По популярности</button>
-      <button type="button" disabled style="padding: 8px 18px; border: 1px solid #000000; background: #000000; color: #ffffff; border-radius: 999px; font-size: 14px; cursor: pointer;">По новизне</button>
-      <button type="button" disabled style="padding: 8px 18px; border: 1px solid #ff5a1f; background: #ffffff; color: #000000; border-radius: 999px; font-size: 14px; cursor: pointer;">По возрастанию цены</button>
-      <button type="button" disabled style="padding: 8px 18px; border: 1px solid #ff5a1f; background: #ffffff; color: #000000; border-radius: 999px; font-size: 14px; cursor: pointer;">По убыванию цены</button>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;" data-catalog-sort>
+      <button type="button" data-sort="popularity" style="padding: 8px 18px; border: 1px solid #ff5a1f; background: #ffffff; color: #000000; border-radius: 999px; font-size: 14px; cursor: pointer;">По популярности</button>
+      <button type="button" data-sort="newest" data-active="true" style="padding: 8px 18px; border: 1px solid #000000; background: #000000; color: #ffffff; border-radius: 999px; font-size: 14px; cursor: pointer;">По новизне</button>
+      <button type="button" data-sort="price-asc" style="padding: 8px 18px; border: 1px solid #ff5a1f; background: #ffffff; color: #000000; border-radius: 999px; font-size: 14px; cursor: pointer;">По возрастанию цены</button>
+      <button type="button" data-sort="price-desc" style="padding: 8px 18px; border: 1px solid #ff5a1f; background: #ffffff; color: #000000; border-radius: 999px; font-size: 14px; cursor: pointer;">По убыванию цены</button>
     </div>
 
     <div style={`display: grid; grid-template-columns: ${sidebar ? '220px 1fr' : '1fr'}; gap: 32px; align-items: start;`}>
@@ -48,19 +58,11 @@ const placeholderCards = Array.from({ length: 6 });
           <div style="font-weight: 500; opacity: 0.7;">Фильтры:</div>
 
           {collFilter && (
-            <div>
+            <div data-catalog-collections>
               <div style="font-weight: 500; margin-bottom: 8px;">Коллекции</div>
               <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer;">
-                <input type="radio" name="cat-coll" checked disabled />
+                <input type="radio" name="cat-coll" checked />
                 <span>Все</span>
-              </label>
-              <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; opacity: 0.7;">
-                <input type="radio" name="cat-coll" disabled />
-                <span>Первая</span>
-              </label>
-              <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; opacity: 0.7;">
-                <input type="radio" name="cat-coll" disabled />
-                <span>Товары</span>
               </label>
             </div>
           )}
@@ -68,28 +70,28 @@ const placeholderCards = Array.from({ length: 6 });
           <div>
             <div style="font-weight: 500; margin-bottom: 8px;">Наличие</div>
             <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer;">
-              <input type="radio" name="cat-stock" checked disabled />
+              <input type="radio" name="cat-stock" checked />
               <span>Все</span>
             </label>
-            <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; opacity: 0.7;">
-              <input type="radio" name="cat-stock" disabled />
+            <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer;">
+              <input type="radio" name="cat-stock" />
               <span>В наличии</span>
             </label>
-            <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; opacity: 0.7;">
-              <input type="radio" name="cat-stock" disabled />
+            <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer;">
+              <input type="radio" name="cat-stock" />
               <span>Распродано</span>
             </label>
           </div>
 
           <div>
             <div style="font-weight: 500; margin-bottom: 8px;">Стоимость</div>
-            <input type="text" placeholder="от" disabled style="width: 100%; padding: 6px 8px; border: 1px solid rgba(0,0,0,0.15); margin-bottom: 6px; background: #ffffff; color: #000000;" />
-            <input type="text" placeholder="до" disabled style="width: 100%; padding: 6px 8px; border: 1px solid rgba(0,0,0,0.15); background: #ffffff; color: #000000;" />
+            <input type="text" placeholder="от" style="width: 100%; padding: 6px 8px; border: 1px solid rgba(0,0,0,0.15); margin-bottom: 6px; background: #ffffff; color: #000000;" />
+            <input type="text" placeholder="до" style="width: 100%; padding: 6px 8px; border: 1px solid rgba(0,0,0,0.15); background: #ffffff; color: #000000;" />
           </div>
         </aside>
       )}
 
-      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px;">
+      <div data-catalog-grid style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px;">
         {placeholderCards.map(() => (
           <article style="display: flex; flex-direction: column; gap: 8px;">
             <div style="aspect-ratio: 3 / 4; background: rgba(0,0,0,0.05); border-radius: 4px;"></div>
@@ -101,3 +103,71 @@ const placeholderCards = Array.from({ length: 6 });
     </div>
   </div>
 </section>
+
+<script is:inline define:vars={{ siteId, apiBase }}>
+  // Mirror live storefront in constructor preview: fetch real products and
+  // collections, swap placeholder grid for actual cards.
+  (function () {
+    if (!siteId) return;
+    const root = document.querySelector('section[data-block="catalog"]');
+    if (!root) return;
+    const grid = root.querySelector('[data-catalog-grid]');
+    const count = root.querySelector('[data-catalog-count]');
+    const collsEl = root.querySelector('[data-catalog-collections]');
+    if (!grid) return;
+
+    function fmtPrice(p) {
+      const num = typeof p === 'number' ? p : parseFloat(p);
+      if (!Number.isFinite(num)) return '';
+      // Backend returns kopecks for some products, rubles for others. Normalise.
+      const rubles = num > 1000000 ? Math.round(num / 100) : Math.round(num);
+      return rubles.toLocaleString('ru-RU') + ' ₽';
+    }
+
+    function cardHtml(p) {
+      const img = (Array.isArray(p.images) && p.images[0])
+        ? (typeof p.images[0] === 'string' ? p.images[0] : p.images[0].url)
+        : '';
+      const title = p.title || p.name || '';
+      const price = fmtPrice(p.basePrice ?? p.price);
+      const compare = p.compareAtPrice ? fmtPrice(p.compareAtPrice) : '';
+      return (
+        '<article style="display:flex;flex-direction:column;gap:8px;">' +
+          (img
+            ? '<div style="aspect-ratio:3/4;background-image:url(' + JSON.stringify(img) + ');background-size:cover;background-position:center;border-radius:4px;"></div>'
+            : '<div style="aspect-ratio:3/4;background:rgba(0,0,0,0.05);border-radius:4px;"></div>') +
+          '<div style="font-size:14px;color:#000;">' + title + '</div>' +
+          '<div style="font-size:14px;color:#000;display:flex;gap:8px;align-items:baseline;">' +
+            '<span>' + price + '</span>' +
+            (compare ? '<span style="text-decoration:line-through;color:#999;">' + compare + '</span>' : '') +
+          '</div>' +
+        '</article>'
+      );
+    }
+
+    fetch(apiBase + '/sites/' + siteId + '/storefront-data', { credentials: 'omit' })
+      .catch(() => null)
+      .then((r) => r && r.ok ? r.json() : null)
+      .then((data) => {
+        if (!data) return;
+        const products = (data.products || data.data?.products || []).slice(0, 12);
+        const colls = data.collections || data.data?.collections || [];
+        if (count && Number.isFinite(products.length)) {
+          count.textContent = products.length + ' товаров';
+        }
+        if (collsEl && Array.isArray(colls) && colls.length) {
+          const items = colls.map(function (c, i) {
+            return '<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;"><input type="radio" name="cat-coll" ' + (i === 0 ? '' : '') + ' /><span>' + (c.title || c.name || c.handle || c.id) + '</span></label>';
+          }).join('');
+          collsEl.innerHTML =
+            '<div style="font-weight:500;margin-bottom:8px;">Коллекции</div>' +
+            '<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;"><input type="radio" name="cat-coll" checked /><span>Все</span></label>' +
+            items;
+        }
+        if (products.length) {
+          grid.innerHTML = products.map(cardHtml).join('');
+        }
+      })
+      .catch(() => {});
+  })();
+</script>

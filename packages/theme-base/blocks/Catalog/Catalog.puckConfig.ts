@@ -11,6 +11,9 @@ export const CatalogSchema = z.object({
   showCollectionFilter: z.union([z.boolean(), z.enum(['true', 'false'])]).optional(),
   showSidebar: z.union([z.boolean(), z.enum(['true', 'false'])]).optional(),
   colorScheme: z.string().optional(),
+  // Optional: injected by preview pipeline so the SSG shell can client-fetch
+  // real products from the storefront API. Not user-editable.
+  siteId: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),

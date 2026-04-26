@@ -54,6 +54,7 @@ export class PreviewController {
       page,
       loaded.publicUrl,
       loaded.themeId,
+      siteId,
     );
     if (!blocks) {
       res
@@ -120,6 +121,7 @@ export class PreviewController {
     page: string,
     publicUrl: string | null,
     themeId: string | null,
+    siteId: string,
   ): Array<{ type: string; props: Record<string, unknown> }> | null {
     const pagesData = (data.pagesData ?? {}) as Record<string, unknown>;
     const pageData = pagesData[page] as Record<string, unknown> | undefined;
@@ -162,6 +164,11 @@ export class PreviewController {
           if (v && !props.variant) {
             props.variant = v;
           }
+        }
+        // Catalog block: inject siteId so the SSG shell can client-fetch
+        // real products from the storefront API and mirror the live grid.
+        if (b.type === 'Catalog') {
+          props.siteId = siteId;
         }
         return { type: b.type, props };
       });

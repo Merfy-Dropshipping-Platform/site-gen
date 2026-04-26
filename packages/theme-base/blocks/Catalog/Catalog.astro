@@ -382,14 +382,31 @@ const apiBase = 'https://gateway.merfy.ru/api';
       });
     });
 
-    // Product card click → navigate to product page
+    // Product card click → navigate to product page.
+    // In live SSG: full-page nav. In preview iframe: postMessage to parent
+    // constructor so it switches the active page (mirrors how <a> clicks
+    // are handled by runtime/preview-nav-agent.ts).
     grid.addEventListener('click', function (ev) {
       const article = ev.target.closest('article[data-product-id]');
       if (!article) return;
       const button = ev.target.closest('button');
       if (button) return; // let button handlers fire instead
       const handle = article.getAttribute('data-product-handle') || article.getAttribute('data-product-id');
-      if (handle) window.location.href = '/product/' + encodeURIComponent(handle);
+      if (!handle) return;
+      const target = '/product/' + encodeURIComponent(handle);
+      const inIframe = window.parent && window.parent !== window;
+      if (inIframe) {
+        try {
+          window.parent.postMessage(
+            { type: 'navigate', href: target, productId: article.getAttribute('data-product-id') },
+            '*'
+          );
+        } catch {
+          /* postMessage to cross-origin parent may fail — silently ignore */
+        }
+      } else {
+        window.location.href = target;
+      }
     });
 
     // Quick-add button click

@@ -41,10 +41,24 @@ export class StorefrontDataController {
         res.status(404).json({ products: [], collections: [] });
         return;
       }
-      const [products, collections] = await Promise.all([
+      // product-service uses shopId = siteId when filtering products. Try
+      // tenantId first (org-level scope); if empty, retry with siteId as
+      // both tenantId+siteId so single-shop merchants whose products were
+      // attached at site-level still get returned.
+      let [products, collections] = await Promise.all([
         fetchProducts(this.productClient, site.tenantId, siteId),
         fetchCollections(this.productClient, site.tenantId, siteId),
       ]);
+      if ((!products || products.length === 0) && (!collections || collections.length === 0)) {
+        const [p2, c2] = await Promise.all([
+          fetchProducts(this.productClient, siteId, siteId),
+          fetchCollections(this.productClient, siteId, siteId),
+        ]);
+        if (p2.length || c2.length) {
+          products = p2;
+          collections = c2;
+        }
+      }
       res
         .header('Cache-Control', 'public, max-age=30')
         .json({ products, collections });

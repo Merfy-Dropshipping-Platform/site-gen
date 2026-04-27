@@ -288,31 +288,21 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
   {/* Phase 1c: React island handles — mobile menu toggle, submenu expand, scroll-up stickiness, cart badge, cart-store integration */}
 </div>
 
-<style>
-  /* Burger-menu visibility — vanilla JS toggles data-mobile-menu-open on
-     the wrapper, this rule shows/hides the panel without React island. */
-  [data-header-wrapper][data-mobile-menu-open="true"] [data-mobile-menu] {
-    display: block !important;
-  }
-</style>
 <script is:inline>
   // Vanilla burger-menu toggle for preview iframe (where the React island
   // doesn't run). Live SSG sites bundle the React island so this script
-  // double-binds harmlessly — toggling aria-expanded twice is fine.
+  // double-binds harmlessly. NB: do NOT add a <style> block to this .astro
+  // file — Astro compiler bakes an absolute dev-machine path into the
+  // .mjs which then ENOENT-fails at runtime on Linux Docker images.
+  // Use inline style.display toggle instead of CSS rule.
   (function () {
     document.querySelectorAll('#mobile-menu-button').forEach(function (btn) {
       btn.addEventListener('click', function () {
         const expanded = btn.getAttribute('aria-expanded') === 'true';
         btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
-        // Find associated mobile menu sheet — looks for hidden nav by
-        // attribute or sibling `role=dialog`. Falls back to toggling the
-        // `data-mobile-menu-open` attribute on the wrapper so theme CSS
-        // can show/hide a custom panel.
         const wrap = btn.closest('[data-header-wrapper]');
-        if (wrap) {
-          const open = wrap.getAttribute('data-mobile-menu-open') === 'true';
-          wrap.setAttribute('data-mobile-menu-open', open ? 'false' : 'true');
-        }
+        const panel = wrap ? wrap.querySelector('[data-mobile-menu]') : null;
+        if (panel) panel.style.display = expanded ? 'none' : 'block';
       });
     });
 

@@ -15,12 +15,17 @@ const {
   padding,
 } = Astro.props as Props;
 
-const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+// Figma 1:13398 (Rose desktop 1920): side-pad 300px, form 652px, gap 84px,
+// summary 884px (full-bleed to right edge). Sum: 300+652+84+884+300=2020 (with right symmetric pad).
+// Actual Figma: left-pad 300, form 652, ~84 gap, summary 884 (extends to right viewport edge).
+const SIDE_PAD = 300;
 const cssVars = [
   `--checkout-form-col-w:${formColumnWidth}px`,
   `--checkout-summary-col-w:${summaryColumnWidth}px`,
   `--checkout-gap:${gap}px`,
+  `--checkout-side-pad:${SIDE_PAD}px`,
 ].join('; ');
+const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
 const inlineStyle = `${paddingStyle}; ${cssVars}`;
 const gridClass = summaryPosition === 'bottom' ? C.gridSummaryBottom : C.grid;
 ---
@@ -31,14 +36,12 @@ const gridClass = summaryPosition === 'bottom' ? C.gridSummaryBottom : C.grid;
   data-summary-position={summaryPosition}
   style={inlineStyle}
 >
-  <div class={C.gridContainer}>
-    <div class={gridClass}>
-      <div class={C.formColumn} data-checkout-column="form">
-        <slot name="form" />
-      </div>
-      <div class={C.summaryColumn} data-checkout-column="summary">
-        <slot name="summary" />
-      </div>
+  <div class={gridClass}>
+    <div class={C.formColumn} data-checkout-column="form">
+      <slot name="form" />
+    </div>
+    <div class={C.summaryColumn} data-checkout-column="summary">
+      <slot name="summary" />
     </div>
   </div>
 </section>

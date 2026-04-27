@@ -109,7 +109,11 @@ function renderBlock(b: Block) {
     )}
   </main>
 
-  {!headerBlock && homeFooterBlock && <Footer {...homeFooterBlock.props} />}
+  <footer class="w-full bg-black flex items-center justify-center h-16">
+    <p class="[font-family:'Inter','sans-serif'] font-light text-[16px] text-white">
+      © 2026 Satin Theme Все права защищены. Powered by Merfy
+    </p>
+  </footer>
 
   <div id="checkout-island" style="display:contents"></div>
 

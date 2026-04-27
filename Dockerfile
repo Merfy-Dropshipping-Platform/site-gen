@@ -17,6 +17,18 @@ RUN pnpm build
 # dist/astro-blocks/. Required for both PreviewService (Astro Container)
 # and ThemePuckConfigController (dynamic-imports <pkg>__<block>__index.mjs).
 RUN pnpm build:blocks
+# Sanity-check: if build:blocks silently produced no output (or skipped a
+# critical block), every preview render would fail at runtime with
+# "Block X not resolvable for themeId=Y". Fail the build NOW with a clear
+# message instead of letting users hit a 500-ish preview later.
+RUN test -f /app/dist/astro-blocks/theme-base__Header__Header.mjs \
+    || (echo "FATAL: build:blocks did not produce theme-base Header.mjs — check astro syntax in packages/theme-base/blocks/Header/Header.astro" && exit 1)
+RUN test -f /app/dist/astro-blocks/theme-base__Footer__Footer.mjs \
+    || (echo "FATAL: build:blocks did not produce theme-base Footer.mjs" && exit 1)
+RUN test -f /app/dist/astro-blocks/theme-base__Product__Product.mjs \
+    || (echo "FATAL: build:blocks did not produce theme-base Product.mjs" && exit 1)
+RUN test -f /app/dist/astro-blocks/theme-base__Catalog__Catalog.mjs \
+    || (echo "FATAL: build:blocks did not produce theme-base Catalog.mjs" && exit 1)
 # Compile Tailwind utility bundle for the preview iframe — theme-base
 # blocks use Tailwind classes in their .astro templates, and PreviewService
 # injects this CSS so the iframe looks like the live site.

@@ -7,40 +7,55 @@ import {
   CheckoutHeaderClasses,
 } from '../blocks/CheckoutHeader';
 
-describe('CheckoutHeader chrome block', () => {
-  it('conforms to validateBlock', async () => {
+describe('CheckoutHeader block', () => {
+  it('conforms to validateBlock contract', async () => {
     const dir = path.resolve(__dirname, '../blocks/CheckoutHeader');
     const result = await validateBlock(dir);
     expect(result.errors).toEqual([]);
     expect(result.ok).toBe(true);
   });
 
-  it('is singleton (maxInstances: 1)', () => {
-    expect(CheckoutHeaderPuckConfig.maxInstances).toBe(1);
-  });
-
-  it('category is navigation', () => {
+  it('exports PuckConfig with refactored fields', () => {
+    expect(CheckoutHeaderPuckConfig.label).toBe('Шапка оформления');
     expect(CheckoutHeaderPuckConfig.category).toBe('navigation');
+    expect(CheckoutHeaderPuckConfig.maxInstances).toBe(1);
+    expect(CheckoutHeaderPuckConfig.fields.logoMode).toBeDefined();
+    expect(CheckoutHeaderPuckConfig.fields.rightIcon).toBeDefined();
+    expect(CheckoutHeaderPuckConfig.fields.accountLink).toBeDefined();
   });
 
-  it('schema parses a minimal valid props object', () => {
+  it('Schema parses extended props', () => {
     const ok = CheckoutHeaderSchema.safeParse({
       siteTitle: 'Test Shop',
-      colorScheme: 1,
+      logoMode: 'text',
+      logoImage: null,
+      rightIcon: 'account',
+      accountLink: '/account',
       padding: { top: 24, bottom: 24 },
     });
     expect(ok.success).toBe(true);
   });
 
-  it('tokens include container + hero heading size + bg', () => {
-    expect(CheckoutHeaderTokens).toContain('--container-max-width');
-    expect(CheckoutHeaderTokens).toContain('--size-hero-heading');
+  it('Schema rejects invalid logoMode', () => {
+    const fail = CheckoutHeaderSchema.safeParse({
+      siteTitle: 'X',
+      logoMode: 'invalid',
+      rightIcon: 'account',
+      accountLink: '/',
+      padding: { top: 0, bottom: 0 },
+    });
+    expect(fail.success).toBe(false);
+  });
+
+  it('Tokens lists at least one CSS var', () => {
+    expect(CheckoutHeaderTokens.length).toBeGreaterThan(0);
     expect(CheckoutHeaderTokens).toContain('--color-bg');
   });
 
-  it('classes expose root + container + title', () => {
+  it('Classes export has root + container + brand + iconRight', () => {
     expect(CheckoutHeaderClasses.root).toBeDefined();
     expect(CheckoutHeaderClasses.container).toBeDefined();
-    expect(CheckoutHeaderClasses.title).toBeDefined();
+    expect(CheckoutHeaderClasses.brand).toBeDefined();
+    expect(CheckoutHeaderClasses.iconRight).toBeDefined();
   });
 });

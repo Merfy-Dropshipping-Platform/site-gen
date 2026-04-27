@@ -50,27 +50,55 @@ export function SubmitSection(props: SubmitSectionProps) {
       if (state.paymentMethod === 'bank_card') {
         paymentToken = await tokenize(props.cardRef.current);
       }
-      const res = await fetch(`${apiBase}/checkout/payment`, {
+
+      // Step 1 — convert cart → order (creates pending order with all checkout info)
+      const checkoutRes = await fetch(`${apiBase}/orders/cart/${state.cartId}/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          cartId: state.cartId,
-          paymentToken,
-          paymentMethod: state.paymentMethod,
-          deliveryAddress: state.delivery,
-          deliveryMethod: state.deliveryMethod,
-          contactEmail: state.contact.email,
-          contactPhone: state.contact.phone,
-          customerName: state.delivery.fullName || `${state.delivery.firstName} ${state.delivery.lastName}`,
-          promoCode: state.promoCode || undefined,
+          metadata: {
+            paymentMethod: state.paymentMethod,
+            deliveryAddress: state.delivery,
+            deliveryMethod: state.deliveryMethod,
+            contactEmail: state.contact.email,
+            contactPhone: state.contact.phone,
+            customerName:
+              state.delivery.fullName || `${state.delivery.firstName} ${state.delivery.lastName}`,
+            promoCode: state.promoCode || undefined,
+          },
         }),
       });
-      const json = await res.json();
-      if (!res.ok || !json?.data?.confirmationUrl) {
-        throw new Error(json?.error?.message ?? 'Ошибка оформления заказа');
+      const checkoutJson = await checkoutRes.json();
+      const orderId: string | undefined = checkoutJson?.data?.orderId ?? checkoutJson?.data?.id;
+      if (!checkoutRes.ok || !orderId) {
+        throw new Error(checkoutJson?.error?.message ?? checkoutJson?.message ?? 'Не удалось создать заказ');
       }
-      window.location.href = json.data.confirmationUrl;
+
+      // Step 2 — create payment for the order (with optional Tokenization SDK token)
+      const paymentRes = await fetch(`${apiBase}/orders/${orderId}/create-payment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          returnUrl: `${window.location.origin}${props.successRedirectUrl}?orderId=${orderId}`,
+          ...(paymentToken ? { paymentToken } : {}),
+        }),
+      });
+      const paymentJson = await paymentRes.json();
+      const confirmationUrl: string | undefined = paymentJson?.data?.confirmationUrl;
+      if (!paymentRes.ok || !confirmationUrl) {
+        throw new Error(paymentJson?.error?.message ?? paymentJson?.message ?? 'Ошибка платежа');
+      }
+
+      // Save orderId for return-url page
+      try {
+        localStorage.setItem('merfy:lastOrderId', orderId);
+        localStorage.removeItem('merfy:cartId');
+      } catch {
+        /* no-op */
+      }
+      window.location.href = confirmationUrl;
     } catch (e) {
       dispatch({ type: 'SET_ERROR', error: e instanceof Error ? e.message : 'Ошибка оформления заказа' });
       dispatch({ type: 'SET_SUBMITTING', submitting: false });

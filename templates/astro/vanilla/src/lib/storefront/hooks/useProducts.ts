@@ -6,7 +6,9 @@ import type { CatalogFilters } from './useUrlFilters';
 
 export type SortOption = 'price_asc' | 'price_desc' | 'newest' | 'popular';
 
-export const PAGE_SIZE = 8;
+export const DEFAULT_PAGE_SIZE = 8;
+/** @deprecated kept for back-compat; prefer the optional `pageSize` option on useProducts. */
+export const PAGE_SIZE = DEFAULT_PAGE_SIZE;
 
 interface PaginationInfo {
   page: number;
@@ -32,12 +34,18 @@ export interface UseProductsOptions {
   gcTime?: number;
   /** Build-time data for first paint. */
   initialData?: ProductsResult;
+  /** Override for products-per-page (clamped to [1, 100]). Defaults to DEFAULT_PAGE_SIZE. */
+  pageSize?: number;
 }
 
 export function useProducts(filters: CatalogFilters, options: UseProductsOptions = {}) {
   const { apiBase, storeId } = useStoreConfig();
+  const pageSize = Math.max(
+    1,
+    Math.min(100, Math.floor(options.pageSize ?? DEFAULT_PAGE_SIZE)),
+  );
 
-  const queryKey = ['products', storeId, filters];
+  const queryKey = ['products', storeId, filters, pageSize];
 
   const { data, isLoading, isFetching, isError, error, isPlaceholderData } = useQuery<ProductsResult>({
     queryKey,
@@ -48,7 +56,7 @@ export function useProducts(filters: CatalogFilters, options: UseProductsOptions
       const params = new URLSearchParams();
       params.set('store_id', storeId);
       params.set('page', String(filters.page));
-      params.set('limit', String(PAGE_SIZE));
+      params.set('limit', String(pageSize));
 
       if (filters.sort) params.set('sort', filters.sort);
       if (filters.collectionId) params.set('collection_id', filters.collectionId);
@@ -82,9 +90,9 @@ export function useProducts(filters: CatalogFilters, options: UseProductsOptions
 
       const pagination: PaginationInfo = response.pagination ?? {
         page: filters.page,
-        limit: PAGE_SIZE,
+        limit: pageSize,
         total: response.total,
-        totalPages: Math.ceil(response.total / PAGE_SIZE),
+        totalPages: Math.ceil(response.total / pageSize),
       };
 
       return { products: mapped, total: response.total, pagination };
@@ -98,7 +106,7 @@ export function useProducts(filters: CatalogFilters, options: UseProductsOptions
     products: data?.products ?? [],
     total: data?.total ?? 0,
     isFetching,
-    pagination: data?.pagination ?? { page: 1, limit: PAGE_SIZE, total: 0, totalPages: 0 },
+    pagination: data?.pagination ?? { page: 1, limit: pageSize, total: 0, totalPages: 0 },
     isLoading,
     isError,
     error: error as Error | null,

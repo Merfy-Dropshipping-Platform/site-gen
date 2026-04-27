@@ -352,13 +352,34 @@ function MobileFilters({ filters, setFilters, variantGroups, collections, hasAct
 
 // --- Main CatalogInner ---
 
+// Tailwind-safe lookup table — every class below must remain a literal string in
+// source so the `lg:grid-cols-N` variants survive tree-shaking. Do not build the
+// class via interpolation/template strings.
+const LG_COLS_CLASS: Record<number, string> = {
+  1: 'lg:grid-cols-1',
+  2: 'lg:grid-cols-2',
+  3: 'lg:grid-cols-3',
+  4: 'lg:grid-cols-4',
+  5: 'lg:grid-cols-5',
+  6: 'lg:grid-cols-6',
+};
+
+const FLUX_DEFAULT_COLUMNS = 2;
+
+function resolveLgCols(columns?: number) {
+  const n = Math.max(1, Math.min(6, Math.floor(columns ?? FLUX_DEFAULT_COLUMNS)));
+  return LG_COLS_CLASS[n] ?? LG_COLS_CLASS[FLUX_DEFAULT_COLUMNS];
+}
+
 interface CatalogInnerProps {
   collectionSlug?: string;
   showCollectionFilter?: boolean;
   cardStyle?: 'auto' | 'portrait' | 'square' | 'wide';
+  columns?: number;
+  cards?: number;
 }
 
-function CatalogInner({ collectionSlug, showCollectionFilter = true, cardStyle }: CatalogInnerProps) {
+function CatalogInner({ collectionSlug, showCollectionFilter = true, cardStyle, columns, cards }: CatalogInnerProps) {
   const { filters, setFilters, resetFilters } = useUrlFilters();
   const { collections } = useCollections();
   const { data: filtersData } = useFilters(filters);
@@ -373,7 +394,10 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true, cardStyle }
     }
   }, [collectionSlug, collections, filters.collectionId, setFilters]);
 
-  const { products, total, pagination, isLoading, isFetching, isError, error } = useProducts(filters);
+  const lgCols = resolveLgCols(columns);
+  const { products, total, pagination, isLoading, isFetching, isError, error } = useProducts(filters, {
+    pageSize: cards,
+  });
   const variantGroups = filtersData?.variantGroups ?? [];
 
   const hasActiveFilters = !!(
@@ -397,7 +421,7 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true, cardStyle }
     if (isLoading && products.length === 0) {
       return (
         <div className="flex-1">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2" style={{ gap: 16 }}>
+          <div className={`grid grid-cols-1 sm:grid-cols-2 ${lgCols}`} style={{ gap: 16 }}>
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="animate-pulse">
                 <div style={{ aspectRatio: '1/1', backgroundColor: 'rgb(var(--color-foreground) / 0.05)', borderRadius: 0 }} />
@@ -464,7 +488,7 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true, cardStyle }
     return (
       <div className="flex-1" style={{ opacity: isFetching ? 0.5 : 1, transition: 'opacity 0.2s ease' }}>
         <div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2"
+          className={`grid grid-cols-1 sm:grid-cols-2 ${lgCols}`}
           style={{ gap: 16 }}
         >
           {products.map((product) => (
@@ -539,6 +563,8 @@ export interface CatalogIslandProps {
   collectionSlug?: string;
   showCollectionFilter?: boolean;
   cardStyle?: 'auto' | 'portrait' | 'square' | 'wide';
+  columns?: number;
+  cards?: number;
 }
 
 export default function CatalogIsland(props: CatalogIslandProps) {

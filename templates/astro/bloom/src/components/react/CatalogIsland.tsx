@@ -351,13 +351,34 @@ function SkeletonGrid({ count = 9 }: { count?: number }) {
 
 // --- Main CatalogInner ---
 
+// Tailwind-safe lookup table — every class below must remain a literal string in
+// source so the `lg:grid-cols-N` variants survive tree-shaking. Do not build the
+// class via interpolation/template strings.
+const LG_COLS_CLASS: Record<number, string> = {
+  1: 'lg:grid-cols-1',
+  2: 'lg:grid-cols-2',
+  3: 'lg:grid-cols-3',
+  4: 'lg:grid-cols-4',
+  5: 'lg:grid-cols-5',
+  6: 'lg:grid-cols-6',
+};
+
+const BLOOM_DEFAULT_COLUMNS = 3;
+
+function resolveLgCols(columns?: number) {
+  const n = Math.max(1, Math.min(6, Math.floor(columns ?? BLOOM_DEFAULT_COLUMNS)));
+  return LG_COLS_CLASS[n] ?? LG_COLS_CLASS[BLOOM_DEFAULT_COLUMNS];
+}
+
 interface CatalogInnerProps {
   collectionSlug?: string;
   showCollectionFilter?: boolean;
   cardStyle?: 'auto' | 'portrait' | 'square' | 'wide';
+  columns?: number;
+  cards?: number;
 }
 
-function CatalogInner({ collectionSlug, cardStyle }: CatalogInnerProps) {
+function CatalogInner({ collectionSlug, cardStyle, columns, cards }: CatalogInnerProps) {
   const { filters, setFilters, resetFilters } = useUrlFilters();
   const { collections } = useCollections();
   const { data: filtersData } = useFilters(filters);
@@ -372,7 +393,10 @@ function CatalogInner({ collectionSlug, cardStyle }: CatalogInnerProps) {
     }
   }, [collectionSlug, collections, filters.collectionId, setFilters]);
 
-  const { products, total, pagination, isLoading, isFetching, isError, error } = useProducts(filters);
+  const lgCols = resolveLgCols(columns);
+  const { products, total, pagination, isLoading, isFetching, isError, error } = useProducts(filters, {
+    pageSize: cards,
+  });
   const variantGroups = filtersData?.variantGroups ?? [];
 
   const colorGroup = variantGroups.find(
@@ -584,7 +608,7 @@ function CatalogInner({ collectionSlug, cardStyle }: CatalogInnerProps) {
     return (
       <>
         <div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+          className={`grid grid-cols-1 sm:grid-cols-2 ${lgCols}`}
           style={{
             columnGap: 16,
             rowGap: 40,
@@ -669,6 +693,8 @@ export interface CatalogIslandProps {
   collectionSlug?: string;
   showCollectionFilter?: boolean;
   cardStyle?: 'auto' | 'portrait' | 'square' | 'wide';
+  columns?: number;
+  cards?: number;
 }
 
 export default function CatalogIsland(props: CatalogIslandProps) {

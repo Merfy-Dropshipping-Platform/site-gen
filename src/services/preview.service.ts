@@ -526,6 +526,13 @@ const PREVIEW_NAV_AGENT_INLINE = `
       e.preventDefault();
       return;
     }
+    // Whitelist: don't hijack clicks on interactive controls (variant pills,
+    // qty +/-, cart buttons, etc). Such elements opt-in via data-puck-interactive
+    // so block.astro inline JS gets the click for state changes.
+    var interactive = e.target && e.target.closest ? e.target.closest('[data-puck-interactive]') : null;
+    if (interactive) {
+      return;
+    }
     var sub = e.target && e.target.closest ? e.target.closest('[data-puck-subsection-parent]') : null;
     if (sub) {
       e.stopPropagation();

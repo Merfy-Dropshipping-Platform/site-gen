@@ -202,7 +202,7 @@ const apiBase = 'https://gateway.merfy.ru/api';
   </div>
 </section>
 
-<script is:inline define:vars={{ siteId, apiBase, cardCount, cardBgOn, btnBg, btnFg, btnBorder, btnStyle, showQuickAdd, quickAddText, collectionSlug }}>
+<script is:inline define:vars={{ siteId, apiBase, cardCount, cardBgOn, btnBg, btnFg, btnBorder, btnStyle, showQuickAdd, quickAddText, collectionSlug, cardAspect }}>
   // Mirror live storefront in constructor preview: fetch real products and
   // replace placeholder grid with actual cards. Honor productCard.* settings
   // so user changes (cardBackground, buttonStyle, quickAdd, etc) reflect.
@@ -243,10 +243,10 @@ const apiBase = 'https://gateway.merfy.ru/api';
       const compare = p.compareAtPrice ? fmtPrice(p.compareAtPrice) : '';
       const handle = p.handle || p.slug || p.id;
       const imgBlock = img
-        ? '<div style="aspect-ratio:3/4;overflow:hidden;border-radius:4px;background:rgba(0,0,0,0.05);">' +
+        ? '<div style="aspect-ratio:' + cardAspect + ';overflow:hidden;border-radius:4px;background:rgba(0,0,0,0.05);">' +
           '<img src="' + escAttr(img) + '" alt="' + escAttr(title) + '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" />' +
           '</div>'
-        : '<div style="aspect-ratio:3/4;background:rgba(0,0,0,0.05);border-radius:4px;"></div>';
+        : '<div style="aspect-ratio:' + cardAspect + ';background:rgba(0,0,0,0.05);border-radius:4px;"></div>';
       return (
         '<article data-product-id="' + escAttr(p.id) + '" data-product-handle="' + escAttr(handle) + '" style="display:flex;flex-direction:column;gap:8px;cursor:pointer;' + cardChrome + '">' +
           imgBlock +

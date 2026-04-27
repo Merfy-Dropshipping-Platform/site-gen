@@ -103,9 +103,25 @@ const defaultComponentResolver: ComponentResolver = async (
     }
   }
 
+  // Diagnostics: when block is missing, list the directories the resolver
+  // checked. Helps catch deploys where build:blocks succeeded in the
+  // builder stage but the dist/astro-blocks/ folder didn't make it into
+  // the runtime image (cache, COPY ordering, etc).
+  const fs = await import('node:fs');
+  const diag: string[] = [];
+  for (const root of roots) {
+    try {
+      const entries = fs.readdirSync(root);
+      diag.push(`${root}: [${entries.length} entries] ${entries.slice(0, 5).join(', ')}${entries.length > 5 ? '...' : ''}`);
+    } catch (e) {
+      diag.push(`${root}: NOT-EXIST (${(e as Error).code ?? 'unknown'})`);
+    }
+  }
+
   throw new Error(
     `Block "${blockName}" not resolvable for themeId="${themeId ?? 'base'}". ` +
-      `Run 'pnpm build:blocks' first. Last error: ${String(lastErr)}`,
+      `Run 'pnpm build:blocks' first. Last error: ${String(lastErr)}. ` +
+      `Filesystem diagnostics: ${diag.join(' | ')}`,
   );
 };
 

@@ -13,7 +13,7 @@ declare global {
   }
 }
 
-const SDK_URL = 'https://yookassa.ru/checkout-js/v2/checkout.js';
+const SDK_URL = 'https://static.yoomoney.ru/checkout-js/v1/checkout.js';
 
 export function useYooKassaSdk(): { ready: boolean; failed: boolean } {
   const [ready, setReady] = useState(false);

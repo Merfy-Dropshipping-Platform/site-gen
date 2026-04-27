@@ -341,52 +341,59 @@ const zoomEffective = zoomMode ?? 'hover';
         }
       }
       renderVariants();
-      // Variant click → select & re-render + update price
+      // Variant click → select & re-render + update price.
+      // Use capture phase + stopPropagation so constructor's
+      // useSubsectionClickHandler (which intercepts clicks on
+      // [data-puck-subsection-parent]) doesn't swallow the event and
+      // turn it into a "select Варианты subsection" instead.
       if (variantsEl) {
         variantsEl.addEventListener('click', function (ev) {
           const target = ev.target.closest('[data-variant-idx]');
           if (!target) return;
+          ev.stopPropagation();
           const idx = Number(target.getAttribute('data-variant-idx'));
           if (Number.isFinite(idx) && idx >= 0 && idx < productVariantsArr.length) {
             selectedVariantIdx = idx;
             renderVariants();
-            // Update displayed price from variant
             const v = productVariantsArr[idx];
             if (priceCur && v && v.price != null) {
               priceCur.textContent = fmtPrice(v.price);
               if (priceWrap) priceWrap.style.display = 'flex';
             }
           }
-        });
+        }, true);
       }
 
       // Thumbnail click → swap hero image
       if (thumbsEl) {
         thumbsEl.addEventListener('click', function (ev) {
+          ev.stopPropagation();
           const thumbDiv = ev.target.closest('div[style*="border-radius"]');
           const img = thumbDiv?.querySelector('img');
           const heroImg = heroEl?.querySelector('img');
           if (img && heroImg && img.src) heroImg.src = img.src;
-        });
+        }, true);
       }
     }
 
-    // Quantity +/- handlers
+    // Quantity +/- handlers (capture+stopPropagation so subsection select doesn't fire)
     const qtyEl = root.querySelector('[data-product-qty]');
     const qtyMinus = root.querySelector('[data-product-qty-minus]');
     const qtyPlus = root.querySelector('[data-product-qty-plus]');
     let currentQty = 1;
     if (qtyMinus && qtyEl) {
-      qtyMinus.addEventListener('click', function () {
+      qtyMinus.addEventListener('click', function (ev) {
+        ev.stopPropagation();
         if (currentQty > 1) currentQty--;
         qtyEl.textContent = String(currentQty);
-      });
+      }, true);
     }
     if (qtyPlus && qtyEl) {
-      qtyPlus.addEventListener('click', function () {
+      qtyPlus.addEventListener('click', function (ev) {
+        ev.stopPropagation();
         currentQty++;
         qtyEl.textContent = String(currentQty);
-      });
+      }, true);
     }
 
     // Add to cart / Buy now / Share
@@ -398,7 +405,8 @@ const zoomEffective = zoomMode ?? 'hover';
     const addBtn = root.querySelector('[data-product-add-to-cart]');
     const buyBtn = root.querySelector('[data-product-buy-now]');
     if (addBtn) {
-      addBtn.addEventListener('click', function () {
+      addBtn.addEventListener('click', function (ev) {
+        ev.stopPropagation();
         const cs = window.cartStore;
         if (cs && typeof cs.addItem === 'function') {
           const variantId = getActiveVariantId();
@@ -417,10 +425,11 @@ const zoomEffective = zoomMode ?? 'hover';
             addBtn.style.color = 'rgb(var(--color-text, 0 0 0))';
           }, 1500);
         }
-      });
+      }, true);
     }
     if (buyBtn) {
-      buyBtn.addEventListener('click', function () {
+      buyBtn.addEventListener('click', function (ev) {
+        ev.stopPropagation();
         if (window.cartStore && typeof window.cartStore.addItem === 'function') {
           window.cartStore.addItem(productId, getActiveVariantId(), currentQty);
           window.location.href = '/checkout';
@@ -429,11 +438,12 @@ const zoomEffective = zoomMode ?? 'hover';
           buyBtn.textContent = 'Переход к оплате...';
           setTimeout(function () { buyBtn.textContent = 'КУПИТЬ'; }, 1500);
         }
-      });
+      }, true);
     }
     const shareBtn = root.querySelector('[data-puck-subsection-field="share"]');
     if (shareBtn) {
-      shareBtn.addEventListener('click', function () {
+      shareBtn.addEventListener('click', function (ev) {
+        ev.stopPropagation();
         const url = window.location.href;
         const title = titleEl?.textContent || '';
         if (navigator.share) {

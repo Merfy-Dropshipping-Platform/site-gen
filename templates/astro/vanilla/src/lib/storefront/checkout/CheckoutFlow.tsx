@@ -25,12 +25,24 @@ interface SlotMount {
   props: Record<string, unknown>;
 }
 
+const HYDRATABLE_SLOTS = new Set([
+  'summary-toggle',
+  'contact',
+  'delivery',
+  'delivery-method',
+  'payment',
+  'order-summary',
+  'totals',
+  'submit',
+]);
+
 function readSlots(): SlotMount[] {
   if (typeof document === 'undefined') return [];
   const nodes = document.querySelectorAll<HTMLElement>('[data-checkout-slot]');
   const slots: SlotMount[] = [];
   nodes.forEach((el) => {
     const slot = el.dataset.checkoutSlot ?? '';
+    if (!HYDRATABLE_SLOTS.has(slot)) return; // skip header/layout/terms — pure SSR
     const propsRaw = el.dataset.checkoutProps;
     let props: Record<string, unknown> = {};
     if (propsRaw) {

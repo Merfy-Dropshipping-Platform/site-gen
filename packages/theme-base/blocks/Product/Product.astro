@@ -364,14 +364,21 @@ const zoomEffective = zoomMode ?? 'hover';
         }, true);
       }
 
-      // Thumbnail click → swap hero image
+      // Thumbnail click → SWAP hero ↔ thumbnail (not replace).
+      // Clicked thumbnail goes to hero; hero image takes the thumbnail's slot.
       if (thumbsEl) {
         thumbsEl.addEventListener('click', function (ev) {
           ev.stopPropagation();
           const thumbDiv = ev.target.closest('div[style*="border-radius"]');
-          const img = thumbDiv?.querySelector('img');
+          const thumbImg = thumbDiv?.querySelector('img');
           const heroImg = heroEl?.querySelector('img');
-          if (img && heroImg && img.src) heroImg.src = img.src;
+          if (!thumbImg || !heroImg || !thumbImg.src) return;
+          const heroSrc = heroImg.src;
+          const heroAlt = heroImg.alt;
+          heroImg.src = thumbImg.src;
+          if (thumbImg.alt) heroImg.alt = thumbImg.alt;
+          thumbImg.src = heroSrc;
+          if (heroAlt) thumbImg.alt = heroAlt;
         }, true);
       }
     }

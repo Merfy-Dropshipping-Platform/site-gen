@@ -1,0 +1,16 @@
+export const CheckoutContactFormTokens = [
+  '--color-input-bg',
+  '--color-input-border',
+  '--color-input-label',
+  '--color-input-placeholder',
+  '--color-heading',
+  '--color-text',
+  '--color-link',
+  '--font-heading',
+  '--font-body',
+  '--size-h3',
+  '--size-body',
+  '--size-tiny',
+  '--size-small',
+  '--radius-input',
+] as const satisfies readonly `--${string}`[];

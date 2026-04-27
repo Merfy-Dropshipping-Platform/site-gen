@@ -1,0 +1,65 @@
+---
+import type { CheckoutDeliveryFormProps } from './CheckoutDeliveryForm.puckConfig';
+import { CheckoutDeliveryFormClasses as C } from './CheckoutDeliveryForm.classes';
+
+interface Props extends CheckoutDeliveryFormProps { id?: string; }
+const { id, heading, country, nameField, cityDadata, addressDadata, indexAutoFill, requiredFields, padding } = Astro.props as Props;
+const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+const propsJson = JSON.stringify({ country, nameField, cityDadata, addressDadata, indexAutoFill, requiredFields });
+---
+<section
+  class={C.root}
+  data-puck-component-id={id}
+  data-checkout-slot="delivery"
+  data-checkout-props={propsJson}
+  style={paddingStyle}
+>
+  <h2 class={C.heading}>{heading}</h2>
+  <div class={C.fields}>
+    {country.enabled && (
+      <div class={C.field} data-checkout-field="country">
+        <label class={C.label}>Страна/Регион</label>
+        <input class={C.input} value={country.default} readonly={!country.selectable} />
+      </div>
+    )}
+    {nameField.enabled && (nameField.splitFirstLast ? (
+      <div class={C.fieldRow2}>
+        <div class={C.field} data-checkout-field="firstName">
+          <label class={C.label}>Имя</label>
+          <input class={C.input} name="firstName" autocomplete="given-name" />
+        </div>
+        <div class={C.field} data-checkout-field="lastName">
+          <label class={C.label}>Фамилия</label>
+          <input class={C.input} name="lastName" autocomplete="family-name" />
+        </div>
+      </div>
+    ) : (
+      <div class={C.field} data-checkout-field="fullName">
+        <label class={C.label}>ФИО</label>
+        <input class={C.input} name="fullName" autocomplete="name" />
+      </div>
+    ))}
+    <div class={C.field} data-checkout-field="city" data-dadata={String(cityDadata)}>
+      <label class={C.label}>Город</label>
+      <input class={C.input} name="city" autocomplete="address-level2" />
+      {cityDadata && (
+        <span class={C.searchIcon}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+        </span>
+      )}
+    </div>
+    <div class={C.field} data-checkout-field="address" data-dadata={String(addressDadata)}>
+      <label class={C.label}>Полный адрес</label>
+      <input class={C.input} name="address" autocomplete="street-address" />
+      {addressDadata && (
+        <span class={C.searchIcon}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+        </span>
+      )}
+    </div>
+    <div class={C.field} data-checkout-field="postalCode" data-autofill={String(indexAutoFill)}>
+      <label class={C.label}>Индекс</label>
+      <input class={C.input} name="postalCode" autocomplete="postal-code" />
+    </div>
+  </div>
+</section>

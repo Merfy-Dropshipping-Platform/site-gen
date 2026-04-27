@@ -29,6 +29,12 @@ export * as CartDrawer from './blocks/CartDrawer';
 export * as CheckoutLayout from './blocks/CheckoutLayout';
 export * as AccountLayout from './blocks/AccountLayout';
 
+// Checkout content blocks (Phase 080)
+export * as CheckoutSummaryToggle from './blocks/CheckoutSummaryToggle';
+export * as CheckoutContactForm from './blocks/CheckoutContactForm';
+export * as CheckoutDeliveryForm from './blocks/CheckoutDeliveryForm';
+export * as CheckoutDeliveryMethod from './blocks/CheckoutDeliveryMethod';
+
 // SEO TS modules (Phase 1b)
 export { buildSitemap } from './seo/SitemapBuilder';
 export type { SitemapUrl } from './seo/SitemapBuilder';

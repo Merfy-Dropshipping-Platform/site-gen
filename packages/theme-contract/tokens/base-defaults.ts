@@ -16,6 +16,11 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   '--color-button-2-text': '17 17 17',
   '--color-button-2-border': '200 200 200',
   '--color-border': '230 230 230',
+  '--color-link': '17 17 17',
+  '--color-input-bg': '255 255 255',
+  '--color-input-border': '210 210 210',
+  '--color-input-label': '120 120 120',
+  '--color-input-placeholder': '160 160 160',
   '--color-error': '220 38 38',
 
   // Typography
@@ -27,6 +32,11 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   '--size-nav-link': '16px',
   '--size-checkout-brand': '20px',
   '--size-checkout-brand-image': '32px',
+  '--size-h2': '24px',
+  '--size-h3': '18px',
+  '--size-body': '16px',
+  '--size-small': '14px',
+  '--size-tiny': '12px',
 
   // Radii
   '--radius-button': '0px',

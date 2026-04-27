@@ -23,6 +23,11 @@ export const TOKEN_REGISTRY = {
   '--color-button-2-text':     { category: 'color', scope: 'scheme' },
   '--color-button-2-border':   { category: 'color', scope: 'scheme' },
   '--color-border':            { category: 'color', scope: 'scheme' },
+  '--color-link':              { category: 'color', scope: 'scheme' },
+  '--color-input-bg':          { category: 'color', scope: 'scheme' },
+  '--color-input-border':      { category: 'color', scope: 'scheme' },
+  '--color-input-label':       { category: 'color', scope: 'scheme' },
+  '--color-input-placeholder': { category: 'color', scope: 'scheme' },
   '--color-error':             { category: 'color', scope: 'theme' },
 
   // Typography
@@ -34,6 +39,11 @@ export const TOKEN_REGISTRY = {
   '--size-nav-link':           { category: 'size',   unit: 'px', scope: 'theme' },
   '--size-checkout-brand':     { category: 'size',   unit: 'px', scope: 'theme' },
   '--size-checkout-brand-image': { category: 'size', unit: 'px', scope: 'theme' },
+  '--size-h2':                 { category: 'size',   unit: 'px', scope: 'theme' },
+  '--size-h3':                 { category: 'size',   unit: 'px', scope: 'theme' },
+  '--size-body':               { category: 'size',   unit: 'px', scope: 'theme' },
+  '--size-small':              { category: 'size',   unit: 'px', scope: 'theme' },
+  '--size-tiny':               { category: 'size',   unit: 'px', scope: 'theme' },
 
   // Radii
   '--radius-button':           { category: 'radius', unit: 'px', scope: 'theme', min: 0, max: 48 },

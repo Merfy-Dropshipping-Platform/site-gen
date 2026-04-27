@@ -58,3 +58,27 @@ export type { CustomerInfo } from './stores/index';
 // Lib
 export { storeFetch, StoreFetchError } from './lib/fetcher';
 export { useDebouncedValue } from './lib/useDebouncedValue';
+
+// 080 — Puck-managed checkout flow
+export {
+  CheckoutFlow,
+  mountCheckoutFlow,
+  CheckoutProvider,
+  useCheckoutContext,
+  computeTotals,
+  formatRub,
+  useCheckoutCart,
+  useDadata,
+  useCdek,
+  useYooKassaSdk,
+  useTokenizeCard,
+} from './checkout';
+export type {
+  CheckoutFlowProps,
+  CheckoutState,
+  CheckoutCartItem,
+  DeliveryAddress,
+  DeliveryMethodChoice,
+  CheckoutContact,
+  PaymentMethodKey,
+} from './checkout';

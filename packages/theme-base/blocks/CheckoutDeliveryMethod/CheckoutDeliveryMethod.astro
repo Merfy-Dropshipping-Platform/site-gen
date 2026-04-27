@@ -1,0 +1,21 @@
+---
+import type { CheckoutDeliveryMethodProps } from './CheckoutDeliveryMethod.puckConfig';
+import { CheckoutDeliveryMethodClasses as C } from './CheckoutDeliveryMethod.classes';
+
+interface Props extends CheckoutDeliveryMethodProps { id?: string; }
+const { id, heading, cdekEnabled, cdekDoorLabel, cdekPvzLabel, pickupEnabled, pickupLabel, customMethods, freeShippingThresholdCents, padding } = Astro.props as Props;
+const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+const propsJson = JSON.stringify({ cdekEnabled, cdekDoorLabel, cdekPvzLabel, pickupEnabled, pickupLabel, customMethods, freeShippingThresholdCents });
+---
+<section
+  class={C.root}
+  data-puck-component-id={id}
+  data-checkout-slot="delivery-method"
+  data-checkout-props={propsJson}
+  style={paddingStyle}
+>
+  <h2 class={C.heading}>{heading}</h2>
+  <div class={C.list} data-checkout-delivery-list>
+    {/* SSR placeholder; CheckoutFlow Island populates after CDEK API resolves */}
+  </div>
+</section>

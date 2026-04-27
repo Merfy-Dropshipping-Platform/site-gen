@@ -1,4 +1,9 @@
 /**
+ * @deprecated 080 Phase 9 — superseded by checkout-puck.astro + @merfy/storefront/checkout.
+ * Kept until per-site `settings.checkoutPuckManaged=true` is fully rolled out.
+ * Removal scheduled 30 days after 100% canary success.
+ */
+/**
  * Checkout page logic
  * Single-page checkout form (no multi-step navigation)
  * Поддерживает два режима:

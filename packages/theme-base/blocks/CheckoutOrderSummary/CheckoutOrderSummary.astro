@@ -1,0 +1,27 @@
+---
+import type { CheckoutOrderSummaryProps } from './CheckoutOrderSummary.puckConfig';
+import { CheckoutOrderSummaryClasses as C } from './CheckoutOrderSummary.classes';
+
+interface Props extends CheckoutOrderSummaryProps { id?: string; }
+const { id, heading, itemImageSize, showVariantLabels, showCompareAtPrice, promoToggle, bogoBadge, padding } = Astro.props as Props;
+const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+const propsJson = JSON.stringify({ itemImageSize, showVariantLabels, showCompareAtPrice, promoToggle, bogoBadge });
+---
+<section
+  class={C.root}
+  data-puck-component-id={id}
+  data-checkout-slot="order-summary"
+  data-checkout-props={propsJson}
+  style={paddingStyle}
+>
+  <h3 class={C.heading}>{heading}</h3>
+  <div class={C.items} data-checkout-items>
+    {/* SSR placeholder; populated by CheckoutFlow Island from cart-store */}
+  </div>
+  {promoToggle.enabled && (
+    <div class={C.promo} data-checkout-promo>
+      <span class={C.promoLabel}>{promoToggle.label}</span>
+      <button class={C.promoApply} type="button">{promoToggle.applyButtonText}</button>
+    </div>
+  )}
+</section>

@@ -1,0 +1,27 @@
+---
+import type { CheckoutPaymentProps } from './CheckoutPayment.puckConfig';
+import { CheckoutPaymentClasses as C } from './CheckoutPayment.classes';
+
+interface Props extends CheckoutPaymentProps { id?: string; }
+const { id, heading, subheading, methods, cardForm, padding } = Astro.props as Props;
+const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+const propsJson = JSON.stringify({ methods, cardForm });
+---
+<section
+  class={C.root}
+  data-puck-component-id={id}
+  data-checkout-slot="payment"
+  data-checkout-props={propsJson}
+  style={paddingStyle}
+>
+  <h2 class={C.heading}>{heading}</h2>
+  <p class={C.subheading}>{subheading}</p>
+  <div class={C.list} data-checkout-payment-list>
+    {methods.filter(m => m.enabled).map(m => (
+      <div class={C.option} data-payment-key={m.key}>
+        <span class={C.radio}></span>
+        <span class={C.label}>{m.label}</span>
+      </div>
+    ))}
+  </div>
+</section>

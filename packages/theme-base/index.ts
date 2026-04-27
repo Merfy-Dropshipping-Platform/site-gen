@@ -18,7 +18,6 @@ export * as ContactForm from './blocks/ContactForm';
 export * as Video from './blocks/Video';
 export * as Publications from './blocks/Publications';
 export * as CartSection from './blocks/CartSection';
-export * as CheckoutSection from './blocks/CheckoutSection';
 export * as Catalog from './blocks/Catalog';
 
 // Chrome blocks (Phase 1b)
@@ -29,6 +28,17 @@ export * as AuthModal from './blocks/AuthModal';
 export * as CartDrawer from './blocks/CartDrawer';
 export * as CheckoutLayout from './blocks/CheckoutLayout';
 export * as AccountLayout from './blocks/AccountLayout';
+
+// Checkout content blocks (Phase 080)
+export * as CheckoutSummaryToggle from './blocks/CheckoutSummaryToggle';
+export * as CheckoutContactForm from './blocks/CheckoutContactForm';
+export * as CheckoutDeliveryForm from './blocks/CheckoutDeliveryForm';
+export * as CheckoutDeliveryMethod from './blocks/CheckoutDeliveryMethod';
+export * as CheckoutPayment from './blocks/CheckoutPayment';
+export * as CheckoutOrderSummary from './blocks/CheckoutOrderSummary';
+export * as CheckoutTotals from './blocks/CheckoutTotals';
+export * as CheckoutSubmit from './blocks/CheckoutSubmit';
+export * as CheckoutTerms from './blocks/CheckoutTerms';
 
 // SEO TS modules (Phase 1b)
 export { buildSitemap } from './seo/SitemapBuilder';

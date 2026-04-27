@@ -1,8 +1,9 @@
 export const CheckoutHeaderTokens = [
   '--color-bg',
   '--color-heading',
+  '--color-border',
   '--font-heading',
-  '--size-hero-heading',
+  '--size-checkout-brand',
+  '--size-checkout-brand-image',
   '--container-max-width',
-  '--spacing-section-y',
 ] as const satisfies readonly `--${string}`[];

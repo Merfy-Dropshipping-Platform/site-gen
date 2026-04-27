@@ -1,0 +1,35 @@
+---
+import type { CheckoutSummaryToggleProps } from './CheckoutSummaryToggle.puckConfig';
+import { CheckoutSummaryToggleClasses as C } from './CheckoutSummaryToggle.classes';
+
+interface Props extends CheckoutSummaryToggleProps {
+  id?: string;
+}
+
+const { id, headerText, dropdownIcon, responsive, padding } = Astro.props as Props;
+const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+const visibilityClasses = [
+  responsive.showOnMobile ? '' : 'hidden',
+  responsive.showOnDesktop ? '' : 'md:hidden',
+].filter(Boolean).join(' ');
+const propsJson = JSON.stringify({ headerText, dropdownIcon });
+---
+<div
+  class={`${C.root} ${visibilityClasses}`}
+  data-puck-component-id={id}
+  data-checkout-slot="summary-toggle"
+  data-checkout-props={propsJson}
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    <button type="button" class={C.header} aria-expanded="false">
+      <span>{headerText}</span>
+      {dropdownIcon === 'chevron' ? (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      ) : (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l7 7 7-7"/></svg>
+      )}
+    </button>
+    <span class={C.total} data-checkout-total>—</span>
+  </div>
+</div>

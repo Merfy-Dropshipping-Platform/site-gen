@@ -1,0 +1,21 @@
+---
+import type { CheckoutSubmitProps } from './CheckoutSubmit.puckConfig';
+import { CheckoutSubmitClasses as C } from './CheckoutSubmit.classes';
+
+interface Props extends CheckoutSubmitProps { id?: string; }
+const { id, buttonText, buttonStyle, loadingText, successRedirectUrl, padding } = Astro.props as Props;
+const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+const propsJson = JSON.stringify({ buttonText, loadingText, successRedirectUrl });
+const cls = buttonStyle === 'outline' ? C.buttonOutline : buttonStyle === 'gradient' ? C.buttonGradient : C.buttonFill;
+---
+<section
+  class={C.root}
+  data-puck-component-id={id}
+  data-checkout-slot="submit"
+  data-checkout-props={propsJson}
+  style={paddingStyle}
+>
+  <button type="submit" class={cls} data-checkout-submit disabled>
+    {buttonText.replace('{total}', '—')}
+  </button>
+</section>

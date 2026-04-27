@@ -9,6 +9,11 @@ interface Props extends CheckoutHeaderProps {
 const {
   id,
   siteTitle,
+  logoMode,
+  logoImage,
+  rightIcon,
+  accountLink,
+  backLink,
   padding,
 } = Astro.props as Props;
 
@@ -17,11 +22,26 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
 <header
   class={C.root}
   data-puck-component-id={id}
+  data-checkout-slot="header"
   style={paddingStyle}
 >
   <div class={C.container}>
-    <a href="/" class={C.title} aria-label={siteTitle}>
-      {siteTitle}
+    <a href="/" class={C.brand} aria-label={siteTitle}>
+      {logoMode === 'image' && logoImage ? (
+        <img src={logoImage} alt={siteTitle} class={C.brandImage} />
+      ) : (
+        siteTitle
+      )}
     </a>
+    {rightIcon === 'account' && (
+      <a href={accountLink} class={C.iconRight} aria-label="Личный кабинет">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>
+      </a>
+    )}
+    {rightIcon === 'back' && (
+      <a href={backLink} class={C.iconRight} aria-label="Назад">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </a>
+    )}
   </div>
 </header>

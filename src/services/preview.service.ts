@@ -114,7 +114,7 @@ const defaultComponentResolver: ComponentResolver = async (
       const entries = fs.readdirSync(root);
       diag.push(`${root}: [${entries.length} entries] ${entries.slice(0, 5).join(', ')}${entries.length > 5 ? '...' : ''}`);
     } catch (e) {
-      diag.push(`${root}: NOT-EXIST (${(e as Error).code ?? 'unknown'})`);
+      diag.push(`${root}: NOT-EXIST (${(e as NodeJS.ErrnoException).code ?? 'unknown'})`);
     }
   }
 

@@ -355,9 +355,10 @@ function MobileFilters({ filters, setFilters, variantGroups, collections, hasAct
 interface CatalogInnerProps {
   collectionSlug?: string;
   showCollectionFilter?: boolean;
+  cardStyle?: 'auto' | 'portrait' | 'square' | 'wide';
 }
 
-function CatalogInner({ collectionSlug, showCollectionFilter = true }: CatalogInnerProps) {
+function CatalogInner({ collectionSlug, showCollectionFilter = true, cardStyle }: CatalogInnerProps) {
   const { filters, setFilters, resetFilters } = useUrlFilters();
   const { collections } = useCollections();
   const { data: filtersData } = useFilters(filters);
@@ -467,7 +468,7 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true }: CatalogIn
           style={{ gap: 16 }}
         >
           {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard key={product.id} product={product} cardStyle={cardStyle} />
           ))}
         </div>
 
@@ -537,6 +538,7 @@ function CatalogInner({ collectionSlug, showCollectionFilter = true }: CatalogIn
 export interface CatalogIslandProps {
   collectionSlug?: string;
   showCollectionFilter?: boolean;
+  cardStyle?: 'auto' | 'portrait' | 'square' | 'wide';
 }
 
 export default function CatalogIsland(props: CatalogIslandProps) {

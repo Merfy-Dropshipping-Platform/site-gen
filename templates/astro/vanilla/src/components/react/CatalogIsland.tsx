@@ -329,6 +329,7 @@ function BottomBar({ currentPage, totalPages, total, isLoading, onLoadMore }: Bo
 interface CatalogInnerProps {
   collectionSlug?: string;
   showCollectionFilter?: boolean;
+  cardStyle?: 'auto' | 'portrait' | 'square' | 'wide';
   initialProducts?: Product[];
   initialTotal?: number;
   initialCollections?: { id: string; handle: string; title?: string; name?: string }[];
@@ -338,6 +339,7 @@ interface CatalogInnerProps {
 function CatalogInner({
   collectionSlug,
   showCollectionFilter = true,
+  cardStyle,
   initialProducts = [],
   initialTotal = 0,
   initialCollections = [],
@@ -481,7 +483,7 @@ function CatalogInner({
           style={{ columnGap: 16, rowGap: 40 }}
         >
           {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard key={product.id} product={product} cardStyle={cardStyle} />
           ))}
         </div>
 
@@ -538,6 +540,7 @@ function CatalogInner({
 export interface CatalogIslandProps {
   collectionSlug?: string;
   showCollectionFilter?: boolean;
+  cardStyle?: 'auto' | 'portrait' | 'square' | 'wide';
   /** Server-side props from Astro page — make first paint instant. */
   shopId?: string;
   apiBase?: string;
@@ -572,7 +575,7 @@ export default function CatalogIsland(props: CatalogIslandProps) {
         <div className="flex-1">
           <div className="grid grid-cols-1 sm:grid-cols-2" style={{ columnGap: 16, rowGap: 40 }}>
             {props.initialProducts.slice(0, 8).map((p) => (
-              <ProductCard key={p.id} product={p} />
+              <ProductCard key={p.id} product={p} cardStyle={props.cardStyle} />
             ))}
           </div>
         </div>

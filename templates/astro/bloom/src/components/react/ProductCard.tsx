@@ -11,12 +11,22 @@ export function formatMoney(kopecks: number, currency = 'RUB'): string {
   }).format(amount);
 }
 
+export type CardStyle = 'auto' | 'portrait' | 'square' | 'wide';
+
 export interface ProductCardProps {
   product: Product;
   href?: string;
+  cardStyle?: CardStyle;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, href }) => {
+const ASPECT_BY_STYLE: Record<CardStyle, string> = {
+  portrait: '3 / 4',
+  square: '1 / 1',
+  wide: '4 / 3',
+  auto: '429 / 564',
+};
+
+export const ProductCard: React.FC<ProductCardProps> = ({ product, href, cardStyle }) => {
   const linkHref = href ?? `/product/${product.handle}`;
   const rawImage = (product.images as unknown as Array<string | { url?: string; alt?: string }>)?.[0];
   const firstImage = typeof rawImage === 'string'
@@ -24,10 +34,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, href }) => {
     : rawImage;
   const hasDiscount =
     product.compareAtPrice != null && product.compareAtPrice > product.price;
+  const aspectRatio = ASPECT_BY_STYLE[cardStyle ?? 'auto'];
 
   return (
     <div className="flex flex-col gap-5 w-full">
-      {/* Image — 429:564 portrait per Figma 897:11521.
+      {/* Image — aspect ratio depends on cardStyle prop (default 429:564 portrait per Figma 897:11521).
           Image is clipped via inner div (overflow-hidden); badge and ❤
           are siblings on the link itself so they aren't clipped. */}
       <a
@@ -38,7 +49,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, href }) => {
         <div
           className="relative w-full overflow-hidden"
           style={{
-            aspectRatio: '429 / 564',
+            aspectRatio,
             backgroundColor: 'rgb(var(--color-background))',
             borderRadius: 'var(--radius-card, 0px)',
           }}

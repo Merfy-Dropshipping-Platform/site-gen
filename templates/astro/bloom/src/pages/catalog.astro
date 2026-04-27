@@ -120,6 +120,7 @@ const pageTitle = (meta?.title && `Каталог — ${meta.title}`) || 'Кат
                 <CatalogIsland
                   client:only="react"
                   collectionSlug={props.collectionSlug}
+                  cardStyle={props.productCard?.cardStyle}
                 />
               </div>
             </section>

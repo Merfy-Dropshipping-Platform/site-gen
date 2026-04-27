@@ -111,6 +111,7 @@ const pageTitle = (meta?.title && `Каталог — ${meta.title}`) || 'Кат
                 client:only="react"
                 collectionSlug={props.collectionSlug}
                 showCollectionFilter={showColl}
+                cardStyle={props.productCard?.cardStyle}
               />
             </section>
           );

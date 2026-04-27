@@ -35,12 +35,22 @@ function getColorDots(product: Product): string[] {
   return colors;
 }
 
+export type CardStyle = 'auto' | 'portrait' | 'square' | 'wide';
+
 export interface ProductCardProps {
   product: Product;
   href?: string;
+  cardStyle?: CardStyle;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, href }) => {
+const ASPECT_BY_STYLE: Record<CardStyle, string> = {
+  portrait: '3 / 4',
+  square: '1 / 1',
+  wide: '4 / 3',
+  auto: '1 / 1',
+};
+
+export const ProductCard: React.FC<ProductCardProps> = ({ product, href, cardStyle }) => {
   const linkHref = href ?? `/product/${product.handle}`;
   const rawImage = (product.images as unknown as Array<string | { url?: string; alt?: string }>)?.[0];
   const firstImage = typeof rawImage === 'string'
@@ -50,6 +60,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, href }) => {
     ? getDiscountPercent(product.price, product.compareAtPrice)
     : 0;
   const colorDots = getColorDots(product);
+  const aspectRatio = ASPECT_BY_STYLE[cardStyle ?? 'auto'];
 
   return (
     <a
@@ -57,10 +68,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, href }) => {
       className="group flex flex-col cursor-pointer no-underline text-inherit"
       style={{ gap: 12 }}
     >
-      {/* Image container — 1:1 square */}
+      {/* Image container — aspect ratio depends on cardStyle prop (default 1:1 square) */}
       <div
         className="relative overflow-hidden w-full"
-        style={{ aspectRatio: '1 / 1', backgroundColor: 'rgb(var(--color-background))' }}
+        style={{ aspectRatio, backgroundColor: 'rgb(var(--color-background))' }}
       >
         {firstImage?.url ? (
           <img

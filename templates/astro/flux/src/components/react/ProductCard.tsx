@@ -11,28 +11,39 @@ export function formatMoney(kopecks: number, currency = 'RUB'): string {
   }).format(amount);
 }
 
+export type CardStyle = 'auto' | 'portrait' | 'square' | 'wide';
+
 export interface ProductCardProps {
   product: Product;
   href?: string;
+  cardStyle?: CardStyle;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, href }) => {
+const ASPECT_BY_STYLE: Record<CardStyle, string> = {
+  portrait: '3 / 4',
+  square: '1 / 1',
+  wide: '4 / 3',
+  auto: '1 / 1',
+};
+
+export const ProductCard: React.FC<ProductCardProps> = ({ product, href, cardStyle }) => {
   const linkHref = href ?? `/product/${product.handle}`;
   // Normalize images: backend may return string[] (RPC) or {url, alt}[] (legacy).
   const rawImage = (product.images as unknown as Array<string | { url?: string; alt?: string }>)?.[0];
   const firstImage = typeof rawImage === 'string'
     ? { url: rawImage, alt: undefined as string | undefined }
     : rawImage;
+  const aspectRatio = ASPECT_BY_STYLE[cardStyle ?? 'auto'];
 
   return (
     <a
       href={linkHref}
       className="group flex flex-col cursor-pointer no-underline text-inherit gap-4 sm:gap-5 md:gap-6 lg:gap-[25px]"
     >
-      {/* Image — 1:1 square per Figma */}
+      {/* Image — aspect ratio depends on cardStyle prop (default 1:1 square per Figma) */}
       <div
         className="overflow-hidden w-full"
-        style={{ aspectRatio: '1 / 1', backgroundColor: 'rgb(var(--color-background))' }}
+        style={{ aspectRatio, backgroundColor: 'rgb(var(--color-background))' }}
       >
         {firstImage?.url ? (
           <img

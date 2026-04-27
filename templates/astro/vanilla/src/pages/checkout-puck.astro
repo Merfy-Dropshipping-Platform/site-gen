@@ -122,5 +122,19 @@ function renderBlock(b: Block) {
       window.__DADATA_TOKEN__ = dadataToken;
     }
   </script>
-  <script type="module" src="/scripts/checkout-island.js"></script>
+  <script>
+    import { mountCheckoutFlow } from '@merfy/storefront/checkout';
+
+    const config = (window as any).__MERFY_CONFIG__ ?? {};
+    const target = document.getElementById('checkout-island');
+    if (target) {
+      const cartId = (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')) || null;
+      mountCheckoutFlow(target as HTMLElement, {
+        apiBase: config.apiUrl ?? 'https://gateway.merfy.ru/api',
+        shopId: config.shopId ?? '',
+        preview: Boolean((window as any).__MERFY_PREVIEW__),
+        initialCartId: cartId,
+      });
+    }
+  </script>
 </BaseLayout>

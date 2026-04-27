@@ -31,6 +31,7 @@ describe('CheckoutHeader block', () => {
       logoImage: null,
       rightIcon: 'account',
       accountLink: '/account',
+      backLink: '/cart',
       padding: { top: 24, bottom: 24 },
     });
     expect(ok.success).toBe(true);
@@ -42,9 +43,15 @@ describe('CheckoutHeader block', () => {
       logoMode: 'invalid',
       rightIcon: 'account',
       accountLink: '/',
+      backLink: '/cart',
       padding: { top: 0, bottom: 0 },
     });
     expect(fail.success).toBe(false);
+  });
+
+  it('exposes backLink field with /cart default', () => {
+    expect(CheckoutHeaderPuckConfig.fields.backLink).toBeDefined();
+    expect(CheckoutHeaderPuckConfig.defaults.backLink).toBe('/cart');
   });
 
   it('Tokens lists at least one CSS var', () => {

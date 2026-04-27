@@ -13,6 +13,7 @@ const {
   logoImage,
   rightIcon,
   accountLink,
+  backLink,
   padding,
 } = Astro.props as Props;
 
@@ -21,7 +22,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
 <header
   class={C.root}
   data-puck-component-id={id}
-  data-checkout-section="header"
+  data-checkout-slot="header"
   style={paddingStyle}
 >
   <div class={C.container}>
@@ -38,7 +39,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       </a>
     )}
     {rightIcon === 'back' && (
-      <a href="/cart" class={C.iconRight} aria-label="Назад в корзину">
+      <a href={backLink} class={C.iconRight} aria-label="Назад">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
       </a>
     )}

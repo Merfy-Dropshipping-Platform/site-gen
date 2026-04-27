@@ -7,6 +7,7 @@ export const CheckoutHeaderSchema = z.object({
   logoImage: z.string().nullable(),
   rightIcon: z.enum(['account', 'back', 'none']),
   accountLink: z.string(),
+  backLink: z.string(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -38,7 +39,8 @@ export const CheckoutHeaderPuckConfig: BlockPuckConfig<CheckoutHeaderProps> = {
         { label: 'Нет', value: 'none' },
       ],
     },
-    accountLink: { type: 'text', label: 'Куда ведёт иконка' },
+    accountLink: { type: 'text', label: 'Ссылка на личный кабинет' },
+    backLink: { type: 'text', label: 'Куда ведёт иконка «Назад»' },
     padding: { type: 'object', label: 'Отступы' },
   },
   defaults: {
@@ -47,6 +49,7 @@ export const CheckoutHeaderPuckConfig: BlockPuckConfig<CheckoutHeaderProps> = {
     logoImage: null,
     rightIcon: 'account',
     accountLink: '/account',
+    backLink: '/cart',
     padding: { top: 24, bottom: 24 },
   },
   schema: CheckoutHeaderSchema,

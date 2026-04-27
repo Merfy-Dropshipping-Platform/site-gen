@@ -22,6 +22,7 @@ export const TOKEN_REGISTRY = {
   '--color-button-2-bg':       { category: 'color', scope: 'scheme' },
   '--color-button-2-text':     { category: 'color', scope: 'scheme' },
   '--color-button-2-border':   { category: 'color', scope: 'scheme' },
+  '--color-border':            { category: 'color', scope: 'scheme' },
   '--color-error':             { category: 'color', scope: 'theme' },
 
   // Typography
@@ -31,6 +32,8 @@ export const TOKEN_REGISTRY = {
   '--weight-body':             { category: 'weight', scope: 'theme' },
   '--size-hero-heading':       { category: 'size',   unit: 'px', scope: 'theme' },
   '--size-nav-link':           { category: 'size',   unit: 'px', scope: 'theme' },
+  '--size-checkout-brand':     { category: 'size',   unit: 'px', scope: 'theme' },
+  '--size-checkout-brand-image': { category: 'size', unit: 'px', scope: 'theme' },
 
   // Radii
   '--radius-button':           { category: 'radius', unit: 'px', scope: 'theme', min: 0, max: 48 },

@@ -15,6 +15,7 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   '--color-button-2-bg': '255 255 255',
   '--color-button-2-text': '17 17 17',
   '--color-button-2-border': '200 200 200',
+  '--color-border': '230 230 230',
   '--color-error': '220 38 38',
 
   // Typography
@@ -24,6 +25,8 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   '--weight-body': '400',
   '--size-hero-heading': '48px',
   '--size-nav-link': '16px',
+  '--size-checkout-brand': '20px',
+  '--size-checkout-brand-image': '32px',
 
   // Radii
   '--radius-button': '0px',

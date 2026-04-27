@@ -160,9 +160,20 @@ function migrateProductPage(pagesData: Record<string, unknown>): Record<string, 
  *     wired through the live page Astro template (separate fallback).
  */
 function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string, unknown> {
-  const existing = pagesData['checkout'] as PageData | undefined;
+  // Some legacy revisions use `page-checkout` key, newer use `checkout`.
+  // Rename `page-checkout` → `checkout` (without losing content), then seed
+  // 11-block layout if no CheckoutLayout exists.
+  const out: Record<string, unknown> = { ...pagesData };
+  const legacyKey = 'page-checkout';
+  if (out[legacyKey] && !out['checkout']) {
+    out['checkout'] = out[legacyKey];
+  }
+  if (out[legacyKey]) {
+    delete out[legacyKey];
+  }
+  const existing = out['checkout'] as PageData | undefined;
   if (existing && Array.isArray(existing.content) && existing.content.some((b) => b?.type === 'CheckoutLayout')) {
-    return pagesData;
+    return out;
   }
   const ts = Date.now();
   const seedBlocks: Block[] = [
@@ -313,7 +324,7 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
   ];
 
   return {
-    ...pagesData,
+    ...out,
     checkout: {
       content: seedBlocks,
       root: { props: { title: 'Оформление заказа' } },

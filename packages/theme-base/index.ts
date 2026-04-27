@@ -18,7 +18,6 @@ export * as ContactForm from './blocks/ContactForm';
 export * as Video from './blocks/Video';
 export * as Publications from './blocks/Publications';
 export * as CartSection from './blocks/CartSection';
-export * as CheckoutSection from './blocks/CheckoutSection';
 export * as Catalog from './blocks/Catalog';
 
 // Chrome blocks (Phase 1b)

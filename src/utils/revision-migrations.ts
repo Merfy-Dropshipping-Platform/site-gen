@@ -160,19 +160,16 @@ function migrateProductPage(pagesData: Record<string, unknown>): Record<string, 
  *     wired through the live page Astro template (separate fallback).
  */
 function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string, unknown> {
-  // Some legacy revisions use `page-checkout` key, newer use `checkout`.
-  // Rename `page-checkout` → `checkout` (without losing content), then seed
-  // 11-block layout if no CheckoutLayout exists.
+  // Constructor uses `page-checkout` key, live `pages/checkout.astro` reads
+  // `checkout`. Keep BOTH keys in sync (migrate either source → both).
   const out: Record<string, unknown> = { ...pagesData };
-  const legacyKey = 'page-checkout';
-  if (out[legacyKey] && !out['checkout']) {
-    out['checkout'] = out[legacyKey];
-  }
-  if (out[legacyKey]) {
-    delete out[legacyKey];
-  }
-  const existing = out['checkout'] as PageData | undefined;
-  if (existing && Array.isArray(existing.content) && existing.content.some((b) => b?.type === 'CheckoutLayout')) {
+  const fromLegacy = out['page-checkout'] as PageData | undefined;
+  const fromNew = out['checkout'] as PageData | undefined;
+  const source = fromNew?.content?.length ? fromNew : fromLegacy;
+  if (source && Array.isArray(source.content) && source.content.some((b) => b?.type === 'CheckoutLayout')) {
+    // Already migrated — just keep both keys in sync
+    out['checkout'] = source;
+    out['page-checkout'] = source;
     return out;
   }
   const ts = Date.now();
@@ -323,13 +320,15 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
     },
   ];
 
+  const newPage: PageData = {
+    content: seedBlocks,
+    root: { props: { title: 'Оформление заказа' } },
+    zones: {},
+  };
   return {
     ...out,
-    checkout: {
-      content: seedBlocks,
-      root: { props: { title: 'Оформление заказа' } },
-      zones: {},
-    } as PageData,
+    checkout: newPage,
+    'page-checkout': newPage,
   };
 }
 

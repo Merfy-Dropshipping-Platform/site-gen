@@ -8,38 +8,37 @@ interface Props extends CheckoutLayoutProps {
 
 const {
   id,
-  showOrderSummary,
-  showTrustBadges,
+  summaryPosition,
+  formColumnWidth,
+  summaryColumnWidth,
+  gap,
   padding,
 } = Astro.props as Props;
 
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+const cssVars = [
+  `--checkout-form-col-w:${formColumnWidth}px`,
+  `--checkout-summary-col-w:${summaryColumnWidth}px`,
+  `--checkout-gap:${gap}px`,
+].join('; ');
+const inlineStyle = `${paddingStyle}; ${cssVars}`;
+const gridClass = summaryPosition === 'bottom' ? C.gridSummaryBottom : C.grid;
 ---
-<div
+<section
   class={C.root}
   data-puck-component-id={id}
-  style={paddingStyle}
+  data-checkout-slot="layout"
+  data-summary-position={summaryPosition}
+  style={inlineStyle}
 >
-  <div class={C.container}>
-    <div class={C.grid}>
-      <main class={C.form}>
-        <slot />
-      </main>
-      {showOrderSummary && (
-        <aside class={C.summary} aria-label="Сводка заказа">
-          <h3 class={C.summaryHeading}>Ваш заказ</h3>
-          <div data-order-summary>
-            {/* Phase 1c: React island renders cart items + total */}
-          </div>
-        </aside>
-      )}
-    </div>
-    {showTrustBadges && (
-      <div class={C.trustBadges} aria-label="Гарантии оплаты">
-        <span>🔒 SSL</span>
-        <span>💳 Visa/Mastercard</span>
-        <span>🏦 YooKassa</span>
+  <div class={C.gridContainer}>
+    <div class={gridClass}>
+      <div class={C.formColumn} data-checkout-column="form">
+        <slot name="form" />
       </div>
-    )}
+      <div class={C.summaryColumn} data-checkout-column="summary">
+        <slot name="summary" />
+      </div>
+    </div>
   </div>
-</div>
+</section>

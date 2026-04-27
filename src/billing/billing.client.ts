@@ -9,7 +9,7 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
 import { firstValueFrom, timeout, catchError, of } from "rxjs";
-import { BILLING_RMQ_SERVICE } from "../constants";
+import { BILLING_RMQ_SERVICE, USER_RMQ_SERVICE } from "../constants";
 
 export interface BillingEntitlements {
   shopsLimit: number;
@@ -26,7 +26,46 @@ export class BillingClient {
   constructor(
     @Inject(BILLING_RMQ_SERVICE)
     private readonly billingClient: ClientProxy,
+    @Inject(USER_RMQ_SERVICE)
+    private readonly userClient: ClientProxy,
   ) {}
+
+  /**
+   * Resolves the billing accountId for a tenant via the User Service.
+   *
+   * Tenant ID (organization id) and billing account ID (admin user id) are
+   * different UUIDs in Merfy — see `user.service#handleGetTenantBillingAccount`.
+   * Returns null if the tenant has no admin/member to bill against.
+   */
+  private async resolveAccountId(tenantId: string): Promise<string | null> {
+    try {
+      const result = await firstValueFrom(
+        this.userClient
+          .send<{ success: boolean; accountId: string | null }>(
+            "user.get_tenant_billing_account",
+            { tenantId },
+          )
+          .pipe(
+            timeout(3000),
+            catchError((err) => {
+              this.logger.warn(
+                `Failed to resolve accountId for tenant ${tenantId}: ${err.message}`,
+              );
+              return of({
+                success: false,
+                accountId: null,
+              } as { success: boolean; accountId: string | null });
+            }),
+          ),
+      );
+      return result?.accountId ?? null;
+    } catch (e) {
+      this.logger.error(
+        `resolveAccountId error for tenant ${tenantId}: ${e instanceof Error ? e.message : e}`,
+      );
+      return null;
+    }
+  }
 
   /**
    * Получает entitlements (лимиты) для тенанта.
@@ -35,18 +74,28 @@ export class BillingClient {
    * @returns Entitlements с лимитами и статусом
    */
   async getEntitlements(tenantId: string): Promise<BillingEntitlements> {
+    const accountId = await this.resolveAccountId(tenantId);
+    if (!accountId) {
+      this.logger.warn(
+        `getEntitlements: no billing account for tenant ${tenantId}, falling back to defaults`,
+      );
+      return this.getDefaultEntitlements();
+    }
+
     try {
       const result = await firstValueFrom(
-        this.billingClient.send("billing.get_entitlements", { tenantId }).pipe(
-          timeout(5000),
-          catchError((err) => {
-            this.logger.warn(
-              `Failed to get entitlements for tenant ${tenantId}: ${err.message}`,
-            );
-            // Возвращаем дефолтные значения при ошибке (graceful degradation)
-            return of(this.getDefaultEntitlements());
-          }),
-        ),
+        this.billingClient
+          .send("billing.get_entitlements", { accountId })
+          .pipe(
+            timeout(5000),
+            catchError((err) => {
+              this.logger.warn(
+                `Failed to get entitlements for account ${accountId} (tenant ${tenantId}): ${err.message}`,
+              );
+              // Возвращаем дефолтные значения при ошибке (graceful degradation)
+              return of(this.getDefaultEntitlements());
+            }),
+          ),
       );
 
       return {
@@ -58,7 +107,7 @@ export class BillingClient {
       };
     } catch (e) {
       this.logger.error(
-        `getEntitlements error for tenant ${tenantId}: ${e instanceof Error ? e.message : e}`,
+        `getEntitlements error for tenant ${tenantId} (account ${accountId}): ${e instanceof Error ? e.message : e}`,
       );
       return this.getDefaultEntitlements();
     }
@@ -100,8 +149,12 @@ export class BillingClient {
   }
 
   /**
-   * Дефолтные entitlements при недоступности Billing Service.
+   * Дефолтные entitlements при недоступности Billing/User Service.
    * Разрешаем 1 сайт — минимальный уровень для работы.
+   *
+   * `frozen: false` намеренно: предпочитаем availability над strict-correctness
+   * во время краткой деградации downstream-сервиса. Подробности — см. follow-up
+   * по различению "transient outage" vs "genuinely no billing account".
    */
   private getDefaultEntitlements(): BillingEntitlements {
     return {

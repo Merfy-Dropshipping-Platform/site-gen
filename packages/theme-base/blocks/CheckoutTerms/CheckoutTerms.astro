@@ -1,0 +1,21 @@
+---
+import type { CheckoutTermsProps } from './CheckoutTerms.puckConfig';
+import { CheckoutTermsClasses as C } from './CheckoutTerms.classes';
+
+interface Props extends CheckoutTermsProps { id?: string; }
+const { id, text, padding } = Astro.props as Props;
+const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+
+const html = text.replace(
+  /\[([^\]]+)\]\(([^)]+)\)/g,
+  (_match, label, url) => `<a href="${url}" class="${C.link}">${label}</a>`,
+);
+---
+<section
+  class={C.root}
+  data-puck-component-id={id}
+  data-checkout-slot="terms"
+  style={paddingStyle}
+>
+  <p class={C.text} set:html={html}></p>
+</section>

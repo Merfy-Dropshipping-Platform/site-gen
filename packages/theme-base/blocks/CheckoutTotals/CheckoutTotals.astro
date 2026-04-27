@@ -1,0 +1,33 @@
+---
+import type { CheckoutTotalsProps } from './CheckoutTotals.puckConfig';
+import { CheckoutTotalsClasses as C } from './CheckoutTotals.classes';
+
+interface Props extends CheckoutTotalsProps { id?: string; }
+const { id, deliveryLabel, freeText, totalLabel, showSubtotal, showDiscount, padding } = Astro.props as Props;
+const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+const propsJson = JSON.stringify({ deliveryLabel, freeText, totalLabel, showSubtotal, showDiscount });
+---
+<section
+  class={C.root}
+  data-puck-component-id={id}
+  data-checkout-slot="totals"
+  data-checkout-props={propsJson}
+  style={paddingStyle}
+>
+  {showSubtotal && (
+    <div class={C.row} data-totals-row="subtotal">
+      <span>Подытог</span><span data-totals-subtotal>—</span>
+    </div>
+  )}
+  <div class={C.row} data-totals-row="delivery">
+    <span>{deliveryLabel}</span><span data-totals-delivery>{freeText}</span>
+  </div>
+  {showDiscount && (
+    <div class={C.discount} data-totals-row="discount" hidden>
+      <span>Скидка</span><span data-totals-discount>—</span>
+    </div>
+  )}
+  <div class={C.totalRow} data-totals-row="total">
+    <span>{totalLabel}</span><span data-totals-total>—</span>
+  </div>
+</section>

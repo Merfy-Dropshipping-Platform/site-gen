@@ -999,53 +999,70 @@ CartSection: {
 
 ---
 
-## CheckoutSection
+## CheckoutSection (DEPRECATED — Phase 080 split)
 
-**Category:** form
-**Max instances per page:** 1 (used on `/checkout` page only)
-**Location in constructor:** `src/contexts/ConstructorContext.tsx:487`
+**Status:** removed from `theme-base` barrel in commit `96912e1`. Directory stays on disk to keep `/checkout.astro` building until Phase 6 rewires the live page. Replaced by 11 finer-grained Checkout* blocks below.
 
-**Props (verbatim from ConstructorContext.tsx):**
+---
 
-```typescript
-CheckoutSection: {
-  id: string;
-  colorScheme: string;
-  padding: { top: number; bottom: number };
-};
-```
+## Phase 080 Checkout blocks (11)
 
-**Required CSS tokens:**
-- `--color-bg`
-- `--color-surface`
-- `--color-heading`
-- `--color-text`
-- `--color-muted`
-- `--color-button-bg`
-- `--color-button-text`
-- `--color-button-border`
-- `--color-error`
-- `--font-heading`
-- `--font-body`
-- `--size-hero-heading`
-- `--radius-button`
-- `--radius-input`
-- `--radius-field`
-- `--size-hero-button-h`
-- `--spacing-section-y`
-- `--spacing-grid-col-gap`
-- `--spacing-grid-row-gap`
-- `--container-max-width`
-- `--button-style`
+Per `specs/080-checkout-redesign/spec.md`. Each block emits `data-checkout-slot="<key>"` so the Phase 2 `CheckoutFlow` React Island can find SSR placeholders and hydrate them via React Portals (single mount, distributed UI).
 
-**Constraints:**
-- Отступы: мин. 0px, макс. 96px, шаг 8px.
-- Note: `padding` is **required** here (not optional), unlike all other blocks.
+### CheckoutHeader (refactored 080)
+- **Purpose:** mini-header on `/checkout` (logo + right icon).
+- **Sidebar:** siteTitle, logoMode (text/image), logoImage (mediaSlot), rightIcon (account/back/none), accountLink, backLink, padding.
+- **Hydration:** static SSR, `data-checkout-slot="header"`.
 
-**Notes:**
-- Data-driven — all content (delivery, payment, fields) comes from `order_settings` and YooKassa/СДЭК integrations.
-- In constructor iframe preview, disable form submission — emit `postMessage({ type: 'form-submit-blocked' })`.
-- Must integrate with existing checkout flow (see `specs/011-storefront-checkout`, `specs/031-cdek-delivery-checkout`, `specs/047-checkout-self-pickup`).
+### CheckoutLayout (refactored 080)
+- **Purpose:** two-column grid shell (form left, summary right).
+- **Sidebar:** summaryPosition (right/bottom), formColumnWidth, summaryColumnWidth, gap, breakpoint, padding.
+- **Hydration:** static SSR, slots `form` / `summary`, `data-checkout-slot="layout"`.
+
+### CheckoutSummaryToggle (new 080)
+- **Purpose:** mobile-only «Сводка заказа ▾» row collapsible.
+- **Sidebar:** headerText, dropdownIcon, responsive {showOnMobile, showOnDesktop}, padding.
+- **Hydration:** by `CheckoutFlow` Island (Phase 2) — toggles items panel.
+
+### CheckoutContactForm (new 080)
+- **Purpose:** email + phone + auth-link.
+- **Sidebar:** heading, showAuthLink, authLinkText/Href, emailLabel, phoneLabel, phoneFormat (ru/intl), padding.
+- **Hydration:** Island provides validation + auth modal trigger.
+
+### CheckoutDeliveryForm (new 080)
+- **Purpose:** address fields with DaData hooks.
+- **Sidebar:** heading, country {enabled, default, selectable}, nameField {enabled, splitFirstLast}, cityDadata, addressDadata, indexAutoFill, requiredFields[], padding.
+- **Hydration:** Island wires DaData suggestions + autofill.
+
+### CheckoutDeliveryMethod (new 080)
+- **Purpose:** radio-list of shipping methods.
+- **Sidebar:** heading, cdekEnabled, cdekDoorLabel, cdekPvzLabel, pickupEnabled, pickupLabel, customMethods[], freeShippingThresholdCents, padding.
+- **Hydration:** Island fetches CDEK tariffs + ПВЗ on city change.
+
+### CheckoutPayment (new 080)
+- **Purpose:** payment method radio + inline card form (YooKassa Tokenization SDK).
+- **Sidebar:** heading, subheading, methods[] (bank_card/sbp/sberbank/tinkoff_bank), cardForm {cvvHelpEnabled, nameOnCardEnabled, warningText}, padding.
+- **Hydration:** Island loads YooKassa SDK lazy + tokenizes card on submit. **Никаких card data в наш backend.**
+
+### CheckoutOrderSummary (new 080)
+- **Purpose:** items list + promo code field.
+- **Sidebar:** heading, itemImageSize (compact/expanded), showVariantLabels, showCompareAtPrice, promoToggle {enabled, label, applyButtonText}, bogoBadge, padding.
+- **Hydration:** Island reads cart-store; renders items including BOGO `bonus_lines` with badge.
+
+### CheckoutTotals (new 080)
+- **Purpose:** delivery / total rows; optional subtotal + discount.
+- **Sidebar:** deliveryLabel, freeText, totalLabel, showSubtotal, showDiscount, padding.
+- **Hydration:** Island writes computed totals into `[data-totals-*]` placeholders.
+
+### CheckoutSubmit (new 080)
+- **Purpose:** primary submit button.
+- **Sidebar:** buttonText (`{total}` template), buttonStyle (fill/outline/gradient), loadingText, successRedirectUrl, padding.
+- **Hydration:** Island toggles disabled state during validation; orchestrates payment flow.
+
+### CheckoutTerms (new 080)
+- **Purpose:** legal small-print under submit.
+- **Sidebar:** text (markdown links), links[], padding.
+- **Hydration:** none — pure SSR with inline link parsing.
 
 ---
 

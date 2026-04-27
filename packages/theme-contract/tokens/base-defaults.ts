@@ -10,6 +10,7 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   '--color-primary': '17 17 17',
   '--color-accent': '17 17 17',
   '--color-accent-fg': '255 255 255',
+  '--color-accent-2': '60 60 60',
   '--color-button-bg': '17 17 17',
   '--color-button-text': '255 255 255',
   '--color-button-border': '17 17 17',

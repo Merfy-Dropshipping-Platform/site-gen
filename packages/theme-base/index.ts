@@ -36,6 +36,9 @@ export * as CheckoutDeliveryForm from './blocks/CheckoutDeliveryForm';
 export * as CheckoutDeliveryMethod from './blocks/CheckoutDeliveryMethod';
 export * as CheckoutPayment from './blocks/CheckoutPayment';
 export * as CheckoutOrderSummary from './blocks/CheckoutOrderSummary';
+export * as CheckoutTotals from './blocks/CheckoutTotals';
+export * as CheckoutSubmit from './blocks/CheckoutSubmit';
+export * as CheckoutTerms from './blocks/CheckoutTerms';
 
 // SEO TS modules (Phase 1b)
 export { buildSitemap } from './seo/SitemapBuilder';

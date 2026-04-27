@@ -16,6 +16,7 @@ export const TOKEN_REGISTRY = {
   '--color-muted':             { category: 'color', scope: 'scheme' },
   '--color-primary':           { category: 'color', scope: 'scheme' },
   '--color-accent':            { category: 'color', scope: 'scheme' },
+  '--color-accent-fg':         { category: 'color', scope: 'scheme' },
   '--color-button-bg':         { category: 'color', scope: 'scheme' },
   '--color-button-text':       { category: 'color', scope: 'scheme' },
   '--color-button-border':     { category: 'color', scope: 'scheme' },

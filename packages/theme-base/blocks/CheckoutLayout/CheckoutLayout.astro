@@ -15,15 +15,15 @@ const {
   padding,
 } = Astro.props as Props;
 
-// Figma 1:13398 (Rose desktop 1920): side-pad 300px, form 652px, gap 84px,
-// summary 884px (full-bleed to right edge). Sum: 300+652+84+884+300=2020 (with right symmetric pad).
-// Actual Figma: left-pad 300, form 652, ~84 gap, summary 884 (extends to right viewport edge).
-const SIDE_PAD = 300;
+// Figma 1:13398 design hints (1920px desktop): form 652px, summary 884px.
+// On real-world viewports (1280–1920) we constrain inside max-w-1440 with
+// reasonable side-pad (clamp). Removes the 300px-each-side that pushed the
+// content past viewport edge and caused horizontal scroll on 1440 monitors.
 const cssVars = [
   `--checkout-form-col-w:${formColumnWidth}px`,
   `--checkout-summary-col-w:${summaryColumnWidth}px`,
   `--checkout-gap:${gap}px`,
-  `--checkout-side-pad:${SIDE_PAD}px`,
+  `--checkout-side-pad:clamp(16px, 4vw, 80px)`,
 ].join('; ');
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
 const inlineStyle = `${paddingStyle}; ${cssVars}`;

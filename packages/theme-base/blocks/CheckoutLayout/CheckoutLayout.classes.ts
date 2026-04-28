@@ -4,7 +4,7 @@ export const CheckoutLayoutClasses = {
   // Mobile (<768px): collapses to single column with px-4 page padding.
   root: 'relative w-full bg-[rgb(var(--color-bg))]',
   grid:
-    'grid grid-cols-1 px-4 md:px-0 md:grid-cols-[minmax(0,1fr)_minmax(0,var(--checkout-summary-col-w))] md:gap-[var(--checkout-gap)] md:max-w-[calc(var(--checkout-form-col-w)+var(--checkout-gap)+var(--checkout-summary-col-w))] md:mx-auto md:px-[var(--checkout-side-pad)]',
+    'grid grid-cols-1 px-4 md:px-0 md:grid-cols-[minmax(420px,2fr)_minmax(320px,1fr)] md:gap-[var(--checkout-gap)] md:max-w-[1280px] md:mx-auto md:px-[var(--checkout-side-pad)]',
   gridSummaryBottom: 'grid grid-cols-1 px-4 max-w-[var(--container-max-width)] mx-auto',
   // Left column: form sections stacked with 40px gap (Figma).
   formColumn: 'flex flex-col gap-10 min-w-0 md:pt-16',

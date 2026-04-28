@@ -3,5 +3,5 @@ export const CheckoutTotalsClasses = {
   root: 'w-full flex flex-col gap-3',
   row: 'flex items-center justify-between text-[length:var(--size-body)] text-[rgb(var(--color-text))] [font-family:var(--font-body)]',
   totalRow: 'flex items-center justify-between text-[length:var(--size-h2)] text-[rgb(var(--color-text))] [font-family:var(--font-body)]',
-  discount: 'flex items-center justify-between text-[length:var(--size-body)] text-[rgb(var(--color-accent))]',
+  discount: 'flex items-center justify-between text-[length:var(--size-body)] text-[rgb(var(--color-text))]',
 } as const;

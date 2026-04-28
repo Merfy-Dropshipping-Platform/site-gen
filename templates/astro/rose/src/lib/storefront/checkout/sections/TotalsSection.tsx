@@ -25,7 +25,7 @@ export function TotalsSection(props: TotalsSectionProps) {
         <span className="text-[length:var(--size-small)]">{deliveryCents === 0 ? props.freeText : formatRub(deliveryCents)}</span>
       </div>
       {props.showDiscount && discountCents > 0 && (
-        <div className="flex items-center justify-between text-[length:var(--size-body)] text-[rgb(var(--color-accent))]">
+        <div className="flex items-center justify-between text-[length:var(--size-body)] text-[rgb(var(--color-text))]">
           <span>Скидка</span>
           <span>−{formatRub(discountCents)}</span>
         </div>

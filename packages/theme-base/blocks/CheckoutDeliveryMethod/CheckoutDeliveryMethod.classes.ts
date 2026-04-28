@@ -4,7 +4,8 @@ export const CheckoutDeliveryMethodClasses = {
   heading: 'mb-4 [font-family:var(--font-body)] text-[length:var(--size-h3)] text-[rgb(var(--color-heading))]',
   list: 'flex flex-col gap-4',
   option: 'flex flex-col justify-center h-[60px] px-3 border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] cursor-pointer transition-colors hover:border-[rgb(var(--color-text)/.4)]',
-  optionSelected: 'border-[rgb(var(--color-accent))]',
+  // Selected state — use --color-text (theme always defines it); accent vars missing from generator CSS.
+  optionSelected: 'border-[rgb(var(--color-text))]',
   radio: 'sr-only',
   body: 'flex-1 flex flex-col',
   label: '[font-family:var(--font-body)] text-[length:var(--size-small)] text-[rgb(var(--color-text))]',

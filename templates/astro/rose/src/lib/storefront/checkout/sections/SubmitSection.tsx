@@ -14,12 +14,13 @@ export function SubmitSection(props: SubmitSectionProps) {
   const { tokenize } = useTokenizeCard();
   const totals = computeTotals(state);
 
+  // Use --color-button-bg/button-text — accent tokens are missing from theme generator output.
   const cls =
     props.buttonStyle === 'outline'
-      ? 'w-full h-14 bg-transparent text-[rgb(var(--color-accent))] border-2 border-[rgb(var(--color-accent))] rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[length:var(--size-body)] disabled:opacity-50'
+      ? 'w-full h-14 bg-transparent text-[rgb(var(--color-text))] border-2 border-[rgb(var(--color-text))] rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[length:var(--size-body)] disabled:opacity-50'
       : props.buttonStyle === 'gradient'
-        ? 'w-full h-14 bg-gradient-to-r from-[rgb(var(--color-accent))] to-[rgb(var(--color-accent-2))] text-[rgb(var(--color-accent-fg))] rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[length:var(--size-body)] disabled:opacity-50'
-        : 'w-full h-14 bg-[rgb(var(--color-accent))] text-[rgb(var(--color-accent-fg))] rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[length:var(--size-body)] disabled:opacity-50';
+        ? 'w-full h-14 bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[length:var(--size-body)] disabled:opacity-50'
+        : 'w-full h-14 bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[length:var(--size-body)] disabled:opacity-50';
 
   const text = state.submitting ? props.loadingText : props.buttonText.replace('{total}', formatRub(totals.totalCents));
 

@@ -59,7 +59,7 @@ export function OrderSummarySection(props: OrderSummarySectionProps) {
             <div className="flex items-center gap-2">
               <span className="[font-family:var(--font-body)] text-[length:var(--size-body)] text-[rgb(var(--color-text))]">{item.name}</span>
               {props.bogoBadge && item.isBonus && (
-                <span className="inline-block px-2 py-0.5 rounded-full bg-[rgb(var(--color-accent)/.12)] text-[rgb(var(--color-accent))] text-[length:var(--size-tiny)]">
+                <span className="inline-block px-2 py-0.5 rounded-full bg-[rgb(var(--color-text)/.12)] text-[rgb(var(--color-text))] text-[length:var(--size-tiny)]">
                   Подарок
                 </span>
               )}
@@ -99,7 +99,7 @@ export function OrderSummarySection(props: OrderSummarySectionProps) {
           <button
             type="button"
             disabled={promoApplying || !state.promoCode}
-            className="px-3 bg-[rgb(var(--color-accent))] text-[rgb(var(--color-accent-fg))] text-[length:var(--size-small)] rounded-[var(--radius-button)] disabled:opacity-50"
+            className="px-3 bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] text-[length:var(--size-small)] rounded-[var(--radius-button)] disabled:opacity-50"
             onClick={applyPromo}
           >
             {promoApplying ? '…' : props.promoToggle.applyButtonText}

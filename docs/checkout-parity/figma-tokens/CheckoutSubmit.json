@@ -1,0 +1,55 @@
+{
+  "id": "1:13560",
+  "name": "Button",
+  "type": "FRAME",
+  "size": {
+    "w": 652,
+    "h": 56
+  },
+  "layout": {
+    "mode": "HORIZONTAL",
+    "direction": "HORIZONTAL",
+    "padding": {
+      "top": 10,
+      "right": 10,
+      "bottom": 10,
+      "left": 10
+    },
+    "gap": 10,
+    "align": "CENTER",
+    "counterAlign": "CENTER"
+  },
+  "radius": 4,
+  "fill": [
+    {
+      "color": "#000000",
+      "opacity": 1
+    }
+  ],
+  "children": [
+    {
+      "id": "1:13561",
+      "name": "Оплатить",
+      "type": "TEXT",
+      "size": {
+        "w": 73,
+        "h": 22
+      },
+      "fill": [
+        {
+          "color": "#ffffff",
+          "opacity": 1
+        }
+      ],
+      "text": {
+        "content": "Оплатить",
+        "font": "Manrope",
+        "size": 16,
+        "weight": 400,
+        "lineHeight": 21.856000900268555,
+        "letterSpacing": 0,
+        "align": "LEFT"
+      }
+    }
+  ]
+}

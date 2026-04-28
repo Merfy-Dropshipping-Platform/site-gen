@@ -1,0 +1,1159 @@
+{
+  "id": "1:13403",
+  "name": "Products & Promocode",
+  "type": "FRAME",
+  "size": {
+    "w": 520,
+    "h": 370
+  },
+  "layout": {
+    "mode": "VERTICAL",
+    "direction": "VERTICAL",
+    "padding": {
+      "top": 0,
+      "right": 0,
+      "bottom": 0,
+      "left": 0
+    },
+    "gap": 50,
+    "align": null,
+    "counterAlign": null
+  },
+  "children": [
+    {
+      "id": "1:13404",
+      "name": "Products",
+      "type": "FRAME",
+      "size": {
+        "w": 520,
+        "h": 264
+      },
+      "layout": {
+        "mode": "VERTICAL",
+        "direction": "VERTICAL",
+        "padding": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        },
+        "gap": 24,
+        "align": null,
+        "counterAlign": null
+      },
+      "children": [
+        {
+          "id": "1:13405",
+          "name": "Товар",
+          "type": "FRAME",
+          "size": {
+            "w": 520,
+            "h": 120
+          },
+          "layout": {
+            "mode": "HORIZONTAL",
+            "direction": "HORIZONTAL",
+            "padding": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "gap": 24,
+            "align": null,
+            "counterAlign": null
+          },
+          "children": [
+            {
+              "id": "1:13406",
+              "name": "Изображение",
+              "type": "FRAME",
+              "size": {
+                "w": 120,
+                "h": 120
+              },
+              "layout": {
+                "mode": "HORIZONTAL",
+                "direction": "HORIZONTAL",
+                "padding": {
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "gap": 0,
+                "align": null,
+                "counterAlign": "CENTER"
+              },
+              "children": [
+                {
+                  "id": "1:13407",
+                  "name": "Image",
+                  "type": "RECTANGLE",
+                  "size": {
+                    "w": 120,
+                    "h": 120
+                  },
+                  "radius": 8
+                },
+                {
+                  "id": "1:13408",
+                  "name": "Counter",
+                  "type": "FRAME",
+                  "size": {
+                    "w": 24,
+                    "h": 24
+                  },
+                  "layout": {
+                    "mode": "VERTICAL",
+                    "direction": "VERTICAL",
+                    "padding": {
+                      "top": 10,
+                      "right": 10,
+                      "bottom": 10,
+                      "left": 10
+                    },
+                    "gap": 10,
+                    "align": "CENTER",
+                    "counterAlign": "CENTER"
+                  },
+                  "radius": 100,
+                  "fill": [
+                    {
+                      "color": "#000000",
+                      "opacity": 1
+                    }
+                  ],
+                  "children": [
+                    {
+                      "id": "1:13409",
+                      "name": "1",
+                      "type": "TEXT",
+                      "size": {
+                        "w": 4,
+                        "h": 19
+                      },
+                      "fill": [
+                        {
+                          "color": "#ffffff",
+                          "opacity": 1
+                        }
+                      ],
+                      "text": {
+                        "content": "1",
+                        "font": "Manrope",
+                        "size": 14,
+                        "weight": 400,
+                        "lineHeight": 19.124000549316406,
+                        "letterSpacing": 0,
+                        "align": "CENTER"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "1:13410",
+              "name": "Информация о товаре",
+              "type": "FRAME",
+              "size": {
+                "w": 375,
+                "h": 99
+              },
+              "layout": {
+                "mode": "HORIZONTAL",
+                "direction": "HORIZONTAL",
+                "padding": {
+                  "top": 4,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "gap": 37,
+                "align": "SPACE_BETWEEN",
+                "counterAlign": null
+              },
+              "children": [
+                {
+                  "id": "1:13411",
+                  "name": "Название и Варианты",
+                  "type": "FRAME",
+                  "size": {
+                    "w": 292,
+                    "h": 95
+                  },
+                  "layout": {
+                    "mode": "VERTICAL",
+                    "direction": "VERTICAL",
+                    "padding": {
+                      "top": 0,
+                      "right": 0,
+                      "bottom": 0,
+                      "left": 0
+                    },
+                    "gap": 8,
+                    "align": null,
+                    "counterAlign": null
+                  },
+                  "children": [
+                    {
+                      "id": "1:13412",
+                      "name": "Сумка",
+                      "type": "TEXT",
+                      "size": {
+                        "w": 292,
+                        "h": 22
+                      },
+                      "fill": [
+                        {
+                          "color": "#000000",
+                          "opacity": 1
+                        }
+                      ],
+                      "text": {
+                        "content": "Сумка",
+                        "font": "Manrope",
+                        "size": 16,
+                        "weight": 400,
+                        "lineHeight": 21.856000900268555,
+                        "letterSpacing": 0,
+                        "align": "LEFT"
+                      }
+                    },
+                    {
+                      "id": "1:13413",
+                      "name": "Варианты",
+                      "type": "FRAME",
+                      "size": {
+                        "w": 292,
+                        "h": 65
+                      },
+                      "layout": {
+                        "mode": "VERTICAL",
+                        "direction": "VERTICAL",
+                        "padding": {
+                          "top": 0,
+                          "right": 0,
+                          "bottom": 0,
+                          "left": 0
+                        },
+                        "gap": 4,
+                        "align": null,
+                        "counterAlign": null
+                      },
+                      "children": [
+                        {
+                          "id": "1:13414",
+                          "name": "Цвет",
+                          "type": "FRAME",
+                          "size": {
+                            "w": 292,
+                            "h": 19
+                          },
+                          "layout": {
+                            "mode": "HORIZONTAL",
+                            "direction": "HORIZONTAL",
+                            "padding": {
+                              "top": 0,
+                              "right": 0,
+                              "bottom": 0,
+                              "left": 0
+                            },
+                            "gap": 4,
+                            "align": null,
+                            "counterAlign": "CENTER"
+                          },
+                          "children": [
+                            {
+                              "id": "1:13415",
+                              "name": "Цвет:",
+                              "type": "TEXT",
+                              "size": {
+                                "w": 37,
+                                "h": 19
+                              },
+                              "fill": [
+                                {
+                                  "color": "#999999",
+                                  "opacity": 1
+                                }
+                              ],
+                              "text": {
+                                "content": "Цвет:",
+                                "font": "Manrope",
+                                "size": 14,
+                                "weight": 400,
+                                "lineHeight": 19.124000549316406,
+                                "letterSpacing": 0,
+                                "align": "CENTER"
+                              }
+                            },
+                            {
+                              "id": "1:13416",
+                              "name": "Бежевый",
+                              "type": "TEXT",
+                              "size": {
+                                "w": 251,
+                                "h": 19
+                              },
+                              "fill": [
+                                {
+                                  "color": "#000000",
+                                  "opacity": 1
+                                }
+                              ],
+                              "text": {
+                                "content": "Бежевый",
+                                "font": "Manrope",
+                                "size": 14,
+                                "weight": 400,
+                                "lineHeight": 19.124000549316406,
+                                "letterSpacing": 0,
+                                "align": "LEFT"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "id": "1:13417",
+                          "name": "Размер",
+                          "type": "FRAME",
+                          "size": {
+                            "w": 292,
+                            "h": 19
+                          },
+                          "layout": {
+                            "mode": "HORIZONTAL",
+                            "direction": "HORIZONTAL",
+                            "padding": {
+                              "top": 0,
+                              "right": 0,
+                              "bottom": 0,
+                              "left": 0
+                            },
+                            "gap": 4,
+                            "align": null,
+                            "counterAlign": "CENTER"
+                          },
+                          "children": [
+                            {
+                              "id": "1:13418",
+                              "name": "Размер:",
+                              "type": "TEXT",
+                              "size": {
+                                "w": 54,
+                                "h": 19
+                              },
+                              "fill": [
+                                {
+                                  "color": "#999999",
+                                  "opacity": 1
+                                }
+                              ],
+                              "text": {
+                                "content": "Размер:",
+                                "font": "Manrope",
+                                "size": 14,
+                                "weight": 400,
+                                "lineHeight": 19.124000549316406,
+                                "letterSpacing": 0,
+                                "align": "CENTER"
+                              }
+                            },
+                            {
+                              "id": "1:13419",
+                              "name": "One-size",
+                              "type": "TEXT",
+                              "size": {
+                                "w": 234,
+                                "h": 19
+                              },
+                              "fill": [
+                                {
+                                  "color": "#000000",
+                                  "opacity": 1
+                                }
+                              ],
+                              "text": {
+                                "content": "One-size",
+                                "font": "Manrope",
+                                "size": 14,
+                                "weight": 400,
+                                "lineHeight": 19.124000549316406,
+                                "letterSpacing": 0,
+                                "align": "LEFT"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "id": "1:13420",
+                          "name": "Материал",
+                          "type": "FRAME",
+                          "size": {
+                            "w": 292,
+                            "h": 19
+                          },
+                          "layout": {
+                            "mode": "HORIZONTAL",
+                            "direction": "HORIZONTAL",
+                            "padding": {
+                              "top": 0,
+                              "right": 0,
+                              "bottom": 0,
+                              "left": 0
+                            },
+                            "gap": 4,
+                            "align": null,
+                            "counterAlign": "CENTER"
+                          },
+                          "children": [
+                            {
+                              "id": "1:13421",
+                              "name": "Материал:",
+                              "type": "TEXT",
+                              "size": {
+                                "w": 72,
+                                "h": 19
+                              },
+                              "fill": [
+                                {
+                                  "color": "#999999",
+                                  "opacity": 1
+                                }
+                              ],
+                              "text": {
+                                "content": "Материал:",
+                                "font": "Manrope",
+                                "size": 14,
+                                "weight": 400,
+                                "lineHeight": 19.124000549316406,
+                                "letterSpacing": 0,
+                                "align": "CENTER"
+                              }
+                            },
+                            {
+                              "id": "1:13422",
+                              "name": "Кожа",
+                              "type": "TEXT",
+                              "size": {
+                                "w": 216,
+                                "h": 19
+                              },
+                              "fill": [
+                                {
+                                  "color": "#000000",
+                                  "opacity": 1
+                                }
+                              ],
+                              "text": {
+                                "content": "Кожа",
+                                "font": "Manrope",
+                                "size": 14,
+                                "weight": 400,
+                                "lineHeight": 19.124000549316406,
+                                "letterSpacing": 0,
+                                "align": "LEFT"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "1:13423",
+                  "name": "Стоимость",
+                  "type": "FRAME",
+                  "size": {
+                    "w": 53,
+                    "h": 40
+                  },
+                  "layout": {
+                    "mode": "VERTICAL",
+                    "direction": "VERTICAL",
+                    "padding": {
+                      "top": 0,
+                      "right": 0,
+                      "bottom": 0,
+                      "left": 0
+                    },
+                    "gap": 2,
+                    "align": null,
+                    "counterAlign": "MAX"
+                  },
+                  "children": [
+                    {
+                      "id": "1:13424",
+                      "name": "5 490₽",
+                      "type": "TEXT",
+                      "size": {
+                        "w": 53,
+                        "h": 22
+                      },
+                      "fill": [
+                        {
+                          "color": "#000000",
+                          "opacity": 1
+                        }
+                      ],
+                      "text": {
+                        "content": "5 490₽",
+                        "font": "Manrope",
+                        "size": 16,
+                        "weight": 400,
+                        "lineHeight": 21.856000900268555,
+                        "letterSpacing": 0,
+                        "align": "CENTER"
+                      }
+                    },
+                    {
+                      "id": "1:13425",
+                      "name": "8 990₽",
+                      "type": "TEXT",
+                      "size": {
+                        "w": 40,
+                        "h": 16
+                      },
+                      "fill": [
+                        {
+                          "color": "#999999",
+                          "opacity": 1
+                        }
+                      ],
+                      "text": {
+                        "content": "8 990₽",
+                        "font": "Manrope",
+                        "size": 12,
+                        "weight": 400,
+                        "lineHeight": 16.392000198364258,
+                        "letterSpacing": 0,
+                        "align": "CENTER"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "1:13426",
+          "name": "Товар",
+          "type": "FRAME",
+          "size": {
+            "w": 520,
+            "h": 120
+          },
+          "layout": {
+            "mode": "HORIZONTAL",
+            "direction": "HORIZONTAL",
+            "padding": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "gap": 24,
+            "align": null,
+            "counterAlign": null
+          },
+          "children": [
+            {
+              "id": "1:13427",
+              "name": "Изображение",
+              "type": "FRAME",
+              "size": {
+                "w": 120,
+                "h": 120
+              },
+              "layout": {
+                "mode": "HORIZONTAL",
+                "direction": "HORIZONTAL",
+                "padding": {
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "gap": 0,
+                "align": null,
+                "counterAlign": "CENTER"
+              },
+              "children": [
+                {
+                  "id": "1:13428",
+                  "name": "Image",
+                  "type": "RECTANGLE",
+                  "size": {
+                    "w": 120,
+                    "h": 120
+                  },
+                  "radius": 8
+                },
+                {
+                  "id": "1:13429",
+                  "name": "Counter",
+                  "type": "FRAME",
+                  "size": {
+                    "w": 24,
+                    "h": 24
+                  },
+                  "layout": {
+                    "mode": "VERTICAL",
+                    "direction": "VERTICAL",
+                    "padding": {
+                      "top": 10,
+                      "right": 10,
+                      "bottom": 10,
+                      "left": 10
+                    },
+                    "gap": 10,
+                    "align": "CENTER",
+                    "counterAlign": "CENTER"
+                  },
+                  "radius": 100,
+                  "fill": [
+                    {
+                      "color": "#000000",
+                      "opacity": 1
+                    }
+                  ],
+                  "children": [
+                    {
+                      "id": "1:13430",
+                      "name": "1",
+                      "type": "TEXT",
+                      "size": {
+                        "w": 4,
+                        "h": 19
+                      },
+                      "fill": [
+                        {
+                          "color": "#ffffff",
+                          "opacity": 1
+                        }
+                      ],
+                      "text": {
+                        "content": "1",
+                        "font": "Manrope",
+                        "size": 14,
+                        "weight": 400,
+                        "lineHeight": 19.124000549316406,
+                        "letterSpacing": 0,
+                        "align": "CENTER"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "1:13431",
+              "name": "Информация о товаре",
+              "type": "FRAME",
+              "size": {
+                "w": 375,
+                "h": 99
+              },
+              "layout": {
+                "mode": "HORIZONTAL",
+                "direction": "HORIZONTAL",
+                "padding": {
+                  "top": 4,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "gap": 37,
+                "align": "SPACE_BETWEEN",
+                "counterAlign": null
+              },
+              "children": [
+                {
+                  "id": "1:13432",
+                  "name": "Название и Варианты",
+                  "type": "FRAME",
+                  "size": {
+                    "w": 292,
+                    "h": 95
+                  },
+                  "layout": {
+                    "mode": "VERTICAL",
+                    "direction": "VERTICAL",
+                    "padding": {
+                      "top": 0,
+                      "right": 0,
+                      "bottom": 0,
+                      "left": 0
+                    },
+                    "gap": 8,
+                    "align": null,
+                    "counterAlign": null
+                  },
+                  "children": [
+                    {
+                      "id": "1:13433",
+                      "name": "Сумка",
+                      "type": "TEXT",
+                      "size": {
+                        "w": 292,
+                        "h": 22
+                      },
+                      "fill": [
+                        {
+                          "color": "#000000",
+                          "opacity": 1
+                        }
+                      ],
+                      "text": {
+                        "content": "Сумка",
+                        "font": "Manrope",
+                        "size": 16,
+                        "weight": 400,
+                        "lineHeight": 21.856000900268555,
+                        "letterSpacing": 0,
+                        "align": "LEFT"
+                      }
+                    },
+                    {
+                      "id": "1:13434",
+                      "name": "Варианты",
+                      "type": "FRAME",
+                      "size": {
+                        "w": 292,
+                        "h": 65
+                      },
+                      "layout": {
+                        "mode": "VERTICAL",
+                        "direction": "VERTICAL",
+                        "padding": {
+                          "top": 0,
+                          "right": 0,
+                          "bottom": 0,
+                          "left": 0
+                        },
+                        "gap": 4,
+                        "align": null,
+                        "counterAlign": null
+                      },
+                      "children": [
+                        {
+                          "id": "1:13435",
+                          "name": "Цвет",
+                          "type": "FRAME",
+                          "size": {
+                            "w": 292,
+                            "h": 19
+                          },
+                          "layout": {
+                            "mode": "HORIZONTAL",
+                            "direction": "HORIZONTAL",
+                            "padding": {
+                              "top": 0,
+                              "right": 0,
+                              "bottom": 0,
+                              "left": 0
+                            },
+                            "gap": 4,
+                            "align": null,
+                            "counterAlign": "CENTER"
+                          },
+                          "children": [
+                            {
+                              "id": "1:13436",
+                              "name": "Цвет:",
+                              "type": "TEXT",
+                              "size": {
+                                "w": 37,
+                                "h": 19
+                              },
+                              "fill": [
+                                {
+                                  "color": "#999999",
+                                  "opacity": 1
+                                }
+                              ],
+                              "text": {
+                                "content": "Цвет:",
+                                "font": "Manrope",
+                                "size": 14,
+                                "weight": 400,
+                                "lineHeight": 19.124000549316406,
+                                "letterSpacing": 0,
+                                "align": "CENTER"
+                              }
+                            },
+                            {
+                              "id": "1:13437",
+                              "name": "Бежевый",
+                              "type": "TEXT",
+                              "size": {
+                                "w": 251,
+                                "h": 19
+                              },
+                              "fill": [
+                                {
+                                  "color": "#000000",
+                                  "opacity": 1
+                                }
+                              ],
+                              "text": {
+                                "content": "Бежевый",
+                                "font": "Manrope",
+                                "size": 14,
+                                "weight": 400,
+                                "lineHeight": 19.124000549316406,
+                                "letterSpacing": 0,
+                                "align": "LEFT"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "id": "1:13438",
+                          "name": "Размер",
+                          "type": "FRAME",
+                          "size": {
+                            "w": 292,
+                            "h": 19
+                          },
+                          "layout": {
+                            "mode": "HORIZONTAL",
+                            "direction": "HORIZONTAL",
+                            "padding": {
+                              "top": 0,
+                              "right": 0,
+                              "bottom": 0,
+                              "left": 0
+                            },
+                            "gap": 4,
+                            "align": null,
+                            "counterAlign": "CENTER"
+                          },
+                          "children": [
+                            {
+                              "id": "1:13439",
+                              "name": "Размер:",
+                              "type": "TEXT",
+                              "size": {
+                                "w": 54,
+                                "h": 19
+                              },
+                              "fill": [
+                                {
+                                  "color": "#999999",
+                                  "opacity": 1
+                                }
+                              ],
+                              "text": {
+                                "content": "Размер:",
+                                "font": "Manrope",
+                                "size": 14,
+                                "weight": 400,
+                                "lineHeight": 19.124000549316406,
+                                "letterSpacing": 0,
+                                "align": "CENTER"
+                              }
+                            },
+                            {
+                              "id": "1:13440",
+                              "name": "One-size",
+                              "type": "TEXT",
+                              "size": {
+                                "w": 234,
+                                "h": 19
+                              },
+                              "fill": [
+                                {
+                                  "color": "#000000",
+                                  "opacity": 1
+                                }
+                              ],
+                              "text": {
+                                "content": "One-size",
+                                "font": "Manrope",
+                                "size": 14,
+                                "weight": 400,
+                                "lineHeight": 19.124000549316406,
+                                "letterSpacing": 0,
+                                "align": "LEFT"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "id": "1:13441",
+                          "name": "Материал",
+                          "type": "FRAME",
+                          "size": {
+                            "w": 292,
+                            "h": 19
+                          },
+                          "layout": {
+                            "mode": "HORIZONTAL",
+                            "direction": "HORIZONTAL",
+                            "padding": {
+                              "top": 0,
+                              "right": 0,
+                              "bottom": 0,
+                              "left": 0
+                            },
+                            "gap": 4,
+                            "align": null,
+                            "counterAlign": "CENTER"
+                          },
+                          "children": [
+                            {
+                              "id": "1:13442",
+                              "name": "Материал:",
+                              "type": "TEXT",
+                              "size": {
+                                "w": 72,
+                                "h": 19
+                              },
+                              "fill": [
+                                {
+                                  "color": "#999999",
+                                  "opacity": 1
+                                }
+                              ],
+                              "text": {
+                                "content": "Материал:",
+                                "font": "Manrope",
+                                "size": 14,
+                                "weight": 400,
+                                "lineHeight": 19.124000549316406,
+                                "letterSpacing": 0,
+                                "align": "CENTER"
+                              }
+                            },
+                            {
+                              "id": "1:13443",
+                              "name": "Кожа",
+                              "type": "TEXT",
+                              "size": {
+                                "w": 216,
+                                "h": 19
+                              },
+                              "fill": [
+                                {
+                                  "color": "#000000",
+                                  "opacity": 1
+                                }
+                              ],
+                              "text": {
+                                "content": "Кожа",
+                                "font": "Manrope",
+                                "size": 14,
+                                "weight": 400,
+                                "lineHeight": 19.124000549316406,
+                                "letterSpacing": 0,
+                                "align": "LEFT"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "1:13444",
+                  "name": "Стоимость",
+                  "type": "FRAME",
+                  "size": {
+                    "w": 53,
+                    "h": 40
+                  },
+                  "layout": {
+                    "mode": "VERTICAL",
+                    "direction": "VERTICAL",
+                    "padding": {
+                      "top": 0,
+                      "right": 0,
+                      "bottom": 0,
+                      "left": 0
+                    },
+                    "gap": 2,
+                    "align": null,
+                    "counterAlign": "MAX"
+                  },
+                  "children": [
+                    {
+                      "id": "1:13445",
+                      "name": "5 490₽",
+                      "type": "TEXT",
+                      "size": {
+                        "w": 53,
+                        "h": 22
+                      },
+                      "fill": [
+                        {
+                          "color": "#000000",
+                          "opacity": 1
+                        }
+                      ],
+                      "text": {
+                        "content": "5 490₽",
+                        "font": "Manrope",
+                        "size": 16,
+                        "weight": 400,
+                        "lineHeight": 21.856000900268555,
+                        "letterSpacing": 0,
+                        "align": "CENTER"
+                      }
+                    },
+                    {
+                      "id": "1:13446",
+                      "name": "8 990₽",
+                      "type": "TEXT",
+                      "size": {
+                        "w": 40,
+                        "h": 16
+                      },
+                      "fill": [
+                        {
+                          "color": "#999999",
+                          "opacity": 1
+                        }
+                      ],
+                      "text": {
+                        "content": "8 990₽",
+                        "font": "Manrope",
+                        "size": 12,
+                        "weight": 400,
+                        "lineHeight": 16.392000198364258,
+                        "letterSpacing": 0,
+                        "align": "CENTER"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1:13447",
+      "name": "Input",
+      "type": "FRAME",
+      "size": {
+        "w": 520,
+        "h": 56
+      },
+      "layout": {
+        "mode": "HORIZONTAL",
+        "direction": "HORIZONTAL",
+        "padding": {
+          "top": 10,
+          "right": 6,
+          "bottom": 10,
+          "left": 12
+        },
+        "gap": 10,
+        "align": "SPACE_BETWEEN",
+        "counterAlign": "CENTER"
+      },
+      "radius": 4,
+      "fill": [
+        {
+          "color": "#ffffff",
+          "opacity": 1
+        }
+      ],
+      "border": [
+        {
+          "color": "#999999",
+          "opacity": 1,
+          "weight": 1
+        }
+      ],
+      "children": [
+        {
+          "id": "1:13448",
+          "name": "У меня есть промокод",
+          "type": "TEXT",
+          "size": {
+            "w": 168,
+            "h": 22
+          },
+          "fill": [
+            {
+              "color": "#999999",
+              "opacity": 1
+            }
+          ],
+          "text": {
+            "content": "У меня есть промокод",
+            "font": "Manrope",
+            "size": 16,
+            "weight": 400,
+            "lineHeight": 21.856000900268555,
+            "letterSpacing": 0,
+            "align": "LEFT"
+          }
+        },
+        {
+          "id": "1:13449",
+          "name": "Button",
+          "type": "FRAME",
+          "size": {
+            "w": 97,
+            "h": 44
+          },
+          "layout": {
+            "mode": "HORIZONTAL",
+            "direction": "HORIZONTAL",
+            "padding": {
+              "top": 0,
+              "right": 12,
+              "bottom": 0,
+              "left": 12
+            },
+            "gap": 0,
+            "align": null,
+            "counterAlign": "CENTER"
+          },
+          "radius": 4,
+          "fill": [
+            {
+              "color": "#000000",
+              "opacity": 1
+            }
+          ],
+          "children": [
+            {
+              "id": "1:13450",
+              "name": "Применить",
+              "type": "TEXT",
+              "size": {
+                "w": 73,
+                "h": 16
+              },
+              "fill": [
+                {
+                  "color": "#ffffff",
+                  "opacity": 1
+                }
+              ],
+              "text": {
+                "content": "Применить",
+                "font": "Roboto",
+                "size": 14,
+                "weight": 300,
+                "lineHeight": 16.40625,
+                "letterSpacing": 0,
+                "align": "LEFT"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

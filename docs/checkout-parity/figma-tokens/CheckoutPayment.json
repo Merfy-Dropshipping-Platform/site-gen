@@ -1,0 +1,1026 @@
+{
+  "id": "1:13517",
+  "name": "Платёжная система",
+  "type": "FRAME",
+  "size": {
+    "w": 652,
+    "h": 507
+  },
+  "layout": {
+    "mode": "VERTICAL",
+    "direction": "VERTICAL",
+    "padding": {
+      "top": 0,
+      "right": 0,
+      "bottom": 0,
+      "left": 0
+    },
+    "gap": 16,
+    "align": null,
+    "counterAlign": null
+  },
+  "children": [
+    {
+      "id": "1:13518",
+      "name": "Заголовок",
+      "type": "FRAME",
+      "size": {
+        "w": 288,
+        "h": 43
+      },
+      "layout": {
+        "mode": "VERTICAL",
+        "direction": "VERTICAL",
+        "padding": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        },
+        "gap": 2,
+        "align": null,
+        "counterAlign": null
+      },
+      "children": [
+        {
+          "id": "1:13519",
+          "name": "Платёжная система",
+          "type": "TEXT",
+          "size": {
+            "w": 152,
+            "h": 22
+          },
+          "fill": [
+            {
+              "color": "#000000",
+              "opacity": 1
+            }
+          ],
+          "text": {
+            "content": "Платёжная система",
+            "font": "Manrope",
+            "size": 16,
+            "weight": 400,
+            "lineHeight": 21.856000900268555,
+            "letterSpacing": 0,
+            "align": "LEFT"
+          }
+        },
+        {
+          "id": "1:13520",
+          "name": "Все транзакции безопасны и зашифрованы",
+          "type": "TEXT",
+          "size": {
+            "w": 288,
+            "h": 19
+          },
+          "fill": [
+            {
+              "color": "#999999",
+              "opacity": 1
+            }
+          ],
+          "text": {
+            "content": "Все транзакции безопасны и зашифрованы",
+            "font": "Manrope",
+            "size": 14,
+            "weight": 400,
+            "lineHeight": 19.124000549316406,
+            "letterSpacing": 0,
+            "align": "LEFT"
+          }
+        }
+      ]
+    },
+    {
+      "id": "1:13521",
+      "name": "Layout",
+      "type": "FRAME",
+      "size": {
+        "w": 652,
+        "h": 448
+      },
+      "layout": {
+        "mode": "VERTICAL",
+        "direction": "VERTICAL",
+        "padding": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        },
+        "gap": 32,
+        "align": null,
+        "counterAlign": null
+      },
+      "children": [
+        {
+          "id": "1:13522",
+          "name": "Банковская карта",
+          "type": "FRAME",
+          "size": {
+            "w": 652,
+            "h": 288
+          },
+          "layout": {
+            "mode": "VERTICAL",
+            "direction": "VERTICAL",
+            "padding": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "gap": 16,
+            "align": null,
+            "counterAlign": null
+          },
+          "children": [
+            {
+              "id": "1:13523",
+              "name": "Вариант",
+              "type": "FRAME",
+              "size": {
+                "w": 652,
+                "h": 32
+              },
+              "layout": {
+                "mode": "HORIZONTAL",
+                "direction": "HORIZONTAL",
+                "padding": {
+                  "top": 20,
+                  "right": 0,
+                  "bottom": 20,
+                  "left": 0
+                },
+                "gap": 308,
+                "align": "SPACE_BETWEEN",
+                "counterAlign": "CENTER"
+              },
+              "children": [
+                {
+                  "id": "1:13524",
+                  "name": "Text",
+                  "type": "FRAME",
+                  "size": {
+                    "w": 163,
+                    "h": 22
+                  },
+                  "layout": {
+                    "mode": "HORIZONTAL",
+                    "direction": "HORIZONTAL",
+                    "padding": {
+                      "top": 0,
+                      "right": 0,
+                      "bottom": 0,
+                      "left": 0
+                    },
+                    "gap": 8,
+                    "align": null,
+                    "counterAlign": "CENTER"
+                  },
+                  "children": [
+                    {
+                      "id": "1:13525",
+                      "name": "icon_radio",
+                      "type": "INSTANCE",
+                      "size": {
+                        "w": 20,
+                        "h": 20
+                      },
+                      "children": [
+                        {
+                          "id": "I1:13525;2847:6849",
+                          "name": "icon",
+                          "type": "VECTOR",
+                          "size": {
+                            "w": 17,
+                            "h": 17
+                          },
+                          "fill": [
+                            {
+                              "color": "#000000",
+                              "opacity": 1
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "1:13526",
+                      "name": "Банковская карта",
+                      "type": "TEXT",
+                      "size": {
+                        "w": 135,
+                        "h": 22
+                      },
+                      "fill": [
+                        {
+                          "color": "#000000",
+                          "opacity": 1
+                        }
+                      ],
+                      "text": {
+                        "content": "Банковская карта",
+                        "font": "Manrope",
+                        "size": 16,
+                        "weight": 400,
+                        "lineHeight": 21.856000900268555,
+                        "letterSpacing": 0,
+                        "align": "LEFT"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "1:13527",
+              "name": "Номер карты",
+              "type": "FRAME",
+              "size": {
+                "w": 652,
+                "h": 56
+              },
+              "layout": {
+                "mode": "HORIZONTAL",
+                "direction": "HORIZONTAL",
+                "padding": {
+                  "top": 0,
+                  "right": 12,
+                  "bottom": 0,
+                  "left": 12
+                },
+                "gap": 10,
+                "align": null,
+                "counterAlign": "CENTER"
+              },
+              "radius": 4,
+              "border": [
+                {
+                  "color": "#999999",
+                  "opacity": 1,
+                  "weight": 1
+                }
+              ],
+              "children": [
+                {
+                  "id": "1:13528",
+                  "name": "Frame",
+                  "type": "FRAME",
+                  "size": {
+                    "w": 146,
+                    "h": 37
+                  },
+                  "layout": {
+                    "mode": "VERTICAL",
+                    "direction": "VERTICAL",
+                    "padding": {
+                      "top": 0,
+                      "right": 0,
+                      "bottom": 0,
+                      "left": 0
+                    },
+                    "gap": 2,
+                    "align": "CENTER",
+                    "counterAlign": null
+                  },
+                  "children": [
+                    {
+                      "id": "1:13529",
+                      "name": "Номер карты",
+                      "type": "TEXT",
+                      "size": {
+                        "w": 74,
+                        "h": 16
+                      },
+                      "fill": [
+                        {
+                          "color": "#999999",
+                          "opacity": 1
+                        }
+                      ],
+                      "text": {
+                        "content": "Номер карты",
+                        "font": "Manrope",
+                        "size": 12,
+                        "weight": 400,
+                        "lineHeight": 16.392000198364258,
+                        "letterSpacing": 0,
+                        "align": "LEFT"
+                      }
+                    },
+                    {
+                      "id": "1:13530",
+                      "name": "Frame",
+                      "type": "FRAME",
+                      "size": {
+                        "w": 146,
+                        "h": 19
+                      },
+                      "layout": {
+                        "mode": "HORIZONTAL",
+                        "direction": "HORIZONTAL",
+                        "padding": {
+                          "top": 0,
+                          "right": 0,
+                          "bottom": 0,
+                          "left": 0
+                        },
+                        "gap": 0,
+                        "align": null,
+                        "counterAlign": "CENTER"
+                      },
+                      "children": [
+                        {
+                          "id": "1:13531",
+                          "name": "0000 0000 0000 0000",
+                          "type": "TEXT",
+                          "size": {
+                            "w": 146,
+                            "h": 19
+                          },
+                          "fill": [
+                            {
+                              "color": "#000000",
+                              "opacity": 1
+                            }
+                          ],
+                          "text": {
+                            "content": "0000 0000 0000 0000",
+                            "font": "Manrope",
+                            "size": 14,
+                            "weight": 400,
+                            "lineHeight": 19.124000549316406,
+                            "letterSpacing": 0,
+                            "align": "LEFT"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "1:13532",
+              "name": "Frame",
+              "type": "FRAME",
+              "size": {
+                "w": 652,
+                "h": 56
+              },
+              "layout": {
+                "mode": "HORIZONTAL",
+                "direction": "HORIZONTAL",
+                "padding": {
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "gap": 16,
+                "align": null,
+                "counterAlign": null
+              },
+              "children": [
+                {
+                  "id": "1:13533",
+                  "name": "Срок действия",
+                  "type": "FRAME",
+                  "size": {
+                    "w": 318,
+                    "h": 56
+                  },
+                  "layout": {
+                    "mode": "HORIZONTAL",
+                    "direction": "HORIZONTAL",
+                    "padding": {
+                      "top": 0,
+                      "right": 12,
+                      "bottom": 0,
+                      "left": 12
+                    },
+                    "gap": 10,
+                    "align": null,
+                    "counterAlign": "CENTER"
+                  },
+                  "radius": 4,
+                  "border": [
+                    {
+                      "color": "#999999",
+                      "opacity": 1,
+                      "weight": 1
+                    }
+                  ],
+                  "children": [
+                    {
+                      "id": "1:13534",
+                      "name": "Срок действия",
+                      "type": "TEXT",
+                      "size": {
+                        "w": 113,
+                        "h": 22
+                      },
+                      "fill": [
+                        {
+                          "color": "#999999",
+                          "opacity": 1
+                        }
+                      ],
+                      "text": {
+                        "content": "Срок действия",
+                        "font": "Manrope",
+                        "size": 16,
+                        "weight": 400,
+                        "lineHeight": 21.856000900268555,
+                        "letterSpacing": 0,
+                        "align": "LEFT"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "1:13535",
+                  "name": "CVV",
+                  "type": "FRAME",
+                  "size": {
+                    "w": 318,
+                    "h": 56
+                  },
+                  "layout": {
+                    "mode": "HORIZONTAL",
+                    "direction": "HORIZONTAL",
+                    "padding": {
+                      "top": 0,
+                      "right": 12,
+                      "bottom": 0,
+                      "left": 12
+                    },
+                    "gap": 10,
+                    "align": "SPACE_BETWEEN",
+                    "counterAlign": "CENTER"
+                  },
+                  "radius": 4,
+                  "border": [
+                    {
+                      "color": "#999999",
+                      "opacity": 1,
+                      "weight": 1
+                    }
+                  ],
+                  "children": [
+                    {
+                      "id": "1:13536",
+                      "name": "CVV",
+                      "type": "TEXT",
+                      "size": {
+                        "w": 31,
+                        "h": 22
+                      },
+                      "fill": [
+                        {
+                          "color": "#999999",
+                          "opacity": 1
+                        }
+                      ],
+                      "text": {
+                        "content": "CVV",
+                        "font": "Manrope",
+                        "size": 16,
+                        "weight": 400,
+                        "lineHeight": 21.856000900268555,
+                        "letterSpacing": 0,
+                        "align": "LEFT"
+                      }
+                    },
+                    {
+                      "id": "1:13537",
+                      "name": "icon_eye",
+                      "type": "INSTANCE",
+                      "size": {
+                        "w": 24,
+                        "h": 24
+                      },
+                      "children": [
+                        {
+                          "id": "I1:13537;5186:15570",
+                          "name": "icon",
+                          "type": "VECTOR",
+                          "size": {
+                            "w": 20,
+                            "h": 20
+                          },
+                          "fill": [
+                            {
+                              "color": "#999999",
+                              "opacity": 1
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "1:13538",
+              "name": "Срок действия",
+              "type": "FRAME",
+              "size": {
+                "w": 652,
+                "h": 56
+              },
+              "layout": {
+                "mode": "HORIZONTAL",
+                "direction": "HORIZONTAL",
+                "padding": {
+                  "top": 0,
+                  "right": 12,
+                  "bottom": 0,
+                  "left": 12
+                },
+                "gap": 10,
+                "align": null,
+                "counterAlign": "CENTER"
+              },
+              "radius": 4,
+              "border": [
+                {
+                  "color": "#999999",
+                  "opacity": 1,
+                  "weight": 1
+                }
+              ],
+              "children": [
+                {
+                  "id": "1:13539",
+                  "name": "Имя на карте",
+                  "type": "TEXT",
+                  "size": {
+                    "w": 100,
+                    "h": 22
+                  },
+                  "fill": [
+                    {
+                      "color": "#999999",
+                      "opacity": 1
+                    }
+                  ],
+                  "text": {
+                    "content": "Имя на карте",
+                    "font": "Manrope",
+                    "size": 16,
+                    "weight": 400,
+                    "lineHeight": 21.856000900268555,
+                    "letterSpacing": 0,
+                    "align": "LEFT"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "1:13540",
+              "name": "Поля ввода",
+              "type": "FRAME",
+              "size": {
+                "w": 652,
+                "h": 24
+              },
+              "layout": {
+                "mode": "HORIZONTAL",
+                "direction": "HORIZONTAL",
+                "padding": {
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "gap": 8,
+                "align": null,
+                "counterAlign": "CENTER"
+              },
+              "children": [
+                {
+                  "id": "1:13541",
+                  "name": "icon_warning",
+                  "type": "INSTANCE",
+                  "size": {
+                    "w": 24,
+                    "h": 24
+                  },
+                  "children": [
+                    {
+                      "id": "I1:13541;2868:2105",
+                      "name": "Vector",
+                      "type": "VECTOR",
+                      "size": {
+                        "w": 18,
+                        "h": 18
+                      },
+                      "border": [
+                        {
+                          "color": "#000000",
+                          "opacity": 1,
+                          "weight": 1
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "1:13542",
+                  "name": "Счёт будет выставлен по вашему адресу",
+                  "type": "TEXT",
+                  "size": {
+                    "w": 272,
+                    "h": 19
+                  },
+                  "fill": [
+                    {
+                      "color": "#000000",
+                      "opacity": 1
+                    }
+                  ],
+                  "text": {
+                    "content": "Счёт будет выставлен по вашему адресу",
+                    "font": "Manrope",
+                    "size": 14,
+                    "weight": 400,
+                    "lineHeight": 19.124000549316406,
+                    "letterSpacing": 0,
+                    "align": "LEFT"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "1:13543",
+          "name": "Frame 201",
+          "type": "FRAME",
+          "size": {
+            "w": 652,
+            "h": 128
+          },
+          "layout": {
+            "mode": "VERTICAL",
+            "direction": "VERTICAL",
+            "padding": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "gap": 16,
+            "align": null,
+            "counterAlign": null
+          },
+          "children": [
+            {
+              "id": "1:13544",
+              "name": "Вариант",
+              "type": "FRAME",
+              "size": {
+                "w": 652,
+                "h": 32
+              },
+              "layout": {
+                "mode": "HORIZONTAL",
+                "direction": "HORIZONTAL",
+                "padding": {
+                  "top": 20,
+                  "right": 0,
+                  "bottom": 20,
+                  "left": 0
+                },
+                "gap": 308,
+                "align": "SPACE_BETWEEN",
+                "counterAlign": "CENTER"
+              },
+              "children": [
+                {
+                  "id": "1:13545",
+                  "name": "Text",
+                  "type": "FRAME",
+                  "size": {
+                    "w": 289,
+                    "h": 22
+                  },
+                  "layout": {
+                    "mode": "HORIZONTAL",
+                    "direction": "HORIZONTAL",
+                    "padding": {
+                      "top": 0,
+                      "right": 0,
+                      "bottom": 0,
+                      "left": 0
+                    },
+                    "gap": 8,
+                    "align": null,
+                    "counterAlign": "CENTER"
+                  },
+                  "children": [
+                    {
+                      "id": "1:13546",
+                      "name": "icon_radio",
+                      "type": "INSTANCE",
+                      "size": {
+                        "w": 20,
+                        "h": 20
+                      },
+                      "children": [
+                        {
+                          "id": "I1:13546;5300:9889",
+                          "name": "icon",
+                          "type": "VECTOR",
+                          "size": {
+                            "w": 17,
+                            "h": 17
+                          },
+                          "fill": [
+                            {
+                              "color": "#999999",
+                              "opacity": 1
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "1:13547",
+                      "name": "СБП (Система быстрых платежей)",
+                      "type": "TEXT",
+                      "size": {
+                        "w": 261,
+                        "h": 22
+                      },
+                      "fill": [
+                        {
+                          "color": "#000000",
+                          "opacity": 1
+                        }
+                      ],
+                      "text": {
+                        "content": "СБП (Система быстрых платежей)",
+                        "font": "Manrope",
+                        "size": 16,
+                        "weight": 400,
+                        "lineHeight": 21.856000900268555,
+                        "letterSpacing": 0,
+                        "align": "LEFT"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "1:13548",
+                  "name": "SBP",
+                  "type": "VECTOR",
+                  "size": {
+                    "w": 19,
+                    "h": 24
+                  },
+                  "fill": [
+                    {
+                      "color": "#5b57a2",
+                      "opacity": 1
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "1:13549",
+              "name": "Вариант",
+              "type": "FRAME",
+              "size": {
+                "w": 652,
+                "h": 32
+              },
+              "layout": {
+                "mode": "HORIZONTAL",
+                "direction": "HORIZONTAL",
+                "padding": {
+                  "top": 20,
+                  "right": 0,
+                  "bottom": 20,
+                  "left": 0
+                },
+                "gap": 308,
+                "align": "SPACE_BETWEEN",
+                "counterAlign": "CENTER"
+              },
+              "children": [
+                {
+                  "id": "1:13550",
+                  "name": "Text",
+                  "type": "FRAME",
+                  "size": {
+                    "w": 92,
+                    "h": 22
+                  },
+                  "layout": {
+                    "mode": "HORIZONTAL",
+                    "direction": "HORIZONTAL",
+                    "padding": {
+                      "top": 0,
+                      "right": 0,
+                      "bottom": 0,
+                      "left": 0
+                    },
+                    "gap": 8,
+                    "align": null,
+                    "counterAlign": "CENTER"
+                  },
+                  "children": [
+                    {
+                      "id": "1:13551",
+                      "name": "icon_radio",
+                      "type": "INSTANCE",
+                      "size": {
+                        "w": 20,
+                        "h": 20
+                      },
+                      "children": [
+                        {
+                          "id": "I1:13551;5300:9889",
+                          "name": "icon",
+                          "type": "VECTOR",
+                          "size": {
+                            "w": 17,
+                            "h": 17
+                          },
+                          "fill": [
+                            {
+                              "color": "#999999",
+                              "opacity": 1
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "1:13552",
+                      "name": "Sber Pay",
+                      "type": "TEXT",
+                      "size": {
+                        "w": 64,
+                        "h": 22
+                      },
+                      "fill": [
+                        {
+                          "color": "#000000",
+                          "opacity": 1
+                        }
+                      ],
+                      "text": {
+                        "content": "Sber Pay",
+                        "font": "Manrope",
+                        "size": 16,
+                        "weight": 400,
+                        "lineHeight": 21.856000900268555,
+                        "letterSpacing": 0,
+                        "align": "LEFT"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "1:13553",
+                  "name": "Sber Pay",
+                  "type": "VECTOR",
+                  "size": {
+                    "w": 48,
+                    "h": 24
+                  },
+                  "fill": [
+                    {
+                      "color": "#ffffff",
+                      "opacity": 1
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "1:13554",
+              "name": "Вариант",
+              "type": "FRAME",
+              "size": {
+                "w": 652,
+                "h": 32
+              },
+              "layout": {
+                "mode": "HORIZONTAL",
+                "direction": "HORIZONTAL",
+                "padding": {
+                  "top": 20,
+                  "right": 0,
+                  "bottom": 20,
+                  "left": 0
+                },
+                "gap": 308,
+                "align": "SPACE_BETWEEN",
+                "counterAlign": "CENTER"
+              },
+              "children": [
+                {
+                  "id": "1:13555",
+                  "name": "Text",
+                  "type": "FRAME",
+                  "size": {
+                    "w": 71,
+                    "h": 22
+                  },
+                  "layout": {
+                    "mode": "HORIZONTAL",
+                    "direction": "HORIZONTAL",
+                    "padding": {
+                      "top": 0,
+                      "right": 0,
+                      "bottom": 0,
+                      "left": 0
+                    },
+                    "gap": 8,
+                    "align": null,
+                    "counterAlign": "CENTER"
+                  },
+                  "children": [
+                    {
+                      "id": "1:13556",
+                      "name": "icon_radio",
+                      "type": "INSTANCE",
+                      "size": {
+                        "w": 20,
+                        "h": 20
+                      },
+                      "children": [
+                        {
+                          "id": "I1:13556;5300:9889",
+                          "name": "icon",
+                          "type": "VECTOR",
+                          "size": {
+                            "w": 17,
+                            "h": 17
+                          },
+                          "fill": [
+                            {
+                              "color": "#999999",
+                              "opacity": 1
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "1:13557",
+                      "name": "T-Pay",
+                      "type": "TEXT",
+                      "size": {
+                        "w": 43,
+                        "h": 22
+                      },
+                      "fill": [
+                        {
+                          "color": "#000000",
+                          "opacity": 1
+                        }
+                      ],
+                      "text": {
+                        "content": "T-Pay",
+                        "font": "Manrope",
+                        "size": 16,
+                        "weight": 400,
+                        "lineHeight": 21.856000900268555,
+                        "letterSpacing": 0,
+                        "align": "LEFT"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "1:13558",
+                  "name": "T Pay",
+                  "type": "VECTOR",
+                  "size": {
+                    "w": 55,
+                    "h": 24
+                  },
+                  "fill": [
+                    {
+                      "color": "#333333",
+                      "opacity": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

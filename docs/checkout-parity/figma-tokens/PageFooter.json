@@ -1,0 +1,41 @@
+{
+  "id": "1:13399",
+  "name": "Powered by merfy",
+  "type": "FRAME",
+  "size": {
+    "w": 1920,
+    "h": 64
+  },
+  "fill": [
+    {
+      "color": "#000000",
+      "opacity": 1
+    }
+  ],
+  "children": [
+    {
+      "id": "1:13400",
+      "name": "© 2025 Rose Theme Все права защищены. Powered by Merfy",
+      "type": "TEXT",
+      "size": {
+        "w": 473,
+        "h": 19
+      },
+      "fill": [
+        {
+          "color": "#ffffff",
+          "opacity": 1
+        }
+      ],
+      "text": {
+        "content": "© 2025 Rose Theme Все права защищены. Powered by Merfy",
+        "font": "Inter",
+        "size": 16,
+        "weight": 300,
+        "lineHeight": 19.363636016845703,
+        "letterSpacing": 0,
+        "align": "CENTER"
+      }
+    }
+  ]
+}

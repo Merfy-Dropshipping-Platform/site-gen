@@ -1,0 +1,118 @@
+{
+  "id": "1:13563",
+  "name": "Header; 1920; Слева",
+  "type": "FRAME",
+  "size": {
+    "w": 1920,
+    "h": 80
+  },
+  "layout": {
+    "mode": "HORIZONTAL",
+    "direction": "HORIZONTAL",
+    "padding": {
+      "top": 24,
+      "right": 300,
+      "bottom": 24,
+      "left": 300
+    },
+    "gap": 1133,
+    "align": "SPACE_BETWEEN",
+    "counterAlign": "CENTER"
+  },
+  "fill": [
+    {
+      "color": "#ffffff",
+      "opacity": 1
+    }
+  ],
+  "children": [
+    {
+      "id": "1:13564",
+      "name": "Rose",
+      "type": "TEXT",
+      "size": {
+        "w": 70,
+        "h": 27
+      },
+      "fill": [
+        {
+          "color": "#000000",
+          "opacity": 1
+        }
+      ],
+      "text": {
+        "content": "Rose",
+        "font": "Comfortaa",
+        "size": 24,
+        "weight": 400,
+        "lineHeight": 26.760000228881836,
+        "letterSpacing": 0,
+        "align": "LEFT"
+      }
+    },
+    {
+      "id": "1:13565",
+      "name": "Иконки",
+      "type": "FRAME",
+      "size": {
+        "w": 32,
+        "h": 32
+      },
+      "layout": {
+        "mode": "HORIZONTAL",
+        "direction": "HORIZONTAL",
+        "padding": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        },
+        "gap": 16,
+        "align": null,
+        "counterAlign": "CENTER"
+      },
+      "children": [
+        {
+          "id": "1:13566",
+          "name": "Header's Icons Free Themes",
+          "type": "INSTANCE",
+          "size": {
+            "w": 32,
+            "h": 32
+          },
+          "layout": {
+            "mode": "HORIZONTAL",
+            "direction": "HORIZONTAL",
+            "padding": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "gap": 0,
+            "align": "CENTER",
+            "counterAlign": "CENTER"
+          },
+          "radius": 8,
+          "children": [
+            {
+              "id": "I1:13566;15:2466",
+              "name": "icon",
+              "type": "VECTOR",
+              "size": {
+                "w": 21,
+                "h": 21
+              },
+              "fill": [
+                {
+                  "color": "#000000",
+                  "opacity": 1
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

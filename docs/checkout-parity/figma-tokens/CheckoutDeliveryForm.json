@@ -1,0 +1,729 @@
+{
+  "id": "1:13474",
+  "name": "Доставка",
+  "type": "FRAME",
+  "size": {
+    "w": 652,
+    "h": 310
+  },
+  "layout": {
+    "mode": "VERTICAL",
+    "direction": "VERTICAL",
+    "padding": {
+      "top": 0,
+      "right": 0,
+      "bottom": 0,
+      "left": 0
+    },
+    "gap": 16,
+    "align": null,
+    "counterAlign": null
+  },
+  "children": [
+    {
+      "id": "1:13475",
+      "name": "Доставка",
+      "type": "TEXT",
+      "size": {
+        "w": 72,
+        "h": 22
+      },
+      "fill": [
+        {
+          "color": "#000000",
+          "opacity": 1
+        }
+      ],
+      "text": {
+        "content": "Доставка",
+        "font": "Manrope",
+        "size": 16,
+        "weight": 400,
+        "lineHeight": 21.856000900268555,
+        "letterSpacing": 0,
+        "align": "LEFT"
+      }
+    },
+    {
+      "id": "1:13476",
+      "name": "Страна/Регион",
+      "type": "FRAME",
+      "size": {
+        "w": 652,
+        "h": 56
+      },
+      "layout": {
+        "mode": "HORIZONTAL",
+        "direction": "HORIZONTAL",
+        "padding": {
+          "top": 0,
+          "right": 12,
+          "bottom": 0,
+          "left": 12
+        },
+        "gap": 10,
+        "align": "SPACE_BETWEEN",
+        "counterAlign": "CENTER"
+      },
+      "radius": 4,
+      "fill": [
+        {
+          "color": "#ffffff",
+          "opacity": 1
+        }
+      ],
+      "border": [
+        {
+          "color": "#999999",
+          "opacity": 1,
+          "weight": 1
+        }
+      ],
+      "children": [
+        {
+          "id": "1:13477",
+          "name": "Frame",
+          "type": "FRAME",
+          "size": {
+            "w": 157,
+            "h": 37
+          },
+          "layout": {
+            "mode": "VERTICAL",
+            "direction": "VERTICAL",
+            "padding": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "gap": 2,
+            "align": "CENTER",
+            "counterAlign": null
+          },
+          "children": [
+            {
+              "id": "1:13478",
+              "name": "Страна/Регион",
+              "type": "TEXT",
+              "size": {
+                "w": 88,
+                "h": 16
+              },
+              "fill": [
+                {
+                  "color": "#999999",
+                  "opacity": 1
+                }
+              ],
+              "text": {
+                "content": "Страна/Регион",
+                "font": "Manrope",
+                "size": 12,
+                "weight": 400,
+                "lineHeight": 16.392000198364258,
+                "letterSpacing": 0,
+                "align": "LEFT"
+              }
+            },
+            {
+              "id": "1:13479",
+              "name": "Frame",
+              "type": "FRAME",
+              "size": {
+                "w": 157,
+                "h": 19
+              },
+              "layout": {
+                "mode": "HORIZONTAL",
+                "direction": "HORIZONTAL",
+                "padding": {
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "gap": 0,
+                "align": null,
+                "counterAlign": "CENTER"
+              },
+              "children": [
+                {
+                  "id": "1:13480",
+                  "name": "Российская Федерация",
+                  "type": "TEXT",
+                  "size": {
+                    "w": 157,
+                    "h": 19
+                  },
+                  "fill": [
+                    {
+                      "color": "#000000",
+                      "opacity": 1
+                    }
+                  ],
+                  "text": {
+                    "content": "Российская Федерация",
+                    "font": "Manrope",
+                    "size": 14,
+                    "weight": 400,
+                    "lineHeight": 19.124000549316406,
+                    "letterSpacing": 0,
+                    "align": "LEFT"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "1:13481",
+          "name": "icon_search",
+          "type": "COMPONENT",
+          "size": {
+            "w": 24,
+            "h": 24
+          },
+          "children": [
+            {
+              "id": "1:13482",
+              "name": "Vector",
+              "type": "VECTOR",
+              "size": {
+                "w": 3,
+                "h": 3
+              },
+              "border": [
+                {
+                  "color": "#999999",
+                  "opacity": 1,
+                  "weight": 1.0499999523162842
+                }
+              ]
+            },
+            {
+              "id": "1:13483",
+              "name": "Vector",
+              "type": "ELLIPSE",
+              "size": {
+                "w": 12,
+                "h": 12
+              },
+              "border": [
+                {
+                  "color": "#999999",
+                  "opacity": 1,
+                  "weight": 1.0499999523162842
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1:13484",
+      "name": "Frame",
+      "type": "FRAME",
+      "size": {
+        "w": 652,
+        "h": 56
+      },
+      "layout": {
+        "mode": "HORIZONTAL",
+        "direction": "HORIZONTAL",
+        "padding": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        },
+        "gap": 16,
+        "align": null,
+        "counterAlign": null
+      },
+      "children": [
+        {
+          "id": "1:13485",
+          "name": "Имя",
+          "type": "FRAME",
+          "size": {
+            "w": 318,
+            "h": 56
+          },
+          "layout": {
+            "mode": "HORIZONTAL",
+            "direction": "HORIZONTAL",
+            "padding": {
+              "top": 0,
+              "right": 12,
+              "bottom": 0,
+              "left": 12
+            },
+            "gap": 0,
+            "align": null,
+            "counterAlign": "CENTER"
+          },
+          "radius": 4,
+          "fill": [
+            {
+              "color": "#ffffff",
+              "opacity": 1
+            }
+          ],
+          "border": [
+            {
+              "color": "#999999",
+              "opacity": 1,
+              "weight": 1
+            }
+          ],
+          "children": [
+            {
+              "id": "1:13486",
+              "name": "Имя",
+              "type": "TEXT",
+              "size": {
+                "w": 31,
+                "h": 22
+              },
+              "fill": [
+                {
+                  "color": "#999999",
+                  "opacity": 1
+                }
+              ],
+              "text": {
+                "content": "Имя",
+                "font": "Manrope",
+                "size": 16,
+                "weight": 400,
+                "lineHeight": 21.856000900268555,
+                "letterSpacing": 0,
+                "align": "LEFT"
+              }
+            }
+          ]
+        },
+        {
+          "id": "1:13487",
+          "name": "Фамилия",
+          "type": "FRAME",
+          "size": {
+            "w": 318,
+            "h": 56
+          },
+          "layout": {
+            "mode": "HORIZONTAL",
+            "direction": "HORIZONTAL",
+            "padding": {
+              "top": 0,
+              "right": 12,
+              "bottom": 0,
+              "left": 12
+            },
+            "gap": 0,
+            "align": null,
+            "counterAlign": "CENTER"
+          },
+          "radius": 4,
+          "fill": [
+            {
+              "color": "#ffffff",
+              "opacity": 1
+            }
+          ],
+          "border": [
+            {
+              "color": "#999999",
+              "opacity": 1,
+              "weight": 1
+            }
+          ],
+          "children": [
+            {
+              "id": "1:13488",
+              "name": "Фамилия",
+              "type": "TEXT",
+              "size": {
+                "w": 68,
+                "h": 22
+              },
+              "fill": [
+                {
+                  "color": "#999999",
+                  "opacity": 1
+                }
+              ],
+              "text": {
+                "content": "Фамилия",
+                "font": "Manrope",
+                "size": 16,
+                "weight": 400,
+                "lineHeight": 21.856000900268555,
+                "letterSpacing": 0,
+                "align": "LEFT"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1:13489",
+      "name": "Город",
+      "type": "FRAME",
+      "size": {
+        "w": 652,
+        "h": 56
+      },
+      "layout": {
+        "mode": "HORIZONTAL",
+        "direction": "HORIZONTAL",
+        "padding": {
+          "top": 0,
+          "right": 12,
+          "bottom": 0,
+          "left": 12
+        },
+        "gap": 10,
+        "align": "SPACE_BETWEEN",
+        "counterAlign": "CENTER"
+      },
+      "radius": 4,
+      "border": [
+        {
+          "color": "#999999",
+          "opacity": 1,
+          "weight": 1
+        }
+      ],
+      "children": [
+        {
+          "id": "1:13490",
+          "name": "Город",
+          "type": "TEXT",
+          "size": {
+            "w": 46,
+            "h": 22
+          },
+          "fill": [
+            {
+              "color": "#999999",
+              "opacity": 1
+            }
+          ],
+          "text": {
+            "content": "Город",
+            "font": "Manrope",
+            "size": 16,
+            "weight": 400,
+            "lineHeight": 21.856000900268555,
+            "letterSpacing": 0,
+            "align": "LEFT"
+          }
+        },
+        {
+          "id": "1:13491",
+          "name": "icon_search",
+          "type": "INSTANCE",
+          "size": {
+            "w": 24,
+            "h": 24
+          },
+          "children": [
+            {
+              "id": "I1:13491;1:13482",
+              "name": "Vector",
+              "type": "VECTOR",
+              "size": {
+                "w": 3,
+                "h": 3
+              },
+              "border": [
+                {
+                  "color": "#999999",
+                  "opacity": 1,
+                  "weight": 1.0499999523162842
+                }
+              ]
+            },
+            {
+              "id": "I1:13491;1:13483",
+              "name": "Vector",
+              "type": "ELLIPSE",
+              "size": {
+                "w": 12,
+                "h": 12
+              },
+              "border": [
+                {
+                  "color": "#999999",
+                  "opacity": 1,
+                  "weight": 1.0499999523162842
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1:13492",
+      "name": "Frame",
+      "type": "FRAME",
+      "size": {
+        "w": 652,
+        "h": 56
+      },
+      "layout": {
+        "mode": "HORIZONTAL",
+        "direction": "HORIZONTAL",
+        "padding": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        },
+        "gap": 16,
+        "align": null,
+        "counterAlign": null
+      },
+      "children": [
+        {
+          "id": "1:13493",
+          "name": "Полный адрес",
+          "type": "FRAME",
+          "size": {
+            "w": 318,
+            "h": 56
+          },
+          "layout": {
+            "mode": "HORIZONTAL",
+            "direction": "HORIZONTAL",
+            "padding": {
+              "top": 0,
+              "right": 12,
+              "bottom": 0,
+              "left": 12
+            },
+            "gap": 10,
+            "align": "SPACE_BETWEEN",
+            "counterAlign": "CENTER"
+          },
+          "radius": 4,
+          "fill": [
+            {
+              "color": "#ffffff",
+              "opacity": 1
+            }
+          ],
+          "border": [
+            {
+              "color": "#999999",
+              "opacity": 1,
+              "weight": 1
+            }
+          ],
+          "children": [
+            {
+              "id": "1:13494",
+              "name": "Frame",
+              "type": "FRAME",
+              "size": {
+                "w": 146,
+                "h": 37
+              },
+              "layout": {
+                "mode": "VERTICAL",
+                "direction": "VERTICAL",
+                "padding": {
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0
+                },
+                "gap": 2,
+                "align": "CENTER",
+                "counterAlign": null
+              },
+              "children": [
+                {
+                  "id": "1:13495",
+                  "name": "Полный адрес",
+                  "type": "TEXT",
+                  "size": {
+                    "w": 82,
+                    "h": 16
+                  },
+                  "fill": [
+                    {
+                      "color": "#999999",
+                      "opacity": 1
+                    }
+                  ],
+                  "text": {
+                    "content": "Полный адрес",
+                    "font": "Manrope",
+                    "size": 12,
+                    "weight": 400,
+                    "lineHeight": 16.392000198364258,
+                    "letterSpacing": 0,
+                    "align": "LEFT"
+                  }
+                },
+                {
+                  "id": "1:13496",
+                  "name": "Frame",
+                  "type": "FRAME",
+                  "size": {
+                    "w": 146,
+                    "h": 19
+                  },
+                  "layout": {
+                    "mode": "HORIZONTAL",
+                    "direction": "HORIZONTAL",
+                    "padding": {
+                      "top": 0,
+                      "right": 0,
+                      "bottom": 0,
+                      "left": 0
+                    },
+                    "gap": 0,
+                    "align": null,
+                    "counterAlign": "CENTER"
+                  },
+                  "children": [
+                    {
+                      "id": "1:13497",
+                      "name": "ул. Пушкина, д. 0, кв. 0",
+                      "type": "TEXT",
+                      "size": {
+                        "w": 146,
+                        "h": 19
+                      },
+                      "fill": [
+                        {
+                          "color": "#000000",
+                          "opacity": 1
+                        }
+                      ],
+                      "text": {
+                        "content": "ул. Пушкина, д. 0, кв. 0",
+                        "font": "Manrope",
+                        "size": 14,
+                        "weight": 400,
+                        "lineHeight": 19.124000549316406,
+                        "letterSpacing": 0,
+                        "align": "LEFT"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "1:13498",
+              "name": "icon_search",
+              "type": "INSTANCE",
+              "size": {
+                "w": 24,
+                "h": 24
+              },
+              "children": [
+                {
+                  "id": "I1:13498;1:13482",
+                  "name": "Vector",
+                  "type": "VECTOR",
+                  "size": {
+                    "w": 3,
+                    "h": 3
+                  },
+                  "border": [
+                    {
+                      "color": "#999999",
+                      "opacity": 1,
+                      "weight": 1.0499999523162842
+                    }
+                  ]
+                },
+                {
+                  "id": "I1:13498;1:13483",
+                  "name": "Vector",
+                  "type": "ELLIPSE",
+                  "size": {
+                    "w": 12,
+                    "h": 12
+                  },
+                  "border": [
+                    {
+                      "color": "#999999",
+                      "opacity": 1,
+                      "weight": 1.0499999523162842
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "1:13499",
+          "name": "Индекс",
+          "type": "FRAME",
+          "size": {
+            "w": 318,
+            "h": 56
+          },
+          "layout": {
+            "mode": "HORIZONTAL",
+            "direction": "HORIZONTAL",
+            "padding": {
+              "top": 0,
+              "right": 12,
+              "bottom": 0,
+              "left": 12
+            },
+            "gap": 10,
+            "align": null,
+            "counterAlign": "CENTER"
+          },
+          "radius": 4,
+          "border": [
+            {
+              "color": "#999999",
+              "opacity": 1,
+              "weight": 1
+            }
+          ],
+          "children": [
+            {
+              "id": "1:13500",
+              "name": "Индекс",
+              "type": "TEXT",
+              "size": {
+                "w": 56,
+                "h": 22
+              },
+              "fill": [
+                {
+                  "color": "#999999",
+                  "opacity": 1
+                }
+              ],
+              "text": {
+                "content": "Индекс",
+                "font": "Manrope",
+                "size": 16,
+                "weight": 400,
+                "lineHeight": 21.856000900268555,
+                "letterSpacing": 0,
+                "align": "LEFT"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

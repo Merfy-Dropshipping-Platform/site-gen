@@ -46,11 +46,12 @@ export function OrderSummarySection(props: OrderSummarySectionProps) {
     <div className="flex flex-col gap-6">
       {state.items.map((item) => (
         <div key={item.id} className="flex items-start gap-6">
-          <div
-            className={`${imgSize} rounded-[var(--radius-card)] bg-[rgb(var(--color-input-bg))] flex-shrink-0 relative overflow-hidden`}
-            style={item.imageUrl ? { backgroundImage: `url(${item.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
-          >
-            <span className="absolute top-2 left-2 bg-[rgb(var(--color-text))] text-[rgb(var(--color-bg))] text-[length:var(--size-tiny)] font-medium w-5 h-5 rounded-full flex items-center justify-center leading-none">
+          <div className={`${imgSize} relative flex-shrink-0`}>
+            <div
+              className={`${imgSize} rounded-[var(--radius-card)] bg-[rgb(var(--color-input-bg))] overflow-hidden`}
+              style={item.imageUrl ? { backgroundImage: `url(${item.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+            />
+            <span className="absolute -top-1 -right-1 bg-[rgb(var(--color-text))] text-[rgb(var(--color-bg))] [font-family:var(--font-body)] text-[length:var(--size-small)] w-6 h-6 rounded-full flex items-center justify-center leading-none">
               {item.quantity}
             </span>
           </div>
@@ -88,7 +89,7 @@ export function OrderSummarySection(props: OrderSummarySectionProps) {
       ))}
 
       {props.promoToggle.enabled && (
-        <div className="mt-12 flex items-stretch h-14 border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] overflow-hidden bg-[rgb(var(--color-input-bg))] p-1.5 pl-3">
+        <div className="mt-6 flex items-stretch h-14 border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] overflow-hidden bg-[rgb(var(--color-input-bg))] p-1.5 pl-3">
           <input
             className="flex-1 bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))] placeholder:text-[rgb(var(--color-input-placeholder))]"
             placeholder={props.promoToggle.label}

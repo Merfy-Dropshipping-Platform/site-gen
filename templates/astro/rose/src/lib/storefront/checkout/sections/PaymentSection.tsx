@@ -39,9 +39,9 @@ export function PaymentSection(props: PaymentSectionProps) {
         <h2 className="[font-family:var(--font-body)] text-[length:var(--size-h3)] text-[rgb(var(--color-heading))]">{props.heading}</h2>
       )}
       {props.subheading && (
-        <p className="mb-4 mt-0.5 text-[length:var(--size-small)] text-[rgb(var(--color-muted))]">{props.subheading}</p>
+        <p className="mt-0.5 mb-8 text-[length:var(--size-small)] text-[rgb(var(--color-muted))]">{props.subheading}</p>
       )}
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-4">
       {props.methods
         .filter((m) => m.enabled)
         .map((m) => {
@@ -51,7 +51,7 @@ export function PaymentSection(props: PaymentSectionProps) {
               <label
                 className={`flex items-center gap-2 px-3 py-5 border rounded-[var(--radius-input)] cursor-pointer transition-colors ${
                   selected
-                    ? 'border-[rgb(var(--color-accent))]'
+                    ? 'border-[rgb(var(--color-text))]'
                     : 'border-[rgb(var(--color-input-border))] hover:border-[rgb(var(--color-text)/.4)]'
                 }`}
               >
@@ -64,14 +64,14 @@ export function PaymentSection(props: PaymentSectionProps) {
                 />
                 <span
                   className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border ${
-                    selected ? 'border-[rgb(var(--color-accent))]' : 'border-[rgb(var(--color-input-border))]'
+                    selected ? 'border-[rgb(var(--color-text))]' : 'border-[rgb(var(--color-input-border))]'
                   }`}
                 >
                   {selected && (
-                    <span className="h-2.5 w-2.5 rounded-full bg-[rgb(var(--color-accent))]" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-[rgb(var(--color-text))]" />
                   )}
                 </span>
-                <span className="flex-1 text-[length:var(--size-small)] text-[rgb(var(--color-text))]">{m.label}</span>
+                <span className="flex-1 [font-family:var(--font-body)] text-[length:var(--size-body)] text-[rgb(var(--color-text))]">{m.label}</span>
                 <PaymentBrand methodKey={m.key} />
               </label>
               {m.key === 'bank_card' && selected && (

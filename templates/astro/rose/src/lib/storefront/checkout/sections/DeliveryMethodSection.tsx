@@ -80,7 +80,7 @@ export function DeliveryMethodSection(props: DeliveryMethodSectionProps) {
   return (
     <>
     <Heading />
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-4">
       {choices.map((c, i) => {
         const id = `dm-${i}`;
         const selected =
@@ -90,7 +90,7 @@ export function DeliveryMethodSection(props: DeliveryMethodSectionProps) {
             key={id}
             className={`flex flex-col justify-center h-[60px] px-3 border rounded-[var(--radius-input)] cursor-pointer transition-colors ${
               selected
-                ? 'border-[rgb(var(--color-accent))]'
+                ? 'border-[rgb(var(--color-text))]'
                 : 'border-[rgb(var(--color-input-border))] hover:border-[rgb(var(--color-text)/.4)]'
             }`}
           >

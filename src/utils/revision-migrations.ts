@@ -181,9 +181,12 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
         siteTitle: 'Мой магазин',
         logoMode: 'text',
         logoImage: null,
-        rightIcon: 'account',
+        // Per Figma 1:13563 — checkout header shows the cart icon, not the
+        // account/avatar one. Aligns with the icon shown in the design.
+        rightIcon: 'cart',
         accountLink: '/account',
         backLink: '/cart',
+        cartLink: '/cart',
         padding: { top: 24, bottom: 24 },
       } as Record<string, unknown>,
     },
@@ -206,7 +209,8 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
         summaryColumnWidth: 884,
         gap: 64,
         breakpoint: 768,
-        padding: { top: 80, bottom: 80 },
+        // Per Figma 1:13398 — top spacing comes from formColumn pt-16; keep top:0.
+        padding: { top: 0, bottom: 80 },
       } as Record<string, unknown>,
       // Slots populated below via zones; keeping as flat content[] for the seed.
     },

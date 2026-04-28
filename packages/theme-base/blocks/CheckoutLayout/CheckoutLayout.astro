@@ -25,7 +25,10 @@ const cssVars = [
   `--checkout-summary-col-w:${summaryColumnWidth}px`,
   `--checkout-gap:${gap}px`,
 ].join('; ');
-const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+// Per Figma 1:13398 — page top → header (80h) → form area top:144 (i.e. 64
+// below header). The form column itself supplies the 64 via pt-16, so we
+// drop padding-top here and only honour padding-bottom from saved props.
+const paddingStyle = padding ? `padding-bottom:${padding.bottom}px;` : '';
 const inlineStyle = `${paddingStyle}; ${cssVars}`;
 const gridClass = summaryPosition === 'bottom' ? C.gridSummaryBottom : C.grid;
 ---

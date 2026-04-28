@@ -39,7 +39,9 @@ export const CheckoutLayoutPuckConfig: BlockPuckConfig<CheckoutLayoutProps> = {
     summaryColumnWidth: 884,
     gap: 64,
     breakpoint: 768,
-    padding: { top: 80, bottom: 80 },
+    // Per Figma 1:13398 — top spacing is supplied by the form column's
+    // pt-16 below the header. Keep `top` as 0 here so we don't double up.
+    padding: { top: 0, bottom: 80 },
   },
   schema: CheckoutLayoutSchema,
   maxInstances: 1,

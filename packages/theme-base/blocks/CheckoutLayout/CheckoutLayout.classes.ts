@@ -11,7 +11,8 @@ export const CheckoutLayoutClasses = {
   gridSummaryBottom: 'grid grid-cols-1 px-4 max-w-[var(--container-max-width)] mx-auto',
   // Form column = grid col 2 → col 3 (form area between left-pad and gap).
   // Top-pad 64px so form sits below header (header 80px tall + 64 = 144 per Figma).
-  formColumn: 'flex flex-col gap-10 min-w-0 md:col-start-2 md:col-end-3 md:pt-16',
+  // Apply pt-16 on mobile too — keeps breathing room when sticky toggle bar isn't enough.
+  formColumn: 'flex flex-col gap-10 min-w-0 pt-10 md:col-start-2 md:col-end-3 md:pt-16',
   // Summary column = grid col 4 → end (full-bleed). Background fbfbfb extends
   // to viewport right edge automatically via the trailing 1fr column. Inner
   // content max 520px per Figma 1:13402, with 64px inset padding.

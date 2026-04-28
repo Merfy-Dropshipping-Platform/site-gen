@@ -24,13 +24,20 @@ export function DeliverySection(props: DeliverySectionProps) {
   return (
     <div className="flex flex-col gap-4">
       {props.country.enabled && (
-        <FloatingField
-          label="Страна/Регион"
-          value={state.delivery.country}
-          readOnly={!props.country.selectable}
-          onChange={(v) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'country', value: v })}
-          trailingIcon={SearchIcon}
-        />
+        props.country.selectable ? (
+          <CountrySelect
+            value={state.delivery.country}
+            onChange={(v) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'country', value: v })}
+          />
+        ) : (
+          <FloatingField
+            label="Страна/Регион"
+            value={state.delivery.country}
+            readOnly
+            onChange={(v) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'country', value: v })}
+            trailingIcon={SearchIcon}
+          />
+        )
       )}
       {props.nameField.enabled &&
         (props.nameField.splitFirstLast ? (
@@ -76,6 +83,92 @@ const SearchIcon = (
     <path d="M21 21l-4.35-4.35" />
   </svg>
 );
+
+const ChevronIcon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M6 9l6 6 6-6" />
+  </svg>
+);
+
+// Common CIS + neighbouring countries; user can search by typing.
+const COUNTRIES: { code: string; name: string }[] = [
+  { code: 'RU', name: 'Российская Федерация' },
+  { code: 'BY', name: 'Беларусь' },
+  { code: 'KZ', name: 'Казахстан' },
+  { code: 'UA', name: 'Украина' },
+  { code: 'AM', name: 'Армения' },
+  { code: 'AZ', name: 'Азербайджан' },
+  { code: 'GE', name: 'Грузия' },
+  { code: 'KG', name: 'Кыргызстан' },
+  { code: 'MD', name: 'Молдова' },
+  { code: 'TJ', name: 'Таджикистан' },
+  { code: 'TM', name: 'Туркменистан' },
+  { code: 'UZ', name: 'Узбекистан' },
+  { code: 'EE', name: 'Эстония' },
+  { code: 'LV', name: 'Латвия' },
+  { code: 'LT', name: 'Литва' },
+];
+
+function CountrySelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const filtered = query
+    ? COUNTRIES.filter((c) => c.name.toLowerCase().includes(query.toLowerCase()))
+    : COUNTRIES;
+
+  return (
+    <div ref={containerRef} className="relative">
+      <FloatingField
+        label="Страна/Регион"
+        value={open ? query : value}
+        onChange={(v) => {
+          setQuery(v);
+          if (!open) setOpen(true);
+        }}
+        onFocus={() => {
+          setQuery('');
+          setOpen(true);
+        }}
+        trailingIcon={ChevronIcon}
+      />
+      {open && (
+        <ul className="absolute z-20 left-0 right-0 top-full mt-1 bg-[rgb(var(--color-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] max-h-60 overflow-auto shadow-md">
+          {filtered.length === 0 ? (
+            <li className="px-3 py-2 text-[length:var(--size-small)] text-[rgb(var(--color-muted))]">Не найдено</li>
+          ) : (
+            filtered.map((c) => (
+              <li
+                key={c.code}
+                className="px-3 py-2 cursor-pointer hover:bg-[rgb(var(--color-input-bg))] text-[length:var(--size-small)] text-[rgb(var(--color-text))]"
+                onMouseDown={() => {
+                  onChange(c.name);
+                  setOpen(false);
+                  setQuery('');
+                }}
+              >
+                {c.name}
+              </li>
+            ))
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 function CityField({ enabled }: { enabled: boolean }) {
   const { state, dispatch } = useCheckoutContext();

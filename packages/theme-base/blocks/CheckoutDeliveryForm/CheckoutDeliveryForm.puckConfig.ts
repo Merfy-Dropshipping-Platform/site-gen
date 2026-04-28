@@ -50,7 +50,7 @@ export const CheckoutDeliveryFormPuckConfig: BlockPuckConfig<CheckoutDeliveryFor
   },
   defaults: {
     heading: 'Доставка',
-    country: { enabled: true, default: 'Российская Федерация', selectable: false },
+    country: { enabled: true, default: 'Российская Федерация', selectable: true },
     nameField: { enabled: true, splitFirstLast: true },
     cityDadata: true,
     addressDadata: true,

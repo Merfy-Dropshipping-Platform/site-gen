@@ -126,7 +126,7 @@ class CheckoutFlow {
 
   getSavedCartId() {
     try {
-      return localStorage.getItem('merfy_cart_id') || null;
+      return localStorage.getItem('merfy:cartId') || null;
     } catch (e) {
       return null;
     }
@@ -167,7 +167,7 @@ class CheckoutFlow {
 
   clearSavedCart() {
     try {
-      localStorage.removeItem('merfy_cart_id');
+      localStorage.removeItem('merfy:cartId');
       localStorage.removeItem('merfy_cart_items');
     } catch (e) {
       // ignore

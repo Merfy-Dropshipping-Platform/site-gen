@@ -299,13 +299,16 @@ export class PreviewService {
       const summaryInner = summaryInnerParts.join('');
       // Astro Container renders <slot name="X" /> as a self-closing
       // placeholder when there's no fragment. Inject by slot name.
+      // CheckoutLayout uses data-checkout-column="form|summary" as the slot
+      // markers (one for each column div). Inject rendered form/summary
+      // blocks into them.
       const withSlots = shell
         .replace(
-          /(<[^<>]+data-checkout-slot="form"[^<>]*>)([\s\S]*?)(<\/[^<>]+>)/i,
+          /(<[^<>]+data-checkout-column="form"[^<>]*>)([\s\S]*?)(<\/div>)/i,
           (_m, open, _inner, close) => `${open}${formInner}${close}`,
         )
         .replace(
-          /(<[^<>]+data-checkout-slot="summary"[^<>]*>)([\s\S]*?)(<\/[^<>]+>)/i,
+          /(<[^<>]+data-checkout-column="summary"[^<>]*>)([\s\S]*?)(<\/div>)/i,
           (_m, open, _inner, close) => `${open}${summaryInner}${close}`,
         );
       return `<div class="color-scheme-2">${headerHtml}<main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">${toggleHtml}${withSlots}</main></div>`;

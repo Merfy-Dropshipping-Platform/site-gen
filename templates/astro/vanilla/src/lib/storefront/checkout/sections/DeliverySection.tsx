@@ -60,14 +60,16 @@ export function DeliverySection(props: DeliverySectionProps) {
           </Field>
         ))}
       <CityField enabled={props.cityDadata} />
-      <AddressField enabled={props.addressDadata} cityFiasId={state.delivery.cityFiasId} />
-      <Field label="Индекс">
-        <input
-          className="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]"
-          value={state.delivery.postalCode}
-          onChange={(e) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'postalCode', value: e.target.value })}
-        />
-      </Field>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <AddressField enabled={props.addressDadata} cityFiasId={state.delivery.cityFiasId} />
+        <Field label="Индекс">
+          <input
+            className="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]"
+            value={state.delivery.postalCode}
+            onChange={(e) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'postalCode', value: e.target.value })}
+          />
+        </Field>
+      </div>
     </div>
   );
 }

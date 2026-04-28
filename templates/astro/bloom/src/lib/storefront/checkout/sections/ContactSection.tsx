@@ -13,7 +13,7 @@ export function ContactSection(props: ContactSectionProps) {
   const { state, dispatch } = useCheckoutContext();
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
       <div className="relative flex flex-col bg-[rgb(var(--color-input-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 py-2">
         <label className="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label))]" htmlFor="email">
           {props.emailLabel}

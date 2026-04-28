@@ -48,18 +48,20 @@ const propsJson = JSON.stringify({ country, nameField, cityDadata, addressDadata
         </span>
       )}
     </div>
-    <div class={C.field} data-checkout-field="address" data-dadata={String(addressDadata)}>
-      <label class={C.label}>Полный адрес</label>
-      <input class={C.input} name="address" autocomplete="street-address" />
-      {addressDadata && (
-        <span class={C.searchIcon}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
-        </span>
-      )}
-    </div>
-    <div class={C.field} data-checkout-field="postalCode" data-autofill={String(indexAutoFill)}>
-      <label class={C.label}>Индекс</label>
-      <input class={C.input} name="postalCode" autocomplete="postal-code" />
+    <div class={C.fieldRow2}>
+      <div class={C.field} data-checkout-field="address" data-dadata={String(addressDadata)}>
+        <label class={C.label}>Полный адрес</label>
+        <input class={C.input} name="address" autocomplete="street-address" />
+        {addressDadata && (
+          <span class={C.searchIcon}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+          </span>
+        )}
+      </div>
+      <div class={C.field} data-checkout-field="postalCode" data-autofill={String(indexAutoFill)}>
+        <label class={C.label}>Индекс</label>
+        <input class={C.input} name="postalCode" autocomplete="postal-code" />
+      </div>
     </div>
   </div>
 </section>

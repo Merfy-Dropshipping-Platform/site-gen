@@ -38,7 +38,7 @@ scripts/checkout-parity/
 | # | Block | Figma node | Size | Status | Last review |
 |---|---|---|---|---|---|
 | 01 | CheckoutHeader | `1:13563` | 1920×80 | 🟡 6 fixes applied, awaiting verify | 2026-04-28 |
-| 02 | CheckoutContactForm | `1:13461` | 652×94 | ⏳ pending | — |
+| 02 | CheckoutContactForm | `1:13461` | 652×94 | 🟡 6 fixes applied; floating-label TODO | 2026-04-28 |
 | 03 | CheckoutDeliveryForm | `1:13474` | 652×310 | ⏳ pending | — |
 | 04 | CheckoutDeliveryMethod | `1:13501` | 652×174 | ⏳ pending | — |
 | 05 | CheckoutPayment | `1:13517` | 652×507 | ⏳ pending | — |

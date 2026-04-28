@@ -21,7 +21,7 @@ export function DeliverySection(props: DeliverySectionProps) {
   }, [props.country.default]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       {props.country.enabled && (
         <Field label="Страна/Регион">
           <input
@@ -60,7 +60,7 @@ export function DeliverySection(props: DeliverySectionProps) {
           </Field>
         ))}
       <CityField enabled={props.cityDadata} />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <AddressField enabled={props.addressDadata} cityFiasId={state.delivery.cityFiasId} />
         <Field label="Индекс">
           <input
@@ -76,7 +76,7 @@ export function DeliverySection(props: DeliverySectionProps) {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-4 h-14">
+    <div className="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-14">
       <label className="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label))]">{label}</label>
       {children}
     </div>

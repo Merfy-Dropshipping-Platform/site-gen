@@ -68,5 +68,21 @@ const {
 <body class={bodyClass}>
   <slot />
   <slot name="body-end" />
+
+  {/* Cart store + API — loaded inline (is:inline) so Astro/Vite leaves the
+     `/scripts/...` references untouched. Without this `window.cartStore`
+     stays undefined → "Купить сейчас" / "Добавить в корзину" silently fails
+     → /checkout shows empty cart. The actual files live in the theme's
+     public/scripts/ directory and are copied as static assets at build time. */}
+  <script is:inline type="module" src="/scripts/cart-api.js"></script>
+  <script is:inline type="module" src="/scripts/cart-store.js"></script>
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (window.cartStore && window.cartStore.init) {
+        window.cartStore.init();
+      }
+    });
+  </script>
+  <script is:inline src="/scripts/cart-drawer.js" defer></script>
 </body>
 </html>

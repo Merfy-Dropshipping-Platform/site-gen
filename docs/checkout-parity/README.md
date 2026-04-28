@@ -38,10 +38,10 @@ scripts/checkout-parity/
 | # | Block | Figma node | Size | Status | Last review |
 |---|---|---|---|---|---|
 | 01 | CheckoutHeader | `1:13563` | 1920×80 | 🟡 6 fixes applied, awaiting verify | 2026-04-28 |
-| 02 | CheckoutContactForm | `1:13461` | 652×94 | 🟡 6 fixes applied; floating-label TODO | 2026-04-28 |
-| 03 | CheckoutDeliveryForm | `1:13474` | 652×310 | 🟡 search-icon 24px + sync to React | 2026-04-28 |
+| 02 | CheckoutContactForm | `1:13461` | 652×94 | 🟢 6 fixes + floating-label done | 2026-04-28 |
+| 03 | CheckoutDeliveryForm | `1:13474` | 652×310 | 🟢 search-icon + floating-label done | 2026-04-28 |
 | 04 | CheckoutDeliveryMethod | `1:13501` | 652×174 | 🟡 60h px-3, font sizes per Figma | 2026-04-28 |
-| 05 | CheckoutPayment | `1:13517` | 652×507 | 🟡 heading body-font, py-5, gap-4 | 2026-04-28 |
+| 05 | CheckoutPayment | `1:13517` | 652×507 | 🟢 heading + payment radio + floating-label done | 2026-04-28 |
 | 06 | CheckoutOrderSummary | `1:13403` | 520×370 | 🟡 image 120px, gaps 24/8/4, promo padded | 2026-04-28 |
 | 07 | CheckoutTotals | `1:13451` | 520×61 | 🟡 gap-12, no border-t, total Manrope 20/400 | 2026-04-28 |
 | 08 | CheckoutSubmit | `1:13560` | 652×56 | 🟡 h-14, no semibold | 2026-04-28 |

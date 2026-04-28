@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useCheckoutContext, formatRub } from '../CheckoutContext';
 
 export interface OrderSummarySectionProps {
+  heading?: string;
   itemImageSize: 'compact' | 'expanded';
   showVariantLabels: boolean;
   showCompareAtPrice: boolean;
@@ -38,6 +39,10 @@ export function OrderSummarySection(props: OrderSummarySectionProps) {
   };
 
   return (
+    <>
+      {props.heading && (
+        <h3 className="mb-4 [font-family:var(--font-body)] text-[length:var(--size-h3)] text-[rgb(var(--color-heading))]">{props.heading}</h3>
+      )}
     <div className="flex flex-col gap-6">
       {state.items.map((item) => (
         <div key={item.id} className="flex items-start gap-6">
@@ -101,5 +106,6 @@ export function OrderSummarySection(props: OrderSummarySectionProps) {
         </div>
       )}
     </div>
+    </>
   );
 }

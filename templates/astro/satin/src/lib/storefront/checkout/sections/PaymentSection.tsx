@@ -10,6 +10,8 @@ interface MethodCfg {
 }
 
 export interface PaymentSectionProps {
+  heading?: string;
+  subheading?: string;
   methods: MethodCfg[];
   cardForm: { cvvHelpEnabled: boolean; nameOnCardEnabled: boolean; warningText: string };
   onCardChange: (card: { number: string; expiry: string; cvc: string; nameOnCard: string }) => void;
@@ -32,6 +34,13 @@ export function PaymentSection(props: PaymentSectionProps) {
   }, [card]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
+    <>
+      {props.heading && (
+        <h2 className="[font-family:var(--font-body)] text-[length:var(--size-h3)] text-[rgb(var(--color-heading))]">{props.heading}</h2>
+      )}
+      {props.subheading && (
+        <p className="mb-4 mt-0.5 text-[length:var(--size-small)] text-[rgb(var(--color-muted))]">{props.subheading}</p>
+      )}
     <div className="flex flex-col gap-2">
       {props.methods
         .filter((m) => m.enabled)
@@ -78,6 +87,7 @@ export function PaymentSection(props: PaymentSectionProps) {
           );
         })}
     </div>
+    </>
   );
 }
 

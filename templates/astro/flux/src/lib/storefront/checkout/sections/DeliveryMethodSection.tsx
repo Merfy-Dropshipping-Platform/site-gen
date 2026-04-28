@@ -3,6 +3,7 @@ import { useCheckoutContext, formatRub, type DeliveryMethodChoice } from '../Che
 import { useCdek } from '../hooks/useCdek';
 
 export interface DeliveryMethodSectionProps {
+  heading?: string;
   cdekEnabled: boolean;
   cdekDoorLabel: string;
   cdekPvzLabel: string;
@@ -60,15 +61,25 @@ export function DeliveryMethodSection(props: DeliveryMethodSectionProps) {
 
   const select = (c: DeliveryMethodChoice) => dispatch({ type: 'SET_DELIVERY_METHOD', method: c });
 
+  const Heading = () =>
+    props.heading ? (
+      <h2 className="mb-4 [font-family:var(--font-body)] text-[length:var(--size-h3)] text-[rgb(var(--color-heading))]">{props.heading}</h2>
+    ) : null;
+
   if (choices.length === 0) {
     return (
-      <p className="text-[length:var(--size-small)] text-[rgb(var(--color-muted))]">
-        Введите адрес — мы рассчитаем стоимость доставки.
-      </p>
+      <>
+        <Heading />
+        <p className="text-[length:var(--size-small)] text-[rgb(var(--color-muted))]">
+          Введите адрес — мы рассчитаем стоимость доставки.
+        </p>
+      </>
     );
   }
 
   return (
+    <>
+    <Heading />
     <div className="flex flex-col gap-2">
       {choices.map((c, i) => {
         const id = `dm-${i}`;
@@ -101,5 +112,6 @@ export function DeliveryMethodSection(props: DeliveryMethodSectionProps) {
         );
       })}
     </div>
+    </>
   );
 }

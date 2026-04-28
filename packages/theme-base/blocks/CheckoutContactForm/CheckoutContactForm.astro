@@ -5,7 +5,7 @@ import { CheckoutContactFormClasses as C } from './CheckoutContactForm.classes';
 interface Props extends CheckoutContactFormProps { id?: string; }
 const { id, heading, showAuthLink, authLinkText, authLinkHref, emailLabel, phoneLabel, phoneFormat, padding } = Astro.props as Props;
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
-const propsJson = JSON.stringify({ emailLabel, phoneLabel, phoneFormat, showAuthLink, authLinkText, authLinkHref });
+const propsJson = JSON.stringify({ heading, emailLabel, phoneLabel, phoneFormat, showAuthLink, authLinkText, authLinkHref });
 ---
 <section
   class={C.root}

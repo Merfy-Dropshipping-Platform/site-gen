@@ -4,6 +4,7 @@ import { FloatingField } from './ContactSection';
 import { useDadata, type DadataSuggestion } from '../hooks/useDaData';
 
 export interface DeliverySectionProps {
+  heading?: string;
   country: { enabled: boolean; default: string; selectable: boolean };
   nameField: { enabled: boolean; splitFirstLast: boolean };
   cityDadata: boolean;
@@ -22,6 +23,10 @@ export function DeliverySection(props: DeliverySectionProps) {
   }, [props.country.default]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
+    <>
+      {props.heading && (
+        <h2 className="mb-4 [font-family:var(--font-body)] text-[length:var(--size-h3)] text-[rgb(var(--color-heading))]">{props.heading}</h2>
+      )}
     <div className="flex flex-col gap-4">
       {props.country.enabled && (
         props.country.selectable ? (
@@ -74,6 +79,7 @@ export function DeliverySection(props: DeliverySectionProps) {
         />
       </div>
     </div>
+    </>
   );
 }
 

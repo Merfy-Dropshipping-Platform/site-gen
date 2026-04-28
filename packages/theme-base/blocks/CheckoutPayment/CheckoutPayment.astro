@@ -5,7 +5,7 @@ import { CheckoutPaymentClasses as C } from './CheckoutPayment.classes';
 interface Props extends CheckoutPaymentProps { id?: string; }
 const { id, heading, subheading, methods, cardForm, padding } = Astro.props as Props;
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
-const propsJson = JSON.stringify({ methods, cardForm });
+const propsJson = JSON.stringify({ heading, subheading, methods, cardForm });
 ---
 <section
   class={C.root}

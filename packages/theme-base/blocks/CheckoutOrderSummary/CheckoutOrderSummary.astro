@@ -5,7 +5,7 @@ import { CheckoutOrderSummaryClasses as C } from './CheckoutOrderSummary.classes
 interface Props extends CheckoutOrderSummaryProps { id?: string; }
 const { id, heading, itemImageSize, showVariantLabels, showCompareAtPrice, promoToggle, bogoBadge, padding } = Astro.props as Props;
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
-const propsJson = JSON.stringify({ itemImageSize, showVariantLabels, showCompareAtPrice, promoToggle, bogoBadge });
+const propsJson = JSON.stringify({ heading, itemImageSize, showVariantLabels, showCompareAtPrice, promoToggle, bogoBadge });
 ---
 <section
   class={C.root}

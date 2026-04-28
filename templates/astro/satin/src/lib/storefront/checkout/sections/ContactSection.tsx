@@ -1,6 +1,7 @@
 import { useCheckoutContext } from '../CheckoutContext';
 
 export interface ContactSectionProps {
+  heading?: string;
   emailLabel: string;
   phoneLabel: string;
   phoneFormat: 'ru' | 'intl';
@@ -13,6 +14,17 @@ export function ContactSection(props: ContactSectionProps) {
   const { state, dispatch } = useCheckoutContext();
 
   return (
+    <>
+      {(props.heading || props.showAuthLink) && (
+        <h2 className="flex items-center justify-between mb-4 [font-family:var(--font-body)] text-[length:var(--size-h3)] text-[rgb(var(--color-heading))]">
+          <span>{props.heading}</span>
+          {props.showAuthLink && (
+            <a href={props.authLinkHref} className="text-[length:var(--size-small)] text-[rgb(var(--color-muted))] underline underline-offset-2 hover:no-underline">
+              {props.authLinkText}
+            </a>
+          )}
+        </h2>
+      )}
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <FloatingField
         id="email"
@@ -31,6 +43,7 @@ export function ContactSection(props: ContactSectionProps) {
         onChange={(v) => dispatch({ type: 'SET_CONTACT_FIELD', field: 'phone', value: v })}
       />
     </div>
+    </>
   );
 }
 

@@ -5,7 +5,7 @@ import { CheckoutDeliveryFormClasses as C } from './CheckoutDeliveryForm.classes
 interface Props extends CheckoutDeliveryFormProps { id?: string; }
 const { id, heading, country, nameField, cityDadata, addressDadata, indexAutoFill, requiredFields, padding } = Astro.props as Props;
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
-const propsJson = JSON.stringify({ country, nameField, cityDadata, addressDadata, indexAutoFill, requiredFields });
+const propsJson = JSON.stringify({ heading, country, nameField, cityDadata, addressDadata, indexAutoFill, requiredFields });
 ---
 <section
   class={C.root}

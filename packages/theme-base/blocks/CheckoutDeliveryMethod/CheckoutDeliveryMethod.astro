@@ -5,7 +5,7 @@ import { CheckoutDeliveryMethodClasses as C } from './CheckoutDeliveryMethod.cla
 interface Props extends CheckoutDeliveryMethodProps { id?: string; }
 const { id, heading, cdekEnabled, cdekDoorLabel, cdekPvzLabel, pickupEnabled, pickupLabel, customMethods, freeShippingThresholdCents, padding } = Astro.props as Props;
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
-const propsJson = JSON.stringify({ cdekEnabled, cdekDoorLabel, cdekPvzLabel, pickupEnabled, pickupLabel, customMethods, freeShippingThresholdCents });
+const propsJson = JSON.stringify({ heading, cdekEnabled, cdekDoorLabel, cdekPvzLabel, pickupEnabled, pickupLabel, customMethods, freeShippingThresholdCents });
 ---
 <section
   class={C.root}

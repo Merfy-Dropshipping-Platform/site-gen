@@ -79,6 +79,8 @@ function renderBlock(b: Block) {
 }
 ---
 <BaseLayout title={`Оформление заказа — ${meta?.title ?? 'Мой сайт'}`}>
+  {/* Per Figma 1:13398 — checkout always renders on light scheme regardless of theme default. */}
+  <div class="color-scheme-2">
   {headerBlock ? <CheckoutHeader {...headerBlock.props} /> : homeHeaderBlock && <Header {...homeHeaderBlock.props} />}
 
   <main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">
@@ -114,6 +116,7 @@ function renderBlock(b: Block) {
       © 2026 Rose Theme Все права защищены. Powered by Merfy
     </p>
   </footer>
+  </div>
 
   <div id="checkout-island" style="display:contents"></div>
 

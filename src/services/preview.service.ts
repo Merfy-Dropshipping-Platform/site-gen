@@ -22,6 +22,8 @@ export interface RenderPreviewPageInput {
   tokensCss: string;
   fontHead: string;
   themeId?: string | null;
+  /** Page key (e.g. 'home', 'checkout', 'cart'). Determines slot-based layout. */
+  page?: string;
 }
 
 /**
@@ -187,30 +189,39 @@ export class PreviewService {
    * each block's HTML, and the preview nav agent installer.
    */
   async renderPreviewPage(input: RenderPreviewPageInput): Promise<string> {
-    const renderedBlocks: string[] = [];
-    for (const b of input.blocks) {
-      const html = await this.renderBlock({
-        blockName: b.type,
-        props: b.props,
-        themeId: input.themeId ?? null,
-      });
-      // Mirror live build: wrap block in color-scheme-N so tokens-css.ts
-      // .color-scheme-N overrides apply per-block. Keeps iframe preview at
-      // parity with the baked Astro page (see page-generator.ts).
-      const rawScheme = b.props?.colorScheme;
-      let schemeId: string | null = null;
-      if (typeof rawScheme === 'number' && Number.isFinite(rawScheme)) {
-        schemeId = String(rawScheme);
-      } else if (typeof rawScheme === 'string' && rawScheme.length > 0) {
-        schemeId = rawScheme.replace(/^scheme-/, '');
+    const isCheckout = input.page === 'checkout';
+    let bodyHtml: string;
+
+    if (isCheckout) {
+      // Mirror live /checkout.astro slot-based layout: header on top, summary
+      // toggle, then 2-column form/summary inside CheckoutLayout.
+      bodyHtml = await this.renderCheckoutLayout(input);
+    } else {
+      const renderedBlocks: string[] = [];
+      for (const b of input.blocks) {
+        const html = await this.renderBlock({
+          blockName: b.type,
+          props: b.props,
+          themeId: input.themeId ?? null,
+        });
+        // Mirror live build: wrap block in color-scheme-N so tokens-css.ts
+        // .color-scheme-N overrides apply per-block.
+        const rawScheme = b.props?.colorScheme;
+        let schemeId: string | null = null;
+        if (typeof rawScheme === 'number' && Number.isFinite(rawScheme)) {
+          schemeId = String(rawScheme);
+        } else if (typeof rawScheme === 'string' && rawScheme.length > 0) {
+          schemeId = rawScheme.replace(/^scheme-/, '');
+        }
+        if (schemeId) {
+          renderedBlocks.push(
+            `<div class="color-scheme-${schemeId}" data-block-scheme="${schemeId}">${html}</div>`,
+          );
+        } else {
+          renderedBlocks.push(html);
+        }
       }
-      if (schemeId) {
-        renderedBlocks.push(
-          `<div class="color-scheme-${schemeId}" data-block-scheme="${schemeId}">${html}</div>`,
-        );
-      } else {
-        renderedBlocks.push(html);
-      }
+      bodyHtml = renderedBlocks.join('\n');
     }
 
     const previewTailwind = await loadPreviewTailwindCss();
@@ -226,10 +237,83 @@ export class PreviewService {
   <style>${input.tokensCss}</style>
 </head>
 <body>
-  ${renderedBlocks.join('\n')}
+  ${bodyHtml}
   <script>${PREVIEW_NAV_AGENT_INLINE}</script>
 </body>
 </html>`;
+  }
+
+  /**
+   * Mirror /checkout.astro: header → summary toggle → 2-column grid via
+   * CheckoutLayout (form column on left, summary column on right). Wraps in
+   * .color-scheme-2 because Figma 1:13398 says checkout always renders light.
+   */
+  private async renderCheckoutLayout(
+    input: RenderPreviewPageInput,
+  ): Promise<string> {
+    const formSlotTypes = new Set([
+      'CheckoutContactForm',
+      'CheckoutDeliveryForm',
+      'CheckoutDeliveryMethod',
+      'CheckoutPayment',
+      'CheckoutSubmit',
+      'CheckoutTerms',
+    ]);
+    const summarySlotTypes = new Set([
+      'CheckoutOrderSummary',
+      'CheckoutTotals',
+    ]);
+
+    const themeId = input.themeId ?? null;
+    const headerBlock = input.blocks.find((b) => b.type === 'CheckoutHeader');
+    const summaryToggleBlock = input.blocks.find(
+      (b) => b.type === 'CheckoutSummaryToggle',
+    );
+    const layoutBlock = input.blocks.find((b) => b.type === 'CheckoutLayout');
+    const formBlocks = input.blocks.filter((b) => formSlotTypes.has(b.type));
+    const summaryBlocks = input.blocks.filter((b) =>
+      summarySlotTypes.has(b.type),
+    );
+
+    const renderOne = async (b: { type: string; props: Record<string, unknown> }) =>
+      this.renderBlock({ blockName: b.type, props: b.props, themeId });
+
+    const headerHtml = headerBlock ? await renderOne(headerBlock) : '';
+    const toggleHtml = summaryToggleBlock
+      ? await renderOne(summaryToggleBlock)
+      : '';
+
+    const formInnerParts = await Promise.all(formBlocks.map(renderOne));
+    const summaryInnerParts = await Promise.all(summaryBlocks.map(renderOne));
+
+    if (layoutBlock) {
+      // Render CheckoutLayout shell with named slots. We can't use Astro's
+      // <slot> here (we're outside the Astro component), so we render the
+      // block then string-replace its slot placeholders.
+      const shell = await this.renderBlock({
+        blockName: 'CheckoutLayout',
+        props: layoutBlock.props,
+        themeId,
+      });
+      const formInner = formInnerParts.join('');
+      const summaryInner = summaryInnerParts.join('');
+      // Astro Container renders <slot name="X" /> as a self-closing
+      // placeholder when there's no fragment. Inject by slot name.
+      const withSlots = shell
+        .replace(
+          /(<[^<>]+data-checkout-slot="form"[^<>]*>)([\s\S]*?)(<\/[^<>]+>)/i,
+          (_m, open, _inner, close) => `${open}${formInner}${close}`,
+        )
+        .replace(
+          /(<[^<>]+data-checkout-slot="summary"[^<>]*>)([\s\S]*?)(<\/[^<>]+>)/i,
+          (_m, open, _inner, close) => `${open}${summaryInner}${close}`,
+        );
+      return `<div class="color-scheme-2">${headerHtml}<main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">${toggleHtml}${withSlots}</main></div>`;
+    }
+
+    // No CheckoutLayout configured — fall back to linear column.
+    const linearInner = [...formInnerParts, ...summaryInnerParts].join('');
+    return `<div class="color-scheme-2">${headerHtml}<main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">${toggleHtml}<div class="mx-auto max-w-[var(--container-max-width)] px-4 flex flex-col gap-6">${linearInner}</div></main></div>`;
   }
 }
 

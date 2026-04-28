@@ -37,16 +37,33 @@ scripts/checkout-parity/
 
 | # | Block | Figma node | Size | Status | Last review |
 |---|---|---|---|---|---|
-| 01 | CheckoutHeader | `1:13563` | 1920×80 | 🟡 6 fixes applied, awaiting verify | 2026-04-28 |
-| 02 | CheckoutContactForm | `1:13461` | 652×94 | 🟢 6 fixes + floating-label done | 2026-04-28 |
-| 03 | CheckoutDeliveryForm | `1:13474` | 652×310 | 🟢 search-icon + floating-label done | 2026-04-28 |
-| 04 | CheckoutDeliveryMethod | `1:13501` | 652×174 | 🟡 60h px-3, font sizes per Figma | 2026-04-28 |
-| 05 | CheckoutPayment | `1:13517` | 652×507 | 🟢 heading + payment radio + floating-label done | 2026-04-28 |
-| 06 | CheckoutOrderSummary | `1:13403` | 520×370 | 🟡 image 120px, gaps 24/8/4, promo padded | 2026-04-28 |
-| 07 | CheckoutTotals | `1:13451` | 520×61 | 🟡 gap-12, no border-t, total Manrope 20/400 | 2026-04-28 |
-| 08 | CheckoutSubmit | `1:13560` | 652×56 | 🟡 h-14, no semibold | 2026-04-28 |
-| 09 | CheckoutTerms | `1:13562` | 652×32 | 🟡 Montserrat Alternates 12/300 | 2026-04-28 |
+| 01 | CheckoutHeader | `1:13563` | 1920×80 | 🟢 verified live | 2026-04-28 |
+| 02 | CheckoutContactForm | `1:13461` | 652×94 | 🟢 verified live | 2026-04-28 |
+| 03 | CheckoutDeliveryForm | `1:13474` | 652×310 | 🟢 verified live (Country dropdown for new sites) | 2026-04-28 |
+| 04 | CheckoutDeliveryMethod | `1:13501` | 652×174 | 🟢 verified live (renders only when CDek tariffs available) | 2026-04-28 |
+| 05 | CheckoutPayment | `1:13517` | 652×507 | 🟢 verified live | 2026-04-28 |
+| 06 | CheckoutOrderSummary | `1:13403` | 520×370 | 🟢 verified live | 2026-04-28 |
+| 07 | CheckoutTotals | `1:13451` | 520×61 | 🟢 verified live | 2026-04-28 |
+| 08 | CheckoutSubmit | `1:13560` | 652×56 | 🟡 h-14 не подтянулось — проверить tailwind purge | 2026-04-28 |
+| 09 | CheckoutTerms | `1:13562` | 652×32 | 🟢 verified live | 2026-04-28 |
 | 10 | PageFooter | `1:13399` | 1920×64 | 🟢 already matches (Inter 16/300) | 2026-04-28 |
+
+## Verification (live `https://8bb11302e214.merfy.ru/checkout?productId=1`, build `53a9aa10`)
+
+Captured by `scripts/checkout-parity/capture-live.mjs` (Playwright 1.49, viewport 1920×1080, scale 2x):
+
+- ✅ Все секции рендерятся со своими headings ("Контакты", "Доставка", "Способ доставки", "Платёжная система", "Сводка заказа")
+- ✅ Light scheme — белый bg, серая summary справа (`#fbfbfb`-ish), чёрный текст
+- ✅ Поля 56h `px-3`, тонкая граница (`#999999`)
+- ✅ 2-col строки: Email|Phone, Имя|Фамилия, Адрес|Индекс
+- ✅ Country с search icon (readonly mode для существующих revisions)
+- ✅ Bank Card форма с floating-label (Номер карты, Срок|CVV, Имя на карте)
+- ✅ Info-icon "(i) Счёт будет выставлен по вашему адресу"
+- ✅ СБП с цветным brand-бейджем
+- ✅ Промокод single-line + Применить (full-height)
+- ✅ "© 2026 Rose Theme..." footer
+- ⚠️ Submit button "Оплатить 0₽" — компактная, h-14 не визуально применилась (вероятно tailwind не подобрал из-за позднего изменения)
+- ⚠️ Header siteTitle "Мой магазин" + account icon — revision config (а не bug темы; новые сайты получат rightIcon='cart')
 
 Legend: ⏳ pending · 🔴 has gaps · 🟡 in progress · 🟢 match
 

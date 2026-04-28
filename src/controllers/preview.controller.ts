@@ -41,12 +41,15 @@ export class PreviewController {
     @Query('productId') productIdOverride: string | undefined,
     @Res() res: Response,
   ): Promise<void> {
-    // Normalize page path: '/checkout' → 'checkout', '/' or '' → 'home'.
-    // pagesData uses bare keys (`checkout`, `cart`, `account`), but the
-    // constructor iframe sends leading-slashed paths.
+    // Normalize page identifier: pagesData uses bare keys (`home`,
+    // `checkout`, `cart`, `account`, `policies`), but the constructor sends:
+    //   * leading-slashed paths   '/checkout'        → 'checkout'
+    //   * page-prefixed ids       'page-checkout'    → 'checkout'
+    //   * empty / '/'             ''                 → 'home'
     const normalizedPage = (() => {
-      const trimmed = (page ?? 'home').replace(/^\/+|\/+$/g, '');
-      return trimmed === '' ? 'home' : trimmed;
+      let v = (page ?? 'home').replace(/^\/+|\/+$/g, '');
+      if (v.startsWith('page-')) v = v.slice('page-'.length);
+      return v === '' ? 'home' : v;
     })();
     this.logger.log(
       `[preview] siteId=${siteId} page=${page}→${normalizedPage} productIdOverride=${productIdOverride ?? 'NONE'}`,

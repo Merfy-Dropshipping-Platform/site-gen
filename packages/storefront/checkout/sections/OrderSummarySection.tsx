@@ -23,7 +23,7 @@ export function OrderSummarySection(props: OrderSummarySectionProps) {
     if (!state.promoCode || !state.cartId) return;
     setPromoApplying(true);
     try {
-      const res = await fetch(`${apiBase}/checkout/cart/${state.cartId}/promo`, {
+      const res = await fetch(`${apiBase}/orders/cart/${state.cartId}/promo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: state.promoCode }),

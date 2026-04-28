@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useCheckoutContext, type PaymentMethodKey } from '../CheckoutContext';
+import { FloatingField } from './ContactSection';
 import { useYooKassaSdk } from '../hooks/useYooKassa';
 
 interface MethodCfg {
@@ -146,48 +147,33 @@ function CardForm({
       {!sdkReady && !sdkFailed && (
         <p className="text-[length:var(--size-small)] text-[rgb(var(--color-muted))]">Загрузка платёжного модуля…</p>
       )}
-      <CardField label="Номер карты">
-        <input
-          className="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]"
-          inputMode="numeric"
-          autoComplete="cc-number"
-          placeholder="0000 0000 0000 0000"
-          value={card.number}
-          onChange={(e) => setCard((c) => ({ ...c, number: e.target.value }))}
-        />
-      </CardField>
+      <FloatingField
+        label="Номер карты"
+        autoComplete="cc-number"
+        value={card.number}
+        onChange={(v) => setCard((c) => ({ ...c, number: v }))}
+      />
       <div className="grid grid-cols-2 gap-4">
-        <CardField label="Срок действия">
-          <input
-            className="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]"
-            inputMode="numeric"
-            autoComplete="cc-exp"
-            placeholder="MM/YY"
-            value={card.expiry}
-            onChange={(e) => setCard((c) => ({ ...c, expiry: e.target.value }))}
-          />
-        </CardField>
-        <CardField label="CVV">
-          <input
-            className="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]"
-            inputMode="numeric"
-            autoComplete="cc-csc"
-            placeholder="•••"
-            value={card.cvc}
-            onChange={(e) => setCard((c) => ({ ...c, cvc: e.target.value }))}
-          />
-        </CardField>
+        <FloatingField
+          label="Срок действия"
+          autoComplete="cc-exp"
+          value={card.expiry}
+          onChange={(v) => setCard((c) => ({ ...c, expiry: v }))}
+        />
+        <FloatingField
+          label="CVV"
+          autoComplete="cc-csc"
+          value={card.cvc}
+          onChange={(v) => setCard((c) => ({ ...c, cvc: v }))}
+        />
       </div>
       {cardForm.nameOnCardEnabled && (
-        <CardField label="Имя на карте">
-          <input
-            className="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]"
-            autoComplete="cc-name"
-            placeholder="IVAN IVANOV"
-            value={card.nameOnCard}
-            onChange={(e) => setCard((c) => ({ ...c, nameOnCard: e.target.value }))}
-          />
-        </CardField>
+        <FloatingField
+          label="Имя на карте"
+          autoComplete="cc-name"
+          value={card.nameOnCard}
+          onChange={(v) => setCard((c) => ({ ...c, nameOnCard: v }))}
+        />
       )}
       {cardForm.warningText && (
         <p className="mt-1 flex items-center gap-2 text-[length:var(--size-small)] text-[rgb(var(--color-muted))]">
@@ -202,11 +188,3 @@ function CardForm({
   );
 }
 
-function CardField({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-14">
-      <label className="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label))]">{label}</label>
-      {children}
-    </div>
-  );
-}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useCheckoutContext } from '../CheckoutContext';
+import { FloatingField } from './ContactSection';
 import { useDadata, type DadataSuggestion } from '../hooks/useDaData';
 
 export interface DeliverySectionProps {
@@ -23,67 +24,48 @@ export function DeliverySection(props: DeliverySectionProps) {
   return (
     <div className="flex flex-col gap-4">
       {props.country.enabled && (
-        <Field label="Страна/Регион">
-          <input
-            className="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]"
-            value={state.delivery.country}
-            readOnly={!props.country.selectable}
-            onChange={(e) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'country', value: e.target.value })}
-          />
-        </Field>
+        <FloatingField
+          label="Страна/Регион"
+          value={state.delivery.country}
+          readOnly={!props.country.selectable}
+          onChange={(v) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'country', value: v })}
+          trailingIcon={SearchIcon}
+        />
       )}
       {props.nameField.enabled &&
         (props.nameField.splitFirstLast ? (
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Имя">
-              <input
-                className="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]"
-                value={state.delivery.firstName}
-                onChange={(e) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'firstName', value: e.target.value })}
-              />
-            </Field>
-            <Field label="Фамилия">
-              <input
-                className="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]"
-                value={state.delivery.lastName}
-                onChange={(e) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'lastName', value: e.target.value })}
-              />
-            </Field>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FloatingField
+              label="Имя"
+              autoComplete="given-name"
+              value={state.delivery.firstName}
+              onChange={(v) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'firstName', value: v })}
+            />
+            <FloatingField
+              label="Фамилия"
+              autoComplete="family-name"
+              value={state.delivery.lastName}
+              onChange={(v) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'lastName', value: v })}
+            />
           </div>
         ) : (
-          <Field label="ФИО">
-            <input
-              className="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]"
-              value={state.delivery.fullName}
-              onChange={(e) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'fullName', value: e.target.value })}
-            />
-          </Field>
+          <FloatingField
+            label="ФИО"
+            autoComplete="name"
+            value={state.delivery.fullName}
+            onChange={(v) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'fullName', value: v })}
+          />
         ))}
       <CityField enabled={props.cityDadata} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <AddressField enabled={props.addressDadata} cityFiasId={state.delivery.cityFiasId} />
-        <Field label="Индекс">
-          <input
-            className="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]"
-            value={state.delivery.postalCode}
-            onChange={(e) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'postalCode', value: e.target.value })}
-          />
-        </Field>
+        <FloatingField
+          label="Индекс"
+          autoComplete="postal-code"
+          value={state.delivery.postalCode}
+          onChange={(v) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'postalCode', value: v })}
+        />
       </div>
-    </div>
-  );
-}
-
-function Field({ label, children, trailingIcon }: { label: string; children: React.ReactNode; trailingIcon?: React.ReactNode }) {
-  return (
-    <div className="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-14">
-      <label className="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label))]">{label}</label>
-      {children}
-      {trailingIcon && (
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[rgb(var(--color-input-placeholder))] pointer-events-none">
-          {trailingIcon}
-        </span>
-      )}
     </div>
   );
 }
@@ -121,16 +103,15 @@ function CityField({ enabled }: { enabled: boolean }) {
 
   return (
     <div className="relative">
-      <Field label="Город" trailingIcon={enabled ? SearchIcon : undefined}>
-        <input
-          className="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))] pr-8"
-          value={state.delivery.city}
-          autoComplete="address-level2"
-          onChange={(e) => onChange(e.target.value)}
-          onFocus={() => suggestions.length > 0 && setOpen(true)}
-          onBlur={() => setTimeout(() => setOpen(false), 200)}
-        />
-      </Field>
+      <FloatingField
+        label="Город"
+        autoComplete="address-level2"
+        value={state.delivery.city}
+        onChange={onChange}
+        onFocus={() => suggestions.length > 0 && setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 200)}
+        trailingIcon={enabled ? SearchIcon : undefined}
+      />
       {open && suggestions.length > 0 && (
         <ul className="absolute z-10 left-0 right-0 top-full mt-1 bg-[rgb(var(--color-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] max-h-60 overflow-auto">
           {suggestions.map((s, i) => (
@@ -173,15 +154,14 @@ function AddressField({ enabled, cityFiasId }: { enabled: boolean; cityFiasId?: 
 
   return (
     <div className="relative">
-      <Field label="Полный адрес" trailingIcon={enabled ? SearchIcon : undefined}>
-        <input
-          className="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))] pr-8"
-          value={state.delivery.address}
-          autoComplete="street-address"
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={() => setTimeout(() => setOpen(false), 200)}
-        />
-      </Field>
+      <FloatingField
+        label="Полный адрес"
+        autoComplete="street-address"
+        value={state.delivery.address}
+        onChange={onChange}
+        onBlur={() => setTimeout(() => setOpen(false), 200)}
+        trailingIcon={enabled ? SearchIcon : undefined}
+      />
       {open && suggestions.length > 0 && (
         <ul className="absolute z-10 left-0 right-0 top-full mt-1 bg-[rgb(var(--color-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] max-h-60 overflow-auto">
           {suggestions.map((s, i) => (

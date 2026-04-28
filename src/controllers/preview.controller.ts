@@ -41,15 +41,14 @@ export class PreviewController {
     @Query('productId') productIdOverride: string | undefined,
     @Res() res: Response,
   ): Promise<void> {
-    // Normalize page identifier: pagesData uses bare keys (`home`,
-    // `checkout`, `cart`, `account`, `policies`), but the constructor sends:
-    //   * leading-slashed paths   '/checkout'        → 'checkout'
-    //   * page-prefixed ids       'page-checkout'    → 'checkout'
-    //   * empty / '/'             ''                 → 'home'
+    // pagesData uses inconsistent keys depending on migration:
+    //   * 'home', 'checkout', 'cart' (live storefront uses these)
+    //   * 'page-product', 'page-checkout' (constructor sends these)
+    // We try the input as-is, then both prefix variants. extractPageBlocks
+    // accepts the resolved key.
     const normalizedPage = (() => {
-      let v = (page ?? 'home').replace(/^\/+|\/+$/g, '');
-      if (v.startsWith('page-')) v = v.slice('page-'.length);
-      return v === '' ? 'home' : v;
+      const trimmed = (page ?? 'home').replace(/^\/+|\/+$/g, '');
+      return trimmed === '' ? 'home' : trimmed;
     })();
     this.logger.log(
       `[preview] siteId=${siteId} page=${page}→${normalizedPage} productIdOverride=${productIdOverride ?? 'NONE'}`,
@@ -142,7 +141,21 @@ export class PreviewController {
     productIdOverride?: string,
   ): Array<{ type: string; props: Record<string, unknown> }> | null {
     const pagesData = (data.pagesData ?? {}) as Record<string, unknown>;
-    const pageData = pagesData[page] as Record<string, unknown> | undefined;
+    // Resolve page key with fallback variants. Constructor sends page-product,
+    // page-checkout (with page- prefix), but live storefront keys some pages
+    // bare (home, cart, account). Try both forms in order.
+    const candidates = [
+      page,
+      page.startsWith('page-') ? page.slice('page-'.length) : `page-${page}`,
+    ];
+    let pageData: Record<string, unknown> | undefined;
+    for (const key of candidates) {
+      const found = pagesData[key];
+      if (found && typeof found === 'object') {
+        pageData = found as Record<string, unknown>;
+        break;
+      }
+    }
     if (!pageData) return null;
     const raw = pageData.content;
     let parsed: unknown;

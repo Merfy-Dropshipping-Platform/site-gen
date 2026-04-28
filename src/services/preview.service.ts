@@ -189,7 +189,8 @@ export class PreviewService {
    * each block's HTML, and the preview nav agent installer.
    */
   async renderPreviewPage(input: RenderPreviewPageInput): Promise<string> {
-    const isCheckout = input.page === 'checkout';
+    const pageKey = input.page ?? 'home';
+    const isCheckout = pageKey === 'checkout' || pageKey === 'page-checkout';
     let bodyHtml: string;
 
     if (isCheckout) {

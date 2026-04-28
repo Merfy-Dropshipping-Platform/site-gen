@@ -36,7 +36,26 @@
     "--cart-type": "drawer",
     "--card-style": "standard",
     "--card-alignment": "left",
-    "--color-error": "252 165 165"
+    "--color-error": "252 165 165",
+    "--color-input-bg": "255 255 255",
+    "--color-input-border": "153 153 153",
+    "--color-input-label": "153 153 153",
+    "--color-input-placeholder": "153 153 153",
+    "--color-link": "0 0 0",
+    "--color-accent-fg": "255 255 255",
+    "--color-accent-2": "58 58 58",
+    "--color-border": "153 153 153",
+    "--checkout-form-col-w": "652px",
+    "--checkout-summary-col-w": "884px",
+    "--checkout-gap": "84px",
+    "--checkout-side-pad": "300px",
+    "--size-checkout-brand": "24px",
+    "--size-checkout-brand-image": "32px",
+    "--size-h2": "20px",
+    "--size-h3": "16px",
+    "--size-body": "16px",
+    "--size-small": "14px",
+    "--size-tiny": "12px"
   },
 
   "blockDefaults": {

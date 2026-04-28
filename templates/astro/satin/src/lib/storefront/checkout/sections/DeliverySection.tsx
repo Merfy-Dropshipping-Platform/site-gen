@@ -76,7 +76,7 @@ export function DeliverySection(props: DeliverySectionProps) {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="relative flex flex-col bg-[rgb(var(--color-input-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 py-2">
+    <div className="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-4 h-14">
       <label className="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label))]">{label}</label>
       {children}
     </div>

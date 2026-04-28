@@ -39,10 +39,10 @@ export function PaymentSection(props: PaymentSectionProps) {
           return (
             <div key={m.key} className="flex flex-col">
               <label
-                className={`flex items-center gap-3 px-3 py-3 border rounded-[var(--radius-input)] cursor-pointer ${
+                className={`flex items-center gap-3 px-4 py-4 border rounded-[var(--radius-input)] cursor-pointer transition-colors ${
                   selected
-                    ? 'border-[rgb(var(--color-accent))] bg-[rgb(var(--color-accent)/.04)]'
-                    : 'border-[rgb(var(--color-input-border))]'
+                    ? 'border-[rgb(var(--color-accent))]'
+                    : 'border-[rgb(var(--color-input-border))] hover:border-[rgb(var(--color-text)/.4)]'
                 }`}
               >
                 <input
@@ -50,8 +50,19 @@ export function PaymentSection(props: PaymentSectionProps) {
                   name="payment-method"
                   checked={selected}
                   onChange={() => dispatch({ type: 'SET_PAYMENT_METHOD', method: m.key })}
+                  className="sr-only"
                 />
+                <span
+                  className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border ${
+                    selected ? 'border-[rgb(var(--color-accent))]' : 'border-[rgb(var(--color-input-border))]'
+                  }`}
+                >
+                  {selected && (
+                    <span className="h-2.5 w-2.5 rounded-full bg-[rgb(var(--color-accent))]" />
+                  )}
+                </span>
                 <span className="flex-1 text-[length:var(--size-body)] text-[rgb(var(--color-text))]">{m.label}</span>
+                <PaymentBrand methodKey={m.key} />
               </label>
               {m.key === 'bank_card' && selected && (
                 <CardForm
@@ -67,6 +78,49 @@ export function PaymentSection(props: PaymentSectionProps) {
         })}
     </div>
   );
+}
+
+function PaymentBrand({ methodKey }: { methodKey: PaymentMethodKey }) {
+  switch (methodKey) {
+    case 'sbp':
+      return (
+        <span aria-hidden className="flex items-center gap-0.5 leading-none">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <rect x="0" y="0" width="9" height="9" fill="#5B57A2" />
+            <rect x="13" y="0" width="9" height="9" fill="#1F9F4B" />
+            <rect x="0" y="13" width="9" height="9" fill="#E5202E" />
+            <rect x="13" y="13" width="9" height="9" fill="#F89C1C" />
+          </svg>
+        </span>
+      );
+    case 'sberbank':
+      return (
+        <span
+          aria-hidden
+          className="inline-flex items-center gap-1 rounded-full bg-[#21A038] px-2.5 py-1 text-[11px] font-semibold text-white"
+        >
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="6.5" stroke="white" strokeWidth="1.6" />
+            <path d="M11.5 5.5l-4 4-2-2" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Pay
+        </span>
+      );
+    case 'tinkoff_bank':
+      return (
+        <span
+          aria-hidden
+          className="inline-flex items-center rounded-full bg-black px-2.5 py-1 text-[11px] font-semibold tracking-wider text-white"
+        >
+          <span className="mr-1 inline-flex h-3 w-3 items-center justify-center rounded-sm bg-[#FFDD2D] text-[8px] font-bold text-black">
+            T
+          </span>
+          PAY
+        </span>
+      );
+    default:
+      return null;
+  }
 }
 
 function CardForm({
@@ -136,8 +190,11 @@ function CardForm({
         </CardField>
       )}
       {cardForm.warningText && (
-        <p className="mt-2 flex items-start gap-2 text-[length:var(--size-small)] text-[rgb(var(--color-muted))]">
-          <span aria-hidden>⚠</span>
+        <p className="mt-1 flex items-center gap-2 text-[length:var(--size-small)] text-[rgb(var(--color-muted))]">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden className="flex-shrink-0">
+            <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.2" />
+            <path d="M8 7v4M8 5v.01" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+          </svg>
           <span>{cardForm.warningText}</span>
         </p>
       )}
@@ -147,7 +204,7 @@ function CardForm({
 
 function CardField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col bg-[rgb(var(--color-input-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 py-2">
+    <div className="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-4 h-14">
       <label className="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label))]">{label}</label>
       {children}
     </div>

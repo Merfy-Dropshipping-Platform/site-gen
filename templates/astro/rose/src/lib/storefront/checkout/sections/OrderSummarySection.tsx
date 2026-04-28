@@ -44,11 +44,9 @@ export function OrderSummarySection(props: OrderSummarySectionProps) {
             className={`${imgSize} rounded-[var(--radius-card)] bg-[rgb(var(--color-input-bg))] flex-shrink-0 relative overflow-hidden`}
             style={item.imageUrl ? { backgroundImage: `url(${item.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
           >
-            {item.quantity > 1 && (
-              <span className="absolute -top-1 -right-1 bg-[rgb(var(--color-text))] text-[rgb(var(--color-bg))] text-[length:var(--size-tiny)] w-5 h-5 rounded-full flex items-center justify-center">
-                {item.quantity}
-              </span>
-            )}
+            <span className="absolute top-2 left-2 bg-[rgb(var(--color-text))] text-[rgb(var(--color-bg))] text-[length:var(--size-tiny)] font-medium w-5 h-5 rounded-full flex items-center justify-center leading-none">
+              {item.quantity}
+            </span>
           </div>
           <div className="flex-1 flex flex-col gap-1">
             <div className="flex items-center gap-2">
@@ -84,33 +82,21 @@ export function OrderSummarySection(props: OrderSummarySectionProps) {
       ))}
 
       {props.promoToggle.enabled && (
-        <div className="mt-2">
-          {!promoOpen ? (
-            <button
-              type="button"
-              className="text-[length:var(--size-body)] text-[rgb(var(--color-text))] underline"
-              onClick={() => setPromoOpen(true)}
-            >
-              {props.promoToggle.label}
-            </button>
-          ) : (
-            <div className="flex items-center gap-2 px-3 py-2 border border-dashed border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)]">
-              <input
-                className="flex-1 bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]"
-                placeholder="MERFY10"
-                value={state.promoCode}
-                onChange={(e) => dispatch({ type: 'SET_PROMO_CODE', code: e.target.value })}
-              />
-              <button
-                type="button"
-                disabled={promoApplying || !state.promoCode}
-                className="px-3 py-1.5 bg-[rgb(var(--color-accent))] text-[rgb(var(--color-accent-fg))] rounded-[var(--radius-button)] text-[length:var(--size-small)] disabled:opacity-50"
-                onClick={applyPromo}
-              >
-                {promoApplying ? '…' : props.promoToggle.applyButtonText}
-              </button>
-            </div>
-          )}
+        <div className="mt-2 flex items-stretch h-14 border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] overflow-hidden bg-[rgb(var(--color-input-bg))]">
+          <input
+            className="flex-1 bg-transparent outline-none px-4 text-[length:var(--size-body)] text-[rgb(var(--color-text))] placeholder:text-[rgb(var(--color-input-placeholder))]"
+            placeholder={props.promoToggle.label}
+            value={state.promoCode}
+            onChange={(e) => dispatch({ type: 'SET_PROMO_CODE', code: e.target.value })}
+          />
+          <button
+            type="button"
+            disabled={promoApplying || !state.promoCode}
+            className="px-6 bg-[rgb(var(--color-accent))] text-[rgb(var(--color-accent-fg))] text-[length:var(--size-body)] disabled:opacity-50"
+            onClick={applyPromo}
+          >
+            {promoApplying ? '…' : props.promoToggle.applyButtonText}
+          </button>
         </div>
       )}
     </div>

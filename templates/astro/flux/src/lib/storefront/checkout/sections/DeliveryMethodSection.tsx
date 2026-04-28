@@ -77,10 +77,10 @@ export function DeliveryMethodSection(props: DeliveryMethodSectionProps) {
         return (
           <label
             key={id}
-            className={`flex items-start gap-3 px-3 py-3 border rounded-[var(--radius-input)] cursor-pointer ${
+            className={`block px-4 py-4 border rounded-[var(--radius-input)] cursor-pointer transition-colors ${
               selected
-                ? 'border-[rgb(var(--color-accent))] bg-[rgb(var(--color-accent)/.04)]'
-                : 'border-[rgb(var(--color-input-border))]'
+                ? 'border-[rgb(var(--color-accent))]'
+                : 'border-[rgb(var(--color-input-border))] hover:border-[rgb(var(--color-text)/.4)]'
             }`}
           >
             <input
@@ -88,17 +88,15 @@ export function DeliveryMethodSection(props: DeliveryMethodSectionProps) {
               name="delivery-method"
               checked={selected}
               onChange={() => select(c)}
-              className="mt-1"
+              className="sr-only"
             />
-            <div className="flex-1">
-              <div className="flex items-center justify-between text-[length:var(--size-body)] text-[rgb(var(--color-text))]">
-                <span>{c.label}</span>
-                <span>{c.priceCents === 0 ? 'Бесплатно' : formatRub(c.priceCents)}</span>
-              </div>
-              {c.etaText && (
-                <div className="text-[length:var(--size-small)] text-[rgb(var(--color-muted))]">{c.etaText}</div>
-              )}
+            <div className="flex items-center justify-between gap-3 text-[length:var(--size-body)] text-[rgb(var(--color-text))]">
+              <span>{c.label}</span>
+              <span>{c.priceCents === 0 ? 'Бесплатно' : formatRub(c.priceCents)}</span>
             </div>
+            {c.etaText && (
+              <div className="mt-1 text-[length:var(--size-small)] text-[rgb(var(--color-muted))]">{c.etaText}</div>
+            )}
           </label>
         );
       })}

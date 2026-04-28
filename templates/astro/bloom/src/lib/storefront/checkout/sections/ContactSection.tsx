@@ -14,7 +14,7 @@ export function ContactSection(props: ContactSectionProps) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <div className="relative flex flex-col bg-[rgb(var(--color-input-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 py-2">
+      <div className="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-4 h-14">
         <label className="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label))]" htmlFor="email">
           {props.emailLabel}
         </label>
@@ -28,7 +28,7 @@ export function ContactSection(props: ContactSectionProps) {
           onChange={(e) => dispatch({ type: 'SET_CONTACT_FIELD', field: 'email', value: e.target.value })}
         />
       </div>
-      <div className="relative flex flex-col bg-[rgb(var(--color-input-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 py-2">
+      <div className="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-4 h-14">
         <label className="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label))]" htmlFor="phone">
           {props.phoneLabel}
         </label>

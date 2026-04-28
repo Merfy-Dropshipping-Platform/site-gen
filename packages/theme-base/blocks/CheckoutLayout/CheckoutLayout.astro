@@ -15,15 +15,15 @@ const {
   padding,
 } = Astro.props as Props;
 
-// Figma 1:13398 design hints (1920px desktop): form 652px, summary 884px.
-// On real-world viewports (1280–1920) we constrain inside max-w-1440 with
-// reasonable side-pad (clamp). Removes the 300px-each-side that pushed the
-// content past viewport edge and caused horizontal scroll on 1440 monitors.
+// Figma 1:13398 (Rose 1920): form 652, gap 84, summary 884, side-pad 300.
+// Grid template uses minmax(min, fixed) per column so on tight viewports
+// (1280-1440) columns shrink to their min and avoid horizontal scroll;
+// on 1920+ they reach the design widths and side-pad 1fr columns absorb
+// extra space so summary stays full-bleed to right.
 const cssVars = [
   `--checkout-form-col-w:${formColumnWidth}px`,
   `--checkout-summary-col-w:${summaryColumnWidth}px`,
   `--checkout-gap:${gap}px`,
-  `--checkout-side-pad:clamp(16px, 4vw, 80px)`,
 ].join('; ');
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
 const inlineStyle = `${paddingStyle}; ${cssVars}`;

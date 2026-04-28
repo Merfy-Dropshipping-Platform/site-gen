@@ -99,7 +99,7 @@ export function OrderSummarySection(props: OrderSummarySectionProps) {
           <button
             type="button"
             disabled={promoApplying || !state.promoCode}
-            className="px-3 bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] text-[length:var(--size-small)] rounded-[var(--radius-button)] disabled:opacity-50"
+            className="px-3 bg-[rgb(var(--color-button-bg))]! text-[rgb(var(--color-button-text))]! text-[length:var(--size-small)] rounded-[var(--radius-button)] disabled:opacity-50"
             onClick={applyPromo}
           >
             {promoApplying ? '…' : props.promoToggle.applyButtonText}

@@ -6,5 +6,6 @@ export const CheckoutOrderSummaryClasses = {
   promo: 'mt-6 flex items-stretch h-14 border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] overflow-hidden bg-[rgb(var(--color-input-bg))] p-1.5 pl-3',
   promoLabel: 'flex-1 flex items-center text-[length:var(--size-body)] text-[rgb(var(--color-input-placeholder))]',
   // Use button-bg/button-text (always emitted by theme generator) — accent vars are missing from current scheme CSS.
-  promoApply: 'px-3 bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] text-[length:var(--size-small)] rounded-[var(--radius-button)]',
+  // Trailing `!` forces important to beat Tailwind preflight `button,[type=submit]{background-color:#0000}`.
+  promoApply: 'px-3 bg-[rgb(var(--color-button-bg))]! text-[rgb(var(--color-button-text))]! text-[length:var(--size-small)] rounded-[var(--radius-button)]',
 } as const;

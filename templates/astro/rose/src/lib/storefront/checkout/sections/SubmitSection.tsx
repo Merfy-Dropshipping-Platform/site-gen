@@ -15,12 +15,12 @@ export function SubmitSection(props: SubmitSectionProps) {
   const totals = computeTotals(state);
 
   // Use --color-button-bg/button-text — accent tokens are missing from theme generator output.
+  // Trailing `!` forces important so we beat the Tailwind preflight rule
+  // `button,[type=submit]{background-color:#0000}` that wins by source order.
   const cls =
     props.buttonStyle === 'outline'
-      ? 'w-full h-14 bg-transparent text-[rgb(var(--color-text))] border-2 border-[rgb(var(--color-text))] rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[length:var(--size-body)] disabled:opacity-50'
-      : props.buttonStyle === 'gradient'
-        ? 'w-full h-14 bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[length:var(--size-body)] disabled:opacity-50'
-        : 'w-full h-14 bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[length:var(--size-body)] disabled:opacity-50';
+      ? 'w-full h-14 bg-transparent! text-[rgb(var(--color-text))] border-2 border-[rgb(var(--color-text))] rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[length:var(--size-body)] disabled:opacity-50'
+      : 'w-full h-14 bg-[rgb(var(--color-button-bg))]! text-[rgb(var(--color-button-text))]! rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[length:var(--size-body)] disabled:opacity-50';
 
   const text = state.submitting ? props.loadingText : props.buttonText.replace('{total}', formatRub(totals.totalCents));
 

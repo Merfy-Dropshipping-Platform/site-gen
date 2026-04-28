@@ -77,7 +77,7 @@ export function DeliveryMethodSection(props: DeliveryMethodSectionProps) {
         return (
           <label
             key={id}
-            className={`block px-4 py-4 border rounded-[var(--radius-input)] cursor-pointer transition-colors ${
+            className={`flex flex-col justify-center h-[60px] px-3 border rounded-[var(--radius-input)] cursor-pointer transition-colors ${
               selected
                 ? 'border-[rgb(var(--color-accent))]'
                 : 'border-[rgb(var(--color-input-border))] hover:border-[rgb(var(--color-text)/.4)]'
@@ -90,12 +90,12 @@ export function DeliveryMethodSection(props: DeliveryMethodSectionProps) {
               onChange={() => select(c)}
               className="sr-only"
             />
-            <div className="flex items-center justify-between gap-3 text-[length:var(--size-body)] text-[rgb(var(--color-text))]">
-              <span>{c.label}</span>
-              <span>{c.priceCents === 0 ? 'Бесплатно' : formatRub(c.priceCents)}</span>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[length:var(--size-small)] text-[rgb(var(--color-text))]">{c.label}</span>
+              <span className="text-[length:var(--size-tiny)] text-[rgb(var(--color-text))]">{c.priceCents === 0 ? 'Бесплатно' : formatRub(c.priceCents)}</span>
             </div>
             {c.etaText && (
-              <div className="mt-1 text-[length:var(--size-small)] text-[rgb(var(--color-muted))]">{c.etaText}</div>
+              <div className="mt-0.5 text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]">{c.etaText}</div>
             )}
           </label>
         );

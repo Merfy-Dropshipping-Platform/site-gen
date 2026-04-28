@@ -39,7 +39,7 @@ export function PaymentSection(props: PaymentSectionProps) {
           return (
             <div key={m.key} className="flex flex-col">
               <label
-                className={`flex items-center gap-3 px-4 py-4 border rounded-[var(--radius-input)] cursor-pointer transition-colors ${
+                className={`flex items-center gap-2 px-3 py-5 border rounded-[var(--radius-input)] cursor-pointer transition-colors ${
                   selected
                     ? 'border-[rgb(var(--color-accent))]'
                     : 'border-[rgb(var(--color-input-border))] hover:border-[rgb(var(--color-text)/.4)]'
@@ -61,7 +61,7 @@ export function PaymentSection(props: PaymentSectionProps) {
                     <span className="h-2.5 w-2.5 rounded-full bg-[rgb(var(--color-accent))]" />
                   )}
                 </span>
-                <span className="flex-1 text-[length:var(--size-body)] text-[rgb(var(--color-text))]">{m.label}</span>
+                <span className="flex-1 text-[length:var(--size-small)] text-[rgb(var(--color-text))]">{m.label}</span>
                 <PaymentBrand methodKey={m.key} />
               </label>
               {m.key === 'bank_card' && selected && (
@@ -137,7 +137,7 @@ function CardForm({
   sdkFailed: boolean;
 }) {
   return (
-    <div className="mt-3 grid grid-cols-1 gap-2">
+    <div className="mt-4 grid grid-cols-1 gap-4">
       {sdkFailed && (
         <p className="text-[length:var(--size-small)] text-[rgb(var(--color-error))]">
           Не удалось загрузить платёжный модуль. Обновите страницу.
@@ -156,7 +156,7 @@ function CardForm({
           onChange={(e) => setCard((c) => ({ ...c, number: e.target.value }))}
         />
       </CardField>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-4">
         <CardField label="Срок действия">
           <input
             className="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]"

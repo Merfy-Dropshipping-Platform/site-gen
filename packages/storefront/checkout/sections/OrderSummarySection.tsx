@@ -14,8 +14,9 @@ export function OrderSummarySection(props: OrderSummarySectionProps) {
   const [promoOpen, setPromoOpen] = useState(false);
   const [promoApplying, setPromoApplying] = useState(false);
 
+  // Per Figma 1:13403 — items always 120×120 (compact и expanded → одинаковые на десктопе).
   const imgSize =
-    props.itemImageSize === 'expanded' ? 'w-[120px] h-[120px]' : 'w-24 h-24';
+    props.itemImageSize === 'expanded' ? 'w-[120px] h-[120px]' : 'w-[120px] h-[120px]';
 
   const applyPromo = async () => {
     if (!state.promoCode || !state.cartId) return;
@@ -37,9 +38,9 @@ export function OrderSummarySection(props: OrderSummarySectionProps) {
   };
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-6">
       {state.items.map((item) => (
-        <div key={item.id} className="flex items-start gap-3">
+        <div key={item.id} className="flex items-start gap-6">
           <div
             className={`${imgSize} rounded-[var(--radius-card)] bg-[rgb(var(--color-input-bg))] flex-shrink-0 relative overflow-hidden`}
             style={item.imageUrl ? { backgroundImage: `url(${item.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
@@ -48,7 +49,7 @@ export function OrderSummarySection(props: OrderSummarySectionProps) {
               {item.quantity}
             </span>
           </div>
-          <div className="flex-1 flex flex-col gap-1">
+          <div className="flex-1 flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <span className="[font-family:var(--font-body)] text-[length:var(--size-body)] text-[rgb(var(--color-text))]">{item.name}</span>
               {props.bogoBadge && item.isBonus && (
@@ -58,22 +59,22 @@ export function OrderSummarySection(props: OrderSummarySectionProps) {
               )}
             </div>
             {item.variants && (
-              <div className="flex flex-col gap-0.5 text-[length:var(--size-small)] text-[rgb(var(--color-muted))]">
+              <div className="flex flex-col gap-1 text-[length:var(--size-small)] text-[rgb(var(--color-muted))]">
                 {Object.entries(item.variants).map(([k, v]) => (
-                  <div key={k}>
-                    {props.showVariantLabels && <span>{k}: </span>}
+                  <div key={k} className="flex gap-1">
+                    {props.showVariantLabels && <span>{k}:</span>}
                     <span className="text-[rgb(var(--color-text))]">{v}</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
-          <div className="flex flex-col items-end">
-            <span className="[font-family:var(--font-body)] text-[length:var(--size-body)] text-[rgb(var(--color-text))] font-semibold">
+          <div className="flex flex-col items-end gap-0.5">
+            <span className="[font-family:var(--font-body)] text-[length:var(--size-body)] text-[rgb(var(--color-text))]">
               {item.isBonus ? '0₽' : formatRub(item.unitPriceCents)}
             </span>
             {props.showCompareAtPrice && item.compareAtPriceCents && !item.isBonus && (
-              <span className="text-[length:var(--size-small)] text-[rgb(var(--color-muted))] line-through">
+              <span className="text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))] line-through">
                 {formatRub(item.compareAtPriceCents)}
               </span>
             )}
@@ -82,9 +83,9 @@ export function OrderSummarySection(props: OrderSummarySectionProps) {
       ))}
 
       {props.promoToggle.enabled && (
-        <div className="mt-2 flex items-stretch h-14 border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] overflow-hidden bg-[rgb(var(--color-input-bg))]">
+        <div className="mt-12 flex items-stretch h-14 border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] overflow-hidden bg-[rgb(var(--color-input-bg))] p-1.5 pl-3">
           <input
-            className="flex-1 bg-transparent outline-none px-4 text-[length:var(--size-body)] text-[rgb(var(--color-text))] placeholder:text-[rgb(var(--color-input-placeholder))]"
+            className="flex-1 bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))] placeholder:text-[rgb(var(--color-input-placeholder))]"
             placeholder={props.promoToggle.label}
             value={state.promoCode}
             onChange={(e) => dispatch({ type: 'SET_PROMO_CODE', code: e.target.value })}
@@ -92,7 +93,7 @@ export function OrderSummarySection(props: OrderSummarySectionProps) {
           <button
             type="button"
             disabled={promoApplying || !state.promoCode}
-            className="px-6 bg-[rgb(var(--color-accent))] text-[rgb(var(--color-accent-fg))] text-[length:var(--size-body)] disabled:opacity-50"
+            className="px-3 bg-[rgb(var(--color-accent))] text-[rgb(var(--color-accent-fg))] text-[length:var(--size-small)] rounded-[var(--radius-button)] disabled:opacity-50"
             onClick={applyPromo}
           >
             {promoApplying ? '…' : props.promoToggle.applyButtonText}

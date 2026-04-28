@@ -74,14 +74,26 @@ export function DeliverySection(props: DeliverySectionProps) {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children, trailingIcon }: { label: string; children: React.ReactNode; trailingIcon?: React.ReactNode }) {
   return (
     <div className="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-14">
       <label className="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label))]">{label}</label>
       {children}
+      {trailingIcon && (
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[rgb(var(--color-input-placeholder))] pointer-events-none">
+          {trailingIcon}
+        </span>
+      )}
     </div>
   );
 }
+
+const SearchIcon = (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <circle cx="11" cy="11" r="7" />
+    <path d="M21 21l-4.35-4.35" />
+  </svg>
+);
 
 function CityField({ enabled }: { enabled: boolean }) {
   const { state, dispatch } = useCheckoutContext();
@@ -109,9 +121,9 @@ function CityField({ enabled }: { enabled: boolean }) {
 
   return (
     <div className="relative">
-      <Field label="Город">
+      <Field label="Город" trailingIcon={enabled ? SearchIcon : undefined}>
         <input
-          className="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]"
+          className="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))] pr-8"
           value={state.delivery.city}
           autoComplete="address-level2"
           onChange={(e) => onChange(e.target.value)}
@@ -161,9 +173,9 @@ function AddressField({ enabled, cityFiasId }: { enabled: boolean; cityFiasId?: 
 
   return (
     <div className="relative">
-      <Field label="Полный адрес">
+      <Field label="Полный адрес" trailingIcon={enabled ? SearchIcon : undefined}>
         <input
-          className="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]"
+          className="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))] pr-8"
           value={state.delivery.address}
           autoComplete="street-address"
           onChange={(e) => onChange(e.target.value)}

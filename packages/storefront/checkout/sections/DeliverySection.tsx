@@ -68,9 +68,8 @@ export function DeliverySection(props: DeliverySectionProps) {
             onChange={(v) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'fullName', value: v })}
           />
         ))}
-      <CityField enabled={props.cityDadata} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <AddressField enabled={props.addressDadata} cityFiasId={state.delivery.cityFiasId} />
+        <AddressField enabled={props.addressDadata} />
         <FloatingField
           label="Индекс"
           autoComplete="postal-code"
@@ -176,59 +175,7 @@ function CountrySelect({ value, onChange }: { value: string; onChange: (v: strin
   );
 }
 
-function CityField({ enabled }: { enabled: boolean }) {
-  const { state, dispatch } = useCheckoutContext();
-  const { suggestions, suggest, clear } = useDadata();
-  const [open, setOpen] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const onChange = (val: string) => {
-    dispatch({ type: 'SET_DELIVERY_FIELD', field: 'city', value: val });
-    if (!enabled) return;
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      void suggest('city', val);
-      setOpen(true);
-    }, 300);
-  };
-
-  const pick = (s: DadataSuggestion) => {
-    dispatch({ type: 'SET_DELIVERY_FIELD', field: 'city', value: s.value });
-    if (s.data.fias_id) dispatch({ type: 'SET_DELIVERY_FIELD', field: 'cityFiasId', value: s.data.fias_id });
-    if (s.data.postal_code) dispatch({ type: 'SET_DELIVERY_FIELD', field: 'postalCode', value: s.data.postal_code });
-    setOpen(false);
-    clear();
-  };
-
-  return (
-    <div className="relative">
-      <FloatingField
-        label="Город"
-        autoComplete="address-level2"
-        value={state.delivery.city}
-        onChange={onChange}
-        onFocus={() => suggestions.length > 0 && setOpen(true)}
-        onBlur={() => setTimeout(() => setOpen(false), 200)}
-        trailingIcon={enabled ? SearchIcon : undefined}
-      />
-      {open && suggestions.length > 0 && (
-        <ul className="absolute z-10 left-0 right-0 top-full mt-1 bg-[rgb(var(--color-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] max-h-60 overflow-auto">
-          {suggestions.map((s, i) => (
-            <li
-              key={i}
-              className="px-3 py-2 cursor-pointer hover:bg-[rgb(var(--color-input-bg))] text-[length:var(--size-body)] text-[rgb(var(--color-text))]"
-              onMouseDown={() => pick(s)}
-            >
-              {s.value}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-function AddressField({ enabled, cityFiasId }: { enabled: boolean; cityFiasId?: string }) {
+function AddressField({ enabled }: { enabled: boolean }) {
   const { state, dispatch } = useCheckoutContext();
   const { suggestions, suggest, clear } = useDadata();
   const [open, setOpen] = useState(false);
@@ -239,13 +186,17 @@ function AddressField({ enabled, cityFiasId }: { enabled: boolean; cityFiasId?: 
     if (!enabled) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      void suggest('address', val, { city: state.delivery.city });
+      void suggest('address', val);
       setOpen(true);
     }, 300);
   };
 
   const pick = (s: DadataSuggestion) => {
     dispatch({ type: 'SET_DELIVERY_FIELD', field: 'address', value: s.value });
+    // City info comes back inside the address suggestion — populate so CDek
+    // delivery cost calculation has what it needs without a separate input.
+    if (s.data.city) dispatch({ type: 'SET_DELIVERY_FIELD', field: 'city', value: s.data.city });
+    if (s.data.fias_id) dispatch({ type: 'SET_DELIVERY_FIELD', field: 'cityFiasId', value: s.data.fias_id });
     if (s.data.postal_code) dispatch({ type: 'SET_DELIVERY_FIELD', field: 'postalCode', value: s.data.postal_code });
     setOpen(false);
     clear();

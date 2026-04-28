@@ -39,15 +39,6 @@ const propsJson = JSON.stringify({ heading, country, nameField, cityDadata, addr
         <input class={C.input} name="fullName" autocomplete="name" />
       </div>
     ))}
-    <div class={C.field} data-checkout-field="city" data-dadata={String(cityDadata)}>
-      <label class={C.label}>Город</label>
-      <input class={C.input} name="city" autocomplete="address-level2" />
-      {cityDadata && (
-        <span class={C.searchIcon}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
-        </span>
-      )}
-    </div>
     <div class={C.fieldRow2}>
       <div class={C.field} data-checkout-field="address" data-dadata={String(addressDadata)}>
         <label class={C.label}>Полный адрес</label>

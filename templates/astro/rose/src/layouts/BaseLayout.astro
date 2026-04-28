@@ -52,8 +52,12 @@ const favicons = (meta as any)?.favicons ?? {};
         requireCustomerAuth: requireCustomerAuth || false,
       };
     </script>
-    <script type="module" src="/scripts/cart-api.js"></script>
-    <script type="module" src="/scripts/cart-store.js"></script>
+    {/* `is:inline` is REQUIRED here — without it Astro tries to bundle these
+       through Vite, can't resolve `/scripts/...` (public dir, not src) and
+       SILENTLY drops the script tag from the rendered HTML. Result: window.cartStore
+       never gets defined, "Купить сейчас" addItem fails, /checkout shows empty cart. */}
+    <script is:inline type="module" src="/scripts/cart-api.js"></script>
+    <script is:inline type="module" src="/scripts/cart-store.js"></script>
     <script is:inline>
       document.addEventListener('DOMContentLoaded', function() {
         if (window.cartStore && window.cartStore.init) {
@@ -61,7 +65,7 @@ const favicons = (meta as any)?.favicons ?? {};
         }
       });
     </script>
-    <script src="/scripts/cart-drawer.js" defer></script>
+    <script is:inline src="/scripts/cart-drawer.js" defer></script>
   </body>
 </html>
 

@@ -102,3 +102,11 @@ export interface StoreConfig {
   currency: string;
   locale: string;
 }
+
+export type {
+  WishlistItem,
+  HeartButtonProps,
+  WishlistViewProps,
+  WishlistSyncStatus,
+} from './wishlist/contract';
+export { WISHLIST_LIMIT } from './wishlist/contract';

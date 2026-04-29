@@ -195,8 +195,11 @@ function AddressField({ enabled }: { enabled: boolean }) {
     dispatch({ type: 'SET_DELIVERY_FIELD', field: 'address', value: s.value });
     // City info comes back inside the address suggestion — populate so CDek
     // delivery cost calculation has what it needs without a separate input.
+    // Prefer `city_fias_id` (always points at the city) over `fias_id` which
+    // may be the house/street ID and produce an empty tariff list.
     if (s.data.city) dispatch({ type: 'SET_DELIVERY_FIELD', field: 'city', value: s.data.city });
-    if (s.data.fias_id) dispatch({ type: 'SET_DELIVERY_FIELD', field: 'cityFiasId', value: s.data.fias_id });
+    const cityFias = s.data.city_fias_id ?? s.data.fias_id;
+    if (cityFias) dispatch({ type: 'SET_DELIVERY_FIELD', field: 'cityFiasId', value: cityFias });
     if (s.data.postal_code) dispatch({ type: 'SET_DELIVERY_FIELD', field: 'postalCode', value: s.data.postal_code });
     setOpen(false);
     clear();

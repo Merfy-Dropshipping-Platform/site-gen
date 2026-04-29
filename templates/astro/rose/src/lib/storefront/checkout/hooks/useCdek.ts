@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useCheckoutContext, type DeliveryMethodChoice } from '../CheckoutContext';
 
 // Backend response shape of POST /store/carts/:cartId/delivery/calculate?store_id={shopId}
@@ -47,23 +47,38 @@ export function useCdek() {
   const [data, setData] = useState<DeliveryOptionsResponse>(EMPTY);
   const [loading, setLoading] = useState(false);
 
+  // Stable refs so the inner fetch always reads current values without
+  // putting them in fetchTariffs' deps array (otherwise every postal-code
+  // change would re-create the callback and fire a duplicate fetch via the
+  // auto-refetch effect below).
+  const cartIdRef = useRef(state.cartId);
+  const postalCodeRef = useRef(state.delivery.postalCode);
+  cartIdRef.current = state.cartId;
+  postalCodeRef.current = state.delivery.postalCode;
+
   const fetchTariffs = useCallback(
     async (cityFiasId: string, _weightGramsUnused?: number) => {
+      const cartId = cartIdRef.current;
+      const postalCode = postalCodeRef.current;
       // Cart + city are both required server-side. Bail early if either is
       // missing — nothing to calculate.
-      if (!state.cartId || !cityFiasId || !shopId) return;
+      if (!cartId || !cityFiasId || !shopId) return;
       setLoading(true);
       try {
-        const url = `${apiBase}/store/carts/${state.cartId}/delivery/calculate?store_id=${encodeURIComponent(shopId)}`;
+        const url = `${apiBase}/store/carts/${cartId}/delivery/calculate?store_id=${encodeURIComponent(shopId)}`;
         const body: Record<string, string> = { cityFiasId };
-        if (state.delivery.postalCode) body.postalCode = state.delivery.postalCode;
+        if (postalCode) body.postalCode = postalCode;
         const res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
           credentials: 'include',
         });
-        const json = await res.json();
+        if (!res.ok) {
+          setData(EMPTY);
+          return;
+        }
+        const json = await res.json().catch(() => null);
         if (json?.success && json?.data) {
           setData(json.data as DeliveryOptionsResponse);
         } else {
@@ -75,22 +90,33 @@ export function useCdek() {
         setLoading(false);
       }
     },
-    [apiBase, shopId, state.cartId, state.delivery.postalCode],
+    [apiBase, shopId],
   );
 
-  // Auto-refetch whenever the cart or city FIAS changes — keeps options fresh
-  // as the customer types their address.
+  // Auto-refetch whenever the city FIAS changes — keeps options fresh as the
+  // customer types their address. Bail to EMPTY when no FIAS is set yet so a
+  // previous response isn't shown after the user clears the field.
   useEffect(() => {
-    if (state.delivery.cityFiasId) void fetchTariffs(state.delivery.cityFiasId);
+    if (state.delivery.cityFiasId) {
+      void fetchTariffs(state.delivery.cityFiasId);
+    } else {
+      setData(EMPTY);
+    }
   }, [state.delivery.cityFiasId, fetchTariffs]);
 
   // Build a unified DeliveryMethodChoice list from all sources. Order matches
   // Figma 1:13501 grouping: CDEK first, then pickup, then custom profiles.
+  // Defensive fallbacks: arrays default to [] in case backend response is
+  // malformed — render code maps over them so a missing field would otherwise
+  // crash the whole React Island.
+  const safeTariffs = Array.isArray(data.tariffs) ? data.tariffs : [];
+  const safeProfiles = Array.isArray(data.customProfiles) ? data.customProfiles : [];
+
   const choices: DeliveryMethodChoice[] = [
-    ...data.tariffs.map((t) => ({
+    ...safeTariffs.map((t) => ({
       type: t.deliveryMode === 'door' ? ('cdek_door' as const) : ('cdek_pvz' as const),
-      label: t.tariffName,
-      priceCents: t.deliverySumRub * 100,
+      label: t.tariffName ?? 'CDEK',
+      priceCents: Number.isFinite(t.deliverySumRub) ? t.deliverySumRub * 100 : 0,
       etaText:
         t.periodMin === t.periodMax
           ? `${t.periodMin} раб. дн.`
@@ -107,11 +133,11 @@ export function useCdek() {
           },
         ]
       : []),
-    ...data.customProfiles.flatMap((profile) =>
-      profile.tariffs.map((t) => ({
+    ...safeProfiles.flatMap((profile) =>
+      (Array.isArray(profile.tariffs) ? profile.tariffs : []).map((t) => ({
         type: 'custom' as const,
-        label: t.name,
-        priceCents: t.priceCents,
+        label: t.name ?? 'Доставка',
+        priceCents: Number.isFinite(t.priceCents) ? t.priceCents : 0,
         etaText: t.description ?? undefined,
         customId: t.id,
       })),
@@ -121,7 +147,7 @@ export function useCdek() {
   // Legacy export — DeliveryMethodSection still imports `tariffs` for backwards
   // compat. Map back to the old shape so existing rendering code works while
   // we migrate.
-  const tariffs = data.tariffs.map((t) => ({
+  const tariffs = safeTariffs.map((t) => ({
     tariff_code: t.tariffCode,
     tariff_name: t.tariffName,
     delivery_sum: t.deliverySumRub,

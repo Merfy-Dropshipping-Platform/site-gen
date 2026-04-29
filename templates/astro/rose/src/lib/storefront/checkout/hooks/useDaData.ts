@@ -4,6 +4,7 @@ export interface DadataSuggestion {
   value: string;
   data: {
     fias_id?: string;
+    city_fias_id?: string;
     postal_code?: string;
     city?: string;
     region_with_type?: string;

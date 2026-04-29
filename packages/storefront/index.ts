@@ -82,3 +82,6 @@ export type {
   CheckoutContact,
   PaymentMethodKey,
 } from './checkout';
+
+// Wishlist module
+export * from './wishlist';

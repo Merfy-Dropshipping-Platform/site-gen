@@ -15,32 +15,14 @@ const {
 
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
 ---
+{/* CartDrawer placeholder — interactive UI rendered by CartDrawerIsland mounted in Header.astro. */}
 <aside
   class:list={[C.root, C.position[position]]}
   data-puck-component-id={id}
   data-position={position}
   style={paddingStyle}
-  aria-label="Корзина"
+  aria-label="Корзина (mini)"
+  hidden
 >
-  <header class={C.header}>
-    <h2 class={C.heading}>Корзина</h2>
-    <button type="button" class={C.closeBtn} aria-label="Закрыть" data-action="close-cart">×</button>
-  </header>
-
-  <div class={C.items} data-cart-items>
-    {/* Phase 1c: React island populates with real cart state */}
-    <div class={C.empty}>Корзина пуста</div>
-  </div>
-
-  <footer class={C.footer}>
-    <div class={C.total}>
-      <span>Итого</span>
-      <span data-cart-total>0 ₽</span>
-    </div>
-    {showCheckoutButton && (
-      <a href="/checkout" class={C.checkoutBtn}>Оформить заказ</a>
-    )}
-  </footer>
-
-  {/* Phase 1c: React island handles open/close animation + cart updates */}
+  <div id="cart-drawer-island-mount" data-show-checkout={showCheckoutButton ? 'true' : 'false'}></div>
 </aside>

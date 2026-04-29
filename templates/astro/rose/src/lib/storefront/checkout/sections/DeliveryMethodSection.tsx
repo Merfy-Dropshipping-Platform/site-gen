@@ -1,7 +1,9 @@
-import { useEffect, useMemo } from 'react';
 import { useCheckoutContext, formatRub, type DeliveryMethodChoice } from '../CheckoutContext';
 import { useCdek } from '../hooks/useCdek';
 
+// Most props are vestigial now — the unified `useCdek` hook returns CDEK
+// tariffs, pickup, and custom profiles already merged into one `choices` list.
+// We keep the prop signature so existing puckConfig + Astro SSR don't break.
 export interface DeliveryMethodSectionProps {
   heading?: string;
   cdekEnabled: boolean;
@@ -15,16 +17,7 @@ export interface DeliveryMethodSectionProps {
 
 export function DeliveryMethodSection(props: DeliveryMethodSectionProps) {
   const { state, dispatch } = useCheckoutContext();
-  const { tariffs, fetchTariffs } = useCdek();
-
-  const cityFiasId = state.delivery.cityFiasId;
-  const totalWeightG = state.items.reduce((acc, it) => acc + 500 * it.quantity, 0);
-
-  useEffect(() => {
-    if (props.cdekEnabled && cityFiasId) {
-      void fetchTariffs(cityFiasId, totalWeightG);
-    }
-  }, [cityFiasId, totalWeightG, props.cdekEnabled, fetchTariffs]);
+  const { choices, loading } = useCdek();
 
   const subtotalCents = state.items
     .filter((i) => !i.isBonus)
@@ -32,86 +25,80 @@ export function DeliveryMethodSection(props: DeliveryMethodSectionProps) {
   const freeShipping =
     props.freeShippingThresholdCents !== null && subtotalCents >= props.freeShippingThresholdCents;
 
-  const choices = useMemo<DeliveryMethodChoice[]>(() => {
-    const list: DeliveryMethodChoice[] = [];
-    if (props.cdekEnabled) {
-      tariffs.forEach((t) => {
-        list.push({
-          type: 'cdek_door',
-          label: `${props.cdekDoorLabel} — ${t.tariff_name}`,
-          priceCents: freeShipping ? 0 : t.delivery_sum * 100,
-          etaText: `от ${t.period_min} до ${t.period_max} рабочих дней`,
-        });
-      });
-    }
-    if (props.pickupEnabled) {
-      list.push({ type: 'pickup', label: props.pickupLabel, priceCents: 0 });
-    }
-    props.customMethods.forEach((m, i) => {
-      list.push({
-        type: 'custom',
-        label: m.label,
-        priceCents: freeShipping ? 0 : m.priceCents,
-        etaText: m.etaText,
-        customId: `custom-${i}`,
-      });
-    });
-    return list;
-  }, [tariffs, props, freeShipping]);
+  // Apply free-shipping threshold to non-pickup choices (pickup is always 0).
+  const displayChoices = freeShipping
+    ? choices.map((c) => (c.type === 'pickup' ? c : { ...c, priceCents: 0 }))
+    : choices;
 
   const select = (c: DeliveryMethodChoice) => dispatch({ type: 'SET_DELIVERY_METHOD', method: c });
 
   const Heading = () =>
     props.heading ? (
-      <h2 className="mb-4 [font-family:var(--font-body)] text-[length:var(--size-h3)] text-[rgb(var(--color-heading))]">{props.heading}</h2>
+      <h2 className="mb-4 [font-family:var(--font-body)] text-[length:var(--size-h3)] text-[rgb(var(--color-heading))]">
+        {props.heading}
+      </h2>
     ) : null;
 
-  if (choices.length === 0) {
+  // Empty state: city not picked yet, or city picked but no methods returned.
+  if (displayChoices.length === 0) {
+    const message = !state.delivery.cityFiasId
+      ? 'Введите адрес — мы рассчитаем стоимость доставки.'
+      : loading
+      ? 'Считаем варианты доставки…'
+      : 'Для этого города нет доступных вариантов доставки.';
     return (
       <>
         <Heading />
-        <p className="text-[length:var(--size-small)] text-[rgb(var(--color-muted))]">
-          Введите адрес — мы рассчитаем стоимость доставки.
-        </p>
+        <p className="text-[length:var(--size-small)] text-[rgb(var(--color-muted))]">{message}</p>
       </>
     );
   }
 
+  // Per Figma 1:13501 — each row is 60h, 12px horizontal padding, two-line
+  // content (label+price on top, ETA below in muted color), 16px vertical gap.
   return (
     <>
-    <Heading />
-    <div className="flex flex-col gap-4">
-      {choices.map((c, i) => {
-        const id = `dm-${i}`;
-        const selected =
-          state.deliveryMethod?.label === c.label && state.deliveryMethod?.type === c.type;
-        return (
-          <label
-            key={id}
-            className={`flex flex-col justify-center h-[60px] px-3 border rounded-[var(--radius-input)] cursor-pointer transition-colors ${
-              selected
-                ? 'border-[rgb(var(--color-text))]'
-                : 'border-[rgb(var(--color-input-border))] hover:border-[rgb(var(--color-text)/.4)]'
-            }`}
-          >
-            <input
-              type="radio"
-              name="delivery-method"
-              checked={selected}
-              onChange={() => select(c)}
-              className="sr-only"
-            />
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-[length:var(--size-small)] text-[rgb(var(--color-text))]">{c.label}</span>
-              <span className="text-[length:var(--size-tiny)] text-[rgb(var(--color-text))]">{c.priceCents === 0 ? 'Бесплатно' : formatRub(c.priceCents)}</span>
-            </div>
-            {c.etaText && (
-              <div className="mt-0.5 text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]">{c.etaText}</div>
-            )}
-          </label>
-        );
-      })}
-    </div>
+      <Heading />
+      <div className="flex flex-col gap-4">
+        {displayChoices.map((c, i) => {
+          const id = `dm-${c.type}-${c.customId ?? c.label}-${i}`;
+          const selected =
+            state.deliveryMethod?.label === c.label && state.deliveryMethod?.type === c.type;
+          return (
+            <label
+              key={id}
+              htmlFor={id}
+              className={`flex flex-col justify-center min-h-[60px] px-3 py-2 border rounded-[var(--radius-input)] cursor-pointer transition-colors ${
+                selected
+                  ? 'border-[rgb(var(--color-text))]'
+                  : 'border-[rgb(var(--color-input-border))] hover:border-[rgb(var(--color-text)/.4)]'
+              }`}
+            >
+              <input
+                id={id}
+                type="radio"
+                name="delivery-method"
+                checked={selected}
+                onChange={() => select(c)}
+                className="sr-only"
+              />
+              <div className="flex items-center justify-between gap-3">
+                <span className="[font-family:var(--font-body)] text-[length:var(--size-body)] text-[rgb(var(--color-text))]">
+                  {c.label}
+                </span>
+                <span className="[font-family:var(--font-body)] text-[length:var(--size-body)] text-[rgb(var(--color-text))]">
+                  {c.priceCents === 0 ? 'Бесплатно' : formatRub(c.priceCents)}
+                </span>
+              </div>
+              {c.etaText && (
+                <div className="mt-0.5 text-[length:var(--size-small)] text-[rgb(var(--color-muted))]">
+                  {c.etaText}
+                </div>
+              )}
+            </label>
+          );
+        })}
+      </div>
     </>
   );
 }

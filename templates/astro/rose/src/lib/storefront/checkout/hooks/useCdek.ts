@@ -1,74 +1,134 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useCheckoutContext, type DeliveryMethodChoice } from '../CheckoutContext';
 
+// Backend response shape of POST /store/carts/:cartId/delivery/calculate?store_id={shopId}
+// Mirrors api-gateway store.controller.ts → store.service.calculateDelivery output.
 export interface CdekTariff {
-  tariff_code: number;
-  tariff_name: string;
-  delivery_sum: number;
-  period_min: number;
-  period_max: number;
-  delivery_mode: number;
+  tariffCode: number;
+  tariffName: string;
+  deliveryMode: 'door' | 'pickup' | string;
+  deliverySumRub: number;
+  periodMin: number;
+  periodMax: number;
 }
 
-export interface CdekPvz {
-  code: string;
+interface CustomTariff {
+  id: string;
   name: string;
-  address: string;
-  work_time: string;
-  type: string;
+  description: string | null;
+  priceCents: number;
 }
+
+interface CustomProfile {
+  profileId: string;
+  name: string;
+  tariffs: CustomTariff[];
+}
+
+interface DeliveryOptionsResponse {
+  cdekAvailable: boolean;
+  tariffs: CdekTariff[];
+  pickupAvailable: boolean;
+  pickupAddress?: string;
+  pickupNotification?: string;
+  pickupExpectedDate?: string;
+  customProfiles: CustomProfile[];
+}
+
+const EMPTY: DeliveryOptionsResponse = {
+  cdekAvailable: false,
+  tariffs: [],
+  pickupAvailable: false,
+  customProfiles: [],
+};
 
 export function useCdek() {
-  const { apiBase } = useCheckoutContext();
-  const [tariffs, setTariffs] = useState<CdekTariff[]>([]);
-  const [pvz, setPvz] = useState<CdekPvz[]>([]);
+  const { apiBase, shopId, state } = useCheckoutContext();
+  const [data, setData] = useState<DeliveryOptionsResponse>(EMPTY);
   const [loading, setLoading] = useState(false);
 
   const fetchTariffs = useCallback(
-    async (cityFiasId: string, weightGrams: number) => {
+    async (cityFiasId: string, _weightGramsUnused?: number) => {
+      // Cart + city are both required server-side. Bail early if either is
+      // missing — nothing to calculate.
+      if (!state.cartId || !cityFiasId || !shopId) return;
       setLoading(true);
       try {
-        const res = await fetch(`${apiBase}/checkout/cdek-tariffs`, {
+        const url = `${apiBase}/store/carts/${state.cartId}/delivery/calculate?store_id=${encodeURIComponent(shopId)}`;
+        const body: Record<string, string> = { cityFiasId };
+        if (state.delivery.postalCode) body.postalCode = state.delivery.postalCode;
+        const res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cityFiasId, weightGrams }),
+          body: JSON.stringify(body),
           credentials: 'include',
         });
         const json = await res.json();
-        setTariffs((json?.data?.tariffs ?? []) as CdekTariff[]);
+        if (json?.success && json?.data) {
+          setData(json.data as DeliveryOptionsResponse);
+        } else {
+          setData(EMPTY);
+        }
+      } catch {
+        setData(EMPTY);
       } finally {
         setLoading(false);
       }
     },
-    [apiBase],
+    [apiBase, shopId, state.cartId, state.delivery.postalCode],
   );
 
-  const fetchPvz = useCallback(
-    async (cityFiasId: string) => {
-      setLoading(true);
-      try {
-        const res = await fetch(`${apiBase}/checkout/cdek-pvz`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cityFiasId }),
-          credentials: 'include',
-        });
-        const json = await res.json();
-        setPvz((json?.data?.pvz ?? []) as CdekPvz[]);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [apiBase],
-  );
+  // Auto-refetch whenever the cart or city FIAS changes — keeps options fresh
+  // as the customer types their address.
+  useEffect(() => {
+    if (state.delivery.cityFiasId) void fetchTariffs(state.delivery.cityFiasId);
+  }, [state.delivery.cityFiasId, fetchTariffs]);
 
-  const tariffsToChoices = (label: string): DeliveryMethodChoice[] =>
-    tariffs.map((t) => ({
-      type: 'cdek_door',
-      label: `${label} — ${t.tariff_name}`,
-      priceCents: t.delivery_sum * 100,
-      etaText: `от ${t.period_min} до ${t.period_max} рабочих дней`,
-    }));
+  // Build a unified DeliveryMethodChoice list from all sources. Order matches
+  // Figma 1:13501 grouping: CDEK first, then pickup, then custom profiles.
+  const choices: DeliveryMethodChoice[] = [
+    ...data.tariffs.map((t) => ({
+      type: t.deliveryMode === 'door' ? ('cdek_door' as const) : ('cdek_pvz' as const),
+      label: t.tariffName,
+      priceCents: t.deliverySumRub * 100,
+      etaText:
+        t.periodMin === t.periodMax
+          ? `${t.periodMin} раб. дн.`
+          : `от ${t.periodMin} до ${t.periodMax} рабочих дней`,
+    })),
+    ...(data.pickupAvailable
+      ? [
+          {
+            type: 'pickup' as const,
+            label: 'Самовывоз',
+            priceCents: 0,
+            etaText:
+              [data.pickupAddress, data.pickupExpectedDate].filter(Boolean).join(' • ') || undefined,
+          },
+        ]
+      : []),
+    ...data.customProfiles.flatMap((profile) =>
+      profile.tariffs.map((t) => ({
+        type: 'custom' as const,
+        label: t.name,
+        priceCents: t.priceCents,
+        etaText: t.description ?? undefined,
+        customId: t.id,
+      })),
+    ),
+  ];
 
-  return { tariffs, pvz, loading, fetchTariffs, fetchPvz, tariffsToChoices };
+  // Legacy export — DeliveryMethodSection still imports `tariffs` for backwards
+  // compat. Map back to the old shape so existing rendering code works while
+  // we migrate.
+  const tariffs = data.tariffs.map((t) => ({
+    tariff_code: t.tariffCode,
+    tariff_name: t.tariffName,
+    delivery_sum: t.deliverySumRub,
+    period_min: t.periodMin,
+    period_max: t.periodMax,
+    delivery_mode: t.deliveryMode === 'door' ? 1 : 2,
+  }));
+
+  return { tariffs, choices, data, loading, fetchTariffs };
 }

@@ -1,0 +1,366 @@
+---
+import type { HeaderProps } from './Header.puckConfig';
+import { HeaderClasses as C } from './Header.classes';
+import WishlistDrawer from './WishlistDrawer';
+
+interface Props extends HeaderProps {
+  id?: string;
+}
+
+const {
+  id,
+  siteTitle = 'Store',
+  logo,
+  logoPosition = 'top-left',
+  stickiness = 'none',
+  menuType = 'dropdown',
+  navigationLinks = [],
+  actionButtons = { showSearch: true, showCart: true, showProfile: true },
+  colorScheme,
+  padding,
+} = Astro.props as Props;
+
+const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
+const isCenterLeft = logoPosition === 'center-left';
+
+// Treat the seed default `/logo.svg` as "merchant hasn't set a custom logo"
+// and fall through to the styled text logo. The SVG file itself uses
+// `fill="currentColor"` but <img> loads SVGs in an isolated context that
+// doesn't inherit the parent `color`, so the mark renders black on dark
+// schemes. Styled `<span>` matches the constructor's React render, which
+// always uses text and honors --color-heading.
+const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/logo.svg';
+---
+<div class:list={[C.wrapper, C.sticky[stickiness], schemeClass]} data-header-wrapper data-puck-component-id={id}>
+  <header
+    class:list={[C.header, !padding && 'min-h-[64px]']}
+    data-menu-type={menuType}
+    style={paddingStyle}
+  >
+    <nav class:list={[C.nav, !isCenterLeft && C.navJustified]} aria-label="Primary navigation">
+
+      {/* ============ LAYOUT: top-left (default) ============ */}
+      {logoPosition === 'top-left' && (
+        <>
+          {/* Mobile hamburger — Phase 1c: React island handles menu toggle */}
+          <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" class={C.hamburger}>
+            <svg id="menu-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+              <path d="M11 17H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M11 23H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+
+          <div class={C.logoWrap['top-left']}>
+            <a href="/" class={C.logoLink}>
+              {hasCustomLogo ? <img src={logo} alt={siteTitle} class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
+            </a>
+          </div>
+
+          <div class={C.navMenu}>
+            {navigationLinks.map((link) => (
+              <a href={link.href} class={C.navLink}>{link.label}</a>
+            ))}
+          </div>
+
+          <div class={C.actions}>
+            {actionButtons.showSearch && (
+              <button type="button" aria-label="Поиск" class={C.actionSearch} data-action="search">
+                <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+              </button>
+            )}
+            {actionButtons.showCart && (
+              <a href="/cart" id="header-cart-link" class={C.actionCart} aria-label="Корзина" data-action="cart">
+                <svg class="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M18.0295 11.6923C16.8004 11.6923 15.6678 12.3587 15.0708 13.4332C13.8175 15.6892 15.4488 18.4615 18.0295 18.4615H21.9704C24.5511 18.4615 26.1824 15.6892 24.9291 13.4332C24.3321 12.3587 23.1996 11.6923 21.9704 11.6923H18.0295ZM16.6847 14.3298C16.956 13.8414 17.4708 13.5385 18.0295 13.5385H21.9704C22.5291 13.5385 23.0439 13.8414 23.3152 14.3298C23.8849 15.3552 23.1434 16.6154 21.9704 16.6154H18.0295C16.8565 16.6154 16.115 15.3552 16.6847 14.3298Z" fill="currentColor"/>
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M17.2489 8C15.1954 8 13.2924 9.07744 12.2359 10.8383L8.83312 16.5096C8.28797 17.4182 8 18.4579 8 19.5175V26.1538C8 29.3826 10.6174 32 13.8462 32H26.1538C29.3826 32 32 29.3826 32 26.1538V19.5175C32 18.4579 31.712 17.4182 31.1669 16.5096L27.7641 10.8383C26.7076 9.07744 24.8046 8 22.7511 8H17.2489ZM13.819 11.7882C14.5419 10.5833 15.8439 9.84615 17.2489 9.84615H22.7511C24.1561 9.84615 25.4581 10.5833 26.181 11.7882L29.5838 17.4595C29.9568 18.0811 30.1538 18.7925 30.1538 19.5175V26.1538C30.1538 28.363 28.363 30.1538 26.1538 30.1538H13.8462C11.637 30.1538 9.84615 28.363 9.84615 26.1538V19.5175C9.84615 18.7925 10.0432 18.0811 10.4162 17.4595L13.819 11.7882Z" fill="currentColor"/>
+                </svg>
+                <span id="cart-badge" class={C.cartBadge}>0</span>
+              </a>
+            )}
+            <button type="button" data-wishlist-trigger class={C.actionWishlist} aria-label="Избранное">
+              <svg width="22" height="20" viewBox="0 0 22 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M11 18.35l-1.45-1.32C4.4 12.36 1 9.28 1 5.5 1 2.42 3.42 0 6.5 0c1.74 0 3.41.81 4.5 2.09C12.09.81 13.76 0 15.5 0 18.58 0 21 2.42 21 5.5c0 3.78-3.4 6.86-8.55 11.54L11 18.35z"/>
+              </svg>
+              <span data-wishlist-badge class={C.wishlistBadge}>0</span>
+            </button>
+            {actionButtons.showProfile && (
+              <a href="/login" aria-label="Аккаунт" class={C.actionProfile} data-action="profile">
+                <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+              </a>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ============ LAYOUT: top-center ============ */}
+      {logoPosition === 'top-center' && (
+        <>
+          <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" class={C.hamburger}>
+            <svg id="menu-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+              <path d="M11 17H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M11 23H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+
+          <div class={C.navMenu}>
+            {navigationLinks.map((link) => (
+              <a href={link.href} class={C.navLink}>{link.label}</a>
+            ))}
+          </div>
+
+          <div class={C.logoWrap['top-center']}>
+            <a href="/" class={C.logoLink}>
+              {hasCustomLogo ? <img src={logo} alt={siteTitle} class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
+            </a>
+          </div>
+
+          <div class={C.actions}>
+            {actionButtons.showSearch && (
+              <button type="button" aria-label="Поиск" class={C.actionSearch} data-action="search">
+                <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+              </button>
+            )}
+            {actionButtons.showCart && (
+              <a href="/cart" class={C.actionCart} aria-label="Корзина" data-action="cart">
+                <svg class="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M18.0295 11.6923C16.8004 11.6923 15.6678 12.3587 15.0708 13.4332C13.8175 15.6892 15.4488 18.4615 18.0295 18.4615H21.9704C24.5511 18.4615 26.1824 15.6892 24.9291 13.4332C24.3321 12.3587 23.1996 11.6923 21.9704 11.6923H18.0295Z" fill="currentColor"/>
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M17.2489 8C15.1954 8 13.2924 9.07744 12.2359 10.8383L8.83312 16.5096C8.28797 17.4182 8 18.4579 8 19.5175V26.1538C8 29.3826 10.6174 32 13.8462 32H26.1538C29.3826 32 32 29.3826 32 26.1538V19.5175C32 18.4579 31.712 17.4182 31.1669 16.5096L27.7641 10.8383C26.7076 9.07744 24.8046 8 22.7511 8H17.2489Z" fill="currentColor"/>
+                </svg>
+                <span class={C.cartBadge}>0</span>
+              </a>
+            )}
+            <button type="button" data-wishlist-trigger class={C.actionWishlist} aria-label="Избранное">
+              <svg width="22" height="20" viewBox="0 0 22 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M11 18.35l-1.45-1.32C4.4 12.36 1 9.28 1 5.5 1 2.42 3.42 0 6.5 0c1.74 0 3.41.81 4.5 2.09C12.09.81 13.76 0 15.5 0 18.58 0 21 2.42 21 5.5c0 3.78-3.4 6.86-8.55 11.54L11 18.35z"/>
+              </svg>
+              <span data-wishlist-badge class={C.wishlistBadge}>0</span>
+            </button>
+            {actionButtons.showProfile && (
+              <a href="/login" aria-label="Аккаунт" class={C.actionProfile} data-action="profile">
+                <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+              </a>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ============ LAYOUT: top-right ============ */}
+      {logoPosition === 'top-right' && (
+        <>
+          <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" class={C.hamburger}>
+            <svg id="menu-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+              <path d="M11 17H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M11 23H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+
+          <div class={C.navMenu}>
+            {navigationLinks.map((link) => (
+              <a href={link.href} class={C.navLink}>{link.label}</a>
+            ))}
+          </div>
+
+          <div class={C.actions}>
+            {actionButtons.showSearch && (
+              <button type="button" aria-label="Поиск" class={C.actionSearch} data-action="search">
+                <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+              </button>
+            )}
+            {actionButtons.showCart && (
+              <a href="/cart" class={C.actionCart} aria-label="Корзина" data-action="cart">
+                <svg class="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M18.0295 11.6923C16.8004 11.6923 15.6678 12.3587 15.0708 13.4332C13.8175 15.6892 15.4488 18.4615 18.0295 18.4615H21.9704C24.5511 18.4615 26.1824 15.6892 24.9291 13.4332C24.3321 12.3587 23.1996 11.6923 21.9704 11.6923H18.0295Z" fill="currentColor"/>
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M17.2489 8C15.1954 8 13.2924 9.07744 12.2359 10.8383L8.83312 16.5096C8.28797 17.4182 8 18.4579 8 19.5175V26.1538C8 29.3826 10.6174 32 13.8462 32H26.1538C29.3826 32 32 29.3826 32 26.1538V19.5175C32 18.4579 31.712 17.4182 31.1669 16.5096L27.7641 10.8383C26.7076 9.07744 24.8046 8 22.7511 8H17.2489Z" fill="currentColor"/>
+                </svg>
+                <span class={C.cartBadge}>0</span>
+              </a>
+            )}
+            <button type="button" data-wishlist-trigger class={C.actionWishlist} aria-label="Избранное">
+              <svg width="22" height="20" viewBox="0 0 22 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M11 18.35l-1.45-1.32C4.4 12.36 1 9.28 1 5.5 1 2.42 3.42 0 6.5 0c1.74 0 3.41.81 4.5 2.09C12.09.81 13.76 0 15.5 0 18.58 0 21 2.42 21 5.5c0 3.78-3.4 6.86-8.55 11.54L11 18.35z"/>
+              </svg>
+              <span data-wishlist-badge class={C.wishlistBadge}>0</span>
+            </button>
+            {actionButtons.showProfile && (
+              <a href="/login" aria-label="Аккаунт" class={C.actionProfile} data-action="profile">
+                <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+              </a>
+            )}
+          </div>
+
+          <div class={C.logoWrap['top-right']}>
+            <a href="/" class={C.logoLink}>
+              {hasCustomLogo ? <img src={logo} alt={siteTitle} class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
+            </a>
+          </div>
+        </>
+      )}
+
+      {/* ============ LAYOUT: center-left (two rows) ============ */}
+      {logoPosition === 'center-left' && (
+        <div class="flex flex-col w-full">
+          <div class="flex items-center justify-between w-full">
+            <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" class={C.hamburger}>
+              <svg id="menu-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                <path d="M11 17H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M11 23H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+
+            <a href="/" class={C.logoLink}>
+              {hasCustomLogo ? <img src={logo} alt={siteTitle} class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
+            </a>
+
+            <div class={C.actions}>
+              {actionButtons.showSearch && (
+                <button type="button" aria-label="Поиск" class={C.actionSearch} data-action="search">
+                  <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                  </svg>
+                </button>
+              )}
+              {actionButtons.showCart && (
+                <a href="/cart" class={C.actionCart} aria-label="Корзина" data-action="cart">
+                  <svg class="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M18.0295 11.6923C16.8004 11.6923 15.6678 12.3587 15.0708 13.4332C13.8175 15.6892 15.4488 18.4615 18.0295 18.4615H21.9704C24.5511 18.4615 26.1824 15.6892 24.9291 13.4332C24.3321 12.3587 23.1996 11.6923 21.9704 11.6923H18.0295Z" fill="currentColor"/>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M17.2489 8C15.1954 8 13.2924 9.07744 12.2359 10.8383L8.83312 16.5096C8.28797 17.4182 8 18.4579 8 19.5175V26.1538C8 29.3826 10.6174 32 13.8462 32H26.1538C29.3826 32 32 29.3826 32 26.1538V19.5175C32 18.4579 31.712 17.4182 31.1669 16.5096L27.7641 10.8383C26.7076 9.07744 24.8046 8 22.7511 8H17.2489Z" fill="currentColor"/>
+                  </svg>
+                  <span class={C.cartBadge}>0</span>
+                </a>
+              )}
+              <button type="button" data-wishlist-trigger class={C.actionWishlist} aria-label="Избранное">
+                <svg width="22" height="20" viewBox="0 0 22 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M11 18.35l-1.45-1.32C4.4 12.36 1 9.28 1 5.5 1 2.42 3.42 0 6.5 0c1.74 0 3.41.81 4.5 2.09C12.09.81 13.76 0 15.5 0 18.58 0 21 2.42 21 5.5c0 3.78-3.4 6.86-8.55 11.54L11 18.35z"/>
+                </svg>
+                <span data-wishlist-badge class={C.wishlistBadge}>0</span>
+              </button>
+              {actionButtons.showProfile && (
+                <a href="/login" aria-label="Аккаунт" class={C.actionProfile} data-action="profile">
+                  <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                  </svg>
+                </a>
+              )}
+            </div>
+          </div>
+
+          <div class={C.navMenuCentered}>
+            {navigationLinks.map((link) => (
+              <a href={link.href} class={C.navLink}>{link.label}</a>
+            ))}
+          </div>
+        </div>
+      )}
+    </nav>
+  </header>
+
+  {/* ============ Mobile navigation menu — Phase 1c: React island will drive show/hide ============ */}
+  <div id="mobile-menu" data-mobile-menu class={C.mobileMenu.root}>
+    <nav class={C.mobileMenu.nav} aria-label="Мобильная навигация">
+      {actionButtons.showSearch && (
+        <div class={C.mobileMenu.search}>
+          <div class="relative">
+            <input type="search" placeholder="Поиск..." class={C.mobileMenu.searchInput} />
+            <button class="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5" aria-label="Искать">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+      <div class="flex flex-col">
+        {navigationLinks.map((link) => {
+          const hasSubmenu = link.submenu && link.submenu.length > 0;
+          return hasSubmenu ? (
+            <div>
+              <button class={C.mobileMenu.submenuToggle} data-target={`submenu-${link.label}`}>
+                <span>{link.label}</span>
+                <svg class="w-4 h-4 transition-transform submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>
+              <div class={C.mobileMenu.submenuWrap} data-id={`submenu-${link.label}`}>
+                {link.submenu?.map((sub) => (
+                  <a href={sub.href} class={C.mobileMenu.submenuLink}>{sub.label}</a>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <a href={link.href} class={C.mobileMenu.link}>{link.label}</a>
+          );
+        })}
+      </div>
+      {actionButtons.showProfile && (
+        <a href="/login" class={C.mobileMenu.link} data-action="profile">Войти</a>
+      )}
+    </nav>
+  </div>
+
+  {/* Phase 1c: React island handles — mobile menu toggle, submenu expand, scroll-up stickiness, cart badge, cart-store integration */}
+</div>
+
+<WishlistDrawer client:load />
+
+<script is:inline>
+  // Wishlist trigger: any click on [data-wishlist-trigger] dispatches
+  // a 'wishlist:open' event picked up by WishlistDrawer React island.
+  document.addEventListener('click', function (e) {
+    var btn = e.target && e.target.closest && e.target.closest('[data-wishlist-trigger]');
+    if (btn) {
+      e.preventDefault();
+      window.dispatchEvent(new CustomEvent('wishlist:open'));
+    }
+  });
+</script>
+
+<script is:inline>
+  // Vanilla burger-menu toggle for preview iframe (where the React island
+  // doesn't run). Live SSG sites bundle the React island so this script
+  // double-binds harmlessly. NB: do NOT add a <style> block to this .astro
+  // file — Astro compiler bakes an absolute dev-machine path into the
+  // .mjs which then ENOENT-fails at runtime on Linux Docker images.
+  // Use inline style.display toggle instead of CSS rule.
+  (function () {
+    document.querySelectorAll('#mobile-menu-button').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const expanded = btn.getAttribute('aria-expanded') === 'true';
+        btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+        const wrap = btn.closest('[data-header-wrapper]');
+        const panel = wrap ? wrap.querySelector('[data-mobile-menu]') : null;
+        if (panel) panel.style.display = expanded ? 'none' : 'block';
+      });
+    });
+
+    // Submenu expand inside mobile sheet
+    document.querySelectorAll('[data-target^="submenu-"]').forEach(function (toggle) {
+      toggle.addEventListener('click', function () {
+        const targetId = toggle.getAttribute('data-target');
+        const target = document.querySelector('[data-id="' + targetId + '"]');
+        if (target) {
+          const open = target.getAttribute('data-open') === 'true';
+          target.setAttribute('data-open', open ? 'false' : 'true');
+          target.style.display = open ? 'none' : 'block';
+        }
+        const arrow = toggle.querySelector('.submenu-arrow');
+        if (arrow) {
+          arrow.style.transform =
+            arrow.style.transform === 'rotate(180deg)' ? '' : 'rotate(180deg)';
+        }
+      });
+    });
+  })();
+</script>

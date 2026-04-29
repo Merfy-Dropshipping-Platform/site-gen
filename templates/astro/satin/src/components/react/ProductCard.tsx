@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Product } from '../../lib/storefront/types';
+import { useWishlist } from '../../../../../../packages/storefront/wishlist';
 
 export function formatMoney(kopecks: number, currency = 'RUB'): string {
   const amount = kopecks / 100;
@@ -27,6 +28,8 @@ const ASPECT_BY_STYLE: Record<CardStyle, string> = {
 };
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, href, cardStyle }) => {
+  const { toggle, isInWishlist } = useWishlist();
+  const inWishlist = isInWishlist(product.id);
   const linkHref = href ?? `/product/${product.handle}`;
   const rawImage = (product.images as unknown as Array<string | { url?: string; alt?: string }>)?.[0];
   const firstImage = typeof rawImage === 'string'
@@ -93,10 +96,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, href, cardSty
 
         <button
           type="button"
-          aria-label="Добавить в избранное"
+          aria-label={inWishlist ? 'Убрать из избранного' : 'Добавить в избранное'}
+          aria-pressed={inWishlist}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
+            toggle(product.id);
           }}
           className="absolute flex items-center justify-center hover:opacity-70 transition-opacity"
           style={{
@@ -105,14 +110,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, href, cardSty
             width: 32,
             height: 32,
             backgroundColor: 'transparent',
-            color: 'rgb(var(--color-foreground))',
+            color: inWishlist ? '#e53935' : 'rgb(var(--color-foreground))',
           }}
         >
           <svg
             width="22"
             height="20"
             viewBox="0 0 22 20"
-            fill="none"
+            fill={inWishlist ? 'currentColor' : 'none'}
             stroke="currentColor"
             strokeWidth="1.5"
             strokeLinecap="round"

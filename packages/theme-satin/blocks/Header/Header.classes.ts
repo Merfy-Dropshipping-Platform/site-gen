@@ -29,9 +29,11 @@ export const HeaderClasses = {
   actions: 'flex items-center gap-[24px]',
   actionSearch: 'hidden md:flex w-8 h-8 items-center justify-center hover:opacity-70 transition-opacity text-[rgb(var(--color-text))]',
   actionCart: 'relative w-8 h-8 flex items-center justify-center hover:opacity-70 transition-opacity text-[rgb(var(--color-text))]',
+  actionWishlist: 'relative w-8 h-8 flex items-center justify-center hover:opacity-70 transition-opacity text-[rgb(var(--color-text))] bg-transparent border-0 cursor-pointer p-0',
   actionProfile: 'auth-nav-btn w-8 h-8 flex items-center justify-center hover:opacity-70 transition-opacity text-[rgb(var(--color-text))]',
   // Satin signature: Manrope font on cart badge, flat/square corners (no rounded-full).
   cartBadge: 'hidden absolute -top-1 -right-1 text-white text-[11px] font-medium min-w-[18px] h-[18px] flex items-center justify-center leading-none px-0.5 bg-[rgb(var(--color-accent))] font-[var(--font-badge,Manrope)]',
+  wishlistBadge: 'hidden absolute -top-1 -right-1 text-white text-[11px] font-medium min-w-[18px] h-[18px] flex items-center justify-center leading-none px-0.5 bg-[rgb(var(--color-accent))] font-[var(--font-badge,Manrope)]',
   mobileMenu: {
     root: 'hidden md:hidden absolute top-full left-0 right-0 border-b border-[rgb(var(--color-text))]/15 shadow-lg z-50 bg-[rgb(var(--color-bg))]',
     nav: 'flex flex-col',

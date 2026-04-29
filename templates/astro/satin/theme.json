@@ -12,7 +12,7 @@
     "colorSwatches": true,
     "filterSidebar": true,
     "newsletter": true,
-    "wishlist": false,
+    "wishlist": true,
     "blog": true,
     "rss": true
   },

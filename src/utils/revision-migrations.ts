@@ -13,6 +13,77 @@ type Block = { type?: string; props?: Record<string, unknown> };
 type PageData = { content?: Block[]; root?: { props?: Record<string, unknown> }; zones?: Record<string, unknown> };
 
 /**
+ * 081: cart page is now Puck-managed with 3 blocks (CartBody + CartSummary +
+ * Collections). Existing sites either have no `page-cart` in pagesData or
+ * have a legacy seed. This migration:
+ *
+ *   - Seeds default 3-block layout when `page-cart` is missing.
+ *   - Idempotent: pages that already contain a CartBody are left alone.
+ *   - Has page-cart but no CartBody → inserts 3 blocks before Footer or
+ *     appends if no Footer.
+ */
+function migrateCartPage(pagesData: Record<string, unknown>): Record<string, unknown> {
+  const existing = pagesData['page-cart'] as PageData | undefined;
+
+  if (existing?.content?.some((b) => b?.type === 'CartBody')) {
+    return pagesData;
+  }
+
+  const ts = Date.now();
+  const seedBlocks: Block[] = [
+    {
+      type: 'CartBody',
+      props: {
+        id: `CartBody-${ts}`,
+        colorScheme: 'scheme-1',
+        padding: { top: 80, bottom: 40 },
+      },
+    },
+    {
+      type: 'CartSummary',
+      props: {
+        id: `CartSummary-${ts + 1}`,
+        colorScheme: 'scheme-1',
+        padding: { top: 0, bottom: 80 },
+      },
+    },
+    {
+      type: 'Collections',
+      props: {
+        id: `Collections-${ts + 2}`,
+        heading: 'Возможно вам понравится',
+        cards: 4,
+        columns: 4,
+        showCompareAtPrice: 'true',
+        cardStyle: 'portrait',
+        colorScheme: 'scheme-1',
+        padding: { top: 80, bottom: 80 },
+      },
+    },
+  ];
+
+  if (!existing || !Array.isArray(existing.content)) {
+    return {
+      ...pagesData,
+      'page-cart': {
+        content: seedBlocks,
+        root: { props: { title: 'Корзина' } },
+        zones: {},
+      } as PageData,
+    };
+  }
+
+  const footerIdx = existing.content.findIndex((b) => b?.type === 'Footer');
+  const next = [...existing.content];
+  if (footerIdx >= 0) {
+    next.splice(footerIdx, 0, ...seedBlocks);
+  } else {
+    next.push(...seedBlocks);
+  }
+  return { ...pagesData, 'page-cart': { ...existing, content: next } };
+}
+
+/**
  * 078 phase 4: catalog page is now a Puck-managed page (like home) using a
  * single Catalog block (filter sidebar + grid + pagination). Existing sites
  * have catalog page seeded as [Header, PopularProducts, Footer] from the old
@@ -364,6 +435,9 @@ export function migrateRevisionData(
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = migrateProductPage(out.pagesData as Record<string, unknown>);
+  }
+  if (out.pagesData && typeof out.pagesData === 'object') {
+    out.pagesData = migrateCartPage(out.pagesData as Record<string, unknown>);
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = migrateCheckoutPage(out.pagesData as Record<string, unknown>);

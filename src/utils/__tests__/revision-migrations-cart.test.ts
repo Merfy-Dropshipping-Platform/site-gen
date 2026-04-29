@@ -88,6 +88,52 @@ describe('migrateCartPage', () => {
     expect(result.pagesData).toBeUndefined();
   });
 
+  it('removes legacy CartSection when CartBody already present', () => {
+    const existing = {
+      pagesData: {
+        'page-cart': {
+          content: [
+            { type: 'Header', props: {} },
+            { type: 'CartSection', props: { id: 'legacy' } },
+            { type: 'CartBody', props: { id: 'cart-body-1' } },
+            { type: 'CartSummary', props: { id: 'cart-summary-1' } },
+            { type: 'Footer', props: {} },
+          ],
+          root: { props: {} },
+          zones: {},
+        },
+      },
+    };
+    const result = migrateRevisionData(existing) as {
+      pagesData: Record<string, any>;
+    };
+    const types = result.pagesData['page-cart'].content.map((b: any) => b.type);
+    expect(types).not.toContain('CartSection');
+    expect(types).toEqual(['Header', 'CartBody', 'CartSummary', 'Footer']);
+  });
+
+  it('removes legacy CartSection AND inserts new blocks when CartBody missing', () => {
+    const existing = {
+      pagesData: {
+        'page-cart': {
+          content: [
+            { type: 'Header', props: {} },
+            { type: 'CartSection', props: { id: 'legacy' } },
+            { type: 'Footer', props: {} },
+          ],
+          root: { props: {} },
+          zones: {},
+        },
+      },
+    };
+    const result = migrateRevisionData(existing) as {
+      pagesData: Record<string, any>;
+    };
+    const types = result.pagesData['page-cart'].content.map((b: any) => b.type);
+    expect(types).not.toContain('CartSection');
+    expect(types).toEqual(['Header', 'CartBody', 'CartSummary', 'Collections', 'Footer']);
+  });
+
   it('preserves other pages (catalog, product) and seeds page-cart alongside', () => {
     const existing = {
       pagesData: {

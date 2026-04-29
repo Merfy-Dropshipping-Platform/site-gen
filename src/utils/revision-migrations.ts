@@ -18,15 +18,22 @@ type PageData = { content?: Block[]; root?: { props?: Record<string, unknown> };
  * have a legacy seed. This migration:
  *
  *   - Seeds default 3-block layout when `page-cart` is missing.
- *   - Idempotent: pages that already contain a CartBody are left alone.
- *   - Has page-cart but no CartBody → inserts 3 blocks before Footer or
- *     appends if no Footer.
+ *   - Idempotent: pages that already contain a CartBody have their legacy
+ *     CartSection block removed (keeps preview ≡ live, since rose cart.astro
+ *     skips CartSection entirely on live render).
+ *   - Has page-cart but no CartBody → inserts 3 blocks before Footer (or
+ *     appends if no Footer) AND removes any legacy CartSection.
  */
 function migrateCartPage(pagesData: Record<string, unknown>): Record<string, unknown> {
   const existing = pagesData['page-cart'] as PageData | undefined;
 
   if (existing?.content?.some((b) => b?.type === 'CartBody')) {
-    return pagesData;
+    const hasLegacy = existing.content?.some((b) => b?.type === 'CartSection');
+    if (!hasLegacy) {
+      return pagesData;
+    }
+    const cleaned = (existing.content ?? []).filter((b) => b?.type !== 'CartSection');
+    return { ...pagesData, 'page-cart': { ...existing, content: cleaned } };
   }
 
   const ts = Date.now();
@@ -73,8 +80,9 @@ function migrateCartPage(pagesData: Record<string, unknown>): Record<string, unk
     };
   }
 
-  const footerIdx = existing.content.findIndex((b) => b?.type === 'Footer');
-  const next = [...existing.content];
+  const cleaned = existing.content.filter((b) => b?.type !== 'CartSection');
+  const footerIdx = cleaned.findIndex((b) => b?.type === 'Footer');
+  const next = [...cleaned];
   if (footerIdx >= 0) {
     next.splice(footerIdx, 0, ...seedBlocks);
   } else {

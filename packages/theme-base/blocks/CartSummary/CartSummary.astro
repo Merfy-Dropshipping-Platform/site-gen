@@ -1,9 +1,9 @@
 ---
-// CartSummary — Astro SSR placeholder для preview iframe. Live render —
-// CartSummaryIsland из packages/storefront/cart/. Hidden когда cart empty
-// (выкл через inline скрипт по cartStore).
+// CartSummary — Astro component for constructor preview AND live SSG.
+// Disclaimer + total + checkout button. Inline JS on the page (cart.astro)
+// hides this section when cart is empty (per Figma). Inline CSS-var styles
+// match rose live cart.astro for pixel-perfect parity.
 import type { CartSummaryProps } from './CartSummary.puckConfig';
-import { CartSummaryClasses as C } from './CartSummary.classes';
 
 interface Props extends CartSummaryProps {
   id?: string;
@@ -21,25 +21,30 @@ const schemeClass =
     : '';
 ---
 <section
-  class:list={[C.root, schemeClass]}
+  class:list={['relative w-full', schemeClass]}
   data-puck-component-id={id}
   data-block="cart-summary"
   data-cart-summary-hidden-when-empty="true"
+  id="cart-page-summary"
   style={paddingStyle}
 >
-  <div class={C.container}>
-    <div class={C.inner}>
-      <p class={C.disclaimer}>
+  <div class="max-w-[768px] mx-auto px-4 sm:px-6">
+    <div class="cart-summary flex flex-col items-end" style="gap: 25px;">
+      <p class="cart-summary-disclaimer font-body" style="font-size: 16px; line-height: 22px; color: rgb(var(--color-muted)); text-align: right; margin: 0; max-width: 318px;">
         Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.
       </p>
-      <div class={C.totalRow}>
-        <span class={C.totalLabel}>Итого</span>
-        <span class={C.totalValue} data-cart-total>0 ₽</span>
+      <div class="flex items-center" style="gap: 15px;">
+        <span class="font-body" style="font-size: 20px; line-height: 27px; color: rgb(var(--color-foreground));">
+          Итого
+        </span>
+        <span id="cart-page-total" class="font-body" style="font-size: 20px; line-height: 27px; color: rgb(var(--color-foreground));" data-cart-total>
+          0&nbsp;₽
+        </span>
       </div>
       <a
         href="/checkout"
-        class={C.checkoutBtn}
-        style="width: 195px; height: 60px; font-size: 20px; line-height: 27px; border-radius: 10px;"
+        class="cart-checkout-btn flex items-center justify-center font-body cursor-pointer transition-colors border-0 no-underline"
+        style="width: 195px; height: 60px; font-size: 20px; line-height: 27px; border-radius: 10px; background: rgb(var(--color-foreground)); color: rgb(var(--color-background));"
         data-cart-checkout-button
       >
         Оформить заказ

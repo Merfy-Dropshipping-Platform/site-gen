@@ -1,10 +1,10 @@
 ---
-// CartBody — Astro SSR placeholder for constructor preview. The interactive
-// rendering lives in CartBodyIsland (packages/storefront/cart/) and is mounted
-// directly by templates/astro/<theme>/src/pages/cart.astro on live. In preview
-// iframe this placeholder shows skeleton until hydrate.
+// CartBody — Astro component used in BOTH constructor preview AND live SSG.
+// Renders cart heading + empty state + items container. Inline JS on the page
+// (cart.astro) toggles cart-page-empty / cart-page-content based on
+// window.cartStore items. Inline CSS-var styles match rose live cart.astro
+// for pixel-perfect parity.
 import type { CartBodyProps } from './CartBody.puckConfig';
-import { CartBodyClasses as C } from './CartBody.classes';
 
 interface Props extends CartBodyProps {
   id?: string;
@@ -22,15 +22,36 @@ const schemeClass =
     : '';
 ---
 <section
-  class:list={[C.root, schemeClass]}
+  class:list={['relative w-full', schemeClass]}
   data-puck-component-id={id}
   data-block="cart-body"
   style={paddingStyle}
 >
-  <div class={C.container}>
-    <h1 class={C.heading}>КОРЗИНА</h1>
-    <div class={C.loadingEmpty} data-cart-loading>
-      <p class={C.loadingMuted}>Загрузка корзины...</p>
+  <div class="max-w-[768px] mx-auto px-4 sm:px-6">
+    <h1 class="font-heading uppercase" style="font-size: 24px; line-height: 27px; color: rgb(var(--color-foreground)); margin: 0 0 25px 0;">
+      Корзина
+    </h1>
+
+    {/* Empty state — visible by default; inline JS hides it when cart has items */}
+    <div id="cart-page-empty">
+      <div class="flex flex-col items-center py-16 gap-4">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="color: rgb(var(--color-muted));">
+          <circle cx="9" cy="21" r="1"></circle>
+          <circle cx="20" cy="21" r="1"></circle>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+        </svg>
+        <p class="font-body" style="font-size: 20px; line-height: 27px; color: rgb(var(--color-muted));">
+          Вы пока не добавили товар в корзину.
+        </p>
+        <a href="/catalog" class="font-body" style="display:inline-flex; align-items:center; justify-content:center; padding: 12px 24px; background: rgb(var(--color-foreground)); color: rgb(var(--color-background)); font-size: 16px; line-height: 22px; border-radius: 8px; text-decoration: none;">
+          Продолжить покупки
+        </a>
+      </div>
+    </div>
+
+    {/* Items state — populated by inline JS in cart.astro on cart:updated */}
+    <div id="cart-page-content" style="display: none;">
+      <div id="cart-page-items" class="flex flex-col" style="gap: 50px;"></div>
     </div>
   </div>
 </section>

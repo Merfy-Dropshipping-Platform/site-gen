@@ -4,67 +4,118 @@ import data from '../data/data.json';
 import siteConfig from '../data/site-config.json';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import Collections from '../components/Collections.astro';
 
+// 081: cart page is Puck-managed. Read pagesData['page-cart'] for block list;
+// fall back to default (CartBody + CartSummary) when no page data.
 const meta = data?.meta ?? {};
-const blocks = data?.content ?? [];
-const headerBlock = blocks.find((b: any) => b.type === 'Header');
-const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+const allPagesData = (data as any)?.pagesData ?? {};
+const cartPage = allPagesData['page-cart'];
+const contentBlocks: any[] = Array.isArray(cartPage?.content) ? cartPage.content : [];
+
+// Header/Footer come from the cart page itself if present, else from home.
+const homePage = allPagesData['home'];
+const homeBlocks: any[] = Array.isArray(homePage?.content) ? homePage.content : [];
+const headerBlock =
+  contentBlocks.find((b: any) => b.type === 'Header') ??
+  homeBlocks.find((b: any) => b.type === 'Header');
+const footerBlock =
+  contentBlocks.find((b: any) => b.type === 'Footer') ??
+  homeBlocks.find((b: any) => b.type === 'Footer');
 const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
 const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
+
+// Find Puck-managed cart blocks (default present if revision migrated).
+const cartBodyBlock = contentBlocks.find((b: any) => b.type === 'CartBody');
+const cartSummaryBlock = contentBlocks.find((b: any) => b.type === 'CartSummary');
+const collectionsBlock = contentBlocks.find((b: any) => b.type === 'Collections');
+
+const showCartBody = cartBodyBlock !== undefined || contentBlocks.length === 0;
+const showCartSummary = cartSummaryBlock !== undefined || contentBlocks.length === 0;
+const showCollections = collectionsBlock !== undefined;
+
+const cartBodyPadding =
+  cartBodyBlock?.props?.padding ?? { top: 80, bottom: 40 };
+const cartSummaryPadding =
+  cartSummaryBlock?.props?.padding ?? { top: 0, bottom: 80 };
+
+const cartBodyPadStyle = `padding-top:${cartBodyPadding.top}px; padding-bottom:${cartBodyPadding.bottom}px;`;
+const cartSummaryPadStyle = `padding-top:${cartSummaryPadding.top}px; padding-bottom:${cartSummaryPadding.bottom}px;`;
 ---
 <BaseLayout title={`Корзина — ${meta?.title ?? 'Мой магазин'}`}>
   <Header {...headerProps} />
 
   <main class="flex-1 w-full" style="background: rgb(var(--color-background)); color: rgb(var(--color-foreground));">
-    <div class="max-w-[768px] mx-auto px-4 sm:px-6 py-[75px]">
 
-      <!-- Title -->
-      <h1 class="font-heading uppercase" style="font-size: 24px; line-height: 27px; color: rgb(var(--color-foreground)); margin: 0 0 25px 0;">
-        Корзина
-      </h1>
+    {showCartBody && (
+      <section
+        data-puck-component-id={cartBodyBlock?.props?.id}
+        data-block="cart-body"
+        style={cartBodyPadStyle}
+      >
+        <div class="max-w-[768px] mx-auto px-4 sm:px-6">
+          <h1 class="font-heading uppercase" style="font-size: 24px; line-height: 27px; color: rgb(var(--color-foreground)); margin: 0 0 25px 0;">
+            Корзина
+          </h1>
 
-      <!-- Empty state -->
-      <div id="cart-page-empty" style="display: none;">
-        <div class="flex flex-col items-center py-16 gap-4">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="color: rgb(var(--color-muted));">
-            <circle cx="9" cy="21" r="1"></circle>
-            <circle cx="20" cy="21" r="1"></circle>
-            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-          </svg>
-          <p class="font-body" style="font-size: 20px; line-height: 27px; color: rgb(var(--color-muted));">
-            Корзина пуста
-          </p>
-          <a href="/catalog" class="font-body" style="font-size: 16px; line-height: 22px; color: rgb(var(--color-foreground)); text-decoration: underline;">
-            Перейти в каталог
-          </a>
-        </div>
-      </div>
-
-      <!-- Cart content -->
-      <div id="cart-page-content" style="display: none;">
-        <!-- Items list -->
-        <div id="cart-page-items" class="flex flex-col" style="gap: 50px;"></div>
-
-        <!-- Summary -->
-        <div class="cart-summary flex flex-col items-end mt-[50px]" style="gap: 25px;">
-          <p class="cart-summary-disclaimer font-body" style="font-size: 16px; line-height: 22px; color: rgb(var(--color-muted)); text-align: right; margin: 0; max-width: 318px;">
-            Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.
-          </p>
-          <div class="flex items-center" style="gap: 15px;">
-            <span class="font-body" style="font-size: 20px; line-height: 27px; color: rgb(var(--color-foreground));">
-              Итого
-            </span>
-            <span id="cart-page-total" class="font-body" style="font-size: 20px; line-height: 27px; color: rgb(var(--color-foreground));">
-              0 ₽
-            </span>
+          {/* Empty state */}
+          <div id="cart-page-empty" style="display: none;">
+            <div class="flex flex-col items-center py-16 gap-4">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="color: rgb(var(--color-muted));">
+                <circle cx="9" cy="21" r="1"></circle>
+                <circle cx="20" cy="21" r="1"></circle>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+              </svg>
+              <p class="font-body" style="font-size: 20px; line-height: 27px; color: rgb(var(--color-muted));">
+                Вы пока не добавили товар в корзину.
+              </p>
+              <a href="/catalog" class="font-body" style="display:inline-flex; align-items:center; justify-content:center; padding: 12px 24px; background: rgb(var(--color-foreground)); color: rgb(var(--color-background)); font-size: 16px; line-height: 22px; border-radius: 8px; text-decoration: none;">
+                Продолжить покупки
+              </a>
+            </div>
           </div>
-          <a href="/checkout" class="cart-checkout-btn flex items-center justify-center font-body cursor-pointer transition-colors border-0 no-underline" style="width: 195px; height: 60px; font-size: 20px; line-height: 27px; border-radius: 10px; background: rgb(var(--color-foreground)); color: rgb(var(--color-background));">
-            Оформить заказ
-          </a>
-        </div>
-      </div>
 
-    </div>
+          {/* Cart items list */}
+          <div id="cart-page-content" style="display: none;">
+            <div id="cart-page-items" class="flex flex-col" style="gap: 50px;"></div>
+          </div>
+        </div>
+      </section>
+    )}
+
+    {showCartSummary && (
+      <section
+        data-puck-component-id={cartSummaryBlock?.props?.id}
+        data-block="cart-summary"
+        data-cart-summary-hidden-when-empty="true"
+        style={cartSummaryPadStyle}
+        id="cart-page-summary"
+      >
+        <div class="max-w-[768px] mx-auto px-4 sm:px-6">
+          <div class="cart-summary flex flex-col items-end" style="gap: 25px;">
+            <p class="cart-summary-disclaimer font-body" style="font-size: 16px; line-height: 22px; color: rgb(var(--color-muted)); text-align: right; margin: 0; max-width: 318px;">
+              Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.
+            </p>
+            <div class="flex items-center" style="gap: 15px;">
+              <span class="font-body" style="font-size: 20px; line-height: 27px; color: rgb(var(--color-foreground));">
+                Итого
+              </span>
+              <span id="cart-page-total" class="font-body" style="font-size: 20px; line-height: 27px; color: rgb(var(--color-foreground));">
+                0 ₽
+              </span>
+            </div>
+            <a href="/checkout" class="cart-checkout-btn flex items-center justify-center font-body cursor-pointer transition-colors border-0 no-underline" style="width: 195px; height: 60px; font-size: 20px; line-height: 27px; border-radius: 10px; background: rgb(var(--color-foreground)); color: rgb(var(--color-background));">
+              Оформить заказ
+            </a>
+          </div>
+        </div>
+      </section>
+    )}
+
+    {showCollections && collectionsBlock && (
+      <Collections {...(collectionsBlock.props ?? {})} />
+    )}
+
   </main>
 
   <Footer {...footerProps} />
@@ -109,6 +160,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
     var contentEl = document.getElementById('cart-page-content');
     var itemsContainer = document.getElementById('cart-page-items');
     var totalEl = document.getElementById('cart-page-total');
+    var summaryEl = document.getElementById('cart-page-summary');
     if (!emptyEl || !contentEl) return;
 
     var items = window.cartStore ? window.cartStore.getItems() : [];
@@ -116,11 +168,14 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
     if (items.length === 0) {
       emptyEl.style.display = '';
       contentEl.style.display = 'none';
+      // Hide summary block when cart empty (per Figma)
+      if (summaryEl) summaryEl.style.display = 'none';
       return;
     }
 
     emptyEl.style.display = 'none';
     contentEl.style.display = '';
+    if (summaryEl) summaryEl.style.display = '';
 
     if (itemsContainer) {
       itemsContainer.innerHTML = items.map(function(item, index) {
@@ -144,28 +199,22 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 
         return '<div>' +
           '<div class="cart-item-row" style="display: flex; justify-content: space-between; align-items: flex-end; height: 184px;">' +
-            /* Left: image + info */
             '<div class="cart-item-left" style="display: flex; align-items: center; gap: 50px;">' +
               imgHtml +
               '<div style="display: flex; flex-direction: column; gap: 10px;">' +
-                /* Name + price block */
                 '<div style="display: flex; flex-direction: column; gap: 5px;">' +
                   '<div class="font-body" style="font-size: 20px; line-height: 27px; text-transform: uppercase; color: rgb(var(--color-foreground));">' + name + '</div>' +
                   '<div style="display: flex; align-items: center; gap: 15px;">' +
                     '<span class="font-body" style="font-size: 24px; line-height: 33px; color: rgb(var(--color-foreground));">' + formatCartPrice(price) + '</span>' +
                   '</div>' +
                 '</div>' +
-                /* Variant info */
                 variantHtml +
               '</div>' +
             '</div>' +
-            /* Right: delete + qty */
             '<div class="cart-item-actions" style="display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; padding: 15px 0; width: 130px; height: 184px; box-sizing: border-box;">' +
-              /* Delete icon */
               '<button data-action="remove" data-item-id="' + item.id + '" aria-label="Удалить" style="background: none; border: none; cursor: pointer; padding: 0; color: rgb(var(--color-muted));">' +
                 '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 6H5H21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
               '</button>' +
-              /* Quantity controls */
               '<div style="display: flex; align-items: center; gap: 5px;">' +
                 '<button data-action="decrease" data-item-id="' + item.id + '"' + (qty <= 1 ? ' disabled' : '') + ' style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid rgb(var(--color-foreground)); background: rgb(var(--color-background)); cursor: pointer; color: rgb(var(--color-foreground));' + (qty <= 1 ? ' opacity: 0.4; cursor: not-allowed;' : '') + '">' +
                   '<svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M8 16H24" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>' +
@@ -184,18 +233,15 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
       }).join('');
     }
 
-    // Total
     if (totalEl) {
       var total = window.cartStore ? window.cartStore.getTotal() : 0;
       totalEl.textContent = formatCartPrice(total);
     }
   }
 
-  // Handle quantity/remove clicks (delegated)
   document.addEventListener('click', async function(e) {
     var btn = e.target.closest('[data-action]');
     if (!btn || !window.cartStore) return;
-    // Only handle clicks within cart page
     var inCartPage = btn.closest('#cart-page-content');
     if (!inCartPage) return;
 
@@ -224,10 +270,7 @@ const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
     btn.disabled = false;
   });
 
-  // Re-render on cart updates
   document.addEventListener('cart:updated', renderCartPage);
-
-  // Initial render
   document.addEventListener('DOMContentLoaded', function() {
     setTimeout(renderCartPage, 150);
   });

@@ -1,0 +1,49 @@
+---
+// CartSummary — Astro SSR placeholder для preview iframe. Live render —
+// CartSummaryIsland из packages/storefront/cart/. Hidden когда cart empty
+// (выкл через inline скрипт по cartStore).
+import type { CartSummaryProps } from './CartSummary.puckConfig';
+import { CartSummaryClasses as C } from './CartSummary.classes';
+
+interface Props extends CartSummaryProps {
+  id?: string;
+}
+
+const { id, padding, colorScheme } = Astro.props as Props;
+
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : 'padding-top:0px; padding-bottom:80px;';
+
+const schemeClass =
+  typeof colorScheme === 'string' && colorScheme
+    ? `color-scheme-${colorScheme.replace('scheme-', '')}`
+    : '';
+---
+<section
+  class:list={[C.root, schemeClass]}
+  data-puck-component-id={id}
+  data-block="cart-summary"
+  data-cart-summary-hidden-when-empty="true"
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    <div class={C.inner}>
+      <p class={C.disclaimer}>
+        Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.
+      </p>
+      <div class={C.totalRow}>
+        <span class={C.totalLabel}>Итого</span>
+        <span class={C.totalValue} data-cart-total>0 ₽</span>
+      </div>
+      <a
+        href="/checkout"
+        class={C.checkoutBtn}
+        style="width: 195px; height: 60px; font-size: 20px; line-height: 27px; border-radius: 10px;"
+        data-cart-checkout-button
+      >
+        Оформить заказ
+      </a>
+    </div>
+  </div>
+</section>

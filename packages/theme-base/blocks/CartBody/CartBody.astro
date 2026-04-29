@@ -1,0 +1,36 @@
+---
+// CartBody — Astro SSR placeholder for constructor preview. The interactive
+// rendering lives in CartBodyIsland (packages/storefront/cart/) and is mounted
+// directly by templates/astro/<theme>/src/pages/cart.astro on live. In preview
+// iframe this placeholder shows skeleton until hydrate.
+import type { CartBodyProps } from './CartBody.puckConfig';
+import { CartBodyClasses as C } from './CartBody.classes';
+
+interface Props extends CartBodyProps {
+  id?: string;
+}
+
+const { id, padding, colorScheme } = Astro.props as Props;
+
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : 'padding-top:80px; padding-bottom:40px;';
+
+const schemeClass =
+  typeof colorScheme === 'string' && colorScheme
+    ? `color-scheme-${colorScheme.replace('scheme-', '')}`
+    : '';
+---
+<section
+  class:list={[C.root, schemeClass]}
+  data-puck-component-id={id}
+  data-block="cart-body"
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    <h1 class={C.heading}>КОРЗИНА</h1>
+    <div class={C.loadingEmpty} data-cart-loading>
+      <p class={C.loadingMuted}>Загрузка корзины...</p>
+    </div>
+  </div>
+</section>

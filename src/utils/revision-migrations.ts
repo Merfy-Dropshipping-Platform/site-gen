@@ -167,7 +167,20 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
   const fromNew = out['checkout'] as PageData | undefined;
   const source = fromNew?.content?.length ? fromNew : fromLegacy;
   if (source && Array.isArray(source.content) && source.content.some((b) => b?.type === 'CheckoutLayout')) {
-    // Already migrated — just keep both keys in sync
+    // Already migrated — patch in-place fixes for fields that have changed
+    // semantics over time, then keep both keys in sync.
+    for (const block of source.content) {
+      if (block?.type === 'CheckoutDeliveryForm') {
+        const props = (block.props ?? {}) as Record<string, unknown>;
+        const country = (props.country ?? {}) as Record<string, unknown>;
+        // Force the country field into dropdown mode for all existing sites —
+        // readonly was a transient default that never matched the design.
+        if (country.selectable !== true) {
+          props.country = { ...country, selectable: true };
+          block.props = props;
+        }
+      }
+    }
     out['checkout'] = source;
     out['page-checkout'] = source;
     return out;
@@ -233,7 +246,7 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
       props: {
         id: `CheckoutDeliveryForm-${ts + 4}`,
         heading: 'Доставка',
-        country: { enabled: true, default: 'Российская Федерация', selectable: false },
+        country: { enabled: true, default: 'Российская Федерация', selectable: true },
         nameField: { enabled: true, splitFirstLast: true },
         cityDadata: true,
         addressDadata: true,

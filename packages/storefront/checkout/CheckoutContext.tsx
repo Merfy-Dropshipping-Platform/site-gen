@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useReducer, type ReactNode } from 'react';
 
 export type PaymentMethodKey = 'bank_card' | 'sbp' | 'sberbank' | 'tinkoff_bank';
 
@@ -48,6 +48,10 @@ export interface CheckoutState {
   paymentMethod: PaymentMethodKey | null;
   promoCode: string;
   appliedDiscountCents: number;
+  /** YooKassa numeric shop ID — нужен Tokenization SDK на стороне клиента.
+   * Достаётся через public endpoint /api/billing/shops/:shopId/payment-config/public.
+   * NULL значит виджет недоступен (платёжки не настроены / shop disabled). */
+  yookassaShopId: string | null;
   loading: boolean;
   submitting: boolean;
   error: string | null;
@@ -63,7 +67,8 @@ export type CheckoutAction =
   | { type: 'SET_DISCOUNT'; discountCents: number }
   | { type: 'SET_LOADING'; loading: boolean }
   | { type: 'SET_SUBMITTING'; submitting: boolean }
-  | { type: 'SET_ERROR'; error: string | null };
+  | { type: 'SET_ERROR'; error: string | null }
+  | { type: 'SET_YOOKASSA_SHOP_ID'; yookassaShopId: string | null };
 
 const initialState: CheckoutState = {
   cartId: null,
@@ -82,6 +87,7 @@ const initialState: CheckoutState = {
   paymentMethod: null,
   promoCode: '',
   appliedDiscountCents: 0,
+  yookassaShopId: null,
   loading: true,
   submitting: false,
   error: null,
@@ -109,6 +115,8 @@ function reducer(state: CheckoutState, action: CheckoutAction): CheckoutState {
       return { ...state, submitting: action.submitting };
     case 'SET_ERROR':
       return { ...state, error: action.error };
+    case 'SET_YOOKASSA_SHOP_ID':
+      return { ...state, yookassaShopId: action.yookassaShopId };
     default:
       return state;
   }
@@ -147,6 +155,30 @@ export function CheckoutProvider({
     items: initialItems,
     loading: !preview && initialItems.length === 0,
   });
+
+  // Один раз при mount достаём публичный YooKassa shopId для этого магазина —
+  // он нужен Tokenization SDK для inline-виджета карты. Без него бэк всё равно
+  // сможет провести платёж через redirect-flow, но клиентский виджет не
+  // инициализируется.
+  useEffect(() => {
+    if (preview || !shopId) return;
+    const ctrl = new AbortController();
+    fetch(`${apiBase}/billing/shops/${shopId}/payment-config/public`, {
+      signal: ctrl.signal,
+      credentials: 'omit',
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        const yk = j?.data?.yookassaShopId;
+        if (typeof yk === 'string' && yk) {
+          dispatch({ type: 'SET_YOOKASSA_SHOP_ID', yookassaShopId: yk });
+        }
+      })
+      .catch(() => {
+        /* fail silent — widget просто не появится, redirect-flow остаётся */
+      });
+    return () => ctrl.abort();
+  }, [apiBase, shopId, preview]);
 
   return <Ctx.Provider value={{ state, dispatch, apiBase, shopId, preview }}>{children}</Ctx.Provider>;
 }

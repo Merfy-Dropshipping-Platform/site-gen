@@ -11,7 +11,7 @@ export interface SubmitSectionProps {
 
 export function SubmitSection(props: SubmitSectionProps) {
   const { state, dispatch, apiBase, preview } = useCheckoutContext();
-  const { tokenize } = useTokenizeCard();
+  const { tokenize } = useTokenizeCard(state.yookassaShopId ?? '');
   const totals = computeTotals(state);
 
   const cls =
@@ -48,7 +48,13 @@ export function SubmitSection(props: SubmitSectionProps) {
     try {
       let paymentToken: string | undefined;
       if (state.paymentMethod === 'bank_card') {
-        paymentToken = await tokenize(props.cardRef.current);
+        // Inline-виджет YooKassa Tokenization работает только если у магазина
+        // настроен публичный yookassaShopId. Если его нет — пропускаем
+        // токенизацию: backend отдаст confirmation_url и YooKassa проведёт
+        // карту на своей hosted-странице (redirect-flow).
+        if (state.yookassaShopId) {
+          paymentToken = await tokenize(props.cardRef.current);
+        }
       }
 
       // Step 1 — convert cart → order (creates pending order with all checkout info)

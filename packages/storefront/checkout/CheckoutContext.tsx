@@ -21,6 +21,12 @@ export interface DeliveryAddress {
   fullName: string;
   city: string;
   cityFiasId?: string;
+  /** Структурированные части адреса. Хранятся отдельно чтобы 1:1 матчиться
+   * с админкой (Город/Улица/Дом/Кв/Индекс). `address` — производное полное
+   * представление "ул. Тверская, 1, кв. 5". */
+  street: string;
+  building: string;
+  apartment: string;
   address: string;
   postalCode: string;
 }
@@ -80,6 +86,9 @@ const initialState: CheckoutState = {
     lastName: '',
     fullName: '',
     city: '',
+    street: '',
+    building: '',
+    apartment: '',
     address: '',
     postalCode: '',
   },

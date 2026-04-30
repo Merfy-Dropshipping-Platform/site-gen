@@ -30,7 +30,8 @@ export function SubmitSection(props: SubmitSectionProps) {
     state.contact.email &&
     state.contact.phone &&
     state.delivery.city &&
-    state.delivery.address &&
+    state.delivery.street &&
+    state.delivery.building &&
     state.deliveryMethod &&
     state.paymentMethod;
 

@@ -1,13 +1,10 @@
 ---
-// 080 Phase 6 — Puck-managed checkout page.
+// Puck-managed checkout page.
 //
 // Reads pagesData.checkout (seeded by migrateCheckoutPage at revision-read
 // time) and renders the 11 Checkout* blocks. Each block emits
 // data-checkout-slot — the CheckoutFlow Island finds them at runtime and
 // Portals interactive React content into each placeholder.
-//
-// Live URL: /checkout-puck (canary) — flipped to /checkout via per-site
-// feature flag `features.checkoutPuckManaged` in Phase 8.
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 import data from '../data/data.json';

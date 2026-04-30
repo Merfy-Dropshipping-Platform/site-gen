@@ -127,11 +127,6 @@ export const site = pgTable("site", {
   // Настройки магазина (checkout, регистрация и т.д.)
   settings: jsonb("settings").$type<{
     requireCustomerAuth?: boolean;
-    // 080 Phase 8 — switch live `/checkout` page from legacy vanilla JS to the
-    // Puck-managed CheckoutFlow Island. Set per-site for canary rollout.
-    // false (default): legacy `pages/checkout.astro` rendered at /checkout.
-    // true: build pipeline emits `pages/checkout-puck.astro` content at /checkout.
-    checkoutPuckManaged?: boolean;
   }>(),
   // Закреплённая версия темы (e.g. "1.2.0"). Null = использовать latest.
   themeVersion: text("theme_version"),

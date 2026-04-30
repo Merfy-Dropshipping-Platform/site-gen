@@ -122,32 +122,7 @@ export interface BuildContext {
   /** Branding overrides (logo, colors) from site table */
   branding?: { logoUrl?: string; primaryColor?: string; secondaryColor?: string; favicons?: { universal?: string; dark?: string; light?: string; apple?: string } };
   /** Site settings (checkout config, etc.) */
-  settings?: { requireCustomerAuth?: boolean; checkoutPuckManaged?: boolean };
-}
-
-/**
- * 080 Phase 6 — when site has `settings.checkoutPuckManaged = true`, replace
- * the legacy `checkout/index.html` (from `pages/checkout.astro`) with the
- * Puck-managed version built by `pages/checkout-puck.astro`. Idempotent: if
- * `checkout-puck/index.html` doesn't exist, no-op. If flag is false/missing,
- * no swap. The non-canonical `checkout-puck` route stays for canary debugging
- * but won't be the default.
- */
-async function applyCheckoutPuckFlag(distDir: string, enabled: boolean): Promise<void> {
-  if (!enabled) return;
-  const puckIndex = path.join(distDir, "checkout-puck", "index.html");
-  const legacyIndex = path.join(distDir, "checkout", "index.html");
-  try {
-    await fs.access(puckIndex);
-  } catch {
-    return; // canary file not built — silently skip
-  }
-  try {
-    await fs.copyFile(puckIndex, legacyIndex);
-  } catch (e) {
-    // Don't fail the whole build over canary swap
-    console.warn(`[checkout-080] Failed to swap checkout-puck → checkout: ${e instanceof Error ? e.message : String(e)}`);
-  }
+  settings?: { requireCustomerAuth?: boolean };
 }
 
 const ANALYTICS_COLLECTOR_URL = "https://iowcg0sw4wsoo0s4k8g0ws0o.176.57.218.121.sslip.io";
@@ -692,9 +667,6 @@ export async function trySnapshotDeploy(
       await fs.writeFile(file, html, "utf8");
     }
     logger.log(`[snapshot] Patched shopId in ${htmlFiles.length} HTML files`);
-
-    // ── 080 Phase 6: swap checkout to Puck-managed if flag set ──
-    await applyCheckoutPuckFlag(distDir, ctx.settings?.checkoutPuckManaged === true);
 
     // ── Inject analytics tracker + pixel loader ──
     await injectAnalyticsTracker(distDir, params.siteId);

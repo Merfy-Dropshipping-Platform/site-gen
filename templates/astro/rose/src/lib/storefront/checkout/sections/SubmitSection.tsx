@@ -11,16 +11,15 @@ export interface SubmitSectionProps {
 
 export function SubmitSection(props: SubmitSectionProps) {
   const { state, dispatch, apiBase, preview } = useCheckoutContext();
-  const { tokenize } = useTokenizeCard();
+  const { tokenize } = useTokenizeCard(state.yookassaShopId ?? '');
   const totals = computeTotals(state);
 
-  // Use --color-button-bg/button-text — accent tokens are missing from theme generator output.
-  // Trailing `!` forces important so we beat the Tailwind preflight rule
-  // `button,[type=submit]{background-color:#0000}` that wins by source order.
   const cls =
     props.buttonStyle === 'outline'
-      ? 'w-full h-14 bg-transparent! text-[rgb(var(--color-text))] border-2 border-[rgb(var(--color-text))] rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[length:var(--size-body)] disabled:opacity-50'
-      : 'w-full h-14 bg-[rgb(var(--color-button-bg))]! text-[rgb(var(--color-button-text))]! rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[length:var(--size-body)] disabled:opacity-50';
+      ? 'w-full h-14bg-transparent text-[rgb(var(--color-accent))] border-2 border-[rgb(var(--color-accent))] rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[length:var(--size-body)] disabled:opacity-50'
+      : props.buttonStyle === 'gradient'
+        ? 'w-full h-14bg-gradient-to-r from-[rgb(var(--color-accent))] to-[rgb(var(--color-accent-2))] text-[rgb(var(--color-accent-fg))] rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[length:var(--size-body)] disabled:opacity-50'
+        : 'w-full h-14bg-[rgb(var(--color-accent))] text-[rgb(var(--color-accent-fg))] rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[length:var(--size-body)] disabled:opacity-50';
 
   const text = state.submitting ? props.loadingText : props.buttonText.replace('{total}', formatRub(totals.totalCents));
 
@@ -31,7 +30,8 @@ export function SubmitSection(props: SubmitSectionProps) {
     state.contact.email &&
     state.contact.phone &&
     state.delivery.city &&
-    state.delivery.address &&
+    state.delivery.street &&
+    state.delivery.building &&
     state.deliveryMethod &&
     state.paymentMethod;
 
@@ -49,7 +49,13 @@ export function SubmitSection(props: SubmitSectionProps) {
     try {
       let paymentToken: string | undefined;
       if (state.paymentMethod === 'bank_card') {
-        paymentToken = await tokenize(props.cardRef.current);
+        // Inline-виджет YooKassa Tokenization работает только если у магазина
+        // настроен публичный yookassaShopId. Если его нет — пропускаем
+        // токенизацию: backend отдаст confirmation_url и YooKassa проведёт
+        // карту на своей hosted-странице (redirect-flow).
+        if (state.yookassaShopId) {
+          paymentToken = await tokenize(props.cardRef.current);
+        }
       }
 
       // Step 1 — convert cart → order (creates pending order with all checkout info)

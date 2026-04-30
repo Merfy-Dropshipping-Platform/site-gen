@@ -134,6 +134,22 @@ function PaymentBrand({ methodKey }: { methodKey: PaymentMethodKey }) {
   }
 }
 
+// === Card input formatters ===
+// Без масок tokenize ломается: SDK ждёт `expiry` в формате MM/YY, а пользователь
+// часто печатает 1228 → split('/') возвращает один элемент → не распарсилось.
+function formatCardNumber(input: string): string {
+  const digits = input.replace(/\D/g, '').slice(0, 19);
+  return digits.replace(/(\d{4})(?=\d)/g, '$1 ');
+}
+function formatExpiry(input: string): string {
+  const digits = input.replace(/\D/g, '').slice(0, 4);
+  if (digits.length < 3) return digits;
+  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+}
+function formatCvc(input: string): string {
+  return input.replace(/\D/g, '').slice(0, 4);
+}
+
 function CardForm({
   card,
   setCard,
@@ -161,20 +177,20 @@ function CardForm({
         label="Номер карты"
         autoComplete="cc-number"
         value={card.number}
-        onChange={(v) => setCard((c) => ({ ...c, number: v }))}
+        onChange={(v) => setCard((c) => ({ ...c, number: formatCardNumber(v) }))}
       />
       <div className="grid grid-cols-2 gap-4">
         <FloatingField
-          label="Срок действия"
+          label="ММ/ГГ"
           autoComplete="cc-exp"
           value={card.expiry}
-          onChange={(v) => setCard((c) => ({ ...c, expiry: v }))}
+          onChange={(v) => setCard((c) => ({ ...c, expiry: formatExpiry(v) }))}
         />
         <FloatingField
           label="CVV"
           autoComplete="cc-csc"
           value={card.cvc}
-          onChange={(v) => setCard((c) => ({ ...c, cvc: v }))}
+          onChange={(v) => setCard((c) => ({ ...c, cvc: formatCvc(v) }))}
         />
       </div>
       {cardForm.nameOnCardEnabled && (
@@ -182,7 +198,7 @@ function CardForm({
           label="Имя на карте"
           autoComplete="cc-name"
           value={card.nameOnCard}
-          onChange={(v) => setCard((c) => ({ ...c, nameOnCard: v }))}
+          onChange={(v) => setCard((c) => ({ ...c, nameOnCard: v.toUpperCase() }))}
         />
       )}
       {cardForm.warningText && (

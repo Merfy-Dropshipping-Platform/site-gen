@@ -39,9 +39,9 @@ export function PaymentSection(props: PaymentSectionProps) {
         <h2 className="[font-family:var(--font-body)] text-[length:var(--size-h3)] text-[rgb(var(--color-heading))]">{props.heading}</h2>
       )}
       {props.subheading && (
-        <p className="mt-0.5 mb-8 text-[length:var(--size-small)] text-[rgb(var(--color-muted))]">{props.subheading}</p>
+        <p className="mb-4 mt-0.5 text-[length:var(--size-small)] text-[rgb(var(--color-muted))]">{props.subheading}</p>
       )}
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2">
       {props.methods
         .filter((m) => m.enabled)
         .map((m) => {
@@ -51,7 +51,7 @@ export function PaymentSection(props: PaymentSectionProps) {
               <label
                 className={`flex items-center gap-2 px-3 py-5 border rounded-[var(--radius-input)] cursor-pointer transition-colors ${
                   selected
-                    ? 'border-[rgb(var(--color-text))]'
+                    ? 'border-[rgb(var(--color-accent))]'
                     : 'border-[rgb(var(--color-input-border))] hover:border-[rgb(var(--color-text)/.4)]'
                 }`}
               >
@@ -64,14 +64,14 @@ export function PaymentSection(props: PaymentSectionProps) {
                 />
                 <span
                   className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border ${
-                    selected ? 'border-[rgb(var(--color-text))]' : 'border-[rgb(var(--color-input-border))]'
+                    selected ? 'border-[rgb(var(--color-accent))]' : 'border-[rgb(var(--color-input-border))]'
                   }`}
                 >
                   {selected && (
-                    <span className="h-2.5 w-2.5 rounded-full bg-[rgb(var(--color-text))]" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-[rgb(var(--color-accent))]" />
                   )}
                 </span>
-                <span className="flex-1 [font-family:var(--font-body)] text-[length:var(--size-body)] text-[rgb(var(--color-text))]">{m.label}</span>
+                <span className="flex-1 text-[length:var(--size-small)] text-[rgb(var(--color-text))]">{m.label}</span>
                 <PaymentBrand methodKey={m.key} />
               </label>
               {m.key === 'bank_card' && selected && (
@@ -134,6 +134,22 @@ function PaymentBrand({ methodKey }: { methodKey: PaymentMethodKey }) {
   }
 }
 
+// === Card input formatters ===
+// Без масок tokenize ломается: SDK ждёт `expiry` в формате MM/YY, а пользователь
+// часто печатает 1228 → split('/') возвращает один элемент → не распарсилось.
+function formatCardNumber(input: string): string {
+  const digits = input.replace(/\D/g, '').slice(0, 19);
+  return digits.replace(/(\d{4})(?=\d)/g, '$1 ');
+}
+function formatExpiry(input: string): string {
+  const digits = input.replace(/\D/g, '').slice(0, 4);
+  if (digits.length < 3) return digits;
+  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+}
+function formatCvc(input: string): string {
+  return input.replace(/\D/g, '').slice(0, 4);
+}
+
 function CardForm({
   card,
   setCard,
@@ -161,20 +177,20 @@ function CardForm({
         label="Номер карты"
         autoComplete="cc-number"
         value={card.number}
-        onChange={(v) => setCard((c) => ({ ...c, number: v }))}
+        onChange={(v) => setCard((c) => ({ ...c, number: formatCardNumber(v) }))}
       />
       <div className="grid grid-cols-2 gap-4">
         <FloatingField
-          label="Срок действия"
+          label="ММ/ГГ"
           autoComplete="cc-exp"
           value={card.expiry}
-          onChange={(v) => setCard((c) => ({ ...c, expiry: v }))}
+          onChange={(v) => setCard((c) => ({ ...c, expiry: formatExpiry(v) }))}
         />
         <FloatingField
           label="CVV"
           autoComplete="cc-csc"
           value={card.cvc}
-          onChange={(v) => setCard((c) => ({ ...c, cvc: v }))}
+          onChange={(v) => setCard((c) => ({ ...c, cvc: formatCvc(v) }))}
         />
       </div>
       {cardForm.nameOnCardEnabled && (
@@ -182,7 +198,7 @@ function CardForm({
           label="Имя на карте"
           autoComplete="cc-name"
           value={card.nameOnCard}
-          onChange={(v) => setCard((c) => ({ ...c, nameOnCard: v }))}
+          onChange={(v) => setCard((c) => ({ ...c, nameOnCard: v.toUpperCase() }))}
         />
       )}
       {cardForm.warningText && (

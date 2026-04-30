@@ -12,6 +12,12 @@ export interface DeliverySectionProps {
   indexAutoFill: boolean;
 }
 
+/**
+ * Доставка: структурированные поля (Город / Улица / Дом / Кв / Индекс) — 1:1
+ * с админкой заказа. DaData подсказывает каждое поле отдельно и автозаполняет
+ * остальные при выборе варианта (например, выбор улицы → подставляет город,
+ * cityFiasId, индекс если они известны DaData).
+ */
 export function DeliverySection(props: DeliverySectionProps) {
   const { state, dispatch } = useCheckoutContext();
 
@@ -22,55 +28,82 @@ export function DeliverySection(props: DeliverySectionProps) {
     }
   }, [props.country.default]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Поддерживаем `address` (полная строка) — пересобираем при изменении
+  // структурированных полей. Backend смотрит и address, и отдельные поля.
+  useEffect(() => {
+    const parts = [
+      state.delivery.street ? state.delivery.street.trim() : '',
+      state.delivery.building ? `д. ${state.delivery.building.trim()}` : '',
+      state.delivery.apartment ? `кв. ${state.delivery.apartment.trim()}` : '',
+    ].filter(Boolean);
+    const composed = parts.join(', ');
+    if (composed !== state.delivery.address) {
+      dispatch({ type: 'SET_DELIVERY_FIELD', field: 'address', value: composed });
+    }
+  }, [state.delivery.street, state.delivery.building, state.delivery.apartment]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <>
       {props.heading && (
         <h2 className="mb-4 [font-family:var(--font-body)] text-[length:var(--size-h3)] text-[rgb(var(--color-heading))]">{props.heading}</h2>
       )}
-    <div className="flex flex-col gap-4">
-      {props.country.enabled && (
-        props.country.selectable ? (
-          <CountrySelect
-            value={state.delivery.country}
-            onChange={(v) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'country', value: v })}
-          />
-        ) : (
-          <FloatingField
-            label="Страна/Регион"
-            value={state.delivery.country}
-            readOnly
-            onChange={(v) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'country', value: v })}
-            trailingIcon={SearchIcon}
-          />
-        )
-      )}
-      {props.nameField.enabled &&
-        (props.nameField.splitFirstLast ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FloatingField
-              label="Имя"
-              autoComplete="given-name"
-              value={state.delivery.firstName}
-              onChange={(v) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'firstName', value: v })}
+      <div className="flex flex-col gap-4">
+        {props.country.enabled &&
+          (props.country.selectable ? (
+            <CountrySelect
+              value={state.delivery.country}
+              onChange={(v) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'country', value: v })}
             />
+          ) : (
             <FloatingField
-              label="Фамилия"
-              autoComplete="family-name"
-              value={state.delivery.lastName}
-              onChange={(v) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'lastName', value: v })}
+              label="Страна/Регион"
+              value={state.delivery.country}
+              readOnly
+              onChange={(v) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'country', value: v })}
+              trailingIcon={SearchIcon}
             />
-          </div>
-        ) : (
+          ))}
+        {props.nameField.enabled &&
+          (props.nameField.splitFirstLast ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FloatingField
+                label="Имя"
+                autoComplete="given-name"
+                value={state.delivery.firstName}
+                onChange={(v) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'firstName', value: v })}
+              />
+              <FloatingField
+                label="Фамилия"
+                autoComplete="family-name"
+                value={state.delivery.lastName}
+                onChange={(v) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'lastName', value: v })}
+              />
+            </div>
+          ) : (
+            <FloatingField
+              label="ФИО"
+              autoComplete="name"
+              value={state.delivery.fullName}
+              onChange={(v) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'fullName', value: v })}
+            />
+          ))}
+
+        <CityField enabled={props.cityDadata} />
+        <StreetField enabled={props.addressDadata} />
+        <div className="grid grid-cols-2 gap-4">
           <FloatingField
-            label="ФИО"
-            autoComplete="name"
-            value={state.delivery.fullName}
-            onChange={(v) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'fullName', value: v })}
+            label="Дом"
+            autoComplete="address-line2"
+            value={state.delivery.building}
+            onChange={(v) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'building', value: v })}
           />
-        ))}
-      <CityField enabled={props.cityDadata} />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <AddressField enabled={props.addressDadata} cityFiasId={state.delivery.cityFiasId} />
+          <FloatingField
+            label="Кв./офис"
+            autoComplete="address-line3"
+            value={state.delivery.apartment}
+            onChange={(v) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'apartment', value: v })}
+          />
+        </div>
         <FloatingField
           label="Индекс"
           autoComplete="postal-code"
@@ -78,7 +111,6 @@ export function DeliverySection(props: DeliverySectionProps) {
           onChange={(v) => dispatch({ type: 'SET_DELIVERY_FIELD', field: 'postalCode', value: v })}
         />
       </div>
-    </div>
     </>
   );
 }
@@ -176,6 +208,9 @@ function CountrySelect({ value, onChange }: { value: string; onChange: (v: strin
   );
 }
 
+/**
+ * Город — отдельное поле, DaData фильтрует suggestions от city до settlement.
+ */
 function CityField({ enabled }: { enabled: boolean }) {
   const { state, dispatch } = useCheckoutContext();
   const { suggestions, suggest, clear } = useDadata();
@@ -193,9 +228,13 @@ function CityField({ enabled }: { enabled: boolean }) {
   };
 
   const pick = (s: DadataSuggestion) => {
-    dispatch({ type: 'SET_DELIVERY_FIELD', field: 'city', value: s.value });
-    if (s.data.fias_id) dispatch({ type: 'SET_DELIVERY_FIELD', field: 'cityFiasId', value: s.data.fias_id });
-    if (s.data.postal_code) dispatch({ type: 'SET_DELIVERY_FIELD', field: 'postalCode', value: s.data.postal_code });
+    const cityName = s.data.city ?? s.value;
+    dispatch({ type: 'SET_DELIVERY_FIELD', field: 'city', value: cityName });
+    const cityFias = s.data.city_fias_id ?? s.data.fias_id;
+    if (cityFias) dispatch({ type: 'SET_DELIVERY_FIELD', field: 'cityFiasId', value: cityFias });
+    if (s.data.postal_code) {
+      dispatch({ type: 'SET_DELIVERY_FIELD', field: 'postalCode', value: s.data.postal_code });
+    }
     setOpen(false);
     clear();
   };
@@ -207,7 +246,6 @@ function CityField({ enabled }: { enabled: boolean }) {
         autoComplete="address-level2"
         value={state.delivery.city}
         onChange={onChange}
-        onFocus={() => suggestions.length > 0 && setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 200)}
         trailingIcon={enabled ? SearchIcon : undefined}
       />
@@ -228,14 +266,19 @@ function CityField({ enabled }: { enabled: boolean }) {
   );
 }
 
-function AddressField({ enabled, cityFiasId }: { enabled: boolean; cityFiasId?: string }) {
+/**
+ * Улица — отдельное поле, DaData ищет адрес в выбранном городе и при выборе
+ * варианта раскладывает street/house/flat/postal_code в соответствующие
+ * поля state.
+ */
+function StreetField({ enabled }: { enabled: boolean }) {
   const { state, dispatch } = useCheckoutContext();
   const { suggestions, suggest, clear } = useDadata();
   const [open, setOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const onChange = (val: string) => {
-    dispatch({ type: 'SET_DELIVERY_FIELD', field: 'address', value: val });
+    dispatch({ type: 'SET_DELIVERY_FIELD', field: 'street', value: val });
     if (!enabled) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
@@ -245,8 +288,25 @@ function AddressField({ enabled, cityFiasId }: { enabled: boolean; cityFiasId?: 
   };
 
   const pick = (s: DadataSuggestion) => {
-    dispatch({ type: 'SET_DELIVERY_FIELD', field: 'address', value: s.value });
-    if (s.data.postal_code) dispatch({ type: 'SET_DELIVERY_FIELD', field: 'postalCode', value: s.data.postal_code });
+    // DaData возвращает полную строку — нам нужны только улица + дом + кв.
+    const streetName = (s.data.street_with_type ?? s.data.street ?? s.value).trim();
+    dispatch({ type: 'SET_DELIVERY_FIELD', field: 'street', value: streetName });
+
+    if (s.data.house) {
+      dispatch({ type: 'SET_DELIVERY_FIELD', field: 'building', value: s.data.house });
+    }
+    if (s.data.flat) {
+      dispatch({ type: 'SET_DELIVERY_FIELD', field: 'apartment', value: s.data.flat });
+    }
+    // Подтянуть город / индекс / fiasId если ещё не заданы.
+    if (s.data.city && !state.delivery.city) {
+      dispatch({ type: 'SET_DELIVERY_FIELD', field: 'city', value: s.data.city });
+    }
+    const cityFias = s.data.city_fias_id;
+    if (cityFias) dispatch({ type: 'SET_DELIVERY_FIELD', field: 'cityFiasId', value: cityFias });
+    if (s.data.postal_code) {
+      dispatch({ type: 'SET_DELIVERY_FIELD', field: 'postalCode', value: s.data.postal_code });
+    }
     setOpen(false);
     clear();
   };
@@ -254,9 +314,9 @@ function AddressField({ enabled, cityFiasId }: { enabled: boolean; cityFiasId?: 
   return (
     <div className="relative">
       <FloatingField
-        label="Полный адрес"
-        autoComplete="street-address"
-        value={state.delivery.address}
+        label="Улица"
+        autoComplete="address-line1"
+        value={state.delivery.street}
         onChange={onChange}
         onBlur={() => setTimeout(() => setOpen(false), 200)}
         trailingIcon={enabled ? SearchIcon : undefined}

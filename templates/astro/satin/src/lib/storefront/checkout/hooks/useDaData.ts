@@ -4,9 +4,19 @@ export interface DadataSuggestion {
   value: string;
   data: {
     fias_id?: string;
+    city_fias_id?: string;
     postal_code?: string;
     city?: string;
     region_with_type?: string;
+    /** "ул", "ул Красногвардейская" — for street-level suggestions. */
+    street_with_type?: string;
+    street?: string;
+    /** "д 1" — for house-level suggestions. */
+    house?: string;
+    house_type?: string;
+    /** "кв 5" — for flat-level suggestions. */
+    flat?: string;
+    flat_type?: string;
   };
 }
 

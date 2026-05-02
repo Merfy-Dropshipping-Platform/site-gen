@@ -1,49 +1,56 @@
 /**
  * Rose Theme — Component Registry
  *
- * Maps all 18 Puck component types to their corresponding Astro components
- * in templates/astro/rose/src/components/.
+ * Maps all 20 Puck component types to their corresponding Astro components
+ * in @merfy/theme-base/blocks/<Block>/<Block>.astro.
  *
- * Import paths are relative from src/pages/ to src/components/.
+ * Spec 082 W2: switched live build for Rose to packages-only path.
+ * Previously imports were relative `../components/<X>.astro` pointing at
+ * `templates/astro/rose/src/components/`; now they resolve via the
+ * pnpm workspace alias to `packages/theme-base/blocks/<X>/<X>.astro`.
  */
 import type { ComponentRegistryEntry } from "../page-generator";
 
-function staticComponent(
+/**
+ * Build a registry entry that points at a packages-managed block.
+ * Used by the new packages-only Rose registry (spec 082 W2).
+ */
+function packageComponent(
   name: string,
-  astroFile: string,
+  blockDir: string,
 ): ComponentRegistryEntry {
   return {
     name,
     kind: "static",
-    importPath: `../components/${astroFile}`,
+    importPath: `@merfy/theme-base/blocks/${blockDir}/${blockDir}.astro`,
   };
 }
 
 /** All Puck component types → Astro component mappings for Rose theme */
 export const roseRegistry: Record<string, ComponentRegistryEntry> = {
-  Header: staticComponent("Header", "Header.astro"),
-  Hero: staticComponent("Hero", "Hero.astro"),
-  Footer: staticComponent("Footer", "Footer.astro"),
-  MainText: staticComponent("MainText", "TextBlock.astro"),
-  PopularProducts: staticComponent("PopularProducts", "PopularProducts.astro"),
-  Collections: staticComponent("Collections", "Collections.astro"),
-  ContactForm: staticComponent("ContactForm", "ContactForm.astro"),
-  Gallery: staticComponent("Gallery", "Gallery.astro"),
-  PromoBanner: staticComponent("PromoBanner", "PromoBanner.astro"),
-  ImageWithText: staticComponent("ImageWithText", "ImageWithText.astro"),
-  Newsletter: staticComponent("Newsletter", "Newsletter.astro"),
-  Video: staticComponent("Video", "Video.astro"),
-  Slideshow: staticComponent("Slideshow", "Slideshow.astro"),
-  MultiColumns: staticComponent("MultiColumns", "MultiColumns.astro"),
-  MultiRows: staticComponent("MultiRows", "MultiRows.astro"),
-  CollapsibleSection: staticComponent(
+  Header: packageComponent("Header", "Header"),
+  Hero: packageComponent("Hero", "Hero"),
+  Footer: packageComponent("Footer", "Footer"),
+  MainText: packageComponent("MainText", "MainText"),
+  PopularProducts: packageComponent("PopularProducts", "PopularProducts"),
+  Collections: packageComponent("Collections", "Collections"),
+  ContactForm: packageComponent("ContactForm", "ContactForm"),
+  Gallery: packageComponent("Gallery", "Gallery"),
+  PromoBanner: packageComponent("PromoBanner", "PromoBanner"),
+  ImageWithText: packageComponent("ImageWithText", "ImageWithText"),
+  Newsletter: packageComponent("Newsletter", "Newsletter"),
+  Video: packageComponent("Video", "Video"),
+  Slideshow: packageComponent("Slideshow", "Slideshow"),
+  MultiColumns: packageComponent("MultiColumns", "MultiColumns"),
+  MultiRows: packageComponent("MultiRows", "MultiRows"),
+  CollapsibleSection: packageComponent(
     "CollapsibleSection",
-    "CollapsibleSection.astro",
+    "CollapsibleSection",
   ),
-  Publications: staticComponent("Publications", "Publications.astro"),
-  Product: staticComponent("Product", "Product.astro"),
-  CartSection: staticComponent("CartSection", "CartSection.astro"),
-  CheckoutSection: staticComponent("CheckoutSection", "CheckoutSection.astro"),
+  Publications: packageComponent("Publications", "Publications"),
+  Product: packageComponent("Product", "Product"),
+  CartSection: packageComponent("CartSection", "CartSection"),
+  CheckoutSection: packageComponent("CheckoutSection", "CheckoutSection"),
 };
 
 /**

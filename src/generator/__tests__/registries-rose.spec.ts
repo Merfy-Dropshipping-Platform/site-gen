@@ -2,14 +2,18 @@
  * Tests for registries/rose.ts
  *
  * Validates:
- * - All 18 Puck component types are registered
- * - Import paths follow correct pattern
+ * - All 20 Puck component types are registered (spec 082 W2 + W6:
+ *   18 legacy blocks + CartSection + CheckoutSection)
+ * - Import paths follow the packages-only pattern
+ *   `@merfy/theme-base/blocks/<X>/<X>.astro`
  * - Component kinds are correct (static vs island)
  * - Registry structure matches ComponentRegistryEntry interface
+ *
+ * Spec 082 Stage 1 W2: Rose live build switched from
+ * `templates/astro/rose/src/components/<X>.astro` to packages-only.
  */
 
 import { roseRegistry } from "../registries/rose";
-import type { ComponentRegistryEntry } from "../page-generator";
 
 /** All expected Puck component types in Rose theme */
 const EXPECTED_COMPONENTS = [
@@ -31,6 +35,8 @@ const EXPECTED_COMPONENTS = [
   "CollapsibleSection",
   "Publications",
   "Product",
+  "CartSection",
+  "CheckoutSection",
 ];
 
 describe("roseRegistry", () => {
@@ -39,7 +45,7 @@ describe("roseRegistry", () => {
     expect(Object.keys(roseRegistry).length).toBeGreaterThan(0);
   });
 
-  it("contains all 18 expected component types", () => {
+  it("contains all 20 expected component types", () => {
     for (const componentType of EXPECTED_COMPONENTS) {
       expect(roseRegistry).toHaveProperty(componentType);
     }
@@ -47,7 +53,7 @@ describe("roseRegistry", () => {
   });
 
   it("each entry has required ComponentRegistryEntry fields", () => {
-    for (const [key, entry] of Object.entries(roseRegistry)) {
+    for (const [, entry] of Object.entries(roseRegistry)) {
       expect(entry).toHaveProperty("name");
       expect(entry).toHaveProperty("kind");
       expect(entry).toHaveProperty("importPath");
@@ -63,9 +69,12 @@ describe("roseRegistry", () => {
     }
   });
 
-  it("import paths point to ../components/ directory", () => {
+  it("import paths point to @merfy/theme-base/blocks/ (packages-only)", () => {
     for (const entry of Object.values(roseRegistry)) {
-      expect(entry.importPath).toMatch(/^\.\.\/components\//);
+      expect(entry.importPath).toMatch(/^@merfy\/theme-base\/blocks\//);
+      // Must NOT use the legacy templates path anymore.
+      expect(entry.importPath).not.toMatch(/templates\/astro\/rose/);
+      expect(entry.importPath).not.toMatch(/^\.\.\/components\//);
     }
   });
 
@@ -75,16 +84,17 @@ describe("roseRegistry", () => {
     }
   });
 
-  it("entry names match their registry keys (or map to Astro file)", () => {
-    // Each key should match the entry name
+  it("entry names match their registry keys", () => {
     for (const [key, entry] of Object.entries(roseRegistry)) {
       expect(entry.name).toBe(key);
     }
   });
 
-  it("MainText maps to TextBlock.astro", () => {
+  it("MainText maps to MainText/MainText.astro (was TextBlock.astro pre-082 W2)", () => {
     const mainText = roseRegistry["MainText"];
     expect(mainText).toBeDefined();
-    expect(mainText.importPath).toContain("TextBlock.astro");
+    expect(mainText.importPath).toBe(
+      "@merfy/theme-base/blocks/MainText/MainText.astro",
+    );
   });
 });

@@ -58,7 +58,7 @@ const sizeOptions = [
 ];
 
 export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
-  label: 'Информация о товаре',
+  label: 'Товар',
   category: 'products',
   fields: {
     productId: { type: 'productPicker', label: 'Выбор товара' },

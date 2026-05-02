@@ -4,13 +4,17 @@
  * Validates:
  * - All 20 Puck component types are registered (spec 082 W2 + W6:
  *   18 legacy blocks + CartSection + CheckoutSection)
- * - Import paths follow the packages-only pattern
- *   `@merfy/theme-base/blocks/<X>/<X>.astro`
+ * - Import paths follow the relative consumption pattern
+ *   `../components/<X>.astro` (assembler копирует source из
+ *   packages/theme-base/blocks/ в isolated build scaffold)
  * - Component kinds are correct (static vs island)
  * - Registry structure matches ComponentRegistryEntry interface
  *
- * Spec 082 Stage 1 W2: Rose live build switched from
- * `templates/astro/rose/src/components/<X>.astro` to packages-only.
+ * Spec 082 Stage 1 W2/T12.5: Rose live build использует packages-only
+ * source-of-truth (assembler копирует из packages/theme-base/blocks/),
+ * но consumption side (importPath в registry) — relative path. T12 попыталась
+ * прописать workspace alias напрямую, но Vite/Rollup не resolved alias
+ * в isolated build dir → revert на relative path в T12.5.
  */
 
 import { roseRegistry } from "../registries/rose";
@@ -69,12 +73,14 @@ describe("roseRegistry", () => {
     }
   });
 
-  it("import paths point to @merfy/theme-base/blocks/ (packages-only)", () => {
+  it("import paths point to ../components/ (relative consumption path)", () => {
     for (const entry of Object.values(roseRegistry)) {
-      expect(entry.importPath).toMatch(/^@merfy\/theme-base\/blocks\//);
-      // Must NOT use the legacy templates path anymore.
+      expect(entry.importPath).toMatch(/^\.\.\/components\//);
+      // Must NOT use the legacy templates path.
       expect(entry.importPath).not.toMatch(/templates\/astro\/rose/);
-      expect(entry.importPath).not.toMatch(/^\.\.\/components\//);
+      // Must NOT use workspace alias (Vite/Rollup can't resolve in
+      // isolated build dir — see T12.5 fix).
+      expect(entry.importPath).not.toMatch(/@merfy\//);
     }
   });
 
@@ -90,11 +96,9 @@ describe("roseRegistry", () => {
     }
   });
 
-  it("MainText maps to MainText/MainText.astro (was TextBlock.astro pre-082 W2)", () => {
+  it("MainText maps to ../components/MainText.astro (was TextBlock.astro pre-082 W2)", () => {
     const mainText = roseRegistry["MainText"];
     expect(mainText).toBeDefined();
-    expect(mainText.importPath).toBe(
-      "@merfy/theme-base/blocks/MainText/MainText.astro",
-    );
+    expect(mainText.importPath).toBe("../components/MainText.astro");
   });
 });

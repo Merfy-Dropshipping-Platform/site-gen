@@ -1,19 +1,33 @@
 /**
  * Rose Theme — Component Registry
  *
- * Maps all 20 Puck component types to their corresponding Astro components
- * in @merfy/theme-base/blocks/<Block>/<Block>.astro.
+ * Maps all 20 Puck component types to their corresponding Astro components.
  *
- * Spec 082 W2: switched live build for Rose to packages-only path.
- * Previously imports were relative `../components/<X>.astro` pointing at
- * `templates/astro/rose/src/components/`; now they resolve via the
- * pnpm workspace alias to `packages/theme-base/blocks/<X>/<X>.astro`.
+ * Spec 082 W2 (packages-only invariant):
+ *   SOURCE-OF-TRUTH: блоки live в `packages/theme-base/blocks/<X>/<X>.astro`.
+ *   `assembleFromPackages` копирует их в isolated build scaffold под
+ *   `<scaffold>/src/components/<X>.astro`.
+ *
+ * Consumption (что записывается в generated `src/pages/index.astro`):
+ *   relative path `../components/<X>.astro`. Это работает в isolated build
+ *   dir где `npm install` выполняется (нет pnpm workspace alias context,
+ *   нет Vite alias config). «Packages-only» property сохраняется на
+ *   SOURCE side (assembler копирует FROM packages/, не FROM
+ *   templates/astro/rose/legacy/).
+ *
+ * История: T12 попыталась прописать workspace alias `@merfy/theme-base/...`
+ * напрямую — Vite/Rollup не resolved alias в isolated dir → build failed.
+ * T12.5 revert на relative path который assembler уже set up correctly.
  */
 import type { ComponentRegistryEntry } from "../page-generator";
 
 /**
  * Build a registry entry that points at a packages-managed block.
- * Used by the new packages-only Rose registry (spec 082 W2).
+ *
+ * Returns relative consumption path (`../components/<X>.astro`) — assembler
+ * копирует source from `packages/theme-base/blocks/<X>/<X>.astro` в
+ * `<scaffold>/src/components/<X>.astro` перед build, так что relative
+ * import resolves correctly без workspace/npm/Vite alias wiring.
  */
 function packageComponent(
   name: string,
@@ -22,7 +36,7 @@ function packageComponent(
   return {
     name,
     kind: "static",
-    importPath: `@merfy/theme-base/blocks/${blockDir}/${blockDir}.astro`,
+    importPath: `../components/${blockDir}.astro`,
   };
 }
 

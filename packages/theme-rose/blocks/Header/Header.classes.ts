@@ -24,7 +24,7 @@ export const HeaderClasses = {
   logoText: 'text-lg sm:text-xl md:text-2xl font-bold tracking-wide [font-family:var(--font-body)] text-[rgb(var(--color-heading))]',
   navMenu: 'hidden md:flex items-center gap-4 lg:gap-8 xl:gap-12 2xl:gap-[80px]',
   navMenuCentered: 'hidden md:flex items-center justify-center gap-4 lg:gap-8 xl:gap-12 2xl:gap-[80px] mt-2',
-  navLink: 'text-sm md:text-base lg:text-lg xl:text-[20px] font-normal hover:opacity-70 transition-opacity [font-family:var(--font-body)] text-[length:var(--size-nav-link)] text-[rgb(var(--color-text))]',
+  navLink: 'text-sm md:text-base lg:text-lg xl:text-[20px] font-normal hover:opacity-70 transition-opacity [font-family:var(--font-heading)] text-[length:var(--size-nav-link)] text-[rgb(var(--color-text))]',
   actions: 'flex items-center gap-3 sm:gap-3 md:gap-4 lg:gap-5 xl:gap-[25px]',
   actionSearch: 'hidden md:flex w-8 h-8 lg:w-10 lg:h-10 items-center justify-center hover:opacity-70 transition-opacity text-[rgb(var(--color-text))]',
   actionCart: 'relative w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 flex items-center justify-center hover:opacity-70 transition-opacity text-[rgb(var(--color-text))]',

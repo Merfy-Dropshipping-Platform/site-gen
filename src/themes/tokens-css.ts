@@ -40,6 +40,8 @@ export function buildTokensCss(
   const bodyWeightSet = typeof s.bodyWeight === 'number';
   const headingWeightSet = typeof s.headingWeight === 'number';
   const logoWidthSet = typeof s.logoWidth === 'number';
+  const heroHeadingSizeSet = typeof s.heroHeadingSize === 'number';
+  const navLinkSizeSet = typeof s.navLinkSize === 'number';
 
   const buttonRadius = toPx(s.buttonRadius, 0);
   const cardRadius = toPx(s.cardRadius, 8);
@@ -54,6 +56,8 @@ export function buildTokensCss(
   const headingWeight =
     typeof s.headingWeight === 'number' ? s.headingWeight : 400;
   const logoWidth = toPx(s.logoWidth, 40);
+  const heroHeadingSize = toPx(s.heroHeadingSize, 48);
+  const navLinkSize = toPx(s.navLinkSize, 14);
   const errorColor = hexToRgbTriple(s.errorColor) ?? '252 165 165';
 
   // Cascade: merchant override (revision.themeSettings) → theme manifest →
@@ -79,9 +83,9 @@ export function buildTokensCss(
   --spacing-section-y: ${merchantFirst(sectionPadding, sectionPaddingSet, themeDefaults['--spacing-section-y'], '80px')};
   --spacing-grid-col-gap: ${themeDefaults['--spacing-grid-col-gap'] ?? '24px'};
   --spacing-grid-row-gap: ${themeDefaults['--spacing-grid-row-gap'] ?? '32px'};
-  --size-hero-heading: ${themeDefaults['--size-hero-heading'] ?? '48px'};
+  --size-hero-heading: ${merchantFirst(heroHeadingSize, heroHeadingSizeSet, themeDefaults['--size-hero-heading'], '48px')};
   --size-hero-button-h: ${themeDefaults['--size-hero-button-h'] ?? '48px'};
-  --size-nav-link: ${themeDefaults['--size-nav-link'] ?? '14px'};
+  --size-nav-link: ${merchantFirst(navLinkSize, navLinkSizeSet, themeDefaults['--size-nav-link'], '14px')};
   --size-section-heading: ${themeDefaults['--size-section-heading'] ?? '20px'};
   --size-logo-width: ${merchantFirst(logoWidth, logoWidthSet, themeDefaults['--size-logo-width'], '40px')};
   --size-newsletter-form-w: ${themeDefaults['--size-newsletter-form-w'] ?? '420px'};

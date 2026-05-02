@@ -70,4 +70,26 @@ describe('buildTokensCss merchant precedence', () => {
     // cardRadius not touched → manifest default 8px
     expect(css).toContain('--radius-card: 8px');
   });
+
+  it('merchant heroHeadingSize overrides manifest', () => {
+    const css = buildTokensCss({ heroHeadingSize: 64 }, 'rose');
+    expect(css).toContain('--size-hero-heading: 64px');
+  });
+
+  it('manifest --size-hero-heading default used when merchant did not set heroHeadingSize', () => {
+    const css = buildTokensCss({}, 'rose');
+    // Rose manifest has --size-hero-heading: 32px
+    expect(css).toContain('--size-hero-heading: 32px');
+  });
+
+  it('merchant navLinkSize overrides manifest', () => {
+    const css = buildTokensCss({ navLinkSize: 24 }, 'rose');
+    expect(css).toContain('--size-nav-link: 24px');
+  });
+
+  it('manifest --size-nav-link default used when merchant did not set navLinkSize', () => {
+    const css = buildTokensCss({}, 'rose');
+    // Rose manifest has --size-nav-link: 16px
+    expect(css).toContain('--size-nav-link: 16px');
+  });
 });

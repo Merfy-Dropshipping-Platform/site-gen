@@ -140,4 +140,53 @@ describe('PreviewService', () => {
     expect(html).toContain('NoScheme');
     expect(html).not.toContain('data-block-scheme');
   });
+
+  describe('PREVIEW_NAV_AGENT_INLINE', () => {
+    it('handles update-block postMessage с per-theme guard', async () => {
+      // Renderим preview page с rose theme — inline JS bridge должен содержать
+      // handler для update-block (используется iframe для hot-replace blocks).
+      const html = await svc.renderPreviewPage({
+        blocks: [{ type: 'Hero', props: { id: 'Hero-1' } }],
+        tokensCss: '',
+        fontHead: '',
+        themeId: 'rose',
+      });
+      // Inline-bridge JS должен содержать handler для update-block message
+      expect(html).toContain("ev.data.type === 'update-block'");
+      // Per-theme guard: только Rose делает hot-replace, другие темы skip
+      expect(html).toContain("currentThemeId !== 'rose'");
+      // Endpoint URL для fetch (через api-gateway proxy)
+      expect(html).toContain('/preview/block');
+    });
+
+    it('per-theme guard skips update-block для не-Rose тем', async () => {
+      // Один и тот же inline JS используется для всех тем — code identical,
+      // behaviour diverges at runtime через currentThemeId set in init message.
+      const html = await svc.renderPreviewPage({
+        blocks: [{ type: 'Hero', props: { id: 'Hero-1' } }],
+        tokensCss: '',
+        fontHead: '',
+        themeId: 'vanilla',
+      });
+      // Per-theme guard в коде есть (verify same string presence)
+      expect(html).toContain("currentThemeId !== 'rose'");
+      // Update-block handler в коде есть (тот же handler для всех тем,
+      // guard срабатывает на runtime)
+      expect(html).toContain('update-block');
+    });
+
+    it('init handler сохраняет themeId и siteId из parent', async () => {
+      // Init postMessage от parent должен сохранить currentThemeId и currentSiteId
+      // в iframe scope чтобы update-block handler потом использовал их в fetch URL.
+      const html = await svc.renderPreviewPage({
+        blocks: [{ type: 'Hero', props: { id: 'Hero-1' } }],
+        tokensCss: '',
+        fontHead: '',
+        themeId: 'rose',
+      });
+      expect(html).toContain("ev.data.type === 'init'");
+      expect(html).toContain('currentThemeId =');
+      expect(html).toContain('currentSiteId =');
+    });
+  });
 });

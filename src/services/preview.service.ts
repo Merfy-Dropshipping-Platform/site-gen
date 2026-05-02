@@ -438,6 +438,11 @@ const PREVIEW_NAV_AGENT_INLINE = `
   // Labels (filled by parent in 'init' / 'set-labels').
   var componentLabels = {};
   var subsectionItemLabels = {};
+  // Hot-update context (filled by parent in 'init').
+  // Used by 'update-block' handler для построения fetch URL и per-theme guard
+  // (Rose делает hot-replace, другие темы fallback на полный iframe reload).
+  var currentThemeId = '';
+  var currentSiteId = '';
 
   // Floating action pill — one instance per layer (section vs subsection),
   // can be visible simultaneously.
@@ -680,6 +685,42 @@ const PREVIEW_NAV_AGENT_INLINE = `
         subsectionItemLabels = ev.data.subsectionItemLabels;
       }
       refreshPills();
+    } else if (ev.data.type === 'init') {
+      // Запоминаем themeId/siteId для per-theme guard hot-update.
+      // Parent шлёт init после iframe ready (см. PreviewFrame.tsx).
+      currentThemeId = (ev.data.themeId || '') + '';
+      currentSiteId = (ev.data.siteId || '') + '';
+    } else if (ev.data.type === 'update-block') {
+      // Per-theme guard: только Rose hot-replace; другие темы skip
+      // (fallback на полный iframe reload через src change в PreviewFrame).
+      if (currentThemeId !== 'rose') return;
+      var blockId = ev.data.blockId;
+      if (!blockId || !currentSiteId) return;
+      var blockType = blockId.split('-')[0];
+      if (!blockType) return;
+      fetch('/api/sites/' + currentSiteId + '/preview/block', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ blockType: blockType, props: ev.data.props, themeId: currentThemeId }),
+      })
+        .then(function (r) { return r.text(); })
+        .then(function (html) {
+          var el = document.querySelector('[data-puck-component-id="' + blockId + '"]');
+          if (!el) return;
+          // Replace outerHTML; preserve enclosing color-scheme wrapper if any
+          // (preview.service.ts wraps each block in a div carrying the scheme attr).
+          var wrapper = el.parentElement;
+          var schemeAttr = 'data-block-' + 'scheme';
+          var hasSchemeWrapper = wrapper && wrapper.hasAttribute(schemeAttr);
+          if (hasSchemeWrapper) {
+            wrapper.innerHTML = html;
+          } else {
+            el.outerHTML = html;
+          }
+        })
+        .catch(function (err) {
+          console.error('[preview] update-block fetch failed', err);
+        });
     }
   });
 

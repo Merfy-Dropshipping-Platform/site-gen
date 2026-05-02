@@ -22,7 +22,7 @@ export const HeroClasses = {
     'bottom-right': 'justify-end',
   },
   title:
-    '[font-family:var(--font-heading)] text-[length:var(--size-hero-heading)] leading-tight text-[rgb(var(--color-heading))]',
+    '[font-family:var(--font-heading)] [font-weight:var(--weight-heading)] text-[length:var(--size-hero-heading)] leading-tight text-[rgb(var(--color-heading))]',
   subtitle: 'text-[16px] mt-2 [font-family:var(--font-body)] text-[rgb(var(--color-text))]',
   ctaButton:
     // Hero CTA = primary button: high-contrast action. Secondary was used

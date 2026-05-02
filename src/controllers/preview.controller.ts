@@ -1,4 +1,16 @@
-import { Controller, Get, Inject, Logger, Param, Query, Res } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Inject,
+  Logger,
+  Param,
+  Post,
+  Query,
+  Res,
+} from '@nestjs/common';
 import type { Response } from 'express';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { eq } from 'drizzle-orm';
@@ -8,6 +20,18 @@ import { PG_CONNECTION } from '../constants';
 import { getThemeManifest, googleFontHead } from '../themes/theme-manifest-loader';
 import { buildTokensCss } from '../themes/tokens-css';
 import { migrateRevisionData } from '../utils/revision-migrations';
+
+/**
+ * Body for POST /api/sites/:id/preview/block — single-block hot-render
+ * used by the iframe's `update-block` postMessage handler in the constructor
+ * (spec 082 Stage 1, T2/T5). `blockType` is required; `props` may be empty;
+ * `themeId` falls back to base resolver when omitted/null.
+ */
+interface RenderBlockBody {
+  blockType: string;
+  props: Record<string, unknown>;
+  themeId?: string | null;
+}
 
 /**
  * GET /api/sites/:id/preview — renders the constructor's iframe preview for
@@ -101,6 +125,47 @@ export class PreviewController {
         .status(500)
         .type('text/html')
         .send(this.errorPage(`Render failed: ${e?.message ?? 'unknown'}`));
+    }
+  }
+
+  /**
+   * POST /api/sites/:id/preview/block — render a SINGLE block to HTML.
+   *
+   * Used by the constructor iframe's `update-block` postMessage handler so
+   * editing a Puck prop hot-swaps just one block instead of reloading the
+   * full preview page. Auth-free like @Get() above (iframe loads without
+   * cookies). Body: { blockType, props, themeId? }. Returns text/html.
+   *
+   * 400 — blockType missing/empty.
+   * 500 — render failed (HTML comment body so iframe can show debuggable
+   *       text instead of NestJS JSON).
+   */
+  @Post('block')
+  @HttpCode(200)
+  async renderBlock(
+    @Body() body: RenderBlockBody,
+    @Res() res: Response,
+  ): Promise<void> {
+    if (!body?.blockType || typeof body.blockType !== 'string') {
+      throw new BadRequestException('blockType is required');
+    }
+    try {
+      const html = await this.preview.renderBlock({
+        blockName: body.blockType,
+        props: body.props ?? {},
+        themeId: body.themeId ?? null,
+      });
+      res.type('text/html').send(html);
+    } catch (err: unknown) {
+      const e = err as Error;
+      this.logger.error(
+        `[preview-block] render failed for blockType=${body.blockType}: ${e?.message ?? e}`,
+        e?.stack,
+      );
+      res
+        .status(500)
+        .type('text/html')
+        .send(`<!-- render error: ${e?.message ?? 'unknown'} -->`);
     }
   }
 

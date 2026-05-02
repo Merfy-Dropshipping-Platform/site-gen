@@ -144,9 +144,9 @@ export const GalleryPuckConfig: BlockPuckConfig<GalleryProps> = {
     heading: '',
     subheading: '',
     items: [
-      { id: 'item-1', type: 'image', url: '', alt: 'Image 1' },
-      { id: 'item-2', type: 'image', url: '', alt: 'Image 2' },
-      { id: 'item-3', type: 'image', url: '', alt: 'Image 3' },
+      { id: 'item-1', type: 'image', url: '', alt: 'Изображение' },
+      { id: 'item-2', type: 'product', productId: null },
+      { id: 'item-3', type: 'collection', collectionId: null },
     ],
     layout: 'featured',
     padding: { top: 80, bottom: 80 },

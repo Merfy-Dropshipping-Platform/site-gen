@@ -36,6 +36,7 @@
     "--cart-type": "drawer",
     "--card-style": "standard",
     "--card-alignment": "left",
+    "--text-transform-heading": "uppercase",
     "--color-error": "252 165 165",
     "--color-input-bg": "255 255 255",
     "--color-input-border": "153 153 153",

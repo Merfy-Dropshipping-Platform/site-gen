@@ -92,4 +92,14 @@ describe('buildTokensCss merchant precedence', () => {
     // Rose manifest has --size-nav-link: 16px
     expect(css).toContain('--size-nav-link: 16px');
   });
+
+  it('Rose manifest --text-transform-heading: uppercase emitted', () => {
+    const css = buildTokensCss({}, 'rose');
+    expect(css).toContain('--text-transform-heading: uppercase');
+  });
+
+  it('non-Rose theme falls back to none for --text-transform-heading', () => {
+    const css = buildTokensCss({}, null);
+    expect(css).toContain('--text-transform-heading: none');
+  });
 });

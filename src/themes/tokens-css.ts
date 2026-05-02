@@ -93,6 +93,7 @@ export function buildTokensCss(
   --color-error: ${errorColor};
   --color-muted: 156 163 175;
   --color-primary: 17 17 17;
+  --text-transform-heading: ${themeDefaults['--text-transform-heading'] ?? 'none'};
 }`;
 
   // Merchant colorSchemes win — they're editable via the admin ThemeSettings

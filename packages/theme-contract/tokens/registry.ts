@@ -73,6 +73,7 @@ export const TOKEN_REGISTRY = {
   '--cart-type':               { category: 'variant', values: ['drawer', 'page'], scope: 'theme' },
   '--card-style':              { category: 'variant', values: ['standard', 'card'], scope: 'theme' },
   '--card-alignment':          { category: 'variant', values: ['left', 'center', 'right'], scope: 'theme' },
+  '--text-transform-heading':  { category: 'variant', values: ['none', 'uppercase', 'capitalize'], scope: 'theme' },
 } as const satisfies Record<`--${string}`, TokenMeta>;
 
 export type TokenKey = keyof typeof TOKEN_REGISTRY;

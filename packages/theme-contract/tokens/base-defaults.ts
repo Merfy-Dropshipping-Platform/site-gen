@@ -66,4 +66,5 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   '--cart-type': 'drawer',
   '--card-style': 'standard',
   '--card-alignment': 'left',
+  '--text-transform-heading': 'none',
 };

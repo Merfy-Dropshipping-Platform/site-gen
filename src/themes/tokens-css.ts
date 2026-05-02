@@ -25,6 +25,22 @@ export function buildTokensCss(
 ): string {
   const manifest = themeId ? getThemeManifest(themeId) : null;
   const s = isPlainObject(settings) ? settings : {};
+
+  // Track whether merchant explicitly set each field — needed to distinguish
+  // "user typed 0/empty" from "absent/unset" (the latter must fall through to
+  // manifest defaults). We can't infer this from the converted value alone.
+  const buttonRadiusSet = typeof s.buttonRadius === 'number';
+  const cardRadiusSet = typeof s.cardRadius === 'number';
+  const inputRadiusSet = typeof s.inputRadius === 'number';
+  const mediaRadiusSet = typeof s.mediaRadius === 'number';
+  const fieldRadiusSet = typeof s.fieldRadius === 'number';
+  const headingFontSet = typeof s.headingFont === 'string' && !!s.headingFont;
+  const bodyFontSet = typeof s.bodyFont === 'string' && !!s.bodyFont;
+  const sectionPaddingSet = typeof s.sectionPadding === 'number';
+  const bodyWeightSet = typeof s.bodyWeight === 'number';
+  const headingWeightSet = typeof s.headingWeight === 'number';
+  const logoWidthSet = typeof s.logoWidth === 'number';
+
   const buttonRadius = toPx(s.buttonRadius, 0);
   const cardRadius = toPx(s.cardRadius, 8);
   const inputRadius = toPx(s.inputRadius, 8);
@@ -40,38 +56,34 @@ export function buildTokensCss(
   const logoWidth = toPx(s.logoWidth, 40);
   const errorColor = hexToRgbTriple(s.errorColor) ?? '252 165 165';
 
-  // Theme manifest is the SOURCE OF TRUTH for fonts/radii/spacing/sizes.
-  // Theme defaults (Bitter/Arsenal for Rose, Urbanist/Inter for Bloom,
-  // Kelly Slab/Arsenal for Satin, Roboto Flex for Flux, Bitter/Arsenal
-  // for Vanilla) always win over merchant-generic values from
-  // themeSettings — merchant's ThemeSettings UI doesn't yet expose these
-  // fields per-site so letting their defaults override theme identity
-  // makes every theme visually indistinguishable. Merchant retains
-  // control over colorSchemes (which ARE exposed) and per-block props.
+  // Cascade: merchant override (revision.themeSettings) → theme manifest →
+  // hardcoded fallback. Merchant ThemeSettingsPanel saves customizations
+  // in revision.data.themeSettings (constructor); preview + build pipelines
+  // both call buildTokensCss to apply them. Spec 082 Stage 2a N4.5 flipped
+  // precedence so merchant edits actually take effect — previously theme
+  // manifest defaults always won, silently discarding merchant input.
   const themeDefaults = (manifest?.defaults ?? {}) as Record<string, string>;
-  const themeFirst = (themeKey: string, hardcoded: string): string =>
-    themeDefaults[themeKey] ?? hardcoded;
 
   const rootRules = `
 :root {
-  --radius-button: ${themeFirst('--radius-button', buttonRadius)};
-  --radius-card: ${themeFirst('--radius-card', cardRadius)};
-  --radius-input: ${themeFirst('--radius-input', inputRadius)};
-  --radius-media: ${themeFirst('--radius-media', mediaRadius)};
-  --radius-field: ${themeFirst('--radius-field', fieldRadius)};
-  --font-heading: ${themeFirst('--font-heading', headingFont)};
-  --font-body: ${themeFirst('--font-body', bodyFont)};
-  --weight-body: ${themeDefaults['--weight-body'] ?? bodyWeight};
-  --weight-heading: ${themeDefaults['--weight-heading'] ?? headingWeight};
-  --section-padding: ${themeFirst('--spacing-section-y', sectionPadding)};
-  --spacing-section-y: ${themeFirst('--spacing-section-y', sectionPadding)};
+  --radius-button: ${merchantFirst(buttonRadius, buttonRadiusSet, themeDefaults['--radius-button'], '0px')};
+  --radius-card: ${merchantFirst(cardRadius, cardRadiusSet, themeDefaults['--radius-card'], '8px')};
+  --radius-input: ${merchantFirst(inputRadius, inputRadiusSet, themeDefaults['--radius-input'], '8px')};
+  --radius-media: ${merchantFirst(mediaRadius, mediaRadiusSet, themeDefaults['--radius-media'], '8px')};
+  --radius-field: ${merchantFirst(fieldRadius, fieldRadiusSet, themeDefaults['--radius-field'], '4px')};
+  --font-heading: ${merchantFirst(headingFont, headingFontSet, themeDefaults['--font-heading'], 'system-ui')};
+  --font-body: ${merchantFirst(bodyFont, bodyFontSet, themeDefaults['--font-body'], 'system-ui')};
+  --weight-body: ${merchantFirst(String(bodyWeight), bodyWeightSet, themeDefaults['--weight-body'], '400')};
+  --weight-heading: ${merchantFirst(String(headingWeight), headingWeightSet, themeDefaults['--weight-heading'], '400')};
+  --section-padding: ${merchantFirst(sectionPadding, sectionPaddingSet, themeDefaults['--spacing-section-y'], '80px')};
+  --spacing-section-y: ${merchantFirst(sectionPadding, sectionPaddingSet, themeDefaults['--spacing-section-y'], '80px')};
   --spacing-grid-col-gap: ${themeDefaults['--spacing-grid-col-gap'] ?? '24px'};
   --spacing-grid-row-gap: ${themeDefaults['--spacing-grid-row-gap'] ?? '32px'};
   --size-hero-heading: ${themeDefaults['--size-hero-heading'] ?? '48px'};
   --size-hero-button-h: ${themeDefaults['--size-hero-button-h'] ?? '48px'};
   --size-nav-link: ${themeDefaults['--size-nav-link'] ?? '14px'};
   --size-section-heading: ${themeDefaults['--size-section-heading'] ?? '20px'};
-  --size-logo-width: ${themeFirst('--size-logo-width', logoWidth)};
+  --size-logo-width: ${merchantFirst(logoWidth, logoWidthSet, themeDefaults['--size-logo-width'], '40px')};
   --size-newsletter-form-w: ${themeDefaults['--size-newsletter-form-w'] ?? '420px'};
   --container-max-width: ${themeDefaults['--container-max-width'] ?? '1320px'};
   --color-error: ${errorColor};
@@ -162,6 +174,23 @@ function fontFamily(v: unknown, fallback: string): string {
     roboto: '"Roboto", system-ui, sans-serif',
   };
   return known[v] ?? `"${v}", ${fallback}`;
+}
+
+/**
+ * Merchant-first cascade: returns merchant-derived value if user set it,
+ * otherwise theme manifest token, otherwise hardcoded fallback.
+ *
+ * `merchantSet` = was the merchant key actually present in settings?
+ * (We can't distinguish "user set 0" from "absent" without explicit flag.)
+ */
+function merchantFirst(
+  merchantValue: string,
+  merchantSet: boolean,
+  themeDefault: string | undefined,
+  hardcoded: string,
+): string {
+  if (merchantSet) return merchantValue;
+  return themeDefault ?? hardcoded;
 }
 
 function schemeClassId(id: string): string {

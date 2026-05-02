@@ -235,7 +235,7 @@ export class PreviewService {
   <title>Preview</title>
   ${input.fontHead}
   <style>${previewTailwind}</style>
-  <style>${input.tokensCss}</style>
+  <style id="__merfy_tokens_css">${input.tokensCss}</style>
 </head>
 <body>
   ${bodyHtml}
@@ -720,6 +720,26 @@ const PREVIEW_NAV_AGENT_INLINE = `
         })
         .catch(function (err) {
           console.error('[preview] update-block fetch failed', err);
+        });
+    } else if (ev.data.type === 'update-tokens') {
+      // Per-theme guard: только Rose hot-replace tokens.css; другие темы skip
+      // (fallback на полный iframe reload через src change в PreviewFrame).
+      // Symmetric to update-block — Stage 2a N4.
+      if (currentThemeId !== 'rose') return;
+      if (!currentSiteId) return;
+      fetch('/api/sites/' + currentSiteId + '/preview/tokens-css', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ themeSettings: ev.data.themeSettings, themeId: currentThemeId }),
+      })
+        .then(function (r) { return r.text(); })
+        .then(function (css) {
+          var styleEl = document.getElementById('__merfy_tokens_css');
+          if (!styleEl) return;
+          styleEl.textContent = css;
+        })
+        .catch(function (err) {
+          console.error('[preview] update-tokens fetch failed', err);
         });
     }
   });

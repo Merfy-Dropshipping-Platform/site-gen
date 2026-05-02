@@ -34,6 +34,19 @@ interface RenderBlockBody {
 }
 
 /**
+ * Body for POST /api/sites/:id/preview/tokens-css — tokens.css hot-render
+ * used by the iframe's `update-tokens` postMessage handler in the constructor
+ * (spec 082 Stage 2a, N4). Symmetric to RenderBlockBody but renders the
+ * full tokens.css string instead of a single block. `themeSettings` is
+ * required (constructor sends the full themeSettings object); `themeId`
+ * falls back to the manifest defaults when omitted/null.
+ */
+interface RenderTokensCssBody {
+  themeSettings: Record<string, unknown>;
+  themeId?: string | null;
+}
+
+/**
  * GET /api/sites/:id/preview — renders the constructor's iframe preview for
  * the site's active revision. Phase 0 shipped as a hardcoded stub; Phase 1c
  * wires it to real site_revision data so the iframe shows the user's actual
@@ -166,6 +179,46 @@ export class PreviewController {
         .status(500)
         .type('text/html')
         .send(`<!-- render error: ${e?.message ?? 'unknown'} -->`);
+    }
+  }
+
+  /**
+   * POST /api/sites/:id/preview/tokens-css — render tokens.css text from
+   * a `themeSettings` object.
+   *
+   * Used by the constructor iframe's `update-tokens` postMessage handler so
+   * editing a theme-level token (radii, fonts, color schemes, etc) hot-swaps
+   * the `<style id="__merfy_tokens_css">` content instead of reloading the
+   * full preview page. Auth-free like sibling endpoints (iframe loads without
+   * cookies). Body: { themeSettings, themeId? }. Returns text/css.
+   *
+   * 400 — body missing/invalid.
+   * 500 — generation failed (CSS comment body so iframe can show debuggable
+   *       text instead of NestJS JSON, even though the style tag swap is a
+   *       no-op on parse error).
+   */
+  @Post('tokens-css')
+  @HttpCode(200)
+  async renderTokensCss(
+    @Body() body: RenderTokensCssBody,
+    @Res() res: Response,
+  ): Promise<void> {
+    if (!body || typeof body !== 'object') {
+      throw new BadRequestException('themeSettings required');
+    }
+    try {
+      const css = buildTokensCss(body.themeSettings ?? {}, body.themeId ?? null);
+      res.type('text/css').send(css);
+    } catch (err: unknown) {
+      const e = err as Error;
+      this.logger.error(
+        `[preview-tokens-css] failed for themeId=${body.themeId}: ${e?.message ?? e}`,
+        e?.stack,
+      );
+      res
+        .status(500)
+        .type('text/css')
+        .send(`/* tokens-css render error: ${e?.message ?? 'unknown'} */`);
     }
   }
 

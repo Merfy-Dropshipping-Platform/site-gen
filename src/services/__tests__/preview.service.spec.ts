@@ -188,5 +188,36 @@ describe('PreviewService', () => {
       expect(html).toContain('currentThemeId =');
       expect(html).toContain('currentSiteId =');
     });
+
+    it('update-tokens handler присутствует с per-theme guard', async () => {
+      // Stage 2a N4: hot-replace tokens.css в iframe без full reload.
+      // Symmetric to update-block — same per-theme Rose guard.
+      const html = await svc.renderPreviewPage({
+        blocks: [{ type: 'Hero', props: { id: 'Hero-1' } }],
+        tokensCss: ':root { --foo: 1 }',
+        fontHead: '',
+        themeId: 'rose',
+      });
+      expect(html).toContain("ev.data.type === 'update-tokens'");
+      // Per-theme guard: только Rose; vanilla/satin/etc skip
+      expect(html).toContain("currentThemeId !== 'rose'");
+      // Endpoint URL для fetch (через api-gateway proxy)
+      expect(html).toContain('/preview/tokens-css');
+      // Stable id для replacement target
+      expect(html).toContain('__merfy_tokens_css');
+    });
+
+    it('renderPreviewPage emits <style id="__merfy_tokens_css"> tag', async () => {
+      // The update-tokens handler replaces .textContent of this element;
+      // missing id → handler is a no-op. Pin the id so renames break loudly.
+      const html = await svc.renderPreviewPage({
+        blocks: [{ type: 'Hero', props: { id: 'Hero-1' } }],
+        tokensCss: ':root { --radius-button: 8px; }',
+        fontHead: '',
+        themeId: 'rose',
+      });
+      expect(html).toContain('<style id="__merfy_tokens_css">');
+      expect(html).toContain('--radius-button: 8px');
+    });
   });
 });

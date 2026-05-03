@@ -2,18 +2,28 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import data from '../../data/data.json';
 import siteConfig from '../../data/site-config.json';
-import Header from '../../components/Header.astro';
-import Footer from '../../components/Footer.astro';
-import CatalogIsland from '../../components/react/CatalogIsland';
 import collectionsData from '../../data/collections.json';
 
-export function getStaticPaths() {
-  const cols: any[] = Array.isArray(collectionsData) ? collectionsData : [];
+// Component map — same set as catalog.astro for now
+import Header from '../../components/Header.astro';
+import Hero from '../../components/Hero.astro';
+import Footer from '../../components/Footer.astro';
+import Catalog from '../../components/Catalog.astro';
+import PromoBanner from '../../components/PromoBanner.astro';
+import Collections from '../../components/Collections.astro';
+import PopularProducts from '../../components/PopularProducts.astro';
+import Gallery from '../../components/Gallery.astro';
+import Newsletter from '../../components/Newsletter.astro';
 
+const componentMap: Record<string, any> = {
+  Header, Hero, Footer, Catalog, PromoBanner, Collections, PopularProducts, Gallery, Newsletter,
+};
+
+export function getStaticPaths() {
+  const cols: any[] = Array.isArray(collectionsData) ? (collectionsData as any) : [];
   if (cols.length === 0) {
     return [{ params: { slug: '_placeholder' }, props: { collection: null } }];
   }
-
   const paths: { params: { slug: string }; props: { collection: any } }[] = [];
   const seen = new Set<string>();
   for (const c of cols) {
@@ -29,35 +39,84 @@ export function getStaticPaths() {
 const { slug } = Astro.params;
 const { collection } = Astro.props;
 
-const meta = data?.meta ?? {};
-const blocks = data?.content ?? [];
-const headerBlock = blocks.find((b: any) => b.type === 'Header');
-const footerBlock = blocks.find((b: any) => b.type === 'Footer');
+// Read pagesData['page-collection'] template, fallback to inline default if absent
+const pagesData = (data as any)?.pagesData ?? {};
+const collectionPage = pagesData['page-collection'];
+
+const FALLBACK_DEFAULT = [
+  { type: 'Header', props: { id: 'Header-fallback' } },
+  {
+    type: 'Hero',
+    props: {
+      id: 'Hero-fallback',
+      variant: 'split',
+      heading: { text: '{{COLLECTION_NAME}}', size: 'large' },
+      subtitle: { content: '{{COLLECTION_DESCRIPTION}}', size: 'medium' },
+      padding: { top: 80, bottom: 80 },
+    },
+  },
+  {
+    type: 'Catalog',
+    props: {
+      id: 'Catalog-fallback',
+      cards: 24,
+      columns: 3,
+      showFilter: 'true',
+      filterPosition: 'side',
+      showSort: 'true',
+      padding: { top: 40, bottom: 80 },
+    },
+  },
+  { type: 'Footer', props: { id: 'Footer-fallback' } },
+];
+
+const blocks: any[] = collectionPage?.content && Array.isArray(collectionPage.content)
+  ? collectionPage.content
+  : FALLBACK_DEFAULT;
+
+// Header/Footer fallbacks from siteConfig
+const headerBlock = blocks.find((b: any) => b?.type === 'Header');
+const footerBlock = blocks.find((b: any) => b?.type === 'Footer');
 const headerProps = headerBlock?.props ?? (siteConfig as any)?.header ?? {};
 const footerProps = footerBlock?.props ?? (siteConfig as any)?.footer ?? {};
 
-const title = collection?.title ?? slug ?? 'Коллекция';
+// Inline template var substitution (mirror of src/utils/template-vars.ts but
+// inlined here because Astro pages can't import outside scaffold scope at build).
+function renderProps(p: any, vars: Record<string, string>): any {
+  if (p === null || p === undefined) return p;
+  if (typeof p === 'string') {
+    return p.replace(/\{\{(\w+)\}\}/g, (match, key) => vars[key] !== undefined ? String(vars[key]) : match);
+  }
+  if (Array.isArray(p)) return p.map((item) => renderProps(item, vars));
+  if (typeof p === 'object') {
+    const out: Record<string, any> = {};
+    for (const [k, v] of Object.entries(p)) out[k] = renderProps(v, vars);
+    return out;
+  }
+  return p;
+}
+
+const templateVars = {
+  COLLECTION_NAME: collection?.title ?? collection?.name ?? slug ?? 'Коллекция',
+  COLLECTION_DESCRIPTION: collection?.description ?? '',
+  COLLECTION_IMAGE: collection?.image ?? '',
+};
+
+const meta = collectionPage?.root?.props?.meta ?? data?.meta ?? {};
+const title = renderProps(meta?.title, templateVars) || `${templateVars.COLLECTION_NAME}`;
 ---
-<BaseLayout title={`${title} — ${meta?.title ?? 'Мой сайт'}`} description={collection?.description ?? meta?.description}>
-  <Header {...headerProps} />
-
-  <main class="flex-1 w-full max-w-[1200px] mx-auto px-5 py-10">
-    <div class="text-center mb-10">
-      <p class="mb-4 text-sm text-gray-500 font-manrope">
-        <a href="/" class="text-gray-500 hover:text-black">Главная</a>
-        <span class="mx-1">/</span>
-        <a href="/catalog" class="text-gray-500 hover:text-black">Каталог</a>
-        <span class="mx-1">/</span>
-        {title}
-      </p>
-      <h1 class="text-4xl font-comfortaa">{title}</h1>
-      {collection?.description && (
-        <p class="mt-3 text-gray-500 font-manrope max-w-2xl mx-auto">{collection.description}</p>
-      )}
-    </div>
-
-    <CatalogIsland client:load collectionSlug={slug} showCollectionFilter={false} />
-  </main>
-
-  <Footer {...footerProps} />
+<BaseLayout title={title} description={collection?.description ?? meta?.description}>
+  {blocks.map((block: any) => {
+    if (!block || !block.type) return null;
+    if (block.type === 'Header') {
+      return <Header {...headerProps} />;
+    }
+    if (block.type === 'Footer') {
+      return <Footer {...footerProps} />;
+    }
+    const Comp = componentMap[block.type];
+    if (!Comp) return null;
+    const resolvedProps = renderProps(block.props, templateVars);
+    return <Comp {...resolvedProps} _astroSlug={slug} />;
+  })}
 </BaseLayout>

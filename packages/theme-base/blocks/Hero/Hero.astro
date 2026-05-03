@@ -44,9 +44,13 @@ const bgPair = raw.backgroundImages as { url1?: string; url2?: string } | undefi
 const backgroundImage = (bgPair?.url1) || (typeof raw.backgroundImage === 'string' ? raw.backgroundImage : '');
 const backgroundImage2 = (bgPair?.url2) || (typeof raw.backgroundImage2 === 'string' ? (raw.backgroundImage2 as string) : '');
 
+// Constructor writes heading as { text, size } via Hero puckConfig. Prefer
+// heading.text when present so merchant edits in the constructor "Текст"
+// field win over the legacy default `title` prop. Fall back to legacy title
+// when heading.text is empty.
 const resolvedTitle =
-  (typeof title === 'string' && title) ||
   (typeof heading === 'string' ? heading : heading?.text) ||
+  (typeof title === 'string' && title) ||
   '';
 const resolvedSubtitle =
   (typeof subtitle === 'string' && subtitle) ||

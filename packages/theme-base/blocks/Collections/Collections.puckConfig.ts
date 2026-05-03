@@ -28,6 +28,12 @@ export const CollectionsSchema = z.object({
   collections: z.array(CollectionItemSchema).min(1).max(10),
   columns: z.number().int().min(1).max(6),
   colorScheme: z.string().optional(),
+  /**
+   * Prefix for collection-card hrefs. Defaults to `/catalog?collection=` so
+   * clicks filter the catalog grid (rose reference). Merchants can switch
+   * to `/collections/` for dedicated collection pages.
+   */
+  cardLinkBase: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -92,6 +98,7 @@ export const CollectionsPuckConfig: BlockPuckConfig<CollectionsProps> = {
     },
     columns: { type: 'number', label: 'Колонки (1-6)' },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    cardLinkBase: { type: 'text', label: 'Префикс ссылки на коллекцию' },
     padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
@@ -107,6 +114,7 @@ export const CollectionsPuckConfig: BlockPuckConfig<CollectionsProps> = {
       { id: 'col-3', collectionId: null, heading: 'Коллекция 3', description: '' },
     ],
     columns: 3,
+    cardLinkBase: '/catalog?collection=',
     padding: { top: 80, bottom: 80 },
   },
   schema: CollectionsSchema,

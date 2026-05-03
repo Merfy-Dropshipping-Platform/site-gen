@@ -1,6 +1,7 @@
 ---
 import type { PopularProductsProps } from './PopularProducts.puckConfig';
 import { PopularProductsClasses as C } from './PopularProducts.classes';
+import { resolveActiveCollection } from './url-filter';
 
 interface Props extends PopularProductsProps {
   id?: string;
@@ -96,8 +97,12 @@ try {
   realProducts = [];
 }
 
-// Filter by collection если задано в block props
-const collectionRef = typeof raw.collection === 'string' ? raw.collection : undefined;
+// Filter by collection. URL `?collection=` query overrides block.props.collection
+// (allows /catalog?collection=URBAN deep-linking like rose reference). Falls back
+// to block prop when no URL query.
+const urlCollection = Astro.url.searchParams.get('collection');
+const blockCollection = typeof raw.collection === 'string' ? raw.collection : undefined;
+const collectionRef = resolveActiveCollection(urlCollection, blockCollection);
 if (collectionRef && realProducts.length > 0) {
   try {
     const collectionsData = await import('../data/collections.json');

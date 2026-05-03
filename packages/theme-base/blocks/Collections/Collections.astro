@@ -1,6 +1,7 @@
 ---
 import type { CollectionsProps } from './Collections.puckConfig';
 import { CollectionsClasses as C } from './Collections.classes';
+import { buildCollectionHref } from './card-href';
 
 interface Props extends CollectionsProps {
   id?: string;
@@ -54,6 +55,11 @@ const paddingStyle = padding
 const gridTemplateCols = `grid-template-columns: repeat(${columns}, minmax(0, 1fr));`;
 const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
 
+// Card link prefix: defaults to '/catalog?collection=' so cards filter the
+// catalog page (rose reference behaviour). Merchant can switch to
+// '/collections/' if they want dedicated collection pages.
+const cardLinkBase = typeof raw.cardLinkBase === 'string' ? raw.cardLinkBase : undefined;
+
 // imageView → aspect-ratio for tiles (falls back to portrait 430/500 for
 // parity with legacy vanilla template).
 const imageViewProp =
@@ -97,7 +103,7 @@ const effectiveCollections = hasRealCollections
     <div class={C.grid} style={gridTemplateCols}>
       {effectiveCollections.map((item, i) => (
         <a
-          href={item.collectionId ? `/collections/${item.collectionId}` : '#'}
+          href={buildCollectionHref(item.collectionId, cardLinkBase)}
           class={C.card}
           data-puck-subsection-parent={hasRealCollections ? id : undefined}
           data-puck-subsection-index={hasRealCollections ? i : undefined}

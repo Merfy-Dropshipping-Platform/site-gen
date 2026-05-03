@@ -41,4 +41,5 @@ export const fluxRegistry: Record<string, ComponentRegistryEntry> = {
   Product: staticComponent("Product", "Product.astro"),
   CartSection: staticComponent("CartSection", "CartSection.astro"),
   CheckoutSection: staticComponent("CheckoutSection", "CheckoutSection.astro"),
+  Catalog: staticComponent("Catalog", "Catalog.astro"),
 };

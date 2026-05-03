@@ -2,8 +2,9 @@
  * Tests for registries/rose.ts
  *
  * Validates:
- * - All 20 Puck component types are registered (spec 082 W2 + W6:
- *   18 legacy blocks + CartSection + CheckoutSection)
+ * - All 21 Puck component types are registered (spec 082 W2 + W6 + Phase B
+ *   Catalog mapping: 18 legacy blocks + CartSection + CheckoutSection +
+ *   Catalog)
  * - Import paths follow the relative consumption pattern
  *   `../components/<X>.astro` (assembler копирует source из
  *   packages/theme-base/blocks/ в isolated build scaffold)
@@ -41,6 +42,7 @@ const EXPECTED_COMPONENTS = [
   "Product",
   "CartSection",
   "CheckoutSection",
+  "Catalog",
 ];
 
 describe("roseRegistry", () => {
@@ -49,7 +51,7 @@ describe("roseRegistry", () => {
     expect(Object.keys(roseRegistry).length).toBeGreaterThan(0);
   });
 
-  it("contains all 20 expected component types", () => {
+  it("contains all 21 expected component types", () => {
     for (const componentType of EXPECTED_COMPONENTS) {
       expect(roseRegistry).toHaveProperty(componentType);
     }

@@ -65,6 +65,7 @@ export const roseRegistry: Record<string, ComponentRegistryEntry> = {
   Product: packageComponent("Product", "Product"),
   CartSection: packageComponent("CartSection", "CartSection"),
   CheckoutSection: packageComponent("CheckoutSection", "CheckoutSection"),
+  Catalog: packageComponent("Catalog", "Catalog"),
 };
 
 /**

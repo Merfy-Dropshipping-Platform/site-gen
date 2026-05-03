@@ -149,6 +149,17 @@ const apiBase = 'https://gateway.merfy.ru/api';
       </div>
     )}
 
+    <button type="button" data-mobile-filter-trigger class={C.mobileTrigger} aria-label="Открыть фильтры">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="4" y1="6" x2="20" y2="6" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="18" x2="20" y2="18" />
+      </svg>
+      Фильтры
+      <span data-mobile-active-dot class={C.mobileTriggerDot} style="display: none;"></span>
+    </button>
+
+    <div data-mobile-drawer class={C.mobileDrawer} style="display: none;">
+    </div>
+
     <div style={`display: grid; grid-template-columns: ${filterVisible && filterSide ? '220px 1fr' : '1fr'}; gap: 32px; align-items: start;`}>
       {filterVisible && filterSide && (
         <aside
@@ -437,6 +448,9 @@ const apiBase = 'https://gateway.merfy.ru/api';
           }
         }
       }
+
+      updateMobileActiveDot();
+      syncMobileDrawer();
     }
 
     // Sort pills click handler
@@ -528,6 +542,38 @@ const apiBase = 'https://gateway.merfy.ru/api';
         setTimeout(function () { btn.textContent = orig; }, 800);
       });
     });
+
+    // Mobile drawer toggle
+    const mobileTrigger = root.querySelector('[data-mobile-filter-trigger]');
+    const mobileDrawer = root.querySelector('[data-mobile-drawer]');
+    const mobileActiveDot = root.querySelector('[data-mobile-active-dot]');
+
+    if (mobileTrigger && mobileDrawer) {
+      mobileTrigger.addEventListener('click', function () {
+        const isOpen = mobileDrawer.style.display !== 'none';
+        mobileDrawer.style.display = isOpen ? 'none' : 'flex';
+      });
+    }
+
+    // Update active dot when filters change
+    function updateMobileActiveDot() {
+      if (!mobileActiveDot) return;
+      const hasActive = !!(
+        state.collection ||
+        state.priceMin != null || state.priceMax != null ||
+        (state.stock && state.stock !== 'all') ||
+        (Array.isArray(state.colors) && state.colors.length > 0)
+      );
+      mobileActiveDot.style.display = hasActive ? '' : 'none';
+    }
+
+    // Mirror sidebar into mobile drawer (clone DOM after sidebar is hydrated)
+    function syncMobileDrawer() {
+      if (!mobileDrawer) return;
+      const sidebar = root.querySelector('aside');
+      if (!sidebar) return;
+      mobileDrawer.innerHTML = sidebar.innerHTML;
+    }
 
     // Product card click → navigate to product page.
     // In live SSG: full-page nav. In preview iframe: postMessage to parent

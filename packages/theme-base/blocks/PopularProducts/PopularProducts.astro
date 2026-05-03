@@ -85,18 +85,63 @@ const paddingStyle = padding
 const gridTemplateCols = `grid-template-columns: repeat(${productCardCols}, minmax(0, 1fr));`;
 const colorSchemeRaw = typeof raw.colorScheme === 'string' ? raw.colorScheme : undefined;
 const schemeClass = colorSchemeRaw ? `color-scheme-${colorSchemeRaw.replace('scheme-', '')}` : '';
-// Demo product cards render for seed sites that don't yet have real products
-// wired in. Live storefronts show 4 real cards — we emulate with demo
-// content so preview visually matches Figma. When a site gets real products
-// (dataSource: 'auto' resolved), the block should be replaced by a real
-// product loader upstream; for now this is visual-parity scaffolding.
+// Try import products.json (build pipeline writes scaffold dir from product service).
+// Fallback к DEMO_PRODUCTS если products.json missing/empty (seed site без real products).
+type RealProduct = { id?: string; name?: string; price?: string | number; oldPrice?: string | number; image?: string; href?: string };
+let realProducts: RealProduct[] = [];
+try {
+  const productsData = await import('../data/products.json');
+  realProducts = (productsData.default ?? productsData) as RealProduct[];
+} catch {
+  realProducts = [];
+}
+
+// Filter by collection если задано в block props
+const collectionRef = typeof raw.collection === 'string' ? raw.collection : undefined;
+if (collectionRef && realProducts.length > 0) {
+  try {
+    const collectionsData = await import('../data/collections.json');
+    const collections = (collectionsData.default ?? collectionsData) as Array<{ id?: string; name?: string; slug?: string; productIds?: string[] }>;
+    const matched = collections.find((c) => c.name === collectionRef || c.id === collectionRef || c.slug === collectionRef);
+    if (matched?.productIds?.length) {
+      const idSet = new Set(matched.productIds);
+      const filtered = realProducts.filter((p) => p.id && idSet.has(p.id));
+      if (filtered.length > 0) realProducts = filtered;
+    }
+  } catch {
+    // collections.json missing — use all products
+  }
+}
+
 const DEMO_PRODUCTS = [
-  { title: 'Сумка', price: '5 990 ₽', oldPrice: '', badgeNew: true,  badgeSale: '' },
-  { title: 'Сумка', price: '5 990 ₽', oldPrice: '', badgeNew: false, badgeSale: '' },
-  { title: 'Сумка', price: '5 990 ₽', oldPrice: '', badgeNew: false, badgeSale: '' },
-  { title: 'Сумка', price: '5 990 ₽', oldPrice: '7 990 ₽', badgeNew: false, badgeSale: '20%' },
+  { title: 'Сумка', price: '5 990 ₽', oldPrice: '', badgeNew: true,  badgeSale: '', image: '' },
+  { title: 'Сумка', price: '5 990 ₽', oldPrice: '', badgeNew: false, badgeSale: '', image: '' },
+  { title: 'Сумка', price: '5 990 ₽', oldPrice: '', badgeNew: false, badgeSale: '', image: '' },
+  { title: 'Сумка', price: '5 990 ₽', oldPrice: '7 990 ₽', badgeNew: false, badgeSale: '20%', image: '' },
 ];
-const demo = DEMO_PRODUCTS.slice(0, Math.min(cards, DEMO_PRODUCTS.length));
+
+const formatPrice = (v: unknown): string => {
+  if (typeof v === 'number') return `${v.toLocaleString('ru-RU')} ₽`;
+  if (typeof v === 'string' && v.trim()) return v.trim();
+  return '';
+};
+
+// Use real products если есть, иначе demo. Slice to `cards` count.
+const productList = realProducts.length > 0
+  ? realProducts.slice(0, Math.min(cards, realProducts.length)).map((p) => ({
+      title: p.name || 'Товар',
+      price: formatPrice(p.price),
+      oldPrice: formatPrice(p.oldPrice),
+      badgeNew: false,
+      badgeSale: '',
+      image: p.image || '',
+      href: p.href || '/catalog',
+    }))
+  : DEMO_PRODUCTS.slice(0, Math.min(cards, DEMO_PRODUCTS.length)).map((p) => ({
+      ...p,
+      href: '/catalog',
+    }));
+const demo = productList;
 
 // Bottom "Смотреть ещё" CTA. Accept top-level viewAll object.
 const viewAllObj = raw.viewAll as { show?: boolean | string; text?: string; href?: string } | undefined;
@@ -135,11 +180,15 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
           <div class={C.cardMedia} aria-hidden="true">
             {p.badgeNew && <span class={C.cardBadgeNew}>Новинка</span>}
             {p.badgeSale && <span class={p.badgeNew ? C.cardBadgeSale : C.cardBadgeNew}>{p.badgeSale}</span>}
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <polyline points="21,15 16,10 5,21" />
-            </svg>
+            {p.image ? (
+              <img src={p.image} alt={p.title} class="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+            ) : (
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21,15 16,10 5,21" />
+              </svg>
+            )}
           </div>
           <div class="flex flex-col gap-1 items-start w-full">
             <div class={C.cardTitle}>{p.title}</div>

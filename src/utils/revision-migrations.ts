@@ -110,14 +110,23 @@ function migrateCartPage(pagesData: Record<string, unknown>): Record<string, unk
 function migrateCatalogPage(pagesData: Record<string, unknown>): Record<string, unknown> {
   const existing = pagesData['page-catalog'] as PageData | undefined;
   const ts = Date.now();
+  // New default seed (082+): explicit cards/columns/filter/sort props so the
+  // legacy [Header, PopularProducts, Footer] migration produces a Catalog
+  // widget with the canonical 12 cards × 3 columns side-filter layout. Legacy
+  // aliases (showCollectionFilter, showSidebar) are dropped — Catalog.astro
+  // and live catalog.astro accept both shapes.
   const catalogBlock: Block = {
     type: 'Catalog',
     props: {
       id: `Catalog-${ts}`,
-      showCollectionFilter: 'true',
-      showSidebar: 'true',
+      collectionSlug: undefined,
+      cards: 12,
+      columns: 3,
+      showFilter: 'true',
+      filterPosition: 'side',
+      showSort: 'true',
       colorScheme: 'scheme-1',
-      padding: { top: 40, bottom: 80 },
+      padding: { top: 80, bottom: 80 },
     } as Record<string, unknown>,
   };
 
@@ -154,6 +163,70 @@ function migrateCatalogPage(pagesData: Record<string, unknown>): Record<string, 
   return {
     ...pagesData,
     'page-catalog': { ...existing, content: nextContent },
+  };
+}
+
+/**
+ * 082+ page-collection: collection detail pages (`/c/[slug]`) are now Puck-
+ * managed via a single template `page-collection` that auto-scopes to the
+ * Astro `params.slug` at render time. This migration seeds the default
+ * [Header, Hero('{{COLLECTION_NAME}}'), Catalog (auto-scope), Footer] when
+ * absent.
+ *
+ * Header/Footer are copied from the home page if present so chrome stays in
+ * sync. Hero/Catalog use template variables ({{COLLECTION_NAME}},
+ * {{COLLECTION_DESCRIPTION}}, {{COLLECTION_IMAGE}}) that the build pipeline
+ * substitutes per-collection at render time.
+ *
+ * Idempotent: if `page-collection` already exists, returns pagesData unchanged.
+ */
+function migrateCollectionPage(pagesData: Record<string, unknown>): Record<string, unknown> {
+  if (pagesData['page-collection']) return pagesData;
+
+  // Use home page header/footer as templates if available so chrome matches.
+  const home = pagesData['home'] as PageData | undefined;
+  const homeContent: Block[] = Array.isArray(home?.content) ? (home!.content as Block[]) : [];
+  const headerBlock = homeContent.find((b) => b?.type === 'Header');
+  const footerBlock = homeContent.find((b) => b?.type === 'Footer');
+  const ts = Date.now();
+
+  const collectionContent: Block[] = [
+    headerBlock ?? { type: 'Header', props: { id: `Header-collection-${ts}` } },
+    {
+      type: 'Hero',
+      props: {
+        id: `Hero-collection-${ts}`,
+        variant: 'split',
+        heading: { text: '{{COLLECTION_NAME}}', size: 'large' },
+        subtitle: { content: '{{COLLECTION_DESCRIPTION}}', size: 'medium' },
+        backgroundImage: '{{COLLECTION_IMAGE}}',
+        padding: { top: 80, bottom: 80 },
+      } as Record<string, unknown>,
+    },
+    {
+      type: 'Catalog',
+      props: {
+        id: `Catalog-collection-${ts}`,
+        // collectionSlug omitted → live page auto-scopes from Astro.params.slug
+        cards: 24,
+        columns: 3,
+        showFilter: 'true',
+        filterPosition: 'side',
+        showSort: 'true',
+        colorScheme: 'scheme-1',
+        padding: { top: 40, bottom: 80 },
+      } as Record<string, unknown>,
+    },
+    footerBlock ?? { type: 'Footer', props: { id: `Footer-collection-${ts}` } },
+  ];
+
+  return {
+    ...pagesData,
+    'page-collection': {
+      content: collectionContent,
+      root: { props: { meta: { title: '{{COLLECTION_NAME}}' } } },
+      zones: {},
+    } as PageData,
   };
 }
 
@@ -444,6 +517,9 @@ export function migrateRevisionData(
   const pagesData = out.pagesData;
   if (pagesData && typeof pagesData === 'object') {
     out.pagesData = migrateCatalogPage(pagesData as Record<string, unknown>);
+  }
+  if (out.pagesData && typeof out.pagesData === 'object') {
+    out.pagesData = migrateCollectionPage(out.pagesData as Record<string, unknown>);
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = migrateProductPage(out.pagesData as Record<string, unknown>);

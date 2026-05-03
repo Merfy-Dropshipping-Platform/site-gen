@@ -54,6 +54,11 @@ const componentMap: Record<string, any> = {
 };
 
 const hasCatalogBlock = contentBlocks.some((b: any) => b.type === 'Catalog');
+// Fallback default catalog (КАТАЛОГ heading + CatalogIsland) only when the
+// merchant has NOT customised the page. Once any block is present (Hero,
+// Collections, PopularProducts, Gallery, etc.) we trust the merchant layout
+// (082 catalog parity — rose-style PopularProducts URL filter approach).
+const hasMerchantContent = contentBlocks.length > 0;
 const pageTitle = (meta?.title && `Каталог — ${meta.title}`) || 'Каталог';
 ---
 <BaseLayout title={pageTitle} description={meta?.description}>
@@ -98,8 +103,11 @@ const pageTitle = (meta?.title && `Каталог — ${meta.title}`) || 'Кат
         return <Component {...(block.props ?? {})} />;
       })}
 
-      {/* Fallback: revisions без Catalog блока — рендерим default rose layout */}
-      {!hasCatalogBlock && (
+      {/* Fallback: only когда страница совсем пустая (нет ни Hero, ни Catalog,
+          ни Collections и т.д.) — показываем default rose catalog (КАТАЛОГ +
+          functional CatalogIsland). Если merchant добавил блоки через
+          конструктор — render only their layout (082 catalog parity). */}
+      {!hasMerchantContent && (
         <>
           <div style="margin-bottom: 30px;">
             <h1

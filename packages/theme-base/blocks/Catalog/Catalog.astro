@@ -187,6 +187,11 @@ const apiBase = 'https://gateway.merfy.ru/api';
             <input type="text" placeholder="от" style="width: 100%; padding: 6px 8px; border: 1px solid rgb(var(--color-foreground) / 0.15); margin-bottom: 6px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));" />
             <input type="text" placeholder="до" style="width: 100%; padding: 6px 8px; border: 1px solid rgb(var(--color-foreground) / 0.15); background: rgb(var(--color-background)); color: rgb(var(--color-foreground));" />
           </div>
+
+          <div data-catalog-color-filter style="display: none;">
+            <div class={C.filterSectionTitle}>Цвет</div>
+            <div data-color-options class="flex flex-col gap-2"></div>
+          </div>
         </aside>
       )}
 
@@ -353,6 +358,16 @@ const apiBase = 'https://gateway.merfy.ru/api';
         result = result.filter(function (p) {
           const q = typeof p.quantity === 'number' ? p.quantity : 1;
           return q <= 0;
+        });
+      }
+      // Color filter (OR semantics — selected color matches if ANY variant matches)
+      if (Array.isArray(state.colors) && state.colors.length > 0) {
+        result = result.filter(function (p) {
+          if (!Array.isArray(p.variants)) return false;
+          const productColors = p.variants
+            .filter(function (v) { const n = (v.name || '').toLowerCase(); return n === 'цвет' || n === 'color'; })
+            .map(function (v) { return v.value; });
+          return state.colors.some(function (c) { return productColors.includes(c); });
         });
       }
       // Price range
@@ -578,6 +593,45 @@ const apiBase = 'https://gateway.merfy.ru/api';
           }
         }
         state.allProducts = products;
+
+        // Detect color variants from products
+        const colorSet = new Set();
+        products.forEach(function (p) {
+          if (Array.isArray(p.variants)) {
+            p.variants.forEach(function (v) {
+              const name = (v.name || '').toLowerCase();
+              if ((name === 'цвет' || name === 'color') && v.value) colorSet.add(v.value);
+            });
+          }
+        });
+        const availableColors = Array.from(colorSet);
+
+        // Render color checkboxes in sidebar (only if colors exist)
+        const colorFilterEl = root.querySelector('[data-catalog-color-filter]');
+        const colorOptionsEl = root.querySelector('[data-color-options]');
+        if (colorFilterEl && availableColors.length > 0) {
+          colorFilterEl.style.display = '';
+          if (colorOptionsEl) {
+            colorOptionsEl.innerHTML = availableColors.map(function (c) {
+              const checked = state.colors.includes(c) ? 'checked' : '';
+              return '<label class="flex items-center gap-2 cursor-pointer py-1"><input type="checkbox" data-color-value="' + escAttr(c) + '" ' + checked + ' /><span class="font-[family-name:var(--font-body)] text-[18px] text-[rgb(var(--color-foreground))]">' + escAttr(c) + '</span></label>';
+            }).join('');
+            colorOptionsEl.addEventListener('change', function (ev) {
+              const cb = ev.target.closest('input[data-color-value]');
+              if (!cb) return;
+              const val = cb.getAttribute('data-color-value');
+              if (cb.checked) {
+                if (!state.colors.includes(val)) state.colors.push(val);
+              } else {
+                state.colors = state.colors.filter(function (c) { return c !== val; });
+              }
+              state.page = 1;
+              syncUrlState();
+              rerender();
+            });
+          }
+        }
+
         if (collsEl && Array.isArray(colls) && colls.length) {
           const items = colls.map(function (c) {
             const checked = c.id === state.collection || c.handle === state.collection ? 'checked' : '';

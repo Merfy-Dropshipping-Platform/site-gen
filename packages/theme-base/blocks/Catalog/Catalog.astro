@@ -14,6 +14,7 @@ import type { CatalogProps } from './Catalog.puckConfig';
 import { CatalogClasses as C } from './Catalog.classes';
 import { parseCatalogUrlParams, type CatalogUrlState } from './url-params';
 import { resolveCatalogScope } from './auto-scope';
+import { paginateProducts, getPageNumbers, totalPages } from './pagination';
 
 interface Props extends CatalogProps {
   id?: string;
@@ -213,6 +214,21 @@ const apiBase = 'https://gateway.merfy.ru/api';
           </article>
         ))}
       </div>
+
+      <div data-catalog-pagination class={C.paginationBar} style="display: none;">
+        <button type="button" data-page-prev class={C.pageArrow} aria-label="Предыдущая страница">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+        <div data-page-numbers class={C.pageButtons}></div>
+        <button type="button" data-page-next class={C.pageArrow} aria-label="Следующая страница">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18l6-6-6-6" />
+          </svg>
+        </button>
+        <span data-page-total class={C.paginationCount}>0 товаров</span>
+      </div>
     </div>
   </div>
 </section>
@@ -287,6 +303,35 @@ const apiBase = 'https://gateway.merfy.ru/api';
       colors: urlState.colors,
     };
 
+    function computePageNumbers(current, total) {
+      if (total <= 7) {
+        var arr = [];
+        for (var i = 1; i <= total; i++) arr.push(i);
+        return arr;
+      }
+      if (current <= 3) {
+        return [1, 2, 3, 'ellipsis', total];
+      }
+      if (current >= total - 2) {
+        return [1, 'ellipsis', total - 2, total - 1, total];
+      }
+      return [1, 'ellipsis', current - 1, current, current + 1, 'ellipsis', total];
+    }
+
+    function syncUrlState() {
+      const params = new URLSearchParams(window.location.search);
+      if (state.collection) params.set('collection', state.collection); else params.delete('collection');
+      if (state.page > 1) params.set('page', String(state.page)); else params.delete('page');
+      if (state.sort && state.sort !== 'newest') params.set('sort', state.sort); else params.delete('sort');
+      if (state.stock && state.stock !== 'all') params.set('availability', state.stock); else params.delete('availability');
+      if (Array.isArray(state.colors) && state.colors.length > 0) params.set('color', state.colors.join(',')); else params.delete('color');
+      if (state.priceMin != null) params.set('priceMin', String(state.priceMin)); else params.delete('priceMin');
+      if (state.priceMax != null) params.set('priceMax', String(state.priceMax)); else params.delete('priceMax');
+      const qs = params.toString();
+      const newUrl = window.location.pathname + (qs ? '?' + qs : '') + window.location.hash;
+      window.history.replaceState({}, '', newUrl);
+    }
+
     function applyFilters(list) {
       let result = list.slice();
       // Collection filter
@@ -327,15 +372,56 @@ const apiBase = 'https://gateway.merfy.ru/api';
       else if (state.sort === 'price-desc') result.sort((a, b) => priceOf(b) - priceOf(a));
       else if (state.sort === 'newest') result.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
       else if (state.sort === 'popularity') result.sort((a, b) => (b.quantity || 0) - (a.quantity || 0));
-      return result.slice(0, cardCount);
+      return result;
     }
 
     function rerender() {
       const filtered = applyFilters(state.allProducts);
-      if (count) count.textContent = filtered.length + ' товаров';
-      grid.innerHTML = filtered.length
-        ? filtered.map(cardHtml).join('')
+      const total = filtered.length;
+      const ps = cardCount;
+      const totalP = total === 0 ? 0 : Math.ceil(total / ps);
+      const pageSafe = Math.max(1, Math.min(state.page, Math.max(1, totalP)));
+      const slice = filtered.slice((pageSafe - 1) * ps, pageSafe * ps);
+
+      if (count) count.textContent = slice.length + ' из ' + total + ' товаров';
+      grid.innerHTML = slice.length
+        ? slice.map(cardHtml).join('')
         : '<div style="grid-column:1/-1;padding:40px;text-align:center;color:rgb(var(--color-muted));">Товары не найдены</div>';
+
+      // Pagination
+      const pagination = root.querySelector('[data-catalog-pagination]');
+      const pageNumbersEl = root.querySelector('[data-page-numbers]');
+      const pageTotalEl = root.querySelector('[data-page-total]');
+      const prevBtn = root.querySelector('[data-page-prev]');
+      const nextBtn = root.querySelector('[data-page-next]');
+      if (pagination) {
+        if (totalP <= 1) {
+          pagination.style.display = 'none';
+        } else {
+          pagination.style.display = '';
+          if (pageTotalEl) pageTotalEl.textContent = total + ' товаров';
+          if (pageNumbersEl) {
+            const pages = computePageNumbers(pageSafe, totalP);
+            pageNumbersEl.innerHTML = pages.map(function (p) {
+              if (p === 'ellipsis') {
+                return '<span class="flex items-center justify-center w-10 h-10 sm:w-[60px] sm:h-[60px]" style="color:rgb(var(--color-muted));">...</span>';
+              }
+              const isActive = p === pageSafe;
+              return '<button type="button" data-page="' + p + '" class="flex items-center justify-center w-10 h-10 sm:w-[60px] sm:h-[60px]" style="color:rgb(var(--color-' + (isActive ? 'foreground' : 'muted') + '));cursor:pointer;">' + p + '</button>';
+            }).join('');
+          }
+          if (prevBtn) {
+            prevBtn.style.opacity = pageSafe <= 1 ? '0.4' : '1';
+            prevBtn.style.cursor = pageSafe <= 1 ? 'not-allowed' : 'pointer';
+            prevBtn.disabled = pageSafe <= 1;
+          }
+          if (nextBtn) {
+            nextBtn.style.opacity = pageSafe >= totalP ? '0.4' : '1';
+            nextBtn.style.cursor = pageSafe >= totalP ? 'not-allowed' : 'pointer';
+            nextBtn.disabled = pageSafe >= totalP;
+          }
+        }
+      }
     }
 
     // Sort pills click handler
@@ -359,7 +445,30 @@ const apiBase = 'https://gateway.merfy.ru/api';
             b.removeAttribute('data-active');
           }
         });
+        state.page = 1;  // reset page on filter/sort change
+        syncUrlState();
         rerender();
+      });
+    }
+
+    // Pagination click handlers
+    const paginationEl = root.querySelector('[data-catalog-pagination]');
+    if (paginationEl) {
+      paginationEl.addEventListener('click', function (ev) {
+        const target = ev.target.closest('[data-page], [data-page-prev], [data-page-next]');
+        if (!target) return;
+        const filtered = applyFilters(state.allProducts);
+        const totalP = filtered.length === 0 ? 0 : Math.ceil(filtered.length / cardCount);
+        if (target.matches('[data-page-prev]')) {
+          state.page = Math.max(1, state.page - 1);
+        } else if (target.matches('[data-page-next]')) {
+          state.page = Math.min(totalP, state.page + 1);
+        } else {
+          state.page = parseInt(target.getAttribute('data-page'), 10) || 1;
+        }
+        syncUrlState();
+        rerender();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     }
 
@@ -369,6 +478,8 @@ const apiBase = 'https://gateway.merfy.ru/api';
       root.querySelectorAll('input[name="cat-stock"]').forEach(function (input, idx) {
         input.addEventListener('change', function () {
           state.stock = idx === 0 ? 'all' : idx === 1 ? 'in' : 'out';
+          state.page = 1;  // reset page on filter/sort change
+          syncUrlState();
           rerender();
         });
       });
@@ -378,6 +489,8 @@ const apiBase = 'https://gateway.merfy.ru/api';
         priceInputs[0].addEventListener('input', function () {
           const v = parseFloat(this.value);
           state.priceMin = Number.isFinite(v) ? v : null;
+          state.page = 1;  // reset page on filter/sort change
+          syncUrlState();
           rerender();
         });
       }
@@ -385,6 +498,8 @@ const apiBase = 'https://gateway.merfy.ru/api';
         priceInputs[1].addEventListener('input', function () {
           const v = parseFloat(this.value);
           state.priceMax = Number.isFinite(v) ? v : null;
+          state.page = 1;  // reset page on filter/sort change
+          syncUrlState();
           rerender();
         });
       }
@@ -476,6 +591,8 @@ const apiBase = 'https://gateway.merfy.ru/api';
             const lbl = ev.target.closest('label[data-coll-id]');
             if (!lbl) return;
             state.collection = lbl.getAttribute('data-coll-id') || null;
+            state.page = 1;  // reset page on filter/sort change
+            syncUrlState();
             rerender();
           });
         }
@@ -483,5 +600,21 @@ const apiBase = 'https://gateway.merfy.ru/api';
         rerender();
       })
       .catch(() => {});
+
+    window.addEventListener('popstate', function () {
+      const newParams = new URLSearchParams(window.location.search);
+      state.sort = (newParams.get('sort') || 'newest');
+      state.stock = (newParams.get('availability') || 'all');
+      const pageR = parseInt(newParams.get('page') || '1', 10);
+      state.page = (Number.isFinite(pageR) && pageR >= 1) ? pageR : 1;
+      state.collection = newParams.get('collection') || null;
+      const colorsR = newParams.get('color') || '';
+      state.colors = colorsR ? colorsR.split(',').map(function (s) { return s.trim(); }).filter(Boolean) : [];
+      const priceMinR = newParams.get('priceMin');
+      state.priceMin = priceMinR && Number.isFinite(parseFloat(priceMinR)) ? parseFloat(priceMinR) : null;
+      const priceMaxR = newParams.get('priceMax');
+      state.priceMax = priceMaxR && Number.isFinite(parseFloat(priceMaxR)) ? parseFloat(priceMaxR) : null;
+      rerender();
+    });
   })();
 </script>

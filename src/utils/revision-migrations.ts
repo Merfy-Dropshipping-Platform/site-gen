@@ -98,9 +98,12 @@ function migrateCartPage(pagesData: Record<string, unknown>): Record<string, unk
  * createCatalogPageData seed. This migration:
  *
  *   - Adds a default page-catalog with a Catalog block when missing entirely.
- *   - Replaces a legacy PopularProducts on page-catalog with a Catalog block
- *     (preserves Header/Footer chrome and any user-added blocks).
- *   - Inserts a Catalog block before Footer when no Catalog/PopularProducts.
+ *   - Replaces a legacy PopularProducts on page-catalog with a Catalog block,
+ *     BUT only when the page is the exact legacy seed
+ *     `[Header, PopularProducts, Footer]`. Once the user has added other
+ *     blocks (Hero/PromoBanner/Collections/Gallery/...), they are treated
+ *     as having opted out of the auto Catalog widget and the page is left
+ *     alone — this allows replicating reference catalog layouts (082).
  *
  * Idempotent: page-catalog already containing a Catalog block is left alone.
  */
@@ -132,20 +135,21 @@ function migrateCatalogPage(pagesData: Record<string, unknown>): Record<string, 
   const hasCatalog = existing.content.some((b) => b?.type === 'Catalog');
   if (hasCatalog) return pagesData;
 
+  // Only migrate the exact legacy seed [Header, PopularProducts, Footer]. If
+  // the user has customised the page with additional blocks, leave it alone
+  // (082 catalog reference layout uses Hero+Collections+PopularProducts+
+  // Gallery without the functional Catalog widget).
+  const types = existing.content.map((b) => b?.type).filter(Boolean) as string[];
+  const isLegacySeed =
+    types.length === 3 &&
+    types[0] === 'Header' &&
+    types[1] === 'PopularProducts' &&
+    types[2] === 'Footer';
+  if (!isLegacySeed) return pagesData;
+
   const popularIdx = existing.content.findIndex((b) => b?.type === 'PopularProducts');
-  let nextContent: Block[];
-  if (popularIdx >= 0) {
-    nextContent = [...existing.content];
-    nextContent[popularIdx] = catalogBlock;
-  } else {
-    const footerIdx = existing.content.findIndex((b) => b?.type === 'Footer');
-    nextContent = [...existing.content];
-    if (footerIdx >= 0) {
-      nextContent.splice(footerIdx, 0, catalogBlock);
-    } else {
-      nextContent.push(catalogBlock);
-    }
-  }
+  const nextContent = [...existing.content];
+  nextContent[popularIdx] = catalogBlock;
 
   return {
     ...pagesData,

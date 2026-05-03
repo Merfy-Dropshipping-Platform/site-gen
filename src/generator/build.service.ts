@@ -1198,14 +1198,20 @@ async function stageGenerate(
         continue;
       }
 
-      // Auto-inject Catalog block on /catalog page if missing — merchants
-      // who haven't added a Catalog block in the constructor still get a
-      // working catalog (filters + grid). Block is appended; merchant blocks
-      // (Header, hero teasers, etc.) above remain editable.
+      // Auto-inject Catalog block on /catalog page when the page has only
+      // chrome (Header/Footer) and no merchant content. After 082 catalog
+      // parity: when the merchant has added their own product/collection
+      // blocks (Hero/Collections/PopularProducts/Gallery/...) the page is
+      // treated as customised and no auto Catalog widget is injected — the
+      // merchant chose a rose-style layout with PopularProducts URL filter.
       let pageContent = pageData.content as any[];
       if (slug === "catalog") {
         const hasCatalog = pageContent.some((b: any) => b?.type === "Catalog");
-        if (!hasCatalog) {
+        const CHROME_TYPES = new Set(["Header", "Footer", "PromoBanner"]);
+        const hasMerchantContent = pageContent.some(
+          (b: any) => b?.type && !CHROME_TYPES.has(b.type) && b.type !== "Catalog",
+        );
+        if (!hasCatalog && !hasMerchantContent) {
           const lastFooterIdx = pageContent.findIndex(
             (b: any) => b?.type === "Footer",
           );
@@ -1223,7 +1229,7 @@ async function stageGenerate(
             ];
           }
           logger.log(
-            `[generate] Auto-injected Catalog block into ${fileName} (none was present)`,
+            `[generate] Auto-injected Catalog block into ${fileName} (page had only chrome)`,
           );
         }
       }

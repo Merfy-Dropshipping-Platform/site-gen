@@ -121,23 +121,14 @@ describe('CheckoutSection.astro CSS variable usage', () => {
   });
 });
 
-// ── 5. CatalogIsland.tsx and ProductCard.tsx skeleton colors ──
+// ── 5. ProductCard.tsx skeleton colors ──
+// Note: CatalogIsland.tsx tests removed in T23 (082-rose-pilot) — the React
+// CatalogIsland was deleted in favour of theme-base/blocks/Catalog (SSR Astro).
 
 describe('skeleton color consistency', () => {
-  it('CatalogIsland.tsx does not use hardcoded #FBFBFB', () => {
-    const content = readRoseFile('src/components/react/CatalogIsland.tsx');
-    expect(content).not.toContain('#FBFBFB');
-  });
-
   it('ProductCard.tsx does not use hardcoded #FBFBFB', () => {
     const content = readRoseFile('src/components/react/ProductCard.tsx');
     expect(content).not.toContain('#FBFBFB');
-  });
-
-  it('CatalogIsland.tsx uses --color-muted for skeleton backgrounds', () => {
-    const content = readRoseFile('src/components/react/CatalogIsland.tsx');
-    // The skeleton placeholders should reference the muted CSS variable
-    expect(content).toMatch(/color-muted/);
   });
 
   it('ProductCard.tsx uses --color-muted for skeleton backgrounds', () => {

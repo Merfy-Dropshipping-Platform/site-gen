@@ -2,7 +2,6 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import data from '../data/data.json';
 import siteConfig from '../data/site-config.json';
-import products from '../data/products.json';
 
 // Puck block components — render content from pagesData['page-catalog'].content[]
 import Header from '../components/Header.astro';
@@ -23,7 +22,7 @@ import CollapsibleSection from '../components/CollapsibleSection.astro';
 import Collections from '../components/Collections.astro';
 import Newsletter from '../components/Newsletter.astro';
 import Product from '../components/Product.astro';
-import CatalogIsland from '../components/react/CatalogIsland';
+import Catalog from '../components/Catalog.astro';
 
 // Resolve catalog page blocks from multipage revision shape
 const allPagesData = (data as any)?.pagesData ?? {};
@@ -51,14 +50,29 @@ const componentMap: Record<string, any> = {
   Hero, PopularProducts, Gallery, TextBlock, MultiColumns, MultiRows, Slideshow,
   Video, ImageWithText, ContactForm, PromoBanner, Publications,
   CollapsibleSection, Collections, Newsletter, Product,
+  Catalog,
 };
 
-const hasCatalogBlock = contentBlocks.some((b: any) => b.type === 'Catalog');
-// Fallback default catalog (КАТАЛОГ heading + CatalogIsland) only when the
-// merchant has NOT customised the page. Once any block is present (Hero,
-// Collections, PopularProducts, Gallery, etc.) we trust the merchant layout
-// (082 catalog parity — rose-style PopularProducts URL filter approach).
+// If merchant hasn't customised the page (no content blocks), fall back to a
+// default Catalog block so /catalog is functional out of the box.
+// Otherwise we trust whatever blocks the merchant placed via the constructor
+// (082 catalog parity — same behaviour as other route pages).
 const hasMerchantContent = contentBlocks.length > 0;
+const defaultBlocks = [
+  {
+    type: 'Catalog',
+    props: {
+      id: 'Catalog-default',
+      cards: 24,
+      columns: 3,
+      showFilter: 'true',
+      filterPosition: 'side',
+      showSort: 'true',
+      padding: { top: 40, bottom: 80 },
+    },
+  },
+];
+const renderBlocks = hasMerchantContent ? contentBlocks : defaultBlocks;
 const pageTitle = (meta?.title && `Каталог — ${meta.title}`) || 'Каталог';
 ---
 <BaseLayout title={pageTitle} description={meta?.description}>
@@ -66,65 +80,11 @@ const pageTitle = (meta?.title && `Каталог — ${meta.title}`) || 'Кат
     <Header {...headerProps} colorScheme="scheme-2" />
 
     <main class="catalog-main flex-1 w-full max-w-[1920px] mx-auto" style="padding-top: 40px; padding-bottom: 60px;">
-      {contentBlocks.map((block: any) => {
-        if (block.type === 'Catalog') {
-          const props = block.props ?? {};
-          const padding = props.padding ?? { top: 40, bottom: 80 };
-          const showColl = props.showCollectionFilter !== 'false' && props.showCollectionFilter !== false;
-          return (
-            <section
-              data-puck-component-id={props.id}
-              data-block="catalog"
-              style={`padding-top:${padding.top ?? 40}px; padding-bottom:${padding.bottom ?? 80}px;`}
-            >
-              <div style="margin-bottom: 30px;">
-                <h1
-                  class="font-comfortaa text-2xl sm:text-3xl xl:text-[36px]"
-                  style="line-height: 1.1; font-weight: 400; text-transform: uppercase; color: #000000; margin: 0;"
-                >КАТАЛОГ</h1>
-                <p
-                  class="font-manrope text-base sm:text-lg xl:text-[24px]"
-                  style="line-height: 1.38; font-weight: 400; color: #999999; margin-top: 5px;"
-                >Здесь начинается персональный стиль</p>
-              </div>
-              <CatalogIsland
-                client:only="react"
-                collectionSlug={props.collectionSlug}
-                showCollectionFilter={showColl}
-                cardStyle={props.productCard?.cardStyle}
-                columns={props.columns}
-                cards={props.cards}
-              />
-            </section>
-          );
-        }
+      {renderBlocks.map((block: any) => {
         const Component = componentMap[block.type];
         if (!Component) return null;
         return <Component {...(block.props ?? {})} />;
       })}
-
-      {/* Fallback: only когда страница совсем пустая (нет ни Hero, ни Catalog,
-          ни Collections и т.д.) — показываем default rose catalog (КАТАЛОГ +
-          functional CatalogIsland). Если merchant добавил блоки через
-          конструктор — render only their layout (082 catalog parity). */}
-      {!hasMerchantContent && (
-        <>
-          <div style="margin-bottom: 30px;">
-            <h1
-              class="font-comfortaa text-2xl sm:text-3xl xl:text-[36px]"
-              style="line-height: 1.1; font-weight: 400; text-transform: uppercase; color: #000000; margin: 0;"
-            >КАТАЛОГ</h1>
-            <p
-              class="font-manrope text-base sm:text-lg xl:text-[24px]"
-              style="line-height: 1.38; font-weight: 400; color: #999999; margin-top: 5px;"
-            >Здесь начинается персональный стиль</p>
-          </div>
-          <CatalogIsland client:only="react" />
-          <noscript>
-            <PopularProducts products={products} />
-          </noscript>
-        </>
-      )}
     </main>
 
     <Footer {...footerProps} colorScheme="scheme-2" />

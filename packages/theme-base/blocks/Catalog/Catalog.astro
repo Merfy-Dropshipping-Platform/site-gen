@@ -11,6 +11,9 @@
 // before they reach this file and renders the interactive React island
 // directly, so this file is only used in preview.
 import type { CatalogProps } from './Catalog.puckConfig';
+import { CatalogClasses as C } from './Catalog.classes';
+import { parseCatalogUrlParams, type CatalogUrlState } from './url-params';
+import { resolveCatalogScope } from './auto-scope';
 
 interface Props extends CatalogProps {
   id?: string;
@@ -34,6 +37,18 @@ const {
   showSidebar,
   siteId,
 } = Astro.props as Props;
+
+// Pull URL state (initial — vanilla JS hydration will sync on client)
+const urlState: CatalogUrlState = parseCatalogUrlParams(Astro.url.searchParams);
+
+// Auto-scope cascade: explicit puck prop > Astro.params.slug > URL query
+const routeSlug = (Astro.params as Record<string, string | undefined>)?.slug;
+const explicitCollection = typeof collectionSlug === 'string' ? collectionSlug : undefined;
+const effectiveCollection = resolveCatalogScope({
+  explicitCollectionSlug: explicitCollection,
+  routeSlug,
+  urlQueryCollection: urlState.collection,
+});
 
 const paddingStyle = padding
   ? `padding-top:${padding.top ?? 120}px; padding-bottom:${padding.bottom ?? 120}px;`
@@ -202,7 +217,7 @@ const apiBase = 'https://gateway.merfy.ru/api';
   </div>
 </section>
 
-<script is:inline define:vars={{ siteId, apiBase, cardCount, cardBgOn, btnBg, btnFg, btnBorder, btnStyle, showQuickAdd, quickAddText, collectionSlug, cardAspect }}>
+<script is:inline define:vars={{ siteId, apiBase, cardCount, cardBgOn, btnBg, btnFg, btnBorder, btnStyle, showQuickAdd, quickAddText, effectiveCollection, urlState, cardAspect }}>
   // Mirror live storefront in constructor preview: fetch real products and
   // replace placeholder grid with actual cards. Honor productCard.* settings
   // so user changes (cardBackground, buttonStyle, quickAdd, etc) reflect.
@@ -263,11 +278,13 @@ const apiBase = 'https://gateway.merfy.ru/api';
     // Local state for client-side filter/sort (preview parity with live).
     const state = {
       allProducts: [],
-      sort: 'newest',
-      stock: 'all',          // 'all' | 'in' | 'out'
-      priceMin: null,
-      priceMax: null,
-      collection: collectionSlug || null,
+      sort: urlState.sort,
+      stock: urlState.availability,  // 'all' | 'in' | 'out'
+      priceMin: urlState.priceMin != null ? urlState.priceMin : null,
+      priceMax: urlState.priceMax != null ? urlState.priceMax : null,
+      collection: effectiveCollection || null,
+      page: urlState.page,
+      colors: urlState.colors,
     };
 
     function applyFilters(list) {

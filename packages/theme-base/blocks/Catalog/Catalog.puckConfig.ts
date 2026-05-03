@@ -49,7 +49,7 @@ export const CatalogSchema = z.object({
 export type CatalogProps = z.infer<typeof CatalogSchema>;
 
 export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
-  label: 'Группа товаров',
+  label: 'Каталог товаров',
   category: 'products',
   fields: {
     collectionSlug: { type: 'collectionPicker', label: 'Коллекция' },

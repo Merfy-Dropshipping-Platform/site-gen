@@ -363,10 +363,20 @@ const CpoweredBy = (C as any).poweredBy ?? {};
     </div>
   )}
 
-  {/* 084 vanilla pilot: additive `bottomStrip`. Renders only when explicitly enabled. */}
-  {bottomStrip?.enabled && (
-    <div class={C.bottomStrip.wrapper} data-bottom-strip>
-      <p class={C.bottomStrip.text}>{bottomStrip.text ?? 'Powered by Merfy'}</p>
-    </div>
-  )}
+  {/* 084 vanilla pilot: additive `bottomStrip`. Renders only when explicitly enabled.
+      Also tolerates a string-collapsed shape from `legacy-prop-normalizer.ts`,
+      which strips `{ enabled, text }` to just the text string. */}
+  {(() => {
+    const bs = bottomStrip as unknown;
+    const isObj = bs && typeof bs === 'object' && !Array.isArray(bs);
+    const enabled = isObj ? Boolean((bs as { enabled?: unknown }).enabled) : typeof bs === 'string' && bs.length > 0;
+    const text = isObj
+      ? ((bs as { text?: string }).text ?? 'Powered by Merfy')
+      : (typeof bs === 'string' ? bs : 'Powered by Merfy');
+    return enabled ? (
+      <div class={C.bottomStrip.wrapper} data-bottom-strip>
+        <p class={C.bottomStrip.text}>{text}</p>
+      </div>
+    ) : null;
+  })()}
 </footer>

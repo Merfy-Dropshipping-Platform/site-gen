@@ -1077,8 +1077,12 @@ export class SitesDomainService {
     if (!rev) throw new Error("revision_not_found");
     // Apply server-side migrations (catalog page → Catalog block, etc.) so
     // constructor and preview always see the canonical shape regardless of
-    // when the revision was saved. Idempotent.
-    const migratedData = migrateRevisionData(rev.data as Record<string, unknown> | undefined);
+    // when the revision was saved. Idempotent. themeId — для активации
+    // theme-specific миграций (e.g. vanilla home seed, spec 084).
+    const migratedData = migrateRevisionData(
+      rev.data as Record<string, unknown> | undefined,
+      site.themeId,
+    );
     return { item: { ...rev, data: migratedData } };
   }
 

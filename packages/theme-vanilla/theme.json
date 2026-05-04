@@ -12,6 +12,8 @@
   "defaults": {
     "--font-heading": "'Bitter', serif",
     "--font-body": "'Arsenal', sans-serif",
+    "--font-cart-counter": "'Exo 2', sans-serif",
+    "--font-powered-by": "'Inter', sans-serif",
     "--weight-heading": "400",
     "--weight-body": "400",
     "--container-max-width": "1320px",
@@ -36,12 +38,54 @@
     "--cart-type": "drawer",
     "--card-style": "standard",
     "--card-alignment": "left",
-    "--color-error": "255 148 148"
+    "--color-error": "255 148 148",
+    "--color-bottom-strip-bg": "0 0 0",
+    "--color-bottom-strip-text": "255 255 255",
+    "--promo-banner-h-thin": "56px"
   },
 
   "blockDefaults": {
+    "PromoBanner": {
+      "size": "thin",
+      "textTransform": "uppercase",
+      "colorScheme": "scheme-1"
+    },
+    "Header": {
+      "logoPosition": "center-absolute",
+      "activeLinkIndicator": "underline"
+    },
+    "Slideshow": {
+      "alignment": "left",
+      "pagination": "numbers",
+      "contentAlign": "left"
+    },
+    "Collections": {
+      "cardCaptionStyle": "uppercase",
+      "gridAspect": "1:1"
+    },
+    "MainText": {
+      "buttonStyle": "outlined"
+    },
+    "Video": {
+      "padded": true
+    },
+    "ImageWithText": {
+      "imagePosition": "right",
+      "ctaPosition": "bottom-pinned"
+    },
+    "PopularProducts": {
+      "swatchOverlay": true,
+      "cardCaptionStyle": "uppercase"
+    },
+    "Newsletter": {
+      "formLayout": "inline-submit"
+    },
     "Footer": {
-      "variant": "2-part"
+      "variant": "2-part-asymmetric",
+      "bottomStrip": {
+        "enabled": true,
+        "text": "© 2025 Vanilla Theme. Powered by Merfy"
+      }
     }
   },
 
@@ -125,19 +169,9 @@
   ],
 
   "blocks": {
-    "Header": {
-      "override": {
-        "path": "./blocks/Header",
-        "reason": "Vanilla uses 1320px container, 4 logo-position layouts with isLightColor() logo inversion, Exo 2 cart badge font, and custom olive-themed iconography."
-      }
-    },
-    "Footer": {
-      "override": {
-        "path": "./blocks/Footer",
-        "reason": "Vanilla uses 2-part grid (logo+nav LEFT, contact+social+payment RIGHT) plus a unique powered-by black strip below copyright, with MC/VISA/МИР payment badges."
-      }
-    },
     "Hero": { "variant": "overlay" },
+    "Header": {},
+    "Footer": {},
     "PopularProducts": {},
     "Collections": {},
     "Product": {},
@@ -157,7 +191,7 @@
   "fonts": [
     { "family": "Bitter",  "weights": [400, 600, 700], "italic": true, "source": "google" },
     { "family": "Arsenal", "weights": [400, 700],                       "source": "google" },
-    { "family": "Exo 2",   "weights": [700],                            "source": "google" },
-    { "family": "Inter",   "weights": [300, 400],                       "source": "google" }
+    { "family": "Exo 2",   "weights": [400, 700],                       "source": "google" },
+    { "family": "Inter",   "weights": [300, 400, 500],                  "source": "google" }
   ]
 }

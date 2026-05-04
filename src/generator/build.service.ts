@@ -1005,7 +1005,11 @@ async function stageMerge(
   // Apply server-side migrations (e.g. catalog page → Catalog block) so build
   // pipeline sees the canonical shape regardless of when the revision was
   // saved. Idempotent — running on already-migrated revisions is a no-op.
-  ctx.revisionData = migrateRevisionData(revRow?.data as Record<string, unknown> | undefined);
+  // Pass themeId so vanilla-specific home seed (084) activates for vanilla sites.
+  ctx.revisionData = migrateRevisionData(
+    revRow?.data as Record<string, unknown> | undefined,
+    siteRow.themeId,
+  );
   ctx.revisionMeta = (revRow?.meta as Record<string, unknown>) ?? {};
 
   // Update build record with revisionId

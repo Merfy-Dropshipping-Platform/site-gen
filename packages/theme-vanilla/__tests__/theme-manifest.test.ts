@@ -68,10 +68,16 @@ describe('@merfy/theme-vanilla theme.json', () => {
     expect(families).toContain('Inter');
   });
 
-  it('overrides Header and Footer with rationale', () => {
-    expect(manifest.blocks.Header.override).toBeDefined();
-    expect(manifest.blocks.Header.override.path).toBe('./blocks/Header');
-    expect(manifest.blocks.Footer.override).toBeDefined();
-    expect(manifest.blocks.Footer.override.path).toBe('./blocks/Footer');
+  it('does NOT override Header or Footer (no-overrides architecture, spec 084)', () => {
+    // Spec 084 §2.2: vanilla отказался от override-блоков — все различия
+    // выражаются через blockDefaults + additive variants в theme-base.
+    expect(manifest.blocks?.Header?.override).toBeUndefined();
+    expect(manifest.blocks?.Footer?.override).toBeUndefined();
+  });
+
+  it('blockDefaults configure universal blocks (Header logoPosition, Footer variant)', () => {
+    expect(manifest.blockDefaults.Header.logoPosition).toBe('center-absolute');
+    expect(manifest.blockDefaults.Footer.variant).toBe('2-part-asymmetric');
+    expect(manifest.blockDefaults.Footer.bottomStrip.enabled).toBe(true);
   });
 });

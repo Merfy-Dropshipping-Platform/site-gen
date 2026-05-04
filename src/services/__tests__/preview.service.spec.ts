@@ -142,7 +142,7 @@ describe('PreviewService', () => {
   });
 
   describe('PREVIEW_NAV_AGENT_INLINE', () => {
-    it('handles update-block postMessage с per-theme guard', async () => {
+    it('handles update-block postMessage с per-theme allowlist', async () => {
       // Renderим preview page с rose theme — inline JS bridge должен содержать
       // handler для update-block (используется iframe для hot-replace blocks).
       const html = await svc.renderPreviewPage({
@@ -153,13 +153,15 @@ describe('PreviewService', () => {
       });
       // Inline-bridge JS должен содержать handler для update-block message
       expect(html).toContain("ev.data.type === 'update-block'");
-      // Per-theme guard: только Rose делает hot-replace, другие темы skip
-      expect(html).toContain("currentThemeId !== 'rose'");
+      // Per-theme allowlist: hot-replace включён для rose и vanilla (spec 084).
+      expect(html).toContain("HOT_UPDATE_ALLOWED_THEMES");
+      expect(html).toContain("'rose'");
+      expect(html).toContain("'vanilla'");
       // Endpoint URL для fetch (через api-gateway proxy)
       expect(html).toContain('/preview/block');
     });
 
-    it('per-theme guard skips update-block для не-Rose тем', async () => {
+    it('per-theme allowlist пропускает rose И vanilla, скип остальные', async () => {
       // Один и тот же inline JS используется для всех тем — code identical,
       // behaviour diverges at runtime через currentThemeId set in init message.
       const html = await svc.renderPreviewPage({
@@ -168,11 +170,13 @@ describe('PreviewService', () => {
         fontHead: '',
         themeId: 'vanilla',
       });
-      // Per-theme guard в коде есть (verify same string presence)
-      expect(html).toContain("currentThemeId !== 'rose'");
+      // Allowlist в коде содержит rose + vanilla (T026 — spec 084)
+      expect(html).toContain("HOT_UPDATE_ALLOWED_THEMES");
+      expect(html).toMatch(/HOT_UPDATE_ALLOWED_THEMES\s*=\s*\[[^\]]*'rose'[^\]]*'vanilla'[^\]]*\]/);
       // Update-block handler в коде есть (тот же handler для всех тем,
-      // guard срабатывает на runtime)
+      // allowlist срабатывает на runtime через indexOf check).
       expect(html).toContain('update-block');
+      expect(html).toContain('indexOf(currentThemeId)');
     });
 
     it('init handler сохраняет themeId и siteId из parent', async () => {
@@ -189,9 +193,9 @@ describe('PreviewService', () => {
       expect(html).toContain('currentSiteId =');
     });
 
-    it('update-tokens handler присутствует с per-theme guard', async () => {
+    it('update-tokens handler присутствует с per-theme allowlist', async () => {
       // Stage 2a N4: hot-replace tokens.css в iframe без full reload.
-      // Symmetric to update-block — same per-theme Rose guard.
+      // Symmetric to update-block — same per-theme allowlist (rose + vanilla).
       const html = await svc.renderPreviewPage({
         blocks: [{ type: 'Hero', props: { id: 'Hero-1' } }],
         tokensCss: ':root { --foo: 1 }',
@@ -199,8 +203,8 @@ describe('PreviewService', () => {
         themeId: 'rose',
       });
       expect(html).toContain("ev.data.type === 'update-tokens'");
-      // Per-theme guard: только Rose; vanilla/satin/etc skip
-      expect(html).toContain("currentThemeId !== 'rose'");
+      // Per-theme allowlist: rose + vanilla; satin/bloom/flux пока skip.
+      expect(html).toContain("HOT_UPDATE_ALLOWED_THEMES_TOKENS");
       // Endpoint URL для fetch (через api-gateway proxy)
       expect(html).toContain('/preview/tokens-css');
       // Stable id для replacement target

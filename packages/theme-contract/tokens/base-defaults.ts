@@ -28,9 +28,12 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   // Typography
   '--font-heading': 'system-ui, sans-serif',
   '--font-body': 'system-ui, sans-serif',
+  '--font-cart-counter': 'inherit',
+  '--font-powered-by': 'inherit',
   '--weight-heading': '600',
   '--weight-body': '400',
   '--size-hero-heading': '48px',
+  '--size-section-heading': '20px',
   '--size-nav-link': '16px',
   '--size-checkout-brand': '20px',
   '--size-checkout-brand-image': '32px',
@@ -58,6 +61,11 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   '--size-newsletter-form-w': '652px',
   '--size-logo-width': '120px',
   '--size-card-border': '0px',
+  '--promo-banner-h-thin': '40px',
+
+  // Theme-scope colors (used by universal blocks)
+  '--color-bottom-strip-bg': '0 0 0',
+  '--color-bottom-strip-text': '255 255 255',
 
   // Variants
   '--button-style': 'solid',

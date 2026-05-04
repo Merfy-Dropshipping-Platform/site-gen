@@ -35,9 +35,12 @@ export const TOKEN_REGISTRY = {
   // Typography
   '--font-heading':            { category: 'font',   scope: 'theme' },
   '--font-body':               { category: 'font',   scope: 'theme' },
+  '--font-cart-counter':       { category: 'font',   scope: 'theme' },
+  '--font-powered-by':         { category: 'font',   scope: 'theme' },
   '--weight-heading':          { category: 'weight', scope: 'theme' },
   '--weight-body':             { category: 'weight', scope: 'theme' },
   '--size-hero-heading':       { category: 'size',   unit: 'px', scope: 'theme' },
+  '--size-section-heading':    { category: 'size',   unit: 'px', scope: 'theme' },
   '--size-nav-link':           { category: 'size',   unit: 'px', scope: 'theme' },
   '--size-checkout-brand':     { category: 'size',   unit: 'px', scope: 'theme' },
   '--size-checkout-brand-image': { category: 'size', unit: 'px', scope: 'theme' },
@@ -65,6 +68,11 @@ export const TOKEN_REGISTRY = {
   '--size-newsletter-form-w':  { category: 'size', unit: 'px', scope: 'theme' },
   '--size-logo-width':         { category: 'size', unit: 'px', scope: 'theme' },
   '--size-card-border':        { category: 'size', unit: 'px', scope: 'theme', min: 0, max: 4 },
+  '--promo-banner-h-thin':     { category: 'size', unit: 'px', scope: 'theme', min: 0, max: 200 },
+
+  // Theme-scope colors (used by universal blocks across themes)
+  '--color-bottom-strip-bg':   { category: 'color', scope: 'theme' },
+  '--color-bottom-strip-text': { category: 'color', scope: 'theme' },
 
   // Layout variants (enumerated string tokens)
   '--button-style':            { category: 'variant', values: ['outline', 'solid'], scope: 'theme' },

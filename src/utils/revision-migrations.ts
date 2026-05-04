@@ -506,11 +506,201 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
 }
 
 /**
+ * 084 Stage 1: vanilla home seed migration.
+ *
+ * Если `themeId === 'vanilla'` AND в `home.content` отсутствует блок
+ * `Slideshow` — заполняет home канонической последовательностью 10 блоков
+ * `[PromoBanner, Header, Slideshow, Collections, MainText, Video,
+ *   ImageWithText, PopularProducts, Newsletter, Footer]` со ссылками на
+ * коллекции `mebel` и `dekor` (соответствует Figma vanilla `1:18954`).
+ *
+ * Idempotent — повторный запуск ничего не меняет, anchor по наличию
+ * `Slideshow` блока (он есть только в vanilla home seed). Для не-vanilla
+ * тем home.content остаётся нетронутым.
+ *
+ * Применяется только когда themeId явно передан (опциональный параметр —
+ * legacy callers без themeId не активируют миграцию).
+ */
+export function migrateVanillaHomePage(
+  pagesData: Record<string, unknown>,
+  themeId: string | null | undefined,
+): Record<string, unknown> {
+  if (themeId !== 'vanilla') return pagesData;
+
+  const existing = pagesData['home'] as PageData | undefined;
+  const existingContent = Array.isArray(existing?.content) ? existing!.content : [];
+  const hasSlideshow = existingContent.some((b) => b?.type === 'Slideshow');
+  if (hasSlideshow) return pagesData;
+
+  const ts = Date.now();
+  const seedBlocks: Block[] = [
+    {
+      type: 'PromoBanner',
+      props: {
+        id: `PromoBanner-${ts}`,
+        text: 'Скидка 10% на первый заказ — промокод WELCOME10',
+        link: { text: 'В каталог', href: '/catalog' },
+        size: 'thin',
+        textTransform: 'uppercase',
+        colorScheme: 'scheme-1',
+      } as Record<string, unknown>,
+    },
+    {
+      type: 'Header',
+      props: {
+        id: `Header-${ts + 1}`,
+        siteTitle: 'Vanilla',
+        logoPosition: 'center-absolute',
+        activeLinkIndicator: 'underline',
+        navigationLinks: [
+          { label: 'Каталог', href: '/catalog' },
+          { label: 'Мебель', href: '/c/mebel' },
+          { label: 'Декор', href: '/c/dekor' },
+          { label: 'История', href: '/about' },
+        ],
+        actionButtons: { cart: true, account: true, search: true },
+      } as Record<string, unknown>,
+    },
+    {
+      type: 'Slideshow',
+      props: {
+        id: `Slideshow-${ts + 2}`,
+        slides: [
+          {
+            heading: 'Уют для вашего дома',
+            subtitle: 'Мебель и декор в современном стиле',
+            buttonText: 'В каталог',
+            buttonHref: '/catalog',
+            image: '',
+          },
+        ],
+        contentAlign: 'left',
+        alignment: 'left',
+        pagination: 'numbers',
+        colorScheme: 'scheme-1',
+      } as Record<string, unknown>,
+    },
+    {
+      type: 'Collections',
+      props: {
+        id: `Collections-${ts + 3}`,
+        heading: 'Коллекции',
+        cards: 2,
+        columns: 2,
+        cardCaptionStyle: 'uppercase',
+        gridAspect: '1:1',
+        items: [
+          { collectionHandle: 'mebel', title: 'Мебель', href: '/c/mebel' },
+          { collectionHandle: 'dekor', title: 'Декор', href: '/c/dekor' },
+        ],
+        colorScheme: 'scheme-3',
+        padding: { top: 80, bottom: 80 },
+      } as Record<string, unknown>,
+    },
+    {
+      type: 'MainText',
+      props: {
+        id: `MainText-${ts + 4}`,
+        heading: 'О нас',
+        body: 'Мы создаём уютные интерьеры — мебель и декор от российских мастеров.',
+        buttonText: 'Узнать больше',
+        buttonHref: '/about',
+        buttonStyle: 'outlined',
+        textStyle: 'italic',
+        colorScheme: 'scheme-3',
+        padding: { top: 80, bottom: 80 },
+      } as Record<string, unknown>,
+    },
+    {
+      type: 'Video',
+      props: {
+        id: `Video-${ts + 5}`,
+        videoUrl: '',
+        padded: true,
+        colorScheme: 'scheme-3',
+        padding: { top: 0, bottom: 80 },
+      } as Record<string, unknown>,
+    },
+    {
+      type: 'ImageWithText',
+      props: {
+        id: `ImageWithText-${ts + 6}`,
+        heading: 'Качество российских мастеров',
+        body: 'Каждое изделие создано вручную — натуральные материалы, классические формы, современные акценты.',
+        buttonText: 'Смотреть мебель',
+        buttonHref: '/c/mebel',
+        imagePosition: 'right',
+        ctaPosition: 'bottom-pinned',
+        image: '',
+        colorScheme: 'scheme-3',
+        padding: { top: 80, bottom: 80 },
+      } as Record<string, unknown>,
+    },
+    {
+      type: 'PopularProducts',
+      props: {
+        id: `PopularProducts-${ts + 7}`,
+        heading: 'Популярные товары',
+        cards: 4,
+        columns: 4,
+        collectionHandle: 'mebel',
+        cardCaptionStyle: 'uppercase',
+        swatchOverlay: true,
+        showCompareAtPrice: 'true',
+        colorScheme: 'scheme-3',
+        padding: { top: 80, bottom: 80 },
+      } as Record<string, unknown>,
+    },
+    {
+      type: 'Newsletter',
+      props: {
+        id: `Newsletter-${ts + 8}`,
+        heading: 'Подпишитесь на рассылку',
+        description: 'Получайте новости и специальные предложения раз в месяц.',
+        placeholder: 'email@example.ru',
+        buttonText: 'Подписаться',
+        formLayout: 'inline-submit',
+        colorScheme: 'scheme-1',
+        padding: { top: 80, bottom: 80 },
+      } as Record<string, unknown>,
+    },
+    {
+      type: 'Footer',
+      props: {
+        id: `Footer-${ts + 9}`,
+        variant: '2-part-asymmetric',
+        bottomStrip: {
+          enabled: true,
+          text: '© 2025 Vanilla Theme. Powered by Merfy',
+        },
+        colorScheme: 'scheme-1',
+      } as Record<string, unknown>,
+    },
+  ];
+
+  const baseExisting: PageData = existing && typeof existing === 'object' ? existing : { content: [] };
+  return {
+    ...pagesData,
+    home: {
+      ...baseExisting,
+      content: seedBlocks,
+      root: baseExisting.root ?? { props: { title: 'Главная' } },
+      zones: baseExisting.zones ?? {},
+    } as PageData,
+  };
+}
+
+/**
  * Apply all server-side migrations to a revision data object. Mutates a
  * shallow copy — input is not modified.
+ *
+ * `themeId` опционален — если передан, активируется theme-specific
+ * миграция (на текущий момент только vanilla home seed). Без themeId
+ * theme-specific шаги пропускаются (back-compat для legacy callers).
  */
 export function migrateRevisionData(
   data: Record<string, unknown> | null | undefined,
+  themeId?: string | null,
 ): Record<string, unknown> {
   if (!data || typeof data !== 'object') return {};
   const out: Record<string, unknown> = { ...data };
@@ -529,6 +719,9 @@ export function migrateRevisionData(
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = migrateCheckoutPage(out.pagesData as Record<string, unknown>);
+  }
+  if (out.pagesData && typeof out.pagesData === 'object') {
+    out.pagesData = migrateVanillaHomePage(out.pagesData as Record<string, unknown>, themeId);
   }
   return out;
 }

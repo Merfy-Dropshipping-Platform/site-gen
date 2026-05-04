@@ -244,7 +244,10 @@ export class PreviewController {
     if (!rev?.data) return null;
 
     return {
-      data: migrateRevisionData(rev.data as Record<string, unknown>),
+      data: migrateRevisionData(
+        rev.data as Record<string, unknown>,
+        site.themeId ?? null,
+      ),
       publicUrl: site.publicUrl ?? null,
       themeId: site.themeId ?? null,
     };

@@ -36,14 +36,16 @@ const BASE_BLOCKS: Record<string, BaseBlockEntry> = Object.fromEntries(
 );
 
 describe('Theme manifest resolver (Phase 2a multi-theme wiring)', () => {
-  it('vanilla manifest overrides Header + Footer, inherits base for Hero/AuthModal', () => {
+  it('vanilla manifest inherits Header + Footer from base (spec 084 — no overrides)', () => {
+    // Spec 084 §2.2 — vanilla отказался от override-блоков. Header/Footer
+    // резолвятся в `packages/theme-base/blocks/<X>` через universal variants
+    // (Header.logoPosition='center-absolute', Footer.variant='2-part-asymmetric')
+    // конфигурируемых через theme.json blockDefaults.
     const vanilla = loadManifest('vanilla');
     const resolved = resolveBlocks(BASE_BLOCKS, vanilla);
 
-    expect(resolved.Header.source).toBe('theme');
-    expect(resolved.Header.path).toBe('./blocks/Header');
-    expect(resolved.Footer.source).toBe('theme');
-    expect(resolved.Footer.path).toBe('./blocks/Footer');
+    expect(resolved.Header.source).toBe('base');
+    expect(resolved.Footer.source).toBe('base');
     expect(resolved.Hero.source).toBe('base');
     expect(resolved.AuthModal.source).toBe('base');
   });
@@ -118,9 +120,11 @@ describe('Theme manifest resolver (Phase 2a multi-theme wiring)', () => {
     expect(fluxJson.colorSchemes[0].tokens['--color-accent']).toBe('250 81 9');
   });
 
-  it('all 5 themes resolve Header + Footer overrides (rose, vanilla, bloom, satin, flux)', () => {
-    const themeIds: Array<'rose' | 'vanilla' | 'bloom' | 'satin' | 'flux'> = ['rose', 'vanilla', 'bloom', 'satin', 'flux'];
-    for (const id of themeIds) {
+  it('themes resolve Header + Footer correctly (rose/bloom/satin/flux override; vanilla base)', () => {
+    // After spec 084 — vanilla больше не override Header/Footer; остальные
+    // 4 темы пока используют override (миграция на base — отдельная spec).
+    const overrideThemes: Array<'rose' | 'bloom' | 'satin' | 'flux'> = ['rose', 'bloom', 'satin', 'flux'];
+    for (const id of overrideThemes) {
       const manifest = loadManifest(id);
       const resolved = resolveBlocks(BASE_BLOCKS, manifest);
       expect(resolved.Header.source).toBe('theme');
@@ -128,5 +132,11 @@ describe('Theme manifest resolver (Phase 2a multi-theme wiring)', () => {
       expect(resolved.Hero.source).toBe('base');
       expect(resolved.AuthModal.source).toBe('base');
     }
+
+    // Vanilla: no overrides, all from base
+    const vanilla = loadManifest('vanilla');
+    const vanillaResolved = resolveBlocks(BASE_BLOCKS, vanilla);
+    expect(vanillaResolved.Header.source).toBe('base');
+    expect(vanillaResolved.Footer.source).toBe('base');
   });
 });

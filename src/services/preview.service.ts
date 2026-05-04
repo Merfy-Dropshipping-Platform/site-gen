@@ -691,9 +691,10 @@ const PREVIEW_NAV_AGENT_INLINE = `
       currentThemeId = (ev.data.themeId || '') + '';
       currentSiteId = (ev.data.siteId || '') + '';
     } else if (ev.data.type === 'update-block') {
-      // Per-theme guard: только Rose hot-replace; другие темы skip
-      // (fallback на полный iframe reload через src change в PreviewFrame).
-      if (currentThemeId !== 'rose') return;
+      // Per-theme allowlist: hot-replace включён для Rose и Vanilla (spec 084).
+      // Другие темы fallback на полный iframe reload через src change в PreviewFrame.
+      var HOT_UPDATE_ALLOWED_THEMES = ['rose', 'vanilla'];
+      if (HOT_UPDATE_ALLOWED_THEMES.indexOf(currentThemeId) === -1) return;
       var blockId = ev.data.blockId;
       if (!blockId || !currentSiteId) return;
       var blockType = blockId.split('-')[0];
@@ -722,10 +723,10 @@ const PREVIEW_NAV_AGENT_INLINE = `
           console.error('[preview] update-block fetch failed', err);
         });
     } else if (ev.data.type === 'update-tokens') {
-      // Per-theme guard: только Rose hot-replace tokens.css; другие темы skip
-      // (fallback на полный iframe reload через src change в PreviewFrame).
+      // Per-theme allowlist: hot-replace tokens.css для Rose и Vanilla (spec 084).
       // Symmetric to update-block — Stage 2a N4.
-      if (currentThemeId !== 'rose') return;
+      var HOT_UPDATE_ALLOWED_THEMES_TOKENS = ['rose', 'vanilla'];
+      if (HOT_UPDATE_ALLOWED_THEMES_TOKENS.indexOf(currentThemeId) === -1) return;
       if (!currentSiteId) return;
       fetch('/api/sites/' + currentSiteId + '/preview/tokens-css', {
         method: 'POST',

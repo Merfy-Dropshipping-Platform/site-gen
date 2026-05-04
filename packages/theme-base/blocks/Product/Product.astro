@@ -719,10 +719,11 @@ const jsonLdSchema = resolvedProduct
         ev.stopPropagation();
         const cs = window.cartStore;
         const defaultLabel = addBtn.getAttribute('data-default-label') || 'Добавить в корзину';
-        const slugOrId = root.getAttribute('data-product-slug') || productId;
+        // Use UUID (data-product-id) for cart API — backend expects UUID, not slug.
+        const cartProductId = root.getAttribute('data-product-id') || productId;
         if (cs && typeof cs.addItem === 'function') {
           try {
-            cs.addItem(slugOrId, getActiveVariantId(), currentQty);
+            cs.addItem(cartProductId, getActiveVariantId(), currentQty);
             addBtn.textContent = 'Добавлено!';
           } catch {
             addBtn.textContent = defaultLabel;
@@ -738,12 +739,14 @@ const jsonLdSchema = resolvedProduct
     if (buyBtn) {
       buyBtn.addEventListener('click', function (ev) {
         ev.stopPropagation();
-        const slugOrId = root.getAttribute('data-product-slug') || productId;
+        // Use UUID for cart API (slug only ok for product page navigation).
+        const cartProductId = root.getAttribute('data-product-id') || productId;
+        const slug = root.getAttribute('data-product-slug') || productId;
         const cs = window.cartStore;
         if (cs && typeof cs.addItem === 'function') {
-          try { cs.addItem(slugOrId, getActiveVariantId(), currentQty); } catch {}
+          try { cs.addItem(cartProductId, getActiveVariantId(), currentQty); } catch {}
         }
-        window.location.href = '/checkout?productId=' + encodeURIComponent(slugOrId || '');
+        window.location.href = '/checkout?productId=' + encodeURIComponent(slug || '');
       }, true);
     }
     // Share

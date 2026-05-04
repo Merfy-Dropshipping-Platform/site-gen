@@ -22,15 +22,24 @@ export const NewsletterClasses = {
   button:
     'absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-[rgb(var(--color-heading))] hover:opacity-70 transition-opacity',
   /**
-   * 084 vanilla pilot — additive `formLayout` variant. Default
-   * `inline-submit` preserves the pre-084 single-row layout. `stacked`
-   * removes the relative positioning so the submit button can be
-   * rendered as a block element below the input.
+   * 084 vanilla pilot — additive `formLayout` variant.
+   *   - `inline-submit` (vanilla parity): full bordered input, height 56px,
+   *     submit button rendered INSIDE on the right (h=32, white solid).
+   *   - `stacked`: button below input as block element.
+   *   Both variants stay token-driven — colours come from the active scheme.
    */
   formWrapper: {
-    'inline-submit': 'relative flex items-center w-full border-b border-[rgb(var(--color-text))]/30',
+    'inline-submit':
+      'relative flex items-center justify-between w-full max-w-[652px] h-14 pl-4 pr-3 border border-[rgb(var(--color-text))]',
     stacked: 'flex flex-col items-stretch gap-3 w-full',
   },
+  /**
+   * Inline-submit button — small white solid pill INSIDE the bordered
+   * input on the right. Uses scheme-aware tokens so the button stays
+   * legible in any colour scheme.
+   */
+  buttonInline:
+    'inline-flex items-center justify-center h-8 px-2 [font-family:var(--font-body)] text-[12px] uppercase bg-[rgb(var(--color-bg))] text-[rgb(var(--color-heading))] hover:opacity-80 transition-opacity',
   buttonStacked:
     'inline-flex items-center justify-center h-12 px-6 rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[14px] font-medium uppercase tracking-wide bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] border border-[rgb(var(--color-button-border))] hover:opacity-90 transition-opacity',
 } as const;

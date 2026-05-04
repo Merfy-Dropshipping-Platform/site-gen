@@ -96,7 +96,7 @@ const contentAlignClass = C.contentAlign[contentAlignProp];
             {slide.image && (
               <img src={slide.image} alt={slide.headingText ?? ''} class={C.image} />
             )}
-            <div class={C.content}>
+            <div class:list={[C.content, slideAlignClass]}>
               {slide.headingText && <h2 class={C.heading}>{slide.headingText}</h2>}
               {slide.textContent && <p class={C.subtitle}>{slide.textContent}</p>}
               {slide.buttonText && (

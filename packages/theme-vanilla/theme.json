@@ -61,7 +61,8 @@
     },
     "Collections": {
       "cardCaptionStyle": "uppercase",
-      "gridAspect": "1:1"
+      "gridAspect": "1:1",
+      "titleAlignment": "left"
     },
     "MainText": {
       "buttonStyle": "outlined"
@@ -75,7 +76,8 @@
     },
     "PopularProducts": {
       "swatchOverlay": true,
-      "cardCaptionStyle": "uppercase"
+      "cardCaptionStyle": "uppercase",
+      "headingAlignment": "left"
     },
     "Newsletter": {
       "formLayout": "inline-submit"

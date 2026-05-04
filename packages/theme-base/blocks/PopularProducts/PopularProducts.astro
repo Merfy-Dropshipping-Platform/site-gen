@@ -59,18 +59,27 @@ const subtitle =
   })();
 
 // Pupa parity: heading.alignment, heading.size, text.size, productCard.{cardStyle,buttonStyle}, containerColorScheme.
+// 084 vanilla pilot: also accept top-level `headingAlignment` so themes can
+// set alignment via `blockDefaults.PopularProducts.headingAlignment` without
+// being clobbered by a heading object spread merge.
 const headingObj = headingProp ?? raw.heading;
-const headingAlignment = typeof headingObj === 'object' ? (headingObj as { alignment?: string })?.alignment : undefined;
+const headingAlignment =
+  (typeof headingObj === 'object' ? (headingObj as { alignment?: string })?.alignment : undefined)
+  ?? (typeof raw.headingAlignment === 'string' ? (raw.headingAlignment as string) : undefined);
 const headingSize = typeof headingObj === 'object' ? (headingObj as { size?: string })?.size : undefined;
 const textSize = (() => {
   const t = raw.text;
   if (t && typeof t === 'object') return (t as { size?: string }).size;
   return undefined;
 })();
+// Default to `text-center` when prop is unset so pre-084 themes
+// (rose/satin/bloom/flux) keep their centered headings. Vanilla
+// theme overrides via `blockDefaults.PopularProducts.heading.alignment`.
 const headingAlignClass =
   headingAlignment === 'left' ? 'text-left' :
   headingAlignment === 'right' ? 'text-right' :
-  headingAlignment === 'center' ? 'text-center' : '';
+  headingAlignment === 'center' ? 'text-center' :
+  'text-center';
 const headingSizeClass =
   headingSize === 'large' ? 'text-3xl md:text-4xl' :
   headingSize === 'medium' ? 'text-2xl md:text-3xl' :

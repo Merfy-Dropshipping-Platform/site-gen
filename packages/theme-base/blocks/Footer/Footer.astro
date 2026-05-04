@@ -25,10 +25,11 @@ const {
   padding,
   bottomStrip,
 } = Astro.props as Props;
-// 084 vanilla pilot: additive `2-part-asymmetric` variant — falls back to
-// existing `2-part` markup. Theme can override via Footer.classes
-// extension when finer control is needed.
-const effectiveVariant = variant === '2-part-asymmetric' ? '2-part' : variant;
+// 084 vanilla pilot: additive `2-part-asymmetric` variant has its own
+// markup branch below (LEFT items-start / RIGHT items-end + self-stretch).
+// Pre-084 variants (`3-col`/`2-part`/`minimal`) keep their existing
+// markup unchanged.
+const effectiveVariant = variant;
 
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
 const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
@@ -207,6 +208,73 @@ const CpoweredBy = (C as any).poweredBy ?? {};
       </section>
     )}
 
+    {variant === '2-part-asymmetric' && (
+      <section class={Cm.section} aria-label="Информация и навигация">
+        <div class={(C as any).variant?.['2-part-asymmetric']?.row ?? 'flex justify-between'}>
+          {/* LEFT: logo/brand + nav links (items-start, gap=24) */}
+          <div class={(C as any).variant?.['2-part-asymmetric']?.left ?? 'flex flex-col gap-6 items-start'}>
+            {brandName && (
+              <div class={Cm.leftTitle}>{brandName}</div>
+            )}
+            {navigationColumn?.links && navigationColumn.links.length > 0 && (
+              <nav class="flex flex-col gap-2 items-start" aria-label="Footer navigation">
+                {navigationColumn.links.map((link) => (
+                  <a href={link.href} class={Cm.leftLink}>{link.label}</a>
+                ))}
+              </nav>
+            )}
+          </div>
+          {/* RIGHT: contacts (top, items-end) + socials/payments (bottom, items-end), gap=64, self-stretch */}
+          <div class={(C as any).variant?.['2-part-asymmetric']?.right ?? 'flex flex-col gap-16 items-end self-stretch h-full'}>
+            <div class="flex flex-col gap-2 items-end">
+              {socialColumn?.email && (
+                <a href={`mailto:${socialColumn.email}`} class={Cm.rightEmail}>{socialColumn.email}</a>
+              )}
+            </div>
+            <div class="flex flex-col gap-6 items-end">
+              {socialColumn?.socialLinks && socialColumn.socialLinks.length > 0 && (
+                <div class={Cm.socialRow}>
+                  {socialColumn.socialLinks.map((social) => (
+                    <a
+                      href={social.href}
+                      aria-label={social.platform}
+                      class={Cm.socialLink}
+                      data-platform={social.platform}
+                    >
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true" set:html={SOCIAL_ICONS[social.platform] ?? ''} />
+                    </a>
+                  ))}
+                </div>
+              )}
+              {/* Payment badges (MC / VISA / МИР) */}
+              <div class="flex gap-2 items-start justify-end">
+                <div class="bg-[rgb(var(--color-heading))]/95 h-6 px-1 flex items-center justify-center rounded-[4px]">
+                  <span class="text-[10px] font-bold text-gray-800">MC</span>
+                </div>
+                <div class="bg-[rgb(var(--color-heading))]/95 h-6 px-1 flex items-center justify-center rounded-[4px]">
+                  <span class="text-[10px] font-bold text-blue-700">VISA</span>
+                </div>
+                <div class="bg-[rgb(var(--color-heading))]/95 h-6 px-1 flex items-center justify-center rounded-[4px]">
+                  <span class="text-[10px] font-bold text-green-600">МИР</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Bottom info row: copyright (left) + info links (right) */}
+        {(informationColumn?.links ?? []).length > 0 && (
+          <div class="flex flex-wrap items-center justify-between gap-4 mt-8">
+            <span class={Cm.leftLink}>{copyText}</span>
+            <div class="flex flex-wrap gap-6">
+              {(informationColumn?.links ?? []).map((link) => (
+                <a href={link.href} class={Cm.leftLink}>{link.label}</a>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+    )}
+
     {variant === 'minimal' && (
       <>
         <section class={Cm.section} aria-label="Информация и навигация">
@@ -284,6 +352,9 @@ const CpoweredBy = (C as any).poweredBy ?? {};
         &copy; {year} {brandName}. Все права защищены. {poweredBy}
       </p>
     </div>
+  ) : variant === '2-part-asymmetric' ? (
+    /* Asymmetric variant uses its own bottomStrip below — no default copy bar. */
+    null
   ) : (
     <div class={Ccopy.bar}>
       <p class={Ccopy.text}>

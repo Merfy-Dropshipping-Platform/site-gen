@@ -38,7 +38,16 @@ const headingAlignment = typeof headingObj === 'object' ? (headingObj as { align
 const headingSize = typeof headingObj === 'object' ? (headingObj as { size?: string })?.size : undefined;
 const textObj = raw.text;
 const textSize = typeof textObj === 'object' ? (textObj as { size?: string })?.size : undefined;
-const position = typeof raw.position === 'string' ? raw.position : 'center';
+// Position default depends on formLayout: vanilla `inline-submit` defaults
+// to left-aligned items-start (matches Figma); other themes (no formLayout)
+// keep the legacy centered position.
+const formLayoutForPosition =
+  raw.formLayout === 'inline-submit' || raw.formLayout === 'stacked'
+    ? raw.formLayout
+    : undefined;
+const position = typeof raw.position === 'string'
+  ? raw.position
+  : (formLayoutForPosition === 'inline-submit' ? 'left' : 'center');
 const colorScheme = raw.colorScheme as string | undefined;
 const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
 
@@ -54,22 +63,43 @@ const textSizeClass =
   textSize === 'large' ? 'text-lg md:text-xl' :
   textSize === 'medium' ? 'text-base md:text-lg' :
   textSize === 'small' ? 'text-sm md:text-base' : '';
-// 084 vanilla pilot: additive `formLayout` variant. Default unset →
-// `inline-submit` which uses the same classes as pre-084 (C.form +
-// C.button absolute). `stacked` swaps to a column layout with the
-// submit button rendered as a block element below the input.
-const formLayoutProp =
-  raw.formLayout === 'stacked' || raw.formLayout === 'inline-submit'
-    ? (raw.formLayout as 'stacked' | 'inline-submit')
-    : 'inline-submit';
-const formClass = formLayoutProp === 'stacked' ? C.formWrapper.stacked : C.form;
+// 084 vanilla pilot: additive `formLayout` variant.
+//   - 'inline-submit' (explicit, vanilla parity): full bordered input,
+//     button INSIDE on right.
+//   - 'stacked': button below input as block element.
+//   - undefined (legacy themes — rose/satin/bloom/flux): underline-only
+//     input + absolute arrow icon, identical to pre-084 behaviour.
+const formLayoutPropRaw = raw.formLayout;
+const isExplicitInline = formLayoutPropRaw === 'inline-submit';
+const isStacked = formLayoutPropRaw === 'stacked';
+const formLayoutProp: 'stacked' | 'inline-submit' | 'legacy' = isStacked
+  ? 'stacked'
+  : isExplicitInline
+  ? 'inline-submit'
+  : 'legacy';
+const formClass =
+  formLayoutProp === 'stacked'
+    ? C.formWrapper.stacked
+    : formLayoutProp === 'inline-submit'
+    ? C.formWrapper['inline-submit']
+    : C.form; // legacy underline
 const submitButtonClass =
-  formLayoutProp === 'stacked' ? C.buttonStacked : C.button;
+  formLayoutProp === 'stacked'
+    ? C.buttonStacked
+    : formLayoutProp === 'inline-submit'
+    ? ((C as Record<string, unknown>).buttonInline as string)
+    : C.button; // legacy absolute icon
 
 const positionClass =
   position === 'left' ? 'text-left items-start' :
   position === 'right' ? 'text-right items-end' :
   position === 'center' ? 'text-center items-center' : '';
+// When left/right we override the default mx-auto centering on the inner
+// wrapper so content sits flush with the section start (vanilla parity).
+const innerOverrideClass =
+  position === 'left' ? '!mx-0 !max-w-none flex flex-col gap-10' :
+  position === 'right' ? '!ml-auto !mr-0 !max-w-none flex flex-col gap-10' :
+  '';
 ---
 <section
   class:list={[C.root, schemeClass]}
@@ -77,7 +107,7 @@ const positionClass =
   style={paddingStyle}
 >
   <div class={C.container}>
-    <div class:list={[C.inner, positionClass]}>
+    <div class:list={[C.inner, positionClass, innerOverrideClass]}>
       {heading && (
         <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{heading}</h2>
       )}
@@ -87,10 +117,12 @@ const positionClass =
       <form class={formClass} method="POST" action="/api/newsletter/subscribe" data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="form" data-form-layout={formLayoutProp}>
         <input type="email" name="email" placeholder={placeholder} required class={C.input} />
         <button type="submit" class={submitButtonClass} aria-label={buttonText}>
-          {formLayoutProp === 'stacked' ? buttonText : (
+          {formLayoutProp === 'legacy' ? (
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <path d="M4 10h12m0 0l-5-5m5 5l-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
+          ) : (
+            buttonText
           )}
         </button>
       </form>

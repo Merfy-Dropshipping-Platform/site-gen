@@ -30,6 +30,8 @@ const titleSize = typeof raw.titleSize === 'string' ? raw.titleSize :
   (typeof raw.headingSize === 'string' ? raw.headingSize : 'medium');
 const subtitleSize = typeof raw.subtitleSize === 'string' ? raw.subtitleSize : 'small';
 
+// Default to `text-center` when prop is unset so pre-084 themes keep
+// their centered headings. Vanilla overrides via blockDefaults.
 const titleAlignClass =
   titleAlignment === 'left' ? 'text-left' :
   titleAlignment === 'right' ? 'text-right' :

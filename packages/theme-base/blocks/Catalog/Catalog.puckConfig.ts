@@ -155,7 +155,7 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
     showFilter: 'true',
     filterPosition: 'side',
     showSort: 'true',
-    colorScheme: 'scheme-1',
+    colorScheme: 'scheme-2',
     padding: { top: 120, bottom: 120 },
   },
   schema: CatalogSchema,

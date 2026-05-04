@@ -80,42 +80,18 @@ const renderBlocks = hasMerchantContent ? contentBlocks : defaultBlocks;
 const pageTitle = (meta?.title && `Каталог — ${meta.title}`) || 'Каталог';
 ---
 <BaseLayout title={pageTitle} description={meta?.description}>
-  <div class="catalog-page color-scheme-2 flex flex-col flex-1" style="background: #FFFFFF; color: #000000;">
-    <Header {...headerProps} colorScheme="scheme-2" />
+  <Header {...headerProps} />
 
-    <main class="catalog-main flex-1 w-full max-w-[1920px] mx-auto" style="padding-top: 40px; padding-bottom: 60px;">
-      {renderBlocks.map((block: any) => {
-        const Component = componentMap[block.type];
-        if (!Component) return null;
-        // Inject siteId into Catalog blocks so the inline fetch hydrates
-        // placeholder cards with real products from storefront-data.
-        const extraProps = block.type === 'Catalog' && siteId ? { siteId } : {};
-        return <Component {...(block.props ?? {})} {...extraProps} />;
-      })}
-    </main>
+  <main class="flex-1 w-full">
+    {renderBlocks.map((block: any) => {
+      const Component = componentMap[block.type];
+      if (!Component) return null;
+      // Inject siteId into Catalog blocks so the inline fetch hydrates
+      // placeholder cards with real products from storefront-data.
+      const extraProps = block.type === 'Catalog' && siteId ? { siteId } : {};
+      return <Component {...(block.props ?? {})} {...extraProps} />;
+    })}
+  </main>
 
-    <Footer {...footerProps} colorScheme="scheme-2" />
-  </div>
+  <Footer {...footerProps} />
 </BaseLayout>
-
-<style>
-  .catalog-main {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-  @media (min-width: 640px) {
-    .catalog-main { padding-left: 24px; padding-right: 24px; }
-  }
-  @media (min-width: 768px) {
-    .catalog-main { padding-left: 32px; padding-right: 32px; }
-  }
-  @media (min-width: 1024px) {
-    .catalog-main { padding-left: 48px; padding-right: 48px; }
-  }
-  @media (min-width: 1280px) {
-    .catalog-main { padding-left: 64px; padding-right: 64px; }
-  }
-  @media (min-width: 1536px) {
-    .catalog-main { padding-left: 300px; padding-right: 300px; }
-  }
-</style>

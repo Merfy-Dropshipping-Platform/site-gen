@@ -20,6 +20,14 @@ export const SlideshowClasses = {
   },
   image: 'absolute inset-0 -z-10 object-cover w-full h-full',
   /**
+   * 084 vanilla pilot — additive `imageFullBleed` variant. When enabled,
+   * background image breaks out of the parent container and spans full
+   * viewport width (100vw). Used for vanilla hero (1920×880) where
+   * Figma reference has section image edge-to-edge while content stays
+   * inside max-width container. Default (rose/satin/bloom/flux) preserved.
+   */
+  imageFullBleed: '!left-1/2 -translate-x-1/2 w-screen !max-w-none',
+  /**
    * 084 vanilla pilot — content column WITHOUT hardcoded `text-center`.
    * Text alignment is applied via the `align` map below so callers
    * don't end up with conflicting `text-center text-left` pairs.

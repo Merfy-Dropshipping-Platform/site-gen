@@ -58,7 +58,8 @@
     "Slideshow": {
       "alignment": "left",
       "pagination": "numbers",
-      "contentAlign": "left"
+      "contentAlign": "left",
+      "imageFullBleed": true
     },
     "Collections": {
       "cardCaptionStyle": "uppercase",

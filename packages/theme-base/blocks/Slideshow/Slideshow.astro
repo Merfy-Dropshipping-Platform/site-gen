@@ -77,6 +77,12 @@ const buttonStyleProp =
     ? (raw.buttonStyle as 'outlined' | 'solid')
     : 'solid';
 const buttonStyleClass = C.buttonStyle[buttonStyleProp];
+
+// 084 vanilla pilot: additive `imageFullBleed` variant. Default false
+// keeps image constrained to container (rose/satin/bloom/flux). When
+// true, image escapes via 100vw + center-translate trick (vanilla
+// 1920×880 Figma reference).
+const imageFullBleed = raw.imageFullBleed === true;
 ---
 <section
   class:list={[C.root, schemeClass]}
@@ -112,7 +118,7 @@ const buttonStyleClass = C.buttonStyle[buttonStyleProp];
             data-puck-subsection-field="slides"
           >
             {slide.image && (
-              <img src={slide.image} alt={slide.headingText ?? ''} class={C.image} />
+              <img src={slide.image} alt={slide.headingText ?? ''} class:list={[C.image, imageFullBleed && C.imageFullBleed]} />
             )}
             <div class:list={[C.content, slideAlignClass]}>
               {slide.headingText && <h2 class={C.heading}>{slide.headingText}</h2>}

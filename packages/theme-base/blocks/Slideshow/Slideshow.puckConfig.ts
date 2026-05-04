@@ -53,6 +53,14 @@ export const SlideshowSchema = z.object({
    * Vanilla scheme-1 Figma reference.
    */
   buttonStyle: z.enum(['solid', 'outlined']).optional(),
+  /**
+   * 084 vanilla pilot: additive `imageFullBleed` variant. When true, slide
+   * background image breaks out of parent container to span full viewport
+   * width (100vw). Used by vanilla hero (1920×880 per Figma) while content
+   * stays inside container max-width. Default false preserves rose/satin
+   * /bloom/flux behaviour where image is constrained by container.
+   */
+  imageFullBleed: z.boolean().optional(),
   colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),

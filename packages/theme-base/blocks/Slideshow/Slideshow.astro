@@ -65,6 +65,16 @@ const contentAlignProp =
     ? (raw.contentAlign as 'left' | 'center')
     : 'center';
 const contentAlignClass = C.contentAlign[contentAlignProp];
+
+// 084 vanilla pilot: additive `buttonStyle` variant for hero CTA.
+// `solid` (default) preserves pre-084 themed bg+border. `outlined`
+// renders transparent fill + 1.3px white border + uppercase per
+// Vanilla scheme-1 Figma reference. Mirrors MainText.buttonStyle.
+const buttonStyleProp =
+  raw.buttonStyle === 'outlined' || raw.buttonStyle === 'solid'
+    ? (raw.buttonStyle as 'outlined' | 'solid')
+    : 'solid';
+const buttonStyleClass = C.buttonStyle[buttonStyleProp];
 ---
 <section
   class:list={[C.root, schemeClass]}
@@ -77,10 +87,16 @@ const contentAlignClass = C.contentAlign[contentAlignProp];
   <div class={C.container}>
     <div class="relative" data-merfy-slideshow>
       {allSlides.map((slide, idx) => {
-        const slideAlignClass =
-          slide.alignment === 'left' ? 'text-left' :
-          slide.alignment === 'right' ? 'text-right' :
-          slide.alignment === 'center' ? 'text-center' : '';
+        // 084 vanilla pilot: text-align resolved via `C.align` map so we
+        // never emit conflicting `text-center text-left` pairs. When the
+        // slide has no explicit alignment, fall back to `center`
+        // (pre-084 default) — matches the previous `text-center` baked
+        // into `C.content`.
+        const textAlignment: 'left' | 'center' | 'right' =
+          slide.alignment === 'left' || slide.alignment === 'right' || slide.alignment === 'center'
+            ? slide.alignment
+            : 'center';
+        const slideAlignClass = C.align[textAlignment];
         const slideSchemeClass = slide.colorScheme
           ? `color-scheme-${String(slide.colorScheme).replace('scheme-', '')}`
           : '';
@@ -100,7 +116,7 @@ const contentAlignClass = C.contentAlign[contentAlignProp];
               {slide.headingText && <h2 class={C.heading}>{slide.headingText}</h2>}
               {slide.textContent && <p class={C.subtitle}>{slide.textContent}</p>}
               {slide.buttonText && (
-                <a href={slide.buttonLink ?? '#'} class={C.ctaButton}>{slide.buttonText}</a>
+                <a href={slide.buttonLink ?? '#'} class:list={[C.ctaButton, buttonStyleClass]}>{slide.buttonText}</a>
               )}
             </div>
           </div>

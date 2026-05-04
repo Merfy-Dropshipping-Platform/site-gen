@@ -46,6 +46,13 @@ export const SlideshowSchema = z.object({
    * Vanilla home can render the offset hero card.
    */
   contentAlign: z.enum(['center', 'left']).optional(),
+  /**
+   * 084 vanilla pilot — additive variant. CTA button visual style.
+   * `solid` (default) preserves pre-084 themed bg+border. `outlined`
+   * renders transparent fill + 1.3px white border + uppercase, matching
+   * Vanilla scheme-1 Figma reference.
+   */
+  buttonStyle: z.enum(['solid', 'outlined']).optional(),
   colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
@@ -175,6 +182,14 @@ export const SlideshowPuckConfig: BlockPuckConfig<SlideshowProps> = {
       options: [
         { label: 'По центру', value: 'center' },
         { label: 'Сверху', value: 'left' },
+      ],
+    },
+    buttonStyle: {
+      type: 'radio',
+      label: 'Стиль кнопки',
+      options: [
+        { label: 'Solid', value: 'solid' },
+        { label: 'Outlined', value: 'outlined' },
       ],
     },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },

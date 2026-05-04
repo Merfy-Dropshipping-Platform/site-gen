@@ -33,7 +33,9 @@ function normalizeSlide(slide: any) {
   const headingSize = typeof headingObj === 'object' ? headingObj?.size : undefined;
   const textObj = slide.text;
   const textContent =
-    typeof textObj === 'object' ? textObj?.content : (slide.subtitle ?? '');
+    typeof textObj === 'object' ? textObj?.content :
+    typeof textObj === 'string' ? textObj :
+    (slide.subtitle ?? '');
   const textSize = typeof textObj === 'object' ? textObj?.size : undefined;
   const buttonObj = slide.button;
   const buttonText = buttonObj?.text ?? slide.ctaText;

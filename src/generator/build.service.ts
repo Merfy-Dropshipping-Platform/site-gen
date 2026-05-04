@@ -1234,9 +1234,36 @@ async function stageGenerate(
         }
       }
 
+      // Extract page-level title/description (Puck saves these in root.props).
+      // Without this the generated <BaseLayout> gets no title → live page
+      // ships <title></title>. Puck's root.props shape on Merfy:
+      //   { title: "Мой магазин", description?: "..." }
+      // (older revisions may use root.props.meta — check both for safety).
+      const rootProps = (pageData as {
+        root?: {
+          props?: {
+            title?: unknown;
+            description?: unknown;
+            meta?: { title?: unknown; description?: unknown };
+          };
+        };
+      })?.root?.props;
+      const titleStr =
+        (typeof rootProps?.title === "string" ? rootProps.title : undefined) ||
+        (typeof rootProps?.meta?.title === "string" ? rootProps.meta.title : undefined);
+      const descStr =
+        (typeof rootProps?.description === "string" ? rootProps.description : undefined) ||
+        (typeof rootProps?.meta?.description === "string" ? rootProps.meta.description : undefined);
+      const pageMeta: { title?: string; description?: string } | undefined =
+        titleStr || descStr
+          ? { ...(titleStr ? { title: titleStr } : {}), ...(descStr ? { description: descStr } : {}) }
+          : undefined;
+
       pages.push({
         fileName,
-        data: { content: pageContent },
+        data: pageMeta
+          ? { content: pageContent, meta: pageMeta }
+          : { content: pageContent },
       });
     }
 

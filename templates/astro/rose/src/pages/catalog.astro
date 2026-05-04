@@ -37,6 +37,10 @@ const contentBlocks = catalogPage?.content
     : [];
 
 const meta = data?.meta ?? {};
+// Pass siteId (shopId) into Catalog so its inline fetch script has the API
+// target without depending on window.__MERFY_CONFIG__ being available
+// before the script runs. Mirrors how the preview controller injects siteId.
+const siteId = (meta as any)?.shopId ?? (meta as any)?.siteId ?? '';
 
 // Header/Footer fallbacks from siteConfig
 const homePage = allPagesData['home'];
@@ -83,7 +87,10 @@ const pageTitle = (meta?.title && `Каталог — ${meta.title}`) || 'Кат
       {renderBlocks.map((block: any) => {
         const Component = componentMap[block.type];
         if (!Component) return null;
-        return <Component {...(block.props ?? {})} />;
+        // Inject siteId into Catalog blocks so the inline fetch hydrates
+        // placeholder cards with real products from storefront-data.
+        const extraProps = block.type === 'Catalog' && siteId ? { siteId } : {};
+        return <Component {...(block.props ?? {})} {...extraProps} />;
       })}
     </main>
 

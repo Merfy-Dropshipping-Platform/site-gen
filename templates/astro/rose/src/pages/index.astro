@@ -28,6 +28,14 @@ const blocks = data?.content ?? [];
 const meta = data?.meta ?? {};
 const hasProducts = products && products.length > 0;
 
+// Title fallback chain: meta.title → siteConfig.title → header.siteTitle → 'Магазин'.
+// Empty <title> harms SEO + browser tab — every page must have a non-empty title.
+const homeTitle =
+  (meta as any)?.title ||
+  (siteConfig as any)?.title ||
+  (siteConfig as any)?.header?.siteTitle ||
+  'Магазин';
+
 // Separate blocks by role: Header before <main>, content inside <main>, Footer after <main>
 const headerBlock = blocks.find((b: any) => b.type === 'Header');
 const footerBlock = blocks.find((b: any) => b.type === 'Footer');
@@ -57,7 +65,7 @@ const componentMap: Record<string, any> = {
   Product,
 };
 ---
-<BaseLayout title={meta?.title ?? 'Мой сайт'} description={meta?.description}>
+<BaseLayout title={homeTitle} description={meta?.description}>
   <Header {...headerProps} />
 
   <main class="flex-1 w-full">

@@ -2,8 +2,8 @@
 import '../styles/global.css';
 
 interface Props {
-  title: string;
-  description: string;
+  title?: string;
+  description?: string;
   locale?: string;               // default 'ru'
   canonicalUrl?: string;
   ogImage?: string;
@@ -14,8 +14,8 @@ interface Props {
 }
 
 const {
-  title,
-  description,
+  title: titleProp,
+  description: descriptionProp,
   locale = 'ru',
   canonicalUrl,
   ogImage,
@@ -24,6 +24,15 @@ const {
   tokensCss = '',
   fontHead = '',
 } = Astro.props as Props;
+
+// Title fallback chain: explicit prop → empty string crashes SEO + browser tab.
+// Generator emits `<BaseLayout>...</BaseLayout>` without title prop on pages
+// where Puck's root.props.meta.title isn't set. Use a sane default so we never
+// ship `<title></title>` to live storefronts.
+const title = (typeof titleProp === 'string' && titleProp.trim().length > 0)
+  ? titleProp
+  : 'Магазин';
+const description = typeof descriptionProp === 'string' ? descriptionProp : '';
 ---
 <!DOCTYPE html>
 <html lang={locale}>

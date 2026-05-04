@@ -160,10 +160,14 @@ const apiBase = 'https://gateway.merfy.ru/api';
     <div data-mobile-drawer class={C.mobileDrawer} style="display: none;">
     </div>
 
-    <div style={`display: grid; grid-template-columns: ${filterVisible && filterSide ? '220px 1fr' : '1fr'}; gap: 32px; align-items: start;`}>
+    <div
+      class={filterVisible && filterSide ? 'catalog-grid-with-sidebar' : 'catalog-grid-no-sidebar'}
+      style="display: grid; gap: 32px; align-items: start;"
+    >
       {filterVisible && filterSide && (
         <aside
-          style="display: flex; flex-direction: column; gap: 24px; font-size: 14px; color: rgb(var(--color-foreground));"
+          class="catalog-sidebar"
+          style="flex-direction: column; gap: 24px; font-size: 14px; color: rgb(var(--color-foreground));"
         >
           <div style="font-weight: 500; opacity: 0.7;">Фильтры:</div>
 
@@ -249,12 +253,32 @@ const apiBase = 'https://gateway.merfy.ru/api';
   </div>
 </section>
 
+<style is:inline>
+  /* Mobile (< 1024px): single-column layout, sidebar hidden — mobile filter
+     trigger button + drawer is the entry point for filters. */
+  .catalog-grid-with-sidebar { grid-template-columns: 1fr; }
+  .catalog-grid-no-sidebar { grid-template-columns: 1fr; }
+  .catalog-sidebar { display: none; }
+  /* Tablet/desktop (>= 1024px): show sidebar as fixed column. */
+  @media (min-width: 1024px) {
+    .catalog-grid-with-sidebar { grid-template-columns: 220px 1fr; }
+    .catalog-sidebar { display: flex; }
+  }
+</style>
+
 <script is:inline define:vars={{ siteId, apiBase, cardCount, cardBgOn, btnBg, btnFg, btnBorder, btnStyle, showQuickAdd, quickAddText, effectiveCollection, urlState, cardAspect }}>
   // Mirror live storefront in constructor preview: fetch real products and
   // replace placeholder grid with actual cards. Honor productCard.* settings
   // so user changes (cardBackground, buttonStyle, quickAdd, etc) reflect.
   (function () {
-    if (!siteId) return;
+    // Resolve effective siteId: explicit prop wins (set by preview controller),
+    // fall back to window.__MERFY_CONFIG__.shopId so live SSG pages where the
+    // static catalog.astro template doesn't pass siteId still hydrate from the
+    // storefront-data API.
+    const effectiveSiteId = siteId
+      || (typeof window !== 'undefined' && window.__MERFY_CONFIG__ && (window.__MERFY_CONFIG__.shopId || window.__MERFY_CONFIG__.siteId))
+      || '';
+    if (!effectiveSiteId) return;
     const root = document.querySelector('section[data-block="catalog"]');
     if (!root) return;
     const grid = root.querySelector('[data-catalog-grid]');
@@ -617,7 +641,7 @@ const apiBase = 'https://gateway.merfy.ru/api';
       setTimeout(function () { btn.textContent = orig; }, 1500);
     });
 
-    fetch(apiBase + '/sites/' + siteId + '/storefront-data', { credentials: 'omit' })
+    fetch(apiBase + '/sites/' + effectiveSiteId + '/storefront-data', { credentials: 'omit' })
       .catch(() => null)
       .then((r) => r && r.ok ? r.json() : null)
       .then((data) => {

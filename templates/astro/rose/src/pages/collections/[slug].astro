@@ -104,6 +104,8 @@ const templateVars = {
 
 const meta = collectionPage?.root?.props?.meta ?? data?.meta ?? {};
 const title = renderProps(meta?.title, templateVars) || `${templateVars.COLLECTION_NAME}`;
+// Pass siteId (shopId) into Catalog so its inline fetch hydrates the grid.
+const siteId = (data as any)?.meta?.shopId ?? (data as any)?.meta?.siteId ?? '';
 ---
 <BaseLayout title={title} description={collection?.description ?? meta?.description}>
   {blocks.map((block: any) => {
@@ -117,6 +119,7 @@ const title = renderProps(meta?.title, templateVars) || `${templateVars.COLLECTI
     const Comp = componentMap[block.type];
     if (!Comp) return null;
     const resolvedProps = renderProps(block.props, templateVars);
-    return <Comp {...resolvedProps} _astroSlug={slug} />;
+    const extraProps = block.type === 'Catalog' && siteId ? { siteId } : {};
+    return <Comp {...resolvedProps} {...extraProps} _astroSlug={slug} />;
   })}
 </BaseLayout>

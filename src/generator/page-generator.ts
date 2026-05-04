@@ -269,7 +269,20 @@ export function generateAstroPage(
   // Assemble template
   let template: string;
   if (options?.layoutTag) {
-    template = `<${options.layoutTag}>\n${bodyLines.join("\n")}\n</${options.layoutTag}>`;
+    // Pass meta.title / meta.description from Puck root.props.meta into the
+    // layout so BaseLayout doesn't render `<title></title>` on live SSG pages.
+    // (Puck saves meta on the page level — see scaffold-builder pages config.)
+    const metaTitle = pageData.meta?.title;
+    const metaDescription = pageData.meta?.description;
+    const layoutAttrs: string[] = [];
+    if (typeof metaTitle === "string" && metaTitle.trim().length > 0) {
+      layoutAttrs.push(`title=${JSON.stringify(metaTitle)}`);
+    }
+    if (typeof metaDescription === "string" && metaDescription.trim().length > 0) {
+      layoutAttrs.push(`description=${JSON.stringify(metaDescription)}`);
+    }
+    const attrsStr = layoutAttrs.length > 0 ? ` ${layoutAttrs.join(" ")}` : "";
+    template = `<${options.layoutTag}${attrsStr}>\n${bodyLines.join("\n")}\n</${options.layoutTag}>`;
   } else {
     template = bodyLines.join("\n");
   }

@@ -42,4 +42,19 @@ export const HeroClasses = {
     'w-full max-w-[var(--container-max-width)] grid grid-cols-2 gap-4 md:gap-6 lg:gap-8',
   gridTile:
     'relative overflow-hidden rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))] aspect-square',
+  // 084 vanilla pilot — carousel mode classes
+  carouselRoot: 'relative w-full',
+  slide: 'relative h-[var(--slide-min-height,60vh)] flex items-center justify-center',
+  slideHidden: 'hidden',
+  imageFullBleed: '!left-1/2 -translate-x-1/2 w-screen !max-w-none',
+  pagination: 'flex justify-center items-center gap-5 mt-6 pb-6',
+  paginationButton:
+    '[font-family:var(--font-pagination,Exo_2,sans-serif)] font-light text-[16px] text-[rgb(var(--color-text)/0.6)]',
+  paginationButtonActive: 'text-[rgb(var(--color-heading))]',
+  carouselArrow:
+    'w-6 h-6 inline-flex items-center justify-center text-[rgb(var(--color-heading))]',
+  // Vanilla solid CTA — pre-existing buttonStyle classes already in HeroClasses
+  // if not present, mirror MainText.buttonStyle
+  buttonStyleSolid: '',
+  buttonStyleOutlined: '!bg-transparent border-[1.3px] border-[rgb(var(--color-button-text))] uppercase',
 } as const;

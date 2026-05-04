@@ -506,59 +506,75 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
 }
 
 /**
- * 084 Stage 1: vanilla home seed migration.
+ * 084 Stage 1: vanilla home seed migration (T025 v2).
  *
- * Если `themeId === 'vanilla'` AND в `home.content` отсутствует блок
- * `Slideshow` — заполняет home канонической последовательностью 10 блоков
+ * Если `themeId === 'vanilla'` AND текущая версия миграции на pagesData
+ * меньше `VANILLA_HOME_MIGRATION_VERSION` — заполняет home канонической
+ * последовательностью 10 блоков
  * `[PromoBanner, Header, Slideshow, Collections, MainText, Video,
  *   ImageWithText, PopularProducts, Newsletter, Footer]` со ссылками на
- * коллекции `mebel` и `dekor` (соответствует Figma vanilla `1:18954`).
+ * коллекции `mebel` и `dekor` (соответствует Figma vanilla `1:18954`)
+ * И запекает в каждый блок vanilla-specific props (logoPosition,
+ * buttonStyle, formLayout, swatchOverlay, bottomStrip, и т.д.) — чтобы
+ * мерчант видел эти variants в админке без зависимости от render-time
+ * blockDefaults из theme.json.
  *
- * Idempotent — повторный запуск ничего не меняет, anchor по наличию
- * `Slideshow` блока (он есть только в vanilla home seed). Для не-vanilla
- * тем home.content остаётся нетронутым.
+ * Idempotency anchor — version-based:
+ *   `pagesData._vanillaHomeMigrationVersion` (number, ≥ 2 = уже мигрирован
+ *   на текущую версию). Старая Hero-seed версия (без флага) считается
+ *   version 0 и автоматически апгрейдится до version 2.
  *
- * Применяется только когда themeId явно передан (опциональный параметр —
- * legacy callers без themeId не активируют миграцию).
+ * Для не-vanilla тем home.content остаётся нетронутым. Применяется
+ * только когда themeId явно передан.
  */
+export const VANILLA_HOME_MIGRATION_VERSION = 2;
+
 export function migrateVanillaHomePage(
   pagesData: Record<string, unknown>,
   themeId: string | null | undefined,
 ): Record<string, unknown> {
   if (themeId !== 'vanilla') return pagesData;
 
-  const existing = pagesData['home'] as PageData | undefined;
-  const existingContent = Array.isArray(existing?.content) ? existing!.content : [];
-  const hasSlideshow = existingContent.some((b) => b?.type === 'Slideshow');
-  if (hasSlideshow) return pagesData;
+  const currentVersionRaw = pagesData['_vanillaHomeMigrationVersion'];
+  const currentVersion =
+    typeof currentVersionRaw === 'number' && Number.isFinite(currentVersionRaw)
+      ? currentVersionRaw
+      : 0;
+  if (currentVersion >= VANILLA_HOME_MIGRATION_VERSION) return pagesData;
 
+  const existing = pagesData['home'] as PageData | undefined;
   const ts = Date.now();
   const seedBlocks: Block[] = [
     {
       type: 'PromoBanner',
       props: {
         id: `PromoBanner-${ts}`,
-        text: 'Скидка 10% на первый заказ — промокод WELCOME10',
+        text: 'СКИДКА 10% НА ПЕРВЫЙ ЗАКАЗ — ПРОМОКОД WELCOME10',
         link: { text: 'В каталог', href: '/catalog' },
         size: 'thin',
         textTransform: 'uppercase',
         colorScheme: 'scheme-1',
+        padding: { top: 12, bottom: 12 },
       } as Record<string, unknown>,
     },
     {
       type: 'Header',
       props: {
         id: `Header-${ts + 1}`,
-        siteTitle: 'Vanilla',
+        siteTitle: 'Vanilla Pilot',
+        logo: '',
         logoPosition: 'center-absolute',
         activeLinkIndicator: 'underline',
+        stickiness: 'scroll-up',
+        menuType: 'dropdown',
         navigationLinks: [
           { label: 'Каталог', href: '/catalog' },
           { label: 'Мебель', href: '/c/mebel' },
           { label: 'Декор', href: '/c/dekor' },
-          { label: 'История', href: '/about' },
         ],
-        actionButtons: { cart: true, account: true, search: true },
+        actionButtons: { showSearch: true, showCart: true, showProfile: true },
+        colorScheme: 'scheme-1',
+        padding: { top: 16, bottom: 16 },
       } as Record<string, unknown>,
     },
     {
@@ -567,17 +583,46 @@ export function migrateVanillaHomePage(
         id: `Slideshow-${ts + 2}`,
         slides: [
           {
-            heading: 'Уют для вашего дома',
-            subtitle: 'Мебель и декор в современном стиле',
-            buttonText: 'В каталог',
-            buttonHref: '/catalog',
+            id: `slide-${ts + 2}-1`,
+            imageUrl: '',
             image: '',
+            heading: { text: 'Искусство жить уютно', size: 'large' },
+            text: { content: 'Товары, которые делают дом особенным', size: 'medium' },
+            button: { text: 'Перейти к коллекции', link: '/catalog' },
+            container: 'true',
+            position: 'left',
+            alignment: 'left',
+          },
+          {
+            id: `slide-${ts + 2}-2`,
+            imageUrl: '',
+            image: '',
+            heading: { text: 'Мебель ручной работы', size: 'large' },
+            text: { content: 'Натуральные материалы и классические формы', size: 'medium' },
+            button: { text: 'Смотреть мебель', link: '/c/mebel' },
+            container: 'true',
+            position: 'left',
+            alignment: 'left',
+          },
+          {
+            id: `slide-${ts + 2}-3`,
+            imageUrl: '',
+            image: '',
+            heading: { text: 'Декор для дома', size: 'large' },
+            text: { content: 'Современные акценты для вашего интерьера', size: 'medium' },
+            button: { text: 'Смотреть декор', link: '/c/dekor' },
+            container: 'true',
+            position: 'left',
+            alignment: 'left',
           },
         ],
+        interval: 5,
+        autoplay: true,
         contentAlign: 'left',
         alignment: 'left',
         pagination: 'numbers',
         colorScheme: 'scheme-1',
+        padding: { top: 0, bottom: 0 },
       } as Record<string, unknown>,
     },
     {
@@ -585,14 +630,31 @@ export function migrateVanillaHomePage(
       props: {
         id: `Collections-${ts + 3}`,
         heading: 'Коллекции',
-        cards: 2,
-        columns: 2,
-        cardCaptionStyle: 'uppercase',
+        subtitle: 'Мебель и декор для уютного дома',
+        headingSize: 'medium',
+        titleAlignment: 'center',
+        imageView: 'square',
         gridAspect: '1:1',
-        items: [
-          { collectionHandle: 'mebel', title: 'Мебель', href: '/c/mebel' },
-          { collectionHandle: 'dekor', title: 'Декор', href: '/c/dekor' },
+        cardCaptionStyle: 'uppercase',
+        dataSource: 'manual',
+        collections: [
+          {
+            id: 'col-mebel',
+            collectionId: 'mebel',
+            heading: 'Мебель',
+            description: 'Кресла, столы, стеллажи',
+            image: '',
+          },
+          {
+            id: 'col-dekor',
+            collectionId: 'dekor',
+            heading: 'Декор',
+            description: 'Вазы, текстиль, аксессуары',
+            image: '',
+          },
         ],
+        columns: 2,
+        cardLinkBase: '/c/',
         colorScheme: 'scheme-3',
         padding: { top: 80, bottom: 80 },
       } as Record<string, unknown>,
@@ -601,12 +663,16 @@ export function migrateVanillaHomePage(
       type: 'MainText',
       props: {
         id: `MainText-${ts + 4}`,
-        heading: 'О нас',
-        body: 'Мы создаём уютные интерьеры — мебель и декор от российских мастеров.',
-        buttonText: 'Узнать больше',
-        buttonHref: '/about',
+        heading: { text: 'О нас', size: 'large' },
+        text: {
+          content:
+            'Мы создаём уютные интерьеры — мебель и декор от российских мастеров. Каждое изделие — забота о деталях.',
+          size: 'medium',
+        },
+        alignment: 'center',
+        position: 'center',
+        button: { text: 'Узнать больше', link: '/about' },
         buttonStyle: 'outlined',
-        textStyle: 'italic',
         colorScheme: 'scheme-3',
         padding: { top: 80, bottom: 80 },
       } as Record<string, unknown>,
@@ -615,8 +681,12 @@ export function migrateVanillaHomePage(
       type: 'Video',
       props: {
         id: `Video-${ts + 5}`,
+        heading: '',
         videoUrl: '',
+        poster: '',
+        position: 'contained',
         padded: true,
+        align: 'container',
         colorScheme: 'scheme-3',
         padding: { top: 0, bottom: 80 },
       } as Record<string, unknown>,
@@ -625,13 +695,16 @@ export function migrateVanillaHomePage(
       type: 'ImageWithText',
       props: {
         id: `ImageWithText-${ts + 6}`,
-        heading: 'Качество российских мастеров',
-        body: 'Каждое изделие создано вручную — натуральные материалы, классические формы, современные акценты.',
-        buttonText: 'Смотреть мебель',
-        buttonHref: '/c/mebel',
+        image: { url: '', alt: 'Мебель ручной работы' },
+        heading: { text: 'Качество российских мастеров', size: 'large' },
+        text: {
+          content:
+            'Каждое изделие создано вручную — натуральные материалы, классические формы, современные акценты.',
+          size: 'medium',
+        },
+        button: { text: 'Смотреть мебель', link: '/c/mebel' },
         imagePosition: 'right',
         ctaPosition: 'bottom-pinned',
-        image: '',
         colorScheme: 'scheme-3',
         padding: { top: 80, bottom: 80 },
       } as Record<string, unknown>,
@@ -640,13 +713,14 @@ export function migrateVanillaHomePage(
       type: 'PopularProducts',
       props: {
         id: `PopularProducts-${ts + 7}`,
-        heading: 'Популярные товары',
+        heading: { text: 'Популярные товары', size: 'medium' },
         cards: 4,
         columns: 4,
-        collectionHandle: 'mebel',
+        collection: 'mebel',
         cardCaptionStyle: 'uppercase',
         swatchOverlay: true,
-        showCompareAtPrice: 'true',
+        quickAdd: false,
+        quickAddText: 'В КОРЗИНУ',
         colorScheme: 'scheme-3',
         padding: { top: 80, bottom: 80 },
       } as Record<string, unknown>,
@@ -655,7 +729,7 @@ export function migrateVanillaHomePage(
       type: 'Newsletter',
       props: {
         id: `Newsletter-${ts + 8}`,
-        heading: 'Подпишитесь на рассылку',
+        heading: { text: 'Подпишитесь на рассылку', size: 'medium' },
         description: 'Получайте новости и специальные предложения раз в месяц.',
         placeholder: 'email@example.ru',
         buttonText: 'Подписаться',
@@ -668,12 +742,43 @@ export function migrateVanillaHomePage(
       type: 'Footer',
       props: {
         id: `Footer-${ts + 9}`,
+        siteTitle: 'Vanilla Pilot',
         variant: '2-part-asymmetric',
         bottomStrip: {
           enabled: true,
           text: '© 2025 Vanilla Theme. Powered by Merfy',
         },
+        copyright: { companyName: 'Vanilla Pilot', showYear: true },
+        newsletter: {
+          enabled: false,
+          heading: '',
+          description: '',
+          placeholder: '',
+        },
+        heading: { text: '', size: 'medium', alignment: 'left' },
+        text: { content: '', size: 'small' },
+        navigationColumn: {
+          title: 'Магазин',
+          links: [
+            { label: 'Каталог', href: '/catalog' },
+            { label: 'Мебель', href: '/c/mebel' },
+            { label: 'Декор', href: '/c/dekor' },
+          ],
+        },
+        informationColumn: {
+          title: 'Информация',
+          links: [
+            { label: 'Доставка', href: '/delivery' },
+            { label: 'Контакты', href: '/contacts' },
+          ],
+        },
+        socialColumn: {
+          title: 'Связь',
+          email: '',
+          socialLinks: [],
+        },
         colorScheme: 'scheme-1',
+        padding: { top: 80, bottom: 40 },
       } as Record<string, unknown>,
     },
   ];
@@ -681,6 +786,7 @@ export function migrateVanillaHomePage(
   const baseExisting: PageData = existing && typeof existing === 'object' ? existing : { content: [] };
   return {
     ...pagesData,
+    _vanillaHomeMigrationVersion: VANILLA_HOME_MIGRATION_VERSION,
     home: {
       ...baseExisting,
       content: seedBlocks,

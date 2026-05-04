@@ -85,6 +85,7 @@ export function buildTokensCss(
   --spacing-grid-row-gap: ${themeDefaults['--spacing-grid-row-gap'] ?? '32px'};
   --size-hero-heading: ${merchantFirst(heroHeadingSize, heroHeadingSizeSet, themeDefaults['--size-hero-heading'], '48px')};
   --size-hero-button-h: ${themeDefaults['--size-hero-button-h'] ?? '48px'};
+  --slide-min-height: ${themeDefaults['--slide-min-height'] ?? '60vh'};
   --size-nav-link: ${merchantFirst(navLinkSize, navLinkSizeSet, themeDefaults['--size-nav-link'], '14px')};
   --size-section-heading: ${themeDefaults['--size-section-heading'] ?? '20px'};
   --size-logo-width: ${merchantFirst(logoWidth, logoWidthSet, themeDefaults['--size-logo-width'], '40px')};

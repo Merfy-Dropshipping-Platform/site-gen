@@ -29,7 +29,7 @@ describe('migrateVanillaHomePage (084 — T025 v2)', () => {
   const expectedSequence = [
     'PromoBanner',
     'Header',
-    'Slideshow',
+    'Hero',
     'Collections',
     'MainText',
     'Video',
@@ -41,7 +41,7 @@ describe('migrateVanillaHomePage (084 — T025 v2)', () => {
 
   it('migrateVanillaHomePage and version constant are exported', () => {
     expect(typeof migrateVanillaHomePage).toBe('function');
-    expect(VANILLA_HOME_MIGRATION_VERSION).toBe(2);
+    expect(VANILLA_HOME_MIGRATION_VERSION).toBe(3);
   });
 
   it('seeds 10 vanilla home blocks when themeId=vanilla + empty home + version flag set', () => {
@@ -50,17 +50,17 @@ describe('migrateVanillaHomePage (084 — T025 v2)', () => {
     const home = out.home as Home;
     const types = home.content.map((b) => b.type);
     expect(types).toEqual(expectedSequence);
-    expect(types[2]).toBe('Slideshow');
-    expect(out._vanillaHomeMigrationVersion).toBe(2);
+    expect(types[2]).toBe('Hero');
+    expect(out._vanillaHomeMigrationVersion).toBe(3);
   });
 
-  it('upgrades existing pre-v2 seed (Hero in slot #3) to v2 (Slideshow)', () => {
+  it('upgrades existing pre-v3 seed (legacy Hero in slot #3, no version flag) to v3 (Hero+carousel)', () => {
     const pagesData = {
       home: {
         content: [
           { type: 'PromoBanner', props: {} },
           { type: 'Header', props: {} },
-          { type: 'Hero', props: {} }, // legacy seed — must be replaced
+          { type: 'Hero', props: {} }, // legacy seed — must be replaced with v3 Hero+carousel
           { type: 'Footer', props: {} },
         ],
       },
@@ -68,19 +68,64 @@ describe('migrateVanillaHomePage (084 — T025 v2)', () => {
     const out = migrateVanillaHomePage(pagesData, 'vanilla') as Record<string, unknown>;
     const home = out.home as Home;
     expect(home.content.map((b) => b.type)).toEqual(expectedSequence);
-    expect(home.content[2].type).toBe('Slideshow');
-    expect(out._vanillaHomeMigrationVersion).toBe(2);
+    expect(home.content[2].type).toBe('Hero');
+    expect((home.content[2].props as Record<string, unknown>).mode).toBe('carousel');
+    expect(out._vanillaHomeMigrationVersion).toBe(3);
   });
 
-  it('is no-op when already on current version (v2)', () => {
-    const home = { content: [{ type: 'Slideshow', props: { id: 'kept' } }] };
+  it('is no-op when already on current version (v3)', () => {
+    const home = { content: [{ type: 'Hero', props: { id: 'kept', mode: 'carousel' } }] };
     const pagesData = {
-      _vanillaHomeMigrationVersion: 2,
+      _vanillaHomeMigrationVersion: 3,
       home,
     };
     const out = migrateVanillaHomePage(pagesData, 'vanilla');
     expect(out).toBe(pagesData);
     expect((out as { home: Home }).home).toBe(home);
+  });
+
+  it('v2 (Slideshow at #2) auto-upgrades to v3 (Hero+carousel)', () => {
+    const v2Data = {
+      pagesData: {
+        _vanillaHomeMigrationVersion: 2,
+        home: {
+          content: [
+            { type: 'PromoBanner', props: {} },
+            { type: 'Header', props: {} },
+            { type: 'Slideshow', props: { slides: [{ id: 's1', imageUrl: 'x' }] } },
+            { type: 'Collections', props: {} },
+            { type: 'MainText', props: {} },
+            { type: 'Video', props: {} },
+            { type: 'ImageWithText', props: {} },
+            { type: 'PopularProducts', props: {} },
+            { type: 'Newsletter', props: {} },
+            { type: 'Footer', props: {} },
+          ],
+        },
+      },
+    };
+    const result = RevisionMigrations.migrateRevisionData(v2Data, 'vanilla');
+    const pagesData = result.pagesData as Record<string, unknown>;
+    expect(pagesData._vanillaHomeMigrationVersion).toBe(3);
+    const home = pagesData.home as Home;
+    expect(home.content[2].type).toBe('Hero');
+    expect((home.content[2].props as Record<string, unknown>).mode).toBe('carousel');
+    expect(Array.isArray((home.content[2].props as Record<string, unknown>).slides)).toBe(true);
+    expect(((home.content[2].props as Record<string, unknown>).slides as unknown[]).length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('v3 already (no-op idempotent)', () => {
+    const v3Data = {
+      pagesData: {
+        _vanillaHomeMigrationVersion: 3,
+        home: { content: [{ type: 'Hero', props: { mode: 'carousel', slides: [] } }] },
+      },
+    };
+    const result = RevisionMigrations.migrateRevisionData(v3Data, 'vanilla');
+    const pagesData = result.pagesData as Record<string, unknown>;
+    expect(pagesData._vanillaHomeMigrationVersion).toBe(3);
+    const home = pagesData.home as Home;
+    expect(home.content.length).toBe(1);
   });
 
   it('leaves non-vanilla themes untouched', () => {
@@ -115,12 +160,13 @@ describe('migrateVanillaHomePage (084 — T025 v2)', () => {
     expect(header.logoPosition).toBe('center-absolute');
     expect(header.activeLinkIndicator).toBe('underline');
 
-    const slideshow = blocks[2].props as Record<string, unknown>;
-    expect(slideshow.contentAlign).toBe('left');
-    expect(slideshow.alignment).toBe('left');
-    expect(slideshow.pagination).toBe('numbers');
-    expect(Array.isArray(slideshow.slides)).toBe(true);
-    expect((slideshow.slides as unknown[]).length).toBe(3);
+    const hero = blocks[2].props as Record<string, unknown>;
+    expect(hero.mode).toBe('carousel');
+    expect(hero.contentAlign).toBe('left');
+    expect(hero.alignment).toBe('left');
+    expect(hero.pagination).toBe('numbers');
+    expect(Array.isArray(hero.slides)).toBe(true);
+    expect((hero.slides as unknown[]).length).toBe(3);
 
     const collections = blocks[3].props as Record<string, unknown>;
     expect(collections.gridAspect).toBe('1:1');

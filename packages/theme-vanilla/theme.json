@@ -22,7 +22,7 @@
     "--radius-card": "0px",
     "--radius-media": "0px",
     "--radius-field": "0px",
-    "--size-hero-heading": "72px",
+    "--size-hero-heading": "24px",
     "--slide-min-height": "880px",
     "--size-hero-button-h": "48px",
     "--size-section-heading": "20px",
@@ -54,6 +54,18 @@
     "Header": {
       "logoPosition": "center-absolute",
       "activeLinkIndicator": "underline"
+    },
+    "Hero": {
+      "mode": "carousel",
+      "imageFullBleed": true,
+      "contentAlign": "left",
+      "alignment": "left",
+      "pagination": "numbers",
+      "buttonStyle": "solid",
+      "size": "large",
+      "container": "false",
+      "autoplay": true,
+      "interval": 5
     },
     "Slideshow": {
       "alignment": "left",

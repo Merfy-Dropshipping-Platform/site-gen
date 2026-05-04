@@ -33,6 +33,7 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   '--weight-heading': '600',
   '--weight-body': '400',
   '--size-hero-heading': '48px',
+  '--slide-min-height': '60vh',
   '--size-section-heading': '20px',
   '--size-nav-link': '16px',
   '--size-checkout-brand': '20px',

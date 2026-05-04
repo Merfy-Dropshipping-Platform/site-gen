@@ -40,6 +40,7 @@ export const TOKEN_REGISTRY = {
   '--weight-heading':          { category: 'weight', scope: 'theme' },
   '--weight-body':             { category: 'weight', scope: 'theme' },
   '--size-hero-heading':       { category: 'size',   unit: 'px', scope: 'theme' },
+  '--slide-min-height':        { category: 'size',   scope: 'theme' },
   '--size-section-heading':    { category: 'size',   unit: 'px', scope: 'theme' },
   '--size-nav-link':           { category: 'size',   unit: 'px', scope: 'theme' },
   '--size-checkout-brand':     { category: 'size',   unit: 'px', scope: 'theme' },

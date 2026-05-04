@@ -23,6 +23,7 @@
     "--radius-media": "0px",
     "--radius-field": "0px",
     "--size-hero-heading": "72px",
+    "--slide-min-height": "880px",
     "--size-hero-button-h": "48px",
     "--size-section-heading": "20px",
     "--size-nav-link": "16px",

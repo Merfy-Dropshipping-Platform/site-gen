@@ -8,7 +8,7 @@ export const SlideshowClasses = {
    * so callers never end up with conflicting `items-center items-start`
    * or `text-center text-left` pairs.
    */
-  slide: 'relative h-[880px] flex justify-center',
+  slide: 'relative min-h-[var(--slide-min-height,60vh)] flex justify-center',
   /**
    * 084 vanilla pilot — additive `contentAlign` variant. Default
    * (`center`) preserves pre-084 vertical centering. `left` shifts

@@ -1,15 +1,25 @@
 ---
-// Product — Puck-managed SSR card. Mirrors the live ProductIsland visual
-// structure (image gallery + info block) so the constructor preview matches
-// what the user sees on the live storefront. When `siteId` is injected by
-// the preview pipeline, an inline client script fetches the chosen product
-// (or first available) from the storefront API and replaces placeholder
-// values with real data.
+// Product — universal SSR product detail block (Astro-only).
 //
-// On live SSG bundles each theme's `/product/[id].astro` page intercepts
-// Product blocks before they reach this file and mounts the interactive
-// React island directly with `productId` from URL params. So this file is
-// only rendered in preview pipelines and as a graceful fallback.
+// This block is the canonical PDP (Product Detail Page) renderer. It runs in
+// three modes — all share the SAME markup so the constructor preview matches
+// the live storefront pixel-for-pixel:
+//
+//  1. **Live SSG (page-product/[id].astro)** — `productId` resolves to a real
+//     product imported from `data/products.json` (build-time snapshot from the
+//     product service). All layout/variant/quantity/cart UI is rendered SSR.
+//     Vanilla JS hydration powers interactive bits (variant select, qty, add
+//     to cart, share, zoom).
+//
+//  2. **Constructor preview** — `siteId` is injected by the preview pipeline.
+//     The inline script falls back to fetching `/storefront-data` so block
+//     populates with real product data while editing.
+//
+//  3. **Standalone fallback** (no `siteId`, no products.json match) — render
+//     placeholder skeleton; vanilla JS still wires interactivity.
+//
+// Spec 082 (rose pilot): replaces per-theme React `<ProductIsland>` islands
+// with this universal Astro+vanilla-JS block, mirroring the catalog migration.
 import type { ProductProps } from './Product.puckConfig';
 
 interface Props extends ProductProps {
@@ -39,8 +49,8 @@ const {
 } = Astro.props as Props;
 
 const paddingStyle = padding
-  ? `padding-top:${padding.top ?? 80}px; padding-bottom:${padding.bottom ?? 80}px;`
-  : 'padding-top:80px; padding-bottom:80px;';
+  ? `padding-top:${padding.top ?? 75}px; padding-bottom:${padding.bottom ?? 75}px;`
+  : 'padding-top:75px; padding-bottom:75px;';
 
 const schemeClass =
   typeof colorScheme === 'string' && colorScheme
@@ -49,43 +59,157 @@ const schemeClass =
 
 const apiBase = 'https://gateway.merfy.ru/api';
 
-const textContent = text?.content ?? badge?.text ?? '';
-const priceVisible = price?.show !== 'false' && price?.show !== false;
-const quantityVisible = quantity?.enabled !== 'false' && quantity?.enabled !== false;
-const addBtnText = buttons?.addToCart?.text ?? 'В КОРЗИНУ';
-const buyBtnText = buttons?.buyNow?.text ?? 'КУПИТЬ';
-const shareText = share?.text ?? 'Поделиться';
-const descContent = description?.content ?? '';
-
-const photoOnLeft = photoPosition !== 'right';
-
-// Layout variants drive grid template / image stacking.
+// Layout flags — drive grid column / image stacking.
 const effectiveLayout = layout ?? 'two-columns';
 const isStacked = effectiveLayout === 'stacked';
-const isCarousel = effectiveLayout === 'carousel';
-const isThumbnail = effectiveLayout === 'thumbnail';
-const isSplit = effectiveLayout === 'split';
-// 'two-columns' (default) and 'split' both side-by-side; 'split' = 50/50.
-const galleryWidth = isSplit ? '1fr' : '435px';
-const gridTemplate = isStacked
-  ? '1fr'
-  : photoOnLeft
-    ? `${galleryWidth} 1fr`
-    : `1fr ${galleryWidth}`;
-// Block size scales container max-width and font-size baseline.
-const effectiveSize = size ?? 'medium';
-const blockMaxWidth = effectiveSize === 'small' ? '960px' : effectiveSize === 'large' ? '1440px' : '1280px';
-const titleFontSize = effectiveSize === 'small' ? '20px' : effectiveSize === 'large' ? '28px' : '24px';
-const heroAspect = isStacked ? '4/3' : '1/1';
+const photoOnLeft = photoPosition !== 'right';
 
-// Variants visual style: 'button' (pill buttons, default) vs 'list' (vertical rows).
+// Variants visual style: 'button' (pill, default) or 'list' (rows).
 const variantsStyle = variants?.style ?? 'button';
 const variantsShape = variants?.shape ?? 'circle';
 const variantsRadius =
   variantsShape === 'square' ? '4px' : variantsShape === 'none' ? '0' : '999px';
 
+// Visibility flags (default-on; only hide on explicit 'false').
+const priceVisible = price?.show !== 'false' && price?.show !== false;
+const quantityVisible = quantity?.enabled !== 'false' && quantity?.enabled !== false;
+
+// Static labels — i18n in Russian to match rose live storefront.
+const textContent = text?.content ?? badge?.text ?? '';
+const addBtnText = buttons?.addToCart?.text ?? 'Добавить в корзину';
+const buyBtnText = buttons?.buyNow?.text ?? 'Купить сейчас';
+const shareText = share?.text ?? 'Поделиться';
+const descContent = description?.content ?? '';
+
 // Zoom mode: hover (CSS scale on hover) vs click (lightbox via JS) vs none.
 const zoomEffective = zoomMode ?? 'hover';
+
+// Block-level container max width follows hero ProductIsland 768px baseline.
+const blockMaxWidth = '768px';
+
+// Try import products.json (build pipeline writes scaffold dir from product
+// service). At live SSG time the resolved product is the one whose slug/handle
+// matches Astro.params.id (resolved by getStaticPaths upstream). If we receive
+// `productId` prop directly we use that.
+type RealProduct = {
+  id?: string;
+  slug?: string;
+  handle?: string;
+  name?: string;
+  title?: string;
+  description?: string;
+  price?: string | number;
+  basePrice?: string | number;
+  oldPrice?: string | number;
+  compareAtPrice?: string | number;
+  image?: string;
+  images?: Array<string | { url?: string; alt?: string }>;
+  variants?: Array<{
+    id: string;
+    title: string;
+    price?: string | number;
+    available?: boolean;
+    options?: Record<string, string>;
+  }>;
+  hasVariants?: boolean;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+};
+let realProducts: RealProduct[] = [];
+try {
+  const productsData = await import('../data/products.json');
+  realProducts = (productsData.default ?? productsData) as RealProduct[];
+} catch {
+  realProducts = [];
+}
+
+// Resolve product by productId (URL param) — accept slug, handle, or id match.
+function resolveProduct(idOrSlug: string | undefined): RealProduct | null {
+  if (!idOrSlug || realProducts.length === 0) return null;
+  return (
+    realProducts.find(
+      (p) => p.slug === idOrSlug || p.handle === idOrSlug || p.id === idOrSlug,
+    ) ?? null
+  );
+}
+
+const resolvedProduct = resolveProduct(productId);
+const productName = resolvedProduct?.name ?? resolvedProduct?.title ?? '';
+const productDescription = resolvedProduct?.description ?? descContent ?? '';
+
+// Image helpers
+function normalizeImages(p: RealProduct | null): string[] {
+  if (!p) return [];
+  const arr = Array.isArray(p.images) ? p.images : [];
+  const mapped = arr
+    .map((img) => (typeof img === 'string' ? img : img?.url ?? ''))
+    .filter((s): s is string => !!s);
+  if (mapped.length > 0) return mapped;
+  return p.image ? [p.image] : [];
+}
+const images = normalizeImages(resolvedProduct);
+const heroImage = images[0] ?? '';
+const thumbs = images.slice(1, 4);
+
+// Price helpers
+function parseNum(v: number | string | null | undefined): number {
+  if (v == null) return 0;
+  if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+  const cleaned = String(v).replace(/[^\d.,-]/g, '').replace(',', '.');
+  const n = parseFloat(cleaned);
+  return Number.isFinite(n) ? n : 0;
+}
+function fmtRub(amount: number): string {
+  if (!Number.isFinite(amount) || amount <= 0) return '';
+  const grouped = String(Math.round(amount)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return `${grouped} ₽`;
+}
+const basePrice = parseNum(resolvedProduct?.price ?? resolvedProduct?.basePrice ?? 0);
+const oldPriceNum = parseNum(resolvedProduct?.compareAtPrice ?? resolvedProduct?.oldPrice ?? 0);
+const priceText = fmtRub(basePrice);
+const oldPriceText = oldPriceNum > 0 ? fmtRub(oldPriceNum) : '';
+
+// Variant groups (option-keyed)
+type VariantGroup = { key: string; values: Array<{ value: string; available: boolean }> };
+function buildGroups(vs: NonNullable<RealProduct['variants']>): VariantGroup[] {
+  const groupMap = new Map<string, Map<string, boolean>>();
+  for (const v of vs) {
+    if (!v.options) continue;
+    for (const [key, value] of Object.entries(v.options)) {
+      if (!groupMap.has(key)) groupMap.set(key, new Map());
+      const valMap = groupMap.get(key)!;
+      const avail = v.available !== false;
+      if (!valMap.has(value) || avail) valMap.set(value, valMap.get(value) || avail);
+    }
+  }
+  return Array.from(groupMap.entries()).map(([key, valMap]) => ({
+    key,
+    values: Array.from(valMap.entries()).map(([value, available]) => ({ value, available })),
+  }));
+}
+const productVariants = Array.isArray(resolvedProduct?.variants) ? resolvedProduct!.variants! : [];
+const hasVariants = !!resolvedProduct?.hasVariants && productVariants.length > 0;
+const variantGroups = hasVariants ? buildGroups(productVariants) : [];
+
+// JSON-LD product schema for SEO. Only emit when we have a resolved product.
+const jsonLdSchema = resolvedProduct
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: productName,
+      description: productDescription || undefined,
+      image: images.length ? images : undefined,
+      sku: (resolvedProduct as any).sku ?? undefined,
+      offers: basePrice > 0
+        ? {
+            '@type': 'Offer',
+            price: Math.round(basePrice),
+            priceCurrency: 'RUB',
+            availability: 'https://schema.org/InStock',
+          }
+        : undefined,
+    }
+  : null;
 ---
 <section
   class:list={[schemeClass]}
@@ -94,40 +218,89 @@ const zoomEffective = zoomMode ?? 'hover';
   data-site-id={siteId}
   data-api-base={apiBase}
   data-product-id={productId}
+  data-product-slug={resolvedProduct?.slug ?? resolvedProduct?.handle ?? resolvedProduct?.id ?? productId}
   data-layout={effectiveLayout}
-  data-size={effectiveSize}
   data-zoom={zoomEffective}
   data-variants-style={variantsStyle}
   data-variants-radius={variantsRadius}
-  style={`background:rgb(var(--color-bg, 255 255 255));color:rgb(var(--color-text, 0 0 0));${paddingStyle}`}
+  style={`background:rgb(var(--color-background, var(--color-bg)));color:rgb(var(--color-foreground, var(--color-text)));${paddingStyle}`}
 >
-  <div style={`max-width:${blockMaxWidth};margin:0 auto;padding-left:24px;padding-right:24px;`}>
-    <div style={`display:grid;grid-template-columns:${gridTemplate};gap:${isStacked ? '24px' : '80px'};align-items:start;`}>
-      {/* Images gallery */}
-      <div data-product-images style={`order:${photoOnLeft || isStacked ? 0 : 1};display:flex;flex-direction:column;gap:11px;`}>
-        <div data-product-hero style={`aspect-ratio:${heroAspect};background:rgba(0,0,0,0.05);border-radius:4px;overflow:hidden;${zoomEffective === 'hover' ? 'transition:transform 0.3s ease;' : ''}${zoomEffective === 'click' ? 'cursor:zoom-in;' : ''}`}>
-          {/* Hero image filled by inline JS */}
+  {jsonLdSchema && (
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLdSchema)} />
+  )}
+  <div style={`max-width:${blockMaxWidth};margin:0 auto;padding-left:16px;padding-right:16px;`}>
+    <div
+      data-product-grid
+      data-photo-position={photoOnLeft ? 'left' : 'right'}
+      style={`display:flex;flex-direction:column;${isStacked ? '' : photoOnLeft ? 'gap:50px;' : 'gap:50px;'}`}
+    >
+      {/* Image gallery — desktop 400px column, mobile full width */}
+      <div data-product-images style="width:100%;flex-shrink:0;">
+        <div
+          data-product-hero
+          style={`overflow:hidden;width:100%;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;border-radius:10px;background:rgb(var(--color-foreground, var(--color-text)) / 0.03);${zoomEffective === 'hover' ? 'transition:transform 0.3s ease;' : ''}${zoomEffective === 'click' ? 'cursor:zoom-in;' : ''}`}
+        >
+          {heroImage ? (
+            <img
+              src={heroImage}
+              alt={productName}
+              loading="eager"
+              style="width:100%;height:100%;object-fit:cover;display:block;"
+            />
+          ) : (
+            <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:rgb(var(--color-muted));">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21,15 16,10 5,21" />
+              </svg>
+            </div>
+          )}
         </div>
-        <div data-product-thumbs style={`display:none;grid-template-columns:repeat(${isCarousel ? 4 : isThumbnail ? 2 : 3},1fr);gap:11px;${isCarousel ? 'overflow-x:auto;' : ''}`}></div>
+        {thumbs.length > 0 && (
+          <div
+            data-product-thumbs
+            style="display:grid;grid-template-columns:repeat(2, 1fr);gap:20px;margin-top:20px;"
+          >
+            {thumbs.map((src, idx) => (
+              <button
+                type="button"
+                data-product-thumb
+                data-thumb-idx={idx + 1}
+                style="overflow:hidden;width:100%;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:10px;background:rgb(var(--color-foreground, var(--color-text)) / 0.03);border:2px solid transparent;padding:0;"
+                aria-label={`Изображение ${idx + 2}`}
+              >
+                <img
+                  src={src}
+                  alt={`${productName} — фото ${idx + 2}`}
+                  loading="lazy"
+                  style="width:100%;height:100%;object-fit:cover;display:block;"
+                />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Info block — Figma node 1:21380 */}
-      <div style={`order:${photoOnLeft ? 1 : 0};display:flex;flex-direction:column;gap:14px;`}>
-        <div
-          data-puck-subsection-parent={id}
-          data-puck-subsection-index="100"
-          data-puck-subsection-field="text"
-          data-product-text
-          style={`font-size:13px;color:rgb(var(--color-muted, 153 153 153));text-transform:uppercase;letter-spacing:0.05em;cursor:pointer;${textContent ? '' : 'display:none;'}`}
-        >{textContent}</div>
+      {/* Info block */}
+      <div style="display:flex;flex-direction:column;width:100%;">
+        {textContent && (
+          <span
+            data-puck-subsection-parent={id}
+            data-puck-subsection-index="100"
+            data-puck-subsection-field="text"
+            data-product-text
+            style="font-family:var(--font-body);font-size:16px;line-height:22px;color:rgb(var(--color-muted));margin-bottom:4px;cursor:pointer;"
+          >{textContent}</span>
+        )}
 
         <h1
           data-puck-subsection-parent={id}
           data-puck-subsection-index="101"
           data-puck-subsection-field="title"
           data-product-title
-          style={`font-size:${title?.size === 'large' ? '32px' : title?.size === 'small' ? '18px' : titleFontSize};font-weight:400;line-height:1.1;margin:0;color:rgb(var(--color-heading, 0 0 0));font-family:var(--font-heading);cursor:pointer;`}
-        ></h1>
+          style={`font-family:var(--font-body);font-weight:400;line-height:1.1;text-transform:uppercase;margin:0;color:rgb(var(--color-foreground, var(--color-text)));font-size:${title?.size === 'small' ? '20px' : title?.size === 'large' ? '40px' : '32px'};line-height:${title?.size === 'small' ? '28px' : title?.size === 'large' ? '52px' : '44px'};cursor:pointer;`}
+        >{productName}</h1>
 
         {priceVisible && (
           <div
@@ -135,10 +308,16 @@ const zoomEffective = zoomMode ?? 'hover';
             data-puck-subsection-index="102"
             data-puck-subsection-field="price"
             data-product-price
-            style="display:none;gap:8px;align-items:baseline;font-size:18px;color:rgb(var(--color-heading, 0 0 0));cursor:pointer;"
+            style={`display:${priceText ? 'flex' : 'none'};gap:15px;align-items:baseline;margin-top:5px;cursor:pointer;`}
           >
-            <span data-product-price-current></span>
-            <span data-product-price-compare style="text-decoration:line-through;color:rgb(var(--color-muted, 153 153 153));font-size:14px;display:none;"></span>
+            <span
+              data-product-price-current
+              style="font-family:var(--font-body);font-size:24px;line-height:33px;color:rgb(var(--color-foreground, var(--color-text)));"
+            >{priceText}</span>
+            <span
+              data-product-price-compare
+              style={`text-decoration:line-through;font-family:var(--font-body);color:rgb(var(--color-muted));font-size:16px;line-height:22px;font-weight:500;display:${oldPriceText ? 'inline' : 'none'};`}
+            >{oldPriceText}</span>
           </div>
         )}
 
@@ -147,8 +326,47 @@ const zoomEffective = zoomMode ?? 'hover';
           data-puck-subsection-index="103"
           data-puck-subsection-field="variants"
           data-product-variants
-          style="display:none;gap:8px;flex-wrap:wrap;cursor:pointer;"
-        ></div>
+          data-has-groups={variantGroups.length > 0 ? 'true' : 'false'}
+          style={`display:${hasVariants ? 'flex' : 'none'};flex-direction:column;gap:25px;margin-top:25px;cursor:pointer;`}
+        >
+          {variantGroups.length > 0 ? (
+            variantGroups.map((group) => (
+              <div data-variant-group data-group-key={group.key} style="display:flex;flex-direction:column;gap:15px;">
+                <span style="font-family:var(--font-body);font-size:20px;line-height:27px;color:rgb(var(--color-muted));">
+                  {group.key}
+                </span>
+                <div data-variant-row style="display:flex;flex-wrap:wrap;gap:10px;">
+                  {group.values.map((opt, vi) => (
+                    <button
+                      type="button"
+                      data-puck-interactive
+                      data-variant-option
+                      data-group-key={group.key}
+                      data-option-value={opt.value}
+                      data-option-available={opt.available ? 'true' : 'false'}
+                      data-selected={vi === 0 && opt.available ? 'true' : 'false'}
+                      style={`height:40px;padding:10px;font-family:var(--font-body);font-size:16px;line-height:22px;border-radius:${variantsRadius};border:1px solid rgb(var(--color-foreground, var(--color-text)));background:transparent;color:rgb(var(--color-foreground, var(--color-text)));cursor:${opt.available ? 'pointer' : 'not-allowed'};${!opt.available ? 'opacity:0.6;text-decoration:line-through;' : ''}`}
+                    >{opt.value}</button>
+                  ))}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div data-flat-variants style="display:flex;flex-wrap:wrap;gap:10px;">
+              {productVariants.map((v, vi) => (
+                <button
+                  type="button"
+                  data-puck-interactive
+                  data-flat-variant
+                  data-variant-id={v.id}
+                  data-variant-available={v.available !== false ? 'true' : 'false'}
+                  data-selected={vi === 0 ? 'true' : 'false'}
+                  style={`height:40px;padding:10px;font-family:var(--font-body);font-size:16px;line-height:22px;border-radius:${variantsRadius};border:1px solid rgb(var(--color-foreground, var(--color-text)));background:transparent;color:rgb(var(--color-foreground, var(--color-text)));cursor:${v.available !== false ? 'pointer' : 'not-allowed'};${v.available === false ? 'opacity:0.6;text-decoration:line-through;' : ''}`}
+                >{v.title}</button>
+              ))}
+            </div>
+          )}
+        </div>
 
         {quantityVisible && (
           <div
@@ -156,13 +374,35 @@ const zoomEffective = zoomMode ?? 'hover';
             data-puck-subsection-index="104"
             data-puck-subsection-field="quantity"
             data-product-quantity
-            style="display:flex;align-items:center;gap:12px;cursor:pointer;"
+            style="display:flex;flex-direction:column;gap:15px;margin-top:25px;cursor:pointer;"
           >
-            <span style="font-size:14px;color:rgb(var(--color-muted, 153 153 153));">Количество:</span>
-            <div style="display:flex;align-items:center;border:1px solid rgba(0,0,0,0.15);border-radius:4px;">
-              <button type="button" data-product-qty-minus data-puck-interactive style="padding:4px 10px;background:transparent;border:0;cursor:pointer;font-size:16px;">−</button>
-              <span data-product-qty style="padding:4px 12px;font-size:14px;min-width:24px;text-align:center;">1</span>
-              <button type="button" data-product-qty-plus data-puck-interactive style="padding:4px 10px;background:transparent;border:0;cursor:pointer;font-size:16px;">+</button>
+            <span style="font-family:var(--font-body);font-size:20px;line-height:27px;color:rgb(var(--color-muted));">Количество</span>
+            <div style="display:flex;align-items:center;gap:5px;">
+              <button
+                type="button"
+                data-product-qty-minus
+                data-puck-interactive
+                aria-label="Уменьшить количество"
+                style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:8px;border:1px solid rgb(var(--color-foreground, var(--color-text)));background:rgb(var(--color-background, var(--color-bg)));color:rgb(var(--color-foreground, var(--color-text)));"
+              >
+                <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
+                  <path d="M8 16H24" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                </svg>
+              </button>
+              <div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:rgb(var(--color-background, var(--color-bg)));">
+                <span data-product-qty style="font-family:var(--font-body);font-size:16px;line-height:22px;color:rgb(var(--color-foreground, var(--color-text)));">1</span>
+              </div>
+              <button
+                type="button"
+                data-product-qty-plus
+                data-puck-interactive
+                aria-label="Увеличить количество"
+                style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:8px;border:1px solid rgb(var(--color-foreground, var(--color-text)));background:rgb(var(--color-background, var(--color-bg)));color:rgb(var(--color-foreground, var(--color-text)));"
+              >
+                <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
+                  <path d="M16 8V24M8 16H24" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                </svg>
+              </button>
             </div>
           </div>
         )}
@@ -172,10 +412,22 @@ const zoomEffective = zoomMode ?? 'hover';
           data-puck-subsection-index="105"
           data-puck-subsection-field="buttons"
           data-product-buttons
-          style="display:flex;flex-direction:column;gap:8px;cursor:pointer;"
+          style="display:flex;flex-direction:column;gap:15px;margin-top:25px;cursor:pointer;"
         >
-          <button type="button" data-product-add-to-cart data-puck-interactive style="padding:14px;border:1px solid rgb(var(--color-text, 0 0 0));background:transparent;color:rgb(var(--color-text, 0 0 0));border-radius:4px;font-size:14px;cursor:pointer;text-transform:uppercase;letter-spacing:0.04em;">{addBtnText}</button>
-          <button type="button" data-product-buy-now data-puck-interactive style="padding:14px;background:rgb(var(--color-text, 0 0 0));color:rgb(var(--color-bg, 255 255 255));border:0;border-radius:4px;font-size:14px;cursor:pointer;text-transform:uppercase;letter-spacing:0.04em;">{buyBtnText}</button>
+          <button
+            type="button"
+            data-product-add-to-cart
+            data-puck-interactive
+            data-default-label={addBtnText}
+            style="width:100%;height:60px;display:flex;align-items:center;justify-content:center;font-family:var(--font-body);font-size:20px;line-height:27px;cursor:pointer;border-radius:10px;background:transparent;border:1px solid rgb(var(--color-foreground, var(--color-text)));color:rgb(var(--color-foreground, var(--color-text)));"
+          >{addBtnText}</button>
+          <button
+            type="button"
+            data-product-buy-now
+            data-puck-interactive
+            data-default-label={buyBtnText}
+            style="width:100%;height:60px;display:flex;align-items:center;justify-content:center;font-family:var(--font-body);font-size:20px;line-height:27px;cursor:pointer;border-radius:10px;background:rgb(var(--color-foreground, var(--color-text)));color:rgb(var(--color-background, var(--color-bg)));border:0;"
+          >{buyBtnText}</button>
         </div>
 
         <div
@@ -183,32 +435,67 @@ const zoomEffective = zoomMode ?? 'hover';
           data-puck-subsection-index="106"
           data-puck-subsection-field="description"
           data-product-description
-          style={`font-size:${description?.size === 'large' ? '16px' : description?.size === 'small' ? '12px' : '14px'};color:rgb(var(--color-text, 0 0 0));line-height:1.5;cursor:pointer;${descContent ? '' : 'display:none;'}`}
+          style={`display:${productDescription || descContent ? 'flex' : 'none'};flex-direction:column;gap:15px;margin-top:25px;cursor:pointer;`}
         >
-          <div style="font-weight:500;margin-bottom:6px;">Описание</div>
-          <p data-product-description-content style="margin:0;">{descContent}</p>
+          <h2 style="font-family:var(--font-body);font-size:20px;line-height:27px;color:rgb(var(--color-foreground, var(--color-text)));margin:0;text-transform:uppercase;">Описание</h2>
+          <p
+            data-product-description-content
+            style={`font-family:var(--font-body);font-size:${description?.size === 'large' ? '18px' : description?.size === 'small' ? '14px' : '16px'};line-height:${description?.size === 'large' ? '24px' : description?.size === 'small' ? '20px' : '22px'};color:rgb(var(--color-muted));margin:0;white-space:pre-line;`}
+          >{productDescription || descContent}</p>
         </div>
 
-        <div
+        <button
+          type="button"
           data-puck-subsection-parent={id}
           data-puck-subsection-index="107"
           data-puck-subsection-field="share"
-          style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:rgb(var(--color-muted, 153 153 153));cursor:pointer;"
+          data-product-share
+          style="display:inline-flex;align-items:center;gap:15px;margin-top:25px;background:transparent;padding:0;border:0;cursor:pointer;color:rgb(var(--color-foreground, var(--color-text)));"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-          <span>{shareText}</span>
-        </div>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9 6L12 3M12 3L15 6M12 3V13M7.00023 10C6.06835 10 5.60241 10 5.23486 10.1522C4.74481 10.3552 4.35523 10.7448 4.15224 11.2349C4 11.6024 4 12.0681 4 13V17.8C4 18.9201 4 19.4798 4.21799 19.9076C4.40973 20.2839 4.71547 20.5905 5.0918 20.7822C5.5192 21 6.07899 21 7.19691 21H16.8036C17.9215 21 18.4805 21 18.9079 20.7822C19.2842 20.5905 19.5905 20.2839 19.7822 19.9076C20 19.4802 20 18.921 20 17.8031V13C20 12.0681 19.9999 11.6024 19.8477 11.2349C19.6447 10.7448 19.2554 10.3552 18.7654 10.1522C18.3978 10 17.9319 10 17 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <span style="font-family:var(--font-body);font-size:16px;line-height:22px;">{shareText}</span>
+        </button>
       </div>
     </div>
   </div>
+
+  <style>
+    /* Desktop: gallery left/right column 400px, info column 318px. */
+    @media (min-width: 1024px) {
+      [data-block="product"] [data-product-grid] {
+        flex-direction: row;
+        align-items: flex-start;
+      }
+      [data-block="product"] [data-product-grid][data-photo-position="right"] {
+        flex-direction: row-reverse;
+      }
+      [data-block="product"] [data-product-images] {
+        width: 400px;
+        flex-shrink: 0;
+      }
+      [data-block="product"] [data-product-grid] > div:not([data-product-images]) {
+        width: 318px;
+      }
+    }
+    [data-block="product"] [data-product-thumb][data-active="true"] {
+      border-color: rgb(var(--color-foreground, var(--color-text)));
+    }
+    [data-block="product"] [data-variant-option][data-selected="true"],
+    [data-block="product"] [data-flat-variant][data-selected="true"] {
+      background: rgb(var(--color-foreground, var(--color-text)));
+      color: rgb(var(--color-background, var(--color-bg)));
+    }
+  </style>
 </section>
 
 <script is:inline define:vars={{ siteId, apiBase, productId }}>
-  // Mirror live storefront in constructor preview: fetch real product
-  // (chosen via productId picker, falling back to first available) and
-  // populate hero image, thumbs, title, price.
+  // Hydration: live SSG already rendered real data from products.json.
+  // In preview mode (siteId set) we fetch /storefront-data and refresh DOM.
+  // Both paths share the same DOM contract, so interactive handlers wire up
+  // identically.
   (function () {
-    if (!siteId) return;
     const root = document.querySelector('section[data-block="product"]');
     if (!root) return;
     const heroEl = root.querySelector('[data-product-hero]');
@@ -220,179 +507,200 @@ const zoomEffective = zoomMode ?? 'hover';
     const variantsEl = root.querySelector('[data-product-variants]');
     const descWrap = root.querySelector('[data-product-description]');
     const descEl = root.querySelector('[data-product-description-content]');
-    if (!heroEl || !titleEl) return;
+    const qtyEl = root.querySelector('[data-product-qty]');
+    const qtyMinus = root.querySelector('[data-product-qty-minus]');
+    const qtyPlus = root.querySelector('[data-product-qty-plus]');
+    const addBtn = root.querySelector('[data-product-add-to-cart]');
+    const buyBtn = root.querySelector('[data-product-buy-now]');
+    const shareBtn = root.querySelector('[data-product-share]');
 
-    function fmtPrice(p) {
-      const num = typeof p === 'number' ? p : parseFloat(p);
-      if (!Number.isFinite(num)) return '';
-      const rubles = num > 1000000 ? Math.round(num / 100) : Math.round(num);
-      return rubles.toLocaleString('ru-RU') + ' ₽';
-    }
+    let currentQty = 1;
+    let productData = null;
+    let selectedOptions = {};
+    let selectedFlatVariantId = null;
 
     function escAttr(s) {
       return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
+    function fmtPrice(p) {
+      const num = typeof p === 'number' ? p : parseFloat(String(p).replace(/[^\d.,-]/g, '').replace(',', '.'));
+      if (!Number.isFinite(num) || num <= 0) return '';
+      const rubles = num > 1000000 ? Math.round(num / 100) : Math.round(num);
+      return rubles.toLocaleString('ru-RU') + ' ₽';
+    }
 
-    function applyProduct(p) {
-      if (!p) return;
-      const imgs = (Array.isArray(p.images) ? p.images : [])
-        .map((it) => (typeof it === 'string' ? it : (it && it.url) || null))
-        .filter(Boolean);
-      const hero = imgs[0];
-      if (hero && heroEl) {
-        heroEl.innerHTML =
-          '<img src="' + escAttr(hero) +
-          '" alt="' + escAttr(p.title || p.name || '') +
-          '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" />';
-      }
-      if (thumbsEl) {
-        const thumbs = imgs.slice(1, 4);
-        if (thumbs.length === 0) {
-          thumbsEl.style.display = 'none';
-          thumbsEl.innerHTML = '';
-        } else {
-          thumbsEl.style.display = 'grid';
-          thumbsEl.innerHTML = thumbs
-            .map(function (src) {
-              return (
-                '<div style="aspect-ratio:1/1;border-radius:4px;overflow:hidden;background:rgba(0,0,0,0.05);"><img src="' +
-                escAttr(src) +
-                '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>'
-              );
-            })
-            .join('');
+    function findVariantByOptions(variants, sel) {
+      const keys = Object.keys(sel);
+      if (!keys.length) return null;
+      for (const v of variants) {
+        if (!v.options) continue;
+        let allMatch = true;
+        for (const k of keys) {
+          if (v.options[k] !== sel[k]) { allMatch = false; break; }
         }
+        if (allMatch) return v;
       }
-      titleEl.textContent = p.title || p.name || '';
-      // Price: show only if real price exists
-      const priceVal = fmtPrice(p.basePrice ?? p.price);
-      if (priceCur) priceCur.textContent = priceVal;
-      if (priceWrap) priceWrap.style.display = priceVal ? 'flex' : 'none';
+      return null;
+    }
+    function getActiveVariant() {
+      if (!productData || !Array.isArray(productData.variants) || !productData.variants.length) return null;
+      if (Object.keys(selectedOptions).length > 0) {
+        return findVariantByOptions(productData.variants, selectedOptions);
+      }
+      if (selectedFlatVariantId) {
+        return productData.variants.find((v) => v.id === selectedFlatVariantId) || null;
+      }
+      return productData.variants[0] || null;
+    }
+    function getActiveVariantId() {
+      const v = getActiveVariant();
+      return v ? v.id : null;
+    }
+
+    function refreshPriceFromVariant() {
+      if (!priceCur || !priceWrap) return;
+      const v = getActiveVariant();
+      const total = (v && v.price != null ? parseFloat(String(v.price)) : null);
+      const base = total != null ? total : (productData ? parseFloat(String(productData.basePrice ?? productData.price ?? 0)) : 0);
+      const formatted = fmtPrice(base * currentQty);
+      priceCur.textContent = formatted;
+      priceWrap.style.display = formatted ? 'flex' : 'none';
       if (priceCmp) {
-        if (p.compareAtPrice) {
-          priceCmp.textContent = fmtPrice(p.compareAtPrice);
+        const old = productData ? parseFloat(String(productData.compareAtPrice ?? productData.oldPrice ?? 0)) : 0;
+        if (old > 0) {
+          priceCmp.textContent = fmtPrice(old * currentQty);
           priceCmp.style.display = 'inline';
         } else {
           priceCmp.style.display = 'none';
         }
       }
-      // Description: show only if real description exists (don't override with empty)
-      if (descEl && p.description) {
-        descEl.textContent = p.description;
-        if (descWrap) descWrap.style.display = '';
-      } else if (descWrap && !descEl?.textContent) {
-        descWrap.style.display = 'none';
-      }
-      // Variants: build pills (button-style) or rows (list-style) from
-      // product.variants[]. Shape (radius) and style come from data-* attrs
-      // set by Astro frontmatter so revision props drive the visual.
-      const productVariantsArr = Array.isArray(p.variants) ? p.variants.filter((v) => v && v.title) : [];
-      let selectedVariantIdx = 0;
-      function renderVariants() {
-        if (!variantsEl) return;
-        const styleMode = root.getAttribute('data-variants-style') || 'button';
-        const radius = root.getAttribute('data-variants-radius') || '999px';
-        if (productVariantsArr.length === 0) {
-          variantsEl.style.display = 'none';
-          return;
-        }
-        if (styleMode === 'list') {
-          variantsEl.style.display = 'flex';
-          variantsEl.style.flexDirection = 'column';
-          variantsEl.style.gap = '4px';
-          variantsEl.innerHTML = productVariantsArr
-            .map(function (v, i) {
-              const selected = i === selectedVariantIdx;
-              return (
-                '<label data-puck-interactive data-variant-row data-variant-idx="' + i + '" style="display:flex;align-items:center;gap:10px;padding:8px 10px;cursor:pointer;border:1px solid ' +
-                (selected ? 'rgb(var(--color-text, 0 0 0))' : 'rgba(0,0,0,0.12)') +
-                ';border-radius:' + radius + ';font-size:14px;">' +
-                '<input type="radio" name="variant"' + (selected ? ' checked' : '') + ' style="margin:0;pointer-events:none;" />' +
-                '<span>' + escAttr(v.title) + '</span>' +
-                '</label>'
-              );
-            })
-            .join('');
-        } else {
-          variantsEl.style.display = 'flex';
-          variantsEl.style.flexDirection = 'row';
-          variantsEl.style.gap = '8px';
-          variantsEl.innerHTML = productVariantsArr
-            .map(function (v, i) {
-              const selected = i === selectedVariantIdx;
-              const bg = selected ? 'rgb(var(--color-text, 0 0 0))' : 'transparent';
-              const fg = selected ? 'rgb(var(--color-bg, 255 255 255))' : 'rgb(var(--color-text, 0 0 0))';
-              const border = selected
-                ? '1px solid rgb(var(--color-text, 0 0 0))'
-                : '1px solid rgba(0,0,0,0.15)';
-              return (
-                '<button type="button" data-puck-interactive data-variant-pill data-variant-idx="' + i + '" style="padding:6px 14px;border:' +
-                border +
-                ';background:' +
-                bg +
-                ';color:' +
-                fg +
-                ';border-radius:' + radius + ';font-size:13px;cursor:pointer;">' +
-                escAttr(v.title) +
-                '</button>'
-              );
-            })
-            .join('');
-        }
-      }
-      renderVariants();
-      // Variant click → select & re-render + update price.
-      // Use capture phase + stopPropagation so constructor's
-      // useSubsectionClickHandler (which intercepts clicks on
-      // [data-puck-subsection-parent]) doesn't swallow the event and
-      // turn it into a "select Варианты subsection" instead.
-      if (variantsEl) {
-        variantsEl.addEventListener('click', function (ev) {
-          const target = ev.target.closest('[data-variant-idx]');
-          if (!target) return;
-          ev.stopPropagation();
-          const idx = Number(target.getAttribute('data-variant-idx'));
-          if (Number.isFinite(idx) && idx >= 0 && idx < productVariantsArr.length) {
-            selectedVariantIdx = idx;
-            renderVariants();
-            const v = productVariantsArr[idx];
-            if (priceCur && v && v.price != null) {
-              priceCur.textContent = fmtPrice(v.price);
-              if (priceWrap) priceWrap.style.display = 'flex';
-            }
-          }
-        }, true);
-      }
-
-      // Thumbnail click → SWAP hero ↔ thumbnail (not replace).
-      // Clicked thumbnail goes to hero; hero image takes the thumbnail's slot.
-      if (thumbsEl) {
-        thumbsEl.addEventListener('click', function (ev) {
-          ev.stopPropagation();
-          const thumbDiv = ev.target.closest('div[style*="border-radius"]');
-          const thumbImg = thumbDiv?.querySelector('img');
-          const heroImg = heroEl?.querySelector('img');
-          if (!thumbImg || !heroImg || !thumbImg.src) return;
-          const heroSrc = heroImg.src;
-          const heroAlt = heroImg.alt;
-          heroImg.src = thumbImg.src;
-          if (thumbImg.alt) heroImg.alt = thumbImg.alt;
-          thumbImg.src = heroSrc;
-          if (heroAlt) thumbImg.alt = heroAlt;
-        }, true);
-      }
     }
 
-    // Quantity +/- handlers (capture+stopPropagation so subsection select doesn't fire)
-    const qtyEl = root.querySelector('[data-product-qty]');
-    const qtyMinus = root.querySelector('[data-product-qty-minus]');
-    const qtyPlus = root.querySelector('[data-product-qty-plus]');
-    let currentQty = 1;
+    function applyProduct(p) {
+      if (!p) return;
+      productData = p;
+      const imgs = (Array.isArray(p.images) ? p.images : [])
+        .map((it) => (typeof it === 'string' ? it : (it && it.url) || null))
+        .filter(Boolean);
+      const heroSrc = imgs[0] || null;
+      if (heroSrc && heroEl) {
+        heroEl.innerHTML =
+          '<img src="' + escAttr(heroSrc) +
+          '" alt="' + escAttr(p.title || p.name || '') +
+          '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" />';
+      }
+      if (thumbsEl) {
+        const tmbs = imgs.slice(1, 4);
+        if (!tmbs.length) {
+          thumbsEl.style.display = 'none';
+          thumbsEl.innerHTML = '';
+        } else {
+          thumbsEl.style.display = 'grid';
+          thumbsEl.innerHTML = tmbs
+            .map(function (src, idx) {
+              return (
+                '<button type="button" data-product-thumb data-thumb-idx="' + (idx + 1) + '" style="overflow:hidden;width:100%;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:10px;background:rgb(var(--color-foreground, var(--color-text)) / 0.03);border:2px solid transparent;padding:0;"><img src="' +
+                escAttr(src) +
+                '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" /></button>'
+              );
+            })
+            .join('');
+        }
+      }
+      if (titleEl) titleEl.textContent = p.title || p.name || '';
+      // description
+      const descContent = p.description;
+      if (descEl && descContent) {
+        descEl.textContent = descContent;
+        if (descWrap) descWrap.style.display = 'flex';
+      }
+      // variants — re-init selection
+      const variants = Array.isArray(p.variants) ? p.variants : [];
+      const hasGroups = variants.some((v) => v.options && Object.keys(v.options).length);
+      if (variantsEl && variants.length) {
+        variantsEl.style.display = 'flex';
+        if (hasGroups) {
+          // Initialise to first available option per group
+          const groupMap = new Map();
+          for (const v of variants) {
+            if (!v.options) continue;
+            for (const [key, value] of Object.entries(v.options)) {
+              if (!groupMap.has(key)) groupMap.set(key, new Map());
+              const valMap = groupMap.get(key);
+              const avail = v.available !== false;
+              if (!valMap.has(value) || avail) valMap.set(value, valMap.get(value) || avail);
+            }
+          }
+          selectedOptions = {};
+          for (const [k, vmap] of groupMap.entries()) {
+            for (const [val, avail] of vmap.entries()) {
+              if (avail) { selectedOptions[k] = val; break; }
+            }
+            if (!(k in selectedOptions)) {
+              selectedOptions[k] = vmap.keys().next().value;
+            }
+          }
+        } else {
+          const first = variants.find((v) => v.available !== false) || variants[0];
+          selectedFlatVariantId = first ? first.id : null;
+        }
+      }
+      refreshPriceFromVariant();
+    }
+
+    // Variant click — capture phase + stopPropagation to avoid puck subsection select
+    if (variantsEl) {
+      variantsEl.addEventListener('click', function (ev) {
+        const grpBtn = ev.target.closest('[data-variant-option]');
+        const flatBtn = ev.target.closest('[data-flat-variant]');
+        if (grpBtn) {
+          ev.stopPropagation();
+          if (grpBtn.getAttribute('data-option-available') === 'false') return;
+          const key = grpBtn.getAttribute('data-group-key');
+          const val = grpBtn.getAttribute('data-option-value');
+          selectedOptions[key] = val;
+          // Re-paint: remove data-selected from siblings in this group
+          variantsEl
+            .querySelectorAll('[data-variant-option][data-group-key="' + key + '"]')
+            .forEach((el) => el.setAttribute('data-selected', el === grpBtn ? 'true' : 'false'));
+          refreshPriceFromVariant();
+        } else if (flatBtn) {
+          ev.stopPropagation();
+          if (flatBtn.getAttribute('data-variant-available') === 'false') return;
+          selectedFlatVariantId = flatBtn.getAttribute('data-variant-id');
+          variantsEl
+            .querySelectorAll('[data-flat-variant]')
+            .forEach((el) => el.setAttribute('data-selected', el === flatBtn ? 'true' : 'false'));
+          refreshPriceFromVariant();
+        }
+      }, true);
+    }
+
+    // Thumb click — swap hero/thumb images
+    if (thumbsEl) {
+      thumbsEl.addEventListener('click', function (ev) {
+        const btn = ev.target.closest('[data-product-thumb]');
+        if (!btn) return;
+        ev.stopPropagation();
+        const thumbImg = btn.querySelector('img');
+        const heroImg = heroEl ? heroEl.querySelector('img') : null;
+        if (!thumbImg || !heroImg || !thumbImg.src) return;
+        const heroSrc = heroImg.src;
+        const heroAlt = heroImg.alt;
+        heroImg.src = thumbImg.src;
+        if (thumbImg.alt) heroImg.alt = thumbImg.alt;
+        thumbImg.src = heroSrc;
+        if (heroAlt) thumbImg.alt = heroAlt;
+      }, true);
+    }
+
+    // Quantity +/-
     if (qtyMinus && qtyEl) {
       qtyMinus.addEventListener('click', function (ev) {
         ev.stopPropagation();
         if (currentQty > 1) currentQty--;
         qtyEl.textContent = String(currentQty);
+        refreshPriceFromVariant();
       }, true);
     }
     if (qtyPlus && qtyEl) {
@@ -400,66 +708,56 @@ const zoomEffective = zoomMode ?? 'hover';
         ev.stopPropagation();
         currentQty++;
         qtyEl.textContent = String(currentQty);
+        refreshPriceFromVariant();
       }, true);
     }
 
-    // Add to cart / Buy now / Share
-    function getActiveVariantId() {
-      const variants = Array.isArray(window.__productData?.variants) ? window.__productData.variants : [];
-      const v = variants[window.__productData?.selectedVariantIdx ?? 0];
-      return v?.id ?? null;
-    }
-    const addBtn = root.querySelector('[data-product-add-to-cart]');
-    const buyBtn = root.querySelector('[data-product-buy-now]');
+    // Add to cart
     if (addBtn) {
       addBtn.addEventListener('click', function (ev) {
         ev.stopPropagation();
         const cs = window.cartStore;
+        const defaultLabel = addBtn.getAttribute('data-default-label') || 'Добавить в корзину';
+        const slugOrId = root.getAttribute('data-product-slug') || productId;
         if (cs && typeof cs.addItem === 'function') {
-          const variantId = getActiveVariantId();
-          cs.addItem(productId, variantId, currentQty);
-          addBtn.textContent = 'Добавлено!';
-          setTimeout(function () { addBtn.textContent = (root.querySelector('[data-product-add-to-cart]')?.dataset?.label) || 'В КОРЗИНУ'; }, 1500);
+          try {
+            cs.addItem(slugOrId, getActiveVariantId(), currentQty);
+            addBtn.textContent = 'Добавлено!';
+          } catch {
+            addBtn.textContent = defaultLabel;
+          }
+          setTimeout(function () { addBtn.textContent = defaultLabel; }, 1500);
         } else {
-          // Preview mode (no cart-store) — just visual feedback
-          const orig = addBtn.textContent;
-          addBtn.textContent = 'Добавлено в корзину ✓';
-          addBtn.style.background = 'rgb(var(--color-text, 0 0 0))';
-          addBtn.style.color = 'rgb(var(--color-bg, 255 255 255))';
-          setTimeout(function () {
-            addBtn.textContent = orig;
-            addBtn.style.background = 'transparent';
-            addBtn.style.color = 'rgb(var(--color-text, 0 0 0))';
-          }, 1500);
+          addBtn.textContent = 'Добавлено!';
+          setTimeout(function () { addBtn.textContent = defaultLabel; }, 1500);
         }
       }, true);
     }
+    // Buy now
     if (buyBtn) {
       buyBtn.addEventListener('click', function (ev) {
         ev.stopPropagation();
-        if (window.cartStore && typeof window.cartStore.addItem === 'function') {
-          window.cartStore.addItem(productId, getActiveVariantId(), currentQty);
-          window.location.href = '/checkout';
-        } else {
-          // Preview mode
-          buyBtn.textContent = 'Переход к оплате...';
-          setTimeout(function () { buyBtn.textContent = 'КУПИТЬ'; }, 1500);
+        const slugOrId = root.getAttribute('data-product-slug') || productId;
+        const cs = window.cartStore;
+        if (cs && typeof cs.addItem === 'function') {
+          try { cs.addItem(slugOrId, getActiveVariantId(), currentQty); } catch {}
         }
+        window.location.href = '/checkout?productId=' + encodeURIComponent(slugOrId || '');
       }, true);
     }
-    const shareBtn = root.querySelector('[data-puck-subsection-field="share"]');
+    // Share
     if (shareBtn) {
       shareBtn.addEventListener('click', function (ev) {
         ev.stopPropagation();
         const url = window.location.href;
-        const title = titleEl?.textContent || '';
+        const title = titleEl ? titleEl.textContent : '';
+        const span = shareBtn.querySelector('span');
+        const orig = span ? span.textContent : '';
         if (navigator.share) {
           navigator.share({ title: title, url: url }).catch(function () {});
         } else if (navigator.clipboard) {
           navigator.clipboard.writeText(url);
-          const span = shareBtn.querySelector('span');
           if (span) {
-            const orig = span.textContent;
             span.textContent = 'Ссылка скопирована!';
             setTimeout(function () { span.textContent = orig; }, 1500);
           }
@@ -467,43 +765,56 @@ const zoomEffective = zoomMode ?? 'hover';
       });
     }
 
-    // Zoom: hover scales hero image, click opens fullscreen overlay.
+    // Zoom (hover scales hero, click opens overlay)
     const zoomMode = root.getAttribute('data-zoom') || 'hover';
     if (heroEl && zoomMode === 'hover') {
       heroEl.addEventListener('mouseenter', function () {
         const img = heroEl.querySelector('img');
-        if (img) img.style.transform = 'scale(1.05)';
+        if (img) { img.style.transition = 'transform 0.3s ease'; img.style.transform = 'scale(1.05)'; }
       });
       heroEl.addEventListener('mouseleave', function () {
         const img = heroEl.querySelector('img');
         if (img) img.style.transform = '';
       });
-      const img = heroEl.querySelector('img');
-      if (img) img.style.transition = 'transform 0.3s ease';
     } else if (heroEl && zoomMode === 'click') {
       heroEl.addEventListener('click', function () {
         const img = heroEl.querySelector('img');
         if (!img) return;
         const overlay = document.createElement('div');
         overlay.style.cssText =
-          'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;';
+          'position:fixed;inset:0;background:rgb(var(--color-foreground, var(--color-text)) / 0.85);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;';
         overlay.innerHTML =
-          '<img src="' + img.src + '" style="max-width:90vw;max-height:90vh;object-fit:contain;" />';
+          '<img src="' + escAttr(img.src) + '" style="max-width:90vw;max-height:90vh;object-fit:contain;" />';
         overlay.addEventListener('click', function () { overlay.remove(); });
         document.body.appendChild(overlay);
       });
     }
 
-    const qs = productId ? '?product=' + encodeURIComponent(productId) : '';
-    fetch(apiBase + '/sites/' + siteId + '/storefront-data' + qs, { credentials: 'omit' })
-      .catch(() => null)
-      .then((r) => (r && r.ok ? r.json() : null))
-      .then((data) => {
-        if (!data) return;
-        const single = data.product;
-        const list = data.products || (data.data && data.data.products) || [];
-        applyProduct(single || list[0]);
-      })
-      .catch(() => {});
+    // Initial state — if products.json was matched on SSG, sync productData
+    // from page-level globals. Otherwise (preview), fetch storefront-data.
+    function initFromGlobalProducts() {
+      try {
+        const slug = root.getAttribute('data-product-slug') || productId;
+        const fromGlobal = (window.__MERFY_PRODUCTS__ || []).find((p) =>
+          p && (p.slug === slug || p.handle === slug || p.id === slug),
+        );
+        if (fromGlobal) applyProduct(fromGlobal);
+      } catch {}
+    }
+    initFromGlobalProducts();
+
+    if (siteId) {
+      const qs = productId ? '?product=' + encodeURIComponent(productId) : '';
+      fetch(apiBase + '/sites/' + siteId + '/storefront-data' + qs, { credentials: 'omit' })
+        .catch(() => null)
+        .then((r) => (r && r.ok ? r.json() : null))
+        .then((data) => {
+          if (!data) return;
+          const single = data.product;
+          const list = data.products || (data.data && data.data.products) || [];
+          applyProduct(single || list[0]);
+        })
+        .catch(() => {});
+    }
   })();
 </script>

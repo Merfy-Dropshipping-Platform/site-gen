@@ -600,7 +600,7 @@ export function migrateVanillaHomePage(
         slides: [
           {
             id: 'slide-vanilla-home-1',
-            imageUrl: 'https://picsum.photos/seed/vanilla-home-1/1920/1080',
+            imageUrl: 'https://minio.merfy.ru/product-images/vanilla-pilot/mebel/1.jpg',
             heading: { text: 'Искусство жить уютно', size: 'large' },
             text: { content: 'Товары, создающие атмосферу тепла и спокойствия', size: 'medium' },
             buttonText: 'Перейти к коллекции',
@@ -608,7 +608,7 @@ export function migrateVanillaHomePage(
           },
           {
             id: 'slide-vanilla-home-2',
-            imageUrl: 'https://picsum.photos/seed/vanilla-home-2/1920/1080',
+            imageUrl: 'https://minio.merfy.ru/product-images/vanilla-pilot/mebel/15.jpg',
             heading: { text: 'Мебель ручной работы', size: 'large' },
             text: { content: 'Натуральные материалы и авторский дизайн', size: 'medium' },
             buttonText: 'Смотреть мебель',
@@ -616,7 +616,7 @@ export function migrateVanillaHomePage(
           },
           {
             id: 'slide-vanilla-home-3',
-            imageUrl: 'https://picsum.photos/seed/vanilla-home-3/1920/1080',
+            imageUrl: 'https://minio.merfy.ru/product-images/vanilla-pilot/dekor/1.jpg',
             heading: { text: 'Декор для дома', size: 'large' },
             text: { content: 'Уютные акценты для каждой комнаты', size: 'medium' },
             buttonText: 'Смотреть декор',

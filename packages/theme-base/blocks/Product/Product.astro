@@ -461,33 +461,33 @@ const jsonLdSchema = resolvedProduct
     </div>
   </div>
 
-  <style>
+  <style is:inline set:html={`
     /* Desktop: gallery left/right column 400px, info column 318px. */
     @media (min-width: 1024px) {
-      [data-block="product"] [data-product-grid] {
+      section[data-block="product"] [data-product-grid] {
         flex-direction: row;
         align-items: flex-start;
       }
-      [data-block="product"] [data-product-grid][data-photo-position="right"] {
+      section[data-block="product"] [data-product-grid][data-photo-position="right"] {
         flex-direction: row-reverse;
       }
-      [data-block="product"] [data-product-images] {
+      section[data-block="product"] [data-product-images] {
         width: 400px;
         flex-shrink: 0;
       }
-      [data-block="product"] [data-product-grid] > div:not([data-product-images]) {
+      section[data-block="product"] [data-product-grid] > div:not([data-product-images]) {
         width: 318px;
       }
     }
-    [data-block="product"] [data-product-thumb][data-active="true"] {
+    section[data-block="product"] [data-product-thumb][data-active="true"] {
       border-color: rgb(var(--color-foreground, var(--color-text)));
     }
-    [data-block="product"] [data-variant-option][data-selected="true"],
-    [data-block="product"] [data-flat-variant][data-selected="true"] {
+    section[data-block="product"] [data-variant-option][data-selected="true"],
+    section[data-block="product"] [data-flat-variant][data-selected="true"] {
       background: rgb(var(--color-foreground, var(--color-text)));
       color: rgb(var(--color-background, var(--color-bg)));
     }
-  </style>
+  `} />
 </section>
 
 <script is:inline define:vars={{ siteId, apiBase, productId }}>

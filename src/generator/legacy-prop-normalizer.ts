@@ -109,8 +109,24 @@ export function normalizeLegacyProps(
 ): Record<string, unknown> {
   if (!props) return {};
   const out: Record<string, unknown> = {};
+  // 084 vanilla pilot: keys whose envelope `{enabled, text}` is semantically
+  // a struct (not a legacy "{text:string}" wrapper). Without this guard the
+  // generic coerceLegacyValue collapses `bottomStrip` to its `text` string,
+  // which loses `enabled` and prevents the Footer bottom strip from
+  // rendering even when explicitly enabled in seed/blockDefaults.
+  const STRUCT_KEYS = new Set(["bottomStrip"]);
   for (const [k, v] of Object.entries(props)) {
-    out[k] = coerceLegacyValue(v);
+    if (STRUCT_KEYS.has(k) && v && typeof v === "object" && !Array.isArray(v)) {
+      // Recurse into nested values but preserve the outer struct.
+      const obj = v as Record<string, unknown>;
+      const nested: Record<string, unknown> = {};
+      for (const [nk, nv] of Object.entries(obj)) {
+        nested[nk] = coerceLegacyValue(nv);
+      }
+      out[k] = nested;
+    } else {
+      out[k] = coerceLegacyValue(v);
+    }
   }
   if (typeof out.colorScheme === "string") {
     out.colorScheme = coerceSchemeNumber(out.colorScheme);

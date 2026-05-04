@@ -151,7 +151,30 @@ const gridImages: ImageShape[] =
 while (gridImages.length < 4 && variant === 'grid-4') {
   gridImages.push(gridFallback);
 }
+
+// 084 vanilla pilot: additive carousel mode.
+// Default 'single' preserves pre-edit rose render byte-for-byte.
+// 'carousel' enables slides[] + pagination + autoplay (ported from Slideshow).
+const rawSlides = Array.isArray((Astro.props as any).slides)
+  ? ((Astro.props as any).slides as any[])
+  : [];
+const effectiveMode =
+  (Astro.props as any).mode === 'carousel' && rawSlides.length > 0
+    ? 'carousel'
+    : 'single';
+const heroPagination = (Astro.props as any).pagination ?? 'numbers';
+const heroAutoplay = (Astro.props as any).autoplay === true;
+const heroInterval = typeof (Astro.props as any).interval === 'number'
+  ? (Astro.props as any).interval
+  : 5;
+const heroImageFullBleed = (Astro.props as any).imageFullBleed === true;
+const heroButtonStyle =
+  (Astro.props as any).buttonStyle === 'outlined' ? 'outlined' : 'solid';
+const heroButtonStyleClass = heroButtonStyle === 'outlined'
+  ? C.buttonStyleOutlined
+  : C.buttonStyleSolid;
 ---
+{effectiveMode === 'single' && (
 <section
   class:list={[C.root, variant === 'overlay' ? 'min-h-[var(--h-base)] sm:min-h-[var(--h-sm)] md:min-h-[var(--h-md)] lg:min-h-[var(--h-lg)] xl:min-h-[var(--h-xl)] 2xl:min-h-[var(--h-xxl)]' : '', schemeClass]}
   data-puck-component-id={id}
@@ -240,3 +263,67 @@ while (gridImages.length < 4 && variant === 'grid-4') {
     )}
   </div>
 </section>
+)}
+
+{effectiveMode === 'carousel' && (
+  <section
+    class:list={[C.root, schemeClass]}
+    data-puck-component-id={id}
+    data-variant="carousel"
+    style={paddingStyle}
+  >
+    <div class={C.carouselRoot} data-merfy-hero-carousel
+         data-autoplay={String(heroAutoplay)}
+         data-interval={heroInterval}>
+      {rawSlides.map((slide, idx) => (
+        <div class:list={[C.slide, idx === 0 ? '' : C.slideHidden]}
+             data-slide-id={slide.id}
+             data-slide-index={idx}
+             data-puck-subsection-parent={id}
+             data-puck-subsection-index={idx}
+             data-puck-subsection-field="slides">
+          {slide.imageUrl && (
+            <img src={slide.imageUrl}
+                 alt={slide.heading?.text ?? ''}
+                 class:list={['absolute inset-0 -z-10 object-cover w-full h-full',
+                              heroImageFullBleed && C.imageFullBleed]} />
+          )}
+          <div class="relative z-10 max-w-[var(--container-max-width)] mx-auto px-[300px] flex flex-col gap-8 items-start">
+            <div class="flex flex-col gap-1 items-start">
+              {slide.heading?.text && (
+                <h1 class="[font-family:var(--font-heading)] italic text-[length:var(--size-hero-heading)] text-[rgb(var(--color-heading))] font-normal">
+                  {slide.heading.text}
+                </h1>
+              )}
+              {slide.text?.content && (
+                <p class="[font-family:var(--font-body)] italic text-[16px] text-[rgb(var(--color-text)/0.95)]">
+                  {slide.text.content}
+                </p>
+              )}
+            </div>
+            {slide.buttonText && (
+              <a href={slide.buttonLink ?? '#'}
+                 class:list={[
+                   'inline-flex items-center justify-center h-[var(--size-hero-button-h,48px)] rounded-[var(--radius-button)] px-4 border bg-[rgb(var(--color-button-bg))] border-[rgb(var(--color-button-border))] text-[rgb(var(--color-button-text))] [font-family:var(--font-body)] text-[16px]',
+                   heroButtonStyleClass,
+                 ]}>
+                {slide.buttonText}
+              </a>
+            )}
+          </div>
+        </div>
+      ))}
+      {heroPagination !== 'none' && rawSlides.length > 1 && (
+        <div class={C.pagination}>
+          <button class={C.carouselArrow} data-pagination-prev aria-label="Previous">←</button>
+          {rawSlides.map((_, idx) => (
+            <button class:list={[C.paginationButton, idx === 0 && C.paginationButtonActive]}
+                    data-pagination-index={idx}
+                    type="button">{idx + 1}</button>
+          ))}
+          <button class={C.carouselArrow} data-pagination-next aria-label="Next">→</button>
+        </div>
+      )}
+    </div>
+  </section>
+)}

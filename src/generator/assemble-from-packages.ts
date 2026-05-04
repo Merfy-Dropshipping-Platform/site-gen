@@ -397,6 +397,42 @@ async function copyStyles(
 }
 
 /**
+ * Copy runtime modules from `packages/theme-base/runtime/` → `<outputDir>/runtime/`.
+ *
+ * Why outputDir/runtime (not outputDir/src/runtime):
+ *   block .astro files live at outputDir/src/components/<Block>.astro and
+ *   import runtime via `../../runtime/<name>`. Two `..` from src/components
+ *   resolves to outputDir, so runtime must live at the project root.
+ *
+ * Skips `preview-nav-agent.ts` — that one is preview-only (injected only
+ * by constructor iframe scaffold). hero-carousel and any future live-only
+ * runtime files DO get copied so the bundler can resolve them at build.
+ *
+ * PHASE3A-STATUS: IMPLEMENTED (Spec 084 — Hero carousel runtime support)
+ */
+async function copyRuntime(
+  pkgDir: string,
+  outputDir: string,
+  tracked: string[],
+): Promise<void> {
+  const src = path.join(pkgDir, "runtime");
+  if (!(await dirExists(src))) return;
+  const dest = path.join(outputDir, "runtime");
+  await fs.mkdir(dest, { recursive: true });
+  const entries = await fs.readdir(src, { withFileTypes: true });
+  for (const entry of entries) {
+    if (!entry.isFile()) continue;
+    if (shouldSkipFile(entry.name)) continue;
+    // preview-nav-agent is preview-only — skip in live build
+    if (entry.name === "preview-nav-agent.ts") continue;
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    await fs.copyFile(srcPath, destPath);
+    tracked.push(path.relative(outputDir, destPath));
+  }
+}
+
+/**
  * Generate tokens.css from tokens.json using the v2 tokens format
  * (design-tokens.github.io community group format).
  *
@@ -606,6 +642,7 @@ export async function assembleFromPackages(
     await copyBaseLayouts(packagesRoot, opts.outputDir, tracked, warnings);
     await copyBaseSeo(packagesRoot, opts.outputDir, tracked, warnings);
     await copyStyles(baseDir, opts.outputDir, tracked);
+    await copyRuntime(baseDir, opts.outputDir, tracked);
     // Copy all base blocks (do NOT overwrite — theme pass will)
     await copyBlocksFromPackage(baseDir, opts.outputDir, tracked, /* overwrite */ true);
   } else {

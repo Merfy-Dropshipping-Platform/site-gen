@@ -31,6 +31,13 @@ export const MainTextSchema = z.object({
     text: z.string().optional(),
     link: z.string().optional(),
   }).optional(),
+  /**
+   * 084 vanilla pilot — additive variant. Visual treatment of the CTA
+   * button. `solid` (default) keeps pre-084 background+text variant
+   * styling. `outlined` switches to a transparent button with current
+   * border (vanilla home «Перейти в каталог»).
+   */
+  buttonStyle: z.enum(['solid', 'outlined']).optional(),
   colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
@@ -114,6 +121,14 @@ export const MainTextPuckConfig: BlockPuckConfig<MainTextProps> = {
           ],
         },
       },
+    },
+    buttonStyle: {
+      type: 'radio',
+      label: 'Стиль кнопки',
+      options: [
+        { label: 'Заливка', value: 'solid' },
+        { label: 'Контурная', value: 'outlined' },
+      ],
     },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },

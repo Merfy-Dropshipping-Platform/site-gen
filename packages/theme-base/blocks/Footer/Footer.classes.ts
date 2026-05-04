@@ -27,4 +27,29 @@ export const FooterClasses = {
     bar: 'w-full flex items-center justify-center h-16 bg-[rgb(var(--color-heading))] text-[rgb(var(--color-bg))]',
     text: '[font-family:var(--font-body)] font-light leading-[1.21] text-center px-4 sm:px-6',
   },
+  /**
+   * 084 vanilla pilot — additive `variant` value `'2-part-asymmetric'`.
+   * Pre-084 variants (`3-col`/`2-part`/`minimal`) keep their existing
+   * markup and styles. Asymmetric splits the footer into a left-aligned
+   * column (items-start) and a right-stretched column (items-end +
+   * self-stretch + h-full) for the vanilla parity.
+   */
+  variant: {
+    '2-part-asymmetric': {
+      row: 'flex justify-between',
+      left: 'flex flex-col gap-6 items-start',
+      right: 'flex flex-col gap-16 items-end self-stretch h-full',
+    },
+  },
+  /**
+   * 084 vanilla pilot — additive `bottomStrip` markup. Black bar with
+   * "Powered by Merfy" text rendered beneath the main footer. Theme
+   * controls colours via `--color-bottom-strip-bg`/`-text` and the font
+   * via `--font-powered-by`.
+   */
+  bottomStrip: {
+    wrapper:
+      'w-full bg-[rgb(var(--color-bottom-strip-bg,0_0_0))] text-[rgb(var(--color-bottom-strip-text,255_255_255))] py-5 text-center',
+    text: '[font-family:var(--font-powered-by,inherit)] text-[12px] leading-[15px]',
+  },
 } as const;

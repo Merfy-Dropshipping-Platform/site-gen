@@ -39,6 +39,13 @@ export const SlideshowSchema = z.object({
   size: z.enum(['small', 'medium', 'large']).optional(),
   overlay: z.number().int().min(0).max(100).optional(),
   pagination: z.enum(['numbers', 'dots', 'lines', 'none']).optional(),
+  /**
+   * 084 vanilla pilot — additive variant. Vertical alignment of slide
+   * content (heading/subtitle/cta) within the slide. `center` (default)
+   * preserves pre-084 behaviour. `left` aligns content to the start so
+   * Vanilla home can render the offset hero card.
+   */
+  contentAlign: z.enum(['center', 'left']).optional(),
   colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
@@ -162,6 +169,14 @@ export const SlideshowPuckConfig: BlockPuckConfig<SlideshowProps> = {
       ],
     },
     autoplay: { type: 'radio', label: 'Автопрокрутка' },
+    contentAlign: {
+      type: 'radio',
+      label: 'Вертикальное выравнивание контента',
+      options: [
+        { label: 'По центру', value: 'center' },
+        { label: 'Сверху', value: 'left' },
+      ],
+    },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
   },

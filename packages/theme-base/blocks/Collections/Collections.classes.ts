@@ -21,4 +21,22 @@ export const CollectionsClasses = {
     'mt-3 [font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-heading))] text-center',
   cardDescription:
     'mt-1 text-[12px] leading-[15px] [font-family:var(--font-body)] text-[rgb(var(--color-text))]/60 text-center',
+  /**
+   * 084 vanilla pilot — additive `cardCaptionStyle` variant. Default keeps
+   * pre-commit casing. `uppercase` adds tracking + uppercasing for vanilla
+   * home tiles.
+   */
+  cardCaption: {
+    default: '',
+    uppercase: 'uppercase tracking-[0.1em]',
+  },
+  /**
+   * 084 vanilla pilot — additive `gridAspect` variant. Default `auto`
+   * preserves the existing `imageView` aspect map (no class added).
+   * `1:1` forces a square tile via Tailwind `aspect-square`.
+   */
+  gridAspect: {
+    auto: '',
+    '1:1': 'aspect-square',
+  },
 } as const;

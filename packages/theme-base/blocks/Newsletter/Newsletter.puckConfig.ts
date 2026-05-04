@@ -18,6 +18,15 @@ export const NewsletterSchema = z.object({
   placeholder: z.string(),
   buttonText: z.string(),
   position: z.enum(['left', 'center', 'right']).optional(),
+  /**
+   * 084 vanilla pilot — additive variant. Form layout style:
+   *   - `inline-submit` (default behaviour, identical pre-commit)
+   *     keeps the submit button absolute-positioned inside the input
+   *     row (single border-bottom line).
+   *   - `stacked` renders the button below the input (block layout for
+   *     vanilla home where the form sits inside a coloured panel).
+   */
+  formLayout: z.enum(['stacked', 'inline-submit']).optional(),
   colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
@@ -68,6 +77,14 @@ export const NewsletterPuckConfig: BlockPuckConfig<NewsletterProps> = {
     placeholder: { type: 'text', label: 'Плейсхолдер' },
     buttonText: { type: 'text', label: 'Кнопка' },
     position: { type: 'alignment', label: 'Положение секции' },
+    formLayout: {
+      type: 'radio',
+      label: 'Расположение формы',
+      options: [
+        { label: 'В строку с inline-кнопкой', value: 'inline-submit' },
+        { label: 'Кнопка под полем', value: 'stacked' },
+      ],
+    },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
   },

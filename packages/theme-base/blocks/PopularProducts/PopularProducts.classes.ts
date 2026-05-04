@@ -43,4 +43,15 @@ export const PopularProductsClasses = {
   placeholderPrice:
     'mt-2 h-3 w-1/3 rounded bg-[rgb(var(--color-muted))] opacity-30',
   placeholderBody: 'px-3 pb-4',
+  /**
+   * 084 vanilla pilot — additive `swatchOverlay` variant. Three small
+   * pips rendered absolutely top-right over the card media. Colors come
+   * from the variant options' swatch attribute (or a fallback gradient
+   * of `--color-foreground/--color-text`).
+   */
+  swatchOverlay: {
+    container: 'absolute top-3 right-3 inline-flex gap-1.5 z-10',
+    dot:
+      'w-2.5 h-2.5 rounded-full border border-[rgb(var(--color-foreground)/0.2)] bg-[rgb(var(--color-surface))]',
+  },
 } as const;

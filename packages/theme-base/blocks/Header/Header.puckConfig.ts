@@ -13,7 +13,25 @@ const NavigationLinkSchema = z.object({
 export const HeaderSchema = z.object({
   siteTitle: z.string(),
   logo: z.string(),
-  logoPosition: z.enum(['top-left', 'top-center', 'top-right', 'center-left']),
+  /**
+   * 084 vanilla pilot — additive value `'center-absolute'` in the
+   * existing logoPosition enum. Pre-084 values remain valid. Vanilla
+   * uses this for the absolute-centered logo (3-column header layout).
+   */
+  logoPosition: z.enum([
+    'top-left',
+    'top-center',
+    'top-right',
+    'center-left',
+    'center-absolute',
+  ]),
+  /**
+   * 084 vanilla pilot — additive variant. Visual indicator under the
+   * currently-active nav link. Default `none` keeps pre-084 behaviour
+   * (no indicator). `underline` renders a thin span under the active
+   * link (vanilla home parity).
+   */
+  activeLinkIndicator: z.enum(['none', 'underline']).optional(),
   /**
    * Font for the text logo (used when `logo` is empty). Maps to a family key
    * known to constructor-theme-bridge — see FONT_FAMILIES there. Leave
@@ -45,6 +63,14 @@ export const HeaderPuckConfig: BlockPuckConfig<HeaderProps> = {
     logo: { type: 'text', label: 'URL логотипа' },
     logoFont: { type: 'select', label: 'Шрифт текстового лого' },
     logoPosition: { type: 'radio', label: 'Позиция логотипа' },
+    activeLinkIndicator: {
+      type: 'radio',
+      label: 'Индикатор активной ссылки',
+      options: [
+        { label: 'Нет', value: 'none' },
+        { label: 'Подчёркивание', value: 'underline' },
+      ],
+    },
     stickiness: { type: 'radio', label: 'Прилипание' },
     menuType: { type: 'radio', label: 'Тип меню' },
     navigationLinks: { type: 'array', label: 'Ссылки меню' },

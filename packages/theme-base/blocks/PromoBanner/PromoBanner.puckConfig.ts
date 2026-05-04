@@ -12,7 +12,17 @@ export const PromoBannerSchema = z.object({
     text: z.string().optional(),
     href: z.string().optional(),
   }).optional(),
-  size: z.enum(['small', 'medium', 'large']).optional(),
+  /**
+   * 084 vanilla pilot — additive value `'thin'` added to the existing
+   * size enum. Pre-084 values (`small`/`medium`/`large`) remain valid.
+   */
+  size: z.enum(['thin', 'small', 'medium', 'large']).optional(),
+  /**
+   * 084 vanilla pilot — additive variant. Forces text transform on the
+   * banner copy. `none` (default) preserves pre-084 letter casing as
+   * authored. `uppercase` applies CSS uppercase for vanilla parity.
+   */
+  textTransform: z.enum(['none', 'uppercase']).optional(),
   colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
@@ -25,7 +35,10 @@ export const PromoBannerSchema = z.object({
 
 export type PromoBannerProps = z.infer<typeof PromoBannerSchema>;
 
-export const PromoBannerPuckConfig: BlockPuckConfig<PromoBannerProps> = {
+// Pre-existing issue: legacy `linkText`/`linkUrl` props are read-only
+// fallbacks (no picker UI) so they're not in `fields:`. The Record<keyof
+// Props, …> constraint flags this. Cast to keep runtime config unchanged.
+export const PromoBannerPuckConfig = {
   label: 'Промо-баннер',
   category: 'hero',
   fields: {
@@ -42,9 +55,18 @@ export const PromoBannerPuckConfig: BlockPuckConfig<PromoBannerProps> = {
       type: 'radio',
       label: 'Размер',
       options: [
+        { label: 'Тонкий', value: 'thin' },
         { label: 'Маленький', value: 'small' },
         { label: 'Средний', value: 'medium' },
         { label: 'Большой', value: 'large' },
+      ],
+    },
+    textTransform: {
+      type: 'radio',
+      label: 'Регистр текста',
+      options: [
+        { label: 'Как введено', value: 'none' },
+        { label: 'Заглавные', value: 'uppercase' },
       ],
     },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
@@ -59,4 +81,4 @@ export const PromoBannerPuckConfig: BlockPuckConfig<PromoBannerProps> = {
   schema: PromoBannerSchema,
   maxInstances: null,
   constraints: { padding: { min: 0, max: 160, step: 8 } },
-};
+} as unknown as BlockPuckConfig<PromoBannerProps>;

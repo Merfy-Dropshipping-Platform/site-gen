@@ -60,6 +60,13 @@ const readCta = (v: unknown): { text: string; href: string; variant: CtaVariant 
 };
 const cta = readCta(ctaProp);
 
+// 084 vanilla pilot: additive `buttonStyle` variant.
+const buttonStyleProp =
+  raw.buttonStyle === 'outlined' || raw.buttonStyle === 'solid'
+    ? (raw.buttonStyle as 'outlined' | 'solid')
+    : 'solid';
+const buttonStyleClass = C.buttonStyle[buttonStyleProp];
+
 const alignClass = C.align[alignment];
 const ctaAlignClass = C.ctaWrapAlign[alignment];
 const paddingStyle = padding
@@ -85,7 +92,7 @@ const schemeClass = colorSchemeRaw ? `color-scheme-${colorSchemeRaw.replace('sch
     )}
     {cta && (
       <div class:list={[C.ctaWrap, ctaAlignClass]}>
-        <a href={cta.href} class={C.cta[cta.variant]} data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="cta">{cta.text}</a>
+        <a href={cta.href} class:list={[C.cta[cta.variant], buttonStyleClass]} data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="cta">{cta.text}</a>
       </div>
     )}
   </div>

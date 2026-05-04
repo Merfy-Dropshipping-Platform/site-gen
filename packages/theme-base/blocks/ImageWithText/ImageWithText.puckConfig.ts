@@ -24,6 +24,13 @@ export const ImageWithTextSchema = z.object({
     link: z.string().optional(),
   }).optional(),
   imagePosition: z.enum(['left', 'right']).optional(),
+  /**
+   * 084 vanilla pilot — additive variant. CTA placement within the text
+   * column. `inline` (default) keeps the pre-084 inline button. `bottom-pinned`
+   * pushes the button to the bottom of the column via `mt-auto` so it
+   * aligns with the bottom edge of the image (Vanilla home parity).
+   */
+  ctaPosition: z.enum(['inline', 'bottom-pinned']).optional(),
   // Pupa parity.
   size: z.enum(['small', 'medium', 'large']).optional(),
   width: z.enum(['small', 'medium', 'large', 'full']).optional(),
@@ -96,6 +103,14 @@ export const ImageWithTextPuckConfig: BlockPuckConfig<ImageWithTextProps> = {
       options: [
         { label: 'Слева', value: 'left' },
         { label: 'Справа', value: 'right' },
+      ],
+    },
+    ctaPosition: {
+      type: 'radio',
+      label: 'Позиция кнопки',
+      options: [
+        { label: 'Inline', value: 'inline' },
+        { label: 'Внизу колонки', value: 'bottom-pinned' },
       ],
     },
     size: {

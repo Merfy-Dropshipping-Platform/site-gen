@@ -22,6 +22,8 @@ export const HeaderClasses = {
     'top-center': 'justify-center',
     'top-right': 'justify-end',
     'center-left': 'justify-start',
+    /** 084 vanilla pilot — additive `center-absolute`. */
+    'center-absolute': 'justify-center',
   },
   logoWrap: {
     'top-left':
@@ -29,6 +31,26 @@ export const HeaderClasses = {
     'top-center': 'absolute left-1/2 -translate-x-1/2',
     'top-right': 'hidden md:flex',
     'center-left': '',
+    /**
+     * 084 vanilla pilot — additive `center-absolute` value. Pins the
+     * logo absolutely at the horizontal centre of the header on all
+     * breakpoints so the surrounding nav and actions can hug the edges.
+     */
+    'center-absolute':
+      'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2',
+  },
+  /**
+   * 084 vanilla pilot — additive `activeLinkIndicator` variant. Pre-084
+   * default = no indicator. `underline` adds a 1px line under the link
+   * via a positioned `<span>` within a `relative` wrapper.
+   */
+  activeIndicator: {
+    none: { wrapper: '', span: '' },
+    underline: {
+      wrapper: 'relative',
+      span:
+        'absolute left-0 -bottom-2 h-px w-[59px] bg-[rgb(var(--color-text))]',
+    },
   },
   logoLink: 'flex items-center hover:opacity-80 transition-opacity',
   logoImg: 'h-5 sm:h-6 md:h-[26px] w-auto max-w-[var(--size-logo-width)]',

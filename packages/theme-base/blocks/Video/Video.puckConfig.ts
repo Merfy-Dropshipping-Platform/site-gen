@@ -6,6 +6,19 @@ export const VideoSchema = z.object({
   videoUrl: z.string(),
   poster: z.string(),
   position: z.enum(['contained', 'fullscreen']).optional(),
+  /**
+   * 084 vanilla pilot — additive variant. Whether the video media has
+   * horizontal padding (container max-width). Default `true` keeps the
+   * pre-084 contained layout identical. `false` removes the container
+   * wrapper without changing aspect ratio.
+   */
+  padded: z.boolean().optional(),
+  /**
+   * 084 vanilla pilot — additive variant. Container vs. fullbleed
+   * alignment. Default `container` preserves pre-084 max-width clamp.
+   * `fullbleed` removes the clamp so video spans the viewport.
+   */
+  align: z.enum(['container', 'fullbleed']).optional(),
   // Pupa parity.
   size: z.enum(['small', 'medium', 'large']).optional(),
   overlay: z.number().int().min(0).max(100).optional(),
@@ -49,6 +62,15 @@ export const VideoPuckConfig: BlockPuckConfig<VideoProps> = {
         { label: 'Маленький', value: 'small' },
         { label: 'Средний', value: 'medium' },
         { label: 'Большой', value: 'large' },
+      ],
+    },
+    padded: { type: 'radio', label: 'Отступы по ширине' },
+    align: {
+      type: 'radio',
+      label: 'Ширина',
+      options: [
+        { label: 'Контейнер', value: 'container' },
+        { label: 'На всю ширину', value: 'fullbleed' },
       ],
     },
     overlay: { type: 'slider', label: 'Затемнение', min: 0, max: 100, step: 5 },

@@ -2,6 +2,15 @@ export const SlideshowClasses = {
   root: 'relative w-full overflow-hidden',
   container: 'mx-auto max-w-[var(--container-max-width)] px-4',
   slide: 'relative min-h-[60vh] flex items-center justify-center',
+  /**
+   * 084 vanilla pilot — additive `contentAlign` variant. Default
+   * (`center`) preserves pre-084 vertical centering. `left` shifts
+   * content to the start of the cross-axis (top of the slide column).
+   */
+  contentAlign: {
+    center: 'items-center',
+    left: 'items-start',
+  },
   image: 'absolute inset-0 -z-10 object-cover w-full h-full',
   content: 'relative z-10 text-center',
   heading:

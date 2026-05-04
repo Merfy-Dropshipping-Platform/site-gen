@@ -21,6 +21,18 @@ export const CollectionsSchema = z.object({
   /** Visual aspect ratio of tiles — square / portrait (Figma) / wide. */
   imageView: z.enum(['square', 'portrait', 'wide']).optional(),
   /**
+   * 084 vanilla pilot — additive variant. Caption (heading + description)
+   * casing for collection cards. Default `default` preserves pre-084
+   * behaviour (regular case). `uppercase` matches Vanilla home cards.
+   */
+  cardCaptionStyle: z.enum(['default', 'uppercase']).optional(),
+  /**
+   * 084 vanilla pilot — additive variant. Tile aspect ratio override.
+   * Default `auto` keeps the existing `imageView`-driven aspect (3:4 portrait
+   * for vanilla). `1:1` forces square tiles for the Vanilla home grid.
+   */
+  gridAspect: z.enum(['auto', '1:1']).optional(),
+  /**
    * `auto` pulls from the shop's collections feed at build time; `manual`
    * uses only the items in `collections[]`. Default auto.
    */
@@ -97,6 +109,22 @@ export const CollectionsPuckConfig: BlockPuckConfig<CollectionsProps> = {
       max: 10,
     },
     columns: { type: 'number', label: 'Колонки (1-6)' },
+    cardCaptionStyle: {
+      type: 'radio',
+      label: 'Стиль подписи карточки',
+      options: [
+        { label: 'Обычный', value: 'default' },
+        { label: 'Заглавные', value: 'uppercase' },
+      ],
+    },
+    gridAspect: {
+      type: 'radio',
+      label: 'Соотношение сторон карточек',
+      options: [
+        { label: 'Авто', value: 'auto' },
+        { label: 'Квадрат 1:1', value: '1:1' },
+      ],
+    },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     cardLinkBase: { type: 'text', label: 'Префикс ссылки на коллекцию' },
     padding: { type: 'padding', label: 'Отступы' },

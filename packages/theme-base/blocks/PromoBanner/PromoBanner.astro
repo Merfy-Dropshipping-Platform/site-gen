@@ -13,11 +13,20 @@ const { id, text, linkText, linkUrl, colorScheme, padding } = raw as Props;
 const linkObj = raw.link as { text?: string; href?: string } | undefined;
 const resolvedLinkText = linkObj?.text ?? linkText;
 const resolvedLinkHref = linkObj?.href ?? linkUrl;
+// 084 vanilla pilot: additive `thin` size value + `textTransform` field.
+// Default unset → `medium` (identical pre-commit). When set to `thin`,
+// renders a fixed-height strip via `--promo-banner-h-thin` token.
 const size = typeof raw.size === 'string' ? raw.size : 'medium';
 const sizeClass =
-  size === 'large' ? 'text-base py-4' :
-  size === 'medium' ? 'text-sm py-3' :
-  size === 'small' ? 'text-xs py-2' : '';
+  size === 'thin'   ? C.size.thin :
+  size === 'large'  ? C.size.large :
+  size === 'medium' ? C.size.medium :
+  size === 'small'  ? C.size.small : '';
+const textTransformProp =
+  raw.textTransform === 'uppercase' || raw.textTransform === 'none'
+    ? (raw.textTransform as 'uppercase' | 'none')
+    : undefined;
+const textTransformClass = textTransformProp ? C.textTransform[textTransformProp] : '';
 
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
@@ -29,7 +38,7 @@ const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('s
   data-puck-component-id={id}
   style={paddingStyle}
 >
-  <div class={C.container}>
+  <div class:list={[C.container, textTransformClass]}>
     <span class={C.text}>{text}</span>
     {resolvedLinkText && (
       <>

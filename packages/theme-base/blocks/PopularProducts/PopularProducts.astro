@@ -17,6 +17,13 @@ const {
   padding,
 } = Astro.props as Props & { subtitle?: string };
 
+// 084 vanilla pilot: additive `swatchOverlay` variant. When true, each
+// card renders a 3-pip swatch indicator over the image (top-right). The
+// pip palette comes from `p.variantSwatches` (first 3) when present;
+// otherwise three neutral default pips render so the indicator is
+// visible immediately on demo data.
+const swatchOverlayProp = raw.swatchOverlay === true;
+
 // "В корзину" CTA per card. Accept flat (quickAdd) or legacy nested
 // (productCard.quickAdd) shapes; string "true"/"false" also normalised.
 const productCardObj = raw.productCard as { quickAdd?: boolean | string; buttonText?: string } | undefined;
@@ -185,6 +192,13 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
           <div class={C.cardMedia} aria-hidden="true">
             {p.badgeNew && <span class={C.cardBadgeNew}>Новинка</span>}
             {p.badgeSale && <span class={p.badgeNew ? C.cardBadgeSale : C.cardBadgeNew}>{p.badgeSale}</span>}
+            {swatchOverlayProp && (
+              <span class={C.swatchOverlay.container} data-swatch-overlay aria-hidden="true">
+                <span class={C.swatchOverlay.dot}></span>
+                <span class={C.swatchOverlay.dot}></span>
+                <span class={C.swatchOverlay.dot}></span>
+              </span>
+            )}
             {p.image ? (
               <img src={p.image} alt={p.title} class="absolute inset-0 w-full h-full object-cover" loading="lazy" />
             ) : (

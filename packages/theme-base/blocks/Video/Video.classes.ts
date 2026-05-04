@@ -20,4 +20,21 @@ export const VideoClasses = {
     'w-16 h-16 rounded-full border-2 border-current flex items-center justify-center',
   placeholderText:
     '[font-family:var(--font-body)] text-[14px] leading-[17px]',
+  /**
+   * 084 vanilla pilot — additive `align` variant. `container` (default)
+   * preserves the pre-084 `mx-auto max-w-[…] px-4` clamp. `fullbleed`
+   * spans the viewport without the clamp.
+   */
+  align: {
+    container: 'mx-auto max-w-[var(--container-max-width)] px-4',
+    fullbleed: 'w-full',
+  },
+  /**
+   * 084 vanilla pilot — additive `padded` variant. When `false` removes
+   * the horizontal padding layer (used together with `align=fullbleed`).
+   */
+  padded: {
+    true: 'px-4',
+    false: '',
+  },
 } as const;

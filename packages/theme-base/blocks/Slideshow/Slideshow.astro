@@ -57,6 +57,14 @@ function normalizeSlide(slide: any) {
 
 const allSlides = (slides ?? []).map(normalizeSlide);
 const pagination = typeof raw.pagination === 'string' ? raw.pagination : 'numbers';
+// 084 vanilla pilot: additive `contentAlign` variant. Default `center`
+// preserves identical pre-commit behaviour (items-center). `left` aligns
+// the slide content column to the cross-axis start.
+const contentAlignProp =
+  raw.contentAlign === 'left' || raw.contentAlign === 'center'
+    ? (raw.contentAlign as 'left' | 'center')
+    : 'center';
+const contentAlignClass = C.contentAlign[contentAlignProp];
 ---
 <section
   class:list={[C.root, schemeClass]}
@@ -78,7 +86,7 @@ const pagination = typeof raw.pagination === 'string' ? raw.pagination : 'number
           : '';
         return (
           <div
-            class:list={[C.slide, slideAlignClass, slideSchemeClass, idx === 0 ? '' : 'hidden']}
+            class:list={[C.slide, contentAlignClass, slideAlignClass, slideSchemeClass, idx === 0 ? '' : 'hidden']}
             data-slide-id={slide.id}
             data-slide-index={idx}
             data-puck-subsection-parent={id}

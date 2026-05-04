@@ -74,8 +74,18 @@ const sizeClass =
   sizeProp === 'small' ? 'aspect-[16/8]' :
   sizeProp === 'medium' ? 'aspect-video' :
   sizeProp === 'large' ? 'aspect-[16/10]' : '';
-const containerClass =
-  positionProp === 'fullscreen'
+// 084 vanilla pilot: additive `align` and `padded` variants. When set,
+// they take precedence over the legacy `position` prop. Defaults preserve
+// pre-084 behaviour: `align` falls back to position-derived clamp,
+// `padded` only applies when explicitly false (no extra classes).
+const alignProp =
+  raw.align === 'fullbleed' || raw.align === 'container'
+    ? (raw.align as 'fullbleed' | 'container')
+    : undefined;
+const paddedProp = typeof raw.padded === 'boolean' ? raw.padded : undefined;
+const containerClass = alignProp
+  ? C.align[alignProp]
+  : positionProp === 'fullscreen'
     ? 'w-full'
     : C.container;
 

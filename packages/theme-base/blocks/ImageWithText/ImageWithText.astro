@@ -75,6 +75,14 @@ const headingSizeClass =
   headingSize === 'medium' ? 'text-2xl md:text-3xl' :
   headingSize === 'small' ? 'text-xl md:text-2xl' : '';
 
+// 084 vanilla pilot: additive `ctaPosition` variant.
+const ctaPositionProp =
+  raw.ctaPosition === 'bottom-pinned' || raw.ctaPosition === 'inline'
+    ? (raw.ctaPosition as 'bottom-pinned' | 'inline')
+    : 'inline';
+const ctaPositionClass = C.ctaPosition[ctaPositionProp];
+const textColFlexClass = C.textColFlex[ctaPositionProp];
+
 const widthClass =
   width === 'small' ? 'max-w-3xl mx-auto' :
   width === 'medium' ? 'max-w-5xl mx-auto' :
@@ -104,7 +112,7 @@ const widthClass =
           </div>
         )}
       </div>
-      <div class:list={[textColClass, headingAlignClass]}>
+      <div class:list={[textColClass, headingAlignClass, textColFlexClass]}>
         {heading && (
           <h2 class:list={[C.heading, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="heading">{heading}</h2>
         )}
@@ -112,7 +120,7 @@ const widthClass =
           <p class={C.text} data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="text">{text}</p>
         )}
         {buttonText && (
-          <a href={buttonHref} class={C.button} data-puck-subsection-parent={id} data-puck-subsection-index="103" data-puck-subsection-field="button">{buttonText}</a>
+          <a href={buttonHref} class:list={[C.button, ctaPositionClass]} data-puck-subsection-parent={id} data-puck-subsection-index="103" data-puck-subsection-field="button">{buttonText}</a>
         )}
       </div>
     </div>

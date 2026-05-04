@@ -20,6 +20,16 @@ export const MainTextClasses = {
     center: 'justify-center',
     right: 'justify-end',
   },
+  /**
+   * 084 vanilla pilot — additive `buttonStyle` variant. `solid` adds no
+   * extra classes (pre-084 behaviour preserved). `outlined` overrides the
+   * background to transparent and uses 1.3px current-color border.
+   */
+  buttonStyle: {
+    solid: '',
+    outlined:
+      '!bg-transparent border-[1.3px] border-current text-[rgb(var(--color-button-text))]',
+  },
   cta: {
     primary:
       '[font-family:var(--font-body)] inline-flex h-14 items-center justify-center rounded-[var(--radius-button)] px-6 text-[14px] font-medium uppercase tracking-wide transition-opacity hover:opacity-90 bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] border border-[rgb(var(--color-button-border))]',

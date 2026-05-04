@@ -35,6 +35,13 @@ export const PopularProductsSchema = z.object({
   }),
   quickAdd: z.boolean().default(false),
   quickAddText: z.string().default('В КОРЗИНУ'),
+  /**
+   * 084 vanilla pilot — additive variant. Renders a 3-pip swatch overlay
+   * over each product image (top-right) when the product has variant
+   * groups with options. Default `undefined` (or `false`) preserves the
+   * pre-084 cardMedia render — no overlay.
+   */
+  swatchOverlay: z.boolean().optional(),
   viewAll: z.object({
     show: z.boolean().optional(),
     text: z.string().optional(),
@@ -159,6 +166,7 @@ export const PopularProductsPuckConfig: BlockPuckConfig<PopularProductsProps> = 
         href: { type: 'text', label: 'Ссылка' },
       },
     },
+    swatchOverlay: { type: 'radio', label: 'Показать варианты на карточке' },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
   },
@@ -171,7 +179,10 @@ export const PopularProductsPuckConfig: BlockPuckConfig<PopularProductsProps> = 
     quickAdd: false,
     quickAddText: 'В КОРЗИНУ',
   },
-  schema: PopularProductsSchema,
+  // ts-jest types `.default(false)` input as `boolean | undefined` which
+  // conflicts with the inferred `quickAdd: boolean` in Props. Pre-existing
+  // issue unrelated to 084. Cast keeps the runtime schema unchanged.
+  schema: PopularProductsSchema as unknown as BlockPuckConfig<PopularProductsProps>['schema'],
   maxInstances: null,
   constraints: {
     padding: { min: 0, max: 160, step: 8 },

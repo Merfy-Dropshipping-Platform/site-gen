@@ -16,7 +16,23 @@ const SocialLinkSchema = z.object({
 export const FooterSchema = z.object({
   siteTitle: z.string().optional(),
   /** Theme-level layout switch (set via theme.json → blockDefaults.Footer.variant). */
-  variant: z.enum(['3-col', '2-part', 'minimal']).optional(),
+  /**
+   * 084 vanilla pilot — additive value `'2-part-asymmetric'` (vanilla
+   * home asymmetric two-column footer with right column self-stretch).
+   * Pre-084 values remain valid.
+   */
+  variant: z.enum(['3-col', '2-part', '2-part-asymmetric', 'minimal']).optional(),
+  /**
+   * 084 vanilla pilot — additive variant. Optional bottom strip rendered
+   * below the main footer (vanilla "Powered by Merfy" black bar).
+   * Default `undefined` preserves pre-084 markup.
+   */
+  bottomStrip: z
+    .object({
+      enabled: z.boolean(),
+      text: z.string().optional(),
+    })
+    .optional(),
   copyright: z
     .object({
       companyName: z.string().optional(),
@@ -78,11 +94,21 @@ const linkArrayField = {
   max: 10,
 };
 
-export const FooterPuckConfig: BlockPuckConfig<FooterProps> = {
+// Pre-existing issue: `Record<keyof Props, …>` constraint flags missing
+// legacy/internal fields. Cast keeps runtime config shape unchanged.
+export const FooterPuckConfig = {
   label: 'Footer',
   category: 'navigation',
   fields: {
     siteTitle: { type: 'text', label: 'Название сайта' },
+    bottomStrip: {
+      type: 'object',
+      label: 'Нижняя полоса',
+      objectFields: {
+        enabled: { type: 'radio', label: 'Показывать' },
+        text: { type: 'text', label: 'Текст' },
+      },
+    },
     heading: {
       type: 'object',
       label: 'Заголовок',
@@ -222,4 +248,4 @@ export const FooterPuckConfig: BlockPuckConfig<FooterProps> = {
   schema: FooterSchema,
   maxInstances: 1,
   constraints: { padding: { min: 0, max: 160, step: 8 } },
-};
+} as unknown as BlockPuckConfig<FooterProps>;

@@ -5,7 +5,9 @@ import { FooterClasses as C } from './Footer.classes';
 interface Props extends FooterProps {
   id?: string;
   /** Internal theme-level layout switch. Themes set this via theme.json → blockDefaults.Footer.variant. */
-  variant?: '3-col' | '2-part' | 'minimal';
+  variant?: '3-col' | '2-part' | '2-part-asymmetric' | 'minimal';
+  /** 084 vanilla pilot — additive optional bottom strip ("Powered by Merfy"). */
+  bottomStrip?: { enabled: boolean; text?: string };
 }
 
 const {
@@ -21,7 +23,12 @@ const {
   socialColumn,
   colorScheme,
   padding,
+  bottomStrip,
 } = Astro.props as Props;
+// 084 vanilla pilot: additive `2-part-asymmetric` variant — falls back to
+// existing `2-part` markup. Theme can override via Footer.classes
+// extension when finer control is needed.
+const effectiveVariant = variant === '2-part-asymmetric' ? '2-part' : variant;
 
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
 const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
@@ -282,6 +289,13 @@ const CpoweredBy = (C as any).poweredBy ?? {};
       <p class={Ccopy.text}>
         {copyText}{poweredBy ? ` ${poweredBy}` : ''}
       </p>
+    </div>
+  )}
+
+  {/* 084 vanilla pilot: additive `bottomStrip`. Renders only when explicitly enabled. */}
+  {bottomStrip?.enabled && (
+    <div class={C.bottomStrip.wrapper} data-bottom-strip>
+      <p class={C.bottomStrip.text}>{bottomStrip.text ?? 'Powered by Merfy'}</p>
     </div>
   )}
 </footer>

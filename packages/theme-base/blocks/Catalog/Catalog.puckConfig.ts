@@ -40,6 +40,9 @@ export const CatalogSchema = z.object({
   // Optional: injected by preview pipeline so the SSG shell can client-fetch
   // real products from the storefront API. Not user-editable.
   siteId: z.string().optional(),
+  // 084 Stage 3 vanilla pilot — additive grid + caption variants
+  gridAspect: z.enum(['auto', '1:1', '4:5']).optional(),
+  cardCaptionStyle: z.enum(['default', 'uppercase']).optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -136,6 +139,23 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
       options: [
         { label: 'Показать', value: 'true' },
         { label: 'Скрыть', value: 'false' },
+      ],
+    },
+    gridAspect: {
+      type: 'radio',
+      label: 'Соотношение сторон карточки',
+      options: [
+        { label: 'Auto', value: 'auto' },
+        { label: '1:1 (квадрат)', value: '1:1' },
+        { label: '4:5 (портрет)', value: '4:5' },
+      ],
+    },
+    cardCaptionStyle: {
+      type: 'radio',
+      label: 'Стиль подписи карточки',
+      options: [
+        { label: 'По умолчанию', value: 'default' },
+        { label: 'UPPERCASE', value: 'uppercase' },
       ],
     },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },

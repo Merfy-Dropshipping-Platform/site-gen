@@ -27,6 +27,12 @@ export const NewsletterSchema = z.object({
    *     vanilla home where the form sits inside a coloured panel).
    */
   formLayout: z.enum(['stacked', 'inline-submit']).optional(),
+  /**
+   * 084 vanilla pilot — additive variant. Text/form alignment within the
+   * section. Default `center` preserves pre-084 behaviour. `left` matches
+   * the vanilla home left-aligned newsletter panel.
+   */
+  alignment: z.enum(['left', 'center', 'right']).optional(),
   colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
@@ -85,6 +91,7 @@ export const NewsletterPuckConfig: BlockPuckConfig<NewsletterProps> = {
         { label: 'Кнопка под полем', value: 'stacked' },
       ],
     },
+    alignment: { type: 'alignment', label: 'Выравнивание' },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
   },

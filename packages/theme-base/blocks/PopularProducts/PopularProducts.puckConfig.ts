@@ -42,6 +42,12 @@ export const PopularProductsSchema = z.object({
    * pre-084 cardMedia render — no overlay.
    */
   swatchOverlay: z.boolean().optional(),
+  /**
+   * 084 vanilla pilot — additive variant. Caption (title + price) casing
+   * for product cards. Default `default` preserves pre-084 behaviour
+   * (regular case). `uppercase` matches Vanilla home cards.
+   */
+  cardCaptionStyle: z.enum(['default', 'uppercase']).optional(),
   viewAll: z.object({
     show: z.boolean().optional(),
     text: z.string().optional(),
@@ -167,6 +173,14 @@ export const PopularProductsPuckConfig: BlockPuckConfig<PopularProductsProps> = 
       },
     },
     swatchOverlay: { type: 'radio', label: 'Показать варианты на карточке' },
+    cardCaptionStyle: {
+      type: 'radio',
+      label: 'Стиль подписи карточки',
+      options: [
+        { label: 'Обычный', value: 'default' },
+        { label: 'Заглавные', value: 'uppercase' },
+      ],
+    },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
   },

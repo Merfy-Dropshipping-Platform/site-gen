@@ -38,6 +38,12 @@ export const MainTextSchema = z.object({
    * border (vanilla home «Перейти в каталог»).
    */
   buttonStyle: z.enum(['solid', 'outlined']).optional(),
+  /**
+   * 084 vanilla pilot — additive variant. Controls italic/normal styling
+   * for the body text. `normal` (default) preserves pre-084 text styling.
+   * `italic` applies italic to the body content (vanilla home parity).
+   */
+  textStyle: z.enum(['normal', 'italic']).optional(),
   colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
@@ -128,6 +134,14 @@ export const MainTextPuckConfig: BlockPuckConfig<MainTextProps> = {
       options: [
         { label: 'Заливка', value: 'solid' },
         { label: 'Контурная', value: 'outlined' },
+      ],
+    },
+    textStyle: {
+      type: 'radio',
+      label: 'Стиль текста',
+      options: [
+        { label: 'Обычный', value: 'normal' },
+        { label: 'Курсив', value: 'italic' },
       ],
     },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },

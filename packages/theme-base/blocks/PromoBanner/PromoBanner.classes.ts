@@ -9,9 +9,12 @@ export const PromoBannerClasses = {
    * Pre-084 values (small/medium/large) reproduce identical rendering.
    * `thin` exposes a token-driven height so themes can pin the banner
    * to a specific px (vanilla = 56px via `--promo-banner-h-thin`).
+   * Figma 1:18956 (vanilla): height 56px, text 16px Arsenal Regular.
+   * `[&_*]:text-[16px]` cascades 16px to inner span/link, overriding
+   * the container's pre-084 `text-[13px]` default.
    */
   size: {
-    thin: 'h-[var(--promo-banner-h-thin,56px)] text-[12px] py-0',
+    thin: 'h-[var(--promo-banner-h-thin,56px)] text-[16px] py-0 [&_*]:text-[16px]',
     small: 'text-xs py-2',
     medium: 'text-sm py-3',
     large: 'text-base py-4',

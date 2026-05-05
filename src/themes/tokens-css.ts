@@ -102,7 +102,58 @@ export function buildTokensCss(
   --color-error: ${errorColor};
   --color-muted: 156 163 175;
   --color-primary: 17 17 17;
-  --text-transform-heading: ${themeDefaults['--text-transform-heading'] ?? 'none'};
+  --text-transform-heading: ${themeDefaults['--text-transform-heading'] ?? 'none'};${
+    // 084 vanilla pilot — additive theme-scope tokens. Emitted only when the
+    // active theme manifest sets them, so pre-084 themes keep relying on the
+    // inline Tailwind fallbacks baked into block class strings.
+    themeDefaults['--font-cart-counter']
+      ? `\n  --font-cart-counter: ${themeDefaults['--font-cart-counter']};`
+      : ''
+  }${
+    themeDefaults['--font-powered-by']
+      ? `\n  --font-powered-by: ${themeDefaults['--font-powered-by']};`
+      : ''
+  }${
+    themeDefaults['--size-card-border']
+      ? `\n  --size-card-border: ${themeDefaults['--size-card-border']};`
+      : ''
+  }${
+    themeDefaults['--button-style']
+      ? `\n  --button-style: ${themeDefaults['--button-style']};`
+      : ''
+  }${
+    themeDefaults['--footer-layout']
+      ? `\n  --footer-layout: ${themeDefaults['--footer-layout']};`
+      : ''
+  }${
+    themeDefaults['--contact-form-layout']
+      ? `\n  --contact-form-layout: ${themeDefaults['--contact-form-layout']};`
+      : ''
+  }${
+    themeDefaults['--cart-type']
+      ? `\n  --cart-type: ${themeDefaults['--cart-type']};`
+      : ''
+  }${
+    themeDefaults['--card-style']
+      ? `\n  --card-style: ${themeDefaults['--card-style']};`
+      : ''
+  }${
+    themeDefaults['--card-alignment']
+      ? `\n  --card-alignment: ${themeDefaults['--card-alignment']};`
+      : ''
+  }${
+    themeDefaults['--color-bottom-strip-bg']
+      ? `\n  --color-bottom-strip-bg: ${themeDefaults['--color-bottom-strip-bg']};`
+      : ''
+  }${
+    themeDefaults['--color-bottom-strip-text']
+      ? `\n  --color-bottom-strip-text: ${themeDefaults['--color-bottom-strip-text']};`
+      : ''
+  }${
+    themeDefaults['--promo-banner-h-thin']
+      ? `\n  --promo-banner-h-thin: ${themeDefaults['--promo-banner-h-thin']};`
+      : ''
+  }
 }`;
 
   // Merchant colorSchemes win — they're editable via the admin ThemeSettings

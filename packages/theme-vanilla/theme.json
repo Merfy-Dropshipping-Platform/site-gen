@@ -82,10 +82,12 @@
       "titleAlignment": "left"
     },
     "MainText": {
-      "buttonStyle": "outlined"
+      "buttonStyle": "outlined",
+      "textStyle": "italic"
     },
     "Video": {
-      "padded": true
+      "padded": true,
+      "align": "container"
     },
     "ImageWithText": {
       "imagePosition": "right",
@@ -94,10 +96,12 @@
     "PopularProducts": {
       "swatchOverlay": true,
       "cardCaptionStyle": "uppercase",
-      "headingAlignment": "left"
+      "headingAlignment": "left",
+      "columns": 3
     },
     "Newsletter": {
-      "formLayout": "inline-submit"
+      "formLayout": "inline-submit",
+      "alignment": "left"
     },
     "Footer": {
       "variant": "2-part-asymmetric",

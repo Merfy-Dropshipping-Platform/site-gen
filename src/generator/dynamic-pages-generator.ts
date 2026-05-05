@@ -185,3 +185,58 @@ ${closeLayout}`.trim();
 
   return `---\n${frontmatter}\n---\n${template}\n`;
 }
+
+/**
+ * Generate /catalog/[slug].astro — SEO-friendly per-collection catalog page.
+ *
+ * Uniform across all themes (rose/vanilla/satin/bloom/flux) via
+ * scaffold-builder. Uses the existing Catalog.astro component so the page
+ * looks identical to the master /catalog page but pre-filtered by
+ * collection.
+ *
+ * Layout import path uses `../../layouts/` (two levels up from
+ * src/pages/catalog/[slug].astro → src/layouts/), per the fix established
+ * in commit 26669dc.
+ */
+export function generateCatalogSlugPage(config: DynamicPageConfig): string {
+  const { apiUrl, shopId, layoutImport, layoutTag } = config;
+
+  const imports: string[] = [];
+  if (layoutImport && layoutTag) {
+    imports.push(`import ${layoutTag} from '${layoutImport}';`);
+  }
+  imports.push(`import Catalog from '../../components/Catalog.astro';`);
+
+  const frontmatter = `${imports.join("\n")}
+
+export async function getStaticPaths() {
+  let collections = [];
+  try {
+    const res = await fetch('${apiUrl}/store/${shopId}/collections');
+    const json = await res.json();
+    collections = json.success ? (json.data ?? []) : [];
+  } catch {
+    collections = [];
+  }
+  return collections.map((c) => ({
+    params: { slug: c.slug || c.handle || c.id },
+    props: { collection: c },
+  }));
+}
+
+const { slug } = Astro.params;
+const { collection } = Astro.props;`;
+
+  const openLayout = layoutTag
+    ? `<${layoutTag} title={collection?.title ?? collection?.name ?? 'Каталог'}>`
+    : "";
+  const closeLayout = layoutTag ? `</${layoutTag}>` : "";
+  const indent = layoutTag ? "  " : "";
+
+  const template = `${openLayout}
+${indent}<h1 class="[font-family:var(--font-heading)] italic text-[length:var(--size-h1,24px)] text-[rgb(var(--color-heading))] mb-10">{collection?.title ?? collection?.name ?? 'Все товары'}</h1>
+${indent}<Catalog collectionSlug={slug} cards={12} columns={2} showFilter="true" filterPosition="side" />
+${closeLayout}`.trim();
+
+  return `---\n${frontmatter}\n---\n${template}\n`;
+}

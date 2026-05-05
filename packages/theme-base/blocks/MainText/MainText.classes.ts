@@ -30,6 +30,15 @@ export const MainTextClasses = {
     outlined:
       '!bg-transparent border-[1.3px] border-current text-[rgb(var(--color-button-text))]',
   },
+  /**
+   * 084 vanilla pilot Stage 2 Task 6 — additive `textStyle` variant.
+   * `normal` (default) preserves pre-084 styling. `italic` applies italic
+   * to the heading + body pair (vanilla home «Тепло вашего дома…»).
+   */
+  textStyle: {
+    normal: '',
+    italic: 'italic',
+  },
   cta: {
     primary:
       '[font-family:var(--font-body)] inline-flex h-14 items-center justify-center rounded-[var(--radius-button)] px-6 text-[14px] font-medium uppercase tracking-wide transition-opacity hover:opacity-90 bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] border border-[rgb(var(--color-button-border))]',

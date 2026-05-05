@@ -527,7 +527,7 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
  * Для не-vanilla тем home.content остаётся нетронутым. Применяется
  * только когда themeId явно передан.
  */
-export const VANILLA_HOME_MIGRATION_VERSION = 5;
+export const VANILLA_HOME_MIGRATION_VERSION = 6;
 
 export function migrateVanillaHomePage(
   pagesData: Record<string, unknown>,
@@ -669,18 +669,25 @@ export function migrateVanillaHomePage(
       type: 'MainText',
       props: {
         id: `MainText-${ts + 4}`,
-        heading: { text: 'О нас', size: 'large' },
+        heading: { text: 'Тепло вашего дома начинается здесь', size: 'small' },
         text: {
           content:
-            'Мы создаём уютные интерьеры — мебель и декор от российских мастеров. Каждое изделие — забота о деталях.',
-          size: 'medium',
+            'Потому что настоящий уют рождается из деталей. Мы знаем, как важно возвращаться в дом, где каждая деталь дарит комфорт и радость. Натуральный хлопок, уютный велюр, мягкий лен и нежные оттенки — все это Vanila. Позвольте себе наслаждаться красотой в деталях и превратите повседневность в маленькое удовольствие. Создайте дом своей мечты вместе с Vanila.',
+          size: 'small',
         },
         alignment: 'center',
         position: 'center',
-        button: { text: 'Узнать больше', link: '/about' },
+        // 084 Stage 2 Task 6 (v6): use canonical `cta` shape (Astro reads
+        // `cta`, not `button`) so the «К покупкам» button actually renders.
+        cta: { text: 'К покупкам', href: '/catalog', variant: 'primary' },
         buttonStyle: 'outlined',
-        colorScheme: 'scheme-3',
-        padding: { top: 80, bottom: 80 },
+        textStyle: 'italic',
+        // 084 Stage 2 Task 6 (v6): scheme-2 = `#3a4530` dark olive bg with
+        // white text per Figma 1:18984. Pre-v6 used scheme-3 (light grey
+        // `#eee`) which was an inverse of the design.
+        colorScheme: 'scheme-2',
+        // 084 Stage 2 Task 6 (v6): 120px y-padding per Figma 1:18984.
+        padding: { top: 120, bottom: 120 },
       } as Record<string, unknown>,
     },
     {

@@ -76,4 +76,19 @@ export const CatalogClasses = {
   emptyState: 'flex-1 py-12 text-center font-[family-name:var(--font-body)]',
   emptyStateText: 'text-[20px] text-[rgb(var(--color-muted))] mb-4',
   emptyStateButton: 'px-6 py-3 bg-[rgb(var(--color-foreground))] text-[rgb(var(--color-background))] rounded-[10px] text-base',
+
+  // 084 Stage 3 vanilla pilot
+  gridAspect: {
+    auto: '',
+    '1:1': '[--catalog-card-aspect:1/1]',
+    '4:5': '[--catalog-card-aspect:4/5]',
+  },
+  cardCaptionStyle: {
+    default: '',
+    uppercase: 'uppercase tracking-wide',
+  },
+  // Sidebar width via CSS-var (token from Task 4 — fallback 260px keeps
+  // Task 3 alone non-broken). Note: existing `sidebar` key above remains
+  // unchanged; this is a separate width-token utility that sits alongside.
+  sidebarBox: 'w-[var(--catalog-sidebar-w,260px)] flex-shrink-0',
 } as const;

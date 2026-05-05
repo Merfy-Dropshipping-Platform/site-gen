@@ -227,7 +227,7 @@ const apiBase = 'https://gateway.merfy.ru/api';
 
       <div
         data-catalog-grid
-        style={`display: grid; grid-template-columns: repeat(${colCount}, 1fr); gap: 16px;`}
+        style={`display: grid; grid-template-columns: repeat(${colCount}, 1fr); column-gap: 16px; row-gap: var(--catalog-grid-row-gap, 16px);`}
       >
         {placeholderCards.map(() => (
           <article style={`display: flex; flex-direction: column; gap: 12px; ${cardBgOn ? 'background:rgb(var(--color-muted) / 0.1);border:1px solid rgb(var(--color-muted) / 0.1);border-radius:8px;padding:8px;' : ''}`}>
@@ -279,7 +279,7 @@ const apiBase = 'https://gateway.merfy.ru/api';
   .catalog-sidebar { display: none; }
   /* Tablet/desktop (>= 1024px): show sidebar as fixed column. */
   @media (min-width: 1024px) {
-    .catalog-grid-with-sidebar { grid-template-columns: 220px 1fr; }
+    .catalog-grid-with-sidebar { grid-template-columns: var(--catalog-sidebar-w, 260px) 1fr; }
     .catalog-sidebar { display: flex; }
   }
 </style>

@@ -26,6 +26,8 @@ export const CatalogTokens = {
     '--space-grid-gap',
     '--space-sidebar-gap',
     '--space-toolbar-gap',
+    '--catalog-sidebar-w',
+    '--catalog-grid-row-gap',
   ],
   // Sidebar / mobile breakpoints (used by class names and inline media queries)
   breakpoints: {

@@ -84,7 +84,7 @@ export function buildTokensCss(
   --spacing-grid-col-gap: ${themeDefaults['--spacing-grid-col-gap'] ?? '24px'};
   --spacing-grid-row-gap: ${themeDefaults['--spacing-grid-row-gap'] ?? '32px'};
   --catalog-sidebar-w: ${themeDefaults['--catalog-sidebar-w'] ?? '260px'};
-  --catalog-grid-row-gap: ${themeDefaults['--catalog-grid-row-gap'] ?? '32px'};
+  --catalog-grid-row-gap: ${themeDefaults['--catalog-grid-row-gap'] ?? '16px'};
   --size-hero-heading: ${merchantFirst(heroHeadingSize, heroHeadingSizeSet, themeDefaults['--size-hero-heading'], '48px')};
   --size-hero-button-h: ${themeDefaults['--size-hero-button-h'] ?? '48px'};
   --slide-min-height: ${themeDefaults['--slide-min-height'] ?? '60vh'};${

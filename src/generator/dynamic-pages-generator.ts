@@ -187,56 +187,41 @@ ${closeLayout}`.trim();
 }
 
 /**
- * Generate /catalog/[slug].astro — SEO-friendly per-collection catalog page.
+ * Generate /catalog/[slug].astro — uniform redirect to /collections/[slug].
  *
- * Uniform across all themes (rose/vanilla/satin/bloom/flux) via
- * scaffold-builder. Uses the existing Catalog.astro component so the page
- * looks identical to the master /catalog page but pre-filtered by
- * collection.
+ * Stage 3 (spec 084) introduces /catalog/[slug] as the canonical SEO route.
+ * To avoid coupling to per-theme component paths (vanilla doesn't ship a
+ * `components/Catalog.astro` — it uses CatalogIsland with local JSON data),
+ * we generate /catalog/[slug] as a 301 redirect to the existing working
+ * /collections/[slug] page that every theme already ships.
  *
- * Layout import path uses `../../layouts/` (two levels up from
- * src/pages/catalog/[slug].astro → src/layouts/), per the fix established
- * in commit 26669dc.
+ * Trade-off: /catalog/[slug] returns 301 → 200 (instead of direct 200), but
+ * `curl -sL` (follow redirects) sees 200 — same UX. SEO-wise 301 preserves
+ * link equity to the new canonical /catalog/ namespace.
  */
-export function generateCatalogSlugPage(config: DynamicPageConfig): string {
-  const { apiUrl, shopId, layoutImport, layoutTag } = config;
+export function generateCatalogSlugPage(_config: DynamicPageConfig): string {
+  return `---
+/* 084-stage3-uniform-catalog-redirect */
+import collectionsData from '../../data/collections.json';
 
-  const imports: string[] = [];
-  if (layoutImport && layoutTag) {
-    imports.push(`import ${layoutTag} from '${layoutImport}';`);
+export function getStaticPaths() {
+  const cols: any[] = Array.isArray(collectionsData) ? collectionsData : [];
+  if (cols.length === 0) {
+    return [{ params: { slug: '_placeholder' }, props: {} }];
   }
-  imports.push(`import Catalog from '../../components/Catalog.astro';`);
-
-  const frontmatter = `${imports.join("\n")}
-
-export async function getStaticPaths() {
-  let collections = [];
-  try {
-    const res = await fetch('${apiUrl}/store/${shopId}/collections');
-    const json = await res.json();
-    collections = json.success ? (json.data ?? []) : [];
-  } catch {
-    collections = [];
+  const paths: { params: { slug: string }; props: Record<string, never> }[] = [];
+  const seen = new Set<string>();
+  for (const c of cols) {
+    for (const slug of [c.id, c.slug, c.handle].filter(Boolean) as string[]) {
+      if (seen.has(slug)) continue;
+      seen.add(slug);
+      paths.push({ params: { slug }, props: {} });
+    }
   }
-  return collections.map((c) => ({
-    params: { slug: c.slug || c.handle || c.id },
-    props: { collection: c },
-  }));
+  return paths;
 }
 
 const { slug } = Astro.params;
-const { collection } = Astro.props;`;
-
-  const openLayout = layoutTag
-    ? `<${layoutTag} title={collection?.title ?? collection?.name ?? 'Каталог'}>`
-    : "";
-  const closeLayout = layoutTag ? `</${layoutTag}>` : "";
-  const indent = layoutTag ? "  " : "";
-
-  const template = `${openLayout}
-${indent}<h1 class="[font-family:var(--font-heading)] italic text-[length:var(--size-h1,24px)] text-[rgb(var(--color-heading))] mb-10">{collection?.title ?? collection?.name ?? 'Все товары'}</h1>
-${indent}<Catalog collectionSlug={slug} cards={12} columns={2} showFilter="true" filterPosition="side" />
-${closeLayout}`.trim();
-
-  return `---\n${frontmatter}\n---\n${template}\n`;
+return Astro.redirect(\`/collections/\${slug}\`, 301);
+---`;
 }

@@ -57,10 +57,10 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   '--spacing-grid-row-gap': '40px',
   // 084 Stage 3 catalog — pre-084 defaults match prior hardcoded
   // values in Catalog.astro (gap: 16px, sidebar grid-template-columns:
-  // 220px). Sidebar fallback is 260px (consumer fallback) so themes
-  // without explicit override still match registry hint. Vanilla
-  // overrides both to 294px/40px in theme-vanilla/theme.json.
-  '--catalog-sidebar-w': '260px',
+  // 220px). Sidebar fallback is 220px to preserve exact pre-Stage-3
+  // dimension on rose/satin/bloom/flux. Vanilla overrides both to
+  // 294px/40px in theme-vanilla/theme.json.
+  '--catalog-sidebar-w': '220px',
   '--catalog-grid-row-gap': '16px',
 
   // Sizes

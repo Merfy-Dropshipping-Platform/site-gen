@@ -87,8 +87,9 @@ export const CatalogClasses = {
     default: '',
     uppercase: 'uppercase tracking-wide',
   },
-  // Sidebar width via CSS-var (token from Task 4 — fallback 260px keeps
-  // Task 3 alone non-broken). Note: existing `sidebar` key above remains
-  // unchanged; this is a separate width-token utility that sits alongside.
-  sidebarBox: 'w-[var(--catalog-sidebar-w,260px)] flex-shrink-0',
+  // Sidebar width via CSS-var (token from Task 4 — fallback 220px keeps
+  // pre-Stage-3 hardcoded value, matching rose/satin/bloom/flux). Note:
+  // existing `sidebar` key above remains unchanged; this is a separate
+  // width-token utility that sits alongside.
+  sidebarBox: 'w-[var(--catalog-sidebar-w,220px)] flex-shrink-0',
 } as const;

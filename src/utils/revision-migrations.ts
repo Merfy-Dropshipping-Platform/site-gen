@@ -527,7 +527,37 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
  * Для не-vanilla тем home.content остаётся нетронутым. Применяется
  * только когда themeId явно передан.
  */
-export const VANILLA_HOME_MIGRATION_VERSION = 10;
+export const VANILLA_HOME_MIGRATION_VERSION = 11;
+
+/**
+ * 084 Stage 3 Task 6 (v11): vanilla-specific Catalog blockDefaults baked
+ * onto Catalog blocks living in `page-catalog.content` and
+ * `page-collection.content`. Applied only where prop is undefined —
+ * preserves merchant edits.
+ */
+const VANILLA_CATALOG_DEFAULTS: Record<string, unknown> = {
+  filterPosition: 'side',
+  showFilter: 'true',
+  showSort: 'true',
+  columns: 2,
+  cards: 12,
+  gridAspect: '1:1',
+  cardCaptionStyle: 'uppercase',
+  colorScheme: 'scheme-3',
+  padding: { top: 120, bottom: 120 },
+};
+
+function applyVanillaCatalogDefaults(block: Block): Block {
+  if (!block || block.type !== 'Catalog') return block;
+  const props = (block.props ?? {}) as Record<string, unknown>;
+  const merged: Record<string, unknown> = { ...props };
+  for (const [key, value] of Object.entries(VANILLA_CATALOG_DEFAULTS)) {
+    if (merged[key] === undefined) {
+      merged[key] = value;
+    }
+  }
+  return { ...block, props: merged };
+}
 
 export function migrateVanillaHomePage(
   pagesData: Record<string, unknown>,
@@ -822,6 +852,22 @@ export function migrateVanillaHomePage(
   ];
 
   const baseExisting: PageData = existing && typeof existing === 'object' ? existing : { content: [] };
+
+  // 084 Stage 3 Task 6 (v11): bake vanilla Catalog defaults onto Catalog blocks
+  // in page-catalog and page-collection. Only fills undefined props — preserves
+  // merchant edits.
+  const pageCatalogRaw = pagesData['page-catalog'] as PageData | undefined;
+  const updatedPageCatalog =
+    pageCatalogRaw && Array.isArray(pageCatalogRaw.content)
+      ? { ...pageCatalogRaw, content: pageCatalogRaw.content.map(applyVanillaCatalogDefaults) }
+      : pageCatalogRaw;
+
+  const pageCollectionRaw = pagesData['page-collection'] as PageData | undefined;
+  const updatedPageCollection =
+    pageCollectionRaw && Array.isArray(pageCollectionRaw.content)
+      ? { ...pageCollectionRaw, content: pageCollectionRaw.content.map(applyVanillaCatalogDefaults) }
+      : pageCollectionRaw;
+
   return {
     ...pagesData,
     _vanillaHomeMigrationVersion: VANILLA_HOME_MIGRATION_VERSION,
@@ -831,6 +877,8 @@ export function migrateVanillaHomePage(
       root: baseExisting.root ?? { props: { title: 'Главная' } },
       zones: baseExisting.zones ?? {},
     } as PageData,
+    ...(updatedPageCatalog ? { 'page-catalog': updatedPageCatalog } : {}),
+    ...(updatedPageCollection ? { 'page-collection': updatedPageCollection } : {}),
   };
 }
 

@@ -52,7 +52,7 @@ describe('migrateVanillaHomePage (084 — Stage 2 v10)', () => {
 
   it('migrateVanillaHomePage and version constant are exported', () => {
     expect(typeof migrateVanillaHomePage).toBe('function');
-    expect(VANILLA_HOME_MIGRATION_VERSION).toBe(10);
+    expect(VANILLA_HOME_MIGRATION_VERSION).toBe(11);
   });
 
   it('seeds 10 vanilla home blocks when themeId=vanilla + empty home + version flag set', () => {
@@ -62,16 +62,16 @@ describe('migrateVanillaHomePage (084 — Stage 2 v10)', () => {
     const types = home.content.map((b) => b.type);
     expect(types).toEqual(expectedSequence);
     expect(types[2]).toBe('Hero');
-    expect(out._vanillaHomeMigrationVersion).toBe(10);
+    expect(out._vanillaHomeMigrationVersion).toBe(11);
   });
 
-  it('upgrades existing pre-v10 seed (legacy Hero in slot #3, no version flag) to v10 (Hero+carousel)', () => {
+  it('upgrades existing pre-v11 seed (legacy Hero in slot #3, no version flag) to v11 (Hero+carousel)', () => {
     const pagesData = {
       home: {
         content: [
           { type: 'PromoBanner', props: {} },
           { type: 'Header', props: {} },
-          { type: 'Hero', props: {} }, // legacy seed — replaced with v10 Hero+carousel
+          { type: 'Hero', props: {} }, // legacy seed — replaced with v11 Hero+carousel
           { type: 'Footer', props: {} },
         ],
       },
@@ -81,13 +81,13 @@ describe('migrateVanillaHomePage (084 — Stage 2 v10)', () => {
     expect(home.content.map((b) => b.type)).toEqual(expectedSequence);
     expect(home.content[2].type).toBe('Hero');
     expect((home.content[2].props as Record<string, unknown>).mode).toBe('carousel');
-    expect(out._vanillaHomeMigrationVersion).toBe(10);
+    expect(out._vanillaHomeMigrationVersion).toBe(11);
   });
 
-  it('is no-op when already on current version (v10)', () => {
+  it('is no-op when already on current version (v11)', () => {
     const home = { content: [{ type: 'Hero', props: { id: 'kept', mode: 'carousel' } }] };
     const pagesData = {
-      _vanillaHomeMigrationVersion: 10,
+      _vanillaHomeMigrationVersion: 11,
       home,
     };
     const out = migrateVanillaHomePage(pagesData, 'vanilla');
@@ -95,7 +95,7 @@ describe('migrateVanillaHomePage (084 — Stage 2 v10)', () => {
     expect((out as { home: Home }).home).toBe(home);
   });
 
-  it('v2 (Slideshow at #2) auto-upgrades to v10 (Hero+carousel)', () => {
+  it('v2 (Slideshow at #2) auto-upgrades to v11 (Hero+carousel)', () => {
     const v2Data = {
       pagesData: {
         _vanillaHomeMigrationVersion: 2,
@@ -117,7 +117,7 @@ describe('migrateVanillaHomePage (084 — Stage 2 v10)', () => {
     };
     const result = RevisionMigrations.migrateRevisionData(v2Data, 'vanilla');
     const pagesData = result.pagesData as Record<string, unknown>;
-    expect(pagesData._vanillaHomeMigrationVersion).toBe(10);
+    expect(pagesData._vanillaHomeMigrationVersion).toBe(11);
     const home = pagesData.home as Home;
     expect(home.content[2].type).toBe('Hero');
     expect((home.content[2].props as Record<string, unknown>).mode).toBe('carousel');
@@ -125,16 +125,16 @@ describe('migrateVanillaHomePage (084 — Stage 2 v10)', () => {
     expect(((home.content[2].props as Record<string, unknown>).slides as unknown[]).length).toBeGreaterThanOrEqual(3);
   });
 
-  it('v10 already (no-op idempotent)', () => {
-    const v10Data = {
+  it('v11 already (no-op idempotent)', () => {
+    const v11Data = {
       pagesData: {
-        _vanillaHomeMigrationVersion: 10,
+        _vanillaHomeMigrationVersion: 11,
         home: { content: [{ type: 'Hero', props: { mode: 'carousel', slides: [] } }] },
       },
     };
-    const result = RevisionMigrations.migrateRevisionData(v10Data, 'vanilla');
+    const result = RevisionMigrations.migrateRevisionData(v11Data, 'vanilla');
     const pagesData = result.pagesData as Record<string, unknown>;
-    expect(pagesData._vanillaHomeMigrationVersion).toBe(10);
+    expect(pagesData._vanillaHomeMigrationVersion).toBe(11);
     const home = pagesData.home as Home;
     expect(home.content.length).toBe(1);
   });
@@ -239,5 +239,111 @@ describe('migrateVanillaHomePage (084 — Stage 2 v10)', () => {
       enabled: true,
       text: expect.stringContaining('Powered by Merfy'),
     });
+  });
+
+  // 084 Stage 3 Task 6 (v11): bake vanilla-specific Catalog blockDefaults
+  // onto Catalog blocks living in `page-catalog.content` and
+  // `page-collection.content` (only where prop undefined — preserve merchant
+  // edits).
+  it('v10 (Stage 2) auto-upgrades to v11 (Catalog vanilla blockDefaults baked in page-catalog)', () => {
+    const v10Data = {
+      pagesData: {
+        _vanillaHomeMigrationVersion: 10,
+        home: { content: [] },
+        'page-catalog': {
+          content: [
+            { type: 'Header', props: {} },
+            { type: 'Catalog', props: {} },
+            { type: 'Footer', props: {} },
+          ],
+        },
+      },
+    };
+    const result = migrateVanillaHomePage(
+      v10Data.pagesData as Record<string, unknown>,
+      'vanilla',
+    );
+    expect(result._vanillaHomeMigrationVersion).toBe(11);
+    const pageCatalog = result['page-catalog'] as {
+      content: Array<{ type: string; props: Record<string, unknown> }>;
+    };
+    const catalog = pageCatalog.content[1];
+    expect(catalog.props.gridAspect).toBe('1:1');
+    expect(catalog.props.cardCaptionStyle).toBe('uppercase');
+    expect(catalog.props.colorScheme).toBe('scheme-3');
+    expect(catalog.props.filterPosition).toBe('side');
+    expect(catalog.props.columns).toBe(2);
+    expect(catalog.props.cards).toBe(12);
+    expect(catalog.props.padding).toEqual({ top: 120, bottom: 120 });
+  });
+
+  it('v11 already (no-op idempotent for Catalog defaults — merchant edits preserved)', () => {
+    const v11Data = {
+      _vanillaHomeMigrationVersion: 11,
+      home: { content: [] },
+      'page-catalog': {
+        content: [{ type: 'Catalog', props: { columns: 5 } }], // merchant set columns=5
+      },
+    };
+    const result = migrateVanillaHomePage(v11Data, 'vanilla');
+    expect(result._vanillaHomeMigrationVersion).toBe(11);
+    // Merchant edit preserved — no override (also no-op since already on v11)
+    const pageCatalog = result['page-catalog'] as {
+      content: Array<{ props: Record<string, unknown> }>;
+    };
+    expect(pageCatalog.content[0].props.columns).toBe(5);
+  });
+
+  it('v10 → v11 preserves merchant Catalog props (only fills undefined)', () => {
+    const v10Data = {
+      _vanillaHomeMigrationVersion: 10,
+      home: { content: [] },
+      'page-catalog': {
+        content: [
+          {
+            type: 'Catalog',
+            props: { columns: 4, cardCaptionStyle: 'default' }, // merchant set 2 props
+          },
+        ],
+      },
+    };
+    const result = migrateVanillaHomePage(v10Data, 'vanilla');
+    const pageCatalog = result['page-catalog'] as {
+      content: Array<{ props: Record<string, unknown> }>;
+    };
+    // Merchant edits preserved
+    expect(pageCatalog.content[0].props.columns).toBe(4);
+    expect(pageCatalog.content[0].props.cardCaptionStyle).toBe('default');
+    // Other vanilla defaults baked
+    expect(pageCatalog.content[0].props.gridAspect).toBe('1:1');
+    expect(pageCatalog.content[0].props.colorScheme).toBe('scheme-3');
+    expect(pageCatalog.content[0].props.filterPosition).toBe('side');
+  });
+
+  it('v10 → v11 also bakes Catalog defaults in page-collection content', () => {
+    const v10Data = {
+      _vanillaHomeMigrationVersion: 10,
+      home: { content: [] },
+      'page-collection': {
+        content: [
+          { type: 'Header', props: {} },
+          { type: 'Catalog', props: {} },
+          { type: 'Footer', props: {} },
+        ],
+      },
+    };
+    const result = migrateVanillaHomePage(v10Data, 'vanilla');
+    expect(result._vanillaHomeMigrationVersion).toBe(11);
+    const pageCollection = result['page-collection'] as {
+      content: Array<{ type: string; props: Record<string, unknown> }>;
+    };
+    const catalog = pageCollection.content[1];
+    expect(catalog.props.gridAspect).toBe('1:1');
+    expect(catalog.props.cardCaptionStyle).toBe('uppercase');
+    expect(catalog.props.colorScheme).toBe('scheme-3');
+    expect(catalog.props.filterPosition).toBe('side');
+    expect(catalog.props.columns).toBe(2);
+    expect(catalog.props.cards).toBe(12);
+    expect(catalog.props.padding).toEqual({ top: 120, bottom: 120 });
   });
 });

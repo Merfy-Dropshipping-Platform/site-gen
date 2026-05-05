@@ -1181,10 +1181,15 @@ async function stageGenerate(
 
   // Pages with full static implementations in theme templates — never overwrite with Puck stubs.
   // catalog: rich theme-specific template with filters/sort/pagination — keep static.
+  // collections/preview: page-collection is a TEMPLATE (substituted per-collection at
+  //   render time via /c/[slug]). Don't write it as a static page — its slug
+  //   `/collections/preview` would land at src/pages/collections/preview.astro
+  //   with a broken `../layouts/BaseLayout.astro` import (needs `../../layouts/`).
   const STATIC_TEMPLATE_PAGES = new Set([
     "cart", "catalog", "checkout", "checkout/result",
     "login", "register", "reset-password", "verify-email",
     "account", "account/orders", "account/order", "account/profile", "account/newsletter",
+    "collections/preview",
   ]);
 
   if (Array.isArray(revPages) && revPages.length > 0 && revPagesData) {

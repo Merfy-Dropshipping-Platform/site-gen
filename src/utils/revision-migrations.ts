@@ -527,7 +527,7 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
  * Для не-vanilla тем home.content остаётся нетронутым. Применяется
  * только когда themeId явно передан.
  */
-export const VANILLA_HOME_MIGRATION_VERSION = 6;
+export const VANILLA_HOME_MIGRATION_VERSION = 7;
 
 export function migrateVanillaHomePage(
   pagesData: Record<string, unknown>,
@@ -700,8 +700,14 @@ export function migrateVanillaHomePage(
         position: 'contained',
         padded: true,
         align: 'container',
-        colorScheme: 'scheme-3',
-        padding: { top: 0, bottom: 80 },
+        // 084 Stage 2 Task 7 (v7): scheme-1 = brand-dark `#26311c`
+        // (rgb 38 49 28) bg per Figma 1:18989. Pre-v7 used scheme-3
+        // (light `#eee`) which inverted the design — Video must sit on
+        // the same deep olive band as PromoBanner.
+        colorScheme: 'scheme-1',
+        // 084 Stage 2 Task 7 (v7): 120px y-padding per Figma 1:18989.
+        // Pre-v7 was {top:0, bottom:80} (top padding missing entirely).
+        padding: { top: 120, bottom: 120 },
       } as Record<string, unknown>,
     },
     {

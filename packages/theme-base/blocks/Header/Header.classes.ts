@@ -16,7 +16,11 @@ export const HeaderClasses = {
     none: 'relative z-50',
   },
   container: 'mx-auto max-w-[var(--container-max-width)] px-4 flex items-center',
-  header: 'w-full flex items-center border-b border-[rgb(var(--color-text))]/15',
+  // 084 vanilla pilot — when theme defines `--size-header-h` (vanilla =
+  // 80px per Figma 1:18957) the inner header gets a hard height clamp,
+  // overflowing padding visually so the box stays exactly N pixels tall.
+  // Pre-084 themes don't set the token → `h-auto` → original behaviour.
+  header: 'w-full flex items-center border-b border-[rgb(var(--color-text))]/15 h-[var(--size-header-h,auto)]',
   nav: 'w-full max-w-[var(--container-max-width,1320px)] mx-auto px-4 md:px-6 flex items-center relative',
   navJustified: 'justify-between',
   hamburger:

@@ -72,6 +72,9 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   // pre-084 themes keep their existing behaviour. Vanilla theme.json
   // sets it explicitly to `58 69 48` for the Figma-spec olive band.
   '--color-header-bg': '',
+  // 084 vanilla pilot — Header total height (empty = auto). Vanilla
+  // theme.json sets it to `80px` per Figma 1:18957.
+  '--size-header-h': '',
 
   // Variants
   '--button-style': 'solid',

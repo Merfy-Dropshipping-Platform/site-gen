@@ -70,6 +70,12 @@ export const TOKEN_REGISTRY = {
   '--size-logo-width':         { category: 'size', unit: 'px', scope: 'theme' },
   '--size-card-border':        { category: 'size', unit: 'px', scope: 'theme', min: 0, max: 4 },
   '--promo-banner-h-thin':     { category: 'size', unit: 'px', scope: 'theme', min: 0, max: 200 },
+  /**
+   * 084 vanilla pilot — additive theme-scope token. Header total height
+   * (e.g. vanilla = 80px per Figma 1:18957). Pre-084 themes don't set
+   * it so Header.classes.ts falls through to `auto` height.
+   */
+  '--size-header-h':           { category: 'size', unit: 'px', scope: 'theme', min: 0, max: 240 },
 
   // Theme-scope colors (used by universal blocks across themes)
   '--color-bottom-strip-bg':   { category: 'color', scope: 'theme' },

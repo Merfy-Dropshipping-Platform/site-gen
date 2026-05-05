@@ -89,6 +89,10 @@ export function buildTokensCss(
     themeDefaults['--color-header-bg']
       ? `\n  --color-header-bg: ${themeDefaults['--color-header-bg']};`
       : ''
+  }${
+    themeDefaults['--size-header-h']
+      ? `\n  --size-header-h: ${themeDefaults['--size-header-h']};`
+      : ''
   }
   --size-nav-link: ${merchantFirst(navLinkSize, navLinkSizeSet, themeDefaults['--size-nav-link'], '14px')};
   --size-section-heading: ${themeDefaults['--size-section-heading'] ?? '20px'};

@@ -43,7 +43,8 @@
     "--color-bottom-strip-bg": "0 0 0",
     "--color-bottom-strip-text": "255 255 255",
     "--promo-banner-h-thin": "56px",
-    "--color-header-bg": "58 69 48"
+    "--color-header-bg": "58 69 48",
+    "--size-header-h": "80px"
   },
 
   "blockDefaults": {

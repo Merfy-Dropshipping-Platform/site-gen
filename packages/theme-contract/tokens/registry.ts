@@ -62,6 +62,14 @@ export const TOKEN_REGISTRY = {
   '--spacing-section-y':       { category: 'spacing', unit: 'px', scope: 'theme', min: 0, max: 160 },
   '--spacing-grid-col-gap':    { category: 'spacing', unit: 'px', scope: 'theme' },
   '--spacing-grid-row-gap':    { category: 'spacing', unit: 'px', scope: 'theme' },
+  /**
+   * 084 Stage 3 catalog — additive theme-scope tokens. Sidebar width and
+   * grid row gap for the Catalog page. Pre-084 themes don't set them so
+   * Catalog falls through to base-defaults (260px / 32px). Vanilla
+   * theme.json overrides to 294px / 40px per Figma.
+   */
+  '--catalog-sidebar-w':       { category: 'size',    unit: 'px', scope: 'theme', min: 200, max: 400 },
+  '--catalog-grid-row-gap':    { category: 'spacing', unit: 'px', scope: 'theme' },
 
   // Sizes
   '--container-max-width':     { category: 'size', unit: 'px', scope: 'theme' },

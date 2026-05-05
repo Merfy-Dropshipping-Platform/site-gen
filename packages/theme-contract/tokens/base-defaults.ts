@@ -55,6 +55,9 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   '--spacing-section-y': '80px',
   '--spacing-grid-col-gap': '16px',
   '--spacing-grid-row-gap': '40px',
+  // 084 Stage 3 catalog — pre-084 defaults; vanilla overrides to 294px/40px.
+  '--catalog-sidebar-w': '260px',
+  '--catalog-grid-row-gap': '32px',
 
   // Sizes
   '--container-max-width': '1320px',

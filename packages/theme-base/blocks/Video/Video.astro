@@ -157,7 +157,6 @@ const video = parseVideo(videoUrl);
             class={C.video}
             src={video.embedUrl}
             poster={poster}
-            controls
             preload="metadata"
             playsinline
             data-media-video
@@ -186,7 +185,7 @@ const video = parseVideo(videoUrl);
                 if (!v || !btn) return;
                 const hide = () => { btn.style.opacity = '0'; btn.style.pointerEvents = 'none'; };
                 const show = () => { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; };
-                btn.addEventListener('click', (e) => { e.preventDefault(); v.play().catch(() => {}); });
+                btn.addEventListener('click', (e) => { e.preventDefault(); v.setAttribute('controls', ''); v.play().catch(() => {}); });
                 v.addEventListener('play', hide);
                 v.addEventListener('pause', show);
                 v.addEventListener('ended', show);

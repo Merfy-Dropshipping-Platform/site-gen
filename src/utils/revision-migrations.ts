@@ -527,7 +527,7 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
  * Для не-vanilla тем home.content остаётся нетронутым. Применяется
  * только когда themeId явно передан.
  */
-export const VANILLA_HOME_MIGRATION_VERSION = 8;
+export const VANILLA_HOME_MIGRATION_VERSION = 9;
 
 export function migrateVanillaHomePage(
   pagesData: Record<string, unknown>,
@@ -739,16 +739,20 @@ export function migrateVanillaHomePage(
       type: 'PopularProducts',
       props: {
         id: `PopularProducts-${ts + 7}`,
-        heading: { text: 'Популярные товары', size: 'medium' },
-        cards: 4,
-        columns: 4,
+        heading: { text: 'Популярные товары', size: 'medium', alignment: 'left' },
+        // 084 Stage 2 Task 9 (v9): Figma 1:18999 — 3-col × 2-row grid (6 cards),
+        // 120px y-padding, heading left-aligned. Pre-v9 had cards:4/columns:4
+        // (1-row only) and padding 80/80 (too tight).
+        cards: 6,
+        columns: 3,
         collection: 'mebel',
         cardCaptionStyle: 'uppercase',
         swatchOverlay: true,
+        headingAlignment: 'left',
         quickAdd: false,
         quickAddText: 'В КОРЗИНУ',
         colorScheme: 'scheme-3',
-        padding: { top: 80, bottom: 80 },
+        padding: { top: 120, bottom: 120 },
       } as Record<string, unknown>,
     },
     {

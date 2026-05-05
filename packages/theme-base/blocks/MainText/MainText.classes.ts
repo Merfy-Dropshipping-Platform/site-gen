@@ -27,8 +27,16 @@ export const MainTextClasses = {
    */
   buttonStyle: {
     solid: '',
+    /**
+     * Outlined CTA: transparent bg, 1.3px border, text colour follows the
+     * surrounding scheme `--color-text` (heading/body colour) — NOT the
+     * filled-button text colour, which for dark schemes inverts to the
+     * scheme bg (e.g. scheme-2 has button-text=#3a4530 to read on the
+     * white filled button). For outlined we sit on the section bg, so we
+     * want the same colour as the heading/body.
+     */
     outlined:
-      '!bg-transparent border-[1.3px] border-current text-[rgb(var(--color-button-text))]',
+      '!bg-transparent !border-[1.3px] !border-[rgb(var(--color-text))] !text-[rgb(var(--color-text))]',
   },
   /**
    * 084 vanilla pilot Stage 2 Task 6 — additive `textStyle` variant.

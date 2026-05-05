@@ -277,24 +277,21 @@ describe('migrateVanillaHomePage (084 — Stage 2 v10)', () => {
     expect(catalog.props.padding).toEqual({ top: 120, bottom: 120 });
   });
 
-  it('v11 already (no-op idempotent for Catalog defaults — merchant edits preserved)', () => {
+  it('v11 already (no-op idempotent — merchant edits at v11+ preserved)', () => {
     const v11Data = {
       _vanillaHomeMigrationVersion: 11,
       home: { content: [] },
-      'page-catalog': {
-        content: [{ type: 'Catalog', props: { columns: 5 } }], // merchant set columns=5
-      },
+      'page-catalog': { content: [{ type: 'Catalog', props: { columns: 5, colorScheme: 'scheme-1' } }] },
     };
     const result = migrateVanillaHomePage(v11Data, 'vanilla');
     expect(result._vanillaHomeMigrationVersion).toBe(11);
-    // Merchant edit preserved — no override (also no-op since already on v11)
-    const pageCatalog = result['page-catalog'] as {
-      content: Array<{ props: Record<string, unknown> }>;
-    };
+    // Merchant v11+ edits preserved (early-return, no overwrites)
+    const pageCatalog = result['page-catalog'] as { content: Array<{ props: Record<string, unknown> }> };
     expect(pageCatalog.content[0].props.columns).toBe(5);
+    expect(pageCatalog.content[0].props.colorScheme).toBe('scheme-1');
   });
 
-  it('v10 → v11 preserves merchant Catalog props (only fills undefined)', () => {
+  it('v10 → v11 (force-override) replaces all Catalog props with vanilla defaults', () => {
     const v10Data = {
       _vanillaHomeMigrationVersion: 10,
       home: { content: [] },
@@ -302,22 +299,50 @@ describe('migrateVanillaHomePage (084 — Stage 2 v10)', () => {
         content: [
           {
             type: 'Catalog',
-            props: { columns: 4, cardCaptionStyle: 'default' }, // merchant set 2 props
+            props: { columns: 4, cardCaptionStyle: 'default', colorScheme: 'scheme-1' },
           },
         ],
       },
     };
     const result = migrateVanillaHomePage(v10Data, 'vanilla');
-    const pageCatalog = result['page-catalog'] as {
-      content: Array<{ props: Record<string, unknown> }>;
-    };
-    // Merchant edits preserved
-    expect(pageCatalog.content[0].props.columns).toBe(4);
-    expect(pageCatalog.content[0].props.cardCaptionStyle).toBe('default');
-    // Other vanilla defaults baked
-    expect(pageCatalog.content[0].props.gridAspect).toBe('1:1');
+    const pageCatalog = result['page-catalog'] as { content: Array<{ props: Record<string, unknown> }> };
+    // All 9 props now match vanilla defaults — pre-edit values overwritten
+    expect(pageCatalog.content[0].props.columns).toBe(2);
+    expect(pageCatalog.content[0].props.cardCaptionStyle).toBe('uppercase');
     expect(pageCatalog.content[0].props.colorScheme).toBe('scheme-3');
-    expect(pageCatalog.content[0].props.filterPosition).toBe('side');
+    expect(pageCatalog.content[0].props.gridAspect).toBe('1:1');
+  });
+
+  it('v10 → v11 force-overrides migrateCatalogPage all-themes seed (scheme-2/columns:3/padding:80) with vanilla', () => {
+    const pilotShape = {
+      _vanillaHomeMigrationVersion: 10,
+      home: { content: [] },
+      'page-catalog': {
+        content: [
+          {
+            type: 'Catalog',
+            props: {
+              id: 'Catalog-test',
+              cards: 12,
+              columns: 3,
+              padding: { top: 80, bottom: 80 },
+              showSort: 'true',
+              showFilter: 'true',
+              colorScheme: 'scheme-2',
+              filterPosition: 'side',
+            },
+          },
+        ],
+      },
+    };
+    const result = migrateVanillaHomePage(pilotShape, 'vanilla');
+    const catalog = (result['page-catalog'] as { content: Array<{ props: Record<string, unknown> }> }).content[0];
+    expect(catalog.props.columns).toBe(2);
+    expect(catalog.props.colorScheme).toBe('scheme-3');
+    expect(catalog.props.padding).toEqual({ top: 120, bottom: 120 });
+    expect(catalog.props.gridAspect).toBe('1:1');
+    expect(catalog.props.cardCaptionStyle).toBe('uppercase');
+    expect(catalog.props.id).toBe('Catalog-test'); // id preserved (not in VANILLA_CATALOG_DEFAULTS)
   });
 
   it('v10 → v11 also bakes Catalog defaults in page-collection content', () => {

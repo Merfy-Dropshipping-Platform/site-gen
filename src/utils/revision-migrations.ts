@@ -532,8 +532,16 @@ export const VANILLA_HOME_MIGRATION_VERSION = 11;
 /**
  * 084 Stage 3 Task 6 (v11): vanilla-specific Catalog blockDefaults baked
  * onto Catalog blocks living in `page-catalog.content` and
- * `page-collection.content`. Applied only where prop is undefined —
- * preserves merchant edits.
+ * `page-collection.content`.
+ *
+ * When `force=true` (used during the v10 → v11 transition), all 9 props
+ * are overwritten unconditionally — interpreted as a destructive restyle
+ * because `migrateCatalogPage` runs first in the orchestrator and pre-seeds
+ * page-catalog with all-themes defaults (scheme-2/columns:3/padding:80),
+ * which are Figma-incorrect for vanilla. Idempotent at v11+ (early return
+ * in `migrateVanillaHomePage`) preserves any post-v11 merchant edits.
+ *
+ * When `force=false` (default), only undefined props get filled.
  */
 const VANILLA_CATALOG_DEFAULTS: Record<string, unknown> = {
   filterPosition: 'side',
@@ -547,12 +555,12 @@ const VANILLA_CATALOG_DEFAULTS: Record<string, unknown> = {
   padding: { top: 120, bottom: 120 },
 };
 
-function applyVanillaCatalogDefaults(block: Block): Block {
+function applyVanillaCatalogDefaults(block: Block, force: boolean = false): Block {
   if (!block || block.type !== 'Catalog') return block;
   const props = (block.props ?? {}) as Record<string, unknown>;
   const merged: Record<string, unknown> = { ...props };
   for (const [key, value] of Object.entries(VANILLA_CATALOG_DEFAULTS)) {
-    if (merged[key] === undefined) {
+    if (force || merged[key] === undefined) {
       merged[key] = value;
     }
   }
@@ -854,18 +862,22 @@ export function migrateVanillaHomePage(
   const baseExisting: PageData = existing && typeof existing === 'object' ? existing : { content: [] };
 
   // 084 Stage 3 Task 6 (v11): bake vanilla Catalog defaults onto Catalog blocks
-  // in page-catalog and page-collection. Only fills undefined props — preserves
-  // merchant edits.
+  // in page-catalog and page-collection. Force-override (force=true) replaces
+  // pre-existing values unconditionally because we only reach this branch when
+  // currentVersion < VANILLA_HOME_MIGRATION_VERSION — the v10 → v11 transition
+  // is interpreted as a destructive restyle to overwrite migrateCatalogPage's
+  // all-themes seed (scheme-2/columns:3/padding:80). At v11+ the early return
+  // above preserves merchant edits.
   const pageCatalogRaw = pagesData['page-catalog'] as PageData | undefined;
   const updatedPageCatalog =
     pageCatalogRaw && Array.isArray(pageCatalogRaw.content)
-      ? { ...pageCatalogRaw, content: pageCatalogRaw.content.map(applyVanillaCatalogDefaults) }
+      ? { ...pageCatalogRaw, content: pageCatalogRaw.content.map((b) => applyVanillaCatalogDefaults(b, true)) }
       : pageCatalogRaw;
 
   const pageCollectionRaw = pagesData['page-collection'] as PageData | undefined;
   const updatedPageCollection =
     pageCollectionRaw && Array.isArray(pageCollectionRaw.content)
-      ? { ...pageCollectionRaw, content: pageCollectionRaw.content.map(applyVanillaCatalogDefaults) }
+      ? { ...pageCollectionRaw, content: pageCollectionRaw.content.map((b) => applyVanillaCatalogDefaults(b, true)) }
       : pageCollectionRaw;
 
   return {

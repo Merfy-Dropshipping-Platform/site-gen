@@ -4,8 +4,12 @@
 // all field names must remain present or Header.astro will crash with
 // "Cannot read properties of undefined (reading '<field>')" at render time.
 export const HeaderClasses = {
-  root: 'relative w-full z-40 bg-[rgb(var(--color-bg))]',
-  wrapper: 'w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
+  // 084 vanilla pilot — Header background pulls from `--color-header-bg`
+  // when the theme defines it (vanilla = `58 69 48` per Figma 1:18957),
+  // otherwise falls back to the active scheme's `--color-bg`. Pre-084
+  // themes don't set the override token so behaviour is unchanged.
+  root: 'relative w-full z-40 bg-[rgb(var(--color-header-bg,var(--color-bg)))]',
+  wrapper: 'w-full bg-[rgb(var(--color-header-bg,var(--color-bg)))] text-[rgb(var(--color-text))]',
   sticky: {
     'scroll-up': 'sticky top-0 z-50 transition-transform duration-300',
     always: 'sticky top-0 z-50',

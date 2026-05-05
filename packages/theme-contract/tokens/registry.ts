@@ -74,6 +74,14 @@ export const TOKEN_REGISTRY = {
   // Theme-scope colors (used by universal blocks across themes)
   '--color-bottom-strip-bg':   { category: 'color', scope: 'theme' },
   '--color-bottom-strip-text': { category: 'color', scope: 'theme' },
+  /**
+   * 084 vanilla pilot — additive theme-scope token. Header surface colour.
+   * Pre-084 themes don't set it, so Header.classes.ts falls back to
+   * `--color-bg` (active scheme bg). Vanilla overrides to `58 69 48`
+   * (#3a4530) so the header sits as a distinct band above the promo
+   * banner (#26311c) — matches Figma 1:18957.
+   */
+  '--color-header-bg':         { category: 'color', scope: 'theme' },
 
   // Layout variants (enumerated string tokens)
   '--button-style':            { category: 'variant', values: ['outline', 'solid'], scope: 'theme' },

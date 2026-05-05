@@ -42,7 +42,8 @@
     "--color-error": "255 148 148",
     "--color-bottom-strip-bg": "0 0 0",
     "--color-bottom-strip-text": "255 255 255",
-    "--promo-banner-h-thin": "56px"
+    "--promo-banner-h-thin": "56px",
+    "--color-header-bg": "58 69 48"
   },
 
   "blockDefaults": {
@@ -53,7 +54,8 @@
     },
     "Header": {
       "logoPosition": "center-absolute",
-      "activeLinkIndicator": "underline"
+      "activeLinkIndicator": "underline",
+      "padding": { "top": 32, "bottom": 32 }
     },
     "Hero": {
       "mode": "carousel",

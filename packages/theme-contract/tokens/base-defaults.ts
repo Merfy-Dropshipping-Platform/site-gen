@@ -67,6 +67,11 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   // Theme-scope colors (used by universal blocks)
   '--color-bottom-strip-bg': '0 0 0',
   '--color-bottom-strip-text': '255 255 255',
+  // 084 vanilla pilot — Header surface colour. Empty triplet means
+  // "no override" — Header.classes.ts falls back to `--color-bg` so
+  // pre-084 themes keep their existing behaviour. Vanilla theme.json
+  // sets it explicitly to `58 69 48` for the Figma-spec olive band.
+  '--color-header-bg': '',
 
   // Variants
   '--button-style': 'solid',

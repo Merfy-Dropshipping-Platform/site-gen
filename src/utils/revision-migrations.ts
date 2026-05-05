@@ -527,7 +527,7 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
  * Для не-vanilla тем home.content остаётся нетронутым. Применяется
  * только когда themeId явно передан.
  */
-export const VANILLA_HOME_MIGRATION_VERSION = 9;
+export const VANILLA_HOME_MIGRATION_VERSION = 10;
 
 export function migrateVanillaHomePage(
   pagesData: Record<string, unknown>,
@@ -759,13 +759,21 @@ export function migrateVanillaHomePage(
       type: 'Newsletter',
       props: {
         id: `Newsletter-${ts + 8}`,
-        heading: { text: 'Подпишитесь на рассылку', size: 'medium' },
-        description: 'Получайте новости и специальные предложения раз в месяц.',
-        placeholder: 'email@example.ru',
-        buttonText: 'Подписаться',
+        heading: { text: 'Будьте в курсе уютных новостей', size: 'medium', alignment: 'left' },
+        text: {
+          content:
+            'Станьте частью сообщества Vanila. Вас ждут свежие идеи для уюта, анонсы новинок, полезные советы по уходу за текстилем и специальные промокоды для подписчиков.',
+          size: 'small',
+        },
+        description:
+          'Станьте частью сообщества Vanila. Вас ждут свежие идеи для уюта, анонсы новинок, полезные советы по уходу за текстилем и специальные промокоды для подписчиков.',
+        placeholder: 'E-mail',
+        buttonText: 'Отправить',
         formLayout: 'inline-submit',
-        colorScheme: 'scheme-1',
-        padding: { top: 80, bottom: 80 },
+        position: 'left',
+        alignment: 'left',
+        colorScheme: 'scheme-2',
+        padding: { top: 120, bottom: 120 },
       } as Record<string, unknown>,
     },
     {

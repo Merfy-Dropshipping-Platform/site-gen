@@ -13,12 +13,33 @@ export const NewsletterClasses = {
     'mx-auto max-w-[var(--size-newsletter-form-w,420px)]',
   heading:
     '[font-family:var(--font-heading)] text-[14px] leading-[16px] tracking-[0.05em] uppercase text-[rgb(var(--color-heading))] mb-2',
+  /**
+   * Inline-submit heading (vanilla parity, Figma 1:19021):
+   * Bitter Italic 20px white, NOT uppercase, no tracking, no margin
+   * (gap-8 on inner wrapper handles spacing).
+   */
+  headingInline:
+    '[font-family:var(--font-heading)] italic font-normal text-[20px] leading-tight text-[rgb(var(--color-heading))] whitespace-nowrap normal-case tracking-normal',
   description:
     '[font-family:var(--font-body)] text-[12px] leading-[15px] text-[rgb(var(--color-text))]/60 mb-5',
+  /**
+   * Inline-submit description (vanilla parity): Arsenal Italic 16px
+   * #f0f0f0 (text token in scheme-2 = white, but use --color-text /90
+   * for slight off-white parity).
+   */
+  descriptionInline:
+    '[font-family:var(--font-body)] italic text-[16px] leading-snug text-[rgb(var(--color-text))]/95',
   form:
     'relative flex items-center w-full border-b border-[rgb(var(--color-text))]/30',
   input:
     'flex-1 h-10 bg-transparent border-0 outline-none pr-10 text-[14px] [font-family:var(--font-body)] text-[rgb(var(--color-text))] placeholder:text-[rgb(var(--color-text))]/40',
+  /**
+   * Inline-submit input (vanilla parity, Figma 1:19021):
+   * transparent bg, Arsenal Regular 16px, placeholder #f0f0f0
+   * (text/95 in scheme-2). No border (the form wrapper has it).
+   */
+  inputInline:
+    'flex-1 h-full bg-transparent border-0 outline-none [font-family:var(--font-body)] text-[16px] text-[rgb(var(--color-text))] placeholder:text-[rgb(var(--color-text))]/95',
   button:
     'absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-[rgb(var(--color-heading))] hover:opacity-70 transition-opacity',
   /**
@@ -30,7 +51,7 @@ export const NewsletterClasses = {
    */
   formWrapper: {
     'inline-submit':
-      'relative flex items-center justify-between w-full max-w-[652px] h-14 pl-4 pr-3 border border-[rgb(var(--color-text))]',
+      'relative flex items-center justify-between w-full max-w-[652px] h-14 pl-4 pr-3 border border-solid border-[rgb(var(--color-text))]',
     stacked: 'flex flex-col items-stretch gap-3 w-full',
   },
   /**
@@ -39,7 +60,7 @@ export const NewsletterClasses = {
    * legible in any colour scheme.
    */
   buttonInline:
-    'inline-flex items-center justify-center h-8 px-2 [font-family:var(--font-body)] text-[12px] uppercase bg-[rgb(var(--color-bg))] text-[rgb(var(--color-heading))] hover:opacity-80 transition-opacity',
+    'inline-flex items-center justify-center h-8 px-2 py-[10px] [font-family:var(--font-body)] text-[12px] uppercase bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] hover:opacity-80 transition-opacity',
   buttonStacked:
     'inline-flex items-center justify-center h-12 px-6 rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[14px] font-medium uppercase tracking-wide bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] border border-[rgb(var(--color-button-border))] hover:opacity-90 transition-opacity',
 } as const;

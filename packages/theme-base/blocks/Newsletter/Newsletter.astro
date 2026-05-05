@@ -90,6 +90,17 @@ const submitButtonClass =
     ? ((C as Record<string, unknown>).buttonInline as string)
     : C.button; // legacy absolute icon
 
+// 084 vanilla pilot — inline-submit-specific typography overrides.
+const headingClass = formLayoutProp === 'inline-submit'
+  ? ((C as Record<string, unknown>).headingInline as string)
+  : C.heading;
+const descriptionClass = formLayoutProp === 'inline-submit'
+  ? ((C as Record<string, unknown>).descriptionInline as string)
+  : C.description;
+const inputClass = formLayoutProp === 'inline-submit'
+  ? ((C as Record<string, unknown>).inputInline as string)
+  : C.input;
+
 const positionClass =
   position === 'left' ? 'text-left items-start' :
   position === 'right' ? 'text-right items-end' :
@@ -109,13 +120,13 @@ const innerOverrideClass =
   <div class={C.container}>
     <div class:list={[C.inner, positionClass, innerOverrideClass]}>
       {heading && (
-        <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{heading}</h2>
+        <h2 class:list={[headingClass, formLayoutProp === 'inline-submit' ? '' : headingAlignClass, formLayoutProp === 'inline-submit' ? '' : headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{heading}</h2>
       )}
       {description && (
-        <p class:list={[C.description, textSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{description}</p>
+        <p class:list={[descriptionClass, formLayoutProp === 'inline-submit' ? '' : textSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{description}</p>
       )}
       <form class={formClass} method="POST" action="/api/newsletter/subscribe" data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="form" data-form-layout={formLayoutProp}>
-        <input type="email" name="email" placeholder={placeholder} required class={C.input} />
+        <input type="email" name="email" placeholder={placeholder} required class={inputClass} />
         <button type="submit" class={submitButtonClass} aria-label={buttonText}>
           {formLayoutProp === 'legacy' ? (
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">

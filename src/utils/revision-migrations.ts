@@ -527,7 +527,7 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
  * Для не-vanilla тем home.content остаётся нетронутым. Применяется
  * только когда themeId явно передан.
  */
-export const VANILLA_HOME_MIGRATION_VERSION = 3;
+export const VANILLA_HOME_MIGRATION_VERSION = 4;
 
 export function migrateVanillaHomePage(
   pagesData: Record<string, unknown>,
@@ -574,7 +574,9 @@ export function migrateVanillaHomePage(
         ],
         actionButtons: { showSearch: true, showCart: true, showProfile: true },
         colorScheme: 'scheme-1',
-        padding: { top: 16, bottom: 16 },
+        // 084 Stage 2 Task 4 (v4): 32px y-padding to hit Figma 1:18957 80px
+        // header height. Pre-v4 seeded 16px (= 73px live, 7px short).
+        padding: { top: 32, bottom: 32 },
       } as Record<string, unknown>,
     },
     {

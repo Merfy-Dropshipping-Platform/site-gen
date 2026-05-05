@@ -41,7 +41,7 @@ describe('migrateVanillaHomePage (084 — T025 v2)', () => {
 
   it('migrateVanillaHomePage and version constant are exported', () => {
     expect(typeof migrateVanillaHomePage).toBe('function');
-    expect(VANILLA_HOME_MIGRATION_VERSION).toBe(3);
+    expect(VANILLA_HOME_MIGRATION_VERSION).toBe(4);
   });
 
   it('seeds 10 vanilla home blocks when themeId=vanilla + empty home + version flag set', () => {

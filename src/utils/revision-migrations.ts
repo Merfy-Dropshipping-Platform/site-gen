@@ -527,7 +527,7 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
  * Для не-vanilla тем home.content остаётся нетронутым. Применяется
  * только когда themeId явно передан.
  */
-export const VANILLA_HOME_MIGRATION_VERSION = 4;
+export const VANILLA_HOME_MIGRATION_VERSION = 5;
 
 export function migrateVanillaHomePage(
   pagesData: Record<string, unknown>,
@@ -634,7 +634,9 @@ export function migrateVanillaHomePage(
         heading: 'Коллекции',
         subtitle: 'Мебель и декор для уютного дома',
         headingSize: 'medium',
-        titleAlignment: 'center',
+        // 084 Stage 2 Task 5 (v5): titleAlignment=left per Figma 1:18973
+        // (items-start). Pre-v5 was 'center'.
+        titleAlignment: 'left',
         imageView: 'square',
         gridAspect: '1:1',
         cardCaptionStyle: 'uppercase',
@@ -658,7 +660,9 @@ export function migrateVanillaHomePage(
         columns: 2,
         cardLinkBase: '/c/',
         colorScheme: 'scheme-3',
-        padding: { top: 80, bottom: 80 },
+        // 084 Stage 2 Task 5 (v5): 120px y-padding per Figma 1:18973.
+        // Pre-v5 was 80px (40px short of Figma).
+        padding: { top: 120, bottom: 120 },
       } as Record<string, unknown>,
     },
     {

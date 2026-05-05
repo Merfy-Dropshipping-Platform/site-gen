@@ -152,14 +152,48 @@ const video = parseVideo(videoUrl);
         ></iframe>
       )}
       {video.kind === 'file' && video.embedUrl && (
-        <video
-          class={C.video}
-          src={video.embedUrl}
-          poster={poster}
-          controls
-          preload="metadata"
-          data-media-video
-        ></video>
+        <>
+          <video
+            class={C.video}
+            src={video.embedUrl}
+            poster={poster}
+            controls
+            preload="metadata"
+            playsinline
+            data-media-video
+          ></video>
+          {/* 084 vanilla pilot: 44×44 white play overlay centered absolutely
+              per Figma 1:18989. Native browser play indicator sits bottom-
+              center which looked like "broken arc / spinner" off-center.
+              Overlay shows when paused, hides on play. Click triggers play. */}
+          <button
+            type="button"
+            class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-white pointer-events-auto z-10 transition-opacity"
+            aria-label="Воспроизвести видео"
+            data-media-play-overlay
+          >
+            <svg width="44" height="44" viewBox="0 0 44 44" fill="none" aria-hidden="true">
+              <circle cx="22" cy="22" r="21" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M18 14L30 22L18 30Z" fill="currentColor"/>
+            </svg>
+          </button>
+          <script is:inline>
+            (() => {
+              const wraps = document.querySelectorAll('[data-media-target]');
+              wraps.forEach((wrap) => {
+                const v = wrap.querySelector('video[data-media-video]');
+                const btn = wrap.querySelector('[data-media-play-overlay]');
+                if (!v || !btn) return;
+                const hide = () => { btn.style.opacity = '0'; btn.style.pointerEvents = 'none'; };
+                const show = () => { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; };
+                btn.addEventListener('click', (e) => { e.preventDefault(); v.play().catch(() => {}); });
+                v.addEventListener('play', hide);
+                v.addEventListener('pause', show);
+                v.addEventListener('ended', show);
+              });
+            })();
+          </script>
+        </>
       )}
       {!video.embedUrl && (
         <div class={C.placeholder} aria-hidden="true" data-media-placeholder>

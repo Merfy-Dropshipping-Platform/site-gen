@@ -1,25 +1,36 @@
 import * as RevisionMigrations from '../revision-migrations';
 
 /**
- * 084 vanilla pilot — T025 v2.
+ * 084 vanilla pilot — Stage 2 Task 13 (v10).
  *
  * `migrateVanillaHomePage(pagesData, themeId)` — version-based seed
  * migration. Pins the contract:
  *   1. With themeId='vanilla' and missing/empty `home.content` →
- *      seeds the canonical 10-block home array, third block === Slideshow,
- *      sets `_vanillaHomeMigrationVersion = 2`.
+ *      seeds the canonical 10-block home array, third block === Hero
+ *      (carousel mode), sets
+ *      `_vanillaHomeMigrationVersion = VANILLA_HOME_MIGRATION_VERSION`.
  *   2. Each seeded block carries vanilla-specific props baked in
  *      (logoPosition='center-absolute', buttonStyle='outlined',
  *      formLayout='inline-submit', swatchOverlay=true,
- *      bottomStrip.enabled=true, etc.) so the merchant sees the variants
- *      in the constructor without depending on render-time blockDefaults.
- *   3. Existing pre-v2 seed (e.g. with Hero #3 and no version flag) →
- *      auto-upgraded to v2 (Slideshow + baked props).
- *   4. Already on v2 → idempotent no-op.
+ *      bottomStrip.enabled=true, scheme assignments per Figma, 120px
+ *      y-padding on body blocks per Figma vanilla `1:18954`, etc.) so
+ *      the merchant sees the variants in the constructor without
+ *      depending on render-time blockDefaults.
+ *   3. Existing pre-v10 seeds (e.g. v0 legacy, v2 with Slideshow #3, or
+ *      any version < 10) → auto-upgraded to v10.
+ *   4. Already on v10 → idempotent no-op.
  *   5. With themeId='rose' (or other non-vanilla) → home.content is
  *      left untouched.
+ *
+ * Stage 2 versions bumped through 4..10 (Tasks 4-10 each +1):
+ *   v4 Header padding 32/32 → v5 Collections titleAlignment=left+pad 120
+ *   → v6 MainText scheme-2 + cta + italic + pad 120
+ *   → v7 Video scheme-1 + pad 120
+ *   → v8 ImageWithText scheme-2 + pad 120 + italic
+ *   → v9 PopularProducts cards=6/cols=3 + pad 120 + heading left
+ *   → v10 Newsletter scheme-2 + inline-submit + alignment=left + pad 120.
  */
-describe('migrateVanillaHomePage (084 — T025 v2)', () => {
+describe('migrateVanillaHomePage (084 — Stage 2 v10)', () => {
   const { migrateVanillaHomePage, VANILLA_HOME_MIGRATION_VERSION } =
     RevisionMigrations;
 
@@ -41,7 +52,7 @@ describe('migrateVanillaHomePage (084 — T025 v2)', () => {
 
   it('migrateVanillaHomePage and version constant are exported', () => {
     expect(typeof migrateVanillaHomePage).toBe('function');
-    expect(VANILLA_HOME_MIGRATION_VERSION).toBe(4);
+    expect(VANILLA_HOME_MIGRATION_VERSION).toBe(10);
   });
 
   it('seeds 10 vanilla home blocks when themeId=vanilla + empty home + version flag set', () => {
@@ -51,16 +62,16 @@ describe('migrateVanillaHomePage (084 — T025 v2)', () => {
     const types = home.content.map((b) => b.type);
     expect(types).toEqual(expectedSequence);
     expect(types[2]).toBe('Hero');
-    expect(out._vanillaHomeMigrationVersion).toBe(3);
+    expect(out._vanillaHomeMigrationVersion).toBe(10);
   });
 
-  it('upgrades existing pre-v3 seed (legacy Hero in slot #3, no version flag) to v3 (Hero+carousel)', () => {
+  it('upgrades existing pre-v10 seed (legacy Hero in slot #3, no version flag) to v10 (Hero+carousel)', () => {
     const pagesData = {
       home: {
         content: [
           { type: 'PromoBanner', props: {} },
           { type: 'Header', props: {} },
-          { type: 'Hero', props: {} }, // legacy seed — must be replaced with v3 Hero+carousel
+          { type: 'Hero', props: {} }, // legacy seed — replaced with v10 Hero+carousel
           { type: 'Footer', props: {} },
         ],
       },
@@ -70,13 +81,13 @@ describe('migrateVanillaHomePage (084 — T025 v2)', () => {
     expect(home.content.map((b) => b.type)).toEqual(expectedSequence);
     expect(home.content[2].type).toBe('Hero');
     expect((home.content[2].props as Record<string, unknown>).mode).toBe('carousel');
-    expect(out._vanillaHomeMigrationVersion).toBe(3);
+    expect(out._vanillaHomeMigrationVersion).toBe(10);
   });
 
-  it('is no-op when already on current version (v3)', () => {
+  it('is no-op when already on current version (v10)', () => {
     const home = { content: [{ type: 'Hero', props: { id: 'kept', mode: 'carousel' } }] };
     const pagesData = {
-      _vanillaHomeMigrationVersion: 3,
+      _vanillaHomeMigrationVersion: 10,
       home,
     };
     const out = migrateVanillaHomePage(pagesData, 'vanilla');
@@ -84,7 +95,7 @@ describe('migrateVanillaHomePage (084 — T025 v2)', () => {
     expect((out as { home: Home }).home).toBe(home);
   });
 
-  it('v2 (Slideshow at #2) auto-upgrades to v3 (Hero+carousel)', () => {
+  it('v2 (Slideshow at #2) auto-upgrades to v10 (Hero+carousel)', () => {
     const v2Data = {
       pagesData: {
         _vanillaHomeMigrationVersion: 2,
@@ -106,7 +117,7 @@ describe('migrateVanillaHomePage (084 — T025 v2)', () => {
     };
     const result = RevisionMigrations.migrateRevisionData(v2Data, 'vanilla');
     const pagesData = result.pagesData as Record<string, unknown>;
-    expect(pagesData._vanillaHomeMigrationVersion).toBe(3);
+    expect(pagesData._vanillaHomeMigrationVersion).toBe(10);
     const home = pagesData.home as Home;
     expect(home.content[2].type).toBe('Hero');
     expect((home.content[2].props as Record<string, unknown>).mode).toBe('carousel');
@@ -114,16 +125,16 @@ describe('migrateVanillaHomePage (084 — T025 v2)', () => {
     expect(((home.content[2].props as Record<string, unknown>).slides as unknown[]).length).toBeGreaterThanOrEqual(3);
   });
 
-  it('v3 already (no-op idempotent)', () => {
-    const v3Data = {
+  it('v10 already (no-op idempotent)', () => {
+    const v10Data = {
       pagesData: {
-        _vanillaHomeMigrationVersion: 3,
+        _vanillaHomeMigrationVersion: 10,
         home: { content: [{ type: 'Hero', props: { mode: 'carousel', slides: [] } }] },
       },
     };
-    const result = RevisionMigrations.migrateRevisionData(v3Data, 'vanilla');
+    const result = RevisionMigrations.migrateRevisionData(v10Data, 'vanilla');
     const pagesData = result.pagesData as Record<string, unknown>;
-    expect(pagesData._vanillaHomeMigrationVersion).toBe(3);
+    expect(pagesData._vanillaHomeMigrationVersion).toBe(10);
     const home = pagesData.home as Home;
     expect(home.content.length).toBe(1);
   });
@@ -151,15 +162,19 @@ describe('migrateVanillaHomePage (084 — T025 v2)', () => {
     >;
     const blocks = (out.home as Home).content;
 
+    // PromoBanner
     const promoBanner = blocks[0].props as Record<string, unknown>;
     expect(promoBanner.size).toBe('thin');
     expect(promoBanner.textTransform).toBe('uppercase');
     expect(promoBanner.colorScheme).toBe('scheme-1');
 
+    // Header — v4 (Stage 2 Task 4): 32/32 padding for 80px Figma height
     const header = blocks[1].props as Record<string, unknown>;
     expect(header.logoPosition).toBe('center-absolute');
     expect(header.activeLinkIndicator).toBe('underline');
+    expect(header.padding).toEqual({ top: 32, bottom: 32 });
 
+    // Hero — Stage 1 carousel
     const hero = blocks[2].props as Record<string, unknown>;
     expect(hero.mode).toBe('carousel');
     expect(hero.contentAlign).toBe('left');
@@ -168,31 +183,56 @@ describe('migrateVanillaHomePage (084 — T025 v2)', () => {
     expect(Array.isArray(hero.slides)).toBe(true);
     expect((hero.slides as unknown[]).length).toBe(3);
 
+    // Collections — v5 (Stage 2 Task 5): titleAlignment=left + pad 120
     const collections = blocks[3].props as Record<string, unknown>;
     expect(collections.gridAspect).toBe('1:1');
     expect(collections.cardCaptionStyle).toBe('uppercase');
     expect(collections.dataSource).toBe('manual');
+    expect(collections.titleAlignment).toBe('left');
+    expect(collections.padding).toEqual({ top: 120, bottom: 120 });
     const collArr = collections.collections as Array<{ collectionId: string }>;
     expect(collArr.map((c) => c.collectionId)).toEqual(['mebel', 'dekor']);
 
+    // MainText — v6 (Stage 2 Task 6): scheme-2 + outlined + italic + pad 120
     const mainText = blocks[4].props as Record<string, unknown>;
     expect(mainText.buttonStyle).toBe('outlined');
+    expect(mainText.colorScheme).toBe('scheme-2');
+    expect(mainText.textStyle).toBe('italic');
+    expect(mainText.padding).toEqual({ top: 120, bottom: 120 });
+    expect(mainText.cta).toMatchObject({ text: 'К покупкам', href: '/catalog' });
 
+    // Video — v7 (Stage 2 Task 7): scheme-1 + pad 120
     const video = blocks[5].props as Record<string, unknown>;
     expect(video.padded).toBe(true);
+    expect(video.colorScheme).toBe('scheme-1');
+    expect(video.padding).toEqual({ top: 120, bottom: 120 });
 
+    // ImageWithText — v8 (Stage 2 Task 8): scheme-2 + italic + pad 120
     const iwt = blocks[6].props as Record<string, unknown>;
     expect(iwt.imagePosition).toBe('right');
     expect(iwt.ctaPosition).toBe('bottom-pinned');
+    expect(iwt.colorScheme).toBe('scheme-2');
+    expect(iwt.textStyle).toBe('italic');
+    expect(iwt.padding).toEqual({ top: 120, bottom: 120 });
 
+    // PopularProducts — v9 (Stage 2 Task 9): 3×2 grid + pad 120
     const popular = blocks[7].props as Record<string, unknown>;
     expect(popular.swatchOverlay).toBe(true);
     expect(popular.cardCaptionStyle).toBe('uppercase');
     expect(popular.collection).toBe('mebel');
+    expect(popular.cards).toBe(6);
+    expect(popular.columns).toBe(3);
+    expect(popular.colorScheme).toBe('scheme-3');
+    expect(popular.padding).toEqual({ top: 120, bottom: 120 });
 
+    // Newsletter — v10 (Stage 2 Task 10): scheme-2 + inline-submit + left + pad 120
     const newsletter = blocks[8].props as Record<string, unknown>;
     expect(newsletter.formLayout).toBe('inline-submit');
+    expect(newsletter.colorScheme).toBe('scheme-2');
+    expect(newsletter.alignment).toBe('left');
+    expect(newsletter.padding).toEqual({ top: 120, bottom: 120 });
 
+    // Footer
     const footer = blocks[9].props as Record<string, unknown>;
     expect(footer.variant).toBe('2-part-asymmetric');
     expect(footer.bottomStrip).toMatchObject({

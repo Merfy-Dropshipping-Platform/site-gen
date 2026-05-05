@@ -31,6 +31,13 @@ export const ImageWithTextSchema = z.object({
    * aligns with the bottom edge of the image (Vanilla home parity).
    */
   ctaPosition: z.enum(['inline', 'bottom-pinned']).optional(),
+  /**
+   * 084 vanilla pilot Stage 2 Task 8 — additive variant. Controls italic
+   * vs normal styling of heading + body. `normal` (default) preserves
+   * pre-084 styling. `italic` applies italic to both (vanilla Figma
+   * 1:18992 demands Bitter Italic + Arsenal Italic).
+   */
+  textStyle: z.enum(['normal', 'italic']).optional(),
   // Pupa parity.
   size: z.enum(['small', 'medium', 'large']).optional(),
   width: z.enum(['small', 'medium', 'large', 'full']).optional(),
@@ -111,6 +118,14 @@ export const ImageWithTextPuckConfig: BlockPuckConfig<ImageWithTextProps> = {
       options: [
         { label: 'Inline', value: 'inline' },
         { label: 'Внизу колонки', value: 'bottom-pinned' },
+      ],
+    },
+    textStyle: {
+      type: 'radio',
+      label: 'Стиль текста',
+      options: [
+        { label: 'Обычный', value: 'normal' },
+        { label: 'Курсив', value: 'italic' },
       ],
     },
     size: {

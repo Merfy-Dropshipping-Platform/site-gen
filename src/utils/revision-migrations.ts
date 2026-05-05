@@ -527,7 +527,7 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
  * Для не-vanilla тем home.content остаётся нетронутым. Применяется
  * только когда themeId явно передан.
  */
-export const VANILLA_HOME_MIGRATION_VERSION = 7;
+export const VANILLA_HOME_MIGRATION_VERSION = 8;
 
 export function migrateVanillaHomePage(
   pagesData: Record<string, unknown>,
@@ -724,8 +724,15 @@ export function migrateVanillaHomePage(
         button: { text: 'Смотреть мебель', link: '/c/mebel' },
         imagePosition: 'right',
         ctaPosition: 'bottom-pinned',
-        colorScheme: 'scheme-3',
-        padding: { top: 80, bottom: 80 },
+        textStyle: 'italic',
+        // 084 Stage 2 Task 8 (v8): scheme-2 = mid-olive `#3a4530`
+        // (rgb 58 69 48) bg per Figma 1:18992 with white text + outlined
+        // white CTA. Pre-v8 used scheme-3 (light `#eee`) which inverted
+        // the design — block must sit on dark olive band.
+        colorScheme: 'scheme-2',
+        // 084 Stage 2 Task 8 (v8): 120px y-padding per Figma 1:18992.
+        // Pre-v8 was 80/80 — too compact.
+        padding: { top: 120, bottom: 120 },
       } as Record<string, unknown>,
     },
     {

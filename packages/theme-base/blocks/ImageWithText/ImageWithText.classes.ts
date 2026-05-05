@@ -21,7 +21,7 @@ export const ImageWithTextClasses = {
     '[font-family:var(--font-heading)] text-[length:var(--size-section-heading,1.25rem)] font-normal leading-[1.2] text-[rgb(var(--color-heading))] mb-3',
   text: '[font-family:var(--font-body)] text-[16px] font-normal leading-[1.25] text-[rgb(var(--color-text))] mb-6',
   button:
-    'inline-flex items-center justify-center h-[48px] px-4 text-[16px] font-normal uppercase no-underline hover:opacity-90 transition-colors [font-family:var(--font-body)] self-start border border-[rgb(var(--color-foreground,0,0,0))] rounded-[var(--radius-button)] bg-transparent text-[rgb(var(--color-heading))]',
+    'inline-flex items-center justify-center h-[48px] px-4 text-[16px] font-normal uppercase no-underline hover:opacity-90 transition-colors [font-family:var(--font-body)] self-start border-[1.3px] border-solid border-[rgb(var(--color-heading))] rounded-[var(--radius-button)] bg-transparent text-[rgb(var(--color-heading))]',
   /**
    * 084 vanilla pilot — additive `ctaPosition` variant. Default `inline`
    * preserves pre-084 button positioning. `bottom-pinned` pushes the
@@ -38,5 +38,15 @@ export const ImageWithTextClasses = {
   textColFlex: {
     inline: '',
     'bottom-pinned': 'flex flex-col h-full',
+  },
+  /**
+   * 084 vanilla pilot Stage 2 Task 8 — additive `textStyle` variant.
+   * `normal` (default) preserves pre-084 styling. `italic` applies italic
+   * to the heading + body pair (vanilla home Figma 1:18992 demands
+   * Bitter Italic + Arsenal Italic).
+   */
+  textStyle: {
+    normal: '',
+    italic: 'italic',
   },
 } as const;

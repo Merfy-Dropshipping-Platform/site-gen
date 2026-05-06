@@ -340,3 +340,80 @@ const blocks = rawContent.map((b) => ({ ...b, props: substituteVars(b.props ?? {
 </BaseLayout>
 `;
 }
+
+/**
+ * Generate /catalog.astro for vanilla theme — Puck-driven landing page
+ * showing all products (no collection scope). Replaces the deleted
+ * templates/astro/vanilla/src/pages/catalog.astro which used CatalogIsland.tsx.
+ *
+ * Reads page-catalog content from revision data (data.json) and walks
+ * blocks via theme registry. NO collection scoping — Catalog block
+ * runs unscoped (inline-script fetches all products).
+ *
+ * 086 Stage 4 architectural refactor:
+ * - Single static route (no getStaticPaths)
+ * - Page content from pagesData['page-catalog'].content (Puck JSON)
+ * - All blocks rendered via theme-base components
+ * - NO hardcoded layout values — конструктор ≡ live invariant.
+ *
+ * Layout import path uses `../layouts/` (one level up from
+ * src/pages/catalog.astro → src/layouts/).
+ */
+export function generateVanillaCatalogPage(_config: DynamicPageConfig): string {
+  return `---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import data from '../data/data.json';
+
+import Header from '../components/Header.astro';
+import Hero from '../components/Hero.astro';
+import Catalog from '../components/Catalog.astro';
+import Footer from '../components/Footer.astro';
+import PromoBanner from '../components/PromoBanner.astro';
+import Newsletter from '../components/Newsletter.astro';
+import Collections from '../components/Collections.astro';
+import PopularProducts from '../components/PopularProducts.astro';
+import MainText from '../components/MainText.astro';
+import Video from '../components/Video.astro';
+import ImageWithText from '../components/ImageWithText.astro';
+import Gallery from '../components/Gallery.astro';
+import ContactForm from '../components/ContactForm.astro';
+import CollapsibleSection from '../components/CollapsibleSection.astro';
+import MultiColumns from '../components/MultiColumns.astro';
+import MultiRows from '../components/MultiRows.astro';
+import Slideshow from '../components/Slideshow.astro';
+import Publications from '../components/Publications.astro';
+import Product from '../components/Product.astro';
+
+const allPagesData = ((data as any)?.pagesData ?? {}) as Record<string, { content?: any[]; root?: any }>;
+const pageData = allPagesData['page-catalog'] ?? { content: [] };
+const blocks = (pageData.content ?? []) as Array<{ type: string; props: Record<string, any> }>;
+
+const rootProps = (pageData as any)?.root?.props ?? {};
+const pageTitle = (typeof rootProps.title === 'string' && rootProps.title) || 'Каталог';
+---
+<BaseLayout title={pageTitle}>
+  {blocks.map((block) => {
+    if (block.type === 'Header') return <Header {...block.props} />;
+    if (block.type === 'Hero') return <Hero {...block.props} />;
+    if (block.type === 'Catalog') return <Catalog {...block.props} />;
+    if (block.type === 'Footer') return <Footer {...block.props} />;
+    if (block.type === 'PromoBanner') return <PromoBanner {...block.props} />;
+    if (block.type === 'Newsletter') return <Newsletter {...block.props} />;
+    if (block.type === 'Collections') return <Collections {...block.props} />;
+    if (block.type === 'PopularProducts') return <PopularProducts {...block.props} />;
+    if (block.type === 'MainText') return <MainText {...block.props} />;
+    if (block.type === 'Video') return <Video {...block.props} />;
+    if (block.type === 'ImageWithText') return <ImageWithText {...block.props} />;
+    if (block.type === 'Gallery') return <Gallery {...block.props} />;
+    if (block.type === 'ContactForm') return <ContactForm {...block.props} />;
+    if (block.type === 'CollapsibleSection') return <CollapsibleSection {...block.props} />;
+    if (block.type === 'MultiColumns') return <MultiColumns {...block.props} />;
+    if (block.type === 'MultiRows') return <MultiRows {...block.props} />;
+    if (block.type === 'Slideshow') return <Slideshow {...block.props} />;
+    if (block.type === 'Publications') return <Publications {...block.props} />;
+    if (block.type === 'Product') return <Product {...block.props} />;
+    return null;
+  })}
+</BaseLayout>
+`;
+}

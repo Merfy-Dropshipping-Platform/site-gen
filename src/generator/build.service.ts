@@ -1201,16 +1201,8 @@ async function stageGenerate(
       const slug = (page.slug || "/").replace(/^\/+/, "");
       const fileName = slug === "" ? "index.astro" : `${slug}.astro`;
 
-      // Skip pages that have full static template implementations in the theme.
-      // 086 Stage 4 — vanilla theme is full Astro-only after Spec 086:
-      // pages/catalog.astro deleted, must be Puck-walked here. Other themes
-      // (rose/satin/bloom/flux) still ship static catalog.astro template
-      // (uses CatalogIsland.tsx) and skip Puck-walking.
-      const skipStatic =
-        ctx.templateId &&
-        ctx.templateId !== "default" &&
-        ctx.templateId !== "vanilla";
-      if (skipStatic && STATIC_TEMPLATE_PAGES.has(slug)) {
+      // Skip pages that have full static template implementations in the theme
+      if (ctx.templateId && ctx.templateId !== "default" && STATIC_TEMPLATE_PAGES.has(slug)) {
         logger.log(`[generate] Skipping static template page: ${fileName} (theme: ${ctx.templateId})`);
         continue;
       }

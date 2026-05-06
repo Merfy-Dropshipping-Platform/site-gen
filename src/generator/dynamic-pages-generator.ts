@@ -358,3 +358,107 @@ ${closeLayout}`.trim();
 
   return `---\n${frontmatter}\n---\n${template}\n`;
 }
+
+/**
+ * Generate /catalog.astro for vanilla theme — Puck-driven landing page
+ * showing all products (no collection scope). Replaces the deleted
+ * templates/astro/vanilla/src/pages/catalog.astro which used CatalogIsland.tsx.
+ *
+ * Layout import path uses `../layouts/` (one level up from src/pages/catalog.astro
+ * → src/layouts/). NOTE: this differs from generateVanillaCollectionsSlugPage
+ * which is at src/pages/collections/[slug].astro (two levels deep) and uses
+ * `../../layouts/`.
+ *
+ * 086 Stage 4 — final vanilla full Astro-only invariant per spec 084 §2.2.
+ * Renders Header → Hero → Catalog (unscoped, cards=24) → Footer with vanilla
+ * blockDefaults baked. Catalog block uses inline-script hydration (Stage 3
+ * commit 9ea67ca + Spec 085) for client-side filter/sort/pagination.
+ */
+export function generateVanillaCatalogPage(config: DynamicPageConfig): string {
+  const { layoutImport, layoutTag } = config;
+  const imports: string[] = [];
+  if (layoutImport && layoutTag) {
+    imports.push(`import ${layoutTag} from '${layoutImport}';`);
+  }
+  imports.push(`import Header from '../components/Header.astro';`);
+  imports.push(`import Hero from '../components/Hero.astro';`);
+  imports.push(`import Catalog from '../components/Catalog.astro';`);
+  imports.push(`import Footer from '../components/Footer.astro';`);
+
+  const frontmatter = `${imports.join("\n")}`;
+
+  const openLayout = layoutTag ? `<${layoutTag} title="Каталог">` : "";
+  const closeLayout = layoutTag ? `</${layoutTag}>` : "";
+
+  const template = `${openLayout}
+  <Header
+    siteTitle="Vanilla Pilot"
+    logoPosition="center-absolute"
+    activeLinkIndicator="underline"
+    stickiness="scroll-up"
+    menuType="dropdown"
+    navigationLinks={[
+      { label: 'Каталог', href: '/catalog' },
+      { label: 'Мебель', href: '/collections/mebel' },
+      { label: 'Декор', href: '/collections/dekor' },
+    ]}
+    actionButtons={{ showSearch: true, showCart: true, showProfile: true }}
+    colorScheme="scheme-1"
+    padding={{ top: 32, bottom: 32 }}
+  />
+  <Hero
+    mode="single"
+    size="medium"
+    alignment="left"
+    contentAlign="left"
+    imageFullBleed={true}
+    buttonStyle="solid"
+    container="false"
+    padding={{ top: 0, bottom: 0 }}
+    title="Каталог"
+    subtitle="Все товары"
+    image={{ url: '', alt: '' }}
+    cta={{ text: '', href: '' }}
+  />
+  <Catalog
+    cards={24}
+    columns={2}
+    showFilter="true"
+    showSort="true"
+    filterPosition="side"
+    colorScheme="scheme-3"
+    gridAspect="1:1"
+    cardCaptionStyle="uppercase"
+    padding={{ top: 120, bottom: 120 }}
+  />
+  <Footer
+    siteTitle="Vanilla Pilot"
+    variant="2-part-asymmetric"
+    bottomStrip={{ enabled: true, text: '© 2026 Vanilla Theme. Powered by Merfy' }}
+    copyright={{ companyName: 'Vanilla Pilot', showYear: true }}
+    newsletter={{ enabled: false, heading: '', description: '', placeholder: '' }}
+    heading={{ text: '', size: 'medium', alignment: 'left' }}
+    text={{ content: '', size: 'small' }}
+    navigationColumn={{
+      title: 'Магазин',
+      links: [
+        { label: 'Каталог', href: '/catalog' },
+        { label: 'Мебель', href: '/collections/mebel' },
+        { label: 'Декор', href: '/collections/dekor' },
+      ],
+    }}
+    informationColumn={{
+      title: 'Информация',
+      links: [
+        { label: 'Доставка', href: '/delivery' },
+        { label: 'Контакты', href: '/contacts' },
+      ],
+    }}
+    socialColumn={{ title: 'Связь', email: '', socialLinks: [] }}
+    colorScheme="scheme-1"
+    padding={{ top: 80, bottom: 40 }}
+  />
+${closeLayout}`.trim();
+
+  return `---\n${frontmatter}\n---\n${template}\n`;
+}

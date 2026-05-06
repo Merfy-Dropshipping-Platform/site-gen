@@ -5,6 +5,13 @@ import { resolveActiveCollection } from './url-filter';
 
 interface Props extends PopularProductsProps {
   id?: string;
+  /**
+   * 088 T008 — siteId injected by build pipeline / preview controller so
+   * the inline runtime fetch script can hit `/api/sites/<siteId>/storefront-data`
+   * without depending on `window.__MERFY_CONFIG__` being available before
+   * the script runs. Mirrors Catalog.astro Stage 3 pattern.
+   */
+  siteId?: string;
 }
 
 const raw = Astro.props as Record<string, unknown>;
@@ -15,6 +22,7 @@ const {
   cards = 4,
   columns = 4,
   padding,
+  siteId,
 } = Astro.props as Props & { subtitle?: string };
 
 // 084 vanilla pilot: additive `swatchOverlay` variant. When true, each
@@ -181,6 +189,7 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
   class:list={[C.root, schemeClass]}
   data-puck-component-id={id}
   data-block="popular-products"
+  data-site-id={siteId}
   style={paddingStyle}
 >
   <div class:list={[C.container, containerSchemeClass]}>
@@ -194,7 +203,7 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
         )}
       </div>
     )}
-    <div class={C.grid} style={gridTemplateCols}>
+    <div class={C.grid} style={gridTemplateCols} data-pop-grid>
       {demo.map((p, i) => (
         <div
           class={C.card}
@@ -239,3 +248,140 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
     )}
   </div>
 </section>
+
+<script
+  is:inline
+  define:vars={{
+    siteId: siteId ?? '',
+    apiBase: 'https://gateway.merfy.ru/api',
+    cardCount: Math.max(1, Math.min(24, Number(cards) || 4)),
+    collection: collectionRef ?? null,
+    quickAdd,
+    quickAddText,
+    cardClass: (C as Record<string, string>).card,
+    cardMediaClass: (C as Record<string, string>).cardMedia,
+    cardTitleClass: (C as Record<string, string>).cardTitle,
+    cardPriceRowClass: (C as Record<string, string>).cardPriceRow,
+    cardPriceClass: (C as Record<string, string>).cardPrice,
+    cardOldPriceClass: (C as Record<string, string>).cardOldPrice,
+    cardCtaClass: (C as Record<string, string>).cardCta,
+  }}
+>
+  // 088 T008 — runtime fetch (mirror Catalog.astro Stage 3 pattern).
+  // SSG renders placeholder cards (graceful default); this script swaps the
+  // grid with real product cards in BOTH live storefront and constructor
+  // preview iframe — so конструктор ≡ live for PopularProducts.
+  (function () {
+    // Resolve effective siteId: explicit prop wins (set by build pipeline /
+    // preview controller), fall back to window.__MERFY_CONFIG__.shopId so
+    // older builds where the page template doesn't pass siteId still hydrate.
+    var effectiveSiteId = siteId
+      || (typeof window !== 'undefined' && window.__MERFY_CONFIG__ && (window.__MERFY_CONFIG__.shopId || window.__MERFY_CONFIG__.siteId))
+      || (typeof window !== 'undefined' && window.__MERFY__ && window.__MERFY__.siteId)
+      || '';
+    // Hostname fallback: <12hex>.merfy.ru → first 12 hex chars are siteId prefix.
+    if (!effectiveSiteId && typeof window !== 'undefined' && window.location) {
+      var host = window.location.hostname || '';
+      var m = host.match(/^([0-9a-f]{12})\.merfy\.ru$/i);
+      if (m) effectiveSiteId = m[1];
+    }
+    if (!effectiveSiteId) return;
+
+    // Find THIS section (in case multiple PopularProducts blocks exist on page,
+    // each script invocation targets the nearest unhydrated section).
+    var sections = document.querySelectorAll('section[data-block="popular-products"]');
+    var root = null;
+    for (var i = 0; i < sections.length; i++) {
+      if (!sections[i].hasAttribute('data-pop-hydrated')) {
+        root = sections[i];
+        break;
+      }
+    }
+    if (!root) return;
+    root.setAttribute('data-pop-hydrated', 'true');
+
+    var grid = root.querySelector('[data-pop-grid]');
+    if (!grid) return;
+
+    function escAttr(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    function fmtPrice(p) {
+      var num = typeof p === 'number' ? p : parseFloat(p);
+      if (!Number.isFinite(num)) return '';
+      var rubles = num > 1000000 ? Math.round(num / 100) : Math.round(num);
+      return rubles.toLocaleString('ru-RU') + ' ₽';
+    }
+    function getImg(p) {
+      if (Array.isArray(p.images) && p.images[0]) {
+        return typeof p.images[0] === 'string' ? p.images[0] : (p.images[0].url || '');
+      }
+      return p.image || '';
+    }
+
+    function cardHtml(p) {
+      var title = p.title || p.name || 'Товар';
+      var price = fmtPrice(p.basePrice != null ? p.basePrice : p.price);
+      var compare = p.compareAtPrice ? fmtPrice(p.compareAtPrice) : (p.oldPrice ? fmtPrice(p.oldPrice) : '');
+      var img = getImg(p);
+      var handle = p.handle || p.slug || p.id || '';
+      var href = handle ? '/product/' + encodeURIComponent(handle) : '/catalog';
+
+      var mediaInner = img
+        ? '<img src="' + escAttr(img) + '" alt="' + escAttr(title) + '" class="absolute inset-0 w-full h-full object-cover" loading="lazy" />'
+        : '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21,15 16,10 5,21" /></svg>';
+
+      var ctaHtml = quickAdd
+        ? '<a href="' + escAttr(href) + '" class="' + cardCtaClass + '">' + escAttr(quickAddText) + '</a>'
+        : '';
+
+      var oldPriceHtml = compare
+        ? '<div class="' + cardOldPriceClass + '">' + escAttr(compare) + '</div>'
+        : '';
+
+      return (
+        '<a href="' + escAttr(href) + '" class="' + cardClass + '" aria-label="' + escAttr(title) + '" style="text-decoration:none;color:inherit;">' +
+          '<div class="' + cardMediaClass + '" aria-hidden="true">' + mediaInner + '</div>' +
+          '<div class="flex flex-col gap-1 items-start w-full">' +
+            '<div class="' + cardTitleClass + '">' + escAttr(title) + '</div>' +
+            '<div class="' + cardPriceRowClass + '">' +
+              '<div class="' + cardPriceClass + '">' + escAttr(price) + '</div>' +
+              oldPriceHtml +
+            '</div>' +
+            ctaHtml +
+          '</div>' +
+        '</a>'
+      );
+    }
+
+    function applyCollectionFilter(products, collections, ref) {
+      if (!ref || !Array.isArray(collections) || collections.length === 0) return products;
+      var matched = collections.find(function (c) {
+        return c && (c.id === ref || c.name === ref || c.slug === ref || c.handle === ref || c.title === ref);
+      });
+      if (!matched || !Array.isArray(matched.productIds) || matched.productIds.length === 0) return products;
+      var idSet = new Set(matched.productIds);
+      var filtered = products.filter(function (p) { return p.id && idSet.has(p.id); });
+      return filtered.length > 0 ? filtered : products;
+    }
+
+    fetch(apiBase + '/sites/' + effectiveSiteId + '/storefront-data', { credentials: 'omit' })
+      .catch(function () { return null; })
+      .then(function (r) { return r && r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data) return;
+        var products = data.products || (data.data && data.data.products) || [];
+        var collections = data.collections || (data.data && data.data.collections) || [];
+        if (!Array.isArray(products) || products.length === 0) return;
+
+        var filtered = applyCollectionFilter(products, collections, collection);
+        var slice = filtered.slice(0, cardCount);
+        if (slice.length === 0) return;
+
+        grid.innerHTML = slice.map(cardHtml).join('');
+      })
+      .catch(function () { /* silent — placeholders stay */ });
+  })();
+</script>

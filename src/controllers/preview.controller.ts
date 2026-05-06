@@ -335,6 +335,22 @@ export class PreviewController {
             props.productId = productIdOverride;
           }
         }
+        // Video block (088 T021): inject siteId so the inline media hydrator
+        // can fetch /api/sites/<siteId>/blocks/<blockId>/media. Preview iframe
+        // doesn't load /site-meta.js, so without explicit siteId prop the
+        // hydrator returns early — placeholder stays and preview drifts from
+        // live (which has window.__MERFY__ from /site-meta.js).
+        if (b.type === 'Video') {
+          props.siteId = siteId;
+        }
+        // PopularProducts block (088 T021): same — inline runtime fetch script
+        // needs siteId to call /api/sites/<siteId>/storefront-data. Preview
+        // iframe lacks window.__MERFY__ and the hostname (gateway.merfy.ru)
+        // doesn't match the 12-hex slug fallback, so without explicit siteId
+        // the script returns early.
+        if (b.type === 'PopularProducts') {
+          props.siteId = siteId;
+        }
         return { type: b.type, props };
       });
   }

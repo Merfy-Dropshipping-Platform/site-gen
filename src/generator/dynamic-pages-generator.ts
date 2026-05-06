@@ -244,7 +244,7 @@ return Astro.redirect(\`/collections/\${slug}\`, 301);
 export function generateVanillaCollectionsSlugPage(
   config: DynamicPageConfig,
 ): string {
-  const { apiUrl, shopId, layoutImport, layoutTag } = config;
+  const { layoutImport, layoutTag } = config;
 
   const imports: string[] = [];
   if (layoutImport && layoutTag) {
@@ -254,22 +254,26 @@ export function generateVanillaCollectionsSlugPage(
   imports.push(`import Hero from '../../components/Hero.astro';`);
   imports.push(`import Catalog from '../../components/Catalog.astro';`);
   imports.push(`import Footer from '../../components/Footer.astro';`);
+  imports.unshift(`import collectionsData from '../../data/collections.json';`);
 
   const frontmatter = `${imports.join("\n")}
 
-export async function getStaticPaths() {
-  let collections = [];
-  try {
-    const res = await fetch('${apiUrl}/store/${shopId}/collections');
-    const json = await res.json();
-    collections = json.success ? (json.data ?? []) : [];
-  } catch {
-    collections = [];
+export function getStaticPaths() {
+  const cols: any[] = Array.isArray(collectionsData) ? collectionsData : [];
+  if (cols.length === 0) {
+    return [{ params: { slug: '_placeholder' }, props: { collection: null } }];
   }
-  return collections.map((c) => ({
-    params: { slug: c.slug || c.handle || c.id },
-    props: { collection: c },
-  }));
+  const paths: { params: { slug: string }; props: { collection: any } }[] = [];
+  const seen = new Set<string>();
+  for (const c of cols) {
+    for (const slug of [c.slug, c.handle, c.id].filter(Boolean) as string[]) {
+      if (seen.has(slug)) continue;
+      seen.add(slug);
+      paths.push({ params: { slug }, props: { collection: c } });
+      break;
+    }
+  }
+  return paths;
 }
 
 const { slug } = Astro.params;

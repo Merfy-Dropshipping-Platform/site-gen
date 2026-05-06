@@ -351,22 +351,27 @@ export async function buildScaffold(
 
   // 6. Generate dynamic pages
   if (config.dynamicPages) {
-    const productPage = generateProductPage({
-      ...config.dynamicPages,
-      layoutImport: config.layout?.importPath
-        ? `../../layouts/${path.basename(config.layout.importPath)}`
-        : undefined,
-      layoutTag: config.layout?.tagName,
-    });
-    const productPagePath = path.join(
-      outputDir,
-      "src",
-      "pages",
-      "product",
-      "[handle].astro",
-    );
-    await writeFile(productPagePath, productPage);
-    generatedFiles.push("src/pages/product/[handle].astro");
+    // Skip legacy generic /product/[handle] generator for vanilla — vanilla
+    // gets its own Puck-driven generator below (087 Stage 5). Without this
+    // guard the legacy file shadows the vanilla generator via fileExists().
+    if (config.themeName !== 'vanilla') {
+      const productPage = generateProductPage({
+        ...config.dynamicPages,
+        layoutImport: config.layout?.importPath
+          ? `../../layouts/${path.basename(config.layout.importPath)}`
+          : undefined,
+        layoutTag: config.layout?.tagName,
+      });
+      const productPagePath = path.join(
+        outputDir,
+        "src",
+        "pages",
+        "product",
+        "[handle].astro",
+      );
+      await writeFile(productPagePath, productPage);
+      generatedFiles.push("src/pages/product/[handle].astro");
+    }
 
     // Skip the generic [handle].astro when the theme template already ships
     // its own collections route ([slug].astro) — having both creates an Astro

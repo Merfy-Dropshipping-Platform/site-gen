@@ -38,7 +38,12 @@ const {
 const swatchOverlayProp = raw.swatchOverlay === true;
 const MAX_SWATCH_PIPS = 5;
 type SwatchEntry = { color?: string | null };
-function resolveSwatchPips(p: Record<string, unknown>): SwatchEntry[] {
+type SwatchSource = {
+  variantSwatches?: unknown;
+  variants?: unknown;
+  hasVariants?: unknown;
+};
+function resolveSwatchPips(p: SwatchSource): SwatchEntry[] {
   const fromSwatches = Array.isArray(p.variantSwatches) ? (p.variantSwatches as SwatchEntry[]) : null;
   if (fromSwatches && fromSwatches.length > 0) {
     return fromSwatches.slice(0, MAX_SWATCH_PIPS);
@@ -244,7 +249,7 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
     )}
     <div class={C.grid} style={gridTemplateCols} data-pop-grid>
       {demo.map((p, i) => {
-        const pips = swatchOverlayProp ? resolveSwatchPips(p as unknown as Record<string, unknown>) : [];
+        const pips = swatchOverlayProp ? resolveSwatchPips(p) : [];
         return (
         <div
           class={C.card}

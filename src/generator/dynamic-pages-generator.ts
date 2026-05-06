@@ -426,7 +426,7 @@ const pageTitle = (typeof rootProps.title === 'string' && rootProps.title) || 'Ð
  * Reads page-product content from revision data (data.json) + iterates
  * products.json for getStaticPaths. Catalog Walking pattern: each block
  * type rendered via theme registry components. Product block receives
- * productHandle prop for runtime scoping.
+ * productId prop for runtime scoping (Product.astro accepts slug/handle/id polymorphically via resolveProduct).
  *
  * 087 Stage 5 â€” final React island removal in vanilla.
  */
@@ -505,7 +505,7 @@ const pageTitle = (typeof rootProps.title === 'string' && rootProps.title) || pr
     if (block.type === 'MultiRows') return <MultiRows {...block.props} />;
     if (block.type === 'Slideshow') return <Slideshow {...block.props} />;
     if (block.type === 'Publications') return <Publications {...block.props} />;
-    if (block.type === 'Product') return <Product {...block.props} productHandle={handle} />;
+    if (block.type === 'Product') return <Product {...block.props} productId={handle} />;
     return null;
   })}
 </BaseLayout>

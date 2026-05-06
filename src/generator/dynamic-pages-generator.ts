@@ -225,3 +225,132 @@ const { slug } = Astro.params;
 return Astro.redirect(\`/collections/\${slug}\`, 301);
 ---`;
 }
+
+/**
+ * Generate /collections/[slug].astro for vanilla theme — Puck-driven
+ * canonical collections page. Mirrors the structure of vanilla pilot's
+ * page-collection Puck JSON (Header → Hero → Catalog → Footer) with
+ * vanilla blockDefaults baked into Catalog (per migration v11).
+ *
+ * Layout import path uses `../../layouts/` (двух levels up from
+ * src/pages/collections/[slug].astro → src/layouts/).
+ *
+ * 085 Stage 3.5 — replaces hardcoded
+ * templates/astro/vanilla/src/pages/collections/[slug].astro deleted in
+ * the same commit. Other themes (rose/satin/bloom/flux) preserve their
+ * own theme-shipped collections/[slug].astro — this function runs ONLY
+ * when scaffold-builder detects themeName === 'vanilla'.
+ */
+export function generateVanillaCollectionsSlugPage(
+  config: DynamicPageConfig,
+): string {
+  const { apiUrl, shopId, layoutImport, layoutTag } = config;
+
+  const imports: string[] = [];
+  if (layoutImport && layoutTag) {
+    imports.push(`import ${layoutTag} from '${layoutImport}';`);
+  }
+  imports.push(`import Header from '../../components/Header.astro';`);
+  imports.push(`import Hero from '../../components/Hero.astro';`);
+  imports.push(`import Catalog from '../../components/Catalog.astro';`);
+  imports.push(`import Footer from '../../components/Footer.astro';`);
+
+  const frontmatter = `${imports.join("\n")}
+
+export async function getStaticPaths() {
+  let collections = [];
+  try {
+    const res = await fetch('${apiUrl}/store/${shopId}/collections');
+    const json = await res.json();
+    collections = json.success ? (json.data ?? []) : [];
+  } catch {
+    collections = [];
+  }
+  return collections.map((c) => ({
+    params: { slug: c.slug || c.handle || c.id },
+    props: { collection: c },
+  }));
+}
+
+const { slug } = Astro.params;
+const { collection } = Astro.props;
+const collectionTitle = (collection && (collection.title || collection.name)) || 'Каталог';
+const collectionDescription = (collection && collection.description) || '';
+const collectionImage = (collection && collection.image) || '';`;
+
+  const openLayout = layoutTag ? `<${layoutTag} title={collectionTitle}>` : "";
+  const closeLayout = layoutTag ? `</${layoutTag}>` : "";
+
+  const template = `${openLayout}
+  <Header
+    siteTitle="Vanilla Pilot"
+    logoPosition="center-absolute"
+    activeLinkIndicator="underline"
+    stickiness="scroll-up"
+    menuType="dropdown"
+    navigationLinks={[
+      { label: 'Каталог', href: '/catalog' },
+      { label: 'Мебель', href: '/collections/mebel' },
+      { label: 'Декор', href: '/collections/dekor' },
+    ]}
+    actionButtons={{ showSearch: true, showCart: true, showProfile: true }}
+    colorScheme="scheme-1"
+    padding={{ top: 32, bottom: 32 }}
+  />
+  <Hero
+    mode="single"
+    size="medium"
+    alignment="left"
+    contentAlign="left"
+    imageFullBleed={true}
+    buttonStyle="solid"
+    container="false"
+    padding={{ top: 0, bottom: 0 }}
+    title={collectionTitle}
+    subtitle={collectionDescription}
+    image={{ url: collectionImage, alt: collectionTitle }}
+    cta={{ text: '', href: '' }}
+  />
+  <Catalog
+    collectionSlug={slug}
+    cards={12}
+    columns={2}
+    showFilter="true"
+    showSort="true"
+    filterPosition="side"
+    colorScheme="scheme-3"
+    gridAspect="1:1"
+    cardCaptionStyle="uppercase"
+    padding={{ top: 120, bottom: 120 }}
+  />
+  <Footer
+    siteTitle="Vanilla Pilot"
+    variant="2-part-asymmetric"
+    bottomStrip={{ enabled: true, text: '© 2026 Vanilla Theme. Powered by Merfy' }}
+    copyright={{ companyName: 'Vanilla Pilot', showYear: true }}
+    newsletter={{ enabled: false, heading: '', description: '', placeholder: '' }}
+    heading={{ text: '', size: 'medium', alignment: 'left' }}
+    text={{ content: '', size: 'small' }}
+    navigationColumn={{
+      title: 'Магазин',
+      links: [
+        { label: 'Каталог', href: '/catalog' },
+        { label: 'Мебель', href: '/collections/mebel' },
+        { label: 'Декор', href: '/collections/dekor' },
+      ],
+    }}
+    informationColumn={{
+      title: 'Информация',
+      links: [
+        { label: 'Доставка', href: '/delivery' },
+        { label: 'Контакты', href: '/contacts' },
+      ],
+    }}
+    socialColumn={{ title: 'Связь', email: '', socialLinks: [] }}
+    colorScheme="scheme-1"
+    padding={{ top: 80, bottom: 40 }}
+  />
+${closeLayout}`.trim();
+
+  return `---\n${frontmatter}\n---\n${template}\n`;
+}

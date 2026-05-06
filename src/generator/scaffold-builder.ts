@@ -29,6 +29,7 @@ import {
   generateProductPage,
   generateCollectionPage,
   generateCatalogSlugPage,
+  generateVanillaCollectionsSlugPage,
   type DynamicPageConfig,
 } from "./dynamic-pages-generator";
 import {
@@ -414,6 +415,32 @@ export async function buildScaffold(
       });
       await writeFile(catalogSlugPath, catalogPage);
       generatedFiles.push("src/pages/catalog/[slug].astro");
+    }
+
+    // 085 Stage 3.5 — vanilla theme: auto-generate /collections/[slug] page.
+    // Replaces deleted templates/astro/vanilla/src/pages/collections/[slug].astro.
+    // Only runs for vanilla theme; other themes preserve their custom shipped
+    // collections/[slug].astro via fileExists guard.
+    if (config.themeName === "vanilla") {
+      const vanillaCollectionsSlugPath = path.join(
+        outputDir,
+        "src",
+        "pages",
+        "collections",
+        "[slug].astro",
+      );
+      if (!(await fileExists(vanillaCollectionsSlugPath))) {
+        const collectionsPage = generateVanillaCollectionsSlugPage({
+          apiUrl: config.dynamicPages.apiUrl,
+          shopId: config.dynamicPages.shopId,
+          layoutImport: config.layout?.importPath
+            ? `../../layouts/${path.basename(config.layout.importPath)}`
+            : undefined,
+          layoutTag: config.layout?.tagName,
+        });
+        await writeFile(vanillaCollectionsSlugPath, collectionsPage);
+        generatedFiles.push("src/pages/collections/[slug].astro");
+      }
     }
   }
 

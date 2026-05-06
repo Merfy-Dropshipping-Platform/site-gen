@@ -25,12 +25,33 @@ const {
   siteId,
 } = Astro.props as Props & { subtitle?: string };
 
-// 084 vanilla pilot: additive `swatchOverlay` variant. When true, each
-// card renders a 3-pip swatch indicator over the image (top-right). The
-// pip palette comes from `p.variantSwatches` (first 3) when present;
-// otherwise three neutral default pips render so the indicator is
-// visible immediately on demo data.
+// 084 vanilla pilot: additive `swatchOverlay` variant. When true, cards
+// render a swatch indicator over the image **bottom-right** (per Figma
+// 1:19004). Pip count comes from `p.variantSwatches.length` (preferred,
+// each entry may carry a `color` hex) or `p.variants.length` (fallback,
+// neutral pips). Capped at 5 pips. Hidden entirely when the product has
+// no variants — i.e. demo placeholders no longer show 3 neutral pips.
+//
+// 088 G3 fix: previously rendered 3 neutral pips top-right on every card
+// regardless of variant data; per audit Phase 3 it now mirrors Figma —
+// bottom-right, real variant count, conditional render.
 const swatchOverlayProp = raw.swatchOverlay === true;
+const MAX_SWATCH_PIPS = 5;
+type SwatchEntry = { color?: string | null };
+function resolveSwatchPips(p: Record<string, unknown>): SwatchEntry[] {
+  const fromSwatches = Array.isArray(p.variantSwatches) ? (p.variantSwatches as SwatchEntry[]) : null;
+  if (fromSwatches && fromSwatches.length > 0) {
+    return fromSwatches.slice(0, MAX_SWATCH_PIPS);
+  }
+  const variants = Array.isArray(p.variants) ? (p.variants as unknown[]) : null;
+  if (variants && variants.length > 0) {
+    return variants.slice(0, MAX_SWATCH_PIPS).map(() => ({ color: null }));
+  }
+  if (p.hasVariants === true) {
+    return [{ color: null }];
+  }
+  return [];
+}
 
 // "В корзину" CTA per card. Accept flat (quickAdd) or legacy nested
 // (productCard.quickAdd) shapes; string "true"/"false" also normalised.
@@ -112,7 +133,17 @@ const colorSchemeRaw = typeof raw.colorScheme === 'string' ? raw.colorScheme : u
 const schemeClass = colorSchemeRaw ? `color-scheme-${colorSchemeRaw.replace('scheme-', '')}` : '';
 // Try import products.json (build pipeline writes scaffold dir from product service).
 // Fallback к DEMO_PRODUCTS если products.json missing/empty (seed site без real products).
-type RealProduct = { id?: string; name?: string; price?: string | number; oldPrice?: string | number; image?: string; href?: string };
+type RealProduct = {
+  id?: string;
+  name?: string;
+  price?: string | number;
+  oldPrice?: string | number;
+  image?: string;
+  href?: string;
+  hasVariants?: boolean;
+  variants?: unknown[];
+  variantSwatches?: Array<{ color?: string | null }>;
+};
 let realProducts: RealProduct[] = [];
 try {
   const productsData = await import('../data/products.json');
@@ -168,10 +199,18 @@ const productList = realProducts.length > 0
       badgeSale: '',
       image: p.image || '',
       href: p.href || '/catalog',
+      // 088 G3 fix — forward variant signals to SSG card so swatch overlay
+      // resolves real pip count from build-time products.json.
+      hasVariants: p.hasVariants ?? false,
+      variants: Array.isArray(p.variants) ? p.variants : [],
+      variantSwatches: Array.isArray(p.variantSwatches) ? p.variantSwatches : [],
     }))
   : DEMO_PRODUCTS.slice(0, Math.min(cards, DEMO_PRODUCTS.length)).map((p) => ({
       ...p,
       href: '/catalog',
+      hasVariants: false as boolean,
+      variants: [] as unknown[],
+      variantSwatches: [] as Array<{ color?: string | null }>,
     }));
 const demo = productList;
 
@@ -204,7 +243,9 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
       </div>
     )}
     <div class={C.grid} style={gridTemplateCols} data-pop-grid>
-      {demo.map((p, i) => (
+      {demo.map((p, i) => {
+        const pips = swatchOverlayProp ? resolveSwatchPips(p as unknown as Record<string, unknown>) : [];
+        return (
         <div
           class={C.card}
           aria-label="Товар"
@@ -213,11 +254,14 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
           <div class={C.cardMedia} aria-hidden="true">
             {p.badgeNew && <span class={C.cardBadgeNew}>Новинка</span>}
             {p.badgeSale && <span class={p.badgeNew ? C.cardBadgeSale : C.cardBadgeNew}>{p.badgeSale}</span>}
-            {swatchOverlayProp && (
+            {swatchOverlayProp && pips.length > 0 && (
               <span class={C.swatchOverlay.container} data-swatch-overlay aria-hidden="true">
-                <span class={C.swatchOverlay.dot}></span>
-                <span class={C.swatchOverlay.dot}></span>
-                <span class={C.swatchOverlay.dot}></span>
+                {pips.map((pip) => (
+                  <span
+                    class={C.swatchOverlay.dot}
+                    style={pip.color ? `background-color:${pip.color};` : undefined}
+                  ></span>
+                ))}
               </span>
             )}
             {p.image ? (
@@ -241,7 +285,8 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
             )}
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
     {viewAllShow && viewAllCtaClass && (
       <a href={viewAllHref} class={viewAllCtaClass}>{viewAllText}</a>
@@ -258,6 +303,7 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
     collection: collectionRef ?? null,
     quickAdd,
     quickAddText,
+    swatchOverlay: swatchOverlayProp,
     cardClass: (C as Record<string, string>).card,
     cardMediaClass: (C as Record<string, string>).cardMedia,
     cardTitleClass: (C as Record<string, string>).cardTitle,
@@ -265,6 +311,9 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
     cardPriceClass: (C as Record<string, string>).cardPrice,
     cardOldPriceClass: (C as Record<string, string>).cardOldPrice,
     cardCtaClass: (C as Record<string, string>).cardCta,
+    swatchContainerClass: C.swatchOverlay.container,
+    swatchDotClass: C.swatchOverlay.dot,
+    maxSwatchPips: MAX_SWATCH_PIPS,
   }}
 >
   // 088 T008 — runtime fetch (mirror Catalog.astro Stage 3 pattern).
@@ -321,6 +370,46 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
       return p.image || '';
     }
 
+    // 088 G3 fix — swatch pips per Figma 1:19004. Position is bottom-right
+    // (handled via CSS in classes); pip count and colors derive from real
+    // product data (`variantSwatches[]` preferred, falls back to
+    // `variants.length`). Returns empty string when product has no
+    // variants — overlay must NOT render at all on placeholder cards.
+    function resolveSwatchPipsRuntime(p) {
+      var max = typeof maxSwatchPips === 'number' ? maxSwatchPips : 5;
+      if (Array.isArray(p.variantSwatches) && p.variantSwatches.length > 0) {
+        return p.variantSwatches.slice(0, max).map(function (sw) {
+          return { color: sw && typeof sw.color === 'string' ? sw.color : null };
+        });
+      }
+      if (Array.isArray(p.variants) && p.variants.length > 0) {
+        return p.variants.slice(0, max).map(function () {
+          return { color: null };
+        });
+      }
+      if (p.hasVariants === true) {
+        return [{ color: null }];
+      }
+      return [];
+    }
+
+    function swatchOverlayHtml(p) {
+      if (!swatchOverlay) return '';
+      var pips = resolveSwatchPipsRuntime(p);
+      if (pips.length === 0) return '';
+      var dotsHtml = pips.map(function (pip) {
+        var styleAttr = pip.color
+          ? ' style="background-color:' + escAttr(pip.color) + ';"'
+          : '';
+        return '<span class="' + swatchDotClass + '"' + styleAttr + '></span>';
+      }).join('');
+      return (
+        '<span class="' + swatchContainerClass + '" data-swatch-overlay aria-hidden="true">' +
+          dotsHtml +
+        '</span>'
+      );
+    }
+
     function cardHtml(p) {
       var title = p.title || p.name || 'Товар';
       var price = fmtPrice(p.basePrice != null ? p.basePrice : p.price);
@@ -341,9 +430,11 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
         ? '<div class="' + cardOldPriceClass + '">' + escAttr(compare) + '</div>'
         : '';
 
+      var pipsHtml = swatchOverlayHtml(p);
+
       return (
         '<a href="' + escAttr(href) + '" class="' + cardClass + '" aria-label="' + escAttr(title) + '" style="text-decoration:none;color:inherit;">' +
-          '<div class="' + cardMediaClass + '" aria-hidden="true">' + mediaInner + '</div>' +
+          '<div class="' + cardMediaClass + '" aria-hidden="true">' + mediaInner + pipsHtml + '</div>' +
           '<div class="flex flex-col gap-1 items-start w-full">' +
             '<div class="' + cardTitleClass + '">' + escAttr(title) + '</div>' +
             '<div class="' + cardPriceRowClass + '">' +

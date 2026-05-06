@@ -53,8 +53,11 @@ describe('PopularProducts.swatchOverlay (additive variant)', () => {
     expect(c.swatchOverlay).toBeDefined();
     const map = c.swatchOverlay as Record<string, string>;
     expect(map.container).toMatch(/absolute/);
-    expect(map.container).toMatch(/top-/);
+    // 088 G3 fix — pips moved from top-right to bottom-right per Figma
+    // 1:19004. Position is now `bottom-3 right-3` (not `top-3 right-3`).
+    expect(map.container).toMatch(/bottom-/);
     expect(map.container).toMatch(/right-/);
+    expect(map.container).not.toMatch(/top-/);
     expect(map.dot).toBeDefined();
   });
 });

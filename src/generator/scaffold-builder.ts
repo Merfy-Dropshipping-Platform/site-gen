@@ -31,6 +31,7 @@ import {
   generateCatalogSlugPage,
   generateVanillaCollectionsSlugPage,
   generateVanillaCatalogPage,
+  generateVanillaProductPage,
   type DynamicPageConfig,
 } from "./dynamic-pages-generator";
 import {
@@ -460,6 +461,23 @@ export async function buildScaffold(
         });
         await writeFile(vanillaCatalogPath, catalogPage);
         generatedFiles.push("src/pages/catalog.astro");
+      }
+    }
+
+    // 087 Stage 5 — vanilla theme: auto-generate /product/[handle] page.
+    // Replaces deleted templates/astro/vanilla/src/pages/product/[id].astro
+    // (legacy ProductIsland.tsx React-island wrapper).
+    if (config.themeName === 'vanilla') {
+      const vanillaProductPath = path.join(
+        outputDir, "src", "pages", "product", "[handle].astro",
+      );
+      if (!(await fileExists(vanillaProductPath))) {
+        const productPage = generateVanillaProductPage({
+          apiUrl: config.dynamicPages.apiUrl,
+          shopId: config.dynamicPages.shopId,
+        });
+        await writeFile(vanillaProductPath, productPage);
+        generatedFiles.push("src/pages/product/[handle].astro");
       }
     }
 

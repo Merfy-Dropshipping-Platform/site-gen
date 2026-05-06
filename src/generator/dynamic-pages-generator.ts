@@ -227,36 +227,47 @@ return Astro.redirect(\`/collections/\${slug}\`, 301);
 }
 
 /**
- * Generate /collections/[slug].astro for vanilla theme — Puck-driven
- * canonical collections page. Mirrors the structure of vanilla pilot's
- * page-collection Puck JSON (Header → Hero → Catalog → Footer) with
- * vanilla blockDefaults baked into Catalog (per migration v11).
+ * Generate /collections/[slug].astro for vanilla theme — Puck-driven page
+ * for parameterized collection routes. Reads page-collection content from
+ * revision data (data.json) and walks blocks via theme registry. Template
+ * variables ({{COLLECTION_NAME}}, {{COLLECTION_DESCRIPTION}}, {{COLLECTION_IMAGE}})
+ * are substituted per-collection.
  *
- * Layout import path uses `../../layouts/` (двух levels up from
- * src/pages/collections/[slug].astro → src/layouts/).
+ * 085 Stage 3.5 + 086 architectural refactor:
+ * - getStaticPaths reads collections.json (build-time static, no fetch).
+ * - Page content comes from pagesData['page-collection'].content (Puck JSON).
+ * - Template variables substituted recursively in props.
+ * - Catalog block gets collectionSlug={slug} injected for runtime scoping.
  *
- * 085 Stage 3.5 — replaces hardcoded
- * templates/astro/vanilla/src/pages/collections/[slug].astro deleted in
- * the same commit. Other themes (rose/satin/bloom/flux) preserve their
- * own theme-shipped collections/[slug].astro — this function runs ONLY
- * when scaffold-builder detects themeName === 'vanilla'.
+ * NO hardcoded layout values — конструктор ≡ live for ALL blocks.
  */
 export function generateVanillaCollectionsSlugPage(
-  config: DynamicPageConfig,
+  _config: DynamicPageConfig,
 ): string {
-  const { layoutImport, layoutTag } = config;
+  return `---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import data from '../../data/data.json';
+import collectionsData from '../../data/collections.json';
 
-  const imports: string[] = [];
-  if (layoutImport && layoutTag) {
-    imports.push(`import ${layoutTag} from '${layoutImport}';`);
-  }
-  imports.push(`import Header from '../../components/Header.astro';`);
-  imports.push(`import Hero from '../../components/Hero.astro';`);
-  imports.push(`import Catalog from '../../components/Catalog.astro';`);
-  imports.push(`import Footer from '../../components/Footer.astro';`);
-  imports.unshift(`import collectionsData from '../../data/collections.json';`);
-
-  const frontmatter = `${imports.join("\n")}
+import Header from '../../components/Header.astro';
+import Hero from '../../components/Hero.astro';
+import Catalog from '../../components/Catalog.astro';
+import Footer from '../../components/Footer.astro';
+import PromoBanner from '../../components/PromoBanner.astro';
+import Newsletter from '../../components/Newsletter.astro';
+import Collections from '../../components/Collections.astro';
+import PopularProducts from '../../components/PopularProducts.astro';
+import MainText from '../../components/MainText.astro';
+import Video from '../../components/Video.astro';
+import ImageWithText from '../../components/ImageWithText.astro';
+import Gallery from '../../components/Gallery.astro';
+import ContactForm from '../../components/ContactForm.astro';
+import CollapsibleSection from '../../components/CollapsibleSection.astro';
+import MultiColumns from '../../components/MultiColumns.astro';
+import MultiRows from '../../components/MultiRows.astro';
+import Slideshow from '../../components/Slideshow.astro';
+import Publications from '../../components/Publications.astro';
+import Product from '../../components/Product.astro';
 
 export function getStaticPaths() {
   const cols: any[] = Array.isArray(collectionsData) ? collectionsData : [];
@@ -277,188 +288,55 @@ export function getStaticPaths() {
 }
 
 const { slug } = Astro.params;
-const { collection } = Astro.props;
+const { collection } = Astro.props as { collection: any };
 const collectionTitle = (collection && (collection.title || collection.name)) || 'Каталог';
 const collectionDescription = (collection && collection.description) || '';
-const collectionImage = (collection && collection.image) || '';`;
+const collectionImage = (collection && collection.image) || '';
 
-  const openLayout = layoutTag ? `<${layoutTag} title={collectionTitle}>` : "";
-  const closeLayout = layoutTag ? `</${layoutTag}>` : "";
+const allPagesData = ((data as any)?.pagesData ?? {}) as Record<string, { content?: any[] }>;
+const rawContent = (allPagesData['page-collection']?.content ?? []) as Array<{ type: string; props: Record<string, any> }>;
 
-  const template = `${openLayout}
-  <Header
-    siteTitle="Vanilla Pilot"
-    logoPosition="center-absolute"
-    activeLinkIndicator="underline"
-    stickiness="scroll-up"
-    menuType="dropdown"
-    navigationLinks={[
-      { label: 'Каталог', href: '/catalog' },
-      { label: 'Мебель', href: '/collections/mebel' },
-      { label: 'Декор', href: '/collections/dekor' },
-    ]}
-    actionButtons={{ showSearch: true, showCart: true, showProfile: true }}
-    colorScheme="scheme-1"
-    padding={{ top: 32, bottom: 32 }}
-  />
-  <Hero
-    mode="single"
-    size="medium"
-    alignment="left"
-    contentAlign="left"
-    imageFullBleed={true}
-    buttonStyle="solid"
-    container="false"
-    padding={{ top: 0, bottom: 0 }}
-    title={collectionTitle}
-    subtitle={collectionDescription}
-    image={{ url: collectionImage, alt: collectionTitle }}
-    cta={{ text: '', href: '' }}
-  />
-  <Catalog
-    collectionSlug={slug}
-    cards={12}
-    columns={2}
-    showFilter="true"
-    showSort="true"
-    filterPosition="side"
-    colorScheme="scheme-3"
-    gridAspect="1:1"
-    cardCaptionStyle="uppercase"
-    padding={{ top: 120, bottom: 120 }}
-  />
-  <Footer
-    siteTitle="Vanilla Pilot"
-    variant="2-part-asymmetric"
-    bottomStrip={{ enabled: true, text: '© 2026 Vanilla Theme. Powered by Merfy' }}
-    copyright={{ companyName: 'Vanilla Pilot', showYear: true }}
-    newsletter={{ enabled: false, heading: '', description: '', placeholder: '' }}
-    heading={{ text: '', size: 'medium', alignment: 'left' }}
-    text={{ content: '', size: 'small' }}
-    navigationColumn={{
-      title: 'Магазин',
-      links: [
-        { label: 'Каталог', href: '/catalog' },
-        { label: 'Мебель', href: '/collections/mebel' },
-        { label: 'Декор', href: '/collections/dekor' },
-      ],
-    }}
-    informationColumn={{
-      title: 'Информация',
-      links: [
-        { label: 'Доставка', href: '/delivery' },
-        { label: 'Контакты', href: '/contacts' },
-      ],
-    }}
-    socialColumn={{ title: 'Связь', email: '', socialLinks: [] }}
-    colorScheme="scheme-1"
-    padding={{ top: 80, bottom: 40 }}
-  />
-${closeLayout}`.trim();
-
-  return `---\n${frontmatter}\n---\n${template}\n`;
+function substituteVars(value: any): any {
+  if (typeof value === 'string') {
+    return value
+      .replace(/\\{\\{COLLECTION_NAME\\}\\}/g, collectionTitle)
+      .replace(/\\{\\{COLLECTION_DESCRIPTION\\}\\}/g, collectionDescription)
+      .replace(/\\{\\{COLLECTION_IMAGE\\}\\}/g, collectionImage);
+  }
+  if (Array.isArray(value)) return value.map(substituteVars);
+  if (value && typeof value === 'object') {
+    const out: any = {};
+    for (const k of Object.keys(value)) out[k] = substituteVars(value[k]);
+    return out;
+  }
+  return value;
 }
 
-/**
- * Generate /catalog.astro for vanilla theme — Puck-driven landing page
- * showing all products (no collection scope). Replaces the deleted
- * templates/astro/vanilla/src/pages/catalog.astro which used CatalogIsland.tsx.
- *
- * Layout import path uses `../layouts/` (one level up from src/pages/catalog.astro
- * → src/layouts/). NOTE: this differs from generateVanillaCollectionsSlugPage
- * which is at src/pages/collections/[slug].astro (two levels deep) and uses
- * `../../layouts/`.
- *
- * 086 Stage 4 — final vanilla full Astro-only invariant per spec 084 §2.2.
- * Renders Header → Hero → Catalog (unscoped, cards=24) → Footer with vanilla
- * blockDefaults baked. Catalog block uses inline-script hydration (Stage 3
- * commit 9ea67ca + Spec 085) for client-side filter/sort/pagination.
- */
-export function generateVanillaCatalogPage(config: DynamicPageConfig): string {
-  const { layoutImport, layoutTag } = config;
-  const imports: string[] = [];
-  if (layoutImport && layoutTag) {
-    imports.push(`import ${layoutTag} from '${layoutImport}';`);
-  }
-  imports.push(`import Header from '../components/Header.astro';`);
-  imports.push(`import Hero from '../components/Hero.astro';`);
-  imports.push(`import Catalog from '../components/Catalog.astro';`);
-  imports.push(`import Footer from '../components/Footer.astro';`);
-
-  const frontmatter = `${imports.join("\n")}`;
-
-  const openLayout = layoutTag ? `<${layoutTag} title="Каталог">` : "";
-  const closeLayout = layoutTag ? `</${layoutTag}>` : "";
-
-  const template = `${openLayout}
-  <Header
-    siteTitle="Vanilla Pilot"
-    logoPosition="center-absolute"
-    activeLinkIndicator="underline"
-    stickiness="scroll-up"
-    menuType="dropdown"
-    navigationLinks={[
-      { label: 'Каталог', href: '/catalog' },
-      { label: 'Мебель', href: '/collections/mebel' },
-      { label: 'Декор', href: '/collections/dekor' },
-    ]}
-    actionButtons={{ showSearch: true, showCart: true, showProfile: true }}
-    colorScheme="scheme-1"
-    padding={{ top: 32, bottom: 32 }}
-  />
-  <Hero
-    mode="single"
-    size="medium"
-    alignment="left"
-    contentAlign="left"
-    imageFullBleed={true}
-    buttonStyle="solid"
-    container="false"
-    padding={{ top: 0, bottom: 0 }}
-    title="Каталог"
-    subtitle="Все товары"
-    image={{ url: '', alt: '' }}
-    cta={{ text: '', href: '' }}
-  />
-  <Catalog
-    cards={24}
-    columns={2}
-    showFilter="true"
-    showSort="true"
-    filterPosition="side"
-    colorScheme="scheme-3"
-    gridAspect="1:1"
-    cardCaptionStyle="uppercase"
-    padding={{ top: 120, bottom: 120 }}
-  />
-  <Footer
-    siteTitle="Vanilla Pilot"
-    variant="2-part-asymmetric"
-    bottomStrip={{ enabled: true, text: '© 2026 Vanilla Theme. Powered by Merfy' }}
-    copyright={{ companyName: 'Vanilla Pilot', showYear: true }}
-    newsletter={{ enabled: false, heading: '', description: '', placeholder: '' }}
-    heading={{ text: '', size: 'medium', alignment: 'left' }}
-    text={{ content: '', size: 'small' }}
-    navigationColumn={{
-      title: 'Магазин',
-      links: [
-        { label: 'Каталог', href: '/catalog' },
-        { label: 'Мебель', href: '/collections/mebel' },
-        { label: 'Декор', href: '/collections/dekor' },
-      ],
-    }}
-    informationColumn={{
-      title: 'Информация',
-      links: [
-        { label: 'Доставка', href: '/delivery' },
-        { label: 'Контакты', href: '/contacts' },
-      ],
-    }}
-    socialColumn={{ title: 'Связь', email: '', socialLinks: [] }}
-    colorScheme="scheme-1"
-    padding={{ top: 80, bottom: 40 }}
-  />
-${closeLayout}`.trim();
-
-  return `---\n${frontmatter}\n---\n${template}\n`;
+const blocks = rawContent.map((b) => ({ ...b, props: substituteVars(b.props ?? {}) }));
+---
+<BaseLayout title={collectionTitle}>
+  {blocks.map((block) => {
+    if (block.type === 'Header') return <Header {...block.props} />;
+    if (block.type === 'Hero') return <Hero {...block.props} />;
+    if (block.type === 'Catalog') return <Catalog {...block.props} collectionSlug={slug} />;
+    if (block.type === 'Footer') return <Footer {...block.props} />;
+    if (block.type === 'PromoBanner') return <PromoBanner {...block.props} />;
+    if (block.type === 'Newsletter') return <Newsletter {...block.props} />;
+    if (block.type === 'Collections') return <Collections {...block.props} />;
+    if (block.type === 'PopularProducts') return <PopularProducts {...block.props} />;
+    if (block.type === 'MainText') return <MainText {...block.props} />;
+    if (block.type === 'Video') return <Video {...block.props} />;
+    if (block.type === 'ImageWithText') return <ImageWithText {...block.props} />;
+    if (block.type === 'Gallery') return <Gallery {...block.props} />;
+    if (block.type === 'ContactForm') return <ContactForm {...block.props} />;
+    if (block.type === 'CollapsibleSection') return <CollapsibleSection {...block.props} />;
+    if (block.type === 'MultiColumns') return <MultiColumns {...block.props} />;
+    if (block.type === 'MultiRows') return <MultiRows {...block.props} />;
+    if (block.type === 'Slideshow') return <Slideshow {...block.props} />;
+    if (block.type === 'Publications') return <Publications {...block.props} />;
+    if (block.type === 'Product') return <Product {...block.props} />;
+    return null;
+  })}
+</BaseLayout>
+`;
 }

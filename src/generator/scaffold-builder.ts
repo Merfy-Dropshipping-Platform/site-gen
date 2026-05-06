@@ -30,7 +30,6 @@ import {
   generateCollectionPage,
   generateCatalogSlugPage,
   generateVanillaCollectionsSlugPage,
-  generateVanillaCatalogPage,
   type DynamicPageConfig,
 } from "./dynamic-pages-generator";
 import {
@@ -444,29 +443,6 @@ export async function buildScaffold(
       }
     }
 
-    // 086 Stage 4 — vanilla theme: auto-generate /catalog landing page.
-    // Replaces deleted templates/astro/vanilla/src/pages/catalog.astro
-    // (legacy React-island wrapper). Mirror Spec 085 collections/[slug] gating.
-    if (config.themeName === "vanilla") {
-      const vanillaCatalogPath = path.join(
-        outputDir,
-        "src",
-        "pages",
-        "catalog.astro",
-      );
-      if (!(await fileExists(vanillaCatalogPath))) {
-        const catalogPage = generateVanillaCatalogPage({
-          apiUrl: config.dynamicPages.apiUrl,
-          shopId: config.dynamicPages.shopId,
-          layoutImport: config.layout?.importPath
-            ? `../layouts/${path.basename(config.layout.importPath)}`
-            : undefined,
-          layoutTag: config.layout?.tagName,
-        });
-        await writeFile(vanillaCatalogPath, catalogPage);
-        generatedFiles.push("src/pages/catalog.astro");
-      }
-    }
   }
 
   // 7. Generate override.css tokens and append to tokens.css

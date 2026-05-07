@@ -342,6 +342,117 @@ const blocks = rawContent.map((b) => ({ ...b, props: substituteVars(b.props ?? {
 }
 
 /**
+ * Generate /collections/[slug].astro for bloom theme — Puck-driven page.
+ * Mirror of generateVanillaCollectionsSlugPage. Replaces deleted
+ * templates/astro/bloom/src/pages/collections/[slug].astro.
+ *
+ * 089 Bundle 5 (US1 Sub-A): single common implementation для всех тем
+ * через package theme-base/blocks. Bloom уникальные стили — через
+ * theme.json blockDefaults (no theme-specific code).
+ *
+ * NO hardcoded layout values — конструктор ≡ live invariant.
+ */
+export function generateBloomCollectionsSlugPage(
+  _config: DynamicPageConfig,
+): string {
+  return `---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import data from '../../data/data.json';
+import collectionsData from '../../data/collections.json';
+
+import Header from '../../components/Header.astro';
+import Hero from '../../components/Hero.astro';
+import Catalog from '../../components/Catalog.astro';
+import Footer from '../../components/Footer.astro';
+import PromoBanner from '../../components/PromoBanner.astro';
+import Newsletter from '../../components/Newsletter.astro';
+import Collections from '../../components/Collections.astro';
+import PopularProducts from '../../components/PopularProducts.astro';
+import MainText from '../../components/MainText.astro';
+import Video from '../../components/Video.astro';
+import ImageWithText from '../../components/ImageWithText.astro';
+import Gallery from '../../components/Gallery.astro';
+import ContactForm from '../../components/ContactForm.astro';
+import CollapsibleSection from '../../components/CollapsibleSection.astro';
+import MultiColumns from '../../components/MultiColumns.astro';
+import MultiRows from '../../components/MultiRows.astro';
+import Slideshow from '../../components/Slideshow.astro';
+import Publications from '../../components/Publications.astro';
+import Product from '../../components/Product.astro';
+
+export function getStaticPaths() {
+  const cols: any[] = Array.isArray(collectionsData) ? collectionsData : [];
+  if (cols.length === 0) {
+    return [{ params: { slug: '_placeholder' }, props: { collection: null } }];
+  }
+  const paths: { params: { slug: string }; props: { collection: any } }[] = [];
+  const seen = new Set<string>();
+  for (const c of cols) {
+    for (const slug of [c.slug, c.handle, c.id].filter(Boolean) as string[]) {
+      if (seen.has(slug)) continue;
+      seen.add(slug);
+      paths.push({ params: { slug }, props: { collection: c } });
+      break;
+    }
+  }
+  return paths;
+}
+
+const { slug } = Astro.params;
+const { collection } = Astro.props as { collection: any };
+const collectionTitle = (collection && (collection.title || collection.name)) || 'Каталог';
+const collectionDescription = (collection && collection.description) || '';
+const collectionImage = (collection && collection.image) || '';
+
+const allPagesData = ((data as any)?.pagesData ?? {}) as Record<string, { content?: any[] }>;
+const rawContent = (allPagesData['page-collection']?.content ?? []) as Array<{ type: string; props: Record<string, any> }>;
+
+function substituteVars(value: any): any {
+  if (typeof value === 'string') {
+    return value
+      .replace(/\\{\\{COLLECTION_NAME\\}\\}/g, collectionTitle)
+      .replace(/\\{\\{COLLECTION_DESCRIPTION\\}\\}/g, collectionDescription)
+      .replace(/\\{\\{COLLECTION_IMAGE\\}\\}/g, collectionImage);
+  }
+  if (Array.isArray(value)) return value.map(substituteVars);
+  if (value && typeof value === 'object') {
+    const out: any = {};
+    for (const k of Object.keys(value)) out[k] = substituteVars(value[k]);
+    return out;
+  }
+  return value;
+}
+
+const blocks = rawContent.map((b) => ({ ...b, props: substituteVars(b.props ?? {}) }));
+---
+<BaseLayout title={collectionTitle}>
+  {blocks.map((block) => {
+    if (block.type === 'Header') return <Header {...block.props} />;
+    if (block.type === 'Hero') return <Hero {...block.props} />;
+    if (block.type === 'Catalog') return <Catalog {...block.props} collectionSlug={slug} />;
+    if (block.type === 'Footer') return <Footer {...block.props} />;
+    if (block.type === 'PromoBanner') return <PromoBanner {...block.props} />;
+    if (block.type === 'Newsletter') return <Newsletter {...block.props} />;
+    if (block.type === 'Collections') return <Collections {...block.props} />;
+    if (block.type === 'PopularProducts') return <PopularProducts {...block.props} />;
+    if (block.type === 'MainText') return <MainText {...block.props} />;
+    if (block.type === 'Video') return <Video {...block.props} />;
+    if (block.type === 'ImageWithText') return <ImageWithText {...block.props} />;
+    if (block.type === 'Gallery') return <Gallery {...block.props} />;
+    if (block.type === 'ContactForm') return <ContactForm {...block.props} />;
+    if (block.type === 'CollapsibleSection') return <CollapsibleSection {...block.props} />;
+    if (block.type === 'MultiColumns') return <MultiColumns {...block.props} />;
+    if (block.type === 'MultiRows') return <MultiRows {...block.props} />;
+    if (block.type === 'Slideshow') return <Slideshow {...block.props} />;
+    if (block.type === 'Publications') return <Publications {...block.props} />;
+    if (block.type === 'Product') return <Product {...block.props} />;
+    return null;
+  })}
+</BaseLayout>
+`;
+}
+
+/**
  * Generate /catalog.astro for vanilla theme — Puck-driven landing page
  * showing all products (no collection scope). Replaces the deleted
  * templates/astro/vanilla/src/pages/catalog.astro which used CatalogIsland.tsx.

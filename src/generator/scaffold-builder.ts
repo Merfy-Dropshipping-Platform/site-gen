@@ -32,6 +32,7 @@ import {
   generateVanillaCollectionsSlugPage,
   generateVanillaCatalogPage,
   generateVanillaProductPage,
+  generateBloomCollectionsSlugPage,
   type DynamicPageConfig,
 } from "./dynamic-pages-generator";
 import {
@@ -446,6 +447,31 @@ export async function buildScaffold(
           layoutTag: config.layout?.tagName,
         });
         await writeFile(vanillaCollectionsSlugPath, collectionsPage);
+        generatedFiles.push("src/pages/collections/[slug].astro");
+      }
+    }
+
+    // 089 Bundle 5 (US1 Sub-A) — bloom theme: auto-generate /collections/[slug] page.
+    // Replaces deleted templates/astro/bloom/src/pages/collections/[slug].astro.
+    // Mirror vanilla pattern — single common implementation через package блоки.
+    if (config.themeName === "bloom") {
+      const bloomCollectionsSlugPath = path.join(
+        outputDir,
+        "src",
+        "pages",
+        "collections",
+        "[slug].astro",
+      );
+      if (!(await fileExists(bloomCollectionsSlugPath))) {
+        const collectionsPage = generateBloomCollectionsSlugPage({
+          apiUrl: config.dynamicPages.apiUrl,
+          shopId: config.dynamicPages.shopId,
+          layoutImport: config.layout?.importPath
+            ? `../../layouts/${path.basename(config.layout.importPath)}`
+            : undefined,
+          layoutTag: config.layout?.tagName,
+        });
+        await writeFile(bloomCollectionsSlugPath, collectionsPage);
         generatedFiles.push("src/pages/collections/[slug].astro");
       }
     }

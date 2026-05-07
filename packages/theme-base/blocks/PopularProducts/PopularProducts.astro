@@ -178,18 +178,15 @@ if (collectionRef && realProducts.length > 0) {
   }
 }
 
-// Demo product illustrations per Figma `1:19785` (Platform-Constructor-Landing).
+// Demo product illustrations per Figma 1:19785 (Platform-Constructor-Landing).
 // 4 цветные курточки — placeholder-карточки для seed-сайтов без реальных товаров.
-import demoBlueUrl from './assets/demo-blue.svg?url';
-import demoYellowUrl from './assets/demo-yellow.svg?url';
-import demoRedUrl from './assets/demo-red.svg?url';
-import demoGreenUrl from './assets/demo-green.svg?url';
+import { DEMO_PRODUCT_IMAGES } from './demo-products';
 
 const DEMO_PRODUCTS = [
-  { title: 'Товар', price: '2 500 ₽', oldPrice: '', badgeNew: false, badgeSale: '', image: demoBlueUrl },
-  { title: 'Товар', price: '2 500 ₽', oldPrice: '', badgeNew: false, badgeSale: '', image: demoYellowUrl },
-  { title: 'Товар', price: '2 500 ₽', oldPrice: '', badgeNew: false, badgeSale: '', image: demoRedUrl },
-  { title: 'Товар', price: '2 500 ₽', oldPrice: '', badgeNew: false, badgeSale: '', image: demoGreenUrl },
+  { title: 'Товар', price: '2 500 ₽', oldPrice: '', badgeNew: false, badgeSale: '', image: DEMO_PRODUCT_IMAGES.blue },
+  { title: 'Товар', price: '2 500 ₽', oldPrice: '', badgeNew: false, badgeSale: '', image: DEMO_PRODUCT_IMAGES.yellow },
+  { title: 'Товар', price: '2 500 ₽', oldPrice: '', badgeNew: false, badgeSale: '', image: DEMO_PRODUCT_IMAGES.red },
+  { title: 'Товар', price: '2 500 ₽', oldPrice: '', badgeNew: false, badgeSale: '', image: DEMO_PRODUCT_IMAGES.green },
 ];
 
 const formatPrice = (v: unknown): string => {

@@ -354,10 +354,10 @@ export async function buildScaffold(
 
   // 6. Generate dynamic pages
   if (config.dynamicPages) {
-    // Skip legacy generic /product/[handle] generator for vanilla — vanilla
-    // gets its own Puck-driven generator below (087 Stage 5). Without this
-    // guard the legacy file shadows the vanilla generator via fileExists().
-    if (config.themeName !== 'vanilla') {
+    // Skip legacy generic /product/[handle] generator for vanilla AND bloom —
+    // оба theme'а имеют собственный Puck-driven generator ниже (Spec 087, 089).
+    // Без этого guard legacy file shadows theme-specific generator via fileExists().
+    if (config.themeName !== 'vanilla' && config.themeName !== 'bloom') {
       const productPage = generateProductPage({
         ...config.dynamicPages,
         layoutImport: config.layout?.importPath

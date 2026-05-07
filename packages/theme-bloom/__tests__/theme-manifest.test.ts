@@ -65,10 +65,24 @@ describe('@merfy/theme-bloom theme.json', () => {
     expect(families).toContain('Inter');
   });
 
-  it('overrides Header and Footer with rationale', () => {
-    expect(manifest.blocks.Header.override).toBeDefined();
-    expect(manifest.blocks.Header.override.path).toBe('./blocks/Header');
-    expect(manifest.blocks.Footer.override).toBeDefined();
-    expect(manifest.blocks.Footer.override.path).toBe('./blocks/Footer');
+  it('inherits Header and Footer from theme-base (Spec 089 — no overrides)', () => {
+    // Spec 089 Bundle 3 — bloom отказался от override-блоков. Header/Footer/
+    // Catalog/Hero резолвятся в `packages/theme-base/blocks/<X>` через
+    // universal variants + theme.json blockDefaults. Hero использует
+    // дополнительный `split-bloom` additive variant в base Hero.
+    expect(manifest.blocks.Header.override).toBeUndefined();
+    expect(manifest.blocks.Footer.override).toBeUndefined();
+    expect(manifest.blocks.Hero.override).toBeUndefined();
+    expect(manifest.blocks.Catalog.override).toBeUndefined();
+  });
+
+  it('configures bloom signature via theme.json blockDefaults', () => {
+    expect(manifest.blockDefaults).toBeDefined();
+    expect(manifest.blockDefaults.Hero.variant).toBe('split-bloom');
+    expect(manifest.blockDefaults.Footer.variant).toBe('2-part');
+    expect(manifest.blockDefaults.Footer.bottomStrip.enabled).toBe(true);
+    expect(manifest.blockDefaults.Catalog.showFilter).toBe('false');
+    expect(manifest.blockDefaults.Catalog.productCard.cardStyle).toBe('auto');
+    expect(manifest.blockDefaults.Catalog.productCard.quickAdd).toBe('none');
   });
 });

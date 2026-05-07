@@ -72,7 +72,9 @@ describe('Hero schema — carousel additions (T-H1)', () => {
 describe('Hero render — carousel branch (T-H1..T-H5)', () => {
   it('carousel branch renders slides with hidden class for non-first (T-H1)', () => {
     // single render must remain wrapped in `effectiveMode === 'single'`
-    expect(HERO_ASTRO).toMatch(/\{effectiveMode === 'single' && \(/);
+    // 089 bloom pilot — split-bloom variant adds an additional branch but the
+    // canonical single-mode block still starts with `effectiveMode === 'single'`.
+    expect(HERO_ASTRO).toMatch(/\{effectiveMode === 'single' && /);
     // carousel branch present and emits the slide loop
     expect(HERO_ASTRO).toMatch(/\{effectiveMode === 'carousel' && \(/);
     expect(HERO_ASTRO).toContain('data-merfy-hero-carousel');
@@ -86,8 +88,9 @@ describe('Hero render — carousel branch (T-H1..T-H5)', () => {
   it('mode=undefined falls back to single — single branch unchanged (T-H2 — rose regression)', () => {
     // effectiveMode resolution: requires both 'carousel' string AND non-empty slides
     expect(HERO_ASTRO).toMatch(/\(Astro\.props as any\)\.mode === 'carousel' && rawSlides\.length > 0/);
-    // single branch wraps the original section with data-puck-component-id
-    expect(HERO_ASTRO).toMatch(/\{effectiveMode === 'single' && \(\s*<section/);
+    // 089 bloom pilot — single branch now has variant gating (split-bloom vs others).
+    // canonical single-mode <section> still starts with `effectiveMode === 'single'`.
+    expect(HERO_ASTRO).toMatch(/\{effectiveMode === 'single' && variant !== 'split-bloom' && \(\s*<section/);
     // existing single-mode markers preserved
     expect(HERO_ASTRO).toContain('data-puck-component-id={id}');
     expect(HERO_ASTRO).toContain('variant === \'overlay\'');

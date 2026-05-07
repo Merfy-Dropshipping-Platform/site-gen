@@ -40,8 +40,71 @@
   },
 
   "blockDefaults": {
+    "PromoBanner": {
+      "size": "thin",
+      "textTransform": "uppercase",
+      "colorScheme": "scheme-1"
+    },
+    "Header": {
+      "logoPosition": "top-left",
+      "padding": { "top": 16, "bottom": 16 }
+    },
+    "Hero": {
+      "variant": "split-bloom",
+      "alignment": "left",
+      "size": "large"
+    },
+    "Slideshow": {
+      "alignment": "left",
+      "pagination": "numbers",
+      "contentAlign": "left"
+    },
+    "Collections": {
+      "cardCaptionStyle": "uppercase",
+      "gridAspect": "1:1",
+      "titleAlignment": "left"
+    },
+    "MainText": {
+      "buttonStyle": "solid",
+      "textStyle": "regular"
+    },
+    "Video": {
+      "padded": true,
+      "align": "container"
+    },
+    "ImageWithText": {
+      "imagePosition": "right",
+      "ctaPosition": "bottom-pinned"
+    },
+    "PopularProducts": {
+      "cardCaptionStyle": "uppercase",
+      "headingAlignment": "left",
+      "columns": 3
+    },
+    "Newsletter": {
+      "formLayout": "inline-submit",
+      "alignment": "left"
+    },
+    "Catalog": {
+      "filterPosition": "side",
+      "showFilter": "false",
+      "showSort": "true",
+      "columns": 3,
+      "cards": 12,
+      "gridAspect": "1:1",
+      "cardCaptionStyle": "uppercase",
+      "padding": { "top": 80, "bottom": 80 },
+      "productCard": {
+        "cardStyle": "auto",
+        "quickAdd": "none"
+      }
+    },
     "Footer": {
-      "variant": "2-part"
+      "variant": "2-part",
+      "bottomStrip": {
+        "enabled": true,
+        "text": "© 2026 Bloom Theme. Powered by Merfy"
+      }
     }
   },
 
@@ -125,36 +188,15 @@
   ],
 
   "blocks": {
-    "Header": {
-      "override": {
-        "path": "./blocks/Header",
-        "reason": "Bloom uses 1320px container, Urbanist font, pill-radius buttons, and a pink accent cart badge distinct from base Header."
-      }
-    },
-    "Footer": {
-      "override": {
-        "path": "./blocks/Footer",
-        "reason": "Bloom uses 2-part grid (logo+nav LEFT, contact+social RIGHT), pink-palette newsletter with pill submit, and a powered-by black strip below copyright."
-      }
-    },
-    "Hero": {
-      "override": {
-        "path": "./blocks/Hero",
-        "reason": "Bloom uses edge-to-edge split layout (bottom-aligned text col + image col), 20px Urbanist uppercase accent-pink kicker heading, 16px body subtitle, pink pill CTA — all distinct from base Hero."
-      },
-      "variant": "split"
-    },
+    "Hero": { "variant": "split-bloom" },
+    "Header": {},
+    "Footer": {},
     "PopularProducts": {},
     "Collections": {},
     "Product": {},
     "Newsletter": {},
     "ContactForm": {},
-    "Catalog": {
-      "override": {
-        "path": "./blocks/Catalog",
-        "reason": "Bloom Catalog mirrors Satin's top-toolbar dropdowns + 3-col grid + Show More layout (Figma 897:11521) but keeps Bloom font tokens (--font-heading=Urbanist, --font-body=Inter) and pink color schemes."
-      }
-    }
+    "Catalog": {}
   },
 
   "features": {

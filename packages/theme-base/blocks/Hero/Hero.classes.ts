@@ -6,6 +6,10 @@ export const HeroClasses = {
     split: 'grid grid-cols-1 md:grid-cols-2 items-center gap-8 py-12',
     overlay: 'relative min-h-[60vh] flex flex-col py-12',
     'grid-4': 'flex flex-col items-center text-center py-12 gap-8',
+    // 089 bloom pilot — edge-to-edge split (no container max-width, no padding):
+    // text column bottom-aligned (justify-end), image column full-height.
+    'split-bloom':
+      'flex flex-col md:flex-row items-stretch w-full min-h-[560px] md:min-h-[720px]',
   },
   // Horizontal alignment of the inner content block
   hAlign: {
@@ -37,7 +41,20 @@ export const HeroClasses = {
     split: 'w-full aspect-[4/3] object-cover',
     overlay: 'absolute inset-0 -z-10 object-cover w-full h-full opacity-60',
     'grid-4': 'w-full aspect-square object-cover rounded-[var(--radius-media)]',
+    // 089 bloom pilot — edge-to-edge image fills the right column.
+    'split-bloom': 'absolute inset-0 object-cover w-full h-full',
   },
+  // 089 bloom pilot — split-bloom column classes
+  splitBloomTextCol:
+    'flex-1 min-w-0 flex flex-col justify-end gap-[24px] bg-[rgb(var(--color-bg))] px-6 md:px-[80px] lg:px-[120px] py-[60px] md:py-[100px] lg:py-[120px]',
+  splitBloomImageCol: 'flex-1 min-w-0 relative min-h-[320px] md:min-h-full',
+  // Kicker = small uppercase accent-color heading (Bloom signature).
+  splitBloomKicker:
+    '[font-family:var(--font-heading)] text-[20px] leading-[1.3] tracking-[0.08em] uppercase text-[rgb(var(--color-accent))]',
+  splitBloomSubtitle:
+    '[font-family:var(--font-body)] text-[14px] md:text-[16px] leading-[1.6] text-[rgb(var(--color-text))]',
+  splitBloomCta:
+    'inline-flex items-center justify-center self-start h-[var(--size-hero-button-h)] rounded-[var(--radius-button)] px-8 text-[14px] md:text-[15px] tracking-[0.04em] [font-family:var(--font-body)] border border-[rgb(var(--color-button-border))] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] hover:opacity-90 transition-colors no-underline',
   gridContainer:
     'w-full max-w-[var(--container-max-width)] grid grid-cols-2 gap-4 md:gap-6 lg:gap-8',
   gridTile:

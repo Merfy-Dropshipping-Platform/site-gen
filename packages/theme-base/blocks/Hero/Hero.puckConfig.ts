@@ -17,7 +17,7 @@ export const HeroSchema = z.object({
   image: z.object({ url: z.string(), alt: z.string() }),
   images: z.array(z.object({ url: z.string(), alt: z.string() })).max(8).optional(),
   cta: z.object({ text: z.string(), href: z.string() }),
-  variant: z.enum(['centered', 'split', 'overlay', 'grid-4']),
+  variant: z.enum(['centered', 'split', 'overlay', 'grid-4', 'split-bloom']),
   // Pupa parity: nested heading/text + primary/secondary buttons + extended position.
   heading: z.object({
     text: z.string(),
@@ -103,6 +103,7 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
         { label: 'Сплит (фото сбоку)', value: 'split' },
         { label: 'Фон на всю ширину', value: 'overlay' },
         { label: 'Сетка 2x2', value: 'grid-4' },
+        { label: 'Сплит edge-to-edge (Bloom)', value: 'split-bloom' },
       ],
     },
     contentPosition: {

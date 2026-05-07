@@ -174,7 +174,42 @@ const heroButtonStyleClass = heroButtonStyle === 'outlined'
   ? C.buttonStyleOutlined
   : C.buttonStyleSolid;
 ---
-{effectiveMode === 'single' && (
+{effectiveMode === 'single' && variant === 'split-bloom' && (
+  <section
+    class:list={[C.root, schemeClass]}
+    data-puck-component-id={id}
+    data-variant="split-bloom"
+    style={paddingStyle}
+  >
+    <div class={C.inner['split-bloom']}>
+      <div class={C.splitBloomTextCol}>
+        {resolvedTitle && (
+          <h1 class={C.splitBloomKicker} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{resolvedTitle}</h1>
+        )}
+        {resolvedSubtitle && (
+          <p class={C.splitBloomSubtitle} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{resolvedSubtitle}</p>
+        )}
+        {(resolvedCta?.text || resolvedSecondaryCta?.text) && (
+          <div class="flex flex-wrap gap-3">
+            {resolvedCta?.text && (
+              <a href={resolvedCta.href} class={C.splitBloomCta} data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="primaryButton">{resolvedCta.text}</a>
+            )}
+            {resolvedSecondaryCta?.text && (
+              <a href={resolvedSecondaryCta.href} class:list={[C.splitBloomCta, 'opacity-90 underline']} data-puck-subsection-parent={id} data-puck-subsection-index="103" data-puck-subsection-field="secondaryButton">{resolvedSecondaryCta.text}</a>
+            )}
+          </div>
+        )}
+      </div>
+      <div class={C.splitBloomImageCol}>
+        {imageUrl && (
+          <img src={imageUrl} alt={imageAlt} class={C.image['split-bloom']} />
+        )}
+      </div>
+    </div>
+  </section>
+)}
+
+{effectiveMode === 'single' && variant !== 'split-bloom' && (
 <section
   class:list={[C.root, variant === 'overlay' ? 'min-h-[var(--h-base)] sm:min-h-[var(--h-sm)] md:min-h-[var(--h-md)] lg:min-h-[var(--h-lg)] xl:min-h-[var(--h-xl)] 2xl:min-h-[var(--h-xxl)]' : '', schemeClass]}
   data-puck-component-id={id}

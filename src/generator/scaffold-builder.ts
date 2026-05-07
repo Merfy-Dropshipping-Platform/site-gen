@@ -33,6 +33,7 @@ import {
   generateVanillaCatalogPage,
   generateVanillaProductPage,
   generateBloomCollectionsSlugPage,
+  generateBloomCatalogPage,
   type DynamicPageConfig,
 } from "./dynamic-pages-generator";
 import {
@@ -491,6 +492,23 @@ export async function buildScaffold(
           shopId: config.dynamicPages.shopId,
         });
         await writeFile(vanillaCatalogPath, catalogPage);
+        generatedFiles.push("src/pages/catalog.astro");
+      }
+    }
+
+    // 089 Bundle 6 (US1 Sub-B) — bloom theme: auto-generate /catalog landing page.
+    // Replaces deleted templates/astro/bloom/src/pages/catalog.astro (legacy
+    // CatalogIsland.tsx React-island wrapper). Mirror vanilla pattern.
+    if (config.themeName === 'bloom') {
+      const bloomCatalogPath = path.join(
+        outputDir, "src", "pages", "catalog.astro",
+      );
+      if (!(await fileExists(bloomCatalogPath))) {
+        const catalogPage = generateBloomCatalogPage({
+          apiUrl: config.dynamicPages.apiUrl,
+          shopId: config.dynamicPages.shopId,
+        });
+        await writeFile(bloomCatalogPath, catalogPage);
         generatedFiles.push("src/pages/catalog.astro");
       }
     }

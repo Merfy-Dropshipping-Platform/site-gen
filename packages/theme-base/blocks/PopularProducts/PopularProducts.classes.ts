@@ -61,4 +61,13 @@ export const PopularProductsClasses = {
     dot:
       'w-2.5 h-2.5 rounded-full border border-[rgb(var(--color-foreground)/0.2)] bg-[rgb(var(--color-surface))]',
   },
+  // Empty-state when realProducts.length === 0 (seed site без товаров).
+  // Renders inside grid as full-width row (col-span: 1 / -1) so inline-script
+  // can replace grid.innerHTML when API returns products.
+  emptyState:
+    '[grid-column:1/-1] flex flex-col items-center justify-center gap-3 py-16 text-[rgb(var(--color-text))]/50',
+  emptyStateIcon:
+    'opacity-40',
+  emptyStateText:
+    '[font-family:var(--font-body)] text-[14px] leading-[17px]',
 } as const;

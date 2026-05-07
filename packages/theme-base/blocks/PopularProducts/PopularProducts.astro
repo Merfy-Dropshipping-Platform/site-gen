@@ -178,23 +178,14 @@ if (collectionRef && realProducts.length > 0) {
   }
 }
 
-const DEMO_PRODUCTS = [
-  { title: 'Сумка', price: '5 990 ₽', oldPrice: '', badgeNew: true,  badgeSale: '', image: '' },
-  { title: 'Сумка', price: '5 990 ₽', oldPrice: '', badgeNew: false, badgeSale: '', image: '' },
-  { title: 'Сумка', price: '5 990 ₽', oldPrice: '', badgeNew: false, badgeSale: '', image: '' },
-  { title: 'Сумка', price: '5 990 ₽', oldPrice: '7 990 ₽', badgeNew: false, badgeSale: '20%', image: '' },
-  // 084 Stage 2 Task 9: 6 cards for 3-col × 2-row Figma 1:18999 layout.
-  { title: 'Сумка', price: '5 990 ₽', oldPrice: '', badgeNew: false, badgeSale: '', image: '' },
-  { title: 'Сумка', price: '5 990 ₽', oldPrice: '', badgeNew: false, badgeSale: '', image: '' },
-];
-
 const formatPrice = (v: unknown): string => {
   if (typeof v === 'number') return `${v.toLocaleString('ru-RU')} ₽`;
   if (typeof v === 'string' && v.trim()) return v.trim();
   return '';
 };
 
-// Use real products если есть, иначе demo. Slice to `cards` count.
+// Use real products если есть, иначе пустой массив → empty-state.
+// Inline-script ниже подменит grid.innerHTML при ответе API с товарами.
 const productList = realProducts.length > 0
   ? realProducts.slice(0, Math.min(cards, realProducts.length)).map((p) => ({
       title: p.name || 'Товар',
@@ -210,13 +201,7 @@ const productList = realProducts.length > 0
       variants: Array.isArray(p.variants) ? p.variants : [],
       variantSwatches: Array.isArray(p.variantSwatches) ? p.variantSwatches : [],
     }))
-  : DEMO_PRODUCTS.slice(0, Math.min(cards, DEMO_PRODUCTS.length)).map((p) => ({
-      ...p,
-      href: '/catalog',
-      hasVariants: false as boolean,
-      variants: [] as unknown[],
-      variantSwatches: [] as Array<{ color?: string | null }>,
-    }));
+  : [];
 const demo = productList;
 
 // Bottom "Смотреть ещё" CTA. Accept top-level viewAll object.
@@ -248,7 +233,16 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
       </div>
     )}
     <div class={C.grid} style={gridTemplateCols} data-pop-grid>
-      {demo.map((p, i) => {
+      {demo.length === 0 ? (
+        <div class={(C as Record<string, string>).emptyState} data-pop-empty>
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" class={(C as Record<string, string>).emptyStateIcon}>
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21,15 16,10 5,21" />
+          </svg>
+          <span class={(C as Record<string, string>).emptyStateText}>Скоро здесь появятся товары</span>
+        </div>
+      ) : demo.map((p, i) => {
         const pips = swatchOverlayProp ? resolveSwatchPips(p) : [];
         return (
         <div

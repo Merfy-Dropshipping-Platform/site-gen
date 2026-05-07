@@ -599,6 +599,96 @@ const pageTitle = (typeof rootProps.title === 'string' && rootProps.title) || '�
 }
 
 /**
+ * Generate /product/[handle].astro for bloom theme — Puck-driven product
+ * detail page. Mirror generateVanillaProductPage. Replaces deleted
+ * templates/astro/bloom/src/pages/product/[id].astro которая использовала ProductIsland.tsx.
+ *
+ * 089 Bundle 7 (US1 Sub-C): single common implementation через package блоки.
+ * Layout import: `../../layouts/` (depth-2). Product block получает productId={handle}.
+ */
+export function generateBloomProductPage(_config: DynamicPageConfig): string {
+  return `---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import data from '../../data/data.json';
+import productsData from '../../data/products.json';
+
+import Header from '../../components/Header.astro';
+import Hero from '../../components/Hero.astro';
+import Catalog from '../../components/Catalog.astro';
+import Footer from '../../components/Footer.astro';
+import PromoBanner from '../../components/PromoBanner.astro';
+import Newsletter from '../../components/Newsletter.astro';
+import Collections from '../../components/Collections.astro';
+import PopularProducts from '../../components/PopularProducts.astro';
+import MainText from '../../components/MainText.astro';
+import Video from '../../components/Video.astro';
+import ImageWithText from '../../components/ImageWithText.astro';
+import Gallery from '../../components/Gallery.astro';
+import ContactForm from '../../components/ContactForm.astro';
+import CollapsibleSection from '../../components/CollapsibleSection.astro';
+import MultiColumns from '../../components/MultiColumns.astro';
+import MultiRows from '../../components/MultiRows.astro';
+import Slideshow from '../../components/Slideshow.astro';
+import Publications from '../../components/Publications.astro';
+import Product from '../../components/Product.astro';
+
+export function getStaticPaths() {
+  const prods: any[] = Array.isArray(productsData) ? productsData : [];
+  if (prods.length === 0) {
+    return [{ params: { handle: '_placeholder' }, props: { product: null } }];
+  }
+  const paths: { params: { handle: string }; props: { product: any } }[] = [];
+  const seen = new Set<string>();
+  for (const p of prods) {
+    for (const handle of [p.slug, p.handle, p.id].filter(Boolean) as string[]) {
+      if (seen.has(handle)) continue;
+      seen.add(handle);
+      paths.push({ params: { handle }, props: { product: p } });
+      break;
+    }
+  }
+  return paths;
+}
+
+const { handle } = Astro.params;
+const { product } = Astro.props as { product: any };
+const productTitle = (product && (product.title || product.name)) || 'Товар';
+
+const allPagesData = ((data as any)?.pagesData ?? {}) as Record<string, { content?: any[]; root?: any }>;
+const pageData = allPagesData['page-product'] ?? { content: [] };
+const blocks = (pageData.content ?? []) as Array<{ type: string; props: Record<string, any> }>;
+
+const rootProps = (pageData as any)?.root?.props ?? {};
+const pageTitle = (typeof rootProps.title === 'string' && rootProps.title) || productTitle;
+---
+<BaseLayout title={pageTitle}>
+  {blocks.map((block) => {
+    if (block.type === 'Header') return <Header {...block.props} />;
+    if (block.type === 'Hero') return <Hero {...block.props} />;
+    if (block.type === 'Catalog') return <Catalog {...block.props} />;
+    if (block.type === 'Footer') return <Footer {...block.props} />;
+    if (block.type === 'PromoBanner') return <PromoBanner {...block.props} />;
+    if (block.type === 'Newsletter') return <Newsletter {...block.props} />;
+    if (block.type === 'Collections') return <Collections {...block.props} />;
+    if (block.type === 'PopularProducts') return <PopularProducts {...block.props} />;
+    if (block.type === 'MainText') return <MainText {...block.props} />;
+    if (block.type === 'Video') return <Video {...block.props} />;
+    if (block.type === 'ImageWithText') return <ImageWithText {...block.props} />;
+    if (block.type === 'Gallery') return <Gallery {...block.props} />;
+    if (block.type === 'ContactForm') return <ContactForm {...block.props} />;
+    if (block.type === 'CollapsibleSection') return <CollapsibleSection {...block.props} />;
+    if (block.type === 'MultiColumns') return <MultiColumns {...block.props} />;
+    if (block.type === 'MultiRows') return <MultiRows {...block.props} />;
+    if (block.type === 'Slideshow') return <Slideshow {...block.props} />;
+    if (block.type === 'Publications') return <Publications {...block.props} />;
+    if (block.type === 'Product') return <Product {...block.props} productId={handle} />;
+    return null;
+  })}
+</BaseLayout>
+`;
+}
+
+/**
  * Generate /product/[handle].astro for vanilla theme — Puck-driven product
  * detail page. Replaces deleted templates/astro/vanilla/src/pages/product/[id].astro
  * which used ProductIsland.tsx React island.

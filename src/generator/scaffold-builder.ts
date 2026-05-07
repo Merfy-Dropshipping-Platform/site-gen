@@ -34,6 +34,7 @@ import {
   generateVanillaProductPage,
   generateBloomCollectionsSlugPage,
   generateBloomCatalogPage,
+  generateBloomProductPage,
   type DynamicPageConfig,
 } from "./dynamic-pages-generator";
 import {
@@ -526,6 +527,23 @@ export async function buildScaffold(
           shopId: config.dynamicPages.shopId,
         });
         await writeFile(vanillaProductPath, productPage);
+        generatedFiles.push("src/pages/product/[handle].astro");
+      }
+    }
+
+    // 089 Bundle 7 (US1 Sub-C) — bloom theme: auto-generate /product/[handle] page.
+    // Replaces deleted templates/astro/bloom/src/pages/product/[id].astro (legacy
+    // ProductIsland wrapper). Mirror vanilla pattern.
+    if (config.themeName === 'bloom') {
+      const bloomProductPath = path.join(
+        outputDir, "src", "pages", "product", "[handle].astro",
+      );
+      if (!(await fileExists(bloomProductPath))) {
+        const productPage = generateBloomProductPage({
+          apiUrl: config.dynamicPages.apiUrl,
+          shopId: config.dynamicPages.shopId,
+        });
+        await writeFile(bloomProductPath, productPage);
         generatedFiles.push("src/pages/product/[handle].astro");
       }
     }

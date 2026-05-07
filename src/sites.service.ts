@@ -698,7 +698,7 @@ export class SitesDomainService {
     // Мягкое удаление: отметка deletedAt без разрушения данных (возможен restore)
     const [row] = await this.db
       .update(schema.site)
-      .set({ deletedAt: new Date() })
+      .set({ deletedAt: new Date(), updatedAt: new Date() })
       .where(
         and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)),
       )
@@ -1176,12 +1176,14 @@ export class SitesDomainService {
   }
 
   async freezeTenant(tenantId: string) {
+    const now = new Date();
     const res = await this.db
       .update(schema.site)
       .set({
         prevStatus: sql`${schema.site.status}` as any,
         status: "frozen",
-        frozenAt: new Date(),
+        frozenAt: now,
+        updatedAt: now,
       })
       .where(
         and(
@@ -1229,6 +1231,7 @@ export class SitesDomainService {
         status: sql`COALESCE(${schema.site.prevStatus}, 'draft')`,
         prevStatus: null as any,
         frozenAt: null as any,
+        updatedAt: new Date(),
       })
       .where(
         and(
@@ -1721,7 +1724,7 @@ export class SitesDomainService {
     // Сбрасываем mock coolifyProjectUuid в сайтах
     await this.db
       .update(schema.site)
-      .set({ coolifyProjectUuid: null })
+      .set({ coolifyProjectUuid: null, updatedAt: new Date() })
       .where(sql`${schema.site.coolifyProjectUuid} LIKE 'mock-project-%'`);
 
     this.logger.log("Cleared all mock cache data");

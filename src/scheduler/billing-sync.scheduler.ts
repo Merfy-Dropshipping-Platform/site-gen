@@ -98,9 +98,11 @@ export class BillingSyncScheduler implements OnModuleInit {
             { accountId },
           );
           if (!entitlements?.success) continue;
-          const frozen = Boolean(
-            entitlements.frozen || entitlements.hasOpenInvoice,
-          );
+          // Only react to billing's authoritative freeze decision.
+          // hasOpenInvoice is a UI hint (e.g. failed domain payment) and must
+          // NOT auto-freeze tenant sites — that's billing's responsibility via
+          // subscription.status/frozenAt and the subscription.updated event.
+          const frozen = Boolean(entitlements.frozen);
           if (frozen) {
             const res = await this.sites.freezeTenant(tenantId);
             this.logger.debug(

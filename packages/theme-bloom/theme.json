@@ -8,7 +8,6 @@
   "description": "Bloom — soft feminine theme with pink pastel accents (#CF7A8B / #E38E9F), Urbanist headings, pill-shaped buttons for beauty and cosmetics stores.",
   "author": "Merfy",
   "tokens": "./tokens.json",
-
   "defaults": {
     "--font-heading": "'Urbanist', sans-serif",
     "--font-body": "'Inter', sans-serif",
@@ -38,7 +37,6 @@
     "--card-alignment": "left",
     "--color-error": "255 148 148"
   },
-
   "blockDefaults": {
     "PromoBanner": {
       "size": "thin",
@@ -47,7 +45,10 @@
     },
     "Header": {
       "logoPosition": "top-left",
-      "padding": { "top": 16, "bottom": 16 }
+      "padding": {
+        "top": 16,
+        "bottom": 16
+      }
     },
     "Hero": {
       "variant": "split-bloom",
@@ -93,7 +94,10 @@
       "cards": 12,
       "gridAspect": "1:1",
       "cardCaptionStyle": "uppercase",
-      "padding": { "top": 80, "bottom": 80 },
+      "padding": {
+        "top": 80,
+        "bottom": 80
+      },
       "productCard": {
         "cardStyle": "auto",
         "quickAdd": "none"
@@ -107,7 +111,6 @@
       }
     }
   },
-
   "colorSchemes": [
     {
       "id": "scheme-1",
@@ -186,9 +189,10 @@
       }
     }
   ],
-
   "blocks": {
-    "Hero": { "variant": "split-bloom" },
+    "Hero": {
+      "variant": "split-bloom"
+    },
     "Header": {},
     "Footer": {},
     "PopularProducts": {},
@@ -198,20 +202,51 @@
     "ContactForm": {},
     "Catalog": {}
   },
-
   "features": {
     "newsletter": true,
     "cart-drawer": true,
     "otp-auth": true,
     "wishlist": false,
     "color-swatches": true,
-    "filter-sidebar": true
+    "filter-sidebar": true,
+    "puckDrivenPages": true
   },
-
   "fonts": [
-    { "family": "Urbanist", "weights": [400, 500, 600, 700], "source": "google" },
-    { "family": "Inter",    "weights": [300, 400, 500, 600], "source": "google" },
-    { "family": "Roboto",   "weights": [400, 500],           "source": "google" },
-    { "family": "Manrope",  "weights": [400, 500],           "source": "google" }
+    {
+      "family": "Urbanist",
+      "weights": [
+        400,
+        500,
+        600,
+        700
+      ],
+      "source": "google"
+    },
+    {
+      "family": "Inter",
+      "weights": [
+        300,
+        400,
+        500,
+        600
+      ],
+      "source": "google"
+    },
+    {
+      "family": "Roboto",
+      "weights": [
+        400,
+        500
+      ],
+      "source": "google"
+    },
+    {
+      "family": "Manrope",
+      "weights": [
+        400,
+        500
+      ],
+      "source": "google"
+    }
   ]
 }

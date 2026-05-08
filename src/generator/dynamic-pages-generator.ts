@@ -241,7 +241,7 @@ return Astro.redirect(\`/collections/\${slug}\`, 301);
  *
  * NO hardcoded layout values — конструктор ≡ live for ALL blocks.
  */
-export function generateVanillaCollectionsSlugPage(
+export function generatePuckCollectionsSlugPage(
   _config: DynamicPageConfig,
 ): string {
   return `---
@@ -341,116 +341,11 @@ const blocks = rawContent.map((b) => ({ ...b, props: substituteVars(b.props ?? {
 `;
 }
 
-/**
- * Generate /collections/[slug].astro for bloom theme — Puck-driven page.
- * Mirror of generateVanillaCollectionsSlugPage. Replaces deleted
- * templates/astro/bloom/src/pages/collections/[slug].astro.
- *
- * 089 Bundle 5 (US1 Sub-A): single common implementation для всех тем
- * через package theme-base/blocks. Bloom уникальные стили — через
- * theme.json blockDefaults (no theme-specific code).
- *
- * NO hardcoded layout values — конструктор ≡ live invariant.
- */
-export function generateBloomCollectionsSlugPage(
-  _config: DynamicPageConfig,
-): string {
-  return `---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import data from '../../data/data.json';
-import collectionsData from '../../data/collections.json';
-
-import Header from '../../components/Header.astro';
-import Hero from '../../components/Hero.astro';
-import Catalog from '../../components/Catalog.astro';
-import Footer from '../../components/Footer.astro';
-import PromoBanner from '../../components/PromoBanner.astro';
-import Newsletter from '../../components/Newsletter.astro';
-import Collections from '../../components/Collections.astro';
-import PopularProducts from '../../components/PopularProducts.astro';
-import MainText from '../../components/MainText.astro';
-import Video from '../../components/Video.astro';
-import ImageWithText from '../../components/ImageWithText.astro';
-import Gallery from '../../components/Gallery.astro';
-import ContactForm from '../../components/ContactForm.astro';
-import CollapsibleSection from '../../components/CollapsibleSection.astro';
-import MultiColumns from '../../components/MultiColumns.astro';
-import MultiRows from '../../components/MultiRows.astro';
-import Slideshow from '../../components/Slideshow.astro';
-import Publications from '../../components/Publications.astro';
-import Product from '../../components/Product.astro';
-
-export function getStaticPaths() {
-  const cols: any[] = Array.isArray(collectionsData) ? collectionsData : [];
-  if (cols.length === 0) {
-    return [{ params: { slug: '_placeholder' }, props: { collection: null } }];
-  }
-  const paths: { params: { slug: string }; props: { collection: any } }[] = [];
-  const seen = new Set<string>();
-  for (const c of cols) {
-    for (const slug of [c.slug, c.handle, c.id].filter(Boolean) as string[]) {
-      if (seen.has(slug)) continue;
-      seen.add(slug);
-      paths.push({ params: { slug }, props: { collection: c } });
-      break;
-    }
-  }
-  return paths;
-}
-
-const { slug } = Astro.params;
-const { collection } = Astro.props as { collection: any };
-const collectionTitle = (collection && (collection.title || collection.name)) || 'Каталог';
-const collectionDescription = (collection && collection.description) || '';
-const collectionImage = (collection && collection.image) || '';
-
-const allPagesData = ((data as any)?.pagesData ?? {}) as Record<string, { content?: any[] }>;
-const rawContent = (allPagesData['page-collection']?.content ?? []) as Array<{ type: string; props: Record<string, any> }>;
-
-function substituteVars(value: any): any {
-  if (typeof value === 'string') {
-    return value
-      .replace(/\\{\\{COLLECTION_NAME\\}\\}/g, collectionTitle)
-      .replace(/\\{\\{COLLECTION_DESCRIPTION\\}\\}/g, collectionDescription)
-      .replace(/\\{\\{COLLECTION_IMAGE\\}\\}/g, collectionImage);
-  }
-  if (Array.isArray(value)) return value.map(substituteVars);
-  if (value && typeof value === 'object') {
-    const out: any = {};
-    for (const k of Object.keys(value)) out[k] = substituteVars(value[k]);
-    return out;
-  }
-  return value;
-}
-
-const blocks = rawContent.map((b) => ({ ...b, props: substituteVars(b.props ?? {}) }));
----
-<BaseLayout title={collectionTitle}>
-  {blocks.map((block) => {
-    if (block.type === 'Header') return <Header {...block.props} />;
-    if (block.type === 'Hero') return <Hero {...block.props} />;
-    if (block.type === 'Catalog') return <Catalog {...block.props} collectionSlug={slug} />;
-    if (block.type === 'Footer') return <Footer {...block.props} />;
-    if (block.type === 'PromoBanner') return <PromoBanner {...block.props} />;
-    if (block.type === 'Newsletter') return <Newsletter {...block.props} />;
-    if (block.type === 'Collections') return <Collections {...block.props} />;
-    if (block.type === 'PopularProducts') return <PopularProducts {...block.props} />;
-    if (block.type === 'MainText') return <MainText {...block.props} />;
-    if (block.type === 'Video') return <Video {...block.props} />;
-    if (block.type === 'ImageWithText') return <ImageWithText {...block.props} />;
-    if (block.type === 'Gallery') return <Gallery {...block.props} />;
-    if (block.type === 'ContactForm') return <ContactForm {...block.props} />;
-    if (block.type === 'CollapsibleSection') return <CollapsibleSection {...block.props} />;
-    if (block.type === 'MultiColumns') return <MultiColumns {...block.props} />;
-    if (block.type === 'MultiRows') return <MultiRows {...block.props} />;
-    if (block.type === 'Slideshow') return <Slideshow {...block.props} />;
-    if (block.type === 'Publications') return <Publications {...block.props} />;
-    if (block.type === 'Product') return <Product {...block.props} />;
-    return null;
-  })}
-</BaseLayout>
-`;
-}
+// Backwards-compat alias. Body merged into generatePuckCollectionsSlugPage —
+// vanilla/bloom were 100% identical (only function names differed). Existing
+// callers (scaffold-builder) now use generatePuck* directly; this alias may
+// be removed once external consumers migrate.
+export const generateBloomCollectionsSlugPage = generatePuckCollectionsSlugPage;
 
 /**
  * Generate /catalog.astro for vanilla theme — Puck-driven landing page
@@ -470,7 +365,7 @@ const blocks = rawContent.map((b) => ({ ...b, props: substituteVars(b.props ?? {
  * Layout import path uses `../layouts/` (one level up from
  * src/pages/catalog.astro → src/layouts/).
  */
-export function generateVanillaCatalogPage(_config: DynamicPageConfig): string {
+export function generatePuckCatalogPage(_config: DynamicPageConfig): string {
   return `---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import data from '../data/data.json';
@@ -529,164 +424,11 @@ const pageTitle = (typeof rootProps.title === 'string' && rootProps.title) || '�
 `;
 }
 
-/**
- * Generate /catalog.astro for bloom theme — Puck-driven landing page.
- * Mirror generateVanillaCatalogPage. Replaces deleted
- * templates/astro/bloom/src/pages/catalog.astro которая использовала CatalogIsland.tsx.
- *
- * 089 Bundle 6 (US1 Sub-B): single common implementation через package блоки.
- * Bloom-уникальные стили — через theme.json blockDefaults (no theme-specific code).
- *
- * Layout import: `../layouts/` (depth-1).
- */
-export function generateBloomCatalogPage(_config: DynamicPageConfig): string {
-  return `---
-import BaseLayout from '../layouts/BaseLayout.astro';
-import data from '../data/data.json';
+// Backwards-compat alias. Body merged into generatePuckCatalogPage.
+export const generateBloomCatalogPage = generatePuckCatalogPage;
 
-import Header from '../components/Header.astro';
-import Hero from '../components/Hero.astro';
-import Catalog from '../components/Catalog.astro';
-import Footer from '../components/Footer.astro';
-import PromoBanner from '../components/PromoBanner.astro';
-import Newsletter from '../components/Newsletter.astro';
-import Collections from '../components/Collections.astro';
-import PopularProducts from '../components/PopularProducts.astro';
-import MainText from '../components/MainText.astro';
-import Video from '../components/Video.astro';
-import ImageWithText from '../components/ImageWithText.astro';
-import Gallery from '../components/Gallery.astro';
-import ContactForm from '../components/ContactForm.astro';
-import CollapsibleSection from '../components/CollapsibleSection.astro';
-import MultiColumns from '../components/MultiColumns.astro';
-import MultiRows from '../components/MultiRows.astro';
-import Slideshow from '../components/Slideshow.astro';
-import Publications from '../components/Publications.astro';
-import Product from '../components/Product.astro';
-
-const allPagesData = ((data as any)?.pagesData ?? {}) as Record<string, { content?: any[]; root?: any }>;
-const pageData = allPagesData['page-catalog'] ?? { content: [] };
-const blocks = (pageData.content ?? []) as Array<{ type: string; props: Record<string, any> }>;
-
-const rootProps = (pageData as any)?.root?.props ?? {};
-const pageTitle = (typeof rootProps.title === 'string' && rootProps.title) || 'Каталог';
----
-<BaseLayout title={pageTitle}>
-  {blocks.map((block) => {
-    if (block.type === 'Header') return <Header {...block.props} />;
-    if (block.type === 'Hero') return <Hero {...block.props} />;
-    if (block.type === 'Catalog') return <Catalog {...block.props} />;
-    if (block.type === 'Footer') return <Footer {...block.props} />;
-    if (block.type === 'PromoBanner') return <PromoBanner {...block.props} />;
-    if (block.type === 'Newsletter') return <Newsletter {...block.props} />;
-    if (block.type === 'Collections') return <Collections {...block.props} />;
-    if (block.type === 'PopularProducts') return <PopularProducts {...block.props} />;
-    if (block.type === 'MainText') return <MainText {...block.props} />;
-    if (block.type === 'Video') return <Video {...block.props} />;
-    if (block.type === 'ImageWithText') return <ImageWithText {...block.props} />;
-    if (block.type === 'Gallery') return <Gallery {...block.props} />;
-    if (block.type === 'ContactForm') return <ContactForm {...block.props} />;
-    if (block.type === 'CollapsibleSection') return <CollapsibleSection {...block.props} />;
-    if (block.type === 'MultiColumns') return <MultiColumns {...block.props} />;
-    if (block.type === 'MultiRows') return <MultiRows {...block.props} />;
-    if (block.type === 'Slideshow') return <Slideshow {...block.props} />;
-    if (block.type === 'Publications') return <Publications {...block.props} />;
-    if (block.type === 'Product') return <Product {...block.props} />;
-    return null;
-  })}
-</BaseLayout>
-`;
-}
-
-/**
- * Generate /product/[handle].astro for bloom theme — Puck-driven product
- * detail page. Mirror generateVanillaProductPage. Replaces deleted
- * templates/astro/bloom/src/pages/product/[id].astro которая использовала ProductIsland.tsx.
- *
- * 089 Bundle 7 (US1 Sub-C): single common implementation через package блоки.
- * Layout import: `../../layouts/` (depth-2). Product block получает productId={handle}.
- */
-export function generateBloomProductPage(_config: DynamicPageConfig): string {
-  return `---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import data from '../../data/data.json';
-import productsData from '../../data/products.json';
-
-import Header from '../../components/Header.astro';
-import Hero from '../../components/Hero.astro';
-import Catalog from '../../components/Catalog.astro';
-import Footer from '../../components/Footer.astro';
-import PromoBanner from '../../components/PromoBanner.astro';
-import Newsletter from '../../components/Newsletter.astro';
-import Collections from '../../components/Collections.astro';
-import PopularProducts from '../../components/PopularProducts.astro';
-import MainText from '../../components/MainText.astro';
-import Video from '../../components/Video.astro';
-import ImageWithText from '../../components/ImageWithText.astro';
-import Gallery from '../../components/Gallery.astro';
-import ContactForm from '../../components/ContactForm.astro';
-import CollapsibleSection from '../../components/CollapsibleSection.astro';
-import MultiColumns from '../../components/MultiColumns.astro';
-import MultiRows from '../../components/MultiRows.astro';
-import Slideshow from '../../components/Slideshow.astro';
-import Publications from '../../components/Publications.astro';
-import Product from '../../components/Product.astro';
-
-export function getStaticPaths() {
-  const prods: any[] = Array.isArray(productsData) ? productsData : [];
-  if (prods.length === 0) {
-    return [{ params: { handle: '_placeholder' }, props: { product: null } }];
-  }
-  const paths: { params: { handle: string }; props: { product: any } }[] = [];
-  const seen = new Set<string>();
-  for (const p of prods) {
-    for (const handle of [p.slug, p.handle, p.id].filter(Boolean) as string[]) {
-      if (seen.has(handle)) continue;
-      seen.add(handle);
-      paths.push({ params: { handle }, props: { product: p } });
-      break;
-    }
-  }
-  return paths;
-}
-
-const { handle } = Astro.params;
-const { product } = Astro.props as { product: any };
-const productTitle = (product && (product.title || product.name)) || 'Товар';
-
-const allPagesData = ((data as any)?.pagesData ?? {}) as Record<string, { content?: any[]; root?: any }>;
-const pageData = allPagesData['page-product'] ?? { content: [] };
-const blocks = (pageData.content ?? []) as Array<{ type: string; props: Record<string, any> }>;
-
-const rootProps = (pageData as any)?.root?.props ?? {};
-const pageTitle = (typeof rootProps.title === 'string' && rootProps.title) || productTitle;
----
-<BaseLayout title={pageTitle}>
-  {blocks.map((block) => {
-    if (block.type === 'Header') return <Header {...block.props} />;
-    if (block.type === 'Hero') return <Hero {...block.props} />;
-    if (block.type === 'Catalog') return <Catalog {...block.props} />;
-    if (block.type === 'Footer') return <Footer {...block.props} />;
-    if (block.type === 'PromoBanner') return <PromoBanner {...block.props} />;
-    if (block.type === 'Newsletter') return <Newsletter {...block.props} />;
-    if (block.type === 'Collections') return <Collections {...block.props} />;
-    if (block.type === 'PopularProducts') return <PopularProducts {...block.props} />;
-    if (block.type === 'MainText') return <MainText {...block.props} />;
-    if (block.type === 'Video') return <Video {...block.props} />;
-    if (block.type === 'ImageWithText') return <ImageWithText {...block.props} />;
-    if (block.type === 'Gallery') return <Gallery {...block.props} />;
-    if (block.type === 'ContactForm') return <ContactForm {...block.props} />;
-    if (block.type === 'CollapsibleSection') return <CollapsibleSection {...block.props} />;
-    if (block.type === 'MultiColumns') return <MultiColumns {...block.props} />;
-    if (block.type === 'MultiRows') return <MultiRows {...block.props} />;
-    if (block.type === 'Slideshow') return <Slideshow {...block.props} />;
-    if (block.type === 'Publications') return <Publications {...block.props} />;
-    if (block.type === 'Product') return <Product {...block.props} productId={handle} />;
-    return null;
-  })}
-</BaseLayout>
-`;
-}
+// Backwards-compat alias. Body merged into generatePuckProductPage.
+export const generateBloomProductPage = generatePuckProductPage;
 
 /**
  * Generate /product/[handle].astro for vanilla theme — Puck-driven product
@@ -700,7 +442,7 @@ const pageTitle = (typeof rootProps.title === 'string' && rootProps.title) || pr
  *
  * 087 Stage 5 — final React island removal in vanilla.
  */
-export function generateVanillaProductPage(_config: DynamicPageConfig): string {
+export function generatePuckProductPage(_config: DynamicPageConfig): string {
   return `---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import data from '../../data/data.json';
@@ -783,10 +525,13 @@ const pageTitle = (typeof rootProps.title === 'string' && rootProps.title) || pr
 }
 
 
-// Rose theme — aliases bloom auto-gen functions (identical Puck-driven page
-// shape, single source of truth via theme-base packages). Per spec 082 +
-// Bundle 3-5 of rose pilot. Keeps rose pages in lockstep with bloom: any
-// future change to bloom-* generators automatically applies to rose too.
-export const generateRoseCollectionsSlugPage = generateBloomCollectionsSlugPage;
-export const generateRoseCatalogPage = generateBloomCatalogPage;
-export const generateRoseProductPage = generateBloomProductPage;
+// Backwards-compat aliases (vanilla/rose). Body merged into generatePuck*.
+// Каждая тема, opt-in через `features.puckDrivenPages` в theme.json,
+// получит Puck-driven pages автоматически — name aliases остаются для
+// внешних консьюмеров (тесты, IDE imports), будут удалены позже.
+export const generateVanillaCollectionsSlugPage = generatePuckCollectionsSlugPage;
+export const generateVanillaCatalogPage = generatePuckCatalogPage;
+export const generateVanillaProductPage = generatePuckProductPage;
+export const generateRoseCollectionsSlugPage = generatePuckCollectionsSlugPage;
+export const generateRoseCatalogPage = generatePuckCatalogPage;
+export const generateRoseProductPage = generatePuckProductPage;

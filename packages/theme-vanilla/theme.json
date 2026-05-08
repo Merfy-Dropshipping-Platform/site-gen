@@ -8,7 +8,6 @@
   "description": "Vanilla flat theme — olive-green palette with square radii (Merfy universal storefront template).",
   "author": "Merfy",
   "tokens": "./tokens.json",
-
   "defaults": {
     "--font-heading": "'Bitter', serif",
     "--font-body": "'Arsenal', sans-serif",
@@ -48,7 +47,6 @@
     "--catalog-sidebar-w": "294px",
     "--catalog-grid-row-gap": "40px"
   },
-
   "blockDefaults": {
     "PromoBanner": {
       "size": "thin",
@@ -58,7 +56,10 @@
     "Header": {
       "logoPosition": "center-absolute",
       "activeLinkIndicator": "underline",
-      "padding": { "top": 32, "bottom": 32 }
+      "padding": {
+        "top": 32,
+        "bottom": 32
+      }
     },
     "Hero": {
       "mode": "carousel",
@@ -114,7 +115,10 @@
       "gridAspect": "1:1",
       "cardCaptionStyle": "uppercase",
       "colorScheme": "scheme-3",
-      "padding": { "top": 120, "bottom": 120 }
+      "padding": {
+        "top": 120,
+        "bottom": 120
+      }
     },
     "Footer": {
       "variant": "2-part-asymmetric",
@@ -124,7 +128,6 @@
       }
     }
   },
-
   "colorSchemes": [
     {
       "id": "scheme-1",
@@ -203,9 +206,10 @@
       }
     }
   ],
-
   "blocks": {
-    "Hero": { "variant": "overlay" },
+    "Hero": {
+      "variant": "overlay"
+    },
     "Header": {},
     "Footer": {},
     "PopularProducts": {},
@@ -214,20 +218,50 @@
     "Newsletter": {},
     "ContactForm": {}
   },
-
   "features": {
     "newsletter": true,
     "cart-drawer": true,
     "otp-auth": true,
     "wishlist": false,
     "color-swatches": false,
-    "filter-sidebar": true
+    "filter-sidebar": true,
+    "puckDrivenPages": true
   },
-
   "fonts": [
-    { "family": "Bitter",  "weights": [400, 600, 700], "italic": true, "source": "google" },
-    { "family": "Arsenal", "weights": [400, 700],                       "source": "google" },
-    { "family": "Exo 2",   "weights": [400, 700],                       "source": "google" },
-    { "family": "Inter",   "weights": [300, 400, 500],                  "source": "google" }
+    {
+      "family": "Bitter",
+      "weights": [
+        400,
+        600,
+        700
+      ],
+      "italic": true,
+      "source": "google"
+    },
+    {
+      "family": "Arsenal",
+      "weights": [
+        400,
+        700
+      ],
+      "source": "google"
+    },
+    {
+      "family": "Exo 2",
+      "weights": [
+        400,
+        700
+      ],
+      "source": "google"
+    },
+    {
+      "family": "Inter",
+      "weights": [
+        300,
+        400,
+        500
+      ],
+      "source": "google"
+    }
   ]
 }

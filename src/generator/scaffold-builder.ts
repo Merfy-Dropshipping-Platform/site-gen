@@ -29,15 +29,9 @@ import {
   generateProductPage,
   generateCollectionPage,
   generateCatalogSlugPage,
-  generateVanillaCollectionsSlugPage,
-  generateVanillaCatalogPage,
-  generateVanillaProductPage,
-  generateBloomCollectionsSlugPage,
-  generateBloomCatalogPage,
-  generateBloomProductPage,
-  generateRoseCollectionsSlugPage,
-  generateRoseCatalogPage,
-  generateRoseProductPage,
+  generatePuckCollectionsSlugPage,
+  generatePuckCatalogPage,
+  generatePuckProductPage,
   type DynamicPageConfig,
 } from "./dynamic-pages-generator";
 import {
@@ -324,8 +318,13 @@ export async function buildScaffold(
 
   // Load blockDefaults from theme.json so pages pick up theme-level prop defaults
   // (e.g. rose.Footer.variant = '3-col'). Merchant props always win over these.
+  // Also reads `features.puckDrivenPages` opt-in flag — when true, scaffold
+  // generates /collections/[slug], /catalog, /product/[handle] from Puck JSON
+  // (single source of truth via theme-base packages). Themes still on legacy
+  // shipped templates (satin, flux) simply omit the flag.
   let blockDefaults: Record<string, Record<string, unknown>> = {};
-  if (useNewPackages && config.themeName) {
+  let puckDrivenPages = false;
+  if (config.themeName) {
     const themeJsonPath = path.join(
       process.cwd(),
       "packages",
@@ -334,9 +333,15 @@ export async function buildScaffold(
     );
     try {
       const raw = await fs.readFile(themeJsonPath, "utf8");
-      const parsed = JSON.parse(raw) as { blockDefaults?: Record<string, Record<string, unknown>> };
-      if (parsed.blockDefaults && typeof parsed.blockDefaults === "object") {
+      const parsed = JSON.parse(raw) as {
+        blockDefaults?: Record<string, Record<string, unknown>>;
+        features?: { puckDrivenPages?: boolean };
+      };
+      if (useNewPackages && parsed.blockDefaults && typeof parsed.blockDefaults === "object") {
         blockDefaults = parsed.blockDefaults;
+      }
+      if (parsed.features?.puckDrivenPages === true) {
+        puckDrivenPages = true;
       }
     } catch {
       // theme.json missing or malformed — proceed without defaults
@@ -361,7 +366,7 @@ export async function buildScaffold(
     // все три theme'а имеют собственный Puck-driven generator ниже (Spec 087, 089,
     // rose pilot Bundle 5). Без этого guard legacy file shadows theme-specific
     // generator via fileExists().
-    if (config.themeName !== 'vanilla' && config.themeName !== 'bloom' && config.themeName !== 'rose') {
+    if (!puckDrivenPages) {
       const productPage = generateProductPage({
         ...config.dynamicPages,
         layoutImport: config.layout?.importPath
@@ -431,20 +436,19 @@ export async function buildScaffold(
       generatedFiles.push("src/pages/catalog/[slug].astro");
     }
 
-    // 085 Stage 3.5 — vanilla theme: auto-generate /collections/[slug] page.
-    // Replaces deleted templates/astro/vanilla/src/pages/collections/[slug].astro.
-    // Only runs for vanilla theme; other themes preserve their custom shipped
-    // collections/[slug].astro via fileExists guard.
-    if (config.themeName === "vanilla") {
-      const vanillaCollectionsSlugPath = path.join(
-        outputDir,
-        "src",
-        "pages",
-        "collections",
-        "[slug].astro",
+    // Puck-driven pages — auto-generate /collections/[slug], /catalog,
+    // /product/[handle] from Puck JSON for any theme that opts-in via
+    // theme.json `features.puckDrivenPages: true`. Single source of truth
+    // (theme-base packages); legacy theme-specific templates are removed
+    // after migration. Themes still on legacy templates (satin, flux)
+    // simply omit the flag — their shipped pages stay untouched.
+    if (puckDrivenPages) {
+      // /collections/[slug].astro
+      const collectionsSlugPath = path.join(
+        outputDir, "src", "pages", "collections", "[slug].astro",
       );
-      if (!(await fileExists(vanillaCollectionsSlugPath))) {
-        const collectionsPage = generateVanillaCollectionsSlugPage({
+      if (!(await fileExists(collectionsSlugPath))) {
+        const collectionsPage = generatePuckCollectionsSlugPage({
           apiUrl: config.dynamicPages.apiUrl,
           shopId: config.dynamicPages.shopId,
           layoutImport: config.layout?.importPath
@@ -452,161 +456,33 @@ export async function buildScaffold(
             : undefined,
           layoutTag: config.layout?.tagName,
         });
-        await writeFile(vanillaCollectionsSlugPath, collectionsPage);
+        await writeFile(collectionsSlugPath, collectionsPage);
         generatedFiles.push("src/pages/collections/[slug].astro");
       }
-    }
 
-    // 089 Bundle 5 (US1 Sub-A) — bloom theme: auto-generate /collections/[slug] page.
-    // Replaces deleted templates/astro/bloom/src/pages/collections/[slug].astro.
-    // Mirror vanilla pattern — single common implementation через package блоки.
-    if (config.themeName === "bloom") {
-      const bloomCollectionsSlugPath = path.join(
-        outputDir,
-        "src",
-        "pages",
-        "collections",
-        "[slug].astro",
-      );
-      if (!(await fileExists(bloomCollectionsSlugPath))) {
-        const collectionsPage = generateBloomCollectionsSlugPage({
-          apiUrl: config.dynamicPages.apiUrl,
-          shopId: config.dynamicPages.shopId,
-          layoutImport: config.layout?.importPath
-            ? `../../layouts/${path.basename(config.layout.importPath)}`
-            : undefined,
-          layoutTag: config.layout?.tagName,
-        });
-        await writeFile(bloomCollectionsSlugPath, collectionsPage);
-        generatedFiles.push("src/pages/collections/[slug].astro");
-      }
-    }
-
-    // Bundle 3 (rose pilot) — rose theme: auto-generate /collections/[slug] page.
-    // Replaces deleted templates/astro/rose/src/pages/collections/[slug].astro.
-    // Mirror bloom pattern (alias generateRoseCollectionsSlugPage = bloom's).
-    if (config.themeName === "rose") {
-      const roseCollectionsSlugPath = path.join(
-        outputDir,
-        "src",
-        "pages",
-        "collections",
-        "[slug].astro",
-      );
-      if (!(await fileExists(roseCollectionsSlugPath))) {
-        const collectionsPage = generateRoseCollectionsSlugPage({
-          apiUrl: config.dynamicPages.apiUrl,
-          shopId: config.dynamicPages.shopId,
-          layoutImport: config.layout?.importPath
-            ? `../../layouts/${path.basename(config.layout.importPath)}`
-            : undefined,
-          layoutTag: config.layout?.tagName,
-        });
-        await writeFile(roseCollectionsSlugPath, collectionsPage);
-        generatedFiles.push("src/pages/collections/[slug].astro");
-      }
-    }
-
-    // 086 Stage 4 — vanilla theme: auto-generate /catalog landing page.
-    // Replaces deleted templates/astro/vanilla/src/pages/catalog.astro
-    // (legacy React-island wrapper). Uses Puck-walking shape mirroring
-    // generateVanillaCollectionsSlugPage — reads pagesData['page-catalog']
-    // from data.json and walks blocks via theme registry.
-    if (config.themeName === 'vanilla') {
-      const vanillaCatalogPath = path.join(
+      // /catalog.astro
+      const catalogPath = path.join(
         outputDir, "src", "pages", "catalog.astro",
       );
-      if (!(await fileExists(vanillaCatalogPath))) {
-        const catalogPage = generateVanillaCatalogPage({
+      if (!(await fileExists(catalogPath))) {
+        const catalogPage = generatePuckCatalogPage({
           apiUrl: config.dynamicPages.apiUrl,
           shopId: config.dynamicPages.shopId,
         });
-        await writeFile(vanillaCatalogPath, catalogPage);
+        await writeFile(catalogPath, catalogPage);
         generatedFiles.push("src/pages/catalog.astro");
       }
-    }
 
-    // 089 Bundle 6 (US1 Sub-B) — bloom theme: auto-generate /catalog landing page.
-    // Replaces deleted templates/astro/bloom/src/pages/catalog.astro (legacy
-    // CatalogIsland.tsx React-island wrapper). Mirror vanilla pattern.
-    if (config.themeName === 'bloom') {
-      const bloomCatalogPath = path.join(
-        outputDir, "src", "pages", "catalog.astro",
-      );
-      if (!(await fileExists(bloomCatalogPath))) {
-        const catalogPage = generateBloomCatalogPage({
-          apiUrl: config.dynamicPages.apiUrl,
-          shopId: config.dynamicPages.shopId,
-        });
-        await writeFile(bloomCatalogPath, catalogPage);
-        generatedFiles.push("src/pages/catalog.astro");
-      }
-    }
-
-    // Bundle 4 (rose pilot) — rose theme: auto-generate /catalog page.
-    // Replaces deleted templates/astro/rose/src/pages/catalog.astro
-    // (legacy with hardcoded layout). Mirror bloom pattern.
-    if (config.themeName === 'rose') {
-      const roseCatalogPath = path.join(
-        outputDir, "src", "pages", "catalog.astro",
-      );
-      if (!(await fileExists(roseCatalogPath))) {
-        const catalogPage = generateRoseCatalogPage({
-          apiUrl: config.dynamicPages.apiUrl,
-          shopId: config.dynamicPages.shopId,
-        });
-        await writeFile(roseCatalogPath, catalogPage);
-        generatedFiles.push("src/pages/catalog.astro");
-      }
-    }
-
-    // 087 Stage 5 — vanilla theme: auto-generate /product/[handle] page.
-    // Replaces deleted templates/astro/vanilla/src/pages/product/[id].astro
-    // (legacy ProductIsland.tsx React-island wrapper).
-    if (config.themeName === 'vanilla') {
-      const vanillaProductPath = path.join(
+      // /product/[handle].astro
+      const productHandlePath = path.join(
         outputDir, "src", "pages", "product", "[handle].astro",
       );
-      if (!(await fileExists(vanillaProductPath))) {
-        const productPage = generateVanillaProductPage({
+      if (!(await fileExists(productHandlePath))) {
+        const productPage = generatePuckProductPage({
           apiUrl: config.dynamicPages.apiUrl,
           shopId: config.dynamicPages.shopId,
         });
-        await writeFile(vanillaProductPath, productPage);
-        generatedFiles.push("src/pages/product/[handle].astro");
-      }
-    }
-
-    // 089 Bundle 7 (US1 Sub-C) — bloom theme: auto-generate /product/[handle] page.
-    // Replaces deleted templates/astro/bloom/src/pages/product/[id].astro (legacy
-    // ProductIsland wrapper). Mirror vanilla pattern.
-    if (config.themeName === 'bloom') {
-      const bloomProductPath = path.join(
-        outputDir, "src", "pages", "product", "[handle].astro",
-      );
-      if (!(await fileExists(bloomProductPath))) {
-        const productPage = generateBloomProductPage({
-          apiUrl: config.dynamicPages.apiUrl,
-          shopId: config.dynamicPages.shopId,
-        });
-        await writeFile(bloomProductPath, productPage);
-        generatedFiles.push("src/pages/product/[handle].astro");
-      }
-    }
-
-    // Bundle 5 (rose pilot) — rose theme: auto-generate /product/[handle] page.
-    // Replaces deleted templates/astro/rose/src/pages/product/[id].astro
-    // (legacy slug-by-id route). Mirror bloom pattern — handle-based routing.
-    if (config.themeName === 'rose') {
-      const roseProductPath = path.join(
-        outputDir, "src", "pages", "product", "[handle].astro",
-      );
-      if (!(await fileExists(roseProductPath))) {
-        const productPage = generateRoseProductPage({
-          apiUrl: config.dynamicPages.apiUrl,
-          shopId: config.dynamicPages.shopId,
-        });
-        await writeFile(roseProductPath, productPage);
+        await writeFile(productHandlePath, productPage);
         generatedFiles.push("src/pages/product/[handle].astro");
       }
     }

@@ -8,7 +8,6 @@
   "description": "Elegant rose theme — Merfy flagship storefront template (fashion & lifestyle)",
   "author": "Merfy",
   "tokens": "./tokens.json",
-
   "defaults": {
     "--font-heading": "'Comfortaa', sans-serif",
     "--font-body": "'Manrope', sans-serif",
@@ -58,13 +57,11 @@
     "--size-small": "14px",
     "--size-tiny": "12px"
   },
-
   "blockDefaults": {
     "Footer": {
       "variant": "3-col"
     }
   },
-
   "colorSchemes": [
     {
       "id": "scheme-1",
@@ -144,7 +141,6 @@
       }
     }
   ],
-
   "blocks": {
     "Header": {
       "override": {
@@ -158,25 +154,44 @@
         "reason": "Rose uses 3-column grid (navigation / information / social) with inline-titled columns and unique social iconography."
       }
     },
-    "Hero": { "variant": "overlay" },
+    "Hero": {
+      "variant": "overlay"
+    },
     "PopularProducts": {},
     "Collections": {},
     "Product": {},
     "Newsletter": {},
     "ContactForm": {}
   },
-
   "features": {
     "newsletter": true,
     "cart-drawer": true,
     "otp-auth": true,
     "wishlist": false,
     "color-swatches": true,
-    "filter-sidebar": true
+    "filter-sidebar": true,
+    "puckDrivenPages": true
   },
-
   "fonts": [
-    { "family": "Comfortaa", "weights": [400, 500, 600, 700], "source": "google" },
-    { "family": "Manrope",   "weights": [400, 500, 600, 700], "source": "google" }
+    {
+      "family": "Comfortaa",
+      "weights": [
+        400,
+        500,
+        600,
+        700
+      ],
+      "source": "google"
+    },
+    {
+      "family": "Manrope",
+      "weights": [
+        400,
+        500,
+        600,
+        700
+      ],
+      "source": "google"
+    }
   ]
 }

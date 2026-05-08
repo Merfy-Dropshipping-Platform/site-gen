@@ -542,6 +542,23 @@ export async function buildScaffold(
       }
     }
 
+    // Bundle 4 (rose pilot) — rose theme: auto-generate /catalog page.
+    // Replaces deleted templates/astro/rose/src/pages/catalog.astro
+    // (legacy with hardcoded layout). Mirror bloom pattern.
+    if (config.themeName === 'rose') {
+      const roseCatalogPath = path.join(
+        outputDir, "src", "pages", "catalog.astro",
+      );
+      if (!(await fileExists(roseCatalogPath))) {
+        const catalogPage = generateRoseCatalogPage({
+          apiUrl: config.dynamicPages.apiUrl,
+          shopId: config.dynamicPages.shopId,
+        });
+        await writeFile(roseCatalogPath, catalogPage);
+        generatedFiles.push("src/pages/catalog.astro");
+      }
+    }
+
     // 087 Stage 5 — vanilla theme: auto-generate /product/[handle] page.
     // Replaces deleted templates/astro/vanilla/src/pages/product/[id].astro
     // (legacy ProductIsland.tsx React-island wrapper).

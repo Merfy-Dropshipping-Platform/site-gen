@@ -519,3 +519,17 @@ input[type="search"]::-webkit-search-results-decoration {
     padding: 0;
   }
 }
+
+/**
+ * Cascade fix: physical longhand для перебития Tailwind v4 reset.
+ * `* { margin: 0 }` раскладывается в browser computed как longhand
+ * `margin-left: 0` и побеждает logical `margin-inline-start: auto`
+ * от утилиты .mx-auto в одном Chrome cascade resolution.
+ *
+ * Этот override пишет longhand явно — wins cascade unambiguously.
+ * Применяется ко всем темам (через template global.css) и preview iframe.
+ */
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}

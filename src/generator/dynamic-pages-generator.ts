@@ -781,3 +781,12 @@ const pageTitle = (typeof rootProps.title === 'string' && rootProps.title) || pr
 </BaseLayout>
 `;
 }
+
+
+// Rose theme — aliases bloom auto-gen functions (identical Puck-driven page
+// shape, single source of truth via theme-base packages). Per spec 082 +
+// Bundle 3-5 of rose pilot. Keeps rose pages in lockstep with bloom: any
+// future change to bloom-* generators automatically applies to rose too.
+export const generateRoseCollectionsSlugPage = generateBloomCollectionsSlugPage;
+export const generateRoseCatalogPage = generateBloomCatalogPage;
+export const generateRoseProductPage = generateBloomProductPage;

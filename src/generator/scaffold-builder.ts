@@ -35,6 +35,9 @@ import {
   generateBloomCollectionsSlugPage,
   generateBloomCatalogPage,
   generateBloomProductPage,
+  generateRoseCollectionsSlugPage,
+  generateRoseCatalogPage,
+  generateRoseProductPage,
   type DynamicPageConfig,
 } from "./dynamic-pages-generator";
 import {
@@ -474,6 +477,31 @@ export async function buildScaffold(
           layoutTag: config.layout?.tagName,
         });
         await writeFile(bloomCollectionsSlugPath, collectionsPage);
+        generatedFiles.push("src/pages/collections/[slug].astro");
+      }
+    }
+
+    // Bundle 3 (rose pilot) — rose theme: auto-generate /collections/[slug] page.
+    // Replaces deleted templates/astro/rose/src/pages/collections/[slug].astro.
+    // Mirror bloom pattern (alias generateRoseCollectionsSlugPage = bloom's).
+    if (config.themeName === "rose") {
+      const roseCollectionsSlugPath = path.join(
+        outputDir,
+        "src",
+        "pages",
+        "collections",
+        "[slug].astro",
+      );
+      if (!(await fileExists(roseCollectionsSlugPath))) {
+        const collectionsPage = generateRoseCollectionsSlugPage({
+          apiUrl: config.dynamicPages.apiUrl,
+          shopId: config.dynamicPages.shopId,
+          layoutImport: config.layout?.importPath
+            ? `../../layouts/${path.basename(config.layout.importPath)}`
+            : undefined,
+          layoutTag: config.layout?.tagName,
+        });
+        await writeFile(roseCollectionsSlugPath, collectionsPage);
         generatedFiles.push("src/pages/collections/[slug].astro");
       }
     }

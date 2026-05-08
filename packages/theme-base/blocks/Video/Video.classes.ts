@@ -13,7 +13,7 @@ export const VideoClasses = {
   iframe:
     'absolute inset-0 h-full w-full border-0',
   video:
-    'absolute inset-0 h-full w-full object-cover',
+    'absolute inset-0 h-full w-full object-contain bg-black',
   placeholder:
     'absolute inset-0 flex flex-col items-center justify-center gap-3 text-[rgb(var(--color-text))]/50',
   placeholderIcon:

@@ -63,27 +63,23 @@ const headingSizeClass =
   headingSizeResolved === 'small' ? 'text-xl md:text-2xl' : '';
 
 // Constructor passes enabled/required as "true"/"false" strings.
-// Normalize to booleans; when fields is absent altogether, fall back to the
-// default field set (name + email + message enabled; phone disabled).
+// Normalize to booleans. Default field set: name + email + message
+// (phone disabled, included only when explicitly opted-in via fields config).
 const toBool = (v: unknown, fallback = false): boolean =>
   typeof v === 'boolean' ? v : v === 'true' ? true : v === 'false' ? false : fallback;
-// Default to ALL 4 fields enabled to match the constructor's React render,
-// which hardcodes Имя / Email / Телефон / Сообщение in both centered and
-// wide layouts. `required` markers are cosmetic here; constructor doesn't
-// render "*" at all, so keep them off by default to minimize visual diff.
 const norm = {
   name: {
     enabled: hasFields ? toBool(fields?.name?.enabled) : true,
-    required: hasFields ? toBool(fields?.name?.required) : false,
+    required: hasFields ? toBool(fields?.name?.required, true) : true,
     label: fields?.name?.label ?? 'Имя',
   },
   email: {
     enabled: hasFields ? toBool(fields?.email?.enabled) : true,
-    required: hasFields ? toBool(fields?.email?.required) : false,
+    required: hasFields ? toBool(fields?.email?.required, true) : true,
     label: fields?.email?.label ?? 'Email',
   },
   phone: {
-    enabled: hasFields ? toBool(fields?.phone?.enabled) : true,
+    enabled: hasFields ? toBool(fields?.phone?.enabled) : false,
     required: hasFields ? toBool(fields?.phone?.required) : false,
     label: fields?.phone?.label ?? 'Телефон',
   },

@@ -1,3 +1,30 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/**
+ * Tailwind v4 input для preview pipeline.
+ *
+ * Заменяет legacy v3-style `tailwind.config.cjs` + `@tailwind base/components/utilities`.
+ * Compile через `@tailwindcss/cli` v4 (см. compile-preview-tailwind.mjs).
+ *
+ * Унифицирует версию Tailwind с live build (templates/astro/<theme>/ тоже v4) —
+ * site ≡ constructor parity на CSS level (ранее preview был на v3 → cascade
+ * расходился: v3 emit longhand .mx-auto, v4 emit logical shorthand).
+ *
+ * Content paths: scan все theme-base + per-theme block overrides.
+ * cwd compile: packages/theme-base (см. compile-preview-tailwind.mjs).
+ */
+
+@import "tailwindcss";
+
+@source "./blocks/**/*.{astro,ts,tsx}";
+@source "./layouts/**/*.astro";
+@source "./seo/**/*.{astro,ts}";
+@source "./primitives/**/*.astro";
+@source "../theme-rose/blocks/**/*.{astro,ts,tsx}";
+@source "../theme-rose/customBlocks/**/*.{astro,ts,tsx}";
+@source "../theme-vanilla/blocks/**/*.{astro,ts,tsx}";
+@source "../theme-vanilla/customBlocks/**/*.{astro,ts,tsx}";
+@source "../theme-satin/blocks/**/*.{astro,ts,tsx}";
+@source "../theme-satin/customBlocks/**/*.{astro,ts,tsx}";
+@source "../theme-bloom/blocks/**/*.{astro,ts,tsx}";
+@source "../theme-bloom/customBlocks/**/*.{astro,ts,tsx}";
+@source "../theme-flux/blocks/**/*.{astro,ts,tsx}";
+@source "../theme-flux/customBlocks/**/*.{astro,ts,tsx}";

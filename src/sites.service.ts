@@ -1020,6 +1020,25 @@ export class SitesDomainService {
       await coolifyPromise;
     }
 
+    // Trigger Coolify nginx redeploy so the running container picks up the
+    // freshly built artifact from MinIO. Без этого build пишет файлы в bucket,
+    // но nginx serves старый snapshot до restart (live визуально не обновляется
+    // даже после успешной публикации).
+    if (coolifyAppUuid) {
+      try {
+        await this.deployments.deploy({
+          tenantId: params.tenantId,
+          siteId: params.siteId,
+          buildId,
+          artifactUrl,
+        });
+      } catch (e) {
+        this.logger.warn(
+          `Coolify nginx redeploy failed (build OK but live not updated): ${e instanceof Error ? e.message : e}`,
+        );
+      }
+    }
+
     // Обновить статус сайта + publicUrl
     await this.db
       .update(schema.site)

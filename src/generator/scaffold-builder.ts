@@ -357,10 +357,11 @@ export async function buildScaffold(
 
   // 6. Generate dynamic pages
   if (config.dynamicPages) {
-    // Skip legacy generic /product/[handle] generator for vanilla AND bloom —
-    // оба theme'а имеют собственный Puck-driven generator ниже (Spec 087, 089).
-    // Без этого guard legacy file shadows theme-specific generator via fileExists().
-    if (config.themeName !== 'vanilla' && config.themeName !== 'bloom') {
+    // Skip legacy generic /product/[handle] generator for vanilla, bloom AND rose —
+    // все три theme'а имеют собственный Puck-driven generator ниже (Spec 087, 089,
+    // rose pilot Bundle 5). Без этого guard legacy file shadows theme-specific
+    // generator via fileExists().
+    if (config.themeName !== 'vanilla' && config.themeName !== 'bloom' && config.themeName !== 'rose') {
       const productPage = generateProductPage({
         ...config.dynamicPages,
         layoutImport: config.layout?.importPath
@@ -589,6 +590,23 @@ export async function buildScaffold(
           shopId: config.dynamicPages.shopId,
         });
         await writeFile(bloomProductPath, productPage);
+        generatedFiles.push("src/pages/product/[handle].astro");
+      }
+    }
+
+    // Bundle 5 (rose pilot) — rose theme: auto-generate /product/[handle] page.
+    // Replaces deleted templates/astro/rose/src/pages/product/[id].astro
+    // (legacy slug-by-id route). Mirror bloom pattern — handle-based routing.
+    if (config.themeName === 'rose') {
+      const roseProductPath = path.join(
+        outputDir, "src", "pages", "product", "[handle].astro",
+      );
+      if (!(await fileExists(roseProductPath))) {
+        const productPage = generateRoseProductPage({
+          apiUrl: config.dynamicPages.apiUrl,
+          shopId: config.dynamicPages.shopId,
+        });
+        await writeFile(roseProductPath, productPage);
         generatedFiles.push("src/pages/product/[handle].astro");
       }
     }

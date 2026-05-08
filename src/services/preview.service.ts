@@ -722,6 +722,53 @@ const PREVIEW_NAV_AGENT_INLINE = `
         .catch(function (err) {
           console.error('[preview] update-block fetch failed', err);
         });
+    } else if (ev.data.type === 'add-block') {
+      // Structural insert without iframe reload. Parent посылает blockId,
+      // blockType, props, и beforeBlockId (вставить перед этим блоком,
+      // null = в конец). Fetch HTML и insertAdjacentHTML.
+      if (!currentSiteId) return;
+      var addBlockType = ev.data.blockType;
+      var addBlockId = ev.data.blockId;
+      var addBeforeId = ev.data.beforeBlockId;
+      if (!addBlockType || !addBlockId) return;
+      fetch('/api/sites/' + currentSiteId + '/preview/block', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ blockType: addBlockType, props: ev.data.props, themeId: currentThemeId }),
+      })
+        .then(function (r) { return r.text(); })
+        .then(function (html) {
+          // Найти точку вставки.
+          if (addBeforeId) {
+            var ref = document.querySelector('[data-puck-component-id="' + addBeforeId + '"]');
+            // Если у ref есть color-scheme wrapper — вставлять перед ним.
+            var refSchemeAttr = 'data-block-' + 'scheme';
+            var refTarget = ref && ref.parentElement && ref.parentElement.hasAttribute(refSchemeAttr) ? ref.parentElement : ref;
+            if (refTarget && refTarget.parentElement) {
+              refTarget.insertAdjacentHTML('beforebegin', html);
+              return;
+            }
+          }
+          // Append в конец main.
+          var container = document.querySelector('main') || document.body;
+          container.insertAdjacentHTML('beforeend', html);
+        })
+        .catch(function (err) { console.error('[preview] add-block fetch failed', err); });
+    } else if (ev.data.type === 'remove-block') {
+      // Удалить блок из DOM по blockId.
+      var rmId = ev.data.blockId;
+      if (!rmId) return;
+      var rmEl = document.querySelector('[data-puck-component-id="' + rmId + '"]');
+      if (rmEl) {
+        // Если есть color-scheme wrapper — удалить его тоже.
+        var rmParent = rmEl.parentElement;
+        var rmSchemeAttr = 'data-block-' + 'scheme';
+        if (rmParent && rmParent.hasAttribute(rmSchemeAttr)) {
+          rmParent.parentElement && rmParent.parentElement.removeChild(rmParent);
+        } else {
+          rmEl.parentElement && rmEl.parentElement.removeChild(rmEl);
+        }
+      }
     } else if (ev.data.type === 'update-tokens') {
       // Per-theme allowlist: hot-replace tokens.css для Rose и Vanilla (spec 084).
       // Symmetric to update-block — Stage 2a N4.

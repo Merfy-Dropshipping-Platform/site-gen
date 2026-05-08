@@ -1,6 +1,12 @@
 ---
 import type { ContactFormProps } from './ContactForm.puckConfig';
+import { ContactFormPuckConfig } from './ContactForm.puckConfig';
 import { ContactFormClasses as C } from './ContactForm.classes';
+
+// Single source of truth: defaults живут в puckConfig.ts. Astro fallback
+// импортирует их вместо дублирования — иначе расхождение неизбежно при
+// каждом изменении (как было: phone enabled в puckConfig, disabled в Astro).
+const PUCK_DEFAULTS = ContactFormPuckConfig.defaults?.fields ?? {};
 
 interface Props extends ContactFormProps {
   id?: string;
@@ -62,32 +68,25 @@ const headingSizeClass =
   headingSizeResolved === 'medium' ? 'text-2xl md:text-3xl' :
   headingSizeResolved === 'small' ? 'text-xl md:text-2xl' : '';
 
-// Constructor passes enabled/required as "true"/"false" strings.
-// Normalize to booleans. Default field set: name + email + message
-// (phone disabled, included only when explicitly opted-in via fields config).
+// Constructor passes enabled/required as "true"/"false" strings — normalize.
 const toBool = (v: unknown, fallback = false): boolean =>
   typeof v === 'boolean' ? v : v === 'true' ? true : v === 'false' ? false : fallback;
+// Resolve each field from props if present, else from puckConfig defaults.
+// Single source of truth: defaults defined ONLY in puckConfig.
+const resolveField = (key: 'name' | 'email' | 'phone' | 'message') => {
+  const def = (PUCK_DEFAULTS as Record<string, { enabled?: unknown; required?: unknown; label?: string }>)[key] ?? {};
+  const f = fields?.[key];
+  return {
+    enabled: hasFields && f?.enabled !== undefined ? toBool(f.enabled) : toBool(def.enabled),
+    required: hasFields && f?.required !== undefined ? toBool(f.required) : toBool(def.required),
+    label: f?.label ?? def.label ?? key,
+  };
+};
 const norm = {
-  name: {
-    enabled: hasFields ? toBool(fields?.name?.enabled) : true,
-    required: hasFields ? toBool(fields?.name?.required, true) : true,
-    label: fields?.name?.label ?? 'Имя',
-  },
-  email: {
-    enabled: hasFields ? toBool(fields?.email?.enabled) : true,
-    required: hasFields ? toBool(fields?.email?.required, true) : true,
-    label: fields?.email?.label ?? 'Email',
-  },
-  phone: {
-    enabled: hasFields ? toBool(fields?.phone?.enabled) : false,
-    required: hasFields ? toBool(fields?.phone?.required) : false,
-    label: fields?.phone?.label ?? 'Телефон',
-  },
-  message: {
-    enabled: hasFields ? toBool(fields?.message?.enabled) : true,
-    required: hasFields ? toBool(fields?.message?.required) : false,
-    label: fields?.message?.label ?? 'Сообщение',
-  },
+  name: resolveField('name'),
+  email: resolveField('email'),
+  phone: resolveField('phone'),
+  message: resolveField('message'),
 };
 ---
 <section

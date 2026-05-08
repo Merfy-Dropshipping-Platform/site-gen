@@ -82,7 +82,7 @@ export const ContactFormPuckConfig: BlockPuckConfig<ContactFormProps> = {
     fields: {
       name: { enabled: true, required: true, label: 'Имя' },
       email: { enabled: true, required: true, label: 'Email' },
-      phone: { enabled: true, required: false, label: 'Телефон' },
+      phone: { enabled: false, required: false, label: 'Телефон' },
       message: { enabled: true, required: false, label: 'Сообщение' },
     },
     buttonText: 'Отправить',

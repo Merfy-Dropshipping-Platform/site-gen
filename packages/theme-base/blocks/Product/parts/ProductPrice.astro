@@ -1,0 +1,45 @@
+---
+/**
+ * ProductPrice — current + (optional) old price.
+ *
+ * Variants:
+ *  - `compact` (rose, default) — 16px current / 14px old, gap 8px.
+ *  - `spaced` (flux) — 20px current / 16px old, gap 12px.
+ */
+import type { PriceView } from '../Product.types';
+
+interface Props {
+  price: PriceView;
+  oldPrice?: PriceView;
+  hasDiscount?: boolean;
+  variant?: 'compact' | 'spaced';
+}
+
+const { price, oldPrice, hasDiscount = false, variant = 'compact' } = Astro.props as Props;
+const isSpaced = variant === 'spaced';
+const showOld = hasDiscount && oldPrice && oldPrice.formatted;
+---
+<div
+  class:list={[
+    'inline-flex items-center [font-family:var(--font-body)]',
+    isSpaced ? 'gap-3' : 'gap-2',
+  ]}
+  data-product-price
+>
+  <span
+    class:list={[
+      'text-[rgb(var(--color-text))]',
+      isSpaced ? 'text-[20px]' : 'text-[16px]',
+    ]}
+    data-product-price-current
+  >{price.formatted}</span>
+  {showOld && (
+    <span
+      class:list={[
+        'text-[rgb(var(--color-muted))] line-through',
+        isSpaced ? 'text-[16px]' : 'text-[14px]',
+      ]}
+      data-product-price-old
+    >{oldPrice!.formatted}</span>
+  )}
+</div>

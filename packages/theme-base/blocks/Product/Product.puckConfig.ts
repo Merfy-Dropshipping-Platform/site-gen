@@ -43,6 +43,21 @@ export const ProductSchema = z.object({
   }).optional(),
   dynamicButton: z.object({ enabled: z.enum(['true', 'false']).optional() }).optional(),
   colorScheme: z.string().optional(),
+  /**
+   * Theme-driven visual variants (gallery layout, chips/dropdown, mono/accent
+   * CTA, description visibility). Set via `theme.json blockDefaults.Product.visualConfig`.
+   * Merchant doesn't see this in the constructor — there are no `fields` for it.
+   */
+  visualConfig: z.object({
+    gallery: z.object({
+      variant: z.enum(['wrap-large', 'inline-small']).optional(),
+      showDiscountBadge: z.boolean().optional(),
+    }).optional(),
+    variantsType: z.enum(['chips', 'dropdown']).optional(),
+    counter: z.object({ variant: z.enum(['inline', 'pill']).optional() }).optional(),
+    actions: z.object({ scheme: z.enum(['mono', 'accent']).optional() }).optional(),
+    showDescription: z.boolean().optional(),
+  }).optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -213,6 +228,9 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
       },
     },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    // visualConfig is theme-driven only (set via theme.json blockDefaults).
+    // Marked 'hidden' so the constructor doesn't render an editor for it.
+    visualConfig: { type: 'hidden', label: '' },
     padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {

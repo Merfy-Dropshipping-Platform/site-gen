@@ -1,0 +1,52 @@
+---
+/**
+ * ProductActions — Add to cart + Buy now CTAs.
+ *
+ * Schemes:
+ *  - `mono` (rose, default) — first button outline (border-text/text-text),
+ *    second button filled (bg-text/text-bg). Both h-14 rounded-8 16px.
+ *  - `accent` (flux) — first button filled mono (bg-text/text-bg), second
+ *    button filled accent (bg-accent/text-bg). Both h-16 rounded-8 20px UPPERCASE.
+ *
+ * Buttons carry `data-product-action` so the JS island can hook into clicks
+ * without parsing labels.
+ */
+interface Props {
+  addToCartLabel?: string;
+  buyNowLabel?: string;
+  scheme?: 'mono' | 'accent';
+}
+
+const {
+  addToCartLabel = 'Добавить в корзину',
+  buyNowLabel = 'Купить сейчас',
+  scheme = 'mono',
+} = Astro.props as Props;
+
+const isAccent = scheme === 'accent';
+
+const heightCls = isAccent ? 'h-16' : 'h-14';
+const textCls = isAccent
+  ? 'text-[20px] uppercase'
+  : 'text-[16px]';
+const baseCls =
+  'w-full inline-flex items-center justify-center px-5 rounded-[8px] [font-family:var(--font-body)] cursor-pointer transition-opacity hover:opacity-85';
+const addCls = isAccent
+  ? 'bg-[rgb(var(--color-text))] text-[rgb(var(--color-background))]'
+  : 'bg-transparent border border-[rgb(var(--color-text))] text-[rgb(var(--color-text))]';
+const buyCls = isAccent
+  ? 'bg-[rgb(var(--color-accent,250_81_9))] text-[rgb(var(--color-background))]'
+  : 'bg-[rgb(var(--color-text))] text-[rgb(var(--color-background))]';
+---
+<div class="flex flex-col gap-3 w-full" data-product-actions data-actions-scheme={scheme}>
+  <button
+    type="button"
+    data-product-action="add-to-cart"
+    class:list={[baseCls, heightCls, textCls, addCls]}
+  >{addToCartLabel}</button>
+  <button
+    type="button"
+    data-product-action="buy-now"
+    class:list={[baseCls, heightCls, textCls, buyCls]}
+  >{buyNowLabel}</button>
+</div>

@@ -159,7 +159,15 @@
     },
     "PopularProducts": {},
     "Collections": {},
-    "Product": {},
+    "Product": {
+      "visualConfig": {
+        "gallery": { "variant": "wrap-large", "showDiscountBadge": true },
+        "variantsType": "chips",
+        "counter": { "variant": "inline" },
+        "actions": { "scheme": "mono" },
+        "showDescription": true
+      }
+    },
     "Newsletter": {},
     "ContactForm": {}
   },

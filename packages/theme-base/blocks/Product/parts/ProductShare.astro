@@ -1,0 +1,25 @@
+---
+/**
+ * ProductShare — share button (icon + label).
+ *
+ * Single visual variant. Click handler is wired by the JS island via
+ * `data-product-action="share"`.
+ */
+interface Props {
+  label?: string;
+}
+
+const { label = 'Поделиться' } = Astro.props as Props;
+---
+<button
+  type="button"
+  data-product-action="share"
+  class="inline-flex items-center gap-2 [font-family:var(--font-body)] text-[14px] text-[rgb(var(--color-text))] cursor-pointer transition-opacity hover:opacity-70 bg-transparent border-0 p-0"
+>
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+    <path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7" />
+    <polyline points="16 6 12 2 8 6" />
+    <line x1="12" y1="2" x2="12" y2="15" />
+  </svg>
+  <span>{label}</span>
+</button>

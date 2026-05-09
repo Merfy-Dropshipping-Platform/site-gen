@@ -1,0 +1,26 @@
+---
+/**
+ * ProductDescription — section with heading "ОПИСАНИЕ" + body copy.
+ *
+ * Renders nothing when content is empty. Themes that hide description
+ * entirely (e.g. flux PDP variant) just omit this primitive in Product.astro
+ * via `showDescription: false`.
+ */
+interface Props {
+  content?: string;
+  heading?: string;
+}
+
+const { content = '', heading = 'Описание' } = Astro.props as Props;
+const trimmed = content.trim();
+---
+{trimmed && (
+  <div class="flex flex-col gap-2 w-full" data-product-description>
+    <h2 class="[font-family:var(--font-heading)] text-[20px] uppercase tracking-wide text-[rgb(var(--color-text))] m-0">
+      {heading}
+    </h2>
+    <p class="[font-family:var(--font-body)] text-[16px] text-[rgb(var(--color-muted))] leading-normal m-0 whitespace-pre-line">
+      {trimmed}
+    </p>
+  </div>
+)}

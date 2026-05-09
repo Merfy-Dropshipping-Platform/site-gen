@@ -1,0 +1,91 @@
+---
+/**
+ * ProductVariants — variant-group selector primitive.
+ *
+ * Types:
+ *  - `chips` (rose, default) — each option is a pill button h-12 rounded-6.
+ *    Active: bg-text/text-bg. Inactive: border-text/text-text. Out-of-stock:
+ *    border-muted/text-muted strikethrough disabled.
+ *  - `dropdown` (flux) — each group is a labelled `<select>` h-14 rounded-6.
+ *
+ * Each option button/option carries `data-variant-key` and `data-variant-value`
+ * so the JS island can read selection state without parsing labels.
+ */
+import type { VariantGroupView } from '../Product.types';
+
+interface Props {
+  groups: VariantGroupView[];
+  type?: 'chips' | 'dropdown';
+}
+
+const { groups, type = 'chips' } = Astro.props as Props;
+const isDropdown = type === 'dropdown';
+---
+{groups.length > 0 && (
+  <div
+    class:list={[
+      'flex flex-col w-full',
+      isDropdown ? 'gap-6' : 'gap-4',
+    ]}
+    data-product-variants
+    data-variants-type={type}
+  >
+    {groups.map((g) => (
+      <div class="flex flex-col gap-3 w-full" data-variant-group data-variant-key={g.key}>
+        {isDropdown && (
+          <label
+            class="[font-family:var(--font-body)] text-[14px] uppercase text-[rgb(var(--color-text))] tracking-wide"
+            for={`variant-${g.key}`}
+          >{g.key}</label>
+        )}
+
+        {isDropdown ? (
+          <div class="relative w-full">
+            <select
+              id={`variant-${g.key}`}
+              data-variant-select
+              data-variant-key={g.key}
+              class="w-full h-14 px-3 pr-10 rounded-[6px] bg-[rgb(var(--color-surface,var(--color-text)/0.04))] [font-family:var(--font-body)] text-[16px] text-[rgb(var(--color-text))] uppercase appearance-none border-0 outline-none cursor-pointer"
+            >
+              {g.options.map((opt) => (
+                <option value={opt.value} disabled={!opt.available}>{opt.value}</option>
+              ))}
+            </select>
+            <svg
+              aria-hidden="true"
+              class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none w-6 h-6 text-[rgb(var(--color-text))]"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+        ) : (
+          <div class="flex flex-wrap gap-2">
+            {g.options.map((opt, optIdx) => {
+              const active = optIdx === 0 && opt.available;
+              const baseCls =
+                'inline-flex items-center justify-center h-12 px-4 rounded-[6px] [font-family:var(--font-body)] text-[16px] cursor-pointer transition-colors';
+              const stateCls = !opt.available
+                ? 'border border-[rgb(var(--color-muted))] text-[rgb(var(--color-muted))] line-through bg-[rgb(var(--color-muted)/0.05)] cursor-not-allowed'
+                : active
+                ? 'bg-[rgb(var(--color-text))] text-[rgb(var(--color-background))] border border-[rgb(var(--color-text))]'
+                : 'border border-[rgb(var(--color-text))] text-[rgb(var(--color-text))] bg-transparent';
+              return (
+                <button
+                  type="button"
+                  data-variant-chip
+                  data-variant-key={g.key}
+                  data-variant-value={opt.value}
+                  data-variant-available={opt.available ? 'true' : 'false'}
+                  data-variant-active={active ? 'true' : 'false'}
+                  disabled={!opt.available}
+                  class:list={[baseCls, stateCls]}
+                >{opt.value}</button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    ))}
+  </div>
+)}

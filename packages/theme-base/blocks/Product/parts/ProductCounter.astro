@@ -1,0 +1,63 @@
+---
+/**
+ * ProductCounter — quantity selector.
+ *
+ * Variants:
+ *  - `inline` (rose, default) — minus / value / plus, no surrounding fill,
+ *    icons size-6, gap-3.
+ *  - `pill` (flux) — same controls inside a black filled rounded-4 pill,
+ *    white text, p-2 gap-2.
+ */
+interface Props {
+  variant?: 'inline' | 'pill';
+  initialValue?: number;
+}
+
+const { variant = 'inline', initialValue = 1 } = Astro.props as Props;
+const isPill = variant === 'pill';
+---
+<div
+  class:list={[
+    'inline-flex items-center [font-family:var(--font-body)]',
+    isPill
+      ? 'bg-[rgb(var(--color-text))] text-[rgb(var(--color-background))] gap-2 p-2 rounded-[4px]'
+      : 'text-[rgb(var(--color-text))] gap-3',
+  ]}
+  data-product-counter
+  data-counter-variant={variant}
+>
+  <button
+    type="button"
+    data-counter-action="decrement"
+    aria-label="Уменьшить количество"
+    class:list={[
+      'inline-flex items-center justify-center cursor-pointer transition-opacity hover:opacity-70',
+      isPill ? 'w-8 h-8 rounded-[4px]' : 'w-6 h-6',
+    ]}
+  >
+    <svg width={isPill ? '16' : '24'} height={isPill ? '16' : '24'} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  </button>
+  <span
+    class:list={[
+      'min-w-6 text-center select-none',
+      isPill ? 'text-[20px]' : 'text-[16px]',
+    ]}
+    data-counter-value
+  >{initialValue}</span>
+  <button
+    type="button"
+    data-counter-action="increment"
+    aria-label="Увеличить количество"
+    class:list={[
+      'inline-flex items-center justify-center cursor-pointer transition-opacity hover:opacity-70',
+      isPill ? 'w-8 h-8 rounded-[4px]' : 'w-6 h-6',
+    ]}
+  >
+    <svg width={isPill ? '16' : '24'} height={isPill ? '16' : '24'} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  </button>
+</div>

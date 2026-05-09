@@ -83,6 +83,12 @@ const shareText = share?.text ?? 'Поделиться';
 const fallbackDescription = description?.content ?? '';
 
 // — Resolve product → ProductView (single source of truth). —
+//
+// Path 1 (live SSG): products.json snapshot is baked at build time; resolve
+//   by productId/slug/handle from that array.
+// Path 2 (preview iframe): products.json absent → fetch storefront-data
+//   server-side so Astro renders complete HTML (variants, thumbs, etc) instead
+//   of relying on JS-driven post-load DOM patching.
 let realProducts: RawProduct[] = [];
 try {
   const productsData = await import('../data/products.json');
@@ -90,7 +96,25 @@ try {
 } catch {
   realProducts = [];
 }
-const resolved = resolveProduct(productId, realProducts);
+let resolved = resolveProduct(productId, realProducts);
+if (!resolved && siteId) {
+  // Preview path: pull product directly from sites service so SSR is complete.
+  // Local hostname inside the container; falls back to public gateway in case
+  // the block is rendered outside the sites service process.
+  try {
+    const qs = productId ? `?product=${encodeURIComponent(productId)}` : '';
+    const internalBase = (import.meta as unknown as { env?: { SITES_INTERNAL_BASE?: string } }).env?.SITES_INTERNAL_BASE
+      ?? 'http://localhost:3114';
+    const res = await fetch(`${internalBase}/api/sites/${siteId}/storefront-data${qs}`).catch(() => null);
+    if (res && res.ok) {
+      const data = (await res.json()) as { product?: RawProduct; products?: RawProduct[] };
+      const single = data.product ?? data.products?.[0] ?? null;
+      if (single) resolved = single;
+    }
+  } catch {
+    // swallow — fall through to emptyProductView
+  }
+}
 const view: ProductView = resolved
   ? normaliseProduct(resolved, fallbackDescription)
   : emptyProductView(fallbackDescription);

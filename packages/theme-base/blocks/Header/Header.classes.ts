@@ -35,7 +35,7 @@ export const HeaderClasses = {
   },
   logoWrap: {
     'top-left':
-      'absolute left-1/2 -translate-x-1/2 md:relative md:left-auto md:transform-none',
+      'absolute left-1/2 -translate-x-1/2 md:relative md:left-auto md:translate-x-0',
     'top-center': 'absolute left-1/2 -translate-x-1/2',
     'top-right': 'hidden md:flex',
     'center-left': '',

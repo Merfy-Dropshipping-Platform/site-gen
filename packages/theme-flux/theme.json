@@ -87,7 +87,7 @@
       "name": "2",
       "tokens": {
         "--color-bg": "255 255 255",
-        "--color-surface": "255 255 255",
+        "--color-surface": "251 251 251",
         "--color-heading": "0 0 0",
         "--color-text": "0 0 0",
         "--color-muted": "204 204 204",
@@ -96,9 +96,12 @@
         "--color-button-bg": "250 81 9",
         "--color-button-text": "255 255 255",
         "--color-button-border": "250 81 9",
-        "--color-button-2-bg": "255 255 255",
-        "--color-button-2-text": "0 0 0",
-        "--color-button-2-border": "245 245 245"
+        "--color-button-secondary-bg": "0 0 0",
+        "--color-button-secondary-text": "255 255 255",
+        "--color-button-secondary-border": "0 0 0",
+        "--color-button-2-bg": "0 0 0",
+        "--color-button-2-text": "255 255 255",
+        "--color-button-2-border": "0 0 0"
       }
     },
     {

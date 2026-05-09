@@ -342,10 +342,10 @@ const brandText = textContent || view.brand || '';
         const isActive = c === chip;
         c.setAttribute('data-variant-active', isActive ? 'true' : 'false');
         if (isActive) {
-          c.classList.add('bg-[rgb(var(--color-text))]', 'text-[rgb(var(--color-background))]');
+          c.classList.add('bg-[rgb(var(--color-text))]', 'text-[rgb(var(--color-bg))]');
           c.classList.remove('bg-transparent', 'text-[rgb(var(--color-text))]');
         } else if (c.getAttribute('data-variant-available') !== 'false') {
-          c.classList.remove('bg-[rgb(var(--color-text))]', 'text-[rgb(var(--color-background))]');
+          c.classList.remove('bg-[rgb(var(--color-text))]', 'text-[rgb(var(--color-bg))]');
           c.classList.add('bg-transparent', 'text-[rgb(var(--color-text))]');
         }
       });

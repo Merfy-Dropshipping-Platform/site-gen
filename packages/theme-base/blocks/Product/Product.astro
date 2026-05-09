@@ -133,9 +133,6 @@ const brandText = textContent || view.brand || '';
   data-product-id={view.id || productId}
   data-product-slug={view.slug || productId}
   data-product-handle={view.handle || productId}
-  data-debug-resolved={resolved ? '1' : '0'}
-  data-debug-has-variants={view.hasVariants ? '1' : '0'}
-  data-debug-groups={String(view.variantGroups.length)}
   style={`background:rgb(var(--color-background, var(--color-bg)));color:rgb(var(--color-foreground, var(--color-text)));${paddingStyle}`}
 >
   {view.jsonLd && (

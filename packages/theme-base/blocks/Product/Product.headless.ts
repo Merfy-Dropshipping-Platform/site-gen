@@ -131,15 +131,15 @@ export function normaliseProduct(
   const oldPrice = toPriceView(raw.compareAtPrice ?? raw.oldPrice ?? 0);
   const hasDiscount = oldPrice.amount > 0 && oldPrice.amount > price.amount;
   const gallery = normaliseGallery(raw, name);
-  // Storefront-data API returns `variantCombinations`; build pipeline writes
-  // `variants` to products.json. Accept either so live + preview paths behave
-  // identically. Derive `hasVariants` from data when the flag is missing
-  // (some upstream responses set it incorrectly).
-  const productVariants = Array.isArray(raw.variants)
-    ? raw.variants
-    : Array.isArray(raw.variantCombinations)
-      ? raw.variantCombinations
-      : [];
+  // Storefront-data API populates `variantCombinations` (and emits an empty
+  // `variants: []` for compat); build pipeline writes `variants` to
+  // products.json. Pick whichever array is non-empty so both paths render
+  // variants identically without forcing the API to drop one of the fields.
+  // Derive `hasVariants` from data when the upstream flag is incorrect
+  // (storefront-data returns hasVariants=false alongside 9 combinations).
+  const variantsArr = Array.isArray(raw.variants) ? raw.variants : [];
+  const combosArr = Array.isArray(raw.variantCombinations) ? raw.variantCombinations : [];
+  const productVariants = variantsArr.length > 0 ? variantsArr : combosArr;
   const hasVariants =
     productVariants.length > 0 &&
     (raw.hasVariants !== false ||

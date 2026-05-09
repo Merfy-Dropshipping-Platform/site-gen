@@ -85,9 +85,12 @@
         "--color-button-bg": "0 0 0",
         "--color-button-text": "255 255 255",
         "--color-button-border": "0 0 0",
+        "--color-button-secondary-bg": "255 255 255",
+        "--color-button-secondary-text": "0 0 0",
+        "--color-button-secondary-border": "0 0 0",
         "--color-button-2-bg": "255 255 255",
         "--color-button-2-text": "0 0 0",
-        "--color-button-2-border": "229 231 235"
+        "--color-button-2-border": "0 0 0"
       }
     },
     {
@@ -105,9 +108,12 @@
         "--color-button-bg": "0 0 0",
         "--color-button-text": "255 255 255",
         "--color-button-border": "0 0 0",
+        "--color-button-secondary-bg": "255 255 255",
+        "--color-button-secondary-text": "0 0 0",
+        "--color-button-secondary-border": "0 0 0",
         "--color-button-2-bg": "255 255 255",
         "--color-button-2-text": "0 0 0",
-        "--color-button-2-border": "229 231 235"
+        "--color-button-2-border": "0 0 0"
       }
     },
     {
@@ -124,9 +130,12 @@
         "--color-button-bg": "0 0 0",
         "--color-button-text": "245 240 235",
         "--color-button-border": "0 0 0",
+        "--color-button-secondary-bg": "245 240 235",
+        "--color-button-secondary-text": "26 26 26",
+        "--color-button-secondary-border": "26 26 26",
         "--color-button-2-bg": "245 240 235",
         "--color-button-2-text": "26 26 26",
-        "--color-button-2-border": "220 215 210"
+        "--color-button-2-border": "26 26 26"
       }
     },
     {
@@ -143,9 +152,12 @@
         "--color-button-bg": "255 255 255",
         "--color-button-text": "0 0 0",
         "--color-button-border": "255 255 255",
+        "--color-button-secondary-bg": "0 0 0",
+        "--color-button-secondary-text": "255 255 255",
+        "--color-button-secondary-border": "255 255 255",
         "--color-button-2-bg": "0 0 0",
         "--color-button-2-text": "255 255 255",
-        "--color-button-2-border": "51 51 51"
+        "--color-button-2-border": "255 255 255"
       }
     }
   ],

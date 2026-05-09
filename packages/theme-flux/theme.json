@@ -8,7 +8,6 @@
   "description": "Flux — modern dark theme with orange accent (#fa5109), Roboto Flex headings + body, medium (6px) button radii for tech and electronics stores.",
   "author": "Merfy",
   "tokens": "./tokens.json",
-
   "defaults": {
     "--font-heading": "'Roboto Flex', sans-serif",
     "--font-body": "'Roboto Flex', sans-serif",
@@ -38,13 +37,11 @@
     "--card-alignment": "left",
     "--color-error": "255 148 148"
   },
-
   "blockDefaults": {
     "Footer": {
       "variant": "2-part"
     }
   },
-
   "colorSchemes": [
     {
       "id": "scheme-1",
@@ -123,7 +120,6 @@
       }
     }
   ],
-
   "blocks": {
     "Header": {
       "override": {
@@ -137,26 +133,51 @@
         "reason": "Flux uses 2-part grid (logo+nav LEFT, contact+social RIGHT), orange accent submit button with 6px radius, and a powered-by black strip below copyright."
       }
     },
-    "Hero": { "variant": "overlay" },
+    "Hero": {
+      "variant": "overlay"
+    },
     "PopularProducts": {},
     "Collections": {},
     "Product": {},
     "Newsletter": {},
     "ContactForm": {}
   },
-
   "features": {
     "newsletter": true,
     "cart-drawer": true,
     "otp-auth": true,
     "wishlist": false,
     "color-swatches": true,
-    "filter-sidebar": true
+    "filter-sidebar": true,
+    "puckDrivenPages": true
   },
-
   "fonts": [
-    { "family": "Roboto Flex", "weights": [300, 400, 500, 600, 700], "source": "google" },
-    { "family": "Barlow",      "weights": [400, 500],                 "source": "google" },
-    { "family": "Inter",       "weights": [300, 400],                 "source": "google" }
+    {
+      "family": "Roboto Flex",
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "source": "google"
+    },
+    {
+      "family": "Barlow",
+      "weights": [
+        400,
+        500
+      ],
+      "source": "google"
+    },
+    {
+      "family": "Inter",
+      "weights": [
+        300,
+        400
+      ],
+      "source": "google"
+    }
   ]
 }

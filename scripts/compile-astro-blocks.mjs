@@ -203,12 +203,19 @@ function rewriteRelativeImports(source, pkg, blockName) {
       // importing `./BaseLayout.astro` → `./theme-base__layouts__BaseLayout.mjs`.
       if (modName.endsWith('.astro')) {
         const bare = modName.replace(/\.astro$/, '');
-        // If entry is a non-block (layouts__X or seo__X), its siblings use the same category prefix.
-        // E.g. StoreLayout blockName = 'layouts__StoreLayout' → prefix = 'layouts__'
-        // Sibling './BaseLayout.astro' should resolve to 'theme-base__layouts__BaseLayout.mjs'.
+        // Two cases:
+        // 1. Non-block entry (layouts__X / seo__X) — siblings share the category
+        //    prefix. E.g. StoreLayout (blockName = 'layouts__StoreLayout') importing
+        //    './BaseLayout.astro' → 'theme-base__layouts__BaseLayout.mjs'.
+        // 2. Block entry (e.g. Product) importing a primitive sibling
+        //    './ProductGallery.astro' → 'theme-base__Product__ProductGallery.mjs'.
+        //    Without the `<blockName>__` segment the resolver can't find the file
+        //    (production crash before this fix).
         const catMatch = /^([a-z]+__)/i.exec(blockName);
-        const category = catMatch ? catMatch[1] : '';
-        return `${prefix}./${pkg}__${category}${bare}.mjs${suffix}`;
+        if (catMatch) {
+          return `${prefix}./${pkg}__${catMatch[1]}${bare}.mjs${suffix}`;
+        }
+        return `${prefix}./${pkg}__${blockName}__${bare}.mjs${suffix}`;
       }
       return `${prefix}./${pkg}__${blockName}__${modName}.mjs${suffix}`;
     },

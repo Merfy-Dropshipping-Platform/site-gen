@@ -40,6 +40,16 @@ export const HeaderSchema = z.object({
    */
   variant: z.enum(['standard', 'two-tier']).optional(),
   /**
+   * Optional promo strip rendered ABOVE the header (Figma flux 1:26341).
+   * Disabled by default; flux opts in via `theme.json blockDefaults.Header.promoBar.enabled`.
+   */
+  promoBar: z.object({
+    enabled: z.boolean().optional(),
+    text: z.string().optional(),
+    linkText: z.string().optional(),
+    linkHref: z.string().optional(),
+  }).optional(),
+  /**
    * Font for the text logo (used when `logo` is empty). Maps to a family key
    * known to constructor-theme-bridge — see FONT_FAMILIES there. Leave
    * undefined to use the theme's body font.
@@ -86,6 +96,23 @@ export const HeaderPuckConfig: BlockPuckConfig<HeaderProps> = {
         { label: 'Стандартный (одна строка)', value: 'standard' },
         { label: 'Двухуровневый (логотип сверху, меню снизу)', value: 'two-tier' },
       ],
+    },
+    promoBar: {
+      type: 'object',
+      label: 'Промо-полоска (сверху)',
+      objectFields: {
+        enabled: {
+          type: 'radio',
+          label: 'Показать',
+          options: [
+            { label: 'Да', value: true },
+            { label: 'Нет', value: false },
+          ],
+        },
+        text: { type: 'text', label: 'Текст' },
+        linkText: { type: 'text', label: 'Текст ссылки' },
+        linkHref: { type: 'text', label: 'URL ссылки' },
+      },
     },
     menuType: { type: 'radio', label: 'Тип меню' },
     navigationLinks: { type: 'array', label: 'Ссылки меню' },

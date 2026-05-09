@@ -21,6 +21,16 @@ const {
 const variant = (Astro.props as Record<string, unknown>).variant as 'standard' | 'two-tier' | undefined;
 const isTwoTier = variant === 'two-tier';
 
+// Optional promo strip above header (Figma flux 1:26341). flux opts in via
+// theme.json blockDefaults.Header.promoBar.enabled.
+const promoBar = (Astro.props as Record<string, unknown>).promoBar as
+  | { enabled?: boolean | string; text?: string; linkText?: string; linkHref?: string }
+  | undefined;
+const promoEnabled = promoBar?.enabled === true || promoBar?.enabled === 'true';
+const promoText = (promoBar?.text || '').trim();
+const promoLinkText = (promoBar?.linkText || '').trim();
+const promoLinkHref = promoBar?.linkHref || '#';
+
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
 const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
 const isCenterLeft = logoPosition === 'center-left';
@@ -34,6 +44,21 @@ const isCenterLeft = logoPosition === 'center-left';
 const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/logo.svg';
 ---
 <div class:list={[C.wrapper, C.sticky[stickiness], schemeClass]} data-header-wrapper data-puck-component-id={id}>
+  {promoEnabled && promoText && (
+    <div class="w-full bg-black text-white" data-header-promo>
+      <div class="flex items-center justify-center px-4 py-[14px] min-h-[48px]">
+        <p class="[font-family:var(--font-body)] font-light text-[14px] leading-[20px] uppercase text-white">
+          <span>{promoText}</span>
+          {promoLinkText && (
+            <>
+              {' '}
+              <a href={promoLinkHref} class="underline underline-offset-2 hover:opacity-80 transition-opacity">{promoLinkText}</a>
+            </>
+          )}
+        </p>
+      </div>
+    </div>
+  )}
   <header
     class:list={[C.header, !padding && 'min-h-[64px]']}
     data-menu-type={menuType}

@@ -49,7 +49,6 @@ export const bloomRegistry: Record<string, ComponentRegistryEntry> = {
   ContactForm: packageComponent("ContactForm", "ContactForm"),
   Gallery: packageComponent("Gallery", "Gallery"),
   PromoBanner: packageComponent("PromoBanner", "PromoBanner"),
-  PromoBar: packageComponent("PromoBar", "PromoBar"),
   ImageWithText: packageComponent("ImageWithText", "ImageWithText"),
   Newsletter: packageComponent("Newsletter", "Newsletter"),
   Video: packageComponent("Video", "Video"),

@@ -17,14 +17,17 @@ import type { ProductView, ProductVisualConfig, RawProduct } from './Product.typ
 import { DEFAULT_VISUAL_CONFIG } from './Product.types';
 import { emptyProductView, normaliseProduct, resolveProduct } from './Product.headless';
 
-import ProductGallery from './parts/ProductGallery.astro';
-import ProductInfo from './parts/ProductInfo.astro';
-import ProductPrice from './parts/ProductPrice.astro';
-import ProductVariants from './parts/ProductVariants.astro';
-import ProductCounter from './parts/ProductCounter.astro';
-import ProductActions from './parts/ProductActions.astro';
-import ProductDescription from './parts/ProductDescription.astro';
-import ProductShare from './parts/ProductShare.astro';
+// Primitives — colocated with Product.astro so compile-astro-blocks (flat
+// per-block discovery) picks them up. They are presentational only; data
+// flows through the headless layer above.
+import ProductGallery from './ProductGallery.astro';
+import ProductInfo from './ProductInfo.astro';
+import ProductPrice from './ProductPrice.astro';
+import ProductVariants from './ProductVariants.astro';
+import ProductCounter from './ProductCounter.astro';
+import ProductActions from './ProductActions.astro';
+import ProductDescription from './ProductDescription.astro';
+import ProductShare from './ProductShare.astro';
 
 interface Props extends ProductProps {
   id?: string;

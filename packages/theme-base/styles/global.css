@@ -1018,17 +1018,27 @@ input[type="search"]::-webkit-search-results-decoration {
   height: 32px;
 }
 [data-header-variant="two-tier"] nav[aria-label="Secondary navigation"] {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   gap: 32px;
   height: 24px;
   margin-top: 20px;
   padding: 0;
 }
+/* Шрифт/вес/размер берутся из theme tokens (управляются ThemeSettingsPanel
+   в конструкторе: Типографика → Шрифт body / Размер навигационной ссылки). */
 [data-header-variant="two-tier"] nav[aria-label="Secondary navigation"] a {
-  font-weight: 300;
-  font-size: 16px;
+  font-family: var(--font-body);
+  font-weight: var(--weight-body, 400);
+  font-size: var(--size-nav-link, 16px);
   line-height: 1;
   color: rgb(var(--color-muted));
+  transition: color 150ms ease;
 }
 [data-header-variant="two-tier"] nav[aria-label="Secondary navigation"] a:first-child {
+  color: rgb(var(--color-text));
+}
+[data-header-variant="two-tier"] nav[aria-label="Secondary navigation"] a:hover {
   color: rgb(var(--color-text));
 }

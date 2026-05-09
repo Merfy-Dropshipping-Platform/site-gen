@@ -1,45 +1,51 @@
 /**
  * Flux Theme — Component Registry
  *
- * Maps all 20 Puck component types to their corresponding Astro components
- * in templates/astro/flux/src/components/.
+ * Mirror bloom/rose/vanilla — packages-only invariant. Source-of-truth blocks
+ * live in `packages/theme-base/blocks/<X>/<X>.astro`. `assembleFromPackages`
+ * copies them into scaffold dir under `<scaffold>/src/components/<X>.astro`.
+ *
+ * Все различия flux от других тем — через CSS-vars в theme.json `defaults`/
+ * `colorSchemes` + блок-defaults в `blockDefaults`. Никаких override-блоков
+ * в `packages/theme-flux/blocks/`.
  */
 import type { ComponentRegistryEntry } from "../page-generator";
 
-function staticComponent(
+function packageComponent(
   name: string,
-  astroFile: string,
+  blockDir: string,
 ): ComponentRegistryEntry {
   return {
     name,
     kind: "static",
-    importPath: `../components/${astroFile}`,
+    importPath: `../components/${blockDir}.astro`,
   };
 }
 
 export const fluxRegistry: Record<string, ComponentRegistryEntry> = {
-  Header: staticComponent("Header", "Header.astro"),
-  Hero: staticComponent("Hero", "Hero.astro"),
-  Footer: staticComponent("Footer", "Footer.astro"),
-  MainText: staticComponent("MainText", "TextBlock.astro"),
-  PopularProducts: staticComponent("PopularProducts", "PopularProducts.astro"),
-  Collections: staticComponent("Collections", "Collections.astro"),
-  ContactForm: staticComponent("ContactForm", "ContactForm.astro"),
-  Gallery: staticComponent("Gallery", "Gallery.astro"),
-  PromoBanner: staticComponent("PromoBanner", "PromoBanner.astro"),
-  ImageWithText: staticComponent("ImageWithText", "ImageWithText.astro"),
-  Newsletter: staticComponent("Newsletter", "Newsletter.astro"),
-  Video: staticComponent("Video", "Video.astro"),
-  Slideshow: staticComponent("Slideshow", "Slideshow.astro"),
-  MultiColumns: staticComponent("MultiColumns", "MultiColumns.astro"),
-  MultiRows: staticComponent("MultiRows", "MultiRows.astro"),
-  CollapsibleSection: staticComponent(
+  Header: packageComponent("Header", "Header"),
+  Hero: packageComponent("Hero", "Hero"),
+  Footer: packageComponent("Footer", "Footer"),
+  MainText: packageComponent("MainText", "MainText"),
+  PopularProducts: packageComponent("PopularProducts", "PopularProducts"),
+  Collections: packageComponent("Collections", "Collections"),
+  ContactForm: packageComponent("ContactForm", "ContactForm"),
+  Gallery: packageComponent("Gallery", "Gallery"),
+  PromoBanner: packageComponent("PromoBanner", "PromoBanner"),
+  PromoBar: packageComponent("PromoBar", "PromoBar"),
+  ImageWithText: packageComponent("ImageWithText", "ImageWithText"),
+  Newsletter: packageComponent("Newsletter", "Newsletter"),
+  Video: packageComponent("Video", "Video"),
+  Slideshow: packageComponent("Slideshow", "Slideshow"),
+  MultiColumns: packageComponent("MultiColumns", "MultiColumns"),
+  MultiRows: packageComponent("MultiRows", "MultiRows"),
+  CollapsibleSection: packageComponent(
     "CollapsibleSection",
-    "CollapsibleSection.astro",
+    "CollapsibleSection",
   ),
-  Publications: staticComponent("Publications", "Publications.astro"),
-  Product: staticComponent("Product", "Product.astro"),
-  CartSection: staticComponent("CartSection", "CartSection.astro"),
-  CheckoutSection: staticComponent("CheckoutSection", "CheckoutSection.astro"),
-  Catalog: staticComponent("Catalog", "Catalog.astro"),
+  Publications: packageComponent("Publications", "Publications"),
+  Product: packageComponent("Product", "Product"),
+  CartSection: packageComponent("CartSection", "CartSection"),
+  CheckoutSection: packageComponent("CheckoutSection", "CheckoutSection"),
+  Catalog: packageComponent("Catalog", "Catalog"),
 };

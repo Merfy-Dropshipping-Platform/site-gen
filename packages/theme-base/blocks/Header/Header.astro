@@ -327,7 +327,7 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
        в конструкторе (Типографика). */}
   {isTwoTier && navigationLinks.length > 0 && (
     <div class="hidden md:block w-full">
-      <nav class="w-full max-w-[1320px] mx-auto px-4 flex items-center justify-center gap-8 h-6 mt-5" aria-label="Secondary navigation">
+      <nav class="w-full max-w-[1320px] mx-auto px-4 flex items-center justify-start gap-8 h-6 mt-5" aria-label="Secondary navigation">
         {navigationLinks.map((link, idx) => (
           <a
             href={link.href}

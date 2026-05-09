@@ -60,6 +60,15 @@
   "blockDefaults": {
     "Footer": {
       "variant": "3-col"
+    },
+    "Product": {
+      "visualConfig": {
+        "gallery": { "variant": "wrap-large", "showDiscountBadge": true },
+        "variantsType": "chips",
+        "counter": { "variant": "inline" },
+        "actions": { "scheme": "mono" },
+        "showDescription": true
+      }
     }
   },
   "colorSchemes": [
@@ -159,15 +168,7 @@
     },
     "PopularProducts": {},
     "Collections": {},
-    "Product": {
-      "visualConfig": {
-        "gallery": { "variant": "wrap-large", "showDiscountBadge": true },
-        "variantsType": "chips",
-        "counter": { "variant": "inline" },
-        "actions": { "scheme": "mono" },
-        "showDescription": true
-      }
-    },
+    "Product": {},
     "Newsletter": {},
     "ContactForm": {}
   },

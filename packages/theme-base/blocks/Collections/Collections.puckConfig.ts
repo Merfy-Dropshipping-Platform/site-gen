@@ -33,6 +33,12 @@ export const CollectionsSchema = z.object({
    */
   gridAspect: z.enum(['auto', '1:1']).optional(),
   /**
+   * Additive layout variant. `standard` (default) keeps rose/vanilla/bloom
+   * behaviour. `tile` (flux pilot, Figma 1:26298) — square rounded-12
+   * cards, left-aligned heading и caption, font-light, hover muted→text.
+   */
+  variant: z.enum(['standard', 'tile']).optional(),
+  /**
    * `auto` pulls from the shop's collections feed at build time; `manual`
    * uses only the items in `collections[]`. Default auto.
    */
@@ -123,6 +129,14 @@ export const CollectionsPuckConfig: BlockPuckConfig<CollectionsProps> = {
       options: [
         { label: 'Авто', value: 'auto' },
         { label: 'Квадрат 1:1', value: '1:1' },
+      ],
+    },
+    variant: {
+      type: 'radio',
+      label: 'Вариант',
+      options: [
+        { label: 'Стандартный', value: 'standard' },
+        { label: 'Плитка (квадрат, слева)', value: 'tile' },
       ],
     },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },

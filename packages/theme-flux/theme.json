@@ -49,6 +49,9 @@
         "linkText": "смотреть больше",
         "linkHref": "/promo"
       }
+    },
+    "Collections": {
+      "variant": "tile"
     }
   },
   "colorSchemes": [

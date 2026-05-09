@@ -40,6 +40,14 @@
   "blockDefaults": {
     "Footer": {
       "variant": "2-part"
+    },
+    "Header": {
+      "variant": "two-tier"
+    },
+    "PromoBar": {
+      "text": "Бесплатная доставка на весь ассортимент до 30.06.2026.",
+      "linkText": "смотреть больше",
+      "linkHref": "/promo"
     }
   },
   "colorSchemes": [

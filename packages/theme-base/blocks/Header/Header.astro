@@ -18,6 +18,8 @@ const {
   colorScheme,
   padding,
 } = Astro.props as Props;
+const variant = (Astro.props as Record<string, unknown>).variant as 'standard' | 'two-tier' | undefined;
+const isTwoTier = variant === 'two-tier';
 
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
 const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
@@ -56,11 +58,13 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
             </a>
           </div>
 
-          <div class={C.navMenu}>
-            {navigationLinks.map((link) => (
-              <a href={link.href} class={C.navLink}>{link.label}</a>
-            ))}
-          </div>
+          {!isTwoTier && (
+            <div class={C.navMenu}>
+              {navigationLinks.map((link) => (
+                <a href={link.href} class={C.navLink}>{link.label}</a>
+              ))}
+            </div>
+          )}
 
           <div class={C.actions}>
             {actionButtons.showSearch && (
@@ -292,6 +296,19 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
       )}
     </nav>
   </header>
+
+  {/* Two-tier secondary nav row (Figma flux 1:26327). Centered nav menu
+       appearing below the logo+actions row. Hidden on mobile (mobile uses
+       hamburger drawer like standard variant). */}
+  {isTwoTier && navigationLinks.length > 0 && (
+    <div class="hidden md:block w-full border-t border-[rgb(var(--color-text))]/10">
+      <nav class="w-full max-w-[var(--container-max-width,1320px)] mx-auto px-4 md:px-6 flex items-center justify-center gap-8 h-[60px]" aria-label="Secondary navigation">
+        {navigationLinks.map((link) => (
+          <a href={link.href} class={`${C.navLink} text-[16px]`}>{link.label}</a>
+        ))}
+      </nav>
+    </div>
+  )}
 
   {/* ============ Mobile navigation menu — Phase 1c: React island will drive show/hide ============ */}
   <div id="mobile-menu" data-mobile-menu class={C.mobileMenu.root}>

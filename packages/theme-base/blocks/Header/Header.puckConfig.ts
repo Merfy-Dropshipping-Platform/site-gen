@@ -33,6 +33,13 @@ export const HeaderSchema = z.object({
    */
   activeLinkIndicator: z.enum(['none', 'underline']).optional(),
   /**
+   * Additive layout variant. `standard` (default) — single row: hamburger,
+   * logo, nav menu, actions. `two-tier` (flux pilot) — two rows: row 1 is
+   * logo + actions; row 2 is centered nav menu. Other themes default to
+   * `standard` so behaviour не меняется.
+   */
+  variant: z.enum(['standard', 'two-tier']).optional(),
+  /**
    * Font for the text logo (used when `logo` is empty). Maps to a family key
    * known to constructor-theme-bridge — see FONT_FAMILIES there. Leave
    * undefined to use the theme's body font.
@@ -72,6 +79,14 @@ export const HeaderPuckConfig: BlockPuckConfig<HeaderProps> = {
       ],
     },
     stickiness: { type: 'radio', label: 'Прилипание' },
+    variant: {
+      type: 'radio',
+      label: 'Вариант',
+      options: [
+        { label: 'Стандартный (одна строка)', value: 'standard' },
+        { label: 'Двухуровневый (логотип сверху, меню снизу)', value: 'two-tier' },
+      ],
+    },
     menuType: { type: 'radio', label: 'Тип меню' },
     navigationLinks: { type: 'array', label: 'Ссылки меню' },
     actionButtons: { type: 'object', label: 'Кнопки' },

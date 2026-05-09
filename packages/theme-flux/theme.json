@@ -58,7 +58,6 @@
         "gallery": { "variant": "inline-small", "showDiscountBadge": false },
         "variantsType": "dropdown",
         "counter": { "variant": "pill" },
-        "actions": { "scheme": "accent" },
         "showDescription": false
       }
     }

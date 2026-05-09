@@ -92,9 +92,15 @@ export interface ProductView {
 }
 
 /**
- * Visual variant matrix — every primitive picks the variant it cares about.
- * Themes set these via theme.json blockDefaults.Product. Defaults preserve
- * pre-headless behaviour so existing themes keep rendering untouched.
+ * Visual variant matrix — LAYOUT only.
+ *
+ * Colour decisions live in the merchant-editable colour-scheme feature
+ * (`ColorSchemePanel.tsx` → `site.settings.colorSchemes` →
+ * `src/themes/tokens-css.ts` → `--color-*` CSS variables). Primitives
+ * consume those tokens directly; nothing about colour is configured per
+ * theme here.
+ *
+ * Themes set these LAYOUT variants via `theme.json blockDefaults.Product`.
  */
 export interface ProductVisualConfig {
   gallery: {
@@ -106,21 +112,16 @@ export interface ProductVisualConfig {
   counter: {
     variant: 'inline' | 'pill';
   };
-  actions: {
-    /** mono = both buttons inherit fg/bg; accent = primary button uses accent token. */
-    scheme: 'mono' | 'accent';
-  };
   showDescription: boolean;
 }
 
 /**
- * Default visual config — chosen so existing rose live pages render
+ * Default layout config — chosen so existing rose live pages render
  * unchanged when theme.json has no overrides.
  */
 export const DEFAULT_VISUAL_CONFIG: ProductVisualConfig = {
   gallery: { variant: 'wrap-large', showDiscountBadge: true },
   variantsType: 'chips',
   counter: { variant: 'inline' },
-  actions: { scheme: 'mono' },
   showDescription: true,
 };

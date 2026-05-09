@@ -55,7 +55,6 @@ export const ProductSchema = z.object({
     }).optional(),
     variantsType: z.enum(['chips', 'dropdown']).optional(),
     counter: z.object({ variant: z.enum(['inline', 'pill']).optional() }).optional(),
-    actions: z.object({ scheme: z.enum(['mono', 'accent']).optional() }).optional(),
     showDescription: z.boolean().optional(),
   }).optional(),
   padding: z.object({

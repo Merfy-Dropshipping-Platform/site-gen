@@ -2,11 +2,11 @@
 /**
  * ProductCounter — quantity selector.
  *
- * Variants:
- *  - `inline` (rose, default) — minus / value / plus, no surrounding fill,
- *    icons size-6, gap-3.
- *  - `pill` (flux) — same controls inside a black filled rounded-4 pill,
- *    white text, p-2 gap-2.
+ * Variants (LAYOUT only):
+ *  - `inline` (rose) — minus/value/plus, no fill, icons size-6, gap-3
+ *  - `pill` (flux) — same controls inside a filled rounded-4 pill, gap-2 p-2
+ *
+ * Pill colour comes from primaryButton tokens (merchant-editable scheme).
  */
 interface Props {
   variant?: 'inline' | 'pill';
@@ -19,10 +19,11 @@ const isPill = variant === 'pill';
 <div
   class:list={[
     'inline-flex items-center [font-family:var(--font-body)]',
-    isPill
-      ? 'bg-[rgb(var(--color-text))] text-[rgb(var(--color-bg))] gap-2 p-2 rounded-[4px]'
-      : 'text-[rgb(var(--color-text))] gap-3',
+    isPill ? 'gap-2 p-2 rounded-[4px]' : 'text-[rgb(var(--color-text))] gap-3',
   ]}
+  style={isPill
+    ? 'background:rgb(var(--color-button-bg, var(--color-text))); color:rgb(var(--color-button-text, var(--color-bg)));'
+    : ''}
   data-product-counter
   data-counter-variant={variant}
 >
@@ -31,7 +32,7 @@ const isPill = variant === 'pill';
     data-counter-action="decrement"
     aria-label="Уменьшить количество"
     class:list={[
-      'inline-flex items-center justify-center cursor-pointer transition-opacity hover:opacity-70',
+      'inline-flex items-center justify-center cursor-pointer transition-opacity hover:opacity-70 bg-transparent border-0 text-current',
       isPill ? 'w-8 h-8 rounded-[4px]' : 'w-6 h-6',
     ]}
   >
@@ -51,7 +52,7 @@ const isPill = variant === 'pill';
     data-counter-action="increment"
     aria-label="Увеличить количество"
     class:list={[
-      'inline-flex items-center justify-center cursor-pointer transition-opacity hover:opacity-70',
+      'inline-flex items-center justify-center cursor-pointer transition-opacity hover:opacity-70 bg-transparent border-0 text-current',
       isPill ? 'w-8 h-8 rounded-[4px]' : 'w-6 h-6',
     ]}
   >

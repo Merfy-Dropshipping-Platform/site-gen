@@ -54,13 +54,12 @@ const {
   photoPosition = 'left',
 } = Astro.props as Props;
 
-// — Visual configuration (theme-driven, never seen in constructor UI). —
+// — Visual configuration (LAYOUT only — colours come from active scheme). —
 const visual: ProductVisualConfig = {
   ...DEFAULT_VISUAL_CONFIG,
   ...(visualConfigProp ?? {}),
   gallery: { ...DEFAULT_VISUAL_CONFIG.gallery, ...(visualConfigProp?.gallery ?? {}) },
   counter: { ...DEFAULT_VISUAL_CONFIG.counter, ...(visualConfigProp?.counter ?? {}) },
-  actions: { ...DEFAULT_VISUAL_CONFIG.actions, ...(visualConfigProp?.actions ?? {}) },
 };
 
 // — Section-level styling (color scheme + padding). —
@@ -193,7 +192,7 @@ const brandText = textContent || view.brand || '';
           <ProductActions
             addToCartLabel={addBtnText}
             buyNowLabel={buyBtnText}
-            scheme={visual.actions.scheme}
+            size={visual.gallery.variant === 'inline-small' ? 'tall' : 'compact'}
           />
         </div>
 
@@ -329,7 +328,12 @@ const brandText = textContent || view.brand || '';
       });
     }
 
-    // Variant chip select.
+    // Variant chip select. Active chip uses primaryButton tokens; inactive
+    // uses secondaryButton tokens. Both are scheme-driven via CSS vars.
+    var ACTIVE_CHIP_STYLE =
+      'background:rgb(var(--color-button-bg, var(--color-text))); color:rgb(var(--color-button-text, var(--color-bg))); border-color:rgb(var(--color-button-border, var(--color-text)));';
+    var INACTIVE_CHIP_STYLE =
+      'background:rgb(var(--color-button-secondary-bg, var(--color-bg))); color:rgb(var(--color-button-secondary-text, var(--color-text))); border-color:rgb(var(--color-button-secondary-border, var(--color-text)));';
     root.addEventListener('click', function (ev) {
       const chip = ev.target && ev.target.closest && ev.target.closest('[data-variant-chip]');
       if (!chip || chip.getAttribute('data-variant-available') === 'false') return;
@@ -337,17 +341,11 @@ const brandText = textContent || view.brand || '';
       const val = chip.getAttribute('data-variant-value');
       if (!key || val == null) return;
       selectedOptions[key] = val;
-      // Toggle active state across siblings of same key.
       root.querySelectorAll('[data-variant-chip][data-variant-key="' + key + '"]').forEach(function (c) {
         const isActive = c === chip;
         c.setAttribute('data-variant-active', isActive ? 'true' : 'false');
-        if (isActive) {
-          c.classList.add('bg-[rgb(var(--color-text))]', 'text-[rgb(var(--color-bg))]');
-          c.classList.remove('bg-transparent', 'text-[rgb(var(--color-text))]');
-        } else if (c.getAttribute('data-variant-available') !== 'false') {
-          c.classList.remove('bg-[rgb(var(--color-text))]', 'text-[rgb(var(--color-bg))]');
-          c.classList.add('bg-transparent', 'text-[rgb(var(--color-text))]');
-        }
+        if (c.getAttribute('data-variant-available') === 'false') return;
+        c.setAttribute('style', isActive ? ACTIVE_CHIP_STYLE : INACTIVE_CHIP_STYLE);
       });
       refreshPriceFromVariant();
     });

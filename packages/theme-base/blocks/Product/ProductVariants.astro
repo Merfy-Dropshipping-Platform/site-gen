@@ -64,12 +64,16 @@ const isDropdown = type === 'dropdown';
             {g.options.map((opt, optIdx) => {
               const active = optIdx === 0 && opt.available;
               const baseCls =
-                'inline-flex items-center justify-center h-12 px-4 rounded-[6px] [font-family:var(--font-body)] text-[16px] cursor-pointer transition-colors';
-              const stateCls = !opt.available
-                ? 'border border-[rgb(var(--color-muted))] text-[rgb(var(--color-muted))] line-through bg-[rgb(var(--color-muted)/0.05)] cursor-not-allowed'
+                'inline-flex items-center justify-center h-12 px-4 rounded-[6px] [font-family:var(--font-body)] text-[16px] cursor-pointer transition-colors border border-solid';
+              // Active chip ↔ primary button tokens; inactive ↔ secondary button
+              // tokens; out-of-stock uses muted. All colours flow from the
+              // merchant-edited colour scheme (no per-theme hardcode).
+              const styleStr = !opt.available
+                ? 'background:rgb(var(--color-text)/0.04); color:rgb(var(--color-muted)); border-color:rgb(var(--color-muted));'
                 : active
-                ? 'bg-[rgb(var(--color-text))] text-[rgb(var(--color-bg))] border border-[rgb(var(--color-text))]'
-                : 'border border-[rgb(var(--color-text))] text-[rgb(var(--color-text))] bg-transparent';
+                ? 'background:rgb(var(--color-button-bg, var(--color-text))); color:rgb(var(--color-button-text, var(--color-bg))); border-color:rgb(var(--color-button-border, var(--color-text)));'
+                : 'background:rgb(var(--color-button-secondary-bg, var(--color-bg))); color:rgb(var(--color-button-secondary-text, var(--color-text))); border-color:rgb(var(--color-button-secondary-border, var(--color-text)));';
+              const extraCls = !opt.available ? 'line-through cursor-not-allowed' : '';
               return (
                 <button
                   type="button"
@@ -79,7 +83,8 @@ const isDropdown = type === 'dropdown';
                   data-variant-available={opt.available ? 'true' : 'false'}
                   data-variant-active={active ? 'true' : 'false'}
                   disabled={!opt.available}
-                  class:list={[baseCls, stateCls]}
+                  class:list={[baseCls, extraCls]}
+                  style={styleStr}
                 >{opt.value}</button>
               );
             })}

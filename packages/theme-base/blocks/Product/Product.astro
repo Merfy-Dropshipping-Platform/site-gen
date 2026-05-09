@@ -276,10 +276,17 @@ const brandText = textContent || view.brand || '';
       }
       return null;
     }
+    function getProductVariants() {
+      if (!productData) return [];
+      if (Array.isArray(productData.variants) && productData.variants.length) return productData.variants;
+      if (Array.isArray(productData.variantCombinations) && productData.variantCombinations.length) return productData.variantCombinations;
+      return [];
+    }
     function getActiveVariant() {
-      if (!productData || !Array.isArray(productData.variants) || !productData.variants.length) return null;
-      if (Object.keys(selectedOptions).length > 0) return findVariantByOptions(productData.variants, selectedOptions);
-      return productData.variants[0] || null;
+      const vs = getProductVariants();
+      if (!vs.length) return null;
+      if (Object.keys(selectedOptions).length > 0) return findVariantByOptions(vs, selectedOptions);
+      return vs[0] || null;
     }
     function getActiveVariantId() {
       const v = getActiveVariant();

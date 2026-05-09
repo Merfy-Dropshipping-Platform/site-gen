@@ -131,8 +131,19 @@ export function normaliseProduct(
   const oldPrice = toPriceView(raw.compareAtPrice ?? raw.oldPrice ?? 0);
   const hasDiscount = oldPrice.amount > 0 && oldPrice.amount > price.amount;
   const gallery = normaliseGallery(raw, name);
-  const productVariants = Array.isArray(raw.variants) ? raw.variants : [];
-  const hasVariants = !!raw.hasVariants && productVariants.length > 0;
+  // Storefront-data API returns `variantCombinations`; build pipeline writes
+  // `variants` to products.json. Accept either so live + preview paths behave
+  // identically. Derive `hasVariants` from data when the flag is missing
+  // (some upstream responses set it incorrectly).
+  const productVariants = Array.isArray(raw.variants)
+    ? raw.variants
+    : Array.isArray(raw.variantCombinations)
+      ? raw.variantCombinations
+      : [];
+  const hasVariants =
+    productVariants.length > 0 &&
+    (raw.hasVariants !== false ||
+      productVariants.some((v) => v.options && Object.keys(v.options).length > 0));
   const variantGroups = hasVariants ? buildVariantGroups(productVariants) : [];
 
   const view: ProductView = {

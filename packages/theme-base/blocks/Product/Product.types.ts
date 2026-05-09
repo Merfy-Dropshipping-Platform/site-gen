@@ -36,7 +36,10 @@ export interface RawProduct {
   compareAtPrice?: string | number;
   image?: string;
   images?: Array<string | RawImage>;
+  /** Build-pipeline name (products.json). */
   variants?: RawVariant[];
+  /** Storefront-data API name (preview path). Same shape as `variants`. */
+  variantCombinations?: RawVariant[];
   hasVariants?: boolean;
   metaTitle?: string | null;
   metaDescription?: string | null;

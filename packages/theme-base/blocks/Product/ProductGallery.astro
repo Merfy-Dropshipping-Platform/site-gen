@@ -46,7 +46,10 @@ const thumbRadius = isInlineSmall ? 'rounded-[8px]' : 'rounded-[8px]';
         data-product-hero-image
       />
       {showDiscountBadge && hasDiscount && (
-        <div class="absolute top-3 left-3 inline-flex items-center justify-center h-6 px-1.5 rounded-[4px] bg-black text-white text-xs [font-family:var(--font-body)]">
+        <div
+          class="absolute top-3 left-3 inline-flex items-center justify-center h-6 px-1.5 rounded-[4px] text-xs [font-family:var(--font-body)]"
+          style="background:rgb(var(--color-text)); color:rgb(var(--color-bg));"
+        >
           {badgeText}
         </div>
       )}

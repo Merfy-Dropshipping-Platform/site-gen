@@ -169,19 +169,57 @@ export class PreviewService {
   }
 
   /**
-   * Render a single named block to an HTML string.
+   * Render a single named block to an HTML string. Theme-level blockDefaults
+   * (from theme.json) merged UNDER user props so preview ≡ live build:
+   * if revision не задаёт `Header.variant`, but theme.json has
+   * `blockDefaults.Header.variant: 'two-tier'` — preview покажет two-tier
+   * (mirror page-generator.ts:122).
    */
   async renderBlock(input: RenderBlockInput): Promise<string> {
-    // Resolve first so unknown blocks fail fast without initializing the container.
     const Component = await this.componentResolver(
       input.blockName,
       input.themeId ?? null,
     );
+    const themeDefaults = await this.loadThemeBlockDefaults(input.themeId);
+    const blockDefaults = (themeDefaults[input.blockName] as Record<string, unknown> | undefined) ?? {};
+    const mergedProps = { ...blockDefaults, ...input.props };
     const container = await this.getContainer();
     const html = await container.renderToString(Component, {
-      props: input.props,
+      props: mergedProps,
     });
     return html;
+  }
+
+  private themeDefaultsCache = new Map<string, Record<string, unknown>>();
+
+  /**
+   * Read `blockDefaults` from `packages/theme-<id>/theme.json` (cached). Returns
+   * empty object if theme.json missing or has no blockDefaults section.
+   */
+  private async loadThemeBlockDefaults(
+    themeId: string | null | undefined,
+  ): Promise<Record<string, unknown>> {
+    const id = themeId ?? 'base';
+    const cached = this.themeDefaultsCache.get(id);
+    if (cached) return cached;
+    try {
+      const fs = await import('node:fs/promises');
+      const path = await import('node:path');
+      const themeJsonPath = path.join(
+        process.cwd(),
+        'packages',
+        `theme-${id}`,
+        'theme.json',
+      );
+      const raw = await fs.readFile(themeJsonPath, 'utf8');
+      const parsed = JSON.parse(raw) as { blockDefaults?: Record<string, unknown> };
+      const defaults = parsed.blockDefaults ?? {};
+      this.themeDefaultsCache.set(id, defaults);
+      return defaults;
+    } catch {
+      this.themeDefaultsCache.set(id, {});
+      return {};
+    }
   }
 
   /**

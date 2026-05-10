@@ -268,27 +268,33 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
       {cardVariant === 'rich' ? demo.map((p, i) => {
         // Per-card data extraction: swatches → colors row; first non-color
         // option group → memory chips; auto sale% from price diff; manual
-        // badgeNew preserved.
-        const colors = (p.variantSwatches ?? []).slice(0, 4).map((s) => ({ color: s?.color ?? null, available: true }));
-        const variantsArr = Array.isArray(p.variants) ? (p.variants as Array<{ options?: Record<string,string>; available?: boolean }>) : [];
-        // Build memory chips from a non-color option key (first one we see).
-        const memorySet = new Map<string, boolean>();
+        // badgeNew preserved. NB: avoid TS generics (<...>) inside Astro
+        // frontmatter expressions — the compiler mistakes them for JSX.
+        const colors = (p.variantSwatches ?? []).slice(0, 4).map(function (s) {
+          return { color: (s && s.color) ? s.color : null, available: true };
+        });
+        const variantsArr = Array.isArray(p.variants) ? p.variants : [];
+        const memorySet = new Map();
         for (const v of variantsArr) {
-          if (!v.options) continue;
-          for (const [k, val] of Object.entries(v.options)) {
+          const opts = v && (v as any).options;
+          if (!opts) continue;
+          for (const [k, val] of Object.entries(opts)) {
             if (k.toLowerCase().includes('цвет') || k.toLowerCase().includes('color')) continue;
-            const prev = memorySet.get(val) ?? false;
-            memorySet.set(val, prev || v.available !== false);
+            const key = String(val);
+            const prev = memorySet.get(key) || false;
+            memorySet.set(key, prev || (v as any).available !== false);
           }
         }
-        const memoryChips = Array.from(memorySet.entries()).slice(0, 5).map(([value, available]) => ({ value, available }));
-        const badges: { label: string }[] = [];
+        const memoryChips = Array.from(memorySet.entries()).slice(0, 5).map(function (entry) {
+          return { value: entry[0], available: entry[1] };
+        });
+        const badges = [];
         if (p.badgeNew) badges.push({ label: 'Новинка' });
         // Auto-derive sale percent from old/current price (numeric only).
         const cur = parseFloat(String(p.price).replace(/[^\d.]/g,''));
-        const old = parseFloat(String(p.oldPrice ?? '').replace(/[^\d.]/g,''));
-        if (Number.isFinite(cur) && Number.isFinite(old) && old > cur && old > 0) {
-          const pct = Math.round(((old - cur) / old) * 100);
+        const oldNum = parseFloat(String(p.oldPrice ?? '').replace(/[^\d.]/g,''));
+        if (Number.isFinite(cur) && Number.isFinite(oldNum) && oldNum > cur && oldNum > 0) {
+          const pct = Math.round(((oldNum - cur) / oldNum) * 100);
           if (pct > 0) badges.push({ label: `${pct}%` });
         } else if (typeof p.badgeSale === 'string' && p.badgeSale) {
           badges.push({ label: p.badgeSale });

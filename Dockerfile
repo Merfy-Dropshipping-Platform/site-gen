@@ -17,6 +17,11 @@ RUN pnpm build
 # dist/astro-blocks/. Required for both PreviewService (Astro Container)
 # and ThemePuckConfigController (dynamic-imports <pkg>__<block>__index.mjs).
 RUN pnpm build:blocks
+# DEBUG: list PopularProducts files immediately after build:blocks
+RUN echo "=== PopularProducts files after build:blocks ===" \
+    && ls -la /app/dist/astro-blocks/ | grep -i Popular || echo "(NONE found via grep)" \
+    && echo "=== full count ===" \
+    && ls /app/dist/astro-blocks/ | wc -l
 # Sanity-check: if build:blocks silently produced no output (or skipped a
 # critical block), every preview render would fail at runtime with
 # "Block X not resolvable for themeId=Y". Fail the build NOW with a clear

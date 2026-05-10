@@ -738,10 +738,12 @@ const PREVIEW_NAV_AGENT_INLINE = `
       currentThemeId = (ev.data.themeId || '') + '';
       currentSiteId = (ev.data.siteId || '') + '';
     } else if (ev.data.type === 'update-block') {
-      // Per-theme allowlist: hot-replace включён для Rose и Vanilla (spec 084).
-      // Другие темы fallback на полный iframe reload через src change в PreviewFrame.
-      var HOT_UPDATE_ALLOWED_THEMES = ['rose', 'vanilla'];
-      if (HOT_UPDATE_ALLOWED_THEMES.indexOf(currentThemeId) === -1) return;
+      // Hot-replace включён для всех тем после консолидации на packages/theme-base
+      // (2026-05-10). До этого был allowlist [rose, vanilla] — для других тем
+      // изменения в sidebar НЕ применялись в preview без полного reload (баг
+      // «изменения видны только после reload» на flux/satin/bloom).
+      // Если currentThemeId пустой (init не пришёл) — пропускаем.
+      if (!currentThemeId) return;
       var blockId = ev.data.blockId;
       if (!blockId || !currentSiteId) return;
       var blockType = blockId.split('-')[0];
@@ -817,10 +819,10 @@ const PREVIEW_NAV_AGENT_INLINE = `
         }
       }
     } else if (ev.data.type === 'update-tokens') {
-      // Per-theme allowlist: hot-replace tokens.css для Rose и Vanilla (spec 084).
-      // Symmetric to update-block — Stage 2a N4.
-      var HOT_UPDATE_ALLOWED_THEMES_TOKENS = ['rose', 'vanilla'];
-      if (HOT_UPDATE_ALLOWED_THEMES_TOKENS.indexOf(currentThemeId) === -1) return;
+      // Hot-replace tokens.css включён для всех тем после консолидации
+      // на packages/theme-base (2026-05-10). До этого был allowlist
+      // [rose, vanilla] — symmetric to update-block fix.
+      if (!currentThemeId) return;
       if (!currentSiteId) return;
       fetch('/api/sites/' + currentSiteId + '/preview/tokens-css', {
         method: 'POST',

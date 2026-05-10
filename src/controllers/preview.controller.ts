@@ -124,7 +124,16 @@ export class PreviewController {
         themeId: loaded.themeId,
         page,
       });
-      res.type('text/html').send(html);
+      // Disable browser cache for preview iframe — Constructor вылитый
+      // на свежий код мог отдавать stale HTML из browser cache (etag 304),
+      // даже после deploy свежей render-логики. no-cache+no-store+revalidate
+      // гарантирует что iframe всегда дёргает актуальный server render.
+      res
+        .header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        .header('Pragma', 'no-cache')
+        .header('Expires', '0')
+        .type('text/html')
+        .send(html);
     } catch (err: unknown) {
       // Log full stack so ops can diagnose; send a readable 500 body to the
       // iframe instead of the generic NestJS JSON so the constructor shows

@@ -31,7 +31,15 @@ const promoText = (promoBar?.text || '').trim();
 const promoLinkText = (promoBar?.linkText || '').trim();
 const promoLinkHref = promoBar?.linkHref || '#';
 
-const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+// Clamp padding ≤ 32px — header выше ~96px выглядит «гигантским» и обычно
+// результат ошибки/legacy-данных (раньше default был 80/80 — после fix
+// уменьшен до 12/12, но сохранённые revisions содержат старое значение).
+// Slider в sidebar теперь ограничен max 64, render ограничивает до 32.
+const _MAX_HEADER_PAD = 32;
+const safePadding = padding
+  ? { top: Math.min(padding.top || 0, _MAX_HEADER_PAD), bottom: Math.min(padding.bottom || 0, _MAX_HEADER_PAD) }
+  : undefined;
+const paddingStyle = safePadding ? `padding-top:${safePadding.top}px; padding-bottom:${safePadding.bottom}px;` : '';
 const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
 // Figma constructor sidebar 314:34540 — отдельная схема для блока «Меню».
 // Если merchant не выбрал — наследуем основную схему (нет дополнительного wrapper).

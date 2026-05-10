@@ -211,10 +211,10 @@ const heroButtonStyleClass = heroButtonStyle === 'outlined'
 
 {effectiveMode === 'single' && variant !== 'split-bloom' && (
 <section
-  class:list={[C.root, variant === 'overlay' ? 'min-h-[var(--h-base)] sm:min-h-[var(--h-sm)] md:min-h-[var(--h-md)] lg:min-h-[var(--h-lg)] xl:min-h-[var(--h-xl)] 2xl:min-h-[var(--h-xxl)]' : '', schemeClass]}
+  class:list={[C.root, 'min-h-[var(--h-base)] sm:min-h-[var(--h-sm)] md:min-h-[var(--h-md)] lg:min-h-[var(--h-lg)] xl:min-h-[var(--h-xl)] 2xl:min-h-[var(--h-xxl)]', schemeClass]}
   data-puck-component-id={id}
   data-variant={variant}
-  style={`${paddingStyle} ${variant === 'overlay' ? heightVars : ''}`}
+  style={`${paddingStyle} ${heightVars}`}
 >
   {variant === 'overlay' && imageUrl && (
     <>

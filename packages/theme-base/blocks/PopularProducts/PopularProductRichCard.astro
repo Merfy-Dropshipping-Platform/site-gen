@@ -1,0 +1,151 @@
+---
+/**
+ * PopularProductRichCard — flux variant card per Figma 1:26389.
+ *
+ * Visual-only primitive consumed by PopularProducts.astro when
+ * `cardVariant === 'rich'`. Rose / vanilla / bloom stay on the existing
+ * minimal card branch so this file is purely additive.
+ *
+ * Layout (per Figma):
+ *   ┌──────────────┐
+ *   │ [badges]      │  badges absolute top-left, stacked vertical
+ *   │   IMAGE       │  square aspect, rounded-12
+ *   ├──────────────┤
+ *   │ ▢ ▢ ▢         │  color swatches row (size-20 squares)
+ *   │ Title         │
+ *   │ Price  Old    │
+ *   │ [128 256 512] │  memory chips row (small, last greyed if disabled)
+ *   │ [В корзину]   │  black filled button h-44
+ *   └──────────────┘
+ *   surrounding card has bg-surface, p-12, rounded-12
+ *
+ * Colours flow from active scheme tokens (--color-text/--color-bg,
+ * --color-surface, --color-button-bg/text, --color-muted, --color-accent for badges).
+ */
+interface Color {
+  color?: string | null;
+  available?: boolean;
+}
+interface MemoryChip {
+  value: string;
+  available?: boolean;
+}
+interface Badge {
+  label: string;
+  /** 'accent' (orange/scheme accent) — Figma default. */
+  variant?: 'accent';
+}
+
+interface Props {
+  href?: string;
+  image?: string;
+  title: string;
+  price: string;
+  oldPrice?: string;
+  colors?: Color[];
+  memoryChips?: MemoryChip[];
+  badges?: Badge[];
+  ctaLabel?: string;
+}
+
+const {
+  href = '/catalog',
+  image,
+  title,
+  price,
+  oldPrice,
+  colors = [],
+  memoryChips = [],
+  badges = [],
+  ctaLabel = 'В корзину',
+} = Astro.props as Props;
+
+const showOld = !!(oldPrice && oldPrice.trim());
+---
+<div
+  class="relative flex flex-col gap-4 p-3 rounded-[12px] w-full bg-[rgb(var(--color-surface,var(--color-text)/0.04))]"
+  data-popular-card-rich
+>
+  <a href={href} class="block aspect-square rounded-[12px] overflow-hidden bg-[rgb(var(--color-text)/0.04)]">
+    {image ? (
+      <img src={image} alt={title} loading="lazy" class="w-full h-full object-cover block" />
+    ) : (
+      <div class="w-full h-full flex items-center justify-center text-[rgb(var(--color-muted))]">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <polyline points="21,15 16,10 5,21" />
+        </svg>
+      </div>
+    )}
+  </a>
+
+  {badges.length > 0 && (
+    <div class="absolute top-2 left-2 flex flex-col gap-1 items-start" data-popular-badges>
+      {badges.map((b) => (
+        <span
+          class="inline-flex items-center justify-center px-1.5 py-1 rounded-[4px] [font-family:var(--font-body)] text-[14px] leading-none"
+          style="background:rgb(var(--color-accent,250 81 9)); color:rgb(var(--color-bg));"
+        >{b.label}</span>
+      ))}
+    </div>
+  )}
+
+  <div class="flex flex-col gap-4 w-full">
+    {colors.length > 0 && (
+      <div class="flex items-center gap-1" data-popular-colors>
+        {colors.map((c) => (
+          <span
+            class:list={[
+              'inline-block w-5 h-5 rounded-[2px] relative',
+              c.available === false ? 'overflow-hidden' : '',
+            ]}
+            style={c.color ? `background:${c.color};` : 'background:rgb(var(--color-text)/0.05);'}
+            aria-label={c.available === false ? 'недоступен' : undefined}
+          >
+            {c.available === false && (
+              <svg viewBox="0 0 20 20" class="absolute inset-0 w-full h-full text-[rgb(var(--color-muted))]" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                <line x1="0" y1="20" x2="20" y2="0" />
+              </svg>
+            )}
+          </span>
+        ))}
+      </div>
+    )}
+
+    <div class="flex flex-col gap-1 w-full">
+      <a href={href} class="block [font-family:var(--font-body)] text-[16px] text-[rgb(var(--color-text))] truncate hover:opacity-80">{title}</a>
+      <div class="flex items-center gap-2">
+        <span class="[font-family:var(--font-body)] text-[16px] text-[rgb(var(--color-text))]">{price}</span>
+        {showOld && (
+          <span class="[font-family:var(--font-body)] text-[14px] text-[rgb(var(--color-muted))] line-through">{oldPrice}</span>
+        )}
+      </div>
+    </div>
+
+    {memoryChips.length > 0 && (
+      <div class="flex items-start gap-1 flex-wrap" data-popular-memory>
+        {memoryChips.map((m) => (
+          <span
+            class:list={[
+              'inline-flex items-center px-1 py-1 rounded-[2px] [font-family:var(--font-body)] text-[12px] leading-none border border-solid',
+              m.available === false
+                ? 'text-[rgb(var(--color-muted))]'
+                : 'text-[rgb(var(--color-text))]',
+            ]}
+            style={m.available === false
+              ? 'background:rgb(var(--color-text)/0.05); border-color:rgb(var(--color-text)/0.05);'
+              : 'background:transparent; border-color:rgb(var(--color-text)/0.05);'}
+          >{m.value}</span>
+        ))}
+      </div>
+    )}
+
+    <button
+      type="button"
+      data-popular-cta
+      class="w-full inline-flex items-center justify-center h-11 px-3 rounded-[4px] [font-family:var(--font-body)] text-[14px] uppercase cursor-pointer transition-opacity hover:opacity-85"
+      style="background:rgb(var(--color-button-bg,var(--color-text))); color:rgb(var(--color-button-text,var(--color-bg)));"
+    >{ctaLabel}</button>
+  </div>
+</div>

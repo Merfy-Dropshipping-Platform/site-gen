@@ -48,6 +48,13 @@ export const PopularProductsSchema = z.object({
    * (regular case). `uppercase` matches Vanilla home cards.
    */
   cardCaptionStyle: z.enum(['default', 'uppercase']).optional(),
+  /**
+   * Layout variant for product cards. `minimal` (default) keeps existing
+   * rose/vanilla/bloom render. `rich` (flux per Figma 1:26389) wraps each
+   * card in surface bg with colour swatches, memory chips, badges and
+   * in-card CTA. Theme-set via theme.json blockDefaults.
+   */
+  cardVariant: z.enum(['minimal', 'rich']).optional(),
   viewAll: z.object({
     show: z.boolean().optional(),
     text: z.string().optional(),
@@ -181,6 +188,8 @@ export const PopularProductsPuckConfig: BlockPuckConfig<PopularProductsProps> = 
         { label: 'Заглавные', value: 'uppercase' },
       ],
     },
+    // Theme-driven; not exposed in constructor sidebar.
+    cardVariant: { type: 'hidden', label: '' },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
   },

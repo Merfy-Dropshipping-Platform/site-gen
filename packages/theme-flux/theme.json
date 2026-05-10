@@ -53,6 +53,9 @@
     "Collections": {
       "variant": "tile"
     },
+    "PopularProducts": {
+      "cardVariant": "rich"
+    },
     "Product": {
       "visualConfig": {
         "gallery": { "variant": "inline-small", "showDiscountBadge": false },

@@ -2,6 +2,7 @@
 import type { PopularProductsProps } from './PopularProducts.puckConfig';
 import { PopularProductsClasses as C } from './PopularProducts.classes';
 import { resolveActiveCollection } from './url-filter';
+import PopularProductRichCard from './PopularProductRichCard.astro';
 
 interface Props extends PopularProductsProps {
   id?: string;
@@ -24,6 +25,13 @@ const {
   padding,
   siteId,
 } = Astro.props as Props & { subtitle?: string };
+
+// Layout variant: 'minimal' (rose/vanilla/bloom default) keeps existing
+// markup; 'rich' (flux per Figma 1:26389) wraps each card in surface bg
+// with colour swatches, memory chips, badges, in-card CTA. Set via
+// theme.json blockDefaults.PopularProducts.cardVariant.
+const cardVariant: 'minimal' | 'rich' =
+  raw.cardVariant === 'rich' ? 'rich' : 'minimal';
 
 // 084 vanilla pilot: additive `swatchOverlay` variant. When true, cards
 // render a swatch indicator over the image **bottom-right** (per Figma
@@ -256,8 +264,49 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
         )}
       </div>
     )}
-    <div class={C.grid} style={gridTemplateCols} data-pop-grid>
-      {demo.map((p, i) => {
+    <div class={C.grid} style={gridTemplateCols} data-pop-grid data-card-variant={cardVariant}>
+      {cardVariant === 'rich' ? demo.map((p, i) => {
+        // Per-card data extraction: swatches → colors row; first non-color
+        // option group → memory chips; auto sale% from price diff; manual
+        // badgeNew preserved.
+        const colors = (p.variantSwatches ?? []).slice(0, 4).map((s) => ({ color: s?.color ?? null, available: true }));
+        const variantsArr = Array.isArray(p.variants) ? (p.variants as Array<{ options?: Record<string,string>; available?: boolean }>) : [];
+        // Build memory chips from a non-color option key (first one we see).
+        const memorySet = new Map<string, boolean>();
+        for (const v of variantsArr) {
+          if (!v.options) continue;
+          for (const [k, val] of Object.entries(v.options)) {
+            if (k.toLowerCase().includes('цвет') || k.toLowerCase().includes('color')) continue;
+            const prev = memorySet.get(val) ?? false;
+            memorySet.set(val, prev || v.available !== false);
+          }
+        }
+        const memoryChips = Array.from(memorySet.entries()).slice(0, 5).map(([value, available]) => ({ value, available }));
+        const badges: { label: string }[] = [];
+        if (p.badgeNew) badges.push({ label: 'Новинка' });
+        // Auto-derive sale percent from old/current price (numeric only).
+        const cur = parseFloat(String(p.price).replace(/[^\d.]/g,''));
+        const old = parseFloat(String(p.oldPrice ?? '').replace(/[^\d.]/g,''));
+        if (Number.isFinite(cur) && Number.isFinite(old) && old > cur && old > 0) {
+          const pct = Math.round(((old - cur) / old) * 100);
+          if (pct > 0) badges.push({ label: `${pct}%` });
+        } else if (typeof p.badgeSale === 'string' && p.badgeSale) {
+          badges.push({ label: p.badgeSale });
+        }
+        return (
+          <PopularProductRichCard
+            href={p.href}
+            image={p.image}
+            title={p.title}
+            price={p.price}
+            oldPrice={p.oldPrice}
+            colors={colors}
+            memoryChips={memoryChips}
+            badges={badges}
+            ctaLabel={quickAddText}
+          />
+        );
+      }) : demo.map((p, i) => {
         const pips = swatchOverlayProp ? resolveSwatchPips(p) : [];
         return (
         <div

@@ -91,6 +91,7 @@ const defaultComponentResolver: ComponentResolver = async (
   ];
 
   let lastErr: unknown;
+  const allErrors: string[] = [];
   for (const pkg of packages) {
     const moduleName = `${pkg}__${blockName}__${blockName}.mjs`;
     for (const root of roots) {
@@ -101,6 +102,8 @@ const defaultComponentResolver: ComponentResolver = async (
         throw new Error(`Compiled module ${moduleName} has no default export`);
       } catch (err) {
         lastErr = err;
+        const e = err as Error;
+        allErrors.push(`${p}: ${e?.message?.slice(0, 200) ?? String(err).slice(0, 200)}`);
       }
     }
   }
@@ -128,7 +131,7 @@ const defaultComponentResolver: ComponentResolver = async (
 
   throw new Error(
     `Block "${blockName}" not resolvable for themeId="${themeId ?? 'base'}". ` +
-      `Run 'pnpm build:blocks' first. Last error: ${String(lastErr)}. ` +
+      `Run 'pnpm build:blocks' first. ALL errors: [${allErrors.join(' || ')}]. ` +
       `Filesystem diagnostics: ${diag.join(' | ')}`,
   );
 };

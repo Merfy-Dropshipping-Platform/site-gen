@@ -157,11 +157,13 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
             </svg>
           </button>
 
-          <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
-            {navigationLinks.map((link) => (
-              <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
-            ))}
-          </div>
+          {!isTwoTier && (
+            <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
+              {navigationLinks.map((link) => (
+                <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
+              ))}
+            </div>
+          )}
 
           <div class={C.logoWrap['center-absolute']}>
             <a href="/" class={C.logoLink}>
@@ -206,11 +208,13 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
             </svg>
           </button>
 
-          <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
-            {navigationLinks.map((link) => (
-              <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
-            ))}
-          </div>
+          {!isTwoTier && (
+            <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
+              {navigationLinks.map((link) => (
+                <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
+              ))}
+            </div>
+          )}
 
           <div class={C.logoWrap['top-center']}>
             <a href="/" class={C.logoLink}>
@@ -256,11 +260,13 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
             </svg>
           </button>
 
-          <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
-            {navigationLinks.map((link) => (
-              <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
-            ))}
-          </div>
+          {!isTwoTier && (
+            <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
+              {navigationLinks.map((link) => (
+                <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
+              ))}
+            </div>
+          )}
 
           <div class={C.actions}>
             {actionButtons.showSearch && (
@@ -338,11 +344,13 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
             </div>
           </div>
 
-          <div data-nav-inline class:list={[C.navMenuCentered, menuSchemeClass, navInlineMenuClass]}>
-            {navigationLinks.map((link) => (
-              <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
-            ))}
-          </div>
+          {!isTwoTier && (
+            <div data-nav-inline class:list={[C.navMenuCentered, menuSchemeClass, navInlineMenuClass]}>
+              {navigationLinks.map((link) => (
+                <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </nav>

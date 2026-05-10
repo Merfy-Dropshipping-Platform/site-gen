@@ -41,6 +41,18 @@ const menuSchemeClass = menuColorScheme && menuColorScheme !== colorScheme
   : '';
 const isCenterLeft = logoPosition === 'center-left';
 
+// Figma constructor sidebar 314:34540 — поле «Тип меню».
+//   - dropdown   (default) — inline nav на desktop, hamburger drawer на mobile.
+//   - sidebar              — hamburger всегда (включая desktop), inline nav скрыт.
+//   - mega-menu            — inline nav + uppercase tracked + bold links.
+// Реализовано через conditional Tailwind classes (без <style> блока, который
+// в Astro генерит виртуальный CSS-import → ломает .mjs runtime preview).
+const isSidebar = menuType === 'sidebar';
+const isMegaMenu = menuType === 'mega-menu';
+const navInlineMenuClass = isSidebar ? 'md:!hidden' : '';
+const navInlineLinkClass = isMegaMenu ? 'uppercase tracking-[0.06em] font-medium' : '';
+const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
+
 // Treat the seed default `/logo.svg` as "merchant hasn't set a custom logo"
 // and fall through to the styled text logo. The SVG file itself uses
 // `fill="currentColor"` but <img> loads SVGs in an isolated context that
@@ -76,7 +88,7 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
       {logoPosition === 'top-left' && (
         <>
           {/* Mobile hamburger — Phase 1c: React island handles menu toggle */}
-          <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" data-hamburger class={C.hamburger}>
+          <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" data-hamburger class:list={[C.hamburger, hamburgerOverrideClass]}>
             <svg id="menu-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
               <path d="M11 17H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M11 23H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
@@ -90,9 +102,9 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
           </div>
 
           {!isTwoTier && (
-            <div data-nav-inline class:list={[C.navMenu, menuSchemeClass]}>
+            <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
               {navigationLinks.map((link) => (
-                <a href={link.href} class={C.navLink}>{link.label}</a>
+                <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
               ))}
             </div>
           )}
@@ -130,16 +142,16 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
       {/* Reuses top-center markup but swaps logoWrap class to absolute-pin. */}
       {logoPosition === 'center-absolute' && (
         <>
-          <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" data-hamburger class={C.hamburger}>
+          <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" data-hamburger class:list={[C.hamburger, hamburgerOverrideClass]}>
             <svg id="menu-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
               <path d="M11 17H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M11 23H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
 
-          <div data-nav-inline class:list={[C.navMenu, menuSchemeClass]}>
+          <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
             {navigationLinks.map((link) => (
-              <a href={link.href} class={C.navLink}>{link.label}</a>
+              <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
             ))}
           </div>
 
@@ -179,16 +191,16 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
       {/* ============ LAYOUT: top-center ============ */}
       {logoPosition === 'top-center' && (
         <>
-          <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" data-hamburger class={C.hamburger}>
+          <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" data-hamburger class:list={[C.hamburger, hamburgerOverrideClass]}>
             <svg id="menu-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
               <path d="M11 17H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M11 23H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
 
-          <div data-nav-inline class:list={[C.navMenu, menuSchemeClass]}>
+          <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
             {navigationLinks.map((link) => (
-              <a href={link.href} class={C.navLink}>{link.label}</a>
+              <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
             ))}
           </div>
 
@@ -229,16 +241,16 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
       {/* ============ LAYOUT: top-right ============ */}
       {logoPosition === 'top-right' && (
         <>
-          <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" data-hamburger class={C.hamburger}>
+          <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" data-hamburger class:list={[C.hamburger, hamburgerOverrideClass]}>
             <svg id="menu-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
               <path d="M11 17H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M11 23H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
 
-          <div data-nav-inline class:list={[C.navMenu, menuSchemeClass]}>
+          <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
             {navigationLinks.map((link) => (
-              <a href={link.href} class={C.navLink}>{link.label}</a>
+              <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
             ))}
           </div>
 
@@ -280,7 +292,7 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
       {logoPosition === 'center-left' && (
         <div class="flex flex-col w-full">
           <div class="flex items-center justify-between w-full">
-            <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" data-hamburger class={C.hamburger}>
+            <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" data-hamburger class:list={[C.hamburger, hamburgerOverrideClass]}>
               <svg id="menu-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
                 <path d="M11 17H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
                 <path d="M11 23H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
@@ -318,9 +330,9 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
             </div>
           </div>
 
-          <div data-nav-inline class:list={[C.navMenuCentered, menuSchemeClass]}>
+          <div data-nav-inline class:list={[C.navMenuCentered, menuSchemeClass, navInlineMenuClass]}>
             {navigationLinks.map((link) => (
-              <a href={link.href} class={C.navLink}>{link.label}</a>
+              <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
             ))}
           </div>
         </div>
@@ -430,22 +442,4 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
     });
   })();
 </script>
-
-<!--
-  Figma constructor sidebar 314:34540 — поле «Тип меню».
-  Реальная разница типов через CSS overrides по data-menu-type на <header>:
-    - dropdown   (default) — inline nav на desktop, hamburger drawer на mobile.
-    - sidebar              — hamburger всегда (включая desktop), inline nav скрыт.
-    - mega-menu            — inline nav + uppercase tracked + расширенный link.
--->
-<style is:global>
-  header[data-menu-type='sidebar'] [data-nav-inline] { display: none !important; }
-  header[data-menu-type='sidebar'] [data-hamburger] { display: flex !important; }
-
-  header[data-menu-type='mega-menu'] [data-nav-inline] a {
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-weight: 500;
-  }
-</style>
 

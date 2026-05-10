@@ -17,14 +17,11 @@ export const HeaderClasses = {
   },
   container: 'mx-auto max-w-[var(--container-max-width)] px-4 flex items-center',
   // 084 vanilla pilot — when theme defines `--size-header-h` (vanilla =
-  // 80px per Figma 1:18957) the inner header gets a hard height clamp,
-  // overflowing padding visually so the box stays exactly N pixels tall.
-  // Pre-084 themes don't set the token → `h-auto` → original behaviour.
-  // Fix 2026-05-10: `min-h-[88px]` гарантирует стабильную высоту независимо
-  // от того, рендерит ли активный logoPosition одну или две строки контента
+  // 80px per Figma 1:18957) the inner header gets a hard height clamp.
+  // Pre-084 themes default `--size-header-h:auto`.
+  // `min-h-[64px]` гарантирует стабильную высоту независимо от logoPosition
   // (center-left = 2 строки, top-left/top-center/center-absolute = 1 строка).
-  // Раньше при смене logoPosition высота header «прыгала» в preview.
-  header: 'w-full flex items-center border-b border-[rgb(var(--color-text))]/15 h-[var(--size-header-h,auto)] min-h-[88px]',
+  header: 'w-full flex items-center border-b border-[rgb(var(--color-text))]/15 h-[var(--size-header-h,auto)] min-h-[64px]',
   nav: 'w-full max-w-[var(--container-max-width,1320px)] mx-auto px-4 md:px-6 flex items-center relative',
   navJustified: 'justify-between',
   hamburger:

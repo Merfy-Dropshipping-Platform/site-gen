@@ -1,5 +1,5 @@
 // Theme-satin override — sidebar IDENTICAL to theme-base (Figma 314:34540).
-// Only `defaults` differ per-theme (siteTitle, navigationLinks, padding).
+// Only `defaults` differ per-theme (siteTitle, navigationLinks).
 // To change sidebar fields → edit theme-base, then sync here.
 import { z } from 'zod';
 import type { BlockPuckConfig } from '@merfy/theme-contract';
@@ -150,10 +150,13 @@ export const HeaderPuckConfig: BlockPuckConfig<HeaderProps> = {
       { label: 'Контакты', href: '/contacts' },
     ],
     actionButtons: { showSearch: true, showCart: true, showProfile: true },
-    // Figma sidebar 314:34540 — отступы слайдеры с дефолтом 80 (не 16).
-    padding: { top: 16, bottom: 16 },
+    // Header padding — компактные 12px сверху/снизу. Раньше пробовали 80
+    // (как value slider в Figma sidebar 314:34548), но это растягивало
+    // header до ~240px — некомфортно. Реальный header высота ~64-80px:
+    // 12 padding + ~40 content = ~64px.
+    padding: { top: 12, bottom: 12 },
   },
   schema: HeaderSchema,
   maxInstances: 1,
-  constraints: { padding: { min: 0, max: 160, step: 4 } },
+  constraints: { padding: { min: 0, max: 64, step: 4 } },
 };

@@ -63,7 +63,7 @@ const {
 const showOld = !!(oldPrice && oldPrice.trim());
 ---
 <div
-  class="relative flex flex-col gap-4 p-3 rounded-[12px] w-full bg-[rgb(var(--color-surface,var(--color-text)/0.04))]"
+  class="relative flex flex-col gap-4 p-3 rounded-[12px] w-full bg-[rgb(var(--color-surface))]"
   data-popular-card-rich
 >
   <a href={href} class="block aspect-square rounded-[12px] overflow-hidden bg-[rgb(var(--color-text)/0.04)]">
@@ -84,8 +84,8 @@ const showOld = !!(oldPrice && oldPrice.trim());
     <div class="absolute top-2 left-2 flex flex-col gap-1 items-start" data-popular-badges>
       {badges.map((b) => (
         <span
-          class="inline-flex items-center justify-center px-1.5 py-1 rounded-[4px] [font-family:var(--font-body)] text-[14px] leading-none"
-          style="background:rgb(var(--color-accent,250 81 9)); color:rgb(var(--color-bg));"
+          class="inline-flex items-center justify-center px-1.5 py-1 rounded-[4px] [font-family:var(--font-body)] text-[16px] leading-none"
+          style="background:rgb(var(--color-accent)); color:rgb(var(--color-button-text, 255 255 255));"
         >{b.label}</span>
       ))}
     </div>
@@ -97,14 +97,15 @@ const showOld = !!(oldPrice && oldPrice.trim());
         {colors.map((c) => (
           <span
             class:list={[
-              'inline-block w-5 h-5 rounded-[2px] relative',
-              c.available === false ? 'overflow-hidden' : '',
+              'inline-block w-5 h-5 rounded-[2px] relative overflow-hidden',
+              c.available === false ? 'border border-[rgb(var(--color-text)/0.15)]' : '',
             ]}
             style={c.color ? `background:${c.color};` : 'background:rgb(var(--color-text)/0.05);'}
             aria-label={c.available === false ? 'недоступен' : undefined}
           >
             {c.available === false && (
-              <svg viewBox="0 0 20 20" class="absolute inset-0 w-full h-full text-[rgb(var(--color-muted))]" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+              /* Figma 1:26398 disable swatch — single thin diagonal corner-to-corner. */
+              <svg viewBox="0 0 20 20" class="absolute inset-0 w-full h-full text-[rgb(var(--color-text)/0.4)]" stroke="currentColor" stroke-width="1" aria-hidden="true" preserveAspectRatio="none">
                 <line x1="0" y1="20" x2="20" y2="0" />
               </svg>
             )}
@@ -144,8 +145,8 @@ const showOld = !!(oldPrice && oldPrice.trim());
     <button
       type="button"
       data-popular-cta
-      class="w-full inline-flex items-center justify-center h-11 px-3 rounded-[4px] [font-family:var(--font-body)] text-[14px] uppercase cursor-pointer transition-opacity hover:opacity-85"
-      style="background:rgb(var(--color-button-bg,var(--color-text))); color:rgb(var(--color-button-text,var(--color-bg)));"
+      class="w-full inline-flex items-center justify-center h-11 px-3 rounded-[4px] [font-family:var(--font-body)] font-normal text-[14px] uppercase tracking-[0.02em] cursor-pointer transition-opacity hover:opacity-85"
+      style="background:rgb(var(--color-button-bg, var(--color-text))); color:rgb(var(--color-button-text, var(--color-bg))); font-weight:400;"
     >{ctaLabel}</button>
   </div>
 </div>

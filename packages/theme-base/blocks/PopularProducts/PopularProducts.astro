@@ -301,10 +301,42 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
         // option group → memory chips; auto sale% from price diff; manual
         // badgeNew preserved. NB: avoid TS generics (<...>) inside Astro
         // frontmatter expressions — the compiler mistakes them for JSX.
-        const colors = (p.variantSwatches ?? []).slice(0, 4).map(function (s) {
+        const variantsArr = Array.isArray(p.variants) ? p.variants : [];
+        // Russian colour-name → hex map (extend as needed; falls back to
+        // muted-grey square for unknown values).
+        const COLOR_HEX: Record<string, string> = {
+          'чёрный': '#000', 'черный': '#000', 'black': '#000',
+          'белый': '#fff', 'white': '#fff',
+          'серебро': '#c0c0c0', 'серебряный': '#c0c0c0', 'silver': '#c0c0c0',
+          'серый': '#888', 'gray': '#888', 'grey': '#888',
+          'красный': '#e00', 'red': '#e00',
+          'синий': '#33396d', 'blue': '#33396d',
+          'зелёный': '#3eb489', 'зеленый': '#3eb489', 'green': '#3eb489',
+          'жёлтый': '#f6dc58', 'желтый': '#f6dc58', 'yellow': '#f6dc58',
+          'коричневый': '#8b4513', 'brown': '#8b4513',
+        };
+        // Prefer explicit variantSwatches; otherwise extract colour options
+        // from the first variant group whose key matches Цвет/Color.
+        let colors = (p.variantSwatches ?? []).slice(0, 4).map(function (s) {
           return { color: (s && s.color) ? s.color : null, available: true };
         });
-        const variantsArr = Array.isArray(p.variants) ? p.variants : [];
+        if (colors.length === 0) {
+          const colorMap = new Map();
+          for (const v of variantsArr) {
+            const opts = v && (v as any).options;
+            if (!opts) continue;
+            for (const [k, val] of Object.entries(opts)) {
+              if (!k.toLowerCase().includes('цвет') && !k.toLowerCase().includes('color')) continue;
+              const valStr = String(val);
+              const prev = colorMap.get(valStr) || false;
+              colorMap.set(valStr, prev || (v as any).available !== false);
+            }
+          }
+          colors = Array.from(colorMap.entries()).slice(0, 4).map(function (entry) {
+            const lookup = COLOR_HEX[String(entry[0]).toLowerCase()] || null;
+            return { color: lookup, available: entry[1] };
+          });
+        }
         const memorySet = new Map();
         for (const v of variantsArr) {
           const opts = v && (v as any).options;

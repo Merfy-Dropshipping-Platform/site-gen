@@ -13,6 +13,28 @@ import type * as schemaTypes from "../db/schema";
 
 const logger = new Logger("DataFetcher");
 
+export interface FetchedVariantOption {
+  id?: string;
+  value: string;
+  position?: number;
+  images?: string[];
+  /** `#RRGGBB` colour for swatch render (set when group is «Цвет»/«Color»). */
+  swatchHex?: string | null;
+}
+
+export interface FetchedVariantGroup {
+  id?: string;
+  name: string;
+  position?: number;
+  options: FetchedVariantOption[];
+}
+
+export interface FetchedVariantSwatch {
+  value: string;
+  color: string | null;
+  available?: boolean;
+}
+
 export interface FetchedProduct {
   id: string;
   name: string;
@@ -27,6 +49,14 @@ export interface FetchedProduct {
   isPhysicalProduct?: boolean;
   quantity?: number;
   hasVariants?: boolean;
+  /** Full variant group tree (with `swatchHex` per option). */
+  variantGroups?: FetchedVariantGroup[];
+  /**
+   * Convenience flat array surfaced from the «Цвет»/«Color» group. Storefront
+   * themes (flux Figma 1:26389 PopularProducts rich card) read this directly
+   * to render colour swatches without having to walk variantGroups.
+   */
+  variantSwatches?: FetchedVariantSwatch[];
 }
 
 export interface FetchedCollection {

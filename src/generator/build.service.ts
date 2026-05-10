@@ -1743,6 +1743,47 @@ async function stageFetchData(
             options: v.options || {},
           }))
         : [],
+      // Variant groups (with swatchHex per option) — themes consume via
+      // products.json for static cards. Always emit (empty array when no
+      // groups) so Astro consumers don't have to null-guard.
+      variantGroups: Array.isArray(p.variantGroups)
+        ? p.variantGroups.map((g: any) => ({
+            id: g.id ?? null,
+            name: g.name,
+            position: g.position ?? 0,
+            options: Array.isArray(g.options)
+              ? g.options.map((o: any) => ({
+                  id: o.id ?? null,
+                  value: o.value,
+                  position: o.position ?? 0,
+                  images: Array.isArray(o.images) ? o.images : [],
+                  swatchHex: o.swatchHex ?? null,
+                }))
+              : [],
+          }))
+        : [],
+      // Convenience flat swatches array — flux PopularProducts rich card
+      // (Figma 1:26389) reads this to render colour squares. Falls back to
+      // deriving from variantGroups when RPC didn't include the convenience
+      // field (older product-service builds).
+      variantSwatches: (() => {
+        if (Array.isArray(p.variantSwatches) && p.variantSwatches.length > 0) {
+          return p.variantSwatches.map((s: any) => ({
+            value: s.value,
+            color: s.color ?? null,
+            available: s.available !== false,
+          }));
+        }
+        const colorGroup = Array.isArray(p.variantGroups)
+          ? p.variantGroups.find((g: any) => /^(цвет|color)$/i.test(String(g.name ?? "").trim()))
+          : null;
+        if (!colorGroup || !Array.isArray(colorGroup.options)) return [];
+        return colorGroup.options.map((o: any) => ({
+          value: o.value,
+          color: o.swatchHex ?? null,
+          available: true,
+        }));
+      })(),
     }));
 
   // Write products.json for Astro build-time consumption (formatted for components)

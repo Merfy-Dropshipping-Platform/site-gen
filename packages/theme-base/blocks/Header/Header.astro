@@ -76,7 +76,7 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
       {logoPosition === 'top-left' && (
         <>
           {/* Mobile hamburger — Phase 1c: React island handles menu toggle */}
-          <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" class={C.hamburger}>
+          <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" data-hamburger class={C.hamburger}>
             <svg id="menu-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
               <path d="M11 17H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M11 23H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
@@ -90,7 +90,7 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
           </div>
 
           {!isTwoTier && (
-            <div class:list={[C.navMenu, menuSchemeClass]}>
+            <div data-nav-inline class:list={[C.navMenu, menuSchemeClass]}>
               {navigationLinks.map((link) => (
                 <a href={link.href} class={C.navLink}>{link.label}</a>
               ))}
@@ -130,14 +130,14 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
       {/* Reuses top-center markup but swaps logoWrap class to absolute-pin. */}
       {logoPosition === 'center-absolute' && (
         <>
-          <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" class={C.hamburger}>
+          <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" data-hamburger class={C.hamburger}>
             <svg id="menu-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
               <path d="M11 17H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M11 23H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
 
-          <div class:list={[C.navMenu, menuSchemeClass]}>
+          <div data-nav-inline class:list={[C.navMenu, menuSchemeClass]}>
             {navigationLinks.map((link) => (
               <a href={link.href} class={C.navLink}>{link.label}</a>
             ))}
@@ -179,14 +179,14 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
       {/* ============ LAYOUT: top-center ============ */}
       {logoPosition === 'top-center' && (
         <>
-          <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" class={C.hamburger}>
+          <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" data-hamburger class={C.hamburger}>
             <svg id="menu-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
               <path d="M11 17H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M11 23H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
 
-          <div class:list={[C.navMenu, menuSchemeClass]}>
+          <div data-nav-inline class:list={[C.navMenu, menuSchemeClass]}>
             {navigationLinks.map((link) => (
               <a href={link.href} class={C.navLink}>{link.label}</a>
             ))}
@@ -229,14 +229,14 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
       {/* ============ LAYOUT: top-right ============ */}
       {logoPosition === 'top-right' && (
         <>
-          <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" class={C.hamburger}>
+          <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" data-hamburger class={C.hamburger}>
             <svg id="menu-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
               <path d="M11 17H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M11 23H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
 
-          <div class:list={[C.navMenu, menuSchemeClass]}>
+          <div data-nav-inline class:list={[C.navMenu, menuSchemeClass]}>
             {navigationLinks.map((link) => (
               <a href={link.href} class={C.navLink}>{link.label}</a>
             ))}
@@ -280,7 +280,7 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
       {logoPosition === 'center-left' && (
         <div class="flex flex-col w-full">
           <div class="flex items-center justify-between w-full">
-            <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" class={C.hamburger}>
+            <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" data-hamburger class={C.hamburger}>
               <svg id="menu-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
                 <path d="M11 17H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
                 <path d="M11 23H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
@@ -318,7 +318,7 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
             </div>
           </div>
 
-          <div class:list={[C.navMenuCentered, menuSchemeClass]}>
+          <div data-nav-inline class:list={[C.navMenuCentered, menuSchemeClass]}>
             {navigationLinks.map((link) => (
               <a href={link.href} class={C.navLink}>{link.label}</a>
             ))}
@@ -430,4 +430,22 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
     });
   })();
 </script>
+
+<!--
+  Figma constructor sidebar 314:34540 — поле «Тип меню».
+  Реальная разница типов через CSS overrides по data-menu-type на <header>:
+    - dropdown   (default) — inline nav на desktop, hamburger drawer на mobile.
+    - sidebar              — hamburger всегда (включая desktop), inline nav скрыт.
+    - mega-menu            — inline nav + uppercase tracked + расширенный link.
+-->
+<style is:global>
+  header[data-menu-type='sidebar'] [data-nav-inline] { display: none !important; }
+  header[data-menu-type='sidebar'] [data-hamburger] { display: flex !important; }
+
+  header[data-menu-type='mega-menu'] [data-nav-inline] a {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+  }
+</style>
 

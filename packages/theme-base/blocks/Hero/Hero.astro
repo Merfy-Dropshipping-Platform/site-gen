@@ -94,11 +94,13 @@ const hAlignClass = C.hAlign[contentPositionMapped];
 const vAlignClass = variant === 'overlay' ? C.vAlign[contentPositionMapped] : '';
 
 // Pupa parity: alignment field controls text-align inside content.
+// Default = 'text-center' (per Figma 2:16517 — heading + subtitle + button
+// центрированы). Будущая настройка в sidebar позволит сменить на left/right.
 const alignmentRaw = typeof raw.alignment === 'string' ? raw.alignment : '';
 const alignmentClass =
   alignmentRaw === 'left' ? 'text-left' :
   alignmentRaw === 'right' ? 'text-right' :
-  alignmentRaw === 'center' ? 'text-center' : '';
+  'text-center';
 
 // Pupa parity: container='false' → no max-width wrapping (full bleed).
 const containerEnabled = raw.container !== 'false';

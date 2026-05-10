@@ -164,6 +164,37 @@ try {
 } catch {
   realProducts = [];
 }
+// Preview path (no products.json baked, but siteId provided): pull
+// products from sites svc storefront-data so SSR has real data and
+// the JS hydration step doesn't have to overwrite SSR markup.
+// Mirrors Product.astro's preview SSR fetch.
+if (realProducts.length === 0 && siteId) {
+  try {
+    const internalBase = (import.meta as unknown as { env?: { SITES_INTERNAL_BASE?: string } }).env?.SITES_INTERNAL_BASE
+      ?? 'http://localhost:3114';
+    const res = await fetch(`${internalBase}/api/sites/${siteId}/storefront-data`).catch(() => null);
+    if (res && res.ok) {
+      const data = (await res.json()) as { products?: Array<Record<string, unknown>> };
+      if (Array.isArray(data.products)) {
+        realProducts = data.products.map((p) => ({
+          id: typeof p.id === 'string' ? p.id : undefined,
+          name: typeof p.name === 'string' ? p.name : (typeof p.title === 'string' ? p.title : undefined),
+          price: (p.price ?? p.basePrice) as string | number | undefined,
+          oldPrice: (p.compareAtPrice ?? p.oldPrice) as string | number | undefined,
+          image: typeof p.image === 'string' ? p.image : (Array.isArray(p.images) && typeof p.images[0] === 'string' ? p.images[0] as string : undefined),
+          href: typeof p.slug === 'string' ? `/product/${p.slug}` : '/catalog',
+          hasVariants: !!p.hasVariants,
+          variants: Array.isArray(p.variants) && p.variants.length > 0
+            ? p.variants
+            : (Array.isArray(p.variantCombinations) ? p.variantCombinations : []),
+          variantSwatches: Array.isArray(p.variantSwatches) ? p.variantSwatches as Array<{ color?: string | null }> : [],
+        }));
+      }
+    }
+  } catch {
+    // swallow — fall through to DEMO_PRODUCTS
+  }
+}
 
 // Filter by collection. URL `?collection=` query overrides block.props.collection
 // (allows /catalog?collection=URBAN deep-linking like rose reference). Falls back
@@ -526,6 +557,11 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
       var filtered = products.filter(function (p) { return p.id && idSet.has(p.id); });
       return filtered.length > 0 ? filtered : products;
     }
+
+    // Rich variant rendered fully SSR (Astro fetched products itself);
+    // skip JS-side rebuild to avoid clobbering rich card markup with
+    // minimal cardHtml template.
+    if (grid.getAttribute('data-card-variant') === 'rich') return;
 
     fetch(apiBase + '/sites/' + effectiveSiteId + '/storefront-data', { credentials: 'omit' })
       .catch(function () { return null; })

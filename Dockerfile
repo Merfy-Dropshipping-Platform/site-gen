@@ -17,13 +17,6 @@ RUN pnpm build
 # dist/astro-blocks/. Required for both PreviewService (Astro Container)
 # and ThemePuckConfigController (dynamic-imports <pkg>__<block>__index.mjs).
 RUN pnpm build:blocks
-# DEBUG_TRACE_2026_05_10 — diagnose why API returns stale Header.puckConfig
-# despite Coolify reporting deploy at correct git sha. Dump source AND
-# compiled output so the build log can confirm what's really in the image.
-RUN echo "=== DEBUG_TRACE Header source (lines 80-160) ===" \
-    && sed -n '80,160p' /app/packages/theme-base/blocks/Header/Header.puckConfig.ts \
-    && echo "=== DEBUG_TRACE Header compiled mjs (head 80) ===" \
-    && head -80 /app/dist/astro-blocks/theme-base__Header__Header.puckConfig.mjs
 # DEBUG: list PopularProducts files immediately after build:blocks
 RUN echo "=== PopularProducts files after build:blocks ===" \
     && ls -la /app/dist/astro-blocks/ | grep -i Popular || echo "(NONE found via grep)" \

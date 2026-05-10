@@ -303,8 +303,11 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
         // frontmatter expressions — the compiler mistakes them for JSX.
         const variantsArr = Array.isArray(p.variants) ? p.variants : [];
         // Russian colour-name → hex map (extend as needed; falls back to
-        // muted-grey square for unknown values).
-        const COLOR_HEX: Record<string, string> = {
+        // muted-grey square for unknown values). NB: keep this as a plain
+        // object literal (NO TS generic annotation like `Record<...>`) —
+        // SWC inside Astro JSX expressions parses `<...>` as JSX and breaks
+        // the const declaration, surfacing as "Missing initializer".
+        const COLOR_HEX = {
           'чёрный': '#000', 'черный': '#000', 'black': '#000',
           'белый': '#fff', 'white': '#fff',
           'серебро': '#c0c0c0', 'серебряный': '#c0c0c0', 'silver': '#c0c0c0',
@@ -333,7 +336,8 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
             }
           }
           colors = Array.from(colorMap.entries()).slice(0, 4).map(function (entry) {
-            const lookup = COLOR_HEX[String(entry[0]).toLowerCase()] || null;
+            const key = String(entry[0]).toLowerCase();
+            const lookup = (COLOR_HEX as any)[key] || null;
             return { color: lookup, available: entry[1] };
           });
         }

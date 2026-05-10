@@ -104,7 +104,6 @@ const showOld = !!(oldPrice && oldPrice.trim());
             aria-label={c.available === false ? 'недоступен' : undefined}
           >
             {c.available === false && (
-              /* Figma 1:26398 disable swatch — single thin diagonal corner-to-corner. */
               <svg viewBox="0 0 20 20" class="absolute inset-0 w-full h-full text-[rgb(var(--color-text)/0.4)]" stroke="currentColor" stroke-width="1" aria-hidden="true" preserveAspectRatio="none">
                 <line x1="0" y1="20" x2="20" y2="0" />
               </svg>

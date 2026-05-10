@@ -81,11 +81,11 @@ const showOld = !!(oldPrice && oldPrice.trim());
   </a>
 
   {badges.length > 0 && (
-    <div class="absolute top-2 left-2 flex flex-col gap-1 items-start" data-popular-badges>
+    <div class="absolute top-2 left-2 z-10 flex flex-col gap-1 items-start" data-popular-badges>
       {badges.map((b) => (
         <span
           class="inline-flex items-center justify-center px-1.5 py-1 rounded-[4px] [font-family:var(--font-body)] text-[16px] leading-none"
-          style="background:rgb(var(--color-accent)); color:rgb(var(--color-button-text, 255 255 255));"
+          style="background:#fa5109; color:#ffffff;"
         >{b.label}</span>
       ))}
     </div>
@@ -145,7 +145,7 @@ const showOld = !!(oldPrice && oldPrice.trim());
       type="button"
       data-popular-cta
       class="w-full inline-flex items-center justify-center h-11 px-3 rounded-[4px] [font-family:var(--font-body)] font-normal text-[14px] uppercase tracking-[0.02em] cursor-pointer transition-opacity hover:opacity-85"
-      style="background:rgb(var(--color-button-bg, var(--color-text))); color:rgb(var(--color-button-text, var(--color-bg))); font-weight:400;"
+      style="background:#000000; color:#ffffff; font-weight:400;"
     >{ctaLabel}</button>
   </div>
 </div>

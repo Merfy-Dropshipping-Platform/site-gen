@@ -320,8 +320,16 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
         };
         // Prefer explicit variantSwatches; otherwise extract colour options
         // from the first variant group whose key matches Цвет/Color.
+        // When variantSwatches has entries but `color` is null (option exists
+        // in DB but merchant didn't fill swatchHex yet) — fall back to looking
+        // up the option's `value` in COLOR_HEX so well-known names render.
         let colors = (p.variantSwatches ?? []).slice(0, 4).map(function (s) {
-          return { color: (s && s.color) ? s.color : null, available: true };
+          if (s && s.color) return { color: s.color, available: true };
+          const name = s && (s as any).value
+            ? String((s as any).value).toLowerCase()
+            : null;
+          const fallback = name ? (COLOR_HEX as any)[name] || null : null;
+          return { color: fallback, available: true };
         });
         if (colors.length === 0) {
           const colorMap = new Map();

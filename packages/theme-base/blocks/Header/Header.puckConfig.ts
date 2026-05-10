@@ -88,8 +88,10 @@ export const HeaderPuckConfig: BlockPuckConfig<HeaderProps> = {
   // (берутся из branding / theme-default), но в sidebar не показываются.
   fields: {
     // ── Figma — основа ──
+    // Все три enum-поля — `select` (dropdown с chevron по Figma 314:34540),
+    // не `radio` — иначе Puck UI рисует пилюли вместо выпадашки.
     logoPosition: {
-      type: 'radio',
+      type: 'select',
       label: 'Положение логотипа',
       options: [
         { label: 'Сверху слева', value: 'top-left' },
@@ -99,7 +101,7 @@ export const HeaderPuckConfig: BlockPuckConfig<HeaderProps> = {
       ],
     },
     stickiness: {
-      type: 'radio',
+      type: 'select',
       label: 'Статичность',
       options: [
         { label: 'Никогда', value: 'none' },
@@ -113,7 +115,7 @@ export const HeaderPuckConfig: BlockPuckConfig<HeaderProps> = {
     // ── Figma — Меню ──
     menuColorScheme: { type: 'colorScheme', label: 'Цветовая схема меню' },
     menuType: {
-      type: 'radio',
+      type: 'select',
       label: 'Тип меню',
       options: [
         { label: 'Боковое', value: 'sidebar' },

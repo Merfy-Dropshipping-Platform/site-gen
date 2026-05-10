@@ -33,6 +33,12 @@ const promoLinkHref = promoBar?.linkHref || '#';
 
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
 const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
+// Figma constructor sidebar 314:34540 — отдельная схема для блока «Меню».
+// Если merchant не выбрал — наследуем основную схему (нет дополнительного wrapper).
+const menuColorScheme = (Astro.props as Record<string, unknown>).menuColorScheme as string | undefined;
+const menuSchemeClass = menuColorScheme && menuColorScheme !== colorScheme
+  ? `color-scheme-${String(menuColorScheme).replace('scheme-', '')}`
+  : '';
 const isCenterLeft = logoPosition === 'center-left';
 
 // Treat the seed default `/logo.svg` as "merchant hasn't set a custom logo"
@@ -84,7 +90,7 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
           </div>
 
           {!isTwoTier && (
-            <div class={C.navMenu}>
+            <div class:list={[C.navMenu, menuSchemeClass]}>
               {navigationLinks.map((link) => (
                 <a href={link.href} class={C.navLink}>{link.label}</a>
               ))}
@@ -131,7 +137,7 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
             </svg>
           </button>
 
-          <div class={C.navMenu}>
+          <div class:list={[C.navMenu, menuSchemeClass]}>
             {navigationLinks.map((link) => (
               <a href={link.href} class={C.navLink}>{link.label}</a>
             ))}
@@ -180,7 +186,7 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
             </svg>
           </button>
 
-          <div class={C.navMenu}>
+          <div class:list={[C.navMenu, menuSchemeClass]}>
             {navigationLinks.map((link) => (
               <a href={link.href} class={C.navLink}>{link.label}</a>
             ))}
@@ -230,7 +236,7 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
             </svg>
           </button>
 
-          <div class={C.navMenu}>
+          <div class:list={[C.navMenu, menuSchemeClass]}>
             {navigationLinks.map((link) => (
               <a href={link.href} class={C.navLink}>{link.label}</a>
             ))}
@@ -312,7 +318,7 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
             </div>
           </div>
 
-          <div class={C.navMenuCentered}>
+          <div class:list={[C.navMenuCentered, menuSchemeClass]}>
             {navigationLinks.map((link) => (
               <a href={link.href} class={C.navLink}>{link.label}</a>
             ))}

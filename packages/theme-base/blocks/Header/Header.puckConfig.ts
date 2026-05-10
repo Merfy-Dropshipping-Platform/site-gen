@@ -64,6 +64,12 @@ export const HeaderSchema = z.object({
     showProfile: z.boolean(),
   }),
   colorScheme: z.string().optional(),
+  /**
+   * Figma constructor sidebar 314:34540 — отдельная схема для блока «Меню»
+   * (отличается от основной цветовой схемы хедера). Влияет на dropdown
+   * mega-menu / sidebar wrapper. NULL = наследует от `colorScheme`.
+   */
+  menuColorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -75,50 +81,56 @@ export type HeaderProps = z.infer<typeof HeaderSchema>;
 export const HeaderPuckConfig: BlockPuckConfig<HeaderProps> = {
   label: 'Header',
   category: 'navigation',
+  // Sidebar собран строго по Figma 314:34540 (Platform - Constructor - Landing).
+  // Порядок полей и опций — как в макете. Поля, которых в макете нет
+  // (siteTitle/logo URL/logoFont/activeLinkIndicator/variant/promoBar/
+  // actionButtons), помечены `type:'hidden'` — они нужны для рендера
+  // (берутся из branding / theme-default), но в sidebar не показываются.
   fields: {
-    siteTitle: { type: 'text', label: 'Название магазина' },
-    logo: { type: 'text', label: 'URL логотипа' },
-    logoFont: { type: 'select', label: 'Шрифт текстового лого' },
-    logoPosition: { type: 'radio', label: 'Позиция логотипа' },
-    activeLinkIndicator: {
+    // ── Figma — основа ──
+    logoPosition: {
       type: 'radio',
-      label: 'Индикатор активной ссылки',
+      label: 'Положение логотипа',
       options: [
-        { label: 'Нет', value: 'none' },
-        { label: 'Подчёркивание', value: 'underline' },
+        { label: 'Сверху слева', value: 'top-left' },
+        { label: 'Сверху в центре', value: 'top-center' },
+        { label: 'Слева', value: 'center-left' },
+        { label: 'По центру', value: 'center-absolute' },
       ],
     },
-    stickiness: { type: 'radio', label: 'Прилипание' },
-    variant: {
+    stickiness: {
       type: 'radio',
-      label: 'Вариант',
+      label: 'Статичность',
       options: [
-        { label: 'Стандартный (одна строка)', value: 'standard' },
-        { label: 'Двухуровневый (логотип сверху, меню снизу)', value: 'two-tier' },
+        { label: 'Никогда', value: 'none' },
+        { label: 'При прокрутке вверх', value: 'scroll-up' },
+        { label: 'Всегда', value: 'always' },
       ],
     },
-    promoBar: {
-      type: 'object',
-      label: 'Промо-полоска (сверху)',
-      objectFields: {
-        enabled: {
-          type: 'radio',
-          label: 'Показать',
-          options: [
-            { label: 'Да', value: true },
-            { label: 'Нет', value: false },
-          ],
-        },
-        text: { type: 'text', label: 'Текст' },
-        linkText: { type: 'text', label: 'Текст ссылки' },
-        linkHref: { type: 'text', label: 'URL ссылки' },
-      },
-    },
-    menuType: { type: 'radio', label: 'Тип меню' },
-    navigationLinks: { type: 'array', label: 'Ссылки меню' },
-    actionButtons: { type: 'object', label: 'Кнопки' },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
-    padding: { type: 'object', label: 'Отступы' },
+    padding: { type: 'padding', label: 'Отступы' },
+
+    // ── Figma — Меню ──
+    menuColorScheme: { type: 'colorScheme', label: 'Цветовая схема меню' },
+    menuType: {
+      type: 'radio',
+      label: 'Тип меню',
+      options: [
+        { label: 'Боковое', value: 'sidebar' },
+        { label: 'Выпадающее', value: 'dropdown' },
+        { label: 'Расширенное', value: 'mega-menu' },
+      ],
+    },
+    navigationLinks: { type: 'array', label: 'Изменить пункты меню' },
+
+    // ── скрыто (не в Figma sidebar; заполняется через branding / theme) ──
+    siteTitle: { type: 'hidden', label: '' },
+    logo: { type: 'hidden', label: '' },
+    logoFont: { type: 'hidden', label: '' },
+    activeLinkIndicator: { type: 'hidden', label: '' },
+    variant: { type: 'hidden', label: '' },
+    promoBar: { type: 'hidden', label: '' },
+    actionButtons: { type: 'hidden', label: '' },
   },
   defaults: {
     siteTitle: 'Мой магазин',
@@ -132,9 +144,10 @@ export const HeaderPuckConfig: BlockPuckConfig<HeaderProps> = {
       { label: 'Контакты', href: '/contacts' },
     ],
     actionButtons: { showSearch: true, showCart: true, showProfile: true },
-    padding: { top: 16, bottom: 16 },
+    // Figma sidebar 314:34540 — отступы слайдеры с дефолтом 80 (не 16).
+    padding: { top: 80, bottom: 80 },
   },
   schema: HeaderSchema,
   maxInstances: 1,
-  constraints: { padding: { min: 0, max: 40, step: 4 } },
+  constraints: { padding: { min: 0, max: 160, step: 4 } },
 };

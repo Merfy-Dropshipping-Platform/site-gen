@@ -114,7 +114,13 @@ const defaultComponentResolver: ComponentResolver = async (
   for (const root of roots) {
     try {
       const entries = fs.readdirSync(root);
-      diag.push(`${root}: [${entries.length} entries] ${entries.slice(0, 5).join(', ')}${entries.length > 5 ? '...' : ''}`);
+      // Filter to entries matching the requested blockName so we can see
+      // exactly which files for THIS block are present (rather than just
+      // a generic count).
+      const matching = entries.filter((e) => e.includes(`__${blockName}__`));
+      diag.push(
+        `${root}: [${entries.length} entries] matching "${blockName}": [${matching.join(', ') || 'NONE'}]`,
+      );
     } catch (e) {
       diag.push(`${root}: NOT-EXIST (${(e as NodeJS.ErrnoException).code ?? 'unknown'})`);
     }

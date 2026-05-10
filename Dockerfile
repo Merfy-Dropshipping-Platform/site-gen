@@ -11,7 +11,7 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install
 
 COPY . .
-# cache-bust: 2026-04-21-preview-tailwind
+# cache-bust: 2026-05-10-popular-rich-card
 RUN pnpm build
 # Precompile theme blocks (.astro + sibling .ts) to flat ESM under
 # dist/astro-blocks/. Required for both PreviewService (Astro Container)
@@ -29,6 +29,8 @@ RUN test -f /app/dist/astro-blocks/theme-base__Product__Product.mjs \
     || (echo "FATAL: build:blocks did not produce theme-base Product.mjs" && exit 1)
 RUN test -f /app/dist/astro-blocks/theme-base__Catalog__Catalog.mjs \
     || (echo "FATAL: build:blocks did not produce theme-base Catalog.mjs" && exit 1)
+RUN test -f /app/dist/astro-blocks/theme-base__PopularProducts__PopularProducts.mjs \
+    || (echo "FATAL: build:blocks did not produce theme-base PopularProducts.mjs — check syntax in packages/theme-base/blocks/PopularProducts/PopularProducts.astro" && exit 1)
 # Compile Tailwind utility bundle for the preview iframe — theme-base
 # blocks use Tailwind classes in their .astro templates, and PreviewService
 # injects this CSS so the iframe looks like the live site.

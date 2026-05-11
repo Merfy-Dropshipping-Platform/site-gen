@@ -1,0 +1,81 @@
+---
+/**
+ * NavLinkItem — single link + optional submenu (hover desktop / click touch).
+ *
+ * Используется в Header.astro в 5 layout-ветках (top-left, top-center,
+ * top-right, center-absolute, center-left) — раньше код дублировался,
+ * теперь все ветки делают `<NavLinkItem link={l} isMegaMenu={isMegaMenu}
+ * linkClass={navLinkClass} />`.
+ *
+ * menuType controls submenu look:
+ *   - dropdown (default) — локальный popup ~200px снизу под link.
+ *   - mega-menu          — panel на всю ширину header под nav row.
+ *   - sidebar            — inline nav скрыт через md:!hidden на parent,
+ *                          этот компонент не рендерится вообще.
+ *
+ * Touch (`(hover: none)`) — Header.astro inline-script переключает
+ * `data-open` на host, CSS variant data-[open=true] показывает submenu
+ * без hover (для tablet/phone landscape).
+ */
+type Submenu = { label: string; href: string };
+type Link = {
+  label: string;
+  href: string;
+  submenu?: Submenu[];
+};
+
+interface Props {
+  link: Link;
+  isMegaMenu?: boolean;
+  /** Tailwind classes for the link itself — переданные родителем для
+   *  кейсов вроде mega-menu uppercase + tracking. */
+  linkClass?: string;
+}
+
+const { link, isMegaMenu = false, linkClass = '' } = Astro.props as Props;
+const hasSubmenu = Array.isArray(link.submenu) && link.submenu.length > 0;
+
+const submenuClass = isMegaMenu
+  ? 'absolute left-0 right-0 top-full w-screen bg-[rgb(var(--color-bg))] border-t border-[rgb(var(--color-text)/0.1)] shadow-lg z-50'
+  : 'absolute left-0 top-full min-w-[220px] bg-[rgb(var(--color-bg))] border border-[rgb(var(--color-text)/0.1)] shadow-lg z-50 py-2 rounded-[var(--radius-card,4px)]';
+
+const subLinkClass = isMegaMenu
+  ? 'block py-2 text-[16px] [font-family:var(--font-body)] text-[rgb(var(--color-text))] hover:opacity-70 transition-opacity'
+  : 'block px-4 py-2 text-[14px] [font-family:var(--font-body)] text-[rgb(var(--color-text))] hover:bg-[rgb(var(--color-text)/0.05)] transition-colors';
+---
+{hasSubmenu ? (
+  <div
+    class="group relative"
+    data-submenu-host
+    data-open="false"
+  >
+    <a
+      href={link.href}
+      class:list={['inline-flex items-center', linkClass]}
+      data-submenu-trigger
+    >
+      {link.label}
+    </a>
+    <div
+      class:list={[
+        'hidden group-hover:flex data-[open=true]:flex flex-col',
+        submenuClass,
+      ]}
+      data-submenu-panel
+    >
+      {isMegaMenu ? (
+        <div class="mx-auto w-full max-w-[var(--container-max-width,1320px)] px-8 py-6 flex flex-col">
+          {link.submenu!.map((sub) => (
+            <a href={sub.href} class={subLinkClass}>{sub.label}</a>
+          ))}
+        </div>
+      ) : (
+        link.submenu!.map((sub) => (
+          <a href={sub.href} class={subLinkClass}>{sub.label}</a>
+        ))
+      )}
+    </div>
+  </div>
+) : (
+  <a href={link.href} class={linkClass}>{link.label}</a>
+)}

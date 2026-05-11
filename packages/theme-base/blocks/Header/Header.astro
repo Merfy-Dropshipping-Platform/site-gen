@@ -1,6 +1,7 @@
 ---
 import type { HeaderProps } from './Header.puckConfig';
 import { HeaderClasses as C } from './Header.classes';
+import NavLinkItem from './NavLinkItem.astro';
 
 interface Props extends HeaderProps {
   id?: string;
@@ -110,24 +111,9 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
 
           {!isTwoTier && (
             <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
-              {navigationLinks.map((link) => {
-                const hasSubmenu = Array.isArray(link.submenu) && link.submenu.length > 0;
-                return (
-                  <div class="group relative">
-                    <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
-                    {hasSubmenu && (
-                      <div class:list={[
-                        'hidden group-hover:flex flex-col absolute z-50 bg-[rgb(var(--color-bg))] border border-[rgb(var(--color-text)/0.1)] shadow-lg',
-                        isMegaMenu ? 'left-1/2 -translate-x-1/2 top-full w-screen max-w-[var(--container-max-width,1320px)] px-8 py-6' : 'left-0 top-full min-w-[200px] py-2',
-                      ]}>
-                        {link.submenu.map((sub) => (
-                          <a href={sub.href} class:list={['text-[rgb(var(--color-text))] hover:opacity-70 transition-opacity', isMegaMenu ? 'py-2 text-[16px]' : 'px-4 py-2 hover:bg-[rgb(var(--color-text)/0.05)] text-[14px]']}>{sub.label}</a>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              {navigationLinks.map((link) => (
+                <NavLinkItem link={link} isMegaMenu={isMegaMenu} linkClass={[C.navLink, navInlineLinkClass].filter(Boolean).join(' ')} />
+              ))}
             </div>
           )}
 
@@ -173,24 +159,9 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
 
           {!isTwoTier && (
             <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
-              {navigationLinks.map((link) => {
-                const hasSubmenu = Array.isArray(link.submenu) && link.submenu.length > 0;
-                return (
-                  <div class="group relative">
-                    <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
-                    {hasSubmenu && (
-                      <div class:list={[
-                        'hidden group-hover:flex flex-col absolute z-50 bg-[rgb(var(--color-bg))] border border-[rgb(var(--color-text)/0.1)] shadow-lg',
-                        isMegaMenu ? 'left-1/2 -translate-x-1/2 top-full w-screen max-w-[var(--container-max-width,1320px)] px-8 py-6' : 'left-0 top-full min-w-[200px] py-2',
-                      ]}>
-                        {link.submenu.map((sub) => (
-                          <a href={sub.href} class:list={['text-[rgb(var(--color-text))] hover:opacity-70 transition-opacity', isMegaMenu ? 'py-2 text-[16px]' : 'px-4 py-2 hover:bg-[rgb(var(--color-text)/0.05)] text-[14px]']}>{sub.label}</a>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              {navigationLinks.map((link) => (
+                <NavLinkItem link={link} isMegaMenu={isMegaMenu} linkClass={[C.navLink, navInlineLinkClass].filter(Boolean).join(' ')} />
+              ))}
             </div>
           )}
 
@@ -239,24 +210,9 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
 
           {!isTwoTier && (
             <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
-              {navigationLinks.map((link) => {
-                const hasSubmenu = Array.isArray(link.submenu) && link.submenu.length > 0;
-                return (
-                  <div class="group relative">
-                    <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
-                    {hasSubmenu && (
-                      <div class:list={[
-                        'hidden group-hover:flex flex-col absolute z-50 bg-[rgb(var(--color-bg))] border border-[rgb(var(--color-text)/0.1)] shadow-lg',
-                        isMegaMenu ? 'left-1/2 -translate-x-1/2 top-full w-screen max-w-[var(--container-max-width,1320px)] px-8 py-6' : 'left-0 top-full min-w-[200px] py-2',
-                      ]}>
-                        {link.submenu.map((sub) => (
-                          <a href={sub.href} class:list={['text-[rgb(var(--color-text))] hover:opacity-70 transition-opacity', isMegaMenu ? 'py-2 text-[16px]' : 'px-4 py-2 hover:bg-[rgb(var(--color-text)/0.05)] text-[14px]']}>{sub.label}</a>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              {navigationLinks.map((link) => (
+                <NavLinkItem link={link} isMegaMenu={isMegaMenu} linkClass={[C.navLink, navInlineLinkClass].filter(Boolean).join(' ')} />
+              ))}
             </div>
           )}
 
@@ -306,24 +262,9 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
 
           {!isTwoTier && (
             <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
-              {navigationLinks.map((link) => {
-                const hasSubmenu = Array.isArray(link.submenu) && link.submenu.length > 0;
-                return (
-                  <div class="group relative">
-                    <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
-                    {hasSubmenu && (
-                      <div class:list={[
-                        'hidden group-hover:flex flex-col absolute z-50 bg-[rgb(var(--color-bg))] border border-[rgb(var(--color-text)/0.1)] shadow-lg',
-                        isMegaMenu ? 'left-1/2 -translate-x-1/2 top-full w-screen max-w-[var(--container-max-width,1320px)] px-8 py-6' : 'left-0 top-full min-w-[200px] py-2',
-                      ]}>
-                        {link.submenu.map((sub) => (
-                          <a href={sub.href} class:list={['text-[rgb(var(--color-text))] hover:opacity-70 transition-opacity', isMegaMenu ? 'py-2 text-[16px]' : 'px-4 py-2 hover:bg-[rgb(var(--color-text)/0.05)] text-[14px]']}>{sub.label}</a>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              {navigationLinks.map((link) => (
+                <NavLinkItem link={link} isMegaMenu={isMegaMenu} linkClass={[C.navLink, navInlineLinkClass].filter(Boolean).join(' ')} />
+              ))}
             </div>
           )}
 
@@ -405,24 +346,9 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
 
           {!isTwoTier && (
             <div data-nav-inline class:list={[C.navMenuCentered, menuSchemeClass, navInlineMenuClass]}>
-              {navigationLinks.map((link) => {
-                const hasSubmenu = Array.isArray(link.submenu) && link.submenu.length > 0;
-                return (
-                  <div class="group relative">
-                    <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
-                    {hasSubmenu && (
-                      <div class:list={[
-                        'hidden group-hover:flex flex-col absolute z-50 bg-[rgb(var(--color-bg))] border border-[rgb(var(--color-text)/0.1)] shadow-lg',
-                        isMegaMenu ? 'left-1/2 -translate-x-1/2 top-full w-screen max-w-[var(--container-max-width,1320px)] px-8 py-6' : 'left-0 top-full min-w-[200px] py-2',
-                      ]}>
-                        {link.submenu.map((sub) => (
-                          <a href={sub.href} class:list={['text-[rgb(var(--color-text))] hover:opacity-70 transition-opacity', isMegaMenu ? 'py-2 text-[16px]' : 'px-4 py-2 hover:bg-[rgb(var(--color-text)/0.05)] text-[14px]']}>{sub.label}</a>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              {navigationLinks.map((link) => (
+                <NavLinkItem link={link} isMegaMenu={isMegaMenu} linkClass={[C.navLink, navInlineLinkClass].filter(Boolean).join(' ')} />
+              ))}
             </div>
           )}
         </div>
@@ -512,6 +438,40 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
         if (panel) panel.style.display = expanded ? 'none' : 'block';
       });
     });
+
+    // Desktop NavLinkItem submenu touch-toggle. На touch-устройствах
+    // (`(hover: none)`) hover не работает — click на link с submenu
+    // toggle'ит `data-open` на host; CSS variant `data-[open=true]:flex`
+    // показывает submenu без hover. Desktop поведение (hover) не
+    // изменяется.
+    const isTouch = window.matchMedia('(hover: none)').matches;
+    if (isTouch) {
+      document.querySelectorAll('[data-submenu-trigger]').forEach(function (trigger) {
+        trigger.addEventListener('click', function (e) {
+          const host = trigger.closest('[data-submenu-host]');
+          if (!host) return;
+          const isOpen = host.getAttribute('data-open') === 'true';
+          // Close all other open submenus first
+          document.querySelectorAll('[data-submenu-host][data-open="true"]').forEach(function (h) {
+            if (h !== host) h.setAttribute('data-open', 'false');
+          });
+          // Если ещё не open — preventDefault, открываем submenu.
+          // Если уже open — пускаем переход по link.href.
+          if (!isOpen) {
+            e.preventDefault();
+            host.setAttribute('data-open', 'true');
+          }
+        });
+      });
+      // Close all submenus on outside click.
+      document.addEventListener('click', function (e) {
+        if (!(e.target instanceof Element)) return;
+        if (e.target.closest('[data-submenu-host]')) return;
+        document.querySelectorAll('[data-submenu-host][data-open="true"]').forEach(function (h) {
+          h.setAttribute('data-open', 'false');
+        });
+      });
+    }
 
     // Submenu expand inside mobile sheet
     document.querySelectorAll('[data-target^="submenu-"]').forEach(function (toggle) {

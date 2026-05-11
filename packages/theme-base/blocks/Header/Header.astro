@@ -366,10 +366,7 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
           <NavLinkItem
             link={link}
             isMegaMenu={isMegaMenu}
-            linkClass={[
-              '[font-family:var(--font-body)] text-[length:var(--size-nav-link)] leading-none transition-colors hover:text-[rgb(var(--color-text))]',
-              idx === 0 ? 'text-[rgb(var(--color-text))]' : 'text-[rgb(var(--color-muted))]',
-            ].filter(Boolean).join(' ')}
+            linkClass={'[font-family:var(--font-body)] text-[length:var(--size-nav-link)] leading-none text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] transition-colors'}
           />
         ))}
       </nav>
@@ -447,30 +444,54 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
     // изменяется.
     const isTouch = window.matchMedia('(hover: none)').matches;
     if (isTouch) {
+      // Touch: click toggle.
       document.querySelectorAll('[data-submenu-trigger]').forEach(function (trigger) {
         trigger.addEventListener('click', function (e) {
           const host = trigger.closest('[data-submenu-host]');
           if (!host) return;
           const isOpen = host.getAttribute('data-open') === 'true';
-          // Close all other open submenus first
           document.querySelectorAll('[data-submenu-host][data-open="true"]').forEach(function (h) {
             if (h !== host) h.setAttribute('data-open', 'false');
           });
-          // Если ещё не open — preventDefault, открываем submenu.
-          // Если уже open — пускаем переход по link.href.
           if (!isOpen) {
             e.preventDefault();
             host.setAttribute('data-open', 'true');
           }
         });
       });
-      // Close all submenus on outside click.
       document.addEventListener('click', function (e) {
         if (!(e.target instanceof Element)) return;
         if (e.target.closest('[data-submenu-host]')) return;
         document.querySelectorAll('[data-submenu-host][data-open="true"]').forEach(function (h) {
           h.setAttribute('data-open', 'false');
         });
+      });
+    } else {
+      // Desktop: mouseenter/mouseleave с задержкой 200мс на close — даёт
+      // достаточно времени переместить курсор от link к submenu panel.
+      // CSS group-hover не использовали из-за browser pixel rounding bugs
+      // (mouse теряет :hover в 0.5px gap → submenu закрывается до того
+      // как курсор успевает войти в panel).
+      const closeTimers = new Map();
+      function openHost(host) {
+        const t = closeTimers.get(host);
+        if (t) { clearTimeout(t); closeTimers.delete(host); }
+        // Close other open hosts immediately (не одно открытым time).
+        document.querySelectorAll('[data-submenu-host][data-open="true"]').forEach(function (h) {
+          if (h !== host) h.setAttribute('data-open', 'false');
+        });
+        host.setAttribute('data-open', 'true');
+      }
+      function scheduleClose(host) {
+        const t = setTimeout(function () {
+          host.setAttribute('data-open', 'false');
+          closeTimers.delete(host);
+        }, 200);
+        closeTimers.set(host, t);
+      }
+      document.querySelectorAll('[data-submenu-host]').forEach(function (host) {
+        host.addEventListener('mouseenter', function () { openHost(host); });
+        host.addEventListener('mouseleave', function () { scheduleClose(host); });
       });
     }
 

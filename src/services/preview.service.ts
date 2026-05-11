@@ -501,6 +501,86 @@ const PREVIEW_NAV_AGENT_INLINE = `
     window.__MERFY_LOCAL_PATCH_ENABLED = true;
   }
 
+  // Spec 090 — LOCAL_PATCH_REGISTRY[blockType][propName] = (el, oldVal, newVal) => boolean.
+  // Patch fn возвращает false → fallback на server fetch.
+  var LOCAL_PATCH_REGISTRY = {
+    Header: {
+      padding: function (el, _oldVal, newVal) {
+        var hdr = el.querySelector('header');
+        if (!hdr) return false;
+        var MAX_PAD = 64;
+        var v = newVal || { top: 0, bottom: 0 };
+        var t = Math.min(Number(v.top) || 0, MAX_PAD);
+        var b = Math.min(Number(v.bottom) || 0, MAX_PAD);
+        hdr.style.paddingTop = t + 'px';
+        hdr.style.paddingBottom = b + 'px';
+        return true;
+      },
+      colorScheme: function (el, _oldVal, newVal) {
+        var wrap = el.closest('[data-header-wrapper]') || el;
+        wrap.className = wrap.className.replace(/\bcolor-scheme-\d+\b/g, '').replace(/\s+/g, ' ').trim();
+        if (typeof newVal === 'string' && newVal) {
+          var n = newVal.replace('scheme-', '');
+          wrap.classList.add('color-scheme-' + n);
+        }
+        return true;
+      },
+      menuColorScheme: function (el, _oldVal, newVal) {
+        var items = el.querySelectorAll('[data-nav-inline]');
+        for (var i = 0; i < items.length; i++) {
+          var it = items[i];
+          it.className = it.className.replace(/\bcolor-scheme-\d+\b/g, '').replace(/\s+/g, ' ').trim();
+          if (typeof newVal === 'string' && newVal) {
+            var n = newVal.replace('scheme-', '');
+            it.classList.add('color-scheme-' + n);
+          }
+        }
+        return true;
+      },
+      stickiness: function (el, _oldVal, newVal) {
+        var wrap = el.closest('[data-header-wrapper]') || el;
+        wrap.className = wrap.className
+          .replace(/sticky\s+top-0\s+z-50(\s+transition-transform\s+duration-300)?/g, '')
+          .replace(/relative\s+z-50/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+        var classToAdd = newVal === 'scroll-up' ? 'sticky top-0 z-50 transition-transform duration-300'
+          : newVal === 'always' ? 'sticky top-0 z-50'
+          : 'relative z-50';
+        var parts = classToAdd.split(' ');
+        for (var pi = 0; pi < parts.length; pi++) {
+          if (parts[pi]) wrap.classList.add(parts[pi]);
+        }
+        return true;
+      },
+      navigationLinks: function (el, oldVal, newVal) {
+        var oa = Array.isArray(oldVal) ? oldVal : [];
+        var na = Array.isArray(newVal) ? newVal : [];
+        if (oa.length !== na.length) return false;
+        for (var i = 0; i < na.length; i++) {
+          var oldSub = (oa[i] && Array.isArray(oa[i].submenu)) ? oa[i].submenu : [];
+          var newSub = (na[i] && Array.isArray(na[i].submenu)) ? na[i].submenu : [];
+          if (oldSub.length !== newSub.length) return false;
+        }
+        var topLinks = el.querySelectorAll('[data-nav-inline] > div > a, [data-nav-inline] > a');
+        if (topLinks.length !== na.length) return false;
+        for (var j = 0; j < na.length; j++) {
+          var a = topLinks[j];
+          a.textContent = na[j].label || '';
+          a.href = na[j].href || '/';
+          var parent = a.parentElement;
+          var subAs = parent ? parent.querySelectorAll('[data-submenu-panel] a, [data-submenu-panel] > div > a') : [];
+          var subs = Array.isArray(na[j].submenu) ? na[j].submenu : [];
+          for (var k = 0; k < subs.length && k < subAs.length; k++) {
+            subAs[k].textContent = subs[k].label || '';
+            subAs[k].href = subs[k].href || '/';
+          }
+        }
+        return true;
+      }
+    }
+  };
+
   // Shallow diff — возвращает массив изменённых top-level keys.
   // Глубокое сравнение через JSON.stringify (props не огромные).
   function shallowDiff(oldP, newP) {

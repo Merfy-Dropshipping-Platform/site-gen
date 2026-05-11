@@ -19,9 +19,10 @@ export const HeaderClasses = {
   // 084 vanilla pilot — when theme defines `--size-header-h` (vanilla =
   // 80px per Figma 1:18957) the inner header gets a hard height clamp.
   // Pre-084 themes default `--size-header-h:auto`.
-  // `min-h-[64px]` гарантирует стабильную высоту независимо от logoPosition
-  // (center-left = 2 строки, top-left/top-center/center-absolute = 1 строка).
-  header: 'w-full flex items-center border-b border-[rgb(var(--color-text))]/15 h-[var(--size-header-h,auto)] min-h-[64px]',
+  // НЕТ `min-h-[N]` здесь — иначе slider «Отступы» в sidebar визуально
+  // не работает при small padding (юзер 2026-05-11). Default min-height
+  // только когда padding undefined — в Astro `class:list`.
+  header: 'w-full flex items-center border-b border-[rgb(var(--color-text))]/15 h-[var(--size-header-h,auto)]',
   nav: 'w-full max-w-[var(--container-max-width,1320px)] mx-auto px-4 md:px-6 flex items-center relative',
   navJustified: 'justify-between',
   hamburger:

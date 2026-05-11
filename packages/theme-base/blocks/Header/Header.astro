@@ -359,8 +359,8 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
   {/* Two-tier secondary nav row (Figma flux 1:26327). Все классы используют
        theme tokens — шрифт/вес/размер настраиваются через ThemeSettingsPanel
        в конструкторе (Типографика). */}
-  {isTwoTier && navigationLinks.length > 0 && (
-    <div class="hidden md:block w-full">
+  {isTwoTier && !isSidebar && navigationLinks.length > 0 && (
+    <div data-nav-inline class="hidden md:block w-full">
       <nav class="w-full max-w-[1320px] mx-auto px-4 flex items-center justify-start gap-8 h-6 mt-5" aria-label="Secondary navigation">
         {navigationLinks.map((link, idx) => (
           <a

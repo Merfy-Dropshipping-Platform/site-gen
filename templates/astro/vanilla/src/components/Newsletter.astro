@@ -34,9 +34,11 @@ const padBottom = padding?.bottom ?? 120;
     </div>
     <form
       class="newsletter-form"
-      action="#"
+      action="https://gateway.merfy.ru/api/storefront/newsletter/subscribe"
       method="POST"
+      data-newsletter-form
     >
+      <input type="hidden" name="store_id" value="" data-newsletter-store-id />
       <input
         type="email"
         name="email"
@@ -54,6 +56,42 @@ const padBottom = padding?.bottom ?? 120;
     </form>
   </div>
 </section>
+
+<script is:inline>
+  // Wire newsletter form to the storefront gateway endpoint.
+  // - store_id comes from window.__MERFY_CONFIG__.shopId (set by BaseLayout).
+  // - When __MERFY_CONFIG__.apiUrl differs from prod (preview / staging),
+  //   we rebuild the action URL on the form so this block doesn't have to
+  //   bake a host at build time.
+  // This script keeps the form as a NATIVE POST submit — no fetch, no
+  // success/error UI. {alreadySubscribed} / 429 handling lives in a future
+  // JS-handler iteration; for MVP the browser shows the JSON response.
+  (function () {
+    function wire(form) {
+      if (!form || form.__merfyNewsletterWired) return;
+      form.__merfyNewsletterWired = true;
+      var cfg = (typeof window !== 'undefined' && window.__MERFY_CONFIG__) || {};
+      var hidden = form.querySelector('[data-newsletter-store-id]');
+      if (hidden && cfg.shopId) {
+        hidden.value = String(cfg.shopId);
+      }
+      if (cfg.apiUrl) {
+        // Strip trailing slash, append the storefront path.
+        var base = String(cfg.apiUrl).replace(/\/+$/, '');
+        form.setAttribute('action', base + '/storefront/newsletter/subscribe');
+      }
+    }
+    function init() {
+      var forms = document.querySelectorAll('form[data-newsletter-form]');
+      for (var i = 0; i < forms.length; i++) wire(forms[i]);
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
+</script>
 
 <style>
   .newsletter-inner {

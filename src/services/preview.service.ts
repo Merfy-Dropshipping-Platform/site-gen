@@ -508,7 +508,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
       padding: function (el, _oldVal, newVal) {
         var hdr = el.querySelector('header');
         if (!hdr) return false;
-        var MAX_PAD = 64;
+        var MAX_PAD = 120;
         var v = newVal || { top: 0, bottom: 0 };
         var t = Math.min(Number(v.top) || 0, MAX_PAD);
         var b = Math.min(Number(v.bottom) || 0, MAX_PAD);

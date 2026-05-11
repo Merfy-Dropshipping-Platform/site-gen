@@ -110,9 +110,24 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
 
           {!isTwoTier && (
             <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
-              {navigationLinks.map((link) => (
-                <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
-              ))}
+              {navigationLinks.map((link) => {
+                const hasSubmenu = Array.isArray(link.submenu) && link.submenu.length > 0;
+                return (
+                  <div class="group relative">
+                    <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
+                    {hasSubmenu && (
+                      <div class:list={[
+                        'hidden group-hover:flex flex-col absolute z-50 bg-[rgb(var(--color-bg))] border border-[rgb(var(--color-text)/0.1)] shadow-lg',
+                        isMegaMenu ? 'left-1/2 -translate-x-1/2 top-full w-screen max-w-[var(--container-max-width,1320px)] px-8 py-6' : 'left-0 top-full min-w-[200px] py-2',
+                      ]}>
+                        {link.submenu.map((sub) => (
+                          <a href={sub.href} class:list={['text-[rgb(var(--color-text))] hover:opacity-70 transition-opacity', isMegaMenu ? 'py-2 text-[16px]' : 'px-4 py-2 hover:bg-[rgb(var(--color-text)/0.05)] text-[14px]']}>{sub.label}</a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
 
@@ -158,9 +173,24 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
 
           {!isTwoTier && (
             <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
-              {navigationLinks.map((link) => (
-                <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
-              ))}
+              {navigationLinks.map((link) => {
+                const hasSubmenu = Array.isArray(link.submenu) && link.submenu.length > 0;
+                return (
+                  <div class="group relative">
+                    <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
+                    {hasSubmenu && (
+                      <div class:list={[
+                        'hidden group-hover:flex flex-col absolute z-50 bg-[rgb(var(--color-bg))] border border-[rgb(var(--color-text)/0.1)] shadow-lg',
+                        isMegaMenu ? 'left-1/2 -translate-x-1/2 top-full w-screen max-w-[var(--container-max-width,1320px)] px-8 py-6' : 'left-0 top-full min-w-[200px] py-2',
+                      ]}>
+                        {link.submenu.map((sub) => (
+                          <a href={sub.href} class:list={['text-[rgb(var(--color-text))] hover:opacity-70 transition-opacity', isMegaMenu ? 'py-2 text-[16px]' : 'px-4 py-2 hover:bg-[rgb(var(--color-text)/0.05)] text-[14px]']}>{sub.label}</a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
 
@@ -209,9 +239,24 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
 
           {!isTwoTier && (
             <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
-              {navigationLinks.map((link) => (
-                <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
-              ))}
+              {navigationLinks.map((link) => {
+                const hasSubmenu = Array.isArray(link.submenu) && link.submenu.length > 0;
+                return (
+                  <div class="group relative">
+                    <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
+                    {hasSubmenu && (
+                      <div class:list={[
+                        'hidden group-hover:flex flex-col absolute z-50 bg-[rgb(var(--color-bg))] border border-[rgb(var(--color-text)/0.1)] shadow-lg',
+                        isMegaMenu ? 'left-1/2 -translate-x-1/2 top-full w-screen max-w-[var(--container-max-width,1320px)] px-8 py-6' : 'left-0 top-full min-w-[200px] py-2',
+                      ]}>
+                        {link.submenu.map((sub) => (
+                          <a href={sub.href} class:list={['text-[rgb(var(--color-text))] hover:opacity-70 transition-opacity', isMegaMenu ? 'py-2 text-[16px]' : 'px-4 py-2 hover:bg-[rgb(var(--color-text)/0.05)] text-[14px]']}>{sub.label}</a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
 
@@ -261,9 +306,24 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
 
           {!isTwoTier && (
             <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
-              {navigationLinks.map((link) => (
-                <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
-              ))}
+              {navigationLinks.map((link) => {
+                const hasSubmenu = Array.isArray(link.submenu) && link.submenu.length > 0;
+                return (
+                  <div class="group relative">
+                    <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
+                    {hasSubmenu && (
+                      <div class:list={[
+                        'hidden group-hover:flex flex-col absolute z-50 bg-[rgb(var(--color-bg))] border border-[rgb(var(--color-text)/0.1)] shadow-lg',
+                        isMegaMenu ? 'left-1/2 -translate-x-1/2 top-full w-screen max-w-[var(--container-max-width,1320px)] px-8 py-6' : 'left-0 top-full min-w-[200px] py-2',
+                      ]}>
+                        {link.submenu.map((sub) => (
+                          <a href={sub.href} class:list={['text-[rgb(var(--color-text))] hover:opacity-70 transition-opacity', isMegaMenu ? 'py-2 text-[16px]' : 'px-4 py-2 hover:bg-[rgb(var(--color-text)/0.05)] text-[14px]']}>{sub.label}</a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
 
@@ -345,9 +405,24 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
 
           {!isTwoTier && (
             <div data-nav-inline class:list={[C.navMenuCentered, menuSchemeClass, navInlineMenuClass]}>
-              {navigationLinks.map((link) => (
-                <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
-              ))}
+              {navigationLinks.map((link) => {
+                const hasSubmenu = Array.isArray(link.submenu) && link.submenu.length > 0;
+                return (
+                  <div class="group relative">
+                    <a href={link.href} class:list={[C.navLink, navInlineLinkClass]}>{link.label}</a>
+                    {hasSubmenu && (
+                      <div class:list={[
+                        'hidden group-hover:flex flex-col absolute z-50 bg-[rgb(var(--color-bg))] border border-[rgb(var(--color-text)/0.1)] shadow-lg',
+                        isMegaMenu ? 'left-1/2 -translate-x-1/2 top-full w-screen max-w-[var(--container-max-width,1320px)] px-8 py-6' : 'left-0 top-full min-w-[200px] py-2',
+                      ]}>
+                        {link.submenu.map((sub) => (
+                          <a href={sub.href} class:list={['text-[rgb(var(--color-text))] hover:opacity-70 transition-opacity', isMegaMenu ? 'py-2 text-[16px]' : 'px-4 py-2 hover:bg-[rgb(var(--color-text)/0.05)] text-[14px]']}>{sub.label}</a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

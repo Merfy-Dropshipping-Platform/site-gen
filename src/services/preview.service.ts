@@ -491,6 +491,34 @@ const PREVIEW_NAV_AGENT_INLINE = `
   var currentThemeId = '';
   var currentSiteId = '';
 
+  // Spec 090 — local-patch state. Хранит последний known props per blockId
+  // чтобы compute diff при следующем update-block.
+  var LAST_PROPS = {};
+
+  // Spec 090 — runtime kill switch. Можно выключить через console:
+  // window.__MERFY_LOCAL_PATCH_ENABLED = false; reload не требуется.
+  if (typeof window.__MERFY_LOCAL_PATCH_ENABLED === 'undefined') {
+    window.__MERFY_LOCAL_PATCH_ENABLED = true;
+  }
+
+  // Shallow diff — возвращает массив изменённых top-level keys.
+  // Глубокое сравнение через JSON.stringify (props не огромные).
+  function shallowDiff(oldP, newP) {
+    var keys = {};
+    var k;
+    for (k in (oldP || {})) keys[k] = 1;
+    for (k in (newP || {})) keys[k] = 1;
+    var changed = [];
+    for (k in keys) {
+      var oldV = (oldP || {})[k];
+      var newV = (newP || {})[k];
+      if (JSON.stringify(oldV) !== JSON.stringify(newV)) {
+        changed.push(k);
+      }
+    }
+    return changed;
+  }
+
   // Floating action pill — one instance per layer (section vs subsection),
   // can be visible simultaneously.
   function makePill(layer) {

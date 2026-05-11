@@ -363,13 +363,14 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
     <div data-nav-inline class="hidden md:block w-full">
       <nav class="w-full max-w-[1320px] mx-auto px-4 flex items-center justify-start gap-8 h-6 mt-5" aria-label="Secondary navigation">
         {navigationLinks.map((link, idx) => (
-          <a
-            href={link.href}
-            class:list={[
+          <NavLinkItem
+            link={link}
+            isMegaMenu={isMegaMenu}
+            linkClass={[
               '[font-family:var(--font-body)] text-[length:var(--size-nav-link)] leading-none transition-colors hover:text-[rgb(var(--color-text))]',
               idx === 0 ? 'text-[rgb(var(--color-text))]' : 'text-[rgb(var(--color-muted))]',
-            ]}
-          >{link.label}</a>
+            ].filter(Boolean).join(' ')}
+          />
         ))}
       </nav>
     </div>

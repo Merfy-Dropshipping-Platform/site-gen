@@ -31,11 +31,10 @@ const promoText = (promoBar?.text || '').trim();
 const promoLinkText = (promoBar?.linkText || '').trim();
 const promoLinkHref = promoBar?.linkHref || '#';
 
-// Clamp padding ≤ 32px — header выше ~96px выглядит «гигантским» и обычно
-// результат ошибки/legacy-данных (раньше default был 80/80 — после fix
-// уменьшен до 12/12, но сохранённые revisions содержат старое значение).
-// Slider в sidebar теперь ограничен max 64, render ограничивает до 32.
-const _MAX_HEADER_PAD = 32;
+// Clamp padding ≤ 64 чтобы header не растягивался непропорционально
+// из legacy revisions (старый default был 80). Slider в sidebar тоже 0..64
+// — clamp и slider range совпадают, slider visually meaningful.
+const _MAX_HEADER_PAD = 64;
 const safePadding = padding
   ? { top: Math.min(padding.top || 0, _MAX_HEADER_PAD), bottom: Math.min(padding.bottom || 0, _MAX_HEADER_PAD) }
   : undefined;

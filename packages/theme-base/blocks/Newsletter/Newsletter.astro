@@ -125,7 +125,25 @@ const innerOverrideClass =
       {description && (
         <p class:list={[descriptionClass, formLayoutProp === 'inline-submit' ? '' : textSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{description}</p>
       )}
-      <form class={formClass} method="POST" action="/api/newsletter/subscribe" data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="form" data-form-layout={formLayoutProp}>
+      <form
+        class={formClass}
+        method="POST"
+        action="https://gateway.merfy.ru/api/storefront/newsletter/subscribe"
+        data-newsletter-form
+        data-puck-subsection-parent={id}
+        data-puck-subsection-index="102"
+        data-puck-subsection-field="form"
+        data-form-layout={formLayoutProp}
+      >
+        {/*
+          store_id is injected at runtime from window.__MERFY_CONFIG__.shopId
+          (set by the per-site BaseLayout, see templates/.../layouts/BaseLayout.astro).
+          We keep the field as a hidden input so the form remains a plain
+          POST submit — no JS-handler / fetch / UI feedback in this block yet
+          (that's a follow-up). The same inline script also rewrites `action`
+          when a non-default apiUrl is configured (preview / staging).
+        */}
+        <input type="hidden" name="store_id" value="" data-newsletter-store-id />
         <input type="email" name="email" placeholder={placeholder} required class={inputClass} />
         <button type="submit" class={submitButtonClass} aria-label={buttonText}>
           {formLayoutProp === 'legacy' ? (
@@ -140,3 +158,38 @@ const innerOverrideClass =
     </div>
   </div>
 </section>
+<script is:inline>
+  // Wire newsletter form to the storefront gateway endpoint.
+  // - store_id comes from window.__MERFY_CONFIG__.shopId (set by BaseLayout).
+  // - When __MERFY_CONFIG__.apiUrl differs from prod (preview / staging),
+  //   we rebuild the action URL on the form so this block doesn't have to
+  //   bake a host at build time.
+  // This script keeps the form as a NATIVE POST submit — no fetch, no
+  // success/error UI. {alreadySubscribed} / 429 handling lives in a future
+  // JS-handler iteration; for MVP the browser shows the JSON response.
+  (function () {
+    function wire(form) {
+      if (!form || form.__merfyNewsletterWired) return;
+      form.__merfyNewsletterWired = true;
+      var cfg = (typeof window !== 'undefined' && window.__MERFY_CONFIG__) || {};
+      var hidden = form.querySelector('[data-newsletter-store-id]');
+      if (hidden && cfg.shopId) {
+        hidden.value = String(cfg.shopId);
+      }
+      if (cfg.apiUrl) {
+        // Strip trailing slash, append the storefront path.
+        var base = String(cfg.apiUrl).replace(/\/+$/, '');
+        form.setAttribute('action', base + '/storefront/newsletter/subscribe');
+      }
+    }
+    function init() {
+      var forms = document.querySelectorAll('form[data-newsletter-form]');
+      for (var i = 0; i < forms.length; i++) wire(forms[i]);
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
+</script>

@@ -847,26 +847,56 @@ const PREVIEW_NAV_AGENT_INLINE = `
       currentSiteId = (ev.data.siteId || '') + '';
     } else if (ev.data.type === 'update-block') {
       // Hot-replace включён для всех тем после консолидации на packages/theme-base
-      // (2026-05-10). До этого был allowlist [rose, vanilla] — для других тем
-      // изменения в sidebar НЕ применялись в preview без полного reload (баг
-      // «изменения видны только после reload» на flux/satin/bloom).
+      // (2026-05-10). До этого был allowlist [rose, vanilla].
       // Если currentThemeId пустой (init не пришёл) — пропускаем.
       if (!currentThemeId) return;
       var blockId = ev.data.blockId;
       if (!blockId || !currentSiteId) return;
       var blockType = blockId.split('-')[0];
       if (!blockType) return;
+
+      // Spec 090 — local-patch attempt перед server fetch fallback.
+      var newProps = ev.data.props || {};
+      var oldProps = LAST_PROPS[blockId];
+      var elNow = document.querySelector('[data-puck-component-id="' + blockId + '"]');
+      var canPatch = false;
+      if (window.__MERFY_LOCAL_PATCH_ENABLED && elNow && oldProps) {
+        var registry = LOCAL_PATCH_REGISTRY[blockType];
+        if (registry) {
+          var changed = shallowDiff(oldProps, newProps);
+          canPatch = changed.length > 0 && changed.every(function (k) {
+            return typeof registry[k] === 'function';
+          });
+          if (canPatch) {
+            try {
+              for (var ci = 0; ci < changed.length; ci++) {
+                var key = changed[ci];
+                var ok = registry[key](elNow, oldProps[key], newProps[key]);
+                if (!ok) { canPatch = false; break; }
+              }
+            } catch (patchErr) {
+              console.warn('[preview] local patch threw', patchErr);
+              canPatch = false;
+            }
+          }
+        }
+      }
+
+      if (canPatch) {
+        LAST_PROPS[blockId] = newProps;
+        return; // local patch applied — fetch skipped
+      }
+
       fetch('/api/sites/' + currentSiteId + '/preview/block', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ blockType: blockType, props: ev.data.props, themeId: currentThemeId }),
+        body: JSON.stringify({ blockType: blockType, props: newProps, themeId: currentThemeId }),
       })
         .then(function (r) { return r.text(); })
         .then(function (html) {
           var el = document.querySelector('[data-puck-component-id="' + blockId + '"]');
           if (!el) return;
-          // Replace outerHTML; preserve enclosing color-scheme wrapper if any
-          // (preview.service.ts wraps each block in a div carrying the scheme attr).
+          // Replace outerHTML; preserve enclosing color-scheme wrapper if any.
           var wrapper = el.parentElement;
           var schemeAttr = 'data-block-' + 'scheme';
           var hasSchemeWrapper = wrapper && wrapper.hasAttribute(schemeAttr);
@@ -875,6 +905,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
           } else {
             el.outerHTML = html;
           }
+          LAST_PROPS[blockId] = newProps;
         })
         .catch(function (err) {
           console.error('[preview] update-block fetch failed', err);

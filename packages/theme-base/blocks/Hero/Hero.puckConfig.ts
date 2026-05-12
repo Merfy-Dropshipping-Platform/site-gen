@@ -106,21 +106,8 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
         { label: 'Сплит edge-to-edge (Bloom)', value: 'split-bloom' },
       ],
     },
-    contentPosition: {
-      type: 'select',
-      label: 'Положение текста',
-      options: [
-        { label: 'Сверху слева', value: 'top-left' },
-        { label: 'Сверху в центре', value: 'top-center' },
-        { label: 'Сверху справа', value: 'top-right' },
-        { label: 'По центру слева', value: 'center-left' },
-        { label: 'По центру', value: 'center' },
-        { label: 'По центру справа', value: 'center-right' },
-        { label: 'Снизу слева', value: 'bottom-left' },
-        { label: 'Снизу по центру', value: 'bottom-center' },
-        { label: 'Снизу справа', value: 'bottom-right' },
-      ],
-    },
+    // Дубль с `position` — скрыт, position остаётся canonical.
+    contentPosition: { type: 'hidden', label: '' } as any,
     position: {
       type: 'select',
       label: 'Позиция',
@@ -189,37 +176,16 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
         link: { type: 'pagePicker', label: 'Ссылка' },
       },
     },
-    title: { type: 'text', label: 'Заголовок' },
-    subtitle: { type: 'text', label: 'Подзаголовок' },
-    image: {
-      type: 'object',
-      label: 'Изображение',
-      objectFields: {
-        url: { type: 'image', label: 'Фото' },
-        alt: { type: 'text', label: 'Alt текст' },
-      },
-    },
-    images: {
-      type: 'array',
-      label: 'Сетка изображений (grid-4)',
-      arrayFields: {
-        url: { type: 'image', label: 'Фото' },
-        alt: { type: 'text', label: 'Alt текст' },
-      },
-      defaultItemProps: { url: '', alt: '' },
-      max: 8,
-    },
-    cta: {
-      type: 'object',
-      label: 'Кнопка',
-      objectFields: {
-        text: { type: 'text', label: 'Текст' },
-        href: { type: 'text', label: 'Ссылка' },
-      },
-    },
+    // Legacy fields — скрыты, заменены на heading / text / backgroundImages /
+    // primaryButton. Данные сохраняются 1-в-1 (backward-compat при rollback).
+    title: { type: 'hidden', label: '' },
+    subtitle: { type: 'hidden', label: '' },
+    image: { type: 'hidden', label: '' },
+    images: { type: 'hidden', label: '' },
+    cta: { type: 'hidden', label: '' },
     // Pupa parity: дополнительные параметры секции.
     size: {
-      type: 'radio',
+      type: 'select',
       label: 'Размер',
       options: [
         { label: 'Маленький', value: 'small' },
@@ -238,18 +204,12 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
       ],
     },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
-    // 084 vanilla pilot — additive carousel mode fields. Optional in schema —
-    // if absent, theme renders 'single' mode (current rose behaviour).
-    mode: {
-      type: 'radio',
-      label: 'Режим',
-      options: [
-        { label: 'Одиночный', value: 'single' },
-        { label: 'Карусель', value: 'carousel' },
-      ],
-    },
+    // Carousel mode + slides — advanced, скрыты по умолчанию в sidebar.
+    // Theme rendering обрабатывает existing data normally если есть, но
+    // редактирование slides убрано чтобы не загромождать sidebar.
+    mode: { type: 'hidden', label: '' },
     slides: {
-      type: 'array',
+      type: 'hidden',
       label: 'Слайды (карусель)',
       arrayFields: {
         id: { type: 'text', label: 'ID' },
@@ -293,21 +253,9 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
       defaultItemProps: { id: '', imageUrl: '' },
       max: 8,
     },
-    pagination: {
-      type: 'radio',
-      label: 'Пагинация',
-      options: [
-        { label: 'Цифры', value: 'numbers' },
-        { label: 'Точки', value: 'dots' },
-        { label: 'Линии', value: 'lines' },
-        { label: 'Скрыть', value: 'none' },
-      ],
-    },
-    autoplay: { type: 'radio', label: 'Автопрокрутка', options: [
-      { label: 'Вкл', value: true },
-      { label: 'Выкл', value: false },
-    ] },
-    interval: { type: 'number', label: 'Интервал (сек)', min: 1, max: 60 },
+    pagination: { type: 'hidden', label: '' },
+    autoplay: { type: 'hidden', label: '' },
+    interval: { type: 'hidden', label: '' },
     imageFullBleed: { type: 'radio', label: 'Фото на всю ширину', options: [
       { label: 'Да', value: true },
       { label: 'Нет', value: false },

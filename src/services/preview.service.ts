@@ -581,6 +581,29 @@ const PREVIEW_NAV_AGENT_INLINE = `
         }
         return true;
       }
+    },
+    // 091 — Hero local-patch: heading/text text changes БЕЗ outerHTML replace.
+    // Это предотвращает re-load <img> при правке заголовка (картинка не «крашится»).
+    // Size change → false (fallback на server fetch чтобы CSS класс пересчитался).
+    Hero: {
+      heading: function (el, oldVal, newVal) {
+        var oldObj = (oldVal && typeof oldVal === 'object') ? oldVal : {};
+        var newObj = (newVal && typeof newVal === 'object') ? newVal : {};
+        if ((oldObj.size || 'small') !== (newObj.size || 'small')) return false;
+        var h1 = el.querySelector('h1[data-puck-subsection-field="heading"]');
+        if (!h1) return false;
+        h1.textContent = newObj.text || '';
+        return true;
+      },
+      text: function (el, oldVal, newVal) {
+        var oldObj = (oldVal && typeof oldVal === 'object') ? oldVal : {};
+        var newObj = (newVal && typeof newVal === 'object') ? newVal : {};
+        if ((oldObj.size || 'small') !== (newObj.size || 'small')) return false;
+        var p = el.querySelector('p[data-puck-subsection-field="text"]');
+        if (!p) return false;
+        p.textContent = newObj.content || '';
+        return true;
+      }
     }
   };
 

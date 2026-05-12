@@ -54,7 +54,7 @@ const subLinkClass = isMegaMenu
 ---
 {hasSubmenu ? (
   <div
-    class="relative"
+    class="relative group/submenu"
     data-submenu-host
     data-open="false"
   >
@@ -67,7 +67,7 @@ const subLinkClass = isMegaMenu
     </a>
     <div
       class:list={[
-        'hidden data-[open=true]:flex flex-col',
+        'hidden group-data-[open=true]/submenu:flex flex-col',
         submenuClass,
       ]}
       data-submenu-panel

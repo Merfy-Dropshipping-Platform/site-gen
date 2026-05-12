@@ -69,16 +69,19 @@ const resolvedTextSize: 'small' | 'medium' | 'large' =
     ? ((textObj as { size: string }).size as 'small' | 'medium' | 'large')
     : 'medium');
 
+// `!` prefix → !important, overrides base text-size class из C.title / C.subtitle
+// (Tailwind utility classes имеют equal specificity, без `!` срабатывает CSS
+// source order вместо HTML class order).
 const headingSizeClass = {
-  small:  'text-[length:calc(var(--size-hero-heading)*0.75)]',
+  small:  '!text-[length:calc(var(--size-hero-heading)*0.75)]',
   medium: '',  // базовый размер из C.title
-  large:  'text-[length:calc(var(--size-hero-heading)*1.5)]',
+  large:  '!text-[length:calc(var(--size-hero-heading)*1.5)]',
 }[resolvedHeadingSize] || '';
 
 const textSizeClass = {
-  small:  'text-[14px]',
+  small:  '!text-[14px]',
   medium: '',  // базовый из C.subtitle
-  large:  'text-[20px]',
+  large:  '!text-[20px]',
 }[resolvedTextSize] || '';
 const primaryLink = typeof primaryButton?.link === 'object'
   ? primaryButton.link?.href

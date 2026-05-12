@@ -128,9 +128,14 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     // но редактирование идёт через backgroundImages (imagePair).
     backgroundImage: { type: 'hidden', label: '' },
     backgroundImage2: { type: 'hidden', label: '' },
+    // heading / text / primaryButton / secondaryButton — видны только в
+    // sub-panel'е при click на subsection в превью (NamedFocusedPanel).
+    // hiddenInMainPanel=true → CustomFieldsPanel dynamic renderer пропускает
+    // в main panel, но field config остаётся валидным для sub-panel.
     heading: {
       type: 'object',
       label: 'Заголовок',
+      hiddenInMainPanel: true,
       objectFields: {
         text: { type: 'aiText', label: 'Заголовок', fieldType: 'title', placeholder: 'Ввести текст...' } as any,
         size: {
@@ -143,10 +148,11 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
           ],
         },
       },
-    },
+    } as any,
     text: {
       type: 'object',
       label: 'Текст',
+      hiddenInMainPanel: true,
       objectFields: {
         content: { type: 'aiText', label: 'Текст', fieldType: 'description', placeholder: 'Ввести текст...' } as any,
         size: {
@@ -159,23 +165,25 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
           ],
         },
       },
-    },
+    } as any,
     primaryButton: {
       type: 'object',
       label: 'Кнопка основная',
+      hiddenInMainPanel: true,
       objectFields: {
         text: { type: 'text', label: 'Текст' },
         link: { type: 'pagePicker', label: 'Ссылка' },
       },
-    },
+    } as any,
     secondaryButton: {
       type: 'object',
       label: 'Кнопка вторичная',
+      hiddenInMainPanel: true,
       objectFields: {
         text: { type: 'text', label: 'Текст' },
         link: { type: 'pagePicker', label: 'Ссылка' },
       },
-    },
+    } as any,
     // Legacy fields — скрыты, заменены на heading / text / backgroundImages /
     // primaryButton. Данные сохраняются 1-в-1 (backward-compat при rollback).
     title: { type: 'hidden', label: '' },

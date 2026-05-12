@@ -975,6 +975,19 @@ const PREVIEW_NAV_AGENT_INLINE = `
       // Parent шлёт init после iframe ready (см. PreviewFrame.tsx).
       currentThemeId = (ev.data.themeId || '') + '';
       currentSiteId = (ev.data.siteId || '') + '';
+      // 091 — populate LAST_PROPS из initial data чтобы первый update-block
+      // мог сразу пойти через local-patch (без fetch + outerHTML replace).
+      // До этого фикса первый edit любого блока вызывал re-fetch → image flicker.
+      var initData = ev.data.data;
+      var initContent = initData && initData.content;
+      if (Array.isArray(initContent)) {
+        for (var ci = 0; ci < initContent.length; ci++) {
+          var block = initContent[ci];
+          if (block && block.props && block.props.id) {
+            LAST_PROPS[block.props.id] = block.props;
+          }
+        }
+      }
     } else if (ev.data.type === 'update-block') {
       // Hot-replace включён для всех тем после консолидации на packages/theme-base
       // (2026-05-10). До этого был allowlist [rose, vanilla].

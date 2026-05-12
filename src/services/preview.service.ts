@@ -612,6 +612,12 @@ const PREVIEW_NAV_AGENT_INLINE = `
       clearTimeout(__submenuTimers.get(host));
       __submenuTimers.delete(host);
     }
+    // Закрыть остальные открытые меню — иначе при движении курсора горизонтально
+    // по nav-row на короткий момент видны два submenu (дребезг).
+    var others = document.querySelectorAll('[data-submenu-host][data-open="true"]');
+    for (var i = 0; i < others.length; i++) {
+      if (others[i] !== host) __setOpen(others[i], false);
+    }
     __setOpen(host, true);
   }
   function __scheduleClose(host) {
@@ -637,6 +643,9 @@ const PREVIEW_NAV_AGENT_INLINE = `
     if (!host) return;
     var rel = e.relatedTarget instanceof Element ? e.relatedTarget : null;
     if (rel && host.contains(rel)) return;
+    // Игнорировать выход на наш overlay/pill — курсор технически вне host,
+    // но визуально пользователь всё ещё над Header → не дребезжим.
+    if (rel && rel.closest('.__merfy_pill')) return;
     __scheduleClose(host);
   });
   // Touch / no-hover: первое нажатие открывает, второе — переходит по ссылке.

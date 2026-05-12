@@ -466,42 +466,10 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
           h.setAttribute('data-open', 'false');
         });
       });
-    } else {
-      // Desktop: event delegation на document — переживает hot-update
-      // (когда iframe replaces outerHTML, listeners на конкретных nodes
-      // теряются). mouseenter не bubbles, поэтому используем mouseover
-      // + closest() + check related target relationship.
-      const closeTimers = new Map();
-      function openHost(host) {
-        const t = closeTimers.get(host);
-        if (t) { clearTimeout(t); closeTimers.delete(host); }
-        document.querySelectorAll('[data-submenu-host][data-open="true"]').forEach(function (h) {
-          if (h !== host) h.setAttribute('data-open', 'false');
-        });
-        host.setAttribute('data-open', 'true');
-      }
-      function scheduleClose(host) {
-        const t = setTimeout(function () {
-          host.setAttribute('data-open', 'false');
-          closeTimers.delete(host);
-        }, 250);
-        closeTimers.set(host, t);
-      }
-      document.addEventListener('mouseover', function (e) {
-        if (!(e.target instanceof Element)) return;
-        const host = e.target.closest('[data-submenu-host]');
-        if (host) openHost(host);
-      });
-      document.addEventListener('mouseout', function (e) {
-        if (!(e.target instanceof Element)) return;
-        const host = e.target.closest('[data-submenu-host]');
-        if (!host) return;
-        const rel = e.relatedTarget instanceof Element ? e.relatedTarget : null;
-        // Если курсор всё ещё внутри того же host — игнорируем (между link и panel).
-        if (rel && host.contains(rel)) return;
-        scheduleClose(host);
-      });
     }
+    // Desktop hover handled by inline-bridge in preview.service.ts (preview iframe)
+    // and by React island Header.client.tsx (live SSG). Не дублируем здесь —
+    // иначе два независимых обработчика дребезжат state на mouseover/mouseout.
 
     // Submenu expand inside mobile sheet
     document.querySelectorAll('[data-target^="submenu-"]').forEach(function (toggle) {

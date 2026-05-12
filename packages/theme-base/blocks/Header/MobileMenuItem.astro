@@ -1,0 +1,52 @@
+---
+/**
+ * MobileMenuItem — рекурсивный accordion для mobile drawer и desktop sidebar.
+ *
+ * Pattern: на каждом уровне item с children показывает chevron + toggle на click;
+ * children рендерятся прямо под item'ом с увеличенным indent (pl-* в зависимости
+ * от level). Без B-slide stack — простой accordion-матрёшка.
+ *
+ * Cap глубины — recursion не идёт глубже maxDepth.
+ *
+ * Toggling реализован inline-script'ом в Header.astro через data-mobile-toggle
+ * атрибут (handler ищет ближайший [data-mobile-submenu] и toggle'ит display).
+ */
+type Link = {
+  label: string;
+  href?: string;
+  submenu?: Link[];
+};
+
+interface Props {
+  link: Link;
+  level?: number;
+  maxDepth?: number;
+}
+
+const { link, level = 1, maxDepth = 3 } = Astro.props as Props;
+
+const hasSubmenu = Array.isArray(link.submenu) && link.submenu.length > 0 && level < maxDepth;
+
+// Increment indent для каждого следующего уровня. На level=1 — нет лишнего отступа
+// (border-left для tree-look не делаем — drawer узкий).
+const indentClass = level === 1 ? '' : level === 2 ? 'pl-8' : 'pl-12';
+const baseLinkClass = `block px-4 py-3 text-base font-normal hover:opacity-80 transition-colors [font-family:var(--font-body)] text-[rgb(var(--color-text))] border-t border-[rgb(var(--color-text))]/15 ${indentClass}`;
+const toggleBtnClass = `mobile-submenu-toggle w-full px-4 py-3 text-base font-normal hover:opacity-80 transition-colors flex items-center justify-between [font-family:var(--font-body)] text-[rgb(var(--color-text))] border-t border-[rgb(var(--color-text))]/15 ${indentClass}`;
+---
+{hasSubmenu ? (
+  <div>
+    <button class={toggleBtnClass} data-mobile-toggle aria-expanded="false">
+      <span>{link.label}</span>
+      <svg class="w-4 h-4 transition-transform mobile-submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+      </svg>
+    </button>
+    <div class="hidden bg-[rgb(var(--color-text))]/5" data-mobile-submenu>
+      {link.submenu!.map((sub) => (
+        <Astro.self link={sub} level={level + 1} maxDepth={maxDepth} />
+      ))}
+    </div>
+  </div>
+) : (
+  <a href={link.href || '#'} class={baseLinkClass}>{link.label}</a>
+)}

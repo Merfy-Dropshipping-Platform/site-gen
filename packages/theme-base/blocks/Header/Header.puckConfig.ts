@@ -1,14 +1,17 @@
 import { z } from 'zod';
 import type { BlockPuckConfig } from '@merfy/theme-contract';
 
-const NavigationLinkSchema = z.object({
-  label: z.string(),
-  href: z.string(),
-  submenu: z.array(z.object({
-    label: z.string(),
-    href: z.string(),
-  })).optional(),
-});
+// Recursive: меню любой глубины (cap в render-стороне через menuMaxDepth).
+// Parent теряет href когда у него непустой submenu (визуально это «секция-заголовок»).
+type NavLink = { label: string; href?: string; submenu?: NavLink[] };
+
+const NavigationLinkSchema: z.ZodType<NavLink> = z.lazy(() =>
+  z.object({
+    label: z.string().min(1),
+    href: z.string().optional(),
+    submenu: z.array(NavigationLinkSchema).optional(),
+  })
+);
 
 export const HeaderSchema = z.object({
   siteTitle: z.string(),

@@ -2,6 +2,9 @@
 import type { HeaderProps } from './Header.puckConfig';
 import { HeaderClasses as C } from './Header.classes';
 import NavLinkItem from './NavLinkItem.astro';
+import MobileMenuItem from './MobileMenuItem.astro';
+
+const MENU_MAX_DEPTH = 3;
 
 interface Props extends HeaderProps {
   id?: string;
@@ -112,7 +115,7 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
           {!isTwoTier && (
             <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
               {navigationLinks.map((link) => (
-                <NavLinkItem link={link} isMegaMenu={isMegaMenu} linkClass={[C.navLink, navInlineLinkClass].filter(Boolean).join(' ')} />
+                <NavLinkItem link={link} menuType={menuType} maxDepth={MENU_MAX_DEPTH} linkClass={[C.navLink, navInlineLinkClass].filter(Boolean).join(' ')} />
               ))}
             </div>
           )}
@@ -160,7 +163,7 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
           {!isTwoTier && (
             <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
               {navigationLinks.map((link) => (
-                <NavLinkItem link={link} isMegaMenu={isMegaMenu} linkClass={[C.navLink, navInlineLinkClass].filter(Boolean).join(' ')} />
+                <NavLinkItem link={link} menuType={menuType} maxDepth={MENU_MAX_DEPTH} linkClass={[C.navLink, navInlineLinkClass].filter(Boolean).join(' ')} />
               ))}
             </div>
           )}
@@ -211,7 +214,7 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
           {!isTwoTier && (
             <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
               {navigationLinks.map((link) => (
-                <NavLinkItem link={link} isMegaMenu={isMegaMenu} linkClass={[C.navLink, navInlineLinkClass].filter(Boolean).join(' ')} />
+                <NavLinkItem link={link} menuType={menuType} maxDepth={MENU_MAX_DEPTH} linkClass={[C.navLink, navInlineLinkClass].filter(Boolean).join(' ')} />
               ))}
             </div>
           )}
@@ -263,7 +266,7 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
           {!isTwoTier && (
             <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
               {navigationLinks.map((link) => (
-                <NavLinkItem link={link} isMegaMenu={isMegaMenu} linkClass={[C.navLink, navInlineLinkClass].filter(Boolean).join(' ')} />
+                <NavLinkItem link={link} menuType={menuType} maxDepth={MENU_MAX_DEPTH} linkClass={[C.navLink, navInlineLinkClass].filter(Boolean).join(' ')} />
               ))}
             </div>
           )}
@@ -347,7 +350,7 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
           {!isTwoTier && (
             <div data-nav-inline class:list={[C.navMenuCentered, menuSchemeClass, navInlineMenuClass]}>
               {navigationLinks.map((link) => (
-                <NavLinkItem link={link} isMegaMenu={isMegaMenu} linkClass={[C.navLink, navInlineLinkClass].filter(Boolean).join(' ')} />
+                <NavLinkItem link={link} menuType={menuType} maxDepth={MENU_MAX_DEPTH} linkClass={[C.navLink, navInlineLinkClass].filter(Boolean).join(' ')} />
               ))}
             </div>
           )}
@@ -365,7 +368,8 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
         {navigationLinks.map((link, idx) => (
           <NavLinkItem
             link={link}
-            isMegaMenu={isMegaMenu}
+            menuType={menuType}
+            maxDepth={MENU_MAX_DEPTH}
             linkClass={'[font-family:var(--font-body)] text-[length:var(--size-nav-link)] leading-none text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] transition-colors'}
           />
         ))}
@@ -389,26 +393,9 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
         </div>
       )}
       <div class="flex flex-col">
-        {navigationLinks.map((link) => {
-          const hasSubmenu = link.submenu && link.submenu.length > 0;
-          return hasSubmenu ? (
-            <div>
-              <button class={C.mobileMenu.submenuToggle} data-target={`submenu-${link.label}`}>
-                <span>{link.label}</span>
-                <svg class="w-4 h-4 transition-transform submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                </svg>
-              </button>
-              <div class={C.mobileMenu.submenuWrap} data-id={`submenu-${link.label}`}>
-                {link.submenu?.map((sub) => (
-                  <a href={sub.href} class={C.mobileMenu.submenuLink}>{sub.label}</a>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <a href={link.href} class={C.mobileMenu.link}>{link.label}</a>
-          );
-        })}
+        {navigationLinks.map((link) => (
+          <MobileMenuItem link={link} level={1} maxDepth={MENU_MAX_DEPTH} />
+        ))}
       </div>
       {actionButtons.showProfile && (
         <a href="/login" class={C.mobileMenu.link} data-action="profile">Войти</a>
@@ -471,20 +458,19 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
     // and by React island Header.client.tsx (live SSG). Не дублируем здесь —
     // иначе два независимых обработчика дребезжат state на mouseover/mouseout.
 
-    // Submenu expand inside mobile sheet
-    document.querySelectorAll('[data-target^="submenu-"]').forEach(function (toggle) {
+    // Mobile drawer recursive accordion: каждая [data-mobile-toggle] кнопка
+    // toggle'ит ближайший [data-mobile-submenu] sibling. Работает для любого
+    // уровня вложенности (1/2/3+).
+    document.querySelectorAll('[data-mobile-toggle]').forEach(function (toggle) {
       toggle.addEventListener('click', function () {
-        const targetId = toggle.getAttribute('data-target');
-        const target = document.querySelector('[data-id="' + targetId + '"]');
-        if (target) {
-          const open = target.getAttribute('data-open') === 'true';
-          target.setAttribute('data-open', open ? 'false' : 'true');
-          target.style.display = open ? 'none' : 'block';
-        }
-        const arrow = toggle.querySelector('.submenu-arrow');
+        const submenu = toggle.nextElementSibling;
+        if (!submenu || !submenu.matches('[data-mobile-submenu]')) return;
+        const wasHidden = submenu.classList.contains('hidden');
+        submenu.classList.toggle('hidden');
+        toggle.setAttribute('aria-expanded', wasHidden ? 'true' : 'false');
+        const arrow = toggle.querySelector('.mobile-submenu-arrow');
         if (arrow) {
-          arrow.style.transform =
-            arrow.style.transform === 'rotate(180deg)' ? '' : 'rotate(180deg)';
+          arrow.style.transform = wasHidden ? 'rotate(180deg)' : '';
         }
       });
     });

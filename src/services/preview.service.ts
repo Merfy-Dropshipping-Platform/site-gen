@@ -795,6 +795,24 @@ const PREVIEW_NAV_AGENT_INLINE = `
     var t = e.target;
     if (!t || !t.closest) return;
     if (t.closest && t.closest('[data-merfy-pill]')) return;
+    // Если open submenu — Header section hover лочим за Header'ом, не переключаем
+    // на нижние секции, даже если курсор визуально над ними (panel абсолютно
+    // позиционирован и выходит за bbox Header → нативный switch мерцает outline).
+    var openSubmenu = document.querySelector('[data-submenu-host][data-open="true"]');
+    if (openSubmenu) {
+      var headerSec = openSubmenu.closest('[data-puck-component-id]');
+      if (headerSec && hoveredSection !== headerSec) {
+        if (hoveredSection) {
+          hoveredSection.removeAttribute('data-puck-section-hover');
+          clearAllSubsectionHints(hoveredSection);
+        }
+        headerSec.setAttribute('data-puck-section-hover', 'true');
+        hintAllSubsections(headerSec);
+        hoveredSection = headerSec;
+      }
+      refreshPills();
+      return;
+    }
     var sec = t.closest('[data-puck-component-id]');
     if (sec !== hoveredSection) {
       if (hoveredSection) {

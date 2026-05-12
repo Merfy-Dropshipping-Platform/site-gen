@@ -15,7 +15,7 @@ export const HeaderClasses = {
   hamburger: 'md:hidden w-10 h-10 flex items-center justify-center hover:opacity-70 transition-opacity text-[rgb(var(--color-heading))]',
   logoWrap: {
     'top-left': 'absolute left-1/2 -translate-x-1/2 md:relative md:left-auto md:transform-none',
-    'top-center': 'absolute left-1/2 -translate-x-1/2',
+    'top-center': 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2',
     'top-right': 'hidden md:flex',
     'center-left': '',
   },

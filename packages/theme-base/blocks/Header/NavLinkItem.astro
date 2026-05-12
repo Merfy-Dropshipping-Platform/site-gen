@@ -1,84 +1,156 @@
 ---
 /**
- * NavLinkItem — single link + optional submenu (hover desktop / click touch).
+ * NavLinkItem — рекурсивный компонент пункта меню desktop nav.
  *
- * Используется в Header.astro в 5 layout-ветках (top-left, top-center,
- * top-right, center-absolute, center-left) — раньше код дублировался,
- * теперь все ветки делают `<NavLinkItem link={l} isMegaMenu={isMegaMenu}
- * linkClass={navLinkClass} />`.
+ * menuType:
+ *   - dropdown   — level=1 popup под триггером, level=2+ popup справа (каскад).
+ *   - mega-menu  — level=1 full-width sheet под header'ом; внутри секционный
+ *                  layout (level-2 заголовки секций + level-3 пункты под ними).
+ *                  Дальнейшая рекурсия в mega внутри секций отсекается.
+ *   - sidebar    — desktop inline-nav скрыт через md:!hidden на parent,
+ *                  NavLinkItem не рендерится. Mobile drawer обрабатывается
+ *                  отдельно в MobileMenuItem.astro.
  *
- * menuType controls submenu look:
- *   - dropdown (default) — локальный popup ~200px снизу под link.
- *   - mega-menu          — panel на всю ширину header под nav row.
- *   - sidebar            — inline nav скрыт через md:!hidden на parent,
- *                          этот компонент не рендерится вообще.
+ * Cap глубины (maxDepth) — рекурсия не идёт глубже.
  *
- * Touch (`(hover: none)`) — Header.astro inline-script переключает
- * `data-open` на host, CSS variant data-[open=true] показывает submenu
- * без hover (для tablet/phone landscape).
+ * Hover/touch: data-open=true|false на [data-submenu-host]. Touch — inline-script
+ * toggle через click. Desktop hover — обрабатывается внешним handler'ом
+ * (preview-bridge для конструктора, React island для live).
  */
-type Submenu = { label: string; href: string };
 type Link = {
   label: string;
-  href: string;
-  submenu?: Submenu[];
+  href?: string;
+  submenu?: Link[];
 };
 
 interface Props {
   link: Link;
-  isMegaMenu?: boolean;
-  /** Tailwind classes for the link itself — переданные родителем для
-   *  кейсов вроде mega-menu uppercase + tracking. */
+  level?: number;
+  maxDepth?: number;
+  menuType?: 'dropdown' | 'mega-menu' | 'sidebar';
+  /** Tailwind classes для самой ссылки на текущем уровне. */
   linkClass?: string;
 }
 
-const { link, isMegaMenu = false, linkClass = '' } = Astro.props as Props;
-const hasSubmenu = Array.isArray(link.submenu) && link.submenu.length > 0;
+const {
+  link,
+  level = 1,
+  maxDepth = 3,
+  menuType = 'dropdown',
+  linkClass = '',
+} = Astro.props as Props;
 
-// `pt-4` + negative `mt-2` создают **invisible hover bridge** между link
-// и submenu panel: hover area submenu начинается на 8px ABOVE bottom of
-// host + первые 16px невидимые, реальный content visible после. Mouse
-// никогда не теряет hover при transit от link к submenu — без этого
-// browser pixel rounding теряет :hover на 0.5px gap и dropdown closes.
-const submenuClass = isMegaMenu
-  ? 'absolute left-0 right-0 top-full -mt-2 pt-4 w-screen bg-[rgb(var(--color-bg))] border-t border-[rgb(var(--color-text)/0.1)] shadow-lg z-50'
-  : 'absolute left-0 top-full -mt-2 pt-4 min-w-[220px] z-50';
+const hasSubmenu = Array.isArray(link.submenu) && link.submenu.length > 0 && level < maxDepth;
+const isMegaMenu = menuType === 'mega-menu';
+const isLevel1 = level === 1;
 
-const submenuInnerClass = isMegaMenu
-  ? 'mx-auto w-full max-w-[var(--container-max-width,1320px)] px-8 py-6 flex flex-col'
-  : 'bg-[rgb(var(--color-bg))] border border-[rgb(var(--color-text)/0.1)] shadow-lg py-2 rounded-[var(--radius-card,4px)] flex flex-col';
+// ────────────────────────────────────────────────────────────────────
+// MEGA-MENU level=1: full-width sheet с секционным layout
+// ────────────────────────────────────────────────────────────────────
+if (isMegaMenu && isLevel1 && hasSubmenu) {
+  // ничего не делаем здесь — секционный рендер ниже через ветку шаблона
+}
 
-const subLinkClass = isMegaMenu
-  ? 'block py-2 text-[16px] [font-family:var(--font-body)] text-[rgb(var(--color-text))] hover:opacity-70 transition-opacity'
-  : 'block px-4 py-2 text-[14px] [font-family:var(--font-body)] text-[rgb(var(--color-text))] hover:bg-[rgb(var(--color-text)/0.05)] transition-colors';
+// Каскад dropdown:
+const popupClass = isLevel1
+  ? 'absolute left-0 top-full -mt-2 pt-4 min-w-[var(--size-submenu-width,220px)] z-50'
+  : 'absolute left-full top-0 -ml-2 pl-2 min-w-[var(--size-submenu-width,220px)] z-50';
+const popupInnerClass = 'bg-[rgb(var(--color-bg))] border border-[rgb(var(--color-text)/0.1)] shadow-lg py-2 rounded-[var(--radius-card,4px)] flex flex-col';
+
+// Mega-menu sheet:
+const megaSheetClass = 'absolute left-0 right-0 top-full -mt-2 pt-4 w-screen bg-[rgb(var(--color-bg))] border-t border-[rgb(var(--color-text)/0.1)] shadow-lg z-50';
+const megaInnerClass = 'mx-auto w-full max-w-[var(--container-max-width,1320px)] px-8 py-8 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-6';
+
+// Classes for items внутри popup (level >= 2).
+const childLinkClass = 'block px-4 py-2 text-[14px] [font-family:var(--font-body)] text-[rgb(var(--color-text))] hover:bg-[rgb(var(--color-text)/0.05)] transition-colors inline-flex items-center justify-between gap-2';
 ---
-{hasSubmenu ? (
-  <div
-    class="relative group/submenu"
-    data-submenu-host
-    data-open="false"
-  >
+{isMegaMenu && isLevel1 && hasSubmenu ? (
+  /* ─── MEGA-MENU sheet ─── */
+  <div class="relative group/submenu" data-submenu-host data-open="false">
     <a
-      href={link.href}
+      href={link.href || '#'}
       class:list={['inline-flex items-center', linkClass]}
       data-submenu-trigger
     >
       {link.label}
     </a>
     <div
-      class:list={[
-        'hidden group-data-[open=true]/submenu:flex flex-col',
-        submenuClass,
-      ]}
+      class:list={['hidden group-data-[open=true]/submenu:flex flex-col', megaSheetClass]}
       data-submenu-panel
     >
-      <div class={submenuInnerClass}>
+      <div class={megaInnerClass}>
+        {link.submenu!.map((category) => {
+          const hasGrandChildren = Array.isArray(category.submenu) && category.submenu.length > 0;
+          return (
+            <section class="flex flex-col gap-3">
+              {hasGrandChildren ? (
+                <>
+                  <a
+                    href={category.href || '#'}
+                    class="text-[14px] font-semibold uppercase tracking-wider opacity-70 hover:opacity-100 transition-opacity [font-family:var(--font-body)] text-[rgb(var(--color-text))]"
+                  >
+                    {category.label}
+                  </a>
+                  <ul class="flex flex-col gap-1">
+                    {category.submenu!.map((sub) => (
+                      <li>
+                        <a
+                          href={sub.href || '#'}
+                          class="block py-1 text-[14px] [font-family:var(--font-body)] text-[rgb(var(--color-text))] hover:opacity-70 transition-opacity"
+                        >
+                          {sub.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <a
+                  href={category.href || '#'}
+                  class="text-[14px] font-medium [font-family:var(--font-body)] text-[rgb(var(--color-text))] hover:opacity-70 transition-opacity"
+                >
+                  {category.label}
+                </a>
+              )}
+            </section>
+          );
+        })}
+      </div>
+    </div>
+  </div>
+) : hasSubmenu ? (
+  /* ─── DROPDOWN каскад (level=1 popup под триггером, level=2+ справа) ─── */
+  <div class="relative group/submenu" data-submenu-host data-open="false">
+    <a
+      href={link.href || '#'}
+      class:list={['inline-flex items-center gap-1', linkClass]}
+      data-submenu-trigger
+    >
+      {link.label}
+      {!isLevel1 && (
+        <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      )}
+    </a>
+    <div
+      class:list={['hidden group-data-[open=true]/submenu:flex flex-col', popupClass]}
+      data-submenu-panel
+    >
+      <div class={popupInnerClass}>
         {link.submenu!.map((sub) => (
-          <a href={sub.href} class={subLinkClass}>{sub.label}</a>
+          <Astro.self
+            link={sub}
+            level={level + 1}
+            maxDepth={maxDepth}
+            menuType={menuType}
+            linkClass={childLinkClass}
+          />
         ))}
       </div>
     </div>
   </div>
 ) : (
-  <a href={link.href} class={linkClass}>{link.label}</a>
+  /* ─── LEAF ─── */
+  <a href={link.href || '#'} class={linkClass}>{link.label}</a>
 )}

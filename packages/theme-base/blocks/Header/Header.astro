@@ -467,16 +467,14 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
         });
       });
     } else {
-      // Desktop: mouseenter/mouseleave с задержкой 200мс на close — даёт
-      // достаточно времени переместить курсор от link к submenu panel.
-      // CSS group-hover не использовали из-за browser pixel rounding bugs
-      // (mouse теряет :hover в 0.5px gap → submenu закрывается до того
-      // как курсор успевает войти в panel).
+      // Desktop: event delegation на document — переживает hot-update
+      // (когда iframe replaces outerHTML, listeners на конкретных nodes
+      // теряются). mouseenter не bubbles, поэтому используем mouseover
+      // + closest() + check related target relationship.
       const closeTimers = new Map();
       function openHost(host) {
         const t = closeTimers.get(host);
         if (t) { clearTimeout(t); closeTimers.delete(host); }
-        // Close other open hosts immediately (не одно открытым time).
         document.querySelectorAll('[data-submenu-host][data-open="true"]').forEach(function (h) {
           if (h !== host) h.setAttribute('data-open', 'false');
         });
@@ -486,12 +484,22 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
         const t = setTimeout(function () {
           host.setAttribute('data-open', 'false');
           closeTimers.delete(host);
-        }, 200);
+        }, 250);
         closeTimers.set(host, t);
       }
-      document.querySelectorAll('[data-submenu-host]').forEach(function (host) {
-        host.addEventListener('mouseenter', function () { openHost(host); });
-        host.addEventListener('mouseleave', function () { scheduleClose(host); });
+      document.addEventListener('mouseover', function (e) {
+        if (!(e.target instanceof Element)) return;
+        const host = e.target.closest('[data-submenu-host]');
+        if (host) openHost(host);
+      });
+      document.addEventListener('mouseout', function (e) {
+        if (!(e.target instanceof Element)) return;
+        const host = e.target.closest('[data-submenu-host]');
+        if (!host) return;
+        const rel = e.relatedTarget instanceof Element ? e.relatedTarget : null;
+        // Если курсор всё ещё внутри того же host — игнорируем (между link и panel).
+        if (rel && host.contains(rel)) return;
+        scheduleClose(host);
       });
     }
 

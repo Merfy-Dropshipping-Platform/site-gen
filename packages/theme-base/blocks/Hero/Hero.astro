@@ -56,6 +56,30 @@ const resolvedSubtitle =
   (typeof subtitle === 'string' && subtitle) ||
   (typeof textObj === 'string' ? textObj : textObj?.content) ||
   '';
+
+// 091 — apply heading.size / text.size как multiplier к базовому token.
+// Маленький / Средний / Большой → 0.75x / 1x / 1.5x от --size-hero-heading
+// (для заголовка) и от 16px (для текста).
+const resolvedHeadingSize: 'small' | 'medium' | 'large' =
+  (typeof heading === 'object' && heading && typeof heading.size === 'string'
+    ? (heading.size as 'small' | 'medium' | 'large')
+    : 'medium');
+const resolvedTextSize: 'small' | 'medium' | 'large' =
+  (typeof textObj === 'object' && textObj && typeof (textObj as { size?: unknown }).size === 'string'
+    ? ((textObj as { size: string }).size as 'small' | 'medium' | 'large')
+    : 'medium');
+
+const headingSizeClass = {
+  small:  'text-[length:calc(var(--size-hero-heading)*0.75)]',
+  medium: '',  // базовый размер из C.title
+  large:  'text-[length:calc(var(--size-hero-heading)*1.5)]',
+}[resolvedHeadingSize] || '';
+
+const textSizeClass = {
+  small:  'text-[14px]',
+  medium: '',  // базовый из C.subtitle
+  large:  'text-[20px]',
+}[resolvedTextSize] || '';
 const primaryLink = typeof primaryButton?.link === 'object'
   ? primaryButton.link?.href
   : primaryButton?.link;
@@ -186,10 +210,10 @@ const heroButtonStyleClass = heroButtonStyle === 'outlined'
     <div class={C.inner['split-bloom']}>
       <div class={C.splitBloomTextCol}>
         {resolvedTitle && (
-          <h1 class={C.splitBloomKicker} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{resolvedTitle}</h1>
+          <h1 class:list={[C.splitBloomKicker, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{resolvedTitle}</h1>
         )}
         {resolvedSubtitle && (
-          <p class={C.splitBloomSubtitle} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{resolvedSubtitle}</p>
+          <p class:list={[C.splitBloomSubtitle, textSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{resolvedSubtitle}</p>
         )}
         {(resolvedCta?.text || resolvedSecondaryCta?.text) && (
           <div class="flex flex-wrap gap-3">
@@ -240,13 +264,13 @@ const heroButtonStyleClass = heroButtonStyle === 'outlined'
     ]}>
       <header class="flex flex-col gap-1 sm:gap-2 md:gap-3 lg:gap-4 xl:gap-[5px]">
         {variant === 'split' && resolvedSubtitle && (
-          <p class={C.subtitle} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{resolvedSubtitle}</p>
+          <p class:list={[C.subtitle, textSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{resolvedSubtitle}</p>
         )}
         {resolvedTitle && (
-          <h1 class={C.title} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{resolvedTitle}</h1>
+          <h1 class:list={[C.title, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{resolvedTitle}</h1>
         )}
         {variant !== 'split' && resolvedSubtitle && (
-          <p class={C.subtitle} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{resolvedSubtitle}</p>
+          <p class:list={[C.subtitle, textSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{resolvedSubtitle}</p>
         )}
       </header>
       {variant === 'grid-4' && (

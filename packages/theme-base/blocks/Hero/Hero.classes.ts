@@ -28,9 +28,14 @@ export const HeroClasses = {
     'bottom-center': 'justify-end',
     'bottom-right': 'justify-end',
   },
+  // 091 — размер заголовка/текста управляется через CSS-var на root section:
+  // --hero-heading-size / --hero-text-size. Constructor шлёт значения через
+  // heading.size / text.size, Hero.astro вычисляет calc(...) и инжектит в
+  // style на root. Здесь base просто читает var с fallback'ом.
   title:
-    '[font-family:var(--font-heading)] [font-weight:var(--weight-heading)] [text-transform:var(--text-transform-heading)] text-[length:var(--size-hero-heading)] leading-tight text-[rgb(var(--color-heading))]',
-  subtitle: 'text-[16px] mt-2 [font-family:var(--font-body)] text-[rgb(var(--color-text))]',
+    '[font-family:var(--font-heading)] [font-weight:var(--weight-heading)] [text-transform:var(--text-transform-heading)] text-[length:var(--hero-heading-size,var(--size-hero-heading))] leading-tight text-[rgb(var(--color-heading))]',
+  subtitle:
+    'mt-2 [font-family:var(--font-body)] text-[length:var(--hero-text-size,16px)] text-[rgb(var(--color-text))]',
   ctaButton:
     // Hero CTA = primary button: high-contrast action. Secondary was used
     // before, but schemes like Inverse (secondaryButton: transparent bg +

@@ -57,9 +57,10 @@ const resolvedSubtitle =
   (typeof textObj === 'string' ? textObj : textObj?.content) ||
   '';
 
-// 091 — apply heading.size / text.size как multiplier к базовому token.
-// Маленький / Средний / Большой → 0.75x / 1x / 1.5x от --size-hero-heading
-// (для заголовка) и от 16px (для текста).
+// 091 — heading.size / text.size управляют CSS-var'ами `--hero-heading-size`
+// и `--hero-text-size` на root section. Base classes C.title / C.subtitle
+// читают их через var(...) с fallback'ом. Никаких !important / class overrides
+// — single source of truth: data → CSS var → token cascade.
 const resolvedHeadingSize: 'small' | 'medium' | 'large' =
   (typeof heading === 'object' && heading && typeof heading.size === 'string'
     ? (heading.size as 'small' | 'medium' | 'large')
@@ -69,20 +70,21 @@ const resolvedTextSize: 'small' | 'medium' | 'large' =
     ? ((textObj as { size: string }).size as 'small' | 'medium' | 'large')
     : 'medium');
 
-// `!` prefix → !important, overrides base text-size class из C.title / C.subtitle
-// (Tailwind utility classes имеют equal specificity, без `!` срабатывает CSS
-// source order вместо HTML class order).
-const headingSizeClass = {
-  small:  '!text-[length:calc(var(--size-hero-heading)*0.75)]',
-  medium: '',  // базовый размер из C.title
-  large:  '!text-[length:calc(var(--size-hero-heading)*1.5)]',
-}[resolvedHeadingSize] || '';
+// Heading: multiplier к --size-hero-heading (тема задаёт base).
+// Text: фиксированные размеры (тема может через --hero-text-size override'нуть).
+const headingSizeVar = {
+  small:  'calc(var(--size-hero-heading) * 0.75)',
+  medium: 'var(--size-hero-heading)',
+  large:  'calc(var(--size-hero-heading) * 1.5)',
+}[resolvedHeadingSize];
 
-const textSizeClass = {
-  small:  '!text-[14px]',
-  medium: '',  // базовый из C.subtitle
-  large:  '!text-[20px]',
-}[resolvedTextSize] || '';
+const textSizeVar = {
+  small:  '14px',
+  medium: '16px',
+  large:  '20px',
+}[resolvedTextSize];
+
+const sizeVarsStyle = `--hero-heading-size:${headingSizeVar};--hero-text-size:${textSizeVar};`;
 const primaryLink = typeof primaryButton?.link === 'object'
   ? primaryButton.link?.href
   : primaryButton?.link;
@@ -208,15 +210,15 @@ const heroButtonStyleClass = heroButtonStyle === 'outlined'
     class:list={[C.root, schemeClass]}
     data-puck-component-id={id}
     data-variant="split-bloom"
-    style={paddingStyle}
+    style={`${paddingStyle} ${sizeVarsStyle}`}
   >
     <div class={C.inner['split-bloom']}>
       <div class={C.splitBloomTextCol}>
         {resolvedTitle && (
-          <h1 class:list={[C.splitBloomKicker, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{resolvedTitle}</h1>
+          <h1 class={C.splitBloomKicker} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{resolvedTitle}</h1>
         )}
         {resolvedSubtitle && (
-          <p class:list={[C.splitBloomSubtitle, textSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{resolvedSubtitle}</p>
+          <p class={C.splitBloomSubtitle} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{resolvedSubtitle}</p>
         )}
         {(resolvedCta?.text || resolvedSecondaryCta?.text) && (
           <div class="flex flex-wrap gap-3">
@@ -243,7 +245,7 @@ const heroButtonStyleClass = heroButtonStyle === 'outlined'
   class:list={[C.root, 'min-h-[var(--h-base)] sm:min-h-[var(--h-sm)] md:min-h-[var(--h-md)] lg:min-h-[var(--h-lg)] xl:min-h-[var(--h-xl)] 2xl:min-h-[var(--h-xxl)]', schemeClass]}
   data-puck-component-id={id}
   data-variant={variant}
-  style={`${paddingStyle} ${heightVars}`}
+  style={`${paddingStyle} ${heightVars} ${sizeVarsStyle}`}
 >
   {variant === 'overlay' && imageUrl && (
     <>
@@ -267,13 +269,13 @@ const heroButtonStyleClass = heroButtonStyle === 'outlined'
     ]}>
       <header class="flex flex-col gap-1 sm:gap-2 md:gap-3 lg:gap-4 xl:gap-[5px]">
         {variant === 'split' && resolvedSubtitle && (
-          <p class:list={[C.subtitle, textSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{resolvedSubtitle}</p>
+          <p class={C.subtitle} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{resolvedSubtitle}</p>
         )}
         {resolvedTitle && (
-          <h1 class:list={[C.title, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{resolvedTitle}</h1>
+          <h1 class={C.title} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{resolvedTitle}</h1>
         )}
         {variant !== 'split' && resolvedSubtitle && (
-          <p class:list={[C.subtitle, textSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{resolvedSubtitle}</p>
+          <p class={C.subtitle} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{resolvedSubtitle}</p>
         )}
       </header>
       {variant === 'grid-4' && (
@@ -334,7 +336,7 @@ const heroButtonStyleClass = heroButtonStyle === 'outlined'
     class:list={[C.root, schemeClass]}
     data-puck-component-id={id}
     data-variant="carousel"
-    style={paddingStyle}
+    style={`${paddingStyle} ${sizeVarsStyle}`}
   >
     <div class={C.carouselRoot} data-merfy-hero-carousel
          data-autoplay={String(heroAutoplay)}

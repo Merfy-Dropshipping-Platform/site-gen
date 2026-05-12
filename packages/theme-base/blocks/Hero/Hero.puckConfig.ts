@@ -96,7 +96,7 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
   category: 'hero',
   fields: {
     variant: {
-      type: 'radio',
+      type: 'select',
       label: 'Вариант',
       options: [
         { label: 'По центру', value: 'centered' },
@@ -137,8 +137,10 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
       ],
     },
     backgroundImages: { type: 'imagePair', label: 'Фоновые изображения' } as any,
-    backgroundImage: { type: 'image', label: 'Фоновое изображение (legacy)' },
-    backgroundImage2: { type: 'image', label: 'Фоновое изображение 2 (legacy)' },
+    // Legacy fields — скрыты из sidebar; данные сохраняются для backward-compat,
+    // но редактирование идёт через backgroundImages (imagePair).
+    backgroundImage: { type: 'hidden', label: '' },
+    backgroundImage2: { type: 'hidden', label: '' },
     heading: {
       type: 'object',
       label: 'Заголовок',

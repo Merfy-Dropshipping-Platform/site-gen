@@ -108,10 +108,10 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
       type: 'object',
       label: 'Заголовок',
       objectFields: {
-        text: { type: 'text', label: 'Текст' },
+        text: { type: 'aiText', label: 'Заголовок', fieldType: 'title', placeholder: 'Ввести текст...' } as any,
         size: {
-          type: 'radio',
-          label: 'Размер',
+          type: 'select',
+          label: 'Размер заголовка',
           options: [
             { label: 'Маленький', value: 'small' },
             { label: 'Средний', value: 'medium' },
@@ -124,10 +124,10 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
       type: 'object',
       label: 'Текст',
       objectFields: {
-        content: { type: 'textarea', label: 'Содержание' },
+        content: { type: 'aiText', label: 'Текст', fieldType: 'description', placeholder: 'Ввести текст...' } as any,
         size: {
-          type: 'radio',
-          label: 'Размер',
+          type: 'select',
+          label: 'Размер текста',
           options: [
             { label: 'Маленький', value: 'small' },
             { label: 'Средний', value: 'medium' },

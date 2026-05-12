@@ -599,6 +599,60 @@ const PREVIEW_NAV_AGENT_INLINE = `
     return changed;
   }
 
+  // Submenu hover (Header dropdown) — delegated on document so it survives
+  // hot-update outerHTML swap of Header block. Inline-script внутри Header.astro
+  // не re-executes после .outerHTML = html, поэтому держим логику здесь.
+  var __submenuTimers = new WeakMap ? new WeakMap() : null;
+  function __setOpen(host, open) {
+    if (!host) return;
+    host.setAttribute('data-open', open ? 'true' : 'false');
+  }
+  function __openHost(host) {
+    if (__submenuTimers && __submenuTimers.has(host)) {
+      clearTimeout(__submenuTimers.get(host));
+      __submenuTimers.delete(host);
+    }
+    __setOpen(host, true);
+  }
+  function __scheduleClose(host) {
+    if (!__submenuTimers) {
+      __setOpen(host, false);
+      return;
+    }
+    if (__submenuTimers.has(host)) clearTimeout(__submenuTimers.get(host));
+    var t = setTimeout(function () {
+      __setOpen(host, false);
+      __submenuTimers.delete(host);
+    }, 220);
+    __submenuTimers.set(host, t);
+  }
+  document.addEventListener('mouseover', function (e) {
+    if (!(e.target instanceof Element)) return;
+    var host = e.target.closest('[data-submenu-host]');
+    if (host) __openHost(host);
+  });
+  document.addEventListener('mouseout', function (e) {
+    if (!(e.target instanceof Element)) return;
+    var host = e.target.closest('[data-submenu-host]');
+    if (!host) return;
+    var rel = e.relatedTarget instanceof Element ? e.relatedTarget : null;
+    if (rel && host.contains(rel)) return;
+    __scheduleClose(host);
+  });
+  // Touch / no-hover: первое нажатие открывает, второе — переходит по ссылке.
+  document.addEventListener('click', function (e) {
+    if (!(e.target instanceof Element)) return;
+    var a = e.target.closest('[data-submenu-trigger]');
+    if (!a) return;
+    var host = a.closest('[data-submenu-host]');
+    if (!host) return;
+    if (host.getAttribute('data-open') === 'true') return; // навигация
+    if (window.matchMedia && window.matchMedia('(hover: none)').matches) {
+      e.preventDefault();
+      __openHost(host);
+    }
+  });
+
   // Floating action pill — one instance per layer (section vs subsection),
   // can be visible simultaneously.
   function makePill(layer) {

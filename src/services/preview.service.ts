@@ -629,7 +629,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
     var t = setTimeout(function () {
       __setOpen(host, false);
       __submenuTimers.delete(host);
-    }, 220);
+    }, 400);
     __submenuTimers.set(host, t);
   }
   document.addEventListener('mouseover', function (e) {
@@ -646,7 +646,30 @@ const PREVIEW_NAV_AGENT_INLINE = `
     // Игнорировать выход на наш overlay/pill — курсор технически вне host,
     // но визуально пользователь всё ещё над Header → не дребезжим.
     if (rel && rel.closest('.__merfy_pill')) return;
+    // Если rel null/не-Element — курсор быстро перескочил gap или вышел
+    // за iframe; даём шанс mouseover отловить возврат — schedule с delay.
     __scheduleClose(host);
+  });
+  // Курсор-«докатывание» от link к panel через gap: pointermove проверяет
+  // позицию относительно host bbox + панели; если курсор внутри объединённой
+  // зоны — отменяем close.
+  document.addEventListener('mousemove', function (e) {
+    var open = document.querySelector('[data-submenu-host][data-open="true"]');
+    if (!open || !__submenuTimers || !__submenuTimers.has(open)) return;
+    var hostRect = open.getBoundingClientRect();
+    var panel = open.querySelector('[data-submenu-panel]');
+    var panelRect = panel ? panel.getBoundingClientRect() : null;
+    var x = e.clientX, y = e.clientY;
+    var inHost = x >= hostRect.left && x <= hostRect.right && y >= hostRect.top && y <= hostRect.bottom;
+    var inPanel = panelRect && x >= panelRect.left && x <= panelRect.right && y >= panelRect.top && y <= panelRect.bottom;
+    // Зона «коридор» между host bottom и panel top — тоже считается hover.
+    var inCorridor = panelRect && x >= Math.min(hostRect.left, panelRect.left)
+      && x <= Math.max(hostRect.right, panelRect.right)
+      && y >= hostRect.bottom - 4 && y <= panelRect.top + 4;
+    if (inHost || inPanel || inCorridor) {
+      clearTimeout(__submenuTimers.get(open));
+      __submenuTimers.delete(open);
+    }
   });
   // Touch / no-hover: первое нажатие открывает, второе — переходит по ссылке.
   document.addEventListener('click', function (e) {

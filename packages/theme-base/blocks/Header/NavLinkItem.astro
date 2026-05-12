@@ -35,14 +35,14 @@ interface Props {
 const { link, isMegaMenu = false, linkClass = '' } = Astro.props as Props;
 const hasSubmenu = Array.isArray(link.submenu) && link.submenu.length > 0;
 
-// `pt-2` + negative `mt-px` создают **invisible hover bridge** между link
-// и submenu panel: hover area submenu начинается на 1px ABOVE parent
-// bottom + первые 8px невидимые, реальный content visible после. Mouse
+// `pt-4` + negative `mt-2` создают **invisible hover bridge** между link
+// и submenu panel: hover area submenu начинается на 8px ABOVE bottom of
+// host + первые 16px невидимые, реальный content visible после. Mouse
 // никогда не теряет hover при transit от link к submenu — без этого
 // browser pixel rounding теряет :hover на 0.5px gap и dropdown closes.
 const submenuClass = isMegaMenu
-  ? 'absolute left-0 right-0 top-full -mt-px pt-2 w-screen bg-[rgb(var(--color-bg))] border-t border-[rgb(var(--color-text)/0.1)] shadow-lg z-50'
-  : 'absolute left-0 top-full -mt-px pt-2 min-w-[220px] z-50';
+  ? 'absolute left-0 right-0 top-full -mt-2 pt-4 w-screen bg-[rgb(var(--color-bg))] border-t border-[rgb(var(--color-text)/0.1)] shadow-lg z-50'
+  : 'absolute left-0 top-full -mt-2 pt-4 min-w-[220px] z-50';
 
 const submenuInnerClass = isMegaMenu
   ? 'mx-auto w-full max-w-[var(--container-max-width,1320px)] px-8 py-6 flex flex-col'

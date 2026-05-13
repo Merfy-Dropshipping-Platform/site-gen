@@ -302,6 +302,7 @@ export class FragmentPatcher {
       buffer.length,
       {
         "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "no-cache, must-revalidate",
       },
     );
   }
@@ -353,6 +354,7 @@ export class FragmentPatcher {
       buffer.length,
       {
         "Content-Type": "application/json",
+        "Cache-Control": "no-cache, must-revalidate",
       },
     );
 

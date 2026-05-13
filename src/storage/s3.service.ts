@@ -148,7 +148,11 @@ export class S3StorageService {
 
   async uploadFile(bucket: string, key: string, filePath: string) {
     if (!this.client) throw new Error("S3 client not initialized");
-    await this.client.fPutObject(bucket, key, filePath, {});
+    const filename = filePath.split("/").pop() || key.split("/").pop() || "";
+    await this.client.fPutObject(bucket, key, filePath, {
+      "Content-Type": this.getContentType(filename),
+      "Cache-Control": this.getCacheControl(filename),
+    });
     return this.getPublicUrl(bucket, key);
   }
 
@@ -159,8 +163,10 @@ export class S3StorageService {
     contentType: string,
   ): Promise<string> {
     if (!this.client) throw new Error("S3 client not initialized");
+    const filename = key.split("/").pop() || "";
     await this.client.putObject(bucket, key, buffer, buffer.length, {
       "Content-Type": contentType,
+      "Cache-Control": this.getCacheControl(filename),
     });
     return this.getPublicUrl(bucket, key);
   }
@@ -310,18 +316,43 @@ export class S3StorageService {
     for (let i = 0; i < files.length; i += BATCH_SIZE) {
       const batch = files.slice(i, i + BATCH_SIZE);
       await Promise.all(
-        batch.map((f) =>
-          this.client!.fPutObject(bucket, f.s3Key, f.localPath, {
-            "Content-Type": this.getContentType(
-              f.localPath.split("/").pop() || "",
-            ),
-          }),
-        ),
+        batch.map((f) => {
+          const filename = f.localPath.split("/").pop() || "";
+          return this.client!.fPutObject(bucket, f.s3Key, f.localPath, {
+            "Content-Type": this.getContentType(filename),
+            "Cache-Control": this.getCacheControl(filename),
+          });
+        }),
       );
     }
 
     this.logger.log(`Uploaded ${files.length} files to s3://${bucket}/${prefix}`);
     return { uploaded: files.length };
+  }
+
+  /**
+   * Cache-Control для загружаемого файла.
+   *
+   * Astro build кладёт ассеты с content-hash в имя
+   * (`assets/index-CcFO96Ur.js`) → immutable + год. HTML / JSON со списками
+   * (products.json, manifest.json) меняются при каждом publish, поэтому им
+   * `no-cache, must-revalidate` — браузер шлёт conditional GET с
+   * If-None-Match, MinIO ETag отвечает 304 если файл не изменился, 200 +
+   * свежий контент если изменился. Без этого браузер heuristic-кеширует и
+   * показывает старую версию даже после успешного publish.
+   */
+  private getCacheControl(filename: string): string {
+    const ext = filename.split(".").pop()?.toLowerCase() ?? "";
+    if (ext === "html" || ext === "htm") {
+      return "no-cache, must-revalidate";
+    }
+    // JSON-манифесты (products.json, manifest.json, collections.json …) —
+    // тоже always revalidate, иначе storefront может читать прошлый снимок.
+    if (ext === "json" || ext === "xml" || ext === "txt") {
+      return "no-cache, must-revalidate";
+    }
+    // Ассеты с content-hash от Astro/Vite — immutable на год.
+    return "public, max-age=31536000, immutable";
   }
 
   /**

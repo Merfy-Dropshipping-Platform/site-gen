@@ -267,14 +267,7 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     imageFullBleed: { type: 'hidden', label: '' },
     contentAlign: { type: 'hidden', label: '' },
     buttonStyle: { type: 'hidden', label: '' },
-    padding: {
-      type: 'object',
-      label: 'Отступы',
-      objectFields: {
-        top: { type: 'number', label: 'Сверху (px)', min: 0, max: 160 },
-        bottom: { type: 'number', label: 'Снизу (px)', min: 0, max: 160 },
-      },
-    },
+    padding: { type: 'padding', label: 'Отступы' } as any,
   },
   defaults: {
     title: 'Добро пожаловать',

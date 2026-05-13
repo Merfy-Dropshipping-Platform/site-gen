@@ -27,13 +27,17 @@ export const HeroSchema = z.object({
     content: z.string(),
     size: z.enum(['small', 'medium', 'large']),
   }).optional(),
+  // link принимает обе формы: string ('/catalog') или object ({ href: '/catalog' }).
+  // Constructor defaultPagesData пишет object form — при строгом schema=string
+  // primaryButton дропался при safeParse → кнопка пропадала при изменении других
+  // props. Hero.astro и так нормализует обе формы.
   primaryButton: z.object({
     text: z.string(),
-    link: z.string(),
+    link: z.union([z.string(), z.object({ href: z.string() })]),
   }).optional(),
   secondaryButton: z.object({
     text: z.string(),
-    link: z.string(),
+    link: z.union([z.string(), z.object({ href: z.string() })]),
   }).optional(),
   contentPosition: z.enum([
     'center',

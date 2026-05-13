@@ -14,7 +14,10 @@ import type { BlockPuckConfig } from '@merfy/theme-contract';
 export const HeroSchema = z.object({
   title: z.string(),
   subtitle: z.string(),
-  image: z.object({ url: z.string(), alt: z.string() }),
+  // Принимаем обе формы: string (legacy / Pupa shape, как в существующих
+  // ревизиях `image: "/main-image.png"`) или object (новый Theme Contract).
+  // Hero.astro нормализует оба варианта.
+  image: z.union([z.string(), z.object({ url: z.string(), alt: z.string() })]).optional(),
   images: z.array(z.object({ url: z.string(), alt: z.string() })).max(8).optional(),
   cta: z.object({ text: z.string(), href: z.string() }),
   variant: z.enum(['centered', 'split', 'overlay', 'grid-4', 'split-bloom']),
@@ -101,14 +104,12 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     // 091-merge: 6 видимых полей по Figma 314-34786.
     // Все остальные legacy-поля — `hidden`. Данные сохраняются, рендер
     // (Hero.astro) использует их по-прежнему, но мерчант их не редактирует.
-    image: {
-      type: 'object',
-      label: 'Изображения',
-      objectFields: {
-        url: { type: 'image', label: 'Фото' },
-        alt: { type: 'text', label: 'Alt текст' },
-      },
-    } as any,
+    //
+    // image — `type: image` (single URL string), а не object. Старые
+    // ревизии хранят `image: "/main-image.png"` строкой; Hero.astro
+    // принимает обе формы. При object Puck Editor сбрасывал данные при
+    // смежных изменениях полей.
+    image: { type: 'image', label: 'Изображения' } as any,
     // Legacy hidden — заменены single `image`.
     variant: { type: 'hidden', label: '' },
     contentPosition: { type: 'hidden', label: '' } as any,
@@ -278,7 +279,7 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
   defaults: {
     title: 'Добро пожаловать',
     subtitle: '',
-    image: { url: '', alt: '' },
+    image: '',
     images: undefined,
     cta: { text: 'Смотреть каталог', href: '/catalog' },
     variant: 'centered',

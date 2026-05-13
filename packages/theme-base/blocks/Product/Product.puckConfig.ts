@@ -74,26 +74,70 @@ const sizeOptions = [
 export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
   label: 'Товар',
   category: 'products',
+  // Figma 314-34639: 7 visible fields в порядке —
+  // Выбор товара → Макет → Размер → Позиция фото → Увеличение → Цветовая схема → Отступы.
+  // Остальные (text/title/price/variants/quantity/buttons/description/share/
+  // badge/dynamicButton) — hiddenInMainPanel: редактируются через outline-click
+  // на subsection в превью.
   fields: {
     productId: { type: 'productPicker', label: 'Выбор товара' },
+    layout: {
+      type: 'select',
+      label: 'Макет',
+      options: [
+        { label: 'Сложенный', value: 'stacked' },
+        { label: '2 колонки', value: 'two-columns' },
+        { label: 'Карусель снизу', value: 'carousel' },
+        { label: 'Карусель слева', value: 'split' },
+      ],
+    },
+    size: {
+      type: 'select',
+      label: 'Размер',
+      options: sizeOptions,
+    },
+    photoPosition: {
+      type: 'radio',
+      label: 'Позиция фото',
+      options: [
+        { label: 'Слева', value: 'left' },
+        { label: 'Справа', value: 'right' },
+      ],
+    },
+    zoomMode: {
+      type: 'radio',
+      label: 'Увеличение',
+      options: [
+        { label: 'Нажатие', value: 'click' },
+        { label: 'Наведение', value: 'hover' },
+      ],
+    },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    padding: { type: 'padding', label: 'Отступы' },
+
+    // Sub-panels — Figma 314-34639 их не показывает в main panel,
+    // они открываются через outline click на subsection в превью.
     text: {
       type: 'object',
       label: 'Текст',
+      hiddenInMainPanel: true,
       objectFields: {
         content: { type: 'textarea', label: 'Содержание' },
         size: { type: 'radio', label: 'Размер', options: sizeOptions },
       },
-    },
+    } as any,
     title: {
       type: 'object',
       label: 'Название',
+      hiddenInMainPanel: true,
       objectFields: {
         size: { type: 'radio', label: 'Размер', options: sizeOptions },
       },
-    },
+    } as any,
     price: {
       type: 'object',
       label: 'Стоимость',
+      hiddenInMainPanel: true,
       objectFields: {
         show: {
           type: 'toggle',
@@ -104,10 +148,11 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
           ],
         },
       },
-    },
+    } as any,
     variants: {
       type: 'object',
       label: 'Варианты',
+      hiddenInMainPanel: true,
       objectFields: {
         style: {
           type: 'radio',
@@ -127,10 +172,11 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
           ],
         },
       },
-    },
+    } as any,
     quantity: {
       type: 'object',
       label: 'Количество',
+      hiddenInMainPanel: true,
       objectFields: {
         enabled: {
           type: 'toggle',
@@ -141,10 +187,11 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
           ],
         },
       },
-    },
+    } as any,
     buttons: {
       type: 'object',
       label: 'Кнопки',
+      hiddenInMainPanel: true,
       objectFields: {
         addToCart: {
           type: 'object',
@@ -157,80 +204,27 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
           objectFields: { text: { type: 'text', label: 'Текст' } },
         },
       },
-    },
+    } as any,
     description: {
       type: 'object',
       label: 'Описание',
+      hiddenInMainPanel: true,
       objectFields: {
         content: { type: 'textarea', label: 'Содержание' },
         size: { type: 'radio', label: 'Размер', options: sizeOptions },
       },
-    },
+    } as any,
     share: {
       type: 'object',
       label: 'Поделиться',
+      hiddenInMainPanel: true,
       objectFields: { text: { type: 'text', label: 'Текст' } },
-    },
-    layout: {
-      type: 'select',
-      label: 'Макет',
-      options: [
-        { label: 'Стопкой', value: 'stacked' },
-        { label: 'Две колонки', value: 'two-columns' },
-        { label: 'Карусель', value: 'carousel' },
-        { label: 'Миниатюры', value: 'thumbnail' },
-        { label: 'Сплит', value: 'split' },
-      ],
-    },
-    photoPosition: {
-      type: 'radio',
-      label: 'Позиция фото',
-      options: [
-        { label: 'Слева', value: 'left' },
-        { label: 'Справа', value: 'right' },
-      ],
-    },
-    zoomMode: {
-      type: 'radio',
-      label: 'Увеличение',
-      options: [
-        { label: 'По клику', value: 'click' },
-        { label: 'При наведении', value: 'hover' },
-        { label: 'Выключено', value: 'none' },
-      ],
-    },
-    size: {
-      type: 'radio',
-      label: 'Размер блока',
-      options: sizeOptions,
-    },
-    badge: {
-      type: 'object',
-      label: 'Бейдж (legacy)',
-      objectFields: {
-        text: { type: 'text', label: 'Текст' },
-        textSize: { type: 'radio', label: 'Размер', options: sizeOptions },
-      },
-    },
-    dynamicButton: {
-      type: 'object',
-      label: 'Динамическая кнопка',
-      objectFields: {
-        enabled: {
-          type: 'toggle',
-          label: 'Включена',
-          options: [
-            { label: 'Да', value: 'true' },
-            { label: 'Нет', value: 'false' },
-          ],
-        },
-      },
-    },
-    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
-    // visualConfig is theme-driven only (set via theme.json blockDefaults).
-    // Marked 'hidden' so the constructor doesn't render an editor for it.
+    } as any,
+
+    // Legacy/internal — hidden совсем, данные сохраняются.
+    badge: { type: 'hidden', label: '' },
+    dynamicButton: { type: 'hidden', label: '' },
     visualConfig: { type: 'hidden', label: '' },
-    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     productId: '',

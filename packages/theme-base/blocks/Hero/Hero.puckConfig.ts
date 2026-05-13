@@ -180,7 +180,9 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
       ],
     },
     overlay: { type: 'slider', label: 'Затемнение', min: 0, max: 100, step: 5 },
-    // Раздел «Содержание» в Figma — Позиция / Выравнивание / Контейнер.
+    // Раздел «Содержание» — black 16px subheader перед Позиция / Выравнивание /
+    // Контейнер. Не контрол, не сохраняется в props (decorative only).
+    ['_contentSection' as never]: { type: 'section-header', label: 'Содержание' } as any,
     position: {
       type: 'select',
       label: 'Позиция',
@@ -197,14 +199,14 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
       ],
     },
     alignment: { type: 'alignment', label: 'Выравнивание' },
+    // Figma 314-34815: Контейнер = toggle switch «Скрыть/показать»,
+    // не две кнопки. FieldRenderer переключает toggle ↔ boolean,
+    // legacy 'true'/'false' strings совместимы (Hero.astro приводит).
     container: {
-      type: 'radio',
+      type: 'toggle',
       label: 'Контейнер',
-      options: [
-        { label: 'Показать', value: 'true' },
-        { label: 'Скрыть', value: 'false' },
-      ],
-    },
+      toggleLabel: 'Скрыть/показать',
+    } as any,
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     // Carousel mode + slides — advanced, скрыты по умолчанию в sidebar.
     // Theme rendering обрабатывает existing data normally если есть, но
@@ -262,7 +264,9 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     imageFullBleed: { type: 'hidden', label: '' },
     contentAlign: { type: 'hidden', label: '' },
     buttonStyle: { type: 'hidden', label: '' },
-    padding: { type: 'padding', label: 'Отступы' } as any,
+    // В Figma 314-34815 «Отступы» нет — скрыто из sidebar. Padding в данных
+    // сохраняется (для Hero.astro), но мерчант не редактирует.
+    padding: { type: 'hidden', label: '' } as any,
   },
   defaults: {
     title: 'Добро пожаловать',

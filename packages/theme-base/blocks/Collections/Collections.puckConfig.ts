@@ -63,12 +63,22 @@ export type CollectionsProps = z.infer<typeof CollectionsSchema>;
 export const CollectionsPuckConfig: BlockPuckConfig<CollectionsProps> = {
   label: 'Список коллекций',
   category: 'products',
+  // Figma 314-34726: раздел «Содержание» (Заголовок / Размер / Текст /
+  // Размер) → Колонки → Цветовая схема → Отступы.
+  // Скрытые поля (нет в Figma): titleAlignment, imageView, dataSource,
+  // cardCaptionStyle, gridAspect, variant, cardLinkBase. Данные ревизий
+  // сохраняются; Astro-рендер использует их по дефолтам.
   fields: {
-    heading: { type: 'text', label: 'Заголовок' },
-    titleAlignment: { type: 'alignment', label: 'Выравнивание заголовка' },
-    subtitle: { type: 'text', label: 'Подзаголовок' },
+    // section-header — decorative subheader без контрола
+    ['_contentSection' as never]: { type: 'section-header', label: 'Содержание' } as any,
+    heading: {
+      type: 'aiText',
+      label: 'Заголовок',
+      fieldType: 'title',
+      placeholder: 'Ввести текст...',
+    } as any,
     headingSize: {
-      type: 'radio',
+      type: 'select',
       label: 'Размер заголовка',
       options: [
         { label: 'Маленький', value: 'small' },
@@ -76,35 +86,30 @@ export const CollectionsPuckConfig: BlockPuckConfig<CollectionsProps> = {
         { label: 'Большой', value: 'large' },
       ],
     },
+    subtitle: {
+      type: 'aiText',
+      label: 'Текст',
+      fieldType: 'description',
+      placeholder: 'Ввести текст...',
+    } as any,
     subtitleSize: {
-      type: 'radio',
-      label: 'Размер подзаголовка',
+      type: 'select',
+      label: 'Размер текста',
       options: [
         { label: 'Маленький', value: 'small' },
         { label: 'Средний', value: 'medium' },
         { label: 'Большой', value: 'large' },
       ],
     },
-    imageView: {
-      type: 'radio',
-      label: 'Форма карточек',
-      options: [
-        { label: 'Квадрат', value: 'square' },
-        { label: 'Портрет', value: 'portrait' },
-        { label: 'Широкая', value: 'wide' },
-      ],
-    },
-    dataSource: {
-      type: 'radio',
-      label: 'Источник данных',
-      options: [
-        { label: 'Автоматически', value: 'auto' },
-        { label: 'Вручную', value: 'manual' },
-      ],
-    },
+    columns: { type: 'slider', label: 'Колонки', min: 1, max: 6, step: 1 } as any,
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    padding: { type: 'padding', label: 'Отступы' },
+    // Hidden — collections редактируется через outline/array sub-panel,
+    // не в main sidebar (Figma 314-34726 показывает только настройки секции).
     collections: {
       type: 'array',
       label: 'Коллекции',
+      hiddenInMainPanel: true,
       arrayFields: {
         heading: { type: 'text', label: 'Заголовок' },
         description: { type: 'text', label: 'Описание' },
@@ -113,35 +118,15 @@ export const CollectionsPuckConfig: BlockPuckConfig<CollectionsProps> = {
       },
       defaultItemProps: { id: '', collectionId: null, heading: '', description: '', image: '' },
       max: 10,
-    },
-    columns: { type: 'number', label: 'Колонки (1-6)' },
-    cardCaptionStyle: {
-      type: 'radio',
-      label: 'Стиль подписи карточки',
-      options: [
-        { label: 'Обычный', value: 'default' },
-        { label: 'Заглавные', value: 'uppercase' },
-      ],
-    },
-    gridAspect: {
-      type: 'radio',
-      label: 'Соотношение сторон карточек',
-      options: [
-        { label: 'Авто', value: 'auto' },
-        { label: 'Квадрат 1:1', value: '1:1' },
-      ],
-    },
-    variant: {
-      type: 'radio',
-      label: 'Вариант',
-      options: [
-        { label: 'Стандартный', value: 'standard' },
-        { label: 'Плитка (квадрат, слева)', value: 'tile' },
-      ],
-    },
-    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
-    cardLinkBase: { type: 'text', label: 'Префикс ссылки на коллекцию' },
-    padding: { type: 'padding', label: 'Отступы' },
+    } as any,
+    // Legacy hidden — нет в Figma 314-34726.
+    titleAlignment: { type: 'hidden', label: '' },
+    imageView: { type: 'hidden', label: '' },
+    dataSource: { type: 'hidden', label: '' },
+    cardCaptionStyle: { type: 'hidden', label: '' },
+    gridAspect: { type: 'hidden', label: '' },
+    variant: { type: 'hidden', label: '' },
+    cardLinkBase: { type: 'hidden', label: '' },
   },
   defaults: {
     heading: 'Коллекции',

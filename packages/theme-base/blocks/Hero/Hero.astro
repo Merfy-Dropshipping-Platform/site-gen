@@ -265,7 +265,13 @@ const heroButtonStyleClass = heroButtonStyle === 'outlined'
     </>
   )}
   {variant === 'centered' && imageUrl && (
-    <img src={imageUrl} alt={imageAlt} class={imageClass} />
+    <>
+      <img src={imageUrl} alt={imageAlt} class={imageClass} />
+      {/* Затемнение поверх фона. Применяется для centered тоже — раньше
+          overlay-слой рендерился только в variant='overlay', sidebar slider
+          «Затемнение» для default centered ничего не делал. */}
+      <div class="absolute inset-0 -z-[5]" style={overlayStyle} aria-hidden="true" />
+    </>
   )}
   <div class:list={[C.container, innerClass, vAlignClass, 'relative z-10']} style="min-height: inherit;">
     <div class:list={[

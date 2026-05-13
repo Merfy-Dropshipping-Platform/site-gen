@@ -2,13 +2,13 @@ export const HeroClasses = {
   root: 'relative w-full overflow-hidden',
   container: 'mx-auto max-w-[var(--container-max-width)] px-4',
   inner: {
-    // `justify-center` (vertical center) — раньше text был stuck top когда
-    // min-h на section растягивал Hero до 720px; теперь content
-    // вертикально центрирован.
-    centered: 'flex flex-col items-center justify-center text-center py-12 min-h-[inherit]',
+    // items/justify *не* зашиваем — Позиция (hAlign/vAlign из 9 значений)
+    // полностью контролирует горизонтальное и вертикальное выравнивание.
+    // Если положение не задано → default vAlign[center]+hAlign[center].
+    centered: 'flex flex-col py-12 min-h-[inherit]',
     split: 'grid grid-cols-1 md:grid-cols-2 items-center gap-8 py-12',
-    overlay: 'relative min-h-[60vh] flex flex-col justify-center py-12',
-    'grid-4': 'flex flex-col items-center justify-center text-center py-12 gap-8 min-h-[inherit]',
+    overlay: 'relative min-h-[60vh] flex flex-col py-12',
+    'grid-4': 'flex flex-col py-12 gap-8 min-h-[inherit]',
     // 089 bloom pilot — edge-to-edge split (no container max-width, no padding):
     // text column bottom-aligned (justify-end), image column full-height.
     'split-bloom':

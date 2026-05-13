@@ -122,8 +122,12 @@ const VALID_POSITIONS: ReadonlyArray<ContentPos> = [
 const contentPositionMapped: ContentPos = (VALID_POSITIONS as readonly string[]).includes(positionRaw)
   ? (positionRaw as ContentPos)
   : 'center';
+// Применяем hAlign/vAlign для всех variants (centered/overlay/split etc),
+// а не только для 'overlay'. Раньше vAlign работал только в overlay, и
+// для default 'centered' (когда нет фонового изображения) позиция всегда
+// schлопывалась в center. Теперь Позиция влияет везде.
 const hAlignClass = C.hAlign[contentPositionMapped];
-const vAlignClass = variant === 'overlay' ? C.vAlign[contentPositionMapped] : '';
+const vAlignClass = C.vAlign[contentPositionMapped];
 
 // Pupa parity: alignment field controls text-align inside content.
 // Default = 'text-center' (per Figma 2:16517 — heading + subtitle + button

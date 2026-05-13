@@ -95,28 +95,13 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
   label: 'Изображение',
   category: 'hero',
   fields: {
-    // Hidden по Figma 314-34815 — variant больше не редактируется мерчантом.
-    // Рендер использует existing variant или дефолт (overlay/centered) по
-    // наличию backgroundImage.
+    // Порядок по Figma 314-34815:
+    // 1. Изображения, 2. Размер, 3. Затемнение, 4. (раздел «Содержание»),
+    // 5. Позиция, 6. Выравнивание, 7. Контейнер, 8. Цветовая схема, 9. Отступы.
+    backgroundImages: { type: 'imagePair', label: 'Изображения' } as any,
+    // Hidden — нет в Figma 314-34815, данные сохраняются для рендера.
     variant: { type: 'hidden', label: '' },
-    // Дубль с `position` — скрыт, position остаётся canonical.
     contentPosition: { type: 'hidden', label: '' } as any,
-    position: {
-      type: 'select',
-      label: 'Позиция',
-      options: [
-        { label: 'Сверху слева', value: 'top-left' },
-        { label: 'Сверху в центре', value: 'top-center' },
-        { label: 'Сверху справа', value: 'top-right' },
-        { label: 'По центру слева', value: 'center-left' },
-        { label: 'По центру', value: 'center' },
-        { label: 'По центру справа', value: 'center-right' },
-        { label: 'Снизу слева', value: 'bottom-left' },
-        { label: 'Снизу по центру', value: 'bottom-center' },
-        { label: 'Снизу справа', value: 'bottom-right' },
-      ],
-    },
-    backgroundImages: { type: 'imagePair', label: 'Фоновые изображения' } as any,
     // Legacy fields — скрыты из sidebar; данные сохраняются для backward-compat,
     // но редактирование идёт через backgroundImages (imagePair).
     backgroundImage: { type: 'hidden', label: '' },
@@ -195,6 +180,22 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
       ],
     },
     overlay: { type: 'slider', label: 'Затемнение', min: 0, max: 100, step: 5 },
+    // Раздел «Содержание» в Figma — Позиция / Выравнивание / Контейнер.
+    position: {
+      type: 'select',
+      label: 'Позиция',
+      options: [
+        { label: 'Сверху слева', value: 'top-left' },
+        { label: 'Сверху в центре', value: 'top-center' },
+        { label: 'Сверху справа', value: 'top-right' },
+        { label: 'По центру слева', value: 'center-left' },
+        { label: 'По центру', value: 'center' },
+        { label: 'По центру справа', value: 'center-right' },
+        { label: 'Снизу слева', value: 'bottom-left' },
+        { label: 'Снизу по центру', value: 'bottom-center' },
+        { label: 'Снизу справа', value: 'bottom-right' },
+      ],
+    },
     alignment: { type: 'alignment', label: 'Выравнивание' },
     container: {
       type: 'radio',

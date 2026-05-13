@@ -14,10 +14,7 @@ import type { BlockPuckConfig } from '@merfy/theme-contract';
 export const HeroSchema = z.object({
   title: z.string(),
   subtitle: z.string(),
-  // Принимаем обе формы: string (legacy / Pupa shape, как в существующих
-  // ревизиях `image: "/main-image.png"`) или object (новый Theme Contract).
-  // Hero.astro нормализует оба варианта.
-  image: z.union([z.string(), z.object({ url: z.string(), alt: z.string() })]).optional(),
+  image: z.object({ url: z.string(), alt: z.string() }),
   images: z.array(z.object({ url: z.string(), alt: z.string() })).max(8).optional(),
   cta: z.object({ text: z.string(), href: z.string() }),
   variant: z.enum(['centered', 'split', 'overlay', 'grid-4', 'split-bloom']),
@@ -57,9 +54,6 @@ export const HeroSchema = z.object({
     url2: z.string().optional(),
   }).optional(),
   size: z.enum(['small', 'medium', 'large']).optional(),
-  // 091-merge: Hero ↔ ImageWithText sidebar по Figma 314-34786.
-  width: z.enum(['small', 'medium', 'large']).optional(),
-  photoPosition: z.enum(['left', 'right']).optional(),
   overlay: z.number().int().min(0).max(100).optional(),
   alignment: z.enum(['left', 'center', 'right']).optional(),
   container: z.enum(['true', 'false']).optional(),
@@ -98,24 +92,22 @@ export const HeroSchema = z.object({
 export type HeroProps = z.infer<typeof HeroSchema>;
 
 export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
-  label: 'Изображение с текстом',
+  label: 'Изображение',
   category: 'hero',
   fields: {
-    // 091-merge: 6 видимых полей по Figma 314-34786.
-    // Все остальные legacy-поля — `hidden`. Данные сохраняются, рендер
-    // (Hero.astro) использует их по-прежнему, но мерчант их не редактирует.
-    //
-    // image — `type: image` (single URL string), а не object. Старые
-    // ревизии хранят `image: "/main-image.png"` строкой; Hero.astro
-    // принимает обе формы. При object Puck Editor сбрасывал данные при
-    // смежных изменениях полей.
-    image: { type: 'image', label: 'Изображения' } as any,
-    // Legacy hidden — заменены single `image`.
-    variant: { type: 'hidden', label: '' },
+    variant: {
+      type: 'select',
+      label: 'Вариант',
+      options: [
+        { label: 'По центру', value: 'centered' },
+        { label: 'Сплит (фото сбоку)', value: 'split' },
+        { label: 'Фон на всю ширину', value: 'overlay' },
+        { label: 'Сетка 2x2', value: 'grid-4' },
+        { label: 'Сплит edge-to-edge (Bloom)', value: 'split-bloom' },
+      ],
+    },
+    // Дубль с `position` — скрыт, position остаётся canonical.
     contentPosition: { type: 'hidden', label: '' } as any,
-    // Позиция блока текст+кнопка на фоне Hero — 9 значений (Figma macro
-    // Hero sidebar). Управляет hAlign / vAlign контента, рендерится через
-    // contentPositionMapped + overlay variant.
     position: {
       type: 'select',
       label: 'Позиция',
@@ -131,7 +123,9 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
         { label: 'Снизу справа', value: 'bottom-right' },
       ],
     },
-    backgroundImages: { type: 'hidden', label: '' } as any,
+    backgroundImages: { type: 'imagePair', label: 'Фоновые изображения' } as any,
+    // Legacy fields — скрыты из sidebar; данные сохраняются для backward-compat,
+    // но редактирование идёт через backgroundImages (imagePair).
     backgroundImage: { type: 'hidden', label: '' },
     backgroundImage2: { type: 'hidden', label: '' },
     // heading / text / primaryButton / secondaryButton — видны только в
@@ -194,9 +188,10 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     // primaryButton. Данные сохраняются 1-в-1 (backward-compat при rollback).
     title: { type: 'hidden', label: '' },
     subtitle: { type: 'hidden', label: '' },
+    image: { type: 'hidden', label: '' },
     images: { type: 'hidden', label: '' },
     cta: { type: 'hidden', label: '' },
-    // Figma 314-34786 поля.
+    // Pupa parity: дополнительные параметры секции.
     size: {
       type: 'select',
       label: 'Размер',
@@ -206,22 +201,16 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
         { label: 'Большой', value: 'large' },
       ],
     },
-    width: {
-      type: 'select',
-      label: 'Ширина',
+    overlay: { type: 'slider', label: 'Затемнение', min: 0, max: 100, step: 5 },
+    alignment: { type: 'alignment', label: 'Выравнивание' },
+    container: {
+      type: 'radio',
+      label: 'Контейнер',
       options: [
-        { label: 'Маленькая', value: 'small' },
-        { label: 'Средняя', value: 'medium' },
-        { label: 'Большая', value: 'large' },
+        { label: 'Показать', value: 'true' },
+        { label: 'Скрыть', value: 'false' },
       ],
     },
-    // photoPosition выпилен — пользователь хочет управлять позицией
-    // текст+кнопка, не фото. Для этого используется `position` (9 значений).
-    photoPosition: { type: 'hidden', label: '' } as any,
-    // Legacy hidden — после merge не редактируются.
-    overlay: { type: 'hidden', label: '' },
-    alignment: { type: 'hidden', label: '' },
-    container: { type: 'hidden', label: '' },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     // Carousel mode + slides — advanced, скрыты по умолчанию в sidebar.
     // Theme rendering обрабатывает existing data normally если есть, но
@@ -275,16 +264,39 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     pagination: { type: 'hidden', label: '' },
     autoplay: { type: 'hidden', label: '' },
     interval: { type: 'hidden', label: '' },
-    // Legacy hidden — после merge не редактируются.
-    imageFullBleed: { type: 'hidden', label: '' },
-    contentAlign: { type: 'hidden', label: '' },
-    buttonStyle: { type: 'hidden', label: '' },
-    padding: { type: 'padding', label: 'Отступы' } as any,
+    imageFullBleed: { type: 'radio', label: 'Фото на всю ширину', options: [
+      { label: 'Да', value: true },
+      { label: 'Нет', value: false },
+    ] },
+    contentAlign: {
+      type: 'radio',
+      label: 'Выравнивание контента',
+      options: [
+        { label: 'По центру', value: 'center' },
+        { label: 'Слева', value: 'left' },
+      ],
+    },
+    buttonStyle: {
+      type: 'radio',
+      label: 'Стиль кнопки',
+      options: [
+        { label: 'Заливка', value: 'solid' },
+        { label: 'Контур', value: 'outlined' },
+      ],
+    },
+    padding: {
+      type: 'object',
+      label: 'Отступы',
+      objectFields: {
+        top: { type: 'number', label: 'Сверху (px)', min: 0, max: 160 },
+        bottom: { type: 'number', label: 'Снизу (px)', min: 0, max: 160 },
+      },
+    },
   },
   defaults: {
     title: 'Добро пожаловать',
     subtitle: '',
-    image: '',
+    image: { url: '', alt: '' },
     images: undefined,
     cta: { text: 'Смотреть каталог', href: '/catalog' },
     variant: 'centered',

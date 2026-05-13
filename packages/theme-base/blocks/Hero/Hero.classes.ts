@@ -14,16 +14,27 @@ export const HeroClasses = {
     'split-bloom':
       'flex flex-col md:flex-row items-stretch w-full min-h-[560px] md:min-h-[720px]',
   },
-  // Horizontal alignment of the inner content block
+  // Horizontal alignment of the inner content block — 9 значений по
+  // вертикали × горизонтали из Figma Hero sidebar.
   hAlign: {
+    'top-left': 'items-start text-left',
+    'top-center': 'items-center text-center',
+    'top-right': 'items-end text-right',
+    'center-left': 'items-start text-left',
     center: 'items-center text-center',
+    'center-right': 'items-end text-right',
     'bottom-left': 'items-start text-left',
     'bottom-center': 'items-center text-center',
     'bottom-right': 'items-end text-right',
   },
-  // Vertical alignment inside overlay variant (full-height stage)
+  // Vertical alignment inside overlay variant (full-height stage).
   vAlign: {
+    'top-left': 'justify-start',
+    'top-center': 'justify-start',
+    'top-right': 'justify-start',
+    'center-left': 'justify-center',
     center: 'justify-center',
+    'center-right': 'justify-center',
     'bottom-left': 'justify-end',
     'bottom-center': 'justify-end',
     'bottom-right': 'justify-end',

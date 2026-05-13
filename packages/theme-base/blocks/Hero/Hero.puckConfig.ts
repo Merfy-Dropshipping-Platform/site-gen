@@ -113,7 +113,24 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     // Legacy hidden — заменены single `image`.
     variant: { type: 'hidden', label: '' },
     contentPosition: { type: 'hidden', label: '' } as any,
-    position: { type: 'hidden', label: '' },
+    // Позиция блока текст+кнопка на фоне Hero — 9 значений (Figma macro
+    // Hero sidebar). Управляет hAlign / vAlign контента, рендерится через
+    // contentPositionMapped + overlay variant.
+    position: {
+      type: 'select',
+      label: 'Позиция',
+      options: [
+        { label: 'Сверху слева', value: 'top-left' },
+        { label: 'Сверху в центре', value: 'top-center' },
+        { label: 'Сверху справа', value: 'top-right' },
+        { label: 'По центру слева', value: 'center-left' },
+        { label: 'По центру', value: 'center' },
+        { label: 'По центру справа', value: 'center-right' },
+        { label: 'Снизу слева', value: 'bottom-left' },
+        { label: 'Снизу по центру', value: 'bottom-center' },
+        { label: 'Снизу справа', value: 'bottom-right' },
+      ],
+    },
     backgroundImages: { type: 'hidden', label: '' } as any,
     backgroundImage: { type: 'hidden', label: '' },
     backgroundImage2: { type: 'hidden', label: '' },
@@ -198,14 +215,9 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
         { label: 'Большая', value: 'large' },
       ],
     },
-    photoPosition: {
-      type: 'radio',
-      label: 'Позиция фото',
-      options: [
-        { label: 'Слева', value: 'left' },
-        { label: 'Справа', value: 'right' },
-      ],
-    },
+    // photoPosition выпилен — пользователь хочет управлять позицией
+    // текст+кнопка, не фото. Для этого используется `position` (9 значений).
+    photoPosition: { type: 'hidden', label: '' } as any,
     // Legacy hidden — после merge не редактируются.
     overlay: { type: 'hidden', label: '' },
     alignment: { type: 'hidden', label: '' },

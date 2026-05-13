@@ -95,17 +95,10 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
   label: 'Изображение',
   category: 'hero',
   fields: {
-    variant: {
-      type: 'select',
-      label: 'Вариант',
-      options: [
-        { label: 'По центру', value: 'centered' },
-        { label: 'Сплит (фото сбоку)', value: 'split' },
-        { label: 'Фон на всю ширину', value: 'overlay' },
-        { label: 'Сетка 2x2', value: 'grid-4' },
-        { label: 'Сплит edge-to-edge (Bloom)', value: 'split-bloom' },
-      ],
-    },
+    // Hidden по Figma 314-34815 — variant больше не редактируется мерчантом.
+    // Рендер использует existing variant или дефолт (overlay/centered) по
+    // наличию backgroundImage.
+    variant: { type: 'hidden', label: '' },
     // Дубль с `position` — скрыт, position остаётся canonical.
     contentPosition: { type: 'hidden', label: '' } as any,
     position: {
@@ -264,34 +257,11 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     pagination: { type: 'hidden', label: '' },
     autoplay: { type: 'hidden', label: '' },
     interval: { type: 'hidden', label: '' },
-    imageFullBleed: { type: 'radio', label: 'Фото на всю ширину', options: [
-      { label: 'Да', value: true },
-      { label: 'Нет', value: false },
-    ] },
-    contentAlign: {
-      type: 'radio',
-      label: 'Выравнивание контента',
-      options: [
-        { label: 'По центру', value: 'center' },
-        { label: 'Слева', value: 'left' },
-      ],
-    },
-    buttonStyle: {
-      type: 'radio',
-      label: 'Стиль кнопки',
-      options: [
-        { label: 'Заливка', value: 'solid' },
-        { label: 'Контур', value: 'outlined' },
-      ],
-    },
-    padding: {
-      type: 'object',
-      label: 'Отступы',
-      objectFields: {
-        top: { type: 'number', label: 'Сверху (px)', min: 0, max: 160 },
-        bottom: { type: 'number', label: 'Снизу (px)', min: 0, max: 160 },
-      },
-    },
+    // Hidden — нет в Figma 314-34815.
+    imageFullBleed: { type: 'hidden', label: '' },
+    contentAlign: { type: 'hidden', label: '' },
+    buttonStyle: { type: 'hidden', label: '' },
+    padding: { type: 'padding', label: 'Отступы' } as any,
   },
   defaults: {
     title: 'Добро пожаловать',

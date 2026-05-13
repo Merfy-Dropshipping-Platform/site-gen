@@ -7,10 +7,14 @@ export const CollectionsClasses = {
     'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
   container:
     'mx-auto max-w-[var(--container-max-width)] px-4',
+  // Размеры заголовка/подзаголовка — не зашиваем, чтобы titleSizeClass /
+  // subtitleSizeClass из sidebar (small/medium/large) реально применялись.
+  // Раньше зашитый `text-[14px]` (arbitrary value) перебивал utility-классы
+  // в каскаде → ползунок Размер не работал.
   heading:
-    '[font-family:var(--font-heading)] text-[14px] leading-[16px] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] mb-2',
+    '[font-family:var(--font-heading)] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] mb-2',
   subtitle:
-    '[font-family:var(--font-body)] text-[12px] leading-[15px] text-[rgb(var(--color-text))]/60 mb-10',
+    '[font-family:var(--font-body)] text-[rgb(var(--color-text))]/60 mb-10',
   grid:
     'grid gap-x-[var(--spacing-grid-col-gap)] gap-y-[var(--spacing-grid-row-gap)]',
   card:

@@ -3,6 +3,7 @@ import type { PopularProductsProps } from './PopularProducts.puckConfig';
 import { PopularProductsClasses as C } from './PopularProducts.classes';
 import { resolveActiveCollection } from './url-filter';
 import PopularProductRichCard from './PopularProductRichCard.astro';
+import { getPlaceholderSvg } from '../../runtime/placeholders';
 
 interface Props extends PopularProductsProps {
   id?: string;
@@ -385,6 +386,7 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
             memoryChips={memoryChips}
             badges={badges}
             ctaLabel={quickAddText}
+            cardIndex={i}
           />
         );
       }) : demo.map((p, i) => {
@@ -411,11 +413,11 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
             {p.image ? (
               <img src={p.image} alt={p.title} class="absolute inset-0 w-full h-full object-cover" loading="lazy" />
             ) : (
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                <circle cx="8.5" cy="8.5" r="1.5" />
-                <polyline points="21,15 16,10 5,21" />
-              </svg>
+              <div class="absolute inset-0 flex items-center justify-center text-[rgb(var(--color-accent))]">
+                <div class="w-[40%] aspect-square">
+                  <Fragment set:html={getPlaceholderSvg(i)} />
+                </div>
+              </div>
             )}
           </div>
           <div class="flex flex-col gap-1 items-start w-full">
@@ -458,6 +460,10 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
     swatchContainerClass: C.swatchOverlay.container,
     swatchDotClass: C.swatchOverlay.dot,
     maxSwatchPips: MAX_SWATCH_PIPS,
+    // Inline SVG свитера для client-side cardHtml fallback (когда у товара
+    // нет картинки). Тот же SVG что Astro server рендерит через
+    // getPlaceholderSvg — единая декорация на оба пути.
+    placeholderSvg: getPlaceholderSvg(0),
   }}
 >
   // 088 T008 — runtime fetch (mirror Catalog.astro Stage 3 pattern).
@@ -564,7 +570,7 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
 
       var mediaInner = img
         ? '<img src="' + escAttr(img) + '" alt="' + escAttr(title) + '" class="absolute inset-0 w-full h-full object-cover" loading="lazy" />'
-        : '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21,15 16,10 5,21" /></svg>';
+        : '<div class="absolute inset-0 flex items-center justify-center text-[rgb(var(--color-accent))]"><div class="w-[40%] aspect-square">' + placeholderSvg + '</div></div>';
 
       var ctaHtml = quickAdd
         ? '<a href="' + escAttr(href) + '" class="' + cardCtaClass + '">' + escAttr(quickAddText) + '</a>'

@@ -36,6 +36,8 @@ interface Badge {
   variant?: 'accent';
 }
 
+import { getPlaceholderSvg } from '../../runtime/placeholders';
+
 interface Props {
   href?: string;
   image?: string;
@@ -46,6 +48,8 @@ interface Props {
   memoryChips?: MemoryChip[];
   badges?: Badge[];
   ctaLabel?: string;
+  /** index в массиве карточек — для будущей вариативности placeholder'ов. */
+  cardIndex?: number;
 }
 
 const {
@@ -58,6 +62,7 @@ const {
   memoryChips = [],
   badges = [],
   ctaLabel = 'В корзину',
+  cardIndex = 0,
 } = Astro.props as Props;
 
 const showOld = !!(oldPrice && oldPrice.trim());
@@ -70,12 +75,10 @@ const showOld = !!(oldPrice && oldPrice.trim());
     {image ? (
       <img src={image} alt={title} loading="lazy" class="w-full h-full object-cover block" />
     ) : (
-      <div class="w-full h-full flex items-center justify-center text-[rgb(var(--color-muted))]">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-          <circle cx="8.5" cy="8.5" r="1.5" />
-          <polyline points="21,15 16,10 5,21" />
-        </svg>
+      <div class="w-full h-full flex items-center justify-center text-[rgb(var(--color-accent))]">
+        <div class="w-[40%] aspect-square">
+          <Fragment set:html={getPlaceholderSvg(cardIndex)} />
+        </div>
       </div>
     )}
   </a>

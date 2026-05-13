@@ -2,6 +2,7 @@
 import type { CollectionsProps } from './Collections.puckConfig';
 import { CollectionsClasses as C } from './Collections.classes';
 import { buildCollectionHref } from './card-href';
+import { getPlaceholderSvg } from '../../runtime/placeholders';
 
 interface Props extends CollectionsProps {
   id?: string;
@@ -140,9 +141,20 @@ const effectiveCollections = hasRealCollections
               isTile ? 'w-full aspect-square object-cover rounded-[12px] bg-[rgb(var(--color-surface))] transition-transform duration-500 ease-out group-hover:scale-105' : `${C.image} ${gridAspectClass}`,
             ]} loading="lazy" style={isTile ? '' : `aspect-ratio: ${tileAspectStyle};`} />
           ) : (
-            <div class:list={[
-              isTile ? 'w-full aspect-square rounded-[12px] bg-[rgb(var(--color-surface))]' : `w-full rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))] ${gridAspectClass}`,
-            ]} style={isTile ? '' : `aspect-ratio: ${tileAspectStyle};`} aria-hidden="true"></div>
+            <div
+              class:list={[
+                'flex items-center justify-center overflow-hidden',
+                isTile
+                  ? 'w-full aspect-square rounded-[12px] bg-[rgb(var(--color-surface))] text-[rgb(var(--color-accent))]'
+                  : `w-full rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))] text-[rgb(var(--color-accent))] ${gridAspectClass}`,
+              ]}
+              style={isTile ? '' : `aspect-ratio: ${tileAspectStyle};`}
+              aria-hidden="true"
+            >
+              <div class="w-[40%] aspect-square">
+                <Fragment set:html={getPlaceholderSvg(i)} />
+              </div>
+            </div>
           )}
           <h3 class:list={[
             isTile ? '[font-family:var(--font-body)] font-light text-[length:var(--size-nav-link,16px)] leading-none text-[rgb(var(--color-muted))] group-hover:text-[rgb(var(--color-text))] transition-colors' : `${C.cardHeading} ${cardCaptionClass}`,

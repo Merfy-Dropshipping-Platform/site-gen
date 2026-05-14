@@ -81,6 +81,12 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
   // на subsection в превью.
   fields: {
     productId: { type: 'productPicker', label: 'Выбор товара' },
+    // Figma 314-34639: Размер ПЕРЕД Макет.
+    size: {
+      type: 'select',
+      label: 'Размер',
+      options: sizeOptions,
+    },
     layout: {
       type: 'select',
       label: 'Макет',
@@ -90,11 +96,6 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
         { label: 'Карусель снизу', value: 'carousel' },
         { label: 'Карусель слева', value: 'split' },
       ],
-    },
-    size: {
-      type: 'select',
-      label: 'Размер',
-      options: sizeOptions,
     },
     photoPosition: {
       type: 'radio',

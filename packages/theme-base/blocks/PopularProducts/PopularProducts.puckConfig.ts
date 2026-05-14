@@ -10,11 +10,26 @@ export const PopularProductsSchema = z.object({
       size: z.enum(['small', 'medium', 'large']).optional(),
     }),
   ]).optional(),
+  // Figma 314-34614: «Размер заголовка» — отдельное top-level поле (Маленький/Средний/Большой).
+  headingSize: z.enum(['small', 'medium', 'large']).optional(),
   subtitle: z.string().optional(),
-  text: z.object({
-    content: z.string().optional(),
-    size: z.enum(['small', 'medium', 'large']).optional(),
-  }).optional(),
+  text: z.union([
+    z.string(),
+    z.object({
+      content: z.string().optional(),
+      size: z.enum(['small', 'medium', 'large']).optional(),
+    }),
+  ]).optional(),
+  // Figma 314-34614: «Размер текста» — отдельное top-level поле.
+  textSize: z.enum(['small', 'medium', 'large']).optional(),
+  // Figma 314-34614: «Вид изображения» — Квадрат / Портрет / Адаптация.
+  imageView: z.enum(['square', 'portrait', 'adaptive']).optional(),
+  // Figma 314-34614: «Стиль кнопки» — Ссылка / Основная / Дополнительная.
+  buttonStyle: z.enum(['link', 'primary', 'secondary']).optional(),
+  // Figma 314-34614: «Следующее фото при наведении» — switch.
+  nextPhotoOnHover: z.boolean().optional(),
+  // Figma 314-34614: «Быстрое добавление» — Нет / Стандарт / Количество.
+  quickAddMode: z.enum(['none', 'standard', 'count']).optional(),
   cards: z.number().int().min(2).max(24),
   columns: z.number().int().min(1).max(6),
   // Pupa parity.
@@ -64,139 +79,114 @@ export const PopularProductsSchema = z.object({
 
 export type PopularProductsProps = z.infer<typeof PopularProductsSchema>;
 
+const sizeOptions = [
+  { label: 'Маленький', value: 'small' },
+  { label: 'Средний', value: 'medium' },
+  { label: 'Большой', value: 'large' },
+];
+
 export const PopularProductsPuckConfig: BlockPuckConfig<PopularProductsProps> = {
   label: 'Коллекция товаров',
   category: 'products',
+  // Figma 314-34614: точный порядок и набор контролов в правом сайдбаре.
+  //  1. Выбор коллекции
+  //  2. Карточки
+  //  3. (header) Содержание
+  //  4. Заголовок (aiText)
+  //  5. Размер заголовка
+  //  6. Текст (aiText)
+  //  7. Размер текста
+  //  8. (header) Карточка товара
+  //  9. Стиль кнопки
+  // 10. Вид изображения
+  // 11. Следующее фото при наведении
+  // 12. Быстрое добавление
+  // 13. Колонки
+  // 14. Цветовая схема
+  // 15. Отступы
   fields: {
+    collection: { type: 'collectionPicker', label: 'Выбор коллекции' },
+    cards: { type: 'slider', label: 'Карточки', min: 2, max: 24, step: 1 },
+
+    ['_contentSection' as never]: { type: 'section-header', label: 'Содержание' } as any,
     heading: {
-      type: 'object',
+      type: 'aiText',
       label: 'Заголовок',
-      objectFields: {
-        text: { type: 'text', label: 'Текст' },
-        alignment: { type: 'alignment', label: 'Выравнивание' },
-        size: {
-          type: 'radio',
-          label: 'Размер',
-          options: [
-            { label: 'Маленький', value: 'small' },
-            { label: 'Средний', value: 'medium' },
-            { label: 'Большой', value: 'large' },
-          ],
-        },
-      },
-    },
-    subtitle: { type: 'textarea', label: 'Подзаголовок (опционально)' },
+      fieldType: 'title',
+      placeholder: 'Ввести текст...',
+    } as any,
+    headingSize: { type: 'select', label: 'Размер заголовка', options: sizeOptions },
     text: {
-      type: 'object',
+      type: 'aiText',
       label: 'Текст',
-      objectFields: {
-        content: { type: 'textarea', label: 'Содержание' },
-        size: {
-          type: 'radio',
-          label: 'Размер',
-          options: [
-            { label: 'Маленький', value: 'small' },
-            { label: 'Средний', value: 'medium' },
-            { label: 'Большой', value: 'large' },
-          ],
-        },
-      },
-    },
-    collection: { type: 'collectionPicker', label: 'Коллекция' },
-    cards: { type: 'slider', label: 'Количество карточек', min: 2, max: 24, step: 1 },
-    columns: { type: 'slider', label: 'Колонок в ряд', min: 1, max: 6, step: 1 },
-    productCard: {
-      type: 'object',
-      label: 'Карточка товара',
-      objectFields: {
-        columns: { type: 'slider', label: 'Колонок', min: 1, max: 6, step: 1 },
-        buttonStyle: {
-          type: 'select',
-          label: 'Стиль кнопки',
-          options: [
-            { label: 'Ссылка', value: 'link' },
-            { label: 'Основной', value: 'primary' },
-            { label: 'Вторичный', value: 'secondary' },
-          ],
-        },
-        cardStyle: {
-          type: 'select',
-          label: 'Стиль карточки',
-          options: [
-            { label: 'Авто', value: 'auto' },
-            { label: 'Портрет', value: 'portrait' },
-            { label: 'Квадрат', value: 'square' },
-            { label: 'Широкая', value: 'wide' },
-          ],
-        },
-        nextPhoto: {
-          type: 'radio',
-          label: 'Следующее фото при наведении',
-          options: [
-            { label: 'Да', value: 'true' },
-            { label: 'Нет', value: 'false' },
-          ],
-        },
-        quickAdd: {
-          type: 'radio',
-          label: 'Быстро добавить',
-          options: [
-            { label: 'Да', value: 'true' },
-            { label: 'Нет', value: 'false' },
-          ],
-        },
-        buttonText: {
-          type: 'text',
-          label: 'Текст кнопки',
-          // Pupa parity: показывать только когда quickAdd='true'.
-          visibleWhen: { field: 'quickAdd', equals: 'true' },
-        },
-      },
-    },
-    containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
-    quickAdd: {
-      type: 'radio',
-      label: 'Кнопка "В корзину"',
+      fieldType: 'description',
+      placeholder: 'Добавь текст в объявление.',
+    } as any,
+    textSize: { type: 'select', label: 'Размер текста', options: sizeOptions },
+
+    ['_cardSection' as never]: { type: 'section-header', label: 'Карточка товара' } as any,
+    buttonStyle: {
+      type: 'select',
+      label: 'Стиль кнопки',
       options: [
-        { label: 'Показать', value: 'true' },
-        { label: 'Скрыть', value: 'false' },
+        { label: 'Ссылка', value: 'link' },
+        { label: 'Основная', value: 'primary' },
+        { label: 'Дополнительная', value: 'secondary' },
       ],
     },
-    quickAddText: { type: 'text', label: 'Текст кнопки' },
-    viewAll: {
-      type: 'object',
-      label: 'Кнопка "Смотреть ещё"',
-      objectFields: {
-        show: {
-          type: 'radio',
-          label: 'Показать',
-          options: [
-            { label: 'Да', value: true },
-            { label: 'Нет', value: false },
-          ],
-        },
-        text: { type: 'text', label: 'Текст' },
-        href: { type: 'text', label: 'Ссылка' },
-      },
-    },
-    swatchOverlay: { type: 'radio', label: 'Показать варианты на карточке' },
-    cardCaptionStyle: {
-      type: 'radio',
-      label: 'Стиль подписи карточки',
+    imageView: {
+      type: 'select',
+      label: 'Вид изображения',
       options: [
-        { label: 'Обычный', value: 'default' },
-        { label: 'Заглавные', value: 'uppercase' },
+        { label: 'Квадрат', value: 'square' },
+        { label: 'Портрет', value: 'portrait' },
+        { label: 'Адаптация', value: 'adaptive' },
       ],
     },
-    // Theme-driven; not exposed in constructor sidebar.
-    cardVariant: { type: 'hidden', label: '' },
+    nextPhotoOnHover: {
+      type: 'toggle',
+      label: 'Следующее фото при наведении',
+      options: [
+        { label: 'Вкл', value: true },
+        { label: 'Выкл', value: false },
+      ],
+    } as any,
+    quickAddMode: {
+      type: 'select',
+      label: 'Быстрое добавление',
+      options: [
+        { label: 'Нет', value: 'none' },
+        { label: 'Стандарт', value: 'standard' },
+        { label: 'Количество', value: 'count' },
+      ],
+    },
+    columns: { type: 'slider', label: 'Колонки', min: 1, max: 6, step: 1 },
+
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
+
+    // Hidden — данные ревизий сохраняются, но в Figma 314-34614 эти контролы
+    // отсутствуют. Astro-рендер может читать их через fallback chain.
+    subtitle: { type: 'hidden', label: '' },
+    productCard: { type: 'hidden', label: '' },
+    containerColorScheme: { type: 'hidden', label: '' },
+    quickAdd: { type: 'hidden', label: '' },
+    quickAddText: { type: 'hidden', label: '' },
+    viewAll: { type: 'hidden', label: '' },
+    swatchOverlay: { type: 'hidden', label: '' },
+    cardCaptionStyle: { type: 'hidden', label: '' },
+    cardVariant: { type: 'hidden', label: '' },
   },
   defaults: {
-    heading: 'Популярные товары',
-    subtitle: '',
-    cards: 4,
+    heading: 'Коллекция товаров',
+    headingSize: 'small',
+    text: '',
+    textSize: 'small',
+    imageView: 'square',
+    buttonStyle: 'link',
+    nextPhotoOnHover: false,
+    quickAddMode: 'none',
+    cards: 6,
     columns: 4,
     padding: { top: 80, bottom: 80 },
     quickAdd: false,

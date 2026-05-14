@@ -112,8 +112,12 @@ const headingObj = headingProp ?? raw.heading;
 const headingAlignment =
   (typeof headingObj === 'object' ? (headingObj as { alignment?: string })?.alignment : undefined)
   ?? (typeof raw.headingAlignment === 'string' ? (raw.headingAlignment as string) : undefined);
-const headingSize = typeof headingObj === 'object' ? (headingObj as { size?: string })?.size : undefined;
+// Figma 314-34614: top-level `headingSize` имеет приоритет, fallback на legacy heading.size.
+const headingSize =
+  (typeof raw.headingSize === 'string' ? (raw.headingSize as string) : undefined)
+  ?? (typeof headingObj === 'object' ? (headingObj as { size?: string })?.size : undefined);
 const textSize = (() => {
+  if (typeof raw.textSize === 'string') return raw.textSize as string;
   const t = raw.text;
   if (t && typeof t === 'object') return (t as { size?: string }).size;
   return undefined;

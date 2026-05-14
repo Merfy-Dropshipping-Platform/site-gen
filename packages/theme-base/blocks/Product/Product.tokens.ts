@@ -36,4 +36,12 @@ export const ProductTokens = [
   '--spacing-section-y',
   '--spacing-grid-col-gap',
   '--container-max-width',
+  // Product sidebar-driven sizes (Figma 648:55733 — see audit-flux/figma-product/).
+  // `size`        → main image + thumbs.
+  // `title.size`  → ProductInfo h1.
+  // `text.size`   → brand line + description body.
+  '--product-title-size',
+  '--product-text-size',
+  '--product-main-image-size',
+  '--product-thumb-size',
 ] as const satisfies readonly `--${string}`[];

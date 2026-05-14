@@ -19,11 +19,11 @@ const isUpper = variant === 'uppercase-title';
 ---
 <div class="flex flex-col gap-2 w-full" data-product-info>
   {brand && (
-    <span class="[font-family:var(--font-body)] text-base text-[rgb(var(--color-muted))]">{brand}</span>
+    <span class="[font-family:var(--font-body)] text-[length:var(--product-text-size,16px)] text-[rgb(var(--color-muted))]">{brand}</span>
   )}
   <h1
     class:list={[
-      '[font-family:var(--font-heading)] text-[20px] leading-tight text-[rgb(var(--color-text))] m-0',
+      '[font-family:var(--font-heading)] text-[length:var(--product-title-size,24px)] leading-tight text-[rgb(var(--color-text))] m-0',
       isUpper ? 'uppercase tracking-wide' : 'normal-case',
     ]}
   >{title}</h1>

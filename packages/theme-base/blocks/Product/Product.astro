@@ -41,7 +41,7 @@ const {
   siteId,
   productId,
   text,
-  title: _titleProp,
+  title: titleProp,
   price: priceProp,
   quantity,
   buttons,
@@ -53,7 +53,44 @@ const {
   visualConfig: visualConfigProp,
   photoPosition = 'left',
   zoomMode = 'hover',
+  size: sizeProp,
+  layout: layoutProp,
 } = Astro.props as Props;
+
+// Layout switch (Figma 648:55733).
+//   split        — карусель сбоку: thumbs col рядом с main image
+//   carousel     — карусель снизу: main image + thumbs row
+//   two-columns  — все фото в grid 2×N равными
+//   stacked      — большой main + thumbs grid 2×N снизу
+const VALID_LAYOUTS = ['split', 'carousel', 'two-columns', 'stacked'] as const;
+const layout: 'split' | 'carousel' | 'two-columns' | 'stacked' =
+  (typeof layoutProp === 'string' && (VALID_LAYOUTS as readonly string[]).includes(layoutProp))
+    ? (layoutProp as 'split' | 'carousel' | 'two-columns' | 'stacked')
+    : 'two-columns';
+
+// — Sidebar size mapping (Figma 648:55733). Single source of truth: data → CSS-var → token cascade.
+//
+//   size        → main image (440/552/640) + thumb (72/88/96).
+//   title.size  → h1 (18/24/32).
+//   text.size   → brand + description body (14/16/18).
+//
+// Primitives (ProductInfo, ProductDescription, ProductGallery) consume these
+// vars via `text-[length:var(--product-...,fallback)]` so theme cascade still
+// works for themes that don't emit them.
+const _size = (sizeProp === 'small' || sizeProp === 'large' ? sizeProp : 'medium');
+const _titleSize = (typeof titleProp?.size === 'string' && (titleProp.size === 'small' || titleProp.size === 'large' || titleProp.size === 'medium'))
+  ? titleProp.size
+  : _size;
+const _textSize = (typeof text?.size === 'string' && (text.size === 'small' || text.size === 'large' || text.size === 'medium'))
+  ? text.size
+  : _size;
+
+const MAIN_IMAGE_PX = { small: 440, medium: 552, large: 640 } as const;
+const THUMB_PX      = { small:  72, medium:  88, large:  96 } as const;
+const TITLE_PX      = { small:  18, medium:  24, large:  32 } as const;
+const TEXT_PX       = { small:  14, medium:  16, large:  18 } as const;
+
+const sizeVarsStyle = `--product-title-size:${TITLE_PX[_titleSize]}px;--product-text-size:${TEXT_PX[_textSize]}px;--product-main-image-size:${MAIN_IMAGE_PX[_size]}px;--product-thumb-size:${THUMB_PX[_size]}px;`;
 
 // — Visual configuration (LAYOUT only — colours come from active scheme). —
 const visual: ProductVisualConfig = {
@@ -135,7 +172,7 @@ const brandText = textContent || view.brand || '';
   data-product-slug={view.slug || productId}
   data-product-handle={view.handle || productId}
   data-zoom-mode={zoomMode}
-  style={`background:rgb(var(--color-background, var(--color-bg)));color:rgb(var(--color-foreground, var(--color-text)));${paddingStyle}`}
+  style={`background:rgb(var(--color-background, var(--color-bg)));color:rgb(var(--color-foreground, var(--color-text)));${paddingStyle}${sizeVarsStyle}`}
 >
   {view.jsonLd && (
     <script type="application/ld+json" set:html={JSON.stringify(view.jsonLd)} />
@@ -150,11 +187,17 @@ const brandText = textContent || view.brand || '';
       data-product-grid
       data-photo-position={photoOnLeft ? 'left' : 'right'}
     >
-      {/* Left: gallery (652px on desktop). */}
-      <div class="w-full lg:w-[652px] shrink-0" data-product-images>
+      {/* MEDIA col. split раздвигается за счёт thumbs+main inline (auto-width).
+          Остальные макеты — фикс 652px на desktop (как до 091). */}
+      <div class:list={[
+        'w-full shrink-0',
+        layout === 'split' ? 'lg:w-auto' : 'lg:w-[652px]',
+      ]} data-product-images>
         <ProductGallery
           gallery={view.gallery}
           variant={visual.gallery.variant}
+          layout={layout}
+          photoPosition={photoPosition}
           showDiscountBadge={visual.gallery.showDiscountBadge}
           hasDiscount={view.hasDiscount}
         />

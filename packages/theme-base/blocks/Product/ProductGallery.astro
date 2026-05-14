@@ -49,30 +49,13 @@ const allImages = gallery.hero
 ---
 <div class="w-full" data-product-gallery data-gallery-variant={variant} data-gallery-layout={layout}>
   {layout === 'split' && (
-    <div class:list={['flex flex-row items-stretch gap-3 w-full', photoOnRight ? 'flex-row-reverse' : '']}>
-      {/* Thumbs column (vertical) — крайняя сторона, противоположная info-колонке. */}
-      {gallery.thumbs.length > 0 && (
-        <div class="flex flex-col items-center gap-2 shrink-0" data-product-thumbs data-thumbs-axis="vertical">
-          <button type="button" aria-label="Назад" class="shrink-0 h-6 w-6 flex items-center justify-center text-[rgb(var(--color-text))]" data-thumbs-prev>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
-          </button>
-          <div class="flex flex-col gap-2 overflow-y-auto" style="max-height: calc(var(--product-main-image-size,552px));">
-            {gallery.thumbs.map((thumb, idx) => (
-              <button type="button" data-product-thumb data-thumb-idx={idx + 1} aria-label={`Изображение ${idx + 2}`}
-                class:list={['relative overflow-hidden p-0 border-0 bg-transparent cursor-pointer shrink-0', thumbRadius,
-                  'w-[var(--product-thumb-size,88px)] h-[var(--product-thumb-size,88px)]']}>
-                <img src={thumb.src} alt={thumb.alt} loading="lazy" class="w-full h-full object-cover block"/>
-              </button>
-            ))}
-          </div>
-          <button type="button" aria-label="Вперёд" class="shrink-0 h-6 w-6 flex items-center justify-center text-[rgb(var(--color-text))]" data-thumbs-next>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-        </div>
-      )}
-      {/* Main image */}
-      <div class:list={['relative overflow-hidden bg-[rgb(var(--color-surface,var(--color-text)/0.05))] shrink-0', heroRadius]}
-           style="width:var(--product-main-image-size,552px); aspect-ratio:1/1;" data-product-hero>
+    <div class:list={[
+      'flex flex-col lg:flex-row items-stretch gap-3 w-full',
+      photoOnRight ? 'lg:flex-row-reverse' : '',
+    ]}>
+      {/* Main image — на mobile сверху full-width, на lg сбоку фиксированной ширины. */}
+      <div class:list={['relative overflow-hidden bg-[rgb(var(--color-surface,var(--color-text)/0.05))] shrink-0 order-1 lg:order-2 w-full lg:w-[var(--product-main-image-size,552px)]', heroRadius]}
+           style="aspect-ratio:1/1;" data-product-hero>
         {gallery.hero ? (
           <img src={gallery.hero.src} alt={gallery.hero.alt} loading="eager" class="absolute inset-0 w-full h-full object-cover block" data-product-hero-image/>
         ) : (
@@ -85,6 +68,29 @@ const allImages = gallery.hero
                style="background:rgb(var(--color-text)); color:rgb(var(--color-bg));">{badgeText}</div>
         )}
       </div>
+      {/* Thumbs — на mobile горизонтальная лента под main, на lg вертикальная сбоку. */}
+      {gallery.thumbs.length > 0 && (
+        <div class="flex flex-row lg:flex-col items-center gap-2 shrink-0 order-2 lg:order-1 w-full lg:w-auto"
+             data-product-thumbs data-thumbs-axis="responsive">
+          <button type="button" aria-label="Назад" class="shrink-0 h-6 w-6 flex items-center justify-center text-[rgb(var(--color-text))]" data-thumbs-prev>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="lg:block hidden"><polyline points="18 15 12 9 6 15"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="lg:hidden block"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div class="flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-y-auto flex-1 lg:flex-none lg:max-h-[var(--product-main-image-size,552px)]">
+            {gallery.thumbs.map((thumb, idx) => (
+              <button type="button" data-product-thumb data-thumb-idx={idx + 1} aria-label={`Изображение ${idx + 2}`}
+                class:list={['relative overflow-hidden p-0 border-0 bg-transparent cursor-pointer shrink-0', thumbRadius,
+                  'w-[var(--product-thumb-size,88px)] h-[var(--product-thumb-size,88px)]']}>
+                <img src={thumb.src} alt={thumb.alt} loading="lazy" class="w-full h-full object-cover block"/>
+              </button>
+            ))}
+          </div>
+          <button type="button" aria-label="Вперёд" class="shrink-0 h-6 w-6 flex items-center justify-center text-[rgb(var(--color-text))]" data-thumbs-next>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="lg:block hidden"><polyline points="6 9 12 15 18 9"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="lg:hidden block"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      )}
     </div>
   )}
 

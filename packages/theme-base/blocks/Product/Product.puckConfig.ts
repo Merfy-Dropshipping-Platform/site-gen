@@ -163,13 +163,14 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
             { label: 'Список', value: 'list' },
           ],
         },
+        // Figma 314-34673: «Вариации» (не «Форма»), последняя опция «Нет».
         shape: {
           type: 'radio',
-          label: 'Форма',
+          label: 'Вариации',
           options: [
             { label: 'Круг', value: 'circle' },
             { label: 'Квадрат', value: 'square' },
-            { label: 'Без формы', value: 'none' },
+            { label: 'Нет', value: 'none' },
           ],
         },
       },
@@ -206,14 +207,17 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
         },
       },
     } as any,
+    // Figma 314-34700: Описание — sub-panel показывает «Настройка недоступна /
+    // Изменения проводятся на странице Товары». Контент берётся из БД товара,
+    // не редактируется в конструкторе.
     description: {
-      type: 'object',
+      type: 'disabledHint',
       label: 'Описание',
       hiddenInMainPanel: true,
-      objectFields: {
-        content: { type: 'textarea', label: 'Содержание' },
-        size: { type: 'radio', label: 'Размер', options: sizeOptions },
-      },
+      hintTitle: 'Настройка недоступна',
+      hintBody: 'Изменения проводятся на странице',
+      hintLinkText: 'Товары',
+      hintLinkHref: '/products',
     } as any,
     share: {
       type: 'object',

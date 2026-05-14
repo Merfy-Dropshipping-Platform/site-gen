@@ -165,6 +165,7 @@ export class PreviewController {
   @Post('block')
   @HttpCode(200)
   async renderBlock(
+    @Param('id') siteId: string,
     @Body() body: RenderBlockBody,
     @Res() res: Response,
   ): Promise<void> {
@@ -172,16 +173,24 @@ export class PreviewController {
       throw new BadRequestException('blockType is required');
     }
     try {
+      // Inject siteId в props — Product.astro и подобные используют
+      // Astro.props.siteId для server-side fetch товара из storefront-data
+      // когда products.json отсутствует (preview path). Без siteId
+      // Product.astro рендерил empty placeholder при hot-replace.
+      const propsWithContext = {
+        ...(body.props ?? {}),
+        siteId,
+      };
       const html = await this.preview.renderBlock({
         blockName: body.blockType,
-        props: body.props ?? {},
+        props: propsWithContext,
         themeId: body.themeId ?? null,
       });
       res.type('text/html').send(html);
     } catch (err: unknown) {
       const e = err as Error;
       this.logger.error(
-        `[preview-block] render failed for blockType=${body.blockType}: ${e?.message ?? e}`,
+        `[preview-block] site=${siteId} render failed for blockType=${body.blockType}: ${e?.message ?? e}`,
         e?.stack,
       );
       res

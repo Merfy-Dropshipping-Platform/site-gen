@@ -52,6 +52,7 @@ const {
   padding,
   visualConfig: visualConfigProp,
   photoPosition = 'left',
+  zoomMode = 'hover',
 } = Astro.props as Props;
 
 // — Visual configuration (LAYOUT only — colours come from active scheme). —
@@ -133,6 +134,7 @@ const brandText = textContent || view.brand || '';
   data-product-id={view.id || productId}
   data-product-slug={view.slug || productId}
   data-product-handle={view.handle || productId}
+  data-zoom-mode={zoomMode}
   style={`background:rgb(var(--color-background, var(--color-bg)));color:rgb(var(--color-foreground, var(--color-text)));${paddingStyle}`}
 >
   {view.jsonLd && (
@@ -456,15 +458,153 @@ const brandText = textContent || view.brand || '';
       });
     }
 
-    // Hover zoom on hero (cheap, non-zoom themes ignore).
-    if (heroEl && heroImg) {
+    // Увеличение фото товара. Управляется data-zoom-mode на root section:
+    //   - 'hover' — tracking zoom: scale 2x + transform-origin перемещается
+    //                 за курсором по площади фото.
+    //   - 'click' — lightbox popup: фото на полный экран + лента thumbs.
+    //   - 'none'  — поведение отключено.
+    const zoomMode = root.getAttribute('data-zoom-mode') || 'hover';
+
+    if (heroEl && heroImg && zoomMode === 'hover') {
+      heroImg.style.transition = 'transform 0.2s ease, transform-origin 0.05s linear';
+      heroEl.style.cursor = 'zoom-in';
       heroEl.addEventListener('mouseenter', function () {
-        heroImg.style.transition = 'transform 0.3s ease';
-        heroImg.style.transform = 'scale(1.05)';
+        heroImg.style.transform = 'scale(2)';
+      });
+      heroEl.addEventListener('mousemove', function (e) {
+        const rect = heroEl.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        heroImg.style.transformOrigin = x + '% ' + y + '%';
       });
       heroEl.addEventListener('mouseleave', function () {
         heroImg.style.transform = '';
+        heroImg.style.transformOrigin = '';
       });
+    }
+
+    if (heroEl && heroImg && zoomMode === 'click') {
+      heroEl.style.cursor = 'zoom-in';
+      heroEl.addEventListener('click', function () {
+        openLightbox();
+      });
+    }
+
+    // Lightbox: full-screen popup с большим фото + thumb-полосой.
+    // Создаётся лениво при первом click (zoomMode='click').
+    function openLightbox() {
+      // Собираем все URL фотографий (hero + thumbs).
+      const urls = [];
+      if (heroImg && heroImg.getAttribute('src')) {
+        urls.push(heroImg.getAttribute('src'));
+      }
+      const thumbImgs = root.querySelectorAll('[data-product-thumb] img');
+      thumbImgs.forEach(function (img) {
+        const src = img.getAttribute('src');
+        if (src && urls.indexOf(src) === -1) urls.push(src);
+      });
+      if (urls.length === 0) return;
+
+      let activeIdx = 0;
+
+      const overlay = document.createElement('div');
+      overlay.setAttribute('data-product-lightbox', '');
+      overlay.style.cssText = [
+        'position:fixed', 'inset:0', 'z-index:100',
+        'background:rgba(0,0,0,0.92)',
+        'display:flex', 'flex-direction:column',
+        'align-items:center', 'justify-content:center',
+        'padding:32px', 'gap:16px',
+        'animation:merfy-lightbox-fade 0.15s ease-out',
+      ].join(';');
+
+      const closeBtn = document.createElement('button');
+      closeBtn.setAttribute('type', 'button');
+      closeBtn.setAttribute('aria-label', 'Закрыть');
+      closeBtn.style.cssText = [
+        'position:absolute', 'top:16px', 'right:16px',
+        'width:40px', 'height:40px', 'border:none',
+        'background:rgba(255,255,255,0.1)', 'color:#fff',
+        'border-radius:50%', 'cursor:pointer',
+        'font-size:24px', 'line-height:1',
+        'display:flex', 'align-items:center', 'justify-content:center',
+      ].join(';');
+      closeBtn.innerHTML = '×';
+      overlay.appendChild(closeBtn);
+
+      const mainImg = document.createElement('img');
+      mainImg.style.cssText = [
+        'max-width:100%', 'max-height:calc(100vh - 200px)',
+        'object-fit:contain', 'display:block',
+        'border-radius:8px',
+      ].join(';');
+      mainImg.src = urls[0];
+      overlay.appendChild(mainImg);
+
+      const strip = document.createElement('div');
+      strip.style.cssText = [
+        'display:flex', 'gap:8px',
+        'overflow-x:auto', 'max-width:100%',
+        'padding:8px',
+      ].join(';');
+
+      const thumbBtns = urls.map(function (url, idx) {
+        const btn = document.createElement('button');
+        btn.setAttribute('type', 'button');
+        btn.style.cssText = [
+          'width:80px', 'height:80px', 'flex-shrink:0',
+          'border:2px solid ' + (idx === 0 ? '#fff' : 'transparent'),
+          'border-radius:6px', 'overflow:hidden',
+          'cursor:pointer', 'padding:0', 'background:transparent',
+          'transition:border-color 0.15s',
+        ].join(';');
+        const img = document.createElement('img');
+        img.src = url;
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+        btn.appendChild(img);
+        btn.addEventListener('click', function () {
+          activeIdx = idx;
+          mainImg.src = url;
+          thumbBtns.forEach(function (b, i) {
+            b.style.borderColor = i === idx ? '#fff' : 'transparent';
+          });
+        });
+        strip.appendChild(btn);
+        return btn;
+      });
+
+      overlay.appendChild(strip);
+
+      function close() {
+        overlay.remove();
+        document.removeEventListener('keydown', onKey);
+      }
+
+      function onKey(e) {
+        if (e.key === 'Escape') close();
+        if (e.key === 'ArrowRight' && activeIdx < urls.length - 1) {
+          activeIdx++;
+          mainImg.src = urls[activeIdx];
+          thumbBtns.forEach(function (b, i) {
+            b.style.borderColor = i === activeIdx ? '#fff' : 'transparent';
+          });
+        }
+        if (e.key === 'ArrowLeft' && activeIdx > 0) {
+          activeIdx--;
+          mainImg.src = urls[activeIdx];
+          thumbBtns.forEach(function (b, i) {
+            b.style.borderColor = i === activeIdx ? '#fff' : 'transparent';
+          });
+        }
+      }
+
+      closeBtn.addEventListener('click', close);
+      overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) close();
+      });
+      document.addEventListener('keydown', onKey);
+
+      document.body.appendChild(overlay);
     }
 
     // Initial hydration.

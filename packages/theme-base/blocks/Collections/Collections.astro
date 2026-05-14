@@ -58,7 +58,24 @@ const columns = typeof columnsProp === 'number'
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
-const gridTemplateCols = `grid-template-columns: repeat(${columns}, minmax(0, 1fr));`;
+// Responsive grid (mobile-first):
+//   <640: 1 col,  ≥640 (sm): min(columns,2),  ≥768 (md): min(columns,3),  ≥1024 (lg): columns
+// Все literal-классы ниже Tailwind v4 подхватит через @source.
+// Маркеры для JIT (на случай если grep не найдёт): grid-cols-1 sm:grid-cols-2 md:grid-cols-2
+// md:grid-cols-3 lg:grid-cols-1 lg:grid-cols-2 lg:grid-cols-3 lg:grid-cols-4 lg:grid-cols-5 lg:grid-cols-6
+const LG_GRID: Record<number, string> = {
+  1: 'lg:grid-cols-1', 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-3',
+  4: 'lg:grid-cols-4', 5: 'lg:grid-cols-5', 6: 'lg:grid-cols-6',
+};
+const MD_GRID: Record<number, string> = { 1: 'md:grid-cols-1', 2: 'md:grid-cols-2', 3: 'md:grid-cols-3' };
+const SM_GRID: Record<number, string> = { 1: 'sm:grid-cols-1', 2: 'sm:grid-cols-2' };
+const _cols = Math.max(1, Math.min(6, columns));
+const gridResponsiveClass = [
+  'grid-cols-1',
+  SM_GRID[Math.min(_cols, 2)],
+  MD_GRID[Math.min(_cols, 3)],
+  LG_GRID[_cols],
+].filter(Boolean).join(' ');
 const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
 
 // Card link prefix: defaults to '/catalog?collection=' so cards filter the
@@ -130,7 +147,7 @@ const effectiveCollections = hasRealCollections
     {subtitle && (
       <p class:list={[C.subtitle, isTile ? 'text-left mb-10' : `${titleAlignClass} ${subtitleSizeClass}`]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="subtitle">{subtitle}</p>
     )}
-    <div class={C.grid} style={gridTemplateCols}>
+    <div class:list={[C.grid, gridResponsiveClass]}>
       {effectiveCollections.map((item, i) => (
         <a
           href={buildCollectionHref(item.collectionId, cardLinkBase)}

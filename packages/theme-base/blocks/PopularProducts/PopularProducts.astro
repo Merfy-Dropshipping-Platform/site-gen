@@ -149,7 +149,24 @@ const productCardCols = productCardObj && typeof productCardObj === 'object' && 
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
-const gridTemplateCols = `grid-template-columns: repeat(${productCardCols}, minmax(0, 1fr));`;
+// Responsive grid (mobile-first):
+//   <640: 1, ≥640 (sm): min(N,2), ≥768 (md): min(N,3), ≥1024 (lg): N
+// Маркеры для Tailwind v4 JIT: grid-cols-1 sm:grid-cols-1 sm:grid-cols-2 md:grid-cols-1
+// md:grid-cols-2 md:grid-cols-3 lg:grid-cols-1 lg:grid-cols-2 lg:grid-cols-3 lg:grid-cols-4
+// lg:grid-cols-5 lg:grid-cols-6
+const LG_GRID: Record<number, string> = {
+  1: 'lg:grid-cols-1', 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-3',
+  4: 'lg:grid-cols-4', 5: 'lg:grid-cols-5', 6: 'lg:grid-cols-6',
+};
+const MD_GRID: Record<number, string> = { 1: 'md:grid-cols-1', 2: 'md:grid-cols-2', 3: 'md:grid-cols-3' };
+const SM_GRID: Record<number, string> = { 1: 'sm:grid-cols-1', 2: 'sm:grid-cols-2' };
+const _pcols = Math.max(1, Math.min(6, productCardCols));
+const gridResponsiveClass = [
+  'grid-cols-1',
+  SM_GRID[Math.min(_pcols, 2)],
+  MD_GRID[Math.min(_pcols, 3)],
+  LG_GRID[_pcols],
+].filter(Boolean).join(' ');
 const colorSchemeRaw = typeof raw.colorScheme === 'string' ? raw.colorScheme : undefined;
 const schemeClass = colorSchemeRaw ? `color-scheme-${colorSchemeRaw.replace('scheme-', '')}` : '';
 // Try import products.json (build pipeline writes scaffold dir from product service).
@@ -303,7 +320,7 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
         )}
       </div>
     )}
-    <div class={C.grid} style={gridTemplateCols} data-pop-grid data-card-variant={cardVariant}>
+    <div class:list={[C.grid, gridResponsiveClass]} data-pop-grid data-card-variant={cardVariant}>
       {cardVariant === 'rich' ? demo.map((p, i) => {
         // Per-card data extraction: swatches → colors row; first non-color
         // option group → memory chips; auto sale% from price diff; manual

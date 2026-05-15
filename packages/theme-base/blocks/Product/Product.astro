@@ -77,13 +77,13 @@ const layout: 'split' | 'carousel' | 'two-columns' | 'stacked' =
 // Primitives (ProductInfo, ProductDescription, ProductGallery) consume these
 // vars via `text-[length:var(--product-...,fallback)]` so theme cascade still
 // works for themes that don't emit them.
+// Top-level `size` — единственный source of truth (Figma 314-34639).
+// Legacy nested title.size / text.size игнорируются — в sub-panels Figma
+// (314-34686 / 314-34719) нет UI для них; они остались в БД от старой схемы.
 const _size = (sizeProp === 'small' || sizeProp === 'large' ? sizeProp : 'medium');
-const _titleSize = (typeof titleProp?.size === 'string' && (titleProp.size === 'small' || titleProp.size === 'large' || titleProp.size === 'medium'))
-  ? titleProp.size
-  : _size;
-const _textSize = (typeof text?.size === 'string' && (text.size === 'small' || text.size === 'large' || text.size === 'medium'))
-  ? text.size
-  : _size;
+const _titleSize = _size;
+const _textSize = _size;
+void titleProp; // titleProp.size игнорируется (top-level size — primary)
 
 const MAIN_IMAGE_PX = { small: 440, medium: 552, large: 640 } as const;
 const THUMB_PX      = { small:  72, medium:  88, large:  96 } as const;

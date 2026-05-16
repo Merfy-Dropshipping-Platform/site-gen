@@ -3,6 +3,7 @@ import { PreviewController } from '../controllers/preview.controller';
 import { PreviewService } from '../services/preview.service';
 import { StorefrontDataController } from '../controllers/storefront-data.controller';
 import { PublicationsController } from '../controllers/publications.controller';
+import { PageMetaController } from '../controllers/page-meta.controller';
 import { DatabaseModule } from '../db/database.module';
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
 
@@ -18,7 +19,7 @@ import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
  */
 @Module({
   imports: [DatabaseModule, RabbitMQModule],
-  controllers: [PreviewController, StorefrontDataController, PublicationsController],
+  controllers: [PreviewController, StorefrontDataController, PublicationsController, PageMetaController],
   providers: [PreviewService],
   exports: [PreviewService],
 })

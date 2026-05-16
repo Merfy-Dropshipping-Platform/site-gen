@@ -7,6 +7,7 @@ interface Props extends PageProps {
 }
 
 const { id, pageId, colorScheme, padding } = Astro.props as Props;
+const raw = Astro.props as Record<string, unknown>;
 
 const schemeClass = typeof colorScheme === 'string' && colorScheme
   ? `color-scheme-${colorScheme.replace('scheme-', '')}`
@@ -14,6 +15,23 @@ const schemeClass = typeof colorScheme === 'string' && colorScheme
 const paddingStyle = padding
   ? `padding-top:${padding.top}px;padding-bottom:${padding.bottom}px;`
   : '';
+
+// SSR resolve page meta (title + path) для embed-карточки.
+const siteIdFromRoot = typeof raw.siteId === 'string' ? raw.siteId : '';
+type PageMeta = { id: string; title: string; slug: string; path: string; url?: string };
+let pageMeta: PageMeta | null = null;
+
+if (pageId && siteIdFromRoot) {
+  try {
+    const internalBase = (import.meta as unknown as { env?: { SITES_INTERNAL_BASE?: string } }).env?.SITES_INTERNAL_BASE
+      ?? 'http://localhost:3114';
+    const res = await fetch(`${internalBase}/api/sites/${siteIdFromRoot}/page-meta?pageId=${encodeURIComponent(pageId)}`).catch(() => null);
+    if (res && res.ok) {
+      const data = (await res.json()) as { page?: PageMeta };
+      pageMeta = data.page ?? null;
+    }
+  } catch {/* swallow */}
+}
 ---
 <section
   class:list={[C.root, schemeClass]}
@@ -23,12 +41,32 @@ const paddingStyle = padding
   style={paddingStyle}
 >
   <div class={C.container}>
-    {pageId ? (
-      <div class={C.placeholder}>
-        <p class={C.text}>Содержимое страницы загружается…</p>
+    {pageMeta ? (
+      <a href={pageMeta.path} class={`${C.placeholder} hover:bg-[rgb(var(--color-surface))]/80 transition-colors no-underline flex-col gap-3`}>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+          <polyline points="10 9 9 9 8 9" />
+        </svg>
+        <p class={C.text}>{pageMeta.title}</p>
+        <p class="text-xs [font-family:var(--font-body)] text-[rgb(var(--color-muted))]/70">{pageMeta.path}</p>
+      </a>
+    ) : pageId ? (
+      <div class={`${C.placeholder} flex-col gap-3`}>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+        </svg>
+        <p class={C.text}>Страница «{pageId}» не найдена</p>
       </div>
     ) : (
-      <div class={C.placeholder}>
+      <div class={`${C.placeholder} flex-col gap-3`}>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+        </svg>
         <p class={C.text}>Выберите страницу в правом меню</p>
       </div>
     )}

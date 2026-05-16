@@ -54,55 +54,34 @@ export type ImageWithTextProps = z.infer<typeof ImageWithTextSchema>;
 export const ImageWithTextPuckConfig: BlockPuckConfig<ImageWithTextProps> = {
   label: 'Изображение с текстом',
   category: 'content',
+  // Figma 314-34786: Изображения / Размер / Ширина / Позиция фото /
+  // Цветовая схема / Отступы. Заголовок / Текст / Кнопка — sub-panels.
   fields: {
     image: {
       type: 'object',
-      label: 'Изображение',
+      label: 'Изображения',
       objectFields: {
         url: { type: 'image', label: 'Фото' },
         alt: { type: 'text', label: 'Alt текст' },
       },
     },
-    heading: {
-      type: 'object',
-      label: 'Заголовок',
-      objectFields: {
-        text: { type: 'text', label: 'Текст' },
-        alignment: { type: 'alignment', label: 'Выравнивание' },
-        size: {
-          type: 'radio',
-          label: 'Размер',
-          options: [
-            { label: 'Маленький', value: 'small' },
-            { label: 'Средний', value: 'medium' },
-            { label: 'Большой', value: 'large' },
-          ],
-        },
-      },
+    size: {
+      type: 'select',
+      label: 'Размер',
+      options: [
+        { label: 'Маленький', value: 'small' },
+        { label: 'Средний', value: 'medium' },
+        { label: 'Большой', value: 'large' },
+      ],
     },
-    text: {
-      type: 'object',
-      label: 'Текст',
-      objectFields: {
-        content: { type: 'textarea', label: 'Содержание' },
-        size: {
-          type: 'radio',
-          label: 'Размер',
-          options: [
-            { label: 'Маленький', value: 'small' },
-            { label: 'Средний', value: 'medium' },
-            { label: 'Большой', value: 'large' },
-          ],
-        },
-      },
-    },
-    button: {
-      type: 'object',
-      label: 'Кнопка',
-      objectFields: {
-        text: { type: 'text', label: 'Текст' },
-        link: { type: 'pagePicker', label: 'Ссылка' },
-      },
+    width: {
+      type: 'select',
+      label: 'Ширина',
+      options: [
+        { label: 'Маленькая', value: 'small' },
+        { label: 'Средняя', value: 'medium' },
+        { label: 'Большая', value: 'large' },
+      ],
     },
     imagePosition: {
       type: 'radio',
@@ -112,44 +91,57 @@ export const ImageWithTextPuckConfig: BlockPuckConfig<ImageWithTextProps> = {
         { label: 'Справа', value: 'right' },
       ],
     },
-    ctaPosition: {
-      type: 'radio',
-      label: 'Позиция кнопки',
-      options: [
-        { label: 'Inline', value: 'inline' },
-        { label: 'Внизу колонки', value: 'bottom-pinned' },
-      ],
-    },
-    textStyle: {
-      type: 'radio',
-      label: 'Стиль текста',
-      options: [
-        { label: 'Обычный', value: 'normal' },
-        { label: 'Курсив', value: 'italic' },
-      ],
-    },
-    size: {
-      type: 'radio',
-      label: 'Размер',
-      options: [
-        { label: 'Маленький', value: 'small' },
-        { label: 'Средний', value: 'medium' },
-        { label: 'Большой', value: 'large' },
-      ],
-    },
-    width: {
-      type: 'radio',
-      label: 'Ширина',
-      options: [
-        { label: 'Маленькая', value: 'small' },
-        { label: 'Средняя', value: 'medium' },
-        { label: 'Большая', value: 'large' },
-        { label: 'Во всю', value: 'full' },
-      ],
-    },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
-    containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
     padding: { type: 'padding', label: 'Отступы' },
+    // Sub-panels (subsection click, NamedFocusedPanel):
+    heading: {
+      type: 'object',
+      label: 'Заголовок',
+      hiddenInMainPanel: true,
+      objectFields: {
+        text: { type: 'aiText', label: 'Заголовок', fieldType: 'title', placeholder: 'Ввести текст...' } as any,
+        alignment: { type: 'alignment', label: 'Выравнивание' },
+        size: {
+          type: 'select',
+          label: 'Размер заголовка',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
+      },
+    } as any,
+    text: {
+      type: 'object',
+      label: 'Текст',
+      hiddenInMainPanel: true,
+      objectFields: {
+        content: { type: 'aiText', label: 'Текст', fieldType: 'description', placeholder: 'Ввести текст...' } as any,
+        size: {
+          type: 'select',
+          label: 'Размер текста',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
+      },
+    } as any,
+    button: {
+      type: 'object',
+      label: 'Кнопка',
+      hiddenInMainPanel: true,
+      objectFields: {
+        text: { type: 'text', label: 'Текст' },
+        link: { type: 'pagePicker', label: 'Ссылка' },
+      },
+    } as any,
+    // Hidden — нет в Figma 314-34786.
+    ctaPosition: { type: 'hidden', label: '' },
+    textStyle: { type: 'hidden', label: '' },
+    containerColorScheme: { type: 'hidden', label: '' },
   },
   defaults: {
     image: { url: '', alt: '' },

@@ -45,51 +45,19 @@ export type GalleryProps = z.infer<typeof GallerySchema>;
 export const GalleryPuckConfig: BlockPuckConfig<GalleryProps> = {
   label: 'Галерея',
   category: 'media',
+  // Figma 314-34875: Содержание (header) / Заголовок (aiText) / Размер
+  // заголовка / Текст (aiText) / Размер текста / Положение изображения /
+  // Цветовая схема / Отступы.
   fields: {
+    ['_contentSection' as never]: { type: 'section-header', label: 'Содержание' } as any,
     heading: {
-      type: 'object',
+      type: 'aiText',
       label: 'Заголовок',
-      objectFields: {
-        text: { type: 'text', label: 'Текст' },
-        alignment: { type: 'alignment', label: 'Выравнивание' },
-        size: {
-          type: 'radio',
-          label: 'Размер',
-          options: [
-            { label: 'Маленький', value: 'small' },
-            { label: 'Средний', value: 'medium' },
-            { label: 'Большой', value: 'large' },
-          ],
-        },
-      },
-    },
-    text: {
-      type: 'object',
-      label: 'Текст',
-      objectFields: {
-        content: { type: 'textarea', label: 'Содержание' },
-        size: {
-          type: 'radio',
-          label: 'Размер',
-          options: [
-            { label: 'Маленький', value: 'small' },
-            { label: 'Средний', value: 'medium' },
-            { label: 'Большой', value: 'large' },
-          ],
-        },
-      },
-    },
-    imagePosition: {
-      type: 'radio',
-      label: 'Позиция изображения',
-      options: [
-        { label: 'Слева', value: 'left' },
-        { label: 'Справа', value: 'right' },
-      ],
-    },
-    headingAlignment: { type: 'alignment', label: 'Выравнивание заголовка' },
+      fieldType: 'title',
+      placeholder: 'Ввести текст...',
+    } as any,
     headingSize: {
-      type: 'radio',
+      type: 'select',
       label: 'Размер заголовка',
       options: [
         { label: 'Маленький', value: 'small' },
@@ -97,9 +65,14 @@ export const GalleryPuckConfig: BlockPuckConfig<GalleryProps> = {
         { label: 'Большой', value: 'large' },
       ],
     },
-    subheading: { type: 'textarea', label: 'Подзаголовок' },
+    text: {
+      type: 'aiText',
+      label: 'Текст',
+      fieldType: 'description',
+      placeholder: 'Ввести текст...',
+    } as any,
     textSize: {
-      type: 'radio',
+      type: 'select',
       label: 'Размер текста',
       options: [
         { label: 'Маленький', value: 'small' },
@@ -107,9 +80,21 @@ export const GalleryPuckConfig: BlockPuckConfig<GalleryProps> = {
         { label: 'Большой', value: 'large' },
       ],
     },
+    imagePosition: {
+      type: 'radio',
+      label: 'Положение изображения',
+      options: [
+        { label: 'Слева', value: 'left' },
+        { label: 'Справа', value: 'right' },
+      ],
+    },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    padding: { type: 'padding', label: 'Отступы' },
+    // Items — sub-panel array, редактирование через subsection click.
     items: {
       type: 'array',
       label: 'Элементы (макс 3)',
+      hiddenInMainPanel: true,
       arrayFields: {
         type: {
           type: 'radio',
@@ -127,18 +112,11 @@ export const GalleryPuckConfig: BlockPuckConfig<GalleryProps> = {
       },
       defaultItemProps: { id: '', type: 'image', url: '', alt: '' },
       max: 3,
-    },
-    layout: {
-      type: 'radio',
-      label: 'Расположение',
-      options: [
-        { label: 'Сетка', value: 'grid' },
-        { label: 'Рядом (2 колонки)', value: 'side-by-side' },
-        { label: 'Акцент + стопка', value: 'featured' },
-      ],
-    },
-    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
-    padding: { type: 'padding', label: 'Отступы' },
+    } as any,
+    // Hidden — нет в Figma 314-34875.
+    layout: { type: 'hidden', label: '' },
+    headingAlignment: { type: 'hidden', label: '' },
+    subheading: { type: 'hidden', label: '' },
   },
   defaults: {
     heading: '',

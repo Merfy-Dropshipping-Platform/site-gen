@@ -24,11 +24,21 @@ export type PublicationsProps = z.infer<typeof PublicationsSchema>;
 export const PublicationsPuckConfig: BlockPuckConfig<PublicationsProps> = {
   label: 'Публикации',
   category: 'content',
+  // Figma 314-35098: Выбор публикации (page picker) / Карточки (slider) /
+  // Содержание (header) / Заголовок (aiText) / Размер заголовка /
+  // Колонки (slider) / Дата и время (toggle) / Цветовая схема / Отступы.
   fields: {
-    heading: { type: 'text', label: 'Заголовок' },
-    headingAlignment: { type: 'alignment', label: 'Выравнивание заголовка' },
+    publicationType: { type: 'pagePicker', label: 'Выбор публикации' } as any,
+    cardsCount: { type: 'slider', label: 'Карточки', min: 1, max: 12, step: 1 },
+    ['_contentSection' as never]: { type: 'section-header', label: 'Содержание' } as any,
+    heading: {
+      type: 'aiText',
+      label: 'Заголовок',
+      fieldType: 'title',
+      placeholder: 'Ввести текст...',
+    } as any,
     headingSize: {
-      type: 'radio',
+      type: 'select',
       label: 'Размер заголовка',
       options: [
         { label: 'Маленький', value: 'small' },
@@ -36,27 +46,27 @@ export const PublicationsPuckConfig: BlockPuckConfig<PublicationsProps> = {
         { label: 'Большой', value: 'large' },
       ],
     },
-    publicationType: { type: 'text', label: 'Тип публикации' },
-    cardsCount: { type: 'slider', label: 'Карточки', min: 1, max: 12, step: 1 },
-    columnsCount: { type: 'slider', label: 'Колонок', min: 1, max: 6, step: 1 },
-    columns: { type: 'number', label: 'Колонки (1-4)' },
-    cards: { type: 'number', label: 'Карточки (1-4)' },
+    columnsCount: { type: 'slider', label: 'Колонки', min: 1, max: 6, step: 1 },
     dateTime: {
       type: 'object',
       label: 'Дата и время',
       objectFields: {
         enabled: {
-          type: 'radio',
-          label: 'Показывать',
+          type: 'toggle',
+          label: 'Показать/скрыть',
           options: [
-            { label: 'Да', value: 'true' },
-            { label: 'Нет', value: 'false' },
+            { label: 'Показать', value: 'true' },
+            { label: 'Скрыть', value: 'false' },
           ],
         },
       },
     },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
+    // Hidden — нет в Figma 314-35098.
+    headingAlignment: { type: 'hidden', label: '' },
+    columns: { type: 'hidden', label: '' },
+    cards: { type: 'hidden', label: '' },
   },
   defaults: {
     heading: 'Публикации',

@@ -59,27 +59,18 @@ export type MultiColumnsProps = z.infer<typeof MultiColumnsSchema>;
 export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
   label: 'Мультиколонны',
   category: 'layout',
+  // Figma 314-34917: Заголовок (aiText) / Размер заголовка / Ширина /
+  // Соотношение изображений / Кнопка / Ссылка / Колонки (slider) /
+  // Положение колонн (toggle) / Контейнер (toggle) / Цветовая схема / Отступы.
   fields: {
     heading: {
-      type: 'object',
+      type: 'aiText',
       label: 'Заголовок',
-      objectFields: {
-        text: { type: 'text', label: 'Текст' },
-        alignment: { type: 'alignment', label: 'Выравнивание' },
-        size: {
-          type: 'radio',
-          label: 'Размер',
-          options: [
-            { label: 'Маленький', value: 'small' },
-            { label: 'Средний', value: 'medium' },
-            { label: 'Большой', value: 'large' },
-          ],
-        },
-      },
-    },
-    headingAlignment: { type: 'alignment', label: 'Выравнивание заголовка' },
+      fieldType: 'title',
+      placeholder: 'Ввести текст...',
+    } as any,
     headingSize: {
-      type: 'radio',
+      type: 'select',
       label: 'Размер заголовка',
       options: [
         { label: 'Маленький', value: 'small' },
@@ -88,54 +79,65 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
       ],
     },
     width: {
-      type: 'radio',
+      type: 'select',
       label: 'Ширина',
       options: [
         { label: 'Маленькая', value: 'small' },
         { label: 'Средняя', value: 'medium' },
         { label: 'Большая', value: 'large' },
-        { label: 'Во всю', value: 'full' },
       ],
     },
     imageAspectRatio: {
-      type: 'radio',
+      type: 'select',
       label: 'Соотношение изображения',
       options: [
-        { label: 'Адаптивное', value: 'adapt' },
+        { label: 'Адаптировать', value: 'adapt' },
         { label: 'Квадрат', value: 'square' },
         { label: 'Портрет', value: 'portrait' },
         { label: 'Альбом', value: 'landscape' },
       ],
     },
-    buttonText: { type: 'text', label: 'Кнопка' },
+    buttonText: { type: 'text', label: 'Кнопка', placeholder: 'Оставьте пустой для скрытия' } as any,
     buttonLink: { type: 'pagePicker', label: 'Ссылка' },
+    displayColumns: {
+      type: 'slider',
+      label: 'Колонки',
+      min: 1,
+      max: 4,
+      step: 1,
+    },
     textPosition: {
       type: 'radio',
-      label: 'Положение текста',
+      label: 'Положение колонн',
       options: [
         { label: 'Слева', value: 'left' },
-        { label: 'По центру', value: 'center' },
+        { label: 'Центр', value: 'center' },
       ],
     },
     background: {
       type: 'object',
-      label: 'Фон',
+      label: 'Контейнер',
       objectFields: {
         enabled: {
-          type: 'radio',
-          label: 'Включён',
+          type: 'toggle',
+          label: 'Скрыть/показать',
           options: [
-            { label: 'Да', value: 'true' },
-            { label: 'Нет', value: 'false' },
+            { label: 'Показать', value: 'true' },
+            { label: 'Скрыть', value: 'false' },
           ],
         },
       },
     },
-    containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
-    link: { type: 'pagePicker', label: 'Ссылка секции' },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    padding: { type: 'padding', label: 'Отступы' },
+    // Hidden — нет в Figma 314-34917.
+    headingAlignment: { type: 'hidden', label: '' },
+    containerColorScheme: { type: 'hidden', label: '' },
+    link: { type: 'hidden', label: '' },
     columns: {
       type: 'array',
       label: 'Колонки (макс 10)',
+      hiddenInMainPanel: true,
       arrayFields: {
         image: { type: 'image', label: 'Изображение' },
         imageSize: {
@@ -185,15 +187,6 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
       },
       max: 10,
     },
-    displayColumns: {
-      type: 'slider',
-      label: 'Колонок в ряд',
-      min: 1,
-      max: 4,
-      step: 1,
-    },
-    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
-    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     heading: '',

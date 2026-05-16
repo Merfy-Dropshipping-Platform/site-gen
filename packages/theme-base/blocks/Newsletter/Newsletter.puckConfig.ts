@@ -45,31 +45,16 @@ export type NewsletterProps = z.infer<typeof NewsletterSchema>;
 export const NewsletterPuckConfig: BlockPuckConfig<NewsletterProps> = {
   label: 'Подписка на рассылку',
   category: 'form',
+  // Figma 314-35034: Соглашение на рассылку (toggle) / Текст (aiText) /
+  // Цветовая схема / Отступы.
   fields: {
-    heading: {
-      type: 'object',
-      label: 'Заголовок',
-      objectFields: {
-        text: { type: 'text', label: 'Текст' },
-        alignment: { type: 'alignment', label: 'Выравнивание' },
-        size: {
-          type: 'radio',
-          label: 'Размер',
-          options: [
-            { label: 'Маленький', value: 'small' },
-            { label: 'Средний', value: 'medium' },
-            { label: 'Большой', value: 'large' },
-          ],
-        },
-      },
-    },
     text: {
       type: 'object',
       label: 'Текст',
       objectFields: {
-        content: { type: 'textarea', label: 'Содержание' },
+        content: { type: 'aiText', label: 'Текст', fieldType: 'description', placeholder: 'Ввести текст...' } as any,
         size: {
-          type: 'radio',
+          type: 'select',
           label: 'Размер',
           options: [
             { label: 'Маленький', value: 'small' },
@@ -79,21 +64,34 @@ export const NewsletterPuckConfig: BlockPuckConfig<NewsletterProps> = {
         },
       },
     },
-    description: { type: 'text', label: 'Описание' },
-    placeholder: { type: 'text', label: 'Плейсхолдер' },
-    buttonText: { type: 'text', label: 'Кнопка' },
-    position: { type: 'alignment', label: 'Положение секции' },
-    formLayout: {
-      type: 'radio',
-      label: 'Расположение формы',
-      options: [
-        { label: 'В строку с inline-кнопкой', value: 'inline-submit' },
-        { label: 'Кнопка под полем', value: 'stacked' },
-      ],
-    },
-    alignment: { type: 'alignment', label: 'Выравнивание' },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
+    // Sub-panel «Форма рассылки» (314:35058):
+    heading: {
+      type: 'object',
+      label: 'Заголовок',
+      hiddenInMainPanel: true,
+      objectFields: {
+        text: { type: 'aiText', label: 'Заголовок', fieldType: 'title', placeholder: 'Ввести текст...' } as any,
+        alignment: { type: 'alignment', label: 'Выравнивание' },
+        size: {
+          type: 'select',
+          label: 'Размер заголовка',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
+      },
+    } as any,
+    placeholder: { type: 'text', label: 'Плейсхолдер', hiddenInMainPanel: true } as any,
+    buttonText: { type: 'text', label: 'Кнопка', hiddenInMainPanel: true } as any,
+    // Hidden — нет в Figma 314-35034.
+    description: { type: 'hidden', label: '' },
+    position: { type: 'hidden', label: '' },
+    formLayout: { type: 'hidden', label: '' },
+    alignment: { type: 'hidden', label: '' },
   },
   defaults: {
     heading: 'Подпишись на новости',

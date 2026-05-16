@@ -99,110 +99,67 @@ const linkArrayField = {
 export const FooterPuckConfig = {
   label: 'Footer',
   category: 'navigation',
+  // Figma 314-34558: Рассылка (toggle) / Заголовок (sub-panel) / Размер заголовка /
+  // Текст (sub-panel) / Размер текста / Цветовая схема / Отступы.
   fields: {
-    siteTitle: { type: 'text', label: 'Название сайта' },
-    bottomStrip: {
-      type: 'object',
-      label: 'Нижняя полоса',
-      objectFields: {
-        enabled: { type: 'radio', label: 'Показывать' },
-        text: { type: 'text', label: 'Текст' },
-      },
-    },
-    heading: {
-      type: 'object',
-      label: 'Заголовок',
-      objectFields: {
-        text: { type: 'text', label: 'Текст' },
-        size: { type: 'radio', label: 'Размер', options: sizeOptions },
-        alignment: { type: 'alignment', label: 'Выравнивание' },
-      },
-    },
-    text: {
-      type: 'object',
-      label: 'Описание',
-      objectFields: {
-        content: { type: 'textarea', label: 'Текст' },
-        size: { type: 'radio', label: 'Размер', options: sizeOptions },
-      },
-    },
     newsletter: {
       type: 'object',
       label: 'Рассылка',
       objectFields: {
         enabled: {
-          type: 'radio',
-          label: 'Показывать форму',
+          type: 'toggle',
+          label: 'Скрыть/показать',
           options: [
-            { label: 'Да', value: 'true' },
-            { label: 'Нет', value: 'false' },
+            { label: 'Показать', value: 'true' },
+            { label: 'Скрыть', value: 'false' },
           ],
         },
-        heading: { type: 'text', label: 'Заголовок' },
-        description: { type: 'textarea', label: 'Описание' },
-        placeholder: { type: 'text', label: 'Плейсхолдер поля' },
+        heading: { type: 'hidden', label: '' },
+        description: { type: 'hidden', label: '' },
+        placeholder: { type: 'hidden', label: '' },
       },
     },
-    navigationColumn: {
+    heading: {
       type: 'object',
-      label: 'Колонка: Навигация',
+      label: 'Заголовок',
+      hiddenInMainPanel: true,
+      objectFields: {
+        text: { type: 'aiText', label: 'Заголовок', fieldType: 'title', placeholder: 'Ввести текст...' } as any,
+        size: { type: 'select', label: 'Размер заголовка', options: sizeOptions },
+        alignment: { type: 'alignment', label: 'Выравнивание' },
+      },
+    } as any,
+    text: {
+      type: 'object',
+      label: 'Текст',
+      hiddenInMainPanel: true,
+      objectFields: {
+        content: { type: 'aiText', label: 'Текст', fieldType: 'description', placeholder: 'Ввести текст...' } as any,
+        size: { type: 'select', label: 'Размер текста', options: sizeOptions },
+      },
+    } as any,
+    // Hidden — нет в Figma 314-34558.
+    siteTitle: { type: 'hidden', label: '' },
+    bottomStrip: { type: 'hidden', label: '' },
+    // Columns hidden из main по Figma 314-34558 (footer-specific advanced).
+    navigationColumn: {
+      type: 'hidden' as const,
+      label: '',
       objectFields: {
         title: { type: 'text', label: 'Заголовок колонки' },
         links: linkArrayField,
       },
     },
     informationColumn: {
-      type: 'object',
-      label: 'Колонка: Информация',
+      type: 'hidden' as const,
+      label: '',
       objectFields: {
         title: { type: 'text', label: 'Заголовок колонки' },
         links: linkArrayField,
       },
     },
-    socialColumn: {
-      type: 'object',
-      label: 'Колонка: Соцсети',
-      objectFields: {
-        title: { type: 'text', label: 'Заголовок колонки' },
-        email: { type: 'text', label: 'Email для связи' },
-        socialLinks: {
-          type: 'array',
-          label: 'Соц. сети',
-          arrayFields: {
-            platform: {
-              type: 'radio',
-              label: 'Платформа',
-              options: [
-                { label: 'Telegram', value: 'telegram' },
-                { label: 'VK', value: 'vk' },
-                { label: 'YouTube', value: 'youtube' },
-                { label: 'TikTok', value: 'tiktok' },
-                { label: 'Дзен', value: 'dzen' },
-              ],
-            },
-            href: { type: 'text', label: 'Ссылка' },
-          },
-          defaultItemProps: { platform: 'telegram', href: '' },
-          max: 5,
-        },
-      },
-    },
-    copyright: {
-      type: 'object',
-      label: 'Копирайт',
-      objectFields: {
-        companyName: { type: 'text', label: 'Название компании' },
-        poweredBy: { type: 'text', label: 'Powered by текст' },
-        showYear: {
-          type: 'radio',
-          label: 'Показывать год',
-          options: [
-            { label: 'Да', value: 'true' },
-            { label: 'Нет', value: 'false' },
-          ],
-        },
-      },
-    },
+    socialColumn: { type: 'hidden' as const, label: '' },
+    copyright: { type: 'hidden' as const, label: '' },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
   },

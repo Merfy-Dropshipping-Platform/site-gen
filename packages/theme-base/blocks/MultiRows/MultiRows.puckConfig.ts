@@ -54,36 +54,13 @@ export type MultiRowsProps = z.infer<typeof MultiRowsSchema>;
 export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
   label: 'Мультиряды',
   category: 'layout',
+  // Figma 314-34963: Высота / Ширина / Позиция рядов (toggle) /
+  // Содержание (header) / Заголовок (aiText) / Размер заголовка /
+  // Выбор кнопки (select) / Выравнивание / Цветовая схема /
+  // Цветовая схема (контейнер) / Отступы.
   fields: {
-    heading: {
-      type: 'object',
-      label: 'Заголовок',
-      objectFields: {
-        text: { type: 'text', label: 'Текст' },
-        alignment: { type: 'alignment', label: 'Выравнивание' },
-        size: {
-          type: 'radio',
-          label: 'Размер',
-          options: [
-            { label: 'Маленький', value: 'small' },
-            { label: 'Средний', value: 'medium' },
-            { label: 'Большой', value: 'large' },
-          ],
-        },
-      },
-    },
-    headingAlignment: { type: 'alignment', label: 'Выравнивание заголовка' },
-    headingSize: {
-      type: 'radio',
-      label: 'Размер заголовка',
-      options: [
-        { label: 'Маленький', value: 'small' },
-        { label: 'Средний', value: 'medium' },
-        { label: 'Большой', value: 'large' },
-      ],
-    },
     size: {
-      type: 'radio',
+      type: 'select',
       label: 'Высота',
       options: [
         { label: 'Маленькая', value: 'small' },
@@ -92,13 +69,12 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
       ],
     },
     width: {
-      type: 'radio',
+      type: 'select',
       label: 'Ширина',
       options: [
         { label: 'Маленькая', value: 'small' },
         { label: 'Средняя', value: 'medium' },
         { label: 'Большая', value: 'large' },
-        { label: 'Во всю', value: 'full' },
       ],
     },
     rowsPosition: {
@@ -107,14 +83,29 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
       options: [
         { label: 'Слева', value: 'left' },
         { label: 'Справа', value: 'right' },
-        { label: 'Чередовать', value: 'alternate' },
+      ],
+    },
+    ['_contentSection' as never]: { type: 'section-header', label: 'Содержание' } as any,
+    heading: {
+      type: 'aiText',
+      label: 'Заголовок',
+      fieldType: 'title',
+      placeholder: 'Ввести текст...',
+    } as any,
+    headingSize: {
+      type: 'select',
+      label: 'Размер заголовка',
+      options: [
+        { label: 'Маленький', value: 'small' },
+        { label: 'Средний', value: 'medium' },
+        { label: 'Большой', value: 'large' },
       ],
     },
     buttonStyle: {
-      type: 'radio',
-      label: 'Стиль кнопки',
+      type: 'select',
+      label: 'Выбор кнопки',
       options: [
-        { label: 'Акцент', value: 'primary' },
+        { label: 'Основная', value: 'primary' },
         { label: 'Чёрная', value: 'black' },
         { label: 'Белая', value: 'white' },
       ],
@@ -122,9 +113,14 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
     alignment: { type: 'alignment', label: 'Выравнивание' },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
+    padding: { type: 'padding', label: 'Отступы' },
+    // Hidden — нет в Figma 314-34963.
+    headingAlignment: { type: 'hidden', label: '' },
+    _headingLegacy: { type: 'hidden', label: '' } as any,
     rows: {
       type: 'array',
       label: 'Ряды (макс 10)',
+      hiddenInMainPanel: true,
       arrayFields: {
         image: { type: 'image', label: 'Изображение' },
         size: {
@@ -182,8 +178,7 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
         button: { text: 'Подробнее', link: '/catalog' },
       },
       max: 10,
-    },
-    padding: { type: 'padding', label: 'Отступы' },
+    } as any,
   },
   defaults: {
     rows: [

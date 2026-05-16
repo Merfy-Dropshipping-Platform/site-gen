@@ -42,27 +42,18 @@ export type ContactFormProps = z.infer<typeof ContactFormSchema>;
 export const ContactFormPuckConfig: BlockPuckConfig<ContactFormProps> = {
   label: 'Контактная форма',
   category: 'form',
+  // Figma 314-35069: Содержание (header) / Заголовок (aiText) /
+  // Размер заголовка / Цветовая схема / Отступы.
   fields: {
+    ['_contentSection' as never]: { type: 'section-header', label: 'Содержание' } as any,
     heading: {
-      type: 'object',
+      type: 'aiText',
       label: 'Заголовок',
-      objectFields: {
-        text: { type: 'text', label: 'Текст' },
-        alignment: { type: 'alignment', label: 'Выравнивание' },
-        size: {
-          type: 'radio',
-          label: 'Размер',
-          options: [
-            { label: 'Маленький', value: 'small' },
-            { label: 'Средний', value: 'medium' },
-            { label: 'Большой', value: 'large' },
-          ],
-        },
-      },
-    },
-    headingAlignment: { type: 'alignment', label: 'Выравнивание заголовка' },
+      fieldType: 'title',
+      placeholder: 'Ввести текст...',
+    } as any,
     headingSize: {
-      type: 'radio',
+      type: 'select',
       label: 'Размер заголовка',
       options: [
         { label: 'Маленький', value: 'small' },
@@ -70,11 +61,13 @@ export const ContactFormPuckConfig: BlockPuckConfig<ContactFormProps> = {
         { label: 'Большой', value: 'large' },
       ],
     },
-    description: { type: 'text', label: 'Описание' },
-    fields: { type: 'object', label: 'Поля формы' },
-    buttonText: { type: 'text', label: 'Кнопка' },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
+    // Hidden — нет в Figma 314-35069.
+    headingAlignment: { type: 'hidden', label: '' },
+    description: { type: 'hidden', label: '' },
+    fields: { type: 'hidden', label: '' },
+    buttonText: { type: 'hidden', label: '' },
   },
   defaults: {
     heading: 'Связаться с нами',

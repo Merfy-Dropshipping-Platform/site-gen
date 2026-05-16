@@ -41,36 +41,34 @@ export type PromoBannerProps = z.infer<typeof PromoBannerSchema>;
 export const PromoBannerPuckConfig = {
   label: 'Промо-баннер',
   category: 'hero',
+  // Figma 314-34592: main panel — только Цветовая схема. Text/link/size
+  // редактируются через sub-panel «Объявление» при subsection click.
   fields: {
-    text: { type: 'text', label: 'Текст' },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    padding: { type: 'padding', label: 'Отступы' },
+    // Sub-panel «Объявление» (314:34600) — text + link + size editable.
+    text: { type: 'text', label: 'Текст', hiddenInMainPanel: true } as any,
     link: {
       type: 'object',
       label: 'Ссылка',
+      hiddenInMainPanel: true,
       objectFields: {
         text: { type: 'text', label: 'Текст ссылки' },
         href: { type: 'pagePicker', label: 'Адрес' },
       },
-    },
+    } as any,
     size: {
-      type: 'radio',
+      type: 'select',
       label: 'Размер',
+      hiddenInMainPanel: true,
       options: [
         { label: 'Тонкий', value: 'thin' },
         { label: 'Маленький', value: 'small' },
         { label: 'Средний', value: 'medium' },
         { label: 'Большой', value: 'large' },
       ],
-    },
-    textTransform: {
-      type: 'radio',
-      label: 'Регистр текста',
-      options: [
-        { label: 'Как введено', value: 'none' },
-        { label: 'Заглавные', value: 'uppercase' },
-      ],
-    },
-    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
-    padding: { type: 'padding', label: 'Отступы' },
+    } as any,
+    textTransform: { type: 'hidden', label: '' },
   },
   defaults: {
     text: 'Бесплатная доставка от 3000 ₽',

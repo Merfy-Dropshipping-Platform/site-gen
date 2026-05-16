@@ -43,77 +43,44 @@ export type VideoProps = z.infer<typeof VideoSchema>;
 export const VideoPuckConfig: BlockPuckConfig<VideoProps> = {
   label: 'Видео',
   category: 'media',
+  // Figma 314-35082: Добавить видео (file upload) / Положение видео (toggle) /
+  // Содержание (header) / Заголовок (aiText) / Размер заголовка /
+  // Цветовая схема / Отступы.
   fields: {
-    heading: { type: 'text', label: 'Заголовок' },
-    videoUrl: { type: 'text', label: 'Ссылка на видео (YouTube / Vimeo / MP4)' },
-    poster: { type: 'text', label: 'Постер (URL)' },
+    videoUrl: { type: 'video', label: 'Добавить видео' } as any,
     position: {
       type: 'radio',
-      label: 'Положение',
+      label: 'Положение видео',
       options: [
-        { label: 'В контейнере', value: 'contained' },
-        { label: 'На всю ширину', value: 'fullscreen' },
+        { label: 'На весь экран', value: 'fullscreen' },
+        { label: 'Окно', value: 'contained' },
       ],
     },
+    ['_contentSection' as never]: { type: 'section-header', label: 'Содержание' } as any,
+    heading: {
+      type: 'aiText',
+      label: 'Заголовок',
+      fieldType: 'title',
+      placeholder: 'Ввести текст...',
+    } as any,
     size: {
-      type: 'radio',
-      label: 'Размер',
+      type: 'select',
+      label: 'Размер заголовка',
       options: [
         { label: 'Маленький', value: 'small' },
         { label: 'Средний', value: 'medium' },
         { label: 'Большой', value: 'large' },
       ],
     },
-    padded: { type: 'radio', label: 'Отступы по ширине' },
-    align: {
-      type: 'radio',
-      label: 'Ширина',
-      options: [
-        { label: 'Контейнер', value: 'container' },
-        { label: 'На всю ширину', value: 'fullbleed' },
-      ],
-    },
-    overlay: { type: 'slider', label: 'Затемнение', min: 0, max: 100, step: 5 },
-    video: {
-      type: 'object',
-      label: 'Видео',
-      objectFields: {
-        url: { type: 'text', label: 'URL' },
-      },
-    },
-    content: {
-      type: 'object',
-      label: 'Содержимое',
-      objectFields: {
-        heading: {
-          type: 'object',
-          label: 'Заголовок',
-          objectFields: {
-            text: { type: 'text', label: 'Текст' },
-            alignment: { type: 'alignment', label: 'Выравнивание' },
-            enabled: {
-              type: 'radio',
-              label: 'Показывать',
-              options: [
-                { label: 'Да', value: 'true' },
-                { label: 'Нет', value: 'false' },
-              ],
-            },
-            size: {
-              type: 'radio',
-              label: 'Размер',
-              options: [
-                { label: 'Маленький', value: 'small' },
-                { label: 'Средний', value: 'medium' },
-                { label: 'Большой', value: 'large' },
-              ],
-            },
-          },
-        },
-      },
-    },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
+    // Hidden — нет в Figma 314-35082.
+    poster: { type: 'hidden', label: '' },
+    padded: { type: 'hidden', label: '' },
+    align: { type: 'hidden', label: '' },
+    overlay: { type: 'hidden', label: '' },
+    video: { type: 'hidden', label: '' },
+    content: { type: 'hidden', label: '' },
   },
   defaults: {
     heading: '',

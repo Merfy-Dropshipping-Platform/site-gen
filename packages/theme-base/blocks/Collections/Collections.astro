@@ -116,20 +116,76 @@ const tileAspectStyle = gridAspectProp === '1:1' ? '1 / 1' : tileAspect;
 const variant = (raw.variant === 'tile' || raw.variant === 'standard')
   ? (raw.variant as 'tile' | 'standard') : 'standard';
 const isTile = variant === 'tile';
-// When the merchant hasn't wired real collections, show demo tiles so the
-// preview matches Figma reference (3 collection cards). Real collections
-// take precedence as soon as they exist.
+// SSR fetch live collections (Gallery pattern) — resolve collection cards
+// through storefront-data so merchant edits in product service appear
+// without rebuild. Live SSG bakes collections.json snapshot at build time.
+type RawCollection = {
+  id: string;
+  slug?: string;
+  name?: string;
+  imageUrl?: string;
+  image?: string;
+};
+
+const siteIdFromRoot = typeof raw.siteId === 'string' ? raw.siteId : '';
+let realCollections: RawCollection[] = [];
+
+if (siteIdFromRoot) {
+  try {
+    const internalBase = (import.meta as unknown as { env?: { SITES_INTERNAL_BASE?: string } }).env?.SITES_INTERNAL_BASE
+      ?? 'http://localhost:3114';
+    const res = await fetch(`${internalBase}/api/sites/${siteIdFromRoot}/storefront-data`).catch(() => null);
+    if (res && res.ok) {
+      const data = (await res.json()) as { collections?: RawCollection[] };
+      realCollections = data.collections ?? [];
+    }
+  } catch {/* swallow */}
+}
+try {
+  if (realCollections.length === 0) {
+    const collectionsData = await import('../data/collections.json');
+    realCollections = ((collectionsData as { default?: RawCollection[] }).default ?? (collectionsData as unknown as RawCollection[])) as RawCollection[];
+  }
+} catch {/* swallow */}
+
+// Resolve merchant's manual collection items via collectionId.
+// When merchant hasn't set up anything — fallback на live `realCollections`
+// (auto-mode), затем DEMO_COLLECTIONS как visual placeholder.
 const DEMO_COLLECTIONS = [
   { heading: 'Коллекция RIVIERA', image: '' },
   { heading: 'Коллекция URBAN', image: '' },
   { heading: 'Коллекция FUTURISM', image: '' },
 ];
-const hasRealCollections = (collections ?? []).length > 0;
-const effectiveCollections = hasRealCollections
-  ? collections
-  : DEMO_COLLECTIONS.slice(0, columns).map((c, i) => ({
-      id: `demo-${i}`, heading: c.heading, image: c.image, collectionId: null,
-    }));
+
+type CollectionTile = { id: string; heading: string; description?: string; image?: string; collectionId: string | null };
+
+function resolveManual(item: { id?: string; heading?: string; description?: string; image?: string; collectionId?: string | null }): CollectionTile {
+  const found = item.collectionId
+    ? realCollections.find((c) => c.id === item.collectionId || c.slug === item.collectionId)
+    : null;
+  return {
+    id: item.id ?? '',
+    heading: found?.name ?? item.heading ?? '',
+    description: item.description,
+    image: found?.imageUrl ?? found?.image ?? item.image ?? '',
+    collectionId: (found?.slug ?? item.collectionId) ?? null,
+  };
+}
+
+const hasManualCollections = (collections ?? []).length > 0;
+const effectiveCollections: CollectionTile[] = hasManualCollections
+  ? collections.map(resolveManual)
+  : realCollections.length > 0
+    ? realCollections.slice(0, columns).map((c) => ({
+        id: c.id,
+        heading: c.name ?? 'Коллекция',
+        image: c.imageUrl ?? c.image ?? '',
+        collectionId: c.slug ?? c.id,
+      }))
+    : DEMO_COLLECTIONS.slice(0, columns).map((c, i) => ({
+        id: `demo-${i}`, heading: c.heading, image: c.image, collectionId: null,
+      }));
+const hasRealCollections = hasManualCollections || realCollections.length > 0;
 ---
 <section
   class:list={[C.root, schemeClass]}

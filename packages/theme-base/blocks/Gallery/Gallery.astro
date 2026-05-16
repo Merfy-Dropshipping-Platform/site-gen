@@ -1,6 +1,7 @@
 ---
 import type { GalleryProps } from './Gallery.puckConfig';
 import { GalleryClasses as C } from './Gallery.classes';
+import { PLACEHOLDER_LANDSCAPE, PLACEHOLDER_SWEATER } from '../../runtime/placeholders';
 
 interface Props extends GalleryProps {
   id?: string;
@@ -220,12 +221,8 @@ const resolvedItems: ResolvedItem[] = effectiveItems.map((item) => resolveItem(i
                   {item.url ? (
                     <img src={item.url} alt={item.alt} class={C.image} />
                   ) : (
-                    <div class="w-full aspect-[3/4] bg-[rgb(var(--color-surface,var(--color-text)/0.05))] flex items-center justify-center text-[rgb(var(--color-muted))]" aria-hidden="true">
-                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-                        <rect x="3" y="3" width="18" height="18" rx="2"/>
-                        <circle cx="8.5" cy="8.5" r="1.5"/>
-                        <polyline points="21,15 16,10 5,21"/>
-                      </svg>
+                    <div class="w-full aspect-[3/4] bg-[rgb(var(--color-surface,var(--color-text)/0.05))] overflow-hidden text-[rgb(var(--color-accent))]" aria-hidden="true">
+                      <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
                     </div>
                   )}
                 </div>
@@ -242,12 +239,14 @@ const resolvedItems: ResolvedItem[] = effectiveItems.map((item) => resolveItem(i
                 {item.url ? (
                   <img src={item.url} alt={item.alt} class={C.imageSmall} />
                 ) : (
-                  <div class={`${C.cardMedia} flex items-center justify-center text-[rgb(var(--color-muted))]`} aria-hidden="true">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-                      <rect x="3" y="3" width="18" height="18" rx="2"/>
-                      <circle cx="8.5" cy="8.5" r="1.5"/>
-                      <polyline points="21,15 16,10 5,21"/>
-                    </svg>
+                  <div class={`${C.cardMedia} flex items-center justify-center overflow-hidden text-[rgb(var(--color-accent))]`} aria-hidden="true">
+                    {item.type === 'product' ? (
+                      <div class="w-[60%] aspect-square"><Fragment set:html={PLACEHOLDER_SWEATER} /></div>
+                    ) : item.type === 'collection' ? (
+                      <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
+                    ) : (
+                      <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
+                    )}
                   </div>
                 )}
                 {item.label && <div class={C.cardLabel}>{item.label}</div>}
@@ -267,12 +266,8 @@ const resolvedItems: ResolvedItem[] = effectiveItems.map((item) => resolveItem(i
                   {item.url ? (
                     <img src={item.url} alt={item.alt} class={C.image} />
                   ) : (
-                    <div class="w-full aspect-square bg-[rgb(var(--color-surface,var(--color-text)/0.05))] flex items-center justify-center text-[rgb(var(--color-muted))]" aria-hidden="true">
-                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-                        <rect x="3" y="3" width="18" height="18" rx="2"/>
-                        <circle cx="8.5" cy="8.5" r="1.5"/>
-                        <polyline points="21,15 16,10 5,21"/>
-                      </svg>
+                    <div class="w-full aspect-square bg-[rgb(var(--color-surface,var(--color-text)/0.05))] overflow-hidden text-[rgb(var(--color-accent))]" aria-hidden="true">
+                      <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
                     </div>
                   )}
                 </div>
@@ -289,12 +284,14 @@ const resolvedItems: ResolvedItem[] = effectiveItems.map((item) => resolveItem(i
                 {item.url ? (
                   <img src={item.url} alt={item.alt} class={C.imageSmall} />
                 ) : (
-                  <div class={`${C.cardMedia} flex items-center justify-center text-[rgb(var(--color-muted))]`} aria-hidden="true">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-                      <rect x="3" y="3" width="18" height="18" rx="2"/>
-                      <circle cx="8.5" cy="8.5" r="1.5"/>
-                      <polyline points="21,15 16,10 5,21"/>
-                    </svg>
+                  <div class={`${C.cardMedia} flex items-center justify-center overflow-hidden text-[rgb(var(--color-accent))]`} aria-hidden="true">
+                    {item.type === 'product' ? (
+                      <div class="w-[60%] aspect-square"><Fragment set:html={PLACEHOLDER_SWEATER} /></div>
+                    ) : item.type === 'collection' ? (
+                      <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
+                    ) : (
+                      <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
+                    )}
                   </div>
                 )}
                 {item.label && <div class={C.cardLabel}>{item.label}</div>}

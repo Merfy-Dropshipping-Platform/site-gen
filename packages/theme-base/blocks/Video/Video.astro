@@ -1,6 +1,7 @@
 ---
 import type { VideoProps } from './Video.puckConfig';
 import { VideoClasses as C } from './Video.classes';
+import { PLACEHOLDER_LANDSCAPE, PLACEHOLDER_PLAY } from '../../runtime/placeholders';
 
 interface Props extends VideoProps {
   id?: string;
@@ -205,16 +206,13 @@ const video = parseVideo(videoUrl);
         </>
       )}
       {!video.embedUrl && (
-        <div class={C.placeholder} aria-hidden="true" data-media-placeholder>
-          <div class={C.placeholderIcon}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M8 5v14l11-7L8 5z"/>
-            </svg>
+        <div class={`${C.placeholder} relative overflow-hidden`} aria-hidden="true" data-media-placeholder>
+          {/* Figma 1:19525 — иллюстрация-фон + play icon overlay в центре. */}
+          <div class="absolute inset-0 text-[rgb(var(--color-accent))]">
+            <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
           </div>
-          <div class={C.placeholderText}>
-            {rawVideoUrl.startsWith('blob:')
-              ? 'Загрузите видео заново — предыдущая ссылка устарела'
-              : 'Видео появится здесь'}
+          <div class="absolute inset-0 flex items-center justify-center text-[rgb(var(--color-accent))]">
+            <Fragment set:html={PLACEHOLDER_PLAY} />
           </div>
         </div>
       )}

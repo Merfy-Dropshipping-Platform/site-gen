@@ -151,28 +151,9 @@ export class StorefrontDataController {
           }
         }
       }
-      // Publications fetch — single source for storefront (shared with
-      // Publications block in constructor preview).
-      let publications: Array<Record<string, unknown>> = [];
-      try {
-        const pool = this.getProductPool();
-        if (pool) {
-          const pubRes = await pool.query(
-            `SELECT id, title, slug, category, excerpt, cover_image_url AS "coverImageUrl",
-                    published_at AS "publishedAt"
-               FROM publications
-              WHERE site_id = $1 AND status = 'published'
-              ORDER BY published_at DESC NULLS LAST
-              LIMIT 20`,
-            [siteId],
-          );
-          publications = pubRes.rows;
-        }
-      } catch (pubErr) {
-        this.logger.warn(
-          `publications fetch failed for site=${siteId}: ${(pubErr as Error)?.message ?? pubErr}`,
-        );
-      }
+      // Publications fetch вынесен в отдельный endpoint /api/sites/:id/publications
+      // (PublicationsController) чтобы pool issues не блокировали storefront-data.
+      const publications: Array<Record<string, unknown>> = [];
 
       let product: Record<string, unknown> | null = null;
       if (productIdParam) {

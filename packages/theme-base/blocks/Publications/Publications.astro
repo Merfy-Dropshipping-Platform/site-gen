@@ -52,7 +52,7 @@ if (siteIdFromRoot) {
   try {
     const internalBase = (import.meta as unknown as { env?: { SITES_INTERNAL_BASE?: string } }).env?.SITES_INTERNAL_BASE
       ?? 'http://localhost:3114';
-    const res = await fetch(`${internalBase}/api/sites/${siteIdFromRoot}/storefront-data`).catch(() => null);
+    const res = await fetch(`${internalBase}/api/sites/${siteIdFromRoot}/publications`).catch(() => null);
     if (res && res.ok) {
       const data = (await res.json()) as { publications?: RawPublication[] };
       realPublications = data.publications ?? [];

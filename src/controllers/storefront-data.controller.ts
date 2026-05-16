@@ -62,7 +62,7 @@ export class StorefrontDataController {
         .from(schema.site)
         .where(eq(schema.site.id, siteId));
       if (!site?.tenantId) {
-        res.status(404).json({ products: [], collections: [] });
+        res.status(404).json({ products: [], collections: [], publications: [] });
         return;
       }
 
@@ -151,6 +151,29 @@ export class StorefrontDataController {
           }
         }
       }
+      // Publications fetch — single source for storefront (shared with
+      // Publications block in constructor preview).
+      let publications: Array<Record<string, unknown>> = [];
+      try {
+        const pool = this.getProductPool();
+        if (pool) {
+          const pubRes = await pool.query(
+            `SELECT id, title, slug, category, excerpt, cover_image_url AS "coverImageUrl",
+                    published_at AS "publishedAt"
+               FROM publications
+              WHERE site_id = $1 AND status = 'published'
+              ORDER BY published_at DESC NULLS LAST
+              LIMIT 20`,
+            [siteId],
+          );
+          publications = pubRes.rows;
+        }
+      } catch (pubErr) {
+        this.logger.warn(
+          `publications fetch failed for site=${siteId}: ${(pubErr as Error)?.message ?? pubErr}`,
+        );
+      }
+
       let product: Record<string, unknown> | null = null;
       if (productIdParam) {
         const found = products.find((p: any) => p.id === productIdParam || p.handle === productIdParam || p.slug === productIdParam);
@@ -248,6 +271,7 @@ export class StorefrontDataController {
           .json({
             products,
             collections,
+            publications,
             product,
             _debug: {
               tenantId: site.tenantId,
@@ -263,13 +287,13 @@ export class StorefrontDataController {
 
       res
         .header('Cache-Control', 'public, max-age=30')
-        .json({ products, collections, product });
+        .json({ products, collections, publications, product });
     } catch (err: unknown) {
       const e = err as Error;
       this.logger.warn(
         `storefront-data failed for site=${siteId}: ${e?.message ?? e}`,
       );
-      res.status(200).json({ products: [], collections: [] });
+      res.status(200).json({ products: [], collections: [], publications: [] });
     }
   }
 }

@@ -25,18 +25,66 @@ const headingText = (() => {
   return undefined;
 })();
 
-// Demo fallback so seed sites don't show empty skeleton bars. Merchant
-// content (once wired in Phase 1c) overrides by passing `items` prop.
-type Article = { date: string; title: string; excerpt: string };
+// SSR fetch publications from storefront-data endpoint (gateway → sites-service).
+type RawPublication = {
+  id: string;
+  title?: string;
+  slug?: string;
+  excerpt?: string;
+  category?: string;
+  coverImageUrl?: string | null;
+  publishedAt?: string | null;
+};
+type Article = { id?: string; date: string; title: string; excerpt: string; image?: string; slug?: string };
+
+function formatDate(iso: string | null | undefined): string {
+  if (!iso) return '';
+  try {
+    return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(iso));
+  } catch {
+    return '';
+  }
+}
+
+const siteIdFromRoot = typeof raw.siteId === 'string' ? raw.siteId : '';
+let realPublications: RawPublication[] = [];
+if (siteIdFromRoot) {
+  try {
+    const internalBase = (import.meta as unknown as { env?: { SITES_INTERNAL_BASE?: string } }).env?.SITES_INTERNAL_BASE
+      ?? 'http://localhost:3114';
+    const res = await fetch(`${internalBase}/api/sites/${siteIdFromRoot}/storefront-data`).catch(() => null);
+    if (res && res.ok) {
+      const data = (await res.json()) as { publications?: RawPublication[] };
+      realPublications = data.publications ?? [];
+    }
+  } catch {/* swallow */}
+}
+try {
+  if (realPublications.length === 0) {
+    const pubData = await import('../data/publications.json');
+    realPublications = ((pubData as { default?: RawPublication[] }).default ?? (pubData as unknown as RawPublication[])) as RawPublication[];
+  }
+} catch {/* swallow — publications.json absent */}
+
+// Placeholder articles (Figma 1:19531 reference cards) when no real
+// publications exist yet — keeps preview alive for seed sites.
 const DEMO_ARTICLES: Article[] = [
   { date: '15 марта 2025', title: 'Новая коллекция весна 2025', excerpt: 'Рассказываем о вдохновении и ключевых силуэтах новой коллекции.' },
   { date: '28 февраля 2025', title: 'Как ухаживать за кожаными изделиями', excerpt: 'Простые правила, чтобы ваши вещи служили долгие годы.' },
   { date: '10 февраля 2025', title: 'История бренда: от идеи до магазина', excerpt: 'Путь от первой сумки, сшитой вручную, до собственной коллекции.' },
   { date: '25 января 2025', title: 'Тренды аксессуаров 2025', excerpt: 'Обзор ключевых трендов сезона — от цветов до фактур.' },
 ];
-const rawItems = raw.items as Article[] | undefined;
-const items: Article[] = (Array.isArray(rawItems) && rawItems.length > 0
-  ? rawItems
+
+const hasRealPublications = realPublications.length > 0;
+const items: Article[] = (hasRealPublications
+  ? realPublications.map((p) => ({
+      id: p.id,
+      slug: p.slug,
+      date: formatDate(p.publishedAt),
+      title: p.title ?? '',
+      excerpt: p.excerpt ?? '',
+      image: p.coverImageUrl ?? undefined,
+    }))
   : DEMO_ARTICLES
 ).slice(0, cards);
 
@@ -78,22 +126,30 @@ const gridTemplateCols = `grid-template-columns: repeat(${columnsResolved}, minm
       <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{headingText}</h2>
     )}
     <div class={C.grid} style={gridTemplateCols}>
-      {items.slice(0, cardsResolved).map((item, i) => (
-        <article class={C.card} data-article-index={i}>
-          <div class={C.cardMedia} aria-hidden="true">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <polyline points="21,15 16,10 5,21" />
-            </svg>
-          </div>
-          <div class={C.cardBody}>
-            {dateTimeEnabled && <div class={C.cardDate}>{item.date}</div>}
-            <div class={C.cardTitle}>{item.title}</div>
-            <div class={C.cardExcerpt}>{item.excerpt}</div>
-          </div>
-        </article>
-      ))}
+      {items.slice(0, cardsResolved).map((item, i) => {
+        const href = item.slug ? `/publication/${item.slug}` : '#';
+        const Wrapper = item.slug ? 'a' : 'article';
+        return (
+          <Wrapper class={C.card} href={item.slug ? href : undefined} data-article-index={i}>
+            {item.image ? (
+              <img src={item.image} alt={item.title} class={`${C.cardMedia} object-cover`} loading="lazy" />
+            ) : (
+              <div class={C.cardMedia} aria-hidden="true">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21,15 16,10 5,21" />
+                </svg>
+              </div>
+            )}
+            <div class={C.cardBody}>
+              {dateTimeEnabled && item.date && <div class={C.cardDate}>{item.date}</div>}
+              <div class={C.cardTitle}>{item.title}</div>
+              {item.excerpt && <div class={C.cardExcerpt}>{item.excerpt}</div>}
+            </div>
+          </Wrapper>
+        );
+      })}
     </div>
   </div>
 </section>

@@ -48,25 +48,149 @@ const innerClass = C.inner[layout];
 const colorSchemeRaw = typeof raw.colorScheme === 'string' ? raw.colorScheme : undefined;
 const schemeClass = colorSchemeRaw ? `color-scheme-${colorSchemeRaw.replace('scheme-', '')}` : '';
 
-// Demo fallback so seed sites match Figma even before merchant configures.
-type ItemDemo = { type: 'image' | 'product' | 'collection'; url?: string; alt?: string; label?: string; price?: string };
+// SSR resolve real product/collection data via storefront-data endpoint
+// (same pattern as Hero.astro / Product.astro). Sites service serves under
+// SITES_INTERNAL_BASE (localhost:3114 inside container), public proxy is
+// gateway.merfy.ru.
+type RawProduct = {
+  id: string;
+  slug?: string;
+  handle?: string;
+  name?: string;
+  price?: number | string;
+  images?: string[];
+};
+type RawCollection = {
+  id: string;
+  slug?: string;
+  name?: string;
+  imageUrl?: string;
+  image?: string;
+};
+
+const siteIdFromRoot = typeof raw.siteId === 'string' ? raw.siteId : '';
+let realProducts: RawProduct[] = [];
+let realCollections: RawCollection[] = [];
+
+// Pull live data at SSR. Try local sites service first (preview iframe),
+// fall back to public gateway (live SSG).
+async function fetchStorefrontData(siteId: string): Promise<{ products: RawProduct[]; collections: RawCollection[] }> {
+  if (!siteId) return { products: [], collections: [] };
+  const internalBase = (import.meta as unknown as { env?: { SITES_INTERNAL_BASE?: string } }).env?.SITES_INTERNAL_BASE
+    ?? 'http://localhost:3114';
+  try {
+    const res = await fetch(`${internalBase}/api/sites/${siteId}/storefront-data`).catch(() => null);
+    if (res && res.ok) {
+      const data = (await res.json()) as { products?: RawProduct[]; collections?: RawCollection[] };
+      return { products: data.products ?? [], collections: data.collections ?? [] };
+    }
+  } catch {/* swallow */}
+  return { products: [], collections: [] };
+}
+
+if (siteIdFromRoot) {
+  const data = await fetchStorefrontData(siteIdFromRoot);
+  realProducts = data.products;
+  realCollections = data.collections;
+}
+
+// Try to embed real data fallback through products.json (live SSG mode).
+try {
+  if (realProducts.length === 0) {
+    const productsData = await import('../data/products.json');
+    realProducts = ((productsData as { default?: RawProduct[] }).default ?? (productsData as unknown as RawProduct[])) as RawProduct[];
+  }
+} catch {/* swallow — products.json absent in dev */}
+
+function resolveProduct(productId: string | null | undefined): RawProduct | null {
+  if (!productId) return null;
+  return realProducts.find((p) => p.id === productId || p.slug === productId || p.handle === productId) ?? null;
+}
+
+function resolveCollection(collectionId: string | null | undefined): RawCollection | null {
+  if (!collectionId) return null;
+  return realCollections.find((c) => c.id === collectionId || c.slug === collectionId) ?? null;
+}
+
+function formatPrice(value: number | string | undefined): string {
+  if (value === undefined || value === null) return '';
+  const num = typeof value === 'string' ? Number(value) : value;
+  if (Number.isNaN(num)) return '';
+  return new Intl.NumberFormat('ru-RU').format(num) + ' ₽';
+}
+
+type ItemDemo = {
+  type: 'image' | 'product' | 'collection';
+  url?: string;
+  alt?: string;
+  productId?: string | null;
+  collectionId?: string | null;
+};
+
+// Figma 1:19439 — empty state shows 3 placeholder items: large image, product
+// card («Товар» + price), collection card («Выбери коллекцию»).
 const DEMO_ITEMS: ItemDemo[] = [
   { type: 'image', url: '', alt: '' },
-  { type: 'product', label: 'Сумка', price: '5 990 ₽' },
-  { type: 'collection', label: 'Коллекция FUTURISM' },
+  { type: 'product' },
+  { type: 'collection' },
 ];
+
 const hasRealItems = items.length > 0;
 const effectiveItems = hasRealItems ? items : DEMO_ITEMS;
 
-function labelFor(item: { type?: string; label?: string; price?: string }): { label: string; price?: string } {
-  if (item.type === 'product') {
-    return { label: item.label ?? 'Товар', price: item.price };
+type ResolvedItem = {
+  type: 'image' | 'product' | 'collection';
+  url: string;
+  alt: string;
+  label: string;
+  price: string;
+  href: string;
+  isPlaceholder: boolean;
+};
+
+function resolveItem(raw: ItemDemo): ResolvedItem {
+  if (raw.type === 'product') {
+    const product = resolveProduct(raw.productId);
+    if (product) {
+      return {
+        type: 'product',
+        url: product.images?.[0] ?? '',
+        alt: product.name ?? '',
+        label: product.name ?? '',
+        price: formatPrice(product.price),
+        href: product.slug ? `/product/${product.slug}` : '/catalog',
+        isPlaceholder: false,
+      };
+    }
+    return { type: 'product', url: '', alt: '', label: 'Товар', price: '2 500 ₽', href: '/catalog', isPlaceholder: true };
   }
-  if (item.type === 'collection') {
-    return { label: item.label ?? 'Коллекция' };
+  if (raw.type === 'collection') {
+    const collection = resolveCollection(raw.collectionId);
+    if (collection) {
+      return {
+        type: 'collection',
+        url: collection.imageUrl ?? collection.image ?? '',
+        alt: collection.name ?? '',
+        label: collection.name ?? '',
+        price: '',
+        href: collection.slug ? `/catalog/${collection.slug}` : '/catalog',
+        isPlaceholder: false,
+      };
+    }
+    return { type: 'collection', url: '', alt: '', label: 'Выбери коллекцию', price: '', href: '/catalog', isPlaceholder: true };
   }
-  return { label: '' };
+  return {
+    type: 'image',
+    url: raw.url ?? '',
+    alt: raw.alt ?? '',
+    label: '',
+    price: '',
+    href: '#',
+    isPlaceholder: !raw.url,
+  };
 }
+
+const resolvedItems: ResolvedItem[] = effectiveItems.map((item) => resolveItem(item as ItemDemo));
 ---
 <section
   class:list={[C.root, schemeClass]}
@@ -83,10 +207,8 @@ function labelFor(item: { type?: string; label?: string; price?: string }): { la
     )}
     <div class={innerClass}>
       {layout === 'featured'
-        ? effectiveItems.map((rawItem, idx) => {
-            const item = rawItem as ItemDemo;
+        ? resolvedItems.map((item, idx) => {
             const isPrimary = idx === 0;
-            const { label, price } = labelFor(item);
             if (isPrimary) {
               return (
                 <div
@@ -96,38 +218,44 @@ function labelFor(item: { type?: string; label?: string; price?: string }): { la
                   data-puck-subsection-field={hasRealItems ? 'items' : undefined}
                 >
                   {item.url ? (
-                    <img src={item.url} alt={item.alt ?? ''} class={C.image} />
+                    <img src={item.url} alt={item.alt} class={C.image} />
                   ) : (
-                    <div class="w-full aspect-[3/4] bg-[rgb(var(--color-surface))]" aria-hidden="true"></div>
+                    <div class="w-full aspect-[3/4] bg-[rgb(var(--color-surface,var(--color-text)/0.05))] flex items-center justify-center text-[rgb(var(--color-muted))]" aria-hidden="true">
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21,15 16,10 5,21"/>
+                      </svg>
+                    </div>
                   )}
                 </div>
               );
             }
-            const href = item.type === 'product'
-              ? '/catalog'
-              : item.type === 'collection'
-                ? '/catalog'
-                : '#';
             return (
               <a
-                href={href}
+                href={item.href}
                 class={C.itemSmall}
                 data-puck-subsection-parent={hasRealItems ? id : undefined}
                 data-puck-subsection-index={hasRealItems ? idx : undefined}
                 data-puck-subsection-field={hasRealItems ? 'items' : undefined}
               >
                 {item.url ? (
-                  <img src={item.url} alt={item.alt ?? ''} class={C.imageSmall} />
+                  <img src={item.url} alt={item.alt} class={C.imageSmall} />
                 ) : (
-                  <div class={C.cardMedia} aria-hidden="true"></div>
+                  <div class={`${C.cardMedia} flex items-center justify-center text-[rgb(var(--color-muted))]`} aria-hidden="true">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                      <rect x="3" y="3" width="18" height="18" rx="2"/>
+                      <circle cx="8.5" cy="8.5" r="1.5"/>
+                      <polyline points="21,15 16,10 5,21"/>
+                    </svg>
+                  </div>
                 )}
-                {label && <div class={C.cardLabel}>{label}</div>}
-                {price && <div class={C.cardPrice}>{price}</div>}
+                {item.label && <div class={C.cardLabel}>{item.label}</div>}
+                {item.price && <div class={C.cardPrice}>{item.price}</div>}
               </a>
             );
           })
-        : effectiveItems.map((rawItem, idx) => {
-            const item = rawItem as ItemDemo;
+        : resolvedItems.map((item, idx) => {
             if (item.type === 'image') {
               return (
                 <div
@@ -137,26 +265,40 @@ function labelFor(item: { type?: string; label?: string; price?: string }): { la
                   data-puck-subsection-field={hasRealItems ? 'items' : undefined}
                 >
                   {item.url ? (
-                    <img src={item.url} alt={item.alt ?? ''} class={C.image} />
+                    <img src={item.url} alt={item.alt} class={C.image} />
                   ) : (
-                    <div class="w-full aspect-square bg-[rgb(var(--color-surface))]" aria-hidden="true"></div>
+                    <div class="w-full aspect-square bg-[rgb(var(--color-surface,var(--color-text)/0.05))] flex items-center justify-center text-[rgb(var(--color-muted))]" aria-hidden="true">
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21,15 16,10 5,21"/>
+                      </svg>
+                    </div>
                   )}
                 </div>
               );
             }
-            const href = '/catalog';
-            const { label, price } = labelFor(item);
             return (
               <a
-                href={href}
+                href={item.href}
                 class={C.card}
                 data-puck-subsection-parent={hasRealItems ? id : undefined}
                 data-puck-subsection-index={hasRealItems ? idx : undefined}
                 data-puck-subsection-field={hasRealItems ? 'items' : undefined}
               >
-                <div class={C.cardMedia}></div>
-                {label && <div class={C.cardLabel}>{label}</div>}
-                {price && <div class={C.cardPrice}>{price}</div>}
+                {item.url ? (
+                  <img src={item.url} alt={item.alt} class={C.imageSmall} />
+                ) : (
+                  <div class={`${C.cardMedia} flex items-center justify-center text-[rgb(var(--color-muted))]`} aria-hidden="true">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                      <rect x="3" y="3" width="18" height="18" rx="2"/>
+                      <circle cx="8.5" cy="8.5" r="1.5"/>
+                      <polyline points="21,15 16,10 5,21"/>
+                    </svg>
+                  </div>
+                )}
+                {item.label && <div class={C.cardLabel}>{item.label}</div>}
+                {item.price && <div class={C.cardPrice}>{item.price}</div>}
               </a>
             );
           })}

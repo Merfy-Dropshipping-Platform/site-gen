@@ -1,0 +1,36 @@
+---
+import type { PageProps } from './Page.puckConfig';
+import { PageClasses as C } from './Page.classes';
+
+interface Props extends PageProps {
+  id?: string;
+}
+
+const { id, pageId, colorScheme, padding } = Astro.props as Props;
+
+const schemeClass = typeof colorScheme === 'string' && colorScheme
+  ? `color-scheme-${colorScheme.replace('scheme-', '')}`
+  : '';
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px;padding-bottom:${padding.bottom}px;`
+  : '';
+---
+<section
+  class:list={[C.root, schemeClass]}
+  data-puck-component-id={id}
+  data-page-embed
+  data-page-id={pageId || ''}
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    {pageId ? (
+      <div class={C.placeholder}>
+        <p class={C.text}>Содержимое страницы загружается…</p>
+      </div>
+    ) : (
+      <div class={C.placeholder}>
+        <p class={C.text}>Выберите страницу в правом меню</p>
+      </div>
+    )}
+  </div>
+</section>

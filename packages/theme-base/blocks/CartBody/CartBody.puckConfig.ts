@@ -16,7 +16,7 @@ export const CartBodySchema = z.object({
 export type CartBodyProps = z.infer<typeof CartBodySchema>;
 
 export const CartBodyPuckConfig: BlockPuckConfig<CartBodyProps> = {
-  label: 'Корзина',
+  label: 'Товары',
   category: 'content',
   fields: {
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },

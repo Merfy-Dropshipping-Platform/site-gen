@@ -244,8 +244,12 @@ const heroButtonStyleClass = heroButtonStyle === 'outlined'
         )}
       </div>
       <div class={C.splitBloomImageCol}>
-        {imageUrl && (
+        {imageUrl ? (
           <img src={imageUrl} alt={imageAlt} class={C.image['split-bloom']} />
+        ) : (
+          <div class="absolute inset-0 overflow-hidden text-[rgb(var(--color-accent))]" aria-hidden="true">
+            <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
+          </div>
         )}
       </div>
     </div>
@@ -269,6 +273,11 @@ const heroButtonStyleClass = heroButtonStyle === 'outlined'
       <div class="absolute inset-0" style={overlayStyle} aria-hidden="true" />
     </>
   )}
+  {variant === 'overlay' && !imageUrl && (
+    <div class="absolute inset-0 overflow-hidden text-[rgb(var(--color-accent))]" aria-hidden="true">
+      <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
+    </div>
+  )}
   {variant === 'centered' && imageUrl && (
     <>
       <img src={imageUrl} alt={imageAlt} class={imageClass} />
@@ -277,6 +286,11 @@ const heroButtonStyleClass = heroButtonStyle === 'outlined'
           «Затемнение» для default centered ничего не делал. */}
       <div class="absolute inset-0 -z-[5]" style={overlayStyle} aria-hidden="true" />
     </>
+  )}
+  {variant === 'centered' && !imageUrl && (
+    <div class="absolute inset-0 -z-10 overflow-hidden text-[rgb(var(--color-accent))]" aria-hidden="true">
+      <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
+    </div>
   )}
   <div class:list={[C.container, innerClass, vAlignClass, 'relative z-10']} style="min-height: inherit;">
     <div class:list={[
@@ -347,6 +361,11 @@ const heroButtonStyleClass = heroButtonStyle === 'outlined'
     {variant === 'split' && imageUrl && (
       <img src={imageUrl} alt={imageAlt} class={imageClass} />
     )}
+    {variant === 'split' && !imageUrl && (
+      <div class="w-full aspect-[4/3] overflow-hidden text-[rgb(var(--color-accent))]" aria-hidden="true">
+        <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
+      </div>
+    )}
   </div>
 </section>
 )}
@@ -382,11 +401,15 @@ const heroButtonStyleClass = heroButtonStyle === 'outlined'
              data-puck-subsection-parent={id}
              data-puck-subsection-index={idx}
              data-puck-subsection-field="slides">
-          {slide.imageUrl && (
+          {slide.imageUrl ? (
             <img src={slide.imageUrl}
                  alt={slideHeadingText ?? ''}
                  class:list={['absolute inset-0 -z-10 object-cover w-full h-full',
                               heroImageFullBleed && C.imageFullBleed]} />
+          ) : (
+            <div class="absolute inset-0 -z-10 overflow-hidden text-[rgb(var(--color-accent))]" aria-hidden="true">
+              <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
+            </div>
           )}
           <div class="relative z-10 max-w-[var(--container-max-width)] mx-auto px-[300px] flex flex-col gap-8 items-start">
             <div class="flex flex-col gap-1 items-start">

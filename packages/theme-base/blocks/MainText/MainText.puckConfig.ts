@@ -56,15 +56,34 @@ export type MainTextProps = z.infer<typeof MainTextSchema>;
 export const MainTextPuckConfig: BlockPuckConfig<MainTextProps> = {
   label: 'Основной текст',
   category: 'content',
+  // Figma 314-34750: 4 sections — Содержание (header) / Позиция / Выравнивание /
+  // Цветовая схема / Отступы. heading / text / button — в sub-panels через
+  // subsection click в превью.
   fields: {
+    ['_contentSection' as never]: { type: 'section-header', label: 'Содержание' } as any,
+    position: {
+      type: 'select',
+      label: 'Позиция',
+      options: [
+        { label: 'Слева', value: 'left' },
+        { label: 'По центру', value: 'center' },
+        { label: 'Справа', value: 'right' },
+      ],
+    },
+    alignment: { type: 'alignment', label: 'Выравнивание' },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    padding: { type: 'padding', label: 'Отступы' },
+
+    // Sub-panels — открываются subsection click в превью (NamedFocusedPanel).
     heading: {
       type: 'object',
       label: 'Заголовок',
+      hiddenInMainPanel: true,
       objectFields: {
-        text: { type: 'text', label: 'Текст' },
+        text: { type: 'aiText', label: 'Заголовок', fieldType: 'title', placeholder: 'Ввести текст...' } as any,
         size: {
-          type: 'radio',
-          label: 'Размер',
+          type: 'select',
+          label: 'Размер заголовка',
           options: [
             { label: 'Маленький', value: 'small' },
             { label: 'Средний', value: 'medium' },
@@ -72,15 +91,16 @@ export const MainTextPuckConfig: BlockPuckConfig<MainTextProps> = {
           ],
         },
       },
-    },
+    } as any,
     text: {
       type: 'object',
       label: 'Текст',
+      hiddenInMainPanel: true,
       objectFields: {
-        content: { type: 'textarea', label: 'Содержание' },
+        content: { type: 'aiText', label: 'Текст', fieldType: 'description', placeholder: 'Ввести текст...' } as any,
         size: {
-          type: 'radio',
-          label: 'Размер',
+          type: 'select',
+          label: 'Размер текста',
           options: [
             { label: 'Маленький', value: 'small' },
             { label: 'Средний', value: 'medium' },
@@ -88,64 +108,22 @@ export const MainTextPuckConfig: BlockPuckConfig<MainTextProps> = {
           ],
         },
       },
-    },
+    } as any,
     button: {
       type: 'object',
       label: 'Кнопка',
+      hiddenInMainPanel: true,
       objectFields: {
         text: { type: 'text', label: 'Текст' },
         link: { type: 'pagePicker', label: 'Ссылка' },
       },
-    },
-    position: { type: 'alignment', label: 'Позиция' },
-    alignment: {
-      type: 'alignment',
-      label: 'Выравнивание',
-    },
-    headingSize: {
-      type: 'radio',
-      label: 'Размер заголовка',
-      options: [
-        { label: 'Маленький', value: 'small' },
-        { label: 'Средний', value: 'medium' },
-        { label: 'Большой', value: 'large' },
-      ],
-    },
-    cta: {
-      type: 'object',
-      label: 'Кнопка (опционально)',
-      objectFields: {
-        text: { type: 'text', label: 'Текст кнопки' },
-        href: { type: 'pagePicker', label: 'Ссылка' },
-        variant: {
-          type: 'radio',
-          label: 'Стиль',
-          options: [
-            { label: 'Акцент', value: 'primary' },
-            { label: 'Чёрная', value: 'black' },
-            { label: 'Белая', value: 'white' },
-          ],
-        },
-      },
-    },
-    buttonStyle: {
-      type: 'radio',
-      label: 'Стиль кнопки',
-      options: [
-        { label: 'Заливка', value: 'solid' },
-        { label: 'Контурная', value: 'outlined' },
-      ],
-    },
-    textStyle: {
-      type: 'radio',
-      label: 'Стиль текста',
-      options: [
-        { label: 'Обычный', value: 'normal' },
-        { label: 'Курсив', value: 'italic' },
-      ],
-    },
-    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
-    padding: { type: 'padding', label: 'Отступы' },
+    } as any,
+
+    // Hidden — нет в Figma 314-34750.
+    headingSize: { type: 'hidden', label: '' },
+    cta: { type: 'hidden', label: '' },
+    buttonStyle: { type: 'hidden', label: '' },
+    textStyle: { type: 'hidden', label: '' },
   },
   defaults: {
     heading: 'Заголовок раздела',

@@ -32,13 +32,16 @@ const SlideSchema = z.object({
 
 export const SlideshowSchema = z.object({
   slides: z.array(SlideSchema).min(1).max(5),
-  interval: z.union([z.literal(3), z.literal(5), z.literal(7), z.literal(9)]),
+  // Pixel-perfect 314-34834: slider 1-20 step 1 (раньше было 3/5/7/9 enum).
+  interval: z.number().int().min(1).max(60),
   autoplay: z.boolean(),
-  // Pupa parity.
+  // Pupa parity. 314-34834 показывает 2 опции — fullscreen / contained.
+  // Legacy left/right values сохраняются для backward-compat.
   imagePosition: z.enum(['fullscreen', 'contained', 'left', 'right']).optional(),
   size: z.enum(['small', 'medium', 'large']).optional(),
   overlay: z.number().int().min(0).max(100).optional(),
-  pagination: z.enum(['numbers', 'dots', 'lines', 'none']).optional(),
+  // 'counter' (Счётчик) добавлен по Figma 314-34834. Legacy 'lines'/'none' тоже.
+  pagination: z.enum(['numbers', 'dots', 'lines', 'none', 'counter']).optional(),
   /**
    * 084 vanilla pilot — additive variant. Vertical alignment of slide
    * content (heading/subtitle/cta) within the slide. `center` (default)
@@ -152,18 +155,19 @@ export const SlideshowPuckConfig: BlockPuckConfig<SlideshowProps> = {
       },
       max: 5,
     },
+    // По Figma 314-34834: 5 sections — Слайды (array header) / Положение
+    // изображения (2-pill) / Размер (select) / Интервал (slider) /
+    // Нумерация страниц (select). Затем стандарт — Цветовая схема + Отступы.
     imagePosition: {
       type: 'radio',
       label: 'Положение изображения',
       options: [
-        { label: 'Полноэкранное', value: 'fullscreen' },
-        { label: 'Контейнер', value: 'contained' },
-        { label: 'Слева', value: 'left' },
-        { label: 'Справа', value: 'right' },
+        { label: 'На весь экран', value: 'fullscreen' },
+        { label: 'Окно', value: 'contained' },
       ],
     },
     size: {
-      type: 'radio',
+      type: 'select',
       label: 'Размер',
       options: [
         { label: 'Маленький', value: 'small' },
@@ -171,37 +175,24 @@ export const SlideshowPuckConfig: BlockPuckConfig<SlideshowProps> = {
         { label: 'Большой', value: 'large' },
       ],
     },
-    interval: { type: 'slider', label: 'Интервал (сек)', min: 3, max: 9, step: 2 },
-    overlay: { type: 'slider', label: 'Затемнение', min: 0, max: 100, step: 5 },
+    interval: { type: 'slider', label: 'Интервал', min: 1, max: 20, step: 1 } as any,
     pagination: {
-      type: 'radio',
+      type: 'select',
       label: 'Нумерация страниц',
       options: [
-        { label: 'Цифры', value: 'numbers' },
+        { label: 'Числа', value: 'numbers' },
         { label: 'Точки', value: 'dots' },
-        { label: 'Линии', value: 'lines' },
-        { label: 'Скрыть', value: 'none' },
-      ],
-    },
-    autoplay: { type: 'radio', label: 'Автопрокрутка' },
-    contentAlign: {
-      type: 'radio',
-      label: 'Вертикальное выравнивание контента',
-      options: [
-        { label: 'По центру', value: 'center' },
-        { label: 'Сверху', value: 'left' },
-      ],
-    },
-    buttonStyle: {
-      type: 'radio',
-      label: 'Стиль кнопки',
-      options: [
-        { label: 'Solid', value: 'solid' },
-        { label: 'Outlined', value: 'outlined' },
+        { label: 'Счётчик', value: 'counter' },
       ],
     },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
+    // Hidden — нет в Figma 314-34834.
+    overlay: { type: 'hidden', label: '' },
+    autoplay: { type: 'hidden', label: '' },
+    contentAlign: { type: 'hidden', label: '' },
+    buttonStyle: { type: 'hidden', label: '' },
+    imageFullBleed: { type: 'hidden', label: '' } as any,
   },
   defaults: {
     slides: [

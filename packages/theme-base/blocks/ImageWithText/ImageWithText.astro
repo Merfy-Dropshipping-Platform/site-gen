@@ -1,6 +1,7 @@
 ---
 import type { ImageWithTextProps } from './ImageWithText.puckConfig';
 import { ImageWithTextClasses as C } from './ImageWithText.classes';
+import { PLACEHOLDER_LANDSCAPE } from '../../runtime/placeholders';
 
 interface Props extends ImageWithTextProps {
   id?: string;
@@ -112,12 +113,8 @@ const widthClass =
         {imageUrl ? (
           <img src={imageUrl} alt={imageAlt} class={C.image} />
         ) : (
-          <div class="aspect-[652/366] flex items-center justify-center bg-[rgb(var(--color-foreground,0,0,0))]/5 rounded-[var(--radius-media)] text-[rgb(var(--color-muted))]">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <polyline points="21,15 16,10 5,21" />
-            </svg>
+          <div class="aspect-[652/366] overflow-hidden rounded-[var(--radius-media)] text-[rgb(var(--color-accent))]" aria-hidden="true">
+            <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
           </div>
         )}
       </div>

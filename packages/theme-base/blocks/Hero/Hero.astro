@@ -1,6 +1,7 @@
 ---
 import type { HeroProps } from './Hero.puckConfig';
 import { HeroClasses as C } from './Hero.classes';
+import { PLACEHOLDER_LANDSCAPE } from '../../runtime/placeholders';
 
 interface Props extends HeroProps {
   id?: string;
@@ -312,7 +313,9 @@ const heroButtonStyleClass = heroButtonStyle === 'outlined'
                   loading={i < 2 ? 'eager' : 'lazy'}
                 />
               ) : (
-                <span class="sr-only">Пустой слот изображения</span>
+                <div class="absolute inset-0 overflow-hidden text-[rgb(var(--color-accent))]" aria-hidden="true">
+                  <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
+                </div>
               )}
             </div>
           ))}

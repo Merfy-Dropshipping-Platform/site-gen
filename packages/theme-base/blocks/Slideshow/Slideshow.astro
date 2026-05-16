@@ -1,6 +1,7 @@
 ---
 import type { SlideshowProps } from './Slideshow.puckConfig';
 import { SlideshowClasses as C } from './Slideshow.classes';
+import { PLACEHOLDER_LANDSCAPE } from '../../runtime/placeholders';
 
 interface Props extends SlideshowProps {
   id?: string;
@@ -117,8 +118,12 @@ const imageFullBleed = raw.imageFullBleed === true;
             data-puck-subsection-index={idx}
             data-puck-subsection-field="slides"
           >
-            {slide.image && (
+            {slide.image ? (
               <img src={slide.image} alt={slide.headingText ?? ''} class:list={[C.image, imageFullBleed && C.imageFullBleed]} />
+            ) : (
+              <div class="absolute inset-0 -z-10 overflow-hidden text-[rgb(var(--color-accent))]" aria-hidden="true">
+                <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
+              </div>
             )}
             <div class:list={[C.content, slideAlignClass]}>
               {slide.headingText && <h2 class={C.heading}>{slide.headingText}</h2>}

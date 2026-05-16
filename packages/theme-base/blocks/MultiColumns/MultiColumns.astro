@@ -1,6 +1,7 @@
 ---
 import type { MultiColumnsProps } from './MultiColumns.puckConfig';
 import { MultiColumnsClasses as C } from './MultiColumns.classes';
+import { PLACEHOLDER_LANDSCAPE } from '../../runtime/placeholders';
 
 interface Props extends MultiColumnsProps {
   id?: string;
@@ -72,8 +73,12 @@ const buttonLink = typeof raw.buttonLink === 'string' ? raw.buttonLink : (typeof
             data-puck-subsection-index={i}
             data-puck-subsection-field="columns"
           >
-            {colImage && (
+            {colImage ? (
               <img src={colImage} alt={colTitle ?? ''} class={C.image} />
+            ) : (
+              <div class="w-full aspect-square overflow-hidden rounded-[var(--radius-media)] text-[rgb(var(--color-accent))] mb-3" aria-hidden="true">
+                <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
+              </div>
             )}
             {colTitle && <h3 class={C.columnHeading}>{colTitle}</h3>}
             {colDescription && <p class={C.columnText}>{colDescription}</p>}

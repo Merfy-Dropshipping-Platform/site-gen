@@ -1,9 +1,81 @@
 /**
- * Shared placeholder SVG-illustrations для Astro блоков theme-base.
- * Стиль: blue flat illustrations Yandex Kit / Figma 1:19336 (section previews).
+ * Shared placeholder library для Astro блоков theme-base.
  *
- * Использование: каждый блок импортирует нужный placeholder и рендерит
- * через <Fragment set:html={PLACEHOLDER}> когда нет реальных данных.
+ * Два варианта:
+ *
+ * 1. **PLACEHOLDER_ASSETS** (preferred) — pixel-perfect PNG export
+ *    из Figma frame 1:32992 (Platform — Constructor — Landing).
+ *    Файлы: packages/theme-base/public/placeholders/*.png →
+ *    выезжают на live через `/placeholders/<name>.png` (copyPublic в
+ *    assemble-from-packages.ts:376).
+ *
+ * 2. **PLACEHOLDER_SVG** (legacy/fallback) — currentColor SVG для
+ *    блоков где нужен tint под активную color-scheme.
+ *
+ * При empty-state блок рендерит ASSET через <img src={url} /> + text
+ * labels («Товар», «2 500₽», «Коллекция»). Когда данные есть — обычный
+ * рендер реальных продуктов/коллекций.
+ */
+
+// ============================================================================
+// PLACEHOLDER_ASSETS — Figma PNG exports (pixel-perfect)
+// ============================================================================
+
+const A = '/placeholders';
+
+export const PLACEHOLDER_ASSETS = {
+  sweater: {
+    blue: `${A}/sweater-blue.png`,
+    yellow: `${A}/sweater-yellow.png`,
+    red: `${A}/sweater-red.png`,
+    green: `${A}/sweater-green.png`,
+    /** 200x200 — для Product hero. Остальные 132x132 для cards. */
+    blueLarge: `${A}/sweater-blue-large.png`,
+  },
+  landscape: {
+    /** Slideshow / Hero (большой 16:9). */
+    slideshow: `${A}/landscape-slideshow.png`,
+    /** Image block / ImageWithText (376x240 wide). */
+    iwt: `${A}/landscape-iwt.png`,
+    /** Image-only block, full bleed. */
+    image: `${A}/landscape-image.png`,
+    /** Gallery hero (568x572 square-ish). */
+    gallery: `${A}/landscape-gallery.png`,
+    /** Video frame (768x568). */
+    video: `${A}/landscape-video.png`,
+    /** MultiRows image cell (376x240). */
+    multirows: `${A}/landscape-multirows-image.png`,
+  },
+  /** Publication card image (164x200 portrait). */
+  publicationCard: `${A}/publication-card.png`,
+} as const;
+
+/** Cyclic color order для grid placeholders (PopularProducts, Gallery). */
+export const SWEATER_COLORS = ['blue', 'yellow', 'red', 'green'] as const;
+export type SweaterColor = (typeof SWEATER_COLORS)[number];
+
+/**
+ * Get sweater asset URL by index (0..N) — cycles через 4 цвета.
+ * Используется когда блок рендерит несколько placeholder cards.
+ *
+ *   getSweaterAsset(0) → blue
+ *   getSweaterAsset(1) → yellow
+ *   getSweaterAsset(2) → red
+ *   getSweaterAsset(3) → green
+ *   getSweaterAsset(4) → blue (wraps)
+ */
+export function getSweaterAsset(index: number): string {
+  const color = SWEATER_COLORS[index % SWEATER_COLORS.length];
+  return PLACEHOLDER_ASSETS.sweater[color];
+}
+
+// ============================================================================
+// PLACEHOLDER_SVG — legacy/fallback (currentColor tinting)
+// ============================================================================
+
+/**
+ * Shared placeholder SVG-illustrations (legacy). Используются там где
+ * нужен tint под активную color-scheme через currentColor.
  *
  * Палитра наследуется от текущей color-scheme через CSS-vars
  * (--color-accent для синего, --color-surface для bg, --color-text/0.2 для shapes).

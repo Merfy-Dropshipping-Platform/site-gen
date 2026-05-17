@@ -1,5 +1,5 @@
 ---
-import { PLACEHOLDER_SWEATER } from '../../runtime/placeholders';
+import { PLACEHOLDER_ASSETS } from '../../runtime/placeholders';
 
 /**
  * PopularProductRichCard — flux variant card per Figma 1:26389.
@@ -75,11 +75,7 @@ const showOld = !!(oldPrice && oldPrice.trim());
     {image ? (
       <img src={image} alt={title} loading="lazy" class="w-full h-full object-cover block" />
     ) : (
-      <div class="w-full h-full flex items-center justify-center text-[rgb(var(--color-accent))]">
-        <div class="w-[40%] aspect-square">
-          <Fragment set:html={PLACEHOLDER_SWEATER} />
-        </div>
-      </div>
+      <img src={PLACEHOLDER_ASSETS.sweater.blue} alt={title} loading="lazy" class="w-full h-full object-contain p-[15%] block" />
     )}
   </a>
 

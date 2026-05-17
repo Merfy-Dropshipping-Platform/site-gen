@@ -15,7 +15,7 @@ import { CatalogClasses as C } from './Catalog.classes';
 import { parseCatalogUrlParams, type CatalogUrlState } from './url-params';
 import { resolveCatalogScope } from './auto-scope';
 import { paginateProducts, getPageNumbers, totalPages } from './pagination';
-import { PLACEHOLDER_SWEATER } from '../../runtime/placeholders';
+import { getSweaterAsset } from '../../runtime/placeholders';
 
 interface Props extends CatalogProps {
   id?: string;
@@ -230,13 +230,13 @@ const apiBase = 'https://gateway.merfy.ru/api';
         data-catalog-grid
         style={`display: grid; grid-template-columns: repeat(${colCount}, 1fr); column-gap: 16px; row-gap: var(--catalog-grid-row-gap, 16px);`}
       >
-        {placeholderCards.map(() => (
+        {placeholderCards.map((_, idx) => (
           <article style={`display: flex; flex-direction: column; gap: 12px; ${cardBgOn ? 'background:rgb(var(--color-muted) / 0.1);border:1px solid rgb(var(--color-muted) / 0.1);border-radius:8px;padding:8px;' : ''}`}>
             <div
-              class:list={[gridAspectClass, 'text-[rgb(var(--color-accent))]']}
+              class:list={[gridAspectClass]}
               style={`aspect-ratio: var(--catalog-card-aspect, ${cardAspect}); background: rgb(var(--color-muted) / 0.1); border-radius: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden;`}
             >
-              <div style="width:40%;aspect-ratio:1/1;"><Fragment set:html={PLACEHOLDER_SWEATER} /></div>
+              <img src={getSweaterAsset(idx)} alt="Товар" loading="lazy" style="width:60%;aspect-ratio:1/1;object-fit:contain;" />
             </div>
             <div style="display: flex; flex-direction: column; gap: 4px;">
               <div class:list={[cardCaptionClass]} style="font-size: 14px; color: rgb(var(--color-foreground));">Товар</div>

@@ -190,7 +190,8 @@ function stripTypes(source, filename) {
  * That's acceptable in Phase 1b — Phase 1c wires the real integration.
  */
 function rewriteRelativeImports(source, pkg, blockName) {
-  return source.replace(
+  // Rewrite `./X` (sibling) imports to flat naming
+  let out = source.replace(
     /(from\s+["'])(\.\/)([A-Za-z0-9_.-]+?)(\.ts)?(["'])/g,
     (match, prefix, dot, modName, _tsExt, suffix) => {
       // Don't touch .json, .css, etc.
@@ -220,6 +221,16 @@ function rewriteRelativeImports(source, pkg, blockName) {
       return `${prefix}./${pkg}__${blockName}__${modName}.mjs${suffix}`;
     },
   );
+  // Rewrite `../../runtime/X` imports (theme-base/runtime/*) to flat `./runtime__X.mjs`
+  // — these resolve to compiled files in the same dist/astro-blocks/ dir
+  // (see compileRuntimeFiles below).
+  out = out.replace(
+    /(from\s+["'])(\.\.\/\.\.\/runtime\/)([A-Za-z0-9_.-]+?)(\.ts)?(["'])/g,
+    (_match, prefix, _dots, modName, _tsExt, suffix) => {
+      return `${prefix}./runtime__${modName}.mjs${suffix}`;
+    },
+  );
+  return out;
 }
 
 /**
@@ -332,6 +343,39 @@ async function compileTsOnlyBlock(entry) {
   };
 }
 
+/**
+ * Compile theme-base/runtime/*.ts → dist/astro-blocks/runtime__*.mjs
+ *
+ * Hero/Slideshow/Gallery/etc import `../../runtime/placeholders` (shared
+ * placeholder asset URLs). After rewriteRelativeImports() those become
+ * `./runtime__placeholders.mjs`; this function ensures the target files exist.
+ *
+ * Runtime files must be plain ES modules (no .astro deps). Only files that
+ * theme-base blocks actually import are compiled.
+ */
+async function compileRuntimeFiles() {
+  const runtimeDir = path.join(PACKAGES_DIR, 'theme-base', 'runtime');
+  let files;
+  try {
+    files = await fs.readdir(runtimeDir);
+  } catch {
+    return [];
+  }
+  const compiled = [];
+  for (const f of files) {
+    if (!f.endsWith('.ts') || f.endsWith('.d.ts')) continue;
+    const srcPath = path.join(runtimeDir, f);
+    const source = await fs.readFile(srcPath, 'utf-8');
+    const stripped = stripTypes(source, srcPath);
+    const baseName = f.replace(/\.ts$/, '');
+    const outName = `runtime__${baseName}.mjs`;
+    const outPath = path.join(DIST_DIR, outName);
+    await fs.writeFile(outPath, stripped, 'utf-8');
+    compiled.push(outName);
+  }
+  return compiled;
+}
+
 async function main() {
   const blockEntries = await findAstroBlocks();
   const tsOnlyEntries = await findTsOnlyBlocks();
@@ -343,6 +387,10 @@ async function main() {
   }
 
   await fs.mkdir(DIST_DIR, { recursive: true });
+
+  // Compile runtime/ files FIRST so block imports resolve at load time.
+  const runtimeCompiled = await compileRuntimeFiles();
+  console.log(`Runtime files compiled: ${runtimeCompiled.length} (${runtimeCompiled.join(', ')})`);
 
   console.log(
     `Compiling ${blockEntries.length} block(s) + ${nonBlockEntries.length} non-block(s) + ${tsOnlyEntries.length} ts-only override(s)...`,

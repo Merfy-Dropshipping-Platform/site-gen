@@ -643,6 +643,10 @@ export async function assembleFromPackages(
     await copyBaseSeo(packagesRoot, opts.outputDir, tracked, warnings);
     await copyStyles(baseDir, opts.outputDir, tracked);
     await copyRuntime(baseDir, opts.outputDir, tracked);
+    // 2026-05-17: copyAssets для theme-base (раньше вызывалось только для
+    // themeDir → public/placeholders/ из theme-base никогда не копировался).
+    // Нужно для shared placeholder PNGs (Figma 1:32992).
+    await copyAssets(baseDir, opts.outputDir, tracked);
     // Copy all base blocks (do NOT overwrite — theme pass will)
     await copyBlocksFromPackage(baseDir, opts.outputDir, tracked, /* overwrite */ true);
   } else {

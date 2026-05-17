@@ -16,7 +16,7 @@
  * Theme variants (`wrap-large` / `inline-small`) → радиус и discount-badge стиль.
  */
 import type { GalleryView } from '../Product.types';
-import { PLACEHOLDER_SWEATER } from '../../runtime/placeholders';
+import { PLACEHOLDER_ASSETS } from '../../runtime/placeholders';
 
 interface Props {
   gallery: GalleryView;
@@ -61,7 +61,7 @@ const allImages = gallery.hero
           <img src={gallery.hero.src} alt={gallery.hero.alt} loading="eager" class="absolute inset-0 w-full h-full object-cover block" data-product-hero-image/>
         ) : (
           <div class="absolute inset-0 flex items-center justify-center text-[rgb(var(--color-accent))]">
-            <div class="w-[40%] aspect-square"><Fragment set:html={PLACEHOLDER_SWEATER} /></div>
+            <img src={PLACEHOLDER_ASSETS.sweater.blueLarge} alt="" class="w-[40%] aspect-square object-contain" loading="lazy" />
           </div>
         )}
         {showDiscountBadge && hasDiscount && gallery.hero && (
@@ -104,7 +104,7 @@ const allImages = gallery.hero
           <img src={gallery.hero.src} alt={gallery.hero.alt} loading="eager" class="absolute inset-0 w-full h-full object-cover block" data-product-hero-image/>
         ) : (
           <div class="absolute inset-0 flex items-center justify-center text-[rgb(var(--color-accent))]">
-            <div class="w-[40%] aspect-square"><Fragment set:html={PLACEHOLDER_SWEATER} /></div>
+            <img src={PLACEHOLDER_ASSETS.sweater.blueLarge} alt="" class="w-[40%] aspect-square object-contain" loading="lazy" />
           </div>
         )}
         {showDiscountBadge && hasDiscount && gallery.hero && (
@@ -138,7 +138,7 @@ const allImages = gallery.hero
   {layout === 'two-columns' && allImages.length === 0 && (
     <div class:list={['relative w-full overflow-hidden bg-[rgb(var(--color-surface,var(--color-text)/0.05))] flex items-center justify-center text-[rgb(var(--color-accent))]', heroRadius]}
          style="aspect-ratio:1/1;" data-product-hero>
-      <div class="w-[40%] aspect-square"><Fragment set:html={PLACEHOLDER_SWEATER} /></div>
+      <img src={PLACEHOLDER_ASSETS.sweater.blueLarge} alt="" class="w-[40%] aspect-square object-contain" loading="lazy" />
     </div>
   )}
   {layout === 'two-columns' && allImages.length > 0 && (
@@ -173,7 +173,7 @@ const allImages = gallery.hero
           <img src={gallery.hero.src} alt={gallery.hero.alt} loading="eager" class="absolute inset-0 w-full h-full object-cover block" data-product-hero-image/>
         ) : (
           <div class="absolute inset-0 flex items-center justify-center text-[rgb(var(--color-accent))]">
-            <div class="w-[40%] aspect-square"><Fragment set:html={PLACEHOLDER_SWEATER} /></div>
+            <img src={PLACEHOLDER_ASSETS.sweater.blueLarge} alt="" class="w-[40%] aspect-square object-contain" loading="lazy" />
           </div>
         )}
         {showDiscountBadge && hasDiscount && gallery.hero && (

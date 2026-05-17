@@ -1,7 +1,7 @@
 ---
 import type { ImageWithTextProps } from './ImageWithText.puckConfig';
 import { ImageWithTextClasses as C } from './ImageWithText.classes';
-import { PLACEHOLDER_LANDSCAPE } from '../../runtime/placeholders';
+import { PLACEHOLDER_ASSETS } from '../../runtime/placeholders';
 
 interface Props extends ImageWithTextProps {
   id?: string;
@@ -113,9 +113,7 @@ const widthClass =
         {imageUrl ? (
           <img src={imageUrl} alt={imageAlt} class={C.image} />
         ) : (
-          <div class="aspect-[652/366] overflow-hidden rounded-[var(--radius-media)] text-[rgb(var(--color-accent))]" aria-hidden="true">
-            <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
-          </div>
+          <img src={PLACEHOLDER_ASSETS.landscape.iwt} alt="" class={`${C.image} aspect-[652/366] rounded-[var(--radius-media)]`} aria-hidden="true" loading="lazy" />
         )}
       </div>
       <div class:list={[textColClass, headingAlignClass, textColFlexClass]}>

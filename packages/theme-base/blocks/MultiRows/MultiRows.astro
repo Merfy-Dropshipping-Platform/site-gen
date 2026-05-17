@@ -1,7 +1,7 @@
 ---
 import type { MultiRowsProps } from './MultiRows.puckConfig';
 import { MultiRowsClasses as C } from './MultiRows.classes';
-import { PLACEHOLDER_LANDSCAPE } from '../../runtime/placeholders';
+import { PLACEHOLDER_ASSETS } from '../../runtime/placeholders';
 
 interface Props extends MultiRowsProps {
   id?: string;
@@ -75,9 +75,7 @@ const rowsPosition = typeof raw.rowsPosition === 'string' ? raw.rowsPosition : '
               {rowImage ? (
                 <img src={rowImage} alt={rowTitle ?? ''} class={C.image} />
               ) : (
-                <div class="w-full aspect-[4/3] overflow-hidden rounded-[var(--radius-media)] text-[rgb(var(--color-accent))]" aria-hidden="true">
-                  <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
-                </div>
+                <img src={PLACEHOLDER_ASSETS.landscape.multirows} alt="" class={`${C.image} w-full aspect-[4/3] rounded-[var(--radius-media)] object-cover`} aria-hidden="true" loading="lazy" />
               )}
             </div>
             <div class={C.textCol[variantKey]}>

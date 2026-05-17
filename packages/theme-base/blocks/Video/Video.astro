@@ -1,7 +1,7 @@
 ---
 import type { VideoProps } from './Video.puckConfig';
 import { VideoClasses as C } from './Video.classes';
-import { PLACEHOLDER_LANDSCAPE, PLACEHOLDER_PLAY } from '../../runtime/placeholders';
+import { PLACEHOLDER_ASSETS, PLACEHOLDER_PLAY } from '../../runtime/placeholders';
 
 interface Props extends VideoProps {
   id?: string;
@@ -207,11 +207,9 @@ const video = parseVideo(videoUrl);
       )}
       {!video.embedUrl && (
         <div class={`${C.placeholder} relative overflow-hidden`} aria-hidden="true" data-media-placeholder>
-          {/* Figma 1:19525 — иллюстрация-фон + play icon overlay в центре. */}
-          <div class="absolute inset-0 text-[rgb(var(--color-accent))]">
-            <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
-          </div>
-          <div class="absolute inset-0 flex items-center justify-center text-[rgb(var(--color-accent))]">
+          {/* Figma 1:33420 — Video frame illustration + play icon overlay. */}
+          <img src={PLACEHOLDER_ASSETS.landscape.video} alt="" class="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+          <div class="absolute inset-0 flex items-center justify-center text-white drop-shadow-lg">
             <Fragment set:html={PLACEHOLDER_PLAY} />
           </div>
         </div>

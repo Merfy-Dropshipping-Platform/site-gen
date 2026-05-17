@@ -1,7 +1,7 @@
 ---
 import type { PublicationsProps } from './Publications.puckConfig';
 import { PublicationsClasses as C } from './Publications.classes';
-import { PLACEHOLDER_LANDSCAPE } from '../../runtime/placeholders';
+import { PLACEHOLDER_ASSETS } from '../../runtime/placeholders';
 
 interface Props extends PublicationsProps {
   id?: string;
@@ -135,9 +135,7 @@ const gridTemplateCols = `grid-template-columns: repeat(${columnsResolved}, minm
             {item.image ? (
               <img src={item.image} alt={item.title} class={`${C.cardMedia} object-cover`} loading="lazy" />
             ) : (
-              <div class={`${C.cardMedia} overflow-hidden text-[rgb(var(--color-accent))]`} aria-hidden="true">
-                <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
-              </div>
+              <img src={PLACEHOLDER_ASSETS.publicationCard} alt="" class={`${C.cardMedia} object-cover`} aria-hidden="true" loading="lazy" />
             )}
             <div class={C.cardBody}>
               {dateTimeEnabled && item.date && <div class={C.cardDate}>{item.date}</div>}

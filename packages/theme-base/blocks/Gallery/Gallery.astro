@@ -1,7 +1,7 @@
 ---
 import type { GalleryProps } from './Gallery.puckConfig';
 import { GalleryClasses as C } from './Gallery.classes';
-import { PLACEHOLDER_LANDSCAPE, PLACEHOLDER_SWEATER } from '../../runtime/placeholders';
+import { PLACEHOLDER_ASSETS } from '../../runtime/placeholders';
 
 interface Props extends GalleryProps {
   id?: string;
@@ -222,7 +222,7 @@ const resolvedItems: ResolvedItem[] = effectiveItems.map((item) => resolveItem(i
                     <img src={item.url} alt={item.alt} class={C.image} />
                   ) : (
                     <div class="w-full aspect-[3/4] bg-[rgb(var(--color-surface,var(--color-text)/0.05))] overflow-hidden text-[rgb(var(--color-accent))]" aria-hidden="true">
-                      <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
+                      <img src={PLACEHOLDER_ASSETS.landscape.gallery} alt="" class="w-full h-full object-cover" loading="lazy" />
                     </div>
                   )}
                 </div>
@@ -241,11 +241,11 @@ const resolvedItems: ResolvedItem[] = effectiveItems.map((item) => resolveItem(i
                 ) : (
                   <div class={`${C.cardMedia} flex items-center justify-center overflow-hidden text-[rgb(var(--color-accent))]`} aria-hidden="true">
                     {item.type === 'product' ? (
-                      <div class="w-[60%] aspect-square"><Fragment set:html={PLACEHOLDER_SWEATER} /></div>
+                      <img src={PLACEHOLDER_ASSETS.sweater.blue} alt="" class="w-[60%] aspect-square object-contain" loading="lazy" />
                     ) : item.type === 'collection' ? (
-                      <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
+                      <img src={PLACEHOLDER_ASSETS.landscape.gallery} alt="" class="w-full h-full object-cover" loading="lazy" />
                     ) : (
-                      <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
+                      <img src={PLACEHOLDER_ASSETS.landscape.gallery} alt="" class="w-full h-full object-cover" loading="lazy" />
                     )}
                   </div>
                 )}
@@ -267,7 +267,7 @@ const resolvedItems: ResolvedItem[] = effectiveItems.map((item) => resolveItem(i
                     <img src={item.url} alt={item.alt} class={C.image} />
                   ) : (
                     <div class="w-full aspect-square bg-[rgb(var(--color-surface,var(--color-text)/0.05))] overflow-hidden text-[rgb(var(--color-accent))]" aria-hidden="true">
-                      <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
+                      <img src={PLACEHOLDER_ASSETS.landscape.gallery} alt="" class="w-full h-full object-cover" loading="lazy" />
                     </div>
                   )}
                 </div>
@@ -286,11 +286,11 @@ const resolvedItems: ResolvedItem[] = effectiveItems.map((item) => resolveItem(i
                 ) : (
                   <div class={`${C.cardMedia} flex items-center justify-center overflow-hidden text-[rgb(var(--color-accent))]`} aria-hidden="true">
                     {item.type === 'product' ? (
-                      <div class="w-[60%] aspect-square"><Fragment set:html={PLACEHOLDER_SWEATER} /></div>
+                      <img src={PLACEHOLDER_ASSETS.sweater.blue} alt="" class="w-[60%] aspect-square object-contain" loading="lazy" />
                     ) : item.type === 'collection' ? (
-                      <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
+                      <img src={PLACEHOLDER_ASSETS.landscape.gallery} alt="" class="w-full h-full object-cover" loading="lazy" />
                     ) : (
-                      <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
+                      <img src={PLACEHOLDER_ASSETS.landscape.gallery} alt="" class="w-full h-full object-cover" loading="lazy" />
                     )}
                   </div>
                 )}

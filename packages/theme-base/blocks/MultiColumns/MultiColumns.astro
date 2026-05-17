@@ -1,7 +1,9 @@
 ---
 import type { MultiColumnsProps } from './MultiColumns.puckConfig';
 import { MultiColumnsClasses as C } from './MultiColumns.classes';
-import { PLACEHOLDER_LANDSCAPE } from '../../runtime/placeholders';
+// MultiColumns placeholder per Figma 1:33303 — маленький decorative
+// square icon (НЕ landscape), потому что MultiColumns в Figma это
+// 3 узких текстовых колонки с маленьким accent icon наверху.
 
 interface Props extends MultiColumnsProps {
   id?: string;
@@ -76,9 +78,7 @@ const buttonLink = typeof raw.buttonLink === 'string' ? raw.buttonLink : (typeof
             {colImage ? (
               <img src={colImage} alt={colTitle ?? ''} class={C.image} />
             ) : (
-              <div class="w-full aspect-square overflow-hidden rounded-[var(--radius-media)] text-[rgb(var(--color-accent))] mb-3" aria-hidden="true">
-                <Fragment set:html={PLACEHOLDER_LANDSCAPE} />
-              </div>
+              <div class="w-8 h-8 rounded bg-[rgb(var(--color-accent))] mb-3" aria-hidden="true" />
             )}
             {colTitle && <h3 class={C.columnHeading}>{colTitle}</h3>}
             {colDescription && <p class={C.columnText}>{colDescription}</p>}

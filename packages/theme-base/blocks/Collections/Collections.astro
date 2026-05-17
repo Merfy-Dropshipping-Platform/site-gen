@@ -2,7 +2,8 @@
 import type { CollectionsProps } from './Collections.puckConfig';
 import { CollectionsClasses as C } from './Collections.classes';
 import { buildCollectionHref } from './card-href';
-import { PLACEHOLDER_SWEATER } from '../../runtime/placeholders';
+// Collections placeholder per Figma 1:33070 — пустые квадратные карточки
+// (gray fill, no illustration) с лейблом «Коллекция» под каждой.
 
 interface Props extends CollectionsProps {
   id?: string;
@@ -148,10 +149,11 @@ try {
 // Resolve merchant's manual collection items via collectionId.
 // When merchant hasn't set up anything — fallback на live `realCollections`
 // (auto-mode), затем DEMO_COLLECTIONS как visual placeholder.
+// Per Figma 1:33070 — пустые квадратные карточки с лейблом «Коллекция».
 const DEMO_COLLECTIONS = [
-  { heading: 'Коллекция RIVIERA', image: '' },
-  { heading: 'Коллекция URBAN', image: '' },
-  { heading: 'Коллекция FUTURISM', image: '' },
+  { heading: 'Коллекция', image: '' },
+  { heading: 'Коллекция', image: '' },
+  { heading: 'Коллекция', image: '' },
 ];
 
 type CollectionTile = { id: string; heading: string; description?: string; image?: string; collectionId: string | null };
@@ -216,18 +218,14 @@ const hasRealCollections = hasManualCollections || realCollections.length > 0;
           ) : (
             <div
               class:list={[
-                'flex items-center justify-center overflow-hidden',
+                'overflow-hidden',
                 isTile
-                  ? 'w-full aspect-square rounded-[12px] bg-[rgb(var(--color-surface))] text-[rgb(var(--color-accent))]'
-                  : `w-full rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))] text-[rgb(var(--color-accent))] ${gridAspectClass}`,
+                  ? 'w-full aspect-square rounded-[12px] bg-[rgb(var(--color-muted)/0.15)]'
+                  : `w-full rounded-[var(--radius-media)] bg-[rgb(var(--color-muted)/0.15)] ${gridAspectClass}`,
               ]}
               style={isTile ? '' : `aspect-ratio: ${tileAspectStyle};`}
               aria-hidden="true"
-            >
-              <div class="w-[40%] aspect-square">
-                <Fragment set:html={PLACEHOLDER_SWEATER} />
-              </div>
-            </div>
+            />
           )}
           <h3 class:list={[
             isTile ? '[font-family:var(--font-body)] font-light text-[length:var(--size-nav-link,16px)] leading-none text-[rgb(var(--color-muted))] group-hover:text-[rgb(var(--color-text))] transition-colors' : `${C.cardHeading} ${cardCaptionClass}`,

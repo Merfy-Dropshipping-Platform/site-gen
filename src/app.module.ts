@@ -67,6 +67,7 @@ import { HealthMonitorService } from "./health-monitor/health-monitor.service";
 import { PreviewModule } from "./modules/preview.module";
 import { ThemePuckConfigModule } from "./modules/theme-puck-config.module";
 import { ThemePresetModule } from "./modules/theme-preset/theme-preset.module";
+import { BlocksController } from "./controllers/blocks.controller";
 
 @Module({
   imports: [
@@ -102,6 +103,7 @@ import { ThemePresetModule } from "./modules/theme-preset/theme-preset.module";
     BrandingController,
     MediaUploadController,
     PublicationsMicroserviceController,
+    BlocksController,
   ],
   providers: [
     SitesDomainService,

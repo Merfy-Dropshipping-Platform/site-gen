@@ -189,6 +189,13 @@ function stripTypes(source, filename) {
  * so such astros will fail to render via the Container and will surface in verify:astro.
  * That's acceptable in Phase 1b — Phase 1c wires the real integration.
  */
+// MIRROR of packages/theme-contract/registry/resolve.ts — spec 092 FR-003.
+// Логика идентична `resolveImports(source, { pkg, blockName, mode: 'flat' })`.
+// Дубликат вместо import потому что compile-blocks.mjs — plain Node ESM
+// который не может resolve .ts module без transpile step. Drift проверяется
+// тестом packages/theme-contract/__tests__/registry/resolve.test.ts —
+// при изменении одного нужно одинаково менять другой (TODO: extract to .js
+// shared module чтобы можно было импортировать из обоих контекстов).
 function rewriteRelativeImports(source, pkg, blockName) {
   // Rewrite `./X` (sibling) imports to flat naming
   let out = source.replace(

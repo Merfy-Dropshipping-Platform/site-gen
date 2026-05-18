@@ -1,0 +1,71 @@
+---
+import type { ImageProps } from './Image.puckConfig';
+import { ImageClasses as C } from './Image.classes';
+import { PLACEHOLDER_ASSETS } from '../../runtime/placeholders';
+
+interface Props extends ImageProps {
+  id?: string;
+}
+
+const raw = Astro.props as Record<string, unknown>;
+const {
+  id,
+  imageUrl,
+  imageAlt = '',
+  imageUrl2,
+  imageAlt2 = '',
+  heading,
+  text,
+  button,
+  variant = 'full',
+  height = 'medium',
+  colorScheme,
+  padding,
+} = raw as ImageProps & { id?: string };
+
+const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace(/^scheme-/, '')}` : '';
+const heightClass = (C.heights as Record<string, string>)[height ?? 'medium'] ?? C.heights.medium;
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+
+const isSplit = variant === 'split-h';
+const cardVariant = typeof variant === 'string' && variant.startsWith('card-') ? variant : null;
+const cardPosClass = cardVariant ? (C.cardPos as Record<string, string>)[cardVariant] ?? '' : '';
+
+const src1 = imageUrl || PLACEHOLDER_ASSETS.landscape.image;
+const src2 = imageUrl2 || PLACEHOLDER_ASSETS.landscape.image;
+---
+<section
+  class:list={[C.root, schemeClass]}
+  data-puck-component-id={id}
+  data-block="image"
+  data-variant={variant}
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    {isSplit ? (
+      <div class={C.splitGrid}>
+        <div class:list={[C.splitItem, heightClass]}>
+          <img src={src1} alt={imageAlt} class={C.image} loading="lazy" />
+        </div>
+        <div class:list={[C.splitItem, heightClass]}>
+          <img src={src2} alt={imageAlt2} class={C.image} loading="lazy" />
+        </div>
+      </div>
+    ) : (
+      <div class:list={[C.imageWrap, heightClass]}>
+        <img src={src1} alt={imageAlt} class={C.image} loading="lazy" />
+        {cardVariant && (heading || text || button?.text) && (
+          <div class:list={[C.card, cardPosClass]}>
+            {heading && <h2 class={C.heading}>{heading}</h2>}
+            {text && <p class={C.text}>{text}</p>}
+            {button?.text && (
+              <a href={button.href ?? '#'} class={C.button}>{button.text}</a>
+            )}
+          </div>
+        )}
+      </div>
+    )}
+  </div>
+</section>

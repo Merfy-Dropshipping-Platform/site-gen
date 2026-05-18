@@ -25,7 +25,8 @@
     "figma:inventory": "tsx scripts/figma/inventory.ts",
     "figma:snapshot": "tsx scripts/figma/snapshot.ts",
     "figma:audit": "tsx scripts/figma/audit.ts",
-    "figma:theme-readiness": "tsx scripts/figma/theme-readiness.ts"
+    "figma:theme-readiness": "tsx scripts/figma/theme-readiness.ts",
+    "validate:blocks": "tsx scripts/validate-blocks.mjs"
   },
   "dependencies": {
     "@astrojs/compiler": "^3.0.1",

@@ -350,6 +350,44 @@ async function copyCustomBlocks(
 }
 
 /**
+ * Symmetric pipeline pass — копирует ВСЁ что есть в `packageDir` в outputDir
+ * по единым правилам. Используется и для BASE PASS (`packages/theme-base/`)
+ * и для THEME PASS (`packages/theme-<name>/`).
+ *
+ * Spec 092 FR-004: drift между BASE и THEME passes невозможен by construction —
+ * добавление нового step (например copyFonts) автоматически применяется к обоим.
+ *
+ * `isBaseLayer` triggers BASE-only steps: layouts (StoreLayout/BaseLayout) +
+ * seo modules — они существуют только в theme-base; theme passes этого не имеют.
+ * `applyThemeDefaultFonts` — наоборот, только для theme pass (rewrite BaseLayout
+ * Google Fonts link с theme.json defaults).
+ *
+ * `copyBlocksFromPackage` всегда called with overwrite=true: для BASE первый
+ * pass на чистый outputDir; для THEME — overrides base blocks.
+ */
+async function runPass(
+  packageDir: string,
+  outputDir: string,
+  isBaseLayer: boolean,
+  packagesRoot: string,
+  tracked: string[],
+  warnings: string[],
+): Promise<void> {
+  if (isBaseLayer) {
+    await copyBaseLayouts(packagesRoot, outputDir, tracked, warnings);
+    await copyBaseSeo(packagesRoot, outputDir, tracked, warnings);
+  }
+  await copyStyles(packageDir, outputDir, tracked);
+  await copyRuntime(packageDir, outputDir, tracked);
+  await copyAssets(packageDir, outputDir, tracked);
+  await copyCustomBlocks(packageDir, outputDir, tracked);
+  await copyBlocksFromPackage(packageDir, outputDir, tracked, /* overwrite */ true);
+  if (!isBaseLayer) {
+    await applyThemeDefaultFonts(packageDir, outputDir, warnings);
+  }
+}
+
+/**
  * Copy theme assets (images, static) if present.
  *
  * PHASE3A-STATUS: IMPLEMENTED
@@ -639,16 +677,7 @@ export async function assembleFromPackages(
   // ---- BASE PASS ----
   if (await dirExists(baseDir)) {
     baseCopied = true;
-    await copyBaseLayouts(packagesRoot, opts.outputDir, tracked, warnings);
-    await copyBaseSeo(packagesRoot, opts.outputDir, tracked, warnings);
-    await copyStyles(baseDir, opts.outputDir, tracked);
-    await copyRuntime(baseDir, opts.outputDir, tracked);
-    // 2026-05-17: copyAssets для theme-base (раньше вызывалось только для
-    // themeDir → public/placeholders/ из theme-base никогда не копировался).
-    // Нужно для shared placeholder PNGs (Figma 1:32992).
-    await copyAssets(baseDir, opts.outputDir, tracked);
-    // Copy all base blocks (do NOT overwrite — theme pass will)
-    await copyBlocksFromPackage(baseDir, opts.outputDir, tracked, /* overwrite */ true);
+    await runPass(baseDir, opts.outputDir, /* isBaseLayer */ true, packagesRoot, tracked, warnings);
   } else {
     warnings.push(`theme-base package not found at ${baseDir}`);
   }
@@ -656,14 +685,7 @@ export async function assembleFromPackages(
   // ---- THEME PASS ----
   if (await dirExists(themeDir)) {
     themeCopied = true;
-    // Theme blocks override base blocks of the same name
-    await copyBlocksFromPackage(themeDir, opts.outputDir, tracked, /* overwrite */ true);
-    await copyCustomBlocks(themeDir, opts.outputDir, tracked);
-    await copyAssets(themeDir, opts.outputDir, tracked);
-    await copyStyles(themeDir, opts.outputDir, tracked);
-    // Rewrite Google Fonts <link> in BaseLayout to match theme.json defaults
-    // (prevents all non-rose themes from inheriting rose's Comfortaa+Manrope)
-    await applyThemeDefaultFonts(themeDir, opts.outputDir, warnings);
+    await runPass(themeDir, opts.outputDir, /* isBaseLayer */ false, packagesRoot, tracked, warnings);
   } else {
     warnings.push(`theme-${opts.themeName} package not found at ${themeDir}`);
   }

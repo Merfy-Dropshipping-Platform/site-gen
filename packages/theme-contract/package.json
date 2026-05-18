@@ -20,7 +20,8 @@
     "./cli/dev": "./cli/dev.ts",
     "./schema": "./schema/theme-manifest.schema.json",
     "./tokens/registry": "./tokens/registry.ts",
-    "./validators/validateBlock": "./validators/validateBlock.ts"
+    "./validators/validateBlock": "./validators/validateBlock.ts",
+    "./registry": "./registry/index.ts"
   },
   "scripts": {
     "theme:create": "tsx cli/create.ts",

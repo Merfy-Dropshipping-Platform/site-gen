@@ -440,11 +440,25 @@ export class SitesDomainService {
     let coolifyProjectUuid: string | undefined =
       existing.coolifyProjectUuid ?? undefined;
 
-    // Generate subdomain via Domain Service (if not already done)
-    if (!skipCoolify && !domainId) {
-      try {
-        const domainResult =
-          await this.domainClient.generateSubdomain(tenantId);
+    // Generate subdomain + create/get Coolify project in parallel — they're
+    // independent external calls. Errors per-task are still logged as warn and
+    // the reaper retries missing fields, preserving the previous behavior.
+    const needsDomain = !skipCoolify && !domainId;
+    const needsProject = !skipCoolify && !coolifyProjectUuid;
+
+    const provisioningStartedAt = Date.now();
+    const [domainSettled, projectSettled] = await Promise.allSettled([
+      needsDomain
+        ? this.domainClient.generateSubdomain(tenantId)
+        : Promise.resolve(null),
+      needsProject
+        ? this.getOrCreateTenantProject(tenantId, companyName)
+        : Promise.resolve(null),
+    ]);
+
+    if (needsDomain) {
+      if (domainSettled.status === "fulfilled" && domainSettled.value) {
+        const domainResult = domainSettled.value;
         domainId = domainResult.id;
         const subdomain = domainResult.name;
         publicUrl = this.storage.getSitePublicUrlBySubdomain(subdomain);
@@ -452,29 +466,31 @@ export class SitesDomainService {
         this.logger.log(
           `finishProvisioning: generated subdomain ${subdomain} (id: ${domainId}) for site ${siteId} tenant ${tenantId}`,
         );
-      } catch (e) {
+      } else if (domainSettled.status === "rejected") {
+        const reason = domainSettled.reason;
         this.logger.warn(
-          `finishProvisioning: Domain Service failed for site ${siteId}: ${e instanceof Error ? e.message : e}`,
+          `finishProvisioning: Domain Service failed for site ${siteId}: ${reason instanceof Error ? reason.message : reason}`,
         );
       }
     }
 
-    // Create or get Coolify project (if not already done)
-    if (!skipCoolify && !coolifyProjectUuid) {
-      try {
-        coolifyProjectUuid = await this.getOrCreateTenantProject(
-          tenantId,
-          companyName,
-        );
+    if (needsProject) {
+      if (projectSettled.status === "fulfilled" && projectSettled.value) {
+        coolifyProjectUuid = projectSettled.value;
         this.logger.log(
           `finishProvisioning: Coolify project ${coolifyProjectUuid} ready for tenant ${tenantId} site ${siteId}`,
         );
-      } catch (e) {
+      } else if (projectSettled.status === "rejected") {
+        const reason = projectSettled.reason;
         this.logger.warn(
-          `finishProvisioning: Coolify project failed for site ${siteId}: ${e instanceof Error ? e.message : e}`,
+          `finishProvisioning: Coolify project failed for site ${siteId}: ${reason instanceof Error ? reason.message : reason}`,
         );
       }
     }
+
+    this.logger.log(
+      `finishProvisioning: parallel provisioning for site ${siteId} took ${Date.now() - provisioningStartedAt}ms (domain=${needsDomain}, project=${needsProject})`,
+    );
 
     // UPDATE site with resolved fields (partial updates ok — reaper will retry missing bits)
     await this.db

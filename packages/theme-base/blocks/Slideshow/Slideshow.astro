@@ -160,36 +160,39 @@ const imageFullBleed = raw.imageFullBleed === true;
   </div>
 </section>
 
-<script>
+<script is:inline>
   // Pupa parity: simple carousel rotation (vanilla JS, no React island).
-  document.querySelectorAll<HTMLElement>('[data-merfy-slideshow]').forEach((root) => {
-    const slides = root.querySelectorAll<HTMLElement>('[data-slide-index]');
-    const pagination = root.querySelectorAll<HTMLElement>('[data-slide-target]');
+  // is:inline — script emitted as-is в HTML без Astro/Vite bundling.
+  // Без is:inline preview iframe (Astro Container renderToString) не получает
+  // client JS → buttons "1 2 3" не работали.
+  document.querySelectorAll('[data-merfy-slideshow]').forEach(function (root) {
+    var slides = root.querySelectorAll('[data-slide-index]');
+    var pagination = root.querySelectorAll('[data-slide-target]');
     if (slides.length <= 1) return;
 
-    const section = root.closest('section');
-    const autoplay = section?.dataset.autoplay === 'true';
-    const intervalSec = parseInt(section?.dataset.interval || '5', 10);
+    var section = root.closest('section');
+    var autoplay = section && section.dataset.autoplay === 'true';
+    var intervalSec = parseInt((section && section.dataset.interval) || '5', 10);
 
-    let current = 0;
-    const show = (idx: number) => {
-      slides.forEach((s, i) => s.classList.toggle('hidden', i !== idx));
-      pagination.forEach((p, i) => {
+    var current = 0;
+    function show(idx) {
+      slides.forEach(function (s, i) { s.classList.toggle('hidden', i !== idx); });
+      pagination.forEach(function (p, i) {
         p.classList.toggle('opacity-100', i === idx);
         p.classList.toggle('opacity-40', i !== idx);
       });
       current = idx;
-    };
+    }
 
-    pagination.forEach((p) => {
-      p.addEventListener('click', () => {
-        const target = parseInt(p.dataset.slideTarget || '0', 10);
+    pagination.forEach(function (p) {
+      p.addEventListener('click', function () {
+        var target = parseInt(p.dataset.slideTarget || '0', 10);
         show(target);
       });
     });
 
     if (autoplay) {
-      setInterval(() => show((current + 1) % slides.length), intervalSec * 1000);
+      setInterval(function () { show((current + 1) % slides.length); }, intervalSec * 1000);
     }
   });
 </script>

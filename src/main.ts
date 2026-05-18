@@ -1,4 +1,5 @@
 import { NestFactory } from "@nestjs/core";
+import { NestExpressApplication } from "@nestjs/platform-express";
 import { AppModule } from "./app.module";
 import { MicroserviceOptions, Transport } from "@nestjs/microservices";
 import { ValidationPipe } from "@nestjs/common";
@@ -41,9 +42,19 @@ async function bootstrap() {
     process.exit(1);
   }
 
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
   });
+
+  // Serve theme-base/public/* as static for preview iframe (spec 092 + 091).
+  // Preview iframe HTML рендерит `<img src="/placeholders/X.png">` —
+  // нужно чтобы sites service отдавал эти файлы напрямую (для live SSG они
+  // копируются в MinIO bucket per-site через copyPublic; для preview
+  // iframe — sites service serves source filesystem directly).
+  app.useStaticAssets(
+    path.resolve(process.cwd(), "packages", "theme-base", "public", "placeholders"),
+    { prefix: "/placeholders/" },
+  );
 
   // Использовать Pino как основной logger
   app.useLogger(app.get(Logger));

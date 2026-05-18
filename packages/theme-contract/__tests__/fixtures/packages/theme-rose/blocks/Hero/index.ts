@@ -1,0 +1,2 @@
+// Rose override stub
+export {};

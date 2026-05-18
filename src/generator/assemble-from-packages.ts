@@ -350,6 +350,64 @@ async function copyCustomBlocks(
 }
 
 /**
+ * Validate output directory before zip/upload. Catches broken refs к assets
+ * которые .astro блоки используют через `<img src="/placeholders/X">` etc, но
+ * самих файлов нет в `outputDir/public/`. Сегодня это был root cause —
+ * `copyAssets(baseDir)` не вызывался → 404 на live.
+ *
+ * Scans .astro в outputDir/src/ для refs `/placeholders/`, `/assets/`,
+ * `/fonts/`, `/icons/`. Каждый ref должен resolve к существующему файлу в
+ * `outputDir/public/`. Если нет — issue в array.
+ */
+export async function validateOutputDir(outputDir: string): Promise<string[]> {
+  const fs = await import('node:fs/promises');
+  const path = await import('node:path');
+  const issues: string[] = [];
+  const srcDir = path.join(outputDir, 'src');
+  const publicDir = path.join(outputDir, 'public');
+
+  const astroFiles = await collectAstroFiles(srcDir);
+  const referenced = new Set<string>();
+  const refRegex = /(?:src|href|url)\s*[=:]\s*['"\(]\s*\/(placeholders|assets|fonts|icons)\/([^'"\)\s?#]+)/g;
+  for (const f of astroFiles) {
+    const src = await fs.readFile(f, 'utf-8');
+    for (const m of src.matchAll(refRegex)) {
+      referenced.add(`${m[1]}/${m[2]}`);
+    }
+  }
+
+  for (const ref of referenced) {
+    try {
+      await fs.access(path.join(publicDir, ref));
+    } catch {
+      issues.push(`Missing referenced asset: /${ref}`);
+    }
+  }
+  return issues;
+}
+
+async function collectAstroFiles(dir: string): Promise<string[]> {
+  const fs = await import('node:fs/promises');
+  const path = await import('node:path');
+  const out: string[] = [];
+  let entries: Array<{ name: string; isDirectory: () => boolean; isFile: () => boolean }>;
+  try {
+    entries = await fs.readdir(dir, { withFileTypes: true });
+  } catch {
+    return out;
+  }
+  for (const e of entries) {
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) {
+      out.push(...(await collectAstroFiles(full)));
+    } else if (e.isFile() && e.name.endsWith('.astro')) {
+      out.push(full);
+    }
+  }
+  return out;
+}
+
+/**
  * Symmetric pipeline pass — копирует ВСЁ что есть в `packageDir` в outputDir
  * по единым правилам. Используется и для BASE PASS (`packages/theme-base/`)
  * и для THEME PASS (`packages/theme-<name>/`).
@@ -688,6 +746,18 @@ export async function assembleFromPackages(
     await runPass(themeDir, opts.outputDir, /* isBaseLayer */ false, packagesRoot, tracked, warnings);
   } else {
     warnings.push(`theme-${opts.themeName} package not found at ${themeDir}`);
+  }
+
+  // ---- VALIDATE OUTPUT ----
+  // Spec 092 FR-005 / defense layer #4: block release of broken artifact.
+  // Если .astro references asset который не существует в public/ — throw.
+  // Build pipeline propagates → site_build status='failed' → no MinIO upload →
+  // live stays on старом working artifact.
+  const outputIssues = await validateOutputDir(opts.outputDir);
+  if (outputIssues.length > 0) {
+    throw new Error(
+      `Output directory validation failed (${outputIssues.length} issue(s)): ${outputIssues.slice(0, 5).join('; ')}${outputIssues.length > 5 ? ' …' : ''}`,
+    );
   }
 
   // ---- TOKENS ----

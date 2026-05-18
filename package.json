@@ -27,7 +27,8 @@
     "figma:audit": "tsx scripts/figma/audit.ts",
     "figma:theme-readiness": "tsx scripts/figma/theme-readiness.ts",
     "validate:blocks": "tsx scripts/validate-blocks.mjs",
-    "smoke:sites": "node scripts/smoke-99-sites.mjs"
+    "smoke:sites": "node scripts/smoke-99-sites.mjs",
+    "new:block": "node scripts/new-block.mjs"
   },
   "dependencies": {
     "@astrojs/compiler": "^3.0.1",

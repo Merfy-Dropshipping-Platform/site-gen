@@ -185,6 +185,9 @@ export class PreviewController {
         blockName: body.blockType,
         props: propsWithContext,
         themeId: body.themeId ?? null,
+        // POST /preview/block ALWAYS called from constructor iframe —
+        // граceful stub визибл при missing/broken (spec 092 Q3 C).
+        isPreview: true,
       });
       res.type('text/html').send(html);
     } catch (err: unknown) {

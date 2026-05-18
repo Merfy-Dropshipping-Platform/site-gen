@@ -1,5 +1,17 @@
 import { Injectable, Optional } from '@nestjs/common';
 
+const HTML_ESCAPE_MAP: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => HTML_ESCAPE_MAP[c]!);
+}
+
 /**
  * Input for rendering a single block to HTML.
  */
@@ -12,6 +24,12 @@ export interface RenderBlockInput {
    * to theme-base.
    */
   themeId?: string | null;
+  /**
+   * Context flag для graceful stub rendering (spec 092 Q3 C).
+   * - true (preview iframe): show visible stub при missing/broken block
+   * - false (live build): show invisible empty fragment
+   */
+  isPreview?: boolean;
 }
 
 /**
@@ -185,18 +203,33 @@ export class PreviewService {
    * (mirror page-generator.ts:122).
    */
   async renderBlock(input: RenderBlockInput): Promise<string> {
-    const Component = await this.componentResolver(
-      input.blockName,
-      input.themeId ?? null,
-    );
-    const themeDefaults = await this.loadThemeBlockDefaults(input.themeId);
-    const blockDefaults = (themeDefaults[input.blockName] as Record<string, unknown> | undefined) ?? {};
-    const mergedProps = { ...blockDefaults, ...input.props };
-    const container = await this.getContainer();
-    const html = await container.renderToString(Component, {
-      props: mergedProps,
-    });
-    return html;
+    const isPreview = input.isPreview ?? true;
+    try {
+      const Component = await this.componentResolver(
+        input.blockName,
+        input.themeId ?? null,
+      );
+      const themeDefaults = await this.loadThemeBlockDefaults(input.themeId);
+      const blockDefaults = (themeDefaults[input.blockName] as Record<string, unknown> | undefined) ?? {};
+      const mergedProps = { ...blockDefaults, ...input.props };
+      const container = await this.getContainer();
+      const html = await container.renderToString(Component, {
+        props: mergedProps,
+      });
+      return html;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const isMissing = /Cannot find module|not resolvable|MODULE_NOT_FOUND/.test(msg);
+      if (isPreview) {
+        const escaped = escapeHtml(input.blockName);
+        if (isMissing) {
+          return `<div data-missing-block="${escaped}" style="padding:24px;background:#fef3c7;border:2px dashed #d97706;color:#92400e;text-align:center;font-family:sans-serif;border-radius:8px;margin:16px 0">Блок «${escaped}» не настроен. Удалите его или обратитесь в поддержку.</div>`;
+        }
+        return `<div data-render-error="${escaped}" style="padding:16px;background:#fee2e2;border:1px solid #dc2626;color:#991b1b;font-family:sans-serif;border-radius:8px;margin:16px 0">Ошибка рендера блока «${escaped}»</div>`;
+      }
+      // Live build — invisible (spec 092 Q3 C)
+      return '';
+    }
   }
 
   private themeDefaultsCache = new Map<string, Record<string, unknown>>();

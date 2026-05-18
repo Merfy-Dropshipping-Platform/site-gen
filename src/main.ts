@@ -12,7 +12,12 @@ async function bootstrap() {
   // Registry init + validation BEFORE Nest app creation.
   // Broken registry → process.exit(1) → Coolify retry fails → откат на
   // предыдущий рабочий artifact. См. spec 092 (defense in depth).
-  const packagesDir = path.resolve(__dirname, "..", "packages");
+  // __dirname в проде = /app/dist/src → ../../packages = /app/packages.
+  // В dev (ts-node/tsx) = /Users/.../sites/src → ../../packages = /Users/.../sites/packages.
+  // Wait — в dev __dirname = .../sites/src, ../packages = .../sites/packages (one ..).
+  // Различие dev vs prod build → resolve через process.cwd() — sites service всегда
+  // запускается из service root (Coolify WORKDIR=/app, dev = sites/).
+  const packagesDir = path.resolve(process.cwd(), "packages");
   try {
     const registry = await scanBlockRegistry(packagesDir);
     const { errors, warnings } = await validateRegistry(registry, packagesDir);

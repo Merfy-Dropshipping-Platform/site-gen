@@ -4,8 +4,38 @@ import { MicroserviceOptions, Transport } from "@nestjs/microservices";
 import { ValidationPipe } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Logger } from "nestjs-pino";
+import * as path from "node:path";
+import { scanBlockRegistry, validateRegistry } from "../packages/theme-contract/registry";
+import { RegistryStore } from "./registry/registry.store";
 
 async function bootstrap() {
+  // Registry init + validation BEFORE Nest app creation.
+  // Broken registry → process.exit(1) → Coolify retry fails → откат на
+  // предыдущий рабочий artifact. См. spec 092 (defense in depth).
+  const packagesDir = path.resolve(__dirname, "..", "packages");
+  try {
+    const registry = await scanBlockRegistry(packagesDir);
+    const { errors, warnings } = await validateRegistry(registry, packagesDir);
+    if (warnings.length > 0) {
+      console.warn(
+        `[registry] ${warnings.length} warning(s):`,
+        warnings.map((w) => `${w.code}:${w.block ?? "?"}`).join(", "),
+      );
+    }
+    if (errors.length > 0) {
+      console.error(`[registry] FATAL ${errors.length} error(s):`);
+      for (const e of errors) {
+        console.error(`  - ${e.code} ${e.block ?? ""}: ${e.message}${e.file ? ` (${e.file})` : ""}`);
+      }
+      process.exit(1);
+    }
+    RegistryStore.set(registry);
+    console.log(`[registry] ${registry.blocks.length} blocks loaded from ${registry.source}`);
+  } catch (e) {
+    console.error("[registry] scan/validate failed:", e);
+    process.exit(1);
+  }
+
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
   });

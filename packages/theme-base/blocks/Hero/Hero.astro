@@ -1,7 +1,8 @@
 ---
 import type { HeroProps } from './Hero.puckConfig';
 import { HeroClasses as C } from './Hero.classes';
-import { PLACEHOLDER_ASSETS } from '../../runtime/placeholders';
+// Hero placeholder bg — neutral gray (Hero всегда имеет heading/text content,
+// Figma PNG content overlay'ало бы с real text).
 
 interface Props extends HeroProps {
   id?: string;
@@ -248,7 +249,7 @@ const heroButtonStyleClass = heroButtonStyle === 'outlined'
           <img src={imageUrl} alt={imageAlt} class={C.image['split-bloom']} />
         ) : (
           <div class="absolute inset-0 overflow-hidden text-[rgb(var(--color-accent))]" aria-hidden="true">
-            <img src={PLACEHOLDER_ASSETS.landscape.slideshow} alt="" class="w-full h-full object-cover" loading="lazy" />
+            <div class="w-full h-full bg-[rgb(var(--color-muted)/0.12)]" aria-hidden="true" />
           </div>
         )}
       </div>
@@ -275,7 +276,7 @@ const heroButtonStyleClass = heroButtonStyle === 'outlined'
   )}
   {variant === 'overlay' && !imageUrl && (
     <div class="absolute inset-0 overflow-hidden text-[rgb(var(--color-accent))]" aria-hidden="true">
-      <img src={PLACEHOLDER_ASSETS.landscape.slideshow} alt="" class="w-full h-full object-cover" loading="lazy" />
+      <div class="w-full h-full bg-[rgb(var(--color-muted)/0.12)]" aria-hidden="true" />
     </div>
   )}
   {variant === 'centered' && imageUrl && (
@@ -289,7 +290,7 @@ const heroButtonStyleClass = heroButtonStyle === 'outlined'
   )}
   {variant === 'centered' && !imageUrl && (
     <div class="absolute inset-0 -z-10 overflow-hidden text-[rgb(var(--color-accent))]" aria-hidden="true">
-      <img src={PLACEHOLDER_ASSETS.landscape.slideshow} alt="" class="w-full h-full object-cover" loading="lazy" />
+      <div class="w-full h-full bg-[rgb(var(--color-muted)/0.12)]" aria-hidden="true" />
     </div>
   )}
   <div class:list={[C.container, innerClass, vAlignClass, 'relative z-10']} style="min-height: inherit;">
@@ -328,7 +329,7 @@ const heroButtonStyleClass = heroButtonStyle === 'outlined'
                 />
               ) : (
                 <div class="absolute inset-0 overflow-hidden text-[rgb(var(--color-accent))]" aria-hidden="true">
-                  <img src={PLACEHOLDER_ASSETS.landscape.slideshow} alt="" class="w-full h-full object-cover" loading="lazy" />
+                  <div class="w-full h-full bg-[rgb(var(--color-muted)/0.12)]" aria-hidden="true" />
                 </div>
               )}
             </div>
@@ -363,7 +364,7 @@ const heroButtonStyleClass = heroButtonStyle === 'outlined'
     )}
     {variant === 'split' && !imageUrl && (
       <div class="w-full aspect-[4/3] overflow-hidden text-[rgb(var(--color-accent))]" aria-hidden="true">
-        <img src={PLACEHOLDER_ASSETS.landscape.slideshow} alt="" class="w-full h-full object-cover" loading="lazy" />
+        <div class="w-full h-full bg-[rgb(var(--color-muted)/0.12)]" aria-hidden="true" />
       </div>
     )}
   </div>
@@ -408,7 +409,7 @@ const heroButtonStyleClass = heroButtonStyle === 'outlined'
                               heroImageFullBleed && C.imageFullBleed]} />
           ) : (
             <div class="absolute inset-0 -z-10 overflow-hidden text-[rgb(var(--color-accent))]" aria-hidden="true">
-              <img src={PLACEHOLDER_ASSETS.landscape.slideshow} alt="" class="w-full h-full object-cover" loading="lazy" />
+              <div class="w-full h-full bg-[rgb(var(--color-muted)/0.12)]" aria-hidden="true" />
             </div>
           )}
           <div class="relative z-10 max-w-[var(--container-max-width)] mx-auto px-[300px] flex flex-col gap-8 items-start">

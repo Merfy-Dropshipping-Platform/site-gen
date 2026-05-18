@@ -120,7 +120,12 @@ const imageFullBleed = raw.imageFullBleed === true;
           >
             {slide.image ? (
               <img src={slide.image} alt={slide.headingText ?? ''} class:list={[C.image, imageFullBleed && C.imageFullBleed]} />
+            ) : slide.headingText || slide.textContent || slide.buttonText ? (
+              /* Slide имеет text/button content — neutral gray background, без Figma PNG
+                 (PNG asset содержит built-in white card что overlap'ало бы с real content). */
+              <div class:list={[C.image, imageFullBleed && C.imageFullBleed, '-z-10 bg-[rgb(var(--color-muted)/0.12)]']} aria-hidden="true" />
             ) : (
+              /* Полностью пустой slide — full empty-state PNG из Figma. */
               <img src={PLACEHOLDER_ASSETS.landscape.slideshow} alt="" class:list={[C.image, imageFullBleed && C.imageFullBleed, '-z-10 object-cover']} aria-hidden="true" loading="lazy" />
             )}
             <div class:list={[C.content, slideAlignClass]}>

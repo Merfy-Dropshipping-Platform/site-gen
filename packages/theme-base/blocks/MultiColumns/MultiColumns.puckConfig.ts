@@ -138,20 +138,28 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
       type: 'array',
       label: 'Колонки (макс 10)',
       hiddenInMainPanel: true,
+      // Sub-panel "Колонна" — Figma 314:34941:
+      // Изображения / Размер / Содержание / Заголовок / Размер заголовка /
+      // Текст / Размер текста / Название ссылки / Ссылка
       arrayFields: {
-        image: { type: 'image', label: 'Изображение' },
+        image: { type: 'image', label: 'Изображения' } as any,
         imageSize: {
-          type: 'radio',
-          label: 'Размер изображения',
+          type: 'select',
+          label: 'Размер',
           options: [
             { label: 'Маленький', value: 'small' },
             { label: 'Средний', value: 'medium' },
             { label: 'Большой', value: 'large' },
           ],
         },
-        title: { type: 'text', label: 'Заголовок' },
+        title: {
+          type: 'aiText',
+          label: 'Заголовок',
+          fieldType: 'title',
+          placeholder: 'Ввести текст...',
+        } as any,
         headingSize: {
-          type: 'radio',
+          type: 'select',
           label: 'Размер заголовка',
           options: [
             { label: 'Маленький', value: 'small' },
@@ -159,9 +167,14 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
             { label: 'Большой', value: 'large' },
           ],
         },
-        description: { type: 'textarea', label: 'Описание' },
+        description: {
+          type: 'aiText',
+          label: 'Текст',
+          fieldType: 'text',
+          placeholder: 'Ввести текст...',
+        } as any,
         textSize: {
-          type: 'radio',
+          type: 'select',
           label: 'Размер текста',
           options: [
             { label: 'Маленький', value: 'small' },
@@ -173,7 +186,11 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
           type: 'object',
           label: 'Ссылка',
           objectFields: {
-            text: { type: 'text', label: 'Текст' },
+            text: {
+              type: 'text',
+              label: 'Название ссылки',
+              placeholder: '*Оставьте пустой, чтобы скрыть',
+            } as any,
             href: { type: 'pagePicker', label: 'Ссылка' },
           },
         },
@@ -181,8 +198,11 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
       defaultItemProps: {
         id: '',
         image: '',
+        imageSize: 'medium',
         title: 'Новая колонка',
+        headingSize: 'small',
         description: '',
+        textSize: 'small',
         link: { text: '', href: '' },
       },
       max: 10,

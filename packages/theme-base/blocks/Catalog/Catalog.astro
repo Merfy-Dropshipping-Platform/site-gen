@@ -33,6 +33,7 @@ const {
   filterPosition,
   showSort,
   colorScheme,
+  containerColorScheme,
   collectionSlug,
   // Legacy aliases (revisions saved before Figma redesign).
   showCollectionFilter,
@@ -100,6 +101,12 @@ const schemeClass =
   typeof colorScheme === 'string' && colorScheme
     ? `color-scheme-${colorScheme.replace('scheme-', '')}`
     : '';
+// Figma 1:34017 — отдельная схема для внутреннего контейнера. Когда не задана —
+// используется та же что и у секции (тогда визуально wrapper не отличается).
+const containerSchemeClass =
+  typeof containerColorScheme === 'string' && containerColorScheme
+    ? `color-scheme-${containerColorScheme.replace('scheme-', '')}`
+    : '';
 
 // 084 Stage 3 vanilla pilot — additive grid + caption variants.
 // Default → empty class (rose/satin/bloom/flux behavior unchanged).
@@ -127,7 +134,10 @@ const apiBase = 'https://gateway.merfy.ru/api';
   data-next-photo={(productCard?.nextPhoto === 'true' || productCard?.nextPhoto === true) ? 'true' : 'false'}
   style={`background:rgb(var(--color-background));color:rgb(var(--color-foreground));${paddingStyle}`}
 >
-  <div style="max-width: 1320px; margin: 0 auto; padding-left: 24px; padding-right: 24px;">
+  <div
+    class:list={[containerSchemeClass]}
+    style="max-width: 1320px; margin: 0 auto; padding-left: 24px; padding-right: 24px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));"
+  >
     <div style="margin-bottom: 24px;">
       <h1
         style="font-size: clamp(20px, 3vw, 36px); font-weight: 400; text-transform: uppercase; line-height: 1.1; color: rgb(var(--color-foreground)); margin: 0; font-family: var(--font-heading);"

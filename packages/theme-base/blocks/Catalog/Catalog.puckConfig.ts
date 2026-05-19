@@ -37,10 +37,14 @@ export const CatalogSchema = z.object({
   showSidebar: z.union([z.boolean(), z.enum(['true', 'false'])]).optional(),
 
   colorScheme: z.string().optional(),
+  // Figma 1:34017 — отдельная цветовая схема для внутреннего контейнера
+  // (max-width:1320px wrapper). Когда не задана — используется colorScheme.
+  containerColorScheme: z.string().optional(),
   // Optional: injected by preview pipeline so the SSG shell can client-fetch
   // real products from the storefront API. Not user-editable.
   siteId: z.string().optional(),
-  // 084 Stage 3 vanilla pilot — additive grid + caption variants
+  // 084 Stage 3 vanilla pilot — additive grid + caption variants (legacy,
+  // больше не показываются в sidebar — Figma 1:34017 их не имеет).
   gridAspect: z.enum(['auto', '1:1', '4:5']).optional(),
   cardCaptionStyle: z.enum(['default', 'uppercase']).optional(),
   padding: z.object({
@@ -54,8 +58,12 @@ export type CatalogProps = z.infer<typeof CatalogSchema>;
 export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
   label: 'Каталог товаров',
   category: 'products',
+  // Figma 1:34017 sidebar "Группа товаров": Подзаголовок / Карточки / Колонки /
+  // [Карточка товара] Стиль кнопки / Вид изображения / Следующее фото при
+  // наведении / Быстрое добавление / [Фильтрация и сортировка] Фильтры /
+  // Вид фильтра / Сортировка / Цветовая схема / Цветовая схема контейнера /
+  // Отступы. Schema-driven, без хардкода в CustomFieldsPanel.
   fields: {
-    collectionSlug: { type: 'collectionPicker', label: 'Коллекция' },
     subtitle: {
       type: 'toggle',
       label: 'Подзаголовок',
@@ -66,35 +74,27 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
     },
     cards: { type: 'slider', label: 'Карточки', min: 2, max: 24, step: 1 },
     columns: { type: 'slider', label: 'Колонки', min: 1, max: 6, step: 1 },
+    ['_section_card' as never]: { type: 'section-header', label: 'Карточка товара' } as any,
     productCard: {
       type: 'object',
-      label: 'Карточка товара',
+      label: '',
       objectFields: {
         buttonStyle: {
           type: 'select',
           label: 'Стиль кнопки',
           options: [
             { label: 'Основная', value: 'primary' },
-            { label: 'Вторичная', value: 'secondary' },
+            { label: 'Второстепенная', value: 'secondary' },
             { label: 'Ссылка', value: 'link' },
-          ],
-        },
-        cardBackground: {
-          type: 'toggle',
-          label: 'Фон карточки',
-          options: [
-            { label: 'Показать', value: 'true' },
-            { label: 'Скрыть', value: 'false' },
           ],
         },
         cardStyle: {
           type: 'select',
           label: 'Вид изображения',
           options: [
-            { label: 'Авто', value: 'auto' },
             { label: 'Портрет', value: 'portrait' },
             { label: 'Квадрат', value: 'square' },
-            { label: 'Широкое', value: 'wide' },
+            { label: 'Широкий', value: 'wide' },
           ],
         },
         nextPhoto: {
@@ -111,11 +111,12 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
           options: [
             { label: 'Нет', value: 'none' },
             { label: 'Стандарт', value: 'standard' },
-            { label: 'В корзину', value: 'cart' },
+            { label: 'Количество', value: 'cart' },
           ],
         },
       },
     },
+    ['_section_filter' as never]: { type: 'section-header', label: 'Фильтрация и сортировка' } as any,
     showFilter: {
       type: 'toggle',
       label: 'Фильтры',
@@ -141,32 +142,20 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
         { label: 'Скрыть', value: 'false' },
       ],
     },
-    gridAspect: {
-      type: 'radio',
-      label: 'Соотношение сторон карточки',
-      options: [
-        { label: 'Auto', value: 'auto' },
-        { label: '1:1 (квадрат)', value: '1:1' },
-        { label: '4:5 (портрет)', value: '4:5' },
-      ],
-    },
-    cardCaptionStyle: {
-      type: 'radio',
-      label: 'Стиль подписи карточки',
-      options: [
-        { label: 'По умолчанию', value: 'default' },
-        { label: 'UPPERCASE', value: 'uppercase' },
-      ],
-    },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
     padding: { type: 'padding', label: 'Отступы' },
+    // Hidden — не показаны в Figma 1:34017, но хранятся в revisions.
+    collectionSlug: { type: 'hidden', label: '' },
+    gridAspect: { type: 'hidden', label: '' },
+    cardCaptionStyle: { type: 'hidden', label: '' },
   },
   defaults: {
     subtitle: 'true',
     cards: 8,
     columns: 4,
     productCard: {
-      buttonStyle: 'primary',
+      buttonStyle: 'secondary',
       cardBackground: 'false',
       cardStyle: 'portrait',
       nextPhoto: 'false',
@@ -175,7 +164,8 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
     showFilter: 'true',
     filterPosition: 'side',
     showSort: 'true',
-    colorScheme: 'scheme-2',
+    colorScheme: 'scheme-1',
+    containerColorScheme: 'scheme-1',
     padding: { top: 120, bottom: 120 },
   },
   schema: CatalogSchema,

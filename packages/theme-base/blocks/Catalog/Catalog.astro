@@ -238,10 +238,11 @@ const apiBase = 'https://gateway.merfy.ru/api';
 
       <div
         data-catalog-grid
+        data-loading="true"
         style={`display: grid; grid-template-columns: repeat(${colCount}, 1fr); column-gap: 16px; row-gap: var(--catalog-grid-row-gap, 16px);`}
       >
         {placeholderCards.map((_, idx) => (
-          <article style={`display: flex; flex-direction: column; gap: 12px; ${cardBgOn ? 'background:rgb(var(--color-muted) / 0.1);border:1px solid rgb(var(--color-muted) / 0.1);border-radius:8px;padding:8px;' : ''}`}>
+          <article data-placeholder="true" style={`display: flex; flex-direction: column; gap: 12px; opacity: 0; ${cardBgOn ? 'background:rgb(var(--color-muted) / 0.1);border:1px solid rgb(var(--color-muted) / 0.1);border-radius:8px;padding:8px;' : ''}`}>
             <div
               class:list={[gridAspectClass]}
               style={`aspect-ratio: var(--catalog-card-aspect, ${cardAspect}); background: rgb(var(--color-muted) / 0.1); border-radius: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden;`}
@@ -465,9 +466,19 @@ const apiBase = 'https://gateway.merfy.ru/api';
       const slice = filtered.slice((pageSafe - 1) * ps, pageSafe * ps);
 
       if (count) count.textContent = slice.length + ' из ' + total + ' товаров';
-      grid.innerHTML = slice.length
-        ? slice.map(cardHtml).join('')
-        : '<div style="grid-column:1/-1;padding:40px;text-align:center;color:rgb(var(--color-muted));">Товары не найдены</div>';
+      // Заглушки (placeholder свитеры) видны ТОЛЬКО когда total=0. Если есть
+      // хотя бы 1 товар — рендерим только реальные карточки, без добивки до cardCount.
+      grid.removeAttribute('data-loading');
+      if (slice.length) {
+        grid.innerHTML = slice.map(cardHtml).join('');
+      } else if (total === 0 && state.allProducts.length === 0) {
+        // Реально нет товаров → показываем placeholder заглушки (убираем opacity:0).
+        grid.querySelectorAll('article[data-placeholder]').forEach(function (a) {
+          a.style.opacity = '';
+        });
+      } else {
+        grid.innerHTML = '<div style="grid-column:1/-1;padding:40px;text-align:center;color:rgb(var(--color-muted));">Товары не найдены</div>';
+      }
 
       // Pagination
       const pagination = root.querySelector('[data-catalog-pagination]');

@@ -15,8 +15,13 @@ export const CatalogSchema = z.object({
   categorySubtitle: z.string().optional(),
   /** 'muted' = текущий gray (default), 'accent' = оранжевый flux. */
   categorySubtitleColor: z.enum(['muted', 'accent']).optional(),
-  // Subtitle visibility (matches Figma "Подзаголовок Показать/скрыть").
+  // Subtitle visibility (Figma 1:21287 убрал поле — теперь hidden).
   subtitle: z.union([z.boolean(), z.enum(['true', 'false'])]).optional(),
+
+  // 098 Figma 1:21287 — Рассылка toggle (inline newsletter section внутри
+  // каталога). NB: render-side нет в Catalog.astro — это placeholder
+  // для будущего newsletter block embed. Сейчас no-op.
+  newsletterEnabled: z.union([z.boolean(), z.enum(['true', 'false'])]).optional(),
 
   // Cards/columns sliders.
   cards: z.number().int().min(2).max(24).optional(),
@@ -72,7 +77,7 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
   // Вид фильтра / Сортировка / Цветовая схема / Цветовая схема контейнера /
   // Отступы. Schema-driven, без хардкода в CustomFieldsPanel.
   fields: {
-    // 097: hidden by design — Figma 1:34017 sidebar не имеет fields для
+    // 098 hidden by design — Figma 1:21287 sidebar не имеет fields для
     // редактирования title/subtitle/subtitleColor. Эти props заполняются
     // через theme.json blockDefaults (per-theme defaults — flux:
     // "СМАРТФОНЫ"/"M Phone"/accent). Existing revisions с этими props
@@ -80,16 +85,36 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
     categoryTitle: { type: 'hidden', label: '' },
     categorySubtitle: { type: 'hidden', label: '' },
     categorySubtitleColor: { type: 'hidden', label: '' },
-    subtitle: {
+    subtitle: { type: 'hidden', label: '' }, // hidden в новом дизайне
+    containerColorScheme: { type: 'hidden', label: '' }, // только одна Цветовая схема в Figma 1:21287
+    gridAspect: { type: 'hidden', label: '' },
+    cardCaptionStyle: { type: 'hidden', label: '' },
+
+    // ──────────────────────────────────────────────────────────────────
+    // Figma 1:21287 order — visible fields:
+    // 1. Выбор коллекции (collectionPicker)
+    // 2. Карточки (slider)
+    // 3. Колонки (slider)
+    // 4. [Рассылка] toggle
+    // 5. [Карточка товара] productCard sub-fields
+    // 6. [Фильтрация и сортировка] showFilter/filterPosition/showSort
+    // 7. Цветовая схема
+    // 8. [Отступы] padding
+    // ──────────────────────────────────────────────────────────────────
+    collectionSlug: { type: 'collectionPicker', label: 'Выбор коллекции' } as any,
+    cards: { type: 'slider', label: 'Карточки', min: 2, max: 24, step: 1 },
+    columns: { type: 'slider', label: 'Колонки', min: 1, max: 6, step: 1 },
+
+    ['_section_newsletter' as never]: { type: 'section-header', label: 'Рассылка' } as any,
+    newsletterEnabled: {
       type: 'toggle',
-      label: 'Подзаголовок',
+      label: 'Скрыть/показать',
       options: [
         { label: 'Показать', value: 'true' },
         { label: 'Скрыть', value: 'false' },
       ],
-    },
-    cards: { type: 'slider', label: 'Карточки', min: 2, max: 24, step: 1 },
-    columns: { type: 'slider', label: 'Колонки', min: 1, max: 6, step: 1 },
+    } as any,
+
     ['_section_card' as never]: { type: 'section-header', label: 'Карточка товара' } as any,
     productCard: {
       type: 'object',
@@ -132,6 +157,7 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
         },
       },
     },
+
     ['_section_filter' as never]: { type: 'section-header', label: 'Фильтрация и сортировка' } as any,
     showFilter: {
       type: 'toggle',
@@ -158,16 +184,13 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
         { label: 'Скрыть', value: 'false' },
       ],
     },
+
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
-    containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
     padding: { type: 'padding', label: 'Отступы' },
-    // Hidden — не показаны в Figma 1:34017, но хранятся в revisions.
-    collectionSlug: { type: 'hidden', label: '' },
-    gridAspect: { type: 'hidden', label: '' },
-    cardCaptionStyle: { type: 'hidden', label: '' },
   },
   defaults: {
     subtitle: 'true',
+    newsletterEnabled: 'false', // 098: default off (Рассылка toggle Figma 1:21287)
     cards: 8,
     columns: 4,
     productCard: {

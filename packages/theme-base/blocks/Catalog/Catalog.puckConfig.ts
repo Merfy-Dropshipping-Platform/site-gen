@@ -72,16 +72,14 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
   // Вид фильтра / Сортировка / Цветовая схема / Цветовая схема контейнера /
   // Отступы. Schema-driven, без хардкода в CustomFieldsPanel.
   fields: {
-    categoryTitle: { type: 'aiText', label: 'Заголовок', fieldType: 'title', placeholder: 'КАТАЛОГ' } as any,
-    categorySubtitle: { type: 'aiText', label: 'Подзаголовок текст', fieldType: 'description', placeholder: 'Описание категории' } as any,
-    categorySubtitleColor: {
-      type: 'select',
-      label: 'Цвет подзаголовка',
-      options: [
-        { label: 'Серый', value: 'muted' },
-        { label: 'Акцентный', value: 'accent' },
-      ],
-    },
+    // 097: hidden by design — Figma 1:34017 sidebar не имеет fields для
+    // редактирования title/subtitle/subtitleColor. Эти props заполняются
+    // через theme.json blockDefaults (per-theme defaults — flux:
+    // "СМАРТФОНЫ"/"M Phone"/accent). Existing revisions с этими props
+    // продолжают рендериться нормально через Astro.props.
+    categoryTitle: { type: 'hidden', label: '' },
+    categorySubtitle: { type: 'hidden', label: '' },
+    categorySubtitleColor: { type: 'hidden', label: '' },
     subtitle: {
       type: 'toggle',
       label: 'Подзаголовок',

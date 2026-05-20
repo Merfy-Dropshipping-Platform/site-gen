@@ -148,6 +148,7 @@ const apiBase = 'https://gateway.merfy.ru/api';
   data-card-bg={cardBgOn ? 'true' : 'false'}
   data-quick-add={quickAddMode}
   data-next-photo={(productCard?.nextPhoto === 'true' || productCard?.nextPhoto === true) ? 'true' : 'false'}
+  data-next-photo-mode={productCard?.nextPhotoMode === 'zones' ? 'zones' : 'simple'}
   style={`background:rgb(var(--color-bg));color:rgb(var(--color-text));${paddingStyle}`}
 >
   <div
@@ -178,6 +179,7 @@ const apiBase = 'https://gateway.merfy.ru/api';
             <button type="button" data-filter-toggle="stock" style="background: transparent; border: 0; color: rgb(var(--color-text)); cursor: pointer; font-size: 14px;">Наличие ▾</button>
             <button type="button" data-filter-toggle="price" style="background: transparent; border: 0; color: rgb(var(--color-text)); cursor: pointer; font-size: 14px;">Стоимость ▾</button>
             <button type="button" data-filter-toggle="color" style="background: transparent; border: 0; color: rgb(var(--color-text)); cursor: pointer; font-size: 14px;">Цвет ▾</button>
+            <button type="button" data-filter-toggle="memory" style="background: transparent; border: 0; color: rgb(var(--color-text)); cursor: pointer; font-size: 14px;">Объём памяти ▾</button>
           </div>
         )}
         {!filterSide && sortVisible && (
@@ -384,13 +386,16 @@ const apiBase = 'https://gateway.merfy.ru/api';
       return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
     function cardHtml(p) {
-      const img = (Array.isArray(p.images) && p.images[0])
-        ? (typeof p.images[0] === 'string' ? p.images[0] : p.images[0].url)
-        : '';
-      // 097 phase 2: secondary image for nextPhoto hover swap
-      const img2 = (Array.isArray(p.images) && p.images[1])
-        ? (typeof p.images[1] === 'string' ? p.images[1] : p.images[1].url)
-        : '';
+      const imgAt = function (idx) {
+        return (Array.isArray(p.images) && p.images[idx])
+          ? (typeof p.images[idx] === 'string' ? p.images[idx] : p.images[idx].url)
+          : '';
+      };
+      const img = imgAt(0);
+      // 098: до 4 images для hover modes (simple uses img2; zones uses up to 4)
+      const img2 = imgAt(1);
+      const img3 = imgAt(2);
+      const img4 = imgAt(3);
       const title = p.title || p.name || '';
       const basePrice = Number(p.basePrice ?? p.price ?? 0);
       const compPrice = Number(p.compareAtPrice ?? 0);
@@ -399,8 +404,12 @@ const apiBase = 'https://gateway.merfy.ru/api';
       const handle = p.handle || p.slug || p.id;
       const imgWrapClassAttr = gridAspectClass ? ' class="' + gridAspectClass + '"' : '';
       const imgWrapStyle = 'aspect-ratio:var(--catalog-card-aspect,' + cardAspect + ');';
-      // 097 phase 2: data-img-primary/data-img-secondary для hover swap, JS меняет src на data-next-photo='true'
-      const imgAttrs = 'data-img-primary="' + escAttr(img) + '"' + (img2 ? ' data-img-secondary="' + escAttr(img2) + '"' : '');
+      // 098: data-img-primary/2/3/4 для hover modes ('simple' = img2 swap;
+      // 'zones' = Avito-style position-based swap до 4 segments).
+      let imgAttrs = 'data-img-primary="' + escAttr(img) + '"';
+      if (img2) imgAttrs += ' data-img-secondary="' + escAttr(img2) + '" data-img-2="' + escAttr(img2) + '"';
+      if (img3) imgAttrs += ' data-img-3="' + escAttr(img3) + '"';
+      if (img4) imgAttrs += ' data-img-4="' + escAttr(img4) + '"';
       const imgBlock = img
         ? '<div' + imgWrapClassAttr + ' style="' + imgWrapStyle + 'overflow:hidden;border-radius:12px;background:rgb(var(--color-text) / 0.05);position:relative;">' +
           '<img ' + imgAttrs + ' src="' + escAttr(img) + '" alt="' + escAttr(title) + '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;transition:opacity 0.2s;" />' +
@@ -783,19 +792,42 @@ const apiBase = 'https://gateway.merfy.ru/api';
       setTimeout(function () { btn.textContent = orig; }, 1500);
     });
 
-    // 097 phase 2: nextPhoto hover swap — меняем img.src на secondary при hover
-    // когда section[data-next-photo='true'].
-    if (root.getAttribute('data-next-photo') === 'true') {
-      grid.addEventListener('mouseover', function (ev) {
-        const img = ev.target.closest('img[data-img-secondary]');
+    // 098 nextPhoto hover modes:
+    // - 'simple': при hover swap img.src на data-img-secondary (single second photo)
+    // - 'zones': Avito-style — hovering на разные X-сегменты image swaps to
+    //   data-img-2/3/4 (показывает скрытые фото при наведении на правую/центр/левую части)
+    var nextPhotoOn = root.getAttribute('data-next-photo') === 'true';
+    var nextPhotoMode = root.getAttribute('data-next-photo-mode') || 'simple';
+    if (nextPhotoOn && nextPhotoMode === 'zones') {
+      grid.addEventListener('mousemove', function (ev) {
+        var img = ev.target.closest('img[data-img-primary]');
         if (!img) return;
-        const sec = img.getAttribute('data-img-secondary');
+        var rect = img.getBoundingClientRect();
+        var xRel = (ev.clientX - rect.left) / rect.width;
+        var keys = ['data-img-primary', 'data-img-2', 'data-img-3', 'data-img-4'];
+        var available = keys.filter(function (k) { return img.getAttribute(k); });
+        var idx = Math.min(available.length - 1, Math.floor(xRel * available.length));
+        if (idx < 0) idx = 0;
+        var nextSrc = img.getAttribute(available[idx]);
+        if (nextSrc && img.src !== nextSrc) img.src = nextSrc;
+      });
+      grid.addEventListener('mouseleave', function (ev) {
+        var img = ev.target.closest('img[data-img-primary]');
+        if (!img) return;
+        var prim = img.getAttribute('data-img-primary');
+        if (prim && img.src !== prim) img.src = prim;
+      }, true);
+    } else if (nextPhotoOn) {
+      grid.addEventListener('mouseover', function (ev) {
+        var img = ev.target.closest('img[data-img-secondary]');
+        if (!img) return;
+        var sec = img.getAttribute('data-img-secondary');
         if (sec && img.src !== sec) img.src = sec;
       });
       grid.addEventListener('mouseout', function (ev) {
-        const img = ev.target.closest('img[data-img-primary]');
+        var img = ev.target.closest('img[data-img-primary]');
         if (!img) return;
-        const prim = img.getAttribute('data-img-primary');
+        var prim = img.getAttribute('data-img-primary');
         if (prim && img.src !== prim) img.src = prim;
       });
     }

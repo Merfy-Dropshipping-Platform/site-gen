@@ -33,6 +33,10 @@ export const CatalogSchema = z.object({
     cardStyle: z.enum(['auto', 'portrait', 'square', 'wide']).optional(),
     cardBackground: z.union([z.boolean(), z.enum(['true', 'false'])]).optional(),
     nextPhoto: z.union([z.boolean(), z.enum(['true', 'false'])]).optional(),
+    // 098: hover mode — "simple" просто swap на images[1] (по умолчанию).
+    // "zones" = Avito-style hover-zones: hovering на разные 1/3-сегменты
+    // изображения показывает images[1], images[2], images[3].
+    nextPhotoMode: z.enum(['simple', 'zones']).optional(),
     quickAdd: z.enum(['none', 'standard', 'cart']).optional(),
   }).optional(),
 
@@ -146,6 +150,17 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
             { label: 'Выкл', value: 'false' },
           ],
         },
+        // 098: simple = просто второе фото при hover; zones = Avito-style
+        // hover-zones (1/3 image сегменты показывают images[1..3])
+        nextPhotoMode: {
+          type: 'select',
+          label: 'Режим следующего фото',
+          options: [
+            { label: 'Просто следующее', value: 'simple' },
+            { label: 'Зоны при наведении', value: 'zones' },
+          ],
+          visibleWhen: { field: 'productCard.nextPhoto', equals: 'true' },
+        } as any,
         quickAdd: {
           type: 'select',
           label: 'Быстрое добавление',

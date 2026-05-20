@@ -309,30 +309,34 @@ export class PreviewService {
       // toggle, then 2-column form/summary inside CheckoutLayout.
       bodyHtml = await this.renderCheckoutLayout(input);
     } else {
-      const renderedBlocks: string[] = [];
-      for (const b of input.blocks) {
-        const html = await this.renderBlock({
-          blockName: b.type,
-          props: b.props,
-          themeId: input.themeId ?? null,
-        });
-        // Mirror live build: wrap block in color-scheme-N so tokens-css.ts
-        // .color-scheme-N overrides apply per-block.
-        const rawScheme = b.props?.colorScheme;
-        let schemeId: string | null = null;
-        if (typeof rawScheme === 'number' && Number.isFinite(rawScheme)) {
-          schemeId = String(rawScheme);
-        } else if (typeof rawScheme === 'string' && rawScheme.length > 0) {
-          schemeId = rawScheme.replace(/^scheme-/, '');
-        }
-        if (schemeId) {
-          renderedBlocks.push(
-            `<div class="color-scheme-${schemeId}" data-block-scheme="${schemeId}">${html}</div>`,
-          );
-        } else {
-          renderedBlocks.push(html);
-        }
-      }
+      // Parallel render: Astro `experimental_AstroContainer.renderToString`
+      // is safe to call concurrently on a shared container instance. With N
+      // blocks per page (typically 5-9), sequential render meant each block
+      // waited for the previous block's I/O (storefront-data fetch in
+      // Collections/PopularProducts/Gallery/Product frontmatter). Parallel
+      // overlaps those round-trips so total time ≈ slowest block instead of
+      // sum of all blocks.
+      const renderedBlocks = await Promise.all(
+        input.blocks.map(async (b) => {
+          const html = await this.renderBlock({
+            blockName: b.type,
+            props: b.props,
+            themeId: input.themeId ?? null,
+          });
+          // Mirror live build: wrap block in color-scheme-N so tokens-css.ts
+          // .color-scheme-N overrides apply per-block.
+          const rawScheme = b.props?.colorScheme;
+          let schemeId: string | null = null;
+          if (typeof rawScheme === 'number' && Number.isFinite(rawScheme)) {
+            schemeId = String(rawScheme);
+          } else if (typeof rawScheme === 'string' && rawScheme.length > 0) {
+            schemeId = rawScheme.replace(/^scheme-/, '');
+          }
+          return schemeId
+            ? `<div class="color-scheme-${schemeId}" data-block-scheme="${schemeId}">${html}</div>`
+            : html;
+        }),
+      );
       bodyHtml = renderedBlocks.join('\n');
     }
 

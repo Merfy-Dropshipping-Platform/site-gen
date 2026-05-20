@@ -56,10 +56,14 @@ export class BillingSyncScheduler implements OnModuleInit {
   }
 
   /**
-   * Синхронизация billing status каждые 5 минут для быстрого восстановления.
-   * Если event-based синхронизация не сработала, cron подхватит изменения.
+   * Синхронизация billing status раз в час — backstop на случай если
+   * event-based синхронизация (subscription.updated → freeze/unfreeze)
+   * не сработала. Каждые 5 минут было избыточно: проход по всем tenants
+   * генерил поток freeze/unfreeze событий + S3 head-check всех published
+   * сайтов в `ensureStaticContent`, что создавало фоновую нагрузку на
+   * event loop sites-service во время работы конструктора.
    */
-  @Cron(CronExpression.EVERY_5_MINUTES)
+  @Cron(CronExpression.EVERY_HOUR)
   async reconcileBilling() {
     if (
       (process.env.BILLING_SYNC_CRON_ENABLED ?? "true").toLowerCase() ===

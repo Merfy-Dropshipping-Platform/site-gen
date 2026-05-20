@@ -53,9 +53,14 @@ export class StorefrontDataController {
     // the constructor iframe appear to "load for two minutes" before any
     // preview HTML reaches the browser. Fail-fast lets the fallback return
     // empty quickly so RPC-only data still renders.
+    // max: 25 — default 10 is exhausted on busy preview sessions where the
+    // constructor iframe renders 3-5 blocks in parallel and each block hits
+    // /storefront-data, plus the billing-sync cron piggybacks. Bump headroom
+    // so pool exhaustion stops contributing to perceived iframe latency.
     StorefrontDataController.productPool = new PgPoolCtor({
       connectionString: url,
       connectionTimeoutMillis: 2000,
+      max: 25,
     });
     return StorefrontDataController.productPool;
   }

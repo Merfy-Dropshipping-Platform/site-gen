@@ -39,7 +39,47 @@
   },
   "blockDefaults": {
     "Footer": {
-      "variant": "2-part"
+      "variant": "3-col",
+      "newsletter": {
+        "enabled": true,
+        "heading": "Подпишитесь на нашу рассылку",
+        "description": "Введите электронную почту и получайте информацию нашего бренда",
+        "placeholder": "flux@example.ru"
+      },
+      "navigationColumn": {
+        "title": "Навигация",
+        "links": [
+          { "label": "Смартфоны", "href": "/catalog" },
+          { "label": "Наушники", "href": "/catalog" },
+          { "label": "Ноутбуки", "href": "/catalog" },
+          { "label": "Аксессуары", "href": "/catalog" }
+        ]
+      },
+      "informationColumn": {
+        "title": "Информация",
+        "links": [
+          { "label": "Политика доставки", "href": "/legal/delivery" },
+          { "label": "Политика возврата", "href": "/legal/returns" },
+          { "label": "Условия обслуживания", "href": "/legal/terms" },
+          { "label": "Политика конфиденциальности", "href": "/legal/privacy" }
+        ]
+      },
+      "socialColumn": {
+        "title": "Социальные сети",
+        "email": "flux@example.ru",
+        "socialLinks": [
+          { "platform": "telegram", "href": "#" },
+          { "platform": "vk", "href": "#" },
+          { "platform": "youtube", "href": "#" },
+          { "platform": "dzen", "href": "#" },
+          { "platform": "tiktok", "href": "#" }
+        ]
+      },
+      "copyright": {
+        "poweredBy": "Powered by Merfy",
+        "showYear": true
+      },
+      "padding": { "top": 64, "bottom": 64 }
     },
     "Header": {
       "variant": "two-tier",
@@ -160,12 +200,6 @@
       "override": {
         "path": "./blocks/Header",
         "reason": "Flux uses 1320px container, Roboto Flex bold headings, orange-accent cart badge with 2px badge radius, and 6px button radius for tech/electronics aesthetic."
-      }
-    },
-    "Footer": {
-      "override": {
-        "path": "./blocks/Footer",
-        "reason": "Flux uses 2-part grid (logo+nav LEFT, contact+social RIGHT), orange accent submit button with 6px radius, and a powered-by black strip below copyright."
       }
     },
     "Hero": {

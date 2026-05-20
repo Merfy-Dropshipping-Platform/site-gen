@@ -25,10 +25,34 @@ import {
  *      PRODUCT_DATABASE_URL — quicker and skips RPC roundtrip when the
  *      caller is just the preview iframe (read-only public data).
  */
+interface StorefrontPayload {
+  products: any[];
+  collections: any[];
+  publications: any[];
+  product: Record<string, unknown> | null;
+  _debug?: Record<string, unknown>;
+}
+
 @Controller('api/sites/:id/storefront-data')
 export class StorefrontDataController {
   private readonly logger = new Logger(StorefrontDataController.name);
   private static productPool: PgPool | null = null;
+
+  /**
+   * In-flight + short-TTL cache. Each constructor preview render fires 3-5
+   * parallel /storefront-data requests (one per block: Collections /
+   * PopularProducts / Gallery / Product SSR frontmatter). Without dedupe each
+   * runs the full RPC + DB fetch separately even though they ask for the same
+   * data. Map<key, {promise, expiresAt}> lets concurrent callers await the
+   * same Promise; expiresAt=now+1000ms also covers back-to-back reloads
+   * inside the same second. After 1s any fresh request recomputes — no stale
+   * data risk longer than that.
+   */
+  private static inflight = new Map<
+    string,
+    { promise: Promise<StorefrontPayload>; expiresAt: number }
+  >();
+  private static readonly INFLIGHT_TTL_MS = 1000;
 
   constructor(
     @Inject(PG_CONNECTION)
@@ -71,18 +95,72 @@ export class StorefrontDataController {
     @Query('product') productIdParam: string | undefined,
     @Res() res: Response,
   ): Promise<void> {
-    try {
-      const [site] = await this.db
-        .select({ tenantId: schema.site.tenantId })
-        .from(schema.site)
-        .where(eq(schema.site.id, siteId));
-      if (!site?.tenantId) {
-        res.status(404).json({ products: [], collections: [], publications: [] });
+    const includeDebug =
+      (res as Response & { req?: { query?: { debug?: string } } }).req?.query
+        ?.debug === '1';
+    const cacheKey = `${siteId}:${productIdParam ?? ''}:${includeDebug ? 'D' : 'N'}`;
+    const now = Date.now();
+    const cached = StorefrontDataController.inflight.get(cacheKey);
+    if (cached && cached.expiresAt > now) {
+      try {
+        const data = await cached.promise;
+        res
+          .header(
+            'Cache-Control',
+            includeDebug ? 'no-cache' : 'public, max-age=30',
+          )
+          .header('X-Storefront-Cache', 'hit')
+          .json(data);
         return;
+      } catch {
+        // Failed in-flight promise — fall through and recompute.
       }
+    }
 
-      // Try RPC first (build-pipeline path).
-      let [products, collections] = await Promise.all([
+    const computePromise = this.computeStorefrontPayload(
+      siteId,
+      productIdParam,
+      includeDebug,
+    );
+    StorefrontDataController.inflight.set(cacheKey, {
+      promise: computePromise,
+      expiresAt: now + StorefrontDataController.INFLIGHT_TTL_MS,
+    });
+
+    try {
+      const data = await computePromise;
+      res
+        .header(
+          'Cache-Control',
+          includeDebug ? 'no-cache' : 'public, max-age=30',
+        )
+        .json(data);
+    } catch (err: unknown) {
+      const e = err as Error;
+      this.logger.warn(
+        `storefront-data failed for site=${siteId}: ${e?.message ?? e}`,
+      );
+      res
+        .status(200)
+        .json({ products: [], collections: [], publications: [], product: null });
+    }
+  }
+
+  private async computeStorefrontPayload(
+    siteId: string,
+    productIdParam: string | undefined,
+    includeDebug: boolean,
+  ): Promise<StorefrontPayload> {
+    const [site] = await this.db
+      .select({ tenantId: schema.site.tenantId })
+      .from(schema.site)
+      .where(eq(schema.site.id, siteId));
+    if (!site?.tenantId) {
+      return { products: [], collections: [], publications: [], product: null };
+    }
+
+    // Try RPC first (build-pipeline path).
+    let [products, collections] = await Promise.all([
         fetchProducts(this.productClient, site.tenantId, siteId),
         fetchCollections(this.productClient, site.tenantId, siteId),
       ]);
@@ -259,37 +337,23 @@ export class StorefrontDataController {
 
       // Surface debug info in response so it's visible from the browser
       // when troubleshooting empty results. Strip in production once stable.
-      const debugQuery = (req: Response & { req?: { query?: { debug?: string } } }) =>
-        req.req?.query?.debug === '1';
-      if (debugQuery(res)) {
-        res
-          .header('Cache-Control', 'no-cache')
-          .json({
-            products,
-            collections,
-            publications,
-            product,
-            _debug: {
-              tenantId: site.tenantId,
-              siteId,
-              poolStatus: dbgPoolUrl,
-              poolError: dbgError,
-              hasProductDbUrl: !!process.env.PRODUCT_DATABASE_URL,
-              hasDatabaseUrl: !!process.env.DATABASE_URL,
-            },
-          });
-        return;
+      if (includeDebug) {
+        return {
+          products,
+          collections,
+          publications,
+          product,
+          _debug: {
+            tenantId: site.tenantId,
+            siteId,
+            poolStatus: dbgPoolUrl,
+            poolError: dbgError,
+            hasProductDbUrl: !!process.env.PRODUCT_DATABASE_URL,
+            hasDatabaseUrl: !!process.env.DATABASE_URL,
+          },
+        };
       }
 
-      res
-        .header('Cache-Control', 'public, max-age=30')
-        .json({ products, collections, publications, product });
-    } catch (err: unknown) {
-      const e = err as Error;
-      this.logger.warn(
-        `storefront-data failed for site=${siteId}: ${e?.message ?? e}`,
-      );
-      res.status(200).json({ products: [], collections: [], publications: [] });
-    }
+      return { products, collections, publications, product };
   }
 }

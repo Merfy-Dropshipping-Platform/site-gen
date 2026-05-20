@@ -180,8 +180,13 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
     showFilter: 'true',
     filterPosition: 'side',
     showSort: 'true',
-    colorScheme: 'scheme-1',
-    containerColorScheme: 'scheme-1',
+    // 097 SYSTEMIC FIX: убраны colorScheme/containerColorScheme из universal
+    // defaults. Pattern других блоков (Header/Hero/Footer/Collections/
+    // PopularProducts): colorScheme в zod schema optional БЕЗ default value.
+    // Это позволяет theme.json blockDefaults (flux: scheme-2) и revision data
+    // быть единственным источником истины. Без этого Puck baked-in scheme-1
+    // (dark) в state → edit любого поля шлёт scheme-1 → catalog рендерится
+    // тёмным независимо от revision.
     padding: { top: 120, bottom: 120 },
   },
   schema: CatalogSchema,

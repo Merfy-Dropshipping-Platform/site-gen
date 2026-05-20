@@ -9,6 +9,10 @@ import {
   resolveConstructorConfig,
   type BlockConfigLoader,
 } from '../../packages/theme-contract/resolver/resolveConstructorConfig';
+// 097: same deep-merge used server-side in preview.service.ts so constructor
+// frontend receives theme.json blockDefaults as part of defaultProps. Single
+// source of truth for merge semantics across both render paths.
+import { deepMergeBlockProps } from '../services/preview.service';
 // Theme manifests — imported via TS resolveJsonModule so JSON content is
 // INLINED into compiled JS at build time (no runtime file lookup). Required
 // because nest-cli doesn't copy packages/*/theme.json into dist/ (relative
@@ -215,16 +219,38 @@ export class ThemePuckConfigController {
       }
     }
 
+    // 097: merge theme.json blockDefaults INTO defaultProps so constructor
+    // frontend получает theme-aware defaults. Без этого Puck.defaultProps
+    // содержит только universal puckConfig.ts defaults — на любой edit Puck
+    // применяет их сверху user-data, затирая theme-specific values
+    // (colorScheme=scheme-1 dark вместо flux scheme-2 light, отсутствие
+    // categoryTitle/Subtitle/etc).
+    //
+    // Same deepMergeBlockProps что preview.service.ts uses — theme defaults
+    // UNDER universal puckDefaults, theme wins. Constructor получит финальные
+    // theme-aware defaults; Puck's edit-time merge не будет сбрасывать на
+    // dark scheme.
+    const themeBlockDefaults =
+      (themeManifest as { blockDefaults?: Record<string, unknown> } | undefined)?.blockDefaults ?? {};
+
     // Strip render function — it's a placeholder (() => null) on the server
     // and cannot be JSON-serialized. Constructor re-attaches AstroBlockBridge.
     const components: Record<string, PuckComponentJson> = {};
     for (const [name, cfg] of Object.entries(puckConfig.components)) {
       const hydratedFields = hydrateFields(cfg.fields, cfg.defaultProps);
+      // Deep-merge theme blockDefaults under puckConfig defaults so theme
+      // values win for keys it specifies. Universal defaults survive for
+      // keys theme doesn't override.
+      const themeDefaults = (themeBlockDefaults[name] as Record<string, unknown> | undefined) ?? {};
+      const mergedDefaults = deepMergeBlockProps(
+        (cfg.defaultProps ?? {}) as Record<string, unknown>,
+        themeDefaults,
+      );
       components[name] = {
         label: cfg.label,
         category: componentToCategory[name] ?? 'other',
         fields: hydratedFields,
-        defaultProps: cfg.defaultProps,
+        defaultProps: mergedDefaults,
       };
     }
 

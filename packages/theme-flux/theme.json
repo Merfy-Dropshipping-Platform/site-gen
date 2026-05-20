@@ -113,7 +113,10 @@
       "filterPosition": "side",
       "showSort": "true",
       "showFilter": "true",
-      "columns": 3
+      "columns": 3,
+      "colorScheme": "scheme-2",
+      "containerColorScheme": "scheme-2",
+      "padding": { "top": 80, "bottom": 80 }
     },
     "Product": {
       "visualConfig": {

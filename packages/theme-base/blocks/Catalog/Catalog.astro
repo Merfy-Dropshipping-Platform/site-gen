@@ -25,6 +25,10 @@ interface Props extends CatalogProps {
 const {
   id,
   padding,
+  // 096: editable title/subtitle (Figma flux 905-19049 — «СМАРТФОНЫ» / «M Phone»)
+  categoryTitle,
+  categorySubtitle,
+  categorySubtitleColor,
   subtitle,
   cards = 8,
   columns = 4,
@@ -141,11 +145,11 @@ const apiBase = 'https://gateway.merfy.ru/api';
     <div style="margin-bottom: 24px;">
       <h1
         style="font-size: clamp(20px, 3vw, 36px); font-weight: 400; text-transform: uppercase; line-height: 1.1; color: rgb(var(--color-foreground)); margin: 0; font-family: var(--font-heading);"
-      >КАТАЛОГ</h1>
+      >{(typeof categoryTitle === 'string' && categoryTitle.trim()) || 'КАТАЛОГ'}</h1>
       {subtitleVisible && (
         <p
-          style="font-size: clamp(14px, 1.5vw, 20px); font-weight: 400; line-height: 1.4; color: rgb(var(--color-muted)); margin-top: 6px; font-family: var(--font-body);"
-        >Здесь начинается персональный стиль</p>
+          style={`font-size: clamp(14px, 1.5vw, 20px); font-weight: 400; line-height: 1.4; color: rgb(var(${categorySubtitleColor === 'accent' ? '--color-accent' : '--color-muted'})); margin-top: 6px; font-family: var(--font-body);`}
+        >{(typeof categorySubtitle === 'string' && categorySubtitle.trim()) || 'Здесь начинается персональный стиль'}</p>
       )}
     </div>
 

@@ -7,6 +7,14 @@ import type { BlockPuckConfig } from '@merfy/theme-contract';
 // page.
 
 export const CatalogSchema = z.object({
+  // 096 flux electronics — editable заголовок/подзаголовок (раньше были
+  // hardcoded "КАТАЛОГ" / "Здесь начинается персональный стиль"). Themes
+  // override через theme.json blockDefaults.Catalog.{categoryTitle,
+  // categorySubtitle, categorySubtitleColor}.
+  categoryTitle: z.string().optional(),
+  categorySubtitle: z.string().optional(),
+  /** 'muted' = текущий gray (default), 'accent' = оранжевый flux. */
+  categorySubtitleColor: z.enum(['muted', 'accent']).optional(),
   // Subtitle visibility (matches Figma "Подзаголовок Показать/скрыть").
   subtitle: z.union([z.boolean(), z.enum(['true', 'false'])]).optional(),
 
@@ -64,6 +72,16 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
   // Вид фильтра / Сортировка / Цветовая схема / Цветовая схема контейнера /
   // Отступы. Schema-driven, без хардкода в CustomFieldsPanel.
   fields: {
+    categoryTitle: { type: 'aiText', label: 'Заголовок', fieldType: 'title', placeholder: 'КАТАЛОГ' } as any,
+    categorySubtitle: { type: 'aiText', label: 'Подзаголовок текст', fieldType: 'description', placeholder: 'Описание категории' } as any,
+    categorySubtitleColor: {
+      type: 'select',
+      label: 'Цвет подзаголовка',
+      options: [
+        { label: 'Серый', value: 'muted' },
+        { label: 'Акцентный', value: 'accent' },
+      ],
+    },
     subtitle: {
       type: 'toggle',
       label: 'Подзаголовок',

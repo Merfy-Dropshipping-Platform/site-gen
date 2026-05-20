@@ -46,7 +46,17 @@ export class StorefrontDataController {
     // explicitly provided; otherwise reuse DATABASE_URL.
     const url = process.env.PRODUCT_DATABASE_URL ?? process.env.DATABASE_URL;
     if (!url) return null;
-    StorefrontDataController.productPool = new PgPoolCtor({ connectionString: url });
+    // connectionTimeoutMillis: 2000 — direct product DB is firewalled when
+    // called from the sites-service container (see comment near getVariants
+    // below). Without an explicit timeout pg falls back to the Linux TCP
+    // SYN-retry budget (~127s), which blocks the connection pool and makes
+    // the constructor iframe appear to "load for two minutes" before any
+    // preview HTML reaches the browser. Fail-fast lets the fallback return
+    // empty quickly so RPC-only data still renders.
+    StorefrontDataController.productPool = new PgPoolCtor({
+      connectionString: url,
+      connectionTimeoutMillis: 2000,
+    });
     return StorefrontDataController.productPool;
   }
 

@@ -287,7 +287,7 @@ const apiBase = 'https://gateway.merfy.ru/api';
         style={`display: grid; grid-template-columns: repeat(${colCount}, 1fr); column-gap: 16px; row-gap: var(--catalog-grid-row-gap, 16px);`}
       >
         {placeholderCards.map((_, idx) => (
-          <article data-placeholder="true" style={`display: flex; flex-direction: column; gap: 12px; opacity: 0; ${cardBgOn ? 'background:rgb(var(--color-muted) / 0.1);border:1px solid rgb(var(--color-muted) / 0.1);border-radius:8px;padding:8px;' : ''}`}>
+          <article data-placeholder="true" style={`display: flex; flex-direction: column; gap: 12px; ${cardBgOn ? 'background:rgb(var(--color-surface,251 251 251));border-radius:12px;padding:12px;' : ''}`}>
             <div
               class:list={[gridAspectClass]}
               style={`aspect-ratio: var(--catalog-card-aspect, ${cardAspect}); background: rgb(var(--color-muted) / 0.1); border-radius: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden;`}

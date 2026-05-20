@@ -97,9 +97,9 @@ const showQuickAdd = quickAddMode === 'standard' || quickAddMode === 'cart';
 const quickAddText = quickAddMode === 'cart' ? 'В КОРЗИНУ' : 'БЫСТРЫЙ ПРОСМОТР';
 // Button style affects pill colors.
 const btnStyle = productCard?.buttonStyle ?? 'primary';
-const btnBg = btnStyle === 'primary' ? 'rgb(var(--color-foreground))' : btnStyle === 'secondary' ? 'rgb(var(--color-background))' : 'transparent';
-const btnFg = btnStyle === 'primary' ? 'rgb(var(--color-background))' : 'rgb(var(--color-foreground))';
-const btnBorder = btnStyle === 'link' ? 'none' : btnStyle === 'secondary' ? '1px solid rgb(var(--color-foreground))' : '1px solid rgb(var(--color-foreground))';
+const btnBg = btnStyle === 'primary' ? 'rgb(var(--color-text))' : btnStyle === 'secondary' ? 'rgb(var(--color-bg))' : 'transparent';
+const btnFg = btnStyle === 'primary' ? 'rgb(var(--color-bg))' : 'rgb(var(--color-text))';
+const btnBorder = btnStyle === 'link' ? 'none' : btnStyle === 'secondary' ? '1px solid rgb(var(--color-text))' : '1px solid rgb(var(--color-text))';
 // Color scheme — apply CSS class so theme tokens swap.
 const schemeClass =
   typeof colorScheme === 'string' && colorScheme
@@ -127,7 +127,7 @@ const cardCaptionClass = C.cardCaptionStyle[cardCaptionStyleProp];
 const apiBase = 'https://gateway.merfy.ru/api';
 ---
 <section
-  class:list={[schemeClass]}
+  class={schemeClass}
   data-puck-component-id={id}
   data-block="catalog"
   data-site-id={siteId}
@@ -136,15 +136,15 @@ const apiBase = 'https://gateway.merfy.ru/api';
   data-card-bg={cardBgOn ? 'true' : 'false'}
   data-quick-add={quickAddMode}
   data-next-photo={(productCard?.nextPhoto === 'true' || productCard?.nextPhoto === true) ? 'true' : 'false'}
-  style={`background:rgb(var(--color-background));color:rgb(var(--color-foreground));${paddingStyle}`}
+  style={`background:rgb(var(--color-bg));color:rgb(var(--color-text));${paddingStyle}`}
 >
   <div
-    class:list={[containerSchemeClass]}
-    style="max-width: 1320px; margin: 0 auto; padding-left: 24px; padding-right: 24px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));"
+    class={containerSchemeClass}
+    style="max-width: 1320px; margin: 0 auto; padding-left: 24px; padding-right: 24px; background: rgb(var(--color-bg)); color: rgb(var(--color-text));"
   >
     <div style="margin-bottom: 24px;">
       <h1
-        style="font-size: clamp(20px, 3vw, 36px); font-weight: 400; text-transform: uppercase; line-height: 1.1; color: rgb(var(--color-foreground)); margin: 0; font-family: var(--font-heading);"
+        style="font-size: clamp(20px, 3vw, 36px); font-weight: 400; text-transform: uppercase; line-height: 1.1; color: rgb(var(--color-text)); margin: 0; font-family: var(--font-heading);"
       >{(typeof categoryTitle === 'string' && categoryTitle.trim()) || 'КАТАЛОГ'}</h1>
       {subtitleVisible && (
         <p
@@ -158,12 +158,12 @@ const apiBase = 'https://gateway.merfy.ru/api';
     {filterVisible && !filterSide && (
       <div
         data-catalog-filters-top
-        style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgb(var(--color-foreground) / 0.1);"
+        style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgb(var(--color-text) / 0.1);"
       >
-        <div style="font-weight: 500; color: rgb(var(--color-foreground));">Фильтры:</div>
-        <button type="button" data-filter-toggle="stock" style="background: transparent; border: 0; color: rgb(var(--color-foreground)); cursor: pointer;">Наличие ▾</button>
-        <button type="button" data-filter-toggle="price" style="background: transparent; border: 0; color: rgb(var(--color-foreground)); cursor: pointer;">Стоимость ▾</button>
-        <button type="button" data-filter-toggle="color" style="background: transparent; border: 0; color: rgb(var(--color-foreground)); cursor: pointer;">Цвет ▾</button>
+        <div style="font-weight: 500; color: rgb(var(--color-text));">Фильтры:</div>
+        <button type="button" data-filter-toggle="stock" style="background: transparent; border: 0; color: rgb(var(--color-text)); cursor: pointer;">Наличие ▾</button>
+        <button type="button" data-filter-toggle="price" style="background: transparent; border: 0; color: rgb(var(--color-text)); cursor: pointer;">Стоимость ▾</button>
+        <button type="button" data-filter-toggle="color" style="background: transparent; border: 0; color: rgb(var(--color-text)); cursor: pointer;">Цвет ▾</button>
       </div>
     )}
 
@@ -185,12 +185,12 @@ const apiBase = 'https://gateway.merfy.ru/api';
       {filterVisible && filterSide && (
         <aside
           class:list={['catalog-sidebar', C.sidebarBox]}
-          style="flex-direction: column; gap: 24px; font-size: 14px; color: rgb(var(--color-foreground));"
+          style="flex-direction: column; gap: 24px; font-size: 14px; color: rgb(var(--color-text));"
         >
           {sortVisible && (
             <div data-catalog-sort-wrap style="display: flex; flex-direction: column; gap: 12px;">
-              <div style="font-size: 14px; color: rgb(var(--color-foreground)); font-family: var(--font-body);">Сортировать по:</div>
-              <select data-catalog-sort-select style="width: 100%; height: 44px; padding: 0 12px; border: 1px solid rgb(var(--color-foreground) / 0.1); border-radius: 4px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); font-family: var(--font-body); font-size: 14px; cursor: pointer; appearance: none; background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 10px center; padding-right: 36px;">
+              <div style="font-size: 14px; color: rgb(var(--color-text)); font-family: var(--font-body);">Сортировать по:</div>
+              <select data-catalog-sort-select style="width: 100%; height: 44px; padding: 0 12px; border: 1px solid rgb(var(--color-text) / 0.1); border-radius: 4px; background: rgb(var(--color-bg)); color: rgb(var(--color-text)); font-family: var(--font-body); font-size: 14px; cursor: pointer; appearance: none; background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 10px center; padding-right: 36px;">
                 <option value="popularity">По популярности</option>
                 <option value="newest">По новизне</option>
                 <option value="price-asc">По возрастанию цены</option>
@@ -201,7 +201,7 @@ const apiBase = 'https://gateway.merfy.ru/api';
 
           {collFilterLegacy && (
             <div data-catalog-collections>
-              <div style="font-size: 14px; color: rgb(var(--color-foreground)); margin-bottom: 12px;">Коллекции</div>
+              <div style="font-size: 14px; color: rgb(var(--color-text)); margin-bottom: 12px;">Коллекции</div>
               <label style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 0;">
                 <span style="display: flex; align-items: center; gap: 8px;"><input type="radio" name="cat-coll" checked /> Все</span>
               </label>
@@ -209,7 +209,7 @@ const apiBase = 'https://gateway.merfy.ru/api';
           )}
 
           <div data-catalog-stock-filter style="display: flex; flex-direction: column; gap: 12px;">
-            <div style="font-size: 14px; color: rgb(var(--color-foreground));">Наличие</div>
+            <div style="font-size: 14px; color: rgb(var(--color-text));">Наличие</div>
             <label data-stock-row="all" style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; cursor: pointer;">
               <span style="display: flex; align-items: center; gap: 8px; font-size: 14px;"><input type="radio" name="cat-stock" value="all" checked /> Все</span>
               <span data-stock-count="all" style="font-size: 14px; color: rgb(var(--color-muted));">0</span>
@@ -225,24 +225,24 @@ const apiBase = 'https://gateway.merfy.ru/api';
           </div>
 
           <div data-catalog-price-filter style="display: flex; flex-direction: column; gap: 12px;">
-            <div style="font-size: 14px; color: rgb(var(--color-foreground));">Стоимость</div>
+            <div style="font-size: 14px; color: rgb(var(--color-text));">Стоимость</div>
             <div style="position: relative;">
-              <input type="text" data-cat-price-min placeholder="от" style="width: 100%; height: 44px; padding: 0 12px; padding-right: 28px; border: 1px solid rgb(var(--color-foreground) / 0.1); border-radius: 4px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); font-family: var(--font-body); font-size: 14px;" />
+              <input type="text" data-cat-price-min placeholder="от" style="width: 100%; height: 44px; padding: 0 12px; padding-right: 28px; border: 1px solid rgb(var(--color-text) / 0.1); border-radius: 4px; background: rgb(var(--color-bg)); color: rgb(var(--color-text)); font-family: var(--font-body); font-size: 14px;" />
               <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: rgb(var(--color-muted)); font-size: 14px;">₽</span>
             </div>
             <div style="position: relative;">
-              <input type="text" data-cat-price-max placeholder="до" style="width: 100%; height: 44px; padding: 0 12px; padding-right: 28px; border: 1px solid rgb(var(--color-foreground) / 0.1); border-radius: 4px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); font-family: var(--font-body); font-size: 14px;" />
+              <input type="text" data-cat-price-max placeholder="до" style="width: 100%; height: 44px; padding: 0 12px; padding-right: 28px; border: 1px solid rgb(var(--color-text) / 0.1); border-radius: 4px; background: rgb(var(--color-bg)); color: rgb(var(--color-text)); font-family: var(--font-body); font-size: 14px;" />
               <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: rgb(var(--color-muted)); font-size: 14px;">₽</span>
             </div>
           </div>
 
           <div data-catalog-color-filter style="display: none; flex-direction: column; gap: 12px;">
-            <div style="font-size: 14px; color: rgb(var(--color-foreground));">Цвет</div>
+            <div style="font-size: 14px; color: rgb(var(--color-text));">Цвет</div>
             <div data-color-options style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
           </div>
 
           <div data-catalog-attr-filter="memory" style="display: none; flex-direction: column; gap: 12px;">
-            <div style="font-size: 14px; color: rgb(var(--color-foreground));">Объём памяти</div>
+            <div style="font-size: 14px; color: rgb(var(--color-text));">Объём памяти</div>
             <div data-attr-options="memory" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
           </div>
         </aside>
@@ -262,8 +262,8 @@ const apiBase = 'https://gateway.merfy.ru/api';
               <img src={getSweaterAsset(idx)} alt="Товар" loading="lazy" style="width:60%;aspect-ratio:1/1;object-fit:contain;" />
             </div>
             <div style="display: flex; flex-direction: column; gap: 4px;">
-              <div class:list={[cardCaptionClass]} style="font-size: 14px; color: rgb(var(--color-foreground));">Товар</div>
-              <div style="font-size: 14px; color: rgb(var(--color-foreground));">2 500 ₽</div>
+              <div class:list={[cardCaptionClass]} style="font-size: 14px; color: rgb(var(--color-text));">Товар</div>
+              <div style="font-size: 14px; color: rgb(var(--color-text));">2 500 ₽</div>
             </div>
             {showQuickAdd && (
               <button
@@ -365,10 +365,10 @@ const apiBase = 'https://gateway.merfy.ru/api';
       const imgWrapClassAttr = gridAspectClass ? ' class="' + gridAspectClass + '"' : '';
       const imgWrapStyle = 'aspect-ratio:var(--catalog-card-aspect,' + cardAspect + ');';
       const imgBlock = img
-        ? '<div' + imgWrapClassAttr + ' style="' + imgWrapStyle + 'overflow:hidden;border-radius:12px;background:rgb(var(--color-foreground) / 0.05);position:relative;">' +
+        ? '<div' + imgWrapClassAttr + ' style="' + imgWrapStyle + 'overflow:hidden;border-radius:12px;background:rgb(var(--color-text) / 0.05);position:relative;">' +
           '<img src="' + escAttr(img) + '" alt="' + escAttr(title) + '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" />' +
           '</div>'
-        : '<div' + imgWrapClassAttr + ' style="' + imgWrapStyle + 'background:rgb(var(--color-foreground) / 0.05);border-radius:12px;position:relative;"></div>';
+        : '<div' + imgWrapClassAttr + ' style="' + imgWrapStyle + 'background:rgb(var(--color-text) / 0.05);border-radius:12px;position:relative;"></div>';
 
       // 096: badges (Новинка / -N%) — Figma 905-19049 bg-accent (#fa5109)
       const badges = [];
@@ -394,7 +394,7 @@ const apiBase = 'https://gateway.merfy.ru/api';
           memPills = '<div style="display:flex;gap:4px;flex-wrap:wrap;">' + memVals.map(function (mv) {
             const soldOut = mv.stock === 0;
             const bg = soldOut ? 'rgb(var(--color-muted) / 0.15)' : 'transparent';
-            const fg = soldOut ? 'rgb(var(--color-muted))' : 'rgb(var(--color-foreground))';
+            const fg = soldOut ? 'rgb(var(--color-muted))' : 'rgb(var(--color-text))';
             const border = soldOut ? '0' : '1px solid rgb(var(--color-muted) / 0.2)';
             return '<div style="padding:4px;border:' + border + ';border-radius:2px;background:' + bg + ';color:' + fg + ';font-size:12px;font-family:var(--font-body);line-height:1;">' + escAttr(mv.val) + '</div>';
           }).join('') + '</div>';
@@ -406,8 +406,8 @@ const apiBase = 'https://gateway.merfy.ru/api';
         '<article data-product-id="' + escAttr(p.id) + '" data-product-handle="' + escAttr(handle) + '" style="display:flex;flex-direction:column;gap:16px;cursor:pointer;' + cardChrome + 'position:relative;">' +
           imgWithBadges +
           '<div style="display:flex;flex-direction:column;gap:4px;">' +
-            '<div' + (cardCaptionClass ? ' class="' + cardCaptionClass + '"' : '') + ' style="font-size:16px;font-family:var(--font-body);color:rgb(var(--color-foreground));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escAttr(title) + '</div>' +
-            '<div style="font-size:16px;font-family:var(--font-body);color:rgb(var(--color-foreground));display:flex;gap:8px;align-items:baseline;">' +
+            '<div' + (cardCaptionClass ? ' class="' + cardCaptionClass + '"' : '') + ' style="font-size:16px;font-family:var(--font-body);color:rgb(var(--color-text));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escAttr(title) + '</div>' +
+            '<div style="font-size:16px;font-family:var(--font-body);color:rgb(var(--color-text));display:flex;gap:8px;align-items:baseline;">' +
               '<span>' + price + '</span>' +
               (compare ? '<span style="text-decoration:line-through;color:rgb(var(--color-muted));font-size:14px;">' + compare + '</span>' : '') +
             '</div>' +
@@ -799,8 +799,8 @@ const apiBase = 'https://gateway.merfy.ru/api';
 
         // Pill renderer — Figma 905-19049 style (h-32 px-8 rounded-4)
         function pillHtml(val, active, dataAttr) {
-          const bg = active ? 'rgb(var(--color-foreground))' : 'rgb(var(--color-muted) / 0.15)';
-          const fg = active ? 'rgb(var(--color-background))' : 'rgb(var(--color-foreground))';
+          const bg = active ? 'rgb(var(--color-text))' : 'rgb(var(--color-muted) / 0.15)';
+          const fg = active ? 'rgb(var(--color-bg))' : 'rgb(var(--color-text))';
           return '<button type="button" ' + dataAttr + '="' + escAttr(val) + '" style="height:32px;padding:0 8px;border-radius:4px;border:0;background:' + bg + ';color:' + fg + ';font-family:var(--font-body);font-size:14px;text-transform:uppercase;cursor:pointer;">' + escAttr(val) + '</button>';
         }
 

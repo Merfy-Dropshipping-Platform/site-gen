@@ -293,6 +293,12 @@ function themeSchemeToMerchantShape(scheme: {
     surfaceBg: rgbTripleToHex(t['--color-surface']),
     heading: rgbTripleToHex(t['--color-heading']),
     text: rgbTripleToHex(t['--color-text']),
+    // 096: preserve accent + muted tokens — Figma 905-19049 flux subtitle
+    // "M Phone" (orange) и multiple block rendering paths используют
+    // --color-accent / --color-muted. Без этих полей merchant-shape
+    // conversion стрипит их при сериализации в CSS.
+    accent: rgbTripleToHex(t['--color-accent']),
+    muted: rgbTripleToHex(t['--color-muted']),
     primaryButton: {
       background: rgbTripleToHex(t['--color-button-bg']),
       text: rgbTripleToHex(t['--color-button-text']),
@@ -339,6 +345,13 @@ function schemeToVars(scheme: Record<string, unknown>): string {
   }
   if (heading) parts.push(`--color-heading: ${heading}`);
   if (text) parts.push(`--color-text: ${text}`);
+  // 096: emit accent + muted CSS-vars (preserved from theme manifest via
+  // themeSchemeToMerchantShape). Used by Catalog subtitle, sale badges,
+  // muted text variants — Figma 905-19049 flux electronics.
+  const accent = hexToRgbTriple(scheme.accent);
+  if (accent) parts.push(`--color-accent: ${accent}`);
+  const muted = hexToRgbTriple(scheme.muted);
+  if (muted) parts.push(`--color-muted: ${muted}`);
   const primaryBg = hexToRgbTriple(primary.background);
   const primaryText = hexToRgbTriple(primary.text);
   const primaryBorder = hexToRgbTriple(primary.border);

@@ -155,17 +155,7 @@ const apiBase = 'https://gateway.merfy.ru/api';
 
     <div data-catalog-count style="margin-bottom: 16px; color: rgb(var(--color-foreground)); font-size: 14px;">{cardCount} товаров</div>
 
-    {sortVisible && (
-      <div
-        data-catalog-sort
-        style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;"
-      >
-        <button type="button" data-sort="popularity" style="padding: 8px 18px; border: 1px solid rgb(var(--color-accent)); background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); border-radius: 999px; font-size: 14px;">По популярности</button>
-        <button type="button" data-sort="newest" data-active="true" style="padding: 8px 18px; border: 1px solid rgb(var(--color-foreground)); background: rgb(var(--color-foreground)); color: rgb(var(--color-background)); border-radius: 999px; font-size: 14px;">По новизне</button>
-        <button type="button" data-sort="price-asc" style="padding: 8px 18px; border: 1px solid rgb(var(--color-accent)); background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); border-radius: 999px; font-size: 14px;">По возрастанию цены</button>
-        <button type="button" data-sort="price-desc" style="padding: 8px 18px; border: 1px solid rgb(var(--color-accent)); background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); border-radius: 999px; font-size: 14px;">По убыванию цены</button>
-      </div>
-    )}
+    {/* sort is rendered inside sidebar — top-bar sort removed for Figma alignment (905-19049). */}
 
     {filterVisible && !filterSide && (
       <div
@@ -197,45 +187,65 @@ const apiBase = 'https://gateway.merfy.ru/api';
       {filterVisible && filterSide && (
         <aside
           class:list={['catalog-sidebar', C.sidebarBox]}
-          style="flex-direction: column; gap: 24px; font-size: 14px; color: rgb(var(--color-foreground));"
+          style="flex-direction: column; gap: 24px; font-size: 14px; color: rgb(var(--color-foreground)); width: 318px;"
         >
-          <div style="font-weight: 500; opacity: 0.7;">Фильтры:</div>
+          {sortVisible && (
+            <div data-catalog-sort-wrap style="display: flex; flex-direction: column; gap: 12px;">
+              <div style="font-size: 14px; color: rgb(var(--color-foreground)); font-family: var(--font-body);">Сортировать по:</div>
+              <select data-catalog-sort-select style="width: 100%; height: 44px; padding: 0 12px; border: 1px solid rgb(var(--color-foreground) / 0.1); border-radius: 4px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); font-family: var(--font-body); font-size: 14px; cursor: pointer; appearance: none; background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 10px center; padding-right: 36px;">
+                <option value="popularity">По популярности</option>
+                <option value="newest">По новизне</option>
+                <option value="price-asc">По возрастанию цены</option>
+                <option value="price-desc">По убыванию цены</option>
+              </select>
+            </div>
+          )}
 
           {collFilterLegacy && (
             <div data-catalog-collections>
-              <div style="font-weight: 500; margin-bottom: 8px;">Коллекции</div>
-              <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0;">
-                <input type="radio" name="cat-coll" checked />
-                <span>Все</span>
+              <div style="font-size: 14px; color: rgb(var(--color-foreground)); margin-bottom: 12px;">Коллекции</div>
+              <label style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 0;">
+                <span style="display: flex; align-items: center; gap: 8px;"><input type="radio" name="cat-coll" checked /> Все</span>
               </label>
             </div>
           )}
 
-          <div>
-            <div style="font-weight: 500; margin-bottom: 8px;">Наличие</div>
-            <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0;">
-              <input type="radio" name="cat-stock" checked />
-              <span>Все</span>
+          <div data-catalog-stock-filter style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="font-size: 14px; color: rgb(var(--color-foreground));">Наличие</div>
+            <label data-stock-row="all" style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; cursor: pointer;">
+              <span style="display: flex; align-items: center; gap: 8px; font-size: 14px;"><input type="radio" name="cat-stock" value="all" checked /> Все</span>
+              <span data-stock-count="all" style="font-size: 14px; color: rgb(var(--color-muted));">0</span>
             </label>
-            <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0;">
-              <input type="radio" name="cat-stock" />
-              <span>В наличии</span>
+            <label data-stock-row="in" style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; cursor: pointer;">
+              <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: rgb(var(--color-muted));"><input type="radio" name="cat-stock" value="in" /> В наличии</span>
+              <span data-stock-count="in" style="font-size: 14px; color: rgb(var(--color-muted));">0</span>
             </label>
-            <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0;">
-              <input type="radio" name="cat-stock" />
-              <span>Распродано</span>
+            <label data-stock-row="out" style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; cursor: pointer;">
+              <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: rgb(var(--color-muted));"><input type="radio" name="cat-stock" value="out" /> Распродано</span>
+              <span data-stock-count="out" style="font-size: 14px; color: rgb(var(--color-muted));">0</span>
             </label>
           </div>
 
-          <div>
-            <div style="font-weight: 500; margin-bottom: 8px;">Стоимость</div>
-            <input type="text" placeholder="от" style="width: 100%; padding: 6px 8px; border: 1px solid rgb(var(--color-foreground) / 0.15); margin-bottom: 6px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground));" />
-            <input type="text" placeholder="до" style="width: 100%; padding: 6px 8px; border: 1px solid rgb(var(--color-foreground) / 0.15); background: rgb(var(--color-background)); color: rgb(var(--color-foreground));" />
+          <div data-catalog-price-filter style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="font-size: 14px; color: rgb(var(--color-foreground));">Стоимость</div>
+            <div style="position: relative;">
+              <input type="text" data-cat-price-min placeholder="от" style="width: 100%; height: 44px; padding: 0 12px; padding-right: 28px; border: 1px solid rgb(var(--color-foreground) / 0.1); border-radius: 4px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); font-family: var(--font-body); font-size: 14px;" />
+              <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: rgb(var(--color-muted)); font-size: 14px;">₽</span>
+            </div>
+            <div style="position: relative;">
+              <input type="text" data-cat-price-max placeholder="до" style="width: 100%; height: 44px; padding: 0 12px; padding-right: 28px; border: 1px solid rgb(var(--color-foreground) / 0.1); border-radius: 4px; background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); font-family: var(--font-body); font-size: 14px;" />
+              <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: rgb(var(--color-muted)); font-size: 14px;">₽</span>
+            </div>
           </div>
 
-          <div data-catalog-color-filter style="display: none;">
-            <div class={C.filterSectionTitle}>Цвет</div>
-            <div data-color-options class="flex flex-col gap-2"></div>
+          <div data-catalog-color-filter style="display: none; flex-direction: column; gap: 12px;">
+            <div style="font-size: 14px; color: rgb(var(--color-foreground));">Цвет</div>
+            <div data-color-options style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+          </div>
+
+          <div data-catalog-attr-filter="memory" style="display: none; flex-direction: column; gap: 12px;">
+            <div style="font-size: 14px; color: rgb(var(--color-foreground));">Объём памяти</div>
+            <div data-attr-options="memory" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
           </div>
         </aside>
       )}
@@ -367,6 +377,10 @@ const apiBase = 'https://gateway.merfy.ru/api';
       );
     }
 
+    // 096: memory из URL (Figma 905-19049 "Объём памяти" pill filter)
+    const memoryRaw = (typeof URLSearchParams !== 'undefined' ? new URLSearchParams(window.location.search).get('memory') : '') || '';
+    const memoryFromUrl = memoryRaw ? memoryRaw.split(',').map(function (s) { return s.trim(); }).filter(Boolean) : [];
+
     // Local state for client-side filter/sort (preview parity with live).
     const state = {
       allProducts: [],
@@ -377,6 +391,7 @@ const apiBase = 'https://gateway.merfy.ru/api';
       collection: effectiveCollection || null,
       page: urlState.page,
       colors: urlState.colors,
+      memory: memoryFromUrl,
     };
 
     function computePageNumbers(current, total) {
@@ -401,6 +416,7 @@ const apiBase = 'https://gateway.merfy.ru/api';
       if (state.sort && state.sort !== 'newest') params.set('sort', state.sort); else params.delete('sort');
       if (state.stock && state.stock !== 'all') params.set('availability', state.stock); else params.delete('availability');
       if (Array.isArray(state.colors) && state.colors.length > 0) params.set('color', state.colors.join(',')); else params.delete('color');
+      if (Array.isArray(state.memory) && state.memory.length > 0) params.set('memory', state.memory.join(',')); else params.delete('memory');
       if (state.priceMin != null) params.set('priceMin', String(state.priceMin)); else params.delete('priceMin');
       if (state.priceMax != null) params.set('priceMax', String(state.priceMax)); else params.delete('priceMax');
       const qs = params.toString();
@@ -439,6 +455,17 @@ const apiBase = 'https://gateway.merfy.ru/api';
             .filter(function (v) { const n = (v.name || '').toLowerCase(); return n === 'цвет' || n === 'color'; })
             .map(function (v) { return v.value; });
           return state.colors.some(function (c) { return productColors.includes(c); });
+        });
+      }
+      // 096: Memory filter (OR semantics, Figma 905-19049 "Объём памяти")
+      if (Array.isArray(state.memory) && state.memory.length > 0) {
+        const memNames = ['память', 'memory', 'storage', 'объём памяти', 'размер памяти'];
+        result = result.filter(function (p) {
+          if (!Array.isArray(p.variants)) return false;
+          const productMem = p.variants
+            .filter(function (v) { return memNames.indexOf((v.name || '').toLowerCase().trim()) !== -1; })
+            .map(function (v) { return v.value; });
+          return state.memory.some(function (m) { return productMem.indexOf(m) !== -1; });
         });
       }
       // Price range
@@ -523,28 +550,13 @@ const apiBase = 'https://gateway.merfy.ru/api';
       syncMobileDrawer();
     }
 
-    // Sort pills click handler
-    const sortBar = root.querySelector('[data-catalog-sort]');
-    if (sortBar) {
-      sortBar.addEventListener('click', function (ev) {
-        const btn = ev.target.closest('[data-sort]');
-        if (!btn) return;
-        state.sort = btn.getAttribute('data-sort');
-        // Update visual selection
-        sortBar.querySelectorAll('[data-sort]').forEach(function (b) {
-          if (b === btn) {
-            b.style.background = 'rgb(var(--color-foreground))';
-            b.style.color = 'rgb(var(--color-background))';
-            b.style.border = '1px solid rgb(var(--color-foreground))';
-            b.setAttribute('data-active', 'true');
-          } else {
-            b.style.background = 'rgb(var(--color-background))';
-            b.style.color = 'rgb(var(--color-foreground))';
-            b.style.border = '1px solid rgb(var(--color-accent))';
-            b.removeAttribute('data-active');
-          }
-        });
-        state.page = 1;  // reset page on filter/sort change
+    // 096: Sort dropdown (replaces tabs; Figma 905-19049 sidebar layout)
+    const sortSelect = root.querySelector('[data-catalog-sort-select]');
+    if (sortSelect) {
+      if (state.sort) sortSelect.value = state.sort;
+      sortSelect.addEventListener('change', function () {
+        state.sort = this.value || 'newest';
+        state.page = 1;
         syncUrlState();
         rerender();
       });
@@ -571,33 +583,38 @@ const apiBase = 'https://gateway.merfy.ru/api';
       });
     }
 
-    // Side-bar filters (stock radios + price inputs)
+    // Side-bar filters — Figma 905-19049 (stock radios with values + price inputs by data-attr)
     function attachSideFilters() {
-      // Stock radios in aside
-      root.querySelectorAll('input[name="cat-stock"]').forEach(function (input, idx) {
+      // Stock radios — use value="all|in|out"
+      root.querySelectorAll('input[name="cat-stock"]').forEach(function (input) {
         input.addEventListener('change', function () {
-          state.stock = idx === 0 ? 'all' : idx === 1 ? 'in' : 'out';
-          state.page = 1;  // reset page on filter/sort change
+          if (!this.checked) return;
+          const v = this.value;
+          state.stock = (v === 'in' || v === 'out') ? v : 'all';
+          state.page = 1;
           syncUrlState();
           rerender();
         });
       });
-      // Price inputs (от / до)
-      const priceInputs = root.querySelectorAll('aside input[type="text"]');
-      if (priceInputs[0]) {
-        priceInputs[0].addEventListener('input', function () {
+      // Price inputs (от / до) by data-attribute
+      const priceMinEl = root.querySelector('[data-cat-price-min]');
+      const priceMaxEl = root.querySelector('[data-cat-price-max]');
+      if (priceMinEl) {
+        if (state.priceMin != null) priceMinEl.value = String(state.priceMin);
+        priceMinEl.addEventListener('input', function () {
           const v = parseFloat(this.value);
           state.priceMin = Number.isFinite(v) ? v : null;
-          state.page = 1;  // reset page on filter/sort change
+          state.page = 1;
           syncUrlState();
           rerender();
         });
       }
-      if (priceInputs[1]) {
-        priceInputs[1].addEventListener('input', function () {
+      if (priceMaxEl) {
+        if (state.priceMax != null) priceMaxEl.value = String(state.priceMax);
+        priceMaxEl.addEventListener('input', function () {
           const v = parseFloat(this.value);
           state.priceMax = Number.isFinite(v) ? v : null;
-          state.page = 1;  // reset page on filter/sort change
+          state.page = 1;
           syncUrlState();
           rerender();
         });
@@ -710,43 +727,116 @@ const apiBase = 'https://gateway.merfy.ru/api';
         }
         state.allProducts = products;
 
-        // Detect color variants from products
-        const colorSet = new Set();
+        // 096: Aggregate variant attributes (color, memory) — Figma 905-19049 pills
+        const attrSets = { color: new Set(), memory: new Set() };
+        function attrKey(name) {
+          const n = (name || '').toLowerCase().trim();
+          if (n === 'цвет' || n === 'color') return 'color';
+          if (n === 'память' || n === 'memory' || n === 'storage' || n === 'объём памяти' || n === 'размер памяти') return 'memory';
+          return null;
+        }
         products.forEach(function (p) {
           if (Array.isArray(p.variants)) {
             p.variants.forEach(function (v) {
-              const name = (v.name || '').toLowerCase();
-              if ((name === 'цвет' || name === 'color') && v.value) colorSet.add(v.value);
+              const key = attrKey(v.name);
+              if (key && v.value) attrSets[key].add(v.value);
+            });
+          }
+          if (Array.isArray(p.variantGroups)) {
+            p.variantGroups.forEach(function (g) {
+              const key = attrKey(g.name);
+              if (!key || !Array.isArray(g.options)) return;
+              g.options.forEach(function (o) {
+                const val = (o && (o.value || o.label)) || o;
+                if (val) attrSets[key].add(val);
+              });
             });
           }
         });
-        const availableColors = Array.from(colorSet);
+        const availableColors = Array.from(attrSets.color);
+        const availableMemory = Array.from(attrSets.memory);
 
-        // Render color checkboxes in sidebar (only if colors exist)
+        // Pill renderer — Figma 905-19049 style (h-32 px-8 rounded-4)
+        function pillHtml(val, active, dataAttr) {
+          const bg = active ? 'rgb(var(--color-foreground))' : 'rgb(var(--color-muted) / 0.15)';
+          const fg = active ? 'rgb(var(--color-background))' : 'rgb(var(--color-foreground))';
+          return '<button type="button" ' + dataAttr + '="' + escAttr(val) + '" style="height:32px;padding:0 8px;border-radius:4px;border:0;background:' + bg + ';color:' + fg + ';font-family:var(--font-body);font-size:14px;text-transform:uppercase;cursor:pointer;">' + escAttr(val) + '</button>';
+        }
+
+        // Render color pills
         const colorFilterEl = root.querySelector('[data-catalog-color-filter]');
         const colorOptionsEl = root.querySelector('[data-color-options]');
         if (colorFilterEl && availableColors.length > 0) {
-          colorFilterEl.style.display = '';
+          colorFilterEl.style.display = 'flex';
           if (colorOptionsEl) {
             colorOptionsEl.innerHTML = availableColors.map(function (c) {
-              const checked = state.colors.includes(c) ? 'checked' : '';
-              return '<label class="flex items-center gap-2 cursor-pointer py-1"><input type="checkbox" data-color-value="' + escAttr(c) + '" ' + checked + ' /><span class="font-[family-name:var(--font-body)] text-[18px] text-[rgb(var(--color-foreground))]">' + escAttr(c) + '</span></label>';
+              return pillHtml(c, state.colors.includes(c), 'data-color-value');
             }).join('');
-            colorOptionsEl.addEventListener('change', function (ev) {
-              const cb = ev.target.closest('input[data-color-value]');
-              if (!cb) return;
-              const val = cb.getAttribute('data-color-value');
-              if (cb.checked) {
-                if (!state.colors.includes(val)) state.colors.push(val);
-              } else {
+            colorOptionsEl.addEventListener('click', function (ev) {
+              const btn = ev.target.closest('[data-color-value]');
+              if (!btn) return;
+              const val = btn.getAttribute('data-color-value');
+              if (state.colors.includes(val)) {
                 state.colors = state.colors.filter(function (c) { return c !== val; });
+              } else {
+                state.colors.push(val);
               }
               state.page = 1;
               syncUrlState();
+              // Re-render pills to update active state
+              colorOptionsEl.innerHTML = availableColors.map(function (c) {
+                return pillHtml(c, state.colors.includes(c), 'data-color-value');
+              }).join('');
               rerender();
             });
           }
         }
+
+        // Render memory pills (Figma "Объём памяти")
+        const memFilterEl = root.querySelector('[data-catalog-attr-filter="memory"]');
+        const memOptionsEl = root.querySelector('[data-attr-options="memory"]');
+        if (!state.memory) state.memory = [];
+        if (memFilterEl && availableMemory.length > 0) {
+          memFilterEl.style.display = 'flex';
+          if (memOptionsEl) {
+            memOptionsEl.innerHTML = availableMemory.map(function (m) {
+              return pillHtml(m, state.memory.includes(m), 'data-memory-value');
+            }).join('');
+            memOptionsEl.addEventListener('click', function (ev) {
+              const btn = ev.target.closest('[data-memory-value]');
+              if (!btn) return;
+              const val = btn.getAttribute('data-memory-value');
+              if (state.memory.includes(val)) {
+                state.memory = state.memory.filter(function (m) { return m !== val; });
+              } else {
+                state.memory.push(val);
+              }
+              state.page = 1;
+              memOptionsEl.innerHTML = availableMemory.map(function (m) {
+                return pillHtml(m, state.memory.includes(m), 'data-memory-value');
+              }).join('');
+              rerender();
+            });
+          }
+        }
+
+        // Stock counts (Figma — N справа от каждого radio)
+        function updateStockCounts() {
+          const total = products.length;
+          let inCount = 0, outCount = 0;
+          products.forEach(function (p) {
+            const inStock = p.inStock === true || (typeof p.totalStock === 'number' && p.totalStock > 0) || (p.stock && p.stock !== 'out');
+            if (inStock) inCount++;
+            else outCount++;
+          });
+          const allEl = root.querySelector('[data-stock-count="all"]');
+          const inEl = root.querySelector('[data-stock-count="in"]');
+          const outEl = root.querySelector('[data-stock-count="out"]');
+          if (allEl) allEl.textContent = String(total);
+          if (inEl) inEl.textContent = String(inCount);
+          if (outEl) outEl.textContent = String(outCount);
+        }
+        updateStockCounts();
 
         if (collsEl && Array.isArray(colls) && colls.length) {
           const items = colls.map(function (c) {
@@ -780,6 +870,8 @@ const apiBase = 'https://gateway.merfy.ru/api';
       state.collection = newParams.get('collection') || null;
       const colorsR = newParams.get('color') || '';
       state.colors = colorsR ? colorsR.split(',').map(function (s) { return s.trim(); }).filter(Boolean) : [];
+      const memoryR = newParams.get('memory') || '';
+      state.memory = memoryR ? memoryR.split(',').map(function (s) { return s.trim(); }).filter(Boolean) : [];
       const priceMinR = newParams.get('priceMin');
       state.priceMin = priceMinR && Number.isFinite(parseFloat(priceMinR)) ? parseFloat(priceMinR) : null;
       const priceMaxR = newParams.get('priceMax');

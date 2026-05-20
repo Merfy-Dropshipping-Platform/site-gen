@@ -1129,11 +1129,27 @@ const PREVIEW_NAV_AGENT_INLINE = `
         .then(function (html) {
           var el = document.querySelector('[data-puck-component-id="' + blockId + '"]');
           if (!el) return;
-          // Replace outerHTML; preserve enclosing color-scheme wrapper if any.
+          // 097: при наличии scheme wrapper — обновляем его class в соответствии
+          // с newProps.colorScheme. Раньше wrapper class был frozen от initial
+          // render, поэтому смена colorScheme в Puck не меняла внешнюю
+          // dark/light scheme, только inner section CSS-vars.
           var wrapper = el.parentElement;
           var schemeAttr = 'data-block-' + 'scheme';
           var hasSchemeWrapper = wrapper && wrapper.hasAttribute(schemeAttr);
           if (hasSchemeWrapper) {
+            // Sync wrapper class to current newProps.colorScheme (cleaned through
+            // theme defaults server-side — see deepMergeBlockProps stale guard).
+            var rawScheme = newProps && newProps.colorScheme;
+            var newSchemeId = '';
+            if (typeof rawScheme === 'string' && rawScheme.length > 0) {
+              newSchemeId = String(rawScheme).replace(/^scheme-/, '');
+            } else if (typeof rawScheme === 'number') {
+              newSchemeId = String(rawScheme);
+            }
+            if (newSchemeId) {
+              wrapper.className = 'color-scheme-' + newSchemeId;
+              wrapper.setAttribute(schemeAttr, newSchemeId);
+            }
             wrapper.innerHTML = html;
           } else {
             el.outerHTML = html;

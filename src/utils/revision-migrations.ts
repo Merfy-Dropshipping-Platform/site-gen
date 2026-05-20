@@ -13,6 +13,56 @@ type Block = { type?: string; props?: Record<string, unknown> };
 type PageData = { content?: Block[]; root?: { props?: Record<string, unknown> }; zones?: Record<string, unknown> };
 
 /**
+ * 094: shared chrome helper. Returns Header/Footer blocks lifted from the
+ * home page so all auto-seeded pages (catalog/product/cart/checkout/collection)
+ * stay visually consistent with the merchant's home layout. Falls back to
+ * minimal placeholder blocks if home lacks chrome (e.g. user removed it).
+ *
+ * IMPORTANT: returns the home blocks AS-IS (same object refs) — same pattern
+ * used by `migrateCollectionPage`. This keeps the data shape predictable;
+ * downstream code that deep-clones per page is responsible for unique IDs.
+ */
+function getHomeChrome(pagesData: Record<string, unknown>): {
+  headerBlock: Block;
+  footerBlock: Block;
+} {
+  const home = pagesData['home'] as PageData | undefined;
+  const homeContent: Block[] = Array.isArray(home?.content) ? (home!.content as Block[]) : [];
+  const ts = Date.now();
+  return {
+    headerBlock:
+      homeContent.find((b) => b?.type === 'Header') ?? {
+        type: 'Header',
+        props: { id: `Header-${ts}` },
+      },
+    footerBlock:
+      homeContent.find((b) => b?.type === 'Footer') ?? {
+        type: 'Footer',
+        props: { id: `Footer-${ts + 1}` },
+      },
+  };
+}
+
+/**
+ * 094: patches a content array so it starts with Header and ends with Footer.
+ * If Header/Footer already exists ANYWHERE in content, leaves it (avoids
+ * accidentally duplicating chrome when blocks are mid-array for non-standard
+ * layouts). Used by migrate{Catalog,Product,Cart}Page to backfill existing
+ * sites that were seeded without chrome (pre-094 bug).
+ *
+ * Idempotent: re-running on already-chromed content is a no-op (same length).
+ */
+function ensureChrome(content: Block[], pagesData: Record<string, unknown>): Block[] {
+  const chrome = getHomeChrome(pagesData);
+  const out = [...content];
+  const hasHeader = out.some((b) => b?.type === 'Header');
+  const hasFooter = out.some((b) => b?.type === 'Footer');
+  if (!hasHeader) out.unshift(chrome.headerBlock);
+  if (!hasFooter) out.push(chrome.footerBlock);
+  return out;
+}
+
+/**
  * 081: cart page is now Puck-managed with 3 blocks (CartBody + CartSummary +
  * Collections). Existing sites either have no `page-cart` in pagesData or
  * have a legacy seed. This migration:
@@ -28,12 +78,13 @@ function migrateCartPage(pagesData: Record<string, unknown>): Record<string, unk
   const existing = pagesData['page-cart'] as PageData | undefined;
 
   if (existing?.content?.some((b) => b?.type === 'CartBody')) {
-    const hasLegacy = existing.content?.some((b) => b?.type === 'CartSection');
-    if (!hasLegacy) {
+    const cleaned = (existing.content ?? []).filter((b) => b?.type !== 'CartSection');
+    const patched = ensureChrome(cleaned, pagesData);
+    if (patched.length === (existing.content ?? []).length) {
+      // No CartSection removed AND no chrome added → exact no-op
       return pagesData;
     }
-    const cleaned = (existing.content ?? []).filter((b) => b?.type !== 'CartSection');
-    return { ...pagesData, 'page-cart': { ...existing, content: cleaned } };
+    return { ...pagesData, 'page-cart': { ...existing, content: patched } };
   }
 
   const ts = Date.now();
@@ -70,10 +121,11 @@ function migrateCartPage(pagesData: Record<string, unknown>): Record<string, unk
   ];
 
   if (!existing || !Array.isArray(existing.content)) {
+    const chrome = getHomeChrome(pagesData);
     return {
       ...pagesData,
       'page-cart': {
-        content: seedBlocks,
+        content: [chrome.headerBlock, ...seedBlocks, chrome.footerBlock],
         root: { props: { title: 'Корзина' } },
         zones: {},
       } as PageData,
@@ -88,7 +140,8 @@ function migrateCartPage(pagesData: Record<string, unknown>): Record<string, unk
   } else {
     next.push(...seedBlocks);
   }
-  return { ...pagesData, 'page-cart': { ...existing, content: next } };
+  const withChrome = ensureChrome(next, pagesData);
+  return { ...pagesData, 'page-cart': { ...existing, content: withChrome } };
 }
 
 /**
@@ -131,10 +184,11 @@ function migrateCatalogPage(pagesData: Record<string, unknown>): Record<string, 
   };
 
   if (!existing || !Array.isArray(existing.content)) {
+    const chrome = getHomeChrome(pagesData);
     return {
       ...pagesData,
       'page-catalog': {
-        content: [catalogBlock],
+        content: [chrome.headerBlock, catalogBlock, chrome.footerBlock],
         root: { props: { title: 'Коллекции' } },
         zones: {},
       } as PageData,
@@ -142,7 +196,13 @@ function migrateCatalogPage(pagesData: Record<string, unknown>): Record<string, 
   }
 
   const hasCatalog = existing.content.some((b) => b?.type === 'Catalog');
-  if (hasCatalog) return pagesData;
+  if (hasCatalog) {
+    // 094: patch chrome on already-seeded pages that lack Header/Footer
+    // (pre-094 sites where [Catalog]-only was seeded by the broken migration).
+    const patched = ensureChrome(existing.content, pagesData);
+    if (patched.length === existing.content.length) return pagesData;
+    return { ...pagesData, 'page-catalog': { ...existing, content: patched } };
+  }
 
   // Only migrate the exact legacy seed [Header, PopularProducts, Footer]. If
   // the user has customised the page with additional blocks, leave it alone
@@ -276,10 +336,11 @@ function migrateProductPage(pagesData: Record<string, unknown>): Record<string, 
   };
 
   if (!existing || !Array.isArray(existing.content)) {
+    const chrome = getHomeChrome(pagesData);
     return {
       ...pagesData,
       'page-product': {
-        content: [productBlock, popularBlock, newsletterBlock],
+        content: [chrome.headerBlock, productBlock, popularBlock, newsletterBlock, chrome.footerBlock],
         root: { props: { title: 'Товар' } },
         zones: {},
       } as PageData,
@@ -287,7 +348,12 @@ function migrateProductPage(pagesData: Record<string, unknown>): Record<string, 
   }
 
   const hasProduct = existing.content.some((b) => b?.type === 'Product');
-  if (hasProduct) return pagesData;
+  if (hasProduct) {
+    // 094: patch chrome on already-seeded pages that lack Header/Footer.
+    const patched = ensureChrome(existing.content, pagesData);
+    if (patched.length === existing.content.length) return pagesData;
+    return { ...pagesData, 'page-product': { ...existing, content: patched } };
+  }
 
   // Has page-product but no Product block — insert before Footer or at end.
   const footerIdx = existing.content.findIndex((b) => b?.type === 'Footer');
@@ -297,9 +363,10 @@ function migrateProductPage(pagesData: Record<string, unknown>): Record<string, 
   } else {
     nextContent.push(productBlock);
   }
+  const withChrome = ensureChrome(nextContent, pagesData);
   return {
     ...pagesData,
-    'page-product': { ...existing, content: nextContent },
+    'page-product': { ...existing, content: withChrome },
   };
 }
 
@@ -337,8 +404,16 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
         }
       }
     }
-    out['checkout'] = source;
-    out['page-checkout'] = source;
+    // 094: ensure Footer at end (CheckoutHeader stays in front — checkout
+    // uses its own header variant, no global Header here). Build a fresh
+    // page object so we don't mutate the caller's source array.
+    let chromed: PageData = source;
+    if (!chromed.content!.some((b) => b?.type === 'Footer')) {
+      const { footerBlock } = getHomeChrome(pagesData);
+      chromed = { ...chromed, content: [...(chromed.content ?? []), footerBlock] };
+    }
+    out['checkout'] = chromed;
+    out['page-checkout'] = chromed;
     return out;
   }
   const ts = Date.now();
@@ -493,8 +568,11 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
     },
   ];
 
+  // 094: append Footer at end (CheckoutHeader stays as the checkout-specific
+  // header variant; no global Header on checkout).
+  const { footerBlock } = getHomeChrome(pagesData);
   const newPage: PageData = {
-    content: seedBlocks,
+    content: [...seedBlocks, footerBlock],
     root: { props: { title: 'Оформление заказа' } },
     zones: {},
   };

@@ -96,6 +96,11 @@
     "PopularProducts": {
       "cardVariant": "rich"
     },
+    "Catalog": {
+      "categoryTitle": "СМАРТФОНЫ",
+      "categorySubtitle": "M Phone",
+      "categorySubtitleColor": "accent"
+    },
     "Product": {
       "visualConfig": {
         "gallery": { "variant": "inline-small", "showDiscountBadge": false },

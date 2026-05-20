@@ -99,7 +99,17 @@
     "Catalog": {
       "categoryTitle": "СМАРТФОНЫ",
       "categorySubtitle": "M Phone",
-      "categorySubtitleColor": "accent"
+      "categorySubtitleColor": "accent",
+      "productCard": {
+        "buttonStyle": "primary",
+        "cardBackground": "true",
+        "cardStyle": "square",
+        "quickAdd": "cart"
+      },
+      "filterPosition": "side",
+      "showSort": "true",
+      "showFilter": "true",
+      "columns": 3
     },
     "Product": {
       "visualConfig": {

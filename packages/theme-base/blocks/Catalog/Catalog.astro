@@ -337,11 +337,13 @@ const apiBase = 'https://gateway.merfy.ru/api';
       return rubles.toLocaleString('ru-RU') + ' ₽';
     }
 
+    // 096 flux electronics — card chrome via CSS-vars (flux scheme-2 → --color-surface = #fbfbfb)
     const cardChrome = cardBgOn
-      ? 'background:rgb(var(--color-muted) / 0.1);border:1px solid rgb(var(--color-muted) / 0.1);border-radius:8px;padding:8px;'
+      ? 'background:rgb(var(--color-surface,251 251 251));border-radius:12px;padding:12px;'
       : '';
+    // 096 flux electronics — full-width «В КОРЗИНУ» button (h-44, uppercase, rounded-4).
     const buttonStyle = (
-      'margin-top:4px;padding:8px 12px;border-radius:4px;font-size:12px;cursor:pointer;' +
+      'width:100%;height:44px;padding:0 12px;border-radius:4px;font-size:14px;font-family:var(--font-body);text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;' +
       'background:' + btnBg + ';color:' + btnFg + ';border:' + btnBorder + ';' +
       (btnStyle === 'link' ? 'text-decoration:underline;background:transparent;' : '')
     );
@@ -354,24 +356,62 @@ const apiBase = 'https://gateway.merfy.ru/api';
         ? (typeof p.images[0] === 'string' ? p.images[0] : p.images[0].url)
         : '';
       const title = p.title || p.name || '';
-      const price = fmtPrice(p.basePrice ?? p.price);
-      const compare = p.compareAtPrice ? fmtPrice(p.compareAtPrice) : '';
+      const basePrice = Number(p.basePrice ?? p.price ?? 0);
+      const compPrice = Number(p.compareAtPrice ?? 0);
+      const price = fmtPrice(basePrice);
+      const compare = compPrice > basePrice ? fmtPrice(compPrice) : '';
       const handle = p.handle || p.slug || p.id;
       const imgWrapClassAttr = gridAspectClass ? ' class="' + gridAspectClass + '"' : '';
       const imgWrapStyle = 'aspect-ratio:var(--catalog-card-aspect,' + cardAspect + ');';
       const imgBlock = img
-        ? '<div' + imgWrapClassAttr + ' style="' + imgWrapStyle + 'overflow:hidden;border-radius:4px;background:rgb(var(--color-foreground) / 0.05);">' +
+        ? '<div' + imgWrapClassAttr + ' style="' + imgWrapStyle + 'overflow:hidden;border-radius:12px;background:rgb(var(--color-foreground) / 0.05);position:relative;">' +
           '<img src="' + escAttr(img) + '" alt="' + escAttr(title) + '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" />' +
           '</div>'
-        : '<div' + imgWrapClassAttr + ' style="' + imgWrapStyle + 'background:rgb(var(--color-foreground) / 0.05);border-radius:4px;"></div>';
+        : '<div' + imgWrapClassAttr + ' style="' + imgWrapStyle + 'background:rgb(var(--color-foreground) / 0.05);border-radius:12px;position:relative;"></div>';
+
+      // 096: badges (Новинка / -N%) — Figma 905-19049 bg-accent (#fa5109)
+      const badges = [];
+      if (p.isNew) {
+        badges.push('<div style="background:rgb(var(--color-accent,250 81 9));color:#fff;font-size:14px;font-family:var(--font-body);padding:4px 6px;border-radius:4px;line-height:1;">Новинка</div>');
+      }
+      if (compPrice > basePrice) {
+        const disc = Math.round((1 - basePrice / compPrice) * 100);
+        if (disc > 0) badges.push('<div style="background:rgb(var(--color-accent,250 81 9));color:#fff;font-size:14px;font-family:var(--font-body);padding:4px 6px;border-radius:4px;line-height:1;">' + disc + '%</div>');
+      }
+      const badgesBlock = badges.length
+        ? '<div style="position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:4px;z-index:1;">' + badges.join('') + '</div>'
+        : '';
+
+      // 096: variant pills (Объём памяти) — Figma 905-19049
+      let memPills = '';
+      const memNames = ['память', 'memory', 'storage', 'объём памяти', 'размер памяти'];
+      if (Array.isArray(p.variants)) {
+        const memVals = p.variants
+          .filter(function (v) { return memNames.indexOf((v.name || '').toLowerCase().trim()) !== -1; })
+          .map(function (v) { return { val: v.value, stock: typeof v.quantity === 'number' ? v.quantity : null }; });
+        if (memVals.length > 0) {
+          memPills = '<div style="display:flex;gap:4px;flex-wrap:wrap;">' + memVals.map(function (mv) {
+            const soldOut = mv.stock === 0;
+            const bg = soldOut ? 'rgb(var(--color-muted) / 0.15)' : 'transparent';
+            const fg = soldOut ? 'rgb(var(--color-muted))' : 'rgb(var(--color-foreground))';
+            const border = soldOut ? '0' : '1px solid rgb(var(--color-muted) / 0.2)';
+            return '<div style="padding:4px;border:' + border + ';border-radius:2px;background:' + bg + ';color:' + fg + ';font-size:12px;font-family:var(--font-body);line-height:1;">' + escAttr(mv.val) + '</div>';
+          }).join('') + '</div>';
+        }
+      }
+      // 096: image wrapper с badges-overlay (Figma 905-19049)
+      const imgWithBadges = imgBlock.replace('</div>', badgesBlock + '</div>');
       return (
-        '<article data-product-id="' + escAttr(p.id) + '" data-product-handle="' + escAttr(handle) + '" style="display:flex;flex-direction:column;gap:8px;cursor:pointer;' + cardChrome + '">' +
-          imgBlock +
-          '<div' + (cardCaptionClass ? ' class="' + cardCaptionClass + '"' : '') + ' style="font-size:14px;color:rgb(var(--color-foreground));">' + escAttr(title) + '</div>' +
-          '<div style="font-size:14px;color:rgb(var(--color-foreground));display:flex;gap:8px;align-items:baseline;">' +
-            '<span>' + price + '</span>' +
-            (compare ? '<span style="text-decoration:line-through;color:rgb(var(--color-muted));">' + compare + '</span>' : '') +
+        '<article data-product-id="' + escAttr(p.id) + '" data-product-handle="' + escAttr(handle) + '" style="display:flex;flex-direction:column;gap:16px;cursor:pointer;' + cardChrome + 'position:relative;">' +
+          imgWithBadges +
+          '<div style="display:flex;flex-direction:column;gap:4px;">' +
+            '<div' + (cardCaptionClass ? ' class="' + cardCaptionClass + '"' : '') + ' style="font-size:16px;font-family:var(--font-body);color:rgb(var(--color-foreground));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escAttr(title) + '</div>' +
+            '<div style="font-size:16px;font-family:var(--font-body);color:rgb(var(--color-foreground));display:flex;gap:8px;align-items:baseline;">' +
+              '<span>' + price + '</span>' +
+              (compare ? '<span style="text-decoration:line-through;color:rgb(var(--color-muted));font-size:14px;">' + compare + '</span>' : '') +
+            '</div>' +
           '</div>' +
+          memPills +
           (showQuickAdd ? '<button type="button" data-quick-add-id="' + escAttr(p.id) + '" style="' + buttonStyle + '">' + escAttr(quickAddText) + '</button>' : '') +
         '</article>'
       );

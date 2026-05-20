@@ -87,12 +87,11 @@ const collFilterLegacy =
   showCollectionFilter !== 'false' && showCollectionFilter !== false;
 
 const cardCount = Math.max(2, Math.min(24, Number(cards) || 8));
-// 098: auto-cap columns based on layout mode
-// - filterPosition='side' → 1-4 (sidebar занимает ~318px из 1320px = 4 columns max разумно)
-// - filterPosition='top' → 1-6 (full-width grid)
-// - desktop min 2 (1 columns layout ugly; mobile CSS отдельно 1 col на <640px)
-const rawColCount = Math.max(1, Math.min(6, Number(columns) || 4));
-const colCount = filterSide ? Math.max(2, Math.min(4, rawColCount)) : Math.max(2, rawColCount);
+// 098 revised: columns 1-6 без cap к sidebar mode. User: «после 5+ колонок
+// не применяется, лимит 4 в ряду». Раньше capped к 4 на filterSide=true —
+// теперь user сам решает. Desktop min 2 (1 column layout некрасиво на
+// большом экране; mobile media query потом отдельно).
+const colCount = Math.max(2, Math.min(6, Number(columns) || 4));
 const placeholderCards = Array.from({ length: cardCount });
 
 const cardAspect =

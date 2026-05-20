@@ -12,6 +12,7 @@
  * flat strings / {text,href} shape theme-base .astro templates expect.
  */
 import { normalizeLegacyProps } from "./legacy-prop-normalizer";
+import { deepMergeBlockProps } from "../services/preview.service";
 
 /** How a component should be rendered in Astro */
 export type ComponentKind = "island" | "static" | "server-island";
@@ -122,10 +123,16 @@ function processContentItems(
     // Merge theme-level block defaults (from theme.json → blockDefaults[type]) UNDER
     // merchant props. Merchant values win. Used so e.g. rose gets Footer variant
     // '3-col' without the merchant ever having to set it in Puck.
+    // 095: deep-merge for nested objects so blockDefaults sub-keys
+    // (Footer.newsletter.heading / .description / .placeholder) survive
+    // when revision has partial `newsletter: { enabled: true }`.
     const themeDefaults = blockDefaults[rawItem.type];
     const mergedProps =
       themeDefaults && Object.keys(themeDefaults).length > 0
-        ? { ...themeDefaults, ...(rawItem.props ?? {}) }
+        ? deepMergeBlockProps(
+            themeDefaults as Record<string, unknown>,
+            (rawItem.props ?? {}) as Record<string, unknown>,
+          )
         : (rawItem.props ?? {});
     // Unwrap legacy envelopes so the generated .astro receives flat strings
     // instead of "[object Object]" when the Astro template serialises them.

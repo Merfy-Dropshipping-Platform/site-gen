@@ -12,6 +12,34 @@ function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => HTML_ESCAPE_MAP[c]!);
 }
 
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) return false;
+  const proto = Object.getPrototypeOf(v);
+  return proto === Object.prototype || proto === null;
+}
+
+/**
+ * 095: deep-merge theme blockDefaults UNDER revision props. Plain objects
+ * recurse; arrays/scalars in props replace wholesale. Used so a revision
+ * like `newsletter: { enabled: true }` still inherits theme.json defaults
+ * for `newsletter.heading` / `.description` / `.placeholder`.
+ */
+export function deepMergeBlockProps(
+  defaults: Record<string, unknown>,
+  props: Record<string, unknown>,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...defaults };
+  for (const [key, value] of Object.entries(props)) {
+    const defaultValue = defaults[key];
+    if (isPlainObject(defaultValue) && isPlainObject(value)) {
+      out[key] = deepMergeBlockProps(defaultValue, value);
+    } else {
+      out[key] = value;
+    }
+  }
+  return out;
+}
+
 /**
  * Input for rendering a single block to HTML.
  */
@@ -211,7 +239,10 @@ export class PreviewService {
       );
       const themeDefaults = await this.loadThemeBlockDefaults(input.themeId);
       const blockDefaults = (themeDefaults[input.blockName] as Record<string, unknown> | undefined) ?? {};
-      const mergedProps = { ...blockDefaults, ...input.props };
+      // 095: deep-merge so blockDefaults sub-keys (e.g. Footer.newsletter.heading,
+      // description, placeholder) survive when revision has partial sub-object
+      // like `newsletter: { enabled: true }`. Arrays are replaced wholesale.
+      const mergedProps = deepMergeBlockProps(blockDefaults, (input.props ?? {}) as Record<string, unknown>);
       const container = await this.getContainer();
       const html = await container.renderToString(Component, {
         props: mergedProps,

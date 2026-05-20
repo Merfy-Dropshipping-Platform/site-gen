@@ -87,7 +87,12 @@ const collFilterLegacy =
   showCollectionFilter !== 'false' && showCollectionFilter !== false;
 
 const cardCount = Math.max(2, Math.min(24, Number(cards) || 8));
-const colCount = Math.max(1, Math.min(6, Number(columns) || 4));
+// 098: auto-cap columns based on layout mode
+// - filterPosition='side' → 1-4 (sidebar занимает ~318px из 1320px = 4 columns max разумно)
+// - filterPosition='top' → 1-6 (full-width grid)
+// - desktop min 2 (1 columns layout ugly; mobile CSS отдельно 1 col на <640px)
+const rawColCount = Math.max(1, Math.min(6, Number(columns) || 4));
+const colCount = filterSide ? Math.max(2, Math.min(4, rawColCount)) : Math.max(2, rawColCount);
 const placeholderCards = Array.from({ length: cardCount });
 
 const cardAspect =
@@ -198,10 +203,12 @@ const apiBase = 'https://gateway.merfy.ru/api';
     </div>
 
     <div
-      class={filterVisible && filterSide ? 'catalog-grid-with-sidebar' : 'catalog-grid-no-sidebar'}
+      class={filterSide && (sortVisible || filterVisible) ? 'catalog-grid-with-sidebar' : 'catalog-grid-no-sidebar'}
       style="display: grid; gap: 32px; align-items: start;"
     >
-      {filterVisible && filterSide && (
+      {/* 098: sidebar показывается если filterSide AND (Sort or Фильтры). */}
+      {/* "Скрыть фильтры" в Figma 1:21287 = только filter sections, Sort остаётся */}
+      {filterSide && (sortVisible || filterVisible) && (
         <aside
           class:list={['catalog-sidebar', C.sidebarBox]}
           style="flex-direction: column; gap: 24px; font-size: 14px; color: rgb(var(--color-text));"
@@ -218,6 +225,9 @@ const apiBase = 'https://gateway.merfy.ru/api';
             </div>
           )}
 
+          {/* 098: filter sections скрываются когда filterVisible=false, Sort остаётся выше */}
+          {filterVisible && (
+          <>
           {collFilterLegacy && (
             <div data-catalog-collections>
               <div style="font-size: 14px; color: rgb(var(--color-text)); margin-bottom: 12px;">Коллекции</div>
@@ -264,6 +274,8 @@ const apiBase = 'https://gateway.merfy.ru/api';
             <div style="font-size: 14px; color: rgb(var(--color-text));">Объём памяти</div>
             <div data-attr-options="memory" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
           </div>
+          </>
+          )}
         </aside>
       )}
 

@@ -1,15 +1,22 @@
 ---
-// Catalog — pupa-style SSG render with optional client hydration.
+// Catalog — universal block, rendered identically in preview iframe и live
+// SSG (modern Puck-driven architecture, parity с home-section блоками).
 //
-// Renders the same visual structure as the live CatalogIsland (sort pills,
-// filter sidebar, product grid) so the constructor preview mirrors the live
-// storefront. When `siteId` is injected by the preview pipeline, an inline
-// client script fetches real products from the storefront API and replaces
-// placeholder cards.
+// Build pipeline (scaffold-builder): walks pagesData.page-catalog.content[]
+// → generates `pages/page-catalog.astro` with `<Catalog props={...} />` import
+// from `theme-base/blocks/Catalog/Catalog.astro`. Same flow как Hero/Collections
+// на home — single source of truth.
 //
-// On live SSG bundles the theme catalog.astro intercepts Catalog blocks
-// before they reach this file and renders the interactive React island
-// directly, so this file is only used in preview.
+// Preview iframe (preview.service.ts): Astro Container API renders this
+// same .astro server-side с inlined inline-script hydration ниже.
+//
+// Inline-script: при наличии `siteId` фетчит реальные продукты из storefront
+// API и replaces placeholder cards. Фильтры (Sort/Stock/Price/Color/Memory)
+// и пагинация — vanilla JS state + URL sync.
+//
+// Legacy note: theme-satin шлёт через templates/astro/satin/src/pages/catalog.astro
+// (React CatalogIsland) — единственная тема на старом intercept-pattern.
+// flux/rose/bloom/vanilla используют этот файл напрямую.
 import type { CatalogProps } from './Catalog.puckConfig';
 import { CatalogClasses as C } from './Catalog.classes';
 import { parseCatalogUrlParams, type CatalogUrlState } from './url-params';
@@ -144,11 +151,11 @@ const apiBase = 'https://gateway.merfy.ru/api';
   >
     <div style="margin-bottom: 24px;">
       <h1
-        style="font-size: clamp(20px, 3vw, 36px); font-weight: 400; text-transform: uppercase; line-height: 1.1; color: rgb(var(--color-text)); margin: 0; font-family: var(--font-heading);"
+        style="font-size: var(--size-catalog-title, clamp(20px, 3vw, 36px)); font-weight: var(--weight-catalog-title, 400); text-transform: uppercase; line-height: 1.1; color: rgb(var(--color-text)); margin: 0; font-family: var(--font-heading);"
       >{(typeof categoryTitle === 'string' && categoryTitle.trim()) || 'КАТАЛОГ'}</h1>
       {subtitleVisible && (
         <p
-          style={`font-size: clamp(14px, 1.5vw, 20px); font-weight: 400; line-height: 1.4; color: rgb(var(${categorySubtitleColor === 'accent' ? '--color-accent' : '--color-muted'})); margin-top: 6px; font-family: var(--font-body);`}
+          style={`font-size: var(--size-catalog-subtitle, clamp(14px, 1.5vw, 20px)); font-weight: 400; line-height: 1.4; color: rgb(var(${categorySubtitleColor === 'accent' ? '--color-accent' : '--color-muted'})); margin-top: 4px; font-family: var(--font-body);`}
         >{(typeof categorySubtitle === 'string' && categorySubtitle.trim()) || 'Здесь начинается персональный стиль'}</p>
       )}
     </div>
@@ -537,7 +544,8 @@ const apiBase = 'https://gateway.merfy.ru/api';
       const pageSafe = Math.max(1, Math.min(state.page, Math.max(1, totalP)));
       const slice = filtered.slice((pageSafe - 1) * ps, pageSafe * ps);
 
-      if (count) count.textContent = slice.length + ' из ' + total + ' товаров';
+      // 096 Figma 905-19049: counter format "{total} товаров" (без "X из Y")
+      if (count) count.textContent = total + ' товаров';
       // Заглушки (placeholder свитеры) видны ТОЛЬКО когда total=0. Если есть
       // хотя бы 1 товар — рендерим только реальные карточки, без добивки до cardCount.
       grid.removeAttribute('data-loading');

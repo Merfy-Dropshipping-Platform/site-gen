@@ -84,7 +84,19 @@ export function buildTokensCss(
   --spacing-grid-col-gap: ${themeDefaults['--spacing-grid-col-gap'] ?? '24px'};
   --spacing-grid-row-gap: ${themeDefaults['--spacing-grid-row-gap'] ?? '32px'};
   --catalog-sidebar-w: ${themeDefaults['--catalog-sidebar-w'] ?? '220px'};
-  --catalog-grid-row-gap: ${themeDefaults['--catalog-grid-row-gap'] ?? '16px'};
+  --catalog-grid-row-gap: ${themeDefaults['--catalog-grid-row-gap'] ?? '16px'};${
+    themeDefaults['--size-catalog-title']
+      ? `\n  --size-catalog-title: ${themeDefaults['--size-catalog-title']};`
+      : ''
+  }${
+    themeDefaults['--size-catalog-subtitle']
+      ? `\n  --size-catalog-subtitle: ${themeDefaults['--size-catalog-subtitle']};`
+      : ''
+  }${
+    themeDefaults['--weight-catalog-title']
+      ? `\n  --weight-catalog-title: ${themeDefaults['--weight-catalog-title']};`
+      : ''
+  }
   --size-hero-heading: ${merchantFirst(heroHeadingSize, heroHeadingSizeSet, themeDefaults['--size-hero-heading'], '48px')};
   --size-hero-button-h: ${themeDefaults['--size-hero-button-h'] ?? '48px'};
   --slide-min-height: ${themeDefaults['--slide-min-height'] ?? '60vh'};${

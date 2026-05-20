@@ -242,7 +242,29 @@ export class PreviewService {
       // 095: deep-merge so blockDefaults sub-keys (e.g. Footer.newsletter.heading,
       // description, placeholder) survive when revision has partial sub-object
       // like `newsletter: { enabled: true }`. Arrays are replaced wholesale.
-      const mergedProps = deepMergeBlockProps(blockDefaults, (input.props ?? {}) as Record<string, unknown>);
+      //
+      // 097 stale-state guard: при пришедшем `colorScheme === 'scheme-1'`
+      // (старый universal puck default) И theme имеет свой override — prefer
+      // theme. Это защищает render от stale Puck state в браузерных сессиях
+      // загруженных ДО fix архитектуры puck-config defaultProps. Без этого
+      // user-edit любого поля шлёт state с scheme-1 → catalog рендерится
+      // тёмным даже если revision имеет scheme-2.
+      const userProps = (input.props ?? {}) as Record<string, unknown>;
+      const cleanedUserProps: Record<string, unknown> = { ...userProps };
+      const STALE_PUCK_DEFAULTS: Record<string, unknown> = {
+        colorScheme: 'scheme-1',
+        containerColorScheme: 'scheme-1',
+      };
+      for (const [key, staleValue] of Object.entries(STALE_PUCK_DEFAULTS)) {
+        if (
+          cleanedUserProps[key] === staleValue &&
+          blockDefaults[key] !== undefined &&
+          blockDefaults[key] !== staleValue
+        ) {
+          delete cleanedUserProps[key];
+        }
+      }
+      const mergedProps = deepMergeBlockProps(blockDefaults, cleanedUserProps);
       const container = await this.getContainer();
       const html = await container.renderToString(Component, {
         props: mergedProps,

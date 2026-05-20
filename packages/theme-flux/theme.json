@@ -26,6 +26,7 @@
     "--size-newsletter-form-w": "480px",
     "--size-logo-width": "120px",
     "--size-card-border": "1px",
+    "--catalog-sidebar-w": "318px",
     "--spacing-section-y": "64px",
     "--spacing-grid-col-gap": "40px",
     "--spacing-grid-row-gap": "40px",

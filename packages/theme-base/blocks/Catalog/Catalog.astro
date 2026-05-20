@@ -153,9 +153,7 @@ const apiBase = 'https://gateway.merfy.ru/api';
       )}
     </div>
 
-    <div data-catalog-count style="margin-bottom: 16px; color: rgb(var(--color-foreground)); font-size: 14px;">{cardCount} товаров</div>
-
-    {/* sort is rendered inside sidebar — top-bar sort removed for Figma alignment (905-19049). */}
+{/* sort is rendered inside sidebar — top-bar sort removed for Figma alignment (905-19049). */}
 
     {filterVisible && !filterSide && (
       <div
@@ -187,7 +185,7 @@ const apiBase = 'https://gateway.merfy.ru/api';
       {filterVisible && filterSide && (
         <aside
           class:list={['catalog-sidebar', C.sidebarBox]}
-          style="flex-direction: column; gap: 24px; font-size: 14px; color: rgb(var(--color-foreground)); width: 318px;"
+          style="flex-direction: column; gap: 24px; font-size: 14px; color: rgb(var(--color-foreground));"
         >
           {sortVisible && (
             <div data-catalog-sort-wrap style="display: flex; flex-direction: column; gap: 12px;">
@@ -293,6 +291,9 @@ const apiBase = 'https://gateway.merfy.ru/api';
         </button>
         <span data-page-total class={C.paginationCount}>0 товаров</span>
       </div>
+
+      {/* 096: counter под grid (Figma 905-19049 "8 товаров" внизу) */}
+      <div data-catalog-count style="margin-top: 24px; text-align: center; color: rgb(var(--color-muted)); font-size: 16px; font-family: var(--font-body); grid-column: 1 / -1;">{cardCount} товаров</div>
     </div>
   </div>
 </section>

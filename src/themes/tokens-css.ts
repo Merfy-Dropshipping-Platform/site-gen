@@ -182,7 +182,30 @@ export function buildTokensCss(
     // constructor is what lands on live" contract. Fall back to theme
     // manifest tokens only when merchant didn't touch this scheme id.
     if (merchant) {
-      const rule = buildSchemeRule(merchant);
+      // 096: merchant override defines basic colors (bg/heading/text/buttons);
+      // accent/muted живут только в theme manifest (admin UI не имеет их
+      // picker'ов). Inherit accent/muted from theme scheme когда merchant
+      // не задал — иначе subtitle/badges остаются без CSS-var.
+      const merged: Record<string, unknown> = { ...merchant };
+      if (merged.accent === undefined) {
+        const themeAccent = themeScheme.tokens?.['--color-accent'];
+        if (themeAccent) {
+          const [r, g, b] = themeAccent.trim().split(/\s+/).map((n) => parseInt(n, 10));
+          if ([r, g, b].every((n) => !Number.isNaN(n))) {
+            merged.accent = '#' + [r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('');
+          }
+        }
+      }
+      if (merged.muted === undefined) {
+        const themeMuted = themeScheme.tokens?.['--color-muted'];
+        if (themeMuted) {
+          const [r, g, b] = themeMuted.trim().split(/\s+/).map((n) => parseInt(n, 10));
+          if ([r, g, b].every((n) => !Number.isNaN(n))) {
+            merged.muted = '#' + [r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('');
+          }
+        }
+      }
+      const rule = buildSchemeRule(merged);
       if (rule) {
         schemeRuleLines.push(rule);
       } else {

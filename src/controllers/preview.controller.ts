@@ -65,6 +65,37 @@ interface RenderTokensCssBody {
 export class PreviewController {
   private readonly logger = new Logger(PreviewController.name);
 
+  /**
+   * Rendered preview HTML cache keyed by (siteId, revisionId, page, productId).
+   * revisionId is part of the key — when a constructor save creates a new
+   * revision, currentRevisionId changes and old cache entries are simply not
+   * looked up again (and get LRU-evicted in time). No explicit invalidation
+   * needed; stale HTML is impossible by construction.
+   *
+   * Simple Map-based LRU: on read, re-insert to refresh order; on write, evict
+   * oldest if over MAX. ~150-300KB per entry × 300 entries ≈ 45-90MB ceiling.
+   */
+  private static htmlCache = new Map<string, string>();
+  private static readonly MAX_HTML_CACHE = 300;
+
+  private static getCachedHtml(key: string): string | undefined {
+    const v = PreviewController.htmlCache.get(key);
+    if (v !== undefined) {
+      // LRU bump: delete + reinsert so this key becomes the newest.
+      PreviewController.htmlCache.delete(key);
+      PreviewController.htmlCache.set(key, v);
+    }
+    return v;
+  }
+
+  private static setCachedHtml(key: string, html: string): void {
+    if (PreviewController.htmlCache.size >= PreviewController.MAX_HTML_CACHE) {
+      const oldest = PreviewController.htmlCache.keys().next().value;
+      if (oldest !== undefined) PreviewController.htmlCache.delete(oldest);
+    }
+    PreviewController.htmlCache.set(key, html);
+  }
+
   constructor(
     private readonly preview: PreviewService,
     @Inject(PG_CONNECTION)
@@ -100,6 +131,22 @@ export class PreviewController {
       return;
     }
 
+    // Cache lookup BEFORE doing extractPageBlocks/render. Key includes the
+    // current revisionId so any constructor save (new revision) yields a
+    // different key and the new content is rendered fresh.
+    const cacheKey = `${siteId}:${loaded.revisionId}:${page}:${productIdOverride ?? ''}`;
+    const cachedHtml = PreviewController.getCachedHtml(cacheKey);
+    if (cachedHtml !== undefined) {
+      res
+        .header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        .header('Pragma', 'no-cache')
+        .header('Expires', '0')
+        .header('X-Preview-Cache', 'hit')
+        .type('text/html')
+        .send(cachedHtml);
+      return;
+    }
+
     const blocks = this.extractPageBlocks(
       loaded.data,
       page,
@@ -124,6 +171,7 @@ export class PreviewController {
         themeId: loaded.themeId,
         page,
       });
+      PreviewController.setCachedHtml(cacheKey, html);
       // Disable browser cache for preview iframe — Constructor вылитый
       // на свежий код мог отдавать stale HTML из browser cache (etag 304),
       // даже после deploy свежей render-логики. no-cache+no-store+revalidate
@@ -247,6 +295,7 @@ export class PreviewController {
     data: Record<string, unknown>;
     publicUrl: string | null;
     themeId: string | null;
+    revisionId: string;
   } | null> {
     const [site] = await this.db
       .select({
@@ -271,6 +320,7 @@ export class PreviewController {
       ),
       publicUrl: site.publicUrl ?? null,
       themeId: site.themeId ?? null,
+      revisionId: site.currentRevisionId,
     };
   }
 

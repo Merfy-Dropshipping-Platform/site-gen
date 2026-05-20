@@ -566,6 +566,26 @@ const PREVIEW_NAV_AGENT_INLINE = `
   // чтобы compute diff при следующем update-block.
   var LAST_PROPS = {};
 
+  // 098 systemic: HTML5 spec — <script> elements added via innerHTML не выполняются.
+  // После hot-replace на update-block hydration scripts (Catalog/Collections/
+  // PopularProducts/Gallery/etc fetching real products) остаются inert,
+  // placeholders видны вместо real cards. Воссоздаём <script> элементы вручную —
+  // браузер их выполнит. Idempotency на стороне блока через data-X-hydrated attrs.
+  function executeScriptsIn(rootEl) {
+    if (!rootEl) return;
+    var scripts = rootEl.querySelectorAll('script');
+    for (var i = 0; i < scripts.length; i++) {
+      var oldScript = scripts[i];
+      var newScript = document.createElement('script');
+      for (var j = 0; j < oldScript.attributes.length; j++) {
+        var attr = oldScript.attributes[j];
+        newScript.setAttribute(attr.name, attr.value);
+      }
+      newScript.text = oldScript.text;
+      if (oldScript.parentNode) oldScript.parentNode.replaceChild(newScript, oldScript);
+    }
+  }
+
   // Spec 090 — runtime kill switch. Можно выключить через console:
   // window.__MERFY_LOCAL_PATCH_ENABLED = false; reload не требуется.
   if (typeof window.__MERFY_LOCAL_PATCH_ENABLED === 'undefined') {
@@ -1129,8 +1149,19 @@ const PREVIEW_NAV_AGENT_INLINE = `
               wrapper.setAttribute(schemeAttr, newSchemeId);
             }
             wrapper.innerHTML = html;
+            // 098 systemic fix: HTML5 не выполняет <script> теги добавленные
+            // через innerHTML. Без этого hot-replaced блоки (Catalog/Collections/
+            // PopularProducts/Gallery/etc) не re-hydrate — placeholders остаются
+            // visible вместо real products. Воссоздаём <script> элементы вручную
+            // — браузер их выполнит. Idempotency на стороне блока через
+            // data-X-hydrated атрибуты.
+            executeScriptsIn(wrapper);
           } else {
             el.outerHTML = html;
+            // Same fix для no-wrapper case. После outerHTML el detached —
+            // ищем новый по blockId.
+            var newEl = document.querySelector('[data-puck-component-id="' + blockId + '"]');
+            if (newEl) executeScriptsIn(newEl.parentElement || newEl);
           }
           LAST_PROPS[blockId] = newProps;
         })
@@ -1154,6 +1185,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
         .then(function (r) { return r.text(); })
         .then(function (html) {
           // Найти точку вставки.
+          var insertedAtRef = false;
           if (addBeforeId) {
             var ref = document.querySelector('[data-puck-component-id="' + addBeforeId + '"]');
             // Если у ref есть color-scheme wrapper — вставлять перед ним.
@@ -1161,12 +1193,19 @@ const PREVIEW_NAV_AGENT_INLINE = `
             var refTarget = ref && ref.parentElement && ref.parentElement.hasAttribute(refSchemeAttr) ? ref.parentElement : ref;
             if (refTarget && refTarget.parentElement) {
               refTarget.insertAdjacentHTML('beforebegin', html);
-              return;
+              // 098: execute <script> tags из inserted HTML.
+              var prevSibling = refTarget.previousElementSibling;
+              if (prevSibling) executeScriptsIn(prevSibling);
+              insertedAtRef = true;
             }
           }
-          // Append в конец main.
-          var container = document.querySelector('main') || document.body;
-          container.insertAdjacentHTML('beforeend', html);
+          if (!insertedAtRef) {
+            // Append в конец main.
+            var container = document.querySelector('main') || document.body;
+            container.insertAdjacentHTML('beforeend', html);
+            // 098: execute scripts из last child.
+            if (container.lastElementChild) executeScriptsIn(container.lastElementChild);
+          }
         })
         .catch(function (err) { console.error('[preview] add-block fetch failed', err); });
     } else if (ev.data.type === 'remove-block') {

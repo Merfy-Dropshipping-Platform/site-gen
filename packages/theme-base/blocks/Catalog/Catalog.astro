@@ -162,15 +162,27 @@ const apiBase = 'https://gateway.merfy.ru/api';
 
 {/* sort is rendered inside sidebar — top-bar sort removed for Figma alignment (905-19049). */}
 
-    {filterVisible && !filterSide && (
+    {((filterVisible && !filterSide) || (!filterSide && sortVisible)) && (
       <div
         data-catalog-filters-top
-        style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgb(var(--color-text) / 0.1);"
+        style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgb(var(--color-text) / 0.1); align-items: center; justify-content: space-between;"
       >
-        <div style="font-weight: 500; color: rgb(var(--color-text));">Фильтры:</div>
-        <button type="button" data-filter-toggle="stock" style="background: transparent; border: 0; color: rgb(var(--color-text)); cursor: pointer;">Наличие ▾</button>
-        <button type="button" data-filter-toggle="price" style="background: transparent; border: 0; color: rgb(var(--color-text)); cursor: pointer;">Стоимость ▾</button>
-        <button type="button" data-filter-toggle="color" style="background: transparent; border: 0; color: rgb(var(--color-text)); cursor: pointer;">Цвет ▾</button>
+        {filterVisible && !filterSide && (
+          <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center;">
+            <div style="font-size: 14px; color: rgb(var(--color-text));">Фильтры:</div>
+            <button type="button" data-filter-toggle="stock" style="background: transparent; border: 0; color: rgb(var(--color-text)); cursor: pointer; font-size: 14px;">Наличие ▾</button>
+            <button type="button" data-filter-toggle="price" style="background: transparent; border: 0; color: rgb(var(--color-text)); cursor: pointer; font-size: 14px;">Стоимость ▾</button>
+            <button type="button" data-filter-toggle="color" style="background: transparent; border: 0; color: rgb(var(--color-text)); cursor: pointer; font-size: 14px;">Цвет ▾</button>
+          </div>
+        )}
+        {!filterSide && sortVisible && (
+          <select data-catalog-sort-select style="height: 44px; padding: 0 36px 0 12px; border: 1px solid rgb(var(--color-text) / 0.1); border-radius: 4px; background-color: rgb(var(--color-bg)); color: rgb(var(--color-text)); font-family: var(--font-body); font-size: 14px; cursor: pointer; appearance: none; min-width: 200px; background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 10px center;">
+            <option value="popularity">По популярности</option>
+            <option value="newest">По новизне</option>
+            <option value="price-asc">По возрастанию цены</option>
+            <option value="price-desc">По убыванию цены</option>
+          </select>
+        )}
       </div>
     )}
 
@@ -363,6 +375,10 @@ const apiBase = 'https://gateway.merfy.ru/api';
       const img = (Array.isArray(p.images) && p.images[0])
         ? (typeof p.images[0] === 'string' ? p.images[0] : p.images[0].url)
         : '';
+      // 097 phase 2: secondary image for nextPhoto hover swap
+      const img2 = (Array.isArray(p.images) && p.images[1])
+        ? (typeof p.images[1] === 'string' ? p.images[1] : p.images[1].url)
+        : '';
       const title = p.title || p.name || '';
       const basePrice = Number(p.basePrice ?? p.price ?? 0);
       const compPrice = Number(p.compareAtPrice ?? 0);
@@ -371,9 +387,11 @@ const apiBase = 'https://gateway.merfy.ru/api';
       const handle = p.handle || p.slug || p.id;
       const imgWrapClassAttr = gridAspectClass ? ' class="' + gridAspectClass + '"' : '';
       const imgWrapStyle = 'aspect-ratio:var(--catalog-card-aspect,' + cardAspect + ');';
+      // 097 phase 2: data-img-primary/data-img-secondary для hover swap, JS меняет src на data-next-photo='true'
+      const imgAttrs = 'data-img-primary="' + escAttr(img) + '"' + (img2 ? ' data-img-secondary="' + escAttr(img2) + '"' : '');
       const imgBlock = img
         ? '<div' + imgWrapClassAttr + ' style="' + imgWrapStyle + 'overflow:hidden;border-radius:12px;background:rgb(var(--color-text) / 0.05);position:relative;">' +
-          '<img src="' + escAttr(img) + '" alt="' + escAttr(title) + '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" />' +
+          '<img ' + imgAttrs + ' src="' + escAttr(img) + '" alt="' + escAttr(title) + '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;transition:opacity 0.2s;" />' +
           '</div>'
         : '<div' + imgWrapClassAttr + ' style="' + imgWrapStyle + 'background:rgb(var(--color-text) / 0.05);border-radius:12px;position:relative;"></div>';
 
@@ -752,6 +770,23 @@ const apiBase = 'https://gateway.merfy.ru/api';
       btn.textContent = '✓ Добавлено';
       setTimeout(function () { btn.textContent = orig; }, 1500);
     });
+
+    // 097 phase 2: nextPhoto hover swap — меняем img.src на secondary при hover
+    // когда section[data-next-photo='true'].
+    if (root.getAttribute('data-next-photo') === 'true') {
+      grid.addEventListener('mouseover', function (ev) {
+        const img = ev.target.closest('img[data-img-secondary]');
+        if (!img) return;
+        const sec = img.getAttribute('data-img-secondary');
+        if (sec && img.src !== sec) img.src = sec;
+      });
+      grid.addEventListener('mouseout', function (ev) {
+        const img = ev.target.closest('img[data-img-primary]');
+        if (!img) return;
+        const prim = img.getAttribute('data-img-primary');
+        if (prim && img.src !== prim) img.src = prim;
+      });
+    }
 
     fetch(apiBase + '/sites/' + effectiveSiteId + '/storefront-data', { credentials: 'omit' })
       .catch(() => null)

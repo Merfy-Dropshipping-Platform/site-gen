@@ -13,6 +13,13 @@ export interface ThemeConfigForResolver {
   blocks: Record<string, { override?: { path: string; reason: string } } | { variant?: string; constraints?: unknown }>;
   features: Record<string, boolean>;
   customBlocks?: Record<string, { path: string; requiredFeatures?: string[] }>;
+  /**
+   * 097: theme-level block defaults (variant/colorScheme/title etc).
+   * Pass-through от theme.json чтобы PuckConfig API мог merge их в
+   * defaultProps (Catalog/Header/Footer/etc) — иначе constructor получает
+   * universal-only defaults и Puck.edit-time merge затирает theme values.
+   */
+  blockDefaults?: Record<string, unknown>;
 }
 
 export function resolveBlocks(

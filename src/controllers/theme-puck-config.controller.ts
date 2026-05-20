@@ -109,6 +109,10 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       blocks: roseManifestJson.blocks ?? {},
       features: roseManifestJson.features ?? {},
       customBlocks: roseManifestJson.customBlocks ?? {},
+      // 097: blockDefaults survives manifest pass-through so /api/themes/:id/puck-config
+      // can merge theme blockDefaults в Catalog.defaultProps (otherwise constructor
+      // получает universal-only defaults и затирает theme-specific values на edit).
+      blockDefaults: (roseManifestJson as any).blockDefaults ?? {},
     };
   }
   if (themeId === 'vanilla') {
@@ -116,6 +120,7 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       blocks: vanillaManifestJson.blocks ?? {},
       features: vanillaManifestJson.features ?? {},
       customBlocks: vanillaManifestJson.customBlocks ?? {},
+      blockDefaults: (vanillaManifestJson as any).blockDefaults ?? {},
     };
   }
   if (themeId === 'bloom') {
@@ -123,6 +128,7 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       blocks: bloomManifestJson.blocks ?? {},
       features: bloomManifestJson.features ?? {},
       customBlocks: bloomManifestJson.customBlocks ?? {},
+      blockDefaults: (bloomManifestJson as any).blockDefaults ?? {},
     };
   }
   if (themeId === 'satin') {
@@ -130,6 +136,7 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       blocks: satinManifestJson.blocks ?? {},
       features: satinManifestJson.features ?? {},
       customBlocks: satinManifestJson.customBlocks ?? {},
+      blockDefaults: (satinManifestJson as any).blockDefaults ?? {},
     };
   }
   if (themeId === 'flux') {
@@ -137,6 +144,7 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       blocks: fluxManifestJson.blocks ?? {},
       features: fluxManifestJson.features ?? {},
       customBlocks: fluxManifestJson.customBlocks ?? {},
+      blockDefaults: (fluxManifestJson as any).blockDefaults ?? {},
     };
   }
   return DEFAULT_THEME_CONFIG;

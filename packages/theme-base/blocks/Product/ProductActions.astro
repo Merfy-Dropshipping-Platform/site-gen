@@ -32,7 +32,7 @@ const isTall = size === 'tall';
 const heightCls = isTall ? 'h-16' : 'h-14';
 const textCls = isTall ? 'text-[20px] uppercase' : 'text-[16px]';
 const baseCls =
-  'w-full inline-flex items-center justify-center px-5 rounded-[8px] [font-family:var(--font-body)] cursor-pointer transition-opacity hover:opacity-85 border border-solid';
+  'w-full inline-flex items-center justify-center px-5 rounded-[var(--radius-button)] [font-family:var(--font-body)] cursor-pointer transition-colors border border-solid hover:bg-[rgb(var(--color-button-bg-hover))] hover:text-[rgb(var(--color-button-text-hover))]';
 ---
 <div class="flex flex-col gap-3 w-full" data-product-actions data-actions-size={size}>
   <button

@@ -8,10 +8,10 @@ export const CartSummaryClasses = {
     'cart-summary-disclaimer font-body text-[16px] leading-[22px] ' +
     'text-[rgb(var(--color-muted))] text-right m-0 max-w-[318px]',
   totalRow: 'flex items-center gap-[15px]',
-  totalLabel: 'font-body text-[20px] leading-[27px] text-[rgb(var(--color-foreground))]',
-  totalValue: 'font-body text-[20px] leading-[27px] text-[rgb(var(--color-foreground))]',
+  totalLabel: 'font-body text-[20px] leading-[27px] text-[rgb(var(--color-text))]',
+  totalValue: 'font-body text-[20px] leading-[27px] text-[rgb(var(--color-text))]',
   checkoutBtn:
     'cart-checkout-btn flex items-center justify-center font-body cursor-pointer ' +
     'transition-colors border-0 no-underline ' +
-    'bg-[rgb(var(--color-foreground))] text-[rgb(var(--color-background))]',
+    'bg-[rgb(var(--color-text))] text-[rgb(var(--color-bg))]',
 } as const;

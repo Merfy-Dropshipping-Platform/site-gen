@@ -174,7 +174,7 @@ const brandText = textContent || view.brand || '';
   data-product-slug={view.slug || productId}
   data-product-handle={view.handle || productId}
   data-zoom-mode={zoomMode}
-  style={`background:rgb(var(--color-background, var(--color-bg)));color:rgb(var(--color-foreground, var(--color-text)));${paddingStyle}${sizeVarsStyle}`}
+  style={`background:rgb(var(--color-bg, var(--color-bg)));color:rgb(var(--color-text, var(--color-text)));${paddingStyle}${sizeVarsStyle}`}
 >
   {view.jsonLd && (
     <script type="application/ld+json" set:html={JSON.stringify(view.jsonLd)} />

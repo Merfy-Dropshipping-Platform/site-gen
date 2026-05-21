@@ -21,7 +21,7 @@ export const ImageWithTextClasses = {
     '[font-family:var(--font-heading)] text-[length:var(--size-section-heading,1.25rem)] font-normal leading-[1.2] text-[rgb(var(--color-heading))] mb-3',
   text: '[font-family:var(--font-body)] text-[16px] font-normal leading-[1.25] text-[rgb(var(--color-text))] mb-6',
   button:
-    'inline-flex items-center justify-center h-[48px] px-4 text-[16px] font-normal uppercase no-underline hover:opacity-90 transition-colors [font-family:var(--font-body)] self-start border-[1.3px] border-solid border-[rgb(var(--color-heading))] rounded-[var(--radius-button)] bg-transparent text-[rgb(var(--color-heading))]',
+    'inline-flex items-center justify-center h-[48px] px-4 text-[16px] font-normal uppercase no-underline transition-colors [font-family:var(--font-body)] self-start border-[1.3px] border-solid border-[rgb(var(--color-button-border))] rounded-[var(--radius-button)] bg-transparent text-[rgb(var(--color-heading))] hover:bg-[rgb(var(--color-button-bg-hover))] hover:text-[rgb(var(--color-button-text-hover))]',
   /**
    * 084 vanilla pilot — additive `ctaPosition` variant. Default `inline`
    * preserves pre-084 button positioning. `bottom-pinned` pushes the

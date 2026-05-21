@@ -319,7 +319,7 @@ const fmtPriceServer = (n: number | string | undefined): string => {
       <div
         data-catalog-grid
         data-loading={initialSlice.length === 0 ? 'true' : 'false'}
-        style={`display: grid; grid-template-columns: repeat(${colCount}, 1fr); column-gap: 16px; row-gap: var(--catalog-grid-row-gap, 16px); align-items: stretch;`}
+        style={`display: grid; --catalog-cols: ${colCount}; column-gap: 16px; row-gap: var(--catalog-grid-row-gap, 16px); align-items: stretch;`}
       >
         {initialSlice.length > 0
           ? initialSlice.map((p) => {
@@ -402,8 +402,7 @@ const fmtPriceServer = (n: number | string | undefined): string => {
 </section>
 
 <style is:inline>
-  /* Mobile (< 1024px): single-column layout, sidebar hidden — mobile filter
-     trigger button + drawer is the entry point for filters. */
+  /* Layout: sidebar OR no-sidebar */
   .catalog-grid-with-sidebar { grid-template-columns: 1fr; }
   .catalog-grid-no-sidebar { grid-template-columns: 1fr; }
   .catalog-sidebar { display: none; }
@@ -411,6 +410,27 @@ const fmtPriceServer = (n: number | string | undefined): string => {
   @media (min-width: 1024px) {
     .catalog-grid-with-sidebar { grid-template-columns: var(--catalog-sidebar-w, 220px) 1fr; }
     .catalog-sidebar { display: flex; }
+  }
+
+  /* 098 Mobile responsive product grid.
+     Уровни:
+     - <640px (mobile): 2 columns (compact, ~150px per card)
+     - 640-1023px (tablet): 3 columns (~200px)
+     - >=1024px (desktop): user's --cols (1-6 columns)
+     User-chosen `columns` стоит на inline style attr через --cols var.
+   */
+  [data-catalog-grid] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  @media (min-width: 640px) {
+    [data-catalog-grid] {
+      grid-template-columns: repeat(3, 1fr) !important;
+    }
+  }
+  @media (min-width: 1024px) {
+    [data-catalog-grid] {
+      grid-template-columns: repeat(var(--catalog-cols, 4), 1fr) !important;
+    }
   }
 </style>
 

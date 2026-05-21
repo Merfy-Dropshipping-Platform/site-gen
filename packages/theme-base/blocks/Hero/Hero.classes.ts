@@ -54,7 +54,7 @@ export const HeroClasses = {
     // diverged from the constructor's React render (primary). Primary keeps
     // site ≡ constructor parity without relying on merchant filling both
     // button slots with compatible colors.
-    'inline-flex items-center justify-center h-[var(--size-hero-button-h)] rounded-[var(--radius-button)] px-4 text-[16px] [font-family:var(--font-body)] border border-[rgb(var(--color-button-border))] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] hover:opacity-90 transition-colors no-underline',
+    'inline-flex items-center justify-center h-[var(--size-hero-button-h)] rounded-[var(--radius-button)] px-4 text-[16px] [font-family:var(--font-body)] border border-[rgb(var(--color-button-border))] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] hover:bg-[rgb(var(--color-button-bg-hover))] hover:text-[rgb(var(--color-button-text-hover))] transition-colors no-underline',
   image: {
     centered: 'absolute inset-0 -z-10 object-cover w-full h-full',
     split: 'w-full aspect-[4/3] object-cover',
@@ -73,7 +73,7 @@ export const HeroClasses = {
   splitBloomSubtitle:
     '[font-family:var(--font-body)] text-[14px] md:text-[16px] leading-[1.6] text-[rgb(var(--color-text))]',
   splitBloomCta:
-    'inline-flex items-center justify-center self-start h-[var(--size-hero-button-h)] rounded-[var(--radius-button)] px-8 text-[14px] md:text-[15px] tracking-[0.04em] [font-family:var(--font-body)] border border-[rgb(var(--color-button-border))] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] hover:opacity-90 transition-colors no-underline',
+    'inline-flex items-center justify-center self-start h-[var(--size-hero-button-h)] rounded-[var(--radius-button)] px-8 text-[14px] md:text-[15px] tracking-[0.04em] [font-family:var(--font-body)] border border-[rgb(var(--color-button-border))] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] hover:bg-[rgb(var(--color-button-bg-hover))] hover:text-[rgb(var(--color-button-text-hover))] transition-colors no-underline',
   gridContainer:
     'w-full max-w-[var(--container-max-width)] grid grid-cols-2 gap-4 md:gap-6 lg:gap-8',
   gridTile:

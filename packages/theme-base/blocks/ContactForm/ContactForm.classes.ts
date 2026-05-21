@@ -33,5 +33,5 @@ export const ContactFormClasses = {
   buttonRow:
     'flex justify-end mt-2',
   button:
-    'inline-flex items-center justify-center h-12 px-6 rounded-[var(--radius-button)] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] border border-[rgb(var(--color-button-border))] [font-family:var(--font-body)] text-[14px] leading-[17px] hover:opacity-90 transition-opacity',
+    'inline-flex items-center justify-center h-12 px-6 rounded-[var(--radius-button)] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] border border-[rgb(var(--color-button-border))] [font-family:var(--font-body)] text-[14px] leading-[17px] hover:bg-[rgb(var(--color-button-bg-hover))] hover:text-[rgb(var(--color-button-text-hover))] transition-colors',
 } as const;

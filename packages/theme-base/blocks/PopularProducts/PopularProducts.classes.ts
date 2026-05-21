@@ -28,7 +28,7 @@ export const PopularProductsClasses = {
   cardOldPrice:
     '[font-family:var(--font-body)] text-[12px] leading-[15px] text-[rgb(var(--color-text))]/50 line-through',
   cardCta:
-    'mt-3 inline-flex h-[44px] items-center justify-center px-4 text-[14px] font-medium uppercase tracking-wide rounded-[var(--radius-button)] [font-family:var(--font-body)] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] border border-[rgb(var(--color-button-border))] hover:opacity-90 transition-opacity no-underline',
+    'mt-3 inline-flex h-[44px] items-center justify-center px-4 text-[14px] font-medium uppercase tracking-wide rounded-[var(--radius-button)] [font-family:var(--font-body)] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] border border-[rgb(var(--color-button-border))] hover:bg-[rgb(var(--color-button-bg-hover))] hover:text-[rgb(var(--color-button-text-hover))] transition-colors no-underline',
   cardBadgeNew:
     'absolute top-3 left-3 inline-flex items-center justify-center h-6 px-2 rounded-[var(--radius-button)] bg-[rgb(var(--color-accent))] text-white [font-family:var(--font-body)] text-[11px] leading-none',
   cardBadgeSale:

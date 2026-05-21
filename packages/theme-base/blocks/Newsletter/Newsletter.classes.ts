@@ -60,7 +60,7 @@ export const NewsletterClasses = {
    * legible in any colour scheme.
    */
   buttonInline:
-    'inline-flex items-center justify-center h-8 px-2 py-[10px] [font-family:var(--font-body)] text-[12px] uppercase bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] hover:opacity-80 transition-opacity',
+    'inline-flex items-center justify-center h-8 px-2 py-[10px] [font-family:var(--font-body)] text-[12px] uppercase bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] hover:bg-[rgb(var(--color-button-bg-hover))] hover:text-[rgb(var(--color-button-text-hover))] transition-opacity',
   buttonStacked:
-    'inline-flex items-center justify-center h-12 px-6 rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[14px] font-medium uppercase tracking-wide bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] border border-[rgb(var(--color-button-border))] hover:opacity-90 transition-opacity',
+    'inline-flex items-center justify-center h-12 px-6 rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[14px] font-medium uppercase tracking-wide bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] border border-[rgb(var(--color-button-border))] hover:bg-[rgb(var(--color-button-bg-hover))] hover:text-[rgb(var(--color-button-text-hover))] transition-colors',
 } as const;

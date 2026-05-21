@@ -393,12 +393,21 @@ function schemeToVars(scheme: Record<string, unknown>): string {
   if (primaryBg) parts.push(`--color-button-bg: ${primaryBg}`);
   if (primaryText) parts.push(`--color-button-text: ${primaryText}`);
   if (primaryBorder) parts.push(`--color-button-border: ${primaryBorder}`);
+  // Hover variants — fallback на non-hover если backgroundHover/textHover не задан.
+  const primaryBgHover = hexToRgbTriple(primary.backgroundHover) ?? primaryBg;
+  const primaryTextHover = hexToRgbTriple(primary.textHover) ?? primaryText;
+  if (primaryBgHover) parts.push(`--color-button-bg-hover: ${primaryBgHover}`);
+  if (primaryTextHover) parts.push(`--color-button-text-hover: ${primaryTextHover}`);
   const secondaryBg = hexToRgbTriple(secondary.background);
   const secondaryText = hexToRgbTriple(secondary.text);
   const secondaryBorder = hexToRgbTriple(secondary.border);
   if (secondaryBg) parts.push(`--color-button-secondary-bg: ${secondaryBg}`);
   if (secondaryText) parts.push(`--color-button-secondary-text: ${secondaryText}`);
   if (secondaryBorder) parts.push(`--color-button-secondary-border: ${secondaryBorder}`);
+  const secondaryBgHover = hexToRgbTriple(secondary.backgroundHover) ?? secondaryBg;
+  const secondaryTextHover = hexToRgbTriple(secondary.textHover) ?? secondaryText;
+  if (secondaryBgHover) parts.push(`--color-button-secondary-bg-hover: ${secondaryBgHover}`);
+  if (secondaryTextHover) parts.push(`--color-button-secondary-text-hover: ${secondaryTextHover}`);
 
   return parts.length > 0 ? ' ' + parts.join('; ') + ';' : '';
 }

@@ -474,6 +474,24 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
         }
       });
     });
+
+    // Cart icon click — читает --cart-type из :root.
+    // 'drawer' → preventDefault + window.cartDrawer.open() (drawer mode)
+    // 'page' (или unset) → нативная навигация на /cart (page mode)
+    // Theme Settings → Корзина (Сайдбар/Страница) меняет --cart-type через
+    // CSS-var в iframe head; этот обработчик читает live значение на click.
+    document.querySelectorAll('a[data-action="cart"]').forEach(function (cartLink) {
+      cartLink.addEventListener('click', function (e) {
+        var cartType = getComputedStyle(document.documentElement)
+          .getPropertyValue('--cart-type')
+          .trim()
+          .replace(/['"]/g, '');
+        if (cartType !== 'drawer') return; // page mode — let nav happen
+        if (!window.cartDrawer || typeof window.cartDrawer.open !== 'function') return;
+        e.preventDefault();
+        window.cartDrawer.open();
+      });
+    });
   })();
 </script>
 

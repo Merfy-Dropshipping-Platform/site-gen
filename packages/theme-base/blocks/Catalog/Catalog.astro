@@ -283,13 +283,13 @@ const apiBase = 'https://gateway.merfy.ru/api';
       <div
         data-catalog-grid
         data-loading="true"
-        style={`display: grid; grid-template-columns: repeat(${colCount}, 1fr); column-gap: 16px; row-gap: var(--catalog-grid-row-gap, 16px);`}
+        style={`display: grid; grid-template-columns: repeat(${colCount}, 1fr); column-gap: 16px; row-gap: var(--catalog-grid-row-gap, 16px); align-items: stretch; grid-auto-rows: 1fr;`}
       >
         {placeholderCards.map((_, idx) => (
           <article data-placeholder="true" style={`display: flex; flex-direction: column; gap: 12px; ${cardBgOn ? 'background:rgb(var(--color-surface,251 251 251));border-radius:12px;padding:12px;' : ''}`}>
             <div
               class:list={[gridAspectClass]}
-              style={`aspect-ratio: var(--catalog-card-aspect, ${cardAspect}); background: rgb(var(--color-muted) / 0.1); border-radius: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden;`}
+              style={`width: 100%; aspect-ratio: ${cardAspect}; background: rgb(var(--color-muted) / 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden;`}
             >
               <img src={getSweaterAsset(idx)} alt="Товар" loading="lazy" style="width:60%;aspect-ratio:1/1;object-fit:contain;" />
             </div>
@@ -402,7 +402,10 @@ const apiBase = 'https://gateway.merfy.ru/api';
       const compare = compPrice > basePrice ? fmtPrice(compPrice) : '';
       const handle = p.handle || p.slug || p.id;
       const imgWrapClassAttr = gridAspectClass ? ' class="' + gridAspectClass + '"' : '';
-      const imgWrapStyle = 'aspect-ratio:var(--catalog-card-aspect,' + cardAspect + ');';
+      // 098: width:100% + direct aspect-ratio = robust enforce (var() fallback с
+      // ratio shorthand "3 / 4" в browsers parsed inconsistently → одна
+      // карточка может растягиваться по natural image aspect)
+      const imgWrapStyle = 'width:100%;aspect-ratio:' + cardAspect + ';';
       // 098: data-img-primary/2/3/4 для hover modes ('simple' = img2 swap;
       // 'zones' = Avito-style position-based swap до 4 segments).
       let imgAttrs = 'data-img-primary="' + escAttr(img) + '"';

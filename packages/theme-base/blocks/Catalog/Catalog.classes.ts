@@ -7,7 +7,7 @@
  */
 export const CatalogClasses = {
   // Section chrome
-  root: 'relative w-full bg-[rgb(var(--color-background))] text-[rgb(var(--color-foreground))]',
+  root: 'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
   container: 'w-full max-w-[1320px] mx-auto px-6 lg:px-10',
 
   // Toolbar (sort dropdown + product count)
@@ -16,8 +16,8 @@ export const CatalogClasses = {
 
   // Sort pills
   sortBar: 'flex flex-wrap gap-2 mb-6',
-  sortPill: 'px-4 py-2 rounded-full text-sm border border-[rgb(var(--color-accent))] bg-[rgb(var(--color-background))] text-[rgb(var(--color-foreground))] cursor-pointer transition-colors',
-  sortPillActive: 'px-4 py-2 rounded-full text-sm border border-[rgb(var(--color-foreground))] bg-[rgb(var(--color-foreground))] text-[rgb(var(--color-background))] cursor-pointer',
+  sortPill: 'px-4 py-2 rounded-full text-sm border border-[rgb(var(--color-accent))] bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))] cursor-pointer transition-colors',
+  sortPillActive: 'px-4 py-2 rounded-full text-sm border border-[rgb(var(--color-text))] bg-[rgb(var(--color-text))] text-[rgb(var(--color-bg))] cursor-pointer',
 
   // Layout
   layoutGrid: 'flex gap-[50px] items-start',
@@ -30,19 +30,19 @@ export const CatalogClasses = {
   sidebarSections: 'flex flex-col gap-[50px]',
 
   // Filter sections
-  filterSectionTitle: 'font-[family-name:var(--font-heading)] text-[20px] leading-[27px] text-[rgb(var(--color-foreground))] mb-[15px]',
+  filterSectionTitle: 'font-[family-name:var(--font-heading)] text-[20px] leading-[27px] text-[rgb(var(--color-heading))] mb-[15px]',
   filterRadioRow: 'flex items-center gap-[10px] cursor-pointer py-1',
   filterRadioInput: 'accent-current',
-  filterRadioLabel: 'font-[family-name:var(--font-body)] text-[18px] leading-[24px] text-[rgb(var(--color-foreground))]',
+  filterRadioLabel: 'font-[family-name:var(--font-body)] text-[18px] leading-[24px] text-[rgb(var(--color-text))]',
 
   // Price input
-  filterPriceInput: 'w-full px-2 py-1.5 border border-[rgb(var(--color-border))] bg-[rgb(var(--color-background))] text-[rgb(var(--color-foreground))]',
+  filterPriceInput: 'w-full px-2 py-1.5 border border-[rgb(var(--color-border))] bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
   filterPriceMb: 'mb-1.5',
 
   // Color dropdown
   filterColorDropdown: 'relative',
-  filterColorTrigger: 'flex items-center justify-between w-full px-3 py-2 border border-[rgb(var(--color-border))] cursor-pointer bg-[rgb(var(--color-background))]',
-  filterColorOptions: 'absolute top-full left-0 right-0 mt-1 bg-[rgb(var(--color-background))] border border-[rgb(var(--color-border))] z-10 max-h-60 overflow-y-auto',
+  filterColorTrigger: 'flex items-center justify-between w-full px-3 py-2 border border-[rgb(var(--color-border))] cursor-pointer bg-[rgb(var(--color-bg))]',
+  filterColorOptions: 'absolute top-full left-0 right-0 mt-1 bg-[rgb(var(--color-bg))] border border-[rgb(var(--color-border))] z-10 max-h-60 overflow-y-auto',
 
   // Product grid
   productGrid: 'flex-1',
@@ -50,23 +50,23 @@ export const CatalogClasses = {
   productCard: 'flex flex-col gap-2 cursor-pointer',
   productCardImage: 'aspect-[315/515] overflow-hidden rounded-[var(--radius-card)] bg-[rgb(var(--color-muted)/0.1)]',
   productCardImageImg: 'w-full h-full object-cover block',
-  productCardTitle: 'text-[14px] text-[rgb(var(--color-foreground))]',
-  productCardPriceRow: 'text-[14px] text-[rgb(var(--color-foreground))] flex gap-2 items-baseline',
+  productCardTitle: 'text-[14px] text-[rgb(var(--color-text))]',
+  productCardPriceRow: 'text-[14px] text-[rgb(var(--color-text))] flex gap-2 items-baseline',
   productCardPriceCompare: 'line-through text-[rgb(var(--color-muted))]',
 
   // Pagination bar
   paginationBar: 'flex items-center justify-between mt-10 font-[family-name:var(--font-body)]',
   pageButtons: 'flex items-center gap-0.5',
   pageNumber: 'flex items-center justify-center w-10 h-10 sm:w-[60px] sm:h-[60px] text-base sm:text-2xl text-[rgb(var(--color-muted))] cursor-pointer leading-[33px]',
-  pageNumberActive: 'flex items-center justify-center w-10 h-10 sm:w-[60px] sm:h-[60px] text-base sm:text-2xl text-[rgb(var(--color-foreground))] cursor-pointer leading-[33px]',
+  pageNumberActive: 'flex items-center justify-center w-10 h-10 sm:w-[60px] sm:h-[60px] text-base sm:text-2xl text-[rgb(var(--color-text))] cursor-pointer leading-[33px]',
   pageEllipsis: 'flex items-center justify-center w-10 h-10 sm:w-[60px] sm:h-[60px] text-base sm:text-2xl leading-[33px] text-[rgb(var(--color-muted))]',
-  pageArrow: 'flex items-center justify-center w-10 h-10 sm:w-[60px] sm:h-[60px] text-[rgb(var(--color-foreground))] cursor-pointer',
+  pageArrow: 'flex items-center justify-center w-10 h-10 sm:w-[60px] sm:h-[60px] text-[rgb(var(--color-text))] cursor-pointer',
   pageArrowDisabled: 'flex items-center justify-center w-10 h-10 sm:w-[60px] sm:h-[60px] text-[rgb(var(--color-muted))] opacity-40 cursor-not-allowed',
   paginationCount: 'hidden sm:inline text-[20px] leading-[27px] text-[rgb(var(--color-muted))] ml-5',
 
   // Mobile filter trigger
-  mobileTrigger: 'lg:hidden flex items-center font-[family-name:var(--font-body)] text-[18px] leading-[24px] text-[rgb(var(--color-foreground))] gap-2 py-2.5 mb-5',
-  mobileTriggerDot: 'w-2 h-2 rounded-full bg-[rgb(var(--color-foreground))]',
+  mobileTrigger: 'lg:hidden flex items-center font-[family-name:var(--font-body)] text-[18px] leading-[24px] text-[rgb(var(--color-text))] gap-2 py-2.5 mb-5',
+  mobileTriggerDot: 'w-2 h-2 rounded-full bg-[rgb(var(--color-text))]',
   mobileDrawer: 'lg:hidden flex flex-col gap-[30px] py-[15px] mb-5',
 
   // Reset link
@@ -75,7 +75,7 @@ export const CatalogClasses = {
   // Empty / error states
   emptyState: 'flex-1 py-12 text-center font-[family-name:var(--font-body)]',
   emptyStateText: 'text-[20px] text-[rgb(var(--color-muted))] mb-4',
-  emptyStateButton: 'px-6 py-3 bg-[rgb(var(--color-foreground))] text-[rgb(var(--color-background))] rounded-[var(--radius-button)] text-base',
+  emptyStateButton: 'px-6 py-3 bg-[rgb(var(--color-text))] text-[rgb(var(--color-bg))] rounded-[var(--radius-button)] text-base',
 
   // 084 Stage 3 vanilla pilot
   gridAspect: {

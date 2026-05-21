@@ -41,7 +41,7 @@ export const NewsletterClasses = {
   inputInline:
     'flex-1 h-full bg-transparent border-0 outline-none [font-family:var(--font-body)] text-[16px] text-[rgb(var(--color-text))] placeholder:text-[rgb(var(--color-text))]/95',
   button:
-    'absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-[rgb(var(--color-heading))] hover:opacity-70 transition-opacity',
+    'absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-[rgb(var(--color-text))] hover:text-[rgb(var(--color-button-bg))] transition-colors',
   /**
    * 084 vanilla pilot — additive `formLayout` variant.
    *   - `inline-submit` (vanilla parity): full bordered input, height 56px,

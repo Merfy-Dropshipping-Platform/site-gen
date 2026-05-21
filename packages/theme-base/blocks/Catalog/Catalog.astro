@@ -980,10 +980,11 @@ const fmtPriceServer = (n: number | string | undefined): string => {
         const availableColors = Array.from(attrSets.color);
         const availableMemory = Array.from(attrSets.memory);
 
-        // Pill renderer — Figma 905-19049 style (h-32 px-8 rounded-4)
+        // Pill renderer — Figma 905-19049 style. Active pill использует
+        // primary button цвет из scheme; inactive — muted bg + text.
         function pillHtml(val, active, dataAttr) {
-          const bg = active ? 'rgb(var(--color-text))' : 'rgb(var(--color-muted) / 0.15)';
-          const fg = active ? 'rgb(var(--color-bg))' : 'rgb(var(--color-text))';
+          const bg = active ? 'rgb(var(--color-button-bg))' : 'rgb(var(--color-muted) / 0.15)';
+          const fg = active ? 'rgb(var(--color-button-text))' : 'rgb(var(--color-text))';
           return '<button type="button" ' + dataAttr + '="' + escAttr(val) + '" style="height:32px;padding:0 8px;border-radius:var(--radius-button);border:0;background:' + bg + ';color:' + fg + ';font-family:var(--font-body);font-size:14px;text-transform:uppercase;cursor:pointer;">' + escAttr(val) + '</button>';
         }
 

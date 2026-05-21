@@ -331,7 +331,7 @@ const fmtPriceServer = (n: number | string | undefined): string => {
               const compPrice = Number(p.compareAtPrice ?? 0);
               const handle = p.handle || p.slug || p.id || '';
               return (
-                <article data-product-id={p.id} data-product-handle={handle} style={`display:flex;flex-direction:column;gap:16px;cursor:pointer;${cardBgOn ? 'background:rgb(var(--color-surface,251 251 251));border-radius:12px;padding:12px;' : ''}position:relative;`}>
+                <article data-product-id={p.id} data-product-handle={handle} style={`display:flex;flex-direction:column;gap:16px;cursor:pointer;${cardBgOn ? 'background:rgb(var(--color-surface,251 251 251));border-radius:12px;padding:12px;' : ''}position:relative;min-width:0;`}>
                   <div class:list={[gridAspectClass]} style={`position:relative;width:100%;padding-bottom:${cardPaddingBottom};flex-shrink:0;overflow:hidden;border-radius:12px;background:rgb(var(--color-text) / 0.05);`}>
                     {img0 && <img src={img0} alt={title} loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;" />}
                     {compPrice > basePrice && basePrice > 0 && (
@@ -356,7 +356,7 @@ const fmtPriceServer = (n: number | string | undefined): string => {
               );
             })
           : placeholderCards.map((_, idx) => (
-              <article data-placeholder="true" style={`display: flex; flex-direction: column; gap: 12px; ${cardBgOn ? 'background:rgb(var(--color-surface,251 251 251));border-radius:12px;padding:12px;' : ''}`}>
+              <article data-placeholder="true" style={`display: flex; flex-direction: column; gap: 12px; min-width: 0; ${cardBgOn ? 'background:rgb(var(--color-surface,251 251 251));border-radius:12px;padding:12px;' : ''}`}>
                 <div
                   class:list={[gridAspectClass]}
                   style={`position: relative; width: 100%; padding-bottom: ${cardPaddingBottom}; background: rgb(var(--color-muted) / 0.1); border-radius: 12px; overflow: hidden;`}
@@ -525,7 +525,7 @@ const fmtPriceServer = (n: number | string | undefined): string => {
       // 096: image wrapper с badges-overlay (Figma 905-19049)
       const imgWithBadges = imgBlock.replace('</div>', badgesBlock + '</div>');
       return (
-        '<article data-product-id="' + escAttr(p.id) + '" data-product-handle="' + escAttr(handle) + '" style="display:flex;flex-direction:column;gap:16px;cursor:pointer;' + cardChrome + 'position:relative;">' +
+        '<article data-product-id="' + escAttr(p.id) + '" data-product-handle="' + escAttr(handle) + '" style="display:flex;flex-direction:column;gap:16px;cursor:pointer;' + cardChrome + 'position:relative;min-width:0;">' +
           imgWithBadges +
           '<div style="display:flex;flex-direction:column;gap:4px;">' +
             '<div' + (cardCaptionClass ? ' class="' + cardCaptionClass + '"' : '') + ' style="font-size:16px;font-family:var(--font-body);color:rgb(var(--color-text));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escAttr(title) + '</div>' +

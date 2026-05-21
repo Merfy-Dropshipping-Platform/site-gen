@@ -283,7 +283,7 @@ const apiBase = 'https://gateway.merfy.ru/api';
       <div
         data-catalog-grid
         data-loading="true"
-        style={`display: grid; grid-template-columns: repeat(${colCount}, 1fr); column-gap: 16px; row-gap: var(--catalog-grid-row-gap, 16px); align-items: stretch; grid-auto-rows: 1fr;`}
+        style={`display: grid; grid-template-columns: repeat(${colCount}, 1fr); column-gap: 16px; row-gap: var(--catalog-grid-row-gap, 16px); align-items: stretch;`}
       >
         {placeholderCards.map((_, idx) => (
           <article data-placeholder="true" style={`display: flex; flex-direction: column; gap: 12px; ${cardBgOn ? 'background:rgb(var(--color-surface,251 251 251));border-radius:12px;padding:12px;' : ''}`}>
@@ -412,11 +412,13 @@ const apiBase = 'https://gateway.merfy.ru/api';
       if (img2) imgAttrs += ' data-img-secondary="' + escAttr(img2) + '" data-img-2="' + escAttr(img2) + '"';
       if (img3) imgAttrs += ' data-img-3="' + escAttr(img3) + '"';
       if (img4) imgAttrs += ' data-img-4="' + escAttr(img4) + '"';
+      // flex-shrink:0 — критично! image area не должна сжиматься/расти в flex column
+      // (uniform height только через aspect-ratio container).
       const imgBlock = img
-        ? '<div' + imgWrapClassAttr + ' style="' + imgWrapStyle + 'overflow:hidden;border-radius:12px;background:rgb(var(--color-text) / 0.05);position:relative;">' +
+        ? '<div' + imgWrapClassAttr + ' style="' + imgWrapStyle + 'flex-shrink:0;overflow:hidden;border-radius:12px;background:rgb(var(--color-text) / 0.05);position:relative;">' +
           '<img ' + imgAttrs + ' src="' + escAttr(img) + '" alt="' + escAttr(title) + '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;transition:opacity 0.2s;" />' +
           '</div>'
-        : '<div' + imgWrapClassAttr + ' style="' + imgWrapStyle + 'background:rgb(var(--color-text) / 0.05);border-radius:12px;position:relative;"></div>';
+        : '<div' + imgWrapClassAttr + ' style="' + imgWrapStyle + 'flex-shrink:0;background:rgb(var(--color-text) / 0.05);border-radius:12px;position:relative;"></div>';
 
       // 096: badges (Новинка / -N%) — Figma 905-19049 bg-accent (#fa5109)
       const badges = [];

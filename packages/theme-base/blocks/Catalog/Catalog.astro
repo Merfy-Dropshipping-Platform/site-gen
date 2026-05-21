@@ -98,6 +98,12 @@ const cardAspect =
   productCard?.cardStyle === 'square' ? '1 / 1'
   : productCard?.cardStyle === 'wide' ? '4 / 3'
   : '3 / 4';
+// 098: padding-bottom % trick для bulletproof aspect-ratio (works в любом
+// browser независимо от CSS aspect-ratio support). 3:4 → 133.33%; 1:1 → 100%; 4:3 → 75%
+const cardPaddingBottom =
+  productCard?.cardStyle === 'square' ? '100%'
+  : productCard?.cardStyle === 'wide' ? '75%'
+  : '133.33%';
 
 // Card chrome — toggle background/border based on cardBackground.
 const cardBgOn =
@@ -289,9 +295,9 @@ const apiBase = 'https://gateway.merfy.ru/api';
           <article data-placeholder="true" style={`display: flex; flex-direction: column; gap: 12px; ${cardBgOn ? 'background:rgb(var(--color-surface,251 251 251));border-radius:12px;padding:12px;' : ''}`}>
             <div
               class:list={[gridAspectClass]}
-              style={`width: 100%; aspect-ratio: ${cardAspect}; background: rgb(var(--color-muted) / 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden;`}
+              style={`position: relative; width: 100%; padding-bottom: ${cardPaddingBottom}; background: rgb(var(--color-muted) / 0.1); border-radius: 12px; overflow: hidden;`}
             >
-              <img src={getSweaterAsset(idx)} alt="Товар" loading="lazy" style="width:60%;aspect-ratio:1/1;object-fit:contain;" />
+              <img src={getSweaterAsset(idx)} alt="Товар" loading="lazy" style="position:absolute;left:20%;top:20%;width:60%;height:60%;object-fit:contain;" />
             </div>
             <div style="display: flex; flex-direction: column; gap: 4px;">
               <div class:list={[cardCaptionClass]} style="font-size: 14px; color: rgb(var(--color-text));">Товар</div>
@@ -402,10 +408,11 @@ const apiBase = 'https://gateway.merfy.ru/api';
       const compare = compPrice > basePrice ? fmtPrice(compPrice) : '';
       const handle = p.handle || p.slug || p.id;
       const imgWrapClassAttr = gridAspectClass ? ' class="' + gridAspectClass + '"' : '';
-      // 098: width:100% + direct aspect-ratio = robust enforce (var() fallback с
-      // ratio shorthand "3 / 4" в browsers parsed inconsistently → одна
-      // карточка может растягиваться по natural image aspect)
-      const imgWrapStyle = 'width:100%;aspect-ratio:' + cardAspect + ';';
+      // 098: padding-bottom % trick — bulletproof aspect-ratio (works в любом
+      // browser, не зависит от CSS aspect-ratio parsing edge cases).
+      // Container: position:relative + padding-bottom:X% → height = width * X/100.
+      // Image: absolute inset:0 + object-fit:cover → fills container.
+      const imgWrapStyle = 'position:relative;width:100%;padding-bottom:' + cardPaddingBottom + ';';
       // 098: data-img-primary/2/3/4 для hover modes ('simple' = img2 swap;
       // 'zones' = Avito-style position-based swap до 4 segments).
       let imgAttrs = 'data-img-primary="' + escAttr(img) + '"';
@@ -415,10 +422,10 @@ const apiBase = 'https://gateway.merfy.ru/api';
       // flex-shrink:0 — критично! image area не должна сжиматься/расти в flex column
       // (uniform height только через aspect-ratio container).
       const imgBlock = img
-        ? '<div' + imgWrapClassAttr + ' style="' + imgWrapStyle + 'flex-shrink:0;overflow:hidden;border-radius:12px;background:rgb(var(--color-text) / 0.05);position:relative;">' +
-          '<img ' + imgAttrs + ' src="' + escAttr(img) + '" alt="' + escAttr(title) + '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;transition:opacity 0.2s;" />' +
+        ? '<div' + imgWrapClassAttr + ' style="' + imgWrapStyle + 'flex-shrink:0;overflow:hidden;border-radius:12px;background:rgb(var(--color-text) / 0.05);">' +
+          '<img ' + imgAttrs + ' src="' + escAttr(img) + '" alt="' + escAttr(title) + '" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;transition:opacity 0.2s;" />' +
           '</div>'
-        : '<div' + imgWrapClassAttr + ' style="' + imgWrapStyle + 'flex-shrink:0;background:rgb(var(--color-text) / 0.05);border-radius:12px;position:relative;"></div>';
+        : '<div' + imgWrapClassAttr + ' style="' + imgWrapStyle + 'flex-shrink:0;background:rgb(var(--color-text) / 0.05);border-radius:12px;"></div>';
 
       // 096: badges (Новинка / -N%) — Figma 905-19049 bg-accent (#fa5109)
       const badges = [];

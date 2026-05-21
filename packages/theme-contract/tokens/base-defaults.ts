@@ -67,7 +67,9 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   '--container-max-width': '1320px',
   '--size-hero-button-h': '48px',
   '--size-newsletter-form-w': '652px',
-  '--size-logo-width': '120px',
+  // Высота лого (semantically "logo size") — Header.classes.ts использует
+  // h-[var(...)] для контроля высоты. Slider в Theme Settings — 0-40 step 4.
+  '--size-logo-width': '24px',
   '--size-card-border': '0px',
   '--promo-banner-h-thin': '40px',
 

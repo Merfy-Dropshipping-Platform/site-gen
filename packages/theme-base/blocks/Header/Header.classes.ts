@@ -63,7 +63,10 @@ export const HeaderClasses = {
     },
   },
   logoLink: 'flex items-center hover:opacity-80 transition-opacity',
-  logoImg: 'h-5 sm:h-6 md:h-[26px] w-auto max-w-[var(--size-logo-width)]',
+  // Высота лого = значение --size-logo-width (slider в Theme Settings —
+  // "Размер" задаёт высоту); fallback 24px если token не задан.
+  // Ширина auto до 160px max — preserve aspect-ratio для широких логотипов.
+  logoImg: 'h-[var(--size-logo-width,24px)] w-auto max-w-[160px] object-contain',
   logoText:
     'text-lg sm:text-xl md:text-2xl font-semibold tracking-wide uppercase [font-family:var(--font-heading)] text-[rgb(var(--color-heading))]',
   logo:

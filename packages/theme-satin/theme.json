@@ -25,7 +25,7 @@
     "--size-nav-link": "16px",
     "--size-section-heading": "20px",
     "--size-newsletter-form-w": "480px",
-    "--size-logo-width": "120px",
+    "--size-logo-width": "24px",
     "--size-card-border": "1px",
     "--spacing-section-y": "40px",
     "--spacing-grid-col-gap": "40px",

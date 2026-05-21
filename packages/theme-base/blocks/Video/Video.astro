@@ -65,7 +65,7 @@ const sizeProp = typeof raw.size === 'string' ? raw.size : 'medium';
 const overlayPctRaw = typeof raw.overlay === 'number' ? raw.overlay : 0;
 const overlayPct = overlayPctRaw / 100;
 const overlayStyle = overlayPctRaw > 0
-  ? `background-color: rgb(var(--color-foreground) / ${overlayPct});`
+  ? `background-color: rgb(var(--color-text) / ${overlayPct});`
   : '';
 
 const contentObj = raw.content as { heading?: { text?: string; alignment?: string; enabled?: string; size?: string } } | undefined;

@@ -154,8 +154,8 @@ const heightVars = {
 }[size ?? 'medium'];
 
 // Затемнение = полупрозрачный чёрный over фон. Раньше использовался
-// rgb(var(--color-foreground) / N) — но в некоторых color-схемах
-// --color-foreground = белый/светлый, overlay становился невидим.
+// rgb(var(--color-text) / N) — но в некоторых color-схемах
+// --color-text = белый/светлый, overlay становился невидим.
 // Теперь жёстко чёрный — slider реально затемняет картинку на любой схеме.
 const overlayPct = typeof overlayRaw === 'number' ? overlayRaw / 100 : 0;
 const overlayStyle = `background-color: rgb(0 0 0 / ${overlayPct});`;

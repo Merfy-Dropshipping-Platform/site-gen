@@ -74,9 +74,9 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
 ---
 <div class:list={[C.wrapper, C.sticky[stickiness], schemeClass]} data-header-wrapper data-header-variant={variant ?? 'standard'} data-puck-component-id={id}>
   {promoEnabled && promoText && (
-    <div class="w-full bg-black text-white" data-header-promo>
+    <div class="w-full bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))]" data-header-promo>
       <div class="flex items-center justify-center px-4 py-[14px] min-h-[48px]">
-        <p class="[font-family:var(--font-body)] font-light text-[14px] leading-[20px] uppercase text-white">
+        <p class="[font-family:var(--font-body)] font-light text-[14px] leading-[20px] uppercase text-[rgb(var(--color-button-text))]">
           <span>{promoText}</span>
           {promoLinkText && (
             <>

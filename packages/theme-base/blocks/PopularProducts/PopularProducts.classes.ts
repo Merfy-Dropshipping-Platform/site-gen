@@ -59,7 +59,7 @@ export const PopularProductsClasses = {
   swatchOverlay: {
     container: 'absolute bottom-3 right-3 inline-flex gap-1.5 z-10',
     dot:
-      'w-2.5 h-2.5 rounded-full border border-[rgb(var(--color-foreground)/0.2)] bg-[rgb(var(--color-surface))]',
+      'w-2.5 h-2.5 rounded-full border border-[rgb(var(--color-text)/0.2)] bg-[rgb(var(--color-surface))]',
   },
   // Empty-state when realProducts.length === 0 (seed site без товаров).
   // Renders inside grid as full-width row (col-span: 1 / -1) so inline-script

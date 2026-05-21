@@ -142,6 +142,36 @@ const cardCaptionStyleProp =
 const cardCaptionClass = C.cardCaptionStyle[cardCaptionStyleProp];
 
 const apiBase = 'https://gateway.merfy.ru/api';
+
+// 098 SSR-fetch products чтобы preview iframe рендерил real cards в initial
+// HTML (без placeholder flash). Mirrors PopularProducts.astro pattern.
+type SsrProduct = { id?: string; name?: string; title?: string; slug?: string; handle?: string;
+  price?: number | string; basePrice?: number | string; compareAtPrice?: number | string;
+  images?: Array<string | { url?: string }>; variants?: unknown[]; isNew?: boolean;
+};
+let ssrProducts: SsrProduct[] = [];
+if (siteId) {
+  try {
+    const internalBase =
+      (import.meta as unknown as { env?: { SITES_INTERNAL_BASE?: string } }).env?.SITES_INTERNAL_BASE
+      ?? 'http://localhost:3114';
+    const ssrRes = await fetch(`${internalBase}/api/sites/${siteId}/storefront-data`).catch(() => null);
+    if (ssrRes && ssrRes.ok) {
+      const data = (await ssrRes.json()) as { products?: SsrProduct[] };
+      ssrProducts = Array.isArray(data.products) ? data.products : [];
+    }
+  } catch {
+    /* fallback: placeholders */
+  }
+}
+// Slice к cardCount для первой страницы
+const initialSlice = ssrProducts.slice(0, cardCount);
+// Pure helpers reused в Astro markup
+const fmtPriceServer = (n: number | string | undefined): string => {
+  const num = typeof n === 'number' ? n : parseFloat(String(n));
+  if (!Number.isFinite(num)) return '';
+  return Math.round(num).toLocaleString('ru-RU') + ' ₽';
+};
 ---
 <section
   class={schemeClass}
@@ -288,31 +318,66 @@ const apiBase = 'https://gateway.merfy.ru/api';
 
       <div
         data-catalog-grid
-        data-loading="true"
+        data-loading={initialSlice.length === 0 ? 'true' : 'false'}
         style={`display: grid; grid-template-columns: repeat(${colCount}, 1fr); column-gap: 16px; row-gap: var(--catalog-grid-row-gap, 16px); align-items: stretch;`}
       >
-        {placeholderCards.map((_, idx) => (
-          <article data-placeholder="true" style={`display: flex; flex-direction: column; gap: 12px; ${cardBgOn ? 'background:rgb(var(--color-surface,251 251 251));border-radius:12px;padding:12px;' : ''}`}>
-            <div
-              class:list={[gridAspectClass]}
-              style={`position: relative; width: 100%; padding-bottom: ${cardPaddingBottom}; background: rgb(var(--color-muted) / 0.1); border-radius: 12px; overflow: hidden;`}
-            >
-              <img src={getSweaterAsset(idx)} alt="Товар" loading="lazy" style="position:absolute;left:20%;top:20%;width:60%;height:60%;object-fit:contain;" />
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 4px;">
-              <div class:list={[cardCaptionClass]} style="font-size: 14px; color: rgb(var(--color-text));">Товар</div>
-              <div style="font-size: 14px; color: rgb(var(--color-text));">2 500 ₽</div>
-            </div>
-            {showQuickAdd && (
-              <button
-                type="button"
-                style={`margin-top:4px;padding:8px 12px;border-radius:4px;font-size:12px;cursor:pointer;background:${btnBg};color:${btnFg};border:${btnBorder};${btnStyle === 'link' ? 'text-decoration:underline;background:transparent;' : ''}`}
-              >
-                {quickAddText}
-              </button>
-            )}
-          </article>
-        ))}
+        {initialSlice.length > 0
+          ? initialSlice.map((p) => {
+              const img0 = Array.isArray(p.images) && p.images[0]
+                ? (typeof p.images[0] === 'string' ? p.images[0] : p.images[0].url)
+                : '';
+              const title = p.title || p.name || '';
+              const basePrice = Number(p.basePrice ?? p.price ?? 0);
+              const compPrice = Number(p.compareAtPrice ?? 0);
+              const handle = p.handle || p.slug || p.id || '';
+              return (
+                <article data-product-id={p.id} data-product-handle={handle} style={`display:flex;flex-direction:column;gap:16px;cursor:pointer;${cardBgOn ? 'background:rgb(var(--color-surface,251 251 251));border-radius:12px;padding:12px;' : ''}position:relative;`}>
+                  <div class:list={[gridAspectClass]} style={`position:relative;width:100%;padding-bottom:${cardPaddingBottom};flex-shrink:0;overflow:hidden;border-radius:12px;background:rgb(var(--color-text) / 0.05);`}>
+                    {img0 && <img src={img0} alt={title} loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;" />}
+                    {compPrice > basePrice && basePrice > 0 && (
+                      <div style="position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:4px;z-index:1;">
+                        <div style="background:rgb(var(--color-accent,250 81 9));color:#fff;font-size:14px;font-family:var(--font-body);padding:4px 6px;border-radius:4px;line-height:1;">{Math.round((1 - basePrice / compPrice) * 100)}%</div>
+                      </div>
+                    )}
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:4px;">
+                    <div class:list={[cardCaptionClass]} style="font-size:16px;font-family:var(--font-body);color:rgb(var(--color-text));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{title}</div>
+                    <div style="font-size:16px;font-family:var(--font-body);color:rgb(var(--color-text));display:flex;gap:8px;align-items:baseline;">
+                      <span>{fmtPriceServer(basePrice)}</span>
+                      {compPrice > basePrice && <span style="text-decoration:line-through;color:rgb(var(--color-muted));font-size:14px;">{fmtPriceServer(compPrice)}</span>}
+                    </div>
+                  </div>
+                  {showQuickAdd && (
+                    <button type="button" data-quick-add-id={p.id} style={`width:100%;height:44px;padding:0 12px;border-radius:4px;font-size:14px;font-family:var(--font-body);text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;background:${btnBg};color:${btnFg};border:${btnBorder};${btnStyle === 'link' ? 'text-decoration:underline;background:transparent;' : ''}`}>
+                      {quickAddText}
+                    </button>
+                  )}
+                </article>
+              );
+            })
+          : placeholderCards.map((_, idx) => (
+              <article data-placeholder="true" style={`display: flex; flex-direction: column; gap: 12px; ${cardBgOn ? 'background:rgb(var(--color-surface,251 251 251));border-radius:12px;padding:12px;' : ''}`}>
+                <div
+                  class:list={[gridAspectClass]}
+                  style={`position: relative; width: 100%; padding-bottom: ${cardPaddingBottom}; background: rgb(var(--color-muted) / 0.1); border-radius: 12px; overflow: hidden;`}
+                >
+                  <img src={getSweaterAsset(idx)} alt="Товар" loading="lazy" style="position:absolute;left:20%;top:20%;width:60%;height:60%;object-fit:contain;" />
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <div class:list={[cardCaptionClass]} style="font-size: 14px; color: rgb(var(--color-text));">Товар</div>
+                  <div style="font-size: 14px; color: rgb(var(--color-text));">2 500 ₽</div>
+                </div>
+                {showQuickAdd && (
+                  <button
+                    type="button"
+                    style={`margin-top:4px;padding:8px 12px;border-radius:4px;font-size:12px;cursor:pointer;background:${btnBg};color:${btnFg};border:${btnBorder};${btnStyle === 'link' ? 'text-decoration:underline;background:transparent;' : ''}`}
+                  >
+                    {quickAddText}
+                  </button>
+                )}
+              </article>
+            ))
+        }
       </div>
 
       <div data-catalog-pagination class={C.paginationBar} style="display: none;">

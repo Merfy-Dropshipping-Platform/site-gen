@@ -348,7 +348,7 @@ const fmtPriceServer = (n: number | string | undefined): string => {
                     </div>
                   </div>
                   {showQuickAdd && (
-                    <button type="button" data-quick-add-id={p.id} style={`width:100%;height:44px;padding:0 12px;border-radius:4px;font-size:14px;font-family:var(--font-body);text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;background:${btnBg};color:${btnFg};border:${btnBorder};${btnStyle === 'link' ? 'text-decoration:underline;background:transparent;' : ''}`}>
+                    <button type="button" data-quick-add-id={p.id} style={`width:100%;height:44px;padding:0 12px;border-radius:var(--radius-button);font-size:14px;font-family:var(--font-body);text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;background:${btnBg};color:${btnFg};border:${btnBorder};${btnStyle === 'link' ? 'text-decoration:underline;background:transparent;' : ''}`}>
                       {quickAddText}
                     </button>
                   )}
@@ -370,7 +370,7 @@ const fmtPriceServer = (n: number | string | undefined): string => {
                 {showQuickAdd && (
                   <button
                     type="button"
-                    style={`margin-top:4px;padding:8px 12px;border-radius:4px;font-size:12px;cursor:pointer;background:${btnBg};color:${btnFg};border:${btnBorder};${btnStyle === 'link' ? 'text-decoration:underline;background:transparent;' : ''}`}
+                    style={`margin-top:4px;padding:8px 12px;border-radius:var(--radius-button);font-size:12px;cursor:pointer;background:${btnBg};color:${btnFg};border:${btnBorder};${btnStyle === 'link' ? 'text-decoration:underline;background:transparent;' : ''}`}
                   >
                     {quickAddText}
                   </button>
@@ -467,7 +467,7 @@ const fmtPriceServer = (n: number | string | undefined): string => {
       : '';
     // 096 flux electronics — full-width «В КОРЗИНУ» button (h-44, uppercase, rounded-4).
     const buttonStyle = (
-      'width:100%;height:44px;padding:0 12px;border-radius:4px;font-size:14px;font-family:var(--font-body);text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;' +
+      'width:100%;height:44px;padding:0 12px;border-radius:var(--radius-button);font-size:14px;font-family:var(--font-body);text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;' +
       'background:' + btnBg + ';color:' + btnFg + ';border:' + btnBorder + ';' +
       (btnStyle === 'link' ? 'text-decoration:underline;background:transparent;' : '')
     );
@@ -984,7 +984,7 @@ const fmtPriceServer = (n: number | string | undefined): string => {
         function pillHtml(val, active, dataAttr) {
           const bg = active ? 'rgb(var(--color-text))' : 'rgb(var(--color-muted) / 0.15)';
           const fg = active ? 'rgb(var(--color-bg))' : 'rgb(var(--color-text))';
-          return '<button type="button" ' + dataAttr + '="' + escAttr(val) + '" style="height:32px;padding:0 8px;border-radius:4px;border:0;background:' + bg + ';color:' + fg + ';font-family:var(--font-body);font-size:14px;text-transform:uppercase;cursor:pointer;">' + escAttr(val) + '</button>';
+          return '<button type="button" ' + dataAttr + '="' + escAttr(val) + '" style="height:32px;padding:0 8px;border-radius:var(--radius-button);border:0;background:' + bg + ';color:' + fg + ';font-family:var(--font-body);font-size:14px;text-transform:uppercase;cursor:pointer;">' + escAttr(val) + '</button>';
         }
 
         // Render color pills

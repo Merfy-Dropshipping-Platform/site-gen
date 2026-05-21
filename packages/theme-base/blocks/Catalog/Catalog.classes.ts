@@ -48,7 +48,7 @@ export const CatalogClasses = {
   productGrid: 'flex-1',
   productGridCols: 'grid grid-cols-1 sm:grid-cols-2 gap-5',
   productCard: 'flex flex-col gap-2 cursor-pointer',
-  productCardImage: 'aspect-[315/515] overflow-hidden rounded-[10px] bg-[rgb(var(--color-muted)/0.1)]',
+  productCardImage: 'aspect-[315/515] overflow-hidden rounded-[var(--radius-card)] bg-[rgb(var(--color-muted)/0.1)]',
   productCardImageImg: 'w-full h-full object-cover block',
   productCardTitle: 'text-[14px] text-[rgb(var(--color-foreground))]',
   productCardPriceRow: 'text-[14px] text-[rgb(var(--color-foreground))] flex gap-2 items-baseline',
@@ -75,7 +75,7 @@ export const CatalogClasses = {
   // Empty / error states
   emptyState: 'flex-1 py-12 text-center font-[family-name:var(--font-body)]',
   emptyStateText: 'text-[20px] text-[rgb(var(--color-muted))] mb-4',
-  emptyStateButton: 'px-6 py-3 bg-[rgb(var(--color-foreground))] text-[rgb(var(--color-background))] rounded-[10px] text-base',
+  emptyStateButton: 'px-6 py-3 bg-[rgb(var(--color-foreground))] text-[rgb(var(--color-background))] rounded-[var(--radius-button)] text-base',
 
   // 084 Stage 3 vanilla pilot
   gridAspect: {

@@ -224,6 +224,8 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
       { id: 'col-3', heading: 'Колонка 3', text: 'Описание третьей колонки.', imageUrl: '' },
     ],
     displayColumns: 3,
+    headingSize: 'medium',
+    textSize: 'medium',
     padding: { top: 80, bottom: 80 },
   },
   schema: MultiColumnsSchema,

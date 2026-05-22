@@ -199,6 +199,8 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
         button: { text: 'Узнать больше', href: '/about' },
       },
     ],
+    headingSize: 'medium',
+    textSize: 'medium',
     padding: { top: 80, bottom: 80 },
   },
   schema: MultiRowsSchema,

@@ -72,6 +72,7 @@ export const PublicationsPuckConfig: BlockPuckConfig<PublicationsProps> = {
     heading: 'Публикации',
     columns: 3,
     cards: 3,
+    headingSize: 'medium',
     padding: { top: 80, bottom: 80 },
   },
   schema: PublicationsSchema,

@@ -106,6 +106,7 @@ export const CollapsibleSectionPuckConfig: BlockPuckConfig<CollapsibleSectionPro
         content: 'Ответ на второй вопрос.',
       },
     ],
+    headingSize: 'medium',
     padding: { top: 80, bottom: 80 },
   },
   schema: CollapsibleSectionSchema,

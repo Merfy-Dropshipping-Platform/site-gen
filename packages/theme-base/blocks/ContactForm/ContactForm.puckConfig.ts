@@ -79,6 +79,7 @@ export const ContactFormPuckConfig: BlockPuckConfig<ContactFormProps> = {
       message: { enabled: true, required: false, label: 'Сообщение' },
     },
     buttonText: 'Отправить',
+    headingSize: 'medium',
     padding: { top: 80, bottom: 80 },
   },
   schema: ContactFormSchema,

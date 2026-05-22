@@ -109,17 +109,7 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
     cards: { type: 'slider', label: 'Карточки', min: 2, max: 24, step: 1 },
     columns: { type: 'slider', label: 'Колонки', min: 1, max: 6, step: 1 },
 
-    ['_section_newsletter' as never]: { type: 'section-header', label: 'Рассылка' } as any,
-    newsletterEnabled: {
-      type: 'toggle',
-      label: 'Скрыть/показать',
-      options: [
-        { label: 'Показать', value: 'true' },
-        { label: 'Скрыть', value: 'false' },
-      ],
-    } as any,
-
-    ['_section_card' as never]: { type: 'section-header', label: 'Карточка товара' } as any,
+['_section_card' as never]: { type: 'section-header', label: 'Карточка товара' } as any,
     productCard: {
       type: 'object',
       label: '',

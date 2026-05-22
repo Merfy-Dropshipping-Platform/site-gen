@@ -244,6 +244,7 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
     buttons: { addToCart: { text: 'В КОРЗИНУ' }, buyNow: { text: 'КУПИТЬ' } },
     description: { content: '', size: 'medium' },
     share: { text: 'Поделиться' },
+    size: 'medium',
     colorScheme: 'scheme-2',
     padding: { top: 80, bottom: 80 },
   },

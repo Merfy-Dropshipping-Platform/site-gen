@@ -87,6 +87,8 @@ export const VideoPuckConfig: BlockPuckConfig<VideoProps> = {
     videoUrl: '',
     poster: '',
     position: 'contained',
+    headingSize: 'medium',
+    headingAlignment: 'left',
     padding: { top: 80, bottom: 80 },
   },
   schema: VideoSchema,

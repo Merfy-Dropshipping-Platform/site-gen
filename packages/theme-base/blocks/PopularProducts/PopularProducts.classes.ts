@@ -24,7 +24,7 @@ export const PopularProductsClasses = {
   cardPriceRow:
     'flex gap-2 items-center',
   cardPrice:
-    '[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-heading))]',
+    '[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-text))]',
   cardOldPrice:
     '[font-family:var(--font-body)] text-[12px] leading-[15px] text-[rgb(var(--color-text))]/50 line-through',
   cardCta:

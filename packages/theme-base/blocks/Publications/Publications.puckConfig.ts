@@ -47,20 +47,18 @@ export const PublicationsPuckConfig: BlockPuckConfig<PublicationsProps> = {
       ],
     },
     columnsCount: { type: 'slider', label: 'Колонки', min: 1, max: 6, step: 1 },
-    dateTime: {
-      type: 'object',
+    // user #31: упростил object с вложенным toggle до flat toggle
+    // (rendering FieldRenderer same as другие — mobile pattern с
+    // animated "Показать"/"Скрыть").
+    dateTime: { type: 'hidden', label: '' } as any,
+    showDateTime: {
+      type: 'toggle',
       label: 'Дата и время',
-      objectFields: {
-        enabled: {
-          type: 'toggle',
-          label: 'Показать/скрыть',
-          options: [
-            { label: 'Показать', value: 'true' },
-            { label: 'Скрыть', value: 'false' },
-          ],
-        },
-      },
-    },
+      options: [
+        { label: 'Показать', value: 'true' },
+        { label: 'Скрыть', value: 'false' },
+      ],
+    } as any,
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
     // Hidden — нет в Figma 314-35098.

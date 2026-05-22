@@ -87,10 +87,18 @@ export const NewsletterPuckConfig: BlockPuckConfig<NewsletterProps> = {
     } as any,
     placeholder: { type: 'text', label: 'Плейсхолдер', hiddenInMainPanel: true } as any,
     buttonText: { type: 'text', label: 'Кнопка', hiddenInMainPanel: true } as any,
+    // User #28: добавить параметр "Форма" (variant выбор) — Figma 1:19891/1:17346
+    formLayout: {
+      type: 'select',
+      label: 'Форма',
+      options: [
+        { label: 'Стек (вертикально)', value: 'stacked' },
+        { label: 'Inline-submit', value: 'inline-submit' },
+      ],
+    } as any,
     // Hidden — нет в Figma 314-35034.
     description: { type: 'hidden', label: '' },
     position: { type: 'hidden', label: '' },
-    formLayout: { type: 'hidden', label: '' },
     alignment: { type: 'hidden', label: '' },
   },
   defaults: {
@@ -98,6 +106,7 @@ export const NewsletterPuckConfig: BlockPuckConfig<NewsletterProps> = {
     description: 'Узнавай о новинках и акциях первым',
     placeholder: 'Твой email',
     buttonText: 'Подписаться',
+    formLayout: 'stacked',
     padding: { top: 80, bottom: 80 },
   },
   schema: NewsletterSchema,

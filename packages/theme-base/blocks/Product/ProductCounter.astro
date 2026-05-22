@@ -4,11 +4,10 @@
  *
  * Variants (LAYOUT only):
  *  - `inline` (rose) — minus/value/plus, no fill, icons size-6, gap-3
- *  - `pill` (flux) — same controls inside a filled rounded-4 pill, gap-2 p-2
+ *  - `pill` (flux) — same controls inside a filled rounded pill, gap-2 p-2
  *
- * Pill colour is mono (--color-text on --color-bg) — matches the page text
- * colour, not the primary button colour. Counter is a utility control,
- * not a CTA, so it stays neutral regardless of merchant accent choice.
+ * Colour: следует основной кнопке scheme (--color-button-bg/text). User-spec:
+ * Кнопка количество зависит от настроек основной кнопки.
  */
 interface Props {
   variant?: 'inline' | 'pill';
@@ -21,10 +20,10 @@ const isPill = variant === 'pill';
 <div
   class:list={[
     'inline-flex items-center [font-family:var(--font-body)]',
-    isPill ? 'gap-2 p-2 rounded-[4px]' : 'text-[rgb(var(--color-text))] gap-3',
+    isPill ? 'gap-2 p-2 rounded-[var(--radius-button)]' : 'text-[rgb(var(--color-button-bg))] gap-3',
   ]}
   style={isPill
-    ? 'background:rgb(var(--color-text)); color:rgb(var(--color-bg));'
+    ? 'background:rgb(var(--color-button-bg)); color:rgb(var(--color-button-text));'
     : ''}
   data-product-counter
   data-counter-variant={variant}
@@ -35,7 +34,7 @@ const isPill = variant === 'pill';
     aria-label="Уменьшить количество"
     class:list={[
       'inline-flex items-center justify-center cursor-pointer transition-opacity hover:opacity-70 bg-transparent border-0 text-current',
-      isPill ? 'w-8 h-8 rounded-[4px]' : 'w-6 h-6',
+      isPill ? 'w-8 h-8 rounded-[var(--radius-button)]' : 'w-6 h-6',
     ]}
   >
     <svg width={isPill ? '16' : '24'} height={isPill ? '16' : '24'} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
@@ -55,7 +54,7 @@ const isPill = variant === 'pill';
     aria-label="Увеличить количество"
     class:list={[
       'inline-flex items-center justify-center cursor-pointer transition-opacity hover:opacity-70 bg-transparent border-0 text-current',
-      isPill ? 'w-8 h-8 rounded-[4px]' : 'w-6 h-6',
+      isPill ? 'w-8 h-8 rounded-[var(--radius-button)]' : 'w-6 h-6',
     ]}
   >
     <svg width={isPill ? '16' : '24'} height={isPill ? '16' : '24'} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">

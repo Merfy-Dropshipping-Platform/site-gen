@@ -114,9 +114,29 @@ const showQuickAdd = quickAddMode === 'standard' || quickAddMode === 'cart';
 const quickAddText = quickAddMode === 'cart' ? 'В КОРЗИНУ' : 'БЫСТРЫЙ ПРОСМОТР';
 // Button style affects pill colors.
 const btnStyle = productCard?.buttonStyle ?? 'primary';
-const btnBg = btnStyle === 'primary' ? 'rgb(var(--color-text))' : btnStyle === 'secondary' ? 'rgb(var(--color-bg))' : 'transparent';
-const btnFg = btnStyle === 'primary' ? 'rgb(var(--color-bg))' : 'rgb(var(--color-text))';
-const btnBorder = btnStyle === 'link' ? 'none' : btnStyle === 'secondary' ? '1px solid rgb(var(--color-text))' : '1px solid rgb(var(--color-text))';
+// User-spec: "Группа товаров" buttons reagируют на Основная кнопка scheme.
+// Primary  → button-bg/text/border + button-bg-hover/text-hover
+// Secondary → button-secondary-bg/text/border + secondary-bg-hover/text-hover
+// Link     → transparent, text scheme
+const btnBg = btnStyle === 'primary'
+  ? 'rgb(var(--color-button-bg))'
+  : btnStyle === 'secondary' ? 'rgb(var(--color-button-secondary-bg))' : 'transparent';
+const btnFg = btnStyle === 'primary'
+  ? 'rgb(var(--color-button-text))'
+  : btnStyle === 'secondary' ? 'rgb(var(--color-button-secondary-text))' : 'rgb(var(--color-text))';
+const btnBorder = btnStyle === 'link'
+  ? 'none'
+  : btnStyle === 'secondary'
+    ? '1px solid rgb(var(--color-button-secondary-border))'
+    : '1px solid rgb(var(--color-button-border))';
+// Hover values для inline-script mouseover handler (style attribute не
+// поддерживает :hover — нужен JS swap).
+const btnBgHover = btnStyle === 'primary'
+  ? 'rgb(var(--color-button-bg-hover))'
+  : btnStyle === 'secondary' ? 'rgb(var(--color-button-secondary-bg-hover))' : 'transparent';
+const btnFgHover = btnStyle === 'primary'
+  ? 'rgb(var(--color-button-text-hover))'
+  : btnStyle === 'secondary' ? 'rgb(var(--color-button-secondary-text-hover))' : 'rgb(var(--color-text))';
 // Color scheme — apply CSS class so theme tokens swap.
 const schemeClass =
   typeof colorScheme === 'string' && colorScheme
@@ -366,7 +386,7 @@ const fmtPriceServer = (n: number | string | undefined): string => {
                     </div>
                   </div>
                   {showQuickAdd && (
-                    <button type="button" data-quick-add-id={p.id} style={`width:100%;height:44px;padding:0 12px;border-radius:var(--radius-button);font-size:14px;font-family:var(--font-body);text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;background:${btnBg};color:${btnFg};border:${btnBorder};${btnStyle === 'link' ? 'text-decoration:underline;background:transparent;' : ''}`}>
+                    <button type="button" data-quick-add-id={p.id} data-btn-bg={btnBg} data-btn-fg={btnFg} data-btn-bg-hover={btnBgHover} data-btn-fg-hover={btnFgHover} style={`width:100%;height:44px;padding:0 12px;border-radius:var(--radius-button);font-size:14px;font-family:var(--font-body);text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;background:${btnBg};color:${btnFg};border:${btnBorder};transition:background-color 0.15s, color 0.15s;${btnStyle === 'link' ? 'text-decoration:underline;background:transparent;' : ''}`}>
                       {quickAddText}
                     </button>
                   )}
@@ -826,6 +846,36 @@ const fmtPriceServer = (n: number | string | undefined): string => {
     document.addEventListener('click', function () {
       root.querySelectorAll('[data-sort-options]').forEach(function (ol) { ol.style.display = 'none'; });
     });
+
+    // Hover handler для quick-add кнопок — inline-style не поддерживает
+    // :hover pseudo, поэтому swap через mouseover/mouseout JS.
+    // data-btn-bg-hover / data-btn-fg-hover хранят целевые значения.
+    function attachHover(scope) {
+      scope.querySelectorAll('[data-quick-add-id]').forEach(function (btn) {
+        const bgH = btn.getAttribute('data-btn-bg-hover');
+        const fgH = btn.getAttribute('data-btn-fg-hover');
+        const bg = btn.getAttribute('data-btn-bg');
+        const fg = btn.getAttribute('data-btn-fg');
+        if (!bgH || !fgH) return;
+        btn.addEventListener('mouseover', function () {
+          btn.style.background = bgH;
+          btn.style.color = fgH;
+        });
+        btn.addEventListener('mouseout', function () {
+          btn.style.background = bg || '';
+          btn.style.color = fg || '';
+        });
+      });
+    }
+    attachHover(root);
+    // Re-attach hover после rerender (новые кнопки в DOM).
+    // Используем MutationObserver вместо переопределения rerender (что
+    // ломает strict-mode function declaration reassignment).
+    const gridObserver = new MutationObserver(function () {
+      attachHover(root);
+    });
+    const grid = root.querySelector('[data-catalog-grid]');
+    if (grid) gridObserver.observe(grid, { childList: true, subtree: false });
 
     // Pagination click handlers
     const paginationEl = root.querySelector('[data-catalog-pagination]');

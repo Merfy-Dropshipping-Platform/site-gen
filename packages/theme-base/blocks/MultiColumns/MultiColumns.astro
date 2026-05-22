@@ -98,7 +98,7 @@ const buttonLink = typeof raw.buttonLink === 'string' ? raw.buttonLink : (typeof
     </div>
     {buttonText && (
       <div class={`mt-8 ${headingAlignClass}`}>
-        <a href={buttonLink} class="inline-block px-6 py-3 bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] rounded">{buttonText}</a>
+        <a href={buttonLink} class="inline-block px-6 py-3 bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] border border-[rgb(var(--color-button-border))] rounded-[var(--radius-button)] hover:bg-[rgb(var(--color-button-bg-hover))] hover:text-[rgb(var(--color-button-text-hover))] transition-colors no-underline">{buttonText}</a>
       </div>
     )}
   </div>

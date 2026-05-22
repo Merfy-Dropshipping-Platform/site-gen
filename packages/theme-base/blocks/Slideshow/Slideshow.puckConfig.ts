@@ -146,7 +146,7 @@ export const SlideshowPuckConfig: BlockPuckConfig<SlideshowProps> = {
       defaultItemProps: {
         id: '',
         imageUrl: '',
-        heading: { text: 'Новый слайд', size: 'medium' },
+        heading: { text: '', size: 'medium' },
         text: { content: '', size: 'medium' },
         button: { text: 'Подробнее', link: '/catalog' },
         container: 'true',

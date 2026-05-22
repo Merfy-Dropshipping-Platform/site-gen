@@ -173,7 +173,7 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
       defaultItemProps: {
         id: '',
         image: '',
-        title: 'Новый ряд',
+        title: '',
         description: '',
         button: { text: 'Подробнее', link: '/catalog' },
       },

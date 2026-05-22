@@ -206,10 +206,11 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     // Figma 314-34815: Контейнер = toggle switch «Скрыть/показать»,
     // не две кнопки. FieldRenderer переключает toggle ↔ boolean,
     // legacy 'true'/'false' strings совместимы (Hero.astro приводит).
+    // toggleLabel removed (user #7) — FieldRenderer falls through to
+    // dynamic inlineLabel = isOn ? "Показать" : "Скрыть" (mobile pattern).
     container: {
       type: 'toggle',
       label: 'Контейнер',
-      toggleLabel: 'Скрыть/показать',
     } as any,
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     // Carousel mode + slides — advanced, скрыты по умолчанию в sidebar.

@@ -97,8 +97,9 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
         { label: 'Альбом', value: 'landscape' },
       ],
     },
-    buttonText: { type: 'text', label: 'Кнопка', placeholder: 'Оставьте пустой для скрытия' } as any,
-    buttonLink: { type: 'pagePicker', label: 'Ссылка' },
+    // user #23: buttonText/buttonLink убраны из main sidebar — не наши поля.
+    buttonText: { type: 'hidden', label: '' } as any,
+    buttonLink: { type: 'hidden', label: '' },
     displayColumns: {
       type: 'slider',
       label: 'Колонки',
@@ -114,20 +115,17 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
         { label: 'Центр', value: 'center' },
       ],
     },
-    background: {
-      type: 'object',
+    // user #23: Контейнер дублировался (object с вложенным toggle). Заменил
+    // на flat toggle field — рендерится FieldRenderer без nesting.
+    background: { type: 'hidden', label: '' } as any,
+    containerEnabled: {
+      type: 'toggle',
       label: 'Контейнер',
-      objectFields: {
-        enabled: {
-          type: 'toggle',
-          label: 'Скрыть/показать',
-          options: [
-            { label: 'Показать', value: 'true' },
-            { label: 'Скрыть', value: 'false' },
-          ],
-        },
-      },
-    },
+      options: [
+        { label: 'Показать', value: 'true' },
+        { label: 'Скрыть', value: 'false' },
+      ],
+    } as any,
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
     // Hidden — нет в Figma 314-34917.
@@ -226,6 +224,10 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
     displayColumns: 3,
     headingSize: 'medium',
     textSize: 'medium',
+    width: 'medium',
+    imageAspectRatio: 'square',
+    textPosition: 'left',
+    containerEnabled: 'true',
     padding: { top: 80, bottom: 80 },
   },
   schema: MultiColumnsSchema,

@@ -129,6 +129,7 @@ export const MainTextPuckConfig: BlockPuckConfig<MainTextProps> = {
     heading: 'Заголовок раздела',
     text: 'Описание вашего магазина. Поддерживает базовое HTML-форматирование: <b>жирный</b> и <i>курсив</i>.',
     alignment: 'center',
+    position: 'center',
     headingSize: 'medium',
     textSize: 'medium',
     padding: { top: 80, bottom: 80 },

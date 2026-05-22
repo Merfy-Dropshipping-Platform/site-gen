@@ -36,7 +36,7 @@ const showOld = hasDiscount && oldPrice && oldPrice.formatted;
   {showOld && (
     <span
       class:list={[
-        'text-[rgb(var(--color-muted))] line-through',
+        'text-[rgb(var(--color-text))]/60 line-through',
         isSpaced ? 'text-[16px]' : 'text-[14px]',
       ]}
       data-product-price-old

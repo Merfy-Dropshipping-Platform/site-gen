@@ -32,19 +32,25 @@ const isTall = size === 'tall';
 const heightCls = isTall ? 'h-16' : 'h-14';
 const textCls = isTall ? 'text-[20px] uppercase' : 'text-[16px]';
 const baseCls =
-  'w-full inline-flex items-center justify-center px-5 rounded-[var(--radius-button)] [font-family:var(--font-body)] cursor-pointer transition-colors border border-solid hover:bg-[rgb(var(--color-button-bg-hover))] hover:text-[rgb(var(--color-button-text-hover))]';
+  'w-full inline-flex items-center justify-center px-5 rounded-[var(--radius-button)] [font-family:var(--font-body)] cursor-pointer transition-colors border border-solid';
+// Secondary (add-to-cart) — bg + text + border + hover variants from
+// --color-button-secondary-* tokens. Inline-style раньше блокировал
+// Tailwind hover (inline > class spec), теперь через classes hover работает.
+const secondaryBtnCls =
+  'bg-[rgb(var(--color-button-secondary-bg))] text-[rgb(var(--color-button-secondary-text))] border-[rgb(var(--color-button-secondary-border))] hover:bg-[rgb(var(--color-button-secondary-bg-hover))] hover:text-[rgb(var(--color-button-secondary-text-hover))]';
+// Primary (buy-now) — --color-button-bg/text/border + hover variants.
+const primaryBtnCls =
+  'bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] border-[rgb(var(--color-button-border))] hover:bg-[rgb(var(--color-button-bg-hover))] hover:text-[rgb(var(--color-button-text-hover))]';
 ---
 <div class="flex flex-col gap-3 w-full" data-product-actions data-actions-size={size}>
   <button
     type="button"
     data-product-action="add-to-cart"
-    class:list={[baseCls, heightCls, textCls]}
-    style="background:rgb(var(--color-button-secondary-bg, var(--color-bg))); color:rgb(var(--color-button-secondary-text, var(--color-text))); border-color:rgb(var(--color-button-secondary-border, var(--color-text)));"
+    class:list={[baseCls, heightCls, textCls, secondaryBtnCls]}
   >{addToCartLabel}</button>
   <button
     type="button"
     data-product-action="buy-now"
-    class:list={[baseCls, heightCls, textCls]}
-    style="background:rgb(var(--color-button-bg, var(--color-text))); color:rgb(var(--color-button-text, var(--color-bg))); border-color:rgb(var(--color-button-border, var(--color-text)));"
+    class:list={[baseCls, heightCls, textCls, primaryBtnCls]}
   >{buyNowLabel}</button>
 </div>

@@ -51,7 +51,7 @@ export const SlideshowClasses = {
   subtitle:
     '[font-family:var(--font-body)] italic text-[16px] leading-[1.25] mt-1 text-[rgb(var(--color-text))] opacity-90',
   ctaButton:
-    'inline-flex items-center justify-center h-[var(--size-hero-button-h)] rounded-[var(--radius-button)] px-8 mt-8 border border-[rgb(var(--color-button-border))] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))]',
+    'inline-flex items-center justify-center h-[var(--size-hero-button-h)] rounded-[var(--radius-button)] px-8 mt-8 border border-[rgb(var(--color-button-border))] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] hover:bg-[rgb(var(--color-button-bg-hover))] hover:text-[rgb(var(--color-button-text-hover))] transition-colors no-underline',
   /**
    * 084 vanilla pilot — additive `buttonStyle` variant for hero CTA.
    * `solid` adds nothing (pre-084 behaviour preserved). `outlined`

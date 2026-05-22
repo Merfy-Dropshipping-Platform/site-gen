@@ -218,12 +218,21 @@ const fmtPriceServer = (n: number | string | undefined): string => {
           </div>
         )}
         {!filterSide && sortVisible && (
-          <select data-catalog-sort-select style="height: 44px; padding: 0 36px 0 12px; border: 1px solid rgb(var(--color-text) / 0.1); border-radius: 4px; background-color: rgb(var(--color-bg)); color: rgb(var(--color-text)); font-family: var(--font-body); font-size: 14px; cursor: pointer; appearance: none; min-width: 200px; background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 10px center;">
-            <option value="popularity">По популярности</option>
-            <option value="newest">По новизне</option>
-            <option value="price-asc">По возрастанию цены</option>
-            <option value="price-desc">По убыванию цены</option>
-          </select>
+          <div data-catalog-sort-dropdown style="position:relative;min-width:200px;">
+            <select data-catalog-sort-select style="display:none;" aria-hidden="true">
+              <option value="popularity">По популярности</option>
+              <option value="newest">По новизне</option>
+              <option value="price-asc">По возрастанию цены</option>
+              <option value="price-desc">По убыванию цены</option>
+            </select>
+            <button type="button" data-sort-trigger style="width:100%;height:44px;padding:0 36px 0 12px;border:1px solid rgb(var(--color-text)/0.1);border-radius:var(--radius-input);background:rgb(var(--color-bg));color:rgb(var(--color-text));font-family:var(--font-body);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;text-align:left;"><span data-sort-label>По популярности</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+            <ul data-sort-options style="position:absolute;top:calc(100% + 4px);left:0;right:0;margin:0;padding:4px;list-style:none;background:rgb(var(--color-bg));border:1px solid rgb(var(--color-text)/0.1);border-radius:var(--radius-input);z-index:10;display:none;">
+              <li data-sort-option="popularity" style="padding:8px 12px;cursor:pointer;border-radius:calc(var(--radius-input) - 2px);font-family:var(--font-body);font-size:14px;color:rgb(var(--color-text));">По популярности</li>
+              <li data-sort-option="newest" style="padding:8px 12px;cursor:pointer;border-radius:calc(var(--radius-input) - 2px);font-family:var(--font-body);font-size:14px;color:rgb(var(--color-text));">По новизне</li>
+              <li data-sort-option="price-asc" style="padding:8px 12px;cursor:pointer;border-radius:calc(var(--radius-input) - 2px);font-family:var(--font-body);font-size:14px;color:rgb(var(--color-text));">По возрастанию цены</li>
+              <li data-sort-option="price-desc" style="padding:8px 12px;cursor:pointer;border-radius:calc(var(--radius-input) - 2px);font-family:var(--font-body);font-size:14px;color:rgb(var(--color-text));">По убыванию цены</li>
+            </ul>
+          </div>
         )}
       </div>
     )}
@@ -253,12 +262,21 @@ const fmtPriceServer = (n: number | string | undefined): string => {
           {sortVisible && (
             <div data-catalog-sort-wrap style="display: flex; flex-direction: column; gap: 12px;">
               <div style="font-size: 14px; color: rgb(var(--color-text)); font-family: var(--font-body);">Сортировать по:</div>
-              <select data-catalog-sort-select style="width: 100%; height: 44px; padding: 0 12px; border: 1px solid rgb(var(--color-text) / 0.1); border-radius: 4px; background: rgb(var(--color-bg)); color: rgb(var(--color-text)); font-family: var(--font-body); font-size: 14px; cursor: pointer; appearance: none; background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 10px center; padding-right: 36px;">
-                <option value="popularity">По популярности</option>
-                <option value="newest">По новизне</option>
-                <option value="price-asc">По возрастанию цены</option>
-                <option value="price-desc">По убыванию цены</option>
-              </select>
+              <div data-catalog-sort-dropdown style="position:relative;width:100%;">
+                <select data-catalog-sort-select style="display:none;" aria-hidden="true">
+                  <option value="popularity">По популярности</option>
+                  <option value="newest">По новизне</option>
+                  <option value="price-asc">По возрастанию цены</option>
+                  <option value="price-desc">По убыванию цены</option>
+                </select>
+                <button type="button" data-sort-trigger style="width:100%;height:44px;padding:0 36px 0 12px;border:1px solid rgb(var(--color-text)/0.1);border-radius:var(--radius-input);background:rgb(var(--color-bg));color:rgb(var(--color-text));font-family:var(--font-body);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;text-align:left;"><span data-sort-label>По популярности</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+                <ul data-sort-options style="position:absolute;top:calc(100% + 4px);left:0;right:0;margin:0;padding:4px;list-style:none;background:rgb(var(--color-bg));border:1px solid rgb(var(--color-text)/0.1);border-radius:var(--radius-input);z-index:10;display:none;">
+                  <li data-sort-option="popularity" style="padding:8px 12px;cursor:pointer;border-radius:calc(var(--radius-input) - 2px);font-family:var(--font-body);font-size:14px;color:rgb(var(--color-text));">По популярности</li>
+                  <li data-sort-option="newest" style="padding:8px 12px;cursor:pointer;border-radius:calc(var(--radius-input) - 2px);font-family:var(--font-body);font-size:14px;color:rgb(var(--color-text));">По новизне</li>
+                  <li data-sort-option="price-asc" style="padding:8px 12px;cursor:pointer;border-radius:calc(var(--radius-input) - 2px);font-family:var(--font-body);font-size:14px;color:rgb(var(--color-text));">По возрастанию цены</li>
+                  <li data-sort-option="price-desc" style="padding:8px 12px;cursor:pointer;border-radius:calc(var(--radius-input) - 2px);font-family:var(--font-body);font-size:14px;color:rgb(var(--color-text));">По убыванию цены</li>
+                </ul>
+              </div>
             </div>
           )}
 
@@ -734,7 +752,9 @@ const fmtPriceServer = (n: number | string | undefined): string => {
       syncMobileDrawer();
     }
 
-    // 096: Sort dropdown (replaces tabs; Figma 905-19049 sidebar layout)
+    // 096: Sort dropdown (custom div-based для CSS scheme control over
+    // selected option — native <select> игнорирует option styling в macOS).
+    // Hidden <select> сохранён для backward compat (sort handler читает .value).
     const sortSelect = root.querySelector('[data-catalog-sort-select]');
     if (sortSelect) {
       if (state.sort) sortSelect.value = state.sort;
@@ -745,6 +765,67 @@ const fmtPriceServer = (n: number | string | undefined): string => {
         rerender();
       });
     }
+
+    // Custom dropdown управление: open/close + click-on-option → emit
+    // change event на hidden select.
+    const sortDropdowns = root.querySelectorAll('[data-catalog-sort-dropdown]');
+    function updateSortLabel(dropdown, value) {
+      const opt = dropdown.querySelector('[data-sort-option="' + value + '"]');
+      if (!opt) return;
+      const labelEl = dropdown.querySelector('[data-sort-label]');
+      if (labelEl) labelEl.textContent = opt.textContent;
+      // Highlight selected option (scheme button-bg/text)
+      dropdown.querySelectorAll('[data-sort-option]').forEach(function (o) {
+        const isSel = o.getAttribute('data-sort-option') === value;
+        o.style.background = isSel ? 'rgb(var(--color-button-bg))' : '';
+        o.style.color = isSel ? 'rgb(var(--color-button-text))' : 'rgb(var(--color-text))';
+      });
+    }
+    sortDropdowns.forEach(function (dropdown) {
+      const trigger = dropdown.querySelector('[data-sort-trigger]');
+      const optionsList = dropdown.querySelector('[data-sort-options]');
+      const hidden = dropdown.querySelector('[data-catalog-sort-select]');
+      if (!trigger || !optionsList || !hidden) return;
+      // Sync initial label with current state.sort
+      updateSortLabel(dropdown, state.sort || 'popularity');
+      // Toggle on trigger click
+      trigger.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const isOpen = optionsList.style.display === 'block';
+        // Close all dropdowns first
+        root.querySelectorAll('[data-sort-options]').forEach(function (ol) { ol.style.display = 'none'; });
+        if (!isOpen) optionsList.style.display = 'block';
+      });
+      // Click on option
+      optionsList.addEventListener('click', function (e) {
+        const li = e.target.closest('[data-sort-option]');
+        if (!li) return;
+        const value = li.getAttribute('data-sort-option');
+        if (!value) return;
+        updateSortLabel(dropdown, value);
+        // Update hidden select + dispatch change so existing handler fires
+        hidden.value = value;
+        hidden.dispatchEvent(new Event('change', { bubbles: true }));
+        optionsList.style.display = 'none';
+      });
+      // Hover highlight (без CSS :hover так как inline-style)
+      optionsList.addEventListener('mouseover', function (e) {
+        const li = e.target.closest('[data-sort-option]');
+        if (!li) return;
+        const isSel = li.getAttribute('data-sort-option') === hidden.value;
+        if (!isSel) li.style.background = 'rgb(var(--color-text)/0.05)';
+      });
+      optionsList.addEventListener('mouseout', function (e) {
+        const li = e.target.closest('[data-sort-option]');
+        if (!li) return;
+        const isSel = li.getAttribute('data-sort-option') === hidden.value;
+        if (!isSel) li.style.background = '';
+      });
+    });
+    // Click outside closes all dropdowns
+    document.addEventListener('click', function () {
+      root.querySelectorAll('[data-sort-options]').forEach(function (ol) { ol.style.display = 'none'; });
+    });
 
     // Pagination click handlers
     const paginationEl = root.querySelector('[data-catalog-pagination]');

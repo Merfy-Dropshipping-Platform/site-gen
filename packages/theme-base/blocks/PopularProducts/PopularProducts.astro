@@ -67,18 +67,28 @@ function resolveSwatchPips(p: SwatchSource): SwatchEntry[] {
   return [];
 }
 
-// "В корзину" CTA per card. Accept flat (quickAdd) or legacy nested
-// (productCard.quickAdd) shapes; string "true"/"false" also normalised.
+// "В корзину" CTA per card. Поддерживаем 3 источника правды:
+//   1. raw.quickAddMode (flat select, sidebar Figma 314-34614):
+//      'none' / 'standard' / 'cart' (canonical). 'count' = legacy alias 'cart'.
+//   2. raw.quickAdd (boolean) — старый flat API.
+//   3. productCard.quickAdd ('true'/'false') — legacy nested API.
+// quickAddMode имеет высший приоритет (новая каноническая схема, parity с Catalog).
 const productCardObj = raw.productCard as { quickAdd?: boolean | string; buttonText?: string } | undefined;
+const quickAddModeRaw = raw.quickAddMode as string | undefined;
+const quickAddMode =
+  quickAddModeRaw === 'count' ? 'cart' : quickAddModeRaw;  // legacy alias → canonical
+const quickAddFromMode =
+  quickAddMode === 'standard' || quickAddMode === 'cart';
 const quickAddRaw = raw.quickAdd ?? productCardObj?.quickAdd;
-const quickAdd =
+const quickAddFromLegacy =
   quickAddRaw === true ||
   quickAddRaw === 'true' ||
   (typeof quickAddRaw === 'string' && quickAddRaw.toLowerCase() === 'yes');
+const quickAdd = quickAddMode === 'none' ? false : (quickAddFromMode || quickAddFromLegacy);
 const quickAddText =
   (typeof raw.quickAddText === 'string' && raw.quickAddText) ||
   productCardObj?.buttonText ||
-  'В корзину';
+  (quickAddMode === 'cart' ? 'В КОРЗИНУ' : 'В корзину');
 
 // Constructor legacy schema writes heading as { text } and subtitle as
 // { content }; accept both shapes so nothing renders as [object Object].

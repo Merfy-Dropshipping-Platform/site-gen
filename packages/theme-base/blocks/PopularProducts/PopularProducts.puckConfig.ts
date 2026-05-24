@@ -22,14 +22,18 @@ export const PopularProductsSchema = z.object({
   ]).optional(),
   // Figma 314-34614: «Размер текста» — отдельное top-level поле.
   textSize: z.enum(['small', 'medium', 'large']).optional(),
-  // Figma 314-34614: «Вид изображения» — Квадрат / Портрет / Адаптация.
-  imageView: z.enum(['square', 'portrait', 'adaptive']).optional(),
+  // Figma 314-34614: «Вид изображения» — Квадрат / Портрет / Широкий.
+  // 'adaptive' = legacy alias для 'wide' (backwards-compat с ревизиями
+  // до унификации с Catalog. PopularProducts.astro мапит adaptive→wide).
+  imageView: z.enum(['square', 'portrait', 'wide', 'adaptive']).optional(),
   // Figma 314-34614: «Стиль кнопки» — Ссылка / Основная / Дополнительная.
   buttonStyle: z.enum(['link', 'primary', 'secondary']).optional(),
   // Figma 314-34614: «Следующее фото при наведении» — switch.
   nextPhotoOnHover: z.boolean().optional(),
   // Figma 314-34614: «Быстрое добавление» — Нет / Стандарт / Количество.
-  quickAddMode: z.enum(['none', 'standard', 'count']).optional(),
+  // 'count' = legacy alias для 'cart' (backwards-compat). PopularProducts.astro
+  // мапит count→cart и активирует quickAdd кнопку с текстом 'В КОРЗИНУ'.
+  quickAddMode: z.enum(['none', 'standard', 'cart', 'count']).optional(),
   cards: z.number().int().min(2).max(24),
   columns: z.number().int().min(1).max(6),
   // Pupa parity.
@@ -138,9 +142,9 @@ export const PopularProductsPuckConfig: BlockPuckConfig<PopularProductsProps> = 
       type: 'select',
       label: 'Вид изображения',
       options: [
-        { label: 'Квадрат', value: 'square' },
         { label: 'Портрет', value: 'portrait' },
-        { label: 'Адаптация', value: 'adaptive' },
+        { label: 'Квадрат', value: 'square' },
+        { label: 'Широкий', value: 'wide' },
       ],
     },
     nextPhotoOnHover: {
@@ -157,7 +161,7 @@ export const PopularProductsPuckConfig: BlockPuckConfig<PopularProductsProps> = 
       options: [
         { label: 'Нет', value: 'none' },
         { label: 'Стандарт', value: 'standard' },
-        { label: 'Количество', value: 'count' },
+        { label: 'Количество', value: 'cart' },
       ],
     },
     columns: { type: 'slider', label: 'Колонки', min: 1, max: 6, step: 1 },

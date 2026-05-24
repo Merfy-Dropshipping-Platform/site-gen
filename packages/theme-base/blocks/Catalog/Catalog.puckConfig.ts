@@ -11,8 +11,16 @@ export const CatalogSchema = z.object({
   // hardcoded "КАТАЛОГ" / "Здесь начинается персональный стиль"). Themes
   // override через theme.json blockDefaults.Catalog.{categoryTitle,
   // categorySubtitle, categorySubtitleColor}.
-  categoryTitle: z.string().optional(),
-  categorySubtitle: z.string().optional(),
+  // aiText в puck config может писать как plain string или { text: '...' }
+  // (legacy/новый shape). Render и build pipeline mapят оба варианта.
+  categoryTitle: z.union([
+    z.string(),
+    z.object({ text: z.string().optional() }),
+  ]).optional(),
+  categorySubtitle: z.union([
+    z.string(),
+    z.object({ text: z.string().optional() }),
+  ]).optional(),
   /** 'muted' = текущий gray (default), 'accent' = оранжевый flux. */
   categorySubtitleColor: z.enum(['muted', 'accent']).optional(),
   // Subtitle visibility (Figma 1:21287 убрал поле — теперь hidden).
@@ -86,8 +94,6 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
     // через theme.json blockDefaults (per-theme defaults — flux:
     // "СМАРТФОНЫ"/"M Phone"/accent). Existing revisions с этими props
     // продолжают рендериться нормально через Astro.props.
-    categoryTitle: { type: 'hidden', label: '' },
-    categorySubtitle: { type: 'hidden', label: '' },
     categorySubtitleColor: { type: 'hidden', label: '' },
     subtitle: { type: 'hidden', label: '' }, // hidden в новом дизайне
     containerColorScheme: { type: 'hidden', label: '' }, // только одна Цветовая схема в Figma 1:21287
@@ -108,6 +114,24 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
     collectionSlug: { type: 'collectionPicker', label: 'Выбор коллекции' } as any,
     cards: { type: 'slider', label: 'Карточки', min: 2, max: 24, step: 1 },
     columns: { type: 'slider', label: 'Колонки', min: 1, max: 6, step: 1 },
+
+    // «Содержание» — parity с PopularProducts (Коллекция товаров): user
+    // может задать собственный heading и подзаголовок для каталога. Хранится
+    // в существующих полях categoryTitle/categorySubtitle (раньше hidden,
+    // заполнялось только через theme.json blockDefaults).
+    ['_section_content' as never]: { type: 'section-header', label: 'Содержание' } as any,
+    categoryTitle: {
+      type: 'aiText',
+      label: 'Заголовок',
+      fieldType: 'title',
+      placeholder: 'Ввести текст...',
+    } as any,
+    categorySubtitle: {
+      type: 'aiText',
+      label: 'Текст',
+      fieldType: 'description',
+      placeholder: 'Ввести текст...',
+    } as any,
 
 ['_section_card' as never]: { type: 'section-header', label: 'Карточка товара' } as any,
     productCard: {

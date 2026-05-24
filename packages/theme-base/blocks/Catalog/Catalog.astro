@@ -212,12 +212,26 @@ const fmtPriceServer = (n: number | string | undefined): string => {
   >
     <div style="margin-bottom: 24px;">
       <h1
-        style="font-size: var(--size-catalog-title, clamp(20px, 3vw, 36px)); font-weight: var(--weight-catalog-title, 400); text-transform: uppercase; line-height: 1.1; color: rgb(var(--color-text)); margin: 0; font-family: var(--font-heading);"
-      >{(typeof categoryTitle === 'string' && categoryTitle.trim()) || 'КАТАЛОГ'}</h1>
+        style="font-size: var(--size-catalog-title, clamp(20px, 3vw, 36px)); font-weight: var(--weight-catalog-title, 400); text-transform: uppercase; line-height: 1.1; color: rgb(var(--color-heading)); margin: 0; font-family: var(--font-heading);"
+      >{(() => {
+        if (typeof categoryTitle === 'string' && categoryTitle.trim()) return categoryTitle;
+        if (categoryTitle && typeof categoryTitle === 'object') {
+          const t = (categoryTitle as { text?: string }).text;
+          if (typeof t === 'string' && t.trim()) return t;
+        }
+        return 'КАТАЛОГ';
+      })()}</h1>
       {subtitleVisible && (
         <p
           style={`font-size: var(--size-catalog-subtitle, clamp(14px, 1.5vw, 20px)); font-weight: 400; line-height: 1.4; color: rgb(var(${categorySubtitleColor === 'accent' ? '--color-accent' : '--color-muted'})); margin-top: 4px; font-family: var(--font-body);`}
-        >{(typeof categorySubtitle === 'string' && categorySubtitle.trim()) || 'Здесь начинается персональный стиль'}</p>
+        >{(() => {
+          if (typeof categorySubtitle === 'string' && categorySubtitle.trim()) return categorySubtitle;
+          if (categorySubtitle && typeof categorySubtitle === 'object') {
+            const t = (categorySubtitle as { text?: string }).text;
+            if (typeof t === 'string' && t.trim()) return t;
+          }
+          return 'Здесь начинается персональный стиль';
+        })()}</p>
       )}
     </div>
 

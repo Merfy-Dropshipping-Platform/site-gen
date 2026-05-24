@@ -6,7 +6,7 @@ export const CollapsibleSectionClasses = {
   // bg/text utility которые читают эти vars.
   container: 'mx-auto max-w-[var(--container-max-width)] px-4 bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
   heading:
-    '[font-family:var(--font-heading)] text-[var(--size-hero-heading)] text-[rgb(var(--color-heading))] mb-8 text-center',
+    '[font-family:var(--font-heading)] text-[length:var(--size-hero-heading)] text-[rgb(var(--color-heading))] mb-8 text-center',
   list: 'flex flex-col gap-y-3',
   item:
     'rounded-[var(--radius-field)] border border-[rgb(var(--color-text))]/10 bg-[rgb(var(--color-surface))] overflow-hidden',

@@ -2,7 +2,7 @@ export const CheckoutSectionClasses = {
   root: 'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
   container: 'mx-auto max-w-[var(--container-max-width)] px-4',
   heading:
-    '[font-family:var(--font-heading)] text-[var(--size-hero-heading)] text-[rgb(var(--color-heading))] mb-8',
+    '[font-family:var(--font-heading)] text-[length:var(--size-hero-heading)] text-[rgb(var(--color-heading))] mb-8',
   form: 'flex flex-col gap-6',
   fieldset:
     'flex flex-col gap-3 rounded-[var(--radius-field)] border border-[rgb(var(--color-button-border))] bg-white p-6',

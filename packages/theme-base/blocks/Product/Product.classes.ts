@@ -11,7 +11,7 @@ export const ProductClasses = {
     'aspect-square rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))] opacity-70',
   infoCol: 'w-full',
   title:
-    '[font-family:var(--font-heading)] text-[var(--size-hero-heading)] leading-tight text-[rgb(var(--color-heading))] mb-4',
+    '[font-family:var(--font-heading)] text-[length:var(--size-hero-heading)] leading-tight text-[rgb(var(--color-heading))] mb-4',
   price:
     '[font-family:var(--font-body)] text-2xl text-[rgb(var(--color-heading))] mb-6',
   variants: 'mb-6',

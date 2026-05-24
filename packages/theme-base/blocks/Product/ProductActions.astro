@@ -5,10 +5,10 @@
  * Colours come from the active color scheme (merchant-editable via
  * ColorSchemePanel). Tokens emitted by `src/themes/tokens-css.ts`:
  *   --color-button-bg / --color-button-text / --color-button-border
- *     ← primaryButton (used for the more prominent CTA "Купить сейчас")
+ *     ← primaryButton (used for "Добавить в корзину" — main action)
  *   --color-button-secondary-bg / --color-button-secondary-text /
  *   --color-button-secondary-border
- *     ← secondaryButton (used for "Добавить в корзину")
+ *     ← secondaryButton (used for "Купить сейчас" — alt checkout)
  *
  * No `actions.scheme` knob — visual difference between rose (mono) and
  * flux (orange accent) flows from the merchant's chosen scheme tokens,
@@ -39,16 +39,16 @@ const baseCls =
     type="button"
     data-product-action="add-to-cart"
     class:list={[baseCls, heightCls, textCls]}
-    style="background:rgb(var(--color-button-secondary-bg, var(--color-bg))); color:rgb(var(--color-button-secondary-text, var(--color-text))); border-color:rgb(var(--color-button-secondary-border, var(--color-text)));"
-    onmouseover="this.style.background='rgb(var(--color-button-secondary-bg-hover))'; this.style.color='rgb(var(--color-button-secondary-text-hover))';"
-    onmouseout="this.style.background='rgb(var(--color-button-secondary-bg, var(--color-bg)))'; this.style.color='rgb(var(--color-button-secondary-text, var(--color-text)))';"
+    style="background:rgb(var(--color-button-bg, var(--color-text))); color:rgb(var(--color-button-text, var(--color-bg))); border-color:rgb(var(--color-button-border, var(--color-text)));"
+    onmouseover="this.style.background='rgb(var(--color-button-bg-hover))'; this.style.color='rgb(var(--color-button-text-hover))';"
+    onmouseout="this.style.background='rgb(var(--color-button-bg, var(--color-text)))'; this.style.color='rgb(var(--color-button-text, var(--color-bg)))';"
   >{addToCartLabel}</button>
   <button
     type="button"
     data-product-action="buy-now"
     class:list={[baseCls, heightCls, textCls]}
-    style="background:rgb(var(--color-button-bg, var(--color-text))); color:rgb(var(--color-button-text, var(--color-bg))); border-color:rgb(var(--color-button-border, var(--color-text)));"
-    onmouseover="this.style.background='rgb(var(--color-button-bg-hover))'; this.style.color='rgb(var(--color-button-text-hover))';"
-    onmouseout="this.style.background='rgb(var(--color-button-bg, var(--color-text)))'; this.style.color='rgb(var(--color-button-text, var(--color-bg)))';"
+    style="background:rgb(var(--color-button-secondary-bg, var(--color-bg))); color:rgb(var(--color-button-secondary-text, var(--color-text))); border-color:rgb(var(--color-button-secondary-border, var(--color-text)));"
+    onmouseover="this.style.background='rgb(var(--color-button-secondary-bg-hover))'; this.style.color='rgb(var(--color-button-secondary-text-hover))';"
+    onmouseout="this.style.background='rgb(var(--color-button-secondary-bg, var(--color-bg)))'; this.style.color='rgb(var(--color-button-secondary-text, var(--color-text)))';"
   >{buyNowLabel}</button>
 </div>

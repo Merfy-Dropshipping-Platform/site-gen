@@ -119,7 +119,7 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
           label: 'Стиль кнопки',
           options: [
             { label: 'Основная', value: 'primary' },
-            { label: 'Второстепенная', value: 'secondary' },
+            { label: 'Дополнительная', value: 'secondary' },
             { label: 'Ссылка', value: 'link' },
           ],
         },

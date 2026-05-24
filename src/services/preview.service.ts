@@ -986,7 +986,13 @@ const PREVIEW_NAV_AGENT_INLINE = `
       var href = a.getAttribute('href') || '';
       if (href.startsWith('/') && !href.startsWith('//')) {
         e.preventDefault();
-        post({ type: 'navigate', path: href });
+        // Product card link → extract productId from ancestor [data-product-id]
+        // (Catalog <article>, PopularProducts <a> wrap, RichCard <div> wrap).
+        // Без этого constructor получает navigate без productId → setPreviewProductId
+        // не вызывается → preview всегда рендерит дефолтный товар, не выбранный.
+        var pidEl = e.target && e.target.closest ? e.target.closest('[data-product-id]') : null;
+        var pid = pidEl ? pidEl.getAttribute('data-product-id') : null;
+        post(pid ? { type: 'navigate', path: href, productId: pid } : { type: 'navigate', path: href });
         return;
       }
       e.preventDefault();

@@ -110,11 +110,15 @@ export const CollectionsPuckConfig: BlockPuckConfig<CollectionsProps> = {
       type: 'array',
       label: 'Коллекции',
       hiddenInMainPanel: true,
+      // user #10 / Figma 1:17042 — Коллекция sub-panel показывает ТОЛЬКО
+      // "Выбор коллекции" (collectionPicker). heading/description/image —
+      // data сохраняется, но не редактируется в sidebar. Сами поля для
+      // карточки автоматически берутся из выбранной коллекции на render.
       arrayFields: {
-        heading: { type: 'text', label: 'Заголовок' },
-        description: { type: 'text', label: 'Описание' },
-        image: { type: 'image', label: 'Фото' },
-        collectionId: { type: 'text', label: 'ID коллекции' },
+        collectionId: { type: 'collectionPicker', label: 'Выбор коллекции' } as any,
+        heading: { type: 'hidden', label: '' },
+        description: { type: 'hidden', label: '' },
+        image: { type: 'hidden', label: '' },
       },
       defaultItemProps: { id: '', collectionId: null, heading: '', description: '', image: '' },
       max: 10,

@@ -19,7 +19,16 @@ export function installPreviewNavAgent(options: PreviewNavAgentOptions): void {
       } catch {
         path = anchor.getAttribute('href') ?? '/';
       }
-      window.parent.postMessage({ type: 'navigate', path }, origin);
+      // Product card links (Catalog/PopularProducts/etc.) — wrapping <article>
+      // имеет data-product-id с конкретным товаром. Передаём parent так чтобы
+      // setPreviewProductId() мог отрендерить именно выбранный товар,
+      // не дефолтный из Puck props.
+      const article = anchor.closest('[data-product-id]') as HTMLElement | null;
+      const productId = article?.getAttribute('data-product-id') ?? undefined;
+      const msg = productId
+        ? { type: 'navigate', path, productId }
+        : { type: 'navigate', path };
+      window.parent.postMessage(msg, origin);
       return;
     }
 

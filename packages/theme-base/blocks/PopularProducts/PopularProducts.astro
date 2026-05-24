@@ -413,6 +413,7 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
             badges={badges}
             ctaLabel={quickAddText}
             cardIndex={i}
+            productId={p.id}
           />
         );
       }) : demo.map((p, i) => {
@@ -605,7 +606,7 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
       var pipsHtml = swatchOverlayHtml(p);
 
       return (
-        '<a href="' + escAttr(href) + '" class="' + cardClass + '" aria-label="' + escAttr(title) + '" style="text-decoration:none;color:inherit;">' +
+        '<a href="' + escAttr(href) + '" data-product-id="' + escAttr(p.id) + '" data-product-handle="' + escAttr(handle) + '" class="' + cardClass + '" aria-label="' + escAttr(title) + '" style="text-decoration:none;color:inherit;">' +
           '<div class="' + cardMediaClass + '" aria-hidden="true">' + mediaInner + pipsHtml + '</div>' +
           '<div class="flex flex-col gap-1 items-start w-full">' +
             '<div class="' + cardTitleClass + '">' + escAttr(title) + '</div>' +

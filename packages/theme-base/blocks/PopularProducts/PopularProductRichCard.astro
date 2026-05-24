@@ -50,6 +50,8 @@ interface Props {
   ctaLabel?: string;
   /** index в массиве карточек — для будущей вариативности placeholder'ов. */
   cardIndex?: number;
+  /** productId — для preview-nav-agent чтобы передать в parent при клике. */
+  productId?: string;
 }
 
 const {
@@ -63,6 +65,7 @@ const {
   badges = [],
   ctaLabel = 'В корзину',
   cardIndex = 0,
+  productId,
 } = Astro.props as Props;
 
 const showOld = !!(oldPrice && oldPrice.trim());
@@ -70,6 +73,7 @@ const showOld = !!(oldPrice && oldPrice.trim());
 <div
   class="relative flex flex-col gap-4 p-3 rounded-[12px] w-full bg-[rgb(var(--color-surface))]"
   data-popular-card-rich
+  data-product-id={productId}
 >
   <a href={href} class="block aspect-square rounded-[12px] overflow-hidden bg-[rgb(var(--color-text)/0.04)]">
     {image ? (

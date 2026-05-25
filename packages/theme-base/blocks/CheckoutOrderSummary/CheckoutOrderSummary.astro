@@ -19,40 +19,32 @@ const propsJson = JSON.stringify({ heading, itemImageSize, showVariantLabels, sh
     {/* SSR demo skeleton (Figma 1:19998 frame 183:27872) — 2 demo items
         видимы в preview/iframe. CheckoutFlow Island заменит их на real
         cart-store items при mount (на live сайте). */}
-    <div data-checkout-item-skeleton class="flex gap-4 items-start">
-      <div class="relative flex-shrink-0 w-20 h-20 rounded-md bg-[rgb(var(--color-bg-alt,250,250,250))] overflow-hidden">
-        <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[rgb(var(--color-text))] text-[rgb(var(--color-bg))] text-[10px] flex items-center justify-center [font-family:var(--font-body)]">1</span>
+    {[0, 1].map(() => (
+      <div data-checkout-item-skeleton class="flex gap-4 items-start">
+        <div class="relative flex-shrink-0 w-20 h-20 rounded-md overflow-hidden bg-[rgb(var(--color-bg-alt,250,250,250))]">
+          <img
+            src="https://minio.merfy.ru/product-images/placeholders/bag-rose.jpg"
+            alt="Сумка"
+            class="absolute inset-0 w-full h-full object-cover"
+            loading="lazy"
+            onerror="this.style.display='none'"
+          />
+          <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[rgb(var(--color-text))] text-[rgb(var(--color-bg))] text-[10px] flex items-center justify-center [font-family:var(--font-body)] z-10">1</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-[length:var(--size-small)] [font-family:var(--font-body)] text-[rgb(var(--color-heading))]">Сумка</div>
+          <div class="mt-1 text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]"><span>Цвет:</span> Бежевый</div>
+          <div class="text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]"><span>Размер:</span> One-size</div>
+          <div class="text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]"><span>Материал:</span> Кожа</div>
+        </div>
+        <div class="text-right flex-shrink-0">
+          <div class="[font-family:var(--font-body)] text-[length:var(--size-small)] text-[rgb(var(--color-heading))]">5 490 ₽</div>
+          {showCompareAtPrice && (
+            <div class="[font-family:var(--font-body)] text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))] line-through">8 990 ₽</div>
+          )}
+        </div>
       </div>
-      <div class="flex-1 min-w-0">
-        <div class="text-[length:var(--size-small)] [font-family:var(--font-body)] text-[rgb(var(--color-heading))]">Сумка</div>
-        <div class="mt-1 text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]"><span>Цвет:</span> Бежевый</div>
-        <div class="text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]"><span>Размер:</span> One-size</div>
-        <div class="text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]"><span>Материал:</span> Кожа</div>
-      </div>
-      <div class="text-right flex-shrink-0">
-        <div class="[font-family:var(--font-body)] text-[length:var(--size-small)] text-[rgb(var(--color-heading))]">5 490 ₽</div>
-        {showCompareAtPrice && (
-          <div class="[font-family:var(--font-body)] text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))] line-through">8 990 ₽</div>
-        )}
-      </div>
-    </div>
-    <div data-checkout-item-skeleton class="flex gap-4 items-start">
-      <div class="relative flex-shrink-0 w-20 h-20 rounded-md bg-[rgb(var(--color-bg-alt,250,250,250))] overflow-hidden">
-        <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[rgb(var(--color-text))] text-[rgb(var(--color-bg))] text-[10px] flex items-center justify-center [font-family:var(--font-body)]">1</span>
-      </div>
-      <div class="flex-1 min-w-0">
-        <div class="text-[length:var(--size-small)] [font-family:var(--font-body)] text-[rgb(var(--color-heading))]">Сумка</div>
-        <div class="mt-1 text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]"><span>Цвет:</span> Бежевый</div>
-        <div class="text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]"><span>Размер:</span> One-size</div>
-        <div class="text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]"><span>Материал:</span> Кожа</div>
-      </div>
-      <div class="text-right flex-shrink-0">
-        <div class="[font-family:var(--font-body)] text-[length:var(--size-small)] text-[rgb(var(--color-heading))]">5 490 ₽</div>
-        {showCompareAtPrice && (
-          <div class="[font-family:var(--font-body)] text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))] line-through">8 990 ₽</div>
-        )}
-      </div>
-    </div>
+    ))}
   </div>
   {promoToggle.enabled && (
     <div class={C.promo} data-checkout-promo>

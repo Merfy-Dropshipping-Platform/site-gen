@@ -19,14 +19,31 @@ interface CartApiResponse {
   };
 }
 
+// Demo placeholders для preview iframe — конструктор не имеет реальной корзины,
+// показываем 2 demo «Сумка»-товара чтобы дизайн отображался полностью per Figma
+// 1:19998 (правая колонка summary). Используем placeholder image из MinIO которая
+// гарантированно доступна (unsplash blocked в некоторых сетях).
+const PREVIEW_PLACEHOLDER_IMG =
+  'https://minio.merfy.ru/product-images/placeholders/bag-rose.jpg';
+
 const FAKE_CART_ITEMS: CheckoutCartItem[] = [
   {
     id: 'preview-1',
     productId: 'preview-1',
     name: 'Сумка',
-    imageUrl: undefined,
-    unitPriceCents: 599000,
-    compareAtPriceCents: 799000,
+    imageUrl: PREVIEW_PLACEHOLDER_IMG,
+    unitPriceCents: 549000,
+    compareAtPriceCents: 899000,
+    quantity: 1,
+    variants: { Цвет: 'Бежевый', Размер: 'One-size', Материал: 'Кожа' },
+  },
+  {
+    id: 'preview-2',
+    productId: 'preview-2',
+    name: 'Сумка',
+    imageUrl: PREVIEW_PLACEHOLDER_IMG,
+    unitPriceCents: 549000,
+    compareAtPriceCents: 899000,
     quantity: 1,
     variants: { Цвет: 'Бежевый', Размер: 'One-size', Материал: 'Кожа' },
   },

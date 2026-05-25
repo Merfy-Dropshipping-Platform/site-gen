@@ -480,7 +480,19 @@ const brandText = textContent || view.brand || '';
         if (cs && typeof cs.addItem === 'function') {
           try { cs.addItem(cartProductId, getActiveVariantId(), currentQty); } catch {}
         }
-        window.location.href = '/checkout?productId=' + encodeURIComponent(slug || '');
+        // iframe-aware navigation: на live → window.location, в constructor
+        // preview iframe → postMessage в parent. preview-nav-agent.ts
+        // перехватывает только <a> clicks, не imperative location.href,
+        // поэтому требуется явный check.
+        const target = '/checkout?productId=' + encodeURIComponent(slug || '');
+        const inIframe = window.parent && window.parent !== window;
+        if (inIframe) {
+          try {
+            window.parent.postMessage({ type: 'navigate', path: target }, '*');
+          } catch (e) { /* cross-origin postMessage may fail — silent */ }
+        } else {
+          window.location.href = target;
+        }
       }, true);
     }
 

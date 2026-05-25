@@ -49,8 +49,19 @@ export function OrderSummarySection(props: OrderSummarySectionProps) {
           <div className={`${imgSize} relative flex-shrink-0`}>
             <div
               className={`${imgSize} rounded-[var(--radius-card)] bg-[rgb(var(--color-input-bg))] overflow-hidden`}
-              style={item.imageUrl ? { backgroundImage: `url(${item.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
-            />
+            >
+              {item.imageUrl && (
+                <img
+                  src={item.imageUrl}
+                  alt={item.name}
+                  className="w-full h-full object-cover block"
+                  loading="lazy"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              )}
+            </div>
             <span className="absolute -top-1 -right-1 bg-[rgb(var(--color-text))] text-[rgb(var(--color-bg))] [font-family:var(--font-body)] text-[length:var(--size-small)] w-6 h-6 rounded-full flex items-center justify-center leading-none">
               {item.quantity}
             </span>

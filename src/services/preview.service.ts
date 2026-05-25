@@ -301,21 +301,25 @@ export class PreviewService {
    */
   async renderPreviewPage(input: RenderPreviewPageInput): Promise<string> {
     const pageKey = input.page ?? 'home';
-    const isCheckout = pageKey === 'checkout' || pageKey === 'page-checkout';
-    let bodyHtml: string;
+    // Все страницы (home/cart/checkout/etc.) рендерятся через ОДНУ generic
+    // pipeline — blocks из revision content array эмитятся последовательно.
+    // Спец. layouts (2-column checkout, sidebar catalog) — выражены через CSS
+    // в самих блоках + flex-wrap на body (см. <body class="checkout-grid">
+    // в HTML output ниже).
+    //
+    // Legacy renderCheckoutLayout сохранён ТОЛЬКО для не-мигрированных
+    // 11-блочных checkout сайтов (нет CheckoutForm, есть CheckoutLayout).
+    const isLegacyCheckout =
+      (pageKey === 'checkout' || pageKey === 'page-checkout') &&
+      input.blocks.some((b) => b.type === 'CheckoutLayout') &&
+      !input.blocks.some((b) => b.type === 'CheckoutForm');
 
-    if (isCheckout) {
-      // Mirror live /checkout.astro slot-based layout: header on top, summary
-      // toggle, then 2-column form/summary inside CheckoutLayout.
+    let bodyHtml: string;
+    if (isLegacyCheckout) {
       bodyHtml = await this.renderCheckoutLayout(input);
     } else {
       // Parallel render: Astro `experimental_AstroContainer.renderToString`
-      // is safe to call concurrently on a shared container instance. With N
-      // blocks per page (typically 5-9), sequential render meant each block
-      // waited for the previous block's I/O (storefront-data fetch in
-      // Collections/PopularProducts/Gallery/Product frontmatter). Parallel
-      // overlaps those round-trips so total time ≈ slowest block instead of
-      // sum of all blocks.
+      // is safe to call concurrently on a shared container instance.
       const renderedBlocks = await Promise.all(
         input.blocks.map(async (b) => {
           const html = await this.renderBlock({
@@ -323,8 +327,6 @@ export class PreviewService {
             props: b.props,
             themeId: input.themeId ?? null,
           });
-          // Mirror live build: wrap block in color-scheme-N so tokens-css.ts
-          // .color-scheme-N overrides apply per-block.
           const rawScheme = b.props?.colorScheme;
           let schemeId: string | null = null;
           if (typeof rawScheme === 'number' && Number.isFinite(rawScheme)) {

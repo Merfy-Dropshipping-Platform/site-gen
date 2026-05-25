@@ -27,22 +27,23 @@ const schemeClass =
   style={paddingStyle}
 >
   <div class="max-w-[1280px] mx-auto px-4 sm:px-6">
-    {/* Empty state per Figma 1:20942 — centered heading + subtitle + CTA +
-        login link. Items state — heading left + items list. */}
+    {/* Empty state per Figma 1:20942 — centered heading + subtitle + black
+        inverse CTA + login link with split styling. */}
     <div id="cart-page-empty">
-      <div class="flex flex-col items-center text-center" style="padding-top: 80px; padding-bottom: 80px; gap: 0;">
-        <h1 class="[font-family:var(--font-heading)] uppercase" style="font-size: 16px; line-height: 19px; letter-spacing: 0.02em; color: rgb(var(--color-heading)); margin: 0 0 5px 0;">
+      <div class="flex flex-col items-center text-center" style="padding-top: 80px; padding-bottom: 120px;">
+        <h1 class="[font-family:var(--font-heading)] uppercase" style="font-size: 16px; line-height: 19px; letter-spacing: 0.08em; color: rgb(var(--color-heading)); margin: 0 0 8px 0;">
           Корзина
         </h1>
-        <p class="[font-family:var(--font-body)]" style="font-size: 14px; line-height: 19px; color: rgb(var(--color-muted)); margin: 0 0 28px 0;">
+        <p class="[font-family:var(--font-body)]" style="font-size: 13px; line-height: 16px; color: rgb(var(--color-muted)); margin: 0 0 32px 0;">
           Вы пока не добавили товар в корзину.
         </p>
-        <a href="/catalog" class="[font-family:var(--font-body)] bg-[rgb(var(--color-button-bg))]! text-[rgb(var(--color-button-text))]! hover:bg-[rgb(var(--color-button-bg-hover))]! hover:text-[rgb(var(--color-button-text-hover))]! uppercase" style="display:inline-flex; align-items:center; justify-content:center; padding: 0 20px; height: 40px; font-size: 14px; line-height: 17px; letter-spacing: 0.02em; border-radius: var(--radius-button, 0); text-decoration: none; transition: background 0.15s, color 0.15s; margin-bottom: 16px;">
+        <a href="/catalog" class="[font-family:var(--font-body)] hover:opacity-90 transition-opacity" style="display:inline-flex; align-items:center; justify-content:center; padding: 0 32px; height: 44px; font-size: 14px; line-height: 17px; background: rgb(var(--color-text)); color: rgb(var(--color-bg)); border-radius: 8px; text-decoration: none; margin-bottom: 24px;">
           Продолжить покупки
         </a>
-        <a href="/login?next=/cart" class="[font-family:var(--font-body)]" style="font-size: 14px; line-height: 17px; color: rgb(var(--color-text)); text-decoration: underline; text-underline-offset: 4px;">
-          Есть аккаунт? Войти
-        </a>
+        <div class="[font-family:var(--font-body)]" style="font-size: 13px; line-height: 16px; color: rgb(var(--color-muted));">
+          Есть аккаунт?
+          <a href="/login?next=/cart" style="color: rgb(var(--color-text)); text-decoration: underline; text-underline-offset: 2px; margin-left: 4px;">Войти</a>
+        </div>
       </div>
     </div>
 

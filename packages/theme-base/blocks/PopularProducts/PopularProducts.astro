@@ -272,6 +272,7 @@ const formatPrice = (v: unknown): string => {
 // Inline-script ниже подменит grid.innerHTML при ответе API с товарами.
 const productList = realProducts.length > 0
   ? realProducts.slice(0, Math.min(cards, realProducts.length)).map((p) => ({
+      id: p.id,
       title: p.name || 'Товар',
       price: formatPrice(p.price),
       oldPrice: formatPrice(p.oldPrice),
@@ -287,6 +288,10 @@ const productList = realProducts.length > 0
     }))
   : DEMO_PRODUCTS.slice(0, Math.min(cards, DEMO_PRODUCTS.length)).map((p) => ({
       ...p,
+      // Демо-cards без real productId — id остаётся undefined и кнопка
+      // add-to-cart blocked в click handler (PopularProducts inline-script
+      // bail если pid отсутствует).
+      id: undefined as string | undefined,
       href: '/catalog',
       hasVariants: false as boolean,
       variants: [] as unknown[],

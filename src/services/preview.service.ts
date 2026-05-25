@@ -391,6 +391,10 @@ export class PreviewService {
       summarySlotTypes.has(b.type),
     );
 
+    // Figma 1:19998 — new mega-block structure: CheckoutForm + CheckoutSummary.
+    const megaFormBlock = input.blocks.find((b) => b.type === 'CheckoutForm');
+    const megaSummaryBlock = input.blocks.find((b) => b.type === 'CheckoutSummary');
+
     const renderOne = async (b: { type: string; props: Record<string, unknown> }) =>
       this.renderBlock({ blockName: b.type, props: b.props, themeId });
 
@@ -398,6 +402,15 @@ export class PreviewService {
     const toggleHtml = summaryToggleBlock
       ? await renderOne(summaryToggleBlock)
       : '';
+
+    // New 2-mega-block path (Figma 1:19998) — preferred when блоки есть.
+    if (megaFormBlock && megaSummaryBlock) {
+      const [formHtml, summaryHtml] = await Promise.all([
+        renderOne(megaFormBlock),
+        renderOne(megaSummaryBlock),
+      ]);
+      return `<div class="color-scheme-2">${headerHtml}<main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));"><div class="mx-auto max-w-[var(--container-max-width)] px-4 py-16 grid grid-cols-1 lg:grid-cols-[652px_884px] gap-x-16 gap-y-8 justify-center"><div data-checkout-column="form">${formHtml}</div><div data-checkout-column="summary">${summaryHtml}</div></div></main></div>`;
+    }
 
     const formInnerParts = await Promise.all(formBlocks.map(renderOne));
     const summaryInnerParts = await Promise.all(summaryBlocks.map(renderOne));

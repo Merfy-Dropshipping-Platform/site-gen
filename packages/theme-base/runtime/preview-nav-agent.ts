@@ -32,6 +32,16 @@ export function installPreviewNavAgent(options: PreviewNavAgentOptions): void {
       return;
     }
 
+    // Native interactive elements не интерсептятся — клик идёт к local
+    // handler (add-to-cart, qty +/-, variant pill, promo apply, etc.).
+    // Section/subsection selection не триггерится при клике в button/input.
+    const nativeInteractive = target.closest(
+      'button, input, select, textarea, label[for]',
+    );
+    if (nativeInteractive) {
+      return;
+    }
+
     const block = target.closest('[data-puck-component-id]') as HTMLElement | null;
     if (block) {
       const blockId = block.getAttribute('data-puck-component-id');

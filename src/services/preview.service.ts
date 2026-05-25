@@ -1214,9 +1214,20 @@ const PREVIEW_NAV_AGENT_INLINE = `
       e.preventDefault();
       return;
     }
-    // Whitelist: don't hijack clicks on interactive controls (variant pills,
-    // qty +/-, cart buttons, etc). Such elements opt-in via data-puck-interactive
-    // so block.astro inline JS gets the click for state changes.
+    // Native interactive elements (button/input/select/textarea/label) сами
+    // обрабатывают клик — preview iframe не должен перехватывать их для
+    // section/subsection selection. Это позволяет add-to-cart кнопкам,
+    // qty +/-, variant pills, promo apply, и т.д. работать без opt-in
+    // через data-puck-interactive. Section hover на родителе сохраняется
+    // (mouseover/mouseleave handlers ниже не блокируются).
+    var nativeInteractive = e.target && e.target.closest
+      ? e.target.closest('button, input, select, textarea, label[for]')
+      : null;
+    if (nativeInteractive) {
+      return;
+    }
+    // Explicit opt-in для не-native интерактивных контролов (например div
+    // с onclick). Legacy fallback — наследуется когда нужен.
     var interactive = e.target && e.target.closest ? e.target.closest('[data-puck-interactive]') : null;
     if (interactive) {
       return;

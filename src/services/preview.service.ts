@@ -336,24 +336,45 @@ export class PreviewService {
           } else if (typeof rawScheme === 'string' && rawScheme.length > 0) {
             schemeId = rawScheme.replace(/^scheme-/, '');
           }
-          return schemeId
+          const wrapped = schemeId
             ? `<div class="color-scheme-${schemeId}" data-block-scheme="${schemeId}">${html}</div>`
             : html;
+          return { type: b.type, wrapped };
         }),
       );
-      bodyHtml = renderedBlocks.join('\n');
 
-      // Post-process для checkout: оборачиваем CheckoutForm + CheckoutSummary
-      // в 2-col grid div (Figma 1:19998 form 434px / summary 589px / gap 56px).
-      // CheckoutHeader + Footer остаются вне grid (full-width).
       if (isMegaCheckout) {
-        // Match block-wrapper pattern: блоки CheckoutForm/CheckoutSummary
-        // обёрнуты в <div class="color-scheme-N" data-block-scheme="N">.
-        // Найдём их по data-block внутри и обернём пару в grid.
-        const re = /(<div class="color-scheme-\d+"[^>]*>(?:(?!<div class="color-scheme-)[\s\S])*?<section[^>]*data-block="checkout-form"[\s\S]*?<\/div>)\s*(<div class="color-scheme-\d+"[^>]*>(?:(?!<div class="color-scheme-)[\s\S])*?<section[^>]*data-block="checkout-summary"[\s\S]*?<\/div>)/;
-        bodyHtml = bodyHtml.replace(re, (_m, formWrap, summaryWrap) => {
-          return `<div class="mx-auto max-w-[1280px] px-4 lg:px-0 lg:pl-[200px] py-12 grid grid-cols-1 lg:grid-cols-[434px_589px] gap-x-[56px] gap-y-8"><div data-checkout-column="form" class="min-w-0">${formWrap}</div><div data-checkout-column="summary" class="min-w-0">${summaryWrap}</div></div>`;
-        });
+        // Walk blocks: всё ДО CheckoutForm — sequential, CheckoutForm +
+        // CheckoutSummary — в 2-col grid, всё ПОСЛЕ CheckoutSummary —
+        // sequential (Footer).
+        const parts: string[] = [];
+        let formHtml = '';
+        let summaryHtml = '';
+        for (const { type, wrapped } of renderedBlocks) {
+          if (type === 'CheckoutForm') {
+            formHtml = wrapped;
+          } else if (type === 'CheckoutSummary') {
+            summaryHtml = wrapped;
+          } else if (formHtml && summaryHtml) {
+            // After grid pair found — push grid then continue with this block
+            parts.push(this.wrapCheckoutGrid(formHtml, summaryHtml));
+            formHtml = '';
+            summaryHtml = '';
+            parts.push(wrapped);
+          } else {
+            parts.push(wrapped);
+          }
+        }
+        if (formHtml && summaryHtml) {
+          parts.push(this.wrapCheckoutGrid(formHtml, summaryHtml));
+        } else if (formHtml) {
+          parts.push(formHtml);
+        } else if (summaryHtml) {
+          parts.push(summaryHtml);
+        }
+        bodyHtml = parts.join('\n');
+      } else {
+        bodyHtml = renderedBlocks.map((b) => b.wrapped).join('\n');
       }
     }
 
@@ -374,6 +395,15 @@ export class PreviewService {
   <script>${PREVIEW_NAV_AGENT_INLINE}</script>
 </body>
 </html>`;
+  }
+
+  /**
+   * Wrap CheckoutForm + CheckoutSummary в 2-column grid div per Figma 1:19998.
+   * Form 434px / Summary 589px / gap 56px / left-pad 200px on desktop.
+   * Mobile: stacked grid-cols-1, no left padding.
+   */
+  private wrapCheckoutGrid(formHtml: string, summaryHtml: string): string {
+    return `<div class="mx-auto max-w-[1280px] px-4 lg:px-0 lg:pl-[200px] py-12 grid grid-cols-1 lg:grid-cols-[434px_589px] gap-x-[56px] gap-y-8"><div data-checkout-column="form" class="min-w-0">${formHtml}</div><div data-checkout-column="summary" class="min-w-0">${summaryHtml}</div></div>`;
   }
 
   /**

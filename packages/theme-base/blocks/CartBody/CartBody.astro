@@ -26,22 +26,29 @@ const schemeClass =
   data-block="cart-body"
   style={paddingStyle}
 >
-  <div class="max-w-[768px] mx-auto px-4 sm:px-6">
-    <h1 class="[font-family:var(--font-heading)] uppercase text-center" style="font-size: 24px; line-height: 27px; color: rgb(var(--color-heading)); margin: 0 0 25px 0;">
-      Корзина
-    </h1>
-
-    {/* Empty state — visible by default; inline JS hides when items present */}
+  <div class="max-w-[1280px] mx-auto px-4 sm:px-6">
+    {/* Empty state per Figma 1:20942 — centered heading + subtitle + CTA +
+        login link. Items state — heading left + items list. */}
     <div id="cart-page-empty">
-      <div class="flex flex-col items-center py-16 gap-4">
-        <p class="[font-family:var(--font-body)]" style="font-size: 20px; line-height: 27px; color: rgb(var(--color-muted)); text-align:center;">
+      <div class="flex flex-col items-center text-center" style="padding-top: 80px; padding-bottom: 80px; gap: 0;">
+        <h1 class="[font-family:var(--font-heading)] uppercase" style="font-size: 16px; line-height: 19px; letter-spacing: 0.02em; color: rgb(var(--color-heading)); margin: 0 0 5px 0;">
+          Корзина
+        </h1>
+        <p class="[font-family:var(--font-body)]" style="font-size: 14px; line-height: 19px; color: rgb(var(--color-muted)); margin: 0 0 28px 0;">
           Вы пока не добавили товар в корзину.
         </p>
-        <a href="/catalog" class="[font-family:var(--font-body)] bg-[rgb(var(--color-button-bg))]! text-[rgb(var(--color-button-text))]! hover:bg-[rgb(var(--color-button-bg-hover))]! hover:text-[rgb(var(--color-button-text-hover))]!" style="display:inline-flex; align-items:center; justify-content:center; padding: 12px 24px; font-size: 16px; line-height: 22px; border-radius: var(--radius-button, 8px); text-decoration: none; transition: background 0.15s, color 0.15s;">
+        <a href="/catalog" class="[font-family:var(--font-body)] bg-[rgb(var(--color-button-bg))]! text-[rgb(var(--color-button-text))]! hover:bg-[rgb(var(--color-button-bg-hover))]! hover:text-[rgb(var(--color-button-text-hover))]! uppercase" style="display:inline-flex; align-items:center; justify-content:center; padding: 0 20px; height: 40px; font-size: 14px; line-height: 17px; letter-spacing: 0.02em; border-radius: var(--radius-button, 0); text-decoration: none; transition: background 0.15s, color 0.15s; margin-bottom: 16px;">
           Продолжить покупки
+        </a>
+        <a href="/login?next=/cart" class="[font-family:var(--font-body)]" style="font-size: 14px; line-height: 17px; color: rgb(var(--color-text)); text-decoration: underline; text-underline-offset: 4px;">
+          Есть аккаунт? Войти
         </a>
       </div>
     </div>
+
+    <h1 class="[font-family:var(--font-heading)] uppercase" id="cart-page-heading" style="display:none; font-size: 24px; line-height: 27px; color: rgb(var(--color-heading)); margin: 0 0 25px 0;">
+      Корзина
+    </h1>
 
     {/* Items state */}
     <div id="cart-page-content" style="display: none;">
@@ -78,6 +85,7 @@ const schemeClass =
     function renderCart() {
       var emptyEl = document.getElementById('cart-page-empty');
       var contentEl = document.getElementById('cart-page-content');
+      var headingEl = document.getElementById('cart-page-heading');
       var itemsContainer = document.getElementById('cart-page-items');
       if (!emptyEl || !contentEl) return;
 
@@ -86,10 +94,12 @@ const schemeClass =
       if (items.length === 0) {
         emptyEl.style.display = '';
         contentEl.style.display = 'none';
+        if (headingEl) headingEl.style.display = 'none';
         return;
       }
       emptyEl.style.display = 'none';
       contentEl.style.display = '';
+      if (headingEl) headingEl.style.display = '';
 
       if (itemsContainer) {
         itemsContainer.innerHTML = items.map(function (item, index) {

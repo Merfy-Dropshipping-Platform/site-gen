@@ -34,11 +34,13 @@ const footerProps = footerBlock?.props ?? homeFooter?.props ?? (siteConfig as an
     {headerBlock && <CheckoutHeader {...headerBlock.props} />}
 
     <main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">
-      <div class="mx-auto max-w-[var(--container-max-width)] px-4 py-16 grid grid-cols-1 lg:grid-cols-[652px_884px] gap-x-16 gap-y-8 justify-center">
-        <div data-checkout-column="form">
+      {/* Figma 1:19998 — form col 434px, summary col 589px, gap ~56px, x-offset 200px.
+          Total content = 1280px. Mobile: stacked. */}
+      <div class="mx-auto max-w-[1280px] px-4 lg:px-0 lg:pl-[200px] py-12 grid grid-cols-1 lg:grid-cols-[434px_589px] gap-x-[56px] gap-y-8">
+        <div data-checkout-column="form" class="min-w-0">
           {formBlock && <CheckoutForm {...formBlock.props} />}
         </div>
-        <div data-checkout-column="summary">
+        <div data-checkout-column="summary" class="min-w-0">
           {summaryBlock && <CheckoutSummary {...summaryBlock.props} />}
         </div>
       </div>

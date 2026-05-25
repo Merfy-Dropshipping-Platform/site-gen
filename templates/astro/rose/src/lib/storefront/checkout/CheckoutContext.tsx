@@ -36,7 +36,12 @@ export interface DeliveryMethodChoice {
   label: string;
   priceCents: number;
   etaText?: string;
+  /** CDEK pickup point code — заполняется через PickupPointPicker когда
+   * user выбирает конкретный ПВЗ для cdek_pvz варианта. */
   pvzCode?: string;
+  /** Address of selected ПВЗ — показывается под radio и шлётся в backend
+   * через selectDelivery → pickupPointAddress. */
+  pvzAddress?: string;
   customId?: string;
 }
 

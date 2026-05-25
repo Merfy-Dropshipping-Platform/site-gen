@@ -23,6 +23,12 @@ export function SubmitSection(props: SubmitSectionProps) {
 
   const text = state.submitting ? props.loadingText : props.buttonText.replace('{total}', formatRub(totals.totalCents));
 
+  // cdek_pvz требует выбранной точки (pvzCode) — иначе backend не сможет
+  // оформить отгрузку CDEK на ПВЗ. Другие методы (cdek_door / pickup / custom)
+  // не нуждаются в pvzCode.
+  const pvzRequiredAndMissing =
+    state.deliveryMethod?.type === 'cdek_pvz' && !state.deliveryMethod?.pvzCode;
+
   const canSubmit =
     !state.submitting &&
     !state.loading &&
@@ -33,6 +39,7 @@ export function SubmitSection(props: SubmitSectionProps) {
     state.delivery.street &&
     state.delivery.building &&
     state.deliveryMethod &&
+    !pvzRequiredAndMissing &&
     state.paymentMethod;
 
   const onSubmit = async () => {
@@ -47,6 +54,36 @@ export function SubmitSection(props: SubmitSectionProps) {
     dispatch({ type: 'SET_SUBMITTING', submitting: true });
     dispatch({ type: 'SET_ERROR', error: null });
     try {
+      // Step 0 — persist delivery method on cart (особенно pickupPointCode для
+      // cdek_pvz). Если не вызвать selectDelivery, backend cart_to_order
+      // не получит cdekPickupPointCode и CDEK заказ создаётся без точки выдачи.
+      if (state.deliveryMethod && state.cartId) {
+        const dm = state.deliveryMethod;
+        const selectBody: Record<string, unknown> = {
+          type: dm.type,
+          deliveryCostCents: dm.priceCents,
+        };
+        if (dm.pvzCode) selectBody.pickupPointCode = dm.pvzCode;
+        if (dm.pvzAddress) selectBody.pickupPointAddress = dm.pvzAddress;
+        if (state.delivery.city || state.delivery.address) {
+          selectBody.address = {
+            city: state.delivery.city,
+            street: state.delivery.street,
+            house: state.delivery.building,
+            apartment: state.delivery.apartment,
+            postalCode: state.delivery.postalCode,
+            fiasId: state.delivery.cityFiasId,
+            fullAddress: state.delivery.address,
+          };
+        }
+        await fetch(`${apiBase}/store/carts/${state.cartId}/delivery/select`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(selectBody),
+        }).catch(() => null);
+      }
+
       let paymentToken: string | undefined;
       if (state.paymentMethod === 'bank_card') {
         // Inline-виджет YooKassa Tokenization работает только если у магазина

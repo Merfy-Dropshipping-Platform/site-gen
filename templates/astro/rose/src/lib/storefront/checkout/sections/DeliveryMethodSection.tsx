@@ -1,5 +1,7 @@
 import { useCheckoutContext, formatRub, type DeliveryMethodChoice } from '../CheckoutContext';
 import { useCdek } from '../hooks/useCdek';
+import { PickupPointPicker } from './PickupPointPicker';
+import type { PickupPoint } from '../hooks/usePickupPoints';
 
 // Most props are vestigial now — the unified `useCdek` hook returns CDEK
 // tariffs, pickup, and custom profiles already merged into one `choices` list.
@@ -31,6 +33,18 @@ export function DeliveryMethodSection(props: DeliveryMethodSectionProps) {
     : choices;
 
   const select = (c: DeliveryMethodChoice) => dispatch({ type: 'SET_DELIVERY_METHOD', method: c });
+
+  const pickPvz = (point: PickupPoint) => {
+    if (!state.deliveryMethod || state.deliveryMethod.type !== 'cdek_pvz') return;
+    dispatch({
+      type: 'SET_DELIVERY_METHOD',
+      method: {
+        ...state.deliveryMethod,
+        pvzCode: point.code,
+        pvzAddress: point.address,
+      },
+    });
+  };
 
   const Heading = () =>
     props.heading ? (
@@ -93,6 +107,22 @@ export function DeliveryMethodSection(props: DeliveryMethodSectionProps) {
               {c.etaText && (
                 <div className="mt-0.5 text-[length:var(--size-small)] text-[rgb(var(--color-muted))]">
                   {c.etaText}
+                </div>
+              )}
+              {/* Inline PVZ picker — раскрывается при selected cdek_pvz.
+                  Список ПВЗ для выбранного города через usePickupPoints. */}
+              {selected && c.type === 'cdek_pvz' && (
+                <div onClick={(e) => e.preventDefault()}>
+                  <PickupPointPicker
+                    selectedCode={state.deliveryMethod?.pvzCode ?? null}
+                    onPick={pickPvz}
+                  />
+                  {state.deliveryMethod?.pvzCode && state.deliveryMethod?.pvzAddress && (
+                    <div className="mt-2 px-3 py-2 text-[length:var(--size-small)] text-[rgb(var(--color-text))] bg-[rgb(var(--color-text)/.04)] rounded-[var(--radius-input)]">
+                      <span className="text-[rgb(var(--color-muted))]">Выбран ПВЗ:</span>{' '}
+                      {state.deliveryMethod.pvzAddress}
+                    </div>
+                  )}
                 </div>
               )}
             </label>

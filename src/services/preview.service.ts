@@ -70,6 +70,8 @@ export interface RenderPreviewPageInput {
   themeId?: string | null;
   /** Page key (e.g. 'home', 'checkout', 'cart'). Determines slot-based layout. */
   page?: string;
+  /** Site ID — нужен PREVIEW_CART_STORE_INLINE для API calls в правильный shop. */
+  siteId?: string;
 }
 
 /**
@@ -393,6 +395,7 @@ export class PreviewService {
 <body>
   ${bodyHtml}
   <script>${PREVIEW_NAV_AGENT_INLINE}</script>
+  <script>${PREVIEW_CART_STORE_INLINE.replace('__SHOP_ID__', input.siteId ?? '').replace('__API_BASE__', 'https://gateway.merfy.ru/api')}</script>
 </body>
 </html>`;
   }
@@ -584,6 +587,138 @@ async function loadPreviewTailwindCss(): Promise<string> {
  *    editor, not a live storefront — submitting would either 404 or trigger
  *    real orders. An empty `formId` falls back to the form's index.
  */
+/**
+ * Inline cart-store stub для preview iframe. Live-сайт загружает полную
+ * cart-store.js (ESM module из templates/<theme>/src/scripts/) через Astro
+ * pages — но preview iframe рендерится через Container API без этих
+ * outer pages, поэтому window.cartStore = undefined.
+ *
+ * Этот мини-stub эмулирует cart-store API (init/addItem/removeItem/getItems/
+ * getTotal) достаточно для что Catalog quick-add / PopularProducts CTA /
+ * Product Buy Now кнопок работают в preview. localStorage + fetch к
+ * gateway.merfy.ru/api/orders/cart/... — тот же endpoint что live.
+ *
+ * Placeholders __SHOP_ID__ / __API_BASE__ заменяются в renderPreviewPage.
+ */
+const PREVIEW_CART_STORE_INLINE = `
+(function () {
+  if (window.cartStore) return; // не перезаписываем full live cart-store
+  var SHOP_ID = '__SHOP_ID__';
+  var API_BASE = '__API_BASE__';
+  var CART_ID_KEY = 'merfy:cartId';
+  var CART_ITEMS_KEY = 'merfy:cartItems';
+
+  var state = { cartId: null, items: [], loading: false };
+
+  function load() {
+    try {
+      state.cartId = localStorage.getItem(CART_ID_KEY) || null;
+      var raw = localStorage.getItem(CART_ITEMS_KEY);
+      state.items = raw ? JSON.parse(raw) : [];
+    } catch (e) { state.items = []; state.cartId = null; }
+  }
+  function save() {
+    try {
+      if (state.cartId) localStorage.setItem(CART_ID_KEY, state.cartId);
+      else localStorage.removeItem(CART_ID_KEY);
+      localStorage.setItem(CART_ITEMS_KEY, JSON.stringify(state.items));
+    } catch (e) {}
+  }
+  function notify(eventName, detail) {
+    document.dispatchEvent(new CustomEvent(eventName, { detail: detail }));
+  }
+  function syncFromCart(cart) {
+    if (cart && Array.isArray(cart.items)) state.items = cart.items;
+    save();
+    notify('cart:updated', { items: state.items });
+  }
+  async function api(path, opts) {
+    opts = opts || {};
+    opts.credentials = 'include';
+    opts.headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+    var res = await fetch(API_BASE + path, opts);
+    if (!res.ok) return { success: false, message: 'http_' + res.status };
+    return await res.json();
+  }
+  async function ensureCart() {
+    if (state.cartId) return state.cartId;
+    var r = await api('/orders/cart', { method: 'POST', body: JSON.stringify({ shopId: SHOP_ID }) });
+    if (r.success && r.data && r.data.id) {
+      state.cartId = r.data.id;
+      save();
+      return state.cartId;
+    }
+    throw new Error('cart_create_failed');
+  }
+  async function refresh() {
+    if (!state.cartId) return;
+    var r = await api('/orders/cart/' + state.cartId);
+    if (r.success && r.data) syncFromCart(r.data);
+  }
+
+  window.cartStore = {
+    async init() {
+      load();
+      notify('cart:updated', { items: state.items });
+      if (state.cartId) {
+        try { await refresh(); } catch (e) {
+          state.cartId = null; state.items = []; save();
+          notify('cart:updated', { items: state.items });
+        }
+      }
+    },
+    getItems() { return state.items.slice(); },
+    getTotal() {
+      return state.items.reduce(function (acc, i) {
+        var p = i.unitPriceCents != null ? i.unitPriceCents : (i.priceCents || 0);
+        return acc + p * (i.quantity || 1);
+      }, 0);
+    },
+    async addItem(productId, variantId, quantity) {
+      var qty = quantity || 1;
+      state.loading = true;
+      try {
+        var cartId = await ensureCart();
+        var body = { productId: productId, quantity: qty };
+        if (variantId) body.variantCombinationId = variantId;
+        var r = await api('/orders/cart/' + cartId + '/items', { method: 'POST', body: JSON.stringify(body) });
+        if (r.success) { await refresh(); notify('cart:item-added', { productId: productId, quantity: qty }); return true; }
+        return false;
+      } catch (e) { return false; }
+      finally { state.loading = false; }
+    },
+    async removeItem(itemId) {
+      if (!state.cartId) return false;
+      state.items = state.items.filter(function (i) { return i.id !== itemId; });
+      notify('cart:updated', { items: state.items });
+      try {
+        await api('/orders/cart/' + state.cartId + '/items/' + itemId, { method: 'DELETE' });
+        await refresh();
+        return true;
+      } catch (e) { return false; }
+    },
+    async updateQuantity(itemId, quantity) {
+      if (!state.cartId) return false;
+      try {
+        await api('/orders/cart/' + state.cartId + '/items/' + itemId, {
+          method: 'PATCH',
+          body: JSON.stringify({ quantity: quantity }),
+        });
+        await refresh();
+        return true;
+      } catch (e) { return false; }
+    },
+  };
+
+  // Auto-init
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { window.cartStore.init(); });
+  } else {
+    window.cartStore.init();
+  }
+})();
+`;
+
 const PREVIEW_NAV_AGENT_INLINE = `
 (function () {
   var TARGET = '*';

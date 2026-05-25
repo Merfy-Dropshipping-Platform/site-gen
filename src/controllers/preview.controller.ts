@@ -170,6 +170,7 @@ export class PreviewController {
         fontHead: googleFontHead(loaded.themeId),
         themeId: loaded.themeId,
         page,
+        siteId,
       });
       PreviewController.setCachedHtml(cacheKey, html);
       // Disable browser cache for preview iframe — Constructor вылитый

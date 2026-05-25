@@ -1,0 +1,54 @@
+---
+// CartCheckoutButton — «Оформить заказ» CTA отдельным блоком.
+// Скрывается когда корзина пустая.
+import type { CartCheckoutButtonProps } from './CartCheckoutButton.puckConfig';
+import { CartCheckoutButtonClasses as C } from './CartCheckoutButton.classes';
+
+interface Props extends CartCheckoutButtonProps {
+  id?: string;
+}
+
+const { id, padding, colorScheme } = Astro.props as Props;
+
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : 'padding-top:8px; padding-bottom:80px;';
+
+const schemeClass =
+  typeof colorScheme === 'string' && colorScheme
+    ? `color-scheme-${colorScheme.replace('scheme-', '')}`
+    : '';
+---
+<section
+  class:list={[C.root, schemeClass]}
+  data-puck-component-id={id}
+  data-block="cart-checkout-button"
+  data-cart-summary-hidden-when-empty="true"
+  id="cart-page-checkout-section"
+  style={`${paddingStyle} display:none;`}
+>
+  <div class={C.container}>
+    <a
+      href="/checkout"
+      class={C.btn}
+      style="width: 195px; height: 60px; font-size: 20px; line-height: 27px; border-radius: var(--radius-button, 10px);"
+      data-cart-checkout-button
+    >Оформить заказ</a>
+  </div>
+</section>
+
+<script is:inline>
+  (function () {
+    var section = document.getElementById('cart-page-checkout-section');
+    if (!section) return;
+    function refresh() {
+      var items = (window.cartStore && typeof window.cartStore.getItems === 'function') ? window.cartStore.getItems() : [];
+      section.style.display = items.length > 0 ? '' : 'none';
+    }
+    document.addEventListener('cart:updated', refresh);
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(refresh, 150); });
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      setTimeout(refresh, 150);
+    }
+  })();
+</script>

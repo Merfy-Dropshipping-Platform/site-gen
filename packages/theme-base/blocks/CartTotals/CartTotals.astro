@@ -1,0 +1,62 @@
+---
+// CartTotals — Final price line "Итого <amount>".
+// Self-contained: inline JS reads cartStore.getTotal() и обновляется на cart:updated.
+// Скрывается когда корзина пустая (display:none при items.length===0).
+import type { CartTotalsProps } from './CartTotals.puckConfig';
+import { CartTotalsClasses as C } from './CartTotals.classes';
+
+interface Props extends CartTotalsProps {
+  id?: string;
+}
+
+const { id, padding, colorScheme } = Astro.props as Props;
+
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : 'padding-top:0px; padding-bottom:8px;';
+
+const schemeClass =
+  typeof colorScheme === 'string' && colorScheme
+    ? `color-scheme-${colorScheme.replace('scheme-', '')}`
+    : '';
+---
+<section
+  class:list={[C.root, schemeClass]}
+  data-puck-component-id={id}
+  data-block="cart-totals"
+  data-cart-summary-hidden-when-empty="true"
+  id="cart-page-totals-section"
+  style={`${paddingStyle} display:none;`}
+>
+  <div class={C.container}>
+    <div class={C.inner}>
+      <span class={C.label}>Итого</span>
+      <span class={C.value} id="cart-page-total" data-cart-total>0&nbsp;₽</span>
+    </div>
+  </div>
+</section>
+
+<script is:inline>
+  (function () {
+    var section = document.getElementById('cart-page-totals-section');
+    var totalEl = document.getElementById('cart-page-total');
+    if (!section || !totalEl) return;
+
+    function fmt(cents) {
+      if (!cents && cents !== 0) return '0 ₽';
+      return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 }).format(cents / 100);
+    }
+    function refresh() {
+      var items = (window.cartStore && typeof window.cartStore.getItems === 'function') ? window.cartStore.getItems() : [];
+      var total = (window.cartStore && typeof window.cartStore.getTotal === 'function') ? window.cartStore.getTotal() : 0;
+      section.style.display = items.length > 0 ? '' : 'none';
+      totalEl.textContent = fmt(total);
+    }
+    document.addEventListener('cart:updated', refresh);
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(refresh, 150); });
+    // Site already loaded?
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      setTimeout(refresh, 150);
+    }
+  })();
+</script>

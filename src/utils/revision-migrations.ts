@@ -63,57 +63,101 @@ function ensureChrome(content: Block[], pagesData: Record<string, unknown>): Blo
 }
 
 /**
- * 081: cart page is now Puck-managed with 3 blocks (CartBody + CartSummary +
- * Collections). Existing sites either have no `page-cart` in pagesData or
- * have a legacy seed. This migration:
+ * Cart page Puck-driven с 5 секциями (Figma 1:20818):
+ *   CartBody / CartSummary / CartTotals / CartCheckoutButton / PopularProducts
+ * (Раньше было 3: CartBody + CartSummary + Collections — но Figma требует
+ * split CartSummary на 3 блока + cross-sell через PopularProducts.)
  *
- *   - Seeds default 3-block layout when `page-cart` is missing.
- *   - Idempotent: pages that already contain a CartBody have their legacy
- *     CartSection block removed (keeps preview ≡ live, since rose cart.astro
- *     skips CartSection entirely on live render).
- *   - Has page-cart but no CartBody → inserts 3 blocks before Footer (or
- *     appends if no Footer) AND removes any legacy CartSection.
+ *   - Seeds default 5-block layout when `page-cart` is missing.
+ *   - Idempotent: уже-мигрированные сайты получают патч добавляющий новые блоки
+ *     CartTotals + CartCheckoutButton если их нет, и заменяет Collections
+ *     на PopularProducts если только legacy seed (Collections с heading
+ *     "Возможно вам понравится").
+ *   - Has page-cart но нет CartBody → inserts 5 blocks before Footer.
+ *   - Legacy CartSection всегда удаляется (preview ≡ live parity).
  */
 function migrateCartPage(pagesData: Record<string, unknown>): Record<string, unknown> {
   const existing = pagesData['page-cart'] as PageData | undefined;
+  const ts = Date.now();
 
+  // Идемпотентный путь: уже есть CartBody — patch недостающие новые блоки.
   if (existing?.content?.some((b) => b?.type === 'CartBody')) {
-    const cleaned = (existing.content ?? []).filter((b) => b?.type !== 'CartSection');
-    const patched = ensureChrome(cleaned, pagesData);
-    if (patched.length === (existing.content ?? []).length) {
-      // No CartSection removed AND no chrome added → exact no-op
+    let content = (existing.content ?? []).filter((b) => b?.type !== 'CartSection');
+
+    // Заменяем legacy Collections (cross-sell на cart) → PopularProducts
+    // только если это типовой seed: heading "Возможно вам понравится" + cards=4.
+    content = content.map((b) => {
+      if (b?.type !== 'Collections') return b;
+      const p = (b.props ?? {}) as Record<string, unknown>;
+      const isLegacyCartSeed = p.heading === 'Возможно вам понравится' || p.id === 'Collections-cart' || String(p.id ?? '').startsWith('Collections-') && p.cards === 4;
+      if (!isLegacyCartSeed) return b;
+      return {
+        type: 'PopularProducts',
+        props: {
+          id: `PopularProducts-cart-${ts}`,
+          heading: 'Возможно вам понравится',
+          cards: 4,
+          columns: 4,
+          colorScheme: 'scheme-2',
+          padding: { top: 80, bottom: 80 },
+        },
+      };
+    });
+
+    // Insert CartTotals + CartCheckoutButton если ещё нет — после CartSummary.
+    const hasTotals = content.some((b) => b?.type === 'CartTotals');
+    const hasCheckoutBtn = content.some((b) => b?.type === 'CartCheckoutButton');
+    if (!hasTotals || !hasCheckoutBtn) {
+      const summaryIdx = content.findIndex((b) => b?.type === 'CartSummary');
+      const insertAt = summaryIdx >= 0 ? summaryIdx + 1 : 1;
+      const toInsert: Block[] = [];
+      if (!hasTotals) {
+        toInsert.push({
+          type: 'CartTotals',
+          props: { id: `CartTotals-${ts + 1}`, colorScheme: 'scheme-2', padding: { top: 0, bottom: 8 } },
+        });
+      }
+      if (!hasCheckoutBtn) {
+        toInsert.push({
+          type: 'CartCheckoutButton',
+          props: { id: `CartCheckoutButton-${ts + 2}`, colorScheme: 'scheme-2', padding: { top: 8, bottom: 80 } },
+        });
+      }
+      content = [...content.slice(0, insertAt), ...toInsert, ...content.slice(insertAt)];
+    }
+
+    const patched = ensureChrome(content, pagesData);
+    if (patched.length === (existing.content ?? []).length && patched.every((b, i) => b === (existing.content ?? [])[i])) {
       return pagesData;
     }
     return { ...pagesData, 'page-cart': { ...existing, content: patched } };
   }
 
-  const ts = Date.now();
+  // Полный seed (новый сайт ИЛИ существующий без CartBody)
   const seedBlocks: Block[] = [
     {
       type: 'CartBody',
-      props: {
-        id: `CartBody-${ts}`,
-        colorScheme: 'scheme-2',
-        padding: { top: 80, bottom: 40 },
-      },
+      props: { id: `CartBody-${ts}`, colorScheme: 'scheme-2', padding: { top: 80, bottom: 40 } },
     },
     {
       type: 'CartSummary',
-      props: {
-        id: `CartSummary-${ts + 1}`,
-        colorScheme: 'scheme-2',
-        padding: { top: 0, bottom: 80 },
-      },
+      props: { id: `CartSummary-${ts + 1}`, colorScheme: 'scheme-2', padding: { top: 0, bottom: 0 } },
     },
     {
-      type: 'Collections',
+      type: 'CartTotals',
+      props: { id: `CartTotals-${ts + 2}`, colorScheme: 'scheme-2', padding: { top: 0, bottom: 8 } },
+    },
+    {
+      type: 'CartCheckoutButton',
+      props: { id: `CartCheckoutButton-${ts + 3}`, colorScheme: 'scheme-2', padding: { top: 8, bottom: 80 } },
+    },
+    {
+      type: 'PopularProducts',
       props: {
-        id: `Collections-${ts + 2}`,
+        id: `PopularProducts-cart-${ts + 4}`,
         heading: 'Возможно вам понравится',
         cards: 4,
         columns: 4,
-        showCompareAtPrice: 'true',
-        cardStyle: 'portrait',
         colorScheme: 'scheme-2',
         padding: { top: 80, bottom: 80 },
       },

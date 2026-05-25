@@ -1,8 +1,8 @@
 ---
-// CartSummary — Astro component for constructor preview AND live SSG.
-// Disclaimer + total + checkout button. Inline JS on the page (cart.astro)
-// hides this section when cart is empty (per Figma). Inline CSS-var styles
-// match rose live cart.astro for pixel-perfect parity.
+// CartSummary — «Промежуточный итог» (disclaimer).
+// Раньше блок содержал disclaimer + total + checkout button. После Figma
+// 1:20818 split на 3 блока: CartSummary (этот) + CartTotals + CartCheckoutButton.
+// Скрывается когда корзина пустая.
 import type { CartSummaryProps } from './CartSummary.puckConfig';
 
 interface Props extends CartSummaryProps {
@@ -13,7 +13,7 @@ const { id, padding, colorScheme } = Astro.props as Props;
 
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
-  : 'padding-top:0px; padding-bottom:80px;';
+  : 'padding-top:0px; padding-bottom:0px;';
 
 const schemeClass =
   typeof colorScheme === 'string' && colorScheme
@@ -21,34 +21,34 @@ const schemeClass =
     : '';
 ---
 <section
-  class:list={['relative w-full', schemeClass]}
+  class:list={['relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]', schemeClass]}
   data-puck-component-id={id}
   data-block="cart-summary"
   data-cart-summary-hidden-when-empty="true"
   id="cart-page-summary"
-  style={paddingStyle}
+  style={`${paddingStyle} display:none;`}
 >
   <div class="max-w-[768px] mx-auto px-4 sm:px-6">
     <div class="cart-summary flex flex-col items-end" style="gap: 25px;">
-      <p class="cart-summary-disclaimer font-body" style="font-size: 16px; line-height: 22px; color: rgb(var(--color-muted)); text-align: right; margin: 0; max-width: 318px;">
+      <p class="cart-summary-disclaimer [font-family:var(--font-body)]" style="font-size: 16px; line-height: 22px; color: rgb(var(--color-muted)); text-align: right; margin: 0; max-width: 318px;">
         Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.
       </p>
-      <div class="flex items-center" style="gap: 15px;">
-        <span class="font-body" style="font-size: 20px; line-height: 27px; color: rgb(var(--color-text));">
-          Итого
-        </span>
-        <span id="cart-page-total" class="font-body" style="font-size: 20px; line-height: 27px; color: rgb(var(--color-text));" data-cart-total>
-          0&nbsp;₽
-        </span>
-      </div>
-      <a
-        href="/checkout"
-        class="cart-checkout-btn flex items-center justify-center font-body cursor-pointer transition-colors border-0 no-underline"
-        style="width: 195px; height: 60px; font-size: 20px; line-height: 27px; border-radius: 10px; background: rgb(var(--color-text)); color: rgb(var(--color-bg));"
-        data-cart-checkout-button
-      >
-        Оформить заказ
-      </a>
     </div>
   </div>
 </section>
+
+<script is:inline>
+  (function () {
+    var section = document.getElementById('cart-page-summary');
+    if (!section) return;
+    function refresh() {
+      var items = (window.cartStore && typeof window.cartStore.getItems === 'function') ? window.cartStore.getItems() : [];
+      section.style.display = items.length > 0 ? '' : 'none';
+    }
+    document.addEventListener('cart:updated', refresh);
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(refresh, 150); });
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      setTimeout(refresh, 150);
+    }
+  })();
+</script>

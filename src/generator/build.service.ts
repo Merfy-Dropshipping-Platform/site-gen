@@ -1186,7 +1186,9 @@ async function stageGenerate(
   //   `/collections/preview` would land at src/pages/collections/preview.astro
   //   with a broken `../layouts/BaseLayout.astro` import (needs `../../layouts/`).
   const STATIC_TEMPLATE_PAGES = new Set([
-    "cart", "catalog", "checkout", "checkout/result",
+    // "cart" удалён — Cart page стала Puck-driven (5 секций per Figma 1:20818):
+    // CartBody / CartSummary / CartTotals / CartCheckoutButton / PopularProducts.
+    "catalog", "checkout", "checkout/result",
     "login", "register", "reset-password", "verify-email",
     "account", "account/orders", "account/order", "account/profile", "account/newsletter",
     "collections/preview",

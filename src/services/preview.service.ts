@@ -301,18 +301,20 @@ export class PreviewService {
    */
   async renderPreviewPage(input: RenderPreviewPageInput): Promise<string> {
     const pageKey = input.page ?? 'home';
-    // Все страницы (home/cart/checkout/etc.) рендерятся через ОДНУ generic
-    // pipeline — blocks из revision content array эмитятся последовательно.
-    // Спец. layouts (2-column checkout, sidebar catalog) — выражены через CSS
-    // в самих блоках + flex-wrap на body (см. <body class="checkout-grid">
-    // в HTML output ниже).
-    //
-    // Legacy renderCheckoutLayout сохранён ТОЛЬКО для не-мигрированных
-    // 11-блочных checkout сайтов (нет CheckoutForm, есть CheckoutLayout).
+    // Все страницы (home/cart/etc.) рендерятся через ОДНУ generic pipeline.
+    // Checkout — единственное исключение: его 2-column layout (form/summary)
+    // структурно не выразить через generic sequential rendering. После
+    // sequential render оборачиваем CheckoutForm + CheckoutSummary в
+    // 2-col grid (post-processing). Иначе preview не соответствует live
+    // (live template уже wrap'ит в grid).
     const isLegacyCheckout =
       (pageKey === 'checkout' || pageKey === 'page-checkout') &&
       input.blocks.some((b) => b.type === 'CheckoutLayout') &&
       !input.blocks.some((b) => b.type === 'CheckoutForm');
+    const isMegaCheckout =
+      (pageKey === 'checkout' || pageKey === 'page-checkout') &&
+      input.blocks.some((b) => b.type === 'CheckoutForm') &&
+      input.blocks.some((b) => b.type === 'CheckoutSummary');
 
     let bodyHtml: string;
     if (isLegacyCheckout) {
@@ -340,6 +342,19 @@ export class PreviewService {
         }),
       );
       bodyHtml = renderedBlocks.join('\n');
+
+      // Post-process для checkout: оборачиваем CheckoutForm + CheckoutSummary
+      // в 2-col grid div (Figma 1:19998 form 434px / summary 589px / gap 56px).
+      // CheckoutHeader + Footer остаются вне grid (full-width).
+      if (isMegaCheckout) {
+        // Match block-wrapper pattern: блоки CheckoutForm/CheckoutSummary
+        // обёрнуты в <div class="color-scheme-N" data-block-scheme="N">.
+        // Найдём их по data-block внутри и обернём пару в grid.
+        const re = /(<div class="color-scheme-\d+"[^>]*>(?:(?!<div class="color-scheme-)[\s\S])*?<section[^>]*data-block="checkout-form"[\s\S]*?<\/div>)\s*(<div class="color-scheme-\d+"[^>]*>(?:(?!<div class="color-scheme-)[\s\S])*?<section[^>]*data-block="checkout-summary"[\s\S]*?<\/div>)/;
+        bodyHtml = bodyHtml.replace(re, (_m, formWrap, summaryWrap) => {
+          return `<div class="mx-auto max-w-[1280px] px-4 lg:px-0 lg:pl-[200px] py-12 grid grid-cols-1 lg:grid-cols-[434px_589px] gap-x-[56px] gap-y-8"><div data-checkout-column="form" class="min-w-0">${formWrap}</div><div data-checkout-column="summary" class="min-w-0">${summaryWrap}</div></div>`;
+        });
+      }
     }
 
     const previewTailwind = await loadPreviewTailwindCss();

@@ -17,10 +17,53 @@ const propsJson = JSON.stringify({ heading, subheading, methods, cardForm });
   <h2 class={C.heading}>{heading}</h2>
   <p class={C.subheading}>{subheading}</p>
   <div class={C.list} data-checkout-payment-list>
-    {methods.filter(m => m.enabled).map(m => (
-      <div class={C.option} data-payment-key={m.key}>
-        <span class={C.radio}></span>
-        <span class={C.label}>{m.label}</span>
+    {methods.filter(m => m.enabled).map((m, i) => (
+      <div
+        class:list={[
+          'flex flex-col gap-3 px-3 py-5 border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] cursor-pointer transition-colors',
+          i === 0 ? 'border-[rgb(var(--color-text))]' : 'hover:border-[rgb(var(--color-text)/.4)]',
+        ]}
+        data-payment-key={m.key}
+        data-payment-selected={String(i === 0)}
+      >
+        <div class="flex items-center gap-2 w-full">
+          <span class:list={[
+            'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border',
+            i === 0
+              ? 'bg-[rgb(var(--color-text))] border-[rgb(var(--color-text))]'
+              : 'border-[rgb(var(--color-input-border))]',
+          ]}>
+            {i === 0 && <span class="block w-2 h-2 rounded-full bg-[rgb(var(--color-bg))]"></span>}
+          </span>
+          <span class={C.label}>{m.label}</span>
+        </div>
+        {/* Banking card form fields shown when first method is bank_card */}
+        {i === 0 && m.key === 'bank_card' && (
+          <div class="w-full grid grid-cols-1 gap-3" data-checkout-card-form>
+            <div class="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg,255,255,255))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-14">
+              <label class="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label,156,163,175))]">Номер карты</label>
+              <input class="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]" placeholder="0000 0000 0000 0000" />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg,255,255,255))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-14">
+                <label class="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label,156,163,175))]">Срок действия</label>
+                <input class="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]" placeholder="ММ/ГГ" />
+              </div>
+              <div class="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg,255,255,255))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-14">
+                <label class="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label,156,163,175))]">CVV</label>
+                <input class="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]" type="password" />
+              </div>
+            </div>
+            <div class="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg,255,255,255))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-14">
+              <label class="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label,156,163,175))]">Имя на карте</label>
+              <input class="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]" autocomplete="cc-name" />
+            </div>
+            <p class="flex items-center gap-2 text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="0.5" fill="currentColor"/></svg>
+              Счёт будет выставлен по вашему адресу
+            </p>
+          </div>
+        )}
       </div>
     ))}
   </div>

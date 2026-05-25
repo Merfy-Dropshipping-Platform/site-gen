@@ -16,6 +16,26 @@ const propsJson = JSON.stringify({ heading, cdekEnabled, cdekDoorLabel, cdekPvzL
 >
   <h2 class={C.heading}>{heading}</h2>
   <div class={C.list} data-checkout-delivery-list>
-    {/* SSR placeholder; CheckoutFlow Island populates after CDEK API resolves */}
+    {/* SSR skeleton (Figma 1:19998 frame 183:27969) — отображается до того
+        как CheckoutFlow Island заменит на live CDEK ответ. В preview iframe
+        React не запускается → этот skeleton остаётся видимым. */}
+    <div class:list={[C.option, C.optionSelected]} data-checkout-delivery-skeleton>
+      <div class="flex items-center justify-between">
+        <div class={C.body}>
+          <span class={C.label}>Эконом</span>
+          <span class={C.meta}>от 5 до 8 рабочих дней</span>
+        </div>
+        <span class={C.price}>Бесплатно</span>
+      </div>
+    </div>
+    <div class={C.option} data-checkout-delivery-skeleton>
+      <div class="flex items-center justify-between">
+        <div class={C.body}>
+          <span class={C.label}>Стандарт</span>
+          <span class={C.meta}>от 3 до 5 рабочих дней</span>
+        </div>
+        <span class={C.price}>700 ₽</span>
+      </div>
+    </div>
   </div>
 </section>

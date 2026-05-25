@@ -472,24 +472,32 @@ const brandText = textContent || view.brand || '';
 
     // Buy now.
     if (buyBtn) {
-      buyBtn.addEventListener('click', function (ev) {
+      buyBtn.addEventListener('click', async function (ev) {
         ev.stopPropagation();
+        ev.preventDefault();
         const cartProductId = root.getAttribute('data-product-id') || productId;
         const slug = root.getAttribute('data-product-slug') || productId;
         const cs = window.cartStore;
+        // AWAIT addItem чтобы cart-store + backend получили товар ДО навигации.
+        // Без await navigation отменяет in-flight API request → /checkout
+        // показывает empty cart. Disabled button во время processing предотвращает
+        // double-click и даёт visual feedback.
+        const origText = buyBtn.textContent;
+        buyBtn.disabled = true;
+        buyBtn.textContent = '...';
         if (cs && typeof cs.addItem === 'function') {
-          try { cs.addItem(cartProductId, getActiveVariantId(), currentQty); } catch {}
+          try { await cs.addItem(cartProductId, getActiveVariantId(), currentQty); } catch (e) { /* silent */ }
         }
-        // iframe-aware navigation: на live → window.location, в constructor
-        // preview iframe → postMessage в parent. preview-nav-agent.ts
-        // перехватывает только <a> clicks, не imperative location.href,
-        // поэтому требуется явный check.
+        // iframe-aware navigation
         const target = '/checkout?productId=' + encodeURIComponent(slug || '');
         const inIframe = window.parent && window.parent !== window;
         if (inIframe) {
           try {
             window.parent.postMessage({ type: 'navigate', path: target }, '*');
           } catch (e) { /* cross-origin postMessage may fail — silent */ }
+          // Restore button в preview (нет full reload как на live)
+          buyBtn.disabled = false;
+          buyBtn.textContent = origText;
         } else {
           window.location.href = target;
         }

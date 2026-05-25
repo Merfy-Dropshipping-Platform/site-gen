@@ -899,7 +899,9 @@ const fmtPriceServer = (n: number | string | undefined): string => {
     const gridObserver = new MutationObserver(function () {
       attachHover(root);
     });
-    const grid = root.querySelector('[data-catalog-grid]');
+    // `grid` уже объявлен ранее в этом IIFE (line 511) — используем ту же
+    // переменную чтобы не получить SyntaxError 'Identifier already declared'
+    // который ломает весь inline script (quick-add click не attach'ится).
     if (grid) gridObserver.observe(grid, { childList: true, subtree: false });
 
     // Pagination click handlers

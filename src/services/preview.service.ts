@@ -403,7 +403,28 @@ export class PreviewService {
    * Mobile: stacked grid-cols-1, no left padding.
    */
   private wrapCheckoutGrid(formHtml: string, summaryHtml: string): string {
-    return `<div class="mx-auto max-w-[1280px] px-4 lg:px-0 lg:pl-[200px] py-12 grid grid-cols-1 lg:grid-cols-[434px_589px] gap-x-[56px] gap-y-8"><div data-checkout-column="form" class="min-w-0">${formHtml}</div><div data-checkout-column="summary" class="min-w-0">${summaryHtml}</div></div>`;
+    // Inline styles — Tailwind preview-pipeline не сканирует src/services/*.ts
+    // → arbitrary classes (grid-cols-[434px_589px]) не попадают в bundle.
+    // Inline CSS работает независимо. Mobile: <1024px stacked + side pad 16.
+    const gridStyle = [
+      'max-width:1280px',
+      'margin:0 auto',
+      'padding:48px 16px',
+      'display:grid',
+      'grid-template-columns:1fr',
+      'gap:32px',
+    ].join(';');
+    const mediaQuery = `
+      @media (min-width: 1024px) {
+        [data-checkout-grid] {
+          padding: 48px 0 48px 200px !important;
+          grid-template-columns: 434px 589px !important;
+          column-gap: 56px !important;
+          row-gap: 32px !important;
+        }
+      }
+    `;
+    return `<style>${mediaQuery}</style><div data-checkout-grid style="${gridStyle}"><div data-checkout-column="form" style="min-width:0">${formHtml}</div><div data-checkout-column="summary" style="min-width:0">${summaryHtml}</div></div>`;
   }
 
   /**

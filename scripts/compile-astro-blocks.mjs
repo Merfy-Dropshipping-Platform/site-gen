@@ -237,6 +237,16 @@ function rewriteRelativeImports(source, pkg, blockName) {
       return `${prefix}./runtime__${modName}.mjs${suffix}`;
     },
   );
+  // Mega-block cross-block imports: `from '../OtherBlock/OtherBlock.astro'`
+  // → `./theme-base__OtherBlock__OtherBlock.mjs`. Используется CheckoutForm/
+  // CheckoutSummary/CartBody которые консолидируют inner blocks через Astro
+  // imports (Figma cart 1:20818 + checkout 1:19998).
+  out = out.replace(
+    /(from\s+["'])\.\.\/([A-Z][A-Za-z0-9]*)\/\2\.astro(["'])/g,
+    (_match, prefix, otherBlock, suffix) => {
+      return `${prefix}./${pkg}__${otherBlock}__${otherBlock}.mjs${suffix}`;
+    },
+  );
   return out;
 }
 

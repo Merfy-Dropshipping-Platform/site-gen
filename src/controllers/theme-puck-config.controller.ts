@@ -80,6 +80,9 @@ const BASE_BLOCKS: Record<string, BaseBlockEntry> = Object.fromEntries(
     'CartSummary',
     'CartTotals',
     'CartCheckoutButton',
+    // Checkout page mega-blocks (Figma 1:19998 — 2 секции вместо 11)
+    'CheckoutForm',
+    'CheckoutSummary',
     // Catalog page-only block (filter sidebar + product grid + pagination)
     'Catalog',
     // 7 chrome blocks

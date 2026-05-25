@@ -1,0 +1,51 @@
+---
+// CheckoutSummary — мега-блок «Сводка заказа» (Figma 1:19998).
+// Консолидирует OrderSummary + Totals. Inner sections — Astro imports,
+// data-checkout-slot markers сохраняются, React Island hydratation работает
+// без изменений.
+import type { CheckoutSummaryProps } from './CheckoutSummary.puckConfig';
+import { CheckoutSummaryClasses as C } from './CheckoutSummary.classes';
+
+import CheckoutOrderSummary from '../CheckoutOrderSummary/CheckoutOrderSummary.astro';
+import CheckoutTotals from '../CheckoutTotals/CheckoutTotals.astro';
+
+interface Props extends CheckoutSummaryProps {
+  id?: string;
+}
+
+const { id, padding, colorScheme } = Astro.props as Props;
+
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+
+const schemeClass =
+  typeof colorScheme === 'string' && colorScheme
+    ? `color-scheme-${colorScheme.replace('scheme-', '')}`
+    : '';
+---
+<section
+  class:list={[C.root, schemeClass]}
+  data-puck-component-id={id}
+  data-block="checkout-summary"
+  style={paddingStyle}
+>
+  <CheckoutOrderSummary
+    heading="Сводка заказа"
+    itemImageSize="compact"
+    showVariantLabels={true}
+    showCompareAtPrice={true}
+    promoToggle={{ enabled: true, label: 'У меня есть промокод', applyButtonText: 'Применить' }}
+    bogoBadge={true}
+    padding={{ top: 0, bottom: 0 }}
+  />
+
+  <CheckoutTotals
+    deliveryLabel="Доставка"
+    freeText="Бесплатно"
+    totalLabel="Итого"
+    showSubtotal={false}
+    showDiscount={true}
+    padding={{ top: 0, bottom: 0 }}
+  />
+</section>

@@ -1,117 +1,51 @@
 ---
-// Puck-managed checkout page.
+// Puck-managed checkout page (Figma 1:19998 — 2 mega sections).
 //
-// Reads pagesData.checkout (seeded by migrateCheckoutPage at revision-read
-// time) and renders the 11 Checkout* blocks. Each block emits
-// data-checkout-slot — the CheckoutFlow Island finds them at runtime and
-// Portals interactive React content into each placeholder.
+// pagesData.checkout содержит [CheckoutHeader, CheckoutForm, CheckoutSummary,
+// Footer]. CheckoutForm и CheckoutSummary — мега-блоки которые internally
+// импортируют все необходимые inner Astro sections с data-checkout-slot.
+// React Island (CheckoutFlow.tsx) находит slots через querySelectorAll и
+// Portals interactive content без изменений.
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 import data from '../data/data.json';
 import siteConfig from '../data/site-config.json';
-import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-
 import CheckoutHeader from '../components/CheckoutHeader.astro';
-import CheckoutSummaryToggle from '../components/CheckoutSummaryToggle.astro';
-import CheckoutLayout from '../components/CheckoutLayout.astro';
-import CheckoutContactForm from '../components/CheckoutContactForm.astro';
-import CheckoutDeliveryForm from '../components/CheckoutDeliveryForm.astro';
-import CheckoutDeliveryMethod from '../components/CheckoutDeliveryMethod.astro';
-import CheckoutPayment from '../components/CheckoutPayment.astro';
-import CheckoutOrderSummary from '../components/CheckoutOrderSummary.astro';
-import CheckoutTotals from '../components/CheckoutTotals.astro';
-import CheckoutSubmit from '../components/CheckoutSubmit.astro';
-import CheckoutTerms from '../components/CheckoutTerms.astro';
+import CheckoutForm from '../components/CheckoutForm.astro';
+import CheckoutSummary from '../components/CheckoutSummary.astro';
 
 const meta = (data as any)?.meta ?? {};
-const homeBlocks = (data as any)?.content ?? [];
 const checkoutPage = (data as any)?.pagesData?.checkout ?? { content: [] };
 
-const headerBlock = checkoutPage.content.find((b: any) => b.type === 'CheckoutHeader');
-const homeHeaderBlock = homeBlocks.find((b: any) => b.type === 'Header');
-const homeFooterBlock = homeBlocks.find((b: any) => b.type === 'Footer');
-
-// Filter blocks by slot kind for layout column placement.
 type Block = { type: string; props: Record<string, any> };
-const formSlotTypes = new Set([
-  'CheckoutContactForm',
-  'CheckoutDeliveryForm',
-  'CheckoutDeliveryMethod',
-  'CheckoutPayment',
-  'CheckoutSubmit',
-  'CheckoutTerms',
-]);
-const summarySlotTypes = new Set(['CheckoutOrderSummary', 'CheckoutTotals']);
+const blocks: Block[] = Array.isArray(checkoutPage.content) ? checkoutPage.content : [];
 
-const blocksByType = (types: Set<string>) =>
-  (checkoutPage.content as Block[]).filter((b) => types.has(b.type));
-
-const layoutBlock = (checkoutPage.content as Block[]).find((b) => b.type === 'CheckoutLayout');
-const summaryToggleBlock = (checkoutPage.content as Block[]).find((b) => b.type === 'CheckoutSummaryToggle');
-const formBlocks = blocksByType(formSlotTypes);
-const summaryBlocks = blocksByType(summarySlotTypes);
-
-function renderBlock(b: Block) {
-  switch (b.type) {
-    case 'CheckoutContactForm':
-      return CheckoutContactForm;
-    case 'CheckoutDeliveryForm':
-      return CheckoutDeliveryForm;
-    case 'CheckoutDeliveryMethod':
-      return CheckoutDeliveryMethod;
-    case 'CheckoutPayment':
-      return CheckoutPayment;
-    case 'CheckoutOrderSummary':
-      return CheckoutOrderSummary;
-    case 'CheckoutTotals':
-      return CheckoutTotals;
-    case 'CheckoutSubmit':
-      return CheckoutSubmit;
-    case 'CheckoutTerms':
-      return CheckoutTerms;
-    default:
-      return null;
-  }
-}
+const headerBlock = blocks.find((b) => b.type === 'CheckoutHeader');
+const formBlock = blocks.find((b) => b.type === 'CheckoutForm');
+const summaryBlock = blocks.find((b) => b.type === 'CheckoutSummary');
+const footerBlock = blocks.find((b) => b.type === 'Footer');
+const homeFooter = ((data as any)?.content ?? []).find((b: any) => b.type === 'Footer');
+const footerProps = footerBlock?.props ?? homeFooter?.props ?? (siteConfig as any)?.footer ?? {};
 ---
 <BaseLayout title={`Оформление заказа — ${meta?.title ?? 'Мой сайт'}`}>
+  {/* Figma 1:13398 — checkout always light scheme regardless of theme default. */}
   <div class="color-scheme-2">
-  {headerBlock ? <CheckoutHeader {...headerBlock.props} /> : homeHeaderBlock && <Header {...homeHeaderBlock.props} />}
+    {headerBlock && <CheckoutHeader {...headerBlock.props} />}
 
-  <main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">
-    {summaryToggleBlock && <CheckoutSummaryToggle {...summaryToggleBlock.props} />}
-
-    {layoutBlock ? (
-      <CheckoutLayout {...layoutBlock.props}>
-        <Fragment slot="form">
-          {formBlocks.map((b) => {
-            const Comp = renderBlock(b);
-            return Comp ? <Comp {...b.props} /> : null;
-          })}
-        </Fragment>
-        <Fragment slot="summary">
-          {summaryBlocks.map((b) => {
-            const Comp = renderBlock(b);
-            return Comp ? <Comp {...b.props} /> : null;
-          })}
-        </Fragment>
-      </CheckoutLayout>
-    ) : (
-      <div class="mx-auto max-w-[var(--container-max-width)] px-4 flex flex-col gap-6">
-        {formBlocks.concat(summaryBlocks).map((b) => {
-          const Comp = renderBlock(b);
-          return Comp ? <Comp {...b.props} /> : null;
-        })}
+    <main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">
+      <div class="mx-auto max-w-[var(--container-max-width)] px-4 py-16 grid grid-cols-1 lg:grid-cols-[652px_884px] gap-x-16 gap-y-8 justify-center">
+        <div data-checkout-column="form">
+          {formBlock && <CheckoutForm {...formBlock.props} />}
+        </div>
+        <div data-checkout-column="summary">
+          {summaryBlock && <CheckoutSummary {...summaryBlock.props} />}
+        </div>
       </div>
-    )}
-  </main>
+    </main>
 
-  <footer class="w-full bg-black flex items-center justify-center h-16">
-    <p class="[font-family:'Inter','sans-serif'] font-light text-[16px] text-white">
-      © 2026 Vanilla Theme Все права защищены. Powered by Merfy
-    </p>
-  </footer>
+    {footerBlock ? <Footer {...footerProps} /> : null}
+  </div>
 
   <div id="checkout-island" style="display:contents"></div>
 
@@ -139,5 +73,4 @@ function renderBlock(b: Block) {
       });
     }
   </script>
-</div>
 </BaseLayout>

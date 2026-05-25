@@ -1,0 +1,107 @@
+---
+// CheckoutForm — мега-блок «Оформление заказа» (Figma 1:19998).
+// Консолидирует 6 inner sections (Contact / Delivery / DeliveryMethod /
+// Payment / Submit / Terms) в один Puck блок. Каждая inner-секция импортируется
+// как Astro component → сохраняет data-checkout-slot markers (React Island
+// CheckoutFlow.tsx находит их через querySelectorAll и Portals interactive
+// content без изменений).
+//
+// Защищает merchant'a от 6 отдельных sidebar configs — per Figma тут только
+// Цветовая схема. Дефолты для inner blocks hardcoded ниже (matches миграцию
+// migrateCheckoutPage из 080 phase 6).
+import type { CheckoutFormProps } from './CheckoutForm.puckConfig';
+import { CheckoutFormClasses as C } from './CheckoutForm.classes';
+
+import CheckoutContactForm from '../CheckoutContactForm/CheckoutContactForm.astro';
+import CheckoutDeliveryForm from '../CheckoutDeliveryForm/CheckoutDeliveryForm.astro';
+import CheckoutDeliveryMethod from '../CheckoutDeliveryMethod/CheckoutDeliveryMethod.astro';
+import CheckoutPayment from '../CheckoutPayment/CheckoutPayment.astro';
+import CheckoutSubmit from '../CheckoutSubmit/CheckoutSubmit.astro';
+import CheckoutTerms from '../CheckoutTerms/CheckoutTerms.astro';
+
+interface Props extends CheckoutFormProps {
+  id?: string;
+}
+
+const { id, padding, colorScheme } = Astro.props as Props;
+
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+
+const schemeClass =
+  typeof colorScheme === 'string' && colorScheme
+    ? `color-scheme-${colorScheme.replace('scheme-', '')}`
+    : '';
+---
+<section
+  class:list={[C.root, schemeClass]}
+  data-puck-component-id={id}
+  data-block="checkout-form"
+  style={paddingStyle}
+>
+  <CheckoutContactForm
+    heading="Контакты"
+    showAuthLink={true}
+    authLinkText="Войти в аккаунт"
+    authLinkHref="/login?next=/checkout"
+    emailLabel="E-mail"
+    phoneLabel="Номер телефона"
+    phoneFormat="ru"
+    padding={{ top: 0, bottom: 0 }}
+  />
+
+  <CheckoutDeliveryForm
+    heading="Доставка"
+    country={{ enabled: true, default: 'Российская Федерация', selectable: true }}
+    nameField={{ enabled: true, splitFirstLast: true }}
+    cityDadata={true}
+    addressDadata={true}
+    indexAutoFill={true}
+    requiredFields={['email', 'phone', 'name', 'address', 'index']}
+    padding={{ top: 0, bottom: 0 }}
+  />
+
+  <CheckoutDeliveryMethod
+    heading="Способ доставки"
+    cdekEnabled={true}
+    cdekDoorLabel="Курьер до двери"
+    cdekPvzLabel="До пункта выдачи"
+    pickupEnabled={false}
+    pickupLabel="Самовывоз"
+    customMethods={[]}
+    freeShippingThresholdCents={null}
+    padding={{ top: 0, bottom: 0 }}
+  />
+
+  <CheckoutPayment
+    heading="Платёжная система"
+    subheading="Все транзакции безопасны и зашифрованы"
+    methods={[
+      { key: 'bank_card', enabled: true, label: 'Банковская карта' },
+      { key: 'sbp', enabled: true, label: 'СБП (Система быстрых платежей)' },
+      { key: 'sberbank', enabled: false, label: 'Sber Pay' },
+      { key: 'tinkoff_bank', enabled: false, label: 'T-Pay' },
+    ]}
+    cardForm={{ cvvHelpEnabled: true, nameOnCardEnabled: true, warningText: 'Счёт будет выставлен по вашему адресу' }}
+    padding={{ top: 0, bottom: 0 }}
+  />
+
+  <CheckoutSubmit
+    buttonText="Оплатить {total}"
+    buttonStyle="fill"
+    loadingText="Обработка платежа…"
+    successRedirectUrl="/checkout-result"
+    padding={{ top: 0, bottom: 0 }}
+  />
+
+  <CheckoutTerms
+    text="Размещая заказ, вы соглашаетесь с [Условиями обслуживания](/legal/terms), [Политикой конфиденциальности](/legal/privacy) и [Политикой использования файлов cookie](/legal/cookies)."
+    links={[
+      { label: 'Условия обслуживания', url: '/legal/terms' },
+      { label: 'Политика конфиденциальности', url: '/legal/privacy' },
+      { label: 'Политика использования файлов cookie', url: '/legal/cookies' },
+    ]}
+    padding={{ top: 0, bottom: 0 }}
+  />
+</section>

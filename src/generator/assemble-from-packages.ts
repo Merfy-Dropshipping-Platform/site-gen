@@ -304,7 +304,17 @@ async function copyBlocksFromPackage(
     const astroAlready = await fileExists(destAstro);
 
     if (hasAstro && (overwrite || !astroAlready)) {
-      await fs.copyFile(astroFile, destAstro);
+      // Rewrite cross-block imports: in source, blocks are at
+      // `blocks/<X>/<X>.astro` and import siblings via `../<Y>/<Y>.astro`.
+      // After copy ALL block .astro live in flat `src/components/` — so the
+      // import path must become `./<Y>.astro` (sibling). Needed for mega-blocks
+      // (CheckoutForm/CheckoutSummary/CartBody) which compose inner blocks.
+      const astroContent = await fs.readFile(astroFile, 'utf8');
+      const rewritten = astroContent.replace(
+        /(from\s+['"])\.\.\/([A-Z][A-Za-z0-9]*)\/\2\.astro(['"])/g,
+        '$1./$2.astro$3',
+      );
+      await fs.writeFile(destAstro, rewritten, 'utf8');
       tracked.push(path.relative(outputDir, destAstro));
     }
 

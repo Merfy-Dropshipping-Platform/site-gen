@@ -415,16 +415,17 @@ function migrateProductPage(pagesData: Record<string, unknown>): Record<string, 
 }
 
 /**
- * 080 phase 6: checkout page is now Puck-managed with 11 fine-grained Checkout*
- * blocks (Header / Layout shell with form/summary slots / Contact / Delivery /
- * DeliveryMethod / Payment / OrderSummary / Totals / Submit / Terms /
- * SummaryToggle). Existing sites have either no `checkout` page or a legacy
- * `siteConfig.checkout` flat object. This migration:
+ * Figma 1:19998: checkout page = 4 sections (Header / CheckoutForm /
+ * CheckoutSummary / Footer). 6 form-side blocks (Contact/Delivery/Method/
+ * Payment/Submit/Terms) консолидированы в CheckoutForm; OrderSummary + Totals
+ * — в CheckoutSummary.
  *
- *   - Seeds a default 11-block layout when `pagesData.checkout` is missing.
- *   - Idempotent: pages that already contain a CheckoutLayout block are left.
- *   - Does NOT migrate `siteConfig.checkout` — those merchant settings are
- *     wired through the live page Astro template (separate fallback).
+ *   - Seeds Figma-canonical 4-block layout когда checkout missing.
+ *   - Migrates legacy 11-block sites (080) → 4-block (collapse inner blocks
+ *     in form/summary mega).
+ *   - Idempotent: уже-мигрированные на 2-mega остаются.
+ *   - Legacy `siteConfig.checkout` НЕ мигрируется — merchant settings
+ *     теперь hardcoded в CheckoutForm.astro defaults.
  */
 function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string, unknown> {
   // Constructor uses `page-checkout` key, live `pages/checkout.astro` reads
@@ -433,24 +434,9 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
   const fromLegacy = out['page-checkout'] as PageData | undefined;
   const fromNew = out['checkout'] as PageData | undefined;
   const source = fromNew?.content?.length ? fromNew : fromLegacy;
-  if (source && Array.isArray(source.content) && source.content.some((b) => b?.type === 'CheckoutLayout')) {
-    // Already migrated — patch in-place fixes for fields that have changed
-    // semantics over time, then keep both keys in sync.
-    for (const block of source.content) {
-      if (block?.type === 'CheckoutDeliveryForm') {
-        const props = (block.props ?? {}) as Record<string, unknown>;
-        const country = (props.country ?? {}) as Record<string, unknown>;
-        // Force the country field into dropdown mode for all existing sites —
-        // readonly was a transient default that never matched the design.
-        if (country.selectable !== true) {
-          props.country = { ...country, selectable: true };
-          block.props = props;
-        }
-      }
-    }
-    // 094: ensure Footer at end (CheckoutHeader stays in front — checkout
-    // uses its own header variant, no global Header here). Build a fresh
-    // page object so we don't mutate the caller's source array.
+
+  // Уже консолидирован в 2 mega-блока (новый Figma 1:19998 layout) — no-op.
+  if (source && Array.isArray(source.content) && source.content.some((b) => b?.type === 'CheckoutForm')) {
     let chromed: PageData = source;
     if (!chromed.content!.some((b) => b?.type === 'Footer')) {
       const { footerBlock } = getHomeChrome(pagesData);
@@ -460,6 +446,48 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
     out['page-checkout'] = chromed;
     return out;
   }
+
+  // Legacy 080: имеет CheckoutLayout + 11 fine-grained блоков. Collapse в
+  // [CheckoutHeader, CheckoutForm, CheckoutSummary, Footer]. Удаляем
+  // 11 inner blocks (functionality сохраняется т.к. CheckoutForm рендерит
+  // их через Astro imports с теми же дефолтами).
+  if (source && Array.isArray(source.content) && source.content.some((b) => b?.type === 'CheckoutLayout')) {
+    const ts0 = Date.now();
+    const header = source.content.find((b) => b?.type === 'CheckoutHeader');
+    const footer = source.content.find((b) => b?.type === 'Footer');
+    const collapsed: Block[] = [
+      header ?? {
+        type: 'CheckoutHeader',
+        props: {
+          id: `CheckoutHeader-${ts0}`,
+          siteTitle: 'Мой магазин',
+          logoMode: 'text',
+          logoImage: null,
+          rightIcon: 'cart',
+          accountLink: '/account',
+          backLink: '/cart',
+          cartLink: '/cart',
+          padding: { top: 24, bottom: 24 },
+        },
+      },
+      {
+        type: 'CheckoutForm',
+        props: { id: `CheckoutForm-${ts0 + 1}`, colorScheme: 'scheme-2', padding: { top: 0, bottom: 0 } },
+      },
+      {
+        type: 'CheckoutSummary',
+        props: { id: `CheckoutSummary-${ts0 + 2}`, colorScheme: 'scheme-2', padding: { top: 0, bottom: 0 } },
+      },
+      footer ?? getHomeChrome(pagesData).footerBlock,
+    ];
+    const chromed: PageData = { ...source, content: collapsed };
+    out['checkout'] = chromed;
+    out['page-checkout'] = chromed;
+    return out;
+  }
+  // Figma 1:19998 — 2 mega-блока «Оформление заказа» + «Сводка заказа».
+  // Inner config (Contact / Delivery / Payment fields, terms text, etc) —
+  // hardcoded в CheckoutForm.astro / CheckoutSummary.astro defaults.
   const ts = Date.now();
   const seedBlocks: Block[] = [
     {
@@ -469,8 +497,6 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
         siteTitle: 'Мой магазин',
         logoMode: 'text',
         logoImage: null,
-        // Per Figma 1:13563 — checkout header shows the cart icon, not the
-        // account/avatar one. Aligns with the icon shown in the design.
         rightIcon: 'cart',
         accountLink: '/account',
         backLink: '/cart',
@@ -479,134 +505,18 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
       } as Record<string, unknown>,
     },
     {
-      type: 'CheckoutSummaryToggle',
+      type: 'CheckoutForm',
       props: {
-        id: `CheckoutSummaryToggle-${ts + 1}`,
-        headerText: 'Сводка заказа',
-        dropdownIcon: 'chevron',
-        responsive: { showOnMobile: true, showOnDesktop: false },
-        padding: { top: 12, bottom: 12 },
-      } as Record<string, unknown>,
-    },
-    {
-      type: 'CheckoutLayout',
-      props: {
-        id: `CheckoutLayout-${ts + 2}`,
-        summaryPosition: 'right',
-        formColumnWidth: 652,
-        summaryColumnWidth: 884,
-        gap: 64,
-        breakpoint: 768,
-        // Per Figma 1:13398 — top spacing comes from formColumn pt-16; keep top:0.
-        padding: { top: 0, bottom: 80 },
-      } as Record<string, unknown>,
-      // Slots populated below via zones; keeping as flat content[] for the seed.
-    },
-    {
-      type: 'CheckoutContactForm',
-      props: {
-        id: `CheckoutContactForm-${ts + 3}`,
-        heading: 'Контакты',
-        showAuthLink: true,
-        authLinkText: 'Войти в аккаунт',
-        authLinkHref: '/login?next=/checkout',
-        emailLabel: 'E-mail',
-        phoneLabel: 'Номер телефона',
-        phoneFormat: 'ru',
+        id: `CheckoutForm-${ts + 1}`,
+        colorScheme: 'scheme-2',
         padding: { top: 0, bottom: 0 },
       } as Record<string, unknown>,
     },
     {
-      type: 'CheckoutDeliveryForm',
+      type: 'CheckoutSummary',
       props: {
-        id: `CheckoutDeliveryForm-${ts + 4}`,
-        heading: 'Доставка',
-        country: { enabled: true, default: 'Российская Федерация', selectable: true },
-        nameField: { enabled: true, splitFirstLast: true },
-        cityDadata: true,
-        addressDadata: true,
-        indexAutoFill: true,
-        requiredFields: ['email', 'phone', 'name', 'address', 'index'],
-        padding: { top: 0, bottom: 0 },
-      } as Record<string, unknown>,
-    },
-    {
-      type: 'CheckoutDeliveryMethod',
-      props: {
-        id: `CheckoutDeliveryMethod-${ts + 5}`,
-        heading: 'Способ доставки',
-        cdekEnabled: true,
-        cdekDoorLabel: 'Курьер до двери',
-        cdekPvzLabel: 'До пункта выдачи',
-        pickupEnabled: false,
-        pickupLabel: 'Самовывоз',
-        customMethods: [],
-        freeShippingThresholdCents: null,
-        padding: { top: 0, bottom: 0 },
-      } as Record<string, unknown>,
-    },
-    {
-      type: 'CheckoutPayment',
-      props: {
-        id: `CheckoutPayment-${ts + 6}`,
-        heading: 'Платёжная система',
-        subheading: 'Все транзакции безопасны и зашифрованы',
-        methods: [
-          { key: 'bank_card', enabled: true, label: 'Банковская карта' },
-          { key: 'sbp', enabled: true, label: 'СБП (Система быстрых платежей)' },
-          { key: 'sberbank', enabled: false, label: 'Sber Pay' },
-          { key: 'tinkoff_bank', enabled: false, label: 'T-Pay' },
-        ],
-        cardForm: { cvvHelpEnabled: true, nameOnCardEnabled: true, warningText: 'Счёт будет выставлен по вашему адресу' },
-        padding: { top: 0, bottom: 0 },
-      } as Record<string, unknown>,
-    },
-    {
-      type: 'CheckoutOrderSummary',
-      props: {
-        id: `CheckoutOrderSummary-${ts + 7}`,
-        heading: 'Сводка заказа',
-        itemImageSize: 'compact',
-        showVariantLabels: true,
-        showCompareAtPrice: true,
-        promoToggle: { enabled: true, label: 'У меня есть промокод', applyButtonText: 'Применить' },
-        bogoBadge: true,
-        padding: { top: 0, bottom: 0 },
-      } as Record<string, unknown>,
-    },
-    {
-      type: 'CheckoutTotals',
-      props: {
-        id: `CheckoutTotals-${ts + 8}`,
-        deliveryLabel: 'Доставка',
-        freeText: 'Бесплатно',
-        totalLabel: 'Итого',
-        showSubtotal: false,
-        showDiscount: true,
-        padding: { top: 0, bottom: 0 },
-      } as Record<string, unknown>,
-    },
-    {
-      type: 'CheckoutSubmit',
-      props: {
-        id: `CheckoutSubmit-${ts + 9}`,
-        buttonText: 'Оплатить {total}',
-        buttonStyle: 'fill',
-        loadingText: 'Обработка платежа…',
-        successRedirectUrl: '/checkout-result',
-        padding: { top: 0, bottom: 0 },
-      } as Record<string, unknown>,
-    },
-    {
-      type: 'CheckoutTerms',
-      props: {
-        id: `CheckoutTerms-${ts + 10}`,
-        text: 'Размещая заказ, вы соглашаетесь с [Условиями обслуживания](/legal/terms), [Политикой конфиденциальности](/legal/privacy) и [Политикой использования файлов cookie](/legal/cookies).',
-        links: [
-          { label: 'Условия обслуживания', url: '/legal/terms' },
-          { label: 'Политика конфиденциальности', url: '/legal/privacy' },
-          { label: 'Политика использования файлов cookie', url: '/legal/cookies' },
-        ],
+        id: `CheckoutSummary-${ts + 2}`,
+        colorScheme: 'scheme-2',
         padding: { top: 0, bottom: 0 },
       } as Record<string, unknown>,
     },

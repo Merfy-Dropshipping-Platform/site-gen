@@ -38,7 +38,9 @@ const paddingStyle = padding
         id="checkout-email"
         name="email"
         type="email"
-        autocomplete="email"
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
         placeholder=" "
       />
       <label class={C.label} for="checkout-email">{emailLabel}</label>
@@ -49,7 +51,7 @@ const paddingStyle = padding
         id="checkout-phone"
         name="phone"
         type="tel"
-        autocomplete="tel"
+        autocomplete="off"
         placeholder=" "
         data-checkout-phone
       />

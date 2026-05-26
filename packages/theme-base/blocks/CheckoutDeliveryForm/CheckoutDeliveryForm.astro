@@ -42,7 +42,7 @@ const paddingStyle = padding
           id="checkout-country"
           name="country"
           type="text"
-          autocomplete="country-name"
+          autocomplete="off"
           value={country.default}
           placeholder=" "
           readonly={!country.selectable}
@@ -63,51 +63,58 @@ const paddingStyle = padding
     {nameField.enabled && (nameField.splitFirstLast ? (
       <div class={C.fieldRow2}>
         <div class={C.field} data-checkout-field="firstName">
-          <input class={C.input} id="checkout-firstName" name="firstName" type="text" autocomplete="given-name" placeholder=" " />
+          <input class={C.input} id="checkout-firstName" name="firstName" type="text" autocomplete="off" placeholder=" " />
           <label class={C.label} for="checkout-firstName">Имя</label>
         </div>
         <div class={C.field} data-checkout-field="lastName">
-          <input class={C.input} id="checkout-lastName" name="lastName" type="text" autocomplete="family-name" placeholder=" " />
+          <input class={C.input} id="checkout-lastName" name="lastName" type="text" autocomplete="off" placeholder=" " />
           <label class={C.label} for="checkout-lastName">Фамилия</label>
         </div>
       </div>
     ) : (
       <div class={C.field} data-checkout-field="fullName">
-        <input class={C.input} id="checkout-fullName" name="fullName" type="text" autocomplete="name" placeholder=" " />
+        <input class={C.input} id="checkout-fullName" name="fullName" type="text" autocomplete="off" placeholder=" " />
         <label class={C.label} for="checkout-fullName">ФИО</label>
       </div>
     ))}
 
-    {/* Город — full row, Figma 1:19998. */}
-    <div class={C.field} data-checkout-field="city" data-dadata={String(cityDadata)}>
-      <input
-        class={cityDadata ? C.inputWithIcon : C.input}
-        id="checkout-city"
-        name="city"
-        type="text"
-        autocomplete="address-level2"
-        placeholder=" "
-        data-checkout-dadata-input="city"
-      />
-      <label class={C.label} for="checkout-city">Город</label>
-      {cityDadata && (
-        <span class={C.searchIcon}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
-        </span>
-      )}
-      {cityDadata && (
-        <ul class={C.dropdown} data-checkout-dadata-list="city" hidden></ul>
-      )}
+    {/* Город + Индекс — один ряд, 65/35 на десктопе. Индекс не вешает
+        одиночный ряд, и логически связан с городом (postal_code города). */}
+    <div class={C.cityIndexRow}>
+      <div class={C.field} data-checkout-field="city" data-dadata={String(cityDadata)}>
+        <input
+          class={cityDadata ? C.inputWithIcon : C.input}
+          id="checkout-city"
+          name="city"
+          type="text"
+          autocomplete="off"
+          placeholder=" "
+          data-checkout-dadata-input="city"
+        />
+        <label class={C.label} for="checkout-city">Город</label>
+        {cityDadata && (
+          <span class={C.searchIcon}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+          </span>
+        )}
+        {cityDadata && (
+          <ul class={C.dropdown} data-checkout-dadata-list="city" hidden></ul>
+        )}
+      </div>
+      <div class={C.field} data-checkout-field="postalCode" data-autofill={String(indexAutoFill)}>
+        <input class={C.input} id="checkout-postal" name="postalCode" type="text" autocomplete="off" placeholder=" " />
+        <label class={C.label} for="checkout-postal">Индекс</label>
+      </div>
     </div>
 
-    {/* Адрес — full row (Figma 1:19998 frame 183:27957, user feedback). */}
+    {/* Адрес — full row, до квартиры. */}
     <div class={C.field} data-checkout-field="address" data-dadata={String(addressDadata)}>
       <input
         class={addressDadata ? C.inputWithIcon : C.input}
         id="checkout-address"
         name="address"
         type="text"
-        autocomplete="street-address"
+        autocomplete="off"
         placeholder=" "
         data-checkout-dadata-input="address"
       />
@@ -120,12 +127,6 @@ const paddingStyle = padding
       {addressDadata && (
         <ul class={C.dropdown} data-checkout-dadata-list="address" hidden></ul>
       )}
-    </div>
-
-    {/* Индекс — отдельный ряд, 50% ширины на десктопе. */}
-    <div class={`${C.field} md:w-1/2`} data-checkout-field="postalCode" data-autofill={String(indexAutoFill)}>
-      <input class={C.input} id="checkout-postal" name="postalCode" type="text" autocomplete="postal-code" placeholder=" " />
-      <label class={C.label} for="checkout-postal">Индекс</label>
     </div>
   </div>
 </section>

@@ -7,6 +7,8 @@ export const CheckoutDeliveryFormClasses = {
     'mb-4 [font-family:var(--font-body)] text-[length:var(--size-h3)] text-[rgb(var(--color-heading))]',
   fields: 'flex flex-col gap-4',
   fieldRow2: 'grid grid-cols-1 md:grid-cols-2 gap-4',
+  // 65/35 split — город получает основное место, индекс компактный.
+  cityIndexRow: 'grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-4',
   field:
     'relative bg-[rgb(var(--color-input-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] h-14 transition-colors focus-within:border-[rgb(var(--color-text)/.5)]',
   input:

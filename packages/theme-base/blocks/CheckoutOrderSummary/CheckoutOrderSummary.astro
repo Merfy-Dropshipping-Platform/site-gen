@@ -120,13 +120,18 @@ const imageSize = itemImageSize === 'expanded' ? 120 : 96;
       var qty = item.quantity || 1;
       var isBonus = !!item.isBonus;
 
+      // overflow-hidden только на внутренней обёртке картинки.
+      // Бейдж количества — сибилинг, не клипится при выходе за пределы.
       var imgHtml = img
-        ? '<div class="relative flex-shrink-0 rounded-md overflow-hidden bg-[rgb(var(--color-input-bg))]" style="width:' + imageSize + 'px;height:' + imageSize + 'px;">'
-          + '<img src="' + esc(img) + '" alt="' + esc(name) + '" class="absolute inset-0 w-full h-full object-cover" loading="lazy" onerror="this.style.display=\'none\'"/>'
+        ? '<div class="relative flex-shrink-0" style="width:' + imageSize + 'px;height:' + imageSize + 'px;">'
+          + '<div class="absolute inset-0 rounded-md overflow-hidden bg-[rgb(var(--color-input-bg))]">'
+            + '<img src="' + esc(img) + '" alt="' + esc(name) + '" class="w-full h-full object-cover" loading="lazy" onerror="this.style.display=\'none\'"/>'
+          + '</div>'
           + '<span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[rgb(var(--color-text))] text-[rgb(var(--color-bg))] text-[10px] flex items-center justify-center [font-family:var(--font-body)] z-10">' + qty + '</span>'
           + '</div>'
-        : '<div class="relative flex-shrink-0 rounded-md bg-[rgb(var(--color-input-bg))]" style="width:' + imageSize + 'px;height:' + imageSize + 'px;">'
-          + '<span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[rgb(var(--color-text))] text-[rgb(var(--color-bg))] text-[10px] flex items-center justify-center [font-family:var(--font-body)]">' + qty + '</span>'
+        : '<div class="relative flex-shrink-0" style="width:' + imageSize + 'px;height:' + imageSize + 'px;">'
+          + '<div class="absolute inset-0 rounded-md bg-[rgb(var(--color-input-bg))]"></div>'
+          + '<span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[rgb(var(--color-text))] text-[rgb(var(--color-bg))] text-[10px] flex items-center justify-center [font-family:var(--font-body)] z-10">' + qty + '</span>'
           + '</div>';
 
       var badge = (bogoBadge && isBonus)

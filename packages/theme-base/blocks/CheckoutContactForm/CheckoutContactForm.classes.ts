@@ -14,5 +14,5 @@ export const CheckoutContactFormClasses = {
   input:
     'peer block w-full h-full px-3 pt-5 pb-1 bg-transparent outline-none [font-family:var(--font-body)] text-[length:var(--size-body)] text-[rgb(var(--color-text))] placeholder-transparent rounded-[var(--radius-input)]',
   label:
-    'absolute left-3 top-1.5 [font-family:var(--font-body)] text-[10px] leading-none text-[rgb(var(--color-input-label))] pointer-events-none transition-all duration-150 ease-out peer-[:placeholder-shown:not(:focus)]:top-1/2 peer-[:placeholder-shown:not(:focus)]:-translate-y-1/2 peer-[:placeholder-shown:not(:focus)]:text-[length:var(--size-body)] peer-[:placeholder-shown:not(:focus)]:text-[rgb(var(--color-input-placeholder))]',
+    'absolute left-3 top-1.5 [font-family:var(--font-body)] text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label))] pointer-events-none transition-all duration-150 ease-out peer-[:placeholder-shown:not(:focus)]:top-1/2 peer-[:placeholder-shown:not(:focus)]:-translate-y-1/2 peer-[:placeholder-shown:not(:focus)]:text-[length:var(--size-body)] peer-[:placeholder-shown:not(:focus)]:text-[rgb(var(--color-input-placeholder))]',
 } as const;

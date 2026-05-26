@@ -237,9 +237,17 @@ const paddingStyle = padding
           // Только street-level подсказки (без городов и областей)
           body.from_bound = { value: 'street' };
           body.to_bound = { value: 'house' };
+          // Приоритет: сохранённый city_fias_id (после выбора города) → текст города → fallback страна
+          var storedFiasId = section.getAttribute('data-selected-city-fias-id') || '';
           var cityInput = section.querySelector('[data-checkout-dadata-input="city"]');
           var cityVal = cityInput && cityInput.value && cityInput.value.trim();
-          if (cityVal) body.locations = [{ city: cityVal }];
+          if (storedFiasId) {
+            body.locations = [{ city_fias_id: storedFiasId }];
+          } else if (cityVal) {
+            body.locations = [{ city: cityVal }];
+          } else {
+            body.locations = [{ country: 'Россия' }];
+          }
         }
         try {
           var res = await fetch(DADATA_URL, {
@@ -276,6 +284,7 @@ const paddingStyle = padding
               + ' data-suggest-value="' + escapeHtml(setVal) + '"'
               + ' data-postal="' + escapeHtml(d.postal_code || '') + '"'
               + ' data-city="' + escapeHtml(d.city || '') + '"'
+              + ' data-fias-id="' + escapeHtml(d.city_fias_id || d.fias_id || '') + '"'
               + '>' + escapeHtml(setVal) + '</li>';
           }).join('');
           list.hidden = false;
@@ -288,6 +297,11 @@ const paddingStyle = padding
         var q = (input.value || '').trim();
         if (q === lastQuery) return;
         lastQuery = q;
+        // Юзер изменил город руками → сохранённый fias_id больше не валиден
+        // для фильтрации адресных подсказок. Очищаем.
+        if (kind === 'city') {
+          section.removeAttribute('data-selected-city-fias-id');
+        }
         clearTimeout(debounce);
         debounce = setTimeout(function () { fetchSuggestions(q); }, 200);
       });
@@ -304,6 +318,7 @@ const paddingStyle = padding
         e.preventDefault();
         var val = li.getAttribute('data-suggest-value') || '';
         var postal = li.getAttribute('data-postal') || '';
+        var fiasId = li.getAttribute('data-fias-id') || '';
 
         // CRITICAL: ставим lastQuery + чистим debounce ДО изменения value,
         // иначе input-event ре-триггерит fetch и dropdown снова открывается.
@@ -316,13 +331,24 @@ const paddingStyle = padding
         // 'change' не триггерит наш input-listener (не ре-fetch'нет DaData)
         input.dispatchEvent(new Event('change', { bubbles: true }));
 
-        // Autofill индекса если включено в settings
-        var indexField = section.querySelector('[data-checkout-field="postalCode"]');
-        if (indexField && indexField.getAttribute('data-autofill') === 'true' && postal) {
-          var postalInput = indexField.querySelector('input');
-          if (postalInput) {
-            postalInput.value = postal;
-            postalInput.dispatchEvent(new Event('change', { bubbles: true }));
+        // При выборе города — сохраняем city_fias_id для точной фильтрации
+        // адресных подсказок. Это важнее текстового совпадения city.
+        if (kind === 'city') {
+          if (fiasId) section.setAttribute('data-selected-city-fias-id', fiasId);
+          else section.removeAttribute('data-selected-city-fias-id');
+        }
+
+        // Autofill индекса — ТОЛЬКО при выборе полного адреса (улица + дом).
+        // У города postal_code это центральный индекс района, что неправильно
+        // для конкретной доставки. Точный индекс берётся из адресной строки.
+        if (kind === 'address') {
+          var indexField = section.querySelector('[data-checkout-field="postalCode"]');
+          if (indexField && indexField.getAttribute('data-autofill') === 'true' && postal) {
+            var postalInput = indexField.querySelector('input');
+            if (postalInput) {
+              postalInput.value = postal;
+              postalInput.dispatchEvent(new Event('change', { bubbles: true }));
+            }
           }
         }
       });

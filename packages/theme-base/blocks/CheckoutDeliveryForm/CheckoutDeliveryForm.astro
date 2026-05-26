@@ -100,32 +100,32 @@ const paddingStyle = padding
       )}
     </div>
 
-    {/* Адрес + Индекс row. */}
-    <div class={C.fieldRow2}>
-      <div class={C.field} data-checkout-field="address" data-dadata={String(addressDadata)}>
-        <input
-          class={addressDadata ? C.inputWithIcon : C.input}
-          id="checkout-address"
-          name="address"
-          type="text"
-          autocomplete="street-address"
-          placeholder=" "
-          data-checkout-dadata-input="address"
-        />
-        <label class={C.label} for="checkout-address">Полный адрес</label>
-        {addressDadata && (
-          <span class={C.searchIcon}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
-          </span>
-        )}
-        {addressDadata && (
-          <ul class={C.dropdown} data-checkout-dadata-list="address" hidden></ul>
-        )}
-      </div>
-      <div class={C.field} data-checkout-field="postalCode" data-autofill={String(indexAutoFill)}>
-        <input class={C.input} id="checkout-postal" name="postalCode" type="text" autocomplete="postal-code" placeholder=" " />
-        <label class={C.label} for="checkout-postal">Индекс</label>
-      </div>
+    {/* Адрес — full row (Figma 1:19998 frame 183:27957, user feedback). */}
+    <div class={C.field} data-checkout-field="address" data-dadata={String(addressDadata)}>
+      <input
+        class={addressDadata ? C.inputWithIcon : C.input}
+        id="checkout-address"
+        name="address"
+        type="text"
+        autocomplete="street-address"
+        placeholder=" "
+        data-checkout-dadata-input="address"
+      />
+      <label class={C.label} for="checkout-address">Полный адрес</label>
+      {addressDadata && (
+        <span class={C.searchIcon}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+        </span>
+      )}
+      {addressDadata && (
+        <ul class={C.dropdown} data-checkout-dadata-list="address" hidden></ul>
+      )}
+    </div>
+
+    {/* Индекс — отдельный ряд, 50% ширины на десктопе. */}
+    <div class={`${C.field} md:w-1/2`} data-checkout-field="postalCode" data-autofill={String(indexAutoFill)}>
+      <input class={C.input} id="checkout-postal" name="postalCode" type="text" autocomplete="postal-code" placeholder=" " />
+      <label class={C.label} for="checkout-postal">Индекс</label>
     </div>
   </div>
 </section>
@@ -234,9 +234,9 @@ const paddingStyle = padding
           body.to_bound = { value: 'settlement' };
         }
         if (kind === 'address') {
-          // Только street-level подсказки (без городов и областей)
+          // Подсказки от улицы до квартиры — точная адресная навигация.
           body.from_bound = { value: 'street' };
-          body.to_bound = { value: 'house' };
+          body.to_bound = { value: 'flat' };
           // Приоритет: сохранённый city_fias_id (после выбора города) → текст города → fallback страна
           var storedFiasId = section.getAttribute('data-selected-city-fias-id') || '';
           var cityInput = section.querySelector('[data-checkout-dadata-input="city"]');
@@ -270,12 +270,15 @@ const paddingStyle = padding
             var v = (s && s.value) || '';
             var d = (s && s.data) || {};
             var setVal = v;
-            // Для address — храним и показываем короткую запись без города
+            // Для address — короткая запись без города, до квартиры.
             if (kind === 'address') {
               var parts = [];
               if (d.street_with_type) parts.push(d.street_with_type);
               if (d.house) {
                 parts.push(((d.house_type || 'д') + ' ' + d.house).trim());
+              }
+              if (d.flat) {
+                parts.push(((d.flat_type || 'кв') + ' ' + d.flat).trim());
               }
               var shortAddr = parts.join(', ').trim();
               if (shortAddr) setVal = shortAddr;

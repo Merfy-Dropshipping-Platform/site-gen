@@ -425,7 +425,7 @@ export class PreviewService {
       'gap:32px',
     ].join(';');
     const mediaQuery = `
-      @media (min-width: 1024px) {
+      @media (min-width: 1280px) {
         [data-checkout-grid] {
           padding: 48px 0 48px 200px !important;
           grid-template-columns: 434px 589px !important;

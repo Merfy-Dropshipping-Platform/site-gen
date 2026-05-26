@@ -222,6 +222,14 @@ const paddingStyle = padding
       var debounce = null;
       var lastQuery = '';
 
+      function shortAddrFromData(d) {
+        var parts = [];
+        if (d.street_with_type) parts.push(d.street_with_type);
+        if (d.house) parts.push(((d.house_type || 'д') + ' ' + d.house).trim());
+        if (d.flat) parts.push(((d.flat_type || 'кв') + ' ' + d.flat).trim());
+        return parts.join(', ').trim();
+      }
+
       async function fetchSuggestions(query) {
         var token = getDadataToken();
         if (!token || query.length < 2) {
@@ -267,29 +275,34 @@ const paddingStyle = padding
             list.innerHTML = '';
             return;
           }
-          list.innerHTML = suggestions.map(function (s) {
-            var v = (s && s.value) || '';
-            var d = (s && s.data) || {};
-            var setVal = v;
-            // Для address — короткая запись без города, до квартиры.
-            if (kind === 'address') {
-              var parts = [];
-              if (d.street_with_type) parts.push(d.street_with_type);
-              if (d.house) {
-                parts.push(((d.house_type || 'д') + ' ' + d.house).trim());
+          var rendered = suggestions
+            .map(function (s) {
+              var v = (s && s.value) || '';
+              var d = (s && s.data) || {};
+              var setVal = v;
+              if (kind === 'address') {
+                var sa = shortAddrFromData(d);
+                if (sa) setVal = sa;
               }
-              if (d.flat) {
-                parts.push(((d.flat_type || 'кв') + ' ' + d.flat).trim());
-              }
-              var shortAddr = parts.join(', ').trim();
-              if (shortAddr) setVal = shortAddr;
-            }
+              return { setVal: setVal, d: d };
+            })
+            // Фильтр: убираем подсказку identical с текущим input.value,
+            // чтобы progressive refetch не показал «то же самое».
+            .filter(function (r) { return r.setVal !== input.value; });
+
+          if (rendered.length === 0) {
+            list.hidden = true;
+            list.innerHTML = '';
+            return;
+          }
+
+          list.innerHTML = rendered.map(function (r) {
             return '<li class="' + ITEM_CLS + '"'
-              + ' data-suggest-value="' + escapeHtml(setVal) + '"'
-              + ' data-postal="' + escapeHtml(d.postal_code || '') + '"'
-              + ' data-city="' + escapeHtml(d.city || '') + '"'
-              + ' data-fias-id="' + escapeHtml(d.city_fias_id || d.fias_id || '') + '"'
-              + '>' + escapeHtml(setVal) + '</li>';
+              + ' data-suggest-value="' + escapeHtml(r.setVal) + '"'
+              + ' data-postal="' + escapeHtml(r.d.postal_code || '') + '"'
+              + ' data-city="' + escapeHtml(r.d.city || '') + '"'
+              + ' data-fias-id="' + escapeHtml(r.d.city_fias_id || r.d.fias_id || '') + '"'
+              + '>' + escapeHtml(r.setVal) + '</li>';
           }).join('');
           list.hidden = false;
         } catch (e) {
@@ -335,17 +348,14 @@ const paddingStyle = padding
         // 'change' не триггерит наш input-listener (не ре-fetch'нет DaData)
         input.dispatchEvent(new Event('change', { bubbles: true }));
 
-        // При выборе города — сохраняем city_fias_id для точной фильтрации
-        // адресных подсказок. Это важнее текстового совпадения city.
         if (kind === 'city') {
+          // Сохраняем city_fias_id — точная фильтрация для address-подсказок.
           if (fiasId) section.setAttribute('data-selected-city-fias-id', fiasId);
           else section.removeAttribute('data-selected-city-fias-id');
         }
 
-        // Autofill индекса — ТОЛЬКО при выборе полного адреса (улица + дом).
-        // У города postal_code это центральный индекс района, что неправильно
-        // для конкретной доставки. Точный индекс берётся из адресной строки.
         if (kind === 'address') {
+          // Postal autofill ТОЛЬКО при выборе полного адреса (не города).
           var indexField = section.querySelector('[data-checkout-field="postalCode"]');
           if (indexField && indexField.getAttribute('data-autofill') === 'true' && postal) {
             var postalInput = indexField.querySelector('input');
@@ -354,6 +364,13 @@ const paddingStyle = padding
               postalInput.dispatchEvent(new Event('change', { bubbles: true }));
             }
           }
+
+          // PROGRESSIVE DISCLOSURE: рефетч с уже выбранным value → DaData
+          // вернёт следующий уровень (улица → дома → квартиры). Фильтр в
+          // fetchSuggestions уберёт дубль с текущим value. Если deeper level
+          // отсутствует — dropdown останется закрытым (suggestions = 0 после
+          // фильтра).
+          setTimeout(function () { fetchSuggestions(val); }, 50);
         }
       });
 

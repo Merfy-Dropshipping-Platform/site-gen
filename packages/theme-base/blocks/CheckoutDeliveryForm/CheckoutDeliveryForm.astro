@@ -234,6 +234,9 @@ const paddingStyle = padding
           body.to_bound = { value: 'settlement' };
         }
         if (kind === 'address') {
+          // Только street-level подсказки (без городов и областей)
+          body.from_bound = { value: 'street' };
+          body.to_bound = { value: 'house' };
           var cityInput = section.querySelector('[data-checkout-dadata-input="city"]');
           var cityVal = cityInput && cityInput.value && cityInput.value.trim();
           if (cityVal) body.locations = [{ city: cityVal }];
@@ -258,11 +261,22 @@ const paddingStyle = padding
           list.innerHTML = suggestions.map(function (s) {
             var v = (s && s.value) || '';
             var d = (s && s.data) || {};
+            var setVal = v;
+            // Для address — храним и показываем короткую запись без города
+            if (kind === 'address') {
+              var parts = [];
+              if (d.street_with_type) parts.push(d.street_with_type);
+              if (d.house) {
+                parts.push(((d.house_type || 'д') + ' ' + d.house).trim());
+              }
+              var shortAddr = parts.join(', ').trim();
+              if (shortAddr) setVal = shortAddr;
+            }
             return '<li class="' + ITEM_CLS + '"'
-              + ' data-suggest-value="' + escapeHtml(v) + '"'
+              + ' data-suggest-value="' + escapeHtml(setVal) + '"'
               + ' data-postal="' + escapeHtml(d.postal_code || '') + '"'
               + ' data-city="' + escapeHtml(d.city || '') + '"'
-              + '>' + escapeHtml(v) + '</li>';
+              + '>' + escapeHtml(setVal) + '</li>';
           }).join('');
           list.hidden = false;
         } catch (e) {
@@ -290,8 +304,17 @@ const paddingStyle = padding
         e.preventDefault();
         var val = li.getAttribute('data-suggest-value') || '';
         var postal = li.getAttribute('data-postal') || '';
+
+        // CRITICAL: ставим lastQuery + чистим debounce ДО изменения value,
+        // иначе input-event ре-триггерит fetch и dropdown снова открывается.
+        lastQuery = val;
+        clearTimeout(debounce);
+        list.hidden = true;
+        list.innerHTML = '';
+
         input.value = val;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
+        // 'change' не триггерит наш input-listener (не ре-fetch'нет DaData)
+        input.dispatchEvent(new Event('change', { bubbles: true }));
 
         // Autofill индекса если включено в settings
         var indexField = section.querySelector('[data-checkout-field="postalCode"]');
@@ -299,12 +322,9 @@ const paddingStyle = padding
           var postalInput = indexField.querySelector('input');
           if (postalInput) {
             postalInput.value = postal;
-            postalInput.dispatchEvent(new Event('input', { bubbles: true }));
+            postalInput.dispatchEvent(new Event('change', { bubbles: true }));
           }
         }
-        list.hidden = true;
-        list.innerHTML = '';
-        lastQuery = val;
       });
 
       var field = input.closest('[data-checkout-field]');

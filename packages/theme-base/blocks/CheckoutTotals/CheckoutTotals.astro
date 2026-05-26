@@ -1,22 +1,29 @@
 ---
+// CheckoutTotals — vanilla Astro + inline script + window.cartStore.
+// Никаких React island'ов. Subtotal/Discount/Delivery/Total пересчитываются
+// по events: cart:updated (cartStore), checkout:discount-applied (от
+// CheckoutOrderSummary), checkout:delivery-changed (от CheckoutDeliveryMethod).
+// Section скрывается когда корзина пуста — как CartTotals.
 import type { CheckoutTotalsProps } from './CheckoutTotals.puckConfig';
 import { CheckoutTotalsClasses as C } from './CheckoutTotals.classes';
 
 interface Props extends CheckoutTotalsProps { id?: string; }
 const { id, deliveryLabel, freeText, totalLabel, showSubtotal, showDiscount, padding } = Astro.props as Props;
-const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
-const propsJson = JSON.stringify({ deliveryLabel, freeText, totalLabel, showSubtotal, showDiscount });
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
 ---
 <section
   class={C.root}
   data-puck-component-id={id}
-  data-checkout-slot="totals"
-  data-checkout-props={propsJson}
+  data-checkout-totals
+  data-free-text={freeText}
+  hidden
   style={paddingStyle}
 >
   {showSubtotal && (
     <div class={C.row} data-totals-row="subtotal">
-      <span>Подытог</span><span data-totals-subtotal>—</span>
+      <span>Подытог</span><span data-totals-subtotal>0&nbsp;₽</span>
     </div>
   )}
   <div class={C.row} data-totals-row="delivery">
@@ -24,10 +31,76 @@ const propsJson = JSON.stringify({ deliveryLabel, freeText, totalLabel, showSubt
   </div>
   {showDiscount && (
     <div class={C.discount} data-totals-row="discount" hidden>
-      <span>Скидка</span><span data-totals-discount>—</span>
+      <span>Скидка</span><span data-totals-discount>0&nbsp;₽</span>
     </div>
   )}
   <div class={C.totalRow} data-totals-row="total">
-    <span>{totalLabel}</span><span data-totals-total>11 880 ₽</span>
+    <span>{totalLabel}</span><span data-totals-total>0&nbsp;₽</span>
   </div>
 </section>
+
+<script is:inline>
+  (function () {
+    var section = document.querySelector('[data-checkout-totals]');
+    if (!section) return;
+
+    var subtotalEl = section.querySelector('[data-totals-subtotal]');
+    var discountRow = section.querySelector('[data-totals-row="discount"]');
+    var discountEl = section.querySelector('[data-totals-discount]');
+    var deliveryEl = section.querySelector('[data-totals-delivery]');
+    var totalEl = section.querySelector('[data-totals-total]');
+    var freeText = section.getAttribute('data-free-text') || 'Бесплатно';
+
+    var discountCents = 0;
+    var deliveryCents = 0;
+
+    function fmt(cents) {
+      if (!cents && cents !== 0) return '0 ₽';
+      return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 }).format(cents / 100);
+    }
+
+    function refresh() {
+      var items = (window.cartStore && typeof window.cartStore.getItems === 'function') ? window.cartStore.getItems() : [];
+      if (items.length === 0) {
+        section.hidden = true;
+        return;
+      }
+      section.hidden = false;
+
+      var subtotal = (window.cartStore && typeof window.cartStore.getTotal === 'function') ? window.cartStore.getTotal() : 0;
+      if (subtotalEl) subtotalEl.textContent = fmt(subtotal);
+
+      if (discountEl && discountRow) {
+        if (discountCents > 0) {
+          discountRow.hidden = false;
+          discountEl.textContent = '−' + fmt(discountCents);
+        } else {
+          discountRow.hidden = true;
+          discountEl.textContent = '0 ₽';
+        }
+      }
+
+      if (deliveryEl) {
+        deliveryEl.textContent = deliveryCents > 0 ? fmt(deliveryCents) : freeText;
+      }
+
+      var total = Math.max(0, subtotal - discountCents + deliveryCents);
+      if (totalEl) totalEl.textContent = fmt(total);
+    }
+
+    document.addEventListener('cart:updated', refresh);
+    document.addEventListener('checkout:discount-applied', function (e) {
+      discountCents = (e && e.detail && e.detail.discountCents) || 0;
+      refresh();
+    });
+    document.addEventListener('checkout:delivery-changed', function (e) {
+      deliveryCents = (e && e.detail && e.detail.costCents) || 0;
+      refresh();
+    });
+
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(refresh, 150); });
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      setTimeout(refresh, 150);
+    }
+  })();
+</script>

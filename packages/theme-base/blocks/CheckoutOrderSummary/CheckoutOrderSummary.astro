@@ -1,55 +1,207 @@
 ---
+// CheckoutOrderSummary — vanilla Astro + inline script + window.cartStore.
+// Никаких React island'ов. Паттерн идентичен CartBody/CartTotals/CartSummary:
+// SSR пустой каркас → inline IIFE рендерит items из cartStore и слушает
+// cart:updated / checkout:discount-applied.
 import type { CheckoutOrderSummaryProps } from './CheckoutOrderSummary.puckConfig';
 import { CheckoutOrderSummaryClasses as C } from './CheckoutOrderSummary.classes';
 
 interface Props extends CheckoutOrderSummaryProps { id?: string; }
-const { id, heading, itemImageSize, showVariantLabels, showCompareAtPrice, promoToggle, bogoBadge, padding } = Astro.props as Props;
-const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
-const propsJson = JSON.stringify({ heading, itemImageSize, showVariantLabels, showCompareAtPrice, promoToggle, bogoBadge });
+const {
+  id,
+  heading,
+  itemImageSize,
+  showVariantLabels,
+  showCompareAtPrice,
+  promoToggle,
+  bogoBadge,
+  padding,
+} = Astro.props as Props;
+
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+const imageSize = itemImageSize === 'expanded' ? 120 : 96;
 ---
 <section
   class={C.root}
   data-puck-component-id={id}
-  data-checkout-slot="order-summary"
-  data-checkout-props={propsJson}
+  data-checkout-summary
+  data-show-variant-labels={String(showVariantLabels)}
+  data-show-compare-price={String(showCompareAtPrice)}
+  data-bogo-badge={String(bogoBadge)}
+  data-image-size={String(imageSize)}
   style={paddingStyle}
 >
   <h3 class={C.heading}>{heading}</h3>
-  <div class={C.items} data-checkout-items>
-    {/* SSR demo skeleton (Figma 1:19998 frame 183:27872) — 2 demo items
-        видимы в preview/iframe. CheckoutFlow Island заменит их на real
-        cart-store items при mount (на live сайте). */}
-    {[0, 1].map(() => (
-      <div data-checkout-item-skeleton class="flex gap-4 items-start">
-        <div class="relative flex-shrink-0 w-20 h-20 rounded-md overflow-hidden bg-[rgb(var(--color-bg-alt,250,250,250))]">
-          <img
-            src="https://minio.merfy.ru/product-images/placeholders/bag-rose.jpg"
-            alt="Сумка"
-            class="absolute inset-0 w-full h-full object-cover"
-            loading="lazy"
-            onerror="this.style.display='none'"
-          />
-          <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[rgb(var(--color-text))] text-[rgb(var(--color-bg))] text-[10px] flex items-center justify-center [font-family:var(--font-body)] z-10">1</span>
-        </div>
-        <div class="flex-1 min-w-0">
-          <div class="text-[length:var(--size-small)] [font-family:var(--font-body)] text-[rgb(var(--color-heading))]">Сумка</div>
-          <div class="mt-1 text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]"><span>Цвет:</span> Бежевый</div>
-          <div class="text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]"><span>Размер:</span> One-size</div>
-          <div class="text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]"><span>Материал:</span> Кожа</div>
-        </div>
-        <div class="text-right flex-shrink-0">
-          <div class="[font-family:var(--font-body)] text-[length:var(--size-small)] text-[rgb(var(--color-heading))]">5 490 ₽</div>
-          {showCompareAtPrice && (
-            <div class="[font-family:var(--font-body)] text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))] line-through">8 990 ₽</div>
-          )}
-        </div>
-      </div>
-    ))}
+
+  {/* Empty state — «ничего не выбрано» (cartStore.getItems() === []). */}
+  <div
+    data-checkout-empty
+    class="py-6 text-center [font-family:var(--font-body)] text-[length:var(--size-small)] text-[rgb(var(--color-muted))]"
+  >
+    Ничего не выбрано
   </div>
+
+  {/* Items container — заполняется через innerHTML из cartStore. */}
+  <div class={C.items} data-checkout-items hidden></div>
+
   {promoToggle.enabled && (
-    <div class={C.promo} data-checkout-promo>
-      <span class={C.promoLabel}>{promoToggle.label}</span>
-      <button class={C.promoApply} type="button">{promoToggle.applyButtonText}</button>
+    <div
+      class={C.promo}
+      data-checkout-promo
+      data-promo-label={promoToggle.label}
+      hidden
+    >
+      <input
+        type="text"
+        class="flex-1 bg-transparent outline-none [font-family:var(--font-body)] text-[length:var(--size-body)] text-[rgb(var(--color-text))] placeholder:text-[rgb(var(--color-input-placeholder))]"
+        placeholder={promoToggle.label}
+        data-checkout-promo-input
+        autocomplete="off"
+      />
+      <button
+        class={C.promoApply}
+        type="button"
+        data-checkout-promo-apply
+        disabled
+      >{promoToggle.applyButtonText}</button>
     </div>
   )}
 </section>
+
+<script is:inline>
+  (function () {
+    var section = document.querySelector('[data-checkout-summary]');
+    if (!section) return;
+
+    var emptyEl = section.querySelector('[data-checkout-empty]');
+    var itemsEl = section.querySelector('[data-checkout-items]');
+    var promoEl = section.querySelector('[data-checkout-promo]');
+    var promoInput = section.querySelector('[data-checkout-promo-input]');
+    var promoApply = section.querySelector('[data-checkout-promo-apply]');
+
+    var showVariantLabels = section.getAttribute('data-show-variant-labels') === 'true';
+    var showComparePrice = section.getAttribute('data-show-compare-price') === 'true';
+    var bogoBadge = section.getAttribute('data-bogo-badge') === 'true';
+    var imageSize = parseInt(section.getAttribute('data-image-size') || '96', 10);
+
+    function fmt(cents) {
+      if (!cents && cents !== 0) return '0 ₽';
+      return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 }).format(cents / 100);
+    }
+
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+
+    function variantLines(opts) {
+      if (!opts || typeof opts !== 'object') return '';
+      var html = '';
+      var keys = Object.keys(opts);
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        var v = opts[k];
+        var line = showVariantLabels
+          ? '<span>' + esc(k) + ':</span> ' + esc(v)
+          : esc(v);
+        html += '<div class="text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]">' + line + '</div>';
+      }
+      return html ? '<div class="mt-1 flex flex-col gap-0.5">' + html + '</div>' : '';
+    }
+
+    function renderItem(item) {
+      var img = item.imageUrl || (item.images && item.images[0]) || item.image || '';
+      var name = item.name || item.productName || 'Товар';
+      var price = item.unitPriceCents || item.priceCents || item.price || 0;
+      var compareAt = item.compareAtPriceCents;
+      var qty = item.quantity || 1;
+      var isBonus = !!item.isBonus;
+
+      var imgHtml = img
+        ? '<div class="relative flex-shrink-0 rounded-md overflow-hidden bg-[rgb(var(--color-input-bg))]" style="width:' + imageSize + 'px;height:' + imageSize + 'px;">'
+          + '<img src="' + esc(img) + '" alt="' + esc(name) + '" class="absolute inset-0 w-full h-full object-cover" loading="lazy" onerror="this.style.display=\'none\'"/>'
+          + '<span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[rgb(var(--color-text))] text-[rgb(var(--color-bg))] text-[10px] flex items-center justify-center [font-family:var(--font-body)] z-10">' + qty + '</span>'
+          + '</div>'
+        : '<div class="relative flex-shrink-0 rounded-md bg-[rgb(var(--color-input-bg))]" style="width:' + imageSize + 'px;height:' + imageSize + 'px;">'
+          + '<span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[rgb(var(--color-text))] text-[rgb(var(--color-bg))] text-[10px] flex items-center justify-center [font-family:var(--font-body)]">' + qty + '</span>'
+          + '</div>';
+
+      var badge = (bogoBadge && isBonus)
+        ? ' <span class="inline-block px-2 py-0.5 rounded-full bg-[rgb(var(--color-text)/.08)] text-[rgb(var(--color-text))] text-[length:var(--size-tiny)] align-middle">Подарок</span>'
+        : '';
+
+      var compareHtml = (showComparePrice && compareAt && !isBonus)
+        ? '<div class="[font-family:var(--font-body)] text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))] line-through">' + fmt(compareAt) + '</div>'
+        : '';
+
+      return '<div class="flex gap-4 items-start">'
+        + imgHtml
+        + '<div class="flex-1 min-w-0">'
+          + '<div class="text-[length:var(--size-small)] [font-family:var(--font-body)] text-[rgb(var(--color-heading))]">' + esc(name) + badge + '</div>'
+          + variantLines(item.options)
+        + '</div>'
+        + '<div class="text-right flex-shrink-0">'
+          + '<div class="[font-family:var(--font-body)] text-[length:var(--size-small)] text-[rgb(var(--color-heading))]">' + (isBonus ? '0 ₽' : fmt(price)) + '</div>'
+          + compareHtml
+        + '</div>'
+      + '</div>';
+    }
+
+    function render() {
+      var items = (window.cartStore && typeof window.cartStore.getItems === 'function') ? window.cartStore.getItems() : [];
+
+      if (items.length === 0) {
+        if (emptyEl) emptyEl.hidden = false;
+        if (itemsEl) { itemsEl.hidden = true; itemsEl.innerHTML = ''; }
+        if (promoEl) promoEl.hidden = true;
+        return;
+      }
+
+      if (emptyEl) emptyEl.hidden = true;
+      if (itemsEl) {
+        itemsEl.hidden = false;
+        itemsEl.innerHTML = items.map(renderItem).join('');
+      }
+      if (promoEl) promoEl.hidden = false;
+    }
+
+    if (promoInput && promoApply) {
+      promoInput.addEventListener('input', function () {
+        promoApply.disabled = !promoInput.value.trim();
+      });
+
+      promoApply.addEventListener('click', async function () {
+        var code = promoInput.value.trim();
+        if (!code) return;
+        var cartId = (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')) || null;
+        if (!cartId) return;
+        var apiBase = (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.apiUrl) || 'https://gateway.merfy.ru/api';
+        promoApply.disabled = true;
+        try {
+          var res = await fetch(apiBase + '/orders/cart/' + cartId + '/promo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: code }),
+            credentials: 'include',
+          });
+          var json = await res.json();
+          var discountCents = (json && json.data && json.data.discountCents) || 0;
+          document.dispatchEvent(new CustomEvent('checkout:discount-applied', { detail: { code: code, discountCents: discountCents } }));
+        } catch (e) {
+          // silently — UI остаётся в текущем состоянии, totals не обновляются
+        } finally {
+          promoApply.disabled = !promoInput.value.trim();
+        }
+      });
+    }
+
+    document.addEventListener('cart:updated', render);
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(render, 150); });
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      setTimeout(render, 150);
+    }
+  })();
+</script>

@@ -337,12 +337,10 @@ const paddingStyle = padding
         var postal = li.getAttribute('data-postal') || '';
         var fiasId = li.getAttribute('data-fias-id') || '';
 
-        // CRITICAL: ставим lastQuery + чистим debounce ДО изменения value,
-        // иначе input-event ре-триггерит fetch и dropdown снова открывается.
+        // CRITICAL: ставим lastQuery + чистим debounce ДО смены value,
+        // иначе input-event ре-триггерит fetch.
         lastQuery = val;
         clearTimeout(debounce);
-        list.hidden = true;
-        list.innerHTML = '';
 
         input.value = val;
         // 'change' не триггерит наш input-listener (не ре-fetch'нет DaData)
@@ -352,10 +350,13 @@ const paddingStyle = padding
           // Сохраняем city_fias_id — точная фильтрация для address-подсказок.
           if (fiasId) section.setAttribute('data-selected-city-fias-id', fiasId);
           else section.removeAttribute('data-selected-city-fias-id');
+          // City selection — dropdown закрывается (нет progressive для города)
+          list.hidden = true;
+          list.innerHTML = '';
         }
 
         if (kind === 'address') {
-          // Postal autofill ТОЛЬКО при выборе полного адреса (не города).
+          // Postal autofill ТОЛЬКО при выборе полного адреса.
           var indexField = section.querySelector('[data-checkout-field="postalCode"]');
           if (indexField && indexField.getAttribute('data-autofill') === 'true' && postal) {
             var postalInput = indexField.querySelector('input');
@@ -365,12 +366,10 @@ const paddingStyle = padding
             }
           }
 
-          // PROGRESSIVE DISCLOSURE: рефетч с уже выбранным value → DaData
-          // вернёт следующий уровень (улица → дома → квартиры). Фильтр в
-          // fetchSuggestions уберёт дубль с текущим value. Если deeper level
-          // отсутствует — dropdown останется закрытым (suggestions = 0 после
-          // фильтра).
-          setTimeout(function () { fetchSuggestions(val); }, 50);
+          // PROGRESSIVE DISCLOSURE: refetch в этом же dropdown'е без
+          // промежуточного hide/clear. fetchSuggestions подменит innerHTML
+          // когда DaData ответит. Если deeper level нет — закроет dropdown.
+          fetchSuggestions(val);
         }
       });
 

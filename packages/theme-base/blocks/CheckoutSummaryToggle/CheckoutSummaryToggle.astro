@@ -8,9 +8,11 @@ interface Props extends CheckoutSummaryToggleProps {
 
 const { id, headerText, dropdownIcon, responsive, padding } = Astro.props as Props;
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+// Toggle прячется на десктопе (lg+, ≥1024px) — там summary column видна в боку.
+// На <lg layout стекается в одну колонку → toggle сворачивает summary в подсказку.
 const visibilityClasses = [
   responsive.showOnMobile ? '' : 'hidden',
-  responsive.showOnDesktop ? '' : 'md:hidden',
+  responsive.showOnDesktop ? '' : 'lg:hidden',
 ].filter(Boolean).join(' ');
 const propsJson = JSON.stringify({ headerText, dropdownIcon });
 ---

@@ -394,6 +394,13 @@ export class PreviewService {
 </head>
 <body>
   ${bodyHtml}
+  <script>
+    window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
+      shopId: ${JSON.stringify(input.siteId ?? '')},
+      apiUrl: 'https://gateway.merfy.ru/api'
+    };
+    ${process.env.DADATA_API_KEY ? `window.__DADATA_TOKEN__ = ${JSON.stringify(process.env.DADATA_API_KEY)};` : ''}
+  </script>
   <script>${PREVIEW_NAV_AGENT_INLINE}</script>
   <script>${PREVIEW_CART_STORE_INLINE.replace('__SHOP_ID__', input.siteId ?? '').replace('__API_BASE__', 'https://gateway.merfy.ru/api')}</script>
 </body>

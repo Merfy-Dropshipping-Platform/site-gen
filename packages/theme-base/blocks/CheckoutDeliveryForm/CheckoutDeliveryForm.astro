@@ -1,68 +1,321 @@
 ---
+// CheckoutDeliveryForm — vanilla Astro + inline script (без React island).
+// Floating-label паттерн + country dropdown + DaData автокомплит для city/address.
+// DaData токен читается из window.__DADATA_TOKEN__ (инжектится в live build
+// через meta.dadataToken; в preview iframe — через preview.service.ts).
 import type { CheckoutDeliveryFormProps } from './CheckoutDeliveryForm.puckConfig';
 import { CheckoutDeliveryFormClasses as C } from './CheckoutDeliveryForm.classes';
 
 interface Props extends CheckoutDeliveryFormProps { id?: string; }
-const { id, heading, country, nameField, cityDadata, addressDadata, indexAutoFill, requiredFields, padding } = Astro.props as Props;
-const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
-const propsJson = JSON.stringify({ heading, country, nameField, cityDadata, addressDadata, indexAutoFill, requiredFields });
+const {
+  id,
+  heading,
+  country,
+  nameField,
+  cityDadata,
+  addressDadata,
+  indexAutoFill,
+  requiredFields,
+  padding,
+} = Astro.props as Props;
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
 ---
 <section
   class={C.root}
   data-puck-component-id={id}
-  data-checkout-slot="delivery"
-  data-checkout-props={propsJson}
+  data-checkout-delivery
   style={paddingStyle}
 >
   <h2 class={C.heading}>{heading}</h2>
   <div class={C.fields}>
     {country.enabled && (
-      <div class={C.field} data-checkout-field="country">
-        <label class={C.label}>Страна/Регион</label>
-        <input class={C.input} value={country.default} readonly={!country.selectable} />
+      <div
+        class={C.field}
+        data-checkout-field="country"
+        data-country-default={country.default}
+        data-country-selectable={String(country.selectable)}
+      >
+        <input
+          class={country.selectable ? C.inputWithIcon + ' cursor-pointer caret-transparent' : C.input}
+          id="checkout-country"
+          name="country"
+          type="text"
+          autocomplete="country-name"
+          value={country.default}
+          placeholder=" "
+          readonly={!country.selectable}
+          data-country-input
+        />
+        <label class={C.label} for="checkout-country">Страна/Регион</label>
+        {country.selectable && (
+          <span class={C.chevron} data-country-chevron>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          </span>
+        )}
+        {country.selectable && (
+          <ul class={C.dropdown} data-country-list hidden></ul>
+        )}
       </div>
     )}
+
     {nameField.enabled && (nameField.splitFirstLast ? (
       <div class={C.fieldRow2}>
         <div class={C.field} data-checkout-field="firstName">
-          <label class={C.label}>Имя</label>
-          <input class={C.input} name="firstName" autocomplete="given-name" />
+          <input class={C.input} id="checkout-firstName" name="firstName" type="text" autocomplete="given-name" placeholder=" " />
+          <label class={C.label} for="checkout-firstName">Имя</label>
         </div>
         <div class={C.field} data-checkout-field="lastName">
-          <label class={C.label}>Фамилия</label>
-          <input class={C.input} name="lastName" autocomplete="family-name" />
+          <input class={C.input} id="checkout-lastName" name="lastName" type="text" autocomplete="family-name" placeholder=" " />
+          <label class={C.label} for="checkout-lastName">Фамилия</label>
         </div>
       </div>
     ) : (
       <div class={C.field} data-checkout-field="fullName">
-        <label class={C.label}>ФИО</label>
-        <input class={C.input} name="fullName" autocomplete="name" />
+        <input class={C.input} id="checkout-fullName" name="fullName" type="text" autocomplete="name" placeholder=" " />
+        <label class={C.label} for="checkout-fullName">ФИО</label>
       </div>
     ))}
-    {/* Figma 1:19998 (frame 183:27957) — отдельная строка «Город» full-width. */}
+
+    {/* Город — full row, Figma 1:19998. */}
     <div class={C.field} data-checkout-field="city" data-dadata={String(cityDadata)}>
-      <label class={C.label}>Город</label>
-      <input class={C.input} name="city" autocomplete="address-level2" />
+      <input
+        class={cityDadata ? C.inputWithIcon : C.input}
+        id="checkout-city"
+        name="city"
+        type="text"
+        autocomplete="address-level2"
+        placeholder=" "
+        data-checkout-dadata-input="city"
+      />
+      <label class={C.label} for="checkout-city">Город</label>
       {cityDadata && (
         <span class={C.searchIcon}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
         </span>
       )}
+      {cityDadata && (
+        <ul class={C.dropdown} data-checkout-dadata-list="city" hidden></ul>
+      )}
     </div>
+
+    {/* Адрес + Индекс row. */}
     <div class={C.fieldRow2}>
       <div class={C.field} data-checkout-field="address" data-dadata={String(addressDadata)}>
-        <label class={C.label}>Полный адрес</label>
-        <input class={C.input} name="address" autocomplete="street-address" />
+        <input
+          class={addressDadata ? C.inputWithIcon : C.input}
+          id="checkout-address"
+          name="address"
+          type="text"
+          autocomplete="street-address"
+          placeholder=" "
+          data-checkout-dadata-input="address"
+        />
+        <label class={C.label} for="checkout-address">Полный адрес</label>
         {addressDadata && (
           <span class={C.searchIcon}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
           </span>
+        )}
+        {addressDadata && (
+          <ul class={C.dropdown} data-checkout-dadata-list="address" hidden></ul>
         )}
       </div>
       <div class={C.field} data-checkout-field="postalCode" data-autofill={String(indexAutoFill)}>
-        <label class={C.label}>Индекс</label>
-        <input class={C.input} name="postalCode" autocomplete="postal-code" />
+        <input class={C.input} id="checkout-postal" name="postalCode" type="text" autocomplete="postal-code" placeholder=" " />
+        <label class={C.label} for="checkout-postal">Индекс</label>
       </div>
     </div>
   </div>
 </section>
+
+<script is:inline>
+  (function () {
+    var section = document.querySelector('[data-checkout-delivery]');
+    if (!section) return;
+
+    var ITEM_CLS = 'block w-full text-left px-3 py-2 cursor-pointer hover:bg-[rgb(var(--color-input-bg))] [font-family:var(--font-body)] text-[length:var(--size-body)] text-[rgb(var(--color-text))]';
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+
+    // === Country selector ===
+    var countryField = section.querySelector('[data-checkout-field="country"]');
+    if (countryField && countryField.getAttribute('data-country-selectable') === 'true') {
+      var countryInput = countryField.querySelector('[data-country-input]');
+      var countryList = countryField.querySelector('[data-country-list]');
+      var countryChevron = countryField.querySelector('[data-country-chevron]');
+
+      var COUNTRIES = [
+        'Российская Федерация',
+        'Беларусь',
+        'Казахстан',
+        'Армения',
+        'Киргизия',
+        'Узбекистан',
+        'Таджикистан',
+        'Азербайджан',
+        'Молдова',
+        'Грузия',
+        'Украина',
+        'Турция',
+        'Германия',
+        'Польша',
+        'Латвия',
+        'Литва',
+        'Эстония',
+        'Сербия',
+        'Болгария',
+        'Чехия'
+      ];
+
+      countryList.innerHTML = COUNTRIES.map(function (c) {
+        return '<li class="' + ITEM_CLS + '" data-country-value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</li>';
+      }).join('');
+
+      function openCountryList() {
+        countryList.hidden = false;
+        if (countryChevron) countryChevron.style.transform = 'translateY(-50%) rotate(180deg)';
+      }
+      function closeCountryList() {
+        countryList.hidden = true;
+        if (countryChevron) countryChevron.style.transform = '';
+      }
+
+      countryInput.addEventListener('focus', openCountryList);
+      countryInput.addEventListener('click', openCountryList);
+
+      countryList.addEventListener('mousedown', function (e) {
+        var li = e.target.closest && e.target.closest('[data-country-value]');
+        if (!li) return;
+        e.preventDefault();
+        var val = li.getAttribute('data-country-value') || '';
+        countryInput.value = val;
+        countryInput.dispatchEvent(new Event('input', { bubbles: true }));
+        closeCountryList();
+      });
+
+      document.addEventListener('click', function (e) {
+        if (!countryField.contains(e.target)) closeCountryList();
+      });
+    }
+
+    // === DaData autocomplete (city + address) ===
+    var DADATA_URL = 'https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address';
+
+    function getDadataToken() {
+      return window.__DADATA_TOKEN__
+        || (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.dadataToken)
+        || null;
+    }
+
+    function setupDadata(kind) {
+      var input = section.querySelector('[data-checkout-dadata-input="' + kind + '"]');
+      var list = section.querySelector('[data-checkout-dadata-list="' + kind + '"]');
+      if (!input || !list) return;
+
+      var debounce = null;
+      var lastQuery = '';
+
+      async function fetchSuggestions(query) {
+        var token = getDadataToken();
+        if (!token || query.length < 2) {
+          list.hidden = true;
+          list.innerHTML = '';
+          return;
+        }
+        var body = { query: query, count: 8 };
+        if (kind === 'city') {
+          body.from_bound = { value: 'city' };
+          body.to_bound = { value: 'settlement' };
+        }
+        if (kind === 'address') {
+          var cityInput = section.querySelector('[data-checkout-dadata-input="city"]');
+          var cityVal = cityInput && cityInput.value && cityInput.value.trim();
+          if (cityVal) body.locations = [{ city: cityVal }];
+        }
+        try {
+          var res = await fetch(DADATA_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: 'Token ' + token,
+              Accept: 'application/json',
+            },
+            body: JSON.stringify(body),
+          });
+          var json = await res.json();
+          var suggestions = (json && json.suggestions) || [];
+          if (suggestions.length === 0) {
+            list.hidden = true;
+            list.innerHTML = '';
+            return;
+          }
+          list.innerHTML = suggestions.map(function (s) {
+            var v = (s && s.value) || '';
+            var d = (s && s.data) || {};
+            return '<li class="' + ITEM_CLS + '"'
+              + ' data-suggest-value="' + escapeHtml(v) + '"'
+              + ' data-postal="' + escapeHtml(d.postal_code || '') + '"'
+              + ' data-city="' + escapeHtml(d.city || '') + '"'
+              + '>' + escapeHtml(v) + '</li>';
+          }).join('');
+          list.hidden = false;
+        } catch (e) {
+          list.hidden = true;
+        }
+      }
+
+      input.addEventListener('input', function () {
+        var q = (input.value || '').trim();
+        if (q === lastQuery) return;
+        lastQuery = q;
+        clearTimeout(debounce);
+        debounce = setTimeout(function () { fetchSuggestions(q); }, 200);
+      });
+
+      input.addEventListener('focus', function () {
+        if ((input.value || '').trim().length >= 2 && list.children.length > 0) {
+          list.hidden = false;
+        }
+      });
+
+      list.addEventListener('mousedown', function (e) {
+        var li = e.target.closest && e.target.closest('[data-suggest-value]');
+        if (!li) return;
+        e.preventDefault();
+        var val = li.getAttribute('data-suggest-value') || '';
+        var postal = li.getAttribute('data-postal') || '';
+        input.value = val;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+
+        // Autofill индекса если включено в settings
+        var indexField = section.querySelector('[data-checkout-field="postalCode"]');
+        if (indexField && indexField.getAttribute('data-autofill') === 'true' && postal) {
+          var postalInput = indexField.querySelector('input');
+          if (postalInput) {
+            postalInput.value = postal;
+            postalInput.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+        }
+        list.hidden = true;
+        list.innerHTML = '';
+        lastQuery = val;
+      });
+
+      var field = input.closest('[data-checkout-field]');
+      document.addEventListener('click', function (e) {
+        if (field && !field.contains(e.target)) {
+          list.hidden = true;
+        }
+      });
+    }
+
+    setupDadata('city');
+    setupDadata('address');
+  })();
+</script>

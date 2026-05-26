@@ -36,7 +36,7 @@ const footerProps = footerBlock?.props ?? homeFooter?.props ?? (siteConfig as an
     <main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">
       {/* Figma 1:19998 — form col 434px, summary col 589px, gap ~56px, x-offset 200px.
           Total content = 1280px. Mobile: stacked. */}
-      <div class="mx-auto max-w-[1280px] px-4 xl:px-0 xl:pl-[200px] py-12 grid grid-cols-1 xl:grid-cols-[434px_589px] gap-x-[56px] gap-y-8">
+      <div class="mx-auto max-w-[1280px] px-4 lg:px-6 xl:px-0 xl:pl-[200px] py-12 grid grid-cols-1 lg:grid-cols-2 lg:gap-x-8 xl:grid-cols-[434px_589px] xl:gap-x-[56px] gap-y-8">
         <div data-checkout-column="form" class="min-w-0">
           {formBlock && <CheckoutForm {...formBlock.props} />}
         </div>

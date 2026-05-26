@@ -425,6 +425,14 @@ export class PreviewService {
       'gap:32px',
     ].join(';');
     const mediaQuery = `
+      @media (min-width: 1024px) {
+        [data-checkout-grid] {
+          padding: 48px 24px !important;
+          grid-template-columns: minmax(0,1fr) minmax(0,1fr) !important;
+          column-gap: 32px !important;
+          row-gap: 32px !important;
+        }
+      }
       @media (min-width: 1280px) {
         [data-checkout-grid] {
           padding: 48px 0 48px 200px !important;

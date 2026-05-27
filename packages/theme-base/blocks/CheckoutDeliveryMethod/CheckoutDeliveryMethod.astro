@@ -81,8 +81,13 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
     var freeThresholdRaw = section.getAttribute('data-free-shipping-threshold') || '';
     var freeShippingThreshold = freeThresholdRaw ? parseInt(freeThresholdRaw, 10) : null;
 
-    var apiBase = (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.apiUrl) || 'https://gateway.merfy.ru/api';
-    var shopId = (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.shopId) || '';
+    // Lazy — конфиг инжектится ПОСЛЕ блоков. Считываем при каждом вызове.
+    function getApiBase() {
+      return (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.apiUrl) || 'https://gateway.merfy.ru/api';
+    }
+    function getShopId() {
+      return (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.shopId) || '';
+    }
 
     var OPTION_CLS = 'flex flex-col justify-center h-[60px] px-3 border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] cursor-pointer transition-colors hover:border-[rgb(var(--color-text)/.4)]';
     var OPTION_SELECTED_CLS = 'border-[rgb(var(--color-text))]';
@@ -289,6 +294,8 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       var cityFiasId = (addr && addr.cityFiasId) || '';
       var postalCode = (addr && addr.postalCode) || '';
       var cartId = (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')) || '';
+      var shopId = getShopId();
+      var apiBase = getApiBase();
 
       if (!shopId || !cartId) {
         showEmpty();

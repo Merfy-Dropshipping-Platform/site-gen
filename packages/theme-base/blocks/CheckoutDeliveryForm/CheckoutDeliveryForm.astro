@@ -144,6 +144,28 @@ const paddingStyle = padding
       });
     }
 
+    // Logistics: эмитим checkout:address-changed когда меняется
+    // city/postal — CheckoutDeliveryMethod слушает и пересчитывает тарифы.
+    var dispatchAddressTimer;
+    function dispatchAddressChange() {
+      clearTimeout(dispatchAddressTimer);
+      dispatchAddressTimer = setTimeout(function () {
+        var cityFiasId = section.getAttribute('data-selected-city-fias-id') || '';
+        var postalInput = section.querySelector('[data-checkout-field="postalCode"] input');
+        var postalCode = (postalInput && postalInput.value && postalInput.value.trim()) || '';
+        document.dispatchEvent(new CustomEvent('checkout:address-changed', {
+          detail: { cityFiasId: cityFiasId, postalCode: postalCode },
+        }));
+      }, 150);
+    }
+
+    // Postal input — пользователь меняет руками → перепосчёт логистики
+    var postalInput = section.querySelector('[data-checkout-field="postalCode"] input');
+    if (postalInput) {
+      postalInput.addEventListener('change', dispatchAddressChange);
+      postalInput.addEventListener('blur', dispatchAddressChange);
+    }
+
     // === Country selector ===
     var countryField = section.querySelector('[data-checkout-field="country"]');
     if (countryField && countryField.getAttribute('data-country-selectable') === 'true') {
@@ -353,6 +375,8 @@ const paddingStyle = padding
           // City selection — dropdown закрывается (нет progressive для города)
           list.hidden = true;
           list.innerHTML = '';
+          // Logistics — известна новая локация → пересчитать варианты доставки
+          dispatchAddressChange();
         }
 
         if (kind === 'address') {
@@ -370,6 +394,9 @@ const paddingStyle = padding
           // промежуточного hide/clear. fetchSuggestions подменит innerHTML
           // когда DaData ответит. Если deeper level нет — закроет dropdown.
           fetchSuggestions(val);
+
+          // Logistics — postal мог обновиться через autofill → пересчёт
+          if (postal) dispatchAddressChange();
         }
       });
 

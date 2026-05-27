@@ -1,41 +1,353 @@
 ---
+// CheckoutDeliveryMethod — vanilla Astro + inline script.
+// Карточки доставки генерируются от реальной логистики:
+//   POST /api/store/carts/<cartId>/delivery/calculate?store_id=<shopId>
+//   body: { cityFiasId, postalCode? }
+//   → { tariffs[], pickupAvailable, customProfiles? }
+// Слушает событие `checkout:address-changed` из CheckoutDeliveryForm.
 import type { CheckoutDeliveryMethodProps } from './CheckoutDeliveryMethod.puckConfig';
 import { CheckoutDeliveryMethodClasses as C } from './CheckoutDeliveryMethod.classes';
 
 interface Props extends CheckoutDeliveryMethodProps { id?: string; }
-const { id, heading, cdekEnabled, cdekDoorLabel, cdekPvzLabel, pickupEnabled, pickupLabel, customMethods, freeShippingThresholdCents, padding } = Astro.props as Props;
+const {
+  id,
+  heading,
+  cdekEnabled,
+  cdekDoorLabel,
+  cdekPvzLabel,
+  pickupEnabled,
+  pickupLabel,
+  freeShippingThresholdCents,
+  padding,
+} = Astro.props as Props;
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
-const propsJson = JSON.stringify({ heading, cdekEnabled, cdekDoorLabel, cdekPvzLabel, pickupEnabled, pickupLabel, customMethods, freeShippingThresholdCents });
 ---
 <section
   class={C.root}
   data-puck-component-id={id}
-  data-checkout-slot="delivery-method"
-  data-checkout-props={propsJson}
+  data-checkout-delivery-method
+  data-cdek-enabled={String(cdekEnabled)}
+  data-cdek-door-label={cdekDoorLabel}
+  data-cdek-pvz-label={cdekPvzLabel}
+  data-pickup-enabled={String(pickupEnabled)}
+  data-pickup-label={pickupLabel}
+  data-free-shipping-threshold={freeShippingThresholdCents != null ? String(freeShippingThresholdCents) : ''}
   style={paddingStyle}
 >
   <h2 class={C.heading}>{heading}</h2>
-  <div class={C.list} data-checkout-delivery-list>
-    {/* SSR skeleton (Figma 1:19998 frame 183:27969) — отображается до того
-        как CheckoutFlow Island заменит на live CDEK ответ. В preview iframe
-        React не запускается → этот skeleton остаётся видимым. */}
-    <div class:list={[C.option, C.optionSelected]} data-checkout-delivery-skeleton>
-      <div class="flex items-center justify-between">
-        <div class={C.body}>
-          <span class={C.label}>Эконом</span>
-          <span class={C.meta}>от 5 до 8 рабочих дней</span>
-        </div>
-        <span class={C.price}>Бесплатно</span>
-      </div>
-    </div>
-    <div class={C.option} data-checkout-delivery-skeleton>
-      <div class="flex items-center justify-between">
-        <div class={C.body}>
-          <span class={C.label}>Стандарт</span>
-          <span class={C.meta}>от 3 до 5 рабочих дней</span>
-        </div>
-        <span class={C.price}>700 ₽</span>
-      </div>
-    </div>
+
+  {/* Empty state — пока город не выбран. */}
+  <div
+    data-checkout-delivery-empty
+    class="py-4 text-[length:var(--size-small)] [font-family:var(--font-body)] text-[rgb(var(--color-muted))]"
+  >
+    Заполните адрес доставки чтобы увидеть варианты.
   </div>
+
+  {/* Loading state — пока идёт fetch к логистике. */}
+  <div
+    data-checkout-delivery-loading
+    class="py-4 text-[length:var(--size-small)] [font-family:var(--font-body)] text-[rgb(var(--color-muted))]"
+    hidden
+  >
+    Считаем варианты доставки…
+  </div>
+
+  {/* Error state — CDEK ответил ошибкой / нет тарифов. */}
+  <div
+    data-checkout-delivery-error
+    class="py-4 text-[length:var(--size-small)] [font-family:var(--font-body)] text-[rgb(220,38,38)]"
+    hidden
+  ></div>
+
+  {/* Live cards — заполняется inline-script'ом из ответа логистики. */}
+  <div class={C.list} data-checkout-delivery-list hidden></div>
 </section>
+
+<script is:inline>
+  (function () {
+    var section = document.querySelector('[data-checkout-delivery-method]');
+    if (!section) return;
+
+    var listEl = section.querySelector('[data-checkout-delivery-list]');
+    var emptyEl = section.querySelector('[data-checkout-delivery-empty]');
+    var loadingEl = section.querySelector('[data-checkout-delivery-loading]');
+    var errorEl = section.querySelector('[data-checkout-delivery-error]');
+
+    var pickupEnabled = section.getAttribute('data-pickup-enabled') === 'true';
+    var pickupLabel = section.getAttribute('data-pickup-label') || 'Самовывоз';
+    var cdekDoorLabel = section.getAttribute('data-cdek-door-label') || 'Курьер до двери';
+    var cdekPvzLabel = section.getAttribute('data-cdek-pvz-label') || 'До пункта выдачи';
+    var freeThresholdRaw = section.getAttribute('data-free-shipping-threshold') || '';
+    var freeShippingThreshold = freeThresholdRaw ? parseInt(freeThresholdRaw, 10) : null;
+
+    var apiBase = (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.apiUrl) || 'https://gateway.merfy.ru/api';
+    var shopId = (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.shopId) || '';
+
+    var OPTION_CLS = 'flex flex-col justify-center h-[60px] px-3 border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] cursor-pointer transition-colors hover:border-[rgb(var(--color-text)/.4)]';
+    var OPTION_SELECTED_CLS = 'border-[rgb(var(--color-text))]';
+    var BODY_CLS = 'flex-1 flex flex-col';
+    var LABEL_CLS = '[font-family:var(--font-body)] text-[length:var(--size-small)] text-[rgb(var(--color-text))]';
+    var META_CLS = 'mt-0.5 text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]';
+    var PRICE_CLS = '[font-family:var(--font-body)] text-[length:var(--size-tiny)] text-[rgb(var(--color-text))]';
+
+    function fmt(cents) {
+      if (!cents && cents !== 0) return '0 ₽';
+      return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 }).format(cents / 100);
+    }
+
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+
+    function cartTotalCents() {
+      if (window.cartStore && typeof window.cartStore.getTotal === 'function') {
+        return window.cartStore.getTotal();
+      }
+      return 0;
+    }
+
+    function showEmpty() {
+      emptyEl && (emptyEl.hidden = false);
+      loadingEl && (loadingEl.hidden = true);
+      errorEl && (errorEl.hidden = true);
+      listEl && (listEl.hidden = true);
+    }
+    function showLoading() {
+      emptyEl && (emptyEl.hidden = true);
+      loadingEl && (loadingEl.hidden = false);
+      errorEl && (errorEl.hidden = true);
+      listEl && (listEl.hidden = true);
+    }
+    function showError(msg) {
+      emptyEl && (emptyEl.hidden = true);
+      loadingEl && (loadingEl.hidden = true);
+      if (errorEl) { errorEl.hidden = false; errorEl.textContent = msg || 'Не удалось рассчитать доставку'; }
+      listEl && (listEl.hidden = true);
+    }
+    function showList() {
+      emptyEl && (emptyEl.hidden = true);
+      loadingEl && (loadingEl.hidden = true);
+      errorEl && (errorEl.hidden = true);
+      listEl && (listEl.hidden = false);
+    }
+
+    /**
+     * Собирает массив option'ов из ответа логистики + локальных флагов.
+     * type: 'self_pickup' | 'cdek_door' | 'cdek_pickup' | 'custom'
+     */
+    function buildOptions(data) {
+      var options = [];
+      var subtotal = cartTotalCents();
+      var freeShipping = freeShippingThreshold != null && subtotal >= freeShippingThreshold;
+
+      // Самовывоз из магазина
+      if (pickupEnabled && data && data.pickupAvailable) {
+        options.push({
+          type: 'self_pickup',
+          tariffCode: null,
+          label: pickupLabel,
+          meta: data.pickupAddress || 'Заберите из нашего магазина',
+          priceCents: 0,
+        });
+      }
+
+      // CDEK tariffs (door + pickup)
+      if (data && Array.isArray(data.tariffs)) {
+        for (var i = 0; i < data.tariffs.length; i++) {
+          var t = data.tariffs[i];
+          var isDoor = t.deliveryMode === 'door';
+          var name = isDoor ? cdekDoorLabel : cdekPvzLabel;
+          // Тарифу даём имя из его tariffName (например «Посылка склад-дверь»),
+          // а как заголовок карточки — настройку темы (cdekDoorLabel / cdekPvzLabel).
+          var period = t.periodMin && t.periodMax
+            ? 'от ' + t.periodMin + ' до ' + t.periodMax + ' рабочих дней'
+            : (t.tariffName || '');
+          options.push({
+            type: isDoor ? 'cdek_door' : 'cdek_pickup',
+            tariffCode: t.tariffCode,
+            label: name,
+            meta: period,
+            priceCents: Math.round((t.deliverySumRub || 0) * 100),
+            periodMin: t.periodMin,
+            periodMax: t.periodMax,
+          });
+        }
+      }
+
+      // Custom delivery profiles (свои тарифы магазина)
+      if (data && Array.isArray(data.customProfiles)) {
+        for (var p = 0; p < data.customProfiles.length; p++) {
+          var profile = data.customProfiles[p];
+          for (var j = 0; j < (profile.tariffs || []).length; j++) {
+            var ct = profile.tariffs[j];
+            options.push({
+              type: 'custom',
+              tariffCode: null,
+              customTariffId: ct.id,
+              label: ct.name,
+              meta: ct.description || '',
+              priceCents: ct.priceCents || 0,
+            });
+          }
+        }
+      }
+
+      // Free shipping override — если cart total >= threshold, все платные → бесплатно.
+      if (freeShipping) {
+        for (var k = 0; k < options.length; k++) {
+          if (options[k].priceCents > 0) {
+            options[k].priceCents = 0;
+            options[k].freeShipping = true;
+          }
+        }
+      }
+
+      // Сортировка: бесплатные первыми, потом по цене.
+      options.sort(function (a, b) { return a.priceCents - b.priceCents; });
+      return options;
+    }
+
+    function render(data) {
+      var options = buildOptions(data);
+      if (options.length === 0) {
+        showError(data && data.cdekError ? data.cdekError : 'Нет доступных вариантов доставки для этого адреса');
+        return;
+      }
+
+      listEl.innerHTML = options.map(function (opt, idx) {
+        var selected = idx === 0;
+        var cls = OPTION_CLS + (selected ? ' ' + OPTION_SELECTED_CLS : '');
+        var priceText = opt.priceCents === 0 ? 'Бесплатно' : fmt(opt.priceCents);
+        return '<div class="' + cls + '"'
+          + ' data-delivery-option'
+          + ' data-delivery-type="' + esc(opt.type) + '"'
+          + ' data-delivery-tariff-code="' + esc(opt.tariffCode == null ? '' : String(opt.tariffCode)) + '"'
+          + ' data-delivery-custom-id="' + esc(opt.customTariffId || '') + '"'
+          + ' data-delivery-price-cents="' + esc(String(opt.priceCents)) + '"'
+          + ' data-delivery-period-min="' + esc(opt.periodMin != null ? String(opt.periodMin) : '') + '"'
+          + ' data-delivery-period-max="' + esc(opt.periodMax != null ? String(opt.periodMax) : '') + '"'
+          + (selected ? ' data-selected="true"' : '')
+          + '>'
+          + '<div class="flex items-center justify-between">'
+          + '<div class="' + BODY_CLS + '">'
+          + '<span class="' + LABEL_CLS + '">' + esc(opt.label) + '</span>'
+          + (opt.meta ? '<span class="' + META_CLS + '">' + esc(opt.meta) + '</span>' : '')
+          + '</div>'
+          + '<span class="' + PRICE_CLS + '">' + priceText + '</span>'
+          + '</div>'
+          + '</div>';
+      }).join('');
+      showList();
+
+      // По умолчанию выбран первый — диспатчим событие чтобы Totals обновился.
+      dispatchSelection(options[0]);
+    }
+
+    function dispatchSelection(opt) {
+      document.dispatchEvent(new CustomEvent('checkout:delivery-changed', {
+        detail: {
+          type: opt.type,
+          tariffCode: opt.tariffCode,
+          customTariffId: opt.customTariffId || null,
+          costCents: opt.priceCents,
+          periodMin: opt.periodMin || null,
+          periodMax: opt.periodMax || null,
+          label: opt.label,
+        },
+      }));
+    }
+
+    // Click handler — переключение selected состояния
+    listEl.addEventListener('click', function (e) {
+      var card = e.target.closest && e.target.closest('[data-delivery-option]');
+      if (!card) return;
+
+      var cards = listEl.querySelectorAll('[data-delivery-option]');
+      for (var i = 0; i < cards.length; i++) {
+        cards[i].classList.remove('border-[rgb(var(--color-text))]');
+        cards[i].removeAttribute('data-selected');
+      }
+      card.classList.add('border-[rgb(var(--color-text))]');
+      card.setAttribute('data-selected', 'true');
+
+      dispatchSelection({
+        type: card.getAttribute('data-delivery-type') || '',
+        tariffCode: card.getAttribute('data-delivery-tariff-code') ? parseInt(card.getAttribute('data-delivery-tariff-code'), 10) : null,
+        customTariffId: card.getAttribute('data-delivery-custom-id') || null,
+        priceCents: parseInt(card.getAttribute('data-delivery-price-cents') || '0', 10),
+        periodMin: card.getAttribute('data-delivery-period-min') ? parseInt(card.getAttribute('data-delivery-period-min'), 10) : null,
+        periodMax: card.getAttribute('data-delivery-period-max') ? parseInt(card.getAttribute('data-delivery-period-max'), 10) : null,
+        label: card.querySelector('span') ? card.querySelector('span').textContent : '',
+      });
+    });
+
+    var calcInFlight = null;
+    async function recalculate(addr) {
+      var cityFiasId = (addr && addr.cityFiasId) || '';
+      var postalCode = (addr && addr.postalCode) || '';
+      var cartId = (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')) || '';
+
+      if (!shopId || !cartId) {
+        showEmpty();
+        return;
+      }
+      if (!cityFiasId) {
+        showEmpty();
+        return;
+      }
+
+      showLoading();
+      var url = apiBase + '/store/carts/' + encodeURIComponent(cartId) + '/delivery/calculate?store_id=' + encodeURIComponent(shopId);
+      var body = { cityFiasId: cityFiasId };
+      if (postalCode) body.postalCode = postalCode;
+
+      // Cancel предыдущий
+      if (calcInFlight && calcInFlight.abort) {
+        try { calcInFlight.abort(); } catch (e) {}
+      }
+      var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+      calcInFlight = controller;
+
+      try {
+        var res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          credentials: 'include',
+          signal: controller ? controller.signal : undefined,
+        });
+        var json = await res.json();
+        if (!json || !json.success) {
+          showError((json && (json.error || json.message)) || 'Не удалось рассчитать доставку');
+          return;
+        }
+        render(json.data || {});
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;
+        showError('Сервис доставки недоступен');
+      }
+    }
+
+    document.addEventListener('checkout:address-changed', function (e) {
+      recalculate(e && e.detail);
+    });
+    // Cart updates — пересчитать free shipping threshold + актуальные веса
+    document.addEventListener('cart:updated', function () {
+      var section2 = section;
+      var lastFiasId = section2.getAttribute('data-last-fias-id') || '';
+      var lastPostal = section2.getAttribute('data-last-postal') || '';
+      if (lastFiasId) recalculate({ cityFiasId: lastFiasId, postalCode: lastPostal });
+    });
+
+    // Запомним последний адрес для cart:updated триггера
+    document.addEventListener('checkout:address-changed', function (e) {
+      if (e && e.detail) {
+        section.setAttribute('data-last-fias-id', e.detail.cityFiasId || '');
+        section.setAttribute('data-last-postal', e.detail.postalCode || '');
+      }
+    });
+  })();
+</script>

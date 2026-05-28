@@ -573,6 +573,53 @@ export class SitesMicroserviceController {
   }
 
   /**
+   * Обработка события от Domain Service: внешний домен отвязан.
+   * Если домен был активен (publicUrl сайта = этот домен) — восстанавливаем
+   * fallback subdomain. Иначе — просто пометим запись истории inactive.
+   */
+  @EventPattern("site-gen.domain_detached")
+  async handleDomainDetached(
+    @Payload()
+    data: {
+      domainId: string;
+      name: string;
+      siteId: string;
+      wasActive: boolean;
+    },
+  ) {
+    this.logger.log(
+      `domain_detached raw payload: ${JSON.stringify(data)}`,
+    );
+    const { domainId, name, siteId, wasActive } = data ?? {};
+    if (!siteId || !domainId) {
+      this.logger.warn(
+        `domain_detached skipped: missing siteId=${siteId} or domainId=${domainId}`,
+      );
+      return;
+    }
+    try {
+      if (wasActive) {
+        await this.service.restoreFallbackDomain(siteId);
+        this.logger.log(
+          `domain_detached: restored fallback subdomain for site ${siteId} (was ${name})`,
+        );
+      } else {
+        await this.service.markDomainHistoryInactive(siteId, domainId);
+        this.logger.log(
+          `domain_detached: marked history inactive for site ${siteId} domain ${name} (never active)`,
+        );
+      }
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to handle domain_detached for site ${siteId}: ${error?.message}`,
+        error?.stack,
+      );
+      // Re-throw to push back onto DLQ — surface broken state instead of swallowing it.
+      throw error;
+    }
+  }
+
+  /**
    * Async-provisioning entry point for sites reserved during signup.
    * Published by `SitesDomainService.triggerAsyncProvisioning()` on the
    * sites queue; consumed here via the same queue (self-loop). The

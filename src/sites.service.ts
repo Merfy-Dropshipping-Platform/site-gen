@@ -2555,4 +2555,120 @@ export class SitesDomainService {
       `[switchDomain] DONE site ${siteId}: ${siteRow.publicUrl} -> ${newPublicUrl}`,
     );
   }
+
+  /**
+   * Restore a fallback subdomain after an external domain is detached.
+   *
+   * Strategy (in order):
+   *   1. Try to recycle the previous `type='generated'` history entry
+   *      (most recent `inactive`, ordered by detachedAt DESC). This is
+   *      the deterministic `*.merfy.ru` subdomain originally provisioned
+   *      for the tenant — reusing it avoids regenerating and keeps the
+   *      old URL stable for users.
+   *   2. If no generated history exists (edge case — sites attached an
+   *      external domain before fallback was tracked), ask the domain
+   *      microservice to generate a fresh subdomain via the existing
+   *      `generateSubdomain(tenantId)` RPC.
+   *
+   * Reuses `switchDomain(...)` so Coolify reconciliation, publicUrl
+   * update and history insert all match the live attach path.
+   *
+   * NOTE: notifications-side `domain.connected` re-emit for the restored
+   * subdomain is NOT fired here — the existing emit pattern lives in
+   * the domain microservice (DomainNotificationEvent in attach handlers),
+   * and adding a parallel emit from site-gen would diverge from that
+   * pattern. Tracked as a followup (see plan, step 12).
+   */
+  async restoreFallbackDomain(siteId: string): Promise<void> {
+    this.logger.log(`[restoreFallbackDomain] START siteId=${siteId}`);
+
+    const [siteRow] = await this.db
+      .select()
+      .from(schema.site)
+      .where(eq(schema.site.id, siteId))
+      .limit(1);
+
+    if (!siteRow) {
+      this.logger.warn(
+        `[restoreFallbackDomain] site ${siteId} NOT FOUND — aborting`,
+      );
+      return;
+    }
+
+    // 1. Try to recycle previous generated subdomain from history.
+    const previousGenerated = await this.db
+      .select()
+      .from(schema.siteDomainHistory)
+      .where(
+        and(
+          eq(schema.siteDomainHistory.siteId, siteId),
+          eq(schema.siteDomainHistory.type, "generated"),
+          eq(schema.siteDomainHistory.status, "inactive"),
+        ),
+      )
+      .orderBy(sql`${schema.siteDomainHistory.detachedAt} DESC NULLS LAST`)
+      .limit(1);
+
+    const prev = previousGenerated[0];
+    const prevDomainId = prev?.domainId ?? null;
+    if (prev && prevDomainId) {
+      this.logger.log(
+        `[restoreFallbackDomain] recycling previous generated subdomain ${prev.domainName} (id=${prevDomainId}) for site ${siteId}`,
+      );
+      await this.switchDomain({
+        siteId,
+        domainId: prevDomainId,
+        domainName: prev.domainName,
+        type: "generated",
+      });
+      return;
+    }
+
+    // 2. No previous fallback in history — generate a new subdomain.
+    this.logger.log(
+      `[restoreFallbackDomain] no inactive generated history for site ${siteId}, requesting new subdomain for tenant ${siteRow.tenantId}`,
+    );
+    const sub = await this.domainClient.generateSubdomain(siteRow.tenantId);
+    if (!sub?.id || !sub?.name) {
+      throw new Error(
+        `domain_service did not return a subdomain for tenant ${siteRow.tenantId}`,
+      );
+    }
+    await this.switchDomain({
+      siteId,
+      domainId: sub.id,
+      domainName: sub.name,
+      type: "generated",
+    });
+    this.logger.log(
+      `[restoreFallbackDomain] generated new subdomain ${sub.name} for site ${siteId}`,
+    );
+  }
+
+  /**
+   * Mark the siteDomainHistory entry for `(siteId, domainId)` inactive.
+   * Called when an external domain is detached BEFORE it ever went active —
+   * no publicUrl swap needed, just close out the history row so the
+   * audit trail stays consistent. Idempotent: a no-op if the row is
+   * already inactive or missing.
+   */
+  async markDomainHistoryInactive(
+    siteId: string,
+    domainId: string,
+  ): Promise<void> {
+    const now = new Date();
+    const result = await this.db
+      .update(schema.siteDomainHistory)
+      .set({ status: "inactive", detachedAt: now })
+      .where(
+        and(
+          eq(schema.siteDomainHistory.siteId, siteId),
+          eq(schema.siteDomainHistory.domainId, domainId),
+          eq(schema.siteDomainHistory.status, "active"),
+        ),
+      );
+    this.logger.log(
+      `[markDomainHistoryInactive] siteId=${siteId} domainId=${domainId} rowCount=${result.rowCount ?? 0}`,
+    );
+  }
 }

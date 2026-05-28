@@ -13,7 +13,7 @@
  * - Идемпотентность: операции создают/обновляют записи атомарно, повторные вызовы безопасны.
  * - События публикуются в fire‑and‑forget режиме — сбои в брокере не блокируют основной сценарий.
  */
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
 import { firstValueFrom, timeout, catchError, of } from "rxjs";
 import { randomUUID } from "crypto";
@@ -32,6 +32,7 @@ import { S3StorageService } from "./storage/s3.service";
 import { DomainClient } from "./domain";
 import { BillingClient } from "./billing/billing.client";
 import { BuildQueuePublisher } from "./rabbitmq/build-queue.service";
+import { ActivityLogPublisher } from "./activity-log/activity-log.publisher";
 
 function slugify(input: string) {
   return input
@@ -59,6 +60,13 @@ export class SitesDomainService {
     private readonly domainClient: DomainClient,
     private readonly billingClient: BillingClient,
     private readonly buildQueue: BuildQueuePublisher,
+    // PR5: best-effort fan-out to the activity-log journal. Mirrors
+    // sites.site.published into the owner-facing log. Never throws.
+    // Optional so the existing sites.service.spec / freeze-unfreeze /
+    // store-api-integration test harnesses that hand-construct
+    // SitesDomainService do not need to be rewritten.
+    @Optional()
+    private readonly activityLogPublisher?: ActivityLogPublisher,
   ) {}
 
   /**
@@ -1012,6 +1020,30 @@ export class SitesDomainService {
         queued: true,
       });
 
+      // PR5: activity-log fan-out (queued-build path). Owner-facing
+      // journal records the publish moment; the build itself completes
+      // asynchronously in the worker.
+      this.activityLogPublisher?.emit({
+        sourceService: "site-gen",
+        category: "site",
+        action: "published",
+        severity: "info",
+        organizationId: params.tenantId,
+        siteId: params.siteId,
+        actorType: "user",
+        actorUserId: null,
+        objectType: "site",
+        objectId: params.siteId,
+        objectRef: finalUrl ?? null,
+        payload: {
+          meta: {
+            url: finalUrl ?? null,
+            queued: true,
+            buildId: "queued",
+          },
+        },
+      });
+
       this.logger.log(
         `Published site ${params.siteId} (queued build, priority=${priority}) at ${finalUrl}`,
       );
@@ -1076,6 +1108,29 @@ export class SitesDomainService {
       siteId: params.siteId,
       buildId,
       url: finalUrl,
+    });
+
+    // PR5: activity-log fan-out (synchronous-build legacy path). Mirrors
+    // the same envelope as the queued path so the journal looks identical
+    // regardless of which build branch ran.
+    this.activityLogPublisher?.emit({
+      sourceService: "site-gen",
+      category: "site",
+      action: "published",
+      severity: "info",
+      organizationId: params.tenantId,
+      siteId: params.siteId,
+      actorType: "user",
+      actorUserId: null,
+      objectType: "site",
+      objectId: params.siteId,
+      objectRef: finalUrl ?? null,
+      payload: {
+        meta: {
+          url: finalUrl ?? null,
+          buildId,
+        },
+      },
     });
 
     this.logger.log(`Published site ${params.siteId} at ${finalUrl}`);

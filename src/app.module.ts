@@ -37,6 +37,7 @@ import { SitesDomainService } from "./sites.service";
 import { ThemesService } from "./themes.service";
 import { ThemesMicroserviceController } from "./themes.microservice.controller";
 import { EventsModule } from "./events/events.module";
+import { ActivityLogModule } from "./activity-log/activity-log.module";
 import { BillingListenerController } from "./billing/billing.listener";
 import { BillingClient } from "./billing/billing.client";
 import { BillingEventsConsumer } from "./billing/billing-events.consumer";
@@ -83,6 +84,7 @@ import { BlocksController } from "./controllers/blocks.controller";
     CqrsModule.forRoot(),
     ScheduleModule.forRoot(),
     RabbitMQModule,
+    ActivityLogModule,
     EventsModule,
     DatabaseModule,
     DomainModule,

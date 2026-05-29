@@ -1,9 +1,10 @@
 ---
 // CheckoutDeliveryMethod — vanilla Astro + inline script.
-// Карточки доставки генерируются от реальной логистики:
+// Карточки доставки генерируются от реальной логистики (merfy-logistics-service,
+// orders релеит ответ as-is):
 //   POST /api/store/carts/<cartId>/delivery/calculate?store_id=<shopId>
 //   body: { cityFiasId, postalCode? }
-//   → { tariffs[], pickupAvailable, customProfiles? }
+//   → { deliveryOptions[], pickupPoints[] }
 // Слушает событие `checkout:address-changed` из CheckoutDeliveryForm.
 import type { CheckoutDeliveryMethodProps } from './CheckoutDeliveryMethod.puckConfig';
 import { CheckoutDeliveryMethodClasses as C } from './CheckoutDeliveryMethod.classes';
@@ -141,62 +142,62 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
 
     /**
      * Собирает массив option'ов из ответа логистики + локальных флагов.
-     * type: 'self_pickup' | 'cdek_door' | 'cdek_pickup' | 'custom'
+     * Доставкой владеет merfy-logistics-service: ответ — дженерик
+     *   { deliveryOptions: [{id,name,type:'OWN'|'PARTNER',price,minDays,maxDays,
+     *      description,cdekTariffCode,deliveryMode:'door'|'pickup'}], pickupPoints[] }
+     * type карточки: 'self_pickup' | 'cdek_door' | 'cdek_pickup' | 'custom'
      */
     function buildOptions(data) {
       var options = [];
       var subtotal = cartTotalCents();
       var freeShipping = freeShippingThreshold != null && subtotal >= freeShippingThreshold;
 
-      // Самовывоз из магазина
-      if (pickupEnabled && data && data.pickupAvailable) {
+      var deliveryOptions = (data && Array.isArray(data.deliveryOptions)) ? data.deliveryOptions : [];
+      var pickupPoints = (data && Array.isArray(data.pickupPoints)) ? data.pickupPoints : [];
+
+      // Самовывоз из магазина — точки самовывоза из логистики.
+      if (pickupEnabled && pickupPoints.length > 0) {
+        var pp = pickupPoints[0];
         options.push({
           type: 'self_pickup',
           tariffCode: null,
           label: pickupLabel,
-          meta: data.pickupAddress || 'Заберите из нашего магазина',
+          meta: (pp && pp.address) || 'Заберите из нашего магазина',
           priceCents: 0,
         });
       }
 
-      // CDEK tariffs (door + pickup)
-      if (data && Array.isArray(data.tariffs)) {
-        for (var i = 0; i < data.tariffs.length; i++) {
-          var t = data.tariffs[i];
-          var isDoor = t.deliveryMode === 'door';
-          var name = isDoor ? cdekDoorLabel : cdekPvzLabel;
-          // Тарифу даём имя из его tariffName (например «Посылка склад-дверь»),
-          // а как заголовок карточки — настройку темы (cdekDoorLabel / cdekPvzLabel).
-          var period = t.periodMin && t.periodMax
-            ? 'от ' + t.periodMin + ' до ' + t.periodMax + ' рабочих дней'
-            : (t.tariffName || '');
+      // Опции доставки: PARTNER (CDEK) → дверь/ПВЗ, OWN → свой тариф магазина.
+      for (var i = 0; i < deliveryOptions.length; i++) {
+        var o = deliveryOptions[i];
+        var priceCents = Math.round((o.price || 0) * 100);
+        var period = (o.minDays != null && o.maxDays != null)
+          ? 'от ' + o.minDays + ' до ' + o.maxDays + ' рабочих дней'
+          : (o.description || '');
+
+        if (o.type === 'PARTNER') {
+          var isDoor = o.deliveryMode === 'door';
+          // Заголовок карточки — настройка темы (cdekDoorLabel / cdekPvzLabel),
+          // срок/описание — meta.
           options.push({
             type: isDoor ? 'cdek_door' : 'cdek_pickup',
-            tariffCode: t.tariffCode,
-            label: name,
+            tariffCode: (o.cdekTariffCode != null ? o.cdekTariffCode : null),
+            label: isDoor ? cdekDoorLabel : cdekPvzLabel,
             meta: period,
-            priceCents: Math.round((t.deliverySumRub || 0) * 100),
-            periodMin: t.periodMin,
-            periodMax: t.periodMax,
+            priceCents: priceCents,
+            periodMin: o.minDays,
+            periodMax: o.maxDays,
           });
-        }
-      }
-
-      // Custom delivery profiles (свои тарифы магазина)
-      if (data && Array.isArray(data.customProfiles)) {
-        for (var p = 0; p < data.customProfiles.length; p++) {
-          var profile = data.customProfiles[p];
-          for (var j = 0; j < (profile.tariffs || []).length; j++) {
-            var ct = profile.tariffs[j];
-            options.push({
-              type: 'custom',
-              tariffCode: null,
-              customTariffId: ct.id,
-              label: ct.name,
-              meta: ct.description || '',
-              priceCents: ct.priceCents || 0,
-            });
-          }
+        } else {
+          // OWN — собственный тариф магазина (бывшие customProfiles).
+          options.push({
+            type: 'custom',
+            tariffCode: null,
+            customTariffId: o.id,
+            label: o.name,
+            meta: o.description || period,
+            priceCents: priceCents,
+          });
         }
       }
 

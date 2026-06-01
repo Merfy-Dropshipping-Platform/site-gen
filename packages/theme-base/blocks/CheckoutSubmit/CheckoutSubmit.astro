@@ -152,7 +152,21 @@ const initialLabel = buttonText.replace('{total}', '—');
           body: JSON.stringify({ email: email, phone: phone, name: fullName }),
         });
 
-        // 2. PATCH cart с address (для бэка тоже)
+        // 2. PATCH cart с address (backend DTO ожидает street/building/apartment
+        // ОТДЕЛЬНО, не fullAddress). Структурированный адрес сохранён в
+        // data-addr-* атрибутах после выбора DaData address suggestion.
+        var deliveryForm = document.querySelector('[data-checkout-delivery-form]');
+        var addrStreet = deliveryForm ? (deliveryForm.getAttribute('data-addr-street') || '') : '';
+        var addrBuilding = deliveryForm ? (deliveryForm.getAttribute('data-addr-building') || '') : '';
+        var addrApartment = deliveryForm ? (deliveryForm.getAttribute('data-addr-apartment') || '') : '';
+        var addrFull = getField('address');
+        // Fallback parse если juzер ввёл руками: "ул X, д Y, кв Z"
+        if (!addrStreet && addrFull) {
+          var parts = addrFull.split(',').map(function (s) { return s.trim(); });
+          addrStreet = parts[0] || '';
+          addrBuilding = parts[1] || '';
+          addrApartment = parts[2] || '';
+        }
         await fetch(apiBase + '/orders/cart/' + cartId + '/address', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -160,9 +174,10 @@ const initialLabel = buttonText.replace('{total}', '—');
           body: JSON.stringify({
             country: getField('country') || 'Россия',
             city: getField('city'),
-            fullAddress: getField('address'),
+            street: addrStreet,
+            building: addrBuilding,
+            apartment: addrApartment,
             postalCode: getField('postalCode'),
-            fiasId: getFiasId(),
           }),
         });
 

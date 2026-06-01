@@ -376,6 +376,11 @@ const paddingStyle = padding
               + ' data-postal="' + escapeHtml(r.d.postal_code || '') + '"'
               + ' data-city="' + escapeHtml(r.d.city || '') + '"'
               + ' data-fias-id="' + escapeHtml(r.d.city_fias_id || r.d.fias_id || '') + '"'
+              + ' data-street="' + escapeHtml(r.d.street_with_type || r.d.street || '') + '"'
+              + ' data-house="' + escapeHtml(r.d.house || '') + '"'
+              + ' data-house-type="' + escapeHtml(r.d.house_type || '') + '"'
+              + ' data-flat="' + escapeHtml(r.d.flat || '') + '"'
+              + ' data-flat-type="' + escapeHtml(r.d.flat_type || '') + '"'
               + '>' + escapeHtml(r.setVal) + '</li>';
           }).join('');
           list.hidden = false;
@@ -497,6 +502,22 @@ const paddingStyle = padding
         }
 
         if (kind === 'address') {
+          // Сохраняем структурированный адрес из DaData (street, house, flat)
+          // в data-* атрибуты на section — CheckoutSubmit прочитает их и
+          // отправит в PATCH /cart/:id/address с правильными полями (не
+          // одним fullAddress, который backend DTO дропает).
+          var dStreet = li.getAttribute('data-street') || '';
+          var dHouseType = li.getAttribute('data-house-type') || 'д';
+          var dHouse = li.getAttribute('data-house') || '';
+          var dFlatType = li.getAttribute('data-flat-type') || 'кв';
+          var dFlat = li.getAttribute('data-flat') || '';
+          if (dStreet) section.setAttribute('data-addr-street', dStreet);
+          else section.removeAttribute('data-addr-street');
+          if (dHouse) section.setAttribute('data-addr-building', (dHouseType + ' ' + dHouse).trim());
+          else section.removeAttribute('data-addr-building');
+          if (dFlat) section.setAttribute('data-addr-apartment', (dFlatType + ' ' + dFlat).trim());
+          else section.removeAttribute('data-addr-apartment');
+
           // Postal autofill ТОЛЬКО при выборе полного адреса.
           var indexField = section.querySelector('[data-checkout-field="postalCode"]');
           if (indexField && indexField.getAttribute('data-autofill') === 'true' && postal) {

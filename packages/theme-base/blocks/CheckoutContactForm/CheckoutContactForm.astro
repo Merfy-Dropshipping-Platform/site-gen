@@ -69,11 +69,8 @@ const paddingStyle = padding
     if (format !== 'ru') return;
 
     function formatRu(digits) {
-      // digits — только цифры без + и пробелов
       if (!digits) return '';
-      // Если начинается с 8 — заменяем на 7
       if (digits[0] === '8') digits = '7' + digits.slice(1);
-      // Если не начинается с 7 — префиксуем 7
       if (digits[0] !== '7') digits = '7' + digits;
       digits = digits.slice(0, 11);
       var out = '+7';
@@ -85,13 +82,99 @@ const paddingStyle = padding
       return out;
     }
 
+    function digitsBefore(str, pos) {
+      var n = 0;
+      for (var i = 0; i < pos && i < str.length; i++) {
+        if (/\d/.test(str[i])) n++;
+      }
+      return n;
+    }
+
+    function cursorAfterNthDigit(str, n) {
+      if (n <= 0) {
+        // Найти первую цифру в str — поставим курсор перед ней
+        var idx = str.search(/\d/);
+        return idx < 0 ? str.length : idx;
+      }
+      var count = 0;
+      for (var i = 0; i < str.length; i++) {
+        if (/\d/.test(str[i])) {
+          count++;
+          if (count === n) return i + 1;
+        }
+      }
+      return str.length;
+    }
+
+    // Backspace через разделитель ()/space/dash должен удалить разделитель
+    // + предыдущую цифру вместе. Без этого input handler reformat'ит обратно
+    // и курсор «застревает» на скобке.
+    phoneInput.addEventListener('keydown', function (e) {
+      var key = e.key;
+      if (key !== 'Backspace' && key !== 'Delete') return;
+      if (phoneInput.selectionStart !== phoneInput.selectionEnd) return; // selection — стандартное поведение
+      var pos = phoneInput.selectionStart;
+      var val = phoneInput.value;
+
+      if (key === 'Backspace') {
+        if (pos === 0) return;
+        // Если перед курсором цифра — default Backspace OK
+        if (/\d/.test(val[pos - 1])) return;
+        // Перед курсором разделитель — найдём предыдущую цифру (или начало "+7")
+        var newPos = pos - 1;
+        while (newPos > 0 && /\D/.test(val[newPos])) newPos--;
+        if (newPos === 0) return; // дошли до начала "+7" — не трогаем префикс
+        // newPos указывает на цифру → удалить её + все разделители до pos
+        e.preventDefault();
+        var targetDigits = digitsBefore(val, newPos); // сколько цифр остаётся слева
+        var allDigits = val.replace(/\D/g, '');
+        var newDigits = allDigits.slice(0, targetDigits) + allDigits.slice(targetDigits + 1);
+        var newValue = formatRu(newDigits);
+        phoneInput.value = newValue;
+        var caret = cursorAfterNthDigit(newValue, targetDigits);
+        phoneInput.setSelectionRange(caret, caret);
+        return;
+      }
+
+      if (key === 'Delete') {
+        if (pos >= val.length) return;
+        // Аналогично — если справа разделитель, перепрыгиваем + удаляем след. цифру
+        if (/\d/.test(val[pos])) return;
+        var nextPos = pos;
+        while (nextPos < val.length && /\D/.test(val[nextPos])) nextPos++;
+        if (nextPos >= val.length) return;
+        e.preventDefault();
+        var keepBefore = digitsBefore(val, nextPos);
+        var all = val.replace(/\D/g, '');
+        var nd = all.slice(0, keepBefore) + all.slice(keepBefore + 1);
+        var nv = formatRu(nd);
+        phoneInput.value = nv;
+        var c = cursorAfterNthDigit(nv, keepBefore);
+        phoneInput.setSelectionRange(c, c);
+      }
+    });
+
     phoneInput.addEventListener('input', function () {
-      var digits = (phoneInput.value || '').replace(/\D/g, '');
-      phoneInput.value = formatRu(digits);
+      // Сохраняем сколько цифр было до курсора → курсор останется на том же
+      // месте логически (не прыгает в конец после реформата).
+      var oldVal = phoneInput.value;
+      var caretPos = phoneInput.selectionStart || oldVal.length;
+      var targetDigits = digitsBefore(oldVal, caretPos);
+      var digits = oldVal.replace(/\D/g, '');
+      var newVal = formatRu(digits);
+      if (newVal !== oldVal) {
+        phoneInput.value = newVal;
+        var newCaret = cursorAfterNthDigit(newVal, targetDigits);
+        phoneInput.setSelectionRange(newCaret, newCaret);
+      }
     });
 
     phoneInput.addEventListener('focus', function () {
-      if (!phoneInput.value) phoneInput.value = '+7 (';
+      if (!phoneInput.value) {
+        phoneInput.value = '+7 (';
+        // Курсор в позицию после "("
+        try { phoneInput.setSelectionRange(4, 4); } catch (e) {}
+      }
     });
 
     phoneInput.addEventListener('blur', function () {

@@ -407,8 +407,15 @@ const paddingStyle = padding
 
       // Initial probe — если value уже есть (browser autofill / SSR-prefilled).
       if (kind === 'city' && (input.value || '').trim().length >= 3) {
-        // Защита от race с другой инициализацией — пара tick'ов задержки
-        setTimeout(resolveCityIfMissing, 50);
+        setTimeout(function () {
+          // Если fiasId уже выставлен — сразу диспатчим event для recalculate
+          // тарифов (например после reload страницы с заполненным адресом).
+          if (section.getAttribute('data-selected-city-fias-id')) {
+            dispatchAddressChange();
+          } else {
+            resolveCityIfMissing();
+          }
+        }, 50);
       }
 
       list.addEventListener('mousedown', function (e) {

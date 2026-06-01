@@ -215,6 +215,7 @@ const initialLabel = buttonText.replace('{total}', '—');
 
         var paymentBody = {
           returnUrl: window.location.origin + successRedirectUrl + '?orderId=' + orderId,
+          paymentMethod: state.paymentMethod, // 'bank_card' | 'sbp' | ...
         };
         if (paymentToken) paymentBody.paymentToken = paymentToken;
 

@@ -5,66 +5,321 @@ import { CheckoutPaymentClasses as C } from './CheckoutPayment.classes';
 interface Props extends CheckoutPaymentProps { id?: string; }
 const { id, heading, subheading, methods, cardForm, padding } = Astro.props as Props;
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
-const propsJson = JSON.stringify({ heading, subheading, methods, cardForm });
+
+const enabledMethods = (methods || []).filter((m) => m.enabled);
+const firstKey = enabledMethods[0]?.key ?? 'bank_card';
+const warningText = cardForm?.warningText || 'Счёт будет выставлен по вашему адресу';
+const nameOnCardEnabled = cardForm?.nameOnCardEnabled !== false;
 ---
 <section
   class={C.root}
   data-puck-component-id={id}
-  data-checkout-slot="payment"
-  data-checkout-props={propsJson}
+  data-block="checkout-payment"
   style={paddingStyle}
 >
   <h2 class={C.heading}>{heading}</h2>
   <p class={C.subheading}>{subheading}</p>
+
   <div class={C.list} data-checkout-payment-list>
-    {methods.filter(m => m.enabled).map((m, i) => (
-      <div
+    {enabledMethods.map((m, i) => (
+      <label
         class:list={[
           'flex flex-col gap-3 px-3 py-5 border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] cursor-pointer transition-colors',
           i === 0 ? 'border-[rgb(var(--color-text))]' : 'hover:border-[rgb(var(--color-text)/.4)]',
         ]}
         data-payment-key={m.key}
+        data-payment-method={m.key}
         data-payment-selected={String(i === 0)}
       >
         <div class="flex items-center gap-2 w-full">
-          <span class:list={[
-            'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border',
-            i === 0
-              ? 'bg-[rgb(var(--color-text))] border-[rgb(var(--color-text))]'
-              : 'border-[rgb(var(--color-input-border))]',
-          ]}>
+          <input
+            type="radio"
+            name="paymentMethod"
+            value={m.key}
+            checked={i === 0}
+            class="sr-only"
+            data-payment-radio
+          />
+          <span
+            class:list={[
+              'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border',
+              i === 0
+                ? 'bg-[rgb(var(--color-text))] border-[rgb(var(--color-text))]'
+                : 'border-[rgb(var(--color-input-border))]',
+            ]}
+            data-payment-radio-dot
+          >
             {i === 0 && <span class="block w-2 h-2 rounded-full bg-[rgb(var(--color-bg))]"></span>}
           </span>
           <span class={C.label}>{m.label}</span>
+          {m.key === 'sbp' && (
+            <svg class={C.brand} viewBox="0 0 40 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <text x="0" y="12" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="currentColor">СБП</text>
+            </svg>
+          )}
+          {m.key === 'sberbank' && (
+            <svg class={C.brand} viewBox="0 0 60 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <text x="0" y="12" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="currentColor">Sber Pay</text>
+            </svg>
+          )}
+          {m.key === 'tinkoff_bank' && (
+            <svg class={C.brand} viewBox="0 0 60 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <text x="0" y="12" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="currentColor">T-Pay</text>
+            </svg>
+          )}
         </div>
-        {/* Banking card form fields shown when first method is bank_card */}
-        {i === 0 && m.key === 'bank_card' && (
-          <div class="w-full grid grid-cols-1 gap-3" data-checkout-card-form>
-            <div class="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg,255,255,255))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-14">
-              <label class="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label,156,163,175))]">Номер карты</label>
-              <input class="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]" placeholder="0000 0000 0000 0000" />
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-              <div class="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg,255,255,255))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-14">
-                <label class="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label,156,163,175))]">Срок действия</label>
-                <input class="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]" placeholder="ММ/ГГ" />
-              </div>
-              <div class="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg,255,255,255))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-14">
-                <label class="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label,156,163,175))]">CVV</label>
-                <input class="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]" type="password" />
-              </div>
-            </div>
-            <div class="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg,255,255,255))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-14">
-              <label class="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label,156,163,175))]">Имя на карте</label>
-              <input class="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]" autocomplete="cc-name" />
-            </div>
-            <p class="flex items-center gap-2 text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="0.5" fill="currentColor"/></svg>
-              Счёт будет выставлен по вашему адресу
-            </p>
-          </div>
-        )}
-      </div>
+      </label>
     ))}
   </div>
+
+  <div
+    class="w-full grid grid-cols-1 gap-3 mt-4"
+    data-card-form-wrapper
+    data-checkout-card-form
+    hidden={firstKey !== 'bank_card'}
+  >
+    <div class="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg,255,255,255))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-14">
+      <label class="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label,156,163,175))]">Номер карты</label>
+      <input
+        class="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]"
+        data-card-field="number"
+        inputmode="numeric"
+        autocomplete="cc-number"
+        maxlength="19"
+        placeholder="0000 0000 0000 0000"
+      />
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div class="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg,255,255,255))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-14">
+        <label class="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label,156,163,175))]">Срок действия</label>
+        <input
+          class="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]"
+          data-card-field="expiry"
+          inputmode="numeric"
+          autocomplete="cc-exp"
+          maxlength="5"
+          placeholder="ММ/ГГ"
+        />
+      </div>
+      <div class="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg,255,255,255))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-14">
+        <label class="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label,156,163,175))]">CVV</label>
+        <input
+          class="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]"
+          data-card-field="cvc"
+          inputmode="numeric"
+          autocomplete="cc-csc"
+          maxlength="4"
+          type="password"
+          placeholder="CVV"
+        />
+      </div>
+    </div>
+    {nameOnCardEnabled && (
+      <div class="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg,255,255,255))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-14">
+        <label class="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label,156,163,175))]">Имя на карте</label>
+        <input
+          class="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))] uppercase"
+          data-card-field="nameOnCard"
+          autocomplete="cc-name"
+          placeholder="IVAN IVANOV"
+        />
+      </div>
+    )}
+    <p class="flex items-center gap-2 text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]" data-card-warning>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <circle cx="12" cy="16" r="0.5" fill="currentColor"/>
+      </svg>
+      <span>{warningText}</span>
+    </p>
+    <p
+      class="text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]"
+      data-payment-sdk-status
+      hidden
+    ></p>
+  </div>
 </section>
+
+<script is:inline>
+  (function () {
+    var section = document.querySelector('[data-block="checkout-payment"]');
+    if (!section) return;
+
+    var radios = section.querySelectorAll('input[name="paymentMethod"]');
+    var labels = section.querySelectorAll('[data-payment-key]');
+    var cardWrapper = section.querySelector('[data-card-form-wrapper]');
+    var sdkStatusEl = section.querySelector('[data-payment-sdk-status]');
+    var cardInputs = {
+      number: section.querySelector('[data-card-field="number"]'),
+      expiry: section.querySelector('[data-card-field="expiry"]'),
+      cvc: section.querySelector('[data-card-field="cvc"]'),
+      nameOnCard: section.querySelector('[data-card-field="nameOnCard"]'),
+    };
+
+    function updateSelectionStyle(method) {
+      labels.forEach(function (lbl) {
+        var isSelected = lbl.getAttribute('data-payment-key') === method;
+        lbl.setAttribute('data-payment-selected', String(isSelected));
+        if (isSelected) {
+          lbl.classList.add('border-[rgb(var(--color-text))]');
+          lbl.classList.remove('hover:border-[rgb(var(--color-text)/.4)]');
+        } else {
+          lbl.classList.remove('border-[rgb(var(--color-text))]');
+          lbl.classList.add('hover:border-[rgb(var(--color-text)/.4)]');
+        }
+        var dot = lbl.querySelector('[data-payment-radio-dot]');
+        if (dot) {
+          if (isSelected) {
+            dot.classList.add('bg-[rgb(var(--color-text))]');
+            dot.classList.add('border-[rgb(var(--color-text))]');
+            dot.classList.remove('border-[rgb(var(--color-input-border))]');
+            if (!dot.querySelector('span')) {
+              var inner = document.createElement('span');
+              inner.className = 'block w-2 h-2 rounded-full bg-[rgb(var(--color-bg))]';
+              dot.appendChild(inner);
+            }
+          } else {
+            dot.classList.remove('bg-[rgb(var(--color-text))]');
+            dot.classList.remove('border-[rgb(var(--color-text))]');
+            dot.classList.add('border-[rgb(var(--color-input-border))]');
+            var inner2 = dot.querySelector('span');
+            if (inner2) inner2.remove();
+          }
+        }
+      });
+    }
+
+    function setMethod(method) {
+      if (cardWrapper) cardWrapper.hidden = method !== 'bank_card';
+      updateSelectionStyle(method);
+      document.dispatchEvent(new CustomEvent('checkout:payment-method-changed', {
+        detail: { method: method, key: method },
+      }));
+      if (method === 'bank_card') ensureYookassaSdk();
+    }
+
+    radios.forEach(function (r) {
+      r.addEventListener('change', function () {
+        if (r.checked) setMethod(r.value);
+      });
+    });
+
+    // Card number mask
+    if (cardInputs.number) {
+      cardInputs.number.addEventListener('input', function () {
+        var v = cardInputs.number.value.replace(/\D/g, '').substring(0, 19);
+        cardInputs.number.value = v.replace(/(\d{4})(?=\d)/g, '$1 ');
+      });
+    }
+    // Expiry mask MM/YY
+    if (cardInputs.expiry) {
+      cardInputs.expiry.addEventListener('input', function () {
+        var v = cardInputs.expiry.value.replace(/\D/g, '').substring(0, 4);
+        if (v.length >= 3) v = v.substring(0, 2) + '/' + v.substring(2);
+        cardInputs.expiry.value = v;
+      });
+    }
+    // CVC numeric only
+    if (cardInputs.cvc) {
+      cardInputs.cvc.addEventListener('input', function () {
+        cardInputs.cvc.value = cardInputs.cvc.value.replace(/\D/g, '').substring(0, 4);
+      });
+    }
+    // Name on card → uppercase
+    if (cardInputs.nameOnCard) {
+      cardInputs.nameOnCard.addEventListener('input', function () {
+        cardInputs.nameOnCard.value = cardInputs.nameOnCard.value.toUpperCase();
+      });
+    }
+
+    // YooKassa SDK loader
+    var yookassaShopId = null;
+    function setSdkStatus(text, visible) {
+      if (!sdkStatusEl) return;
+      sdkStatusEl.textContent = text || '';
+      sdkStatusEl.hidden = !visible;
+    }
+
+    function ensureYookassaSdk() {
+      if (window.__YOOKASSA_SDK_READY__) return;
+      if (window.__YOOKASSA_SDK_LOADING__) return;
+
+      var apiBase = (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.apiUrl) || 'https://gateway.merfy.ru/api';
+      var shopId = (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.shopId) || '';
+      if (!shopId) return;
+
+      window.__YOOKASSA_SDK_LOADING__ = true;
+      setSdkStatus('Загрузка платёжного модуля…', true);
+
+      fetch(apiBase + '/billing/shops/' + shopId + '/payment-config/public')
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) {
+          var yk = j && j.data && j.data.yookassaShopId;
+          if (!yk) {
+            window.__YOOKASSA_SDK_LOADING__ = false;
+            setSdkStatus('', false);
+            return;
+          }
+          yookassaShopId = yk;
+          window.__YOOKASSA_SHOP_ID__ = yk;
+
+          var existing = document.querySelector('script[src="https://yookassa.ru/checkout-widget/v1/checkout-widget.js"]');
+          if (existing) {
+            window.__YOOKASSA_SDK_READY__ = true;
+            window.__YOOKASSA_SDK_LOADING__ = false;
+            setSdkStatus('', false);
+            return;
+          }
+          var s = document.createElement('script');
+          s.src = 'https://yookassa.ru/checkout-widget/v1/checkout-widget.js';
+          s.async = true;
+          s.onload = function () {
+            window.__YOOKASSA_SDK_READY__ = true;
+            window.__YOOKASSA_SDK_LOADING__ = false;
+            setSdkStatus('', false);
+          };
+          s.onerror = function () {
+            window.__YOOKASSA_SDK_LOADING__ = false;
+            setSdkStatus('Не удалось загрузить платёжный модуль', true);
+          };
+          document.head.appendChild(s);
+        })
+        .catch(function () {
+          window.__YOOKASSA_SDK_LOADING__ = false;
+          setSdkStatus('Не удалось загрузить платёжный модуль', true);
+        });
+    }
+
+    // Global tokenize — called from CheckoutSubmit
+    window.__checkoutTokenizeCard = async function () {
+      var shopId = window.__YOOKASSA_SHOP_ID__ || yookassaShopId;
+      if (!shopId || !window.YooMoneyCheckout) return '';
+
+      var num = (cardInputs.number && cardInputs.number.value.replace(/\s/g, '')) || '';
+      var exp = (cardInputs.expiry && cardInputs.expiry.value) || '';
+      var cvc = (cardInputs.cvc && cardInputs.cvc.value) || '';
+      var name = (cardInputs.nameOnCard && cardInputs.nameOnCard.value.trim()) || '';
+      if (!num || !exp || !cvc) return '';
+
+      var parts = exp.split('/');
+      var month = (parts[0] || '').padStart(2, '0').slice(0, 2);
+      var year = '20' + ((parts[1] || '').slice(-2));
+
+      try {
+        var ym = new window.YooMoneyCheckout(shopId);
+        var payload = { number: num, cvc: cvc, month: month, year: year };
+        if (name) payload.fio = name;
+        var result = await ym.tokenize(payload);
+        return (result && result.data && result.data.response && result.data.response.paymentToken) || '';
+      } catch (e) {
+        return '';
+      }
+    };
+
+    // Init: dispatch initial selection and preload SDK if bank_card
+    var initial = section.querySelector('input[name="paymentMethod"]:checked');
+    var initialKey = (initial && initial.value) || 'bank_card';
+    setMethod(initialKey);
+  })();
+</script>

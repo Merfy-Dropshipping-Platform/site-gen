@@ -5,17 +5,203 @@ import { CheckoutSubmitClasses as C } from './CheckoutSubmit.classes';
 interface Props extends CheckoutSubmitProps { id?: string; }
 const { id, buttonText, buttonStyle, loadingText, successRedirectUrl, padding } = Astro.props as Props;
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
-const propsJson = JSON.stringify({ buttonText, loadingText, successRedirectUrl });
 const cls = buttonStyle === 'outline' ? C.buttonOutline : buttonStyle === 'gradient' ? C.buttonGradient : C.buttonFill;
+const initialLabel = buttonText.replace('{total}', '—');
 ---
 <section
   class={C.root}
   data-puck-component-id={id}
-  data-checkout-slot="submit"
-  data-checkout-props={propsJson}
+  data-block="checkout-submit"
   style={paddingStyle}
 >
-  <button type="submit" class={cls} data-checkout-submit disabled>
-    {buttonText.replace('{total}', '—')}
+  <div data-checkout-submit-error role="alert" hidden style="color:rgb(220 38 38);font-size:14px;margin-bottom:8px;"></div>
+  <button type="button" class={cls} data-checkout-submit disabled>
+    {initialLabel}
   </button>
 </section>
+
+<script is:inline define:vars={{ buttonText, loadingText, successRedirectUrl }}>
+  (function () {
+    var section = document.querySelector('[data-block="checkout-submit"]');
+    if (!section) return;
+    var button = section.querySelector('[data-checkout-submit]');
+    var errorEl = section.querySelector('[data-checkout-submit-error]');
+    if (!button) return;
+
+    var state = {
+      deliveryMethod: null,
+      paymentMethod: 'bank_card',
+      submitting: false,
+    };
+
+    function getApiBase() {
+      return (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.apiUrl) || 'https://gateway.merfy.ru/api';
+    }
+    function getShopId() {
+      return (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.shopId) || '';
+    }
+    function getCartId() {
+      return (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')) || '';
+    }
+    function getCartItems() {
+      return (window.cartStore && typeof window.cartStore.getItems === 'function') ? window.cartStore.getItems() : [];
+    }
+    function getSubtotalCents() {
+      var items = getCartItems();
+      return items.reduce(function (sum, it) { return sum + (it.unitPriceCents || it.priceCents || 0) * (it.quantity || 1); }, 0);
+    }
+    function getDeliveryCents() {
+      return state.deliveryMethod ? (state.deliveryMethod.costCents || 0) : 0;
+    }
+    function getTotalCents() {
+      return Math.max(0, getSubtotalCents() + getDeliveryCents());
+    }
+    function fmtRub(cents) {
+      var rub = Math.round(cents / 100);
+      return rub.toLocaleString('ru-RU') + '₽';
+    }
+    function getField(name) {
+      var el = document.querySelector('[data-checkout-field="' + name + '"] input');
+      return el ? (el.value || '').trim() : '';
+    }
+    function getFiasId() {
+      var f = document.querySelector('[data-checkout-delivery-form]');
+      return f ? (f.getAttribute('data-selected-city-fias-id') || '') : '';
+    }
+
+    function canSubmit() {
+      if (state.submitting) return false;
+      var items = getCartItems();
+      if (items.length === 0) return false;
+      if (!getCartId() || !getShopId()) return false;
+      if (!getField('email') || !getField('phone')) return false;
+      if (!getField('city') || !getField('address')) return false;
+      if (!state.deliveryMethod) return false;
+      if (!state.paymentMethod) return false;
+      return true;
+    }
+
+    function refresh() {
+      var label = buttonText.replace('{total}', fmtRub(getTotalCents()));
+      button.textContent = state.submitting ? loadingText : label;
+      button.disabled = !canSubmit();
+    }
+
+    document.addEventListener('cart:updated', refresh);
+    document.addEventListener('checkout:address-changed', refresh);
+    document.addEventListener('checkout:delivery-changed', function (e) {
+      var d = e && e.detail;
+      if (!d) return;
+      state.deliveryMethod = {
+        type: d.type,
+        label: d.label,
+        costCents: d.costCents || 0,
+        tariffCode: d.tariffCode != null ? d.tariffCode : null,
+        customTariffId: d.customTariffId || null,
+        periodMin: d.periodMin != null ? d.periodMin : null,
+        periodMax: d.periodMax != null ? d.periodMax : null,
+      };
+      refresh();
+    });
+    document.addEventListener('checkout:payment-method-changed', function (e) {
+      var m = e && e.detail && e.detail.method;
+      if (m) { state.paymentMethod = m; refresh(); }
+    });
+
+    ['email','phone','firstName','lastName','fullName','city','postalCode','address'].forEach(function (f) {
+      var el = document.querySelector('[data-checkout-field="' + f + '"] input');
+      if (!el) return;
+      el.addEventListener('input', refresh);
+      el.addEventListener('change', refresh);
+    });
+
+    function showError(msg) {
+      if (errorEl) { errorEl.hidden = false; errorEl.textContent = msg; }
+    }
+    function clearError() {
+      if (errorEl) { errorEl.hidden = true; errorEl.textContent = ''; }
+    }
+
+    button.addEventListener('click', async function (e) {
+      e.preventDefault();
+      if (!canSubmit()) return;
+      clearError();
+      state.submitting = true;
+      refresh();
+
+      try {
+        var apiBase = getApiBase();
+        var cartId = getCartId();
+
+        var paymentToken = null;
+        if (state.paymentMethod === 'bank_card' && typeof window.__checkoutTokenizeCard === 'function') {
+          paymentToken = await window.__checkoutTokenizeCard();
+        }
+
+        var firstName = getField('firstName');
+        var lastName = getField('lastName');
+        var fullName = getField('fullName') || (firstName + ' ' + lastName).trim();
+
+        var checkoutBody = {
+          metadata: {
+            paymentMethod: state.paymentMethod,
+            deliveryAddress: {
+              country: getField('country') || 'Россия',
+              city: getField('city'),
+              fullAddress: getField('address'),
+              postalCode: getField('postalCode'),
+              fiasId: getFiasId(),
+              firstName: firstName,
+              lastName: lastName,
+              fullName: fullName,
+            },
+            deliveryMethod: state.deliveryMethod,
+            contactEmail: getField('email'),
+            contactPhone: getField('phone'),
+            customerName: fullName,
+          },
+        };
+        var checkoutRes = await fetch(apiBase + '/orders/cart/' + cartId + '/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(checkoutBody),
+        });
+        var checkoutJson = await checkoutRes.json();
+        var orderId = checkoutJson && checkoutJson.data && (checkoutJson.data.orderId || checkoutJson.data.id);
+        if (!checkoutRes.ok || !orderId) {
+          throw new Error((checkoutJson && (checkoutJson.error || checkoutJson.message)) || 'Не удалось оформить заказ');
+        }
+
+        var paymentBody = {
+          returnUrl: window.location.origin + successRedirectUrl + '?orderId=' + orderId,
+        };
+        if (paymentToken) paymentBody.paymentToken = paymentToken;
+
+        var paymentRes = await fetch(apiBase + '/orders/' + orderId + '/create-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(paymentBody),
+        });
+        var paymentJson = await paymentRes.json();
+        var confirmationUrl = paymentJson && paymentJson.data && paymentJson.data.confirmationUrl;
+        if (!paymentRes.ok || !confirmationUrl) {
+          throw new Error((paymentJson && (paymentJson.error || paymentJson.message)) || 'Ошибка платежа');
+        }
+
+        try {
+          localStorage.setItem('merfy:lastOrderId', orderId);
+          localStorage.removeItem('merfy:cartId');
+        } catch (e) {}
+        window.location.href = confirmationUrl;
+      } catch (err) {
+        state.submitting = false;
+        refresh();
+        showError(err && err.message ? err.message : 'Не удалось оформить заказ');
+      }
+    });
+
+    refresh();
+  })();
+</script>

@@ -23,6 +23,12 @@ export function SubmitSection(props: SubmitSectionProps) {
 
   const text = state.submitting ? props.loadingText : props.buttonText.replace('{total}', formatRub(totals.totalCents));
 
+  // В Astro vanilla форме адрес собран в одно поле `address` (DaData composes
+  // "ул. X, д. Y, кв. Z"), street/building/apartment не сплитятся отдельно.
+  // Принимаем валидным или composed `address`, или структурированный street+building.
+  const hasAddress = Boolean(
+    state.delivery.address || (state.delivery.street && state.delivery.building),
+  );
   const canSubmit =
     !state.submitting &&
     !state.loading &&
@@ -30,8 +36,7 @@ export function SubmitSection(props: SubmitSectionProps) {
     state.contact.email &&
     state.contact.phone &&
     state.delivery.city &&
-    state.delivery.street &&
-    state.delivery.building &&
+    hasAddress &&
     state.deliveryMethod &&
     state.paymentMethod;
 

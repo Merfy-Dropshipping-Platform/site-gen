@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { CheckoutProvider, type CheckoutCartItem } from './CheckoutContext';
 import { useCheckoutCart } from './hooks/useCheckoutCart';
+import { useAstroBridge } from './hooks/useAstroBridge';
 import { ContactSection, type ContactSectionProps } from './sections/ContactSection';
 import { DeliverySection, type DeliverySectionProps } from './sections/DeliverySection';
 import { DeliveryMethodSection, type DeliveryMethodSectionProps } from './sections/DeliveryMethodSection';
@@ -73,6 +74,7 @@ export function CheckoutFlow(rootProps: CheckoutFlowProps) {
 
 function CheckoutFlowInner() {
   useCheckoutCart();
+  useAstroBridge();
   const slots = useMemo(() => readSlots(), []);
   const cardRef = useRef({ number: '', expiry: '', cvc: '', nameOnCard: '' });
 

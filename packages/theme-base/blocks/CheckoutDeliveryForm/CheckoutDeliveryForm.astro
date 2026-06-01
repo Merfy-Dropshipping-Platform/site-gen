@@ -435,6 +435,16 @@ const paddingStyle = padding
           // City selection — dropdown закрывается (нет progressive для города)
           list.hidden = true;
           list.innerHTML = '';
+          // Postal autofill из city.data.postal_code — без него logistics
+          // отдаёт BadRequest и тарифы СДЭК не считаются.
+          var cityPostalField = section.querySelector('[data-checkout-field="postalCode"]');
+          if (cityPostalField && cityPostalField.getAttribute('data-autofill') === 'true' && postal) {
+            var cityPostalInput = cityPostalField.querySelector('input');
+            if (cityPostalInput && !cityPostalInput.value) {
+              cityPostalInput.value = postal;
+              cityPostalInput.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          }
           // Logistics — известна новая локация → пересчитать варианты доставки
           dispatchAddressChange();
         }

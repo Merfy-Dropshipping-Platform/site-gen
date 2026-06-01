@@ -291,6 +291,31 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
     });
 
     var calcInFlight = null;
+
+    // Last-resort fallback: получить postal_code по cityFiasId через DaData.
+    // Гарантирует что в logistics всегда уходит postal — без него BadRequest.
+    async function resolvePostalFromFiasId(fiasId) {
+      try {
+        var cfg = window.__MERFY_CONFIG__ || {};
+        var token = window.__DADATA_TOKEN__ || cfg.dadataToken;
+        if (!token || !fiasId) return '';
+        var res = await fetch('https://suggestions.dadata.ru/suggestions/api/4_1/rs/findById/address', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Token ' + token,
+            Accept: 'application/json',
+          },
+          body: JSON.stringify({ query: fiasId }),
+        });
+        var json = await res.json();
+        var first = json && json.suggestions && json.suggestions[0];
+        return (first && first.data && first.data.postal_code) || '';
+      } catch (e) {
+        return '';
+      }
+    }
+
     async function recalculate(addr) {
       var cityFiasId = (addr && addr.cityFiasId) || '';
       var postalCode = (addr && addr.postalCode) || '';
@@ -305,6 +330,19 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       if (!cityFiasId) {
         showEmpty();
         return;
+      }
+
+      // Last-resort: если postal не пришёл от формы — резолвим по fiasId.
+      // Покрывает кеш браузера / autofill / случаи когда city click отработал
+      // но postal field остался пустым.
+      if (!postalCode) {
+        showLoading();
+        postalCode = await resolvePostalFromFiasId(cityFiasId);
+        if (postalCode) {
+          // Заполняем поле "Индекс" если оно пустое — для UX consistency
+          var pInputEl = document.querySelector('[data-checkout-field="postalCode"] input');
+          if (pInputEl && !pInputEl.value) pInputEl.value = postalCode;
+        }
       }
 
       showLoading();

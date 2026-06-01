@@ -318,10 +318,11 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
       calcInFlight = controller;
 
-      // Retry: logistics иногда возвращает {success:true, deliveryOptions:[]} —
-      // транзиентный race в первом запросе после создания cart. Пытаемся ещё
-      // через 1.5s и 3s прежде чем показать error.
-      var attempts = [0, 1500, 3000];
+      // Retry: logistics периодически возвращает {success:true, deliveryOptions:[]}
+      // на свежие cart'ы — eventual consistency на стороне calc. Воспроизведено
+      // E2E: race разрешается за ~10-30 секунд после создания cart.
+      // Пробуем с увеличивающимися задержками; loading-state видим весь retry.
+      var attempts = [0, 2000, 5000, 10000];
       var lastJson = null;
       for (var i = 0; i < attempts.length; i++) {
         if (i > 0) await new Promise(function (r) { setTimeout(r, attempts[i]); });

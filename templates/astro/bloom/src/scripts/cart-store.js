@@ -5,8 +5,8 @@
 
 import { CartAPI } from './cart-api.js';
 
-const CART_ID_KEY = 'merfy_cart_id';
-const CART_ITEMS_KEY = 'merfy_cart_items';
+const CART_ID_KEY = 'merfy:cartId';
+const CART_ITEMS_KEY = 'merfy:cartItems';
 
 /** @type {{ items: Array<any>, cartId: string|null, loading: boolean }} */
 const state = {

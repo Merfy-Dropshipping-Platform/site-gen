@@ -25,7 +25,12 @@ import type { ChannelWrapper } from "amqp-connection-manager";
 import type { Channel } from "amqplib";
 
 export type ActivitySeverity = "info" | "warning" | "critical" | "security";
-export type ActivityActorType = "user" | "system" | "webhook" | "cron";
+export type ActivityActorType =
+  | "user"
+  | "system"
+  | "webhook"
+  | "cron"
+  | "external";
 
 export interface ActivityEnvelopeInput {
   sourceService: string;

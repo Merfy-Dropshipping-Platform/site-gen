@@ -184,13 +184,10 @@ const paddingStyle = padding
               if (resolvedFias) {
                 cityFiasId = resolvedFias;
                 section.setAttribute('data-selected-city-fias-id', resolvedFias);
-                // Postal autofill если поле пустое
-                var resolvedPostal = first.data && first.data.postal_code;
-                var postalField2 = section.querySelector('[data-checkout-field="postalCode"]');
-                if (resolvedPostal && postalField2 && postalField2.getAttribute('data-autofill') === 'true') {
-                  var pInputEl2 = postalField2.querySelector('input');
-                  if (pInputEl2 && !pInputEl2.value) pInputEl2.value = resolvedPostal;
-                }
+                // Postal autofill из city — НЕ делаем. City postal_code это
+                // postal центра города (общий), а юзеру нужен postal
+                // конкретного адреса. Заполняется ниже при выборе address
+                // suggestion из DaData.
               }
             } catch (e) {
               // silent
@@ -440,15 +437,9 @@ const paddingStyle = padding
             input.value = first.value;
             lastQuery = first.value;
           }
-          var postal = first.data && first.data.postal_code;
-          var postalField = section.querySelector('[data-checkout-field="postalCode"]');
-          if (postalField && postalField.getAttribute('data-autofill') === 'true' && postal) {
-            var pInput = postalField.querySelector('input');
-            if (pInput && !pInput.value) {
-              pInput.value = postal;
-              pInput.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-          }
+          // Postal НЕ заполняем из city resolve — общий postal города не
+          // соответствует конкретному адресу. Только при выборе address
+          // suggestion ниже postal autofill'ится.
           dispatchAddressChange();
         } catch (e) {
           // silent
@@ -497,17 +488,11 @@ const paddingStyle = padding
           // City selection — dropdown закрывается (нет progressive для города)
           list.hidden = true;
           list.innerHTML = '';
-          // Postal autofill из city.data.postal_code — без него logistics
-          // отдаёт BadRequest и тарифы СДЭК не считаются.
-          var cityPostalField = section.querySelector('[data-checkout-field="postalCode"]');
-          if (cityPostalField && cityPostalField.getAttribute('data-autofill') === 'true' && postal) {
-            var cityPostalInput = cityPostalField.querySelector('input');
-            if (cityPostalInput && !cityPostalInput.value) {
-              cityPostalInput.value = postal;
-              cityPostalInput.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-          }
-          // Logistics — известна новая локация → пересчитать варианты доставки
+          // Postal в поле "Индекс" НЕ заполняем из city — общий postal города
+          // (101000 для Москвы) не соответствует конкретному адресу. Logistics
+          // получит postal через bulletproof fallback в recalculate
+          // (DaData findById по fiasId server-side). Юзер увидит postal в поле
+          // только когда выберет конкретный address suggestion ниже.
           dispatchAddressChange();
         }
 

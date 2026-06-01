@@ -149,6 +149,8 @@ const paddingStyle = padding
     var dispatchAddressTimer;
     function dispatchAddressChange() {
       clearTimeout(dispatchAddressTimer);
+      // 400ms — даём юзеру допечатать перед resolve+fetch. Универсальный resolver
+      // в дальнейшем делает DaData call, поэтому слишком частые dispatchи дороги.
       dispatchAddressTimer = setTimeout(async function () {
         var cityFiasId = section.getAttribute('data-selected-city-fias-id') || '';
         var cityInputEl = section.querySelector('[data-checkout-dadata-input="city"]');
@@ -201,14 +203,22 @@ const paddingStyle = padding
         document.dispatchEvent(new CustomEvent('checkout:address-changed', {
           detail: { cityFiasId: cityFiasId, postalCode: postalCode },
         }));
-      }, 150);
+      }, 400);
     }
 
-    // Postal input — пользователь меняет руками → перепосчёт логистики
-    var postalInput = section.querySelector('[data-checkout-field="postalCode"] input');
-    if (postalInput) {
-      postalInput.addEventListener('change', dispatchAddressChange);
-      postalInput.addEventListener('blur', dispatchAddressChange);
+    // Postal/city/address inputs — любой ввод/blur → перепосчёт тарифов.
+    // dispatchAddressChange имеет внутренний debounce 150ms + universal
+    // resolver fiasId, поэтому даже ручные правки без клика на DaData
+    // suggestion заставляют recalculate отработать.
+    var trackFields = ['postalCode', 'city', 'address'];
+    for (var ti = 0; ti < trackFields.length; ti++) {
+      var fEl = section.querySelector('[data-checkout-field="' + trackFields[ti] + '"] input')
+        || section.querySelector('[data-checkout-dadata-input="' + trackFields[ti] + '"]');
+      if (!fEl) continue;
+      fEl.addEventListener('change', dispatchAddressChange);
+      fEl.addEventListener('blur', dispatchAddressChange);
+      // input event сделает re-resolve fiasId, но deboucned внутри dispatchAddressChange
+      fEl.addEventListener('input', dispatchAddressChange);
     }
 
     // === Country selector ===

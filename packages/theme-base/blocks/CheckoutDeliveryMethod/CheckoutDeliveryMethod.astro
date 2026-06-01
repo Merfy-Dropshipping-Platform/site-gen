@@ -120,8 +120,12 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       return 0;
     }
 
-    function showEmpty() {
+    function showEmpty(reason) {
       emptyEl && (emptyEl.hidden = false);
+      // Если передан reason — оверайдим текст для лучшего UX (вместо общего
+      // "Заполните адрес доставки..." показываем конкретику: cart пуст или
+      // адрес неполный)
+      if (emptyEl && reason) emptyEl.textContent = reason;
       loadingEl && (loadingEl.hidden = true);
       errorEl && (errorEl.hidden = true);
       listEl && (listEl.hidden = true);
@@ -350,12 +354,22 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       var shopId = getShopId();
       var apiBase = getApiBase();
 
-      if (!shopId || !cartId) {
-        showEmpty();
+      if (!shopId) {
+        showEmpty('Магазин не определён');
+        return;
+      }
+      if (!cartId) {
+        showEmpty('Добавьте товар в корзину чтобы рассчитать доставку');
         return;
       }
       if (!cityFiasId) {
-        showEmpty();
+        // address-changed event пришёл без fiasId — но универсальный resolver
+        // в CheckoutDeliveryForm должен резолвить из текста города. Если до
+        // сюда дошли — либо ещё не отрезолвилось (юзер допечатывает), либо
+        // DaData не нашёл город. Не reset существующий list если он уже есть.
+        if (!listEl || listEl.hidden) {
+          showEmpty('Заполните адрес доставки чтобы увидеть варианты.');
+        }
         return;
       }
 

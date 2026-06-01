@@ -141,7 +141,32 @@ const initialLabel = buttonText.replace('{total}', '—');
         var firstName = getField('firstName');
         var lastName = getField('lastName');
         var fullName = getField('fullName') || (firstName + ' ' + lastName).trim();
+        var email = getField('email');
+        var phone = getField('phone');
 
+        // 1. PATCH cart с customer info (backend ищет на самой записи cart)
+        await fetch(apiBase + '/orders/cart/' + cartId + '/customer', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email: email, phone: phone, name: fullName }),
+        });
+
+        // 2. PATCH cart с address (для бэка тоже)
+        await fetch(apiBase + '/orders/cart/' + cartId + '/address', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            country: getField('country') || 'Россия',
+            city: getField('city'),
+            fullAddress: getField('address'),
+            postalCode: getField('postalCode'),
+            fiasId: getFiasId(),
+          }),
+        });
+
+        // 3. POST checkout (теперь cart содержит customerEmail/Phone)
         var checkoutBody = {
           metadata: {
             paymentMethod: state.paymentMethod,
@@ -156,8 +181,8 @@ const initialLabel = buttonText.replace('{total}', '—');
               fullName: fullName,
             },
             deliveryMethod: state.deliveryMethod,
-            contactEmail: getField('email'),
-            contactPhone: getField('phone'),
+            contactEmail: email,
+            contactPhone: phone,
             customerName: fullName,
           },
         };

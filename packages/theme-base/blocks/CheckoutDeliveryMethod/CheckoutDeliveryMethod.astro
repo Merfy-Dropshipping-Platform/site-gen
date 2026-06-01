@@ -312,31 +312,54 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       var body = { cityFiasId: cityFiasId };
       if (postalCode) body.postalCode = postalCode;
 
-      // Cancel предыдущий
       if (calcInFlight && calcInFlight.abort) {
         try { calcInFlight.abort(); } catch (e) {}
       }
       var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
       calcInFlight = controller;
 
-      try {
-        var res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-          credentials: 'include',
-          signal: controller ? controller.signal : undefined,
-        });
-        var json = await res.json();
-        if (!json || !json.success) {
-          showError((json && (json.error || json.message)) || 'Не удалось рассчитать доставку');
-          return;
+      // Retry: logistics иногда возвращает {success:true, deliveryOptions:[]} —
+      // транзиентный race в первом запросе после создания cart. Пытаемся ещё
+      // через 1.5s и 3s прежде чем показать error.
+      var attempts = [0, 1500, 3000];
+      var lastJson = null;
+      for (var i = 0; i < attempts.length; i++) {
+        if (i > 0) await new Promise(function (r) { setTimeout(r, attempts[i]); });
+        try {
+          var res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+            credentials: 'include',
+            signal: controller ? controller.signal : undefined,
+          });
+          lastJson = await res.json();
+          if (lastJson && lastJson.success) {
+            var data = lastJson.data || {};
+            var options = (data.deliveryOptions && data.deliveryOptions.length) || 0;
+            var points = (data.pickupPoints && data.pickupPoints.length) || 0;
+            // Если что-то пришло — отрисуем; иначе — следующая попытка
+            if (options > 0 || points > 0) {
+              render(data);
+              return;
+            }
+          } else {
+            // не-success — сразу показываем error без retry
+            showError((lastJson && (lastJson.error || lastJson.message)) || 'Не удалось рассчитать доставку');
+            return;
+          }
+        } catch (e) {
+          if (e && e.name === 'AbortError') return;
+          // На сетевую ошибку тоже retry — но только если это не последняя попытка
+          if (i === attempts.length - 1) {
+            showError('Сервис доставки недоступен');
+            return;
+          }
         }
-        render(json.data || {});
-      } catch (e) {
-        if (e && e.name === 'AbortError') return;
-        showError('Сервис доставки недоступен');
       }
+
+      // Все попытки вернули пустые опции — рендерим (render сам покажет error)
+      render((lastJson && lastJson.data) || {});
     }
 
     document.addEventListener('checkout:address-changed', function (e) {

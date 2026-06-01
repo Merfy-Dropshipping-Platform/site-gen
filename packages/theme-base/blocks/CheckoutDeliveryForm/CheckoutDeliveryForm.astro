@@ -149,8 +149,53 @@ const paddingStyle = padding
     var dispatchAddressTimer;
     function dispatchAddressChange() {
       clearTimeout(dispatchAddressTimer);
-      dispatchAddressTimer = setTimeout(function () {
+      dispatchAddressTimer = setTimeout(async function () {
         var cityFiasId = section.getAttribute('data-selected-city-fias-id') || '';
+        var cityInputEl = section.querySelector('[data-checkout-dadata-input="city"]');
+        var cityVal = (cityInputEl && cityInputEl.value && cityInputEl.value.trim()) || '';
+
+        // Last-resort: fiasId пустой но в поле "Город" есть текст —
+        // резолвим через DaData. Покрывает browser autofill / paste /
+        // ручной ввод без клика на dropdown.
+        if (!cityFiasId && cityVal.length >= 3) {
+          var token = window.__DADATA_TOKEN__
+            || (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.dadataToken);
+          if (token) {
+            try {
+              var res = await fetch('https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: 'Token ' + token,
+                  Accept: 'application/json',
+                },
+                body: JSON.stringify({
+                  query: cityVal,
+                  count: 1,
+                  from_bound: { value: 'city' },
+                  to_bound: { value: 'settlement' },
+                }),
+              });
+              var json = await res.json();
+              var first = json && json.suggestions && json.suggestions[0];
+              var resolvedFias = first && first.data && (first.data.city_fias_id || first.data.settlement_fias_id);
+              if (resolvedFias) {
+                cityFiasId = resolvedFias;
+                section.setAttribute('data-selected-city-fias-id', resolvedFias);
+                // Postal autofill если поле пустое
+                var resolvedPostal = first.data && first.data.postal_code;
+                var postalField2 = section.querySelector('[data-checkout-field="postalCode"]');
+                if (resolvedPostal && postalField2 && postalField2.getAttribute('data-autofill') === 'true') {
+                  var pInputEl2 = postalField2.querySelector('input');
+                  if (pInputEl2 && !pInputEl2.value) pInputEl2.value = resolvedPostal;
+                }
+              }
+            } catch (e) {
+              // silent
+            }
+          }
+        }
+
         var postalInput = section.querySelector('[data-checkout-field="postalCode"] input');
         var postalCode = (postalInput && postalInput.value && postalInput.value.trim()) || '';
         document.dispatchEvent(new CustomEvent('checkout:address-changed', {

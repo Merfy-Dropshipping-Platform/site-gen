@@ -242,7 +242,7 @@ return Astro.redirect(\`/collections/\${slug}\`, 301);
  * NO hardcoded layout values — конструктор ≡ live for ALL blocks.
  */
 export function generatePuckCollectionsSlugPage(
-  _config: DynamicPageConfig,
+  config: DynamicPageConfig,
 ): string {
   return `---
 import BaseLayout from '../../layouts/BaseLayout.astro';
@@ -313,12 +313,15 @@ function substituteVars(value: any): any {
 }
 
 const blocks = rawContent.map((b) => ({ ...b, props: substituteVars(b.props ?? {}) }));
+
+// 098 fix: siteId инжектируется из build config (см. catalog page).
+const siteId = '${config.shopId}';
 ---
 <BaseLayout title={collectionTitle}>
   {blocks.map((block) => {
     if (block.type === 'Header') return <Header {...block.props} />;
     if (block.type === 'Hero') return <Hero {...block.props} />;
-    if (block.type === 'Catalog') return <Catalog {...block.props} collectionSlug={slug} />;
+    if (block.type === 'Catalog') return <Catalog {...block.props} siteId={siteId} collectionSlug={slug} />;
     if (block.type === 'Footer') return <Footer {...block.props} />;
     if (block.type === 'PromoBanner') return <PromoBanner {...block.props} />;
     if (block.type === 'Newsletter') return <Newsletter {...block.props} />;
@@ -365,7 +368,7 @@ export const generateBloomCollectionsSlugPage = generatePuckCollectionsSlugPage;
  * Layout import path uses `../layouts/` (one level up from
  * src/pages/catalog.astro → src/layouts/).
  */
-export function generatePuckCatalogPage(_config: DynamicPageConfig): string {
+export function generatePuckCatalogPage(config: DynamicPageConfig): string {
   return `---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import data from '../data/data.json';
@@ -396,12 +399,16 @@ const blocks = (pageData.content ?? []) as Array<{ type: string; props: Record<s
 
 const rootProps = (pageData as any)?.root?.props ?? {};
 const pageTitle = (typeof rootProps.title === 'string' && rootProps.title) || 'Каталог';
+
+// 098 fix: siteId инжектируется из build config — без него Catalog.astro
+// inline-script не fetch'ит реальные товары и показывает 12 моков "Товар 2500 ₽".
+const siteId = '${config.shopId}';
 ---
 <BaseLayout title={pageTitle}>
   {blocks.map((block) => {
     if (block.type === 'Header') return <Header {...block.props} />;
     if (block.type === 'Hero') return <Hero {...block.props} />;
-    if (block.type === 'Catalog') return <Catalog {...block.props} />;
+    if (block.type === 'Catalog') return <Catalog {...block.props} siteId={siteId} />;
     if (block.type === 'Footer') return <Footer {...block.props} />;
     if (block.type === 'PromoBanner') return <PromoBanner {...block.props} />;
     if (block.type === 'Newsletter') return <Newsletter {...block.props} />;
@@ -442,7 +449,7 @@ export const generateBloomProductPage = generatePuckProductPage;
  *
  * 087 Stage 5 — final React island removal in vanilla.
  */
-export function generatePuckProductPage(_config: DynamicPageConfig): string {
+export function generatePuckProductPage(config: DynamicPageConfig): string {
   return `---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import data from '../../data/data.json';
@@ -496,12 +503,15 @@ const blocks = (pageData.content ?? []) as Array<{ type: string; props: Record<s
 
 const rootProps = (pageData as any)?.root?.props ?? {};
 const pageTitle = (typeof rootProps.title === 'string' && rootProps.title) || productTitle;
+
+// 098 fix: siteId инжектируется из build config (см. catalog page).
+const siteId = '${config.shopId}';
 ---
 <BaseLayout title={pageTitle}>
   {blocks.map((block) => {
     if (block.type === 'Header') return <Header {...block.props} />;
     if (block.type === 'Hero') return <Hero {...block.props} />;
-    if (block.type === 'Catalog') return <Catalog {...block.props} />;
+    if (block.type === 'Catalog') return <Catalog {...block.props} siteId={siteId} />;
     if (block.type === 'Footer') return <Footer {...block.props} />;
     if (block.type === 'PromoBanner') return <PromoBanner {...block.props} />;
     if (block.type === 'Newsletter') return <Newsletter {...block.props} />;

@@ -61,7 +61,10 @@ async function fetchCart(
 ): Promise<void> {
   dispatch({ type: 'SET_LOADING', loading: true });
   try {
-    const res = await fetch(`${apiBase}/checkout/cart/${cartId}`, { credentials: 'include' });
+    // Gateway endpoint: /orders/cart/:id (не /checkout/cart/:id — такого нет, 404).
+    // Response shape: { success, data: { cart: {...}, items: [...] } } — data.items
+    // совпадает с интерфейсом CartApiResponse, маппинг ниже остаётся as-is.
+    const res = await fetch(`${apiBase}/orders/cart/${cartId}`, { credentials: 'include' });
     const json = (await res.json()) as CartApiResponse;
     const apiItems = json?.data?.items ?? [];
     const items: CheckoutCartItem[] = apiItems.map((it) => ({

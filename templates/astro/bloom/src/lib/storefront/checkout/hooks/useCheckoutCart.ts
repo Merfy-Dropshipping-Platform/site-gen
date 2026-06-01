@@ -61,7 +61,7 @@ async function fetchCart(
 ): Promise<void> {
   dispatch({ type: 'SET_LOADING', loading: true });
   try {
-    const res = await fetch(`${apiBase}/checkout/cart/${cartId}`, { credentials: 'include' });
+    const res = await fetch(`${apiBase}/orders/cart/${cartId}`, { credentials: 'include' });
     const json = (await res.json()) as CartApiResponse;
     const apiItems = json?.data?.items ?? [];
     const items: CheckoutCartItem[] = apiItems.map((it) => ({

@@ -735,7 +735,8 @@ export async function trySnapshotDeploy(
       logger.log(`[snapshot] Injected ${astroPubs.length} publications into data/publications.json`);
     }
 
-    // ── Zip → Upload → Deploy (reuse existing stages) ──
+    // ── Cache-bust → Zip → Upload → Deploy (reuse existing stages) ──
+    await stageCacheBustHtml(ctx);
     emitProgress(deps, ctx, "zip", "Packaging snapshot artifact");
     await stageZip(ctx);
 
@@ -876,6 +877,13 @@ export async function runBuildPipeline(
         process.env.ISLANDS_SERVER_URL ?? "https://islands.merfy.ru";
       await injectIslandsScript(ctx.distDir, ctx.siteId, islandsServerUrl);
     }
+
+    // === Stage 4.5: CACHE-BUST HTML ===
+    // Перед zip пройдём по всем .html и добавим ?v=<buildId> к URL static-файлов
+    // (`/scripts/*.js`, `/*.css` и т.п.). Это инвалидирует существующие
+    // браузерные кэши (включая старые `immutable, max-age=31536000` записи).
+    // Новый build = новый buildId UUID = новые URL = старый кэш не применяется.
+    await stageCacheBustHtml(ctx);
 
     // === Stage 5: ZIP ===
     t = Date.now();
@@ -2044,6 +2052,65 @@ async function validateBuildOutput(ctx: BuildContext): Promise<string | null> {
   }
 
   return `Validation warnings: ${warnings.join("; ")}`;
+}
+
+/**
+ * Stage 4.5: CACHE-BUST — добавить `?v=<buildId>` ко всем static URL
+ * (`/scripts/*.js`, `/*.css`, шрифты, изображения) в каждом .html файле.
+ *
+ * Это **системная защита от stale browser cache**. Без cache-bust клиенты
+ * с локально закэшированными immutable+365d файлами (старая конфигурация
+ * до commit b3f8b90) залипают на старой версии cart-store.js на год.
+ * При смене URL через query-string браузер видит другой URL → старый кэш
+ * не применяется → запрашивает свежий файл.
+ *
+ * Затрагиваем только URL вида `/path.ext` (абсолютные, локальные). External
+ * URLs (https://, //) и URL уже с query-string пропускаются — у них своя
+ * политика кэширования.
+ */
+async function stageCacheBustHtml(ctx: BuildContext): Promise<void> {
+  const hash = ctx.buildId.slice(0, 8); // короткий уникальный per-build
+  const STATIC_EXTENSIONS = ["js", "mjs", "css", "woff", "woff2", "ttf"];
+  const extRegex = STATIC_EXTENSIONS.join("|");
+
+  // Match: src="/path.js" или href="/path.css" — только локальные URL без http(s)://
+  // и без существующего query-string. Group 1 = атрибут (src/href), 2 = URL.
+  const re = new RegExp(
+    `\\b(src|href)\\s*=\\s*"(\\/[^"?#]+\\.(?:${extRegex}))"`,
+    "g",
+  );
+
+  const htmlFiles = await findHtmlFiles(ctx.distDir);
+  let totalReplaced = 0;
+  for (const filePath of htmlFiles) {
+    const content = await fs.readFile(filePath, "utf-8");
+    let fileReplaced = 0;
+    const updated = content.replace(re, (_match, attr: string, url: string) => {
+      fileReplaced++;
+      return `${attr}="${url}?v=${hash}"`;
+    });
+    if (fileReplaced > 0) {
+      await fs.writeFile(filePath, updated, "utf-8");
+      totalReplaced += fileReplaced;
+    }
+  }
+  logger.log(
+    `[cache-bust] hash=${hash} files=${htmlFiles.length} urls-rewritten=${totalReplaced}`,
+  );
+}
+
+async function findHtmlFiles(dir: string): Promise<string[]> {
+  const result: string[] = [];
+  const walk = async (d: string): Promise<void> => {
+    const entries = await fs.readdir(d, { withFileTypes: true });
+    for (const e of entries) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) await walk(p);
+      else if (e.isFile() && e.name.endsWith(".html")) result.push(p);
+    }
+  };
+  await walk(dir);
+  return result;
 }
 
 /**

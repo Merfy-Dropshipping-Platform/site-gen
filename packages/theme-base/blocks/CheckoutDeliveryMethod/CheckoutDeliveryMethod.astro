@@ -90,12 +90,17 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       return (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.shopId) || '';
     }
 
-    var OPTION_CLS = 'flex flex-col justify-center h-[60px] px-3 border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] cursor-pointer transition-colors hover:border-[rgb(var(--color-text)/.4)]';
+    var OPTION_CLS = 'flex items-center gap-3 px-3 py-4 border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] cursor-pointer transition-colors hover:border-[rgb(var(--color-text)/.4)]';
     var OPTION_SELECTED_CLS = 'border-[rgb(var(--color-text))]';
-    var BODY_CLS = 'flex-1 flex flex-col';
+    var BODY_CLS = 'flex-1 flex flex-col min-w-0';
     var LABEL_CLS = '[font-family:var(--font-body)] text-[length:var(--size-small)] text-[rgb(var(--color-text))]';
     var META_CLS = 'mt-0.5 text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]';
-    var PRICE_CLS = '[font-family:var(--font-body)] text-[length:var(--size-tiny)] text-[rgb(var(--color-text))]';
+    var PRICE_CLS = '[font-family:var(--font-body)] text-[length:var(--size-tiny)] text-[rgb(var(--color-text))] flex-shrink-0';
+    // Radio button (паритет с CheckoutPayment): outer circle + inner dot когда selected
+    var RADIO_OUTER_BASE = 'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border';
+    var RADIO_OUTER_SELECTED = 'bg-[rgb(var(--color-text))] border-[rgb(var(--color-text))]';
+    var RADIO_OUTER_UNSELECTED = 'border-[rgb(var(--color-input-border))]';
+    var RADIO_DOT = 'block w-2 h-2 rounded-full bg-[rgb(var(--color-bg))]';
 
     function fmt(cents) {
       if (!cents && cents !== 0) return '0 ₽';
@@ -227,7 +232,8 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
         var selected = idx === 0;
         var cls = OPTION_CLS + (selected ? ' ' + OPTION_SELECTED_CLS : '');
         var priceText = opt.priceCents === 0 ? 'Бесплатно' : fmt(opt.priceCents);
-        return '<div class="' + cls + '"'
+        var radioOuterCls = RADIO_OUTER_BASE + ' ' + (selected ? RADIO_OUTER_SELECTED : RADIO_OUTER_UNSELECTED);
+        return '<label class="' + cls + '"'
           + ' data-delivery-option'
           + ' data-delivery-type="' + esc(opt.type) + '"'
           + ' data-delivery-tariff-code="' + esc(opt.tariffCode == null ? '' : String(opt.tariffCode)) + '"'
@@ -237,14 +243,16 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
           + ' data-delivery-period-max="' + esc(opt.periodMax != null ? String(opt.periodMax) : '') + '"'
           + (selected ? ' data-selected="true"' : '')
           + '>'
-          + '<div class="flex items-center justify-between">'
+          + '<input type="radio" name="deliveryOption" value="' + esc(opt.type) + '"' + (selected ? ' checked' : '') + ' class="sr-only" data-delivery-radio />'
+          + '<span class="' + radioOuterCls + '" data-delivery-radio-dot>'
+          + (selected ? '<span class="' + RADIO_DOT + '"></span>' : '')
+          + '</span>'
           + '<div class="' + BODY_CLS + '">'
-          + '<span class="' + LABEL_CLS + '">' + esc(opt.label) + '</span>'
+          + '<span class="' + LABEL_CLS + '" data-delivery-label>' + esc(opt.label) + '</span>'
           + (opt.meta ? '<span class="' + META_CLS + '">' + esc(opt.meta) + '</span>' : '')
           + '</div>'
           + '<span class="' + PRICE_CLS + '">' + priceText + '</span>'
-          + '</div>'
-          + '</div>';
+          + '</label>';
       }).join('');
       showList();
 
@@ -266,19 +274,38 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       }));
     }
 
-    // Click handler — переключение selected состояния
+    // Click handler — переключение selected состояния (radio + border)
     listEl.addEventListener('click', function (e) {
       var card = e.target.closest && e.target.closest('[data-delivery-option]');
       if (!card) return;
 
       var cards = listEl.querySelectorAll('[data-delivery-option]');
       for (var i = 0; i < cards.length; i++) {
-        cards[i].classList.remove('border-[rgb(var(--color-text))]');
-        cards[i].removeAttribute('data-selected');
+        var c = cards[i];
+        c.classList.remove('border-[rgb(var(--color-text))]');
+        c.removeAttribute('data-selected');
+        // снять radio dot + reset outer circle
+        var dotEl = c.querySelector('[data-delivery-radio-dot]');
+        if (dotEl) {
+          dotEl.className = RADIO_OUTER_BASE + ' ' + RADIO_OUTER_UNSELECTED;
+          dotEl.innerHTML = '';
+        }
+        // uncheck input
+        var ri = c.querySelector('[data-delivery-radio]');
+        if (ri) ri.checked = false;
       }
+      // selected — добавляем border + radio dot + check input
       card.classList.add('border-[rgb(var(--color-text))]');
       card.setAttribute('data-selected', 'true');
+      var newDot = card.querySelector('[data-delivery-radio-dot]');
+      if (newDot) {
+        newDot.className = RADIO_OUTER_BASE + ' ' + RADIO_OUTER_SELECTED;
+        newDot.innerHTML = '<span class="' + RADIO_DOT + '"></span>';
+      }
+      var newRadio = card.querySelector('[data-delivery-radio]');
+      if (newRadio) newRadio.checked = true;
 
+      var labelEl = card.querySelector('[data-delivery-label]');
       dispatchSelection({
         type: card.getAttribute('data-delivery-type') || '',
         tariffCode: card.getAttribute('data-delivery-tariff-code') ? parseInt(card.getAttribute('data-delivery-tariff-code'), 10) : null,
@@ -286,7 +313,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
         priceCents: parseInt(card.getAttribute('data-delivery-price-cents') || '0', 10),
         periodMin: card.getAttribute('data-delivery-period-min') ? parseInt(card.getAttribute('data-delivery-period-min'), 10) : null,
         periodMax: card.getAttribute('data-delivery-period-max') ? parseInt(card.getAttribute('data-delivery-period-max'), 10) : null,
-        label: card.querySelector('span') ? card.querySelector('span').textContent : '',
+        label: labelEl ? labelEl.textContent : '',
       });
     });
 

@@ -320,7 +320,7 @@ export class S3StorageService {
           const filename = f.localPath.split("/").pop() || "";
           return this.client!.fPutObject(bucket, f.s3Key, f.localPath, {
             "Content-Type": this.getContentType(filename),
-            "Cache-Control": this.getCacheControl(filename),
+            "Cache-Control": this.getCacheControl(filename, f.s3Key),
           });
         }),
       );
@@ -333,26 +333,45 @@ export class S3StorageService {
   /**
    * Cache-Control для загружаемого файла.
    *
-   * Astro build кладёт ассеты с content-hash в имя
-   * (`assets/index-CcFO96Ur.js`) → immutable + год. HTML / JSON со списками
-   * (products.json, manifest.json) меняются при каждом publish, поэтому им
-   * `no-cache, must-revalidate` — браузер шлёт conditional GET с
-   * If-None-Match, MinIO ETag отвечает 304 если файл не изменился, 200 +
-   * свежий контент если изменился. Без этого браузер heuristic-кеширует и
-   * показывает старую версию даже после успешного publish.
+   * Только **hashed assets** Astro/Vite (в `_assets/` или `assets/`) можно
+   * immutable-кэшировать на год — у них имя содержит content-hash, поэтому
+   * новый билд = новое имя файла = форсированный fetch. Всё остальное
+   * (static JS из `public/scripts/`, HTML, JSON-манифесты) **обязано**
+   * revalidate'иться через conditional GET — иначе старый JS у клиентов
+   * остаётся навсегда даже после deploy.
+   *
+   * Раньше `getCacheControl` смотрел только на расширение → `/scripts/cart-store.js`
+   * получал immutable + год и не обновлялся у юзеров. Это закрепляло баги
+   * на стороне клиентов на год.
    */
-  private getCacheControl(filename: string): string {
+  private getCacheControl(filename: string, s3Key?: string): string {
     const ext = filename.split(".").pop()?.toLowerCase() ?? "";
     if (ext === "html" || ext === "htm") {
       return "no-cache, must-revalidate";
     }
-    // JSON-манифесты (products.json, manifest.json, collections.json …) —
-    // тоже always revalidate, иначе storefront может читать прошлый снимок.
     if (ext === "json" || ext === "xml" || ext === "txt") {
       return "no-cache, must-revalidate";
     }
-    // Ассеты с content-hash от Astro/Vite — immutable на год.
-    return "public, max-age=31536000, immutable";
+    // Hashed assets (Astro/Vite content-hash в filename) — immutable.
+    // Path-based check: только файлы в `_assets/` или `assets/` директориях.
+    // `public/scripts/cart-store.js`, `public/styles.css` — плоские имена БЕЗ хэша.
+    const path = s3Key || filename;
+    const isHashedAsset = /(^|\/)(_?assets)\//.test(path);
+    if (isHashedAsset) {
+      return "public, max-age=31536000, immutable";
+    }
+    // Шрифты — обычно стабильны, но без хэша; недельный max-age + revalidate.
+    if (["woff", "woff2", "ttf", "otf", "eot"].includes(ext)) {
+      return "public, max-age=604800, must-revalidate";
+    }
+    // Изображения — сутки + revalidate.
+    if (["png", "jpg", "jpeg", "gif", "svg", "ico", "webp", "avif"].includes(ext)) {
+      return "public, max-age=86400, must-revalidate";
+    }
+    // Остальные JS/CSS (cart-store.js, cart-api.js, custom CSS) — short-cached
+    // с обязательной revalidation. Браузер шлёт If-None-Match, MinIO отвечает
+    // 304 если ETag совпадает, 200 + свежий контент если изменился.
+    return "no-cache, must-revalidate";
   }
 
   /**

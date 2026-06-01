@@ -351,6 +351,59 @@ const paddingStyle = padding
         }
       });
 
+      // Blur fallback: paste / autofill / typing-without-click — юзер не выбрал
+      // suggestion из dropdown, но логистике нужен city_fias_id. Резолвим сами.
+      input.addEventListener('blur', function () {
+        if (kind !== 'city') return;
+        // Подождём 150ms — даём mousedown на suggestion сначала отработать
+        setTimeout(async function () {
+          if (section.getAttribute('data-selected-city-fias-id')) return;
+          var q = (input.value || '').trim();
+          if (q.length < 3) return;
+          var token = getDadataToken();
+          if (!token) return;
+          try {
+            var res = await fetch(DADATA_URL, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: 'Token ' + token,
+                Accept: 'application/json',
+              },
+              body: JSON.stringify({
+                query: q,
+                count: 1,
+                from_bound: { value: 'city' },
+                to_bound: { value: 'settlement' },
+              }),
+            });
+            var json = await res.json();
+            var first = json && json.suggestions && json.suggestions[0];
+            var fiasId = first && first.data && (first.data.city_fias_id || first.data.settlement_fias_id);
+            if (!fiasId) return;
+            section.setAttribute('data-selected-city-fias-id', fiasId);
+            // Нормализуем value до канонической формы из DaData
+            if (first.value && first.value !== q) {
+              input.value = first.value;
+              lastQuery = first.value;
+            }
+            // Postal autofill — если поле включено и пустое
+            var postal = first.data && first.data.postal_code;
+            var postalField = section.querySelector('[data-checkout-field="postalCode"]');
+            if (postalField && postalField.getAttribute('data-autofill') === 'true' && postal) {
+              var pInput = postalField.querySelector('input');
+              if (pInput && !pInput.value) {
+                pInput.value = postal;
+                pInput.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+            }
+            dispatchAddressChange();
+          } catch (e) {
+            // silent
+          }
+        }, 150);
+      });
+
       list.addEventListener('mousedown', function (e) {
         var li = e.target.closest && e.target.closest('[data-suggest-value]');
         if (!li) return;

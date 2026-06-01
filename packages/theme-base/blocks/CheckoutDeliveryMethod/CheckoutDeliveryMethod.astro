@@ -404,6 +404,11 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
             var data = lastJson.data || {};
             var options = (data.deliveryOptions && data.deliveryOptions.length) || 0;
             var points = (data.pickupPoints && data.pickupPoints.length) || 0;
+            // Backend сообщил что CDEK upstream упал → finalized, retry не поможет
+            if (data.cdekError) {
+              showError(data.cdekError);
+              return;
+            }
             // Если что-то пришло — отрисуем; иначе — следующая попытка
             if (options > 0 || points > 0) {
               render(data);

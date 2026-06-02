@@ -208,6 +208,12 @@ const initialLabel = buttonText.replace('{total}', '—');
           body: JSON.stringify(checkoutBody),
         });
         var checkoutJson = await checkoutRes.json();
+        // Cart not found (404) → cart устарел (paid/cancelled). Сбрасываем cartId
+        // чтобы next add-to-cart создал новый, и просим юзера пересобрать заказ.
+        if (checkoutRes.status === 404) {
+          try { localStorage.removeItem('merfy:cartId'); } catch (e) {}
+          throw new Error('Корзина устарела. Вернитесь в каталог и добавьте товары заново.');
+        }
         var orderId = checkoutJson && checkoutJson.data && (checkoutJson.data.orderId || checkoutJson.data.id);
         if (!checkoutRes.ok || !orderId) {
           throw new Error((checkoutJson && (checkoutJson.error || checkoutJson.message)) || 'Не удалось оформить заказ');

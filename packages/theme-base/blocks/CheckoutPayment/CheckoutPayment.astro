@@ -205,6 +205,47 @@ const nameOnCardEnabled = cardForm?.nameOnCardEnabled !== false;
       });
     });
 
+    /**
+     * Скрыть карточки методов которые не подключены в YooKassa-кабинете
+     * мерчанта. Backend /billing/.../payment-config/public возвращает
+     * enabledMethods из YooKassa /v3/me — фильтруем по нему.
+     *
+     * Если поле undefined (бэк не смог проверить, fail/timeout) — оставляем
+     * все методы как есть (lenient fallback). Если есть list — скрываем
+     * disabled.
+     */
+    function filterEnabledMethods() {
+      var apiBase = (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.apiUrl) || 'https://gateway.merfy.ru/api';
+      var shopId = (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.shopId) || '';
+      if (!shopId) return;
+      fetch(apiBase + '/billing/shops/' + shopId + '/payment-config/public')
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) {
+          var enabled = j && j.data && j.data.enabledMethods;
+          if (!Array.isArray(enabled) || enabled.length === 0) return;
+          var visibleKeys = [];
+          labels.forEach(function (lbl) {
+            var key = lbl.getAttribute('data-payment-key');
+            if (enabled.indexOf(key) === -1) {
+              lbl.style.display = 'none';
+            } else {
+              visibleKeys.push(key);
+            }
+          });
+          // Если current selected скрыт — переключаемся на первый видимый
+          var current = section.querySelector('input[name="paymentMethod"]:checked');
+          if (current && enabled.indexOf(current.value) === -1 && visibleKeys.length > 0) {
+            var firstVisibleRadio = section.querySelector('input[name="paymentMethod"][value="' + visibleKeys[0] + '"]');
+            if (firstVisibleRadio) {
+              firstVisibleRadio.checked = true;
+              setMethod(visibleKeys[0]);
+            }
+          }
+        })
+        .catch(function () { /* silent — оставляем default visibility */ });
+    }
+    filterEnabledMethods();
+
     // Card number mask
     if (cardInputs.number) {
       cardInputs.number.addEventListener('input', function () {

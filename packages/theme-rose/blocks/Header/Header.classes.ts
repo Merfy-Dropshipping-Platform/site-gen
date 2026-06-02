@@ -10,7 +10,10 @@ export const HeaderClasses = {
     none: 'relative z-50',
   },
   header: 'w-full flex items-center border-b border-[rgb(var(--color-text))]/15',
-  nav: 'w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-16 xl:px-24 2xl:px-[300px] flex items-center relative',
+  // Responsive padding ступени синхронизированы с rose.merfy.ru showcase
+  // (sm:5 / md:10 / lg:16 / xl:20 / 2xl:280) — иначе дельта 1-2px на каждом
+  // breakpoint от эталона.
+  nav: 'w-full max-w-[1920px] mx-auto px-4 sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px] flex items-center relative',
   navJustified: 'justify-between',
   hamburger: 'md:hidden w-10 h-10 flex items-center justify-center hover:opacity-70 transition-opacity text-[rgb(var(--color-heading))]',
   logoWrap: {
@@ -21,7 +24,12 @@ export const HeaderClasses = {
   },
   logoLink: 'flex items-center hover:opacity-80 transition-opacity',
   logoImg: 'h-5 sm:h-6 md:h-[26px] w-auto max-w-[var(--size-logo-width)]',
-  logoText: 'text-lg sm:text-xl md:text-2xl font-bold tracking-wide [font-family:var(--font-body)] text-[rgb(var(--color-heading))]',
+  // Pixel-perfect к rose.merfy.ru showcase: Comfortaa (heading) + 20px фикс +
+  // font-normal (400) + tracking-normal + uppercase + color-primary.
+  // Showcase rose.merfy.ru рендерит logo как `<a class="font-comfortaa text-[20px] font-normal uppercase tracking-normal text-primary">`;
+  // base Header.astro оборачивает текст в `<span class="logoText">`, поэтому
+  // эта строка должна повторить ту же стилистику внутри span.
+  logoText: 'text-[20px] font-normal uppercase tracking-normal leading-none [font-family:var(--font-heading)] text-[rgb(var(--color-primary))]',
   navMenu: 'hidden md:flex items-center gap-4 lg:gap-8 xl:gap-12 2xl:gap-[80px]',
   navMenuCentered: 'hidden md:flex items-center justify-center gap-4 lg:gap-8 xl:gap-12 2xl:gap-[80px] mt-2',
   navLink: 'text-sm md:text-base lg:text-lg xl:text-[20px] font-normal hover:opacity-70 transition-opacity [font-family:var(--font-body)] text-[length:var(--size-nav-link)] text-[rgb(var(--color-text))]',

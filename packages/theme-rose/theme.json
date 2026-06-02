@@ -58,6 +58,20 @@
     "--size-tiny": "12px"
   },
   "blockDefaults": {
+    "Header": {
+      "siteTitle": "Rose Theme",
+      "logoPosition": "top-left",
+      "stickiness": "scroll-up",
+      "menuType": "dropdown",
+      "navigationLinks": [
+        { "label": "Главная", "href": "/" },
+        { "label": "Каталог", "href": "/catalog" },
+        { "label": "О нас", "href": "/about" },
+        { "label": "Контакты", "href": "/contacts" }
+      ],
+      "actionButtons": { "showSearch": true, "showCart": true, "showProfile": true },
+      "padding": { "top": 12, "bottom": 12 }
+    },
     "Footer": {
       "variant": "3-col"
     },

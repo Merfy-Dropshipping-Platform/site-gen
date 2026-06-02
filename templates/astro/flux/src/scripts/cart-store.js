@@ -31,6 +31,14 @@ function saveToStorage() {
 function loadFromStorage() {
   try {
     state.cartId = localStorage.getItem(CART_ID_KEY) || null;
+    // Если cartId отсутствует (после успешной оплаты), items тоже сбрасываем
+    // — иначе stale items создают зомби-cart: сводка показывает товар,
+    // а delivery quote / submit видит cartId=null → "Добавьте товар".
+    if (!state.cartId) {
+      state.items = [];
+      try { localStorage.removeItem(CART_ITEMS_KEY); } catch (e2) {}
+      return;
+    }
     const raw = localStorage.getItem(CART_ITEMS_KEY);
     state.items = raw ? JSON.parse(raw) : [];
   } catch (e) {

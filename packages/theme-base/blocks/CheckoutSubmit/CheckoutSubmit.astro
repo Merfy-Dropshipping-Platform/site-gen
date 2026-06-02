@@ -239,7 +239,11 @@ const initialLabel = buttonText.replace('{total}', '—');
 
         try {
           localStorage.setItem('merfy:lastOrderId', orderId);
+          // Удаляем оба ключа — иначе stale items без cartId создают
+          // зомби-cart на /checkout (сводка показывает item, но
+          // delivery quote видит cartId=null → 'Добавьте товар').
           localStorage.removeItem('merfy:cartId');
+          localStorage.removeItem('merfy:cartItems');
         } catch (e) {}
         window.location.href = confirmationUrl;
       } catch (err) {

@@ -81,21 +81,33 @@ export const FooterPuckConfig: BlockPuckConfig<FooterProps> = {
       links: [
         { label: 'Главная', href: '/' },
         { label: 'Каталог', href: '/catalog' },
+        { label: 'О нас', href: '/about' },
         { label: 'Контакты', href: '/contacts' },
       ],
     },
     informationColumn: {
       title: 'Информация',
       links: [
-        { label: 'Политика доставки', href: '/delivery' },
-        { label: 'Политика возврата', href: '/returns' },
-        { label: 'Условия обслуживания', href: '/terms' },
+        { label: 'Политика доставки', href: '/legal/delivery' },
+        { label: 'Политика возврата', href: '/legal/returns' },
+        { label: 'Условия обслуживания', href: '/legal/terms' },
+        { label: 'Политика конфиденциальности', href: '/legal/privacy' },
       ],
     },
     socialColumn: {
       title: 'Социальные сети',
       email: 'rose@example.ru',
-      socialLinks: [],
+      // Sync с theme.json blockDefaults.Footer.socialColumn — 5 платформ
+      // как в rose.merfy.ru showcase. Для уже опубликованных rose-сайтов
+      // эти defaults не применяются (revision overrides), но новые сайты
+      // (и reset через "сбросить") получат все 5 из коробки.
+      socialLinks: [
+        { platform: 'telegram', href: '#' },
+        { platform: 'vk', href: '#' },
+        { platform: 'youtube', href: '#' },
+        { platform: 'dzen', href: '#' },
+        { platform: 'tiktok', href: '#' },
+      ],
     },
     padding: { top: 80, bottom: 80 },
   },

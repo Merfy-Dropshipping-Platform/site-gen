@@ -1,17 +1,17 @@
+// Theme-rose override — sidebar IDENTICAL to theme-base (Figma 314:34540).
+// Only `defaults` differ per-theme (siteTitle, navigationLinks).
+// To change sidebar fields → edit theme-base, then sync here.
 import { z } from 'zod';
 import type { BlockPuckConfig } from '@merfy/theme-contract';
 
-// Recursive: меню любой глубины (cap в render-стороне через menuMaxDepth).
-// Parent теряет href когда у него непустой submenu (визуально это «секция-заголовок»).
-type NavLink = { label: string; href?: string; submenu?: NavLink[] };
-
-const NavigationLinkSchema: z.ZodType<NavLink> = z.lazy(() =>
-  z.object({
-    label: z.string().min(1),
-    href: z.string().optional(),
-    submenu: z.array(NavigationLinkSchema).optional(),
-  })
-);
+const NavigationLinkSchema = z.object({
+  label: z.string(),
+  href: z.string(),
+  submenu: z.array(z.object({
+    label: z.string(),
+    href: z.string(),
+  })).optional(),
+});
 
 export const HeaderSchema = z.object({
   siteTitle: z.string(),
@@ -138,13 +138,14 @@ export const HeaderPuckConfig: BlockPuckConfig<HeaderProps> = {
     actionButtons: { type: 'hidden', label: '' },
   },
   defaults: {
-    siteTitle: 'Мой магазин',
+    siteTitle: 'Rose Theme',
     logo: '',
     logoPosition: 'top-left',
     stickiness: 'scroll-up',
     menuType: 'dropdown',
     navigationLinks: [
-      { label: 'Магазин', href: '/catalog' },
+      { label: 'Главная', href: '/' },
+      { label: 'Каталог', href: '/catalog' },
       { label: 'О нас', href: '/about' },
       { label: 'Контакты', href: '/contacts' },
     ],

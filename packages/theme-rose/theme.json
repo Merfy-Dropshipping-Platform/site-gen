@@ -60,6 +60,7 @@
   "blockDefaults": {
     "Header": {
       "siteTitle": "Rose Theme",
+      "variant": "rose-classic",
       "logoPosition": "top-left",
       "stickiness": "scroll-up",
       "menuType": "dropdown",

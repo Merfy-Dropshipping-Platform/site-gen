@@ -22,8 +22,14 @@ const {
   colorScheme,
   padding,
 } = Astro.props as Props;
-const variant = (Astro.props as Record<string, unknown>).variant as 'standard' | 'two-tier' | undefined;
+const variant = (Astro.props as Record<string, unknown>).variant as 'standard' | 'two-tier' | 'rose-classic' | undefined;
 const isTwoTier = variant === 'two-tier';
+// rose-classic — inline conditional overrides симметрично two-tier.
+// Применяются классы с `!` prefix чтобы побить base classes через Tailwind
+// `!important`. Эти overrides повторяют визуальные tweaks из
+// theme-rose/blocks/Header/Header.classes.ts — нужны для preview iframe,
+// где file-level overlay (assemble-from-packages) не применяется.
+const isRoseClassic = variant === 'rose-classic';
 
 // Optional promo strip above header (Figma flux 1:26341). flux opts in via
 // theme.json blockDefaults.Header.promoBar.enabled.
@@ -72,7 +78,7 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
 // always uses text and honors --color-heading.
 const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/logo.svg';
 ---
-<div class:list={[C.wrapper, C.sticky[stickiness], schemeClass]} data-header-wrapper data-header-variant={variant ?? 'standard'} data-puck-component-id={id}>
+<div class:list={[C.wrapper, C.sticky[stickiness], schemeClass, isRoseClassic && '!shadow-sm']} data-header-wrapper data-header-variant={variant ?? 'standard'} data-puck-component-id={id}>
   {promoEnabled && promoText && (
     <div class="w-full bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))]" data-header-promo>
       <div class="flex items-center justify-center px-4 py-[14px] min-h-[48px]">
@@ -93,7 +99,7 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
     data-menu-type={menuType}
     style={paddingStyle}
   >
-    <nav class:list={[C.nav, !isCenterLeft && C.navJustified, isTwoTier && '!max-w-[1320px] !px-4']} aria-label="Primary navigation">
+    <nav class:list={[C.nav, !isCenterLeft && C.navJustified, isTwoTier && '!max-w-[1320px] !px-4', isRoseClassic && '!max-w-[1920px] sm:!px-5 md:!px-10 lg:!px-16 xl:!px-20 2xl:!px-[280px]']} aria-label="Primary navigation">
 
       {/* ============ LAYOUT: top-left (default) ============ */}
       {logoPosition === 'top-left' && (
@@ -108,19 +114,19 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
 
           <div class={C.logoWrap['top-left']}>
             <a href="/" class={C.logoLink}>
-              {hasCustomLogo ? <img src={logo} alt={siteTitle} class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
+              {hasCustomLogo ? <img src={logo} alt={siteTitle} class:list={[C.logoImg, isRoseClassic && '!h-5 sm:!h-6 md:!h-[26px]']} /> : <span class:list={[C.logoText, isRoseClassic && '!text-[20px] !font-normal !leading-none !tracking-normal !text-[rgb(var(--color-primary))]']}>{siteTitle}</span>}
             </a>
           </div>
 
           {!isTwoTier && (
-            <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
+            <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass, isRoseClassic && '2xl:!gap-[80px]']}>
               {navigationLinks.map((link) => (
-                <NavLinkItem link={link} menuType={menuType} maxDepth={MENU_MAX_DEPTH} linkClass={[C.navLink, navInlineLinkClass].filter(Boolean).join(' ')} />
+                <NavLinkItem link={link} menuType={menuType} maxDepth={MENU_MAX_DEPTH} linkClass={[C.navLink, navInlineLinkClass, isRoseClassic && '!text-sm md:!text-base lg:!text-lg xl:!text-[20px] !font-normal'].filter(Boolean).join(' ')} />
               ))}
             </div>
           )}
 
-          <div class:list={[C.actions, isTwoTier && '!gap-4']}>
+          <div class:list={[C.actions, isTwoTier && '!gap-4', isRoseClassic && 'xl:!gap-[25px]']}>
             {actionButtons.showSearch && (
               <button type="button" aria-label="Поиск" class:list={[C.actionSearch, isTwoTier && '!w-8 !h-8']} data-action="search">
                 <svg class:list={[isTwoTier ? 'w-6 h-6' : 'w-5 h-5 lg:w-6 lg:h-6']} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -161,20 +167,20 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
           </button>
 
           {!isTwoTier && (
-            <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
+            <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass, isRoseClassic && '2xl:!gap-[80px]']}>
               {navigationLinks.map((link) => (
-                <NavLinkItem link={link} menuType={menuType} maxDepth={MENU_MAX_DEPTH} linkClass={[C.navLink, navInlineLinkClass].filter(Boolean).join(' ')} />
+                <NavLinkItem link={link} menuType={menuType} maxDepth={MENU_MAX_DEPTH} linkClass={[C.navLink, navInlineLinkClass, isRoseClassic && '!text-sm md:!text-base lg:!text-lg xl:!text-[20px] !font-normal'].filter(Boolean).join(' ')} />
               ))}
             </div>
           )}
 
           <div class={C.logoWrap['center-absolute']}>
             <a href="/" class={C.logoLink}>
-              {hasCustomLogo ? <img src={logo} alt={siteTitle} class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
+              {hasCustomLogo ? <img src={logo} alt={siteTitle} class:list={[C.logoImg, isRoseClassic && '!h-5 sm:!h-6 md:!h-[26px]']} /> : <span class:list={[C.logoText, isRoseClassic && '!text-[20px] !font-normal !leading-none !tracking-normal !text-[rgb(var(--color-primary))]']}>{siteTitle}</span>}
             </a>
           </div>
 
-          <div class={C.actions}>
+          <div class:list={[C.actions, isRoseClassic && 'xl:!gap-[25px]']}>
             {actionButtons.showSearch && (
               <button type="button" aria-label="Поиск" class={C.actionSearch} data-action="search">
                 <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -212,20 +218,20 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
           </button>
 
           {!isTwoTier && (
-            <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
+            <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass, isRoseClassic && '2xl:!gap-[80px]']}>
               {navigationLinks.map((link) => (
-                <NavLinkItem link={link} menuType={menuType} maxDepth={MENU_MAX_DEPTH} linkClass={[C.navLink, navInlineLinkClass].filter(Boolean).join(' ')} />
+                <NavLinkItem link={link} menuType={menuType} maxDepth={MENU_MAX_DEPTH} linkClass={[C.navLink, navInlineLinkClass, isRoseClassic && '!text-sm md:!text-base lg:!text-lg xl:!text-[20px] !font-normal'].filter(Boolean).join(' ')} />
               ))}
             </div>
           )}
 
           <div class={C.logoWrap['top-center']}>
             <a href="/" class={C.logoLink}>
-              {hasCustomLogo ? <img src={logo} alt={siteTitle} class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
+              {hasCustomLogo ? <img src={logo} alt={siteTitle} class:list={[C.logoImg, isRoseClassic && '!h-5 sm:!h-6 md:!h-[26px]']} /> : <span class:list={[C.logoText, isRoseClassic && '!text-[20px] !font-normal !leading-none !tracking-normal !text-[rgb(var(--color-primary))]']}>{siteTitle}</span>}
             </a>
           </div>
 
-          <div class={C.actions}>
+          <div class:list={[C.actions, isRoseClassic && 'xl:!gap-[25px]']}>
             {actionButtons.showSearch && (
               <button type="button" aria-label="Поиск" class={C.actionSearch} data-action="search">
                 <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -264,14 +270,14 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
           </button>
 
           {!isTwoTier && (
-            <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
+            <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass, isRoseClassic && '2xl:!gap-[80px]']}>
               {navigationLinks.map((link) => (
-                <NavLinkItem link={link} menuType={menuType} maxDepth={MENU_MAX_DEPTH} linkClass={[C.navLink, navInlineLinkClass].filter(Boolean).join(' ')} />
+                <NavLinkItem link={link} menuType={menuType} maxDepth={MENU_MAX_DEPTH} linkClass={[C.navLink, navInlineLinkClass, isRoseClassic && '!text-sm md:!text-base lg:!text-lg xl:!text-[20px] !font-normal'].filter(Boolean).join(' ')} />
               ))}
             </div>
           )}
 
-          <div class={C.actions}>
+          <div class:list={[C.actions, isRoseClassic && 'xl:!gap-[25px]']}>
             {actionButtons.showSearch && (
               <button type="button" aria-label="Поиск" class={C.actionSearch} data-action="search">
                 <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -299,7 +305,7 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
 
           <div class={C.logoWrap['top-right']}>
             <a href="/" class={C.logoLink}>
-              {hasCustomLogo ? <img src={logo} alt={siteTitle} class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
+              {hasCustomLogo ? <img src={logo} alt={siteTitle} class:list={[C.logoImg, isRoseClassic && '!h-5 sm:!h-6 md:!h-[26px]']} /> : <span class:list={[C.logoText, isRoseClassic && '!text-[20px] !font-normal !leading-none !tracking-normal !text-[rgb(var(--color-primary))]']}>{siteTitle}</span>}
             </a>
           </div>
         </>
@@ -317,10 +323,10 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
             </button>
 
             <a href="/" class={C.logoLink}>
-              {hasCustomLogo ? <img src={logo} alt={siteTitle} class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
+              {hasCustomLogo ? <img src={logo} alt={siteTitle} class:list={[C.logoImg, isRoseClassic && '!h-5 sm:!h-6 md:!h-[26px]']} /> : <span class:list={[C.logoText, isRoseClassic && '!text-[20px] !font-normal !leading-none !tracking-normal !text-[rgb(var(--color-primary))]']}>{siteTitle}</span>}
             </a>
 
-            <div class={C.actions}>
+            <div class:list={[C.actions, isRoseClassic && 'xl:!gap-[25px]']}>
               {actionButtons.showSearch && (
                 <button type="button" aria-label="Поиск" class={C.actionSearch} data-action="search">
                   <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -348,9 +354,9 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
           </div>
 
           {!isTwoTier && (
-            <div data-nav-inline class:list={[C.navMenuCentered, menuSchemeClass, navInlineMenuClass]}>
+            <div data-nav-inline class:list={[C.navMenuCentered, menuSchemeClass, navInlineMenuClass, isRoseClassic && '2xl:!gap-[80px]']}>
               {navigationLinks.map((link) => (
-                <NavLinkItem link={link} menuType={menuType} maxDepth={MENU_MAX_DEPTH} linkClass={[C.navLink, navInlineLinkClass].filter(Boolean).join(' ')} />
+                <NavLinkItem link={link} menuType={menuType} maxDepth={MENU_MAX_DEPTH} linkClass={[C.navLink, navInlineLinkClass, isRoseClassic && '!text-sm md:!text-base lg:!text-lg xl:!text-[20px] !font-normal'].filter(Boolean).join(' ')} />
               ))}
             </div>
           )}

@@ -1,0 +1,551 @@
+---
+// Theme-rose Header override. Port of legacy
+// `templates/astro/rose/src/components/Header.astro` (showcase rose.merfy.ru)
+// adapted to packages-only contract:
+//   • Props взяты из HeaderProps (Header.puckConfig.ts), не локальные.
+//   • Удалена зависимость от `site-config.json` (legacy resolve через JSON-файл).
+//     Цвета приходят через token cascade → CSS-var `--color-*` на schemeClass wrapper.
+//   • Все Tailwind-классы из `Header.classes.ts` (HeaderClasses) — single source.
+//   • Добавлены packages-маркеры: data-header-wrapper / data-puck-component-id /
+//     data-header-variant — позволяют конструктору связать DOM узел с Puck-блоком.
+//   • Inline-style цвета (`textStyle`/`navLinkStyle`/`menuStyle`) заменены на
+//     CSS-var в HeaderClasses (token cascade).
+//   • `<script>` сконвертирован в `<script is:inline>` (vanilla JS без
+//     TS-аннотаций) — иначе Astro компилит .mjs с виртуальными import-ами,
+//     которые ENOENT-фейлят в Docker preview runtime.
+//   • Без `<style>` блока (тоже Astro virtual-import gotcha).
+import type { HeaderProps } from './Header.puckConfig';
+import { HeaderClasses as C } from './Header.classes';
+
+interface Props extends HeaderProps {
+  id?: string;
+}
+
+const {
+  id,
+  siteTitle = 'Store',
+  logo = '/logo.svg',
+  logoPosition = 'top-left',
+  stickiness = 'scroll-up',
+  colorScheme,
+  padding,
+  navigationLinks = [
+    { label: 'Главная', href: '/' },
+    { label: 'Каталог', href: '/catalog' },
+    { label: 'О нас', href: '/about' },
+    { label: 'Контакты', href: '/contacts' },
+  ],
+  menuColorScheme,
+  actionButtons = { showSearch: true, showCart: true, showProfile: true },
+} = Astro.props as Props;
+
+// Optional variant marker. Rose currently ships standard layout — variant
+// прокидывается на data-attribute для будущих flux/two-tier overrides.
+const variant = (Astro.props as Record<string, unknown>).variant as
+  | 'standard'
+  | 'two-tier'
+  | undefined;
+
+// HeaderProps.actionButtons — boolean. У legacy props были строки 'true'.
+// Используем boolean напрямую с safe fallback на true (showcase default).
+const showSearch = actionButtons?.showSearch ?? true;
+const showCart = actionButtons?.showCart ?? true;
+const showProfile = actionButtons?.showProfile ?? true;
+
+// Padding из HeaderProps (constructor → seed default). Legacy fallback = 0.
+const paddingTop = padding?.top ?? 0;
+const paddingBottom = padding?.bottom ?? 0;
+const useCustomPadding = paddingTop > 0 || paddingBottom > 0;
+const paddingStyle = useCustomPadding
+  ? `padding-top:${paddingTop}px; padding-bottom:${paddingBottom}px;`
+  : '';
+
+// Color scheme как CSS class (token cascade зайдёт через `color-scheme-N`).
+// Legacy resolved через site-config.json — теперь runtime tokens.
+const schemeClass = colorScheme
+  ? `color-scheme-${String(colorScheme).replace('scheme-', '')}`
+  : '';
+// Меню может иметь свою схему. Если совпадает с основной — не добавляем
+// дополнительный wrapper class (наследование от outer schemeClass).
+const menuSchemeClass =
+  menuColorScheme && menuColorScheme !== colorScheme
+    ? `color-scheme-${String(menuColorScheme).replace('scheme-', '')}`
+    : '';
+
+const isCenterLeft = logoPosition === 'center-left';
+
+// Treat seed default `/logo.svg` как «нет custom logo» — `<img>` грузит SVG
+// в isolated context, который не наследует `currentColor`, и mark рендерится
+// чёрным на dark scheme. Текстовый logo через `<span>` подхватывает
+// --color-primary через C.logoText.
+const hasCustomLogo =
+  typeof logo === 'string' && logo.length > 0 && logo !== '/logo.svg';
+---
+
+<div
+  class:list={[C.wrapper, C.sticky[stickiness], schemeClass]}
+  data-header-wrapper
+  data-header-variant={variant ?? 'standard'}
+  data-puck-component-id={id}
+>
+  <header
+    class:list={[C.header, !useCustomPadding && !isCenterLeft && 'min-h-[64px]']}
+    style={paddingStyle}
+  >
+    <nav class:list={[C.nav, !isCenterLeft && C.navJustified]} aria-label="Primary navigation">
+
+      {/* ============ LAYOUT: top-left (default) ============ */}
+      {logoPosition === 'top-left' && (
+        <>
+          {/* Mobile hamburger */}
+          <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" class={C.hamburger}>
+            <svg id="menu-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M11 17H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M11 23H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+
+          {/* Logo */}
+          <div class={C.logoWrap['top-left']}>
+            <a href="/" class={C.logoLink}>
+              {hasCustomLogo ? (
+                <img src={logo} alt={siteTitle} class={C.logoImg} />
+              ) : (
+                <span class={C.logoText}>{siteTitle}</span>
+              )}
+            </a>
+          </div>
+
+          {/* Desktop nav */}
+          <div class:list={[C.navMenu, menuSchemeClass]}>
+            {navigationLinks?.map((link) => (
+              <a href={link.href} class={C.navLink}>{link.label}</a>
+            ))}
+          </div>
+
+          {/* Actions */}
+          <div class={C.actions}>
+            {showSearch && (
+              <button type="button" aria-label="Поиск" class={C.actionSearch} data-action="search">
+                <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+              </button>
+            )}
+            {showCart && (
+              <a href="/cart" id="header-cart-link" class={C.actionCart} aria-label="Корзина" data-action="cart">
+                <svg class="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M18.0295 11.6923C16.8004 11.6923 15.6678 12.3587 15.0708 13.4332C13.8175 15.6892 15.4488 18.4615 18.0295 18.4615H21.9704C24.5511 18.4615 26.1824 15.6892 24.9291 13.4332C24.3321 12.3587 23.1996 11.6923 21.9704 11.6923H18.0295ZM16.6847 14.3298C16.956 13.8414 17.4708 13.5385 18.0295 13.5385H21.9704C22.5291 13.5385 23.0439 13.8414 23.3152 14.3298C23.8849 15.3552 23.1434 16.6154 21.9704 16.6154H18.0295C16.8565 16.6154 16.115 15.3552 16.6847 14.3298Z" fill="currentColor"/>
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M17.2489 8C15.1954 8 13.2924 9.07744 12.2359 10.8383L8.83312 16.5096C8.28797 17.4182 8 18.4579 8 19.5175V26.1538C8 29.3826 10.6174 32 13.8462 32H26.1538C29.3826 32 32 29.3826 32 26.1538V19.5175C32 18.4579 31.712 17.4182 31.1669 16.5096L27.7641 10.8383C26.7076 9.07744 24.8046 8 22.7511 8H17.2489ZM13.819 11.7882C14.5419 10.5833 15.8439 9.84615 17.2489 9.84615H22.7511C24.1561 9.84615 25.4581 10.5833 26.181 11.7882L29.5838 17.4595C29.9568 18.0811 30.1538 18.7925 30.1538 19.5175V26.1538C30.1538 28.363 28.363 30.1538 26.1538 30.1538H13.8462C11.637 30.1538 9.84615 28.363 9.84615 26.1538V19.5175C9.84615 18.7925 10.0432 18.0811 10.4162 17.4595L13.819 11.7882Z" fill="currentColor"/>
+                </svg>
+                <span id="cart-badge" class={C.cartBadge}>0</span>
+              </a>
+            )}
+            {showProfile && (
+              <a href="/login" aria-label="Аккаунт" class={C.actionProfile} data-action="profile">
+                <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+              </a>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ============ LAYOUT: top-center ============ */}
+      {logoPosition === 'top-center' && (
+        <>
+          {/* Mobile hamburger */}
+          <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" class={C.hamburger}>
+            <svg id="menu-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M11 17H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M11 23H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+
+          {/* Desktop nav (left) */}
+          <div class:list={[C.navMenu, menuSchemeClass]}>
+            {navigationLinks?.map((link) => (
+              <a href={link.href} class={C.navLink}>{link.label}</a>
+            ))}
+          </div>
+
+          {/* Logo (absolute center) */}
+          <div class={C.logoWrap['top-center']}>
+            <a href="/" class={C.logoLink}>
+              {hasCustomLogo ? (
+                <img src={logo} alt={siteTitle} class={C.logoImg} />
+              ) : (
+                <span class={C.logoText}>{siteTitle}</span>
+              )}
+            </a>
+          </div>
+
+          {/* Actions (right) */}
+          <div class={C.actions}>
+            {showSearch && (
+              <button type="button" aria-label="Поиск" class={C.actionSearch} data-action="search">
+                <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+              </button>
+            )}
+            {showCart && (
+              <a href="/cart" id="header-cart-link" class={C.actionCart} aria-label="Корзина" data-action="cart">
+                <svg class="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M18.0295 11.6923C16.8004 11.6923 15.6678 12.3587 15.0708 13.4332C13.8175 15.6892 15.4488 18.4615 18.0295 18.4615H21.9704C24.5511 18.4615 26.1824 15.6892 24.9291 13.4332C24.3321 12.3587 23.1996 11.6923 21.9704 11.6923H18.0295ZM16.6847 14.3298C16.956 13.8414 17.4708 13.5385 18.0295 13.5385H21.9704C22.5291 13.5385 23.0439 13.8414 23.3152 14.3298C23.8849 15.3552 23.1434 16.6154 21.9704 16.6154H18.0295C16.8565 16.6154 16.115 15.3552 16.6847 14.3298Z" fill="currentColor"/>
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M17.2489 8C15.1954 8 13.2924 9.07744 12.2359 10.8383L8.83312 16.5096C8.28797 17.4182 8 18.4579 8 19.5175V26.1538C8 29.3826 10.6174 32 13.8462 32H26.1538C29.3826 32 32 29.3826 32 26.1538V19.5175C32 18.4579 31.712 17.4182 31.1669 16.5096L27.7641 10.8383C26.7076 9.07744 24.8046 8 22.7511 8H17.2489ZM13.819 11.7882C14.5419 10.5833 15.8439 9.84615 17.2489 9.84615H22.7511C24.1561 9.84615 25.4581 10.5833 26.181 11.7882L29.5838 17.4595C29.9568 18.0811 30.1538 18.7925 30.1538 19.5175V26.1538C30.1538 28.363 28.363 30.1538 26.1538 30.1538H13.8462C11.637 30.1538 9.84615 28.363 9.84615 26.1538V19.5175C9.84615 18.7925 10.0432 18.0811 10.4162 17.4595L13.819 11.7882Z" fill="currentColor"/>
+                </svg>
+                <span id="cart-badge" class={C.cartBadge}>0</span>
+              </a>
+            )}
+            {showProfile && (
+              <a href="/login" aria-label="Аккаунт" class={C.actionProfile} data-action="profile">
+                <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+              </a>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ============ LAYOUT: top-right ============ */}
+      {logoPosition === 'top-right' && (
+        <>
+          {/* Mobile hamburger */}
+          <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" class={C.hamburger}>
+            <svg id="menu-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M11 17H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M11 23H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+
+          {/* Desktop nav (left) */}
+          <div class:list={[C.navMenu, menuSchemeClass]}>
+            {navigationLinks?.map((link) => (
+              <a href={link.href} class={C.navLink}>{link.label}</a>
+            ))}
+          </div>
+
+          {/* Actions */}
+          <div class={C.actions}>
+            {showSearch && (
+              <button type="button" aria-label="Поиск" class={C.actionSearch} data-action="search">
+                <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+              </button>
+            )}
+            {showCart && (
+              <a href="/cart" id="header-cart-link" class={C.actionCart} aria-label="Корзина" data-action="cart">
+                <svg class="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M18.0295 11.6923C16.8004 11.6923 15.6678 12.3587 15.0708 13.4332C13.8175 15.6892 15.4488 18.4615 18.0295 18.4615H21.9704C24.5511 18.4615 26.1824 15.6892 24.9291 13.4332C24.3321 12.3587 23.1996 11.6923 21.9704 11.6923H18.0295ZM16.6847 14.3298C16.956 13.8414 17.4708 13.5385 18.0295 13.5385H21.9704C22.5291 13.5385 23.0439 13.8414 23.3152 14.3298C23.8849 15.3552 23.1434 16.6154 21.9704 16.6154H18.0295C16.8565 16.6154 16.115 15.3552 16.6847 14.3298Z" fill="currentColor"/>
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M17.2489 8C15.1954 8 13.2924 9.07744 12.2359 10.8383L8.83312 16.5096C8.28797 17.4182 8 18.4579 8 19.5175V26.1538C8 29.3826 10.6174 32 13.8462 32H26.1538C29.3826 32 32 29.3826 32 26.1538V19.5175C32 18.4579 31.712 17.4182 31.1669 16.5096L27.7641 10.8383C26.7076 9.07744 24.8046 8 22.7511 8H17.2489ZM13.819 11.7882C14.5419 10.5833 15.8439 9.84615 17.2489 9.84615H22.7511C24.1561 9.84615 25.4581 10.5833 26.181 11.7882L29.5838 17.4595C29.9568 18.0811 30.1538 18.7925 30.1538 19.5175V26.1538C30.1538 28.363 28.363 30.1538 26.1538 30.1538H13.8462C11.637 30.1538 9.84615 28.363 9.84615 26.1538V19.5175C9.84615 18.7925 10.0432 18.0811 10.4162 17.4595L13.819 11.7882Z" fill="currentColor"/>
+                </svg>
+                <span id="cart-badge" class={C.cartBadge}>0</span>
+              </a>
+            )}
+            {showProfile && (
+              <a href="/login" aria-label="Аккаунт" class={C.actionProfile} data-action="profile">
+                <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+              </a>
+            )}
+          </div>
+
+          {/* Logo (right) */}
+          <div class={C.logoWrap['top-right']}>
+            <a href="/" class={C.logoLink}>
+              {hasCustomLogo ? (
+                <img src={logo} alt={siteTitle} class={C.logoImg} />
+              ) : (
+                <span class={C.logoText}>{siteTitle}</span>
+              )}
+            </a>
+          </div>
+        </>
+      )}
+
+      {/* ============ LAYOUT: center-left (two rows) ============ */}
+      {logoPosition === 'center-left' && (
+        <div class="flex flex-col w-full">
+          <div class="flex items-center justify-between w-full">
+            {/* Mobile hamburger */}
+            <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" class={C.hamburger}>
+              <svg id="menu-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M11 17H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M11 23H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+
+            {/* Logo */}
+            <a href="/" class={C.logoLink}>
+              {hasCustomLogo ? (
+                <img src={logo} alt={siteTitle} class={C.logoImg} />
+              ) : (
+                <span class={C.logoText}>{siteTitle}</span>
+              )}
+            </a>
+
+            {/* Actions */}
+            <div class={C.actions}>
+              {showSearch && (
+                <button type="button" aria-label="Поиск" class={C.actionSearch} data-action="search">
+                  <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                  </svg>
+                </button>
+              )}
+              {showCart && (
+                <a href="/cart" id="header-cart-link" class={C.actionCart} aria-label="Корзина" data-action="cart">
+                  <svg class="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M18.0295 11.6923C16.8004 11.6923 15.6678 12.3587 15.0708 13.4332C13.8175 15.6892 15.4488 18.4615 18.0295 18.4615H21.9704C24.5511 18.4615 26.1824 15.6892 24.9291 13.4332C24.3321 12.3587 23.1996 11.6923 21.9704 11.6923H18.0295ZM16.6847 14.3298C16.956 13.8414 17.4708 13.5385 18.0295 13.5385H21.9704C22.5291 13.5385 23.0439 13.8414 23.3152 14.3298C23.8849 15.3552 23.1434 16.6154 21.9704 16.6154H18.0295C16.8565 16.6154 16.115 15.3552 16.6847 14.3298Z" fill="currentColor"/>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M17.2489 8C15.1954 8 13.2924 9.07744 12.2359 10.8383L8.83312 16.5096C8.28797 17.4182 8 18.4579 8 19.5175V26.1538C8 29.3826 10.6174 32 13.8462 32H26.1538C29.3826 32 32 29.3826 32 26.1538V19.5175C32 18.4579 31.712 17.4182 31.1669 16.5096L27.7641 10.8383C26.7076 9.07744 24.8046 8 22.7511 8H17.2489ZM13.819 11.7882C14.5419 10.5833 15.8439 9.84615 17.2489 9.84615H22.7511C24.1561 9.84615 25.4581 10.5833 26.181 11.7882L29.5838 17.4595C29.9568 18.0811 30.1538 18.7925 30.1538 19.5175V26.1538C30.1538 28.363 28.363 30.1538 26.1538 30.1538H13.8462C11.637 30.1538 9.84615 28.363 9.84615 26.1538V19.5175C9.84615 18.7925 10.0432 18.0811 10.4162 17.4595L13.819 11.7882Z" fill="currentColor"/>
+                  </svg>
+                  <span id="cart-badge" class={C.cartBadge}>0</span>
+                </a>
+              )}
+              {showProfile && (
+                <a href="/login" aria-label="Аккаунт" class={C.actionProfile} data-action="profile">
+                  <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                  </svg>
+                </a>
+              )}
+            </div>
+          </div>
+
+          {/* Desktop nav (centered, second row) */}
+          <div class:list={[C.navMenuCentered, menuSchemeClass]}>
+            {navigationLinks?.map((link) => (
+              <a href={link.href} class={C.navLink}>{link.label}</a>
+            ))}
+          </div>
+        </div>
+      )}
+    </nav>
+  </header>
+
+  {/* ============ Mobile Navigation Menu ============ */}
+  <div id="mobile-menu" class={C.mobileMenu.root}>
+    <nav class={C.mobileMenu.nav} aria-label="Мобильная навигация">
+      {showSearch && (
+        <div class={C.mobileMenu.search}>
+          <div class="relative">
+            <input type="search" placeholder="Поиск..." class={C.mobileMenu.searchInput} />
+            <button class="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5" aria-label="Искать">
+              <svg class="w-5 h-5 text-[rgb(var(--color-muted))]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+      <div class="flex flex-col">
+        {navigationLinks?.map((link) => {
+          const hasSubmenu = link.submenu && link.submenu.length > 0;
+          return hasSubmenu ? (
+            <div>
+              <button class={C.mobileMenu.submenuToggle} data-target={`submenu-${link.label}`}>
+                <span>{link.label}</span>
+                <svg class="w-4 h-4 transition-transform submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+              <div class={C.mobileMenu.submenuWrap} data-id={`submenu-${link.label}`}>
+                {link.submenu?.map((sub) => (
+                  <a href={sub.href} class={C.mobileMenu.submenuLink}>{sub.label}</a>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <a href={link.href} class={C.mobileMenu.link}>{link.label}</a>
+          );
+        })}
+      </div>
+      {showProfile && (
+        <a href="/login" class:list={[C.mobileMenu.link, 'auth-nav-btn flex items-center gap-2']}>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+          </svg>
+          <span class="auth-nav-label">Войти</span>
+        </a>
+      )}
+    </nav>
+  </div>
+</div>
+
+<script is:inline>
+  // Vanilla JS only. NB: do NOT add `<style>` block to this .astro file —
+  // Astro compiler bakes a virtual `?astro&type=style` import into the
+  // .mjs which then ENOENT-fails at runtime in Docker preview iframe.
+  // Use inline-style/class toggles instead.
+  (function () {
+    // Mobile menu toggle.
+    var mobileMenuButton = document.getElementById('mobile-menu-button');
+    var mobileMenu = document.getElementById('mobile-menu');
+    if (mobileMenuButton && mobileMenu) {
+      var menuIcon = document.getElementById('menu-icon');
+      mobileMenuButton.addEventListener('click', function () {
+        mobileMenu.classList.toggle('hidden');
+        var isOpen = !mobileMenu.classList.contains('hidden');
+        mobileMenuButton.setAttribute('aria-expanded', String(isOpen));
+        if (menuIcon) menuIcon.classList.toggle('menu-open', isOpen);
+      });
+    }
+
+    // Submenu toggles in mobile drawer.
+    document.querySelectorAll('.mobile-submenu-toggle').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var targetId = btn.getAttribute('data-target');
+        var submenu = document.querySelector('.mobile-submenu[data-id="' + targetId + '"]');
+        var arrow = btn.querySelector('.submenu-arrow');
+        if (submenu) submenu.classList.toggle('hidden');
+        if (arrow) arrow.classList.toggle('rotate-180');
+      });
+    });
+
+    // Close mobile menu on link click inside drawer.
+    var menuLinks = mobileMenu ? mobileMenu.querySelectorAll('a') : [];
+    menuLinks.forEach(function (link) {
+      link.addEventListener('click', function () {
+        if (mobileMenu) mobileMenu.classList.add('hidden');
+        if (mobileMenuButton) mobileMenuButton.setAttribute('aria-expanded', 'false');
+        var icon = document.getElementById('menu-icon');
+        if (icon) icon.classList.remove('menu-open');
+      });
+    });
+
+    // Scroll-up stickiness — hide header on scroll-down, show on scroll-up.
+    // Только если у wrapper применён `transition-transform` (sticky=scroll-up).
+    (function () {
+      var wrapper = document.querySelector('[data-header-wrapper]');
+      if (!wrapper || !wrapper.classList.contains('transition-transform')) return;
+      var lastScrollY = 0;
+      window.addEventListener('scroll', function () {
+        var currentScrollY = window.scrollY;
+        if (currentScrollY < lastScrollY || currentScrollY < 10) {
+          wrapper.style.transform = 'translateY(0)';
+        } else {
+          wrapper.style.transform = 'translateY(-100%)';
+        }
+        lastScrollY = currentScrollY;
+      }, { passive: true });
+    })();
+
+    // Cart badge update (читает window.cartStore — глобал из storefront runtime).
+    function updateCartBadge() {
+      var badge = document.getElementById('cart-badge');
+      if (!badge) return;
+      var count = window.cartStore ? window.cartStore.getCount() : 0;
+      if (count > 0) {
+        badge.textContent = String(count > 99 ? '99+' : count);
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+    document.addEventListener('cart:updated', updateCartBadge);
+    document.addEventListener('DOMContentLoaded', function () {
+      setTimeout(updateCartBadge, 100);
+    });
+
+    // Mark add-to-cart buttons for products already in cart.
+    function syncCartButtons() {
+      if (!window.cartStore) return;
+      var items = window.cartStore.getItems();
+      var inCartIds = new Set(items.map(function (i) { return i.productId; }));
+      document.querySelectorAll('.add-to-cart-btn').forEach(function (btn) {
+        if (!(btn instanceof HTMLButtonElement)) return;
+        var pid = btn.dataset.productId;
+        if (pid && inCartIds.has(pid)) {
+          btn.textContent = 'В корзине ✓';
+          btn.classList.add('in-cart');
+          btn.disabled = false;
+        } else if (pid) {
+          btn.textContent = 'В корзину';
+          btn.classList.remove('in-cart');
+          btn.disabled = false;
+        }
+      });
+    }
+    document.addEventListener('cart:updated', syncCartButtons);
+    document.addEventListener('DOMContentLoaded', function () {
+      setTimeout(syncCartButtons, 200);
+    });
+
+    // Delegated add-to-cart click handler.
+    document.addEventListener('click', async function (e) {
+      var target = e.target;
+      if (!(target instanceof Element)) return;
+      var btn = target.closest('.add-to-cart-btn');
+      if (!btn || !(btn instanceof HTMLButtonElement)) return;
+      var productId = btn.dataset.productId;
+      if (!productId || !window.cartStore) return;
+
+      var items = window.cartStore.getItems();
+      var existingItem = items.find(function (i) { return i.productId === productId; });
+      var maxStock = btn.dataset.stock ? parseInt(btn.dataset.stock, 10) : null;
+
+      if (existingItem) {
+        if (maxStock !== null && existingItem.quantity >= maxStock) {
+          btn.textContent = 'Макс. ' + maxStock + ' шт.';
+          setTimeout(function () { btn.textContent = 'В корзине ✓'; }, 1500);
+          return;
+        }
+        if (window.cartDrawer) window.cartDrawer.open();
+        return;
+      }
+
+      if (maxStock !== null && maxStock <= 0) {
+        btn.textContent = 'Нет в наличии';
+        btn.disabled = true;
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Добавляем...';
+      var ok = await window.cartStore.addItem(productId, null, 1);
+      if (ok) {
+        btn.textContent = 'В корзине ✓';
+        btn.classList.add('in-cart');
+        btn.disabled = false;
+      } else {
+        btn.textContent = 'Ошибка';
+        setTimeout(function () {
+          btn.textContent = 'В корзину';
+          btn.disabled = false;
+        }, 1500);
+      }
+    });
+
+    // Auth-aware nav button: rewrites href + label если пользователь залогинен.
+    document.querySelectorAll('.auth-nav-btn').forEach(function (link) {
+      if (window.CustomerStore && window.CustomerStore.isLoggedIn && window.CustomerStore.isLoggedIn()) {
+        link.setAttribute('href', '/account');
+        link.setAttribute('aria-label', 'Личный кабинет');
+        var label = link.querySelector('.auth-nav-label');
+        if (label) label.textContent = 'Личный кабинет';
+      }
+    });
+
+    // Cart action — читает --cart-type CSS var:
+    //   'drawer' → preventDefault + window.cartDrawer.open()
+    //   default → нативная навигация на /cart
+    // Меняется через Theme Settings → Корзина (Сайдбар/Страница).
+    document.querySelectorAll('a[data-action="cart"]').forEach(function (cartLink) {
+      cartLink.addEventListener('click', function (e) {
+        var cartType = getComputedStyle(document.documentElement)
+          .getPropertyValue('--cart-type')
+          .trim()
+          .replace(/['"]/g, '');
+        if (cartType !== 'drawer') return;
+        if (!window.cartDrawer || typeof window.cartDrawer.open !== 'function') return;
+        e.preventDefault();
+        window.cartDrawer.open();
+      });
+    });
+  })();
+</script>

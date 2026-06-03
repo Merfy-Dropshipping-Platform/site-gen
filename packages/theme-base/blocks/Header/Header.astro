@@ -3,6 +3,7 @@ import type { HeaderProps } from './Header.puckConfig';
 import { HeaderClasses as C } from './Header.classes';
 import NavLinkItem from './NavLinkItem.astro';
 import MobileMenuItem from './MobileMenuItem.astro';
+import RoseClassicVariant from './variants/RoseClassic.astro';
 
 const MENU_MAX_DEPTH = 3;
 
@@ -22,8 +23,17 @@ const {
   colorScheme,
   padding,
 } = Astro.props as Props;
-const variant = (Astro.props as Record<string, unknown>).variant as 'standard' | 'two-tier' | undefined;
+const variant = (Astro.props as Record<string, unknown>).variant as
+  | 'standard'
+  | 'two-tier'
+  | 'rose-classic'
+  | undefined;
 const isTwoTier = variant === 'two-tier';
+// `rose-classic` — pixel-perfect rose markup, отдельный sub-component с
+// rose-specific Tailwind classes + inline SVG icons. Полностью изолирован
+// от standard/two-tier path, потому что разметка существенно отличается
+// (4 logoPosition ветки, rose mobile drawer, scoped inline-script).
+const isRoseClassic = variant === 'rose-classic';
 
 // Optional promo strip above header (Figma flux 1:26341). flux opts in via
 // theme.json blockDefaults.Header.promoBar.enabled.
@@ -72,6 +82,10 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
 // always uses text and honors --color-heading.
 const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/logo.svg';
 ---
+{isRoseClassic ? (
+  <RoseClassicVariant {...(Astro.props as any)} />
+) : (
+<>
 <div class:list={[C.wrapper, C.sticky[stickiness], schemeClass]} data-header-wrapper data-header-variant={variant ?? 'standard'} data-puck-component-id={id}>
   {promoEnabled && promoText && (
     <div class="w-full bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))]" data-header-promo>
@@ -494,4 +508,6 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
     });
   })();
 </script>
+</>
+)}
 

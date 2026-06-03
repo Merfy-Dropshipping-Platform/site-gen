@@ -59,6 +59,7 @@
   },
   "blockDefaults": {
     "Header": {
+      "variant": "rose-classic",
       "siteTitle": "Rose Theme",
       "logoPosition": "top-left",
       "stickiness": "scroll-up",
@@ -216,10 +217,7 @@
   ],
   "blocks": {
     "Header": {
-      "override": {
-        "path": "./blocks/Header",
-        "reason": "Rose uses 1920px container, 4 logo-position layouts, rose-specific SVG iconography, and scroll-up sticky transform."
-      }
+      "variant": "rose-classic"
     },
     "Footer": {
       "override": {

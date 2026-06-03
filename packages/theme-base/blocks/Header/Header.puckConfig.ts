@@ -38,10 +38,13 @@ export const HeaderSchema = z.object({
   /**
    * Additive layout variant. `standard` (default) — single row: hamburger,
    * logo, nav menu, actions. `two-tier` (flux pilot) — two rows: row 1 is
-   * logo + actions; row 2 is centered nav menu. Other themes default to
-   * `standard` so behaviour не меняется.
+   * logo + actions; row 2 is centered nav menu. `rose-classic` — port of
+   * rose.merfy.ru pixel-perfect markup (1920px container, large responsive
+   * gaps, rose-specific SVG cart/profile/search/hamburger icons,
+   * rose mobile drawer). Other themes default to `standard` so behaviour
+   * не меняется. Sub-variant rendering лежит в `blocks/Header/variants/`.
    */
-  variant: z.enum(['standard', 'two-tier']).optional(),
+  variant: z.enum(['standard', 'two-tier', 'rose-classic']).optional(),
   /**
    * Optional promo strip rendered ABOVE the header (Figma flux 1:26341).
    * Disabled by default; flux opts in via `theme.json blockDefaults.Header.promoBar.enabled`.

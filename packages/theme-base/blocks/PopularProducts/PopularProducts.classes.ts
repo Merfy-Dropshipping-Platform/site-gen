@@ -7,11 +7,8 @@ export const PopularProductsClasses = {
     'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
   container:
     'mx-auto max-w-[var(--container-max-width)] px-4',
-  // Token-driven heading size — fallback 14px сохраняет pre-token legacy
-  // поведение. Темы (rose/satin/vanilla 20px, flux/bloom 24px) автоматически
-  // получают свой `--size-section-heading` без правок classes на тему.
   heading:
-    '[font-family:var(--font-heading)] text-[length:var(--size-section-heading,14px)] leading-[1.15] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] mb-2',
+    '[font-family:var(--font-heading)] text-[14px] leading-[16px] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] mb-2',
   subtitle:
     '[font-family:var(--font-body)] text-[12px] leading-[15px] text-[rgb(var(--color-text))]/60 mb-10',
   grid:

@@ -41,7 +41,7 @@ export const HeaderSchema = z.object({
    * logo + actions; row 2 is centered nav menu. Other themes default to
    * `standard` so behaviour не меняется.
    */
-  variant: z.enum(['standard', 'two-tier', 'rose-classic']).optional(),
+  variant: z.enum(['standard', 'two-tier']).optional(),
   /**
    * Optional promo strip rendered ABOVE the header (Figma flux 1:26341).
    * Disabled by default; flux opts in via `theme.json blockDefaults.Header.promoBar.enabled`.

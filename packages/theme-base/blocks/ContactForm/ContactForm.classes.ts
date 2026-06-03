@@ -10,11 +10,8 @@ export const ContactFormClasses = {
     'mx-auto max-w-[var(--container-max-width)] px-4',
   inner:
     'mx-auto max-w-[1200px]',
-  // Token-driven heading size (sister-fix к PopularProducts) — fallback 14px
-  // сохраняет pre-token legacy. Темы (rose/satin/vanilla 20px, flux/bloom 24px)
-  // получают свой --size-section-heading автоматически.
   heading:
-    '[font-family:var(--font-heading)] text-[length:var(--size-section-heading,14px)] leading-[1.15] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] mb-8',
+    '[font-family:var(--font-heading)] text-[14px] leading-[16px] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] mb-8',
   description:
     '[font-family:var(--font-body)] text-[12px] leading-[15px] text-[rgb(var(--color-text))]/60 mb-8',
   form:

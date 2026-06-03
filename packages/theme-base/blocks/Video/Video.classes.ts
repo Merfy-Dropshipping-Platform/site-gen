@@ -6,9 +6,8 @@ export const VideoClasses = {
     'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
   container:
     'mx-auto max-w-[var(--container-max-width)] px-4',
-  // Token-driven heading size (sister-fix к PopularProducts) — fallback 14px.
   heading:
-    '[font-family:var(--font-heading)] text-[length:var(--size-section-heading,14px)] leading-[1.15] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] text-center mb-10',
+    '[font-family:var(--font-heading)] text-[14px] leading-[16px] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] text-center mb-10',
   media:
     'relative w-full aspect-video overflow-hidden rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))]',
   iframe:

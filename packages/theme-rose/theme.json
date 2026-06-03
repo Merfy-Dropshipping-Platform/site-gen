@@ -111,6 +111,9 @@
       },
       "padding": { "top": 80, "bottom": 80 }
     },
+    "PopularProducts": {
+      "padding": { "top": 80, "bottom": 80 }
+    },
     "Product": {
       "visualConfig": {
         "gallery": { "variant": "wrap-large", "showDiscountBadge": true },

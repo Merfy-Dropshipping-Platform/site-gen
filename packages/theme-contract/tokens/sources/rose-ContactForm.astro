@@ -1,0 +1,175 @@
+---
+import type { ContactFormProps } from './ContactForm.puckConfig';
+import { ContactFormPuckConfig } from './ContactForm.puckConfig';
+import { ContactFormClasses as C } from './ContactForm.classes';
+
+// Single source of truth: defaults живут в puckConfig.ts. Astro fallback
+// импортирует их вместо дублирования — иначе расхождение неизбежно при
+// каждом изменении (как было: phone enabled в puckConfig, disabled в Astro).
+const PUCK_DEFAULTS = ContactFormPuckConfig.defaults?.fields ?? {};
+
+interface Props extends ContactFormProps {
+  id?: string;
+}
+
+const raw = Astro.props as Record<string, unknown>;
+const {
+  id,
+  padding,
+} = Astro.props as Props;
+
+// Constructor legacy schema wraps heading as {text, size} and description as
+// {content, size}. Also `fields` may be absent (seed revision) — fall back
+// to sane defaults so live doesn't render "[object Object]" + an empty form.
+const readText = (v: unknown): string | undefined => {
+  if (typeof v === 'string') return v || undefined;
+  if (v && typeof v === 'object') {
+    const o = v as { text?: string; content?: string };
+    return o.text ?? o.content ?? undefined;
+  }
+  return undefined;
+};
+const heading = readText(raw.heading) ?? 'Остались вопросы?';
+const description = readText(raw.description);
+const buttonText =
+  typeof raw.buttonText === 'string' && raw.buttonText.length > 0
+    ? raw.buttonText
+    : 'Отправить';
+const fields = raw.fields as
+  | {
+      name?: { enabled?: unknown; required?: unknown; label?: string };
+      email?: { enabled?: unknown; required?: unknown; label?: string };
+      phone?: { enabled?: unknown; required?: unknown; label?: string };
+      message?: { enabled?: unknown; required?: unknown; label?: string };
+    }
+  | undefined;
+const hasFields = !!fields && typeof fields === 'object';
+
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+
+// Pupa parity: heading.alignment, heading.size, colorScheme.
+const headingObj = raw.heading;
+const headingAlignment =
+  typeof headingObj === 'object' ? (headingObj as { alignment?: string })?.alignment : undefined;
+const headingAlignmentResolved = headingAlignment ?? raw.headingAlignment;
+const headingSize =
+  typeof headingObj === 'object' ? (headingObj as { size?: string })?.size : undefined;
+const headingSizeResolved = headingSize ?? raw.headingSize;
+const colorScheme = raw.colorScheme as string | undefined;
+const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
+const headingAlignClass =
+  headingAlignmentResolved === 'left' ? 'text-left' :
+  headingAlignmentResolved === 'right' ? 'text-right' :
+  headingAlignmentResolved === 'center' ? 'text-center' : '';
+const headingSizeClass =
+  headingSizeResolved === 'large' ? 'text-3xl md:text-4xl' :
+  headingSizeResolved === 'medium' ? 'text-2xl md:text-3xl' :
+  headingSizeResolved === 'small' ? 'text-xl md:text-2xl' : '';
+
+// Constructor passes enabled/required as "true"/"false" strings — normalize.
+const toBool = (v: unknown, fallback = false): boolean =>
+  typeof v === 'boolean' ? v : v === 'true' ? true : v === 'false' ? false : fallback;
+// Resolve each field from props if present, else from puckConfig defaults.
+// Single source of truth: defaults defined ONLY in puckConfig.
+const resolveField = (key: 'name' | 'email' | 'phone' | 'message') => {
+  const def = (PUCK_DEFAULTS as Record<string, { enabled?: unknown; required?: unknown; label?: string }>)[key] ?? {};
+  const f = fields?.[key];
+  return {
+    enabled: hasFields && f?.enabled !== undefined ? toBool(f.enabled) : toBool(def.enabled),
+    required: hasFields && f?.required !== undefined ? toBool(f.required) : toBool(def.required),
+    label: f?.label ?? def.label ?? key,
+  };
+};
+const norm = {
+  name: resolveField('name'),
+  email: resolveField('email'),
+  phone: resolveField('phone'),
+  message: resolveField('message'),
+};
+---
+<section
+  class:list={[C.root, schemeClass]}
+  data-puck-component-id={id}
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    <div class={C.inner}>
+      {heading && (
+        <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{heading}</h2>
+      )}
+      {description && (
+        <p class={C.description} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="description">{description}</p>
+      )}
+      <form class={C.form} method="POST" action="/api/contact/submit">
+        <div class={C.leftColumn}>
+          {norm.name.enabled && (
+            <div class={C.field}>
+              <label class={C.label} for="contact-name">
+                {norm.name.label}
+                {norm.name.required && <span class={C.required}>*</span>}
+              </label>
+              <input
+                id="contact-name"
+                type="text"
+                name="name"
+                class={C.input}
+                required={norm.name.required}
+              />
+            </div>
+          )}
+          {norm.email.enabled && (
+            <div class={C.field}>
+              <label class={C.label} for="contact-email">
+                {norm.email.label}
+                {norm.email.required && <span class={C.required}>*</span>}
+              </label>
+              <input
+                id="contact-email"
+                type="email"
+                name="email"
+                class={C.input}
+                required={norm.email.required}
+              />
+            </div>
+          )}
+          {norm.phone.enabled && (
+            <div class={C.field}>
+              <label class={C.label} for="contact-phone">
+                {norm.phone.label}
+                {norm.phone.required && <span class={C.required}>*</span>}
+              </label>
+              <input
+                id="contact-phone"
+                type="tel"
+                name="phone"
+                class={C.input}
+                required={norm.phone.required}
+              />
+            </div>
+          )}
+        </div>
+        <div class={C.rightColumn}>
+          {norm.message.enabled && (
+            <div class={C.field + ' flex-1'}>
+              <label class={C.label} for="contact-message">
+                {norm.message.label}
+                {norm.message.required && <span class={C.required}>*</span>}
+              </label>
+              <textarea
+                id="contact-message"
+                name="message"
+                class={C.textarea}
+                required={norm.message.required}
+              ></textarea>
+            </div>
+          )}
+          <div class={C.buttonRow}>
+            <button type="submit" class={C.button}>{buttonText}</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>

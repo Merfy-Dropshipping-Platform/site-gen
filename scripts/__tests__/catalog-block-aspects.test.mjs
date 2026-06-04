@@ -1417,3 +1417,180 @@ test('PopularProducts rose: swatchOverlayContainer НЕ найден (у rose н
   });
   assert.equal(classMap.swatchOverlayContainer.found, false);
 });
+
+// ───────── ContactForm блок ─────────
+// Покрывает оба источника:
+//   1) База theme-base/blocks/ContactForm/ContactForm.astro (wide layout):
+//      <section data-puck-component-id>, <div max-w-[var(--container-max-width)]>,
+//      <div mx-auto max-w-[1200px]>, <h2 data-puck-subsection-field="heading">,
+//      <p data-puck-subsection-field="description">,
+//      <form action="/api/contact/submit" grid lg:grid-cols-[429px_1fr]>,
+//      <div flex flex-col gap-4> (left/right column), <div flex flex-col gap-2> (field),
+//      <label for="contact-...">, <span text-[rgb(var(--color-error))] ml-1>,
+//      <input h-14 rounded-[var(--radius-input)]>, <textarea min-h-[196px]>,
+//      <div flex justify-end mt-2> (buttonRow),
+//      <button type="submit" h-12 rounded-[var(--radius-button)]>.
+//   2) Источник rose-theme: rose НЕ имеет своего ContactForm в репо темы —
+//      использует base ContactForm как есть. Cached source-файл —
+//      копия base ContactForm.astro. Селекторы покрывают base — этого
+//      достаточно, потому что оба источника идентичны.
+
+const MINIMAL_CONTACT_FORM_BASE_ASTRO = `---
+const x = 1;
+---
+<section
+  class:list={['relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]', 'color-scheme-default']}
+  data-puck-component-id="contact-1"
+  style="padding-top:80px; padding-bottom:80px;"
+>
+  <div class="mx-auto max-w-[var(--container-max-width)] px-4">
+    <div class="mx-auto max-w-[1200px]">
+      <h2 class:list={['[font-family:var(--font-heading)] text-[14px] leading-[16px] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] mb-8', 'text-center']} data-puck-subsection-parent="contact-1" data-puck-subsection-index="100" data-puck-subsection-field="heading">Связаться</h2>
+      <p class="[font-family:var(--font-body)] text-[12px] leading-[15px] text-[rgb(var(--color-text))]/60 mb-8" data-puck-subsection-parent="contact-1" data-puck-subsection-index="101" data-puck-subsection-field="description">Опишите свой вопрос</p>
+      <form class="grid grid-cols-1 lg:grid-cols-[429px_1fr] gap-4" method="POST" action="/api/contact/submit">
+        <div class="flex flex-col gap-4">
+          <div class="flex flex-col gap-2">
+            <label class="[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-text))]" for="contact-name">
+              Имя
+              <span class="text-[rgb(var(--color-error))] ml-1">*</span>
+            </label>
+            <input
+              id="contact-name"
+              type="text"
+              name="name"
+              class="w-full h-14 px-4 rounded-[var(--radius-input)] border border-[rgb(var(--color-text))]/20 bg-transparent [font-family:var(--font-body)] text-[16px] text-[rgb(var(--color-text))] placeholder:text-[rgb(var(--color-text))]/40 focus:border-[rgb(var(--color-heading))] focus:outline-none transition-colors"
+              required
+            />
+          </div>
+        </div>
+        <div class="flex flex-col gap-4">
+          <div class="flex flex-col gap-2 flex-1">
+            <label class="[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-text))]" for="contact-message">Сообщение</label>
+            <textarea
+              id="contact-message"
+              name="message"
+              class="w-full h-full min-h-[196px] px-4 py-3 rounded-[var(--radius-field,var(--radius-input))] border border-[rgb(var(--color-text))]/20 bg-transparent [font-family:var(--font-body)] text-[16px] text-[rgb(var(--color-text))] placeholder:text-[rgb(var(--color-text))]/40 focus:border-[rgb(var(--color-heading))] focus:outline-none resize-y transition-colors"
+            ></textarea>
+          </div>
+          <div class="flex justify-end mt-2">
+            <button type="submit" class="inline-flex items-center justify-center h-12 px-6 rounded-[var(--radius-button)] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] border border-[rgb(var(--color-button-border))] [font-family:var(--font-body)] text-[14px] leading-[17px] hover:bg-[rgb(var(--color-button-bg-hover))] hover:text-[rgb(var(--color-button-text-hover))] transition-colors">Отправить</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+`;
+
+test('ContactForm base: находит root по data-puck-component-id', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_CONTACT_FORM_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.ContactForm,
+    blockName: 'ContactForm',
+  });
+  assert.ok(classMap.root.found, 'root должен быть найден');
+});
+
+test('ContactForm base: находит container по max-w-[var(--container-max-width)]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_CONTACT_FORM_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.ContactForm,
+    blockName: 'ContactForm',
+  });
+  assert.ok(classMap.container.found);
+});
+
+test('ContactForm base: находит inner по mx-auto + max-w-[1200px]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_CONTACT_FORM_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.ContactForm,
+    blockName: 'ContactForm',
+  });
+  assert.ok(classMap.inner.found);
+  assert.ok(classMap.inner.staticClass.includes('max-w-[1200px]'));
+});
+
+test('ContactForm base: находит heading по data-puck-subsection-field="heading"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_CONTACT_FORM_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.ContactForm,
+    blockName: 'ContactForm',
+  });
+  assert.ok(classMap.heading.found);
+});
+
+test('ContactForm base: находит description по data-puck-subsection-field="description"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_CONTACT_FORM_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.ContactForm,
+    blockName: 'ContactForm',
+  });
+  assert.ok(classMap.description.found);
+});
+
+test('ContactForm base: находит form по action="/api/contact/submit"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_CONTACT_FORM_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.ContactForm,
+    blockName: 'ContactForm',
+  });
+  assert.ok(classMap.form.found);
+});
+
+test('ContactForm base: находит leftColumn по flex flex-col gap-4', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_CONTACT_FORM_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.ContactForm,
+    blockName: 'ContactForm',
+  });
+  assert.ok(classMap.leftColumn.found);
+});
+
+test('ContactForm base: находит field по flex flex-col gap-2', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_CONTACT_FORM_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.ContactForm,
+    blockName: 'ContactForm',
+  });
+  assert.ok(classMap.field.found);
+});
+
+test('ContactForm base: находит label по for="contact-..."', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_CONTACT_FORM_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.ContactForm,
+    blockName: 'ContactForm',
+  });
+  assert.ok(classMap.label.found);
+});
+
+test('ContactForm base: находит required по text-[rgb(var(--color-error))] ml-1', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_CONTACT_FORM_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.ContactForm,
+    blockName: 'ContactForm',
+  });
+  assert.ok(classMap.required.found);
+});
+
+test('ContactForm base: находит input по h-14 + rounded-[var(--radius-input)]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_CONTACT_FORM_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.ContactForm,
+    blockName: 'ContactForm',
+  });
+  assert.ok(classMap.input.found);
+});
+
+test('ContactForm base: находит textarea по тегу <textarea>', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_CONTACT_FORM_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.ContactForm,
+    blockName: 'ContactForm',
+  });
+  assert.ok(classMap.textarea.found);
+});
+
+test('ContactForm base: находит buttonRow по flex justify-end mt-2', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_CONTACT_FORM_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.ContactForm,
+    blockName: 'ContactForm',
+  });
+  assert.ok(classMap.buttonRow.found);
+});
+
+test('ContactForm base: находит button по type="submit" + h-12', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_CONTACT_FORM_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.ContactForm,
+    blockName: 'ContactForm',
+  });
+  assert.ok(classMap.button.found);
+});

@@ -1,0 +1,12 @@
+{
+  "block": "ContactForm",
+  "theme": "rose",
+  "source": "base://theme-base/blocks/ContactForm/ContactForm.astro",
+  "fetchedAt": "2026-06-04T00:00:00.000Z",
+  "elementsFound": 15,
+  "tokensProposed": 0,
+  "tokensFiltered": 0,
+  "elements": {},
+  "tokensSuggested": [],
+  "tokensFilteredList": []
+}

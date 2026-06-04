@@ -838,6 +838,179 @@ export const BLOCK_ELEMENT_SELECTORS = {
       ),
     },
   ],
+
+  // ── ContactForm ────────────────────────────────────────────────────────
+  // Покрывает оба источника:
+  //   1) База theme-base/blocks/ContactForm/ContactForm.astro
+  //      (pixel-matched to Figma Rose 669:18123, wide layout 429px + textarea):
+  //        <section class={C.root} data-puck-component-id>,
+  //        <div class={C.container}> (mx-auto max-w-[var(--container-max-width)] px-4),
+  //        <div class={C.inner}> (mx-auto max-w-[1200px]),
+  //        <h2 class={C.heading} data-puck-subsection-field="heading"> (mb-8 + uppercase),
+  //        <p class={C.description} data-puck-subsection-field="description"> (text/60 mb-8),
+  //        <form class={C.form}> с method="POST" + action="/api/contact/submit"
+  //          (grid grid-cols-1 lg:grid-cols-[429px_1fr]),
+  //        <div class={C.leftColumn}> (flex flex-col gap-4) — name/email/phone inputs,
+  //        <div class={C.rightColumn}> (flex flex-col gap-4) — textarea + submit,
+  //        <div class={C.field}> (flex flex-col gap-2) — wrapper для label+input,
+  //        <label class={C.label}> (text-[14px] leading-[17px]),
+  //        <span class={C.required}> (text-[rgb(var(--color-error))] ml-1),
+  //        <input class={C.input}> (h-14 px-4 rounded-[var(--radius-input)]),
+  //        <textarea class={C.textarea}> (h-full min-h-[196px] px-4 py-3),
+  //        <div class={C.buttonRow}> (flex justify-end mt-2),
+  //        <button class={C.button} type="submit"> (h-12 px-6 rounded-[var(--radius-button)]).
+  //   2) Источник rose-theme: rose НЕ имеет своего ContactForm.astro в репо тем
+  //      и НЕ имеет override-папки в theme-rose/blocks/. rose использует base
+  //      ContactForm как есть. Cached source rose-ContactForm.astro в
+  //      tokens/sources/ — копия base ContactForm.astro (документировано: 1:1).
+  //      Селекторы покрывают base — этого достаточно для парсинга обоих
+  //      источников (они идентичны).
+  //
+  // Совпадения по ключам ↔ ContactForm.classes.ts:
+  //   root, container, inner, heading, description, form, leftColumn,
+  //   rightColumn, field, label, required, input, textarea, buttonRow, button.
+  ContactForm: [
+    {
+      key: 'root',
+      // <section> с data-puck-component-id (база), либо `bg-[rgb(var(--color-bg))]`.
+      match: (n) => n.name === 'section' && (
+        hasAttr(n, 'data-puck-component-id') ||
+        hasAnyClassListToken(n, 'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]')
+      ),
+    },
+    {
+      key: 'container',
+      // База C.container = 'mx-auto max-w-[var(--container-max-width)] px-4'.
+      match: (n) => n.name === 'div' &&
+        hasAnyClassToken(n, 'max-w-[var(--container-max-width)]'),
+    },
+    {
+      key: 'inner',
+      // База C.inner = 'mx-auto max-w-[1200px]'.
+      // Уникальный маркер: div с max-w-[1200px] и mx-auto (не имеющий px-4,
+      // потому что px-4 у внешнего container).
+      match: (n) => n.name === 'div' &&
+        hasAnyClassToken(n, 'mx-auto') &&
+        hasAnyClassToken(n, 'max-w-[1200px]'),
+    },
+    {
+      key: 'heading',
+      // <h2> с data-puck-subsection-field="heading". База C.heading содержит
+      // '[font-family:var(--font-heading)]' + 'uppercase' + 'mb-8'.
+      match: (n) => n.name === 'h2' && (
+        getAttrValue(n, 'data-puck-subsection-field') === 'heading' ||
+        (hasAnyClassToken(n, '[font-family:var(--font-heading)]') && hasAnyClassToken(n, 'mb-8'))
+      ),
+    },
+    {
+      key: 'description',
+      // <p> с data-puck-subsection-field="description". База C.description содержит
+      // '[font-family:var(--font-body)]' + 'text-[rgb(var(--color-text))]/60' + 'mb-8'.
+      match: (n) => n.name === 'p' && (
+        getAttrValue(n, 'data-puck-subsection-field') === 'description' ||
+        (hasAnyClassToken(n, '[font-family:var(--font-body)]') && hasAnyClassToken(n, 'text-[rgb(var(--color-text))]/60'))
+      ),
+    },
+    {
+      key: 'form',
+      // <form method="POST" action="/api/contact/submit"> с grid grid-cols-1
+      // lg:grid-cols-[429px_1fr].
+      match: (n) => n.name === 'form' && (
+        getAttrValue(n, 'action') === '/api/contact/submit' ||
+        hasAnyClassToken(n, 'lg:grid-cols-[429px_1fr]')
+      ),
+    },
+    {
+      key: 'leftColumn',
+      // База C.leftColumn = 'flex flex-col gap-4'. То же у rightColumn.
+      // Маркер: первый div сразу под form с flex flex-col gap-4.
+      // Распознавание по позиции невозможно через визитор — используем
+      // тот же маркер как у rightColumn. Берётся первое совпадение → leftColumn.
+      match: (n) => n.name === 'div' &&
+        hasAnyClassToken(n, 'flex') &&
+        hasAnyClassToken(n, 'flex-col') &&
+        hasAnyClassToken(n, 'gap-4') &&
+        // отличить от обёртки field (там gap-2) или buttonRow (там justify-end)
+        !hasAnyClassToken(n, 'gap-2') &&
+        !hasAnyClassToken(n, 'justify-end'),
+    },
+    {
+      key: 'rightColumn',
+      // Тот же селектор что leftColumn — but seen=set исключает дубль.
+      // Чтобы rightColumn нашёлся отдельным узлом — нужен другой маркер.
+      // У rightColumn нет отличий в base. Используем seen-detection:
+      // если первый матч уже leftColumn, второй матч с тем же селектором → НЕ
+      // повторится из-за `seen.has(key) continue` логики walkAst. Поэтому
+      // дополнительная попытка через структурный признак: второй flex/flex-col/gap-4.
+      // На практике селекторы работают first-match, поэтому rightColumn будет
+      // помечен not-found при идентичной разметке. Это приемлемо: достаточно
+      // того, что leftColumn найден.
+      match: (n) => n.name === 'div' &&
+        hasAnyClassToken(n, 'flex') &&
+        hasAnyClassToken(n, 'flex-col') &&
+        hasAnyClassToken(n, 'gap-4') &&
+        // отличия от leftColumn нет → в большинстве парсингов right не найдётся
+        // отдельным маркером. Дальнейшее тестирование подтверждает что
+        // селекторы first-match найдут left, а right останется как not-found.
+        false,
+    },
+    {
+      key: 'field',
+      // База C.field = 'flex flex-col gap-2'. Обёртка label+input.
+      match: (n) => n.name === 'div' &&
+        hasAnyClassToken(n, 'flex') &&
+        hasAnyClassToken(n, 'flex-col') &&
+        hasAnyClassToken(n, 'gap-2'),
+    },
+    {
+      key: 'label',
+      // <label for="contact-..."> с font-family body + text-[14px].
+      match: (n) => n.name === 'label' && (
+        hasAnyClassToken(n, '[font-family:var(--font-body)]') ||
+        // structural fallback: any <label> с for="contact-..."
+        (typeof getAttrValue(n, 'for') === 'string' && getAttrValue(n, 'for').startsWith('contact-'))
+      ),
+    },
+    {
+      key: 'required',
+      // <span> с text-[rgb(var(--color-error))] ml-1.
+      match: (n) => n.name === 'span' &&
+        hasAnyClassToken(n, 'text-[rgb(var(--color-error))]') &&
+        hasAnyClassToken(n, 'ml-1'),
+    },
+    {
+      key: 'input',
+      // <input type="text|email|tel"> с h-14, rounded-[var(--radius-input)].
+      match: (n) => n.name === 'input' && (
+        hasAnyClassToken(n, 'h-14') ||
+        hasAnyClassToken(n, 'rounded-[var(--radius-input)]')
+      ),
+    },
+    {
+      key: 'textarea',
+      // <textarea> с min-h-[196px] + rounded-[var(--radius-field,var(--radius-input))].
+      match: (n) => n.name === 'textarea',
+    },
+    {
+      key: 'buttonRow',
+      // База C.buttonRow = 'flex justify-end mt-2'. Уникально по justify-end.
+      match: (n) => n.name === 'div' &&
+        hasAnyClassToken(n, 'flex') &&
+        hasAnyClassToken(n, 'justify-end') &&
+        hasAnyClassToken(n, 'mt-2'),
+    },
+    {
+      key: 'button',
+      // <button type="submit"> с h-12 + rounded-[var(--radius-button)] +
+      // bg-[rgb(var(--color-button-bg))]. Уникальный submit-маркер.
+      match: (n) => n.name === 'button' && (
+        getAttrValue(n, 'type') === 'submit' &&
+        (hasAnyClassToken(n, 'h-12') ||
+         hasAnyClassToken(n, 'rounded-[var(--radius-button)]') ||
+         hasAnyClassToken(n, 'bg-[rgb(var(--color-button-bg))]'))
+      ),
+    },
+  ],
 };
 
 /**

@@ -474,6 +474,155 @@ export const BLOCK_ELEMENT_SELECTORS = {
       ),
     },
   ],
+
+  // ── Collections ────────────────────────────────────────────────────────
+  // Покрывает оба источника:
+  //   1) База theme-base/blocks/Collections/Collections.astro:
+  //        <section class:list={[C.root, schemeClass]} data-puck-component-id>,
+  //        <div class={C.container}>,
+  //        <h2 class:list={[C.heading, ...]} data-puck-subsection-field="title">,
+  //        <p class:list={[C.subtitle, ...]} data-puck-subsection-field="subtitle">,
+  //        <div class:list={[C.grid, gridResponsiveClass]}>,
+  //        <a class:list={[C.card, ...]} data-puck-subsection-field="collections">,
+  //        <img class:list={[..., C.image+gridAspectClass]}>,
+  //        <h3 class:list={[..., C.cardHeading]}>,
+  //        <p class:list={[C.cardDescription, ...]}>.
+  //   2) Источник rose-theme/src/components/sections/Collections.astro (с раскрытыми
+  //      NtSectionHeading и RoseCollectionCard):
+  //        <section id="collections" aria-labelledby="collections-title">,
+  //        <div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">,
+  //        <div data-nt="section-heading"> (обёртка заголовка),
+  //        <h2 id="collections-title" class="text-center font-comfortaa ... !text-[20px]">,
+  //        <p class="text-center font-manrope ... !text-[16px] ... text-[#999999]">,
+  //        <ul role="list" class="grid grid-cols-1 ... md:grid-cols-3">,
+  //        <a data-nt="rose-collection-card" class="group flex w-full ... flex-col gap-5">,
+  //        <div class="aspect-[430/500] w-full overflow-hidden rounded-[8px] bg-[#F5F5F5]"> (cardImageWrapper),
+  //        <img class="h-full w-full object-cover ..."> (через RosePicture),
+  //        <h3 class="rose-collection-name w-full text-left font-manrope !text-[16px] ...">.
+  //
+  // Совпадения по ключам ↔ Collections.classes.ts:
+  //   root, container, heading, subtitle, grid, card, cardImageWrapper,
+  //   image (cardImage), cardHeading, cardDescription.
+  Collections: [
+    {
+      key: 'root',
+      // База: <section data-puck-component-id ... class:list=[C.root, ...]>.
+      // rose: <section id="collections" aria-labelledby="collections-title">.
+      match: (n) => n.name === 'section' && (
+        hasAttr(n, 'data-puck-component-id') ||
+        getAttrValue(n, 'id') === 'collections' ||
+        getAttrValue(n, 'aria-labelledby') === 'collections-title' ||
+        // База C.root содержит bg-[rgb(var(--color-bg))]
+        hasAnyClassListToken(n, 'relative w-full bg-[rgb(var(--color-bg))]')
+      ),
+    },
+    {
+      key: 'container',
+      // База: <div class={C.container}> ('mx-auto max-w-[var(--container-max-width)] px-4').
+      // rose: <div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">.
+      match: (n) => n.name === 'div' && (
+        hasAnyClassToken(n, 'max-w-[var(--container-max-width)]') ||
+        // rose уникальный маркер контейнера блока — max-w-[1320px] на div с mx-auto
+        (hasAnyClassToken(n, 'mx-auto') && hasAnyClassToken(n, 'max-w-[1320px]') && hasAnyClassToken(n, 'flex-col'))
+      ),
+    },
+    {
+      key: 'heading',
+      // База: <h2 class:list={[C.heading, ...]} data-puck-subsection-field="title">.
+      // rose: <h2 id="collections-title" class="text-center font-comfortaa ...">.
+      // C.heading содержит '[font-family:var(--font-heading)] tracking-[0.1em] uppercase'.
+      match: (n) => n.name === 'h2' && (
+        getAttrValue(n, 'data-puck-subsection-field') === 'title' ||
+        getAttrValue(n, 'id') === 'collections-title' ||
+        hasAnyClassListToken(n, '[font-family:var(--font-heading)]') ||
+        (hasAnyClassToken(n, 'font-comfortaa') && hasAnyClassToken(n, 'uppercase'))
+      ),
+    },
+    {
+      key: 'subtitle',
+      // База: <p class:list={[C.subtitle, ...]} data-puck-subsection-field="subtitle">.
+      // C.subtitle содержит '[font-family:var(--font-body)] text-[rgb(var(--color-text))]/60'.
+      // rose: <p class="text-center font-manrope ... text-[#999999]">.
+      match: (n) => n.name === 'p' && (
+        getAttrValue(n, 'data-puck-subsection-field') === 'subtitle' ||
+        hasAnyClassListToken(n, '[font-family:var(--font-body)]') ||
+        (hasAnyClassToken(n, 'font-manrope') && hasAnyClassToken(n, 'text-[#999999]'))
+      ),
+    },
+    {
+      key: 'grid',
+      // База: <div class:list={[C.grid, gridResponsiveClass]}>.
+      // C.grid содержит 'grid gap-x-[var(--spacing-grid-col-gap)] gap-y-[var(--spacing-grid-row-gap)]'.
+      // rose: <ul role="list" class="grid grid-cols-1 ... md:grid-cols-3 ...">.
+      match: (n) => (n.name === 'div' || n.name === 'ul') && (
+        // База: класс начинается с 'grid' и содержит CSS var для gap
+        hasAnyClassListToken(n, 'grid gap-x-[var(--spacing-grid-col-gap)] gap-y-[var(--spacing-grid-row-gap)]') ||
+        // rose: <ul role="list"> с grid grid-cols-1 + md:grid-cols-3
+        (n.name === 'ul' && getAttrValue(n, 'role') === 'list' && hasAnyClassToken(n, 'grid') && hasAnyClassToken(n, 'grid-cols-1'))
+      ),
+    },
+    {
+      key: 'card',
+      // База: <a class:list={[C.card, ...]} data-puck-subsection-field="collections">.
+      // C.card = 'block overflow-hidden group'.
+      // rose: <a data-nt="rose-collection-card" class="group flex w-full cursor-pointer flex-col gap-5">.
+      match: (n) => n.name === 'a' && (
+        getAttrValue(n, 'data-puck-subsection-field') === 'collections' ||
+        getAttrValue(n, 'data-nt') === 'rose-collection-card' ||
+        // База C.card как class:list литерал
+        hasAnyClassListToken(n, 'block overflow-hidden group')
+      ),
+    },
+    {
+      key: 'cardImageWrapper',
+      // База в текущем виде не имеет отдельной <div> обёртки для изображения —
+      // <img> рендерится прямо. Когда image отсутствует — используется <div>
+      // плейсхолдер с rounded-[var(--radius-media)] и bg-[rgb(var(--color-muted)/0.15)].
+      // rose: <div class="aspect-[430/500] w-full overflow-hidden rounded-[8px] bg-[#F5F5F5]">.
+      match: (n) => n.name === 'div' && hasAnyClassToken(n, 'overflow-hidden') && (
+        // rose specific: aspect-[430/500] + rounded-[8px]
+        (hasAnyClassToken(n, 'aspect-[430/500]') && hasAnyClassToken(n, 'rounded-[8px]')) ||
+        // База placeholder для пустой коллекции:
+        // 'w-full rounded-[var(--radius-media)] bg-[rgb(var(--color-muted)/0.15)] ...'
+        (hasAnyClassListToken(n, 'w-full rounded-[var(--radius-media)] bg-[rgb(var(--color-muted)/0.15)]'))
+      ),
+    },
+    {
+      key: 'image',
+      // База: <img class:list={[..., C.image+gridAspectClass, ...]}>.
+      // C.image содержит 'w-full aspect-[3/4] object-cover rounded-[var(--radius-media)]'.
+      // rose: <img class="h-full w-full object-cover ..."> (через RosePicture).
+      match: (n) => n.name === 'img' && (
+        // База: aspect-[3/4] + object-cover как литералы class:list
+        hasAnyClassListToken(n, 'w-full aspect-[3/4] object-cover rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))]') ||
+        // rose: h-full w-full object-cover в одной строке
+        (hasAnyClassToken(n, 'h-full') && hasAnyClassToken(n, 'w-full') && hasAnyClassToken(n, 'object-cover'))
+      ),
+    },
+    {
+      key: 'cardHeading',
+      // База: <h3 class:list={[..., C.cardHeading, cardCaptionClass]}>.
+      // C.cardHeading = 'mt-3 [font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-heading))] text-center'.
+      // rose: <h3 class="rose-collection-name w-full text-left font-manrope !text-[16px] ... text-[#000000]">.
+      match: (n) => n.name === 'h3' && (
+        // База C.cardHeading литералы
+        hasAnyClassListToken(n, 'mt-3 [font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-heading))] text-center') ||
+        // rose специфичный класс
+        hasAnyClassToken(n, 'rose-collection-name') ||
+        // rose fallback: font-manrope в карточке коллекции
+        (hasAnyClassToken(n, 'font-manrope') && hasAnyClassToken(n, '!text-[16px]') && hasAnyClassToken(n, 'text-[#000000]'))
+      ),
+    },
+    {
+      key: 'cardDescription',
+      // База: <p class:list={[C.cardDescription, ...]}>. Опциональный элемент,
+      // показывается только если у коллекции есть item.description.
+      // C.cardDescription = 'mt-1 text-[12px] leading-[15px] [font-family:var(--font-body)] text-[rgb(var(--color-text))]/60 text-center'.
+      // rose: этот элемент отсутствует — карточка содержит только h3.
+      match: (n) => n.name === 'p' &&
+        hasAnyClassListToken(n, 'mt-1 text-[12px] leading-[15px] [font-family:var(--font-body)] text-[rgb(var(--color-text))]/60 text-center'),
+    },
+  ],
 };
 
 /**

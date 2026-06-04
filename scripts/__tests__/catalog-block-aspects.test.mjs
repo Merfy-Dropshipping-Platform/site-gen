@@ -810,3 +810,285 @@ test('Hero rose: находит contentColumn по max-w-[540px]', async () => {
   });
   assert.ok(classMap.contentColumn.found);
 });
+
+// ───────── Collections блок ─────────
+// Покрывает оба источника:
+//   1) База theme-base/blocks/Collections/Collections.astro — main markup,
+//      с маркерами: <section data-puck-component-id>, <div class={C.container}>,
+//      <h2 data-puck-subsection-field="title">, <p data-puck-subsection-field="subtitle">,
+//      <div class={C.grid}>, <a data-puck-subsection-field="collections">,
+//      <img class={C.image+gridAspectClass}>, <h3 class={C.cardHeading}>.
+//   2) Источник rose-theme/src/components/sections/Collections.astro
+//      (с раскрытыми NtSectionHeading + RoseCollectionCard):
+//      <section id="collections" aria-labelledby="collections-title">,
+//      <div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 ...">,
+//      <h2 id="collections-title" class="font-comfortaa uppercase">,
+//      <p class="font-manrope text-[#999999]">,
+//      <ul role="list" class="grid grid-cols-1 md:grid-cols-3">,
+//      <a data-nt="rose-collection-card" class="group flex">,
+//      <div class="aspect-[430/500] rounded-[8px] bg-[#F5F5F5]">,
+//      <img class="h-full w-full object-cover">,
+//      <h3 class="rose-collection-name">.
+
+const MINIMAL_COLLECTIONS_BASE_ASTRO = `---
+const x = 1;
+---
+<section
+  class:list={['relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]', 'color-scheme-default']}
+  data-puck-component-id="collections-1"
+  data-collections-variant="standard"
+  style="padding-top:80px;"
+>
+  <div class="mx-auto max-w-[var(--container-max-width)] px-4">
+    <h2 class:list={['[font-family:var(--font-heading)] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] mb-2', 'text-center text-2xl md:text-3xl']} data-puck-subsection-field="title">Collections</h2>
+    <p class:list={['[font-family:var(--font-body)] text-[rgb(var(--color-text))]/60 mb-10', 'text-center text-sm md:text-base']} data-puck-subsection-field="subtitle">Browse our collections</p>
+    <div class:list={['grid gap-x-[var(--spacing-grid-col-gap)] gap-y-[var(--spacing-grid-row-gap)]', 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3']}>
+      <a
+        href="/catalog?collection=demo-1"
+        class:list={['block overflow-hidden group']}
+        data-puck-subsection-field="collections"
+      >
+        <img src="/img/c1.jpg" alt="Collection" class:list={['w-full aspect-[3/4] object-cover rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))] transition-transform duration-500 ease-out group-hover:scale-105']} loading="lazy" />
+        <h3 class:list={['mt-3 [font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-heading))] text-center']}>Коллекция</h3>
+        <p class:list={['mt-1 text-[12px] leading-[15px] [font-family:var(--font-body)] text-[rgb(var(--color-text))]/60 text-center']}>Описание</p>
+      </a>
+      <a
+        href="/catalog?collection=demo-2"
+        class:list={['block overflow-hidden group']}
+        data-puck-subsection-field="collections"
+      >
+        <div
+          class:list={['overflow-hidden', 'w-full rounded-[var(--radius-media)] bg-[rgb(var(--color-muted)/0.15)]']}
+          aria-hidden="true"
+        ></div>
+        <h3 class:list={['mt-3 [font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-heading))] text-center']}>Коллекция</h3>
+      </a>
+    </div>
+  </div>
+</section>
+`;
+
+// Фикстура rose-источника — раскрытый markup как видит парсер после fetch из github
+// (NtSectionHeading и RoseCollectionCard представлены своим итоговым HTML).
+const MINIMAL_COLLECTIONS_ROSE_ASTRO = `---
+const sectionTitle = "Коллекции";
+const sectionSubtitle = "Вдохновение";
+const collections = [{ name: "RIVIERA", image: "/img/r.jpg" }];
+---
+<section
+  id="collections"
+  class="w-full bg-white px-4 pb-14 pt-14 sm:px-5 sm:pb-16 sm:pt-16 md:px-10 md:pb-[100px] md:pt-[100px] lg:px-16 lg:pb-[120px] lg:pt-[120px] xl:px-20 xl:pb-[140px] xl:pt-[140px] 2xl:px-[280px]"
+  aria-labelledby="collections-title"
+>
+  <div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
+    <div class="flex w-full justify-center md:justify-center">
+      <div
+        class:list={['flex max-w-[90vw] flex-col items-center', 'gap-2']}
+        data-nt="section-heading"
+        data-nt-variant="rose"
+      >
+        <h2
+          id="collections-title"
+          class:list={['text-center font-comfortaa font-normal uppercase text-[#000000]', '!text-[20px] !leading-none tracking-normal']}
+        >{sectionTitle}</h2>
+        <p
+          class:list={['text-center font-manrope font-normal text-[#999999]', 'max-w-[780px] px-2 !text-[16px] !leading-none tracking-normal']}
+        >{sectionSubtitle}</p>
+      </div>
+    </div>
+    <ul
+      class="grid grid-cols-1 gap-6 sm:gap-5 md:grid-cols-3 md:gap-5 lg:gap-6"
+      role="list"
+    >
+      <li>
+        <a
+          href="/catalog?collection=RIVIERA"
+          class="group flex w-full cursor-pointer flex-col gap-5"
+          aria-label="RIVIERA"
+          data-nt="rose-collection-card"
+        >
+          <div class="aspect-[430/500] w-full overflow-hidden rounded-[8px] bg-[#F5F5F5]">
+            <img
+              src="/img/r.jpg"
+              alt="RIVIERA"
+              width="430"
+              height="500"
+              loading="eager"
+              class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.08]"
+            />
+          </div>
+          <h3
+            class="rose-collection-name w-full text-left font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[#000000] transition-opacity group-hover:opacity-70"
+          >RIVIERA</h3>
+        </a>
+      </li>
+    </ul>
+  </div>
+</section>
+`;
+
+test('Collections base: находит root по data-puck-component-id', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_COLLECTIONS_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Collections,
+    blockName: 'Collections',
+  });
+  assert.ok(classMap.root.found, 'root должен быть найден');
+});
+
+test('Collections base: находит container по max-w-[var(--container-max-width)]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_COLLECTIONS_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Collections,
+    blockName: 'Collections',
+  });
+  assert.ok(classMap.container.found);
+});
+
+test('Collections base: находит heading по data-puck-subsection-field="title"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_COLLECTIONS_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Collections,
+    blockName: 'Collections',
+  });
+  assert.ok(classMap.heading.found);
+});
+
+test('Collections base: находит subtitle по data-puck-subsection-field="subtitle"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_COLLECTIONS_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Collections,
+    blockName: 'Collections',
+  });
+  assert.ok(classMap.subtitle.found);
+});
+
+test('Collections base: находит grid по литералам с var(--spacing-grid-*)', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_COLLECTIONS_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Collections,
+    blockName: 'Collections',
+  });
+  assert.ok(classMap.grid.found);
+});
+
+test('Collections base: находит card по data-puck-subsection-field="collections"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_COLLECTIONS_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Collections,
+    blockName: 'Collections',
+  });
+  assert.ok(classMap.card.found);
+});
+
+test('Collections base: находит image по литералам C.image (aspect-[3/4])', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_COLLECTIONS_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Collections,
+    blockName: 'Collections',
+  });
+  assert.ok(classMap.image.found);
+});
+
+test('Collections base: находит cardHeading по литералам C.cardHeading', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_COLLECTIONS_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Collections,
+    blockName: 'Collections',
+  });
+  assert.ok(classMap.cardHeading.found);
+});
+
+test('Collections base: находит cardDescription по литералам C.cardDescription', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_COLLECTIONS_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Collections,
+    blockName: 'Collections',
+  });
+  assert.ok(classMap.cardDescription.found);
+});
+
+test('Collections base: находит cardImageWrapper-плейсхолдер (rounded-[var(--radius-media)] bg-[rgb(var(--color-muted)/0.15)])', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_COLLECTIONS_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Collections,
+    blockName: 'Collections',
+  });
+  assert.ok(classMap.cardImageWrapper.found);
+});
+
+// ── rose источник ──
+
+test('Collections rose: находит root по id="collections"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_COLLECTIONS_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Collections,
+    blockName: 'Collections',
+  });
+  assert.ok(classMap.root.found);
+  assert.ok(classMap.root.staticClass.includes('bg-white'));
+});
+
+test('Collections rose: находит container по max-w-[1320px]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_COLLECTIONS_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Collections,
+    blockName: 'Collections',
+  });
+  assert.ok(classMap.container.found);
+  assert.ok(classMap.container.staticClass.includes('max-w-[1320px]'));
+});
+
+test('Collections rose: находит heading по id="collections-title"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_COLLECTIONS_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Collections,
+    blockName: 'Collections',
+  });
+  assert.ok(classMap.heading.found);
+});
+
+test('Collections rose: находит subtitle по font-manrope+text-[#999999]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_COLLECTIONS_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Collections,
+    blockName: 'Collections',
+  });
+  assert.ok(classMap.subtitle.found);
+});
+
+test('Collections rose: находит grid по <ul role="list"> с grid+grid-cols-1', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_COLLECTIONS_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Collections,
+    blockName: 'Collections',
+  });
+  assert.ok(classMap.grid.found);
+});
+
+test('Collections rose: находит card по data-nt="rose-collection-card"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_COLLECTIONS_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Collections,
+    blockName: 'Collections',
+  });
+  assert.ok(classMap.card.found);
+});
+
+test('Collections rose: находит cardImageWrapper по aspect-[430/500]+rounded-[8px]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_COLLECTIONS_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Collections,
+    blockName: 'Collections',
+  });
+  assert.ok(classMap.cardImageWrapper.found);
+  assert.ok(classMap.cardImageWrapper.staticClass.includes('aspect-[430/500]'));
+});
+
+test('Collections rose: находит image по h-full+w-full+object-cover', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_COLLECTIONS_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Collections,
+    blockName: 'Collections',
+  });
+  assert.ok(classMap.image.found);
+});
+
+test('Collections rose: находит cardHeading по rose-collection-name', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_COLLECTIONS_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Collections,
+    blockName: 'Collections',
+  });
+  assert.ok(classMap.cardHeading.found);
+  assert.ok(classMap.cardHeading.staticClass.includes('rose-collection-name'));
+});
+
+test('Collections rose: cardDescription НЕ найден (нет описаний в источнике)', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_COLLECTIONS_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Collections,
+    blockName: 'Collections',
+  });
+  assert.equal(classMap.cardDescription.found, false);
+});

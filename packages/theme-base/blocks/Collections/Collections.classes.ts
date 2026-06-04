@@ -4,9 +4,9 @@
 // centered label under each ("Коллекция RIVIERA", etc.).
 export const CollectionsClasses = {
   root:
-    'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
+    'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))] px-[var(--collections-root-padding-x)] pb-[var(--collections-root-padding-bottom)] pt-[var(--collections-root-padding-top)] sm:px-[var(--collections-root-padding-x-sm)] sm:pb-[var(--collections-root-padding-bottom-sm)] sm:pt-[var(--collections-root-padding-top-sm)] md:px-[var(--collections-root-padding-x-md)] md:pb-[var(--collections-root-padding-bottom-md)] md:pt-[var(--collections-root-padding-top-md)] lg:px-[var(--collections-root-padding-x-lg)] lg:pb-[var(--collections-root-padding-bottom-lg)] lg:pt-[var(--collections-root-padding-top-lg)] xl:px-[var(--collections-root-padding-x-xl)] xl:pb-[var(--collections-root-padding-bottom-xl)] xl:pt-[var(--collections-root-padding-top-xl)] 2xl:px-[var(--collections-root-padding-x-2xl)]',
   container:
-    'mx-auto max-w-[var(--container-max-width)] px-4',
+    'mx-auto max-w-[var(--collections-container-max-width)] px-4 w-[var(--collections-container-width)] gap-[var(--collections-container-gap)] md:gap-[var(--collections-container-gap-md)]',
   // Размеры заголовка/подзаголовка — не зашиваем, чтобы titleSizeClass /
   // subtitleSizeClass из sidebar (small/medium/large) реально применялись.
   // Раньше зашитый `text-[14px]` (arbitrary value) перебивал utility-классы
@@ -16,7 +16,7 @@ export const CollectionsClasses = {
   subtitle:
     '[font-family:var(--font-body)] text-[rgb(var(--color-text))]/60 mb-10',
   grid:
-    'grid gap-x-[var(--spacing-grid-col-gap)] gap-y-[var(--spacing-grid-row-gap)]',
+    'grid gap-x-[var(--spacing-grid-col-gap)] gap-y-[var(--spacing-grid-row-gap)] gap-[var(--collections-grid-gap)] sm:gap-[var(--collections-grid-gap-sm)] md:gap-[var(--collections-grid-gap-md)] lg:gap-[var(--collections-grid-gap-lg)]',
   card:
     'block overflow-hidden group',
   image:

@@ -4,11 +4,11 @@
 // grey strikethrough oldPrice for discounted items).
 export const PopularProductsClasses = {
   root:
-    'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))] px-[var(--popular-products-root-padding-x)] pb-[var(--popular-products-root-padding-bottom)] pt-[var(--popular-products-root-padding-top)] sm:px-[var(--popular-products-root-padding-x-sm)] sm:pb-[var(--popular-products-root-padding-bottom-sm)] sm:pt-[var(--popular-products-root-padding-top-sm)] md:px-[var(--popular-products-root-padding-x-md)] md:pb-[var(--popular-products-root-padding-bottom-md)] md:pt-[var(--popular-products-root-padding-top-md)] lg:px-[var(--popular-products-root-padding-x-lg)] lg:pb-[var(--popular-products-root-padding-bottom-lg)] lg:pt-[var(--popular-products-root-padding-top-lg)] xl:px-[var(--popular-products-root-padding-x-xl)] xl:pb-[var(--popular-products-root-padding-bottom-xl)] xl:pt-[var(--popular-products-root-padding-top-xl)] 2xl:px-[var(--popular-products-root-padding-x-2xl)]',
+    'relative w-full bg-[var(--popular-products-root-background-color)] text-[rgb(var(--color-text))] px-[var(--popular-products-root-padding-x)] pb-[var(--popular-products-root-padding-bottom)] pt-[var(--popular-products-root-padding-top)] sm:px-[var(--popular-products-root-padding-x-sm)] sm:pb-[var(--popular-products-root-padding-bottom-sm)] sm:pt-[var(--popular-products-root-padding-top-sm)] md:px-[var(--popular-products-root-padding-x-md)] md:pb-[var(--popular-products-root-padding-bottom-md)] md:pt-[var(--popular-products-root-padding-top-md)] lg:px-[var(--popular-products-root-padding-x-lg)] lg:pb-[var(--popular-products-root-padding-bottom-lg)] lg:pt-[var(--popular-products-root-padding-top-lg)] xl:px-[var(--popular-products-root-padding-x-xl)] xl:pb-[var(--popular-products-root-padding-bottom-xl)] xl:pt-[var(--popular-products-root-padding-top-xl)] 2xl:px-[var(--popular-products-root-padding-x-2xl)] py-[var(--popular-products-root-padding-y)] md:py-[var(--popular-products-root-padding-y-md)]',
   container:
     'mx-auto max-w-[var(--popular-products-container-max-width)] px-4 w-[var(--popular-products-container-width)] gap-[var(--popular-products-container-gap)] md:gap-[var(--popular-products-container-gap-md)]',
   heading:
-    '[font-family:var(--font-heading)] text-[14px] leading-[16px] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] mb-2',
+    '[font-family:var(--font-heading)] text-[var(--popular-products-heading-color)] leading-[16px] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] mb-2',
   subtitle:
     '[font-family:var(--font-body)] text-[12px] leading-[15px] text-[rgb(var(--color-text))]/60 mb-10',
   grid:

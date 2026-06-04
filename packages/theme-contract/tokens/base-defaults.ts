@@ -317,4 +317,10 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   '--collections-root-padding-y-md': '112px',
   '--collections-heading-color': 'var(--vanilla-announcement-bg)',
   '--collections-heading-font-size': '20px',
+  // ── v2 миграция — запасные значения (добавлено скриптом)
+  '--popular-products-root-background-color': 'var(--vanilla-surface)',
+  '--popular-products-root-padding-y': '80px',
+  '--popular-products-root-padding-y-md': '112px',
+  '--popular-products-heading-font-size': '14px',
+  '--popular-products-heading-color': 'var(--vanilla-announcement-bg)',
 };

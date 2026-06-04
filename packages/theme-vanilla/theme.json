@@ -56,7 +56,8 @@
     "--footer-copyright-bar-padding-x": "16px",
     "--hero-root-background-color": "var(--vanilla-green-deep)",
     "--hero-title-font-size": "24px",
-    "--collections-grid-gap": "16px"
+    "--collections-grid-gap": "16px",
+    "--popular-products-heading-font-size": "20px"
   },
   "blockDefaults": {
     "PromoBanner": {

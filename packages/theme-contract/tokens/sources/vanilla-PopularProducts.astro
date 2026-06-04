@@ -1,0 +1,38 @@
+---
+import VanillaProductCard from "../products/VanillaProductCard.astro";
+import { catalogProducts } from "../../data/products";
+
+const sectionTitle = "Популярные товары";
+const sectionSubtitle =
+	"Вдохновение для каждого дня — актуальные коллекции текстиля и декора, созданные, чтобы радовать и удивлять.";
+
+const products = catalogProducts.slice(0, 6);
+---
+
+<section
+	id="popular"
+	class="vanilla-pad w-full bg-[var(--vanilla-surface)] py-20 md:py-28"
+	aria-labelledby="popular-title"
+>
+	<div class="vanilla-container flex max-w-[1180px] flex-col gap-8">
+		<div class="flex max-w-[760px] flex-col gap-2" data-animate>
+			<h2
+				id="popular-title"
+				class="font-vanilla-bitter text-[20px] font-normal italic leading-none tracking-normal text-[var(--vanilla-announcement-bg)]"
+			>
+				{sectionTitle}
+			</h2>
+			<p class="font-vanilla-arsenal text-base font-normal italic leading-none text-[#444444]">
+				{sectionSubtitle}
+			</p>
+		</div>
+
+		<ul class="grid grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:grid-cols-3 md:gap-x-4 md:gap-y-12" role="list" data-animate data-animate-delay="0.1s">
+			{products.map((product) => (
+				<li>
+					<VanillaProductCard product={product} />
+				</li>
+			))}
+		</ul>
+	</div>
+</section>

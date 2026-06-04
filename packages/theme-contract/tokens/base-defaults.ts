@@ -17,6 +17,11 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   '--color-button-2-bg': '255 255 255',
   '--color-button-2-text': '17 17 17',
   '--color-button-2-border': '200 200 200',
+  // Pre-existing globals — стандартный hover-контракт: при hover button
+  // меняет местами bg ↔ text. Темы могут переопределять per-scheme.
+  // RGB-триплеты повторяют значения --color-text / --color-bg.
+  '--color-button-bg-hover': '51 51 51',
+  '--color-button-text-hover': '255 255 255',
   '--color-border': '230 230 230',
   '--color-link': '17 17 17',
   '--color-input-bg': '255 255 255',
@@ -30,9 +35,18 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   '--font-body': 'system-ui, sans-serif',
   '--font-cart-counter': 'inherit',
   '--font-powered-by': 'inherit',
+  // Pre-existing — pagination font в Hero carousel. Default наследует
+  // body-шрифт; темы могут переопределить (rose ставит 'Exo 2').
+  '--font-pagination': 'system-ui, sans-serif',
   '--weight-heading': '600',
   '--weight-body': '400',
   '--size-hero-heading': '48px',
+  // Pre-existing — per-block размер заголовка Hero. Empty default
+  // означает «нет override»: Hero.classes.ts падает обратно к
+  // --size-hero-heading (по аналогии с --color-header-bg/--size-header-h).
+  // При активной Puck-настройке heading.size Hero.astro инжектит
+  // расчётное значение inline через `style="--hero-heading-size:..."`.
+  '--hero-heading-size': '',
   '--slide-min-height': '60vh',
   '--size-section-heading': '20px',
   '--size-nav-link': '16px',

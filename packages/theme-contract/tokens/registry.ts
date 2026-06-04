@@ -24,6 +24,12 @@ export const TOKEN_REGISTRY = {
   '--color-button-2-bg':       { category: 'color', scope: 'scheme' },
   '--color-button-2-text':     { category: 'color', scope: 'scheme' },
   '--color-button-2-border':   { category: 'color', scope: 'scheme' },
+  // Pre-existing глобальные hover-токены — используются в Hero, MultiColumns,
+  // Newsletter, ContactForm, PopularProducts, CheckoutSubmit, Catalog,
+  // ImageWithText, CartCheckoutButton, MultiRows, Slideshow, ProductActions.
+  // Декларированы в CartCheckoutButton.tokens.ts, но не были в registry.
+  '--color-button-bg-hover':   { category: 'color', scope: 'scheme' },
+  '--color-button-text-hover': { category: 'color', scope: 'scheme' },
   '--color-border':            { category: 'color', scope: 'scheme' },
   '--color-link':              { category: 'color', scope: 'scheme' },
   '--color-input-bg':          { category: 'color', scope: 'scheme' },
@@ -37,9 +43,18 @@ export const TOKEN_REGISTRY = {
   '--font-body':               { category: 'font',   scope: 'theme' },
   '--font-cart-counter':       { category: 'font',   scope: 'theme' },
   '--font-powered-by':         { category: 'font',   scope: 'theme' },
+  // Pre-existing pagination font — используется в Hero.classes.ts:88 для
+  // paginationButton (Hero carousel). Fallback в classes — `'Exo_2', sans-serif`,
+  // зарегистрировано чтобы пройти validateTokenCompleteness.
+  '--font-pagination':         { category: 'font',   scope: 'theme' },
   '--weight-heading':          { category: 'weight', scope: 'theme' },
   '--weight-body':             { category: 'weight', scope: 'theme' },
   '--size-hero-heading':       { category: 'size',   unit: 'px', scope: 'theme' },
+  // Pre-existing per-block hero heading size — Hero.astro:89 инжектит
+  // inline через style="--hero-heading-size:…" (управляется heading.size
+  // в Puck: small/medium/large → calc от --size-hero-heading). В classes
+  // используется через text-[length:var(--hero-heading-size,var(--size-hero-heading))].
+  '--hero-heading-size':       { category: 'size',   scope: 'theme' },
   '--slide-min-height':        { category: 'size',   scope: 'theme' },
   '--size-section-heading':    { category: 'size',   unit: 'px', scope: 'theme' },
   '--size-nav-link':           { category: 'size',   unit: 'px', scope: 'theme' },

@@ -86,7 +86,12 @@
     "--popular-products-card-gap": "20px",
     "--popular-products-card-media-border-radius": "8px",
     "--popular-products-card-badge-border-radius": "4px",
-    "--popular-products-card-badge-font-size": "12px"
+    "--popular-products-card-badge-font-size": "12px",
+    "--gallery-item-primary-border-radius": "8px",
+    "--gallery-item-small-gap": "16px",
+    "--gallery-card-media-border-radius": "8px",
+    "--gallery-card-label-font-size": "16px",
+    "--gallery-card-price-font-size": "16px"
   },
   "blockDefaults": {
     "Footer": {

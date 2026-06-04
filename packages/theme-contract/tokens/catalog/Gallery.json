@@ -1,0 +1,568 @@
+{
+  "block": "Gallery",
+  "theme": "rose",
+  "source": "github://Merfy-Dropshipping-Platform/rose-theme@main:src/components/sections/Gallery.astro",
+  "fetchedAt": "2026-06-04T15:36:04.488Z",
+  "elementsFound": 14,
+  "tokensProposed": 31,
+  "tokensFiltered": 14,
+  "elements": {
+    "root": {
+      "padding-x": {
+        "default": {
+          "base": "(нет)",
+          "source": "16px"
+        },
+        "sm": {
+          "base": "(нет)",
+          "source": "20px"
+        },
+        "md": {
+          "base": "(нет)",
+          "source": "40px"
+        },
+        "lg": {
+          "base": "(нет)",
+          "source": "64px"
+        },
+        "xl": {
+          "base": "(нет)",
+          "source": "80px"
+        },
+        "2xl": {
+          "base": "(нет)",
+          "source": "280px"
+        }
+      },
+      "padding-bottom": {
+        "default": {
+          "base": "(нет)",
+          "source": "56px"
+        },
+        "sm": {
+          "base": "(нет)",
+          "source": "64px"
+        },
+        "md": {
+          "base": "(нет)",
+          "source": "100px"
+        },
+        "lg": {
+          "base": "(нет)",
+          "source": "120px"
+        },
+        "xl": {
+          "base": "(нет)",
+          "source": "140px"
+        }
+      },
+      "padding-top": {
+        "default": {
+          "base": "(нет)",
+          "source": "56px"
+        },
+        "sm": {
+          "base": "(нет)",
+          "source": "64px"
+        },
+        "md": {
+          "base": "(нет)",
+          "source": "100px"
+        },
+        "lg": {
+          "base": "(нет)",
+          "source": "120px"
+        },
+        "xl": {
+          "base": "(нет)",
+          "source": "140px"
+        }
+      }
+    },
+    "container": {
+      "max-width": {
+        "default": {
+          "base": "var(--container-max-width)",
+          "source": "1320px"
+        }
+      },
+      "gap": {
+        "default": {
+          "base": "(нет)",
+          "source": "32px"
+        },
+        "md": {
+          "base": "(нет)",
+          "source": "40px"
+        }
+      }
+    },
+    "inner": {
+      "gap": {
+        "default": {
+          "base": "(нет)",
+          "source": "24px"
+        },
+        "md": {
+          "base": "(нет)",
+          "source": "32px"
+        },
+        "lg": {
+          "base": "(нет)",
+          "source": "24px"
+        },
+        "xl": {
+          "base": "(нет)",
+          "source": "32px"
+        }
+      }
+    },
+    "itemPrimary": {
+      "border-radius": {
+        "default": {
+          "base": "var(--radius-media)",
+          "source": "8px"
+        }
+      },
+      "min-height": {
+        "default": {
+          "base": "(нет)",
+          "source": "280px"
+        }
+      }
+    },
+    "itemSmall": {
+      "gap": {
+        "default": {
+          "base": "8px",
+          "source": "16px"
+        },
+        "md": {
+          "base": "(нет)",
+          "source": "20px"
+        }
+      }
+    },
+    "cardMedia": {
+      "border-radius": {
+        "default": {
+          "base": "var(--radius-media)",
+          "source": "8px"
+        }
+      }
+    },
+    "cardLabel": {
+      "font-size": {
+        "default": {
+          "base": "14px",
+          "source": "16px"
+        },
+        "md": {
+          "base": "(нет)",
+          "source": "16px"
+        },
+        "lg": {
+          "base": "(нет)",
+          "source": "16px"
+        },
+        "xl": {
+          "base": "(нет)",
+          "source": "16px"
+        }
+      }
+    },
+    "cardPrice": {
+      "font-size": {
+        "default": {
+          "base": "14px",
+          "source": "16px"
+        },
+        "md": {
+          "base": "(нет)",
+          "source": "16px"
+        },
+        "lg": {
+          "base": "(нет)",
+          "source": "16px"
+        },
+        "xl": {
+          "base": "(нет)",
+          "source": "16px"
+        }
+      },
+      "color": {
+        "default": {
+          "base": "(нет)",
+          "source": "black"
+        }
+      }
+    }
+  },
+  "tokensSuggested": [
+    {
+      "name": "--gallery-root-padding-x",
+      "fallback": "16px",
+      "themeValue": "16px",
+      "element": "root",
+      "property": "padding-x",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--gallery-root-padding-x-sm",
+      "fallback": "20px",
+      "themeValue": "20px",
+      "element": "root",
+      "property": "padding-x",
+      "state": null,
+      "breakpoint": "sm"
+    },
+    {
+      "name": "--gallery-root-padding-x-md",
+      "fallback": "40px",
+      "themeValue": "40px",
+      "element": "root",
+      "property": "padding-x",
+      "state": null,
+      "breakpoint": "md"
+    },
+    {
+      "name": "--gallery-root-padding-x-lg",
+      "fallback": "64px",
+      "themeValue": "64px",
+      "element": "root",
+      "property": "padding-x",
+      "state": null,
+      "breakpoint": "lg"
+    },
+    {
+      "name": "--gallery-root-padding-x-xl",
+      "fallback": "80px",
+      "themeValue": "80px",
+      "element": "root",
+      "property": "padding-x",
+      "state": null,
+      "breakpoint": "xl"
+    },
+    {
+      "name": "--gallery-root-padding-x-2xl",
+      "fallback": "280px",
+      "themeValue": "280px",
+      "element": "root",
+      "property": "padding-x",
+      "state": null,
+      "breakpoint": "2xl"
+    },
+    {
+      "name": "--gallery-root-padding-bottom",
+      "fallback": "56px",
+      "themeValue": "56px",
+      "element": "root",
+      "property": "padding-bottom",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--gallery-root-padding-bottom-sm",
+      "fallback": "64px",
+      "themeValue": "64px",
+      "element": "root",
+      "property": "padding-bottom",
+      "state": null,
+      "breakpoint": "sm"
+    },
+    {
+      "name": "--gallery-root-padding-bottom-md",
+      "fallback": "100px",
+      "themeValue": "100px",
+      "element": "root",
+      "property": "padding-bottom",
+      "state": null,
+      "breakpoint": "md"
+    },
+    {
+      "name": "--gallery-root-padding-bottom-lg",
+      "fallback": "120px",
+      "themeValue": "120px",
+      "element": "root",
+      "property": "padding-bottom",
+      "state": null,
+      "breakpoint": "lg"
+    },
+    {
+      "name": "--gallery-root-padding-bottom-xl",
+      "fallback": "140px",
+      "themeValue": "140px",
+      "element": "root",
+      "property": "padding-bottom",
+      "state": null,
+      "breakpoint": "xl"
+    },
+    {
+      "name": "--gallery-root-padding-top",
+      "fallback": "56px",
+      "themeValue": "56px",
+      "element": "root",
+      "property": "padding-top",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--gallery-root-padding-top-sm",
+      "fallback": "64px",
+      "themeValue": "64px",
+      "element": "root",
+      "property": "padding-top",
+      "state": null,
+      "breakpoint": "sm"
+    },
+    {
+      "name": "--gallery-root-padding-top-md",
+      "fallback": "100px",
+      "themeValue": "100px",
+      "element": "root",
+      "property": "padding-top",
+      "state": null,
+      "breakpoint": "md"
+    },
+    {
+      "name": "--gallery-root-padding-top-lg",
+      "fallback": "120px",
+      "themeValue": "120px",
+      "element": "root",
+      "property": "padding-top",
+      "state": null,
+      "breakpoint": "lg"
+    },
+    {
+      "name": "--gallery-root-padding-top-xl",
+      "fallback": "140px",
+      "themeValue": "140px",
+      "element": "root",
+      "property": "padding-top",
+      "state": null,
+      "breakpoint": "xl"
+    },
+    {
+      "name": "--gallery-container-max-width",
+      "fallback": "1320px",
+      "themeValue": "1320px",
+      "element": "container",
+      "property": "max-width",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--gallery-container-gap",
+      "fallback": "32px",
+      "themeValue": "32px",
+      "element": "container",
+      "property": "gap",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--gallery-container-gap-md",
+      "fallback": "40px",
+      "themeValue": "40px",
+      "element": "container",
+      "property": "gap",
+      "state": null,
+      "breakpoint": "md"
+    },
+    {
+      "name": "--gallery-inner-gap",
+      "fallback": "24px",
+      "themeValue": "24px",
+      "element": "inner",
+      "property": "gap",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--gallery-inner-gap-md",
+      "fallback": "32px",
+      "themeValue": "32px",
+      "element": "inner",
+      "property": "gap",
+      "state": null,
+      "breakpoint": "md"
+    },
+    {
+      "name": "--gallery-inner-gap-lg",
+      "fallback": "24px",
+      "themeValue": "24px",
+      "element": "inner",
+      "property": "gap",
+      "state": null,
+      "breakpoint": "lg"
+    },
+    {
+      "name": "--gallery-inner-gap-xl",
+      "fallback": "32px",
+      "themeValue": "32px",
+      "element": "inner",
+      "property": "gap",
+      "state": null,
+      "breakpoint": "xl"
+    },
+    {
+      "name": "--gallery-item-primary-border-radius",
+      "fallback": "var(--radius-media)",
+      "themeValue": "8px",
+      "element": "itemPrimary",
+      "property": "border-radius",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--gallery-item-primary-min-height",
+      "fallback": "280px",
+      "themeValue": "280px",
+      "element": "itemPrimary",
+      "property": "min-height",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--gallery-item-small-gap",
+      "fallback": "8px",
+      "themeValue": "16px",
+      "element": "itemSmall",
+      "property": "gap",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--gallery-item-small-gap-md",
+      "fallback": "20px",
+      "themeValue": "20px",
+      "element": "itemSmall",
+      "property": "gap",
+      "state": null,
+      "breakpoint": "md"
+    },
+    {
+      "name": "--gallery-card-media-border-radius",
+      "fallback": "var(--radius-media)",
+      "themeValue": "8px",
+      "element": "cardMedia",
+      "property": "border-radius",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--gallery-card-label-font-size",
+      "fallback": "14px",
+      "themeValue": "16px",
+      "element": "cardLabel",
+      "property": "font-size",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--gallery-card-price-font-size",
+      "fallback": "14px",
+      "themeValue": "16px",
+      "element": "cardPrice",
+      "property": "font-size",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--gallery-card-price-color",
+      "fallback": "black",
+      "themeValue": "black",
+      "element": "cardPrice",
+      "property": "color",
+      "state": null,
+      "breakpoint": null
+    }
+  ],
+  "tokensFilteredList": [
+    {
+      "name": "--gallery-root-background-color",
+      "reason": "local color in source overrides scheme-driven base — kept base scheme",
+      "base": "rgb(var(--color-bg))",
+      "source": "white"
+    },
+    {
+      "name": "--gallery-container-width",
+      "reason": "structural dimension or text-align (width: full)",
+      "base": "(нет)",
+      "source": "full"
+    },
+    {
+      "name": "--gallery-item-primary-background-color",
+      "reason": "local color in source overrides scheme-driven base — kept base scheme",
+      "base": "rgb(var(--color-surface))",
+      "source": "#F5F5F5"
+    },
+    {
+      "name": "--gallery-item-primary-width",
+      "reason": "structural dimension or text-align (width: full)",
+      "base": "(нет)",
+      "source": "full"
+    },
+    {
+      "name": "--gallery-item-primary-height-lg",
+      "reason": "structural dimension or text-align (height: full)",
+      "base": "(нет)",
+      "source": "full"
+    },
+    {
+      "name": "--gallery-item-small-text-align",
+      "reason": "structural dimension or text-align (text-align: left)",
+      "base": "(нет)",
+      "source": "left"
+    },
+    {
+      "name": "--gallery-card-media-background-color",
+      "reason": "local color in source overrides scheme-driven base — kept base scheme",
+      "base": "rgb(var(--color-surface))",
+      "source": "#F5F5F5"
+    },
+    {
+      "name": "--gallery-card-label-color",
+      "reason": "local color in source overrides scheme-driven base — kept base scheme",
+      "base": "rgb(var(--color-heading))",
+      "source": "black"
+    },
+    {
+      "name": "--gallery-card-label-font-size-md",
+      "reason": "duplicate of --gallery-card-label-font-size across breakpoints (all = 16px)",
+      "base": "16px",
+      "source": "16px"
+    },
+    {
+      "name": "--gallery-card-label-font-size-lg",
+      "reason": "duplicate of --gallery-card-label-font-size across breakpoints (all = 16px)",
+      "base": "16px",
+      "source": "16px"
+    },
+    {
+      "name": "--gallery-card-label-font-size-xl",
+      "reason": "duplicate of --gallery-card-label-font-size across breakpoints (all = 16px)",
+      "base": "16px",
+      "source": "16px"
+    },
+    {
+      "name": "--gallery-card-price-font-size-md",
+      "reason": "duplicate of --gallery-card-price-font-size across breakpoints (all = 16px)",
+      "base": "16px",
+      "source": "16px"
+    },
+    {
+      "name": "--gallery-card-price-font-size-lg",
+      "reason": "duplicate of --gallery-card-price-font-size across breakpoints (all = 16px)",
+      "base": "16px",
+      "source": "16px"
+    },
+    {
+      "name": "--gallery-card-price-font-size-xl",
+      "reason": "duplicate of --gallery-card-price-font-size across breakpoints (all = 16px)",
+      "base": "16px",
+      "source": "16px"
+    }
+  ]
+}

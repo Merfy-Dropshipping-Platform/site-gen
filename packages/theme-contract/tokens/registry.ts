@@ -318,6 +318,10 @@ export const TOKEN_REGISTRY = {
   '--header-header-color': { category: 'color', scope: 'theme' },
   '--header-logo-link-color': { category: 'color', scope: 'theme' },
   '--header-cart-badge-color': { category: 'color', scope: 'theme' },
+  // ── v2 миграция — токены блока (добавлено скриптом)
+  '--footer-email-opacity-hover': { category: 'size', scope: 'theme' },
+  '--footer-copyright-bar-padding-y': { category: 'spacing', unit: 'px', scope: 'theme' },
+  '--footer-copyright-bar-min-height': { category: 'size', unit: 'px', scope: 'theme' },
 } as const satisfies Record<`--${string}`, TokenMeta>;
 
 export type TokenKey = keyof typeof TOKEN_REGISTRY;

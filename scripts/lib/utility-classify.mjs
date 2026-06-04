@@ -18,11 +18,28 @@ const STATE_PREFIXES = new Set([
   'placeholder', 'first', 'last',
 ]);
 
-const TEXT_SIZE_NAMED = new Set([
-  'text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl',
-  'text-2xl', 'text-3xl', 'text-4xl', 'text-5xl', 'text-6xl',
-  'text-7xl', 'text-8xl', 'text-9xl',
+// Карта именованных Tailwind text-size → реальные px-значения (Tailwind v4 defaults).
+// Принцип: классификатор всегда отдаёт конкретные px, иначе catalog не сравнивает
+// `text-base` с `font-size: 16px` (получается «токен `base`» — артефакт, не значение).
+//
+// См. https://tailwindcss.com/docs/font-size (v4 шкала идентична v3 по умолчанию).
+const TEXT_SIZE_PX_MAP = new Map([
+  ['text-xs',   '12px'],
+  ['text-sm',   '14px'],
+  ['text-base', '16px'],
+  ['text-lg',   '18px'],
+  ['text-xl',   '20px'],
+  ['text-2xl',  '24px'],
+  ['text-3xl',  '30px'],
+  ['text-4xl',  '36px'],
+  ['text-5xl',  '48px'],
+  ['text-6xl',  '60px'],
+  ['text-7xl',  '72px'],
+  ['text-8xl',  '96px'],
+  ['text-9xl',  '128px'],
 ]);
+
+const TEXT_SIZE_NAMED = new Set(TEXT_SIZE_PX_MAP.keys());
 
 const TEXT_ALIGN_NAMED = new Set([
   'text-left', 'text-center', 'text-right', 'text-justify', 'text-start', 'text-end',
@@ -104,7 +121,9 @@ export function classifyUtility(token) {
       return { property: 'text-align', value: base.replace('text-', ''), state, breakpoint };
     }
     if (TEXT_SIZE_NAMED.has(base)) {
-      return { property: 'font-size', value: base.replace('text-', ''), state, breakpoint };
+      // Tailwind именованный размер: возвращаем реальный px,
+      // а не строку «xs»/«base» — иначе catalog не сравнивает с rgb-source.
+      return { property: 'font-size', value: TEXT_SIZE_PX_MAP.get(base), state, breakpoint };
     }
     if (arbitrary !== null) {
       // text-[длина] vs text-[цвет]

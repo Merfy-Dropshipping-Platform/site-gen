@@ -64,15 +64,92 @@ test('text-[10px] → font-size', () => {
   assert.equal(c.value, '10px');
 });
 
-test('text-xs → font-size', () => {
+test('text-xs → font-size 12px', () => {
   const c = classifyUtility('text-xs');
   assert.equal(c.property, 'font-size');
-  assert.equal(c.value, 'xs');
+  assert.equal(c.value, '12px');
 });
 
-test('text-2xl → font-size', () => {
+test('text-sm → font-size 14px', () => {
+  const c = classifyUtility('text-sm');
+  assert.equal(c.property, 'font-size');
+  assert.equal(c.value, '14px');
+});
+
+test('text-base → font-size 16px (баг vanilla Footer)', () => {
+  const c = classifyUtility('text-base');
+  assert.equal(c.property, 'font-size');
+  assert.equal(c.value, '16px');
+});
+
+test('text-lg → font-size 18px', () => {
+  const c = classifyUtility('text-lg');
+  assert.equal(c.property, 'font-size');
+  assert.equal(c.value, '18px');
+});
+
+test('text-xl → font-size 20px', () => {
+  const c = classifyUtility('text-xl');
+  assert.equal(c.property, 'font-size');
+  assert.equal(c.value, '20px');
+});
+
+test('text-2xl → font-size 24px', () => {
   const c = classifyUtility('text-2xl');
   assert.equal(c.property, 'font-size');
+  assert.equal(c.value, '24px');
+});
+
+test('text-3xl → font-size 30px', () => {
+  const c = classifyUtility('text-3xl');
+  assert.equal(c.property, 'font-size');
+  assert.equal(c.value, '30px');
+});
+
+test('text-4xl → font-size 36px', () => {
+  const c = classifyUtility('text-4xl');
+  assert.equal(c.property, 'font-size');
+  assert.equal(c.value, '36px');
+});
+
+test('text-5xl → font-size 48px', () => {
+  const c = classifyUtility('text-5xl');
+  assert.equal(c.property, 'font-size');
+  assert.equal(c.value, '48px');
+});
+
+test('text-9xl → font-size 128px (граница карты)', () => {
+  const c = classifyUtility('text-9xl');
+  assert.equal(c.property, 'font-size');
+  assert.equal(c.value, '128px');
+});
+
+test('text-[16px] arbitrary → font-size 16px (без карты)', () => {
+  const c = classifyUtility('text-[16px]');
+  assert.equal(c.property, 'font-size');
+  assert.equal(c.value, '16px');
+});
+
+test('md:text-base → breakpoint=md, font-size=16px', () => {
+  const c = classifyUtility('md:text-base');
+  assert.equal(c.breakpoint, 'md');
+  assert.equal(c.property, 'font-size');
+  assert.equal(c.value, '16px');
+});
+
+test('hover:text-xl → state=hover, font-size=20px', () => {
+  const c = classifyUtility('hover:text-xl');
+  assert.equal(c.state, 'hover');
+  assert.equal(c.property, 'font-size');
+  assert.equal(c.value, '20px');
+});
+
+test('2xl:hover:text-4xl → breakpoint=2xl + state=hover + 36px', () => {
+  const c = classifyUtility('2xl:hover:text-4xl');
+  assert.equal(c.breakpoint, '2xl');
+  assert.equal(c.state, 'hover');
+  assert.equal(c.property, 'font-size');
+  assert.equal(c.value, '36px');
 });
 
 test('text-[#fff] → color', () => {

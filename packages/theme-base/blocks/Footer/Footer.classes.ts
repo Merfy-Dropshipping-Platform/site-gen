@@ -45,12 +45,12 @@ export const FooterClasses = {
     nav: 'flex flex-col gap-3',
   },
   link: '[font-family:var(--font-body)] font-light leading-[1.4] text-[16px] text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] transition-colors',
-  email: '[font-family:var(--font-body)] font-light leading-[1.4] text-[16px] text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] transition-colors',
+  email: '[font-family:var(--font-body)] font-light leading-[1.4] text-[16px] text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] transition-colors hover:opacity-[var(--footer-email-opacity-hover)]',
   socialRow: 'flex gap-4 items-center justify-end',
   socialLink: 'w-6 h-6 flex items-center justify-center text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] transition-colors',
   copyright: {
     // Figma 905-19155: full-width black bar, h-100, centered text 20px light white
-    bar: 'w-full h-[var(--footer-copyright-bar-height)] sm:h-20 md:h-24 lg:h-[100px] flex items-center justify-center py-6 sm:py-0 bg-[rgb(var(--color-heading))] text-[rgb(var(--color-bg))] px-[var(--footer-copyright-bar-padding-x)]',
+    bar: 'w-full h-[var(--footer-copyright-bar-height)] sm:h-20 md:h-24 lg:h-[100px] flex items-center justify-center py-[var(--footer-copyright-bar-padding-y)] sm:py-0 bg-[rgb(var(--color-heading))] text-[rgb(var(--color-bg))] px-[var(--footer-copyright-bar-padding-x)] min-h-[var(--footer-copyright-bar-min-height)]',
     text: '[font-family:var(--font-body)] font-light leading-[1.21] text-[var(--footer-copyright-text-color)] text-center px-4 sm:px-6',
   },
   /**

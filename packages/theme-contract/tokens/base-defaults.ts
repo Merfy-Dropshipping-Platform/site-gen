@@ -305,4 +305,8 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   '--header-header-color': 'white',
   '--header-logo-link-color': 'var(--header-logo-link-font-size)',
   '--header-cart-badge-color': 'var(--vanilla-dark)',
+  // ── v2 миграция — запасные значения (добавлено скриптом)
+  '--footer-email-opacity-hover': '0.7',
+  '--footer-copyright-bar-padding-y': '24px',
+  '--footer-copyright-bar-min-height': '64px',
 };

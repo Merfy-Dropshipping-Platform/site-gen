@@ -35,6 +35,17 @@ async function realGhFetch({ owner, repo, file, ref }) {
   }
 }
 
+// Возможные относительные пути для одного блока в репо темы.
+// rose-theme/main кладёт `Hero` в `src/components/sections/Hero.astro`, тогда как
+// `Header` лежит в `src/components/Header.astro`. Пробуем варианты по порядку.
+function candidatePaths(block) {
+  return [
+    `src/components/${block}.astro`,
+    `src/components/sections/${block}.astro`,
+    `src/components/${block.toLowerCase()}/${block}.astro`,
+  ];
+}
+
 /**
  * Получить файл темы из github (или из кэша).
  * @param {object} opts
@@ -54,7 +65,6 @@ export async function getThemeSource({
 }) {
   const cacheFile = path.join(sourcesDir, `${theme}-${block}.astro`);
   const metaFile = path.join(sourcesDir, `${theme}-${block}.meta.json`);
-  const sourceUrl = `github://${owner}/${theme}-theme@main:src/components/${block}.astro`;
 
   if (!refresh) {
     try {
@@ -67,43 +77,49 @@ export async function getThemeSource({
         source: cached,
         fetchedAt: meta.fetchedAt || 'unknown',
         cached: true,
-        sourceUrl,
+        sourceUrl: meta.sourceUrl ||
+          `github://${owner}/${theme}-theme@main:src/components/${block}.astro`,
       };
     } catch {
       /* fall through to fetch */
     }
   }
 
-  const result = await _fetcher({
-    owner,
-    repo: `${theme}-theme`,
-    file: `src/components/${block}.astro`,
-  });
-
-  if (!result.ok) {
-    if (result.status === 404) {
-      throw new Error(
-        `Файл src/components/${block}.astro не найден в репо ${owner}/${theme}-theme. ` +
-        `Проверь что:\n` +
-        `  1) Блок реально есть в репо темы\n` +
-        `  2) Имя файла совпадает (регистр важен)\n` +
-        `  3) У тебя есть доступ: gh auth status\n` +
-        `Ошибка gh: ${result.error}`,
+  const candidates = candidatePaths(block);
+  let lastError = '';
+  for (const filePath of candidates) {
+    const result = await _fetcher({
+      owner,
+      repo: `${theme}-theme`,
+      file: filePath,
+    });
+    if (result.ok) {
+      const sourceUrl = `github://${owner}/${theme}-theme@main:${filePath}`;
+      const fetchedAt = new Date().toISOString();
+      await fs.mkdir(sourcesDir, { recursive: true });
+      await fs.writeFile(cacheFile, result.body, 'utf-8');
+      await fs.writeFile(
+        metaFile,
+        JSON.stringify({ fetchedAt, sourceUrl, theme, block }, null, 2),
+        'utf-8',
       );
+      return { source: result.body, fetchedAt, cached: false, sourceUrl };
+    }
+    if (result.status === 404) {
+      lastError = result.error;
+      continue;
     }
     throw new Error(
       `Не удалось получить ${block} из ${owner}/${theme}-theme: ${result.error}`,
     );
   }
-
-  const fetchedAt = new Date().toISOString();
-  await fs.mkdir(sourcesDir, { recursive: true });
-  await fs.writeFile(cacheFile, result.body, 'utf-8');
-  await fs.writeFile(
-    metaFile,
-    JSON.stringify({ fetchedAt, sourceUrl, theme, block }, null, 2),
-    'utf-8',
+  throw new Error(
+    `Файл блока ${block} не найден в репо ${owner}/${theme}-theme. ` +
+    `Пробовали:\n  ${candidates.join('\n  ')}\n` +
+    `Проверь что:\n` +
+    `  1) Блок реально есть в репо темы\n` +
+    `  2) Имя файла совпадает (регистр важен)\n` +
+    `  3) У тебя есть доступ: gh auth status\n` +
+    `Ошибка gh: ${lastError}`,
   );
-
-  return { source: result.body, fetchedAt, cached: false, sourceUrl };
 }

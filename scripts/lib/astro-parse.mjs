@@ -342,6 +342,138 @@ export const BLOCK_ELEMENT_SELECTORS = {
         ),
     },
   ],
+
+  // ── Hero ────────────────────────────────────────────────────────────────
+  // Покрывает оба источника:
+  //   1) База theme-base/blocks/Hero/Hero.astro — variants centered/split/overlay/grid-4/split-bloom + carousel mode.
+  //      Маркеры: <section data-puck-component-id+data-variant>, <h1>, <p>, <a class={C.ctaButton}>,
+  //      <img class={C.image[variant]}>, <header class="flex flex-col gap-1 ...">,
+  //      обёртка контента <div class:list=[..., 'flex flex-col gap-4 ...']> и контейнер C.container.
+  //   2) Источник rose-theme/src/components/sections/Hero.astro — overlay-style стейдж:
+  //      <section aria-labelledby="hero-title">, <div class="relative w-full min-h-[...]"> — стейдж,
+  //      <RosePicture> → <img class="absolute inset-0 z-0 size-full object-cover ...">,
+  //      <div class="absolute inset-0 z-10 flex w-full flex-col items-center justify-end ..."> — overlay,
+  //      <div class="flex w-full max-w-[540px] flex-col items-center gap-6 ..."> — content column,
+  //      <div class="flex flex-col items-center gap-2 text-center ..."> — header,
+  //      <h1 id="hero-title">, <p>, <a> с !bg-white.
+  //
+  // Совпадения по ключам ↔ Hero.classes.ts:
+  //   root, container, header, title, subtitle, ctaButton, image
+  //   (и контент/overlay/stage слои — они частично выражены inline и через variant-specific подклассы).
+  Hero: [
+    {
+      key: 'root',
+      // Базовый <section> — корневой стейдж. У базы class:list=[C.root, ...],
+      // у rose <section class="relative w-full overflow-hidden bg-white" aria-labelledby="hero-title">.
+      match: (n) => n.name === 'section' && (
+        hasAttr(n, 'data-puck-component-id') ||
+        getAttrValue(n, 'aria-labelledby') === 'hero-title' ||
+        // База без id (preview) — fallback: section с overflow-hidden+w-full.
+        (hasAnyClassToken(n, 'relative') && hasAnyClassToken(n, 'overflow-hidden') && hasAnyClassToken(n, 'w-full'))
+      ),
+    },
+    {
+      key: 'stage',
+      // База: первый <div> внутри overlay/centered variant — слой с фоновым изображением + контентом.
+      // У базы это часть class:list через inner[variant]; чаще всего находится через
+      // div с class содержащим 'absolute inset-0 bg-cover bg-center'.
+      // У rose stage — <div class="relative w-full min-h-[min(70svh,560px)] sm:min-h-[560px] ...">.
+      match: (n) => n.name === 'div' && (
+        // rose: уникальный stage с min-h-* и aspect-* в одной строке.
+        (hasAnyClassToken(n, 'min-h-[min(70svh,560px)]')) ||
+        (hasAnyClassToken(n, 'aspect-[10/15]') && hasAnyClassToken(n, 'relative')) ||
+        // База: stage = слой с background-image (variant=overlay).
+        (hasAnyClassToken(n, 'absolute') && hasAnyClassToken(n, 'bg-cover') && hasAnyClassToken(n, 'bg-center'))
+      ),
+    },
+    {
+      key: 'container',
+      // База: <div class:list={[C.container, innerClass, vAlignClass, 'relative z-10']}>.
+      // C.container = 'mx-auto max-w-[var(--container-max-width)] px-4'.
+      // rose: contentовая обёртка верхнего уровня с max-w + центрированием. В rose такого слоя нет —
+      // используется stage + overlay, поэтому здесь key совпадает только с базой.
+      match: (n) => n.name === 'div' && (
+        hasAnyClassToken(n, 'max-w-[var(--container-max-width)]') ||
+        hasAnyClassListToken(n, 'mx-auto')
+      ),
+    },
+    {
+      key: 'overlay',
+      // База: variant=centered/overlay рендерит <div class="absolute inset-0 -z-[5]" style=overlay>.
+      // rose: контентный слой <div class="absolute inset-0 z-10 flex w-full flex-col items-center justify-end ...">.
+      // Маркер: div с inset-0 (полное наложение) и z-10/z-* контентного позиционирования.
+      match: (n) => n.name === 'div' && hasAnyClassToken(n, 'absolute') && (
+        // rose контентный overlay со специальной комбинацией классов:
+        (hasAnyClassToken(n, 'inset-0') && hasAnyClassToken(n, 'z-10') && hasAnyClassToken(n, 'justify-end')) ||
+        // База: затемняющий слой (variant centered)
+        (hasAnyClassToken(n, 'inset-0') && hasAnyClassToken(n, '-z-[5]'))
+      ),
+    },
+    {
+      key: 'contentColumn',
+      // База: <div class:list={[..., 'flex flex-col gap-4 sm:gap-5 md:gap-6 ... w-full px-4 sm:px-6 md:px-8', ...]}>.
+      // rose: <div class="flex w-full max-w-[540px] flex-col items-center gap-6 sm:gap-10 md:max-w-[640px]">.
+      match: (n) => n.name === 'div' && hasAnyClassListToken(n, 'flex flex-col gap-4 sm:gap-5 md:gap-6 lg:gap-5 xl:gap-[25px] w-full px-4 sm:px-6 md:px-8') ||
+        (n.name === 'div' &&
+         hasAnyClassToken(n, 'flex') && hasAnyClassToken(n, 'flex-col') && (
+           hasAnyClassToken(n, 'max-w-[540px]') ||
+           hasAnyClassToken(n, 'max-w-[640px]')
+         )),
+    },
+    {
+      key: 'header',
+      // База: <header class="flex flex-col gap-1 sm:gap-2 md:gap-3 lg:gap-4 xl:gap-[5px]">.
+      // rose: <div class="flex flex-col items-center gap-2 text-center sm:gap-3 md:gap-4"> — фактически
+      // выполняет ту же роль обёртки h1+p, но это <div>. Допускаем оба тега.
+      match: (n) => (n.name === 'header' || (n.name === 'div' && hasAnyClassToken(n, 'items-center') && hasAnyClassToken(n, 'text-center') && hasAnyClassToken(n, 'flex-col'))) &&
+        hasAnyClassToken(n, 'gap-2') || hasAnyClassToken(n, 'gap-1') ||
+        (n.name === 'header'),
+    },
+    {
+      key: 'title',
+      // <h1> — заголовок Hero. В rose у него id="hero-title", в базе data-puck-subsection-field="heading".
+      match: (n) => n.name === 'h1' && (
+        getAttrValue(n, 'id') === 'hero-title' ||
+        getAttrValue(n, 'data-puck-subsection-field') === 'heading' ||
+        hasAnyClassListToken(n, '[font-family:var(--font-heading)]')
+      ),
+    },
+    {
+      key: 'subtitle',
+      // <p> сразу после h1, текстовый подзаголовок.
+      // База: class={C.subtitle} = 'mt-2 [font-family:var(--font-body)] text-[length:var(--hero-text-size,16px)] ...'.
+      // rose: class="hero-animate-2 max-w-xl px-1 font-manrope text-[14px] font-normal leading-none text-white sm:text-[16px] ...".
+      match: (n) => n.name === 'p' && (
+        getAttrValue(n, 'data-puck-subsection-field') === 'text' ||
+        hasAnyClassListToken(n, '[font-family:var(--font-body)]') ||
+        (hasAnyClassToken(n, 'font-manrope') && hasAnyClassToken(n, 'max-w-xl'))
+      ),
+    },
+    {
+      key: 'ctaButton',
+      // База: <a class={C.ctaButton} ...> с data-puck-subsection-field="primaryButton".
+      // rose: <a href={ctaLink} class="inline-flex h-10 min-h-10 w-auto min-w-[120px] ... !bg-white ... !text-[#000000]">.
+      match: (n) => n.name === 'a' && (
+        getAttrValue(n, 'data-puck-subsection-field') === 'primaryButton' ||
+        // База C.ctaButton (часть class:list — литерал виден через hasAnyClassListToken)
+        hasAnyClassListToken(n, 'inline-flex items-center justify-center h-[var(--size-hero-button-h)] rounded-[var(--radius-button)]') ||
+        // rose CTA — уникально по !bg-white + min-w-[120px]
+        (hasAnyClassToken(n, 'inline-flex') && hasAnyClassToken(n, '!bg-white') && hasAnyClassToken(n, 'min-w-[120px]'))
+      ),
+    },
+    {
+      key: 'image',
+      // База: <img class={C.image[variant]}>. У rose используется компонент <RosePicture>
+      // который раскрывается в <img class="absolute inset-0 z-0 size-full object-cover object-center">.
+      // Маркер: img с absolute+inset-0 (background-fill в overlay) или с rose-specific size-full.
+      match: (n) => n.name === 'img' && (
+        // rose specific
+        (hasAnyClassToken(n, 'size-full') && hasAnyClassToken(n, 'object-cover')) ||
+        // База centered/overlay image
+        (hasAnyClassToken(n, 'absolute') && hasAnyClassToken(n, 'inset-0') && hasAnyClassToken(n, 'object-cover'))
+      ),
+    },
+  ],
 };
 
 /**

@@ -609,3 +609,204 @@ test('classifyTokens: rose Footer submit button (строка 69 источни�
   assert.equal(map['transform|active|'], 'scale(0.95)',
     'active:scale-95 должен классифицироваться как transform/active');
 });
+
+// ───────── Hero блок ─────────
+// Покрывает оба источника:
+//   1) База theme-base/blocks/Hero/Hero.astro — variant=centered/overlay/split/grid-4/split-bloom.
+//      Маркеры: <section data-puck-component-id+data-variant>, <h1>,
+//      <p>, <a> с data-puck-subsection-field, <img> с classList из C.image[variant],
+//      <header> или <div> внутри content column.
+//   2) Источник rose-theme/src/components/sections/Hero.astro — overlay-стейдж:
+//      <section aria-labelledby="hero-title">, <div class="relative w-full min-h-[...]">,
+//      <RosePicture> → <img class="absolute inset-0 z-0 size-full object-cover ...">,
+//      <div class="absolute inset-0 z-10 flex w-full flex-col items-center justify-end ...">,
+//      <h1 id="hero-title">, <p class="font-manrope max-w-xl ...">, <a class="!bg-white min-w-[120px] ...">.
+
+const MINIMAL_HERO_BASE_ASTRO = `---
+const x = 1;
+---
+<section
+  class:list={['relative w-full overflow-hidden', 'color-scheme-default']}
+  data-puck-component-id="hero-1"
+  data-variant="centered"
+  style="padding-top:80px;"
+>
+  <img alt="" class="absolute inset-0 -z-10 object-cover w-full h-full" />
+  <div class="absolute inset-0 -z-[5]" style="background-color: rgb(0 0 0 / 0.5);" aria-hidden="true"></div>
+  <div class:list={['mx-auto max-w-[var(--container-max-width)] px-4', 'flex flex-col py-12 min-h-[inherit]', 'justify-center', 'relative z-10']} style="min-height: inherit;">
+    <div class:list={['flex flex-col gap-4 sm:gap-5 md:gap-6 lg:gap-5 xl:gap-[25px] w-full px-4 sm:px-6 md:px-8', 'items-center text-center']}>
+      <header class="flex flex-col gap-1 sm:gap-2 md:gap-3 lg:gap-4 xl:gap-[5px]">
+        <h1 class:list={['[font-family:var(--font-heading)] [font-weight:var(--weight-heading)] text-[length:var(--hero-heading-size,var(--size-hero-heading))] leading-tight text-[rgb(var(--color-heading))]']} data-puck-subsection-field="heading">Hero Title</h1>
+        <p class:list={['mt-2 [font-family:var(--font-body)] text-[length:var(--hero-text-size,16px)] text-[rgb(var(--color-text))]']} data-puck-subsection-field="text">Hero subtitle</p>
+      </header>
+      <div class="flex flex-wrap gap-[25px] justify-center">
+        <a href="/shop" class:list={['inline-flex items-center justify-center h-[var(--size-hero-button-h)] rounded-[var(--radius-button)] px-4 text-[16px] [font-family:var(--font-body)] border bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))]']} data-puck-subsection-field="primaryButton">Купить</a>
+      </div>
+    </div>
+  </div>
+</section>
+`;
+
+// Фикстура источника rose Hero (упрощённая копия sources/rose-Hero.astro).
+// Маркеры: aria-labelledby="hero-title", stage с min-h-[min(70svh,560px)] и aspect-[10/15],
+// <img> с size-full+object-cover (после раскрытия RosePicture),
+// overlay-content с inset-0+z-10+justify-end, max-w-[540px] content column,
+// inner header — <div items-center text-center>, h1 id="hero-title",
+// p с font-manrope+max-w-xl, <a> с !bg-white+min-w-[120px].
+const MINIMAL_HERO_ROSE_ASTRO = `---
+const x = 1;
+---
+<section
+  class="relative w-full overflow-hidden bg-white"
+  aria-labelledby="hero-title"
+>
+  <div
+    class="relative w-full min-h-[min(70svh,560px)] sm:min-h-[560px] md:min-h-[420px] lg:min-h-[460px] aspect-[10/15] sm:aspect-[4/5] md:aspect-[4/3] lg:aspect-[16/9] xl:aspect-[2/1] 2xl:aspect-[21/9]"
+  >
+    <img
+      src="/images/hero.png"
+      alt="Hero"
+      loading="eager"
+      class="absolute inset-0 z-0 size-full object-cover object-center"
+    />
+    <div
+      class="absolute inset-0 z-10 flex w-full flex-col items-center justify-end px-4 pb-10 pt-28 sm:px-5 sm:pb-11 sm:pt-32 md:px-10 md:pb-14 md:pt-36 lg:px-16 lg:pb-16 xl:px-20 xl:pb-20 2xl:px-[280px]"
+    >
+      <div class="flex w-full max-w-[540px] flex-col items-center gap-6 sm:gap-10 md:max-w-[640px]">
+        <div class="flex flex-col items-center gap-2 text-center sm:gap-3 md:gap-4">
+          <h1
+            id="hero-title"
+            class="hero-animate-1 font-comfortaa !text-[20px] !font-normal !leading-none uppercase tracking-normal text-white sm:!text-[28px] md:!text-[36px] lg:!text-[40px]"
+          >Rose Site</h1>
+          <p
+            class="hero-animate-2 max-w-xl px-1 font-manrope text-[14px] font-normal leading-none text-white sm:text-[16px] md:text-[18px] lg:text-[20px]"
+          >Там, где классика встречается с характером</p>
+        </div>
+        <div class="hero-animate-3 flex w-full flex-col items-center justify-center">
+          <a
+            href="/catalog"
+            class="inline-flex h-10 min-h-10 w-auto min-w-[120px] items-center justify-center rounded !border-0 !bg-white px-3 py-2.5 font-manrope text-[14px] font-normal leading-none !text-[#000000] transition-opacity hover:opacity-90 sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:rounded-[6px] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]"
+          >В каталог</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+`;
+
+test('Hero base: находит root по data-puck-component-id', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_HERO_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Hero,
+    blockName: 'Hero',
+  });
+  assert.ok(classMap.root.found, 'root должен быть найден');
+});
+
+test('Hero base: находит title по data-puck-subsection-field=heading', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_HERO_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Hero,
+    blockName: 'Hero',
+  });
+  assert.ok(classMap.title.found);
+});
+
+test('Hero base: находит subtitle по data-puck-subsection-field=text', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_HERO_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Hero,
+    blockName: 'Hero',
+  });
+  assert.ok(classMap.subtitle.found);
+});
+
+test('Hero base: находит ctaButton по data-puck-subsection-field=primaryButton', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_HERO_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Hero,
+    blockName: 'Hero',
+  });
+  assert.ok(classMap.ctaButton.found);
+});
+
+test('Hero base: находит image (img inset-0 object-cover)', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_HERO_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Hero,
+    blockName: 'Hero',
+  });
+  assert.ok(classMap.image.found);
+});
+
+test('Hero base: находит header', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_HERO_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Hero,
+    blockName: 'Hero',
+  });
+  assert.ok(classMap.header.found);
+});
+
+test('Hero rose: находит root по aria-labelledby="hero-title"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_HERO_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Hero,
+    blockName: 'Hero',
+  });
+  assert.ok(classMap.root.found);
+  assert.ok(classMap.root.staticClass.includes('bg-white'));
+});
+
+test('Hero rose: находит title по id="hero-title"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_HERO_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Hero,
+    blockName: 'Hero',
+  });
+  assert.ok(classMap.title.found);
+  assert.ok(classMap.title.staticClass.includes('font-comfortaa'));
+});
+
+test('Hero rose: находит subtitle по font-manrope+max-w-xl', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_HERO_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Hero,
+    blockName: 'Hero',
+  });
+  assert.ok(classMap.subtitle.found);
+});
+
+test('Hero rose: находит ctaButton по !bg-white+min-w-[120px]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_HERO_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Hero,
+    blockName: 'Hero',
+  });
+  assert.ok(classMap.ctaButton.found);
+  assert.ok(classMap.ctaButton.staticClass.includes('!bg-white'));
+});
+
+test('Hero rose: находит image (size-full+object-cover)', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_HERO_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Hero,
+    blockName: 'Hero',
+  });
+  assert.ok(classMap.image.found);
+  assert.ok(classMap.image.staticClass.includes('size-full'));
+});
+
+test('Hero rose: находит stage (min-h-[min(70svh,560px)])', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_HERO_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Hero,
+    blockName: 'Hero',
+  });
+  assert.ok(classMap.stage.found);
+  assert.ok(classMap.stage.staticClass.includes('min-h-[min(70svh,560px)]'));
+});
+
+test('Hero rose: находит overlay (inset-0+z-10+justify-end)', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_HERO_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Hero,
+    blockName: 'Hero',
+  });
+  assert.ok(classMap.overlay.found);
+});
+
+test('Hero rose: находит contentColumn по max-w-[540px]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_HERO_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Hero,
+    blockName: 'Hero',
+  });
+  assert.ok(classMap.contentColumn.found);
+});

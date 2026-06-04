@@ -311,4 +311,10 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   '--footer-copyright-bar-min-height': '64px',
   // ── v2 миграция — запасные значения (добавлено скриптом)
   '--hero-title-font-size': 'var(--hero-heading-size,var(--size-hero-heading))',
+  // ── v2 миграция — запасные значения (добавлено скриптом)
+  '--collections-root-background-color': 'var(--vanilla-surface)',
+  '--collections-root-padding-y': '80px',
+  '--collections-root-padding-y-md': '112px',
+  '--collections-heading-color': 'var(--vanilla-announcement-bg)',
+  '--collections-heading-font-size': '20px',
 };

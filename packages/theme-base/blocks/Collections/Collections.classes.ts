@@ -4,7 +4,7 @@
 // centered label under each ("Коллекция RIVIERA", etc.).
 export const CollectionsClasses = {
   root:
-    'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))] px-[var(--collections-root-padding-x)] pb-[var(--collections-root-padding-bottom)] pt-[var(--collections-root-padding-top)] sm:px-[var(--collections-root-padding-x-sm)] sm:pb-[var(--collections-root-padding-bottom-sm)] sm:pt-[var(--collections-root-padding-top-sm)] md:px-[var(--collections-root-padding-x-md)] md:pb-[var(--collections-root-padding-bottom-md)] md:pt-[var(--collections-root-padding-top-md)] lg:px-[var(--collections-root-padding-x-lg)] lg:pb-[var(--collections-root-padding-bottom-lg)] lg:pt-[var(--collections-root-padding-top-lg)] xl:px-[var(--collections-root-padding-x-xl)] xl:pb-[var(--collections-root-padding-bottom-xl)] xl:pt-[var(--collections-root-padding-top-xl)] 2xl:px-[var(--collections-root-padding-x-2xl)]',
+    'relative w-full bg-[var(--collections-root-background-color)] text-[rgb(var(--color-text))] px-[var(--collections-root-padding-x)] pb-[var(--collections-root-padding-bottom)] pt-[var(--collections-root-padding-top)] sm:px-[var(--collections-root-padding-x-sm)] sm:pb-[var(--collections-root-padding-bottom-sm)] sm:pt-[var(--collections-root-padding-top-sm)] md:px-[var(--collections-root-padding-x-md)] md:pb-[var(--collections-root-padding-bottom-md)] md:pt-[var(--collections-root-padding-top-md)] lg:px-[var(--collections-root-padding-x-lg)] lg:pb-[var(--collections-root-padding-bottom-lg)] lg:pt-[var(--collections-root-padding-top-lg)] xl:px-[var(--collections-root-padding-x-xl)] xl:pb-[var(--collections-root-padding-bottom-xl)] xl:pt-[var(--collections-root-padding-top-xl)] 2xl:px-[var(--collections-root-padding-x-2xl)] py-[var(--collections-root-padding-y)] md:py-[var(--collections-root-padding-y-md)]',
   container:
     'mx-auto max-w-[var(--collections-container-max-width)] px-4 w-[var(--collections-container-width)] gap-[var(--collections-container-gap)] md:gap-[var(--collections-container-gap-md)]',
   // Размеры заголовка/подзаголовка — не зашиваем, чтобы titleSizeClass /
@@ -12,7 +12,7 @@ export const CollectionsClasses = {
   // Раньше зашитый `text-[14px]` (arbitrary value) перебивал utility-классы
   // в каскаде → ползунок Размер не работал.
   heading:
-    '[font-family:var(--font-heading)] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] mb-2',
+    '[font-family:var(--font-heading)] tracking-[0.1em] uppercase text-[var(--collections-heading-color)] mb-2 text-[var(--collections-heading-font-size)]',
   subtitle:
     '[font-family:var(--font-body)] text-[rgb(var(--color-text))]/60 mb-10',
   grid:

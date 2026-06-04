@@ -1,353 +1,108 @@
 {
   "block": "Collections",
-  "theme": "rose",
-  "source": "github://Merfy-Dropshipping-Platform/rose-theme@main:src/components/sections/Collections.astro",
-  "fetchedAt": "2026-06-04T14:09:39.614Z",
+  "theme": "vanilla",
+  "source": "github://Merfy-Dropshipping-Platform/vanilla-theme@main:src/components/sections/Collections.astro",
+  "fetchedAt": "2026-06-04T17:36:55.808Z",
   "elementsFound": 9,
-  "tokensProposed": 24,
-  "tokensFiltered": 1,
+  "tokensProposed": 6,
+  "tokensFiltered": 0,
   "elements": {
     "root": {
-      "padding-x": {
+      "background-color": {
         "default": {
-          "base": "(нет)",
-          "source": "16px"
-        },
-        "sm": {
-          "base": "(нет)",
-          "source": "20px"
-        },
-        "md": {
-          "base": "(нет)",
-          "source": "40px"
-        },
-        "lg": {
-          "base": "(нет)",
-          "source": "64px"
-        },
-        "xl": {
+          "base": "rgb(var(--color-bg))",
+          "source": "var(--vanilla-surface)"
+        }
+      },
+      "padding-y": {
+        "default": {
           "base": "(нет)",
           "source": "80px"
         },
-        "2xl": {
-          "base": "(нет)",
-          "source": "280px"
-        }
-      },
-      "padding-bottom": {
-        "default": {
-          "base": "(нет)",
-          "source": "56px"
-        },
-        "sm": {
-          "base": "(нет)",
-          "source": "64px"
-        },
         "md": {
           "base": "(нет)",
-          "source": "100px"
-        },
-        "lg": {
-          "base": "(нет)",
-          "source": "120px"
-        },
-        "xl": {
-          "base": "(нет)",
-          "source": "140px"
-        }
-      },
-      "padding-top": {
-        "default": {
-          "base": "(нет)",
-          "source": "56px"
-        },
-        "sm": {
-          "base": "(нет)",
-          "source": "64px"
-        },
-        "md": {
-          "base": "(нет)",
-          "source": "100px"
-        },
-        "lg": {
-          "base": "(нет)",
-          "source": "120px"
-        },
-        "xl": {
-          "base": "(нет)",
-          "source": "140px"
+          "source": "112px"
         }
       }
     },
-    "container": {
-      "max-width": {
+    "heading": {
+      "color": {
         "default": {
-          "base": "var(--container-max-width)",
-          "source": "1320px"
+          "base": "rgb(var(--color-heading))",
+          "source": "var(--vanilla-announcement-bg)"
         }
       },
-      "width": {
+      "font-size": {
         "default": {
           "base": "(нет)",
-          "source": "full"
-        }
-      },
-      "gap": {
-        "default": {
-          "base": "(нет)",
-          "source": "32px"
-        },
-        "md": {
-          "base": "(нет)",
-          "source": "40px"
+          "source": "20px"
         }
       }
     },
     "grid": {
       "gap": {
         "default": {
-          "base": "(нет)",
-          "source": "24px"
-        },
-        "sm": {
-          "base": "(нет)",
-          "source": "20px"
-        },
-        "md": {
-          "base": "(нет)",
-          "source": "20px"
-        },
-        "lg": {
-          "base": "(нет)",
-          "source": "24px"
+          "base": "var(--collections-grid-gap)",
+          "source": "16px"
         }
       }
     }
   },
   "tokensSuggested": [
     {
-      "name": "--collections-root-padding-x",
-      "fallback": "16px",
-      "themeValue": "16px",
+      "name": "--collections-root-background-color",
+      "fallback": "var(--vanilla-surface)",
+      "themeValue": "var(--vanilla-surface)",
       "element": "root",
-      "property": "padding-x",
+      "property": "background-color",
       "state": null,
       "breakpoint": null
     },
     {
-      "name": "--collections-root-padding-bottom",
-      "fallback": "56px",
-      "themeValue": "56px",
-      "element": "root",
-      "property": "padding-bottom",
-      "state": null,
-      "breakpoint": null
-    },
-    {
-      "name": "--collections-root-padding-top",
-      "fallback": "56px",
-      "themeValue": "56px",
-      "element": "root",
-      "property": "padding-top",
-      "state": null,
-      "breakpoint": null
-    },
-    {
-      "name": "--collections-root-padding-x-sm",
-      "fallback": "20px",
-      "themeValue": "20px",
-      "element": "root",
-      "property": "padding-x",
-      "state": null,
-      "breakpoint": "sm"
-    },
-    {
-      "name": "--collections-root-padding-bottom-sm",
-      "fallback": "64px",
-      "themeValue": "64px",
-      "element": "root",
-      "property": "padding-bottom",
-      "state": null,
-      "breakpoint": "sm"
-    },
-    {
-      "name": "--collections-root-padding-top-sm",
-      "fallback": "64px",
-      "themeValue": "64px",
-      "element": "root",
-      "property": "padding-top",
-      "state": null,
-      "breakpoint": "sm"
-    },
-    {
-      "name": "--collections-root-padding-x-md",
-      "fallback": "40px",
-      "themeValue": "40px",
-      "element": "root",
-      "property": "padding-x",
-      "state": null,
-      "breakpoint": "md"
-    },
-    {
-      "name": "--collections-root-padding-bottom-md",
-      "fallback": "100px",
-      "themeValue": "100px",
-      "element": "root",
-      "property": "padding-bottom",
-      "state": null,
-      "breakpoint": "md"
-    },
-    {
-      "name": "--collections-root-padding-top-md",
-      "fallback": "100px",
-      "themeValue": "100px",
-      "element": "root",
-      "property": "padding-top",
-      "state": null,
-      "breakpoint": "md"
-    },
-    {
-      "name": "--collections-root-padding-x-lg",
-      "fallback": "64px",
-      "themeValue": "64px",
-      "element": "root",
-      "property": "padding-x",
-      "state": null,
-      "breakpoint": "lg"
-    },
-    {
-      "name": "--collections-root-padding-bottom-lg",
-      "fallback": "120px",
-      "themeValue": "120px",
-      "element": "root",
-      "property": "padding-bottom",
-      "state": null,
-      "breakpoint": "lg"
-    },
-    {
-      "name": "--collections-root-padding-top-lg",
-      "fallback": "120px",
-      "themeValue": "120px",
-      "element": "root",
-      "property": "padding-top",
-      "state": null,
-      "breakpoint": "lg"
-    },
-    {
-      "name": "--collections-root-padding-x-xl",
+      "name": "--collections-root-padding-y",
       "fallback": "80px",
       "themeValue": "80px",
       "element": "root",
-      "property": "padding-x",
-      "state": null,
-      "breakpoint": "xl"
-    },
-    {
-      "name": "--collections-root-padding-bottom-xl",
-      "fallback": "140px",
-      "themeValue": "140px",
-      "element": "root",
-      "property": "padding-bottom",
-      "state": null,
-      "breakpoint": "xl"
-    },
-    {
-      "name": "--collections-root-padding-top-xl",
-      "fallback": "140px",
-      "themeValue": "140px",
-      "element": "root",
-      "property": "padding-top",
-      "state": null,
-      "breakpoint": "xl"
-    },
-    {
-      "name": "--collections-root-padding-x-2xl",
-      "fallback": "280px",
-      "themeValue": "280px",
-      "element": "root",
-      "property": "padding-x",
-      "state": null,
-      "breakpoint": "2xl"
-    },
-    {
-      "name": "--collections-container-max-width",
-      "fallback": "1320px",
-      "themeValue": "1320px",
-      "element": "container",
-      "property": "max-width",
+      "property": "padding-y",
       "state": null,
       "breakpoint": null
     },
     {
-      "name": "--collections-container-width",
-      "fallback": "full",
-      "themeValue": "full",
-      "element": "container",
-      "property": "width",
-      "state": null,
-      "breakpoint": null
-    },
-    {
-      "name": "--collections-container-gap",
-      "fallback": "32px",
-      "themeValue": "32px",
-      "element": "container",
-      "property": "gap",
-      "state": null,
-      "breakpoint": null
-    },
-    {
-      "name": "--collections-container-gap-md",
-      "fallback": "40px",
-      "themeValue": "40px",
-      "element": "container",
-      "property": "gap",
+      "name": "--collections-root-padding-y-md",
+      "fallback": "112px",
+      "themeValue": "112px",
+      "element": "root",
+      "property": "padding-y",
       "state": null,
       "breakpoint": "md"
+    },
+    {
+      "name": "--collections-heading-color",
+      "fallback": "var(--vanilla-announcement-bg)",
+      "themeValue": "var(--vanilla-announcement-bg)",
+      "element": "heading",
+      "property": "color",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--collections-heading-font-size",
+      "fallback": "20px",
+      "themeValue": "20px",
+      "element": "heading",
+      "property": "font-size",
+      "state": null,
+      "breakpoint": null
     },
     {
       "name": "--collections-grid-gap",
-      "fallback": "24px",
-      "themeValue": "24px",
+      "fallback": "var(--collections-grid-gap)",
+      "themeValue": "16px",
       "element": "grid",
       "property": "gap",
       "state": null,
       "breakpoint": null
-    },
-    {
-      "name": "--collections-grid-gap-sm",
-      "fallback": "20px",
-      "themeValue": "20px",
-      "element": "grid",
-      "property": "gap",
-      "state": null,
-      "breakpoint": "sm"
-    },
-    {
-      "name": "--collections-grid-gap-md",
-      "fallback": "20px",
-      "themeValue": "20px",
-      "element": "grid",
-      "property": "gap",
-      "state": null,
-      "breakpoint": "md"
-    },
-    {
-      "name": "--collections-grid-gap-lg",
-      "fallback": "24px",
-      "themeValue": "24px",
-      "element": "grid",
-      "property": "gap",
-      "state": null,
-      "breakpoint": "lg"
     }
   ],
-  "tokensFilteredList": [
-    {
-      "name": "--collections-root-background-color",
-      "reason": "local color in source overrides scheme-driven base — kept base scheme",
-      "base": "rgb(var(--color-bg))",
-      "source": "white"
-    }
-  ]
+  "tokensFilteredList": []
 }

@@ -50,11 +50,14 @@ describe('Theme manifest resolver (Phase 2a multi-theme wiring)', () => {
     expect(resolved.AuthModal.source).toBe('base');
   });
 
-  it('rose manifest overrides Header + Footer (regression check)', () => {
+  it('rose manifest inherits Header from base, overrides Footer (regression check)', () => {
+    // Rose Header override removed — defaults moved to theme.json blockDefaults.Header
+    // (siteTitle='Rose Theme', navigationLinks с 'Главная' первым пунктом).
+    // ThemePuckConfigController мержит blockDefaults поверх base puckConfig defaults.
     const rose = loadManifest('rose');
     const resolved = resolveBlocks(BASE_BLOCKS, rose);
 
-    expect(resolved.Header.source).toBe('theme');
+    expect(resolved.Header.source).toBe('base');
     expect(resolved.Footer.source).toBe('theme');
   });
 
@@ -124,12 +127,13 @@ describe('Theme manifest resolver (Phase 2a multi-theme wiring)', () => {
     expect(fluxJson.colorSchemes[0].tokens['--color-accent']).toBe('250 81 9');
   });
 
-  it('themes resolve Header + Footer correctly (rose/satin/flux override; vanilla/bloom base)', () => {
+  it('themes resolve Header + Footer correctly (satin/flux override Header+Footer; rose только Footer; vanilla/bloom base)', () => {
     // After spec 084 — vanilla больше не override Header/Footer.
     // After spec 089 Bundle 3 — bloom тоже отказался от override-блоков.
-    // Остальные 3 темы пока используют override (миграция на base — отдельные spec).
-    const overrideThemes: Array<'rose' | 'satin' | 'flux'> = ['rose', 'satin', 'flux'];
-    for (const id of overrideThemes) {
+    // After rose Header migration — rose Header теперь base (defaults в theme.json
+    // blockDefaults.Header). Rose Footer override пока остаётся.
+    const fullOverrideThemes: Array<'satin' | 'flux'> = ['satin', 'flux'];
+    for (const id of fullOverrideThemes) {
       const manifest = loadManifest(id);
       const resolved = resolveBlocks(BASE_BLOCKS, manifest);
       expect(resolved.Header.source).toBe('theme');
@@ -137,6 +141,14 @@ describe('Theme manifest resolver (Phase 2a multi-theme wiring)', () => {
       expect(resolved.Hero.source).toBe('base');
       expect(resolved.AuthModal.source).toBe('base');
     }
+
+    // Rose: Footer override, Header base
+    const rose = loadManifest('rose');
+    const roseResolved = resolveBlocks(BASE_BLOCKS, rose);
+    expect(roseResolved.Header.source).toBe('base');
+    expect(roseResolved.Footer.source).toBe('theme');
+    expect(roseResolved.Hero.source).toBe('base');
+    expect(roseResolved.AuthModal.source).toBe('base');
 
     // Vanilla and Bloom: no overrides, all from base
     for (const id of ['vanilla', 'bloom'] as const) {

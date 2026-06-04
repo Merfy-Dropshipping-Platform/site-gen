@@ -94,6 +94,27 @@
     "--gallery-card-price-font-size": "16px"
   },
   "blockDefaults": {
+    "Header": {
+      "siteTitle": "Rose Theme",
+      "navigationLinks": [
+        {
+          "label": "Главная",
+          "href": "/"
+        },
+        {
+          "label": "Каталог",
+          "href": "/catalog"
+        },
+        {
+          "label": "О нас",
+          "href": "/about"
+        },
+        {
+          "label": "Контакты",
+          "href": "/contacts"
+        }
+      ]
+    },
     "Footer": {
       "variant": "3-col",
       "newsletter": {
@@ -285,12 +306,6 @@
     }
   ],
   "blocks": {
-    "Header": {
-      "override": {
-        "path": "./blocks/Header",
-        "reason": "Rose uses 1920px container, 4 logo-position layouts, rose-specific SVG iconography, and scroll-up sticky transform."
-      }
-    },
     "Footer": {
       "override": {
         "path": "./blocks/Footer",

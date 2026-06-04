@@ -1,0 +1,67 @@
+---
+import { SITE_TITLE } from "../../consts";
+import RosePicture from "../img/RosePicture.astro";
+
+interface Props {
+	title?: string;
+	subtitle?: string;
+	ctaText?: string;
+	ctaLink?: string;
+	backgroundImage?: string;
+}
+
+const {
+	title = SITE_TITLE,
+	subtitle = "Там, где классика встречается с характером",
+	ctaText = "В каталог",
+	ctaLink = "/catalog",
+	backgroundImage = "/images/Главный_экран.png",
+} = Astro.props;
+
+---
+
+<section
+	class="relative w-full overflow-hidden bg-white"
+	aria-labelledby="hero-title"
+>
+	<div
+		class="relative w-full min-h-[min(70svh,560px)] sm:min-h-[560px] md:min-h-[420px] lg:min-h-[460px] aspect-[10/15] sm:aspect-[4/5] md:aspect-[4/3] lg:aspect-[16/9] xl:aspect-[2/1] 2xl:aspect-[21/9]"
+	>
+		<RosePicture
+			src={backgroundImage}
+			alt={title}
+			loading="eager"
+			fetchpriority="high"
+			class="absolute inset-0 z-0 size-full object-cover object-center"
+		/>
+
+		<div
+			class="absolute inset-0 z-10 flex w-full flex-col items-center justify-end px-4 pb-10 pt-28 sm:px-5 sm:pb-11 sm:pt-32 md:px-10 md:pb-14 md:pt-36 lg:px-16 lg:pb-16 xl:px-20 xl:pb-20 2xl:px-[280px]"
+		>
+			<div class="flex w-full max-w-[540px] flex-col items-center gap-6 sm:gap-10 md:max-w-[640px]">
+				<div class="flex flex-col items-center gap-2 text-center sm:gap-3 md:gap-4">
+					<h1
+						id="hero-title"
+						class="hero-animate-1 font-comfortaa !text-[20px] !font-normal !leading-none uppercase tracking-normal text-white sm:!text-[28px] md:!text-[36px] lg:!text-[40px]"
+					>
+						{title}
+					</h1>
+					<p
+						class="hero-animate-2 max-w-xl px-1 font-manrope text-[14px] font-normal leading-none text-white sm:text-[16px] md:text-[18px] lg:text-[20px]"
+					>
+						{subtitle}
+					</p>
+				</div>
+
+				<div class="hero-animate-3 flex w-full flex-col items-center justify-center">
+					<a
+						href={ctaLink}
+						class="inline-flex h-10 min-h-10 w-auto min-w-[120px] items-center justify-center rounded !border-0 !bg-white px-3 py-2.5 font-manrope text-[14px] font-normal leading-none !text-[#000000] transition-opacity hover:opacity-90 sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:rounded-[6px] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]"
+					>
+						{ctaText}
+					</a>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>

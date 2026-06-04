@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Hero rose</title>
+<style>
+:root {
+  --color-bg: 255 255 255;
+  --color-surface: 245 245 245;
+  --color-heading: 18 18 18;
+  --color-text: 18 18 18;
+  --color-muted: 153 153 153;
+  --color-primary: 0 0 0;
+  --color-accent: 0 0 0;
+  --color-accent-fg: 255 255 255;
+  --color-accent-2: 58 58 58;
+  --color-button-bg: 0 0 0;
+  --color-button-text: 255 255 255;
+  --color-button-border: 0 0 0;
+  --color-button-2-bg: 255 255 255;
+  --color-button-2-text: 0 0 0;
+  --color-button-2-border: 0 0 0;
+  --color-button-bg-hover: 51 51 51;
+  --color-button-text-hover: 255 255 255;
+  --color-border: 153 153 153;
+  --color-link: 0 0 0;
+  --color-input-bg: 255 255 255;
+  --color-input-border: 153 153 153;
+  --color-input-label: 153 153 153;
+  --color-input-placeholder: 153 153 153;
+  --color-error: 252 165 165;
+  --font-heading: 'Comfortaa', sans-serif;
+  --font-body: 'Manrope', sans-serif;
+  --font-cart-counter: inherit;
+  --font-powered-by: inherit;
+  --font-pagination: system-ui, sans-serif;
+  --weight-heading: 400;
+  --weight-body: 400;
+  --size-hero-heading: 32px;
+  --hero-heading-size: ;
+  --slide-min-height: 60vh;
+  --size-section-heading: 20px;
+  --size-nav-link: 16px;
+  --size-checkout-brand: 24px;
+  --size-checkout-brand-image: 32px;
+  --size-h2: 20px;
+  --size-h3: 16px;
+  --size-body: 16px;
+  --size-small: 14px;
+  --size-tiny: 12px;
+  --radius-button: 6px;
+  --radius-input: 4px;
+  --radius-card: 8px;
+  --radius-media: 8px;
+  --radius-field: 4px;
+  --spacing-section-y: 120px;
+  --spacing-grid-col-gap: 16px;
+  --spacing-grid-row-gap: 40px;
+  --catalog-sidebar-w: 220px;
+  --catalog-grid-row-gap: 16px;
+  --container-max-width: 1320px;
+  --size-hero-button-h: 48px;
+  --size-newsletter-form-w: 430px;
+  --size-logo-width: 24px;
+  --size-card-border: 1px;
+  --promo-banner-h-thin: 40px;
+  --color-bottom-strip-bg: 0 0 0;
+  --color-bottom-strip-text: 255 255 255;
+  --color-header-bg: ;
+  --size-header-h: ;
+  --button-style: solid;
+  --footer-layout: 3-column;
+  --contact-form-layout: wide;
+  --cart-type: drawer;
+  --card-style: standard;
+  --card-alignment: left;
+  --text-transform-heading: uppercase;
+  --header-nav-gap: 32px;
+  --header-nav-gap-lg: 48px;
+  --header-logo-link-font-size: 20px;
+  --header-nav-link-font-size: 14px;
+  --header-nav-link-padding-bottom: 4px;
+  --header-nav-link-font-size-lg: 16px;
+  --header-action-search-opacity-hover: 0.8;
+  --header-cart-badge-min-width: 16px;
+  --header-cart-badge-height: 16px;
+  --header-action-profile-opacity-hover: 0.8;
+  --header-mobile-menu-root-width: full;
+  --header-mobile-menu-root-background-color: white;
+  --header-mobile-menu-root-padding-x: 16px;
+  --header-mobile-menu-root-padding-top: 16px;
+  --header-mobile-menu-root-padding-bottom: 32px;
+  --header-mobile-menu-root-padding-x-sm: 20px;
+  --header-mobile-menu-root-padding-x-md: 40px;
+  --footer-container-max-width: 1920px;
+  --footer-container-padding-x-sm: 20px;
+  --footer-container-padding-x-md: 40px;
+  --footer-container-padding-x-lg: 64px;
+  --footer-container-padding-x-xl: 80px;
+  --footer-container-width: full;
+  --footer-container-padding-bottom: 80px;
+  --footer-container-padding-top: 80px;
+  --footer-container-padding-x-2xl: 280px;
+  --footer-newsletter-wrapper-width: full;
+  --footer-newsletter-wrapper-gap: 20px;
+  --footer-newsletter-copy-max-width: 1320px;
+  --footer-newsletter-copy-text-align: left;
+  --footer-newsletter-heading-width: full;
+  --footer-newsletter-form-max-width: 430px;
+  --footer-newsletter-form-height: 56px;
+  --footer-newsletter-form-border-radius: 4px;
+  --footer-newsletter-form-gap: 8px;
+  --footer-newsletter-form-border-color: #999999;
+  --footer-newsletter-form-padding-left: 18px;
+  --footer-newsletter-form-padding-right: 16px;
+  --footer-newsletter-form-border-color-focus-within: #000000;
+  --footer-newsletter-input-font-size: 16px;
+  --footer-newsletter-submit-font-size: 16px;
+  --footer-newsletter-submit-transform-active: scale(0.95);
+  --footer-main-section-width: full;
+  --footer-main-section-gap: 40px;
+  --footer-main-grid-gap: 40px;
+  --footer-main-grid-gap-sm: 200px;
+  --footer-column-root-gap: 12px;
+  --footer-email-text-align-lg: right;
+  --footer-copyright-bar-height: 64px;
+  --footer-copyright-bar-padding-x: 16px;
+  --footer-copyright-text-font-size: 14px;
+  --footer-copyright-text-color: white;
+  --checkout-form-col-w: 652px;
+  --checkout-summary-col-w: 884px;
+  --checkout-gap: 84px;
+  --checkout-side-pad: 300px;
+  --color-button-secondary-bg: 255 255 255;
+  --color-button-secondary-text: 0 0 0;
+  --color-button-secondary-border: 0 0 0;
+}
+body { margin: 0; font-family: var(--font-body, system-ui, sans-serif); background: rgb(var(--color-bg, 255 255 255)); color: rgb(var(--color-text, 0 0 0)); }
+*, *::before, *::after { box-sizing: border-box; }
+</style>
+</head>
+<body class="theme-rose color-scheme-1" data-block="Hero" data-theme="rose">
+
+
+<section class="relative w-full overflow-hidden min-h-[var(--h-base)] sm:min-h-[var(--h-sm)] md:min-h-[var(--h-md)] lg:min-h-[var(--h-lg)] xl:min-h-[var(--h-xl)] 2xl:min-h-[var(--h-xxl)]" data-variant="centered" style=" --h-base:340px;--h-sm:400px;--h-md:480px;--h-lg:560px;--h-xl:640px;--h-xxl:720px; --hero-heading-size:var(--size-hero-heading);--hero-text-size:16px;">
+  
+  
+  
+  <div class="absolute inset-0 -z-10 overflow-hidden text-[rgb(var(--color-accent))]" aria-hidden="true">
+      <div class="w-full h-full bg-[rgb(var(--color-muted)/0.12)]" aria-hidden="true"></div>
+    </div>
+  <div class="mx-auto max-w-[var(--container-max-width)] px-4 flex flex-col py-12 min-h-[inherit] justify-center relative z-10" style="min-height: inherit;">
+    <div class="flex flex-col gap-4 sm:gap-5 md:gap-6 lg:gap-5 xl:gap-[25px] w-full px-4 sm:px-6 md:px-8 items-center text-center max-w-7xl">
+      <header class="flex flex-col gap-1 sm:gap-2 md:gap-3 lg:gap-4 xl:gap-[5px]">
+        
+        
+        
+      </header>
+      
+      
+    </div>
+    
+    
+  </div>
+</section>
+
+
+</body>
+</html>

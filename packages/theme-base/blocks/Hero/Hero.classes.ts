@@ -1,5 +1,5 @@
 export const HeroClasses = {
-  root: 'relative w-full overflow-hidden',
+  root: 'relative w-full overflow-hidden bg-[var(--hero-root-background-color)]',
   container: 'mx-auto max-w-[var(--container-max-width)] px-4',
   inner: {
     // items/justify *не* зашиваем — Позиция (hAlign/vAlign из 9 значений)
@@ -46,7 +46,7 @@ export const HeroClasses = {
   title:
     '[font-family:var(--font-heading)] [font-weight:var(--weight-heading)] [text-transform:var(--text-transform-heading)] text-[length:var(--hero-heading-size,var(--size-hero-heading))] leading-tight text-[rgb(var(--color-heading))]',
   subtitle:
-    'mt-2 [font-family:var(--font-body)] text-[length:var(--hero-text-size,16px)] text-[rgb(var(--color-text))]',
+    'mt-2 [font-family:var(--font-body)] text-[var(--hero-subtitle-font-size)] text-[rgb(var(--color-text))] px-[var(--hero-subtitle-padding-x)] sm:text-[var(--hero-subtitle-font-size-sm)] md:text-[var(--hero-subtitle-font-size-md)] lg:text-[var(--hero-subtitle-font-size-lg)]',
   ctaButton:
     // Hero CTA = primary button: high-contrast action. Secondary was used
     // before, but schemes like Inverse (secondaryButton: transparent bg +
@@ -54,7 +54,7 @@ export const HeroClasses = {
     // diverged from the constructor's React render (primary). Primary keeps
     // site ≡ constructor parity without relying on merchant filling both
     // button slots with compatible colors.
-    'inline-flex items-center justify-center h-[var(--size-hero-button-h)] rounded-[var(--radius-button)] px-4 text-[16px] [font-family:var(--font-body)] border border-[rgb(var(--color-button-border))] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] hover:bg-[rgb(var(--color-button-bg-hover))] hover:text-[rgb(var(--color-button-text-hover))] transition-colors no-underline',
+    'inline-flex items-center justify-center h-[var(--hero-cta-button-height)] rounded-[var(--hero-cta-button-border-radius)] px-[var(--hero-cta-button-padding-x)] text-[var(--hero-cta-button-font-size)] [font-family:var(--font-body)] border border-[rgb(var(--color-button-border))] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] hover:bg-[rgb(var(--color-button-bg-hover))] hover:text-[rgb(var(--color-button-text-hover))] transition-colors no-underline min-h-[var(--hero-cta-button-min-height)] min-w-[var(--hero-cta-button-min-width)] hover:opacity-[var(--hero-cta-button-opacity-hover)] sm:h-[var(--hero-cta-button-height-sm)] sm:min-h-[var(--hero-cta-button-min-height-sm)] sm:min-w-[var(--hero-cta-button-min-width-sm)] sm:rounded-[var(--hero-cta-button-border-radius-sm)] sm:px-[var(--hero-cta-button-padding-x-sm)] sm:py-[var(--hero-cta-button-padding-y-sm)] sm:text-[var(--hero-cta-button-font-size-sm)] md:text-[var(--hero-cta-button-font-size-md)]',
   image: {
     centered: 'absolute inset-0 -z-10 object-cover w-full h-full',
     split: 'w-full aspect-[4/3] object-cover',

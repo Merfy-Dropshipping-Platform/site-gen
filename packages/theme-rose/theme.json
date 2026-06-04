@@ -72,7 +72,17 @@
     "--footer-main-grid-gap": "40px",
     "--footer-column-root-gap": "12px",
     "--footer-copyright-bar-height": "64px",
-    "--footer-copyright-text-font-size": "14px"
+    "--footer-copyright-text-font-size": "14px",
+    "--hero-content-column-gap": "24px",
+    "--hero-content-column-gap-sm": "40px",
+    "--hero-header-gap": "8px",
+    "--hero-header-gap-sm": "12px",
+    "--hero-header-gap-md": "16px",
+    "--hero-subtitle-font-size": "14px",
+    "--hero-cta-button-height": "40px",
+    "--hero-cta-button-border-radius": "4px",
+    "--hero-cta-button-padding-x": "12px",
+    "--hero-cta-button-font-size": "14px"
   },
   "blockDefaults": {
     "Footer": {

@@ -14,8 +14,11 @@
 //   3) Добавить запасные значения в base-defaults.ts
 //   4) Переписать base/<Блок>.classes.ts (литералы → var(--токен))
 //   5) Добавить значения в theme-<тема>/theme.json defaults
-//   6) Удалить theme-<тема>/blocks/<Блок>/Header.classes.ts и Header.tokens.ts
-//   7) При сбое — откатить из бэкапов
+//   6) Удалить theme-<тема>/blocks/<Блок>/<Блок>.classes.ts и <Блок>.tokens.ts
+//   7) Обновить theme-<тема>/blocks/<Блок>/index.ts — убрать exports на удалённые
+//      файлы (или удалить index.ts если он стал пустой). Без этого
+//      ThemePuckConfigController упадёт ENOENT при загрузке index.mjs.
+//   8) При сбое — откатить из бэкапов
 
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
@@ -29,6 +32,7 @@ import {
 import { computeReplacements } from './lib/rewrite-base-classes.mjs';
 import { rewriteClassesFile } from './lib/classes-ts.mjs';
 import { captureBlockSnapshot } from './lib/snapshot-container.mjs';
+import { removeDeletedExports } from './lib/index-ts.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SITES_ROOT = path.resolve(__dirname, '..');
@@ -139,6 +143,27 @@ async function main() {
     } catch { /* not exists */ }
   }
 
+  // ─ Шаг 7: обновить index.ts темы блока — убрать ссылки на удалённые файлы
+  // Иначе ThemePuckConfigController упадёт ENOENT при require('./Header.tokens')
+  // и конструктор получит 500 «Failed to fetch Puck config».
+  let indexUpdate = null;
+  if (filesToDelete.length > 0) {
+    try {
+      const indexSrc = await fs.readFile(paths.themeIndex, 'utf-8');
+      indexUpdate = removeDeletedExports(indexSrc, filesToDelete, paths.themeIndex);
+      indexUpdate.exists = true;
+    } catch (err) {
+      if (err.code === 'ENOENT') {
+        // index.ts отсутствует — нечего обновлять, это валидно
+        indexUpdate = { exists: false, removedCount: 0, removedDecls: [], shouldDelete: false, text: null };
+      } else {
+        throw err;
+      }
+    }
+  } else {
+    indexUpdate = { exists: false, removedCount: 0, removedDecls: [], shouldDelete: false, text: null };
+  }
+
   // ─── Сводка ───
   console.log('Сводка изменений:');
   console.log(`  registry.ts        → +${reg.addedCount} токенов`);
@@ -149,6 +174,24 @@ async function main() {
   console.log(`  Файлов к удалению  → ${filesToDelete.length}`);
   for (const f of filesToDelete) {
     console.log(`     - ${path.relative(SITES_ROOT, f)}`);
+  }
+  if (indexUpdate && indexUpdate.exists) {
+    const rel = path.relative(SITES_ROOT, paths.themeIndex);
+    if (indexUpdate.removedCount > 0) {
+      if (indexUpdate.shouldDelete) {
+        console.log(`  ${rel} → удалить файл (${indexUpdate.removedCount} деклараций удалено, файл пустой)`);
+      } else {
+        console.log(`  ${rel} → -${indexUpdate.removedCount} деклараций:`);
+      }
+      for (const decl of indexUpdate.removedDecls) {
+        console.log(`     - export ... from '${decl}'`);
+      }
+    } else {
+      console.log(`  ${rel} → без изменений (нет ссылок на удалённые файлы)`);
+    }
+  } else if (filesToDelete.length > 0) {
+    const rel = path.relative(SITES_ROOT, paths.themeIndex);
+    console.log(`  ${rel} → файла нет (нечего обновлять)`);
   }
 
   if (dryRun) {
@@ -230,6 +273,19 @@ async function main() {
       console.log(`  ✓ удалён ${path.relative(SITES_ROOT, f)}`);
     }
 
+    // Шаг 7: обновить или удалить index.ts темы блока
+    if (indexUpdate && indexUpdate.exists && indexUpdate.removedCount > 0) {
+      await backup(paths.themeIndex);
+      const relIndex = path.relative(SITES_ROOT, paths.themeIndex);
+      if (indexUpdate.shouldDelete) {
+        await fs.unlink(paths.themeIndex);
+        console.log(`  ✓ удалён ${relIndex} (пустой после миграции)`);
+      } else {
+        await fs.writeFile(paths.themeIndex, indexUpdate.text, 'utf-8');
+        console.log(`  ✓ обновлён ${relIndex} (-${indexUpdate.removedCount} деклараций)`);
+      }
+    }
+
     console.log('\n✓ Миграция применена. Запусти приёмку:');
     console.log(`    node scripts/validate-token-completeness.mjs --block=${block} --theme=${theme}`);
   } catch (err) {
@@ -248,6 +304,7 @@ function computePaths(block, theme) {
     baseDefaults:     path.join(SITES_ROOT, 'packages/theme-contract/tokens/base-defaults.ts'),
     themeJson:        path.join(SITES_ROOT, `packages/theme-${theme}/theme.json`),
     themeBlockDir:    path.join(SITES_ROOT, `packages/theme-${theme}/blocks`, block),
+    themeIndex:       path.join(SITES_ROOT, `packages/theme-${theme}/blocks`, block, 'index.ts'),
     catalogFile:      path.join(SITES_ROOT, 'packages/theme-contract/tokens/catalog', `${block}.json`),
     snapshotsDir:     path.join(SITES_ROOT, 'packages/theme-contract/tokens/snapshots'),
     beforeHtml:       path.join(SITES_ROOT, 'packages/theme-contract/tokens/snapshots', `${block}-${theme}.before.html`),

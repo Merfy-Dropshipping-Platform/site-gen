@@ -309,4 +309,6 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   '--footer-email-opacity-hover': '0.7',
   '--footer-copyright-bar-padding-y': '24px',
   '--footer-copyright-bar-min-height': '64px',
+  // ── v2 миграция — запасные значения (добавлено скриптом)
+  '--hero-title-font-size': 'var(--hero-heading-size,var(--size-hero-heading))',
 };

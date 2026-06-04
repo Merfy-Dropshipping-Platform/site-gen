@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Hero vanilla</title>
+<style>
+:root {
+  --color-bg: 38 49 28;
+  --color-surface: 38 49 28;
+  --color-heading: 255 255 255;
+  --color-text: 255 255 255;
+  --color-muted: 200 200 200;
+  --color-primary: 255 255 255;
+  --color-accent: 58 69 48;
+  --color-accent-fg: 255 255 255;
+  --color-accent-2: 60 60 60;
+  --color-button-bg: 58 69 48;
+  --color-button-text: 255 255 255;
+  --color-button-border: 58 69 48;
+  --color-button-2-bg: 238 238 238;
+  --color-button-2-text: 38 49 28;
+  --color-button-2-border: 200 200 200;
+  --color-button-bg-hover: 51 51 51;
+  --color-button-text-hover: 255 255 255;
+  --color-border: 230 230 230;
+  --color-link: 17 17 17;
+  --color-input-bg: 255 255 255;
+  --color-input-border: 210 210 210;
+  --color-input-label: 120 120 120;
+  --color-input-placeholder: 160 160 160;
+  --color-error: 255 148 148;
+  --font-heading: 'Bitter', serif;
+  --font-body: 'Arsenal', sans-serif;
+  --font-cart-counter: 'Exo 2', sans-serif;
+  --font-powered-by: 'Inter', sans-serif;
+  --font-pagination: system-ui, sans-serif;
+  --weight-heading: 400;
+  --weight-body: 400;
+  --size-hero-heading: 24px;
+  --hero-heading-size: ;
+  --slide-min-height: 880px;
+  --size-section-heading: 20px;
+  --size-nav-link: 16px;
+  --size-checkout-brand: 20px;
+  --size-checkout-brand-image: 32px;
+  --size-h2: 24px;
+  --size-h3: 18px;
+  --size-body: 16px;
+  --size-small: 14px;
+  --size-tiny: 12px;
+  --radius-button: 0px;
+  --radius-input: 0px;
+  --radius-card: 0px;
+  --radius-media: 0px;
+  --radius-field: 0px;
+  --spacing-section-y: 80px;
+  --spacing-grid-col-gap: 40px;
+  --spacing-grid-row-gap: 40px;
+  --catalog-sidebar-w: 294px;
+  --catalog-grid-row-gap: 40px;
+  --container-max-width: 1320px;
+  --size-hero-button-h: 48px;
+  --size-newsletter-form-w: 480px;
+  --size-logo-width: 24px;
+  --size-card-border: 1px;
+  --promo-banner-h-thin: 56px;
+  --color-bottom-strip-bg: 0 0 0;
+  --color-bottom-strip-text: 255 255 255;
+  --color-header-bg: 58 69 48;
+  --size-header-h: 80px;
+  --button-style: solid;
+  --footer-layout: 2-part;
+  --contact-form-layout: wide;
+  --cart-type: drawer;
+  --card-style: standard;
+  --card-alignment: left;
+  --text-transform-heading: none;
+  --header-nav-gap: 40px;
+  --header-nav-gap-lg: 48px;
+  --header-logo-link-font-size: 20px;
+  --header-nav-link-font-size: var(--size-nav-link);
+  --header-nav-link-padding-bottom: 4px;
+  --header-nav-link-font-size-lg: 16px;
+  --header-action-search-opacity-hover: 0.7;
+  --header-cart-badge-min-width: 16px;
+  --header-cart-badge-height: 16px;
+  --header-action-profile-opacity-hover: 0.7;
+  --header-mobile-menu-root-width: full;
+  --header-mobile-menu-root-background-color: white;
+  --header-mobile-menu-root-padding-x: 16px;
+  --header-mobile-menu-root-padding-top: 16px;
+  --header-mobile-menu-root-padding-bottom: 32px;
+  --header-mobile-menu-root-padding-x-sm: 20px;
+  --header-mobile-menu-root-padding-x-md: 40px;
+  --footer-container-max-width: 1920px;
+  --footer-container-padding-x-sm: 24px;
+  --footer-container-padding-x-md: 32px;
+  --footer-container-padding-x-lg: 48px;
+  --footer-container-padding-x-xl: 64px;
+  --footer-container-width: full;
+  --footer-container-padding-bottom: 80px;
+  --footer-container-padding-top: 80px;
+  --footer-container-padding-x-2xl: 280px;
+  --footer-newsletter-wrapper-width: full;
+  --footer-newsletter-wrapper-gap: 20px;
+  --footer-newsletter-copy-max-width: 1320px;
+  --footer-newsletter-copy-text-align: left;
+  --footer-newsletter-heading-width: full;
+  --footer-newsletter-form-max-width: 652px;
+  --footer-newsletter-form-height: 64px;
+  --footer-newsletter-form-border-radius: 8px;
+  --footer-newsletter-form-gap: 8px;
+  --footer-newsletter-form-border-color: #999999;
+  --footer-newsletter-form-padding-left: 18px;
+  --footer-newsletter-form-padding-right: 16px;
+  --footer-newsletter-form-border-color-focus-within: #000000;
+  --footer-newsletter-input-font-size: 20px;
+  --footer-newsletter-submit-font-size: 16px;
+  --footer-newsletter-submit-transform-active: scale(0.95);
+  --footer-main-section-width: full;
+  --footer-main-section-gap: 40px;
+  --footer-main-grid-gap: 32px;
+  --footer-main-grid-gap-sm: 200px;
+  --footer-column-root-gap: 8px;
+  --footer-email-text-align-lg: right;
+  --footer-copyright-bar-height: auto;
+  --footer-copyright-bar-padding-x: 16px;
+  --footer-copyright-text-font-size: 20px;
+  --footer-copyright-text-color: white;
+  --hero-root-background-color: white;
+  --hero-stage-width: full;
+  --hero-stage-min-height: min(70svh,560px);
+  --hero-stage-min-height-sm: 560px;
+  --hero-stage-min-height-md: 420px;
+  --hero-stage-min-height-lg: 460px;
+  --hero-overlay-width: full;
+  --hero-overlay-padding-x: 16px;
+  --hero-overlay-padding-bottom: 40px;
+  --hero-overlay-padding-top: 112px;
+  --hero-overlay-padding-x-sm: 20px;
+  --hero-overlay-padding-bottom-sm: 44px;
+  --hero-overlay-padding-top-sm: 128px;
+  --hero-overlay-padding-x-md: 40px;
+  --hero-overlay-padding-bottom-md: 56px;
+  --hero-overlay-padding-top-md: 144px;
+  --hero-overlay-padding-x-lg: 64px;
+  --hero-overlay-padding-bottom-lg: 64px;
+  --hero-overlay-padding-x-xl: 80px;
+  --hero-overlay-padding-bottom-xl: 80px;
+  --hero-overlay-padding-x-2xl: 280px;
+  --hero-content-column-gap: 16px;
+  --hero-content-column-gap-sm: 20px;
+  --hero-content-column-max-width: 540px;
+  --hero-content-column-max-width-md: 640px;
+  --hero-header-gap: 4px;
+  --hero-header-gap-sm: 8px;
+  --hero-header-gap-md: 12px;
+  --hero-header-text-align: center;
+  --hero-subtitle-font-size: var(--hero-text-size,16px);
+  --hero-subtitle-padding-x: 4px;
+  --hero-subtitle-font-size-sm: 16px;
+  --hero-subtitle-font-size-md: 18px;
+  --hero-subtitle-font-size-lg: 20px;
+  --hero-cta-button-height: var(--size-hero-button-h);
+  --hero-cta-button-border-radius: var(--radius-button);
+  --hero-cta-button-padding-x: 16px;
+  --hero-cta-button-font-size: 16px;
+  --hero-cta-button-min-height: 40px;
+  --hero-cta-button-min-width: 120px;
+  --hero-cta-button-opacity-hover: 0.9;
+  --hero-cta-button-height-sm: 52px;
+  --hero-cta-button-min-height-sm: 52px;
+  --hero-cta-button-min-width-sm: 160px;
+  --hero-cta-button-border-radius-sm: 6px;
+  --hero-cta-button-padding-x-sm: 24px;
+  --hero-cta-button-padding-y-sm: 10px;
+  --hero-cta-button-font-size-sm: 15px;
+  --hero-cta-button-font-size-md: 16px;
+  --collections-root-padding-x: 16px;
+  --collections-root-padding-bottom: 56px;
+  --collections-root-padding-top: 56px;
+  --collections-root-padding-x-sm: 20px;
+  --collections-root-padding-bottom-sm: 64px;
+  --collections-root-padding-top-sm: 64px;
+  --collections-root-padding-x-md: 40px;
+  --collections-root-padding-bottom-md: 100px;
+  --collections-root-padding-top-md: 100px;
+  --collections-root-padding-x-lg: 64px;
+  --collections-root-padding-bottom-lg: 120px;
+  --collections-root-padding-top-lg: 120px;
+  --collections-root-padding-x-xl: 80px;
+  --collections-root-padding-bottom-xl: 140px;
+  --collections-root-padding-top-xl: 140px;
+  --collections-root-padding-x-2xl: 280px;
+  --collections-container-max-width: 1320px;
+  --collections-container-width: full;
+  --collections-container-gap: 32px;
+  --collections-container-gap-md: 40px;
+  --collections-grid-gap: 24px;
+  --collections-grid-gap-sm: 20px;
+  --collections-grid-gap-md: 20px;
+  --collections-grid-gap-lg: 24px;
+  --popular-products-root-padding-x: 16px;
+  --popular-products-root-padding-bottom: 56px;
+  --popular-products-root-padding-top: 56px;
+  --popular-products-root-padding-x-sm: 20px;
+  --popular-products-root-padding-bottom-sm: 64px;
+  --popular-products-root-padding-top-sm: 64px;
+  --popular-products-root-padding-x-md: 40px;
+  --popular-products-root-padding-bottom-md: 100px;
+  --popular-products-root-padding-top-md: 100px;
+  --popular-products-root-padding-x-lg: 64px;
+  --popular-products-root-padding-bottom-lg: 120px;
+  --popular-products-root-padding-top-lg: 120px;
+  --popular-products-root-padding-x-xl: 80px;
+  --popular-products-root-padding-bottom-xl: 140px;
+  --popular-products-root-padding-top-xl: 140px;
+  --popular-products-root-padding-x-2xl: 280px;
+  --popular-products-container-max-width: 1320px;
+  --popular-products-container-width: full;
+  --popular-products-container-gap: 32px;
+  --popular-products-container-gap-md: 40px;
+  --popular-products-grid-width: full;
+  --popular-products-card-gap: 12px;
+  --popular-products-card-width: full;
+  --popular-products-card-media-border-radius: var(--radius-media);
+  --popular-products-card-badge-border-radius: var(--radius-button);
+  --popular-products-card-badge-font-size: 11px;
+  --popular-products-card-badge-min-width: 48px;
+  --popular-products-card-title-width: full;
+  --popular-products-card-title-opacity-hover: 0.7;
+  --popular-products-card-old-price-color: #999999;
+  --gallery-root-padding-x: 16px;
+  --gallery-root-padding-x-sm: 20px;
+  --gallery-root-padding-x-md: 40px;
+  --gallery-root-padding-x-lg: 64px;
+  --gallery-root-padding-x-xl: 80px;
+  --gallery-root-padding-x-2xl: 280px;
+  --gallery-root-padding-bottom: 56px;
+  --gallery-root-padding-bottom-sm: 64px;
+  --gallery-root-padding-bottom-md: 100px;
+  --gallery-root-padding-bottom-lg: 120px;
+  --gallery-root-padding-bottom-xl: 140px;
+  --gallery-root-padding-top: 56px;
+  --gallery-root-padding-top-sm: 64px;
+  --gallery-root-padding-top-md: 100px;
+  --gallery-root-padding-top-lg: 120px;
+  --gallery-root-padding-top-xl: 140px;
+  --gallery-container-max-width: 1320px;
+  --gallery-container-gap: 32px;
+  --gallery-container-gap-md: 40px;
+  --gallery-inner-gap: 24px;
+  --gallery-inner-gap-md: 32px;
+  --gallery-inner-gap-lg: 24px;
+  --gallery-inner-gap-xl: 32px;
+  --gallery-item-primary-border-radius: var(--radius-media);
+  --gallery-item-primary-min-height: 280px;
+  --gallery-item-small-gap: 8px;
+  --gallery-item-small-gap-md: 20px;
+  --gallery-card-media-border-radius: var(--radius-media);
+  --gallery-card-label-font-size: 14px;
+  --gallery-card-price-font-size: 14px;
+  --gallery-card-price-color: black;
+  --header-header-background-color: var(--vanilla-header-bg);
+  --header-header-padding-bottom: 3px;
+  --header-header-color: white;
+  --header-logo-link-color: white;
+  --header-cart-badge-color: var(--vanilla-dark);
+  --footer-email-opacity-hover: 0.7;
+  --footer-copyright-bar-padding-y: 16px;
+  --footer-copyright-bar-min-height: 64px;
+}
+body { margin: 0; font-family: var(--font-body, system-ui, sans-serif); background: rgb(var(--color-bg, 255 255 255)); color: rgb(var(--color-text, 0 0 0)); }
+*, *::before, *::after { box-sizing: border-box; }
+</style>
+</head>
+<body class="theme-vanilla color-scheme-1" data-block="Hero" data-theme="vanilla">
+
+
+<section class="relative w-full overflow-hidden bg-[var(--hero-root-background-color)] min-h-[var(--h-base)] sm:min-h-[var(--h-sm)] md:min-h-[var(--h-md)] lg:min-h-[var(--h-lg)] xl:min-h-[var(--h-xl)] 2xl:min-h-[var(--h-xxl)]" data-variant="centered" style=" --h-base:340px;--h-sm:400px;--h-md:480px;--h-lg:560px;--h-xl:640px;--h-xxl:720px; --hero-heading-size:var(--size-hero-heading);--hero-text-size:16px;">
+  
+  
+  
+  <div class="absolute inset-0 -z-10 overflow-hidden text-[rgb(var(--color-accent))]" aria-hidden="true">
+      <div class="w-full h-full bg-[rgb(var(--color-muted)/0.12)]" aria-hidden="true"></div>
+    </div>
+  <div class="mx-auto max-w-[var(--container-max-width)] px-4 flex flex-col py-12 min-h-[inherit] justify-center relative z-10" style="min-height: inherit;">
+    <div class="flex flex-col gap-4 sm:gap-5 md:gap-6 lg:gap-5 xl:gap-[25px] w-full px-4 sm:px-6 md:px-8 items-center text-center max-w-7xl">
+      <header class="flex flex-col gap-1 sm:gap-2 md:gap-3 lg:gap-4 xl:gap-[5px]">
+        
+        
+        
+      </header>
+      
+      
+    </div>
+    
+    
+  </div>
+</section>
+
+
+</body>
+</html>

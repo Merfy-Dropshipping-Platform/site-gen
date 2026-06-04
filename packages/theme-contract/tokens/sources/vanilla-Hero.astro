@@ -1,0 +1,184 @@
+---
+import VanillaPicture from "../img/VanillaPicture.astro";
+import { V_IMG } from "../../data/imageAssets";
+
+const slides = [
+	{
+		image: V_IMG.hero(1),
+		title: "Искусство жить уютно",
+		subtitle: "Товары, которые делают дом особенным",
+		ctaText: "Перейти к коллекции",
+		ctaHref: "#collections",
+	},
+	{
+		image: V_IMG.hero(2),
+		title: "Дом, в который хочется возвращаться",
+		subtitle: "Товары, создающие атмосферу тепла и спокойствия",
+		ctaText: "Перейти к товарам",
+		ctaHref: "/catalog/textile",
+	},
+	{
+		image: V_IMG.hero(3),
+		title: "Интерьер, наполненный смыслом",
+		subtitle: "коллекция текстиля и декора для тех, кто ценит красоту в деталях",
+		ctaText: "Новые поступления",
+		ctaHref: "/catalog/textile",
+	},
+];
+
+const slidesJson = JSON.stringify(
+	slides.map(({ title, subtitle, ctaText, ctaHref }) => ({
+		title,
+		subtitle,
+		ctaText,
+		ctaHref,
+	})),
+);
+---
+
+<section
+	class="relative w-full overflow-hidden bg-[var(--vanilla-green-deep)]"
+	aria-labelledby="hero-title"
+	data-vanilla-hero-carousel
+	data-vanilla-stack
+	data-slides-json={slidesJson}
+>
+	<div
+		id="hero-carousel-viewport"
+		class="relative w-full min-h-[520px] md:min-h-[620px] xl:min-h-[790px]"
+		role="region"
+		aria-roledescription="карусель"
+		aria-label="Главный экран"
+	>
+		<div class="absolute inset-0 z-0 overflow-hidden">
+			{
+				slides.map((slide, i) => (
+					<div
+						data-hero-slide-img
+						class:list={[
+							"absolute inset-0 z-0 transition-opacity duration-500 ease-out",
+							i === 0 ? "opacity-100" : "pointer-events-none opacity-0",
+						]}
+						aria-hidden={i !== 0 ? "true" : "false"}
+					>
+						<VanillaPicture
+							src={slide.image}
+							alt=""
+							decoding={i === 0 ? "sync" : "async"}
+							loading={i === 0 ? "eager" : "lazy"}
+							fetchpriority={i === 0 ? "high" : undefined}
+							class="absolute inset-0 z-0 size-full object-cover object-center"
+							aria-hidden="true"
+						/>
+					</div>
+				))
+			}
+		</div>
+		<div class="pointer-events-none absolute inset-0 z-[1] bg-black/25" aria-hidden="true"></div>
+
+		<div class="vanilla-pad absolute inset-0 z-10 flex h-full w-full items-center pointer-events-none">
+			<div class="vanilla-container pointer-events-none">
+				<div
+					class="pointer-events-auto flex w-full max-w-[min(100%,52rem)] flex-col items-start gap-5 text-left md:ml-4 md:overflow-visible lg:ml-0"
+					aria-live="polite"
+				>
+					<h1
+						id="hero-title"
+						data-hero-title
+						class="hero-animate-1 vanilla-hero-slide-title font-vanilla-bitter text-2xl font-normal italic tracking-normal text-white md:whitespace-nowrap"
+					>
+						{slides[0].title}
+					</h1>
+					<p
+						data-hero-subtitle
+						class="hero-animate-2 vanilla-hero-slide-subtitle font-vanilla-arsenal text-base font-normal italic tracking-normal text-[var(--vanilla-hero-subtle)] md:whitespace-nowrap"
+					>
+						{slides[0].subtitle}
+					</p>
+					<a
+						data-hero-cta
+						class="hero-animate-3 inline-flex h-12 min-h-12 max-w-full items-center justify-center bg-[var(--vanilla-header-bg)] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-white transition-opacity hover:opacity-90"
+						href={slides[0].ctaHref}
+					>
+						{slides[0].ctaText}
+					</a>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div
+		class="flex h-16 items-center justify-center gap-10 bg-[var(--vanilla-announcement-bg)] font-vanilla-arsenal text-base leading-none md:gap-14"
+		role="toolbar"
+		aria-label="Переключение слайдов"
+		data-hero-controls
+		data-vanilla-hero-controls
+	>
+		<button
+			type="button"
+			data-hero-prev
+			class="text-white hover:opacity-90"
+			aria-label="Предыдущий слайд"
+		>
+			←
+		</button>
+		<div class="flex items-center gap-10 md:gap-12">
+			{
+				slides.map((_, i) => (
+					<button
+						type="button"
+						data-hero-bullet
+						data-hero-index={String(i)}
+						class:list={[
+							"min-w-[1ch] p-1 font-normal uppercase tracking-normal hover:opacity-90",
+							i === 0 ? "text-white" : "text-white/45",
+						]}
+						aria-current={i === 0 ? "true" : undefined}
+						aria-label={`Слайд ${i + 1}`}
+					>
+						{i + 1}
+					</button>
+				))
+			}
+		</div>
+		<button
+			type="button"
+			data-hero-next
+			class="text-white hover:opacity-90"
+			aria-label="Следующий слайд"
+		>
+			→
+		</button>
+	</div>
+</section>
+
+<style>
+	/** Курсив + line-height ≈ 1 даёт наложение на следующую строку — см. блок выше в комментарии. */
+	.vanilla-hero-slide-title {
+		line-height: 1.2;
+		font-synthesis: none;
+		padding-bottom: 0.125em;
+	}
+
+	.vanilla-hero-slide-subtitle {
+		line-height: 1.35;
+		font-synthesis: none;
+		text-transform: none;
+	}
+</style>
+
+<script>
+	import { bindVanillaHeroCarousel } from "../../scripts/vanillaHeroCarousel.ts";
+
+	const boot = () =>
+		document.querySelectorAll<HTMLElement>("[data-vanilla-hero-carousel]").forEach((el) =>
+			bindVanillaHeroCarousel(el),
+		);
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", boot, { once: true });
+	} else {
+		boot();
+	}
+
+	document.addEventListener("astro:page-load", boot);
+</script>

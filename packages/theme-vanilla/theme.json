@@ -53,7 +53,9 @@
     "--footer-main-section-gap": "40px",
     "--footer-column-root-gap": "8px",
     "--footer-copyright-bar-padding-y": "16px",
-    "--footer-copyright-bar-padding-x": "16px"
+    "--footer-copyright-bar-padding-x": "16px",
+    "--hero-root-background-color": "var(--vanilla-green-deep)",
+    "--hero-title-font-size": "24px"
   },
   "blockDefaults": {
     "PromoBanner": {

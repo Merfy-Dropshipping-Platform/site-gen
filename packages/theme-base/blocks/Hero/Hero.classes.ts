@@ -44,7 +44,7 @@ export const HeroClasses = {
   // heading.size / text.size, Hero.astro вычисляет calc(...) и инжектит в
   // style на root. Здесь base просто читает var с fallback'ом.
   title:
-    '[font-family:var(--font-heading)] [font-weight:var(--weight-heading)] [text-transform:var(--text-transform-heading)] text-[length:var(--hero-heading-size,var(--size-hero-heading))] leading-tight text-[rgb(var(--color-heading))]',
+    '[font-family:var(--font-heading)] [font-weight:var(--weight-heading)] [text-transform:var(--text-transform-heading)] text-[var(--hero-title-font-size)] leading-tight text-[rgb(var(--color-heading))]',
   subtitle:
     'mt-2 [font-family:var(--font-body)] text-[var(--hero-subtitle-font-size)] text-[rgb(var(--color-text))] px-[var(--hero-subtitle-padding-x)] sm:text-[var(--hero-subtitle-font-size-sm)] md:text-[var(--hero-subtitle-font-size-md)] lg:text-[var(--hero-subtitle-font-size-lg)]',
   ctaButton:

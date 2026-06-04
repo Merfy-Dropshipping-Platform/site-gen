@@ -60,7 +60,19 @@
     "--header-action-search-opacity-hover": "0.8",
     "--header-cart-badge-min-width": "16px",
     "--header-cart-badge-height": "16px",
-    "--header-action-profile-opacity-hover": "0.8"
+    "--header-action-profile-opacity-hover": "0.8",
+    "--footer-container-padding-x-sm": "20px",
+    "--footer-container-padding-x-md": "40px",
+    "--footer-container-padding-x-lg": "64px",
+    "--footer-container-padding-x-xl": "80px",
+    "--footer-newsletter-form-max-width": "430px",
+    "--footer-newsletter-form-height": "56px",
+    "--footer-newsletter-form-border-radius": "4px",
+    "--footer-newsletter-input-font-size": "16px",
+    "--footer-main-grid-gap": "40px",
+    "--footer-column-root-gap": "12px",
+    "--footer-copyright-bar-height": "64px",
+    "--footer-copyright-text-font-size": "14px"
   },
   "blockDefaults": {
     "Footer": {

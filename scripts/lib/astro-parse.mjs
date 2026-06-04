@@ -131,6 +131,217 @@ export const BLOCK_ELEMENT_SELECTORS = {
       ),
     },
   ],
+
+  // ── Footer ──────────────────────────────────────────────────────────────
+  // Покрывает оба источника:
+  //   1) База theme-base/blocks/Footer/Footer.astro — 4 варианта, маркеры:
+  //        <footer>, <div class={C.container}>, id="newsletter-heading",
+  //        <form data-action="newsletter">, <section aria-label="Информация и навигация">,
+  //        <h3 class={C.column.title}>, <a data-platform=...>, <div class={Ccopy.bar}>
+  //   2) Источник rose-theme/src/components/Footer.astro — 3-col структура с маркерами:
+  //        <footer>, <div class="mx-auto w-full max-w-[1920px] ...">,
+  //        id="newsletter-heading", <form data-newsletter-form>,
+  //        <section aria-label="Навигация по сайту">,
+  //        <ul role="list">, <a aria-label="VK|YouTube|Telegram|...">
+  //
+  // Совпадения по ключам ↔ Footer.classes.ts:
+  //   root, container,
+  //   newsletter.{wrapper,inner,copy,heading,description,form,input,submit},
+  //   main.{section,grid},
+  //   column.{root,title,nav,body}, link, email, socialRow, socialLink,
+  //   copyright.{bar,text}
+  Footer: [
+    {
+      key: 'root',
+      match: (n) => n.name === 'footer',
+    },
+    {
+      key: 'container',
+      match: (n) => n.name === 'div' && (
+        hasAnyClassToken(n, 'max-w-[var(--container-max-width)]') ||
+        // rose: <div class="mx-auto w-full max-w-[1920px] ...">
+        (hasAnyClassToken(n, 'mx-auto') && hasAnyClassToken(n, 'max-w-[1920px]'))
+      ),
+    },
+    {
+      key: 'newsletter.wrapper',
+      match: (n) => n.name === 'section' &&
+        getAttrValue(n, 'aria-labelledby') === 'newsletter-heading',
+    },
+    {
+      key: 'newsletter.inner',
+      // База: <div class={C.newsletter.inner}> — обёртка под copy + form внутри
+      // секции newsletter. rose-источник эту обёртку не использует (там section
+      // прямо содержит copy и form). Будет помечен как не найденный для rose.
+      match: (n) => n.name === 'div' &&
+        hasAnyClassToken(n, 'w-full') &&
+        // Защита: parent — секция newsletter (структурный hint через сосед h2)
+        // Берём через признак «внутри newsletter» (упрощённо: нет других маркеров).
+        // Используем уникальный fingerprint из базы: `w-full` без gap- и без grid.
+        !hasAnyClassToken(n, 'grid') &&
+        !hasAnyClassToken(n, 'flex'),
+    },
+    {
+      key: 'newsletter.copy',
+      // База: <div class={C.newsletter.copy}> ("flex flex-col gap-2")
+      // rose: <div class="flex max-w-[1320px] flex-col gap-2 text-left">
+      match: (n) => n.name === 'div' &&
+        hasAnyClassToken(n, 'flex') &&
+        hasAnyClassToken(n, 'flex-col') &&
+        hasAnyClassToken(n, 'gap-2'),
+    },
+    {
+      key: 'newsletter.heading',
+      match: (n) => n.name === 'h2' &&
+        getAttrValue(n, 'id') === 'newsletter-heading',
+    },
+    {
+      key: 'newsletter.description',
+      // База и rose: <p> сразу за heading в newsletter секции.
+      // Уникальный маркер для обоих — параграф с описанием рассылки.
+      match: (n) => n.name === 'p' && (
+        // База: ничего особо отличительного — берём любой <p> с текстом-like классами
+        hasAnyClassToken(n, 'leading-[1.4]') ||
+        // rose: <p class="font-manrope ... text-[#999999]">
+        (hasAnyClassToken(n, 'font-manrope') && hasAnyClassToken(n, '!leading-none'))
+      ),
+    },
+    {
+      key: 'newsletter.form',
+      match: (n) => n.name === 'form' && (
+        getAttrValue(n, 'data-action') === 'newsletter' ||
+        hasAttr(n, 'data-newsletter-form')
+      ),
+    },
+    {
+      key: 'newsletter.input',
+      match: (n) => n.name === 'input' &&
+        getAttrValue(n, 'type') === 'email',
+    },
+    {
+      key: 'newsletter.submit',
+      match: (n) => n.name === 'button' &&
+        getAttrValue(n, 'type') === 'submit' &&
+        getAttrValue(n, 'aria-label') === 'Подписаться',
+    },
+    {
+      key: 'main.section',
+      // База: <section aria-label="Информация и навигация">
+      // rose: <section aria-label="Навигация по сайту">
+      match: (n) => n.name === 'section' && (
+        getAttrValue(n, 'aria-label') === 'Информация и навигация' ||
+        getAttrValue(n, 'aria-label') === 'Навигация по сайту'
+      ),
+    },
+    {
+      key: 'main.grid',
+      // База: <div class={Cm.grid}> внутри main.section.
+      // rose: основная section сама использует flex flex-col gap-10 lg:flex-row.
+      // Маркер: первый flex/grid div внутри main.section.
+      match: (n) => n.name === 'div' && (
+        // База: typical grid-like
+        (hasAnyClassToken(n, 'md:flex-row') && hasAnyClassToken(n, 'md:items-start')) ||
+        // rose: <div class="flex flex-col gap-10 sm:flex-row sm:gap-[200px]">
+        (hasAnyClassToken(n, 'flex') && hasAnyClassToken(n, 'sm:flex-row') && hasAnyClassToken(n, 'gap-10'))
+      ),
+    },
+    {
+      key: 'column.root',
+      // База: <div class={C.column.root}> — обёртка колонки nav/info/social.
+      // rose: <ul class="flex flex-col gap-3" role="list"> — выступает как
+      // обёртка колонки. Берём первое совпадение (nav-колонка).
+      match: (n) => (n.name === 'div' || n.name === 'ul') && (
+        // База column.root: 'flex flex-col gap-4 flex-1 min-w-0 max-w-[318px]'
+        (hasAnyClassToken(n, 'flex-col') && hasAnyClassToken(n, 'max-w-[318px]')) ||
+        // rose: <ul class="flex flex-col gap-3" role="list">
+        (n.name === 'ul' && getAttrValue(n, 'role') === 'list')
+      ),
+    },
+    {
+      key: 'column.title',
+      // База: <h3 class={C.column.title}>. rose-источник не использует
+      // заголовки колонок → элемент будет not-found для rose.
+      match: (n) => n.name === 'h3',
+    },
+    {
+      key: 'column.nav',
+      // База: <nav class={C.column.nav}> aria-label="Footer navigation"
+      match: (n) => n.name === 'nav' &&
+        getAttrValue(n, 'aria-label') === 'Footer navigation',
+    },
+    {
+      key: 'column.body',
+      // База: <div class={C.column.body}> ("flex flex-col gap-3") —
+      // обёртка под информационные ссылки или контакты.
+      // rose: контактная колонка <div class="flex flex-col gap-3"> внутри
+      // правой колонки (line 114).
+      match: (n) => n.name === 'div' &&
+        hasAnyClassToken(n, 'flex') &&
+        hasAnyClassToken(n, 'flex-col') &&
+        hasAnyClassToken(n, 'gap-3'),
+    },
+    {
+      key: 'link',
+      // База: <a class={C.link}> в nav-колонке. rose: <a class="font-manrope ...">
+      // внутри <li> навигационной <ul>.
+      match: (n) => n.name === 'a' && (
+        // База link: 'text-[16px] text-[rgb(var(--color-muted))]'
+        (hasAnyClassToken(n, 'text-[16px]') && hasAnyClassToken(n, 'transition-colors')) ||
+        // rose: 'font-manrope !text-[16px] ... text-[#999999]'
+        (hasAnyClassToken(n, 'font-manrope') && hasAnyClassToken(n, '!text-[16px]'))
+      ),
+    },
+    {
+      key: 'email',
+      // База: <a class={C.email} href={`mailto:...`}>
+      // rose: <a href={`mailto:${email}`} class="font-manrope ...">
+      match: (n) => n.name === 'a' && (() => {
+        const href = getAttrValue(n, 'href');
+        return typeof href === 'string' && href.includes('mailto:');
+      })(),
+    },
+    {
+      key: 'socialRow',
+      // База: <div class={C.socialRow}> с дочерними <a data-platform=...>.
+      // rose: <div class="flex flex-wrap items-center gap-2 lg:justify-end">
+      // с дочерними <a aria-label="VK|YouTube|...">.
+      // Маркер: div, у которого есть ребёнок <a aria-label> с социальной платформой.
+      match: (n) => n.name === 'div' && Array.isArray(n.children) && n.children.some((c) =>
+        c && c.name === 'a' && (
+          hasAttr(c, 'data-platform') ||
+          ['VK', 'YouTube', 'YandexDzen', 'TikTok', 'Telegram'].includes(getAttrValue(c, 'aria-label') || '')
+        ),
+      ),
+    },
+    {
+      key: 'socialLink',
+      match: (n) => n.name === 'a' && (
+        hasAttr(n, 'data-platform') ||
+        ['VK', 'YouTube', 'YandexDzen', 'TikTok', 'Telegram'].includes(getAttrValue(n, 'aria-label') || '')
+      ),
+    },
+    {
+      key: 'copyright.bar',
+      // База: <div class={Ccopy.bar}> в конце footer ("w-full h-auto sm:h-20 ... bg-[rgb(var(--color-heading))]").
+      // rose: <div class="flex h-16 w-full items-center justify-center bg-black px-4">
+      match: (n) => n.name === 'div' &&
+        hasAnyClassToken(n, 'w-full') &&
+        hasAnyClassToken(n, 'items-center') &&
+        hasAnyClassToken(n, 'justify-center') && (
+          hasAnyClassToken(n, 'bg-[rgb(var(--color-heading))]') ||
+          hasAnyClassToken(n, 'bg-black')
+        ),
+    },
+    {
+      key: 'copyright.text',
+      // База: <p class={Ccopy.text}>. rose: <p class="text-center font-manrope text-[14px] ... text-white">
+      match: (n) => n.name === 'p' &&
+        hasAnyClassToken(n, 'text-center') && (
+          hasAnyClassToken(n, 'leading-[1.21]') ||
+          (hasAnyClassToken(n, 'font-manrope') && hasAnyClassToken(n, 'text-white'))
+        ),
+    },
+  ],
 };
 
 /**

@@ -155,6 +155,38 @@ test('checkPseudoStates: focus в источнике, hover в базе → focu
   assert.equal(r.ok, false);
 });
 
+// Корневая задача rose Footer: active:scale-95 в источнике покрыт
+// active:[transform:var(--token)] в базе (т.к. оба классифицируются как
+// transform/active/null).
+test('checkPseudoStates: active:scale-95 покрыт active:[transform:var(...)]', () => {
+  const source = `<button class="active:scale-95">x</button>`;
+  const base = `export const FooterClasses = {
+    submit: 'flex active:[transform:var(--footer-newsletter-submit-transform-active)]',
+  } as const;`;
+  const r = checkPseudoStates(source, base, 'FooterClasses');
+  assert.equal(r.ok, true, `active:scale-95 должен считаться покрытым; missing=${JSON.stringify(r.missing)}`);
+});
+
+test('checkPseudoStates: hover:scale-105 покрыт hover:[transform:var(...)]', () => {
+  const source = `<div class="hover:scale-105">x</div>`;
+  const base = `export const CardClasses = {
+    root: 'hover:[transform:var(--card-transform-hover)]',
+  } as const;`;
+  const r = checkPseudoStates(source, base, 'CardClasses');
+  assert.equal(r.ok, true);
+});
+
+test('checkPseudoStates: active:scale-95 НЕ покрыт другим transform-состоянием', () => {
+  // Если в base только hover:transform — active не покрыт
+  const source = `<button class="active:scale-95">x</button>`;
+  const base = `export const FooterClasses = {
+    submit: 'hover:[transform:var(--card-hover)]',
+  } as const;`;
+  const r = checkPseudoStates(source, base, 'FooterClasses');
+  assert.equal(r.ok, false);
+  assert.ok(r.missing.includes('active:scale-95'));
+});
+
 // ───────── checkHtmlStructure ─────────
 test('checkHtmlStructure: одинаковые → ok', () => {
   const html = `<div><span>x</span></div>`;

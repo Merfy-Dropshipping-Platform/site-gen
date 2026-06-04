@@ -49,6 +49,61 @@ test('propertyToUtilityName: неизвестное → null', () => {
   assert.equal(propertyToUtilityName('clip-path'), null);
 });
 
+test('propertyToUtilityName: transform → [transform (arbitrary property)', () => {
+  assert.equal(propertyToUtilityName('transform'), '[transform');
+});
+
+test('applyTokensToClass: transform/active → active:[transform:var(--token)]', () => {
+  const summary = { utilitiesReplaced: 0, utilitiesAdded: 0 };
+  const r = applyTokensToClass(
+    'flex size-9 shrink-0 items-center justify-center',
+    [{
+      name: '--footer-newsletter-submit-transform-active',
+      property: 'transform',
+      state: 'active',
+      breakpoint: null,
+    }],
+    summary,
+  );
+  assert.match(r, /active:\[transform:var\(--footer-newsletter-submit-transform-active\)\]/);
+  assert.equal(summary.utilitiesAdded, 1);
+});
+
+test('applyTokensToClass: transform/hover/md → md:hover:[transform:var(...)]', () => {
+  const summary = { utilitiesReplaced: 0, utilitiesAdded: 0 };
+  const r = applyTokensToClass(
+    'block',
+    [{
+      name: '--card-transform-hover-md',
+      property: 'transform',
+      state: 'hover',
+      breakpoint: 'md',
+    }],
+    summary,
+  );
+  assert.match(r, /md:hover:\[transform:var\(--card-transform-hover-md\)\]/);
+});
+
+test('applyTokensToClass: transform заменяет существующий scale-95 на arbitrary-токен', () => {
+  const summary = { utilitiesReplaced: 0, utilitiesAdded: 0 };
+  const r = applyTokensToClass(
+    'flex items-center active:scale-95',
+    [{
+      name: '--footer-newsletter-submit-transform-active',
+      property: 'transform',
+      state: 'active',
+      breakpoint: null,
+    }],
+    summary,
+  );
+  assert.match(r, /active:\[transform:var\(--footer-newsletter-submit-transform-active\)\]/);
+  // Старый active:scale-95 должен быть заменён (а не добавлен)
+  assert.equal(summary.utilitiesReplaced, 1);
+  assert.equal(summary.utilitiesAdded, 0);
+  assert.ok(!r.includes('active:scale-95'),
+    'Старый active:scale-95 должен быть удалён после замены');
+});
+
 // ───────── applyTokensToClass ─────────
 test('applyTokensToClass: заменяет существующую утилиту', () => {
   const summary = { utilitiesReplaced: 0, utilitiesAdded: 0 };

@@ -271,3 +271,341 @@ test('hasClassListToken: находит литерал в class:list', () => {
   const node = { attributes: [{ name: 'class:list', value: `[ 'w-full bg-black' ]` }] };
   assert.equal(hasClassListToken(node, 'w-full'), true);
 });
+
+// ───────── Footer селекторы ─────────
+// Минимальная фикстура базы — 3-col вариант с newsletter + 3 колонки + copyright.
+// Покрывает ключи: root, container, newsletter.*, main.section, main.grid,
+// column.root, column.title, column.nav, column.body, link, email, socialRow,
+// socialLink, copyright.bar, copyright.text.
+const MINIMAL_FOOTER_BASE_ASTRO = `---
+const x = 1;
+---
+<footer class="relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]">
+  <div class="mx-auto max-w-[var(--container-max-width)] px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16">
+    <section class="pb-10 sm:pb-12 md:pb-16 lg:pb-[40px]" aria-labelledby="newsletter-heading">
+      <div class="w-full">
+        <div class="flex flex-col gap-2">
+          <h2 id="newsletter-heading" class="text-[20px] uppercase">Newsletter</h2>
+          <p class="text-[16px] leading-[1.4]">Description</p>
+        </div>
+        <form class="w-full max-w-[652px]" data-action="newsletter">
+          <input type="email" name="email" class="flex-1 bg-transparent" />
+          <button type="submit" aria-label="Подписаться" class="w-8 h-8"></button>
+        </form>
+      </div>
+    </section>
+    <section class="pb-6" aria-label="Информация и навигация">
+      <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-8 md:gap-12 lg:gap-16">
+        <div class="flex flex-col gap-4 flex-1 min-w-0 max-w-[318px]">
+          <h3 class="text-[16px] uppercase">Навигация</h3>
+          <nav class="flex flex-col gap-3" aria-label="Footer navigation">
+            <a href="/about" class="text-[16px] transition-colors">О нас</a>
+          </nav>
+        </div>
+        <div class="flex flex-col gap-4 flex-1 min-w-0 max-w-[318px]">
+          <h3 class="text-[16px] uppercase">Информация</h3>
+          <div class="flex flex-col gap-3">
+            <a href="/legal/delivery" class="text-[16px] transition-colors">Доставка</a>
+          </div>
+        </div>
+        <div class="flex flex-col items-end max-w-[318px] md:self-stretch text-right">
+          <div class="flex flex-col gap-4 flex-1 min-w-0 max-w-[318px]">
+            <h3 class="text-[16px] uppercase">Контакты</h3>
+            <div class="flex flex-col gap-3">
+              <a href="mailto:hi@shop.merfy" class="text-[16px] transition-colors">hi@shop.merfy</a>
+              <div class="flex gap-4 items-center justify-end">
+                <a href="#" aria-label="Telegram" data-platform="telegram" class="w-6 h-6"></a>
+                <a href="#" aria-label="VK" data-platform="vk" class="w-6 h-6"></a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="w-full h-auto sm:h-20 md:h-24 lg:h-[100px] flex items-center justify-center py-6 sm:py-0 bg-[rgb(var(--color-heading))] text-[rgb(var(--color-bg))]">
+    <p class="text-[20px] font-light leading-[1.21] text-center px-4 sm:px-6">© 2026 Магазин. Все права защищены.</p>
+  </div>
+</footer>
+`;
+
+// Фикстура источника rose-темы (упрощённый вариант от sources/rose-Footer.astro).
+// Уникальные маркеры: max-w-[1920px], aria-label="Навигация по сайту",
+// data-newsletter-form, role="list", bg-black для copyright.
+const MINIMAL_FOOTER_ROSE_ASTRO = `---
+const phone = "+7 (000) 000-00-00";
+---
+<footer class="w-full bg-white">
+  <div class="mx-auto w-full max-w-[1920px] px-4 pb-20 pt-20 sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px]">
+    <div class="mx-auto flex w-full max-w-[1320px] flex-col gap-20">
+      <section class="flex w-full flex-col gap-5" aria-labelledby="newsletter-heading">
+        <div class="flex max-w-[1320px] flex-col gap-2 text-left">
+          <h2 id="newsletter-heading" class="rose-title !font-bold w-full">Подпишитесь</h2>
+          <p class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[#999999]">Получайте информацию</p>
+        </div>
+        <form class="flex h-14 w-full max-w-[430px] items-center gap-2 rounded-[4px]" data-newsletter-form>
+          <input type="email" name="email" required class="min-w-0 flex-1 bg-transparent" />
+          <button type="submit" aria-label="Подписаться" class="flex size-9 shrink-0 items-center justify-center"></button>
+        </form>
+      </section>
+      <section class="flex w-full flex-col gap-10 lg:flex-row lg:items-start lg:justify-between" aria-label="Навигация по сайту">
+        <div class="flex flex-col gap-10 sm:flex-row sm:gap-[200px]">
+          <ul class="flex flex-col gap-3" role="list">
+            <li>
+              <a href="/" class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[#999999]">Главная</a>
+            </li>
+          </ul>
+          <ul class="flex flex-col gap-3" role="list">
+            <li>
+              <a href="/legal/delivery" class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[#999999]">Доставка</a>
+            </li>
+          </ul>
+        </div>
+        <div class="flex flex-col gap-6 lg:max-w-[min(100%,430px)] lg:items-end lg:text-right">
+          <div class="flex flex-col gap-3">
+            <a href="tel:+70000000000" class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[#999999]">+7 (000) 000-00-00</a>
+            <a href="mailto:example@shop.merfy" class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[#999999]">example@shop.merfy</a>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 lg:justify-end">
+            <a href="#" aria-label="VK" class="flex size-6 items-center justify-center text-[#000000]"></a>
+            <a href="#" aria-label="Telegram" class="flex size-6 items-center justify-center text-[#000000]"></a>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+  <div class="flex h-16 w-full items-center justify-center bg-black px-4">
+    <p class="text-center font-manrope text-[14px] font-normal leading-none text-white">© 2026 Theme</p>
+  </div>
+</footer>
+`;
+
+test('Footer base: находит root по <footer>', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_FOOTER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Footer,
+    blockName: 'Footer',
+  });
+  assert.ok(classMap.root.found, 'root должен быть найден');
+  assert.ok(classMap.root.staticClass.includes('bg-[rgb(var(--color-bg))]'));
+});
+
+test('Footer base: находит container по max-w-[var(--container-max-width)]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_FOOTER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Footer,
+    blockName: 'Footer',
+  });
+  assert.ok(classMap.container.found);
+});
+
+test('Footer base: находит newsletter.wrapper по aria-labelledby', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_FOOTER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Footer,
+    blockName: 'Footer',
+  });
+  assert.ok(classMap['newsletter.wrapper'].found);
+});
+
+test('Footer base: находит newsletter.heading по id', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_FOOTER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Footer,
+    blockName: 'Footer',
+  });
+  assert.ok(classMap['newsletter.heading'].found);
+});
+
+test('Footer base: находит newsletter.form по data-action="newsletter"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_FOOTER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Footer,
+    blockName: 'Footer',
+  });
+  assert.ok(classMap['newsletter.form'].found);
+});
+
+test('Footer base: находит newsletter.submit по type+aria-label', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_FOOTER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Footer,
+    blockName: 'Footer',
+  });
+  assert.ok(classMap['newsletter.submit'].found);
+});
+
+test('Footer base: находит main.section по aria-label "Информация и навигация"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_FOOTER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Footer,
+    blockName: 'Footer',
+  });
+  assert.ok(classMap['main.section'].found);
+});
+
+test('Footer base: находит column.title по h3', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_FOOTER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Footer,
+    blockName: 'Footer',
+  });
+  assert.ok(classMap['column.title'].found);
+});
+
+test('Footer base: находит column.nav по aria-label="Footer navigation"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_FOOTER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Footer,
+    blockName: 'Footer',
+  });
+  assert.ok(classMap['column.nav'].found);
+});
+
+test('Footer base: находит email по href mailto:', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_FOOTER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Footer,
+    blockName: 'Footer',
+  });
+  assert.ok(classMap.email.found);
+});
+
+test('Footer base: находит socialLink по data-platform', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_FOOTER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Footer,
+    blockName: 'Footer',
+  });
+  assert.ok(classMap.socialLink.found);
+});
+
+test('Footer base: находит copyright.bar', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_FOOTER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Footer,
+    blockName: 'Footer',
+  });
+  assert.ok(classMap['copyright.bar'].found);
+});
+
+test('Footer base: находит copyright.text', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_FOOTER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Footer,
+    blockName: 'Footer',
+  });
+  assert.ok(classMap['copyright.text'].found);
+});
+
+// ───────── Footer rose-источник ─────────
+
+test('Footer rose: находит root по <footer>', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_FOOTER_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Footer,
+    blockName: 'Footer',
+  });
+  assert.ok(classMap.root.found);
+});
+
+test('Footer rose: находит container по max-w-[1920px]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_FOOTER_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Footer,
+    blockName: 'Footer',
+  });
+  assert.ok(classMap.container.found);
+  assert.ok(classMap.container.staticClass.includes('max-w-[1920px]'));
+});
+
+test('Footer rose: находит newsletter.form по data-newsletter-form', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_FOOTER_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Footer,
+    blockName: 'Footer',
+  });
+  assert.ok(classMap['newsletter.form'].found);
+});
+
+test('Footer rose: находит main.section по aria-label "Навигация по сайту"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_FOOTER_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Footer,
+    blockName: 'Footer',
+  });
+  assert.ok(classMap['main.section'].found);
+});
+
+test('Footer rose: находит column.root по role="list"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_FOOTER_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Footer,
+    blockName: 'Footer',
+  });
+  assert.ok(classMap['column.root'].found);
+});
+
+test('Footer rose: находит socialLink по aria-label="VK"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_FOOTER_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Footer,
+    blockName: 'Footer',
+  });
+  assert.ok(classMap.socialLink.found);
+});
+
+test('Footer rose: находит copyright.bar по bg-black', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_FOOTER_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Footer,
+    blockName: 'Footer',
+  });
+  assert.ok(classMap['copyright.bar'].found);
+});
+
+test('Footer rose: column.title НЕ найден (нет h3 в источнике rose)', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_FOOTER_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Footer,
+    blockName: 'Footer',
+  });
+  assert.equal(classMap['column.title'].found, false);
+});
+
+test('Footer rose: классы container содержат max-w-[1920px]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_FOOTER_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Footer,
+    blockName: 'Footer',
+  });
+  assert.ok(classMap.container.staticClass.includes('max-w-[1920px]'));
+});
+
+// ───────── Проброс псевдо-состояний (active:/hover:) до каталога ─────────
+//
+// Эти тесты воспроизводят логику `classifyTokens()` из catalog-block-aspects.mjs:
+// классы каждого элемента — массив, для каждого считаем classifyUtility,
+// формируем ключ `${property}|${state}|${breakpoint}`. Если `active:scale-95`
+// классифицируется правильно — в карте появится ключ `transform|active|`.
+
+function classifyTokensHelper(tokens) {
+  const map = {};
+  for (const tok of tokens) {
+    if (!tok) continue;
+    const c = classifyUtility(tok);
+    if (!c) continue;
+    const key = `${c.property}|${c.state || ''}|${c.breakpoint || ''}`;
+    map[key] = c.value;
+  }
+  return map;
+}
+
+test('classifyTokens: active:scale-95 в массиве → ключ transform|active|', () => {
+  const tokens = ['flex', 'size-9', 'shrink-0', 'items-center', 'active:scale-95'];
+  const map = classifyTokensHelper(tokens);
+  assert.equal(map['transform|active|'], 'scale(0.95)');
+});
+
+test('classifyTokens: hover:scale-105 в массиве → ключ transform|hover|', () => {
+  const tokens = ['p-4', 'rounded-md', 'hover:scale-105'];
+  const map = classifyTokensHelper(tokens);
+  assert.equal(map['transform|hover|'], 'scale(1.05)');
+});
+
+test('classifyTokens: md:hover:scale-110 → transform|hover|md', () => {
+  const tokens = ['md:hover:scale-110'];
+  const map = classifyTokensHelper(tokens);
+  assert.equal(map['transform|hover|md'], 'scale(1.1)');
+});
+
+// Краеугольный тест: классы кнопки submit из rose Footer (точная строка 69
+// из rose-Footer.astro) — после classify в карте обязан появиться ключ
+// transform|active|.
+test('classifyTokens: rose Footer submit button (строка 69 источника)', () => {
+  const tokens = (
+    'flex size-9 shrink-0 items-center justify-center ' +
+    'font-manrope text-[16px] font-normal leading-none text-[#000000] active:scale-95'
+  ).split(/\s+/);
+  const map = classifyTokensHelper(tokens);
+  assert.equal(map['transform|active|'], 'scale(0.95)',
+    'active:scale-95 должен классифицироваться как transform/active');
+});

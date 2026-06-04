@@ -71,7 +71,13 @@ export function applyTokensToClass(currentClass, tokens, summary) {
 
     const prefix = [token.breakpoint, token.state].filter(Boolean).join(':');
     const prefixDot = prefix ? `${prefix}:` : '';
-    const newValue = `${prefixDot}${propUtility}-[var(${token.name})]`;
+    // Arbitrary-property синтаксис Tailwind `[property:value]` — особый формат.
+    // Сюда подпадают `transform` и `font-family` (см. propertyToUtilityName).
+    // Для них собираем `[<property>:var(--токен)]` вместо `<utility>-[var(...)]`.
+    const isArbitraryProperty = propUtility.startsWith('[');
+    const newValue = isArbitraryProperty
+      ? `${prefixDot}${propUtility}:var(${token.name})]`
+      : `${prefixDot}${propUtility}-[var(${token.name})]`;
 
     // Найти существующую утилиту того же класса
     const idx = utilities.findIndex((u) => {
@@ -142,6 +148,7 @@ export function propertyToUtilityName(property) {
     'opacity':           'opacity',
     'font-weight':       'font',
     'font-family':       '[font-family',
+    'transform':         '[transform',
   };
   return map[property] || null;
 }

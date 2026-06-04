@@ -10,21 +10,21 @@
  */
 export const FooterClasses = {
   root: 'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
-  container: 'mx-auto max-w-[var(--container-max-width)] px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16',
+  container: 'mx-auto max-w-[var(--footer-container-max-width)] px-4 sm:px-[var(--footer-container-padding-x-sm)] md:px-[var(--footer-container-padding-x-md)] lg:px-[var(--footer-container-padding-x-lg)] xl:px-[var(--footer-container-padding-x-xl)] w-[var(--footer-container-width)] pb-[var(--footer-container-padding-bottom)] pt-[var(--footer-container-padding-top)] 2xl:px-[var(--footer-container-padding-x-2xl)]',
   newsletter: {
-    wrapper: 'pb-10 sm:pb-12 md:pb-16 lg:pb-[40px]',
+    wrapper: 'pb-10 sm:pb-12 md:pb-16 lg:pb-[40px] w-[var(--footer-newsletter-wrapper-width)] gap-[var(--footer-newsletter-wrapper-gap)]',
     inner: 'w-full',
-    copy: 'flex flex-col gap-2',
-    heading: '[font-family:var(--font-heading)] font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading))] text-[20px]',
+    copy: 'flex flex-col gap-2 max-w-[var(--footer-newsletter-copy-max-width)]',
+    heading: '[font-family:var(--font-heading)] font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading))] text-[20px] w-[var(--footer-newsletter-heading-width)]',
     description: '[font-family:var(--font-body)] font-light leading-[1.4] text-[16px] text-[rgb(var(--color-muted))]',
-    form: 'w-full max-w-[652px] mt-6 h-[64px] flex items-center justify-between px-4 rounded-[8px] border border-[rgb(var(--color-muted))]/30 bg-[rgb(var(--color-bg))]',
-    input: 'flex-1 bg-transparent text-[20px] [font-family:var(--font-body)] font-light leading-[1.4] outline-none text-[rgb(var(--color-text))] placeholder:text-[rgb(var(--color-muted))]',
-    submit: 'w-8 h-8 flex items-center justify-center text-[rgb(var(--color-text))] hover:scale-110 transition-transform',
+    form: 'w-full max-w-[var(--footer-newsletter-form-max-width)] mt-6 h-[var(--footer-newsletter-form-height)] flex items-center justify-between px-4 rounded-[var(--footer-newsletter-form-border-radius)] border border-[rgb(var(--color-muted))]/30 bg-[rgb(var(--color-bg))] gap-[var(--footer-newsletter-form-gap)] border-[var(--footer-newsletter-form-border-color)] pl-[var(--footer-newsletter-form-padding-left)] pr-[var(--footer-newsletter-form-padding-right)] focus-within:border-[var(--footer-newsletter-form-border-color-focus-within)]',
+    input: 'flex-1 bg-transparent text-[var(--footer-newsletter-input-font-size)] [font-family:var(--font-body)] font-light leading-[1.4] outline-none text-[rgb(var(--color-text))] placeholder:text-[rgb(var(--color-muted))]',
+    submit: 'w-8 h-8 flex items-center justify-center text-[rgb(var(--color-text))] hover:scale-110 transition-transform text-[var(--footer-newsletter-submit-font-size)] active:[transform:var(--footer-newsletter-submit-transform-active)]',
   },
   main: {
-    section: 'pb-6 sm:pb-8 md:pb-10 lg:pb-12 xl:pb-16',
+    section: 'pb-6 sm:pb-8 md:pb-10 lg:pb-12 xl:pb-16 w-[var(--footer-main-section-width)] gap-[var(--footer-main-section-gap)]',
     // 3-col grid (Figma 905-19155): 3 equal-ish columns, last aligned right
-    grid: 'flex flex-col md:flex-row md:items-start md:justify-between gap-8 md:gap-12 lg:gap-16',
+    grid: 'flex flex-col md:flex-row md:items-start md:justify-between gap-[var(--footer-main-grid-gap)] md:gap-12 lg:gap-16 sm:gap-[var(--footer-main-grid-gap-sm)]',
     socialColumnWrap: 'flex flex-col items-end max-w-[318px] md:self-stretch text-right',
     // minimal variant fallback (kept for bloom-like usage)
     twoPart: 'flex flex-wrap items-start justify-between gap-8',
@@ -39,7 +39,7 @@ export const FooterClasses = {
   },
   // Per-column structure (used by 3-col variant — title + body or nav)
   column: {
-    root: 'flex flex-col gap-4 flex-1 min-w-0 max-w-[318px]',
+    root: 'flex flex-col gap-[var(--footer-column-root-gap)] flex-1 min-w-0 max-w-[318px]',
     title: '[font-family:var(--font-heading)] font-normal uppercase leading-[1.2] text-[16px] text-[rgb(var(--color-heading))]',
     body: 'flex flex-col gap-3',
     nav: 'flex flex-col gap-3',
@@ -50,8 +50,8 @@ export const FooterClasses = {
   socialLink: 'w-6 h-6 flex items-center justify-center text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))] transition-colors',
   copyright: {
     // Figma 905-19155: full-width black bar, h-100, centered text 20px light white
-    bar: 'w-full h-auto sm:h-20 md:h-24 lg:h-[100px] flex items-center justify-center py-6 sm:py-0 bg-[rgb(var(--color-heading))] text-[rgb(var(--color-bg))]',
-    text: '[font-family:var(--font-body)] font-light leading-[1.21] text-[20px] text-center px-4 sm:px-6',
+    bar: 'w-full h-[var(--footer-copyright-bar-height)] sm:h-20 md:h-24 lg:h-[100px] flex items-center justify-center py-6 sm:py-0 bg-[rgb(var(--color-heading))] text-[rgb(var(--color-bg))] px-[var(--footer-copyright-bar-padding-x)]',
+    text: '[font-family:var(--font-body)] font-light leading-[1.21] text-[var(--footer-copyright-text-color)] text-center px-4 sm:px-6',
   },
   /**
    * 084 vanilla pilot — additive `variant` value `'2-part-asymmetric'`.

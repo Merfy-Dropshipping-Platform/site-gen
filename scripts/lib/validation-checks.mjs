@@ -14,6 +14,7 @@ const require = createRequire(import.meta.url);
 
 import { extractClassesObject, flattenClasses as flattenCT } from './classes-ts.mjs';
 import { extractStringLiterals } from './astro-parse.mjs';
+import { classifyUtility } from './utility-classify.mjs';
 
 /** Проверка 1: сравнение классов */
 export function checkClassesPreserved(beforeHtml, afterHtml) {
@@ -111,12 +112,29 @@ export function checkPseudoStates(sourceAstroText, baseClassesText, exportName) 
   }
 
   const missing = [];
+  // Кэш классификации base-утилит (по property+state+breakpoint)
+  const baseByKey = new Map();
+  for (const t of baseTokens) {
+    const c = classifyUtility(t);
+    if (!c) continue;
+    const key = `${c.property}|${c.state || ''}|${c.breakpoint || ''}`;
+    if (!baseByKey.has(key)) baseByKey.set(key, []);
+    baseByKey.get(key).push(t);
+  }
+
   for (const state of sourceStates) {
-    // Совпадение: либо точно такой же токен есть в base, либо в base есть
-    // утилита с тем же префиксом и var(--токен) значением
+    // 1) Точное совпадение токена в base
     if (baseTokens.has(state)) continue;
-    // Эвристика: ищем `hover:text-...` → есть ли `hover:text-[...]` в base?
-    const prefix = state.split('[')[0].replace(/-[^-:]*$/, ''); // hover:text
+    // 2) Семантическое совпадение: в base есть утилита с тем же property+state+
+    //    breakpoint (например `active:scale-95` покрыт `active:[transform:var(...)]`)
+    const c = classifyUtility(state);
+    if (c) {
+      const key = `${c.property}|${c.state || ''}|${c.breakpoint || ''}`;
+      if (baseByKey.has(key)) continue;
+    }
+    // 3) Старая текстовая эвристика как запасной вариант для несклассифи-
+    //    цированных утилит (`hover:transition-colors` и т.п.)
+    const prefix = state.split('[')[0].replace(/-[^-:]*$/, '');
     const hasMatching = Array.from(baseTokens).some((t) => t.startsWith(prefix));
     if (!hasMatching) missing.push(state);
   }

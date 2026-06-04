@@ -323,6 +323,113 @@ export function classifyUtility(token) {
     return { property: 'box-shadow', value: rest || 'default', state, breakpoint };
   }
 
+  // ── transform-* (scale / rotate / translate / skew) ──
+  //
+  // Tailwind shorthand на shorthand: `scale-95`, `rotate-45`, `translate-x-2`,
+  // `skew-y-12`. Все они компилируются в `transform: ...` и должны входить в
+  // одно CSS-свойство `transform` (иначе токены состояний типа `active:`
+  // теряются — см. провал приёмки rose Footer от 2026-06-04).
+  //
+  // Arbitrary: `[transform:scale(0.9)]` → property=transform, value берётся
+  // как есть.
+  if (base.startsWith('[transform:') && base.endsWith(']')) {
+    const v = base.slice('[transform:'.length, -1);
+    return { property: 'transform', value: v, state, breakpoint };
+  }
+
+  // scale-N / scale-x-N / scale-y-N
+  const scaleMatch = base.match(/^scale(-([xy]))?-(.+)$/);
+  if (scaleMatch) {
+    const axis = scaleMatch[2]; // 'x' | 'y' | undefined
+    const rest = scaleMatch[3];
+    const num = scaleArbitraryOrNamed(rest);
+    if (num !== null) {
+      const fn = axis ? `scale${axis.toUpperCase()}` : 'scale';
+      return { property: 'transform', value: `${fn}(${num})`, state, breakpoint };
+    }
+    return null;
+  }
+
+  // rotate-N
+  const rotateMatch = base.match(/^rotate-(.+)$/);
+  if (rotateMatch) {
+    const rest = rotateMatch[1];
+    if (rest.startsWith('[') && rest.endsWith(']')) {
+      return { property: 'transform', value: `rotate(${rest.slice(1, -1)})`, state, breakpoint };
+    }
+    if (/^-?\d+(\.\d+)?$/.test(rest)) {
+      return { property: 'transform', value: `rotate(${rest}deg)`, state, breakpoint };
+    }
+    return null;
+  }
+
+  // translate-x-N / translate-y-N
+  const translateMatch = base.match(/^translate-([xy])-(.+)$/);
+  if (translateMatch) {
+    const axis = translateMatch[1];
+    const rest = translateMatch[2];
+    if (rest.startsWith('[') && rest.endsWith(']')) {
+      return {
+        property: 'transform',
+        value: `translate${axis.toUpperCase()}(${rest.slice(1, -1)})`,
+        state,
+        breakpoint,
+      };
+    }
+    if (/^-?\d+$/.test(rest)) {
+      // Tailwind translate spacing-scale: 4px на шаг
+      const px = parseInt(rest, 10) * 4;
+      return {
+        property: 'transform',
+        value: `translate${axis.toUpperCase()}(${px}px)`,
+        state,
+        breakpoint,
+      };
+    }
+    return null;
+  }
+
+  // skew-x-N / skew-y-N
+  const skewMatch = base.match(/^skew-([xy])-(.+)$/);
+  if (skewMatch) {
+    const axis = skewMatch[1];
+    const rest = skewMatch[2];
+    if (rest.startsWith('[') && rest.endsWith(']')) {
+      return {
+        property: 'transform',
+        value: `skew${axis.toUpperCase()}(${rest.slice(1, -1)})`,
+        state,
+        breakpoint,
+      };
+    }
+    if (/^-?\d+(\.\d+)?$/.test(rest)) {
+      return {
+        property: 'transform',
+        value: `skew${axis.toUpperCase()}(${rest}deg)`,
+        state,
+        breakpoint,
+      };
+    }
+    return null;
+  }
+
+  return null;
+}
+
+/**
+ * Преобразовать Tailwind-число шкалы scale (`95` → `0.95`) или вернуть
+ * arbitrary-значение из квадратных скобок. Возвращает строку готовую вставить
+ * в `scale(...)`. null если не распознать.
+ */
+function scaleArbitraryOrNamed(rest) {
+  if (!rest) return null;
+  if (rest.startsWith('[') && rest.endsWith(']')) {
+    return rest.slice(1, -1);
+  }
+  if (/^\d+$/.test(rest)) {
+    const n = parseInt(rest, 10);
+    return String(n / 100);
+  }
   return null;
 }
 

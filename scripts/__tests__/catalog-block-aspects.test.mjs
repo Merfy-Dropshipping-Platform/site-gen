@@ -2128,6 +2128,79 @@ test('Gallery rose: item НЕ найден (у rose нет block+overflow-hidden
   assert.equal(classMap.item.found, false);
 });
 
+// ───────── Gallery ctaButton (vanilla) ─────────
+// vanilla источник (sources/vanilla-Gallery.astro) добавляет CTA-ссылки в
+// featured layout — большая плитка («К покупкам») и маленькая («Смотреть
+// больше»). Селектор ctaButton ловит первую такую <a> с inline-flex +
+// bg-transparent + border. Base Gallery таких кнопок не имеет → not-found.
+
+const MINIMAL_GALLERY_VANILLA_ASTRO = `---
+const introTitle = "Тепло вашего дома начинается здесь";
+const introText = "Описание промо";
+const careTitle = "Ваш дом — наша забота";
+---
+<section
+  id="gallery"
+  class="w-full text-white"
+  aria-labelledby="gallery-title"
+  data-vanilla-gallery
+  data-vanilla-stack
+>
+  <div class="vanilla-pad bg-[var(--vanilla-header-bg)] py-16 lg:py-20" data-gallery-promo>
+    <div class="mx-auto flex w-full max-w-[1280px] min-[1920px]:max-w-[1320px] flex-col items-center text-center">
+      <h2 id="gallery-title" class="font-vanilla-bitter text-[16px] font-normal italic leading-none tracking-normal text-white">{introTitle}</h2>
+      <p class="mt-10 w-full max-w-[680px] font-vanilla-arsenal text-[14px] font-normal italic leading-[1.5] text-[var(--vanilla-hero-subtle)] min-[1920px]:max-w-[1320px] min-[1920px]:text-[16px]">{introText}</p>
+      <a
+        href="/catalog/textile"
+        class="mt-10 inline-flex h-10 min-h-10 items-center justify-center border border-white bg-transparent px-3 font-vanilla-arsenal text-[14px] font-normal uppercase leading-none tracking-normal text-white transition-opacity hover:opacity-80"
+      >К покупкам</a>
+    </div>
+  </div>
+  <div class="vanilla-pad bg-[var(--vanilla-header-bg)] py-16 lg:py-[120px]" data-gallery-care>
+    <div class="mx-auto flex w-full max-w-[1280px] flex-col items-center gap-10 lg:flex-row lg:justify-center lg:gap-10">
+      <div class="flex w-full max-w-[352px] flex-col items-start">
+        <h3 class="font-vanilla-bitter text-[20px] font-normal italic leading-none tracking-normal text-white">{careTitle}</h3>
+        <div class="mt-5 flex w-full flex-col gap-4">
+          <p class="font-vanilla-arsenal text-[14px] font-normal italic leading-[1.5] text-[var(--vanilla-hero-subtle)]">Описание</p>
+        </div>
+        <a
+          href="/about"
+          class="mt-10 inline-flex h-12 min-h-12 items-center justify-center self-start border-[1.3px] border-white bg-transparent px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-white transition-opacity hover:opacity-80"
+        >Смотреть больше</a>
+      </div>
+    </div>
+  </div>
+</section>
+`;
+
+test('Gallery vanilla: находит ctaButton по inline-flex + bg-transparent + border', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_VANILLA_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.ctaButton.found, 'ctaButton должен быть найден в vanilla');
+  // first-match — кнопка «К покупкам» (строка 45 в vanilla-Gallery.astro)
+  assert.ok(classMap.ctaButton.staticClass.includes('inline-flex'));
+  assert.ok(classMap.ctaButton.staticClass.includes('bg-transparent'));
+  assert.ok(classMap.ctaButton.staticClass.includes('hover:opacity-80'));
+});
+
+test('Gallery base featured: ctaButton НЕ найден (у base нет CTA-ссылок в Gallery)', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.equal(classMap.ctaButton.found, false);
+});
+
+test('Gallery rose: ctaButton НЕ найден (rose не использует CTA-ссылки в Gallery)', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.equal(classMap.ctaButton.found, false);
+});
+
 // ───────── Newsletter блок ─────────
 // Покрывает оба источника:
 //   1) База theme-base/blocks/Newsletter/Newsletter.astro (compact form

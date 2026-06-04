@@ -1,568 +1,166 @@
 {
   "block": "Gallery",
-  "theme": "rose",
-  "source": "github://Merfy-Dropshipping-Platform/rose-theme@main:src/components/sections/Gallery.astro",
-  "fetchedAt": "2026-06-04T15:36:04.488Z",
+  "theme": "vanilla",
+  "source": "github://Merfy-Dropshipping-Platform/vanilla-theme@main:src/components/sections/Gallery.astro",
+  "fetchedAt": "2026-06-04T17:38:02.829Z",
   "elementsFound": 14,
-  "tokensProposed": 31,
-  "tokensFiltered": 14,
+  "tokensProposed": 9,
+  "tokensFiltered": 2,
   "elements": {
-    "root": {
-      "padding-x": {
+    "heading": {
+      "font-size": {
         "default": {
-          "base": "(нет)",
+          "base": "14px",
           "source": "16px"
-        },
-        "sm": {
-          "base": "(нет)",
-          "source": "20px"
-        },
-        "md": {
-          "base": "(нет)",
-          "source": "40px"
-        },
-        "lg": {
-          "base": "(нет)",
-          "source": "64px"
-        },
-        "xl": {
-          "base": "(нет)",
-          "source": "80px"
-        },
-        "2xl": {
-          "base": "(нет)",
-          "source": "280px"
-        }
-      },
-      "padding-bottom": {
-        "default": {
-          "base": "(нет)",
-          "source": "56px"
-        },
-        "sm": {
-          "base": "(нет)",
-          "source": "64px"
-        },
-        "md": {
-          "base": "(нет)",
-          "source": "100px"
-        },
-        "lg": {
-          "base": "(нет)",
-          "source": "120px"
-        },
-        "xl": {
-          "base": "(нет)",
-          "source": "140px"
-        }
-      },
-      "padding-top": {
-        "default": {
-          "base": "(нет)",
-          "source": "56px"
-        },
-        "sm": {
-          "base": "(нет)",
-          "source": "64px"
-        },
-        "md": {
-          "base": "(нет)",
-          "source": "100px"
-        },
-        "lg": {
-          "base": "(нет)",
-          "source": "120px"
-        },
-        "xl": {
-          "base": "(нет)",
-          "source": "140px"
         }
       }
     },
-    "container": {
-      "max-width": {
+    "ctaButton": {
+      "margin-top": {
         "default": {
-          "base": "var(--container-max-width)",
-          "source": "1320px"
-        }
-      },
-      "gap": {
-        "default": {
-          "base": "(нет)",
-          "source": "32px"
-        },
-        "md": {
           "base": "(нет)",
           "source": "40px"
         }
-      }
-    },
-    "inner": {
-      "gap": {
+      },
+      "height": {
         "default": {
           "base": "(нет)",
-          "source": "24px"
-        },
-        "md": {
-          "base": "(нет)",
-          "source": "32px"
-        },
-        "lg": {
-          "base": "(нет)",
-          "source": "24px"
-        },
-        "xl": {
-          "base": "(нет)",
-          "source": "32px"
-        }
-      }
-    },
-    "itemPrimary": {
-      "border-radius": {
-        "default": {
-          "base": "var(--radius-media)",
-          "source": "8px"
+          "source": "40px"
         }
       },
       "min-height": {
         "default": {
           "base": "(нет)",
-          "source": "280px"
+          "source": "40px"
         }
-      }
-    },
-    "itemSmall": {
-      "gap": {
+      },
+      "border-color": {
         "default": {
-          "base": "8px",
-          "source": "16px"
-        },
-        "md": {
           "base": "(нет)",
-          "source": "20px"
+          "source": "white"
         }
-      }
-    },
-    "cardMedia": {
-      "border-radius": {
+      },
+      "padding-x": {
         "default": {
-          "base": "var(--radius-media)",
-          "source": "8px"
+          "base": "(нет)",
+          "source": "12px"
         }
-      }
-    },
-    "cardLabel": {
+      },
       "font-size": {
         "default": {
-          "base": "14px",
-          "source": "16px"
-        },
-        "md": {
           "base": "(нет)",
-          "source": "16px"
-        },
-        "lg": {
-          "base": "(нет)",
-          "source": "16px"
-        },
-        "xl": {
-          "base": "(нет)",
-          "source": "16px"
-        }
-      }
-    },
-    "cardPrice": {
-      "font-size": {
-        "default": {
-          "base": "14px",
-          "source": "16px"
-        },
-        "md": {
-          "base": "(нет)",
-          "source": "16px"
-        },
-        "lg": {
-          "base": "(нет)",
-          "source": "16px"
-        },
-        "xl": {
-          "base": "(нет)",
-          "source": "16px"
+          "source": "14px"
         }
       },
       "color": {
         "default": {
           "base": "(нет)",
-          "source": "black"
+          "source": "white"
+        }
+      },
+      "opacity": {
+        "hover": {
+          "base": "(нет)",
+          "source": "0.8"
         }
       }
     }
   },
   "tokensSuggested": [
     {
-      "name": "--gallery-root-padding-x",
-      "fallback": "16px",
+      "name": "--gallery-heading-font-size",
+      "fallback": "14px",
       "themeValue": "16px",
-      "element": "root",
-      "property": "padding-x",
+      "element": "heading",
+      "property": "font-size",
       "state": null,
       "breakpoint": null
     },
     {
-      "name": "--gallery-root-padding-x-sm",
-      "fallback": "20px",
-      "themeValue": "20px",
-      "element": "root",
-      "property": "padding-x",
-      "state": null,
-      "breakpoint": "sm"
-    },
-    {
-      "name": "--gallery-root-padding-x-md",
+      "name": "--gallery-cta-button-margin-top",
       "fallback": "40px",
       "themeValue": "40px",
-      "element": "root",
-      "property": "padding-x",
-      "state": null,
-      "breakpoint": "md"
-    },
-    {
-      "name": "--gallery-root-padding-x-lg",
-      "fallback": "64px",
-      "themeValue": "64px",
-      "element": "root",
-      "property": "padding-x",
-      "state": null,
-      "breakpoint": "lg"
-    },
-    {
-      "name": "--gallery-root-padding-x-xl",
-      "fallback": "80px",
-      "themeValue": "80px",
-      "element": "root",
-      "property": "padding-x",
-      "state": null,
-      "breakpoint": "xl"
-    },
-    {
-      "name": "--gallery-root-padding-x-2xl",
-      "fallback": "280px",
-      "themeValue": "280px",
-      "element": "root",
-      "property": "padding-x",
-      "state": null,
-      "breakpoint": "2xl"
-    },
-    {
-      "name": "--gallery-root-padding-bottom",
-      "fallback": "56px",
-      "themeValue": "56px",
-      "element": "root",
-      "property": "padding-bottom",
+      "element": "ctaButton",
+      "property": "margin-top",
       "state": null,
       "breakpoint": null
     },
     {
-      "name": "--gallery-root-padding-bottom-sm",
-      "fallback": "64px",
-      "themeValue": "64px",
-      "element": "root",
-      "property": "padding-bottom",
-      "state": null,
-      "breakpoint": "sm"
-    },
-    {
-      "name": "--gallery-root-padding-bottom-md",
-      "fallback": "100px",
-      "themeValue": "100px",
-      "element": "root",
-      "property": "padding-bottom",
-      "state": null,
-      "breakpoint": "md"
-    },
-    {
-      "name": "--gallery-root-padding-bottom-lg",
-      "fallback": "120px",
-      "themeValue": "120px",
-      "element": "root",
-      "property": "padding-bottom",
-      "state": null,
-      "breakpoint": "lg"
-    },
-    {
-      "name": "--gallery-root-padding-bottom-xl",
-      "fallback": "140px",
-      "themeValue": "140px",
-      "element": "root",
-      "property": "padding-bottom",
-      "state": null,
-      "breakpoint": "xl"
-    },
-    {
-      "name": "--gallery-root-padding-top",
-      "fallback": "56px",
-      "themeValue": "56px",
-      "element": "root",
-      "property": "padding-top",
-      "state": null,
-      "breakpoint": null
-    },
-    {
-      "name": "--gallery-root-padding-top-sm",
-      "fallback": "64px",
-      "themeValue": "64px",
-      "element": "root",
-      "property": "padding-top",
-      "state": null,
-      "breakpoint": "sm"
-    },
-    {
-      "name": "--gallery-root-padding-top-md",
-      "fallback": "100px",
-      "themeValue": "100px",
-      "element": "root",
-      "property": "padding-top",
-      "state": null,
-      "breakpoint": "md"
-    },
-    {
-      "name": "--gallery-root-padding-top-lg",
-      "fallback": "120px",
-      "themeValue": "120px",
-      "element": "root",
-      "property": "padding-top",
-      "state": null,
-      "breakpoint": "lg"
-    },
-    {
-      "name": "--gallery-root-padding-top-xl",
-      "fallback": "140px",
-      "themeValue": "140px",
-      "element": "root",
-      "property": "padding-top",
-      "state": null,
-      "breakpoint": "xl"
-    },
-    {
-      "name": "--gallery-container-max-width",
-      "fallback": "1320px",
-      "themeValue": "1320px",
-      "element": "container",
-      "property": "max-width",
-      "state": null,
-      "breakpoint": null
-    },
-    {
-      "name": "--gallery-container-gap",
-      "fallback": "32px",
-      "themeValue": "32px",
-      "element": "container",
-      "property": "gap",
-      "state": null,
-      "breakpoint": null
-    },
-    {
-      "name": "--gallery-container-gap-md",
+      "name": "--gallery-cta-button-height",
       "fallback": "40px",
       "themeValue": "40px",
-      "element": "container",
-      "property": "gap",
-      "state": null,
-      "breakpoint": "md"
-    },
-    {
-      "name": "--gallery-inner-gap",
-      "fallback": "24px",
-      "themeValue": "24px",
-      "element": "inner",
-      "property": "gap",
+      "element": "ctaButton",
+      "property": "height",
       "state": null,
       "breakpoint": null
     },
     {
-      "name": "--gallery-inner-gap-md",
-      "fallback": "32px",
-      "themeValue": "32px",
-      "element": "inner",
-      "property": "gap",
-      "state": null,
-      "breakpoint": "md"
-    },
-    {
-      "name": "--gallery-inner-gap-lg",
-      "fallback": "24px",
-      "themeValue": "24px",
-      "element": "inner",
-      "property": "gap",
-      "state": null,
-      "breakpoint": "lg"
-    },
-    {
-      "name": "--gallery-inner-gap-xl",
-      "fallback": "32px",
-      "themeValue": "32px",
-      "element": "inner",
-      "property": "gap",
-      "state": null,
-      "breakpoint": "xl"
-    },
-    {
-      "name": "--gallery-item-primary-border-radius",
-      "fallback": "var(--radius-media)",
-      "themeValue": "8px",
-      "element": "itemPrimary",
-      "property": "border-radius",
-      "state": null,
-      "breakpoint": null
-    },
-    {
-      "name": "--gallery-item-primary-min-height",
-      "fallback": "280px",
-      "themeValue": "280px",
-      "element": "itemPrimary",
+      "name": "--gallery-cta-button-min-height",
+      "fallback": "40px",
+      "themeValue": "40px",
+      "element": "ctaButton",
       "property": "min-height",
       "state": null,
       "breakpoint": null
     },
     {
-      "name": "--gallery-item-small-gap",
-      "fallback": "8px",
-      "themeValue": "16px",
-      "element": "itemSmall",
-      "property": "gap",
+      "name": "--gallery-cta-button-border-color",
+      "fallback": "white",
+      "themeValue": "white",
+      "element": "ctaButton",
+      "property": "border-color",
       "state": null,
       "breakpoint": null
     },
     {
-      "name": "--gallery-item-small-gap-md",
-      "fallback": "20px",
-      "themeValue": "20px",
-      "element": "itemSmall",
-      "property": "gap",
-      "state": null,
-      "breakpoint": "md"
-    },
-    {
-      "name": "--gallery-card-media-border-radius",
-      "fallback": "var(--radius-media)",
-      "themeValue": "8px",
-      "element": "cardMedia",
-      "property": "border-radius",
+      "name": "--gallery-cta-button-padding-x",
+      "fallback": "12px",
+      "themeValue": "12px",
+      "element": "ctaButton",
+      "property": "padding-x",
       "state": null,
       "breakpoint": null
     },
     {
-      "name": "--gallery-card-label-font-size",
+      "name": "--gallery-cta-button-font-size",
       "fallback": "14px",
-      "themeValue": "16px",
-      "element": "cardLabel",
+      "themeValue": "14px",
+      "element": "ctaButton",
       "property": "font-size",
       "state": null,
       "breakpoint": null
     },
     {
-      "name": "--gallery-card-price-font-size",
-      "fallback": "14px",
-      "themeValue": "16px",
-      "element": "cardPrice",
-      "property": "font-size",
-      "state": null,
-      "breakpoint": null
-    },
-    {
-      "name": "--gallery-card-price-color",
-      "fallback": "black",
-      "themeValue": "black",
-      "element": "cardPrice",
+      "name": "--gallery-cta-button-color",
+      "fallback": "white",
+      "themeValue": "white",
+      "element": "ctaButton",
       "property": "color",
       "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--gallery-cta-button-opacity-hover",
+      "fallback": "0.8",
+      "themeValue": "0.8",
+      "element": "ctaButton",
+      "property": "opacity",
+      "state": "hover",
       "breakpoint": null
     }
   ],
   "tokensFilteredList": [
     {
-      "name": "--gallery-root-background-color",
+      "name": "--gallery-root-color",
       "reason": "local color in source overrides scheme-driven base — kept base scheme",
-      "base": "rgb(var(--color-bg))",
+      "base": "rgb(var(--color-text))",
       "source": "white"
     },
     {
-      "name": "--gallery-container-width",
-      "reason": "structural dimension or text-align (width: full)",
-      "base": "(нет)",
-      "source": "full"
-    },
-    {
-      "name": "--gallery-item-primary-background-color",
-      "reason": "local color in source overrides scheme-driven base — kept base scheme",
-      "base": "rgb(var(--color-surface))",
-      "source": "#F5F5F5"
-    },
-    {
-      "name": "--gallery-item-primary-width",
-      "reason": "structural dimension or text-align (width: full)",
-      "base": "(нет)",
-      "source": "full"
-    },
-    {
-      "name": "--gallery-item-primary-height-lg",
-      "reason": "structural dimension or text-align (height: full)",
-      "base": "(нет)",
-      "source": "full"
-    },
-    {
-      "name": "--gallery-item-small-text-align",
-      "reason": "structural dimension or text-align (text-align: left)",
-      "base": "(нет)",
-      "source": "left"
-    },
-    {
-      "name": "--gallery-card-media-background-color",
-      "reason": "local color in source overrides scheme-driven base — kept base scheme",
-      "base": "rgb(var(--color-surface))",
-      "source": "#F5F5F5"
-    },
-    {
-      "name": "--gallery-card-label-color",
+      "name": "--gallery-heading-color",
       "reason": "local color in source overrides scheme-driven base — kept base scheme",
       "base": "rgb(var(--color-heading))",
-      "source": "black"
-    },
-    {
-      "name": "--gallery-card-label-font-size-md",
-      "reason": "duplicate of --gallery-card-label-font-size across breakpoints (all = 16px)",
-      "base": "16px",
-      "source": "16px"
-    },
-    {
-      "name": "--gallery-card-label-font-size-lg",
-      "reason": "duplicate of --gallery-card-label-font-size across breakpoints (all = 16px)",
-      "base": "16px",
-      "source": "16px"
-    },
-    {
-      "name": "--gallery-card-label-font-size-xl",
-      "reason": "duplicate of --gallery-card-label-font-size across breakpoints (all = 16px)",
-      "base": "16px",
-      "source": "16px"
-    },
-    {
-      "name": "--gallery-card-price-font-size-md",
-      "reason": "duplicate of --gallery-card-price-font-size across breakpoints (all = 16px)",
-      "base": "16px",
-      "source": "16px"
-    },
-    {
-      "name": "--gallery-card-price-font-size-lg",
-      "reason": "duplicate of --gallery-card-price-font-size across breakpoints (all = 16px)",
-      "base": "16px",
-      "source": "16px"
-    },
-    {
-      "name": "--gallery-card-price-font-size-xl",
-      "reason": "duplicate of --gallery-card-price-font-size across breakpoints (all = 16px)",
-      "base": "16px",
-      "source": "16px"
+      "source": "white"
     }
   ]
 }

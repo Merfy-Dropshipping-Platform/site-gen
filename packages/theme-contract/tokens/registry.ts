@@ -336,6 +336,16 @@ export const TOKEN_REGISTRY = {
   '--popular-products-root-padding-y-md': { category: 'spacing', unit: 'px', scope: 'theme' },
   '--popular-products-heading-font-size': { category: 'size', unit: 'px', scope: 'theme' },
   '--popular-products-heading-color': { category: 'color', scope: 'theme' },
+  // ── v2 миграция — токены блока (добавлено скриптом)
+  '--gallery-heading-font-size': { category: 'size', unit: 'px', scope: 'theme' },
+  '--gallery-cta-button-margin-top': { category: 'spacing', unit: 'px', scope: 'theme' },
+  '--gallery-cta-button-height': { category: 'size', unit: 'px', scope: 'theme' },
+  '--gallery-cta-button-min-height': { category: 'size', unit: 'px', scope: 'theme' },
+  '--gallery-cta-button-border-color': { category: 'color', scope: 'theme' },
+  '--gallery-cta-button-padding-x': { category: 'spacing', unit: 'px', scope: 'theme' },
+  '--gallery-cta-button-font-size': { category: 'size', unit: 'px', scope: 'theme' },
+  '--gallery-cta-button-color': { category: 'color', scope: 'theme' },
+  '--gallery-cta-button-opacity-hover': { category: 'size', scope: 'theme' },
 } as const satisfies Record<`--${string}`, TokenMeta>;
 
 export type TokenKey = keyof typeof TOKEN_REGISTRY;

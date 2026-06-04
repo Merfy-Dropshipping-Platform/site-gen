@@ -1418,6 +1418,28 @@ export const BLOCK_ELEMENT_SELECTORS = {
         hasAnyClassToken(n, 'gallery-product-price')
       ),
     },
+    {
+      key: 'ctaButton',
+      // База: <a class={...}> CTA-кнопки внутри Gallery — НЕ присутствует в
+      // текущем base Gallery.astro (galler markup ограничен itemPrimary/itemSmall/
+      // item/card). Будет not-found для base — это ожидаемо.
+      // vanilla источник (sources/vanilla-Gallery.astro) добавляет CTA-ссылки
+      // в featured layout — большая плитка и маленькие плитки:
+      //   <a class="mt-10 inline-flex h-10 min-h-10 ... border border-white
+      //     bg-transparent px-3 ... transition-opacity hover:opacity-80">К покупкам</a>
+      //   <a class="mt-10 inline-flex h-12 min-h-12 ... self-start
+      //     border-[1.3px] border-white bg-transparent px-4 ... hover:opacity-80">Смотреть больше</a>
+      // Уникальный fingerprint vanilla CTA — inline-flex + bg-transparent +
+      // hover:opacity-80 на теге <a> (плюс border / border-[1.3px]).
+      // ВАЖНО: селектор не должен конфликтовать с itemSmall (тоже <a flex
+      // flex-col gap-2 overflow-hidden) или card (flex flex-col gap-2 без
+      // overflow-hidden). Здесь маркер — inline-flex + bg-transparent —
+      // итем-плитки этих классов не имеют.
+      match: (n) => n.name === 'a' &&
+        hasAnyClassToken(n, 'inline-flex') &&
+        hasAnyClassToken(n, 'bg-transparent') &&
+        (hasAnyClassToken(n, 'border') || hasAnyClassToken(n, 'border-[1.3px]')),
+    },
   ],
 
   // ── Newsletter ─────────────────────────────────────────────────────────

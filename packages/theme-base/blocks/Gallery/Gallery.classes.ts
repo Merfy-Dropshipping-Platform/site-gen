@@ -9,7 +9,7 @@ export const GalleryClasses = {
   container:
     'mx-auto max-w-[var(--gallery-container-max-width)] px-4 gap-[var(--gallery-container-gap)] md:gap-[var(--gallery-container-gap-md)]',
   heading:
-    '[font-family:var(--font-heading)] text-[14px] leading-[16px] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] text-center mb-2',
+    '[font-family:var(--font-heading)] text-[var(--gallery-heading-font-size)] leading-[16px] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] text-center mb-2',
   subheading:
     '[font-family:var(--font-body)] text-[12px] leading-[15px] text-[rgb(var(--color-text))]/60 text-center mb-8',
   inner: {
@@ -38,4 +38,6 @@ export const GalleryClasses = {
     '[font-family:var(--font-body)] text-[var(--gallery-card-label-font-size)] leading-[17px] text-[rgb(var(--color-heading))]',
   cardPrice:
     '[font-family:var(--font-body)] text-[var(--gallery-card-price-color)] leading-[17px] text-[rgb(var(--color-text))]/70',
+  ctaButton:
+    'mt-[var(--gallery-cta-button-margin-top)] inline-flex h-[var(--gallery-cta-button-height)] min-h-[var(--gallery-cta-button-min-height)] items-center justify-center border border-[var(--gallery-cta-button-border-color)] bg-transparent px-[var(--gallery-cta-button-padding-x)] [font-family:var(--font-body)] text-[var(--gallery-cta-button-font-size)] uppercase leading-none text-[var(--gallery-cta-button-color)] transition-opacity hover:opacity-[var(--gallery-cta-button-opacity-hover)]',
 } as const;

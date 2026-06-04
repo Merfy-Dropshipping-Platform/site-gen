@@ -1,0 +1,133 @@
+---
+import VanillaPicture from "../img/VanillaPicture.astro";
+import IconVideo from "../../icons/IconVideo.astro";
+import { V_IMG } from "../../data/imageAssets";
+
+const introTitle = "Тепло вашего дома начинается здесь";
+const introText =
+	"Потому что настоящий уют рождается из деталей. Мы знаем, как важно возвращаться в дом, где каждая деталь дарит комфорт и радость. Натуральный хлопок, уютный велюр, мягкий лен и нежные оттенки — все это Vanila. Позвольте себе наслаждаться красотой в деталях и превратите повседневность в маленькое удовольствие. Создайте дом своей мечты вместе с Vanila.";
+const careTitle = "Ваш дом — наша забота";
+const careTextLead =
+	"Мы уверены: дом должен быть красивым не только на фотографиях, но и на ощупь. Бренд Vanila создан для тех, кто ценит эстетику и качество в каждом квадратном метре своего пространства. Мы собираем для вас самые вдохновляющие предметы текстиля и декора, чтобы ваш интерьер обрел индивидуальность.";
+const careTextTail =
+	"В ассортименте Vanila вы не найдете случайных вещей. Только то, что действительно достойно стать частью вашего дома";
+---
+
+<section
+	id="gallery"
+	class="w-full text-white"
+	aria-labelledby="gallery-title"
+	data-vanilla-gallery
+	data-vanilla-stack
+>
+	<!-- Figma promo: laptop max 1280 / text 680×14px; desktop 1920 / text 1320×16px; py 80, gap 40 -->
+	<div
+		class="vanilla-pad bg-[var(--vanilla-header-bg)] py-16 lg:py-20"
+		data-gallery-promo
+		data-animate
+	>
+		<div
+			class="mx-auto flex w-full max-w-[1280px] min-[1920px]:max-w-[1320px] flex-col items-center text-center"
+		>
+			<h2
+				id="gallery-title"
+				class="font-vanilla-bitter text-[16px] font-normal italic leading-none tracking-normal text-white"
+			>
+				{introTitle}
+			</h2>
+			<p
+				class="mt-10 w-full max-w-[680px] font-vanilla-arsenal text-[14px] font-normal italic leading-[1.5] text-[var(--vanilla-hero-subtle)] min-[1920px]:max-w-[1320px] min-[1920px]:text-[16px]"
+			>
+				{introText}
+			</p>
+			<a
+				href="/catalog/textile"
+				class="mt-10 inline-flex h-10 min-h-10 items-center justify-center border border-white bg-transparent px-3 font-vanilla-arsenal text-[14px] font-normal uppercase leading-none tracking-normal text-white transition-opacity hover:opacity-80"
+			>
+				К покупкам
+			</a>
+		</div>
+	</div>
+
+	<!-- Figma: «Видео», Fill #26311C, px 256, py 80, max 1280 -->
+	<div
+		class="vanilla-pad bg-[var(--vanilla-announcement-bg)] py-16 lg:py-20"
+		data-gallery-video
+		data-animate
+		data-animate-delay="0.1s"
+	>
+		<div class="mx-auto w-full max-w-[1280px]">
+			<div class="relative aspect-[1319/742] w-full overflow-hidden bg-[var(--vanilla-card)]">
+				<video
+					class="pointer-events-none absolute inset-0 size-full object-cover"
+					src={V_IMG.galleryVideo}
+					poster={V_IMG.galleryVideoPoster}
+					autoplay
+					muted
+					loop
+					playsinline
+					preload="auto"
+					disablepictureinpicture
+					aria-hidden="true"
+					tabindex="-1"
+				></video>
+				<IconVideo
+					class="pointer-events-none absolute left-1/2 top-1/2 size-11 -translate-x-1/2 -translate-y-1/2"
+				/>
+			</div>
+		</div>
+	</div>
+
+	<!-- Figma: «Основной текст», Fill #3A4530, px 256, py 120, gap 40, max 1280, контент по центру -->
+	<div
+		class="vanilla-pad bg-[var(--vanilla-header-bg)] py-16 lg:py-[120px]"
+		data-gallery-care
+		data-animate
+		data-animate-delay="0.15s"
+	>
+		<div
+			class="mx-auto flex w-full max-w-[1280px] flex-col items-center gap-10 lg:flex-row lg:justify-center lg:gap-10"
+		>
+			<div class="flex w-full max-w-[352px] flex-col items-start">
+				<h3 class="font-vanilla-bitter text-[20px] font-normal italic leading-none tracking-normal text-white">
+					{careTitle}
+				</h3>
+				<div class="mt-5 flex w-full flex-col gap-4">
+					<p class="font-vanilla-arsenal text-[14px] font-normal italic leading-[1.5] text-[var(--vanilla-hero-subtle)]">
+						{careTextLead}
+					</p>
+					<p class="font-vanilla-arsenal text-[14px] font-normal italic leading-[1.5] text-[var(--vanilla-hero-subtle)]">
+						{careTextTail}
+					</p>
+				</div>
+				<a
+					href="/about"
+					class="mt-10 inline-flex h-12 min-h-12 items-center justify-center self-start border-[1.3px] border-white bg-transparent px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-white transition-opacity hover:opacity-80"
+				>
+					Смотреть больше
+				</a>
+			</div>
+			<div
+				class="relative aspect-[652/366] w-full max-w-[652px] overflow-hidden bg-[var(--vanilla-card)] lg:min-w-0 lg:flex-1"
+			>
+				<VanillaPicture
+					src={V_IMG.galleryCare}
+					alt="Стул Vanilla"
+					width="652"
+					height="366"
+					loading="lazy"
+					class="absolute inset-0 size-full object-cover"
+				/>
+			</div>
+		</div>
+	</div>
+</section>
+
+<style>
+	#gallery picture img,
+	#gallery video {
+		height: 100%;
+		width: 100%;
+		max-width: none;
+	}
+</style>

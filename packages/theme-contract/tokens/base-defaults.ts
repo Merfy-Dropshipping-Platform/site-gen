@@ -323,4 +323,14 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   '--popular-products-root-padding-y-md': '112px',
   '--popular-products-heading-font-size': '14px',
   '--popular-products-heading-color': 'var(--vanilla-announcement-bg)',
+  // ── v2 миграция — запасные значения (добавлено скриптом)
+  '--gallery-heading-font-size': '14px',
+  '--gallery-cta-button-margin-top': '40px',
+  '--gallery-cta-button-height': '40px',
+  '--gallery-cta-button-min-height': '40px',
+  '--gallery-cta-button-border-color': 'white',
+  '--gallery-cta-button-padding-x': '12px',
+  '--gallery-cta-button-font-size': '14px',
+  '--gallery-cta-button-color': 'white',
+  '--gallery-cta-button-opacity-hover': '0.8',
 };

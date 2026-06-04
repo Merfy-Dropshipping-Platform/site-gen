@@ -1594,3 +1594,165 @@ test('ContactForm base: находит button по type="submit" + h-12', async 
   });
   assert.ok(classMap.button.found);
 });
+
+// ───────── ImageWithText блок ─────────
+// Покрывает оба источника:
+//   1) База theme-base/blocks/ImageWithText/ImageWithText.astro:
+//      <section data-puck-component-id data-image-position data-size data-width>,
+//      <div max-w-[var(--container-max-width)]>,
+//      <div grid md:grid-cols-2 items-center gap-[var(--spacing-grid-col-gap)]>,
+//      <div md:order-1|md:order-2 + <img>>, <img object-cover>,
+//      <div md:order-1|md:order-2 + <h2|p|a>>,
+//      <h2 data-puck-subsection-field="heading">,
+//      <p data-puck-subsection-field="text">,
+//      <a data-puck-subsection-field="button">.
+//   2) Источник rose-theme: rose НЕ имеет своего ImageWithText —
+//      использует base ImageWithText как есть. Cached source-файл —
+//      копия base ImageWithText.astro. Оба варианта (imageLeft/imageRight)
+//      покрыты одним и тем же селектором.
+
+const MINIMAL_IMAGE_WITH_TEXT_LEFT_ASTRO = `---
+const x = 1;
+---
+<section
+  class:list={['relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]', 'color-scheme-default']}
+  data-puck-component-id="iwt-1"
+  data-image-position="left"
+  data-size="medium"
+  data-width="large"
+  style="padding-top:80px; padding-bottom:80px;"
+>
+  <div class:list={['mx-auto max-w-[var(--container-max-width)] px-4', 'max-w-7xl mx-auto']}>
+    <div class="grid grid-cols-1 md:grid-cols-2 items-center gap-[var(--spacing-grid-col-gap)]">
+      <div class="md:order-1">
+        <img src="/img/cover.jpg" alt="Cover" class="w-full aspect-[4/3] object-cover rounded-[var(--radius-media)]" />
+      </div>
+      <div class:list={['md:order-2', 'text-left', '']}>
+        <h2 class:list={['[font-family:var(--font-heading)] text-[length:var(--size-section-heading,1.25rem)] font-normal leading-[1.2] text-[rgb(var(--color-heading))] mb-3', 'text-2xl md:text-3xl', '']} data-puck-subsection-parent="iwt-1" data-puck-subsection-index="101" data-puck-subsection-field="heading">Заголовок</h2>
+        <p class:list={['[font-family:var(--font-body)] text-[16px] font-normal leading-[1.25] text-[rgb(var(--color-text))] mb-6', '']} data-puck-subsection-parent="iwt-1" data-puck-subsection-index="102" data-puck-subsection-field="text">Подзаголовок текст блока</p>
+        <a href="/about" class:list={['inline-flex items-center justify-center h-[48px] px-4 text-[16px] font-normal uppercase no-underline transition-colors [font-family:var(--font-body)] self-start border-[1.3px] border-solid border-[rgb(var(--color-button-border))] rounded-[var(--radius-button)] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] hover:bg-[rgb(var(--color-button-bg-hover))] hover:text-[rgb(var(--color-button-text-hover))]', '']} data-puck-subsection-parent="iwt-1" data-puck-subsection-index="103" data-puck-subsection-field="button">Подробнее</a>
+      </div>
+    </div>
+  </div>
+</section>
+`;
+
+const MINIMAL_IMAGE_WITH_TEXT_RIGHT_ASTRO = `---
+const x = 1;
+---
+<section
+  class:list={['relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]', 'color-scheme-default']}
+  data-puck-component-id="iwt-2"
+  data-image-position="right"
+  data-size="medium"
+  data-width="large"
+>
+  <div class:list={['mx-auto max-w-[var(--container-max-width)] px-4', 'max-w-7xl mx-auto']}>
+    <div class="grid grid-cols-1 md:grid-cols-2 items-center gap-[var(--spacing-grid-col-gap)]">
+      <div class="md:order-2">
+        <img src="/img/cover2.jpg" alt="Cover2" class="w-full aspect-[4/3] object-cover rounded-[var(--radius-media)]" />
+      </div>
+      <div class:list={['md:order-1', '', '']}>
+        <h2 class:list={['[font-family:var(--font-heading)] text-[length:var(--size-section-heading,1.25rem)] font-normal leading-[1.2] text-[rgb(var(--color-heading))] mb-3', '', '']} data-puck-subsection-field="heading">Right variant heading</h2>
+        <p class:list={['[font-family:var(--font-body)] text-[16px] font-normal leading-[1.25] text-[rgb(var(--color-text))] mb-6', '']} data-puck-subsection-field="text">Body text</p>
+      </div>
+    </div>
+  </div>
+</section>
+`;
+
+test('ImageWithText base imageLeft: находит root по data-image-position', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_IMAGE_WITH_TEXT_LEFT_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.ImageWithText,
+    blockName: 'ImageWithText',
+  });
+  assert.ok(classMap.root.found, 'root должен быть найден');
+});
+
+test('ImageWithText base imageLeft: находит container по max-w-[var(--container-max-width)]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_IMAGE_WITH_TEXT_LEFT_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.ImageWithText,
+    blockName: 'ImageWithText',
+  });
+  assert.ok(classMap.container.found);
+});
+
+test('ImageWithText base imageLeft: находит inner по grid md:grid-cols-2 + gap-[var(--spacing-grid-col-gap)]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_IMAGE_WITH_TEXT_LEFT_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.ImageWithText,
+    blockName: 'ImageWithText',
+  });
+  assert.ok(classMap.inner.found);
+  assert.ok(classMap.inner.staticClass.includes('md:grid-cols-2'));
+});
+
+test('ImageWithText base imageLeft: находит imageCol по md:order-1 + child <img>', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_IMAGE_WITH_TEXT_LEFT_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.ImageWithText,
+    blockName: 'ImageWithText',
+  });
+  assert.ok(classMap.imageCol.found);
+  assert.ok(classMap.imageCol.staticClass.includes('md:order-1'));
+});
+
+test('ImageWithText base imageLeft: находит textCol по md:order-2 + child <h2|p|a>', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_IMAGE_WITH_TEXT_LEFT_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.ImageWithText,
+    blockName: 'ImageWithText',
+  });
+  assert.ok(classMap.textCol.found);
+  assert.ok(classMap.textCol.classList.some((c) => c.includes('md:order-2')));
+});
+
+test('ImageWithText base imageLeft: находит image по object-cover + aspect-[4/3]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_IMAGE_WITH_TEXT_LEFT_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.ImageWithText,
+    blockName: 'ImageWithText',
+  });
+  assert.ok(classMap.image.found);
+});
+
+test('ImageWithText base imageLeft: находит heading по data-puck-subsection-field="heading"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_IMAGE_WITH_TEXT_LEFT_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.ImageWithText,
+    blockName: 'ImageWithText',
+  });
+  assert.ok(classMap.heading.found);
+});
+
+test('ImageWithText base imageLeft: находит text по data-puck-subsection-field="text"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_IMAGE_WITH_TEXT_LEFT_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.ImageWithText,
+    blockName: 'ImageWithText',
+  });
+  assert.ok(classMap.text.found);
+});
+
+test('ImageWithText base imageLeft: находит button по data-puck-subsection-field="button"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_IMAGE_WITH_TEXT_LEFT_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.ImageWithText,
+    blockName: 'ImageWithText',
+  });
+  assert.ok(classMap.button.found);
+});
+
+test('ImageWithText base imageRight: находит imageCol по md:order-2 + child <img>', async () => {
+  // variant imageRight: imageCol = md:order-2, textCol = md:order-1.
+  // Селекторы устойчивы к variant — first-match по md:order-* + наличию <img>
+  // даст md:order-2 (имеет <img>), textCol даст md:order-1 (имеет <h2>).
+  const { classMap } = await parseAstroFile(MINIMAL_IMAGE_WITH_TEXT_RIGHT_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.ImageWithText,
+    blockName: 'ImageWithText',
+  });
+  assert.ok(classMap.imageCol.found);
+  assert.ok(classMap.imageCol.staticClass.includes('md:order-2'));
+});
+
+test('ImageWithText base imageRight: находит textCol по md:order-1 + child <h2|p>', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_IMAGE_WITH_TEXT_RIGHT_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.ImageWithText,
+    blockName: 'ImageWithText',
+  });
+  assert.ok(classMap.textCol.found);
+  assert.ok(classMap.textCol.classList.some((c) => c.includes('md:order-1')));
+});

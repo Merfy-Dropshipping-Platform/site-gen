@@ -1011,6 +1011,150 @@ export const BLOCK_ELEMENT_SELECTORS = {
       ),
     },
   ],
+
+  // ── ImageWithText ──────────────────────────────────────────────────────
+  // Покрывает оба источника:
+  //   1) База theme-base/blocks/ImageWithText/ImageWithText.astro
+  //      (image-left/image-right variants + ctaPosition + textStyle варианты):
+  //        <section class:list={[C.root, schemeClass]}
+  //           data-puck-component-id={id} data-image-position={imagePosition}
+  //           data-size={size} data-width={width}>,
+  //        <div class:list={[C.container, widthClass, containerSchemeClass]}>
+  //           (mx-auto max-w-[var(--container-max-width)] px-4),
+  //        <div class={innerClass}> — inner = C.inner.imageLeft|imageRight
+  //           ('grid grid-cols-1 md:grid-cols-2 items-center gap-[var(--spacing-grid-col-gap)]'),
+  //        <div class={imageColClass}> — imageCol = C.imageCol.imageLeft|imageRight
+  //           (md:order-1 или md:order-2),
+  //        <img class={C.image}> ИЛИ <img class:list={[C.image, 'aspect-[652/366] rounded-[var(--radius-media)]']}>
+  //           для плейсхолдера (image),
+  //        <div class:list={[textColClass, headingAlignClass, textColFlexClass]}>
+  //           — textCol = C.textCol.imageLeft|imageRight (md:order-2 или md:order-1),
+  //        <h2 class:list={[C.heading, headingSizeClass, textStyleClass]}
+  //           data-puck-subsection-field="heading">,
+  //        <p class:list={[C.text, textStyleClass]}
+  //           data-puck-subsection-field="text">,
+  //        <a class:list={[C.button, ctaPositionClass]}
+  //           data-puck-subsection-field="button">.
+  //   2) Источник rose-theme: rose НЕ имеет своего ImageWithText в репо темы —
+  //      проверено через `gh api repos/Merfy-Dropshipping-Platform/rose-theme`:
+  //      ни src/components/, ни src/components/sections/ не содержат
+  //      ImageWithText.astro. Override-папка theme-rose/blocks/ImageWithText/
+  //      также отсутствует. rose использует base ImageWithText как есть.
+  //      Cached source — копия base (тот же паттерн что у ContactForm).
+  //      Селекторы покрывают base — этого достаточно.
+  //
+  // Variants imageLeft/imageRight не меняют разметку — только order-* классы
+  // на imageCol и textCol. Селекторы устойчивы к обоим вариантам: поиск идёт
+  // по тегу + общим маркерам (data-puck-subsection-field, classlist токены).
+  //
+  // Совпадения по ключам ↔ ImageWithText.classes.ts:
+  //   root, container, inner, imageCol, textCol, image, heading, text, button.
+  ImageWithText: [
+    {
+      key: 'root',
+      // <section> с data-puck-component-id + data-image-position (база).
+      // Уникальный маркер — data-image-position (есть только у этого блока).
+      match: (n) => n.name === 'section' && (
+        hasAttr(n, 'data-image-position') ||
+        // Fallback: section с C.root + data-puck-component-id и data-size+data-width
+        (hasAttr(n, 'data-puck-component-id') && hasAttr(n, 'data-size') && hasAttr(n, 'data-width'))
+      ),
+    },
+    {
+      key: 'container',
+      // База C.container = 'mx-auto max-w-[var(--container-max-width)] px-4'.
+      // Уникальный маркер: div с max-w-[var(--container-max-width)] —
+      // используется во многих блоках, но первый match внутри section
+      // ImageWithText даст контейнер этого блока.
+      match: (n) => n.name === 'div' &&
+        hasAnyClassToken(n, 'max-w-[var(--container-max-width)]'),
+    },
+    {
+      key: 'inner',
+      // База C.inner.{imageLeft,imageRight} = 'grid grid-cols-1 md:grid-cols-2
+      //   items-center gap-[var(--spacing-grid-col-gap)]'. Оба варианта имеют
+      //   одинаковый набор классов — селектор устойчив к variant.
+      // Маркер: grid + md:grid-cols-2 + items-center + gap-[var(--spacing-grid-col-gap)].
+      match: (n) => n.name === 'div' &&
+        hasAnyClassToken(n, 'grid') &&
+        hasAnyClassToken(n, 'md:grid-cols-2') &&
+        hasAnyClassToken(n, 'items-center') &&
+        hasAnyClassToken(n, 'gap-[var(--spacing-grid-col-gap)]'),
+    },
+    {
+      key: 'imageCol',
+      // База C.imageCol.imageLeft = 'md:order-1', C.imageCol.imageRight = 'md:order-2'.
+      // Маркер: div который имеет ТОЛЬКО order-классы и содержит <img>.
+      // first-match найдёт первый div с md:order-1 ИЛИ md:order-2.
+      // Также учитываем что variant imageLeft даёт imageCol=md:order-1,
+      // variant imageRight даёт imageCol=md:order-2. Для устойчивости селектор
+      // ловит оба варианта.
+      match: (n) => n.name === 'div' &&
+        (hasAnyClassToken(n, 'md:order-1') || hasAnyClassToken(n, 'md:order-2')) &&
+        // отличить от textCol: imageCol содержит только order-классы (без
+        // дополнительных utility-классов выравнивания текста).
+        // textCol при variant imageLeft = 'md:order-2' + headingAlignClass + textColFlexClass.
+        // Идём по детям: имеет <img> ребёнка — это image column.
+        Array.isArray(n.children) && n.children.some((c) =>
+          c && (c.name === 'img' ||
+            // <img> может быть обёрнут в условный рендеринг — глубже не идём,
+            // полагаемся на first-match по md:order-*.
+            false)),
+    },
+    {
+      key: 'textCol',
+      // База C.textCol.imageLeft = 'md:order-2', C.textCol.imageRight = 'md:order-1'.
+      // Селектор: div с md:order-* содержащий <h2> с data-puck-subsection-field="heading"
+      // ИЛИ <p> ИЛИ <a> (текстовая колонка).
+      match: (n) => n.name === 'div' &&
+        (hasAnyClassToken(n, 'md:order-1') || hasAnyClassToken(n, 'md:order-2')) &&
+        Array.isArray(n.children) && n.children.some((c) =>
+          c && (c.name === 'h2' || c.name === 'p' || c.name === 'a')),
+    },
+    {
+      key: 'image',
+      // База C.image = 'w-full aspect-[4/3] object-cover rounded-[var(--radius-media)]'.
+      // Placeholder вариант — другие aspect-ratio + добавочные классы.
+      // Маркер: <img> с object-cover + (aspect-[4/3] или w-full).
+      match: (n) => n.name === 'img' && (
+        hasAnyClassToken(n, 'object-cover') &&
+        (hasAnyClassToken(n, 'aspect-[4/3]') ||
+         hasAnyClassToken(n, 'w-full') ||
+         hasAnyClassListToken(n, 'aspect-[652/366]'))
+      ),
+    },
+    {
+      key: 'heading',
+      // <h2> с data-puck-subsection-field="heading".
+      // База C.heading содержит '[font-family:var(--font-heading)]' +
+      // 'text-[length:var(--size-section-heading,1.25rem)]'.
+      match: (n) => n.name === 'h2' && (
+        getAttrValue(n, 'data-puck-subsection-field') === 'heading' ||
+        hasAnyClassListToken(n, '[font-family:var(--font-heading)]')
+      ),
+    },
+    {
+      key: 'text',
+      // <p> с data-puck-subsection-field="text".
+      // База C.text содержит '[font-family:var(--font-body)]' + 'text-[16px]'.
+      match: (n) => n.name === 'p' && (
+        getAttrValue(n, 'data-puck-subsection-field') === 'text' ||
+        hasAnyClassListToken(n, '[font-family:var(--font-body)]')
+      ),
+    },
+    {
+      key: 'button',
+      // <a> с data-puck-subsection-field="button".
+      // База C.button содержит 'inline-flex' + 'h-[48px]' +
+      // 'border-[1.3px]' + 'rounded-[var(--radius-button)]' + bg-button-bg.
+      match: (n) => n.name === 'a' && (
+        getAttrValue(n, 'data-puck-subsection-field') === 'button' ||
+        (hasAnyClassListToken(n, 'inline-flex') &&
+         hasAnyClassListToken(n, 'rounded-[var(--radius-button)]') &&
+         hasAnyClassListToken(n, 'border-[1.3px]'))
+      ),
+    },
+  ],
 };
 
 /**

@@ -1,0 +1,12 @@
+{
+  "block": "ImageWithText",
+  "theme": "rose",
+  "source": "base://theme-base/blocks/ImageWithText/ImageWithText.astro",
+  "fetchedAt": "2026-06-04T00:00:00.000Z",
+  "elementsFound": 6,
+  "tokensProposed": 0,
+  "tokensFiltered": 0,
+  "elements": {},
+  "tokensSuggested": [],
+  "tokensFilteredList": []
+}

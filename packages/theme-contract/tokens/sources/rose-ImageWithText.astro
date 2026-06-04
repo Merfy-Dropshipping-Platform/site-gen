@@ -1,0 +1,132 @@
+---
+import type { ImageWithTextProps } from './ImageWithText.puckConfig';
+import { ImageWithTextClasses as C } from './ImageWithText.classes';
+import { PLACEHOLDER_ASSETS } from '../../runtime/placeholders';
+
+interface Props extends ImageWithTextProps {
+  id?: string;
+}
+
+// Constructor legacy schema writes heading/text/button as objects with
+// optional { enabled: 'true'|'false' } flags, image as bare URL string, and
+// uses photoPosition instead of imagePosition. Normalize here to a flat
+// shape matching the new puckConfig.
+const raw = Astro.props as Record<string, unknown>;
+const id = raw.id as string | undefined;
+const padding = raw.padding as { top: number; bottom: number } | undefined;
+
+const imgRaw = raw.image as string | { url?: string; alt?: string } | undefined;
+const imageUrl = typeof imgRaw === 'string' ? imgRaw : imgRaw?.url;
+const imageAlt = typeof imgRaw === 'string' ? '' : (imgRaw?.alt ?? '');
+
+const readText = (v: unknown): string | undefined => {
+  if (typeof v === 'string') return v || undefined;
+  if (v && typeof v === 'object') {
+    const o = v as { enabled?: string; text?: string; content?: string };
+    if (o.enabled === 'false') return undefined;
+    return o.text ?? o.content ?? undefined;
+  }
+  return undefined;
+};
+const heading = readText(raw.heading);
+const text = readText(raw.text);
+
+const btnRaw = raw.button as
+  | { enabled?: string; text?: string; href?: string; link?: string | { href?: string } }
+  | undefined;
+const buttonEnabled = btnRaw?.enabled !== 'false';
+const buttonText = buttonEnabled ? btnRaw?.text : undefined;
+const buttonHref = (() => {
+  if (!btnRaw) return undefined;
+  if (typeof btnRaw.link === 'string') return btnRaw.link;
+  if (btnRaw.link && typeof btnRaw.link === 'object') return btnRaw.link.href;
+  return btnRaw.href;
+})();
+
+const imagePosition =
+  (raw.imagePosition as string | undefined) ??
+  (raw.photoPosition as string | undefined) ??
+  'left';
+
+const variantKey = imagePosition === 'left' ? 'imageLeft' : 'imageRight';
+const innerClass = C.inner[variantKey];
+const imageColClass = C.imageCol[variantKey];
+const textColClass = C.textCol[variantKey];
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+
+// Pupa parity: size, width, colorScheme, containerColorScheme, heading.alignment, heading.size.
+const size = typeof raw.size === 'string' ? raw.size : 'medium';
+const width = typeof raw.width === 'string' ? raw.width : 'large';
+const colorScheme = raw.colorScheme as string | undefined;
+const containerColorScheme = raw.containerColorScheme as string | undefined;
+const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
+const containerSchemeClass = containerColorScheme ? `color-scheme-${String(containerColorScheme).replace('scheme-', '')}` : '';
+
+const headingObj = raw.heading as { text?: string; alignment?: string; size?: string } | string | undefined;
+const headingAlignment = typeof headingObj === 'object' ? headingObj?.alignment : undefined;
+const headingSize = typeof headingObj === 'object' ? headingObj?.size : undefined;
+const headingAlignClass =
+  headingAlignment === 'left' ? 'text-left' :
+  headingAlignment === 'right' ? 'text-right' :
+  headingAlignment === 'center' ? 'text-center' : '';
+const headingSizeClass =
+  headingSize === 'large' ? 'text-3xl md:text-4xl' :
+  headingSize === 'medium' ? 'text-2xl md:text-3xl' :
+  headingSize === 'small' ? 'text-xl md:text-2xl' : '';
+
+// 084 vanilla pilot: additive `ctaPosition` variant.
+const ctaPositionProp =
+  raw.ctaPosition === 'bottom-pinned' || raw.ctaPosition === 'inline'
+    ? (raw.ctaPosition as 'bottom-pinned' | 'inline')
+    : 'inline';
+const ctaPositionClass = C.ctaPosition[ctaPositionProp];
+const textColFlexClass = C.textColFlex[ctaPositionProp];
+
+// 084 vanilla pilot Stage 2 Task 8: `textStyle` propagation. `italic`
+// applies italic to heading + body (vanilla home Figma 1:18992 demands
+// Bitter Italic + Arsenal Italic).
+const textStyleProp =
+  raw.textStyle === 'italic' || raw.textStyle === 'normal'
+    ? (raw.textStyle as 'italic' | 'normal')
+    : 'normal';
+const textStyleClass = C.textStyle[textStyleProp];
+
+const widthClass =
+  width === 'small' ? 'max-w-3xl mx-auto' :
+  width === 'medium' ? 'max-w-5xl mx-auto' :
+  width === 'large' ? 'max-w-7xl mx-auto' :
+  width === 'full' ? 'w-full' : '';
+---
+<section
+  class:list={[C.root, schemeClass]}
+  data-puck-component-id={id}
+  data-image-position={imagePosition}
+  data-size={size}
+  data-width={width}
+  style={paddingStyle}
+>
+  <div class:list={[C.container, widthClass, containerSchemeClass]}>
+    <div class={innerClass}>
+      <div class={imageColClass}>
+        {imageUrl ? (
+          <img src={imageUrl} alt={imageAlt} class={C.image} />
+        ) : (
+          <img src={PLACEHOLDER_ASSETS.landscape.iwt} alt="" class={`${C.image} aspect-[652/366] rounded-[var(--radius-media)]`} aria-hidden="true" loading="lazy" />
+        )}
+      </div>
+      <div class:list={[textColClass, headingAlignClass, textColFlexClass]}>
+        {heading && (
+          <h2 class:list={[C.heading, headingSizeClass, textStyleClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="heading">{heading}</h2>
+        )}
+        {text && (
+          <p class:list={[C.text, textStyleClass]} data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="text">{text}</p>
+        )}
+        {buttonText && (
+          <a href={buttonHref} class:list={[C.button, ctaPositionClass]} data-puck-subsection-parent={id} data-puck-subsection-index="103" data-puck-subsection-field="button">{buttonText}</a>
+        )}
+      </div>
+    </div>
+  </div>
+</section>

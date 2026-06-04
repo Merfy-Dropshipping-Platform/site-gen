@@ -1,0 +1,7 @@
+{
+  "fetchedAt": "2026-06-04T00:00:00.000Z",
+  "sourceUrl": "base://theme-base/blocks/ImageWithText/ImageWithText.astro",
+  "theme": "rose",
+  "block": "ImageWithText",
+  "note": "rose theme does not have its own ImageWithText.astro (not in github rose-theme/main — проверено: ни src/components/, ни src/components/sections/), no override in packages/theme-rose/blocks/. Live rose site uses base ImageWithText 1:1. Cached source is a copy of base — это документирует факт что rose = base без расхождений (паттерн как ContactForm)."
+}

@@ -480,6 +480,69 @@ export function isGlobalToken(value) {
   return false;
 }
 
+// ── Доработка E: structural dimension / text-align ──
+//
+// Когда расхождение base vs source — это структурное значение по свойству
+// (width: full/auto/100%, height: auto, text-align: left, ...) — мы НЕ
+// создаём токен. Структурное ключевое слово описывает _контекст лейаута_,
+// не визуальное оформление. Токенизация таких значений только засоряет
+// registry и создаёт бесполезные CSS переменные.
+//
+// Правило 1 (structural dimension): property ∈ {width/height/min-w/min-h/
+// max-w/max-h} И value ∈ {full, auto, 100%, 0, none, inherit, unset}.
+// Числовые значения (1320px, 280px, 50vh) НЕ фильтруются — они задают
+// конкретный размер.
+//
+// Правило 2 (text-align): любое значение свойства `text-align` всегда
+// структурно (left/right/center/justify/start/end управляют выравниванием,
+// не оформлением).
+
+export const DIMENSION_PROPERTIES = new Set([
+  'width',
+  'height',
+  'min-width',
+  'min-height',
+  'max-width',
+  'max-height',
+]);
+
+export const STRUCTURAL_DIMENSION_VALUES = new Set([
+  'full',
+  'auto',
+  '100%',
+  '0',
+  '0px',
+  'none',
+  'inherit',
+  'unset',
+  'initial',
+  'fit-content',
+  'min-content',
+  'max-content',
+  'screen',
+]);
+
+/**
+ * Структурное значение для dimension-свойства или text-align?
+ *
+ * Принцип: не создавать токен для значений которые описывают _лейаут_
+ * (full/auto/none/text-align), а не _визуал_ (числовые размеры, цвета).
+ *
+ * @param {string} property — свойство (`width`, `height`, `text-align`, ...)
+ * @param {string} value — значение (`full`, `auto`, `1320px`, ...)
+ * @returns {boolean} true если значение структурно по правилу 1 или 2
+ */
+export function isStructuralDimension(property, value) {
+  if (!property || value === undefined || value === null) return false;
+  // Правило 2: text-align всегда структурно
+  if (property === 'text-align') return true;
+  // Правило 1: dimension + структурное значение
+  if (DIMENSION_PROPERTIES.has(property) && STRUCTURAL_DIMENSION_VALUES.has(value)) {
+    return true;
+  }
+  return false;
+}
+
 // ── Доработка D: цвет в источнике vs scheme-переменная в базе ──
 //
 // Когда база использует `rgb(var(--color-text))` (или другую scheme-переменную),

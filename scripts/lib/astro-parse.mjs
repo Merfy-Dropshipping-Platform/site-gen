@@ -1155,6 +1155,270 @@ export const BLOCK_ELEMENT_SELECTORS = {
       ),
     },
   ],
+
+  // ── Gallery ────────────────────────────────────────────────────────────
+  // Покрывает оба источника:
+  //   1) База theme-base/blocks/Gallery/Gallery.astro
+  //      (layout="featured" по умолчанию когда items.length >= 3, иначе "grid"):
+  //        <section class:list={[C.root, schemeClass]}
+  //           data-puck-component-id={id} data-layout={layout}>,
+  //        <div class={C.container}> (mx-auto max-w-[var(--container-max-width)] px-4),
+  //        <h2 class={C.heading} data-puck-subsection-field="heading">,
+  //        <p class={C.subheading} data-puck-subsection-field="text">,
+  //        <div class={innerClass}> — innerClass = C.inner.{grid|side-by-side|featured};
+  //        featured: <div class={C.itemPrimary}> — большая плитка (md:col-span-2
+  //           md:row-span-2 overflow-hidden rounded-[var(--radius-media)]
+  //           bg-[rgb(var(--color-surface))]) с <img class={C.image}>;
+  //        featured: <a class={C.itemSmall}> — маленькие плитки (flex flex-col
+  //           gap-2 overflow-hidden) с <img class={C.imageSmall}> +
+  //           <div class={C.cardLabel}> + <div class={C.cardPrice}>;
+  //        grid/side-by-side image: <div class={C.item}> (block overflow-hidden
+  //           rounded-[var(--radius-card)]) с <img class={C.image}>;
+  //        grid/side-by-side product|collection: <a class={C.card}> (flex
+  //           flex-col gap-2) с <img class={C.imageSmall}> или плейсхолдером
+  //           <div class={C.cardMedia}> + <div class={C.cardLabel}> + <div class={C.cardPrice}>.
+  //   2) Источник rose-theme/src/components/sections/Gallery.astro
+  //      (featured-style разметка с раскрытым NtSectionHeading):
+  //        <section id="gallery" aria-labelledby="gallery-title">,
+  //        <div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">,
+  //        <NtSectionHeading> → <h2 id="gallery-title" class="font-comfortaa uppercase ...">+<p class="font-manrope text-[#999999] ...">,
+  //        <div class="grid min-h-0 min-w-0 grid-cols-1 gap-6 md:gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,429px)] ...">,
+  //        primary (большая плитка): <a class="gallery-hero-tile group relative block min-h-[280px] w-full ... rounded-[8px] bg-[#F5F5F5]"
+  //           aria-label="Перейти в каталог"> с <RosePicture> → <img class="absolute inset-0 size-full object-cover ...">,
+  //        small product tile: <a class="group flex flex-col items-start gap-4 ..."
+  //           aria-label="Сумка"> с <div class="gallery-bag-media relative aspect-[429/444] w-full ... rounded-[8px] bg-[#F5F5F5] ...">
+  //           + <RosePicture> → <img class="absolute inset-0 size-full max-w-none object-cover ...">
+  //           + <h3 class="gallery-product-title font-manrope text-[16px] ...">
+  //           + <span class="gallery-product-price font-manrope text-[16px] ...">,
+  //        small collection tile: <a class="group flex min-w-0 flex-col items-start gap-4 ..."
+  //           aria-label="Коллекция FUTURISM"> с <div class="aspect-[429/309] w-full ... rounded-[8px] bg-[#F5F5F5]">
+  //           + <RosePicture> → <img class="block size-full object-cover ...">
+  //           + <h3 class="gallery-collection-title font-manrope ...">.
+  //
+  // Совпадения по ключам ↔ Gallery.classes.ts:
+  //   root, container, heading, subheading, inner,
+  //   itemPrimary, itemSmall, item, card, image, imageSmall,
+  //   cardMedia, cardLabel, cardPrice.
+  Gallery: [
+    {
+      key: 'root',
+      // База: <section data-puck-component-id ... data-layout=... class:list=[C.root, ...]>.
+      // rose: <section id="gallery" aria-labelledby="gallery-title">.
+      match: (n) => n.name === 'section' && (
+        getAttrValue(n, 'id') === 'gallery' ||
+        getAttrValue(n, 'aria-labelledby') === 'gallery-title' ||
+        // База: data-puck-component-id + data-layout (уникальный для Gallery)
+        (hasAttr(n, 'data-puck-component-id') && hasAttr(n, 'data-layout')) ||
+        // База C.root: 'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]'
+        hasAnyClassListToken(n, 'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]')
+      ),
+    },
+    {
+      key: 'container',
+      // База C.container = 'mx-auto max-w-[var(--container-max-width)] px-4'.
+      // rose: <div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">.
+      match: (n) => n.name === 'div' && (
+        hasAnyClassToken(n, 'max-w-[var(--container-max-width)]') ||
+        // rose уникальный маркер контейнера блока — max-w-[1320px] + mx-auto + flex-col
+        (hasAnyClassToken(n, 'mx-auto') && hasAnyClassToken(n, 'max-w-[1320px]') && hasAnyClassToken(n, 'flex-col'))
+      ),
+    },
+    {
+      key: 'heading',
+      // База: <h2 class={C.heading} data-puck-subsection-field="heading">.
+      // C.heading = '[font-family:var(--font-heading)] text-[14px] leading-[16px]
+      //   tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] text-center mb-2'.
+      // rose: <h2 id="gallery-title" class="font-comfortaa uppercase ...">.
+      match: (n) => n.name === 'h2' && (
+        getAttrValue(n, 'data-puck-subsection-field') === 'heading' ||
+        getAttrValue(n, 'id') === 'gallery-title' ||
+        hasAnyClassListToken(n, '[font-family:var(--font-heading)]') ||
+        (hasAnyClassToken(n, 'font-comfortaa') && hasAnyClassToken(n, 'uppercase'))
+      ),
+    },
+    {
+      key: 'subheading',
+      // База: <p class={C.subheading} data-puck-subsection-field="text">.
+      // C.subheading = '[font-family:var(--font-body)] text-[12px] leading-[15px]
+      //   text-[rgb(var(--color-text))]/60 text-center mb-8'.
+      // rose: <p class="text-center font-manrope ... text-[#999999]"> (через NtSectionHeading).
+      match: (n) => n.name === 'p' && (
+        getAttrValue(n, 'data-puck-subsection-field') === 'text' ||
+        hasAnyClassListToken(n, '[font-family:var(--font-body)]') ||
+        (hasAnyClassToken(n, 'font-manrope') && hasAnyClassToken(n, 'text-[#999999]'))
+      ),
+    },
+    {
+      key: 'inner',
+      // База: <div class={innerClass}>. innerClass = C.inner.{grid|side-by-side|featured}.
+      //   grid: 'grid grid-cols-1 md:grid-cols-3 gap-x-[var(--spacing-grid-col-gap)] gap-y-[var(--spacing-grid-row-gap)]'.
+      //   side-by-side: 'flex flex-col md:flex-row gap-[var(--spacing-grid-col-gap)]'.
+      //   featured: 'grid grid-cols-1 md:grid-cols-3 md:grid-rows-2 gap-4 md:gap-6'.
+      // rose: <div class="grid min-h-0 min-w-0 grid-cols-1 gap-6 md:gap-8
+      //   lg:grid-cols-[minmax(0,1fr)_minmax(280px,429px)] lg:items-stretch ...">.
+      match: (n) => n.name === 'div' && (
+        // База grid вариант: grid + md:grid-cols-3 + var grid gaps
+        hasAnyClassListToken(n, 'grid grid-cols-1 md:grid-cols-3 gap-x-[var(--spacing-grid-col-gap)] gap-y-[var(--spacing-grid-row-gap)]') ||
+        // База featured вариант: grid + md:grid-cols-3 + md:grid-rows-2
+        hasAnyClassListToken(n, 'grid grid-cols-1 md:grid-cols-3 md:grid-rows-2 gap-4 md:gap-6') ||
+        // База side-by-side
+        hasAnyClassListToken(n, 'flex flex-col md:flex-row gap-[var(--spacing-grid-col-gap)]') ||
+        // rose уникальный grid: lg:grid-cols-[minmax(0,1fr)_minmax(280px,429px)]
+        hasAnyClassToken(n, 'lg:grid-cols-[minmax(0,1fr)_minmax(280px,429px)]')
+      ),
+    },
+    {
+      key: 'itemPrimary',
+      // База: <div class={C.itemPrimary}> — большая плитка в featured layout.
+      // C.itemPrimary = 'md:col-span-2 md:row-span-2 overflow-hidden
+      //   rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))]'.
+      // rose: <a class="gallery-hero-tile group relative block min-h-[280px] w-full
+      //   min-w-0 overflow-hidden rounded-[8px] bg-[#F5F5F5] lg:min-h-0 lg:h-full"
+      //   aria-label="Перейти в каталог">.
+      match: (n) => (n.name === 'div' || n.name === 'a') && (
+        // База уникальный fingerprint — md:col-span-2 + md:row-span-2
+        (hasAnyClassToken(n, 'md:col-span-2') && hasAnyClassToken(n, 'md:row-span-2')) ||
+        // rose specific class gallery-hero-tile
+        hasAnyClassToken(n, 'gallery-hero-tile')
+      ),
+    },
+    {
+      key: 'itemSmall',
+      // База: <a class={C.itemSmall}> — маленькая плитка в featured layout.
+      // C.itemSmall = 'flex flex-col gap-2 overflow-hidden'.
+      // rose: <a class="group flex flex-col items-start gap-4 text-left md:gap-5"
+      //   aria-label="Сумка"> или collection-вариант с min-w-0.
+      // Селектор: <a> с flex flex-col + (gap-2 для базы или gap-4 для rose) +
+      // (overflow-hidden для базы или items-start для rose).
+      match: (n) => n.name === 'a' && hasAnyClassToken(n, 'flex') && hasAnyClassToken(n, 'flex-col') && (
+        // База C.itemSmall: 'flex flex-col gap-2 overflow-hidden'
+        (hasAnyClassToken(n, 'gap-2') && hasAnyClassToken(n, 'overflow-hidden')) ||
+        // rose product/collection tile: 'group flex flex-col items-start gap-4'
+        (hasAnyClassToken(n, 'items-start') && hasAnyClassToken(n, 'gap-4'))
+      ),
+    },
+    {
+      key: 'item',
+      // База: <div class={C.item}> — image-плитка в grid/side-by-side layout.
+      // C.item = 'block overflow-hidden rounded-[var(--radius-card)]'.
+      // rose: не имеет отдельного item — все плитки идут через itemPrimary/itemSmall.
+      // Будет not-found для rose.
+      // ВАЖНО: C.item подставляется в class={C.item} (static class), поэтому
+      // используем hasAnyClassToken (покрывает и class, и class:list).
+      match: (n) => n.name === 'div' &&
+        hasAnyClassToken(n, 'block') &&
+        hasAnyClassToken(n, 'overflow-hidden') &&
+        hasAnyClassToken(n, 'rounded-[var(--radius-card)]'),
+    },
+    {
+      key: 'card',
+      // База: <a class={C.card}> — product/collection карточка в grid/side-by-side layout.
+      // C.card = 'flex flex-col gap-2'. Очень похоже на itemSmall — отличается
+      // отсутствием overflow-hidden. first-match по itemSmall забирает gap-2+overflow-hidden,
+      // здесь остаётся <a> с flex flex-col gap-2 БЕЗ overflow-hidden.
+      // rose: использует ту же разметку что itemSmall — будет not-found (first-match).
+      match: (n) => n.name === 'a' &&
+        hasAnyClassToken(n, 'flex') &&
+        hasAnyClassToken(n, 'flex-col') &&
+        hasAnyClassToken(n, 'gap-2') &&
+        !hasAnyClassToken(n, 'overflow-hidden'),
+    },
+    {
+      key: 'image',
+      // База: <img class={C.image}> — большое изображение.
+      // C.image = 'w-full h-full object-cover rounded-[var(--radius-media)]'.
+      // rose primary tile: <img class="absolute inset-0 size-full object-cover ...">
+      //   (через RosePicture).
+      match: (n) => n.name === 'img' && (
+        // База C.image: w-full + h-full + object-cover + rounded-[var(--radius-media)]
+        (hasAnyClassToken(n, 'w-full') && hasAnyClassToken(n, 'h-full') &&
+          hasAnyClassToken(n, 'object-cover') && hasAnyClassToken(n, 'rounded-[var(--radius-media)]')) ||
+        // rose: absolute + inset-0 + size-full + object-cover
+        (hasAnyClassToken(n, 'absolute') && hasAnyClassToken(n, 'inset-0') &&
+          hasAnyClassToken(n, 'size-full') && hasAnyClassToken(n, 'object-cover'))
+      ),
+    },
+    {
+      key: 'imageSmall',
+      // База: <img class={C.imageSmall}>.
+      // C.imageSmall = 'w-full aspect-square object-cover rounded-[var(--radius-media)]
+      //   bg-[rgb(var(--color-surface))]'.
+      // rose: small tiles используют RosePicture с absolute inset-0 — first-match по
+      // 'image' заберёт первое такое <img>. Возможен not-found для rose (приемлемо,
+      // тот же узор покрыт через 'image').
+      match: (n) => n.name === 'img' && (
+        // База imageSmall: aspect-square + rounded-[var(--radius-media)]
+        (hasAnyClassToken(n, 'aspect-square') && hasAnyClassToken(n, 'object-cover') &&
+          hasAnyClassToken(n, 'rounded-[var(--radius-media)]')) ||
+        // rose collection tile imageSmall: block + size-full + object-cover (без absolute)
+        (hasAnyClassToken(n, 'block') && hasAnyClassToken(n, 'size-full') &&
+          hasAnyClassToken(n, 'object-cover'))
+      ),
+    },
+    {
+      key: 'cardMedia',
+      // База: <div class={C.cardMedia}> — placeholder для card без image.
+      // C.cardMedia = 'w-full aspect-square bg-[rgb(var(--color-surface))]
+      //   rounded-[var(--radius-media)]'.
+      // rose: <div class="gallery-bag-media relative aspect-[429/444] w-full ...
+      //   rounded-[8px] bg-[#F5F5F5] ..."> (product tile) или collection tile
+      //   <div class="aspect-[429/309] w-full ... rounded-[8px] bg-[#F5F5F5]">.
+      // ВАЖНО: C.cardMedia подставляется в class={...}, поэтому используем
+      // hasAnyClassToken для устойчивости к обеим формам атрибута.
+      match: (n) => n.name === 'div' && (
+        // База cardMedia: aspect-square + bg-[rgb(var(--color-surface))] + rounded-[var(--radius-media)]
+        (hasAnyClassToken(n, 'aspect-square') &&
+          hasAnyClassToken(n, 'bg-[rgb(var(--color-surface))]') &&
+          hasAnyClassToken(n, 'rounded-[var(--radius-media)]')) ||
+        // rose gallery-bag-media — уникальный класс на product tile media
+        hasAnyClassToken(n, 'gallery-bag-media') ||
+        // rose collection tile media: aspect-[429/309] + rounded-[8px] + bg-[#F5F5F5]
+        (hasAnyClassToken(n, 'aspect-[429/309]') && hasAnyClassToken(n, 'rounded-[8px]') &&
+          hasAnyClassToken(n, 'bg-[#F5F5F5]'))
+      ),
+    },
+    {
+      key: 'cardLabel',
+      // База: <div class={C.cardLabel}> — подпись карточки (label).
+      // C.cardLabel = '[font-family:var(--font-body)] text-[14px] leading-[17px]
+      //   text-[rgb(var(--color-heading))]'.
+      // rose: <h3 class="gallery-product-title font-manrope text-[16px] ..."> или
+      //   <h3 class="gallery-collection-title font-manrope ...">.
+      // ВАЖНО: C.cardLabel подставляется в class={...}, поэтому используем
+      // hasAnyClassToken (поиск и в class, и в class:list).
+      // Этот же fingerprint совпадает с PopularProducts cardTitle — это OK,
+      // потому что Gallery и PopularProducts парсятся отдельно (разные блоки).
+      match: (n) => (n.name === 'div' || n.name === 'h3') && (
+        // База cardLabel: '[font-family:var(--font-body)]' + 'text-[14px]' +
+        // 'leading-[17px]' + 'text-[rgb(var(--color-heading))]'
+        (hasAnyClassToken(n, '[font-family:var(--font-body)]') &&
+          hasAnyClassToken(n, 'text-[14px]') &&
+          hasAnyClassToken(n, 'leading-[17px]') &&
+          hasAnyClassToken(n, 'text-[rgb(var(--color-heading))]')) ||
+        // rose specific classes
+        hasAnyClassToken(n, 'gallery-product-title') ||
+        hasAnyClassToken(n, 'gallery-collection-title')
+      ),
+    },
+    {
+      key: 'cardPrice',
+      // База: <div class={C.cardPrice}> — цена карточки.
+      // C.cardPrice = '[font-family:var(--font-body)] text-[14px] leading-[17px]
+      //   text-[rgb(var(--color-text))]/70'.
+      // rose: <span class="gallery-product-price font-manrope text-[16px] ...">.
+      // ВАЖНО: C.cardPrice подставляется в class={...}, поэтому hasAnyClassToken.
+      match: (n) => (n.name === 'div' || n.name === 'span') && (
+        // База cardPrice: '[font-family:var(--font-body)]' + 'text-[14px]' +
+        // 'leading-[17px]' + 'text-[rgb(var(--color-text))]/70'
+        (hasAnyClassToken(n, '[font-family:var(--font-body)]') &&
+          hasAnyClassToken(n, 'text-[14px]') &&
+          hasAnyClassToken(n, 'leading-[17px]') &&
+          hasAnyClassToken(n, 'text-[rgb(var(--color-text))]/70')) ||
+        // rose specific class
+        hasAnyClassToken(n, 'gallery-product-price')
+      ),
+    },
+  ],
 };
 
 /**

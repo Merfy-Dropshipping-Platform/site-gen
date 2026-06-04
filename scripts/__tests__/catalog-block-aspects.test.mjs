@@ -1756,3 +1756,374 @@ test('ImageWithText base imageRight: находит textCol по md:order-1 + ch
   assert.ok(classMap.textCol.found);
   assert.ok(classMap.textCol.classList.some((c) => c.includes('md:order-1')));
 });
+
+// ───────── Gallery блок ─────────
+// Покрывает оба источника:
+//   1) База theme-base/blocks/Gallery/Gallery.astro (featured layout по умолчанию):
+//      <section data-puck-component-id+data-layout class:list=[C.root, ...]>,
+//      <div class={C.container}>,
+//      <h2 data-puck-subsection-field="heading">,
+//      <p data-puck-subsection-field="text">,
+//      <div class={innerClass}> — featured/grid/side-by-side вариант,
+//      featured: <div class={C.itemPrimary}> (md:col-span-2 md:row-span-2 ...) с <img>,
+//                <a class={C.itemSmall}> (flex flex-col gap-2 overflow-hidden) с <img>/<div>;
+//      grid: <div class={C.item}> (block overflow-hidden rounded-[var(--radius-card)]) с <img>,
+//            <a class={C.card}> (flex flex-col gap-2) с <img>/<div>.
+//   2) Источник rose-theme/src/components/sections/Gallery.astro:
+//      <section id="gallery" aria-labelledby="gallery-title">,
+//      <div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 ...">,
+//      <h2 id="gallery-title" class="font-comfortaa uppercase ...">,
+//      <p class="font-manrope text-[#999999] ...">,
+//      <div class="grid ... lg:grid-cols-[minmax(0,1fr)_minmax(280px,429px)] ...">,
+//      <a class="gallery-hero-tile group relative block ... rounded-[8px] bg-[#F5F5F5] ..."
+//         aria-label="Перейти в каталог"> (большая плитка) с <img absolute inset-0 size-full object-cover>,
+//      <a class="group flex flex-col items-start gap-4 ..." aria-label="Сумка">
+//         (product tile) с <div class="gallery-bag-media relative aspect-[429/444] ..."> +
+//         <img absolute inset-0 size-full object-cover> + <h3 class="gallery-product-title font-manrope ..."> +
+//         <span class="gallery-product-price font-manrope ...">,
+//      <a class="group flex min-w-0 flex-col items-start gap-4 ..." aria-label="Коллекция FUTURISM">
+//         (collection tile) с <div class="aspect-[429/309] ... rounded-[8px] bg-[#F5F5F5]"> +
+//         <img block size-full object-cover> + <h3 class="gallery-collection-title font-manrope ...">.
+
+const MINIMAL_GALLERY_BASE_ASTRO = `---
+const x = 1;
+---
+<section
+  class:list={['relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]', 'color-scheme-default']}
+  data-puck-component-id="gallery-1"
+  data-layout="featured"
+  style="padding-top:80px;"
+>
+  <div class="mx-auto max-w-[var(--container-max-width)] px-4">
+    <h2 class="[font-family:var(--font-heading)] text-[14px] leading-[16px] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] text-center mb-2" data-puck-subsection-field="heading">Галерея</h2>
+    <p class="[font-family:var(--font-body)] text-[12px] leading-[15px] text-[rgb(var(--color-text))]/60 text-center mb-8" data-puck-subsection-field="text">Подборка</p>
+    <div class:list={['grid grid-cols-1 md:grid-cols-3 md:grid-rows-2 gap-4 md:gap-6']}>
+      <div class="md:col-span-2 md:row-span-2 overflow-hidden rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))]" data-puck-subsection-parent="gallery-1" data-puck-subsection-index="0" data-puck-subsection-field="items">
+        <img src="/img/big.jpg" alt="Big" class="w-full h-full object-cover rounded-[var(--radius-media)]" />
+      </div>
+      <a href="/products/p1" class="flex flex-col gap-2 overflow-hidden" data-puck-subsection-parent="gallery-1" data-puck-subsection-index="1" data-puck-subsection-field="items">
+        <img src="/img/p.jpg" alt="P" class="w-full aspect-square object-cover rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))]" />
+        <div class="[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-heading))]">Товар</div>
+        <div class="[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-text))]/70">2 500 ₽</div>
+      </a>
+    </div>
+  </div>
+</section>
+`;
+
+const MINIMAL_GALLERY_GRID_BASE_ASTRO = `---
+const x = 1;
+---
+<section
+  class:list={['relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]', 'color-scheme-default']}
+  data-puck-component-id="gallery-2"
+  data-layout="grid"
+>
+  <div class="mx-auto max-w-[var(--container-max-width)] px-4">
+    <div class:list={['grid grid-cols-1 md:grid-cols-3 gap-x-[var(--spacing-grid-col-gap)] gap-y-[var(--spacing-grid-row-gap)]']}>
+      <div class="block overflow-hidden rounded-[var(--radius-card)]" data-puck-subsection-parent="gallery-2" data-puck-subsection-index="0" data-puck-subsection-field="items">
+        <img src="/img/i.jpg" alt="I" class="w-full h-full object-cover rounded-[var(--radius-media)]" />
+      </div>
+      <a href="/products/p2" class="flex flex-col gap-2" data-puck-subsection-parent="gallery-2" data-puck-subsection-index="1" data-puck-subsection-field="items">
+        <div class="w-full aspect-square bg-[rgb(var(--color-surface))] rounded-[var(--radius-media)] flex items-center justify-center overflow-hidden text-[rgb(var(--color-accent))]" aria-hidden="true"></div>
+        <div class="[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-heading))]">Товар</div>
+      </a>
+    </div>
+  </div>
+</section>
+`;
+
+// Фикстура rose-источника — Gallery.astro объединённый с раскрытым NtSectionHeading
+// и RosePicture (как сделает getThemeSource с inlineSubComponent).
+const MINIMAL_GALLERY_ROSE_ASTRO = `---
+const sectionTitle = "Снова в наличии!";
+const sectionSubtitle = "Сравнивайте, находите своё";
+---
+<section
+  id="gallery"
+  class="w-full bg-white px-4 pb-14 pt-14 sm:px-5 sm:pb-16 sm:pt-16 md:px-10 md:pb-[100px] md:pt-[100px] lg:px-16 lg:pb-[120px] lg:pt-[120px] xl:px-20 xl:pb-[140px] xl:pt-[140px] 2xl:px-[280px]"
+  aria-labelledby="gallery-title"
+>
+  <div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
+    <div class="gallery-section-heading flex w-full min-w-0 justify-center">
+      <div class:list={['flex max-w-[90vw] flex-col items-center', 'gap-2']} data-nt="section-heading" data-nt-variant="rose">
+        <h2 id="gallery-title" class:list={['text-center font-comfortaa font-normal uppercase text-[#000000]', '!text-[20px] !leading-none tracking-normal']}>{sectionTitle}</h2>
+        <p class:list={['text-center font-manrope font-normal text-[#999999]', 'max-w-[780px] px-2 !text-[16px] !leading-none tracking-normal']}>{sectionSubtitle}</p>
+      </div>
+    </div>
+    <div class="grid min-h-0 min-w-0 grid-cols-1 gap-6 md:gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,429px)] lg:items-stretch lg:gap-6 xl:gap-8">
+      <a
+        href="/catalog"
+        class="gallery-hero-tile group relative block min-h-[280px] w-full min-w-0 overflow-hidden rounded-[8px] bg-[#F5F5F5] lg:min-h-0 lg:h-full"
+        aria-label="Перейти в каталог"
+      >
+        <img
+          src="/img/g.png"
+          alt="Галерея"
+          loading="eager"
+          width="875"
+          height="875"
+          class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
+        />
+      </a>
+      <div class="flex min-h-0 min-w-0 flex-col gap-6">
+        <a
+          href="/products/bag-1"
+          class="group flex flex-col items-start gap-4 text-left md:gap-5"
+          aria-label="Сумка"
+        >
+          <div class="gallery-bag-media relative aspect-[429/444] w-full min-h-0 overflow-hidden rounded-[8px] bg-[#F5F5F5] leading-none">
+            <img
+              src="/img/bag.png"
+              alt="Сумка"
+              width="429"
+              height="444"
+              loading="eager"
+              class="absolute inset-0 size-full max-w-none object-cover object-center transition-transform duration-300 group-hover:scale-110"
+            />
+          </div>
+          <div class="flex flex-col gap-[4px] bg-transparent">
+            <h3 class="gallery-product-title font-manrope text-[16px] font-normal leading-none text-black md:text-[16px] lg:text-[16px] xl:text-[16px]">Сумка</h3>
+            <span class="gallery-product-price font-manrope text-[16px] font-normal leading-none text-black md:text-[16px] lg:text-[16px] xl:text-[16px]">5 990₽</span>
+          </div>
+        </a>
+        <a
+          href="/catalog?collection=FUTURISM"
+          class="group flex min-w-0 flex-col items-start gap-4 text-left md:gap-5"
+          aria-label="Коллекция FUTURISM"
+        >
+          <div class="aspect-[429/309] w-full min-h-0 overflow-hidden rounded-[8px] bg-[#F5F5F5]">
+            <img
+              src="/img/coll.png"
+              alt="Коллекция FUTURISM"
+              width="429"
+              height="309"
+              loading="eager"
+              class="block size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
+            />
+          </div>
+          <h3 class="gallery-collection-title font-manrope bg-transparent text-[16px] font-normal leading-[100%] text-black">Коллекция FUTURISM</h3>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+`;
+
+test('Gallery base featured: находит root по data-puck-component-id + data-layout', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.root.found, 'root должен быть найден');
+});
+
+test('Gallery base featured: находит container по max-w-[var(--container-max-width)]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.container.found);
+});
+
+test('Gallery base featured: находит heading по data-puck-subsection-field="heading"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.heading.found);
+});
+
+test('Gallery base featured: находит subheading по data-puck-subsection-field="text"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.subheading.found);
+});
+
+test('Gallery base featured: находит inner по grid + md:grid-cols-3 + md:grid-rows-2', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.inner.found);
+});
+
+test('Gallery base featured: находит itemPrimary по md:col-span-2 + md:row-span-2', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.itemPrimary.found);
+});
+
+test('Gallery base featured: находит itemSmall по flex flex-col gap-2 + overflow-hidden', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.itemSmall.found);
+});
+
+test('Gallery base featured: находит image по w-full + h-full + object-cover + rounded-[var(--radius-media)]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.image.found);
+});
+
+test('Gallery base featured: находит imageSmall по aspect-square + rounded-[var(--radius-media)]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.imageSmall.found);
+});
+
+test('Gallery base featured: находит cardLabel по литералу C.cardLabel', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.cardLabel.found);
+});
+
+test('Gallery base featured: находит cardPrice по литералу C.cardPrice', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.cardPrice.found);
+});
+
+test('Gallery base grid: находит item по C.item литералу (block overflow-hidden rounded-[var(--radius-card)])', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_GRID_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.item.found);
+});
+
+test('Gallery base grid: находит card по flex flex-col gap-2 без overflow-hidden', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_GRID_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.card.found);
+});
+
+test('Gallery base grid: находит cardMedia по литералу C.cardMedia', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_GRID_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.cardMedia.found);
+});
+
+test('Gallery rose: находит root по id="gallery" + aria-labelledby="gallery-title"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.root.found);
+  assert.ok(classMap.root.staticClass.includes('bg-white'));
+});
+
+test('Gallery rose: находит container по max-w-[1320px]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.container.found);
+  assert.ok(classMap.container.staticClass.includes('max-w-[1320px]'));
+});
+
+test('Gallery rose: находит heading по id="gallery-title" + font-comfortaa', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.heading.found);
+});
+
+test('Gallery rose: находит subheading по font-manrope + text-[#999999]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.subheading.found);
+});
+
+test('Gallery rose: находит inner по lg:grid-cols-[minmax(0,1fr)_minmax(280px,429px)]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.inner.found);
+});
+
+test('Gallery rose: находит itemPrimary по классу gallery-hero-tile', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.itemPrimary.found);
+  assert.ok(classMap.itemPrimary.staticClass.includes('gallery-hero-tile'));
+});
+
+test('Gallery rose: находит itemSmall по items-start + gap-4', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.itemSmall.found);
+});
+
+test('Gallery rose: находит image по absolute + inset-0 + size-full + object-cover', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.image.found);
+});
+
+test('Gallery rose: находит cardMedia по классу gallery-bag-media', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.cardMedia.found);
+  assert.ok(classMap.cardMedia.staticClass.includes('gallery-bag-media'));
+});
+
+test('Gallery rose: находит cardLabel по классу gallery-product-title или gallery-collection-title', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.cardLabel.found);
+  // first-match — gallery-product-title (раньше встречается)
+  assert.ok(
+    classMap.cardLabel.staticClass.includes('gallery-product-title') ||
+    classMap.cardLabel.staticClass.includes('gallery-collection-title')
+  );
+});
+
+test('Gallery rose: находит cardPrice по классу gallery-product-price', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.ok(classMap.cardPrice.found);
+  assert.ok(classMap.cardPrice.staticClass.includes('gallery-product-price'));
+});
+
+test('Gallery rose: item НЕ найден (у rose нет block+overflow-hidden+rounded-[var(--radius-card)])', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_GALLERY_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Gallery,
+    blockName: 'Gallery',
+  });
+  assert.equal(classMap.item.found, false);
+});

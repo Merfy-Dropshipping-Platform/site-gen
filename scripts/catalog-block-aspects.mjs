@@ -33,6 +33,7 @@ import {
   isStructural,
   isGlobalToken,
   shouldFilterAsSchemeColor,
+  isStructuralDimension,
 } from './lib/utility-classify.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -175,6 +176,20 @@ async function main() {
         continue;
       }
 
+      // ── Доработка E (правило 1+2): структурный dimension или text-align ──
+      // Если значение source — структурное ключевое слово для dimension
+      // (width:full, height:auto, max-w:100%) или любое значение text-align —
+      // НЕ создаём токен. Это структура лейаута, не визуал.
+      if (isStructuralDimension(property, sourceVal)) {
+        tokensFilteredList.push({
+          name: tokenName,
+          reason: `structural dimension or text-align (${property}: ${sourceVal})`,
+          base: baseVal || '(нет)',
+          source: sourceVal,
+        });
+        continue;
+      }
+
       aspects[key] = { base: baseVal || '(нет)', source: sourceVal };
 
       const fallback = baseVal && !isGlobalToken(baseVal) ? sanitizeValue(baseVal) : sanitizeValue(sourceVal);
@@ -204,16 +219,27 @@ async function main() {
     }
   }
 
+  // ── Доработка E (правило 3): collapse дубликатов по брейкпоинтам ──
+  // Если для одного (element, property, state) все brakpoint'ы имеют
+  // идентичный themeValue — оставляем только базовый (без breakpoint),
+  // остальные перемещаем в filtered. Если хоть один различается — оставляем
+  // все как есть.
+  const { kept: tokensSuggestedCollapsed, filtered: tokensCollapsedFiltered } =
+    collapseDuplicateBreakpoints(tokensSuggested);
+  for (const f of tokensCollapsedFiltered) {
+    tokensFilteredList.push(f);
+  }
+
   const catalog = {
     block,
     theme,
     source: sourceUrl,
     fetchedAt,
     elementsFound,
-    tokensProposed: tokensSuggested.length,
+    tokensProposed: tokensSuggestedCollapsed.length,
     tokensFiltered: tokensFilteredList.length,
     elements: elementsAnalysis,
-    tokensSuggested,
+    tokensSuggested: tokensSuggestedCollapsed,
     tokensFilteredList,
   };
 
@@ -224,18 +250,83 @@ async function main() {
   console.log(`✓ Каталог сохранён: ${path.relative(SITES_ROOT, outFile)}`);
   console.log(`\nСводка:`);
   console.log(`  Элементов найдено:       ${elementsFound}`);
-  console.log(`  Токенов предложено:      ${tokensSuggested.length}`);
+  console.log(`  Токенов предложено:      ${tokensSuggestedCollapsed.length}`);
   console.log(`  Отфильтровано:           ${tokensFilteredList.length}`);
 
-  if (tokensSuggested.length > 0) {
+  if (tokensSuggestedCollapsed.length > 0) {
     console.log(`\nТоп-5 расхождений:`);
-    const top = tokensSuggested.slice(0, 5);
+    const top = tokensSuggestedCollapsed.slice(0, 5);
     for (const t of top) {
       console.log(`  ${t.name}`);
       const baseShown = t.fallback === t.themeValue ? '(нет)' : t.fallback;
       console.log(`      база → ${baseShown}    источник → ${t.themeValue}`);
     }
   }
+}
+
+/**
+ * Правило 3: схлопывание дубликатов по брейкпоинтам.
+ *
+ * Если для одной группы (element + property + state) все варианты
+ * `breakpoint` (включая null = base) имеют ИДЕНТИЧНЫЙ `themeValue` —
+ * оставляем только базовый (breakpoint = null), остальные перемещаем в
+ * filtered. Если хоть один различается — оставляем все варианты.
+ *
+ * @param {Array<Object>} tokens — массив токенов из tokensSuggested
+ * @returns {{ kept: Array<Object>, filtered: Array<Object> }}
+ */
+export function collapseDuplicateBreakpoints(tokens) {
+  // Группируем по (element, property, state)
+  const groups = new Map();
+  for (const t of tokens) {
+    const groupKey = `${t.element}|${t.property}|${t.state || ''}`;
+    if (!groups.has(groupKey)) groups.set(groupKey, []);
+    groups.get(groupKey).push(t);
+  }
+
+  const kept = [];
+  const filtered = [];
+
+  for (const [, group] of groups) {
+    if (group.length === 1) {
+      kept.push(group[0]);
+      continue;
+    }
+
+    // Все ли themeValue идентичны в группе?
+    const values = new Set(group.map((t) => t.themeValue));
+    if (values.size > 1) {
+      // Разные значения — оставляем все
+      for (const t of group) kept.push(t);
+      continue;
+    }
+
+    // Все одинаковые — оставляем токен без breakpoint, остальные в filtered.
+    // Если базового (breakpoint === null) нет — берём первый по порядку и
+    // делаем из него базовый (убираем breakpoint и пересчитываем имя).
+    const baseToken = group.find((t) => !t.breakpoint);
+    if (baseToken) {
+      kept.push(baseToken);
+      for (const t of group) {
+        if (t === baseToken) continue;
+        filtered.push({
+          name: t.name,
+          reason: `duplicate of ${baseToken.name} across breakpoints (all = ${t.themeValue})`,
+          base: t.fallback,
+          source: t.themeValue,
+        });
+      }
+    } else {
+      // Базового нет — оставляем все как есть (не схлопываем без базы:
+      // там могут быть осмысленные breakpoint'ы например только md/lg).
+      // Конкретно — если все sm/md/lg/xl одинаковые, всё равно нужно
+      // оставить хотя бы один. Но без базового мы НЕ знаем какой шире
+      // покрывает диапазон, поэтому оставляем все.
+      for (const t of group) kept.push(t);
+    }
+  }
+
+  return { kept, filtered };
 }
 
 function classifyTokens(tokens) {
@@ -291,8 +382,15 @@ function bracketize(state, breakpoint) {
   return parts.length ? parts.join('.') : 'default';
 }
 
-main().catch((err) => {
-  console.error('\n✗ Ошибка:', err.message);
-  if (err.stack) console.error(err.stack);
-  process.exit(1);
-});
+// Гард: запускать main() только когда файл вызван напрямую, а не импортирован
+// (например, из тестов). Иначе при `import { collapseDuplicateBreakpoints }`
+// main() выполнится с непереданными --block/--theme и упадёт.
+const __filename = fileURLToPath(import.meta.url);
+const __invoked = process.argv[1] && path.resolve(process.argv[1]) === __filename;
+if (__invoked) {
+  main().catch((err) => {
+    console.error('\n✗ Ошибка:', err.message);
+    if (err.stack) console.error(err.stack);
+    process.exit(1);
+  });
+}

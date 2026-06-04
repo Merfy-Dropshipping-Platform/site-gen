@@ -105,6 +105,24 @@ export const TOKEN_REGISTRY = {
   '--card-style':              { category: 'variant', values: ['standard', 'card'], scope: 'theme' },
   '--card-alignment':          { category: 'variant', values: ['left', 'center', 'right'], scope: 'theme' },
   '--text-transform-heading':  { category: 'variant', values: ['none', 'uppercase', 'capitalize'], scope: 'theme' },
+  // ── v2 миграция — токены блока (добавлено скриптом)
+  '--header-nav-gap': { category: 'spacing', unit: 'px', scope: 'theme' },
+  '--header-nav-gap-lg': { category: 'spacing', unit: 'px', scope: 'theme' },
+  '--header-logo-link-font-size': { category: 'size', unit: 'px', scope: 'theme' },
+  '--header-nav-link-font-size': { category: 'size', unit: 'px', scope: 'theme' },
+  '--header-nav-link-padding-bottom': { category: 'spacing', unit: 'px', scope: 'theme' },
+  '--header-nav-link-font-size-lg': { category: 'size', unit: 'px', scope: 'theme' },
+  '--header-action-search-opacity-hover': { category: 'size', scope: 'theme' },
+  '--header-cart-badge-min-width': { category: 'size', unit: 'px', scope: 'theme' },
+  '--header-cart-badge-height': { category: 'size', unit: 'px', scope: 'theme' },
+  '--header-action-profile-opacity-hover': { category: 'size', scope: 'theme' },
+  '--header-mobile-menu-root-width': { category: 'size', scope: 'theme' },
+  '--header-mobile-menu-root-background-color': { category: 'color', scope: 'theme' },
+  '--header-mobile-menu-root-padding-x': { category: 'spacing', unit: 'px', scope: 'theme' },
+  '--header-mobile-menu-root-padding-top': { category: 'spacing', unit: 'px', scope: 'theme' },
+  '--header-mobile-menu-root-padding-bottom': { category: 'spacing', unit: 'px', scope: 'theme' },
+  '--header-mobile-menu-root-padding-x-sm': { category: 'spacing', unit: 'px', scope: 'theme' },
+  '--header-mobile-menu-root-padding-x-md': { category: 'spacing', unit: 'px', scope: 'theme' },
 } as const satisfies Record<`--${string}`, TokenMeta>;
 
 export type TokenKey = keyof typeof TOKEN_REGISTRY;

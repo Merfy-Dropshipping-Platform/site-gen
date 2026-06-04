@@ -23,7 +23,7 @@ export const HeaderClasses = {
   // не работает при small padding (юзер 2026-05-11). Default min-height
   // только когда padding undefined — в Astro `class:list`.
   header: 'w-full flex items-center border-b border-[rgb(var(--color-text))]/15 h-[var(--size-header-h,auto)]',
-  nav: 'w-full max-w-[var(--container-max-width,1320px)] mx-auto px-4 md:px-6 flex items-center relative',
+  nav: 'w-full max-w-[var(--container-max-width,1320px)] mx-auto px-4 md:px-6 flex items-center relative gap-[var(--header-nav-gap)] lg:gap-[var(--header-nav-gap-lg)]',
   navJustified: 'justify-between',
   hamburger:
     'md:hidden w-10 h-10 flex items-center justify-center hover:opacity-70 transition-opacity text-[rgb(var(--color-heading))]',
@@ -62,7 +62,7 @@ export const HeaderClasses = {
         'absolute left-0 -bottom-2 h-px w-[59px] bg-[rgb(var(--color-text))]',
     },
   },
-  logoLink: 'flex items-center hover:opacity-80 transition-opacity',
+  logoLink: 'flex items-center hover:opacity-80 transition-opacity text-[var(--header-logo-link-font-size)]',
   // Высота лого = значение --size-logo-width (slider в Theme Settings —
   // "Размер" задаёт высоту); fallback 24px если token не задан.
   // Ширина auto до 160px max — preserve aspect-ratio для широких логотипов.
@@ -75,19 +75,19 @@ export const HeaderClasses = {
   navMenuCentered:
     'hidden md:flex items-center justify-center gap-4 lg:gap-8 xl:gap-12 mt-2',
   navLink:
-    '[font-family:var(--font-body)] text-[length:var(--size-nav-link)] font-normal hover:opacity-70 transition-opacity text-[rgb(var(--color-text))]',
+    '[font-family:var(--font-body)] text-[var(--header-nav-link-font-size)] font-normal hover:opacity-70 transition-opacity text-[rgb(var(--color-text))] pb-[var(--header-nav-link-padding-bottom)] lg:text-[var(--header-nav-link-font-size-lg)]',
   actions:
     'flex items-center gap-3 sm:gap-3 md:gap-4 lg:gap-5 xl:gap-6',
   actionButton:
     'p-2 text-[rgb(var(--color-text))] hover:text-[rgb(var(--color-primary))] transition-colors',
   actionSearch:
-    'hidden md:flex w-8 h-8 lg:w-10 lg:h-10 items-center justify-center hover:opacity-70 transition-opacity text-[rgb(var(--color-text))]',
+    'hidden md:flex w-8 h-8 lg:w-10 lg:h-10 items-center justify-center hover:opacity-[var(--header-action-search-opacity-hover)] transition-opacity text-[rgb(var(--color-text))]',
   actionCart:
     'relative w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 flex items-center justify-center hover:opacity-70 transition-opacity text-[rgb(var(--color-text))]',
   actionProfile:
-    'auth-nav-btn w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center hover:opacity-70 transition-opacity text-[rgb(var(--color-text))]',
+    'auth-nav-btn w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center hover:opacity-[var(--header-action-profile-opacity-hover)] transition-opacity text-[rgb(var(--color-text))]',
   cartBadge:
-    'hidden absolute -top-1 -right-1 bg-[rgb(var(--color-primary))] text-[rgb(var(--color-button-text))] text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center leading-none px-1',
+    'hidden absolute -top-1 -right-1 bg-[rgb(var(--color-primary))] text-[rgb(var(--color-button-text))] text-[10px] font-bold rounded-full min-w-[var(--header-cart-badge-min-width)] h-[var(--header-cart-badge-height)] flex items-center justify-center leading-none px-1',
   mobileMenu: {
     root: 'hidden md:hidden absolute top-full left-0 right-0 border-b border-[rgb(var(--color-text))]/15 shadow-lg z-50 bg-[rgb(var(--color-bg))]',
     nav: 'flex flex-col',

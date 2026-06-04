@@ -55,7 +55,12 @@
     "--size-h3": "16px",
     "--size-body": "16px",
     "--size-small": "14px",
-    "--size-tiny": "12px"
+    "--size-tiny": "12px",
+    "--header-nav-link-font-size": "14px",
+    "--header-action-search-opacity-hover": "0.8",
+    "--header-cart-badge-min-width": "16px",
+    "--header-cart-badge-height": "16px",
+    "--header-action-profile-opacity-hover": "0.8"
   },
   "blockDefaults": {
     "Footer": {
@@ -69,30 +74,69 @@
       "navigationColumn": {
         "title": "Навигация",
         "links": [
-          { "label": "Главная", "href": "/" },
-          { "label": "Каталог", "href": "/catalog" },
-          { "label": "О нас", "href": "/about" },
-          { "label": "Контакты", "href": "/contacts" }
+          {
+            "label": "Главная",
+            "href": "/"
+          },
+          {
+            "label": "Каталог",
+            "href": "/catalog"
+          },
+          {
+            "label": "О нас",
+            "href": "/about"
+          },
+          {
+            "label": "Контакты",
+            "href": "/contacts"
+          }
         ]
       },
       "informationColumn": {
         "title": "Информация",
         "links": [
-          { "label": "Политика доставки", "href": "/legal/delivery" },
-          { "label": "Политика возврата", "href": "/legal/returns" },
-          { "label": "Условия обслуживания", "href": "/legal/terms" },
-          { "label": "Политика конфиденциальности", "href": "/legal/privacy" }
+          {
+            "label": "Политика доставки",
+            "href": "/legal/delivery"
+          },
+          {
+            "label": "Политика возврата",
+            "href": "/legal/returns"
+          },
+          {
+            "label": "Условия обслуживания",
+            "href": "/legal/terms"
+          },
+          {
+            "label": "Политика конфиденциальности",
+            "href": "/legal/privacy"
+          }
         ]
       },
       "socialColumn": {
         "title": "Социальные сети",
         "email": "rose@example.ru",
         "socialLinks": [
-          { "platform": "telegram", "href": "#" },
-          { "platform": "vk", "href": "#" },
-          { "platform": "youtube", "href": "#" },
-          { "platform": "dzen", "href": "#" },
-          { "platform": "tiktok", "href": "#" }
+          {
+            "platform": "telegram",
+            "href": "#"
+          },
+          {
+            "platform": "vk",
+            "href": "#"
+          },
+          {
+            "platform": "youtube",
+            "href": "#"
+          },
+          {
+            "platform": "dzen",
+            "href": "#"
+          },
+          {
+            "platform": "tiktok",
+            "href": "#"
+          }
         ]
       },
       "copyright": {
@@ -106,9 +150,14 @@
     },
     "Product": {
       "visualConfig": {
-        "gallery": { "variant": "wrap-large", "showDiscountBadge": true },
+        "gallery": {
+          "variant": "wrap-large",
+          "showDiscountBadge": true
+        },
         "variantsType": "chips",
-        "counter": { "variant": "inline" },
+        "counter": {
+          "variant": "inline"
+        },
         "showDescription": true
       }
     }

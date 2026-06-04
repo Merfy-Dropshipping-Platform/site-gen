@@ -2127,3 +2127,193 @@ test('Gallery rose: item НЕ найден (у rose нет block+overflow-hidden
   });
   assert.equal(classMap.item.found, false);
 });
+
+// ───────── Newsletter блок ─────────
+// Покрывает оба источника:
+//   1) База theme-base/blocks/Newsletter/Newsletter.astro (compact form
+//      с underline-only input + arrow icon submit; + 084 vanilla pilot
+//      inline-submit variant):
+//      <section data-puck-component-id>, <div max-w-[var(--container-max-width)]>,
+//      <div max-w-[var(--size-newsletter-form-w,420px)]>,
+//      <h2 data-puck-subsection-field="heading">,
+//      <p data-puck-subsection-field="text">,
+//      <form data-newsletter-form action="...newsletter/subscribe">,
+//      <input type="email">, <button type="submit" aria-label>.
+//   2) Источник rose-theme: rose НЕ имеет своего Newsletter — использует
+//      base Newsletter как есть. Cached source-файл — копия base
+//      Newsletter.astro.
+
+const MINIMAL_NEWSLETTER_BASE_ASTRO = `---
+const x = 1;
+---
+<section
+  class:list={['relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]', 'color-scheme-default']}
+  data-puck-component-id="newsletter-1"
+  style="padding-top:80px; padding-bottom:80px;"
+>
+  <div class="mx-auto max-w-[var(--container-max-width)] px-4 text-left">
+    <div class:list={['mx-auto max-w-[var(--size-newsletter-form-w,420px)]', 'text-center items-center', '']}>
+      <h2 class:list={['[font-family:var(--font-heading)] text-[14px] leading-[16px] tracking-[0.05em] uppercase text-[rgb(var(--color-heading))] mb-2', '', '']} data-puck-subsection-parent="newsletter-1" data-puck-subsection-index="100" data-puck-subsection-field="heading">Подпишитесь</h2>
+      <p class:list={['[font-family:var(--font-body)] text-[12px] leading-[15px] text-[rgb(var(--color-text))]/60 mb-5', '']} data-puck-subsection-parent="newsletter-1" data-puck-subsection-index="101" data-puck-subsection-field="text">Получайте новости первыми</p>
+      <form
+        class="relative flex items-center w-full border-b border-[rgb(var(--color-text))]/30"
+        method="POST"
+        action="https://gateway.merfy.ru/api/storefront/newsletter/subscribe"
+        data-newsletter-form
+        data-puck-subsection-parent="newsletter-1"
+        data-puck-subsection-index="102"
+        data-puck-subsection-field="form"
+        data-form-layout="legacy"
+      >
+        <input type="hidden" name="store_id" value="" data-newsletter-store-id />
+        <input type="email" name="email" placeholder="email@example.com" required class="flex-1 h-10 bg-transparent border-0 outline-none pr-10 text-[14px] [font-family:var(--font-body)] text-[rgb(var(--color-text))] placeholder:text-[rgb(var(--color-text))]/40" />
+        <button type="submit" class="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-[rgb(var(--color-text))] hover:text-[rgb(var(--color-button-bg))] transition-colors" aria-label="Подписаться">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M4 10h12m0 0l-5-5m5 5l-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </form>
+    </div>
+  </div>
+</section>
+`;
+
+test('Newsletter base: находит root по data-puck-component-id', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_NEWSLETTER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Newsletter,
+    blockName: 'Newsletter',
+  });
+  assert.ok(classMap.root.found, 'root должен быть найден');
+});
+
+test('Newsletter base: находит container по max-w-[var(--container-max-width)]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_NEWSLETTER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Newsletter,
+    blockName: 'Newsletter',
+  });
+  assert.ok(classMap.container.found);
+});
+
+test('Newsletter base: находит inner по max-w-[var(--size-newsletter-form-w,420px)]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_NEWSLETTER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Newsletter,
+    blockName: 'Newsletter',
+  });
+  assert.ok(classMap.inner.found);
+});
+
+test('Newsletter base: находит heading по data-puck-subsection-field="heading"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_NEWSLETTER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Newsletter,
+    blockName: 'Newsletter',
+  });
+  assert.ok(classMap.heading.found);
+});
+
+test('Newsletter base: находит description по data-puck-subsection-field="text"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_NEWSLETTER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Newsletter,
+    blockName: 'Newsletter',
+  });
+  assert.ok(classMap.description.found);
+});
+
+test('Newsletter base: находит form по data-newsletter-form', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_NEWSLETTER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Newsletter,
+    blockName: 'Newsletter',
+  });
+  assert.ok(classMap.form.found);
+});
+
+test('Newsletter base: находит input по type="email" (skip hidden store_id)', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_NEWSLETTER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Newsletter,
+    blockName: 'Newsletter',
+  });
+  assert.ok(classMap.input.found);
+});
+
+test('Newsletter base: находит button по type="submit"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_NEWSLETTER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.Newsletter,
+    blockName: 'Newsletter',
+  });
+  assert.ok(classMap.button.found);
+});
+
+// ───────── PromoBanner блок ─────────
+// Покрывает оба источника:
+//   1) База theme-base/blocks/PromoBanner/PromoBanner.astro (single-line
+//      promo strip + 084 vanilla pilot thin variant):
+//      <section data-puck-component-id>, <div max-w-[var(--container-max-width)]
+//      flex items-center justify-center gap-1 tracking-[0.08em]>,
+//      <span [font-family:var(--font-body)]>, <a underline underline-offset-2>.
+//   2) Источник rose-theme: rose НЕ имеет своего PromoBanner — использует
+//      base PromoBanner как есть. Cached source-файл — копия base.
+
+const MINIMAL_PROMO_BANNER_BASE_ASTRO = `---
+const x = 1;
+---
+<section
+  class:list={['relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]', 'color-scheme-default', 'text-sm py-3']}
+  data-puck-component-id="promo-1"
+  style="padding-top:8px; padding-bottom:8px;"
+>
+  <div class:list={['mx-auto max-w-[var(--container-max-width)] px-4 flex items-center justify-center gap-1 text-center text-[13px] uppercase tracking-[0.08em]', '']}>
+    <span class="[font-family:var(--font-body)] font-[var(--weight-body)] text-[rgb(var(--color-text))]">Бесплатная доставка от 5000₽</span>
+    <span aria-hidden="true">.</span>
+    <a href="/delivery" class="[font-family:var(--font-body)] underline underline-offset-2 text-[rgb(var(--color-text))] hover:opacity-70">Подробнее</a>
+  </div>
+</section>
+`;
+
+test('PromoBanner base: находит root по data-puck-component-id', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_PROMO_BANNER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PromoBanner,
+    blockName: 'PromoBanner',
+  });
+  assert.ok(classMap.root.found, 'root должен быть найден');
+});
+
+test('PromoBanner base: находит container по max-w-[var(--container-max-width)] + tracking-[0.08em]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_PROMO_BANNER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PromoBanner,
+    blockName: 'PromoBanner',
+  });
+  assert.ok(classMap.container.found);
+});
+
+test('PromoBanner base: находит text по [font-family:var(--font-body)] (skip aria-hidden separator)', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_PROMO_BANNER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PromoBanner,
+    blockName: 'PromoBanner',
+  });
+  assert.ok(classMap.text.found);
+  assert.ok(classMap.text.staticClass.includes('[font-family:var(--font-body)]'));
+});
+
+test('PromoBanner base: находит link по underline + underline-offset-2', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_PROMO_BANNER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PromoBanner,
+    blockName: 'PromoBanner',
+  });
+  assert.ok(classMap.link.found);
+});
+
+test('PromoBanner base: text НЕ ловит aria-hidden separator span', async () => {
+  // <span aria-hidden="true">.</span> не должен быть найден как text.
+  // text находит первый span с [font-family:var(--font-body)].
+  const { classMap } = await parseAstroFile(MINIMAL_PROMO_BANNER_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PromoBanner,
+    blockName: 'PromoBanner',
+  });
+  assert.ok(classMap.text.found);
+  // Убеждаемся что найден ЛЕГИТИМНЫЙ span с font-body классами,
+  // не separator (у того только aria-hidden).
+  assert.ok(
+    classMap.text.staticClass.includes('font-[var(--weight-body)]') ||
+    classMap.text.staticClass.includes('text-[rgb(var(--color-text))]'),
+    'text должен быть найден легитимным span с font-body классами, не separator'
+  );
+});

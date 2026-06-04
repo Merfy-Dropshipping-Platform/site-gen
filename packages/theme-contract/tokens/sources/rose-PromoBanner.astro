@@ -1,0 +1,50 @@
+---
+import type { PromoBannerProps } from './PromoBanner.puckConfig';
+import { PromoBannerClasses as C } from './PromoBanner.classes';
+
+interface Props extends PromoBannerProps {
+  id?: string;
+}
+
+const raw = Astro.props as Record<string, unknown>;
+const { id, text, linkText, linkUrl, colorScheme, padding } = raw as Props;
+
+// Pupa parity: link {text, href} object preferred over linkText/linkUrl, plus size.
+const linkObj = raw.link as { text?: string; href?: string } | undefined;
+const resolvedLinkText = linkObj?.text ?? linkText;
+const resolvedLinkHref = linkObj?.href ?? linkUrl;
+// 084 vanilla pilot: additive `thin` size value + `textTransform` field.
+// Default unset → `medium` (identical pre-commit). When set to `thin`,
+// renders a fixed-height strip via `--promo-banner-h-thin` token.
+const size = typeof raw.size === 'string' ? raw.size : 'medium';
+const sizeClass =
+  size === 'thin'   ? C.size.thin :
+  size === 'large'  ? C.size.large :
+  size === 'medium' ? C.size.medium :
+  size === 'small'  ? C.size.small : '';
+const textTransformProp =
+  raw.textTransform === 'uppercase' || raw.textTransform === 'none'
+    ? (raw.textTransform as 'uppercase' | 'none')
+    : undefined;
+const textTransformClass = textTransformProp ? C.textTransform[textTransformProp] : '';
+
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
+---
+<section
+  class:list={[C.root, schemeClass, sizeClass]}
+  data-puck-component-id={id}
+  style={paddingStyle}
+>
+  <div class:list={[C.container, textTransformClass]}>
+    <span class={C.text}>{text}</span>
+    {resolvedLinkText && (
+      <>
+        <span aria-hidden="true">.</span>
+        <a href={resolvedLinkHref} class={C.link}>{resolvedLinkText}</a>
+      </>
+    )}
+  </div>
+</section>

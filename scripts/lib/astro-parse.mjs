@@ -1419,6 +1419,160 @@ export const BLOCK_ELEMENT_SELECTORS = {
       ),
     },
   ],
+
+  // ── Newsletter ─────────────────────────────────────────────────────────
+  // Покрывает оба источника:
+  //   1) База theme-base/blocks/Newsletter/Newsletter.astro
+  //      (compact design Figma Rose 947:11507 — underline-only form +
+  //      absolute arrow icon; + 084 vanilla pilot inline-submit variant):
+  //        <section class:list={[C.root, schemeClass]}
+  //           data-puck-component-id={id}>,
+  //        <div class={C.container}> (mx-auto max-w-[var(--container-max-width)] px-4 text-left),
+  //        <div class:list={[C.inner, positionClass, innerOverrideClass]}>
+  //           (mx-auto max-w-[var(--size-newsletter-form-w,420px)]),
+  //        <h2 class:list={[headingClass, ...]}
+  //           data-puck-subsection-field="heading">,
+  //        <p class:list={[descriptionClass, ...]}
+  //           data-puck-subsection-field="text">,
+  //        <form class={formClass} method="POST" action="..."
+  //           data-newsletter-form data-puck-subsection-field="form">,
+  //        <input type="hidden" name="store_id" data-newsletter-store-id />,
+  //        <input type="email" name="email" class={inputClass} />,
+  //        <button type="submit" class={submitButtonClass} aria-label={buttonText}>.
+  //   2) Источник rose-theme: rose НЕ имеет своего Newsletter.astro в репо
+  //      темы (проверено через github rose-theme/main: ни src/components/, ни
+  //      src/components/sections/ не содержат Newsletter.astro). Override-папки
+  //      theme-rose/blocks/Newsletter/ также нет. rose использует base
+  //      Newsletter как есть. Cached source rose-Newsletter.astro в
+  //      tokens/sources/ — копия base. Селекторы покрывают base — этого
+  //      достаточно для парсинга обоих источников (они идентичны).
+  //
+  // Совпадения по ключам ↔ Newsletter.classes.ts:
+  //   root, container, inner, heading, description, form, input, button.
+  Newsletter: [
+    {
+      key: 'root',
+      // <section> с data-puck-component-id. Также проверяем root-classes
+      // base: 'relative w-full bg-[rgb(var(--color-bg))]'.
+      match: (n) => n.name === 'section' && (
+        hasAttr(n, 'data-puck-component-id') ||
+        hasAnyClassListToken(n, 'bg-[rgb(var(--color-bg))]')
+      ),
+    },
+    {
+      key: 'container',
+      // База C.container = 'mx-auto max-w-[var(--container-max-width)] px-4 text-left'.
+      match: (n) => n.name === 'div' &&
+        hasAnyClassToken(n, 'max-w-[var(--container-max-width)]'),
+    },
+    {
+      key: 'inner',
+      // База C.inner = 'mx-auto max-w-[var(--size-newsletter-form-w,420px)]'.
+      // Уникальный маркер: max-w-[var(--size-newsletter-form-w,420px)].
+      match: (n) => n.name === 'div' &&
+        (hasAnyClassToken(n, 'max-w-[var(--size-newsletter-form-w,420px)]') ||
+         hasAnyClassListToken(n, 'max-w-[var(--size-newsletter-form-w,420px)]')),
+    },
+    {
+      key: 'heading',
+      // <h2> с data-puck-subsection-field="heading".
+      match: (n) => n.name === 'h2' && (
+        getAttrValue(n, 'data-puck-subsection-field') === 'heading' ||
+        hasAnyClassListToken(n, '[font-family:var(--font-heading)]')
+      ),
+    },
+    {
+      key: 'description',
+      // <p> с data-puck-subsection-field="text".
+      match: (n) => n.name === 'p' && (
+        getAttrValue(n, 'data-puck-subsection-field') === 'text' ||
+        hasAnyClassListToken(n, '[font-family:var(--font-body)]')
+      ),
+    },
+    {
+      key: 'form',
+      // <form data-newsletter-form> — уникальный маркер.
+      match: (n) => n.name === 'form' && (
+        hasAttr(n, 'data-newsletter-form') ||
+        getAttrValue(n, 'data-puck-subsection-field') === 'form'
+      ),
+    },
+    {
+      key: 'input',
+      // <input type="email">. Hidden store_id input исключаем по type.
+      match: (n) => n.name === 'input' &&
+        getAttrValue(n, 'type') === 'email',
+    },
+    {
+      key: 'button',
+      // <button type="submit"> с aria-label (button submit единственный).
+      match: (n) => n.name === 'button' &&
+        getAttrValue(n, 'type') === 'submit',
+    },
+  ],
+
+  // ── PromoBanner ────────────────────────────────────────────────────────
+  // Покрывает оба источника:
+  //   1) База theme-base/blocks/PromoBanner/PromoBanner.astro
+  //      (single-line promo strip + 084 vanilla pilot thin variant):
+  //        <section class:list={[C.root, schemeClass, sizeClass]}
+  //           data-puck-component-id={id}>,
+  //        <div class:list={[C.container, textTransformClass]}
+  //           (mx-auto max-w-[var(--container-max-width)] px-4 flex items-center
+  //           justify-center gap-1 text-center text-[13px] uppercase
+  //           tracking-[0.08em]),
+  //        <span class={C.text}> ([font-family:var(--font-body)]
+  //           font-[var(--weight-body)] text-[rgb(var(--color-text))]),
+  //        <span aria-hidden="true">.</span> (separator),
+  //        <a class={C.link} href={...}> ([font-family:var(--font-body)]
+  //           underline underline-offset-2 text-[rgb(var(--color-text))]).
+  //   2) Источник rose-theme: rose НЕ имеет своего PromoBanner.astro в репо
+  //      темы и НЕ имеет override-папки. rose использует base PromoBanner
+  //      как есть. Cached source rose-PromoBanner.astro в tokens/sources/ —
+  //      копия base. Селекторы покрывают base — этого достаточно
+  //      для парсинга обоих источников (они идентичны).
+  //
+  // Совпадения по ключам ↔ PromoBanner.classes.ts:
+  //   root, container, text, link.
+  PromoBanner: [
+    {
+      key: 'root',
+      // <section> с data-puck-component-id. Уникально с base classes:
+      // 'relative w-full bg-[rgb(var(--color-bg))]'.
+      match: (n) => n.name === 'section' && (
+        hasAttr(n, 'data-puck-component-id') ||
+        hasAnyClassListToken(n, 'bg-[rgb(var(--color-bg))]')
+      ),
+    },
+    {
+      key: 'container',
+      // База C.container = 'mx-auto max-w-[var(--container-max-width)] px-4
+      //   flex items-center justify-center gap-1 text-center text-[13px]
+      //   uppercase tracking-[0.08em]'. Уникальные маркеры:
+      //   justify-center + tracking-[0.08em] + max-w-[var(--container-max-width)].
+      match: (n) => n.name === 'div' &&
+        hasAnyClassToken(n, 'max-w-[var(--container-max-width)]') &&
+        (hasAnyClassToken(n, 'tracking-[0.08em]') ||
+         hasAnyClassToken(n, 'justify-center')),
+    },
+    {
+      key: 'text',
+      // <span> с C.text = '[font-family:var(--font-body)]
+      //   font-[var(--weight-body)] text-[rgb(var(--color-text))]'.
+      // ВАЖНО: отличить от <span aria-hidden="true">.</span> (separator).
+      match: (n) => n.name === 'span' &&
+        getAttrValue(n, 'aria-hidden') !== 'true' &&
+        hasAnyClassToken(n, '[font-family:var(--font-body)]'),
+    },
+    {
+      key: 'link',
+      // <a> с C.link = '[font-family:var(--font-body)] underline
+      //   underline-offset-2 text-[rgb(var(--color-text))] hover:opacity-70'.
+      match: (n) => n.name === 'a' &&
+        hasAnyClassToken(n, 'underline') &&
+        hasAnyClassToken(n, 'underline-offset-2'),
+    },
+  ],
 };
 
 /**

@@ -1,0 +1,7 @@
+{
+  "fetchedAt": "2026-06-04T00:00:00.000Z",
+  "sourceUrl": "base://theme-base/blocks/PromoBanner/PromoBanner.astro",
+  "theme": "rose",
+  "block": "PromoBanner",
+  "note": "rose theme does not have its own PromoBanner.astro (not in github rose-theme/main, no override in packages/theme-rose/blocks/). Live rose site uses base PromoBanner 1:1. Cached source is a copy of base — это документирует факт что rose = base без расхождений."
+}

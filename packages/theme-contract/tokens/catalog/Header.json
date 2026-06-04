@@ -1,188 +1,127 @@
 {
   "block": "Header",
-  "theme": "rose",
-  "source": "github://Merfy-Dropshipping-Platform/rose-theme@main:src/components/Header.astro",
-  "fetchedAt": "2026-06-04T09:40:47.281Z",
+  "theme": "vanilla",
+  "source": "github://Merfy-Dropshipping-Platform/vanilla-theme@main:src/components/Header.astro",
+  "fetchedAt": "2026-06-04T17:06:05.943Z",
   "elementsFound": 14,
-  "tokensProposed": 17,
-  "tokensFiltered": 2,
+  "tokensProposed": 8,
+  "tokensFiltered": 1,
   "elements": {
-    "nav": {
-      "gap": {
+    "header": {
+      "background-color": {
         "default": {
           "base": "(нет)",
-          "source": "32px"
-        },
-        "lg": {
-          "base": "(нет)",
-          "source": "48px"
-        }
-      }
-    },
-    "logoLink": {
-      "font-size": {
-        "default": {
-          "base": "(нет)",
-          "source": "20px"
-        }
-      }
-    },
-    "navLink": {
-      "font-size": {
-        "default": {
-          "base": "var(--size-nav-link)",
-          "source": "14px"
-        },
-        "lg": {
-          "base": "(нет)",
-          "source": "16px"
+          "source": "var(--vanilla-header-bg)"
         }
       },
       "padding-bottom": {
         "default": {
           "base": "(нет)",
-          "source": "4px"
+          "source": "3px"
+        }
+      },
+      "color": {
+        "default": {
+          "base": "(нет)",
+          "source": "white"
         }
       }
     },
-    "actionSearch": {
-      "opacity": {
-        "hover": {
-          "base": "0.7",
-          "source": "0.8"
+    "nav": {
+      "gap": {
+        "default": {
+          "base": "var(--header-nav-gap)",
+          "source": "40px"
+        }
+      }
+    },
+    "logoLink": {
+      "color": {
+        "default": {
+          "base": "var(--header-logo-link-font-size)",
+          "source": "white"
         }
       }
     },
     "cartBadge": {
+      "color": {
+        "default": {
+          "base": "rgb(var(--color-button-text))",
+          "source": "var(--vanilla-dark)"
+        }
+      },
       "min-width": {
         "default": {
-          "base": "18px",
+          "base": "var(--header-cart-badge-min-width)",
           "source": "16px"
         }
       },
       "height": {
         "default": {
-          "base": "18px",
+          "base": "var(--header-cart-badge-height)",
           "source": "16px"
-        }
-      }
-    },
-    "actionProfile": {
-      "opacity": {
-        "hover": {
-          "base": "0.7",
-          "source": "0.8"
-        }
-      }
-    },
-    "mobileMenuRoot": {
-      "width": {
-        "default": {
-          "base": "(нет)",
-          "source": "full"
-        }
-      },
-      "background-color": {
-        "default": {
-          "base": "(нет)",
-          "source": "white"
-        }
-      },
-      "padding-x": {
-        "default": {
-          "base": "(нет)",
-          "source": "16px"
-        },
-        "sm": {
-          "base": "(нет)",
-          "source": "20px"
-        },
-        "md": {
-          "base": "(нет)",
-          "source": "40px"
-        }
-      },
-      "padding-top": {
-        "default": {
-          "base": "(нет)",
-          "source": "16px"
-        }
-      },
-      "padding-bottom": {
-        "default": {
-          "base": "(нет)",
-          "source": "32px"
         }
       }
     }
   },
   "tokensSuggested": [
     {
-      "name": "--header-nav-gap",
-      "fallback": "32px",
-      "themeValue": "32px",
-      "element": "nav",
-      "property": "gap",
+      "name": "--header-header-background-color",
+      "fallback": "var(--vanilla-header-bg)",
+      "themeValue": "var(--vanilla-header-bg)",
+      "element": "header",
+      "property": "background-color",
       "state": null,
       "breakpoint": null
     },
     {
-      "name": "--header-nav-gap-lg",
-      "fallback": "48px",
-      "themeValue": "48px",
-      "element": "nav",
-      "property": "gap",
-      "state": null,
-      "breakpoint": "lg"
-    },
-    {
-      "name": "--header-logo-link-font-size",
-      "fallback": "20px",
-      "themeValue": "20px",
-      "element": "logoLink",
-      "property": "font-size",
-      "state": null,
-      "breakpoint": null
-    },
-    {
-      "name": "--header-nav-link-font-size",
-      "fallback": "var(--size-nav-link)",
-      "themeValue": "14px",
-      "element": "navLink",
-      "property": "font-size",
-      "state": null,
-      "breakpoint": null
-    },
-    {
-      "name": "--header-nav-link-padding-bottom",
-      "fallback": "4px",
-      "themeValue": "4px",
-      "element": "navLink",
+      "name": "--header-header-padding-bottom",
+      "fallback": "3px",
+      "themeValue": "3px",
+      "element": "header",
       "property": "padding-bottom",
       "state": null,
       "breakpoint": null
     },
     {
-      "name": "--header-nav-link-font-size-lg",
-      "fallback": "16px",
-      "themeValue": "16px",
-      "element": "navLink",
-      "property": "font-size",
+      "name": "--header-header-color",
+      "fallback": "white",
+      "themeValue": "white",
+      "element": "header",
+      "property": "color",
       "state": null,
-      "breakpoint": "lg"
+      "breakpoint": null
     },
     {
-      "name": "--header-action-search-opacity-hover",
-      "fallback": "0.7",
-      "themeValue": "0.8",
-      "element": "actionSearch",
-      "property": "opacity",
-      "state": "hover",
+      "name": "--header-nav-gap",
+      "fallback": "var(--header-nav-gap)",
+      "themeValue": "40px",
+      "element": "nav",
+      "property": "gap",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--header-logo-link-color",
+      "fallback": "var(--header-logo-link-font-size)",
+      "themeValue": "white",
+      "element": "logoLink",
+      "property": "color",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--header-cart-badge-color",
+      "fallback": "var(--vanilla-dark)",
+      "themeValue": "var(--vanilla-dark)",
+      "element": "cartBadge",
+      "property": "color",
+      "state": null,
       "breakpoint": null
     },
     {
       "name": "--header-cart-badge-min-width",
-      "fallback": "18px",
+      "fallback": "var(--header-cart-badge-min-width)",
       "themeValue": "16px",
       "element": "cartBadge",
       "property": "min-width",
@@ -191,97 +130,19 @@
     },
     {
       "name": "--header-cart-badge-height",
-      "fallback": "18px",
+      "fallback": "var(--header-cart-badge-height)",
       "themeValue": "16px",
       "element": "cartBadge",
       "property": "height",
       "state": null,
       "breakpoint": null
-    },
-    {
-      "name": "--header-action-profile-opacity-hover",
-      "fallback": "0.7",
-      "themeValue": "0.8",
-      "element": "actionProfile",
-      "property": "opacity",
-      "state": "hover",
-      "breakpoint": null
-    },
-    {
-      "name": "--header-mobile-menu-root-width",
-      "fallback": "full",
-      "themeValue": "full",
-      "element": "mobileMenuRoot",
-      "property": "width",
-      "state": null,
-      "breakpoint": null
-    },
-    {
-      "name": "--header-mobile-menu-root-background-color",
-      "fallback": "white",
-      "themeValue": "white",
-      "element": "mobileMenuRoot",
-      "property": "background-color",
-      "state": null,
-      "breakpoint": null
-    },
-    {
-      "name": "--header-mobile-menu-root-padding-x",
-      "fallback": "16px",
-      "themeValue": "16px",
-      "element": "mobileMenuRoot",
-      "property": "padding-x",
-      "state": null,
-      "breakpoint": null
-    },
-    {
-      "name": "--header-mobile-menu-root-padding-top",
-      "fallback": "16px",
-      "themeValue": "16px",
-      "element": "mobileMenuRoot",
-      "property": "padding-top",
-      "state": null,
-      "breakpoint": null
-    },
-    {
-      "name": "--header-mobile-menu-root-padding-bottom",
-      "fallback": "32px",
-      "themeValue": "32px",
-      "element": "mobileMenuRoot",
-      "property": "padding-bottom",
-      "state": null,
-      "breakpoint": null
-    },
-    {
-      "name": "--header-mobile-menu-root-padding-x-sm",
-      "fallback": "20px",
-      "themeValue": "20px",
-      "element": "mobileMenuRoot",
-      "property": "padding-x",
-      "state": null,
-      "breakpoint": "sm"
-    },
-    {
-      "name": "--header-mobile-menu-root-padding-x-md",
-      "fallback": "40px",
-      "themeValue": "40px",
-      "element": "mobileMenuRoot",
-      "property": "padding-x",
-      "state": null,
-      "breakpoint": "md"
     }
   ],
   "tokensFilteredList": [
     {
-      "name": "--header-nav-link-color",
+      "name": "--header-cart-badge-background-color",
       "reason": "local color in source overrides scheme-driven base — kept base scheme",
-      "base": "rgb(var(--color-text))",
-      "source": "#000000"
-    },
-    {
-      "name": "--header-cart-badge-color",
-      "reason": "local color in source overrides scheme-driven base — kept base scheme",
-      "base": "rgb(var(--color-button-text))",
+      "base": "rgb(var(--color-primary))",
       "source": "white"
     }
   ]

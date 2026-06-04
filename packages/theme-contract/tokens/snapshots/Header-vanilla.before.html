@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Header vanilla</title>
+<style>
+:root {
+  --color-bg: 38 49 28;
+  --color-surface: 38 49 28;
+  --color-heading: 255 255 255;
+  --color-text: 255 255 255;
+  --color-muted: 200 200 200;
+  --color-primary: 255 255 255;
+  --color-accent: 58 69 48;
+  --color-accent-fg: 255 255 255;
+  --color-accent-2: 60 60 60;
+  --color-button-bg: 58 69 48;
+  --color-button-text: 255 255 255;
+  --color-button-border: 58 69 48;
+  --color-button-2-bg: 238 238 238;
+  --color-button-2-text: 38 49 28;
+  --color-button-2-border: 200 200 200;
+  --color-button-bg-hover: 51 51 51;
+  --color-button-text-hover: 255 255 255;
+  --color-border: 230 230 230;
+  --color-link: 17 17 17;
+  --color-input-bg: 255 255 255;
+  --color-input-border: 210 210 210;
+  --color-input-label: 120 120 120;
+  --color-input-placeholder: 160 160 160;
+  --color-error: 255 148 148;
+  --font-heading: 'Bitter', serif;
+  --font-body: 'Arsenal', sans-serif;
+  --font-cart-counter: 'Exo 2', sans-serif;
+  --font-powered-by: 'Inter', sans-serif;
+  --font-pagination: system-ui, sans-serif;
+  --weight-heading: 400;
+  --weight-body: 400;
+  --size-hero-heading: 24px;
+  --hero-heading-size: ;
+  --slide-min-height: 880px;
+  --size-section-heading: 20px;
+  --size-nav-link: 16px;
+  --size-checkout-brand: 20px;
+  --size-checkout-brand-image: 32px;
+  --size-h2: 24px;
+  --size-h3: 18px;
+  --size-body: 16px;
+  --size-small: 14px;
+  --size-tiny: 12px;
+  --radius-button: 0px;
+  --radius-input: 0px;
+  --radius-card: 0px;
+  --radius-media: 0px;
+  --radius-field: 0px;
+  --spacing-section-y: 80px;
+  --spacing-grid-col-gap: 40px;
+  --spacing-grid-row-gap: 40px;
+  --catalog-sidebar-w: 294px;
+  --catalog-grid-row-gap: 40px;
+  --container-max-width: 1320px;
+  --size-hero-button-h: 48px;
+  --size-newsletter-form-w: 480px;
+  --size-logo-width: 24px;
+  --size-card-border: 1px;
+  --promo-banner-h-thin: 56px;
+  --color-bottom-strip-bg: 0 0 0;
+  --color-bottom-strip-text: 255 255 255;
+  --color-header-bg: 58 69 48;
+  --size-header-h: 80px;
+  --button-style: solid;
+  --footer-layout: 2-part;
+  --contact-form-layout: wide;
+  --cart-type: drawer;
+  --card-style: standard;
+  --card-alignment: left;
+  --text-transform-heading: none;
+  --header-nav-gap: 32px;
+  --header-nav-gap-lg: 48px;
+  --header-logo-link-font-size: 20px;
+  --header-nav-link-font-size: var(--size-nav-link);
+  --header-nav-link-padding-bottom: 4px;
+  --header-nav-link-font-size-lg: 16px;
+  --header-action-search-opacity-hover: 0.7;
+  --header-cart-badge-min-width: 18px;
+  --header-cart-badge-height: 18px;
+  --header-action-profile-opacity-hover: 0.7;
+  --header-mobile-menu-root-width: full;
+  --header-mobile-menu-root-background-color: white;
+  --header-mobile-menu-root-padding-x: 16px;
+  --header-mobile-menu-root-padding-top: 16px;
+  --header-mobile-menu-root-padding-bottom: 32px;
+  --header-mobile-menu-root-padding-x-sm: 20px;
+  --header-mobile-menu-root-padding-x-md: 40px;
+  --footer-container-max-width: 1920px;
+  --footer-container-padding-x-sm: 24px;
+  --footer-container-padding-x-md: 32px;
+  --footer-container-padding-x-lg: 48px;
+  --footer-container-padding-x-xl: 64px;
+  --footer-container-width: full;
+  --footer-container-padding-bottom: 80px;
+  --footer-container-padding-top: 80px;
+  --footer-container-padding-x-2xl: 280px;
+  --footer-newsletter-wrapper-width: full;
+  --footer-newsletter-wrapper-gap: 20px;
+  --footer-newsletter-copy-max-width: 1320px;
+  --footer-newsletter-copy-text-align: left;
+  --footer-newsletter-heading-width: full;
+  --footer-newsletter-form-max-width: 652px;
+  --footer-newsletter-form-height: 64px;
+  --footer-newsletter-form-border-radius: 8px;
+  --footer-newsletter-form-gap: 8px;
+  --footer-newsletter-form-border-color: #999999;
+  --footer-newsletter-form-padding-left: 18px;
+  --footer-newsletter-form-padding-right: 16px;
+  --footer-newsletter-form-border-color-focus-within: #000000;
+  --footer-newsletter-input-font-size: 20px;
+  --footer-newsletter-submit-font-size: 16px;
+  --footer-newsletter-submit-transform-active: scale(0.95);
+  --footer-main-section-width: full;
+  --footer-main-section-gap: 40px;
+  --footer-main-grid-gap: 32px;
+  --footer-main-grid-gap-sm: 200px;
+  --footer-column-root-gap: 16px;
+  --footer-email-text-align-lg: right;
+  --footer-copyright-bar-height: auto;
+  --footer-copyright-bar-padding-x: 16px;
+  --footer-copyright-text-font-size: 20px;
+  --footer-copyright-text-color: white;
+  --hero-root-background-color: white;
+  --hero-stage-width: full;
+  --hero-stage-min-height: min(70svh,560px);
+  --hero-stage-min-height-sm: 560px;
+  --hero-stage-min-height-md: 420px;
+  --hero-stage-min-height-lg: 460px;
+  --hero-overlay-width: full;
+  --hero-overlay-padding-x: 16px;
+  --hero-overlay-padding-bottom: 40px;
+  --hero-overlay-padding-top: 112px;
+  --hero-overlay-padding-x-sm: 20px;
+  --hero-overlay-padding-bottom-sm: 44px;
+  --hero-overlay-padding-top-sm: 128px;
+  --hero-overlay-padding-x-md: 40px;
+  --hero-overlay-padding-bottom-md: 56px;
+  --hero-overlay-padding-top-md: 144px;
+  --hero-overlay-padding-x-lg: 64px;
+  --hero-overlay-padding-bottom-lg: 64px;
+  --hero-overlay-padding-x-xl: 80px;
+  --hero-overlay-padding-bottom-xl: 80px;
+  --hero-overlay-padding-x-2xl: 280px;
+  --hero-content-column-gap: 16px;
+  --hero-content-column-gap-sm: 20px;
+  --hero-content-column-max-width: 540px;
+  --hero-content-column-max-width-md: 640px;
+  --hero-header-gap: 4px;
+  --hero-header-gap-sm: 8px;
+  --hero-header-gap-md: 12px;
+  --hero-header-text-align: center;
+  --hero-subtitle-font-size: var(--hero-text-size,16px);
+  --hero-subtitle-padding-x: 4px;
+  --hero-subtitle-font-size-sm: 16px;
+  --hero-subtitle-font-size-md: 18px;
+  --hero-subtitle-font-size-lg: 20px;
+  --hero-cta-button-height: var(--size-hero-button-h);
+  --hero-cta-button-border-radius: var(--radius-button);
+  --hero-cta-button-padding-x: 16px;
+  --hero-cta-button-font-size: 16px;
+  --hero-cta-button-min-height: 40px;
+  --hero-cta-button-min-width: 120px;
+  --hero-cta-button-opacity-hover: 0.9;
+  --hero-cta-button-height-sm: 52px;
+  --hero-cta-button-min-height-sm: 52px;
+  --hero-cta-button-min-width-sm: 160px;
+  --hero-cta-button-border-radius-sm: 6px;
+  --hero-cta-button-padding-x-sm: 24px;
+  --hero-cta-button-padding-y-sm: 10px;
+  --hero-cta-button-font-size-sm: 15px;
+  --hero-cta-button-font-size-md: 16px;
+  --collections-root-padding-x: 16px;
+  --collections-root-padding-bottom: 56px;
+  --collections-root-padding-top: 56px;
+  --collections-root-padding-x-sm: 20px;
+  --collections-root-padding-bottom-sm: 64px;
+  --collections-root-padding-top-sm: 64px;
+  --collections-root-padding-x-md: 40px;
+  --collections-root-padding-bottom-md: 100px;
+  --collections-root-padding-top-md: 100px;
+  --collections-root-padding-x-lg: 64px;
+  --collections-root-padding-bottom-lg: 120px;
+  --collections-root-padding-top-lg: 120px;
+  --collections-root-padding-x-xl: 80px;
+  --collections-root-padding-bottom-xl: 140px;
+  --collections-root-padding-top-xl: 140px;
+  --collections-root-padding-x-2xl: 280px;
+  --collections-container-max-width: 1320px;
+  --collections-container-width: full;
+  --collections-container-gap: 32px;
+  --collections-container-gap-md: 40px;
+  --collections-grid-gap: 24px;
+  --collections-grid-gap-sm: 20px;
+  --collections-grid-gap-md: 20px;
+  --collections-grid-gap-lg: 24px;
+  --popular-products-root-padding-x: 16px;
+  --popular-products-root-padding-bottom: 56px;
+  --popular-products-root-padding-top: 56px;
+  --popular-products-root-padding-x-sm: 20px;
+  --popular-products-root-padding-bottom-sm: 64px;
+  --popular-products-root-padding-top-sm: 64px;
+  --popular-products-root-padding-x-md: 40px;
+  --popular-products-root-padding-bottom-md: 100px;
+  --popular-products-root-padding-top-md: 100px;
+  --popular-products-root-padding-x-lg: 64px;
+  --popular-products-root-padding-bottom-lg: 120px;
+  --popular-products-root-padding-top-lg: 120px;
+  --popular-products-root-padding-x-xl: 80px;
+  --popular-products-root-padding-bottom-xl: 140px;
+  --popular-products-root-padding-top-xl: 140px;
+  --popular-products-root-padding-x-2xl: 280px;
+  --popular-products-container-max-width: 1320px;
+  --popular-products-container-width: full;
+  --popular-products-container-gap: 32px;
+  --popular-products-container-gap-md: 40px;
+  --popular-products-grid-width: full;
+  --popular-products-card-gap: 12px;
+  --popular-products-card-width: full;
+  --popular-products-card-media-border-radius: var(--radius-media);
+  --popular-products-card-badge-border-radius: var(--radius-button);
+  --popular-products-card-badge-font-size: 11px;
+  --popular-products-card-badge-min-width: 48px;
+  --popular-products-card-title-width: full;
+  --popular-products-card-title-opacity-hover: 0.7;
+  --popular-products-card-old-price-color: #999999;
+  --gallery-root-padding-x: 16px;
+  --gallery-root-padding-x-sm: 20px;
+  --gallery-root-padding-x-md: 40px;
+  --gallery-root-padding-x-lg: 64px;
+  --gallery-root-padding-x-xl: 80px;
+  --gallery-root-padding-x-2xl: 280px;
+  --gallery-root-padding-bottom: 56px;
+  --gallery-root-padding-bottom-sm: 64px;
+  --gallery-root-padding-bottom-md: 100px;
+  --gallery-root-padding-bottom-lg: 120px;
+  --gallery-root-padding-bottom-xl: 140px;
+  --gallery-root-padding-top: 56px;
+  --gallery-root-padding-top-sm: 64px;
+  --gallery-root-padding-top-md: 100px;
+  --gallery-root-padding-top-lg: 120px;
+  --gallery-root-padding-top-xl: 140px;
+  --gallery-container-max-width: 1320px;
+  --gallery-container-gap: 32px;
+  --gallery-container-gap-md: 40px;
+  --gallery-inner-gap: 24px;
+  --gallery-inner-gap-md: 32px;
+  --gallery-inner-gap-lg: 24px;
+  --gallery-inner-gap-xl: 32px;
+  --gallery-item-primary-border-radius: var(--radius-media);
+  --gallery-item-primary-min-height: 280px;
+  --gallery-item-small-gap: 8px;
+  --gallery-item-small-gap-md: 20px;
+  --gallery-card-media-border-radius: var(--radius-media);
+  --gallery-card-label-font-size: 14px;
+  --gallery-card-price-font-size: 14px;
+  --gallery-card-price-color: black;
+}
+body { margin: 0; font-family: var(--font-body, system-ui, sans-serif); background: rgb(var(--color-bg, 255 255 255)); color: rgb(var(--color-text, 0 0 0)); }
+*, *::before, *::after { box-sizing: border-box; }
+</style>
+</head>
+<body class="theme-vanilla color-scheme-1" data-block="Header" data-theme="vanilla">
+<div class="w-full bg-[rgb(var(--color-header-bg,var(--color-bg)))] text-[rgb(var(--color-text))] relative z-50" data-header-wrapper data-header-variant="standard">
+  
+  <header class="w-full flex items-center border-b border-[rgb(var(--color-text))]/15 h-[var(--size-header-h,auto)] min-h-[64px]" data-menu-type="dropdown" style="">
+    <nav class="w-full max-w-[var(--container-max-width,1320px)] mx-auto px-4 md:px-6 flex items-center relative gap-[var(--header-nav-gap)] lg:gap-[var(--header-nav-gap-lg)] justify-between" aria-label="Primary navigation">
+
+      
+      <button id="mobile-menu-button" aria-label="Меню" aria-expanded="false" data-hamburger class="md:hidden w-10 h-10 flex items-center justify-center hover:opacity-70 transition-opacity text-[rgb(var(--color-heading))]">
+            <svg id="menu-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+              <path d="M11 17H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path>
+              <path d="M11 23H29" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+          </button>
+
+          <div class="absolute left-1/2 -translate-x-1/2 md:relative md:left-auto md:translate-x-0">
+            <a href="/" class="flex items-center hover:opacity-80 transition-opacity text-[var(--header-logo-link-font-size)]">
+              <span class="text-lg sm:text-xl md:text-2xl font-semibold tracking-wide uppercase [font-family:var(--font-heading)] text-[rgb(var(--color-heading))]">Store</span>
+            </a>
+          </div>
+
+          <div data-nav-inline class="hidden md:flex items-center gap-4 lg:gap-8 xl:gap-12">
+              
+            </div><div class="flex items-center gap-3 sm:gap-3 md:gap-4 lg:gap-5 xl:gap-6">
+            <button type="button" aria-label="Поиск" class="hidden md:flex w-8 h-8 lg:w-10 lg:h-10 items-center justify-center hover:opacity-[var(--header-action-search-opacity-hover)] transition-opacity text-[rgb(var(--color-text))]" data-action="search">
+                <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+              </button>
+            <a href="/cart" id="header-cart-link" class="relative w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 flex items-center justify-center hover:opacity-70 transition-opacity text-[rgb(var(--color-text))]" aria-label="Корзина" data-action="cart">
+                <svg class="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M18.0295 11.6923C16.8004 11.6923 15.6678 12.3587 15.0708 13.4332C13.8175 15.6892 15.4488 18.4615 18.0295 18.4615H21.9704C24.5511 18.4615 26.1824 15.6892 24.9291 13.4332C24.3321 12.3587 23.1996 11.6923 21.9704 11.6923H18.0295ZM16.6847 14.3298C16.956 13.8414 17.4708 13.5385 18.0295 13.5385H21.9704C22.5291 13.5385 23.0439 13.8414 23.3152 14.3298C23.8849 15.3552 23.1434 16.6154 21.9704 16.6154H18.0295C16.8565 16.6154 16.115 15.3552 16.6847 14.3298Z" fill="currentColor"></path>
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M17.2489 8C15.1954 8 13.2924 9.07744 12.2359 10.8383L8.83312 16.5096C8.28797 17.4182 8 18.4579 8 19.5175V26.1538C8 29.3826 10.6174 32 13.8462 32H26.1538C29.3826 32 32 29.3826 32 26.1538V19.5175C32 18.4579 31.712 17.4182 31.1669 16.5096L27.7641 10.8383C26.7076 9.07744 24.8046 8 22.7511 8H17.2489ZM13.819 11.7882C14.5419 10.5833 15.8439 9.84615 17.2489 9.84615H22.7511C24.1561 9.84615 25.4581 10.5833 26.181 11.7882L29.5838 17.4595C29.9568 18.0811 30.1538 18.7925 30.1538 19.5175V26.1538C30.1538 28.363 28.363 30.1538 26.1538 30.1538H13.8462C11.637 30.1538 9.84615 28.363 9.84615 26.1538V19.5175C9.84615 18.7925 10.0432 18.0811 10.4162 17.4595L13.819 11.7882Z" fill="currentColor"></path>
+                </svg>
+                <span id="cart-badge" class="hidden absolute -top-1 -right-1 bg-[rgb(var(--color-primary))] text-[rgb(var(--color-button-text))] text-[10px] font-bold rounded-full min-w-[var(--header-cart-badge-min-width)] h-[var(--header-cart-badge-height)] flex items-center justify-center leading-none px-1">0</span>
+              </a>
+            <a href="/login" aria-label="Аккаунт" class="auth-nav-btn w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center hover:opacity-[var(--header-action-profile-opacity-hover)] transition-opacity text-[rgb(var(--color-text))]" data-action="profile">
+                <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                </svg>
+              </a>
+          </div>
+        
+
+      
+      
+      
+      
+
+      
+      
+
+      
+      
+
+      
+      
+    </nav>
+  </header>
+
+  
+  
+
+  
+  <div id="mobile-menu" data-mobile-menu class="hidden md:hidden absolute top-full left-0 right-0 border-b border-[rgb(var(--color-text))]/15 shadow-lg z-50 bg-[rgb(var(--color-bg))]">
+    <nav class="flex flex-col" aria-label="Мобильная навигация">
+      <div class="px-4 pt-6 pb-4">
+          <div class="relative">
+            <input type="search" placeholder="Поиск..." class="block w-full h-12 pl-5 pr-12 border border-[rgb(var(--color-text))]/30 rounded-lg text-sm font-normal outline-none [font-family:var(--font-body)] bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))] placeholder:text-[rgb(var(--color-muted))]">
+            <button class="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5" aria-label="Искать">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      <div class="flex flex-col">
+        
+      </div>
+      <a href="/login" class="px-4 py-4 text-base font-normal hover:opacity-80 transition-colors border-t border-[rgb(var(--color-text))]/15 [font-family:var(--font-body)] text-[rgb(var(--color-text))]" data-action="profile">Войти</a>
+    </nav>
+  </div>
+
+  
+</div>
+
+<script>
+  // Vanilla burger-menu toggle for preview iframe (where the React island
+  // doesn't run). Live SSG sites bundle the React island so this script
+  // double-binds harmlessly. NB: do NOT add a <style> block to this .astro
+  // file — Astro compiler bakes an absolute dev-machine path into the
+  // .mjs which then ENOENT-fails at runtime on Linux Docker images.
+  // Use inline style.display toggle instead of CSS rule.
+  (function () {
+    document.querySelectorAll('#mobile-menu-button').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const expanded = btn.getAttribute('aria-expanded') === 'true';
+        btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+        const wrap = btn.closest('[data-header-wrapper]');
+        const panel = wrap ? wrap.querySelector('[data-mobile-menu]') : null;
+        if (panel) panel.style.display = expanded ? 'none' : 'block';
+      });
+    });
+
+    // Desktop NavLinkItem submenu touch-toggle. На touch-устройствах
+    // (`(hover: none)`) hover не работает — click на link с submenu
+    // toggle'ит `data-open` на host; CSS variant `data-[open=true]:flex`
+    // показывает submenu без hover. Desktop поведение (hover) не
+    // изменяется.
+    const isTouch = window.matchMedia('(hover: none)').matches;
+    if (isTouch) {
+      // Touch: click toggle.
+      document.querySelectorAll('[data-submenu-trigger]').forEach(function (trigger) {
+        trigger.addEventListener('click', function (e) {
+          const host = trigger.closest('[data-submenu-host]');
+          if (!host) return;
+          const isOpen = host.getAttribute('data-open') === 'true';
+          document.querySelectorAll('[data-submenu-host][data-open="true"]').forEach(function (h) {
+            if (h !== host) h.setAttribute('data-open', 'false');
+          });
+          if (!isOpen) {
+            e.preventDefault();
+            host.setAttribute('data-open', 'true');
+          }
+        });
+      });
+      document.addEventListener('click', function (e) {
+        if (!(e.target instanceof Element)) return;
+        if (e.target.closest('[data-submenu-host]')) return;
+        document.querySelectorAll('[data-submenu-host][data-open="true"]').forEach(function (h) {
+          h.setAttribute('data-open', 'false');
+        });
+      });
+    }
+    // Desktop hover handled by inline-bridge in preview.service.ts (preview iframe)
+    // and by React island Header.client.tsx (live SSG). Не дублируем здесь —
+    // иначе два независимых обработчика дребезжат state на mouseover/mouseout.
+
+    // Mobile drawer recursive accordion: каждая [data-mobile-toggle] кнопка
+    // toggle'ит ближайший [data-mobile-submenu] sibling. Работает для любого
+    // уровня вложенности (1/2/3+).
+    document.querySelectorAll('[data-mobile-toggle]').forEach(function (toggle) {
+      toggle.addEventListener('click', function () {
+        const submenu = toggle.nextElementSibling;
+        if (!submenu || !submenu.matches('[data-mobile-submenu]')) return;
+        const wasHidden = submenu.classList.contains('hidden');
+        submenu.classList.toggle('hidden');
+        toggle.setAttribute('aria-expanded', wasHidden ? 'true' : 'false');
+        const arrow = toggle.querySelector('.mobile-submenu-arrow');
+        if (arrow) {
+          arrow.style.transform = wasHidden ? 'rotate(180deg)' : '';
+        }
+      });
+    });
+
+    // Cart icon click — читает --cart-type из :root.
+    // 'drawer' → preventDefault + window.cartDrawer.open() (drawer mode)
+    // 'page' (или unset) → нативная навигация на /cart (page mode)
+    // Theme Settings → Корзина (Сайдбар/Страница) меняет --cart-type через
+    // CSS-var в iframe head; этот обработчик читает live значение на click.
+    document.querySelectorAll('a[data-action="cart"]').forEach(function (cartLink) {
+      cartLink.addEventListener('click', function (e) {
+        var cartType = getComputedStyle(document.documentElement)
+          .getPropertyValue('--cart-type')
+          .trim()
+          .replace(/['"]/g, '');
+        if (cartType !== 'drawer') return; // page mode — let nav happen
+        if (!window.cartDrawer || typeof window.cartDrawer.open !== 'function') return;
+        e.preventDefault();
+        window.cartDrawer.open();
+      });
+    });
+  })();
+</script>
+</body>
+</html>

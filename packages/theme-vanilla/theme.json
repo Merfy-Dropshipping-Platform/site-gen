@@ -45,7 +45,11 @@
     "--color-header-bg": "58 69 48",
     "--size-header-h": "80px",
     "--catalog-sidebar-w": "294px",
-    "--catalog-grid-row-gap": "40px"
+    "--catalog-grid-row-gap": "40px",
+    "--header-nav-gap": "40px",
+    "--header-logo-link-color": "white",
+    "--header-cart-badge-min-width": "16px",
+    "--header-cart-badge-height": "16px"
   },
   "blockDefaults": {
     "PromoBanner": {

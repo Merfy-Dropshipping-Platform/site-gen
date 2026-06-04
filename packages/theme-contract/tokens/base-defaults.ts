@@ -299,4 +299,10 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   '--gallery-card-label-font-size': '14px',
   '--gallery-card-price-font-size': '14px',
   '--gallery-card-price-color': 'black',
+  // ── v2 миграция — запасные значения (добавлено скриптом)
+  '--header-header-background-color': 'var(--vanilla-header-bg)',
+  '--header-header-padding-bottom': '3px',
+  '--header-header-color': 'white',
+  '--header-logo-link-color': 'var(--header-logo-link-font-size)',
+  '--header-cart-badge-color': 'var(--vanilla-dark)',
 };

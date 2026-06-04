@@ -22,7 +22,7 @@ export const HeaderClasses = {
   // НЕТ `min-h-[N]` здесь — иначе slider «Отступы» в sidebar визуально
   // не работает при small padding (юзер 2026-05-11). Default min-height
   // только когда padding undefined — в Astro `class:list`.
-  header: 'w-full flex items-center border-b border-[rgb(var(--color-text))]/15 h-[var(--size-header-h,auto)]',
+  header: 'w-full flex items-center border-b border-[rgb(var(--color-text))]/15 h-[var(--size-header-h,auto)] bg-[var(--header-header-background-color)] pb-[var(--header-header-padding-bottom)] text-[var(--header-header-color)]',
   nav: 'w-full max-w-[var(--container-max-width,1320px)] mx-auto px-4 md:px-6 flex items-center relative gap-[var(--header-nav-gap)] lg:gap-[var(--header-nav-gap-lg)]',
   navJustified: 'justify-between',
   hamburger:
@@ -62,7 +62,7 @@ export const HeaderClasses = {
         'absolute left-0 -bottom-2 h-px w-[59px] bg-[rgb(var(--color-text))]',
     },
   },
-  logoLink: 'flex items-center hover:opacity-80 transition-opacity text-[var(--header-logo-link-font-size)]',
+  logoLink: 'flex items-center hover:opacity-80 transition-opacity text-[var(--header-logo-link-color)]',
   // Высота лого = значение --size-logo-width (slider в Theme Settings —
   // "Размер" задаёт высоту); fallback 24px если token не задан.
   // Ширина auto до 160px max — preserve aspect-ratio для широких логотипов.
@@ -87,7 +87,7 @@ export const HeaderClasses = {
   actionProfile:
     'auth-nav-btn w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center hover:opacity-[var(--header-action-profile-opacity-hover)] transition-opacity text-[rgb(var(--color-text))]',
   cartBadge:
-    'hidden absolute -top-1 -right-1 bg-[rgb(var(--color-primary))] text-[rgb(var(--color-button-text))] text-[10px] font-bold rounded-full min-w-[var(--header-cart-badge-min-width)] h-[var(--header-cart-badge-height)] flex items-center justify-center leading-none px-1',
+    'hidden absolute -top-1 -right-1 bg-[rgb(var(--color-primary))] text-[var(--header-cart-badge-color)] text-[10px] font-bold rounded-full min-w-[var(--header-cart-badge-min-width)] h-[var(--header-cart-badge-height)] flex items-center justify-center leading-none px-1',
   mobileMenu: {
     root: 'hidden md:hidden absolute top-full left-0 right-0 border-b border-[rgb(var(--color-text))]/15 shadow-lg z-50 bg-[rgb(var(--color-bg))]',
     nav: 'flex flex-col',

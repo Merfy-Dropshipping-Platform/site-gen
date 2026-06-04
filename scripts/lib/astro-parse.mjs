@@ -623,6 +623,221 @@ export const BLOCK_ELEMENT_SELECTORS = {
         hasAnyClassListToken(n, 'mt-1 text-[12px] leading-[15px] [font-family:var(--font-body)] text-[rgb(var(--color-text))]/60 text-center'),
     },
   ],
+
+  // ── PopularProducts ────────────────────────────────────────────────────
+  // Покрывает оба источника:
+  //   1) База theme-base/blocks/PopularProducts/PopularProducts.astro + PopularProductRichCard.astro:
+  //        <section data-block="popular-products" data-puck-component-id>,
+  //        <div class={C.container}>,
+  //        <h2 class={C.heading}> + <p class={C.subtitle}>,
+  //        <div data-pop-grid> (grid),
+  //        minimal-вариант: <div class={C.card} data-product-index> с <div class={C.cardMedia}>
+  //          и <span class={C.cardBadgeNew}>, <img>, <div class={C.cardTitle}>,
+  //          <div class={C.cardPrice}>, <div class={C.cardOldPrice}>, <button class={C.cardCta}>,
+  //          <span class={C.swatchOverlay.container}>;
+  //        rich-вариант: <PopularProductRichCard> → <div data-popular-card-rich> с <a> на media,
+  //          <div data-popular-badges> badges (фон bg-[rgb(var(--color-accent))]),
+  //          <div data-popular-colors> swatches, <a> title, <span> price/oldPrice,
+  //          <div data-popular-memory> chips, <button data-popular-cta>.
+  //   2) Источник rose-theme/src/components/sections/Popular.astro + products/RoseProductCard.astro:
+  //        <section id="popular" aria-labelledby="popular-title">,
+  //        <div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">,
+  //        <NtSectionHeading> → <h2 id="popular-title">+<p>,
+  //        <ul role="list" class="grid">,
+  //        <article data-nt="rose-product-card"> с <a> на aspect-[318/444],
+  //          <RosePicture> → <img class="h-full w-full object-cover ...">,
+  //          <span> badge "Скидка", <a class="rose-product-name">,
+  //          <span class="rose-product-price">, <span class="rose-product-oldprice">.
+  //
+  // Совпадения по ключам ↔ PopularProducts.classes.ts:
+  //   root, container, heading, subtitle, grid,
+  //   card, cardMedia, cardImage,
+  //   cardBadge (sale/new badge — общий маркер),
+  //   cardTitle, cardPrice, cardOldPrice, cardCta,
+  //   swatchOverlayContainer (только база — у rose нет swatch-overlay в карточке).
+  PopularProducts: [
+    {
+      key: 'root',
+      // База: <section data-block="popular-products"> + data-puck-component-id.
+      // rose: <section id="popular" aria-labelledby="popular-title">.
+      match: (n) => n.name === 'section' && (
+        getAttrValue(n, 'data-block') === 'popular-products' ||
+        getAttrValue(n, 'id') === 'popular' ||
+        getAttrValue(n, 'aria-labelledby') === 'popular-title' ||
+        // База C.root: 'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]'
+        hasAnyClassListToken(n, 'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]')
+      ),
+    },
+    {
+      key: 'container',
+      // База: <div class={C.container}> ('mx-auto max-w-[var(--container-max-width)] px-4').
+      // rose: <div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">.
+      match: (n) => n.name === 'div' && (
+        hasAnyClassToken(n, 'max-w-[var(--container-max-width)]') ||
+        // rose уникальный маркер — max-w-[1320px] на div mx-auto + flex-col
+        (hasAnyClassToken(n, 'mx-auto') && hasAnyClassToken(n, 'max-w-[1320px]') && hasAnyClassToken(n, 'flex-col'))
+      ),
+    },
+    {
+      key: 'heading',
+      // База: <h2 class={C.heading} data-puck-subsection-field="heading">.
+      // C.heading = '[font-family:var(--font-heading)] text-[14px] leading-[16px] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] mb-2'.
+      // rose: <h2 id="popular-title" class="font-comfortaa uppercase ...">.
+      match: (n) => n.name === 'h2' && (
+        getAttrValue(n, 'data-puck-subsection-field') === 'heading' ||
+        getAttrValue(n, 'id') === 'popular-title' ||
+        hasAnyClassListToken(n, '[font-family:var(--font-heading)]') ||
+        (hasAnyClassToken(n, 'font-comfortaa') && hasAnyClassToken(n, 'uppercase'))
+      ),
+    },
+    {
+      key: 'subtitle',
+      // База: <p class={C.subtitle} data-puck-subsection-field="text">.
+      // C.subtitle = '[font-family:var(--font-body)] text-[12px] leading-[15px] text-[rgb(var(--color-text))]/60 mb-10'.
+      // rose: <p class="font-manrope text-[#999999]"> (внутри NtSectionHeading).
+      match: (n) => n.name === 'p' && (
+        getAttrValue(n, 'data-puck-subsection-field') === 'text' ||
+        hasAnyClassListToken(n, '[font-family:var(--font-body)]') ||
+        (hasAnyClassToken(n, 'font-manrope') && hasAnyClassToken(n, 'text-[#999999]'))
+      ),
+    },
+    {
+      key: 'grid',
+      // База: <div class={C.grid} data-pop-grid>.
+      // C.grid = 'grid gap-x-[var(--spacing-grid-col-gap)] gap-y-[var(--spacing-grid-row-gap)]'.
+      // rose: <ul role="list" class="grid grid-cols-2 ... md:grid-cols-3 xl:grid-cols-4">.
+      match: (n) => (n.name === 'div' || n.name === 'ul') && (
+        hasAttr(n, 'data-pop-grid') ||
+        hasAnyClassListToken(n, 'grid gap-x-[var(--spacing-grid-col-gap)] gap-y-[var(--spacing-grid-row-gap)]') ||
+        (n.name === 'ul' && getAttrValue(n, 'role') === 'list' && hasAnyClassToken(n, 'grid') && hasAnyClassToken(n, 'grid-cols-2'))
+      ),
+    },
+    {
+      key: 'card',
+      // База minimal: <div class={C.card} data-product-index>.
+      // C.card = 'flex flex-col gap-3 items-stretch group'.
+      // База rich (PopularProductRichCard.astro): <div data-popular-card-rich
+      //   class="relative flex flex-col gap-4 p-3 rounded-[12px] w-full bg-[rgb(var(--color-surface))]">.
+      // rose RoseProductCard.astro: <article data-nt="rose-product-card" class="group flex w-full flex-col gap-5">.
+      match: (n) => (n.name === 'div' || n.name === 'article') && (
+        hasAttr(n, 'data-product-index') ||
+        hasAttr(n, 'data-popular-card-rich') ||
+        getAttrValue(n, 'data-nt') === 'rose-product-card' ||
+        // База C.card как class
+        hasAnyClassToken(n, 'flex') && hasAnyClassToken(n, 'flex-col') && hasAnyClassToken(n, 'gap-3') && hasAnyClassToken(n, 'items-stretch')
+      ),
+    },
+    {
+      key: 'cardMedia',
+      // База: <div class={C.cardMedia} aria-hidden="true">.
+      // C.cardMedia = 'relative w-full aspect-square rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))] overflow-hidden ...'.
+      // rich-вариант: <a href={href} class="block aspect-square rounded-[12px] overflow-hidden bg-[rgb(var(--color-text)/0.04)]">.
+      // rose: <a href={href} class="relative block aspect-[318/444] w-full overflow-hidden rounded-[8px] bg-white">.
+      match: (n) => (n.name === 'div' || n.name === 'a') && (
+        // База cardMedia: aspect-square + rounded-[var(--radius-media)]
+        (hasAnyClassToken(n, 'aspect-square') && hasAnyClassToken(n, 'overflow-hidden')) ||
+        // rose aspect-[318/444]
+        (hasAnyClassToken(n, 'aspect-[318/444]') && hasAnyClassToken(n, 'overflow-hidden')) ||
+        // База cardMedia из rich-варианта
+        (hasAnyClassToken(n, 'block') && hasAnyClassToken(n, 'aspect-square') && hasAnyClassToken(n, 'rounded-[12px]'))
+      ),
+    },
+    {
+      key: 'cardImage',
+      // База: <img src=... class="absolute inset-0 w-full h-full object-cover">.
+      // rose: <RosePicture> → <img class="h-full w-full object-cover transition-transform ...">.
+      match: (n) => n.name === 'img' && (
+        // База: absolute inset-0 + object-cover
+        (hasAnyClassToken(n, 'absolute') && hasAnyClassToken(n, 'inset-0') && hasAnyClassToken(n, 'object-cover')) ||
+        // rose / rich: h-full w-full object-cover
+        (hasAnyClassToken(n, 'h-full') && hasAnyClassToken(n, 'w-full') && hasAnyClassToken(n, 'object-cover'))
+      ),
+    },
+    {
+      key: 'cardBadge',
+      // База: <span class={C.cardBadgeNew}> / <span class={C.cardBadgeSale}>.
+      // C.cardBadgeNew = 'absolute top-3 left-3 inline-flex ... bg-[rgb(var(--color-button-bg))] ...'.
+      // rich-вариант: badge через bg-[rgb(var(--color-accent))] внутри data-popular-badges.
+      // rose: <span class="absolute left-3 top-3 z-10 ... bg-[#000000] ... !text-white">Скидка.
+      match: (n) => n.name === 'span' && (
+        // База cardBadgeNew/Sale: absolute top-3 left-3
+        (hasAnyClassToken(n, 'absolute') && hasAnyClassToken(n, 'top-3') && hasAnyClassToken(n, 'left-3') &&
+          (hasAnyClassToken(n, 'bg-[rgb(var(--color-button-bg))]') || hasAnyClassToken(n, 'bg-[rgb(var(--color-accent))]'))) ||
+        // rose Скидка badge: absolute left-3 top-3 bg-[#000000]
+        (hasAnyClassToken(n, 'absolute') && hasAnyClassToken(n, 'left-3') && hasAnyClassToken(n, 'top-3') && hasAnyClassToken(n, 'bg-[#000000]'))
+      ),
+    },
+    {
+      key: 'cardTitle',
+      // База minimal: <div class={C.cardTitle}>.
+      // C.cardTitle = '[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-heading))]'.
+      // База rich: <a class="block [font-family:var(--font-body)] text-[16px] text-[rgb(var(--color-heading))] truncate ...">.
+      // rose: <a class="rose-product-name block w-full font-manrope text-[14px] ... text-[#000000]">.
+      match: (n) => (n.name === 'div' || n.name === 'a') && (
+        // База cardTitle class литерал
+        hasAnyClassListToken(n, '[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-heading))]') ||
+        // rose специфичный класс
+        hasAnyClassToken(n, 'rose-product-name') ||
+        // База rich title: [font-family:var(--font-body)] + text-[rgb(var(--color-heading))] + truncate
+        (hasAnyClassToken(n, '[font-family:var(--font-body)]') && hasAnyClassToken(n, 'text-[rgb(var(--color-heading))]') && hasAnyClassToken(n, 'truncate'))
+      ),
+    },
+    {
+      key: 'cardPrice',
+      // База minimal: <div class={C.cardPrice}>.
+      // C.cardPrice = '[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-text))]'.
+      // База rich: <span class="[font-family:var(--font-body)] text-[16px] text-[rgb(var(--color-text))]">.
+      // rose: <span class="rose-product-price font-manrope !text-[16px] ... text-[#000000]">.
+      match: (n) => (n.name === 'div' || n.name === 'span') && (
+        // База cardPrice: точный литерал C.cardPrice
+        hasAnyClassListToken(n, '[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-text))]') ||
+        // rose-specific class
+        hasAnyClassToken(n, 'rose-product-price') ||
+        // База rich price
+        (hasAnyClassToken(n, '[font-family:var(--font-body)]') && hasAnyClassToken(n, 'text-[rgb(var(--color-text))]') && hasAnyClassToken(n, 'text-[16px]'))
+      ),
+    },
+    {
+      key: 'cardOldPrice',
+      // База minimal: <div class={C.cardOldPrice}>.
+      // C.cardOldPrice = '[font-family:var(--font-body)] text-[12px] leading-[15px] text-[rgb(var(--color-text))]/50 line-through'.
+      // База rich: <span class="[font-family:var(--font-body)] text-[14px] text-[rgb(var(--color-text))]/60 line-through">.
+      // rose: <span class="rose-product-oldprice font-manrope !text-[14px] ... text-[#999999] line-through">.
+      match: (n) => (n.name === 'div' || n.name === 'span') && (
+        // База cardOldPrice класс литерал
+        hasAnyClassListToken(n, '[font-family:var(--font-body)] text-[12px] leading-[15px] text-[rgb(var(--color-text))]/50 line-through') ||
+        // rose specific
+        hasAnyClassToken(n, 'rose-product-oldprice') ||
+        // База rich или общий маркер line-through на тексте товара
+        (hasAnyClassToken(n, '[font-family:var(--font-body)]') && hasAnyClassToken(n, 'line-through'))
+      ),
+    },
+    {
+      key: 'cardCta',
+      // База minimal: <button data-popular-cta class={C.cardCta}>.
+      // C.cardCta = 'mt-3 inline-flex h-[44px] items-center justify-center px-4 ... rounded-[var(--radius-button)]
+      //   [font-family:var(--font-body)] bg-[rgb(var(--color-button-bg))]! ... border ... hover:bg-[rgb(var(--color-button-bg-hover))]! ...'.
+      // База rich: <button data-popular-cta class="w-full inline-flex items-center justify-center h-11 ... rounded-[var(--radius-button)]
+      //   [font-family:var(--font-body)] ... bg-[rgb(var(--color-button-bg))]! ... border ... hover:bg-[rgb(var(--color-button-bg-hover))]! ...">.
+      // rose: в rose-Popular CTA-кнопки на карточке нет — товар просто <a>. Будет not-found для rose.
+      match: (n) => n.name === 'button' && (
+        hasAttr(n, 'data-popular-cta') ||
+        // База C.cardCta — bg-button-bg + hover:bg-button-bg-hover
+        (hasAnyClassToken(n, 'inline-flex') && hasAnyClassToken(n, 'rounded-[var(--radius-button)]') &&
+          (hasAnyClassToken(n, 'bg-[rgb(var(--color-button-bg))]!') || hasAnyClassToken(n, 'bg-[rgb(var(--color-button-bg))]')))
+      ),
+    },
+    {
+      key: 'swatchOverlayContainer',
+      // База minimal: <span class={C.swatchOverlay.container} data-swatch-overlay>.
+      // C.swatchOverlay.container = 'absolute bottom-3 right-3 inline-flex gap-1.5 z-10'.
+      // rose: swatch-overlay отсутствует — будет not-found.
+      match: (n) => n.name === 'span' && (
+        hasAttr(n, 'data-swatch-overlay') ||
+        hasAnyClassListToken(n, 'absolute bottom-3 right-3 inline-flex gap-1.5 z-10')
+      ),
+    },
+  ],
 };
 
 /**

@@ -4,29 +4,29 @@
 // grey strikethrough oldPrice for discounted items).
 export const PopularProductsClasses = {
   root:
-    'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
+    'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))] px-[var(--popular-products-root-padding-x)] pb-[var(--popular-products-root-padding-bottom)] pt-[var(--popular-products-root-padding-top)] sm:px-[var(--popular-products-root-padding-x-sm)] sm:pb-[var(--popular-products-root-padding-bottom-sm)] sm:pt-[var(--popular-products-root-padding-top-sm)] md:px-[var(--popular-products-root-padding-x-md)] md:pb-[var(--popular-products-root-padding-bottom-md)] md:pt-[var(--popular-products-root-padding-top-md)] lg:px-[var(--popular-products-root-padding-x-lg)] lg:pb-[var(--popular-products-root-padding-bottom-lg)] lg:pt-[var(--popular-products-root-padding-top-lg)] xl:px-[var(--popular-products-root-padding-x-xl)] xl:pb-[var(--popular-products-root-padding-bottom-xl)] xl:pt-[var(--popular-products-root-padding-top-xl)] 2xl:px-[var(--popular-products-root-padding-x-2xl)]',
   container:
-    'mx-auto max-w-[var(--container-max-width)] px-4',
+    'mx-auto max-w-[var(--popular-products-container-max-width)] px-4 w-[var(--popular-products-container-width)] gap-[var(--popular-products-container-gap)] md:gap-[var(--popular-products-container-gap-md)]',
   heading:
     '[font-family:var(--font-heading)] text-[14px] leading-[16px] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] mb-2',
   subtitle:
     '[font-family:var(--font-body)] text-[12px] leading-[15px] text-[rgb(var(--color-text))]/60 mb-10',
   grid:
-    'grid gap-x-[var(--spacing-grid-col-gap)] gap-y-[var(--spacing-grid-row-gap)]',
+    'grid gap-x-[var(--spacing-grid-col-gap)] gap-y-[var(--spacing-grid-row-gap)] w-[var(--popular-products-grid-width)]',
   card:
-    'flex flex-col gap-3 items-stretch group',
+    'flex flex-col gap-[var(--popular-products-card-gap)] items-stretch group w-[var(--popular-products-card-width)]',
   cardMedia:
-    'relative w-full aspect-square rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))] overflow-hidden flex items-center justify-center text-[rgb(var(--color-text))]/40',
+    'relative w-full aspect-square rounded-[var(--popular-products-card-media-border-radius)] bg-[rgb(var(--color-surface))] overflow-hidden flex items-center justify-center text-[rgb(var(--color-text))]/40',
   cardBadge:
-    'absolute top-3 left-3 inline-flex items-center justify-center h-6 px-2 rounded-[var(--radius-button)] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] [font-family:var(--font-body)] text-[11px] leading-none',
+    'absolute top-3 left-3 inline-flex items-center justify-center h-6 px-2 rounded-[var(--popular-products-card-badge-border-radius)] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] [font-family:var(--font-body)] text-[var(--popular-products-card-badge-font-size)] leading-none min-w-[var(--popular-products-card-badge-min-width)]',
   cardTitle:
-    '[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-heading))]',
+    '[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-heading))] w-[var(--popular-products-card-title-width)] hover:opacity-[var(--popular-products-card-title-opacity-hover)]',
   cardPriceRow:
     'flex gap-2 items-center',
   cardPrice:
     '[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-text))]',
   cardOldPrice:
-    '[font-family:var(--font-body)] text-[12px] leading-[15px] text-[rgb(var(--color-text))]/50 line-through',
+    '[font-family:var(--font-body)] text-[12px] leading-[15px] text-[rgb(var(--color-text))]/50 line-through text-[var(--popular-products-card-old-price-color)]',
   cardCta:
     'mt-3 inline-flex h-[44px] items-center justify-center px-4 text-[14px] font-medium uppercase tracking-wide rounded-[var(--radius-button)] [font-family:var(--font-body)] bg-[rgb(var(--color-button-bg))]! text-[rgb(var(--color-button-text))]! border border-[rgb(var(--color-button-border))] hover:bg-[rgb(var(--color-button-bg-hover))]! hover:text-[rgb(var(--color-button-text-hover))]! transition-colors no-underline',
   cardBadgeNew:

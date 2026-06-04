@@ -1,0 +1,104 @@
+---
+import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
+import RoseProductCard from "../products/RoseProductCard.astro";
+import { catalogProducts } from "../../data/products";
+
+const sectionTitle = "Главные хиты";
+const sectionSubtitle =
+	"Найдите стиль на каждый случай — коллекции, которые помогают выразить себя вне времени и трендов.";
+
+const products = catalogProducts.slice(0, 4);
+---
+
+<section
+	id="popular"
+	class="w-full bg-white px-4 pb-14 pt-14 sm:px-5 sm:pb-16 sm:pt-16 md:px-10 md:pb-[100px] md:pt-[100px] lg:px-16 lg:pb-[120px] lg:pt-[120px] xl:px-20 xl:pb-[140px] xl:pt-[140px] 2xl:px-[280px]"
+	aria-labelledby="popular-title"
+>
+	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
+		<div class="flex w-full justify-center" data-animate>
+			<NtSectionHeading variant="rose" titleId="popular-title" title={sectionTitle} subtitle={sectionSubtitle} />
+		</div>
+
+		<ul
+			data-animate
+			data-animate-delay="0.1s"
+			class="grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-9 md:grid-cols-3 md:gap-x-4 md:gap-y-10 xl:grid-cols-4 xl:gap-x-5"
+			role="list"
+		>
+			{products.map((product) => (
+				<li>
+					<article
+	class="group flex w-full flex-col gap-5"
+	data-nt="rose-product-card"
+	aria-label={product.name}
+>
+	<a
+		href={href}
+		class="relative block aspect-[318/444] w-full overflow-hidden rounded-[8px] bg-white"
+		aria-label={product.name}
+	>
+		<RosePicture
+			src={product.image}
+			alt={product.name}
+			width="318"
+			height="444"
+			loading="eager"
+			fetchpriority={priority ? "high" : undefined}
+			class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+		/>
+		{showSaleBadge && (
+			<span
+				class="absolute left-3 top-3 z-10 flex h-6 min-w-12 items-center justify-center rounded-[4px] bg-[#000000] px-2 font-manrope text-[12px] font-normal leading-none !text-white"
+			>
+				Скидка
+			</span>
+		)}
+	</a>
+	<div class="flex w-full flex-col gap-1 text-left">
+		<a
+			href={href}
+			class="rose-product-name block w-full font-manrope text-[14px] font-normal leading-none tracking-normal text-[#000000] transition-opacity hover:opacity-70"
+		>
+			{product.name}
+		</a>
+		<div class="flex w-full flex-wrap items-baseline gap-2">
+			<span class="rose-product-price font-manrope !text-[16px] font-normal !leading-none text-[#000000]">
+				{product.price}
+			</span>
+			{product.oldPrice && (
+				<span class="rose-product-oldprice font-manrope !text-[14px] font-normal !leading-none text-[#999999] line-through">
+					{product.oldPrice}
+				</span>
+			)}
+		</div>
+	</div>
+</article>
+				</li>
+			))}
+		</ul>
+	</div>
+</section>
+
+<style>
+	/* Figma 375: section title Comfortaa 14, subtitle Manrope 12. NtSectionHeading не пробрасывает class на h2/p. */
+	@media (max-width: 639.98px) {
+		:global(#popular-title) {
+			font-size: 14px !important;
+			line-height: 1 !important;
+		}
+
+		:global(#popular-title ~ p) {
+			font-size: 12px !important;
+			line-height: 1.4 !important;
+			max-width: 100% !important;
+			width: 100% !important;
+			padding-inline: 0 !important;
+		}
+
+		:global([data-nt="section-heading"]) {
+			max-width: 100% !important;
+			width: 100% !important;
+		}
+	}
+</style>

@@ -38,12 +38,91 @@ async function realGhFetch({ owner, repo, file, ref }) {
 // Возможные относительные пути для одного блока в репо темы.
 // rose-theme/main кладёт `Hero` в `src/components/sections/Hero.astro`, тогда как
 // `Header` лежит в `src/components/Header.astro`. Пробуем варианты по порядку.
+//
+// BLOCK_FILE_ALIASES — для блоков чьё имя в base-репо отличается от github темы.
+// Например `PopularProducts` (имя блока в base) живёт в rose-theme как `Popular.astro`.
+const BLOCK_FILE_ALIASES = {
+  PopularProducts: ['Popular'],
+};
+
+// SUB_COMPONENTS — компоненты внутри блока, которые нужно сразу инлайнить
+// в кэшированный источник (иначе AST не видит атрибуты карточек/sub-разметки).
+// Для PopularProducts rose использует `<RoseProductCard product={...} />` —
+// инлайним его раскрытый markup поверх компонента в кэше, чтобы парсер
+// каталога видел `<article>`, `<img>`, badge, title, price и т.д.
+const SUB_COMPONENTS = {
+  PopularProducts: {
+    rose: [
+      {
+        // Имя в JSX (компонент темы)
+        componentName: 'RoseProductCard',
+        // Путь на github для скачивания
+        candidatePaths: [
+          'src/components/products/RoseProductCard.astro',
+          'src/components/RoseProductCard.astro',
+        ],
+      },
+    ],
+  },
+};
+
 function candidatePaths(block) {
-  return [
-    `src/components/${block}.astro`,
-    `src/components/sections/${block}.astro`,
-    `src/components/${block.toLowerCase()}/${block}.astro`,
-  ];
+  const aliases = BLOCK_FILE_ALIASES[block] || [];
+  const allNames = [block, ...aliases];
+  const out = [];
+  for (const name of allNames) {
+    out.push(`src/components/${name}.astro`);
+    out.push(`src/components/sections/${name}.astro`);
+    out.push(`src/components/${name.toLowerCase()}/${name}.astro`);
+  }
+  return out;
+}
+
+/**
+ * Извлечь только разметку внутри корневого элемента <article|div|section>
+ * sub-компонента — без обёртки frontmatter и <style>. Используется чтобы
+ * инлайнить sub-component в исходник секции.
+ */
+function extractSubComponentBody(astroSource) {
+  // 1) убираем frontmatter `---...---`
+  const noFront = astroSource.replace(/^---[\s\S]*?---\s*/m, '');
+  // 2) убираем <style>...</style>
+  return noFront.replace(/<style[\s\S]*?<\/style>/gi, '').trim();
+}
+
+/**
+ * Заменить теги вида <CompName ... /> и <CompName ...>...</CompName>
+ * на raw markup sub-component'а. Атрибуты не переносим — нам важна
+ * иерархия и классы для парсера каталога.
+ */
+function inlineSubComponent(sectionSource, componentName, subMarkup) {
+  // Self-closing: <RoseProductCard product={p} />
+  const selfClosing = new RegExp(`<${componentName}\\b[^>]*\\/>`, 'g');
+  // Open + close: <RoseProductCard ...>...</RoseProductCard>
+  const openClose = new RegExp(`<${componentName}\\b[^>]*>[\\s\\S]*?<\\/${componentName}>`, 'g');
+  let out = sectionSource.replace(selfClosing, subMarkup);
+  out = out.replace(openClose, subMarkup);
+  return out;
+}
+
+async function fetchSubComponents({ owner, theme, block, sectionSource }) {
+  const subs = SUB_COMPONENTS[block]?.[theme];
+  if (!subs || subs.length === 0) return sectionSource;
+  let merged = sectionSource;
+  for (const sub of subs) {
+    let subSource = null;
+    for (const subPath of sub.candidatePaths) {
+      const result = await _fetcher({ owner, repo: `${theme}-theme`, file: subPath });
+      if (result.ok) {
+        subSource = result.body;
+        break;
+      }
+    }
+    if (!subSource) continue;
+    const body = extractSubComponentBody(subSource);
+    merged = inlineSubComponent(merged, sub.componentName, body);
+  }
+  return merged;
 }
 
 /**
@@ -96,14 +175,23 @@ export async function getThemeSource({
     if (result.ok) {
       const sourceUrl = `github://${owner}/${theme}-theme@main:${filePath}`;
       const fetchedAt = new Date().toISOString();
+      // Если блок имеет sub-component (см. SUB_COMPONENTS) — инлайним его
+      // в кэшируемый источник, чтобы парсер каталога видел разметку карточек,
+      // не только JSX-теги верхнего уровня.
+      const mergedSource = await fetchSubComponents({
+        owner,
+        theme,
+        block,
+        sectionSource: result.body,
+      });
       await fs.mkdir(sourcesDir, { recursive: true });
-      await fs.writeFile(cacheFile, result.body, 'utf-8');
+      await fs.writeFile(cacheFile, mergedSource, 'utf-8');
       await fs.writeFile(
         metaFile,
         JSON.stringify({ fetchedAt, sourceUrl, theme, block }, null, 2),
         'utf-8',
       );
-      return { source: result.body, fetchedAt, cached: false, sourceUrl };
+      return { source: mergedSource, fetchedAt, cached: false, sourceUrl };
     }
     if (result.status === 404) {
       lastError = result.error;

@@ -82,7 +82,11 @@
     "--hero-cta-button-height": "40px",
     "--hero-cta-button-border-radius": "4px",
     "--hero-cta-button-padding-x": "12px",
-    "--hero-cta-button-font-size": "14px"
+    "--hero-cta-button-font-size": "14px",
+    "--popular-products-card-gap": "20px",
+    "--popular-products-card-media-border-radius": "8px",
+    "--popular-products-card-badge-border-radius": "4px",
+    "--popular-products-card-badge-font-size": "12px"
   },
   "blockDefaults": {
     "Footer": {

@@ -1,0 +1,483 @@
+{
+  "block": "PopularProducts",
+  "theme": "rose",
+  "source": "github://Merfy-Dropshipping-Platform/rose-theme@main:src/components/sections/Popular.astro",
+  "fetchedAt": "2026-06-04T14:26:24.391Z",
+  "elementsFound": 14,
+  "tokensProposed": 30,
+  "tokensFiltered": 5,
+  "elements": {
+    "root": {
+      "padding-x": {
+        "default": {
+          "base": "(нет)",
+          "source": "16px"
+        },
+        "sm": {
+          "base": "(нет)",
+          "source": "20px"
+        },
+        "md": {
+          "base": "(нет)",
+          "source": "40px"
+        },
+        "lg": {
+          "base": "(нет)",
+          "source": "64px"
+        },
+        "xl": {
+          "base": "(нет)",
+          "source": "80px"
+        },
+        "2xl": {
+          "base": "(нет)",
+          "source": "280px"
+        }
+      },
+      "padding-bottom": {
+        "default": {
+          "base": "(нет)",
+          "source": "56px"
+        },
+        "sm": {
+          "base": "(нет)",
+          "source": "64px"
+        },
+        "md": {
+          "base": "(нет)",
+          "source": "100px"
+        },
+        "lg": {
+          "base": "(нет)",
+          "source": "120px"
+        },
+        "xl": {
+          "base": "(нет)",
+          "source": "140px"
+        }
+      },
+      "padding-top": {
+        "default": {
+          "base": "(нет)",
+          "source": "56px"
+        },
+        "sm": {
+          "base": "(нет)",
+          "source": "64px"
+        },
+        "md": {
+          "base": "(нет)",
+          "source": "100px"
+        },
+        "lg": {
+          "base": "(нет)",
+          "source": "120px"
+        },
+        "xl": {
+          "base": "(нет)",
+          "source": "140px"
+        }
+      }
+    },
+    "container": {
+      "max-width": {
+        "default": {
+          "base": "var(--container-max-width)",
+          "source": "1320px"
+        }
+      },
+      "width": {
+        "default": {
+          "base": "(нет)",
+          "source": "full"
+        }
+      },
+      "gap": {
+        "default": {
+          "base": "(нет)",
+          "source": "32px"
+        },
+        "md": {
+          "base": "(нет)",
+          "source": "40px"
+        }
+      }
+    },
+    "grid": {
+      "width": {
+        "default": {
+          "base": "(нет)",
+          "source": "full"
+        }
+      }
+    },
+    "card": {
+      "gap": {
+        "default": {
+          "base": "12px",
+          "source": "20px"
+        }
+      },
+      "width": {
+        "default": {
+          "base": "(нет)",
+          "source": "full"
+        }
+      }
+    },
+    "cardMedia": {
+      "border-radius": {
+        "default": {
+          "base": "var(--radius-media)",
+          "source": "8px"
+        }
+      }
+    },
+    "cardBadge": {
+      "border-radius": {
+        "default": {
+          "base": "var(--radius-button)",
+          "source": "4px"
+        }
+      },
+      "font-size": {
+        "default": {
+          "base": "11px",
+          "source": "12px"
+        }
+      },
+      "min-width": {
+        "default": {
+          "base": "(нет)",
+          "source": "48px"
+        }
+      }
+    },
+    "cardTitle": {
+      "width": {
+        "default": {
+          "base": "(нет)",
+          "source": "full"
+        }
+      },
+      "opacity": {
+        "hover": {
+          "base": "(нет)",
+          "source": "0.7"
+        }
+      }
+    },
+    "cardOldPrice": {
+      "color": {
+        "default": {
+          "base": "(нет)",
+          "source": "#999999"
+        }
+      }
+    }
+  },
+  "tokensSuggested": [
+    {
+      "name": "--popular-products-root-padding-x",
+      "fallback": "16px",
+      "themeValue": "16px",
+      "element": "root",
+      "property": "padding-x",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--popular-products-root-padding-bottom",
+      "fallback": "56px",
+      "themeValue": "56px",
+      "element": "root",
+      "property": "padding-bottom",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--popular-products-root-padding-top",
+      "fallback": "56px",
+      "themeValue": "56px",
+      "element": "root",
+      "property": "padding-top",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--popular-products-root-padding-x-sm",
+      "fallback": "20px",
+      "themeValue": "20px",
+      "element": "root",
+      "property": "padding-x",
+      "state": null,
+      "breakpoint": "sm"
+    },
+    {
+      "name": "--popular-products-root-padding-bottom-sm",
+      "fallback": "64px",
+      "themeValue": "64px",
+      "element": "root",
+      "property": "padding-bottom",
+      "state": null,
+      "breakpoint": "sm"
+    },
+    {
+      "name": "--popular-products-root-padding-top-sm",
+      "fallback": "64px",
+      "themeValue": "64px",
+      "element": "root",
+      "property": "padding-top",
+      "state": null,
+      "breakpoint": "sm"
+    },
+    {
+      "name": "--popular-products-root-padding-x-md",
+      "fallback": "40px",
+      "themeValue": "40px",
+      "element": "root",
+      "property": "padding-x",
+      "state": null,
+      "breakpoint": "md"
+    },
+    {
+      "name": "--popular-products-root-padding-bottom-md",
+      "fallback": "100px",
+      "themeValue": "100px",
+      "element": "root",
+      "property": "padding-bottom",
+      "state": null,
+      "breakpoint": "md"
+    },
+    {
+      "name": "--popular-products-root-padding-top-md",
+      "fallback": "100px",
+      "themeValue": "100px",
+      "element": "root",
+      "property": "padding-top",
+      "state": null,
+      "breakpoint": "md"
+    },
+    {
+      "name": "--popular-products-root-padding-x-lg",
+      "fallback": "64px",
+      "themeValue": "64px",
+      "element": "root",
+      "property": "padding-x",
+      "state": null,
+      "breakpoint": "lg"
+    },
+    {
+      "name": "--popular-products-root-padding-bottom-lg",
+      "fallback": "120px",
+      "themeValue": "120px",
+      "element": "root",
+      "property": "padding-bottom",
+      "state": null,
+      "breakpoint": "lg"
+    },
+    {
+      "name": "--popular-products-root-padding-top-lg",
+      "fallback": "120px",
+      "themeValue": "120px",
+      "element": "root",
+      "property": "padding-top",
+      "state": null,
+      "breakpoint": "lg"
+    },
+    {
+      "name": "--popular-products-root-padding-x-xl",
+      "fallback": "80px",
+      "themeValue": "80px",
+      "element": "root",
+      "property": "padding-x",
+      "state": null,
+      "breakpoint": "xl"
+    },
+    {
+      "name": "--popular-products-root-padding-bottom-xl",
+      "fallback": "140px",
+      "themeValue": "140px",
+      "element": "root",
+      "property": "padding-bottom",
+      "state": null,
+      "breakpoint": "xl"
+    },
+    {
+      "name": "--popular-products-root-padding-top-xl",
+      "fallback": "140px",
+      "themeValue": "140px",
+      "element": "root",
+      "property": "padding-top",
+      "state": null,
+      "breakpoint": "xl"
+    },
+    {
+      "name": "--popular-products-root-padding-x-2xl",
+      "fallback": "280px",
+      "themeValue": "280px",
+      "element": "root",
+      "property": "padding-x",
+      "state": null,
+      "breakpoint": "2xl"
+    },
+    {
+      "name": "--popular-products-container-max-width",
+      "fallback": "1320px",
+      "themeValue": "1320px",
+      "element": "container",
+      "property": "max-width",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--popular-products-container-width",
+      "fallback": "full",
+      "themeValue": "full",
+      "element": "container",
+      "property": "width",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--popular-products-container-gap",
+      "fallback": "32px",
+      "themeValue": "32px",
+      "element": "container",
+      "property": "gap",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--popular-products-container-gap-md",
+      "fallback": "40px",
+      "themeValue": "40px",
+      "element": "container",
+      "property": "gap",
+      "state": null,
+      "breakpoint": "md"
+    },
+    {
+      "name": "--popular-products-grid-width",
+      "fallback": "full",
+      "themeValue": "full",
+      "element": "grid",
+      "property": "width",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--popular-products-card-gap",
+      "fallback": "12px",
+      "themeValue": "20px",
+      "element": "card",
+      "property": "gap",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--popular-products-card-width",
+      "fallback": "full",
+      "themeValue": "full",
+      "element": "card",
+      "property": "width",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--popular-products-card-media-border-radius",
+      "fallback": "var(--radius-media)",
+      "themeValue": "8px",
+      "element": "cardMedia",
+      "property": "border-radius",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--popular-products-card-badge-border-radius",
+      "fallback": "var(--radius-button)",
+      "themeValue": "4px",
+      "element": "cardBadge",
+      "property": "border-radius",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--popular-products-card-badge-font-size",
+      "fallback": "11px",
+      "themeValue": "12px",
+      "element": "cardBadge",
+      "property": "font-size",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--popular-products-card-badge-min-width",
+      "fallback": "48px",
+      "themeValue": "48px",
+      "element": "cardBadge",
+      "property": "min-width",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--popular-products-card-title-width",
+      "fallback": "full",
+      "themeValue": "full",
+      "element": "cardTitle",
+      "property": "width",
+      "state": null,
+      "breakpoint": null
+    },
+    {
+      "name": "--popular-products-card-title-opacity-hover",
+      "fallback": "0.7",
+      "themeValue": "0.7",
+      "element": "cardTitle",
+      "property": "opacity",
+      "state": "hover",
+      "breakpoint": null
+    },
+    {
+      "name": "--popular-products-card-old-price-color",
+      "fallback": "#999999",
+      "themeValue": "#999999",
+      "element": "cardOldPrice",
+      "property": "color",
+      "state": null,
+      "breakpoint": null
+    }
+  ],
+  "tokensFilteredList": [
+    {
+      "name": "--popular-products-root-background-color",
+      "reason": "local color in source overrides scheme-driven base — kept base scheme",
+      "base": "rgb(var(--color-bg))",
+      "source": "white"
+    },
+    {
+      "name": "--popular-products-card-media-background-color",
+      "reason": "local color in source overrides scheme-driven base — kept base scheme",
+      "base": "rgb(var(--color-surface))",
+      "source": "white"
+    },
+    {
+      "name": "--popular-products-card-badge-background-color",
+      "reason": "local color in source overrides scheme-driven base — kept base scheme",
+      "base": "rgb(var(--color-button-bg))",
+      "source": "#000000"
+    },
+    {
+      "name": "--popular-products-card-title-color",
+      "reason": "local color in source overrides scheme-driven base — kept base scheme",
+      "base": "rgb(var(--color-heading))",
+      "source": "#000000"
+    },
+    {
+      "name": "--popular-products-card-price-color",
+      "reason": "local color in source overrides scheme-driven base — kept base scheme",
+      "base": "rgb(var(--color-text))",
+      "source": "#000000"
+    }
+  ]
+}

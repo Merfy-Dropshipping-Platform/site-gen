@@ -1092,3 +1092,328 @@ test('Collections rose: cardDescription НЕ найден (нет описани
   });
   assert.equal(classMap.cardDescription.found, false);
 });
+
+// ───────── PopularProducts блок ─────────
+// Покрывает оба источника:
+//   1) База theme-base/blocks/PopularProducts/PopularProducts.astro (minimal + rich card):
+//      <section data-block="popular-products">, <div class={C.container}>,
+//      <h2 class={C.heading} data-puck-subsection-field="heading">,
+//      <p class={C.subtitle} data-puck-subsection-field="text">,
+//      <div data-pop-grid class={C.grid}>,
+//      minimal: <div class={C.card} data-product-index> с <div class={C.cardMedia}>,
+//        <span class={C.cardBadgeNew}>, <img>, <div class={C.cardTitle}>,
+//        <div class={C.cardPrice}>, <div class={C.cardOldPrice}>, <button class={C.cardCta}>,
+//        <span class={C.swatchOverlay.container} data-swatch-overlay>;
+//      rich (PopularProductRichCard.astro): <div data-popular-card-rich>,
+//        <a> media, <div data-popular-badges>, <a> title, <span> price/oldPrice,
+//        <button data-popular-cta>.
+//   2) Источник rose-theme (Popular.astro + RoseProductCard.astro раскрыт):
+//      <section id="popular" aria-labelledby="popular-title">,
+//      <div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 ...">,
+//      <h2 id="popular-title" class="font-comfortaa uppercase ...">,
+//      <p class="font-manrope text-[#999999]">,
+//      <ul role="list" class="grid grid-cols-2 ...">,
+//      <article data-nt="rose-product-card" class="group flex w-full flex-col gap-5">,
+//      <a class="relative block aspect-[318/444] ...">,
+//      <img class="h-full w-full object-cover ...">,
+//      <span class="absolute left-3 top-3 ... bg-[#000000] ...">Скидка,
+//      <a class="rose-product-name font-manrope text-[14px] ...">,
+//      <span class="rose-product-price font-manrope !text-[16px] ...">,
+//      <span class="rose-product-oldprice font-manrope !text-[14px] ... line-through">.
+
+const MINIMAL_POPULAR_BASE_ASTRO = `---
+const x = 1;
+---
+<section
+  class:list={['relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]', 'color-scheme-default']}
+  data-puck-component-id="popular-1"
+  data-block="popular-products"
+  data-site-id="abc"
+  style="padding-top:80px;"
+>
+  <div class:list={['mx-auto max-w-[var(--container-max-width)] px-4', 'color-scheme-default']}>
+    <h2 class:list={['[font-family:var(--font-heading)] text-[14px] leading-[16px] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] mb-2', 'text-center']} data-puck-subsection-field="heading">Хиты</h2>
+    <p class:list={['[font-family:var(--font-body)] text-[12px] leading-[15px] text-[rgb(var(--color-text))]/60 mb-10', 'text-center']} data-puck-subsection-field="text">Подборка</p>
+    <div class:list={['grid gap-x-[var(--spacing-grid-col-gap)] gap-y-[var(--spacing-grid-row-gap)]', 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4']} data-pop-grid data-card-variant="minimal">
+      <div class="flex flex-col gap-3 items-stretch group" aria-label="Товар" data-product-index="0">
+        <div class="relative w-full aspect-square rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))] overflow-hidden flex items-center justify-center text-[rgb(var(--color-text))]/40" aria-hidden="true">
+          <span class="absolute top-3 left-3 inline-flex items-center justify-center h-6 px-2 rounded-[var(--radius-button)] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] [font-family:var(--font-body)] text-[11px] leading-none">Новинка</span>
+          <span class="absolute bottom-3 right-3 inline-flex gap-1.5 z-10" data-swatch-overlay aria-hidden="true">
+            <span class="w-2.5 h-2.5 rounded-full border border-[rgb(var(--color-text)/0.2)] bg-[rgb(var(--color-surface))]"></span>
+          </span>
+          <img src="/img/p.jpg" alt="Товар" class="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+        </div>
+        <div class="flex flex-col gap-1 items-start w-full">
+          <div class="[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-heading))]">Товар</div>
+          <div class="flex gap-2 items-center">
+            <div class="[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-text))]">2 500 ₽</div>
+            <div class="[font-family:var(--font-body)] text-[12px] leading-[15px] text-[rgb(var(--color-text))]/50 line-through">3 000 ₽</div>
+          </div>
+          <button type="button" data-popular-cta data-product-id="p-1" class="mt-3 inline-flex h-[44px] items-center justify-center px-4 text-[14px] font-medium uppercase tracking-wide rounded-[var(--radius-button)] [font-family:var(--font-body)] bg-[rgb(var(--color-button-bg))]! text-[rgb(var(--color-button-text))]! border border-[rgb(var(--color-button-border))] hover:bg-[rgb(var(--color-button-bg-hover))]! hover:text-[rgb(var(--color-button-text-hover))]! transition-colors no-underline">В корзину</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+`;
+
+// Фикстура rose-источника — Popular.astro объединённый с раскрытым RoseProductCard.astro
+// (как сделает getThemeSource с inlineSubComponent). Здесь представлен один <li>
+// с раскрытым <article data-nt="rose-product-card">.
+const MINIMAL_POPULAR_ROSE_ASTRO = `---
+const sectionTitle = "Главные хиты";
+const sectionSubtitle = "Вдохновение для каждого дня";
+const products = [{ id: "p1", name: "Сумка", price: "5990 ₽", oldPrice: "6990 ₽", image: "/img/p.jpg", discount: true }];
+---
+<section
+  id="popular"
+  class="w-full bg-white px-4 pb-14 pt-14 sm:px-5 sm:pb-16 sm:pt-16 md:px-10 md:pb-[100px] md:pt-[100px] lg:px-16 lg:pb-[120px] lg:pt-[120px] xl:px-20 xl:pb-[140px] xl:pt-[140px] 2xl:px-[280px]"
+  aria-labelledby="popular-title"
+>
+  <div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
+    <div class="flex w-full justify-center">
+      <div class:list={['flex max-w-[90vw] flex-col items-center', 'gap-2']} data-nt="section-heading" data-nt-variant="rose">
+        <h2 id="popular-title" class:list={['text-center font-comfortaa font-normal uppercase text-[#000000]', '!text-[20px] !leading-none tracking-normal']}>{sectionTitle}</h2>
+        <p class:list={['text-center font-manrope font-normal text-[#999999]', 'max-w-[780px] px-2 !text-[16px] !leading-none tracking-normal']}>{sectionSubtitle}</p>
+      </div>
+    </div>
+    <ul
+      class="grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-9 md:grid-cols-3 md:gap-x-4 md:gap-y-10 xl:grid-cols-4 xl:gap-x-5"
+      role="list"
+    >
+      <li>
+        <article
+          class="group flex w-full flex-col gap-5"
+          data-nt="rose-product-card"
+          aria-label="Сумка"
+        >
+          <a
+            href="/products/p1"
+            class="relative block aspect-[318/444] w-full overflow-hidden rounded-[8px] bg-white"
+            aria-label="Сумка"
+          >
+            <img
+              src="/img/p.jpg"
+              alt="Сумка"
+              width="318"
+              height="444"
+              loading="eager"
+              class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+            <span
+              class="absolute left-3 top-3 z-10 flex h-6 min-w-12 items-center justify-center rounded-[4px] bg-[#000000] px-2 font-manrope text-[12px] font-normal leading-none !text-white"
+            >Скидка</span>
+          </a>
+          <div class="flex w-full flex-col gap-1 text-left">
+            <a
+              href="/products/p1"
+              class="rose-product-name block w-full font-manrope text-[14px] font-normal leading-none tracking-normal text-[#000000] transition-opacity hover:opacity-70"
+            >Сумка</a>
+            <div class="flex w-full flex-wrap items-baseline gap-2">
+              <span class="rose-product-price font-manrope !text-[16px] font-normal !leading-none text-[#000000]">5990 ₽</span>
+              <span class="rose-product-oldprice font-manrope !text-[14px] font-normal !leading-none text-[#999999] line-through">6990 ₽</span>
+            </div>
+          </div>
+        </article>
+      </li>
+    </ul>
+  </div>
+</section>
+`;
+
+test('PopularProducts base: находит root по data-block="popular-products"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_POPULAR_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PopularProducts,
+    blockName: 'PopularProducts',
+  });
+  assert.ok(classMap.root.found, 'root должен быть найден');
+});
+
+test('PopularProducts base: находит container по max-w-[var(--container-max-width)]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_POPULAR_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PopularProducts,
+    blockName: 'PopularProducts',
+  });
+  assert.ok(classMap.container.found);
+});
+
+test('PopularProducts base: находит heading по data-puck-subsection-field="heading"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_POPULAR_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PopularProducts,
+    blockName: 'PopularProducts',
+  });
+  assert.ok(classMap.heading.found);
+});
+
+test('PopularProducts base: находит subtitle по data-puck-subsection-field="text"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_POPULAR_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PopularProducts,
+    blockName: 'PopularProducts',
+  });
+  assert.ok(classMap.subtitle.found);
+});
+
+test('PopularProducts base: находит grid по data-pop-grid', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_POPULAR_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PopularProducts,
+    blockName: 'PopularProducts',
+  });
+  assert.ok(classMap.grid.found);
+});
+
+test('PopularProducts base: находит card по data-product-index', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_POPULAR_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PopularProducts,
+    blockName: 'PopularProducts',
+  });
+  assert.ok(classMap.card.found);
+});
+
+test('PopularProducts base: находит cardMedia по aspect-square+overflow-hidden', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_POPULAR_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PopularProducts,
+    blockName: 'PopularProducts',
+  });
+  assert.ok(classMap.cardMedia.found);
+});
+
+test('PopularProducts base: находит cardImage по absolute+inset-0+object-cover', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_POPULAR_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PopularProducts,
+    blockName: 'PopularProducts',
+  });
+  assert.ok(classMap.cardImage.found);
+});
+
+test('PopularProducts base: находит cardBadge по absolute+top-3+bg-[rgb(var(--color-button-bg))]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_POPULAR_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PopularProducts,
+    blockName: 'PopularProducts',
+  });
+  assert.ok(classMap.cardBadge.found);
+});
+
+test('PopularProducts base: находит cardCta по data-popular-cta', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_POPULAR_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PopularProducts,
+    blockName: 'PopularProducts',
+  });
+  assert.ok(classMap.cardCta.found);
+});
+
+test('PopularProducts base: находит swatchOverlayContainer по data-swatch-overlay', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_POPULAR_BASE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PopularProducts,
+    blockName: 'PopularProducts',
+  });
+  assert.ok(classMap.swatchOverlayContainer.found);
+});
+
+test('PopularProducts rose: находит root по id="popular"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_POPULAR_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PopularProducts,
+    blockName: 'PopularProducts',
+  });
+  assert.ok(classMap.root.found);
+  assert.ok(classMap.root.staticClass.includes('bg-white'));
+});
+
+test('PopularProducts rose: находит container по max-w-[1320px]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_POPULAR_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PopularProducts,
+    blockName: 'PopularProducts',
+  });
+  assert.ok(classMap.container.found);
+  assert.ok(classMap.container.staticClass.includes('max-w-[1320px]'));
+});
+
+test('PopularProducts rose: находит heading по id="popular-title"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_POPULAR_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PopularProducts,
+    blockName: 'PopularProducts',
+  });
+  assert.ok(classMap.heading.found);
+});
+
+test('PopularProducts rose: находит grid по ul role="list" + grid-cols-2', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_POPULAR_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PopularProducts,
+    blockName: 'PopularProducts',
+  });
+  assert.ok(classMap.grid.found);
+});
+
+test('PopularProducts rose: находит card по data-nt="rose-product-card"', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_POPULAR_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PopularProducts,
+    blockName: 'PopularProducts',
+  });
+  assert.ok(classMap.card.found);
+});
+
+test('PopularProducts rose: находит cardMedia по aspect-[318/444]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_POPULAR_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PopularProducts,
+    blockName: 'PopularProducts',
+  });
+  assert.ok(classMap.cardMedia.found);
+});
+
+test('PopularProducts rose: находит cardImage по h-full+w-full+object-cover', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_POPULAR_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PopularProducts,
+    blockName: 'PopularProducts',
+  });
+  assert.ok(classMap.cardImage.found);
+});
+
+test('PopularProducts rose: находит cardBadge "Скидка" по bg-[#000000]', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_POPULAR_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PopularProducts,
+    blockName: 'PopularProducts',
+  });
+  assert.ok(classMap.cardBadge.found);
+});
+
+test('PopularProducts rose: находит cardTitle по rose-product-name', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_POPULAR_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PopularProducts,
+    blockName: 'PopularProducts',
+  });
+  assert.ok(classMap.cardTitle.found);
+  assert.ok(classMap.cardTitle.staticClass.includes('rose-product-name'));
+});
+
+test('PopularProducts rose: находит cardPrice по rose-product-price', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_POPULAR_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PopularProducts,
+    blockName: 'PopularProducts',
+  });
+  assert.ok(classMap.cardPrice.found);
+  assert.ok(classMap.cardPrice.staticClass.includes('rose-product-price'));
+});
+
+test('PopularProducts rose: находит cardOldPrice по rose-product-oldprice', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_POPULAR_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PopularProducts,
+    blockName: 'PopularProducts',
+  });
+  assert.ok(classMap.cardOldPrice.found);
+  assert.ok(classMap.cardOldPrice.staticClass.includes('rose-product-oldprice'));
+});
+
+test('PopularProducts rose: cardCta НЕ найден (у rose нет CTA на карточке)', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_POPULAR_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PopularProducts,
+    blockName: 'PopularProducts',
+  });
+  assert.equal(classMap.cardCta.found, false);
+});
+
+test('PopularProducts rose: swatchOverlayContainer НЕ найден (у rose нет swatch overlay)', async () => {
+  const { classMap } = await parseAstroFile(MINIMAL_POPULAR_ROSE_ASTRO, {
+    selectors: BLOCK_ELEMENT_SELECTORS.PopularProducts,
+    blockName: 'PopularProducts',
+  });
+  assert.equal(classMap.swatchOverlayContainer.found, false);
+});

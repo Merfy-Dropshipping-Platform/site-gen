@@ -1,0 +1,8 @@
+{
+  "fetchedAt": "2026-06-04T17:52:14.000Z",
+  "sourceUrl": "base://packages/theme-base/blocks/ContactForm/ContactForm.astro",
+  "theme": "vanilla",
+  "block": "ContactForm",
+  "note": "vanilla-theme не имеет собственной реализации ContactForm. Тема использует base 1:1. Cached source = копия base для формальной фиксации vanilla=base.",
+  "cachedAt": "2026-06-04T17:52:14.000Z"
+}

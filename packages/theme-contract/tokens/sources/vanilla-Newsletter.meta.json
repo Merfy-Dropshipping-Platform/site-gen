@@ -1,0 +1,8 @@
+{
+  "fetchedAt": "2026-06-04T17:52:14.000Z",
+  "sourceUrl": "base://packages/theme-base/blocks/Newsletter/Newsletter.astro",
+  "theme": "vanilla",
+  "block": "Newsletter",
+  "note": "vanilla-theme не имеет собственной реализации Newsletter. Тема использует base 1:1. Cached source = копия base для формальной фиксации vanilla=base.",
+  "cachedAt": "2026-06-04T17:52:14.000Z"
+}

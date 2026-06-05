@@ -96,6 +96,10 @@
   "blockDefaults": {
     "Header": {
       "siteTitle": "Rose Theme",
+      "padding": {
+        "top": 24,
+        "bottom": 24
+      },
       "navigationLinks": [
         {
           "label": "Главная",

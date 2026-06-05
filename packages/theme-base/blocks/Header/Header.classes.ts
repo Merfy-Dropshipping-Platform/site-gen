@@ -66,22 +66,9 @@ export const HeaderClasses = {
   // Высота лого = значение --size-logo-width (slider в Theme Settings —
   // "Размер" задаёт высоту); fallback 24px если token не задан.
   // Ширина auto до 160px max — preserve aspect-ratio для широких логотипов.
-  // pointer-events:none — sub-component LogoMark не ловит hover-overlay в
-  // конструкторе, клик проходит на родительский <a class={logoLink}>.
+  // pointer-events:none — не ловит hover-overlay конструктора, клик
+  // проходит на родительский <a class={logoLink}>.
   logoImg: 'pointer-events-none h-[var(--size-logo-width,24px)] w-auto max-w-[160px] object-contain',
-  // Theme-seed logo: рендерим через CSS mask, цвет берётся из
-  // --color-heading активной схемы. Работает на light/dark — в отличие
-  // от <img src> SVG где currentColor не наследуется.
-  // Mask URL — через CSS-var --logo-mask-url, которую LogoMark.astro
-  // устанавливает inline-style'ом. В live build = url(/logo.svg)
-  // (relative, грузится из site origin); в preview iframe = url(<abs>)
-  // (preview.service rewriteAssetUrl пробросил абсолютный URL).
-  // Mask aspect: --size-logo-mask-w (по умолчанию 88px = rose seed) ×
-  // --size-logo-width (высота). pointer-events:none — см. logoImg.
-  logoMask:
-    'pointer-events-none inline-block bg-[rgb(var(--color-heading))] [mask-image:var(--logo-mask-url)] [mask-repeat:no-repeat] [mask-size:contain] [mask-position:center] [-webkit-mask-image:var(--logo-mask-url)] [-webkit-mask-repeat:no-repeat] [-webkit-mask-size:contain] [-webkit-mask-position:center] h-[var(--size-logo-width,26px)] w-[var(--size-logo-mask-w,88px)]',
-  logoText:
-    'pointer-events-none text-lg sm:text-xl md:text-2xl font-semibold tracking-wide uppercase [font-family:var(--font-heading)] text-[rgb(var(--color-heading))]',
   logo:
     'max-w-[var(--size-logo-width)] h-auto [font-family:var(--font-heading)] text-xl text-[rgb(var(--color-heading))]',
   navMenu: 'hidden md:flex items-center gap-4 lg:gap-8 xl:gap-12',

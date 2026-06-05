@@ -3,7 +3,6 @@ import type { HeaderProps } from './Header.puckConfig';
 import { HeaderClasses as C } from './Header.classes';
 import NavLinkItem from './NavLinkItem.astro';
 import MobileMenuItem from './MobileMenuItem.astro';
-import LogoMark from './LogoMark.astro';
 
 const MENU_MAX_DEPTH = 3;
 
@@ -65,12 +64,16 @@ const navInlineMenuClass = isSidebar ? 'md:!hidden' : '';
 const navInlineLinkClass = isMegaMenu ? 'uppercase tracking-[0.06em] font-medium' : '';
 const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
 
-// Logo rendering вынесен в LogoMark.astro — 3-way switch:
-//   /logo.svg → CSS mask (theme icon, currentColor-aware)
-//   URL/base64 → <img> (merchant uploaded)
-//   '' → text fallback (siteTitle)
-// pointer-events:none на root sub-component → не выделяется hover-overlay
-// в превью конструктора, клик проходит на родительский <a class={logoLink}>.
+// Logo: единый рендер через <img src={logo}>. Дефолт темы задаётся в
+// theme.json blockDefaults.Header.logo (например '/logo.svg' для rose).
+// Мерчант загружает свой через ThemeSettingsPanel → revision.logo
+// перезаписывается. Никакой ветвления здесь — `logo` всегда содержит
+// URL: либо theme seed, либо merchant upload.
+// SVG темы должен быть color-fixed (fill="#..."), не currentColor —
+// <img> грузит SVG в изолированном context. На dark color schemes
+// мерчант загружает свой светлый вариант.
+// pointer-events:none на img — не ловит hover-overlay конструктора,
+// клик проходит на родительский <a class={logoLink}>.
 ---
 <div class:list={[C.wrapper, C.sticky[stickiness], schemeClass]} data-header-wrapper data-header-variant={variant ?? 'standard'} data-puck-component-id={id}>
   {promoEnabled && promoText && (
@@ -108,7 +111,7 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
 
           <div class={C.logoWrap['top-left']}>
             <a href="/" class={C.logoLink}>
-              <LogoMark logo={logo} siteTitle={siteTitle} />
+              <img src={logo} alt={siteTitle} class={C.logoImg} />
             </a>
           </div>
 
@@ -170,7 +173,7 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
 
           <div class={C.logoWrap['center-absolute']}>
             <a href="/" class={C.logoLink}>
-              <LogoMark logo={logo} siteTitle={siteTitle} />
+              <img src={logo} alt={siteTitle} class={C.logoImg} />
             </a>
           </div>
 
@@ -221,7 +224,7 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
 
           <div class={C.logoWrap['top-center']}>
             <a href="/" class={C.logoLink}>
-              <LogoMark logo={logo} siteTitle={siteTitle} />
+              <img src={logo} alt={siteTitle} class={C.logoImg} />
             </a>
           </div>
 
@@ -299,7 +302,7 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
 
           <div class={C.logoWrap['top-right']}>
             <a href="/" class={C.logoLink}>
-              <LogoMark logo={logo} siteTitle={siteTitle} />
+              <img src={logo} alt={siteTitle} class={C.logoImg} />
             </a>
           </div>
         </>
@@ -317,7 +320,7 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
             </button>
 
             <a href="/" class={C.logoLink}>
-              <LogoMark logo={logo} siteTitle={siteTitle} />
+              <img src={logo} alt={siteTitle} class={C.logoImg} />
             </a>
 
             <div class={C.actions}>

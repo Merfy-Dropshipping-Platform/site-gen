@@ -27,13 +27,6 @@ export const HeaderClasses = {
   navJustified: 'justify-between',
   hamburger:
     'md:hidden w-10 h-10 flex items-center justify-center hover:opacity-70 transition-opacity text-[rgb(var(--color-heading))]',
-  // Mobile-only hamburger (lg:hidden) — для compact mobile row эталона.
-  // shrink-0 чтобы не сжимался когда logo wide.
-  hamburgerMobile:
-    'shrink-0 w-6 h-6 flex items-center justify-center hover:opacity-70 transition-opacity text-[rgb(var(--color-heading))]',
-  // Mobile-only cart icon (lg:hidden) — compact 24px.
-  actionCartMobile:
-    'shrink-0 relative w-6 h-6 flex items-center justify-center hover:opacity-70 transition-opacity text-[rgb(var(--color-text))]',
   logoBox: {
     'top-left': 'justify-start',
     'top-center': 'justify-center',
@@ -78,12 +71,9 @@ export const HeaderClasses = {
   logoImg: 'pointer-events-none h-[var(--size-logo-width,24px)] w-auto max-w-[160px] object-contain',
   logo:
     'max-w-[var(--size-logo-width)] h-auto [font-family:var(--font-heading)] text-xl text-[rgb(var(--color-heading))]',
-  // navMenu рендерится только внутри desktop-wrapper (`hidden lg:flex`)
-  // нового Header.astro — `hidden md:flex` больше не нужен. Inline style
-  // display:flex даёт fallback при не загруженном CSS.
-  navMenu: 'flex items-center gap-8 lg:gap-12',
+  navMenu: 'hidden md:flex items-center gap-4 lg:gap-8 xl:gap-12',
   navMenuCentered:
-    'flex items-center justify-center gap-8 lg:gap-12',
+    'hidden md:flex items-center justify-center gap-4 lg:gap-8 xl:gap-12 mt-2',
   navLink:
     '[font-family:var(--font-body)] text-[var(--header-nav-link-font-size)] font-normal hover:opacity-70 transition-opacity text-[rgb(var(--color-text))] pb-[var(--header-nav-link-padding-bottom)] lg:text-[var(--header-nav-link-font-size-lg)]',
   actions:

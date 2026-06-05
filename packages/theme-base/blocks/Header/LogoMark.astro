@@ -44,7 +44,10 @@ interface Props {
 }
 
 const { logo, siteTitle } = Astro.props as Props;
-const isThemeLogo = logo === '/logo.svg';
+// Theme-seed: `/logo.svg` (БД) или абсолютный URL `https://<host>/logo.svg`
+// (preview.service rewriteAssetUrl переписывает relative → absolute для
+// iframe). Матчим оба варианта чтобы mask-icon рендерился везде.
+const isThemeLogo = typeof logo === 'string' && /(^|\/)logo\.svg(\?|#|$)/.test(logo);
 const isCustomLogo = typeof logo === 'string' && logo.length > 0 && !isThemeLogo;
 ---
 {isThemeLogo && (

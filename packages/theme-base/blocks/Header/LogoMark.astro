@@ -49,9 +49,12 @@ const { logo, siteTitle } = Astro.props as Props;
 // iframe). Матчим оба варианта чтобы mask-icon рендерился везде.
 const isThemeLogo = typeof logo === 'string' && /(^|\/)logo\.svg(\?|#|$)/.test(logo);
 const isCustomLogo = typeof logo === 'string' && logo.length > 0 && !isThemeLogo;
+// CSS mask-image URL — динамический. В live = '/logo.svg' relative; в
+// preview iframe = абсолютный URL уже переписанный preview.service.
+const maskStyle = isThemeLogo ? `--logo-mask-url: url('${logo}');` : '';
 ---
 {isThemeLogo && (
-  <span class={C.logoMask} role="img" aria-label={siteTitle || 'Logo'}></span>
+  <span class={C.logoMask} style={maskStyle} role="img" aria-label={siteTitle || 'Logo'}></span>
 )}
 {isCustomLogo && (
   <img src={logo} alt={siteTitle} class={C.logoImg} />

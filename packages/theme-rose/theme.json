@@ -95,7 +95,8 @@
   },
   "blockDefaults": {
     "Header": {
-      "siteTitle": "Rose Theme",
+      "siteTitle": "Rose",
+      "logo": "/logo.svg",
       "padding": {
         "top": 24,
         "bottom": 24

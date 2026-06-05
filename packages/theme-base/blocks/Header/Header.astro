@@ -3,6 +3,7 @@ import type { HeaderProps } from './Header.puckConfig';
 import { HeaderClasses as C } from './Header.classes';
 import NavLinkItem from './NavLinkItem.astro';
 import MobileMenuItem from './MobileMenuItem.astro';
+import LogoMark from './LogoMark.astro';
 
 const MENU_MAX_DEPTH = 3;
 
@@ -64,13 +65,12 @@ const navInlineMenuClass = isSidebar ? 'md:!hidden' : '';
 const navInlineLinkClass = isMegaMenu ? 'uppercase tracking-[0.06em] font-medium' : '';
 const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
 
-// Treat the seed default `/logo.svg` as "merchant hasn't set a custom logo"
-// and fall through to the styled text logo. The SVG file itself uses
-// `fill="currentColor"` but <img> loads SVGs in an isolated context that
-// doesn't inherit the parent `color`, so the mark renders black on dark
-// schemes. Styled `<span>` matches the constructor's React render, which
-// always uses text and honors --color-heading.
-const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/logo.svg';
+// Logo rendering вынесен в LogoMark.astro — 3-way switch:
+//   /logo.svg → CSS mask (theme icon, currentColor-aware)
+//   URL/base64 → <img> (merchant uploaded)
+//   '' → text fallback (siteTitle)
+// pointer-events:none на root sub-component → не выделяется hover-overlay
+// в превью конструктора, клик проходит на родительский <a class={logoLink}>.
 ---
 <div class:list={[C.wrapper, C.sticky[stickiness], schemeClass]} data-header-wrapper data-header-variant={variant ?? 'standard'} data-puck-component-id={id}>
   {promoEnabled && promoText && (
@@ -108,7 +108,7 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
 
           <div class={C.logoWrap['top-left']}>
             <a href="/" class={C.logoLink}>
-              {hasCustomLogo ? <img src={logo} alt={siteTitle} class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
+              <LogoMark logo={logo} siteTitle={siteTitle} />
             </a>
           </div>
 
@@ -170,7 +170,7 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
 
           <div class={C.logoWrap['center-absolute']}>
             <a href="/" class={C.logoLink}>
-              {hasCustomLogo ? <img src={logo} alt={siteTitle} class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
+              <LogoMark logo={logo} siteTitle={siteTitle} />
             </a>
           </div>
 
@@ -221,7 +221,7 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
 
           <div class={C.logoWrap['top-center']}>
             <a href="/" class={C.logoLink}>
-              {hasCustomLogo ? <img src={logo} alt={siteTitle} class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
+              <LogoMark logo={logo} siteTitle={siteTitle} />
             </a>
           </div>
 
@@ -299,7 +299,7 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
 
           <div class={C.logoWrap['top-right']}>
             <a href="/" class={C.logoLink}>
-              {hasCustomLogo ? <img src={logo} alt={siteTitle} class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
+              <LogoMark logo={logo} siteTitle={siteTitle} />
             </a>
           </div>
         </>
@@ -317,7 +317,7 @@ const hasCustomLogo = typeof logo === 'string' && logo.length > 0 && logo !== '/
             </button>
 
             <a href="/" class={C.logoLink}>
-              {hasCustomLogo ? <img src={logo} alt={siteTitle} class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
+              <LogoMark logo={logo} siteTitle={siteTitle} />
             </a>
 
             <div class={C.actions}>

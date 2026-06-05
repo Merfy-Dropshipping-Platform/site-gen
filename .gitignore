@@ -26,3 +26,6 @@ visual-diff-report-*
 # Phase 2c — developer's local Figma reference (gitignored, personal workspace)
 docs/figma-snapshots/
 .figma-cache/
+
+# Migration backups from migrate-block-to-tokens.mjs (timestamped .bak.<ms>)
+*.bak.[0-9]*

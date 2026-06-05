@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>PopularProducts rose</title>
+<style>
+:root {
+  --color-bg: 255 255 255;
+  --color-surface: 245 245 245;
+  --color-heading: 18 18 18;
+  --color-text: 18 18 18;
+  --color-muted: 153 153 153;
+  --color-primary: 0 0 0;
+  --color-accent: 0 0 0;
+  --color-accent-fg: 255 255 255;
+  --color-accent-2: 58 58 58;
+  --color-button-bg: 0 0 0;
+  --color-button-text: 255 255 255;
+  --color-button-border: 0 0 0;
+  --color-button-2-bg: 255 255 255;
+  --color-button-2-text: 0 0 0;
+  --color-button-2-border: 0 0 0;
+  --color-button-bg-hover: 51 51 51;
+  --color-button-text-hover: 255 255 255;
+  --color-border: 153 153 153;
+  --color-link: 0 0 0;
+  --color-input-bg: 255 255 255;
+  --color-input-border: 153 153 153;
+  --color-input-label: 153 153 153;
+  --color-input-placeholder: 153 153 153;
+  --color-error: 252 165 165;
+  --font-heading: 'Comfortaa', sans-serif;
+  --font-body: 'Manrope', sans-serif;
+  --font-cart-counter: inherit;
+  --font-powered-by: inherit;
+  --font-pagination: system-ui, sans-serif;
+  --weight-heading: 400;
+  --weight-body: 400;
+  --size-hero-heading: 32px;
+  --hero-heading-size: ;
+  --slide-min-height: 60vh;
+  --size-section-heading: 20px;
+  --size-nav-link: 16px;
+  --size-checkout-brand: 24px;
+  --size-checkout-brand-image: 32px;
+  --size-h2: 20px;
+  --size-h3: 16px;
+  --size-body: 16px;
+  --size-small: 14px;
+  --size-tiny: 12px;
+  --radius-button: 6px;
+  --radius-input: 4px;
+  --radius-card: 8px;
+  --radius-media: 8px;
+  --radius-field: 4px;
+  --spacing-section-y: 120px;
+  --spacing-grid-col-gap: 16px;
+  --spacing-grid-row-gap: 40px;
+  --catalog-sidebar-w: 220px;
+  --catalog-grid-row-gap: 16px;
+  --container-max-width: 1320px;
+  --size-hero-button-h: 48px;
+  --size-newsletter-form-w: 430px;
+  --size-logo-width: 24px;
+  --size-card-border: 1px;
+  --promo-banner-h-thin: 40px;
+  --color-bottom-strip-bg: 0 0 0;
+  --color-bottom-strip-text: 255 255 255;
+  --color-header-bg: ;
+  --size-header-h: ;
+  --button-style: solid;
+  --footer-layout: 3-column;
+  --contact-form-layout: wide;
+  --cart-type: drawer;
+  --card-style: standard;
+  --card-alignment: left;
+  --text-transform-heading: uppercase;
+  --header-nav-gap: 32px;
+  --header-nav-gap-lg: 48px;
+  --header-logo-link-font-size: 20px;
+  --header-nav-link-font-size: 14px;
+  --header-nav-link-padding-bottom: 4px;
+  --header-nav-link-font-size-lg: 16px;
+  --header-action-search-opacity-hover: 0.8;
+  --header-cart-badge-min-width: 16px;
+  --header-cart-badge-height: 16px;
+  --header-action-profile-opacity-hover: 0.8;
+  --header-mobile-menu-root-width: full;
+  --header-mobile-menu-root-background-color: white;
+  --header-mobile-menu-root-padding-x: 16px;
+  --header-mobile-menu-root-padding-top: 16px;
+  --header-mobile-menu-root-padding-bottom: 32px;
+  --header-mobile-menu-root-padding-x-sm: 20px;
+  --header-mobile-menu-root-padding-x-md: 40px;
+  --footer-container-max-width: 1920px;
+  --footer-container-padding-x-sm: 20px;
+  --footer-container-padding-x-md: 40px;
+  --footer-container-padding-x-lg: 64px;
+  --footer-container-padding-x-xl: 80px;
+  --footer-container-width: full;
+  --footer-container-padding-bottom: 80px;
+  --footer-container-padding-top: 80px;
+  --footer-container-padding-x-2xl: 280px;
+  --footer-newsletter-wrapper-width: full;
+  --footer-newsletter-wrapper-gap: 20px;
+  --footer-newsletter-copy-max-width: 1320px;
+  --footer-newsletter-copy-text-align: left;
+  --footer-newsletter-heading-width: full;
+  --footer-newsletter-form-max-width: 430px;
+  --footer-newsletter-form-height: 56px;
+  --footer-newsletter-form-border-radius: 4px;
+  --footer-newsletter-form-gap: 8px;
+  --footer-newsletter-form-border-color: #999999;
+  --footer-newsletter-form-padding-left: 18px;
+  --footer-newsletter-form-padding-right: 16px;
+  --footer-newsletter-form-border-color-focus-within: #000000;
+  --footer-newsletter-input-font-size: 16px;
+  --footer-newsletter-submit-font-size: 16px;
+  --footer-newsletter-submit-transform-active: scale(0.95);
+  --footer-main-section-width: full;
+  --footer-main-section-gap: 40px;
+  --footer-main-grid-gap: 40px;
+  --footer-main-grid-gap-sm: 200px;
+  --footer-column-root-gap: 12px;
+  --footer-email-text-align-lg: right;
+  --footer-copyright-bar-height: 64px;
+  --footer-copyright-bar-padding-x: 16px;
+  --footer-copyright-text-font-size: 14px;
+  --footer-copyright-text-color: white;
+  --hero-root-background-color: white;
+  --hero-stage-width: full;
+  --hero-stage-min-height: min(70svh,560px);
+  --hero-stage-min-height-sm: 560px;
+  --hero-stage-min-height-md: 420px;
+  --hero-stage-min-height-lg: 460px;
+  --hero-overlay-width: full;
+  --hero-overlay-padding-x: 16px;
+  --hero-overlay-padding-bottom: 40px;
+  --hero-overlay-padding-top: 112px;
+  --hero-overlay-padding-x-sm: 20px;
+  --hero-overlay-padding-bottom-sm: 44px;
+  --hero-overlay-padding-top-sm: 128px;
+  --hero-overlay-padding-x-md: 40px;
+  --hero-overlay-padding-bottom-md: 56px;
+  --hero-overlay-padding-top-md: 144px;
+  --hero-overlay-padding-x-lg: 64px;
+  --hero-overlay-padding-bottom-lg: 64px;
+  --hero-overlay-padding-x-xl: 80px;
+  --hero-overlay-padding-bottom-xl: 80px;
+  --hero-overlay-padding-x-2xl: 280px;
+  --hero-content-column-gap: 24px;
+  --hero-content-column-gap-sm: 40px;
+  --hero-content-column-max-width: 540px;
+  --hero-content-column-max-width-md: 640px;
+  --hero-header-gap: 8px;
+  --hero-header-gap-sm: 12px;
+  --hero-header-gap-md: 16px;
+  --hero-header-text-align: center;
+  --hero-subtitle-font-size: 14px;
+  --hero-subtitle-padding-x: 4px;
+  --hero-subtitle-font-size-sm: 16px;
+  --hero-subtitle-font-size-md: 18px;
+  --hero-subtitle-font-size-lg: 20px;
+  --hero-cta-button-height: 40px;
+  --hero-cta-button-border-radius: 4px;
+  --hero-cta-button-padding-x: 12px;
+  --hero-cta-button-font-size: 14px;
+  --hero-cta-button-min-height: 40px;
+  --hero-cta-button-min-width: 120px;
+  --hero-cta-button-opacity-hover: 0.9;
+  --hero-cta-button-height-sm: 52px;
+  --hero-cta-button-min-height-sm: 52px;
+  --hero-cta-button-min-width-sm: 160px;
+  --hero-cta-button-border-radius-sm: 6px;
+  --hero-cta-button-padding-x-sm: 24px;
+  --hero-cta-button-padding-y-sm: 10px;
+  --hero-cta-button-font-size-sm: 15px;
+  --hero-cta-button-font-size-md: 16px;
+  --collections-root-padding-x: 16px;
+  --collections-root-padding-bottom: 56px;
+  --collections-root-padding-top: 56px;
+  --collections-root-padding-x-sm: 20px;
+  --collections-root-padding-bottom-sm: 64px;
+  --collections-root-padding-top-sm: 64px;
+  --collections-root-padding-x-md: 40px;
+  --collections-root-padding-bottom-md: 100px;
+  --collections-root-padding-top-md: 100px;
+  --collections-root-padding-x-lg: 64px;
+  --collections-root-padding-bottom-lg: 120px;
+  --collections-root-padding-top-lg: 120px;
+  --collections-root-padding-x-xl: 80px;
+  --collections-root-padding-bottom-xl: 140px;
+  --collections-root-padding-top-xl: 140px;
+  --collections-root-padding-x-2xl: 280px;
+  --collections-container-max-width: 1320px;
+  --collections-container-width: full;
+  --collections-container-gap: 32px;
+  --collections-container-gap-md: 40px;
+  --collections-grid-gap: 24px;
+  --collections-grid-gap-sm: 20px;
+  --collections-grid-gap-md: 20px;
+  --collections-grid-gap-lg: 24px;
+  --popular-products-root-padding-x: 16px;
+  --popular-products-root-padding-bottom: 56px;
+  --popular-products-root-padding-top: 56px;
+  --popular-products-root-padding-x-sm: 20px;
+  --popular-products-root-padding-bottom-sm: 64px;
+  --popular-products-root-padding-top-sm: 64px;
+  --popular-products-root-padding-x-md: 40px;
+  --popular-products-root-padding-bottom-md: 100px;
+  --popular-products-root-padding-top-md: 100px;
+  --popular-products-root-padding-x-lg: 64px;
+  --popular-products-root-padding-bottom-lg: 120px;
+  --popular-products-root-padding-top-lg: 120px;
+  --popular-products-root-padding-x-xl: 80px;
+  --popular-products-root-padding-bottom-xl: 140px;
+  --popular-products-root-padding-top-xl: 140px;
+  --popular-products-root-padding-x-2xl: 280px;
+  --popular-products-container-max-width: 1320px;
+  --popular-products-container-width: full;
+  --popular-products-container-gap: 32px;
+  --popular-products-container-gap-md: 40px;
+  --popular-products-grid-width: full;
+  --popular-products-card-gap: 20px;
+  --popular-products-card-width: full;
+  --popular-products-card-media-border-radius: 8px;
+  --popular-products-card-badge-border-radius: 4px;
+  --popular-products-card-badge-font-size: 12px;
+  --popular-products-card-badge-min-width: 48px;
+  --popular-products-card-title-width: full;
+  --popular-products-card-title-opacity-hover: 0.7;
+  --popular-products-card-old-price-color: #999999;
+  --checkout-form-col-w: 652px;
+  --checkout-summary-col-w: 884px;
+  --checkout-gap: 84px;
+  --checkout-side-pad: 300px;
+  --color-button-secondary-bg: 255 255 255;
+  --color-button-secondary-text: 0 0 0;
+  --color-button-secondary-border: 0 0 0;
+}
+body { margin: 0; font-family: var(--font-body, system-ui, sans-serif); background: rgb(var(--color-bg, 255 255 255)); color: rgb(var(--color-text, 0 0 0)); }
+*, *::before, *::after { box-sizing: border-box; }
+</style>
+</head>
+<body class="theme-rose color-scheme-1" data-block="PopularProducts" data-theme="rose">
+<section class="relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]" data-block="popular-products" style="padding-top:80px; padding-bottom:80px;">
+  <div class="mx-auto max-w-[var(--container-max-width)] px-4">
+    <div class="contents">
+        <h2 class="[font-family:var(--font-heading)] text-[14px] leading-[16px] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] mb-2 text-center text-xl md:text-2xl" data-puck-subsection-index="100" data-puck-subsection-field="heading">Коллекция товаров</h2>
+        
+      </div>
+    <div class="grid gap-x-[var(--spacing-grid-col-gap)] gap-y-[var(--spacing-grid-row-gap)] grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4" data-pop-grid data-card-variant="minimal">
+      <div class="flex flex-col gap-3 items-stretch group" aria-label="Товар" data-product-index="0">
+          <div class="relative w-full aspect-square rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))] overflow-hidden flex items-center justify-center text-[rgb(var(--color-text))]/40" aria-hidden="true">
+            
+            
+            
+            <img src="/placeholders/sweater-blue.png" alt="Товар" class="absolute inset-0 w-full h-full object-cover" loading="lazy">
+          </div>
+          <div class="flex flex-col gap-1 items-start w-full">
+            <div class="[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-heading))]">Товар</div>
+            <div class="flex gap-2 items-center">
+              <div class="[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-text))]">2 500 ₽</div>
+              
+            </div>
+            
+          </div>
+        </div><div class="flex flex-col gap-3 items-stretch group" aria-label="Товар" data-product-index="1">
+          <div class="relative w-full aspect-square rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))] overflow-hidden flex items-center justify-center text-[rgb(var(--color-text))]/40" aria-hidden="true">
+            
+            
+            
+            <img src="/placeholders/sweater-yellow.png" alt="Товар" class="absolute inset-0 w-full h-full object-cover" loading="lazy">
+          </div>
+          <div class="flex flex-col gap-1 items-start w-full">
+            <div class="[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-heading))]">Товар</div>
+            <div class="flex gap-2 items-center">
+              <div class="[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-text))]">2 500 ₽</div>
+              
+            </div>
+            
+          </div>
+        </div><div class="flex flex-col gap-3 items-stretch group" aria-label="Товар" data-product-index="2">
+          <div class="relative w-full aspect-square rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))] overflow-hidden flex items-center justify-center text-[rgb(var(--color-text))]/40" aria-hidden="true">
+            
+            
+            
+            <img src="/placeholders/sweater-red.png" alt="Товар" class="absolute inset-0 w-full h-full object-cover" loading="lazy">
+          </div>
+          <div class="flex flex-col gap-1 items-start w-full">
+            <div class="[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-heading))]">Товар</div>
+            <div class="flex gap-2 items-center">
+              <div class="[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-text))]">2 500 ₽</div>
+              
+            </div>
+            
+          </div>
+        </div><div class="flex flex-col gap-3 items-stretch group" aria-label="Товар" data-product-index="3">
+          <div class="relative w-full aspect-square rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))] overflow-hidden flex items-center justify-center text-[rgb(var(--color-text))]/40" aria-hidden="true">
+            
+            
+            
+            <img src="/placeholders/sweater-green.png" alt="Товар" class="absolute inset-0 w-full h-full object-cover" loading="lazy">
+          </div>
+          <div class="flex flex-col gap-1 items-start w-full">
+            <div class="[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-heading))]">Товар</div>
+            <div class="flex gap-2 items-center">
+              <div class="[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-text))]">2 500 ₽</div>
+              
+            </div>
+            
+          </div>
+        </div>
+    </div>
+    
+  </div>
+</section>
+
+<script>(function(){const siteId = "";
+const apiBase = "https://gateway.merfy.ru/api";
+const cardCount = 6;
+const collection = null;
+const quickAdd = false;
+const quickAddText = "В КОРЗИНУ";
+const swatchOverlay = false;
+const cardClass = "flex flex-col gap-3 items-stretch group";
+const cardMediaClass = "relative w-full aspect-square rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))] overflow-hidden flex items-center justify-center text-[rgb(var(--color-text))]/40";
+const cardTitleClass = "[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-heading))]";
+const cardPriceRowClass = "flex gap-2 items-center";
+const cardPriceClass = "[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-text))]";
+const cardOldPriceClass = "[font-family:var(--font-body)] text-[12px] leading-[15px] text-[rgb(var(--color-text))]/50 line-through";
+const cardCtaClass = "mt-3 inline-flex h-[44px] items-center justify-center px-4 text-[14px] font-medium uppercase tracking-wide rounded-[var(--radius-button)] [font-family:var(--font-body)] bg-[rgb(var(--color-button-bg))]! text-[rgb(var(--color-button-text))]! border border-[rgb(var(--color-button-border))] hover:bg-[rgb(var(--color-button-bg-hover))]! hover:text-[rgb(var(--color-button-text-hover))]! transition-colors no-underline";
+const swatchContainerClass = "absolute bottom-3 right-3 inline-flex gap-1.5 z-10";
+const swatchDotClass = "w-2.5 h-2.5 rounded-full border border-[rgb(var(--color-text)/0.2)] bg-[rgb(var(--color-surface))]";
+const maxSwatchPips = 5;
+const placeholderImageUrl = "/placeholders/sweater-blue.png";
+
+  // 088 T008 — runtime fetch (mirror Catalog.astro Stage 3 pattern).
+  // SSG renders placeholder cards (graceful default); this script swaps the
+  // grid with real product cards in BOTH live storefront and constructor
+  // preview iframe — so конструктор ≡ live for PopularProducts.
+  (function () {
+    // Resolve effective siteId: explicit prop wins (set by build pipeline /
+    // preview controller), fall back to window.__MERFY_CONFIG__.shopId so
+    // older builds where the page template doesn't pass siteId still hydrate.
+    var effectiveSiteId = siteId
+      || (typeof window !== 'undefined' && window.__MERFY_CONFIG__ && (window.__MERFY_CONFIG__.shopId || window.__MERFY_CONFIG__.siteId))
+      || (typeof window !== 'undefined' && window.__MERFY__ && window.__MERFY__.siteId)
+      || '';
+    // Hostname fallback: <12hex>.merfy.ru → first 12 hex chars are siteId prefix.
+    if (!effectiveSiteId && typeof window !== 'undefined' && window.location) {
+      var host = window.location.hostname || '';
+      var m = host.match(/^([0-9a-f]{12})\.merfy\.ru$/i);
+      if (m) effectiveSiteId = m[1];
+    }
+    if (!effectiveSiteId) return;
+
+    // Find THIS section (in case multiple PopularProducts blocks exist on page,
+    // each script invocation targets the nearest unhydrated section).
+    var sections = document.querySelectorAll('section[data-block="popular-products"]');
+    var root = null;
+    for (var i = 0; i < sections.length; i++) {
+      if (!sections[i].hasAttribute('data-pop-hydrated')) {
+        root = sections[i];
+        break;
+      }
+    }
+    if (!root) return;
+    root.setAttribute('data-pop-hydrated', 'true');
+
+    var grid = root.querySelector('[data-pop-grid]');
+    if (!grid) return;
+
+    function escAttr(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    function fmtPrice(p) {
+      var num = typeof p === 'number' ? p : parseFloat(p);
+      if (!Number.isFinite(num)) return '';
+      var rubles = num > 1000000 ? Math.round(num / 100) : Math.round(num);
+      return rubles.toLocaleString('ru-RU') + ' ₽';
+    }
+    function getImg(p) {
+      if (Array.isArray(p.images) && p.images[0]) {
+        return typeof p.images[0] === 'string' ? p.images[0] : (p.images[0].url || '');
+      }
+      return p.image || '';
+    }
+
+    // 088 G3 fix — swatch pips per Figma 1:19004. Position is bottom-right
+    // (handled via CSS in classes); pip count and colors derive from real
+    // product data (`variantSwatches[]` preferred, falls back to
+    // `variants.length`). Returns empty string when product has no
+    // variants — overlay must NOT render at all on placeholder cards.
+    function resolveSwatchPipsRuntime(p) {
+      var max = typeof maxSwatchPips === 'number' ? maxSwatchPips : 5;
+      if (Array.isArray(p.variantSwatches) && p.variantSwatches.length > 0) {
+        return p.variantSwatches.slice(0, max).map(function (sw) {
+          return { color: sw && typeof sw.color === 'string' ? sw.color : null };
+        });
+      }
+      if (Array.isArray(p.variants) && p.variants.length > 0) {
+        return p.variants.slice(0, max).map(function () {
+          return { color: null };
+        });
+      }
+      if (p.hasVariants === true) {
+        return [{ color: null }];
+      }
+      return [];
+    }
+
+    function swatchOverlayHtml(p) {
+      if (!swatchOverlay) return '';
+      var pips = resolveSwatchPipsRuntime(p);
+      if (pips.length === 0) return '';
+      var dotsHtml = pips.map(function (pip) {
+        var styleAttr = pip.color
+          ? ' style="background-color:' + escAttr(pip.color) + ';"'
+          : '';
+        return '<span class="' + swatchDotClass + '"' + styleAttr + '></span>';
+      }).join('');
+      return (
+        '<span class="' + swatchContainerClass + '" data-swatch-overlay aria-hidden="true">' +
+          dotsHtml +
+        '</span>'
+      );
+    }
+
+    function cardHtml(p) {
+      var title = p.title || p.name || 'Товар';
+      var price = fmtPrice(p.basePrice != null ? p.basePrice : p.price);
+      var compare = p.compareAtPrice ? fmtPrice(p.compareAtPrice) : (p.oldPrice ? fmtPrice(p.oldPrice) : '');
+      var img = getImg(p);
+      var handle = p.handle || p.slug || p.id || '';
+      var href = handle ? '/product/' + encodeURIComponent(handle) : '/catalog';
+
+      var mediaInner = img
+        ? '<img src="' + escAttr(img) + '" alt="' + escAttr(title) + '" class="absolute inset-0 w-full h-full object-cover" loading="lazy" />'
+        : '<img src="' + escAttr(placeholderImageUrl) + '" alt="' + escAttr(title) + '" class="absolute inset-0 w-full h-full object-contain p-[15%]" loading="lazy" />';
+
+      // CTA — отдельный <button> с data-popular-cta (вне <a> wrapper —
+      // button-in-anchor invalid HTML). Click handler в inline script ниже
+      // делает cartStore.addItem(productId) → совпадает с Catalog quickAdd.
+      var ctaHtml = quickAdd
+        ? '<button type="button" data-popular-cta data-product-id="' + escAttr(p.id) + '" class="' + cardCtaClass + '">' + escAttr(quickAddText) + '</button>'
+        : '';
+
+      var oldPriceHtml = compare
+        ? '<div class="' + cardOldPriceClass + '">' + escAttr(compare) + '</div>'
+        : '';
+
+      var pipsHtml = swatchOverlayHtml(p);
+
+      // <article> снаружи + <a> wrap image+title+price (navigation) + кнопка
+      // CTA снаружи <a> чтобы клик по ней не триггерил переход на /product.
+      return (
+        '<article data-product-id="' + escAttr(p.id) + '" data-product-handle="' + escAttr(handle) + '" class="' + cardClass + '" aria-label="' + escAttr(title) + '">' +
+          '<a href="' + escAttr(href) + '" style="text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:12px;">' +
+            '<div class="' + cardMediaClass + '" aria-hidden="true">' + mediaInner + pipsHtml + '</div>' +
+            '<div class="flex flex-col gap-1 items-start w-full">' +
+              '<div class="' + cardTitleClass + '">' + escAttr(title) + '</div>' +
+              '<div class="' + cardPriceRowClass + '">' +
+                '<div class="' + cardPriceClass + '">' + escAttr(price) + '</div>' +
+                oldPriceHtml +
+              '</div>' +
+            '</div>' +
+          '</a>' +
+          ctaHtml +
+        '</article>'
+      );
+    }
+
+    function applyCollectionFilter(products, collections, ref) {
+      if (!ref || !Array.isArray(collections) || collections.length === 0) return products;
+      var matched = collections.find(function (c) {
+        return c && (c.id === ref || c.name === ref || c.slug === ref || c.handle === ref || c.title === ref);
+      });
+      if (!matched || !Array.isArray(matched.productIds) || matched.productIds.length === 0) return products;
+      var idSet = new Set(matched.productIds);
+      var filtered = products.filter(function (p) { return p.id && idSet.has(p.id); });
+      return filtered.length > 0 ? filtered : products;
+    }
+
+    // CTA «В корзину» click — добавляет товар в корзину. Работает и для
+    // minimal-variant (button data-popular-cta) и для rich-variant (button
+    // data-popular-cta внутри RichCard). event.preventDefault() блокирует
+    // переход на /product/<handle> от parent <a>. data-product-id берётся
+    // с самой кнопки (заполнено и в minimal cardHtml, и в RichCard).
+    grid.addEventListener('click', function (ev) {
+      var btn = ev.target && ev.target.closest && ev.target.closest('[data-popular-cta]');
+      if (!btn) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      var pid = btn.getAttribute('data-product-id');
+      if (!pid) {
+        var article = btn.closest('[data-product-id]');
+        pid = article ? article.getAttribute('data-product-id') : null;
+      }
+      if (!pid || !window.cartStore || typeof window.cartStore.addItem !== 'function') return;
+      window.cartStore.addItem(pid, null, 1);
+      var orig = btn.textContent;
+      btn.textContent = '✓ Добавлено';
+      setTimeout(function () { btn.textContent = orig; }, 1500);
+    });
+
+    // Rich variant rendered fully SSR (Astro fetched products itself);
+    // skip JS-side rebuild to avoid clobbering rich card markup with
+    // minimal cardHtml template.
+    if (grid.getAttribute('data-card-variant') === 'rich') return;
+
+    fetch(apiBase + '/sites/' + effectiveSiteId + '/storefront-data', { credentials: 'omit' })
+      .catch(function () { return null; })
+      .then(function (r) { return r && r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data) return;
+        var products = data.products || (data.data && data.data.products) || [];
+        var collections = data.collections || (data.data && data.data.collections) || [];
+        if (!Array.isArray(products) || products.length === 0) return;
+
+        var filtered = applyCollectionFilter(products, collections, collection);
+        var slice = filtered.slice(0, cardCount);
+        if (slice.length === 0) return;
+
+        grid.innerHTML = slice.map(cardHtml).join('');
+      })
+      .catch(function () { /* silent — placeholders stay */ });
+  })();
+})();</script>
+</body>
+</html>

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Collections rose</title>
+<style>
+:root {
+  --color-bg: 255 255 255;
+  --color-surface: 245 245 245;
+  --color-heading: 18 18 18;
+  --color-text: 18 18 18;
+  --color-muted: 153 153 153;
+  --color-primary: 0 0 0;
+  --color-accent: 0 0 0;
+  --color-accent-fg: 255 255 255;
+  --color-accent-2: 58 58 58;
+  --color-button-bg: 0 0 0;
+  --color-button-text: 255 255 255;
+  --color-button-border: 0 0 0;
+  --color-button-2-bg: 255 255 255;
+  --color-button-2-text: 0 0 0;
+  --color-button-2-border: 0 0 0;
+  --color-button-bg-hover: 51 51 51;
+  --color-button-text-hover: 255 255 255;
+  --color-border: 153 153 153;
+  --color-link: 0 0 0;
+  --color-input-bg: 255 255 255;
+  --color-input-border: 153 153 153;
+  --color-input-label: 153 153 153;
+  --color-input-placeholder: 153 153 153;
+  --color-error: 252 165 165;
+  --font-heading: 'Comfortaa', sans-serif;
+  --font-body: 'Manrope', sans-serif;
+  --font-cart-counter: inherit;
+  --font-powered-by: inherit;
+  --font-pagination: system-ui, sans-serif;
+  --weight-heading: 400;
+  --weight-body: 400;
+  --size-hero-heading: 32px;
+  --hero-heading-size: ;
+  --slide-min-height: 60vh;
+  --size-section-heading: 20px;
+  --size-nav-link: 16px;
+  --size-checkout-brand: 24px;
+  --size-checkout-brand-image: 32px;
+  --size-h2: 20px;
+  --size-h3: 16px;
+  --size-body: 16px;
+  --size-small: 14px;
+  --size-tiny: 12px;
+  --radius-button: 6px;
+  --radius-input: 4px;
+  --radius-card: 8px;
+  --radius-media: 8px;
+  --radius-field: 4px;
+  --spacing-section-y: 120px;
+  --spacing-grid-col-gap: 16px;
+  --spacing-grid-row-gap: 40px;
+  --catalog-sidebar-w: 220px;
+  --catalog-grid-row-gap: 16px;
+  --container-max-width: 1320px;
+  --size-hero-button-h: 48px;
+  --size-newsletter-form-w: 430px;
+  --size-logo-width: 24px;
+  --size-card-border: 1px;
+  --promo-banner-h-thin: 40px;
+  --color-bottom-strip-bg: 0 0 0;
+  --color-bottom-strip-text: 255 255 255;
+  --color-header-bg: ;
+  --size-header-h: ;
+  --button-style: solid;
+  --footer-layout: 3-column;
+  --contact-form-layout: wide;
+  --cart-type: drawer;
+  --card-style: standard;
+  --card-alignment: left;
+  --text-transform-heading: uppercase;
+  --header-nav-gap: 32px;
+  --header-nav-gap-lg: 48px;
+  --header-logo-link-font-size: 20px;
+  --header-nav-link-font-size: 14px;
+  --header-nav-link-padding-bottom: 4px;
+  --header-nav-link-font-size-lg: 16px;
+  --header-action-search-opacity-hover: 0.8;
+  --header-cart-badge-min-width: 16px;
+  --header-cart-badge-height: 16px;
+  --header-action-profile-opacity-hover: 0.8;
+  --header-mobile-menu-root-width: full;
+  --header-mobile-menu-root-background-color: white;
+  --header-mobile-menu-root-padding-x: 16px;
+  --header-mobile-menu-root-padding-top: 16px;
+  --header-mobile-menu-root-padding-bottom: 32px;
+  --header-mobile-menu-root-padding-x-sm: 20px;
+  --header-mobile-menu-root-padding-x-md: 40px;
+  --footer-container-max-width: 1920px;
+  --footer-container-padding-x-sm: 20px;
+  --footer-container-padding-x-md: 40px;
+  --footer-container-padding-x-lg: 64px;
+  --footer-container-padding-x-xl: 80px;
+  --footer-container-width: full;
+  --footer-container-padding-bottom: 80px;
+  --footer-container-padding-top: 80px;
+  --footer-container-padding-x-2xl: 280px;
+  --footer-newsletter-wrapper-width: full;
+  --footer-newsletter-wrapper-gap: 20px;
+  --footer-newsletter-copy-max-width: 1320px;
+  --footer-newsletter-copy-text-align: left;
+  --footer-newsletter-heading-width: full;
+  --footer-newsletter-form-max-width: 430px;
+  --footer-newsletter-form-height: 56px;
+  --footer-newsletter-form-border-radius: 4px;
+  --footer-newsletter-form-gap: 8px;
+  --footer-newsletter-form-border-color: #999999;
+  --footer-newsletter-form-padding-left: 18px;
+  --footer-newsletter-form-padding-right: 16px;
+  --footer-newsletter-form-border-color-focus-within: #000000;
+  --footer-newsletter-input-font-size: 16px;
+  --footer-newsletter-submit-font-size: 16px;
+  --footer-newsletter-submit-transform-active: scale(0.95);
+  --footer-main-section-width: full;
+  --footer-main-section-gap: 40px;
+  --footer-main-grid-gap: 40px;
+  --footer-main-grid-gap-sm: 200px;
+  --footer-column-root-gap: 12px;
+  --footer-email-text-align-lg: right;
+  --footer-copyright-bar-height: 64px;
+  --footer-copyright-bar-padding-x: 16px;
+  --footer-copyright-text-font-size: 14px;
+  --footer-copyright-text-color: white;
+  --hero-root-background-color: white;
+  --hero-stage-width: full;
+  --hero-stage-min-height: min(70svh,560px);
+  --hero-stage-min-height-sm: 560px;
+  --hero-stage-min-height-md: 420px;
+  --hero-stage-min-height-lg: 460px;
+  --hero-overlay-width: full;
+  --hero-overlay-padding-x: 16px;
+  --hero-overlay-padding-bottom: 40px;
+  --hero-overlay-padding-top: 112px;
+  --hero-overlay-padding-x-sm: 20px;
+  --hero-overlay-padding-bottom-sm: 44px;
+  --hero-overlay-padding-top-sm: 128px;
+  --hero-overlay-padding-x-md: 40px;
+  --hero-overlay-padding-bottom-md: 56px;
+  --hero-overlay-padding-top-md: 144px;
+  --hero-overlay-padding-x-lg: 64px;
+  --hero-overlay-padding-bottom-lg: 64px;
+  --hero-overlay-padding-x-xl: 80px;
+  --hero-overlay-padding-bottom-xl: 80px;
+  --hero-overlay-padding-x-2xl: 280px;
+  --hero-content-column-gap: 24px;
+  --hero-content-column-gap-sm: 40px;
+  --hero-content-column-max-width: 540px;
+  --hero-content-column-max-width-md: 640px;
+  --hero-header-gap: 8px;
+  --hero-header-gap-sm: 12px;
+  --hero-header-gap-md: 16px;
+  --hero-header-text-align: center;
+  --hero-subtitle-font-size: 14px;
+  --hero-subtitle-padding-x: 4px;
+  --hero-subtitle-font-size-sm: 16px;
+  --hero-subtitle-font-size-md: 18px;
+  --hero-subtitle-font-size-lg: 20px;
+  --hero-cta-button-height: 40px;
+  --hero-cta-button-border-radius: 4px;
+  --hero-cta-button-padding-x: 12px;
+  --hero-cta-button-font-size: 14px;
+  --hero-cta-button-min-height: 40px;
+  --hero-cta-button-min-width: 120px;
+  --hero-cta-button-opacity-hover: 0.9;
+  --hero-cta-button-height-sm: 52px;
+  --hero-cta-button-min-height-sm: 52px;
+  --hero-cta-button-min-width-sm: 160px;
+  --hero-cta-button-border-radius-sm: 6px;
+  --hero-cta-button-padding-x-sm: 24px;
+  --hero-cta-button-padding-y-sm: 10px;
+  --hero-cta-button-font-size-sm: 15px;
+  --hero-cta-button-font-size-md: 16px;
+  --checkout-form-col-w: 652px;
+  --checkout-summary-col-w: 884px;
+  --checkout-gap: 84px;
+  --checkout-side-pad: 300px;
+  --color-button-secondary-bg: 255 255 255;
+  --color-button-secondary-text: 0 0 0;
+  --color-button-secondary-border: 0 0 0;
+}
+body { margin: 0; font-family: var(--font-body, system-ui, sans-serif); background: rgb(var(--color-bg, 255 255 255)); color: rgb(var(--color-text, 0 0 0)); }
+*, *::before, *::after { box-sizing: border-box; }
+</style>
+</head>
+<body class="theme-rose color-scheme-1" data-block="Collections" data-theme="rose">
+<section class="relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]" data-collections-variant="standard" style="padding-top:80px; padding-bottom:80px;">
+  <div class="mx-auto max-w-[var(--container-max-width)] px-4">
+    <h2 class="[font-family:var(--font-heading)] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] mb-2 text-center text-2xl md:text-3xl" data-puck-subsection-index="100" data-puck-subsection-field="title">Коллекции</h2>
+    
+    <div class="grid gap-x-[var(--spacing-grid-col-gap)] gap-y-[var(--spacing-grid-row-gap)] grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3">
+      <a href="#" class="block overflow-hidden group" data-puck-subsection-index="0" data-puck-subsection-field="collections">
+          <div class="overflow-hidden w-full rounded-[var(--radius-media)] bg-[rgb(var(--color-muted)/0.15)] " style="aspect-ratio: 1 / 1;" aria-hidden="true"></div>
+          <h3 class="mt-3 [font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-heading))] text-center ">Коллекция 1</h3>
+          
+        </a><a href="#" class="block overflow-hidden group" data-puck-subsection-index="1" data-puck-subsection-field="collections">
+          <div class="overflow-hidden w-full rounded-[var(--radius-media)] bg-[rgb(var(--color-muted)/0.15)] " style="aspect-ratio: 1 / 1;" aria-hidden="true"></div>
+          <h3 class="mt-3 [font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-heading))] text-center ">Коллекция 2</h3>
+          
+        </a><a href="#" class="block overflow-hidden group" data-puck-subsection-index="2" data-puck-subsection-field="collections">
+          <div class="overflow-hidden w-full rounded-[var(--radius-media)] bg-[rgb(var(--color-muted)/0.15)] " style="aspect-ratio: 1 / 1;" aria-hidden="true"></div>
+          <h3 class="mt-3 [font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-heading))] text-center ">Коллекция 3</h3>
+          
+        </a>
+    </div>
+  </div>
+</section>
+</body>
+</html>

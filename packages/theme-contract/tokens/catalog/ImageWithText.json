@@ -1,8 +1,8 @@
 {
   "block": "ImageWithText",
-  "theme": "rose",
-  "source": "base://theme-base/blocks/ImageWithText/ImageWithText.astro",
-  "fetchedAt": "2026-06-04T00:00:00.000Z",
+  "theme": "vanilla",
+  "source": "base://packages/theme-base/blocks/ImageWithText/ImageWithText.astro",
+  "fetchedAt": "2026-06-04T17:52:14.000Z",
   "elementsFound": 6,
   "tokensProposed": 0,
   "tokensFiltered": 0,

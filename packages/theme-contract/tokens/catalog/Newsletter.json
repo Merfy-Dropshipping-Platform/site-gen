@@ -1,9 +1,9 @@
 {
-  "block": "ContactForm",
+  "block": "Newsletter",
   "theme": "vanilla",
-  "source": "base://packages/theme-base/blocks/ContactForm/ContactForm.astro",
+  "source": "base://packages/theme-base/blocks/Newsletter/Newsletter.astro",
   "fetchedAt": "2026-06-04T17:52:14.000Z",
-  "elementsFound": 15,
+  "elementsFound": 8,
   "tokensProposed": 0,
   "tokensFiltered": 0,
   "elements": {},

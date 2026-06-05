@@ -94,9 +94,9 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
   <header
     class:list={[C.header, !padding && !isTwoTier && 'min-h-[64px]', isTwoTier && 'border-b-0 py-3 min-h-[64px]']}
     data-menu-type={menuType}
-    style={paddingStyle}
+    style={`display:flex;align-items:center;width:100%;${paddingStyle}`}
   >
-    <nav class:list={[C.nav, !isCenterLeft && C.navJustified, isTwoTier && '!max-w-[1320px] !px-4']} aria-label="Primary navigation">
+    <nav class:list={[C.nav, !isCenterLeft && C.navJustified, isTwoTier && '!max-w-[1320px] !px-4']} style={`display:flex;align-items:center;width:100%;${isCenterLeft ? '' : 'justify-content:space-between;'}`} aria-label="Primary navigation">
 
       {/* ============ LAYOUT: top-left (default) ============ */}
       {logoPosition === 'top-left' && (
@@ -123,7 +123,7 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
             </div>
           )}
 
-          <div class:list={[C.actions, isTwoTier && '!gap-4']}>
+          <div class:list={[C.actions, isTwoTier && '!gap-4']} style="display:flex;align-items:center;gap:12px">
             {actionButtons.showSearch && (
               <button type="button" aria-label="Поиск" class:list={[C.actionSearch, isTwoTier && '!w-8 !h-8']} data-action="search">
                 <svg class:list={[isTwoTier ? 'w-6 h-6' : 'w-5 h-5 lg:w-6 lg:h-6']} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -177,7 +177,7 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
             </a>
           </div>
 
-          <div class={C.actions}>
+          <div class={C.actions} style="display:flex;align-items:center;gap:12px">
             {actionButtons.showSearch && (
               <button type="button" aria-label="Поиск" class={C.actionSearch} data-action="search">
                 <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -228,7 +228,7 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
             </a>
           </div>
 
-          <div class={C.actions}>
+          <div class={C.actions} style="display:flex;align-items:center;gap:12px">
             {actionButtons.showSearch && (
               <button type="button" aria-label="Поиск" class={C.actionSearch} data-action="search">
                 <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -274,7 +274,7 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
             </div>
           )}
 
-          <div class={C.actions}>
+          <div class={C.actions} style="display:flex;align-items:center;gap:12px">
             {actionButtons.showSearch && (
               <button type="button" aria-label="Поиск" class={C.actionSearch} data-action="search">
                 <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -323,7 +323,7 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
               <img src={logo} alt={siteTitle} width="160" height="36" style="height:var(--size-logo-width,36px);max-width:160px;width:auto;object-fit:contain" class={C.logoImg} />
             </a>
 
-            <div class={C.actions}>
+            <div class={C.actions} style="display:flex;align-items:center;gap:12px">
               {actionButtons.showSearch && (
                 <button type="button" aria-label="Поиск" class={C.actionSearch} data-action="search">
                   <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">

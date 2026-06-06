@@ -1,5 +1,5 @@
 import { Injectable, Optional } from '@nestjs/common';
-import { resolveAssetUrls, rewriteHtmlAssets } from '../themes/asset-resolver';
+import { rewriteHtmlAssets } from '../themes/asset-resolver';
 
 const HTML_ESCAPE_MAP: Record<string, string> = {
   '&': '&amp;',
@@ -329,20 +329,14 @@ export class PreviewService {
     if (isLegacyCheckout) {
       bodyHtml = await this.renderCheckoutLayout(input);
     } else {
-      // Resolve relative asset paths в block props перед рендером — `/main-image.png`
-      // → `${publicUrl}/main-image.png`. Один URL для preview iframe и live (live origin
-      // = publicUrl). Theme defaults и Puck seeds хранят `/X` clean, merchant uploads —
-      // full MinIO URL (helper их игнорирует). See `src/themes/asset-resolver.ts`.
-      const blocksResolved = input.publicUrl
-        ? input.blocks.map((b) => ({
-            type: b.type,
-            props: resolveAssetUrls(b.props, input.publicUrl) as Record<string, unknown>,
-          }))
-        : input.blocks;
+      // NB: preview.controller.ts уже делает per-block asset URL rewriting
+      // через `adaptLegacyProps` → `rewriteValueUrls`. Не дублируем здесь.
+      // Safety net на HTML output (rewriteHtmlAssets ниже) ловит build-time
+      // hardcoded paths в .astro / runtime JS.
       // Parallel render: Astro `experimental_AstroContainer.renderToString`
       // is safe to call concurrently on a shared container instance.
       const renderedBlocks = await Promise.all(
-        blocksResolved.map(async (b) => {
+        input.blocks.map(async (b) => {
           const html = await this.renderBlock({
             blockName: b.type,
             props: b.props,

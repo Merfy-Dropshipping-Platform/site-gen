@@ -388,6 +388,19 @@ export class PreviewService {
 
     const previewTailwind = await loadPreviewTailwindCss();
 
+    // Rewrite absolute-path asset URLs (src="/main-image.png", style="background-image:url(/foo.png)")
+    // → site publicUrl prefix, чтобы preview iframe мог их загрузить из MinIO
+    // через nginx live host. Без этого Hero backgroundImage / hero placeholders
+    // отдавали 404 в iframe (preview-сервер не serve'ит build pipeline static
+    // assets), → bg оставался прозрачным → text scheme-1 (white) на white bg = невидимо.
+    if (input.publicUrl) {
+      const baseUrl = input.publicUrl.replace(/\/$/, '');
+      bodyHtml = bodyHtml
+        .replace(/\bsrc="\/(?!\/)([^"]*)"/g, (_m, p) => `src="${baseUrl}/${p}"`)
+        .replace(/\bsrcset="\/(?!\/)([^"]*)"/g, (_m, p) => `srcset="${baseUrl}/${p}"`)
+        .replace(/url\(\s*['"]?\/(?!\/)([^'")]*)['"]?\s*\)/g, (_m, p) => `url('${baseUrl}/${p}')`);
+    }
+
     return `<!DOCTYPE html>
 <html lang="ru">
 <head>

@@ -92,14 +92,18 @@ export const HeaderClasses = {
   // от parent text color → корректная адаптация к color scheme.
   iconBase:
     'inline-block bg-current pointer-events-none [mask-size:contain] [mask-position:center] [mask-repeat:no-repeat] [-webkit-mask-size:contain] [-webkit-mask-position:center] [-webkit-mask-repeat:no-repeat]',
+  // Mask URL — через CSS-var с fallback на relative path. На live
+  // fallback грузится из site origin (/icons/cart.svg → OK). В iframe
+  // preview конструктора preview.service устанавливает CSS-var в `<style>`
+  // блоке с absolute URL (customize.merfy.ru НЕ имеет /icons/*).
   iconCart:
-    'w-6 h-6 lg:w-7 lg:h-7 [mask-image:url(/icons/cart.svg)] [-webkit-mask-image:url(/icons/cart.svg)]',
+    'w-6 h-6 lg:w-7 lg:h-7 [mask-image:var(--header-icon-cart,url(/icons/cart.svg))] [-webkit-mask-image:var(--header-icon-cart,url(/icons/cart.svg))]',
   iconUser:
-    'w-5 h-5 lg:w-6 lg:h-6 [mask-image:url(/icons/user.svg)] [-webkit-mask-image:url(/icons/user.svg)]',
+    'w-5 h-5 lg:w-6 lg:h-6 [mask-image:var(--header-icon-user,url(/icons/user.svg))] [-webkit-mask-image:var(--header-icon-user,url(/icons/user.svg))]',
   iconSearch:
-    'w-5 h-5 lg:w-6 lg:h-6 [mask-image:url(/icons/search-lg.svg)] [-webkit-mask-image:url(/icons/search-lg.svg)]',
+    'w-5 h-5 lg:w-6 lg:h-6 [mask-image:var(--header-icon-search,url(/icons/search-lg.svg))] [-webkit-mask-image:var(--header-icon-search,url(/icons/search-lg.svg))]',
   iconBurger:
-    'w-5 h-5 [mask-image:url(/icons/menu-burger.svg)] [-webkit-mask-image:url(/icons/menu-burger.svg)]',
+    'w-5 h-5 [mask-image:var(--header-icon-burger,url(/icons/menu-burger.svg))] [-webkit-mask-image:var(--header-icon-burger,url(/icons/menu-burger.svg))]',
   cartBadge:
     'hidden absolute -top-1 -right-1 bg-[rgb(var(--color-primary))] text-[var(--header-cart-badge-color)] text-[10px] font-bold rounded-full min-w-[var(--header-cart-badge-min-width)] h-[var(--header-cart-badge-height)] flex items-center justify-center leading-none px-1',
   mobileMenu: {

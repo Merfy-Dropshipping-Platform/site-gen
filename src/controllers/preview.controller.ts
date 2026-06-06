@@ -171,6 +171,7 @@ export class PreviewController {
         themeId: loaded.themeId,
         page,
         siteId,
+        publicUrl: loaded.publicUrl,
       });
       PreviewController.setCachedHtml(cacheKey, html);
       // Disable browser cache for preview iframe — Constructor вылитый

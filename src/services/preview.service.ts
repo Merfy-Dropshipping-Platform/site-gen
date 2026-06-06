@@ -72,6 +72,12 @@ export interface RenderPreviewPageInput {
   page?: string;
   /** Site ID — нужен PREVIEW_CART_STORE_INLINE для API calls в правильный shop. */
   siteId?: string;
+  /**
+   * Site publicUrl — преview iframe должен fetch'ить static assets
+   * (/icons/*.svg в CSS mask-image) с live site origin, потому что
+   * customize.merfy.ru их не имеет. Inject'им CSS-var overrides в head.
+   */
+  publicUrl?: string | null;
 }
 
 /**
@@ -391,6 +397,12 @@ export class PreviewService {
   ${input.fontHead}
   <style>${previewTailwind}</style>
   <style id="__merfy_tokens_css">${input.tokensCss}</style>
+  ${input.publicUrl ? `<style id="__merfy_asset_overrides">:root{
+    --header-icon-cart:url('${input.publicUrl.replace(/\/$/, '')}/icons/cart.svg');
+    --header-icon-user:url('${input.publicUrl.replace(/\/$/, '')}/icons/user.svg');
+    --header-icon-search:url('${input.publicUrl.replace(/\/$/, '')}/icons/search-lg.svg');
+    --header-icon-burger:url('${input.publicUrl.replace(/\/$/, '')}/icons/menu-burger.svg');
+  }</style>` : ''}
 </head>
 <body>
   ${bodyHtml}

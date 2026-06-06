@@ -68,7 +68,7 @@ export const HeaderClasses = {
   // Ширина auto до 160px max — preserve aspect-ratio для широких логотипов.
   // pointer-events:none — не ловит hover-overlay конструктора, клик
   // проходит на родительский <a class={logoLink}>.
-  logoImg: 'pointer-events-none h-[var(--size-logo-width,24px)] w-auto max-w-[160px] object-contain',
+  logoImg: 'pointer-events-none h-[var(--size-logo-width,24px)] w-auto max-w-[var(--size-logo-max-width,160px)] object-contain',
   logo:
     'max-w-[var(--size-logo-width)] h-auto [font-family:var(--font-heading)] text-xl text-[rgb(var(--color-heading))]',
   navMenu: 'hidden md:flex items-center gap-4 lg:gap-8 xl:gap-12',

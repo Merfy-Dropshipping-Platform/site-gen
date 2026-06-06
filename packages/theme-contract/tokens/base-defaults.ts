@@ -84,6 +84,7 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   // Высота лого (semantically "logo size") — Header.classes.ts использует
   // h-[var(...)] для контроля высоты. Slider в Theme Settings — 0-40 step 4.
   '--size-logo-width': '24px',
+  '--size-logo-max-width': '160px',
   '--size-card-border': '0px',
   '--promo-banner-h-thin': '40px',
 

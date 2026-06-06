@@ -91,6 +91,7 @@ export const TOKEN_REGISTRY = {
   '--size-hero-button-h':      { category: 'size', unit: 'px', scope: 'theme' },
   '--size-newsletter-form-w':  { category: 'size', unit: 'px', scope: 'theme' },
   '--size-logo-width':         { category: 'size', unit: 'px', scope: 'theme' },
+  '--size-logo-max-width':     { category: 'size', unit: 'px', scope: 'theme' },
   '--size-card-border':        { category: 'size', unit: 'px', scope: 'theme', min: 0, max: 4 },
   '--promo-banner-h-thin':     { category: 'size', unit: 'px', scope: 'theme', min: 0, max: 200 },
   /**

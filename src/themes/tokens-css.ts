@@ -18,6 +18,7 @@
  * converge here.
  */
 import { getThemeManifest } from './theme-manifest-loader';
+import { BASE_DEFAULTS } from '../../packages/theme-contract/tokens/base-defaults';
 
 // Список tokens которые emit'ятся явно в rootRules (с merchant cascade).
 // Catch-all iterator ниже пропускает их, чтобы не было дубликата.
@@ -198,7 +199,11 @@ export function buildTokensCss(
     // не проходит через scaffold-builder — только через buildTokensCss.
     // Без catch-all per-block tokens были undefined → блоки в превью
     // схлопывались до content size (height/min-width var → invalid).
-    Object.entries(themeDefaults)
+    // Cascade: BASE_DEFAULTS под theme.json defaults — theme override base.
+    // Без BASE_DEFAULTS per-block tokens (--popular-products-root-padding-x,
+    // --footer-newsletter-* etc) которые НЕ в theme.json — пропали бы из
+    // :root конструктора → блоки collapse'ились бы (padding 0, height 0).
+    Object.entries({ ...BASE_DEFAULTS, ...themeDefaults } as Record<string, string>)
       .filter(([k]) => !ROOT_RULES_EXPLICIT.has(k))
       .map(([k, v]) => `\n  ${k}: ${v};`)
       .join('')

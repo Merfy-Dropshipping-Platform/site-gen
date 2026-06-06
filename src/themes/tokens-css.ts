@@ -19,6 +19,28 @@
  */
 import { getThemeManifest } from './theme-manifest-loader';
 
+// Список tokens которые emit'ятся явно в rootRules (с merchant cascade).
+// Catch-all iterator ниже пропускает их, чтобы не было дубликата.
+const ROOT_RULES_EXPLICIT = new Set<string>([
+  '--radius-button', '--radius-card', '--radius-input', '--radius-media', '--radius-field',
+  '--font-heading', '--font-body', '--weight-body', '--weight-heading',
+  '--section-padding', '--spacing-section-y', '--spacing-grid-col-gap', '--spacing-grid-row-gap',
+  '--catalog-sidebar-w', '--catalog-grid-row-gap',
+  '--size-catalog-title', '--size-catalog-subtitle', '--weight-catalog-title',
+  '--size-hero-heading', '--size-hero-button-h', '--slide-min-height',
+  '--color-header-bg', '--size-header-h',
+  '--size-nav-link', '--size-section-heading', '--size-logo-width',
+  '--size-newsletter-form-w', '--container-max-width',
+  '--color-error', '--color-muted', '--color-primary',
+  '--text-transform-heading',
+  '--font-cart-counter', '--font-powered-by',
+  '--size-card-border',
+  '--button-style', '--footer-layout', '--contact-form-layout',
+  '--cart-type', '--card-style', '--card-alignment',
+  '--color-bottom-strip-bg', '--color-bottom-strip-text',
+  '--promo-banner-h-thin',
+]);
+
 export function buildTokensCss(
   settings: unknown,
   themeId: string | null,
@@ -167,6 +189,19 @@ export function buildTokensCss(
     themeDefaults['--promo-banner-h-thin']
       ? `\n  --promo-banner-h-thin: ${themeDefaults['--promo-banner-h-thin']};`
       : ''
+  }${
+    // Catch-all: emit ВСЕ theme.json defaults которые не обработаны явно
+    // выше. Это гарантирует что per-block tokens (--hero-cta-button-*,
+    // --footer-newsletter-*, --gallery-* и т.д.) попадают в :root preview
+    // iframe конструктора. На live этот pipeline покрывается scaffold-builder
+    // через generateTokensCss(themeDefaults) → :root #3, но конструктор
+    // не проходит через scaffold-builder — только через buildTokensCss.
+    // Без catch-all per-block tokens были undefined → блоки в превью
+    // схлопывались до content size (height/min-width var → invalid).
+    Object.entries(themeDefaults)
+      .filter(([k]) => !ROOT_RULES_EXPLICIT.has(k))
+      .map(([k, v]) => `\n  ${k}: ${v};`)
+      .join('')
   }
 }`;
 

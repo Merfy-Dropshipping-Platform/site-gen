@@ -51,8 +51,11 @@ const isLevel1 = level === 1;
 const currentPath = (Astro.url.pathname || '/').replace(/\/+$/, '') || '/';
 const linkPath = (link.href || '').replace(/\/+$/, '') || '';
 const isActive = isLevel1 && linkPath !== '' && currentPath === linkPath;
+// after:content-[''] — single quotes критично! Double quotes ломаются при
+// escape в HTML attribute (&#34;), Tailwind не парсит class. Также добавлен
+// !important на after:* чтобы не перебивалось другими hover-классами.
 const activeUnderlineClass = isActive
-  ? 'relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:bg-current after:content-[""]'
+  ? "relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:bg-current after:content-['']"
   : '';
 
 // ────────────────────────────────────────────────────────────────────

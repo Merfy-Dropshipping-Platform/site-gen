@@ -23,7 +23,7 @@
   --color-surface-muted: 245, 245, 245;    /* neutral-100 — OTP cell bg, subtle surfaces */
 
   /* ── Typography ── */
-  --font-heading: 'Comfortaa', cursive;
+  --font-heading: 'Comfortaa', sans-serif;
   --font-body: 'Manrope', sans-serif;
 
   /* ── Border Radii ── */

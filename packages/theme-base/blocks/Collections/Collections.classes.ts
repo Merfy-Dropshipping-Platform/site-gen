@@ -20,7 +20,7 @@ export const CollectionsClasses = {
   card:
     'block overflow-hidden group',
   image:
-    'w-full aspect-[3/4] object-cover rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))] transition-transform duration-500 ease-out group-hover:scale-105',
+    'w-full aspect-[3/4] object-cover rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))] transition-transform duration-500 ease-out group-hover:scale-105 border-[length:var(--size-card-border,0px)] border-[rgb(var(--color-text))]/10',
   cardHeading:
     'mt-3 [font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-heading))] text-center',
   cardDescription:

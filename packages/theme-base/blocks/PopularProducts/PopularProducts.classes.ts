@@ -16,7 +16,7 @@ export const PopularProductsClasses = {
   card:
     'flex flex-col gap-[var(--popular-products-card-gap)] items-stretch group w-[var(--popular-products-card-width)]',
   cardMedia:
-    'relative w-full aspect-square rounded-[var(--popular-products-card-media-border-radius)] bg-[rgb(var(--color-surface))] overflow-hidden flex items-center justify-center text-[rgb(var(--color-text))]/40',
+    'relative w-full aspect-square rounded-[var(--popular-products-card-media-border-radius)] bg-[rgb(var(--color-surface))] overflow-hidden flex items-center justify-center text-[rgb(var(--color-text))]/40 border-[length:var(--size-card-border,0px)] border-[rgb(var(--color-text))]/10',
   cardBadge:
     'absolute top-3 left-3 inline-flex items-center justify-center h-6 px-2 rounded-[var(--popular-products-card-badge-border-radius)] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] [font-family:var(--font-body)] text-[var(--popular-products-card-badge-font-size)] leading-none min-w-[var(--popular-products-card-badge-min-width)]',
   cardTitle:

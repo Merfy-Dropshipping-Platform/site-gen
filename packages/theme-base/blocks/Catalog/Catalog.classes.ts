@@ -48,7 +48,7 @@ export const CatalogClasses = {
   productGrid: 'flex-1',
   productGridCols: 'grid grid-cols-1 sm:grid-cols-2 gap-5',
   productCard: 'flex flex-col gap-2 cursor-pointer',
-  productCardImage: 'aspect-[315/515] overflow-hidden rounded-[var(--radius-card)] bg-[rgb(var(--color-muted)/0.1)]',
+  productCardImage: 'aspect-[315/515] overflow-hidden rounded-[var(--radius-card)] bg-[rgb(var(--color-muted)/0.1)] border-[length:var(--size-card-border,0px)] border-[rgb(var(--color-text))]/10',
   productCardImageImg: 'w-full h-full object-cover block',
   productCardTitle: 'text-[14px] text-[rgb(var(--color-text))]',
   productCardPriceRow: 'text-[14px] text-[rgb(var(--color-text))] flex gap-2 items-baseline',

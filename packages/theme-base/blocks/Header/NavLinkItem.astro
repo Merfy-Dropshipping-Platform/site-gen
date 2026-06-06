@@ -44,6 +44,17 @@ const hasSubmenu = Array.isArray(link.submenu) && link.submenu.length > 0 && lev
 const isMegaMenu = menuType === 'mega-menu';
 const isLevel1 = level === 1;
 
+// Active link detection — сравниваем `link.href` с `Astro.url.pathname`.
+// Эталон rose.merfy.ru: активная ссылка получает `aria-current="page"` +
+// `::after` underline вдоль всей ширины (h-px, bg=currentColor).
+// Только level=1 ссылки получают underline (sub-items не подсвечиваются).
+const currentPath = (Astro.url.pathname || '/').replace(/\/+$/, '') || '/';
+const linkPath = (link.href || '').replace(/\/+$/, '') || '';
+const isActive = isLevel1 && linkPath !== '' && currentPath === linkPath;
+const activeUnderlineClass = isActive
+  ? 'relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:bg-current after:content-[""]'
+  : '';
+
 // ────────────────────────────────────────────────────────────────────
 // MEGA-MENU level=1: full-width sheet с секционным layout
 // ────────────────────────────────────────────────────────────────────
@@ -69,7 +80,8 @@ const childLinkClass = 'block px-4 py-2 text-[14px] [font-family:var(--font-body
   <div class="relative group/submenu" data-submenu-host data-open="false">
     <a
       href={link.href || '#'}
-      class:list={['inline-flex items-center', linkClass]}
+      aria-current={isActive ? 'page' : undefined}
+      class:list={['inline-flex items-center', linkClass, activeUnderlineClass]}
       data-submenu-trigger
     >
       {link.label}
@@ -123,7 +135,8 @@ const childLinkClass = 'block px-4 py-2 text-[14px] [font-family:var(--font-body
   <div class="relative group/submenu" data-submenu-host data-open="false">
     <a
       href={link.href || '#'}
-      class:list={['inline-flex items-center gap-1', linkClass]}
+      aria-current={isActive ? 'page' : undefined}
+      class:list={['inline-flex items-center gap-1', linkClass, activeUnderlineClass]}
       data-submenu-trigger
     >
       {link.label}
@@ -152,5 +165,5 @@ const childLinkClass = 'block px-4 py-2 text-[14px] [font-family:var(--font-body
   </div>
 ) : (
   /* ─── LEAF ─── */
-  <a href={link.href || '#'} class={linkClass}>{link.label}</a>
+  <a href={link.href || '#'} aria-current={isActive ? 'page' : undefined} class:list={[linkClass, activeUnderlineClass]}>{link.label}</a>
 )}

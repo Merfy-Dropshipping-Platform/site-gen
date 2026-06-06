@@ -118,7 +118,7 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
           </div>
 
           {!isTwoTier && (
-            <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
+            <div data-nav-inline class:list={[C.navMenu, 'flex-1 justify-center', menuSchemeClass, navInlineMenuClass]}>
               {navigationLinks.map((link) => (
                 <NavLinkItem link={link} menuType={menuType} maxDepth={MENU_MAX_DEPTH} linkClass={[C.navLink, navInlineLinkClass].filter(Boolean).join(' ')} />
               ))}
@@ -166,7 +166,7 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
           </button>
 
           {!isTwoTier && (
-            <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
+            <div data-nav-inline class:list={[C.navMenu, 'flex-1 justify-center', menuSchemeClass, navInlineMenuClass]}>
               {navigationLinks.map((link) => (
                 <NavLinkItem link={link} menuType={menuType} maxDepth={MENU_MAX_DEPTH} linkClass={[C.navLink, navInlineLinkClass].filter(Boolean).join(' ')} />
               ))}
@@ -217,7 +217,7 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
           </button>
 
           {!isTwoTier && (
-            <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
+            <div data-nav-inline class:list={[C.navMenu, 'flex-1 justify-center', menuSchemeClass, navInlineMenuClass]}>
               {navigationLinks.map((link) => (
                 <NavLinkItem link={link} menuType={menuType} maxDepth={MENU_MAX_DEPTH} linkClass={[C.navLink, navInlineLinkClass].filter(Boolean).join(' ')} />
               ))}
@@ -269,7 +269,7 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
           </button>
 
           {!isTwoTier && (
-            <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
+            <div data-nav-inline class:list={[C.navMenu, 'flex-1 justify-center', menuSchemeClass, navInlineMenuClass]}>
               {navigationLinks.map((link) => (
                 <NavLinkItem link={link} menuType={menuType} maxDepth={MENU_MAX_DEPTH} linkClass={[C.navLink, navInlineLinkClass].filter(Boolean).join(' ')} />
               ))}
@@ -327,7 +327,7 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
           </a>
 
           {!isTwoTier && (
-            <div data-nav-inline class:list={[C.navMenu, menuSchemeClass, navInlineMenuClass]}>
+            <div data-nav-inline class:list={[C.navMenu, 'flex-1 justify-center', menuSchemeClass, navInlineMenuClass]}>
               {navigationLinks.map((link) => (
                 <NavLinkItem link={link} menuType={menuType} maxDepth={MENU_MAX_DEPTH} linkClass={[C.navLink, navInlineLinkClass].filter(Boolean).join(' ')} />
               ))}

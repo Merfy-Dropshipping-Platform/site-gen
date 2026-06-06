@@ -123,6 +123,7 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       // can merge theme blockDefaults в Catalog.defaultProps (otherwise constructor
       // получает universal-only defaults и затирает theme-specific values на edit).
       blockDefaults: (roseManifestJson as any).blockDefaults ?? {},
+      defaults: (roseManifestJson as any).defaults ?? {},
     };
   }
   if (themeId === 'vanilla') {
@@ -131,6 +132,7 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       features: vanillaManifestJson.features ?? {},
       customBlocks: vanillaManifestJson.customBlocks ?? {},
       blockDefaults: (vanillaManifestJson as any).blockDefaults ?? {},
+      defaults: (vanillaManifestJson as any).defaults ?? {},
     };
   }
   if (themeId === 'bloom') {
@@ -139,6 +141,7 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       features: bloomManifestJson.features ?? {},
       customBlocks: bloomManifestJson.customBlocks ?? {},
       blockDefaults: (bloomManifestJson as any).blockDefaults ?? {},
+      defaults: (bloomManifestJson as any).defaults ?? {},
     };
   }
   if (themeId === 'satin') {
@@ -147,6 +150,7 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       features: satinManifestJson.features ?? {},
       customBlocks: satinManifestJson.customBlocks ?? {},
       blockDefaults: (satinManifestJson as any).blockDefaults ?? {},
+      defaults: (satinManifestJson as any).defaults ?? {},
     };
   }
   if (themeId === 'flux') {
@@ -155,6 +159,7 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       features: fluxManifestJson.features ?? {},
       customBlocks: fluxManifestJson.customBlocks ?? {},
       blockDefaults: (fluxManifestJson as any).blockDefaults ?? {},
+      defaults: (fluxManifestJson as any).defaults ?? {},
     };
   }
   return DEFAULT_THEME_CONFIG;

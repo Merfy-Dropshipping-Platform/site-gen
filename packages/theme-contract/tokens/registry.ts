@@ -229,6 +229,15 @@ export const TOKEN_REGISTRY = {
   '--hero-cta-button-padding-y-sm': { category: 'spacing', unit: 'px', scope: 'theme' },
   '--hero-cta-button-font-size-sm': { category: 'size', unit: 'px', scope: 'theme' },
   '--hero-cta-button-font-size-md': { category: 'size', unit: 'px', scope: 'theme' },
+  // Hero CTA scheme-independent colors (rose эталон: overlay variant даёт
+  // dark image + WHITE CTA bg + BLACK text). Защищает от случая, когда
+  // merchant scheme[0] оказалась DARK (тогда `--color-button-secondary-bg`
+  // тоже dark, и CTA сливается с тёмной картинкой). Hero.astro inline-style
+  // использует эти токены с fallback на `--color-button-secondary-*` для
+  // обратной совместимости с темами, которые их не задают.
+  '--hero-cta-bg': { category: 'color', scope: 'theme' },
+  '--hero-cta-text': { category: 'color', scope: 'theme' },
+  '--hero-cta-border': { category: 'color', scope: 'theme' },
   // ── v2 миграция — токены блока (добавлено скриптом)
   '--collections-root-padding-x': { category: 'spacing', unit: 'px', scope: 'theme' },
   '--collections-root-padding-bottom': { category: 'spacing', unit: 'px', scope: 'theme' },

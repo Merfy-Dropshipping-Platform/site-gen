@@ -13,7 +13,8 @@
     "--font-body": "'Manrope', sans-serif",
     "--weight-heading": "400",
     "--weight-body": "400",
-    "--container-max-width": "1320px",
+    "--container-max-width": "1920px",
+    "--header-container-px-2xl": "280px",
     "--radius-button": "6px",
     "--radius-input": "4px",
     "--radius-card": "8px",
@@ -101,6 +102,12 @@
       "padding": {
         "top": 24,
         "bottom": 24
+      },
+      "promoBar": {
+        "enabled": true,
+        "text": "Скидка 10% на общую сумму заказа от 9 000₽",
+        "linkText": "Перейти",
+        "linkHref": "/catalog"
       },
       "navigationLinks": [
         {

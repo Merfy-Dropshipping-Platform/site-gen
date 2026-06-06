@@ -23,7 +23,7 @@ export const HeaderClasses = {
   // не работает при small padding (юзер 2026-05-11). Default min-height
   // только когда padding undefined — в Astro `class:list`.
   header: 'w-full flex items-center border-b border-[rgb(var(--color-text))]/15 h-[var(--size-header-h,auto)] bg-[var(--header-header-background-color)] pb-[var(--header-header-padding-bottom)] text-[var(--header-header-color)]',
-  nav: 'w-full max-w-[var(--container-max-width,1320px)] mx-auto px-4 md:px-6 flex items-center relative gap-[var(--header-nav-gap)] lg:gap-[var(--header-nav-gap-lg)]',
+  nav: 'w-full max-w-[var(--container-max-width,1320px)] mx-auto px-4 sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[var(--header-container-px-2xl,280px)] flex items-center relative gap-[var(--header-nav-gap)] lg:gap-[var(--header-nav-gap-lg)]',
   navJustified: 'justify-between',
   hamburger:
     'md:hidden w-10 h-10 flex items-center justify-center hover:opacity-70 transition-opacity text-[rgb(var(--color-heading))]',
@@ -86,6 +86,20 @@ export const HeaderClasses = {
     'relative w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 flex items-center justify-center hover:opacity-70 transition-opacity text-[rgb(var(--color-text))]',
   actionProfile:
     'auth-nav-btn w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center hover:opacity-[var(--header-action-profile-opacity-hover)] transition-opacity text-[rgb(var(--color-text))]',
+  // Icon classes: CSS-mask вместо inline SVG. SVG-файлы лежат в
+  // packages/theme-<name>/public/icons/ и build pipeline копирует
+  // их в /icons/ live site. bg-current → currentColor наследуется
+  // от parent text color → корректная адаптация к color scheme.
+  iconBase:
+    'inline-block bg-current pointer-events-none [mask-size:contain] [mask-position:center] [mask-repeat:no-repeat] [-webkit-mask-size:contain] [-webkit-mask-position:center] [-webkit-mask-repeat:no-repeat]',
+  iconCart:
+    'w-6 h-6 lg:w-7 lg:h-7 [mask-image:url(/icons/cart.svg)] [-webkit-mask-image:url(/icons/cart.svg)]',
+  iconUser:
+    'w-5 h-5 lg:w-6 lg:h-6 [mask-image:url(/icons/user.svg)] [-webkit-mask-image:url(/icons/user.svg)]',
+  iconSearch:
+    'w-5 h-5 lg:w-6 lg:h-6 [mask-image:url(/icons/search-lg.svg)] [-webkit-mask-image:url(/icons/search-lg.svg)]',
+  iconBurger:
+    'w-5 h-5 [mask-image:url(/icons/menu-burger.svg)] [-webkit-mask-image:url(/icons/menu-burger.svg)]',
   cartBadge:
     'hidden absolute -top-1 -right-1 bg-[rgb(var(--color-primary))] text-[var(--header-cart-badge-color)] text-[10px] font-bold rounded-full min-w-[var(--header-cart-badge-min-width)] h-[var(--header-cart-badge-height)] flex items-center justify-center leading-none px-1',
   mobileMenu: {

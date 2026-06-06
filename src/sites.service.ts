@@ -24,6 +24,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { and, eq, ilike, or, sql } from "drizzle-orm";
 import { COOLIFY_RMQ_SERVICE, PG_CONNECTION } from "./constants";
 import { migrateRevisionData } from "./utils/revision-migrations";
+import { resolveAssetUrls } from "./themes/asset-resolver";
 import * as schema from "./db/schema";
 import { SiteGeneratorService } from "./generator/generator.service";
 import { SitesEventsService } from "./events/events.service";
@@ -1173,7 +1174,12 @@ export class SitesDomainService {
       rev.data as Record<string, unknown> | undefined,
       site.themeId,
     );
-    return { item: { ...rev, data: migratedData } };
+    // Resolve relative asset paths → absolute URLs (via site.publicUrl) so
+    // constructor sidebar image previews load directly. Merchant uploads
+    // are already absolute → helper skips them. Single URL contract across
+    // admin / preview / live build.
+    const resolvedData = resolveAssetUrls(migratedData, site.publicUrl);
+    return { item: { ...rev, data: resolvedData } };
   }
 
   /**

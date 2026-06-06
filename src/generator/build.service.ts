@@ -14,6 +14,7 @@
  */
 import { Logger } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
+import { resolveAssetUrls } from "../themes/asset-resolver";
 import * as path from "path";
 import * as fs from "fs/promises";
 import * as fsSync from "fs";
@@ -1014,10 +1015,14 @@ async function stageMerge(
   // pipeline sees the canonical shape regardless of when the revision was
   // saved. Idempotent — running on already-migrated revisions is a no-op.
   // Pass themeId so vanilla-specific home seed (084) activates for vanilla sites.
-  ctx.revisionData = migrateRevisionData(
+  const migrated = migrateRevisionData(
     revRow?.data as Record<string, unknown> | undefined,
     siteRow.themeId,
   );
+  // Resolve relative asset paths (theme defaults `/main-image.png`) → absolute
+  // URLs via site.publicUrl. Live и preview iframe видят один и тот же URL,
+  // merchant uploads (уже absolute) — без изменений. Single source of truth.
+  ctx.revisionData = resolveAssetUrls(migrated, siteRow.publicUrl);
   ctx.revisionMeta = (revRow?.meta as Record<string, unknown>) ?? {};
 
   // Update build record with revisionId

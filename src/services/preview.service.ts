@@ -1,4 +1,5 @@
 import { Injectable, Optional } from '@nestjs/common';
+import { resolveAssetUrls, rewriteHtmlAssets } from '../themes/asset-resolver';
 
 const HTML_ESCAPE_MAP: Record<string, string> = {
   '&': '&amp;',
@@ -328,10 +329,20 @@ export class PreviewService {
     if (isLegacyCheckout) {
       bodyHtml = await this.renderCheckoutLayout(input);
     } else {
+      // Resolve relative asset paths в block props перед рендером — `/main-image.png`
+      // → `${publicUrl}/main-image.png`. Один URL для preview iframe и live (live origin
+      // = publicUrl). Theme defaults и Puck seeds хранят `/X` clean, merchant uploads —
+      // full MinIO URL (helper их игнорирует). See `src/themes/asset-resolver.ts`.
+      const blocksResolved = input.publicUrl
+        ? input.blocks.map((b) => ({
+            type: b.type,
+            props: resolveAssetUrls(b.props, input.publicUrl) as Record<string, unknown>,
+          }))
+        : input.blocks;
       // Parallel render: Astro `experimental_AstroContainer.renderToString`
       // is safe to call concurrently on a shared container instance.
       const renderedBlocks = await Promise.all(
-        input.blocks.map(async (b) => {
+        blocksResolved.map(async (b) => {
           const html = await this.renderBlock({
             blockName: b.type,
             props: b.props,
@@ -388,18 +399,11 @@ export class PreviewService {
 
     const previewTailwind = await loadPreviewTailwindCss();
 
-    // Rewrite absolute-path asset URLs (src="/main-image.png", style="background-image:url(/foo.png)")
-    // → site publicUrl prefix, чтобы preview iframe мог их загрузить из MinIO
-    // через nginx live host. Без этого Hero backgroundImage / hero placeholders
-    // отдавали 404 в iframe (preview-сервер не serve'ит build pipeline static
-    // assets), → bg оставался прозрачным → text scheme-1 (white) на white bg = невидимо.
-    if (input.publicUrl) {
-      const baseUrl = input.publicUrl.replace(/\/$/, '');
-      bodyHtml = bodyHtml
-        .replace(/\bsrc="\/(?!\/)([^"]*)"/g, (_m, p) => `src="${baseUrl}/${p}"`)
-        .replace(/\bsrcset="\/(?!\/)([^"]*)"/g, (_m, p) => `srcset="${baseUrl}/${p}"`)
-        .replace(/url\(\s*['"]?\/(?!\/)([^'")]*)['"]?\s*\)/g, (_m, p) => `url('${baseUrl}/${p}')`);
-    }
+    // Safety net для **hardcoded** absolute-paths в скомпилированном HTML
+    // (placeholder PNGs из `.astro`, runtime JS innerHTML). Основной путь
+    // — resolveAssetUrls(props) выше — превращает merchant-data ссылки в
+    // абсолютные ДО рендера. Это закрывает оставшийся build-time hardcode.
+    bodyHtml = rewriteHtmlAssets(bodyHtml, input.publicUrl);
 
     return `<!DOCTYPE html>
 <html lang="ru">

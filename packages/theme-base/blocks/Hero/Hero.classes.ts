@@ -46,15 +46,18 @@ export const HeroClasses = {
   title:
     '[font-family:var(--font-heading)] [font-weight:var(--weight-heading)] [text-transform:var(--text-transform-heading)] text-[var(--hero-title-font-size)] leading-tight text-[rgb(var(--color-heading))]',
   subtitle:
-    'mt-2 [font-family:var(--font-body)] text-[var(--hero-subtitle-font-size)] text-[rgb(var(--color-text))] px-[var(--hero-subtitle-padding-x)] sm:text-[var(--hero-subtitle-font-size-sm)] md:text-[var(--hero-subtitle-font-size-md)] lg:text-[var(--hero-subtitle-font-size-lg)]',
+    'mt-2 [font-family:var(--font-body)] text-[length:var(--hero-subtitle-font-size,14px)] text-[rgb(var(--color-text))] px-[var(--hero-subtitle-padding-x,0px)] sm:text-[length:var(--hero-subtitle-font-size-sm,14px)] md:text-[length:var(--hero-subtitle-font-size-md,16px)] lg:text-[length:var(--hero-subtitle-font-size-lg,16px)]',
   ctaButton:
-    // Hero CTA = primary button: high-contrast action. Secondary was used
-    // before, but schemes like Inverse (secondaryButton: transparent bg +
-    // white text) turn the CTA invisible on light hero backdrops, which
-    // diverged from the constructor's React render (primary). Primary keeps
-    // site ≡ constructor parity without relying on merchant filling both
-    // button slots with compatible colors.
-    'inline-flex items-center justify-center h-[var(--hero-cta-button-height)] rounded-[var(--hero-cta-button-border-radius)] px-[var(--hero-cta-button-padding-x)] text-[var(--hero-cta-button-font-size)] [font-family:var(--font-body)] border border-[rgb(var(--color-button-border))] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] hover:bg-[rgb(var(--color-button-bg-hover))] hover:text-[rgb(var(--color-button-text-hover))] transition-colors no-underline min-h-[var(--hero-cta-button-min-height)] min-w-[var(--hero-cta-button-min-width)] hover:opacity-[var(--hero-cta-button-opacity-hover)] sm:h-[var(--hero-cta-button-height-sm)] sm:min-h-[var(--hero-cta-button-min-height-sm)] sm:min-w-[var(--hero-cta-button-min-width-sm)] sm:rounded-[var(--hero-cta-button-border-radius-sm)] sm:px-[var(--hero-cta-button-padding-x-sm)] sm:py-[var(--hero-cta-button-padding-y-sm)] sm:text-[var(--hero-cta-button-font-size-sm)] md:text-[var(--hero-cta-button-font-size-md)]',
+    // Hero CTA = primary button: high-contrast action.
+    // - text-[length:var(...,fallback)] — `length:` префикс критичен,
+    //   иначе Tailwind эмитит `color:` вместо `font-size:` (см. nav-link
+    //   bug fix). Fallback'и гарантируют видимый button даже когда tokens
+    //   не set в :root.
+    // - rounded-[length:var(--hero-cta-button-border-radius, var(--radius-button, 4px))]
+    //   — fallback chain к общему slider'у Theme Settings. Hero CTA
+    //   автоматически следует за "Кнопки → Скругление".
+    // - min-h/min-w с fallback 40px / 120px чтобы button не collapsed.
+    'inline-flex items-center justify-center h-[var(--hero-cta-button-height,40px)] rounded-[length:var(--hero-cta-button-border-radius,var(--radius-button,4px))] px-[var(--hero-cta-button-padding-x,16px)] text-[length:var(--hero-cta-button-font-size,14px)] [font-family:var(--font-body)] border border-[rgb(var(--color-button-border))] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] hover:bg-[rgb(var(--color-button-bg-hover))] hover:text-[rgb(var(--color-button-text-hover))] transition-colors no-underline min-h-[var(--hero-cta-button-min-height,40px)] min-w-[var(--hero-cta-button-min-width,120px)] hover:opacity-[var(--hero-cta-button-opacity-hover,0.9)] sm:h-[var(--hero-cta-button-height-sm,48px)] sm:min-h-[var(--hero-cta-button-min-height-sm,48px)] sm:min-w-[var(--hero-cta-button-min-width-sm,160px)] sm:rounded-[length:var(--hero-cta-button-border-radius-sm,var(--radius-button,4px))] sm:px-[var(--hero-cta-button-padding-x-sm,24px)] sm:py-[var(--hero-cta-button-padding-y-sm,12px)] sm:text-[length:var(--hero-cta-button-font-size-sm,15px)] md:text-[length:var(--hero-cta-button-font-size-md,16px)]',
   image: {
     centered: 'absolute inset-0 -z-10 object-cover w-full h-full',
     split: 'w-full aspect-[4/3] object-cover',

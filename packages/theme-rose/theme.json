@@ -103,12 +103,6 @@
         "top": 24,
         "bottom": 24
       },
-      "promoBar": {
-        "enabled": true,
-        "text": "Скидка 10% на общую сумму заказа от 9 000₽",
-        "linkText": "Перейти",
-        "linkHref": "/catalog"
-      },
       "navigationLinks": [
         {
           "label": "Главная",

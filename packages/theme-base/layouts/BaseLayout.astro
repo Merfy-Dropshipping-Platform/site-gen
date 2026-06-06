@@ -74,7 +74,7 @@ const description = typeof descriptionProp === 'string' ? descriptionProp : '';
   {/* Tracking scripts slot — TrackingScripts.astro injects here */}
   <slot name="head" />
 </head>
-<body class={bodyClass}>
+<body class:list={['antialiased', bodyClass]}>
   <slot />
   <slot name="body-end" />
 

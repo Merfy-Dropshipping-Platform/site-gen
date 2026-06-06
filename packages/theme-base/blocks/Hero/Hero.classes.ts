@@ -43,13 +43,18 @@ export const HeroClasses = {
   // --hero-heading-size / --hero-text-size. Constructor шлёт значения через
   // heading.size / text.size, Hero.astro вычисляет calc(...) и инжектит в
   // style на root. Здесь base просто читает var с fallback'ом.
-  // Tailwind 4 не парсит вложенный `var(--x, fallback)` в arbitrary
-  // value брackets — правило не emit'ится. Дефолты — через
-  // theme-contract base-defaults / theme.json (уровень CSS-vars).
+  // СИСТЕМНОЕ решение responsive font-sizes:
+  // Tailwind 4 emit'ит правило ТОЛЬКО для base arbitrary value
+  // (`text-[length:var(--x)]`), но НЕ emit'ит responsive variants
+  // (`sm:text-[length:var(--x)]` и т.д.). Поэтому архитектура:
+  //   - ОДИН token per element + `clamp()` для fluid scaling
+  //   - Class только базовый, без `sm:/md:/lg:` префиксов
+  //   - Token value в theme.json: `clamp(<min>, <fluid>, <max>)`
+  // Это даёт smooth responsive по viewport ширине без N breakpoint classes.
   title:
-    '[font-family:var(--font-heading)] [font-weight:var(--weight-heading)] [text-transform:var(--text-transform-heading)] tracking-normal leading-none text-[rgb(var(--color-heading))] text-[length:var(--hero-title-size)] sm:text-[length:var(--hero-title-size-sm)] md:text-[length:var(--hero-title-size-md)] lg:text-[length:var(--hero-title-size-lg)]',
+    '[font-family:var(--font-heading)] [font-weight:var(--weight-heading)] [text-transform:var(--text-transform-heading)] tracking-normal leading-none text-[rgb(var(--color-heading))] text-[length:var(--hero-title-size)]',
   subtitle:
-    'mt-2 [font-family:var(--font-body)] [font-weight:var(--weight-body)] leading-none text-[rgb(var(--color-text))] text-[length:var(--hero-subtitle-font-size)] sm:text-[length:var(--hero-subtitle-font-size-sm)] md:text-[length:var(--hero-subtitle-font-size-md)] lg:text-[length:var(--hero-subtitle-font-size-lg)] px-[var(--hero-subtitle-padding-x)] max-w-xl',
+    'mt-2 [font-family:var(--font-body)] [font-weight:var(--weight-body)] leading-none text-[rgb(var(--color-text))] text-[length:var(--hero-subtitle-font-size)] px-[var(--hero-subtitle-padding-x)] max-w-xl',
   ctaButton:
     // Hero CTA = эталон rose.merfy.ru: inverted-on-image button — белый
     // bg + чёрный текст на dark image overlay. Используем
@@ -58,7 +63,14 @@ export const HeroClasses = {
     // Эталонные responsive sizes: h-10→sm:h-[52px], min-w-[120]→[160],
     // rounded→[6px], px-3→px-6, py-2.5→[10px], text-14→15→16.
     // Fallback chain rounded → --radius-button — slider Theme Settings.
-    'inline-flex items-center justify-center no-underline transition-opacity [font-family:var(--font-body)] [font-weight:var(--weight-body)] leading-none h-[var(--hero-cta-button-height)] min-h-[var(--hero-cta-button-min-height)] min-w-[var(--hero-cta-button-min-width)] px-[var(--hero-cta-button-padding-x)] py-[var(--hero-cta-button-padding-y)] rounded-[length:var(--radius-button)] text-[length:var(--hero-cta-button-font-size)] bg-[rgb(var(--color-button-secondary-bg))] text-[rgb(var(--color-button-secondary-text))] border border-[rgb(var(--color-button-secondary-border))] hover:opacity-[var(--hero-cta-button-opacity-hover)] sm:h-[var(--hero-cta-button-height-sm)] sm:min-h-[var(--hero-cta-button-min-height-sm)] sm:min-w-[var(--hero-cta-button-min-width-sm)] sm:px-[var(--hero-cta-button-padding-x-sm)] sm:py-[var(--hero-cta-button-padding-y-sm)] sm:text-[length:var(--hero-cta-button-font-size-sm)] md:text-[length:var(--hero-cta-button-font-size-md)]',
+    // CTA: один class per свойство, БЕЗ sm:/md: префиксов (Tailwind 4 не
+    // emit'ит responsive variants для arbitrary value с var()).
+    // Responsive — через clamp() в theme token value:
+    //   --hero-cta-button-height: clamp(40px, 6vw, 52px)
+    //   --hero-cta-button-min-width: clamp(120px, 12vw, 160px)
+    //   --hero-cta-button-font-size: clamp(14px, 1.2vw, 16px)
+    // Reagирует на slider Theme Settings → --radius-button.
+    'inline-flex items-center justify-center no-underline transition-opacity [font-family:var(--font-body)] [font-weight:var(--weight-body)] leading-none h-[var(--hero-cta-button-height)] min-h-[var(--hero-cta-button-min-height)] min-w-[var(--hero-cta-button-min-width)] px-[var(--hero-cta-button-padding-x)] py-[var(--hero-cta-button-padding-y)] rounded-[length:var(--radius-button)] text-[length:var(--hero-cta-button-font-size)] bg-[rgb(var(--color-button-secondary-bg))] text-[rgb(var(--color-button-secondary-text))] border border-[rgb(var(--color-button-secondary-border))] hover:opacity-[var(--hero-cta-button-opacity-hover)]',
   image: {
     centered: 'absolute inset-0 -z-10 object-cover w-full h-full',
     split: 'w-full aspect-[4/3] object-cover',

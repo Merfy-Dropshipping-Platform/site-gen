@@ -297,7 +297,11 @@ const heroButtonStyleClass = heroButtonStyle === 'outlined'
   )}
   <div class:list={[C.container, innerClass, vAlignClass, 'relative z-10']} style="min-height: inherit;">
     <div class:list={[
-      'flex flex-col gap-4 sm:gap-5 md:gap-6 lg:gap-5 xl:gap-[25px] w-full px-4 sm:px-6 md:px-8',
+      // mx-auto центрирует inner div когда viewport < container width.
+      // Без него max-w-7xl выравнивается к ЛЕВОМУ краю родителя (flex parent
+      // items-center не центрирует child w-full — w-full разворачивает на
+      // всю ширину parent, items-center работает только для fixed-width child).
+      'flex flex-col gap-4 sm:gap-5 md:gap-6 lg:gap-5 xl:gap-[25px] w-full mx-auto px-4 sm:px-6 md:px-8',
       variant === 'split'
         ? 'items-start text-left max-w-xl'
         : [hAlignClass, variant === 'overlay' ? 'max-w-7xl' : 'max-w-7xl']

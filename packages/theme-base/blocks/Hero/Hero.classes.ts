@@ -56,21 +56,17 @@ export const HeroClasses = {
   subtitle:
     'mt-2 [font-family:var(--font-body)] [font-weight:var(--weight-body)] leading-none text-[rgb(var(--color-text))] text-[length:var(--hero-subtitle-font-size)] px-[var(--hero-subtitle-padding-x)] max-w-xl',
   ctaButton:
-    // Hero CTA = эталон rose.merfy.ru: inverted-on-image button — белый
-    // bg + чёрный текст на dark image overlay. Используем
-    // `--color-button-secondary-*` (на scheme-2 даёт white bg + black
-    // text по дизайну системы цветовых схем).
-    // Эталонные responsive sizes: h-10→sm:h-[52px], min-w-[120]→[160],
-    // rounded→[6px], px-3→px-6, py-2.5→[10px], text-14→15→16.
-    // Fallback chain rounded → --radius-button — slider Theme Settings.
-    // CTA: один class per свойство, БЕЗ sm:/md: префиксов (Tailwind 4 не
-    // emit'ит responsive variants для arbitrary value с var()).
-    // Responsive — через clamp() в theme token value:
-    //   --hero-cta-button-height: clamp(40px, 6vw, 52px)
-    //   --hero-cta-button-min-width: clamp(120px, 12vw, 160px)
-    //   --hero-cta-button-font-size: clamp(14px, 1.2vw, 16px)
-    // Reagирует на slider Theme Settings → --radius-button.
-    'inline-flex items-center justify-center no-underline transition-opacity [font-family:var(--font-body)] [font-weight:var(--weight-body)] leading-none h-[var(--hero-cta-button-height)] min-h-[var(--hero-cta-button-min-height)] min-w-[var(--hero-cta-button-min-width)] px-[var(--hero-cta-button-padding-x)] py-[var(--hero-cta-button-padding-y)] rounded-[length:var(--radius-button)] text-[length:var(--hero-cta-button-font-size)] bg-[rgb(var(--color-button-secondary-bg))] text-[rgb(var(--color-button-secondary-text))] border border-[rgb(var(--color-button-secondary-border))] hover:opacity-[var(--hero-cta-button-opacity-hover)]',
+    // Hero CTA overlay = эталон rose.merfy.ru, см. <https://rose.merfy.ru/>:
+    // inverted-on-image button — invariant design baseline:
+    // white bg + черный текст + БЕЗ рамки + малый radius. На dark image
+    // overlay контраст важнее scheme-агностики, поэтому эти 4 свойства
+    // HARDCODED (не через Theme Settings sliders / scheme tokens):
+    //   - !bg-white !text-[#000000] — гарантированный контраст с image
+    //   - !border-0 — design intent (нет outlined CTA на overlay)
+    //   - rounded sm:rounded-[6px] — намеренно меньше merchant --radius-button
+    // Остальное (height/min-width/padding/font-size/font-family) — через
+    // CSS-var + clamp() в theme.json, может настраиваться темой.
+    'inline-flex items-center justify-center no-underline transition-opacity [font-family:var(--font-body)] [font-weight:var(--weight-body)] leading-none h-[var(--hero-cta-button-height)] min-h-[var(--hero-cta-button-min-height)] min-w-[var(--hero-cta-button-min-width)] px-[var(--hero-cta-button-padding-x)] py-[var(--hero-cta-button-padding-y)] text-[length:var(--hero-cta-button-font-size)] rounded sm:rounded-[6px] !border-0 !bg-white !text-[#000000] hover:opacity-[var(--hero-cta-button-opacity-hover)]',
   image: {
     centered: 'absolute inset-0 -z-10 object-cover w-full h-full',
     split: 'w-full aspect-[4/3] object-cover',

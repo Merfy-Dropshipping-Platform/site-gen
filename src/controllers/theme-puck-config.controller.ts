@@ -44,6 +44,8 @@ interface PuckComponentJson {
 export interface PuckConfigJson {
   components: Record<string, PuckComponentJson>;
   categories: Record<string, { components: string[] }>;
+  /** 100: CSS-token defaults темы (theme.json `defaults`). */
+  defaults?: Record<string, string>;
 }
 
 /**
@@ -270,9 +272,17 @@ export class ThemePuckConfigController {
       };
     }
 
+    // 100: CSS-token defaults из theme.json `defaults` — конструктор
+    // initializes ThemeSettingsPanel slider'ы с эталонными значениями
+    // темы. Без этого slider показывает только BASE_DEFAULTS (16px и т.д.)
+    // вместо rose-specific (24px Logo, 8px Card radius, и т.д.).
+    const themeDefaults =
+      (themeManifest as { defaults?: Record<string, string> } | undefined)?.defaults ?? {};
+
     return {
       components,
       categories: puckConfig.categories ?? {},
+      defaults: themeDefaults,
     };
   }
 }

@@ -20,6 +20,12 @@ export interface ThemeConfigForResolver {
    * universal-only defaults и Puck.edit-time merge затирает theme values.
    */
   blockDefaults?: Record<string, unknown>;
+  /**
+   * 100: CSS-token defaults (theme.json `defaults` block). Передаются в
+   * /api/themes/:id/puck-config response → конструктор TokenThemeProvider
+   * инициализирует slider'ы Theme Settings с темо-эталонными значениями.
+   */
+  defaults?: Record<string, string>;
 }
 
 export function resolveBlocks(

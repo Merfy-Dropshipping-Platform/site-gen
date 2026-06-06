@@ -335,6 +335,7 @@ export async function buildScaffold(
       const raw = await fs.readFile(themeJsonPath, "utf8");
       const parsed = JSON.parse(raw) as {
         blockDefaults?: Record<string, Record<string, unknown>>;
+        defaults?: Record<string, string>;
         features?: { puckDrivenPages?: boolean };
       };
       if (useNewPackages && parsed.blockDefaults && typeof parsed.blockDefaults === "object") {
@@ -342,6 +343,27 @@ export async function buildScaffold(
       }
       if (parsed.features?.puckDrivenPages === true) {
         puckDrivenPages = true;
+      }
+      // CSS-token defaults: read theme.json `defaults` block ({"--foo": "bar"}
+      // → tokens.css :root). Existing revisions.meta.themeDefaults может быть
+      // пустым (новые токены добавили после создания сайта) — disk theme.json
+      // тогда **fallback layer** под merchant overrides. Live rebuild
+      // подхватывает свежие токены без миграции revisions.
+      if (parsed.defaults && typeof parsed.defaults === "object") {
+        const diskTokens: Record<string, string> = {};
+        for (const [key, val] of Object.entries(parsed.defaults)) {
+          const keyNoDash = key.startsWith("--") ? key.slice(2) : key;
+          diskTokens[keyNoDash] = String(val);
+        }
+        // Merge: disk defaults BELOW existing themeDefaults (which may carry
+        // legacy zafrozen values). Merchant settings still win in tokens-generator.
+        config.themeDefaults = {
+          ...(config.themeDefaults ?? {}),
+          tokens: {
+            ...diskTokens,
+            ...(config.themeDefaults?.tokens ?? {}),
+          },
+        };
       }
     } catch {
       // theme.json missing or malformed — proceed without defaults

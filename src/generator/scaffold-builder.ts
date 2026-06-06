@@ -511,25 +511,31 @@ export async function buildScaffold(
 
   }
 
-  // 7. Generate override.css tokens and append to tokens.css
-  if (config.merchantSettings) {
+  // 7. Generate override.css tokens and append to tokens.css.
+  // ВАЖНО: вызываем ВСЕГДА, не только при merchantSettings — theme.json
+  // defaults должны попадать в :root даже когда мерчант ничего не настраивал.
+  // Раньше gate `if (config.merchantSettings)` блокировал theme defaults
+  // для дефолтных сайтов → CSS vars (--hero-title-size, --radius-card и т.д.)
+  // отсутствовали в :root, Tailwind class `text-[length:var(...)]` resolveился
+  // в browser default. Системный fix: effectiveSettings всегда заполнен.
+  {
+    const effectiveSettings = config.merchantSettings ?? { tokens: {} };
     const tokensCss = generateTokensCss(
-      config.merchantSettings,
+      effectiveSettings,
       config.themeDefaults ?? {},
     );
-    const overridePath = path.join(outputDir, "src", "styles", "override.css");
-    await writeFile(overridePath, tokensCss);
-    generatedFiles.push("src/styles/override.css");
-
-    // Append override tokens to tokens.css so they take effect
-    // (tokens.css is imported by global.css and defines :root + color-scheme vars)
-    const tokensCssPath = path.join(outputDir, "src", "styles", "tokens.css");
-    try {
-      let existing = await fs.readFile(tokensCssPath, "utf8");
-      existing += "\n/* Merchant overrides */\n" + tokensCss;
-      await fs.writeFile(tokensCssPath, existing, "utf8");
-    } catch {
-      // tokens.css may not exist in all themes — skip silently
+    if (tokensCss.trim()) {
+      const overridePath = path.join(outputDir, "src", "styles", "override.css");
+      await writeFile(overridePath, tokensCss);
+      generatedFiles.push("src/styles/override.css");
+      const tokensCssPath = path.join(outputDir, "src", "styles", "tokens.css");
+      try {
+        let existing = await fs.readFile(tokensCssPath, "utf8");
+        existing += "\n/* Theme defaults + merchant overrides */\n" + tokensCss;
+        await fs.writeFile(tokensCssPath, existing, "utf8");
+      } catch {
+        // tokens.css may not exist in all themes — skip silently
+      }
     }
   }
 

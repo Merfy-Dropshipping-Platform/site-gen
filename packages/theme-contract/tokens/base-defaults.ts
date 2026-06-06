@@ -211,6 +211,7 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   '--hero-cta-bg': '255 255 255',
   '--hero-cta-text': '18 18 18',
   '--hero-cta-border': '18 18 18',
+  '--hero-cta-radius': '8px',
   '--hero-cta-button-height-sm': '52px',
   '--hero-cta-button-min-height-sm': '52px',
   '--hero-cta-button-min-width-sm': '160px',

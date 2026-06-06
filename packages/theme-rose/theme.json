@@ -94,6 +94,7 @@
     "--hero-cta-bg": "255 255 255",
     "--hero-cta-text": "18 18 18",
     "--hero-cta-border": "18 18 18",
+    "--hero-cta-radius": "8px",
     "--popular-products-card-gap": "20px",
     "--popular-products-card-media-border-radius": "8px",
     "--popular-products-card-badge-border-radius": "4px",

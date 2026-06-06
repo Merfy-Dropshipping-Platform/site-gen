@@ -238,6 +238,7 @@ export const TOKEN_REGISTRY = {
   '--hero-cta-bg': { category: 'color', scope: 'theme' },
   '--hero-cta-text': { category: 'color', scope: 'theme' },
   '--hero-cta-border': { category: 'color', scope: 'theme' },
+  '--hero-cta-radius': { category: 'radius', unit: 'px', scope: 'theme' },
   // ── v2 миграция — токены блока (добавлено скриптом)
   '--collections-root-padding-x': { category: 'spacing', unit: 'px', scope: 'theme' },
   '--collections-root-padding-bottom': { category: 'spacing', unit: 'px', scope: 'theme' },

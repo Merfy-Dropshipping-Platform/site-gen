@@ -167,10 +167,11 @@ const LG_GRID: Record<number, string> = {
 };
 const MD_GRID: Record<number, string> = { 1: 'md:grid-cols-1', 2: 'md:grid-cols-2', 3: 'md:grid-cols-3' };
 const SM_GRID: Record<number, string> = { 1: 'sm:grid-cols-1', 2: 'sm:grid-cols-2' };
+// Эталон rose.merfy.ru — mobile уже grid-cols-2 (НЕ 1). Pixel-perfect parity:
+// 2 (mobile) → 3 (md, columns≥3) → N (lg/xl, columns).
 const _pcols = Math.max(1, Math.min(6, productCardCols));
 const gridResponsiveClass = [
-  'grid-cols-1',
-  SM_GRID[Math.min(_pcols, 2)],
+  _pcols >= 2 ? 'grid-cols-2' : 'grid-cols-1',
   MD_GRID[Math.min(_pcols, 3)],
   LG_GRID[_pcols],
 ].filter(Boolean).join(' ');
@@ -318,13 +319,15 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
 >
   <div class:list={[C.container, containerSchemeClass]}>
     {(heading || subtitle) && (
-      <div class={(C as Record<string, string>).headerGroup ?? 'contents'}>
-        {heading && (
-          <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{heading}</h2>
-        )}
-        {subtitle && (
-          <p class:list={[C.subtitle, headingAlignClass, textSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{subtitle}</p>
-        )}
+      <div class={(C as Record<string, string>).headerGroup ?? 'flex w-full justify-center'}>
+        <div class={(C as Record<string, string>).headerInner ?? 'flex max-w-[90vw] flex-col items-center gap-2'}>
+          {heading && (
+            <h2 class:list={[C.heading, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{heading}</h2>
+          )}
+          {subtitle && (
+            <p class:list={[C.subtitle, textSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{subtitle}</p>
+          )}
+        </div>
       </div>
     )}
     <div class:list={[C.grid, gridResponsiveClass]} data-pop-grid data-card-variant={cardVariant}>

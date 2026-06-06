@@ -146,11 +146,13 @@ const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
 
-// Hero min-height by size, matching 072 live templates.
+// Hero min-height by size — приведены к эталону rose.merfy.ru
+// (aspect-ratio chain 10/15 → 4/5 → 4/3 → 16/9 → 2/1 → 21/9 даёт меньшие
+// высоты на desktop чем pre-100 hardcoded 700-1080).
 const heightVars = {
-  small:  '--h-base:280px;--h-sm:320px;--h-md:360px;--h-lg:400px;--h-xl:440px;--h-xxl:480px;',
-  medium: '--h-base:340px;--h-sm:400px;--h-md:480px;--h-lg:560px;--h-xl:640px;--h-xxl:720px;',
-  large:  '--h-base:400px;--h-sm:500px;--h-md:600px;--h-lg:700px;--h-xl:800px;--h-xxl:1080px;',
+  small:  '--h-base:240px;--h-sm:280px;--h-md:320px;--h-lg:360px;--h-xl:400px;--h-xxl:440px;',
+  medium: '--h-base:280px;--h-sm:400px;--h-md:380px;--h-lg:420px;--h-xl:560px;--h-xxl:640px;',
+  large:  '--h-base:320px;--h-sm:480px;--h-md:420px;--h-lg:460px;--h-xl:720px;--h-xxl:820px;',
 }[size ?? 'medium'];
 
 // Затемнение = полупрозрачный чёрный over фон. Раньше использовался

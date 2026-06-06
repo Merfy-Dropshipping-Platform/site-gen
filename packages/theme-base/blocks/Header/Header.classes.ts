@@ -75,7 +75,7 @@ export const HeaderClasses = {
   navMenuCentered:
     'hidden md:flex items-center justify-center gap-4 lg:gap-8 xl:gap-12 mt-2',
   navLink:
-    '[font-family:var(--font-body)] text-[var(--header-nav-link-font-size)] font-normal hover:opacity-70 transition-opacity text-[rgb(var(--color-text))] pb-[var(--header-nav-link-padding-bottom)] lg:text-[var(--header-nav-link-font-size-lg)]',
+    '[font-family:var(--font-body)] text-[length:var(--header-nav-link-font-size)] font-normal hover:opacity-70 transition-opacity text-[rgb(var(--color-text))] pb-[var(--header-nav-link-padding-bottom)] lg:text-[length:var(--header-nav-link-font-size-lg)]',
   actions:
     'flex items-center gap-3 sm:gap-3 md:gap-4 lg:gap-5 xl:gap-6',
   actionButton:

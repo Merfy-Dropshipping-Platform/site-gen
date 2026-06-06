@@ -57,6 +57,7 @@
     "--size-small": "14px",
     "--size-tiny": "12px",
     "--header-nav-link-font-size": "14px",
+    "--header-nav-link-font-size-lg": "16px",
     "--header-action-search-opacity-hover": "0.8",
     "--header-cart-badge-min-width": "16px",
     "--header-cart-badge-height": "16px",

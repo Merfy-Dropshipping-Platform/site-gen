@@ -261,7 +261,7 @@ const heroButtonStyleClass = heroButtonStyle === 'outlined'
 
 {effectiveMode === 'single' && variant !== 'split-bloom' && (
 <section
-  class:list={[C.root, 'min-h-[var(--h-base)] sm:min-h-[var(--h-sm)] md:min-h-[var(--h-md)] lg:min-h-[var(--h-lg)] xl:min-h-[var(--h-xl)] 2xl:min-h-[var(--h-xxl)]', schemeClass]}
+  class:list={[C.root, 'min-h-[var(--h-base)] sm:min-h-[var(--h-sm)] md:min-h-[var(--h-md)] lg:min-h-[var(--h-lg)] xl:min-h-[var(--h-xl)] 2xl:min-h-[var(--h-xxl)] aspect-[10/15] sm:aspect-[4/5] md:aspect-[4/3] lg:aspect-[16/9] xl:aspect-[2/1] 2xl:aspect-[21/9]', schemeClass]}
   data-puck-component-id={id}
   data-variant={variant}
   style={`${paddingStyle} ${heightVars} ${sizeVarsStyle}`}

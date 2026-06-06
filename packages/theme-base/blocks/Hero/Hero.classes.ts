@@ -43,10 +43,13 @@ export const HeroClasses = {
   // --hero-heading-size / --hero-text-size. Constructor шлёт значения через
   // heading.size / text.size, Hero.astro вычисляет calc(...) и инжектит в
   // style на root. Здесь base просто читает var с fallback'ом.
+  // Tailwind 4 не парсит вложенный `var(--x, fallback)` в arbitrary
+  // value брackets — правило не emit'ится. Дефолты — через
+  // theme-contract base-defaults / theme.json (уровень CSS-vars).
   title:
-    '[font-family:var(--font-heading)] [font-weight:var(--weight-heading,400)] [text-transform:var(--text-transform-heading,uppercase)] tracking-normal leading-none text-[rgb(var(--color-heading))] text-[length:var(--hero-title-size,20px)] sm:text-[length:var(--hero-title-size-sm,28px)] md:text-[length:var(--hero-title-size-md,36px)] lg:text-[length:var(--hero-title-size-lg,40px)]',
+    '[font-family:var(--font-heading)] [font-weight:var(--weight-heading)] [text-transform:var(--text-transform-heading)] tracking-normal leading-none text-[rgb(var(--color-heading))] text-[length:var(--hero-title-size)] sm:text-[length:var(--hero-title-size-sm)] md:text-[length:var(--hero-title-size-md)] lg:text-[length:var(--hero-title-size-lg)]',
   subtitle:
-    'mt-2 [font-family:var(--font-body)] font-normal leading-none text-[rgb(var(--color-text))] text-[length:var(--hero-subtitle-font-size,14px)] sm:text-[length:var(--hero-subtitle-font-size-sm,16px)] md:text-[length:var(--hero-subtitle-font-size-md,18px)] lg:text-[length:var(--hero-subtitle-font-size-lg,20px)] px-[var(--hero-subtitle-padding-x,4px)] max-w-xl',
+    'mt-2 [font-family:var(--font-body)] [font-weight:var(--weight-body)] leading-none text-[rgb(var(--color-text))] text-[length:var(--hero-subtitle-font-size)] sm:text-[length:var(--hero-subtitle-font-size-sm)] md:text-[length:var(--hero-subtitle-font-size-md)] lg:text-[length:var(--hero-subtitle-font-size-lg)] px-[var(--hero-subtitle-padding-x)] max-w-xl',
   ctaButton:
     // Hero CTA = эталон rose.merfy.ru: inverted-on-image button — белый
     // bg + чёрный текст на dark image overlay. Используем
@@ -55,7 +58,7 @@ export const HeroClasses = {
     // Эталонные responsive sizes: h-10→sm:h-[52px], min-w-[120]→[160],
     // rounded→[6px], px-3→px-6, py-2.5→[10px], text-14→15→16.
     // Fallback chain rounded → --radius-button — slider Theme Settings.
-    'inline-flex items-center justify-center no-underline transition-opacity [font-family:var(--font-body)] font-normal leading-none h-[var(--hero-cta-button-height,40px)] min-h-[var(--hero-cta-button-min-height,40px)] min-w-[var(--hero-cta-button-min-width,120px)] px-[var(--hero-cta-button-padding-x,12px)] py-[var(--hero-cta-button-padding-y,10px)] rounded-[length:var(--hero-cta-button-border-radius,var(--radius-button,4px))] text-[length:var(--hero-cta-button-font-size,14px)] bg-[rgb(var(--color-button-secondary-bg))] text-[rgb(var(--color-button-secondary-text))] border border-[rgb(var(--color-button-secondary-border))] hover:opacity-[var(--hero-cta-button-opacity-hover,0.9)] sm:h-[var(--hero-cta-button-height-sm,52px)] sm:min-h-[var(--hero-cta-button-min-height-sm,52px)] sm:min-w-[var(--hero-cta-button-min-width-sm,160px)] sm:rounded-[length:var(--hero-cta-button-border-radius-sm,6px)] sm:px-[var(--hero-cta-button-padding-x-sm,24px)] sm:py-[var(--hero-cta-button-padding-y-sm,10px)] sm:text-[length:var(--hero-cta-button-font-size-sm,15px)] md:text-[length:var(--hero-cta-button-font-size-md,16px)]',
+    'inline-flex items-center justify-center no-underline transition-opacity [font-family:var(--font-body)] [font-weight:var(--weight-body)] leading-none h-[var(--hero-cta-button-height)] min-h-[var(--hero-cta-button-min-height)] min-w-[var(--hero-cta-button-min-width)] px-[var(--hero-cta-button-padding-x)] py-[var(--hero-cta-button-padding-y)] rounded-[length:var(--radius-button)] text-[length:var(--hero-cta-button-font-size)] bg-[rgb(var(--color-button-secondary-bg))] text-[rgb(var(--color-button-secondary-text))] border border-[rgb(var(--color-button-secondary-border))] hover:opacity-[var(--hero-cta-button-opacity-hover)] sm:h-[var(--hero-cta-button-height-sm)] sm:min-h-[var(--hero-cta-button-min-height-sm)] sm:min-w-[var(--hero-cta-button-min-width-sm)] sm:px-[var(--hero-cta-button-padding-x-sm)] sm:py-[var(--hero-cta-button-padding-y-sm)] sm:text-[length:var(--hero-cta-button-font-size-sm)] md:text-[length:var(--hero-cta-button-font-size-md)]',
   image: {
     centered: 'absolute inset-0 -z-10 object-cover w-full h-full',
     split: 'w-full aspect-[4/3] object-cover',

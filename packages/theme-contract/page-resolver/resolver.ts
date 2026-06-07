@@ -77,6 +77,11 @@ export class PageResolver {
     // Lazy seed — look up manifest contentFile
     const manifestEntry = this.opts.manifest.pages.find((m) => m.id === pageId);
     if (!manifestEntry) {
+      // Orphan case: page exists в revision.pages но НЕ в theme manifest
+      // (e.g. theme version removed it but revision wasn't migrated).
+      // Throwing is intentional — let caller decide policy (treat as deleted,
+      // show "unsupported" badge, etc). Per spec Sec 4.2 "Theme Version
+      // Upgrade — Сценарий B".
       throw new Error(`Page ${pageId} has no content in revision and no manifest entry to lazy-seed from`);
     }
     const content = await this.opts.lazySeed.loadContent(this.opts.manifest.id, manifestEntry.contentFile);

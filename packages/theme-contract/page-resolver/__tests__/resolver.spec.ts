@@ -151,4 +151,18 @@ describe('PageResolver.resolvePage', () => {
     const rev = await resolver.buildInitialRevision();
     await expect(resolver.resolvePage(rev, 'page-nope')).rejects.toThrow(/not found/i);
   });
+
+  it('throws when page is in revision.pages but missing both pagesData AND manifest entry (orphan)', async () => {
+    const orphanRevision = resolver.normalizeRevision({
+      pages: [
+        { id: 'home', name: 'Главная', slug: '/', role: 'system' },
+        // Orphan: in revision.pages but neither pagesData entry nor manifest entry exists
+        { id: 'page-removed-by-theme-upgrade', name: 'Орфан', slug: '/orphan', role: 'system' },
+      ],
+      pagesData: { home: homeContent },
+    });
+    await expect(
+      resolver.resolvePage(orphanRevision, 'page-removed-by-theme-upgrade'),
+    ).rejects.toThrow(/no manifest entry to lazy-seed/i);
+  });
 });

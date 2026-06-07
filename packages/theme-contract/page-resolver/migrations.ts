@@ -1,6 +1,10 @@
 // backend/services/sites/packages/theme-contract/page-resolver/migrations.ts
 import type { PageManifest, RevisionPage, ResolvedRevision, ThemeManifest } from './types';
 
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
 interface MigrationDef {
   from: string;
   to: string;
@@ -64,11 +68,16 @@ const v1ToV2: MigrationDef = {
       manifestVersion: '2.0',
       themeId: manifest.id,
       pages: merged,
-      pagesData: data.pagesData ?? {},
-      themeSettings: data.themeSettings ?? {},
-      siteOverrides: data.siteOverrides ?? { pages: {}, blocks: {} },
+      pagesData: isPlainObject(data.pagesData) ? data.pagesData : {},
+      themeSettings: isPlainObject(data.themeSettings) ? data.themeSettings : {},
+      siteOverrides: isPlainObject(data.siteOverrides)
+        ? {
+            pages: isPlainObject(data.siteOverrides.pages) ? data.siteOverrides.pages : {},
+            blocks: isPlainObject(data.siteOverrides.blocks) ? data.siteOverrides.blocks : {},
+          }
+        : { pages: {}, blocks: {} },
       currentPageId: data.currentPageId ?? 'home',
-      lockVersion: typeof data.lockVersion === 'number' ? data.lockVersion : 1,
+      lockVersion: Number.isFinite(data.lockVersion) ? data.lockVersion : 1,
     };
   },
 };
@@ -78,7 +87,8 @@ export const MIGRATIONS: MigrationDef[] = [v1ToV2];
 export function runMigrations(data: any, manifest: ThemeManifest): ResolvedRevision {
   let current = data ?? {};
   let currentVersion = current.manifestVersion ?? '1.0';
-  // Sort migrations by `from` semver-lite.
+  // Filter to migrations whose `from` version <= current. Apply in array
+  // order — `MIGRATIONS` registry must be authored in ascending `from` order.
   const applicable = MIGRATIONS.filter((m) => versionGte(currentVersion, m.from));
   for (const m of applicable) {
     if (versionLt(currentVersion, m.to)) {

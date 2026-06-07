@@ -76,4 +76,21 @@ describe('migrations', () => {
     const migrated = runMigrations(legacy, roseManifest);
     expect(migrated.lockVersion).toBe(42);
   });
+
+  it('survives malformed input (non-object pagesData, NaN lockVersion, non-array pages)', () => {
+    const broken = {
+      pages: 'not an array',
+      pagesData: 'not an object',
+      themeSettings: 42,
+      siteOverrides: ['wrong', 'shape'],
+      lockVersion: Number.NaN,
+    };
+    const migrated = runMigrations(broken, roseManifest);
+    expect(migrated.pagesData).toEqual({});
+    expect(migrated.themeSettings).toEqual({});
+    expect(migrated.siteOverrides).toEqual({ pages: {}, blocks: {} });
+    expect(migrated.lockVersion).toBe(1);
+    // pages: should fall back to manifest-derived pages (2 from rose)
+    expect(migrated.pages).toHaveLength(2);
+  });
 });

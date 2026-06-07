@@ -1,4 +1,5 @@
 import { validateManifest, validateRevision } from '../validators';
+import roseManifestRaw from '../../../theme-rose/theme.json';
 
 describe('validateManifest', () => {
   it('passes valid manifest', () => {
@@ -92,5 +93,24 @@ describe('validateRevision', () => {
       lockVersion: 1,
     };
     expect(() => validateRevision(revision)).toThrow(/currentPageId/i);
+  });
+});
+
+describe('rose theme manifest validation', () => {
+  it('passes validateManifest', () => {
+    expect(() => validateManifest(roseManifestRaw)).not.toThrow();
+  });
+
+  it('has 8 system pages', () => {
+    const m = roseManifestRaw as any;
+    expect(m.pages).toHaveLength(8);
+    expect(m.pages.every((p: any) => p.role === 'system')).toBe(true);
+  });
+
+  it('has exactly one isHome page', () => {
+    const m = roseManifestRaw as any;
+    const homes = m.pages.filter((p: any) => p.isHome);
+    expect(homes).toHaveLength(1);
+    expect(homes[0].id).toBe('home');
   });
 });

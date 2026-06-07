@@ -121,3 +121,34 @@ describe('PageResolver.normalizeRevision', () => {
     expect(twice).toEqual(once);
   });
 });
+
+describe('PageResolver.resolvePage', () => {
+  it('returns content from revision.pagesData when present', async () => {
+    const rev = await resolver.buildInitialRevision();
+    const resolved = await resolver.resolvePage(rev, 'home');
+    expect(resolved.content.content[0].type).toBe('Hero');
+    expect(resolved.contentSource).toBe('revision');
+  });
+
+  it('lazy-seeds content from contentFile when pagesData[id] missing', async () => {
+    const legacy = resolver.normalizeRevision({
+      pages: [{ id: 'home', name: 'Главная', slug: '/', role: 'system' }],
+      pagesData: { home: homeContent }, // page-about missing
+    });
+    const resolved = await resolver.resolvePage(legacy, 'page-about');
+    expect(resolved.content.content[0].type).toBe('MainText');
+    expect(resolved.contentSource).toBe('lazy-seed');
+  });
+
+  it('returns metadata from revision.pages', async () => {
+    const rev = await resolver.buildInitialRevision();
+    const resolved = await resolver.resolvePage(rev, 'page-about');
+    expect(resolved.page.id).toBe('page-about');
+    expect(resolved.page.name).toBe('О нас');
+  });
+
+  it('throws when pageId not in revision.pages AND not in manifest', async () => {
+    const rev = await resolver.buildInitialRevision();
+    await expect(resolver.resolvePage(rev, 'page-nope')).rejects.toThrow(/not found/i);
+  });
+});

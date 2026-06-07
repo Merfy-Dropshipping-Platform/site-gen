@@ -1,4 +1,4 @@
-import type { ResolvedRevision, RevisionPage, ThemeManifest, PageManifest, PuckData } from './types';
+import type { ResolvedRevision, RevisionPage, ThemeManifest, PageManifest, PuckData, ResolvedPage } from './types';
 import { LazySeed } from './lazy-seed';
 import type { LifecycleBus } from './lifecycle';
 import { runMigrations } from './migrations';
@@ -62,5 +62,24 @@ export class PageResolver {
   /** Normalize legacy or current revision data. Idempotent. */
   normalizeRevision(data: any): ResolvedRevision {
     return runMigrations(data, this.opts.manifest);
+  }
+
+  /** Resolve content for given pageId. Lazy-seeds from contentFile if needed. */
+  async resolvePage(revision: ResolvedRevision, pageId: string): Promise<ResolvedPage> {
+    const page = revision.pages.find((p) => p.id === pageId);
+    if (!page) throw new Error(`Page not found: ${pageId}`);
+
+    const existing = revision.pagesData[pageId];
+    if (existing) {
+      return { page, content: existing, contentSource: 'revision' };
+    }
+
+    // Lazy seed — look up manifest contentFile
+    const manifestEntry = this.opts.manifest.pages.find((m) => m.id === pageId);
+    if (!manifestEntry) {
+      throw new Error(`Page ${pageId} has no content in revision and no manifest entry to lazy-seed from`);
+    }
+    const content = await this.opts.lazySeed.loadContent(this.opts.manifest.id, manifestEntry.contentFile);
+    return { page, content, contentSource: 'lazy-seed' };
   }
 }

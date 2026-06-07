@@ -1,0 +1,43 @@
+{
+  "content": [
+    {
+      "type": "Header",
+      "props": {
+        "id": "Header-collection",
+        "siteTitle": "Мой магазин",
+        "logo": "/logo.svg",
+        "logoPosition": "top-left",
+        "navigationLinks": [
+          { "label": "Главная", "href": "/" },
+          { "label": "Каталог", "href": "/catalog" },
+          { "label": "О нас", "href": "/about" },
+          { "label": "Контакты", "href": "/contacts" }
+        ],
+        "actionButtons": { "showSearch": "true", "showCart": "true", "showProfile": "true" }
+      }
+    },
+    {
+      "type": "Catalog",
+      "props": {
+        "id": "Catalog-collection",
+        "heading": { "text": "Коллекция", "size": "large" },
+        "colorScheme": "scheme-2",
+        "columns": 4,
+        "filters": { "enabled": "true" },
+        "sort": { "enabled": "true" },
+        "pagination": { "enabled": "true", "pageSize": 24 },
+        "padding": { "top": 80, "bottom": 80 }
+      }
+    },
+    {
+      "type": "Footer",
+      "props": {
+        "id": "Footer-collection",
+        "colorScheme": "scheme-2",
+        "padding": { "top": 80, "bottom": 80 }
+      }
+    }
+  ],
+  "root": { "props": { "title": "Коллекция" } },
+  "zones": {}
+}

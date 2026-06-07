@@ -1,7 +1,6 @@
-import type { ResolvedRevision, RevisionPage, ThemeManifest, PageManifest } from './types';
+import type { ResolvedRevision, RevisionPage, ThemeManifest, PageManifest, PuckData } from './types';
 import { LazySeed } from './lazy-seed';
-import { runMigrations } from './migrations';
-import { LifecycleBus } from './lifecycle';
+import type { LifecycleBus } from './lifecycle';
 
 export interface PageResolverOptions {
   manifest: ThemeManifest;
@@ -26,22 +25,26 @@ function manifestEntryToRevisionPage(entry: PageManifest, source: 'theme' | 'use
   };
 }
 
-// Imports `runMigrations` and `LifecycleBus` are reserved for Tasks 6 & 7.
-// Silence unused-import lint warnings without dropping them — keeping the
-// surface stable means downstream tasks just call them inline.
-void runMigrations;
-void LifecycleBus;
-
+/**
+ * Resolves theme manifest + revision data into the canonical `ResolvedRevision`
+ * shape consumed by sites.service (createSite, getRevision), preview controller,
+ * and build pipeline. Methods added incrementally:
+ *
+ * - buildInitialRevision() — fresh revision на createSite
+ * - normalizeRevision()    — Task 6 — legacy revisions → v2.0
+ * - resolvePage()          — Task 7 — lazy-seed missing pages
+ * - mergeOverrides()       — Task 8 — siteOverrides merge layer
+ */
 export class PageResolver {
   constructor(private readonly opts: PageResolverOptions) {}
 
   /** Build fresh revision при createSite — load all manifest pages content. */
   async buildInitialRevision(): Promise<ResolvedRevision> {
     const manifest = this.opts.manifest;
-    const pagesData: Record<string, any> = {};
-    for (const pm of manifest.pages) {
-      pagesData[pm.id] = await this.opts.lazySeed.loadContent(manifest.id, pm.contentFile);
-    }
+    const loaded = await Promise.all(
+      manifest.pages.map(async (pm) => [pm.id, await this.opts.lazySeed.loadContent(manifest.id, pm.contentFile)] as const),
+    );
+    const pagesData: Record<string, PuckData> = Object.fromEntries(loaded);
     const home = manifest.pages.find((p) => p.isHome) ?? manifest.pages[0];
     return {
       manifestVersion: manifest.manifestVersion ?? '2.0',

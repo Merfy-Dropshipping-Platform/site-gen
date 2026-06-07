@@ -69,6 +69,7 @@ import { PreviewModule } from "./modules/preview.module";
 import { ThemePuckConfigModule } from "./modules/theme-puck-config.module";
 import { ThemePresetModule } from "./modules/theme-preset/theme-preset.module";
 import { BlocksController } from "./controllers/blocks.controller";
+import { PagesModule } from "./pages/pages.module";
 
 @Module({
   imports: [
@@ -93,6 +94,7 @@ import { BlocksController } from "./controllers/blocks.controller";
     PreviewModule,
     ThemePuckConfigModule,
     ThemePresetModule,
+    PagesModule,
   ],
   controllers: [
     HealthController,

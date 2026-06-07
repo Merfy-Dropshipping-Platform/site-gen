@@ -66,3 +66,58 @@ describe('PageResolver.buildInitialRevision', () => {
     expect(rev.lockVersion).toBe(1);
   });
 });
+
+describe('PageResolver.normalizeRevision', () => {
+  it('migrates legacy revision (no manifestVersion) to v2.0', () => {
+    const legacy = {
+      pages: [{ id: 'home', name: 'Главная', slug: '/', role: 'system' }],
+      pagesData: { home: homeContent },
+    };
+    const normalized = resolver.normalizeRevision(legacy);
+    expect(normalized.manifestVersion).toBe('2.0');
+    expect(normalized.themeId).toBe('rose');
+  });
+
+  it('adds missing manifest pages to revision.pages', () => {
+    const legacy = {
+      pages: [{ id: 'home', name: 'Главная', slug: '/', role: 'system' }],
+      pagesData: { home: homeContent },
+    };
+    const normalized = resolver.normalizeRevision(legacy);
+    const ids = normalized.pages.map((p) => p.id);
+    expect(ids).toEqual(expect.arrayContaining(['home', 'page-about']));
+  });
+
+  it('preserves merchant overrides on page names', () => {
+    const legacy = {
+      pages: [
+        { id: 'home', name: 'Главная', slug: '/', role: 'system' },
+        { id: 'page-about', name: 'О бренде', slug: '/brand', role: 'system' },
+      ],
+      pagesData: { home: homeContent, 'page-about': aboutContent },
+    };
+    const normalized = resolver.normalizeRevision(legacy);
+    const about = normalized.pages.find((p) => p.id === 'page-about');
+    expect(about?.name).toBe('О бренде');
+    expect(about?.slug).toBe('/brand');
+  });
+
+  it('preserves custom user pages', () => {
+    const legacy = {
+      pages: [
+        { id: 'home', name: 'Главная', slug: '/', role: 'system' },
+        { id: 'page-custom-blog', name: 'Блог', slug: '/blog', role: 'custom', isCustom: true, source: 'user' },
+      ],
+      pagesData: { home: homeContent, 'page-custom-blog': aboutContent },
+    };
+    const normalized = resolver.normalizeRevision(legacy);
+    expect(normalized.pages.find((p) => p.id === 'page-custom-blog')).toBeDefined();
+  });
+
+  it('is idempotent', () => {
+    const legacy = { pages: [{ id: 'home', name: 'Главная', slug: '/', role: 'system' }], pagesData: { home: homeContent } };
+    const once = resolver.normalizeRevision(legacy);
+    const twice = resolver.normalizeRevision(once);
+    expect(twice).toEqual(once);
+  });
+});

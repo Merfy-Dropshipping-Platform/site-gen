@@ -1,6 +1,7 @@
 import type { ResolvedRevision, RevisionPage, ThemeManifest, PageManifest, PuckData } from './types';
 import { LazySeed } from './lazy-seed';
 import type { LifecycleBus } from './lifecycle';
+import { runMigrations } from './migrations';
 
 export interface PageResolverOptions {
   manifest: ThemeManifest;
@@ -56,5 +57,10 @@ export class PageResolver {
       currentPageId: home.id,
       lockVersion: 1,
     };
+  }
+
+  /** Normalize legacy or current revision data. Idempotent. */
+  normalizeRevision(data: any): ResolvedRevision {
+    return runMigrations(data, this.opts.manifest);
   }
 }

@@ -17,7 +17,7 @@
     "build:blocks": "node scripts/compile-astro-blocks.mjs",
     "verify:astro": "node scripts/verify-astro-runtime.mjs",
     "build:preview-tailwind": "node scripts/compile-preview-tailwind.mjs",
-    "build:themes": "node scripts/compile-theme-sections.mjs rose && mkdir -p dist/theme-css && tailwindcss -i themes/rose/src/styles/global.css -o dist/theme-css/rose.css",
+    "build:themes": "tsx scripts/build-all-themes.ts",
     "backfill:theme-schemes": "tsx scripts/backfill-theme-colorschemes.ts",
     "rollback:theme-schemes": "tsx scripts/rollback-theme-colorschemes.ts",
     "visual-diff:themes": "node scripts/visual-diff-themes.mjs",

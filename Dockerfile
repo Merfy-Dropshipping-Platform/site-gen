@@ -47,8 +47,16 @@ RUN test -f /app/dist/astro-blocks/theme-base__PopularProducts__PopularProducts.
 # injects this CSS so the iframe looks like the live site.
 RUN pnpm build:preview-tailwind
 
-# (v2 build:themes step removed — piecemeal-v2 откачен; preview без dist/theme-sections
-#  → resolveV2Section инертен → legacy. Фаза 1 v2 redo по constructor-v2-design.md.)
+# Constructor v2 (Phase 1): build every верстальщик theme under themes/ into
+# dist/theme-preview/<name>/ (install + astro build + URL rewrite via
+# ThemeBuildService). NODE_AUTH_TOKEN (set above) authorises the private
+# design-system dep. Stage 2 copies all of /app/dist, so theme-preview ships.
+RUN pnpm build:themes
+# Sanity: rose is the reference theme — fail the build loudly if its assembled
+# page is missing (otherwise the constructor preview would silently fall back to
+# legacy for every site on a v2 theme).
+RUN test -f /app/dist/theme-preview/rose/index.html \
+    || (echo "FATAL: build:themes did not produce dist/theme-preview/rose/index.html" && exit 1)
 
 # ========================
 # Stage 2: Production

@@ -18,6 +18,7 @@ import { PreviewService } from '../services/preview.service';
 import * as schema from '../db/schema';
 import { PG_CONNECTION } from '../constants';
 import { getThemeManifest, googleFontHead } from '../themes/theme-manifest-loader';
+import { getPageResolver } from '../themes/page-resolver-instance';
 import { buildTokensCss } from '../themes/tokens-css';
 import { migrateRevisionData } from '../utils/revision-migrations';
 
@@ -174,7 +175,7 @@ export class PreviewController {
       return;
     }
 
-    const blocks = this.extractPageBlocks(
+    const blocks = await this.extractPageBlocks(
       loaded.data,
       page,
       loaded.publicUrl,
@@ -353,14 +354,14 @@ export class PreviewController {
     };
   }
 
-  private extractPageBlocks(
+  private async extractPageBlocks(
     data: Record<string, unknown>,
     page: string,
     publicUrl: string | null,
     themeId: string | null,
     siteId: string,
     productIdOverride?: string,
-  ): Array<{ type: string; props: Record<string, unknown> }> | null {
+  ): Promise<Array<{ type: string; props: Record<string, unknown> }> | null> {
     const pagesData = (data.pagesData ?? {}) as Record<string, unknown>;
     // Resolve page key with fallback variants. Constructor sends page-product,
     // page-checkout (with page- prefix), but live storefront keys some pages
@@ -375,6 +376,27 @@ export class PreviewController {
       if (found && typeof found === 'object') {
         pageData = found as Record<string, unknown>;
         break;
+      }
+    }
+    // Lazy-seed via PageResolver if pagesData is missing the page and theme known.
+    // Resolver returns ResolvedPage with `content` already being the blocks array
+    // (from theme `pages/<id>.json`). Wrap it in `{ content }` so the downstream
+    // logic (which expects pageData.content) keeps working uniformly.
+    if (!pageData && themeId) {
+      try {
+        const resolver = getPageResolver(themeId);
+        const normalized = resolver.normalizeRevision(data);
+        for (const key of candidates) {
+          try {
+            const resolved = await resolver.resolvePage(normalized, key);
+            pageData = { content: resolved.content };
+            break;
+          } catch {
+            // Try next candidate (page- prefix variant)
+          }
+        }
+      } catch {
+        // Resolver init failed (unknown theme); fall through to null return.
       }
     }
     if (!pageData) return null;

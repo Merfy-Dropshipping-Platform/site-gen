@@ -47,12 +47,8 @@ RUN test -f /app/dist/astro-blocks/theme-base__PopularProducts__PopularProducts.
 # injects this CSS so the iframe looks like the live site.
 RUN pnpm build:preview-tailwind
 
-# v2 theme transfer: compile verstalshik theme sections (themes/<theme>/) +
-# their CSS bundle. PreviewService.resolveV2Section / loadThemeCss read these
-# from dist/theme-sections/ and dist/theme-css/ at runtime.
-RUN pnpm build:themes
-RUN test -f /app/dist/theme-sections/rose/manifest.json \
-    || (echo "FATAL: build:themes did not produce rose theme-sections manifest" && exit 1)
+# (v2 build:themes step removed — piecemeal-v2 откачен; preview без dist/theme-sections
+#  → resolveV2Section инертен → legacy. Фаза 1 v2 redo по constructor-v2-design.md.)
 
 # ========================
 # Stage 2: Production

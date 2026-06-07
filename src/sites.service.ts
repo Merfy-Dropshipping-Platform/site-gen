@@ -1177,11 +1177,20 @@ export class SitesDomainService {
       rev.data as Record<string, unknown> | undefined,
       site.themeId,
     );
+    let normalizedData: any = migratedData;
+    if (USE_PAGE_RESOLVER && site.themeId) {
+      try {
+        const resolver = getPageResolver(site.themeId);
+        normalizedData = resolver.normalizeRevision(migratedData);
+      } catch (e) {
+        this.logger.warn(`PageResolver.normalizeRevision failed for site ${siteId}: ${e instanceof Error ? e.message : e}`);
+      }
+    }
     // Resolve relative asset paths → absolute URLs (via site.publicUrl) so
     // constructor sidebar image previews load directly. Merchant uploads
     // are already absolute → helper skips them. Single URL contract across
     // admin / preview / live build.
-    const resolvedData = resolveAssetUrls(migratedData, site.publicUrl);
+    const resolvedData = resolveAssetUrls(normalizedData, site.publicUrl);
     return { item: { ...rev, data: resolvedData } };
   }
 

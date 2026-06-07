@@ -21,7 +21,8 @@
     "./schema": "./schema/theme-manifest.schema.json",
     "./tokens/registry": "./tokens/registry.ts",
     "./validators/validateBlock": "./validators/validateBlock.ts",
-    "./registry": "./registry/index.ts"
+    "./registry": "./registry/index.ts",
+    "./page-resolver": "./page-resolver/index.ts"
   },
   "scripts": {
     "theme:create": "tsx cli/create.ts",

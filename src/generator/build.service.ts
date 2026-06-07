@@ -432,18 +432,24 @@ async function updateBuildStatus(
 
 /**
  * Run a shell command in a directory and return stdout.
+ *
+ * Exported for reuse by ThemeBuildService (Constructor v2). The optional
+ * `extraEnv` is merged on top of the default env (e.g. NODE_AUTH_TOKEN for
+ * installing private GitHub Packages deps) — existing pipeline callers omit it,
+ * so behaviour is unchanged for them.
  */
-function runCommand(
+export function runCommand(
   cmd: string,
   args: string[],
   cwd: string,
   timeoutMs = 300_000,
+  extraEnv: NodeJS.ProcessEnv = {},
 ): Promise<{ stdout: string; stderr: string; code: number }> {
   return new Promise((resolve) => {
     const proc = spawn(cmd, args, {
       cwd,
       stdio: ["ignore", "pipe", "pipe"],
-      env: { ...process.env, NODE_ENV: "production" },
+      env: { ...process.env, NODE_ENV: "production", ...extraEnv },
       timeout: timeoutMs,
     });
 

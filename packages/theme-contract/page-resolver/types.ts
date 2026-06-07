@@ -14,15 +14,23 @@ export interface PageManifest {
 }
 
 /**
- * Page metadata as stored в revision.data.pages[]. Extends manifest entry
- * с runtime-specific fields. Extension points (seo/locale/variant/...)
- * reserved as nullable для future features.
+ * Page metadata as stored в revision.data.pages[]. Partially duplicates
+ * PageManifest fields (id/name/slug/role) intentionally — manifest is the
+ * theme-author authored declaration; RevisionPage is per-site runtime state.
+ * The two may drift over time (manifest adds e.g. `category`, revision adds
+ * e.g. `lastEditedBy`), so they're independent shapes.
+ *
+ * Extension points (seo/locale/variant/...) reserved as `null | T` for
+ * future features. New revisions initialize them to `null`; migrations
+ * preserve existing values.
  */
 export interface RevisionPage {
   id: string;
   name: string;
   slug: string;
   role: 'system' | 'custom';
+  /** Convenience flag — must equal `role === 'custom'`. Kept explicit
+   * because legacy БД rows have both fields and we don't break-change. */
   isCustom: boolean;
   source: 'theme' | 'user' | 'orphan';
   createdAt?: number;             // ms epoch, custom pages only
@@ -92,5 +100,5 @@ export interface ThemeManifest {
 export interface ResolvedPage {
   page: RevisionPage;
   content: PuckData;
-  source: 'revision' | 'lazy-seed';
+  contentSource: 'revision' | 'lazy-seed';
 }

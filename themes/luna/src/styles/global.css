@@ -1,0 +1,99 @@
+@import "tailwindcss";
+@import "@merfy-dropshipping-platform/design-systems-theme/tokens.css";
+@source "../../../DesignSystemsTheme/src/**/*.{astro,ts,tsx,js,jsx}";
+@source "../../node_modules/@merfy-dropshipping-platform/design-systems-theme/src/**/*.{astro,ts,tsx,js,jsx}";
+
+/* Токены из Figma — подставьте значения из Variables / Dev Mode */
+@theme {
+  --font-family-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* Luna — акцент Merfy Blue 600 (Figma New-Themes) */
+  --color-primary: #71c0ff;
+  --color-gray: #999999;
+  --color-accent: #71c0ff;
+}
+
+.font-comfortaa,
+.font-manrope,
+.font-inter {
+  font-family: var(--font-family-sans);
+}
+
+#menu-line-1 {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: 20px 17px;
+}
+#menu-line-2 {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: 20px 23px;
+}
+.menu-open #menu-line-1 {
+  transform: translate(0, 3px) rotate(45deg);
+}
+.menu-open #menu-line-2 {
+  transform: translate(0, -3px) rotate(-45deg);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  font-family: var(--font-family-sans);
+}
+main {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+.sr-only {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  position: absolute !important;
+  height: 1px;
+  width: 1px;
+  overflow: hidden;
+  clip: rect(1px, 1px, 1px, 1px);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+input[type="search"] {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  box-sizing: border-box !important;
+  padding-block: 0 !important;
+  padding-inline: 0 !important;
+}
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration {
+  display: none;
+}
+
+/* Блог (layouts/BlogPost.astro) */
+:root {
+  --accent: #2337ff;
+  --gray: 96, 115, 159;
+  --gray-light: 229, 233, 240;
+  --gray-dark: 34, 41, 57;
+  --box-shadow: 0 2px 6px rgba(var(--gray), 25%), 0 8px 24px rgba(var(--gray), 33%);
+}
+code {
+  padding: 2px 5px;
+  background-color: rgb(var(--gray-light));
+  border-radius: 2px;
+}
+pre {
+  padding: 1.5em;
+  border-radius: 8px;
+}
+pre > code {
+  all: unset;
+}
+blockquote {
+  border-left: 4px solid var(--accent);
+  padding: 0 0 0 20px;
+  margin: 0;
+}

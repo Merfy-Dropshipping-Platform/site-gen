@@ -1,0 +1,72 @@
+---
+import SatinPicture from "../img/SatinPicture.astro";
+
+interface Row {
+	title: string;
+	paragraphs: string[];
+	image: string;
+	alt: string;
+	ctaLabel: string;
+	ctaHref: string;
+	imageRight?: boolean;
+}
+
+interface Props {
+	rows?: Row[];
+	/** Shorter 652×360 images (About page) vs square images (home). */
+	compact?: boolean;
+}
+
+const defaultRows: Row[] = [
+	{
+		title: "Женская коллекция",
+		paragraphs: [
+			"Мы уверены: одежда должна быть красивой не только на фотографиях, но и на ощупь. Satin создан для тех, кто ценит эстетику и качество в каждой детали.",
+			"В ассортименте Satin вы не найдёте случайных вещей — только то, что действительно достойно стать частью вашего гардероба.",
+		],
+		image: "/images/4x/Женская_коллекция.png",
+		alt: "Женская коллекция",
+		ctaLabel: "Для женщин",
+		ctaHref: "/catalog?collection=Женское",
+	},
+	{
+		title: "Мужская коллекция",
+		paragraphs: [
+			"Минимализм, точная посадка и спокойный силуэт — мужская линия Satin собирает базовые вещи без лишних деталей.",
+			"Одежда, которая не требует усилий, чтобы выглядеть хорошо.",
+		],
+		image: "/images/4x/Мужская_коллекция.png",
+		alt: "Мужская коллекция",
+		ctaLabel: "Для мужчин",
+		ctaHref: "/catalog?collection=Мужское",
+		imageRight: true,
+	},
+];
+
+const { rows = defaultRows, compact = false } = Astro.props;
+---
+
+<section class="satin-pad w-full bg-white py-12 md:py-16" aria-label="Коллекции">
+	<div class="satin-container flex flex-col gap-12 md:gap-20">
+		{rows.map((row) => (
+			<div class="grid grid-cols-1 items-stretch gap-8 md:grid-cols-2 md:gap-10">
+				<div
+					class:list={[
+						"relative aspect-square overflow-hidden bg-[#111111]",
+						compact && "md:aspect-[652/360]",
+						row.imageRight && "md:order-2",
+					]}
+				>
+					<SatinPicture src={row.image} alt={row.alt} loading="lazy" class="absolute inset-0 size-full object-cover" />
+				</div>
+				<div class:list={["flex flex-col gap-5", row.imageRight && "md:order-1"]}>
+					<h2 class="font-logo text-[20px] font-normal uppercase leading-[1.15] text-[#000000]">{row.title}</h2>
+					<div class="flex flex-col gap-3">
+						{row.paragraphs.map((p) => <p class="satin-copy max-w-[600px] md:text-[20px]">{p}</p>)}
+					</div>
+					<a href={row.ctaHref} class="satin-button satin-button-md satin-button-light mt-auto w-fit">{row.ctaLabel}</a>
+				</div>
+			</div>
+		))}
+	</div>
+</section>

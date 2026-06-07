@@ -1,0 +1,197 @@
+---
+import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+import { SITE_TITLE } from "../consts";
+import { withBase } from "../lib/with-base";
+
+const today = new Date();
+const leftCol = [
+	{ label: "Коллекции", href: "/catalog" },
+	{ label: "История", href: "/about" },
+	{ label: "Контакты", href: "/contacts" },
+];
+const midCol = [
+	{ label: "Мужское", href: "/catalog?collection=Мужское" },
+	{ label: "Женское", href: "/catalog?collection=Женское" },
+	{ label: "Весна 25'", href: "/catalog" },
+	{ label: "Лето 25'", href: "/catalog" },
+];
+const infoColumn = [
+	{ label: "Политика доставки", href: "/legal/delivery" },
+	{ label: "Политика возврата", href: "/legal/return" },
+	{ label: "Условия обслуживания", href: "/legal/terms" },
+	{ label: "Политика конфиденциальности", href: "/legal/privacy" },
+];
+const socials = [
+	{ name: "social-telegram", href: "https://t.me/", label: "Telegram" },
+	{ name: "social-vk", href: "https://vk.com/", label: "VK" },
+	{ name: "social-tiktok", href: "https://tiktok.com/", label: "TikTok" },
+	{ name: "social-youtube", href: "https://youtube.com/", label: "YouTube" },
+	{ name: "social-yandex-dzen", href: "https://dzen.ru/", label: "Дзен" },
+];
+const payments = [
+	{ src: "/icons/MasterCard.svg", alt: "Mastercard" },
+	{ src: "/icons/Visa.png", alt: "Visa" },
+	{ src: "/icons/MIR.png", alt: "МИР" },
+];
+const phone = "+7 (000) 000-00-00";
+const email = "example@satin.merfy";
+const linkClass =
+	"font-manrope text-[14px] font-light leading-normal text-[#999999] transition-opacity hover:opacity-70";
+const linkClassSm =
+	"font-manrope text-[12px] font-light leading-normal text-[#999999] transition-opacity hover:opacity-70";
+---
+
+<footer class="w-full bg-[var(--satin-surface)]">
+	<!-- Desktop (≥ md) — Figma 905-16327 -->
+	<div class="hidden w-full md:block">
+		<div class="satin-pad mx-auto w-full max-w-[1920px] pb-10 pt-16">
+			<div class="satin-container flex flex-col gap-10">
+				<!-- Top: two columns (logo+menu | newsletter+contacts) -->
+				<div class="flex items-start justify-between">
+					<!-- Left: logo + navigation (40px gap between logo and menu) -->
+					<div class="flex flex-col gap-10">
+						<a href="/" class="font-logo text-xl font-normal uppercase leading-none text-[#000000] transition-opacity hover:opacity-80">{SITE_TITLE}</a>
+						<div class="flex gap-16">
+							<ul class="flex flex-col gap-2.5" role="list">
+								{leftCol.map((link) => (
+									<li><a href={link.href} class={`${linkClass} uppercase`}>{link.label}</a></li>
+								))}
+							</ul>
+							<ul class="flex flex-col gap-2.5" role="list">
+								{midCol.map((link) => (
+									<li><a href={link.href} class={`${linkClass} uppercase`}>{link.label}</a></li>
+								))}
+							</ul>
+						</div>
+					</div>
+
+					<!-- Right: newsletter + contacts -->
+					<div class="flex flex-col items-end gap-10">
+						<div class="flex w-full max-w-[320px] flex-col gap-3">
+							<p class="font-logo text-[14px] font-normal uppercase leading-normal text-[#000000]">Будьте в курсе наших новостей</p>
+							<form class="flex h-10 w-full items-center justify-between border border-[#999999] pl-3 pr-2.5" data-newsletter-form>
+								<input type="email" name="email" required placeholder="example@satin.merfy" aria-label="Email" class="min-w-0 flex-1 bg-transparent font-manrope text-xs font-light leading-normal text-[#000000] placeholder:text-[#999999] outline-none" />
+								<button type="submit" aria-label="Подписаться" class="flex h-6 w-6 shrink-0 items-center justify-center transition-opacity hover:opacity-80"><NtIcon name="arrow-right" sizeClass="size-5" /></button>
+							</form>
+							<p data-newsletter-status role="status" class="hidden font-manrope text-xs font-light text-[#000000]"></p>
+						</div>
+						<div class="flex flex-col gap-2 text-right">
+							<a href={`tel:${phone.replace(/[^+\d]/g, "")}`} class={linkClass}>{phone}</a>
+							<a href={`mailto:${email}`} class={linkClass}>{email}</a>
+						</div>
+					</div>
+				</div>
+
+				<!-- C. Socials + payments -->
+				<div class="flex items-center justify-between gap-4">
+					<div class="flex items-center gap-3">
+						{socials.map((s) => (
+							<a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label} class="flex h-6 w-6 items-center justify-center transition-opacity hover:opacity-70">
+								<NtIcon name={s.name} sizeClass="size-6" />
+							</a>
+						))}
+					</div>
+					<div class="flex items-center gap-2">
+						{payments.map((p) => (
+							<span class="flex h-6 items-center justify-center rounded-[4px] bg-[#fafafa] px-1">
+								<img src={withBase(p.src)} alt={p.alt} class="h-4 w-auto object-contain" loading="lazy" />
+							</span>
+						))}
+					</div>
+				</div>
+
+				<!-- D. Info row -->
+				<div class="flex items-center justify-between gap-4 border-t border-[#DDDDDD] pt-6">
+					<p class="font-manrope text-[14px] font-light leading-normal text-[#999999]">© {today.getFullYear()} {SITE_TITLE} Theme Все права защищены.</p>
+					<div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+						{infoColumn.map((link) => (
+							<a href={link.href} class={linkClass}>{link.label}</a>
+						))}
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Mobile (< md) — Figma 1-21690 -->
+	<div class="px-4 pb-8 pt-8 md:hidden">
+		<!-- Logo + socials -->
+		<div class="flex items-center justify-between">
+			<a href="/" class="font-logo text-lg font-normal uppercase leading-none text-[#000000] transition-opacity hover:opacity-80">{SITE_TITLE}</a>
+			<div class="flex items-center gap-2">
+				{socials.map((s) => (
+					<a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label} class="flex h-5 w-5 items-center justify-center transition-opacity hover:opacity-70">
+						<NtIcon name={s.name} sizeClass="size-5" />
+					</a>
+				))}
+			</div>
+		</div>
+
+		<!-- Menu (left: collections/seasons, right: nav) -->
+		<div class="mt-10 grid grid-cols-2 gap-x-8 gap-y-6">
+			<ul class="flex flex-col gap-2.5" role="list">
+				{midCol.map((link) => (
+					<li><a href={link.href} class={`${linkClass} uppercase`}>{link.label}</a></li>
+				))}
+			</ul>
+			<ul class="flex flex-col gap-2.5" role="list">
+				{leftCol.map((link) => (
+					<li><a href={link.href} class={`${linkClass} uppercase`}>{link.label}</a></li>
+				))}
+			</ul>
+		</div>
+
+		<!-- Newsletter -->
+		<div class="mt-8 flex flex-col gap-3">
+			<p class="font-logo text-[14px] font-normal uppercase leading-normal text-[#000000]">Будьте в курсе наших новостей</p>
+			<form class="flex h-10 w-full items-center justify-between border border-[#999999] pl-3 pr-2.5" data-newsletter-form>
+				<input type="email" name="email" required placeholder="example@satin.merfy" aria-label="Email" class="min-w-0 flex-1 bg-transparent font-manrope text-xs font-light leading-normal text-[#000000] placeholder:text-[#999999] outline-none" />
+				<button type="submit" aria-label="Подписаться" class="flex h-6 w-6 shrink-0 items-center justify-center transition-opacity hover:opacity-80"><NtIcon name="arrow-right" sizeClass="size-5" /></button>
+			</form>
+			<p data-newsletter-status role="status" class="hidden font-manrope text-xs font-light text-[#000000]"></p>
+		</div>
+
+		<!-- Contacts -->
+		<div class="mt-8 flex flex-col gap-2">
+			<a href={`tel:${phone.replace(/[^+\d]/g, "")}`} class={linkClassSm}>{phone}</a>
+			<a href={`mailto:${email}`} class={linkClassSm}>{email}</a>
+		</div>
+
+		<!-- Divider + bottom (copyright/payments | policies) -->
+		<div class="mt-8 flex justify-between gap-4 border-t border-[#DDDDDD] pt-6">
+			<div class="flex flex-col gap-4">
+				<p class="font-manrope text-[12px] font-light leading-normal text-[#999999]">© {today.getFullYear()} {SITE_TITLE} Theme Все права защищены.</p>
+				<div class="flex items-center gap-2">
+					{payments.map((p) => (
+						<span class="flex h-4 items-center justify-center rounded-[2px] bg-[#fafafa] px-1">
+							<img src={withBase(p.src)} alt={p.alt} class="h-2.5 w-auto object-contain" loading="lazy" />
+						</span>
+					))}
+				</div>
+			</div>
+			<div class="flex flex-col gap-2">
+				{infoColumn.map((link) => (
+					<a href={link.href} class={linkClassSm}>{link.label}</a>
+				))}
+			</div>
+		</div>
+	</div>
+
+	<div class="w-full bg-[#000000] py-4">
+		<p class="text-center font-inter text-[12px] font-light leading-normal text-white md:text-[16px]">© {today.getFullYear()} {SITE_TITLE} Theme Все права защищены. Powered by Merfy</p>
+	</div>
+</footer>
+
+<script>
+	document.querySelectorAll<HTMLFormElement>("[data-newsletter-form]").forEach((form) => {
+		form.addEventListener("submit", (event) => {
+			event.preventDefault();
+			const status = form.parentElement?.querySelector<HTMLElement>("[data-newsletter-status]");
+			if (status) {
+				status.textContent = "Спасибо! Мы отправим вам приветственное письмо.";
+				status.classList.remove("hidden");
+			}
+			form.reset();
+		});
+	});
+</script>

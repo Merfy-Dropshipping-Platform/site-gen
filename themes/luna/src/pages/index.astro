@@ -1,0 +1,22 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Hero from "../components/sections/Hero.astro";
+import Collections from "../components/sections/Collections.astro";
+import Popular from "../components/sections/Popular.astro";
+import Gallery from "../components/sections/Gallery.astro";
+import Puk from "../components/sections/Puk.astro";
+---
+
+<Layout>
+	<Hero
+		title="LUNA — COLLECTION FOR EVERY NIGHT OUT"
+		subtitle="Светлые силуэты и глубокие оттенки — ваш стиль без компромиссов"
+		ctaText="Смотреть коллекцию"
+		ctaLink="/catalog"
+		backgroundImage="/images/4x/Главный_экран.png"
+	/>
+	<Collections />
+	<Popular />
+	<Gallery />
+	<Puk />
+</Layout>

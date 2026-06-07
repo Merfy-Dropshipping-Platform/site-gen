@@ -1,0 +1,41 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import NtAuthPanel from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtAuthPanel.astro";
+import NtTextField from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtTextField.astro";
+---
+
+<Layout title="Вход" description="Войдите в аккаунт Bloom">
+	<section class="flex w-full flex-1 items-center justify-center bg-white px-4 py-16 md:py-24">
+		<form class="w-full max-w-[430px]" data-auth-form>
+			<NtAuthPanel title="Вход" subtitle="Рады видеть вас снова">
+				<div slot="fields" class="flex flex-col gap-4">
+					<NtTextField label="E-mail" name="email" type="email" autocomplete="email" />
+					<NtTextField label="Пароль" name="password" type="password" autocomplete="current-password" />
+				</div>
+				<button
+					slot="primary"
+					type="submit"
+					class="flex h-12 w-full items-center justify-center rounded-[6px] bg-[#000000] px-6 font-manrope text-[16px] font-normal leading-normal text-white transition-opacity hover:opacity-95"
+				>
+					Войти
+				</button>
+				<div slot="links" class="flex w-full flex-col items-center gap-3 text-center">
+					<a href="/auth/forgot-password" class="font-manrope text-[16px] font-normal text-[#999999] hover:text-[#000000] transition-colors">
+						Забыли пароль?
+					</a>
+					<p class="font-manrope text-[16px] font-normal text-[#999999]">
+						Нет аккаунта?
+						<a href="/auth/sign-up" class="text-[#000000] hover:opacity-80">Зарегистрироваться</a>
+					</p>
+				</div>
+			</NtAuthPanel>
+		</form>
+	</section>
+</Layout>
+
+<script>
+	document.querySelector<HTMLFormElement>("[data-auth-form]")?.addEventListener("submit", (event) => {
+		event.preventDefault();
+		alert("Демо-вход: авторизация ещё не подключена.");
+	});
+</script>

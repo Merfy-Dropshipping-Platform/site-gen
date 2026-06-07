@@ -1,0 +1,40 @@
+/* GSAP takes over these visuals — neutralise the design-system's own CSS. */
+
+/* Cart drawer: GSAP (cart-drawer.ts) drives the panel transform and overlay
+   opacity, so the DS CSS transitions must be off and the root must stay
+   rendered (otherwise the close animation would be clipped by
+   `visibility:hidden`). The root is click-through by default; cart-drawer.ts
+   sets `pointer-events:auto` on it while the drawer is open and restores
+   `none` when the close animation finishes. */
+#satin-cart-drawer-root {
+	visibility: visible !important;
+	pointer-events: none;
+}
+/* Only the full-screen overlay (direct child) — NOT the in-panel "Скрыть"
+   button, whose hover fade we want to keep. */
+#satin-cart-drawer-root [data-cart-panel],
+#satin-cart-drawer-root > [data-cart-close] {
+	transition: none !important;
+}
+
+/* Add-to-cart button: hidden on hover-capable devices, rises up + fades in on
+   card hover (and on keyboard focus). Touch devices keep it always visible. */
+@media (hover: hover) and (pointer: fine) {
+	[data-nt="satin-product-card"] [data-add-to-cart] {
+		opacity: 0;
+		visibility: hidden;
+		transform: translateY(8px);
+		transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
+	}
+	[data-nt="satin-product-card"]:hover [data-add-to-cart],
+	[data-nt="satin-product-card"]:focus-within [data-add-to-cart] {
+		opacity: 1;
+		visibility: visible;
+		transform: none;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	[data-nt="satin-product-card"] [data-add-to-cart] {
+		transition: none;
+	}
+}

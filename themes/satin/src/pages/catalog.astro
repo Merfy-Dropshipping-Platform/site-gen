@@ -1,0 +1,167 @@
+---
+import Layout from "../layouts/Layout.astro";
+import SatinProductCard from "../components/products/SatinProductCard.astro";
+import NtFilterSidebar from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtFilterSidebar.astro";
+import NtFilterPanel from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtFilterPanel.astro";
+import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+import { catalogProducts } from "../data/products";
+
+const layout = (Astro.url.searchParams.get("layout") ?? "row") === "sidebar" ? "sidebar" : "row";
+const collection = Astro.url.searchParams.get("collection");
+const products = collection ? catalogProducts.filter((product) => product.collection === collection) : catalogProducts.slice(0, 6);
+const totalCount = products.length;
+---
+
+<Layout title="Каталог" description="Каталог Satin — коллекции, хиты, новинки">
+	<section
+		class="satin-pad w-full bg-white py-12 md:py-16"
+		aria-labelledby="catalog-title"
+	>
+		<div class="satin-container flex flex-col gap-8">
+			<header class="flex flex-col gap-2">
+				<h1
+					id="catalog-title"
+					class="font-logo text-[20px] font-normal uppercase leading-[1.15] text-[#000000]"
+				>
+					Каталог
+				</h1>
+				<p class="font-manrope text-[16px] font-light leading-normal text-[#999999]">
+					Здесь начинается персональный стиль
+				</p>
+			</header>
+
+			{layout === "row" ? (
+				<div class="flex flex-col gap-6">
+					<div class="flex flex-wrap items-center justify-between gap-3" data-nt="catalog-filters">
+						<div class="flex flex-wrap items-start gap-3">
+							<details class="group relative">
+								<summary class="flex h-8 min-w-[120px] cursor-pointer list-none items-center justify-between gap-2 bg-white px-0 font-manrope text-[16px] font-normal uppercase leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+									<span>Наличие</span>
+									<NtIcon name="dropdown-chevron" sizeClass="size-6" class="transition-transform group-open:rotate-180" />
+								</summary>
+								<div class="absolute left-0 top-full z-10 mt-1 w-full">
+									<NtFilterPanel panel="stock" />
+								</div>
+							</details>
+
+							<details class="group relative">
+								<summary class="flex h-8 min-w-[120px] cursor-pointer list-none items-center justify-between gap-2 bg-white px-0 font-manrope text-[16px] font-normal uppercase leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+									<span>Стоимость</span>
+									<NtIcon name="dropdown-chevron" sizeClass="size-6" class="transition-transform group-open:rotate-180" />
+								</summary>
+								<div class="absolute left-0 top-full z-10 mt-1 w-full">
+									<NtFilterPanel panel="price" />
+								</div>
+							</details>
+
+							<details class="group relative">
+								<summary class="flex h-8 min-w-[90px] cursor-pointer list-none items-center justify-between gap-2 bg-white px-0 font-manrope text-[16px] font-normal uppercase leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+									<span>Цвет</span>
+									<NtIcon name="dropdown-chevron" sizeClass="size-6" class="transition-transform group-open:rotate-180" />
+								</summary>
+								<div class="absolute left-0 top-full z-10 mt-1 w-full">
+									<NtFilterPanel panel="color" />
+								</div>
+							</details>
+						</div>
+
+						<details class="group relative">
+							<summary class="flex h-8 min-w-[150px] cursor-pointer list-none items-center justify-end gap-2 bg-white px-0 font-manrope text-[16px] font-normal uppercase leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+								<span>По популярности</span>
+								<NtIcon name="dropdown-chevron" sizeClass="size-6" />
+							</summary>
+							<div class="absolute right-0 top-full z-10 mt-1 w-[180px]">
+								<NtFilterPanel panel="sort" />
+							</div>
+						</details>
+					</div>
+
+					<ul
+						class="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3"
+						role="list"
+						data-nt="catalog-grid"
+					>
+						{products.map((product) => (
+							<li data-product-id={product.id}>
+								<SatinProductCard product={product} />
+							</li>
+						))}
+					</ul>
+
+					<div class="flex flex-wrap items-center justify-between gap-4">
+						<button
+							type="button"
+							data-action="load-more"
+							class="satin-button satin-button-md satin-button-light"
+						>
+							Смотреть ещё
+						</button>
+						<span class="font-manrope text-[16px] font-normal uppercase leading-normal text-[#999999]">
+							{totalCount} товаров
+						</span>
+					</div>
+				</div>
+			) : (
+				<div class="flex flex-col gap-8 lg:flex-row lg:gap-10">
+					<NtFilterSidebar class="hidden w-[172px] shrink-0 lg:flex xl:w-[294px]" />
+
+					<div class="flex flex-1 flex-col gap-8">
+						<ul
+							class="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3"
+							role="list"
+							data-nt="catalog-grid"
+						>
+							{products.map((product) => (
+								<li data-product-id={product.id}>
+									<SatinProductCard product={product} />
+								</li>
+							))}
+						</ul>
+
+						<div class="flex flex-wrap items-center justify-between gap-4">
+							<button
+								type="button"
+								data-action="load-more"
+								class="satin-button satin-button-light"
+							>
+								Смотреть ещё
+							</button>
+							<span class="font-manrope text-[16px] font-normal uppercase leading-normal text-[#999999]">
+								{totalCount} товаров
+							</span>
+						</div>
+					</div>
+				</div>
+			)}
+		</div>
+	</section>
+</Layout>
+
+<script>
+	document.addEventListener("click", (event) => {
+		const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-action='load-more']");
+		if (!button) return;
+		button.disabled = true;
+		button.textContent = "Больше товаров нет";
+		button.classList.add("opacity-60", "pointer-events-none");
+	});
+
+	// Catalog filter dropdowns — only one open at a time, close on outside click.
+	const filterBar = document.querySelector("[data-nt='catalog-filters']");
+	if (filterBar) {
+		const dropdowns = Array.from(filterBar.querySelectorAll<HTMLDetailsElement>("details"));
+		dropdowns.forEach((dropdown) => {
+			dropdown.addEventListener("toggle", () => {
+				if (!dropdown.open) return;
+				dropdowns.forEach((other) => {
+					if (other !== dropdown) other.open = false;
+				});
+			});
+		});
+		document.addEventListener("click", (event) => {
+			if (!filterBar.contains(event.target as Node)) {
+				dropdowns.forEach((dropdown) => (dropdown.open = false));
+			}
+		});
+	}
+</script>

@@ -1,0 +1,30 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { legalPages, type LegalSlug } from "../../data/legal";
+
+export const getStaticPaths = async () => {
+	const { legalPages } = await import("../../data/legal");
+	return Object.keys(legalPages).map((slug) => ({
+		params: { slug },
+		props: { slug },
+	}));
+};
+
+const { slug } = Astro.props as { slug: LegalSlug };
+const page = legalPages[slug];
+---
+
+<Layout title={page.title} description={page.title}>
+	<section
+		class="w-full bg-white px-4 pb-[60px] pt-16 md:px-20 md:pb-[80px] md:pt-20 2xl:px-[300px]"
+	>
+		<div class="mx-auto flex w-full max-w-[900px] flex-col gap-8">
+			<h1 class="font-comfortaa text-[28px] font-normal uppercase leading-[1.115] text-[#000000] md:text-[32px] lg:text-[36px]">
+				{page.title}
+			</h1>
+			<div class="flex flex-col gap-5 font-manrope text-[16px] font-light leading-[1.6] text-[#000000]">
+				{page.body.map((para) => <p>{para}</p>)}
+			</div>
+		</div>
+	</section>
+</Layout>

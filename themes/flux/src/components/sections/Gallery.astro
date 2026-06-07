@@ -1,0 +1,92 @@
+---
+import FluxPicture from "../img/FluxPicture.astro";
+import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
+
+const liftLine = "Ноутбуки";
+const liftHref = `/catalog?collection=${encodeURIComponent(liftLine)}`;
+
+const sectionTitle = "Вдохновение в деталях";
+const sectionSubtitle =
+	"Технологии, которые приятно держать в руках каждый день.";
+---
+<section
+	id="gallery"
+	class="w-full bg-white px-4 pb-16 pt-16 md:px-20 md:pb-24 md:pt-24 2xl:px-80"
+	aria-labelledby="gallery-title"
+>
+	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-12">
+		<NtSectionHeading titleId="gallery-title" title={sectionTitle} subtitle={sectionSubtitle} />
+
+		<div class="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_429px] md:gap-8">
+			<a
+				href="/catalog"
+				class="group relative block aspect-square w-full min-h-0 overflow-hidden bg-[#F5F5F5] rounded-[8px]"
+				aria-label="Перейти в каталог"
+			>
+				<FluxPicture
+					src="/images/4x/Изображение_Галерея.png"
+					alt="Галерея"
+					loading="eager"
+					class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]"
+					width="875"
+					height="875"
+				/>
+			</a>
+
+			<div class="flex flex-col gap-6 md:gap-8">
+				<a
+					href="/products/m-phone-17"
+					class="group flex flex-col gap-4"
+					aria-label="M Phone 17"
+				>
+					<div class="relative aspect-[429/444] w-full min-h-0 overflow-hidden bg-[#F5F5F5] rounded-[8px]">
+						<FluxPicture
+							src="/images/4x/Товар_5__2_.png"
+							alt="M Phone 17"
+							width="429"
+							height="444"
+							loading="eager"
+							class="absolute inset-0 size-full max-w-none object-cover object-center transition-transform duration-300 group-hover:scale-105"
+						/>
+					</div>
+					<div class="flex flex-col gap-1">
+						<h3 class="font-manrope text-[14px] font-normal leading-[1.366] text-[#000000] md:text-[16px]">
+							M Phone 17
+						</h3>
+						<span class="font-manrope text-[14px] font-normal leading-[1.366] text-[#000000] md:text-[16px]">
+							140 990₽
+						</span>
+					</div>
+				</a>
+
+				<a
+					href={liftHref}
+					class="group flex flex-col gap-4"
+					aria-label={liftLine}
+				>
+					<div class="relative aspect-[429/309] w-full min-h-0 overflow-hidden bg-[#F5F5F5] rounded-[8px]">
+						<FluxPicture
+							src="/images/4x/Товар_5__3_.png"
+							alt="Ноутбуки"
+							width="429"
+							height="309"
+							loading="eager"
+							class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+						/>
+					</div>
+					<h3 class="font-manrope text-[14px] font-normal leading-[1.366] text-[#000000] md:text-[16px]">
+						Ноутбуки
+					</h3>
+				</a>
+			</div>
+		</div>
+	</div>
+</section>
+
+<style>
+	#gallery picture img {
+		height: 100%;
+		width: 100%;
+		max-width: none;
+	}
+</style>

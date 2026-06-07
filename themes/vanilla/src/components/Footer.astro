@@ -1,0 +1,134 @@
+---
+import VanilaFooterLogo from "../icons/VanilaFooterLogo.astro";
+import SocialTelegramWhite from "../icons/SocialTelegramWhite.astro";
+import SocialVkWhite from "../icons/SocialVkWhite.astro";
+import SocialTiktokWhite from "../icons/SocialTiktokWhite.astro";
+import SocialYoutubeWhite from "../icons/SocialYoutubeWhite.astro";
+import SocialYandexDzenWhite from "../icons/SocialYandexDzenWhite.astro";
+import PaymentMastercard from "../icons/PaymentMastercard.astro";
+import PaymentVisa from "../icons/PaymentVisa.astro";
+import PaymentMir from "../icons/PaymentMir.astro";
+import { SITE_TITLE } from "../consts";
+
+const COPYRIGHT_YEAR = 2026;
+const copyrightText = `© ${COPYRIGHT_YEAR} ${SITE_TITLE} Theme Все права защищены.`;
+const poweredByText = `${copyrightText} Powered by Merfy`;
+
+const navColumn = [
+	{ label: "Текстиль", href: "/catalog/textile" },
+	{ label: "Декор", href: "/catalog/decor" },
+	{ label: "Домашняя одежда", href: "/catalog/textile" },
+];
+
+const infoColumn = [
+	"Политика доставки",
+	"Политика возврата",
+	"Условия обслуживания",
+	"Политика конфиденциальности",
+];
+
+const phone = "+7 (000) 000-00-00";
+const email = "example@vanila.merfy";
+
+const socials = [
+	{ platform: "Telegram", href: "#", Icon: SocialTelegramWhite },
+	{ platform: "VK", href: "#", Icon: SocialVkWhite },
+	{ platform: "TikTok", href: "#", Icon: SocialTiktokWhite },
+	{ platform: "YouTube", href: "#", Icon: SocialYoutubeWhite },
+	{ platform: "Дзен", href: "#", Icon: SocialYandexDzenWhite },
+];
+---
+
+<footer class="flex w-full flex-col text-white" data-vanilla-footer>
+	<!-- Figma footer: #26311C, px 300 @1920, content 1320, gap 80 между рядами -->
+	<div
+		class="vanilla-pad shrink-0 border-0 bg-[var(--vanilla-announcement-bg)] py-12 md:py-16"
+	>
+		<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-12 md:gap-20">
+			<section
+				class="grid grid-cols-1 gap-10 md:grid-cols-[1fr_auto] md:items-stretch max-sm:items-center max-sm:text-center"
+				aria-label="Навигация по сайту"
+			>
+				<div class="flex flex-col gap-8 max-sm:items-center">
+					<a href="/" class="inline-flex w-fit transition-opacity hover:opacity-80" aria-label="Vanila — на главную">
+						<VanilaFooterLogo class="h-7 w-[89px]" />
+					</a>
+					<ul class="flex flex-col gap-2" role="list">
+						{navColumn.map((link) => (
+							<li>
+								<a
+									href={link.href}
+									class="font-vanilla-arsenal text-base font-normal leading-none text-white transition-opacity hover:opacity-70"
+								>
+									{link.label}
+								</a>
+							</li>
+						))}
+					</ul>
+				</div>
+
+				<div class="flex flex-col items-start gap-6 max-sm:items-center md:h-full md:items-end">
+					<div class="flex flex-col gap-1 max-sm:items-center md:items-end">
+						<a
+							href={`tel:${phone.replace(/[^+\d]/g, "")}`}
+							class="font-vanilla-arsenal text-base font-normal leading-none text-white transition-opacity hover:opacity-70"
+						>
+							{phone}
+						</a>
+						<a
+							href={`mailto:${email}`}
+							class="font-vanilla-arsenal text-base font-normal leading-none text-white transition-opacity hover:opacity-70"
+						>
+							{email}
+						</a>
+					</div>
+					<div class="flex flex-col items-start gap-6 max-sm:items-center md:mt-auto md:items-end">
+						<div class="flex flex-wrap items-center justify-center gap-3 md:justify-end" aria-label="Социальные сети">
+							{socials.map(({ platform, href, Icon }) => (
+								<a
+									href={href}
+									aria-label={platform}
+									class="flex size-5 items-center justify-center transition-opacity hover:opacity-70"
+								>
+									<Icon class="h-5 w-auto max-h-5" />
+								</a>
+							))}
+						</div>
+						<div class="flex flex-wrap items-center justify-center gap-2 md:justify-end" aria-label="Способы оплаты">
+							<PaymentMastercard />
+							<PaymentVisa />
+							<PaymentMir />
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<section
+				class="flex flex-col gap-4 max-sm:items-center max-sm:text-center md:flex-row md:items-center md:justify-between"
+			>
+				<p class="font-vanilla-arsenal text-[14px] font-normal leading-[1.35] text-white md:text-base md:leading-none">
+					{copyrightText}
+				</p>
+				<nav
+					class="flex flex-wrap items-center justify-center gap-x-9 gap-y-2 md:justify-end"
+					aria-label="Юридическая информация"
+				>
+					{infoColumn.map((label) => (
+						<span class="font-vanilla-arsenal text-base font-normal leading-none text-white">
+							{label}
+						</span>
+					))}
+				</nav>
+			</section>
+		</div>
+	</div>
+
+	<div
+		class="flex min-h-16 w-full shrink-0 items-center justify-center border-0 bg-black px-4 py-4"
+		aria-label="Копирайт"
+	>
+		<p class="text-center font-vanilla-arsenal text-[14px] font-normal leading-[1.35] text-white md:text-base md:leading-none">
+			{poweredByText}
+		</p>
+	</div>
+</footer>

@@ -1,0 +1,91 @@
+---
+import Layout from "../layouts/Layout.astro";
+import NtTextField from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtTextField.astro";
+import SatinPicture from "../components/img/SatinPicture.astro";
+
+const addresses = ["г. Москва, ул. Пример, 1", "г. Москва, ул. Пример, 2"];
+const phone = "+7 (000) 000-00-00";
+const email = "satin@example.ru";
+---
+
+<Layout title="Контакты" description="Свяжитесь с Satin — контакты магазина и форма обратной связи">
+	<section class="satin-pad w-full bg-white pt-12 md:pt-16" aria-labelledby="contacts-title">
+		<div class="satin-container flex flex-col gap-8">
+			<h1 id="contacts-title" class="font-logo text-[20px] font-normal uppercase leading-[1.15] text-[#000000]">
+				Свяжитесь с нами
+			</h1>
+			<div class="grid grid-cols-1 gap-8 font-manrope text-[16px] leading-normal sm:grid-cols-2 md:max-w-[640px]">
+				<div class="flex flex-col gap-10">
+					{addresses.map((addr, i) => (
+						<div class="flex flex-col gap-1">
+							<span class="text-[#999999]">Адрес магазина{addresses.length > 1 ? ` ${i + 1}` : ""}</span>
+							<span class="font-light text-[#000000]">{addr}</span>
+						</div>
+					))}
+				</div>
+				<div class="flex flex-col gap-10">
+					<div class="flex flex-col gap-1">
+						<span class="text-[#999999]">Номер телефона</span>
+						<a href={`tel:${phone.replace(/[^+\d]/g, "")}`} class="font-light text-[#000000] transition-opacity hover:opacity-70">{phone}</a>
+					</div>
+					<div class="flex flex-col gap-1">
+						<span class="text-[#999999]">E-mail</span>
+						<a href={`mailto:${email}`} class="font-light text-[#000000] transition-opacity hover:opacity-70">{email}</a>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<section class="w-full bg-white py-10 md:py-12" aria-hidden="true">
+		<div class="relative aspect-[375/240] w-full overflow-hidden bg-[#111111] md:aspect-[1920/680]">
+			<SatinPicture src="/images/4x/Контакты.png" alt="Магазин Satin" loading="lazy" class="absolute inset-0 size-full object-cover" />
+		</div>
+	</section>
+
+	<section class="satin-pad w-full bg-white pb-16 md:pb-24" aria-labelledby="feedback-title">
+		<div class="satin-container flex flex-col gap-8">
+			<div class="flex flex-col gap-2">
+				<h2 id="feedback-title" class="font-logo text-[20px] font-normal uppercase leading-[1.15] text-[#000000]">Обратная связь</h2>
+				<p class="font-manrope text-[16px] font-light leading-normal text-[#999999]">Оставьте контакты, чтобы нам было проще связаться с вами</p>
+			</div>
+
+			<form class="grid grid-cols-1 gap-4 lg:grid-cols-[429px_1fr] lg:gap-6" data-contacts-form novalidate>
+				<div class="flex flex-col gap-4">
+					<NtTextField label="Имя" name="name" autocomplete="name" />
+					<NtTextField label="E-mail" name="email" type="email" autocomplete="email" />
+					<NtTextField label="Номер телефона" name="phone" type="tel" autocomplete="tel" />
+				</div>
+
+				<div class="flex flex-col gap-2">
+					<label for="contacts-question" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">Ваш вопрос</label>
+					<textarea
+						id="contacts-question"
+						name="question"
+						rows={8}
+						class="min-h-[176px] w-full flex-1 border border-[#999999] bg-white p-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000]"
+					></textarea>
+				</div>
+
+				<div class="lg:col-span-2">
+					<button type="submit" class="satin-button satin-button-md satin-button-dark">Отправить</button>
+				</div>
+
+				<p data-contacts-status role="status" class="hidden lg:col-span-2 font-manrope text-[14px] font-normal leading-normal text-[#000000]"></p>
+			</form>
+		</div>
+	</section>
+</Layout>
+
+<script>
+	document.querySelector<HTMLFormElement>("[data-contacts-form]")?.addEventListener("submit", (event) => {
+		event.preventDefault();
+		const form = event.currentTarget as HTMLFormElement;
+		const status = document.querySelector<HTMLElement>("[data-contacts-status]");
+		if (status) {
+			status.textContent = "Спасибо! Мы свяжемся с вами в ближайшее время.";
+			status.classList.remove("hidden");
+		}
+		form.reset();
+	});
+</script>

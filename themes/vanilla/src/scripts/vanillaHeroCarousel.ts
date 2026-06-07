@@ -1,0 +1,103 @@
+export interface VanillaHeroSlideCopy {
+	title: string;
+	subtitle: string;
+	ctaText: string;
+	ctaHref: string;
+}
+
+export function bindVanillaHeroCarousel(root: HTMLElement) {
+	if (root.dataset.vanillaHeroBound === "true") return;
+	root.dataset.vanillaHeroBound = "true";
+
+	const raw = root.dataset.slidesJson;
+	if (!raw) return;
+
+	let slides: VanillaHeroSlideCopy[];
+	try {
+		slides = JSON.parse(raw) as VanillaHeroSlideCopy[];
+	} catch {
+		return;
+	}
+	if (!slides.length) return;
+
+	const imgs = [...root.querySelectorAll<HTMLElement>("[data-hero-slide-img]")];
+	const titleEl = root.querySelector<HTMLElement>("[data-hero-title]");
+	const subEl = root.querySelector<HTMLElement>("[data-hero-subtitle]");
+	const ctaEl = root.querySelector<HTMLAnchorElement>("[data-hero-cta]");
+	if (!titleEl || !subEl || !ctaEl) return;
+	const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+	const fadeCopy = (...els: (HTMLElement | null)[]) => {
+		if (reduceMotion) return;
+		for (const el of els) {
+			if (!el) continue;
+			el.classList.remove("vanilla-hero-copy-fade");
+			void el.offsetWidth;
+			el.classList.add("vanilla-hero-copy-fade");
+		}
+	};
+
+	let idx = 0;
+
+	const apply = (next: number) => {
+		idx = (next + slides.length) % slides.length;
+		const copy = slides[idx];
+		if (!copy) return;
+
+		imgs.forEach((el, k) => {
+			const on = k === idx;
+			el.classList.toggle("opacity-100", on);
+			el.classList.toggle("opacity-0", !on);
+			el.classList.toggle("pointer-events-none", !on);
+			el.setAttribute("aria-hidden", on ? "false" : "true");
+			if (reduceMotion) {
+				el.classList.remove("transition-opacity", "duration-500", "ease-out");
+			}
+		});
+
+		titleEl.textContent = copy.title;
+		subEl.textContent = copy.subtitle;
+		ctaEl.textContent = copy.ctaText;
+		ctaEl.setAttribute("href", copy.ctaHref);
+		fadeCopy(titleEl, subEl, ctaEl);
+
+		root.querySelectorAll<HTMLButtonElement>("[data-hero-bullet]").forEach((btn, k) => {
+			const on = k === idx;
+			btn.setAttribute("aria-current", on ? "true" : "false");
+			btn.classList.toggle("text-white", on);
+			btn.classList.toggle("text-white/45", !on);
+		});
+	};
+
+	root.querySelector("[data-hero-prev]")?.addEventListener("click", () => apply(idx - 1));
+	root.querySelector("[data-hero-next]")?.addEventListener("click", () => apply(idx + 1));
+
+	root.querySelectorAll<HTMLButtonElement>("[data-hero-bullet]").forEach((btn) => {
+		btn.addEventListener("click", () => {
+			const n = Number(btn.dataset.heroIndex);
+			if (Number.isFinite(n)) apply(n);
+		});
+	});
+
+	let touchX = 0;
+	root.addEventListener(
+		"touchstart",
+		(e) => {
+			touchX = e.changedTouches[0]?.screenX ?? 0;
+		},
+		{ passive: true },
+	);
+	root.addEventListener(
+		"touchend",
+		(e) => {
+			const x = e.changedTouches[0]?.screenX ?? touchX;
+			const dx = x - touchX;
+			if (Math.abs(dx) < 44) return;
+			if (dx < 0) apply(idx + 1);
+			else apply(idx - 1);
+		},
+		{ passive: true },
+	);
+
+	apply(0);
+}

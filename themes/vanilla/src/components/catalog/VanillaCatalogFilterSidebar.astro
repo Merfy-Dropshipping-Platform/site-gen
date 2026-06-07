@@ -1,0 +1,116 @@
+---
+/**
+ * Боковые фильтры каталога Vanilla (Figma Vanila / textile).
+ * UI-only: без серверной фильтрации.
+ */
+
+interface RadioOption {
+	value: string;
+	label: string;
+	checked?: boolean;
+}
+
+interface Props {
+	class?: string;
+}
+
+const { class: className = "" } = Astro.props;
+
+const sortOptions: RadioOption[] = [
+	{ value: "popularity", label: "По популярности", checked: true },
+	{ value: "new", label: "По новизне" },
+	{ value: "price-desc", label: "По убыванию цены" },
+	{ value: "price-asc", label: "По возрастанию цены" },
+];
+
+const stockOptions: RadioOption[] = [
+	{ value: "all", label: "Все", checked: true },
+	{ value: "in", label: "В наличии" },
+	{ value: "out", label: "Распродано" },
+];
+---
+
+<aside
+	class:list={["flex w-full max-w-full shrink-0 flex-col gap-3 lg:w-[294px]", className]}
+	data-nt="vanilla-filter-sidebar"
+>
+	<div class="flex flex-col gap-3 py-3">
+		<p class="font-vanilla-arsenal text-base font-normal leading-none text-black">Сортировать</p>
+		<div class="flex flex-col gap-3">
+			{
+				sortOptions.map((option) => {
+					const id = `vanilla-sort-${option.value}`;
+					return (
+						<label for={id} class="group flex cursor-pointer items-center gap-2">
+							<input
+								id={id}
+								type="radio"
+								name="vanilla-sort"
+								value={option.value}
+								checked={option.checked}
+								class="peer sr-only"
+							/>
+							<span
+								aria-hidden="true"
+								class="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-[#999999] after:pointer-events-none after:absolute after:h-[10px] after:w-[10px] after:rounded-full after:bg-black after:opacity-0 after:content-[''] peer-checked:border-black peer-checked:after:opacity-100 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-black"
+							/>
+							<span class="font-vanilla-arsenal text-base font-normal leading-none text-[#999999] peer-checked:text-black">
+								{option.label}
+							</span>
+						</label>
+					);
+				})
+			}
+		</div>
+	</div>
+
+	<div class="flex flex-col gap-3 py-3">
+		<p class="font-vanilla-arsenal text-base font-normal leading-none text-black">Наличие</p>
+		<div class="flex flex-col gap-3">
+			{
+				stockOptions.map((option) => {
+					const id = `vanilla-stock-${option.value}`;
+					return (
+						<label for={id} class="group flex cursor-pointer items-center gap-2">
+							<input
+								id={id}
+								type="radio"
+								name="vanilla-stock"
+								value={option.value}
+								checked={option.checked}
+								class="peer sr-only"
+							/>
+							<span
+								aria-hidden="true"
+								class="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-[#999999] after:pointer-events-none after:absolute after:h-[10px] after:w-[10px] after:rounded-full after:bg-black after:opacity-0 after:content-[''] peer-checked:border-black peer-checked:after:opacity-100 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-black"
+							/>
+							<span class="font-vanilla-arsenal text-base font-normal leading-none text-[#999999] peer-checked:text-black">
+								{option.label}
+							</span>
+						</label>
+					);
+				})
+			}
+		</div>
+	</div>
+
+	<div class="flex flex-col gap-3 py-3">
+		<p class="font-vanilla-arsenal text-base font-normal leading-none text-black">Стоимость</p>
+		<div class="flex w-full flex-col font-vanilla-arsenal text-base font-normal leading-none">
+			<div class="flex h-10 w-full items-center justify-between border-b border-[#999999] text-[#444444]">
+				<span>от</span>
+				<div class="flex items-center gap-2 text-black">
+					<span>0</span>
+					<span>₽</span>
+				</div>
+			</div>
+			<div class="flex h-10 w-full items-center justify-between border-b border-[#999999] text-[#444444]">
+				<span>до</span>
+				<div class="flex items-center gap-2 text-black">
+					<span>5 990</span>
+					<span>₽</span>
+				</div>
+			</div>
+		</div>
+	</div>
+</aside>

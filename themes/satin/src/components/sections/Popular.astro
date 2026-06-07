@@ -1,0 +1,30 @@
+---
+import SatinProductCard from "../products/SatinProductCard.astro";
+import { catalogProducts } from "../../data/products";
+import type { CatalogProduct } from "../../data/products";
+
+interface Props {
+	products?: CatalogProduct[];
+	moreLabel?: string;
+	moreHref?: string;
+}
+
+const {
+	products = catalogProducts.slice(0, 3),
+	moreLabel = "Смотреть больше",
+	moreHref = "/catalog",
+} = Astro.props;
+---
+
+<section class="satin-pad w-full bg-white py-10 md:py-14" aria-label="Товары Satin">
+	<div class="satin-container flex flex-col gap-8">
+		<ul class="grid grid-cols-1 gap-4 sm:grid-cols-3" role="list">
+			{products.map((product) => (
+				<li><SatinProductCard product={product} /></li>
+			))}
+		</ul>
+		<a href={moreHref} class="satin-button satin-button-md satin-button-light w-fit">
+			{moreLabel}
+		</a>
+	</div>
+</section>

@@ -1,0 +1,17 @@
+---
+import { DEFAULT_CATEGORY_HREF } from "../data/categories";
+---
+
+<!doctype html>
+<html lang="ru">
+	<head>
+		<meta charset="utf-8" />
+		<meta http-equiv="refresh" content={`0;url=${DEFAULT_CATEGORY_HREF}`} />
+		<script is:inline define:vars={{ href: DEFAULT_CATEGORY_HREF }}>
+			window.location.replace(href + window.location.search);
+		</script>
+	</head>
+	<body>
+		<a href={DEFAULT_CATEGORY_HREF}>Перейти в раздел «Уход за кожей»</a>
+	</body>
+</html>

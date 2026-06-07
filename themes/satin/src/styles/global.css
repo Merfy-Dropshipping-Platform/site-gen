@@ -1,0 +1,225 @@
+@import "tailwindcss";
+@import "@merfy-dropshipping-platform/design-systems-theme/tokens.css";
+@import "./gsap-overrides.css";
+@source "../../../DesignSystemsTheme/src/**/*.{astro,ts,tsx,js,jsx}";
+@source "../../node_modules/@merfy-dropshipping-platform/design-systems-theme/src/**/*.{astro,ts,tsx,js,jsx}";
+
+@theme {
+  --font-family-sans: var(--font-nt-ui);
+  --color-primary: var(--satin-black);
+  --color-gray: var(--satin-muted);
+  --color-accent: var(--satin-border);
+}
+
+.font-comfortaa,
+.font-manrope {
+  font-family: var(--font-nt-ui);
+}
+
+.font-inter {
+  font-family: var(--font-inter);
+}
+
+.font-logo {
+  font-family: var(--font-nt-logo);
+}
+
+:root {
+  /* Satin typography — match the Figma mockup (loaded from Google Fonts in BaseHead).
+     Overrides the design-system token defaults (Comfortaa/Manrope). */
+  --font-nt-ui: "Arsenal", ui-sans-serif, system-ui, sans-serif;
+  --font-nt-logo: "Kelly Slab", Georgia, serif;
+  --font-inter: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --satin-black: #000000;
+  --satin-white: #ffffff;
+  --satin-bg: #ffffff;
+  --satin-surface: #f5f5f5;
+  --satin-border: #dddddd;
+  --satin-muted: #999999;
+  --satin-text-muted: #606060;
+  --satin-max: 1320px;
+  --satin-pad: clamp(16px, 8.33vw, 160px);
+  /* Side gutter that lines full-bleed sections (hero, image banners) up with
+     the 1320 container edge: 300px at 1920, collapsing to 16px below 1320. */
+  --satin-gutter: clamp(16px, calc((100vw - var(--satin-max)) / 2), 300px);
+}
+
+#menu-line-1 {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: 20px 17px;
+}
+#menu-line-2 {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: 20px 23px;
+}
+.menu-open #menu-line-1 {
+  transform: translate(0, 3px) rotate(45deg);
+}
+.menu-open #menu-line-2 {
+  transform: translate(0, -3px) rotate(-45deg);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  font-family: var(--font-nt-ui);
+  background-color: var(--satin-bg);
+  color: var(--satin-black);
+}
+main {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.satin-container {
+  width: 100%;
+  max-width: var(--satin-max);
+  margin-inline: auto;
+}
+
+.satin-pad {
+  padding-inline: var(--satin-pad);
+}
+
+.satin-title {
+  font-family: var(--font-nt-logo);
+  font-weight: 400;
+  text-transform: uppercase;
+  line-height: 1.15;
+  color: var(--satin-black);
+}
+
+.satin-copy {
+  font-family: var(--font-nt-ui);
+  font-size: 16px;
+  font-weight: 300;
+  line-height: 1.5;
+  color: var(--satin-muted);
+}
+
+.satin-button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid currentColor;
+  padding: 0 18px;
+  font-family: var(--font-nt-ui);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1;
+  text-transform: uppercase;
+  transition: opacity 180ms ease, background-color 180ms ease, color 180ms ease;
+}
+
+/* md (48px) variant — Figma "Button md Fill" / "Button_lg_white". */
+.satin-button-md {
+  min-height: 48px;
+  padding: 0 24px;
+  font-size: 16px;
+}
+
+.satin-button:hover {
+  opacity: 0.78;
+}
+
+/* Full-bleed split sections (hero, image banner): the text half is padded by
+   the same gutter as the global container so copy lines up edge-to-edge with
+   the rest of the page, while the image half bleeds to the viewport edge. */
+/* Mega-menu caret flips when the «Коллекции» trigger is expanded. */
+[data-mega-trigger][aria-expanded="true"] .satin-mega-caret {
+  transform: rotate(180deg);
+}
+
+/* Favourited product-card heart: solid + slightly enlarged. */
+.satin-fav[aria-pressed="true"] {
+  opacity: 1;
+}
+.satin-fav[aria-pressed="true"] img {
+  transform: scale(1.12);
+}
+
+.satin-bleed-left {
+  padding-inline-start: var(--satin-gutter);
+}
+.satin-bleed-right {
+  padding-inline-end: var(--satin-gutter);
+}
+
+.satin-button-dark {
+  color: var(--satin-white);
+  background: var(--satin-black);
+  border-color: var(--satin-black);
+}
+
+.satin-button-light {
+  color: var(--satin-black);
+  background: transparent;
+  border-color: var(--satin-black);
+}
+.sr-only {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  position: absolute !important;
+  height: 1px;
+  width: 1px;
+  overflow: hidden;
+  clip: rect(1px, 1px, 1px, 1px);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+input[type="search"] {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  box-sizing: border-box !important;
+  padding-block: 0 !important;
+  padding-inline: 0 !important;
+}
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration {
+  display: none;
+}
+/* Hide native number-input spinner arrows (PDP quantity stepper). */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Blog styles */
+:root {
+  --accent: #2337ff;
+  --gray: 96, 115, 159;
+  --gray-light: 229, 233, 240;
+  --gray-dark: 34, 41, 57;
+  --box-shadow: 0 2px 6px rgba(var(--gray), 25%), 0 8px 24px rgba(var(--gray), 33%);
+}
+code {
+  padding: 2px 5px;
+  background-color: rgb(var(--gray-light));
+  border-radius: 2px;
+}
+pre {
+  padding: 1.5em;
+  border-radius: 8px;
+}
+pre > code {
+  all: unset;
+}
+blockquote {
+  border-left: 4px solid var(--accent);
+  padding: 0 0 0 20px;
+  margin: 0;
+}

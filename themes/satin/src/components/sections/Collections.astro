@@ -1,0 +1,21 @@
+---
+import SatinCollectionCard from "../products/SatinCollectionCard.astro";
+import { collections as defaultCollections, type Collection } from "../../data/collections";
+
+interface Props {
+	items?: Collection[];
+	id?: string;
+}
+
+const { items = defaultCollections, id = "collections" } = Astro.props;
+---
+
+<section id={id} class="satin-pad w-full bg-white py-8 md:py-12" aria-label="Коллекции Satin">
+	<ul class="satin-container grid grid-cols-2 gap-4 sm:grid-cols-3" role="list">
+		{items.map((collection, index) => (
+			<li class:list={[index === 0 && "col-span-2 sm:col-span-1"]}>
+				<SatinCollectionCard collection={collection} priority={index < 3} />
+			</li>
+		))}
+	</ul>
+</section>

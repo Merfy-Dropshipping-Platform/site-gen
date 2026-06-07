@@ -1,0 +1,59 @@
+---
+import type { Product } from "../../types/product";
+import FluxPicture from "../img/FluxPicture.astro";
+
+interface Props {
+	product: Product;
+	priority?: boolean;
+}
+
+const { product, priority = false } = Astro.props;
+const href = `/products/${product.id}`;
+---
+
+<article
+	class="group flex flex-col gap-3 md:gap-4"
+	data-nt="flux-product-card"
+	aria-label={product.name}
+>
+	<a
+		href={href}
+		class="relative block aspect-[318/444] w-full overflow-hidden bg-[#F5F5F5] rounded-[8px]"
+		aria-label={product.name}
+	>
+		<FluxPicture
+			src={product.image}
+			alt={product.name}
+			width="318"
+			height="444"
+			loading="eager"
+			fetchpriority={priority ? "high" : undefined}
+			class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+		/>
+		{product.discount && (
+			<span
+				class="absolute left-2 top-2 inline-flex h-6 items-center rounded-[4px] bg-[#FA5109] px-1.5 font-roboto-flex text-[11px] font-light leading-none text-[#000000] md:text-[12px]"
+			>
+				Скидка
+			</span>
+		)}
+	</a>
+	<div class="flex flex-col gap-1">
+		<a
+			href={href}
+			class="font-manrope text-[14px] font-normal leading-[1.366] text-[#000000] hover:opacity-80 md:text-[16px]"
+		>
+			{product.name}
+		</a>
+		<div class="flex flex-wrap items-baseline gap-2">
+			<span class="font-manrope text-[14px] font-normal leading-[1.366] text-[#000000] md:text-[16px]">
+				{product.price}
+			</span>
+			{product.oldPrice && (
+				<span class="font-manrope text-[12px] font-normal leading-[1.366] text-[#999999] line-through md:text-[14px]">
+					{product.oldPrice}
+				</span>
+			)}
+		</div>
+	</div>
+</article>

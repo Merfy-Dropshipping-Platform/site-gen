@@ -1,0 +1,66 @@
+---
+---
+
+<section
+	class="vanilla-pad m-0 w-full shrink-0 border-0 bg-[var(--vanilla-header-bg)] py-16 lg:py-[120px]"
+	aria-labelledby="newsletter-heading"
+	data-vanilla-newsletter
+>
+	<div
+		class="mx-auto flex w-full max-w-[1280px] min-[1920px]:max-w-[1320px] flex-col items-start gap-10 text-left"
+		data-animate
+	>
+		<div class="flex w-full flex-col gap-2">
+			<h2
+				id="newsletter-heading"
+				class="m-0 font-vanilla-bitter text-[20px] font-normal italic leading-none tracking-normal text-white"
+			>
+				Будьте в курсе уютных новостей
+			</h2>
+			<p
+				class="m-0 w-full font-vanilla-arsenal text-[14px] font-normal italic leading-none text-[var(--vanilla-hero-subtle)] lg:text-[16px]"
+			>
+				Станьте частью сообщества Vanila. Вас ждут свежие идеи для уюта,<br />
+				анонсы новинок, полезные советы по уходу за текстилем и специальные промокоды для подписчиков.
+			</p>
+		</div>
+
+		<form
+			class="flex w-full max-w-[652px] flex-col items-stretch justify-between gap-3 border border-white bg-transparent p-3 transition-colors focus-within:border-white/80 sm:h-14 sm:flex-row sm:items-center sm:gap-2 sm:py-0 sm:pl-4 sm:pr-3"
+			data-newsletter-form
+		>
+			<input
+				type="email"
+				name="email"
+				required
+				placeholder="E-mail"
+				aria-label="E-mail"
+				class="min-w-0 flex-1 bg-transparent font-vanilla-arsenal text-base font-normal leading-none text-[var(--vanilla-hero-subtle)] placeholder:text-[var(--vanilla-hero-subtle)] outline-none"
+			/>
+			<button
+				type="submit"
+				class="inline-flex h-9 w-full shrink-0 items-center justify-center bg-white px-2 py-2.5 font-vanilla-arsenal text-base font-normal uppercase leading-none text-[var(--vanilla-header-bg)] transition-opacity hover:opacity-80 sm:h-8 sm:w-auto"
+			>
+				ОТПРАВИТЬ
+			</button>
+		</form>
+		<p
+			data-newsletter-status
+			role="status"
+			class="hidden font-vanilla-arsenal text-base font-normal leading-[1.5] text-white"
+		></p>
+	</div>
+</section>
+
+<script>
+	document.querySelector<HTMLFormElement>("[data-newsletter-form]")?.addEventListener("submit", (event) => {
+		event.preventDefault();
+		const form = event.currentTarget as HTMLFormElement;
+		const status = form.closest("[data-vanilla-newsletter]")?.querySelector<HTMLElement>("[data-newsletter-status]");
+		if (status) {
+			status.textContent = "Спасибо! Мы отправим вам приветственное письмо.";
+			status.classList.remove("hidden");
+		}
+		form.reset();
+	});
+</script>

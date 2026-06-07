@@ -1,0 +1,162 @@
+---
+import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+import { SITE_TITLE } from "../consts";
+
+const today = new Date();
+
+const navColumn = [
+	{ label: "Смартфоны", href: "/catalog?collection=Смартфоны" },
+	{ label: "Наушники", href: "/catalog?collection=Наушники" },
+	{ label: "Ноутбуки", href: "/catalog?collection=Ноутбуки" },
+	{ label: "Аксессуары", href: "/catalog?collection=Аксессуары" },
+];
+
+const infoColumn = [
+	{ label: "Политика доставки", href: "/legal/delivery" },
+	{ label: "Политика возврата", href: "/legal/return" },
+	{ label: "Условия обслуживания", href: "/legal/terms" },
+	{ label: "Политика конфиденциальности", href: "/legal/privacy" },
+];
+
+const phone = "+7 (000) 000-00-00";
+const email = "flux@example.ru";
+
+const socials = [
+	{ platform: "Telegram", href: "#", icon: "social-telegram" as const },
+	{ platform: "VK", href: "#", icon: "social-vk" as const },
+	{ platform: "TikTok", href: "#", icon: "social-tiktok" as const },
+	{ platform: "YouTube", href: "#", icon: "social-youtube" as const },
+	{ platform: "Дзен", href: "#", icon: "social-yandex-dzen" as const },
+];
+---
+
+<footer class="w-full bg-white">
+	<div class="mx-auto w-full max-w-[1920px] px-4 pt-12 md:px-20 md:pt-16 2xl:px-80">
+	<!-- Newsletter -->
+	<section class="mx-auto flex w-full max-w-[1320px] flex-col gap-4 pb-12 md:pb-16" aria-labelledby="newsletter-heading">
+		<div class="flex flex-col gap-1">
+			<h2
+				id="newsletter-heading"
+				class="font-comfortaa text-[16px] font-normal uppercase leading-normal text-[#000000] md:text-[18px]"
+			>
+				Подпишитесь на нашу рассылку
+			</h2>
+			<p class="font-roboto-flex text-[12px] font-light leading-normal text-[#999999] md:text-[14px]">
+				Получайте информацию от нашего бренда
+			</p>
+		</div>
+
+		<form
+			class="flex h-11 w-full max-w-[460px] items-center justify-between gap-2 rounded-[4px] border border-[#F5F5F5] bg-white pl-3 pr-1 md:h-12"
+			data-newsletter-form
+		>
+			<input
+				type="email"
+				name="email"
+				required
+				placeholder="flux@example.ru"
+				aria-label="Email"
+				class="min-w-0 flex-1 bg-transparent font-manrope text-[12px] font-normal leading-normal text-[#000000] placeholder:text-[#999999] outline-none md:text-[14px]"
+			/>
+			<button
+				type="submit"
+				aria-label="Подписаться"
+				class="flex size-10 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
+			>
+				<NtIcon name="arrow-right" sizeClass="size-5" />
+			</button>
+		</form>
+		<p
+			data-newsletter-status
+			role="status"
+			class="hidden font-roboto-flex text-[12px] font-light text-[#4AD300] md:text-[14px]"
+		></p>
+	</section>
+
+	<!-- Links -->
+	<section
+		class="mx-auto grid w-full max-w-[1320px] grid-cols-2 gap-8 pb-12 md:grid-cols-4 md:gap-6 md:pb-16"
+		aria-label="Навигация по сайту"
+	>
+		<ul class="flex flex-col gap-2" role="list">
+			{navColumn.map((link) => (
+				<li>
+					<a
+						href={link.href}
+						class="font-roboto-flex text-[12px] font-light leading-normal text-[#000000] transition-opacity hover:opacity-70 md:text-[14px]"
+					>
+						{link.label}
+					</a>
+				</li>
+			))}
+		</ul>
+
+		<ul class="flex flex-col gap-2" role="list">
+			{infoColumn.map((link) => (
+				<li>
+					<a
+						href={link.href}
+						class="font-roboto-flex text-[12px] font-light leading-normal text-[#000000] transition-opacity hover:opacity-70 md:text-[14px]"
+					>
+						{link.label}
+					</a>
+				</li>
+			))}
+		</ul>
+
+		<div class="flex flex-col gap-2">
+			<a
+				href={`tel:${phone.replace(/[^+\d]/g, "")}`}
+				class="font-roboto-flex text-[12px] font-light leading-normal text-[#000000] transition-opacity hover:opacity-70 md:text-[14px]"
+			>
+				{phone}
+			</a>
+			<a
+				href={`mailto:${email}`}
+				class="font-roboto-flex text-[12px] font-light leading-normal text-[#000000] transition-opacity hover:opacity-70 md:text-[14px]"
+			>
+				{email}
+			</a>
+		</div>
+
+		<div class="flex flex-col items-start gap-3 md:items-end">
+			<div class="flex flex-wrap items-center gap-2">
+				{socials.map((s) => (
+					<a
+						href={s.href}
+						aria-label={s.platform}
+						class="flex size-6 items-center justify-center transition-opacity hover:opacity-70"
+					>
+						<NtIcon name={s.icon} sizeClass="size-5" />
+					</a>
+				))}
+			</div>
+			<div class="flex items-center gap-2">
+				<span class="font-roboto-flex text-[10px] font-light leading-none text-[#000000] md:text-[12px]">Mastercard</span>
+				<span class="font-roboto-flex text-[10px] font-light leading-none text-[#000000] md:text-[12px]">VISA</span>
+				<span class="font-roboto-flex text-[10px] font-light leading-none text-[#000000] md:text-[12px]">МИР</span>
+			</div>
+		</div>
+	</section>
+	</div>
+
+	<!-- Copyright -->
+	<div class="w-full bg-black py-4 md:py-5">
+		<p class="text-center font-manrope text-[11px] font-normal leading-normal text-white md:text-[12px]">
+			© {today.getFullYear()} {SITE_TITLE} Theme. Все права защищены. Powered by Merfy
+		</p>
+	</div>
+</footer>
+
+<script>
+	document.querySelector<HTMLFormElement>("[data-newsletter-form]")?.addEventListener("submit", (event) => {
+		event.preventDefault();
+		const form = event.currentTarget as HTMLFormElement;
+		const status = document.querySelector<HTMLElement>("[data-newsletter-status]");
+		if (status) {
+			status.textContent = "Спасибо! Мы отправим вам приветственное письмо.";
+			status.classList.remove("hidden");
+		}
+		form.reset();
+	});
+</script>

@@ -1,0 +1,32 @@
+---
+import BloomProductCard from "../products/BloomProductCard.astro";
+import { catalogProducts } from "../../data/products";
+
+const sectionTitle = "Сейчас в тренде";
+const products = catalogProducts.slice(0, 6);
+---
+
+<section
+	id="collections"
+	class="w-full bg-white px-4 pb-20 pt-20 md:px-20 md:pb-[120px] md:pt-[120px] 2xl:px-[300px]"
+	aria-labelledby="collections-title"
+>
+	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10">
+		<div data-animate>
+			<h2
+				id="collections-title"
+				class="font-urbanist text-[18px] font-normal uppercase leading-none text-[#e38e9f] md:text-[20px]"
+			>
+				{sectionTitle}
+			</h2>
+		</div>
+
+		<ul class="grid w-full grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-[16px] lg:gap-y-10" role="list" data-animate data-animate-delay="0.1s">
+			{products.map((product, index) => (
+				<li>
+					<BloomProductCard product={product} priority={index < 3} />
+				</li>
+			))}
+		</ul>
+	</div>
+</section>

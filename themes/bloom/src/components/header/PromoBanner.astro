@@ -1,0 +1,19 @@
+---
+interface Props {
+	text: string;
+	link: string;
+	linkText?: string;
+}
+
+const { text, link, linkText = "Перейти" } = Astro.props;
+---
+
+<div class="w-full bg-[#e38e9f] py-2 text-center">
+	<a
+		href={link}
+		class="inline-block text-center hover:opacity-80 transition-opacity text-[12px] font-normal leading-normal font-inter uppercase text-white"
+	>
+		<span>{text}</span>
+		{linkText && <span class="ml-1 underline decoration-1 underline-offset-2">{linkText}</span>}
+	</a>
+</div>

@@ -1,0 +1,181 @@
+---
+import Layout from "../layouts/Layout.astro";
+import VanillaPicture from "../components/img/VanillaPicture.astro";
+import { V_IMG } from "../data/imageAssets";
+
+const historyParagraphs = [
+	"Всё началось с одного простого, но очень важного вопроса: почему так сложно найти домой текстиль, который был бы одновременно красивым, удобным и по-настоящему «своим»?",
+	"Так в 2020 году родилась Vanila. Название пришло не случайно: ваниль — это аромат тепла, детства, чего-то родного и успокаивающего. Именно эти ощущения мы хотели подарить своим покупателям.",
+	"Первая коллекция состояла всего из пяти видов декоративных подушек и трех оттенков пледа. Мы сами выбирали ткани, тестировали их на мягкость, проверяли, как они поведут себя после стирки. И когда первый заказ уехал к клиентке, а она написала: «Я не хочу выходить из дома, здесь теперь так хорошо», — мы поняли: мы на правильном пути.",
+	"С тех пор Vanila выросла. Сегодня у нас есть собственные линии постельного белья из высококачественного хлопка, пледы под любые цели и желания, а также разнообразные предметы интерьера, но главное осталось неизменным: наша страсть к созданию настоящего домашнего счастья.",
+];
+
+const welcomeParagraphs = [
+	"Мы по-прежнему лично отбираем каждый материал, вдохновляемся природными оттенками и архитектурой скандинавского дизайна. Мы не гонимся за быстрой модой. Мы создаем вещи, которые остаются с вами надолго.",
+	"Vanila — это история про то, как желание одного человека сделать свой дом уютнее превратилось в бренд, который помогает тысячам семей создавать интерьеры своей мечты. Добро пожаловать домой.",
+];
+---
+
+<Layout title="История" description="История Vanila — бренд домашнего текстиля и декора" showNewsletter={false}>
+	<div data-vanilla-stack class="w-full">
+		<section
+			class="vanilla-pad w-full bg-[var(--vanilla-header-bg)] py-16 text-white lg:py-[120px]"
+			aria-labelledby="history-title"
+		>
+			<div
+				class="mx-auto grid w-full max-w-[1320px] grid-cols-1 items-center gap-10 lg:grid-cols-[minmax(0,1fr)_429px]"
+			>
+				<div class="flex flex-col items-start gap-10">
+					<h1
+						id="history-title"
+						class="font-vanilla-bitter text-2xl font-normal italic leading-none tracking-normal text-white"
+					>
+						История Vanila
+					</h1>
+					<div class="flex max-w-[851px] flex-col gap-4">
+						{
+							historyParagraphs.map((paragraph) => (
+								<p class="font-vanilla-arsenal text-base font-normal italic leading-[1.45] text-[#F0F0F0] md:leading-[1.35]">
+									{paragraph}
+								</p>
+							))
+						}
+					</div>
+					<a
+						href="/catalog/textile"
+						class="inline-flex h-12 min-h-12 items-center justify-center border border-white bg-transparent px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-white transition-opacity hover:opacity-80"
+					>
+						НОВАЯ КОЛЛЕКЦИЯ
+					</a>
+				</div>
+				<div class="relative mx-auto aspect-[429/440] w-full max-w-[429px] shrink-0 overflow-hidden bg-[var(--vanilla-card)] lg:mx-0 lg:h-[440px] lg:w-[429px]">
+					<VanillaPicture
+						src={V_IMG.history}
+						alt="История Vanila"
+						width="429"
+						height="440"
+						loading="eager"
+						class="absolute inset-0 size-full object-cover"
+					/>
+				</div>
+			</div>
+		</section>
+
+		<section
+			class="vanilla-pad w-full bg-[var(--vanilla-surface)] py-16 lg:py-[120px]"
+			aria-labelledby="contact-title"
+		>
+			<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10">
+				<h2
+					id="contact-title"
+					class="font-vanilla-arsenal text-[20px] font-normal uppercase leading-none tracking-normal text-[var(--vanilla-dark)]"
+				>
+					Свяжитесь с нами
+				</h2>
+				<form
+					class="grid grid-cols-1 gap-6 lg:grid-cols-[430px_1fr] lg:items-stretch lg:gap-x-10 lg:gap-y-6"
+					data-history-form
+					novalidate
+				>
+					<div class="flex flex-col gap-4 lg:max-w-[430px]">
+						<label class="flex w-full flex-col gap-2">
+							<span class="font-vanilla-arsenal text-base font-normal leading-normal text-[#444444]">Имя</span>
+							<input
+								type="text"
+								name="name"
+								autocomplete="name"
+								class="box-border h-14 w-full min-h-[56px] rounded-[4px] border border-solid border-[#000000] bg-white px-4 font-vanilla-arsenal text-base font-normal leading-normal text-[var(--vanilla-dark)] outline-none focus-visible:border-[var(--vanilla-header-bg)]"
+							/>
+						</label>
+						<label class="flex w-full flex-col gap-2">
+							<span class="font-vanilla-arsenal text-base font-normal leading-normal text-[#444444]">E-mail</span>
+							<input
+								type="email"
+								name="email"
+								autocomplete="email"
+								placeholder="example@email.com"
+								class="box-border h-14 w-full min-h-[56px] rounded-[4px] border border-solid border-[#000000] bg-white px-4 font-vanilla-arsenal text-base font-normal leading-normal text-[var(--vanilla-dark)] outline-none placeholder:text-[#999999] focus-visible:border-[var(--vanilla-header-bg)]"
+							/>
+						</label>
+						<label class="flex w-full flex-col gap-2">
+							<span class="font-vanilla-arsenal text-base font-normal leading-normal text-[#444444]">Номер телефона</span>
+							<input
+								type="tel"
+								name="phone"
+								autocomplete="tel"
+								placeholder="+7 (___) ___-__-__"
+								class="box-border h-14 w-full min-h-[56px] rounded-[4px] border border-solid border-[#000000] bg-white px-4 font-vanilla-arsenal text-base font-normal leading-normal text-[var(--vanilla-dark)] outline-none placeholder:text-[#999999] focus-visible:border-[var(--vanilla-header-bg)]"
+							/>
+						</label>
+					</div>
+
+					<label class="flex min-h-0 flex-col gap-2 lg:h-full">
+						<span class="font-vanilla-arsenal text-base font-normal leading-normal text-[#444444]">Ваш вопрос</span>
+						<textarea
+							name="question"
+							class="box-border min-h-[232px] w-full flex-1 resize-none rounded-[4px] border border-solid border-[#000000] bg-white p-4 font-vanilla-arsenal text-base font-normal leading-normal text-[var(--vanilla-dark)] outline-none focus-visible:border-[var(--vanilla-header-bg)] lg:min-h-0"
+						></textarea>
+					</label>
+
+					<div class="lg:col-start-2 lg:flex lg:justify-end">
+						<button
+							type="submit"
+							class="inline-flex h-12 min-h-12 items-center justify-center bg-[var(--vanilla-header-bg)] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-white transition-opacity hover:opacity-80"
+						>
+							Отправить
+						</button>
+					</div>
+
+					<p
+						data-history-status
+						role="status"
+						class="hidden font-vanilla-arsenal text-base font-normal leading-normal text-[var(--vanilla-header-bg)] lg:col-span-2"
+					></p>
+				</form>
+			</div>
+		</section>
+
+		<section
+			class="vanilla-pad w-full bg-[var(--vanilla-header-bg)] py-16 text-white lg:py-[120px]"
+			aria-labelledby="welcome-title"
+			data-welcome-section
+		>
+			<div
+				class="mx-auto flex w-full max-w-[1280px] min-[1920px]:max-w-[1320px] flex-col items-start gap-16"
+			>
+				<div class="flex w-full flex-col gap-3">
+					<h2
+						id="welcome-title"
+						class="m-0 font-vanilla-bitter text-[20px] font-normal italic leading-none tracking-normal text-white"
+					>
+						Добро пожаловать в нашу историю.
+					</h2>
+					<p class="m-0 w-full font-vanilla-arsenal text-base font-normal italic leading-[1.45] text-[#F0F0F0] md:leading-[1.35]">
+						{welcomeParagraphs[0]}
+						<br />
+						{welcomeParagraphs[1]}
+					</p>
+				</div>
+				<a
+					href="/catalog/textile"
+					class="m-0 inline-flex h-12 min-h-12 shrink-0 items-center justify-center border border-white bg-transparent px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-white transition-opacity hover:opacity-80"
+				>
+					ПЕРЕЙТИ В КАТАЛОГ
+				</a>
+			</div>
+		</section>
+	</div>
+</Layout>
+
+<script>
+	document.querySelector<HTMLFormElement>("[data-history-form]")?.addEventListener("submit", (event) => {
+		event.preventDefault();
+		const form = event.currentTarget as HTMLFormElement;
+		const status = document.querySelector<HTMLElement>("[data-history-status]");
+		if (status) {
+			status.textContent = "Спасибо! Мы свяжемся с вами в ближайшее время.";
+			status.classList.remove("hidden");
+		}
+		form.reset();
+	});
+</script>

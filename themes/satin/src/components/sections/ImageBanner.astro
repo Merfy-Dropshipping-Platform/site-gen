@@ -1,0 +1,51 @@
+---
+import SatinPicture from "../img/SatinPicture.astro";
+
+interface Props {
+	eyebrow?: string;
+	title?: string;
+	ctaText?: string;
+	ctaLink?: string;
+	image?: string;
+	alt?: string;
+	/** Which half the photo occupies on desktop. */
+	imageSide?: "left" | "right";
+}
+
+const {
+	eyebrow = "Новая мужская коллекция",
+	title = "STYLE’S WEAR COLLECTION SINCE 90’",
+	ctaText = "Перейти",
+	ctaLink = "/catalog?collection=Мужское",
+	image = "/images/4x/Мужская_кампания.png",
+	alt = "Новая мужская коллекция",
+	imageSide = "left",
+} = Astro.props;
+
+const imgRight = imageSide === "right";
+---
+
+<section class="relative w-full bg-white" aria-label={eyebrow}>
+	<div class="mx-auto grid w-full max-w-[1920px] grid-cols-1 md:grid-cols-2">
+		<div
+			class:list={[
+				"relative order-1 aspect-[375/362] overflow-hidden bg-[#111111] md:aspect-auto md:h-[680px]",
+				imgRight ? "md:order-2" : "md:order-1",
+			]}
+		>
+			<SatinPicture src={image} alt={alt} loading="lazy" class="absolute inset-0 size-full object-cover object-center" />
+		</div>
+		<div
+			class:list={[
+				"flex items-center justify-center px-6 py-12 text-center md:h-[680px] md:py-0",
+				imgRight ? "md:order-1" : "md:order-2",
+			]}
+		>
+			<div class="flex max-w-[420px] flex-col items-center gap-5">
+				<p class="font-manrope text-[16px] font-light uppercase tracking-[0.04em] text-[#999999] md:text-[20px]">{eyebrow}</p>
+				<h2 class="font-logo text-[26px] font-normal uppercase leading-[1.1] text-[#000000] md:text-[32px]">{title}</h2>
+				<a href={ctaLink} class="satin-button satin-button-md satin-button-dark">{ctaText}</a>
+			</div>
+		</div>
+	</div>
+</section>

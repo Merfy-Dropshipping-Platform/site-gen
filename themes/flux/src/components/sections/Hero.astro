@@ -1,0 +1,84 @@
+---
+import NtSearchBar from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSearchBar.astro";
+import FluxPicture from "../img/FluxPicture.astro";
+import { SITE_TITLE } from "../../consts";
+
+interface Props {
+	title?: string;
+	subtitle?: string;
+	ctaText?: string;
+	ctaLink?: string;
+	aboutText?: string;
+	aboutLink?: string;
+	backgroundImage?: string;
+}
+
+const {
+	title = SITE_TITLE,
+	subtitle = "Там, где классика встречается с характером",
+	ctaText = "В каталог",
+	ctaLink = "#collections",
+	aboutText = "О нас",
+	aboutLink = "#about",
+	backgroundImage = "/images/4x/Главный_экран.png",
+} = Astro.props;
+---
+
+<section
+	class="relative w-full bg-white"
+	style="min-height: clamp(500px, 80vh, 1080px)"
+	aria-labelledby="hero-title"
+>
+	<div class="relative h-full w-full">
+		<div
+			class="absolute inset-0 z-0 w-full overflow-hidden"
+			style="min-height: clamp(500px, 80vh, 1080px)"
+		>
+			<FluxPicture
+				src={backgroundImage}
+				alt={title}
+				loading="eager"
+				fetchpriority="high"
+				class="absolute inset-0 size-full object-cover object-center"
+			/>
+		</div>
+
+		<div
+			class="relative z-10 flex h-full w-full flex-col justify-between px-4 pb-6 pt-32 md:px-20 md:pb-10 md:pt-40 lg:pt-52 2xl:px-80"
+			style="min-height: clamp(500px, 80vh, 1080px)"
+		>
+			<div class="flex max-w-[432px] flex-col gap-8">
+				<div class="flex flex-col gap-2">
+					<h1
+						id="hero-title"
+						class="font-comfortaa text-[32px] font-normal leading-[1.115] text-white md:text-[40px] lg:text-[48px]"
+					>
+						{title}
+					</h1>
+					<p class="font-roboto-flex text-[16px] font-light leading-[1.5] text-white md:text-[18px]">
+						{subtitle}
+					</p>
+				</div>
+
+				<div class="flex flex-wrap gap-3">
+					<a
+						href={ctaLink}
+						class="inline-flex h-12 items-center justify-center rounded-[6px] border border-[#FFFFFF] bg-[#FFFFFF] px-6 font-manrope text-[14px] font-normal leading-normal text-[#FA5109] transition-opacity hover:opacity-90 md:text-[16px]"
+					>
+						{ctaText}
+					</a>
+					<a
+						href={aboutLink}
+						class="inline-flex h-12 items-center justify-center rounded-[6px] border border-[#FFFFFF] px-6 font-manrope text-[14px] font-normal leading-normal text-[#FFFFFF] transition-colors hover:bg-[#FFFFFF]/10 md:text-[16px]"
+					>
+						{aboutText}
+					</a>
+				</div>
+			</div>
+
+			<div class="mt-auto w-full max-w-[1320px] self-center">
+				<NtSearchBar />
+			</div>
+		</div>
+	</div>
+</section>

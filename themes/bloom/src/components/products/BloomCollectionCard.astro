@@ -1,0 +1,46 @@
+---
+import type { Collection } from "../../data/collections";
+import BloomPicture from "../img/BloomPicture.astro";
+import { DEFAULT_CATEGORY_HREF } from "../../data/categories";
+
+interface Props {
+	collection: Collection;
+	priority?: boolean;
+}
+
+const { collection, priority = false } = Astro.props;
+const href = DEFAULT_CATEGORY_HREF;
+---
+
+<a
+	href={href}
+	class="group flex cursor-pointer flex-col gap-5"
+	aria-label={collection.name}
+	data-nt="bloom-collection-card"
+>
+	<div class="aspect-[430/500] w-full overflow-hidden bg-[#F5F5F5]">
+		<BloomPicture
+			src={collection.image}
+			alt={collection.name}
+			width="430"
+			height="500"
+			loading="eager"
+			fetchpriority={priority ? "high" : undefined}
+			class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.08]"
+		/>
+	</div>
+	<h3
+		class="bloom-collection-name font-manrope text-[16px] font-normal leading-[1.366] text-[#000000] transition-opacity group-hover:opacity-70 md:text-[20px]"
+	>
+		{collection.name}
+	</h3>
+</a>
+
+<style>
+	@media (max-width: 639.98px) {
+		.bloom-collection-name {
+			font-size: 12px;
+			line-height: 1;
+		}
+	}
+</style>

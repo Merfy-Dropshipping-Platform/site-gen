@@ -1,0 +1,96 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+
+// Эта страница будет использоваться для редактирования с Puck
+const initialData = {
+	content: [
+		{
+			type: "Hero",
+			props: {
+				id: "hero-1",
+				title: "Rose",
+				subtitle: "Ваш стиль, ваша индивидуальность",
+				ctaText: "В каталог",
+				ctaLink: "#collections",
+				backgroundImage: "/images/first-section.png"
+			}
+		},
+		{
+			type: "Collections",
+			props: {
+				id: "collections-1",
+				title: "Снова в продаже",
+				subtitle: "Стиль для каждой ситуации - найдите свой в каталоге."
+			}
+		},
+		{
+			type: "Popular",
+			props: {
+				id: "popular-1",
+				title: "Популярные",
+				subtitle: "Стиль для каждой ситуации - найдите свой в каталоге."
+			}
+		},
+		{
+			type: "Gallery",
+			props: {
+				id: "gallery-1",
+				title: "Галерея",
+				subtitle: "Стиль для каждой ситуации - найдите свой в каталоге."
+			}
+		}
+	],
+	root: {},
+	zones: {}
+};
+---
+
+<!doctype html>
+<html lang="ru">
+	<head>
+		<BaseHead title={`Puck Editor - ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+	</head>
+	<body>
+		<div id="puck-editor"></div>
+
+		<script type="module">
+			import { Puck } from "@measured/puck";
+			import "@measured/puck/puck.css";
+			import config from "../puck/config.tsx";
+
+			const initialData = {
+				content: [
+					{
+						type: "Hero",
+						props: {
+							id: "hero-1",
+							title: "Rose",
+							subtitle: "Ваш стиль, ваша индивидуальность",
+							ctaText: "В каталог",
+							ctaLink: "#collections",
+							backgroundImage: "/images/first-section.png"
+						}
+					}
+				],
+				root: {},
+				zones: {}
+			};
+
+			const root = document.getElementById("puck-editor");
+
+			if (root) {
+				const puck = Puck({
+					config,
+					data: initialData,
+					onPublish: async (data) => {
+						console.log("Published:", data);
+						// Здесь можно отправить данные на сервер
+					},
+				});
+
+				root.appendChild(puck);
+			}
+		</script>
+	</body>
+</html>

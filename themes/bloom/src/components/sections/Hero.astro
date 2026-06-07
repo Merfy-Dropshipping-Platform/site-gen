@@ -1,0 +1,59 @@
+---
+import BloomPicture from "../img/BloomPicture.astro";
+import { DEFAULT_CATEGORY_HREF } from "../../data/categories";
+
+interface Props {
+	title?: string;
+	subtitle?: string;
+	ctaText?: string;
+	ctaLink?: string;
+	backgroundImage?: string;
+}
+
+const {
+	title = "Искусство заботы о себе",
+	subtitle = "Уходовая косметика, которая дарит здоровье и сияние вашей коже и волосам",
+	ctaText = "Начать ритуал",
+	ctaLink = DEFAULT_CATEGORY_HREF,
+	backgroundImage = "/images/hero-background.webp",
+} = Astro.props;
+---
+
+<section
+	class="relative w-full overflow-hidden bg-white"
+	aria-labelledby="hero-title"
+>
+	<div class="relative w-full min-h-[560px] aspect-[375/812] sm:aspect-[768/968] md:aspect-[1280/968] xl:aspect-[1920/925]">
+		<BloomPicture
+			src={backgroundImage}
+			alt=""
+			loading="eager"
+			fetchpriority="high"
+			class="absolute inset-0 z-0 size-full object-cover object-center"
+		/>
+
+		<div
+			class="absolute inset-0 z-10 flex h-full w-full flex-col items-start justify-end px-4 pb-8 md:px-20 md:pb-12 xl:pb-20 2xl:px-[300px]"
+		>
+			<div class="flex w-full max-w-[330px] flex-col items-start gap-4">
+				<div class="flex flex-col items-start gap-2">
+					<h1
+						id="hero-title"
+						class="hero-animate-1 font-urbanist text-[18px] font-normal uppercase leading-none text-[#e38e9f] md:text-[20px]"
+					>
+						{title}
+					</h1>
+					<p class="hero-animate-2 font-inter text-[14px] font-light leading-[1.2] text-[#e38e9f] md:text-[16px]">
+						{subtitle}
+					</p>
+				</div>
+				<a
+					href={ctaLink}
+					class="hero-animate-3 inline-flex h-12 items-center justify-center rounded-full bg-[#e38e9f] px-4 font-inter text-[16px] font-light leading-none text-white transition-opacity hover:opacity-90 active:scale-95"
+				>
+					{ctaText}
+				</a>
+			</div>
+		</div>
+	</div>
+</section>

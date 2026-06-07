@@ -1,0 +1,53 @@
+---
+import SatinPicture from "../img/SatinPicture.astro";
+import { SITE_TITLE } from "../../consts";
+
+interface Props {
+	title?: string;
+	subtitle?: string;
+	ctaText?: string;
+	ctaLink?: string;
+	backgroundImage?: string;
+}
+
+const {
+	title = SITE_TITLE,
+	subtitle = "Там, где классика встречается с характером",
+	ctaText = "В каталог",
+	ctaLink = "#collections",
+	backgroundImage = "/images/4x/Главный_экран.png",
+} = Astro.props;
+---
+
+<section class="relative w-full bg-white" aria-labelledby="hero-title">
+	<div class="mx-auto grid w-full max-w-[1920px] grid-cols-1 md:grid-cols-2">
+		<div class="satin-bleed-left order-2 flex items-center py-12 pr-4 md:order-1 md:h-[680px] md:py-0 md:pr-0">
+			<div class="flex max-w-[420px] flex-col gap-6">
+				<div class="flex flex-col gap-4">
+					<p class="font-manrope text-[16px] font-light uppercase tracking-[0.04em] text-[#999999]">
+						{subtitle}
+					</p>
+					<h1
+						id="hero-title"
+						class="font-logo text-[26px] font-normal uppercase leading-[1.08] text-[#000000] md:text-[32px]"
+					>
+						{title}
+					</h1>
+				</div>
+				<a href={ctaLink} class="satin-button satin-button-md satin-button-dark w-fit">
+					{ctaText}
+				</a>
+			</div>
+		</div>
+
+		<div class="relative order-1 aspect-[375/362] overflow-hidden bg-[#111111] md:order-2 md:aspect-auto md:h-[680px]">
+			<SatinPicture
+				src={backgroundImage}
+				alt={title}
+				loading="eager"
+				fetchpriority="high"
+				class="absolute inset-0 size-full object-cover object-center"
+			/>
+		</div>
+	</div>
+</section>

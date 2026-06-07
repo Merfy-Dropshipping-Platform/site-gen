@@ -1,0 +1,229 @@
+---
+import EyeIcon from "../icons/EyeIcon.astro";
+import EyeOffIcon from "../icons/EyeOffIcon.astro";
+import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+
+interface Props {
+	rootId?: string;
+	eventPrefix?: string;
+	class?: string;
+}
+
+const {
+	rootId = "vanilla-login-drawer-root",
+	eventPrefix = "vanilla:login",
+	class: className = "",
+} = Astro.props;
+
+const evOpen = `${eventPrefix}:open`;
+const evClose = `${eventPrefix}:close`;
+const evToggle = `${eventPrefix}:toggle`;
+const titleId = `${rootId}-title`;
+const emailId = `${rootId}-email`;
+const passwordId = `${rootId}-password`;
+---
+
+<div
+	id={rootId}
+	data-state="closed"
+	class:list={["invisible fixed inset-0 z-[80] data-[state=open]:visible", className]}
+	aria-hidden="true"
+	data-nt="login-drawer"
+>
+	<button
+		type="button"
+		data-login-close
+		aria-label="Закрыть окно входа"
+		class="absolute inset-0 h-full w-full cursor-default bg-black/35 opacity-0 transition-opacity duration-300 data-[state=open]:opacity-100"
+		data-state="closed"
+	></button>
+
+	<aside
+		data-login-panel
+		class="absolute right-0 top-0 flex h-full w-[min(92vw,480px)] min-w-0 max-w-[480px] translate-x-full flex-col bg-white shadow-[0_4px_32px_rgba(0,0,0,0.08)] transition-transform duration-300 ease-out data-[state=open]:translate-x-0 sm:w-full sm:min-w-[300px] sm:max-w-[min(33.333vw,480px)]"
+		data-state="closed"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby={titleId}
+	>
+		<div class="flex items-start justify-end px-6 pt-6 md:px-8 md:pt-8">
+			<button
+				type="button"
+				data-login-close
+				class="flex size-10 items-center justify-center text-[var(--vanilla-muted)] transition-opacity hover:opacity-80"
+				aria-label="Закрыть"
+			>
+				<NtIcon name="menu-close" sizeClass="size-6" />
+			</button>
+		</div>
+
+		<form
+			data-login-form
+			class="flex flex-1 flex-col overflow-y-auto px-6 pb-10 md:px-8 md:pb-12"
+			novalidate
+		>
+			<div class="flex w-full flex-col items-start gap-2">
+				<h2
+					id={titleId}
+					class="font-vanilla-bitter text-[20px] font-normal uppercase leading-none tracking-normal text-[var(--vanilla-dark)] md:text-[24px]"
+				>
+					Вход в аккаунт
+				</h2>
+				<p class="font-manrope text-[14px] font-normal leading-normal text-[var(--vanilla-muted)] md:text-[16px]">
+					Введите свои данные чтобы войти в аккаунт
+				</p>
+			</div>
+
+			<div class="mt-10 flex w-full flex-col gap-6">
+				<div class="flex w-full flex-col gap-2">
+					<label for={emailId} class="font-vanilla-arsenal text-base font-normal leading-normal text-[var(--vanilla-dark)]">
+						E-mail
+					</label>
+					<input
+						id={emailId}
+						name="email"
+						type="email"
+						autocomplete="email"
+						placeholder=""
+						class="box-border h-14 w-full min-h-[56px] rounded-[4px] border border-solid border-[#000000] bg-white px-4 font-manrope text-[16px] font-normal leading-normal text-[var(--vanilla-dark)] outline-none placeholder:text-[#999999] focus-visible:border-[var(--vanilla-header-bg)]"
+					/>
+				</div>
+
+				<div class="flex w-full flex-col gap-2">
+					<label for={passwordId} class="font-vanilla-arsenal text-base font-normal leading-normal text-[var(--vanilla-dark)]">
+						Пароль
+					</label>
+					<div class="relative w-full">
+						<input
+							id={passwordId}
+							name="password"
+							type="password"
+							autocomplete="current-password"
+							class="box-border h-14 w-full min-h-[56px] rounded-[4px] border border-solid border-[#000000] bg-white px-4 pr-12 font-manrope text-[16px] font-normal leading-normal text-[var(--vanilla-dark)] outline-none focus-visible:border-[var(--vanilla-header-bg)]"
+						/>
+						<button
+							type="button"
+							data-login-toggle-password
+							class="absolute right-4 top-1/2 flex -translate-y-1/2 items-center justify-center transition-opacity hover:opacity-80"
+							aria-label="Показать пароль"
+							aria-pressed="false"
+						>
+							<span data-login-eye-on class="hidden">
+								<EyeOffIcon />
+							</span>
+							<span data-login-eye-off>
+								<EyeIcon />
+							</span>
+						</button>
+					</div>
+				</div>
+			</div>
+
+			<div class="mt-10 flex w-full flex-col gap-6">
+				<button
+					type="submit"
+					data-login-submit
+					class="inline-flex h-12 w-full min-h-12 items-center justify-center bg-[var(--vanilla-header-bg)] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-white transition-opacity hover:opacity-90"
+				>
+					Войти
+				</button>
+
+				<div class="flex w-full flex-col items-center gap-4 text-center">
+					<p class="font-manrope text-[12px] font-normal leading-normal text-[var(--vanilla-muted)] md:text-[14px]">
+						Нет аккаунта?
+						<a href="#" data-login-visual-link class="text-[var(--vanilla-header-bg)] hover:opacity-80">
+							Зарегистрироваться
+						</a>
+					</p>
+					<a
+						href="#"
+						data-login-visual-link
+						class="font-manrope text-[12px] font-normal leading-normal text-[var(--vanilla-muted)] transition-colors hover:text-[var(--vanilla-dark)] md:text-[14px]"
+					>
+						Забыл пароль?
+					</a>
+				</div>
+			</div>
+		</form>
+	</aside>
+</div>
+
+<script is:inline define:vars={{ rootId, evOpen, evClose, evToggle }}>
+	const setState = (state) => {
+		const root = document.getElementById(rootId);
+		if (!root) return;
+		root.dataset.state = state;
+		root.setAttribute("aria-hidden", state === "open" ? "false" : "true");
+		root.querySelectorAll("[data-state]").forEach((el) => {
+			el.dataset.state = state;
+		});
+		document.body.style.overflow = state === "open" ? "hidden" : "";
+	};
+
+	const open = () => setState("open");
+	const close = () => setState("closed");
+
+	const syncPasswordToggle = (btn, input) => {
+		if (!btn || !input) return;
+		const visible = input.type === "text";
+		btn.setAttribute("aria-pressed", String(visible));
+		btn.setAttribute("aria-label", visible ? "Скрыть пароль" : "Показать пароль");
+		btn.querySelector("[data-login-eye-on]")?.classList.toggle("hidden", !visible);
+		btn.querySelector("[data-login-eye-off]")?.classList.toggle("hidden", visible);
+	};
+
+	document.addEventListener("click", (event) => {
+		const target = event.target;
+		if (!(target instanceof HTMLElement)) return;
+
+		if (target.closest("[data-login-close]")) {
+			event.preventDefault();
+			close();
+			return;
+		}
+
+		if (target.closest("[data-login-open]")) {
+			event.preventDefault();
+			open();
+			return;
+		}
+
+		const togglePwd = target.closest("[data-login-toggle-password]");
+		if (togglePwd) {
+			event.preventDefault();
+			const root = document.getElementById(rootId);
+			const input = root?.querySelector("[data-login-form] input[name='password']");
+			if (!(input instanceof HTMLInputElement)) return;
+			input.type = input.type === "password" ? "text" : "password";
+			syncPasswordToggle(togglePwd, input);
+			return;
+		}
+
+		if (target.closest("[data-login-visual-link]")) {
+			event.preventDefault();
+		}
+	});
+
+	document.addEventListener("submit", (event) => {
+		const form = event.target;
+		if (!(form instanceof HTMLFormElement) || !form.matches("[data-login-form]")) return;
+		event.preventDefault();
+		alert("Демо-вход: авторизация ещё не подключена.");
+		document.documentElement.dataset.vanillaLoggedIn = "true";
+		close();
+	});
+
+	document.addEventListener("keydown", (event) => {
+		if (event.key === "Escape") close();
+	});
+
+	window.addEventListener(evOpen, open);
+	window.addEventListener(evClose, close);
+	window.addEventListener(evToggle, () => {
+		const root = document.getElementById(rootId);
+		if (root && root.dataset.state === "open") close();
+		else open();
+	});
+
+	document.addEventListener("astro:page-load", close);
+</script>

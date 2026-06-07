@@ -1,0 +1,29 @@
+---
+import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
+import FluxProductCard from "../products/FluxProductCard.astro";
+import { catalogProducts } from "../../data/products";
+
+const sectionTitle = "Популярное";
+const sectionSubtitle =
+	"Топовые модели Flux, которые выбирают чаще всего.";
+
+const products = catalogProducts.slice(0, 4);
+---
+
+<section
+	id="popular"
+	class="w-full bg-white px-4 pb-16 pt-16 md:px-20 md:pb-24 md:pt-24 2xl:px-80"
+	aria-labelledby="popular-title"
+>
+	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-12">
+		<NtSectionHeading titleId="popular-title" title={sectionTitle} subtitle={sectionSubtitle} />
+
+		<ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-4" role="list">
+			{products.map((product) => (
+				<li>
+					<FluxProductCard product={product} />
+				</li>
+			))}
+		</ul>
+	</div>
+</section>

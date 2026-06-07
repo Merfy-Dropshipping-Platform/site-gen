@@ -1,0 +1,17 @@
+version: 2
+registries:
+  github-packages:
+    type: npm-registry
+    url: https://npm.pkg.github.com/
+    token: ${{ secrets.DEPENDABOT_GITHUB_PACKAGES_TOKEN }}
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    registries:
+      - github-packages
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 5
+    allow:
+      - dependency-name: "@merfy-dropshipping-platform/design-systems-theme"

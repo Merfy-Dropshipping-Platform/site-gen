@@ -1,0 +1,34 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Hero from "../components/sections/Hero.astro";
+import Collections from "../components/sections/Collections.astro";
+import Popular from "../components/sections/Popular.astro";
+import CollectionRows from "../components/sections/CollectionRows.astro";
+import TextBlock from "../components/sections/TextBlock.astro";
+import ImageBanner from "../components/sections/ImageBanner.astro";
+import Features from "../components/sections/Features.astro";
+import Journal from "../components/sections/Journal.astro";
+import Faq from "../components/sections/Faq.astro";
+import { collections, collectionsSecondary } from "../data/collections";
+import { catalogProducts } from "../data/products";
+---
+
+<Layout>
+	<Hero
+		title="STYLE’S WEAR COLLECTION SINCE 90’"
+		subtitle="Оставайтесь в центре внимания"
+		ctaText="Новые поступления"
+		ctaLink="/catalog"
+		backgroundImage="/images/4x/Главный_экран.png"
+	/>
+	<Collections items={collections} />
+	<Popular products={catalogProducts.slice(0, 3)} />
+	<CollectionRows />
+	<TextBlock />
+	<ImageBanner />
+	<Collections items={collectionsSecondary} id="collections-2" />
+	<Popular products={catalogProducts.slice(3, 6)} />
+	<Features />
+	<Journal />
+	<Faq />
+</Layout>

@@ -1,0 +1,24 @@
+---
+/**
+ * Вордмарк «Vanila» — SVG из Figma (футер/хедер, 89×28, #FFFFFF).
+ */
+import wordmarkSrc from "./Vanila.svg?url";
+
+interface Props {
+	class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<img
+	src={wordmarkSrc}
+	alt=""
+	width="89"
+	height="28"
+	loading="eager"
+	decoding="async"
+	draggable={false}
+	aria-hidden="true"
+	class:list={["block shrink-0 object-contain object-center", className]}
+/>

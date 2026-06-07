@@ -1,0 +1,41 @@
+---
+/**
+ * На статик-хостинге query string неизвестен при сборке: редирект с `/catalog?…` делаем в браузере,
+ * чтобы сохранялись `?category=` / `?collection=` и параметры поиска (`q` и т.д.).
+ */
+---
+
+<!doctype html>
+<html lang="ru">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="robots" content="noindex" />
+		<title>Перенаправление в каталог…</title>
+		<script is:inline>
+			(function () {
+				var path = location.pathname.replace(/\/+$/, "");
+				if (path !== "/catalog") return;
+				var params = new URLSearchParams(location.search);
+				var dest = "/catalog/textile";
+				if (params.get("category") === "decor" || params.get("collection") === "Декор") {
+					dest = "/catalog/decor";
+				}
+				if (params.get("category") === "textile" || params.get("collection") === "Текстиль") {
+					dest = "/catalog/textile";
+				}
+				params.delete("category");
+				params.delete("collection");
+				var rest = params.toString();
+				if (rest) dest += "?" + rest;
+				location.replace(dest + location.hash);
+			})();
+		</script>
+		<noscript>
+			<meta http-equiv="refresh" content="0;url=/catalog/textile" />
+		</noscript>
+	</head>
+	<body>
+		<noscript><a href="/catalog/textile">Перейти в каталог «Текстиль»</a></noscript>
+	</body>
+</html>

@@ -1,0 +1,31 @@
+---
+import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
+import BloomProductCard from "../products/BloomProductCard.astro";
+import { catalogProducts } from "../../data/products";
+
+const sectionTitle = "Главные хиты";
+const sectionSubtitle =
+	"Бестселлеры бренда — формулы, за которыми возвращаются снова и снова.";
+
+const products = catalogProducts.slice(0, 4);
+---
+
+<section
+	id="popular"
+	class="w-full bg-white px-4 pb-[80px] pt-[80px] md:px-20 md:pb-[120px] md:pt-[120px] 2xl:px-[300px]"
+	aria-labelledby="popular-title"
+>
+	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10">
+		<div data-animate>
+			<NtSectionHeading titleId="popular-title" title={sectionTitle} subtitle={sectionSubtitle} />
+		</div>
+
+		<ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4" role="list" data-animate data-animate-delay="0.1s">
+			{products.map((product) => (
+				<li>
+					<BloomProductCard product={product} />
+				</li>
+			))}
+		</ul>
+	</div>
+</section>

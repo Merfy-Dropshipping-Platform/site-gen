@@ -1,0 +1,79 @@
+---
+import NtSearchBar from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSearchBar.astro";
+import LunaPicture from "../img/LunaPicture.astro";
+import { SITE_TITLE } from "../../consts";
+
+interface Props {
+	title?: string;
+	subtitle?: string;
+	ctaText?: string;
+	ctaLink?: string;
+	aboutText?: string;
+	aboutLink?: string;
+	backgroundImage?: string;
+}
+
+const {
+	title = SITE_TITLE,
+	subtitle = "Там, где классика встречается с характером",
+	ctaText = "В каталог",
+	ctaLink = "#collections",
+	aboutText = "О нас",
+	aboutLink = "#about",
+	backgroundImage = "/images/4x/Главный_экран.png",
+} = Astro.props;
+---
+
+<section
+	class="relative w-full h-[1080px] overflow-hidden bg-white"
+	aria-labelledby="hero-title"
+>
+	<div class="relative h-full w-full">
+		<div class="absolute inset-0 z-0 h-[1080px] w-full overflow-hidden">
+			<LunaPicture
+				src={backgroundImage}
+				alt={title}
+				loading="eager"
+				fetchpriority="high"
+				class="absolute inset-0 size-full h-[1080px] object-cover object-center"
+			/>
+		</div>
+
+		<div
+			class="relative z-10 flex h-full w-full flex-col justify-between pb-10 pl-4 pr-4 pt-40 md:px-20 md:pt-48 lg:pt-52 2xl:px-[300px]"
+		>
+			<div class="flex max-w-[432px] flex-col gap-10">
+				<div class="flex flex-col gap-2">
+					<h1
+						id="hero-title"
+						class="font-comfortaa text-[32px] font-medium leading-[1.115] text-white"
+					>
+						{title}
+					</h1>
+					<p class="font-manrope text-[20px] font-medium leading-[1.366] text-white">
+						{subtitle}
+					</p>
+				</div>
+
+				<div class="flex flex-wrap gap-3">
+					<a
+						href={ctaLink}
+						class="inline-flex h-12 items-center justify-center rounded-[6px] border border-[#000000] bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-95"
+					>
+						{ctaText}
+					</a>
+					<a
+						href={aboutLink}
+						class="inline-flex h-12 items-center justify-center rounded-[6px] border border-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#FFFFFF] transition-colors hover:bg-[#FFFFFF]/10"
+					>
+						{aboutText}
+					</a>
+				</div>
+			</div>
+
+			<div class="mt-auto w-full max-w-[1320px] self-center">
+				<NtSearchBar />
+			</div>
+		</div>
+	</div>
+</section>

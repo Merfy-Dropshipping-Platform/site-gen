@@ -1,0 +1,36 @@
+---
+import type { Collection } from "../../data/collections";
+import FluxPicture from "../img/FluxPicture.astro";
+
+interface Props {
+	collection: Collection;
+	priority?: boolean;
+}
+
+const { collection, priority = false } = Astro.props;
+const href = `/catalog?collection=${encodeURIComponent(collection.name)}`;
+---
+
+<a
+	href={href}
+	class="group flex cursor-pointer flex-col gap-4 md:gap-5"
+	aria-label={collection.name}
+	data-nt="flux-collection-card"
+>
+	<div class="aspect-[430/500] w-full overflow-hidden bg-[#F5F5F5] rounded-[8px]">
+		<FluxPicture
+			src={collection.image}
+			alt={collection.name}
+			width="430"
+			height="500"
+			loading="eager"
+			fetchpriority={priority ? "high" : undefined}
+			class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+		/>
+	</div>
+	<h3
+		class="font-manrope text-[14px] font-normal leading-[1.366] text-[#000000] md:text-[16px]"
+	>
+		{collection.name}
+	</h3>
+</a>

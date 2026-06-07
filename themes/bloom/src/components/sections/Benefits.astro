@@ -1,0 +1,62 @@
+---
+interface Benefit {
+	title: string;
+	description: string;
+	icon: string;
+}
+
+const benefits: Benefit[] = [
+	{
+		title: "Натуральные ингредиенты",
+		description:
+			"Подарите своей коже лучшее. Натуральные масла и экстракты в нашей косметике питают и восстанавливают, сохраняя вашу красоту естественно и безопасно.",
+		icon: "/icons/benefit-1.png",
+	},
+	{
+		title: "Эксперты рекомендуют",
+		description:
+			"Выбор практикующих косметологов. Формула протестирована и рекомендована экспертами в области эстетической медицины. Доверьтесь профессионалам, которые знают о коже всё.",
+		icon: "/icons/benefit-2.png",
+	},
+	{
+		title: "Качественный состав",
+		description:
+			"Безупречный состав: тщательно подобранные активные ингредиенты высшей очистки. Мы выбираем лучшее, чтобы ваша кожа получала идеальный уход каждый день.",
+		icon: "/icons/benefit-3.png",
+	},
+];
+---
+
+<section
+	id="benefits"
+	class="w-full bg-[#e38e9f] px-4 py-20 md:px-20 md:py-[120px] 2xl:px-[300px]"
+>
+	<ul
+		class="mx-auto grid w-full max-w-[1320px] grid-cols-1 justify-items-center gap-10 md:grid-cols-2 xl:grid-cols-3"
+		role="list"
+	>
+		{benefits.map((benefit, index) => (
+			<li
+				class="group flex min-h-[252px] w-full max-w-[429px] flex-col items-center gap-6 rounded-[12px] bg-white px-6 py-8 text-center transition-transform duration-300 ease-out hover:-translate-y-1"
+				data-animate
+				data-animate-delay={`${index * 0.08}s`}
+			>
+				<img
+					src={benefit.icon}
+					alt=""
+					width="44"
+					height="44"
+					loading="lazy"
+					decoding="async"
+					class="h-11 w-11 object-contain transition-transform duration-300 ease-out group-hover:scale-105"
+				/>
+				<h3 class="font-urbanist text-[20px] font-light uppercase leading-none text-black">
+					{benefit.title}
+				</h3>
+				<p class="font-inter text-[16px] font-light leading-none text-[#999999]">
+					{benefit.description}
+				</p>
+			</li>
+		))}
+	</ul>
+</section>

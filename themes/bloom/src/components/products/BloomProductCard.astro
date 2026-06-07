@@ -1,0 +1,113 @@
+---
+import type { CatalogProduct } from "../../data/products";
+import BloomPicture from "../img/BloomPicture.astro";
+
+interface Props {
+	product: CatalogProduct;
+	priority?: boolean;
+}
+
+const { product, priority = false } = Astro.props;
+const href = `/products/${product.id}`;
+
+const swatchColors: Record<string, string> = {
+	pink: "#e38e9f",
+	"light-pink": "#f7a2b3",
+	white: "#ffffff",
+	brown: "#8b5a4a",
+	black: "#000000",
+	olive: "#6b705c",
+	gray: "#cccccc",
+};
+---
+
+<article
+	class="group flex flex-col gap-4"
+	data-nt="bloom-product-card"
+	aria-label={product.name}
+>
+	<a
+		href={href}
+		class="relative block aspect-square w-full overflow-hidden rounded-[12px] bg-[#F5F5F5]"
+		aria-label={product.name}
+	>
+		<BloomPicture
+			src={product.image}
+			alt={product.name}
+			loading="eager"
+			fetchpriority={priority ? "high" : undefined}
+			class="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
+		/>
+		{product.discount && (
+			<span
+				class="absolute left-2 top-2 inline-flex h-6 items-center rounded-[16px] bg-[#e38e9f] px-1.5 font-inter text-[12px] font-normal leading-none text-white"
+			>
+				Скидка
+			</span>
+		)}
+		{product.colors.length > 0 && (
+			<div
+				class="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-white/90 p-1"
+				aria-hidden="true"
+			>
+				{product.colors.map((color) => (
+					<span
+						class="size-2 shrink-0 rounded-full border border-[#F5F5F5]"
+						style={`background-color: ${swatchColors[color] ?? swatchColors.pink}`}
+					/>
+				))}
+			</div>
+		)}
+	</a>
+	<div class="flex flex-col gap-2">
+		<a
+			href={href}
+			class="bloom-product-name font-inter text-[16px] font-light leading-none text-[#000000] transition-opacity hover:opacity-70"
+		>
+			{product.name}
+		</a>
+		<div class="flex flex-wrap items-baseline gap-2">
+			<span class="bloom-product-price font-inter text-[16px] font-light leading-none text-[#000000]">
+				{product.price}
+			</span>
+			{product.oldPrice && (
+				<span class="bloom-product-oldprice font-inter text-[16px] font-light leading-none text-[#999999] line-through">
+					{product.oldPrice}
+				</span>
+			)}
+		</div>
+		{product.inStock ? (
+			<button
+				type="button"
+				data-add-to-cart
+				data-product-id={product.id}
+				data-name={product.name}
+				data-price={product.price}
+				data-old-price={product.oldPrice ?? ""}
+				data-image={product.image}
+				data-volume={product.volume ?? ""}
+				class="flex h-12 w-full items-center justify-center rounded-full bg-[#e38e9f] px-4 font-inter text-[16px] font-light leading-none text-white transition-opacity hover:opacity-90 active:scale-95"
+			>
+				В корзину
+			</button>
+		) : (
+			<button
+				type="button"
+				disabled
+				class="flex h-12 w-full cursor-not-allowed items-center justify-center rounded-full bg-[#fdf4f6] px-4 font-inter text-[16px] font-light leading-none text-[#e38e9f]/60"
+			>
+				Нет в наличии
+			</button>
+		)}
+	</div>
+</article>
+
+<style>
+	@media (max-width: 639.98px) {
+		.bloom-product-name,
+		.bloom-product-price,
+		.bloom-product-oldprice {
+			font-size: 12px;
+		}
+	}
+</style>

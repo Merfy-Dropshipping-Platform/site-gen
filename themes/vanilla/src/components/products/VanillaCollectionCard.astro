@@ -1,0 +1,36 @@
+---
+import type { Collection } from "../../data/collections";
+import VanillaPicture from "../img/VanillaPicture.astro";
+
+interface Props {
+	collection: Collection;
+	priority?: boolean;
+}
+
+const { collection, priority = false } = Astro.props;
+const href = collection.name.includes("Декор") ? "/catalog/decor" : "/catalog/textile";
+---
+
+<a
+	href={href}
+	class="group flex cursor-pointer flex-col gap-3"
+	aria-label={collection.name}
+	data-nt="vanilla-collection-card"
+>
+	<div class="aspect-[1/1] w-full overflow-hidden bg-[var(--vanilla-card)]">
+		<VanillaPicture
+			src={collection.image}
+			alt={collection.name}
+			width="652"
+			height="652"
+			loading="eager"
+			fetchpriority={priority ? "high" : undefined}
+			class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.08]"
+		/>
+	</div>
+	<h3
+		class="font-vanilla-arsenal text-base font-normal uppercase leading-none text-[var(--vanilla-announcement-bg)] transition-opacity group-hover:opacity-70"
+	>
+		{collection.name}
+	</h3>
+</a>

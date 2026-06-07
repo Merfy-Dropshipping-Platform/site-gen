@@ -1,0 +1,95 @@
+---
+import BloomPicture from "../img/BloomPicture.astro";
+
+const sectionTitle = "Галерея";
+
+const product = {
+	title: "Увлажняющее молочко",
+	price: "1190 ₽",
+	href: "/products/bag-4",
+	image: "/images/milk.webp",
+};
+
+const slides = 3;
+const activeSlide = 0;
+---
+
+<section
+	id="gallery"
+	class="w-full bg-white px-4 py-20 md:px-20 md:py-[120px] 2xl:px-[300px]"
+	aria-labelledby="gallery-title"
+>
+	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10">
+		<h2
+			id="gallery-title"
+			data-animate
+			class="font-urbanist text-[18px] font-normal uppercase leading-none text-[#e38e9f] md:text-[20px]"
+		>
+			{sectionTitle}
+		</h2>
+
+		<div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-2" data-animate data-animate-delay="0.1s">
+			<div class="group relative aspect-square w-full overflow-hidden rounded-[12px] bg-[#f5f5f5]">
+				<BloomPicture
+					src="/images/balaklava.webp"
+					alt="Галерея"
+					width={652}
+					height={652}
+					loading="lazy"
+					class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+				/>
+			</div>
+
+			<div class="flex w-full max-w-[652px] flex-col gap-5 lg:max-w-none">
+				<a
+					href={product.href}
+					class="group block"
+					aria-label={`${product.title}, ${product.price}`}
+				>
+					<div class="relative aspect-[652/594] w-full overflow-hidden rounded-[12px] bg-[#f5f5f5]">
+						<BloomPicture
+							src={product.image}
+							alt={product.title}
+							width={652}
+							height={594}
+							loading="lazy"
+							class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
+						/>
+					</div>
+				</a>
+
+				<div class="flex flex-col gap-1">
+					<a href={product.href} class="font-inter text-[16px] font-light leading-normal text-black transition-opacity hover:opacity-70">
+						{product.title}
+					</a>
+					<span class="font-inter text-[16px] font-light leading-normal text-black">
+						{product.price}
+					</span>
+				</div>
+
+				<div class="flex justify-end gap-2" aria-label="Навигация по галерее" role="tablist">
+					{Array.from({ length: slides }).map((_, index) => (
+						<button
+							type="button"
+							role="tab"
+							aria-selected={index === activeSlide}
+							aria-label={`Слайд ${index + 1}`}
+							class:list={[
+								"h-2 w-2 rounded-full transition-colors",
+								index === activeSlide ? "bg-black" : "bg-[#d9d9d9]",
+							]}
+						/>
+					))}
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<style>
+	#gallery picture img {
+		height: 100%;
+		width: 100%;
+		max-width: none;
+	}
+</style>

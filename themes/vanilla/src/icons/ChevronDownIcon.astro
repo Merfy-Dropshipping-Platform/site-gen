@@ -1,0 +1,21 @@
+---
+import { withBase } from "../lib/with-base";
+
+interface Props {
+	class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<img
+	src={withBase("/icons/dropdown-chevron.svg")}
+	alt=""
+	width="10"
+	height="6"
+	loading="lazy"
+	decoding="async"
+	draggable={false}
+	aria-hidden="true"
+	class:list={["block shrink-0 object-contain", className]}
+/>

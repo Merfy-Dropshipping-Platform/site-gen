@@ -1,0 +1,145 @@
+---
+import VanillaPicture from "../img/VanillaPicture.astro";
+import ChevronUpIcon from "../../icons/ChevronUpIcon.astro";
+import ChevronDownIcon from "../../icons/ChevronDownIcon.astro";
+
+interface Props {
+	images: string[];
+	alt: string;
+}
+
+const { images, alt } = Astro.props;
+const thumbs = images.length > 0 ? images : [];
+const mainSrc = thumbs[0] ?? "";
+---
+
+<div class="flex w-full flex-col gap-4 lg:flex-row lg:items-start lg:gap-5" data-pdp-gallery>
+	<div class="relative mx-auto aspect-square w-full max-w-[552px] shrink-0 overflow-hidden bg-[var(--vanilla-card)] lg:mx-0 lg:size-[552px]">
+		<VanillaPicture
+			src={mainSrc}
+			alt={alt}
+			width="552"
+			height="552"
+			loading="eager"
+			fetchpriority="high"
+			class="h-full w-full object-cover"
+			data-pdp-main
+		/>
+	</div>
+
+	{thumbs.length > 0 && (
+		<div class="mx-auto flex w-full max-w-[552px] flex-row items-center gap-3 lg:mx-0 lg:w-auto lg:flex-col lg:gap-2">
+			<button
+				type="button"
+				class="hidden size-6 shrink-0 items-center justify-center transition-opacity hover:opacity-70 disabled:pointer-events-none disabled:opacity-30 lg:flex"
+				aria-label="Прокрутить миниатюры вверх"
+				data-pdp-thumb-prev
+			>
+				<ChevronUpIcon class="size-2.5" />
+			</button>
+
+			<div
+				class="flex flex-1 gap-2 overflow-x-auto [scrollbar-width:none] lg:max-h-[280px] lg:w-[88px] lg:flex-col lg:overflow-x-hidden lg:overflow-y-auto [&::-webkit-scrollbar]:hidden"
+				data-pdp-thumb-list
+			>
+				{thumbs.map((img, index) => (
+					<button
+						type="button"
+						class:list={[
+							"aspect-square w-[72px] shrink-0 overflow-hidden bg-[var(--vanilla-card)] transition-[opacity,box-shadow] hover:opacity-80 lg:size-[88px]",
+							index === 0 ? "opacity-100 ring-1 ring-black/30" : "opacity-50",
+						]}
+						data-pdp-thumb
+						data-image={img}
+						data-index={index}
+						aria-label={`Показать изображение ${index + 1}`}
+						aria-current={index === 0 ? "true" : undefined}
+					>
+						<VanillaPicture src={img} alt={alt} width="88" height="88" loading="lazy" class="h-full w-full object-cover" />
+					</button>
+				))}
+			</div>
+
+			<button
+				type="button"
+				class="hidden size-6 shrink-0 items-center justify-center transition-opacity hover:opacity-70 disabled:pointer-events-none disabled:opacity-30 lg:flex"
+				aria-label="Прокрутить миниатюры вниз"
+				data-pdp-thumb-next
+			>
+				<ChevronDownIcon class="size-2.5" />
+			</button>
+		</div>
+	)}
+</div>
+
+<script>
+	const gallery = document.querySelector("[data-pdp-gallery]");
+	if (!gallery) {
+		/* no gallery */
+	} else {
+		const main = gallery.querySelector<HTMLImageElement>("[data-pdp-main]");
+		const thumbList = gallery.querySelector<HTMLElement>("[data-pdp-thumb-list]");
+		const prevBtn = gallery.querySelector<HTMLButtonElement>("[data-pdp-thumb-prev]");
+		const nextBtn = gallery.querySelector<HTMLButtonElement>("[data-pdp-thumb-next]");
+		const thumbs = Array.from(gallery.querySelectorAll<HTMLButtonElement>("[data-pdp-thumb]"));
+
+		const setMain = (src: string) => {
+			if (!main || !src) return;
+			const webp = src.replace(/\.(png|jpe?g)$/i, ".webp");
+			main.src = webp;
+			const source = main.closest("picture")?.querySelector<HTMLSourceElement>("source[type='image/webp']");
+			if (source) source.srcset = webp;
+			document.querySelector<HTMLElement>("[data-add-to-cart]")?.setAttribute("data-image", src);
+			document.querySelector<HTMLElement>("[data-action='buy-now']")?.setAttribute("data-image", src);
+		};
+
+		const setActiveThumb = (active: HTMLButtonElement) => {
+			thumbs.forEach((t) => {
+				t.classList.remove("ring-1", "ring-black/30", "opacity-100", "opacity-50");
+				t.classList.add("opacity-50");
+				t.removeAttribute("aria-current");
+			});
+			active.classList.remove("opacity-50");
+			active.classList.add("ring-1", "ring-black/30", "opacity-100");
+			active.setAttribute("aria-current", "true");
+			active.scrollIntoView({ block: "nearest", behavior: "smooth" });
+		};
+
+		thumbs.forEach((thumb) => {
+			thumb.addEventListener("click", () => {
+				const src = thumb.dataset.image;
+				if (src) setMain(src);
+				setActiveThumb(thumb);
+			});
+		});
+
+		const getScrollStep = () => {
+			const first = thumbs[0];
+			if (!first || !thumbList) return 96;
+			const gap = Number.parseFloat(getComputedStyle(thumbList).gap) || 8;
+			return first.offsetHeight + gap;
+		};
+
+		const updateScrollButtons = () => {
+			if (!thumbList) return;
+			const { scrollTop, scrollHeight, clientHeight } = thumbList;
+			const overflow = scrollHeight > clientHeight + 1;
+			const atTop = scrollTop <= 1;
+			const atBottom = scrollTop + clientHeight >= scrollHeight - 1;
+
+			prevBtn?.toggleAttribute("disabled", !overflow || atTop);
+			nextBtn?.toggleAttribute("disabled", !overflow || atBottom);
+		};
+
+		prevBtn?.addEventListener("click", () => {
+			thumbList?.scrollBy({ top: -getScrollStep(), behavior: "smooth" });
+		});
+		nextBtn?.addEventListener("click", () => {
+			thumbList?.scrollBy({ top: getScrollStep(), behavior: "smooth" });
+		});
+
+		thumbList?.addEventListener("scroll", updateScrollButtons, { passive: true });
+		window.addEventListener("resize", updateScrollButtons);
+		updateScrollButtons();
+	}
+</script>

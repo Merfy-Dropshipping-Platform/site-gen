@@ -1,0 +1,146 @@
+---
+import Layout from "../layouts/Layout.astro";
+import LunaProductCard from "../components/products/LunaProductCard.astro";
+import NtFilterSidebar from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtFilterSidebar.astro";
+import NtFilterPanel from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtFilterPanel.astro";
+import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+import { catalogProducts } from "../data/products";
+
+const layout = (Astro.url.searchParams.get("layout") ?? "row") === "sidebar" ? "sidebar" : "row";
+const totalCount = catalogProducts.length;
+---
+
+<Layout title="Каталог" description="Каталог Luna — коллекции, хиты, новинки">
+	<section
+		class="w-full bg-white px-4 pb-[80px] pt-10 md:px-20 md:pb-[120px] md:pt-16 2xl:px-[300px]"
+		aria-labelledby="catalog-title"
+	>
+		<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10">
+			<header class="flex flex-col gap-2">
+				<h1
+					id="catalog-title"
+					class="font-comfortaa text-[28px] font-normal uppercase leading-[1.115] text-[#000000] md:text-[32px] lg:text-[36px]"
+				>
+					КАТАЛОГ
+				</h1>
+				<p class="font-manrope text-[16px] font-light leading-[1.366] text-[#999999] md:text-[18px] lg:text-[20px]">
+					Здесь начинается персональный стиль
+				</p>
+			</header>
+
+			{layout === "row" ? (
+				<div class="flex flex-col gap-6">
+					<div class="flex flex-wrap items-center justify-between gap-3" data-nt="catalog-filters">
+						<div class="flex flex-wrap items-start gap-3">
+							<details class="relative">
+								<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[#F5F5F5] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+									<span>Наличие</span>
+									<NtIcon name="dropdown-chevron" sizeClass="size-5" class="transition-transform group-open:rotate-180" />
+								</summary>
+								<div class="absolute left-0 top-full z-10 mt-1 w-full">
+									<NtFilterPanel panel="stock" />
+								</div>
+							</details>
+
+							<details class="relative">
+								<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[#F5F5F5] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+									<span>Стоимость</span>
+									<NtIcon name="dropdown-chevron" sizeClass="size-5" class="transition-transform group-open:rotate-180" />
+								</summary>
+								<div class="absolute left-0 top-full z-10 mt-1 w-full">
+									<NtFilterPanel panel="price" />
+								</div>
+							</details>
+
+							<details class="relative">
+								<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[#F5F5F5] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+									<span>Цвет</span>
+									<NtIcon name="dropdown-chevron" sizeClass="size-5" class="transition-transform group-open:rotate-180" />
+								</summary>
+								<div class="absolute left-0 top-full z-10 mt-1 w-full">
+									<NtFilterPanel panel="color" />
+								</div>
+							</details>
+						</div>
+
+						<details class="relative">
+							<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-end gap-2 rounded-[6px] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+								<span>По популярности</span>
+								<NtIcon name="dropdown-chevron" sizeClass="size-5" />
+							</summary>
+							<div class="absolute right-0 top-full z-10 mt-1 w-[180px]">
+								<NtFilterPanel panel="sort" />
+							</div>
+						</details>
+					</div>
+
+					<ul
+						class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4"
+						role="list"
+						data-nt="catalog-grid"
+					>
+						{catalogProducts.map((product) => (
+							<li data-product-id={product.id}>
+								<LunaProductCard product={product} />
+							</li>
+						))}
+					</ul>
+
+					<div class="flex flex-wrap items-center justify-between gap-4">
+						<button
+							type="button"
+							data-action="load-more"
+							class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[#71C0FF] px-4 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-95 md:text-[16px]"
+						>
+							Смотреть ещё
+						</button>
+						<span class="font-manrope text-[14px] font-normal leading-normal text-[#999999]">
+							{totalCount} товаров
+						</span>
+					</div>
+				</div>
+			) : (
+				<div class="flex flex-col gap-8 lg:flex-row lg:gap-10">
+					<NtFilterSidebar class="hidden w-[172px] shrink-0 lg:flex xl:w-[294px]" />
+
+					<div class="flex flex-1 flex-col gap-8">
+						<ul
+							class="grid grid-cols-2 gap-4 sm:grid-cols-3"
+							role="list"
+							data-nt="catalog-grid"
+						>
+							{catalogProducts.map((product) => (
+								<li data-product-id={product.id}>
+									<LunaProductCard product={product} />
+								</li>
+							))}
+						</ul>
+
+						<div class="flex flex-wrap items-center justify-between gap-4">
+							<button
+								type="button"
+								data-action="load-more"
+								class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[#71C0FF] px-4 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-95 md:text-[16px]"
+							>
+								Смотреть ещё
+							</button>
+							<span class="font-manrope text-[14px] font-normal leading-normal text-[#999999]">
+								{totalCount} товаров
+							</span>
+						</div>
+					</div>
+				</div>
+			)}
+		</div>
+	</section>
+</Layout>
+
+<script>
+	document.addEventListener("click", (event) => {
+		const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-action='load-more']");
+		if (!button) return;
+		button.disabled = true;
+		button.textContent = "Больше товаров нет";
+		button.classList.add("opacity-60", "pointer-events-none");
+	});
+</script>

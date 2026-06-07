@@ -1,0 +1,22 @@
+---
+/** Иконка play поверх видео-блока (Figma, 44×44). */
+import iconSrc from "./icon-video.svg?url";
+
+interface Props {
+	class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<img
+	src={iconSrc}
+	alt=""
+	width="44"
+	height="44"
+	loading="lazy"
+	decoding="async"
+	draggable={false}
+	aria-hidden="true"
+	class:list={["block shrink-0 object-contain object-center", className]}
+/>

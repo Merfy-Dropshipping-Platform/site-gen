@@ -1,0 +1,22 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Hero from "../components/sections/Hero.astro";
+import Collections from "../components/sections/Collections.astro";
+import Popular from "../components/sections/Popular.astro";
+import Gallery from "../components/sections/Gallery.astro";
+import Puk from "../components/sections/Puk.astro";
+---
+
+<Layout>
+	<Hero
+		title="Технологии без паузы"
+		subtitle="Будущее — в режиме онлайн. Ваш новый гаджет — уже в наличии."
+		ctaText="В каталог"
+		ctaLink="/catalog"
+		backgroundImage="/images/hero-flux.png"
+	/>
+	<Collections />
+	<Popular />
+	<Gallery />
+	<Puk />
+</Layout>

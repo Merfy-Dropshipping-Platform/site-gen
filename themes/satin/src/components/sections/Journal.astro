@@ -1,0 +1,60 @@
+---
+import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+import SatinPicture from "../img/SatinPicture.astro";
+
+interface Post {
+	title: string;
+	image: string;
+	date: string;
+	excerpt: string;
+	href?: string;
+}
+
+interface Props {
+	posts?: Post[];
+}
+
+const defaultPosts: Post[] = [
+	{
+		date: "01.05, 12:41",
+		title: "Летняя коллекция уже здесь",
+		excerpt: "Лён, хлопок, свободные силуэты — 12 оттенков, которые сочетаются между собой без раздумий.",
+		image: "/images/4x/journal-1.png",
+	},
+	{
+		date: "21.04, 9:31",
+		title: "Доставка за 1 день — бесплатно",
+		excerpt: "Заказ от 5 000 ₽ по Москве — на следующий день и без доплаты. Примерка при курьере, возврат на месте.",
+		image: "/images/4x/journal-2.png",
+	},
+	{
+		date: "14.03, 8:00",
+		title: "Новая весенняя коллекция",
+		excerpt: "Тренчи, трикотаж, рубашки — остатки весенней коллекции со скидкой. До воскресенья, пока есть размеры.",
+		image: "/images/4x/journal-3.png",
+	},
+];
+
+const { posts = defaultPosts } = Astro.props;
+---
+
+<section class="satin-pad w-full bg-white py-10 md:py-14" aria-label="Журнал">
+	<ul class="satin-container grid grid-cols-1 gap-4 sm:grid-cols-3" role="list">
+		{posts.map((post) => (
+			<li class="flex flex-col gap-6 bg-[#F5F5F5] p-4">
+				<div class="relative aspect-square w-full overflow-hidden bg-[#ECECEC]">
+					<SatinPicture src={post.image} alt={post.title} loading="lazy" class="absolute inset-0 size-full object-cover" />
+				</div>
+				<div class="flex flex-col gap-2">
+					<p class="font-manrope text-[14px] font-light uppercase tracking-[0.04em] text-[#999999]">{post.date}</p>
+					<h3 class="font-logo text-[16px] font-normal uppercase leading-[1.15] text-[#000000]">{post.title}</h3>
+					<p class="font-manrope text-[14px] font-light leading-[1.5] text-[#999999]">{post.excerpt}</p>
+				</div>
+				<a href={post.href ?? "/blog"} class="inline-flex items-center gap-2 font-manrope text-[14px] font-normal uppercase leading-normal text-[#000000] transition-opacity hover:opacity-70">
+					<span>Перейти</span>
+					<NtIcon name="arrow-right" sizeClass="size-5" />
+				</a>
+			</li>
+		))}
+	</ul>
+</section>

@@ -1,0 +1,33 @@
+---
+const philosophy = {
+	description:
+		"Уход за кожей и самочувствием для динамичной жизни. Мы сочетаем активные ингредиенты из моря и гор с научными знаниями о коже и опьяняющими ароматами, создавая чувственный опыт, который успокаивает и восстанавливает кожу.",
+	ctaText: "Подробнее",
+	ctaLink: "/about",
+};
+---
+
+<section
+	id="philosophy"
+	class="w-full bg-[#e38e9f] px-4 py-20 md:px-20 md:py-[120px] 2xl:px-[300px]"
+	aria-labelledby="philosophy-text"
+>
+	<div class="mx-auto flex w-full max-w-[1320px] flex-col items-center gap-10 text-center">
+		<p
+			id="philosophy-text"
+			data-animate
+			class="w-full max-w-[1320px] font-urbanist text-[24px] font-normal uppercase leading-none text-white"
+		>
+			{philosophy.description}
+		</p>
+
+		<a
+			href={philosophy.ctaLink}
+			class="inline-flex h-12 items-center justify-center rounded-full bg-white px-6 font-inter text-[16px] font-light leading-none text-black transition-opacity hover:opacity-90 active:scale-95"
+			data-animate
+			data-animate-delay="0.1s"
+		>
+			{philosophy.ctaText}
+		</a>
+	</div>
+</section>

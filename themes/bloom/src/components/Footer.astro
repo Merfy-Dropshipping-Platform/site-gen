@@ -1,0 +1,199 @@
+---
+import SocialIcon from "./footer/SocialIcon.astro";
+import { SITE_TITLE } from "../consts";
+import { categoryPages } from "../data/categories";
+
+const today = new Date();
+
+const navColumn = [
+	...categoryPages,
+	{ label: "О нас", href: "/about" },
+];
+
+const legalLinks = [
+	{ label: "Политика доставки", href: "/legal/delivery" },
+	{ label: "Политика возврата", href: "/legal/return" },
+	{ label: "Условия обслуживания", href: "/legal/terms" },
+	{ label: "Политика конфиденциальности", href: "/legal/privacy" },
+];
+
+const phone = "+7 (000) 000-00-00";
+const email = "example@bloom.ru";
+const emailPlaceholder = email;
+
+const socials = [
+	{ platform: "VK", href: "#" },
+	{ platform: "YouTube", href: "#" },
+	{ platform: "Яндекс Дзен", href: "#" },
+	{ platform: "TikTok", href: "#" },
+	{ platform: "Telegram", href: "#" },
+];
+---
+
+<footer class="w-full bg-white">
+	<div class="mx-auto w-full max-w-[1920px] px-4 pt-16 pb-24 md:px-20 md:pb-28 2xl:px-[300px]" data-animate>
+		<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-12">
+			<!-- Block 1: Newsletter -->
+			<section
+				class="flex w-full flex-col gap-6 lg:flex-row lg:items-start lg:justify-between"
+				aria-labelledby="newsletter-heading"
+			>
+				<div class="flex flex-col gap-2">
+					<h2
+						id="newsletter-heading"
+						class="font-urbanist text-[20px] font-light uppercase leading-normal text-black"
+					>
+						ПОДПИШИТЕСЬ НА РАССЫЛКУ
+					</h2>
+					<p class="font-inter text-[16px] font-light leading-normal text-[#999999]">
+						Подпишитесь на наши акции и новости
+					</p>
+				</div>
+
+				<div class="flex w-full max-w-[318px] flex-col gap-2 lg:shrink-0">
+					<form
+						class="flex h-10 w-full items-center gap-2 rounded-full border border-[#FFD4E5] bg-white pl-4 pr-1 transition-colors focus-within:border-[#E38E9F]"
+						data-newsletter-form
+					>
+						<input
+							type="email"
+							name="email"
+							required
+							placeholder={emailPlaceholder}
+							aria-label="Email"
+							class="min-w-0 flex-1 bg-transparent font-inter text-[14px] font-light leading-normal text-black outline-none placeholder:text-[#FFD4E5]"
+						/>
+						<button
+							type="submit"
+							class="inline-flex h-8 shrink-0 items-center justify-center rounded-full bg-[#FDF4F6] px-4 font-inter text-[12px] font-light leading-normal text-[#E38E9F] transition-opacity hover:opacity-80 active:scale-95"
+						>
+							Отправить
+						</button>
+					</form>
+					<p
+						data-newsletter-status
+						role="status"
+						class="hidden font-inter text-[14px] font-light leading-normal text-[#E38E9F]"
+					></p>
+				</div>
+			</section>
+
+			<!-- Block 2: Main footer -->
+			<section
+				class="flex w-full flex-col gap-10 lg:flex-row lg:items-start lg:justify-between lg:gap-16"
+				aria-label="Навигация по сайту"
+			>
+				<div class="flex flex-col items-start">
+					<a href="/" class="inline-flex transition-opacity hover:opacity-80" aria-label={SITE_TITLE}>
+						<img
+							src="/icons/Bloom.svg"
+							alt={SITE_TITLE}
+							width="65"
+							height="19"
+							class="h-[19px] w-[65px]"
+							decoding="async"
+						/>
+					</a>
+
+					<address class="mt-8 flex flex-col gap-[3px] not-italic">
+						<span class="font-inter text-[14px] font-light leading-[18px] text-[#999999]">
+							Адрес:
+						</span>
+						<span class="font-inter text-[14px] font-light leading-[18px] text-[#999999]">
+							г. Москва,
+						</span>
+						<span class="font-inter text-[14px] font-light leading-[18px] text-[#999999]">
+							ул. Пушкина,
+						</span>
+						<span class="font-inter text-[14px] font-light leading-[18px] text-[#999999]">
+							д. 0
+						</span>
+					</address>
+
+					<div class="mt-5 flex flex-col gap-[3px]">
+						<span class="font-inter text-[14px] font-light leading-[18px] text-[#999999]">
+							Контакты:
+						</span>
+						<a
+							href={`tel:${phone.replace(/[^+\d]/g, "")}`}
+							class="font-inter text-[14px] font-light leading-[18px] text-[#999999] transition-opacity hover:opacity-70"
+						>
+							{phone}
+						</a>
+						<a
+							href={`mailto:${email}`}
+							class="font-inter text-[14px] font-light leading-[18px] text-[#999999] transition-opacity hover:opacity-70"
+						>
+							{email}
+						</a>
+					</div>
+
+					<div class="mt-6 flex flex-wrap items-center gap-2">
+						{socials.map((s) => (
+							<SocialIcon
+								href={s.href}
+								ariaLabel={s.platform}
+								platform={s.platform}
+							/>
+						))}
+					</div>
+				</div>
+
+				<ul class="flex flex-col gap-3 lg:ml-auto lg:pt-0" role="list">
+					{navColumn.map((link) => (
+						<li>
+							<a
+								href={link.href}
+								class="font-inter text-[14px] font-light leading-normal text-black transition-opacity hover:opacity-70"
+							>
+								{link.label}
+							</a>
+						</li>
+					))}
+				</ul>
+			</section>
+
+			<!-- Block 3: Legal row -->
+			<section class="flex w-full flex-col gap-4 pt-2" aria-label="Правовая информация">
+				<div class="h-px w-full bg-[#E38E9F]/50" aria-hidden="true"></div>
+
+				<div class="flex w-full flex-col gap-3 md:flex-row md:items-center md:justify-between">
+					<p class="font-inter text-[14px] font-light leading-normal text-[#999999]">
+						© {today.getFullYear()} {SITE_TITLE} Theme Все права защищены.
+					</p>
+
+					<div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+						{legalLinks.map((link) => (
+							<a
+								href={link.href}
+								class="font-inter text-[14px] font-light leading-normal text-black underline underline-offset-2 transition-opacity hover:opacity-70"
+							>
+								{link.label}
+							</a>
+						))}
+					</div>
+				</div>
+			</section>
+		</div>
+	</div>
+
+	<!-- Block 4: Bottom pink bar -->
+	<div class="w-full bg-[#E38E9F] py-5">
+		<p class="text-center font-inter text-[14px] font-light leading-normal text-white">
+			© {today.getFullYear()} {SITE_TITLE} Theme Все права защищены. Powered by Merfy
+		</p>
+	</div>
+</footer>
+
+<script>
+	document.querySelector<HTMLFormElement>("[data-newsletter-form]")?.addEventListener("submit", (event) => {
+		event.preventDefault();
+		const form = event.currentTarget as HTMLFormElement;
+		const status = document.querySelector<HTMLElement>("[data-newsletter-status]");
+		if (status) {
+			status.textContent = "Спасибо! Мы отправим вам приветственное письмо.";
+			status.classList.remove("hidden");
+		}
+		form.reset();
+	});
+</script>

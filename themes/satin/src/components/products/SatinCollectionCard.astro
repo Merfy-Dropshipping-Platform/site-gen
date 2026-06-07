@@ -1,0 +1,36 @@
+---
+import type { Collection } from "../../data/collections";
+import SatinPicture from "../img/SatinPicture.astro";
+
+interface Props {
+	collection: Collection;
+	priority?: boolean;
+}
+
+const { collection, priority = false } = Astro.props;
+const href = `/catalog?collection=${encodeURIComponent(collection.name)}`;
+---
+
+<a
+	href={href}
+	class="group flex cursor-pointer flex-col gap-3"
+	aria-label={collection.name}
+	data-nt="satin-collection-card"
+>
+	<div class="aspect-[430/564] w-full overflow-hidden bg-[#F5F5F5]">
+		<SatinPicture
+			src={collection.image}
+			alt={collection.name}
+			width="430"
+			height="564"
+			loading="eager"
+			fetchpriority={priority ? "high" : undefined}
+			class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+		/>
+	</div>
+	<h3
+		class="font-manrope text-[16px] font-normal uppercase leading-tight text-[#000000]"
+	>
+		{collection.name}
+	</h3>
+</a>

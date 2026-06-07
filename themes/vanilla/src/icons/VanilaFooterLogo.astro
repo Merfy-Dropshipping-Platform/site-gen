@@ -1,0 +1,21 @@
+---
+/** Вордмарк Vanila для тёмного футера (Figma, public/icons/Vanila-footer.svg). */
+import { withBase } from "../lib/with-base";
+
+interface Props {
+	class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<img
+	src={withBase("/icons/Vanila-footer.svg")}
+	alt=""
+	width="89"
+	height="28"
+	loading="lazy"
+	decoding="async"
+	draggable={false}
+	class:list={["block shrink-0 object-contain object-center", className]}
+/>

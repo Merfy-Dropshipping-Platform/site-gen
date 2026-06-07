@@ -1,0 +1,19 @@
+---
+import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
+import LunaCollectionCard from "../products/LunaCollectionCard.astro";
+import { collections } from "../../data/collections";
+
+const sectionTitle = "Коллекции";
+const sectionSubtitle = "Сезонные подборки Luna для женского и мужского гардероба.";
+---
+
+<section id="collections" class="w-full bg-white px-4 pb-[80px] pt-[80px] md:px-20 md:pb-[120px] md:pt-[120px] 2xl:px-[300px]" aria-labelledby="collections-title">
+	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10">
+		<NtSectionHeading titleId="collections-title" title={sectionTitle} subtitle={sectionSubtitle} />
+		<ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">
+			{collections.map((collection, index) => (
+				<li><LunaCollectionCard collection={collection} priority={index < 3} /></li>
+			))}
+		</ul>
+	</div>
+</section>

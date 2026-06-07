@@ -1,0 +1,34 @@
+---
+import BaseHead from "../components/BaseHead.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import NtCartDrawer from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtCartDrawer.astro";
+import { SITE_DESCRIPTION, SITE_TITLE } from "../consts";
+
+interface Props {
+	title?: string;
+	description?: string;
+}
+
+const { title, description = SITE_DESCRIPTION } = Astro.props;
+const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
+---
+
+<!doctype html>
+<html lang="ru">
+	<head>
+		<BaseHead title={pageTitle} description={description} />
+	</head>
+	<body class="antialiased bg-white">
+		<Header />
+		<main>
+			<slot />
+		</main>
+		<Footer />
+		<NtCartDrawer rootId="flux-cart-drawer-root" eventPrefix="flux:cart" />
+		<script>
+			import { initCartUI } from "../lib/cart";
+			initCartUI();
+		</script>
+	</body>
+</html>

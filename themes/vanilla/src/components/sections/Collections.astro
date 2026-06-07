@@ -1,0 +1,37 @@
+---
+import VanillaCollectionCard from "../products/VanillaCollectionCard.astro";
+import { collections } from "../../data/collections";
+
+const sectionTitle = "Коллекции, которые становятся любимыми";
+const sectionSubtitle =
+	"Вдохновение для каждого дня — актуальные коллекции текстиля и декора, созданные, чтобы радовать и удивлять.";
+const featuredCollections = collections.slice(0, 2);
+---
+
+<section
+	id="collections"
+	class="vanilla-pad w-full bg-[var(--vanilla-surface)] py-20 md:py-28"
+	aria-labelledby="collections-title"
+>
+	<div class="vanilla-container flex max-w-[1180px] flex-col gap-8">
+		<div class="flex max-w-[760px] flex-col gap-2" data-animate>
+			<h2
+				id="collections-title"
+				class="font-vanilla-bitter text-[20px] font-normal italic leading-none tracking-normal text-[var(--vanilla-announcement-bg)]"
+			>
+				{sectionTitle}
+			</h2>
+			<p class="font-vanilla-arsenal text-base font-normal italic leading-none text-[#444444]">
+				{sectionSubtitle}
+			</p>
+		</div>
+
+		<ul class="grid grid-cols-1 gap-4 md:grid-cols-2" role="list" data-animate data-animate-delay="0.1s">
+			{featuredCollections.map((collection, index) => (
+				<li>
+					<VanillaCollectionCard collection={collection} priority={index < 2} />
+				</li>
+			))}
+		</ul>
+	</div>
+</section>

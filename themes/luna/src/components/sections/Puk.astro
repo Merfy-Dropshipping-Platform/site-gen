@@ -1,0 +1,23 @@
+---
+import LunaPicture from "../img/LunaPicture.astro";
+import { pukItems } from "../../data/pukItems";
+---
+
+<section class="w-full bg-white px-4 pb-[80px] pt-[80px] md:px-20 md:pb-[120px] md:pt-[120px] 2xl:px-[300px]">
+	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10">
+		<div class="flex flex-col gap-2">
+			<h2 class="font-comfortaa text-[28px] font-normal uppercase text-[#000000] md:text-[32px]">Style focus</h2>
+			<p class="font-manrope text-[16px] font-light text-[#999999] md:text-[20px]">Три направления для создания вашего образа.</p>
+		</div>
+		<ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">
+			{pukItems.map((item) => (
+				<li class="flex flex-col gap-4">
+					<div class="relative aspect-[430/500] w-full min-h-0 overflow-hidden">
+						<LunaPicture src={item.image} alt={item.title} loading="lazy" class="absolute inset-0 size-full object-cover" />
+					</div>
+					<p class="font-manrope text-[20px] font-normal uppercase text-[#000000]">{item.title}</p>
+				</li>
+			))}
+		</ul>
+	</div>
+</section>

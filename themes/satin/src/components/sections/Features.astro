@@ -1,0 +1,48 @@
+---
+import { withBase } from "../../lib/with-base";
+
+interface Feature {
+	title: string;
+	body: string;
+	icon: string;
+}
+
+interface Props {
+	items?: Feature[];
+}
+
+const defaultItems: Feature[] = [
+	{
+		title: "Исключительно качественные материалы",
+		body: "Мы выбираем только натуральные ткани премиум-класса: мягкий хлопок, дышащий лён и струящуюся вискозу. Вещи не теряют форму и не вызывают раздражения даже при круглосуточной носке. Ваша кожа скажет спасибо — каждый день вы будете чувствовать себя в уюте и невесомости.",
+		icon: "/images/4x/feature-materials.png",
+	},
+	{
+		title: "Быстрая доставка до любой точки России",
+		body: "Отправляем заказы по всей России ежедневно, включая отдалённые населённые пункты. Собственная упаковка гарантирует сохранность товара даже при долгой транспортировке. Средний срок доставки по стране — всего 4–5 дней.",
+		icon: "/images/4x/feature-delivery.png",
+	},
+];
+
+const { items = defaultItems } = Astro.props;
+---
+
+<section class="satin-pad w-full bg-white py-10 md:py-20" aria-label="Преимущества">
+	<div class="satin-container grid grid-cols-1 gap-4 md:grid-cols-2">
+		{items.map((feature) => (
+			<div class="flex flex-col items-center gap-6 bg-[#F5F5F5] p-6 text-center">
+				<img
+					src={withBase(feature.icon)}
+					alt=""
+					width="56"
+					height="56"
+					loading="lazy"
+					class="h-14 w-14 shrink-0 object-contain"
+					aria-hidden="true"
+				/>
+				<h3 class="font-logo text-[18px] font-normal uppercase leading-[1.15] text-[#000000] md:text-[20px]">{feature.title}</h3>
+				<p class="satin-copy max-w-[560px]">{feature.body}</p>
+			</div>
+		))}
+	</div>
+</section>

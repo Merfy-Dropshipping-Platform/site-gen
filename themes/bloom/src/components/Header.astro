@@ -1,0 +1,391 @@
+---
+import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+import { SITE_TITLE } from "../consts";
+import { DEFAULT_CATEGORY_HREF, categoryPages, getCategoryBySlug } from "../data/categories";
+import { getProductById } from "../data/products";
+
+interface NavLink {
+	label: string;
+	href: string;
+	match?: (pathname: string) => boolean;
+}
+
+function pathnameBase(pathname: string): string {
+	const p = pathname.replace(/\/+$/, "");
+	return p === "" ? "/" : p;
+}
+
+function categoryHrefFromProduct(pathname: string): string | null {
+	const match = pathname.match(/^\/products\/([^/]+)$/);
+	if (!match?.[1]) return null;
+	const product = getProductById(match[1]);
+	return product ? (getCategoryBySlug(product.category)?.href ?? null) : null;
+}
+
+const nav: NavLink[] = [
+	...categoryPages.map((category) => ({
+		label: category.label,
+		href: category.href,
+		match: (p: string) => p === category.href || categoryHrefFromProduct(p) === category.href,
+	})),
+	{ label: "О нас", href: "/about", match: (p) => p.startsWith("/about") },
+];
+
+const pathname = pathnameBase(Astro.url.pathname);
+const categorySearchAction =
+	categoryPages.find((category) => category.href === pathname)?.href ??
+	categoryHrefFromProduct(pathname) ??
+	DEFAULT_CATEGORY_HREF;
+const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathname === link.href);
+---
+
+<div class="sticky top-0 z-50 w-full" data-bloom-header>
+	<div class="w-full bg-[#E38E9F] py-2 text-center" role="region" aria-live="polite" data-bloom-announcement>
+		<p class="font-inter text-[12px] font-normal uppercase leading-normal text-white">
+			Акция на новую коллекцию. Узнать больше
+		</p>
+	</div>
+
+	<header class="relative w-full overflow-visible border-b border-[#F5F5F5] bg-white" data-nt="bloom-header">
+		<!-- Mobile -->
+		<div class="relative z-[60] flex h-16 items-center justify-between bg-white px-4 md:hidden">
+			<button
+				type="button"
+				id="bloom-burger-btn"
+				class="flex size-8 items-center justify-center transition-opacity hover:opacity-70"
+				aria-label="Меню"
+				aria-expanded="false"
+				aria-controls="bloom-burger"
+			>
+				<span class="burger-icon" data-icon="open">
+					<NtIcon name="menu-burger" sizeClass="size-5" />
+				</span>
+				<span class="burger-icon hidden" data-icon="close">
+					<NtIcon name="menu-close" sizeClass="size-5" />
+				</span>
+			</button>
+			<a href="/" class="flex items-center hover:opacity-80" aria-label={SITE_TITLE}>
+				<img
+					src="/icons/Bloom.svg"
+					alt={SITE_TITLE}
+					width="65"
+					height="19"
+					class="h-[19px] w-auto"
+				/>
+			</a>
+			<div class="flex items-center gap-4">
+				<button
+					type="button"
+					data-action="toggle-search"
+					class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
+					aria-label="Поиск"
+					aria-expanded="false"
+					aria-controls="bloom-search-panel"
+				>
+					<NtIcon name="search-sm" sizeClass="size-5" />
+				</button>
+				<button
+					type="button"
+					data-cart-open
+					class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
+					aria-label="Корзина"
+				>
+					<NtIcon name="cart" sizeClass="size-5" />
+					<span
+						data-cart-count
+						data-empty="true"
+						class="absolute -right-2 -top-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#e38e9f] px-1 font-inter text-[10px] font-normal leading-none text-white data-[empty=true]:hidden"
+					>0</span>
+				</button>
+				<a href="/auth/sign-in" class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80" aria-label="Аккаунт">
+					<NtIcon name="user" sizeClass="size-5" />
+				</a>
+			</div>
+		</div>
+
+		<!-- Desktop 1920: row 1 — icons + logo; row 2 — nav -->
+		<div class="relative mx-auto hidden w-full max-w-[1920px] px-20 py-6 md:flex 2xl:px-[300px]">
+			<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-4">
+				<div class="grid w-full grid-cols-[1fr_auto_1fr] items-center">
+					<div class="flex items-center justify-start">
+						<button
+							type="button"
+							data-action="toggle-search"
+							class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
+							aria-label="Поиск"
+							aria-expanded="false"
+							aria-controls="bloom-search-panel"
+						>
+							<NtIcon name="search-sm" sizeClass="size-5" />
+						</button>
+					</div>
+
+					<a href="/" class="flex items-center justify-center hover:opacity-90" aria-label={SITE_TITLE}>
+						<img
+							src="/icons/Bloom.svg"
+							alt={SITE_TITLE}
+							width="65"
+							height="19"
+							class="h-[19px] w-[65px]"
+						/>
+					</a>
+
+					<div class="flex items-center justify-end gap-4">
+						<button
+							type="button"
+							data-cart-open
+							class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
+							aria-label="Корзина"
+						>
+							<NtIcon name="cart" sizeClass="size-5" />
+							<span
+								data-cart-count
+								data-empty="true"
+								class="absolute -right-1 -top-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#E38E9F] px-1 font-inter text-[10px] font-normal leading-none text-white data-[empty=true]:hidden"
+							>0</span>
+						</button>
+						<a
+							href="/auth/sign-in"
+							class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
+							aria-label="Аккаунт"
+						>
+							<NtIcon name="user" sizeClass="size-5" />
+						</a>
+					</div>
+				</div>
+
+				<nav
+					class="flex flex-wrap items-center justify-center gap-8 lg:gap-10"
+					aria-label="Основная навигация"
+				>
+					{nav.map((link) => {
+						const active = isActive(link);
+						return (
+							<a
+								href={link.href}
+								aria-current={active ? "page" : undefined}
+								class:list={[
+									"font-inter text-[16px] font-light leading-[100%] text-[#000000] transition-opacity hover:opacity-70",
+									active && "underline decoration-[#E38E9F] underline-offset-4",
+								]}
+							>
+								{link.label}
+							</a>
+						);
+					})}
+				</nav>
+			</div>
+		</div>
+
+		<div
+			id="bloom-search-panel"
+			data-search-panel
+			class="pointer-events-none absolute left-0 right-0 top-full z-40 w-full overflow-hidden bg-transparent transition-[max-height] duration-300 ease-in-out"
+			style="max-height: 0;"
+			aria-hidden="true"
+		>
+			<div class="px-4 py-2 md:px-20 2xl:px-[300px]">
+				<form role="search" action={categorySearchAction} method="get" class="pointer-events-auto mx-auto flex h-12 w-full max-w-[1320px] items-center justify-between gap-2 rounded-[4px] border border-[#e38e9f] bg-white pl-3 pr-1 shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
+					<input
+						type="search"
+						name="q"
+						placeholder="Поиск..."
+						aria-label="Поиск"
+						class="min-w-0 flex-1 bg-transparent font-inter text-[16px] font-light leading-normal text-[#000000] placeholder:text-[#999999] outline-none"
+					/>
+					<button
+						type="submit"
+						class="flex h-10 shrink-0 items-center justify-center rounded-[4px] bg-[#e38e9f] px-3 py-2.5 font-inter text-[14px] font-normal leading-normal text-white transition-opacity hover:opacity-95"
+					>
+						Найти
+					</button>
+				</form>
+			</div>
+		</div>
+	</header>
+
+	<div
+		id="bloom-burger"
+		class="fixed inset-x-0 bottom-0 z-[55] hidden w-full overflow-y-auto bg-white px-4 pt-4 pb-8 md:hidden"
+		role="dialog"
+		aria-modal="true"
+		aria-label="Меню"
+	>
+		<div class="flex items-center gap-2">
+			<form class="flex h-10 min-h-10 flex-1 items-center justify-between rounded-[4px] border border-[#999999] bg-white pl-3 pr-2" role="search" action={categorySearchAction} method="get">
+				<input
+					type="search"
+					name="q"
+					placeholder="Поиск"
+					class="min-w-0 flex-1 bg-transparent font-inter text-[12px] font-normal leading-normal text-[#000000] placeholder:text-[#999999] outline-none"
+				/>
+				<button type="submit" class="flex h-5 w-5 shrink-0 items-center justify-center" aria-label="Найти">
+					<NtIcon name="search-sm" sizeClass="size-5" />
+				</button>
+			</form>
+			<a
+				href="/auth/sign-in"
+				class="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#e38e9f]"
+				aria-label="Профиль"
+			>
+				<NtIcon name="user" sizeClass="size-5" />
+			</a>
+		</div>
+
+		<nav class="mt-10 flex flex-col gap-5" aria-label="Основное меню">
+			{nav.map((link) => {
+				const active = isActive(link);
+				return (
+					<div class="flex flex-col gap-1">
+						<a
+							href={link.href}
+							class:list={[
+								"font-inter text-[14px] font-light leading-normal",
+								active ? "text-[#000000]" : "text-[#999999]",
+							]}
+						>
+							{link.label}
+						</a>
+						{active && <div class="h-px w-[54px] bg-[#e38e9f]" aria-hidden="true"></div>}
+					</div>
+				);
+			})}
+			<a href="/cart" class="font-inter text-[14px] font-light leading-normal text-[#999999]">Корзина</a>
+			<a href="/auth/sign-up" class="font-inter text-[14px] font-light leading-normal text-[#999999]">Регистрация</a>
+		</nav>
+	</div>
+</div>
+
+<script>
+	const headerOffsetBelowPromo = () => {
+		const promo = document.querySelector<HTMLElement>("[data-bloom-announcement]");
+		const headerEl = document.querySelector<HTMLElement>('[data-nt="bloom-header"]');
+		const p = promo?.offsetHeight ?? 32;
+		const h = headerEl?.offsetHeight ?? 64;
+		return p + h;
+	};
+
+	const positionBurger = () => {
+		const burger = document.getElementById("bloom-burger");
+		if (!burger) return;
+		burger.style.top = `${headerOffsetBelowPromo()}px`;
+	};
+
+	const setSearchOpen = (open: boolean) => {
+		const panel = document.querySelector<HTMLElement>("[data-search-panel]");
+		if (!panel) return;
+		panel.setAttribute("aria-hidden", String(!open));
+		if (open) {
+			panel.style.maxHeight = `${panel.scrollHeight}px`;
+			queueMicrotask(() => {
+				panel.querySelector<HTMLInputElement>("input[type='search']")?.focus();
+			});
+		} else {
+			panel.style.maxHeight = "0px";
+		}
+		document.querySelectorAll<HTMLElement>("[data-action='toggle-search']").forEach((btn) => {
+			btn.setAttribute("aria-expanded", String(open));
+		});
+	};
+
+	const isSearchPanelOpen = () => {
+		const panel = document.querySelector<HTMLElement>("[data-search-panel]");
+		if (!panel) return false;
+		const h = panel.style.maxHeight;
+		return Boolean(h && h !== "0px" && h !== "0");
+	};
+
+	const syncSearchPanelHeight = () => {
+		const panel = document.querySelector<HTMLElement>("[data-search-panel]");
+		if (!panel || !isSearchPanelOpen()) return;
+		panel.style.maxHeight = `${panel.scrollHeight}px`;
+	};
+
+	const burgerBtn = document.getElementById("bloom-burger-btn");
+	const burger = document.getElementById("bloom-burger");
+
+	const syncBurgerButtonIcons = (open: boolean) => {
+		if (!burgerBtn) return;
+		burgerBtn.querySelectorAll<HTMLElement>(".burger-icon").forEach((el) => {
+			const key = el.dataset.icon;
+			if (key === "open") el.classList.toggle("hidden", open);
+			else el.classList.toggle("hidden", !open);
+		});
+	};
+
+	const setBurger = (open: boolean) => {
+		if (!burger || !burgerBtn) return;
+		if (open) setSearchOpen(false);
+		burger.classList.toggle("hidden", !open);
+		burgerBtn.setAttribute("aria-expanded", String(open));
+		syncBurgerButtonIcons(open);
+		document.body.style.overflow = open ? "hidden" : "";
+		if (open) positionBurger();
+	};
+
+	const syncHeaderChromeAfterNavigation = () => {
+		document.body.style.overflow = "";
+		setSearchOpen(false);
+		const burgerEl = document.getElementById("bloom-burger");
+		const btn = document.getElementById("bloom-burger-btn");
+		if (burgerEl) burgerEl.classList.add("hidden");
+		if (btn) btn.setAttribute("aria-expanded", "false");
+		syncBurgerButtonIcons(false);
+		positionBurger();
+	};
+
+	let headerDelegatesBound = false;
+	const bindHeaderDelegatedClicks = () => {
+		if (headerDelegatesBound) return;
+		headerDelegatesBound = true;
+
+		document.addEventListener("click", (event: MouseEvent) => {
+			const raw = event.target;
+			const el = raw instanceof Element ? raw : null;
+			if (!el) return;
+
+			if (el.closest("#bloom-burger-btn")) {
+				const burgerEl = document.getElementById("bloom-burger");
+				if (!burgerEl) return;
+				event.preventDefault();
+				setBurger(burgerEl.classList.contains("hidden"));
+				return;
+			}
+
+			if (el.closest("[data-action='toggle-search']")) {
+				event.preventDefault();
+				event.stopPropagation();
+				const willOpen = !isSearchPanelOpen();
+				if (willOpen && burger && !burger.classList.contains("hidden")) {
+					setBurger(false);
+				}
+				setSearchOpen(willOpen);
+				return;
+			}
+
+			if (el.closest("#bloom-burger a[href]")) {
+				setBurger(false);
+			}
+		});
+
+		document.addEventListener("click", (event: MouseEvent) => {
+			if (!isSearchPanelOpen()) return;
+			const target = event.target;
+			if (!(target instanceof Node)) return;
+			const panel = document.querySelector<HTMLElement>("[data-search-panel]");
+			if (panel?.contains(target)) return;
+			const tEl = target instanceof Element ? target : null;
+			if (tEl?.closest?.("[data-action='toggle-search']")) return;
+			setSearchOpen(false);
+		});
+
+		window.addEventListener("resize", () => {
+			syncSearchPanelHeight();
+			positionBurger();
+		});
+	};
+
+	bindHeaderDelegatedClicks();
+	document.addEventListener("astro:page-load", syncHeaderChromeAfterNavigation);
+	syncHeaderChromeAfterNavigation();
+</script>

@@ -1,0 +1,76 @@
+---
+/**
+ * Обёртка `<picture>` с WebP (как RosePicture в rose-theme).
+ *
+ * Пути в коде могут указывать на `.png`/`.jpg` — после `images:optimize` на диске
+ * остаётся только `.webp`. Компонент подставляет WebP в `<img>` или `<source>`.
+ */
+import fs from "node:fs";
+import path from "node:path";
+import { assetUrl } from "../../lib/asset-url";
+
+interface Props {
+	src: string;
+	alt: string;
+	width?: number | string;
+	height?: number | string;
+	class?: string;
+	loading?: "eager" | "lazy";
+	fetchpriority?: "high" | "low" | "auto";
+	decoding?: "sync" | "async" | "auto";
+	sizes?: string;
+	[key: `data-${string}`]: string | number | boolean | undefined;
+}
+
+const {
+	src,
+	alt,
+	width,
+	height,
+	class: className,
+	loading = "eager",
+	fetchpriority,
+	decoding = "async",
+	sizes,
+	...rest
+} = Astro.props as Props;
+
+const isRaster = /\.(png|jpe?g)$/i.test(src);
+const webpCandidate = isRaster ? src.replace(/\.(png|jpe?g)$/i, ".webp") : src;
+
+const publicRelative = src.replace(/^\/+/, "");
+const webpRelative = webpCandidate.replace(/^\/+/, "");
+const srcExists = fs.existsSync(path.join(process.cwd(), "public", publicRelative));
+const webpExists = fs.existsSync(path.join(process.cwd(), "public", webpRelative));
+
+let imgSrc = src;
+let includeWebpSource = false;
+
+if (isRaster) {
+	if (webpExists && !srcExists) {
+		imgSrc = webpCandidate;
+	} else if (webpExists && srcExists) {
+		imgSrc = src;
+		includeWebpSource = true;
+	}
+}
+
+const resolvedImgSrc = assetUrl(imgSrc);
+const resolvedWebp = includeWebpSource ? assetUrl(webpCandidate) : webpCandidate;
+---
+
+<picture class="contents">
+	{includeWebpSource && <source srcset={resolvedWebp} type="image/webp" />}
+	<img
+		src={resolvedImgSrc}
+		alt={alt}
+		width={width}
+		height={height}
+		class={className}
+		loading={loading}
+		fetchpriority={fetchpriority}
+		decoding={decoding}
+		sizes={sizes}
+		{...rest}
+	/>
+</picture>

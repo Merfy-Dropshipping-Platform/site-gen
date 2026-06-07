@@ -1,0 +1,27 @@
+---
+import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
+import FluxCollectionCard from "../products/FluxCollectionCard.astro";
+import { collections } from "../../data/collections";
+
+const sectionTitle = "Категории";
+const sectionSubtitle =
+	"Смартфоны, наушники, ноутбуки и аксессуары — всё для работы, творчества и развлечений.";
+---
+
+<section
+	id="collections"
+	class="w-full bg-white px-4 pb-16 pt-16 md:px-20 md:pb-24 md:pt-24 2xl:px-80"
+	aria-labelledby="collections-title"
+>
+	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-12">
+		<NtSectionHeading titleId="collections-title" title={sectionTitle} subtitle={sectionSubtitle} />
+
+		<ul class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" role="list">
+			{collections.map((collection, index) => (
+				<li>
+					<FluxCollectionCard collection={collection} priority={index < 3} />
+				</li>
+			))}
+		</ul>
+	</div>
+</section>

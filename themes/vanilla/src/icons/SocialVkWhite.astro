@@ -1,0 +1,21 @@
+---
+import { withBase } from "../lib/with-base";
+
+interface Props {
+	class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<img
+	src={withBase("/icons/social-vk-white.svg")}
+	alt=""
+	width="20"
+	height="12"
+	loading="lazy"
+	decoding="async"
+	draggable={false}
+	aria-hidden="true"
+	class:list={["block shrink-0 object-contain", className]}
+/>

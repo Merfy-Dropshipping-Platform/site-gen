@@ -1,0 +1,63 @@
+---
+import Layout from "../layouts/Layout.astro";
+import SatinPicture from "../components/img/SatinPicture.astro";
+import TextBlock from "../components/sections/TextBlock.astro";
+import Faq from "../components/sections/Faq.astro";
+import CollectionRows from "../components/sections/CollectionRows.astro";
+
+// История-specific Мультиряды images (Figma 905:16312), distinct from the home page.
+const aboutRows = [
+	{
+		title: "Женская коллекция",
+		paragraphs: [
+			"Мы уверены: одежда должна быть красивой не только на фотографиях, но и на ощупь. Satin создан для тех, кто ценит эстетику и качество в каждой детали.",
+			"В ассортименте Satin вы не найдёте случайных вещей — только то, что действительно достойно стать частью вашего гардероба.",
+		],
+		image: "/images/4x/История_ряд_1.png",
+		alt: "Женская коллекция",
+		ctaLabel: "Для женщин",
+		ctaHref: "/catalog?collection=Женское",
+	},
+	{
+		title: "Мужская коллекция",
+		paragraphs: [
+			"Минимализм, точная посадка и спокойный силуэт — мужская линия Satin собирает базовые вещи без лишних деталей.",
+			"Одежда, которая не требует усилий, чтобы выглядеть хорошо.",
+		],
+		image: "/images/4x/История_ряд_2.png",
+		alt: "Мужская коллекция",
+		ctaLabel: "Для мужчин",
+		ctaHref: "/catalog?collection=Мужское",
+		imageRight: true,
+	},
+];
+---
+
+<Layout title="История" description="История Satin">
+	<section class="relative w-full bg-black" aria-label="История Satin">
+		<div class="grid grid-cols-1 md:grid-cols-2">
+			<div class="relative aspect-[375/320] overflow-hidden md:aspect-square">
+				<SatinPicture src="/images/4x/История_герой_1.png" alt="Satin" loading="eager" fetchpriority="high" class="absolute inset-0 size-full object-cover" />
+			</div>
+			<div class="relative hidden overflow-hidden md:block md:aspect-square">
+				<SatinPicture src="/images/4x/История_герой_2.png" alt="Satin" loading="eager" class="absolute inset-0 size-full object-cover" />
+			</div>
+		</div>
+		<div class="absolute inset-0 bg-gradient-to-b from-black/30 to-black/45" aria-hidden="true"></div>
+		<div class="absolute inset-0 flex items-center justify-center px-4">
+			<div class="flex flex-col items-center gap-8 text-center text-white">
+				<div class="flex flex-col items-center gap-2.5">
+					<p class="font-manrope text-[16px] font-normal uppercase tracking-[0.04em] text-[#999999]">Оставайтесь в центре внимания</p>
+					<h1 class="font-logo text-[26px] font-normal uppercase leading-[1.1] text-white md:text-[32px]">
+						STYLE’S WEAR COLLECTION<br />SINCE 90’
+					</h1>
+				</div>
+				<a href="/catalog" class="satin-button satin-button-md text-white">Новые поступления</a>
+			</div>
+		</div>
+	</section>
+
+	<TextBlock />
+	<Faq />
+	<CollectionRows rows={aboutRows} compact />
+</Layout>

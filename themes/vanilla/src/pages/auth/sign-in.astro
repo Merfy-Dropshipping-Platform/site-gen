@@ -1,0 +1,43 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import NtAuthPanel from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtAuthPanel.astro";
+import NtTextField from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtTextField.astro";
+import { V_IMG } from "../../data/imageAssets";
+---
+
+<Layout title="Вход" description="Войдите в аккаунт Vanilla">
+	<section class="relative flex min-h-[620px] w-full items-center justify-end overflow-hidden bg-[var(--vanilla-green)] px-4 py-12 md:px-20">
+		<img src={V_IMG.hero(1)} alt="" class="absolute inset-0 size-full object-cover opacity-55" loading="eager" />
+		<form class="relative z-10 w-full max-w-[420px] bg-[var(--vanilla-surface)] p-8 md:p-10" data-auth-form>
+			<NtAuthPanel title="Вход" subtitle="Рады видеть вас снова">
+				<div slot="fields" class="flex flex-col gap-5">
+					<NtTextField label="E-mail" name="email" type="email" autocomplete="email" />
+					<NtTextField label="Пароль" name="password" type="password" autocomplete="current-password" />
+				</div>
+			<button
+				slot="primary"
+				type="submit"
+				class="vanilla-button vanilla-button-dark w-full"
+			>
+				Войти
+			</button>
+			<div slot="links" class="flex w-full flex-col items-center gap-4 text-center">
+				<a href="/auth/forgot-password" class="font-manrope text-[12px] font-normal text-[var(--vanilla-muted)] hover:text-[var(--vanilla-green)] transition-colors">
+					Забыли пароль?
+				</a>
+				<p class="font-manrope text-[12px] font-normal text-[var(--vanilla-muted)]">
+					Нет аккаунта?
+					<a href="/auth/sign-up" class="text-[var(--vanilla-green)] hover:opacity-80">Зарегистрироваться</a>
+				</p>
+			</div>
+			</NtAuthPanel>
+		</form>
+	</section>
+</Layout>
+
+<script>
+	document.querySelector<HTMLFormElement>("[data-auth-form]")?.addEventListener("submit", (event) => {
+		event.preventDefault();
+		alert("Демо-вход: авторизация ещё не подключена.");
+	});
+</script>

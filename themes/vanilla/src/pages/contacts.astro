@@ -1,0 +1,104 @@
+---
+import Layout from "../layouts/Layout.astro";
+import NtTextField from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtTextField.astro";
+---
+
+<Layout title="Контакты" description="Свяжитесь с Vanilla — контакты магазина и форма обратной связи">
+	<section
+		class="vanilla-pad w-full bg-[var(--vanilla-surface)] py-16 md:py-20"
+		aria-labelledby="contacts-title"
+	>
+		<div class="vanilla-container flex max-w-[1180px] flex-col gap-16 md:gap-20">
+			<div class="flex flex-col gap-6">
+				<h1
+					id="contacts-title"
+					class="font-manrope text-[14px] font-semibold uppercase leading-tight text-[var(--vanilla-green)]"
+				>
+					Контакты
+				</h1>
+				<dl class="flex flex-col gap-3 font-manrope text-[12px] font-normal leading-normal md:text-[13px]">
+					<div class="flex flex-col gap-1 md:flex-row md:gap-16">
+						<dt class="text-[var(--vanilla-muted)] md:w-[200px]">Номер телефона</dt>
+						<dd class="text-[var(--vanilla-green)]">
+							<a href="tel:+70000000000" class="hover:opacity-80 transition-opacity">
+								+7 (000) 000-00-00
+							</a>
+						</dd>
+					</div>
+					<div class="flex flex-col gap-1 md:flex-row md:gap-16">
+						<dt class="text-[var(--vanilla-muted)] md:w-[200px]">E-mail</dt>
+						<dd class="text-[var(--vanilla-green)]">
+							<a href="mailto:example@vanilla.merfy" class="hover:opacity-80 transition-opacity">
+								example@vanilla.merfy
+							</a>
+						</dd>
+					</div>
+				</dl>
+			</div>
+
+			<div class="flex flex-col gap-8">
+				<h2 class="font-manrope text-[14px] font-semibold uppercase leading-tight text-[var(--vanilla-green)]">
+					Остались вопросы?
+				</h2>
+
+				<form
+					class="grid grid-cols-1 gap-6 lg:grid-cols-[330px_1fr] lg:items-start lg:gap-10"
+					data-contacts-form
+					novalidate
+				>
+					<div class="flex flex-col gap-4">
+						<NtTextField label="Имя" name="name" autocomplete="name" />
+						<NtTextField label="E-mail" name="email" type="email" autocomplete="email" />
+						<NtTextField
+							label="Номер телефона"
+							name="phone"
+							type="tel"
+							autocomplete="tel"
+							border="error"
+						/>
+					</div>
+
+					<div class="flex flex-col gap-2">
+						<label for="contacts-question" class="font-manrope text-[12px] font-normal leading-normal text-[var(--vanilla-green)]">
+							Ваш вопрос
+						</label>
+						<textarea
+							id="contacts-question"
+							name="question"
+							rows={8}
+							class="min-h-[232px] w-full border border-[var(--vanilla-muted)] bg-transparent p-4 font-manrope text-[12px] font-normal leading-normal text-[var(--vanilla-dark)] outline-none placeholder:text-[var(--vanilla-muted)] focus-visible:border-[var(--vanilla-green)]"
+						></textarea>
+					</div>
+
+					<div class="lg:col-start-2 lg:flex lg:justify-end">
+						<button
+							type="submit"
+							class="vanilla-button vanilla-button-dark"
+						>
+							Отправить
+						</button>
+					</div>
+
+					<p
+						data-contacts-status
+						role="status"
+						class="hidden lg:col-span-2 font-manrope text-[12px] font-normal leading-normal text-[var(--vanilla-green)]"
+					></p>
+				</form>
+			</div>
+		</div>
+	</section>
+</Layout>
+
+<script>
+	document.querySelector<HTMLFormElement>("[data-contacts-form]")?.addEventListener("submit", (event) => {
+		event.preventDefault();
+		const form = event.currentTarget as HTMLFormElement;
+		const status = document.querySelector<HTMLElement>("[data-contacts-status]");
+		if (status) {
+			status.textContent = "Спасибо! Мы свяжемся с вами в ближайшее время.";
+			status.classList.remove("hidden");
+		}
+		form.reset();
+	});
+</script>

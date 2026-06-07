@@ -1,0 +1,92 @@
+---
+import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+import { SITE_TITLE } from "../consts";
+
+const today = new Date();
+const leftCol = [
+	{ label: "Коллекции", href: "/catalog" },
+	{ label: "Бренд", href: "/contacts" },
+	{ label: "Контакты", href: "/contacts" },
+];
+const midCol = [
+	{ label: "Мужское", href: "/catalog?collection=Мужское" },
+	{ label: "Женское", href: "/catalog?collection=Женское" },
+	{ label: "Весна 25", href: "/catalog" },
+	{ label: "Лето 25", href: "/catalog" },
+];
+const infoColumn = [
+	{ label: "Политика доставки", href: "/legal/delivery" },
+	{ label: "Политика возврата", href: "/legal/return" },
+	{ label: "Условия обслуживания", href: "/legal/terms" },
+	{ label: "Политика конфиденциальности", href: "/legal/privacy" },
+];
+const phone = "+7 (000) 000-00-00";
+const email = "example@luna.merfy";
+---
+
+<footer class="w-full bg-[#F5F5F5]">
+	<div class="mx-auto w-full max-w-[1920px] px-4 pt-16 md:px-20 md:pt-20 2xl:px-[300px]">
+		<section class="mx-auto grid w-full max-w-[1320px] grid-cols-1 gap-8 border-b border-[#DDDDDD] pb-12 md:grid-cols-[1fr_1fr_1fr]" aria-label="Навигация по сайту">
+			<div class="grid grid-cols-2 gap-8">
+				<ul class="flex flex-col gap-3" role="list">
+					{leftCol.map((link) => (
+						<li><a href={link.href} class="font-manrope text-[14px] font-normal leading-normal text-[#999999] transition-opacity hover:opacity-70">{link.label}</a></li>
+					))}
+				</ul>
+				<ul class="flex flex-col gap-3" role="list">
+					{midCol.map((link) => (
+						<li><a href={link.href} class="font-manrope text-[14px] font-normal leading-normal text-[#999999] transition-opacity hover:opacity-70">{link.label}</a></li>
+					))}
+				</ul>
+			</div>
+
+			<div class="flex flex-col gap-3 md:items-end">
+				<a href={`tel:${phone.replace(/[^+\d]/g, "")}`} class="font-manrope text-[14px] font-normal leading-normal text-[#999999] transition-opacity hover:opacity-70">{phone}</a>
+				<a href={`mailto:${email}`} class="font-manrope text-[14px] font-normal leading-normal text-[#999999] transition-opacity hover:opacity-70">{email}</a>
+				<div class="flex items-center gap-2 pt-2">
+					<span class="font-manrope text-[12px] text-[#000000]">Mastercard</span>
+					<span class="font-manrope text-[12px] text-[#000000]">VISA</span>
+					<span class="font-manrope text-[12px] text-[#000000]">МИР</span>
+				</div>
+			</div>
+
+			<div class="flex flex-col gap-4 md:items-end">
+				<p class="font-comfortaa text-[14px] font-normal uppercase text-[#000000]">Будьте в курсе наших новостей</p>
+				<form class="flex h-10 w-full max-w-[320px] items-center justify-between border border-[#999999] bg-white px-3" data-newsletter-form>
+					<input type="email" name="email" required placeholder="example@luna.merfy" aria-label="Email" class="min-w-0 flex-1 bg-transparent font-manrope text-[12px] font-light leading-normal text-[#000000] placeholder:text-[#999999] outline-none" />
+					<button type="submit" aria-label="Подписаться" class="flex size-6 shrink-0 items-center justify-center transition-opacity hover:opacity-80"><NtIcon name="arrow-right" sizeClass="size-4" /></button>
+				</form>
+				<p data-newsletter-status role="status" class="hidden font-manrope text-[12px] font-normal text-[#000000]"></p>
+			</div>
+		</section>
+
+		<section class="mx-auto flex w-full max-w-[1320px] flex-col gap-5 py-6 md:flex-row md:items-center md:justify-between">
+			<div>
+				<div class="font-comfortaa text-[24px] uppercase text-[#000000]">{SITE_TITLE}</div>
+				<p class="mt-2 font-manrope text-[12px] font-light text-[#999999]">© {today.getFullYear()} {SITE_TITLE} Theme Все права защищены.</p>
+			</div>
+			<div class="flex flex-wrap items-center gap-3">
+				{infoColumn.map((link) => (
+					<a href={link.href} class="font-manrope text-[12px] font-light text-[#999999] transition-opacity hover:opacity-70">{link.label}</a>
+				))}
+			</div>
+		</section>
+	</div>
+
+	<div class="w-full bg-black py-5">
+		<p class="text-center font-manrope text-[14px] font-light leading-normal text-white">© {today.getFullYear()} {SITE_TITLE} Theme Все права защищены. Powered by Merfy</p>
+	</div>
+</footer>
+
+<script>
+	document.querySelector<HTMLFormElement>("[data-newsletter-form]")?.addEventListener("submit", (event) => {
+		event.preventDefault();
+		const form = event.currentTarget as HTMLFormElement;
+		const status = document.querySelector<HTMLElement>("[data-newsletter-status]");
+		if (status) {
+			status.textContent = "Спасибо! Мы отправим вам приветственное письмо.";
+			status.classList.remove("hidden");
+		}
+		form.reset();
+	});
+</script>

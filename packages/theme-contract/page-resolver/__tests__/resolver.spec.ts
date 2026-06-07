@@ -166,3 +166,28 @@ describe('PageResolver.resolvePage', () => {
     ).rejects.toThrow(/no manifest entry to lazy-seed/i);
   });
 });
+
+describe('PageResolver.mergeOverrides', () => {
+  it('applies site override on page.name', () => {
+    const page = {
+      id: 'page-about', name: 'О нас', slug: '/about', role: 'system' as const,
+      isCustom: false, source: 'theme' as const,
+      seo: null, locale: null, variant: null, schedule: null, permissions: null, targeting: null,
+    };
+    const overrides = { pages: { 'page-about': { name: 'О бренде' } }, blocks: {} };
+    const merged = resolver.mergeOverrides(page, overrides);
+    expect(merged.name).toBe('О бренде');
+    expect(merged.slug).toBe('/about'); // unchanged
+  });
+
+  it('returns input unchanged when no override for page', () => {
+    const page = {
+      id: 'home', name: 'Главная', slug: '/', role: 'system' as const,
+      isCustom: false, source: 'theme' as const,
+      seo: null, locale: null, variant: null, schedule: null, permissions: null, targeting: null,
+    };
+    const overrides = { pages: {}, blocks: {} };
+    const merged = resolver.mergeOverrides(page, overrides);
+    expect(merged).toEqual(page);
+  });
+});

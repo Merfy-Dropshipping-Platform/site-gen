@@ -1,4 +1,4 @@
-import type { ResolvedRevision, RevisionPage, ThemeManifest, PageManifest, PuckData, ResolvedPage } from './types';
+import type { ResolvedRevision, RevisionPage, ThemeManifest, PageManifest, PuckData, ResolvedPage, SiteOverrides } from './types';
 import { LazySeed } from './lazy-seed';
 import type { LifecycleBus } from './lifecycle';
 import { runMigrations } from './migrations';
@@ -86,5 +86,12 @@ export class PageResolver {
     }
     const content = await this.opts.lazySeed.loadContent(this.opts.manifest.id, manifestEntry.contentFile);
     return { page, content, contentSource: 'lazy-seed' };
+  }
+
+  /** Merge site-level overrides into page metadata. Theme files immutable. */
+  mergeOverrides(page: RevisionPage, overrides: SiteOverrides): RevisionPage {
+    const override = overrides.pages?.[page.id];
+    if (!override) return page;
+    return { ...page, ...override };
   }
 }

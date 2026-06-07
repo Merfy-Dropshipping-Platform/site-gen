@@ -19,6 +19,13 @@ import * as path from "path";
 import * as fs from "fs/promises";
 import { runCommand } from "./build.service";
 
+/**
+ * URL prefix under which built theme previews are served as static assets
+ * (see main.ts `useStaticAssets(dist/theme-preview, { prefix })`). Built pages
+ * are rewritten to reference everything under `<prefix>/<theme>/`.
+ */
+export const THEME_PREVIEW_URL_PREFIX = "/__theme";
+
 /** Result of building a single theme. */
 export interface ThemeBuildResult {
   themeName: string;
@@ -95,8 +102,15 @@ export class ThemeBuildService {
     }
     await copyDir(themeDist, previewDir);
 
+    // ── Step 4: rewrite root-absolute URLs so the page renders under a per-theme
+    // subpath (/__theme/<name>/) instead of the origin root. The верстальщик's
+    // output references assets/links absolutely (`/_astro/…`, `/images/…`,
+    // `/fonts/…` in markup AND `url(/fonts/…)` inside bundled CSS); served as-is
+    // under the constructor origin those would 404.
+    await rewriteAbsoluteUrls(previewDir, themeName);
+
     this.logger.log(
-      `[theme-build] "${themeName}" → ${previewDir} (copied from ${themeDist})`,
+      `[theme-build] "${themeName}" → ${previewDir} (copied from ${themeDist}, urls rewritten under ${THEME_PREVIEW_URL_PREFIX}/${themeName})`,
     );
 
     return { themeName, themeDir, previewDir };
@@ -184,4 +198,42 @@ export async function copyDir(src: string, dest: string): Promise<void> {
   await fs.rm(dest, { recursive: true, force: true });
   await fs.mkdir(dest, { recursive: true });
   await fs.cp(src, dest, { recursive: true });
+}
+
+/**
+ * Rewrite root-absolute URLs in built `.html`/`.css` files to a per-theme
+ * subpath, so a page authored for the origin root renders correctly when served
+ * under `/__theme/<theme>/`. Rewrites assets, fonts (incl. CSS `@font-face`),
+ * images and sub-page links uniformly.
+ *
+ * Only delimiter-led `/` (after `"`, `'`, `(`, `,` or whitespace) that is NOT
+ * `//` is rewritten — so protocol-relative (`//cdn`) and absolute `http(s)://`
+ * URLs are left untouched. `.js` is never rewritten (output stays verbatim);
+ * client-side absolute fetches are out of scope for the read-only Phase 1 preview.
+ */
+export async function rewriteAbsoluteUrls(
+  previewDir: string,
+  themeName: string,
+): Promise<void> {
+  const re = /(["'(,\s])\/(?!\/)/g;
+  const replacement = `$1${THEME_PREVIEW_URL_PREFIX}/${themeName}/`;
+  await rewriteTree(previewDir, re, replacement);
+}
+
+async function rewriteTree(
+  dir: string,
+  re: RegExp,
+  replacement: string,
+): Promise<void> {
+  const entries = await fs.readdir(dir, { withFileTypes: true });
+  await Promise.all(
+    entries.map(async (e) => {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) return rewriteTree(full, re, replacement);
+      if (!/\.(html|css)$/i.test(e.name)) return;
+      const content = await fs.readFile(full, "utf-8");
+      const next = content.replace(re, replacement);
+      if (next !== content) await fs.writeFile(full, next, "utf-8");
+    }),
+  );
 }

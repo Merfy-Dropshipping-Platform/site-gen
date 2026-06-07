@@ -56,6 +56,15 @@ async function bootstrap() {
     { prefix: "/placeholders/" },
   );
 
+  // Constructor v2 (Phase 1): serve built верстальщик theme previews. Pages in
+  // dist/theme-preview/<name>/ are rewritten (ThemeBuildService) to reference
+  // assets under /__theme/<name>/, so the constructor preview iframe renders the
+  // theme verbatim (CSS, fonts, images, icons + sub-page navigation). Same
+  // reachable static mechanism as /placeholders/ above.
+  app.useStaticAssets(path.resolve(process.cwd(), "dist", "theme-preview"), {
+    prefix: "/__theme/",
+  });
+
   // Использовать Pino как основной logger
   app.useLogger(app.get(Logger));
 

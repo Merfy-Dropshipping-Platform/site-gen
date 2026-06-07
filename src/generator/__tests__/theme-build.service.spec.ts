@@ -162,6 +162,43 @@ describe("ThemeBuildService.build", () => {
     buildSpy.mockRestore();
   });
 
+  it("rewrites root-absolute asset/link URLs under /__theme/<name>/", async () => {
+    await createFixtureTheme("rw", {
+      "index.html":
+        '<link href="/_astro/a.css"><img src="/images/x.png"><a href="/catalog">c</a><a href="https://ex.com/y">e</a><img srcset="/_astro/s1.webp 640w, /_astro/s2.webp 1280w">',
+      "_astro/a.css": "@font-face{src:url(/fonts/f.woff)}.b{background:url(//cdn/z.png)}",
+    });
+    jest
+      .spyOn(
+        service as unknown as { runAstroBuild: () => Promise<void> },
+        "runAstroBuild",
+      )
+      .mockResolvedValue();
+
+    const result = await service.build("rw");
+
+    const html = await fs.readFile(
+      path.join(result.previewDir, "index.html"),
+      "utf8",
+    );
+    expect(html).toContain('href="/__theme/rw/_astro/a.css"');
+    expect(html).toContain('src="/__theme/rw/images/x.png"');
+    expect(html).toContain('href="/__theme/rw/catalog"');
+    // srcset (comma/space-led) entries both rewritten
+    expect(html).toContain("/__theme/rw/_astro/s1.webp 640w");
+    expect(html).toContain("/__theme/rw/_astro/s2.webp 1280w");
+    // absolute external URL left untouched
+    expect(html).toContain('href="https://ex.com/y"');
+
+    const css = await fs.readFile(
+      path.join(result.previewDir, "_astro", "a.css"),
+      "utf8",
+    );
+    // CSS @font-face url() rewritten; protocol-relative // left untouched
+    expect(css).toContain("url(/__theme/rw/fonts/f.woff)");
+    expect(css).toContain("url(//cdn/z.png)");
+  });
+
   it("throws if the build produced no dist/ directory", async () => {
     // fixture theme with node_modules but NO dist/
     const dir = path.join(sandbox, "themes", "nodist");

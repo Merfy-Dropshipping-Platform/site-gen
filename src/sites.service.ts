@@ -34,6 +34,7 @@ import { DomainClient } from "./domain";
 import { BillingClient } from "./billing/billing.client";
 import { BuildQueuePublisher } from "./rabbitmq/build-queue.service";
 import { ActivityLogPublisher } from "./activity-log/activity-log.publisher";
+import { getPageResolver } from "./themes/page-resolver-instance";
 
 const USE_PAGE_RESOLVER = process.env.USE_PAGE_RESOLVER !== 'false'; // default ON, set to 'false' to disable
 
@@ -350,7 +351,7 @@ export class SitesDomainService {
     // Default revision is theme content from bundled JSON — local, fast, no network.
     // Must happen synchronously so the theme editor has content from t=0.
     try {
-      const defaultContent = this.getDefaultContent(effectiveThemeId);
+      const defaultContent = await this.buildInitialRevision(effectiveThemeId);
       if (defaultContent) {
         await this.createRevision({
           tenantId: params.tenantId,
@@ -690,7 +691,7 @@ export class SitesDomainService {
           shouldReseed = true;
         }
         if (shouldReseed) {
-          const defaultContent = this.getDefaultContent(nextThemeId);
+          const defaultContent = await this.buildInitialRevision(nextThemeId);
           if (defaultContent) {
             await this.createRevision({
               tenantId: params.tenantId,
@@ -1182,6 +1183,24 @@ export class SitesDomainService {
     // admin / preview / live build.
     const resolvedData = resolveAssetUrls(migratedData, site.publicUrl);
     return { item: { ...rev, data: resolvedData } };
+  }
+
+  /**
+   * Build initial revision data using PageResolver. Replaces getDefaultContent
+   * legacy seed path. Gated by USE_PAGE_RESOLVER ENV flag.
+   */
+  private async buildInitialRevision(themeId: string): Promise<any> {
+    if (!USE_PAGE_RESOLVER) {
+      return this.getDefaultContent(themeId);
+    }
+    try {
+      const resolver = getPageResolver(themeId);
+      const revision = await resolver.buildInitialRevision();
+      return revision;
+    } catch (e) {
+      this.logger.warn(`buildInitialRevision failed for ${themeId}, falling back to legacy seed: ${e}`);
+      return this.getDefaultContent(themeId);
+    }
   }
 
   /**

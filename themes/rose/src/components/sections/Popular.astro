@@ -3,9 +3,11 @@ import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/
 import RoseProductCard from "../products/RoseProductCard.astro";
 import { catalogProducts } from "../../data/products";
 
-const sectionTitle = "Главные хиты";
+// ОЖИВЛЕНИЕ: конструкторная схема PopularProducts (heading/subtitle union). Тело + данные verbatim.
+const p = Astro.props as Record<string, any>;
+const sectionTitle = p.heading?.text ?? p.heading ?? "Главные хиты";
 const sectionSubtitle =
-	"Найдите стиль на каждый случай — коллекции, которые помогают выразить себя вне времени и трендов.";
+	p.subtitle?.content ?? p.subtitle ?? "Найдите стиль на каждый случай — коллекции, которые помогают выразить себя вне времени и трендов.";
 
 const products = catalogProducts.slice(0, 4);
 ---

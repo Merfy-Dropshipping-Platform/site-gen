@@ -3,9 +3,11 @@ import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/
 import RoseCollectionCard from "../products/RoseCollectionCard.astro";
 import { collections } from "../../data/collections";
 
-const sectionTitle = "Коллекции, которые становятся любимыми";
+// ОЖИВЛЕНИЕ: конструкторная схема Collections (heading/subtitle). Тело + данные verbatim.
+const p = Astro.props as Record<string, any>;
+const sectionTitle = p.heading ?? "Коллекции, которые становятся любимыми";
 const sectionSubtitle =
-	"Вдохновение для каждого дня — актуальные коллекции сумок, созданные, чтобы радовать и удивлять.";
+	p.subtitle ?? "Вдохновение для каждого дня — актуальные коллекции сумок, созданные, чтобы радовать и удивлять.";
 ---
 
 <section

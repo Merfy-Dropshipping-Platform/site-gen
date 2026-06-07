@@ -2,9 +2,11 @@
 import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
 import RosePicture from "../img/RosePicture.astro";
 
-const sectionTitle = "Снова в наличии!";
+// ОЖИВЛЕНИЕ: конструкторная схема Gallery (heading/subtitle union). Тело + данные verbatim.
+const p = Astro.props as Record<string, any>;
+const sectionTitle = p.heading?.text ?? p.heading ?? "Снова в наличии!";
 const sectionSubtitle =
-	"Сравнивайте, находите своё — от культовых моделей до свежих решений для особенных моментов";
+	p.subtitle?.content ?? p.subtitle ?? "Сравнивайте, находите своё — от культовых моделей до свежих решений для особенных моментов";
 ---
 
 <section

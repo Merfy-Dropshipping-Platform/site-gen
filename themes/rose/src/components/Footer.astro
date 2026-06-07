@@ -1,0 +1,214 @@
+---
+import RoseNtIcon from "./icons/RoseNtIcon.astro";
+import { withBase } from "../lib/with-base";
+import { SITE_TITLE } from "../consts";
+
+const today = new Date();
+
+const navColumn = [
+	{ label: "Главная", href: "/" },
+	{ label: "Каталог", href: "/catalog" },
+	{ label: "Контакты", href: "/contacts" },
+];
+
+const infoColumn = [
+	{ label: "Политика доставки", href: "/legal/delivery" },
+	{ label: "Политика возврата", href: "/legal/return" },
+	{ label: "Условия обслуживания", href: "/legal/terms" },
+	{ label: "Политика конфиденциальности", href: "/legal/privacy" },
+];
+
+const phone = "+7 (000) 000-00-00";
+const emailPlaceholder = `example@${SITE_TITLE.toLowerCase()}.merfy`;
+const email = emailPlaceholder;
+
+type SocialIconName = "social-vk" | "social-youtube" | "social-yandex-dzen" | "social-tiktok" | "social-telegram";
+
+type SocialLink = { platform: string; href: string; icon: SocialIconName };
+
+const socials: SocialLink[] = [
+	{ platform: "VK", href: "#", icon: "social-vk" },
+	{ platform: "YouTube", href: "#", icon: "social-youtube" },
+	{ platform: "YandexDzen", href: "#", icon: "social-yandex-dzen" },
+	{ platform: "TikTok", href: "#", icon: "social-tiktok" },
+	{ platform: "Telegram", href: "#", icon: "social-telegram" },
+];
+---
+
+<footer class="w-full bg-white">
+	<div class="mx-auto w-full max-w-[1920px] px-4 pb-20 pt-20 sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px]">
+		<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-20">
+			<section class="flex w-full flex-col gap-5" aria-labelledby="newsletter-heading">
+				<div class="flex max-w-[1320px] flex-col gap-2 text-left">
+					<h2
+						id="newsletter-heading"
+						class="rose-title !font-bold w-full min-w-0 max-lg:whitespace-normal lg:whitespace-nowrap !text-[clamp(14px,2.2vw,20px)]"
+					>
+						Подпишитесь на нашу рассылку
+					</h2>
+					<p class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[#999999]">
+						Получайте информацию от нашего бренда
+					</p>
+				</div>
+
+				<form
+					class="flex h-14 w-full max-w-[430px] items-center gap-2 rounded-[4px] border border-[#999999] bg-white pl-[18px] pr-4 transition-colors focus-within:border-[#000000]"
+					data-newsletter-form
+				>
+					<input
+						type="email"
+						name="email"
+						required
+						placeholder={emailPlaceholder}
+						aria-label="Email"
+						class="min-w-0 flex-1 bg-transparent font-manrope text-[16px] font-normal leading-none text-[#000000] placeholder:text-[#999999] outline-none"
+					/>
+					<button
+						type="submit"
+						aria-label="Подписаться"
+						class="flex size-9 shrink-0 items-center justify-center font-manrope text-[16px] font-normal leading-none text-[#000000] active:scale-95"
+					>
+						<span aria-hidden="true" class="block translate-y-px">→</span>
+					</button>
+				</form>
+				<p
+					data-newsletter-status
+					role="status"
+					class="hidden max-w-[430px] font-manrope text-[14px] font-normal leading-none text-[#4AD300]"
+				></p>
+			</section>
+
+			<section
+				class="flex w-full flex-col gap-10 lg:flex-row lg:items-start lg:justify-between"
+				aria-label="Навигация по сайту"
+			>
+				<div class="flex flex-col gap-10 sm:flex-row sm:gap-[200px]">
+					<ul class="flex flex-col gap-3" role="list">
+						{navColumn.map((link) => (
+							<li>
+								<a
+									href={link.href}
+									class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[#999999] transition-colors hover:text-[#000000] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#71C0FF]"
+								>
+									{link.label}
+								</a>
+							</li>
+						))}
+					</ul>
+
+					<ul class="flex flex-col gap-3" role="list">
+						{infoColumn.map((link) => (
+							<li>
+								<a
+									href={link.href}
+									class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[#999999] transition-colors hover:text-[#000000] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#71C0FF]"
+								>
+									{link.label}
+								</a>
+							</li>
+						))}
+					</ul>
+				</div>
+
+				<div class="flex flex-col gap-6 lg:max-w-[min(100%,430px)] lg:items-end lg:text-right">
+					<div class="flex flex-col gap-3">
+						<a
+							href={`tel:${phone.replace(/[^+\d]/g, "")}`}
+							class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[#999999] transition-colors hover:text-[#000000] lg:text-right"
+						>
+							{phone}
+						</a>
+						<a
+							href={`mailto:${email}`}
+							class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[#999999] transition-colors hover:text-[#000000] lg:text-right"
+						>
+							{email}
+						</a>
+					</div>
+					<div class="flex flex-wrap items-center gap-2 lg:justify-end">
+						{socials.map((s) => (
+							<a
+								href={s.href}
+								aria-label={s.platform}
+								class="flex size-6 items-center justify-center text-[#000000] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#71C0FF]"
+							>
+								<RoseNtIcon name={s.icon} sizeClass="size-6" />
+							</a>
+						))}
+					</div>
+					<div class="flex flex-wrap items-center gap-3 lg:justify-end" aria-label="Способы оплаты">
+						<img src={withBase("/icons/MasterCard.svg")} alt="Mastercard" class="h-6 w-auto shrink-0" decoding="async" />
+						<img src={withBase("/icons/Visa.png")} alt="Visa" class="h-6 w-auto shrink-0" decoding="async" />
+						<img src={withBase("/icons/MIR.png")} alt="МИР" class="h-6 w-auto shrink-0" decoding="async" />
+					</div>
+				</div>
+			</section>
+		</div>
+	</div>
+
+	<div class="flex h-16 w-full items-center justify-center bg-black px-4">
+		<p class="text-center font-manrope text-[14px] font-normal leading-none text-white">
+			© {today.getFullYear()} {SITE_TITLE} Theme Все права защищены. Powered by Merfy
+		</p>
+	</div>
+</footer>
+
+<style>
+	/* Figma 375 для мобильного:
+	   - заголовок «Подпишитесь на нашу рассылку» — Comfortaa 14 (clamp уже выдаёт 14 на 375), text-center.
+	   - подзаголовок рассылки — Manrope 12, text-center.
+	   - ссылки навигации/инфо/контактов — Manrope 12–14, text-center.
+	   - колонки навигации/контактов центрируются как блоки. */
+	@media (max-width: 639.98px) {
+		:global([aria-labelledby="newsletter-heading"]) {
+			align-items: center;
+		}
+
+		:global([aria-labelledby="newsletter-heading"] > div:first-child) {
+			text-align: center;
+			align-items: center;
+		}
+
+		:global(#newsletter-heading) {
+			font-weight: 400 !important;
+		}
+
+		:global([aria-labelledby="newsletter-heading"] > div:first-child > p) {
+			font-size: 12px !important;
+			line-height: 1 !important;
+		}
+
+		:global([data-newsletter-form]) {
+			height: 40px !important;
+			min-height: 40px !important;
+			margin-left: auto;
+			margin-right: auto;
+		}
+
+		:global([aria-label="Навигация по сайту"]) {
+			align-items: center;
+			text-align: center;
+		}
+
+		:global([aria-label="Навигация по сайту"] ul) {
+			align-items: center;
+		}
+
+		:global([aria-label="Навигация по сайту"] a) {
+			font-size: 14px !important;
+		}
+	}
+</style>
+
+<script>
+	document.querySelector<HTMLFormElement>("[data-newsletter-form]")?.addEventListener("submit", (event) => {
+		event.preventDefault();
+		const form = event.currentTarget as HTMLFormElement;
+		const status = document.querySelector<HTMLElement>("[data-newsletter-status]");
+		if (status) {
+			status.textContent = "Спасибо! Мы отправим вам приветственное письмо.";
+			status.classList.remove("hidden");
+		}
+		form.reset();
+	});
+</script>

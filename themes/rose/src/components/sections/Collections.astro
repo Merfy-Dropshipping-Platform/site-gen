@@ -1,0 +1,58 @@
+---
+import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
+import RoseCollectionCard from "../products/RoseCollectionCard.astro";
+import { collections } from "../../data/collections";
+
+const sectionTitle = "Коллекции, которые становятся любимыми";
+const sectionSubtitle =
+	"Вдохновение для каждого дня — актуальные коллекции сумок, созданные, чтобы радовать и удивлять.";
+---
+
+<section
+	id="collections"
+	class="w-full bg-white px-4 pb-14 pt-14 sm:px-5 sm:pb-16 sm:pt-16 md:px-10 md:pb-[100px] md:pt-[100px] lg:px-16 lg:pb-[120px] lg:pt-[120px] xl:px-20 xl:pb-[140px] xl:pt-[140px] 2xl:px-[280px]"
+	aria-labelledby="collections-title"
+>
+	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
+		<div class="flex w-full justify-center md:justify-center" data-animate>
+			<NtSectionHeading variant="rose" titleId="collections-title" title={sectionTitle} subtitle={sectionSubtitle} />
+		</div>
+
+		<ul
+			data-animate
+			data-animate-delay="0.1s"
+			class="grid grid-cols-1 gap-6 sm:gap-5 md:grid-cols-3 md:gap-5 lg:gap-6"
+			role="list"
+		>
+			{collections.map((collection, index) => (
+				<li>
+					<RoseCollectionCard collection={collection} priority={index < 3} />
+				</li>
+			))}
+		</ul>
+	</div>
+</section>
+
+<style>
+	/* Figma 375: section title Comfortaa 14, subtitle Manrope 12. NtSectionHeading не пробрасывает class на h2/p. */
+	@media (max-width: 639.98px) {
+		:global(#collections-title) {
+			font-size: 14px !important;
+			line-height: 1 !important;
+		}
+
+		:global(#collections-title ~ p) {
+			font-size: 12px !important;
+			line-height: 1.4 !important;
+			max-width: 100% !important;
+			width: 100% !important;
+			padding-inline: 0 !important;
+		}
+
+		/* Растягиваем контейнер NtSectionHeading на всю доступную ширину */
+		:global([data-nt="section-heading"]) {
+			max-width: 100% !important;
+			width: 100% !important;
+		}
+	}
+</style>

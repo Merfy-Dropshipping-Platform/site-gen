@@ -1,0 +1,90 @@
+---
+/**
+ * PDP Rose — текстовые варианты цвета 1:1 с макетом:
+ * выбран: фон #000, текст белый;
+ * второй: фон белый, border 1px #000;
+ * недоступен: фон белый, border #E0E0E0, текст #D3D3D3.
+ */
+export interface RosePdpColorVariantItem {
+	id: string;
+	label: string;
+	unavailable?: boolean;
+}
+
+interface Props {
+	items: RosePdpColorVariantItem[];
+	selectedId?: string;
+	groupLabel?: string;
+	groupName?: string;
+	class?: string;
+}
+
+const {
+	items,
+	selectedId,
+	groupLabel = "Вариант",
+	groupName = "pdp-color",
+	class: className = "",
+} = Astro.props;
+
+const btnBase =
+	"inline-flex h-10 shrink-0 items-center justify-center rounded-[6px] px-3 py-2.5 text-[14px] font-normal leading-normal outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-[#000000] focus-visible:ring-offset-2";
+---
+
+<div class:list={["flex w-full flex-col font-manrope", className]} data-nt="variant-text-row">
+	<div class="flex flex-wrap gap-2" role="radiogroup" aria-label={groupLabel} data-nt-group={groupName}>
+		{
+			items.map((item) => {
+				const isSel = selectedId === item.id && !item.unavailable;
+
+				if (item.unavailable) {
+					return (
+						<button
+							type="button"
+							disabled
+							class:list={[
+								btnBase,
+								"!cursor-not-allowed border border-solid border-[#E0E0E0] !bg-white !text-[#D3D3D3]",
+							]}
+							role="radio"
+							aria-checked="false"
+							aria-disabled="true"
+							data-id={item.id}
+						>
+							{item.label}
+						</button>
+					);
+				}
+
+				if (isSel) {
+					return (
+						<button
+							type="button"
+							class:list={[btnBase, "border-0 !bg-[#000000] !text-white hover:opacity-95"]}
+							role="radio"
+							aria-checked="true"
+							data-id={item.id}
+						>
+							{item.label}
+						</button>
+					);
+				}
+
+				return (
+					<button
+						type="button"
+						class:list={[
+							btnBase,
+							"border border-solid border-[#000000] !bg-white !text-[#000000] hover:opacity-90",
+						]}
+						role="radio"
+						aria-checked="false"
+						data-id={item.id}
+					>
+						{item.label}
+					</button>
+				);
+			})
+		}
+	</div>
+</div>

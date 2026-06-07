@@ -122,10 +122,43 @@ export type ContainerFactory = () => Promise<IAstroContainer>;
  * Phase 0: only theme-base is searched. Phase 1 will add theme cascade
  * (theme-<name> ?? theme-base).
  */
+/**
+ * v2 theme section resolver. Reads dist/theme-sections/<themeId>/manifest.json
+ * (built by scripts/compile-theme-sections.mjs — verbatim верстка верстальщика
+ * + import-граф) and dynamic-imports the section .mjs. Returns null when the
+ * manifest/section is absent → legacy theme-base cascade takes over.
+ */
+async function resolveV2Section(
+  blockName: string,
+  themeId: string,
+): Promise<unknown | null> {
+  try {
+    const { resolve } = await import('node:path');
+    const { readFile } = await import('node:fs/promises');
+    const dir = resolve(process.cwd(), 'dist', 'theme-sections', themeId);
+    const manifest = JSON.parse(
+      await readFile(resolve(dir, 'manifest.json'), 'utf-8'),
+    ) as Record<string, string>;
+    const file = manifest[blockName];
+    if (!file) return null;
+    const mod = (await import(resolve(dir, file))) as { default?: unknown };
+    return mod.default ?? null;
+  } catch {
+    return null;
+  }
+}
+
 const defaultComponentResolver: ComponentResolver = async (
   blockName,
   themeId,
 ) => {
+  // v2 themes: секция компилится в dist/theme-sections/<themeId>/. Gated
+  // манифестом — legacy-темы (cascade ниже) не задеваются.
+  if (themeId && themeId !== 'base') {
+    const v2 = await resolveV2Section(blockName, themeId);
+    if (v2) return v2;
+  }
+
   // Cascade theme-<id> override → theme-base. Skip the override tier for
   // themeId 'base' or when none is provided.
   const packages: string[] = [];
@@ -392,6 +425,7 @@ export class PreviewService {
     }
 
     const previewTailwind = await loadPreviewTailwindCss();
+    const themeCss = await loadThemeCss(input.themeId ?? null);
 
     // Safety net для **hardcoded** absolute-paths в скомпилированном HTML
     // (placeholder PNGs из `.astro`, runtime JS innerHTML). Основной путь
@@ -407,6 +441,7 @@ export class PreviewService {
   <title>Preview</title>
   ${input.fontHead}
   <style>${previewTailwind}</style>
+  <style id="__merfy_theme_css">${themeCss}</style>
   <style id="__merfy_tokens_css">${input.tokensCss}</style>
   ${input.publicUrl ? `<style id="__merfy_asset_overrides">:root{
     --header-icon-cart:url('${input.publicUrl.replace(/\/$/, '')}/icons/cart.svg');
@@ -594,6 +629,35 @@ async function loadPreviewTailwindCss(): Promise<string> {
     }
   }
   _cachedPreviewTailwind = '';
+  return '';
+}
+
+/**
+ * Load compiled v2 theme CSS bundle (their global.css → Tailwind output) from
+ * dist/theme-css/<themeId>.css (built by scripts/compile-theme-sections.mjs).
+ * Cached per themeId; '' when absent (legacy themes have no bundle → no-op).
+ */
+const _cachedThemeCss = new Map<string, string>();
+async function loadThemeCss(themeId: string | null): Promise<string> {
+  if (!themeId) return '';
+  const cached = _cachedThemeCss.get(themeId);
+  if (cached !== undefined) return cached;
+  const { readFile } = await import('node:fs/promises');
+  const { resolve } = await import('node:path');
+  const candidates = [
+    resolve(__dirname, '..', '..', 'theme-css', `${themeId}.css`),
+    resolve(process.cwd(), 'dist', 'theme-css', `${themeId}.css`),
+  ];
+  for (const p of candidates) {
+    try {
+      const css = await readFile(p, 'utf-8');
+      _cachedThemeCss.set(themeId, css);
+      return css;
+    } catch {
+      // try next candidate
+    }
+  }
+  _cachedThemeCss.set(themeId, '');
   return '';
 }
 

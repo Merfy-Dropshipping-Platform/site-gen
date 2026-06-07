@@ -1,0 +1,149 @@
+---
+import Layout from "../layouts/Layout.astro";
+import RoseProductCard from "../components/products/RoseProductCard.astro";
+import NtFilterSidebar from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtFilterSidebar.astro";
+import RoseNtIcon from "../components/icons/RoseNtIcon.astro";
+import NtFilterPanel from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtFilterPanel.astro";
+import { catalogProducts } from "../data/products";
+
+const layout = (Astro.url.searchParams.get("layout") ?? "row") === "sidebar" ? "sidebar" : "row";
+const totalCount = catalogProducts.length;
+---
+
+<Layout title="Каталог" description="Каталог сумок Rose — коллекции, хиты, новинки">
+	<section
+		class="w-full bg-white px-4 pb-14 pt-10 sm:px-5 sm:pb-16 sm:pt-12 md:px-10 md:pb-[100px] md:pt-16 lg:px-16 lg:pb-[120px] lg:pt-20 xl:px-20 xl:pb-[140px] xl:pt-24 2xl:px-[280px]"
+		aria-labelledby="catalog-title"
+	>
+		<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10 lg:gap-12">
+			<header class="flex flex-col gap-2">
+				<h1 id="catalog-title" class="rose-title">
+					Каталог
+				</h1>
+				<p class="rose-subtitle max-w-2xl">
+					Здесь начинается персональный стиль
+				</p>
+			</header>
+
+			{layout === "row" ? (
+				<div class="flex flex-col gap-6 lg:gap-8">
+					<div class="relative z-30 flex flex-wrap items-center justify-between gap-3 lg:gap-4" data-nt="catalog-filters">
+						<div class="flex flex-wrap items-center gap-3">
+							<details class="relative [&[open]]:z-30">
+								<summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[#000000] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
+									<span class="flex items-center gap-2">
+										<span>Наличие</span>
+										<RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
+									</span>
+								</summary>
+								<div class="absolute left-0 top-full z-30 mt-2 w-[180px]">
+									<NtFilterPanel panel="stock" />
+								</div>
+							</details>
+
+							<details class="relative [&[open]]:z-30">
+								<summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[#000000] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
+									<span class="flex items-center gap-2">
+										<span>Стоимость</span>
+										<RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
+									</span>
+								</summary>
+								<div class="absolute left-0 top-full z-30 mt-2 w-[180px]">
+									<NtFilterPanel panel="price" />
+								</div>
+							</details>
+
+							<details class="relative [&[open]]:z-30">
+								<summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[#000000] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
+									<span class="flex items-center gap-2">
+										<span>Цвет</span>
+										<RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
+									</span>
+								</summary>
+								<div class="absolute left-0 top-full z-30 mt-2 w-[180px]">
+									<NtFilterPanel panel="color" />
+								</div>
+							</details>
+						</div>
+
+						<details class="relative [&[open]]:z-30">
+							<summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[#000000] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
+								<span class="flex items-center gap-2">
+									<span>По популярности</span>
+									<RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
+								</span>
+							</summary>
+							<div class="absolute right-0 top-full z-30 mt-2 w-[180px]">
+								<NtFilterPanel panel="sort" />
+							</div>
+						</details>
+					</div>
+
+					<ul
+						class="grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 md:grid-cols-3 md:gap-x-4 md:gap-y-10 xl:grid-cols-4 xl:gap-x-5"
+						role="list"
+						data-nt="catalog-grid"
+					>
+						{catalogProducts.map((product) => (
+							<li data-product-id={product.id}>
+								<RoseProductCard product={product} />
+							</li>
+						))}
+					</ul>
+
+					<div class="flex flex-wrap items-center justify-between gap-4 pt-4">
+						<button
+							type="button"
+							data-action="load-more"
+							class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[#000000] px-4 py-[10px] font-manrope text-[16px] font-normal leading-[100%] text-white transition-opacity hover:opacity-90"
+						>Смотреть ещё</button>
+						<span class="font-manrope text-[16px] font-normal leading-[100%] text-[#999999]">
+							{totalCount} товаров
+						</span>
+					</div>
+				</div>
+			) : (
+				<div class="flex flex-col gap-8 lg:flex-row lg:gap-10">
+					<NtFilterSidebar class="hidden w-[172px] shrink-0 lg:flex xl:w-[294px]" />
+
+					<div class="flex flex-1 flex-col gap-8">
+						<ul
+							class="grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 md:grid-cols-3 md:gap-x-4 md:gap-y-10 xl:grid-cols-4 xl:gap-x-5"
+							role="list"
+							data-nt="catalog-grid"
+						>
+							{catalogProducts.map((product) => (
+								<li data-product-id={product.id}>
+									<RoseProductCard product={product} />
+								</li>
+							))}
+						</ul>
+
+						<div class="flex flex-wrap items-center justify-between gap-4 pt-4">
+							<button
+								type="button"
+								data-action="load-more"
+								class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[#000000] px-4 font-manrope text-[12px] font-normal leading-normal text-white transition-opacity hover:opacity-95 sm:text-[14px] md:text-[16px]"
+							>
+								Смотреть ещё
+							</button>
+							<span class="font-manrope text-[12px] font-normal leading-normal text-[#999999] sm:text-[14px] md:text-[16px]">
+								{totalCount} товаров
+							</span>
+						</div>
+					</div>
+				</div>
+			)}
+		</div>
+	</section>
+</Layout>
+
+<script>
+	document.addEventListener("click", (event) => {
+		const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-action='load-more']");
+		if (!button) return;
+		button.disabled = true;
+		button.textContent = "Больше товаров нет";
+		button.classList.add("opacity-60", "pointer-events-none");
+	});
+</script>

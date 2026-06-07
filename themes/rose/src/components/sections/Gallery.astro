@@ -1,0 +1,163 @@
+---
+import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
+import RosePicture from "../img/RosePicture.astro";
+
+const sectionTitle = "Снова в наличии!";
+const sectionSubtitle =
+	"Сравнивайте, находите своё — от культовых моделей до свежих решений для особенных моментов";
+---
+
+<section
+	id="gallery"
+	class="w-full bg-white px-4 pb-14 pt-14 sm:px-5 sm:pb-16 sm:pt-16 md:px-10 md:pb-[100px] md:pt-[100px] lg:px-16 lg:pb-[120px] lg:pt-[120px] xl:px-20 xl:pb-[140px] xl:pt-[140px] 2xl:px-[280px]"
+	aria-labelledby="gallery-title"
+>
+	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
+		<div class="gallery-section-heading flex w-full min-w-0 justify-center" data-animate>
+			<NtSectionHeading variant="rose" titleId="gallery-title" title={sectionTitle} subtitle={sectionSubtitle} />
+		</div>
+
+		<div
+			data-animate
+			data-animate-delay="0.1s"
+			class="grid min-h-0 min-w-0 grid-cols-1 gap-6 md:gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,429px)] lg:items-stretch lg:gap-6 xl:gap-8"
+		>
+			<a
+				href="/catalog"
+				class="gallery-hero-tile group relative block min-h-[280px] w-full min-w-0 overflow-hidden rounded-[8px] bg-[#F5F5F5] lg:min-h-0 lg:h-full"
+				aria-label="Перейти в каталог"
+			>
+				<RosePicture
+					src="/images/Изображение_Галерея.png"
+					alt="Галерея"
+					loading="eager"
+					class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
+					width="875"
+					height="875"
+				/>
+			</a>
+
+			<div class="flex min-h-0 min-w-0 flex-col gap-6">
+				<a
+					href="/products/bag-1"
+					class="group flex flex-col items-start gap-4 text-left md:gap-5"
+					aria-label="Сумка"
+				>
+					<div
+						class="gallery-bag-media relative aspect-[429/444] w-full min-h-0 overflow-hidden rounded-[8px] bg-[#F5F5F5] leading-none"
+					>
+						<RosePicture
+							src="/images/Товар_5__2_.png"
+							alt="Сумка"
+							width="429"
+							height="444"
+							loading="eager"
+							class="absolute inset-0 size-full max-w-none object-cover object-center transition-transform duration-300 group-hover:scale-110"
+						/>
+					</div>
+					<div class="flex flex-col gap-[4px] bg-transparent">
+						<h3
+							class="gallery-product-title font-manrope text-[16px] font-normal leading-none text-black md:text-[16px] lg:text-[16px] xl:text-[16px]"
+						>
+							Сумка
+						</h3>
+						<span
+							class="gallery-product-price font-manrope text-[16px] font-normal leading-none text-black md:text-[16px] lg:text-[16px] xl:text-[16px]"
+						>
+							5 990₽
+						</span>
+					</div>
+				</a>
+
+				<a
+					href="/catalog?collection=FUTURISM"
+					class="group flex min-w-0 flex-col items-start gap-4 text-left md:gap-5"
+					aria-label="Коллекция FUTURISM"
+				>
+					<div class="aspect-[429/309] w-full min-h-0 overflow-hidden rounded-[8px] bg-[#F5F5F5]">
+						<RosePicture
+							src="/images/Коллекция_3.png"
+							alt="Коллекция FUTURISM"
+							width="429"
+							height="309"
+							loading="eager"
+							class="block size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
+						/>
+					</div>
+					<h3 class="gallery-collection-title font-manrope bg-transparent text-[16px] font-normal leading-[100%] text-black">
+						Коллекция FUTURISM
+					</h3>
+				</a>
+			</div>
+		</div>
+	</div>
+</section>
+
+<style>
+	/* NtSectionHeading из DS не пробрасывает class на h2 — на широких экранах одна строка с плавным уменьшением */
+	:global(#gallery-title) {
+		white-space: nowrap;
+		font-size: clamp(14px, 3.8vw, 20px) !important;
+	}
+
+	/* Figma 375: разрешаем перенос для коротких заголовков (max-width ограничен в global.css) и
+	   возвращаем подзаголовку Manrope 12 как у .rose-subtitle */
+	@media (max-width: 639.98px) {
+		:global(#gallery-title) {
+			white-space: normal !important;
+		}
+
+		:global(#gallery-title ~ p) {
+			font-size: 12px !important;
+			line-height: 1.4 !important;
+			max-width: 100% !important;
+			width: 100% !important;
+			padding-inline: 0 !important;
+		}
+
+		:global(.gallery-section-heading [data-nt="section-heading"]) {
+			max-width: 100% !important;
+			width: 100% !important;
+		}
+	}
+
+	/* Левая плитка: нижний край картинки совпадает с низом ряда, без «пустого» поля под object-cover */
+	.gallery-hero-tile img {
+		height: 100%;
+		min-height: 100%;
+		width: 100%;
+		max-width: none;
+	}
+
+	/* Верхняя плитка справа: absolute inset-0 — без щели у нижнего края (как у hero) */
+	.gallery-bag-media img {
+		height: 100%;
+		width: 100%;
+		max-width: none;
+	}
+
+	.gallery-collection-title {
+		white-space: nowrap;
+		font-size: clamp(12px, 2.6vw, 16px);
+	}
+
+	/*
+	 * global.css задаёт неслоёные h3 { font-size: 1.953em } и Comfortaa для всех h1–h6 —
+	 * они сильнее @layer utilities Tailwind, поэтому заголовок «Сумка» визуально крупнее цены.
+	 */
+	:global(#gallery) .gallery-product-title,
+	:global(#gallery) .gallery-product-price {
+		font-family: "Manrope", sans-serif;
+		font-size: 16px;
+		font-weight: 400;
+		line-height: 1;
+	}
+
+	/* Figma 375: подписи карточки товара — Manrope 12 */
+	@media (max-width: 639.98px) {
+		:global(#gallery) .gallery-product-title,
+		:global(#gallery) .gallery-product-price {
+			font-size: 12px;
+		}
+	}
+</style>

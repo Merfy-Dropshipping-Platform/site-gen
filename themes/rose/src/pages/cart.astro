@@ -1,0 +1,205 @@
+---
+import Layout from "../layouts/Layout.astro";
+import RoseProductCard from "../components/products/RoseProductCard.astro";
+import RosePagination from "../components/ui/RosePagination.astro";
+import { catalogProducts } from "../data/products";
+import { withBase } from "../lib/with-base";
+
+const recommended = catalogProducts.slice(0, 4);
+const deleteIconSrc = withBase("/icons/delete.svg");
+---
+
+<Layout title="Корзина" description="Ваша корзина — Rose">
+	<section
+		class="w-full bg-white px-4 pb-16 pt-12 sm:px-5 sm:pb-20 sm:pt-16 md:px-10 md:pb-[120px] md:pt-20 lg:px-16 lg:pb-[140px] lg:pt-24 xl:px-20 xl:pb-[140px] xl:pt-28 2xl:px-[280px]"
+		aria-labelledby="cart-title"
+	>
+		<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-16 lg:gap-20">
+			<!-- Пустое состояние -->
+			<div
+				data-cart-page-empty
+				class="flex flex-col items-center gap-4 py-10 sm:gap-6 md:py-16"
+			>
+				<h1
+					id="cart-title"
+					class="rose-title"
+				>
+					Корзина
+				</h1>
+				<p class="rose-subtitle text-center max-w-md">
+					Вы пока не добавили товар в корзину.
+				</p>
+				<a
+					href="/catalog"
+					class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[#000000] px-6 font-manrope text-[14px] font-normal leading-normal text-white transition-opacity hover:opacity-95 sm:text-[16px]"
+				>
+					Продолжить покупки
+				</a>
+				<p class="font-manrope text-[12px] font-normal leading-[1.43] text-[#999999] sm:text-[14px] md:text-[16px]">
+					Есть аккаунт?
+					<a href="/auth/sign-in" class="text-[#000000] hover:opacity-80">Войти</a>
+				</p>
+			</div>
+
+			<!-- Наполненная корзина -->
+			<div
+				data-cart-page-filled
+				class="hidden flex-col gap-10 lg:gap-12"
+			>
+				<h1 class="rose-title">
+					Корзина
+				</h1>
+				<ul
+					data-cart-page-items
+					role="list"
+					class="flex flex-col gap-4 sm:gap-6"
+				></ul>
+				<div class="flex flex-col items-end gap-4 pt-6 sm:gap-5 sm:pt-8">
+					<p class="max-w-md text-right font-manrope text-[12px] font-light leading-[1.5] text-[#999999] sm:text-[13px] md:text-[14px]">
+						Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа
+					</p>
+					<div class="flex w-full flex-wrap items-baseline justify-end gap-x-3 gap-y-1 sm:gap-x-4">
+						<span class="font-manrope text-[14px] font-normal leading-normal text-[#000000] sm:text-[16px] md:text-[18px]">Итого</span>
+						<span data-cart-page-total class="font-manrope text-[18px] font-normal leading-normal text-[#000000] sm:text-[20px] md:text-[24px]">0 ₽</span>
+					</div>
+					<button
+						type="button"
+						data-action="checkout"
+						class="inline-flex h-12 w-full max-w-[320px] items-center justify-center rounded-[6px] !bg-[#000000] px-6 font-manrope text-[14px] font-normal leading-normal !text-white transition-opacity hover:opacity-95 sm:w-auto sm:min-w-[200px] sm:text-[16px]"
+					>
+						Оформить заказ
+					</button>
+				</div>
+			</div>
+
+			<!-- Рекомендации -->
+			<div class="flex flex-col gap-8 lg:gap-10">
+				<h2 class="rose-title">
+					Возможно вам понравится
+				</h2>
+				<ul class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 sm:gap-4 md:gap-6" role="list">
+					{recommended.map((product) => (
+						<li>
+							<RoseProductCard product={product} />
+						</li>
+					))}
+				</ul>
+				<RosePagination currentPage={1} totalPages={3} totalCount={catalogProducts.length} baseHref="/catalog?" />
+			</div>
+		</div>
+	</section>
+</Layout>
+
+<script define:vars={{ deleteIconSrc }}>
+	import { getCart, getCartTotal, formatCartPrice, updateQuantity, removeFromCart } from "../lib/cart";
+	import { cartLineThumbPictureHtml } from "../lib/cart-thumb-html";
+
+	const VARIANT_COLOR_LABELS: Record<string, string> = {
+		brown: "Коричневый",
+		black: "Чёрный",
+		white: "Белый",
+		olive: "Оливковый",
+		gray: "Серый",
+	};
+
+	const emptyBlock = document.querySelector<HTMLElement>("[data-cart-page-empty]");
+	const filledBlock = document.querySelector<HTMLElement>("[data-cart-page-filled]");
+	const itemsEl = document.querySelector<HTMLElement>("[data-cart-page-items]");
+	const totalEl = document.querySelector<HTMLElement>("[data-cart-page-total]");
+
+	const render = () => {
+		const lines = getCart();
+		if (!emptyBlock || !filledBlock || !itemsEl || !totalEl) return;
+		if (lines.length === 0) {
+			emptyBlock.classList.remove("hidden");
+			emptyBlock.classList.add("flex");
+			filledBlock.classList.add("hidden");
+			filledBlock.classList.remove("flex");
+			return;
+		}
+		emptyBlock.classList.add("hidden");
+		emptyBlock.classList.remove("flex");
+		filledBlock.classList.remove("hidden");
+		filledBlock.classList.add("flex");
+
+		itemsEl.innerHTML = lines
+			.map((line) => {
+				const slug = line.variant?.color ?? "";
+				const colorLabel = slug ? (VARIANT_COLOR_LABELS[slug] ?? slug) : "";
+				const sizePart = line.variant?.size ?? "";
+				const variantUnderPrice = [colorLabel, sizePart].filter(Boolean).join(", ");
+				const totalCurrent = formatCartPrice(line.price * line.quantity);
+				const totalOld =
+					line.oldPrice !== undefined ? formatCartPrice(line.oldPrice * line.quantity) : "";
+
+				return `
+					<li class="flex gap-4 sm:gap-6 md:flex-row md:items-start md:justify-between" data-line-id="${line.id}">
+						<div class="flex min-w-0 flex-1 gap-3 sm:gap-4">
+							<a href="/products/${line.productId}" class="block size-20 shrink-0 overflow-hidden rounded-[8px] bg-[#F5F5F5] sm:size-24 md:size-[120px]">
+								${cartLineThumbPictureHtml(line.image, line.name)}
+							</a>
+							<div class="flex min-w-0 flex-col gap-2">
+								<a href="/products/${line.productId}" class="font-manrope text-[14px] font-normal leading-none tracking-normal text-[#000000] hover:opacity-80 sm:text-[15px] md:text-[18px]">${line.name}</a>
+								<div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+									<span class="font-manrope text-[14px] font-normal leading-normal text-[#000000] sm:text-[16px] md:text-[18px]">${totalCurrent}</span>
+									${
+										line.oldPrice !== undefined && totalOld
+											? `<span class="font-manrope text-[13px] font-light leading-normal text-[#999999] line-through sm:text-[14px] md:text-[16px]">${totalOld}</span>`
+											: ""
+									}
+								</div>
+								${
+									variantUnderPrice
+										? `<p class="font-manrope text-[12px] font-light leading-normal text-[#999999] sm:text-[13px] md:text-[14px]">${variantUnderPrice}</p>`
+										: ""
+								}
+							</div>
+						</div>
+						<div class="flex shrink-0 flex-col items-end gap-3 self-start md:gap-4">
+							<button type="button" data-cart-remove data-id="${
+								line.id
+							}" class="flex size-9 items-center justify-center rounded-[4px] text-[#000000] transition-opacity hover:bg-[#F5F5F5] hover:opacity-80 md:size-10" aria-label="Удалить товар из корзины">
+								<img src="${deleteIconSrc}" alt="" width="22" height="22" class="pointer-events-none size-[22px] md:size-6" />
+							</button>
+							<div class="inline-flex h-10 items-center rounded-[4px] border border-solid border-[#E5E5E5]">
+								<button type="button" data-cart-dec data-id="${line.id}" class="flex h-10 w-10 items-center justify-center font-manrope text-[16px] text-[#000000]" aria-label="Уменьшить">−</button>
+								<span class="min-w-[28px] text-center font-manrope text-[12px] text-[#000000] sm:text-[14px]">${line.quantity}</span>
+								<button type="button" data-cart-inc data-id="${line.id}" class="flex h-10 w-10 items-center justify-center font-manrope text-[16px] text-[#000000]" aria-label="Увеличить">+</button>
+							</div>
+						</div>
+					</li>
+				`;
+			})
+			.join("");
+
+		totalEl.textContent = formatCartPrice(getCartTotal(lines));
+	};
+
+	render();
+	document.addEventListener("astro:page-load", render);
+	window.addEventListener("rose:cart:updated", render);
+
+	document.addEventListener("click", (event) => {
+		const target = event.target as HTMLElement;
+		const inc = target.closest<HTMLButtonElement>("[data-cart-inc]");
+		if (inc) {
+			const id = inc.dataset.id ?? "";
+			const line = getCart().find((l) => l.id === id);
+			if (line) updateQuantity(id, line.quantity + 1);
+			return;
+		}
+		const dec = target.closest<HTMLButtonElement>("[data-cart-dec]");
+		if (dec) {
+			const id = dec.dataset.id ?? "";
+			const line = getCart().find((l) => l.id === id);
+			if (line) updateQuantity(id, line.quantity - 1);
+			return;
+		}
+		const remove = target.closest<HTMLButtonElement>("[data-cart-remove]");
+		if (remove) removeFromCart(remove.dataset.id ?? "");
+		const checkout = target.closest<HTMLButtonElement>("[data-action='checkout']");
+		if (checkout) {
+			alert("Спасибо за заказ! Мы свяжемся с вами для подтверждения.");
+		}
+	});
+</script>

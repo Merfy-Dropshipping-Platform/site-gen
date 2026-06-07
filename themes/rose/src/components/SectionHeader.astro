@@ -1,0 +1,19 @@
+---
+interface Props {
+	title: string;
+	subtitle?: string;
+}
+
+const { title, subtitle } = Astro.props;
+---
+
+<div class="mb-8 flex flex-col items-center gap-2 text-center sm:mb-10 md:mb-12 lg:mb-16 xl:mb-20">
+	<h2 class="rose-title">
+		{title}
+	</h2>
+	{subtitle && (
+		<p class="rose-subtitle max-w-[90vw] px-2">
+			{subtitle}
+		</p>
+	)}
+</div>

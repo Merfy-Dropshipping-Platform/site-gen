@@ -1,0 +1,167 @@
+---
+/**
+ * Витрина New-Themes DS — сверка с Figma без сборки главной.
+ * URL: /design-system/
+ */
+import BaseHead from "../components/BaseHead.astro";
+import NtButton from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtButton.astro";
+import NtCollectionCard from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtCollectionCard.astro";
+import NtFilterSidebar from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtFilterSidebar.astro";
+import NtFiltersRow from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtFiltersRow.astro";
+import NtHeaderStacked from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtHeaderStacked.astro";
+import RoseNtIcon from "../components/icons/RoseNtIcon.astro";
+import NtProductCard from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtProductCard.astro";
+import NtPromoBanner from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtPromoBanner.astro";
+import NtScrollIndicator from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtScrollIndicator.astro";
+import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
+import NtSwatchDropdown from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSwatchDropdown.astro";
+import NtTextField from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtTextField.astro";
+import NtVariantSwatchRow from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtVariantSwatchRow.astro";
+import NtVariantTextRow from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtVariantTextRow.astro";
+import { NT_ICON_NAMES } from "@merfy-dropshipping-platform/design-systems-theme/lib/icon-paths";
+import { SITE_DESCRIPTION, SITE_TITLE } from "../consts";
+import { withBase } from "../lib/with-base";
+
+const swatchOptionsCircle = [
+	{ id: "black", label: "Чёрный", swatchColor: "#000000" },
+	{ id: "white", label: "Белый", swatchColor: "#F5F5F5", disabled: true },
+];
+---
+
+<!doctype html>
+<html lang="ru">
+	<head>
+		<BaseHead title={`DS — ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+	</head>
+	<body class="bg-white font-manrope text-[#000000] antialiased">
+		<NtHeaderStacked
+			siteTitle="Rose"
+			currentPath="/design-system/"
+			iconBasePath={withBase("/icons")}
+			nav={[
+				{ label: "Главная", href: "/" },
+				{ label: "Каталог", href: "#ds-cards" },
+				{ label: "Контакты", href: "#" },
+			]}
+		/>
+		<main class="mx-auto max-w-[1920px] px-4 pb-24 pt-10 sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px]">
+			<h1 class="rose-title">
+				New-Themes — витрина компонентов
+			</h1>
+			<p class="rose-subtitle mt-2 max-w-2xl">
+				Sверка с Figma fileKey QfF9NPZBoQX6vCRg560Qcb.
+			</p>
+
+			<section class="mt-16" aria-labelledby="ds-tokens">
+				<h2 id="ds-tokens" class="rose-title mb-6">Токены (часть)</h2>
+				<dl class="grid max-w-xl gap-2 text-[14px] text-[#606060]">
+					<dt>--width-nt-swatch-dropdown</dt><dd class="font-mono text-[#000000]">220px</dd>
+					<dt>--width-nt-modal-1920</dt><dd class="font-mono text-[#000000]">614px</dd>
+					<dt>--color-nt-error</dt><dd class="font-mono text-[#000000]">#ff9494</dd>
+				</dl>
+			</section>
+
+			<section class="mt-16" aria-labelledby="ds-icons">
+				<h2 id="ds-icons" class="rose-title mb-6">Иконки</h2>
+				<div class="grid grid-cols-3 gap-6 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+					{
+						NT_ICON_NAMES.map((name) => (
+							<div class="flex flex-col items-center gap-2 rounded-[8px] border border-solid border-[#F5F5F5] p-3">
+								<RoseNtIcon name={name} sizeClass="size-6" />
+								<span class="break-all text-center text-[10px] leading-tight text-[#999999]">{name}</span>
+							</div>
+						))
+					}
+				</div>
+			</section>
+
+			<section class="mt-16" aria-labelledby="ds-buttons">
+				<h2 id="ds-buttons" class="rose-title mb-6">Кнопки NtButton</h2>
+				<div class="flex flex-wrap gap-3">
+					<NtButton variant="solid" size="sm">sm solid</NtButton>
+					<NtButton variant="outline" size="sm">sm outline</NtButton>
+					<NtButton variant="fill" size="md">md fill</NtButton>
+					<NtButton variant="solid" size="lg">lg solid</NtButton>
+				</div>
+			</section>
+
+			<section class="mt-16" aria-labelledby="ds-fields">
+				<h2 id="ds-fields" class="rose-title mb-6">Поля NtTextField</h2>
+				<div class="flex max-w-[430px] flex-col gap-8">
+					<NtTextField label="Strong" name="ds-s" border="strong" placeholder="…" />
+					<NtTextField label="Muted" name="ds-m" border="muted" placeholder="…" />
+					<NtTextField label="Error" name="ds-e" border="error" placeholder="…" />
+				</div>
+			</section>
+
+			<section class="mt-16" aria-labelledby="ds-heading">
+				<h2 id="ds-heading" class="sr-only">Заголовок секции</h2>
+				<NtSectionHeading
+					variant="rose"
+					titleId="ds-heading-vis"
+					title="Заголовок секции"
+					subtitle="Подзаголовок серый Manrope."
+				/>
+			</section>
+
+			<section class="mt-16" aria-labelledby="ds-promo">
+				<h2 id="ds-promo" class="rose-title mb-6">Промо</h2>
+				<NtPromoBanner text="Скидка 10%" link="#" linkText="Перейти" textSize="lg" />
+			</section>
+
+			<section class="mt-16" aria-labelledby="ds-cards">
+				<h2 id="ds-cards" class="rose-title mb-6">Карточки</h2>
+				<div class="grid grid-cols-1 gap-8 md:grid-cols-2">
+					<NtCollectionCard name="Коллекция DEMO" image="/images/sale-1.png" />
+					<NtProductCard name="Сумка" price="5 990₽" oldPrice="7 990₽" image="/images/Товар_1.png" />
+				</div>
+			</section>
+
+			<section class="mt-16" aria-labelledby="ds-filters">
+				<h2 id="ds-filters" class="rose-title mb-6">Фильтры</h2>
+				<NtFiltersRow density="1920" />
+				<div class="mt-10 flex flex-wrap gap-8">
+					<NtFilterSidebar density="1920" />
+					<NtFilterSidebar density="1280" />
+				</div>
+			</section>
+
+			<section class="mt-16" aria-labelledby="ds-variants">
+				<h2 id="ds-variants" class="rose-title mb-6">Варианты товара</h2>
+				<div class="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-16">
+					<NtSwatchDropdown
+						selectedLabel="Коричневый"
+						selectedSwatchColor="#662F10"
+						options={swatchOptionsCircle}
+						preview="circle"
+						iconBasePath={withBase("/icons")}
+					/>
+					<NtVariantSwatchRow
+						namePrefix="Цвет:"
+						selectedLabel="Коричневый"
+						shape="circle"
+						selectedId="a"
+						items={[
+							{ id: "a", color: "#662F10" },
+							{ id: "b", color: "#000000" },
+							{ id: "c", color: "#FFFFFF", unavailable: true },
+						]}
+					/>
+					<NtVariantTextRow
+						items={[
+							{ id: "1", label: "Коричневый" },
+							{ id: "2", label: "Чёрный" },
+							{ id: "3", label: "Белый", unavailable: true },
+						]}
+						selectedId="1"
+					/>
+				</div>
+			</section>
+
+			<section class="mt-16" aria-labelledby="ds-scroll">
+				<h2 id="ds-scroll" class="rose-title mb-6">Scroll</h2>
+				<NtScrollIndicator iconBasePath={withBase("/icons")} />
+			</section>
+		</main>
+	</body>
+</html>

@@ -1,0 +1,175 @@
+---
+import { pukItems } from '../../data/pukItems';
+---
+
+<section class="puk-section">
+  <div class="puk-container">
+    <div class="puk-header">
+      <h2 class="puk-title">АКЦИЯ ПУКНИ 3 раза</h2>
+      <p class="puk-subtitle">ПУК ПУК ПУК</p>
+    </div>
+
+    <div class="puk-grid">
+      {pukItems.map((item) => (
+        <div class="puk-card">
+          <div class="puk-image-wrapper">
+            <img 
+              src={item.image} 
+              alt={item.title}
+              class="puk-image"
+              decoding="async"
+            />
+          </div>
+          <div class="puk-text">
+            <p>{item.title}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .puk-section {
+    width: 100%;
+    background: #ffffff;
+    padding: 80px 20px;
+  }
+
+  .puk-container {
+    max-width: 1320px;
+    margin: 0 auto;
+  }
+
+  .puk-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 50px;
+    text-align: center;
+  }
+
+  .puk-title {
+    font-family: 'Comfortaa', system-ui, sans-serif;
+    font-size: 20px !important;
+    font-weight: 400;
+    line-height: 1 !important;
+    letter-spacing: normal;
+    text-transform: uppercase;
+    color: #000000;
+    margin: 0;
+  }
+
+  .puk-subtitle {
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-size: 16px !important;
+    font-weight: 400;
+    line-height: 1 !important;
+    letter-spacing: normal;
+    color: #999999;
+    margin: 0;
+  }
+
+  .puk-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    justify-items: center;
+  }
+
+  .puk-card {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    width: 100%;
+    max-width: 430px;
+  }
+
+  .puk-image-wrapper {
+    width: 100%;
+    aspect-ratio: 430 / 500;
+    overflow: hidden;
+    border-radius: 10px;
+  }
+
+  .puk-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .puk-text {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  .puk-text p {
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-size: 24px;
+    font-weight: 400;
+    line-height: 1.366;
+    color: #000000;
+    margin: 0;
+  }
+
+  /* Tablet */
+  @media (max-width: 1024px) {
+    .puk-section {
+      padding: 60px 20px;
+    }
+
+    .puk-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    .puk-card {
+      max-width: 100%;
+    }
+
+    .puk-text p {
+      font-size: 20px;
+    }
+  }
+
+  /* Mobile */
+  @media (max-width: 768px) {
+    .puk-section {
+      padding: 40px 16px;
+    }
+
+    .puk-header {
+      margin-bottom: 30px;
+    }
+
+    .puk-grid {
+      grid-template-columns: 1fr;
+      gap: 30px;
+    }
+
+    .puk-card {
+      gap: 20px;
+    }
+
+    .puk-text p {
+      font-size: 18px;
+    }
+  }
+
+  /* Small Mobile */
+  @media (max-width: 480px) {
+    .puk-section {
+      padding: 30px 12px;
+    }
+
+    .puk-text p {
+      font-size: 16px;
+    }
+  }
+</style>
+
+
+

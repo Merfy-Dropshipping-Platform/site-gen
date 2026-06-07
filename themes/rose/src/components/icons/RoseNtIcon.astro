@@ -1,0 +1,17 @@
+---
+import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+import type { NtIconName } from "@merfy-dropshipping-platform/design-systems-theme/lib/icon-paths";
+import { withBase } from "../../lib/with-base";
+
+interface Props {
+	name: NtIconName;
+	class?: string;
+	iconBasePath?: string;
+	sizeClass?: string;
+}
+
+const { name, class: className, iconBasePath: iconBaseProp, sizeClass } = Astro.props as Props;
+const iconBasePath = iconBaseProp ?? withBase("/icons");
+---
+
+<NtIcon name={name} class={className} sizeClass={sizeClass} iconBasePath={iconBasePath} />

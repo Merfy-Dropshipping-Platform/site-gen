@@ -1,0 +1,33 @@
+---
+import RoseNtIcon from "../icons/RoseNtIcon.astro";
+import { platformToNtIcon, platformToNtIconOnDark } from "@merfy-dropshipping-platform/design-systems-theme/lib/social-map";
+
+interface Props {
+	href: string;
+	ariaLabel: string;
+	/** Подпись платформы из конфигурации (для выбора иконки DS) */
+	platform?: string;
+	/** `onDark` — белые иконки (Figma social media_white), для тёмного фона */
+	variant?: "default" | "onDark";
+}
+
+const { href, ariaLabel, platform = ariaLabel, variant = "default" } = Astro.props;
+const iconName =
+	variant === "onDark" ? platformToNtIconOnDark(platform) : platformToNtIcon(platform);
+---
+
+<a
+	href={href}
+	aria-label={ariaLabel}
+	class="w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 flex items-center justify-center hover:opacity-70 transition-opacity [&_img]:max-h-full [&_img]:max-w-full"
+>
+	{
+		iconName ? (
+			<RoseNtIcon name={iconName} sizeClass="h-full w-full max-h-[40px] max-w-[40px]" />
+		) : (
+			<svg class="w-full h-full" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+				<circle cx="20" cy="20" r="19.5" stroke="#999999" />
+			</svg>
+		)
+	}
+</a>

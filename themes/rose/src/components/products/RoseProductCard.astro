@@ -1,0 +1,77 @@
+---
+import type { Product } from "../../types/product";
+import RosePicture from "../img/RosePicture.astro";
+
+interface Props {
+	product: Product;
+	priority?: boolean;
+}
+
+const { product, priority = false } = Astro.props;
+const href = `/products/${product.id}`;
+const showSaleBadge = product.discount === true;
+---
+
+<article
+	class="group flex w-full flex-col gap-5"
+	data-nt="rose-product-card"
+	aria-label={product.name}
+>
+	<a
+		href={href}
+		class="relative block aspect-[318/444] w-full overflow-hidden rounded-[8px] bg-white"
+		aria-label={product.name}
+	>
+		<RosePicture
+			src={product.image}
+			alt={product.name}
+			width="318"
+			height="444"
+			loading="eager"
+			fetchpriority={priority ? "high" : undefined}
+			class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+		/>
+		{showSaleBadge && (
+			<span
+				class="absolute left-3 top-3 z-10 flex h-6 min-w-12 items-center justify-center rounded-[4px] bg-[#000000] px-2 font-manrope text-[12px] font-normal leading-none !text-white"
+			>
+				Скидка
+			</span>
+		)}
+	</a>
+	<div class="flex w-full flex-col gap-1 text-left">
+		<a
+			href={href}
+			class="rose-product-name block w-full font-manrope text-[14px] font-normal leading-none tracking-normal text-[#000000] transition-opacity hover:opacity-70"
+		>
+			{product.name}
+		</a>
+		<div class="flex w-full flex-wrap items-baseline gap-2">
+			<span class="rose-product-price font-manrope !text-[16px] font-normal !leading-none text-[#000000]">
+				{product.price}
+			</span>
+			{product.oldPrice && (
+				<span class="rose-product-oldprice font-manrope !text-[14px] font-normal !leading-none text-[#999999] line-through">
+					{product.oldPrice}
+				</span>
+			)}
+		</div>
+	</div>
+</article>
+
+<style>
+	/* Figma 375: name/price — Manrope 12, lh 100% */
+	@media (max-width: 639.98px) {
+		.rose-product-name {
+			font-size: 12px !important;
+		}
+
+		.rose-product-price {
+			font-size: 12px !important;
+		}
+
+		.rose-product-oldprice {
+			font-size: 12px !important;
+		}
+	}
+</style>

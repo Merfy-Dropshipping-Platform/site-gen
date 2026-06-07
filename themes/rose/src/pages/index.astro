@@ -1,0 +1,17 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Hero from "../components/sections/Hero.astro";
+import Collections from "../components/sections/Collections.astro";
+import Popular from "../components/sections/Popular.astro";
+import Gallery from "../components/sections/Gallery.astro";
+---
+
+<Layout>
+	<Fragment slot="head">
+		<link rel="preload" as="image" href="/images/Главный_экран.webp" type="image/webp" fetchpriority="high" />
+	</Fragment>
+	<Hero />
+	<Collections />
+	<Popular />
+	<Gallery />
+</Layout>

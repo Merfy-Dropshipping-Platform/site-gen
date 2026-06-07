@@ -1,0 +1,35 @@
+---
+interface Props {
+	name: string;
+	price: string;
+	oldPrice: string;
+	image: string;
+	alt?: string;
+}
+
+const { name, price, oldPrice, image, alt = name } = Astro.props;
+---
+
+<article class="flex flex-col gap-[20px] cursor-pointer">
+	<div class="bg-gray-100 rounded-[8px] overflow-hidden w-full aspect-[318/418]">
+		<img
+			src={image}
+			alt={alt}
+			decoding="async"
+			class="w-full h-full object-cover"
+		/>
+	</div>
+	<div class="flex flex-col gap-[4px]">
+		<h3 class="font-manrope text-[14px] font-normal leading-none text-[#000000]">
+			{name}
+		</h3>
+		<div class="flex items-center gap-[15px] flex-wrap">
+			<span class="text-[16px] font-normal text-black font-manrope leading-[1.366]">
+				{price}
+			</span>
+			<span class="text-[14px] font-normal text-[#999999] line-through leading-[1.366] font-manrope">
+				{oldPrice}
+			</span>
+		</div>
+	</div>
+</article>

@@ -1,0 +1,61 @@
+---
+/**
+ * Тонкая обёртка <picture> с WebP-source.
+ *
+ * Использование:
+ *   <RosePicture src="/images/Товар_1.png" alt="Сумка" width={318} height={444} class="..." />
+ *
+ * Атрибут `src` указывает на PNG/JPG в /public/. Рядом с этим файлом должен лежать
+ * соимённый .webp — генерируется автоматически скриптом `pnpm run images:optimize`
+ * (вызывается из prebuild, см. package.json). WebP отдаётся всем поддерживающим
+ * браузерам (~99%), PNG — fallback и одновременно «настоящий» оригинал.
+ *
+ * По умолчанию изображение грузится eager (как просил продакт — без lazy).
+ */
+interface Props {
+  src: string;
+  alt: string;
+  width?: number | string;
+  height?: number | string;
+  class?: string;
+  /** "eager" по умолчанию. Lazy задавать явно. */
+  loading?: "eager" | "lazy";
+  fetchpriority?: "high" | "low" | "auto";
+  decoding?: "sync" | "async" | "auto";
+  sizes?: string;
+  /** Доп. data-атрибуты на <img>. */
+  [key: `data-${string}`]: string | number | boolean | undefined;
+}
+
+const {
+  src,
+  alt,
+  width,
+  height,
+  class: className,
+  loading = "eager",
+  fetchpriority,
+  decoding = "async",
+  sizes,
+  ...rest
+} = Astro.props as Props;
+
+const webp = src.replace(/\.(png|jpe?g)$/i, ".webp");
+const hasWebp = webp !== src;
+---
+
+<picture class="contents">
+  {hasWebp && <source srcset={webp} type="image/webp" />}
+  <img
+    src={src}
+    alt={alt}
+    width={width}
+    height={height}
+    class={className}
+    loading={loading}
+    fetchpriority={fetchpriority}
+    decoding={decoding}
+    sizes={sizes}
+    {...rest}
+  />
+</picture>

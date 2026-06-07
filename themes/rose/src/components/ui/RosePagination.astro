@@ -1,0 +1,75 @@
+---
+/**
+ * Копия DS NtPagination с путём иконок через withBase — иначе при base != '/' стрелки 404.
+ */
+import RoseNtIcon from "../icons/RoseNtIcon.astro";
+
+interface Props {
+	currentPage?: number;
+	totalPages?: number;
+	baseHref?: string;
+	totalCount?: number;
+	class?: string;
+}
+
+const {
+	currentPage = 1,
+	totalPages = 3,
+	baseHref = "?",
+	totalCount,
+	class: className = "",
+} = Astro.props;
+
+const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+const sep = baseHref.includes("?") ? "&" : "?";
+const prevHref = `${baseHref}${sep}page=${Math.max(1, currentPage - 1)}`;
+const nextHref = `${baseHref}${sep}page=${Math.min(totalPages, currentPage + 1)}`;
+---
+
+<nav
+	class:list={[
+		"flex w-full items-center justify-between font-manrope text-[14px] font-normal leading-normal text-[#000000]",
+		className,
+	]}
+	aria-label="Пагинация"
+	data-nt="pagination"
+>
+	<div class="flex items-center gap-4">
+		<a
+			href={prevHref}
+			aria-label="Предыдущая страница"
+			class:list={[currentPage === 1 ? "pointer-events-none opacity-40" : "hover:opacity-70"]}
+		>
+			<RoseNtIcon name="arrow-left" sizeClass="h-4 w-4" />
+		</a>
+		<ul class="flex items-center gap-4" role="list">
+			{pages.map((p) => (
+				<li>
+					<a
+						href={`${baseHref}${sep}page=${p}`}
+						aria-current={p === currentPage ? "page" : undefined}
+						class:list={[
+							"inline-flex min-w-4 items-center justify-center transition-opacity",
+							p === currentPage ? "text-[#000000]" : "text-[#999999] hover:text-[#000000]",
+						]}
+					>
+						{p}
+					</a>
+				</li>
+			))}
+		</ul>
+		<a
+			href={nextHref}
+			aria-label="Следующая страница"
+			class:list={[currentPage === totalPages ? "pointer-events-none opacity-40" : "hover:opacity-70"]}
+		>
+			<RoseNtIcon name="arrow-right" sizeClass="h-4 w-4" />
+		</a>
+	</div>
+
+	{totalCount !== undefined && (
+		<span class="font-manrope text-[14px] font-normal leading-normal text-[#999999]">
+			{totalCount} товаров
+		</span>
+	)}
+</nav>

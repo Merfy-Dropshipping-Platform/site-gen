@@ -1,0 +1,69 @@
+---
+import Layout from "../../layouts/Layout.astro";
+---
+
+<Layout title="Регистрация" description="Создайте аккаунт Rose">
+	<section class="flex w-full min-h-[calc(100svh-80px)] items-center justify-center bg-white px-4 py-16 sm:px-5 md:px-10 md:py-24 lg:px-16 xl:px-20 2xl:px-[280px]">
+		<form class="flex w-full max-w-[430px] flex-col items-center gap-20" data-auth-form novalidate>
+
+			<div class="flex flex-col items-center gap-3 text-center">
+				<p class="rose-auth-title font-comfortaa text-[36px] font-light uppercase leading-none text-[#000000] sm:text-[44px]">
+					Регистрация аккаунта
+				</p>
+				<span class="rose-auth-subtitle font-manrope text-[16px] font-normal leading-normal text-[#999999]">
+					Введите свои данные чтобы создать аккаунт
+				</span>
+			</div>
+
+			<div class="flex w-full flex-col gap-4">
+				<div class="flex flex-col gap-2">
+					<label for="name" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">Имя</label>
+					<input id="name" name="name" type="text" autocomplete="name" class="rose-input" />
+				</div>
+				<div class="flex flex-col gap-2">
+					<label for="email" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">E-mail</label>
+					<input id="email" name="email" type="email" autocomplete="email" class="rose-input" />
+				</div>
+				<div class="flex flex-col gap-2">
+					<label for="password" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">Пароль</label>
+					<input id="password" name="password" type="password" autocomplete="new-password" class="rose-input" />
+				</div>
+			</div>
+
+			<div class="flex w-full flex-col items-center gap-10">
+				<button type="submit" class="rose-btn-primary">
+					Зарегистрироваться
+				</button>
+				<p class="rose-auth-helper font-manrope text-[16px] font-normal leading-normal text-[#999999]">
+					Уже есть аккаунт?&#32;<a href="/auth/sign-in" class="text-[#000000] transition-opacity hover:opacity-70">Войти</a>
+				</p>
+			</div>
+
+		</form>
+	</section>
+</Layout>
+
+<style>
+	/* Figma 375: page title Comfortaa 14, subtitle/helper Manrope 12 */
+	@media (max-width: 639.98px) {
+		.rose-auth-title {
+			font-size: 14px;
+			max-width: 320px;
+			margin-left: auto;
+			margin-right: auto;
+			white-space: normal;
+		}
+
+		.rose-auth-subtitle,
+		.rose-auth-helper {
+			font-size: 12px;
+		}
+	}
+</style>
+
+<script>
+	document.querySelector<HTMLFormElement>("[data-auth-form]")?.addEventListener("submit", (e) => {
+		e.preventDefault();
+		alert("Демо-регистрация: заявка принята, мы пришлём подтверждение на e-mail.");
+	});
+</script>

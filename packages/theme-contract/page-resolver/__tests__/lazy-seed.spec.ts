@@ -37,4 +37,12 @@ describe('LazySeed', () => {
     const seed = new LazySeed({ themePackageRoots: {} });
     await expect(seed.loadContent('rose', 'pages/home.json')).rejects.toThrow(/unknown theme/i);
   });
+
+  it('throws with file path context when content file is invalid JSON', async () => {
+    await fs.writeFile(path.join(tmpDir, 'pages', 'broken.json'), '{ not valid json');
+    const seed = new LazySeed({ themePackageRoots: { rose: tmpDir } });
+    await expect(seed.loadContent('rose', 'pages/broken.json')).rejects.toThrow(
+      /failed to parse json for theme "rose" \(pages\/broken\.json\)/i,
+    );
+  });
 });

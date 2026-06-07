@@ -11,6 +11,9 @@ dist/astro-blocks/
 .astro-builds/
 artifacts/
 
+# Astro cache (themes/<name>/.astro, etc.)
+.astro/
+
 # Drizzle backups
 drizzle_backup/
 

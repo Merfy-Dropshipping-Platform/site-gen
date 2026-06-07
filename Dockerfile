@@ -7,7 +7,13 @@ WORKDIR /app
 
 RUN npm install -g pnpm@10.14.0
 
-COPY package.json pnpm-lock.yaml ./
+# Private @merfy-dropshipping-platform packages live on GitHub Packages.
+# Coolify passes NODE_AUTH_TOKEN (PAT with read:packages) as a build arg;
+# .npmrc references ${NODE_AUTH_TOKEN}.
+ARG NODE_AUTH_TOKEN
+ENV NODE_AUTH_TOKEN=${NODE_AUTH_TOKEN}
+
+COPY package.json pnpm-lock.yaml .npmrc ./
 RUN pnpm install
 
 COPY . .
@@ -40,6 +46,13 @@ RUN test -f /app/dist/astro-blocks/theme-base__PopularProducts__PopularProducts.
 # blocks use Tailwind classes in their .astro templates, and PreviewService
 # injects this CSS so the iframe looks like the live site.
 RUN pnpm build:preview-tailwind
+
+# v2 theme transfer: compile verstalshik theme sections (themes/<theme>/) +
+# their CSS bundle. PreviewService.resolveV2Section / loadThemeCss read these
+# from dist/theme-sections/ and dist/theme-css/ at runtime.
+RUN pnpm build:themes
+RUN test -f /app/dist/theme-sections/rose/manifest.json \
+    || (echo "FATAL: build:themes did not produce rose theme-sections manifest" && exit 1)
 
 # ========================
 # Stage 2: Production

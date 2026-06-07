@@ -2,21 +2,17 @@
 import { SITE_TITLE } from "../../consts";
 import RosePicture from "../img/RosePicture.astro";
 
-interface Props {
-	title?: string;
-	subtitle?: string;
-	ctaText?: string;
-	ctaLink?: string;
-	backgroundImage?: string;
-}
-
-const {
-	title = SITE_TITLE,
-	subtitle = "Там, где классика встречается с характером",
-	ctaText = "В каталог",
-	ctaLink = "/catalog",
-	backgroundImage = "/images/Главный_экран.png",
-} = Astro.props;
+// ОЖИВЛЕНИЕ: читаем существующую конструкторную Hero-схему (theme-base
+// Hero.puckConfig) и раскладываем по переменным разметки верстальщика. Тело
+// ниже — verbatim. Значения rose = дефолты. Поддержаны flat и nested (Pupa) пропсы.
+const p = Astro.props as Record<string, any>;
+const title = p.heading?.text ?? p.title ?? SITE_TITLE;
+const subtitle =
+	p.text?.content ?? p.subtitle ?? "Там, где классика встречается с характером";
+const ctaText = p.primaryButton?.text ?? p.cta?.text ?? p.ctaText ?? "В каталог";
+const ctaLink =
+	p.primaryButton?.link?.href ?? p.primaryButton?.link ?? p.cta?.href ?? p.ctaLink ?? "/catalog";
+const backgroundImage = p.backgroundImage ?? p.image?.url ?? "/images/Главный_экран.png";
 
 ---
 

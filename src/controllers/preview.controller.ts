@@ -395,8 +395,10 @@ export class PreviewController {
             // Try next candidate (page- prefix variant)
           }
         }
-      } catch {
-        // Resolver init failed (unknown theme); fall through to null return.
+      } catch (err: unknown) {
+        this.logger.warn(
+          `[preview] lazy-seed resolver init failed for theme=${themeId}: ${(err as Error)?.message ?? err}`,
+        );
       }
     }
     if (!pageData) return null;

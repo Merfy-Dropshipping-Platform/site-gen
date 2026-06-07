@@ -3,8 +3,11 @@ import type { Config } from 'jest';
 const config: Config = {
   preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
-  roots: ['<rootDir>/__tests__'],
-  testMatch: ['<rootDir>/__tests__/**/*.test.ts'],
+  roots: ['<rootDir>/__tests__', '<rootDir>/page-resolver'],
+  testMatch: [
+    '<rootDir>/__tests__/**/*.test.ts',
+    '<rootDir>/page-resolver/__tests__/**/*.(test|spec).ts',
+  ],
   testPathIgnorePatterns: ['/node_modules/', '/__tests__/fixtures/'],
   moduleFileExtensions: ['ts', 'js', 'json'],
   transform: {

@@ -338,6 +338,70 @@ export class PreviewService {
   }
 
   /**
+   * Constructor v2 (Phase 1) — load the FULLY-BUILT theme page produced by
+   * ThemeBuildService into `dist/theme-preview/<themeName>/index.html`.
+   *
+   * When present, the constructor preview returns this whole assembled page
+   * verbatim (the верстальщик's theme as-is) instead of the legacy per-block
+   * render. Strictly gated on file existence: returns the HTML string when the
+   * file is found, or `null` so the caller falls back to the legacy path 1:1.
+   *
+   * Path resolution mirrors `loadThemeCss()` (dist/theme-css/<id>.css): same
+   * dist base resolved at runtime (`__dirname` → ../../theme-preview, and
+   * process.cwd()/dist/theme-preview). The only extra step is the theme-key
+   * gotcha — `templateId` may carry a version suffix (`rose-1.0`, `rose@2`)
+   * while A1 writes the dir under the bare theme name (`rose`). We try the id
+   * as-is first, then the base name (`templateId.replace(/[-@].*$/, '')`).
+   *
+   * Cached per templateId (incl. negative results as '') so repeated preview
+   * loads don't re-stat/re-read the file — same memoisation shape as
+   * `loadThemeCss()`.
+   */
+  async tryLoadBuiltThemeHtml(
+    templateId: string | null | undefined,
+  ): Promise<string | null> {
+    if (!templateId) return null;
+    const cached = PreviewService._builtThemeHtmlCache.get(templateId);
+    if (cached !== undefined) return cached === '' ? null : cached;
+
+    const { readFile } = await import('node:fs/promises');
+    const { resolve } = await import('node:path');
+
+    // Theme-key candidates: id as-is, then base name without version suffix.
+    // Order matters — exact match wins over the stripped fallback.
+    const baseKey = templateId.replace(/[-@].*$/, '');
+    const keyCandidates =
+      baseKey && baseKey !== templateId ? [templateId, baseKey] : [templateId];
+
+    // Dist-base candidates mirror loadThemeCss(): compiled file lives at
+    // dist/src/services/preview.service.js, so ../../theme-preview hits
+    // dist/theme-preview; the cwd-based path covers process-root invocations.
+    for (const key of keyCandidates) {
+      const fileCandidates = [
+        resolve(__dirname, '..', '..', 'theme-preview', key, 'index.html'),
+        resolve(process.cwd(), 'dist', 'theme-preview', key, 'index.html'),
+      ];
+      for (const p of fileCandidates) {
+        try {
+          const html = await readFile(p, 'utf-8');
+          PreviewService._builtThemeHtmlCache.set(templateId, html);
+          return html;
+        } catch {
+          // try next candidate
+        }
+      }
+    }
+
+    // Negative cache: no built page for this theme → legacy path.
+    PreviewService._builtThemeHtmlCache.set(templateId, '');
+    return null;
+  }
+
+  // Per-templateId cache for tryLoadBuiltThemeHtml. '' encodes a negative
+  // result (file absent) so we don't re-stat on every preview load.
+  private static readonly _builtThemeHtmlCache = new Map<string, string>();
+
+  /**
    * Render a full preview page: doctype, head (fontHead + tokens.css),
    * each block's HTML, and the preview nav agent installer.
    */

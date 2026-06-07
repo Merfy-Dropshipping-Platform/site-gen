@@ -131,6 +131,33 @@ export class PreviewController {
       return;
     }
 
+    // Constructor v2 (Phase 1) short-circuit. The site's theme_id resolves to
+    // a template_id (loaded.themeId). If ThemeBuildService has produced a fully
+    // assembled page at dist/theme-preview/<template>/index.html, serve that
+    // whole page verbatim — the верстальщик's theme as-is — bypassing
+    // extractPageBlocks/renderPreviewPage entirely.
+    //
+    // Strictly gated on file existence: tryLoadBuiltThemeHtml returns null when
+    // there's no built page, and we fall through to the legacy per-block path
+    // unchanged (1:1 behaviour). Phase 1 is read-only (no Puck editing), so the
+    // `page`/`productId` params and the render cache are intentionally skipped.
+    const builtThemeHtml = await this.preview.tryLoadBuiltThemeHtml(
+      loaded.themeId,
+    );
+    if (builtThemeHtml !== null) {
+      this.logger.log(
+        `[preview] v2 served built theme page for site=${siteId} theme=${loaded.themeId} (${builtThemeHtml.length} bytes)`,
+      );
+      res
+        .header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        .header('Pragma', 'no-cache')
+        .header('Expires', '0')
+        .header('X-Preview-Mode', 'v2-built-theme')
+        .type('text/html')
+        .send(builtThemeHtml);
+      return;
+    }
+
     // Cache lookup BEFORE doing extractPageBlocks/render. Key includes the
     // current revisionId so any constructor save (new revision) yields a
     // different key and the new content is rendered fresh.

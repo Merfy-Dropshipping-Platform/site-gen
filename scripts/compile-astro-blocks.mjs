@@ -273,6 +273,47 @@ function patchCreateAstroCall(source) {
 }
 
 /**
+ * Carry <style> blocks into the Container-API preview output.
+ *
+ * For a scoped <style>, @astrojs/compiler extracts the CSS into result.css
+ * (already scoped, e.g. `.x:where(.astro-HASH){…}`) and leaves an unresolvable
+ *   import "<file>?astro&type=style&index=N&lang.css"
+ * in result.code. Under raw Node ESM (our flat dist/) that import throws
+ * "Unknown file extension .astro" → preview crashes. We strip it and inline the
+ * extracted CSS at the top of the component's first render template, so the
+ * styles ship with the rendered HTML.
+ *
+ * This lets blocks (e.g. ported verstalshik theme files) use plain <style>
+ * instead of being limited to Tailwind classes. The live build already handles
+ * <style> via real `astro build`; this only fixes the preview path, using the
+ * SAME compiler so scope hashes match → preview ≡ live.
+ *
+ * No-op when there are no <style> blocks (css empty) or when a block uses
+ * <style is:inline> (compiler emits the tag literally — no virtual import, no
+ * css entry).
+ */
+function inlineScopedStyles(code, css) {
+  // Strip every `?astro&type=style` side-effect import.
+  let out = code.replace(
+    /import\s+["'][^"']*\?astro&type=style[^"']*["'];?\r?\n?/g,
+    '',
+  );
+  const scopedCss = (css || []).join('').trim();
+  if (!scopedCss) return out;
+  // Escape so the CSS survives being embedded in the $$render`...` template.
+  const cssLiteral = scopedCss
+    .replace(/\\/g, '\\\\')
+    .replace(/`/g, '\\`')
+    .replace(/\$\{/g, '\\${');
+  // Inject into the first render template (the file's default/main component).
+  // A function replacement is used so `$$` in cssLiteral stays literal.
+  return out.replace(
+    /return\s+\$\$render`/,
+    (match) => `${match}<style>${cssLiteral}</style>`,
+  );
+}
+
+/**
  * Compile one sibling .ts file (Hero.classes.ts, Hero.puckConfig.ts, etc.)
  * to dist/astro-blocks/<pkg>__<blockName>__<name>.mjs.
  */
@@ -298,9 +339,14 @@ async function compileOne(entry) {
     resolvePath: async (specifier) => specifier,
   });
 
+  // Carry <style> blocks into the preview (strip the unresolvable
+  // ?astro&type=style import + inline result.css). No-op for blocks without
+  // <style> or that use <style is:inline>. See inlineScopedStyles.
+  const withStyles = inlineScopedStyles(result.code, result.css);
+
   // The .astro compiler leaves TS in the frontmatter (interfaces, `as Props`,
   // `import type`, etc.). Strip all TS syntax via tsc in transpileModule mode.
-  const stripped = stripTypes(result.code, entry.fullPath);
+  const stripped = stripTypes(withStyles, entry.fullPath);
 
   // Rewrite relative imports so they point to our flat dist/ layout with .mjs.
   const imports_rewritten = rewriteRelativeImports(stripped, entry.pkg, entry.blockName);

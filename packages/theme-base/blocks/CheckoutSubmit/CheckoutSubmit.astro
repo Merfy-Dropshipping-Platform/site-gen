@@ -65,7 +65,7 @@ const initialLabel = buttonText.replace('{total}', '—');
       return el ? (el.value || '').trim() : '';
     }
     function getFiasId() {
-      var f = document.querySelector('[data-checkout-delivery-form]');
+      var f = document.querySelector('[data-checkout-delivery]');
       return f ? (f.getAttribute('data-selected-city-fias-id') || '') : '';
     }
 
@@ -155,7 +155,7 @@ const initialLabel = buttonText.replace('{total}', '—');
         // 2. PATCH cart с address (backend DTO ожидает street/building/apartment
         // ОТДЕЛЬНО, не fullAddress). Структурированный адрес сохранён в
         // data-addr-* атрибутах после выбора DaData address suggestion.
-        var deliveryForm = document.querySelector('[data-checkout-delivery-form]');
+        var deliveryForm = document.querySelector('[data-checkout-delivery]');
         var addrStreet = deliveryForm ? (deliveryForm.getAttribute('data-addr-street') || '') : '';
         var addrBuilding = deliveryForm ? (deliveryForm.getAttribute('data-addr-building') || '') : '';
         var addrApartment = deliveryForm ? (deliveryForm.getAttribute('data-addr-apartment') || '') : '';

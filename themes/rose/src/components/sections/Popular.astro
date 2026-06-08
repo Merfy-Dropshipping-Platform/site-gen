@@ -27,15 +27,28 @@ const products = catalogProducts.slice(0, 4);
 			data-animate-delay="0.1s"
 			class="grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-9 md:grid-cols-3 md:gap-x-4 md:gap-y-10 xl:grid-cols-4 xl:gap-x-5"
 			role="list"
+			data-nt="popular-grid"
 		>
 			{products.map((product) => (
-				<li>
+				<li data-product-id={product.id}>
 					<RoseProductCard product={product} />
 				</li>
 			))}
 		</ul>
 	</div>
 </section>
+
+<script>
+	import { hydrateGrid } from "../../lib/storefront-hydrate";
+
+	// Реальные товары (Option B): первые 4 из /data/products.json. Demo-сборка → no-op.
+	const hydratePopular = () => {
+		hydrateGrid('[data-nt="popular-grid"]', 4);
+	};
+
+	hydratePopular();
+	document.addEventListener("astro:page-load", hydratePopular);
+</script>
 
 <style>
 	/* Figma 375: section title Comfortaa 14, subtitle Manrope 12. NtSectionHeading не пробрасывает class на h2/p. */

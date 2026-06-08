@@ -98,7 +98,7 @@ const totalCount = products.length;
 							data-action="load-more"
 							class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[#000000] px-4 py-[10px] font-manrope text-[16px] font-normal leading-[100%] text-white transition-opacity hover:opacity-90"
 						>Смотреть ещё</button>
-						<span class="font-manrope text-[16px] font-normal leading-[100%] text-[#999999]">
+						<span class="font-manrope text-[16px] font-normal leading-[100%] text-[#999999]" data-nt="catalog-count">
 							{totalCount} товаров
 						</span>
 					</div>
@@ -128,7 +128,7 @@ const totalCount = products.length;
 							>
 								Смотреть ещё
 							</button>
-							<span class="font-manrope text-[12px] font-normal leading-normal text-[#999999] sm:text-[14px] md:text-[16px]">
+							<span class="font-manrope text-[12px] font-normal leading-normal text-[#999999] sm:text-[14px] md:text-[16px]" data-nt="catalog-count">
 								{totalCount} товаров
 							</span>
 						</div>
@@ -147,4 +147,18 @@ const totalCount = products.length;
 		button.textContent = "Больше товаров нет";
 		button.classList.add("opacity-60", "pointer-events-none");
 	});
+</script>
+
+<script>
+	import { hydrateGrid, updateCount } from "../lib/storefront-hydrate";
+
+	// Реальные товары (Option B): на published-сайте /data/products.json реальный →
+	// перерисовываем demo-grid. На demo-сборке loadRealProducts() вернёт null → no-op.
+	async function hydrateCatalog() {
+		const items = await hydrateGrid('[data-nt="catalog-grid"]');
+		if (items) updateCount('[data-nt="catalog-count"]', items.length);
+	}
+
+	hydrateCatalog();
+	document.addEventListener("astro:page-load", hydrateCatalog);
 </script>

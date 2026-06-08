@@ -71,6 +71,30 @@ function pickRegistryByTemplateId(
   return THEME_REGISTRIES[bare] ?? null;
 }
 
+/**
+ * Themes whose LIVE publish renders via the themes-v2 build (dist/theme-live/<t>)
+ * instead of scaffold-builder + theme-base. Pilot: rose. luna excluded.
+ */
+export const MIGRATED_THEMES = new Set<string>(["rose"]);
+
+/** Strip a trailing version suffix: "rose-1.0" → "rose". */
+export function bareThemeName(templateId: string): string {
+  return templateId.replace(/-\d+(?:\.\d+)*$/, "");
+}
+
+/** Absolute path to a theme's live root-url dist shipped in the image. */
+export function themeLiveDistFor(theme: string): string {
+  return path.join(process.cwd(), "dist", "theme-live", theme);
+}
+
+/** True if the theme has a usable live dist (index.html present). */
+export async function themeLiveDistExists(theme: string): Promise<boolean> {
+  return fs
+    .stat(path.join(themeLiveDistFor(theme), "index.html"))
+    .then((s) => s.isFile())
+    .catch(() => false);
+}
+
 const logger = new Logger("BuildPipeline");
 
 /** Build stages in order */

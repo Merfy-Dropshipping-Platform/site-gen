@@ -225,10 +225,21 @@ export class PreviewController {
       // live-скрипты checkout/корзины (createCart + мост корзина→checkout) работают
       // с shopId="" и падают, т.е. живой checkout работал бы только на опубликованном
       // сайте, а не в конструктор-preview. Глобально; no-op на страницах без маркера.
-      const html = builtThemeHtml.replace(
+      let html = builtThemeHtml.replace(
         /const shopId = "";/g,
         `const shopId = "${siteId}";`,
       );
+      // DaData-токен для автокомплита адреса в checkout — зеркалим preview.service.ts
+      // (легаси render-путь инжектит его так же). Build-time инжект работает только для
+      // опубликованных сайтов; v2-built-theme путь должен инжектить токен здесь.
+      const dadataToken = process.env.DADATA_API_KEY;
+      if (dadataToken) {
+        html = html.replace(
+          /<head(\s[^>]*)?>/i,
+          (m) =>
+            `${m}<script>window.__DADATA_TOKEN__ = ${JSON.stringify(dadataToken)};</script>`,
+        );
+      }
       this.logger.log(
         `[preview] v2 served built theme page for site=${siteId} theme=${loaded.themeId} route=${route || '(root)'} (${html.length} bytes)`,
       );

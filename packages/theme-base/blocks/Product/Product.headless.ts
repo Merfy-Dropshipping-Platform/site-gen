@@ -158,7 +158,6 @@ export function normaliseProduct(
     hasDiscount,
     gallery,
     variantGroups,
-    variants: productVariants,
     hasVariants,
     meta: {
       title: raw.metaTitle ?? null,
@@ -189,7 +188,6 @@ export function emptyProductView(fallbackDescription = ''): ProductView {
     hasDiscount: false,
     gallery: { hero: null, thumbs: [] },
     variantGroups: [],
-    variants: [],
     hasVariants: false,
     meta: { title: null, description: null },
     jsonLd: null,

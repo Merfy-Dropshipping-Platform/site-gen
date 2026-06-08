@@ -289,7 +289,7 @@ const brandText = textContent || view.brand || '';
   </div>
 </section>
 
-<script is:inline define:vars={{ siteId, apiBase, productId, ssrVariants: view.variants, ssrBasePrice: view.price.amount, ssrOldPrice: view.oldPrice.amount }}>
+<script is:inline define:vars={{ siteId, apiBase, productId }}>
   // Hydration: live SSG already rendered real data via headless normaliser.
   // In preview mode (siteId set) we re-fetch storefront-data and patch DOM
   // through the same primitive selectors. The contract:
@@ -329,16 +329,9 @@ const brandText = textContent || view.brand || '';
     function escAttr(s) {
       return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
-    function parseNum(p) {
-      if (typeof p === 'number') return Number.isFinite(p) ? p : 0;
-      // Prices arrive formatted ("2 500 ₽") — strip thousands-separators/currency
-      // before parseFloat, else "2 500 ₽" → 2.
-      const n = parseFloat(String(p).replace(/[^\d.,-]/g, '').replace(',', '.'));
-      return Number.isFinite(n) ? n : 0;
-    }
     function fmtPrice(p) {
-      const num = parseNum(p);
-      if (num <= 0) return '';
+      const num = typeof p === 'number' ? p : parseFloat(String(p).replace(/[^\d.,-]/g, '').replace(',', '.'));
+      if (!Number.isFinite(num) || num <= 0) return '';
       return Math.round(num).toLocaleString('ru-RU') + ' ₽';
     }
     function findVariantByOptions(variants, sel) {
@@ -355,14 +348,9 @@ const brandText = textContent || view.brand || '';
       return null;
     }
     function getProductVariants() {
-      if (productData) {
-        if (Array.isArray(productData.variants) && productData.variants.length) return productData.variants;
-        if (Array.isArray(productData.variantCombinations) && productData.variantCombinations.length) return productData.variantCombinations;
-      }
-      // Live SSG: combinations serialised from the headless view at build time.
-      // window.__MERFY_PRODUCTS__ is never populated, so this is the only source
-      // of combination ids (→ variantCombinationId for the cart) on a live page.
-      if (Array.isArray(ssrVariants) && ssrVariants.length) return ssrVariants;
+      if (!productData) return [];
+      if (Array.isArray(productData.variants) && productData.variants.length) return productData.variants;
+      if (Array.isArray(productData.variantCombinations) && productData.variantCombinations.length) return productData.variantCombinations;
       return [];
     }
     function getActiveVariant() {
@@ -378,16 +366,11 @@ const brandText = textContent || view.brand || '';
     function refreshPriceFromVariant() {
       if (!priceCur) return;
       const v = getActiveVariant();
-      // Unit price: selected variant → its price; otherwise the build-time base
-      // (ssrBasePrice on live, productData base in preview). Variant products
-      // carry base 0, so the variant price must win when present.
-      const variantUnit = (v && v.price != null) ? parseNum(v.price) : 0;
-      const base = variantUnit > 0
-        ? variantUnit
-        : ((productData ? parseNum(productData.basePrice ?? productData.price ?? 0) : 0) || ssrBasePrice || 0);
+      const total = (v && v.price != null ? parseFloat(String(v.price)) : null);
+      const base = total != null ? total : (productData ? parseFloat(String(productData.basePrice ?? productData.price ?? 0)) : 0);
       priceCur.textContent = fmtPrice(base * currentQty);
       if (priceOld) {
-        const old = (productData ? parseNum(productData.compareAtPrice ?? productData.oldPrice ?? 0) : 0) || ssrOldPrice || 0;
+        const old = productData ? parseFloat(String(productData.compareAtPrice ?? productData.oldPrice ?? 0)) : 0;
         if (old > 0) {
           priceOld.textContent = fmtPrice(old * currentQty);
           priceOld.style.display = '';
@@ -700,10 +683,6 @@ const brandText = textContent || view.brand || '';
       } catch {}
     }
     initFromGlobalProducts();
-    // Live SSG has no productData; reflect the active variant (first chip is
-    // active) using the build-time ssrVariants/ssrBasePrice so the displayed
-    // price matches the combination that add-to-cart will send.
-    refreshPriceFromVariant();
 
     if (siteId) {
       const qs = productId ? '?product=' + encodeURIComponent(productId) : '';

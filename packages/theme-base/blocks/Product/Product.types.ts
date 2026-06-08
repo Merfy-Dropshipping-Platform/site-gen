@@ -87,14 +87,6 @@ export interface ProductView {
   hasDiscount: boolean;
   gallery: GalleryView;
   variantGroups: VariantGroupView[];
-  /**
-   * Full variant *combinations* (each with its id + options map + price).
-   * variantGroups is the flattened key→values for the chip/dropdown UI;
-   * this is what the cart needs to map a selection → variantCombinationId.
-   * Serialised into the live page by Product.astro (the only build-time
-   * source of combination ids on an SSG page).
-   */
-  variants: RawVariant[];
   hasVariants: boolean;
   /** SEO meta values (or null when absent). */
   meta: { title: string | null; description: string | null };

@@ -220,8 +220,17 @@ export class PreviewController {
       route,
     );
     if (builtThemeHtml !== null) {
+      // Инжектим реальный shopId (= siteId) в отдаваемый preview-HTML — зеркалим
+      // патч build.service.ts на деплое (`const shopId = ""` → siteId). Без этого
+      // live-скрипты checkout/корзины (createCart + мост корзина→checkout) работают
+      // с shopId="" и падают, т.е. живой checkout работал бы только на опубликованном
+      // сайте, а не в конструктор-preview. Глобально; no-op на страницах без маркера.
+      const html = builtThemeHtml.replace(
+        /const shopId = "";/g,
+        `const shopId = "${siteId}";`,
+      );
       this.logger.log(
-        `[preview] v2 served built theme page for site=${siteId} theme=${loaded.themeId} route=${route || '(root)'} (${builtThemeHtml.length} bytes)`,
+        `[preview] v2 served built theme page for site=${siteId} theme=${loaded.themeId} route=${route || '(root)'} (${html.length} bytes)`,
       );
       res
         .header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
@@ -229,7 +238,7 @@ export class PreviewController {
         .header('Expires', '0')
         .header('X-Preview-Mode', 'v2-built-theme')
         .type('text/html')
-        .send(builtThemeHtml);
+        .send(html);
       return;
     }
 

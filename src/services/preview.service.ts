@@ -359,13 +359,21 @@ export class PreviewService {
    */
   async tryLoadBuiltThemeHtml(
     templateId: string | null | undefined,
+    route?: string,
   ): Promise<string | null> {
     if (!templateId) return null;
-    const cached = PreviewService._builtThemeHtmlCache.get(templateId);
+    // Cache is keyed per (templateId, route) — each Astro route emits its own
+    // <route>/index.html, so different pages must not clobber each other.
+    const cacheKey = `${templateId}::${route ?? ''}`;
+    const cached = PreviewService._builtThemeHtmlCache.get(cacheKey);
     if (cached !== undefined) return cached === '' ? null : cached;
 
     const { readFile } = await import('node:fs/promises');
     const { resolve } = await import('node:path');
+
+    // Route → relative file. Root (empty/undefined route) is index.html;
+    // a named route loads <route>/index.html (about/index.html, cart/...).
+    const rel = route && route !== '' ? `${route}/index.html` : 'index.html';
 
     // Theme-key candidates: id as-is, then base name without version suffix.
     // Order matters — exact match wins over the stripped fallback.
@@ -378,13 +386,13 @@ export class PreviewService {
     // dist/theme-preview; the cwd-based path covers process-root invocations.
     for (const key of keyCandidates) {
       const fileCandidates = [
-        resolve(__dirname, '..', '..', 'theme-preview', key, 'index.html'),
-        resolve(process.cwd(), 'dist', 'theme-preview', key, 'index.html'),
+        resolve(__dirname, '..', '..', 'theme-preview', key, rel),
+        resolve(process.cwd(), 'dist', 'theme-preview', key, rel),
       ];
       for (const p of fileCandidates) {
         try {
           const html = await readFile(p, 'utf-8');
-          PreviewService._builtThemeHtmlCache.set(templateId, html);
+          PreviewService._builtThemeHtmlCache.set(cacheKey, html);
           return html;
         } catch {
           // try next candidate
@@ -392,14 +400,71 @@ export class PreviewService {
       }
     }
 
-    // Negative cache: no built page for this theme → legacy path.
-    PreviewService._builtThemeHtmlCache.set(templateId, '');
+    // Negative cache: no built page for this (theme, route) → legacy path.
+    PreviewService._builtThemeHtmlCache.set(cacheKey, '');
     return null;
   }
 
-  // Per-templateId cache for tryLoadBuiltThemeHtml. '' encodes a negative
-  // result (file absent) so we don't re-stat on every preview load.
+  // Per-(templateId, route) cache for tryLoadBuiltThemeHtml. '' encodes a
+  // negative result (file absent) so we don't re-stat on every preview load.
   private static readonly _builtThemeHtmlCache = new Map<string, string>();
+
+  /**
+   * Constructor v2 (Phase 1, Task 3) — resolve the product page's preview route.
+   *
+   * The product page's slug is `/product`, but the theme builds per-product
+   * pages at dist/theme-preview/<key>/products/<id>/index.html (one dir per
+   * product). The preview can only serve a concrete product, so this returns
+   * `products/<firstDir>` for the first built product (alphabetically, since
+   * readdir is sorted below) or `null` when no product pages are built.
+   *
+   * Theme-key resolution mirrors tryLoadBuiltThemeHtml (id as-is, then base
+   * name without version suffix). Cached per templateId (incl. negative '').
+   */
+  async firstBuiltProductRoute(
+    templateId: string | null | undefined,
+  ): Promise<string | null> {
+    if (!templateId) return null;
+    const cached = PreviewService._firstProductRouteCache.get(templateId);
+    if (cached !== undefined) return cached === '' ? null : cached;
+
+    const { readdir } = await import('node:fs/promises');
+    const { resolve } = await import('node:path');
+
+    const baseKey = templateId.replace(/[-@].*$/, '');
+    const keyCandidates =
+      baseKey && baseKey !== templateId ? [templateId, baseKey] : [templateId];
+
+    for (const key of keyCandidates) {
+      const dirCandidates = [
+        resolve(__dirname, '..', '..', 'theme-preview', key, 'products'),
+        resolve(process.cwd(), 'dist', 'theme-preview', key, 'products'),
+      ];
+      for (const dir of dirCandidates) {
+        try {
+          const entries = await readdir(dir, { withFileTypes: true });
+          const first = entries
+            .filter((e) => e.isDirectory())
+            .map((e) => e.name)
+            .sort()[0];
+          if (first) {
+            const route = `products/${first}`;
+            PreviewService._firstProductRouteCache.set(templateId, route);
+            return route;
+          }
+        } catch {
+          // try next candidate
+        }
+      }
+    }
+
+    // Negative cache: no built product pages for this theme.
+    PreviewService._firstProductRouteCache.set(templateId, '');
+    return null;
+  }
+
+  // Per-templateId cache for firstBuiltProductRoute. '' = negative result.
+  private static readonly _firstProductRouteCache = new Map<string, string>();
 
   /**
    * Render a full preview page: doctype, head (fontHead + tokens.css),

@@ -157,7 +157,28 @@ export class PagesService {
     const pages = Array.isArray(revData.pages) ? revData.pages : [];
     const target = pages.find((p: any) => p.id === params.pageId);
     if (!target) throw new NotFoundException("page_not_found");
-    if (target.role === "system")
+
+    // Authoritative system-page set = the theme manifest's system pages.
+    // Raw `role` is absent on legacy revisions; normalized `role` over-protects
+    // (migration defaults missing role to 'system'). So check manifest membership.
+    let isSystemPage = target.role === "system"; // fallback if resolver unavailable
+    if (site.themeId) {
+      try {
+        const resolver = getPageResolver(site.themeId);
+        // normalizeRevision on an empty revision yields exactly the manifest pages
+        // (metadata only, no content load) with their true roles.
+        const systemIds = new Set(
+          resolver
+            .normalizeRevision({ pages: [], pagesData: {} })
+            .pages.filter((p: any) => p.role === "system")
+            .map((p: any) => p.id),
+        );
+        isSystemPage = systemIds.has(params.pageId);
+      } catch (e) {
+        // resolver unavailable — fall back to raw role check
+      }
+    }
+    if (isSystemPage)
       throw new ForbiddenException("cannot_delete_system_page");
 
     const newPages = pages.filter((p: any) => p.id !== params.pageId);

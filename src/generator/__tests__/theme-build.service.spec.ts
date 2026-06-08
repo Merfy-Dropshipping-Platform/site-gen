@@ -22,6 +22,7 @@ import {
   ThemeBuildService,
   themeDirFor,
   themePreviewDirFor,
+  themeLiveDirFor,
   copyDir,
 } from "../theme-build.service";
 
@@ -70,6 +71,12 @@ describe("path resolution", () => {
   it("themePreviewDirFor anchors at dist/theme-preview/<name> under cwd", () => {
     expect(themePreviewDirFor("rose")).toBe(
       path.join(sandbox, "dist", "theme-preview", "rose"),
+    );
+  });
+
+  it("themeLiveDirFor anchors at dist/theme-live/<name> under cwd", () => {
+    expect(themeLiveDirFor("rose")).toBe(
+      path.join(sandbox, "dist", "theme-live", "rose"),
     );
   });
 });
@@ -214,5 +221,41 @@ describe("ThemeBuildService.build", () => {
     await expect(service.build("nodist")).rejects.toThrow(
       /did not produce a dist\/ directory/,
     );
+  });
+});
+
+describe("ThemeBuildService.build — live root-url copy", () => {
+  const service = new ThemeBuildService();
+
+  it("emits dist/theme-live/<name> verbatim with ROOT urls (no /__theme/ prefix)", async () => {
+    await createFixtureTheme("livecopy", {
+      "index.html": '<link href="/_astro/a.css"><img src="/images/x.png">',
+      "_astro/a.css": "@font-face{src:url(/fonts/f.woff)}",
+    });
+    jest
+      .spyOn(
+        service as unknown as { runAstroBuild: () => Promise<void> },
+        "runAstroBuild",
+      )
+      .mockResolvedValue();
+
+    const result = await service.build("livecopy");
+
+    const liveDir = themeLiveDirFor("livecopy");
+    const liveHtml = await fs.readFile(path.join(liveDir, "index.html"), "utf8");
+    expect(liveHtml).toContain('href="/_astro/a.css"');
+    expect(liveHtml).toContain('src="/images/x.png"');
+    expect(liveHtml).not.toContain("/__theme/");
+    const liveCss = await fs.readFile(path.join(liveDir, "_astro", "a.css"), "utf8");
+    expect(liveCss).toContain("url(/fonts/f.woff)");
+    expect(liveCss).not.toContain("/__theme/");
+
+    const prevHtml = await fs.readFile(
+      path.join(result.previewDir, "index.html"),
+      "utf8",
+    );
+    expect(prevHtml).toContain('href="/__theme/livecopy/_astro/a.css"');
+
+    expect(result.liveDir).toBe(liveDir);
   });
 });

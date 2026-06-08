@@ -31,8 +31,10 @@ export interface ThemeBuildResult {
   themeName: string;
   /** Absolute path to themes/<name> */
   themeDir: string;
-  /** Absolute path to the copied output: dist/theme-preview/<name> */
+  /** Absolute path to the copied preview output: dist/theme-preview/<name> (prefixed urls) */
   previewDir: string;
+  /** Absolute path to the live copy: dist/theme-live/<name> (ROOT urls, no rewrite) */
+  liveDir: string;
 }
 
 /** Absolute path to the sites-repo root (cwd of the running service). */
@@ -48,6 +50,11 @@ export function themeDirFor(themeName: string): string {
 /** Absolute path to a theme's preview output: dist/theme-preview/<name>. */
 export function themePreviewDirFor(themeName: string): string {
   return path.join(repoRoot(), "dist", "theme-preview", themeName);
+}
+
+/** Absolute path to a theme's LIVE output: dist/theme-live/<name> (root urls). */
+export function themeLiveDirFor(themeName: string): string {
+  return path.join(repoRoot(), "dist", "theme-live", themeName);
 }
 
 async function isDir(p: string): Promise<boolean> {
@@ -109,11 +116,18 @@ export class ThemeBuildService {
     // under the constructor origin those would 404.
     await rewriteAbsoluteUrls(previewDir, themeName);
 
+    // ── Step 4b: LIVE copy — verbatim root-url dist for the live publish
+    // pipeline. NO rewrite (themes build with base '/'), so urls stay rooted.
+    // Ships in the runtime image via the existing `COPY /app/dist`.
+    const liveDir = themeLiveDirFor(themeName);
+    await copyDir(themeDist, liveDir);
+    this.logger.log(`[theme-build] "${themeName}" → ${liveDir} (live root-url copy)`);
+
     this.logger.log(
       `[theme-build] "${themeName}" → ${previewDir} (copied from ${themeDist}, urls rewritten under ${THEME_PREVIEW_URL_PREFIX}/${themeName})`,
     );
 
-    return { themeName, themeDir, previewDir };
+    return { themeName, themeDir, previewDir, liveDir };
   }
 
   /**

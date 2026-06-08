@@ -3,11 +3,11 @@ import Layout from "../../layouts/Layout.astro";
 import RoseNtIcon from "../../components/icons/RoseNtIcon.astro";
 import RosePdpColorVariantRow from "../../components/products/RosePdpColorVariantRow.astro";
 import RosePicture from "../../components/img/RosePicture.astro";
-import { catalogProducts } from "../../data/products";
+import { getProducts } from "../../data/products-source";
 
 export const getStaticPaths = () =>
-	catalogProducts.map((product) => ({
-		params: { id: product.id },
+	getProducts().map((product) => ({
+		params: { id: product.id! },
 		props: { product },
 	}));
 
@@ -20,9 +20,14 @@ const pdpColorVariants = [
 	{ id: "white-unavailable", label: "Белый", unavailable: true as const },
 ];
 
-const galleryImages = product.gallery && product.gallery.length > 0 ? product.gallery : [product.image];
+const galleryImages =
+	product.gallery && product.gallery.length > 0
+		? product.gallery
+		: product.images && product.images.length > 0
+			? product.images
+			: [product.image];
 const [mainImage, ...thumbImages] = galleryImages;
-const cartVariantColor = product.colors[0] ?? "";
+const cartVariantColor = product.colors?.[0] ?? "";
 ---
 
 <Layout title={product.name} description={product.description}>

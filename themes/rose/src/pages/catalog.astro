@@ -4,10 +4,11 @@ import RoseProductCard from "../components/products/RoseProductCard.astro";
 import NtFilterSidebar from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtFilterSidebar.astro";
 import RoseNtIcon from "../components/icons/RoseNtIcon.astro";
 import NtFilterPanel from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtFilterPanel.astro";
-import { catalogProducts } from "../data/products";
+import { getProducts } from "../data/products-source";
 
+const products = getProducts();
 const layout = (Astro.url.searchParams.get("layout") ?? "row") === "sidebar" ? "sidebar" : "row";
-const totalCount = catalogProducts.length;
+const totalCount = products.length;
 ---
 
 <Layout title="Каталог" description="Каталог сумок Rose — коллекции, хиты, новинки">
@@ -84,7 +85,7 @@ const totalCount = catalogProducts.length;
 						role="list"
 						data-nt="catalog-grid"
 					>
-						{catalogProducts.map((product) => (
+						{products.map((product) => (
 							<li data-product-id={product.id}>
 								<RoseProductCard product={product} />
 							</li>
@@ -112,7 +113,7 @@ const totalCount = catalogProducts.length;
 							role="list"
 							data-nt="catalog-grid"
 						>
-							{catalogProducts.map((product) => (
+							{products.map((product) => (
 								<li data-product-id={product.id}>
 									<RoseProductCard product={product} />
 								</li>

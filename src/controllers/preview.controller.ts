@@ -23,6 +23,23 @@ import { buildTokensCss } from '../themes/tokens-css';
 import { migrateRevisionData } from '../utils/revision-migrations';
 
 /**
+ * Canonical system page id → build route. Universal across themes (the 8 system
+ * pages have fixed slugs). Used as the final route fallback when a page is in
+ * neither the raw revision nor the theme manifest (legacy revisions + themes
+ * whose theme.json has no `pages` registry, e.g. bloom/flux/satin/vanilla).
+ */
+const SYSTEM_PAGE_ROUTES: Record<string, string> = {
+  home: '',
+  'page-about': 'about',
+  'page-contacts': 'contacts',
+  'page-catalog': 'catalog',
+  'page-collection': 'collections/preview',
+  'page-cart': 'cart',
+  'page-product': 'product',
+  'page-checkout': 'checkout',
+};
+
+/**
  * Body for POST /api/sites/:id/preview/block — single-block hot-render
  * used by the iframe's `update-block` postMessage handler in the constructor
  * (spec 082 Stage 1, T2/T5). `blockType` is required; `props` may be empty;
@@ -172,8 +189,15 @@ export class PreviewController {
         p?.id === `page-${page}` ||
         (p?.slug ?? '').replace(/^\/+|\/+$/g, '') === page,
     );
-    const slug = (match?.slug ?? page ?? '') as string;
-    let route = slug.replace(/^\/+|\/+$/g, '');
+    let route: string;
+    if (match?.slug) {
+      route = match.slug.replace(/^\/+|\/+$/g, '');
+    } else {
+      // No revision/manifest page → universal system-page route map (covers themes
+      // without a pages manifest + legacy revisions missing the page).
+      const sysKey = page.startsWith('page-') ? page : `page-${page}`;
+      route = SYSTEM_PAGE_ROUTES[page] ?? SYSTEM_PAGE_ROUTES[sysKey] ?? page;
+    }
     if (route === 'home') route = '';
     this.logger.log(
       `[preview] siteId=${siteId} page=${page} → route=${route || '(root)'}`,

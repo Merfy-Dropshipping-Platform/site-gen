@@ -228,6 +228,84 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     expect(res._headers['X-Preview-Mode']).toBe('v2-built-theme');
   });
 
+  it('manifest-less theme + revision without page-collection resolves via SYSTEM_PAGE_ROUTES to "collections/preview"', async () => {
+    // bloom/flux/satin/vanilla theme.json have NO pages registry, so the
+    // manifest merge contributes nothing (normalizeRevision → { pages: [] }).
+    // The revision also lacks page-collection (lazy-added by normalization but
+    // absent from raw pages[]). Without the universal SYSTEM_PAGE_ROUTES
+    // fallback, `match` is undefined and route falls back to the raw
+    // 'page-collection' value → built theme MISS → block-render.
+    const MANIFESTLESS_REVISION = {
+      data: {
+        pages: [
+          { id: 'page-home', slug: '/' },
+          { id: 'page-about', slug: '/about' },
+        ],
+      },
+      publicUrl: 'https://shop.example',
+      themeId: 'bloom',
+      revisionId: 'rev-manifestless',
+    } as typeof REVISION;
+
+    // Theme manifest has NO system pages (matches bloom/flux/satin/vanilla).
+    getPageResolverMock.mockReturnValue({
+      normalizeRevision: () => ({ pages: [] }),
+    } as never);
+
+    const tryLoad = jest
+      .fn()
+      .mockResolvedValue('<!DOCTYPE html><html>COLLECTION</html>');
+    const ctrl = makeController(
+      {
+        tryLoadBuiltThemeHtml: tryLoad,
+        firstBuiltProductRoute: jest.fn(),
+      } as any,
+      MANIFESTLESS_REVISION,
+    );
+    const res = makeRes();
+
+    await ctrl.getPreview('site-1', 'page-collection', undefined, res);
+
+    // Route resolves via the constant, NOT the raw 'page-collection'.
+    expect(tryLoad).toHaveBeenCalledWith('bloom', 'collections/preview');
+    expect(tryLoad).not.toHaveBeenCalledWith('bloom', 'page-collection');
+    expect(res._body).toBe('<!DOCTYPE html><html>COLLECTION</html>');
+    expect(res._headers['X-Preview-Mode']).toBe('v2-built-theme');
+  });
+
+  it('manifest-less theme: page=home resolves to root route ("") via SYSTEM_PAGE_ROUTES', async () => {
+    // Even with no manifest pages and a revision that omits page-home, `home`
+    // must resolve to the root route '' (SYSTEM_PAGE_ROUTES.home = '').
+    const MANIFESTLESS_REVISION = {
+      data: {
+        pages: [{ id: 'page-about', slug: '/about' }],
+      },
+      publicUrl: 'https://shop.example',
+      themeId: 'vanilla',
+      revisionId: 'rev-home',
+    } as typeof REVISION;
+
+    getPageResolverMock.mockReturnValue({
+      normalizeRevision: () => ({ pages: [] }),
+    } as never);
+
+    const tryLoad = jest
+      .fn()
+      .mockResolvedValue('<!DOCTYPE html><html>HOME</html>');
+    const ctrl = makeController(
+      {
+        tryLoadBuiltThemeHtml: tryLoad,
+        firstBuiltProductRoute: jest.fn(),
+      } as any,
+      MANIFESTLESS_REVISION,
+    );
+    const res = makeRes();
+
+    await ctrl.getPreview('site-1', 'home', undefined, res);
+
+    expect(tryLoad).toHaveBeenCalledWith('vanilla', '');
+  });
+
   it('revision page slug takes precedence over the theme manifest (manifest fills gaps only)', async () => {
     // Both revision and manifest define page-about, but with DIFFERENT slugs.
     // The merchant's revision slug must win; the manifest only fills missing ids.

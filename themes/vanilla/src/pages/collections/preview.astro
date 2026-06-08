@@ -1,0 +1,106 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import VanillaProductCard from "../../components/products/VanillaProductCard.astro";
+import VanillaCatalogFilterSidebar from "../../components/catalog/VanillaCatalogFilterSidebar.astro";
+import { catalogProducts } from "../../data/products";
+import { collections } from "../../data/collections";
+
+// Товары помечены полем `collection` («Текстиль» / «Декор»), а `Collection` хранит `id` и `name`.
+// Сравниваем без учёта регистра по обоим полям и берём первую коллекцию с товарами — так превью
+// не пустое. Если ни одна не совпала — показываем первую коллекцию и все товары (graceful fallback).
+const matchProducts = (collection: (typeof collections)[number]) => {
+	const idKey = (collection.id ?? "").toLowerCase();
+	const nameKey = (collection.name ?? "").toLowerCase();
+	return catalogProducts.filter((p) => {
+		const tag = (p.collection ?? "").toLowerCase();
+		return tag === idKey || tag === nameKey;
+	});
+};
+
+const matched = collections
+	.map((collection) => ({ collection, items: matchProducts(collection) }))
+	.find((entry) => entry.items.length > 0);
+
+const collection = matched?.collection ?? collections[0];
+const displayedProducts = matched?.items.length ? matched.items : catalogProducts;
+const totalCount = displayedProducts.length;
+const showLoadMore = totalCount > 4;
+
+function pluralizeProducts(count: number): string {
+	const mod10 = count % 10;
+	const mod100 = count % 100;
+	if (mod100 >= 11 && mod100 <= 14) return `${count} товаров`;
+	if (mod10 === 1) return `${count} товар`;
+	if (mod10 >= 2 && mod10 <= 4) return `${count} товара`;
+	return `${count} товаров`;
+}
+
+const productCountLabel = pluralizeProducts(totalCount);
+const categoryTitle = collection?.name ?? "Коллекция";
+---
+
+<Layout title={categoryTitle} description="Коллекция Vanilla — товары одной подборки">
+	<section
+		class="vanilla-pad w-full bg-[var(--vanilla-surface)] py-16 md:py-20"
+		aria-labelledby="collection-title"
+		data-nt="vanilla-catalog-section"
+		data-section="collection"
+	>
+		<div class="vanilla-container flex flex-col gap-10">
+			<header>
+				<h1
+					id="collection-title"
+					class="font-vanilla-bitter text-[20px] font-normal italic uppercase leading-none tracking-normal text-black"
+				>
+					{categoryTitle}
+				</h1>
+			</header>
+
+			<div class="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-6">
+				<VanillaCatalogFilterSidebar class="w-full lg:shrink-0" />
+
+				<div class="flex min-w-0 flex-1 flex-col gap-8">
+					<ul class="grid grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:gap-x-4 md:gap-y-12" role="list" data-nt="catalog-grid">
+						{displayedProducts.map((product, index) => (
+							<li data-product-id={product.id}>
+								<VanillaProductCard product={product} priority={index < 2} />
+							</li>
+						))}
+					</ul>
+
+					<div
+						class:list={[
+							"flex flex-col items-stretch gap-4 sm:flex-row sm:items-center",
+							showLoadMore ? "sm:justify-between" : "sm:justify-end",
+						]}
+					>
+						{
+							showLoadMore && (
+								<button
+									type="button"
+									data-action="load-more"
+									class="inline-flex h-12 min-h-12 w-full items-center justify-center bg-[var(--vanilla-header-bg)] px-6 font-vanilla-arsenal text-base font-normal uppercase leading-none text-white transition-opacity hover:opacity-90 sm:w-auto sm:px-16"
+								>
+									Смотреть ещё
+								</button>
+							)
+						}
+						<span class="font-vanilla-arsenal text-base font-normal leading-none text-black">
+							{productCountLabel}
+						</span>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+</Layout>
+
+<script>
+	document.addEventListener("click", (event) => {
+		const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-action='load-more']");
+		if (!button) return;
+		button.disabled = true;
+		button.textContent = "Больше товаров нет";
+		button.classList.add("opacity-60", "pointer-events-none");
+	});
+</script>

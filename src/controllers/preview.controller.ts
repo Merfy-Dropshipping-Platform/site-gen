@@ -144,10 +144,29 @@ export class PreviewController {
     // we match it against the revision's pages (by id, page-prefixed id, or
     // trimmed slug) and derive the build route from the matched slug. The
     // `home` slug maps to the root route ('').
-    const pages: any[] = Array.isArray((loaded.data as any)?.pages)
+    const revisionPages: any[] = Array.isArray((loaded.data as any)?.pages)
       ? (loaded.data as any).pages
       : [];
-    const match = pages.find(
+    // Legacy revisions may omit system pages from raw `pages[]` (migrateRevisionData
+    // doesn't backfill the array), so merge in the theme manifest's system pages to
+    // resolve their slug → build route. Manifest is the authoritative id→slug source.
+    let manifestPages: any[] = [];
+    if (loaded.themeId) {
+      try {
+        manifestPages = getPageResolver(loaded.themeId)
+          .normalizeRevision({ pages: [], pagesData: {} })
+          .pages as any[];
+      } catch {
+        // resolver unavailable — fall back to revision pages only
+      }
+    }
+    const lookupPages = [
+      ...revisionPages,
+      ...manifestPages.filter(
+        (mp) => !revisionPages.some((p) => p?.id === mp?.id),
+      ),
+    ];
+    const match = lookupPages.find(
       (p) =>
         p?.id === page ||
         p?.id === `page-${page}` ||

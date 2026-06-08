@@ -1,5 +1,15 @@
 import { PreviewController } from '../preview.controller';
 import { PreviewService } from '../../services/preview.service';
+import { getPageResolver } from '../../themes/page-resolver-instance';
+
+// Mock the page resolver module so we can control the theme manifest's system
+// pages returned by normalizeRevision({ pages: [], pagesData: {} }).
+jest.mock('../../themes/page-resolver-instance', () => ({
+  getPageResolver: jest.fn(),
+}));
+const getPageResolverMock = getPageResolver as jest.MockedFunction<
+  typeof getPageResolver
+>;
 
 /**
  * Constructor v2 (Phase 1, Tasks 2-3) — page-aware preview routing.
@@ -53,12 +63,25 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     revisionId: 'rev-1',
   };
 
-  function makeController(preview: Partial<PreviewService>) {
+  // Default: resolver returns an empty manifest (no system pages). Individual
+  // tests override this to inject manifest pages. Reset before each test so the
+  // legacy-revision case's override doesn't leak.
+  beforeEach(() => {
+    getPageResolverMock.mockReset();
+    getPageResolverMock.mockReturnValue({
+      normalizeRevision: () => ({ pages: [] }),
+    } as never);
+  });
+
+  function makeController(
+    preview: Partial<PreviewService>,
+    revision: typeof REVISION = REVISION,
+  ) {
     const ctrl = new PreviewController(preview as PreviewService, {} as never);
     // loadRevisionData is private and hits the DB — stub it on the instance.
     jest
       .spyOn(ctrl as any, 'loadRevisionData')
-      .mockResolvedValue(REVISION as any);
+      .mockResolvedValue(revision as any);
     return ctrl;
   }
 
@@ -153,5 +176,95 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     expect(firstBuiltProductRoute).toHaveBeenCalledWith('rose');
     expect(tryLoad).toHaveBeenCalledWith('rose', 'products/prod-aaa');
     expect(res._body).toBe('<!DOCTYPE html><html>PRODUCT</html>');
+  });
+
+  it('legacy revision missing page-collection from raw pages[] resolves via theme manifest to "collections/preview"', async () => {
+    // Legacy revision: raw `pages[]` does NOT contain page-collection (its
+    // system pages were never persisted; migrateRevisionData does not backfill
+    // the array). Without the manifest merge, `match` is undefined and the route
+    // falls back to the raw `page` value ('page-collection') → built theme MISS.
+    const LEGACY_REVISION = {
+      data: {
+        pages: [
+          { id: 'page-home', slug: '/' },
+          { id: 'page-about', slug: '/about' },
+        ],
+      },
+      publicUrl: 'https://shop.example',
+      themeId: 'rose',
+      revisionId: 'rev-legacy',
+    } as typeof REVISION;
+
+    // Theme manifest DOES define page-collection → /collections/preview.
+    getPageResolverMock.mockReturnValue({
+      normalizeRevision: () => ({
+        pages: [
+          { id: 'page-home', slug: '/', role: 'system' },
+          { id: 'page-collection', slug: '/collections/preview', role: 'system' },
+          { id: 'page-product', slug: '/product', role: 'system' },
+        ],
+      }),
+    } as never);
+
+    const tryLoad = jest
+      .fn()
+      .mockResolvedValue('<!DOCTYPE html><html>COLLECTION</html>');
+    const ctrl = makeController(
+      {
+        tryLoadBuiltThemeHtml: tryLoad,
+        firstBuiltProductRoute: jest.fn(),
+      } as any,
+      LEGACY_REVISION,
+    );
+    const res = makeRes();
+
+    await ctrl.getPreview('site-1', 'page-collection', undefined, res);
+
+    expect(getPageResolverMock).toHaveBeenCalledWith('rose');
+    // Route resolves to the manifest slug, NOT the raw 'page-collection'.
+    expect(tryLoad).toHaveBeenCalledWith('rose', 'collections/preview');
+    expect(tryLoad).not.toHaveBeenCalledWith('rose', 'page-collection');
+    expect(res._body).toBe('<!DOCTYPE html><html>COLLECTION</html>');
+    expect(res._headers['X-Preview-Mode']).toBe('v2-built-theme');
+  });
+
+  it('revision page slug takes precedence over the theme manifest (manifest fills gaps only)', async () => {
+    // Both revision and manifest define page-about, but with DIFFERENT slugs.
+    // The merchant's revision slug must win; the manifest only fills missing ids.
+    const OVERRIDE_REVISION = {
+      data: {
+        pages: [
+          { id: 'page-home', slug: '/' },
+          { id: 'page-about', slug: '/about-us' },
+        ],
+      },
+      publicUrl: 'https://shop.example',
+      themeId: 'rose',
+      revisionId: 'rev-override',
+    } as typeof REVISION;
+
+    getPageResolverMock.mockReturnValue({
+      normalizeRevision: () => ({
+        pages: [{ id: 'page-about', slug: '/about', role: 'system' }],
+      }),
+    } as never);
+
+    const tryLoad = jest
+      .fn()
+      .mockResolvedValue('<!DOCTYPE html><html>ABOUT</html>');
+    const ctrl = makeController(
+      {
+        tryLoadBuiltThemeHtml: tryLoad,
+        firstBuiltProductRoute: jest.fn(),
+      } as any,
+      OVERRIDE_REVISION,
+    );
+    const res = makeRes();
+
+    await ctrl.getPreview('site-1', 'page-about', undefined, res);
+
+    // Revision slug '/about-us' wins over manifest '/about'.
+    expect(tryLoad).toHaveBeenCalledWith('rose', 'about-us');
+    expect(tryLoad).not.toHaveBeenCalledWith('rose', 'about');
   });
 });

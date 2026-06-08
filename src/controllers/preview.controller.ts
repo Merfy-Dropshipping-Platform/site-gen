@@ -134,20 +134,51 @@ export class PreviewController {
 
     // Constructor v2 (Phase 1) short-circuit. The site's theme_id resolves to
     // a template_id (loaded.themeId). If ThemeBuildService has produced a fully
-    // assembled page at dist/theme-preview/<template>/index.html, serve that
-    // whole page verbatim — the верстальщик's theme as-is — bypassing
-    // extractPageBlocks/renderPreviewPage entirely.
+    // assembled page for the requested route at
+    // dist/theme-preview/<template>/<route>/index.html (root → index.html),
+    // serve that whole page verbatim — the верстальщик's theme as-is —
+    // bypassing extractPageBlocks/renderPreviewPage entirely.
+    //
+    // Resolve the route from the requested page's SLUG. `page` is already a
+    // slash-less string (a pageId like `page-about` OR a path like `about`);
+    // we match it against the revision's pages (by id, page-prefixed id, or
+    // trimmed slug) and derive the build route from the matched slug. The
+    // `home` slug maps to the root route ('').
+    const pages: any[] = Array.isArray((loaded.data as any)?.pages)
+      ? (loaded.data as any).pages
+      : [];
+    const match = pages.find(
+      (p) =>
+        p?.id === page ||
+        p?.id === `page-${page}` ||
+        (p?.slug ?? '').replace(/^\/+|\/+$/g, '') === page,
+    );
+    const slug = (match?.slug ?? page ?? '') as string;
+    let route = slug.replace(/^\/+|\/+$/g, '');
+    if (route === 'home') route = '';
+    this.logger.log(
+      `[preview] siteId=${siteId} page=${page} → route=${route || '(root)'}`,
+    );
+    // The product page's slug is `/product`, but the theme builds per-product
+    // pages at <template>/products/<id>/index.html. Resolve to the first built
+    // product; if none, the literal 'product' route will miss → fall through.
+    if (route === 'product' || match?.id === 'page-product') {
+      route =
+        (await this.preview.firstBuiltProductRoute(loaded.themeId)) ?? 'product';
+    }
     //
     // Strictly gated on file existence: tryLoadBuiltThemeHtml returns null when
-    // there's no built page, and we fall through to the legacy per-block path
-    // unchanged (1:1 behaviour). Phase 1 is read-only (no Puck editing), so the
-    // `page`/`productId` params and the render cache are intentionally skipped.
+    // there's no built page for that route, and we fall through to the legacy
+    // per-block path unchanged (1:1 behaviour). Phase 1 is read-only (no Puck
+    // editing), so the `productId` param and the render cache are intentionally
+    // skipped on the built-theme path.
     const builtThemeHtml = await this.preview.tryLoadBuiltThemeHtml(
       loaded.themeId,
+      route,
     );
     if (builtThemeHtml !== null) {
       this.logger.log(
-        `[preview] v2 served built theme page for site=${siteId} theme=${loaded.themeId} (${builtThemeHtml.length} bytes)`,
+        `[preview] v2 served built theme page for site=${siteId} theme=${loaded.themeId} route=${route || '(root)'} (${builtThemeHtml.length} bytes)`,
       );
       res
         .header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')

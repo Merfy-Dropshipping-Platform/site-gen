@@ -5,6 +5,10 @@ import { DEFAULT_CATEGORY_HREF } from "../data/categories";
 import { catalogProducts } from "../data/products";
 
 const recommended = catalogProducts.slice(0, 4);
+
+// Мост корзины → checkout: build.service.ts патчит `const shopId = ""` → siteId на деплое.
+const shopId = "";
+const apiUrl = "https://gateway.merfy.ru/api";
 ---
 
 <Layout title="Корзина" description="Ваша корзина — Bloom">
@@ -162,7 +166,30 @@ const recommended = catalogProducts.slice(0, 4);
 		if (remove) removeFromCart(remove.dataset.id ?? "");
 		const checkout = target.closest<HTMLButtonElement>("[data-action='checkout']");
 		if (checkout) {
-			window.location.href = "/checkout"; // VT-safe: полная загрузка (не SPA-swap) → checkout inline-скрипты стартуют свежими
+			// Мост NtCart → backend cart: строим серверную корзину из локальных линий,
+			// чтобы checkout (cartStore) показал товары и submit/оплата работали.
+			void (async () => {
+				const cs = (window as any).cartStore;
+				const lines = getCart();
+				if (cs && lines.length) {
+					try {
+						cs.clear();
+						for (const l of lines) await cs.addItem(l.productId, null, l.quantity);
+					} catch (e) {}
+				}
+				window.location.href = "/checkout"; // full load = VT-safe (checkout-скрипты стартуют свежими)
+			})();
 		}
 	});
 </script>
+
+{/* Мост корзины → backend cart: грузим cartStore + конфиг, чтобы «Оформить заказ»
+    создал серверную корзину из локальных NtCart-линий (shopId патчится на деплое). */}
+<script is:inline define:vars={{ shopId, apiUrl }}>
+	window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
+		shopId: shopId || "",
+		apiUrl: apiUrl || "https://gateway.merfy.ru/api",
+	};
+</script>
+<script is:inline type="module" src="/scripts/cart-api.js"></script>
+<script is:inline type="module" src="/scripts/cart-store.js"></script>

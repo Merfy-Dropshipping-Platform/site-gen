@@ -164,7 +164,7 @@ const recommended = catalogProducts.slice(0, 4);
 		if (remove) removeFromCart(remove.dataset.id ?? "");
 		const checkout = target.closest<HTMLButtonElement>("[data-action='checkout']");
 		if (checkout) {
-			alert("Спасибо за заказ! Мы свяжемся с вами для подтверждения.");
+			window.location.href = "/checkout"; // VT-safe: полная загрузка (не SPA-swap) → checkout inline-скрипты стартуют свежими
 		}
 	});
 </script>

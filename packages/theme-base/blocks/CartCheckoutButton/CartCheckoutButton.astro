@@ -28,11 +28,17 @@ const schemeClass =
   style={`${paddingStyle} display:none;`}
 >
   <div class={C.container}>
+    {/* data-astro-reload: форсим полную загрузку /checkout, чтобы inline-скрипты
+        checkout-страницы (DaData / СДЭК / оплата) запускались свежими на темах с
+        ViewTransitions (rose/bloom/vanilla). Они биндятся на DOMContentLoaded и
+        IIFE, которые НЕ перевыполняются при Astro SPA-swap → без full load checkout
+        пришёл бы с неинициализированными скриптами. На non-VT темах (flux/satin) — no-op. */}
     <a
       href="/checkout"
       class={C.btn}
       style="width: 195px; height: 60px; font-size: 20px; line-height: 27px; border-radius: var(--radius-button, 10px);"
       data-cart-checkout-button
+      data-astro-reload
     >Оформить заказ</a>
   </div>
 </section>

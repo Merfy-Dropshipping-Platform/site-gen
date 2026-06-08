@@ -132,7 +132,7 @@ import Layout from "../layouts/Layout.astro";
 	document.addEventListener("click", (event) => {
 		const checkout = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-action='checkout']");
 		if (checkout) {
-			alert("Спасибо за заказ! Мы свяжемся с вами для подтверждения.");
+			window.location.href = "/checkout"; // VT-safe: полная загрузка (не SPA-swap) → checkout inline-скрипты стартуют свежими
 		}
 	});
 </script>

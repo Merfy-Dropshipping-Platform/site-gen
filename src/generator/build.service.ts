@@ -95,6 +95,21 @@ export async function themeLiveDistExists(theme: string): Promise<boolean> {
     .catch(() => false);
 }
 
+/**
+ * themes-v2 live deploy: copy the pre-built root-url theme dist into ctx.distDir.
+ * Mirrors trySnapshotDeploy's fs.cp(templateDistDir, distDir) but sources from
+ * dist/theme-live/<theme>. ctx.distDir's parent (workingDir) is already created
+ * by runBuildPipeline; fs.cp creates distDir.
+ */
+export async function copyThemeV2Dist(
+  ctx: BuildContext,
+  theme: string,
+): Promise<void> {
+  const liveDist = themeLiveDistFor(theme);
+  await fs.cp(liveDist, ctx.distDir, { recursive: true });
+  logger.log(`[themes-v2] Copied ${liveDist} → ${ctx.distDir} for site ${ctx.siteId}`);
+}
+
 const logger = new Logger("BuildPipeline");
 
 /** Build stages in order */
@@ -875,35 +890,49 @@ export async function runBuildPipeline(
     await stageMerge(deps, params, ctx);
     time("merge", t);
 
-    // === Stage 2: GENERATE ===
-    t = Date.now();
-    emitProgress(deps, ctx, "generate", "Generating Astro project");
-    await stageGenerate(deps, params, ctx);
-    time("generate", t);
+    // === Branch: themes-v2 vs legacy scaffold ===
+    const bareTheme = bareThemeName(ctx.templateId);
+    const useThemeV2 =
+      MIGRATED_THEMES.has(bareTheme) && (await themeLiveDistExists(bareTheme));
 
-    // === Stage 3: FETCH_DATA ===
-    t = Date.now();
-    emitProgress(deps, ctx, "fetch_data", "Fetching products and collections");
-    await stageFetchData(deps, ctx);
-    time("fetch_data", t);
+    if (useThemeV2) {
+      // themes-v2: deploy the pre-built designer theme verbatim (root urls).
+      // No generate/fetch_data/astro_build — the dist is already built.
+      t = Date.now();
+      emitProgress(deps, ctx, "generate", `Deploying themes-v2 build (${bareTheme})`);
+      await copyThemeV2Dist(ctx, bareTheme);
+      time("themes-v2-copy", t);
+    } else {
+      // === Stage 2: GENERATE ===
+      t = Date.now();
+      emitProgress(deps, ctx, "generate", "Generating Astro project");
+      await stageGenerate(deps, params, ctx);
+      time("generate", t);
 
-    // === Stage 4: ASTRO_BUILD ===
-    t = Date.now();
-    emitProgress(deps, ctx, "astro_build", "Running astro build");
-    await stageAstroBuild(ctx);
-    time("astro_build", t);
+      // === Stage 3: FETCH_DATA ===
+      t = Date.now();
+      emitProgress(deps, ctx, "fetch_data", "Fetching products and collections");
+      await stageFetchData(deps, ctx);
+      time("fetch_data", t);
 
-    // === Stage 4.5: VALIDATE BUILD OUTPUT ===
-    const validationResult = await validateBuildOutput(ctx);
-    if (validationResult) {
-      emitProgress(deps, ctx, "astro_build", `Build complete. ${validationResult}`);
+      // === Stage 4: ASTRO_BUILD ===
+      t = Date.now();
+      emitProgress(deps, ctx, "astro_build", "Running astro build");
+      await stageAstroBuild(ctx);
+      time("astro_build", t);
+
+      // === Stage 4.5: VALIDATE BUILD OUTPUT ===
+      const validationResult = await validateBuildOutput(ctx);
+      if (validationResult) {
+        emitProgress(deps, ctx, "astro_build", `Build complete. ${validationResult}`);
+      }
     }
 
     // === Stage 4.6: INJECT ANALYTICS TRACKER ===
     await injectAnalyticsTracker(ctx.distDir, params.siteId);
 
-    // === Stage 4.7: INJECT ISLANDS SCRIPT ===
-    if (ctx.islandsEnabled) {
+    // === Stage 4.7: INJECT ISLANDS SCRIPT (legacy path only) ===
+    if (!useThemeV2 && ctx.islandsEnabled) {
       const islandsServerUrl =
         process.env.ISLANDS_SERVER_URL ?? "https://islands.merfy.ru";
       await injectIslandsScript(ctx.distDir, ctx.siteId, islandsServerUrl);

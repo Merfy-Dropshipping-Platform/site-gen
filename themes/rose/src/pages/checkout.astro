@@ -1,0 +1,73 @@
+---
+// Checkout page (rose theme, Phase 1 pilot of Live Per-Theme Checkout).
+//
+// Composes the SHARED theme-base mega-blocks CheckoutForm + CheckoutSummary.
+// Those blocks carry ALL live logic via inline scripts (DaData autocomplete in
+// CheckoutDeliveryForm, СДЭК delivery in CheckoutDeliveryMethod, YooKassa in
+// CheckoutPayment, submit-chain in CheckoutSubmit). They are token-driven, so
+// they inherit rose's colors. NO checkout-JS is rewritten here.
+//
+// Import mechanism: DIRECT relative import from packages/theme-base/blocks/.
+// The block tree is fully self-contained (only sibling .astro + .classes value
+// imports + type-only .puckConfig imports), so a relative path resolves the
+// whole tree. astro.config.mjs adds vite.server.fs.allow = [workspaceRoot] so
+// Vite can read files outside the themes/rose project root.
+//
+// Plumbing: the block inline-scripts need window.cartStore + window.__MERFY_CONFIG__
+// (+ optional window.__DADATA_TOKEN__). themes/rose's native NtCart system does
+// NOT expose window.cartStore, so we load the templates' cart-api.js + cart-store.js
+// (copied into public/scripts/) and inject config on this page only — keeping the
+// rest of the rose theme on its native cart.
+import Layout from "../layouts/Layout.astro";
+import CheckoutForm from "../../../../packages/theme-base/blocks/CheckoutForm/CheckoutForm.astro";
+import CheckoutSummary from "../../../../packages/theme-base/blocks/CheckoutSummary/CheckoutSummary.astro";
+
+// Pilot defaults. In production build.service.ts string-patches shopId and
+// injects DADATA_API_KEY; here we hardcode the apiUrl and leave shopId/dadataToken
+// to be patched at build/deploy time (the injection script below reads them).
+const shopId = "";
+const apiUrl = "https://gateway.merfy.ru/api";
+const dadataToken = "";
+---
+<Layout title="Оформление заказа" description="Оформление заказа">
+  {/* Figma 1:13398 — checkout is always the light scheme regardless of theme default. */}
+  <div class="color-scheme-2">
+    <main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">
+      {/* Figma 1:19998 — form col 434px, summary col 589px, gap ~56px. */}
+      <div class="mx-auto max-w-[1280px] px-4 lg:px-6 xl:px-0 py-12 grid grid-cols-1 lg:grid-cols-2 lg:gap-x-8 xl:grid-cols-[434px_589px] xl:gap-x-[56px] gap-y-8">
+        <div data-checkout-column="form" class="min-w-0">
+          <CheckoutForm />
+        </div>
+        <div data-checkout-column="summary" class="min-w-0">
+          <CheckoutSummary />
+        </div>
+      </div>
+    </main>
+  </div>
+
+  {/* --- Live checkout plumbing (checkout page only) --- */}
+  {/* Config injection (templates pattern). build.service.ts patches shopId +
+      DADATA_API_KEY at deploy; for the local pilot the script just has to exist. */}
+  <script is:inline define:vars={{ shopId, apiUrl, dadataToken }}>
+    window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
+      shopId: shopId || "",
+      apiUrl: apiUrl || "https://gateway.merfy.ru/api",
+    };
+    if (dadataToken) {
+      window.__DADATA_TOKEN__ = dadataToken;
+    }
+  </script>
+  {/* `is:inline` is REQUIRED — without it Astro bundles these through Vite, can't
+      resolve `/scripts/...` (public dir) and SILENTLY drops the tag, leaving
+      window.cartStore undefined → empty checkout. cart-store.js imports cart-api.js,
+      so both are loaded as ES modules. */}
+  <script is:inline type="module" src="/scripts/cart-api.js"></script>
+  <script is:inline type="module" src="/scripts/cart-store.js"></script>
+  <script is:inline>
+    document.addEventListener("DOMContentLoaded", function () {
+      if (window.cartStore && window.cartStore.init) {
+        window.cartStore.init();
+      }
+    });
+  </script>
+</Layout>

@@ -1,6 +1,7 @@
 import { PreviewController } from '../preview.controller';
 import { PreviewService } from '../../services/preview.service';
 import { getPageResolver } from '../../themes/page-resolver-instance';
+import { extractPageBlocks } from '../../themes/page-blocks';
 
 // Mock the page resolver module so we can control the theme manifest's system
 // pages returned by normalizeRevision({ pages: [], pagesData: {} }).
@@ -9,6 +10,17 @@ jest.mock('../../themes/page-resolver-instance', () => ({
 }));
 const getPageResolverMock = getPageResolver as jest.MockedFunction<
   typeof getPageResolver
+>;
+
+// extractPageBlocks moved from a private controller method to this shared
+// module (refactor: extract page-blocks extraction). The fall-through test
+// drives it via the module mock instead of spying on a controller instance
+// method that no longer exists.
+jest.mock('../../themes/page-blocks', () => ({
+  extractPageBlocks: jest.fn(),
+}));
+const extractPageBlocksMock = extractPageBlocks as jest.MockedFunction<
+  typeof extractPageBlocks
 >;
 
 /**
@@ -71,6 +83,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     getPageResolverMock.mockReturnValue({
       normalizeRevision: () => ({ pages: [] }),
     } as never);
+    extractPageBlocksMock.mockReset();
   });
 
   function makeController(
@@ -143,15 +156,13 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
       firstBuiltProductRoute: jest.fn(),
       renderPreviewPage,
     } as any);
-    const extractSpy = jest
-      .spyOn(ctrl as any, 'extractPageBlocks')
-      .mockResolvedValue([{ type: 'Hero', props: {} }]);
+    extractPageBlocksMock.mockResolvedValue([{ type: 'Hero', props: {} }]);
     const res = makeRes();
 
     await ctrl.getPreview('site-1', '/checkout', undefined, res);
 
     expect(tryLoad).toHaveBeenCalledWith('rose', 'checkout');
-    expect(extractSpy).toHaveBeenCalled();
+    expect(extractPageBlocksMock).toHaveBeenCalled();
     expect(renderPreviewPage).toHaveBeenCalled();
     expect(res._body).toBe('<html>RENDERED CHECKOUT</html>');
     // The built-theme header must NOT be set on the fall-through path.

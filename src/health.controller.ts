@@ -470,4 +470,19 @@ export class HealthController {
       };
     }
   }
+
+  @Post("admin-reset-content-pages/:siteId")
+  async adminResetContentPages(@Param("siteId") siteId: string) {
+    this.logger.log(`Admin reset content pages for site ${siteId}`);
+    try {
+      const result = await this.sitesService.resetContentPages(siteId);
+      return { success: true, ...result };
+    } catch (error) {
+      this.logger.error(`Reset content pages failed for ${siteId}: ${error}`);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "unknown",
+      };
+    }
+  }
 }

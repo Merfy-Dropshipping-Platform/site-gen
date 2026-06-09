@@ -58,6 +58,16 @@ RUN pnpm build:themes
 RUN test -f /app/dist/theme-preview/rose/index.html \
     || (echo "FATAL: build:themes did not produce dist/theme-preview/rose/index.html" && exit 1)
 
+# Constructor v2 Phase 2: compile sliced theme sections (canon manifest) for
+# Container rendering of content pages. Only themes with sections.map.json.
+RUN for t in $(ls themes); do \
+      if [ -f "themes/$t/sections.map.json" ]; then \
+        node scripts/compile-theme-sections.mjs "$t" || exit 1; \
+      fi; \
+    done
+RUN test -f /app/dist/theme-sections/rose/manifest.json \
+    || (echo "FATAL: compile-theme-sections did not produce rose manifest" && exit 1)
+
 # ========================
 # Stage 2: Production
 # ========================

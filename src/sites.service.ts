@@ -2332,6 +2332,59 @@ export class SitesDomainService {
     });
   }
 
+  /** Сбросить контентные страницы текущей ревизии на сиды темы (Фаза 2 слайсинга). */
+  async resetContentPages(siteId: string): Promise<{ reset: string[] }> {
+    const [site] = await this.db
+      .select({
+        id: schema.site.id,
+        themeId: schema.site.themeId,
+        currentRevisionId: schema.site.currentRevisionId,
+      })
+      .from(schema.site)
+      .where(eq(schema.site.id, siteId));
+    if (!site) throw new Error(`Site ${siteId} not found`);
+    if (!site.currentRevisionId)
+      throw new Error(`Site ${siteId} has no current revision`);
+
+    const [revision] = await this.db
+      .select({ id: schema.siteRevision.id, data: schema.siteRevision.data })
+      .from(schema.siteRevision)
+      .where(eq(schema.siteRevision.id, site.currentRevisionId));
+    if (!revision)
+      throw new Error(`Revision ${site.currentRevisionId} not found`);
+
+    const theme = (site.themeId ?? "rose").replace(/-\d+(?:\.\d+)*$/, "");
+    const data = (revision.data ?? {}) as Record<string, any>;
+    const pagesData = { ...(data.pagesData ?? {}) };
+    const fs = await import("node:fs/promises");
+    const path = await import("node:path");
+    const seedFiles: Record<string, string> = {
+      home: "home.json",
+      "page-about": "about.json",
+      "page-contacts": "contacts.json",
+    };
+    const reset: string[] = [];
+    for (const [key, file] of Object.entries(seedFiles)) {
+      try {
+        const raw = await fs.readFile(
+          path.join(process.cwd(), "packages", `theme-${theme}`, "pages", file),
+          "utf8",
+        );
+        const seed = JSON.parse(raw) as { content?: unknown };
+        if (!Array.isArray(seed.content)) continue;
+        pagesData[key] = { ...(pagesData[key] ?? {}), content: seed.content };
+        reset.push(key);
+      } catch {
+        /* нет сида у темы — страницу не трогаем */
+      }
+    }
+    await this.db
+      .update(schema.siteRevision)
+      .set({ data: { ...data, pagesData } })
+      .where(eq(schema.siteRevision.id, revision.id));
+    return { reset };
+  }
+
   /**
    * Регенерировать все активные сайты с указанным шаблоном.
    * Используется для массового обновления шаблона всех сайтов.

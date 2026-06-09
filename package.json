@@ -18,6 +18,7 @@
     "verify:astro": "node scripts/verify-astro-runtime.mjs",
     "build:preview-tailwind": "node scripts/compile-preview-tailwind.mjs",
     "build:themes": "tsx scripts/build-all-themes.ts",
+    "build:theme-sections": "node scripts/compile-theme-sections.mjs",
     "backfill:theme-schemes": "tsx scripts/backfill-theme-colorschemes.ts",
     "rollback:theme-schemes": "tsx scripts/rollback-theme-colorschemes.ts",
     "visual-diff:themes": "node scripts/visual-diff-themes.mjs",

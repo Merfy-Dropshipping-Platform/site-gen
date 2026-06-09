@@ -229,9 +229,21 @@ export async function rewriteAbsoluteUrls(
   previewDir: string,
   themeName: string,
 ): Promise<void> {
-  const re = /(["'(,\s])\/(?!\/)/g;
   const replacement = `$1${THEME_PREVIEW_URL_PREFIX}/${themeName}/`;
-  await rewriteTree(previewDir, re, replacement);
+  await rewriteTree(previewDir, ROOT_URL_RE, replacement);
+}
+
+/**
+ * Корневые URL (`"/x"`, `'/x'`, `(/x`, `, /x`) — ЕДИНЫЙ паттерн для шелла
+ * (rewriteAbsoluteUrls при сборке темы) и для блоков (composeV2Page при
+ * пересадке). Расхождение паттернов = блоки и шелл переписываются по-разному
+ * → 404 на ассеты только внутри пересаженных блоков.
+ */
+export const ROOT_URL_RE = /(["'(,\s])\/(?!\/)/g;
+
+/** Переписать корневые URL HTML-фрагмента под префикс, тела <script> verbatim. */
+export function rewriteRootUrlsToPrefix(html: string, prefix: string): string {
+  return rewriteHtmlPreservingScripts(html, ROOT_URL_RE, `$1${prefix}/`);
 }
 
 /**
@@ -240,7 +252,7 @@ export async function rewriteAbsoluteUrls(
  * превью падает). Открывающий тег <script src="/..."> переписывается (атрибут src),
  * тело скрипта — verbatim.
  */
-function rewriteHtmlPreservingScripts(
+export function rewriteHtmlPreservingScripts(
   content: string,
   re: RegExp,
   replacement: string,

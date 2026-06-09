@@ -116,7 +116,7 @@ function pluralizeProducts(count: number): string {
 							Смотреть ещё
 						</button>
 					)}
-					<span class="font-manrope text-[14px] font-normal leading-normal text-[#999999] md:text-[16px]">
+					<span class="font-manrope text-[14px] font-normal leading-normal text-[#999999] md:text-[16px]" data-nt="catalog-count">
 						{pluralizeProducts(totalCount)}
 					</span>
 				</div>
@@ -133,4 +133,21 @@ function pluralizeProducts(count: number): string {
 		button.textContent = "Больше товаров нет";
 		button.classList.add("opacity-60", "pointer-events-none");
 	});
+</script>
+
+<script>
+	import { hydrateGrid, updateCount } from "../../lib/storefront-hydrate";
+
+	// Реальные товары (Option B): на published-сайте /data/products.json реальный →
+	// перерисовываем demo-grid. На demo-сборке loadRealProducts() вернёт null → no-op.
+	// ВНИМАНИЕ: demo-категории фильтруют товары по product.category, но реальный
+	// products.json этого поля не несёт — поэтому в каждую категорию гидрируем ВЕСЬ
+	// каталог (как единый catalog в rose). Это осознанное отклонение, см. отчёт.
+	async function hydrateCatalog() {
+		const items = await hydrateGrid('[data-nt="catalog-grid"]');
+		if (items) updateCount('[data-nt="catalog-count"]', items.length);
+	}
+
+	hydrateCatalog();
+	document.addEventListener("astro:page-load", hydrateCatalog);
 </script>

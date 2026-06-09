@@ -1,11 +1,12 @@
 /**
- * Корзина Bloom — обёртка над {@link createNtCart} из New-Themes DS.
+ * Корзина Bloom — обёртка над локальным {@link createNtCart} (`nt-cart-bloom.ts`,
+ * копия DS с поддержкой `variantCombinationId` для backend cart → order_items).
  */
 import {
 	createNtCart,
 	type NtCartLine,
 	type NtCartLineVariant,
-} from "@merfy-dropshipping-platform/design-systems-theme/lib/nt-cart";
+} from "./nt-cart-bloom";
 import { cartLineThumbPictureHtml } from "./cart-thumb-html";
 import { withBase } from "./with-base";
 
@@ -204,6 +205,8 @@ export const initCartUI = () => {
 			const variant = {
 				color: addBtn.dataset.variantColor || undefined,
 				size: addBtn.dataset.variantSize || undefined,
+				// combinationId реальной комбинации (Phase 2) → backend cart → order_items.
+				variantCombinationId: addBtn.dataset.variantCombinationId || undefined,
 			};
 			const productId = addBtn.dataset.productId ?? "";
 			const name = addBtn.dataset.name ?? "";

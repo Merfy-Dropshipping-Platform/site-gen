@@ -9,6 +9,8 @@ import { cartLineThumbPictureHtml } from "./cart-thumb-html";
 export interface NtCartLineVariant {
 	color?: string;
 	size?: string;
+	/** combinationId реальной комбинации — уходит в backend cart → order_items (Phase 2). */
+	variantCombinationId?: string;
 }
 
 export interface NtCartLine {
@@ -56,7 +58,7 @@ const safeParse = (raw: string | null): NtCartLine[] => {
 };
 
 const makeLineId = (productId: string, variant?: NtCartLineVariant) => {
-	const parts = [productId, variant?.color, variant?.size].filter(Boolean);
+	const parts = [productId, variant?.variantCombinationId, variant?.color, variant?.size].filter(Boolean);
 	return parts.join("|");
 };
 
@@ -218,6 +220,7 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 					variant: {
 						color: addBtn.dataset.variantColor || undefined,
 						size: addBtn.dataset.variantSize || undefined,
+						variantCombinationId: addBtn.dataset.variantCombinationId || undefined,
 					},
 				});
 				window.dispatchEvent(new CustomEvent(evOpen));

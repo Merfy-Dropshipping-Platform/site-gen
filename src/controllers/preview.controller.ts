@@ -240,6 +240,14 @@ export class PreviewController {
             `${m}<script>window.__DADATA_TOKEN__ = ${JSON.stringify(dadataToken)};</script>`,
         );
       }
+      // SiteId для гидрации реальных товаров в preview: built-theme отдаётся БЕЗ
+      // per-site `/data/products.json` (это build-артефакт), поэтому storefront-hydrate
+      // фолбэчит на `/api/sites/<id>/storefront-data` по этому глобалу — тот же источник,
+      // которым блоки конструктора грузят товары. На live products.json есть → фолбэк не нужен.
+      html = html.replace(
+        /<head(\s[^>]*)?>/i,
+        (m) => `${m}<script>window.__MERFY_SITE_ID__ = ${JSON.stringify(siteId)};</script>`,
+      );
       this.logger.log(
         `[preview] v2 served built theme page for site=${siteId} theme=${loaded.themeId} route=${route || '(root)'} (${html.length} bytes)`,
       );

@@ -23,6 +23,25 @@ export interface RealProduct {
 	compareAtPrice?: number | string | null;
 	description?: string;
 	hasVariants?: boolean;
+	variantCombinations?: VariantCombination[];
+}
+
+/** Конкретная покупаемая комбинация вариантов (из products.json). */
+export interface VariantCombination {
+	id: string; // variantCombinationId — уходит в backend cart → order_items
+	title?: string;
+	price: number | string;
+	compareAtPrice?: number | string | null;
+	available?: boolean;
+	quantity?: number;
+	/** Группа → значение, напр. { "Цвет": "Белый", "Размер": "S" }. */
+	options: Record<string, string>;
+}
+
+/** Группа вариантов, выведенная из комбинаций (variantGroups в products.json часто null). */
+export interface VariantGroup {
+	name: string; // "Цвет"
+	values: string[]; // ["Белый", "Чёрный"] — уникальные, в порядке появления
 }
 
 const PRODUCTS_URL = "/data/products.json";
@@ -37,18 +56,47 @@ let cached: RealProduct[] | null | undefined;
  */
 export async function loadRealProducts(): Promise<RealProduct[] | null> {
 	if (cached !== undefined) return cached;
+
+	// 1. Статический per-site файл — опубликованный сайт (build.service инжектит).
 	try {
 		const res = await fetch(PRODUCTS_URL);
-		if (!res.ok) {
-			cached = null;
-			return null;
+		if (res.ok) {
+			const data: unknown = await res.json();
+			if (Array.isArray(data) && data.length > 0) {
+				cached = data as RealProduct[];
+				return cached;
+			}
 		}
-		const data: unknown = await res.json();
-		cached = Array.isArray(data) && data.length > 0 ? (data as RealProduct[]) : null;
 	} catch {
-		cached = null;
+		/* файла нет — пробуем preview-фолбэк ниже */
 	}
-	return cached ?? null;
+
+	// 2. Preview-фолбэк: конструктор-превью отдаёт built-theme БЕЗ products.json
+	// (это build-артефакт). preview.controller инжектит window.__MERFY_SITE_ID__ —
+	// берём товары из того же storefront-data, которым блоки конструктора грузят
+	// товары → паритет live ↔ preview.
+	const siteId =
+		typeof window !== "undefined"
+			? (window as unknown as { __MERFY_SITE_ID__?: string }).__MERFY_SITE_ID__
+			: undefined;
+	if (siteId) {
+		try {
+			const res = await fetch(`/api/sites/${encodeURIComponent(siteId)}/storefront-data`);
+			if (res.ok) {
+				const payload = (await res.json()) as { products?: unknown };
+				const products = payload?.products;
+				if (Array.isArray(products) && products.length > 0) {
+					cached = products as RealProduct[];
+					return cached;
+				}
+			}
+		} catch {
+			/* preview-фолбэк не удался */
+		}
+	}
+
+	cached = null;
+	return cached;
 }
 
 /** Число → "2 800 ₽". Готовую строку возвращает как есть. Пусто → "". */
@@ -129,4 +177,68 @@ export function updateCount(countSelector: string, n: number): void {
 	for (const el of Array.from(document.querySelectorAll<HTMLElement>(countSelector))) {
 		el.textContent = `${n} товаров`;
 	}
+}
+
+// ─────────────────────────── Варианты (Phase 2) ───────────────────────────
+
+/** Выводит группы вариантов из `combos[].options` (variantGroups в products.json часто null). */
+export function deriveVariantGroups(combos: VariantCombination[]): VariantGroup[] {
+	const order: string[] = [];
+	const byGroup = new Map<string, string[]>();
+	for (const c of combos) {
+		for (const [group, value] of Object.entries(c.options ?? {})) {
+			if (!byGroup.has(group)) {
+				byGroup.set(group, []);
+				order.push(group);
+			}
+			const values = byGroup.get(group)!;
+			if (!values.includes(value)) values.push(value);
+		}
+	}
+	return order.map((name) => ({ name, values: byGroup.get(name)! }));
+}
+
+/** Находит комбинацию, у которой ВСЕ выбранные значения групп совпали. */
+export function findCombination(
+	combos: VariantCombination[],
+	selected: Record<string, string>,
+): VariantCombination | null {
+	return (
+		combos.find((c) =>
+			Object.entries(selected).every(([group, value]) => c.options?.[group] === value),
+		) ?? null
+	);
+}
+
+const VARIANT_BTN_BASE =
+	"inline-flex h-10 shrink-0 items-center justify-center rounded-[6px] px-3 py-2.5 text-[14px] font-normal leading-normal outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-[#000000] focus-visible:ring-offset-2";
+const VARIANT_BTN_SEL = "border-0 !bg-[#000000] !text-white hover:opacity-95";
+const VARIANT_BTN_UNSEL =
+	"border border-solid border-[#000000] !bg-white !text-[#000000] hover:opacity-90";
+
+/**
+ * HTML-разметка групп вариантов — стиль 1:1 с `RosePdpColorVariantRow`
+ * (выбран: чёрный фон/белый текст; невыбран: белый фон/чёрный border).
+ * Маркер `data-pdp-variant-group` (НЕ `data-nt="variant-text-row"`), чтобы
+ * не конфликтовать с demo-обработчиком в RoseProductDetail.
+ */
+export function renderVariantGroupsHtml(
+	groups: VariantGroup[],
+	selected: Record<string, string>,
+): string {
+	return groups
+		.map((g) => {
+			const buttons = g.values
+				.map((v) => {
+					const isSel = selected[g.name] === v;
+					const cls = `${VARIANT_BTN_BASE} ${isSel ? VARIANT_BTN_SEL : VARIANT_BTN_UNSEL}`;
+					return `<button type="button" class="${cls}" role="radio" aria-checked="${isSel}" data-variant-value="${escapeHtml(v)}">${escapeHtml(v)}</button>`;
+				})
+				.join("");
+			return `<div class="flex w-full flex-col gap-2 font-manrope" data-pdp-variant-group="${escapeHtml(g.name)}">
+	<span class="font-manrope text-[14px] font-normal leading-none text-[#000000]">${escapeHtml(g.name)}</span>
+	<div class="flex flex-wrap gap-2" role="radiogroup" aria-label="${escapeHtml(g.name)}">${buttons}</div>
+</div>`;
+		})
+		.join("");
 }

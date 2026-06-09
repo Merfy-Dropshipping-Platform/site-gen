@@ -35,7 +35,14 @@ const skeleton = {
 </Layout>
 
 <script>
-	import { loadRealProducts, formatPrice, productImage } from "../lib/storefront-hydrate";
+	import {
+		loadRealProducts,
+		formatPrice,
+		productImage,
+		deriveVariantGroups,
+		findCombination,
+		renderVariantGroupsHtml,
+	} from "../lib/storefront-hydrate";
 
 	const idFromUrl = (): string | null => new URLSearchParams(location.search).get("id");
 
@@ -110,6 +117,62 @@ const skeleton = {
 		const addBtn = section.querySelector<HTMLElement>("[data-add-to-cart]");
 		addBtn?.setAttribute("data-old-price", oldRaw);
 		addBtn?.setAttribute("data-variant-color", "");
+
+		// ── Варианты (Phase 2): реальный селектор из variantCombinations ──
+		const variantsEl = section.querySelector<HTMLElement>("[data-pdp-variants]");
+		const combos = Array.isArray(p.variantCombinations) ? p.variantCombinations : [];
+		const COLOR_KEYS = ["Цвет", "Color"];
+		const SIZE_KEYS = ["Размер", "Size"];
+		const pick = (opts: Record<string, string>, keys: string[]): string => {
+			for (const k of keys) if (opts?.[k] != null) return opts[k];
+			return "";
+		};
+
+		if (variantsEl && combos.length > 0) {
+			const groups = deriveVariantGroups(combos);
+			const firstAvailable = combos.find((c) => c.available !== false) ?? combos[0];
+			const selected: Record<string, string> = { ...(firstAvailable.options ?? {}) };
+
+			const applyCombo = () => {
+				const combo = findCombination(combos, selected);
+				const priceVal = combo ? combo.price : p.price;
+				setText("[data-pdp-price]", formatPrice(priceVal));
+				const available = combo ? combo.available !== false && (combo.quantity ?? 1) > 0 : false;
+				for (const sel of ["[data-add-to-cart]", "[data-action='buy-now']"]) {
+					const btn = section.querySelector<HTMLElement>(sel);
+					if (!btn) continue;
+					btn.setAttribute("data-price", formatPrice(priceVal));
+					btn.setAttribute("data-variant-combination-id", combo?.id ?? "");
+					btn.setAttribute("data-variant-color", pick(combo?.options ?? {}, COLOR_KEYS));
+					btn.setAttribute("data-variant-size", pick(combo?.options ?? {}, SIZE_KEYS));
+				}
+				const addEl = section.querySelector<HTMLButtonElement>("[data-add-to-cart]");
+				if (addEl) {
+					addEl.disabled = !available;
+					addEl.classList.toggle("opacity-50", !available);
+					addEl.classList.toggle("pointer-events-none", !available);
+					addEl.textContent = available ? "Добавить в корзину" : "Нет в наличии";
+				}
+			};
+
+			variantsEl.hidden = false;
+			variantsEl.innerHTML = renderVariantGroupsHtml(groups, selected);
+			applyCombo();
+
+			variantsEl.onclick = (e) => {
+				const btn = (e.target as HTMLElement).closest<HTMLElement>("[data-variant-value]");
+				if (!btn) return;
+				const group = btn.closest<HTMLElement>("[data-pdp-variant-group]")?.getAttribute("data-pdp-variant-group");
+				const value = btn.getAttribute("data-variant-value");
+				if (!group || value == null) return;
+				selected[group] = value;
+				variantsEl.innerHTML = renderVariantGroupsHtml(groups, selected);
+				applyCombo();
+			};
+		} else if (variantsEl) {
+			// Невариативный реальный товар — прячем decorative demo color-row.
+			variantsEl.hidden = true;
+		}
 	}
 
 	hydrateProductPage();

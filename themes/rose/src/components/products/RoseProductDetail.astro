@@ -107,13 +107,15 @@ const cartVariantColor = product.colors?.[0] ?? "";
 			</div>
 
 			<div class="flex flex-col gap-5 sm:gap-6">
-				<RosePdpColorVariantRow
-					items={pdpColorVariants}
-					selectedId="brown-selected"
-					groupLabel="Цвет"
-					groupName="pdp-color"
-					class="max-w-none"
-				/>
+				<div class="flex flex-col gap-4" data-pdp-variants>
+					<RosePdpColorVariantRow
+						items={pdpColorVariants}
+						selectedId="brown-selected"
+						groupLabel="Цвет"
+						groupName="pdp-color"
+						class="max-w-none"
+					/>
+				</div>
 
 				<div
 					class="flex h-10 w-fit items-center rounded-[4px] border border-solid border-[#E5E5E5]"

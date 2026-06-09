@@ -21,6 +21,7 @@ import { googleFontHead } from '../themes/theme-manifest-loader';
 import { getPageResolver } from '../themes/page-resolver-instance';
 import { buildTokensCss } from '../themes/tokens-css';
 import { extractPageBlocks } from '../themes/page-blocks';
+import { isV2ComplexRoute } from '../themes/v2-routes';
 import { migrateRevisionData } from '../utils/revision-migrations';
 import { rewriteRootUrlsToPrefix } from '../generator/theme-build.service';
 
@@ -40,12 +41,6 @@ const SYSTEM_PAGE_ROUTES: Record<string, string> = {
   'page-product': 'product',
   'page-checkout': 'checkout',
 };
-
-/** Первые сегменты маршрутов, которые в Фазе 2 НЕ нарезаются (блоб-путь). */
-const V2_COMPLEX_ROUTE_PREFIXES = new Set([
-  'catalog', 'collection', 'collections', 'product', 'products', 'cart',
-  'checkout', 'auth', 'blog', 'legal', 'account', 'design-system', 'puck-editor',
-]);
 
 /**
  * Body for POST /api/sites/:id/preview/block — single-block hot-render
@@ -223,7 +218,7 @@ export class PreviewController {
     // страницы (catalog/product/cart/checkout/…) остаются на блоб-пути.
     // Любой сбой v2-ветки ОБЯЗАН деградировать в блоб-путь, не в 500 —
     // отсюда try/catch-ремень вокруг всей ветки.
-    const isComplexRoute = V2_COMPLEX_ROUTE_PREFIXES.has(route.split('/')[0]);
+    const isComplexRoute = isV2ComplexRoute(route);
     if (!isComplexRoute && (await this.preview.hasV2Sections(loaded.themeId))) {
       try {
         const v2Blocks = await extractPageBlocks(

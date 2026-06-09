@@ -1,11 +1,15 @@
 /**
- * Корзина Vanilla — обёртка над {@link createNtCart} из New-Themes DS.
+ * Корзина Vanilla — обёртка над {@link createNtCart}.
+ *
+ * Используем ЛОКАЛЬНУЮ копию `nt-cart-vanilla` (не пакет DS): нужен
+ * `variantCombinationId` в линии корзины (Phase 2, спек 098), которого нет в
+ * пакетной версии. Остальное поведение идентично.
  */
 import {
 	createNtCart,
 	type NtCartLine,
 	type NtCartLineVariant,
-} from "@merfy-dropshipping-platform/design-systems-theme/lib/nt-cart";
+} from "./nt-cart-vanilla";
 
 const api = createNtCart({
 	storageKey: "vanilla:cart:v1",
@@ -55,6 +59,7 @@ export const initCartUI = () => {
 				variant: {
 					color: addBtn.dataset.variantColor || undefined,
 					size: addBtn.dataset.variantSize || undefined,
+					variantCombinationId: addBtn.dataset.variantCombinationId || undefined,
 				},
 			});
 			return;

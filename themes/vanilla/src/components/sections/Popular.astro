@@ -27,12 +27,24 @@ const products = catalogProducts.slice(0, 6);
 			</p>
 		</div>
 
-		<ul class="grid grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:grid-cols-3 md:gap-x-4 md:gap-y-12" role="list" data-animate data-animate-delay="0.1s">
+		<ul class="grid grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:grid-cols-3 md:gap-x-4 md:gap-y-12" role="list" data-animate data-animate-delay="0.1s" data-nt="popular-grid">
 			{products.map((product) => (
-				<li>
+				<li data-product-id={product.id}>
 					<VanillaProductCard product={product} />
 				</li>
 			))}
 		</ul>
 	</div>
 </section>
+
+<script>
+	import { hydrateGrid } from "../../lib/storefront-hydrate";
+
+	// Реальные товары (Option B): первые 6 из /data/products.json. Demo-сборка → no-op.
+	const hydratePopular = () => {
+		hydrateGrid('[data-nt="popular-grid"]', 6);
+	};
+
+	hydratePopular();
+	document.addEventListener("astro:page-load", hydratePopular);
+</script>

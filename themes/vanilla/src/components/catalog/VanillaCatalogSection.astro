@@ -81,7 +81,7 @@ const productCountLabel = pluralizeProducts(totalCount);
 							</button>
 						)
 					}
-					<span class="font-vanilla-arsenal text-base font-normal leading-none text-black">
+					<span class="font-vanilla-arsenal text-base font-normal leading-none text-black" data-nt="catalog-count">
 						{productCountLabel}
 					</span>
 				</div>
@@ -98,4 +98,18 @@ const productCountLabel = pluralizeProducts(totalCount);
 		button.textContent = "Больше товаров нет";
 		button.classList.add("opacity-60", "pointer-events-none");
 	});
+</script>
+
+<script>
+	import { hydrateGrid, updateCount } from "../../lib/storefront-hydrate";
+
+	// Реальные товары (Option B): на published-сайте /data/products.json реальный →
+	// перерисовываем demo-grid и счётчик. На demo-сборке loadRealProducts() вернёт null → no-op.
+	async function hydrateCatalog() {
+		const items = await hydrateGrid('[data-nt="catalog-grid"]');
+		if (items) updateCount('[data-nt="catalog-count"]', items.length);
+	}
+
+	hydrateCatalog();
+	document.addEventListener("astro:page-load", hydrateCatalog);
 </script>

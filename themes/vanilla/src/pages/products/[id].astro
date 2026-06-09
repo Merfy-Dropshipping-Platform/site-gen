@@ -1,9 +1,12 @@
 ---
+/**
+ * Demo-SSG страница товара /products/{id} (bag-N). Реальные товары рендерятся
+ * клиентски на /product?id= (Option B, спек 098). Разметка PDP — общий
+ * `VanillaProductDetail` (parity demo ↔ реальный товар).
+ */
 import Layout from "../../layouts/Layout.astro";
-import ProductGallery from "../../components/products/ProductGallery.astro";
+import VanillaProductDetail from "../../components/products/VanillaProductDetail.astro";
 import VanillaProductCard from "../../components/products/VanillaProductCard.astro";
-import ShareIcon from "../../icons/ShareIcon.astro";
-import { withBase } from "../../lib/with-base";
 import { catalogProducts } from "../../data/products";
 import { ensureProductGallery } from "../../data/imageAssets";
 
@@ -18,116 +21,14 @@ const { product } = Astro.props;
 const galleryImages = ensureProductGallery(
 	product.gallery && product.gallery.length > 0 ? product.gallery : [product.image],
 );
-const categoryLabel = product.collection ?? product.brand ?? "";
+const detailProduct = { ...product, gallery: galleryImages };
 const relatedProducts = catalogProducts
 	.filter((item) => item.id !== product.id && (product.collection ? item.collection === product.collection : true))
 	.slice(0, 3);
 ---
 
 <Layout title={product.name} description={product.description}>
-	<section
-		class="vanilla-pad w-full bg-[var(--vanilla-surface)] py-10 md:py-14 lg:min-h-[712px] lg:py-16"
-		aria-labelledby="product-title"
-	>
-		<div
-			class="mx-auto flex w-full max-w-[1320px] flex-col gap-10 xl:flex-row xl:items-start xl:justify-between xl:gap-8 min-[1536px]:gap-16"
-		>
-			<div class="flex w-full flex-col gap-6 xl:min-w-0 xl:flex-1 xl:gap-8 min-[1536px]:max-w-[628px]">
-				<div class="flex flex-col gap-2">
-					{categoryLabel && (
-						<p class="font-vanilla-arsenal text-sm font-normal leading-none text-[#444444]">{categoryLabel}</p>
-					)}
-					<h1
-						id="product-title"
-						class="font-vanilla-arsenal text-xl font-normal leading-none text-black"
-					>
-						{product.name}
-					</h1>
-					<div class="flex flex-wrap items-baseline gap-3 pt-1">
-						<span class="font-vanilla-arsenal text-base font-normal leading-none text-black">{product.price}</span>
-						{product.oldPrice && (
-							<span class="font-vanilla-arsenal text-sm font-normal leading-none text-[#444444] line-through">
-								{product.oldPrice}
-							</span>
-						)}
-					</div>
-				</div>
-
-				<div class="flex items-center gap-3" data-pdp-qty>
-					<button
-						type="button"
-						class="flex size-6 items-center justify-center bg-[var(--vanilla-header-bg)] transition-opacity hover:opacity-80"
-						aria-label="Уменьшить количество"
-						data-action="qty-dec"
-					>
-						<img src={withBase("/icons/minus.svg")} alt="" width="12" height="12" class="size-3 brightness-0 invert" aria-hidden="true" />
-					</button>
-					<input
-						type="number"
-						min="1"
-						value="1"
-						class="h-6 w-10 bg-transparent text-center font-vanilla-arsenal text-base font-normal leading-none text-black outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-						aria-label="Количество"
-						data-pdp-qty-value
-					/>
-					<button
-						type="button"
-						class="flex size-6 items-center justify-center bg-[var(--vanilla-header-bg)] transition-opacity hover:opacity-80"
-						aria-label="Увеличить количество"
-						data-action="qty-inc"
-					>
-						<img src={withBase("/icons/plus.svg")} alt="" width="12" height="12" class="size-3 brightness-0 invert" aria-hidden="true" />
-					</button>
-				</div>
-
-				<div class="flex w-full max-w-[628px] flex-col gap-3">
-					<button
-						type="button"
-						data-add-to-cart
-						data-product-id={product.id}
-						data-name={product.name}
-						data-price={product.price}
-						data-old-price={product.oldPrice ?? ""}
-						data-image={product.image}
-						data-variant-color={product.colors[0] ?? ""}
-						data-quantity="1"
-						class="flex h-14 w-full items-center justify-center border border-black bg-white px-2.5 font-vanilla-arsenal text-base font-normal leading-none text-black transition-opacity hover:opacity-80"
-					>
-						Добавить в корзину
-					</button>
-					<button
-						type="button"
-						data-action="buy-now"
-						data-product-id={product.id}
-						data-name={product.name}
-						data-price={product.price}
-						data-image={product.image}
-						class="flex h-14 w-full items-center justify-center bg-[var(--vanilla-header-bg)] px-2.5 font-vanilla-arsenal text-base font-normal leading-none text-white transition-opacity hover:opacity-80"
-					>
-						Купить сейчас
-					</button>
-				</div>
-
-				<div class="flex max-w-[628px] flex-col gap-3">
-					<h2 class="font-vanilla-arsenal text-base font-normal leading-none text-black">Описание</h2>
-					<p class="font-vanilla-arsenal text-sm font-normal leading-[1.4] text-[#444444]">{product.description}</p>
-					<button
-						type="button"
-						data-action="share"
-						class="inline-flex w-fit items-center gap-2 pt-1 font-vanilla-arsenal text-sm font-normal leading-none text-black transition-opacity hover:opacity-70"
-						aria-label="Поделиться"
-					>
-						<ShareIcon class="size-4" />
-						<span>Поделиться</span>
-					</button>
-				</div>
-			</div>
-
-			<div class="w-full xl:max-w-[660px] xl:shrink-0">
-				<ProductGallery images={galleryImages} alt={product.name} />
-			</div>
-		</div>
-	</section>
+	<VanillaProductDetail product={detailProduct} />
 
 	<section class="vanilla-pad w-full bg-[var(--vanilla-surface)] pb-16 md:pb-24 lg:pb-28" aria-labelledby="related-title">
 		<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8">
@@ -152,46 +53,3 @@ const relatedProducts = catalogProducts
 		</div>
 	</section>
 </Layout>
-
-<script>
-	const qtyInput = document.querySelector<HTMLInputElement>("[data-pdp-qty-value]");
-	const syncQtyToAddButton = (qty: number) => {
-		document.querySelector<HTMLButtonElement>("[data-add-to-cart]")?.setAttribute("data-quantity", String(qty));
-	};
-
-	document.querySelector<HTMLButtonElement>("[data-action='qty-dec']")?.addEventListener("click", () => {
-		if (!qtyInput) return;
-		const next = Math.max(1, Number(qtyInput.value || 1) - 1);
-		qtyInput.value = String(next);
-		syncQtyToAddButton(next);
-	});
-	document.querySelector<HTMLButtonElement>("[data-action='qty-inc']")?.addEventListener("click", () => {
-		if (!qtyInput) return;
-		const next = Number(qtyInput.value || 1) + 1;
-		qtyInput.value = String(next);
-		syncQtyToAddButton(next);
-	});
-	qtyInput?.addEventListener("input", () => {
-		const value = Math.max(1, Number(qtyInput.value || 1));
-		qtyInput.value = String(value);
-		syncQtyToAddButton(value);
-	});
-
-	document.querySelector<HTMLButtonElement>("[data-action='share']")?.addEventListener("click", async () => {
-		try {
-			if (navigator.share) {
-				await navigator.share({ title: document.title, url: location.href });
-			} else {
-				await navigator.clipboard.writeText(location.href);
-				alert("Ссылка скопирована");
-			}
-		} catch {
-			/* пользователь отменил */
-		}
-	});
-
-	document.querySelector<HTMLButtonElement>("[data-action='buy-now']")?.addEventListener("click", () => {
-		document.querySelector<HTMLElement>("[data-add-to-cart]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-		window.location.href = "/cart";
-	});
-</script>

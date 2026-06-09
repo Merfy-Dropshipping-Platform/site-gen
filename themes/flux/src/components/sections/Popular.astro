@@ -18,12 +18,24 @@ const products = catalogProducts.slice(0, 4);
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-12">
 		<NtSectionHeading titleId="popular-title" title={sectionTitle} subtitle={sectionSubtitle} />
 
-		<ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-4" role="list">
+		<ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-4" role="list" data-nt="popular-grid">
 			{products.map((product) => (
-				<li>
+				<li data-product-id={product.id}>
 					<FluxProductCard product={product} />
 				</li>
 			))}
 		</ul>
 	</div>
 </section>
+
+<script>
+	import { hydrateGrid } from "../../lib/storefront-hydrate";
+
+	// Реальные товары (Option B): первые 4 из /data/products.json. Demo-сборка → no-op.
+	const hydratePopular = () => {
+		hydrateGrid('[data-nt="popular-grid"]', 4);
+	};
+
+	hydratePopular();
+	document.addEventListener("astro:page-load", hydratePopular);
+</script>

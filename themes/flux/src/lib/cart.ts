@@ -1,11 +1,14 @@
 /**
- * Корзина Flux — обёртка над {@link createNtCart} из New-Themes DS.
+ * Корзина Flux — обёртка над локальной копией {@link createNtCart}
+ * (`nt-cart-flux.ts`): WebP-превью в drawer + `variantCombinationId` в линии
+ * (нужен для backend cart → order_items, спек 098). Пакетный DS `nt-cart`
+ * этого поля не имеет, поэтому используем локальную копию.
  */
 import {
 	createNtCart,
 	type NtCartLine,
 	type NtCartLineVariant,
-} from "@merfy-dropshipping-platform/design-systems-theme/lib/nt-cart";
+} from "./nt-cart-flux";
 
 const api = createNtCart({
 	storageKey: "flux:cart:v1",

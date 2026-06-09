@@ -234,6 +234,33 @@ export async function rewriteAbsoluteUrls(
   await rewriteTree(previewDir, re, replacement);
 }
 
+/**
+ * Переписывает root-relative URL в HTML, НО оставляет тела <script> нетронутыми —
+ * переписать JS = сломать regex-литералы/пути → runtime-ошибки (вся интерактивность
+ * превью падает). Открывающий тег <script src="/..."> переписывается (атрибут src),
+ * тело скрипта — verbatim.
+ */
+function rewriteHtmlPreservingScripts(
+  content: string,
+  re: RegExp,
+  replacement: string,
+): string {
+  let result = "";
+  let last = 0;
+  const scriptRe = /<script\b[^>]*>[\s\S]*?<\/script>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = scriptRe.exec(content)) !== null) {
+    result += content.slice(last, m.index).replace(re, replacement);
+    const block = m[0];
+    const openEnd = block.indexOf(">") + 1;
+    // Только открывающий тег (src=…) переписываем; JS-тело + </script> — verbatim.
+    result += block.slice(0, openEnd).replace(re, replacement) + block.slice(openEnd);
+    last = m.index + block.length;
+  }
+  result += content.slice(last).replace(re, replacement);
+  return result;
+}
+
 async function rewriteTree(
   dir: string,
   re: RegExp,
@@ -246,7 +273,13 @@ async function rewriteTree(
       if (e.isDirectory()) return rewriteTree(full, re, replacement);
       if (!/\.(html|css)$/i.test(e.name)) return;
       const content = await fs.readFile(full, "utf-8");
-      const next = content.replace(re, replacement);
+      // HTML: переписываем разметку/атрибуты, но НЕ тела <script> — иначе regex-литералы
+      // и пути внутри inline-скриптов корраптятся (`(/[&<>"']/g` → `(/__theme/rose/[&<>"']/g`
+      // → "Invalid regular expression flags" + "__theme is not defined") и ВЕСЬ interactive
+      // JS превью падает (checkout DaData/варианты не инициализируются). CSS — как есть.
+      const next = /\.html$/i.test(e.name)
+        ? rewriteHtmlPreservingScripts(content, re, replacement)
+        : content.replace(re, replacement);
       if (next !== content) await fs.writeFile(full, next, "utf-8");
     }),
   );

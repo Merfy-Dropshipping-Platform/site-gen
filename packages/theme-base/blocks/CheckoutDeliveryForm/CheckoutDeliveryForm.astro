@@ -132,9 +132,14 @@ const paddingStyle = padding
 </section>
 
 <script is:inline>
-  (function () {
+  function initCheckoutDelivery() {
     var section = document.querySelector('[data-checkout-delivery]');
-    if (!section) return;
+    // Идемпотентность + устойчивость к тому, что inline-скрипт может выполниться
+    // ДО появления формы в DOM (конструктор-превью: секции рендерятся позже) или
+    // форма пере-рендерится (ViewTransitions). Без этого DaData/варианты не
+    // привязывались в превью (early-return, listener не вешался).
+    if (!section || section.__merfyDeliveryInit) return;
+    section.__merfyDeliveryInit = true;
 
     var ITEM_CLS = 'block w-full text-left px-3 py-2 cursor-pointer hover:bg-[rgb(var(--color-input-bg))] [font-family:var(--font-body)] text-[length:var(--size-body)] text-[rgb(var(--color-text))]';
 
@@ -548,5 +553,14 @@ const paddingStyle = padding
 
     setupDadata('city');
     setupDadata('address');
-  })();
+  }
+
+  // Запускаем сразу + на готовность DOM + на astro:page-load (ViewTransitions /
+  // конструктор-превью, где форма появляется/пере-рендерится после parse).
+  // section.__merfyDeliveryInit гарантирует один реальный init на форму.
+  initCheckoutDelivery();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCheckoutDelivery);
+  }
+  document.addEventListener('astro:page-load', initCheckoutDelivery);
 </script>

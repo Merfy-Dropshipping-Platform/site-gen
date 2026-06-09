@@ -1,11 +1,13 @@
 /**
- * Корзина Satin — обёртка над {@link createNtCart} из New-Themes DS.
+ * Корзина Satin — локальная реализация {@link createNtCart} (`nt-cart-satin.ts`),
+ * превью строк с WebP в drawer, поддержка `variantCombinationId` и совместимость
+ * API с DS.
  */
 import {
 	createNtCart,
 	type NtCartLine,
 	type NtCartLineVariant,
-} from "@merfy-dropshipping-platform/design-systems-theme/lib/nt-cart";
+} from "./nt-cart-satin";
 
 const api = createNtCart({
 	storageKey: "satin:cart:v1",

@@ -18,9 +18,9 @@ const {
 
 <section class="satin-pad w-full bg-white py-10 md:py-14" aria-label="Товары Satin">
 	<div class="satin-container flex flex-col gap-8">
-		<ul class="grid grid-cols-1 gap-4 sm:grid-cols-3" role="list">
+		<ul class="grid grid-cols-1 gap-4 sm:grid-cols-3" role="list" data-nt="popular-grid">
 			{products.map((product) => (
-				<li><SatinProductCard product={product} /></li>
+				<li data-product-id={product.id}><SatinProductCard product={product} /></li>
 			))}
 		</ul>
 		<a href={moreHref} class="satin-button satin-button-md satin-button-light w-fit">
@@ -28,3 +28,15 @@ const {
 		</a>
 	</div>
 </section>
+
+<script>
+	import { hydrateGrid } from "../../lib/storefront-hydrate";
+
+	// Реальные товары (Option B): первые 4 из /data/products.json. Demo-сборка → no-op.
+	const hydratePopular = () => {
+		hydrateGrid('[data-nt="popular-grid"]', 4);
+	};
+
+	hydratePopular();
+	document.addEventListener("astro:page-load", hydratePopular);
+</script>

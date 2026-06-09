@@ -176,7 +176,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
 				if (cs && lines.length) {
 					try {
 						cs.clear();
-						for (const l of lines) await cs.addItem(l.productId, null, l.quantity);
+						for (const l of lines) await cs.addItem(l.productId, l.variant?.variantCombinationId ?? null, l.quantity);
 					} catch (e) {}
 				}
 				window.location.href = "/checkout"; // full load = VT-safe (checkout-скрипты стартуют свежими)

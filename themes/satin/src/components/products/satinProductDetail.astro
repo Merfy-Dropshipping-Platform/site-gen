@@ -1,0 +1,282 @@
+---
+/**
+ * Разметка страницы товара (PDP) — общий компонент для demo-SSG `[id].astro`
+ * и клиентски-гидрируемой `/product?id=` (Option B, спек 098). Единый источник
+ * разметки → parity demo ↔ реальный товар (никаких дублей).
+ *
+ * `data-pdp-*` хуки — точки клиентского патча в `/product?id=` (имя, цена,
+ * картинка, описание, атрибуты корзины, варианты). На demo-странице патча нет —
+ * рендерится как было.
+ */
+import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+import SatinPicture from "../img/SatinPicture.astro";
+import type { CatalogProduct } from "../../data/products";
+
+interface Props {
+	product: CatalogProduct;
+}
+
+const { product } = Astro.props;
+
+const colorLabels: Record<string, string> = {
+	blue: "Синий",
+	black: "Чёрный",
+	gray: "Серый",
+	brown: "Коричневый",
+	white: "Белый",
+	beige: "Бежевый",
+};
+
+const colors = (product.colors ?? []).map((color) => ({
+	id: color,
+	label: colorLabels[color] ?? color,
+}));
+
+const galleryImages = (product.gallery && product.gallery.length > 0 ? product.gallery : [product.image]).slice(0, 4);
+const single = galleryImages.length === 1;
+const cartVariantColor = product.colors?.[0] ?? "";
+---
+
+<section
+	class="satin-pad w-full bg-white py-10 md:py-16"
+	aria-labelledby="product-title"
+	data-pdp-section
+	data-cart-color={cartVariantColor}
+>
+	<div class="satin-container grid grid-cols-1 gap-10 lg:grid-cols-[652px_minmax(0,1fr)] lg:gap-10">
+		<!-- Gallery: 2×2 portrait grid -->
+		<div class="grid grid-cols-2 gap-4" data-pdp-gallery>
+			{galleryImages.map((img, index) => (
+				<div
+					class:list={["relative aspect-[318/470] w-full overflow-hidden bg-[#F5F5F5]", single && "col-span-2"]}
+					data-pdp-gallery-cell={index === 0 ? "main" : "extra"}
+				>
+					<SatinPicture
+						src={img}
+						alt={product.name}
+						loading="eager"
+						fetchpriority={index === 0 ? "high" : undefined}
+						class="absolute inset-0 size-full object-cover"
+						{...(index === 0 ? { "data-pdp-main": true } : {})}
+					/>
+					{product.discount && index === 0 && (
+						<span class="absolute left-0 top-0 inline-flex h-5 items-center bg-[#000000] px-2 font-manrope text-[9px] font-normal uppercase leading-none text-white" data-pdp-badge>
+							Скидка
+						</span>
+					)}
+				</div>
+			))}
+		</div>
+
+		<!-- Info -->
+		<div class="flex flex-col gap-6 lg:sticky lg:top-24 lg:self-start">
+			<div class="flex flex-col gap-3">
+				<h1 id="product-title" class="font-logo text-[22px] font-normal uppercase leading-[1.1] text-[#000000] md:text-[28px]" data-pdp-name>
+					{product.name}
+				</h1>
+				<div class="flex flex-wrap items-baseline gap-2">
+					<span class="font-manrope text-[20px] font-normal leading-normal text-[#000000]" data-pdp-price>{product.price}</span>
+					<span
+						class="font-manrope text-[16px] font-light leading-normal text-[#999999] line-through"
+						data-pdp-oldprice
+						hidden={!product.oldPrice}
+					>
+						{product.oldPrice}
+					</span>
+				</div>
+			</div>
+
+			<div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Цвет" data-pdp-variants data-pdp-colors hidden={colors.length === 0}>
+				{colors.map((color, index) => (
+					<button
+						type="button"
+						role="radio"
+						aria-checked={index === 0 ? "true" : "false"}
+						data-id={color.id}
+						class:list={[
+							"inline-flex h-10 shrink-0 items-center justify-center border border-[#000000] px-3 font-manrope text-[14px] font-normal leading-none transition-colors",
+							index === 0 ? "bg-[#000000] text-white" : "bg-white text-[#000000]",
+						]}
+					>
+						{color.label}
+					</button>
+				))}
+			</div>
+
+			<div class="flex flex-col gap-3">
+				<div class="flex gap-3">
+					<button
+						type="button"
+						data-add-to-cart
+						data-product-id={product.id}
+						data-name={product.name}
+						data-price={product.price}
+						data-old-price={product.oldPrice ?? ""}
+						data-image={product.image}
+						data-variant-color={cartVariantColor}
+						data-quantity="1"
+						class="flex h-14 flex-1 items-center justify-center border border-[#000000] bg-white px-4 font-manrope text-[16px] font-normal uppercase leading-none text-[#000000] transition-opacity hover:opacity-80"
+					>
+						Добавить в корзину
+					</button>
+					<div class="flex h-14 w-[120px] shrink-0 items-center justify-between border border-[#DDDDDD] px-2" data-pdp-qty>
+						<button type="button" class="flex size-10 items-center justify-center transition-opacity hover:opacity-70" aria-label="Уменьшить количество" data-action="qty-dec">
+							<NtIcon name="minus" sizeClass="size-6" />
+						</button>
+						<input
+							type="number"
+							min="1"
+							value="1"
+							class="h-10 w-8 bg-transparent text-center font-manrope text-[14px] font-normal leading-normal text-[#000000] outline-none"
+							aria-label="Количество"
+							data-pdp-qty-value
+						/>
+						<button type="button" class="flex size-10 items-center justify-center transition-opacity hover:opacity-70" aria-label="Увеличить количество" data-action="qty-inc">
+							<NtIcon name="plus" sizeClass="size-6" />
+						</button>
+					</div>
+				</div>
+				<button
+					type="button"
+					data-action="buy-now"
+					data-product-id={product.id}
+					data-name={product.name}
+					data-price={product.price}
+					data-image={product.image}
+					class="flex h-14 w-full items-center justify-center bg-[#000000] px-4 font-manrope text-[16px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-90"
+				>
+					Купить сейчас
+				</button>
+			</div>
+
+			<div class="flex flex-col gap-3 border-t border-[#DDDDDD] pt-6">
+				<h2 class="font-logo text-[18px] font-normal uppercase leading-normal text-[#000000] md:text-[20px]">Описание</h2>
+				<p class="font-manrope text-[16px] font-light leading-[1.55] text-[#999999]" data-pdp-desc>{product.description}</p>
+			</div>
+
+			<button type="button" data-action="share" class="inline-flex w-fit items-center gap-2 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-70" aria-label="Поделиться">
+				<NtIcon name="share" sizeClass="size-6" />
+				<span>Поделиться</span>
+			</button>
+		</div>
+	</div>
+</section>
+
+<script>
+	import { addToCart } from "../../lib/cart";
+
+	/**
+	 * View Transitions подменяют <main> без полной перезагрузки — обработчики вешаем
+	 * на astro:page-load и снимаем через AbortController при уходе со страницы товара.
+	 */
+	let pdpUiAbort: AbortController | null = null;
+
+	const syncQtyToAddButton = (qty: number) => {
+		document.querySelector<HTMLButtonElement>("[data-add-to-cart]")?.setAttribute("data-quantity", String(qty));
+	};
+
+	function initSatinProductPage() {
+		pdpUiAbort?.abort();
+		pdpUiAbort = null;
+
+		const section = document.querySelector<HTMLElement>("[data-pdp-section]");
+		if (!section) return;
+
+		pdpUiAbort = new AbortController();
+		const { signal } = pdpUiAbort;
+
+		const qtyInput = section.querySelector<HTMLInputElement>("[data-pdp-qty-value]");
+		section.querySelector<HTMLButtonElement>("[data-action='qty-dec']")?.addEventListener(
+			"click",
+			() => {
+				if (!qtyInput) return;
+				const next = Math.max(1, Number(qtyInput.value || 1) - 1);
+				qtyInput.value = String(next);
+				syncQtyToAddButton(next);
+			},
+			{ signal }
+		);
+		section.querySelector<HTMLButtonElement>("[data-action='qty-inc']")?.addEventListener(
+			"click",
+			() => {
+				if (!qtyInput) return;
+				const next = Number(qtyInput.value || 1) + 1;
+				qtyInput.value = String(next);
+				syncQtyToAddButton(next);
+			},
+			{ signal }
+		);
+		qtyInput?.addEventListener(
+			"input",
+			() => {
+				const value = Math.max(1, Number(qtyInput.value || 1));
+				qtyInput.value = String(value);
+				syncQtyToAddButton(value);
+			},
+			{ signal }
+		);
+
+		// Demo color variants: active = solid black, inactive = white with black border.
+		// На реальном товаре (/product?id=) этот блок заменяется вариант-селектором —
+		// его кнопки несут data-variant-value (не data-id) и сюда не попадают.
+		const colorGroup = section.querySelector<HTMLElement>("[data-pdp-colors]");
+		const colorButtons = Array.from(colorGroup?.querySelectorAll<HTMLButtonElement>("button[role='radio'][data-id]") ?? []);
+		const selectColor = (active: HTMLButtonElement) => {
+			colorButtons.forEach((btn) => {
+				const isActive = btn === active;
+				btn.setAttribute("aria-checked", String(isActive));
+				btn.classList.toggle("bg-[#000000]", isActive);
+				btn.classList.toggle("text-white", isActive);
+				btn.classList.toggle("bg-white", !isActive);
+				btn.classList.toggle("text-[#000000]", !isActive);
+			});
+			section.querySelector<HTMLElement>("[data-add-to-cart]")?.setAttribute("data-variant-color", active.dataset.id ?? "");
+		};
+		colorButtons.forEach((btn) => btn.addEventListener("click", () => selectColor(btn), { signal }));
+
+		section.querySelector<HTMLButtonElement>("[data-action='share']")?.addEventListener(
+			"click",
+			async () => {
+				try {
+					if (navigator.share) {
+						await navigator.share({ title: document.title, url: location.href });
+					} else {
+						await navigator.clipboard.writeText(location.href);
+						alert("Ссылка скопирована");
+					}
+				} catch {
+					/* пользователь отменил */
+				}
+			},
+			{ signal }
+		);
+
+		// "Купить сейчас": add to cart directly (no `:open` event → no drawer) then go to /cart.
+		section.querySelector<HTMLButtonElement>("[data-action='buy-now']")?.addEventListener(
+			"click",
+			() => {
+				const add = section.querySelector<HTMLElement>("[data-add-to-cart]");
+				if (add) {
+					addToCart({
+						productId: add.dataset.productId ?? "",
+						name: add.dataset.name ?? "",
+						price: add.dataset.price ?? "0",
+						oldPrice: add.dataset.oldPrice,
+						image: add.dataset.image ?? "",
+						quantity: Number(add.dataset.quantity ?? "1"),
+						variant: {
+							color: add.dataset.variantColor || undefined,
+							size: add.dataset.variantSize || undefined,
+							variantCombinationId: add.dataset.variantCombinationId || undefined,
+						},
+					});
+				}
+				window.location.href = "/cart";
+			},
+			{ signal }
+		);
+	}
+
+	initSatinProductPage();
+	document.addEventListener("astro:page-load", initSatinProductPage);
+</script>

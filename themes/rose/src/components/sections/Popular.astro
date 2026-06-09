@@ -8,7 +8,7 @@ const p = Astro.props as Record<string, any>;
 const id = p.id;
 const sectionTitle = p.heading?.text ?? p.heading ?? "Главные хиты";
 const sectionSubtitle =
-	p.subtitle?.content ?? p.subtitle ?? "Найдите стиль на каждый случай — коллекции, которые помогают выразить себя вне времени и трендов.";
+	p.text?.content ?? p.subtitle?.content ?? p.subtitle ?? "Найдите стиль на каждый случай — коллекции, которые помогают выразить себя вне времени и трендов.";
 
 const products = catalogProducts.slice(0, 4);
 ---

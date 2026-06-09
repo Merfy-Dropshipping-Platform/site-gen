@@ -5,5 +5,6 @@
   "Collections": "src/components/sections/Collections.astro",
   "PopularProducts": "src/components/sections/Popular.astro",
   "Gallery": "src/components/sections/Gallery.astro",
-  "Footer": "src/components/Footer.astro"
+  "Footer": "src/components/Footer.astro",
+  "ContactForm": "src/components/sections/Contacts.astro"
 }

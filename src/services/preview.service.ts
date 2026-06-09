@@ -1,5 +1,6 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { rewriteHtmlAssets } from '../themes/asset-resolver';
+import { composeV2Page } from '../themes/v2-page-composer';
 
 const HTML_ESCAPE_MAP: Record<string, string> = {
   '&': '&amp;',
@@ -377,7 +378,7 @@ export class PreviewService {
 
     // Theme-key candidates: id as-is, then base name without version suffix.
     // Order matters — exact match wins over the stripped fallback.
-    const baseKey = templateId.replace(/[-@].*$/, '');
+    const baseKey = PreviewService.bareThemeKey(templateId);
     const keyCandidates =
       baseKey && baseKey !== templateId ? [templateId, baseKey] : [templateId];
 
@@ -409,6 +410,80 @@ export class PreviewService {
   // negative result (file absent) so we don't re-stat on every preview load.
   private static readonly _builtThemeHtmlCache = new Map<string, string>();
 
+  /** Кэш per-themeKey: есть ли скомпилированные v2-секции (manifest.json). */
+  private static readonly _v2SectionsCache = new Map<string, boolean>();
+
+  /** Bare-ключ темы как в tryLoadBuiltThemeHtml: 'rose-1.0' → 'rose'. */
+  static bareThemeKey(templateId: string): string {
+    return templateId.replace(/[-@].*$/, '');
+  }
+
+  async hasV2Sections(templateId: string | null | undefined): Promise<boolean> {
+    if (!templateId) return false;
+    const key = PreviewService.bareThemeKey(templateId);
+    const cached = PreviewService._v2SectionsCache.get(key);
+    if (cached !== undefined) return cached;
+    const { access } = await import('node:fs/promises');
+    const { resolve } = await import('node:path');
+    const candidates = [
+      resolve(__dirname, '..', '..', 'theme-sections', key, 'manifest.json'),
+      resolve(process.cwd(), 'dist', 'theme-sections', key, 'manifest.json'),
+    ];
+    let found = false;
+    for (const p of candidates) {
+      try {
+        await access(p);
+        found = true;
+        break;
+      } catch {
+        /* next */
+      }
+    }
+    PreviewService._v2SectionsCache.set(key, found);
+    return found;
+  }
+
+  /**
+   * Фаза 2: контентная страница v2-темы = шелл собранной страницы темы
+   * + Container-рендер блоков ревизии + iframe-агент конструктора.
+   * Возвращает null, если шелл не найден/не распознан — зовущий фоллбечит
+   * на существующий блоб-путь 1:1.
+   */
+  async renderV2ContentPage(input: {
+    themeId: string;
+    route: string;
+    blocks: Array<{ type: string; props: Record<string, unknown> }>;
+    titleOverride?: string;
+  }): Promise<string | null> {
+    const shellHtml =
+      (await this.tryLoadBuiltThemeHtml(input.themeId, input.route)) ??
+      (await this.tryLoadBuiltThemeHtml(input.themeId, ''));
+    if (!shellHtml) return null;
+    const blocksHtml = await Promise.all(
+      input.blocks.map((b) =>
+        this.renderBlock({ blockName: b.type, props: b.props, themeId: input.themeId }),
+      ),
+    );
+    const composed = composeV2Page({
+      shellHtml,
+      blocksHtml,
+      blockTypes: input.blocks.map((b) => b.type),
+      assetPrefix: `/__theme/${PreviewService.bareThemeKey(input.themeId)}`,
+      titleOverride: input.titleOverride,
+    });
+    if (composed === null) return null;
+    // Агент конструктора (select/hot-replace/postMessage) — то, чего
+    // блоб-пути не хватало для выделения секций. Вставка по ПОСЛЕДНЕМУ
+    // </body>: литерал внутри инлайн-скрипта хвоста не должен поймать агента.
+    const bodyClose = composed.lastIndexOf('</body>');
+    if (bodyClose === -1) return null;
+    return (
+      composed.slice(0, bodyClose) +
+      `<script>${PREVIEW_NAV_AGENT_INLINE}</script>` +
+      composed.slice(bodyClose)
+    );
+  }
+
   /**
    * Constructor v2 (Phase 1, Task 3) — resolve the product page's preview route.
    *
@@ -431,7 +506,7 @@ export class PreviewService {
     const { readdir } = await import('node:fs/promises');
     const { resolve } = await import('node:path');
 
-    const baseKey = templateId.replace(/[-@].*$/, '');
+    const baseKey = PreviewService.bareThemeKey(templateId);
     const keyCandidates =
       baseKey && baseKey !== templateId ? [templateId, baseKey] : [templateId];
 

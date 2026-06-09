@@ -22,6 +22,7 @@ import { getPageResolver } from '../themes/page-resolver-instance';
 import { buildTokensCss } from '../themes/tokens-css';
 import { extractPageBlocks } from '../themes/page-blocks';
 import { migrateRevisionData } from '../utils/revision-migrations';
+import { rewriteRootUrlsToPrefix } from '../generator/theme-build.service';
 
 /**
  * Canonical system page id → build route. Universal across themes (the 8 system
@@ -39,6 +40,12 @@ const SYSTEM_PAGE_ROUTES: Record<string, string> = {
   'page-product': 'product',
   'page-checkout': 'checkout',
 };
+
+/** Первые сегменты маршрутов, которые в Фазе 2 НЕ нарезаются (блоб-путь). */
+const V2_COMPLEX_ROUTE_PREFIXES = new Set([
+  'catalog', 'collection', 'collections', 'product', 'products', 'cart',
+  'checkout', 'auth', 'blog', 'legal', 'account', 'design-system', 'puck-editor',
+]);
 
 /**
  * Body for POST /api/sites/:id/preview/block — single-block hot-render
@@ -210,6 +217,58 @@ export class PreviewController {
       route =
         (await this.preview.firstBuiltProductRoute(loaded.themeId)) ?? 'product';
     }
+
+    // Фаза 2 (слайсинг): контентные страницы v2-темы идут по-секционно,
+    // чтобы конструктор мог выделять/править/таскать секции. Сложные
+    // страницы (catalog/product/cart/checkout/…) остаются на блоб-пути.
+    // Любой сбой v2-ветки ОБЯЗАН деградировать в блоб-путь, не в 500 —
+    // отсюда try/catch-ремень вокруг всей ветки.
+    const isComplexRoute = V2_COMPLEX_ROUTE_PREFIXES.has(route.split('/')[0]);
+    if (!isComplexRoute && (await this.preview.hasV2Sections(loaded.themeId))) {
+      try {
+        const v2Blocks = await extractPageBlocks(
+          loaded.data,
+          page,
+          loaded.publicUrl,
+          loaded.themeId,
+          siteId,
+          productIdOverride,
+          this.logger,
+        );
+        if (v2Blocks && v2Blocks.length > 0) {
+          const pageTitle =
+            typeof match?.name === 'string' ? match.name : undefined;
+          const v2Html = await this.preview.renderV2ContentPage({
+            themeId: loaded.themeId!,
+            route,
+            blocks: v2Blocks,
+            titleOverride: pageTitle,
+          });
+          if (v2Html !== null) {
+            const finalHtml = this.injectPreviewGlobals(v2Html, siteId);
+            this.logger.log(
+              `[preview] v2-sections page site=${siteId} route=${route || '(root)'} blocks=${v2Blocks.length}`,
+            );
+            res
+              .header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+              .header('Pragma', 'no-cache')
+              .header('Expires', '0')
+              .header('X-Preview-Mode', 'v2-sections')
+              .type('text/html')
+              .send(finalHtml);
+            return;
+          }
+        }
+        // блоков/шелла нет → проваливаемся в блоб-путь как раньше (страховка)
+      } catch (err: unknown) {
+        const e = err as Error;
+        this.logger.error(
+          `[preview] v2-sections render failed for site=${siteId} route=${route || '(root)'} — falling back to built theme: ${e?.message ?? e}`,
+          e?.stack,
+        );
+        // фоллбек в блоб-путь ниже
+      }
+    }
     //
     // Strictly gated on file existence: tryLoadBuiltThemeHtml returns null when
     // there's no built page for that route, and we fall through to the legacy
@@ -221,34 +280,12 @@ export class PreviewController {
       route,
     );
     if (builtThemeHtml !== null) {
-      // Инжектим реальный shopId (= siteId) в отдаваемый preview-HTML — зеркалим
-      // патч build.service.ts на деплое (`const shopId = ""` → siteId). Без этого
-      // live-скрипты checkout/корзины (createCart + мост корзина→checkout) работают
-      // с shopId="" и падают, т.е. живой checkout работал бы только на опубликованном
-      // сайте, а не в конструктор-preview. Глобально; no-op на страницах без маркера.
-      let html = builtThemeHtml.replace(
-        /const shopId = "";/g,
-        `const shopId = "${siteId}";`,
-      );
-      // DaData-токен для автокомплита адреса в checkout — зеркалим preview.service.ts
-      // (легаси render-путь инжектит его так же). Build-time инжект работает только для
-      // опубликованных сайтов; v2-built-theme путь должен инжектить токен здесь.
-      const dadataToken = process.env.DADATA_API_KEY;
-      if (dadataToken) {
-        html = html.replace(
-          /<head(\s[^>]*)?>/i,
-          (m) =>
-            `${m}<script>window.__DADATA_TOKEN__ = ${JSON.stringify(dadataToken)};</script>`,
-        );
-      }
-      // SiteId для гидрации реальных товаров в preview: built-theme отдаётся БЕЗ
-      // per-site `/data/products.json` (это build-артефакт), поэтому storefront-hydrate
-      // фолбэчит на `/api/sites/<id>/storefront-data` по этому глобалу — тот же источник,
-      // которым блоки конструктора грузят товары. На live products.json есть → фолбэк не нужен.
-      html = html.replace(
-        /<head(\s[^>]*)?>/i,
-        (m) => `${m}<script>window.__MERFY_SITE_ID__ = ${JSON.stringify(siteId)};</script>`,
-      );
+      // Инжектим реальный shopId (= siteId) + DaData-токен + siteId-глобал в
+      // отдаваемый preview-HTML — зеркалим патч build.service.ts на деплое
+      // (`const shopId = ""` → siteId), токен DaData (как легаси render-путь) и
+      // __MERFY_SITE_ID__ для гидрации товаров (built-theme отдаётся БЕЗ
+      // per-site products.json → storefront-hydrate фолбэчит на storefront-data).
+      const html = this.injectPreviewGlobals(builtThemeHtml, siteId);
       this.logger.log(
         `[preview] v2 served built theme page for site=${siteId} theme=${loaded.themeId} route=${route || '(root)'} (${html.length} bytes)`,
       );
@@ -363,7 +400,7 @@ export class PreviewController {
         ...(body.props ?? {}),
         siteId,
       };
-      const html = await this.preview.renderBlock({
+      let html = await this.preview.renderBlock({
         blockName: body.blockType,
         props: propsWithContext,
         themeId: body.themeId ?? null,
@@ -371,6 +408,15 @@ export class PreviewController {
         // граceful stub визибл при missing/broken (spec 092 Q3 C).
         isPreview: true,
       });
+      // Фаза 2: для v2-тем переписываем корневые URL блока под /__theme/<тема>,
+      // чтобы hot-replaced секция тянула ассеты темы (как composeV2Page при
+      // первичном рендере). На legacy-темах (нет theme-sections) — no-op.
+      if (body.themeId && (await this.preview.hasV2Sections(body.themeId))) {
+        html = rewriteRootUrlsToPrefix(
+          html,
+          `/__theme/${PreviewService.bareThemeKey(body.themeId)}`,
+        );
+      }
       res.type('text/html').send(html);
     } catch (err: unknown) {
       const e = err as Error;
@@ -463,6 +509,23 @@ export class PreviewController {
     themeId: string | null,
   ): string {
     return buildTokensCss(data.themeSettings, themeId);
+  }
+
+  /** Инжекты в HTML превью: shopId, DaData-токен, siteId для гидрации товаров. */
+  private injectPreviewGlobals(htmlIn: string, siteId: string): string {
+    let html = htmlIn.replace(/const shopId = "";/g, `const shopId = "${siteId}";`);
+    const dadataToken = process.env.DADATA_API_KEY;
+    if (dadataToken) {
+      html = html.replace(
+        /<head(\s[^>]*)?>/i,
+        (m) => `${m}<script>window.__DADATA_TOKEN__ = ${JSON.stringify(dadataToken)};</script>`,
+      );
+    }
+    html = html.replace(
+      /<head(\s[^>]*)?>/i,
+      (m) => `${m}<script>window.__MERFY_SITE_ID__ = ${JSON.stringify(siteId)};</script>`,
+    );
+    return html;
   }
 
   private errorPage(message: string): string {

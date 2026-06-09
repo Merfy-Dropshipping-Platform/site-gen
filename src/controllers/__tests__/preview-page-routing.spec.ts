@@ -90,7 +90,18 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     preview: Partial<PreviewService>,
     revision: typeof REVISION = REVISION,
   ) {
-    const ctrl = new PreviewController(preview as PreviewService, {} as never);
+    // Фаза 2: getPreview сначала спрашивает hasV2Sections; эти тесты проверяют
+    // блоб-путь (built-theme), который активен когда v2-секций НЕТ. Дефолтим
+    // false, чтобы форк пропускался и поведение оставалось как до Фазы 2.
+    // Тест, которому нужна v2-ветка, передаёт свой hasV2Sections явно.
+    const withDefaults: Partial<PreviewService> = {
+      hasV2Sections: jest.fn().mockResolvedValue(false),
+      ...preview,
+    };
+    const ctrl = new PreviewController(
+      withDefaults as PreviewService,
+      {} as never,
+    );
     // loadRevisionData is private and hits the DB — stub it on the instance.
     jest
       .spyOn(ctrl as any, 'loadRevisionData')
@@ -355,5 +366,93 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     // Revision slug '/about-us' wins over manifest '/about'.
     expect(tryLoad).toHaveBeenCalledWith('rose', 'about-us');
     expect(tryLoad).not.toHaveBeenCalledWith('rose', 'about');
+  });
+
+  // ——— Фаза 2 (слайсинг): v2-sections форк контентных страниц ———
+
+  it('v2-sections: контентная страница нарезанной темы рендерится по-секционно (блоб не зовётся)', async () => {
+    const tryLoad = jest.fn().mockResolvedValue('<html>BLOB</html>');
+    const renderV2ContentPage = jest
+      .fn()
+      .mockResolvedValue('<html><head></head><body>V2-SECTIONS</body></html>');
+    const ctrl = makeController({
+      hasV2Sections: jest.fn().mockResolvedValue(true),
+      renderV2ContentPage,
+      tryLoadBuiltThemeHtml: tryLoad,
+      firstBuiltProductRoute: jest.fn(),
+    } as any);
+    extractPageBlocksMock.mockResolvedValue([
+      { type: 'Hero', props: { id: 'Hero-1' } },
+    ]);
+    const res = makeRes();
+
+    await ctrl.getPreview('site-1', 'home', undefined, res);
+
+    expect(renderV2ContentPage).toHaveBeenCalledWith(
+      expect.objectContaining({ themeId: 'rose', route: '' }),
+    );
+    expect(tryLoad).not.toHaveBeenCalled();
+    expect(res._headers['X-Preview-Mode']).toBe('v2-sections');
+    // injectPreviewGlobals добавил siteId-глобал в head.
+    expect(String(res._body)).toContain('__MERFY_SITE_ID__');
+    expect(String(res._body)).toContain('V2-SECTIONS');
+  });
+
+  it('v2-sections: null от renderV2ContentPage (нет шелла) → фоллбек в блоб-путь', async () => {
+    const tryLoad = jest.fn().mockResolvedValue('<html><head></head>BLOB</html>');
+    const renderV2ContentPage = jest.fn().mockResolvedValue(null);
+    const ctrl = makeController({
+      hasV2Sections: jest.fn().mockResolvedValue(true),
+      renderV2ContentPage,
+      tryLoadBuiltThemeHtml: tryLoad,
+      firstBuiltProductRoute: jest.fn(),
+    } as any);
+    extractPageBlocksMock.mockResolvedValue([{ type: 'Hero', props: {} }]);
+    const res = makeRes();
+
+    await ctrl.getPreview('site-1', 'home', undefined, res);
+
+    expect(renderV2ContentPage).toHaveBeenCalled();
+    expect(tryLoad).toHaveBeenCalledWith('rose', '');
+    expect(res._headers['X-Preview-Mode']).toBe('v2-built-theme');
+  });
+
+  it('v2-sections: сложный роут (checkout) идёт в обход форка прямо в блоб', async () => {
+    const tryLoad = jest.fn().mockResolvedValue('<html><head></head>CHECKOUT</html>');
+    const renderV2ContentPage = jest.fn();
+    const ctrl = makeController({
+      hasV2Sections: jest.fn().mockResolvedValue(true),
+      renderV2ContentPage,
+      tryLoadBuiltThemeHtml: tryLoad,
+      firstBuiltProductRoute: jest.fn(),
+    } as any);
+    const res = makeRes();
+
+    await ctrl.getPreview('site-1', '/checkout', undefined, res);
+
+    expect(renderV2ContentPage).not.toHaveBeenCalled();
+    expect(tryLoad).toHaveBeenCalledWith('rose', 'checkout');
+    expect(res._headers['X-Preview-Mode']).toBe('v2-built-theme');
+  });
+
+  it('v2-sections: бросок внутри форка деградирует в блоб-путь, не в 500', async () => {
+    const tryLoad = jest.fn().mockResolvedValue('<html><head></head>BLOB</html>');
+    const renderV2ContentPage = jest
+      .fn()
+      .mockRejectedValue(new Error('boom'));
+    const ctrl = makeController({
+      hasV2Sections: jest.fn().mockResolvedValue(true),
+      renderV2ContentPage,
+      tryLoadBuiltThemeHtml: tryLoad,
+      firstBuiltProductRoute: jest.fn(),
+    } as any);
+    extractPageBlocksMock.mockResolvedValue([{ type: 'Hero', props: {} }]);
+    const res = makeRes();
+
+    await ctrl.getPreview('site-1', 'home', undefined, res);
+
+    expect(res._status).toBe(200);
+    expect(res._headers['X-Preview-Mode']).toBe('v2-built-theme');
+    expect(String(res._body)).toContain('BLOB');
   });
 });

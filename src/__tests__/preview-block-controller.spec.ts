@@ -17,6 +17,10 @@ describe('POST /api/sites/:siteId/preview/block', () => {
           provide: PreviewService,
           useValue: {
             renderBlock: jest.fn().mockResolvedValue('<section data-puck-component-id="x">hi</section>'),
+            // Фаза 2: renderBlock endpoint спрашивает hasV2Sections перед
+            // rewrite корневых URL. false → rewrite-ветка пропускается,
+            // HTML блока отдаётся как раньше (1:1).
+            hasV2Sections: jest.fn().mockResolvedValue(false),
           },
         },
         {

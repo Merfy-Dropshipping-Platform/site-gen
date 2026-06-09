@@ -94,9 +94,16 @@ const apiUrl = "https://gateway.merfy.ru/api";
 	</section>
 </Layout>
 
-<script define:vars={{ deleteIconSrc }}>
+<script>
 	import { getCart, getCartTotal, formatCartPrice, updateQuantity, removeFromCart } from "../lib/cart";
 	import { cartLineThumbPictureHtml } from "../lib/cart-thumb-html";
+
+	// deleteIconSrc приходит из inline-скрипта ниже (window.__ROSE_DELETE_ICON__).
+	// Этот <script> бандлится как module (есть import'ы), поэтому define:vars тут
+	// НЕЛЬЗЯ: define:vars делает скрипт inline → "Cannot use import statement
+	// outside a module" → весь cart-render и мост checkout молча не работают.
+	const deleteIconSrc =
+		(window as unknown as { __ROSE_DELETE_ICON__?: string }).__ROSE_DELETE_ICON__ ?? "/icons/delete.svg";
 
 	const VARIANT_COLOR_LABELS: Record<string, string> = {
 		brown: "Коричневый",
@@ -222,11 +229,13 @@ const apiUrl = "https://gateway.merfy.ru/api";
 
 {/* Мост корзины → backend cart: грузим cartStore + конфиг, чтобы «Оформить заказ»
     создал серверную корзину из локальных NtCart-линий (shopId патчится на деплое). */}
-<script is:inline define:vars={{ shopId, apiUrl }}>
+<script is:inline define:vars={{ shopId, apiUrl, deleteIconSrc }}>
 	window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
 		shopId: shopId || "",
 		apiUrl: apiUrl || "https://gateway.merfy.ru/api",
 	};
+	// Глобал для cart-render module-скрипта (он не может define:vars из-за import'ов).
+	window.__ROSE_DELETE_ICON__ = deleteIconSrc;
 </script>
 <script is:inline type="module" src="/scripts/cart-api.js"></script>
 <script is:inline type="module" src="/scripts/cart-store.js"></script>

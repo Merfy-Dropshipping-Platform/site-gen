@@ -1,16 +1,18 @@
 /**
- * Compile v2 theme sections (themes/<theme>/src/components/sections/*.astro) +
- * their import graph (relative .astro/.ts deps + design-system .astro from
- * node_modules) into flat .mjs renderable via Astro Container API.
+ * Compile v2 theme sections + their import graph (relative .astro/.ts deps +
+ * design-system .astro from node_modules) into flat .mjs renderable via
+ * Astro Container API.
  *
- * Output: dist/theme-sections/<theme>/<flatName>.mjs
- * Entry per section: dist/theme-sections/<theme>/section__<Name>.mjs
+ * Source map: themes/<theme>/sections.map.json
+ *   canonical-block-name → relative path to .astro file (any path within theme root)
+ * Output: dist/theme-sections/<theme>/<flatName>.mjs + manifest.json
+ *   manifest.json: { "<canonName>": "<flatName>.mjs" }
  *
  * Generalizes the proven _rose-render-probe approach. Run:
  *   node scripts/compile-theme-sections.mjs <theme>   (default: rose)
  */
 import { transform } from '@astrojs/compiler';
-import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { createRequire } from 'node:module';
@@ -24,7 +26,6 @@ const DS_PREFIX = '@merfy-dropshipping-platform/design-systems-theme/';
 
 const theme = process.argv[2] || 'rose';
 const THEME_ROOT = resolve(SITES, 'themes', theme);
-const SECTIONS_DIR = resolve(THEME_ROOT, 'src/components/sections');
 const OUT = resolve(SITES, 'dist/theme-sections', theme);
 
 // ---- per-file compile (from proven probe) ----
@@ -91,15 +92,33 @@ async function compileFile(abs) {
 }
 
 // ---- run ----
+const mapPath = resolve(THEME_ROOT, 'sections.map.json');
+if (!existsSync(mapPath)) {
+  console.error(`✗ ${theme}: themes/${theme}/sections.map.json not found — theme is not sliced, nothing to compile`);
+  process.exit(1);
+}
+let sectionMap;
+try {
+  sectionMap = JSON.parse(await readFile(mapPath, 'utf-8'));
+} catch {
+  console.error(`✗ ${theme}: themes/${theme}/sections.map.json is not valid JSON`);
+  process.exit(1);
+}
+if (Object.keys(sectionMap).length === 0) {
+  console.error(`✗ ${theme}: sections.map.json is empty — nothing to compile`);
+  process.exit(1);
+}
 await mkdir(OUT, { recursive: true });
-const sectionFiles = (await readdir(SECTIONS_DIR)).filter((f) => f.endsWith('.astro') && f !== 'Puk.astro');
 const manifest = {};
-for (const f of sectionFiles) {
-  const abs = resolve(SECTIONS_DIR, f);
+for (const [canonName, relPath] of Object.entries(sectionMap)) {
+  const abs = resolve(THEME_ROOT, relPath);
+  if (!isFile(abs)) {
+    console.error(`✗ ${theme}: section "${canonName}" → ${relPath} does not exist`);
+    process.exit(1);
+  }
   await compileFile(abs);
-  const name = f.replace('.astro', '');
-  manifest[name] = `${flatName(abs)}.mjs`;
+  manifest[canonName] = `${flatName(abs)}.mjs`;
 }
 await writeFile(resolve(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2));
-console.log(`✓ ${theme}: ${sectionFiles.length} sections, ${compiled.size} files compiled → dist/theme-sections/${theme}/`);
+console.log(`✓ ${theme}: ${Object.keys(manifest).length} sections, ${compiled.size} files compiled → dist/theme-sections/${theme}/`);
 console.log('sections:', Object.keys(manifest).join(', '));

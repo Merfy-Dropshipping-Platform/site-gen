@@ -1,0 +1,8 @@
+{
+  "Header": "src/components/Header.astro",
+  "Hero": "src/components/sections/Hero.astro",
+  "Collections": "src/components/sections/Collections.astro",
+  "PopularProducts": "src/components/sections/Popular.astro",
+  "Gallery": "src/components/sections/Gallery.astro",
+  "Footer": "src/components/Footer.astro"
+}

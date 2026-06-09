@@ -12,10 +12,12 @@
  */
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
+import { ClientProxy } from "@nestjs/microservices";
+import { firstValueFrom, timeout, catchError, of } from "rxjs";
 import { randomUUID } from "crypto";
 import { and, eq, gt, sql, isNull } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { PG_CONNECTION } from "../constants";
+import { COOLIFY_RMQ_SERVICE, PG_CONNECTION } from "../constants";
 import * as schema from "../db/schema";
 import { BuildQueuePublisher } from "../rabbitmq/build-queue.service";
 import {
@@ -39,6 +41,8 @@ export class HealthMonitorService {
     @Inject(PG_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
     private readonly buildQueue: BuildQueuePublisher,
+    @Inject(COOLIFY_RMQ_SERVICE)
+    private readonly coolifyClient: ClientProxy,
   ) {}
 
   @Cron("0 */15 * * * *")
@@ -111,13 +115,20 @@ export class HealthMonitorService {
             break;
           case SiteHealthStatus.Failed:
             summary.failed++;
+            // И сайт, и /health отдают не-200 → контейнер скорее всего exited.
+            // Rebuild льёт артефакт в MinIO, но НЕ поднимает остановленный
+            // контейнер — нужен Coolify restart. (Раньше Failed игнорировался,
+            // поэтому крашнутые сайты висели 503 до ручного вмешательства.)
+            await this.handleUnhealthySite(checkResult, summary, true);
             break;
           case SiteHealthStatus.Timeout:
             summary.timeout++;
+            await this.handleUnhealthySite(checkResult, summary, true);
             break;
           case SiteHealthStatus.Degraded:
             summary.degraded++;
-            await this.handleDegradedSite(checkResult, summary);
+            // nginx жив (/health=200), но контент битый — достаточно rebuild.
+            await this.handleUnhealthySite(checkResult, summary, false);
             break;
         }
       }
@@ -210,9 +221,10 @@ export class HealthMonitorService {
     });
   }
 
-  private async handleDegradedSite(
+  private async handleUnhealthySite(
     check: SiteCheckResult,
     summary: HealthCheckSummary,
+    restartContainer: boolean,
   ): Promise<void> {
     // Grace period: skip if published < 5 min ago
     const site = await this.db
@@ -244,9 +256,56 @@ export class HealthMonitorService {
       return;
     }
 
+    // Упавший контейнер (site+health оба не-200): rebuild только обновляет
+    // артефакт в MinIO, остановленный контейнер он НЕ поднимает. Сначала
+    // Coolify restart, затем rebuild для свежего контента.
+    if (restartContainer) {
+      await this.restartSiteContainer(check);
+    }
+
     // Queue rebuild
     await this.repairSite(check);
     summary.repairsTriggered++;
+  }
+
+  /**
+   * Перезапускает Coolify-контейнер сайта — для упавших/exited контейнеров,
+   * которые rebuild сам по себе не поднимает (rebuild обновляет MinIO, но не
+   * стартует остановленный контейнер). Best-effort: ошибка не срывает цикл.
+   */
+  private async restartSiteContainer(check: SiteCheckResult): Promise<void> {
+    const site = await this.db
+      .select({ coolifyAppUuid: schema.site.coolifyAppUuid })
+      .from(schema.site)
+      .where(eq(schema.site.id, check.siteId))
+      .then((r) => r[0]);
+
+    if (!site?.coolifyAppUuid) {
+      this.logger.warn(
+        `HealthMonitor: no coolifyAppUuid for ${check.storageSlug}, skipping restart`,
+      );
+      return;
+    }
+
+    try {
+      await firstValueFrom(
+        this.coolifyClient
+          .send("coolify.restart_application", { appUuid: site.coolifyAppUuid })
+          .pipe(
+            timeout(30000),
+            catchError((err) =>
+              of({ success: false, message: err?.message || "rpc_timeout" }),
+            ),
+          ),
+      );
+      this.logger.log(
+        `HealthMonitor: restart triggered for ${check.storageSlug} (app ${site.coolifyAppUuid})`,
+      );
+    } catch (err) {
+      this.logger.error(
+        `HealthMonitor: restart failed for ${check.storageSlug}: ${err instanceof Error ? err.message : err}`,
+      );
+    }
   }
 
   private async getRepairAttemptsInWindow(siteId: string): Promise<number> {

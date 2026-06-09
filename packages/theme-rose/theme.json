@@ -102,6 +102,55 @@
     "--gallery-card-price-font-size": "16px"
   },
   "blockDefaults": {
+    "PromoBanner": {
+      "text": "Скидка 10% на общую сумму заказа от 9 000₽",
+      "link": {
+        "text": "Перейти",
+        "href": "/catalog"
+      }
+    },
+    "Hero": {
+      "heading": {
+        "text": "Rose",
+        "size": "large"
+      },
+      "text": {
+        "content": "Там, где классика встречается с характером",
+        "size": "large"
+      },
+      "primaryButton": {
+        "text": "В каталог",
+        "link": {
+          "href": "/catalog"
+        }
+      },
+      "backgroundImage": "/images/Главный_экран.png"
+    },
+    "Collections": {
+      "heading": "Коллекции, которые становятся любимыми",
+      "subtitle": "Вдохновение для каждого дня — актуальные коллекции сумок, созданные, чтобы радовать и удивлять."
+    },
+    "PopularProducts": {
+      "heading": {
+        "text": "Главные хиты"
+      },
+      "text": {
+        "content": "Найдите стиль на каждый случай — коллекции, которые помогают выразить себя вне времени и трендов."
+      }
+    },
+    "Gallery": {
+      "heading": {
+        "text": "Снова в наличии!"
+      },
+      "text": {
+        "content": "Сравнивайте, находите своё — от культовых моделей до свежих решений для особенных моментов"
+      }
+    },
+    "ContactForm": {
+      "heading": {
+        "text": "Контакты"
+      }
+    },
     "Header": {
       "siteTitle": "Rose",
       "logo": "/logo.svg",
@@ -129,6 +178,8 @@
       ]
     },
     "Footer": {
+      "siteTitle": "Rose",
+      "phone": "+7 (000) 000-00-00",
       "variant": "3-col",
       "newsletter": {
         "enabled": true,

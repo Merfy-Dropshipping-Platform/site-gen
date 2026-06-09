@@ -63,6 +63,13 @@ function flatName(abs) {
   return abs.replace(SITES + '/', '').replace(/[^a-zA-Z0-9]/g, '_');
 }
 
+// Vite define-инлайны, которые astro build делает сам, а bare-Node Container — нет.
+// Без этого `import.meta.env.BASE_URL` (themes/*/src/lib/with-base.ts) в рантайме
+// undefined.BASE_URL → TypeError при рендере секции через Container API.
+function inlineViteEnv(code) {
+  return code.split('import.meta.env.BASE_URL').join('"/"');
+}
+
 const compiled = new Set();
 async function compileFile(abs) {
   if (compiled.has(abs)) return;
@@ -75,6 +82,7 @@ async function compileFile(abs) {
   } else {
     code = stripTypes(src);
   }
+  code = inlineViteEnv(code);
   // rewrite compilable imports → flat sibling .mjs, enqueue deps
   const specs = new Set();
   for (const re of [/from\s+["']([^"']+)["']/g, /import\s+["']([^"']+)["']/g]) {

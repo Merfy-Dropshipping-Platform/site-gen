@@ -1,5 +1,4 @@
 ---
-import NtPromoBanner from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtPromoBanner.astro";
 import RoseNtIcon from "./icons/RoseNtIcon.astro";
 import { SITE_TITLE } from "../consts";
 
@@ -9,23 +8,25 @@ interface NavLink {
 	match?: (pathname: string) => boolean;
 }
 
-const nav: NavLink[] = [
+const defaultNav: NavLink[] = [
 	{ label: "Главная", href: "/", match: (p) => p === "/" },
 	{ label: "Каталог", href: "/catalog", match: (p) => p.startsWith("/catalog") || p.startsWith("/products") },
 	{ label: "Контакты", href: "/contacts", match: (p) => p.startsWith("/contacts") },
 ];
 
+// ОЖИВЛЕНИЕ: канон-схема Header (siteTitle, navigationLinks). Тело дословно.
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+const siteTitle = p.siteTitle ?? SITE_TITLE;
+const nav: NavLink[] = Array.isArray(p.navigationLinks) && p.navigationLinks.length > 0
+	? p.navigationLinks.map((l: any) => ({ label: l.label ?? l.text ?? "", href: l.href ?? l.link ?? "/" }))
+	: defaultNav;
+
 const pathname = Astro.url.pathname;
 const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathname === link.href);
 ---
 
-<div class="w-full">
-	<NtPromoBanner
-		text="Скидка 10% на общую сумму заказа от 9 000₽"
-		link="/catalog"
-		linkText="Перейти"
-	/>
-
+<div class="w-full" data-puck-component-id={id}>
 	<div class="overflow-visible bg-white">
 		<header class="relative w-full overflow-visible" data-nt="rose-header">
 			<div>
@@ -50,7 +51,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 						href="/"
 						class="font-comfortaa text-[20px] font-normal uppercase leading-none tracking-normal text-primary hover:opacity-80"
 					>
-						{SITE_TITLE}
+						{siteTitle}
 					</a>
 					<button
 						type="button"
@@ -74,7 +75,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 							href="/"
 							class="shrink-0 font-comfortaa text-[24px] font-normal uppercase leading-none tracking-normal text-[#000000] hover:opacity-90"
 						>
-							{SITE_TITLE}
+							{siteTitle}
 						</a>
 
 						<nav class="flex items-center gap-8 lg:gap-12" aria-label="Основная навигация">

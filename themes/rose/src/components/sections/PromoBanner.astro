@@ -1,0 +1,17 @@
+---
+import NtPromoBanner from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtPromoBanner.astro";
+
+// ОЖИВЛЕНИЕ: канон-схема PromoBanner (theme-base PromoBanner.puckConfig).
+// Поля канона: text, link {text, href}, legacy linkText/linkUrl.
+// Вёрстка = вызов NtPromoBanner дословно из Header.astro верстальщика.
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+const text = p.text ?? "Скидка 10% на общую сумму заказа от 9 000₽";
+const link =
+	p.link?.href ?? p.linkUrl ?? (typeof p.link === "string" ? p.link : undefined) ?? "/catalog";
+const linkText = p.link?.text ?? p.linkText ?? "Перейти";
+---
+
+<div data-puck-component-id={id}>
+	<NtPromoBanner text={text} link={link} linkText={linkText} />
+</div>

@@ -1,4 +1,5 @@
 {
+  "PromoBanner": "src/components/sections/PromoBanner.astro",
   "Header": "src/components/Header.astro",
   "Hero": "src/components/sections/Hero.astro",
   "Collections": "src/components/sections/Collections.astro",

@@ -4,6 +4,7 @@ import RosePicture from "../img/RosePicture.astro";
 
 // ОЖИВЛЕНИЕ: конструкторная схема Gallery (heading/subtitle union). Тело + данные verbatim.
 const p = Astro.props as Record<string, any>;
+const id = p.id;
 const sectionTitle = p.heading?.text ?? p.heading ?? "Снова в наличии!";
 const sectionSubtitle =
 	p.subtitle?.content ?? p.subtitle ?? "Сравнивайте, находите своё — от культовых моделей до свежих решений для особенных моментов";
@@ -13,9 +14,10 @@ const sectionSubtitle =
 	id="gallery"
 	class="w-full bg-white px-4 pb-14 pt-14 sm:px-5 sm:pb-16 sm:pt-16 md:px-10 md:pb-[100px] md:pt-[100px] lg:px-16 lg:pb-[120px] lg:pt-[120px] xl:px-20 xl:pb-[140px] xl:pt-[140px] 2xl:px-[280px]"
 	aria-labelledby="gallery-title"
+	data-puck-component-id={id}
 >
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
-		<div class="gallery-section-heading flex w-full min-w-0 justify-center" data-animate>
+		<div class="gallery-section-heading flex w-full min-w-0 justify-center" data-animate data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">
 			<NtSectionHeading variant="rose" titleId="gallery-title" title={sectionTitle} subtitle={sectionSubtitle} />
 		</div>
 

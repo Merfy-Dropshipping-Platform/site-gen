@@ -6,6 +6,7 @@ import RosePicture from "../img/RosePicture.astro";
 // Hero.puckConfig) и раскладываем по переменным разметки верстальщика. Тело
 // ниже — verbatim. Значения rose = дефолты. Поддержаны flat и nested (Pupa) пропсы.
 const p = Astro.props as Record<string, any>;
+const id = p.id;
 const title = p.heading?.text ?? p.title ?? SITE_TITLE;
 const subtitle =
 	p.text?.content ?? p.subtitle ?? "Там, где классика встречается с характером";
@@ -19,6 +20,7 @@ const backgroundImage = p.backgroundImage ?? p.image?.url ?? "/images/Главн
 <section
 	class="relative w-full overflow-hidden bg-white"
 	aria-labelledby="hero-title"
+	data-puck-component-id={id}
 >
 	<div
 		class="relative w-full min-h-[min(70svh,560px)] sm:min-h-[560px] md:min-h-[420px] lg:min-h-[460px] aspect-[10/15] sm:aspect-[4/5] md:aspect-[4/3] lg:aspect-[16/9] xl:aspect-[2/1] 2xl:aspect-[21/9]"
@@ -39,11 +41,17 @@ const backgroundImage = p.backgroundImage ?? p.image?.url ?? "/images/Главн
 					<h1
 						id="hero-title"
 						class="hero-animate-1 font-comfortaa !text-[20px] !font-normal !leading-none uppercase tracking-normal text-white sm:!text-[28px] md:!text-[36px] lg:!text-[40px]"
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="100"
+						data-puck-subsection-field="heading"
 					>
 						{title}
 					</h1>
 					<p
 						class="hero-animate-2 max-w-xl px-1 font-manrope text-[14px] font-normal leading-none text-white sm:text-[16px] md:text-[18px] lg:text-[20px]"
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="101"
+						data-puck-subsection-field="text"
 					>
 						{subtitle}
 					</p>
@@ -53,6 +61,9 @@ const backgroundImage = p.backgroundImage ?? p.image?.url ?? "/images/Главн
 					<a
 						href={ctaLink}
 						class="inline-flex h-10 min-h-10 w-auto min-w-[120px] items-center justify-center rounded !border-0 !bg-white px-3 py-2.5 font-manrope text-[14px] font-normal leading-none !text-[#000000] transition-opacity hover:opacity-90 sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:rounded-[6px] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]"
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="102"
+						data-puck-subsection-field="primaryButton"
 					>
 						{ctaText}
 					</a>

@@ -5,6 +5,7 @@ import { collections } from "../../data/collections";
 
 // ОЖИВЛЕНИЕ: конструкторная схема Collections (heading/subtitle). Тело + данные verbatim.
 const p = Astro.props as Record<string, any>;
+const id = p.id;
 const sectionTitle = p.heading ?? "Коллекции, которые становятся любимыми";
 const sectionSubtitle =
 	p.subtitle ?? "Вдохновение для каждого дня — актуальные коллекции сумок, созданные, чтобы радовать и удивлять.";
@@ -14,9 +15,10 @@ const sectionSubtitle =
 	id="collections"
 	class="w-full bg-white px-4 pb-14 pt-14 sm:px-5 sm:pb-16 sm:pt-16 md:px-10 md:pb-[100px] md:pt-[100px] lg:px-16 lg:pb-[120px] lg:pt-[120px] xl:px-20 xl:pb-[140px] xl:pt-[140px] 2xl:px-[280px]"
 	aria-labelledby="collections-title"
+	data-puck-component-id={id}
 >
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
-		<div class="flex w-full justify-center md:justify-center" data-animate>
+		<div class="flex w-full justify-center md:justify-center" data-animate data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">
 			<NtSectionHeading variant="rose" titleId="collections-title" title={sectionTitle} subtitle={sectionSubtitle} />
 		</div>
 

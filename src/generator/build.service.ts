@@ -117,17 +117,18 @@ export async function copyThemeV2Dist(
 }
 
 /**
- * Патч `const shopId = ""` → реальный siteId во всех HTML — зеркалит snapshot-путь
- * (build.service.ts:705) и preview.controller. Без этого cart/checkout createCart
- * работает с shopId="" и падает: мост корзина→backend (и combinationId в заказе)
- * не доезжает. themes-v2 путь копирует pre-built dist verbatim (shopId="" из исходника),
- * поэтому патч нужен и здесь. НЕ инжектим products.json: themes-v2 live уже несёт
- * корректный products.json с variantCombinations (snapshot-маппинг беднее — без вариантов).
+ * Патч live-конфига в HTML themes-v2: `const shopId = ""` → siteId и
+ * `const dadataToken = ""` → DADATA_API_KEY. Зеркалит snapshot-путь (build.service:705)
+ * и preview.controller. Без shopId — cart/checkout createCart падает (мост корзина→backend
+ * не доезжает). Без dadataToken — `window.__DADATA_TOKEN__=""` → подсказки адреса DaData
+ * на чекауте не работают. themes-v2 копирует pre-built dist verbatim (оба = "" из исходника),
+ * поэтому патч нужен здесь. НЕ инжектим products.json тут (это отдельно в themes-v2 ветке).
  */
 export async function patchShopIdInDist(
   distDir: string,
   siteId: string,
 ): Promise<number> {
+  const dadataToken = process.env.DADATA_API_KEY ?? "";
   const htmlFiles: string[] = [];
   async function findHtml(dir: string) {
     const entries = await fs.readdir(dir, { withFileTypes: true });
@@ -142,6 +143,12 @@ export async function patchShopIdInDist(
     let html = await fs.readFile(file, "utf8");
     html = html.replace(/const shopId = "";/g, `const shopId = "${siteId}";`);
     html = html.replace(/const shopId = undefined;/g, `const shopId = "${siteId}";`);
+    if (dadataToken) {
+      html = html.replace(
+        /const dadataToken = "";/g,
+        `const dadataToken = ${JSON.stringify(dadataToken)};`,
+      );
+    }
     await fs.writeFile(file, html, "utf8");
   }
   return htmlFiles.length;

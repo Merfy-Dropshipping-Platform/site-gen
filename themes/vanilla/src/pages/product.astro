@@ -84,7 +84,7 @@ const skeleton = {
 		toggle("[data-pdp-brand]", false);
 		toggle("[data-pdp-thumbs-row]", false);
 
-		const oldRaw = formatPrice(p.oldPrice ?? p.compareAtPrice ?? null);
+		const oldRaw = formatPrice(p.oldPrice || p.compareAtPrice || null);
 		const oldEl = section.querySelector<HTMLElement>("[data-pdp-oldprice]");
 		if (oldEl) {
 			oldEl.textContent = oldRaw;
@@ -133,7 +133,7 @@ const skeleton = {
 
 			const applyCombo = () => {
 				const combo = findCombination(combos, selected);
-				const priceVal = combo ? combo.price : p.price;
+				const priceVal = combo && combo.price ? combo.price : p.price;
 				setText("[data-pdp-price]", formatPrice(priceVal));
 				const available = combo ? combo.available !== false && (combo.quantity ?? 1) > 0 : false;
 				for (const sel of ["[data-add-to-cart]", "[data-action='buy-now']"]) {

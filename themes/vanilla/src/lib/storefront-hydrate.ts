@@ -139,7 +139,7 @@ export function renderCardHtml(p: RealProduct): string {
 	const name = escapeHtml(p.name);
 	const image = escapeHtml(productImage(p));
 	const price = escapeHtml(formatPrice(p.price));
-	const oldRaw = formatPrice(p.oldPrice ?? p.compareAtPrice ?? null);
+	const oldRaw = formatPrice(p.oldPrice || p.compareAtPrice || null);
 	const oldPrice = oldRaw
 		? `<span class="font-vanilla-arsenal text-[14px] font-normal leading-none text-[#444444] line-through">${escapeHtml(oldRaw)}</span>`
 		: "";

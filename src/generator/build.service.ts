@@ -110,6 +110,37 @@ export async function copyThemeV2Dist(
   logger.log(`[themes-v2] Copied ${liveDist} → ${ctx.distDir} for site ${ctx.siteId}`);
 }
 
+/**
+ * Патч `const shopId = ""` → реальный siteId во всех HTML — зеркалит snapshot-путь
+ * (build.service.ts:705) и preview.controller. Без этого cart/checkout createCart
+ * работает с shopId="" и падает: мост корзина→backend (и combinationId в заказе)
+ * не доезжает. themes-v2 путь копирует pre-built dist verbatim (shopId="" из исходника),
+ * поэтому патч нужен и здесь. НЕ инжектим products.json: themes-v2 live уже несёт
+ * корректный products.json с variantCombinations (snapshot-маппинг беднее — без вариантов).
+ */
+export async function patchShopIdInDist(
+  distDir: string,
+  siteId: string,
+): Promise<number> {
+  const htmlFiles: string[] = [];
+  async function findHtml(dir: string) {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    for (const e of entries) {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) await findHtml(full);
+      else if (e.name.endsWith(".html")) htmlFiles.push(full);
+    }
+  }
+  await findHtml(distDir);
+  for (const file of htmlFiles) {
+    let html = await fs.readFile(file, "utf8");
+    html = html.replace(/const shopId = "";/g, `const shopId = "${siteId}";`);
+    html = html.replace(/const shopId = undefined;/g, `const shopId = "${siteId}";`);
+    await fs.writeFile(file, html, "utf8");
+  }
+  return htmlFiles.length;
+}
+
 const logger = new Logger("BuildPipeline");
 
 /** Build stages in order */
@@ -901,6 +932,10 @@ export async function runBuildPipeline(
       t = Date.now();
       emitProgress(deps, ctx, "generate", `Deploying themes-v2 build (${bareTheme})`);
       await copyThemeV2Dist(ctx, bareTheme);
+      // Патч shopId (cart/checkout createCart) — themes-v2 копирует dist verbatim
+      // с shopId="" из исходника, snapshot-путь патчит, а здесь раньше пропускалось.
+      const patchedCount = await patchShopIdInDist(ctx.distDir, params.siteId);
+      logger.log(`[themes-v2] Patched shopId in ${patchedCount} HTML files for site ${params.siteId}`);
       time("themes-v2-copy", t);
     } else {
       // === Stage 2: GENERATE ===

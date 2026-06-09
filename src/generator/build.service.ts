@@ -75,7 +75,13 @@ function pickRegistryByTemplateId(
  * Themes whose LIVE publish renders via the themes-v2 build (dist/theme-live/<t>)
  * instead of scaffold-builder + theme-base. Pilot: rose. luna excluded.
  */
-export const MIGRATED_THEMES = new Set<string>(["rose"]);
+export const MIGRATED_THEMES = new Set<string>([
+  "rose",
+  "bloom",
+  "flux",
+  "satin",
+  "vanilla",
+]);
 
 /** Strip a trailing version suffix: "rose-1.0" → "rose". */
 export function bareThemeName(templateId: string): string {
@@ -936,6 +942,21 @@ export async function runBuildPipeline(
       // с shopId="" из исходника, snapshot-путь патчит, а здесь раньше пропускалось.
       const patchedCount = await patchShopIdInDist(ctx.distDir, params.siteId);
       logger.log(`[themes-v2] Patched shopId in ${patchedCount} HTML files for site ${params.siteId}`);
+      // Инжект реального products.json — на статичном nginx-live гидрация читает
+      // /data/products.json (fallback на storefront-data НЕ резолвится: origin сайта
+      // ≠ API). themes-v2 копирует pre-built dist БЕЗ products.json → без этого live
+      // = demo. Пишем rpcData verbatim (богатый shape с variantCombinations — НЕ
+      // бедный snapshot-маппинг, иначе варианты пропадут).
+      const v2Store = await fetchStoreData(deps.productClient, params.tenantId, params.siteId);
+      ctx.storeData = v2Store;
+      if (v2Store.products.length > 0) {
+        const v2ProductsPath = path.join(ctx.distDir, "data", "products.json");
+        await fs.mkdir(path.dirname(v2ProductsPath), { recursive: true });
+        await fs.writeFile(v2ProductsPath, JSON.stringify(v2Store.products, null, 2), "utf8");
+        logger.log(`[themes-v2] Injected ${v2Store.products.length} products into data/products.json for site ${params.siteId}`);
+      } else {
+        logger.warn(`[themes-v2] RPC returned 0 products for site ${params.siteId} — live will show demo`);
+      }
       time("themes-v2-copy", t);
     } else {
       // === Stage 2: GENERATE ===

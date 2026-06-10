@@ -18,7 +18,7 @@ const backgroundImage = p.backgroundImage ?? p.image?.url ?? "/images/Главн
 ---
 
 <section
-	class="relative w-full overflow-hidden bg-white"
+	class="relative w-full overflow-hidden bg-[rgb(var(--color-bg,255_255_255))]"
 	aria-labelledby="hero-title"
 	data-puck-component-id={id}
 >
@@ -40,7 +40,7 @@ const backgroundImage = p.backgroundImage ?? p.image?.url ?? "/images/Главн
 				<div class="flex flex-col items-center gap-2 text-center sm:gap-3 md:gap-4">
 					<h1
 						id="hero-title"
-						class="hero-animate-1 font-comfortaa !text-[20px] !font-normal !leading-none uppercase tracking-normal text-white sm:!text-[28px] md:!text-[36px] lg:!text-[40px]"
+						class="hero-animate-1 font-comfortaa !text-[20px] !font-normal !leading-none uppercase tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:!text-[28px] md:!text-[36px] lg:!text-[length:var(--size-hero-heading,40px)]"
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="100"
 						data-puck-subsection-field="heading"
@@ -48,7 +48,7 @@ const backgroundImage = p.backgroundImage ?? p.image?.url ?? "/images/Главн
 						{title}
 					</h1>
 					<p
-						class="hero-animate-2 max-w-xl px-1 font-manrope text-[14px] font-normal leading-none text-white sm:text-[16px] md:text-[18px] lg:text-[20px]"
+						class="hero-animate-2 max-w-xl px-1 font-manrope text-[14px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))] sm:text-[16px] md:text-[18px] lg:text-[20px]"
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="101"
 						data-puck-subsection-field="text"
@@ -60,7 +60,7 @@ const backgroundImage = p.backgroundImage ?? p.image?.url ?? "/images/Главн
 				<div class="hero-animate-3 flex w-full flex-col items-center justify-center">
 					<a
 						href={ctaLink}
-						class="inline-flex h-10 min-h-10 w-auto min-w-[120px] items-center justify-center rounded !border-0 !bg-white px-3 py-2.5 font-manrope text-[14px] font-normal leading-none !text-[#000000] transition-opacity hover:opacity-90 sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:rounded-[6px] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]"
+						class="inline-flex h-10 min-h-10 w-auto min-w-[120px] items-center justify-center rounded !border-0 !bg-[rgb(var(--color-button-2-bg,255_255_255))] px-3 py-2.5 font-manrope text-[14px] font-normal leading-none !text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity hover:opacity-90 sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:rounded-[var(--radius-button,6px)] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]"
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="102"
 						data-puck-subsection-field="primaryButton"

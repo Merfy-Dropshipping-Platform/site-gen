@@ -4,6 +4,7 @@ import {
   type ContainerFactory,
   type ComponentResolver,
 } from '../preview.service';
+import { adaptLegacyProps } from '../../themes/page-blocks';
 
 /**
  * Minimal stub container and resolver — тесты resolveBlockScheme не рендерят HTML.
@@ -42,5 +43,22 @@ describe('PreviewService.resolveBlockScheme', () => {
   it('Gallery в rose не имеет colorScheme в blockDefaults → null', async () => {
     const result = await svc.resolveBlockScheme('Gallery', {}, 'rose');
     expect(result).toBeNull();
+  });
+
+  // --- Тесты потока: seed-пропсы проходят через adaptLegacyProps → resolveBlockScheme ---
+
+  it('seed-пропсы Hero после adaptLegacyProps получают схему из blockDefaults (поток)', async () => {
+    // Hero без colorScheme — адаптер не должен впрыснуть fallback '1'
+    const adapted = adaptLegacyProps({ id: 'Hero-1' }, null, 'Hero');
+    expect(adapted.colorScheme).toBeUndefined(); // адаптер НЕ впрыскивает
+    const scheme = await svc.resolveBlockScheme('Hero', adapted, 'rose');
+    expect(scheme).toBe('4'); // blockDefaults.Hero.colorScheme = 'scheme-4'
+  });
+
+  it('clamp: scheme-5 через adaptLegacyProps нормализуется к 5 (не к fallback 1)', () => {
+    // Проверяем что clamp расширен до 5
+    const adapted = adaptLegacyProps({ colorScheme: 'scheme-5' }, null, 'Hero');
+    // После адаптации colorScheme должен быть 5, а не fallback 1
+    expect(adapted.colorScheme).toBe(5);
   });
 });

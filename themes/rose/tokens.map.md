@@ -160,6 +160,12 @@ Gallery/Contacts/Footer + RoseProductCard/RoseCollectionCard + DS-перекры
   scheme-4 (bg `0 0 0`, heading/text `255 255 255`, btn-bg `255 255 255`, btn-text `0 0 0`) в
   `packages/theme-rose/theme.json` blockDefaults. При ревизии без `colorScheme` в props обёртка
   `.color-scheme-4` ставится автоматически → tokens.css :root scheme-1 не ломает Hero/промо-полосу.
+  ✓ Теперь действительно автоматически: до фикса коэрсер `coerceHeroProps` впрыскивал fallback
+  `1` при отсутствии `colorScheme`, перебивая blockDefaults. Исправлено в `src/themes/page-blocks.ts`
+  (фикс впрыска): все `out.colorScheme = coerceSchemeNumber(out.colorScheme)` заменены на
+  `if (out.colorScheme !== undefined) out.colorScheme = coerceSchemeNumber(out.colorScheme)` для
+  Hero, Header, PopularProducts, ContactForm, ImageWithText, MainText, Footer.
+  Clamp расширен с 1..4 до 1..5 для поддержки scheme-5.
 - **Машина resolveBlockScheme**: `PreviewService.resolveBlockScheme()` (preview.service.ts) —
   публичный метод; props ревизии побеждают, иначе blockDefaults темы. Используется в
   `renderV2ContentPage` и `v2-live-pages.ts::composeContentPagesIntoDist` вместо прямого

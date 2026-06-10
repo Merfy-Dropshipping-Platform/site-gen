@@ -155,7 +155,7 @@ export async function extractPageBlocks(
  * TODO(078 Phase 2): back-fill site_revision rows with a one-off migration,
  * then delete this adapter.
  */
-function adaptLegacyProps(
+export function adaptLegacyProps(
   props: Record<string, unknown>,
   publicUrl: string | null,
   blockType: string,
@@ -292,12 +292,12 @@ function unwrapTextSize(
 }
 
 function coerceSchemeNumber(v: unknown, fallback = 1): number {
-  if (typeof v === 'number' && v >= 1 && v <= 4) return v;
+  if (typeof v === 'number' && v >= 1 && v <= 5) return v;
   if (typeof v === 'string') {
     const m = /^scheme-(\d+)$/.exec(v);
     if (m) {
       const n = Number(m[1]);
-      return n >= 1 && n <= 4 ? n : fallback;
+      return n >= 1 && n <= 5 ? n : fallback;
     }
   }
   return fallback;
@@ -360,7 +360,7 @@ function coerceHeroProps(
     }
     // else: leave undefined for theme manifest or Astro frontmatter default
   }
-  out.colorScheme = coerceSchemeNumber(out.colorScheme);
+  if (out.colorScheme !== undefined) out.colorScheme = coerceSchemeNumber(out.colorScheme);
   if (!out.padding) out.padding = { top: 80, bottom: 80 };
   if (typeof out.title !== 'string') out.title = '';
   if (typeof out.subtitle !== 'string') out.subtitle = '';
@@ -379,8 +379,8 @@ function coerceHeroProps(
 }
 
 function coerceHeaderProps(out: Record<string, unknown>): void {
-  out.colorScheme = coerceSchemeNumber(out.colorScheme);
-  out.menuColorScheme = coerceSchemeNumber(out.menuColorScheme);
+  if (out.colorScheme !== undefined) out.colorScheme = coerceSchemeNumber(out.colorScheme);
+  if (out.menuColorScheme !== undefined) out.menuColorScheme = coerceSchemeNumber(out.menuColorScheme);
   // actionButtons: legacy has "true"/"false" strings, theme-base wants boolean.
   if (isPlainObject(out.actionButtons)) {
     const ab = out.actionButtons as Record<string, unknown>;
@@ -413,7 +413,7 @@ function coercePopularProductsProps(out: Record<string, unknown>): void {
   }
   if (typeof out.cards !== 'number') out.cards = 4;
   if (typeof out.columns !== 'number') out.columns = 4;
-  out.colorScheme = coerceSchemeNumber(out.colorScheme);
+  if (out.colorScheme !== undefined) out.colorScheme = coerceSchemeNumber(out.colorScheme);
   if (!out.padding) out.padding = { top: 80, bottom: 80 };
 }
 
@@ -430,7 +430,7 @@ function coerceContactFormProps(out: Record<string, unknown>): void {
       message: { enabled: true, required: false, label: 'Сообщение' },
     };
   }
-  out.colorScheme = coerceSchemeNumber(out.colorScheme);
+  if (out.colorScheme !== undefined) out.colorScheme = coerceSchemeNumber(out.colorScheme);
   if (!out.padding) out.padding = { top: 80, bottom: 80 };
 }
 
@@ -466,7 +466,7 @@ function coerceImageWithTextProps(
             : '#';
     out.button = { text: String(b.text ?? ''), href };
   }
-  out.colorScheme = coerceSchemeNumber(out.colorScheme);
+  if (out.colorScheme !== undefined) out.colorScheme = coerceSchemeNumber(out.colorScheme);
   // photoPosition: "left"|"right" → imagePosition
   if (!out.imagePosition) {
     const pp = typeof out.photoPosition === 'string' ? out.photoPosition : '';
@@ -482,7 +482,7 @@ function coerceMainTextProps(out: Record<string, unknown>): void {
   const t = unwrapTextSize(out.text);
   if (t.present) out.text = t.value;
   else if (typeof out.text !== 'string') out.text = '';
-  out.colorScheme = coerceSchemeNumber(out.colorScheme);
+  if (out.colorScheme !== undefined) out.colorScheme = coerceSchemeNumber(out.colorScheme);
   if (!out.align) out.align = 'left';
   if (!out.padding) out.padding = { top: 40, bottom: 40 };
 }
@@ -491,8 +491,8 @@ function coerceFooterProps(out: Record<string, unknown>): void {
   // Footer schema expects nested heading/text/newsletter, which is what the
   // legacy data already has. The only mismatches are scalar colour schemes
   // and missing defaults.
-  out.colorScheme = coerceSchemeNumber(out.colorScheme);
-  out.copyrightColorScheme = coerceSchemeNumber(out.copyrightColorScheme);
+  if (out.colorScheme !== undefined) out.colorScheme = coerceSchemeNumber(out.colorScheme);
+  if (out.copyrightColorScheme !== undefined) out.copyrightColorScheme = coerceSchemeNumber(out.copyrightColorScheme);
   if (!isPlainObject(out.heading)) {
     out.heading = { text: '', size: 'small', alignment: 'center' };
   } else {

@@ -4,11 +4,82 @@ import RoseCollectionCard from "../products/RoseCollectionCard.astro";
 import { collections } from "../../data/collections";
 
 // ОЖИВЛЕНИЕ: конструкторная схема Collections (heading/subtitle). Тело + данные verbatim.
+// T13: полная канон-схема (headingSize/subtitleSize/titleAlignment/columns/imageView/
+// collections[]/cardLinkBase/padding). Дефолтные ветки тернарников = прежние строки
+// классов байт-в-байт; канон-дефолты конструктора (medium/small/center/3/square) →
+// пиксель верстальщика (прецедент T11 'center').
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 const sectionTitle = p.heading ?? "Коллекции, которые становятся любимыми";
 const sectionSubtitle =
 	p.subtitle ?? "Вдохновение для каждого дня — актуальные коллекции сумок, созданные, чтобы радовать и удивлять.";
+
+// Канон headingSize: 'medium' (canon-default) и отсутствие = NtSectionHeading
+// верстальщика дословно (20px). small ≈0.85× (17px), large ≈1.2× (24px) — окр. до px.
+// Перекрытие — утилитой на обёртке (внутрь DS-компонента класс не пробрасывается).
+const headingSizeCls =
+	p.headingSize === "small"
+		? " [&_h2]:!text-[17px]"
+		: p.headingSize === "large"
+			? " [&_h2]:!text-[24px]"
+			: "";
+// Канон subtitleSize: 'small' (canon-default) и отсутствие = 16px верстальщика.
+const subtitleSizeCls =
+	p.subtitleSize === "medium"
+		? " [&_p]:!text-[19px]"
+		: p.subtitleSize === "large"
+			? " [&_p]:!text-[23px]"
+			: "";
+// Канон titleAlignment: 'center'/отсутствие = строка верстальщика байт-в-байт.
+const headWrapBase = `flex w-full justify-center md:justify-center${headingSizeCls}${subtitleSizeCls}`;
+const headWrapCls =
+	p.titleAlignment === "left"
+		? `flex w-full justify-start [&_[data-nt=section-heading]]:items-start [&_h2]:!text-left [&_p]:!text-left${headingSizeCls}${subtitleSizeCls}`
+		: p.titleAlignment === "right"
+			? `flex w-full justify-end [&_[data-nt=section-heading]]:items-end [&_h2]:!text-right [&_p]:!text-right${headingSizeCls}${subtitleSizeCls}`
+			: headWrapBase;
+
+// Канон columns 1-6: 3 (canon-default = md:grid-cols-3 верстальщика) и отсутствие →
+// дефолт-ветка; иное значение → inline-var на гриде, действует с lg (md-лестница
+// верстальщика 1→3 сохраняется).
+const colsRaw = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : undefined;
+const cols = colsRaw && colsRaw !== 3 ? colsRaw : undefined;
+// Канон imageView: 'square' (canon-default, поле скрыто в панели) и 'portrait'
+// (== литерал верстальщика 430/500) → дефолт-ветка; 'wide' → 16/9.
+const tileAspectCls = p.imageView === "wide" ? " [&_li>a>div]:aspect-[16/9]" : "";
+const gridBase = "grid grid-cols-1 gap-6 sm:gap-5 md:grid-cols-3 md:gap-5 lg:gap-6";
+const gridCls =
+	(cols ? `${gridBase} lg:grid-cols-[repeat(var(--cols),minmax(0,1fr))]` : gridBase) + tileAspectCls;
+const gridStyle = cols ? `--cols:${cols}` : undefined;
+
+// Канон collections[] (≤10): карточки из пропса при непустом массиве (название/
+// картинка/ссылка по shape схемы; разметка = RoseCollectionCard, плоский <img> как
+// в гидрации; без картинки — surface-плитка как канон-плейсхолдер). Иначе —
+// демо-коллекции верстальщика дословно. Резолва collectionId→имя/картинка у
+// rose-сборки нет (нет collections.json/siteId) — рендерим сохранённые поля item.
+const cardLinkBase =
+	typeof p.cardLinkBase === "string" && p.cardLinkBase.trim() ? p.cardLinkBase : "/catalog?collection=";
+const propCollections = (Array.isArray(p.collections) ? p.collections : [])
+	.filter((c: any) => c && typeof c === "object")
+	.slice(0, 10)
+	.map((c: any) => {
+		const collectionId =
+			typeof c.collectionId === "string" && c.collectionId.trim() ? c.collectionId.trim() : null;
+		return {
+			name:
+				(typeof c.heading === "string" && c.heading) ||
+				(typeof c.name === "string" && c.name) ||
+				"Коллекция",
+			image: typeof c.image === "string" && c.image ? c.image : undefined,
+			href: collectionId ? `${cardLinkBase}${collectionId}` : "#",
+		};
+	});
+const usePropCollections = propCollections.length > 0;
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
 ---
 
 <section
@@ -16,19 +87,47 @@ const sectionSubtitle =
 	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-14 pt-14 sm:px-5 sm:pb-16 sm:pt-16 md:px-10 md:pb-[100px] md:pt-[100px] lg:px-16 lg:pb-[120px] lg:pt-[120px] xl:px-20 xl:pb-[140px] xl:pt-[140px] 2xl:px-[280px]"
 	aria-labelledby="collections-title"
 	data-puck-component-id={id}
+	style={paddingStyle}
 >
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
-		<div class="flex w-full justify-center md:justify-center" data-animate data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">
+		<div class={headWrapCls} data-animate data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">
 			<NtSectionHeading variant="rose" titleId="collections-title" title={sectionTitle} subtitle={sectionSubtitle} />
 		</div>
 
 		<ul
 			data-animate
 			data-animate-delay="0.1s"
-			class="grid grid-cols-1 gap-6 sm:gap-5 md:grid-cols-3 md:gap-5 lg:gap-6"
+			class={gridCls}
 			role="list"
+			style={gridStyle}
 		>
-			{collections.map((collection, index) => (
+			{usePropCollections ? propCollections.map((c, i) => (
+				<li>
+					<a
+						href={c.href}
+						class="group flex w-full cursor-pointer flex-col gap-5"
+						aria-label={c.name}
+						data-nt="rose-collection-card"
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index={i}
+						data-puck-subsection-field="collections"
+					>
+						<div class="aspect-[430/500] w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]" aria-hidden={c.image ? undefined : "true"}>
+							{c.image && (
+								<img
+									src={c.image}
+									alt={c.name}
+									loading="lazy"
+									class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.08]"
+								/>
+							)}
+						</div>
+						<h3 class="rose-collection-name w-full text-left font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity group-hover:opacity-70 max-sm:!text-[12px]">
+							{c.name}
+						</h3>
+					</a>
+				</li>
+			)) : collections.map((collection, index) => (
 				<li>
 					<RoseCollectionCard collection={collection} priority={index < 3} />
 				</li>

@@ -3,11 +3,102 @@ import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/
 import RosePicture from "../img/RosePicture.astro";
 
 // ОЖИВЛЕНИЕ: конструкторная схема Gallery (heading/subtitle union). Тело + данные verbatim.
+// T13: полная канон-схема (items[] ≤3, imagePosition, headingSize, textSize, padding).
+// Дефолтные ветки тернарников = прежние строки байт-в-байт; канон-дефолты
+// конструктора (medium/medium/left) → пиксель верстальщика (прецедент T11 'center').
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 const sectionTitle = p.heading?.text ?? p.heading ?? "Снова в наличии!";
 const sectionSubtitle =
 	p.text?.content ?? p.subtitle?.content ?? p.subtitle ?? "Сравнивайте, находите своё — от культовых моделей до свежих решений для особенных моментов";
+
+// Канон headingSize (top-level приоритетнее legacy heading.size): 'medium'
+// (canon-default) и отсутствие = clamp верстальщика (14px→20px) дословно;
+// small/large масштабируют clamp в манере (≈0.85× / ≈1.2×).
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingSizeCls =
+	headingSize === "small"
+		? " [&_h2]:!text-[length:clamp(12px,3.2vw,17px)]"
+		: headingSize === "large"
+			? " [&_h2]:!text-[length:clamp(17px,4.6vw,24px)]"
+			: "";
+// Канон textSize (top-level приоритетнее legacy text.size): 'medium' (canon-default)
+// и отсутствие = 16px верстальщика; small → 14px, large → 19px.
+const textSize = p.textSize ?? p.text?.size;
+const textSizeCls =
+	textSize === "small"
+		? " [&_p]:!text-[14px]"
+		: textSize === "large"
+			? " [&_p]:!text-[19px]"
+			: "";
+const headWrapCls = `gallery-section-heading flex w-full min-w-0 justify-center${headingSizeCls}${textSizeCls}`;
+
+// Канон imagePosition left/right: 'left' (canon-default) и отсутствие = большая
+// плитка слева (пиксель верстальщика); 'right' → зеркало раскладки на lg
+// (узкая колонка слева, большая плитка справа — через swap grid-template + order).
+const mirror = p.imagePosition === "right";
+const galleryGridCls = mirror
+	? "grid min-h-0 min-w-0 grid-cols-1 gap-6 md:gap-8 lg:grid-cols-[minmax(280px,429px)_minmax(0,1fr)] lg:items-stretch lg:gap-6 xl:gap-8"
+	: "grid min-h-0 min-w-0 grid-cols-1 gap-6 md:gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,429px)] lg:items-stretch lg:gap-6 xl:gap-8";
+const heroTileOrderCls = mirror ? " lg:order-2" : "";
+const sideColOrderCls = mirror ? " lg:order-1" : "";
+
+// Канон items[] (≤3, типы image/product/collection): плитки из пропсов с fallback
+// на три плитки верстальщика ДОСЛОВНО. Резолва productId/collectionId→имя/цена/
+// картинка у rose-сборки нет (нет storefront-данных у секции) — product/collection
+// рендерятся канон-плейсхолдерами («Товар» 2 500 ₽ / «Выбери коллекцию»), как
+// isPlaceholder-ветки канона; image-плитка несёт url/alt мерчанта.
+type GalleryTile = {
+	kind: "image" | "product" | "collection";
+	url: string;
+	alt: string;
+	label: string;
+	price: string;
+	href: string;
+};
+const galleryTiles: GalleryTile[] = (Array.isArray(p.items) ? p.items : [])
+	.filter((x: any) => x && typeof x === "object")
+	.slice(0, 3)
+	.map((it: any): GalleryTile => {
+		if (it.type === "product") {
+			const pid = typeof it.productId === "string" && it.productId ? it.productId : null;
+			return {
+				kind: "product",
+				url: "",
+				alt: "Товар",
+				label: "Товар",
+				price: "2 500 ₽",
+				href: pid ? `/product?id=${encodeURIComponent(pid)}` : "/catalog",
+			};
+		}
+		if (it.type === "collection") {
+			const cid = typeof it.collectionId === "string" && it.collectionId ? it.collectionId : null;
+			return {
+				kind: "collection",
+				url: "",
+				alt: "Коллекция",
+				label: "Выбери коллекцию",
+				price: "",
+				href: cid ? `/catalog?collection=${encodeURIComponent(cid)}` : "/catalog",
+			};
+		}
+		return {
+			kind: "image",
+			url: typeof it.url === "string" ? it.url : "",
+			alt: typeof it.alt === "string" ? it.alt : "",
+			label: "",
+			price: "",
+			href: "/catalog",
+		};
+	});
+const useItems = galleryTiles.length > 0;
+const heroTile = useItems ? galleryTiles[0] : undefined;
+const sideTiles = useItems ? galleryTiles.slice(1) : [];
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
 ---
 
 <section
@@ -15,20 +106,40 @@ const sectionSubtitle =
 	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-14 pt-14 sm:px-5 sm:pb-16 sm:pt-16 md:px-10 md:pb-[100px] md:pt-[100px] lg:px-16 lg:pb-[120px] lg:pt-[120px] xl:px-20 xl:pb-[140px] xl:pt-[140px] 2xl:px-[280px]"
 	aria-labelledby="gallery-title"
 	data-puck-component-id={id}
+	style={paddingStyle}
 >
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
-		<div class="gallery-section-heading flex w-full min-w-0 justify-center" data-animate data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">
+		<div class={headWrapCls} data-animate data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">
 			<NtSectionHeading variant="rose" titleId="gallery-title" title={sectionTitle} subtitle={sectionSubtitle} />
 		</div>
 
 		<div
 			data-animate
 			data-animate-delay="0.1s"
-			class="grid min-h-0 min-w-0 grid-cols-1 gap-6 md:gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,429px)] lg:items-stretch lg:gap-6 xl:gap-8"
+			class={galleryGridCls}
 		>
+			{heroTile ? (
+				<a
+					href={heroTile.href}
+					class={`gallery-hero-tile group relative block min-h-[280px] w-full min-w-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] lg:min-h-0 lg:h-full${heroTileOrderCls}`}
+					aria-label={heroTile.alt || heroTile.label || "Перейти в каталог"}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index={0}
+					data-puck-subsection-field="items"
+				>
+					{heroTile.url && (
+						<img
+							src={heroTile.url}
+							alt={heroTile.alt}
+							loading="eager"
+							class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
+						/>
+					)}
+				</a>
+			) : (
 			<a
 				href="/catalog"
-				class="gallery-hero-tile group relative block min-h-[280px] w-full min-w-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] lg:min-h-0 lg:h-full"
+				class={`gallery-hero-tile group relative block min-h-[280px] w-full min-w-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] lg:min-h-0 lg:h-full${heroTileOrderCls}`}
 				aria-label="Перейти в каталог"
 			>
 				<RosePicture
@@ -40,8 +151,78 @@ const sectionSubtitle =
 					height="875"
 				/>
 			</a>
+			)}
 
-			<div class="flex min-h-0 min-w-0 flex-col gap-6">
+			{useItems ? sideTiles.length > 0 && (
+				<div class={`flex min-h-0 min-w-0 flex-col gap-6${sideColOrderCls}`}>
+					{sideTiles.map((tile, i) =>
+						tile.kind === "collection" ? (
+							<a
+								href={tile.href}
+								class="group flex min-w-0 flex-col items-start gap-4 text-left md:gap-5"
+								aria-label={tile.label || tile.alt}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index={i + 1}
+								data-puck-subsection-field="items"
+							>
+								<div class="aspect-[429/309] w-full min-h-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]" aria-hidden={tile.url ? undefined : "true"}>
+									{tile.url && (
+										<img
+											src={tile.url}
+											alt={tile.alt}
+											loading="eager"
+											class="block size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
+										/>
+									)}
+								</div>
+								{tile.label && (
+									<h3 class="gallery-collection-title font-manrope bg-transparent text-[16px] font-normal leading-[100%] text-black">
+										{tile.label}
+									</h3>
+								)}
+							</a>
+						) : (
+							<a
+								href={tile.href}
+								class="group flex flex-col items-start gap-4 text-left md:gap-5"
+								aria-label={tile.label || tile.alt || "Изображение"}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index={i + 1}
+								data-puck-subsection-field="items"
+							>
+								<div
+									class="gallery-bag-media relative aspect-[429/444] w-full min-h-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] leading-none"
+									aria-hidden={tile.url ? undefined : "true"}
+								>
+									{tile.url && (
+										<img
+											src={tile.url}
+											alt={tile.alt}
+											loading="eager"
+											class="absolute inset-0 size-full max-w-none object-cover object-center transition-transform duration-300 group-hover:scale-110"
+										/>
+									)}
+								</div>
+								{(tile.label || tile.price) && (
+									<div class="flex flex-col gap-[4px] bg-transparent">
+										{tile.label && (
+											<h3 class="gallery-product-title font-manrope text-[16px] font-normal leading-none text-black md:text-[16px] lg:text-[16px] xl:text-[16px]">
+												{tile.label}
+											</h3>
+										)}
+										{tile.price && (
+											<span class="gallery-product-price font-manrope text-[16px] font-normal leading-none text-black md:text-[16px] lg:text-[16px] xl:text-[16px]">
+												{tile.price}
+											</span>
+										)}
+									</div>
+								)}
+							</a>
+						),
+					)}
+				</div>
+			) : (
+			<div class={`flex min-h-0 min-w-0 flex-col gap-6${sideColOrderCls}`}>
 				<a
 					href="/products/bag-1"
 					class="group flex flex-col items-start gap-4 text-left md:gap-5"
@@ -93,6 +274,7 @@ const sectionSubtitle =
 					</h3>
 				</a>
 			</div>
+			)}
 		</div>
 	</div>
 </section>

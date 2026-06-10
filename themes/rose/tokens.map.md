@@ -372,3 +372,156 @@ data-puck-subsection-атрибутах; plain-гейт 6×OK identical).
   '©TEST' строкой ✓ и canon-объект ✓; колонки/соцсети/полоса/padding ✓.
 - Гейты T12: plain 6×OK identical; tokens — contacts/catalog/cart/product OK
   identical, home/checkout = два известных исключения (см. журнал T9-фиксов).
+
+## Журнал T13 (Collections + PopularProducts + Gallery — полная канон-схема)
+
+Принцип T11/T12: новые канон-пропсы дают эффект только при значениях ≠ канон-дефолта;
+дефолтные ветки тернарников = прежние строки байт-в-байт (пруф: render-probe diff
+bare-рендера до/после — identical для всех трёх секций; blockDefaults-рендер == bare
+байт-в-байт). Канон-дефолты конструктора (их пишет defaultPagesData в свежие блоки) →
+пиксель верстальщика (прецедент T11 'center'): Collections headingSize medium /
+subtitleSize small / columns 3 / imageView square; PopularProducts headingSize small /
+textSize small / columns 4 / cards… (см. ниже) / imageView square / quickAddMode none;
+Gallery headingSize medium / textSize medium / imagePosition left.
+
+- **Размеры заголовка/текста** (все три секции): NtSectionHeading фиксирует
+  h2 20px / p 16px и не пробрасывает class — перекрытие утилитами-вариантами
+  на обёртке (`[&_h2]:!text-[…]` / `[&_p]:!text-[…]`, паттерн T11 PromoBanner
+  min-h). Шкала ≈0.85×/1.2× с округлением до px: h2 17/20/24 (Popular small=20
+  → medium 24 / large 29 — канонный ряд small 20 / medium 24); p 14/16/19/23.
+  Gallery h2 — носитель clamp(14px,3.8vw,20px) (`<style>`): варианты масштабируют
+  clamp (small clamp(12,3.2vw,17), large clamp(17,4.6vw,24)) — манера сохранена.
+  Layered !important утилит перебивает unlayered !important `<style>`-фиксов
+  (инверсия каскадных слоёв для important) — мобильные Figma-375 фиксы остаются
+  только в дефолт-ветке.
+- **Collections titleAlignment**: left/right → justify-start/end обёртки +
+  `[&_[data-nt=section-heading]]:items-start/end` + `[&_h2]/[&_p]:!text-left/right`;
+  'center' (canon-default) /отсутствие = строка верстальщика байт-в-байт.
+- **columns → inline-var**: `--cols` на гриде + `lg:grid-cols-[repeat(var(--cols),minmax(0,1fr))]`
+  ТОЛЬКО при заданном значении ≠ канон-дефолта (Collections 3 = md:grid-cols-3
+  верстальщика; Popular 4 = xl:grid-cols-4 верстальщика, его же впрыскивает коэрсер
+  при отсутствии). Мобильная лестница верстальщика (1→3 / 2→3) сохраняется, проп
+  действует с lg; у Popular в override-ветке xl:grid-cols-4 заменён на var-классы
+  lg+xl. Следствие для live: legacy cart-seed Collections (columns=4, padding 80/80)
+  получает 4-колоночный lg-грид и отступы 80 вместо лестницы — канон-семантика
+  явных мерчант-данных (seed мигрируется в PopularProducts ревизия-миграцией).
+- **imageView**: канон-дефолт 'square' → пиксель верстальщика (прецедент T11:
+  canon-default value = дефолт-ветка), т.е. «квадрат» НЕ квадратит карточки —
+  иначе каждый свежий блок ломал бы пиксель (Collections: поле к тому же hidden
+  в панели). Collections: portrait == литерал верстальщика 430/500 → дефолт-ветка,
+  wide → `[&_li>a>div]:aspect-[16/9]`. Popular: square/отсутствие = литерал
+  318/444 байт-в-байт, portrait → `[&_li>article>a]:aspect-[430/500]`, wide и
+  legacy-алиас adaptive → aspect-[16/9]. Селектор бьёт только медиа-якорь
+  (прямой ребёнок article), имя-ссылку не задевает; работает и для
+  гидрированных карточек (renderCardHtml имеет ту же структуру li>article>a).
+- **Collections collections[] (≤10)**: карточки из пропса при непустом массиве —
+  разметка RoseCollectionCard дословно, но плоский `<img>` (прецедент гидрации:
+  webp-конвейер не для MinIO-URL) + surface-плитка без картинки (канон-плейсхолдер);
+  href = `cardLinkBase + collectionId` (зеркало canon card-href.ts, '#' без
+  collectionId, дефолт /catalog?collection=); подпись = item.heading || 'Коллекция';
+  `max-sm:!text-[12px]` на h3 (мобильный фикс RoseCollectionCard scoped и не
+  достаёт до пропс-веток). Item subsection-теги 0..N (field=collections).
+  ОГРАНИЧЕНИЕ (эскалация плану): резолва collectionId→имя/картинка реальной
+  коллекции у rose-сборки нет (нет collections.json на live и siteId у секции) —
+  рендерятся сохранённые поля item (свежий блок = 3 плитки «Коллекция 1..3», как
+  канон-плейсхолдеры theme-base Figma 1:33070). dataSource игнорируется (канон
+  Collections.astro его тоже не читает — manual = непустой массив).
+- **PopularProducts cards (2-24)**: лимит среза demo-витрины (slice до 8 demo) и
+  лимит гидрации. 4 = срез верстальщика и впрыск коэрсера при отсутствии →
+  дефолт-ветка без data-атрибута; иное → `data-cards` на гриде, гидрация читает
+  (дефолт 4). Канон-дефолт конструктора cards=6 → свежий блок покажет 6 карточек —
+  так панель и обещает (слайдер «Карточки» 6).
+- **PopularProducts quickAddMode** standard/cart (+legacy count→cart): кнопка на
+  карточке В ПОТОКЕ под ценой (позиция канона theme-base), появляется при hover
+  в манере rose (opacity-0 → group-hover/focus-visible:opacity-100, место
+  зарезервировано — без скачка раскладки; на тач — первый тап). Клик → механика
+  rose:cart БЕЗ нового кода: initCartUI (nt-cart-rose.ts) уже держит глобальный
+  делегат `[data-add-to-cart]` → addToCart + rose:cart:open (drawer). Демо-ветка —
+  данные carte из catalogProducts; гидрированная — postprocess в скрипте Popular
+  (data-qa-text/-qa-class с грида). РЕШЕНИЕ: товары с вариантами
+  (hasVariants/variantCombinations>1) из карточки в корзину НЕ добавляются —
+  кнопка тем же стилем ведёт на PDP (/product?id=…). quickAddText: канон-цепочка
+  (prop → cart:'В КОРЗИНУ' / standard:'В корзину').
+- **PopularProducts buttonStyle** link/primary/secondary — носитель в rose
+  появляется только вместе с quickAdd-кнопкой: primary/отсутствие = кнопка-1,
+  secondary = кнопка-2 (манерный образец «Добавить в корзину» PDP, T11),
+  link = текстовая ссылка с подчёркиванием. Без quickAddMode — эффекта нет
+  (как канон: theme-base minimal-карточка buttonStyle тоже не потребляет).
+- **PopularProducts nextPhotoOnHover** (true/'true'): `data-next-photo` на гриде +
+  `data-image-2` на li (демо — gallery[1] верстальщика; реальные товары —
+  images[1], ставит гидрация) + is:inline скрипт через set:html (без define:vars —
+  компилятор секций не умеет; паттерн T12 sticky), идемпотентность
+  data-np-hydrated; свопит src `<img>` И srcset `<source>` (демо-карточки в
+  `<picture>`); без data-image-2 — no-op без ошибок. Пруф E2E: hover → вторая
+  картинка, mouseout → исходная.
+- **PopularProducts viewAll** {show,text,href} (+legacy true/'true'): кнопка под
+  гридом, манера = вторичная кнопка (классы secondaryButton Hero T11); дефолты
+  канона 'Смотреть ещё' / '/catalog' (текст задачи «Смотреть все» уступил канону
+  theme-base viewAllText). Subsection-тег 102 (field=viewAll). Поле hidden в
+  панели — наследие legacy-ревизий.
+- **PopularProducts collection** (collectionPicker) — ИГНОРИРУЕТСЯ рендером:
+  фильтрация по коллекции требует collections.json (как в каноне), которого на
+  rose-live нет. Эскалация плану вместе с Collections-резолвом.
+- **Гидрация Popular переписана поверх (storefront-hydrate не тронут)**: вместо
+  hydrateGrid(селектор, 4) — пер-гридовый цикл (несколько PopularProducts-блоков
+  на странице = у каждого свой data-cards/quick-add/next-photo), дефолт без
+  атрибутов = ровно прежнее поведение (4 карточки renderCardHtml). Пруф E2E:
+  демо «Сумка»×4 → реальные товары по лимиту, кнопка добавляет строку в
+  rose:cart:v1 localStorage, вариантный товар — ссылка на PDP.
+- **Gallery items[] (≤3)**: плитки из пропсов с fallback на три плитки
+  верстальщика ДОСЛОВНО; слот 0 = большая плитка (image: url/alt мерчанта,
+  иначе surface), слоты 1..2 = правая колонка (kind product/image → разметка
+  «Сумка»-плитки: media 429/444 + подпись/цена; kind collection → разметка
+  FUTURISM-плитки 429/309 + подпись). product/collection БЕЗ storefront-данных →
+  канон-плейсхолдеры (label «Товар» + 2 500 ₽ → /product?id=…; «Выбери
+  коллекцию» → /catalog?collection=…) — зеркало isPlaceholder-веток канона;
+  ссылки в манере rose (/catalog?collection=, НЕ канонный /catalog/slug).
+  Item subsection-теги 0..N (field=items). Один item → правая колонка не
+  рендерится (грид-шаблон держит большую плитку слева).
+- **Gallery imagePosition** right → зеркало lg-раскладки: swap grid-template
+  (minmax(280px,429px)_minmax(0,1fr)) + lg:order-2/order-1 на плитке/колонке;
+  'left' (canon-default)/отсутствие = верстальщик байт-в-байт.
+- **padding {top,bottom}** (все три) — inline-стиль на корне секции ТОЛЬКО при
+  пропе (паттерн T11; pt/pb-лестница верстальщика уступает inline). Live-следствия:
+  cart-seed Popular (80/80) и product-seed «Похожие товары» (60/60) получают
+  канонные отступы вместо лестницы — явные мерчант-данные.
+- **Игнорируемые рендером поля канона** (панель покажет/данные сохранятся,
+  эффекта в rose нет): Collections — dataSource, cardCaptionStyle, gridAspect,
+  variant (rose-вёрстка одна), description у item (в карточке rose нет подписи-2);
+  PopularProducts — collection (см. выше), productCard.* (legacy-двойники читаются
+  через канонные poля), containerColorScheme, swatchOverlay, cardCaptionStyle,
+  cardVariant ('rich' — flux), subtitle-legacy потреблён с Фазы 2; Gallery —
+  layout (rose = featured-раскладка верстальщика), headingAlignment, subheading.
+  colorScheme всех трёх потребляется снаружи обёрткой `.color-scheme-N`
+  композера/превью (как T11/T12).
+- **Известное следствие коэрсера** (вне мандата T13, src/themes/page-blocks.ts):
+  coercePopularProductsProps разворачивает heading {text,size} в строку — legacy
+  heading.size из ревизий (page-product seed 'medium') на live-пути теряется до
+  рендера; канонный top-level headingSize проходит. Также коэрсер впрыскивает
+  heading='Популярные товары'/subtitle='' при отсутствии — на текущих данных
+  не стреляет (home = статичный блоб без пропсов; все composed-инстансы несут
+  heading), но blockDefaults-тексты Popular на live перебьёт. Эскалация плану.
+- Пробы T13: каждая новая канон-ветка — grep эффекта при заданном пропе + diff
+  отсутствия при незаданном/канон-дефолте (Collections: headingSize/subtitleSize/
+  titleAlignment/columns/imageView/collections[]/cardLinkBase/padding/dataSource-игнор;
+  Popular: cards/columns/headingSize(+legacy heading.size)/textSize/imageView/
+  quickAddMode(standard/cart/count/none)/buttonStyle(secondary/link/без-quickAdd)/
+  nextPhotoOnHover(bool+string)/viewAll(object/legacy-true/false)/padding/collection-игнор;
+  Gallery: headingSize/textSize/imagePosition/items[3 типа]/padding); фактические
+  live-shapes из БД (page-product Popular, page-cart legacy Collections) — рендер
+  корректен. Свежий канон-блок (полные defaults конструктора) Collections = 3
+  плейсхолдер-плитки + padding 80; Popular = 6 demo-карточек, грид дефолтный,
+  без кнопок.
+- Гейты T13: plain — contacts/checkout/catalog/cart/product 5×OK identical;
+  home — расхождение ТОЛЬКО в кадре fade-анимации ниже вьюпорта (полоса 47px
+  заголовка Gallery на ~1-2% opacity, max дельта 15/255): харнесс .tmp-snap-rose.mjs
+  снимает fullPage сразу после простановки .is-visible, fadeInUp (0.65s) ещё идёт,
+  а его addStyleTag с animation:none теряется при goto; фаза кадра сдвинулась от
+  +1.5KB CSS в бандле. Пруфы эквивалентности: (1) собранный home HTML
+  байт-идентичен HEAD-сборке (после хэш-нормализации ассетов), (2) computed
+  геометрия/шрифты h2/p идентичны, (3) settled-снимки (анимации завершены,
+  full opacity) HEAD-сборки и T13-сборки байт-идентичны. Эталоны и харнесс НЕ
+  тронуты (мандат); системный фикс гейта (дожидаться конца анимации + пересъёмка
+  эталонов @HEAD, прецедент T9) — эскалация плану. Tokens —
+  contacts/catalog/cart/product 4×OK identical, home/checkout = два известных
+  исключения (журнал T9-фиксов).

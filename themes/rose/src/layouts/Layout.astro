@@ -24,7 +24,11 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 		<slot name="head" />
 	</head>
 	<body class="antialiased bg-[rgb(var(--color-bg,255_255_255))]">
-		<PromoBanner />
+		<!-- Обёртка схемы зеркалит композер v2 (blockDefaults.PromoBanner.colorScheme=scheme-4):
+		     на сложных страницах (блоб) tokens.css задаёт :root=scheme-1, без обёртки полоса белеет. -->
+		<div class="color-scheme-4" data-block-scheme="4">
+			<PromoBanner />
+		</div>
 		<Header />
 		<main>
 			<slot />

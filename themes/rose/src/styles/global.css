@@ -59,6 +59,25 @@
   color: rgb(var(--color-muted, 153 153 153));
 }
 
+/* Носители «Типографики» (заголовки-роли → --font-heading; fallback = литерал
+   верстальщика "Comfortaa", sans-serif). Брендинг (лого Header) и служебные
+   тексты («Товар не найден») остаются литералами намеренно. */
+/* Hero h1 — класс уникален для заголовка героя (Hero.astro);
+   утилита font-comfortaa с него снята в пользу этого правила. */
+.hero-animate-1 {
+  font-family: var(--font-heading, "Comfortaa", sans-serif);
+}
+
+/* Название товара на PDP (RoseProductDetail.astro #product-title). */
+#product-title {
+  font-family: var(--font-heading, "Comfortaa", sans-serif);
+}
+
+/* Титулы auth-страниц (sign-in / sign-up / forgot-password). */
+.rose-auth-title {
+  font-family: var(--font-heading, "Comfortaa", sans-serif);
+}
+
 /* Mobile (Figma 375): section title 14px, subtitle 12px */
 @media (max-width: 639.98px) {
   .rose-title {
@@ -703,10 +722,12 @@ input[type="search"]::-webkit-search-results-decoration {
   color: rgb(var(--color-text, 255 255 255));
 }
 
-/* Заголовок секций (NtSectionHeading): схемные цвета.
-   Fallback = литералы DS NtSectionHeading.astro:27 (#000000) / :39 (#999999). */
+/* Заголовок секций (NtSectionHeading): схемные цвета + шрифт заголовков
+   из панели «Типографика». Fallback = литералы DS NtSectionHeading.astro:27
+   (#000000, font-comfortaa → "Comfortaa", sans-serif) / :39 (#999999). */
 [data-nt="section-heading"] h2 {
   color: rgb(var(--color-heading, 0 0 0));
+  font-family: var(--font-heading, "Comfortaa", sans-serif);
 }
 
 [data-nt="section-heading"] p {

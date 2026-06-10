@@ -30,4 +30,11 @@ describe('tokens-inject', () => {
   it('без </head> возвращает HTML как есть', () => {
     expect(injectTokensCssIntoHtml('<div>no head</div>', CSS)).toBe('<div>no head</div>');
   });
+
+  it('CSS с $-паттернами вставляется дословно (без интерпретации $&)', () => {
+    const once = injectTokensCssIntoHtml('<html><head></head><body></body></html>', CSS);
+    const out = injectTokensCssIntoHtml(once, ':root{--font-heading:"$&weird"}');
+    expect(out).toContain('--font-heading:"$&weird"');
+    expect(out.match(/__merfy_tokens_css/g)?.length).toBe(1);
+  });
 });

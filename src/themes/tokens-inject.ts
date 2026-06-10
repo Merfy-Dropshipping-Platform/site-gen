@@ -11,7 +11,7 @@ export function tokensStyleTag(css: string): string {
 /** Вставляет/обновляет style#__merfy_tokens_css перед </head>. Идемпотентен. */
 export function injectTokensCssIntoHtml(html: string, css: string): string {
   const tag = tokensStyleTag(css);
-  if (EXISTING_RE.test(html)) return html.replace(EXISTING_RE, tag);
+  if (EXISTING_RE.test(html)) return html.replace(EXISTING_RE, () => tag);
   const i = html.search(/<\/head>/i);
   if (i === -1) return html;
   return html.slice(0, i) + tag + html.slice(i);

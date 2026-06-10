@@ -155,7 +155,6 @@
     },
     "Header": {
       "siteTitle": "Rose",
-      "logo": "/logo.svg",
       "padding": {
         "top": 24,
         "bottom": 24
@@ -190,7 +189,6 @@
         "placeholder": "rose@example.ru"
       },
       "navigationColumn": {
-        "title": "Навигация",
         "links": [
           {
             "label": "Главная",
@@ -201,17 +199,12 @@
             "href": "/catalog"
           },
           {
-            "label": "О нас",
-            "href": "/about"
-          },
-          {
             "label": "Контакты",
             "href": "/contacts"
           }
         ]
       },
       "informationColumn": {
-        "title": "Информация",
         "links": [
           {
             "label": "Политика доставки",
@@ -219,7 +212,7 @@
           },
           {
             "label": "Политика возврата",
-            "href": "/legal/returns"
+            "href": "/legal/return"
           },
           {
             "label": "Условия обслуживания",
@@ -232,13 +225,8 @@
         ]
       },
       "socialColumn": {
-        "title": "Социальные сети",
         "email": "rose@example.ru",
         "socialLinks": [
-          {
-            "platform": "telegram",
-            "href": "#"
-          },
           {
             "platform": "vk",
             "href": "#"
@@ -253,6 +241,10 @@
           },
           {
             "platform": "tiktok",
+            "href": "#"
+          },
+          {
+            "platform": "telegram",
             "href": "#"
           }
         ]

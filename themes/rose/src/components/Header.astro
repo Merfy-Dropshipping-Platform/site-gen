@@ -14,19 +14,84 @@ const defaultNav: NavLink[] = [
 	{ label: "Контакты", href: "/contacts", match: (p) => p.startsWith("/contacts") },
 ];
 
-// ОЖИВЛЕНИЕ: канон-схема Header (siteTitle, navigationLinks). Тело дословно.
+// ОЖИВЛЕНИЕ: канон-схема Header (siteTitle, navigationLinks — Фаза 2;
+// logo, logoPosition, stickiness, padding — T12). Дефолтные ветки тернарников =
+// прежним строкам классов байт-в-байт; новые элементы не рендерятся без пропсов.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-const siteTitle = p.siteTitle ?? SITE_TITLE;
+// Пустая строка (впрыск коэрсера live-пути) не должна гасить текстовый логотип.
+const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
 const nav: NavLink[] = Array.isArray(p.navigationLinks) && p.navigationLinks.length > 0
 	? p.navigationLinks.map((l: any) => ({ label: l.label ?? l.text ?? "", href: l.href ?? l.link ?? "/" }))
 	: defaultNav;
+
+// Канон logo (URL картинки; панель «Логотип» пишет в props.logo через
+// applyBrandLogoToAllHeaders): непустая строка → <img> вместо текстового
+// логотипа в desktop И mobile. Высота = --size-logo-width (семантика канона
+// theme-base Header.classes.ts:71 — слайдер «Размер» задаёт ВЫСОТУ лого).
+const logo = typeof p.logo === "string" && p.logo.trim() ? p.logo : undefined;
+const logoImgCls = "h-[var(--size-logo-width,24px)] w-auto max-w-[160px] object-contain";
+
+// Канон logoPosition: 'top-left' (canon default) / 'center-left' / отсутствие /
+// неизвестное значение → строка верстальщика дословно (лого слева); 'top-center'
+// и 'center-absolute' → лого absolute по центру строки (nav остаётся слева).
+const logoPosition = typeof p.logoPosition === "string" ? p.logoPosition : "";
+const logoCentered = logoPosition === "top-center" || logoPosition === "center-absolute";
+const desktopLogoCls = logoCentered
+	? "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-comfortaa text-[length:var(--size-logo-width,24px)] font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90"
+	: "shrink-0 font-comfortaa text-[length:var(--size-logo-width,24px)] font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90";
+
+// Канон stickiness none/scroll-up/always (классы канона Header.classes.ts:13-16).
+// 'none'/отсутствие = как сейчас (корень без sticky-классов).
+const stickiness = typeof p.stickiness === "string" ? p.stickiness : "";
+const rootCls =
+	stickiness === "always"
+		? "sticky top-0 z-50 w-full"
+		: stickiness === "scroll-up"
+			? "sticky top-0 z-50 w-full transition-transform duration-300"
+			: "w-full";
+// 'scroll-up': прячем хедер при скролле вниз, показываем при скролле вверх.
+// is:inline + set:html (компилятор секций не умеет define:vars), параметры не
+// нужны — root ищется по data-rose-sticky; идемпотентность через data-hydrated.
+const SCROLL_UP_JS = [
+	"(function(){",
+	"var root=document.querySelector('[data-rose-sticky=\"scroll-up\"]');",
+	"if(!root||root.getAttribute('data-hydrated')==='true')return;",
+	"root.setAttribute('data-hydrated','true');",
+	"var last=window.scrollY;",
+	"window.addEventListener('scroll',function(){",
+	"var y=window.scrollY;",
+	"if(y>last&&y>root.offsetHeight){root.style.transform='translateY(-100%)';}else{root.style.transform='';}",
+	"last=y;",
+	"},{passive:true});",
+	"})();",
+].join("");
+
+// Канон padding {top,bottom} — clamp ≤64 (как theme-base Header.astro:42-43) и
+// inline-стиль ТОЛЬКО при заданном пропе на носителе отступов верстальщика
+// (desktop-контейнер py-5 lg:py-6; мобильная строка h-11 фиксированная).
+const pad = p.padding && typeof p.padding === "object" ? p.padding : undefined;
+const headerPad = pad
+	? { top: Math.min(Number(pad.top) || 0, 64), bottom: Math.min(Number(pad.bottom) || 0, 64) }
+	: undefined;
+const headerPadStyle = headerPad
+	? `padding-top:${headerPad.top}px;padding-bottom:${headerPad.bottom}px;`
+	: undefined;
+const desktopRowCls = [
+	"mx-auto flex max-w-[1920px] items-center justify-between px-4",
+	headerPad ? "" : "py-5",
+	"sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px]",
+	headerPad ? "" : "lg:py-6",
+	logoCentered ? "relative" : "",
+]
+	.filter(Boolean)
+	.join(" ");
 
 const pathname = Astro.url.pathname;
 const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathname === link.href);
 ---
 
-<div class="w-full" data-puck-component-id={id}>
+<div class={rootCls} data-puck-component-id={id} data-rose-sticky={stickiness === "scroll-up" ? "scroll-up" : undefined}>
 	<div class="overflow-visible bg-[rgb(var(--color-bg,255_255_255))]">
 		<header class="relative w-full overflow-visible" data-nt="rose-header">
 			<div>
@@ -51,7 +116,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 						href="/"
 						class="font-comfortaa text-[20px] font-normal uppercase leading-none tracking-normal text-rose-primary hover:opacity-80"
 					>
-						{siteTitle}
+						{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
 					</a>
 					<button
 						type="button"
@@ -70,15 +135,18 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 
 				<!-- Desktop -->
 				<div class="hidden w-full lg:block">
-					<div class="mx-auto flex max-w-[1920px] items-center justify-between px-4 py-5 sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px] lg:py-6">
-						<a
-							href="/"
-							class="shrink-0 font-comfortaa text-[length:var(--size-logo-width,24px)] font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90"
-						>
-							{siteTitle}
+					<div class={desktopRowCls} style={headerPadStyle}>
+						<a href="/" class={desktopLogoCls}>
+							{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
 						</a>
 
-						<nav class="flex items-center gap-8 lg:gap-12" aria-label="Основная навигация">
+						<nav
+							class="flex items-center gap-8 lg:gap-12"
+							aria-label="Основная навигация"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="997"
+							data-puck-subsection-field="navigationLinks"
+						>
 							{nav.map((link) => {
 								const active = isActive(link);
 								return (
@@ -221,6 +289,8 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 			})}
 		</nav>
 	</div>
+
+	{stickiness === "scroll-up" && <script is:inline set:html={SCROLL_UP_JS} />}
 </div>
 
 <script>

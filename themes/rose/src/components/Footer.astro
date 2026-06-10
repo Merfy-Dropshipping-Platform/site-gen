@@ -18,36 +18,126 @@ const infoColumn = [
 	{ label: "Политика конфиденциальности", href: "/legal/privacy" },
 ];
 
-// ОЖИВЛЕНИЕ: канон-схема Footer — выносим то, что мерчант реально меняет
-// (телефон/email/название). Колонки ссылок и соцсети — дефолт верстальщика.
+// ОЖИВЛЕНИЕ: канон-схема Footer (Фаза 2: телефон/email/название; T12: полная
+// канон-схема — newsletter.enabled, колонки, socialLinks, copyright, bottomStrip,
+// padding). Дефолтные ветки = прежним строкам байт-в-байт; новые элементы
+// (заголовки колонок) не рендерятся без пропсов.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-const siteTitle = p.siteTitle ?? SITE_TITLE;
+// Пустая строка (canon default Puck / коэрсер) не должна ронять «Rose Theme».
+const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
 const phone = p.phone ?? "+7 (000) 000-00-00";
 const emailPlaceholder = `example@${SITE_TITLE.toLowerCase()}.merfy`;
 const email = p.socialColumn?.email ?? p.email ?? emailPlaceholder;
+
+// Канон newsletter.enabled — скрыть блок подписки ТОЛЬКО при явном false/'false'
+// (булево может прийти строкой). Отсутствие пропа и rose
+// blockDefaults.Footer.newsletter.enabled=true → блок показан = пиксель.
+const newsletterEnabled = !(
+	p.newsletter &&
+	(p.newsletter.enabled === false || p.newsletter.enabled === "false")
+);
+
+// Канон-колонки {title, links:[{label,href}]}: ссылки из пропсов с fallback на
+// литералы верстальщика; заголовок колонки — НОВЫЙ элемент, рендерится только
+// при непустом title из пропсов (в вёрстке верстальщика заголовков колонок нет).
+const coerceColumnLinks = (
+	col: any,
+	fallback: Array<{ label: string; href: string }>,
+): Array<{ label: string; href: string }> =>
+	Array.isArray(col?.links) && col.links.length > 0
+		? col.links.map((l: any) => ({ label: String(l?.label ?? ""), href: String(l?.href ?? "/") }))
+		: fallback;
+const navLinks = coerceColumnLinks(p.navigationColumn, navColumn);
+const infoLinks = coerceColumnLinks(p.informationColumn, infoColumn);
+const columnTitle = (col: any): string | undefined =>
+	typeof col?.title === "string" && col.title.trim() ? col.title : undefined;
+const navColTitle = columnTitle(p.navigationColumn);
+const infoColTitle = columnTitle(p.informationColumn);
+const columnTitleCls =
+	"font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-text,0_0_0))]";
 
 type SocialIconName = "social-vk" | "social-youtube" | "social-yandex-dzen" | "social-tiktok" | "social-telegram";
 
 type SocialLink = { platform: string; href: string; icon: SocialIconName };
 
-const socials: SocialLink[] = [
+// Канон socialColumn.socialLinks (enum платформ) → иконы/лейблы верстальщика;
+// fallback = литеральный набор верстальщика дословно.
+const SOCIAL_PLATFORMS: Record<string, { label: string; icon: SocialIconName }> = {
+	vk: { label: "VK", icon: "social-vk" },
+	youtube: { label: "YouTube", icon: "social-youtube" },
+	dzen: { label: "YandexDzen", icon: "social-yandex-dzen" },
+	tiktok: { label: "TikTok", icon: "social-tiktok" },
+	telegram: { label: "Telegram", icon: "social-telegram" },
+};
+const defaultSocials: SocialLink[] = [
 	{ platform: "VK", href: "#", icon: "social-vk" },
 	{ platform: "YouTube", href: "#", icon: "social-youtube" },
 	{ platform: "YandexDzen", href: "#", icon: "social-yandex-dzen" },
 	{ platform: "TikTok", href: "#", icon: "social-tiktok" },
 	{ platform: "Telegram", href: "#", icon: "social-telegram" },
 ];
+const socialsFromProps: SocialLink[] = Array.isArray(p.socialColumn?.socialLinks)
+	? p.socialColumn.socialLinks
+			.map((s: any): SocialLink | null => {
+				const meta = SOCIAL_PLATFORMS[String(s?.platform ?? "")];
+				return meta ? { platform: meta.label, href: String(s?.href ?? "#"), icon: meta.icon } : null;
+			})
+			.filter((s: SocialLink | null): s is SocialLink => s !== null)
+	: [];
+const socials: SocialLink[] = socialsFromProps.length > 0 ? socialsFromProps : defaultSocials;
+
+// Канон copyright {companyName, poweredBy, showYear} (+ legacy-строка целиком).
+// Дефолтная сборка = литерал верстальщика байт-в-байт:
+// «© {год} {siteTitle} Theme Все права защищены. Powered by Merfy».
+const copyrightProp = p.copyright;
+const copyrightOverride =
+	typeof copyrightProp === "string" && copyrightProp.trim() ? copyrightProp : undefined;
+const copyrightObj = copyrightProp && typeof copyrightProp === "object" ? copyrightProp : {};
+const showYear = !(copyrightObj.showYear === false || copyrightObj.showYear === "false");
+const companyPart =
+	typeof copyrightObj.companyName === "string" && copyrightObj.companyName.trim()
+		? copyrightObj.companyName
+		: `${siteTitle} Theme`;
+const poweredBy =
+	typeof copyrightObj.poweredBy === "string" ? copyrightObj.poweredBy : "Powered by Merfy";
+const copyrightText =
+	copyrightOverride ??
+	`© ${showYear ? `${today.getFullYear()} ` : ""}${companyPart} Все права защищены.${poweredBy ? ` ${poweredBy}` : ""}`;
+
+// Канон bottomStrip {enabled, text} — носитель в rose = чёрная копирайт-полоса
+// (отдельной полосы у верстальщика нет). enabled false/'false' → полоса скрыта;
+// непустой text перебивает собранный копирайт. Отсутствие = текущий рендер.
+const strip = p.bottomStrip && typeof p.bottomStrip === "object" ? p.bottomStrip : undefined;
+const bottomStripVisible = !(strip && (strip.enabled === false || strip.enabled === "false"));
+const stripText =
+	typeof strip?.text === "string" && strip.text.trim() ? strip.text : copyrightText;
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при пропе, на носителе
+// отступов верстальщика (внутренний контейнер pt-20 pb-20). При rose
+// blockDefaults {80,80} (и впрыске коэрсера {80,80}) рендер пиксель-идентичен:
+// padding 80px == pt-20/pb-20.
+const pad = p.padding && typeof p.padding === "object" ? p.padding : undefined;
+const footerPadStyle = pad
+	? `padding-top:${Number(pad.top) || 0}px;padding-bottom:${Number(pad.bottom) || 0}px;`
+	: undefined;
+const footerContainerCls = pad
+	? "mx-auto w-full max-w-[1920px] px-4 sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px]"
+	: "mx-auto w-full max-w-[1920px] px-4 pb-20 pt-20 sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px]";
 ---
 
 <footer class="w-full bg-[rgb(var(--color-bg,255_255_255))]" data-puck-component-id={id}>
-	<div class="mx-auto w-full max-w-[1920px] px-4 pb-20 pt-20 sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px]">
+	<div class={footerContainerCls} style={footerPadStyle}>
 		<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-20">
+			{newsletterEnabled && (
 			<section class="flex w-full flex-col gap-5" aria-labelledby="newsletter-heading">
 				<div class="flex max-w-[1320px] flex-col gap-2 text-left">
 					<h2
 						id="newsletter-heading"
 						class="rose-title !font-bold w-full min-w-0 max-lg:whitespace-normal lg:whitespace-nowrap !text-[clamp(14px,2.2vw,20px)]"
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="100"
+						data-puck-subsection-field="newsletter"
 					>
 						Подпишитесь на нашу рассылку
 					</h2>
@@ -59,6 +149,9 @@ const socials: SocialLink[] = [
 				<form
 					class="flex h-14 w-full max-w-[var(--size-newsletter-form-w,430px)] items-center gap-2 rounded-[var(--radius-input,4px)] border border-[rgb(var(--color-input-border,153_153_153))] bg-white pl-[18px] pr-4 transition-colors focus-within:border-[#000000]"
 					data-newsletter-form
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="997"
+					data-puck-subsection-field="newsletter"
 				>
 					<input
 						type="email"
@@ -82,14 +175,26 @@ const socials: SocialLink[] = [
 					class="hidden max-w-[430px] font-manrope text-[14px] font-normal leading-none text-[#4AD300]"
 				></p>
 			</section>
+			)}
 
 			<section
 				class="flex w-full flex-col gap-10 lg:flex-row lg:items-start lg:justify-between"
 				aria-label="Навигация по сайту"
 			>
 				<div class="flex flex-col gap-10 sm:flex-row sm:gap-[200px]">
-					<ul class="flex flex-col gap-3" role="list">
-						{navColumn.map((link) => (
+					<ul
+						class="flex flex-col gap-3"
+						role="list"
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="996"
+						data-puck-subsection-field="navigationColumn"
+					>
+						{navColTitle && (
+							<li>
+								<h3 class={columnTitleCls}>{navColTitle}</h3>
+							</li>
+						)}
+						{navLinks.map((link) => (
 							<li>
 								<a
 									href={link.href}
@@ -101,8 +206,19 @@ const socials: SocialLink[] = [
 						))}
 					</ul>
 
-					<ul class="flex flex-col gap-3" role="list">
-						{infoColumn.map((link) => (
+					<ul
+						class="flex flex-col gap-3"
+						role="list"
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="995"
+						data-puck-subsection-field="informationColumn"
+					>
+						{infoColTitle && (
+							<li>
+								<h3 class={columnTitleCls}>{infoColTitle}</h3>
+							</li>
+						)}
+						{infoLinks.map((link) => (
 							<li>
 								<a
 									href={link.href}
@@ -115,7 +231,12 @@ const socials: SocialLink[] = [
 					</ul>
 				</div>
 
-				<div class="flex flex-col gap-6 lg:max-w-[min(100%,430px)] lg:items-end lg:text-right">
+				<div
+					class="flex flex-col gap-6 lg:max-w-[min(100%,430px)] lg:items-end lg:text-right"
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="994"
+					data-puck-subsection-field="socialColumn"
+				>
 					<div class="flex flex-col gap-3">
 						<a
 							href={`tel:${phone.replace(/[^+\d]/g, "")}`}
@@ -151,11 +272,18 @@ const socials: SocialLink[] = [
 		</div>
 	</div>
 
-	<div class="flex h-16 w-full items-center justify-center bg-[rgb(var(--color-heading,0_0_0))] px-4">
-		<p class="text-center font-manrope text-[14px] font-normal leading-none text-[rgb(var(--color-bg,255_255_255))]">
-			© {today.getFullYear()} {siteTitle} Theme Все права защищены. Powered by Merfy
-		</p>
-	</div>
+	{bottomStripVisible && (
+		<div
+			class="flex h-16 w-full items-center justify-center bg-[rgb(var(--color-heading,0_0_0))] px-4"
+			data-puck-subsection-parent={id}
+			data-puck-subsection-index="993"
+			data-puck-subsection-field="copyright"
+		>
+			<p class="text-center font-manrope text-[14px] font-normal leading-none text-[rgb(var(--color-bg,255_255_255))]">
+				{stripText}
+			</p>
+		</div>
+	)}
 </footer>
 
 <style>

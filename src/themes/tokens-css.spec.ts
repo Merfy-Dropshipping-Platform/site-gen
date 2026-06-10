@@ -102,4 +102,14 @@ describe('buildTokensCss merchant precedence', () => {
     const css = buildTokensCss({}, null);
     expect(css).toContain('--text-transform-heading: none');
   });
+
+  it(':root эмитит button-2 алиасы ≡ secondary (T9)', () => {
+    const css = buildTokensCss({}, 'rose');
+    // Rose manifest: secondaryButton text=#000000, border=#000000
+    // :root должен содержать ОБА алиаса с одинаковым значением
+    expect(css).toContain('--color-button-secondary-text: 0 0 0');
+    expect(css).toContain('--color-button-2-text: 0 0 0');
+    expect(css).toContain('--color-button-secondary-border: 0 0 0');
+    expect(css).toContain('--color-button-2-border: 0 0 0');
+  });
 });

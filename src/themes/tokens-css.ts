@@ -448,6 +448,13 @@ function schemeToVars(scheme: Record<string, unknown>): string {
   const secondaryTextHover = hexToRgbTriple(secondary.textHover) ?? secondaryText;
   if (secondaryBgHover) parts.push(`--color-button-secondary-bg-hover: ${secondaryBgHover}`);
   if (secondaryTextHover) parts.push(`--color-button-secondary-text-hover: ${secondaryTextHover}`);
+  // Алиасы button-2 ≡ secondary: .color-scheme-N правила theme.json несут --color-button-2-*,
+  // :root обязан быть согласован (ревью T9).
+  if (secondaryBg) parts.push(`--color-button-2-bg: ${secondaryBg}`);
+  if (secondaryText) parts.push(`--color-button-2-text: ${secondaryText}`);
+  if (secondaryBorder) parts.push(`--color-button-2-border: ${secondaryBorder}`);
+  if (secondaryBgHover) parts.push(`--color-button-2-bg-hover: ${secondaryBgHover}`);
+  if (secondaryTextHover) parts.push(`--color-button-2-text-hover: ${secondaryTextHover}`);
 
   return parts.length > 0 ? ' ' + parts.join('; ') + ';' : '';
 }

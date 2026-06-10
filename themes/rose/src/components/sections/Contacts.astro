@@ -5,6 +5,10 @@ import NtTextField from "@merfy-dropshipping-platform/design-systems-theme/compo
 // heading — поле канон-схемы (union string | { text }). phone/email — flat-пропсы
 // оживления с фоллбеком на побайтовое значение верстальщика (схема описывает
 // поля ФОРМЫ, контактные данные магазина приходят отдельными пропсами).
+// T14: полная канон-схема (headingSize/headingAlignment/description/fields/
+// buttonText/padding). Дефолтные ветки тернарников = прежние строки байт-в-байт;
+// канон-дефолты конструктора (medium) и отсутствие пропа → пиксель верстальщика
+// (прецедент T11/T13).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 const heading = p.heading?.text ?? p.heading ?? "Контакты";
@@ -12,24 +16,108 @@ const phone = p.phone ?? "+7 (000) 000-00-00";
 const email = p.email ?? "rose@example.ru";
 const phoneHref = `tel:${phone.replace(/[^+\d]/g, "")}`;
 const emailHref = `mailto:${email}`;
+
+// Канон headingSize (top-level приоритетнее legacy heading.size): 'medium'
+// (canon-default) и отсутствие = rose-title верстальщика дословно (20px desktop /
+// 14px mobile из global.css). small ≈0.85× (17/12), large ≈1.2× (24/17) — манера
+// T13 Collections, мобильный шаг 0.7× desktop как у верстальщика (14/20).
+// !-утилиты (layered important) перекрывают un-layered !important у .rose-title.
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingSizeCls =
+	headingSize === "small"
+		? " !text-[12px] sm:!text-[17px]"
+		: headingSize === "large"
+			? " !text-[17px] sm:!text-[24px]"
+			: "";
+// Канон headingAlignment (top-level приоритетнее legacy heading.alignment):
+// отсутствие = строка верстальщика байт-в-байт (слева на desktop, мобильный
+// center из global.css media). Явные left/center/right — как канон theme-base.
+const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
+const headingAlignCls =
+	headingAlignment === "center"
+		? " !text-center"
+		: headingAlignment === "right"
+			? " !text-right"
+			: headingAlignment === "left"
+				? " !text-left"
+				: "";
+const headingCls = `rose-title${headingSizeCls}${headingAlignCls}`;
+
+// Канон description: <p> под заголовком ТОЛЬКО при непустом пропе (у верстальщика
+// описания нет — дефолт-ветка пуста, байт-в-байт). Манера текста = dl-строк.
+const description =
+	typeof p.description === "string" && p.description.trim() ? p.description : undefined;
+
+// Канон fields {name,email,phone,message} (каждое {enabled,required,label}) —
+// проп-ветка рендерит поля канон-семантикой (фоллбеки частичного объекта =
+// канон-дефолты puckConfig: phone disabled, name/email required) В МАНЕРЕ
+// DS-полей верстальщика: тот же грид/обёртки/классы NtTextField, textarea
+// «Ваш вопрос» дословно по классам. Отсутствие fields = форма верстальщика
+// ДОСЛОВНО (NtTextField-компоненты, без required/subsection-тегов).
+const toBool = (v: any, fb: boolean): boolean =>
+	typeof v === "boolean" ? v : v === "true" ? true : v === "false" ? false : fb;
+const CANON_FIELDS = {
+	name: { enabled: true, required: true, label: "Имя" },
+	email: { enabled: true, required: true, label: "Email" },
+	phone: { enabled: false, required: false, label: "Телефон" },
+	message: { enabled: true, required: false, label: "Сообщение" },
+};
+const fieldsProp =
+	p.fields && typeof p.fields === "object" && !Array.isArray(p.fields) ? p.fields : undefined;
+const resolveField = (key: "name" | "email" | "phone" | "message") => {
+	const def = (CANON_FIELDS as any)[key];
+	const f = fieldsProp?.[key];
+	return {
+		enabled: toBool(f?.enabled, def.enabled),
+		required: toBool(f?.required, def.required),
+		label: typeof f?.label === "string" ? f.label : def.label,
+	};
+};
+const formFields = fieldsProp
+	? {
+			name: resolveField("name"),
+			email: resolveField("email"),
+			phone: resolveField("phone"),
+			message: resolveField("message"),
+		}
+	: undefined;
+
+// Канон buttonText: текст кнопки с фоллбеком на литерал верстальщика.
+const buttonText =
+	typeof p.buttonText === "string" && p.buttonText.length > 0 ? p.buttonText : "Отправить";
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
 ---
 
 <section
 	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-[60px] pt-12 sm:px-5 md:px-10 md:pb-[80px] md:pt-20 lg:px-16 xl:px-20 2xl:px-[280px]"
 	aria-labelledby="contacts-title"
 	data-puck-component-id={id}
+	style={paddingStyle}
 >
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-16 md:gap-20">
 		<div class="flex flex-col gap-6">
 			<h1
 				id="contacts-title"
-				class="rose-title"
+				class={headingCls}
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="100"
 				data-puck-subsection-field="heading"
 			>
 				{heading}
-			</h1>
+			</h1>{description && (
+				<p
+					class="font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[16px]"
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="101"
+					data-puck-subsection-field="description"
+				>
+					{description}
+				</p>
+			)}
 			<dl class="flex flex-col gap-3 font-manrope text-[14px] font-normal leading-normal md:text-[16px]">
 				<div class="flex flex-col gap-1 md:flex-row md:gap-16">
 					<dt class="text-[rgb(var(--color-muted,153_153_153))] md:w-[200px]">Номер телефона</dt>
@@ -60,12 +148,107 @@ const emailHref = `mailto:${email}`;
 				data-contacts-form
 				novalidate
 			>
+				{formFields ? (
+					<div class="flex flex-col gap-4">
+						{formFields.name.enabled && (
+							<div
+								class="flex w-full max-w-[430px] flex-col gap-2"
+								data-nt="text-field"
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index={0}
+								data-puck-subsection-field="fields"
+							>
+								<label for="nt-field-name" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
+									{formFields.name.label}{formFields.name.required && <span class="ml-1 text-[rgb(var(--color-error,255_148_148))]">*</span>}
+								</label>
+								<div class="relative w-full">
+									<input
+										id="nt-field-name"
+										name="name"
+										type="text"
+										autocomplete="name"
+										required={formFields.name.required}
+										class="box-border h-14 w-full min-h-[56px] rounded-[4px] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
+									/>
+								</div>
+							</div>
+						)}
+						{formFields.email.enabled && (
+							<div
+								class="flex w-full max-w-[430px] flex-col gap-2"
+								data-nt="text-field"
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index={1}
+								data-puck-subsection-field="fields"
+							>
+								<label for="nt-field-email" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
+									{formFields.email.label}{formFields.email.required && <span class="ml-1 text-[rgb(var(--color-error,255_148_148))]">*</span>}
+								</label>
+								<div class="relative w-full">
+									<input
+										id="nt-field-email"
+										name="email"
+										type="email"
+										autocomplete="email"
+										required={formFields.email.required}
+										class="box-border h-14 w-full min-h-[56px] rounded-[4px] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
+									/>
+								</div>
+							</div>
+						)}
+						{formFields.phone.enabled && (
+							<div
+								class="flex w-full max-w-[430px] flex-col gap-2"
+								data-nt="text-field"
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index={2}
+								data-puck-subsection-field="fields"
+							>
+								<label for="nt-field-phone" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
+									{formFields.phone.label}{formFields.phone.required && <span class="ml-1 text-[rgb(var(--color-error,255_148_148))]">*</span>}
+								</label>
+								<div class="relative w-full">
+									<input
+										id="nt-field-phone"
+										name="phone"
+										type="tel"
+										autocomplete="tel"
+										required={formFields.phone.required}
+										class="box-border h-14 w-full min-h-[56px] rounded-[4px] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
+									/>
+								</div>
+							</div>
+						)}
+					</div>
+				) : (
 				<div class="flex flex-col gap-4">
 					<NtTextField label="Имя" name="name" autocomplete="name" />
 					<NtTextField label="E-mail" name="email" type="email" autocomplete="email" />
 					<NtTextField label="Номер телефона" name="phone" type="tel" autocomplete="tel" />
 				</div>
+				)}
 
+				{formFields ? (
+					formFields.message.enabled && (
+						<div
+							class="flex flex-col gap-2"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index={3}
+							data-puck-subsection-field="fields"
+						>
+							<label for="contacts-question" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
+								{formFields.message.label}{formFields.message.required && <span class="ml-1 text-[rgb(var(--color-error,255_148_148))]">*</span>}
+							</label>
+							<textarea
+								id="contacts-question"
+								name="question"
+								rows={8}
+								required={formFields.message.required}
+								class="min-h-[232px] w-full rounded-[var(--radius-field,4px)] border border-[#000000] bg-white p-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000]"
+							></textarea>
+						</div>
+					)
+				) : (
 				<div class="flex flex-col gap-2">
 					<label for="contacts-question" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
 						Ваш вопрос
@@ -77,13 +260,14 @@ const emailHref = `mailto:${email}`;
 						class="min-h-[232px] w-full rounded-[var(--radius-field,4px)] border border-[#000000] bg-white p-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000]"
 					></textarea>
 				</div>
+				)}
 
 				<div class="lg:col-start-2 lg:flex lg:justify-end">
 					<button
 						type="submit"
 						class="rose-btn-primary inline-flex h-[var(--size-hero-button-h,48px)] min-w-[200px] items-center justify-center rounded-[var(--radius-button,6px)] px-8 font-manrope text-[16px] font-normal leading-normal"
 					>
-						Отправить
+						{buttonText}
 					</button>
 				</div>
 

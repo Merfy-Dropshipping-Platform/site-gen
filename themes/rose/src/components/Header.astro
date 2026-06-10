@@ -27,7 +27,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 ---
 
 <div class="w-full" data-puck-component-id={id}>
-	<div class="overflow-visible bg-white">
+	<div class="overflow-visible bg-[rgb(var(--color-bg,255_255_255))]">
 		<header class="relative w-full overflow-visible" data-nt="rose-header">
 			<div>
 				<!-- Mobile -->
@@ -73,7 +73,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 					<div class="mx-auto flex max-w-[1920px] items-center justify-between px-4 py-5 sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px] lg:py-6">
 						<a
 							href="/"
-							class="shrink-0 font-comfortaa text-[24px] font-normal uppercase leading-none tracking-normal text-[#000000] hover:opacity-90"
+							class="shrink-0 font-comfortaa text-[length:var(--size-logo-width,24px)] font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90"
 						>
 							{siteTitle}
 						</a>
@@ -86,8 +86,8 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 										href={link.href}
 										aria-current={active ? "page" : undefined}
 										class:list={[
-											"relative pb-1 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-all duration-200 hover:opacity-70 lg:text-[16px]",
-											active && "after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:bg-[#000000] after:content-['']",
+											"relative pb-1 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-all duration-200 hover:opacity-70 lg:text-[length:var(--size-nav-link,16px)]",
+											active && "after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:bg-[rgb(var(--color-accent,0_0_0))] after:content-['']",
 										]}
 									>
 										{link.label}
@@ -145,7 +145,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 						role="search"
 						action="/catalog"
 						method="get"
-						class="pointer-events-auto mx-auto flex h-12 w-full max-w-[1320px] items-center gap-2 rounded-[4px] border border-[#E5E5E5] bg-white pl-3 pr-1 shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
+						class="pointer-events-auto mx-auto flex h-12 w-full max-w-[1320px] items-center gap-2 rounded-[var(--radius-input,4px)] border border-[#E5E5E5] bg-white pl-3 pr-1 shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
 					>
 						<input
 							id="rose-site-search-input"
@@ -157,7 +157,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 						/>
 						<button
 							type="submit"
-							class="flex h-10 shrink-0 items-center justify-center rounded-[4px] border-0 !bg-[#000000] px-3 py-2.5 font-manrope text-[14px] font-normal leading-none !text-white transition-opacity hover:opacity-90"
+							class="flex h-10 shrink-0 items-center justify-center rounded-[4px] border-0 !bg-[rgb(var(--color-button-bg,0_0_0))] px-3 py-2.5 font-manrope text-[14px] font-normal leading-none !text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
 						>
 							Найти
 						</button>
@@ -177,7 +177,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 	>
 		<div class="flex items-center gap-2">
 			<form
-				class="flex h-10 min-h-10 flex-1 items-center justify-between rounded-[4px] border border-gray bg-white pl-3 pr-2"
+				class="flex h-10 min-h-10 flex-1 items-center justify-between rounded-[var(--radius-input,4px)] border border-gray bg-white pl-3 pr-2"
 				role="search"
 				action="/catalog"
 				method="get"

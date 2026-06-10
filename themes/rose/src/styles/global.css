@@ -685,3 +685,36 @@ input[type="search"]::-webkit-search-results-decoration {
   flex-shrink: 0;
   white-space: nowrap;
 }
+
+/* ============================================================
+   Фаза 3 (T8): DS-компоненты → панельные токены.
+   Цвета зашиты классами внутри пакета design-systems-theme —
+   перекрываем снаружи; fallback = ровно литерал DS.
+   ============================================================ */
+
+/* Промо-полоса: схемные цвета как у канона theme-base PromoBanner
+   (root: bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]).
+   Панельных токенов --color-bottom-strip-* в реестре 39 нет.
+   Fallback = литералы DS NtPromoBanner.astro:32 (#000000 / #FFFFFF). */
+[data-nt="promo-banner"] {
+  background-color: rgb(var(--color-bg, 0 0 0));
+  color: rgb(var(--color-text, 255 255 255));
+}
+
+/* Заголовок секций (NtSectionHeading): схемные цвета.
+   Fallback = литералы DS NtSectionHeading.astro:27 (#000000) / :39 (#999999). */
+[data-nt="section-heading"] h2 {
+  color: rgb(var(--color-heading, 0 0 0));
+}
+
+[data-nt="section-heading"] p {
+  color: rgb(var(--color-muted, 153 153 153));
+}
+
+/* Поле формы (NtTextField): радиус → --radius-field; fallback = литерал DS
+   rounded-[4px] (NtTextField.astro:60). Бордер НЕ мигрирован: фактический
+   литерал strong-состояния #000000 ≠ дефолт --color-input-border темы
+   (153 153 153), и перекрытие снаружи убило бы state-цвета muted/error. */
+[data-nt="text-field"] input {
+  border-radius: var(--radius-field, 4px);
+}

@@ -1,0 +1,151 @@
+---
+// Фаза 3 (T17): новая канон-секция Newsletter в манере rose (см. themes/rose/MANNER.md).
+// Схема полей = packages/theme-base/blocks/Newsletter/Newsletter.puckConfig.ts.
+// Дизайн = блок подписки подвала верстальщика (Footer.astro:132-176, перенесён
+// КОПИЕЙ — подвал не тронут): заголовок rose-title, подзаголовок Manrope muted,
+// форма-рамка radius-input/border-input с инпутом; сетка секций §2.
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон heading: string | { text, alignment, size }; canon-default «Подпишись на
+// новости».
+const heading =
+	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Подпишись на новости");
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingSizeCls =
+	headingSize === "small"
+		? " !text-[12px] sm:!text-[17px]"
+		: headingSize === "large"
+			? " !text-[17px] sm:!text-[24px]"
+			: "";
+const headingCls = `rose-title${headingSizeCls}`;
+
+// Канон description (string) + text {content,size} (pupa-дубль): canon-default
+// «Узнавай о новинках и акциях первым». Манера = подзаголовок подписки подвала
+// (Manrope 16 muted).
+const description =
+	(typeof p.description === "string" && p.description.trim() ? p.description : undefined) ??
+	(typeof p.text?.content === "string" && p.text.content.trim() ? p.text.content : undefined) ??
+	"Узнавай о новинках и акциях первым";
+const descSize = p.text?.size;
+const descSizeCls =
+	descSize === "small" ? " !text-[14px]" : descSize === "large" ? " !text-[19px]" : "";
+
+// Канон placeholder/buttonText: canon-defaults «Твой email» / «Подписаться».
+const placeholder =
+	typeof p.placeholder === "string" && p.placeholder.trim() ? p.placeholder : "Твой email";
+const buttonText =
+	typeof p.buttonText === "string" && p.buttonText.trim() ? p.buttonText : "Подписаться";
+
+// Канон formLayout: stacked (canon-default) — поле + чёрная CTA манеры §3 под ним;
+// inline-submit — форма подвала верстальщика дословно (кнопка-стрелка в рамке).
+const inlineSubmit = p.formLayout === "inline-submit";
+
+// Канон position — позиция блока в контейнере; alignment — выравнивание текста.
+// Отсутствие = left (манера блока подписки подвала).
+const position = p.position === "center" || p.position === "right" ? p.position : "left";
+const alignment = p.alignment === "center" || p.alignment === "right" ? p.alignment : "left";
+const posCls = position === "center" ? "mx-auto" : position === "right" ? "ml-auto" : "mr-auto";
+const alignCls =
+	alignment === "center"
+		? "items-center text-center"
+		: alignment === "right"
+			? "items-end text-right"
+			: "items-start text-left";
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+
+const titleId = id ? `${id}-title` : undefined;
+---
+
+<section
+	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-14 pt-14 sm:px-5 sm:pb-16 sm:pt-16 md:px-10 md:pb-[100px] md:pt-[100px] lg:px-16 lg:pb-[120px] lg:pt-[120px] xl:px-20 xl:pb-[140px] xl:pt-[140px] 2xl:px-[280px]"
+	aria-labelledby={titleId}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div class="mx-auto w-full max-w-[1320px]">
+		<div class={`flex w-full max-w-[430px] flex-col gap-5 ${posCls} ${alignCls}`} data-animate>
+			<div class="flex w-full flex-col gap-2">
+				<h2
+					id={titleId}
+					class={headingCls}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="heading"
+				>
+					{heading}
+				</h2>
+				<p
+					class={`font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))]${descSizeCls}`}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="101"
+					data-puck-subsection-field="text"
+				>
+					{description}
+				</p>
+			</div>
+
+			{
+				inlineSubmit ? (
+					<form
+						class="flex h-14 w-full items-center gap-2 rounded-[var(--radius-input,4px)] border border-[rgb(var(--color-input-border,153_153_153))] bg-white pl-[18px] pr-4 transition-colors focus-within:border-[#000000]"
+						data-newsletter-form
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="997"
+						data-puck-subsection-field="placeholder"
+					>
+						<input
+							type="email"
+							name="email"
+							required
+							placeholder={placeholder}
+							aria-label="Email"
+							class="min-w-0 flex-1 bg-transparent font-manrope text-[16px] font-normal leading-none text-[#000000] placeholder:text-[#999999] outline-none"
+						/>
+						<button
+							type="submit"
+							aria-label={buttonText}
+							class="flex size-9 shrink-0 items-center justify-center font-manrope text-[16px] font-normal leading-none text-[#000000] active:scale-95"
+						>
+							<span aria-hidden="true" class="block translate-y-px">
+								→
+							</span>
+						</button>
+					</form>
+				) : (
+					<form
+						class="flex w-full flex-col gap-4"
+						data-newsletter-form
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="997"
+						data-puck-subsection-field="placeholder"
+					>
+						<input
+							type="email"
+							name="email"
+							required
+							placeholder={placeholder}
+							aria-label="Email"
+							class="h-14 w-full rounded-[var(--radius-input,4px)] border border-[rgb(var(--color-input-border,153_153_153))] bg-white px-[18px] font-manrope text-[16px] font-normal leading-none text-[#000000] outline-none transition-colors placeholder:text-[#999999] focus-visible:border-[#000000]"
+						/>
+						<button
+							type="submit"
+							class="inline-flex h-12 w-auto min-w-[200px] items-center justify-center self-start rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-8 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
+						>
+							{buttonText}
+						</button>
+					</form>
+				)
+			}
+			<p
+				data-newsletter-status
+				role="status"
+				class="hidden w-full font-manrope text-[14px] font-normal leading-none text-[#4AD300]"
+			></p>
+		</div>
+	</div>
+</section>

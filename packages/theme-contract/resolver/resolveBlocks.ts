@@ -26,6 +26,16 @@ export interface ThemeConfigForResolver {
    * инициализирует slider'ы Theme Settings с темо-эталонными значениями.
    */
   defaults?: Record<string, string>;
+  /**
+   * Фаза 3 «Цвета»: палитра верстальщика (theme.json `colorSchemes`).
+   * Передаётся в /api/themes/:id/puck-config (в merchant-hex shape) →
+   * конструктор сидирует 5 дефолтных схем темы вместо hardcode-палитры.
+   */
+  colorSchemes?: Array<{
+    id: string;
+    name: string;
+    tokens: Record<string, string>;
+  }>;
 }
 
 export function resolveBlocks(

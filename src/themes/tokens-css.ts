@@ -348,7 +348,7 @@ function buildThemeSchemeRule(scheme: {
   return `.color-scheme-${schemeClassId(scheme.id)} { ${pairs.join('; ')}; }`;
 }
 
-function themeSchemeToMerchantShape(scheme: {
+export function themeSchemeToMerchantShape(scheme: {
   id: string;
   name: string;
   tokens: Record<string, string>;

@@ -6,7 +6,9 @@
  * any value typed into ThemeSettingsPanel. This test pins the new
  * "merchant wins" cascade so future refactors can't regress it.
  */
-import { buildTokensCss } from './tokens-css';
+import { buildTokensCss, themeSchemeToMerchantShape } from './tokens-css';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 
 describe('buildTokensCss merchant precedence', () => {
   it('merchant buttonRadius overrides Rose manifest default (6px)', () => {
@@ -111,5 +113,63 @@ describe('buildTokensCss merchant precedence', () => {
     expect(css).toContain('--color-button-2-text: 0 0 0');
     expect(css).toContain('--color-button-secondary-border: 0 0 0');
     expect(css).toContain('--color-button-2-border: 0 0 0');
+  });
+});
+
+/**
+ * Фаза 3 «Цвета» — themeSchemeToMerchantShape экспортируется и конвертирует
+ * theme.json-схему (rgb-триплеты) в merchant-hex shape. Использует реальный
+ * манифест rose: puck-config API отдаёт именно этот результат конструктору
+ * как дефолтные схемы темы (вместо hardcode-палитры ThemeContext).
+ */
+describe('themeSchemeToMerchantShape (схемы темы → merchant shape)', () => {
+  const roseManifest = JSON.parse(
+    readFileSync(
+      resolve(__dirname, '..', '..', 'packages', 'theme-rose', 'theme.json'),
+      'utf-8',
+    ),
+  );
+
+  it('rose scheme-1 конвертится в белую схему с чёрной primary-кнопкой', () => {
+    const scheme1 = roseManifest.colorSchemes.find(
+      (s: { id: string }) => s.id === 'scheme-1',
+    );
+    expect(scheme1).toBeDefined();
+
+    const merchant = themeSchemeToMerchantShape(scheme1);
+    expect(merchant).toMatchObject({
+      id: 'scheme-1',
+      name: '1',
+      background: '#ffffff',
+      surfaceBg: '#f5f5f5',
+      heading: '#000000',
+      text: '#000000',
+      primaryButton: {
+        background: '#000000',
+        text: '#ffffff',
+        border: '#000000',
+      },
+      secondaryButton: {
+        background: '#ffffff',
+        text: '#000000',
+        border: '#000000',
+      },
+    });
+  });
+
+  it('все 5 схем rose конвертируются с валидными hex-полями', () => {
+    expect(roseManifest.colorSchemes).toHaveLength(5);
+    for (const scheme of roseManifest.colorSchemes) {
+      const merchant = themeSchemeToMerchantShape(scheme) as {
+        id: string;
+        background?: string;
+        heading?: string;
+        primaryButton: { background?: string };
+      };
+      expect(merchant.id).toBe(scheme.id);
+      expect(merchant.background).toMatch(/^#[0-9a-f]{6}$/);
+      expect(merchant.heading).toMatch(/^#[0-9a-f]{6}$/);
+      expect(merchant.primaryButton.background).toMatch(/^#[0-9a-f]{6}$/);
+    }
   });
 });

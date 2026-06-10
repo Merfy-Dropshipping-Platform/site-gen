@@ -13,6 +13,10 @@ import {
 // frontend receives theme.json blockDefaults as part of defaultProps. Single
 // source of truth for merge semantics across both render paths.
 import { deepMergeBlockProps } from '../services/preview.service';
+// Фаза 3 «Цвета»: конвертер theme.json-схемы ({id,name,tokens} c rgb-триплетами)
+// в merchant-hex shape ({background,heading,primaryButton{…},…}) — тот же,
+// что использует buildTokensCss при сидировании схем на live-рендере.
+import { themeSchemeToMerchantShape } from '../themes/tokens-css';
 // Theme manifests — imported via TS resolveJsonModule so JSON content is
 // INLINED into compiled JS at build time (no runtime file lookup). Required
 // because nest-cli doesn't copy packages/*/theme.json into dist/ (relative
@@ -46,6 +50,13 @@ export interface PuckConfigJson {
   categories: Record<string, { components: string[] }>;
   /** 100: CSS-token defaults темы (theme.json `defaults`). */
   defaults?: Record<string, string>;
+  /**
+   * Фаза 3 «Цвета»: дефолтные цветовые схемы темы (theme.json `colorSchemes`)
+   * в merchant-hex shape ({id,name,background,heading,primaryButton{…},…}).
+   * Конструктор сидирует ими ThemeContext вместо hardcode-палитры, когда у
+   * ревизии нет merchant-схем. Для legacy themeId без манифеста — пустой массив.
+   */
+  colorSchemes?: Array<Record<string, unknown>>;
 }
 
 /**
@@ -124,6 +135,7 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       // получает universal-only defaults и затирает theme-specific values на edit).
       blockDefaults: (roseManifestJson as any).blockDefaults ?? {},
       defaults: (roseManifestJson as any).defaults ?? {},
+      colorSchemes: roseManifestJson.colorSchemes ?? [],
     };
   }
   if (themeId === 'vanilla') {
@@ -133,6 +145,7 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       customBlocks: vanillaManifestJson.customBlocks ?? {},
       blockDefaults: (vanillaManifestJson as any).blockDefaults ?? {},
       defaults: (vanillaManifestJson as any).defaults ?? {},
+      colorSchemes: vanillaManifestJson.colorSchemes ?? [],
     };
   }
   if (themeId === 'bloom') {
@@ -142,6 +155,7 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       customBlocks: bloomManifestJson.customBlocks ?? {},
       blockDefaults: (bloomManifestJson as any).blockDefaults ?? {},
       defaults: (bloomManifestJson as any).defaults ?? {},
+      colorSchemes: bloomManifestJson.colorSchemes ?? [],
     };
   }
   if (themeId === 'satin') {
@@ -151,6 +165,7 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       customBlocks: satinManifestJson.customBlocks ?? {},
       blockDefaults: (satinManifestJson as any).blockDefaults ?? {},
       defaults: (satinManifestJson as any).defaults ?? {},
+      colorSchemes: satinManifestJson.colorSchemes ?? [],
     };
   }
   if (themeId === 'flux') {
@@ -160,6 +175,7 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       customBlocks: fluxManifestJson.customBlocks ?? {},
       blockDefaults: (fluxManifestJson as any).blockDefaults ?? {},
       defaults: (fluxManifestJson as any).defaults ?? {},
+      colorSchemes: fluxManifestJson.colorSchemes ?? [],
     };
   }
   return DEFAULT_THEME_CONFIG;
@@ -284,10 +300,19 @@ export class ThemePuckConfigController {
     const themeDefaults =
       (themeManifest as { defaults?: Record<string, string> } | undefined)?.defaults ?? {};
 
+    // Фаза 3 «Цвета»: дефолтные схемы темы в merchant-hex shape. Конструктор
+    // сидирует ими палитру, когда у ревизии нет merchant colorSchemes —
+    // вместо hardcode-дефолтов ThemeContext (scheme-1 чёрная). У
+    // DEFAULT_THEME_CONFIG (legacy/unknown themeId) схем нет → пустой массив.
+    const themeColorSchemes = (themeManifest.colorSchemes ?? []).map(
+      themeSchemeToMerchantShape,
+    );
+
     return {
       components,
       categories: puckConfig.categories ?? {},
       defaults: themeDefaults,
+      colorSchemes: themeColorSchemes,
     };
   }
 }

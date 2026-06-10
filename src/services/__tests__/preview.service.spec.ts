@@ -94,10 +94,9 @@ describe('PreviewService', () => {
     expect(html).toContain('fonts.googleapis.com/test');
   });
 
-  it('throws for unknown block name (Phase 0 only Hero supported)', async () => {
-    await expect(
-      svc.renderBlock({ blockName: 'NonExistent', props: {} }),
-    ).rejects.toThrow(/not available|Block/i);
+  it('renders graceful error stub for unknown block name (spec 092)', async () => {
+    const html = await svc.renderBlock({ blockName: 'NonExistent', props: {} });
+    expect(html).toContain('data-render-error="NonExistent"');
   });
 
   it('wraps block HTML in color-scheme-N div when colorScheme prop set', async () => {
@@ -153,30 +152,22 @@ describe('PreviewService', () => {
       });
       // Inline-bridge JS должен содержать handler для update-block message
       expect(html).toContain("ev.data.type === 'update-block'");
-      // Per-theme allowlist: hot-replace включён для rose и vanilla (spec 084).
-      expect(html).toContain("HOT_UPDATE_ALLOWED_THEMES");
-      expect(html).toContain("'rose'");
-      expect(html).toContain("'vanilla'");
+      // 121b720: per-theme allowlist удалён — hot-update для всех тем.
+      expect(html).not.toContain("HOT_UPDATE_ALLOWED_THEMES");
       // Endpoint URL для fetch (через api-gateway proxy)
       expect(html).toContain('/preview/block');
     });
 
-    it('per-theme allowlist пропускает rose И vanilla, скип остальные', async () => {
-      // Один и тот же inline JS используется для всех тем — code identical,
-      // behaviour diverges at runtime через currentThemeId set in init message.
+    it('hot-update доступен для всех тем (allowlist удалён, 121b720)', async () => {
+      // Один и тот же inline JS используется для всех тем.
       const html = await svc.renderPreviewPage({
         blocks: [{ type: 'Hero', props: { id: 'Hero-1' } }],
         tokensCss: '',
         fontHead: '',
         themeId: 'vanilla',
       });
-      // Allowlist в коде содержит rose + vanilla (T026 — spec 084)
-      expect(html).toContain("HOT_UPDATE_ALLOWED_THEMES");
-      expect(html).toMatch(/HOT_UPDATE_ALLOWED_THEMES\s*=\s*\[[^\]]*'rose'[^\]]*'vanilla'[^\]]*\]/);
-      // Update-block handler в коде есть (тот же handler для всех тем,
-      // allowlist срабатывает на runtime через indexOf check).
+      expect(html).not.toContain("HOT_UPDATE_ALLOWED_THEMES");
       expect(html).toContain('update-block');
-      expect(html).toContain('indexOf(currentThemeId)');
     });
 
     it('update-block агент создаёт scheme-обёртку on demand и снимает её симметрично', async () => {
@@ -237,8 +228,8 @@ describe('PreviewService', () => {
         themeId: 'rose',
       });
       expect(html).toContain("ev.data.type === 'update-tokens'");
-      // Per-theme allowlist: rose + vanilla; satin/bloom/flux пока skip.
-      expect(html).toContain("HOT_UPDATE_ALLOWED_THEMES_TOKENS");
+      // 121b720: токены hot-replace для всех тем (allowlist удалён).
+      expect(html).not.toContain("HOT_UPDATE_ALLOWED_THEMES_TOKENS");
       // Endpoint URL для fetch (через api-gateway proxy)
       expect(html).toContain('/preview/tokens-css');
       // Stable id для replacement target

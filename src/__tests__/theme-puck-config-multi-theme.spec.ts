@@ -70,9 +70,11 @@ describe('Theme manifest resolver (Phase 2a multi-theme wiring)', () => {
     expect(vanilla.id).toBe('vanilla');
     expect(rose.id).toBe('rose');
     expect(vanilla.defaults['--container-max-width']).toBe('1320px');
-    expect(rose.defaults['--container-max-width']).toBe('1280px');
+    // Фаза 3 defaults-сверка под верстальщика: внешняя обёртка rose 1920px
+    // (Header/Footer max-w-[1920px]), CTA радиус 6px (MANNER.md §3).
+    expect(rose.defaults['--container-max-width']).toBe('1920px');
     expect(vanilla.defaults['--radius-button']).toBe('0px');
-    expect(rose.defaults['--radius-button']).toBe('8px');
+    expect(rose.defaults['--radius-button']).toBe('6px');
   });
 
   it('bloom manifest inherits Header + Footer from base (spec 089 — no overrides)', () => {
@@ -111,14 +113,13 @@ describe('Theme manifest resolver (Phase 2a multi-theme wiring)', () => {
     expect(satinJson.defaults['--radius-card']).toBe('0px');
   });
 
-  it('flux manifest overrides Header + Footer with dark + orange accent signature', () => {
+  it('flux manifest overrides Header only (Footer override удалён в cleanup)', () => {
     const flux = loadManifest('flux');
     const resolved = resolveBlocks(BASE_BLOCKS, flux);
 
     expect(resolved.Header.source).toBe('theme');
     expect(resolved.Header.path).toBe('./blocks/Header');
-    expect(resolved.Footer.source).toBe('theme');
-    expect(resolved.Footer.path).toBe('./blocks/Footer');
+    expect(resolved.Footer.source).toBe('base');
 
     const fluxJson = JSON.parse(readFileSync(resolve(ROOT, 'packages', 'theme-flux', 'theme.json'), 'utf-8'));
     expect(fluxJson.id).toBe('flux');
@@ -134,14 +135,18 @@ describe('Theme manifest resolver (Phase 2a multi-theme wiring)', () => {
     // After spec 089 Bundle 3 — bloom тоже отказался от override-блоков.
     // After rose Header + Footer migration — rose теперь полностью base
     // (defaults в theme.json blockDefaults.Header и blockDefaults.Footer).
-    const fullOverrideThemes: Array<'satin' | 'flux'> = ['satin', 'flux'];
-    for (const id of fullOverrideThemes) {
-      const manifest = loadManifest(id);
-      const resolved = resolveBlocks(BASE_BLOCKS, manifest);
-      expect(resolved.Header.source).toBe('theme');
-      expect(resolved.Footer.source).toBe('theme');
-      expect(resolved.Hero.source).toBe('base');
-      expect(resolved.AuthModal.source).toBe('base');
+    // satin держит Header+Footer overrides; flux — только Header
+    // (Footer удалён в puckConfig overrides cleanup).
+    {
+      const satin = resolveBlocks(BASE_BLOCKS, loadManifest('satin'));
+      expect(satin.Header.source).toBe('theme');
+      expect(satin.Footer.source).toBe('theme');
+      expect(satin.AuthModal.source).toBe('base');
+      const flux = resolveBlocks(BASE_BLOCKS, loadManifest('flux'));
+      expect(flux.Header.source).toBe('theme');
+      expect(flux.Footer.source).toBe('base');
+      expect(flux.Hero.source).toBe('base');
+      expect(flux.AuthModal.source).toBe('base');
     }
 
     // Rose, Vanilla, Bloom: no Header/Footer overrides, all from base

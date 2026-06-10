@@ -109,9 +109,15 @@ describe("extractSiteConfig", () => {
     };
 
     const config = extractSiteConfig(revisionData);
+    // Канон Header расширен: logoPosition/stickiness/схемы/padding дефолтятся.
     expect(config.header).toEqual({
       siteTitle: "My Shop",
       logo: "/my-logo.svg",
+      logoPosition: "top-left",
+      stickiness: "scroll-up",
+      colorScheme: undefined,
+      menuColorScheme: undefined,
+      padding: { top: 0, bottom: 0 },
       navigationLinks: [{ label: "Home", href: "/" }],
       actionButtons: { cart: true },
     });

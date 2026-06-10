@@ -72,6 +72,15 @@ class MockDomainClient {
   async verifyDomain(_domain: string) {
     return { verified: true };
   }
+
+  // attachDomain делегирует создание домена в domain-сервис (093).
+  async addExternalDomain(_domain: string, _siteId: string) {
+    return {
+      instructions: {
+        txtRecord: { name: "_merfy-verify.example.com", value: "token123" },
+      },
+    };
+  }
 }
 
 class MockBillingClient {
@@ -200,7 +209,9 @@ describe("SitesDomainService (unit)", () => {
     ).rejects.toThrow("domain_already_in_use");
   });
 
-  it("verifyDomain throws on token mismatch", async () => {
+  // Верификация делегирована domain-сервису: verifyDomain — заглушка,
+  // возвращает status === 'verified' записи (false при mismatch вместо throw).
+  it("verifyDomain returns false when record is not verified", async () => {
     const db: any = {
       select: () => ({
         from: (tbl: TableAny) => ({
@@ -210,7 +221,7 @@ describe("SitesDomainService (unit)", () => {
           where: (_: any) => {
             if (tbl === schema.site) return Promise.resolve([{ id: "s1" }]);
             if (tbl === schema.siteDomain)
-              return Promise.resolve([{ id: "d1", token: "token123" }]);
+              return Promise.resolve([{ id: "d1", status: "pending" }]);
             return Promise.resolve([]);
           },
         }),
@@ -247,6 +258,6 @@ describe("SitesDomainService (unit)", () => {
         domain: "example.com",
         token: "wrong",
       }),
-    ).rejects.toThrow("verification_token_mismatch");
+    ).resolves.toBe(false);
   });
 });

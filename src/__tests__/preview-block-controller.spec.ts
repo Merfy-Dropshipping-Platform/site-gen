@@ -50,10 +50,13 @@ describe('POST /api/sites/:siteId/preview/block', () => {
       .expect(200);
 
     expect(res.text).toContain('data-puck-component-id="x"');
+    // siteId инжектится в props (Product.astro server-side fetch);
+    // isPreview: true — graceful stub видим в превью (spec 092 Q3 C).
     expect(renderBlockSpy).toHaveBeenCalledWith({
       blockName: 'Hero',
-      props: { title: 'Test', id: 'Hero-1' },
+      props: { title: 'Test', id: 'Hero-1', siteId: 'site-1' },
       themeId: 'rose',
+      isPreview: true,
     });
   });
 

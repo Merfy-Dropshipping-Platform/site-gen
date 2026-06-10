@@ -266,7 +266,7 @@ describe("buildScaffold", () => {
     expect(generatedFiles).toContain("src/pages/collections/[handle].astro");
 
     const productPage = await fs.readFile(
-      path.join(outputDir, "src", "pages", "products", "[handle].astro"),
+      path.join(outputDir, "src", "pages", "product", "[handle].astro"),
       "utf8",
     );
     expect(productPage).toContain("getStaticPaths");

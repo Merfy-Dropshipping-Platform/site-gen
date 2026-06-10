@@ -85,8 +85,9 @@ describe("FragmentPatcher", () => {
     it("should call islands server for all 3 components", async () => {
       await patcher.patchFragments("site-1", "tenant-1");
 
-      // Should be called 3 times: PopularProducts, ProductGrid, ProductDetail
-      expect(mockFetch).toHaveBeenCalledTimes(3);
+      // Instant sync (7ccc9d3): сначала 1 вызов /islands/batch (мок без ok →
+      // фоллбек), затем sequential по 3 компонентам = 4 вызова.
+      expect(mockFetch).toHaveBeenCalledTimes(4);
     });
 
     it("should write each fragment to MinIO at correct path", async () => {
@@ -124,8 +125,10 @@ describe("FragmentPatcher", () => {
     });
 
     it("should continue patching other components when one fails", async () => {
-      // First call (PopularProducts) fails, others succeed
+      // Batch-вызов падает (→ sequential fallback), затем первый компонент
+      // (PopularProducts) падает, остальные два успешны.
       mockFetch
+        .mockRejectedValueOnce(new Error("batch unavailable"))
         .mockRejectedValueOnce(new Error("network error"))
         .mockResolvedValue({
           ok: true,

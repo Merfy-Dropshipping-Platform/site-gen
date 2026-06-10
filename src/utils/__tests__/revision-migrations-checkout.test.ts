@@ -1,32 +1,21 @@
 import { migrateRevisionData } from '../revision-migrations';
 
+// Figma 1:19998 (2b78d47): checkout = 4 секции — CheckoutHeader / CheckoutForm
+// (мега-блок: контакты+доставка+оплата+submit+terms) / CheckoutSummary
+// (мега-блок: order summary + totals) / Footer.
 describe('migrateCheckoutPage', () => {
-  it('seeds default 12-block checkout (incl. Footer) when pagesData.checkout is missing', () => {
+  it('seeds Figma-canonical 4-block checkout when pagesData.checkout is missing', () => {
     const out = migrateRevisionData({ pagesData: { home: { content: [] } } });
     const checkout = (out.pagesData as Record<string, any>).checkout;
     expect(checkout).toBeDefined();
     const types = (checkout.content as Array<{ type: string }>).map((b) => b.type);
-    expect(types).toEqual(
-      expect.arrayContaining([
-        'CheckoutHeader',
-        'CheckoutSummaryToggle',
-        'CheckoutLayout',
-        'CheckoutContactForm',
-        'CheckoutDeliveryForm',
-        'CheckoutDeliveryMethod',
-        'CheckoutPayment',
-        'CheckoutOrderSummary',
-        'CheckoutTotals',
-        'CheckoutSubmit',
-        'CheckoutTerms',
-        'Footer',
-      ]),
-    );
-    expect(checkout.content.length).toBeGreaterThanOrEqual(12);
-    // CheckoutHeader must stay in front (checkout uses its own header variant)
-    expect(types[0]).toBe('CheckoutHeader');
-    // Footer last
-    expect(types[types.length - 1]).toBe('Footer');
+    expect(types).toEqual(['CheckoutHeader', 'CheckoutForm', 'CheckoutSummary', 'Footer']);
+  });
+
+  it('keeps page-checkout and checkout keys in sync', () => {
+    const out = migrateRevisionData({ pagesData: { home: { content: [] } } });
+    const pages = out.pagesData as Record<string, any>;
+    expect(pages['page-checkout']).toEqual(pages['checkout']);
   });
 
   it('reuses Footer from home page when available', () => {
@@ -40,19 +29,18 @@ describe('migrateCheckoutPage', () => {
     expect(checkout.content[checkout.content.length - 1]).toBe(homeFooter);
   });
 
-  it('appends Footer onto existing CheckoutLayout pages that lack it (094 backfill)', () => {
+  it('collapses legacy 080 CheckoutLayout pages into the 4-block mega layout', () => {
     const customCheckout = {
       content: [{ type: 'CheckoutLayout', props: { id: 'X', summaryPosition: 'bottom' } }],
     };
     const out = migrateRevisionData({ pagesData: { checkout: customCheckout } });
     const checkout = (out.pagesData as Record<string, any>).checkout;
     const types = (checkout.content as Array<{ type: string }>).map((b) => b.type);
-    expect(types).toEqual(['CheckoutLayout', 'Footer']);
-    // Original CheckoutLayout block preserved verbatim
-    expect(checkout.content[0]).toBe(customCheckout.content[0]);
+    expect(types).toEqual(['CheckoutHeader', 'CheckoutForm', 'CheckoutSummary', 'Footer']);
+    expect(types).not.toContain('CheckoutLayout');
   });
 
-  it('does not duplicate Footer if already present', () => {
+  it('preserves existing Footer (no duplicate) when collapsing legacy layout', () => {
     const customCheckout = {
       content: [
         { type: 'CheckoutLayout', props: { id: 'X' } },
@@ -63,7 +51,26 @@ describe('migrateCheckoutPage', () => {
     const checkout = (out.pagesData as Record<string, any>).checkout;
     const types = (checkout.content as Array<{ type: string }>).map((b) => b.type);
     expect(types.filter((t) => t === 'Footer')).toHaveLength(1);
-    expect(checkout.content[1].props.id).toBe('F-keep');
+    expect(checkout.content[checkout.content.length - 1].props.id).toBe('F-keep');
+  });
+
+  it('already-consolidated page is a no-op (idempotent fast path)', () => {
+    const consolidated = {
+      content: [
+        { type: 'CheckoutHeader', props: { id: 'H' } },
+        { type: 'CheckoutForm', props: { id: 'mega-form' } },
+        { type: 'CheckoutSummary', props: { id: 'mega-summary' } },
+        { type: 'Footer', props: { id: 'F' } },
+      ],
+    };
+    const out = migrateRevisionData({ pagesData: { checkout: consolidated } });
+    const checkout = (out.pagesData as Record<string, any>).checkout;
+    expect(checkout.content.map((b: any) => b.props.id)).toEqual([
+      'H',
+      'mega-form',
+      'mega-summary',
+      'F',
+    ]);
   });
 
   it('is idempotent — running twice keeps the same shape', () => {

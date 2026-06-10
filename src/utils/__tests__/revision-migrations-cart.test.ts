@@ -1,19 +1,24 @@
 import { migrateRevisionData } from '../revision-migrations';
 
 describe('migrateCartPage', () => {
-  it('seeds [Header, CartBody, CartSummary, Collections, Footer] when page-cart missing', () => {
+  // Figma 1:20818 (c7da2c2): cart = 5 секций (CartBody/CartSummary/CartTotals/
+  // CartCheckoutButton/PopularProducts) + chrome.
+  it('seeds 5 cart blocks + chrome when page-cart missing', () => {
     const result = migrateRevisionData({ pagesData: {} }) as {
       pagesData: Record<string, any>;
     };
     const cart = result.pagesData['page-cart'];
     expect(cart).toBeDefined();
-    expect(cart.content).toHaveLength(5);
-    expect(cart.content[0].type).toBe('Header');
-    expect(cart.content[1].type).toBe('CartBody');
-    expect(cart.content[2].type).toBe('CartSummary');
-    expect(cart.content[3].type).toBe('Collections');
-    expect(cart.content[3].props.heading).toBe('Возможно вам понравится');
-    expect(cart.content[4].type).toBe('Footer');
+    expect(cart.content.map((b: any) => b.type)).toEqual([
+      'Header',
+      'CartBody',
+      'CartSummary',
+      'CartTotals',
+      'CartCheckoutButton',
+      'PopularProducts',
+      'Footer',
+    ]);
+    expect(cart.content[5].props.heading).toBe('Возможно вам понравится');
   });
 
   it('reuses Header/Footer from home page when available', () => {
@@ -42,7 +47,17 @@ describe('migrateCartPage', () => {
       },
     }) as { pagesData: Record<string, any> };
     const types = result.pagesData['page-cart'].content.map((b: any) => b.type);
-    expect(types).toEqual(['Header', 'CartBody', 'CartSummary', 'Collections', 'Footer']);
+    // Кастомный Collections (без legacy-seed маркеров) сохраняется; патч
+    // добавляет CartTotals + CartCheckoutButton после CartSummary.
+    expect(types).toEqual([
+      'Header',
+      'CartBody',
+      'CartSummary',
+      'CartTotals',
+      'CartCheckoutButton',
+      'Collections',
+      'Footer',
+    ]);
   });
 
   it('is idempotent (running twice = no-op)', () => {
@@ -69,8 +84,17 @@ describe('migrateCartPage', () => {
     const result = migrateRevisionData(existing) as {
       pagesData: Record<string, any>;
     };
-    expect(result.pagesData['page-cart'].content).toHaveLength(3);
-    expect(result.pagesData['page-cart'].content[1].props.id).toBe('custom-cart');
+    // Патч доставляет недостающие CartTotals/CartCheckoutButton (после
+    // CartSummary; его нет — после Header), кастомный CartBody сохраняется.
+    const content = result.pagesData['page-cart'].content;
+    expect(content.map((b: any) => b.type)).toEqual([
+      'Header',
+      'CartTotals',
+      'CartCheckoutButton',
+      'CartBody',
+      'Footer',
+    ]);
+    expect(content[3].props.id).toBe('custom-cart');
   });
 
   it('inserts before Footer when page-cart exists without CartBody', () => {
@@ -90,12 +114,15 @@ describe('migrateCartPage', () => {
       pagesData: Record<string, any>;
     };
     const content = result.pagesData['page-cart'].content;
-    expect(content).toHaveLength(5);
-    expect(content[0].type).toBe('Header');
-    expect(content[1].type).toBe('CartBody');
-    expect(content[2].type).toBe('CartSummary');
-    expect(content[3].type).toBe('Collections');
-    expect(content[4].type).toBe('Footer');
+    expect(content.map((b: any) => b.type)).toEqual([
+      'Header',
+      'CartBody',
+      'CartSummary',
+      'CartTotals',
+      'CartCheckoutButton',
+      'PopularProducts',
+      'Footer',
+    ]);
   });
 
   it('adds Footer when page-cart exists without Footer', () => {
@@ -112,7 +139,7 @@ describe('migrateCartPage', () => {
       pagesData: Record<string, any>;
     };
     const content = result.pagesData['page-cart'].content;
-    expect(content).toHaveLength(5);
+    expect(content).toHaveLength(7);
     expect(content[0].type).toBe('Header');
     expect(content[content.length - 1].type).toBe('Footer');
   });
@@ -143,7 +170,14 @@ describe('migrateCartPage', () => {
     };
     const types = result.pagesData['page-cart'].content.map((b: any) => b.type);
     expect(types).not.toContain('CartSection');
-    expect(types).toEqual(['Header', 'CartBody', 'CartSummary', 'Footer']);
+    expect(types).toEqual([
+      'Header',
+      'CartBody',
+      'CartSummary',
+      'CartTotals',
+      'CartCheckoutButton',
+      'Footer',
+    ]);
   });
 
   it('removes legacy CartSection AND inserts new blocks when CartBody missing', () => {
@@ -165,7 +199,15 @@ describe('migrateCartPage', () => {
     };
     const types = result.pagesData['page-cart'].content.map((b: any) => b.type);
     expect(types).not.toContain('CartSection');
-    expect(types).toEqual(['Header', 'CartBody', 'CartSummary', 'Collections', 'Footer']);
+    expect(types).toEqual([
+      'Header',
+      'CartBody',
+      'CartSummary',
+      'CartTotals',
+      'CartCheckoutButton',
+      'PopularProducts',
+      'Footer',
+    ]);
   });
 
   it('preserves other pages (catalog, product) and seeds page-cart alongside', () => {

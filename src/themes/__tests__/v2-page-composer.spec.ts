@@ -55,4 +55,33 @@ describe('composeV2Page', () => {
     const html = composeV2Page({ shellHtml: noFooterShell, ...blocks(), assetPrefix: null });
     expect(html).toBeNull();
   });
+
+  it('tokensCss вставляет <style id="__merfy_tokens_css"> перед </head>', () => {
+    const html = composeV2Page({ shellHtml: SHELL, ...blocks(), assetPrefix: null, tokensCss: ':root{--radius-button:4px}' });
+    expect(html).toContain('<style id="__merfy_tokens_css">:root{--radius-button:4px}</style></head>');
+    // head остального не потерян
+    expect(html).toContain('/__theme/rose/_astro/a.css');
+  });
+
+  it('без tokensCss style-тег не появляется', () => {
+    const html = composeV2Page({ shellHtml: SHELL, ...blocks(), assetPrefix: null });
+    expect(html).not.toContain('__merfy_tokens_css');
+  });
+
+  it('blockSchemes оборачивает блок в .color-scheme-N, схема null — без обёртки', () => {
+    const html = composeV2Page({
+      shellHtml: SHELL,
+      blockTypes: ['Header', 'Hero', 'Footer'],
+      blocksHtml: [
+        '<div class="w-full" data-puck-component-id="Header-1">H</div>',
+        '<section data-puck-component-id="Hero-1">HERO</section>',
+        '<footer data-puck-component-id="Footer-1">F</footer>',
+      ],
+      blockSchemes: [null, 'scheme-2', '3'],
+      assetPrefix: null,
+    });
+    expect(html).toContain('<div class="color-scheme-2" data-block-scheme="2"><section data-puck-component-id="Hero-1">HERO</section></div>');
+    expect(html).toContain('<div class="color-scheme-3" data-block-scheme="3"><footer data-puck-component-id="Footer-1">F</footer></div>');
+    expect(html).not.toContain('color-scheme-1'); // Header без схемы — без обёртки
+  });
 });

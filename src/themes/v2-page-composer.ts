@@ -12,10 +12,23 @@ export interface ComposeV2PageInput {
   blocksHtml: string[];
   /** Типы тех же блоков (параллельный массив). */
   blockTypes: string[];
+  /** Параллельный массив схем блоков ('scheme-2' | '2' | null). Обёртка
+   * .color-scheme-N — её агент превью уже умеет hot-обновлять (097). */
+  blockSchemes?: Array<string | null>;
   /** '/__theme/<тема>' для превью; null для live (корневые URL). */
   assetPrefix: string | null;
   /** Заменить <title> шелла (например именем страницы). */
   titleOverride?: string;
+  /** Готовый CSS настроек темы — вставляется <style id="__merfy_tokens_css">
+   * перед </head>. Источник: buildTokensCss(themeSettings, themeId). */
+  tokensCss?: string;
+}
+
+/** 'scheme-2' | 2 → '2'; пусто → null. Единая нормализация для превью и live. */
+export function schemeIdFromProp(raw: unknown): string | null {
+  if (typeof raw === 'number' && Number.isFinite(raw)) return String(raw);
+  if (typeof raw === 'string' && raw.length > 0) return raw.replace(/^scheme-/, '');
+  return null;
 }
 
 /**
@@ -35,9 +48,15 @@ export function composeV2Page(input: ComposeV2PageInput): string | null {
   if (footerClose < bodyStart) return null;
   const replaceEnd = footerClose + '</footer>'.length;
 
-  const blocksHtml = assetPrefix
+  const rawBlocksHtml = assetPrefix
     ? input.blocksHtml.map((h) => rewriteRootUrlsToPrefix(h, assetPrefix))
     : input.blocksHtml;
+
+  const schemes = input.blockSchemes ?? [];
+  const blocksHtml = rawBlocksHtml.map((h, i) => {
+    const s = schemes[i] ? schemeIdFromProp(schemes[i]) : null;
+    return s ? `<div class="color-scheme-${s}" data-block-scheme="${s}">${h}</div>` : h;
+  });
 
   const headerParts: string[] = [];
   const mainParts: string[] = [];
@@ -58,6 +77,17 @@ export function composeV2Page(input: ComposeV2PageInput): string | null {
       `<title>${escapeHtml(titleOverride)}</title>`,
     );
   }
+
+  if (input.tokensCss) {
+    const headClose = html.search(/<\/head>/i);
+    if (headClose !== -1) {
+      html =
+        html.slice(0, headClose) +
+        `<style id="__merfy_tokens_css">${input.tokensCss}</style>` +
+        html.slice(headClose);
+    }
+  }
+
   return html;
 }
 

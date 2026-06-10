@@ -1,0 +1,205 @@
+---
+// Фаза 3 (T16): новая канон-секция MultiColumns в манере rose (см. themes/rose/MANNER.md).
+// Схема полей = packages/theme-base/blocks/MultiColumns/MultiColumns.puckConfig.ts.
+// Секции нет у верстальщика — композиция из манеры: сетка секций §2, зазор шапки
+// gap-8 md:gap-10, поверхность контейнера #F5F5F5 §4, типографика §1, кнопка §3.
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон heading: string | { text, alignment, size }; default '' → шапки нет.
+const heading =
+	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingSizeCls =
+	headingSize === "small"
+		? " !text-[12px] sm:!text-[17px]"
+		: headingSize === "large"
+			? " !text-[17px] sm:!text-[24px]"
+			: "";
+const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
+const headingAlignCls =
+	headingAlignment === "center"
+		? " !text-center"
+		: headingAlignment === "right"
+			? " !text-right"
+			: "";
+const headingCls = `rose-title${headingSizeCls}${headingAlignCls}`;
+
+// Канон columns[] 1-10 (item: heading|title, text|description, imageUrl|image,
+// imageSize, headingSize/textSize, link{text,href}). Отсутствие массива =
+// canon-defaults (3 текстовые колонки-болванки).
+const CANON_COLUMNS = [
+	{ id: "col-1", heading: "Колонка 1", text: "Описание первой колонки.", imageUrl: "" },
+	{ id: "col-2", heading: "Колонка 2", text: "Описание второй колонки.", imageUrl: "" },
+	{ id: "col-3", heading: "Колонка 3", text: "Описание третьей колонки.", imageUrl: "" },
+];
+const rawColumns = Array.isArray(p.columns) && p.columns.length ? p.columns : CANON_COLUMNS;
+const columns = rawColumns.slice(0, 10).map((c: any) => ({
+	heading: (typeof c.heading === "string" && c.heading) || (typeof c.title === "string" && c.title) || "",
+	text:
+		(typeof c.text === "string" && c.text) ||
+		(typeof c.description === "string" && c.description) ||
+		"",
+	image:
+		(typeof c.imageUrl === "string" && c.imageUrl.trim()) ||
+		(typeof c.image === "string" && c.image.trim()) ||
+		"",
+	headingSize: c.headingSize,
+	textSize: c.textSize,
+	link:
+		c.link && typeof c.link === "object" && typeof c.link.text === "string" && c.link.text.trim()
+			? { text: c.link.text, href: typeof c.link.href === "string" && c.link.href ? c.link.href : "/catalog" }
+			: undefined,
+}));
+
+// Канон displayColumns 1-4: видимые колонны с lg (canon-default 3); мобильная
+// лестница манеры 1 → md:2 фиксирована.
+const displayColumnsRaw = Number(p.displayColumns);
+const displayColumns =
+	Number.isFinite(displayColumnsRaw) && displayColumnsRaw >= 1 && displayColumnsRaw <= 4
+		? Math.round(displayColumnsRaw)
+		: 3;
+const gridStyle = `--cols:${displayColumns}`;
+
+// Канон width (s/m/l/full): small 780 (текстовая ширина манеры), medium 1080
+// (canon-default и отсутствие), large 1320 (контейнер манеры), full — без лимита.
+const widthCls =
+	p.width === "small"
+		? "max-w-[780px]"
+		: p.width === "large"
+			? "max-w-[1320px]"
+			: p.width === "full"
+				? "max-w-none"
+				: "max-w-[1080px]";
+
+// Канон imageAspectRatio: square (canon-default/отсутствие) | adapt (нативный) |
+// portrait 430/500 | landscape 429/309 — литералы манеры §4.
+const aspectCls =
+	p.imageAspectRatio === "adapt"
+		? ""
+		: p.imageAspectRatio === "portrait"
+			? " aspect-[430/500]"
+			: p.imageAspectRatio === "landscape"
+				? " aspect-[429/309]"
+				: " aspect-square";
+
+// Канон textPosition: left (canon-default) | center.
+const textAlignCls = p.textPosition === "center" ? "items-center text-center" : "items-start text-left";
+
+// Канон containerEnabled ('true' canon-default; legacy background.enabled) —
+// обёртка-поверхность манеры (#F5F5F5, радиус карточки) вокруг грида.
+const containerEnabled =
+	String(p.containerEnabled ?? p.background?.enabled ?? "true") !== "false";
+// Канон containerColorScheme (hidden) — класс схемы на контейнере (паритет theme-base).
+const containerSchemeCls =
+	typeof p.containerColorScheme === "string" && p.containerColorScheme
+		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
+		: "";
+const containerCls = containerEnabled
+	? `rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-surface,245_245_245))] p-6 md:p-10${containerSchemeCls}`
+	: containerSchemeCls.trim();
+
+// Канон buttonText/buttonLink (hidden) — кнопка манеры под гридом при непустом тексте.
+const btnText =
+	typeof p.buttonText === "string" && p.buttonText.trim() ? p.buttonText : undefined;
+const btnHref =
+	(typeof p.buttonLink === "string" && p.buttonLink ? p.buttonLink : undefined) ??
+	(typeof p.link === "string" && p.link ? p.link : undefined) ??
+	"/catalog";
+
+// Шкалы per-item размеров: medium/отсутствие = манера (заголовок колонки Manrope 16
+// как имя карточки §4; текст 16 body). small/large — шаги ≈0.85/1.2.
+const itemHeadingCls = (s: string | undefined) =>
+	s === "small" ? "!text-[14px]" : s === "large" ? "!text-[19px]" : "!text-[16px]";
+const itemTextCls = (s: string | undefined) =>
+	s === "small" ? " !text-[14px]" : s === "large" ? " !text-[19px]" : "";
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+
+const titleId = id && heading ? `${id}-title` : undefined;
+---
+
+<section
+	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-14 pt-14 sm:px-5 sm:pb-16 sm:pt-16 md:px-10 md:pb-[100px] md:pt-[100px] lg:px-16 lg:pb-[120px] lg:pt-[120px] xl:px-20 xl:pb-[140px] xl:pt-[140px] 2xl:px-[280px]"
+	aria-labelledby={titleId}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div class={`mx-auto flex w-full ${widthCls} flex-col gap-8 md:gap-10`}>
+		{
+			heading && (
+				<h2
+					id={titleId}
+					class={headingCls}
+					data-animate
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="heading"
+				>
+					{heading}
+				</h2>
+			)
+		}
+		<div class={containerCls} data-animate>
+			<ul
+				class="grid grid-cols-1 gap-6 sm:gap-5 md:grid-cols-2 md:gap-5 lg:grid-cols-[repeat(var(--cols),minmax(0,1fr))] lg:gap-6"
+				role="list"
+				style={gridStyle}
+			>
+				{
+					columns.map((c, i) => (
+						<li
+							class={`flex flex-col gap-4 ${textAlignCls}`}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index={i}
+							data-puck-subsection-field="columns"
+						>
+							{c.image && (
+								<div class={`w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]${aspectCls}`}>
+									<img src={c.image} alt={c.heading || "Колонка"} loading="lazy" class="h-full w-full object-cover" />
+								</div>
+							)}
+							{c.heading && (
+								<h3 class={`font-manrope ${itemHeadingCls(c.headingSize)} font-normal !leading-none text-[rgb(var(--color-heading,0_0_0))]`}>
+									{c.heading}
+								</h3>
+							)}
+							{c.text && (
+								<div
+									class={`font-manrope text-[16px] font-normal leading-[1.6] text-[rgb(var(--color-text,0_0_0))]${itemTextCls(c.textSize)}`}
+									set:html={c.text}
+								/>
+							)}
+							{c.link && (
+								<a
+									href={c.link.href}
+									class="font-manrope text-[16px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))] underline underline-offset-4 transition-opacity hover:opacity-70"
+								>
+									{c.link.text}
+								</a>
+							)}
+						</li>
+					))
+				}
+			</ul>
+		</div>
+		{
+			btnText && (
+				<div class="flex justify-center">
+					<a
+						href={btnHref}
+						class="inline-flex h-12 w-auto min-w-[200px] items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-8 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="102"
+						data-puck-subsection-field="buttonText"
+					>
+						{btnText}
+					</a>
+				</div>
+			)
+		}
+	</div>
+</section>

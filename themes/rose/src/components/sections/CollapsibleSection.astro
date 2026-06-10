@@ -1,0 +1,127 @@
+---
+// Фаза 3 (T16): новая канон-секция CollapsibleSection в манере rose (см.
+// themes/rose/MANNER.md). Схема = packages/theme-base/blocks/CollapsibleSection/
+// CollapsibleSection.puckConfig.ts. Секции нет у верстальщика — нативный
+// <details>/<summary> (Container-safe, без JS); вопрос = .rose-title-роль меньшего
+// размера, разделители #E5E5E5 §7, ответ = body-манера; chevron — svg c
+// group-open-поворотом (tailwind, без <style>).
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон heading: string | { text, alignment, size }; canon-default «Часто
+// задаваемые вопросы».
+const heading =
+	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Часто задаваемые вопросы");
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingSizeCls =
+	headingSize === "small"
+		? " !text-[12px] sm:!text-[17px]"
+		: headingSize === "large"
+			? " !text-[17px] sm:!text-[24px]"
+			: "";
+const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
+const headingAlignCls =
+	headingAlignment === "center"
+		? " !text-center"
+		: headingAlignment === "right"
+			? " !text-right"
+			: "";
+const headingCls = `rose-title${headingSizeCls}${headingAlignCls}`;
+
+// Канон sections[] 1-10 {heading, content} (+ pupa items[] {title, content}).
+// Отсутствие = canon-defaults (2 вопроса-болванки). content — set:html (HTML канона).
+const CANON_SECTIONS = [
+	{
+		id: "section-1",
+		heading: "Первый вопрос",
+		content: "Ответ на первый вопрос. Поддерживается базовое HTML-форматирование.",
+	},
+	{ id: "section-2", heading: "Второй вопрос", content: "Ответ на второй вопрос." },
+];
+const rawSections = Array.isArray(p.sections) && p.sections.length
+	? p.sections
+	: Array.isArray(p.items) && p.items.length
+		? p.items
+		: CANON_SECTIONS;
+const sections = rawSections.slice(0, 10).map((s: any) => ({
+	heading:
+		(typeof s.heading === "string" && s.heading) || (typeof s.title === "string" && s.title) || "",
+	content: typeof s.content === "string" ? s.content : "",
+}));
+
+// Канон containerEnabled (toggle; legacy container.enabled) — обёртка-поверхность
+// манеры (#F5F5F5, радиус карточки) вокруг списка. Canon-default отсутствует →
+// без контейнера (голый список в манере «голых карточек» §4).
+const containerEnabled = String(p.containerEnabled ?? p.container?.enabled ?? "false") === "true";
+// Канон containerColorScheme (hidden) — класс схемы на контейнере.
+const containerSchemeCls =
+	typeof p.containerColorScheme === "string" && p.containerColorScheme
+		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
+		: "";
+const listWrapCls = containerEnabled
+	? `rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-surface,245_245_245))] p-6 md:p-10${containerSchemeCls}`
+	: containerSchemeCls.trim();
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+
+const titleId = id && heading ? `${id}-title` : undefined;
+---
+
+<section
+	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-14 pt-14 sm:px-5 sm:pb-16 sm:pt-16 md:px-10 md:pb-[100px] md:pt-[100px] lg:px-16 lg:pb-[120px] lg:pt-[120px] xl:px-20 xl:pb-[140px] xl:pt-[140px] 2xl:px-[280px]"
+	aria-labelledby={titleId}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div class="mx-auto flex w-full max-w-[780px] flex-col gap-8 md:gap-10">
+		{
+			heading && (
+				<h2
+					id={titleId}
+					class={headingCls}
+					data-animate
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="heading"
+				>
+					{heading}
+				</h2>
+			)
+		}
+		<div class={listWrapCls} data-animate>
+			<ul class="flex w-full flex-col" role="list">
+				{
+					sections.map((s, i) => (
+						<li
+							class="border-b border-solid border-[rgb(var(--color-border,229_229_229))] first:border-t"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index={i}
+							data-puck-subsection-field="sections"
+						>
+							<details class="group">
+								<summary class="flex w-full cursor-pointer list-none items-center justify-between gap-4 py-5 font-comfortaa text-[14px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-70 sm:text-[16px] [&::-webkit-details-marker]:hidden">
+									<span>{s.heading}</span>
+									<svg
+										class="size-4 shrink-0 transition-transform duration-200 group-open:rotate-180"
+										viewBox="0 0 16 16"
+										fill="none"
+										aria-hidden="true"
+									>
+										<path d="M3 6l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+									</svg>
+								</summary>
+								<div
+									class="pb-5 font-manrope text-[16px] font-normal leading-[1.6] text-[rgb(var(--color-text,0_0_0))]"
+									set:html={s.content}
+								/>
+							</details>
+						</li>
+					))
+				}
+			</ul>
+		</div>
+	</div>
+</section>

@@ -8,5 +8,8 @@
   "Footer": "src/components/Footer.astro",
   "ContactForm": "src/components/sections/Contacts.astro",
   "MainText": "src/components/sections/MainText.astro",
-  "ImageWithText": "src/components/sections/ImageWithText.astro"
+  "ImageWithText": "src/components/sections/ImageWithText.astro",
+  "MultiColumns": "src/components/sections/MultiColumns.astro",
+  "MultiRows": "src/components/sections/MultiRows.astro",
+  "CollapsibleSection": "src/components/sections/CollapsibleSection.astro"
 }

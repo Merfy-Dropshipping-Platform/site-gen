@@ -1,0 +1,201 @@
+---
+// Фаза 3 (T16): новая канон-секция MultiRows в манере rose (см. themes/rose/MANNER.md).
+// Схема полей = packages/theme-base/blocks/MultiRows/MultiRows.puckConfig.ts.
+// Секции нет у верстальщика — ряд «картинка + текст» в чередующейся раскладке;
+// сетка/зазоры/медиа/кнопки — из манеры §2-4 (паттерн ImageWithText T15).
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон top-heading: string | { text, alignment, size } (+ legacy _headingLegacy);
+// отсутствие/пусто → шапки нет (canon-defaults heading не пишут).
+const heading =
+	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p._headingLegacy ?? "";
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingSizeCls =
+	headingSize === "small"
+		? " !text-[12px] sm:!text-[17px]"
+		: headingSize === "large"
+			? " !text-[17px] sm:!text-[24px]"
+			: "";
+const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
+const headingAlignCls =
+	headingAlignment === "center"
+		? " !text-center"
+		: headingAlignment === "right"
+			? " !text-right"
+			: "";
+const headingCls = `rose-title${headingSizeCls}${headingAlignCls}`;
+
+// Канон rows[] 1-10 (item: heading|title, text|description, imageUrl|image,
+// imagePosition, button{text,href|link}, size/width, headingSize/textSize).
+// Отсутствие массива = canon-defaults (2 ряда-болванки, чередование).
+const CANON_ROWS = [
+	{
+		id: "row-1",
+		heading: "Первый ряд",
+		text: "Описание первого ряда. Изображение слева.",
+		imageUrl: "",
+		imagePosition: "left",
+		button: { text: "Подробнее", href: "/about" },
+	},
+	{
+		id: "row-2",
+		heading: "Второй ряд",
+		text: "Описание второго ряда. Изображение справа.",
+		imageUrl: "",
+		imagePosition: "right",
+		button: { text: "Узнать больше", href: "/about" },
+	},
+];
+const rawRows = Array.isArray(p.rows) && p.rows.length ? p.rows : CANON_ROWS;
+
+// Канон rowsPosition: left | right — все картинки с одной стороны; alternate /
+// отсутствие — per-item imagePosition, иначе чередование по индексу.
+const rowsPosition =
+	p.rowsPosition === "left" || p.rowsPosition === "right" ? p.rowsPosition : undefined;
+
+// Канон size (s/m/l) — высота/аспект медиа ряда (топ-уровень, per-item size
+// приоритетнее). Аспекты — литералы манеры §4 (паттерн T15 ImageWithText).
+const aspectFor = (s: string | undefined) =>
+	s === "small" ? "aspect-[429/309]" : s === "large" ? "aspect-[430/500]" : "aspect-[429/444]";
+
+const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
+	const btnText =
+		typeof r.button?.text === "string" && r.button.text.trim() ? r.button.text : undefined;
+	return {
+		heading:
+			(typeof r.heading === "string" && r.heading) || (typeof r.title === "string" && r.title) || "",
+		text:
+			(typeof r.text === "string" && r.text) ||
+			(typeof r.description === "string" && r.description) ||
+			"",
+		image:
+			(typeof r.imageUrl === "string" && r.imageUrl.trim()) ||
+			(typeof r.image === "string" && r.image.trim()) ||
+			"",
+		right:
+			rowsPosition === "right" ||
+			(rowsPosition !== "left" &&
+				(r.imagePosition === "right" || (r.imagePosition !== "left" && i % 2 === 1))),
+		aspectCls: aspectFor(r.size ?? p.size),
+		headingSizeCls:
+			(r.headingSize ?? undefined) === "small"
+				? " !text-[12px] sm:!text-[17px]"
+				: r.headingSize === "large"
+					? " !text-[17px] sm:!text-[24px]"
+					: "",
+		textSizeCls:
+			r.textSize === "small" ? " !text-[14px]" : r.textSize === "large" ? " !text-[19px]" : "",
+		btnText,
+		btnHref:
+			(typeof r.button?.href === "string" && r.button.href ? r.button.href : undefined) ??
+			r.button?.link?.href ??
+			(typeof r.button?.link === "string" && r.button.link ? r.button.link : undefined) ??
+			"/catalog",
+	};
+});
+
+// Канон width (s/m/l/full): small 780, medium 1080, large/отсутствие 1320
+// (контейнер манеры; canon-defaults width не пишут), full — без лимита.
+const widthCls =
+	p.width === "small"
+		? "max-w-[780px]"
+		: p.width === "medium"
+			? "max-w-[1080px]"
+			: p.width === "full"
+				? "max-w-none"
+				: "max-w-[1320px]";
+
+// Канон alignment — выравнивание текстовой колонки рядов.
+const alignCls =
+	p.alignment === "center"
+		? "items-center text-center"
+		: p.alignment === "right"
+			? "items-end text-right"
+			: "items-start text-left";
+
+// Канон buttonStyle (primary/black/white): primary|black/отсутствие = чёрная
+// заливка манеры §3 (габариты Contacts CTA); white = белая (button-2 токены,
+// манера hero CTA).
+const btnBase =
+	"inline-flex h-12 w-auto min-w-[200px] items-center justify-center rounded-[var(--radius-button,6px)] px-8 font-manrope text-[16px] font-normal leading-normal transition-opacity hover:opacity-90";
+const btnCls =
+	p.buttonStyle === "white"
+		? `${btnBase} bg-[rgb(var(--color-button-2-bg,255_255_255))] text-[rgb(var(--color-button-2-text,0_0_0))]`
+		: `${btnBase} bg-[rgb(var(--color-button-bg,0_0_0))] text-[rgb(var(--color-button-text,255_255_255))]`;
+
+// Канон containerColorScheme (hidden) — класс схемы на контейнере рядов.
+const containerSchemeCls =
+	typeof p.containerColorScheme === "string" && p.containerColorScheme
+		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
+		: "";
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+
+const titleId = id && heading ? `${id}-title` : undefined;
+---
+
+<section
+	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-14 pt-14 sm:px-5 sm:pb-16 sm:pt-16 md:px-10 md:pb-[100px] md:pt-[100px] lg:px-16 lg:pb-[120px] lg:pt-[120px] xl:px-20 xl:pb-[140px] xl:pt-[140px] 2xl:px-[280px]"
+	aria-labelledby={titleId}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div class={`mx-auto flex w-full ${widthCls} flex-col gap-8 md:gap-10${containerSchemeCls}`}>
+		{
+			heading && (
+				<h2
+					id={titleId}
+					class={headingCls}
+					data-animate
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="heading"
+				>
+					{heading}
+				</h2>
+			)
+		}
+		<ul class="flex w-full flex-col gap-10 md:gap-14" role="list">
+			{
+				rows.map((r, i) => (
+					<li
+						class="grid w-full grid-cols-1 gap-6 md:gap-8 lg:grid-cols-2 lg:items-center lg:gap-10"
+						data-animate
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index={i}
+						data-puck-subsection-field="rows"
+					>
+						<div
+							class={`w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] ${r.aspectCls}${r.right ? " lg:order-2" : ""}`}
+							aria-hidden={r.image ? undefined : "true"}
+						>
+							{r.image && (
+								<img src={r.image} alt={r.heading || "Ряд"} loading="lazy" class="h-full w-full object-cover" />
+							)}
+						</div>
+						<div class={`flex w-full flex-col gap-6 ${alignCls}${r.right ? " lg:order-1" : ""}`}>
+							{r.heading && <h3 class={`rose-title${r.headingSizeCls}`}>{r.heading}</h3>}
+							{r.text && (
+								<div
+									class={`font-manrope text-[16px] font-normal leading-[1.6] text-[rgb(var(--color-text,0_0_0))]${r.textSizeCls}`}
+									set:html={r.text}
+								/>
+							)}
+							{r.btnText && (
+								<div class="mt-2">
+									<a href={r.btnHref} class={btnCls}>
+										{r.btnText}
+									</a>
+								</div>
+							)}
+						</div>
+					</li>
+				))
+			}
+		</ul>
+	</div>
+</section>

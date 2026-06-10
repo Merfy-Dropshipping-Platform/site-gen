@@ -16,15 +16,19 @@ const theme = process.argv[2];
 const coverage = process.argv.includes('--coverage');
 if (!theme) { console.error('usage: theme-token-audit.mjs <theme> [--coverage]'); process.exit(2); }
 const ROOT = path.resolve(import.meta.dirname, '..', 'themes', theme, 'src');
+await fs.access(ROOT).catch(() => {
+  console.error(`тема не найдена: themes/${theme}/src`);
+  process.exit(1);
+});
 
 const CANDIDATES = [
-  [/font-family:\s*([^;]+);/g, 'font-family', '--font-heading | --font-body'],
-  [/"(Comfortaa|Manrope|Playfair Display|Inter|Roboto|Montserrat[^"]*)"/g, 'font literal', '--font-heading | --font-body'],
-  [/#[0-9a-fA-F]{3,8}\b/g, 'hex color', '--color-* (схемные)'],
-  [/\brgb\(\s*\d+[^)]*\)/g, 'rgb color', '--color-* (схемные)'],
-  [/\b(?:bg|text|border)-(?:white|black|gray-\d+|neutral-\d+|zinc-\d+|stone-\d+)\b/g, 'tailwind color', '--color-bg | --color-text | --color-border'],
-  [/\brounded(?:-(?:sm|md|lg|xl|2xl|3xl|full|\[[^\]]+\]))?\b/g, 'radius', '--radius-button | --radius-card | --radius-media | --radius-input'],
-  [/border-radius:\s*[^;]+;/g, 'radius css', '--radius-*'],
+  [/font-family:\s*([^;]+);/, 'font-family', '--font-heading | --font-body'],
+  [/"(Comfortaa|Manrope|Playfair Display|Inter|Roboto|Montserrat[^"]*)"/, 'font literal', '--font-heading | --font-body'],
+  [/#[0-9a-fA-F]{3,8}\b/, 'hex color', '--color-* (схемные)'],
+  [/\brgb\(\s*\d+[^)]*\)/, 'rgb color', '--color-* (схемные)'],
+  [/\b(?:bg|text|border)-(?:white|black|gray-\d+|neutral-\d+|zinc-\d+|stone-\d+)\b/, 'tailwind color', '--color-bg | --color-text | --color-border'],
+  [/\brounded(?:-(?:sm|md|lg|xl|2xl|3xl|full|\[[^\]]+\]))?/, 'radius', '--radius-button | --radius-card | --radius-media | --radius-input'],
+  [/border-radius:\s*[^;]+;/, 'radius css', '--radius-*'],
 ];
 
 async function* files(dir) {
@@ -49,7 +53,6 @@ for await (const file of files(ROOT)) {
   lines.forEach((line, i) => {
     if (line.includes('var(--')) return; // уже мигрировано
     for (const [re, kind, suggest] of CANDIDATES) {
-      re.lastIndex = 0;
       const m = re.exec(line);
       if (m) {
         totalLiteral++;

@@ -28,7 +28,7 @@ const nextHref = `${baseHref}${sep}page=${Math.min(totalPages, currentPage + 1)}
 
 <nav
 	class:list={[
-		"flex w-full items-center justify-between font-manrope text-[14px] font-normal leading-normal text-[#000000]",
+		"flex w-full items-center justify-between font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]",
 		className,
 	]}
 	aria-label="Пагинация"
@@ -50,7 +50,7 @@ const nextHref = `${baseHref}${sep}page=${Math.min(totalPages, currentPage + 1)}
 						aria-current={p === currentPage ? "page" : undefined}
 						class:list={[
 							"inline-flex min-w-4 items-center justify-center transition-opacity",
-							p === currentPage ? "text-[#000000]" : "text-[#999999] hover:text-[#000000]",
+							p === currentPage ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,153_153_153))] hover:text-[#000000]",
 						]}
 					>
 						{p}
@@ -68,7 +68,7 @@ const nextHref = `${baseHref}${sep}page=${Math.min(totalPages, currentPage + 1)}
 	</div>
 
 	{totalCount !== undefined && (
-		<span class="font-manrope text-[14px] font-normal leading-normal text-[#999999]">
+		<span class="font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-muted,153_153_153))]">
 			{totalCount} товаров
 		</span>
 	)}

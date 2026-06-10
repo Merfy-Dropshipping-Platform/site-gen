@@ -37,14 +37,14 @@ const cartVariantColor = product.colors?.[0] ?? "";
 ---
 
 <section
-	class="w-full bg-white px-4 pb-16 pt-10 sm:px-5 sm:pb-20 sm:pt-12 md:px-10 md:pb-[120px] md:pt-16 lg:px-16 lg:pb-[140px] lg:pt-20 xl:px-20 xl:pb-[140px] xl:pt-24 2xl:px-[280px]"
+	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-16 pt-10 sm:px-5 sm:pb-20 sm:pt-12 md:px-10 md:pb-[120px] md:pt-16 lg:px-16 lg:pb-[140px] lg:pt-20 xl:px-20 xl:pb-[140px] xl:pt-24 2xl:px-[280px]"
 	aria-labelledby="product-title"
 	data-pdp-section
 	data-cart-color={cartVariantColor}
 >
 	<div class="mx-auto grid w-full max-w-[1320px] grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-[1fr_1fr] lg:gap-10 xl:grid-cols-[600px_minmax(0,1fr)]">
 		<div class="flex flex-col gap-3 sm:gap-4">
-			<div class="relative aspect-square w-full overflow-hidden rounded-[8px] bg-[#F5F5F5]">
+			<div class="relative aspect-square w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]">
 				<RosePicture
 					src={mainImage}
 					alt={product.name}
@@ -54,7 +54,7 @@ const cartVariantColor = product.colors?.[0] ?? "";
 					data-pdp-main
 				/>
 				{product.discount === true && (
-					<span class="absolute left-3 top-3 inline-flex h-6 min-w-12 items-center justify-center rounded-[4px] bg-[#000000] px-2 font-manrope text-[12px] font-normal leading-none text-white" data-pdp-badge>
+					<span class="absolute left-3 top-3 inline-flex h-6 min-w-12 items-center justify-center rounded-[4px] bg-[rgb(var(--color-accent,0_0_0))] px-2 font-manrope text-[12px] font-normal leading-none text-white" data-pdp-badge>
 						Скидка
 					</span>
 				)}
@@ -64,7 +64,7 @@ const cartVariantColor = product.colors?.[0] ?? "";
 					{thumbImages.map((img) => (
 						<button
 							type="button"
-							class="aspect-square w-full overflow-hidden rounded-[6px] bg-[#F5F5F5] transition-opacity hover:opacity-90"
+							class="aspect-square w-full overflow-hidden rounded-[6px] bg-[rgb(var(--color-surface,245_245_245))] transition-opacity hover:opacity-90"
 							data-pdp-thumb
 							data-image={img}
 							aria-label="Показать изображение"
@@ -79,7 +79,7 @@ const cartVariantColor = product.colors?.[0] ?? "";
 		<div class="flex flex-col gap-8 lg:gap-10">
 			<div class="flex flex-col gap-2 sm:gap-3">
 				<p
-					class="font-manrope text-[12px] font-light leading-normal text-[#999999] sm:text-[13px] md:text-[14px]"
+					class="font-manrope text-[12px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] sm:text-[13px] md:text-[14px]"
 					data-pdp-brand
 					hidden={!product.brand}
 				>
@@ -87,17 +87,17 @@ const cartVariantColor = product.colors?.[0] ?? "";
 				</p>
 				<h1
 					id="product-title"
-					class="font-comfortaa text-[28px] font-normal leading-none tracking-normal text-[#000000] sm:text-[32px] md:text-[36px]"
+					class="font-comfortaa text-[28px] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,0_0_0))] sm:text-[32px] md:text-[36px]"
 					data-pdp-name
 				>
 					{product.name}
 				</h1>
 				<div class="flex flex-wrap items-baseline gap-2">
-					<span class="font-manrope text-[18px] font-normal leading-normal text-[#000000] sm:text-[20px] md:text-[24px]" data-pdp-price>
+					<span class="font-manrope text-[18px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] sm:text-[20px] md:text-[24px]" data-pdp-price>
 						{product.price}
 					</span>
 					<span
-						class="font-manrope text-[14px] font-light leading-normal text-[#999999] line-through sm:text-[16px] md:text-[18px]"
+						class="font-manrope text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] line-through sm:text-[16px] md:text-[18px]"
 						data-pdp-oldprice
 						hidden={!product.oldPrice}
 					>
@@ -118,7 +118,7 @@ const cartVariantColor = product.colors?.[0] ?? "";
 				</div>
 
 				<div
-					class="flex h-10 w-fit items-center rounded-[4px] border border-solid border-[#E5E5E5]"
+					class="flex h-10 w-fit items-center rounded-[var(--radius-input,4px)] border border-solid border-[#E5E5E5]"
 					data-pdp-qty
 				>
 					<button
@@ -133,7 +133,7 @@ const cartVariantColor = product.colors?.[0] ?? "";
 						type="number"
 						min="1"
 						value="1"
-						class="h-10 w-12 bg-transparent text-center font-manrope text-[12px] font-normal leading-normal text-[#000000] outline-none sm:text-[14px]"
+						class="h-10 w-12 bg-transparent text-center font-manrope text-[12px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] outline-none sm:text-[14px]"
 						aria-label="Количество"
 						data-pdp-qty-value
 					/>
@@ -159,7 +159,7 @@ const cartVariantColor = product.colors?.[0] ?? "";
 					data-image={mainImage}
 					data-variant-color={cartVariantColor}
 					data-quantity="1"
-					class="inline-flex h-12 w-full max-w-none items-center justify-center rounded-[6px] border border-solid border-[#000000] !bg-white px-4 font-manrope text-[14px] font-normal leading-normal !text-[#000000] transition-opacity hover:opacity-90 sm:text-[16px]"
+					class="inline-flex h-12 w-full max-w-none items-center justify-center rounded-[var(--radius-button,6px)] border border-solid border-[rgb(var(--color-button-2-border,0_0_0))] !bg-[rgb(var(--color-button-2-bg,255_255_255))] px-4 font-manrope text-[14px] font-normal leading-normal !text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity hover:opacity-90 sm:text-[16px]"
 				>
 					Добавить в корзину
 				</button>
@@ -170,7 +170,7 @@ const cartVariantColor = product.colors?.[0] ?? "";
 					data-name={product.name}
 					data-price={product.price}
 					data-image={mainImage}
-					class="inline-flex h-12 w-full items-center justify-center rounded-[6px] !bg-[#000000] px-4 font-manrope text-[14px] font-normal leading-normal !text-white transition-opacity hover:opacity-95 sm:text-[16px]"
+					class="inline-flex h-12 w-full items-center justify-center rounded-[var(--radius-button,6px)] !bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-manrope text-[14px] font-normal leading-normal !text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95 sm:text-[16px]"
 				>
 					Купить сейчас
 				</button>
@@ -180,13 +180,13 @@ const cartVariantColor = product.colors?.[0] ?? "";
 				<h2 class="rose-title">
 					Описание
 				</h2>
-				<p class="font-manrope text-[13px] font-light leading-[1.54] text-[#999999] sm:text-[14px] md:text-[15px]" data-pdp-desc>
+				<p class="font-manrope text-[13px] font-light leading-[1.54] text-[rgb(var(--color-muted,153_153_153))] sm:text-[14px] md:text-[15px]" data-pdp-desc>
 					{product.description}
 				</p>
 				<button
 					type="button"
 					data-action="share"
-					class="inline-flex w-fit items-center gap-2 font-manrope text-[13px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-70 sm:text-[14px] md:text-[16px]"
+					class="inline-flex w-fit items-center gap-2 font-manrope text-[13px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 sm:text-[14px] md:text-[16px]"
 					aria-label="Поделиться"
 				>
 					<RoseNtIcon name="share" sizeClass="size-5" />

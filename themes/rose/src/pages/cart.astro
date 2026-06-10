@@ -15,7 +15,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
 
 <Layout title="Корзина" description="Ваша корзина — Rose">
 	<section
-		class="w-full bg-white px-4 pb-16 pt-12 sm:px-5 sm:pb-20 sm:pt-16 md:px-10 md:pb-[120px] md:pt-20 lg:px-16 lg:pb-[140px] lg:pt-24 xl:px-20 xl:pb-[140px] xl:pt-28 2xl:px-[280px]"
+		class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-16 pt-12 sm:px-5 sm:pb-20 sm:pt-16 md:px-10 md:pb-[120px] md:pt-20 lg:px-16 lg:pb-[140px] lg:pt-24 xl:px-20 xl:pb-[140px] xl:pt-28 2xl:px-[280px]"
 		aria-labelledby="cart-title"
 	>
 		<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-16 lg:gap-20">
@@ -35,13 +35,13 @@ const apiUrl = "https://gateway.merfy.ru/api";
 				</p>
 				<a
 					href="/catalog"
-					class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[#000000] px-6 font-manrope text-[14px] font-normal leading-normal text-white transition-opacity hover:opacity-95 sm:text-[16px]"
+					class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95 sm:text-[16px]"
 				>
 					Продолжить покупки
 				</a>
-				<p class="font-manrope text-[12px] font-normal leading-[1.43] text-[#999999] sm:text-[14px] md:text-[16px]">
+				<p class="font-manrope text-[12px] font-normal leading-[1.43] text-[rgb(var(--color-muted,153_153_153))] sm:text-[14px] md:text-[16px]">
 					Есть аккаунт?
-					<a href="/auth/sign-in" class="text-[#000000] hover:opacity-80">Войти</a>
+					<a href="/auth/sign-in" class="text-[rgb(var(--color-text,0_0_0))] hover:opacity-80">Войти</a>
 				</p>
 			</div>
 
@@ -59,17 +59,17 @@ const apiUrl = "https://gateway.merfy.ru/api";
 					class="flex flex-col gap-4 sm:gap-6"
 				></ul>
 				<div class="flex flex-col items-end gap-4 pt-6 sm:gap-5 sm:pt-8">
-					<p class="max-w-md text-right font-manrope text-[12px] font-light leading-[1.5] text-[#999999] sm:text-[13px] md:text-[14px]">
+					<p class="max-w-md text-right font-manrope text-[12px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] sm:text-[13px] md:text-[14px]">
 						Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа
 					</p>
 					<div class="flex w-full flex-wrap items-baseline justify-end gap-x-3 gap-y-1 sm:gap-x-4">
-						<span class="font-manrope text-[14px] font-normal leading-normal text-[#000000] sm:text-[16px] md:text-[18px]">Итого</span>
-						<span data-cart-page-total class="font-manrope text-[18px] font-normal leading-normal text-[#000000] sm:text-[20px] md:text-[24px]">0 ₽</span>
+						<span class="font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] sm:text-[16px] md:text-[18px]">Итого</span>
+						<span data-cart-page-total class="font-manrope text-[18px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] sm:text-[20px] md:text-[24px]">0 ₽</span>
 					</div>
 					<button
 						type="button"
 						data-action="checkout"
-						class="inline-flex h-12 w-full max-w-[320px] items-center justify-center rounded-[6px] !bg-[#000000] px-6 font-manrope text-[14px] font-normal leading-normal !text-white transition-opacity hover:opacity-95 sm:w-auto sm:min-w-[200px] sm:text-[16px]"
+						class="inline-flex h-12 w-full max-w-[320px] items-center justify-center rounded-[var(--radius-button,6px)] !bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-manrope text-[14px] font-normal leading-normal !text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95 sm:w-auto sm:min-w-[200px] sm:text-[16px]"
 					>
 						Оформить заказ
 					</button>

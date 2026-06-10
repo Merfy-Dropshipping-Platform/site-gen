@@ -13,7 +13,7 @@ const totalCount = products.length;
 
 <Layout title="Каталог" description="Каталог сумок Rose — коллекции, хиты, новинки">
 	<section
-		class="w-full bg-white px-4 pb-14 pt-10 sm:px-5 sm:pb-16 sm:pt-12 md:px-10 md:pb-[100px] md:pt-16 lg:px-16 lg:pb-[120px] lg:pt-20 xl:px-20 xl:pb-[140px] xl:pt-24 2xl:px-[280px]"
+		class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-14 pt-10 sm:px-5 sm:pb-16 sm:pt-12 md:px-10 md:pb-[100px] md:pt-16 lg:px-16 lg:pb-[120px] lg:pt-20 xl:px-20 xl:pb-[140px] xl:pt-24 2xl:px-[280px]"
 		aria-labelledby="catalog-title"
 	>
 		<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10 lg:gap-12">
@@ -31,7 +31,7 @@ const totalCount = products.length;
 					<div class="relative z-30 flex flex-wrap items-center justify-between gap-3 lg:gap-4" data-nt="catalog-filters">
 						<div class="flex flex-wrap items-center gap-3">
 							<details class="relative [&[open]]:z-30">
-								<summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[#000000] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
+								<summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
 									<span class="flex items-center gap-2">
 										<span>Наличие</span>
 										<RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
@@ -43,7 +43,7 @@ const totalCount = products.length;
 							</details>
 
 							<details class="relative [&[open]]:z-30">
-								<summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[#000000] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
+								<summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
 									<span class="flex items-center gap-2">
 										<span>Стоимость</span>
 										<RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
@@ -55,7 +55,7 @@ const totalCount = products.length;
 							</details>
 
 							<details class="relative [&[open]]:z-30">
-								<summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[#000000] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
+								<summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
 									<span class="flex items-center gap-2">
 										<span>Цвет</span>
 										<RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
@@ -68,7 +68,7 @@ const totalCount = products.length;
 						</div>
 
 						<details class="relative [&[open]]:z-30">
-							<summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[#000000] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
+							<summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
 								<span class="flex items-center gap-2">
 									<span>По популярности</span>
 									<RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
@@ -96,9 +96,9 @@ const totalCount = products.length;
 						<button
 							type="button"
 							data-action="load-more"
-							class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[#000000] px-4 py-[10px] font-manrope text-[16px] font-normal leading-[100%] text-white transition-opacity hover:opacity-90"
+							class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 py-[10px] font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
 						>Смотреть ещё</button>
-						<span class="font-manrope text-[16px] font-normal leading-[100%] text-[#999999]" data-nt="catalog-count">
+						<span class="font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-muted,153_153_153))]" data-nt="catalog-count">
 							{totalCount} товаров
 						</span>
 					</div>
@@ -124,11 +124,11 @@ const totalCount = products.length;
 							<button
 								type="button"
 								data-action="load-more"
-								class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[#000000] px-4 font-manrope text-[12px] font-normal leading-normal text-white transition-opacity hover:opacity-95 sm:text-[14px] md:text-[16px]"
+								class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-manrope text-[12px] font-normal leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95 sm:text-[14px] md:text-[16px]"
 							>
 								Смотреть ещё
 							</button>
-							<span class="font-manrope text-[12px] font-normal leading-normal text-[#999999] sm:text-[14px] md:text-[16px]" data-nt="catalog-count">
+							<span class="font-manrope text-[12px] font-normal leading-normal text-[rgb(var(--color-muted,153_153_153))] sm:text-[14px] md:text-[16px]" data-nt="catalog-count">
 								{totalCount} товаров
 							</span>
 						</div>

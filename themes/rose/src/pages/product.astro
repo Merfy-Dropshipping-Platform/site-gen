@@ -25,11 +25,11 @@ const skeleton = {
 <Layout title="Товар">
 	<RoseProductDetail product={skeleton} />
 
-	<div data-pdp-notfound hidden class="w-full bg-white px-4 py-24 text-center 2xl:px-[280px]">
-		<p class="font-comfortaa text-[24px] text-[#000000]">Товар не найден</p>
+	<div data-pdp-notfound hidden class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 py-24 text-center 2xl:px-[280px]">
+		<p class="font-comfortaa text-[24px] text-[rgb(var(--color-heading,0_0_0))]">Товар не найден</p>
 		<a
 			href="/catalog"
-			class="mt-6 inline-flex h-12 items-center justify-center rounded-[6px] bg-[#000000] px-6 font-manrope text-[16px] text-white transition-opacity hover:opacity-90"
+			class="mt-6 inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-manrope text-[16px] text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
 		>В каталог</a>
 	</div>
 </Layout>

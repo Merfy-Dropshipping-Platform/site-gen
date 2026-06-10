@@ -171,6 +171,64 @@ Gallery/Contacts/Footer + RoseProductCard/RoseCollectionCard + DS-перекры
   `renderV2ContentPage` и `v2-live-pages.ts::composeContentPagesIntoDist` вместо прямого
   `schemeIdFromProp(b.props?.colorScheme)`.
 
+## Журнал миграции T9 (сложные страницы: checkout / catalog / cart / product)
+
+Правило T9 (live-паритет): сложные страницы — блоб без обёрток `.color-scheme-N` →
+схемные токены разрешаются из `:root` = scheme-1. Мигрировались ТОЛЬКО литералы,
+равные значению scheme-1 соответствующего токена (root-радиусы — равные theme.json
+defaults). Каждый fallback = ровно прежний литерал; пиксель-дифф 4×identical.
+
+- **checkout.astro — правок НЕТ**: страница = композиция theme-base мега-блоков
+  CheckoutForm/CheckoutSummary, уже токен-driven изнутри (кнопка «Оплатить» —
+  CheckoutSubmit.classes.ts:6 `--color-button-bg/text` + `--radius-button`; поля —
+  CheckoutDeliveryForm.classes.ts:13 `--color-input-border` + `--radius-input`).
+  Собственная обвязка страницы уже на `rgb(var(--color-bg/text))` (обёртка
+  `.color-scheme-2`). Заголовки внутри блоков — не `.rose-title`, дублей с T7 нет.
+- **catalog.astro**: фон секции `bg-white` → `--color-bg`; summary фильтров/сортировки
+  (Наличие/Стоимость/Цвет/По популярности) `text-[#000000]` → `--color-text`; кнопка
+  «Смотреть ещё» (оба layout'а) `bg-[#000000]`/`text-white`/`rounded-[6px]` →
+  `--color-button-bg`/`--color-button-text`/`--radius-button`; счётчик «N товаров»
+  `#999999` → `--color-muted`. Высота `h-12` НЕ мигрирована (Step 3 называет
+  фон/текст/радиус; 48px-токен `--size-hero-button-h` остаётся дефолтом CTA-форм).
+  Карточки — RoseProductCard, мигрирован в T8 (подтверждено: страница использует его).
+- **cart.astro (страница)**: фон `bg-white` → `--color-bg`; CTA «Продолжить покупки» и
+  «Оформить заказ» → кнопка-1 токены + `--radius-button`; «Итого»/сумма `#000000` →
+  `--color-text`; подсказки `#999999` → `--color-muted`; ссылка «Войти» `#000000` →
+  `--color-text`. **Строки товаров НЕ мигрированы**: рендерятся клиентским
+  innerHTML-шаблоном внутри `<script>` (cart.astro:146-182) — правка JS запрещена
+  правилом T9 (литералы #F5F5F5/#000000/#999999/#E5E5E5/rounded-[8px]/[4px] остаются
+  носителями в JS до отдельной задачи).
+- **product.astro**: блок «Товар не найден» — фон → `--color-bg`, заголовок (comfortaa)
+  → `--color-heading`, кнопка «В каталог» → кнопка-1 + `--radius-button`.
+- **RoseProductDetail.astro (PDP)**: фон секции → `--color-bg`; главное медиа
+  `rounded-[8px] bg-[#F5F5F5]` → `--radius-media` + `--color-surface`; thumbs
+  `bg-[#F5F5F5]` → `--color-surface`, их `rounded-[6px]` НЕ мигрирован (6px ≠
+  `--radius-media` 8px — per-context литерал); бейдж «Скидка» `bg-[#000000]` →
+  `--color-accent` (прецедент T8 RoseProductCard:36), его `rounded-[4px]`/`text-white`
+  — литералы (как в T8); бренд/старая цена/описание `#999999` → `--color-muted`;
+  h1 → `--color-heading`; цена/qty-значение/«Поделиться» `#000000` → `--color-text`;
+  qty-степпер `rounded-[4px]` → `--radius-input` (прецедент T8: формы поиска), его
+  бордер `#E5E5E5` НЕ мигрирован (≠ `--color-input-border` 153 153 153); CTA
+  «Купить сейчас» (чёрная) → кнопка-1 + `--radius-button`; CTA «Добавить в корзину»
+  (белая outline) → кнопка-2 (`--color-button-2-bg/text/border`, литералы
+  white/#000000/#000000 == scheme-1 кнопки-2) + `--radius-button`.
+- **RosePdpColorVariantRow.astro — НЕ мигрирован целиком**: классы вариантных кнопок
+  (`!bg-[#000000]`/`!bg-white`/`border-[#000000]` и др.) дублируются стейт-машиной
+  applyOutline/applyFilled в `<script>` RoseProductDetail.astro:211-219 — миграция
+  разметки без правки JS даёт конфликт двух `!`-утилит после перещёлкивания
+  варианта, JS трогать нельзя. Литералы остаются синхронной парой разметка↔JS.
+- **RosePagination.astro**: базовый текст/активная страница `#000000` → `--color-text`;
+  неактивные страницы и счётчик `#999999` → `--color-muted`; `hover:text-[#000000]`
+  не тронут (hover-состояния — прецедент T8).
+- **NtCartDrawer (DS-пакет)**: цвета зашиты в пакете — перекрытие в g (конец файла)
+  по фактическим хукам `[data-nt="cart-drawer"]` + `[data-cart-panel/empty/summary]`:
+  фон панели `bg-white` → `--color-bg`; заголовок → `--color-heading`; «Скрыть» и
+  тексты пустой корзины `#999999` → `--color-muted`; «Войти», строка «Итого»
+  `#000000` → `--color-text`; обе CTA (`bg-[#000000] text-white rounded-[6px]`) →
+  кнопка-1 + `--radius-button`. Fallback'и = литералы DS. Оверлей `bg-black/35` —
+  панельного токена нет, не тронут. JS-строки товаров drawer'а не перекрываются
+  (носитель — `<script>`-шаблон).
+
 ## 5-я цветовая схема (scheme-5)
 
 Светло-серый монохром из фактической палитры rose: фон **#F5F5F5** — реальный цвет темы

@@ -54,7 +54,7 @@ export function composeV2Page(input: ComposeV2PageInput): string | null {
 
   const schemes = input.blockSchemes ?? [];
   const blocksHtml = rawBlocksHtml.map((h, i) => {
-    const s = schemes[i] ? schemeIdFromProp(schemes[i]) : null;
+    const s = schemeIdFromProp(schemes[i] ?? null);
     return s ? `<div class="color-scheme-${s}" data-block-scheme="${s}">${h}</div>` : h;
   });
 

@@ -1,6 +1,7 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { rewriteHtmlAssets } from '../themes/asset-resolver';
-import { composeV2Page } from '../themes/v2-page-composer';
+import { composeV2Page, schemeIdFromProp } from '../themes/v2-page-composer';
+import { buildTokensCss } from '../themes/tokens-css';
 
 const HTML_ESCAPE_MAP: Record<string, string> = {
   '&': '&amp;',
@@ -454,6 +455,8 @@ export class PreviewService {
     route: string;
     blocks: Array<{ type: string; props: Record<string, unknown> }>;
     titleOverride?: string;
+    /** revision.data.themeSettings — для tokens.css (паритет с live). */
+    themeSettings?: unknown;
   }): Promise<string | null> {
     const shellHtml =
       (await this.tryLoadBuiltThemeHtml(input.themeId, input.route)) ??
@@ -468,8 +471,10 @@ export class PreviewService {
       shellHtml,
       blocksHtml,
       blockTypes: input.blocks.map((b) => b.type),
+      blockSchemes: input.blocks.map((b) => schemeIdFromProp(b.props?.colorScheme)),
       assetPrefix: `/__theme/${PreviewService.bareThemeKey(input.themeId)}`,
       titleOverride: input.titleOverride,
+      tokensCss: buildTokensCss(input.themeSettings ?? {}, PreviewService.bareThemeKey(input.themeId)),
     });
     if (composed === null) return null;
     // Агент конструктора (select/hot-replace/postMessage) — то, чего
@@ -579,13 +584,7 @@ export class PreviewService {
             props: b.props,
             themeId: input.themeId ?? null,
           });
-          const rawScheme = b.props?.colorScheme;
-          let schemeId: string | null = null;
-          if (typeof rawScheme === 'number' && Number.isFinite(rawScheme)) {
-            schemeId = String(rawScheme);
-          } else if (typeof rawScheme === 'string' && rawScheme.length > 0) {
-            schemeId = rawScheme.replace(/^scheme-/, '');
-          }
+          const schemeId = schemeIdFromProp(b.props?.colorScheme);
           const wrapped = schemeId
             ? `<div class="color-scheme-${schemeId}" data-block-scheme="${schemeId}">${html}</div>`
             : html;

@@ -238,6 +238,7 @@ export class PreviewController {
             route,
             blocks: v2Blocks,
             titleOverride: pageTitle,
+            themeSettings: (loaded.data as Record<string, unknown> | null)?.themeSettings,
           });
           if (v2Html !== null) {
             const finalHtml = this.injectPreviewGlobals(v2Html, siteId);
@@ -280,7 +281,11 @@ export class PreviewController {
       // (`const shopId = ""` → siteId), токен DaData (как легаси render-путь) и
       // __MERFY_SITE_ID__ для гидрации товаров (built-theme отдаётся БЕЗ
       // per-site products.json → storefront-hydrate фолбэчит на storefront-data).
-      const html = this.injectPreviewGlobals(builtThemeHtml, siteId);
+      let html = this.injectPreviewGlobals(builtThemeHtml, siteId);
+      html = this.injectTokensIntoBlobPage(
+        html, siteId, PreviewService.bareThemeKey(loaded.themeId!),
+        (loaded.data as Record<string, unknown> | null)?.themeSettings,
+      );
       this.logger.log(
         `[preview] v2 served built theme page for site=${siteId} theme=${loaded.themeId} route=${route || '(root)'} (${html.length} bytes)`,
       );
@@ -521,6 +526,20 @@ export class PreviewController {
       (m) => `${m}<script>window.__MERFY_SITE_ID__ = ${JSON.stringify(siteId)};</script>`,
     );
     return html;
+  }
+
+  /** Фаза 3: сложные страницы v2 (блоб) получают tokens.css статикой +
+   * мини-слушатель update-tokens (selection-агента у блоба нет и не нужно). */
+  private injectTokensIntoBlobPage(htmlIn: string, siteId: string, themeId: string, themeSettings: unknown): string {
+    const css = buildTokensCss(themeSettings ?? {}, themeId);
+    const listener = `window.addEventListener('message',function(ev){`
+      + `if(!ev.data||ev.data.type!=='update-tokens')return;`
+      + `fetch('/api/sites/${siteId}/preview/tokens-css',{method:'POST',headers:{'Content-Type':'application/json'},`
+      + `body:JSON.stringify({themeSettings:ev.data.themeSettings,themeId:'${themeId}'})})`
+      + `.then(function(r){return r.text()}).then(function(t){`
+      + `var s=document.getElementById('__merfy_tokens_css');if(s)s.textContent=t;})`
+      + `.catch(function(e){console.error('[preview] blob update-tokens failed',e)});});`;
+    return htmlIn.replace(/<\/head>/i, `<style id="__merfy_tokens_css">${css}</style><script>${listener}</script></head>`);
   }
 
   private errorPage(message: string): string {

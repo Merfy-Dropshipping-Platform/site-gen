@@ -2,7 +2,8 @@
 import NtPromoBanner from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtPromoBanner.astro";
 
 // ОЖИВЛЕНИЕ: канон-схема PromoBanner (theme-base PromoBanner.puckConfig).
-// Поля канона: text, link {text, href}, legacy linkText/linkUrl.
+// Поля канона: text, link {text, href}, size (thin/small/medium/large),
+// textTransform (none/uppercase), padding {top,bottom}; legacy linkText/linkUrl.
 // Вёрстка = вызов NtPromoBanner дословно из Header.astro верстальщика.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
@@ -10,8 +11,36 @@ const text = p.text ?? "Скидка 10% на общую сумму заказа
 const link =
 	p.link?.href ?? p.linkUrl ?? (typeof p.link === "string" ? p.link : undefined) ?? "/catalog";
 const linkText = p.link?.text ?? p.linkText ?? "Перейти";
+
+// Канон size → DS-сетка NtPromoBanner (макет «Панель объявлений»: sm h32 / md h40 / lg h48).
+// Canon default 'medium' и отсутствующий проп = текущий вызов верстальщика без textSize
+// (DS-дефолт "lg", min-h-12 = 48px — дословно прежняя полоса); thin → "sm" (32px),
+// small → "md" (40px); large продолжает DS-ряд шагом 8px → 56px (min-h-14 перекрытием
+// на полосе; шрифт не меняем — манера: rose-clamp в global.css задаёт размер текста).
+const size = p.size;
+const ntTextSize = size === "thin" ? "sm" : size === "small" ? "md" : undefined;
+// Канон textTransform: 'uppercase' → класс на обёртке (text-transform наследуется
+// внутрь полосы); 'none'/отсутствие = текущий вид.
+const wrapCls =
+	[
+		size === "large" ? "[&_[data-nt=promo-banner]]:min-h-14" : "",
+		p.textTransform === "uppercase" ? "uppercase" : "",
+	]
+		.filter(Boolean)
+		.join(" ") || undefined;
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T14).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
 ---
 
-<div data-puck-component-id={id}>
-	<NtPromoBanner text={text} link={link} linkText={linkText} />
+<div
+	data-puck-component-id={id}
+	data-puck-subsection-parent={id}
+	data-puck-subsection-index="100"
+	data-puck-subsection-field="text"
+	class={wrapCls}
+	style={paddingStyle}
+>
+	<NtPromoBanner text={text} link={link} linkText={linkText} textSize={ntTextSize} />
 </div>

@@ -13,34 +13,143 @@ const subtitle =
 const ctaText = p.primaryButton?.text ?? p.cta?.text ?? p.ctaText ?? "В каталог";
 const ctaLink =
 	p.primaryButton?.link?.href ?? p.primaryButton?.link ?? p.cta?.href ?? p.ctaLink ?? "/catalog";
-const backgroundImage = p.backgroundImage ?? p.image?.url ?? "/images/Главный_экран.png";
+const backgroundImage =
+	p.backgroundImages?.url1 ?? p.backgroundImage ?? p.image?.url ?? "/images/Главный_экран.png";
+// Канон backgroundImages (imagePair url2) / legacy backgroundImage2: сплит двух
+// картинок 50/50 ТОЛЬКО когда второе фото задано; иначе одиночный рендер дословно.
+const backgroundImage2 = p.backgroundImages?.url2 ?? p.backgroundImage2;
 
+// Канон heading.size / text.size: 'large' (= blockDefaults rose) и отсутствующий
+// проп → ЛИТЕРАЛЬНАЯ лестница верстальщика. Уменьшенные варианты в манере:
+// medium ≈0.85×, small ≈0.7× от лестницы large, округление до целых px:
+//   заголовок large 20/28/36/40 → medium 17/24/31/34 → small 14/20/25/28
+//   текст     large 14/16/18/20 → medium 12/14/15/17 → small 10/11/13/14
+// Дефолтная ветка каждого тернарника = прежняя строка классов байт-в-байт.
+const headingSize = p.heading?.size;
+const headingCls =
+	headingSize === "small"
+		? "hero-animate-1 font-comfortaa !text-[14px] !font-normal !leading-none uppercase tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:!text-[20px] md:!text-[25px] lg:!text-[28px]"
+		: headingSize === "medium"
+			? "hero-animate-1 font-comfortaa !text-[17px] !font-normal !leading-none uppercase tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:!text-[24px] md:!text-[31px] lg:!text-[34px]"
+			: "hero-animate-1 font-comfortaa !text-[20px] !font-normal !leading-none uppercase tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:!text-[28px] md:!text-[36px] lg:!text-[length:var(--size-hero-heading,40px)]";
+const textSize = p.text?.size;
+const subtitleCls =
+	textSize === "small"
+		? "hero-animate-2 max-w-xl px-1 font-manrope text-[10px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))] sm:text-[11px] md:text-[13px] lg:text-[14px]"
+		: textSize === "medium"
+			? "hero-animate-2 max-w-xl px-1 font-manrope text-[12px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))] sm:text-[14px] md:text-[15px] lg:text-[17px]"
+			: "hero-animate-2 max-w-xl px-1 font-manrope text-[14px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))] sm:text-[16px] md:text-[18px] lg:text-[20px]";
+
+// Канон secondaryButton {text, link: string|{href}} — рендер ТОЛЬКО при непустом тексте.
+const secondaryText =
+	typeof p.secondaryButton?.text === "string" && p.secondaryButton.text.trim()
+		? p.secondaryButton.text
+		: undefined;
+const secondaryLink =
+	p.secondaryButton?.link?.href ??
+	(typeof p.secondaryButton?.link === "string" ? p.secondaryButton.link : undefined) ??
+	"/catalog";
+
+// Канон overlay 0-100 (число или строка) → слой затемнения между фото (z-0) и контентом (z-10).
+const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
+
+// Канон position (видимое поле панели) / contentPosition (legacy hidden, те же 9 значений)
+// + alignment (left/center/right). Значение 'center' у position/contentPosition — canon-default
+// (его пишет defaultPagesData) → пиксель верстальщика (контент у нижней кромки, по центру),
+// как и отсутствие пропа. Контент двигают только явные top-*/bottom-*/center-left/center-right.
+const posRaw =
+	typeof p.position === "string"
+		? p.position
+		: typeof p.contentPosition === "string"
+			? p.contentPosition
+			: "";
+const pos = posRaw === "center" ? "" : posRaw;
+const vPos = pos.startsWith("top") ? "top" : pos.startsWith("center") ? "middle" : "";
+const hPosFromPos = pos.endsWith("-left") ? "left" : pos.endsWith("-right") ? "right" : "";
+const hAlign =
+	p.alignment === "left" || p.alignment === "right"
+		? p.alignment
+		: p.alignment === "center"
+			? "center"
+			: hPosFromPos || "center";
+const hItemsCls = hAlign === "left" ? "items-start" : hAlign === "right" ? "items-end" : "items-center";
+const vJustifyCls = vPos === "top" ? "justify-start" : vPos === "middle" ? "justify-center" : "justify-end";
+const textAlignCls = hAlign === "left" ? "text-left" : hAlign === "right" ? "text-right" : "text-center";
+
+// Канон buttonStyle solid|outlined: outlined = бордер/текст цвета заливки кнопки,
+// прозрачный фон; solid/отсутствие = текущий вид CTA дословно (кнопка-1 токены, T8).
+const ctaCls =
+	p.buttonStyle === "outlined"
+		? "inline-flex h-10 min-h-10 w-auto min-w-[120px] items-center justify-center rounded border border-solid border-[rgb(var(--color-button-bg,255_255_255))] !bg-transparent px-3 py-2.5 font-manrope text-[14px] font-normal leading-none !text-[rgb(var(--color-button-bg,255_255_255))] transition-opacity hover:opacity-90 sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:rounded-[var(--radius-button,6px)] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]"
+		: "inline-flex h-10 min-h-10 w-auto min-w-[120px] items-center justify-center rounded !border-0 !bg-[rgb(var(--color-button-bg,255_255_255))] px-3 py-2.5 font-manrope text-[14px] font-normal leading-none !text-[rgb(var(--color-button-text,0_0_0))] transition-opacity hover:opacity-90 sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:rounded-[var(--radius-button,6px)] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]";
+
+// Кнопочный ряд: дефолт (нет второй кнопки) = прежняя строка дословно; при
+// secondaryButton кнопки встают рядом (row) с зазором манеры.
+const buttonsCls = secondaryText
+	? `hero-animate-3 flex w-full flex-row flex-wrap items-center gap-3 ${hAlign === "left" ? "justify-start" : hAlign === "right" ? "justify-end" : "justify-center"} sm:gap-4`
+	: `hero-animate-3 flex w-full flex-col ${hItemsCls} justify-center`;
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T14).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
 ---
 
 <section
 	class="relative w-full overflow-hidden bg-[rgb(var(--color-bg,255_255_255))]"
 	aria-labelledby="hero-title"
 	data-puck-component-id={id}
+	style={paddingStyle}
 >
 	<div
 		class="relative w-full min-h-[min(70svh,560px)] sm:min-h-[560px] md:min-h-[420px] lg:min-h-[460px] aspect-[10/15] sm:aspect-[4/5] md:aspect-[4/3] lg:aspect-[16/9] xl:aspect-[2/1] 2xl:aspect-[21/9]"
 	>
-		<RosePicture
-			src={backgroundImage}
-			alt={title}
-			loading="eager"
-			fetchpriority="high"
-			class="absolute inset-0 z-0 size-full object-cover object-center"
-		/>
+		{
+			backgroundImage2 ? (
+				<div class="absolute inset-0 z-0 grid grid-cols-2">
+					<RosePicture
+						src={backgroundImage}
+						alt={title}
+						loading="eager"
+						fetchpriority="high"
+						class="size-full object-cover object-center"
+					/>
+					<RosePicture
+						src={backgroundImage2}
+						alt={title}
+						loading="eager"
+						fetchpriority="high"
+						class="size-full object-cover object-center"
+					/>
+				</div>
+			) : (
+				<RosePicture
+					src={backgroundImage}
+					alt={title}
+					loading="eager"
+					fetchpriority="high"
+					class="absolute inset-0 z-0 size-full object-cover object-center"
+				/>
+			)
+		}
+
+		{
+			overlayN > 0 && (
+				<div
+					class="pointer-events-none absolute inset-0 z-[1] bg-black"
+					style={`opacity:${overlayN / 100}`}
+				/>
+			)
+		}
 
 		<div
-			class="absolute inset-0 z-10 flex w-full flex-col items-center justify-end px-4 pb-10 pt-28 sm:px-5 sm:pb-11 sm:pt-32 md:px-10 md:pb-14 md:pt-36 lg:px-16 lg:pb-16 xl:px-20 xl:pb-20 2xl:px-[280px]"
+			class={`absolute inset-0 z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} px-4 pb-10 pt-28 sm:px-5 sm:pb-11 sm:pt-32 md:px-10 md:pb-14 md:pt-36 lg:px-16 lg:pb-16 xl:px-20 xl:pb-20 2xl:px-[280px]`}
 		>
-			<div class="flex w-full max-w-[540px] flex-col items-center gap-6 sm:gap-10 md:max-w-[640px]">
-				<div class="flex flex-col items-center gap-2 text-center sm:gap-3 md:gap-4">
+			<div class={`flex w-full max-w-[540px] flex-col ${hItemsCls} gap-6 sm:gap-10 md:max-w-[640px]`}>
+				<div class={`flex flex-col ${hItemsCls} gap-2 ${textAlignCls} sm:gap-3 md:gap-4`}>
 					<h1
 						id="hero-title"
-						class="hero-animate-1 font-comfortaa !text-[20px] !font-normal !leading-none uppercase tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:!text-[28px] md:!text-[36px] lg:!text-[length:var(--size-hero-heading,40px)]"
+						class={headingCls}
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="100"
 						data-puck-subsection-field="heading"
@@ -48,7 +157,7 @@ const backgroundImage = p.backgroundImage ?? p.image?.url ?? "/images/Главн
 						{title}
 					</h1>
 					<p
-						class="hero-animate-2 max-w-xl px-1 font-manrope text-[14px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))] sm:text-[16px] md:text-[18px] lg:text-[20px]"
+						class={subtitleCls}
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="101"
 						data-puck-subsection-field="text"
@@ -57,16 +166,29 @@ const backgroundImage = p.backgroundImage ?? p.image?.url ?? "/images/Главн
 					</p>
 				</div>
 
-				<div class="hero-animate-3 flex w-full flex-col items-center justify-center">
+				<div class={buttonsCls}>
 					<a
 						href={ctaLink}
-						class="inline-flex h-10 min-h-10 w-auto min-w-[120px] items-center justify-center rounded !border-0 !bg-[rgb(var(--color-button-bg,255_255_255))] px-3 py-2.5 font-manrope text-[14px] font-normal leading-none !text-[rgb(var(--color-button-text,0_0_0))] transition-opacity hover:opacity-90 sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:rounded-[var(--radius-button,6px)] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]"
+						class={ctaCls}
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="102"
 						data-puck-subsection-field="primaryButton"
 					>
 						{ctaText}
 					</a>
+					{
+						secondaryText && (
+							<a
+								href={secondaryLink}
+								class="inline-flex h-10 min-h-10 w-auto min-w-[120px] items-center justify-center rounded border border-solid border-[rgb(var(--color-button-2-border,0_0_0))] !bg-[rgb(var(--color-button-2-bg,255_255_255))] px-3 py-2.5 font-manrope text-[14px] font-normal leading-none !text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity hover:opacity-90 sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:rounded-[var(--radius-button,6px)] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]"
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="103"
+								data-puck-subsection-field="secondaryButton"
+							>
+								{secondaryText}
+							</a>
+						)
+					}
 				</div>
 			</div>
 		</div>

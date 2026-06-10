@@ -1128,7 +1128,12 @@ const PREVIEW_NAV_AGENT_INLINE = `
     // подписаны hydratePopular/header-sync верстальщика и блоки theme-base
     // со своими data-hydrated гардами). setTimeout: вставленные module-скрипты
     // выполняются асинхронно — даём свежим блокам сначала самоинициализироваться.
+    // Шлём ОБА события навигации Astro (как ClientRouter): after-swap слушают
+    // scroll-анимации тем (initScrollAnimations в Layout — без него вставленный
+    // hot-add контент с data-animate остаётся opacity:0 «пустая секция»),
+    // page-load — гидрация блоков (hydratePopular/header-sync).
     setTimeout(function () {
+      document.dispatchEvent(new Event('astro:after-swap'));
       document.dispatchEvent(new Event('astro:page-load'));
     }, 0);
   }

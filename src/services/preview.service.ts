@@ -1121,6 +1121,16 @@ const PREVIEW_NAV_AGENT_INLINE = `
       newScript.text = oldScript.text;
       if (oldScript.parentNode) oldScript.parentNode.replaceChild(newScript, oldScript);
     }
+    // Hoisted-скрипты v2-секций (инлайнит compile-theme-sections) выполняются
+    // «один раз на страницу» (window-гард — зеркало кэша Astro-модулей по URL).
+    // Ре-инициализация после hot-replace — стандартный сигнал Astro:
+    // astro:page-load (его же шлёт ClientRouter после навигации; на него
+    // подписаны hydratePopular/header-sync верстальщика и блоки theme-base
+    // со своими data-hydrated гардами). setTimeout: вставленные module-скрипты
+    // выполняются асинхронно — даём свежим блокам сначала самоинициализироваться.
+    setTimeout(function () {
+      document.dispatchEvent(new Event('astro:page-load'));
+    }, 0);
   }
 
   // Spec 090 — runtime kill switch. Можно выключить через console:

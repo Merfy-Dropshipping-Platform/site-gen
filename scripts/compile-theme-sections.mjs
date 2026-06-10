@@ -46,6 +46,54 @@ function inlineStyles(code, css) {
 const patchCreateAstro = (s) => s.replace(/createAstro\(\$\$props,\s*\$\$slots\)/g, 'createAstro($$$$Astro, $$$$props, $$$$slots)');
 const isFile = (p) => { try { return statSync(p).isFile(); } catch { return false; } };
 
+// ---- hoisted <script> inlining ----
+// Astro компилирует hoisted <script> компонента в
+//   ${$$renderScript($$result, "<abs>?astro&type=script&index=N&lang.ts")}
+// В dev этот виртуальный модуль отдаёт Vite, в `astro build` он бандлится в
+// _astro/*.js. У Container API нет ни того ни другого — src уходил в HTML как
+// есть и давал 404 на live/превью (гидрация секций композитных страниц
+// мёртвая). Инлайним аналогично <style>: код скрипта бандлим esbuild'ом
+// (imports вида ../../lib/storefront-hydrate становятся самодостаточным
+// кодом) и кладём <script type="module"> прямо в render-шаблон. window-гард
+// повторяет семантику Astro «hoisted-модуль выполняется один раз на
+// страницу»: дубль секции или повторный hot-replace не плодит document-level
+// обработчики (Header); ре-инициализация после hot-replace — стандартный
+// сигнал astro:page-load (его шлёт превью-агент, как ClientRouter после
+// навигации; hydratePopular/header-sync верстальщика на него подписаны).
+// `<script is:inline>` сюда не попадают — они остаются литералами шаблона.
+// esbuild берём из дерева зависимостей astro (прямого dep нет — рантайму
+// сервиса он не нужен, скрипт работает на стадии сборки образа).
+const esbuild = createRequire(require.resolve('astro/package.json'))('esbuild');
+
+async function bundleHoistedScript(tsCode, fromFile) {
+  const r = await esbuild.build({
+    stdin: { contents: tsCode, resolveDir: dirname(fromFile), sourcefile: fromFile, loader: 'ts' },
+    bundle: true, write: false, format: 'esm', platform: 'browser', logLevel: 'silent',
+  });
+  return r.outputFiles[0].text;
+}
+
+async function inlineScripts(code, scripts, fromFile) {
+  const re = /\$\{\$\$renderScript\(\$\$result,\s*"[^"]*\?astro&type=script&index=(\d+)[^"]*"\)\}/g;
+  for (const m of [...code.matchAll(re)]) {
+    const hoisted = (scripts || [])[Number(m[1])];
+    let tag = '';
+    if (hoisted && hoisted.code) {
+      const key = `__merfy_hoisted_${flatName(fromFile)}_${m[1]}`;
+      const js = (await bundleHoistedScript(hoisted.code, fromFile))
+        // </script> внутри JS-строк закрыл бы инлайн-тег при HTML-парсинге
+        .replace(/<\/script/gi, '<\\/script');
+      const guarded = `if(!window[${JSON.stringify(key)}]){window[${JSON.stringify(key)}]=1;\n${js}}`;
+      const lit = guarded.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${');
+      tag = `<script type="module">${lit}</script>`;
+    } else {
+      console.warn(`! hoisted script без code (external src?) — выпилен: ${fromFile} index=${m[1]}`);
+    }
+    code = code.replace(m[0], () => tag);
+  }
+  return code;
+}
+
 // resolve an import specifier (from `fromFile`) to an abs path of a compilable
 // .astro/.ts, or null (leave import as-is: runtime/react/css/json/unresolved).
 function resolveSpec(spec, fromFile) {
@@ -78,7 +126,8 @@ async function compileFile(abs) {
   let code;
   if (abs.endsWith('.astro')) {
     const r = await transform(src, { filename: abs, sourcemap: 'external', internalURL: 'astro/runtime/server/index.js', resolvePath: async (s) => s });
-    code = patchCreateAstro(stripTypes(inlineStyles(r.code, r.css)));
+    const withAssets = await inlineScripts(inlineStyles(r.code, r.css), r.scripts, abs);
+    code = patchCreateAstro(stripTypes(withAssets));
   } else {
     code = stripTypes(src);
   }

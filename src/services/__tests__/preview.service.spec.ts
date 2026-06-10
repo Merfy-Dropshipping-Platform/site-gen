@@ -200,6 +200,19 @@ describe('PreviewService', () => {
       expect(html).toContain('wrapper.removeAttribute(schemeAttr)');
     });
 
+    it('executeScriptsIn диспатчит astro:page-load для ре-инициализации hoisted-скриптов', async () => {
+      // Hoisted-скрипты v2-секций инлайнятся компилятором с window-гардом
+      // «один раз на страницу» — после hot-replace ре-гидрация идёт через
+      // стандартный сигнал Astro, на который подписаны скрипты темы.
+      const html = await svc.renderPreviewPage({
+        blocks: [{ type: 'Hero', props: { id: 'Hero-1' } }],
+        tokensCss: '',
+        fontHead: '',
+        themeId: 'rose',
+      });
+      expect(html).toContain("document.dispatchEvent(new Event('astro:page-load'))");
+    });
+
     it('init handler сохраняет themeId и siteId из parent', async () => {
       // Init postMessage от parent должен сохранить currentThemeId и currentSiteId
       // в iframe scope чтобы update-block handler потом использовал их в fetch URL.

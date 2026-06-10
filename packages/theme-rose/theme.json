@@ -270,6 +270,27 @@
         },
         "showDescription": true
       }
+    },
+    "MainText": {
+      "colorScheme": "scheme-1"
+    },
+    "ImageWithText": {
+      "colorScheme": "scheme-1"
+    },
+    "MultiColumns": {
+      "colorScheme": "scheme-1"
+    },
+    "MultiRows": {
+      "colorScheme": "scheme-1"
+    },
+    "CollapsibleSection": {
+      "colorScheme": "scheme-1"
+    },
+    "Newsletter": {
+      "colorScheme": "scheme-1"
+    },
+    "Slideshow": {
+      "colorScheme": "scheme-1"
     }
   },
   "colorSchemes": [

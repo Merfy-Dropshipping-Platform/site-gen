@@ -361,20 +361,16 @@ function coerceHeroProps(
     // else: leave undefined for theme manifest or Astro frontmatter default
   }
   if (out.colorScheme !== undefined) out.colorScheme = coerceSchemeNumber(out.colorScheme);
-  if (!out.padding) out.padding = { top: 80, bottom: 80 };
+  // padding: normalise only when present; absent → undefined lets blockDefaults win.
+  // size: same — absent → theme manifest / Astro default applies.
+  // overlay: convert legacy overlayOpacity float only when the source field is present.
   if (typeof out.title !== 'string') out.title = '';
   if (typeof out.subtitle !== 'string') out.subtitle = '';
   if (!out.image) out.image = { url: '', alt: '' };
   if (!out.cta) out.cta = { text: '', href: '#' };
-  // size: "small"|"medium"|"large" is preserved as-is.
-  if (typeof out.size !== 'string') out.size = 'medium';
   // overlay: numeric 0-100. legacy overlayOpacity may be 0..1 float.
-  if (typeof out.overlay !== 'number') {
-    if (typeof out.overlayOpacity === 'number') {
-      out.overlay = Math.round(out.overlayOpacity * 100);
-    } else {
-      out.overlay = 30;
-    }
+  if (typeof out.overlay !== 'number' && typeof out.overlayOpacity === 'number') {
+    out.overlay = Math.round(out.overlayOpacity * 100);
   }
 }
 
@@ -395,7 +391,7 @@ function coerceHeaderProps(out: Record<string, unknown>): void {
   if (typeof out.siteTitle !== 'string') out.siteTitle = '';
   if (typeof out.logo !== 'string') out.logo = '';
   if (!Array.isArray(out.navigationLinks)) out.navigationLinks = [];
-  if (!out.padding) out.padding = { top: 16, bottom: 16 };
+  // padding: absent → undefined lets blockDefaults (e.g. rose Header.padding {24,24}) win.
   // logoPosition/stickiness/menuType — enums; accept legacy values verbatim.
 }
 
@@ -414,7 +410,7 @@ function coercePopularProductsProps(out: Record<string, unknown>): void {
   if (typeof out.cards !== 'number') out.cards = 4;
   if (typeof out.columns !== 'number') out.columns = 4;
   if (out.colorScheme !== undefined) out.colorScheme = coerceSchemeNumber(out.colorScheme);
-  if (!out.padding) out.padding = { top: 80, bottom: 80 };
+  // padding: absent → undefined lets blockDefaults win.
 }
 
 function coerceContactFormProps(out: Record<string, unknown>): void {
@@ -431,7 +427,7 @@ function coerceContactFormProps(out: Record<string, unknown>): void {
     };
   }
   if (out.colorScheme !== undefined) out.colorScheme = coerceSchemeNumber(out.colorScheme);
-  if (!out.padding) out.padding = { top: 80, bottom: 80 };
+  // padding: absent → undefined lets blockDefaults win.
 }
 
 function coerceImageWithTextProps(
@@ -472,7 +468,7 @@ function coerceImageWithTextProps(
     const pp = typeof out.photoPosition === 'string' ? out.photoPosition : '';
     out.imagePosition = pp === 'right' ? 'right' : 'left';
   }
-  if (!out.padding) out.padding = { top: 40, bottom: 40 };
+  // padding: absent → undefined lets blockDefaults win.
 }
 
 function coerceMainTextProps(out: Record<string, unknown>): void {
@@ -483,8 +479,7 @@ function coerceMainTextProps(out: Record<string, unknown>): void {
   if (t.present) out.text = t.value;
   else if (typeof out.text !== 'string') out.text = '';
   if (out.colorScheme !== undefined) out.colorScheme = coerceSchemeNumber(out.colorScheme);
-  if (!out.align) out.align = 'left';
-  if (!out.padding) out.padding = { top: 40, bottom: 40 };
+  // align, padding: absent → undefined lets blockDefaults win.
 }
 
 function coerceFooterProps(out: Record<string, unknown>): void {
@@ -512,7 +507,7 @@ function coerceFooterProps(out: Record<string, unknown>): void {
     const c = out.copyright as Record<string, unknown>;
     c.showYear = truthy(c.showYear);
   }
-  if (!out.padding) out.padding = { top: 80, bottom: 80 };
+  // padding: absent → undefined lets blockDefaults win.
 }
 
 function truthy(v: unknown): boolean {

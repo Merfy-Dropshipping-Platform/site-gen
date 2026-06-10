@@ -61,4 +61,62 @@ describe('PreviewService.resolveBlockScheme', () => {
     // После адаптации colorScheme должен быть 5, а не fallback 1
     expect(adapted.colorScheme).toBe(5);
   });
+
+  // --- T8-fix2: коэрсеры НЕ впрыскивают padding когда поле отсутствует ---
+
+  it('Header без padding в props → adapted.padding === undefined (blockDefaults побеждает)', () => {
+    const adapted = adaptLegacyProps({ id: 'Header-1' }, null, 'Header');
+    expect(adapted.padding).toBeUndefined();
+  });
+
+  it('Footer без padding в props → adapted.padding === undefined', () => {
+    const adapted = adaptLegacyProps({ id: 'Footer-1' }, null, 'Footer');
+    expect(adapted.padding).toBeUndefined();
+  });
+
+  it('Hero без padding в props → adapted.padding === undefined', () => {
+    const adapted = adaptLegacyProps({ id: 'Hero-1', title: 'Test' }, null, 'Hero');
+    expect(adapted.padding).toBeUndefined();
+  });
+
+  it('PopularProducts без padding в props → adapted.padding === undefined', () => {
+    const adapted = adaptLegacyProps({ id: 'PP-1' }, null, 'PopularProducts');
+    expect(adapted.padding).toBeUndefined();
+  });
+
+  it('ContactForm без padding в props → adapted.padding === undefined', () => {
+    const adapted = adaptLegacyProps({ id: 'CF-1' }, null, 'ContactForm');
+    expect(adapted.padding).toBeUndefined();
+  });
+
+  it('ImageWithText без padding в props → adapted.padding === undefined', () => {
+    const adapted = adaptLegacyProps({ id: 'IWT-1' }, null, 'ImageWithText');
+    expect(adapted.padding).toBeUndefined();
+  });
+
+  it('MainText без padding и align в props → оба undefined', () => {
+    const adapted = adaptLegacyProps({ id: 'MT-1', text: 'Hello' }, null, 'MainText');
+    expect(adapted.padding).toBeUndefined();
+    expect(adapted.align).toBeUndefined();
+  });
+
+  it('Hero без size в props → adapted.size === undefined (тема задаёт дефолт)', () => {
+    const adapted = adaptLegacyProps({ id: 'Hero-1', title: 'Test' }, null, 'Hero');
+    expect(adapted.size).toBeUndefined();
+  });
+
+  it('Hero без overlay/overlayOpacity → adapted.overlay === undefined', () => {
+    const adapted = adaptLegacyProps({ id: 'Hero-1', title: 'Test' }, null, 'Hero');
+    expect(adapted.overlay).toBeUndefined();
+  });
+
+  it('Hero с overlayOpacity=0.5 → overlay конвертируется в 50 (нормализация формата)', () => {
+    const adapted = adaptLegacyProps({ id: 'Hero-1', overlayOpacity: 0.5 }, null, 'Hero');
+    expect(adapted.overlay).toBe(50);
+  });
+
+  it('Header с явным padding → значение сохраняется (нормализация не трогает существующие)', () => {
+    const adapted = adaptLegacyProps({ id: 'Header-1', padding: { top: 24, bottom: 24 } }, null, 'Header');
+    expect(adapted.padding).toEqual({ top: 24, bottom: 24 });
+  });
 });

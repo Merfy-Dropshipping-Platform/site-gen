@@ -49,7 +49,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 					</button>
 					<a
 						href="/"
-						class="font-comfortaa text-[20px] font-normal uppercase leading-none tracking-normal text-primary hover:opacity-80"
+						class="font-comfortaa text-[20px] font-normal uppercase leading-none tracking-normal text-rose-primary hover:opacity-80"
 					>
 						{siteTitle}
 					</a>
@@ -63,7 +63,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 						<span
 							data-cart-count
 							data-empty="true"
-							class="absolute -right-2 -top-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 font-manrope text-[10px] font-normal leading-none text-white data-[empty=true]:hidden"
+							class="absolute -right-2 -top-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-primary px-1 font-manrope text-[10px] font-normal leading-none text-white data-[empty=true]:hidden"
 						>0</span>
 					</button>
 				</div>
@@ -186,7 +186,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 					type="search"
 					name="q"
 					placeholder="Поиск"
-					class="min-w-0 flex-1 bg-transparent font-manrope text-[12px] font-normal leading-normal text-primary placeholder:text-gray outline-none"
+					class="min-w-0 flex-1 bg-transparent font-manrope text-[12px] font-normal leading-normal text-rose-primary placeholder:text-gray outline-none"
 				/>
 				<button type="submit" class="flex size-10 shrink-0 items-center justify-center" aria-label="Найти">
 					<RoseNtIcon name="search-sm" sizeClass="size-6" />
@@ -194,7 +194,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 			</form>
 			<a
 				href="/auth/sign-in"
-				class="flex size-10 shrink-0 items-center justify-center rounded-[4px] bg-primary"
+				class="flex size-10 shrink-0 items-center justify-center rounded-[4px] bg-rose-primary"
 				aria-label="Профиль"
 			>
 				<RoseNtIcon name="user" sizeClass="size-6" class="brightness-0 invert" />
@@ -211,8 +211,8 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 						class:list={[
 							"relative inline-flex w-fit pb-1 font-manrope text-[12px] font-normal leading-none transition-colors sm:text-[14px]",
 							active &&
-								"text-primary after:pointer-events-none after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:bg-primary after:content-['']",
-							!active && "text-gray hover:text-primary",
+								"text-rose-primary after:pointer-events-none after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:bg-rose-primary after:content-['']",
+							!active && "text-gray hover:text-rose-primary",
 						]}
 					>
 						{link.label}

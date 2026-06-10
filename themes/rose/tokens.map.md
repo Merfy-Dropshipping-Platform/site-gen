@@ -20,7 +20,8 @@
 | `--color-heading` | #000000 | g:49 (`.rose-title` color #000000); Hero.astro:43 (на фото — white); Header.astro:76 (лого desktop — дополнено T8); DS/NtSectionHeading.astro:27 `text-[#000000]` | было `18 18 18` | ✗ исправлено → `0 0 0` |
 | `--color-text` | #000000 | g:429 (body color #000000); Contacts.astro:36 `text-[#000000]`; Header.astro:89 | было `18 18 18` | ✗ исправлено → `0 0 0` |
 | `--color-muted` | #999999 | g:16 (`--color-gray`), g:58 (`.rose-subtitle`); Contacts.astro:35; Footer.astro:96; DS/NtSectionHeading.astro:39 | `153 153 153` | ✓ совпадает |
-| `--color-primary` | #000000 | g:15 (`@theme --color-primary: #000000`); Header.astro:52 `text-primary`, 197 `bg-primary` | `0 0 0` | ✓ совпадает |
+| `--color-primary` | #000000 (платформенный токен — используется как `rgb(var(--color-primary))` в DS-компонентах, не через Tailwind-утилиту) | DS-компоненты через `rgb(var(--color-primary,...))` | `0 0 0` | ✓ совпадает |
+| `--color-rose-primary` | #000000 | g:15 (`@theme --color-rose-primary: #000000`); Header.astro:52 `text-rose-primary`, 66 `bg-rose-primary`, 189 `text-rose-primary`, 197 `bg-rose-primary`, 214 `text-rose-primary`+`after:bg-rose-primary`, 215 `hover:text-rose-primary` | не платформенный токен — приватный неймспейс темы | ✓ переименовано из `--color-primary` (Фаза 3: коллизия неймспейса, 2026-06-10) |
 | `--color-accent` | #000000 | акцентов кроме чёрного нет: бейдж RoseProductCard.astro:36 `bg-[#000000]`; активное подчёркивание Header.astro:90 | `0 0 0` | ✓ совпадает |
 | `--color-button-bg` | #000000 | g:125 (`.rose-btn-primary` background #000000); Header.astro:160 `!bg-[#000000]`; Contacts.astro:84 | `0 0 0` | ✓ совпадает |
 | `--color-button-text` | #FFFFFF | g:132 (color #FFFFFF); Header.astro:160 `!text-white` | `255 255 255` | ✓ совпадает |

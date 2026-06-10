@@ -396,8 +396,27 @@ function coerceHeaderProps(out: Record<string, unknown>): void {
 }
 
 function coercePopularProductsProps(out: Record<string, unknown>): void {
+  // T13: heading в схеме PopularProducts — union (строка | {text, size,
+  // alignment}); Popular.astro читает `p.headingSize ?? p.heading?.size`.
+  // Раньше envelope всегда плющился в строку и size терялся. Плющим только
+  // когда size отсутствует; с size — сохраняем объект (text нормализуем,
+  // чтобы .astro не отрендерил объект при envelope без text).
   const heading = unwrapTextSize(out.heading);
-  out.heading = heading.present ? heading.value : 'Популярные товары';
+  const headingEnv = isPlainObject(out.heading)
+    ? (out.heading as Record<string, unknown>)
+    : null;
+  if (headingEnv && typeof headingEnv.size === 'string') {
+    const obj: Record<string, unknown> = {
+      text: heading.present ? heading.value : 'Популярные товары',
+      size: headingEnv.size,
+    };
+    if (typeof headingEnv.alignment === 'string') {
+      obj.alignment = headingEnv.alignment;
+    }
+    out.heading = obj;
+  } else {
+    out.heading = heading.present ? heading.value : 'Популярные товары';
+  }
   // subtitle legacy shape: {text} or {content} envelope OR flat string
   const subtitle = unwrapTextSize(out.text);
   if (subtitle.present) out.subtitle = subtitle.value;
@@ -544,6 +563,17 @@ function coerceCollectionsProps(
 ): void {
   if (typeof out.title === 'string' && !out.heading) {
     out.heading = out.title;
+  }
+  // T13: envelope heading {text, size} — схема Collections ждёт heading
+  // строкой, а размер — top-level полем headingSize (его потребляет
+  // Collections.astro). Не теряем size: поднимаем его в headingSize.
+  if (isPlainObject(out.heading)) {
+    const env = out.heading as Record<string, unknown>;
+    const h = unwrapTextSize(out.heading);
+    if (typeof env.size === 'string' && out.headingSize === undefined) {
+      out.headingSize = env.size;
+    }
+    if (h.present) out.heading = h.value;
   }
   if (typeof out.subtitle !== 'string') out.subtitle = '';
   if (typeof out.columnsCount === 'number' && !out.columns) {

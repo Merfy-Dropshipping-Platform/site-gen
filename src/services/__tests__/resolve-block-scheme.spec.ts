@@ -84,6 +84,64 @@ describe('PreviewService.resolveBlockScheme', () => {
     expect(adapted.padding).toBeUndefined();
   });
 
+  // --- T13: коэрсер не теряет heading.size ---
+
+  it('PopularProducts heading {text,size} → объект сохранён (size не потерян)', () => {
+    const adapted = adaptLegacyProps(
+      { id: 'PP-1', heading: { text: 'X', size: 'large' } },
+      null,
+      'PopularProducts',
+    );
+    expect(adapted.heading).toEqual({ text: 'X', size: 'large' });
+  });
+
+  it('PopularProducts heading {size} без text → дефолт-текст, size сохранён', () => {
+    const adapted = adaptLegacyProps(
+      { id: 'PP-1', heading: { size: 'medium' } },
+      null,
+      'PopularProducts',
+    );
+    expect(adapted.heading).toEqual({ text: 'Популярные товары', size: 'medium' });
+  });
+
+  it('PopularProducts heading {text} без size → плющится в строку (прежнее поведение)', () => {
+    const adapted = adaptLegacyProps(
+      { id: 'PP-1', heading: { text: 'X' } },
+      null,
+      'PopularProducts',
+    );
+    expect(adapted.heading).toBe('X');
+  });
+
+  it('PopularProducts heading строкой → строка как была', () => {
+    const adapted = adaptLegacyProps(
+      { id: 'PP-1', heading: 'Хиты' },
+      null,
+      'PopularProducts',
+    );
+    expect(adapted.heading).toBe('Хиты');
+  });
+
+  it('Collections heading {text,size} → heading строкой + size поднят в headingSize', () => {
+    const adapted = adaptLegacyProps(
+      { id: 'C-1', heading: { text: 'Коллекции', size: 'large' } },
+      null,
+      'Collections',
+    );
+    expect(adapted.heading).toBe('Коллекции');
+    expect(adapted.headingSize).toBe('large');
+  });
+
+  it('Collections heading {text,size} при явном headingSize → top-level приоритетнее', () => {
+    const adapted = adaptLegacyProps(
+      { id: 'C-1', heading: { text: 'К', size: 'large' }, headingSize: 'small' },
+      null,
+      'Collections',
+    );
+    expect(adapted.heading).toBe('К');
+    expect(adapted.headingSize).toBe('small');
+  });
+
   it('ContactForm без padding в props → adapted.padding === undefined', () => {
     const adapted = adaptLegacyProps({ id: 'CF-1' }, null, 'ContactForm');
     expect(adapted.padding).toBeUndefined();

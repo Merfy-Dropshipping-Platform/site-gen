@@ -1,0 +1,129 @@
+---
+// Фаза 3 (T15): новая канон-секция MainText в манере rose (см. themes/rose/MANNER.md).
+// Схема полей = packages/theme-base/blocks/MainText/MainText.puckConfig.ts.
+// Секции нет у верстальщика — дефолт-композиция собрана из манеры: сетка секций §2
+// (поля px-4…2xl:px-[280px], вертикаль 56/64/100/120/140, контейнер 1320),
+// типографика §1 (.rose-title / Manrope 16), кнопки §3 (solid чёрная, габариты
+// Contacts CTA; outlined = button-2 токены как secondaryButton Hero T11).
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// heading: string | { text, size }; text: string | { content, size } (canon union).
+const heading =
+	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Заголовок раздела");
+const text =
+	typeof p.text === "string"
+		? p.text
+		: (p.text?.content ??
+			"Описание вашего магазина. Поддерживает базовое HTML-форматирование: <b>жирный</b> и <i>курсив</i>.");
+
+// Канон headingSize (top-level hidden приоритетнее heading.size сабпанели):
+// 'medium' (canon-default) и отсутствие = .rose-title дословно (20px desktop /
+// 14px mobile). small 17/12, large 24/17 — шкала T14 ContactForm.
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingSizeCls =
+	headingSize === "small"
+		? " !text-[12px] sm:!text-[17px]"
+		: headingSize === "large"
+			? " !text-[17px] sm:!text-[24px]"
+			: "";
+const headingCls = `rose-title${headingSizeCls}`;
+
+// Канон textSize (text.size сабпанели): 'medium' (canon-default) и отсутствие =
+// body-манера 16px. small 14, large 19 (шаги ≈0.85/1.2 как T13 subtitle).
+const textSize = p.textSize ?? p.text?.size;
+const textSizeCls =
+	textSize === "small" ? " !text-[14px]" : textSize === "large" ? " !text-[19px]" : "";
+
+// Канон position — позиция контент-колонки в контейнере; alignment — выравнивание
+// текста/элементов внутри колонки. canon-default обоих = 'center'.
+const position = p.position === "left" || p.position === "right" ? p.position : "center";
+const alignment = p.alignment === "left" || p.alignment === "right" ? p.alignment : "center";
+const posCls = position === "left" ? "mr-auto" : position === "right" ? "ml-auto" : "mx-auto";
+const alignCls =
+	alignment === "left"
+		? "items-start text-left"
+		: alignment === "right"
+			? "items-end text-right"
+			: "items-center text-center";
+
+// Канон textStyle (hidden, 084): italic → курсив заголовка и текста.
+const italicCls = p.textStyle === "italic" ? " italic" : "";
+
+// Кнопка: canon-сабпанель button {text, link} приоритетнее legacy hidden cta
+// {text, href|link, variant}. Рендер ТОЛЬКО при непустом тексте (canon-defaults
+// кнопку не пишут — дефолт секции без кнопки). Ссылка-фоллбек /catalog (паттерн T11).
+const btnText =
+	(typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined) ??
+	(typeof p.cta?.text === "string" && p.cta.text.trim() ? p.cta.text : undefined);
+const btnHref =
+	p.button?.link?.href ??
+	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??
+	(typeof p.cta?.href === "string" && p.cta.href ? p.cta.href : undefined) ??
+	(typeof p.cta?.link === "string" && p.cta.link ? p.cta.link : undefined) ??
+	"/catalog";
+// Канон buttonStyle (hidden, 084): solid (default) = чёрная заливка манеры
+// (габариты Contacts CTA: h-12 min-w-200 rounded-6 px-8 Manrope 16); outlined =
+// бордер + button-2 токены; legacy cta.variant 'white' = белая заливка (манера
+// hero CTA на фото).
+const btnVariant =
+	p.buttonStyle === "outlined" ? "outlined" : p.cta?.variant === "white" ? "white" : "solid";
+const btnBase =
+	"inline-flex h-12 w-auto min-w-[200px] items-center justify-center rounded-[var(--radius-button,6px)] px-8 font-manrope text-[16px] font-normal leading-normal transition-opacity hover:opacity-90";
+const btnCls =
+	btnVariant === "outlined"
+		? `${btnBase} border border-solid border-[rgb(var(--color-button-2-border,0_0_0))] bg-[rgb(var(--color-button-2-bg,255_255_255))] text-[rgb(var(--color-button-2-text,0_0_0))]`
+		: btnVariant === "white"
+			? `${btnBase} bg-[rgb(var(--color-button-2-bg,255_255_255))] text-[rgb(var(--color-button-2-text,0_0_0))]`
+			: `${btnBase} bg-[rgb(var(--color-button-bg,0_0_0))] text-[rgb(var(--color-button-text,255_255_255))]`;
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+
+const titleId = id ? `${id}-title` : undefined;
+---
+
+<section
+	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-14 pt-14 sm:px-5 sm:pb-16 sm:pt-16 md:px-10 md:pb-[100px] md:pt-[100px] lg:px-16 lg:pb-[120px] lg:pt-[120px] xl:px-20 xl:pb-[140px] xl:pt-[140px] 2xl:px-[280px]"
+	aria-labelledby={titleId}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div class="mx-auto w-full max-w-[1320px]">
+		<div class={`flex w-full max-w-[780px] flex-col gap-6 ${posCls} ${alignCls}`} data-animate>
+			<h2
+				id={titleId}
+				class={headingCls + italicCls}
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="100"
+				data-puck-subsection-field="heading"
+			>
+				{heading}
+			</h2>
+			<div
+				class={`font-manrope text-[16px] font-normal leading-[1.6] text-[rgb(var(--color-text,0_0_0))]${textSizeCls}${italicCls}`}
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="101"
+				data-puck-subsection-field="text"
+				set:html={text}
+			/>
+			{
+				btnText && (
+					<div class="mt-2">
+						<a
+							href={btnHref}
+							class={btnCls}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="102"
+							data-puck-subsection-field="button"
+						>
+							{btnText}
+						</a>
+					</div>
+				)
+			}
+		</div>
+	</div>
+</section>

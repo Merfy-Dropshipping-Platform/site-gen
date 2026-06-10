@@ -1,0 +1,156 @@
+---
+// Фаза 3 (T15): новая канон-секция ImageWithText в манере rose (см. themes/rose/MANNER.md).
+// Схема полей = packages/theme-base/blocks/ImageWithText/ImageWithText.puckConfig.ts.
+// Секции нет у верстальщика — композиция из манеры: сетка секций §2, зазоры галереи
+// (gap-6 md:gap-8), медиа §4 (rounded 8 на медиа, плейсхолдер-поверхность #F5F5F5),
+// типографика §1, кнопка §3 (solid чёрная, габариты Contacts CTA).
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// heading: string | { text, alignment, size }; text: string | { content, size }.
+const heading =
+	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Расскажите о товаре");
+const text =
+	typeof p.text === "string"
+		? p.text
+		: (p.text?.content ?? "Опишите преимущества продукта, его ценность для клиента.");
+
+// Канон heading.size: 'medium'/отсутствие = .rose-title дословно (20/14).
+// small 17/12, large 24/17 — шкала T14.
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingSizeCls =
+	headingSize === "small"
+		? " !text-[12px] sm:!text-[17px]"
+		: headingSize === "large"
+			? " !text-[17px] sm:!text-[24px]"
+			: "";
+// Канон heading.alignment: отсутствие = left (текстовая колонка манеры).
+const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
+const headingAlignCls =
+	headingAlignment === "center"
+		? " !text-center"
+		: headingAlignment === "right"
+			? " !text-right"
+			: "";
+const headingCls = `rose-title${headingSizeCls}${headingAlignCls}`;
+
+// Канон text.size: medium/отсутствие = body-манера 16px; small 14, large 19.
+const textSize = p.textSize ?? p.text?.size;
+const textSizeCls =
+	textSize === "small" ? " !text-[14px]" : textSize === "large" ? " !text-[19px]" : "";
+
+// Канон textStyle (hidden, 084): italic → курсив заголовка и текста.
+const italicCls = p.textStyle === "italic" ? " italic" : "";
+
+// Канон image {url, alt}: canon-default url пуст → fallback = реальный ассет темы
+// (плановое требование T15; та же картинка, что у плиток галереи верстальщика).
+const imageUrl =
+	typeof p.image?.url === "string" && p.image.url.trim()
+		? p.image.url
+		: "/images/Изображение_Галерея.webp";
+const imageAlt =
+	typeof p.image?.alt === "string" && p.image.alt.trim() ? p.image.alt : heading;
+
+// Канон imagePosition: left (canon-default; картинка слева, текст справа) | right.
+const imageRight = p.imagePosition === "right";
+
+// Канон size (s/m/l) — высота/аспект медиа. Аспекты — литералы манеры §4:
+// small = широкая плитка галереи 429/309, medium (дефолт) = высокая плитка 429/444,
+// large = карточка коллекции 430/500.
+const aspectCls =
+	p.size === "small"
+		? "aspect-[429/309]"
+		: p.size === "large"
+			? "aspect-[430/500]"
+			: "aspect-[429/444]";
+
+// Канон width (s/m/l/full) — ширина контентного контейнера. Дефолт/large = 1320
+// (контейнер манеры), medium 1080, small 780 (текстовая ширина манеры), full — без
+// ограничения (горизонтальные поля секции остаются).
+const widthCls =
+	p.width === "small"
+		? "max-w-[780px]"
+		: p.width === "medium"
+			? "max-w-[1080px]"
+			: p.width === "full"
+				? "max-w-none"
+				: "max-w-[1320px]";
+
+// Канон containerColorScheme (hidden, 084): класс схемы на внутреннем контейнере
+// (паритет theme-base; цвета подтянут токены схемы).
+const containerSchemeCls =
+	typeof p.containerColorScheme === "string" && p.containerColorScheme
+		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
+		: "";
+
+// Кнопка: canon button {text, href|link}. Рендер ТОЛЬКО при непустом тексте.
+const btnText =
+	typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined;
+const btnHref =
+	(typeof p.button?.href === "string" && p.button.href ? p.button.href : undefined) ??
+	p.button?.link?.href ??
+	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??
+	"/catalog";
+// Канон ctaPosition (hidden, 084): inline (default) | bottom-pinned → кнопка
+// прижимается к нижней кромке текстовой колонки (mt-auto).
+const bottomPinned = p.ctaPosition === "bottom-pinned";
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+
+const titleId = id ? `${id}-title` : undefined;
+---
+
+<section
+	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-14 pt-14 sm:px-5 sm:pb-16 sm:pt-16 md:px-10 md:pb-[100px] md:pt-[100px] lg:px-16 lg:pb-[120px] lg:pt-[120px] xl:px-20 xl:pb-[140px] xl:pt-[140px] 2xl:px-[280px]"
+	aria-labelledby={titleId}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div class={`mx-auto grid w-full ${widthCls} grid-cols-1 gap-6 md:gap-8 lg:grid-cols-2 lg:items-center lg:gap-10${containerSchemeCls}`} data-animate>
+		<div
+			class={`w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] ${aspectCls}${imageRight ? " lg:order-2" : ""}`}
+			data-puck-subsection-parent={id}
+			data-puck-subsection-index="100"
+			data-puck-subsection-field="image"
+		>
+			<img src={imageUrl} alt={imageAlt} loading="lazy" class="h-full w-full object-cover" />
+		</div>
+
+		<div class={`flex h-full w-full flex-col gap-6${imageRight ? " lg:order-1" : ""}`}>
+			<h2
+				id={titleId}
+				class={headingCls + italicCls}
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="101"
+				data-puck-subsection-field="heading"
+			>
+				{heading}
+			</h2>
+			<div
+				class={`font-manrope text-[16px] font-normal leading-[1.6] text-[rgb(var(--color-text,0_0_0))]${textSizeCls}${italicCls}`}
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="102"
+				data-puck-subsection-field="text"
+				set:html={text}
+			/>
+			{
+				btnText && (
+					<div class={bottomPinned ? "mt-auto" : "mt-2"}>
+						<a
+							href={btnHref}
+							class="inline-flex h-12 w-auto min-w-[200px] items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-8 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="103"
+							data-puck-subsection-field="button"
+						>
+							{btnText}
+						</a>
+					</div>
+				)
+			}
+		</div>
+	</div>
+</section>

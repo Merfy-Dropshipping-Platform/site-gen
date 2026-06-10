@@ -15,9 +15,9 @@
 
 | Токен | Литерал верстальщика | Носители (файл:строка) | scheme-1 | Вердикт |
 |---|---|---|---|---|
-| `--color-bg` | #FFFFFF | Layout.astro:26 `bg-white`; Hero.astro:21; Collections.astro:16; Popular.astro:18; Gallery.astro:15; Contacts.astro:18; Footer.astro:43; g:17 | `255 255 255` | ✓ совпадает |
+| `--color-bg` | #FFFFFF | Layout.astro:26 `bg-white`; Hero.astro:21; Collections.astro:16; Popular.astro:18; Gallery.astro:15; Contacts.astro:18; Footer.astro:43; Header.astro:30 (фон шапки — дополнено T8); g:17 | `255 255 255` | ✓ совпадает |
 | `--color-surface` | #F5F5F5 | RoseCollectionCard.astro:20 `bg-[#F5F5F5]`; Gallery.astro:31, 51, 81 | `245 245 245` | ✓ совпадает |
-| `--color-heading` | #000000 | g:49 (`.rose-title` color #000000); Hero.astro:43 (на фото — white); DS/NtSectionHeading.astro:27 `text-[#000000]` | было `18 18 18` | ✗ исправлено → `0 0 0` |
+| `--color-heading` | #000000 | g:49 (`.rose-title` color #000000); Hero.astro:43 (на фото — white); Header.astro:76 (лого desktop — дополнено T8); DS/NtSectionHeading.astro:27 `text-[#000000]` | было `18 18 18` | ✗ исправлено → `0 0 0` |
 | `--color-text` | #000000 | g:429 (body color #000000); Contacts.astro:36 `text-[#000000]`; Header.astro:89 | было `18 18 18` | ✗ исправлено → `0 0 0` |
 | `--color-muted` | #999999 | g:16 (`--color-gray`), g:58 (`.rose-subtitle`); Contacts.astro:35; Footer.astro:96; DS/NtSectionHeading.astro:39 | `153 153 153` | ✓ совпадает |
 | `--color-primary` | #000000 | g:15 (`@theme --color-primary: #000000`); Header.astro:52 `text-primary`, 197 `bg-primary` | `0 0 0` | ✓ совпадает |
@@ -101,6 +101,57 @@
 рендерит `calc(var(--size-hero-heading) * 1.5)` (theme-base/blocks/Hero/Hero.astro:78-80) —
 v1-хиро укрупнится 48→60px. Принято: целевой пиксель — верстальщик (40px), v1-каскад
 сводится в следующих задачах фазы.
+
+## Журнал миграции T8 (нарезанные секции → var() с fallback = литерал)
+
+Мигрированы носители панельных токенов в PromoBanner/Header/Hero/Collections/Popular/
+Gallery/Contacts/Footer + RoseProductCard/RoseCollectionCard + DS-перекрытия в g.
+Каждый fallback = ровно прежний литерал верстальщика; пиксель-дифф после каждого
+шага identical. Решения по спорным местам:
+
+- **Промо-полоса**: токенов `--color-bottom-strip-*` в реестре 39 НЕТ — взяты схемные
+  `--color-bg`/`--color-text` как у канона theme-base PromoBanner.classes. Цвета зашиты
+  в DS NtPromoBanner (пропсов цвета нет) → перекрытие в g (конец файла) по
+  `[data-nt="promo-banner"]` с fallback `0 0 0`/`255 255 255` (= литералы DS,
+  НЕ scheme-1 — полоса у верстальщика чёрная; перекраску даст обёртка схемы блока).
+- **Копирайт-полоса Footer** (:154-155): `bg-black`/`text-white` → `--color-heading`/`--color-bg`
+  — пара канона theme-base Footer.classes copyright.bar (инверсия в рамках одной схемы).
+- **Лестницы размеров**: мигрирован только desktop-носитель — nav-ссылка `lg:text-[16px]` →
+  `lg:text-[length:var(--size-nav-link,16px)]` (mobile 14px литерал), hero h1 `lg:!text-[40px]` →
+  `lg:!text-[length:var(--size-hero-heading,40px)]` (лестница 20/28/36 литералами), лого
+  desktop 24px → `--size-logo-width` (mobile 20px литерал). Карта называет lg-классы носителями.
+- **Hero CTA = «вторая кнопка»** (`--color-button-2-bg/text`, по таблице выше); высота
+  `sm:h-[52px]` НЕ мигрирована (52 ≠ глобальный дефолт 48 — см. вердикт `--size-hero-button-h`);
+  mobile `rounded` (4px) НЕ мигрирован (носитель = `sm:rounded-[6px]`); `!border-0` не тронут
+  (рамки нет — носитель отсутствует).
+- **Contacts CTA**: `h-12` → `h-[var(--size-hero-button-h,48px)]` (литерал 48 == дефолт);
+  `rounded-[6px]` → `--radius-button`. Цвета кнопки живут в `.rose-btn-primary` (g) —
+  фон/текст мигрированы на `--color-button-bg/text` (носители g:125/g:132 в старой нумерации);
+  его радиус 8px / высота 56px — per-context (авторизация), остались литералами.
+- **NtTextField (DS)**: радиус перекрыт в g → `--radius-field` (4px = дефолт). Бордер НЕ
+  мигрирован — РАСХОЖДЕНИЕ: фактический рендеримый бордер полей Contacts = strong `#000000`
+  (DS default prop), а дефолт темы `--color-input-border` = `153 153 153`; перекрытие снаружи
+  дополнительно убило бы state-цвета muted/error. Развязка — на уровне DS-пропсов в следующих
+  задачах. Textarea Contacts: бордер `#000000` не мигрирован по той же причине, радиус →
+  `--radius-field`.
+- **NtSectionHeading (DS)**: h2/p не были покрыты T7 (литералы в пакете) — перекрытие в g:
+  h2 → `--color-heading`, p → `--color-muted` (носители по таблице выше).
+- **Радиус медиа карточек**: RoseProductCard:22 и RoseCollectionCard:20 мигрированы под
+  `--radius-media` (по Step 3 задачи); `--radius-card` остаётся без собственного носителя
+  в rose (карточки без подложки/рамки).
+- **Кнопка поиска шапки** («Найти», Header): фон/текст → `--color-button-bg/text` (носители
+  по таблице), радиус 4px — per-context, НЕ мигрирован. Формы поиска (desktop/бургер) →
+  `rounded-[var(--radius-input,4px)]`; бордер поиска `#E5E5E5` — литерал без панельного
+  токена (≠ `--color-input-border` 153 153 153), не тронут.
+- **Footer muted-тексты**: помимо образца :96 тот же литерал/роль у второй колонки, телефона,
+  email и подзаголовка рассылки — все → `--color-muted`. Соцссылки → `--color-text`.
+  Hover/focus-состояния (`hover:text-[#000000]`, `focus-within:border-[#000000]`) не тронуты.
+- **`text-primary`/`bg-primary`** (mobile-лого, бейджи, бургер): НЕ обёрнуты в `rgb(var())` —
+  `@theme` определяет `--color-primary: #000000` hex'ом в :root, `rgb(var(--color-primary))`
+  дал бы invalid. Места остаются на tailwind-переменной; формат-развязка — задача механики схем.
+- **Gallery**: CTA-кнопки в секции верстальщика НЕТ (вопреки тексту Step 4) — мигрированы
+  фон секции, радиусы и surface плиток. Подписи плиток `text-black` — карта носителем не
+  называет, не тронуты.
 
 ## 5-я цветовая схема (scheme-5)
 

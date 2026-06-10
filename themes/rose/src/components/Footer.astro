@@ -40,7 +40,7 @@ const socials: SocialLink[] = [
 ];
 ---
 
-<footer class="w-full bg-white" data-puck-component-id={id}>
+<footer class="w-full bg-[rgb(var(--color-bg,255_255_255))]" data-puck-component-id={id}>
 	<div class="mx-auto w-full max-w-[1920px] px-4 pb-20 pt-20 sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px]">
 		<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-20">
 			<section class="flex w-full flex-col gap-5" aria-labelledby="newsletter-heading">
@@ -51,13 +51,13 @@ const socials: SocialLink[] = [
 					>
 						Подпишитесь на нашу рассылку
 					</h2>
-					<p class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[#999999]">
+					<p class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))]">
 						Получайте информацию от нашего бренда
 					</p>
 				</div>
 
 				<form
-					class="flex h-14 w-full max-w-[430px] items-center gap-2 rounded-[4px] border border-[#999999] bg-white pl-[18px] pr-4 transition-colors focus-within:border-[#000000]"
+					class="flex h-14 w-full max-w-[var(--size-newsletter-form-w,430px)] items-center gap-2 rounded-[var(--radius-input,4px)] border border-[rgb(var(--color-input-border,153_153_153))] bg-white pl-[18px] pr-4 transition-colors focus-within:border-[#000000]"
 					data-newsletter-form
 				>
 					<input
@@ -93,7 +93,7 @@ const socials: SocialLink[] = [
 							<li>
 								<a
 									href={link.href}
-									class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[#999999] transition-colors hover:text-[#000000] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#71C0FF]"
+									class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#000000] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#71C0FF]"
 								>
 									{link.label}
 								</a>
@@ -106,7 +106,7 @@ const socials: SocialLink[] = [
 							<li>
 								<a
 									href={link.href}
-									class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[#999999] transition-colors hover:text-[#000000] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#71C0FF]"
+									class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#000000] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#71C0FF]"
 								>
 									{link.label}
 								</a>
@@ -119,13 +119,13 @@ const socials: SocialLink[] = [
 					<div class="flex flex-col gap-3">
 						<a
 							href={`tel:${phone.replace(/[^+\d]/g, "")}`}
-							class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[#999999] transition-colors hover:text-[#000000] lg:text-right"
+							class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#000000] lg:text-right"
 						>
 							{phone}
 						</a>
 						<a
 							href={`mailto:${email}`}
-							class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[#999999] transition-colors hover:text-[#000000] lg:text-right"
+							class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#000000] lg:text-right"
 						>
 							{email}
 						</a>
@@ -135,7 +135,7 @@ const socials: SocialLink[] = [
 							<a
 								href={s.href}
 								aria-label={s.platform}
-								class="flex size-6 items-center justify-center text-[#000000] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#71C0FF]"
+								class="flex size-6 items-center justify-center text-[rgb(var(--color-text,0_0_0))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#71C0FF]"
 							>
 								<RoseNtIcon name={s.icon} sizeClass="size-6" />
 							</a>
@@ -151,8 +151,8 @@ const socials: SocialLink[] = [
 		</div>
 	</div>
 
-	<div class="flex h-16 w-full items-center justify-center bg-black px-4">
-		<p class="text-center font-manrope text-[14px] font-normal leading-none text-white">
+	<div class="flex h-16 w-full items-center justify-center bg-[rgb(var(--color-heading,0_0_0))] px-4">
+		<p class="text-center font-manrope text-[14px] font-normal leading-none text-[rgb(var(--color-bg,255_255_255))]">
 			© {today.getFullYear()} {siteTitle} Theme Все права защищены. Powered by Merfy
 		</p>
 	</div>

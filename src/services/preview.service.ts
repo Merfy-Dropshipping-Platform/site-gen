@@ -1688,19 +1688,26 @@ const PREVIEW_NAV_AGENT_INLINE = `
           var wrapper = el.parentElement;
           var schemeAttr = 'data-block-' + 'scheme';
           var hasSchemeWrapper = wrapper && wrapper.hasAttribute(schemeAttr);
+          // Нормализация newProps.colorScheme → newSchemeId — нужна ОБЕИМ
+          // веткам (sync существующей обёртки И создание новой on demand).
+          var rawScheme = newProps && newProps.colorScheme;
+          var newSchemeId = '';
+          if (typeof rawScheme === 'string' && rawScheme.length > 0) {
+            newSchemeId = String(rawScheme).replace(/^scheme-/, '');
+          } else if (typeof rawScheme === 'number') {
+            newSchemeId = String(rawScheme);
+          }
           if (hasSchemeWrapper) {
             // Sync wrapper class to current newProps.colorScheme (cleaned through
             // theme defaults server-side — see deepMergeBlockProps stale guard).
-            var rawScheme = newProps && newProps.colorScheme;
-            var newSchemeId = '';
-            if (typeof rawScheme === 'string' && rawScheme.length > 0) {
-              newSchemeId = String(rawScheme).replace(/^scheme-/, '');
-            } else if (typeof rawScheme === 'number') {
-              newSchemeId = String(rawScheme);
-            }
             if (newSchemeId) {
               wrapper.className = 'color-scheme-' + newSchemeId;
               wrapper.setAttribute(schemeAttr, newSchemeId);
+            } else {
+              // Симметрия: scheme снят в Puck — снимаем класс и атрибут,
+              // обёртка становится инертным div (цвета возвращаются к базе).
+              wrapper.className = '';
+              wrapper.removeAttribute(schemeAttr);
             }
             wrapper.innerHTML = html;
             // 098 systemic fix: HTML5 не выполняет <script> теги добавленные
@@ -1710,6 +1717,14 @@ const PREVIEW_NAV_AGENT_INLINE = `
             // — браузер их выполнит. Idempotency на стороне блока через
             // data-X-hydrated атрибуты.
             executeScriptsIn(wrapper);
+          } else if (newSchemeId) {
+            // Обёртки нет, а scheme выбран — создаём wrapper on demand,
+            // зеркально серверному рендеру (v2-page-composer wrapScheme).
+            // Без этого первый выбор colorScheme у блока не красил секцию
+            // до полного reload превью.
+            el.outerHTML = '<div class="color-scheme-' + newSchemeId + '" ' + schemeAttr + '="' + newSchemeId + '">' + html + '</div>';
+            var newWrapped = document.querySelector('[data-puck-component-id="' + blockId + '"]');
+            if (newWrapped) executeScriptsIn(newWrapped.parentElement || newWrapped);
           } else {
             el.outerHTML = html;
             // Same fix для no-wrapper case. После outerHTML el detached —

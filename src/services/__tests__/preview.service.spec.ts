@@ -179,6 +179,27 @@ describe('PreviewService', () => {
       expect(html).toContain('indexOf(currentThemeId)');
     });
 
+    it('update-block агент создаёт scheme-обёртку on demand и снимает её симметрично', async () => {
+      // Hot-replace: если у блока не было scheme-обёртки, а colorScheme выбран —
+      // агент оборачивает HTML в <div class="color-scheme-N" data-block-scheme="N">
+      // (зеркально серверному wrapScheme). Если scheme снят — класс/атрибут
+      // снимаются с существующей обёртки.
+      const html = await svc.renderPreviewPage({
+        blocks: [{ type: 'Hero', props: { id: 'Hero-1' } }],
+        tokensCss: '',
+        fontHead: '',
+        themeId: 'rose',
+      });
+      // Ветка создания обёртки on demand
+      expect(html).toContain('else if (newSchemeId)');
+      expect(html).toContain('\'<div class="color-scheme-\' + newSchemeId');
+      // Re-hydrate скриптов внутри созданной обёртки
+      expect(html).toContain('newWrapped.parentElement || newWrapped');
+      // Симметрия: scheme снят → снимаем класс и data-атрибут с обёртки
+      expect(html).toContain("wrapper.className = ''");
+      expect(html).toContain('wrapper.removeAttribute(schemeAttr)');
+    });
+
     it('init handler сохраняет themeId и siteId из parent', async () => {
       // Init postMessage от parent должен сохранить currentThemeId и currentSiteId
       // в iframe scope чтобы update-block handler потом использовал их в fetch URL.

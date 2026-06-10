@@ -17,7 +17,7 @@ const href = `/catalog?collection=${encodeURIComponent(collection.name)}`;
 	aria-label={collection.name}
 	data-nt="rose-collection-card"
 >
-	<div class="aspect-[430/500] w-full overflow-hidden rounded-[8px] bg-[#F5F5F5]">
+	<div class="aspect-[430/500] w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]">
 		<RosePicture
 			src={collection.image}
 			alt={collection.name}
@@ -29,7 +29,7 @@ const href = `/catalog?collection=${encodeURIComponent(collection.name)}`;
 		/>
 	</div>
 	<h3
-		class="rose-collection-name w-full text-left font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[#000000] transition-opacity group-hover:opacity-70"
+		class="rose-collection-name w-full text-left font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity group-hover:opacity-70"
 	>
 		{collection.name}
 	</h3>

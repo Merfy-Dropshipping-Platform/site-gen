@@ -20,7 +20,7 @@
     "--radius-card": "8px",
     "--radius-media": "8px",
     "--radius-field": "4px",
-    "--size-hero-heading": "32px",
+    "--size-hero-heading": "40px",
     "--size-hero-button-h": "48px",
     "--size-section-heading": "20px",
     "--size-nav-link": "16px",
@@ -37,7 +37,7 @@
     "--card-style": "standard",
     "--card-alignment": "left",
     "--text-transform-heading": "uppercase",
-    "--color-error": "252 165 165",
+    "--color-error": "255 148 148",
     "--color-input-bg": "255 255 255",
     "--color-input-border": "153 153 153",
     "--color-input-label": "153 153 153",
@@ -285,8 +285,8 @@
       "tokens": {
         "--color-bg": "255 255 255",
         "--color-surface": "245 245 245",
-        "--color-heading": "18 18 18",
-        "--color-text": "18 18 18",
+        "--color-heading": "0 0 0",
+        "--color-text": "0 0 0",
         "--color-muted": "153 153 153",
         "--color-primary": "0 0 0",
         "--color-accent": "0 0 0",
@@ -366,6 +366,29 @@
         "--color-button-2-bg": "0 0 0",
         "--color-button-2-text": "255 255 255",
         "--color-button-2-border": "255 255 255"
+      }
+    },
+    {
+      "$comment": "Scheme-5 — светло-серый монохром из фактической палитры верстальщика: фон #F5F5F5 (плейсхолдер медиа RoseCollectionCard/Gallery), белая поверхность, родные чёрные текст и кнопки, muted #999999.",
+      "id": "scheme-5",
+      "name": "5",
+      "tokens": {
+        "--color-bg": "245 245 245",
+        "--color-surface": "255 255 255",
+        "--color-heading": "0 0 0",
+        "--color-text": "0 0 0",
+        "--color-muted": "153 153 153",
+        "--color-primary": "0 0 0",
+        "--color-accent": "0 0 0",
+        "--color-button-bg": "0 0 0",
+        "--color-button-text": "245 245 245",
+        "--color-button-border": "0 0 0",
+        "--color-button-secondary-bg": "245 245 245",
+        "--color-button-secondary-text": "0 0 0",
+        "--color-button-secondary-border": "0 0 0",
+        "--color-button-2-bg": "245 245 245",
+        "--color-button-2-text": "0 0 0",
+        "--color-button-2-border": "0 0 0"
       }
     }
   ],

@@ -78,8 +78,8 @@ describe('buildTokensCss merchant precedence', () => {
 
   it('manifest --size-hero-heading default used when merchant did not set heroHeadingSize', () => {
     const css = buildTokensCss({}, 'rose');
-    // Rose manifest has --size-hero-heading: 32px
-    expect(css).toContain('--size-hero-heading: 32px');
+    // Rose manifest has --size-hero-heading: 40px (фактический h1 верстальщика, themes/rose Hero.astro:43)
+    expect(css).toContain('--size-hero-heading: 40px');
   });
 
   it('merchant navLinkSize overrides manifest', () => {

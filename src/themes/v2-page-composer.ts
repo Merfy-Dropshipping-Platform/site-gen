@@ -1,4 +1,5 @@
 import { rewriteRootUrlsToPrefix } from '../generator/theme-build.service';
+import { injectTokensCssIntoHtml } from './tokens-inject';
 
 /** Блоки, которые на странице стоят ДО <main> (шапка). */
 const HEADER_TYPES = new Set(['PromoBanner', 'Header']);
@@ -79,13 +80,7 @@ export function composeV2Page(input: ComposeV2PageInput): string | null {
   }
 
   if (input.tokensCss) {
-    const headClose = html.search(/<\/head>/i);
-    if (headClose !== -1) {
-      html =
-        html.slice(0, headClose) +
-        `<style id="__merfy_tokens_css">${input.tokensCss}</style>` +
-        html.slice(headClose);
-    }
+    html = injectTokensCssIntoHtml(html, input.tokensCss);
   }
 
   return html;

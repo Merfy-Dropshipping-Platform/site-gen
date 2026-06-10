@@ -20,6 +20,7 @@ import { PG_CONNECTION } from '../constants';
 import { googleFontHead } from '../themes/theme-manifest-loader';
 import { getPageResolver } from '../themes/page-resolver-instance';
 import { buildTokensCss } from '../themes/tokens-css';
+import { injectTokensCssIntoHtml } from '../themes/tokens-inject';
 import { extractPageBlocks } from '../themes/page-blocks';
 import { isV2ComplexRoute } from '../themes/v2-routes';
 import { migrateRevisionData } from '../utils/revision-migrations';
@@ -532,14 +533,9 @@ export class PreviewController {
    * мини-слушатель update-tokens (selection-агента у блоба нет и не нужно). */
   private injectTokensIntoBlobPage(htmlIn: string, siteId: string, themeId: string, themeSettings: unknown): string {
     const css = buildTokensCss(themeSettings ?? {}, themeId);
-    const listener = `window.addEventListener('message',function(ev){`
-      + `if(!ev.data||ev.data.type!=='update-tokens')return;`
-      + `fetch('/api/sites/${siteId}/preview/tokens-css',{method:'POST',headers:{'Content-Type':'application/json'},`
-      + `body:JSON.stringify({themeSettings:ev.data.themeSettings,themeId:'${themeId}'})})`
-      + `.then(function(r){return r.text()}).then(function(t){`
-      + `var s=document.getElementById('__merfy_tokens_css');if(s)s.textContent=t;})`
-      + `.catch(function(e){console.error('[preview] blob update-tokens failed',e)});});`;
-    return htmlIn.replace(/<\/head>/i, `<style id="__merfy_tokens_css">${css}</style><script>${listener}</script></head>`);
+    const listener = `window.addEventListener('message',function(ev){if(!ev.data||ev.data.type!=='update-tokens')return;fetch('/api/sites/${siteId}/preview/tokens-css',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({themeSettings:ev.data.themeSettings,themeId:'${themeId}'})}).then(function(r){return r.text()}).then(function(t){var s=document.getElementById('__merfy_tokens_css');if(s)s.textContent=t;}).catch(function(e){console.error('[preview] blob update-tokens failed',e)});});`;
+    htmlIn = injectTokensCssIntoHtml(htmlIn, css);
+    return htmlIn.replace(/<\/head>/i, `<script>${listener}</script></head>`);
   }
 
   private errorPage(message: string): string {

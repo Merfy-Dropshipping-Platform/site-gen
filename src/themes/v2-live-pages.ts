@@ -2,7 +2,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { Logger } from '@nestjs/common';
 import { PreviewService } from '../services/preview.service';
-import { composeV2Page } from './v2-page-composer';
+import { composeV2Page, schemeIdFromProp } from './v2-page-composer';
 import { extractPageBlocks } from './page-blocks';
 import { isV2ComplexRoute } from './v2-routes';
 // import type → стирается при компиляции, цикла на module-init не создаёт.
@@ -118,6 +118,7 @@ export async function composeContentPagesIntoDist(
       shellHtml,
       blocksHtml,
       blockTypes: blocks.map((b) => b.type),
+      blockSchemes: blocks.map((b) => schemeIdFromProp(b.props?.colorScheme as unknown)),
       // null = live (корневые URL, без /__theme/ префикса).
       assetPrefix: null,
       // Зеркало превью: имя страницы мерчанта → <title> (для кастомных

@@ -974,6 +974,17 @@ export async function runBuildPipeline(
       } else {
         logger.warn(`[themes-v2] RPC returned 0 products for site ${params.siteId} — live will show demo`);
       }
+      // Фаза 3: tokens.css настроек темы — статикой во все страницы диста
+      // (контентные + сложные). Источник = revision.themeSettings, тот же
+      // buildTokensCss что в превью → превью = live.
+      const { buildTokensCss } = await import("../themes/tokens-css");
+      const { injectTokensCssIntoDist } = await import("../themes/tokens-inject");
+      const v2TokensCss = buildTokensCss(
+        (ctx.revisionData as Record<string, unknown> | null)?.themeSettings,
+        bareTheme,
+      );
+      const tokenized = await injectTokensCssIntoDist(ctx.distDir, v2TokensCss);
+      logger.log(`[themes-v2] Injected tokens.css into ${tokenized} HTML files for site ${params.siteId}`);
       time("themes-v2-copy", t);
     } else {
       // === Stage 2: GENERATE ===

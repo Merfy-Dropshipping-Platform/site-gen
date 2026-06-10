@@ -69,7 +69,7 @@
 | Карточка коллекции | `gap-5`; медиа `aspect-[430/500] rounded-[8px] bg-[#F5F5F5]`; hover `scale-[1.08] duration-500`; имя Manrope 16 left | RoseCollectionCard.astro:16, 20, 28, 32 |
 | Плитки галереи | `rounded-[8px] bg-[#F5F5F5]`, аспекты 429/444 и 429/309, hover `scale-[1.05]`/`scale-110` | Gallery.astro:31, 51, 81 |
 | Подписи галереи | Manrope 16/400 leading-none #000 (mobile 12) | Gallery.astro:63-72, 152-158 |
-| Манера | карточки «голые»: без бордера, без подложки-поверхности; скругление **8px только на медиа**; плейсхолдер медиа #F5F5F5; ховер — мягкий zoom картинки | RoseProductCard.astro:22; RoseCollectionCard.astro:20 |
+| Манера | карточки «голые»: без бордера, без подложки-поверхности; скругление **8px только на медиа**; медиа товара — белый фон (`bg-white`, RoseProductCard.astro:22); плейсхолдер медиа #F5F5F5 — только коллекции/галерея (RoseCollectionCard.astro:20, Gallery.astro:31,51,81); ховер — мягкий zoom картинки | RoseProductCard.astro:22; RoseCollectionCard.astro:20; Gallery.astro:31, 51, 81 |
 
 ## 5. Поля ввода
 

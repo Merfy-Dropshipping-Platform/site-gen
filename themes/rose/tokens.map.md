@@ -152,6 +152,18 @@ Gallery/Contacts/Footer + RoseProductCard/RoseCollectionCard + DS-перекры
 - **Gallery**: CTA-кнопки в секции верстальщика НЕТ (вопреки тексту Step 4) — мигрированы
   фон секции, радиусы и surface плиток. Подписи плиток `text-black` — карта носителем не
   называет, не тронуты.
+- **Hero CTA btn2→btn1** (пост-T8): CTA Hero — primaryButton, канон scheme-4 даёт btn-bg
+  `255 255 255` / btn-text `0 0 0` (= прежние литералы btn2). Переведена с `--color-button-2-*`
+  на `--color-button-bg/text` (Hero.astro:63). Fallback'и НЕ изменились — пиксель-дифф identical
+  на standalone-гейте.
+- **Hero/PromoBanner blockDefaults.colorScheme=scheme-4**: оба блока получили дефолтную схему
+  scheme-4 (bg `0 0 0`, heading/text `255 255 255`, btn-bg `255 255 255`, btn-text `0 0 0`) в
+  `packages/theme-rose/theme.json` blockDefaults. При ревизии без `colorScheme` в props обёртка
+  `.color-scheme-4` ставится автоматически → tokens.css :root scheme-1 не ломает Hero/промо-полосу.
+- **Машина resolveBlockScheme**: `PreviewService.resolveBlockScheme()` (preview.service.ts) —
+  публичный метод; props ревизии побеждают, иначе blockDefaults темы. Используется в
+  `renderV2ContentPage` и `v2-live-pages.ts::composeContentPagesIntoDist` вместо прямого
+  `schemeIdFromProp(b.props?.colorScheme)`.
 
 ## 5-я цветовая схема (scheme-5)
 

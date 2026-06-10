@@ -11,10 +11,11 @@ jest.mock('../../services/preview.service', () => {
       `<div data-puck-component-id="${props.id ?? ''}">${blockName}</div>`,
   );
   const hasV2Sections = jest.fn(async () => true);
+  const resolveBlockScheme = jest.fn(async () => null);
   return {
     PreviewService: jest
       .fn()
-      .mockImplementation(() => ({ renderBlock, hasV2Sections })),
+      .mockImplementation(() => ({ renderBlock, hasV2Sections, resolveBlockScheme })),
   };
 });
 

@@ -107,7 +107,8 @@
       "link": {
         "text": "Перейти",
         "href": "/catalog"
-      }
+      },
+      "colorScheme": "scheme-4"
     },
     "Hero": {
       "heading": {
@@ -124,7 +125,8 @@
           "href": "/catalog"
         }
       },
-      "backgroundImage": "/images/Главный_экран.png"
+      "backgroundImage": "/images/Главный_экран.png",
+      "colorScheme": "scheme-4"
     },
     "Collections": {
       "heading": "Коллекции, которые становятся любимыми",

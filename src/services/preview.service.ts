@@ -307,6 +307,22 @@ export class PreviewService {
     }
   }
 
+  /**
+   * Схема блока для обёртки .color-scheme-N: props ревизии побеждают,
+   * иначе blockDefaults темы (та же семантика merge, что у renderBlock).
+   */
+  async resolveBlockScheme(
+    blockName: string,
+    props: Record<string, unknown> | undefined,
+    themeId: string | null,
+  ): Promise<string | null> {
+    const fromProps = schemeIdFromProp(props?.colorScheme);
+    if (fromProps) return fromProps;
+    const defaults = await this.loadThemeBlockDefaults(themeId);
+    const blockDefaults = defaults[blockName] as Record<string, unknown> | undefined;
+    return schemeIdFromProp(blockDefaults?.colorScheme);
+  }
+
   private themeDefaultsCache = new Map<string, Record<string, unknown>>();
 
   /**
@@ -471,7 +487,7 @@ export class PreviewService {
       shellHtml,
       blocksHtml,
       blockTypes: input.blocks.map((b) => b.type),
-      blockSchemes: input.blocks.map((b) => schemeIdFromProp(b.props?.colorScheme)),
+      blockSchemes: await Promise.all(input.blocks.map((b) => this.resolveBlockScheme(b.type, b.props, input.themeId))),
       assetPrefix: `/__theme/${PreviewService.bareThemeKey(input.themeId)}`,
       titleOverride: input.titleOverride,
       tokensCss: buildTokensCss(input.themeSettings ?? {}, PreviewService.bareThemeKey(input.themeId)),

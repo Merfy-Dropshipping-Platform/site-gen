@@ -282,7 +282,12 @@ export class PreviewController {
       // (`const shopId = ""` → siteId), токен DaData (как легаси render-путь) и
       // __MERFY_SITE_ID__ для гидрации товаров (built-theme отдаётся БЕЗ
       // per-site products.json → storefront-hydrate фолбэчит на storefront-data).
-      let html = this.injectPreviewGlobals(builtThemeHtml, siteId);
+      let html = this.injectPreviewGlobals(
+        builtThemeHtml,
+        siteId,
+        // ?productId= (клик по карточке в превью) приоритетнее настройки блока.
+        productIdOverride ?? this.defaultProductIdFromRevision(loaded.data),
+      );
       html = this.injectTokensIntoBlobPage(
         html, siteId, PreviewService.bareThemeKey(loaded.themeId!),
         (loaded.data as Record<string, unknown> | null)?.themeSettings,
@@ -513,7 +518,11 @@ export class PreviewController {
   }
 
   /** Инжекты в HTML превью: shopId, DaData-токен, siteId для гидрации товаров. */
-  private injectPreviewGlobals(htmlIn: string, siteId: string): string {
+  private injectPreviewGlobals(
+    htmlIn: string,
+    siteId: string,
+    defaultProductId?: string | null,
+  ): string {
     let html = htmlIn.replace(/const shopId = "";/g, `const shopId = "${siteId}";`);
     const dadataToken = process.env.DADATA_API_KEY;
     if (dadataToken) {
@@ -526,7 +535,25 @@ export class PreviewController {
       /<head(\s[^>]*)?>/i,
       (m) => `${m}<script>window.__MERFY_SITE_ID__ = ${JSON.stringify(siteId)};</script>`,
     );
+    // «Выбор товара» из конструктора: статичная PDP темы (built-theme путь)
+    // гидрируется по ?id=, а без него — по этому глобалу (фоллбек: первый товар).
+    if (defaultProductId) {
+      html = html.replace(
+        /<head(\s[^>]*)?>/i,
+        (m) => `${m}<script>window.__MERFY_DEFAULT_PRODUCT_ID__ = ${JSON.stringify(defaultProductId)};</script>`,
+      );
+    }
     return html;
+  }
+
+  /** productId из настройки «Выбор товара» (Product-блок page-product ревизии). */
+  private defaultProductIdFromRevision(data: unknown): string | null {
+    const pages = (data as { pagesData?: Record<string, { content?: Array<{ type?: string; props?: { productId?: unknown } }> }> } | null)?.pagesData;
+    const content = pages?.['page-product']?.content;
+    if (!Array.isArray(content)) return null;
+    const productBlock = content.find((b) => b?.type === 'Product');
+    const pid = productBlock?.props?.productId;
+    return typeof pid === 'string' && pid.trim() ? pid.trim() : null;
   }
 
   /** Фаза 3: сложные страницы v2 (блоб) получают tokens.css статикой +

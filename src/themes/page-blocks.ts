@@ -102,39 +102,20 @@ export async function extractPageBlocks(
           props.variant = v;
         }
       }
-      // Catalog block: inject siteId so the SSG shell can client-fetch
-      // real products from the storefront API and mirror the live grid.
-      if (b.type === 'Catalog') {
-        props.siteId = siteId;
-      }
-      // Product block: same — inline JS in Product.astro fetches the chosen
-      // (or first available) product from storefront-data?product=:id.
-      // When the constructor navigates from a Catalog card click, productId
-      // is provided as a query override and takes priority over Puck props.
-      if (b.type === 'Product') {
-        props.siteId = siteId;
-        if (productIdOverride) {
-          logger?.log(
-            `[preview] Product block: overriding productId ${props.productId} → ${productIdOverride}`,
-          );
-          props.productId = productIdOverride;
-        }
-      }
-      // Video block (088 T021): inject siteId so the inline media hydrator
-      // can fetch /api/sites/<siteId>/blocks/<blockId>/media. Preview iframe
-      // doesn't load /site-meta.js, so without explicit siteId prop the
-      // hydrator returns early — placeholder stays and preview drifts from
-      // live (which has window.__MERFY__ from /site-meta.js).
-      if (b.type === 'Video') {
-        props.siteId = siteId;
-      }
-      // PopularProducts block (088 T021): same — inline runtime fetch script
-      // needs siteId to call /api/sites/<siteId>/storefront-data. Preview
-      // iframe lacks window.__MERFY__ and the hostname (gateway.merfy.ru)
-      // doesn't match the 12-hex slug fallback, so without explicit siteId
-      // the script returns early.
-      if (b.type === 'PopularProducts') {
-        props.siteId = siteId;
+      // siteId — серверный контекст-проп для ВСЕХ блоков (как в POST
+      // /preview/block, который инжектит его безусловно). Раньше тут был
+      // allowlist типов (Catalog/Product/Video/PopularProducts) — блоки вне
+      // списка (Publications и будущие) не получали siteId, их SSR-фетч
+      // storefront-данных молча не запускался и рендерились demo-карточки.
+      props.siteId = siteId;
+      // Product block: when the constructor navigates from a Catalog card
+      // click, productId is provided as a query override and takes priority
+      // over Puck props.
+      if (b.type === 'Product' && productIdOverride) {
+        logger?.log(
+          `[preview] Product block: overriding productId ${props.productId} → ${productIdOverride}`,
+        );
+        props.productId = productIdOverride;
       }
       return { type: b.type, props };
     });

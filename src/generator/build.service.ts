@@ -959,6 +959,28 @@ export async function runBuildPipeline(
       // с shopId="" из исходника, snapshot-путь патчит, а здесь раньше пропускалось.
       const patchedCount = await patchShopIdInDist(ctx.distDir, params.siteId);
       logger.log(`[themes-v2] Patched shopId in ${patchedCount} HTML files for site ${params.siteId}`);
+      // «Выбор товара» из конструктора: статичная PDP темы гидрируется по ?id=,
+      // без него — по этому глобалу (зеркало injectPreviewGlobals превью).
+      try {
+        const pdpContent = (ctx.revisionData as { pagesData?: Record<string, { content?: Array<{ type?: string; props?: { productId?: unknown } }> }> } | null)
+          ?.pagesData?.['page-product']?.content;
+        const pdpBlock = Array.isArray(pdpContent) ? pdpContent.find((b) => b?.type === 'Product') : undefined;
+        const defaultPid = typeof pdpBlock?.props?.productId === 'string' ? pdpBlock.props.productId.trim() : '';
+        if (defaultPid) {
+          const pdpPath = path.join(ctx.distDir, 'product', 'index.html');
+          const pdpHtml = await fs.readFile(pdpPath, 'utf8').catch(() => null);
+          if (pdpHtml) {
+            await fs.writeFile(
+              pdpPath,
+              pdpHtml.replace(/<head(\s[^>]*)?>/i, (m) => `${m}<script>window.__MERFY_DEFAULT_PRODUCT_ID__ = ${JSON.stringify(defaultPid)};</script>`),
+              'utf8',
+            );
+            logger.log(`[themes-v2] Injected default productId ${defaultPid} into product page for site ${params.siteId}`);
+          }
+        }
+      } catch (pidErr) {
+        logger.warn(`[themes-v2] default productId inject failed: ${(pidErr as Error)?.message ?? pidErr}`);
+      }
       // Инжект реального products.json — на статичном nginx-live гидрация читает
       // /data/products.json (fallback на storefront-data НЕ резолвится: origin сайта
       // ≠ API). themes-v2 копирует pre-built dist БЕЗ products.json → без этого live

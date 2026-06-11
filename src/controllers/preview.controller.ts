@@ -287,6 +287,7 @@ export class PreviewController {
         siteId,
         // ?productId= (клик по карточке в превью) приоритетнее настройки блока.
         productIdOverride ?? this.defaultProductIdFromRevision(loaded.data),
+        this.catalogLayoutFromRevision(loaded.data),
       );
       html = this.injectTokensIntoBlobPage(
         html, siteId, PreviewService.bareThemeKey(loaded.themeId!),
@@ -522,6 +523,7 @@ export class PreviewController {
     htmlIn: string,
     siteId: string,
     defaultProductId?: string | null,
+    catalogLayout?: string | null,
   ): string {
     let html = htmlIn.replace(/const shopId = "";/g, `const shopId = "${siteId}";`);
     const dadataToken = process.env.DADATA_API_KEY;
@@ -543,7 +545,26 @@ export class PreviewController {
         (m) => `${m}<script>window.__MERFY_DEFAULT_PRODUCT_ID__ = ${JSON.stringify(defaultProductId)};</script>`,
       );
     }
+    // Раскладка каталога (Catalog.filterPosition: 'side'|'top') — статичные
+    // каталог-страницы тем переключают вид по этому глобалу. Не задан —
+    // тема показывает родной вид.
+    if (catalogLayout === 'side' || catalogLayout === 'top') {
+      html = html.replace(
+        /<head(\s[^>]*)?>/i,
+        (m) => `${m}<script>window.__MERFY_CATALOG_LAYOUT__ = ${JSON.stringify(catalogLayout)};</script>`,
+      );
+    }
     return html;
+  }
+
+  /** filterPosition из настроек Catalog-блока page-catalog ревизии. */
+  private catalogLayoutFromRevision(data: unknown): string | null {
+    const pages = (data as { pagesData?: Record<string, { content?: Array<{ type?: string; props?: { filterPosition?: unknown } }> }> } | null)?.pagesData;
+    const content = pages?.['page-catalog']?.content;
+    if (!Array.isArray(content)) return null;
+    const block = content.find((b) => b?.type === 'Catalog');
+    const fp = block?.props?.filterPosition;
+    return fp === 'side' || fp === 'top' ? fp : null;
   }
 
   /** productId из настройки «Выбор товара» (Product-блок page-product ревизии). */

@@ -154,6 +154,43 @@ export async function patchShopIdInDist(
   return htmlFiles.length;
 }
 
+/**
+ * Инжект window-глобалов во все HTML диста (после <head>). Используется для
+ * настроек конструктора, которые статичные страницы тем читают на рантайме
+ * (раскладка каталога и т.п.). Идемпотентно по маркеру имени глобала.
+ */
+export async function injectGlobalsIntoDist(
+  distDir: string,
+  globals: Record<string, string>,
+): Promise<number> {
+  const entries2 = Object.entries(globals);
+  if (entries2.length === 0) return 0;
+  const script = entries2
+    .map(([k, v]) => `window.${k} = ${JSON.stringify(v)};`)
+    .join("");
+  const htmlFiles: string[] = [];
+  async function findHtml(dir: string) {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    for (const e of entries) {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) await findHtml(full);
+      else if (e.name.endsWith(".html")) htmlFiles.push(full);
+    }
+  }
+  await findHtml(distDir);
+  let patched = 0;
+  for (const file of htmlFiles) {
+    const html = await fs.readFile(file, "utf8");
+    if (html.includes(entries2[0][0])) continue; // уже инжектировано
+    const next = html.replace(/<head(\s[^>]*)?>/i, (m) => `${m}<script>${script}</script>`);
+    if (next !== html) {
+      await fs.writeFile(file, next, "utf8");
+      patched++;
+    }
+  }
+  return patched;
+}
+
 const logger = new Logger("BuildPipeline");
 
 /** Build stages in order */
@@ -980,6 +1017,22 @@ export async function runBuildPipeline(
         }
       } catch (pidErr) {
         logger.warn(`[themes-v2] default productId inject failed: ${(pidErr as Error)?.message ?? pidErr}`);
+      }
+      // Раскладка каталога из конструктора (Catalog.filterPosition: 'side'|'top'):
+      // статичные каталог-страницы тем читают window.__MERFY_CATALOG_LAYOUT__ на
+      // рантайме. Без явного выбора мерчанта глобал не инжектится — тема
+      // показывает свой родной вид (ноль визуальных регрессий).
+      try {
+        const catContent = (ctx.revisionData as { pagesData?: Record<string, { content?: Array<{ type?: string; props?: { filterPosition?: unknown } }> }> } | null)
+          ?.pagesData?.['page-catalog']?.content;
+        const catBlock = Array.isArray(catContent) ? catContent.find((b) => b?.type === 'Catalog') : undefined;
+        const fp = catBlock?.props?.filterPosition;
+        if (fp === 'side' || fp === 'top') {
+          const n = await injectGlobalsIntoDist(ctx.distDir, { __MERFY_CATALOG_LAYOUT__: fp });
+          logger.log(`[themes-v2] Injected catalog layout "${fp}" into ${n} HTML files for site ${params.siteId}`);
+        }
+      } catch (layErr) {
+        logger.warn(`[themes-v2] catalog layout inject failed: ${(layErr as Error)?.message ?? layErr}`);
       }
       // Инжект реального products.json — на статичном nginx-live гидрация читает
       // /data/products.json (fallback на storefront-data НЕ резолвится: origin сайта

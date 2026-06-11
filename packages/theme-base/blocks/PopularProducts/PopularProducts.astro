@@ -201,13 +201,20 @@ try {
 // products from sites svc storefront-data so SSR has real data and
 // the JS hydration step doesn't have to overwrite SSR markup.
 // Mirrors Product.astro's preview SSR fetch.
+// Коллекции для SSR-фильтра «Выбор коллекции»: на live приходят из
+// build-time collections.json; в превью его нет — берём из storefront-data
+// (endpoint отдаёт нормализованную форму с productIds).
+let previewCollections: Array<{ id?: string; name?: string; slug?: string; productIds?: string[] }> = [];
 if (realProducts.length === 0 && siteId) {
   try {
     const internalBase = (import.meta as unknown as { env?: { SITES_INTERNAL_BASE?: string } }).env?.SITES_INTERNAL_BASE
       ?? 'http://localhost:3114';
     const res = await fetch(`${internalBase}/api/sites/${siteId}/storefront-data`).catch(() => null);
     if (res && res.ok) {
-      const data = (await res.json()) as { products?: Array<Record<string, unknown>> };
+      const data = (await res.json()) as { products?: Array<Record<string, unknown>>; collections?: Array<Record<string, unknown>> };
+      if (Array.isArray(data.collections)) {
+        previewCollections = data.collections as typeof previewCollections;
+      }
       if (Array.isArray(data.products)) {
         realProducts = data.products.map((p) => ({
           id: typeof p.id === 'string' ? p.id : undefined,
@@ -236,17 +243,19 @@ const urlCollection = Astro.url.searchParams.get('collection');
 const blockCollection = typeof raw.collection === 'string' ? raw.collection : undefined;
 const collectionRef = resolveActiveCollection(urlCollection, blockCollection);
 if (collectionRef && realProducts.length > 0) {
+  let ssrCollections: Array<{ id?: string; name?: string; slug?: string; productIds?: string[] }> = [];
   try {
     const collectionsData = await import('../data/collections.json');
-    const collections = (collectionsData.default ?? collectionsData) as Array<{ id?: string; name?: string; slug?: string; productIds?: string[] }>;
-    const matched = collections.find((c) => c.name === collectionRef || c.id === collectionRef || c.slug === collectionRef);
-    if (matched?.productIds?.length) {
-      const idSet = new Set(matched.productIds);
-      const filtered = realProducts.filter((p) => p.id && idSet.has(p.id));
-      if (filtered.length > 0) realProducts = filtered;
-    }
+    ssrCollections = ((collectionsData as { default?: unknown }).default ?? collectionsData) as typeof ssrCollections;
   } catch {
-    // collections.json missing — use all products
+    // collections.json отсутствует (превью) — фоллбек на storefront-data
+    ssrCollections = previewCollections;
+  }
+  const matched = ssrCollections.find((c) => c.name === collectionRef || c.id === collectionRef || c.slug === collectionRef);
+  if (matched?.productIds?.length) {
+    const idSet = new Set(matched.productIds);
+    const filtered = realProducts.filter((p) => p.id && idSet.has(p.id));
+    if (filtered.length > 0) realProducts = filtered;
   }
 }
 

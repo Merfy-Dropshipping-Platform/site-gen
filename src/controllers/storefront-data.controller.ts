@@ -175,7 +175,7 @@ export class StorefrontDataController {
         if (pool) {
           try {
             const prodRes = await pool.query(
-              `SELECT id, title AS name, description, "basePrice", "compareAtPrice",
+              `SELECT id, title AS name, handle, description, "basePrice", "compareAtPrice",
                       sku, weight, "weightUnit", "isPhysicalProduct",
                       "metaTitle", "metaDescription", images
                  FROM products
@@ -198,11 +198,14 @@ export class StorefrontDataController {
               metaTitle: r.metaTitle ?? null,
               metaDescription: r.metaDescription ?? null,
               images: Array.isArray(r.images) ? r.images : [],
+              // slug — блоки строят /product/<slug> ссылки (RPC-путь отдаёт его же)
+              slug: r.handle || r.id,
+              collections: [] as Array<{ id: string; name?: string; slug?: string }>,
             }));
             const collRes = await pool.query(
-              `SELECT id, name AS title, slug AS handle, description, images
+              `SELECT id, name, slug, description, images
                  FROM collections
-                WHERE "shopId" = $1 AND "deletedAt" IS NULL
+                WHERE "shopId" = $1 AND "deletedAt" IS NULL AND slug != 'general'
                 ORDER BY "createdAt" DESC
                 LIMIT 100`,
               [siteId],
@@ -213,10 +216,14 @@ export class StorefrontDataController {
                 : null;
               return {
                 id: r.id,
-                title: r.title,
-                handle: r.handle ?? r.id,
+                name: r.name,
+                slug: r.slug ?? r.id,
+                // legacy-алиасы — старые потребители читали title/handle
+                title: r.name,
+                handle: r.slug ?? r.id,
                 description: r.description ?? undefined,
                 image: img,
+                images: Array.isArray(r.images) ? r.images : [],
                 productIds: [] as string[],
               };
             });
@@ -228,12 +235,27 @@ export class StorefrontDataController {
                 [collections.map((c) => c.id)],
               );
               const groups: Record<string, string[]> = {};
+              const byCollection = new Map(collections.map((c) => [c.id, c]));
+              const productMembership: Record<string, Array<{ id: string; name?: string; slug?: string }>> = {};
               for (const row of cpRes.rows) {
                 (groups[row.collectionId] ??= []).push(row.productId);
+                const col = byCollection.get(row.collectionId);
+                if (col) {
+                  (productMembership[row.productId] ??= []).push({
+                    id: col.id,
+                    name: col.name,
+                    slug: col.slug,
+                  });
+                }
               }
               collections = collections.map((c) => ({
                 ...c,
                 productIds: groups[c.id] ?? [],
+              }));
+              // membership на товарах — Catalog/PopularProducts фильтруют по нему
+              products = products.map((p: any) => ({
+                ...p,
+                collections: productMembership[p.id] ?? [],
               }));
             }
           } catch (poolErr: unknown) {
@@ -244,6 +266,39 @@ export class StorefrontDataController {
           }
         }
       }
+      // Нормализация формы коллекций. RPC-путь отдаёт {id,name,slug,images[]}
+      // без image/productIds — build-пайплайн для live доштамповывает их в
+      // collections.json, а превью/гидрация читали сырую форму: фильтр
+      // PopularProducts по productIds был no-op («Выбор коллекции» не работал),
+      // обложка коллекции (images[]) не резолвилась в Collections/Gallery.
+      // Гарантируем единую форму на выходе endpoint'а: name/slug/image/productIds
+      // (+ legacy-алиасы title/handle). productIds выводим из membership товаров
+      // (products[].collections) — без дополнительных RPC.
+      collections = (collections ?? []).map((c: any) => {
+        const image =
+          c.image ??
+          (Array.isArray(c.images) && c.images[0]
+            ? typeof c.images[0] === 'string'
+              ? c.images[0]
+              : (c.images[0] as { url?: string })?.url
+            : null);
+        const name = c.name ?? c.title;
+        const slug = c.slug ?? c.handle ?? c.id;
+        let productIds: string[] = Array.isArray(c.productIds) ? c.productIds : [];
+        if (productIds.length === 0) {
+          productIds = (products ?? [])
+            .filter(
+              (p: any) =>
+                Array.isArray(p.collections) &&
+                p.collections.some(
+                  (pc: any) => pc && (pc.id === c.id || (pc.slug && pc.slug === slug)),
+                ),
+            )
+            .map((p: any) => p.id);
+        }
+        return { ...c, name, slug, title: name, handle: slug, image, productIds };
+      });
+
       // Publications fetch вынесен в отдельный endpoint /api/sites/:id/publications
       // (PublicationsController) чтобы pool issues не блокировали storefront-data.
       const publications: Array<Record<string, unknown>> = [];

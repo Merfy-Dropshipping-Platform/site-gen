@@ -67,6 +67,7 @@ type RawCollection = {
   name?: string;
   imageUrl?: string;
   image?: string;
+  images?: string[];
 };
 
 const siteIdFromRoot = typeof raw.siteId === 'string' ? raw.siteId : '';
@@ -170,11 +171,13 @@ function resolveItem(raw: ItemDemo): ResolvedItem {
     if (collection) {
       return {
         type: 'collection',
-        url: collection.imageUrl ?? collection.image ?? '',
+        url: collection.imageUrl ?? collection.image ?? collection.images?.[0] ?? '',
         alt: collection.name ?? '',
         label: collection.name ?? '',
         price: '',
-        href: collection.slug ? `/catalog/${collection.slug}` : '/catalog',
+        // Каталог фильтрует по ?collection= (роута /catalog/<slug> нет) —
+        // тот же дефолт, что buildCollectionHref у Collections-карточек.
+        href: collection.slug ? `/catalog?collection=${collection.slug}` : '/catalog',
         isPlaceholder: false,
       };
     }

@@ -123,6 +123,7 @@ type RawCollection = {
   name?: string;
   imageUrl?: string;
   image?: string;
+  images?: string[];
 };
 
 const siteIdFromRoot = typeof raw.siteId === 'string' ? raw.siteId : '';
@@ -166,7 +167,7 @@ function resolveManual(item: { id?: string; heading?: string; description?: stri
     id: item.id ?? '',
     heading: found?.name ?? item.heading ?? '',
     description: item.description,
-    image: found?.imageUrl ?? found?.image ?? item.image ?? '',
+    image: found?.imageUrl ?? found?.image ?? found?.images?.[0] ?? item.image ?? '',
     collectionId: (found?.slug ?? item.collectionId) ?? null,
   };
 }
@@ -178,7 +179,7 @@ const effectiveCollections: CollectionTile[] = hasManualCollections
     ? realCollections.slice(0, columns).map((c) => ({
         id: c.id,
         heading: c.name ?? 'Коллекция',
-        image: c.imageUrl ?? c.image ?? '',
+        image: c.imageUrl ?? c.image ?? c.images?.[0] ?? '',
         collectionId: c.slug ?? c.id,
       }))
     : DEMO_COLLECTIONS.slice(0, columns).map((c, i) => ({

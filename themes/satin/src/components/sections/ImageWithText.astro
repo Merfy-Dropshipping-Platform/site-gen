@@ -1,0 +1,192 @@
+---
+// Фаза B (satin): канон-секция ImageWithText — адаптация ImageBanner.astro (см.
+// themes/satin/MANNER.md §10). Тело верстальщика перенесено КОПИЕЙ —
+// ImageBanner.astro не тронут (его использует index.astro:28). Схема полей =
+// packages/theme-base/blocks/ImageWithText/ImageWithText.puckConfig.ts.
+// Смысловой маппинг: canon heading → title баннера (Kelly Slab 26/32),
+// canon text → строка-КИКЕР верстальщика НАД заголовком (ImageBanner.astro:45).
+import SatinPicture from "../img/SatinPicture.astro";
+
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон heading: string | { text, alignment, size }. Дефолт = литерал title
+// ImageBanner.astro:17. Лестница §9 «Заголовок баннера 26/32»: large/отсутствие
+// = литерал 26/32, medium 22/27, small 18/22.
+const heading =
+	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "STYLE’S WEAR COLLECTION SINCE 90’");
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingCls =
+	headingSize === "small"
+		? "font-logo text-[18px] font-normal uppercase leading-[1.1] text-[rgb(var(--color-heading,0_0_0))] md:text-[22px]"
+		: headingSize === "medium"
+			? "font-logo text-[22px] font-normal uppercase leading-[1.1] text-[rgb(var(--color-heading,0_0_0))] md:text-[27px]"
+			: "font-logo text-[26px] font-normal uppercase leading-[1.1] text-[rgb(var(--color-heading,0_0_0))] md:text-[32px]";
+// Канон heading.alignment: отсутствие/center = литерал (текст-половина центрована);
+// left/right переопределяют выравнивание заголовка.
+const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
+const headingAlignCls =
+	headingAlignment === "left" ? " text-left" : headingAlignment === "right" ? " text-right" : "";
+
+// Канон text: string | { content, size } → КИКЕР над заголовком (литеральная
+// роль ImageBanner.astro:45: Arsenal 16/md:20 light uppercase tracking-[0.04em]
+// muted). Дефолт = литерал eyebrow. Лестница §9 «Кикер 16» (canon-носитель
+// large): large/отсутствие = литерал 16/20, medium 14/17, small 11/14.
+const text = typeof p.text === "string" ? p.text : (p.text?.content ?? "Новая мужская коллекция");
+const textSize = p.textSize ?? p.text?.size;
+const textCls =
+	textSize === "small"
+		? "font-manrope text-[11px] font-light uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))] md:text-[14px]"
+		: textSize === "medium"
+			? "font-manrope text-[14px] font-light uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))] md:text-[17px]"
+			: "font-manrope text-[16px] font-light uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))] md:text-[20px]";
+
+// Канон textStyle (hidden): italic → курсив кикера и заголовка.
+const italicCls = p.textStyle === "italic" ? " italic" : "";
+
+// Канон image {url, alt}: canon-default url пуст → фоллбек = ассет верстальщика
+// (принцип T15; литерал ImageBanner.astro:20). Кастомные URL (MinIO) рендерим
+// плоским <img> — SatinPicture добавил бы фантомный .webp-source (404).
+const imageUrl =
+	typeof p.image?.url === "string" && p.image.url.trim()
+		? p.image.url
+		: "/images/4x/Мужская_кампания.png";
+const imageAlt =
+	typeof p.image?.alt === "string" && p.image.alt.trim() ? p.image.alt : "Новая мужская коллекция";
+const isThemeAsset = imageUrl.startsWith("/");
+
+// Канон imagePosition: canon-default 'left' (его пишет коэрсер) И отсутствие =
+// ЛИТЕРАЛ imageSide='left' (фото СЛЕВА, текст справа — ImageBanner.astro:22);
+// 'right' зеркалит md:order (механика imgRight верстальщика).
+const imgRight = p.imagePosition === "right";
+
+// Канон size (s/m/l) — высота полотна на md+: medium/отсутствие = литерал
+// md:h-[680px] (обе половины, ImageBanner.astro:32,40), small 560, large 760.
+// Mobile aspect-[375/362] всегда (литерал).
+const mdHeightCls =
+	p.size === "small" ? "md:h-[560px]" : p.size === "large" ? "md:h-[760px]" : "md:h-[680px]";
+
+// Канон width (s/m/l/full): full/отсутствие = литерал-полотно max-w-[1920px];
+// лестница контейнеров манеры: large 1320, medium 1080, small 780.
+const widthCls =
+	p.width === "small"
+		? "max-w-[780px]"
+		: p.width === "medium"
+			? "max-w-[1080px]"
+			: p.width === "large"
+				? "max-w-[1320px]"
+				: "max-w-[1920px]";
+
+// Канон containerColorScheme (hidden): класс схемы на текст-половине.
+const containerSchemeCls =
+	typeof p.containerColorScheme === "string" && p.containerColorScheme
+		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
+		: "";
+
+// Кнопка: canon button {text, href|link}. Дефолт (проп не задан) = CTA
+// верстальщика «Перейти» → /catalog?collection=Мужское (ImageBanner.astro:18-19);
+// заданный пустой текст СКРЫВАЕТ кнопку.
+const btnProvided = p.button !== undefined;
+const btnTextProp =
+	typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined;
+const btnText = btnTextProp ?? (btnProvided ? undefined : "Перейти");
+const btnHref =
+	(typeof p.button?.href === "string" && p.button.href ? p.button.href : undefined) ??
+	p.button?.link?.href ??
+	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??
+	"/catalog?collection=Мужское";
+// Канон buttonStyle: solid/отсутствие (canon-default) = тёмная CTA литерала
+// (метрики .satin-button-md + .satin-button-dark, g:106-126,155-159; цвета
+// токенами); outlined = светлая контурная .satin-button-light (§3).
+const btnBase =
+	"inline-flex min-h-12 items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-6 text-[16px] font-normal uppercase leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]";
+const btnCls =
+	p.buttonStyle === "outlined"
+		? `${btnBase} border-[rgb(var(--color-button-2-text,0_0_0))] bg-transparent text-[rgb(var(--color-button-2-text,0_0_0))]`
+		: `${btnBase} border-[rgb(var(--color-button-bg,0_0_0))] bg-[rgb(var(--color-button-bg,0_0_0))] text-[rgb(var(--color-button-text,255_255_255))]`;
+
+// Канон ctaPosition: inline/отсутствие = литерал (кнопка в потоке под
+// заголовком, gap-5); bottom-pinned — контент-блок растягивается, кнопка
+// прижимается к нижней кромке (mt-auto).
+const bottomPinned = p.ctaPosition === "bottom-pinned";
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе
+// (full-bleed литерал без вертикальных полей).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+---
+
+<section
+	class="relative w-full bg-[rgb(var(--color-bg,255_255_255))]"
+	aria-label={text || undefined}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div class={`mx-auto grid w-full ${widthCls} grid-cols-1 md:grid-cols-2`}>
+		<div
+			class:list={[
+				"relative order-1 aspect-[375/362] overflow-hidden bg-[#111111] md:aspect-auto",
+				mdHeightCls,
+				imgRight ? "md:order-2" : "md:order-1",
+			]}
+		>
+			{
+				isThemeAsset ? (
+					<SatinPicture
+						src={imageUrl}
+						alt={imageAlt}
+						loading="lazy"
+						class="absolute inset-0 size-full object-cover object-center"
+					/>
+				) : (
+					<img
+						src={imageUrl}
+						alt={imageAlt}
+						loading="lazy"
+						class="absolute inset-0 size-full object-cover object-center"
+					/>
+				)
+			}
+		</div>
+		<div
+			class:list={[
+				"flex items-center justify-center px-6 py-12 text-center md:py-0",
+				mdHeightCls,
+				imgRight ? "md:order-1" : "md:order-2",
+				containerSchemeCls.trim(),
+			]}
+		>
+			<div class={`flex max-w-[420px] flex-col items-center gap-5${bottomPinned ? " h-full" : ""}`}>
+				<p
+					class={textCls + italicCls}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="101"
+					data-puck-subsection-field="text"
+					set:html={text}
+				/>
+				<h2
+					class={headingCls + headingAlignCls + italicCls}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="heading"
+				>
+					{heading}
+				</h2>
+				{
+					btnText && (
+						<a
+							href={btnHref}
+							class={btnCls + (bottomPinned ? " mt-auto" : "")}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="102"
+							data-puck-subsection-field="button"
+						>
+							{btnText}
+						</a>
+					)
+				}
+			</div>
+		</div>
+	</div>
+</section>

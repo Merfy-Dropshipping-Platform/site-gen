@@ -1,0 +1,148 @@
+---
+import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+
+// Фаза B (satin, группа misc): канон-секция CollapsibleSection — адаптация
+// src/components/sections/Faq.astro (тело КОПИЕЙ; оригинал не тронут —
+// index.astro:33 и about.astro:61 продолжают его использовать). Схема полей =
+// packages/theme-base/blocks/CollapsibleSection/CollapsibleSection.puckConfig.ts;
+// манера — themes/satin/MANNER.md (эталон процесса — bloom CollapsibleSection).
+// КРИТИЧНО: маркеры data-faq-item / data-faq-answer сохранены — их ищет GSAP
+// initFaq (scripts/gsap/faq.ts: перехват клика, tween высоты/прозрачности
+// 0.3/0.35s); без скрипта работает нативный <details>.
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон heading: string | { text, alignment, size }; canon-default «Часто
+// задаваемые вопросы» (его пишет коэрсер — у верстальщика шапки НЕТ), рендер
+// при непустом. Роль = заголовок секции §1 (font-logo 20 uppercase
+// leading-[1.15], TextBlock.astro:15), токен heading с фоллбеком 0_0_0.
+const heading =
+	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Часто задаваемые вопросы");
+// Лестница §9 «Заголовок секции» (база-литерал 20 = canon-default medium): small 17, large 24.
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingSizeCls =
+	headingSize === "small" ? "text-[17px]" : headingSize === "large" ? "text-[24px]" : "text-[20px]";
+const headingAlignment =
+	p.headingAlignment ?? (typeof p.heading === "object" ? p.heading?.alignment : undefined);
+const headingAlignCls =
+	headingAlignment === "center"
+		? " text-center"
+		: headingAlignment === "right"
+			? " text-right"
+			: "";
+const headingCls = `font-logo ${headingSizeCls} font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
+
+// Лестница §9 «Заголовок-аккордеон» (база-литерал 18/md:20 = medium, Faq.astro:35):
+// small 15/17, large 22/24. Управляется тем же headingSize.
+const summarySizeCls =
+	headingSize === "small"
+		? "text-[15px] md:text-[17px]"
+		: headingSize === "large"
+			? "text-[22px] md:text-[24px]"
+			: "text-[18px] md:text-[20px]";
+
+// Канон sections[] 1-10 {heading, content} (+ pupa items[] {title, content}).
+// Дефолт = 3 вопроса Faq VERBATIM (Faq.astro:13-26). content — set:html (HTML канона).
+const CANON_SECTIONS = [
+	{
+		heading: "Как узнать свой размер?",
+		content:
+			"Рекомендуем воспользоваться таблицей размеров, которая есть в карточке каждого товара. Указывайте свои мерки (обхват груди, талии, бёдер) и сверяйте их с таблицей. Если сомневаетесь, напишите нашему консультанту в онлайн-чат с вашими параметрами — мы поможем подобрать подходящий размер.",
+	},
+	{
+		heading: "Какой у вас срок доставки?",
+		content:
+			"Время доставки в регионы России занимает от 3 до 10 рабочих дней в зависимости от удалённости. Точные сроки и стоимость вы увидите при оформлении заказа, выбрав свой город.",
+	},
+	{
+		heading: "Можно ли вернуть или обменять товар?",
+		content:
+			"Да, конечно. В соответствии с законом о защите прав потребителей вы можете обменять неподошедшую вещь (кроме изделий из категорий «бельё» и «носки») в течение 14 дней с момента получения при сохранении товарного вида, бирок и чека.",
+	},
+];
+const rawSections =
+	Array.isArray(p.sections) && p.sections.length
+		? p.sections
+		: Array.isArray(p.items) && p.items.length
+			? p.items
+			: CANON_SECTIONS;
+const sections = rawSections.slice(0, 10).map((s: any) => ({
+	heading:
+		(typeof s.heading === "string" && s.heading) || (typeof s.title === "string" && s.title) || "",
+	content: typeof s.content === "string" ? s.content : "",
+}));
+
+// Канон containerEnabled (toggle; legacy container.enabled) — surface-подложка
+// манеры §4 (245_245_245, p-6, БЕЗ радиуса — «подложечные» карточки satin только
+// на сером) вокруг списка. Canon-default отсутствует → false = голый divide-y
+// список (литерал Faq).
+const containerEnabled = String(p.containerEnabled ?? p.container?.enabled ?? "false") === "true";
+// Канон containerColorScheme (hidden) — класс схемы на контейнере.
+const containerSchemeCls =
+	typeof p.containerColorScheme === "string" && p.containerColorScheme
+		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
+		: "";
+const listWrapCls = containerEnabled
+	? `bg-[rgb(var(--color-surface,245_245_245))] p-6${containerSchemeCls}`
+	: containerSchemeCls.trim();
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+
+const titleId = id && heading ? `${id}-title` : undefined;
+---
+
+{/* Секция: вертикаль-стандарт §2 (py-10 md:py-14 — литерал Faq.astro:31), поля .satin-pad. */}
+<section
+	class="satin-pad w-full bg-[rgb(var(--color-bg,255_255_255))] py-10 md:py-14"
+	aria-labelledby={titleId}
+	aria-label={heading ? undefined : "Частые вопросы"}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div class="satin-container flex flex-col gap-8">
+		{
+			heading && (
+				<h2
+					id={titleId}
+					class={headingCls}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="heading"
+				>
+					{heading}
+				</h2>
+			)
+		}
+		<div class={listWrapCls}>
+			{/* Волосок #DDDDDD → канон-приём прозрачности от токена текста (≈ #DDD на белом). */}
+			<div class="flex flex-col divide-y divide-[rgb(var(--color-text,0_0_0)/13%)]">
+				{
+					sections.map((s, i) => (
+						<details
+							class="group py-5"
+							open={i === 0}
+							data-faq-item
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index={i}
+							data-puck-subsection-field="sections"
+						>
+							<summary
+								class={`flex cursor-pointer list-none items-center justify-between gap-4 font-logo ${summarySizeCls} font-normal uppercase leading-[1.2] text-[rgb(var(--color-heading,0_0_0))] [&::-webkit-details-marker]:hidden`}
+							>
+								<span>{s.heading}</span>
+								<NtIcon name="plus" sizeClass="size-8" class="shrink-0 group-open:hidden" />
+								<NtIcon name="minus" sizeClass="size-8" class="hidden shrink-0 group-open:block" />
+							</summary>
+							<div class="overflow-hidden" data-faq-answer>
+								<div class="satin-copy mt-3 max-w-[1100px]" set:html={s.content} />
+							</div>
+						</details>
+					))
+				}
+			</div>
+		</div>
+	</div>
+</section>

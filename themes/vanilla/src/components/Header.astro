@@ -24,7 +24,7 @@ function catalogNavFromProduct(url: URL): "textile" | "decor" | null {
 	return product?.collection === "Декор" ? "decor" : "textile";
 }
 
-const nav: NavLink[] = [
+const defaultNav: NavLink[] = [
 	{
 		label: "Текстиль",
 		href: "/catalog/textile",
@@ -41,21 +41,112 @@ const nav: NavLink[] = [
 	{ label: "История", href: "/about", match: (url) => pathnameBase(url).startsWith("/about") },
 ];
 
+// ОЖИВЛЕНИЕ (Фаза B, объём bloom Header): канон-схема theme-base Header.puckConfig —
+// siteTitle, navigationLinks, logo, logoPosition, activeLinkIndicator, stickiness,
+// padding. Тело ниже — verbatim верстальщика; дефолтные ветки тернарников = прежним
+// строкам байт-в-байт (цвета шапки → токены с пиксель-фоллбеком родных, MANNER §7).
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+// Пустая строка (впрыск коэрсера live-пути) не должна гасить название магазина.
+const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
+const nav: NavLink[] =
+	Array.isArray(p.navigationLinks) && p.navigationLinks.length > 0
+		? p.navigationLinks.map((l: any) => ({ label: l.label ?? l.text ?? "", href: l.href ?? l.link ?? "/" }))
+		: defaultNav;
+
+// Канон logo (URL картинки; панель «Логотип» пишет в props.logo): непустая строка →
+// <img> высотой var(--size-logo-width) (слайдер «Размер» канона задаёт высоту лого)
+// в mobile И desktop. Дефолт = SVG-вордмарк VanilaLogo верстальщика (white-вариант):
+// mobile h-6 (24px), desktop h-7 (28px) — фоллбеки токена = родные высоты.
+const logo = typeof p.logo === "string" && p.logo.trim() ? p.logo : undefined;
+const logoImgMobileCls = "h-[var(--size-logo-width,24px)] w-auto max-w-[76px] object-contain";
+const logoImgDesktopCls = "h-[var(--size-logo-width,28px)] w-auto max-w-[160px] object-contain";
+
+// Канон logoPosition: 'center-absolute' (canon-default из blockDefaults vanilla) И
+// отсутствие / неизвестное значение → ЛИТЕРАЛ верстальщика (лого центр абсолютом,
+// нав слева, иконки справа gap-5). Явный 'center-left' («Слева») → лого в поток в
+// начало строки (justify-between раздаёт: лого слева, нав в центре, иконки справа).
+const logoPosition = typeof p.logoPosition === "string" ? p.logoPosition : "";
+const logoLeft = logoPosition === "center-left";
+const desktopLogoCls = logoLeft
+	? "flex shrink-0 items-center text-white"
+	: "absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center text-white";
+
+// Канон activeLinkIndicator: 'underline' (canon-default из blockDefaults vanilla) И
+// отсутствие = литерал верстальщика (after:h-px белая полоска под активной ссылкой);
+// явный 'none' снимает индикатор (desktop-полоску и полоску бургера).
+const activeUnderline = p.activeLinkIndicator !== "none";
+
+// Канон stickiness: шапка верстальщика НЕ sticky — 'none' / отсутствие = литерал.
+// 'always' / 'scroll-up' → position:sticky inline-стилем (глобальный
+// [data-vanilla-header]{position:relative} перебивается только inline);
+// 'scroll-up' дополнительно прячет шапку при скролле вниз (паттерн rose/bloom):
+// is:inline скрипт через data-атрибут, идемпотентность — data-hydrated.
+const stickiness = typeof p.stickiness === "string" ? p.stickiness : "";
+const isSticky = stickiness === "always" || stickiness === "scroll-up";
+const rootCls =
+	stickiness === "scroll-up"
+		? "flex w-full flex-col transition-transform duration-300"
+		: "flex w-full flex-col";
+const stickyStyle = isSticky ? "position:sticky;top:0;z-index:50;" : undefined;
+const SCROLL_UP_JS = [
+	"(function(){",
+	"var root=document.querySelector('[data-vanilla-sticky=\"scroll-up\"]');",
+	"if(!root||root.getAttribute('data-hydrated')==='true')return;",
+	"root.setAttribute('data-hydrated','true');",
+	"var last=window.scrollY;",
+	"window.addEventListener('scroll',function(){",
+	"var y=window.scrollY;",
+	"if(y>last&&y>root.offsetHeight){root.style.transform='translateY(-100%)';}else{root.style.transform='';}",
+	"last=y;",
+	"},{passive:true});",
+	"})();",
+].join("");
+
+// Канон padding {top,bottom} — clamp ≤64 на носителе высоты верстальщика
+// (desktop-ряд h-20; мобильная строка h-14 фиксированная). {32,32} = canon-default
+// blockDefaults vanilla (его же пишет seed) → ЛИТЕРАЛ h-20 (32+28 ≈ те же 80px);
+// иное значение снимает h-20 и ведёт высоту inline-отступами.
+const pad = p.padding && typeof p.padding === "object" ? p.padding : undefined;
+const isCanonPad = pad && Number(pad.top) === 32 && Number(pad.bottom) === 32;
+const headerPad =
+	pad && !isCanonPad
+		? { top: Math.min(Number(pad.top) || 0, 64), bottom: Math.min(Number(pad.bottom) || 0, 64) }
+		: undefined;
+const headerPadStyle = headerPad
+	? `padding-top:${headerPad.top}px;padding-bottom:${headerPad.bottom}px;`
+	: undefined;
+const desktopWrapCls = headerPad
+	? "vanilla-pad relative mx-auto hidden w-full max-w-[1560px] items-center justify-between md:flex min-[1920px]:max-w-[1920px] min-[1920px]:px-[300px]"
+	: "vanilla-pad relative mx-auto hidden h-20 w-full max-w-[1560px] items-center justify-between md:flex min-[1920px]:max-w-[1920px] min-[1920px]:px-[300px]";
+
 const catalogSearchAction = pathnameBase(Astro.url) === "/catalog/decor" ? "/catalog/decor" : "/catalog/textile";
 
 const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.url.pathname === link.href);
 ---
 
-<div class="flex w-full flex-col" data-vanilla-header>
-	<a
-		href="/catalog/textile"
-		data-vanilla-announcement
-		class="m-0 flex h-11 w-full shrink-0 items-center justify-center border-0 bg-[var(--vanilla-announcement-bg)] px-4 text-center font-vanilla-arsenal text-[14px] font-normal uppercase leading-none tracking-normal text-white md:h-12 md:text-base"
-	>
-		<span class="min-w-0 shrink">Бесплатная доставка на весь ассортимент</span>
-	</a>
+<div
+	class={rootCls}
+	data-vanilla-header
+	data-puck-component-id={id}
+	data-vanilla-sticky={stickiness === "scroll-up" ? "scroll-up" : undefined}
+	style={stickyStyle}
+>
+	{
+		/* Встроенная полоса объявления — ТОЛЬКО статик-режим (без props.id):
+		   в канон-композиции полоса = отдельная секция PromoBanner, иначе дубль. */
+		!id && (
+			<a
+				href="/catalog/textile"
+				data-vanilla-announcement
+				class="m-0 flex h-11 w-full shrink-0 items-center justify-center border-0 bg-[var(--vanilla-announcement-bg)] px-4 text-center font-vanilla-arsenal text-[14px] font-normal uppercase leading-none tracking-normal text-white md:h-12 md:text-base"
+			>
+				<span class="min-w-0 shrink">Бесплатная доставка на весь ассортимент</span>
+			</a>
+		)
+	}
 
-	<header class="relative m-0 shrink-0 border-0 w-full overflow-visible bg-[var(--vanilla-header-bg)] pb-[3px] -mb-[3px] text-white" data-nt="vanilla-header">
+	<header class="relative m-0 shrink-0 border-0 w-full overflow-visible bg-[rgb(var(--color-bg,58_69_48))] pb-[3px] -mb-[3px] text-[rgb(var(--color-text,255_255_255))]" data-nt="vanilla-header">
 		<div class="relative z-[60] flex h-14 items-center justify-between px-4 md:hidden">
 			<button
 				type="button"
@@ -72,8 +163,8 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 					<NtIcon name="menu-close" sizeClass="size-6" class="brightness-0 invert" />
 				</span>
 			</button>
-			<a href="/" class="flex shrink-0 items-center text-white" aria-label={SITE_TITLE}>
-				<VanilaLogo class="h-6 w-auto max-w-[76px]" />
+			<a href="/" class="flex shrink-0 items-center text-white" aria-label={siteTitle}>
+				{logo ? <img src={logo} alt={siteTitle} class={logoImgMobileCls} /> : <VanilaLogo class="h-6 w-auto max-w-[76px]" />}
 			</a>
 			<div class="flex items-center gap-3">
 				<button
@@ -110,18 +201,22 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 			</div>
 		</div>
 
-		<div
-			class="vanilla-pad relative mx-auto hidden h-20 w-full max-w-[1560px] items-center justify-between md:flex min-[1920px]:max-w-[1920px] min-[1920px]:px-[300px]"
-		>
+		<div class={desktopWrapCls} style={headerPadStyle}>
 			<a
 				href="/"
-				class="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center text-white"
-				aria-label={SITE_TITLE}
+				class={desktopLogoCls}
+				aria-label={siteTitle}
 			>
-				<VanilaLogo class="h-7 w-[89px]" />
+				{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : <VanilaLogo class="h-7 w-[89px]" />}
 			</a>
 
-			<nav class="flex items-center gap-[40px]" aria-label="Основная навигация">
+			<nav
+				class="flex items-center gap-[40px]"
+				aria-label="Основная навигация"
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="997"
+				data-puck-subsection-field="navigationLinks"
+			>
 				{nav.map((link) => {
 					const active = isActive(link);
 					return (
@@ -129,9 +224,10 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 							href={link.href}
 							aria-current={active ? "page" : undefined}
 							class:list={[
-								"relative pb-1 font-vanilla-arsenal text-base font-normal leading-none tracking-normal text-white transition-all duration-200 hover:opacity-70",
+								"relative pb-1 font-vanilla-arsenal text-base font-normal leading-none tracking-normal text-[rgb(var(--color-text,255_255_255))] transition-all duration-200 hover:opacity-70",
 								active &&
-									"after:pointer-events-none after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:bg-white after:content-['']",
+									activeUnderline &&
+									"after:pointer-events-none after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:bg-[rgb(var(--color-text,255_255_255))] after:content-['']",
 							]}
 						>
 							{link.label}
@@ -259,7 +355,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 						>
 							{link.label}
 						</a>
-						{active && <div class="h-px w-[54px] bg-[var(--vanilla-header-bg)]" aria-hidden="true"></div>}
+						{active && activeUnderline && <div class="h-px w-[54px] bg-[var(--vanilla-header-bg)]" aria-hidden="true"></div>}
 					</div>
 				);
 			})}
@@ -267,6 +363,8 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 			<a href="/auth/sign-up" class="text-[14px] font-normal leading-normal text-[var(--vanilla-muted)]">Регистрация</a>
 		</nav>
 	</div>
+
+	{stickiness === "scroll-up" && <script is:inline set:html={SCROLL_UP_JS} />}
 </div>
 
 <script>

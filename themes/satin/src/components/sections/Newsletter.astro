@@ -1,0 +1,201 @@
+---
+import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+
+// Фаза B (satin, группа misc): новая канон-секция Newsletter в манере satin
+// (themes/satin/MANNER.md; эталон процесса — bloom Newsletter). Тело = блок
+// подписки подвала верстальщика (Footer.astro:70-77, перенесён КОПИЕЙ — подвал
+// не тронут): заголовок Kelly Slab 14 uppercase, форма-прямоугольник h-10 с
+// бордером muted и кнопкой-иконкой arrow-right внутри. Схема полей =
+// packages/theme-base/blocks/Newsletter/Newsletter.puckConfig.ts.
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон heading: string | { text, alignment, size }; дефолт = литерал подвала
+// «Будьте в курсе наших новостей» (F:71, font-logo 14 400 uppercase
+// leading-normal). Токен heading с фоллбеком 0_0_0.
+const heading =
+	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Будьте в курсе наших новостей");
+// Лестница §9 «Заголовок рассылки» (база-литерал 14 = medium): small 12, large 17.
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingSizeCls =
+	headingSize === "small" ? "text-[12px]" : headingSize === "large" ? "text-[17px]" : "text-[14px]";
+const headingCls = `font-logo ${headingSizeCls} font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]`;
+
+// Канон description (string) + text {content,size} (pupa-дубль): у подвала
+// подзаголовка НЕТ → рендер ТОЛЬКО при непустом (body-роль §1: Arsenal 16
+// light muted; лестница body §9: small 14, large 19).
+const description =
+	(typeof p.description === "string" && p.description.trim() ? p.description : undefined) ??
+	(typeof p.text?.content === "string" && p.text.content.trim() ? p.text.content : undefined);
+const descSize = p.text?.size;
+const descSizeCls =
+	descSize === "small" ? "text-[14px]" : descSize === "large" ? "text-[19px]" : "text-[16px]";
+
+// Канон placeholder: дефолт = литерал подвала (F:73).
+const placeholder =
+	typeof p.placeholder === "string" && p.placeholder.trim()
+		? p.placeholder
+		: "example@satin.merfy";
+
+// Канон buttonText: у верстальщика кнопка-ИКОНКА arrow-right size-5 в кнопке
+// 24×24 (F:74) — пустой/отсутствие = иконка литералом; непустой текст →
+// текстовая кнопка-прямоугольник h-8 px-4 Arsenal 12 uppercase (манера кнопки
+// «Найти», Header.astro:165) на токенах кнопки-1.
+const buttonText = typeof p.buttonText === "string" && p.buttonText.trim() ? p.buttonText : "";
+const inlineTextBtnCls =
+	"flex h-8 shrink-0 items-center justify-center rounded-[var(--radius-button,0px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-manrope text-[12px] font-normal uppercase leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95";
+// Тёмная md-кнопка (роль satin-button-md DARK, g:106-126,155-159) пересобрана
+// utility-классами с токенами: unlayered .satin-button-dark из global.css
+// перебил бы токен-утилиты (background: var(--satin-black)) и сломал смену
+// схемы из конструктора.
+const stackedBtnCls =
+	"inline-flex min-h-12 w-fit items-center justify-center self-start rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-bg,0_0_0))] bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-manrope text-[16px] font-normal uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity duration-[180ms] hover:opacity-[0.78]";
+
+// Канон formLayout: canon-default 'inline-submit' (совпадает с отсутствием
+// пропа) = форма подвала VERBATIM (контейнер h-10 border muted pl-3 pr-2.5,
+// кнопка внутри); 'stacked' = поле + тёмная md-кнопка ниже (манера §3).
+const inlineSubmit = p.formLayout !== "stacked";
+
+// Канон position/alignment: canon-default left = литерал подвала (колонка
+// заголовок-над-формой max-w-[320px] слева, F:70); center/right двигают
+// колонку; alignment правит выключку текста внутри колонки.
+const position = p.position === "center" || p.position === "right" ? p.position : "left";
+const alignment = p.alignment === "center" || p.alignment === "right" ? p.alignment : "left";
+const posCls = position === "center" ? "mx-auto" : position === "right" ? "ml-auto" : "mr-auto";
+const alignCls =
+	alignment === "center"
+		? " items-center text-center"
+		: alignment === "right"
+			? " items-end text-right"
+			: "";
+const colCls = `flex w-full max-w-[320px] flex-col gap-3 ${posCls}${alignCls}`;
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+
+const titleId = id && heading ? `${id}-title` : undefined;
+---
+
+{/* Секционная обёртка (новая): вертикаль-стандарт §2, поля .satin-pad, контейнер 1320.
+    Секция живёт на странице (bg-токен 255_255_255), не на сером подвале. */}
+<section
+	class="satin-pad w-full bg-[rgb(var(--color-bg,255_255_255))] py-10 md:py-14"
+	aria-labelledby={titleId}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div class="satin-container">
+		<div class={colCls}>
+			{
+				heading && (
+					<p
+						id={titleId}
+						class={headingCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="100"
+						data-puck-subsection-field="heading"
+					>
+						{heading}
+					</p>
+				)
+			}
+			{
+				description && (
+					<p
+						class={`font-manrope ${descSizeCls} font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]`}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="101"
+						data-puck-subsection-field="text"
+					>
+						{description}
+					</p>
+				)
+			}
+			{
+				inlineSubmit ? (
+					<form
+						class="flex h-10 w-full items-center justify-between rounded-[var(--radius-input,0px)] border border-[rgb(var(--color-muted,153_153_153))] pl-3 pr-2.5"
+						data-newsletter-form
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="997"
+						data-puck-subsection-field="placeholder"
+					>
+						<input
+							type="email"
+							name="email"
+							required
+							placeholder={placeholder}
+							aria-label="Email"
+							class="min-w-0 flex-1 bg-transparent font-manrope text-xs font-light leading-normal text-[rgb(var(--color-text,0_0_0))] outline-none placeholder:text-[rgb(var(--color-muted,153_153_153))]"
+						/>
+						{buttonText ? (
+							<button type="submit" class={inlineTextBtnCls}>
+								{buttonText}
+							</button>
+						) : (
+							<button
+								type="submit"
+								aria-label="Подписаться"
+								class="flex h-6 w-6 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
+							>
+								<NtIcon name="arrow-right" sizeClass="size-5" />
+							</button>
+						)}
+					</form>
+				) : (
+					<form
+						class="flex w-full flex-col gap-4"
+						data-newsletter-form
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="997"
+						data-puck-subsection-field="placeholder"
+					>
+						<input
+							type="email"
+							name="email"
+							required
+							placeholder={placeholder}
+							aria-label="Email"
+							class="h-10 w-full rounded-[var(--radius-input,0px)] border border-[rgb(var(--color-muted,153_153_153))] bg-transparent px-3 font-manrope text-xs font-light leading-normal text-[rgb(var(--color-text,0_0_0))] outline-none transition-colors placeholder:text-[rgb(var(--color-muted,153_153_153))] focus-visible:border-[rgb(var(--color-text,0_0_0))]"
+						/>
+						<button type="submit" class={stackedBtnCls}>
+							{buttonText || "Подписаться"}
+						</button>
+					</form>
+				)
+			}
+			<p
+				data-newsletter-status
+				role="status"
+				class="hidden font-manrope text-xs font-light text-[rgb(var(--color-text,0_0_0))]"
+			></p>
+		</div>
+	</div>
+</section>
+
+<script>
+	// Сабмит-скрипт подвала (Footer.astro:185-197) c ре-инициализацией по
+	// astro:page-load (его шлёт превью-агент после hot-replace) и гардом от
+	// двойной подписки (подвал темы вешает свой listener на все
+	// [data-newsletter-form] — дублирование безвредно, но не нужно).
+	const bindNewsletterForms = () => {
+		document.querySelectorAll<HTMLFormElement>("[data-newsletter-form]").forEach((form) => {
+			if (form.dataset.newsletterBound === "true") return;
+			form.dataset.newsletterBound = "true";
+			form.addEventListener("submit", (event) => {
+				event.preventDefault();
+				const status = form.parentElement?.querySelector<HTMLElement>("[data-newsletter-status]");
+				if (status) {
+					status.textContent = "Спасибо! Мы отправим вам приветственное письмо.";
+					status.classList.remove("hidden");
+				}
+				form.reset();
+			});
+		});
+	};
+
+	bindNewsletterForms();
+	document.addEventListener("astro:page-load", bindNewsletterForms);
+</script>

@@ -1,0 +1,78 @@
+---
+// Фаза B (chrome): новая канон-секция PromoBanner в манере flux (themes/flux/MANNER.md §8).
+// Схема полей = packages/theme-base/blocks/PromoBanner/PromoBanner.puckConfig.ts:
+// text, link {text, href} (+ legacy linkText/linkUrl), size (thin/small/medium/large),
+// textTransform (none/uppercase), colorScheme (обёртку даёт композитор), padding {top,bottom}.
+// Тело = разметка DS NtPromoBanner verbatim (Header.astro:25-29 зовёт её без textSize → lg):
+// чёрная полоса с подчёркнутым хвостом «Перейти». В канон-композиции Header свою полосу
+// не рендерит (там она только в статик-режиме). Анимаций нет — манера flux статична (§6).
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+const text = p.text ?? "Бесплатная доставка на весь ассортимент до 30.06.2026.";
+
+// Канон link {text, href} + legacy linkText/linkUrl. У flux хвост-ссылка ЕСТЬ в
+// литерале (DS NtPromoBanner, linkText дефолт «Перейти») — рендерим ВСЕГДА с
+// дефолтами верстальщика H:27-28 (инверсия bloom, где хвост — новый элемент).
+const linkText =
+	(typeof p.link?.text === "string" && p.link.text.trim() ? p.link.text : undefined) ??
+	(typeof p.linkText === "string" && p.linkText.trim() ? p.linkText : undefined) ??
+	"Перейти";
+const linkHref =
+	p.link?.href ?? p.linkUrl ?? (typeof p.link === "string" ? p.link : undefined) ?? "/catalog";
+
+// Канон size → родная лестница DS NtPromoBanner (textSize): small = min-h-8/text-12,
+// medium = min-h-10/text-14, large = min-h-12/text-16. 'large' И отсутствие пропа =
+// lg-ЛИТЕРАЛ (flux зовёт DS без textSize → lg). 'thin' — узкая полоса py-2 с
+// минимальным текстом 12px. Цвета — токены с пиксель-фоллбеком родных #000/#FFF (§7).
+const size = p.size;
+const heightCls =
+	size === "thin" ? "py-2" : size === "small" ? "min-h-8" : size === "medium" ? "min-h-10" : "min-h-12";
+const textSizeCls =
+	size === "thin" || size === "small" ? "text-[12px]" : size === "medium" ? "text-[14px]" : "text-[16px]";
+const ntTextSize = size === "thin" || size === "small" ? "sm" : size === "medium" ? "md" : "lg";
+const rootCls = `bg-[rgb(var(--color-bg,0_0_0))] text-[rgb(var(--color-text,255_255_255))] flex items-center justify-center overflow-hidden px-4 md:px-20 xl:px-[300px] 2xl:px-[680px] ${heightCls}`;
+
+// Канон textTransform: у flux полоса БЕЗ uppercase — дефолт-ветка без капса
+// (инверсия bloom); явный 'uppercase' добавляет. Шрифт DS font-roboto ≈ системный —
+// в каноне берём font-roboto-flex манеры (Roboto Flex 300, MANNER §1).
+const textCls =
+	p.textTransform === "uppercase"
+		? `text-center font-roboto-flex font-light leading-normal max-w-full uppercase ${textSizeCls}`
+		: `text-center font-roboto-flex font-light leading-normal max-w-full ${textSizeCls}`;
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн bloom
+// PromoBanner:43-50). {12,12} = canon-default puckConfig (его впрыскивает коэрсер) →
+// игнор: высоту дефолта держит родной min-h-12.
+const pad = p.padding && typeof p.padding === "object" ? p.padding : undefined;
+const isCanonPad = pad && Number(pad.top) === 12 && Number(pad.bottom) === 12;
+const paddingStyle =
+	pad && !isCanonPad
+		? `padding-top:${Number(pad.top) || 0}px;padding-bottom:${Number(pad.bottom) || 0}px;`
+		: undefined;
+---
+
+<div
+	class={rootCls}
+	role="region"
+	aria-live="polite"
+	data-nt="promo-banner"
+	data-nt-text-size={ntTextSize}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<p
+		class={textCls}
+		data-puck-subsection-parent={id}
+		data-puck-subsection-index="100"
+		data-puck-subsection-field="text"
+	>
+		<span class="whitespace-pre-wrap">{text}</span>
+		{" "}
+		<a
+			href={linkHref}
+			class="underline underline-offset-2 [text-decoration-skip-ink:none] decoration-solid hover:opacity-90"
+		>
+			{linkText}
+		</a>
+	</p>
+</div>

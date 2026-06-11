@@ -1,0 +1,19 @@
+{
+  "PromoBanner": "src/components/sections/PromoBanner.astro",
+  "Header": "src/components/Header.astro",
+  "Hero": "src/components/sections/Hero.astro",
+  "Collections": "src/components/sections/Collections.astro",
+  "PopularProducts": "src/components/sections/Popular.astro",
+  "Gallery": "src/components/sections/Gallery.astro",
+  "Footer": "src/components/Footer.astro",
+  "ContactForm": "src/components/sections/ContactForm.astro",
+  "MainText": "src/components/sections/MainText.astro",
+  "ImageWithText": "src/components/sections/ImageWithText.astro",
+  "MultiColumns": "src/components/sections/MultiColumns.astro",
+  "MultiRows": "src/components/sections/MultiRows.astro",
+  "CollapsibleSection": "src/components/sections/CollapsibleSection.astro",
+  "Newsletter": "src/components/sections/Newsletter.astro",
+  "Slideshow": "src/components/sections/Slideshow.astro",
+  "Publications": "src/components/sections/Publications.astro",
+  "Video": "src/components/sections/Video.astro"
+}

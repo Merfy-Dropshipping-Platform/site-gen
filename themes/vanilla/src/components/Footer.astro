@@ -11,50 +11,234 @@ import PaymentMir from "../icons/PaymentMir.astro";
 import { SITE_TITLE } from "../consts";
 
 const COPYRIGHT_YEAR = 2026;
-const copyrightText = `© ${COPYRIGHT_YEAR} ${SITE_TITLE} Theme Все права защищены.`;
-const poweredByText = `${copyrightText} Powered by Merfy`;
 
-const navColumn = [
+const navColumnDefault = [
 	{ label: "Текстиль", href: "/catalog/textile" },
 	{ label: "Декор", href: "/catalog/decor" },
 	{ label: "Домашняя одежда", href: "/catalog/textile" },
 ];
 
-const infoColumn = [
+const infoColumnDefault = [
 	"Политика доставки",
 	"Политика возврата",
 	"Условия обслуживания",
 	"Политика конфиденциальности",
 ];
 
-const phone = "+7 (000) 000-00-00";
-const email = "example@vanila.merfy";
+// ОЖИВЛЕНИЕ (Фаза B, объём bloom Footer): канон-схема theme-base Footer.puckConfig —
+// siteTitle, phone, email/socialColumn.email, newsletter.enabled, navigationColumn,
+// informationColumn, socialColumn.socialLinks, copyright, bottomStrip, padding.
+// Тело ниже — verbatim верстальщика; дефолтные ветки = прежним строкам байт-в-байт
+// (бэнд → токен с пиксель-фоллбеком §7, текст НА полотне остаётся white-литералом);
+// новые элементы (заголовки колонок, копия подписки) не рендерятся без пропсов.
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+// Пустая строка (canon default Puck / коэрсер) не должна ронять «Vanilla».
+const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
+const phone = typeof p.phone === "string" && p.phone.trim() ? p.phone : "+7 (000) 000-00-00";
+const email =
+	(typeof p.socialColumn?.email === "string" && p.socialColumn.email.trim()
+		? p.socialColumn.email
+		: undefined) ??
+	(typeof p.email === "string" && p.email.trim() ? p.email : undefined) ??
+	"example@vanila.merfy";
 
-const socials = [
+// НЮАНС vanilla (инверсия bloom): у верстальщика подписки в футере НЕТ — отдельная
+// FooterNewsletter через Layout showNewsletter. Канон newsletter.enabled: отсутствие
+// пропа / false = БЕЗ блока (пиксель верстальщика!); ТОЛЬКО явный true/'true' →
+// копия блока подписки над полотном (вёрстка = footer/FooterNewsletter.astro).
+const newsletterEnabled =
+	p.newsletter?.enabled === true || p.newsletter?.enabled === "true";
+
+// Канон-колонки {title, links:[{label,href}]}: ссылки из пропсов с fallback на
+// литералы верстальщика. Заголовок колонки — НОВЫЙ элемент, рендерится только при
+// непустом title (в вёрстке верстальщика заголовков колонок нет). Правовые пункты
+// у верстальщика — <span>, не ссылки: дефолт-ветка = спаны verbatim, проп-ветка
+// рендерит <a> теми же классами.
+const coerceColumnLinks = (col: any): Array<{ label: string; href: string }> | undefined =>
+	Array.isArray(col?.links) && col.links.length > 0
+		? col.links.map((l: any) => ({ label: String(l?.label ?? ""), href: String(l?.href ?? "/") }))
+		: undefined;
+const navLinks = coerceColumnLinks(p.navigationColumn) ?? navColumnDefault;
+const infoLinks = coerceColumnLinks(p.informationColumn);
+const columnTitle = (col: any): string | undefined =>
+	typeof col?.title === "string" && col.title.trim() ? col.title : undefined;
+const navColTitle = columnTitle(p.navigationColumn);
+const infoColTitle = columnTitle(p.informationColumn);
+const columnTitleCls = "font-vanilla-arsenal text-base font-normal uppercase leading-none text-white";
+
+// Канон socialColumn.socialLinks (enum платформ) → white-иконки верстальщика;
+// fallback = литеральный набор верстальщика дословно (TG/VK/TikTok/YouTube/Дзен).
+const SOCIAL_PLATFORMS: Record<string, { label: string; Icon: any }> = {
+	telegram: { label: "Telegram", Icon: SocialTelegramWhite },
+	vk: { label: "VK", Icon: SocialVkWhite },
+	tiktok: { label: "TikTok", Icon: SocialTiktokWhite },
+	youtube: { label: "YouTube", Icon: SocialYoutubeWhite },
+	dzen: { label: "Дзен", Icon: SocialYandexDzenWhite },
+};
+const defaultSocials = [
 	{ platform: "Telegram", href: "#", Icon: SocialTelegramWhite },
 	{ platform: "VK", href: "#", Icon: SocialVkWhite },
 	{ platform: "TikTok", href: "#", Icon: SocialTiktokWhite },
 	{ platform: "YouTube", href: "#", Icon: SocialYoutubeWhite },
 	{ platform: "Дзен", href: "#", Icon: SocialYandexDzenWhite },
 ];
+const socialsFromProps = Array.isArray(p.socialColumn?.socialLinks)
+	? p.socialColumn.socialLinks
+			.map((s: any) => {
+				const meta = SOCIAL_PLATFORMS[String(s?.platform ?? "")];
+				return meta ? { platform: meta.label, href: String(s?.href ?? "#"), Icon: meta.Icon } : null;
+			})
+			.filter((s: any) => s !== null)
+	: [];
+const socials = socialsFromProps.length > 0 ? socialsFromProps : defaultSocials;
+
+// Канон copyright {companyName, poweredBy, showYear} (+ legacy-строка целиком).
+// Дефолтная сборка = литерал верстальщика байт-в-байт: «© 2026 Vanilla Theme Все
+// права защищены.» — БЕЗ хвоста Powered by (он живёт в чёрной полосе bottomStrip).
+// canon-default poweredBy 'Powered by Merfy' из puckConfig трактуется как «не задан»
+// → литерал (правило canon-default → пиксель). Год у верстальщика фиксирован (2026).
+const copyrightProp = p.copyright;
+const copyrightOverride =
+	typeof copyrightProp === "string" && copyrightProp.trim() ? copyrightProp : undefined;
+const copyrightObj = copyrightProp && typeof copyrightProp === "object" ? copyrightProp : {};
+const showYear = !(copyrightObj.showYear === false || copyrightObj.showYear === "false");
+const companyPart =
+	typeof copyrightObj.companyName === "string" && copyrightObj.companyName.trim()
+		? copyrightObj.companyName
+		: `${siteTitle} Theme`;
+const poweredByTail =
+	typeof copyrightObj.poweredBy === "string" &&
+	copyrightObj.poweredBy.trim() &&
+	copyrightObj.poweredBy !== "Powered by Merfy"
+		? copyrightObj.poweredBy
+		: "";
+const copyrightText =
+	copyrightOverride ??
+	`© ${showYear ? `${COPYRIGHT_YEAR} ` : ""}${companyPart} Все права защищены.${poweredByTail ? ` ${poweredByTail}` : ""}`;
+
+// Канон bottomStrip {enabled, text} — чёрная полоса Powered by верстальщика
+// (min-h-16). Отсутствие пропа / enabled true = полоса видна (литерал); скрывает
+// ТОЛЬКО явный false/'false'. НЮАНС: blockDefaults vanilla (и seed) пишут text
+// «© 2025 Vanilla Theme. Powered by Merfy» — трактуем как canon-default → литерал.
+const CANON_STRIP_TEXT = "© 2025 Vanilla Theme. Powered by Merfy";
+const strip = p.bottomStrip && typeof p.bottomStrip === "object" ? p.bottomStrip : undefined;
+const bottomStripVisible = !(strip && (strip.enabled === false || strip.enabled === "false"));
+const stripText =
+	typeof strip?.text === "string" && strip.text.trim() && strip.text !== CANON_STRIP_TEXT
+		? strip.text
+		: `© ${COPYRIGHT_YEAR} ${siteTitle} Theme Все права защищены. Powered by Merfy`;
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при пропе, на носителе отступов
+// верстальщика (основное полотно py-12 md:py-16). {80,80} = canon-default puckConfig
+// (его впрыскивает коэрсер/конструктор) → литерал (правило canon-default → пиксель).
+const pad = p.padding && typeof p.padding === "object" ? p.padding : undefined;
+const isCanonPad = pad && Number(pad.top) === 80 && Number(pad.bottom) === 80;
+
+// Aria-label логотипа: без пропа = литерал верстальщика «Vanila — на главную»
+// (бренд вордмарка, одна «l»); заданный siteTitle подставляется в подпись.
+const logoAriaLabel =
+	typeof p.siteTitle === "string" && p.siteTitle.trim()
+		? `${siteTitle} — на главную`
+		: "Vanila — на главную";
+const footerPadStyle =
+	pad && !isCanonPad
+		? `padding-top:${Number(pad.top) || 0}px;padding-bottom:${Number(pad.bottom) || 0}px;`
+		: undefined;
+const footerBandCls = footerPadStyle
+	? "vanilla-pad shrink-0 border-0 bg-[rgb(var(--color-bg,38_49_28))]"
+	: "vanilla-pad shrink-0 border-0 bg-[rgb(var(--color-bg,38_49_28))] py-12 md:py-16";
 ---
 
-<footer class="flex w-full flex-col text-white" data-vanilla-footer>
+<footer class="flex w-full flex-col text-white" data-vanilla-footer data-puck-component-id={id}>
+	{
+		/* Копия блока подписки (вёрстка footer/FooterNewsletter.astro) — НОВЫЙ элемент,
+		   только при явном newsletter.enabled=true; сшивку с полотном даёт глобальный
+		   footer[data-vanilla-footer] > * + * (-2px). Оригинал секции не трогаем —
+		   его рендерит Layout при showNewsletter. */
+		newsletterEnabled && (
+			<section
+				class="vanilla-pad m-0 w-full shrink-0 border-0 bg-[var(--vanilla-header-bg)] py-16 lg:py-[120px]"
+				aria-labelledby="footer-newsletter-heading"
+			>
+				<div class="mx-auto flex w-full max-w-[1280px] min-[1920px]:max-w-[1320px] flex-col items-start gap-10 text-left">
+					<div class="flex w-full flex-col gap-2">
+						<h2
+							id="footer-newsletter-heading"
+							class="m-0 font-vanilla-bitter text-[20px] font-normal italic leading-none tracking-normal text-white"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="100"
+							data-puck-subsection-field="newsletter"
+						>
+							{typeof p.newsletter?.heading === "string" && p.newsletter.heading.trim()
+								? p.newsletter.heading
+								: "Будьте в курсе уютных новостей"}
+						</h2>
+						<p class="m-0 w-full font-vanilla-arsenal text-[14px] font-normal italic leading-none text-[var(--vanilla-hero-subtle)] lg:text-[16px]">
+							{typeof p.newsletter?.description === "string" && p.newsletter.description.trim()
+								? p.newsletter.description
+								: "Станьте частью сообщества Vanila. Вас ждут свежие идеи для уюта, анонсы новинок, полезные советы по уходу за текстилем и специальные промокоды для подписчиков."}
+						</p>
+					</div>
+
+					<form
+						class="flex w-full max-w-[652px] flex-col items-stretch justify-between gap-3 border border-white bg-transparent p-3 transition-colors focus-within:border-white/80 sm:h-14 sm:flex-row sm:items-center sm:gap-2 sm:py-0 sm:pl-4 sm:pr-3"
+						data-footer-newsletter-form
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="997"
+						data-puck-subsection-field="newsletter"
+					>
+						<input
+							type="email"
+							name="email"
+							required
+							placeholder={typeof p.newsletter?.placeholder === "string" && p.newsletter.placeholder.trim()
+								? p.newsletter.placeholder
+								: "E-mail"}
+							aria-label="E-mail"
+							class="min-w-0 flex-1 bg-transparent font-vanilla-arsenal text-base font-normal leading-none text-[var(--vanilla-hero-subtle)] placeholder:text-[var(--vanilla-hero-subtle)] outline-none"
+						/>
+						<button
+							type="submit"
+							class="inline-flex h-9 w-full shrink-0 items-center justify-center bg-white px-2 py-2.5 font-vanilla-arsenal text-base font-normal uppercase leading-none text-[var(--vanilla-header-bg)] transition-opacity hover:opacity-80 sm:h-8 sm:w-auto"
+						>
+							ОТПРАВИТЬ
+						</button>
+					</form>
+					<p
+						data-footer-newsletter-status
+						role="status"
+						class="hidden font-vanilla-arsenal text-base font-normal leading-[1.5] text-white"
+					></p>
+				</div>
+			</section>
+		)
+	}
+
 	<!-- Figma footer: #26311C, px 300 @1920, content 1320, gap 80 между рядами -->
-	<div
-		class="vanilla-pad shrink-0 border-0 bg-[var(--vanilla-announcement-bg)] py-12 md:py-16"
-	>
+	<div class={footerBandCls} style={footerPadStyle}>
 		<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-12 md:gap-20">
 			<section
 				class="grid grid-cols-1 gap-10 md:grid-cols-[1fr_auto] md:items-stretch max-sm:items-center max-sm:text-center"
 				aria-label="Навигация по сайту"
 			>
 				<div class="flex flex-col gap-8 max-sm:items-center">
-					<a href="/" class="inline-flex w-fit transition-opacity hover:opacity-80" aria-label="Vanila — на главную">
+					<a href="/" class="inline-flex w-fit transition-opacity hover:opacity-80" aria-label={logoAriaLabel}>
 						<VanilaFooterLogo class="h-7 w-[89px]" />
 					</a>
-					<ul class="flex flex-col gap-2" role="list">
-						{navColumn.map((link) => (
+					<ul
+						class="flex flex-col gap-2"
+						role="list"
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="996"
+						data-puck-subsection-field="navigationColumn"
+					>
+						{navColTitle && (
+							<li>
+								<h3 class={columnTitleCls}>{navColTitle}</h3>
+							</li>
+						)}
+						{navLinks.map((link) => (
 							<li>
 								<a
 									href={link.href}
@@ -68,7 +252,12 @@ const socials = [
 				</div>
 
 				<div class="flex flex-col items-start gap-6 max-sm:items-center md:h-full md:items-end">
-					<div class="flex flex-col gap-1 max-sm:items-center md:items-end">
+					<div
+						class="flex flex-col gap-1 max-sm:items-center md:items-end"
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="994"
+						data-puck-subsection-field="socialColumn"
+					>
 						<a
 							href={`tel:${phone.replace(/[^+\d]/g, "")}`}
 							class="font-vanilla-arsenal text-base font-normal leading-none text-white transition-opacity hover:opacity-70"
@@ -106,29 +295,81 @@ const socials = [
 			<section
 				class="flex flex-col gap-4 max-sm:items-center max-sm:text-center md:flex-row md:items-center md:justify-between"
 			>
-				<p class="font-vanilla-arsenal text-[14px] font-normal leading-[1.35] text-white md:text-base md:leading-none">
+				<p
+					class="font-vanilla-arsenal text-[14px] font-normal leading-[1.35] text-white md:text-base md:leading-none"
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="993"
+					data-puck-subsection-field="copyright"
+				>
 					{copyrightText}
 				</p>
 				<nav
 					class="flex flex-wrap items-center justify-center gap-x-9 gap-y-2 md:justify-end"
 					aria-label="Юридическая информация"
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="995"
+					data-puck-subsection-field="informationColumn"
 				>
-					{infoColumn.map((label) => (
-						<span class="font-vanilla-arsenal text-base font-normal leading-none text-white">
-							{label}
-						</span>
-					))}
+					{infoColTitle && <span class={columnTitleCls}>{infoColTitle}</span>}
+					{infoLinks
+						? infoLinks.map((link) => (
+								<a
+									href={link.href}
+									class="font-vanilla-arsenal text-base font-normal leading-none text-white transition-opacity hover:opacity-70"
+								>
+									{link.label}
+								</a>
+							))
+						: infoColumnDefault.map((label) => (
+								<span class="font-vanilla-arsenal text-base font-normal leading-none text-white">
+									{label}
+								</span>
+							))}
 				</nav>
 			</section>
 		</div>
 	</div>
 
-	<div
-		class="flex min-h-16 w-full shrink-0 items-center justify-center border-0 bg-black px-4 py-4"
-		aria-label="Копирайт"
-	>
-		<p class="text-center font-vanilla-arsenal text-[14px] font-normal leading-[1.35] text-white md:text-base md:leading-none">
-			{poweredByText}
-		</p>
-	</div>
+	{
+		bottomStripVisible && (
+			<div
+				class="flex min-h-16 w-full shrink-0 items-center justify-center border-0 bg-black px-4 py-4"
+				aria-label="Копирайт"
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="992"
+				data-puck-subsection-field="bottomStrip"
+			>
+				<p class="text-center font-vanilla-arsenal text-[14px] font-normal leading-[1.35] text-white md:text-base md:leading-none">
+					{stripText}
+				</p>
+			</div>
+		)
+	}
+
+	{
+		/* Обработчик формы подписки — только при включённом блоке; делегирование на
+		   document переживает hot-replace превью, window-гард не плодит слушателей. */
+		newsletterEnabled && (
+			<script is:inline>
+				{`(function () {
+	if (window.__vanillaFooterNewsletterBound) return;
+	window.__vanillaFooterNewsletterBound = 1;
+	document.addEventListener("submit", function (event) {
+		var t = event.target;
+		var form = t && t.closest ? t.closest("[data-footer-newsletter-form]") : null;
+		if (!form) return;
+		event.preventDefault();
+		var status = form.parentElement
+			? form.parentElement.querySelector("[data-footer-newsletter-status]")
+			: null;
+		if (status) {
+			status.textContent = "Спасибо! Мы отправим вам приветственное письмо.";
+			status.classList.remove("hidden");
+		}
+		form.reset();
+	});
+})();`}
+			</script>
+		)
+	}
 </footer>

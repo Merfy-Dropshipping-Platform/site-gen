@@ -1,0 +1,182 @@
+---
+// Фаза B (vanilla): канон-секция ImageWithText — адаптация care-бэнда
+// sections/Gallery.astro:82-123 («Ваш дом — наша забота», см. themes/vanilla/
+// MANNER.md §10). Тело верстальщика перенесено КОПИЕЙ — Gallery.astro НЕ
+// тронут (его используют страницы). Схема полей = packages/theme-base/blocks/
+// ImageWithText/ImageWithText.puckConfig.ts; дефолт каждого пропса = литерал
+// верстальщика, цвета → токены с пиксель-фоллбеком родных (МАННЕРА §7).
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон heading: string | { text, alignment, size }. Дефолт = careTitle
+// VERBATIM. Роль = заголовок секции (Bitter italic 20 white на полотне №2,
+// Gal:92). Лестница §9: medium/отсутствие = литерал 20, small 17, large 24.
+const heading =
+	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Ваш дом — наша забота");
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingCls =
+	headingSize === "small"
+		? "font-vanilla-bitter text-[17px] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]"
+		: headingSize === "large"
+			? "font-vanilla-bitter text-[24px] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]"
+			: "font-vanilla-bitter text-[20px] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]";
+const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
+const headingAlignCls =
+	headingAlignment === "center" ? " text-center" : headingAlignment === "right" ? " text-right" : "";
+
+// Канон text: string | { content, size }. Дефолт = careTextLead + careTextTail
+// двумя <p> VERBATIM; шрифтовые классы — на обёртке (абзацы наследуют), зазор
+// между абзацами даёт gap-4 обёртки, как у верстальщика (Gal:95). Роль =
+// текст полотна 14 (Gal:96; лестница §9): large/отсутствие = литерал 14,
+// medium 12, small 10.
+const text =
+	typeof p.text === "string"
+		? p.text
+		: (p.text?.content ??
+			"<p>Мы уверены: дом должен быть красивым не только на фотографиях, но и на ощупь. Бренд Vanila создан для тех, кто ценит эстетику и качество в каждом квадратном метре своего пространства. Мы собираем для вас самые вдохновляющие предметы текстиля и декора, чтобы ваш интерьер обрел индивидуальность.</p><p>В ассортименте Vanila вы не найдете случайных вещей. Только то, что действительно достойно стать частью вашего дома</p>");
+const textSize = p.textSize ?? p.text?.size;
+const textCls =
+	textSize === "small"
+		? "mt-5 flex w-full flex-col gap-4 font-vanilla-arsenal text-[10px] font-normal leading-[1.5] text-[rgb(var(--color-text,240_240_240))]"
+		: textSize === "medium"
+			? "mt-5 flex w-full flex-col gap-4 font-vanilla-arsenal text-[12px] font-normal leading-[1.5] text-[rgb(var(--color-text,240_240_240))]"
+			: "mt-5 flex w-full flex-col gap-4 font-vanilla-arsenal text-[14px] font-normal leading-[1.5] text-[rgb(var(--color-text,240_240_240))]";
+
+// Канон textStyle: blockDefaults-литерал 'italic' = курсив верстальщика —
+// снимается только явным 'normal'.
+const italicCls = p.textStyle === "normal" ? "" : " italic";
+
+// Канон image {url, alt}: canon-default url пуст → фоллбек = фото care-бэнда
+// (ассет верстальщика; на диске .webp после images:optimize — прямой путь,
+// т.к. под Container API fs-проверки VanillaPicture идут от чужого cwd).
+const imageUrl =
+	typeof p.image?.url === "string" && p.image.url.trim()
+		? p.image.url
+		: "/images/vanilla-chair.webp";
+const imageAlt = typeof p.image?.alt === "string" && p.image.alt.trim() ? p.image.alt : "Стул Vanilla";
+
+// Канон imagePosition: 'right' (canon-default из theme.json blockDefaults) и
+// отсутствие = литерал care-бэнда — текст слева, ФОТО СПРАВА; 'left' зеркалит
+// через order (на мобиле текст всегда сверху, как у верстальщика).
+const imageLeft = p.imagePosition === "left";
+
+// Канон size — аспект медиа лестницей манеры §4: medium/отсутствие = фото
+// care-бэнда 652/366 (литерал, Gal:111), small = широкое 16/9, large = квадрат.
+const aspectCls =
+	p.size === "small" ? "aspect-[16/9]" : p.size === "large" ? "aspect-square" : "aspect-[652/366]";
+
+// Канон width (s/m/l/full): large/отсутствие = 1280 (контейнер care-бэнда,
+// Gal:89), medium 1080, small 780, full — без лимита (поля .vanilla-pad остаются).
+const widthCls =
+	p.width === "small"
+		? "max-w-[780px]"
+		: p.width === "medium"
+			? "max-w-[1080px]"
+			: p.width === "full"
+				? "max-w-none"
+				: "max-w-[1280px]";
+
+// Канон containerColorScheme (hidden): класс схемы на внутреннем контейнере.
+const containerSchemeCls =
+	typeof p.containerColorScheme === "string" && p.containerColorScheme
+		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
+		: "";
+
+// Кнопка: canon button {text, href|link}. Дефолт (проп не задан) = CTA
+// care-бэнда VERBATIM: «Смотреть больше» → /about. Пустой текст заданного
+// пропа СКРЫВАЕТ кнопку.
+const btnProvided = p.button !== undefined;
+const btnTextProp =
+	typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined;
+const btnText = btnTextProp ?? (btnProvided ? undefined : "Смотреть больше");
+const btnHref =
+	(typeof p.button?.href === "string" && p.button.href ? p.button.href : undefined) ??
+	p.button?.link?.href ??
+	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??
+	"/about";
+
+// Канон buttonStyle: 'outlined' и отсутствие = контур care-бэнда ДОСЛОВНО
+// (border 1.3px white, Gal:105; button-2 токены); 'solid' = заливка кнопки-2.
+// Радиус 0 ≡ var(--radius-button,0px); active:scale в манере НЕ используется.
+const btnCls =
+	p.buttonStyle === "solid"
+		? "inline-flex h-12 min-h-12 items-center justify-center self-start rounded-[var(--radius-button,0px)] bg-[rgb(var(--color-button-2-bg,255_255_255))] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-2-text,58_69_48))] transition-opacity hover:opacity-80"
+		: "inline-flex h-12 min-h-12 items-center justify-center self-start rounded-[var(--radius-button,0px)] border-[1.3px] border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80";
+
+// Канон ctaPosition: 'bottom-pinned' (canon-default из theme.json blockDefaults)
+// и отсутствие = литерал care-бэнда (кнопка mt-10 self-start под текстом);
+// 'inline' — компактнее, в ритме зазора заголовок→текст (mt-5).
+const ctaMtCls = p.ctaPosition === "inline" ? "mt-5" : "mt-10";
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+
+// Фон секции — токен с фоллбеком родного полотна №2 (#3A4530, МАННЕРА §7).
+const titleId = id && heading ? `${id}-title` : undefined;
+---
+
+<section
+	class="vanilla-pad w-full bg-[rgb(var(--color-bg,58_69_48))] py-16 lg:py-[120px]"
+	aria-labelledby={titleId}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div
+		class={`mx-auto flex w-full ${widthCls} flex-col items-center gap-10 lg:flex-row lg:justify-center lg:gap-10${containerSchemeCls}`}
+		data-animate
+	>
+		<div class={`flex w-full max-w-[352px] flex-col items-start${imageLeft ? " lg:order-2" : ""}`}>
+			{
+				heading && (
+					<h2
+						id={titleId}
+						class={headingCls + headingAlignCls + italicCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="100"
+						data-puck-subsection-field="heading"
+					>
+						{heading}
+					</h2>
+				)
+			}
+			<div
+				class={textCls + italicCls}
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="101"
+				data-puck-subsection-field="text"
+				set:html={text}
+			/>
+			{
+				btnText && (
+					<a
+						href={btnHref}
+						class={`${ctaMtCls} ${btnCls}`}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="102"
+						data-puck-subsection-field="button"
+					>
+						{btnText}
+					</a>
+				)
+			}
+		</div>
+		<div
+			class={`relative ${aspectCls} w-full max-w-[652px] overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,236_235_231))] lg:min-w-0 lg:flex-1${imageLeft ? " lg:order-1" : ""}`}
+			data-puck-subsection-parent={id}
+			data-puck-subsection-index="103"
+			data-puck-subsection-field="image"
+		>
+			<img
+				src={imageUrl}
+				alt={imageAlt}
+				width="652"
+				height="366"
+				loading="lazy"
+				decoding="async"
+				class="absolute inset-0 size-full object-cover"
+			/>
+		</div>
+	</div>
+</section>

@@ -3,6 +3,9 @@ export interface VanillaHeroSlideCopy {
 	subtitle: string;
 	ctaText: string;
 	ctaHref: string;
+	/** Канон-классы лестниц размеров (Фаза B): смена слайда переключает и размер. */
+	titleCls?: string;
+	subtitleCls?: string;
 }
 
 export function bindVanillaHeroCarousel(root: HTMLElement) {
@@ -59,6 +62,12 @@ export function bindVanillaHeroCarousel(root: HTMLElement) {
 		subEl.textContent = copy.subtitle;
 		ctaEl.textContent = copy.ctaText;
 		ctaEl.setAttribute("href", copy.ctaHref);
+		// Канон-лестницы (Фаза B): per-slide heading.size/text.size приходят готовыми
+		// классами в JSON; без них (legacy-JSON) классы остаются серверные.
+		if (copy.titleCls) titleEl.className = copy.titleCls;
+		if (copy.subtitleCls) subEl.className = copy.subtitleCls;
+		// Слайд без текста кнопки прячет CTA (канон-слайды могут не нести кнопку).
+		ctaEl.classList.toggle("hidden", !copy.ctaText);
 		fadeCopy(titleEl, subEl, ctaEl);
 
 		root.querySelectorAll<HTMLButtonElement>("[data-hero-bullet]").forEach((btn, k) => {
@@ -69,13 +78,45 @@ export function bindVanillaHeroCarousel(root: HTMLElement) {
 		});
 	};
 
-	root.querySelector("[data-hero-prev]")?.addEventListener("click", () => apply(idx - 1));
-	root.querySelector("[data-hero-next]")?.addEventListener("click", () => apply(idx + 1));
+	// Автолистание (Фаза B, канон autoplay/interval): ТОЛЬКО при data-autoplay="true"
+	// (его выставляет канон-секция при пропе autoplay; дефолт-ветка верстальщика —
+	// без атрибута и без таймера). Ручная навигация перезапускает таймер.
+	const autoplay = root.dataset.autoplay === "true";
+	const intervalMs = Math.max(1000, Number.parseInt(root.dataset.interval || "5000", 10) || 5000);
+	let timer: ReturnType<typeof setInterval> | null = null;
+	const restartAutoplay = () => {
+		if (timer !== null) {
+			clearInterval(timer);
+			timer = null;
+		}
+		if (!autoplay || reduceMotion || slides.length < 2) return;
+		timer = setInterval(() => {
+			// Hot-replace превью убирает узел из DOM — глушим осиротевший таймер.
+			if (!root.isConnected) {
+				if (timer !== null) clearInterval(timer);
+				timer = null;
+				return;
+			}
+			apply(idx + 1);
+		}, intervalMs);
+	};
+
+	root.querySelector("[data-hero-prev]")?.addEventListener("click", () => {
+		apply(idx - 1);
+		restartAutoplay();
+	});
+	root.querySelector("[data-hero-next]")?.addEventListener("click", () => {
+		apply(idx + 1);
+		restartAutoplay();
+	});
 
 	root.querySelectorAll<HTMLButtonElement>("[data-hero-bullet]").forEach((btn) => {
 		btn.addEventListener("click", () => {
 			const n = Number(btn.dataset.heroIndex);
-			if (Number.isFinite(n)) apply(n);
+			if (Number.isFinite(n)) {
+				apply(n);
+				restartAutoplay();
+			}
 		});
 	});
 
@@ -95,9 +136,11 @@ export function bindVanillaHeroCarousel(root: HTMLElement) {
 			if (Math.abs(dx) < 44) return;
 			if (dx < 0) apply(idx + 1);
 			else apply(idx - 1);
+			restartAutoplay();
 		},
 		{ passive: true },
 	);
 
 	apply(0);
+	restartAutoplay();
 }

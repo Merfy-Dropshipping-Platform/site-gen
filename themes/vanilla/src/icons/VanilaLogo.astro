@@ -1,8 +1,12 @@
 ---
 /**
  * Вордмарк «Vanila» — SVG из Figma (футер/хедер, 89×28, #FFFFFF).
+ *
+ * `?url`-импорт заменён на public-путь (паттерн VanilaFooterLogo): Vite-импорты
+ * не резолвятся при компиляции канон-секций (Container API, Фаза B), а
+ * `public/icons/Vanila.svg` доступен и статическому билду, и live-композиции.
  */
-import wordmarkSrc from "./Vanila.svg?url";
+import { withBase } from "../lib/with-base";
 
 interface Props {
 	class?: string;
@@ -12,7 +16,7 @@ const { class: className } = Astro.props;
 ---
 
 <img
-	src={wordmarkSrc}
+	src={withBase("/icons/Vanila.svg")}
 	alt=""
 	width="89"
 	height="28"

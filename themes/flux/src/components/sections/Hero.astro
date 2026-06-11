@@ -3,80 +3,233 @@ import NtSearchBar from "@merfy-dropshipping-platform/design-systems-theme/compo
 import FluxPicture from "../img/FluxPicture.astro";
 import { SITE_TITLE } from "../../consts";
 
-interface Props {
-	title?: string;
-	subtitle?: string;
-	ctaText?: string;
-	ctaLink?: string;
-	aboutText?: string;
-	aboutLink?: string;
-	backgroundImage?: string;
-}
+// ОЖИВЛЕНИЕ (Фаза B, контракт bloom Hero): читаем канон-схему theme-base
+// Hero.puckConfig и раскладываем по разметке верстальщика. Тело ниже — verbatim;
+// значения flux = дефолты (index.astro зовёт <Hero title=... /> легаси-пропсами —
+// они поддержаны наравне с nested). Полотно — min-height clamp(500px,80vh,1080px)
+// (НЕ aspect-лестница, Hero.astro:29); внизу полотна DS NtSearchBar — render-only
+// часть манеры, сохраняется во всех ветках. Анимаций нет (манера flux статична, §6).
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+const nonEmpty = (v: unknown): string | undefined =>
+	typeof v === "string" && v.trim() ? v : undefined;
+const title = p.heading?.text ?? p.title ?? SITE_TITLE;
+const subtitle = p.text?.content ?? p.subtitle ?? "Там, где классика встречается с характером";
+const ctaText = p.primaryButton?.text ?? p.cta?.text ?? p.ctaText ?? "В каталог";
+const ctaLink =
+	p.primaryButton?.link?.href ??
+	(typeof p.primaryButton?.link === "string" ? p.primaryButton.link : undefined) ??
+	p.cta?.href ??
+	p.ctaLink ??
+	"#collections";
+// Канон backgroundImages (imagePair) / legacy backgroundImage / image.url; пустые
+// строки (впрыск коэрсера) не должны ронять фон — фоллбек на литерал верстальщика.
+const backgroundImage =
+	nonEmpty(p.backgroundImages?.url1) ??
+	nonEmpty(p.backgroundImage) ??
+	nonEmpty(p.image?.url) ??
+	"/images/4x/Главный_экран.png";
+// Сплит двух картинок 50/50 ТОЛЬКО когда второе фото задано; иначе одиночный рендер дословно.
+const backgroundImage2 = nonEmpty(p.backgroundImages?.url2) ?? nonEmpty(p.backgroundImage2);
 
-const {
-	title = SITE_TITLE,
-	subtitle = "Там, где классика встречается с характером",
-	ctaText = "В каталог",
-	ctaLink = "#collections",
-	aboutText = "О нас",
-	aboutLink = "#about",
-	backgroundImage = "/images/4x/Главный_экран.png",
-} = Astro.props;
+// Канон heading.size / text.size (+ секционный p.size как canon-носитель).
+// 'large' И отсутствующий проп → ЛИТЕРАЛЬНАЯ лестница верстальщика (MANNER §9):
+//   h1    large 32/40/48 → medium 27/34/41 → small 22/28/34 (Comfortaa БЕЗ uppercase)
+//   текст large 16/18    → medium 14/15    → small 11/13    (Roboto Flex 300)
+// Дефолтная ветка каждого тернарника = прежняя строка классов байт-в-байт
+// (цвета → токены с пиксель-фоллбеком родного белого §7).
+const headingSize = p.heading?.size ?? p.size;
+const headingCls =
+	headingSize === "small"
+		? "font-comfortaa text-[22px] font-normal leading-[1.115] text-[rgb(var(--color-heading,255_255_255))] md:text-[28px] lg:text-[34px]"
+		: headingSize === "medium"
+			? "font-comfortaa text-[27px] font-normal leading-[1.115] text-[rgb(var(--color-heading,255_255_255))] md:text-[34px] lg:text-[41px]"
+			: "font-comfortaa text-[32px] font-normal leading-[1.115] text-[rgb(var(--color-heading,255_255_255))] md:text-[40px] lg:text-[48px]";
+const textSize = p.text?.size ?? p.size;
+const subtitleCls =
+	textSize === "small"
+		? "font-roboto-flex text-[11px] font-light leading-[1.5] text-[rgb(var(--color-text,255_255_255))] md:text-[13px]"
+		: textSize === "medium"
+			? "font-roboto-flex text-[14px] font-light leading-[1.5] text-[rgb(var(--color-text,255_255_255))] md:text-[15px]"
+			: "font-roboto-flex text-[16px] font-light leading-[1.5] text-[rgb(var(--color-text,255_255_255))] md:text-[18px]";
+
+// НЮАНС flux: вторая кнопка «О нас» → #about ЕСТЬ в литерале (Hero.astro:70-75) —
+// рендерим ПО УМОЛЧАНИЮ; пустой текст ЗАДАННОГО пропа скрывает (инверсия bloom,
+// где secondary — новый элемент). Legacy flat-пропсы aboutText/aboutLink поддержаны.
+const secondaryGiven = p.secondaryButton !== undefined && p.secondaryButton !== null;
+const secondaryText = secondaryGiven
+	? nonEmpty(p.secondaryButton?.text)
+	: (nonEmpty(p.aboutText) ?? "О нас");
+const secondaryLink =
+	p.secondaryButton?.link?.href ??
+	(typeof p.secondaryButton?.link === "string" ? p.secondaryButton.link : undefined) ??
+	nonEmpty(p.aboutLink) ??
+	"#about";
+
+// Канон overlay 0-100 (число или строка) → чёрный слой между фото (z-0) и контентом (z-10).
+const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
+
+// Канон position (видимое поле панели) / contentPosition (legacy hidden) + alignment.
+// 'center' (canon-default defaultPagesData) И отсутствие = ЛИТЕРАЛ flux: контент
+// СЛЕВА СВЕРХУ — блок max-w-[432px] в контейнере px-4 pb-6 pt-32 … (Hero.astro:47-50).
+// Контент двигают только явные top-*/bottom-*/center-left/center-right и
+// alignment center/right. Вертикаль — авто-маргины контент-блока: NtSearchBar
+// остаётся внизу полотна (mt-auto уходит к контенту, у middle полоса прижата
+// нижним краем контейнера).
+const posRaw =
+	typeof p.position === "string"
+		? p.position
+		: typeof p.contentPosition === "string"
+			? p.contentPosition
+			: "";
+const pos = posRaw === "center" ? "" : posRaw;
+const vPos = pos.startsWith("bottom")
+	? "bottom"
+	: pos === "center-left" || pos === "center-right"
+		? "middle"
+		: "";
+const hPosFromPos = pos.endsWith("-left")
+	? "left"
+	: pos.endsWith("-right")
+		? "right"
+		: pos.endsWith("-center")
+			? "center"
+			: "";
+const hAlign =
+	p.alignment === "left" || p.alignment === "center" || p.alignment === "right"
+		? p.alignment
+		: hPosFromPos || "left";
+const contentHCls =
+	hAlign === "center" ? " items-center self-center text-center" : hAlign === "right" ? " items-end self-end text-right" : "";
+const contentVCls = vPos === "middle" ? " my-auto" : vPos === "bottom" ? " mt-auto" : "";
+const contentCls = `flex max-w-[432px] flex-col gap-8${contentHCls}${contentVCls}`;
+const rowJustifyCls =
+	hAlign === "center" ? " justify-center" : hAlign === "right" ? " justify-end" : "";
+const searchWrapCls = vPos
+	? "w-full max-w-[1320px] self-center"
+	: "mt-auto w-full max-w-[1320px] self-center";
+
+// Канон buttonStyle solid|outlined для основной кнопки. solid/отсутствие = белая
+// заливка верстальщика с оранжевым текстом дословно (токены кнопки-1 §7: в схемах
+// flux кнопка-1 = фирменная); outlined = бордер+текст цвета заливки на прозрачном.
+const ctaBtnCls =
+	p.buttonStyle === "outlined"
+		? "inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] border border-[rgb(var(--color-button-bg,255_255_255))] px-6 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-button-bg,255_255_255))] transition-colors hover:bg-[#FFFFFF]/10 md:text-[16px]"
+		: "inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] border border-[rgb(var(--color-button-bg,255_255_255))] bg-[rgb(var(--color-button-bg,255_255_255))] px-6 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-button-text,250_81_9))] transition-opacity hover:opacity-90 md:text-[16px]";
+// Вторая кнопка — outlined белая верстальщика на токенах кнопки-2 (паттерн bloom).
+const secondaryBtnCls =
+	"inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] border border-[rgb(var(--color-button-2-bg,255_255_255))] px-6 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-colors hover:bg-[#FFFFFF]/10 md:text-[16px]";
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose
+// T14 / bloom Hero); добавляется к родному min-height полотна.
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+const rootStyle = `min-height: clamp(500px, 80vh, 1080px)${paddingStyle ? `;${paddingStyle}` : ""}`;
 ---
 
 <section
-	class="relative w-full bg-white"
-	style="min-height: clamp(500px, 80vh, 1080px)"
+	class="relative w-full bg-[rgb(var(--color-bg,255_255_255))]"
+	style={rootStyle}
 	aria-labelledby="hero-title"
+	data-puck-component-id={id}
 >
 	<div class="relative h-full w-full">
 		<div
 			class="absolute inset-0 z-0 w-full overflow-hidden"
 			style="min-height: clamp(500px, 80vh, 1080px)"
 		>
-			<FluxPicture
-				src={backgroundImage}
-				alt={title}
-				loading="eager"
-				fetchpriority="high"
-				class="absolute inset-0 size-full object-cover object-center"
-			/>
+			{
+				backgroundImage2 ? (
+					<div class="absolute inset-0 grid grid-cols-2">
+						<FluxPicture
+							src={backgroundImage}
+							alt={title}
+							loading="eager"
+							fetchpriority="high"
+							class="size-full object-cover object-center"
+						/>
+						<FluxPicture
+							src={backgroundImage2}
+							alt=""
+							loading="eager"
+							fetchpriority="high"
+							class="size-full object-cover object-center"
+						/>
+					</div>
+				) : (
+					<FluxPicture
+						src={backgroundImage}
+						alt={title}
+						loading="eager"
+						fetchpriority="high"
+						class="absolute inset-0 size-full object-cover object-center"
+					/>
+				)
+			}
 		</div>
+
+		{
+			overlayN > 0 && (
+				<div
+					class="pointer-events-none absolute inset-0 z-[1] bg-black"
+					style={`opacity:${overlayN / 100}`}
+				/>
+			)
+		}
 
 		<div
 			class="relative z-10 flex h-full w-full flex-col justify-between px-4 pb-6 pt-32 md:px-20 md:pb-10 md:pt-40 lg:pt-52 2xl:px-80"
 			style="min-height: clamp(500px, 80vh, 1080px)"
 		>
-			<div class="flex max-w-[432px] flex-col gap-8">
-				<div class="flex flex-col gap-2">
+			<div class={contentCls}>
+				<div class={`flex flex-col gap-2${contentHCls}`}>
 					<h1
 						id="hero-title"
-						class="font-comfortaa text-[32px] font-normal leading-[1.115] text-white md:text-[40px] lg:text-[48px]"
+						class={headingCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="100"
+						data-puck-subsection-field="heading"
 					>
 						{title}
 					</h1>
-					<p class="font-roboto-flex text-[16px] font-light leading-[1.5] text-white md:text-[18px]">
+					<p
+						class={subtitleCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="101"
+						data-puck-subsection-field="text"
+					>
 						{subtitle}
 					</p>
 				</div>
 
-				<div class="flex flex-wrap gap-3">
+				<div class={`flex flex-wrap gap-3${rowJustifyCls}`}>
 					<a
 						href={ctaLink}
-						class="inline-flex h-12 items-center justify-center rounded-[6px] border border-[#FFFFFF] bg-[#FFFFFF] px-6 font-manrope text-[14px] font-normal leading-normal text-[#FA5109] transition-opacity hover:opacity-90 md:text-[16px]"
+						class={ctaBtnCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="102"
+						data-puck-subsection-field="primaryButton"
 					>
 						{ctaText}
 					</a>
-					<a
-						href={aboutLink}
-						class="inline-flex h-12 items-center justify-center rounded-[6px] border border-[#FFFFFF] px-6 font-manrope text-[14px] font-normal leading-normal text-[#FFFFFF] transition-colors hover:bg-[#FFFFFF]/10 md:text-[16px]"
-					>
-						{aboutText}
-					</a>
+					{
+						secondaryText && (
+							<a
+								href={secondaryLink}
+								class={secondaryBtnCls}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="103"
+								data-puck-subsection-field="secondaryButton"
+							>
+								{secondaryText}
+							</a>
+						)
+					}
 				</div>
 			</div>
 
-			<div class="mt-auto w-full max-w-[1320px] self-center">
+			<div class={searchWrapCls}>
 				<NtSearchBar />
 			</div>
 		</div>

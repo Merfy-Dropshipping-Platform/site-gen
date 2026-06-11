@@ -1,0 +1,176 @@
+---
+import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+import SatinPicture from "../img/SatinPicture.astro";
+
+// Фаза B (satin, группа misc): канон-секция Publications — адаптация
+// src/components/sections/Journal.astro (тело КОПИЕЙ; оригинал не тронут —
+// index.astro:32 его использует). Схема полей = packages/theme-base/blocks/
+// Publications/Publications.puckConfig.ts; манера — themes/satin/MANNER.md
+// (эталон процесса — bloom Publications). Demo-карточки — болванки Journal в
+// тоне §11; платформенный резолв публикаций идёт по data-атрибуту
+// publicationType на гриде, demo-карточки — его фоллбек.
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон heading (string | { text, alignment, size }); canon-default
+// «Публикации» — у верстальщика шапки НЕТ → рендер при непустом. Роль =
+// заголовок секции §1 (font-logo 20 uppercase leading-[1.15]), токен heading.
+const heading = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Публикации");
+// Лестница §9 «Заголовок секции» (база-литерал 20 = medium): small 17, large 24.
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingSizeCls =
+	headingSize === "small" ? "text-[17px]" : headingSize === "large" ? "text-[24px]" : "text-[20px]";
+const headingAlignment =
+	p.headingAlignment ?? (typeof p.heading === "object" ? p.heading?.alignment : undefined);
+const headingAlignCls =
+	headingAlignment === "center"
+		? " text-center"
+		: headingAlignment === "right"
+			? " text-right"
+			: "";
+const headingCls = `font-logo ${headingSizeCls} font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
+
+// Лестница §9 «Заголовок карточки журнала» (база-литерал 16 = medium,
+// Journal.astro:50): small 14, large 19. Управляется тем же headingSize.
+const cardTitleSizeCls =
+	headingSize === "small" ? "text-[14px]" : headingSize === "large" ? "text-[19px]" : "text-[16px]";
+const cardTitleCls = `font-logo ${cardTitleSizeCls} font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]`;
+
+// Канон columnsCount (slider 1-6) приоритетнее hidden columns (1-4); дефолт 3 =
+// sm:grid-cols-3 ЛИТЕРАЛ (Journal.astro:42); иное значение → CSS-var на sm.
+const columnsRaw =
+	typeof p.columnsCount === "number" ? p.columnsCount : typeof p.columns === "number" ? p.columns : 3;
+const columns = Math.max(1, Math.min(6, Math.round(columnsRaw) || 3));
+const gridCls =
+	columns === 3
+		? "grid grid-cols-1 gap-4 sm:grid-cols-3"
+		: "grid grid-cols-1 gap-4 sm:grid-cols-[repeat(var(--pub-cols),minmax(0,1fr))]";
+const gridStyle = columns === 3 ? undefined : `--pub-cols:${columns};`;
+
+// Канон cardsCount (slider 1-12) приоритетнее hidden cards (1-4); дефолт 3 =
+// литерал defaultPosts.
+const cardsRaw =
+	typeof p.cardsCount === "number" ? p.cardsCount : typeof p.cards === "number" ? p.cards : 3;
+const cards = Math.max(1, Math.min(12, Math.round(cardsRaw) || 3));
+
+// Канон showDateTime (toggle; legacy dateTime.enabled) — дефолт true =
+// дата-строка «01.05, 12:41» (Arsenal 14 light uppercase tracking-[0.04em]
+// muted — литерал Journal.astro:49); false скрывает.
+const showDate = String(p.showDateTime ?? p.dateTime?.enabled ?? "true") === "true";
+
+// Канон publicationType (pagePicker) — носитель платформенного резолва
+// публикаций: data-атрибут на гриде (паттерн bloom).
+const publicationType =
+	typeof p.publicationType === "string" && p.publicationType ? p.publicationType : undefined;
+
+// Болванки = defaultPosts Journal VERBATIM (Journal.astro:17-36, тон §11);
+// фоллбек-обложки /images/4x/journal-{1..3}.png по позиции (цикл при cards > 3).
+const DEMO_POSTS = [
+	{
+		date: "01.05, 12:41",
+		title: "Летняя коллекция уже здесь",
+		excerpt:
+			"Лён, хлопок, свободные силуэты — 12 оттенков, которые сочетаются между собой без раздумий.",
+	},
+	{
+		date: "21.04, 9:31",
+		title: "Доставка за 1 день — бесплатно",
+		excerpt:
+			"Заказ от 5 000 ₽ по Москве — на следующий день и без доплаты. Примерка при курьере, возврат на месте.",
+	},
+	{
+		date: "14.03, 8:00",
+		title: "Новая весенняя коллекция",
+		excerpt:
+			"Тренчи, трикотаж, рубашки — остатки весенней коллекции со скидкой. До воскресенья, пока есть размеры.",
+	},
+];
+// Legacy flat-проп Journal posts[] {title,image,date,excerpt,href} — при
+// непустом массиве рендерится verbatim; иначе demo-карточки по cardsCount.
+const legacyPosts = Array.isArray(p.posts) && p.posts.length ? p.posts : undefined;
+const items =
+	legacyPosts ??
+	Array.from({ length: cards }, (_, i) => ({
+		...DEMO_POSTS[i % DEMO_POSTS.length],
+		image: `/images/4x/journal-${(i % 3) + 1}.png`,
+		href: undefined as string | undefined,
+	}));
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+
+const titleId = id && heading ? `${id}-title` : undefined;
+---
+
+{/* Секция: вертикаль-стандарт §2 (py-10 md:py-14 — литерал Journal.astro:41), поля .satin-pad. */}
+<section
+	class="satin-pad w-full bg-[rgb(var(--color-bg,255_255_255))] py-10 md:py-14"
+	aria-labelledby={titleId}
+	aria-label={heading ? undefined : "Журнал"}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div class="satin-container flex flex-col gap-8">
+		{
+			heading && (
+				<h2
+					id={titleId}
+					class={headingCls}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="heading"
+				>
+					{heading}
+				</h2>
+			)
+		}
+		<ul
+			class={gridCls}
+			style={gridStyle}
+			role="list"
+			data-publication-type={publicationType}
+		>
+			{
+				items.map((post: any, i: number) => (
+					<li
+						class="flex flex-col gap-6 bg-[rgb(var(--color-surface,245_245_245))] p-4"
+						data-publication-index={i}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index={i}
+						data-puck-subsection-field="cardsCount"
+					>
+						{/* Плейсхолдер медиа журнала — родной литерал #ECECEC (236 236 236, Journal.astro:45). */}
+						<div class="relative aspect-square w-full overflow-hidden bg-[#ECECEC]">
+							<SatinPicture
+								src={post.image}
+								alt={post.title}
+								loading="lazy"
+								class="absolute inset-0 size-full object-cover"
+							/>
+						</div>
+						<div class="flex flex-col gap-2">
+							{showDate && (
+								<p class="font-manrope text-[14px] font-light uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]">
+									{post.date}
+								</p>
+							)}
+							<h3 class={cardTitleCls}>{post.title}</h3>
+							<p class="font-manrope text-[14px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))]">
+								{post.excerpt}
+							</p>
+						</div>
+						<a
+							href={post.href ?? "/blog"}
+							class="inline-flex items-center gap-2 font-manrope text-[14px] font-normal uppercase leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70"
+						>
+							<span>Перейти</span>
+							<NtIcon name="arrow-right" sizeClass="size-5" />
+						</a>
+					</li>
+				))
+			}
+		</ul>
+	</div>
+</section>

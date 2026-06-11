@@ -1,0 +1,385 @@
+---
+// НОВАЯ канон-секция Slideshow (Фаза B, рецепт bloom Slideshow): полотно слайда =
+// about-герой верстальщика (about.astro:37-57) — фото full-bleed на подложке
+// #111111 + штатный градиент bg-gradient-to-b from-black/30 to-black/45 +
+// центрированный белый контент (кикер → заголовок Kelly Slab → белый контур-CTA).
+// Схема полей — packages/theme-base/blocks/Slideshow/Slideshow.puckConfig.ts.
+// Параметры скрипту — ТОЛЬКО data-атрибуты (define:vars компилятор секций не
+// умеет); идемпотентность — data-slideshow-hydrated; реинициализация —
+// astro:page-load (его шлёт превью-агент после hot-replace).
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон slides[] 1-5 (item: imageUrl|image, heading string|{text,size},
+// subtitle | text{content,size}, ctaText/ctaUrl | button{text,link}, container,
+// position, alignment, colorScheme). Отсутствие = canon-defaults: 3 слайда-
+// болванки в тоне satin §11 (фэшн-капс, «вы», без восклицаний).
+const CANON_SLIDES = [
+	{
+		id: "slide-1",
+		imageUrl: "",
+		heading: "Там, где классика встречается с характером",
+		subtitle: "Оставайтесь в центре внимания",
+		ctaText: "В каталог",
+		ctaUrl: "/catalog",
+	},
+	{
+		id: "slide-2",
+		imageUrl: "",
+		heading: "Мужская коллекция",
+		subtitle: "Базовые вещи без лишних деталей",
+		ctaText: "Новые поступления",
+		ctaUrl: "/catalog",
+	},
+	{
+		id: "slide-3",
+		imageUrl: "",
+		heading: "Здесь начинается персональный стиль",
+		subtitle: "Весна 25’ уже в каталоге",
+		ctaText: "Смотреть больше",
+		ctaUrl: "/catalog",
+	},
+];
+const rawSlides = Array.isArray(p.slides) && p.slides.length ? p.slides : CANON_SLIDES;
+
+// Заголовок слайда — роль заголовка баннера (about.astro:51, Kelly Slab uppercase
+// БЕЛЫЙ на фото): лестница §9 small 18/22 → medium 22/27 → large 26/32 = литерал
+// (canon-носитель large, отсутствие = литерал).
+const slideHeadingCls = (s: string | undefined) =>
+	s === "small"
+		? "font-logo text-[18px] font-normal uppercase leading-[1.1] text-white md:text-[22px]"
+		: s === "medium"
+			? "font-logo text-[22px] font-normal uppercase leading-[1.1] text-white md:text-[27px]"
+			: "font-logo text-[26px] font-normal uppercase leading-[1.1] text-white md:text-[32px]";
+// Кикер слайда — литерал about.astro:50 (Arsenal 16 400 uppercase tracking-[0.04em]
+// #999999 → токен muted): лестница §9 small 11 → medium 14 → large 16 = литерал.
+const slideTextCls = (s: string | undefined) =>
+	s === "small"
+		? "font-manrope text-[11px] font-normal uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]"
+		: s === "medium"
+			? "font-manrope text-[14px] font-normal uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]"
+			: "font-manrope text-[16px] font-normal uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]";
+
+// Канон-плейсхолдер = реальный ассет темы (принцип T15): слайд без фото получает
+// кампанию верстальщика по позиции.
+const SLIDE_FALLBACKS = [
+	"/images/4x/Главный_экран.png",
+	"/images/4x/Мужская_кампания.png",
+	"/images/4x/Контакты.png",
+];
+const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
+	const ctaText =
+		(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined) ??
+		(typeof s.button?.text === "string" && s.button.text.trim() ? s.button.text : undefined);
+	return {
+		image:
+			(typeof s.imageUrl === "string" && s.imageUrl.trim()) ||
+			(typeof s.image === "string" && s.image.trim()) ||
+			SLIDE_FALLBACKS[i % SLIDE_FALLBACKS.length],
+		heading: typeof s.heading === "string" ? s.heading : (s.heading?.text ?? ""),
+		headingCls: slideHeadingCls(typeof s.heading === "object" ? s.heading?.size : undefined),
+		subtitle:
+			(typeof s.subtitle === "string" && s.subtitle.trim() ? s.subtitle : undefined) ??
+			(typeof s.text?.content === "string" && s.text.content.trim() ? s.text.content : undefined),
+		textCls: slideTextCls(s.text?.size),
+		ctaText,
+		ctaHref:
+			(typeof s.ctaUrl === "string" && s.ctaUrl ? s.ctaUrl : undefined) ??
+			s.button?.link?.href ??
+			(typeof s.button?.link === "string" && s.button.link ? s.button.link : undefined) ??
+			"/catalog",
+		boxed: String(s.container ?? "false") === "true",
+		schemeCls:
+			typeof s.colorScheme === "string" && s.colorScheme
+				? ` color-scheme-${String(s.colorScheme).replace("scheme-", "")}`
+				: "",
+		// position per-slide (приоритет) | top-level contentAlign: 'center'
+		// (canon-default puckConfig) И отсутствие = центр about-полотна (литерал
+		// `justify-center px-4`, about.astro:47); left/right — в полях satin-pad.
+		posCls:
+			s.position === "left" || (!s.position && p.contentAlign === "left")
+				? "satin-pad justify-start"
+				: s.position === "right"
+					? "satin-pad justify-end"
+					: "justify-center px-4",
+		// alignment per-slide: 'center' (canon-default) И отсутствие =
+		// items-center text-center литерала about.astro:48-49.
+		alignCls:
+			s.alignment === "left"
+				? "items-start text-left"
+				: s.alignment === "right"
+					? "items-end text-right"
+					: "items-center text-center",
+		active: i === 0,
+	};
+});
+
+// Канон interval (slider 1-20 c, схема до 60) / autoplay: canon-defaults 5 / true.
+const intervalMs = String(
+	(typeof p.interval === "number" && p.interval >= 1 && p.interval <= 60 ? p.interval : 5) * 1000,
+);
+const autoplay = p.autoplay === false || p.autoplay === "false" ? "false" : "true";
+
+// Канон size: medium/отсутствие = 680px-полотно full-bleed манеры §2 (mobile
+// aspect-[375/362], как Hero/ImageBanner); small 560, large 760.
+const heightCls =
+	p.size === "small" ? "md:h-[560px]" : p.size === "large" ? "md:h-[760px]" : "md:h-[680px]";
+
+// Канон imagePosition: fullscreen (canon-default) и отсутствие = full-bleed
+// литерал (обёртка 1920 манеры §2); contained (+legacy left/right) — контейнер
+// 1320 в полях satin-pad с радиус-токеном медиа. imageFullBleed=true возвращает
+// full-bleed.
+const contained =
+	(p.imagePosition === "contained" || p.imagePosition === "left" || p.imagePosition === "right") &&
+	p.imageFullBleed !== true &&
+	p.imageFullBleed !== "true";
+const canvasCls = contained
+	? `satin-container relative w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[#111111] aspect-[375/362] md:aspect-auto ${heightCls}`
+	: `relative mx-auto w-full max-w-[1920px] overflow-hidden bg-[#111111] aspect-[375/362] md:aspect-auto ${heightCls}`;
+
+// Канон overlay 0-100 — дополнительный чёрный слой ПОВЕРХ штатного градиента
+// about-полотна (у верстальщика 0 — слоя нет).
+const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
+
+// Канон pagination: 'dots' (canon-default blockDefaults satin) и отсутствие =
+// КВАДРАТЫ size-2 манеры нулевых радиусов (активная белая, неактивная white/50);
+// numbers — Arsenal 14 белые; lines/counter/none — канон.
+const pagination =
+	p.pagination === "numbers" ||
+	p.pagination === "lines" ||
+	p.pagination === "counter" ||
+	p.pagination === "none"
+		? p.pagination
+		: "dots";
+
+// Канон buttonStyle: outlined (canon-default blockDefaults satin) И отсутствие =
+// ЛИТЕРАЛ верстальщика — белый контур на фото `satin-button satin-button-md
+// text-white` (about.astro:55; бордер базы = currentColor → белый); solid =
+// белая заливка в токенах кнопки-2 (255_255_255 / 0_0_0), реплика
+// .satin-button-md утилитами (паттерн Hero §3).
+const ctaCls =
+	p.buttonStyle === "solid"
+		? "inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-2-bg,255_255_255))] bg-[rgb(var(--color-button-2-bg,255_255_255))] px-6 font-manrope text-[16px] font-normal uppercase leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity duration-[180ms] hover:opacity-[0.78]"
+		: "satin-button satin-button-md text-white";
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+---
+
+<section
+	class="relative w-full bg-[rgb(var(--color-bg,255_255_255))]"
+	aria-label="Слайд-шоу"
+	data-puck-component-id={id}
+	data-satin-slideshow
+	data-interval={intervalMs}
+	data-autoplay={autoplay}
+	style={paddingStyle}
+>
+	<div class={contained ? "satin-pad w-full" : "w-full"}>
+		<div class={canvasCls}>
+			{
+				slides.map((s, i) => (
+					<div
+						data-slide
+						class={`!absolute inset-0 transition-opacity duration-700 ease-out ${s.active ? "opacity-100" : "pointer-events-none opacity-0"}${s.schemeCls}`}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index={i}
+						data-puck-subsection-field="slides"
+					>
+						<img
+							src={s.image}
+							alt={s.heading || "Слайд"}
+							loading={i === 0 ? "eager" : "lazy"}
+							class="absolute inset-0 !h-full !w-full object-cover object-center"
+						/>
+						{/* Штатный градиент about-полотна — литерал about.astro:46. */}
+						<div class="absolute inset-0 bg-gradient-to-b from-black/30 to-black/45" aria-hidden="true" />
+						{overlayN > 0 && (
+							<div
+								class="pointer-events-none absolute inset-0 bg-black"
+								style={`opacity:${overlayN / 100}`}
+								aria-hidden="true"
+							/>
+						)}
+						{/* Контент about-полотна: вертикальный центр, кикер → заголовок → CTA
+						    (gap-8 / gap-2.5 — литерал about.astro:48-49). */}
+						<div class={`absolute inset-0 z-10 flex items-center ${s.posCls}`}>
+							<div class={`flex flex-col gap-8 text-white ${s.alignCls}${s.boxed ? " rounded-[var(--radius-card,0px)] bg-black/45 p-6" : ""}`}>
+								<div class={`flex flex-col gap-2.5 ${s.alignCls}`}>
+									{s.subtitle && (
+										<p
+											class={s.textCls}
+											data-puck-subsection-parent={id}
+											data-puck-subsection-index="101"
+											data-puck-subsection-field="text"
+										>
+											{s.subtitle}
+										</p>
+									)}
+									{s.heading && (
+										<h2
+											class={s.headingCls}
+											data-puck-subsection-parent={id}
+											data-puck-subsection-index="100"
+											data-puck-subsection-field="heading"
+										>
+											{s.heading}
+										</h2>
+									)}
+								</div>
+								{s.ctaText && (
+									<a
+										href={s.ctaHref}
+										class={ctaCls}
+										data-puck-subsection-parent={id}
+										data-puck-subsection-index="102"
+										data-puck-subsection-field="button"
+									>
+										{s.ctaText}
+									</a>
+								)}
+							</div>
+						</div>
+					</div>
+				))
+			}
+
+			{
+				slides.length > 1 && (
+					<>
+						{/* Стрелки — квадраты манеры нулевых радиусов (§4). */}
+						<button
+							type="button"
+							data-slide-prev
+							aria-label="Предыдущий слайд"
+							class="absolute left-4 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center !bg-white/80 !text-black transition-opacity hover:opacity-80"
+						>
+							<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+								<path d="M12.5 4l-6 6 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+							</svg>
+						</button>
+						<button
+							type="button"
+							data-slide-next
+							aria-label="Следующий слайд"
+							class="absolute right-4 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center !bg-white/80 !text-black transition-opacity hover:opacity-80"
+						>
+							<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+								<path d="M7.5 4l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+							</svg>
+						</button>
+						{pagination !== "none" && (
+							<div class="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2">
+								{pagination === "dots" &&
+									slides.map((_, i) => (
+										<button
+											type="button"
+											data-slide-dot
+											data-active={i === 0 ? "true" : "false"}
+											aria-label={`Слайд ${i + 1}`}
+											class="size-2 !bg-white/50 transition-colors data-[active=true]:!bg-white"
+										/>
+									))}
+								{pagination === "numbers" &&
+									slides.map((_, i) => (
+										<button
+											type="button"
+											data-slide-dot
+											data-active={i === 0 ? "true" : "false"}
+											aria-label={`Слайд ${i + 1}`}
+											class="font-manrope text-[14px] font-normal leading-none !text-white/50 transition-colors data-[active=true]:!text-white"
+										>
+											{i + 1}
+										</button>
+									))}
+								{pagination === "lines" &&
+									slides.map((_, i) => (
+										<button
+											type="button"
+											data-slide-dot
+											data-active={i === 0 ? "true" : "false"}
+											aria-label={`Слайд ${i + 1}`}
+											class="h-0.5 w-6 !bg-white/50 transition-colors data-[active=true]:!bg-white"
+										/>
+									))}
+								{pagination === "counter" &&
+									slides.map((_, i) => (
+										<span
+											data-slide-dot
+											data-active={i === 0 ? "true" : "false"}
+											class="font-manrope text-[14px] font-normal leading-none text-white data-[active=false]:hidden"
+										>
+											{i + 1} / {slides.length}
+										</span>
+									))}
+							</div>
+						)}
+					</>
+				)
+			}
+		</div>
+	</div>
+</section>
+
+<script is:inline>
+	(function () {
+		function initOne(root) {
+			if (root.dataset.slideshowHydrated === "true") return;
+			root.dataset.slideshowHydrated = "true";
+			var interval = parseInt(root.dataset.interval || "5000", 10);
+			var autoplay = root.dataset.autoplay !== "false";
+			var slides = root.querySelectorAll("[data-slide]");
+			var dots = root.querySelectorAll("[data-slide-dot]");
+			if (slides.length < 2) return;
+			var idx = 0,
+				timer = null;
+			function show(n) {
+				idx = (n + slides.length) % slides.length;
+				for (var j = 0; j < slides.length; j++) {
+					slides[j].style.opacity = j === idx ? "1" : "0";
+					slides[j].style.pointerEvents = j === idx ? "auto" : "none";
+				}
+				for (var k = 0; k < dots.length; k++) {
+					dots[k].setAttribute("data-active", k === idx ? "true" : "false");
+				}
+			}
+			function restart() {
+				if (timer) clearInterval(timer);
+				if (autoplay)
+					timer = setInterval(function () {
+						show(idx + 1);
+					}, interval);
+			}
+			root.querySelectorAll("[data-slide-prev]").forEach(function (b) {
+				b.addEventListener("click", function () {
+					show(idx - 1);
+					restart();
+				});
+			});
+			root.querySelectorAll("[data-slide-next]").forEach(function (b) {
+				b.addEventListener("click", function () {
+					show(idx + 1);
+					restart();
+				});
+			});
+			dots.forEach(function (d, i) {
+				d.addEventListener("click", function () {
+					show(i);
+					restart();
+				});
+			});
+			show(0);
+			restart();
+		}
+		function initAll() {
+			var roots = document.querySelectorAll("[data-satin-slideshow]");
+			for (var k = 0; k < roots.length; k++) initOne(roots[k]);
+		}
+		initAll();
+		// Hot-replace превью вставляет секцию заново (новый узел без флага) и шлёт
+		// astro:page-load — реинициализация подхватит свежий слайдер.
+		document.addEventListener("astro:page-load", initAll);
+	})();
+</script>

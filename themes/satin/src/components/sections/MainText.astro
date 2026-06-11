@@ -1,0 +1,131 @@
+---
+// Фаза B (satin): канон-секция MainText — адаптация TextBlock.astro (см.
+// themes/satin/MANNER.md §10: TextBlock = заголовок + крупный body-абзац,
+// аналог MainText). Тело верстальщика перенесено КОПИЕЙ — TextBlock.astro не
+// тронут (его используют index.astro:27 и about.astro:60). Схема полей =
+// packages/theme-base/blocks/MainText/MainText.puckConfig.ts; дефолт каждого
+// пропса = литерал верстальщика (дефолт-ветка тернарников = прежние строки).
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон heading: string | { text, size }. Дефолт = литерал TextBlock.astro:8.
+// Роль = заголовок секции (Kelly Slab uppercase, МАННЕРА §1). Лестница §9
+// «Заголовок секции 20»: medium/отсутствие = литерал 20, small 17, large 24.
+const heading =
+	typeof p.heading === "string"
+		? p.heading
+		: (p.heading?.text ?? "Одежда, в которой не нужно стараться выглядеть хорошо");
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingCls =
+	headingSize === "small"
+		? "font-logo text-[17px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
+		: headingSize === "large"
+			? "font-logo text-[24px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
+			: "font-logo text-[20px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]";
+
+// Канон text: string | { content, size }. Дефолт = body-литерал TextBlock.astro:9.
+const text =
+	typeof p.text === "string"
+		? p.text
+		: (p.text?.content ??
+			"Мы делаем вещи, которые работают на вас, а не наоборот. Хлопок и лён, которые приятно носить в жару. Крой, который не сковывает и не растягивается после третьей стирки. Палитра, где любой верх подходит к любому низу — без мучений перед зеркалом. Каждая вещь проходит три этапа примерки на реальных людях до того, как попадает в каталог. Без логомании, без кричащих принтов, без вещей-однодневок. Только базовый гардероб, к которому хочется возвращаться.");
+
+// Канон textSize (top-level hidden приоритетнее text.size сабпанели). Роль =
+// «Body крупный» .satin-copy md:text-[20px] (Arsenal 300, lh 1.5, muted —
+// МАННЕРА §1), классы расписаны явно ради лестницы и токена цвета. Лестница §9:
+// medium/отсутствие = литерал 16/20, small 14/17, large 19/24.
+const textSize = p.textSize ?? p.text?.size;
+const textCls =
+	textSize === "small"
+		? "text-[14px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[17px]"
+		: textSize === "large"
+			? "text-[19px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[24px]"
+			: "text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[20px]";
+
+// Канон position/alignment: canon-default обоих = 'center' (его пишет коэрсер)
+// И отсутствие = ЛИТЕРАЛ верстальщика — всё СЛЕВА во всю ширину satin-container
+// (НЕ центр как у bloom; правило canon-default → пиксель верстальщика).
+// Двигают только отличные значения: position left/right сужает колонку до
+// текстовой ширины манеры max-w-[600px] (CollectionRows.astro:65) и прижимает
+// auto-margin'ом; alignment right выравнивает содержимое вправо.
+const position = p.position === "left" || p.position === "right" ? p.position : "center";
+const posCls =
+	position === "left" ? " max-w-[600px] mr-auto" : position === "right" ? " max-w-[600px] ml-auto" : "";
+const alignment = p.alignment === "left" || p.alignment === "right" ? p.alignment : "center";
+const alignCls = alignment === "right" ? " items-end text-right" : "";
+
+// Канон textStyle (hidden): italic → курсив заголовка и текста.
+const italicCls = p.textStyle === "italic" ? " italic" : "";
+
+// Кнопка: canon-сабпанель button {text, link} приоритетнее legacy hidden cta.
+// У верстальщика кнопки НЕТ → рендер ТОЛЬКО при непустом тексте (заданный
+// пустой скрывает). Ссылка-фоллбек /catalog (паттерн rose T15).
+const btnText =
+	(typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined) ??
+	(typeof p.cta?.text === "string" && p.cta.text.trim() ? p.cta.text : undefined);
+const btnHref =
+	p.button?.link?.href ??
+	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??
+	(typeof p.cta?.href === "string" && p.cta.href ? p.cta.href : undefined) ??
+	(typeof p.cta?.link === "string" && p.cta.link ? p.cta.link : undefined) ??
+	"/catalog";
+// Канон buttonStyle: solid/отсутствие = тёмная кнопка манеры (метрики
+// .satin-button-md + .satin-button-dark, g:106-126,155-159 — прямоугольник
+// min-h 48, px-24, Arsenal 16 400 uppercase, hover 0.78; цвета токенами);
+// outlined = светлая контурная .satin-button-light (родная роль satin, §3).
+const btnBase =
+	"inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-6 text-[16px] font-normal uppercase leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]";
+const btnCls =
+	p.buttonStyle === "outlined"
+		? `${btnBase} border-[rgb(var(--color-button-2-text,0_0_0))] bg-transparent text-[rgb(var(--color-button-2-text,0_0_0))]`
+		: `${btnBase} border-[rgb(var(--color-button-bg,0_0_0))] bg-[rgb(var(--color-button-bg,0_0_0))] text-[rgb(var(--color-button-text,255_255_255))]`;
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+---
+
+<section
+	class="satin-pad w-full bg-[rgb(var(--color-bg,255_255_255))] py-12 md:py-16"
+	aria-label={heading || undefined}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div class="satin-container">
+		<div class={`flex w-full flex-col gap-4${posCls}${alignCls}`}>
+			{
+				heading && (
+					<h2
+						class={headingCls + italicCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="100"
+						data-puck-subsection-field="heading"
+					>
+						{heading}
+					</h2>
+				)
+			}
+			<p
+				class={textCls + italicCls}
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="101"
+				data-puck-subsection-field="text"
+				set:html={text}
+			/>
+			{
+				btnText && (
+					<a
+						href={btnHref}
+						class={btnCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="102"
+						data-puck-subsection-field="button"
+					>
+						{btnText}
+					</a>
+				)
+			}
+		</div>
+	</div>
+</section>

@@ -2,20 +2,208 @@
 import SatinCollectionCard from "../products/SatinCollectionCard.astro";
 import { collections as defaultCollections, type Collection } from "../../data/collections";
 
-interface Props {
-	items?: Collection[];
-	id?: string;
-}
+// ОЖИВЛЕНИЕ (Фаза B, рецепт bloom Collections): конструкторная схема theme-base
+// Collections.puckConfig поверх разметки верстальщика. Тело + demo-данные
+// verbatim: страницы темы зовут <Collections items={...}/> и id="collections-2"
+// с legacy-пропсами (index.astro:24,29) — их рендер не меняется (дефолт-ветки
+// тернарников = прежние строки классов байт-в-байт; цвета → токены с
+// пиксель-фоллбеком родных литералов, MANNER.md §7).
+const p = Astro.props as Record<string, any>;
+// id двойного назначения: legacy DOM-id верстальщика (index передаёт
+// "collections-2", якорь Hero — "#collections") и Puck component id конструктора.
+const id = p.id;
+const domId = typeof p.id === "string" && p.id ? p.id : "collections";
 
-const { items = defaultCollections, id = "collections" } = Astro.props;
+// Legacy items[] верстальщика — страницы передают свои наборы плиток.
+const items: Collection[] = Array.isArray(p.items) ? p.items : defaultCollections;
+
+// Шапки у верстальщика НЕТ — заголовок/текст рендерятся ТОЛЬКО при непустом
+// пропе (роль «заголовок секции» font-logo 20 / body 16 light muted, §1).
+const rawTitle = (typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title;
+const sectionTitle = typeof rawTitle === "string" && rawTitle.trim() ? rawTitle : undefined;
+const sectionSubtitle =
+	typeof p.subtitle === "string" && p.subtitle.trim() ? p.subtitle : undefined;
+
+// Канон headingSize: 'medium' (canon-default) и отсутствие = роль «заголовок
+// секции» дословно (20px, TextBlock.astro:15). Лестница §9: small 17, large 24.
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingCls =
+	headingSize === "small"
+		? "font-logo text-[17px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
+		: headingSize === "large"
+			? "font-logo text-[24px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
+			: "font-logo text-[20px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]";
+// Канон subtitleSize: 'small' (canon-default puckConfig) и отсутствие = body-роль
+// манеры (Arsenal 16 light muted, catalog.astro:41); medium ≈1.2× (19),
+// large ≈1.44× (23) — ряд bloom Collections от роли 16.
+const subtitleCls =
+	p.subtitleSize === "medium"
+		? "font-manrope text-[19px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]"
+		: p.subtitleSize === "large"
+			? "font-manrope text-[23px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]"
+			: "font-manrope text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]";
+// Канон titleAlignment: отсутствие = заголовок слева (литерал манеры, без
+// класса). Двигают только center/right. Зазор «шапка → грид» = mb-8 (манера §2).
+const titleAlignCls =
+	p.titleAlignment === "center" ? " text-center" : p.titleAlignment === "right" ? " text-right" : "";
+const headWrapCls = `satin-container mb-8 flex flex-col gap-2${titleAlignCls}`;
+
+// Канон columns 1-6: 3 (canon-default = sm:grid-cols-3 верстальщика) и
+// отсутствие → дефолт-ветка; иное → inline-var на гриде с sm (mobile-лестница
+// верстальщика grid-cols-2 сохраняется).
+const colsRaw =
+	typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : undefined;
+const cols = colsRaw && colsRaw !== 3 ? colsRaw : undefined;
+const gridBase = "satin-container grid grid-cols-2 gap-4 sm:grid-cols-3";
+const gridCls = cols
+	? "satin-container grid grid-cols-2 gap-4 sm:grid-cols-[repeat(var(--cols),minmax(0,1fr))]"
+	: gridBase;
+const gridStyle = cols ? `--cols:${cols}` : undefined;
+
+// Канон gridAspect/imageView: canon-default (imageView 'square' из puckConfig)
+// И отсутствие = плитка верстальщика 430/564 дословно (SatinCollectionCard);
+// gridAspect '1:1' → квадрат, imageView 'wide' → 16/9.
+const tileAspect =
+	p.gridAspect === "1:1"
+		? "aspect-square"
+		: p.imageView === "wide"
+			? "aspect-[16/9]"
+			: "aspect-[430/564]";
+// Канон cardCaptionStyle: 'uppercase' (canon-default) и отсутствие = родной
+// капс подписи (CC:31-35); 'default' снимает капс.
+const captionCase = p.cardCaptionStyle === "default" ? "" : " uppercase";
+
+// Канон collections[] (≤10): плитки коллекций из пропса при непустом массиве.
+// Иначе — плитки верстальщика дословно (demo-ветка, SatinCollectionCard).
+// SSR рендерит сохранённые поля item, резолв collectionId→имя/обложка делает
+// гидрация ниже (data-collection-ref): live — /data/collections.json, превью —
+// storefront-data; паритет theme-base (имя коллекции перебивает ручной heading,
+// обложка — только при пустой своей).
+const cardLinkBase =
+	typeof p.cardLinkBase === "string" && p.cardLinkBase.trim() ? p.cardLinkBase : "/catalog?collection=";
+const propCollections = (Array.isArray(p.collections) ? p.collections : [])
+	.filter((c: any) => c && typeof c === "object")
+	.slice(0, 10)
+	.map((c: any, i: number) => {
+		const collectionId =
+			typeof c.collectionId === "string" && c.collectionId.trim() ? c.collectionId.trim() : null;
+		return {
+			collectionId,
+			name:
+				(typeof c.heading === "string" && c.heading) ||
+				(typeof c.name === "string" && c.name) ||
+				"Коллекция",
+			// Канон-плейсхолдер = реальный ассет темы (принцип T15): плитка без
+			// выбранной картинки получает фото коллекции верстальщика по позиции.
+			image:
+				typeof c.image === "string" && c.image
+					? c.image
+					: `/images/4x/Коллекция_${(i % 3) + 1}.png`,
+			hasOwnImage: !!(typeof c.image === "string" && c.image),
+			href: collectionId ? `${cardLinkBase}${collectionId}` : "#",
+		};
+	});
+const usePropCollections = propCollections.length > 0;
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
 ---
 
-<section id={id} class="satin-pad w-full bg-white py-8 md:py-12" aria-label="Коллекции Satin">
-	<ul class="satin-container grid grid-cols-2 gap-4 sm:grid-cols-3" role="list">
-		{items.map((collection, index) => (
+<section
+	id={domId}
+	class="satin-pad w-full bg-[rgb(var(--color-bg,255_255_255))] py-8 md:py-12"
+	aria-label="Коллекции Satin"
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	{(sectionTitle || sectionSubtitle) && (
+		<div
+			class={headWrapCls}
+			data-puck-subsection-parent={id}
+			data-puck-subsection-index="100"
+			data-puck-subsection-field="heading"
+		>
+			{sectionTitle && <h2 class={headingCls}>{sectionTitle}</h2>}
+			{sectionSubtitle && <p class={subtitleCls}>{sectionSubtitle}</p>}
+		</div>
+	)}
+	<ul class={gridCls} role="list" style={gridStyle}>
+		{usePropCollections ? propCollections.map((c, i) => (
+			<li class:list={[i === 0 && "col-span-2 sm:col-span-1"]}>
+				<a
+					href={c.href}
+					class="group flex cursor-pointer flex-col gap-3"
+					aria-label={c.name}
+					data-nt="satin-collection-card"
+					data-collection-ref={c.collectionId ?? undefined}
+					data-own-image={c.hasOwnImage ? "true" : undefined}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index={i}
+					data-puck-subsection-field="collections"
+				>
+					<div
+						class={`${tileAspect} w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]`}
+						aria-hidden={c.image ? undefined : "true"}
+					>
+						{c.image && (
+							<img
+								src={c.image}
+								alt={c.name}
+								loading="lazy"
+								class="!h-full !w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+							/>
+						)}
+					</div>
+					<h3
+						class={`satin-collection-name font-manrope text-[16px] font-normal leading-tight text-[rgb(var(--color-text,0_0_0))]${captionCase}`}
+					>
+						{c.name}
+					</h3>
+				</a>
+			</li>
+		)) : items.map((collection, index) => (
 			<li class:list={[index === 0 && "col-span-2 sm:col-span-1"]}>
 				<SatinCollectionCard collection={collection} priority={index < 3} />
 			</li>
 		))}
 	</ul>
 </section>
+
+<script>
+	import { loadRealCollections, findCollection } from "../../lib/storefront-hydrate";
+
+	// Резолв collectionId→имя/обложка на плитках (data-collection-ref).
+	// Паритет theme-base resolveManual: имя коллекции перебивает ручной heading;
+	// обложка коллекции подставляется, только если мерчант не загрузил свою
+	// (data-own-image). Без данных (demo-сборка) — no-op, SSG остаётся.
+	const hydrateCollectionTiles = async () => {
+		const tiles = Array.from(
+			document.querySelectorAll<HTMLElement>('[data-nt="satin-collection-card"][data-collection-ref]'),
+		);
+		if (tiles.length === 0) return;
+		const collections = await loadRealCollections();
+		if (!collections) return;
+		for (const tile of tiles) {
+			const col = findCollection(collections, tile.getAttribute("data-collection-ref"));
+			if (!col) continue;
+			if (col.name) {
+				const h3 = tile.querySelector(".satin-collection-name");
+				if (h3 && h3.textContent !== col.name) h3.textContent = col.name;
+				tile.setAttribute("aria-label", col.name);
+			}
+			const cover = col.image || (Array.isArray(col.images) ? col.images[0] : "");
+			if (cover && tile.getAttribute("data-own-image") !== "true") {
+				const img = tile.querySelector("img");
+				if (img && img.getAttribute("src") !== cover) {
+					img.setAttribute("src", cover);
+					if (col.name) img.setAttribute("alt", col.name);
+				}
+			}
+		}
+	};
+
+	hydrateCollectionTiles();
+	document.addEventListener("astro:page-load", hydrateCollectionTiles);
+</script>

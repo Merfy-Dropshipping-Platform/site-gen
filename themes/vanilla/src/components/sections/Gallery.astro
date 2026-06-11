@@ -1,7 +1,18 @@
 ---
 import VanillaPicture from "../img/VanillaPicture.astro";
-import IconVideo from "../../icons/IconVideo.astro";
 import { V_IMG } from "../../data/imageAssets";
+
+// ОЖИВЛЕНИЕ (Фаза B, контракт rose/bloom Gallery T13): конструкторная схема
+// theme-base Gallery.puckConfig поверх разметки верстальщика. Дефолт-ветка
+// (без items[]) = ТРИ полотна верстальщика verbatim: промо-CTA → видео →
+// care-сплит (страницы зовут <Gallery /> без пропсов — рендер прежний,
+// цвета → токены с пиксель-фоллбеком родных литералов, MANNER.md §7:
+// промо/care bg 58_69_48, видео-бэнд 38_49_28, heading 255_255_255,
+// текст 240_240_240, контурные CTA — --color-primary с белым фоллбеком).
+// Проп-ветка items[] (≤3) = промо-шапка + грид плиток в манере §4 с
+// гидрацией данных платформы (data-gallery-product / data-gallery-collection).
+const p = Astro.props as Record<string, any>;
+const id = p.id;
 
 const introTitle = "Тепло вашего дома начинается здесь";
 const introText =
@@ -11,6 +22,121 @@ const careTextLead =
 	"Мы уверены: дом должен быть красивым не только на фотографиях, но и на ощупь. Бренд Vanila создан для тех, кто ценит эстетику и качество в каждом квадратном метре своего пространства. Мы собираем для вас самые вдохновляющие предметы текстиля и декора, чтобы ваш интерьер обрел индивидуальность.";
 const careTextTail =
 	"В ассортименте Vanila вы не найдете случайных вещей. Только то, что действительно достойно стать частью вашего дома";
+
+const sectionTitle =
+	(typeof p.heading === "string" && p.heading.trim() ? p.heading : p.heading?.text) || introTitle;
+// Текст полотна: дефолт-литерал introText рендерится и при пустом пропе.
+const rawText =
+	(typeof p.text === "string" ? p.text : p.text?.content) ??
+	(typeof p.subtitle === "string" ? p.subtitle : undefined);
+const sectionText = typeof rawText === "string" && rawText.trim() ? rawText : introText;
+
+// Канон headingSize (top-level приоритетнее legacy heading.size): 'medium'
+// (canon-default) и отсутствие = УЗКАЯ роль верстальщика дословно (Bitter
+// italic 16, Gal:34). Лестница §9: small 14, large 20.
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingCls =
+	headingSize === "small"
+		? "font-vanilla-bitter text-[14px] font-normal italic leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]"
+		: headingSize === "large"
+			? "font-vanilla-bitter text-[20px] font-normal italic leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]"
+			: "font-vanilla-bitter text-[16px] font-normal italic leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]";
+// Канон textSize: лестница MANNER §9 «Текст полотна» — литерал верстальщика
+// 14px/min-1920:16px = large И отсутствие пропа; small 10/11, medium 12/14.
+// ⚠️ canon-default puckConfig textSize='medium' ниже литерала — рекомендация
+// следующей фазе: blockDefaults Gallery.textSize='large' в theme.json.
+const textSize = p.textSize ?? p.text?.size;
+const textCls =
+	textSize === "small"
+		? "mt-10 w-full max-w-[680px] font-vanilla-arsenal text-[10px] font-normal italic leading-[1.5] text-[rgb(var(--color-text,240_240_240))] min-[1920px]:max-w-[1320px] min-[1920px]:text-[11px]"
+		: textSize === "medium"
+			? "mt-10 w-full max-w-[680px] font-vanilla-arsenal text-[12px] font-normal italic leading-[1.5] text-[rgb(var(--color-text,240_240_240))] min-[1920px]:max-w-[1320px] min-[1920px]:text-[14px]"
+			: "mt-10 w-full max-w-[680px] font-vanilla-arsenal text-[14px] font-normal italic leading-[1.5] text-[rgb(var(--color-text,240_240_240))] min-[1920px]:max-w-[1320px] min-[1920px]:text-[16px]";
+
+// Канон imagePosition left/right: 'left' (canon-default) и отсутствие =
+// литерал верстальщика. 'right' зеркалит: в дефолт-ветке — care-сплит
+// (фото слева, текст справа), в проп-ветке — первая пара плиток.
+const mirror = p.imagePosition === "right";
+const careRowCls = mirror
+	? "mx-auto flex w-full max-w-[1280px] flex-col items-center gap-10 lg:flex-row-reverse lg:justify-center lg:gap-10"
+	: "mx-auto flex w-full max-w-[1280px] flex-col items-center gap-10 lg:flex-row lg:justify-center lg:gap-10";
+
+// Под Container API (live/превью v2) cwd ≠ корень темы: fs-проверка
+// VanillaPicture не находит public/ и .png остался бы в src (на диске темы
+// только .webp → 404). Подменяем расширение заранее; на сборке темы вывод
+// байт-в-байт тот же (VanillaPicture/assetUrl находят тот же .webp).
+const toWebp = (src: string) => src.replace(/\.(png|jpe?g)$/i, ".webp");
+const careImage = toWebp(V_IMG.galleryCare);
+
+// Канон items[] (≤3, типы image/product/collection): плитки из пропсов.
+// SSR рендерит канон-плейсхолдеры («Товар» 2 500₽ / «Выбери коллекцию»);
+// резолв productId/collectionId→имя/цена/картинка/ссылка делает гидрация
+// ниже (data-gallery-product/-collection): live — /data/{products,
+// collections}.json, превью — storefront-data. Ссылки: товар /product?id=,
+// коллекция /catalog?collection= (каталог vanilla уважает ?collection=).
+type GalleryTile = {
+	kind: "image" | "product" | "collection";
+	url: string;
+	alt: string;
+	label: string;
+	price: string;
+	href: string;
+	ref: string | null;
+};
+const galleryTiles: GalleryTile[] = (Array.isArray(p.items) ? p.items : [])
+	.filter((x: any) => x && typeof x === "object")
+	.slice(0, 3)
+	.map((it: any): GalleryTile => {
+		if (it.type === "product") {
+			const pid = typeof it.productId === "string" && it.productId ? it.productId : null;
+			return {
+				kind: "product",
+				url: "",
+				alt: "Товар",
+				label: "Товар",
+				price: "2 500₽",
+				href: pid ? `/product?id=${encodeURIComponent(pid)}` : "/catalog",
+				ref: pid,
+			};
+		}
+		if (it.type === "collection") {
+			const cid = typeof it.collectionId === "string" && it.collectionId ? it.collectionId : null;
+			return {
+				kind: "collection",
+				url: "",
+				alt: "Коллекция",
+				label: "Выбери коллекцию",
+				price: "",
+				href: cid ? `/catalog?collection=${encodeURIComponent(cid)}` : "/catalog",
+				ref: cid,
+			};
+		}
+		return {
+			kind: "image",
+			url: typeof it.url === "string" ? it.url : "",
+			alt: typeof it.alt === "string" ? it.alt : "",
+			label: "",
+			price: "",
+			href: "/catalog",
+			ref: null,
+		};
+	});
+// Канон-плейсхолдер = реальный ассет темы по позиции (принцип rose T15):
+// плитка без своей картинки получает фото верстальщика — «добавил → красиво».
+const TILE_FALLBACKS = [
+	"/images/vanilla-chair.webp",
+	"/images/vanilla-collection-decor.webp",
+	"/images/vanilla-textile-1.webp",
+];
+galleryTiles.forEach((t, i) => {
+	if (!t.url) t.url = TILE_FALLBACKS[i % TILE_FALLBACKS.length];
+});
+const useItems = galleryTiles.length > 0;
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
 ---
 
 <section
@@ -19,10 +145,12 @@ const careTextTail =
 	aria-labelledby="gallery-title"
 	data-vanilla-gallery
 	data-vanilla-stack
+	data-puck-component-id={id}
+	style={paddingStyle}
 >
 	<!-- Figma promo: laptop max 1280 / text 680×14px; desktop 1920 / text 1320×16px; py 80, gap 40 -->
 	<div
-		class="vanilla-pad bg-[var(--vanilla-header-bg)] py-16 lg:py-20"
+		class="vanilla-pad bg-[rgb(var(--color-bg,58_69_48))] py-16 lg:py-20"
 		data-gallery-promo
 		data-animate
 	>
@@ -31,96 +159,166 @@ const careTextTail =
 		>
 			<h2
 				id="gallery-title"
-				class="font-vanilla-bitter text-[16px] font-normal italic leading-none tracking-normal text-white"
+				class={headingCls}
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="100"
+				data-puck-subsection-field="heading"
 			>
-				{introTitle}
+				{sectionTitle}
 			</h2>
-			<p
-				class="mt-10 w-full max-w-[680px] font-vanilla-arsenal text-[14px] font-normal italic leading-[1.5] text-[var(--vanilla-hero-subtle)] min-[1920px]:max-w-[1320px] min-[1920px]:text-[16px]"
-			>
-				{introText}
+			<p class={textCls}>
+				{sectionText}
 			</p>
-			<a
-				href="/catalog/textile"
-				class="mt-10 inline-flex h-10 min-h-10 items-center justify-center border border-white bg-transparent px-3 font-vanilla-arsenal text-[14px] font-normal uppercase leading-none tracking-normal text-white transition-opacity hover:opacity-80"
-			>
-				К покупкам
-			</a>
-		</div>
-	</div>
-
-	<!-- Figma: «Видео», Fill #26311C, px 256, py 80, max 1280 -->
-	<div
-		class="vanilla-pad bg-[var(--vanilla-announcement-bg)] py-16 lg:py-20"
-		data-gallery-video
-		data-animate
-		data-animate-delay="0.1s"
-	>
-		<div class="mx-auto w-full max-w-[1280px]">
-			<div class="relative aspect-[1319/742] w-full overflow-hidden bg-[var(--vanilla-card)]">
-				<video
-					class="pointer-events-none absolute inset-0 size-full object-cover"
-					src={V_IMG.galleryVideo}
-					poster={V_IMG.galleryVideoPoster}
-					autoplay
-					muted
-					loop
-					playsinline
-					preload="auto"
-					disablepictureinpicture
-					aria-hidden="true"
-					tabindex="-1"
-				></video>
-				<IconVideo
-					class="pointer-events-none absolute left-1/2 top-1/2 size-11 -translate-x-1/2 -translate-y-1/2"
-				/>
-			</div>
-		</div>
-	</div>
-
-	<!-- Figma: «Основной текст», Fill #3A4530, px 256, py 120, gap 40, max 1280, контент по центру -->
-	<div
-		class="vanilla-pad bg-[var(--vanilla-header-bg)] py-16 lg:py-[120px]"
-		data-gallery-care
-		data-animate
-		data-animate-delay="0.15s"
-	>
-		<div
-			class="mx-auto flex w-full max-w-[1280px] flex-col items-center gap-10 lg:flex-row lg:justify-center lg:gap-10"
-		>
-			<div class="flex w-full max-w-[352px] flex-col items-start">
-				<h3 class="font-vanilla-bitter text-[20px] font-normal italic leading-none tracking-normal text-white">
-					{careTitle}
-				</h3>
-				<div class="mt-5 flex w-full flex-col gap-4">
-					<p class="font-vanilla-arsenal text-[14px] font-normal italic leading-[1.5] text-[var(--vanilla-hero-subtle)]">
-						{careTextLead}
-					</p>
-					<p class="font-vanilla-arsenal text-[14px] font-normal italic leading-[1.5] text-[var(--vanilla-hero-subtle)]">
-						{careTextTail}
-					</p>
-				</div>
+			{useItems ? (
+				<ul class="mt-10 grid w-full grid-cols-1 gap-4 text-left lg:grid-cols-2" role="list">
+					{galleryTiles.map((tile, i) => (
+						<li class={mirror && i === 0 ? "lg:order-2" : mirror && i === 1 ? "lg:order-1" : undefined}>
+							<a
+								href={tile.href}
+								class="group flex w-full cursor-pointer flex-col gap-3"
+								aria-label={tile.label || tile.alt || "Перейти в каталог"}
+								data-gallery-product={tile.kind === "product" ? (tile.ref ?? undefined) : undefined}
+								data-gallery-collection={tile.kind === "collection" ? (tile.ref ?? undefined) : undefined}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index={i}
+								data-puck-subsection-field="items"
+							>
+								<div class="relative aspect-square w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]">
+									{tile.url && (
+										<img
+											src={tile.url}
+											alt={tile.alt || tile.label}
+											loading="lazy"
+											class={`absolute inset-0 size-full object-cover transition-transform duration-500 ease-out ${i === 0 ? "group-hover:scale-[1.03]" : "group-hover:scale-[1.05]"}`}
+										/>
+									)}
+								</div>
+								{(tile.label || tile.price) && (
+									<div class="flex flex-col gap-1">
+										{tile.label && (
+											<span
+												class={
+													tile.kind === "collection"
+														? "vanilla-gallery-collection-title font-vanilla-arsenal text-base font-normal uppercase leading-none text-[rgb(var(--color-text,240_240_240))] transition-opacity group-hover:opacity-70"
+														: "vanilla-gallery-product-title font-vanilla-arsenal text-base font-normal uppercase leading-none text-[rgb(var(--color-text,240_240_240))] transition-opacity group-hover:opacity-70"
+												}
+											>
+												{tile.label}
+											</span>
+										)}
+										{tile.price && (
+											<span class="vanilla-gallery-product-price font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-text,240_240_240))]">
+												{tile.price}
+											</span>
+										)}
+									</div>
+								)}
+							</a>
+						</li>
+					))}
+				</ul>
+			) : (
 				<a
-					href="/about"
-					class="mt-10 inline-flex h-12 min-h-12 items-center justify-center self-start border-[1.3px] border-white bg-transparent px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-white transition-opacity hover:opacity-80"
+					href="/catalog/textile"
+					class="mt-10 inline-flex h-10 min-h-10 items-center justify-center border border-[rgb(var(--color-primary,255_255_255))] bg-transparent px-3 font-vanilla-arsenal text-[14px] font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-primary,255_255_255))] transition-opacity hover:opacity-80"
 				>
-					Смотреть больше
+					К покупкам
 				</a>
-			</div>
-			<div
-				class="relative aspect-[652/366] w-full max-w-[652px] overflow-hidden bg-[var(--vanilla-card)] lg:min-w-0 lg:flex-1"
-			>
-				<VanillaPicture
-					src={V_IMG.galleryCare}
-					alt="Стул Vanilla"
-					width="652"
-					height="366"
-					loading="lazy"
-					class="absolute inset-0 size-full object-cover"
-				/>
-			</div>
+			)}
 		</div>
 	</div>
+
+	{!useItems && (
+		<>
+			<!-- Figma: «Видео», Fill #26311C, px 256, py 80, max 1280 -->
+			<div
+				class="vanilla-pad bg-[rgb(var(--color-accent,38_49_28))] py-16 lg:py-20"
+				data-gallery-video
+				data-animate
+				data-animate-delay="0.1s"
+			>
+				<div class="mx-auto w-full max-w-[1280px]">
+					<div class="relative aspect-[1319/742] w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]">
+						<video
+							class="pointer-events-none absolute inset-0 size-full object-cover"
+							src={V_IMG.galleryVideo}
+							poster={V_IMG.galleryVideoPoster}
+							autoplay
+							muted
+							loop
+							playsinline
+							preload="auto"
+							disablepictureinpicture
+							aria-hidden="true"
+							tabindex="-1"
+						></video>
+						<!-- Иконка play (src/icons/icon-video.svg) ИНЛАЙНОМ: импорт `?url`
+						     не переживает компиляцию секций для Container API (паттерн
+						     канон-секции Video этой же темы). -->
+						<svg
+							width="44"
+							height="44"
+							viewBox="0 0 44 44"
+							fill="none"
+							xmlns="http://www.w3.org/2000/svg"
+							aria-hidden="true"
+							class="pointer-events-none absolute left-1/2 top-1/2 size-11 -translate-x-1/2 -translate-y-1/2"
+						>
+							<path
+								d="M9.16772 31.7784V12.2228C9.16772 10.6103 9.16772 9.8031 9.50706 9.32599C9.80323 8.90958 10.2597 8.63618 10.7665 8.57081C11.347 8.49595 12.0589 8.87564 13.4807 9.63394L31.814 19.4117L31.8207 19.4147C33.392 20.2527 34.178 20.6719 34.4358 21.2306C34.6607 21.718 34.6607 22.2806 34.4358 22.7681C34.1776 23.3276 33.3898 23.7485 31.814 24.5889L13.4807 34.3666C12.0579 35.1255 11.3472 35.5037 10.7665 35.4288C10.2597 35.3634 9.80323 35.0901 9.50706 34.6737C9.16772 34.1966 9.16772 33.3909 9.16772 31.7784Z"
+								stroke="white"
+								stroke-width="3"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+						</svg>
+					</div>
+				</div>
+			</div>
+
+			<!-- Figma: «Основной текст», Fill #3A4530, px 256, py 120, gap 40, max 1280, контент по центру -->
+			<div
+				class="vanilla-pad bg-[rgb(var(--color-bg,58_69_48))] py-16 lg:py-[120px]"
+				data-gallery-care
+				data-animate
+				data-animate-delay="0.15s"
+			>
+				<div class={careRowCls}>
+					<div class="flex w-full max-w-[352px] flex-col items-start">
+						<h3 class="font-vanilla-bitter text-[20px] font-normal italic leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]">
+							{careTitle}
+						</h3>
+						<div class="mt-5 flex w-full flex-col gap-4">
+							<p class="font-vanilla-arsenal text-[14px] font-normal italic leading-[1.5] text-[rgb(var(--color-text,240_240_240))]">
+								{careTextLead}
+							</p>
+							<p class="font-vanilla-arsenal text-[14px] font-normal italic leading-[1.5] text-[rgb(var(--color-text,240_240_240))]">
+								{careTextTail}
+							</p>
+						</div>
+						<a
+							href="/about"
+							class="mt-10 inline-flex h-12 min-h-12 items-center justify-center self-start border-[1.3px] border-[rgb(var(--color-primary,255_255_255))] bg-transparent px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-primary,255_255_255))] transition-opacity hover:opacity-80"
+						>
+							Смотреть больше
+						</a>
+					</div>
+					<div
+						class="relative aspect-[652/366] w-full max-w-[652px] overflow-hidden bg-[rgb(var(--color-surface,236_235_231))] lg:min-w-0 lg:flex-1"
+					>
+						<VanillaPicture
+							src={careImage}
+							alt="Стул Vanilla"
+							width="652"
+							height="366"
+							loading="lazy"
+							class="absolute inset-0 size-full object-cover"
+						/>
+					</div>
+				</div>
+			</div>
+		</>
+	)}
 </section>
 
 <style>
@@ -131,3 +329,64 @@ const careTextTail =
 		max-width: none;
 	}
 </style>
+
+<script>
+	import {
+		loadRealProducts,
+		loadRealCollections,
+		findCollection,
+		formatPrice,
+		productHref,
+		productImage,
+	} from "../../lib/storefront-hydrate";
+
+	// Резолв выбранных в конструкторе товара/коллекции на плитках галереи
+	// (data-gallery-product / data-gallery-collection). SSR несёт
+	// канон-плейсхолдеры; здесь подставляем имя/цену/картинку/ссылку реальной
+	// сущности. Без данных (demo-сборка) — no-op.
+	const hydrateGalleryTiles = async () => {
+		const prodTiles = Array.from(document.querySelectorAll<HTMLElement>("[data-gallery-product]"));
+		const colTiles = Array.from(
+			document.querySelectorAll<HTMLElement>("[data-gallery-collection]"),
+		);
+		if (prodTiles.length === 0 && colTiles.length === 0) return;
+		const [products, collections] = await Promise.all([
+			prodTiles.length ? loadRealProducts() : Promise.resolve(null),
+			colTiles.length ? loadRealCollections() : Promise.resolve(null),
+		]);
+		for (const tile of prodTiles) {
+			const ref = tile.getAttribute("data-gallery-product");
+			const product = products?.find((x) => x.id === ref || x.slug === ref) ?? null;
+			if (!product) continue;
+			const title = tile.querySelector(".vanilla-gallery-product-title");
+			if (title && product.name) title.textContent = product.name;
+			const price = tile.querySelector(".vanilla-gallery-product-price");
+			if (price) price.textContent = formatPrice(product.price);
+			const img = tile.querySelector("img");
+			const cover = productImage(product);
+			if (img && cover) {
+				img.setAttribute("src", cover);
+				if (product.name) img.setAttribute("alt", product.name);
+			}
+			tile.setAttribute("href", productHref(product));
+			if (product.name) tile.setAttribute("aria-label", product.name);
+		}
+		for (const tile of colTiles) {
+			const col = findCollection(collections, tile.getAttribute("data-gallery-collection"));
+			if (!col) continue;
+			const title = tile.querySelector(".vanilla-gallery-collection-title");
+			if (title && col.name) title.textContent = col.name;
+			const cover = col.image || (Array.isArray(col.images) ? col.images[0] : "");
+			const img = tile.querySelector("img");
+			if (img && cover) {
+				img.setAttribute("src", cover);
+				if (col.name) img.setAttribute("alt", col.name);
+			}
+			if (col.name) tile.setAttribute("aria-label", col.name);
+			if (col.slug) tile.setAttribute("href", `/catalog?collection=${encodeURIComponent(col.slug)}`);
+		}
+	};
+
+	hydrateGalleryTiles();
+	document.addEventListener("astro:page-load", hydrateGalleryTiles);
+</script>

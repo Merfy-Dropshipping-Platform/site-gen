@@ -1,0 +1,103 @@
+---
+// Фаза B (chrome): новая канон-секция PromoBanner в манере vanilla (MANNER.md §8).
+// Схема полей = packages/theme-base/blocks/PromoBanner/PromoBanner.puckConfig.ts:
+// text, link {text, href} (+ legacy linkText/linkUrl), size (thin/small/medium/large),
+// textTransform (none/uppercase), colorScheme (обёртку даёт композитор), padding {top,bottom}.
+// Тело = инлайн-полоса объявления верстальщика (Header.astro:50-56) дословно; в
+// канон-композиции Header свою полосу не рендерит (там она только в статик-режиме).
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+const text =
+	typeof p.text === "string" && p.text.trim() ? p.text : "Бесплатная доставка на весь ассортимент";
+
+// Канон link {text, href} + legacy linkText/linkUrl. У верстальщика ВСЯ полоса —
+// <a href="/catalog/textile">: дефолт-ветка (без link.text) = полоса-ссылка
+// дословно. При заданном link.text полоса становится <div>, а ссылка — отдельный
+// подчёркнутый хвост (паттерн bloom PromoBanner).
+const linkText =
+	(typeof p.link?.text === "string" && p.link.text.trim() ? p.link.text : undefined) ??
+	(typeof p.linkText === "string" && p.linkText.trim() ? p.linkText : undefined);
+const linkHref =
+	p.link?.href ??
+	p.linkUrl ??
+	(typeof p.link === "string" && p.link ? p.link : undefined) ??
+	"/catalog/textile";
+
+// Канон size: 'thin' (canon-default из theme.json blockDefaults vanilla) И
+// отсутствие → ЛИТЕРАЛ верстальщика h-11 md:h-12. Лестница вверх в манере (шаг 4px,
+// флекс-центровка остаётся): small → min-h-12 (48px), medium → min-h-14 (56px),
+// large → min-h-16 (64px).
+const size = typeof p.size === "string" ? p.size : "";
+const sizeCls =
+	size === "small"
+		? "min-h-12"
+		: size === "medium"
+			? "min-h-14"
+			: size === "large"
+				? "min-h-16"
+				: "h-11 md:h-12";
+
+// Канон textTransform: 'uppercase' (canon-default из blockDefaults) И отсутствие =
+// литерал верстальщика uppercase; явный 'none' снимает капс.
+const caseCls = p.textTransform === "none" ? "" : " uppercase";
+
+// Полоса верстальщика дословно: Arsenal 14/md:16, центр; цвета — токены с
+// пиксель-фоллбеком родных литералов (§7): полоса #26311C → 38 49 28, текст white.
+const rootCls = `m-0 flex ${sizeCls} w-full shrink-0 items-center justify-center border-0 bg-[rgb(var(--color-bg,38_49_28))] px-4 text-center font-vanilla-arsenal text-[14px] font-normal${caseCls} leading-none tracking-normal text-[rgb(var(--color-text,255_255_255))] md:text-base`;
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе; {12,12} =
+// canon-default puckConfig (его пишет seed/конструктор) → литерал высоты полосы.
+const pad = p.padding && typeof p.padding === "object" ? p.padding : undefined;
+const isCanonPad = pad && Number(pad.top) === 12 && Number(pad.bottom) === 12;
+const paddingStyle =
+	pad && !isCanonPad
+		? `padding-top:${Number(pad.top) || 0}px;padding-bottom:${Number(pad.bottom) || 0}px;`
+		: undefined;
+---
+
+{
+	/* data-vanilla-announcement сохранён: JS шапки меряет высоту полосы для
+	   позиционирования бургер-панели (Header.astro headerOffsetBelowPromo). */
+	linkText ? (
+		<div
+			class={rootCls}
+			role="region"
+			aria-live="polite"
+			data-vanilla-announcement
+			data-puck-component-id={id}
+			style={paddingStyle}
+		>
+			<span
+				class="min-w-0 shrink"
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="100"
+				data-puck-subsection-field="text"
+			>
+				{text}
+				<a
+					href={linkHref}
+					class="ml-1 underline decoration-1 underline-offset-2 transition-opacity hover:opacity-80"
+				>
+					{linkText}
+				</a>
+			</span>
+		</div>
+	) : (
+		<a
+			href={linkHref}
+			class={rootCls}
+			data-vanilla-announcement
+			data-puck-component-id={id}
+			style={paddingStyle}
+		>
+			<span
+				class="min-w-0 shrink"
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="100"
+				data-puck-subsection-field="text"
+			>
+				{text}
+			</span>
+		</a>
+	)
+}

@@ -2,7 +2,21 @@
 import VanillaPicture from "../img/VanillaPicture.astro";
 import { V_IMG } from "../../data/imageAssets";
 
-const slides = [
+// ОЖИВЛЕНИЕ (Фаза B, контракт rose/bloom Hero): канон-схема theme-base
+// Hero.puckConfig ВКЛЮЧАЯ carousel-ветку «084 vanilla pilot» (mode, slides[]≤8,
+// pagination, autoplay, interval) поверх карусели верстальщика. Тело — verbatim;
+// страницы темы зовут <Hero /> без пропсов → дефолт = 3 слайда верстальщика
+// байт-в-байт (цвета → токены с пиксель-фоллбеком родных литералов, MANNER §7).
+// blockDefaults vanilla: mode=carousel, pagination=numbers, autoplay=true,
+// interval=5, size=large, alignment/contentAlign=left, buttonStyle=solid,
+// imageFullBleed=true. Параметры скрипту — ТОЛЬКО data-атрибуты (data-slides-json,
+// data-autoplay, data-interval); таймер автолистания живёт в vanillaHeroCarousel.ts
+// и заводится ТОЛЬКО при data-autoplay (дефолт-ветка без таймера = верстальщик).
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Дефолтные слайды = литералы верстальщика (тексты/ссылки verbatim).
+const CANON_SLIDES = [
 	{
 		image: V_IMG.hero(1),
 		title: "Искусство жить уютно",
@@ -26,131 +40,439 @@ const slides = [
 	},
 ];
 
-const slidesJson = JSON.stringify(
-	slides.map(({ title, subtitle, ctaText, ctaHref }) => ({
+// Под Container API (live/превью v2) cwd ≠ корень темы: fs-проверка VanillaPicture
+// не находит public/ и .png остался бы в src (на диске темы только .webp → 404).
+// Подменяем расширение заранее (паттерн Collections); на сборке темы вывод тот же.
+const toWebp = (src: string) => src.replace(/\.(png|jpe?g)$/i, ".webp");
+
+// Канон mode: 'carousel' (canon-default из blockDefaults vanilla) И отсутствие →
+// карусель верстальщика; явный 'single' → одиночное полотно без контролов.
+const mode = p.mode === "single" ? "single" : "carousel";
+
+// Канон size — canon-носитель лестниц (blockDefaults vanilla size='large').
+const sectionSize = typeof p.size === "string" ? p.size : undefined;
+
+// Лестница hero h1 (§9): large (canon-default) и отсутствие = ЛИТЕРАЛ верстальщика
+// text-2xl (24px, lh 1.2 + pb 0.125em в <style> ниже); medium 20, small 17.
+const headingClsFor = (s?: string) =>
+	s === "small"
+		? "hero-animate-1 vanilla-hero-slide-title font-vanilla-bitter text-[17px] font-normal italic tracking-normal text-[rgb(var(--color-heading,255_255_255))] md:whitespace-nowrap"
+		: s === "medium"
+			? "hero-animate-1 vanilla-hero-slide-title font-vanilla-bitter text-[20px] font-normal italic tracking-normal text-[rgb(var(--color-heading,255_255_255))] md:whitespace-nowrap"
+			: "hero-animate-1 vanilla-hero-slide-title font-vanilla-bitter text-2xl font-normal italic tracking-normal text-[rgb(var(--color-heading,255_255_255))] md:whitespace-nowrap";
+
+// Лестница hero-текста (§9): large/отсутствие = литерал text-base (16, lh 1.35);
+// medium 14, small 11. Цвет — токен с фоллбеком родного #F0F0F0.
+const textClsFor = (s?: string) =>
+	s === "small"
+		? "hero-animate-2 vanilla-hero-slide-subtitle font-vanilla-arsenal text-[11px] font-normal italic tracking-normal text-[rgb(var(--color-text,240_240_240))] md:whitespace-nowrap"
+		: s === "medium"
+			? "hero-animate-2 vanilla-hero-slide-subtitle font-vanilla-arsenal text-[14px] font-normal italic tracking-normal text-[rgb(var(--color-text,240_240_240))] md:whitespace-nowrap"
+			: "hero-animate-2 vanilla-hero-slide-subtitle font-vanilla-arsenal text-base font-normal italic tracking-normal text-[rgb(var(--color-text,240_240_240))] md:whitespace-nowrap";
+
+type CanonSlide = {
+	image: string;
+	title: string;
+	subtitle: string;
+	ctaText: string;
+	ctaHref: string;
+	titleCls: string;
+	subtitleCls: string;
+};
+
+// Канон slides[] ≤8 ({id, imageUrl, heading{text,size}, text{content,size},
+// buttonText, buttonLink} + терпимость к legacy title/subtitle/ctaText/ctaUrl).
+// Слайд без фото получает ассет верстальщика по позиции (принцип rose T15).
+const slideFromProps = (s: any, i: number): CanonSlide => {
+	const title = typeof s.heading === "string" ? s.heading : ((s.heading?.text ?? s.title ?? "") as string);
+	const subtitle =
+		typeof s.text === "string" ? s.text : ((s.text?.content ?? s.subtitle ?? "") as string);
+	const ctaText =
+		((typeof s.buttonText === "string" && s.buttonText.trim() ? s.buttonText : undefined) ??
+			(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined) ??
+			"") as string;
+	const ctaHref =
+		((typeof s.buttonLink === "string" && s.buttonLink ? s.buttonLink : undefined) ??
+			s.buttonLink?.href ??
+			(typeof s.ctaUrl === "string" && s.ctaUrl ? s.ctaUrl : undefined) ??
+			(typeof s.ctaHref === "string" && s.ctaHref ? s.ctaHref : undefined) ??
+			"/catalog") as string;
+	const image =
+		(typeof s.imageUrl === "string" && s.imageUrl.trim()) ||
+		(typeof s.image === "string" && s.image.trim()) ||
+		toWebp(V_IMG.hero((((i % 3) + 1) as 1 | 2 | 3)));
+	return {
+		image,
 		title,
 		subtitle,
 		ctaText,
 		ctaHref,
+		titleCls: headingClsFor(s.heading?.size ?? sectionSize),
+		subtitleCls: textClsFor(s.text?.size ?? sectionSize),
+	};
+};
+
+const slides: CanonSlide[] =
+	Array.isArray(p.slides) && p.slides.length > 0
+		? p.slides.slice(0, 8).map(slideFromProps)
+		: CANON_SLIDES.map((s) => ({
+				...s,
+				image: toWebp(s.image),
+				titleCls: headingClsFor(sectionSize),
+				subtitleCls: textClsFor(sectionSize),
+			}));
+
+// Канон top-level heading/text/primaryButton (+ legacy flat) в карусели правят
+// ПЕРВЫЙ слайд — именно на него указывают subsection-маркеры 100/101/102 ниже
+// (сайдбар v2 редактирует top-level пропсы, slides[] в сайдбаре скрыт; образец —
+// bloom Hero, читающий p.heading.text). Непустой проп → копия слайда 1; без
+// пропсов ничего не трогаем — литералы верстальщика байт-в-байт. slidesJson
+// строится НИЖЕ, поэтому листание возвращает отредактированный текст на слайде 1.
+const ovTitle = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? p.title);
+const ovSubtitle = typeof p.text === "string" ? p.text : (p.text?.content ?? p.subtitle);
+const ovCtaText = p.primaryButton?.text ?? p.cta?.text ?? p.ctaText;
+const ovCtaHref =
+	p.primaryButton?.link?.href ??
+	(typeof p.primaryButton?.link === "string" ? p.primaryButton.link : undefined) ??
+	p.cta?.href ??
+	p.ctaLink;
+if (slides[0]) {
+	if (typeof ovTitle === "string" && ovTitle.trim()) slides[0].title = ovTitle;
+	if (typeof ovSubtitle === "string" && ovSubtitle.trim()) slides[0].subtitle = ovSubtitle;
+	if (typeof ovCtaText === "string" && ovCtaText.trim()) slides[0].ctaText = ovCtaText;
+	if (typeof ovCtaHref === "string" && ovCtaHref.trim()) slides[0].ctaHref = ovCtaHref;
+	if (p.heading?.size) slides[0].titleCls = headingClsFor(p.heading.size);
+	if (p.text?.size) slides[0].subtitleCls = textClsFor(p.text.size);
+}
+
+// JSON для скрипта: копия + классы лестниц (смена слайда переключает и размер).
+const slidesJson = JSON.stringify(
+	slides.map(({ title, subtitle, ctaText, ctaHref, titleCls, subtitleCls }) => ({
+		title,
+		subtitle,
+		ctaText,
+		ctaHref,
+		titleCls,
+		subtitleCls,
 	})),
 );
+
+// Канон autoplay/interval: таймер ТОЛЬКО при autoplay-пропе (blockDefaults vanilla
+// пишут true/5с) — дефолт-ветка без пропсов остаётся без таймера (верстальщик).
+const autoplayOn = p.autoplay === true || p.autoplay === "true";
+const intervalMs = String(
+	(typeof p.interval === "number" && p.interval >= 1 && p.interval <= 60 ? p.interval : 5) * 1000,
+);
+
+// Канон pagination: 'numbers' (canon-default из blockDefaults) И отсутствие =
+// цифры верстальщика; dots/lines — плоские маркеры манеры через bg-current
+// (скрипт переключает text-white/text-white/45 — цвет маркера следует за ним);
+// 'none' — без маркеров (стрелки остаются).
+const pagination =
+	p.pagination === "dots" || p.pagination === "lines" || p.pagination === "none"
+		? p.pagination
+		: "numbers";
+
+// Канон buttonStyle: solid (canon-default) = olive-CTA верстальщика дословно
+// (токены кнопки-1); outlined = белый контур манеры на тёмном (§3, токены кнопки-2).
+const ctaCls =
+	p.buttonStyle === "outlined"
+		? "hero-animate-3 inline-flex h-12 min-h-12 max-w-full items-center justify-center border border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80"
+		: "hero-animate-3 inline-flex h-12 min-h-12 max-w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
+
+// Канон alignment / contentAlign: 'left' (canon-default из blockDefaults) И
+// отсутствие = литерал верстальщика (блок слева, text-left, md:ml-4 lg:ml-0).
+const align =
+	p.alignment === "center" || p.alignment === "right"
+		? p.alignment
+		: p.contentAlign === "center"
+			? "center"
+			: "left";
+const copyWrapCls =
+	align === "center"
+		? "pointer-events-auto mx-auto flex w-full max-w-[min(100%,52rem)] flex-col items-center gap-5 text-center md:overflow-visible"
+		: align === "right"
+			? "pointer-events-auto ml-auto flex w-full max-w-[min(100%,52rem)] flex-col items-end gap-5 text-right md:overflow-visible"
+			: "pointer-events-auto flex w-full max-w-[min(100%,52rem)] flex-col items-start gap-5 text-left md:ml-4 md:overflow-visible lg:ml-0";
+
+// Канон overlay 0-100: отсутствие пропа = фикс-затемнение верстальщика bg-black/25;
+// заданное число заменяет его слоем с opacity N/100.
+const overlayRaw = p.overlay;
+const hasOverlay = overlayRaw !== undefined && overlayRaw !== null && overlayRaw !== "";
+const overlayN = hasOverlay ? Math.max(0, Math.min(100, Number(overlayRaw) || 0)) : 0;
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн
+// rose T14; seed пишет {0,0} — визуально ноль и есть).
+const pad = p.padding && typeof p.padding === "object" ? p.padding : undefined;
+const paddingStyle = pad
+	? `padding-top:${Number(pad.top) || 0}px;padding-bottom:${Number(pad.bottom) || 0}px;`
+	: undefined;
+
+// Одиночный режим (mode='single'): копия = канон heading/text/primaryButton
+// (+ legacy flat), фон — backgroundImages.url1 / backgroundImage / image.url.
+const singleTitle = p.heading?.text ?? p.title ?? CANON_SLIDES[0].title;
+const singleSubtitle = p.text?.content ?? p.subtitle ?? CANON_SLIDES[0].subtitle;
+const singleCtaText = p.primaryButton?.text ?? p.cta?.text ?? p.ctaText ?? CANON_SLIDES[0].ctaText;
+const singleCtaHref =
+	p.primaryButton?.link?.href ??
+	(typeof p.primaryButton?.link === "string" ? p.primaryButton.link : undefined) ??
+	p.cta?.href ??
+	p.ctaLink ??
+	CANON_SLIDES[0].ctaHref;
+const singleImage =
+	(typeof p.backgroundImages?.url1 === "string" && p.backgroundImages.url1.trim()) ||
+	(typeof p.backgroundImage === "string" && p.backgroundImage.trim()) ||
+	(typeof p.image?.url === "string" && p.image.url.trim()) ||
+	toWebp(V_IMG.hero(1));
+const singleTitleCls = headingClsFor(p.heading?.size ?? sectionSize);
+const singleSubtitleCls = textClsFor(p.text?.size ?? sectionSize);
+// Вторая кнопка (только single) — рендер при непустом тексте, белый контур манеры.
+const secondaryText =
+	typeof p.secondaryButton?.text === "string" && p.secondaryButton.text.trim()
+		? p.secondaryButton.text
+		: undefined;
+const secondaryHref =
+	p.secondaryButton?.link?.href ??
+	(typeof p.secondaryButton?.link === "string" ? p.secondaryButton.link : undefined) ??
+	"/catalog/textile";
+const secondaryCls =
+	"inline-flex h-12 min-h-12 max-w-full items-center justify-center border border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80";
 ---
 
-<section
-	class="relative w-full overflow-hidden bg-[var(--vanilla-green-deep)]"
-	aria-labelledby="hero-title"
-	data-vanilla-hero-carousel
-	data-vanilla-stack
-	data-slides-json={slidesJson}
->
-	<div
-		id="hero-carousel-viewport"
-		class="relative w-full min-h-[520px] md:min-h-[620px] xl:min-h-[790px]"
-		role="region"
-		aria-roledescription="карусель"
-		aria-label="Главный экран"
-	>
-		<div class="absolute inset-0 z-0 overflow-hidden">
-			{
-				slides.map((slide, i) => (
+{
+	mode === "carousel" ? (
+		<section
+			class="relative w-full overflow-hidden bg-[var(--vanilla-green-deep)]"
+			aria-labelledby="hero-title"
+			data-vanilla-hero-carousel
+			data-vanilla-stack
+			data-slides-json={slidesJson}
+			data-autoplay={autoplayOn ? "true" : undefined}
+			data-interval={autoplayOn ? intervalMs : undefined}
+			data-puck-component-id={id}
+			style={paddingStyle}
+		>
+			<div
+				id="hero-carousel-viewport"
+				class="relative w-full min-h-[520px] md:min-h-[620px] xl:min-h-[790px]"
+				role="region"
+				aria-roledescription="карусель"
+				aria-label="Главный экран"
+			>
+				<div class="absolute inset-0 z-0 overflow-hidden">
+					{slides.map((slide, i) => (
+						<div
+							data-hero-slide-img
+							class:list={[
+								"absolute inset-0 z-0 transition-opacity duration-500 ease-out",
+								i === 0 ? "opacity-100" : "pointer-events-none opacity-0",
+							]}
+							aria-hidden={i !== 0 ? "true" : "false"}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index={i}
+							data-puck-subsection-field="slides"
+						>
+							<VanillaPicture
+								src={slide.image}
+								alt=""
+								decoding={i === 0 ? "sync" : "async"}
+								loading={i === 0 ? "eager" : "lazy"}
+								fetchpriority={i === 0 ? "high" : undefined}
+								class="absolute inset-0 z-0 size-full object-cover object-center"
+								aria-hidden="true"
+							/>
+						</div>
+					))}
+				</div>
+				{hasOverlay ? (
 					<div
-						data-hero-slide-img
-						class:list={[
-							"absolute inset-0 z-0 transition-opacity duration-500 ease-out",
-							i === 0 ? "opacity-100" : "pointer-events-none opacity-0",
-						]}
-						aria-hidden={i !== 0 ? "true" : "false"}
-					>
-						<VanillaPicture
-							src={slide.image}
-							alt=""
-							decoding={i === 0 ? "sync" : "async"}
-							loading={i === 0 ? "eager" : "lazy"}
-							fetchpriority={i === 0 ? "high" : undefined}
-							class="absolute inset-0 z-0 size-full object-cover object-center"
-							aria-hidden="true"
-						/>
-					</div>
-				))
-			}
-		</div>
-		<div class="pointer-events-none absolute inset-0 z-[1] bg-black/25" aria-hidden="true"></div>
+						class="pointer-events-none absolute inset-0 z-[1] bg-black"
+						style={`opacity:${overlayN / 100}`}
+						aria-hidden="true"
+					/>
+				) : (
+					<div class="pointer-events-none absolute inset-0 z-[1] bg-black/25" aria-hidden="true" />
+				)}
 
-		<div class="vanilla-pad absolute inset-0 z-10 flex h-full w-full items-center pointer-events-none">
-			<div class="vanilla-container pointer-events-none">
-				<div
-					class="pointer-events-auto flex w-full max-w-[min(100%,52rem)] flex-col items-start gap-5 text-left md:ml-4 md:overflow-visible lg:ml-0"
-					aria-live="polite"
-				>
-					<h1
-						id="hero-title"
-						data-hero-title
-						class="hero-animate-1 vanilla-hero-slide-title font-vanilla-bitter text-2xl font-normal italic tracking-normal text-white md:whitespace-nowrap"
-					>
-						{slides[0].title}
-					</h1>
-					<p
-						data-hero-subtitle
-						class="hero-animate-2 vanilla-hero-slide-subtitle font-vanilla-arsenal text-base font-normal italic tracking-normal text-[var(--vanilla-hero-subtle)] md:whitespace-nowrap"
-					>
-						{slides[0].subtitle}
-					</p>
-					<a
-						data-hero-cta
-						class="hero-animate-3 inline-flex h-12 min-h-12 max-w-full items-center justify-center bg-[var(--vanilla-header-bg)] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-white transition-opacity hover:opacity-90"
-						href={slides[0].ctaHref}
-					>
-						{slides[0].ctaText}
-					</a>
+				<div class="vanilla-pad absolute inset-0 z-10 flex h-full w-full items-center pointer-events-none">
+					<div class="vanilla-container pointer-events-none">
+						<div class={copyWrapCls} aria-live="polite">
+							<h1
+								id="hero-title"
+								data-hero-title
+								class={slides[0].titleCls}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="100"
+								data-puck-subsection-field="heading"
+							>
+								{slides[0].title}
+							</h1>
+							<p
+								data-hero-subtitle
+								class={slides[0].subtitleCls}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="101"
+								data-puck-subsection-field="text"
+							>
+								{slides[0].subtitle}
+							</p>
+							<a
+								data-hero-cta
+								class:list={[ctaCls, !slides[0].ctaText && "hidden"]}
+								href={slides[0].ctaHref}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="102"
+								data-puck-subsection-field="primaryButton"
+							>
+								{slides[0].ctaText}
+							</a>
+						</div>
+					</div>
 				</div>
 			</div>
-		</div>
-	</div>
 
-	<div
-		class="flex h-16 items-center justify-center gap-10 bg-[var(--vanilla-announcement-bg)] font-vanilla-arsenal text-base leading-none md:gap-14"
-		role="toolbar"
-		aria-label="Переключение слайдов"
-		data-hero-controls
-		data-vanilla-hero-controls
-	>
-		<button
-			type="button"
-			data-hero-prev
-			class="text-white hover:opacity-90"
-			aria-label="Предыдущий слайд"
+			<div
+				class="flex h-16 items-center justify-center gap-10 bg-[rgb(var(--color-bg,38_49_28))] font-vanilla-arsenal text-base leading-none md:gap-14"
+				role="toolbar"
+				aria-label="Переключение слайдов"
+				data-hero-controls
+				data-vanilla-hero-controls
+			>
+				<button
+					type="button"
+					data-hero-prev
+					class="text-white hover:opacity-90"
+					aria-label="Предыдущий слайд"
+				>
+					←
+				</button>
+				{pagination !== "none" && (
+					<div class="flex items-center gap-10 md:gap-12">
+						{slides.map((_, i) => (
+							<button
+								type="button"
+								data-hero-bullet
+								data-hero-index={String(i)}
+								class:list={[
+									"min-w-[1ch] p-1 font-normal uppercase tracking-normal hover:opacity-90",
+									i === 0 ? "text-white" : "text-white/45",
+								]}
+								aria-current={i === 0 ? "true" : undefined}
+								aria-label={`Слайд ${i + 1}`}
+							>
+								{pagination === "dots" ? (
+									<span class="block size-2 bg-current" aria-hidden="true" />
+								) : pagination === "lines" ? (
+									<span class="block h-0.5 w-6 bg-current" aria-hidden="true" />
+								) : (
+									i + 1
+								)}
+							</button>
+						))}
+					</div>
+				)}
+				<button
+					type="button"
+					data-hero-next
+					class="text-white hover:opacity-90"
+					aria-label="Следующий слайд"
+				>
+					→
+				</button>
+			</div>
+		</section>
+	) : (
+		<section
+			class="relative w-full overflow-hidden bg-[var(--vanilla-green-deep)]"
+			aria-labelledby="hero-title"
+			data-puck-component-id={id}
+			style={paddingStyle}
 		>
-			←
-		</button>
-		<div class="flex items-center gap-10 md:gap-12">
-			{
-				slides.map((_, i) => (
-					<button
-						type="button"
-						data-hero-bullet
-						data-hero-index={String(i)}
-						class:list={[
-							"min-w-[1ch] p-1 font-normal uppercase tracking-normal hover:opacity-90",
-							i === 0 ? "text-white" : "text-white/45",
-						]}
-						aria-current={i === 0 ? "true" : undefined}
-						aria-label={`Слайд ${i + 1}`}
-					>
-						{i + 1}
-					</button>
-				))
-			}
-		</div>
-		<button
-			type="button"
-			data-hero-next
-			class="text-white hover:opacity-90"
-			aria-label="Следующий слайд"
-		>
-			→
-		</button>
-	</div>
-</section>
+			<div
+				class="relative w-full min-h-[520px] md:min-h-[620px] xl:min-h-[790px]"
+				role="region"
+				aria-label="Главный экран"
+			>
+				<div class="absolute inset-0 z-0 overflow-hidden">
+					<VanillaPicture
+						src={singleImage}
+						alt=""
+						decoding="sync"
+						loading="eager"
+						fetchpriority="high"
+						class="absolute inset-0 z-0 size-full object-cover object-center"
+						aria-hidden="true"
+					/>
+				</div>
+				{hasOverlay ? (
+					<div
+						class="pointer-events-none absolute inset-0 z-[1] bg-black"
+						style={`opacity:${overlayN / 100}`}
+						aria-hidden="true"
+					/>
+				) : (
+					<div class="pointer-events-none absolute inset-0 z-[1] bg-black/25" aria-hidden="true" />
+				)}
+
+				<div class="vanilla-pad absolute inset-0 z-10 flex h-full w-full items-center pointer-events-none">
+					<div class="vanilla-container pointer-events-none">
+						<div class={copyWrapCls}>
+							<h1
+								id="hero-title"
+								class={singleTitleCls}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="100"
+								data-puck-subsection-field="heading"
+							>
+								{singleTitle}
+							</h1>
+							<p
+								class={singleSubtitleCls}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="101"
+								data-puck-subsection-field="text"
+							>
+								{singleSubtitle}
+							</p>
+							{secondaryText ? (
+								<div class="flex max-w-full flex-row flex-wrap items-center gap-3">
+									<a
+										class={ctaCls}
+										href={singleCtaHref}
+										data-puck-subsection-parent={id}
+										data-puck-subsection-index="102"
+										data-puck-subsection-field="primaryButton"
+									>
+										{singleCtaText}
+									</a>
+									<a
+										class={secondaryCls}
+										href={secondaryHref}
+										data-puck-subsection-parent={id}
+										data-puck-subsection-index="103"
+										data-puck-subsection-field="secondaryButton"
+									>
+										{secondaryText}
+									</a>
+								</div>
+							) : (
+								<a
+									class:list={[ctaCls, !singleCtaText && "hidden"]}
+									href={singleCtaHref}
+									data-puck-subsection-parent={id}
+									data-puck-subsection-index="102"
+									data-puck-subsection-field="primaryButton"
+								>
+									{singleCtaText}
+								</a>
+							)}
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+	)
+}
 
 <style>
 	/** Курсив + line-height ≈ 1 даёт наложение на следующую строку — см. блок выше в комментарии. */

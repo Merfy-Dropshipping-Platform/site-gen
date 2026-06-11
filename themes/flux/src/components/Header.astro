@@ -9,31 +9,127 @@ interface NavLink {
 	match?: (pathname: string) => boolean;
 }
 
-const nav: NavLink[] = [
-	{ label: "Главная", href: "/", match: (p) => p === "/" },
-	{ label: "Смартфоны", href: "/catalog?collection=%D0%A1%D0%BC%D0%B0%D1%80%D1%82%D1%84%D0%BE%D0%BD%D1%8B", match: (p) => p.startsWith("/catalog") || p.startsWith("/products") },
+const defaultNav: NavLink[] = [
+	{ label: "Главная", href: "/", match: (path) => path === "/" },
+	{ label: "Смартфоны", href: "/catalog?collection=%D0%A1%D0%BC%D0%B0%D1%80%D1%82%D1%84%D0%BE%D0%BD%D1%8B", match: (path) => path.startsWith("/catalog") || path.startsWith("/products") },
 	{ label: "Наушники", href: "/catalog?collection=%D0%9D%D0%B0%D1%83%D1%88%D0%BD%D0%B8%D0%BA%D0%B8" },
 	{ label: "Ноутбуки", href: "/catalog?collection=%D0%9D%D0%BE%D1%83%D1%82%D0%B1%D1%83%D0%BA%D0%B8" },
 	{ label: "Аксессуары", href: "/catalog?collection=%D0%90%D0%BA%D1%81%D0%B5%D1%81%D1%81%D1%83%D0%B0%D1%80%D1%8B" },
 ];
 
+// ОЖИВЛЕНИЕ (Фаза B, контракт bloom Header): канон-схема theme-base Header.puckConfig —
+// siteTitle, navigationLinks, logo, logoPosition, stickiness, padding. Тело ниже —
+// verbatim верстальщика; дефолтные ветки тернарников = прежним строкам байт-в-байт
+// (цвета → токены с пиксель-фоллбеком родных литералов §7).
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+// Пустая строка (впрыск коэрсера live-пути) не должна гасить название магазина.
+const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
+const nav: NavLink[] =
+	Array.isArray(p.navigationLinks) && p.navigationLinks.length > 0
+		? p.navigationLinks.map((l: any) => ({ label: l.label ?? l.text ?? "", href: l.href ?? l.link ?? "/" }))
+		: defaultNav;
+
+// Канон logo (URL картинки; панель «Логотип» пишет в props.logo): непустая строка →
+// <img> высотой var(--size-logo-width) в mobile И desktop. Дефолт flux = ТЕКСТ-лого
+// {SITE_TITLE} Comfortaa uppercase (mobile 18px / desktop 24 → lg:28, H:54, 85);
+// фоллбек токена 24px = --size-logo-width из theme.json flux.
+const logo = typeof p.logo === "string" && p.logo.trim() ? p.logo : undefined;
+const logoImgCls = "h-[var(--size-logo-width,24px)] w-auto max-w-[160px] object-contain";
+
+// Канон logoPosition: 'top-left' (canon-default puckConfig) И отсутствие / неизвестное
+// значение → ЛИТЕРАЛ верстальщика — лого СЛЕВА в ряду justify-between (правило
+// canon-default → пиксель). Явные 'top-center' / 'center-absolute' («По центру») →
+// desktop-грид [1fr_auto_1fr] с order-классами: навигация слева, лого по центру,
+// иконки справа (DOM-порядок детей остаётся литеральным).
+const logoPosition = typeof p.logoPosition === "string" ? p.logoPosition : "";
+const logoCentered = logoPosition === "top-center" || logoPosition === "center-absolute";
+
+// Канон stickiness: литерал верстальщика УЖЕ sticky top-0 z-50 (H:24) — 'none' /
+// 'always' / canon-default / отсутствие → sticky остаётся. 'scroll-up' → прячем при
+// скролле вниз, показываем при скролле вверх: is:inline скрипт через data-атрибут
+// (компилятор секций не умеет define:vars), идемпотентность через data-hydrated.
+const stickiness = typeof p.stickiness === "string" ? p.stickiness : "";
+const rootCls =
+	stickiness === "scroll-up"
+		? "sticky top-0 z-50 w-full transition-transform duration-300"
+		: "sticky top-0 z-50 w-full";
+const SCROLL_UP_JS = [
+	"(function(){",
+	"var root=document.querySelector('[data-flux-sticky=\"scroll-up\"]');",
+	"if(!root||root.getAttribute('data-hydrated')==='true')return;",
+	"root.setAttribute('data-hydrated','true');",
+	"var last=window.scrollY;",
+	"window.addEventListener('scroll',function(){",
+	"var y=window.scrollY;",
+	"if(y>last&&y>root.offsetHeight){root.style.transform='translateY(-100%)';}else{root.style.transform='';}",
+	"last=y;",
+	"},{passive:true});",
+	"})();",
+].join("");
+
+// Канон padding {top,bottom} — clamp ≤64 на носителе отступов верстальщика
+// (desktop-ряд md:py-4; мобильная строка h-14 фиксированная). {12,12} = canon-default
+// puckConfig (theme.json flux Header без padding) → ЛИТЕРАЛ md:py-4; inline-стиль
+// только при ином значении (паттерн bloom Header:100-107).
+const pad = p.padding && typeof p.padding === "object" ? p.padding : undefined;
+const isCanonPad = pad && Number(pad.top) === 12 && Number(pad.bottom) === 12;
+const headerPad =
+	pad && !isCanonPad
+		? { top: Math.min(Number(pad.top) || 0, 64), bottom: Math.min(Number(pad.bottom) || 0, 64) }
+		: undefined;
+const headerPadStyle = headerPad
+	? `padding-top:${headerPad.top}px;padding-bottom:${headerPad.bottom}px;`
+	: undefined;
+const desktopWrapCls = logoCentered
+	? headerPad
+		? "hidden w-full max-w-[1920px] mx-auto px-4 md:grid md:grid-cols-[1fr_auto_1fr] md:items-center md:px-20 2xl:px-80"
+		: "hidden w-full max-w-[1920px] mx-auto px-4 md:grid md:grid-cols-[1fr_auto_1fr] md:items-center md:py-4 md:px-20 2xl:px-80"
+	: headerPad
+		? "hidden w-full max-w-[1920px] mx-auto px-4 md:flex md:items-center md:justify-between md:px-20 2xl:px-80"
+		: "hidden w-full max-w-[1920px] mx-auto px-4 md:flex md:items-center md:justify-between md:py-4 md:px-20 2xl:px-80";
+const desktopLogoCls = logo
+	? `flex shrink-0 items-center hover:opacity-90${logoCentered ? " md:order-2 md:justify-self-center" : ""}`
+	: `shrink-0 font-comfortaa text-[24px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90 lg:text-[28px]${logoCentered ? " md:order-2 md:justify-self-center" : ""}`;
+const desktopNavCls = logoCentered
+	? "flex items-center gap-8 lg:gap-10 md:order-1 md:justify-self-start"
+	: "flex items-center gap-8 lg:gap-10";
+const desktopIconsCls = logoCentered
+	? "flex items-center gap-4 lg:gap-5 md:order-3 md:justify-self-end"
+	: "flex items-center gap-4 lg:gap-5";
+const mobileLogoCls = logo
+	? "flex items-center hover:opacity-80"
+	: "font-comfortaa text-[18px] font-normal uppercase text-[rgb(var(--color-heading,0_0_0))] hover:opacity-80";
+
 const pathname = Astro.url.pathname;
 const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathname === link.href);
 ---
 
-<div class="sticky top-0 z-50 w-full">
-	<NtPromoBanner
-		text="Бесплатная доставка на весь ассортимент до 30.06.2026."
-		link="/catalog"
-		linkText="Перейти"
-	/>
+<div
+	class={rootCls}
+	data-flux-header
+	data-puck-component-id={id}
+	data-flux-sticky={stickiness === "scroll-up" ? "scroll-up" : undefined}
+>
+	{
+		/* Встроенная полоса объявления — ТОЛЬКО статик-режим (без props.id):
+		   в канон-композиции полоса = отдельная секция PromoBanner, иначе дубль
+		   (паттерн bloom Header:117-133). */
+		!id && (
+			<NtPromoBanner
+				text="Бесплатная доставка на весь ассортимент до 30.06.2026."
+				link="/catalog"
+				linkText="Перейти"
+			/>
+		)
+	}
 
 	<header
-		class="w-full border-b border-[#F5F5F5] bg-white"
+		class="w-full border-b border-[rgb(var(--color-surface,245_245_245))] bg-[rgb(var(--color-bg,255_255_255))]"
 		data-nt="flux-header"
 	>
 	<!-- Mobile 375 -->
-	<div class="relative z-[60] flex h-14 items-center justify-between bg-white px-4 md:hidden">
+	<div class="relative z-[60] flex h-14 items-center justify-between bg-[rgb(var(--color-bg,255_255_255))] px-4 md:hidden">
 		<button
 			type="button"
 			id="flux-burger-btn"
@@ -49,11 +145,8 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 				<NtIcon name="menu-close" sizeClass="size-6" />
 			</span>
 		</button>
-		<a
-			href="/"
-			class="font-comfortaa text-[18px] font-normal uppercase text-[#000000] hover:opacity-80"
-		>
-			{SITE_TITLE}
+		<a href="/" class={mobileLogoCls} aria-label={siteTitle}>
+			{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
 		</a>
 		<div class="flex items-center gap-3">
 			<a href="#" data-action="toggle-search" class="flex size-6 items-center justify-center" aria-label="Поиск">
@@ -79,15 +172,18 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 	</div>
 
 	<!-- Desktop -->
-	<div class="hidden w-full max-w-[1920px] mx-auto px-4 md:flex md:items-center md:justify-between md:py-4 md:px-20 2xl:px-80">
-		<a
-			href="/"
-			class="shrink-0 font-comfortaa text-[24px] font-normal uppercase leading-none text-[#000000] hover:opacity-90 lg:text-[28px]"
-		>
-			{SITE_TITLE}
+	<div class={desktopWrapCls} style={headerPadStyle}>
+		<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
+			{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
 		</a>
 
-		<nav class="flex items-center gap-8 lg:gap-10" aria-label="Основная навигация">
+		<nav
+			class={desktopNavCls}
+			aria-label="Основная навигация"
+			data-puck-subsection-parent={id}
+			data-puck-subsection-index="997"
+			data-puck-subsection-field="navigationLinks"
+		>
 			{nav.map((link) => {
 				const active = isActive(link);
 				return (
@@ -95,8 +191,8 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 						href={link.href}
 						aria-current={active ? "page" : undefined}
 						class:list={[
-							"relative pb-1 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-70 lg:text-[16px]",
-							active && "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:bg-[#FA5109] after:content-['']",
+							"relative pb-1 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 lg:text-[16px]",
+							active && "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:bg-[rgb(var(--color-accent,250_81_9))] after:content-['']",
 						]}
 					>
 						{link.label}
@@ -105,7 +201,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 			})}
 		</nav>
 
-		<div class="flex items-center gap-4 lg:gap-5">
+		<div class={desktopIconsCls}>
 			<button
 				type="button"
 				data-action="toggle-search"
@@ -140,7 +236,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 	<!-- Desktop Search Panel (expandable) -->
 	<div
 		data-search-panel
-		class="hidden w-full border-t border-[#F5F5F5] bg-white px-4 py-4 md:px-20 2xl:px-80"
+		class="hidden w-full border-t border-[rgb(var(--color-surface,245_245_245))] bg-[rgb(var(--color-bg,255_255_255))] px-4 py-4 md:px-20 2xl:px-80"
 		hidden
 	>
 		<form role="search" action="/catalog" method="get" class="mx-auto flex h-12 w-full max-w-[1320px] items-center justify-between gap-2 rounded-[4px] border border-[#FA5109] bg-white pl-3 pr-1">
@@ -212,6 +308,8 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 			<a href="/auth/sign-up" class="text-[14px] font-normal leading-normal text-[#999999]">Регистрация</a>
 		</nav>
 	</div>
+
+	{stickiness === "scroll-up" && <script is:inline set:html={SCROLL_UP_JS} />}
 </div>
 
 <script>

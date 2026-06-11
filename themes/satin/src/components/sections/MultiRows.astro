@@ -1,0 +1,268 @@
+---
+// Фаза B (satin, группа content): канон-секция MultiRows — адаптация
+// src/components/sections/CollectionRows.astro (тело КОПИЕЙ; оригинал не
+// тронут — index.astro:26 и about.astro:62 его используют, включая
+// compact-вариант). Схема полей = packages/theme-base/blocks/MultiRows/
+// MultiRows.puckConfig.ts; манера — themes/satin/MANNER.md (эталон процесса —
+// bloom MultiRows). Дефолт-ветка (без rows[]) = 2 ряда верстальщика VERBATIM
+// (Женская/Мужская коллекция, чередование фото лево→право,
+// CollectionRows.astro:20-44).
+import SatinPicture from "../img/SatinPicture.astro";
+
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон top-heading: string | { text, alignment, size } (+ legacy
+// _headingLegacy) — у верстальщика шапки НЕТ → рендер ТОЛЬКО при непустом.
+// Роль = заголовок секции §1 (font-logo 20 uppercase leading-[1.15], токен
+// heading). Лестница §9: medium/отсутствие = литерал 20, small 17, large 24.
+const heading =
+	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p._headingLegacy ?? "";
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingSizeCls =
+	headingSize === "small" ? "text-[17px]" : headingSize === "large" ? "text-[24px]" : "text-[20px]";
+const headingAlignment =
+	p.headingAlignment ?? (typeof p.heading === "object" ? p.heading?.alignment : undefined);
+const headingAlignCls =
+	headingAlignment === "center" ? " text-center" : headingAlignment === "right" ? " text-right" : "";
+const headingCls = `font-logo ${headingSizeCls} font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
+
+// Канон rows[] 1-10 (item: heading|title, text|description, imageUrl|image,
+// imagePosition, button {text, href|link}, size/headingSize/textSize
+// per-item); legacy flat-Row верстальщика {title, paragraphs[], image, alt,
+// ctaLabel, ctaHref, imageRight} поддержан алиасами. Отсутствие массива =
+// дефолт-ветка: 2 ряда CollectionRows VERBATIM.
+const CANON_ROWS = [
+	{
+		heading: "Женская коллекция",
+		paragraphs: [
+			"Мы уверены: одежда должна быть красивой не только на фотографиях, но и на ощупь. Satin создан для тех, кто ценит эстетику и качество в каждой детали.",
+			"В ассортименте Satin вы не найдёте случайных вещей — только то, что действительно достойно стать частью вашего гардероба.",
+		],
+		imageUrl: "/images/4x/Женская_коллекция.png",
+		alt: "Женская коллекция",
+		imagePosition: "left",
+		button: { text: "Для женщин", href: "/catalog?collection=Женское" },
+	},
+	{
+		heading: "Мужская коллекция",
+		paragraphs: [
+			"Минимализм, точная посадка и спокойный силуэт — мужская линия Satin собирает базовые вещи без лишних деталей.",
+			"Одежда, которая не требует усилий, чтобы выглядеть хорошо.",
+		],
+		imageUrl: "/images/4x/Мужская_коллекция.png",
+		alt: "Мужская коллекция",
+		imagePosition: "right",
+		button: { text: "Для мужчин", href: "/catalog?collection=Мужское" },
+	},
+];
+const rawRows = Array.isArray(p.rows) && p.rows.length ? p.rows : CANON_ROWS;
+
+// Канон rowsPosition: left | right — ВСЕ фото с одной стороны;
+// alternate/отсутствие — per-item imagePosition (legacy imageRight), иначе
+// чередование по индексу (нечётный ряд — фото справа; паттерн дефолт-веток
+// верстальщика).
+const rowsPosition =
+	p.rowsPosition === "left" || p.rowsPosition === "right" ? p.rowsPosition : undefined;
+
+// Канон size (s/m/l) — аспект медиа ряда (per-item приоритетнее top-level):
+// medium/отсутствие = aspect-square ЛИТЕРАЛ (CollectionRows.astro:55), small =
+// md:aspect-[652/360] (литерал compact-варианта About,
+// CollectionRows.astro:56), large = портрет 430/564 манеры карточек §4.
+const aspectFor = (s: string | undefined) =>
+	s === "small"
+		? "aspect-square md:aspect-[652/360]"
+		: s === "large"
+			? "aspect-[430/564]"
+			: "aspect-square";
+
+// Канон-плейсхолдеры фото = ассеты верстальщика по позиции (принцип T15:
+// «добавил секцию → сразу красиво»).
+const ROW_FALLBACKS = ["/images/4x/Женская_коллекция.png", "/images/4x/Мужская_коллекция.png"];
+
+// Шкалы per-item (лестницы §9): заголовок ряда = роль «заголовок секции» 20 —
+// литерал CollectionRows.astro:63 (small 17, large 24); абзацы = body крупный
+// .satin-copy md:text-[20px] + max-w-[600px] — литерал CollectionRows.astro:65
+// (small 14/17, large 19/24; классы расписаны явно ради лестницы и токена).
+const rowHeadingCls = (s: string | undefined) =>
+	s === "small"
+		? "font-logo text-[17px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
+		: s === "large"
+			? "font-logo text-[24px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
+			: "font-logo text-[20px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]";
+const rowTextCls = (s: string | undefined) =>
+	s === "small"
+		? "max-w-[600px] text-[14px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[17px]"
+		: s === "large"
+			? "max-w-[600px] text-[19px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[24px]"
+			: "max-w-[600px] text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[20px]";
+
+const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
+	// Абзацы: legacy paragraphs[] рендерятся отдельными <p> (литерал);
+	// канон text|description — одним <p> через set:html.
+	const paragraphs: string[] = Array.isArray(r.paragraphs)
+		? r.paragraphs.filter((x: any) => typeof x === "string" && x.trim())
+		: [
+				(typeof r.text === "string" && r.text) ||
+					(typeof r.description === "string" && r.description) ||
+					"",
+			].filter(Boolean);
+	const headingText =
+		(typeof r.heading === "string" && r.heading) || (typeof r.title === "string" && r.title) || "";
+	// Фото справа: per-item imagePosition приоритетнее legacy imageRight;
+	// без обоих — чередование по индексу.
+	const itemRight =
+		r.imagePosition === "right" ||
+		(r.imagePosition !== "left" &&
+			(r.imageRight === true || (r.imageRight === undefined && i % 2 === 1)));
+	const btnText =
+		(typeof r.button?.text === "string" && r.button.text.trim() ? r.button.text : undefined) ??
+		(typeof r.ctaLabel === "string" && r.ctaLabel.trim() ? r.ctaLabel : undefined);
+	return {
+		heading: headingText,
+		paragraphs,
+		image:
+			(typeof r.imageUrl === "string" && r.imageUrl.trim()) ||
+			(typeof r.image === "string" && r.image.trim()) ||
+			ROW_FALLBACKS[i % ROW_FALLBACKS.length],
+		alt: (typeof r.alt === "string" && r.alt.trim()) || headingText || "Ряд",
+		right: rowsPosition === "right" || (rowsPosition !== "left" && itemRight),
+		aspectCls: aspectFor(r.size ?? p.size),
+		headingCls: rowHeadingCls(r.headingSize),
+		textCls: rowTextCls(r.textSize),
+		btnText,
+		btnHref:
+			(typeof r.button?.href === "string" && r.button.href ? r.button.href : undefined) ??
+			r.button?.link?.href ??
+			(typeof r.button?.link === "string" && r.button.link ? r.button.link : undefined) ??
+			(typeof r.ctaHref === "string" && r.ctaHref ? r.ctaHref : undefined) ??
+			"/catalog",
+	};
+});
+
+// Канон width (s/m/l/full): large/отсутствие = .satin-container 1320 (литерал
+// CollectionRows.astro:50); medium 1080, small 780, full — на всю ширину
+// (поля .satin-pad секции остаются).
+const widthCls =
+	p.width === "small"
+		? "mx-auto w-full max-w-[780px]"
+		: p.width === "medium"
+			? "mx-auto w-full max-w-[1080px]"
+			: p.width === "full"
+				? "w-full"
+				: "satin-container";
+
+// Канон alignment текст-колонки: left/отсутствие = ЛИТЕРАЛ (без классов —
+// контент слева, CollectionRows.astro:62); center/right двигают содержимое.
+const alignCls =
+	p.alignment === "center"
+		? " items-center text-center"
+		: p.alignment === "right"
+			? " items-end text-right"
+			: "";
+
+// Канон buttonStyle: canon-default И отсутствие = светлая контурная
+// .satin-button-md LIGHT ЛИТЕРАЛ (родная роль satin! CollectionRows.astro:67);
+// black|solid → тёмная заливка .satin-button-dark; white → белая заливка
+// (инверсия на тёмном §3). Метрики .satin-button-md (g:106-126) + токены;
+// mt-auto w-fit — кнопка прижата к низу ряда (литерал).
+const btnBase =
+	"mt-auto inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-6 text-[16px] font-normal uppercase leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]";
+const btnCls =
+	p.buttonStyle === "black" || p.buttonStyle === "solid"
+		? `${btnBase} border-[rgb(var(--color-button-bg,0_0_0))] bg-[rgb(var(--color-button-bg,0_0_0))] text-[rgb(var(--color-button-text,255_255_255))]`
+		: p.buttonStyle === "white"
+			? `${btnBase} border-[rgb(var(--color-button-2-bg,255_255_255))] bg-[rgb(var(--color-button-2-bg,255_255_255))] text-[rgb(var(--color-button-2-text,0_0_0))]`
+			: `${btnBase} border-[rgb(var(--color-button-2-text,0_0_0))] bg-transparent text-[rgb(var(--color-button-2-text,0_0_0))]`;
+
+// Канон containerColorScheme — класс схемы на контейнере рядов.
+const containerSchemeCls =
+	typeof p.containerColorScheme === "string" && p.containerColorScheme
+		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
+		: "";
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+
+const titleId = id && heading ? `${id}-title` : undefined;
+---
+
+{/* Секция: вертикаль-просторно §2 (py-12 md:py-16 — литерал CollectionRows.astro:49), поля .satin-pad. */}
+<section
+	class="satin-pad w-full bg-[rgb(var(--color-bg,255_255_255))] py-12 md:py-16"
+	aria-labelledby={titleId}
+	aria-label={heading ? undefined : "Коллекции"}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div class={`${widthCls} flex flex-col gap-8${containerSchemeCls}`}>
+		{
+			heading && (
+				<h2
+					id={titleId}
+					class={headingCls}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="heading"
+				>
+					{heading}
+				</h2>
+			)
+		}
+		{/* Ряды: внешний gap-12 md:gap-20, ряд grid items-stretch gap-8 md:grid-cols-2 md:gap-10 (литерал CollectionRows.astro:50-52). */}
+		<div class="flex flex-col gap-12 md:gap-20">
+			{
+				rows.map((row, i) => (
+					<div
+						class="grid grid-cols-1 items-stretch gap-8 md:grid-cols-2 md:gap-10"
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index={i}
+						data-puck-subsection-field="rows"
+					>
+						{/* Подложка фото-плейсхолдера = родной литерал #111111 (full-bleed фото §4). */}
+						<div
+							class:list={[
+								"relative overflow-hidden bg-[#111111]",
+								row.aspectCls,
+								row.right && "md:order-2",
+							]}
+						>
+							{row.image.startsWith("/") ? (
+								<SatinPicture
+									src={row.image}
+									alt={row.alt}
+									loading="lazy"
+									class="absolute inset-0 size-full object-cover"
+								/>
+							) : (
+								<img
+									src={row.image}
+									alt={row.alt}
+									loading="lazy"
+									class="absolute inset-0 size-full object-cover"
+								/>
+							)}
+						</div>
+						<div class:list={[`flex flex-col gap-5${alignCls}`, row.right && "md:order-1"]}>
+							{row.heading && <h3 class={row.headingCls}>{row.heading}</h3>}
+							{row.paragraphs.length > 0 && (
+								<div class="flex flex-col gap-3">
+									{row.paragraphs.map((para) => (
+										<p class={row.textCls} set:html={para} />
+									))}
+								</div>
+							)}
+							{row.btnText && (
+								<a href={row.btnHref} class={btnCls}>
+									{row.btnText}
+								</a>
+							)}
+						</div>
+					</div>
+				))
+			}
+		</div>
+	</div>
+</section>

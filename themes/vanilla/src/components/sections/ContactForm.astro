@@ -1,0 +1,325 @@
+---
+// Фаза B (vanilla, группа misc): канон-секция ContactForm — адаптация формы
+// «Свяжитесь с нами» pages/about.astro:64-136 (страница НЕ меняется, разметка
+// перенесена КОПИЕЙ; pages/contacts.astro — клон rose с Manrope/.vanilla-button,
+// НЕ источник манеры). Эталон процесса — themes/bloom ContactForm. Схема полей =
+// packages/theme-base/blocks/ContactForm/ContactForm.puckConfig.ts.
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон heading: string | {text, alignment, size}; canon-default = литерал
+// about:73 «Свяжитесь с нами». Роль about:71 — Arsenal 20 UPPERCASE прямой
+// (единственное Arsenal-исключение из Bitter-правила §1), токен heading с
+// пиксель-фоллбеком #0A0A0A.
+const heading = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Свяжитесь с нами");
+// Лестница §9 (about-литерал 20 = large/canon-default): small 14, medium 17.
+// headingSize/headingAlignment top-level приоритетнее legacy heading.*.
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingSizeCls =
+	headingSize === "small" ? "text-[14px]" : headingSize === "medium" ? "text-[17px]" : "text-[20px]";
+const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
+const headingAlignCls =
+	headingAlignment === "center"
+		? " text-center"
+		: headingAlignment === "right"
+			? " text-right"
+			: "";
+const headingCls = `font-vanilla-arsenal ${headingSizeCls} font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-heading,10_10_10))]${headingAlignCls}`;
+
+// Канон description — <p> ТОЛЬКО при непустом пропе (у формы верстальщика
+// описания нет → дефолт-ветка пуста). Манера подписей: Arsenal 16 muted.
+const description =
+	typeof p.description === "string" && p.description.trim() ? p.description : undefined;
+
+// Flat-пропсы оживления: контакты магазина (dl-блок над формой — рендер только
+// при заданных; у about-формы их нет → дефолт без блока).
+const phone = typeof p.phone === "string" && p.phone.trim() ? p.phone.trim() : undefined;
+const email = typeof p.email === "string" && p.email.trim() ? p.email.trim() : undefined;
+const phoneHref = phone ? `tel:${phone.replace(/[^+\d]/g, "")}` : undefined;
+const emailHref = email ? `mailto:${email}` : undefined;
+
+// Канон fields {name,email,phone,message} (каждое {enabled,required,label}) —
+// проп-ветка собирает состав формы канон-семантикой (фоллбеки частичного
+// объекта = канон-дефолты puckConfig: phone disabled, name/email required).
+// Отсутствие fields = форма about ДОСЛОВНО (Имя / E-mail / Номер телефона +
+// textarea «Ваш вопрос», без required — у верстальщика novalidate-форма).
+const toBool = (v: any, fb: boolean): boolean =>
+	typeof v === "boolean" ? v : v === "true" ? true : v === "false" ? false : fb;
+const CANON_FIELDS = {
+	name: { enabled: true, required: true, label: "Имя" },
+	email: { enabled: true, required: true, label: "Email" },
+	phone: { enabled: false, required: false, label: "Телефон" },
+	message: { enabled: true, required: false, label: "Сообщение" },
+};
+const fieldsProp =
+	p.fields && typeof p.fields === "object" && !Array.isArray(p.fields) ? p.fields : undefined;
+const resolveField = (key: "name" | "email" | "phone" | "message") => {
+	const def = (CANON_FIELDS as any)[key];
+	const f = fieldsProp?.[key];
+	return {
+		enabled: toBool(f?.enabled, def.enabled),
+		required: toBool(f?.required, def.required),
+		label: typeof f?.label === "string" ? f.label : def.label,
+	};
+};
+const formFields = fieldsProp
+	? {
+			name: resolveField("name"),
+			email: resolveField("email"),
+			phone: resolveField("phone"),
+			message: resolveField("message"),
+		}
+	: undefined;
+
+// Канон buttonText (+ submitText-дубль): дефолт = литерал about:125 «Отправить».
+const buttonText =
+	(typeof p.buttonText === "string" && p.buttonText.trim() ? p.buttonText : undefined) ??
+	(typeof p.submitText === "string" && p.submitText.trim() ? p.submitText : undefined) ??
+	"Отправить";
+
+// Литералы полей about (§5): label Arsenal 16 #444444 → токен muted; input
+// h-14 rounded-[4px] (ЛИТЕРАЛ 4px, НЕ токен — theme.json --radius-input: 0px
+// расходится со служебным радиусом формы) border #000000 bg-white, текст →
+// токен text, focus-рамка → токен accent (#3A4530 у верстальщика).
+const labelCls = "font-vanilla-arsenal text-base font-normal leading-normal text-[rgb(var(--color-muted,68_68_68))]";
+const inputCls =
+	"box-border h-14 w-full min-h-[56px] rounded-[4px] border border-solid border-[#000000] bg-white px-4 font-vanilla-arsenal text-base font-normal leading-normal text-[rgb(var(--color-text,10_10_10))] outline-none focus-visible:border-[rgb(var(--color-accent,58_69_48))]";
+const inputPlaceholderCls = `${inputCls} placeholder:text-[#999999]`;
+const textareaCls =
+	"box-border min-h-[232px] w-full flex-1 resize-none rounded-[4px] border border-solid border-[#000000] bg-white p-4 font-vanilla-arsenal text-base font-normal leading-normal text-[rgb(var(--color-text,10_10_10))] outline-none placeholder:text-[#999999] focus-visible:border-[rgb(var(--color-accent,58_69_48))] lg:min-h-0";
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+
+const titleId = id && heading ? `${id}-title` : undefined;
+---
+
+<section
+	class="vanilla-pad w-full bg-[rgb(var(--color-bg,238_238_238))] py-16 lg:py-[120px]"
+	aria-labelledby={titleId}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10">
+		<div class="flex flex-col gap-4">
+			{
+				heading && (
+					<h2
+						id={titleId}
+						class={headingCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="100"
+						data-puck-subsection-field="heading"
+					>
+						{heading}
+					</h2>
+				)
+			}
+			{
+				description && (
+					<p class="font-vanilla-arsenal text-base font-normal leading-[1.45] text-[rgb(var(--color-muted,68_68_68))]">
+						{description}
+					</p>
+				)
+			}
+			{
+				(phone || email) && (
+					<dl class="flex flex-col gap-3 font-vanilla-arsenal text-base font-normal leading-normal">
+						{phone && (
+							<div class="flex flex-col gap-1 md:flex-row md:gap-16">
+								<dt class="text-[rgb(var(--color-muted,68_68_68))] md:w-[200px]">Номер телефона</dt>
+								<dd class="text-[rgb(var(--color-text,10_10_10))]">
+									<a href={phoneHref} class="transition-opacity hover:opacity-70">
+										{phone}
+									</a>
+								</dd>
+							</div>
+						)}
+						{email && (
+							<div class="flex flex-col gap-1 md:flex-row md:gap-16">
+								<dt class="text-[rgb(var(--color-muted,68_68_68))] md:w-[200px]">E-mail</dt>
+								<dd class="text-[rgb(var(--color-text,10_10_10))]">
+									<a href={emailHref} class="transition-opacity hover:opacity-70">
+										{email}
+									</a>
+								</dd>
+							</div>
+						)}
+					</dl>
+				)
+			}
+		</div>
+
+		<form
+			class="grid grid-cols-1 gap-6 lg:grid-cols-[430px_1fr] lg:items-stretch lg:gap-x-10 lg:gap-y-6"
+			data-contact-form
+			novalidate
+		>
+			{
+				formFields ? (
+					<div
+						class="flex flex-col gap-4 lg:max-w-[430px]"
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="101"
+						data-puck-subsection-field="fields"
+					>
+						{formFields.name.enabled && (
+							<label class="flex w-full flex-col gap-2">
+								<span class={labelCls}>
+									{formFields.name.label}
+									{formFields.name.required && <span class="ml-1">*</span>}
+								</span>
+								<input
+									type="text"
+									name="name"
+									autocomplete="name"
+									required={formFields.name.required}
+									class={inputCls}
+								/>
+							</label>
+						)}
+						{formFields.email.enabled && (
+							<label class="flex w-full flex-col gap-2">
+								<span class={labelCls}>
+									{formFields.email.label}
+									{formFields.email.required && <span class="ml-1">*</span>}
+								</span>
+								<input
+									type="email"
+									name="email"
+									autocomplete="email"
+									placeholder="example@email.com"
+									required={formFields.email.required}
+									class={inputPlaceholderCls}
+								/>
+							</label>
+						)}
+						{formFields.phone.enabled && (
+							<label class="flex w-full flex-col gap-2">
+								<span class={labelCls}>
+									{formFields.phone.label}
+									{formFields.phone.required && <span class="ml-1">*</span>}
+								</span>
+								<input
+									type="tel"
+									name="phone"
+									autocomplete="tel"
+									placeholder="+7 (___) ___-__-__"
+									required={formFields.phone.required}
+									class={inputPlaceholderCls}
+								/>
+							</label>
+						)}
+					</div>
+				) : (
+					<div
+						class="flex flex-col gap-4 lg:max-w-[430px]"
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="101"
+						data-puck-subsection-field="fields"
+					>
+						<label class="flex w-full flex-col gap-2">
+							<span class={labelCls}>Имя</span>
+							<input type="text" name="name" autocomplete="name" class={inputCls} />
+						</label>
+						<label class="flex w-full flex-col gap-2">
+							<span class={labelCls}>E-mail</span>
+							<input
+								type="email"
+								name="email"
+								autocomplete="email"
+								placeholder="example@email.com"
+								class={inputPlaceholderCls}
+							/>
+						</label>
+						<label class="flex w-full flex-col gap-2">
+							<span class={labelCls}>Номер телефона</span>
+							<input
+								type="tel"
+								name="phone"
+								autocomplete="tel"
+								placeholder="+7 (___) ___-__-__"
+								class={inputPlaceholderCls}
+							/>
+						</label>
+					</div>
+				)
+			}
+
+			{
+				formFields ? (
+					formFields.message.enabled && (
+						<label
+							class="flex min-h-0 flex-col gap-2 lg:h-full"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="101"
+							data-puck-subsection-field="fields"
+						>
+							<span class={labelCls}>
+								{formFields.message.label}
+								{formFields.message.required && <span class="ml-1">*</span>}
+							</span>
+							<textarea
+								name="question"
+								required={formFields.message.required}
+								class={textareaCls}
+							/>
+						</label>
+					)
+				) : (
+					<label
+						class="flex min-h-0 flex-col gap-2 lg:h-full"
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="101"
+						data-puck-subsection-field="fields"
+					>
+						<span class={labelCls}>Ваш вопрос</span>
+						<textarea name="question" class={textareaCls} />
+					</label>
+				)
+			}
+
+			<div
+				class="lg:col-start-2 lg:flex lg:justify-end"
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="102"
+				data-puck-subsection-field="buttonText"
+			>
+				<button
+					type="submit"
+					class="inline-flex h-12 min-h-12 items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-80"
+				>
+					{buttonText}
+				</button>
+			</div>
+
+			<p
+				data-contact-status
+				role="status"
+				class="hidden font-vanilla-arsenal text-base font-normal leading-normal text-[rgb(var(--color-accent,58_69_48))] lg:col-span-2"
+			></p>
+		</form>
+	</div>
+</section>
+
+<script>
+	// Сабмит-статус «Спасибо!…» (как pages/about.astro:170-181), но делегированно
+	// на document: идемпотентно (модуль исполняется один раз — window-гард
+	// компилятора секций / дедупликация hoisted скриптов astro build), переживает
+	// hot-replace превью и обслуживает любое число копий секции на странице.
+	document.addEventListener("submit", (event) => {
+		const form = (event.target as HTMLElement | null)?.closest?.<HTMLFormElement>(
+			"form[data-contact-form]",
+		);
+		if (!form) return;
+		event.preventDefault();
+		const status = form.querySelector<HTMLElement>("[data-contact-status]");
+		if (status) {
+			status.textContent = "Спасибо! Мы свяжемся с вами в ближайшее время.";
+			status.classList.remove("hidden");
+		}
+		form.reset();
+	});
+</script>

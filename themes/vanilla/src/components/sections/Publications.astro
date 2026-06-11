@@ -1,0 +1,162 @@
+---
+// Фаза B (vanilla, группа misc): новая канон-секция Publications в манере vanilla
+// (см. themes/vanilla/MANNER.md §2/§4/§9/§11; эталон — themes/bloom Publications,
+// rose-эталона нет). Схема полей = packages/theme-base/blocks/Publications/
+// Publications.puckConfig.ts. Demo-рендер — карточки-болванки в тоне уюта;
+// платформенный резолв публикаций идёт по data-атрибуту publicationType на
+// гриде, demo-карточки — его фоллбек. Обложки — ассеты верстальщика
+// vanilla-product-{1..6} (на диске только .webp — после images:optimize PNG
+// удалены, см. src/data/imageAssets.ts; прямой <img> вместо VanillaPicture,
+// чтобы пути работали и в превью Container API).
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон heading (string | { text, alignment, size }); canon-default «Публикации».
+// Роль = заголовок секции §1 (Col:20, Bitter italic 20), токен heading 38_49_28.
+const heading = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Публикации");
+// Лестница §9 (база-литерал 20 = canon-default medium): small 17, large 24.
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingSizeCls =
+	headingSize === "small" ? "text-[17px]" : headingSize === "large" ? "text-[24px]" : "text-[20px]";
+const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
+const headingAlignCls =
+	headingAlignment === "center"
+		? " text-center"
+		: headingAlignment === "right"
+			? " text-right"
+			: "";
+const headingCls = `font-vanilla-bitter ${headingSizeCls} font-normal italic leading-none tracking-normal text-[rgb(var(--color-heading,38_49_28))]${headingAlignCls}`;
+
+// Канон columnsCount (slider 1-6) приоритетнее hidden columns (1-4); дефолт 3 =
+// лестница товарного грида верстальщика (Pop:30, 1 → sm:2 → md:3); иное
+// значение — CSS-var на md-брейкпоинте.
+const columnsRaw =
+	typeof p.columnsCount === "number" ? p.columnsCount : typeof p.columns === "number" ? p.columns : 3;
+const columns = Math.max(1, Math.min(6, Math.round(columnsRaw) || 3));
+const gridCls =
+	columns === 3
+		? "grid w-full grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:grid-cols-3 md:gap-x-4 md:gap-y-12"
+		: "grid w-full grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:grid-cols-[repeat(var(--pub-cols),minmax(0,1fr))] md:gap-x-4 md:gap-y-12";
+const gridStyle = columns === 3 ? undefined : `--pub-cols:${columns};`;
+
+// Канон cardsCount (slider 1-12) приоритетнее hidden cards (1-4); дефолт 3 карточки.
+const cardsRaw =
+	typeof p.cardsCount === "number" ? p.cardsCount : typeof p.cards === "number" ? p.cards : 3;
+const cards = Math.max(1, Math.min(12, Math.round(cardsRaw) || 3));
+
+// Канон showDateTime (toggle) / legacy dateTime.enabled (hidden) — дата
+// рендерится только при true/'true'.
+const showDate = String(p.showDateTime ?? p.dateTime?.enabled ?? "false") === "true";
+
+// Канон publicationType (pagePicker) — носитель data-атрибут на гриде для
+// платформенного резолва публикаций.
+const publicationType =
+	typeof p.publicationType === "string" && p.publicationType ? p.publicationType : undefined;
+
+// Болванки в тоне §11 (уют/дом/текстиль); обложки по ротации (цикл при
+// cardsCount > 6).
+const DEMO_CARDS = [
+	{
+		date: "12 мая 2026",
+		title: "Как выбрать плед: гид по материалам",
+		excerpt: "Велюр, хлопок или лён — разбираемся, какой плед подарит вашему вечеру больше тепла.",
+	},
+	{
+		date: "28 апреля 2026",
+		title: "Уход за льном: пять простых правил",
+		excerpt: "Бережная стирка и правильная сушка — и любимое бельё служит долгие годы.",
+	},
+	{
+		date: "10 апреля 2026",
+		title: "Спальня в природных оттенках",
+		excerpt: "Собираем спокойный интерьер из песочных, оливковых и молочных тонов.",
+	},
+	{
+		date: "22 марта 2026",
+		title: "Текстиль, который создаёт уют",
+		excerpt: "Подушки, шторы и покрывала: три детали, меняющие настроение комнаты.",
+	},
+	{
+		date: "5 марта 2026",
+		title: "Дом, в который хочется возвращаться",
+		excerpt: "Маленькие ритуалы уюта — от утреннего пледа до вечерней свечи.",
+	},
+	{
+		date: "14 февраля 2026",
+		title: "История одной вазы",
+		excerpt: "Как предмет декора становится семейной традицией и украшением стола.",
+	},
+];
+const items = Array.from({ length: cards }, (_, i) => ({
+	...DEMO_CARDS[i % DEMO_CARDS.length],
+	image: `/images/vanilla-product-${(i % 6) + 1}.webp`,
+}));
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+
+const titleId = id && heading ? `${id}-title` : undefined;
+---
+
+<section
+	class="vanilla-pad w-full bg-[rgb(var(--color-bg,238_238_238))] py-20 md:py-28"
+	aria-labelledby={titleId}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div class="vanilla-container flex max-w-[1180px] flex-col gap-8">
+		{
+			heading && (
+				<div class="flex max-w-[760px] flex-col gap-2" data-animate>
+					<h2
+						id={titleId}
+						class={headingCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="100"
+						data-puck-subsection-field="heading"
+					>
+						{heading}
+					</h2>
+				</div>
+			)
+		}
+
+		<div
+			class={gridCls}
+			style={gridStyle}
+			data-publication-type={publicationType}
+			data-animate
+			data-animate-delay="0.1s"
+		>
+			{
+				items.map((item, i) => (
+					<article class="group flex flex-col gap-3" data-publication-index={i}>
+						<div class="relative aspect-square w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]">
+							<img
+								src={item.image}
+								alt={item.title}
+								loading="lazy"
+								class="absolute inset-0 size-full object-cover transition-transform duration-300 group-hover:scale-105"
+							/>
+						</div>
+						<div class="flex flex-col gap-1">
+							{showDate && (
+								<span class="font-vanilla-arsenal text-[14px] font-normal leading-[1.45] text-[rgb(var(--color-muted,68_68_68))]">
+									{item.date}
+								</span>
+							)}
+							<span class="font-vanilla-arsenal text-base font-normal uppercase leading-none text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70">
+								{item.title}
+							</span>
+							<span class="font-vanilla-arsenal text-[14px] font-normal leading-[1.45] text-[rgb(var(--color-muted,68_68_68))]">
+								{item.excerpt}
+							</span>
+						</div>
+					</article>
+				))
+			}
+		</div>
+	</div>
+</section>

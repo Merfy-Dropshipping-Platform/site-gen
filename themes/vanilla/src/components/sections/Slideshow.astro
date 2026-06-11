@@ -1,0 +1,406 @@
+---
+// Фаза B: новая канон-секция Slideshow в манере vanilla (см. themes/vanilla/
+// MANNER.md; процесс-эталон — bloom Slideshow). Схема полей = packages/
+// theme-base/blocks/Slideshow/Slideshow.puckConfig.ts. Композиция = полотно
+// Hero верстальщика: тёмное полотно bg rgb(var(--color-bg,20_37_15)),
+// viewport min-h 520/620/790 со слоями фонов (transition-opacity 500ms) +
+// оверлей bg-black/25, копи-блок max-w-[min(100%,52rem)] gap-5 (вертикаль —
+// items-center), контролы-бар h-16 «← цифры →» на rgb(var(--color-accent,
+// 38_49_28)). Механика смены слайдов = bindVanillaHeroCarousel верстальщика
+// (ОДИН копи-блок на все слайды, тексты подменяет скрипт по data-slides-json)
+// — поэтому per-slide поля раскладки (heading.size/text.size/position/
+// alignment/container) берутся с ПЕРВОГО слайда: DOM-блок копий единственный.
+// Скрипту — ТОЛЬКО data-атрибуты; autoplay-таймера у верстальщика нет —
+// добавлен в канон-скрипте ниже по data-autoplay/data-interval.
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон slides[] 1-5 (item: imageUrl|image, heading(string|{text,size}),
+// subtitle, text{content,size}, ctaText/ctaUrl | button{text,link}, position,
+// alignment, colorScheme). Отсутствие = canon-defaults: 3 слайда-болванки в
+// тоне уюта (MANNER §11 — мягко, «вы», CTA капсом-императивом).
+const CANON_SLIDES = [
+	{
+		id: "slide-1",
+		imageUrl: "",
+		heading: "Уют начинается с мелочей",
+		subtitle: "Текстиль и декор, которые делают дом по-настоящему вашим",
+		ctaText: "К покупкам",
+		ctaUrl: "/catalog",
+	},
+	{
+		id: "slide-2",
+		imageUrl: "",
+		heading: "Новая коллекция для тёплых вечеров",
+		subtitle: "Пледы, подушки и постельное бельё из натуральных тканей",
+		ctaText: "Смотреть коллекцию",
+		ctaUrl: "/catalog",
+	},
+	{
+		id: "slide-3",
+		imageUrl: "",
+		heading: "Дом, наполненный заботой",
+		subtitle: "Спокойные оттенки и мягкие фактуры для вашего отдыха",
+		ctaText: "Выбрать уют",
+		ctaUrl: "/catalog",
+	},
+];
+const rawSlides = Array.isArray(p.slides) && p.slides.length ? p.slides : CANON_SLIDES;
+
+// Канон-плейсхолдер = реальный ассет верстальщика по позиции (принцип rose
+// T15): слайд без фото получает фон героя vanilla-hero-slide-{1,2,3}
+// (на диске темы .webp — PNG конвертированы, см. imageAssets.ts; под
+// Container API plain <img> на .webp — паттерн оживлённых секций vanilla).
+const SLIDE_FALLBACKS = [
+	"/images/vanilla-hero-slide-1.webp",
+	"/images/vanilla-hero-slide-2.webp",
+	"/images/vanilla-hero-slide-3.webp",
+];
+const slides = rawSlides.slice(0, 5).map((s: any, i: number) => ({
+	image:
+		(typeof s.imageUrl === "string" && s.imageUrl.trim()) ||
+		(typeof s.image === "string" && s.image.trim()) ||
+		SLIDE_FALLBACKS[i % SLIDE_FALLBACKS.length],
+	title: (typeof s.heading === "string" ? s.heading : s.heading?.text) ?? "",
+	subtitle:
+		(typeof s.subtitle === "string" && s.subtitle.trim() ? s.subtitle : undefined) ??
+		(typeof s.text?.content === "string" && s.text.content.trim() ? s.text.content : undefined) ??
+		"",
+	ctaText:
+		(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined) ??
+		(typeof s.button?.text === "string" && s.button.text.trim() ? s.button.text : undefined) ??
+		"",
+	ctaHref:
+		(typeof s.ctaUrl === "string" && s.ctaUrl ? s.ctaUrl : undefined) ??
+		s.button?.link?.href ??
+		(typeof s.button?.link === "string" && s.button.link ? s.button.link : undefined) ??
+		"/catalog",
+	// Per-slide colorScheme — класс на слое фона (паритет bloom Slideshow).
+	schemeCls:
+		typeof s.colorScheme === "string" && s.colorScheme
+			? ` color-scheme-${String(s.colorScheme).replace("scheme-", "")}`
+			: "",
+}));
+
+// Копии слайдов для скрипта верстальщика (root.dataset.slidesJson —
+// контракт VanillaHeroSlideCopy: title/subtitle/ctaText/ctaHref).
+const slidesJson = JSON.stringify(
+	slides.map(({ title, subtitle, ctaText, ctaHref }) => ({ title, subtitle, ctaText, ctaHref })),
+);
+
+// Первый слайд — носитель раскладки единственного копи-блока (см. шапку).
+const s0 = (rawSlides[0] ?? {}) as Record<string, any>;
+
+// Заголовок слайда — лестница hero h1 манеры (§9): large (canon-носитель,
+// как blockDefaults Hero.size) И отсутствие = литерал верстальщика text-2xl
+// (24px, lh 1.2 + pb 0.125em в <style> ниже); medium 20, small 17. Цвет —
+// токен с фоллбеком белого полотна (§7).
+const headingSize = typeof s0.heading === "object" ? s0.heading?.size : undefined;
+const headingCls =
+	headingSize === "small"
+		? "font-vanilla-bitter text-[17px] font-normal italic tracking-normal text-[rgb(var(--color-heading,255_255_255))]"
+		: headingSize === "medium"
+			? "font-vanilla-bitter text-[20px] font-normal italic tracking-normal text-[rgb(var(--color-heading,255_255_255))]"
+			: "font-vanilla-bitter text-2xl font-normal italic tracking-normal text-[rgb(var(--color-heading,255_255_255))]";
+// Текст слайда — лестница hero-подзаголовка (§9): large/отсутствие =
+// литерал text-base (16px, lh 1.35); medium 14, small 11.
+const textSize = s0.text?.size;
+const textCls =
+	textSize === "small"
+		? "font-vanilla-arsenal text-[11px] font-normal italic tracking-normal text-[rgb(var(--color-text,240_240_240))]"
+		: textSize === "medium"
+			? "font-vanilla-arsenal text-[14px] font-normal italic tracking-normal text-[rgb(var(--color-text,240_240_240))]"
+			: "font-vanilla-arsenal text-base font-normal italic tracking-normal text-[rgb(var(--color-text,240_240_240))]";
+
+// Канон buttonStyle: solid (canon-default) = CTA героя дословно (h-12 px-4
+// Arsenal 16 uppercase, заливка кнопки-1 §3); outlined = контур care-бэнда
+// (border 1.3px, --color-primary с белым фоллбеком — паттерн Gallery).
+const ctaCls =
+	p.buttonStyle === "outlined"
+		? "inline-flex h-12 min-h-12 max-w-full items-center justify-center border-[1.3px] border-[rgb(var(--color-primary,255_255_255))] bg-transparent px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-primary,255_255_255))] transition-opacity hover:opacity-80"
+		: "inline-flex h-12 min-h-12 max-w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
+
+// position слайда №1 (приоритет) | top-level contentAlign: 'left'
+// (canon-default из blockDefaults vanilla) и отсутствие = блок слева
+// (литерал героя — .vanilla-container без flex); center/right двигают блок.
+const posRaw = s0.position ?? (p.contentAlign === "center" ? "center" : undefined);
+const containerCls =
+	posRaw === "center"
+		? "vanilla-container pointer-events-none flex justify-center"
+		: posRaw === "right"
+			? "vanilla-container pointer-events-none flex justify-end"
+			: "vanilla-container pointer-events-none";
+// alignment слайда №1 | top-level (blockDefaults alignment=left): 'left' и
+// отсутствие = литерал героя (items-start … text-left байт-в-байт).
+const alignRaw = s0.alignment ?? p.alignment;
+const copyAlign =
+	alignRaw === "center"
+		? "items-center gap-5 text-center"
+		: alignRaw === "right"
+			? "items-end gap-5 text-right"
+			: "items-start gap-5 text-left";
+// container='true' слайда №1 — плоская плашка полотна-2 манеры (радиус 0).
+const boxed = String(s0.container ?? "false") === "true";
+const copyBlockCls = `pointer-events-auto flex w-full max-w-[min(100%,52rem)] flex-col ${copyAlign} md:ml-4 md:overflow-visible lg:ml-0${boxed ? " bg-[rgb(var(--color-bg,58_69_48))]/90 p-6" : ""}`;
+
+// Канон size (s/m/l): medium и отсутствие = viewport героя дословно
+// (min-h 520/620/790); small/large — шаг высоты от полотна в px-манере
+// (large xl=880 — высота героя Figma 1920×880).
+const viewportCls =
+	p.size === "small"
+		? "relative w-full min-h-[420px] md:min-h-[500px] xl:min-h-[620px]"
+		: p.size === "large"
+			? "relative w-full min-h-[620px] md:min-h-[740px] xl:min-h-[880px]"
+			: "relative w-full min-h-[520px] md:min-h-[620px] xl:min-h-[790px]";
+
+// Канон imagePosition: fullscreen (canon-default) = полотно во всю ширину —
+// литерал героя; blockDefaults vanilla несут скрытый imageFullBleed=true как
+// носитель именно этого вида (084: фон 100vw, контент в контейнере — наша
+// композиция и есть). contained (+legacy left/right) = окно карусели внутри
+// контейнера манеры; видимый контрол «Окно» приоритетнее скрытого
+// imageFullBleed из blockDefaults — иначе его не включить вовсе.
+const contained =
+	p.imagePosition === "contained" || p.imagePosition === "left" || p.imagePosition === "right";
+
+// Канон overlay 0-100: отсутствие = оверлей героя дословно (bg-black/25 →
+// 25); явное значение ведёт плотность затемнения (0 убирает слой).
+const overlayRaw = Number(p.overlay);
+const overlayN = Number.isFinite(overlayRaw)
+	? Math.max(0, Math.min(100, Math.round(overlayRaw)))
+	: 25;
+
+// Канон pagination: 'numbers' (canon-default из blockDefaults vanilla) и
+// отсутствие = цифры контролов героя дословно; dots/lines — носители
+// bg-current (скрипт верстальщика переключает text-white/text-white/45 —
+// цвет точки следует за ним); counter — «N / всего», виден только активный
+// (<style> ниже); none — бар только со стрелками.
+const pagination =
+	p.pagination === "dots" ||
+	p.pagination === "counter" ||
+	p.pagination === "lines" ||
+	p.pagination === "none"
+		? p.pagination
+		: "numbers";
+const bulletCls = (i: number) =>
+	pagination === "dots"
+		? `h-2 w-2 rounded-full bg-current transition-opacity hover:opacity-90 ${i === 0 ? "text-white" : "text-white/45"}`
+		: pagination === "lines"
+			? `h-0.5 w-6 bg-current transition-opacity hover:opacity-90 ${i === 0 ? "text-white" : "text-white/45"}`
+			: pagination === "counter"
+				? `min-w-[1ch] p-1 font-normal tracking-normal hover:opacity-90 ${i === 0 ? "text-white" : "text-white/45"}`
+				: `min-w-[1ch] p-1 font-normal uppercase tracking-normal hover:opacity-90 ${i === 0 ? "text-white" : "text-white/45"}`;
+
+// Канон interval (slider 1-20 c, схема до 60) / autoplay: canon-defaults
+// 5 / true. Скрипту — миллисекунды в data-interval.
+const intervalMs = String(
+	(typeof p.interval === "number" && p.interval >= 1 && p.interval <= 60 ? p.interval : 5) * 1000,
+);
+const autoplay = p.autoplay === false || p.autoplay === "false" ? "false" : "true";
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+---
+
+<section
+	class="relative w-full overflow-hidden bg-[rgb(var(--color-bg,20_37_15))]"
+	data-vanilla-slideshow
+	data-slides-json={slidesJson}
+	data-autoplay={autoplay}
+	data-interval={intervalMs}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div class={contained ? "vanilla-pad w-full" : "w-full"}>
+		<!-- data-vanilla-stack: сшивка viewport ↔ контролы -2px из global.css
+		     (как [data-vanilla-hero-carousel] у героя); isolate держит z-слои. -->
+		<div
+			class={`relative isolate${contained ? " vanilla-container overflow-hidden rounded-[var(--radius-media,0px)]" : ""}`}
+			data-vanilla-stack
+		>
+			<div
+				class={viewportCls}
+				role="region"
+				aria-roledescription="карусель"
+				aria-label="Слайд-шоу"
+			>
+				<div class="absolute inset-0 z-0 overflow-hidden">
+					{
+						slides.map((slide, i) => (
+							<div
+								data-hero-slide-img
+								class={`absolute inset-0 z-0 transition-opacity duration-500 ease-out ${i === 0 ? "opacity-100" : "pointer-events-none opacity-0"}${slide.schemeCls}`}
+								aria-hidden={i !== 0 ? "true" : "false"}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index={i}
+								data-puck-subsection-field="slides"
+							>
+								<img
+									src={slide.image}
+									alt=""
+									decoding={i === 0 ? "sync" : "async"}
+									loading={i === 0 ? "eager" : "lazy"}
+									fetchpriority={i === 0 ? "high" : undefined}
+									class="absolute inset-0 z-0 size-full object-cover object-center"
+									aria-hidden="true"
+								/>
+							</div>
+						))
+					}
+				</div>
+				{
+					overlayN > 0 && (
+						<div
+							class="pointer-events-none absolute inset-0 z-[1] bg-black"
+							style={`opacity:${overlayN / 100}`}
+							aria-hidden="true"
+						/>
+					)
+				}
+
+				<div class="vanilla-pad absolute inset-0 z-10 flex h-full w-full items-center pointer-events-none">
+					<div class={containerCls}>
+						<div class={copyBlockCls} aria-live="polite">
+							<h2
+								data-hero-title
+								class={`hero-animate-1 vanilla-slideshow-title ${headingCls}`}
+							>{slides[0].title}</h2>
+							<p
+								data-hero-subtitle
+								class={`hero-animate-2 vanilla-slideshow-subtitle ${textCls}`}
+							>{slides[0].subtitle}</p>
+							<a
+								data-hero-cta
+								class={`hero-animate-3 ${ctaCls}`}
+								href={slides[0].ctaHref}
+							>{slides[0].ctaText}</a>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			{
+				slides.length > 1 && (
+					<div
+						class="flex h-16 items-center justify-center gap-10 bg-[rgb(var(--color-accent,38_49_28))] font-vanilla-arsenal text-base leading-none md:gap-14"
+						role="toolbar"
+						aria-label="Переключение слайдов"
+						data-hero-controls
+					>
+						<button
+							type="button"
+							data-hero-prev
+							class="text-white hover:opacity-90"
+							aria-label="Предыдущий слайд"
+						>
+							←
+						</button>
+						{pagination !== "none" && (
+							<div class="flex items-center gap-10 md:gap-12" data-pagination={pagination}>
+								{slides.map((_, i) => (
+									<button
+										type="button"
+										data-hero-bullet
+										data-hero-index={String(i)}
+										class={bulletCls(i)}
+										aria-current={i === 0 ? "true" : undefined}
+										aria-label={`Слайд ${i + 1}`}
+									>
+										{pagination === "dots" || pagination === "lines"
+											? null
+											: pagination === "counter"
+												? `${i + 1} / ${slides.length}`
+												: i + 1}
+									</button>
+								))}
+							</div>
+						)}
+						<button
+							type="button"
+							data-hero-next
+							class="text-white hover:opacity-90"
+							aria-label="Следующий слайд"
+						>
+							→
+						</button>
+					</div>
+				)
+			}
+		</div>
+	</div>
+</section>
+
+<style>
+	/** Курсив + line-height ≈ 1 даёт наложение строк — паритет Hero верстальщика. */
+	.vanilla-slideshow-title {
+		line-height: 1.2;
+		font-synthesis: none;
+		padding-bottom: 0.125em;
+	}
+
+	.vanilla-slideshow-subtitle {
+		line-height: 1.35;
+		font-synthesis: none;
+		text-transform: none;
+	}
+
+	/* Пустые тексты слайда (скрипт подменяет textContent, может прийти "")
+	   не занимают место в gap-5 колонке копи-блока. */
+	.vanilla-slideshow-title:empty,
+	.vanilla-slideshow-subtitle:empty,
+	a[data-hero-cta]:empty {
+		display: none;
+	}
+
+	/* Нумерация «Счётчик»: виден только номер активного слайда
+	   (aria-current переключает скрипт верстальщика). */
+	[data-pagination="counter"] [data-hero-bullet]:not([aria-current="true"]) {
+		display: none;
+	}
+</style>
+
+<script>
+	import { bindVanillaHeroCarousel } from "../../scripts/vanillaHeroCarousel";
+
+	// Карусель = bindVanillaHeroCarousel верстальщика (стрелки/цифры/swipe +
+	// fade копий vanilla-hero-copy-fade; идемпотентность внутри —
+	// data-vanillaHeroBound). Autoplay-таймера у верстальщика нет — добавляем
+	// по data-autoplay/data-interval: тик «нажимает» data-hero-next (вся
+	// логика смены остаётся в одном месте), ручное переключение сбрасывает
+	// отсчёт, reduce-motion отключает автолистание (манера §6). Своя
+	// идемпотентность — data-vanilla-autoplay-bound.
+	const bindAutoplay = (root: HTMLElement) => {
+		if (root.dataset.vanillaAutoplayBound === "true") return;
+		root.dataset.vanillaAutoplayBound = "true";
+		if (root.dataset.autoplay !== "true") return;
+		const next = root.querySelector<HTMLElement>("[data-hero-next]");
+		if (!next) return;
+		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+		const interval = Number.parseInt(root.dataset.interval || "5000", 10) || 5000;
+		let timer: ReturnType<typeof setInterval> | undefined;
+		const restart = () => {
+			if (timer) clearInterval(timer);
+			timer = setInterval(() => next.click(), interval);
+		};
+		root.addEventListener("click", (e) => {
+			const t = e.target as HTMLElement | null;
+			if (t && t.closest("[data-hero-prev],[data-hero-next],[data-hero-bullet]")) restart();
+		});
+		root.addEventListener("touchend", () => restart(), { passive: true });
+		restart();
+	};
+
+	const boot = () =>
+		document.querySelectorAll<HTMLElement>("[data-vanilla-slideshow]").forEach((el) => {
+			bindVanillaHeroCarousel(el);
+			bindAutoplay(el);
+		});
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", boot, { once: true });
+	} else {
+		boot();
+	}
+	// Реинициализация после hot-replace превью (агент шлёт astro:page-load).
+	document.addEventListener("astro:page-load", boot);
+</script>

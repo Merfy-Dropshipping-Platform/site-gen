@@ -1,0 +1,145 @@
+---
+import FluxPicture from "../img/FluxPicture.astro";
+
+// Фаза B (flux, группа misc): новая канон-секция Publications в манере flux
+// (см. themes/flux/MANNER.md §4/§9/§11; rose-эталона НЕТ — эталон процесса
+// bloom Publications). Схема полей = packages/theme-base/blocks/Publications/
+// Publications.puckConfig.ts. Demo-рендер — карточки-болванки в тоне
+// электроники; платформенный резолв публикаций идёт по data-атрибуту
+// publicationType на гриде, demo-карточки — его фоллбек. Карточки «голые»
+// (без подложек, §4): медиа rounded-8 на surface c hover-zoom, подписи
+// Manrope/Roboto Flex. Скролл-анимаций в манере flux нет (§6) — без data-animate.
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон heading (string | { text, alignment, size }); canon-default «Публикации».
+// Роль = внутренний h2 (contacts.astro:40; cart.astro:76), токен heading
+// с фоллбеком чёрного верстальщика.
+const heading = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Публикации");
+// Лестница §9 внутреннего h2 (дефолт роли — large): отсутствие пропа и large =
+// литерал 24/md:28; medium 20/24, small 17/20.
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingSizeCls =
+	headingSize === "small"
+		? "text-[17px] md:text-[20px]"
+		: headingSize === "medium"
+			? "text-[20px] md:text-[24px]"
+			: "text-[24px] md:text-[28px]";
+const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
+const headingAlignCls =
+	headingAlignment === "center"
+		? " text-center"
+		: headingAlignment === "right"
+			? " text-right"
+			: "";
+const headingCls = `font-comfortaa ${headingSizeCls} font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
+
+// Канон columnsCount (slider 1-6) приоритетнее hidden columns (1-4); дефолт 3 =
+// лестница грида коллекций верстальщика (Collections.astro:19: 1 → sm:2 → lg:3,
+// gap-6); иное значение — CSS-var на lg-брейкпоинте.
+const columnsRaw =
+	typeof p.columnsCount === "number" ? p.columnsCount : typeof p.columns === "number" ? p.columns : 3;
+const columns = Math.max(1, Math.min(6, Math.round(columnsRaw) || 3));
+const gridCls =
+	columns === 3
+		? "grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
+		: "grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-[repeat(var(--pub-cols),minmax(0,1fr))]";
+const gridStyle = columns === 3 ? undefined : `--pub-cols:${columns};`;
+
+// Канон cardsCount (slider 1-12) приоритетнее hidden cards (1-4); дефолт 3 карточки.
+const cardsRaw =
+	typeof p.cardsCount === "number" ? p.cardsCount : typeof p.cards === "number" ? p.cards : 3;
+const cards = Math.max(1, Math.min(12, Math.round(cardsRaw) || 3));
+
+// Канон showDateTime (toggle) / legacy dateTime.enabled (hidden) — дата
+// рендерится только при true/'true'.
+const showDate = String(p.showDateTime ?? p.dateTime?.enabled ?? "false") === "true";
+
+// Канон publicationType (pagePicker) — data-атрибут на гриде для платформенного
+// резолва публикаций (demo-карточки ниже — его фоллбек).
+const publicationType =
+	typeof p.publicationType === "string" && p.publicationType ? p.publicationType : undefined;
+
+// Болванки в тоне §11 (обзоры гаджетов, новости бренда); обложки — родные
+// ассеты /images/4x/* (PLACEHOLDER_IMAGE гидрации в public отсутствует, §10),
+// цикл по позиции при cardsCount > 6.
+const DEMO_CARDS = [
+	{ date: "12 мая 2026", title: "Обзор M Phone 17: неделя с флагманом" },
+	{ date: "28 апреля 2026", title: "Как выбрать наушники с шумоподавлением" },
+	{ date: "10 апреля 2026", title: "M Laptop Air: рабочая станция в рюкзаке" },
+	{ date: "22 марта 2026", title: "Аксессуары, которые экономят время" },
+	{ date: "5 марта 2026", title: "Технологии без паузы: новинки сезона" },
+	{ date: "14 февраля 2026", title: "Гид по быстрой зарядке: ватты без мифов" },
+];
+const DEMO_IMAGES = [
+	"/images/4x/Товар_1.png",
+	"/images/4x/Товар_2.png",
+	"/images/4x/Товар_3.png",
+	"/images/4x/Товар_4.png",
+	"/images/4x/Товар_5.png",
+	"/images/4x/Коллекция_1.png",
+];
+const items = Array.from({ length: cards }, (_, i) => ({
+	...DEMO_CARDS[i % DEMO_CARDS.length],
+	image: DEMO_IMAGES[i % DEMO_IMAGES.length],
+}));
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+
+const titleId = id && heading ? `${id}-title` : undefined;
+---
+
+<section
+	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-16 pt-16 md:px-20 md:pb-24 md:pt-24 2xl:px-80"
+	aria-labelledby={titleId}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-12">
+		{
+			heading && (
+				<h2
+					id={titleId}
+					class={headingCls}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="heading"
+				>
+					{heading}
+				</h2>
+			)
+		}
+
+		<div class={gridCls} style={gridStyle} data-publication-type={publicationType}>
+			{
+				items.map((item, i) => (
+					<article class="group flex flex-col gap-3 md:gap-4" data-publication-index={i}>
+						<div class="aspect-[4/3] w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]">
+							<FluxPicture
+								src={item.image}
+								alt={item.title}
+								width="800"
+								height="600"
+								loading="lazy"
+								class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+							/>
+						</div>
+						<div class="flex flex-col gap-1">
+							{showDate && (
+								<span class="font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-[14px]">
+									{item.date}
+								</span>
+							)}
+							<span class="font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">
+								{item.title}
+							</span>
+						</div>
+					</article>
+				))
+			}
+		</div>
+	</div>
+</section>

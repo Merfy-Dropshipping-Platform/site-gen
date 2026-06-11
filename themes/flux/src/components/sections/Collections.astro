@@ -3,21 +3,165 @@ import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/
 import FluxCollectionCard from "../products/FluxCollectionCard.astro";
 import { collections } from "../../data/collections";
 
-const sectionTitle = "Категории";
+// ОЖИВЛЕНИЕ (Фаза B, контракт bloom Collections): конструкторная схема
+// theme-base Collections.puckConfig поверх разметки верстальщика. Тело +
+// demo-данные verbatim (страницы зовут <Collections /> без пропсов — дефолты
+// дают прежний рендер). Канон-дефолты конструктора (headingSize/subtitleSize
+// small = литерал DS, columns 3, imageView 'square' → литерал 430/500) →
+// пиксель верстальщика; дефолтная ветка каждого тернарника = прежняя строка
+// классов байт-в-байт (цвета → токены с пиксель-фоллбеком родных литералов,
+// MANNER.md §7). Скролл-анимаций нет — манера flux статична (MANNER.md §6).
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+const sectionTitle =
+	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title ?? "Категории";
+// Подзаголовок у верстальщика ЕСТЬ — отсутствие пропа = литерал; пустая строка
+// (мерчант стёр текст) скрывает <p> внутри DS-шапки (паттерн bloom Popular).
 const sectionSubtitle =
+	(typeof p.subtitle === "string" ? p.subtitle : undefined) ??
 	"Смартфоны, наушники, ноутбуки и аксессуары — всё для работы, творчества и развлечений.";
+
+// Шапка — DS-компонент NtSectionHeading: класс внутрь не пробрасывается,
+// размеры — через перекрытия на обёртке (лестница §9 от lg-базы 32 / xl-базы
+// 24). Дефолт и 'small' = литерал DS (20/24/32 + 14/18/24) без перекрытий.
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingSizeCls =
+	headingSize === "medium"
+		? " [&_h2]:!text-[38px]"
+		: headingSize === "large"
+			? " [&_h2]:!text-[46px]"
+			: "";
+const subtitleSizeCls =
+	p.subtitleSize === "medium"
+		? " [&_p]:!text-[29px]"
+		: p.subtitleSize === "large"
+			? " [&_p]:!text-[35px]"
+			: "";
+// Схемы flux включают ТЁМНЫЕ (scheme-1 bg 0 0 0) — хардкоды DS-шапки
+// (#000000/#999999) всегда перекрываются токенами; фоллбеки = литералы DS →
+// без схемы пиксель не меняется (MANNER.md §7).
+const headColorCls =
+	" [&_h2]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-muted,153_153_153))]";
+// Канон titleAlignment: центр = литерал DS (шапка flux центрована); left/right
+// двигают заголовок и подзаголовок перекрытиями на обёртке.
+const titleAlignCls =
+	p.titleAlignment === "left"
+		? " [&>div]:!items-start [&_h2]:!text-left [&_p]:!text-left"
+		: p.titleAlignment === "right"
+			? " [&>div]:!items-end [&_h2]:!text-right [&_p]:!text-right"
+			: "";
+const headWrapCls = [headingSizeCls, subtitleSizeCls, headColorCls, titleAlignCls].join("").trim();
+
+// Канон columns 1-6: 3 (canon-default puckConfig) и отсутствие → дефолт-ветка
+// (литерал lg:grid-cols-3 gap-6); иное → inline-var на гриде с lg (мобильная
+// лестница верстальщика 1 → sm:2 сохраняется).
+const colsRaw =
+	typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : undefined;
+const cols = colsRaw && colsRaw !== 3 ? colsRaw : undefined;
+const gridBase = "grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3";
+const gridCls = cols
+	? "grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-[repeat(var(--cols),minmax(0,1fr))]"
+	: gridBase;
+const gridStyle = cols ? `--cols:${cols}` : undefined;
+
+// Канон gridAspect/imageView: дефолт (и canon-default 'square' конструктора) =
+// литерал плитки aspect-[430/500] (FluxCollectionCard); gridAspect '1:1' →
+// квадрат, imageView 'wide' → 16/9.
+const tileAspect =
+	p.gridAspect === "1:1" ? "aspect-square" : p.imageView === "wide" ? "aspect-[16/9]" : "aspect-[430/500]";
+// Канон cardCaptionStyle: 'default' и отсутствие = обычный регистр подписи
+// верстальщика; 'uppercase' — капсом.
+const captionCase = p.cardCaptionStyle === "uppercase" ? " uppercase" : "";
+
+// Канон collections[] (≤10): плитки коллекций из пропса при непустом массиве.
+// Иначе — три FluxCollectionCard верстальщика дословно. SSR рендерит
+// сохранённые поля item, резолв collectionId → имя/обложка делает гидрация
+// ниже (data-collection-ref): live — /data/collections.json, превью —
+// storefront-data; паритет theme-base (имя коллекции перебивает ручной
+// heading, обложка — только при пустой своей).
+const cardLinkBase =
+	typeof p.cardLinkBase === "string" && p.cardLinkBase.trim() ? p.cardLinkBase : "/catalog?collection=";
+const propCollections = (Array.isArray(p.collections) ? p.collections : [])
+	.filter((c: any) => c && typeof c === "object")
+	.slice(0, 10)
+	.map((c: any, i: number) => {
+		const collectionId =
+			typeof c.collectionId === "string" && c.collectionId.trim() ? c.collectionId.trim() : null;
+		return {
+			collectionId,
+			name:
+				(typeof c.heading === "string" && c.heading) ||
+				(typeof c.name === "string" && c.name) ||
+				"Коллекция",
+			// Канон-плейсхолдер = реальный ассет темы (принцип rose T15): карточка
+			// без выбранной картинки получает обложку верстальщика по позиции
+			// (/images/4x/Коллекция_{1..3}.png — папки /placeholders у flux нет).
+			image:
+				typeof c.image === "string" && c.image ? c.image : `/images/4x/Коллекция_${(i % 3) + 1}.png`,
+			hasOwnImage: !!(typeof c.image === "string" && c.image),
+			href: collectionId ? `${cardLinkBase}${collectionId}` : "#",
+		};
+	});
+const usePropCollections = propCollections.length > 0;
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
 ---
 
 <section
 	id="collections"
-	class="w-full bg-white px-4 pb-16 pt-16 md:px-20 md:pb-24 md:pt-24 2xl:px-80"
+	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-16 pt-16 md:px-20 md:pb-24 md:pt-24 2xl:px-80"
 	aria-labelledby="collections-title"
+	data-puck-component-id={id}
+	style={paddingStyle}
 >
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-12">
-		<NtSectionHeading titleId="collections-title" title={sectionTitle} subtitle={sectionSubtitle} />
+		<div
+			class={headWrapCls}
+			data-puck-subsection-parent={id}
+			data-puck-subsection-index="100"
+			data-puck-subsection-field="heading"
+		>
+			<NtSectionHeading titleId="collections-title" title={sectionTitle} subtitle={sectionSubtitle} />
+		</div>
 
-		<ul class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" role="list">
-			{collections.map((collection, index) => (
+		<ul class={gridCls} role="list" style={gridStyle}>
+			{usePropCollections ? propCollections.map((c, i) => (
+				<li>
+					<a
+						href={c.href}
+						class="group flex cursor-pointer flex-col gap-4 md:gap-5"
+						aria-label={c.name}
+						data-nt="flux-collection-card"
+						data-collection-ref={c.collectionId ?? undefined}
+						data-own-image={c.hasOwnImage ? "true" : undefined}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index={i}
+						data-puck-subsection-field="collections"
+					>
+						<div
+							class={`${tileAspect} w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] rounded-[var(--radius-media,8px)]`}
+							aria-hidden={c.image ? undefined : "true"}
+						>
+							{c.image && (
+								<img
+									src={c.image}
+									alt={c.name}
+									loading="lazy"
+									class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+								/>
+							)}
+						</div>
+						<h3
+							class={`flux-collection-name font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]${captionCase}`}
+						>
+							{c.name}
+						</h3>
+					</a>
+				</li>
+			)) : collections.map((collection, index) => (
 				<li>
 					<FluxCollectionCard collection={collection} priority={index < 3} />
 				</li>
@@ -25,3 +169,40 @@ const sectionSubtitle =
 		</ul>
 	</div>
 </section>
+
+<script>
+	import { loadRealCollections, findCollection } from "../../lib/storefront-hydrate";
+
+	// Резолв collectionId → имя/обложка на плитках (data-collection-ref).
+	// Паритет theme-base resolveManual: имя коллекции перебивает ручной heading;
+	// обложка коллекции подставляется, только если мерчант не загрузил свою
+	// (data-own-image). Без данных (demo-сборка) — no-op, SSG остаётся.
+	const hydrateCollectionTiles = async () => {
+		const tiles = Array.from(
+			document.querySelectorAll<HTMLElement>('[data-nt="flux-collection-card"][data-collection-ref]'),
+		);
+		if (tiles.length === 0) return;
+		const collections = await loadRealCollections();
+		if (!collections) return;
+		for (const tile of tiles) {
+			const col = findCollection(collections, tile.getAttribute("data-collection-ref"));
+			if (!col) continue;
+			if (col.name) {
+				const h3 = tile.querySelector(".flux-collection-name");
+				if (h3 && h3.textContent !== col.name) h3.textContent = col.name;
+				tile.setAttribute("aria-label", col.name);
+			}
+			const cover = col.image || (Array.isArray(col.images) ? col.images[0] : "");
+			if (cover && tile.getAttribute("data-own-image") !== "true") {
+				const img = tile.querySelector("img");
+				if (img && img.getAttribute("src") !== cover) {
+					img.setAttribute("src", cover);
+					if (col.name) img.setAttribute("alt", col.name);
+				}
+			}
+		}
+	};
+
+	hydrateCollectionTiles();
+	document.addEventListener("astro:page-load", hydrateCollectionTiles);
+</script>

@@ -1,0 +1,136 @@
+---
+// Фаза B (vanilla, группа misc): новая канон-секция CollapsibleSection в манере
+// vanilla (см. themes/vanilla/MANNER.md; эталоны — themes/bloom CollapsibleSection,
+// процесс-эталон rose T16). Схема полей = packages/theme-base/blocks/
+// CollapsibleSection/CollapsibleSection.puckConfig.ts. Секции нет у верстальщика —
+// нативный <details>/<summary> (Container-safe, без JS): заголовок = роль секции
+// §1 (Bitter italic 20, #26311C на светлом), вопрос Arsenal 16 uppercase, ответ
+// Arsenal 14/16 muted, разделители в стиле строк «Стоимость» каталога (fc:33,
+// цвет --vanilla-line #D9D9D2); chevron — svg дропдаунов каталога (Cat:117) с
+// group-open-поворотом tailwind-классами, без <style>-блока.
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон heading: string | { text, alignment, size }; canon-default «Часто
+// задаваемые вопросы». Роль = заголовок секции (Col:20), цвет — токен с
+// пиксель-фоллбеком #26311C (38 49 28).
+const heading =
+	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Часто задаваемые вопросы");
+// Лестница §9 (база-литерал 20 = canon-default medium): small 17, large 24.
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingSizeCls =
+	headingSize === "small" ? "text-[17px]" : headingSize === "large" ? "text-[24px]" : "text-[20px]";
+const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
+const headingAlignCls =
+	headingAlignment === "center"
+		? " text-center"
+		: headingAlignment === "right"
+			? " text-right"
+			: "";
+const headingCls = `font-vanilla-bitter ${headingSizeCls} font-normal italic leading-none tracking-normal text-[rgb(var(--color-heading,38_49_28))]${headingAlignCls}`;
+
+// Канон sections[] 1-10 {heading, content} (+ pupa items[] {title, content}).
+// Отсутствие = canon-defaults: 2 вопроса-болванки в тоне уюта §11 (доставка /
+// уход за текстилем). content — set:html (HTML канона).
+const CANON_SECTIONS = [
+	{
+		id: "section-1",
+		heading: "Какие сроки доставки?",
+		content:
+			"Доставка по России занимает от 2 до 7 рабочих дней. Как только заказ передадут в службу доставки, мы пришлём вам трек-номер для отслеживания.",
+	},
+	{
+		id: "section-2",
+		heading: "Как ухаживать за текстилем Vanila?",
+		content:
+			"Рекомендуем бережную стирку при 30 градусах и сушку в расправленном виде — так плед и постельное бельё надолго сохранят мягкость и цвет.",
+	},
+];
+const rawSections =
+	Array.isArray(p.sections) && p.sections.length
+		? p.sections
+		: Array.isArray(p.items) && p.items.length
+			? p.items
+			: CANON_SECTIONS;
+const sections = rawSections.slice(0, 10).map((s: any) => ({
+	heading:
+		(typeof s.heading === "string" && s.heading) || (typeof s.title === "string" && s.title) || "",
+	content: typeof s.content === "string" ? s.content : "",
+}));
+
+// Канон containerEnabled (toggle; legacy container.enabled) — подложка манеры §4
+// (медиа-подложка #ECEBE7, БЕЗ радиуса — у vanilla всё плоское) вокруг списка.
+// Canon-default отсутствует → false = голый список.
+const containerEnabled = String(p.containerEnabled ?? p.container?.enabled ?? "false") === "true";
+// Канон containerColorScheme (hidden) — класс схемы на контейнере.
+const containerSchemeCls =
+	typeof p.containerColorScheme === "string" && p.containerColorScheme
+		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
+		: "";
+const listWrapCls = containerEnabled
+	? `bg-[rgb(var(--color-surface,236_235_231))] p-6 md:p-10${containerSchemeCls}`
+	: containerSchemeCls.trim();
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+
+const titleId = id && heading ? `${id}-title` : undefined;
+---
+
+<section
+	class="vanilla-pad w-full bg-[rgb(var(--color-bg,238_238_238))] py-20 md:py-28"
+	aria-labelledby={titleId}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div class="vanilla-container flex max-w-[1180px] flex-col gap-8">
+		{
+			heading && (
+				<h2
+					id={titleId}
+					class={headingCls}
+					data-animate
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="heading"
+				>
+					{heading}
+				</h2>
+			)
+		}
+		<div class={listWrapCls} data-animate data-animate-delay="0.1s">
+			<ul class="flex w-full flex-col" role="list">
+				{
+					sections.map((s, i) => (
+						<li
+							class="border-b border-solid border-[rgb(var(--color-muted,217_217_210))]"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index={i}
+							data-puck-subsection-field="sections"
+						>
+							<details class="group">
+								<summary class="flex w-full cursor-pointer list-none items-center justify-between gap-4 py-5 font-vanilla-arsenal text-base font-normal uppercase leading-none text-[rgb(var(--color-text,10_10_10))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
+									<span>{s.heading}</span>
+									<svg
+										aria-hidden="true"
+										viewBox="0 0 10 6"
+										fill="none"
+										class="h-[6px] w-[10px] shrink-0 transition-transform duration-300 group-open:rotate-180"
+									>
+										<path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" />
+									</svg>
+								</summary>
+								<div
+									class="pb-5 font-vanilla-arsenal text-[14px] font-normal leading-[1.45] text-[rgb(var(--color-muted,68_68_68))] lg:text-base"
+									set:html={s.content}
+								/>
+							</details>
+						</li>
+					))
+				}
+			</ul>
+		</div>
+	</div>
+</section>

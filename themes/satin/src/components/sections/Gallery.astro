@@ -1,0 +1,305 @@
+---
+// НОВАЯ канон-секция Gallery (Фаза B, рецепт bloom Gallery): у верстальщика
+// satin секции «Галерея» НЕТ; components/gallery/* — legacy клона rose со
+// скруглениями rounded-[8px]/gray-100, его НЕ переиспользуем (MANNER.md, шапка).
+// Композиция bloom-эталона — крупная плитка слева (aspect-square) + 2 боковые
+// справа — на флэт-карточках манеры satin §4: медиа 430/564 на surface БЕЗ
+// скруглений (rounded-[var(--radius-media,0px)]), hover scale-[1.03] duration-500,
+// подписи Arsenal 16 400 uppercase (манера PC:48-62 / CC:31-35). Схема полей —
+// packages/theme-base/blocks/Gallery/Gallery.puckConfig.ts; цвета — токены с
+// пиксель-фоллбеком родных литералов §7.
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон heading {text,size}: дефолт «Галерея» (пустой текст конструктора →
+// тоже «Галерея» — «добавил секцию → сразу красиво»).
+const rawTitle = (typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title;
+const sectionTitle = typeof rawTitle === "string" && rawTitle.trim() ? rawTitle : "Галерея";
+// Текст секции — рендер ТОЛЬКО при непустом (body-роль Arsenal 16 light muted §1).
+const rawText =
+	(typeof p.text === "string" ? p.text : p.text?.content) ??
+	(typeof p.subtitle === "string" ? p.subtitle : undefined) ??
+	(typeof p.subheading === "string" ? p.subheading : undefined);
+const sectionText = typeof rawText === "string" && rawText.trim() ? rawText : undefined;
+
+// Канон headingSize (top-level приоритетнее heading.size): 'medium'
+// (canon-default puckConfig) и отсутствие = роль «заголовок секции» дословно
+// (font-logo 20, TextBlock.astro:15). Лестница §9: small 17, large 24.
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingCls =
+	headingSize === "small"
+		? "font-logo text-[17px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
+		: headingSize === "large"
+			? "font-logo text-[24px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
+			: "font-logo text-[20px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]";
+// Канон textSize: 'medium' (canon-default puckConfig) и отсутствие = body-роль
+// манеры (Arsenal 16 light muted); small 14, large 19 (§9, ряд bloom Gallery).
+const textSize = p.textSize ?? p.text?.size;
+const textCls =
+	textSize === "small"
+		? "font-manrope text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]"
+		: textSize === "large"
+			? "font-manrope text-[19px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]"
+			: "font-manrope text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]";
+
+// Канон imagePosition left/right: 'left' (canon-default) и отсутствие = крупная
+// плитка слева; 'right' зеркалит раскладку lg:grid-cols-2 через lg:order.
+const mirror = p.imagePosition === "right";
+const heroOrderCls = mirror ? " lg:order-2" : "";
+const sideOrderCls = mirror ? " lg:order-1" : "";
+
+// Канон items[] (≤3, типы image{url,alt} / product{productId} /
+// collection{collectionId}). Отсутствие = canon-defaults puckConfig (тройка
+// image+product+collection). SSR рендерит канон-плейсхолдеры («Товар» 2 500 ₽ /
+// «Выбери коллекцию»); резолв productId/collectionId→имя/цена/обложка/ссылка
+// делает гидрация ниже (data-gallery-product / data-gallery-collection —
+// атрибуты bloom Gallery): live — /data/{products,collections}.json, превью —
+// storefront-data по __MERFY_SITE_ID__; demo-сборка → no-op, SSG остаётся.
+const CANON_ITEMS = [
+	{ type: "image", url: "", alt: "Изображение" },
+	{ type: "product", productId: null },
+	{ type: "collection", collectionId: null },
+];
+type GalleryTile = {
+	kind: "image" | "product" | "collection";
+	url: string;
+	alt: string;
+	label: string;
+	price: string;
+	href: string;
+	ref: string | null;
+};
+const rawItems = Array.isArray(p.items) && p.items.length ? p.items : CANON_ITEMS;
+const galleryTiles: GalleryTile[] = rawItems
+	.filter((x: any) => x && typeof x === "object")
+	.slice(0, 3)
+	.map((it: any): GalleryTile => {
+		if (it.type === "product") {
+			const pid = typeof it.productId === "string" && it.productId ? it.productId : null;
+			return {
+				kind: "product",
+				url: "",
+				alt: "Товар",
+				label: "Товар",
+				price: "2 500 ₽",
+				href: pid ? `/product?id=${encodeURIComponent(pid)}` : "/catalog",
+				ref: pid,
+			};
+		}
+		if (it.type === "collection") {
+			const cid = typeof it.collectionId === "string" && it.collectionId ? it.collectionId : null;
+			return {
+				kind: "collection",
+				url: "",
+				alt: "Коллекция",
+				label: "Выбери коллекцию",
+				price: "",
+				href: cid ? `/catalog?collection=${encodeURIComponent(cid)}` : "/catalog",
+				ref: cid,
+			};
+		}
+		return {
+			kind: "image",
+			url: typeof it.url === "string" ? it.url : "",
+			alt: typeof it.alt === "string" ? it.alt : "",
+			label: "",
+			price: "",
+			href: "/catalog",
+			ref: null,
+		};
+	});
+// Канон-плейсхолдер = реальный ассет темы (принцип T15): плитка без картинки
+// (image с пустым url, product/collection без выбранной сущности) получает
+// фото товара верстальщика по позиции.
+const TILE_FALLBACKS = [
+	"/images/4x/Товар_1.png",
+	"/images/4x/Товар_2.png",
+	"/images/4x/Товар_3.png",
+];
+galleryTiles.forEach((t, i) => {
+	if (!t.url) t.url = TILE_FALLBACKS[i % TILE_FALLBACKS.length];
+});
+const heroTile = galleryTiles[0];
+const sideTiles = galleryTiles.slice(1);
+
+// Подписи плиток — манера карточек satin (PC:48-62 / CC:31-35): имя Arsenal 16
+// 400 uppercase leading-tight; цена 16 400; старая цена 14 light muted
+// line-through (SSR-пустышка скрыта, открывает гидрация при oldPrice).
+const captionNameCls =
+	"font-manrope text-[16px] font-normal uppercase leading-tight text-[rgb(var(--color-text,0_0_0))]";
+const captionPriceCls =
+	"font-manrope text-[16px] font-normal leading-tight text-[rgb(var(--color-text,0_0_0))]";
+const captionOldPriceCls =
+	"hidden font-manrope text-[14px] font-light leading-tight text-[rgb(var(--color-muted,153_153_153))] line-through";
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+---
+
+<section
+	class="satin-pad w-full bg-[rgb(var(--color-bg,255_255_255))] py-10 md:py-14"
+	aria-label="Галерея Satin"
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div class="satin-container flex flex-col gap-8">
+		<div
+			class="flex flex-col gap-2"
+			data-puck-subsection-parent={id}
+			data-puck-subsection-index="100"
+			data-puck-subsection-field="heading"
+		>
+			<h2 class={headingCls}>{sectionTitle}</h2>
+			{sectionText && <p class={textCls}>{sectionText}</p>}
+		</div>
+
+		<div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+			{heroTile && (
+				<a
+					href={heroTile.href}
+					class={`group flex cursor-pointer flex-col gap-3${heroOrderCls}`}
+					aria-label={heroTile.label || heroTile.alt || "Перейти в каталог"}
+					data-gallery-product={heroTile.kind === "product" ? (heroTile.ref ?? undefined) : undefined}
+					data-gallery-collection={
+						heroTile.kind === "collection" ? (heroTile.ref ?? undefined) : undefined
+					}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index={0}
+					data-puck-subsection-field="items"
+				>
+					<div class="aspect-square w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]">
+						<img
+							src={heroTile.url}
+							alt={heroTile.alt}
+							loading="lazy"
+							class="!h-full !w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+						/>
+					</div>
+					{heroTile.kind === "product" && (
+						<div class="flex flex-col gap-1.5 md:gap-2">
+							<span class={`gallery-product-title ${captionNameCls} transition-opacity group-hover:opacity-80`}>
+								{heroTile.label}
+							</span>
+							<div class="flex flex-wrap items-baseline gap-1.5 md:gap-2">
+								<span class={`gallery-product-price ${captionPriceCls}`}>{heroTile.price}</span>
+								<span class={`gallery-product-oldprice ${captionOldPriceCls}`} />
+							</div>
+						</div>
+					)}
+					{heroTile.kind === "collection" && (
+						<h3 class={`gallery-collection-title ${captionNameCls}`}>{heroTile.label}</h3>
+					)}
+				</a>
+			)}
+
+			{sideTiles.length > 0 && (
+				<div class={`grid grid-cols-2 gap-4${sideOrderCls}`}>
+					{sideTiles.map((tile, i) => (
+						<a
+							href={tile.href}
+							class="group flex cursor-pointer flex-col gap-3"
+							aria-label={tile.label || tile.alt || "Перейти в каталог"}
+							data-gallery-product={tile.kind === "product" ? (tile.ref ?? undefined) : undefined}
+							data-gallery-collection={
+								tile.kind === "collection" ? (tile.ref ?? undefined) : undefined
+							}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index={i + 1}
+							data-puck-subsection-field="items"
+						>
+							<div class="aspect-[430/564] w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]">
+								<img
+									src={tile.url}
+									alt={tile.alt}
+									loading="lazy"
+									class="!h-full !w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+								/>
+							</div>
+							{tile.kind === "product" && (
+								<div class="flex flex-col gap-1.5 md:gap-2">
+									<span class={`gallery-product-title ${captionNameCls} transition-opacity group-hover:opacity-80`}>
+										{tile.label}
+									</span>
+									<div class="flex flex-wrap items-baseline gap-1.5 md:gap-2">
+										<span class={`gallery-product-price ${captionPriceCls}`}>{tile.price}</span>
+										<span class={`gallery-product-oldprice ${captionOldPriceCls}`} />
+									</div>
+								</div>
+							)}
+							{tile.kind === "collection" && (
+								<h3 class={`gallery-collection-title ${captionNameCls}`}>{tile.label}</h3>
+							)}
+						</a>
+					))}
+				</div>
+			)}
+		</div>
+	</div>
+</section>
+
+<script>
+	import {
+		loadRealProducts,
+		loadRealCollections,
+		findCollection,
+		formatPrice,
+		productHref,
+		productImage,
+	} from "../../lib/storefront-hydrate";
+
+	// Резолв выбранных в конструкторе товара/коллекции на плитках галереи
+	// (data-gallery-product / data-gallery-collection). SSR несёт канон-плейсхолдеры;
+	// здесь подставляем имя/цену/обложку/ссылку реальной сущности (старая цена —
+	// открытие скрытой пустышки). Без данных (demo-сборка) — no-op.
+	const hydrateGalleryTiles = async () => {
+		const prodTiles = Array.from(document.querySelectorAll<HTMLElement>("[data-gallery-product]"));
+		const colTiles = Array.from(document.querySelectorAll<HTMLElement>("[data-gallery-collection]"));
+		if (prodTiles.length === 0 && colTiles.length === 0) return;
+		const [products, collections] = await Promise.all([
+			prodTiles.length ? loadRealProducts() : Promise.resolve(null),
+			colTiles.length ? loadRealCollections() : Promise.resolve(null),
+		]);
+		for (const tile of prodTiles) {
+			const ref = tile.getAttribute("data-gallery-product");
+			const product = products?.find((x) => x.id === ref || x.slug === ref) ?? null;
+			if (!product) continue;
+			const title = tile.querySelector(".gallery-product-title");
+			if (title && product.name) title.textContent = product.name;
+			const price = tile.querySelector(".gallery-product-price");
+			if (price) price.textContent = formatPrice(product.price);
+			const oldRaw = formatPrice(product.oldPrice || product.compareAtPrice || null);
+			const oldEl = tile.querySelector(".gallery-product-oldprice");
+			if (oldEl && oldRaw) {
+				oldEl.textContent = oldRaw;
+				oldEl.classList.remove("hidden");
+			}
+			const img = tile.querySelector("img");
+			const cover = productImage(product);
+			if (img && cover) {
+				img.setAttribute("src", cover);
+				if (product.name) img.setAttribute("alt", product.name);
+			}
+			tile.setAttribute("href", productHref(product));
+			if (product.name) tile.setAttribute("aria-label", product.name);
+		}
+		for (const tile of colTiles) {
+			const col = findCollection(collections, tile.getAttribute("data-gallery-collection"));
+			if (!col) continue;
+			const title = tile.querySelector(".gallery-collection-title");
+			if (title && col.name) title.textContent = col.name;
+			const cover = col.image || (Array.isArray(col.images) ? col.images[0] : "");
+			const img = tile.querySelector("img");
+			if (img && cover) {
+				img.setAttribute("src", cover);
+				if (col.name) img.setAttribute("alt", col.name);
+			}
+			if (col.name) tile.setAttribute("aria-label", col.name);
+			if (col.slug) tile.setAttribute("href", `/catalog?collection=${encodeURIComponent(col.slug)}`);
+		}
+	};
+
+	hydrateGalleryTiles();
+	document.addEventListener("astro:page-load", hydrateGalleryTiles);
+</script>

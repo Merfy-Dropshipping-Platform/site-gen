@@ -2,52 +2,218 @@
 import SatinPicture from "../img/SatinPicture.astro";
 import { SITE_TITLE } from "../../consts";
 
-interface Props {
-	title?: string;
-	subtitle?: string;
-	ctaText?: string;
-	ctaLink?: string;
-	backgroundImage?: string;
-}
+// ОЖИВЛЕНИЕ (Фаза B, контракт rose/bloom Hero): канон-схема theme-base Hero.puckConfig
+// поверх разметки верстальщика. Тело ниже — verbatim; дефолтные ветки тернарников =
+// прежним строкам байт-в-байт (цвета → токены с пиксель-фоллбеком MANNER.md §7).
+// ОБЯЗАТЕЛЬНО сохранены legacy flat-пропсы title/subtitle/ctaText/ctaLink/backgroundImage —
+// index.astro:17-23 зовёт секцию с ними, их рендер не меняется.
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+const title = p.heading?.text ?? p.title ?? SITE_TITLE;
+// Канон text.content — КИКЕР НАД заголовком (порядок верстальщика: subtitle перед h1).
+const subtitle = p.text?.content ?? p.subtitle ?? "Там, где классика встречается с характером";
+const ctaText = p.primaryButton?.text ?? p.cta?.text ?? p.ctaText ?? "В каталог";
+const ctaLink =
+	p.primaryButton?.link?.href ??
+	(typeof p.primaryButton?.link === "string" ? p.primaryButton.link : undefined) ??
+	p.cta?.href ??
+	p.ctaLink ??
+	"#collections";
+const backgroundImage =
+	p.backgroundImages?.url1 ?? p.backgroundImage ?? p.image?.url ?? "/images/4x/Главный_экран.png";
+// Канон backgroundImages.url2 (+legacy backgroundImage2): фото-половина делится на
+// 2 кадра grid-cols-2 ТОЛЬКО когда второе фото задано; иначе одиночный рендер дословно.
+const backgroundImage2 = p.backgroundImages?.url2 ?? p.backgroundImage2;
 
-const {
-	title = SITE_TITLE,
-	subtitle = "Там, где классика встречается с характером",
-	ctaText = "В каталог",
-	ctaLink = "#collections",
-	backgroundImage = "/images/4x/Главный_экран.png",
-} = Astro.props;
+// Канон heading.size / text.size (+ секционный p.size как canon-носитель 'large').
+// 'large' И отсутствие → ЛИТЕРАЛЬНАЯ лестница верстальщика (MANNER.md §9):
+//   заголовок: small 18/22 → medium 22/27 → large 26/32 = литерал (Kelly Slab uppercase)
+//   кикер:     small 11    → medium 14    → large 16    = литерал (Arsenal light uppercase)
+const headingSize = p.heading?.size ?? p.size;
+const headingCls =
+	headingSize === "small"
+		? "font-logo text-[18px] font-normal uppercase leading-[1.08] text-[rgb(var(--color-heading,0_0_0))] md:text-[22px]"
+		: headingSize === "medium"
+			? "font-logo text-[22px] font-normal uppercase leading-[1.08] text-[rgb(var(--color-heading,0_0_0))] md:text-[27px]"
+			: "font-logo text-[26px] font-normal uppercase leading-[1.08] text-[rgb(var(--color-heading,0_0_0))] md:text-[32px]";
+const textSize = p.text?.size ?? p.size;
+const subtitleCls =
+	textSize === "small"
+		? "font-manrope text-[11px] font-light uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]"
+		: textSize === "medium"
+			? "font-manrope text-[14px] font-light uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]"
+			: "font-manrope text-[16px] font-light uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]";
+
+// Кнопки манеры §3 на токенах — реплика .satin-button.satin-button-md (литеральные
+// --satin-* тех классов не реагируют на смену схемы, поэтому утилиты с токенами):
+// dark = чёрная заливка (кнопка-1: 0_0_0 / 255_255_255), light = контурная (кнопка-2 —
+// родная роль satin: бордер/текст 0_0_0 на прозрачном), радиус rounded-[var(--radius-button,0px)].
+const BTN_DARK =
+	"inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-bg,0_0_0))] bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-manrope text-[16px] font-normal uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity duration-[180ms] hover:opacity-[0.78]";
+const BTN_LIGHT =
+	"inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-2-text,0_0_0))] bg-transparent px-6 font-manrope text-[16px] font-normal uppercase leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity duration-[180ms] hover:opacity-[0.78]";
+// Канон buttonStyle: solid (canon-default) И отсутствие = dark литерал; outlined = light.
+const primaryBtnCls = p.buttonStyle === "outlined" ? BTN_LIGHT : BTN_DARK;
+// Канон secondaryButton — рендер ТОЛЬКО при непустом тексте, рядом в ряд gap-3, light.
+const secondaryText =
+	typeof p.secondaryButton?.text === "string" && p.secondaryButton.text.trim()
+		? p.secondaryButton.text
+		: undefined;
+const secondaryLink =
+	p.secondaryButton?.link?.href ??
+	(typeof p.secondaryButton?.link === "string" ? p.secondaryButton.link : undefined) ??
+	"/catalog";
+
+// Канон overlay 0-100 → чёрный слой на фото-половине (у верстальщика 0 — слоя нет).
+const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
+
+// Канон position/contentPosition + alignment: 'center' (canon-default) И отсутствие =
+// ЛИТЕРАЛ — текст вертикально центр, слева в гаттере satin-bleed-left, блок
+// max-w-[420px] gap-6. Явные top-*/bottom-* двигают вертикаль (на desktop добавляется
+// md:py-12, чтобы текст не прилипал к кромке 680px-полотна); alignment center/right
+// двигает блок по горизонтали половины.
+const posRaw =
+	typeof p.position === "string"
+		? p.position
+		: typeof p.contentPosition === "string"
+			? p.contentPosition
+			: "";
+const pos = posRaw === "center" ? "" : posRaw;
+const vPos = pos.startsWith("top") ? "top" : pos.startsWith("bottom") ? "bottom" : "";
+const hPosFromPos = pos.endsWith("-left")
+	? "left"
+	: pos.endsWith("-right")
+		? "right"
+		: pos.endsWith("-center")
+			? "center"
+			: "";
+const hAlign =
+	p.alignment === "left" || p.alignment === "center" || p.alignment === "right"
+		? p.alignment
+		: hPosFromPos || "left";
+const textColCls =
+	vPos === "top"
+		? "satin-bleed-left order-2 flex items-start py-12 pr-4 md:order-1 md:h-[680px] md:py-12 md:pr-0"
+		: vPos === "bottom"
+			? "satin-bleed-left order-2 flex items-end py-12 pr-4 md:order-1 md:h-[680px] md:py-12 md:pr-0"
+			: "satin-bleed-left order-2 flex items-center py-12 pr-4 md:order-1 md:h-[680px] md:py-0 md:pr-0";
+const blockCls =
+	hAlign === "center"
+		? "mx-auto flex max-w-[420px] flex-col items-center gap-6 text-center"
+		: hAlign === "right"
+			? "ml-auto flex max-w-[420px] flex-col items-end gap-6 text-right"
+			: "flex max-w-[420px] flex-col gap-6";
+const rowJustifyCls =
+	hAlign === "center" ? "justify-center" : hAlign === "right" ? "justify-end" : "justify-start";
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T14).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
 ---
 
-<section class="relative w-full bg-white" aria-labelledby="hero-title">
+<section
+	class="relative w-full bg-[rgb(var(--color-bg,255_255_255))]"
+	aria-labelledby="hero-title"
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
 	<div class="mx-auto grid w-full max-w-[1920px] grid-cols-1 md:grid-cols-2">
-		<div class="satin-bleed-left order-2 flex items-center py-12 pr-4 md:order-1 md:h-[680px] md:py-0 md:pr-0">
-			<div class="flex max-w-[420px] flex-col gap-6">
+		<div class={textColCls}>
+			<div class={blockCls}>
 				<div class="flex flex-col gap-4">
-					<p class="font-manrope text-[16px] font-light uppercase tracking-[0.04em] text-[#999999]">
+					<p
+						class={subtitleCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="101"
+						data-puck-subsection-field="text"
+					>
 						{subtitle}
 					</p>
 					<h1
 						id="hero-title"
-						class="font-logo text-[26px] font-normal uppercase leading-[1.08] text-[#000000] md:text-[32px]"
+						class={headingCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="100"
+						data-puck-subsection-field="heading"
 					>
 						{title}
 					</h1>
 				</div>
-				<a href={ctaLink} class="satin-button satin-button-md satin-button-dark w-fit">
-					{ctaText}
-				</a>
+				{
+					secondaryText ? (
+						<div class={`flex w-full flex-row flex-wrap items-center gap-3 ${rowJustifyCls}`}>
+							<a
+								href={ctaLink}
+								class={primaryBtnCls}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="102"
+								data-puck-subsection-field="primaryButton"
+							>
+								{ctaText}
+							</a>
+							<a
+								href={secondaryLink}
+								class={BTN_LIGHT}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="103"
+								data-puck-subsection-field="secondaryButton"
+							>
+								{secondaryText}
+							</a>
+						</div>
+					) : (
+						<a
+							href={ctaLink}
+							class={primaryBtnCls}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="102"
+							data-puck-subsection-field="primaryButton"
+						>
+							{ctaText}
+						</a>
+					)
+				}
 			</div>
 		</div>
 
 		<div class="relative order-1 aspect-[375/362] overflow-hidden bg-[#111111] md:order-2 md:aspect-auto md:h-[680px]">
-			<SatinPicture
-				src={backgroundImage}
-				alt={title}
-				loading="eager"
-				fetchpriority="high"
-				class="absolute inset-0 size-full object-cover object-center"
-			/>
+			{
+				backgroundImage2 ? (
+					<div class="absolute inset-0 grid grid-cols-2">
+						<SatinPicture
+							src={backgroundImage}
+							alt={title}
+							loading="eager"
+							fetchpriority="high"
+							class="size-full object-cover object-center"
+						/>
+						<SatinPicture
+							src={backgroundImage2}
+							alt=""
+							loading="eager"
+							fetchpriority="high"
+							class="size-full object-cover object-center"
+						/>
+					</div>
+				) : (
+					<SatinPicture
+						src={backgroundImage}
+						alt={title}
+						loading="eager"
+						fetchpriority="high"
+						class="absolute inset-0 size-full object-cover object-center"
+					/>
+				)
+			}
+			{
+				overlayN > 0 && (
+					<div
+						class="pointer-events-none absolute inset-0 z-[1] bg-black"
+						style={`opacity:${overlayN / 100}`}
+					/>
+				)
+			}
 		</div>
 	</div>
 </section>

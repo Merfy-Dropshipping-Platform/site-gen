@@ -1,0 +1,147 @@
+---
+// Фаза B (vanilla): канон-секция MainText — адаптация welcome-полотна
+// pages/about.astro:138-166 (см. themes/vanilla/MANNER.md §10: welcome =
+// тёмное полотно №2 «заголовок + текст + outlined-CTA» = аналог MainText).
+// Тело верстальщика перенесено КОПИЕЙ — about.astro НЕ тронут (страница
+// продолжает рендерить свой inline-вариант). Схема полей = packages/
+// theme-base/blocks/MainText/MainText.puckConfig.ts; дефолт каждого пропса =
+// литерал верстальщика (дефолт-ветка тернарников = прежние строки байт-в-байт,
+// цвета → токены с пиксель-фоллбеком родных по МАННЕРЕ §7).
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон heading: string | { text, size }. Дефолт = заголовок welcome-полотна
+// VERBATIM. Роль = заголовок секции (Bitter 400 italic 20, МАННЕРА §1), на
+// тёмном полотне — белый. Лестница §9: medium/отсутствие = литерал 20,
+// small 17, large 24. Курсив вынесен в italicCls (textStyle ниже).
+const heading =
+	typeof p.heading === "string"
+		? p.heading
+		: (p.heading?.text ?? "Добро пожаловать в нашу историю.");
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingCls =
+	headingSize === "small"
+		? "m-0 font-vanilla-bitter text-[17px] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]"
+		: headingSize === "large"
+			? "m-0 font-vanilla-bitter text-[24px] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]"
+			: "m-0 font-vanilla-bitter text-[20px] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]";
+
+// Канон text: string | { content, size }. Дефолт = welcomeParagraphs VERBATIM
+// (два абзаца через <br/>, как у верстальщика; set:html — базовая HTML-разметка).
+const text =
+	typeof p.text === "string"
+		? p.text
+		: (p.text?.content ??
+			"Мы по-прежнему лично отбираем каждый материал, вдохновляемся природными оттенками и архитектурой скандинавского дизайна. Мы не гонимся за быстрой модой. Мы создаем вещи, которые остаются с вами надолго.<br />Vanila — это история про то, как желание одного человека сделать свой дом уютнее превратилось в бренд, который помогает тысячам семей создавать интерьеры своей мечты. Добро пожаловать домой.");
+
+// Канон textSize (top-level hidden приоритетнее text.size сабпанели). Роль =
+// body-текст полотна 16 (about:153; лестница §9): medium/отсутствие = литерал
+// 16 (text-base), small 14, large 19.
+const textSize = p.textSize ?? p.text?.size;
+const textCls =
+	textSize === "small"
+		? "m-0 w-full font-vanilla-arsenal text-[14px] font-normal leading-[1.45] text-[rgb(var(--color-text,240_240_240))] md:leading-[1.35]"
+		: textSize === "large"
+			? "m-0 w-full font-vanilla-arsenal text-[19px] font-normal leading-[1.45] text-[rgb(var(--color-text,240_240_240))] md:leading-[1.35]"
+			: "m-0 w-full font-vanilla-arsenal text-base font-normal leading-[1.45] text-[rgb(var(--color-text,240_240_240))] md:leading-[1.35]";
+
+// Канон textStyle: blockDefaults vanilla пишут 'italic' = литерал верстальщика —
+// курсив УЖЕ в дефолте манеры, снимается только явным 'normal'.
+const italicCls = p.textStyle === "normal" ? "" : " italic";
+
+// Канон position/alignment — canon-default обоих 'center' (его пишут theme-base
+// defaults) = ПИКСЕЛЬ верстальщика (паттерн bloom Hero «canon-default значение
+// = пиксель»): контейнер mx-auto, блок СЛЕВА (items-start, gap-16). Двигают
+// только явные right (items-end / ml-auto) и left у position (mr-auto).
+const position = p.position === "left" || p.position === "right" ? p.position : "center";
+const alignment = p.alignment === "right" ? "right" : "left";
+const posCls = position === "left" ? "mr-auto" : position === "right" ? "ml-auto" : "mx-auto";
+const itemsCls = alignment === "right" ? "items-end" : "items-start";
+const textAlignCls = alignment === "right" ? " text-right" : "";
+
+// Кнопка: canon-сабпанель button {text, link} приоритетнее legacy hidden cta.
+// Дефолт (пропы не заданы) = CTA welcome-полотна VERBATIM: «ПЕРЕЙТИ В КАТАЛОГ»
+// → /catalog/textile. Пустой текст заданного пропа СКРЫВАЕТ кнопку.
+const btnProvided = p.button !== undefined || p.cta !== undefined;
+const btnTextProp =
+	(typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined) ??
+	(typeof p.cta?.text === "string" && p.cta.text.trim() ? p.cta.text : undefined);
+const btnText = btnTextProp ?? (btnProvided ? undefined : "ПЕРЕЙТИ В КАТАЛОГ");
+const btnHref =
+	p.button?.link?.href ??
+	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??
+	(typeof p.cta?.href === "string" && p.cta.href ? p.cta.href : undefined) ??
+	(typeof p.cta?.link === "string" && p.cta.link ? p.cta.link : undefined) ??
+	"/catalog/textile";
+
+// Канон buttonStyle: 'outlined' (canon-default из theme.json blockDefaults) и
+// отсутствие = контурная кнопка верстальщика ДОСЛОВНО (МАННЕРА §3: outlined на
+// тёмном полотне; button-2 токены, радиус 0 ≡ var(--radius-button,0px));
+// 'solid' = заливка кнопки-2 (белая кнопка, текст цвета полотна №2).
+// active:scale в манере vanilla НЕ используется (§3).
+const btnCls =
+	p.buttonStyle === "solid"
+		? "m-0 inline-flex h-12 min-h-12 shrink-0 items-center justify-center rounded-[var(--radius-button,0px)] bg-[rgb(var(--color-button-2-bg,255_255_255))] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-2-text,58_69_48))] transition-opacity hover:opacity-80"
+		: "m-0 inline-flex h-12 min-h-12 shrink-0 items-center justify-center rounded-[var(--radius-button,0px)] border border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80";
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+
+// colorScheme навешивает обёрткой composeV2Page; фон секции — токен с
+// фоллбеком родного полотна №2 (#3A4530 = 58 69 48, МАННЕРА §7).
+const headingId = id ? `${id}-title` : "welcome-title";
+---
+
+<section
+	class="vanilla-pad w-full bg-[rgb(var(--color-bg,58_69_48))] py-16 text-[rgb(var(--color-text,255_255_255))] lg:py-[120px]"
+	aria-labelledby={heading ? headingId : undefined}
+	data-welcome-section
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div
+		class={`${posCls} flex w-full max-w-[1280px] min-[1920px]:max-w-[1320px] flex-col ${itemsCls} gap-16${textAlignCls}`}
+	>
+		<div class={`flex w-full flex-col ${itemsCls} gap-3`}>
+			{
+				heading && (
+					<h2
+						id={headingId}
+						class={headingCls + italicCls}
+						data-animate
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="100"
+						data-puck-subsection-field="heading"
+					>
+						{heading}
+					</h2>
+				)
+			}
+			<p
+				class={textCls + italicCls}
+				data-animate
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="101"
+				data-puck-subsection-field="text"
+				set:html={text}
+			/>
+		</div>
+		{
+			btnText && (
+				<a
+					href={btnHref}
+					class={btnCls}
+					data-animate
+					data-animate-delay="0.1s"
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="102"
+					data-puck-subsection-field="button"
+				>
+					{btnText}
+				</a>
+			)
+		}
+	</div>
+</section>

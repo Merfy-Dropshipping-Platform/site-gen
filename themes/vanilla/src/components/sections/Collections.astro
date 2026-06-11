@@ -2,32 +2,183 @@
 import VanillaCollectionCard from "../products/VanillaCollectionCard.astro";
 import { collections } from "../../data/collections";
 
-const sectionTitle = "Коллекции, которые становятся любимыми";
+// ОЖИВЛЕНИЕ (Фаза B, контракт rose/bloom Collections): конструкторная схема
+// theme-base Collections.puckConfig поверх разметки верстальщика. Тело +
+// demo-данные verbatim (страницы темы зовут <Collections /> без пропсов —
+// дефолт-ветка даёт прежний рендер). Канон-дефолты конструктора (headingSize
+// medium / subtitleSize small / titleAlignment 'left', gridAspect '1:1' и
+// cardCaptionStyle 'uppercase' из blockDefaults vanilla, columns 2 = срез
+// верстальщика) → пиксель верстальщика; дефолтная ветка каждого тернарника =
+// прежняя строка классов байт-в-байт (цвета → токены с пиксель-фоллбеком
+// родных литералов, MANNER.md §7).
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+const sectionTitle =
+	(typeof p.heading === "string" ? p.heading : p.heading?.text) ??
+	p.title ??
+	"Коллекции, которые становятся любимыми";
+// Подзаголовок у верстальщика ЕСТЬ (в отличие от bloom) — дефолт-литерал
+// рендерится и при пустом пропе (конструктор вставляет subtitle: '' из
+// canon-дефолтов, а «добавил секцию → пиксель верстальщика»).
 const sectionSubtitle =
-	"Вдохновение для каждого дня — актуальные коллекции текстиля и декора, созданные, чтобы радовать и удивлять.";
-const featuredCollections = collections.slice(0, 2);
+	typeof p.subtitle === "string" && p.subtitle.trim()
+		? p.subtitle
+		: "Вдохновение для каждого дня — актуальные коллекции текстиля и декора, созданные, чтобы радовать и удивлять.";
+
+// Под Container API (live/превью v2) cwd ≠ корень темы: fs-проверка
+// VanillaPicture не находит public/ и .png остался бы в src (на диске темы
+// только .webp → 404). Подменяем расширение заранее; на сборке темы вывод
+// байт-в-байт тот же (VanillaPicture/assetUrl находят тот же .webp).
+const toWebp = (src: string) => src.replace(/\.(png|jpe?g)$/i, ".webp");
+const featuredCollections = collections
+	.slice(0, 2)
+	.map((c) => ({ ...c, image: toWebp(c.image) }));
+
+// Канон headingSize (top-level приоритетнее legacy heading.size): 'medium'
+// (canon-default, MANNER §9) и отсутствие = роль «заголовок секции»
+// верстальщика дословно (Bitter italic 20). Лестница §9: small 17, large 24.
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingCls =
+	headingSize === "small"
+		? "font-vanilla-bitter text-[17px] font-normal italic leading-none tracking-normal text-[rgb(var(--color-heading,38_49_28))]"
+		: headingSize === "large"
+			? "font-vanilla-bitter text-[24px] font-normal italic leading-none tracking-normal text-[rgb(var(--color-heading,38_49_28))]"
+			: "font-vanilla-bitter text-[20px] font-normal italic leading-none tracking-normal text-[rgb(var(--color-heading,38_49_28))]";
+// Канон subtitleSize: 'small' (canon-default) и отсутствие = подзаголовок
+// верстальщика дословно (Arsenal italic 16). Лестница §9: medium 19, large 23.
+const subtitleCls =
+	p.subtitleSize === "medium"
+		? "font-vanilla-arsenal text-[19px] font-normal italic leading-none text-[rgb(var(--color-muted,68_68_68))]"
+		: p.subtitleSize === "large"
+			? "font-vanilla-arsenal text-[23px] font-normal italic leading-none text-[rgb(var(--color-muted,68_68_68))]"
+			: "font-vanilla-arsenal text-base font-normal italic leading-none text-[rgb(var(--color-muted,68_68_68))]";
+// Канон titleAlignment: 'left' (canon-default из blockDefaults vanilla) и
+// отсутствие = литерал верстальщика (шапка слева, без класса).
+const titleAlignCls =
+	p.titleAlignment === "center" ? " text-center" : p.titleAlignment === "right" ? " text-right" : "";
+const headWrapCls = `flex max-w-[760px] flex-col gap-2${titleAlignCls}`;
+
+// Канон columns 1-6: 2 (срез верстальщика = canon-default, blockDefaults
+// columns не задают) и отсутствие → дефолт-ветка (литерал md:grid-cols-2);
+// иное → inline-var на гриде с md (мобильная колонка верстальщика остаётся).
+const colsRaw =
+	typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : undefined;
+const cols = colsRaw && colsRaw !== 2 ? colsRaw : undefined;
+const gridCls = cols
+	? "grid grid-cols-1 gap-4 md:grid-cols-[repeat(var(--cols),minmax(0,1fr))]"
+	: "grid grid-cols-1 gap-4 md:grid-cols-2";
+const gridStyle = cols ? `--cols:${cols}` : undefined;
+
+// Канон gridAspect '1:1' (canon-default из blockDefaults vanilla) и
+// отсутствие = квадратные плитки верстальщика (aspect-[1/1], §4); без него
+// вид ведёт imageView: portrait → 430/500, wide → 16/9.
+const tileAspect =
+	p.gridAspect === "1:1"
+		? "aspect-[1/1]"
+		: p.imageView === "portrait"
+			? "aspect-[430/500]"
+			: p.imageView === "wide"
+				? "aspect-[16/9]"
+				: "aspect-[1/1]";
+// Канон cardCaptionStyle: 'uppercase' (canon-default из blockDefaults) и
+// отсутствие = капс-подпись верстальщика; 'default' снимает капс.
+const captionCase = p.cardCaptionStyle === "default" ? "" : " uppercase";
+
+// Канон collections[] (≤10): плитки коллекций из пропса при непустом массиве.
+// Иначе — две плитки верстальщика дословно (VanillaCollectionCard). SSR
+// рендерит сохранённые поля item, резолв collectionId→имя/обложка делает
+// гидрация ниже (data-collection-ref): live — /data/collections.json,
+// превью — storefront-data; паритет theme-base (имя коллекции перебивает
+// ручной heading, обложка — только при отсутствии своей, data-own-image).
+const cardLinkBase =
+	typeof p.cardLinkBase === "string" && p.cardLinkBase.trim()
+		? p.cardLinkBase
+		: "/catalog?collection=";
+// Канон-плейсхолдер = ассеты верстальщика по позиции (принцип rose T15):
+// плитка без выбранной картинки получает обложку из пары текстиль/декор.
+const TILE_FALLBACKS = [
+	"/images/vanilla-collection-textile.webp",
+	"/images/vanilla-collection-decor.webp",
+];
+const propCollections = (Array.isArray(p.collections) ? p.collections : [])
+	.filter((c: any) => c && typeof c === "object")
+	.slice(0, 10)
+	.map((c: any, i: number) => {
+		const collectionId =
+			typeof c.collectionId === "string" && c.collectionId.trim() ? c.collectionId.trim() : null;
+		return {
+			collectionId,
+			name:
+				(typeof c.heading === "string" && c.heading) ||
+				(typeof c.name === "string" && c.name) ||
+				"Коллекция",
+			image:
+				typeof c.image === "string" && c.image ? c.image : TILE_FALLBACKS[i % TILE_FALLBACKS.length],
+			hasOwnImage: !!(typeof c.image === "string" && c.image),
+			href: collectionId ? `${cardLinkBase}${collectionId}` : "#",
+		};
+	});
+const usePropCollections = propCollections.length > 0;
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
 ---
 
 <section
 	id="collections"
-	class="vanilla-pad w-full bg-[var(--vanilla-surface)] py-20 md:py-28"
+	class="vanilla-pad w-full bg-[rgb(var(--color-bg,238_238_238))] py-20 md:py-28"
 	aria-labelledby="collections-title"
+	data-puck-component-id={id}
+	style={paddingStyle}
 >
 	<div class="vanilla-container flex max-w-[1180px] flex-col gap-8">
-		<div class="flex max-w-[760px] flex-col gap-2" data-animate>
-			<h2
-				id="collections-title"
-				class="font-vanilla-bitter text-[20px] font-normal italic leading-none tracking-normal text-[var(--vanilla-announcement-bg)]"
-			>
+		<div
+			class={headWrapCls}
+			data-animate
+			data-puck-subsection-parent={id}
+			data-puck-subsection-index="100"
+			data-puck-subsection-field="heading"
+		>
+			<h2 id="collections-title" class={headingCls}>
 				{sectionTitle}
 			</h2>
-			<p class="font-vanilla-arsenal text-base font-normal italic leading-none text-[#444444]">
-				{sectionSubtitle}
-			</p>
+			<p class={subtitleCls}>{sectionSubtitle}</p>
 		</div>
 
-		<ul class="grid grid-cols-1 gap-4 md:grid-cols-2" role="list" data-animate data-animate-delay="0.1s">
-			{featuredCollections.map((collection, index) => (
+		<ul class={gridCls} role="list" data-animate data-animate-delay="0.1s" style={gridStyle}>
+			{usePropCollections ? propCollections.map((c, i) => (
+				<li>
+					<a
+						href={c.href}
+						class="group flex w-full cursor-pointer flex-col gap-3"
+						aria-label={c.name}
+						data-nt="vanilla-collection-card"
+						data-collection-ref={c.collectionId ?? undefined}
+						data-own-image={c.hasOwnImage ? "true" : undefined}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index={i}
+						data-puck-subsection-field="collections"
+					>
+						<div class={`${tileAspect} w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]`}>
+							{c.image && (
+								<img
+									src={c.image}
+									alt={c.name}
+									loading="lazy"
+									class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.08]"
+								/>
+							)}
+						</div>
+						<h3
+							class={`vanilla-collection-name font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-heading,38_49_28))] transition-opacity group-hover:opacity-70${captionCase}`}
+						>
+							{c.name}
+						</h3>
+					</a>
+				</li>
+			)) : featuredCollections.map((collection, index) => (
 				<li>
 					<VanillaCollectionCard collection={collection} priority={index < 2} />
 				</li>
@@ -35,3 +186,42 @@ const featuredCollections = collections.slice(0, 2);
 		</ul>
 	</div>
 </section>
+
+<script>
+	import { loadRealCollections, findCollection } from "../../lib/storefront-hydrate";
+
+	// Резолв collectionId→имя/обложка на плитках (data-collection-ref).
+	// Паритет theme-base resolveManual: имя коллекции перебивает ручной heading;
+	// обложка коллекции подставляется, только если мерчант не загрузил свою
+	// (data-own-image). Без данных (demo-сборка) — no-op, SSG остаётся.
+	const hydrateCollectionTiles = async () => {
+		const tiles = Array.from(
+			document.querySelectorAll<HTMLElement>(
+				'[data-nt="vanilla-collection-card"][data-collection-ref]',
+			),
+		);
+		if (tiles.length === 0) return;
+		const collections = await loadRealCollections();
+		if (!collections) return;
+		for (const tile of tiles) {
+			const col = findCollection(collections, tile.getAttribute("data-collection-ref"));
+			if (!col) continue;
+			if (col.name) {
+				const h3 = tile.querySelector(".vanilla-collection-name");
+				if (h3 && h3.textContent !== col.name) h3.textContent = col.name;
+				tile.setAttribute("aria-label", col.name);
+			}
+			const cover = col.image || (Array.isArray(col.images) ? col.images[0] : "");
+			if (cover && tile.getAttribute("data-own-image") !== "true") {
+				const img = tile.querySelector("img");
+				if (img && img.getAttribute("src") !== cover) {
+					img.setAttribute("src", cover);
+					if (col.name) img.setAttribute("alt", col.name);
+				}
+			}
+		}
+	};
+
+	hydrateCollectionTiles();
+	document.addEventListener("astro:page-load", hydrateCollectionTiles);
+</script>

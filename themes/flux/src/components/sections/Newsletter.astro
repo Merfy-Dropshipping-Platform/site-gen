@@ -1,0 +1,160 @@
+---
+import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+
+// Фаза B (flux, группа misc): новая канон-секция Newsletter в манере flux (см.
+// themes/flux/MANNER.md; эталоны — bloom Newsletter, rose T17). Схема полей =
+// packages/theme-base/blocks/Newsletter/Newsletter.puckConfig.ts. Тело = КОПИЯ
+// блока подписки подвала верстальщика (Footer.astro:36-74 — подвал не тронут):
+// заголовок Comfortaa 16/18 uppercase, описание Roboto Flex 300 12/14 muted,
+// форма h-11/12 c бордером #F5F5F5 и кнопкой-иконкой arrow-right, статус
+// #4AD300. ⚠️ Радиус формы — через --radius-field (4px в theme.json), НЕ через
+// --radius-input (8px — увёл бы литерал, §5). Скролл-анимаций нет (§6).
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон heading: string | { text, alignment, size }; canon-default = литерал
+// подвала «Подпишитесь на нашу рассылку» (F:42). Роль F:40 — Comfortaa 16/18
+// uppercase leading-normal, цвет — токен heading с фоллбеком чёрного.
+const heading =
+	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Подпишитесь на нашу рассылку");
+// Лестница §9 заголовка рассылки (дефолт роли — medium): отсутствие пропа и
+// medium = литерал 16/md:18; small 11/13, large 19/22.
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingSizeCls =
+	headingSize === "small"
+		? "text-[11px] md:text-[13px]"
+		: headingSize === "large"
+			? "text-[19px] md:text-[22px]"
+			: "text-[16px] md:text-[18px]";
+const headingCls = `font-comfortaa ${headingSizeCls} font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]`;
+// Выравнивание (heading.alignment / headingAlignment) — на текстовой колонке,
+// чтобы заголовок и описание двигались вместе; отсутствие = литерал (слева).
+const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
+const textAlignCls =
+	headingAlignment === "center"
+		? " text-center"
+		: headingAlignment === "right"
+			? " text-right"
+			: "";
+
+// Канон description (string) + text {content, size} (pupa-дубль): canon-default =
+// литерал подвала «Получайте информацию от нашего бренда» (F:44, Roboto Flex 300
+// 12/14 #999999 → токен muted). Лестница §9 текста рассылки: small 10/11,
+// medium/отсутствие = литерал 12/14, large 14/17.
+const description =
+	(typeof p.description === "string" && p.description.trim() ? p.description : undefined) ??
+	(typeof p.text?.content === "string" && p.text.content.trim() ? p.text.content : undefined) ??
+	"Получайте информацию от нашего бренда";
+const descSize = p.text?.size;
+const descSizeCls =
+	descSize === "small"
+		? "text-[10px] md:text-[11px]"
+		: descSize === "large"
+			? "text-[14px] md:text-[17px]"
+			: "text-[12px] md:text-[14px]";
+
+// Канон placeholder: дефолт = литерал подвала (F:57).
+const placeholder =
+	typeof p.placeholder === "string" && p.placeholder.trim() ? p.placeholder : "flux@example.ru";
+
+// НЮАНС buttonText: у верстальщика кнопка — ИКОНКА arrow-right (F:61-67).
+// При НЕпустом buttonText рендерим текстовую чёрную кнопку манеры §3 (токены
+// кнопки-2: в схемах flux чёрная кнопка = кнопка-2), иначе иконка-литерал —
+// render-only ветка на существующих данных (новых пропсов не вводим).
+const buttonText = typeof p.buttonText === "string" && p.buttonText.trim() ? p.buttonText : "";
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+
+const titleId = id ? `${id}-title` : undefined;
+---
+
+<section
+	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 py-16 md:px-20 md:py-24 2xl:px-80"
+	aria-labelledby={titleId}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-4">
+		<div class={`flex flex-col gap-1${textAlignCls}`}>
+			<h2
+				id={titleId}
+				class={headingCls}
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="100"
+				data-puck-subsection-field="heading"
+			>
+				{heading}
+			</h2>
+			<p
+				class={`font-roboto-flex ${descSizeCls} font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]`}
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="101"
+				data-puck-subsection-field="text"
+			>
+				{description}
+			</p>
+		</div>
+
+		<form
+			class="flex h-11 w-full max-w-[460px] items-center justify-between gap-2 rounded-[var(--radius-field,4px)] border border-[rgb(var(--color-surface,245_245_245))] bg-white pl-3 pr-1 md:h-12"
+			data-newsletter-form
+			data-puck-subsection-parent={id}
+			data-puck-subsection-index="997"
+			data-puck-subsection-field="placeholder"
+		>
+			<input
+				type="email"
+				name="email"
+				required
+				placeholder={placeholder}
+				aria-label="Email"
+				class="min-w-0 flex-1 bg-transparent font-manrope text-[12px] font-normal leading-normal text-[#000000] placeholder:text-[rgb(var(--color-muted,153_153_153))] outline-none md:text-[14px]"
+			/>
+			{
+				buttonText ? (
+					<button
+						type="submit"
+						class="inline-flex h-10 shrink-0 items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-2-bg,0_0_0))] px-3 font-manrope text-[12px] font-normal leading-normal text-[rgb(var(--color-button-2-text,255_255_255))] transition-opacity hover:opacity-95 md:text-[14px]"
+					>
+						{buttonText}
+					</button>
+				) : (
+					<button
+						type="submit"
+						aria-label="Подписаться"
+						class="flex size-10 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
+					>
+						<NtIcon name="arrow-right" sizeClass="size-5" />
+					</button>
+				)
+			}
+		</form>
+		<p
+			data-newsletter-status
+			role="status"
+			class="hidden font-roboto-flex text-[12px] font-light text-[#4AD300] md:text-[14px]"
+		></p>
+	</div>
+</section>
+
+<script>
+	// Demo-сабмит рассылки (паттерн Footer.astro:151-162). Делегирование на
+	// document: работает для всех экземпляров секции на композитной странице и
+	// переживает hot-replace превью (hoisted-скрипт инлайнится компилятором
+	// с window-гардом — выполняется один раз на страницу).
+	document.addEventListener("submit", (event) => {
+		const target = event.target as HTMLElement | null;
+		const form = target?.closest<HTMLFormElement>("form[data-newsletter-form]");
+		if (!form) return;
+		event.preventDefault();
+		const status = form.closest("section")?.querySelector<HTMLElement>("[data-newsletter-status]");
+		if (status) {
+			status.textContent = "Спасибо! Мы отправим вам приветственное письмо.";
+			status.classList.remove("hidden");
+		}
+		form.reset();
+	});
+</script>

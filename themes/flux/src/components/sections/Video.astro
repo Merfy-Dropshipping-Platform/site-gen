@@ -1,0 +1,154 @@
+---
+import FluxPicture from "../img/FluxPicture.astro";
+
+// Фаза B (flux, группа misc): новая канон-секция Video в манере flux (см.
+// themes/flux/MANNER.md §2/§4; rose-эталона НЕТ — эталон процесса bloom Video).
+// Схема полей = packages/theme-base/blocks/Video/Video.puckConfig.ts. Медиа
+// в контейнере 1320 со скруглением манеры 8px на surface-подложке; только
+// utility-классы с токенами, без <style>-блока. Скролл-анимаций в манере flux
+// нет (§6) — без data-animate.
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон videoUrl + pupa video{url, coverImage}. blob:-URL — временные ObjectURL
+// вкладки конструктора, на live дадут 404 — отбрасываем (паттерн theme-base Video).
+const rawVideoUrl =
+	typeof p.video?.url === "string" ? p.video.url : typeof p.videoUrl === "string" ? p.videoUrl : "";
+const videoUrl = rawVideoUrl.startsWith("blob:") ? "" : rawVideoUrl;
+// Канон poster (+ video.coverImage); пусто и без видео → постер-заглушка
+// /images/hero-flux.png (реальный ассет темы) на медиа-подложке.
+// FluxPicture (манера §4) — только для ассета темы: у него гарантирован
+// соимённый .webp; для пользовательского постера — простой <img> (битый
+// <source> у <picture> не фоллбечится на <img>).
+const poster =
+	(typeof p.video?.coverImage === "string" && p.video.coverImage ? p.video.coverImage : undefined) ??
+	(typeof p.poster === "string" && p.poster ? p.poster : undefined);
+const placeholderPoster = poster ?? "/images/hero-flux.png";
+const placeholderIsThemeAsset = !poster;
+
+// Канон heading + pupa content.heading{text, alignment, enabled, size} — рендер
+// при непустом тексте И enabled !== 'false'. Роль = внутренний h2 §1
+// (Comfortaa uppercase leading-[1.115], токен heading с фоллбеком чёрного).
+const headingRaw = p.heading ?? p.content?.heading;
+const headingText =
+	typeof headingRaw === "string" ? headingRaw : ((headingRaw?.text as string | undefined) ?? "");
+const headingEnabled = String(p.content?.heading?.enabled ?? "true") !== "false";
+const showHeading = Boolean(headingText.trim()) && headingEnabled;
+// Канон size (панель «Размер заголовка») + дубли headingSize / heading.size /
+// content.heading.size. Лестница §9 внутреннего h2 (дефолт роли — large):
+// отсутствие и large = литерал 24/md:28; medium 20/24, small 17/20.
+const headingSize =
+	p.size ??
+	p.headingSize ??
+	(typeof headingRaw === "object" ? headingRaw?.size : undefined) ??
+	p.content?.heading?.size;
+const headingSizeCls =
+	headingSize === "small"
+		? "text-[17px] md:text-[20px]"
+		: headingSize === "medium"
+			? "text-[20px] md:text-[24px]"
+			: "text-[24px] md:text-[28px]";
+const headingAlignment =
+	p.headingAlignment ??
+	(typeof headingRaw === "object" ? headingRaw?.alignment : undefined) ??
+	p.content?.heading?.alignment;
+const headingAlignCls =
+	headingAlignment === "center"
+		? " text-center"
+		: headingAlignment === "right"
+			? " text-right"
+			: "";
+const headingCls = `font-comfortaa ${headingSizeCls} font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
+
+// Канон position contained|fullscreen + padded + align container|fullbleed
+// (паттерн bloom Video; align приоритетнее position — паттерн theme-base).
+// Canon-default ветка = контейнер 1320 c полями/вертикалью главной §2;
+// fullscreen/fullbleed → full-bleed без скругления и клампа; padded=false
+// убирает горизонтальные поля, сохраняя кламп и скругление.
+const alignProp = p.align === "fullbleed" || p.align === "container" ? p.align : undefined;
+const positionProp = typeof p.position === "string" ? p.position : "contained";
+const fullBleed = alignProp ? alignProp === "fullbleed" : positionProp === "fullscreen";
+const padded = !(p.padded === false || p.padded === "false");
+const sectionCls = fullBleed
+	? "w-full bg-[rgb(var(--color-bg,255_255_255))] pb-16 pt-16 md:pb-24 md:pt-24"
+	: padded
+		? "w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-16 pt-16 md:px-20 md:pb-24 md:pt-24 2xl:px-80"
+		: "w-full bg-[rgb(var(--color-bg,255_255_255))] pb-16 pt-16 md:pb-24 md:pt-24";
+const containerCls = fullBleed
+	? "flex w-full flex-col gap-8 md:gap-12"
+	: "mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-12";
+// На full-bleed полотне заголовок остаётся в полях секций главной §2.
+const headingWrapCls = fullBleed ? "px-4 md:px-20 2xl:px-80" : undefined;
+const mediaCls = fullBleed
+	? "relative aspect-video w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))]"
+	: "relative aspect-video w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]";
+
+// Канон overlay 0-100 (число или строка) — слой поверх медиа; клики проходят
+// сквозь (controls видео остаются доступны).
+const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+
+const titleId = id && showHeading ? `${id}-title` : undefined;
+---
+
+<section class={sectionCls} aria-labelledby={titleId} data-puck-component-id={id} style={paddingStyle}>
+	<div class={containerCls}>
+		{
+			showHeading && (
+				<div class={headingWrapCls}>
+					<h2
+						id={titleId}
+						class={headingCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="100"
+						data-puck-subsection-field="heading"
+					>
+						{headingText}
+					</h2>
+				</div>
+			)
+		}
+
+		<div class={mediaCls}>
+			{
+				videoUrl ? (
+					<video
+						src={videoUrl}
+						poster={poster}
+						controls
+						playsinline
+						preload="metadata"
+						class="absolute inset-0 size-full object-cover"
+					/>
+				) : placeholderIsThemeAsset ? (
+					<FluxPicture
+						src={placeholderPoster}
+						alt=""
+						loading="lazy"
+						class="absolute inset-0 size-full object-cover"
+					/>
+				) : (
+					<img
+						src={placeholderPoster}
+						alt=""
+						aria-hidden="true"
+						loading="lazy"
+						class="absolute inset-0 size-full object-cover"
+					/>
+				)
+			}
+			{
+				overlayN > 0 && (
+					<div
+						class="pointer-events-none absolute inset-0 z-[1] bg-black"
+						style={`opacity:${overlayN / 100}`}
+					/>
+				)
+			}
+		</div>
+	</div>
+</section>

@@ -1,0 +1,91 @@
+---
+// Фаза B (chrome): новая канон-секция PromoBanner в манере satin (themes/satin/MANNER.md §8).
+// Схема полей = packages/theme-base/blocks/PromoBanner/PromoBanner.puckConfig.ts:
+// text, link {text, href} (+ legacy linkText/linkUrl), size (thin/small/medium/large),
+// textTransform (none/uppercase), colorScheme (обёртку даёт композитор), padding {top,bottom}.
+// Тело = инлайн-полоса объявления верстальщика (Header.astro:43-45) дословно: вся полоса —
+// одна ссылка без хвоста. Подчёркнутый хвост-ссылка — паттерн legacy
+// header/PromoBanner.astro:17-20 (сам компонент страницами не используется, не трогаем),
+// рендерится ТОЛЬКО при непустом link.text.
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+const text = p.text ?? "Скидка 10% на общую сумму заказа от 9 000₽. Перейти";
+
+// Канон link {text, href} + legacy linkText/linkUrl. Дефолт href = литерал /catalog
+// (вся полоса верстальщика ведёт в каталог).
+const linkText =
+	(typeof p.link?.text === "string" && p.link.text.trim() ? p.link.text : undefined) ??
+	(typeof p.linkText === "string" && p.linkText.trim() ? p.linkText : undefined);
+const linkHref =
+	p.link?.href ?? p.linkUrl ?? (typeof p.link === "string" ? p.link : undefined) ?? "/catalog";
+
+// Канон size: 'thin' (canon-default будущих blockDefaults) И отсутствие → ЛИТЕРАЛ
+// верстальщика py-2. Увеличенные варианты — флекс-центрирование лестницей шагом 8px:
+// small → min-h-10 (40px), medium → min-h-12 (48px), large → min-h-14 (56px).
+// Дефолтная ветка = прежняя строка классов байт-в-байт (цвета чёрной полосы → токены
+// с пиксель-фоллбеком §7: bg 0_0_0, text 255_255_255).
+const size = p.size;
+const rootCls =
+	size === "small"
+		? "flex min-h-10 w-full items-center justify-center bg-[rgb(var(--color-bg,0_0_0))] py-2 text-center"
+		: size === "medium"
+			? "flex min-h-12 w-full items-center justify-center bg-[rgb(var(--color-bg,0_0_0))] py-2 text-center"
+			: size === "large"
+				? "flex min-h-14 w-full items-center justify-center bg-[rgb(var(--color-bg,0_0_0))] py-2 text-center"
+				: "w-full bg-[rgb(var(--color-bg,0_0_0))] py-2 text-center";
+
+// Канон textTransform: 'uppercase' (canon-default) И отсутствие = литерал верстальщика
+// uppercase; явный 'none' снимает капс. Типографика полосы — Arsenal 11/md:14 400
+// tracking-[0.04em] (MANNER.md §1, H:43).
+const typoCls =
+	p.textTransform === "none"
+		? "font-manrope text-[11px] font-normal tracking-[0.04em] text-[rgb(var(--color-text,255_255_255))] md:text-[14px]"
+		: "font-manrope text-[11px] font-normal uppercase tracking-[0.04em] text-[rgb(var(--color-text,255_255_255))] md:text-[14px]";
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе; {12,12} =
+// canon-default коэрсера → трактуем как литерал py-2 (паттерн bloom PromoBanner: isCanonPad).
+const pad = p.padding && typeof p.padding === "object" ? p.padding : undefined;
+const isCanonPad = pad && Number(pad.top) === 12 && Number(pad.bottom) === 12;
+const paddingStyle =
+	pad && !isCanonPad
+		? `padding-top:${Number(pad.top) || 0}px;padding-bottom:${Number(pad.bottom) || 0}px;`
+		: undefined;
+---
+
+<div
+	class={rootCls}
+	role="region"
+	aria-live="polite"
+	data-satin-announcement
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	{
+		linkText ? (
+			<p
+				class={typoCls}
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="100"
+				data-puck-subsection-field="text"
+			>
+				{text}
+				<a
+					href={linkHref}
+					class="ml-1 underline decoration-1 underline-offset-2 transition-opacity hover:opacity-80"
+				>
+					{linkText}
+				</a>
+			</p>
+		) : (
+			<a
+				href={linkHref}
+				class={`block ${typoCls} transition-opacity hover:opacity-80`}
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="100"
+				data-puck-subsection-field="text"
+			>
+				{text}
+			</a>
+		)
+	}
+</div>

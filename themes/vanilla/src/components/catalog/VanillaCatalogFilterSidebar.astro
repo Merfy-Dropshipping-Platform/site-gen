@@ -2,7 +2,19 @@
 /**
  * Боковые фильтры каталога Vanilla (Figma Vanila / textile).
  * UI-only: без серверной фильтрации.
+ *
+ * Классы радио/заголовков/«Стоимости» — общие с рядом дропдаунов top-вида
+ * (filter-classes.ts); цвета — токены схем конструктора rgb(var(--color-*))
+ * с фолбэками на родную палитру vanilla.
  */
+import {
+	CATALOG_FILTER_TITLE,
+	CATALOG_PRICE_ROW,
+	CATALOG_PRICE_VALUE,
+	CATALOG_PRICE_WRAP,
+	CATALOG_RADIO_CIRCLE,
+	CATALOG_RADIO_TEXT,
+} from "./filter-classes";
 
 interface RadioOption {
 	value: string;
@@ -38,12 +50,12 @@ const stockOptions: RadioOption[] = [
 	    показывает его при наличии коллекций магазина и уважает ?collection= из
 	    ссылок тайлов Collections/Gallery. Манера = radio-секции сайдбара ниже. */}
 	<div class="flex flex-col gap-3 py-3" data-nt="catalog-collections-filter" style="display:none;">
-		<p class="font-vanilla-arsenal text-base font-normal leading-none text-black">Коллекции</p>
+		<p class={CATALOG_FILTER_TITLE}>Коллекции</p>
 		<div data-collections-options class="flex flex-col gap-3"></div>
 	</div>
 
 	<div class="flex flex-col gap-3 py-3">
-		<p class="font-vanilla-arsenal text-base font-normal leading-none text-black">Сортировать</p>
+		<p class={CATALOG_FILTER_TITLE}>Сортировать</p>
 		<div class="flex flex-col gap-3">
 			{
 				sortOptions.map((option) => {
@@ -58,13 +70,8 @@ const stockOptions: RadioOption[] = [
 								checked={option.checked}
 								class="peer sr-only"
 							/>
-							<span
-								aria-hidden="true"
-								class="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-[#999999] after:pointer-events-none after:absolute after:h-[10px] after:w-[10px] after:rounded-full after:bg-black after:opacity-0 after:content-[''] peer-checked:border-black peer-checked:after:opacity-100 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-black"
-							/>
-							<span class="font-vanilla-arsenal text-base font-normal leading-none text-[#999999] peer-checked:text-black">
-								{option.label}
-							</span>
+							<span aria-hidden="true" class={CATALOG_RADIO_CIRCLE} />
+							<span class={CATALOG_RADIO_TEXT}>{option.label}</span>
 						</label>
 					);
 				})
@@ -73,7 +80,7 @@ const stockOptions: RadioOption[] = [
 	</div>
 
 	<div class="flex flex-col gap-3 py-3">
-		<p class="font-vanilla-arsenal text-base font-normal leading-none text-black">Наличие</p>
+		<p class={CATALOG_FILTER_TITLE}>Наличие</p>
 		<div class="flex flex-col gap-3">
 			{
 				stockOptions.map((option) => {
@@ -88,13 +95,8 @@ const stockOptions: RadioOption[] = [
 								checked={option.checked}
 								class="peer sr-only"
 							/>
-							<span
-								aria-hidden="true"
-								class="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-[#999999] after:pointer-events-none after:absolute after:h-[10px] after:w-[10px] after:rounded-full after:bg-black after:opacity-0 after:content-[''] peer-checked:border-black peer-checked:after:opacity-100 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-black"
-							/>
-							<span class="font-vanilla-arsenal text-base font-normal leading-none text-[#999999] peer-checked:text-black">
-								{option.label}
-							</span>
+							<span aria-hidden="true" class={CATALOG_RADIO_CIRCLE} />
+							<span class={CATALOG_RADIO_TEXT}>{option.label}</span>
 						</label>
 					);
 				})
@@ -103,18 +105,18 @@ const stockOptions: RadioOption[] = [
 	</div>
 
 	<div class="flex flex-col gap-3 py-3">
-		<p class="font-vanilla-arsenal text-base font-normal leading-none text-black">Стоимость</p>
-		<div class="flex w-full flex-col font-vanilla-arsenal text-base font-normal leading-none">
-			<div class="flex h-10 w-full items-center justify-between border-b border-[#999999] text-[#444444]">
+		<p class={CATALOG_FILTER_TITLE}>Стоимость</p>
+		<div class={CATALOG_PRICE_WRAP}>
+			<div class={CATALOG_PRICE_ROW}>
 				<span>от</span>
-				<div class="flex items-center gap-2 text-black">
+				<div class={CATALOG_PRICE_VALUE}>
 					<span>0</span>
 					<span>₽</span>
 				</div>
 			</div>
-			<div class="flex h-10 w-full items-center justify-between border-b border-[#999999] text-[#444444]">
+			<div class={CATALOG_PRICE_ROW}>
 				<span>до</span>
-				<div class="flex items-center gap-2 text-black">
+				<div class={CATALOG_PRICE_VALUE}>
 					<span>5 990</span>
 					<span>₽</span>
 				</div>

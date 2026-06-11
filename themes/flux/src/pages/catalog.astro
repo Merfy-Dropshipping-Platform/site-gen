@@ -38,7 +38,7 @@ const totalCount = catalogProducts.length;
 				<div class="flex flex-wrap items-center justify-between gap-3" data-nt="catalog-filters">
 					<div class="flex flex-wrap items-start gap-3">
 						<details class="relative">
-							<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[#F5F5F5] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+							<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[rgb(var(--color-muted,153_153_153)/0.1)] bg-[rgb(var(--color-surface,255_255_255))] px-3 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
 								<span>Наличие</span>
 								<NtIcon name="dropdown-chevron" sizeClass="size-5" class="transition-transform group-open:rotate-180" />
 							</summary>
@@ -48,7 +48,7 @@ const totalCount = catalogProducts.length;
 						</details>
 
 						<details class="relative">
-							<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[#F5F5F5] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+							<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[rgb(var(--color-muted,153_153_153)/0.1)] bg-[rgb(var(--color-surface,255_255_255))] px-3 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
 								<span>Стоимость</span>
 								<NtIcon name="dropdown-chevron" sizeClass="size-5" class="transition-transform group-open:rotate-180" />
 							</summary>
@@ -58,7 +58,7 @@ const totalCount = catalogProducts.length;
 						</details>
 
 						<details class="relative">
-							<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[#F5F5F5] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+							<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[rgb(var(--color-muted,153_153_153)/0.1)] bg-[rgb(var(--color-surface,255_255_255))] px-3 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
 								<span>Цвет</span>
 								<NtIcon name="dropdown-chevron" sizeClass="size-5" class="transition-transform group-open:rotate-180" />
 							</summary>
@@ -72,18 +72,18 @@ const totalCount = catalogProducts.length;
 						    ссылок тайлов Collections. Манера = бордерные details-кнопки выше,
 						    панель опций — в стиле NtFilterPanel. */}
 						<details class="relative" data-nt="catalog-collections-filter" style="display:none;">
-							<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[#F5F5F5] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+							<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[rgb(var(--color-muted,153_153_153)/0.1)] bg-[rgb(var(--color-surface,255_255_255))] px-3 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
 								<span data-collections-label>Коллекции</span>
 								<NtIcon name="dropdown-chevron" sizeClass="size-5" class="transition-transform group-open:rotate-180" />
 							</summary>
 							<div class="absolute left-0 top-full z-10 mt-1 w-full">
-								<ul data-collections-options class="m-0 flex w-full list-none flex-col gap-2 rounded-[6px] border border-[#F5F5F5] bg-[#FFFFFF] p-3 font-manrope text-[14px] font-normal leading-normal"></ul>
+								<ul data-collections-options class="m-0 flex w-full list-none flex-col gap-2 rounded-[6px] border border-[rgb(var(--color-muted,153_153_153)/0.1)] bg-[rgb(var(--color-surface,255_255_255))] p-3 font-manrope text-[14px] font-normal leading-normal"></ul>
 							</div>
 						</details>
 					</div>
 
 					<details class="relative">
-						<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-end gap-2 rounded-[6px] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+						<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-end gap-2 rounded-[6px] bg-[rgb(var(--color-surface,255_255_255))] px-3 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
 							<span>По популярности</span>
 							<NtIcon name="dropdown-chevron" sizeClass="size-5" />
 						</summary>
@@ -125,15 +125,18 @@ const totalCount = catalogProducts.length;
 				<div class="hidden w-[172px] shrink-0 flex-col gap-4 lg:flex xl:w-[294px]">
 					<NtFilterSidebar class="hidden w-[172px] shrink-0 lg:flex xl:w-[294px]" />
 
-					{/* Коллекции в манере секций NtFilterSidebar (заголовок + вертикальный
-					    список); сам DS-компонент не трогаем — секция рядом с ним.
-					    Скрыта на demo-сборке, гидрация показывает при наличии коллекций. */}
+					{/* Коллекции 1:1 с секциями NtFilterSidebar: тот же контейнер
+					    (p-3/gap-3/rounded-8, без подложки), тот же заголовок 16px и
+					    строки-радио в манере NtRadioField (кружок рисует гидрация +
+					    <style is:global> ниже); сам DS-компонент не трогаем — секция
+					    рядом с ним. Скрыта на demo-сборке, гидрация показывает при
+					    наличии коллекций. */}
 					<div
 						data-nt="catalog-collections-filter"
 						style="display:none;"
 						class="flex w-full flex-col gap-3 rounded-[8px] p-3 font-manrope"
 					>
-						<p class="text-[16px] font-normal leading-normal text-[#000000]">Коллекции</p>
+						<p class="text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]">Коллекции</p>
 						<ul data-collections-options class="m-0 flex w-full list-none flex-col gap-3 p-0 font-manrope text-[16px] font-normal leading-normal"></ul>
 					</div>
 				</div>
@@ -177,6 +180,106 @@ const totalCount = catalogProducts.length;
 	}
 	[data-catalog-layout="side"] [data-catalog-variant="top"] {
 		display: none;
+	}
+
+	/* ——— Токены цветовых схем в зонах фильтров ———
+	   DS-компоненты (node_modules) не правим — переопределяем снаружи по
+	   стабильным data-атрибутам/структуре из исходников DS. Фоллбеки = родные
+	   цвета flux (#000 / #999 / #FFF / #F5F5F5 ≈ muted 10% на белом), поэтому
+	   без схемы вид не меняется ни на пиксель. */
+
+	/* Top-вид: открытые панели NtFilterPanel — поверхность и бордер на токенах. */
+	[data-catalog-variant="top"] [data-nt="filter-panel"] {
+		background-color: rgb(var(--color-surface, 255 255 255));
+		border-color: rgb(var(--color-muted, 153 153 153) / 0.1);
+	}
+	/* Опции панелей: первая (активная) — основной цвет текста, остальные приглушены. */
+	[data-catalog-variant="top"] [data-nt="filter-panel"] > p {
+		color: rgb(var(--color-muted, 153 153 153));
+	}
+	[data-catalog-variant="top"] [data-nt="filter-panel"] > p:first-of-type {
+		color: rgb(var(--color-text, 0 0 0));
+	}
+	/* Строки «от/до» панели «Стоимость»: верхняя — основной цвет, нижняя — приглушённый. */
+	[data-catalog-variant="top"] [data-nt="filter-price-rows"] > div:first-child {
+		color: rgb(var(--color-text, 0 0 0));
+		border-color: rgb(var(--color-text, 0 0 0));
+	}
+	[data-catalog-variant="top"] [data-nt="filter-price-rows"] > div:last-child {
+		color: rgb(var(--color-muted, 153 153 153));
+		border-color: rgb(var(--color-muted, 153 153 153));
+	}
+
+	/* Side-вид: DS-сайдбар рисует собственную белую подложку (bg-[#FFFFFF] на
+	   aside) — снимаем, чтобы фильтры лежали прямо на фоне страницы. */
+	[data-catalog-variant="side"] [data-nt="filter-sidebar"] {
+		background: transparent;
+	}
+	/* Заголовки секций сайдбара. */
+	[data-catalog-variant="side"] [data-nt="filter-sidebar"] > div > p {
+		color: rgb(var(--color-text, 0 0 0));
+	}
+	/* Радио NtRadioField: кружок, точка и подпись на токенах. */
+	[data-catalog-variant="side"] [data-nt="radio-field"] > span[aria-hidden="true"] {
+		border-color: rgb(var(--color-muted, 153 153 153));
+	}
+	[data-catalog-variant="side"] [data-nt="radio-field"] > span[aria-hidden="true"]::after {
+		background-color: rgb(var(--color-text, 0 0 0));
+	}
+	[data-catalog-variant="side"] [data-nt="radio-field"] > input:checked + span[aria-hidden="true"] {
+		border-color: rgb(var(--color-text, 0 0 0));
+	}
+	[data-catalog-variant="side"] [data-nt="radio-field"] > input:focus-visible + span[aria-hidden="true"] {
+		outline-color: rgb(var(--color-text, 0 0 0));
+	}
+	[data-catalog-variant="side"] [data-nt="radio-field"] > span:not([aria-hidden]) {
+		color: rgb(var(--color-muted, 153 153 153));
+	}
+	[data-catalog-variant="side"] [data-nt="radio-field"] > input:checked ~ span:not([aria-hidden]) {
+		color: rgb(var(--color-text, 0 0 0));
+	}
+	/* Строки «от/до» в сайдбаре: обе приглушённые (как в DS). */
+	[data-catalog-variant="side"] [data-nt="filter-price-rows"] > div {
+		color: rgb(var(--color-muted, 153 153 153));
+		border-color: rgb(var(--color-muted, 153 153 153));
+	}
+
+	/* Опции «Коллекции» (заполняет гидрация в обеих раскладках): активная и
+	   hover — основной цвет, остальные приглушённые — как опции NtFilterPanel. */
+	[data-catalog-variant] [data-collection-option] {
+		color: rgb(var(--color-muted, 153 153 153));
+	}
+	[data-catalog-variant] [data-collection-option]:hover,
+	[data-catalog-variant] [data-collection-option][data-active] {
+		color: rgb(var(--color-text, 0 0 0));
+	}
+	/* Радио-кружок опций в сайдбаре — 1:1 с NtRadioField (24px, бордер 2px,
+	   точка 10px; неактивный — muted, активный — основной цвет). */
+	[data-catalog-variant="side"] [data-collection-option] [data-radio-dot] {
+		position: relative;
+		display: flex;
+		width: 24px;
+		height: 24px;
+		flex-shrink: 0;
+		align-items: center;
+		justify-content: center;
+		border: 2px solid rgb(var(--color-muted, 153 153 153));
+		border-radius: 9999px;
+	}
+	[data-catalog-variant="side"] [data-collection-option] [data-radio-dot]::after {
+		content: "";
+		position: absolute;
+		width: 10px;
+		height: 10px;
+		border-radius: 9999px;
+		background-color: rgb(var(--color-text, 0 0 0));
+		opacity: 0;
+	}
+	[data-catalog-variant="side"] [data-collection-option][data-active] [data-radio-dot] {
+		border-color: rgb(var(--color-text, 0 0 0));
+	}
+	[data-catalog-variant="side"] [data-collection-option][data-active] [data-radio-dot]::after {
+		opacity: 1;
 	}
 </style>
 
@@ -240,9 +343,11 @@ const totalCount = catalogProducts.length;
 		const current = ref
 			? collections.find((c) => c.id === ref || c.slug === ref || c.name === ref) ?? null
 			: null;
-		// Опции в манере NtFilterPanel: активная — чёрная, остальные — серые.
-		const optionHtml = (value: string, name: string, active: boolean) =>
-			`<li><button type="button" data-collection-option="${escapeHtml(value)}" class="w-full cursor-pointer text-left transition-colors hover:text-[#000000] ${active ? "text-[#000000]" : "text-[#999999]"}">${escapeHtml(name)}</button></li>`;
+		// Опции в манере темы: top-дропдаун — текстовые строки как в NtFilterPanel,
+		// сайдбар — строки с радио-кружком 1:1 с NtRadioField. Активность хранится
+		// в data-active; цвета и кружок — в <style is:global> на токенах схем.
+		const optionHtml = (value: string, name: string, active: boolean, radio: boolean) =>
+			`<li><button type="button" data-collection-option="${escapeHtml(value)}"${active ? " data-active" : ""} class="${radio ? "flex w-full cursor-pointer items-center gap-2 text-left transition-colors" : "w-full cursor-pointer text-left transition-colors"}">${radio ? '<span data-radio-dot aria-hidden="true"></span>' : ""}<span>${escapeHtml(name)}</span></button></li>`;
 		// Выбор в любом контейнере синхронизирует активную опцию и подпись
 		// дропдауна во ВСЕХ контейнерах (label есть только в row-дропдауне).
 		const syncActive = (value: string, name: string | null) => {
@@ -251,8 +356,8 @@ const totalCount = catalogProducts.length;
 				if (label) label.textContent = name ?? "Коллекции";
 				for (const b of Array.from(box.querySelectorAll<HTMLElement>("[data-collection-option]"))) {
 					const on = (b.getAttribute("data-collection-option") ?? "") === value;
-					b.classList.toggle("text-[#000000]", on);
-					b.classList.toggle("text-[#999999]", !on);
+					if (on) b.setAttribute("data-active", "");
+					else b.removeAttribute("data-active");
 				}
 			}
 		};
@@ -263,10 +368,12 @@ const totalCount = catalogProducts.length;
 			box.style.display = "";
 			const label = box.querySelector<HTMLElement>("[data-collections-label]");
 			if (label && current?.name) label.textContent = current.name;
+			// Радио-вид — только в секции сайдбара (side-раскладка).
+			const radio = box.closest('[data-catalog-variant="side"]') !== null;
 			list.innerHTML =
-				optionHtml("", "Все", !current) +
+				optionHtml("", "Все", !current, radio) +
 				collections
-					.map((c) => optionHtml(c.slug ?? c.id, c.name ?? "Коллекция", !!current && current.id === c.id))
+					.map((c) => optionHtml(c.slug ?? c.id, c.name ?? "Коллекция", !!current && current.id === c.id, radio))
 					.join("");
 			list.addEventListener("click", (ev) => {
 				const btn = (ev.target as HTMLElement).closest<HTMLElement>("[data-collection-option]");

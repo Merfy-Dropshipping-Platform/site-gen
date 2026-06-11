@@ -1,6 +1,13 @@
 ---
 import VanillaProductCard from "../products/VanillaProductCard.astro";
 import VanillaCatalogFilterSidebar from "./VanillaCatalogFilterSidebar.astro";
+import {
+	CATALOG_PRICE_ROW,
+	CATALOG_PRICE_VALUE,
+	CATALOG_PRICE_WRAP,
+	CATALOG_RADIO_CIRCLE,
+	CATALOG_RADIO_TEXT,
+} from "./filter-classes";
 import { catalogProducts } from "../../data/products";
 
 interface Props {
@@ -37,7 +44,9 @@ const productCountLabel = pluralizeProducts(totalCount);
 
 /* ── Раскладка «top» (настройка конструктора): ряд фильтров строкой над гридом.
    UI-only списки повторяют секции VanillaCatalogFilterSidebar; манера vanilla:
-   font-vanilla-arsenal, плоские панели без скруглений, radio с кастомным кружком. ── */
+   font-vanilla-arsenal, плоские панели без скруглений, radio с кастомным кружком
+   (общие классы — filter-classes.ts). Цвета зоны фильтров — токены схем
+   конструктора rgb(var(--color-*)) с фолбэками на родную палитру vanilla. ── */
 
 interface RadioOption {
 	value: string;
@@ -58,14 +67,13 @@ const rowStockOptions: RadioOption[] = [
 	{ value: "out", label: "Распродано" },
 ];
 
+/* Summary — типографика заголовков секций сайдбара; открытая панель — плоская,
+   border приглушённый (#999999), фон = фон страницы rgb(var(--color-bg)) —
+   единообразно для всех дропдаунов ряда (Наличие/Стоимость/Коллекции/сортировка). */
 const rowSummaryClass =
-	"flex cursor-pointer list-none items-center gap-2 font-vanilla-arsenal text-base font-normal leading-none text-black transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden";
+	"flex cursor-pointer list-none items-center gap-2 font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden";
 const rowPanelClass =
-	"absolute top-full z-30 mt-2 flex w-[240px] flex-col gap-3 border border-[#999999] bg-[var(--vanilla-surface)] p-4";
-const radioCircleClass =
-	"relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-[#999999] after:pointer-events-none after:absolute after:h-[10px] after:w-[10px] after:rounded-full after:bg-black after:opacity-0 after:content-[''] peer-checked:border-black peer-checked:after:opacity-100 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-black";
-const radioTextClass =
-	"font-vanilla-arsenal text-base font-normal leading-none text-[#999999] peer-checked:text-black";
+	"absolute top-full z-30 mt-2 flex w-[240px] flex-col gap-3 border border-[rgb(var(--color-muted,153_153_153))] bg-[rgb(var(--color-bg,238_238_238))] p-4";
 ---
 
 <section
@@ -94,8 +102,10 @@ const radioTextClass =
 			</h1>
 		</header>
 
-		{/* ── Раскладка «top»: фильтры/сортировка строкой над гридом ── */}
-		<div class="flex flex-col gap-8" data-catalog-variant="top">
+		{/* ── Раскладка «top»: фильтры/сортировка строкой над гридом. Ритм отступов —
+		    как на соседних страницах каталога: ряд отбит от заголовка контейнерным
+		    gap-10 и тем же шагом от грида; грид→футер — gap-8, как в side-виде. ── */}
+		<div class="flex flex-col gap-10" data-catalog-variant="top">
 			<div
 				class="relative z-30 flex flex-wrap items-center justify-between gap-x-6 gap-y-4"
 				data-nt="catalog-filters"
@@ -119,8 +129,8 @@ const radioTextClass =
 											checked={option.checked}
 											class="peer sr-only"
 										/>
-										<span aria-hidden="true" class={radioCircleClass} />
-										<span class={radioTextClass}>{option.label}</span>
+										<span aria-hidden="true" class={CATALOG_RADIO_CIRCLE} />
+										<span class={CATALOG_RADIO_TEXT}>{option.label}</span>
 									</label>
 								))
 							}
@@ -135,17 +145,17 @@ const radioTextClass =
 							</svg>
 						</summary>
 						<div class={`${rowPanelClass} left-0`}>
-							<div class="flex w-full flex-col font-vanilla-arsenal text-base font-normal leading-none">
-								<div class="flex h-10 w-full items-center justify-between border-b border-[#999999] text-[#444444]">
+							<div class={CATALOG_PRICE_WRAP}>
+								<div class={CATALOG_PRICE_ROW}>
 									<span>от</span>
-									<div class="flex items-center gap-2 text-black">
+									<div class={CATALOG_PRICE_VALUE}>
 										<span>0</span>
 										<span>₽</span>
 									</div>
 								</div>
-								<div class="flex h-10 w-full items-center justify-between border-b border-[#999999] text-[#444444]">
+								<div class={CATALOG_PRICE_ROW}>
 									<span>до</span>
-									<div class="flex items-center gap-2 text-black">
+									<div class={CATALOG_PRICE_VALUE}>
 										<span>5 990</span>
 										<span>₽</span>
 									</div>
@@ -193,8 +203,8 @@ const radioTextClass =
 										checked={option.checked}
 										class="peer sr-only"
 									/>
-									<span aria-hidden="true" class={radioCircleClass} />
-									<span class={radioTextClass}>{option.label}</span>
+									<span aria-hidden="true" class={CATALOG_RADIO_CIRCLE} />
+									<span class={CATALOG_RADIO_TEXT}>{option.label}</span>
 								</label>
 							))
 						}
@@ -202,38 +212,40 @@ const radioTextClass =
 				</details>
 			</div>
 
-			<ul
-				class="grid grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:grid-cols-3 md:gap-x-4 md:gap-y-12"
-				role="list"
-				data-nt="catalog-grid"
-			>
-				{displayedProducts.map((product, index) => (
-					<li data-product-id={product.id}>
-						<VanillaProductCard product={product} priority={index < 2} />
-					</li>
-				))}
-			</ul>
+			<div class="flex flex-col gap-8">
+				<ul
+					class="grid grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:grid-cols-3 md:gap-x-4 md:gap-y-12"
+					role="list"
+					data-nt="catalog-grid"
+				>
+					{displayedProducts.map((product, index) => (
+						<li data-product-id={product.id}>
+							<VanillaProductCard product={product} priority={index < 2} />
+						</li>
+					))}
+				</ul>
 
-			<div
-				class:list={[
-					"flex flex-col items-stretch gap-4 sm:flex-row sm:items-center",
-					showLoadMore ? "sm:justify-between" : "sm:justify-end",
-				]}
-			>
-				{
-					showLoadMore && (
-						<button
-							type="button"
-							data-action="load-more"
-							class="inline-flex h-12 min-h-12 w-full items-center justify-center bg-[var(--vanilla-header-bg)] px-6 font-vanilla-arsenal text-base font-normal uppercase leading-none text-white transition-opacity hover:opacity-90 sm:w-auto sm:px-16"
-						>
-							Смотреть ещё
-						</button>
-					)
-				}
-				<span class="font-vanilla-arsenal text-base font-normal leading-none text-black" data-nt="catalog-count">
-					{productCountLabel}
-				</span>
+				<div
+					class:list={[
+						"flex flex-col items-stretch gap-4 sm:flex-row sm:items-center",
+						showLoadMore ? "sm:justify-between" : "sm:justify-end",
+					]}
+				>
+					{
+						showLoadMore && (
+							<button
+								type="button"
+								data-action="load-more"
+								class="inline-flex h-12 min-h-12 w-full items-center justify-center bg-[var(--vanilla-header-bg)] px-6 font-vanilla-arsenal text-base font-normal uppercase leading-none text-white transition-opacity hover:opacity-90 sm:w-auto sm:px-16"
+							>
+								Смотреть ещё
+							</button>
+						)
+					}
+					<span class="font-vanilla-arsenal text-base font-normal leading-none text-black" data-nt="catalog-count">
+						{productCountLabel}
+					</span>
+				</div>
 			</div>
 		</div>
 
@@ -308,6 +320,12 @@ const radioTextClass =
 		updateCount,
 		type RealCollection,
 	} from "../../lib/storefront-hydrate";
+	import {
+		CATALOG_OPTION_ACTIVE,
+		CATALOG_OPTION_IDLE,
+		CATALOG_RADIO_CIRCLE,
+		CATALOG_RADIO_TEXT,
+	} from "./filter-classes";
 
 	// Реальные товары (Option B): на published-сайте /data/products.json реальный →
 	// перерисовываем demo-гриды ОБЕИХ раскладок (top/side) и счётчики. На demo-сборке
@@ -335,29 +353,47 @@ const radioTextClass =
 		updateCount('[data-nt="catalog-count"]', items.length);
 	}
 
-	// Radio-опция в манере секций сайдбара (peer sr-only input + кастомный кружок).
-	const RADIO_CIRCLE =
-		"relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-[#999999] after:pointer-events-none after:absolute after:h-[10px] after:w-[10px] after:rounded-full after:bg-black after:opacity-0 after:content-[''] peer-checked:border-black peer-checked:after:opacity-100 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-black";
-	const RADIO_TEXT =
-		"font-vanilla-arsenal text-base font-normal leading-none text-[#999999] peer-checked:text-black";
-
 	let radioNameSeq = 0; // своя radio-группа на контейнер — иначе checked конфликтует между раскладками
+
+	/** Опция фильтра «Коллекции» с гарантированно непустыми значением и лейблом. */
+	interface CollectionOption {
+		id: string;
+		value: string;
+		label: string;
+	}
+
+	/** Готовит пункты списков «Коллекции»: коллекции с пустым именем давали пустые
+	 *  строки между пунктами дропдауна top-вида (`?? "Коллекция"` пропускает "") —
+	 *  такие, как и без slug/id, отфильтровываются в обеих раскладках. */
+	function collectionOptions(): CollectionOption[] {
+		return (catalogCollections ?? [])
+			.map((c) => {
+				const slug = typeof c?.slug === "string" ? c.slug.trim() : "";
+				const id = typeof c?.id === "string" ? c.id.trim() : "";
+				const label = typeof c?.name === "string" ? c.name.trim() : "";
+				return { id, value: slug || id, label };
+			})
+			.filter((option) => option.value !== "" && option.label !== "");
+	}
 
 	/** Перерисовывает опции одного контейнера «Коллекции» из текущего ?collection=. */
 	function renderCollectionsBox(box: HTMLElement): void {
 		const list = box.querySelector<HTMLElement>("[data-collections-options]");
-		if (!list || !catalogCollections) return;
+		if (!list) return;
+		const options = collectionOptions();
+		if (options.length === 0) return;
 		const current = findCollection(catalogCollections, currentCollectionRef());
 		if (box.hasAttribute("data-collections-dropdown")) {
-			// Row-ветка: список-кнопки в дропдауне, манера vanilla (#999999 → black).
+			// Row-ветка: список-кнопки в дропдауне, манера vanilla (приглушённый → текст).
 			const label = box.querySelector<HTMLElement>("[data-collections-label]");
-			if (label) label.textContent = current?.name ?? "Коллекции";
+			const currentLabel = typeof current?.name === "string" ? current.name.trim() : "";
+			if (label) label.textContent = currentLabel || "Коллекции";
 			const optionHtml = (value: string, name: string, active: boolean) =>
-				`<button type="button" data-collection-option="${escapeHtml(value)}" class="cursor-pointer text-left font-vanilla-arsenal text-base font-normal leading-none transition-colors ${active ? "text-black" : "text-[#999999] hover:text-black"}">${escapeHtml(name)}</button>`;
+				`<button type="button" data-collection-option="${escapeHtml(value)}" class="cursor-pointer text-left font-vanilla-arsenal text-base font-normal leading-none transition-colors ${active ? CATALOG_OPTION_ACTIVE : CATALOG_OPTION_IDLE}">${escapeHtml(name)}</button>`;
 			list.innerHTML =
 				optionHtml("", "Все", !current) +
-				catalogCollections
-					.map((c) => optionHtml(c.slug ?? c.id, c.name ?? "Коллекция", !!current && current.id === c.id))
+				options
+					.map((option) => optionHtml(option.value, option.label, !!current && current.id === option.id))
 					.join("");
 		} else {
 			// Sidebar-ветка: radio в манере секций сайдбара.
@@ -369,13 +405,13 @@ const radioTextClass =
 			const optionHtml = (value: string, name: string, active: boolean) =>
 				`<label class="group flex cursor-pointer items-center gap-2">
 	<input type="radio" name="${escapeHtml(radioName)}" value="${escapeHtml(value)}" data-collection-option="${escapeHtml(value)}"${active ? " checked" : ""} class="peer sr-only" />
-	<span aria-hidden="true" class="${RADIO_CIRCLE}"></span>
-	<span class="${RADIO_TEXT}">${escapeHtml(name)}</span>
+	<span aria-hidden="true" class="${CATALOG_RADIO_CIRCLE}"></span>
+	<span class="${CATALOG_RADIO_TEXT}">${escapeHtml(name)}</span>
 </label>`;
 			list.innerHTML =
 				optionHtml("", "Все", !current) +
-				catalogCollections
-					.map((c) => optionHtml(c.slug ?? c.id, c.name ?? "Коллекция", !!current && current.id === c.id))
+				options
+					.map((option) => optionHtml(option.value, option.label, !!current && current.id === option.id))
 					.join("");
 		}
 	}
@@ -403,7 +439,9 @@ const radioTextClass =
 		);
 		if (boxes.length === 0) return;
 		catalogCollections = await loadRealCollections();
-		if (!catalogCollections || catalogCollections.length === 0) return;
+		// Нет ни одного пригодного пункта (см. collectionOptions) — секции «Коллекции»
+		// остаются скрытыми, а не дропдаун из одного «Все».
+		if (collectionOptions().length === 0) return;
 		for (const box of boxes) {
 			if (box.getAttribute("data-cf-hydrated") === "true") continue; // идемпотентность astro:page-load
 			const list = box.querySelector<HTMLElement>("[data-collections-options]");

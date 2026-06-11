@@ -72,7 +72,10 @@ const totalCount = products.length;
 
 						{/* Фильтр по коллекциям: скрыт на demo-сборке, гидрация показывает
 						    его при наличии коллекций магазина и уважает ?collection= из
-						    ссылок тайлов Collections/Gallery. Манера = details-дропдауны выше.
+						    ссылок тайлов Collections/Gallery. Манера = details-дропдауны выше,
+						    открытая панель — 1:1 рецепт корня NtFilterPanel (w-180/min-h-97/
+						    gap-2/rounded-6/border/p-3/14px/leading-100%), цвета токенами схем
+						    с фоллбеками к значениям DS (#FFFFFF / #F5F5F5).
 						    Активное состояние синхронизируется с секцией сайдбара (side). */}
 						<details class="relative [&[open]]:z-30" data-nt="catalog-collections-filter" style="display:none;">
 							<summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
@@ -81,8 +84,8 @@ const totalCount = products.length;
 									<RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
 								</span>
 							</summary>
-							<div class="absolute left-0 top-full z-30 mt-2 w-[200px]">
-								<div class="rounded-[var(--radius-card,8px)] border border-[rgb(var(--color-text,0_0_0))]/10 bg-[rgb(var(--color-bg,255_255_255))] p-4 shadow-sm">
+							<div class="absolute left-0 top-full z-30 mt-2 w-[180px]">
+								<div class="flex min-h-[97px] w-[180px] flex-col justify-center gap-2 rounded-[6px] border border-[rgb(var(--color-surface,245_245_245))] bg-[rgb(var(--color-surface,255_255_255))] p-3 font-manrope text-[14px] font-normal leading-[100%]">
 									<ul data-collections-options class="m-0 flex list-none flex-col gap-2 p-0"></ul>
 								</div>
 							</div>
@@ -132,15 +135,17 @@ const totalCount = products.length;
 					<NtFilterSidebar class="w-full" />
 
 					{/* Фильтр по коллекциям в манере секций сайдбара (NtFilterSidebar не трогаем):
-					    скрыт на demo-сборке, гидрация показывает его при наличии коллекций
-					    магазина и синхронизирует выбор с дропдауном top-раскладки. */}
+					    та же сетка секции DS (rounded-8 / p-3 / gap-3, заголовок 16px leading-normal),
+					    цвета — токены схем с фоллбеками DS. Скрыт на demo-сборке, гидрация
+					    показывает его при наличии коллекций магазина и синхронизирует выбор
+					    с дропдауном top-раскладки. */}
 					<div
 						class="flex flex-col gap-3 rounded-[8px] p-3 font-manrope"
 						data-nt="catalog-collections-filter"
 						data-collections-style="sidebar"
 						style="display:none;"
 					>
-						<p class="text-[16px] font-normal leading-normal text-[#000000]">Коллекции</p>
+						<p class="text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]">Коллекции</p>
 						<ul data-collections-options class="m-0 flex list-none flex-col gap-3 p-0"></ul>
 					</div>
 				</div>
@@ -184,6 +189,71 @@ const totalCount = products.length;
 	}
 	[data-catalog-layout="side"] [data-catalog-variant="top"] {
 		display: none;
+	}
+
+	/* ── Переопределения DS-компонентов фильтров (сами DS-файлы не трогаем). ──
+	   Селекторы — устойчивые data-атрибуты из исходников DS
+	   (NtFilterSidebar / NtRadioField / NtFilterPriceRows / NtFilterPanel),
+	   скоуп — раскладки каталога. Цвета — токены цветовых схем конструктора
+	   с фоллбеками к исходным значениям DS (#000000 / #999999 / #FFFFFF /
+	   #F5F5F5), чтобы вид без схем не менялся. */
+
+	/* side: убираем белую плиту сайдбара — колонка фильтров лежит прямо
+	   на фоне страницы (манера satin/vanilla). */
+	[data-catalog-variant="side"] [data-nt="filter-sidebar"] {
+		background: transparent;
+		border: 0;
+		border-radius: 0;
+		box-shadow: none;
+	}
+
+	/* side: заголовки секций сайдбара («Сортировать/Наличие/Стоимость/Цвет») */
+	[data-catalog-variant="side"] [data-nt="filter-sidebar"] > div > p {
+		color: rgb(var(--color-text, 0 0 0));
+	}
+
+	/* side: радио DS — кольцо, точка, подпись (структура NtRadioField:
+	   input.peer + span[aria-hidden] (кольцо) + span (подпись)) */
+	[data-catalog-variant="side"] [data-nt="radio-field"] > span[aria-hidden="true"] {
+		border-color: rgb(var(--color-muted, 153 153 153));
+		outline-color: rgb(var(--color-text, 0 0 0));
+	}
+	[data-catalog-variant="side"] [data-nt="radio-field"] > span[aria-hidden="true"]::after {
+		background-color: rgb(var(--color-text, 0 0 0));
+	}
+	[data-catalog-variant="side"] [data-nt="radio-field"] > input:checked ~ span[aria-hidden="true"] {
+		border-color: rgb(var(--color-text, 0 0 0));
+	}
+	[data-catalog-variant="side"] [data-nt="radio-field"] > span:last-child {
+		color: rgb(var(--color-muted, 153 153 153));
+	}
+	[data-catalog-variant="side"] [data-nt="radio-field"] > input:checked ~ span:last-child {
+		color: rgb(var(--color-text, 0 0 0));
+	}
+
+	/* обе раскладки: строки «от/до» секции «Стоимость» */
+	[data-catalog-variant="side"] [data-nt="filter-price-rows"] > div,
+	[data-catalog-variant="top"] [data-nt="filter-price-rows"] > div {
+		color: rgb(var(--color-muted, 153 153 153));
+		border-color: rgb(var(--color-muted, 153 153 153));
+	}
+	/* в панели top строка «от» — активная (в DS: #000000) */
+	[data-catalog-variant="top"] [data-nt="filter-price-rows"][data-nt-variant="panel"] > div:first-child {
+		color: rgb(var(--color-text, 0 0 0));
+		border-color: rgb(var(--color-text, 0 0 0));
+	}
+
+	/* top: открытые панели DS-дропдаунов — поверхность и кайма токенами */
+	[data-catalog-variant="top"] [data-nt="filter-panel"] {
+		background-color: rgb(var(--color-surface, 255 255 255));
+		border-color: rgb(var(--color-surface, 245 245 245));
+	}
+	/* пункты панелей: первый — активный (цвет текста), остальные — muted */
+	[data-catalog-variant="top"] [data-nt="filter-panel"] > p {
+		color: rgb(var(--color-muted, 153 153 153));
+	}
+	[data-catalog-variant="top"] [data-nt="filter-panel"] > p:first-of-type {
+		color: rgb(var(--color-text, 0 0 0));
 	}
 </style>
 
@@ -234,13 +304,15 @@ const totalCount = products.length;
 		updateCount('[data-nt="catalog-count"]', items.length);
 	}
 
-	// Опция фильтра: top — пункт details-дропдауна, side — радио в манере сайдбара (NtRadioField 1920)
+	// Опция фильтра: side — радио в манере NtRadioField 1920 (кольцо 24px, точка 10px),
+	// top — пункт в манере NtFilterPanel (активный = цвет текста, остальные = muted).
+	// Цвета — токены схем с фоллбеками к значениям DS (#000000 / #999999).
 	function collectionOptionHtml(value: string, name: string, active: boolean, sidebar: boolean): string {
 		if (sidebar) {
-			const ring = `relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${active ? "border-[#000000]" : "border-[#999999]"} after:pointer-events-none after:absolute after:h-[10px] after:w-[10px] after:rounded-full after:bg-[#000000] after:content-[''] ${active ? "after:opacity-100" : "after:opacity-0"}`;
-			return `<li><button type="button" data-collection-option="${escapeHtml(value)}" aria-pressed="${active}" class="flex w-full cursor-pointer items-center gap-2 text-left font-manrope text-[16px] font-normal leading-normal"><span aria-hidden="true" class="${ring}"></span><span class="${active ? "text-[#000000]" : "text-[#999999]"}">${escapeHtml(name)}</span></button></li>`;
+			const ring = `relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${active ? "border-[rgb(var(--color-text,0_0_0))]" : "border-[rgb(var(--color-muted,153_153_153))]"} after:pointer-events-none after:absolute after:h-[10px] after:w-[10px] after:rounded-full after:bg-[rgb(var(--color-text,0_0_0))] after:content-[''] ${active ? "after:opacity-100" : "after:opacity-0"}`;
+			return `<li><button type="button" data-collection-option="${escapeHtml(value)}" aria-pressed="${active}" class="flex w-full cursor-pointer items-center gap-2 text-left font-manrope text-[16px] font-normal leading-normal"><span aria-hidden="true" class="${ring}"></span><span class="${active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,153_153_153))]"}">${escapeHtml(name)}</span></button></li>`;
 		}
-		return `<li><button type="button" data-collection-option="${escapeHtml(value)}" class="w-full cursor-pointer text-left font-manrope text-[14px] leading-[1.4] text-[rgb(var(--color-text,0_0_0))] transition-opacity ${active ? "underline underline-offset-4" : "opacity-70 hover:opacity-100"}">${escapeHtml(name)}</button></li>`;
+		return `<li><button type="button" data-collection-option="${escapeHtml(value)}" aria-pressed="${active}" class="w-full cursor-pointer text-left font-manrope text-[14px] font-normal leading-[100%] transition-colors ${active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,153_153_153))] hover:text-[rgb(var(--color-text,0_0_0))]"}">${escapeHtml(name)}</button></li>`;
 	}
 
 	// Перерисовывает опции и активное состояние во ВСЕХ контейнерах фильтра коллекций

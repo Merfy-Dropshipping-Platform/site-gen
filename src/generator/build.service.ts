@@ -974,6 +974,26 @@ export async function runBuildPipeline(
       } else {
         logger.warn(`[themes-v2] RPC returned 0 products for site ${params.siteId} — live will show demo`);
       }
+      // Инжект collections.json — гидрация канон-секций (Popular фильтр по
+      // коллекции, Collections/Gallery резолв имени/обложки) читает
+      // /data/collections.json на статичном live (storefront-data с live-origin
+      // не резолвится, см. products.json выше). Форма нормализована как в
+      // storefront-data endpoint: name/slug/image/productIds (membership товаров).
+      if (Array.isArray(v2Store.collections) && v2Store.collections.length > 0) {
+        const v2Collections = (v2Store.collections as Array<Record<string, any>>).map((c) => {
+          const images = Array.isArray(c.images) ? c.images : [];
+          const image = c.image ?? (images[0] ? (typeof images[0] === "string" ? images[0] : images[0]?.url) : null);
+          const slug = c.slug ?? c.handle ?? c.id;
+          const productIds = (v2Store.products as Array<Record<string, any>>)
+            .filter((p) => Array.isArray(p.collections) && p.collections.some((pc: any) => pc && (pc.id === c.id || (pc.slug && pc.slug === slug))))
+            .map((p) => p.id);
+          return { id: c.id, name: c.name ?? c.title, slug, image, productIds };
+        });
+        const v2CollectionsPath = path.join(ctx.distDir, "data", "collections.json");
+        await fs.mkdir(path.dirname(v2CollectionsPath), { recursive: true });
+        await fs.writeFile(v2CollectionsPath, JSON.stringify(v2Collections, null, 2), "utf8");
+        logger.log(`[themes-v2] Injected ${v2Collections.length} collections into data/collections.json for site ${params.siteId}`);
+      }
       // Фаза 3: tokens.css настроек темы — статикой во все страницы диста
       // (контентные + сложные). Источник = revision.themeSettings, тот же
       // buildTokensCss что в превью → превью = live.

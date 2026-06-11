@@ -143,6 +143,12 @@ const viewAllHref =
 	(!!viewAllRaw && typeof viewAllRaw === "object" && typeof viewAllRaw.href === "string" && viewAllRaw.href) ||
 	"/catalog";
 
+// Канон collection (collectionPicker, id или slug): носитель — data-collection
+// на гриде; фильтрацию делает гидрация (filterByCollection: productIds коллекции
+// → membership товара → все, паритет theme-base). Demo-сборка без данных — no-op.
+const collectionRef =
+	typeof p.collection === "string" && p.collection.trim() ? p.collection.trim() : undefined;
+
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T11).
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
@@ -169,6 +175,7 @@ const paddingStyle = p.padding
 			data-nt="popular-grid"
 			style={gridStyle}
 			data-cards={cardsN !== 4 ? String(cardsN) : undefined}
+			data-collection={collectionRef}
 			data-next-photo={nextPhoto ? "true" : undefined}
 			data-quick-add={quickAddMode}
 			data-qa-text={quickAddMode ? quickAddText : undefined}
@@ -211,6 +218,8 @@ const paddingStyle = p.padding
 <script>
 	import {
 		loadRealProducts,
+		loadRealCollections,
+		filterByCollection,
 		renderCardHtml,
 		escapeHtml,
 		productHref,
@@ -221,12 +230,15 @@ const paddingStyle = p.padding
 	// грида, дефолт 4 — поведение верстальщика). Demo-сборка → no-op. Канон-поля
 	// T13 поверх: data-quick-add/-qa-text/-qa-class → кнопка на гидрированной
 	// карточке (товары с вариантами → ссылка на PDP), data-next-photo → data-image-2
-	// (вторая картинка товара) для hover-скрипта.
+	// (вторая картинка товара) для hover-скрипта, data-collection → фильтр по
+	// выбранной в конструкторе коллекции (раньше настройка игнорировалась).
 	const hydratePopular = async () => {
 		const grids = Array.from(document.querySelectorAll<HTMLElement>('[data-nt="popular-grid"]'));
 		if (grids.length === 0) return;
 		const products = await loadRealProducts();
 		if (!products) return;
+		const needCollections = grids.some((g) => g.getAttribute("data-collection"));
+		const collections = needCollections ? await loadRealCollections() : null;
 		for (const grid of grids) {
 			const limitRaw = Number(grid.getAttribute("data-cards"));
 			const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? limitRaw : 4;
@@ -234,7 +246,9 @@ const paddingStyle = p.padding
 			const qaText = grid.getAttribute("data-qa-text") || "В корзину";
 			const qaClass = grid.getAttribute("data-qa-class") || "";
 			const wantNextPhoto = grid.hasAttribute("data-next-photo");
-			const items = products.slice(0, limit);
+			const collectionRef = grid.getAttribute("data-collection");
+			const pool = collectionRef ? filterByCollection(products, collections, collectionRef) : products;
+			const items = pool.slice(0, limit);
 			grid.innerHTML = items
 				.map((p) => {
 					const img2 =

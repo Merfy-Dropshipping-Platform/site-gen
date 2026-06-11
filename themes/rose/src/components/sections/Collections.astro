@@ -55,8 +55,10 @@ const gridStyle = cols ? `--cols:${cols}` : undefined;
 // Канон collections[] (≤10): карточки из пропса при непустом массиве (название/
 // картинка/ссылка по shape схемы; разметка = RoseCollectionCard, плоский <img> как
 // в гидрации; без картинки — surface-плитка как канон-плейсхолдер). Иначе —
-// демо-коллекции верстальщика дословно. Резолва collectionId→имя/картинка у
-// rose-сборки нет (нет collections.json/siteId) — рендерим сохранённые поля item.
+// демо-коллекции верстальщика дословно. SSR рендерит сохранённые поля item,
+// резолв collectionId→имя/обложка делает гидрация ниже (data-collection-ref):
+// live — /data/collections.json, превью — storefront-data; паритет theme-base
+// (имя коллекции перебивает ручной heading, обложка — при пустой своей).
 const cardLinkBase =
 	typeof p.cardLinkBase === "string" && p.cardLinkBase.trim() ? p.cardLinkBase : "/catalog?collection=";
 const propCollections = (Array.isArray(p.collections) ? p.collections : [])
@@ -66,6 +68,7 @@ const propCollections = (Array.isArray(p.collections) ? p.collections : [])
 		const collectionId =
 			typeof c.collectionId === "string" && c.collectionId.trim() ? c.collectionId.trim() : null;
 		return {
+			collectionId,
 			name:
 				(typeof c.heading === "string" && c.heading) ||
 				(typeof c.name === "string" && c.name) ||
@@ -76,6 +79,7 @@ const propCollections = (Array.isArray(p.collections) ? p.collections : [])
 				typeof c.image === "string" && c.image
 					? c.image
 					: `/images/Коллекция_${(i % 3) + 1}.webp`,
+			hasOwnImage: !!(typeof c.image === "string" && c.image),
 			href: collectionId ? `${cardLinkBase}${collectionId}` : "#",
 		};
 	});
@@ -113,6 +117,8 @@ const paddingStyle = p.padding
 						class="group flex w-full cursor-pointer flex-col gap-5"
 						aria-label={c.name}
 						data-nt="rose-collection-card"
+						data-collection-ref={c.collectionId ?? undefined}
+						data-own-image={c.hasOwnImage ? "true" : undefined}
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index={i}
 						data-puck-subsection-field="collections"
@@ -140,6 +146,43 @@ const paddingStyle = p.padding
 		</ul>
 	</div>
 </section>
+
+<script>
+	import { loadRealCollections, findCollection } from "../../lib/storefront-hydrate";
+
+	// Резолв collectionId→имя/обложка на карточках (data-collection-ref).
+	// Паритет theme-base resolveManual: имя коллекции перебивает ручной heading;
+	// обложка коллекции подставляется, только если мерчант не загрузил свою
+	// (data-own-image). Без данных (demo-сборка) — no-op, SSG остаётся.
+	const hydrateCollectionTiles = async () => {
+		const tiles = Array.from(
+			document.querySelectorAll<HTMLElement>('[data-nt="rose-collection-card"][data-collection-ref]'),
+		);
+		if (tiles.length === 0) return;
+		const collections = await loadRealCollections();
+		if (!collections) return;
+		for (const tile of tiles) {
+			const col = findCollection(collections, tile.getAttribute("data-collection-ref"));
+			if (!col) continue;
+			if (col.name) {
+				const h3 = tile.querySelector(".rose-collection-name");
+				if (h3 && h3.textContent !== col.name) h3.textContent = col.name;
+				tile.setAttribute("aria-label", col.name);
+			}
+			const cover = col.image || (Array.isArray(col.images) ? col.images[0] : "");
+			if (cover && tile.getAttribute("data-own-image") !== "true") {
+				const img = tile.querySelector("img");
+				if (img && img.getAttribute("src") !== cover) {
+					img.setAttribute("src", cover);
+					if (col.name) img.setAttribute("alt", col.name);
+				}
+			}
+		}
+	};
+
+	hydrateCollectionTiles();
+	document.addEventListener("astro:page-load", hydrateCollectionTiles);
+</script>
 
 <style>
 	/* Figma 375: section title Comfortaa 14, subtitle Manrope 12. NtSectionHeading не пробрасывает class на h2/p. */

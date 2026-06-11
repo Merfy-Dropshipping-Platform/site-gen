@@ -34,6 +34,14 @@ const stockOptions: RadioOption[] = [
 	class:list={["flex w-full max-w-full shrink-0 flex-col gap-3 lg:w-[294px]", className]}
 	data-nt="vanilla-filter-sidebar"
 >
+	{/* Фильтр по коллекциям: скрыт на demo-сборке, гидрация (VanillaCatalogSection)
+	    показывает его при наличии коллекций магазина и уважает ?collection= из
+	    ссылок тайлов Collections/Gallery. Манера = radio-секции сайдбара ниже. */}
+	<div class="flex flex-col gap-3 py-3" data-nt="catalog-collections-filter" style="display:none;">
+		<p class="font-vanilla-arsenal text-base font-normal leading-none text-black">Коллекции</p>
+		<div data-collections-options class="flex flex-col gap-3"></div>
+	</div>
+
 	<div class="flex flex-col gap-3 py-3">
 		<p class="font-vanilla-arsenal text-base font-normal leading-none text-black">Сортировать</p>
 		<div class="flex flex-col gap-3">

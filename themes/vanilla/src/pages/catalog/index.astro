@@ -17,15 +17,20 @@
 				var path = location.pathname.replace(/\/+$/, "");
 				if (path !== "/catalog") return;
 				var params = new URLSearchParams(location.search);
+				var collection = params.get("collection");
 				var dest = "/catalog/textile";
-				if (params.get("category") === "decor" || params.get("collection") === "Декор") {
+				if (params.get("category") === "decor" || collection === "Декор") {
 					dest = "/catalog/decor";
 				}
-				if (params.get("category") === "textile" || params.get("collection") === "Текстиль") {
+				if (params.get("category") === "textile" || collection === "Текстиль") {
 					dest = "/catalog/textile";
 				}
 				params.delete("category");
-				params.delete("collection");
+				// Литералы «Декор»/«Текстиль» — demo-категории, они уже выбрали страницу выше.
+				// Реальный slug/id коллекции пробрасываем дальше — его читает фильтр «Коллекции».
+				if (collection === "Декор" || collection === "Текстиль") {
+					params.delete("collection");
+				}
 				var rest = params.toString();
 				if (rest) dest += "?" + rest;
 				location.replace(dest + location.hash);

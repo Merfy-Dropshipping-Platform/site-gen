@@ -59,8 +59,15 @@ const skeleton = {
 		const products = await loadRealProducts();
 		if (!products) return; // demo-сборка без products.json — оставляем skeleton
 
-		const id = idFromUrl();
-		const p = id ? products.find((x) => x.id === id || x.slug === id) : null;
+		// Приоритет: ?id= (переход с карточки) → выбранный в конструкторе товар
+		// (настройка «Выбор товара», инжектится превью/билдом как глобал) →
+		// первый товар магазина (прямой заход на /product без id).
+		const defaultId =
+			(window as unknown as { __MERFY_DEFAULT_PRODUCT_ID__?: string }).__MERFY_DEFAULT_PRODUCT_ID__ ?? null;
+		const id = idFromUrl() ?? defaultId;
+		const p = id
+			? products.find((x) => x.id === id || x.slug === id) ?? (idFromUrl() ? null : products[0] ?? null)
+			: products[0] ?? null;
 
 		if (!p) {
 			section.hidden = true;

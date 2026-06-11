@@ -63,6 +63,22 @@ const totalCount = products.length;
 									<NtFilterPanel panel="color" />
 								</div>
 							</details>
+
+							{/* Фильтр по коллекциям: скрыт на demo-сборке, гидрация показывает
+							    его при наличии коллекций магазина и уважает ?collection= из
+							    ссылок тайлов Collections. Манера = details-дропдауны выше,
+							    панель = манера NtFilterPanel. */}
+							<details class="group relative" data-nt="catalog-collections-filter" style="display:none;">
+								<summary class="flex h-8 min-w-[120px] cursor-pointer list-none items-center justify-between gap-2 bg-white px-0 font-manrope text-[16px] font-normal uppercase leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+									<span data-collections-label>Коллекции</span>
+									<NtIcon name="dropdown-chevron" sizeClass="size-6" class="transition-transform group-open:rotate-180" />
+								</summary>
+								<div class="absolute left-0 top-full z-10 mt-1">
+									<div class="flex w-[200px] flex-col gap-2 rounded-[6px] border border-[#F5F5F5] bg-[#FFFFFF] p-3 font-manrope text-[14px] font-normal leading-[100%]">
+										<ul data-collections-options class="m-0 flex list-none flex-col gap-2 p-0"></ul>
+									</div>
+								</div>
+							</details>
 						</div>
 
 						<details class="group relative">
@@ -167,13 +183,87 @@ const totalCount = products.length;
 </script>
 
 <script>
-	import { hydrateGrid, updateCount } from "../lib/storefront-hydrate";
+	import {
+		loadRealProducts,
+		loadRealCollections,
+		filterByCollection,
+		renderCardHtml,
+		escapeHtml,
+		updateCount,
+		type RealCollection,
+	} from "../lib/storefront-hydrate";
 
 	// Реальные товары (Option B): на published-сайте /data/products.json реальный →
 	// перерисовываем demo-grid. На demo-сборке loadRealProducts() вернёт null → no-op.
+	// Фильтр по коллекциям: ?collection= (slug/id из ссылок тайлов) + дропдаун
+	// «Коллекции» (заполняется из collections.json/storefront-data).
+	let catalogCollections: RealCollection[] | null = null;
+
+	function currentCollectionRef(): string | null {
+		return new URLSearchParams(window.location.search).get("collection");
+	}
+
+	async function renderCatalog() {
+		const products = await loadRealProducts();
+		if (!products) return; // demo-сборка
+		const ref = currentCollectionRef();
+		const items = ref ? filterByCollection(products, catalogCollections, ref) : products;
+		const html = items
+			.map((p) => `<li data-product-id="${escapeHtml(p.id)}">${renderCardHtml(p)}</li>`)
+			.join("");
+		for (const grid of Array.from(document.querySelectorAll('[data-nt="catalog-grid"]'))) {
+			grid.innerHTML = html;
+		}
+		updateCount('[data-nt="catalog-count"]', items.length);
+	}
+
+	async function initCollectionsFilter() {
+		const box = document.querySelector<HTMLElement>('[data-nt="catalog-collections-filter"]');
+		const list = box?.querySelector<HTMLElement>("[data-collections-options]");
+		if (!box || !list) return;
+		if (box.getAttribute("data-cf-hydrated") === "true") return; // идемпотентность astro:page-load
+		catalogCollections = await loadRealCollections();
+		if (!catalogCollections || catalogCollections.length === 0) return;
+		box.setAttribute("data-cf-hydrated", "true");
+		box.style.display = "";
+		const label = box.querySelector<HTMLElement>("[data-collections-label]");
+		const ref = currentCollectionRef();
+		const current = ref
+			? catalogCollections.find((c) => c.id === ref || c.slug === ref || c.name === ref) ?? null
+			: null;
+		if (label && current?.name) label.textContent = current.name;
+		// Манера пунктов = списки NtFilterPanel: активный чёрный, остальные #999999.
+		const optionHtml = (value: string, name: string, active: boolean) =>
+			`<li><button type="button" data-collection-option="${escapeHtml(value)}" class="w-full cursor-pointer text-left font-manrope text-[14px] font-normal leading-[100%] transition-colors hover:text-[#000000] ${active ? "text-[#000000]" : "text-[#999999]"}">${escapeHtml(name)}</button></li>`;
+		list.innerHTML =
+			optionHtml("", "Все", !current) +
+			catalogCollections
+				.map((c) => optionHtml(c.slug ?? c.id, c.name ?? "Коллекция", !!current && current.id === c.id))
+				.join("");
+		list.addEventListener("click", (ev) => {
+			const btn = (ev.target as HTMLElement).closest<HTMLElement>("[data-collection-option]");
+			if (!btn) return;
+			const value = btn.getAttribute("data-collection-option") ?? "";
+			const params = new URLSearchParams(window.location.search);
+			if (value) params.set("collection", value);
+			else params.delete("collection");
+			const qs = params.toString();
+			window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
+			const col = catalogCollections?.find((c) => (c.slug ?? c.id) === value) ?? null;
+			if (label) label.textContent = col?.name ?? "Коллекции";
+			for (const b of Array.from(list.querySelectorAll("[data-collection-option]"))) {
+				const on = b === btn;
+				b.classList.toggle("text-[#000000]", on);
+				b.classList.toggle("text-[#999999]", !on);
+			}
+			box.removeAttribute("open");
+			renderCatalog();
+		});
+	}
+
 	async function hydrateCatalog() {
-		const items = await hydrateGrid('[data-nt="catalog-grid"]');
-		if (items) updateCount('[data-nt="catalog-count"]', items.length);
+		await initCollectionsFilter();
+		await renderCatalog();
 	}
 
 	hydrateCatalog();

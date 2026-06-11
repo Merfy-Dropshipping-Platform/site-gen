@@ -101,13 +101,84 @@ const productCountLabel = pluralizeProducts(totalCount);
 </script>
 
 <script>
-	import { hydrateGrid, updateCount } from "../../lib/storefront-hydrate";
+	import {
+		loadRealProducts,
+		loadRealCollections,
+		filterByCollection,
+		findCollection,
+		renderCardHtml,
+		escapeHtml,
+		updateCount,
+		type RealCollection,
+	} from "../../lib/storefront-hydrate";
 
 	// Реальные товары (Option B): на published-сайте /data/products.json реальный →
 	// перерисовываем demo-grid и счётчик. На demo-сборке loadRealProducts() вернёт null → no-op.
+	// Фильтр по коллекциям: ?collection= (slug/id из ссылок тайлов) + секция
+	// «Коллекции» сайдбара (заполняется из collections.json/storefront-data).
+	let catalogCollections: RealCollection[] | null = null;
+
+	function currentCollectionRef(): string | null {
+		return new URLSearchParams(window.location.search).get("collection");
+	}
+
+	async function renderCatalog() {
+		const products = await loadRealProducts();
+		if (!products) return; // demo-сборка
+		const ref = currentCollectionRef();
+		const items = ref ? filterByCollection(products, catalogCollections, ref) : products;
+		const html = items
+			.map((p) => `<li data-product-id="${escapeHtml(p.id)}">${renderCardHtml(p)}</li>`)
+			.join("");
+		for (const grid of Array.from(document.querySelectorAll('[data-nt="catalog-grid"]'))) {
+			grid.innerHTML = html;
+		}
+		updateCount('[data-nt="catalog-count"]', items.length);
+	}
+
+	// Radio-опция в манере секций сайдбара (peer sr-only input + кастомный кружок).
+	const RADIO_CIRCLE =
+		"relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-[#999999] after:pointer-events-none after:absolute after:h-[10px] after:w-[10px] after:rounded-full after:bg-black after:opacity-0 after:content-[''] peer-checked:border-black peer-checked:after:opacity-100 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-black";
+	const RADIO_TEXT =
+		"font-vanilla-arsenal text-base font-normal leading-none text-[#999999] peer-checked:text-black";
+
+	async function initCollectionsFilter() {
+		const box = document.querySelector<HTMLElement>('[data-nt="catalog-collections-filter"]');
+		const list = box?.querySelector<HTMLElement>("[data-collections-options]");
+		if (!box || !list) return;
+		if (box.getAttribute("data-cf-hydrated") === "true") return; // идемпотентность astro:page-load
+		catalogCollections = await loadRealCollections();
+		if (!catalogCollections || catalogCollections.length === 0) return;
+		box.setAttribute("data-cf-hydrated", "true");
+		box.style.display = "";
+		const current = findCollection(catalogCollections, currentCollectionRef());
+		const optionHtml = (value: string, name: string, active: boolean) =>
+			`<label class="group flex cursor-pointer items-center gap-2">
+	<input type="radio" name="vanilla-collection" value="${escapeHtml(value)}" data-collection-option="${escapeHtml(value)}"${active ? " checked" : ""} class="peer sr-only" />
+	<span aria-hidden="true" class="${RADIO_CIRCLE}"></span>
+	<span class="${RADIO_TEXT}">${escapeHtml(name)}</span>
+</label>`;
+		list.innerHTML =
+			optionHtml("", "Все", !current) +
+			catalogCollections
+				.map((c) => optionHtml(c.slug ?? c.id, c.name ?? "Коллекция", !!current && current.id === c.id))
+				.join("");
+		list.addEventListener("change", (ev) => {
+			const input = (ev.target as HTMLElement).closest<HTMLInputElement>("[data-collection-option]");
+			if (!input) return;
+			const value = input.value;
+			const params = new URLSearchParams(window.location.search);
+			if (value) params.set("collection", value);
+			else params.delete("collection");
+			const qs = params.toString();
+			window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
+			renderCatalog();
+		});
+	}
+
 	async function hydrateCatalog() {
-		const items = await hydrateGrid('[data-nt="catalog-grid"]');
-		if (items) updateCount('[data-nt="catalog-count"]', items.length);
+		await initCollectionsFilter();
+		await renderCatalog();
 	}
 
 	hydrateCatalog();

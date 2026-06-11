@@ -99,6 +99,102 @@ export async function loadRealProducts(): Promise<RealProduct[] | null> {
 	return cached;
 }
 
+/** Коллекция магазина (из /data/collections.json или storefront-data). */
+export interface RealCollection {
+	id: string;
+	name?: string;
+	slug?: string;
+	image?: string | null;
+	images?: string[];
+	productIds?: string[];
+}
+
+const COLLECTIONS_URL = "/data/collections.json";
+let cachedCollections: RealCollection[] | null | undefined;
+
+/**
+ * Грузит коллекции магазина тем же двухступенчатым путём, что loadRealProducts:
+ * live — статический per-site `/data/collections.json` (инжектит build.service),
+ * превью — storefront-data по window.__MERFY_SITE_ID__. null — данных нет,
+ * вызывающий код оставляет SSG-разметку.
+ */
+export async function loadRealCollections(): Promise<RealCollection[] | null> {
+	if (cachedCollections !== undefined) return cachedCollections;
+	try {
+		const res = await fetch(COLLECTIONS_URL);
+		if (res.ok) {
+			const data: unknown = await res.json();
+			if (Array.isArray(data) && data.length > 0) {
+				cachedCollections = data as RealCollection[];
+				return cachedCollections;
+			}
+		}
+	} catch {
+		/* файла нет — preview-фолбэк ниже */
+	}
+	const siteId =
+		typeof window !== "undefined"
+			? (window as unknown as { __MERFY_SITE_ID__?: string }).__MERFY_SITE_ID__
+			: undefined;
+	if (siteId) {
+		try {
+			const res = await fetch(`/api/sites/${encodeURIComponent(siteId)}/storefront-data`);
+			if (res.ok) {
+				const payload = (await res.json()) as { collections?: unknown };
+				const collections = payload?.collections;
+				if (Array.isArray(collections) && collections.length > 0) {
+					cachedCollections = collections as RealCollection[];
+					return cachedCollections;
+				}
+			}
+		} catch {
+			/* preview-фолбэк не удался */
+		}
+	}
+	cachedCollections = null;
+	return cachedCollections;
+}
+
+/** Найти коллекцию по id/slug/имени (пикер пишет id, ссылки несут slug). */
+export function findCollection(
+	collections: RealCollection[] | null,
+	ref: string | null | undefined,
+): RealCollection | null {
+	if (!ref || !collections) return null;
+	return (
+		collections.find((c) => c && (c.id === ref || c.slug === ref || c.name === ref)) ?? null
+	);
+}
+
+/**
+ * Фильтр товаров по коллекции: сперва по productIds коллекции, затем по
+ * membership товара (p.collections). Пустой результат → исходный список
+ * (паритет с theme-base: «выбрал пустую коллекцию» не делает блок пустым).
+ */
+export function filterByCollection(
+	products: RealProduct[],
+	collections: RealCollection[] | null,
+	ref: string | null | undefined,
+): RealProduct[] {
+	if (!ref) return products;
+	const col = findCollection(collections, ref);
+	let filtered: RealProduct[] = [];
+	if (col && Array.isArray(col.productIds) && col.productIds.length > 0) {
+		const ids = new Set(col.productIds);
+		filtered = products.filter((p) => p.id && ids.has(p.id));
+	}
+	if (filtered.length === 0) {
+		filtered = products.filter((p) => {
+			const memb = (p as unknown as { collections?: Array<{ id?: string; slug?: string }> }).collections;
+			return (
+				Array.isArray(memb) &&
+				memb.some((m) => m && (m.id === ref || m.slug === ref || (col?.slug && m.slug === col.slug)))
+			);
+		});
+	}
+	return filtered.length > 0 ? filtered : products;
+}
+
 /** Число → "2 800 ₽". Готовую строку возвращает как есть. Пусто → "". */
 export function formatPrice(value: number | string | null | undefined): string {
 	if (value === null || value === undefined || value === "") return "";

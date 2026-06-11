@@ -179,9 +179,13 @@ export async function injectGlobalsIntoDist(
   }
   await findHtml(distDir);
   let patched = 0;
+  // Маркер идемпотентности — ТОЧНОЕ присваивание (`window.X = `): страницы тем
+  // содержат ЧТЕНИЕ глобала (var l=window.X), и проверка по голому имени
+  // скипала инжект во все файлы.
+  const marker = `window.${entries2[0][0]} = `;
   for (const file of htmlFiles) {
     const html = await fs.readFile(file, "utf8");
-    if (html.includes(entries2[0][0])) continue; // уже инжектировано
+    if (html.includes(marker)) continue; // уже инжектировано
     const next = html.replace(/<head(\s[^>]*)?>/i, (m) => `${m}<script>${script}</script>`);
     if (next !== html) {
       await fs.writeFile(file, next, "utf8");

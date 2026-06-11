@@ -15,7 +15,13 @@ export const VideoClasses = {
   video:
     'absolute inset-0 h-full w-full object-contain bg-black',
   placeholder:
-    'absolute inset-0 flex flex-col items-center justify-center gap-3 text-[rgb(var(--color-text))]/50',
+    'absolute inset-0 overflow-hidden text-[rgb(var(--color-text))]/50',
+  /** Постер-плейсхолдер (PNG из Figma). При 404 прячет себя через onerror → виден bg-surface от `media`. */
+  placeholderImg:
+    'absolute inset-0 w-full h-full object-cover',
+  /** Центрирующий слой поверх постера: play-кнопка + подпись «Видео». */
+  placeholderOverlay:
+    'absolute inset-0 flex flex-col items-center justify-center gap-3',
   placeholderIcon:
     'w-16 h-16 rounded-full border-2 border-current flex items-center justify-center',
   placeholderText:

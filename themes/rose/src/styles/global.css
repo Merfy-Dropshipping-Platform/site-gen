@@ -3,6 +3,8 @@
 /* paths fixed for sites/themes/rose/src/styles → sites node_modules */
 @source "../../../../node_modules/@merfy-dropshipping-platform/design-systems-theme/src/**/*.{astro,ts,tsx,js,jsx}";
 @source "../components/**/*.{astro,ts,tsx}";
+/* Блоки theme-base (фоллбек Video/Publications/… через Container API) — без скана их утилиты (aspect-video и пр.) не попадают в CSS темы */
+@source "../../../../packages/theme-base/blocks/**/*.{astro,ts}";
 
 @theme {
   --font-family-sans: "Manrope", system-ui, -apple-system, sans-serif;

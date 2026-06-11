@@ -2,6 +2,13 @@
 // excerpt). Section title uses Rose's 14px uppercase tracked style. When
 // no real articles are wired, shows demo content so seed sites never look
 // blank. Legacy skeleton classes kept for older render paths.
+//
+// ВАЖНО: критичные для читаемости цвета (фон секции, заголовок, дата/
+// текст карточек) и surface-фон медиа продублированы inline-стилями в
+// Publications.astro — дист темы верстальщика может не сканировать
+// packages/theme-base/** Tailwind'ом, и тогда utility-классы отсюда не
+// попадают в CSS темы (так текст «выцветал» на rose). Меняешь цвет/фон
+// здесь — синхронизируй одноимённый *GuardStyle в Publications.astro.
 export const PublicationsClasses = {
   root:
     'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
@@ -14,7 +21,9 @@ export const PublicationsClasses = {
   card:
     'flex flex-col gap-4 group',
   cardMedia:
-    'w-full aspect-[4/3] rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))] overflow-hidden flex items-center justify-center text-[rgb(var(--color-text))]/30',
+    'relative w-full aspect-[4/3] rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))] overflow-hidden',
+  cardMediaImg:
+    'block h-full w-full object-cover',
   cardBody:
     'flex flex-col gap-2 px-1',
   cardDate:

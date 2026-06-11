@@ -17,6 +17,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import * as path from "path";
 import * as fs from "fs/promises";
+import { constants as fsConstants } from "fs";
 import { runCommand } from "./build.service";
 
 /**
@@ -107,6 +108,26 @@ export class ThemeBuildService {
         `Theme "${themeName}" build did not produce a dist/ directory at ${themeDist}`,
       );
     }
+
+    // ── Step 3a: докопировать общие ассеты theme-base в дист темы ──────────
+    // Astro копирует в dist только public/ САМОЙ темы. Блоки, рендерящиеся
+    // theme-base-фоллбеком (compile-astro-blocks → Container API), ссылаются
+    // на /placeholders/*.png из packages/theme-base/public — без докопирования
+    // эти пути 404 и в превью, и на live (битые постеры Video/Gallery/
+    // Publications). Делается ДО copyDir в превью (step 3b) и live (step 4b),
+    // чтобы ассеты попали в обе копии. Файлы темы важнее: существующие пути
+    // НЕ перезаписываются (skip-existing).
+    const themeBasePublic = path.join(
+      repoRoot(),
+      "packages",
+      "theme-base",
+      "public",
+    );
+    await mergeCopyDirSkipExisting(themeBasePublic, themeDist);
+    this.logger.log(
+      `[theme-build] "${themeName}" merged theme-base public assets into dist (skip-existing)`,
+    );
+
     await copyDir(themeDist, previewDir);
 
     // ── Step 4: rewrite root-absolute URLs so the page renders under a per-theme
@@ -212,6 +233,35 @@ export async function copyDir(src: string, dest: string): Promise<void> {
   await fs.rm(dest, { recursive: true, force: true });
   await fs.mkdir(dest, { recursive: true });
   await fs.cp(src, dest, { recursive: true });
+}
+
+/**
+ * Рекурсивный merge-copy БЕЗ перезаписи: существующие файлы в `dest`
+ * сохраняются (файлы темы важнее общих), копируются только отсутствующие
+ * пути; директории сливаются. No-op, если `src` не существует — сборка темы
+ * не должна падать из-за отсутствия общих ассетов.
+ */
+export async function mergeCopyDirSkipExisting(
+  src: string,
+  dest: string,
+): Promise<void> {
+  if (!(await isDir(src))) return;
+  await fs.mkdir(dest, { recursive: true });
+  const entries = await fs.readdir(src, { withFileTypes: true });
+  await Promise.all(
+    entries.map(async (e) => {
+      const from = path.join(src, e.name);
+      const to = path.join(dest, e.name);
+      if (e.isDirectory()) return mergeCopyDirSkipExisting(from, to);
+      try {
+        // COPYFILE_EXCL: атомарный skip-existing — EEXIST означает, что у темы
+        // уже есть свой файл по этому пути, и он остаётся нетронутым.
+        await fs.copyFile(from, to, fsConstants.COPYFILE_EXCL);
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
+      }
+    }),
+  );
 }
 
 /**

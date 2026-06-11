@@ -1,7 +1,7 @@
 ---
 import type { VideoProps } from './Video.puckConfig';
 import { VideoClasses as C } from './Video.classes';
-import { PLACEHOLDER_ASSETS, PLACEHOLDER_PLAY } from '../../runtime/placeholders';
+import { PLACEHOLDER_ASSETS } from '../../runtime/placeholders';
 
 interface Props extends VideoProps {
   id?: string;
@@ -143,7 +143,11 @@ const video = parseVideo(videoUrl);
 >
   <div class={containerClass}>
     {heading && <h2 class={C.heading}>{heading}</h2>}
-    <div class={C.media} data-media-target>
+    {/* style=aspect-ratio дублирует `aspect-video` из C.media: страховка
+        геометрии, если Tailwind-утилита не сгенерирована в CSS темы
+        (CSS темы сканирует только свои файлы — блок не должен
+        схлопываться в 0 высоты ни при каком CSS). */}
+    <div class={C.media} data-media-target style="aspect-ratio:16/9">
       {video.kind === 'youtube' && (
         <iframe
           class={C.iframe}
@@ -206,11 +210,26 @@ const video = parseVideo(videoUrl);
         </>
       )}
       {!video.embedUrl && (
-        <div class={`${C.placeholder} relative overflow-hidden`} aria-hidden="true" data-media-placeholder>
-          {/* Figma 1:33420 — Video frame illustration + play icon overlay. */}
-          <img src={PLACEHOLDER_ASSETS.landscape.video} alt="" class="absolute inset-0 w-full h-full object-cover" loading="lazy" />
-          <div class="absolute inset-0 flex items-center justify-center text-white drop-shadow-lg">
-            <Fragment set:html={PLACEHOLDER_PLAY} />
+        <div class={C.placeholder} aria-hidden="true" data-media-placeholder>
+          {/* Figma 1:33420 — Video frame illustration. alt="" + onerror:
+              если PNG не доехал в дист темы (404), img прячет себя —
+              остаётся bg-surface от C.media + play-кнопка + подпись. */}
+          <img
+            src={PLACEHOLDER_ASSETS.landscape.video}
+            alt=""
+            class={C.placeholderImg}
+            loading="lazy"
+            onerror="this.style.display='none'"
+          />
+          <div class={C.placeholderOverlay}>
+            {/* Play-кнопка: цвета inline-токенами на SVG-узлах — контраст
+                круг/стрелка гарантирован в любой схеме (text ↔ bg) и не
+                зависит от того, сгенерил ли Tailwind утилиты темы. */}
+            <svg width="64" height="64" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+              <circle cx="32" cy="32" r="32" style="fill:rgb(var(--color-text))" />
+              <path d="M27 22L43 32L27 42V22Z" style="fill:rgb(var(--color-bg))" />
+            </svg>
+            <span class={C.placeholderText}>Видео</span>
           </div>
         </div>
       )}

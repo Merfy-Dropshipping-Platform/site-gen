@@ -45,7 +45,12 @@ export interface VariantGroup {
 }
 
 const PRODUCTS_URL = "/data/products.json";
-const PLACEHOLDER_IMAGE = "/images/placeholder.png";
+/**
+ * Плейсхолдер-URL для мест, где нужен именно src (cart-thumb data-image,
+ * Gallery cover, PDP). Ассет theme-base доезжает в дисты как /placeholders/*
+ * (раньше тут был несуществующий /images/placeholder.png → битая иконка).
+ */
+const PLACEHOLDER_IMAGE = "/placeholders/sweater-blue.png";
 
 /** Кэш на страницу: undefined — не загружали, null — demo/пусто/ошибка. */
 let cached: RealProduct[] | null | undefined;
@@ -209,8 +214,13 @@ export function productHref(p: RealProduct): string {
 	return `/product?id=${encodeURIComponent(p.id)}`;
 }
 
+/** Сырой URL первой картинки товара или "" (товар без фото). */
+export function productImageRaw(p: RealProduct): string {
+	return (Array.isArray(p.images) && typeof p.images[0] === "string" && p.images[0]) || "";
+}
+
 export function productImage(p: RealProduct): string {
-	return (Array.isArray(p.images) && p.images[0]) || PLACEHOLDER_IMAGE;
+	return productImageRaw(p) || PLACEHOLDER_IMAGE;
 }
 
 /** Экранирование для вставки в HTML-разметку (имена/описания товаров). */
@@ -224,14 +234,39 @@ export function escapeHtml(value: unknown): string {
 }
 
 /**
+ * Surface-плейсхолдер медиа карточки (товар без фото / битый URL): фон
+ * --color-surface + muted-иконка фото. Цвета ТОЛЬКО через токены; inline
+ * style, т.к. src/lib не сканируется Tailwind (@source темы) — произвольные
+ * bg-/text-утилиты отсюда в CSS не попали бы. Layout-классы (absolute,
+ * inset-0, flex, items-center, justify-center, size-10) уже генерятся из
+ * src/components/**. Разметка зеркалит SSR-ветку RoseProductCard.astro.
+ */
+const CARD_MEDIA_FALLBACK_HTML =
+	'<div class="absolute inset-0 flex items-center justify-center" style="background:rgb(var(--color-surface,245 245 245))" aria-hidden="true">' +
+	'<svg class="size-10" style="color:rgb(var(--color-muted,153 153 153))" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+	'<rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>' +
+	"</svg></div>";
+
+/**
+ * onerror-фоллбек: битая картинка заменяет себя плейсхолдером. Кавычки
+ * разметки → &quot;, чтобы не порвать onerror-атрибут; браузер декодирует
+ * entities до выполнения JS (одинарных кавычек/бэкслэшей в разметке нет).
+ */
+const CARD_IMG_ONERROR_ATTR = ` onerror="this.onerror=null;this.outerHTML='${CARD_MEDIA_FALLBACK_HTML.replace(/"/g, "&quot;")}'"`;
+
+/**
  * Разметка карточки товара — зеркалит `RoseProductCard.astro` (article →
  * картинка-ссылка + name + price). Плоский `<img>` вместо `<RosePicture>`
  * (визуально идентично; webp-конвейер для MinIO-картинок не применяется).
+ * Товар без фото → surface-плейсхолдер вместо <img>; битый URL → onerror.
  */
 export function renderCardHtml(p: RealProduct): string {
 	const href = escapeHtml(productHref(p));
 	const name = escapeHtml(p.name);
-	const image = escapeHtml(productImage(p));
+	const rawImage = productImageRaw(p);
+	const media = rawImage
+		? `<img src="${escapeHtml(rawImage)}" alt="${name}" width="318" height="444" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"${CARD_IMG_ONERROR_ATTR} />`
+		: CARD_MEDIA_FALLBACK_HTML;
 	const price = escapeHtml(formatPrice(p.price));
 	const oldRaw = formatPrice(p.oldPrice || p.compareAtPrice || null);
 	const oldPrice = oldRaw
@@ -239,7 +274,7 @@ export function renderCardHtml(p: RealProduct): string {
 		: "";
 	return `<article class="group flex w-full flex-col gap-5" data-nt="rose-product-card" aria-label="${name}">
 	<a href="${href}" class="relative block aspect-[318/444] w-full overflow-hidden rounded-[8px] bg-white" aria-label="${name}">
-		<img src="${image}" alt="${name}" width="318" height="444" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+		${media}
 	</a>
 	<div class="flex w-full flex-col gap-1 text-left">
 		<a href="${href}" class="rose-product-name block w-full font-manrope text-[14px] font-normal leading-none tracking-normal text-[#000000] transition-opacity hover:opacity-70">${name}</a>

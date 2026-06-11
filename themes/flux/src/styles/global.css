@@ -2,6 +2,8 @@
 @import "@merfy-dropshipping-platform/design-systems-theme/tokens.css";
 @source "../../../DesignSystemsTheme/src/**/*.{astro,ts,tsx,js,jsx}";
 @source "../../node_modules/@merfy-dropshipping-platform/design-systems-theme/src/**/*.{astro,ts,tsx,js,jsx}";
+/* Блоки theme-base (фоллбек Video/Publications/… через Container API) — без скана их утилиты (aspect-video и пр.) не попадают в CSS темы */
+@source "../../../../packages/theme-base/blocks/**/*.{astro,ts}";
 
 /* Токены Flux Theme */
 @theme {

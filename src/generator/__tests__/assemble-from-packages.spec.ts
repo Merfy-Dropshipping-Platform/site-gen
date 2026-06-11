@@ -285,6 +285,27 @@ describe("assembleFromPackages", () => {
     expect(res.baseCopied).toBe(true);
   });
 
+  it("098: generates tokens.css even when theme package is missing (theme_id NULL sites)", async () => {
+    // base global.css безусловно делает `@import "./tokens.css"` — если тема
+    // не найдена (сайты с theme_id NULL → themeName 'default'), tokens.css
+    // всё равно обязан существовать, иначе astro build падает «Can't resolve
+    // './tokens.css'» (прод-инцидент b64c147a, builds красные с 2026-05-03).
+    const outputDir = path.join(tmpDir, "out");
+    const res = await assembleFromPackages({
+      themeName: "nonexistent",
+      outputDir,
+      packagesRoot,
+    });
+    expect(res.themeCopied).toBe(false);
+    expect(res.baseCopied).toBe(true);
+    expect(res.tokensCssGenerated).toBe(true);
+    const tokensCss = await fs.readFile(
+      path.join(outputDir, "src", "styles", "tokens.css"),
+      "utf8",
+    );
+    expect(tokensCss).toMatch(/--radius-button:/);
+  });
+
   it("emits warnings when the base package is missing", async () => {
     // Remove base
     await fs.rm(path.join(packagesRoot, "theme-base"), {

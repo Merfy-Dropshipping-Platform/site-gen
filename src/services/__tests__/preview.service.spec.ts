@@ -204,6 +204,28 @@ describe('PreviewService', () => {
       expect(html).toContain("document.dispatchEvent(new Event('astro:page-load'))");
     });
 
+    it('098: update-block монотонный порядок применения + валидация HTML + коалесинг ре-инициализации', async () => {
+      // Инцидент 78ea7210 (слайдер «Затемнение»): серия update-block одного
+      // блока через очередь gateway возвращалась не по порядку; тело любого
+      // ответа (включая ошибки) вставлялось вместо секции — блок «исчезал».
+      const html = await svc.renderPreviewPage({
+        blocks: [{ type: 'Hero', props: { id: 'Hero-1' } }],
+        tokensCss: '',
+        fontHead: '',
+        themeId: 'rose',
+      });
+      // Монотонность: seq до fetch, stale-ответ отбрасывается
+      expect(html).toContain('UPDATE_SEQ[blockId]');
+      expect(html).toContain('APPLIED_SEQ[blockId]');
+      // Валидация: не-OK статус и мусорное тело не трогают DOM
+      expect(html).toContain('isValidBlockHtml');
+      expect(html).toContain('if (!r.ok)');
+      // Пачка hot-replace → одна ре-инициализация astro-событий
+      expect(html).toContain('dispatchAstroNavEventsDebounced');
+      // add-block тоже валидирует ответ перед вставкой
+      expect(html).toContain('add-block invalid HTML');
+    });
+
     it('init handler сохраняет themeId и siteId из parent', async () => {
       // Init postMessage от parent должен сохранить currentThemeId и currentSiteId
       // в iframe scope чтобы update-block handler потом использовал их в fetch URL.

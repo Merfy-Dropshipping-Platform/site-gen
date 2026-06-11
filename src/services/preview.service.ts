@@ -1103,6 +1103,33 @@ const PREVIEW_NAV_AGENT_INLINE = `
   // чтобы compute diff при следующем update-block.
   var LAST_PROPS = {};
 
+  // 098-fix «блок исчез при правке слайдера»: монотонный порядок применения
+  // hot-replace. Слайдер генерит серию update-block одного блока; ответы
+  // через gateway могут вернуться НЕ по порядку (наблюдали очередь 5.5с) —
+  // без guard'а stale-ответ перезаписывает свежий рендер. Каждому fetch
+  // присваиваем seq; применяем только если он новее последнего применённого.
+  var UPDATE_SEQ = {};
+  var APPLIED_SEQ = {};
+
+  // 098-fix: валидация ответа /preview/block перед заменой DOM. Раньше тело
+  // ЛЮБОГО ответа (JSON-ошибка gateway, 5xx-комментарий, SPA-шелл) вставлялось
+  // как outerHTML/innerHTML — секция молча «исчезала». Теперь: парсим в
+  // template и требуем корневой [data-puck-component-id] (для update — с тем
+  // же blockId). Невалидный ответ → warn + старый DOM остаётся.
+  function isValidBlockHtml(html, expectBlockId) {
+    if (typeof html !== 'string' || !html.trim()) return false;
+    try {
+      var tpl = document.createElement('template');
+      tpl.innerHTML = html;
+      var sel = expectBlockId
+        ? '[data-puck-component-id="' + expectBlockId + '"]'
+        : '[data-puck-component-id]';
+      return !!tpl.content.querySelector(sel);
+    } catch (e) {
+      return false;
+    }
+  }
+
   // 098 systemic: HTML5 spec — <script> elements added via innerHTML не выполняются.
   // После hot-replace на update-block hydration scripts (Catalog/Collections/
   // PopularProducts/Gallery/etc fetching real products) остаются inert,
@@ -1126,16 +1153,25 @@ const PREVIEW_NAV_AGENT_INLINE = `
     // Ре-инициализация после hot-replace — стандартный сигнал Astro:
     // astro:page-load (его же шлёт ClientRouter после навигации; на него
     // подписаны hydratePopular/header-sync верстальщика и блоки theme-base
-    // со своими data-hydrated гардами). setTimeout: вставленные module-скрипты
-    // выполняются асинхронно — даём свежим блокам сначала самоинициализироваться.
-    // Шлём ОБА события навигации Astro (как ClientRouter): after-swap слушают
-    // scroll-анимации тем (initScrollAnimations в Layout — без него вставленный
-    // hot-add контент с data-animate остаётся opacity:0 «пустая секция»),
-    // page-load — гидрация блоков (hydratePopular/header-sync).
-    setTimeout(function () {
+    // со своими data-hydrated гардами). Шлём ОБА события навигации Astro
+    // (как ClientRouter): after-swap слушают scroll-анимации тем
+    // (initScrollAnimations в Layout — без него вставленный hot-add контент
+    // с data-animate остаётся opacity:0 «пустая секция»), page-load —
+    // гидрация блоков (hydratePopular/header-sync).
+    // 098-fix: trailing-коалесинг 60мс — пачка hot-replace (серия слайдера,
+    // очередь gateway) даёт ОДНУ ре-инициализацию вместо N подряд; заодно
+    // вставленные module-скрипты успевают самоинициализироваться (раньше 0мс).
+    dispatchAstroNavEventsDebounced();
+  }
+
+  var __astroNavEventsTimer = null;
+  function dispatchAstroNavEventsDebounced() {
+    if (__astroNavEventsTimer) clearTimeout(__astroNavEventsTimer);
+    __astroNavEventsTimer = setTimeout(function () {
+      __astroNavEventsTimer = null;
       document.dispatchEvent(new Event('astro:after-swap'));
       document.dispatchEvent(new Event('astro:page-load'));
-    }, 0);
+    }, 60);
   }
 
   // Spec 090 — runtime kill switch. Можно выключить через console:
@@ -1687,13 +1723,30 @@ const PREVIEW_NAV_AGENT_INLINE = `
         return; // local patch applied — fetch skipped
       }
 
+      // 098-fix: seq берём ДО fetch — ответы применяются строго в порядке
+      // отправки, stale (обогнанные) отбрасываются.
+      var mySeq = (UPDATE_SEQ[blockId] = (UPDATE_SEQ[blockId] || 0) + 1);
+
       fetch('/api/sites/' + currentSiteId + '/preview/block', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ blockType: blockType, props: newProps, themeId: currentThemeId }),
       })
-        .then(function (r) { return r.text(); })
+        .then(function (r) {
+          if (!r.ok) {
+            console.error('[preview] update-block HTTP ' + r.status + ' for ' + blockId + ' — keep old DOM');
+            return null;
+          }
+          return r.text();
+        })
         .then(function (html) {
+          if (html === null) return;
+          if (!isValidBlockHtml(html, blockId)) {
+            console.error('[preview] update-block invalid HTML for ' + blockId + ' — keep old DOM:', String(html).slice(0, 120));
+            return;
+          }
+          if ((APPLIED_SEQ[blockId] || 0) >= mySeq) return; // stale — новее уже применён
+          APPLIED_SEQ[blockId] = mySeq;
           var el = document.querySelector('[data-puck-component-id="' + blockId + '"]');
           if (!el) return;
           // 097: при наличии scheme wrapper — обновляем его class в соответствии
@@ -1766,8 +1819,20 @@ const PREVIEW_NAV_AGENT_INLINE = `
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ blockType: addBlockType, props: ev.data.props, themeId: currentThemeId }),
       })
-        .then(function (r) { return r.text(); })
+        .then(function (r) {
+          if (!r.ok) {
+            console.error('[preview] add-block HTTP ' + r.status + ' for ' + addBlockId + ' — skip insert');
+            return null;
+          }
+          return r.text();
+        })
         .then(function (html) {
+          if (html === null) return;
+          // 098-fix: не вставляем мусор (JSON-ошибка/комментарий/SPA-шелл).
+          if (!isValidBlockHtml(html, null)) {
+            console.error('[preview] add-block invalid HTML for ' + addBlockId + ' — skip insert:', String(html).slice(0, 120));
+            return;
+          }
           // Найти точку вставки.
           var insertedAtRef = false;
           if (addBeforeId) {

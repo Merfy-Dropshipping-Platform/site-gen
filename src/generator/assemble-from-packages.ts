@@ -771,7 +771,13 @@ export async function assembleFromPackages(
   }
 
   // ---- TOKENS ----
-  if (themeCopied) {
+  // 098-fix: tokens.css генерим и когда theme-пакет НЕ найден (сайты с
+  // theme_id NULL → themeName 'default'). base global.css безусловно делает
+  // `@import "./tokens.css"` — без файла astro build падает «Can't resolve
+  // './tokens.css'» (b64c147a красный с 03.05). buildTokensCss при незнакомой
+  // теме отдаёт hardcode-дефолты + merchant themeSettings — валидный CSS.
+  // Инвариант: скаффолд самосогласован — импортируемые файлы существуют.
+  if (baseCopied || themeCopied) {
     tokensCssGenerated = await generateTokensFromTheme(
       opts.themeName,
       opts.outputDir,

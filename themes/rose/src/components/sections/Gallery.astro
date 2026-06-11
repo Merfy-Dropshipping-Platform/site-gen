@@ -91,6 +91,18 @@ const galleryTiles: GalleryTile[] = (Array.isArray(p.items) ? p.items : [])
 			href: "/catalog",
 		};
 	});
+// Канон-плейсхолдер = реальный ассет темы (принцип T15 ImageWithText): плитка
+// без url (image c пустым url, product/collection без выбранной сущности)
+// получает фото верстальщика по позиции — «добавил секцию → сразу красиво»,
+// подписи-плейсхолдеры (Товар/цена/Выбери коллекцию) остаются.
+const TILE_FALLBACKS = [
+	"/images/Изображение_Галерея.webp",
+	"/images/Товар_1.webp",
+	"/images/Коллекция_1.webp",
+];
+galleryTiles.forEach((t, i) => {
+	if (!t.url) t.url = TILE_FALLBACKS[i % TILE_FALLBACKS.length];
+});
 const useItems = galleryTiles.length > 0;
 const heroTile = useItems ? galleryTiles[0] : undefined;
 const sideTiles = useItems ? galleryTiles.slice(1) : [];
@@ -132,7 +144,7 @@ const paddingStyle = p.padding
 							src={heroTile.url}
 							alt={heroTile.alt}
 							loading="eager"
-							class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
+							class="absolute inset-0 !size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
 						/>
 					)}
 				</a>
@@ -146,7 +158,7 @@ const paddingStyle = p.padding
 					src="/images/Изображение_Галерея.png"
 					alt="Галерея"
 					loading="eager"
-					class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
+					class="absolute inset-0 !size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
 					width="875"
 					height="875"
 				/>
@@ -171,7 +183,7 @@ const paddingStyle = p.padding
 											src={tile.url}
 											alt={tile.alt}
 											loading="eager"
-											class="block size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
+											class="block !size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
 										/>
 									)}
 								</div>
@@ -199,7 +211,7 @@ const paddingStyle = p.padding
 											src={tile.url}
 											alt={tile.alt}
 											loading="eager"
-											class="absolute inset-0 size-full max-w-none object-cover object-center transition-transform duration-300 group-hover:scale-110"
+											class="absolute inset-0 !size-full max-w-none object-cover object-center transition-transform duration-300 group-hover:scale-110"
 										/>
 									)}
 								</div>
@@ -237,7 +249,7 @@ const paddingStyle = p.padding
 							width="429"
 							height="444"
 							loading="eager"
-							class="absolute inset-0 size-full max-w-none object-cover object-center transition-transform duration-300 group-hover:scale-110"
+							class="absolute inset-0 !size-full max-w-none object-cover object-center transition-transform duration-300 group-hover:scale-110"
 						/>
 					</div>
 					<div class="flex flex-col gap-[4px] bg-transparent">
@@ -266,7 +278,7 @@ const paddingStyle = p.padding
 							width="429"
 							height="309"
 							loading="eager"
-							class="block size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
+							class="block !size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
 						/>
 					</div>
 					<h3 class="gallery-collection-title font-manrope bg-transparent text-[16px] font-normal leading-[100%] text-black">

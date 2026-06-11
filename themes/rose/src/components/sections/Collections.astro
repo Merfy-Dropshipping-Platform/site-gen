@@ -62,7 +62,7 @@ const cardLinkBase =
 const propCollections = (Array.isArray(p.collections) ? p.collections : [])
 	.filter((c: any) => c && typeof c === "object")
 	.slice(0, 10)
-	.map((c: any) => {
+	.map((c: any, i: number) => {
 		const collectionId =
 			typeof c.collectionId === "string" && c.collectionId.trim() ? c.collectionId.trim() : null;
 		return {
@@ -70,7 +70,12 @@ const propCollections = (Array.isArray(p.collections) ? p.collections : [])
 				(typeof c.heading === "string" && c.heading) ||
 				(typeof c.name === "string" && c.name) ||
 				"Коллекция",
-			image: typeof c.image === "string" && c.image ? c.image : undefined,
+			// Канон-плейсхолдер = реальный ассет темы (принцип T15): карточка без
+			// выбранной картинки получает фото коллекции верстальщика по позиции.
+			image:
+				typeof c.image === "string" && c.image
+					? c.image
+					: `/images/Коллекция_${(i % 3) + 1}.webp`,
 			href: collectionId ? `${cardLinkBase}${collectionId}` : "#",
 		};
 	});
@@ -118,7 +123,7 @@ const paddingStyle = p.padding
 									src={c.image}
 									alt={c.name}
 									loading="lazy"
-									class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.08]"
+									class="!h-full !w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.08]"
 								/>
 							)}
 						</div>

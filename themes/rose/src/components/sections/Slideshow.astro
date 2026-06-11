@@ -47,6 +47,13 @@ const slideHeadingCls = (s: string | undefined) =>
 			? "text-[24px] sm:text-[34px] md:text-[43px] lg:text-[48px]"
 			: "text-[20px] sm:text-[28px] md:text-[36px] lg:text-[40px]";
 
+// Канон-плейсхолдер = реальный ассет темы (принцип T15): слайд без фото получает
+// ассет верстальщика по позиции (манера hero — белый текст поверх фото).
+const SLIDE_FALLBACKS = [
+	"/images/Главный_экран.webp",
+	"/images/Изображение_Галерея.webp",
+	"/images/Товар_5.webp",
+];
 const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 	const ctaText =
 		(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined) ??
@@ -55,7 +62,7 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 		image:
 			(typeof s.imageUrl === "string" && s.imageUrl.trim()) ||
 			(typeof s.image === "string" && s.image.trim()) ||
-			"",
+			SLIDE_FALLBACKS[i % SLIDE_FALLBACKS.length],
 		heading: typeof s.heading === "string" ? s.heading : (s.heading?.text ?? ""),
 		headingCls: slideHeadingCls(typeof s.heading === "object" ? s.heading?.size : undefined),
 		subtitle:
@@ -161,7 +168,7 @@ const paddingStyle = p.padding
 						data-puck-subsection-field="slides"
 					>
 						{s.image ? (
-							<img src={s.image} alt={s.heading || "Слайд"} loading={i === 0 ? "eager" : "lazy"} class="absolute inset-0 h-full w-full object-cover" />
+							<img src={s.image} alt={s.heading || "Слайд"} loading={i === 0 ? "eager" : "lazy"} class="absolute inset-0 !h-full !w-full object-cover" />
 						) : (
 							<div class="absolute inset-0 bg-[rgb(var(--color-surface,245_245_245))]" aria-hidden="true" />
 						)}

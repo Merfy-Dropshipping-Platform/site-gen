@@ -1,0 +1,160 @@
+---
+// Фаза B (bloom): новая канон-секция ImageWithText в манере bloom (см.
+// themes/bloom/MANNER.md). Секции нет у верстальщика — композиция из манеры:
+// сетка секций §2 (поля px-4 md:px-20 2xl:px-[300px], вертикаль 80/120),
+// медиа-паттерны галереи §4 (rounded 12, плейсхолдер #F5F5F5, hover-zoom 1.03,
+// зазор грида gap-4), типографика §1, розовый pill §3. Схема полей =
+// packages/theme-base/blocks/ImageWithText/ImageWithText.puckConfig.ts.
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// heading: string | { text, alignment, size }; text: string | { content, size }.
+const heading =
+	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Расскажите о товаре");
+const text =
+	typeof p.text === "string"
+		? p.text
+		: (p.text?.content ?? "Опишите преимущества продукта, его ценность для клиента.");
+
+// Канон heading.size — роль «заголовок секции» (Urbanist uppercase, розовый на
+// белом, МАННЕРА §1). Лестница §9: medium/отсутствие = литерал роли 18/md:20,
+// small 15/17, large 22/24.
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingCls =
+	headingSize === "small"
+		? "font-urbanist text-[15px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[17px]"
+		: headingSize === "large"
+			? "font-urbanist text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[24px]"
+			: "font-urbanist text-[18px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[20px]";
+// Канон heading.alignment: отсутствие = left (текстовая колонка манеры).
+const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
+const headingAlignCls =
+	headingAlignment === "center" ? " text-center" : headingAlignment === "right" ? " text-right" : "";
+
+// Канон text.size — body-роль (Inter 300, МАННЕРА §1). Лестница §9: medium
+// (canon-default) и отсутствие = литерал 16, small 14, large 19.
+const textSize = p.textSize ?? p.text?.size;
+const textCls =
+	textSize === "small"
+		? "font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))]"
+		: textSize === "large"
+			? "font-inter text-[19px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))]"
+			: "font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))]";
+
+// Канон textStyle (hidden): italic → курсив заголовка и текста.
+const italicCls = p.textStyle === "italic" ? " italic" : "";
+
+// Канон image {url, alt}: canon-default url пуст → фоллбек = реальный ассет
+// темы (принцип T15 rose; та же картинка, что у плитки галереи верстальщика).
+const imageUrl =
+	typeof p.image?.url === "string" && p.image.url.trim() ? p.image.url : "/images/milk.webp";
+const imageAlt = typeof p.image?.alt === "string" && p.image.alt.trim() ? p.image.alt : heading;
+
+// Канон imagePosition: canon-default 'right' (theme.json blockDefaults) и
+// отсутствие = дефолт-композиция bloom: текст слева, КАРТИНКА СПРАВА. 'left'
+// зеркалит. На мобиле картинка всегда сверху (медиа первым в DOM).
+const imageLeft = p.imagePosition === "left";
+
+// Канон size (s/m/l) — аспект медиа лестницей манеры §4: medium (дефолт) =
+// высокая плитка галереи 652/594 (литерал), small = широкое 16/9, large = квадрат.
+const aspectCls =
+	p.size === "small" ? "aspect-[16/9]" : p.size === "large" ? "aspect-square" : "aspect-[652/594]";
+
+// Канон width (s/m/l/full): дефолт/large = 1320 (контейнер манеры §2),
+// medium 1080, small 780, full — без лимита (поля секции остаются).
+const widthCls =
+	p.width === "small"
+		? "max-w-[780px]"
+		: p.width === "medium"
+			? "max-w-[1080px]"
+			: p.width === "full"
+				? "max-w-none"
+				: "max-w-[1320px]";
+
+// Канон containerColorScheme (hidden): класс схемы на внутреннем контейнере.
+const containerSchemeCls =
+	typeof p.containerColorScheme === "string" && p.containerColorScheme
+		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
+		: "";
+
+// Кнопка: canon button {text, href|link} — розовый pill манеры §3, рендер
+// ТОЛЬКО при непустом тексте (canon-defaults пишут «Подробнее» → /about).
+const btnText = typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined;
+const btnHref =
+	(typeof p.button?.href === "string" && p.button.href ? p.button.href : undefined) ??
+	p.button?.link?.href ??
+	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??
+	"/catalog";
+
+// Канон ctaPosition: 'bottom-pinned' (canon-default из theme.json blockDefaults)
+// и отсутствие = кнопка прижата к нижней кромке текстовой колонки (mt-auto,
+// колонка h-full); 'inline' — кнопка сразу под текстом.
+const inlineCta = p.ctaPosition === "inline";
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+
+const titleId = id ? `${id}-title` : undefined;
+---
+
+<section
+	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 py-20 md:px-20 md:py-[120px] 2xl:px-[300px]"
+	aria-labelledby={titleId}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div
+		class={`mx-auto grid w-full ${widthCls} grid-cols-1 gap-4 lg:grid-cols-2${containerSchemeCls}`}
+		data-animate
+	>
+		<div
+			class={`group relative w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))] ${aspectCls}${imageLeft ? "" : " lg:order-2"}`}
+			data-puck-subsection-parent={id}
+			data-puck-subsection-index="100"
+			data-puck-subsection-field="image"
+		>
+			<img
+				src={imageUrl}
+				alt={imageAlt}
+				loading="lazy"
+				class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+			/>
+		</div>
+
+		<div class={`flex w-full flex-col gap-6${inlineCta ? "" : " h-full"}${imageLeft ? "" : " lg:order-1"}`}>
+			<h2
+				id={titleId}
+				class={headingCls + headingAlignCls + italicCls}
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="101"
+				data-puck-subsection-field="heading"
+			>
+				{heading}
+			</h2>
+			<div
+				class={textCls + italicCls}
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="102"
+				data-puck-subsection-field="text"
+				set:html={text}
+			/>
+			{
+				btnText && (
+					<div class={inlineCta ? "mt-2" : "mt-auto"}>
+						<a
+							href={btnHref}
+							class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,227_142_159))] px-6 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="103"
+							data-puck-subsection-field="button"
+						>
+							{btnText}
+						</a>
+					</div>
+				)
+			}
+		</div>
+	</div>
+</section>

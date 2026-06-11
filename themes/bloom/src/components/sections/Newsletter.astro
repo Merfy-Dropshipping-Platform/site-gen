@@ -1,0 +1,160 @@
+---
+// Фаза B (bloom, группа misc): новая канон-секция Newsletter в манере bloom
+// (см. themes/bloom/MANNER.md; процесс-эталон — rose T17 Newsletter). Схема
+// полей = packages/theme-base/blocks/Newsletter/Newsletter.puckConfig.ts.
+// Тело = блок подписки подвала верстальщика (Footer.astro:36-79, перенесён
+// КОПИЕЙ — подвал не тронут): заголовок Urbanist 20 light uppercase, подзаголовок
+// Inter 16 light muted, pill-форма h-10 с внутренней кнопкой; сетка секций §2.
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон heading: string | { text, alignment, size }; canon-default = литерал
+// подвала «ПОДПИШИТЕСЬ НА РАССЫЛКУ» (F:46). Роль F:44 (Urbanist 20 light
+// uppercase, чёрный) — фоллбек токена 0_0_0, как у верстальщика.
+const heading =
+	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "ПОДПИШИТЕСЬ НА РАССЫЛКУ");
+// Лестница §9 от базы-литерала 20 (medium): small ≈0.7× = 14, large ≈1.2× = 24.
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingCls =
+	headingSize === "small"
+		? "font-urbanist text-[14px] font-light uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]"
+		: headingSize === "large"
+			? "font-urbanist text-[24px] font-light uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]"
+			: "font-urbanist text-[20px] font-light uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]";
+
+// Канон description (string) + text {content,size} (pupa-дубль): canon-default =
+// литерал подвала «Подпишитесь на наши акции и новости» (F:48-50, Inter 16 light
+// #999999 → токен muted). Лестница body §9: small 14, large 19.
+const description =
+	(typeof p.description === "string" && p.description.trim() ? p.description : undefined) ??
+	(typeof p.text?.content === "string" && p.text.content.trim() ? p.text.content : undefined) ??
+	"Подпишитесь на наши акции и новости";
+const descSize = p.text?.size;
+const descSizeCls =
+	descSize === "small" ? " !text-[14px]" : descSize === "large" ? " !text-[19px]" : "";
+
+// Канон placeholder/buttonText: дефолты = литералы подвала (F:21-22, F:70).
+const placeholder =
+	typeof p.placeholder === "string" && p.placeholder.trim() ? p.placeholder : "example@bloom.ru";
+const buttonText =
+	typeof p.buttonText === "string" && p.buttonText.trim() ? p.buttonText : "Отправить";
+
+// Канон formLayout: canon-default 'inline-submit' (blockDefaults темы, совпадает
+// с отсутствием пропа) = форма подвала VERBATIM (pill h-10, внутренняя кнопка
+// h-8 на розовой поверхности); 'stacked' = поле + розовый pill-CTA h-12 манеры §3.
+const inlineSubmit = p.formLayout !== "stacked";
+
+// Канон position/alignment: canon-default 'left' (blockDefaults) = литерал
+// подвала — заголовок слева, форма max-w-[318px] справа, двухколонная
+// lg-раскладка блока (F:38) сохраняется. Явные center/right складывают блок
+// в одну колонку и двигают её по контейнеру.
+const position = p.position === "center" || p.position === "right" ? p.position : "left";
+const alignment = p.alignment === "center" || p.alignment === "right" ? p.alignment : "left";
+const isDefaultLayout = position === "left" && alignment === "left";
+const posCls = position === "center" ? "mx-auto" : position === "right" ? "ml-auto" : "mr-auto";
+const alignCls =
+	alignment === "center"
+		? "items-center text-center"
+		: alignment === "right"
+			? "items-end text-right"
+			: "items-start text-left";
+const wrapCls = isDefaultLayout
+	? "flex w-full flex-col gap-6 lg:flex-row lg:items-start lg:justify-between"
+	: `flex w-full max-w-[430px] flex-col gap-6 ${posCls} ${alignCls}`;
+const textBlockCls = isDefaultLayout ? "flex flex-col gap-2" : "flex w-full flex-col gap-2";
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+
+const titleId = id ? `${id}-title` : undefined;
+---
+
+<section
+	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-20 pt-20 md:px-20 md:pb-[120px] md:pt-[120px] 2xl:px-[300px]"
+	aria-labelledby={titleId}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div class="mx-auto w-full max-w-[1320px]" data-animate>
+		<div class={wrapCls}>
+			<div class={textBlockCls}>
+				<h2
+					id={titleId}
+					class={headingCls}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="heading"
+				>
+					{heading}
+				</h2>
+				<p
+					class={`font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]${descSizeCls}`}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="101"
+					data-puck-subsection-field="text"
+				>
+					{description}
+				</p>
+			</div>
+
+			<div class="flex w-full max-w-[318px] flex-col gap-2 lg:shrink-0">
+				{
+					inlineSubmit ? (
+						<form
+							class="flex h-10 w-full items-center gap-2 rounded-full border border-[rgb(var(--color-input-border,255_212_229))] bg-white pl-4 pr-1 transition-colors focus-within:border-[#E38E9F]"
+							data-newsletter-form
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="997"
+							data-puck-subsection-field="placeholder"
+						>
+							<input
+								type="email"
+								name="email"
+								required
+								placeholder={placeholder}
+								aria-label="Email"
+								class="min-w-0 flex-1 bg-transparent font-inter text-[14px] font-light leading-normal text-black outline-none placeholder:text-[#FFD4E5]"
+							/>
+							<button
+								type="submit"
+								class="inline-flex h-8 shrink-0 items-center justify-center rounded-full bg-[#FDF4F6] px-4 font-inter text-[12px] font-light leading-normal text-[#E38E9F] transition-opacity hover:opacity-80 active:scale-95"
+							>
+								{buttonText}
+							</button>
+						</form>
+					) : (
+						<form
+							class="flex w-full flex-col gap-4"
+							data-newsletter-form
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="997"
+							data-puck-subsection-field="placeholder"
+						>
+							<input
+								type="email"
+								name="email"
+								required
+								placeholder={placeholder}
+								aria-label="Email"
+								class="h-10 w-full rounded-full border border-[rgb(var(--color-input-border,255_212_229))] bg-white px-4 font-inter text-[14px] font-light leading-normal text-black outline-none transition-colors placeholder:text-[#FFD4E5] focus-visible:border-[#E38E9F]"
+							/>
+							<button
+								type="submit"
+								class="inline-flex h-12 w-auto items-center justify-center self-start rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,227_142_159))] px-6 font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95"
+							>
+								{buttonText}
+							</button>
+						</form>
+					)
+				}
+				<p
+					data-newsletter-status
+					role="status"
+					class="hidden font-inter text-[14px] font-light leading-normal text-[#E38E9F]"
+				></p>
+			</div>
+		</div>
+	</div>
+</section>

@@ -1,0 +1,136 @@
+---
+// Фаза B (bloom, группа misc): новая канон-секция Publications в манере bloom
+// (см. themes/bloom/MANNER.md §4/§9/§11; rose-эталона НЕТ — в карте rose 15
+// позиций без Publications). Схема полей = packages/theme-base/blocks/
+// Publications/Publications.puckConfig.ts. Demo-рендер — карточки-болванки в
+// тоне бьюти-ритуала; платформенный резолв публикаций идёт по data-атрибуту
+// publicationType на гриде, demo-карточки — его фоллбек.
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон heading (string | { text, alignment, size }); canon-default «Публикации».
+// Роль = заголовок секции §1 (Collections.astro:18), акцент-токен #E38E9F.
+const heading = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Публикации");
+// Лестница §9 (база-литерал 18/md:20 = canon-default medium): small 15/17, large 22/24.
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingSizeCls =
+	headingSize === "small"
+		? "text-[15px] md:text-[17px]"
+		: headingSize === "large"
+			? "text-[22px] md:text-[24px]"
+			: "text-[18px] md:text-[20px]";
+const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
+const headingAlignCls =
+	headingAlignment === "center"
+		? " text-center"
+		: headingAlignment === "right"
+			? " text-right"
+			: "";
+const headingCls = `font-urbanist ${headingSizeCls} font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))]${headingAlignCls}`;
+
+// Канон columnsCount (slider 1-6) приоритетнее hidden columns (1-4); дефолт 3.
+// Дефолт = лестница литералов товарного грида манеры (Collections.astro:24,
+// 1 → sm:2 → lg:3); иное значение — CSS-var на lg-брейкпоинте.
+const columnsRaw =
+	typeof p.columnsCount === "number" ? p.columnsCount : typeof p.columns === "number" ? p.columns : 3;
+const columns = Math.max(1, Math.min(6, Math.round(columnsRaw) || 3));
+const gridCls =
+	columns === 3
+		? "grid w-full grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-[16px] lg:gap-y-10"
+		: "grid w-full grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-[repeat(var(--pub-cols),minmax(0,1fr))] lg:gap-x-[16px] lg:gap-y-10";
+const gridStyle = columns === 3 ? undefined : `--pub-cols:${columns};`;
+
+// Канон cardsCount (slider 1-12) приоритетнее hidden cards (1-4); дефолт 3 карточки.
+const cardsRaw =
+	typeof p.cardsCount === "number" ? p.cardsCount : typeof p.cards === "number" ? p.cards : 3;
+const cards = Math.max(1, Math.min(12, Math.round(cardsRaw) || 3));
+
+// Канон showDateTime (toggle) / legacy dateTime.enabled (hidden) — дата
+// рендерится только при true/'true'.
+const showDate = String(p.showDateTime ?? p.dateTime?.enabled ?? "false") === "true";
+
+// Канон publicationType (pagePicker) — носитель data-атрибут на гриде для
+// платформенного резолва публикаций.
+const publicationType =
+	typeof p.publicationType === "string" && p.publicationType ? p.publicationType : undefined;
+
+// Болванки в тоне §11 (бьюти-ритуал); фоллбек-обложки /images/trend-{1..6}.webp
+// по позиции (цикл при cardsCount > 6).
+const DEMO_CARDS = [
+	{ date: "12 мая 2026", title: "Утренний ритуал ухода за кожей" },
+	{ date: "28 апреля 2026", title: "Как выбрать крем по типу кожи" },
+	{ date: "10 апреля 2026", title: "Гид по коллекции HYDRO" },
+	{ date: "22 марта 2026", title: "Весенний уход за волосами" },
+	{ date: "5 марта 2026", title: "Косметичка на каждый день" },
+	{ date: "14 февраля 2026", title: "Вечерний ритуал восстановления" },
+];
+const items = Array.from({ length: cards }, (_, i) => ({
+	...DEMO_CARDS[i % DEMO_CARDS.length],
+	image: `/images/trend-${(i % 6) + 1}.webp`,
+}));
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+
+const titleId = id && heading ? `${id}-title` : undefined;
+---
+
+<section
+	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-20 pt-20 md:px-20 md:pb-[120px] md:pt-[120px] 2xl:px-[300px]"
+	aria-labelledby={titleId}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10">
+		{
+			heading && (
+				<div data-animate>
+					<h2
+						id={titleId}
+						class={headingCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="100"
+						data-puck-subsection-field="heading"
+					>
+						{heading}
+					</h2>
+				</div>
+			)
+		}
+
+		<div
+			class={gridCls}
+			style={gridStyle}
+			data-publication-type={publicationType}
+			data-animate
+			data-animate-delay="0.1s"
+		>
+			{
+				items.map((item, i) => (
+					<article class="flex flex-col gap-4" data-publication-index={i}>
+						<div class="group relative aspect-[652/594] w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]">
+							<img
+								src={item.image}
+								alt={item.title}
+								loading="lazy"
+								class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+							/>
+						</div>
+						<div class="flex flex-col gap-1">
+							{showDate && (
+								<span class="font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">
+									{item.date}
+								</span>
+							)}
+							<span class="font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70">
+								{item.title}
+							</span>
+						</div>
+					</article>
+				))
+			}
+		</div>
+	</div>
+</section>

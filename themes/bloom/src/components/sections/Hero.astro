@@ -2,57 +2,222 @@
 import BloomPicture from "../img/BloomPicture.astro";
 import { DEFAULT_CATEGORY_HREF } from "../../data/categories";
 
-interface Props {
-	title?: string;
-	subtitle?: string;
-	ctaText?: string;
-	ctaLink?: string;
-	backgroundImage?: string;
-}
+// ОЖИВЛЕНИЕ (Фаза B, контракт rose Hero): читаем канон-схему theme-base
+// Hero.puckConfig и раскладываем по разметке верстальщика. Тело ниже — verbatim,
+// значения bloom = дефолты (страницы зовут <Hero /> без пропсов). blockDefaults
+// variant='split-bloom' — дефолт-ветка полотна (отдельной ветки не требует).
+// Поддержаны nested (Pupa) и legacy flat-пропсы.
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+const title = p.heading?.text ?? p.title ?? "Искусство заботы о себе";
+const subtitle =
+	p.text?.content ??
+	p.subtitle ??
+	"Уходовая косметика, которая дарит здоровье и сияние вашей коже и волосам";
+const ctaText = p.primaryButton?.text ?? p.cta?.text ?? p.ctaText ?? "Начать ритуал";
+const ctaLink =
+	p.primaryButton?.link?.href ??
+	p.primaryButton?.link ??
+	p.cta?.href ??
+	p.ctaLink ??
+	DEFAULT_CATEGORY_HREF;
+const backgroundImage =
+	p.backgroundImages?.url1 ?? p.backgroundImage ?? p.image?.url ?? "/images/hero-background.webp";
+// Канон backgroundImages (imagePair url2) / legacy backgroundImage2: сплит двух
+// картинок 50/50 ТОЛЬКО когда второе фото задано; иначе одиночный рендер дословно.
+const backgroundImage2 = p.backgroundImages?.url2 ?? p.backgroundImage2;
 
-const {
-	title = "Искусство заботы о себе",
-	subtitle = "Уходовая косметика, которая дарит здоровье и сияние вашей коже и волосам",
-	ctaText = "Начать ритуал",
-	ctaLink = DEFAULT_CATEGORY_HREF,
-	backgroundImage = "/images/hero-background.webp",
-} = Astro.props;
+// Канон heading.size / text.size (+ секционный p.size как canon-носитель:
+// blockDefaults bloom пишут size='large'). 'large' И отсутствующий проп →
+// ЛИТЕРАЛЬНАЯ лестница верстальщика (MANNER.md §9). Уменьшенные в манере
+// (medium ≈0.85×, small ≈0.7×, округление до целых px):
+//   заголовок large 18/md:20 → medium 15/17 → small 13/14
+//   текст     large 14/md:16 → medium 12/14 → small 10/11
+// Дефолтная ветка каждого тернарника = прежняя строка классов байт-в-байт
+// (цвета → токены с пиксель-фоллбеком родных #E38E9F по §7).
+const headingSize = p.heading?.size ?? p.size;
+const headingCls =
+	headingSize === "small"
+		? "hero-animate-1 font-urbanist text-[13px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[14px]"
+		: headingSize === "medium"
+			? "hero-animate-1 font-urbanist text-[15px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[17px]"
+			: "hero-animate-1 font-urbanist text-[18px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[20px]";
+const textSize = p.text?.size ?? p.size;
+const subtitleCls =
+	textSize === "small"
+		? "hero-animate-2 font-inter text-[10px] font-light leading-[1.2] text-[rgb(var(--color-text,227_142_159))] md:text-[11px]"
+		: textSize === "medium"
+			? "hero-animate-2 font-inter text-[12px] font-light leading-[1.2] text-[rgb(var(--color-text,227_142_159))] md:text-[14px]"
+			: "hero-animate-2 font-inter text-[14px] font-light leading-[1.2] text-[rgb(var(--color-text,227_142_159))] md:text-[16px]";
+
+// Канон secondaryButton {text, link: string|{href}} — рендер ТОЛЬКО при непустом
+// тексте; кнопки встают рядом в ряд с зазором gap-3 (манера §3).
+const secondaryText =
+	typeof p.secondaryButton?.text === "string" && p.secondaryButton.text.trim()
+		? p.secondaryButton.text
+		: undefined;
+const secondaryLink =
+	p.secondaryButton?.link?.href ??
+	(typeof p.secondaryButton?.link === "string" ? p.secondaryButton.link : undefined) ??
+	DEFAULT_CATEGORY_HREF;
+
+// Канон overlay 0-100 (число или строка) → слой затемнения между фото (z-0) и контентом (z-10).
+const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
+
+// Канон position (видимое поле панели) / contentPosition (legacy hidden, те же
+// 9 значений) + alignment. 'center' у position — canon-default (его пишет
+// defaultPagesData) → пиксель верстальщика: контент в ЛЕВОМ НИЖНЕМ углу
+// (items-start justify-end), как и отсутствие пропа. alignment 'left' —
+// canon-default из blockDefaults → тот же литерал. Контент двигают только
+// явные top-*/bottom-*/center-left/center-right и alignment center/right.
+const posRaw =
+	typeof p.position === "string"
+		? p.position
+		: typeof p.contentPosition === "string"
+			? p.contentPosition
+			: "";
+const pos = posRaw === "center" ? "" : posRaw;
+const vPos = pos.startsWith("top") ? "top" : pos.startsWith("center") ? "middle" : "";
+const hPosFromPos = pos.endsWith("-left")
+	? "left"
+	: pos.endsWith("-right")
+		? "right"
+		: pos.endsWith("-center")
+			? "center"
+			: "";
+const hAlign =
+	p.alignment === "left" || p.alignment === "center" || p.alignment === "right"
+		? p.alignment
+		: hPosFromPos || "left";
+const hItemsCls =
+	hAlign === "center" ? "items-center" : hAlign === "right" ? "items-end" : "items-start";
+const vJustifyCls =
+	vPos === "top" ? "justify-start" : vPos === "middle" ? "justify-center" : "justify-end";
+const textAlignCls = hAlign === "center" ? " text-center" : hAlign === "right" ? " text-right" : "";
+// Верхний отступ контейнера нужен только при верхней/средней позиции (низ — литерал).
+const containerCls = `absolute inset-0 z-10 flex h-full w-full flex-col ${hItemsCls} ${vJustifyCls} px-4 pb-8 md:px-20 md:pb-12 xl:pb-20 2xl:px-[300px]${vPos ? " pt-8 md:pt-12 xl:pt-20" : ""}`;
+
+// Канон buttonStyle solid|outlined: outlined = pill с бордером/текстом цвета
+// заливки кнопки на прозрачном фоне; solid/отсутствие = розовый pill верстальщика
+// дословно (токены кнопки-1 §7, rounded-full → --radius-button 100px).
+const ctaBtnCls =
+	p.buttonStyle === "outlined"
+		? "inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] border border-solid border-[rgb(var(--color-button-bg,227_142_159))] bg-transparent px-4 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-bg,227_142_159))] transition-opacity hover:opacity-90 active:scale-95"
+		: "inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,227_142_159))] px-4 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95";
+// Вторая кнопка — белый pill манеры (Philosophy.astro:26) на токенах кнопки-2.
+const secondaryBtnCls =
+	"inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-2-bg,255_255_255))] px-4 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity hover:opacity-90 active:scale-95";
+const rowJustifyCls =
+	hAlign === "center" ? "justify-center" : hAlign === "right" ? "justify-end" : "justify-start";
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T14).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
 ---
 
 <section
-	class="relative w-full overflow-hidden bg-white"
+	class="relative w-full overflow-hidden bg-[rgb(var(--color-bg,255_255_255))]"
 	aria-labelledby="hero-title"
+	data-puck-component-id={id}
+	style={paddingStyle}
 >
-	<div class="relative w-full min-h-[560px] aspect-[375/812] sm:aspect-[768/968] md:aspect-[1280/968] xl:aspect-[1920/925]">
-		<BloomPicture
-			src={backgroundImage}
-			alt=""
-			loading="eager"
-			fetchpriority="high"
-			class="absolute inset-0 z-0 size-full object-cover object-center"
-		/>
+	<div
+		class="relative w-full min-h-[560px] aspect-[375/812] sm:aspect-[768/968] md:aspect-[1280/968] xl:aspect-[1920/925]"
+	>
+		{
+			backgroundImage2 ? (
+				<div class="absolute inset-0 z-0 grid grid-cols-2">
+					<BloomPicture
+						src={backgroundImage}
+						alt=""
+						loading="eager"
+						fetchpriority="high"
+						class="size-full object-cover object-center"
+					/>
+					<BloomPicture
+						src={backgroundImage2}
+						alt=""
+						loading="eager"
+						fetchpriority="high"
+						class="size-full object-cover object-center"
+					/>
+				</div>
+			) : (
+				<BloomPicture
+					src={backgroundImage}
+					alt=""
+					loading="eager"
+					fetchpriority="high"
+					class="absolute inset-0 z-0 size-full object-cover object-center"
+				/>
+			)
+		}
 
-		<div
-			class="absolute inset-0 z-10 flex h-full w-full flex-col items-start justify-end px-4 pb-8 md:px-20 md:pb-12 xl:pb-20 2xl:px-[300px]"
-		>
-			<div class="flex w-full max-w-[330px] flex-col items-start gap-4">
-				<div class="flex flex-col items-start gap-2">
+		{
+			overlayN > 0 && (
+				<div
+					class="pointer-events-none absolute inset-0 z-[1] bg-black"
+					style={`opacity:${overlayN / 100}`}
+				/>
+			)
+		}
+
+		<div class={containerCls}>
+			<div class={`flex w-full max-w-[330px] flex-col ${hItemsCls} gap-4`}>
+				<div class={`flex flex-col ${hItemsCls} gap-2${textAlignCls}`}>
 					<h1
 						id="hero-title"
-						class="hero-animate-1 font-urbanist text-[18px] font-normal uppercase leading-none text-[#e38e9f] md:text-[20px]"
+						class={headingCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="100"
+						data-puck-subsection-field="heading"
 					>
 						{title}
 					</h1>
-					<p class="hero-animate-2 font-inter text-[14px] font-light leading-[1.2] text-[#e38e9f] md:text-[16px]">
+					<p
+						class={subtitleCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="101"
+						data-puck-subsection-field="text"
+					>
 						{subtitle}
 					</p>
 				</div>
-				<a
-					href={ctaLink}
-					class="hero-animate-3 inline-flex h-12 items-center justify-center rounded-full bg-[#e38e9f] px-4 font-inter text-[16px] font-light leading-none text-white transition-opacity hover:opacity-90 active:scale-95"
-				>
-					{ctaText}
-				</a>
+				{
+					secondaryText ? (
+						<div class={`hero-animate-3 flex w-full flex-row flex-wrap items-center gap-3 ${rowJustifyCls}`}>
+							<a
+								href={ctaLink}
+								class={ctaBtnCls}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="102"
+								data-puck-subsection-field="primaryButton"
+							>
+								{ctaText}
+							</a>
+							<a
+								href={secondaryLink}
+								class={secondaryBtnCls}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="103"
+								data-puck-subsection-field="secondaryButton"
+							>
+								{secondaryText}
+							</a>
+						</div>
+					) : (
+						<a
+							href={ctaLink}
+							class={`hero-animate-3 ${ctaBtnCls}`}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="102"
+							data-puck-subsection-field="primaryButton"
+						>
+							{ctaText}
+						</a>
+					)
+				}
 			</div>
 		</div>
 	</div>

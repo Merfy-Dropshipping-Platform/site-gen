@@ -3,41 +3,292 @@ import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/
 import BloomProductCard from "../products/BloomProductCard.astro";
 import { catalogProducts } from "../../data/products";
 
-const sectionTitle = "Главные хиты";
+// ОЖИВЛЕНИЕ (Фаза B, контракт rose Popular T13): полная конструкторная схема
+// theme-base PopularProducts.puckConfig поверх разметки верстальщика. Тело +
+// demo-данные verbatim (дефолты без пропсов = прежний рендер). Канон-дефолты
+// конструктора (headingSize/textSize small, imageView square, quickAddMode none)
+// → пиксель верстальщика; дефолтные ветки тернарников = прежние строки
+// байт-в-байт. ⚠️ blockDefaults bloom задают columns=3 при литерале верстальщика
+// lg:grid-cols-4 — по решению аналитика 3 трактуется как canon-default →
+// дефолт-ветка (литерал); рекомендация следующей фазе — поправить theme.json
+// PopularProducts.columns на 4.
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+const sectionTitle =
+	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title ?? "Главные хиты";
 const sectionSubtitle =
+	(typeof p.text === "string" ? p.text : p.text?.content) ??
+	(typeof p.subtitle === "string" ? p.subtitle : p.subtitle?.content) ??
 	"Бестселлеры бренда — формулы, за которыми возвращаются снова и снова.";
 
-const products = catalogProducts.slice(0, 4);
+// Канон cards 2-24: лимит среза demo-витрины и гидрации (data-cards на гриде).
+// 4 = срез верстальщика (и отсутствие пропа) → дефолт-ветка.
+const cardsN =
+	typeof p.cards === "number" && p.cards > 0 ? Math.max(1, Math.min(24, Math.round(p.cards))) : 4;
+const products = catalogProducts.slice(0, cardsN);
+
+// Канон headingSize (top-level приоритетнее legacy heading.size): 'small'
+// (canon-default) и отсутствие = шапка DS NtSectionHeading верстальщика дословно
+// (20/24/32); medium → 38px, large → 46px (§9, перекрытие утилитой на обёртке —
+// внутрь DS-компонента класс не пробрасывается).
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingSizeCls =
+	headingSize === "medium"
+		? " [&_h2]:!text-[38px]"
+		: headingSize === "large"
+			? " [&_h2]:!text-[46px]"
+			: "";
+// Канон textSize: 'small' (canon-default) и отсутствие = подзаголовок DS
+// дословно (14/18/24); medium → 29px, large → 35px (множители ряда §9 от xl-базы 24).
+const textSize = p.textSize ?? p.text?.size;
+const textSizeCls =
+	textSize === "medium"
+		? " [&_p]:!text-[29px]"
+		: textSize === "large"
+			? " [&_p]:!text-[35px]"
+			: "";
+// Дефолт = прежний `<div data-animate>` без class байт-в-байт.
+const headWrapCls = `${headingSizeCls}${textSizeCls}`.trim() || undefined;
+
+// Канон columns 1-6: 3 (canon-default из blockDefaults bloom) и отсутствие →
+// дефолт-ветка (литерал lg:grid-cols-4); иное → inline-var на гриде с lg
+// (мобильная лестница верстальщика 2→sm:3 сохраняется).
+const colsRaw =
+	typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : undefined;
+const cols = colsRaw && colsRaw !== 3 ? colsRaw : undefined;
+// Канон imageView square/portrait/wide (+legacy alias adaptive→wide): 'square'
+// (canon-default) и отсутствие = aspect-square карточки верстальщика;
+// portrait → 430/500, wide → 16/9 (перекрытие медиа-ссылки карточки).
+const tileAspectCls =
+	p.imageView === "portrait"
+		? " [&_li>article>a]:aspect-[430/500]"
+		: p.imageView === "wide" || p.imageView === "adaptive"
+			? " [&_li>article>a]:aspect-[16/9]"
+			: "";
+const gridBase = "grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4";
+const gridCls =
+	(cols
+		? "grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-[repeat(var(--cols),minmax(0,1fr))]"
+		: gridBase) + tileAspectCls;
+const gridStyle = cols ? `--cols:${cols}` : undefined;
+
+// Канон quickAddMode none/standard/cart (+legacy alias count→cart). НЮАНС bloom:
+// карточка верстальщика УЖЕ несёт pill «В корзину» (data-add-to-cart) — дефолт
+// 'none' (canon-default) = карточка verbatim со своей кнопкой; standard/cart
+// сохраняют кнопку и переименовывают её в quickAddText (носители — data-quick-add
+// и data-qa-text на гриде, текст ставит скрипт ниже и на demo, и на гидрации).
+const qaModeRaw = p.quickAddMode === "count" ? "cart" : p.quickAddMode;
+const quickAddMode = qaModeRaw === "standard" || qaModeRaw === "cart" ? qaModeRaw : undefined;
+const quickAddText =
+	(typeof p.quickAddText === "string" && p.quickAddText) ||
+	(quickAddMode === "cart" ? "В КОРЗИНУ" : "В корзину");
+
+// Канон buttonStyle link/primary/secondary — стиль встроенной кнопки карточки.
+// primary/отсутствие = розовый pill верстальщика дословно; secondary = контурный
+// pill в тонах кнопки-1; link = текстовая ссылка. Носитель — data-btn-style на
+// гриде + глобальный <style> ниже (работает и для SSR-demo, и для гидрации).
+const btnStyle =
+	p.buttonStyle === "secondary" || p.buttonStyle === "link" ? p.buttonStyle : undefined;
+
+// Канон nextPhotoOnHover (toggle, true/'true'): смена фото на вторую картинку
+// товара при наведении. Носитель данных: data-image-2 на <li> (demo —
+// gallery[1] верстальщика; реальные товары — images[1], ставит гидрация).
+const nextPhoto = p.nextPhotoOnHover === true || p.nextPhotoOnHover === "true";
+// is:inline + set:html (без define:vars — компилятор секций его не умеет);
+// идемпотентность data-np-hydrated; без data-image-2 скрипт — no-op без ошибок.
+const NEXT_PHOTO_JS = [
+	"(function(){",
+	"var grids=document.querySelectorAll('[data-nt=\"popular-grid\"][data-next-photo]');",
+	"for(var i=0;i<grids.length;i++){(function(g){",
+	"if(g.getAttribute('data-np-hydrated')==='true')return;",
+	"g.setAttribute('data-np-hydrated','true');",
+	"function swap(li,on){",
+	"var u=on?li.getAttribute('data-image-2'):null;",
+	"var im=li.querySelectorAll('img');",
+	"for(var j=0;j<im.length;j++){",
+	"if(on){if(!im[j].getAttribute('data-image-1'))im[j].setAttribute('data-image-1',im[j].getAttribute('src')||'');im[j].setAttribute('src',u);}",
+	"else{var s1=im[j].getAttribute('data-image-1');if(s1)im[j].setAttribute('src',s1);}",
+	"}",
+	"var so=li.querySelectorAll('source');",
+	"for(var k=0;k<so.length;k++){",
+	"if(on){if(!so[k].getAttribute('data-srcset-1'))so[k].setAttribute('data-srcset-1',so[k].getAttribute('srcset')||'');so[k].setAttribute('srcset',u);}",
+	"else{var ss=so[k].getAttribute('data-srcset-1');if(ss)so[k].setAttribute('srcset',ss);}",
+	"}",
+	"}",
+	"g.addEventListener('mouseover',function(e){",
+	"var t=e.target;if(!t||!t.closest)return;",
+	"var li=t.closest('li[data-image-2]');",
+	"if(!li||!g.contains(li)||li.getAttribute('data-np-on')==='true')return;",
+	"li.setAttribute('data-np-on','true');swap(li,true);",
+	"});",
+	"g.addEventListener('mouseout',function(e){",
+	"var t=e.target;if(!t||!t.closest)return;",
+	"var li=t.closest('li[data-image-2]');",
+	"if(!li||li.getAttribute('data-np-on')!=='true')return;",
+	"var to=e.relatedTarget;if(to&&li.contains(to))return;",
+	"li.setAttribute('data-np-on','false');swap(li,false);",
+	"});",
+	"})(grids[i]);}",
+	"})();",
+].join("");
+
+// Канон viewAll {show,text,href} (+legacy true/'true'): кнопка под гридом,
+// манера §3 — розовый pill; дефолты канона 'Смотреть ещё' / '/catalog'.
+const viewAllRaw = p.viewAll;
+const viewAllShow =
+	viewAllRaw === true ||
+	viewAllRaw === "true" ||
+	(!!viewAllRaw &&
+		typeof viewAllRaw === "object" &&
+		(viewAllRaw.show === true || viewAllRaw.show === "true"));
+const viewAllText =
+	(!!viewAllRaw && typeof viewAllRaw === "object" && typeof viewAllRaw.text === "string" && viewAllRaw.text) ||
+	"Смотреть ещё";
+const viewAllHref =
+	(!!viewAllRaw && typeof viewAllRaw === "object" && typeof viewAllRaw.href === "string" && viewAllRaw.href) ||
+	"/catalog";
+
+// Канон collection (collectionPicker, id или slug): носитель — data-collection
+// на гриде; фильтрацию делает гидрация (filterByCollection: productIds коллекции
+// → membership товара → все, паритет theme-base). Demo-сборка без данных — no-op.
+const collectionRef =
+	typeof p.collection === "string" && p.collection.trim() ? p.collection.trim() : undefined;
+
+// blockDefaults bloom headingAlignment/cardCaptionStyle — ключи вне канон-полей
+// Popular, игнорируются (решение аналитика).
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
 ---
 
 <section
 	id="popular"
-	class="w-full bg-white px-4 pb-[80px] pt-[80px] md:px-20 md:pb-[120px] md:pt-[120px] 2xl:px-[300px]"
+	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-[80px] pt-[80px] md:px-20 md:pb-[120px] md:pt-[120px] 2xl:px-[300px]"
 	aria-labelledby="popular-title"
+	data-puck-component-id={id}
+	style={paddingStyle}
 >
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10">
-		<div data-animate>
+		<div
+			data-animate
+			class={headWrapCls}
+			data-puck-subsection-parent={id}
+			data-puck-subsection-index="100"
+			data-puck-subsection-field="heading"
+		>
 			<NtSectionHeading titleId="popular-title" title={sectionTitle} subtitle={sectionSubtitle} />
 		</div>
 
-		<ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4" role="list" data-animate data-animate-delay="0.1s" data-nt="popular-grid">
+		<ul
+			class={gridCls}
+			role="list"
+			data-animate
+			data-animate-delay="0.1s"
+			data-nt="popular-grid"
+			style={gridStyle}
+			data-cards={cardsN !== 4 ? String(cardsN) : undefined}
+			data-collection={collectionRef}
+			data-next-photo={nextPhoto ? "true" : undefined}
+			data-quick-add={quickAddMode}
+			data-qa-text={quickAddMode ? quickAddText : undefined}
+			data-btn-style={btnStyle}
+		>
 			{products.map((product) => (
-				<li data-product-id={product.id}>
+				<li data-product-id={product.id} data-image-2={nextPhoto ? product.gallery?.[1] : undefined}>
 					<BloomProductCard product={product} />
 				</li>
 			))}
-		</ul>
+		</ul>{viewAllShow && (
+			<div class="flex w-full justify-center">
+				<a
+					href={viewAllHref}
+					class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,227_142_159))] px-6 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95"
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="102"
+					data-puck-subsection-field="viewAll"
+				>
+					{viewAllText}
+				</a>
+			</div>
+		)}
 	</div>
-</section>
+</section>{nextPhoto && <script is:inline set:html={NEXT_PHOTO_JS} />}
 
 <script>
-	import { hydrateGrid } from "../../lib/storefront-hydrate";
+	import {
+		loadRealProducts,
+		loadRealCollections,
+		filterByCollection,
+		renderCardHtml,
+		escapeHtml,
+	} from "../../lib/storefront-hydrate";
 
-	// Реальные товары (Option B): первые 4 из /data/products.json. Demo-сборка → no-op.
-	const hydratePopular = () => {
-		hydrateGrid('[data-nt="popular-grid"]', 4);
+	// Текст встроенной кнопки карточки (quickAddText): применяется и к demo-SSR,
+	// и к перерисованным гидрацией карточкам (renderCardHtml несёт «В корзину»).
+	const applyQaText = (grid: HTMLElement) => {
+		const text = grid.getAttribute("data-qa-text");
+		if (!text) return;
+		for (const btn of Array.from(grid.querySelectorAll<HTMLElement>("[data-add-to-cart]"))) {
+			if (btn.textContent !== text) btn.textContent = text;
+		}
+	};
+
+	// Реальные товары (Option B, rose-паритет Popular): первые N из
+	// /data/products.json (N = data-cards грида, дефолт 4 — поведение
+	// верстальщика). Канон-поля T13 поверх: data-collection → фильтр по
+	// выбранной коллекции, data-next-photo → data-image-2 (вторая картинка
+	// товара) для hover-скрипта, data-qa-text → текст кнопки карточки.
+	// Demo-сборка → no-op (только переименование кнопки).
+	const hydratePopular = async () => {
+		const grids = Array.from(document.querySelectorAll<HTMLElement>('[data-nt="popular-grid"]'));
+		if (grids.length === 0) return;
+		const products = await loadRealProducts();
+		if (!products) {
+			for (const grid of grids) applyQaText(grid);
+			return;
+		}
+		const needCollections = grids.some((g) => g.getAttribute("data-collection"));
+		const collections = needCollections ? await loadRealCollections() : null;
+		for (const grid of grids) {
+			const limitRaw = Number(grid.getAttribute("data-cards"));
+			const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? limitRaw : 4;
+			const wantNextPhoto = grid.hasAttribute("data-next-photo");
+			const collectionRef = grid.getAttribute("data-collection");
+			const pool = collectionRef ? filterByCollection(products, collections, collectionRef) : products;
+			const items = pool.slice(0, limit);
+			grid.innerHTML = items
+				.map((p) => {
+					const img2 =
+						wantNextPhoto && Array.isArray(p.images) && p.images[1]
+							? ` data-image-2="${escapeHtml(p.images[1])}"`
+							: "";
+					return `<li data-product-id="${escapeHtml(p.id)}"${img2}>${renderCardHtml(p)}</li>`;
+				})
+				.join("");
+			applyQaText(grid);
+		}
 	};
 
 	hydratePopular();
 	document.addEventListener("astro:page-load", hydratePopular);
 </script>
+
+<style is:global>
+	/* Канон buttonStyle: перекрытие встроенной pill-кнопки карточки верстальщика
+	   (и demo-SSR, и гидрированной разметки renderCardHtml). Дефолт (без
+	   data-btn-style) — без правил, карточка байт-в-байт. */
+	[data-nt="popular-grid"][data-btn-style="secondary"] [data-add-to-cart] {
+		background: transparent;
+		border: 1px solid rgb(var(--color-button-bg, 227 142 159));
+		color: rgb(var(--color-button-bg, 227 142 159));
+	}
+
+	[data-nt="popular-grid"][data-btn-style="link"] [data-add-to-cart] {
+		background: transparent;
+		color: rgb(var(--color-text, 0 0 0));
+		text-decoration: underline;
+		text-underline-offset: 4px;
+	}
+</style>

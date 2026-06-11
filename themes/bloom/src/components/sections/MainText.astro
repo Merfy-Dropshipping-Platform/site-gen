@@ -1,0 +1,137 @@
+---
+// Фаза B (bloom): канон-секция MainText — адаптация Philosophy.astro (см.
+// themes/bloom/MANNER.md §10: Philosophy = текст-манифест + CTA без картинки,
+// аналог MainText). Тело верстальщика перенесено КОПИЕЙ — Philosophy.astro не
+// тронут (его используют страницы). Схема полей = packages/theme-base/blocks/
+// MainText/MainText.puckConfig.ts; дефолт каждого пропса = литерал верстальщика
+// (дефолт-ветка тернарников = прежние строки байт-в-байт).
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон heading: string | { text, size }. У верстальщика заголовка НЕТ →
+// рендер ТОЛЬКО при непустом пропе. Роль = заголовок секции (Urbanist uppercase,
+// МАННЕРА §1), на розовом полотне — белый. Лестница §9: medium/отсутствие =
+// литерал роли 18/md:20, small 15/17, large 22/24.
+const heading = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingCls =
+	headingSize === "small"
+		? "font-urbanist text-[15px] font-normal uppercase leading-none text-[rgb(var(--color-heading,255_255_255))] md:text-[17px]"
+		: headingSize === "large"
+			? "font-urbanist text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,255_255_255))] md:text-[24px]"
+			: "font-urbanist text-[18px] font-normal uppercase leading-none text-[rgb(var(--color-heading,255_255_255))] md:text-[20px]";
+
+// Канон text: string | { content, size }. Дефолт = манифест Philosophy VERBATIM.
+const text =
+	typeof p.text === "string"
+		? p.text
+		: (p.text?.content ??
+			"Уход за кожей и самочувствием для динамичной жизни. Мы сочетаем активные ингредиенты из моря и гор с научными знаниями о коже и опьяняющими ароматами, создавая чувственный опыт, который успокаивает и восстанавливает кожу.");
+
+// Канон textSize (top-level hidden приоритетнее text.size сабпанели). Лестница
+// §9 «Манифест 24»: large/отсутствие = литерал 24px, medium 20, small 17.
+// Дефолт-ветка = прежняя строка верстальщика байт-в-байт (text-white → токен).
+const textSize = p.textSize ?? p.text?.size;
+const textCls =
+	textSize === "small"
+		? "w-full max-w-[1320px] font-urbanist text-[17px] font-normal uppercase leading-none text-[rgb(var(--color-text,255_255_255))]"
+		: textSize === "medium"
+			? "w-full max-w-[1320px] font-urbanist text-[20px] font-normal uppercase leading-none text-[rgb(var(--color-text,255_255_255))]"
+			: "w-full max-w-[1320px] font-urbanist text-[24px] font-normal uppercase leading-none text-[rgb(var(--color-text,255_255_255))]";
+
+// Канон position — позиция контент-колонки; alignment — выравнивание внутри.
+// canon-default обоих = 'center' = литерал верстальщика (всё по центру,
+// max-w-[1320px], mx-auto).
+const position = p.position === "left" || p.position === "right" ? p.position : "center";
+const alignment = p.alignment === "left" || p.alignment === "right" ? p.alignment : "center";
+const posCls = position === "left" ? "mr-auto" : position === "right" ? "ml-auto" : "mx-auto";
+const itemsCls =
+	alignment === "left" ? "items-start" : alignment === "right" ? "items-end" : "items-center";
+const textAlignCls =
+	alignment === "left" ? "text-left" : alignment === "right" ? "text-right" : "text-center";
+
+// Канон textStyle (hidden): italic → курсив заголовка и текста.
+const italicCls = p.textStyle === "italic" ? " italic" : "";
+
+// Кнопка: canon-сабпанель button {text, link} приоритетнее legacy hidden cta.
+// Дефолт (пропы не заданы) = CTA Philosophy VERBATIM: «Подробнее» → /about.
+// Пустой текст заданного пропа СКРЫВАЕТ кнопку.
+const btnProvided = p.button !== undefined || p.cta !== undefined;
+const btnTextProp =
+	(typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined) ??
+	(typeof p.cta?.text === "string" && p.cta.text.trim() ? p.cta.text : undefined);
+const btnText = btnTextProp ?? (btnProvided ? undefined : "Подробнее");
+const btnHref =
+	p.button?.link?.href ??
+	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??
+	(typeof p.cta?.href === "string" && p.cta.href ? p.cta.href : undefined) ??
+	(typeof p.cta?.link === "string" && p.cta.link ? p.cta.link : undefined) ??
+	"/about";
+
+// Канон buttonStyle: 'solid' (canon-default из theme.json blockDefaults) и
+// отсутствие = белый pill верстальщика дословно (МАННЕРА §3: CTA на розовом
+// полотне; button-2 токены, rounded-full ≡ var(--radius-button,100px) пиксельно).
+// outlined = бордер цвета заливки на прозрачном фоне.
+const btnCls =
+	p.buttonStyle === "outlined"
+		? "inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] border border-solid border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent px-6 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-90 active:scale-95"
+		: "inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-2-bg,255_255_255))] px-6 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity hover:opacity-90 active:scale-95";
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+
+// colorScheme навешивает обёрткой composeV2Page; фон секции — токен с РОЗОВЫМ
+// литерал-фоллбеком верстальщика (#E38E9F = 227 142 159, МАННЕРА §7).
+const textId = id ? `${id}-text` : "philosophy-text";
+---
+
+<section
+	id={id ? undefined : "philosophy"}
+	class="w-full bg-[rgb(var(--color-bg,227_142_159))] px-4 py-20 md:px-20 md:py-[120px] 2xl:px-[300px]"
+	aria-labelledby={textId}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div class={`${posCls} flex w-full max-w-[1320px] flex-col ${itemsCls} gap-10 ${textAlignCls}`}>
+		{
+			heading && (
+				<h2
+					class={headingCls + italicCls}
+					data-animate
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="heading"
+				>
+					{heading}
+				</h2>
+			)
+		}
+		<p
+			id={textId}
+			data-animate
+			class={textCls + italicCls}
+			data-puck-subsection-parent={id}
+			data-puck-subsection-index="101"
+			data-puck-subsection-field="text"
+			set:html={text}
+		/>
+
+		{
+			btnText && (
+				<a
+					href={btnHref}
+					class={btnCls}
+					data-animate
+					data-animate-delay="0.1s"
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="102"
+					data-puck-subsection-field="button"
+				>
+					{btnText}
+				</a>
+			)
+		}
+	</div>
+</section>

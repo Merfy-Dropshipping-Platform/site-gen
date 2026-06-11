@@ -1,0 +1,144 @@
+---
+// Фаза B (bloom, группа misc): новая канон-секция Video в манере bloom (см.
+// themes/bloom/MANNER.md §2/§4; rose-эталона НЕТ). Схема полей =
+// packages/theme-base/blocks/Video/Video.puckConfig.ts. Медиа в контейнере 1320
+// со скруглением манеры 12px на surface-подложке; только utility-классы с
+// токенами, без <style>-блока.
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон videoUrl + pupa video{url, coverImage}. blob:-URL — временные ObjectURL
+// вкладки конструктора, на live дадут 404 — отбрасываем (паттерн theme-base Video).
+const rawVideoUrl =
+	typeof p.video?.url === "string" ? p.video.url : typeof p.videoUrl === "string" ? p.videoUrl : "";
+const videoUrl = rawVideoUrl.startsWith("blob:") ? "" : rawVideoUrl;
+// Канон poster (+ video.coverImage); пусто и без видео → постер-плейсхолдер
+// верстальщика /images/hero-background.webp на медиа-подложке.
+const poster =
+	(typeof p.video?.coverImage === "string" && p.video.coverImage ? p.video.coverImage : undefined) ??
+	(typeof p.poster === "string" && p.poster ? p.poster : undefined);
+const placeholderPoster = poster ?? "/images/hero-background.webp";
+
+// Канон heading + pupa content.heading{text, alignment, enabled, size} — рендер
+// при непустом тексте и enabled !== 'false'. Роль = заголовок секции §1
+// (Urbanist 18/20 uppercase, акцент-токен #E38E9F).
+const headingRaw = p.heading ?? p.content?.heading;
+const headingText =
+	typeof headingRaw === "string" ? headingRaw : ((headingRaw?.text as string | undefined) ?? "");
+const headingEnabled = String(p.content?.heading?.enabled ?? "true") !== "false";
+const showHeading = Boolean(headingText.trim()) && headingEnabled;
+// Канон size (панель «Размер заголовка») + дубли headingSize / heading.size /
+// content.heading.size. Лестница §9: small 15/17, medium 18/20 (литерал), large 22/24.
+const headingSize =
+	p.size ??
+	p.headingSize ??
+	(typeof headingRaw === "object" ? headingRaw?.size : undefined) ??
+	p.content?.heading?.size;
+const headingSizeCls =
+	headingSize === "small"
+		? "text-[15px] md:text-[17px]"
+		: headingSize === "large"
+			? "text-[22px] md:text-[24px]"
+			: "text-[18px] md:text-[20px]";
+const headingAlignment =
+	p.headingAlignment ??
+	(typeof headingRaw === "object" ? headingRaw?.alignment : undefined) ??
+	p.content?.heading?.alignment;
+const headingAlignCls =
+	headingAlignment === "center"
+		? " text-center"
+		: headingAlignment === "right"
+			? " text-right"
+			: "";
+const headingCls = `font-urbanist ${headingSizeCls} font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))]${headingAlignCls}`;
+
+// Канон position contained|fullscreen + padded (blockDefaults true) + align
+// container|fullbleed (blockDefaults 'container'). Canon-default ветка =
+// контейнер 1320 с горизонтальными полями §2; fullscreen/fullbleed → full-bleed
+// без скругления и клампа (align приоритетнее position — паттерн theme-base);
+// padded=false убирает горизонтальные поля, сохраняя кламп и скругление.
+const alignProp = p.align === "fullbleed" || p.align === "container" ? p.align : undefined;
+const positionProp = typeof p.position === "string" ? p.position : "contained";
+const fullBleed = alignProp ? alignProp === "fullbleed" : positionProp === "fullscreen";
+const padded = !(p.padded === false || p.padded === "false");
+const sectionCls = fullBleed
+	? "w-full bg-[rgb(var(--color-bg,255_255_255))] pb-20 pt-20 md:pb-[120px] md:pt-[120px]"
+	: padded
+		? "w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-20 pt-20 md:px-20 md:pb-[120px] md:pt-[120px] 2xl:px-[300px]"
+		: "w-full bg-[rgb(var(--color-bg,255_255_255))] pb-20 pt-20 md:pb-[120px] md:pt-[120px]";
+const containerCls = fullBleed
+	? "flex w-full flex-col gap-10"
+	: "mx-auto flex w-full max-w-[1320px] flex-col gap-10";
+// На full-bleed полотне заголовок остаётся в полях секции §2.
+const headingWrapCls = fullBleed ? "px-4 md:px-20 2xl:px-[300px]" : undefined;
+const mediaCls = fullBleed
+	? "relative aspect-video w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))]"
+	: "relative aspect-video w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]";
+
+// Канон overlay 0-100 (число или строка) — слой поверх медиа, как у Hero;
+// клики проходят сквозь (controls видео остаются доступны).
+const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+
+const titleId = id && showHeading ? `${id}-title` : undefined;
+---
+
+<section
+	class={sectionCls}
+	aria-labelledby={titleId}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div class={containerCls}>
+		{
+			showHeading && (
+				<div class={headingWrapCls} data-animate>
+					<h2
+						id={titleId}
+						class={headingCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="100"
+						data-puck-subsection-field="heading"
+					>
+						{headingText}
+					</h2>
+				</div>
+			)
+		}
+
+		<div class={mediaCls} data-animate data-animate-delay="0.1s">
+			{
+				videoUrl ? (
+					<video
+						src={videoUrl}
+						poster={poster}
+						controls
+						playsinline
+						preload="metadata"
+						class="absolute inset-0 size-full object-cover"
+					/>
+				) : (
+					<img
+						src={placeholderPoster}
+						alt=""
+						aria-hidden="true"
+						loading="lazy"
+						class="absolute inset-0 size-full object-cover"
+					/>
+				)
+			}
+			{
+				overlayN > 0 && (
+					<div
+						class="pointer-events-none absolute inset-0 z-[1] bg-black"
+						style={`opacity:${overlayN / 100}`}
+					/>
+				)
+			}
+		</div>
+	</div>
+</section>

@@ -11,8 +11,8 @@ interface NavLink {
 }
 
 function pathnameBase(pathname: string): string {
-	const p = pathname.replace(/\/+$/, "");
-	return p === "" ? "/" : p;
+	const base = pathname.replace(/\/+$/, "");
+	return base === "" ? "/" : base;
 }
 
 function categoryHrefFromProduct(pathname: string): string | null {
@@ -22,14 +22,89 @@ function categoryHrefFromProduct(pathname: string): string | null {
 	return product ? (getCategoryBySlug(product.category)?.href ?? null) : null;
 }
 
-const nav: NavLink[] = [
+const defaultNav: NavLink[] = [
 	...categoryPages.map((category) => ({
 		label: category.label,
 		href: category.href,
-		match: (p: string) => p === category.href || categoryHrefFromProduct(p) === category.href,
+		match: (path: string) => path === category.href || categoryHrefFromProduct(path) === category.href,
 	})),
-	{ label: "О нас", href: "/about", match: (p) => p.startsWith("/about") },
+	{ label: "О нас", href: "/about", match: (path) => path.startsWith("/about") },
 ];
+
+// ОЖИВЛЕНИЕ (Фаза B, объём rose Header): канон-схема theme-base Header.puckConfig —
+// siteTitle, navigationLinks, logo, logoPosition, stickiness, padding. Тело ниже —
+// verbatim верстальщика; дефолтные ветки тернарников = прежним строкам байт-в-байт.
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+// Пустая строка (впрыск коэрсера live-пути) не должна гасить название магазина.
+const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
+const nav: NavLink[] =
+	Array.isArray(p.navigationLinks) && p.navigationLinks.length > 0
+		? p.navigationLinks.map((l: any) => ({ label: l.label ?? l.text ?? "", href: l.href ?? l.link ?? "/" }))
+		: defaultNav;
+
+// Канон logo (URL картинки; панель «Логотип» пишет в props.logo): непустая строка →
+// <img> ВЫСОТОЙ var(--size-logo-width) (семантика канона: слайдер «Размер» задаёт
+// высоту лого) в mobile И desktop. Дефолт = лого верстальщика /icons/Bloom.svg
+// h-[19px] литералом, фоллбек токена = родные 19px.
+const logo = typeof p.logo === "string" && p.logo.trim() ? p.logo : undefined;
+const logoImgCls = "h-[var(--size-logo-width,19px)] w-auto max-w-[160px] object-contain";
+
+// Канон logoPosition: 'top-left' (canon-default из blockDefaults) И отсутствие /
+// неизвестное значение → ЛИТЕРАЛ верстальщика — лого В ЦЕНТРЕ desktop-грида
+// [1fr_auto_1fr] (правило canon-default → пиксель). Явный 'center-left' («Слева»)
+// → лого в начало строки (flex: лого, поиск, справа корзина+аккаунт).
+const logoPosition = typeof p.logoPosition === "string" ? p.logoPosition : "";
+const logoLeft = logoPosition === "center-left";
+const desktopRowCls = logoLeft
+	? "flex w-full items-center gap-4"
+	: "grid w-full grid-cols-[1fr_auto_1fr] items-center";
+const desktopLogoCls = logoLeft
+	? "order-first flex items-center justify-center hover:opacity-90"
+	: "flex items-center justify-center hover:opacity-90";
+const desktopIconsCls = logoLeft
+	? "ml-auto flex items-center justify-end gap-4"
+	: "flex items-center justify-end gap-4";
+
+// Канон stickiness: литерал верстальщика УЖЕ sticky top-0 z-50 — 'none' / 'always' /
+// canon-default / отсутствие → sticky остаётся (правило canon-default → пиксель).
+// 'scroll-up' → прячем при скролле вниз, показываем при скролле вверх: is:inline
+// скрипт через data-атрибут (компилятор секций не умеет define:vars),
+// идемпотентность через data-hydrated.
+const stickiness = typeof p.stickiness === "string" ? p.stickiness : "";
+const rootCls =
+	stickiness === "scroll-up"
+		? "sticky top-0 z-50 w-full transition-transform duration-300"
+		: "sticky top-0 z-50 w-full";
+const SCROLL_UP_JS = [
+	"(function(){",
+	"var root=document.querySelector('[data-bloom-sticky=\"scroll-up\"]');",
+	"if(!root||root.getAttribute('data-hydrated')==='true')return;",
+	"root.setAttribute('data-hydrated','true');",
+	"var last=window.scrollY;",
+	"window.addEventListener('scroll',function(){",
+	"var y=window.scrollY;",
+	"if(y>last&&y>root.offsetHeight){root.style.transform='translateY(-100%)';}else{root.style.transform='';}",
+	"last=y;",
+	"},{passive:true});",
+	"})();",
+].join("");
+
+// Канон padding {top,bottom} — clamp ≤64 на носителе отступов верстальщика
+// (desktop-контейнер py-6; мобильная строка h-16 фиксированная). blockDefaults
+// {16,16} = canon-default → ЛИТЕРАЛ py-6; inline-стиль только при ином значении.
+const pad = p.padding && typeof p.padding === "object" ? p.padding : undefined;
+const isCanonPad = pad && Number(pad.top) === 16 && Number(pad.bottom) === 16;
+const headerPad =
+	pad && !isCanonPad
+		? { top: Math.min(Number(pad.top) || 0, 64), bottom: Math.min(Number(pad.bottom) || 0, 64) }
+		: undefined;
+const headerPadStyle = headerPad
+	? `padding-top:${headerPad.top}px;padding-bottom:${headerPad.bottom}px;`
+	: undefined;
+const desktopWrapCls = headerPad
+	? "relative mx-auto hidden w-full max-w-[1920px] px-20 md:flex 2xl:px-[300px]"
+	: "relative mx-auto hidden w-full max-w-[1920px] px-20 py-6 md:flex 2xl:px-[300px]";
 
 const pathname = pathnameBase(Astro.url.pathname);
 const categorySearchAction =
@@ -39,16 +114,27 @@ const categorySearchAction =
 const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathname === link.href);
 ---
 
-<div class="sticky top-0 z-50 w-full" data-bloom-header>
-	<div class="w-full bg-[#E38E9F] py-2 text-center" role="region" aria-live="polite" data-bloom-announcement>
-		<p class="font-inter text-[12px] font-normal uppercase leading-normal text-white">
-			Акция на новую коллекцию. Узнать больше
-		</p>
-	</div>
+<div
+	class={rootCls}
+	data-bloom-header
+	data-puck-component-id={id}
+	data-bloom-sticky={stickiness === "scroll-up" ? "scroll-up" : undefined}
+>
+	{
+		/* Встроенная полоса объявления — ТОЛЬКО статик-режим (без props.id):
+		   в канон-композиции полоса = отдельная секция PromoBanner, иначе дубль. */
+		!id && (
+			<div class="w-full bg-[#E38E9F] py-2 text-center" role="region" aria-live="polite" data-bloom-announcement>
+				<p class="font-inter text-[12px] font-normal uppercase leading-normal text-white">
+					Акция на новую коллекцию. Узнать больше
+				</p>
+			</div>
+		)
+	}
 
-	<header class="relative w-full overflow-visible border-b border-[#F5F5F5] bg-white" data-nt="bloom-header">
+	<header class="relative w-full overflow-visible border-b border-[#F5F5F5] bg-[rgb(var(--color-bg,255_255_255))]" data-nt="bloom-header">
 		<!-- Mobile -->
-		<div class="relative z-[60] flex h-16 items-center justify-between bg-white px-4 md:hidden">
+		<div class="relative z-[60] flex h-16 items-center justify-between bg-[rgb(var(--color-bg,255_255_255))] px-4 md:hidden">
 			<button
 				type="button"
 				id="bloom-burger-btn"
@@ -64,14 +150,20 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 					<NtIcon name="menu-close" sizeClass="size-5" />
 				</span>
 			</button>
-			<a href="/" class="flex items-center hover:opacity-80" aria-label={SITE_TITLE}>
-				<img
-					src="/icons/Bloom.svg"
-					alt={SITE_TITLE}
-					width="65"
-					height="19"
-					class="h-[19px] w-auto"
-				/>
+			<a href="/" class="flex items-center hover:opacity-80" aria-label={siteTitle}>
+				{
+					logo ? (
+						<img src={logo} alt={siteTitle} class={logoImgCls} />
+					) : (
+						<img
+							src="/icons/Bloom.svg"
+							alt={siteTitle}
+							width="65"
+							height="19"
+							class="h-[19px] w-auto"
+						/>
+					)
+				}
 			</a>
 			<div class="flex items-center gap-4">
 				<button
@@ -104,9 +196,9 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 		</div>
 
 		<!-- Desktop 1920: row 1 — icons + logo; row 2 — nav -->
-		<div class="relative mx-auto hidden w-full max-w-[1920px] px-20 py-6 md:flex 2xl:px-[300px]">
+		<div class={desktopWrapCls} style={headerPadStyle}>
 			<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-4">
-				<div class="grid w-full grid-cols-[1fr_auto_1fr] items-center">
+				<div class={desktopRowCls}>
 					<div class="flex items-center justify-start">
 						<button
 							type="button"
@@ -120,17 +212,23 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 						</button>
 					</div>
 
-					<a href="/" class="flex items-center justify-center hover:opacity-90" aria-label={SITE_TITLE}>
-						<img
-							src="/icons/Bloom.svg"
-							alt={SITE_TITLE}
-							width="65"
-							height="19"
-							class="h-[19px] w-[65px]"
-						/>
+					<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
+						{
+							logo ? (
+								<img src={logo} alt={siteTitle} class={logoImgCls} />
+							) : (
+								<img
+									src="/icons/Bloom.svg"
+									alt={siteTitle}
+									width="65"
+									height="19"
+									class="h-[19px] w-[65px]"
+								/>
+							)
+						}
 					</a>
 
-					<div class="flex items-center justify-end gap-4">
+					<div class={desktopIconsCls}>
 						<button
 							type="button"
 							data-cart-open
@@ -157,6 +255,9 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 				<nav
 					class="flex flex-wrap items-center justify-center gap-8 lg:gap-10"
 					aria-label="Основная навигация"
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="997"
+					data-puck-subsection-field="navigationLinks"
 				>
 					{nav.map((link) => {
 						const active = isActive(link);
@@ -165,8 +266,8 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 								href={link.href}
 								aria-current={active ? "page" : undefined}
 								class:list={[
-									"font-inter text-[16px] font-light leading-[100%] text-[#000000] transition-opacity hover:opacity-70",
-									active && "underline decoration-[#E38E9F] underline-offset-4",
+									"font-inter text-[16px] font-light leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70",
+									active && "underline decoration-[rgb(var(--color-accent,227_142_159))] underline-offset-4",
 								]}
 							>
 								{link.label}
@@ -254,6 +355,8 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 			<a href="/auth/sign-up" class="font-inter text-[14px] font-light leading-normal text-[#999999]">Регистрация</a>
 		</nav>
 	</div>
+
+	{stickiness === "scroll-up" && <script is:inline set:html={SCROLL_UP_JS} />}
 </div>
 
 <script>

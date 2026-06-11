@@ -162,7 +162,7 @@ const paddingStyle = p.padding
 				slides.map((s, i) => (
 					<div
 						data-slide
-						class={`absolute inset-0 transition-opacity duration-700 ease-out ${s.active ? "opacity-100" : "pointer-events-none opacity-0"}${s.schemeCls}`}
+						class={`!absolute inset-0 transition-opacity duration-700 ease-out ${s.active ? "opacity-100" : "pointer-events-none opacity-0"}${s.schemeCls}`}
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index={i}
 						data-puck-subsection-field="slides"

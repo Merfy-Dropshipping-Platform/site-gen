@@ -211,17 +211,18 @@ const video = parseVideo(videoUrl);
       )}
       {!video.embedUrl && (
         <div class={C.placeholder} aria-hidden="true" data-media-placeholder>
-          {/* Figma 1:33420 — Video frame illustration. alt="" + onerror:
-              если PNG не доехал в дист темы (404), img прячет себя —
-              остаётся bg-surface от C.media + play-кнопка + подпись. */}
+          {/* Figma 1:33420 — Video frame illustration. Постер самодостаточен
+              (play-кнопка нарисована в PNG), поэтому SVG-overlay по умолчанию
+              скрыт. Если PNG не доехал в дист темы (404) — onerror прячет img
+              и включает overlay: bg-surface от C.media + play + подпись. */}
           <img
             src={PLACEHOLDER_ASSETS.landscape.video}
             alt=""
             class={C.placeholderImg}
             loading="lazy"
-            onerror="this.style.display='none'"
+            onerror="this.style.display='none';var o=this.nextElementSibling;if(o)o.style.display='flex'"
           />
-          <div class={C.placeholderOverlay}>
+          <div class={C.placeholderOverlay} style="display:none">
             {/* Play-кнопка: цвета inline-токенами на SVG-узлах — контраст
                 круг/стрелка гарантирован в любой схеме (text ↔ bg) и не
                 зависит от того, сгенерил ли Tailwind утилиты темы. */}

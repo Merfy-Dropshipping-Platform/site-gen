@@ -175,7 +175,15 @@ const paddingStyle = p.padding
 						{overlayN > 0 && s.image && (
 							<div class="pointer-events-none absolute inset-0 bg-black" style={`opacity:${overlayN / 100}`} aria-hidden="true" />
 						)}
-						<div class={`relative z-10 flex h-full w-full items-center px-6 md:px-12 ${s.posCls}`}>
+						{s.image && !s.boxed && (
+							<div
+								class="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-black/35 to-transparent"
+								aria-hidden="true"
+							/>
+						)}
+						{/* Контент у нижней кромки — манера hero (низ продуктовых фото темнее,
+						    белый текст читается; сверху скрим страхует светлые кадры). */}
+						<div class={`relative z-10 flex h-full w-full items-end px-6 pb-14 md:px-12 md:pb-16 ${s.posCls}`}>
 							<div
 								class={`flex max-w-[640px] flex-col gap-4 ${s.alignCls}${s.boxed ? " rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-bg,255_255_255))]/90 p-6 md:p-10" : ""}`}
 							>
@@ -217,7 +225,7 @@ const paddingStyle = p.padding
 							type="button"
 							data-slide-prev
 							aria-label="Предыдущий слайд"
-							class="absolute left-4 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white transition-opacity hover:opacity-80"
+							class="absolute left-4 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center !rounded-full !bg-black/30 !text-white transition-opacity hover:opacity-80"
 						>
 							<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
 								<path d="M12.5 4l-6 6 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
@@ -227,7 +235,7 @@ const paddingStyle = p.padding
 							type="button"
 							data-slide-next
 							aria-label="Следующий слайд"
-							class="absolute right-4 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white transition-opacity hover:opacity-80"
+							class="absolute right-4 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center !rounded-full !bg-black/30 !text-white transition-opacity hover:opacity-80"
 						>
 							<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
 								<path d="M7.5 4l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
@@ -242,7 +250,7 @@ const paddingStyle = p.padding
 											data-slide-dot
 											data-active={i === 0 ? "true" : "false"}
 											aria-label={`Слайд ${i + 1}`}
-											class="size-2 rounded-full bg-white/50 transition-colors data-[active=true]:bg-white"
+											class="size-2 !rounded-full !bg-white/50 transition-colors data-[active=true]:!bg-white"
 										/>
 									))}
 								{pagination === "lines" &&
@@ -252,7 +260,7 @@ const paddingStyle = p.padding
 											data-slide-dot
 											data-active={i === 0 ? "true" : "false"}
 											aria-label={`Слайд ${i + 1}`}
-											class="h-0.5 w-6 bg-white/50 transition-colors data-[active=true]:bg-white"
+											class="h-0.5 w-6 !bg-white/50 transition-colors data-[active=true]:!bg-white"
 										/>
 									))}
 								{pagination === "numbers" &&
@@ -261,7 +269,7 @@ const paddingStyle = p.padding
 											type="button"
 											data-slide-dot
 											data-active={i === 0 ? "true" : "false"}
-											class="font-manrope text-[14px] font-normal leading-none text-white/60 transition-colors data-[active=true]:text-white"
+											class="font-manrope text-[14px] font-normal leading-none !text-white/60 transition-colors data-[active=true]:!text-white"
 										>
 											{i + 1}
 										</button>

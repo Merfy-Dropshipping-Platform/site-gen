@@ -159,7 +159,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 						>
 							{c.image && (
 								<div class={`w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]${aspectCls}`}>
-									<img src={c.image} alt={c.heading || "Колонка"} loading="lazy" class="h-full w-full object-cover" />
+									<img src={c.image} alt={c.heading || "Колонка"} loading="lazy" class="!h-full !w-full object-cover" />
 								</div>
 							)}
 							{c.heading && (

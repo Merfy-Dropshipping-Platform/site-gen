@@ -6,7 +6,6 @@ import NtFilterPanel from "@merfy-dropshipping-platform/design-systems-theme/com
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
 import { catalogProducts } from "../data/products";
 
-const layout = (Astro.url.searchParams.get("layout") ?? "row") === "sidebar" ? "sidebar" : "row";
 const totalCount = catalogProducts.length;
 ---
 
@@ -14,7 +13,13 @@ const totalCount = catalogProducts.length;
 	<section
 		class="w-full bg-white px-4 pb-[80px] pt-10 md:px-20 md:pb-[120px] md:pt-16 2xl:px-[300px]"
 		aria-labelledby="catalog-title"
+		data-catalog-layout="top"
 	>
+		{/* Раскладку каталога выбирает настройка конструктора: платформа (превью
+		    и билд) инжектит window.__MERFY_CATALOG_LAYOUT__. Скрипт стоит ДО
+		    рендера вариантов, чтобы переключение прошло без мигания; нет
+		    глобала → остаётся родной вид flux ('top'). */}
+		<script is:inline>var l=window.__MERFY_CATALOG_LAYOUT__; if(l==='top'||l==='side'){document.currentScript.parentElement.setAttribute('data-catalog-layout',l);}</script>
 		<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10">
 			<header class="flex flex-col gap-2">
 				<h1
@@ -28,68 +33,114 @@ const totalCount = catalogProducts.length;
 				</p>
 			</header>
 
-			{layout === "row" ? (
-				<div class="flex flex-col gap-6">
-					<div class="flex flex-wrap items-center justify-between gap-3" data-nt="catalog-filters">
-						<div class="flex flex-wrap items-start gap-3">
-							<details class="relative">
-								<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[#F5F5F5] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
-									<span>Наличие</span>
-									<NtIcon name="dropdown-chevron" sizeClass="size-5" class="transition-transform group-open:rotate-180" />
-								</summary>
-								<div class="absolute left-0 top-full z-10 mt-1 w-full">
-									<NtFilterPanel panel="stock" />
-								</div>
-							</details>
-
-							<details class="relative">
-								<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[#F5F5F5] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
-									<span>Стоимость</span>
-									<NtIcon name="dropdown-chevron" sizeClass="size-5" class="transition-transform group-open:rotate-180" />
-								</summary>
-								<div class="absolute left-0 top-full z-10 mt-1 w-full">
-									<NtFilterPanel panel="price" />
-								</div>
-							</details>
-
-							<details class="relative">
-								<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[#F5F5F5] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
-									<span>Цвет</span>
-									<NtIcon name="dropdown-chevron" sizeClass="size-5" class="transition-transform group-open:rotate-180" />
-								</summary>
-								<div class="absolute left-0 top-full z-10 mt-1 w-full">
-									<NtFilterPanel panel="color" />
-								</div>
-							</details>
-
-							{/* Фильтр по коллекциям: скрыт на demo-сборке, гидрация показывает
-							    его при наличии коллекций магазина и уважает ?collection= из
-							    ссылок тайлов Collections. Манера = бордерные details-кнопки выше,
-							    панель опций — в стиле NtFilterPanel. */}
-							<details class="relative" data-nt="catalog-collections-filter" style="display:none;">
-								<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[#F5F5F5] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
-									<span data-collections-label>Коллекции</span>
-									<NtIcon name="dropdown-chevron" sizeClass="size-5" class="transition-transform group-open:rotate-180" />
-								</summary>
-								<div class="absolute left-0 top-full z-10 mt-1 w-full">
-									<ul data-collections-options class="m-0 flex w-full list-none flex-col gap-2 rounded-[6px] border border-[#F5F5F5] bg-[#FFFFFF] p-3 font-manrope text-[14px] font-normal leading-normal"></ul>
-								</div>
-							</details>
-						</div>
+			{/* Раскладка 'top' — фильтры/сортировка строкой над гридом (родной вид flux). */}
+			<div class="flex flex-col gap-6" data-catalog-variant="top">
+				<div class="flex flex-wrap items-center justify-between gap-3" data-nt="catalog-filters">
+					<div class="flex flex-wrap items-start gap-3">
+						<details class="relative">
+							<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[#F5F5F5] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+								<span>Наличие</span>
+								<NtIcon name="dropdown-chevron" sizeClass="size-5" class="transition-transform group-open:rotate-180" />
+							</summary>
+							<div class="absolute left-0 top-full z-10 mt-1 w-full">
+								<NtFilterPanel panel="stock" />
+							</div>
+						</details>
 
 						<details class="relative">
-							<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-end gap-2 rounded-[6px] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
-								<span>По популярности</span>
-								<NtIcon name="dropdown-chevron" sizeClass="size-5" />
+							<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[#F5F5F5] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+								<span>Стоимость</span>
+								<NtIcon name="dropdown-chevron" sizeClass="size-5" class="transition-transform group-open:rotate-180" />
 							</summary>
-							<div class="absolute right-0 top-full z-10 mt-1 w-[180px]">
-								<NtFilterPanel panel="sort" />
+							<div class="absolute left-0 top-full z-10 mt-1 w-full">
+								<NtFilterPanel panel="price" />
+							</div>
+						</details>
+
+						<details class="relative">
+							<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[#F5F5F5] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+								<span>Цвет</span>
+								<NtIcon name="dropdown-chevron" sizeClass="size-5" class="transition-transform group-open:rotate-180" />
+							</summary>
+							<div class="absolute left-0 top-full z-10 mt-1 w-full">
+								<NtFilterPanel panel="color" />
+							</div>
+						</details>
+
+						{/* Фильтр по коллекциям: скрыт на demo-сборке, гидрация показывает
+						    его при наличии коллекций магазина и уважает ?collection= из
+						    ссылок тайлов Collections. Манера = бордерные details-кнопки выше,
+						    панель опций — в стиле NtFilterPanel. */}
+						<details class="relative" data-nt="catalog-collections-filter" style="display:none;">
+							<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[#F5F5F5] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+								<span data-collections-label>Коллекции</span>
+								<NtIcon name="dropdown-chevron" sizeClass="size-5" class="transition-transform group-open:rotate-180" />
+							</summary>
+							<div class="absolute left-0 top-full z-10 mt-1 w-full">
+								<ul data-collections-options class="m-0 flex w-full list-none flex-col gap-2 rounded-[6px] border border-[#F5F5F5] bg-[#FFFFFF] p-3 font-manrope text-[14px] font-normal leading-normal"></ul>
 							</div>
 						</details>
 					</div>
 
+					<details class="relative">
+						<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-end gap-2 rounded-[6px] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+							<span>По популярности</span>
+							<NtIcon name="dropdown-chevron" sizeClass="size-5" />
+						</summary>
+						<div class="absolute right-0 top-full z-10 mt-1 w-[180px]">
+							<NtFilterPanel panel="sort" />
+						</div>
+					</details>
+				</div>
+
+				<ul
+					class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4"
+					role="list"
+					data-nt="catalog-grid"
+				>
+					{catalogProducts.map((product) => (
+						<li data-product-id={product.id}>
+							<FluxProductCard product={product} />
+						</li>
+					))}
+				</ul>
+
+				<div class="flex flex-wrap items-center justify-between gap-4">
+					<button
+						type="button"
+						data-action="load-more"
+						class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[#000000] px-4 font-manrope text-[14px] font-normal leading-normal text-white transition-opacity hover:opacity-95 md:text-[16px]"
+					>
+						Смотреть ещё
+					</button>
+					<span class="font-manrope text-[14px] font-normal leading-normal text-[#999999]" data-nt="catalog-count">
+						{totalCount} товаров
+					</span>
+				</div>
+			</div>
+
+			{/* Раскладка 'side' — левый сайдбар с фильтрами; включается настройкой
+			    конструктора (data-catalog-layout="side" на section). */}
+			<div class="flex flex-col gap-8 lg:flex-row lg:gap-10" data-catalog-variant="side">
+				<div class="hidden w-[172px] shrink-0 flex-col gap-4 lg:flex xl:w-[294px]">
+					<NtFilterSidebar class="hidden w-[172px] shrink-0 lg:flex xl:w-[294px]" />
+
+					{/* Коллекции в манере секций NtFilterSidebar (заголовок + вертикальный
+					    список); сам DS-компонент не трогаем — секция рядом с ним.
+					    Скрыта на demo-сборке, гидрация показывает при наличии коллекций. */}
+					<div
+						data-nt="catalog-collections-filter"
+						style="display:none;"
+						class="flex w-full flex-col gap-3 rounded-[8px] p-3 font-manrope"
+					>
+						<p class="text-[16px] font-normal leading-normal text-[#000000]">Коллекции</p>
+						<ul data-collections-options class="m-0 flex w-full list-none flex-col gap-3 p-0 font-manrope text-[16px] font-normal leading-normal"></ul>
+					</div>
+				</div>
+
+				<div class="flex flex-1 flex-col gap-8">
 					<ul
-						class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4"
+						class="grid grid-cols-2 gap-4 sm:grid-cols-3"
 						role="list"
 						data-nt="catalog-grid"
 					>
@@ -113,41 +164,21 @@ const totalCount = catalogProducts.length;
 						</span>
 					</div>
 				</div>
-			) : (
-				<div class="flex flex-col gap-8 lg:flex-row lg:gap-10">
-					<NtFilterSidebar class="hidden w-[172px] shrink-0 lg:flex xl:w-[294px]" />
-
-					<div class="flex flex-1 flex-col gap-8">
-						<ul
-							class="grid grid-cols-2 gap-4 sm:grid-cols-3"
-							role="list"
-							data-nt="catalog-grid"
-						>
-							{catalogProducts.map((product) => (
-								<li data-product-id={product.id}>
-									<FluxProductCard product={product} />
-								</li>
-							))}
-						</ul>
-
-						<div class="flex flex-wrap items-center justify-between gap-4">
-							<button
-								type="button"
-								data-action="load-more"
-								class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[#000000] px-4 font-manrope text-[14px] font-normal leading-normal text-white transition-opacity hover:opacity-95 md:text-[16px]"
-							>
-								Смотреть ещё
-							</button>
-							<span class="font-manrope text-[14px] font-normal leading-normal text-[#999999]" data-nt="catalog-count">
-								{totalCount} товаров
-							</span>
-						</div>
-					</div>
-				</div>
-			)}
+			</div>
 		</div>
 	</section>
 </Layout>
+
+<style is:global>
+	/* Переключение раскладок каталога: в HTML запечены обе, видимой остаётся
+	   только активная по data-catalog-layout на section. */
+	[data-catalog-layout="top"] [data-catalog-variant="side"] {
+		display: none;
+	}
+	[data-catalog-layout="side"] [data-catalog-variant="top"] {
+		display: none;
+	}
+</style>
 
 <script>
 	document.addEventListener("click", (event) => {
@@ -172,8 +203,9 @@ const totalCount = catalogProducts.length;
 
 	// Реальные товары (Option B): на published-сайте /data/products.json реальный →
 	// перерисовываем demo-grid. На demo-сборке loadRealProducts() вернёт null → no-op.
-	// Фильтр по коллекциям: ?collection= (slug/id из ссылок тайлов) + дропдаун
-	// «Коллекции» (заполняется из collections.json/storefront-data).
+	// Фильтр по коллекциям: ?collection= (slug/id из ссылок тайлов) + контейнеры
+	// «Коллекции» обеих раскладок (дропдаун в row, секция в сайдбаре) —
+	// заполняются из collections.json/storefront-data.
 	let catalogCollections: RealCollection[] | null = null;
 
 	function currentCollectionRef(): string | null {
@@ -195,47 +227,62 @@ const totalCount = catalogProducts.length;
 	}
 
 	async function initCollectionsFilter() {
-		const box = document.querySelector<HTMLElement>('[data-nt="catalog-collections-filter"]');
-		const list = box?.querySelector<HTMLElement>("[data-collections-options]");
-		if (!box || !list) return;
-		if (box.getAttribute("data-cf-hydrated") === "true") return; // идемпотентность astro:page-load
+		// Контейнеры обеих раскладок (row-дропдаун + секция сайдбара); каждый
+		// гидрируем один раз — идемпотентность astro:page-load через data-cf-hydrated.
+		const boxes = Array.from(
+			document.querySelectorAll<HTMLElement>('[data-nt="catalog-collections-filter"]'),
+		).filter((box) => box.getAttribute("data-cf-hydrated") !== "true");
+		if (boxes.length === 0) return;
 		catalogCollections = await loadRealCollections();
 		if (!catalogCollections || catalogCollections.length === 0) return;
-		box.setAttribute("data-cf-hydrated", "true");
-		box.style.display = "";
-		const label = box.querySelector<HTMLElement>("[data-collections-label]");
+		const collections = catalogCollections;
 		const ref = currentCollectionRef();
 		const current = ref
-			? catalogCollections.find((c) => c.id === ref || c.slug === ref || c.name === ref) ?? null
+			? collections.find((c) => c.id === ref || c.slug === ref || c.name === ref) ?? null
 			: null;
-		if (label && current?.name) label.textContent = current.name;
 		// Опции в манере NtFilterPanel: активная — чёрная, остальные — серые.
 		const optionHtml = (value: string, name: string, active: boolean) =>
 			`<li><button type="button" data-collection-option="${escapeHtml(value)}" class="w-full cursor-pointer text-left transition-colors hover:text-[#000000] ${active ? "text-[#000000]" : "text-[#999999]"}">${escapeHtml(name)}</button></li>`;
-		list.innerHTML =
-			optionHtml("", "Все", !current) +
-			catalogCollections
-				.map((c) => optionHtml(c.slug ?? c.id, c.name ?? "Коллекция", !!current && current.id === c.id))
-				.join("");
-		list.addEventListener("click", (ev) => {
-			const btn = (ev.target as HTMLElement).closest<HTMLElement>("[data-collection-option]");
-			if (!btn) return;
-			const value = btn.getAttribute("data-collection-option") ?? "";
-			const params = new URLSearchParams(window.location.search);
-			if (value) params.set("collection", value);
-			else params.delete("collection");
-			const qs = params.toString();
-			window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
-			const col = catalogCollections?.find((c) => (c.slug ?? c.id) === value) ?? null;
-			if (label) label.textContent = col?.name ?? "Коллекции";
-			for (const b of Array.from(list.querySelectorAll("[data-collection-option]"))) {
-				const on = b === btn;
-				b.classList.toggle("text-[#000000]", on);
-				b.classList.toggle("text-[#999999]", !on);
+		// Выбор в любом контейнере синхронизирует активную опцию и подпись
+		// дропдауна во ВСЕХ контейнерах (label есть только в row-дропдауне).
+		const syncActive = (value: string, name: string | null) => {
+			for (const box of boxes) {
+				const label = box.querySelector<HTMLElement>("[data-collections-label]");
+				if (label) label.textContent = name ?? "Коллекции";
+				for (const b of Array.from(box.querySelectorAll<HTMLElement>("[data-collection-option]"))) {
+					const on = (b.getAttribute("data-collection-option") ?? "") === value;
+					b.classList.toggle("text-[#000000]", on);
+					b.classList.toggle("text-[#999999]", !on);
+				}
 			}
-			box.removeAttribute("open");
-			renderCatalog();
-		});
+		};
+		for (const box of boxes) {
+			const list = box.querySelector<HTMLElement>("[data-collections-options]");
+			if (!list) continue;
+			box.setAttribute("data-cf-hydrated", "true");
+			box.style.display = "";
+			const label = box.querySelector<HTMLElement>("[data-collections-label]");
+			if (label && current?.name) label.textContent = current.name;
+			list.innerHTML =
+				optionHtml("", "Все", !current) +
+				collections
+					.map((c) => optionHtml(c.slug ?? c.id, c.name ?? "Коллекция", !!current && current.id === c.id))
+					.join("");
+			list.addEventListener("click", (ev) => {
+				const btn = (ev.target as HTMLElement).closest<HTMLElement>("[data-collection-option]");
+				if (!btn) return;
+				const value = btn.getAttribute("data-collection-option") ?? "";
+				const params = new URLSearchParams(window.location.search);
+				if (value) params.set("collection", value);
+				else params.delete("collection");
+				const qs = params.toString();
+				window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
+				const col = collections.find((c) => (c.slug ?? c.id) === value) ?? null;
+				syncActive(value, col?.name ?? null);
+				box.removeAttribute("open"); // закрыть row-дропдаун; для секции сайдбара no-op
+				renderCatalog();
+			});
+		}
 	}
 
 	async function hydrateCatalog() {

@@ -34,6 +34,38 @@ function pluralizeProducts(count: number): string {
 }
 
 const productCountLabel = pluralizeProducts(totalCount);
+
+/* ── Раскладка «top» (настройка конструктора): ряд фильтров строкой над гридом.
+   UI-only списки повторяют секции VanillaCatalogFilterSidebar; манера vanilla:
+   font-vanilla-arsenal, плоские панели без скруглений, radio с кастомным кружком. ── */
+
+interface RadioOption {
+	value: string;
+	label: string;
+	checked?: boolean;
+}
+
+const rowSortOptions: RadioOption[] = [
+	{ value: "popularity", label: "По популярности", checked: true },
+	{ value: "new", label: "По новизне" },
+	{ value: "price-desc", label: "По убыванию цены" },
+	{ value: "price-asc", label: "По возрастанию цены" },
+];
+
+const rowStockOptions: RadioOption[] = [
+	{ value: "all", label: "Все", checked: true },
+	{ value: "in", label: "В наличии" },
+	{ value: "out", label: "Распродано" },
+];
+
+const rowSummaryClass =
+	"flex cursor-pointer list-none items-center gap-2 font-vanilla-arsenal text-base font-normal leading-none text-black transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden";
+const rowPanelClass =
+	"absolute top-full z-30 mt-2 flex w-[240px] flex-col gap-3 border border-[#999999] bg-[var(--vanilla-surface)] p-4";
+const radioCircleClass =
+	"relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-[#999999] after:pointer-events-none after:absolute after:h-[10px] after:w-[10px] after:rounded-full after:bg-black after:opacity-0 after:content-[''] peer-checked:border-black peer-checked:after:opacity-100 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-black";
+const radioTextClass =
+	"font-vanilla-arsenal text-base font-normal leading-none text-[#999999] peer-checked:text-black";
 ---
 
 <section
@@ -41,7 +73,17 @@ const productCountLabel = pluralizeProducts(totalCount);
 	aria-labelledby="catalog-title"
 	data-nt="vanilla-catalog-section"
 	data-section={section}
+	data-catalog-layout="side"
 >
+	{/* Переключение раскладки ДО рендера вариантов (без мигания): глобал инжектится
+	    платформой (превью-контроллер и билд) из настройки конструктора; глобала
+	    нет — остаётся родной side-вид vanilla. */}
+	<script is:inline>
+		var l = window.__MERFY_CATALOG_LAYOUT__;
+		if (l === "top" || l === "side") {
+			document.currentScript.parentElement.setAttribute("data-catalog-layout", l);
+		}
+	</script>
 	<div class="vanilla-container flex flex-col gap-10">
 		<header>
 			<h1
@@ -52,7 +94,151 @@ const productCountLabel = pluralizeProducts(totalCount);
 			</h1>
 		</header>
 
-		<div class="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-6">
+		{/* ── Раскладка «top»: фильтры/сортировка строкой над гридом ── */}
+		<div class="flex flex-col gap-8" data-catalog-variant="top">
+			<div
+				class="relative z-30 flex flex-wrap items-center justify-between gap-x-6 gap-y-4"
+				data-nt="catalog-filters"
+			>
+				<div class="flex flex-wrap items-center gap-x-6 gap-y-4">
+					<details class="relative [&[open]]:z-30">
+						<summary class={rowSummaryClass}>
+							<span>Наличие</span>
+							<svg aria-hidden="true" viewBox="0 0 10 6" fill="none" class="h-[6px] w-[10px]">
+								<path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" />
+							</svg>
+						</summary>
+						<div class={`${rowPanelClass} left-0`}>
+							{
+								rowStockOptions.map((option) => (
+									<label class="group flex cursor-pointer items-center gap-2">
+										<input
+											type="radio"
+											name="vanilla-top-stock"
+											value={option.value}
+											checked={option.checked}
+											class="peer sr-only"
+										/>
+										<span aria-hidden="true" class={radioCircleClass} />
+										<span class={radioTextClass}>{option.label}</span>
+									</label>
+								))
+							}
+						</div>
+					</details>
+
+					<details class="relative [&[open]]:z-30">
+						<summary class={rowSummaryClass}>
+							<span>Стоимость</span>
+							<svg aria-hidden="true" viewBox="0 0 10 6" fill="none" class="h-[6px] w-[10px]">
+								<path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" />
+							</svg>
+						</summary>
+						<div class={`${rowPanelClass} left-0`}>
+							<div class="flex w-full flex-col font-vanilla-arsenal text-base font-normal leading-none">
+								<div class="flex h-10 w-full items-center justify-between border-b border-[#999999] text-[#444444]">
+									<span>от</span>
+									<div class="flex items-center gap-2 text-black">
+										<span>0</span>
+										<span>₽</span>
+									</div>
+								</div>
+								<div class="flex h-10 w-full items-center justify-between border-b border-[#999999] text-[#444444]">
+									<span>до</span>
+									<div class="flex items-center gap-2 text-black">
+										<span>5 990</span>
+										<span>₽</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</details>
+
+					{/* Фильтр по коллекциям (row-ветка): дропдаун в манере vanilla. Скрыт на
+					    demo-сборке, гидрация показывает его при наличии коллекций магазина и
+					    уважает ?collection= из ссылок тайлов Collections/Gallery. */}
+					<details
+						class="relative [&[open]]:z-30"
+						data-nt="catalog-collections-filter"
+						data-collections-dropdown
+						style="display:none;"
+					>
+						<summary class={rowSummaryClass}>
+							<span data-collections-label>Коллекции</span>
+							<svg aria-hidden="true" viewBox="0 0 10 6" fill="none" class="h-[6px] w-[10px]">
+								<path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" />
+							</svg>
+						</summary>
+						<div class={`${rowPanelClass} left-0`}>
+							<div data-collections-options class="flex flex-col gap-3"></div>
+						</div>
+					</details>
+				</div>
+
+				<details class="relative [&[open]]:z-30">
+					<summary class={rowSummaryClass}>
+						<span>По популярности</span>
+						<svg aria-hidden="true" viewBox="0 0 10 6" fill="none" class="h-[6px] w-[10px]">
+							<path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" />
+						</svg>
+					</summary>
+					<div class={`${rowPanelClass} right-0`}>
+						{
+							rowSortOptions.map((option) => (
+								<label class="group flex cursor-pointer items-center gap-2">
+									<input
+										type="radio"
+										name="vanilla-top-sort"
+										value={option.value}
+										checked={option.checked}
+										class="peer sr-only"
+									/>
+									<span aria-hidden="true" class={radioCircleClass} />
+									<span class={radioTextClass}>{option.label}</span>
+								</label>
+							))
+						}
+					</div>
+				</details>
+			</div>
+
+			<ul
+				class="grid grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:grid-cols-3 md:gap-x-4 md:gap-y-12"
+				role="list"
+				data-nt="catalog-grid"
+			>
+				{displayedProducts.map((product, index) => (
+					<li data-product-id={product.id}>
+						<VanillaProductCard product={product} priority={index < 2} />
+					</li>
+				))}
+			</ul>
+
+			<div
+				class:list={[
+					"flex flex-col items-stretch gap-4 sm:flex-row sm:items-center",
+					showLoadMore ? "sm:justify-between" : "sm:justify-end",
+				]}
+			>
+				{
+					showLoadMore && (
+						<button
+							type="button"
+							data-action="load-more"
+							class="inline-flex h-12 min-h-12 w-full items-center justify-center bg-[var(--vanilla-header-bg)] px-6 font-vanilla-arsenal text-base font-normal uppercase leading-none text-white transition-opacity hover:opacity-90 sm:w-auto sm:px-16"
+						>
+							Смотреть ещё
+						</button>
+					)
+				}
+				<span class="font-vanilla-arsenal text-base font-normal leading-none text-black" data-nt="catalog-count">
+					{productCountLabel}
+				</span>
+			</div>
+		</div>
+
+		{/* ── Раскладка «side» (родная для vanilla): левый сайдбар фильтров ── */}
+		<div class="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-6" data-catalog-variant="side">
 			<VanillaCatalogFilterSidebar class="w-full lg:shrink-0" />
 
 			<div class="flex min-w-0 flex-1 flex-col gap-8">
@@ -90,6 +276,17 @@ const productCountLabel = pluralizeProducts(totalCount);
 	</div>
 </section>
 
+<style>
+	/* Переключение раскладок: глобал __MERFY_CATALOG_LAYOUT__ выставляет
+	   data-catalog-layout на секции — противоположный вариант скрывается. */
+	[data-catalog-layout="top"] [data-catalog-variant="side"] {
+		display: none;
+	}
+	[data-catalog-layout="side"] [data-catalog-variant="top"] {
+		display: none;
+	}
+</style>
+
 <script>
 	document.addEventListener("click", (event) => {
 		const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-action='load-more']");
@@ -113,9 +310,11 @@ const productCountLabel = pluralizeProducts(totalCount);
 	} from "../../lib/storefront-hydrate";
 
 	// Реальные товары (Option B): на published-сайте /data/products.json реальный →
-	// перерисовываем demo-grid и счётчик. На demo-сборке loadRealProducts() вернёт null → no-op.
-	// Фильтр по коллекциям: ?collection= (slug/id из ссылок тайлов) + секция
-	// «Коллекции» сайдбара (заполняется из collections.json/storefront-data).
+	// перерисовываем demo-гриды ОБЕИХ раскладок (top/side) и счётчики. На demo-сборке
+	// loadRealProducts() вернёт null → no-op.
+	// Фильтр по коллекциям: ?collection= (slug/id из ссылок тайлов) + контейнеры
+	// «Коллекции» обеих раскладок (radio в сайдбаре, дропдаун в row-ветке) —
+	// заполняются из collections.json/storefront-data.
 	let catalogCollections: RealCollection[] | null = null;
 
 	function currentCollectionRef(): string | null {
@@ -142,38 +341,86 @@ const productCountLabel = pluralizeProducts(totalCount);
 	const RADIO_TEXT =
 		"font-vanilla-arsenal text-base font-normal leading-none text-[#999999] peer-checked:text-black";
 
-	async function initCollectionsFilter() {
-		const box = document.querySelector<HTMLElement>('[data-nt="catalog-collections-filter"]');
-		const list = box?.querySelector<HTMLElement>("[data-collections-options]");
-		if (!box || !list) return;
-		if (box.getAttribute("data-cf-hydrated") === "true") return; // идемпотентность astro:page-load
-		catalogCollections = await loadRealCollections();
-		if (!catalogCollections || catalogCollections.length === 0) return;
-		box.setAttribute("data-cf-hydrated", "true");
-		box.style.display = "";
+	let radioNameSeq = 0; // своя radio-группа на контейнер — иначе checked конфликтует между раскладками
+
+	/** Перерисовывает опции одного контейнера «Коллекции» из текущего ?collection=. */
+	function renderCollectionsBox(box: HTMLElement): void {
+		const list = box.querySelector<HTMLElement>("[data-collections-options]");
+		if (!list || !catalogCollections) return;
 		const current = findCollection(catalogCollections, currentCollectionRef());
-		const optionHtml = (value: string, name: string, active: boolean) =>
-			`<label class="group flex cursor-pointer items-center gap-2">
-	<input type="radio" name="vanilla-collection" value="${escapeHtml(value)}" data-collection-option="${escapeHtml(value)}"${active ? " checked" : ""} class="peer sr-only" />
+		if (box.hasAttribute("data-collections-dropdown")) {
+			// Row-ветка: список-кнопки в дропдауне, манера vanilla (#999999 → black).
+			const label = box.querySelector<HTMLElement>("[data-collections-label]");
+			if (label) label.textContent = current?.name ?? "Коллекции";
+			const optionHtml = (value: string, name: string, active: boolean) =>
+				`<button type="button" data-collection-option="${escapeHtml(value)}" class="cursor-pointer text-left font-vanilla-arsenal text-base font-normal leading-none transition-colors ${active ? "text-black" : "text-[#999999] hover:text-black"}">${escapeHtml(name)}</button>`;
+			list.innerHTML =
+				optionHtml("", "Все", !current) +
+				catalogCollections
+					.map((c) => optionHtml(c.slug ?? c.id, c.name ?? "Коллекция", !!current && current.id === c.id))
+					.join("");
+		} else {
+			// Sidebar-ветка: radio в манере секций сайдбара.
+			let radioName = box.getAttribute("data-cf-radio-name");
+			if (!radioName) {
+				radioName = `vanilla-collection-${++radioNameSeq}`;
+				box.setAttribute("data-cf-radio-name", radioName);
+			}
+			const optionHtml = (value: string, name: string, active: boolean) =>
+				`<label class="group flex cursor-pointer items-center gap-2">
+	<input type="radio" name="${escapeHtml(radioName)}" value="${escapeHtml(value)}" data-collection-option="${escapeHtml(value)}"${active ? " checked" : ""} class="peer sr-only" />
 	<span aria-hidden="true" class="${RADIO_CIRCLE}"></span>
 	<span class="${RADIO_TEXT}">${escapeHtml(name)}</span>
 </label>`;
-		list.innerHTML =
-			optionHtml("", "Все", !current) +
-			catalogCollections
-				.map((c) => optionHtml(c.slug ?? c.id, c.name ?? "Коллекция", !!current && current.id === c.id))
-				.join("");
-		list.addEventListener("change", (ev) => {
-			const input = (ev.target as HTMLElement).closest<HTMLInputElement>("[data-collection-option]");
-			if (!input) return;
-			const value = input.value;
-			const params = new URLSearchParams(window.location.search);
-			if (value) params.set("collection", value);
-			else params.delete("collection");
-			const qs = params.toString();
-			window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
-			renderCatalog();
-		});
+			list.innerHTML =
+				optionHtml("", "Все", !current) +
+				catalogCollections
+					.map((c) => optionHtml(c.slug ?? c.id, c.name ?? "Коллекция", !!current && current.id === c.id))
+					.join("");
+		}
+	}
+
+	/** Выбор коллекции в любом контейнере: URL → синк активного состояния в обоих
+	 *  контейнерах → перерисовка гридов обеих раскладок. */
+	function applyCollectionSelection(value: string): void {
+		const params = new URLSearchParams(window.location.search);
+		if (value) params.set("collection", value);
+		else params.delete("collection");
+		const qs = params.toString();
+		window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
+		for (const box of Array.from(
+			document.querySelectorAll<HTMLElement>('[data-nt="catalog-collections-filter"][data-cf-hydrated="true"]'),
+		)) {
+			renderCollectionsBox(box);
+			box.removeAttribute("open"); // закрыть details-дропдаун row-ветки
+		}
+		renderCatalog();
+	}
+
+	async function initCollectionsFilter() {
+		const boxes = Array.from(
+			document.querySelectorAll<HTMLElement>('[data-nt="catalog-collections-filter"]'),
+		);
+		if (boxes.length === 0) return;
+		catalogCollections = await loadRealCollections();
+		if (!catalogCollections || catalogCollections.length === 0) return;
+		for (const box of boxes) {
+			if (box.getAttribute("data-cf-hydrated") === "true") continue; // идемпотентность astro:page-load
+			const list = box.querySelector<HTMLElement>("[data-collections-options]");
+			if (!list) continue;
+			box.setAttribute("data-cf-hydrated", "true");
+			box.style.display = "";
+			renderCollectionsBox(box);
+			// Radio сайдбара отдаёт change, кнопки дропдауна — click; делегируем на список.
+			list.addEventListener("change", (ev) => {
+				const input = (ev.target as HTMLElement).closest<HTMLInputElement>("input[data-collection-option]");
+				if (input) applyCollectionSelection(input.value);
+			});
+			list.addEventListener("click", (ev) => {
+				const btn = (ev.target as HTMLElement).closest<HTMLElement>("button[data-collection-option]");
+				if (btn) applyCollectionSelection(btn.getAttribute("data-collection-option") ?? "");
+			});
+		}
 	}
 
 	async function hydrateCatalog() {

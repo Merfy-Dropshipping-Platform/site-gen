@@ -37,13 +37,13 @@ const nav: NavLink[] =
 const logo = typeof p.logo === "string" && p.logo.trim() ? p.logo : undefined;
 const logoImgCls = "h-[var(--size-logo-width,24px)] w-auto max-w-[160px] object-contain";
 
-// Канон logoPosition: 'top-left' (canon-default puckConfig) И отсутствие / неизвестное
-// значение → ЛИТЕРАЛ верстальщика — лого СЛЕВА в ряду justify-between (правило
-// canon-default → пиксель). Явные 'top-center' / 'center-absolute' («По центру») →
-// desktop-грид [1fr_auto_1fr] с order-классами: навигация слева, лого по центру,
-// иконки справа (DOM-порядок детей остаётся литеральным).
+// Канон logoPosition: 'top-left' (canon-default) / 'top-center' / 'center-left' /
+// 'center-absolute'. Отсутствие / неизвестное значение → 'top-left' (designer default,
+// два ряда). isTwoRow: два ряда (top-left, top-center); single-row: center-left / center-absolute.
 const logoPosition = typeof p.logoPosition === "string" ? p.logoPosition : "";
-const logoCentered = logoPosition === "top-center" || logoPosition === "center-absolute";
+const isTwoRow = logoPosition === "top-left" || logoPosition === "top-center";
+// center-absolute: лого absolute по центру single-row
+const isAbsoluteCenter = logoPosition === "center-absolute";
 
 // Канон stickiness: литерал верстальщика УЖЕ sticky top-0 z-50 (H:24) — 'none' /
 // 'always' / canon-default / отсутствие → sticky остаётся. 'scroll-up' → прячем при
@@ -81,22 +81,15 @@ const headerPad =
 const headerPadStyle = headerPad
 	? `padding-top:${headerPad.top}px;padding-bottom:${headerPad.bottom}px;`
 	: undefined;
-const desktopWrapCls = logoCentered
-	? headerPad
-		? "hidden w-full max-w-[1920px] mx-auto px-4 md:grid md:grid-cols-[1fr_auto_1fr] md:items-center md:px-20 2xl:px-80"
-		: "hidden w-full max-w-[1920px] mx-auto px-4 md:grid md:grid-cols-[1fr_auto_1fr] md:items-center md:py-4 md:px-20 2xl:px-80"
-	: headerPad
-		? "hidden w-full max-w-[1920px] mx-auto px-4 md:flex md:items-center md:justify-between md:px-20 2xl:px-80"
-		: "hidden w-full max-w-[1920px] mx-auto px-4 md:flex md:items-center md:justify-between md:py-4 md:px-20 2xl:px-80";
+// single-row classes (center-left / center-absolute)
+const singleRowCls = [
+	"w-full max-w-[1920px] mx-auto px-4 flex items-center justify-between md:px-20 2xl:px-80",
+	headerPad ? "" : "py-4",
+	isAbsoluteCenter ? "relative" : "",
+].filter(Boolean).join(" ");
 const desktopLogoCls = logo
-	? `flex shrink-0 items-center hover:opacity-90${logoCentered ? " md:order-2 md:justify-self-center" : ""}`
-	: `shrink-0 font-comfortaa text-[24px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90 lg:text-[28px]${logoCentered ? " md:order-2 md:justify-self-center" : ""}`;
-const desktopNavCls = logoCentered
-	? "flex items-center gap-8 lg:gap-10 md:order-1 md:justify-self-start"
-	: "flex items-center gap-8 lg:gap-10";
-const desktopIconsCls = logoCentered
-	? "flex items-center gap-4 lg:gap-5 md:order-3 md:justify-self-end"
-	: "flex items-center gap-4 lg:gap-5";
+	? `flex shrink-0 items-center hover:opacity-90${isAbsoluteCenter ? " md:absolute md:left-1/2 md:-translate-x-1/2" : ""}`
+	: `shrink-0 font-comfortaa text-[24px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90 lg:text-[28px]${isAbsoluteCenter ? " md:absolute md:left-1/2 md:-translate-x-1/2" : ""}`;
 const mobileLogoCls = logo
 	? "flex items-center hover:opacity-80"
 	: "font-comfortaa text-[18px] font-normal uppercase text-[rgb(var(--color-heading,0_0_0))] hover:opacity-80";
@@ -172,65 +165,209 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 	</div>
 
 	<!-- Desktop -->
-	<div class={desktopWrapCls} style={headerPadStyle}>
-		<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
-			{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
-		</a>
+	<div class="hidden w-full md:block">
+		{isTwoRow ? (
+			/* ── TWO-ROW LAYOUTS: top-left / top-center ── */
+			<div
+				class={[
+					"w-full max-w-[1920px] mx-auto px-4 flex flex-col md:px-20 2xl:px-80",
+					headerPad ? "" : "md:py-4",
+				].filter(Boolean).join(" ")}
+				style={headerPadStyle}
+			>
+				{logoPosition === "top-left" || logoPosition === "" ? (
+					/* top-left (designer default): Row1=[logo LEFT + actions RIGHT], Row2=[nav LEFT] */
+					<>
+						<div class="flex w-full items-center justify-between">
+							<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
+								{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
+							</a>
+							<div class="flex items-center gap-4 lg:gap-5">
+								<button
+									type="button"
+									data-action="toggle-search"
+									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
+									aria-label="Поиск"
+								>
+									<NtIcon name="search-lg" sizeClass="size-6" />
+								</button>
+								<button
+									type="button"
+									data-cart-open
+									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
+									aria-label="Корзина"
+								>
+									<NtIcon name="cart" sizeClass="size-6" />
+									<span
+										data-cart-count
+										data-empty="true"
+										class="absolute right-0 top-0 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-manrope text-[10px] font-normal leading-none text-[#000000] data-[empty=true]:hidden"
+									>0</span>
+								</button>
+								<a
+									href="/auth/sign-in"
+									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
+									aria-label="Аккаунт"
+								>
+									<NtIcon name="user" sizeClass="size-6" />
+								</a>
+							</div>
+						</div>
+						<nav
+							class="mt-3 flex w-full items-center justify-start gap-8 lg:gap-10"
+							aria-label="Основная навигация"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="997"
+							data-puck-subsection-field="navigationLinks"
+						>
+							{nav.map((link) => {
+								const active = isActive(link);
+								return (
+									<a
+										href={link.href}
+										aria-current={active ? "page" : undefined}
+										class:list={[
+											"relative pb-1 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 lg:text-[16px]",
+											active && "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:bg-[rgb(var(--color-accent,250_81_9))] after:content-['']",
+										]}
+									>
+										{link.label}
+									</a>
+								);
+							})}
+						</nav>
+					</>
+				) : (
+					/* top-center: Row1=[search LEFT | logo CENTER | cart+user RIGHT], Row2=[nav CENTER] */
+					<>
+						<div class="grid w-full grid-cols-[1fr_auto_1fr] items-center">
+							<div class="flex items-center">
+								<button
+									type="button"
+									data-action="toggle-search"
+									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
+									aria-label="Поиск"
+								>
+									<NtIcon name="search-lg" sizeClass="size-6" />
+								</button>
+							</div>
+							<div class="flex items-center justify-center">
+								<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
+									{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
+								</a>
+							</div>
+							<div class="flex items-center justify-end gap-4 lg:gap-5">
+								<button
+									type="button"
+									data-cart-open
+									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
+									aria-label="Корзина"
+								>
+									<NtIcon name="cart" sizeClass="size-6" />
+									<span
+										data-cart-count
+										data-empty="true"
+										class="absolute right-0 top-0 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-manrope text-[10px] font-normal leading-none text-[#000000] data-[empty=true]:hidden"
+									>0</span>
+								</button>
+								<a
+									href="/auth/sign-in"
+									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
+									aria-label="Аккаунт"
+								>
+									<NtIcon name="user" sizeClass="size-6" />
+								</a>
+							</div>
+						</div>
+						<nav
+							class="mt-3 flex w-full items-center justify-center gap-8 lg:gap-10"
+							aria-label="Основная навигация"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="997"
+							data-puck-subsection-field="navigationLinks"
+						>
+							{nav.map((link) => {
+								const active = isActive(link);
+								return (
+									<a
+										href={link.href}
+										aria-current={active ? "page" : undefined}
+										class:list={[
+											"relative pb-1 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 lg:text-[16px]",
+											active && "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:bg-[rgb(var(--color-accent,250_81_9))] after:content-['']",
+										]}
+									>
+										{link.label}
+									</a>
+								);
+							})}
+						</nav>
+					</>
+				)}
+			</div>
+		) : (
+			/* ── SINGLE-ROW LAYOUTS: center-left / center-absolute ── */
+			<div class={singleRowCls} style={headerPadStyle}>
+				<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
+					{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
+				</a>
 
-		<nav
-			class={desktopNavCls}
-			aria-label="Основная навигация"
-			data-puck-subsection-parent={id}
-			data-puck-subsection-index="997"
-			data-puck-subsection-field="navigationLinks"
-		>
-			{nav.map((link) => {
-				const active = isActive(link);
-				return (
-					<a
-						href={link.href}
-						aria-current={active ? "page" : undefined}
-						class:list={[
-							"relative pb-1 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 lg:text-[16px]",
-							active && "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:bg-[rgb(var(--color-accent,250_81_9))] after:content-['']",
-						]}
+				<nav
+					class="flex items-center gap-8 lg:gap-10"
+					aria-label="Основная навигация"
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="997"
+					data-puck-subsection-field="navigationLinks"
+				>
+					{nav.map((link) => {
+						const active = isActive(link);
+						return (
+							<a
+								href={link.href}
+								aria-current={active ? "page" : undefined}
+								class:list={[
+									"relative pb-1 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 lg:text-[16px]",
+									active && "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:bg-[rgb(var(--color-accent,250_81_9))] after:content-['']",
+								]}
+							>
+								{link.label}
+							</a>
+						);
+					})}
+				</nav>
+
+				<div class="flex items-center gap-4 lg:gap-5">
+					<button
+						type="button"
+						data-action="toggle-search"
+						class="flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
+						aria-label="Поиск"
 					>
-						{link.label}
+						<NtIcon name="search-lg" sizeClass="size-6" />
+					</button>
+					<button
+						type="button"
+						data-cart-open
+						class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
+						aria-label="Корзина"
+					>
+						<NtIcon name="cart" sizeClass="size-6" />
+						<span
+							data-cart-count
+							data-empty="true"
+							class="absolute right-0 top-0 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-manrope text-[10px] font-normal leading-none text-[#000000] data-[empty=true]:hidden"
+						>0</span>
+					</button>
+					<a
+						href="/auth/sign-in"
+						class="flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
+						aria-label="Аккаунт"
+					>
+						<NtIcon name="user" sizeClass="size-6" />
 					</a>
-				);
-			})}
-		</nav>
-
-		<div class={desktopIconsCls}>
-			<button
-				type="button"
-				data-action="toggle-search"
-				class="flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
-				aria-label="Поиск"
-			>
-				<NtIcon name="search-lg" sizeClass="size-6" />
-			</button>
-			<button
-				type="button"
-				data-cart-open
-				class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
-				aria-label="Корзина"
-			>
-				<NtIcon name="cart" sizeClass="size-6" />
-				<span
-					data-cart-count
-					data-empty="true"
-					class="absolute right-0 top-0 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-manrope text-[10px] font-normal leading-none text-[#000000] data-[empty=true]:hidden"
-				>0</span>
-			</button>
-			<a
-				href="/auth/sign-in"
-				class="flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
-				aria-label="Аккаунт"
-			>
-				<NtIcon name="user" sizeClass="size-6" />
-			</a>
-		</div>
+				</div>
+			</div>
+		)}
 	</div>
 
 	<!-- Desktop Search Panel (expandable) -->

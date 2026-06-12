@@ -58,12 +58,16 @@ const showMega = !navFromProps;
 const logo = typeof p.logo === "string" && p.logo.trim() ? p.logo : undefined;
 const logoImgCls = "h-[var(--size-logo-width,22px)] w-auto max-w-[160px] object-contain";
 
-// Канон logoPosition: 'top-left' (canon-default из blockDefaults) И отсутствие /
-// неизвестное значение → ЛИТЕРАЛ верстальщика — лого АБСОЛЮТНЫМ ЦЕНТРОМ desktop-строки
-// (правило canon-default → пиксель). Явный 'center-left' («Слева») → лого первым
-// слева во flex-строке перед навигацией (иконки уходят вправо через ml-auto).
+// Канон logoPosition: 4 значения (center-left / center-absolute / top-left / top-center).
+// 'center-absolute' / отсутствие / неизвестное значение → ЛИТЕРАЛ верстальщика —
+// лого абсолютным центром desktop-строки (designer default сатина).
+// 'center-left' («Слева») → лого первым слева перед навигацией.
+// 'top-left' / 'top-center' → двустрочный макет (isTwoRow = true).
 const logoPosition = typeof p.logoPosition === "string" ? p.logoPosition : "";
 const logoLeft = logoPosition === "center-left";
+const isTwoRow = logoPosition === "top-left" || logoPosition === "top-center";
+
+// Single-row: лого-класс зависит от logoLeft (center-left vs center-absolute default).
 const desktopLogoCls = logoLeft
 	? "order-first font-logo text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90"
 	: "font-logo absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90";
@@ -106,6 +110,7 @@ const headerPad =
 const headerPadStyle = headerPad
 	? `padding-top:${headerPad.top}px;padding-bottom:${headerPad.bottom}px;`
 	: undefined;
+// Single-row container (center-left / center-absolute).
 const desktopRowCls = [
 	"satin-pad relative mx-auto hidden",
 	headerPad ? "" : "h-16",
@@ -164,57 +169,191 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 		</div>
 
 		<!-- Desktop Header: 768px+ -->
-		<div class={desktopRowCls} style={headerPadStyle}>
-			<nav
-				class="flex items-center gap-8"
-				aria-label="Основная навигация"
-				data-puck-subsection-parent={id}
-				data-puck-subsection-index="997"
-				data-puck-subsection-field="navigationLinks"
-			>
-				{nav.map((link) => {
-					const active = isActive(link);
-					return (
-						<a
-							href={link.href}
-							aria-current={active ? "page" : undefined}
-							data-mega-trigger={link.mega ? "" : undefined}
-							aria-haspopup={link.mega ? "true" : undefined}
-							aria-expanded={link.mega ? "false" : undefined}
-							class:list={[
-								"group/mega relative inline-flex items-center gap-1 pb-1 font-manrope text-[16px] font-normal uppercase leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70",
-								active && "after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:bg-[rgb(var(--color-text,0_0_0))] after:content-['']",
-							]}
-						>
-							{link.label}
-							{link.mega && (
-								<NtIcon
-									name="dropdown-chevron"
-									sizeClass="size-4"
-									class="satin-mega-caret transition-transform duration-150"
-								/>
-							)}
+		<div class="hidden w-full md:block">
+			{isTwoRow ? (
+				/* ── TWO-ROW LAYOUTS: top-left / top-center ── */
+				<div
+					class={[
+						"satin-pad mx-auto flex w-full max-w-[1920px] flex-col",
+						headerPad ? "" : "py-4",
+					].filter(Boolean).join(" ")}
+					style={headerPadStyle}
+				>
+					{logoPosition === "top-left" ? (
+						/* top-left: Row1=[logo LEFT + actions RIGHT], Row2=[nav LEFT] */
+						<>
+							<div class="flex w-full items-center justify-between">
+								<a
+									href="/"
+									class="font-logo text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90"
+								>
+									{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
+								</a>
+								<div class="flex items-center gap-5">
+									<button type="button" data-action="toggle-search" class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Поиск">
+										<NtIcon name="search-lg" sizeClass="size-6" />
+									</button>
+									<a href="/catalog" class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Избранное">
+										<NtIcon name="favourite" sizeClass="size-6" />
+									</a>
+									<button type="button" data-cart-open class="relative flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Корзина">
+										<NtIcon name="cart" sizeClass="size-6" />
+										<span data-cart-count data-empty="true" class="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-white data-[empty=true]:hidden">0</span>
+									</button>
+								</div>
+							</div>
+							<nav
+								class="mt-3 flex w-full items-center justify-start gap-8"
+								aria-label="Основная навигация"
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="997"
+								data-puck-subsection-field="navigationLinks"
+							>
+								{nav.map((link) => {
+									const active = isActive(link);
+									return (
+										<a
+											href={link.href}
+											aria-current={active ? "page" : undefined}
+											data-mega-trigger={link.mega ? "" : undefined}
+											aria-haspopup={link.mega ? "true" : undefined}
+											aria-expanded={link.mega ? "false" : undefined}
+											class:list={[
+												"group/mega relative inline-flex items-center gap-1 pb-1 font-manrope text-[16px] font-normal uppercase leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70",
+												active && "after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:bg-[rgb(var(--color-text,0_0_0))] after:content-['']",
+											]}
+										>
+											{link.label}
+											{link.mega && (
+												<NtIcon
+													name="dropdown-chevron"
+													sizeClass="size-4"
+													class="satin-mega-caret transition-transform duration-150"
+												/>
+											)}
+										</a>
+									);
+								})}
+							</nav>
+						</>
+					) : (
+						/* top-center: Row1=[search LEFT | logo CENTER | cart+favourite+user RIGHT], Row2=[nav CENTER] */
+						<>
+							<div class="grid w-full grid-cols-[1fr_auto_1fr] items-center">
+								<div class="flex items-center">
+									<button type="button" data-action="toggle-search" class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Поиск">
+										<NtIcon name="search-lg" sizeClass="size-6" />
+									</button>
+								</div>
+								<div class="flex items-center justify-center">
+									<a
+										href="/"
+										class="font-logo text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90"
+									>
+										{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
+									</a>
+								</div>
+								<div class="flex items-center justify-end gap-5">
+									<a href="/catalog" class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Избранное">
+										<NtIcon name="favourite" sizeClass="size-6" />
+									</a>
+									<button type="button" data-cart-open class="relative flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Корзина">
+										<NtIcon name="cart" sizeClass="size-6" />
+										<span data-cart-count data-empty="true" class="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-white data-[empty=true]:hidden">0</span>
+									</button>
+								</div>
+							</div>
+							<nav
+								class="mt-3 flex w-full items-center justify-center gap-8"
+								aria-label="Основная навигация"
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="997"
+								data-puck-subsection-field="navigationLinks"
+							>
+								{nav.map((link) => {
+									const active = isActive(link);
+									return (
+										<a
+											href={link.href}
+											aria-current={active ? "page" : undefined}
+											data-mega-trigger={link.mega ? "" : undefined}
+											aria-haspopup={link.mega ? "true" : undefined}
+											aria-expanded={link.mega ? "false" : undefined}
+											class:list={[
+												"group/mega relative inline-flex items-center gap-1 pb-1 font-manrope text-[16px] font-normal uppercase leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70",
+												active && "after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:bg-[rgb(var(--color-text,0_0_0))] after:content-['']",
+											]}
+										>
+											{link.label}
+											{link.mega && (
+												<NtIcon
+													name="dropdown-chevron"
+													sizeClass="size-4"
+													class="satin-mega-caret transition-transform duration-150"
+												/>
+											)}
+										</a>
+									);
+								})}
+							</nav>
+						</>
+					)}
+				</div>
+			) : (
+				/* ── SINGLE-ROW LAYOUTS: center-left / center-absolute ── */
+				<div class={desktopRowCls} style={headerPadStyle}>
+					<nav
+						class="flex items-center gap-8"
+						aria-label="Основная навигация"
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="997"
+						data-puck-subsection-field="navigationLinks"
+					>
+						{nav.map((link) => {
+							const active = isActive(link);
+							return (
+								<a
+									href={link.href}
+									aria-current={active ? "page" : undefined}
+									data-mega-trigger={link.mega ? "" : undefined}
+									aria-haspopup={link.mega ? "true" : undefined}
+									aria-expanded={link.mega ? "false" : undefined}
+									class:list={[
+										"group/mega relative inline-flex items-center gap-1 pb-1 font-manrope text-[16px] font-normal uppercase leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70",
+										active && "after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:bg-[rgb(var(--color-text,0_0_0))] after:content-['']",
+									]}
+								>
+									{link.label}
+									{link.mega && (
+										<NtIcon
+											name="dropdown-chevron"
+											sizeClass="size-4"
+											class="satin-mega-caret transition-transform duration-150"
+										/>
+									)}
+								</a>
+							);
+						})}
+					</nav>
+
+					<a href="/" class={desktopLogoCls}>
+						{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
+					</a>
+
+					<div class={desktopIconsCls}>
+						<button type="button" data-action="toggle-search" class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Поиск">
+							<NtIcon name="search-lg" sizeClass="size-6" />
+						</button>
+						<a href="/catalog" class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Избранное">
+							<NtIcon name="favourite" sizeClass="size-6" />
 						</a>
-					);
-				})}
-			</nav>
-
-			<a href="/" class={desktopLogoCls}>
-				{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
-			</a>
-
-			<div class={desktopIconsCls}>
-				<button type="button" data-action="toggle-search" class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Поиск">
-					<NtIcon name="search-lg" sizeClass="size-6" />
-				</button>
-				<a href="/catalog" class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Избранное">
-					<NtIcon name="favourite" sizeClass="size-6" />
-				</a>
-				<button type="button" data-cart-open class="relative flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Корзина">
-					<NtIcon name="cart" sizeClass="size-6" />
-					<span data-cart-count data-empty="true" class="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-white data-[empty=true]:hidden">0</span>
-				</button>
-			</div>
+						<button type="button" data-cart-open class="relative flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Корзина">
+							<NtIcon name="cart" sizeClass="size-6" />
+							<span data-cart-count data-empty="true" class="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-white data-[empty=true]:hidden">0</span>
+						</button>
+					</div>
+				</div>
+			)}
 		</div>
 
 		<!-- Mega-menu (desktop) — opens on Коллекции hover/focus -->

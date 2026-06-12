@@ -98,6 +98,17 @@ export class SitesMicroserviceController {
     }
   }
 
+  @MessagePattern("sites.dev_list_all")
+  async devListAll() {
+    try {
+      const sites = await this.service.listAllForDev();
+      return { success: true, sites };
+    } catch (e: any) {
+      this.logger.error("dev_list_all failed", e);
+      return { success: false, message: e?.message ?? "internal_error" };
+    }
+  }
+
   @MessagePattern("sites.list")
   async listSites(@Payload() data: any) {
     try {

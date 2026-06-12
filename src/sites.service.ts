@@ -89,6 +89,21 @@ export class SitesDomainService {
     return result as T;
   }
 
+  async listAllForDev(): Promise<
+    Array<{ id: string; name: string; themeId: string | null; tenantId: string; storageSlug: string | null }>
+  > {
+    return this.db
+      .select({
+        id: schema.site.id,
+        name: schema.site.name,
+        themeId: schema.site.themeId,
+        tenantId: schema.site.tenantId,
+        storageSlug: schema.site.storageSlug,
+      })
+      .from(schema.site)
+      .orderBy(schema.site.name);
+  }
+
   async list(tenantId: string, limit = 50, cursor?: string) {
     // Cursor‑пагинация зарезервирована для будущей версии; сейчас возвращаем первые N записей
     const rows = await this.db

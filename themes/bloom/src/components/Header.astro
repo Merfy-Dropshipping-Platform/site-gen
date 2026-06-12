@@ -109,6 +109,17 @@ const categorySearchAction =
 	categoryHrefFromProduct(pathname) ??
 	DEFAULT_CATEGORY_HREF;
 const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathname === link.href);
+
+// Канон menuType: 'dropdown' (по умолчанию) / 'mega-menu' (Расширенное).
+// Для mega-menu добавляем uppercase + tracking к десктопным ссылкам нав-меню.
+const menuType = typeof p.menuType === "string" ? p.menuType : "dropdown";
+const isMegaMenu = menuType === "mega-menu";
+const megaLinkCls = isMegaMenu ? "uppercase tracking-[0.06em] font-medium" : "";
+
+// Канон menuColorScheme: опциональная отдельная цветовая схема для десктопного <nav>.
+// При задании — добавляем класс color-scheme-<X> к обёртке <nav>.
+const menuColorScheme = typeof p.menuColorScheme === "string" ? p.menuColorScheme : "";
+const menuSchemeClass = menuColorScheme ? `color-scheme-${menuColorScheme.replace("scheme-", "")}` : "";
 ---
 
 <div
@@ -250,7 +261,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 								</div>
 							</div>
 							<nav
-								class="flex flex-wrap items-center justify-start gap-8 lg:gap-10"
+								class:list={["flex flex-wrap items-center justify-start gap-8 lg:gap-10", menuSchemeClass]}
 								aria-label="Основная навигация"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="997"
@@ -265,6 +276,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 											class:list={[
 												"font-inter text-[16px] font-light leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70",
 												active && "underline decoration-[rgb(var(--color-accent,227_142_159))] underline-offset-4",
+												megaLinkCls,
 											]}
 										>
 											{link.label}
@@ -332,7 +344,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 							</div>
 
 							<nav
-								class="flex flex-wrap items-center justify-center gap-8 lg:gap-10"
+								class:list={["flex flex-wrap items-center justify-center gap-8 lg:gap-10", menuSchemeClass]}
 								aria-label="Основная навигация"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="997"
@@ -347,6 +359,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 											class:list={[
 												"font-inter text-[16px] font-light leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70",
 												active && "underline decoration-[rgb(var(--color-accent,227_142_159))] underline-offset-4",
+												megaLinkCls,
 											]}
 										>
 											{link.label}
@@ -366,7 +379,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 						/* center-absolute: nav LEFT, logo ABSOLUTE-center, icons RIGHT */
 						<>
 							<nav
-								class="flex flex-wrap items-center justify-start gap-8 lg:gap-10"
+								class:list={["flex flex-wrap items-center justify-start gap-8 lg:gap-10", menuSchemeClass]}
 								aria-label="Основная навигация"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="997"
@@ -381,6 +394,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 											class:list={[
 												"font-inter text-[16px] font-light leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70",
 												active && "underline decoration-[rgb(var(--color-accent,227_142_159))] underline-offset-4",
+												megaLinkCls,
 											]}
 										>
 											{link.label}
@@ -458,7 +472,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 							</a>
 
 							<nav
-								class="mx-auto flex flex-wrap items-center justify-center gap-8 lg:gap-10"
+								class:list={["mx-auto flex flex-wrap items-center justify-center gap-8 lg:gap-10", menuSchemeClass]}
 								aria-label="Основная навигация"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="997"
@@ -473,6 +487,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 											class:list={[
 												"font-inter text-[16px] font-light leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70",
 												active && "underline decoration-[rgb(var(--color-accent,227_142_159))] underline-offset-4",
+												megaLinkCls,
 											]}
 										>
 											{link.label}

@@ -40,8 +40,19 @@
   },
 
   "blockDefaults": {
+    "Header": {
+      "logoPosition": "center-absolute"
+    },
     "Footer": {
       "variant": "2-part"
+    },
+    "Newsletter": {
+      "formLayout": "inline-submit",
+      "alignment": "left"
+    },
+    "Video": {
+      "padded": true,
+      "align": "container"
     },
     "PopularProducts": {
       "heading": { "text": "Коллекция товаров", "size": "medium", "alignment": "left" },

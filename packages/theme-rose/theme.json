@@ -155,6 +155,7 @@
     },
     "Header": {
       "siteTitle": "Rose",
+      "logoPosition": "center-left",
       "padding": {
         "top": 24,
         "bottom": 24

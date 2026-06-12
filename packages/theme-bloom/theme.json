@@ -44,7 +44,7 @@
       "colorScheme": "scheme-1"
     },
     "Header": {
-      "logoPosition": "top-left",
+      "logoPosition": "top-center",
       "padding": {
         "top": 16,
         "bottom": 16

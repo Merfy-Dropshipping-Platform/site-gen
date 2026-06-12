@@ -17,7 +17,7 @@
             "id": "Header-1",
             "siteTitle": "Мой магазин",
             "logo": "/logo.svg",
-            "logoPosition": "top-left",
+            "logoPosition": "center-left",
             "stickiness": "scroll-up",
             "colorScheme": "scheme-2",
             "padding": { "top": 32, "bottom": 32 },

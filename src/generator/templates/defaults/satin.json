@@ -17,7 +17,7 @@
             "id": "Header-1",
             "siteTitle": "Satin",
             "logo": "",
-            "logoPosition": "top-center",
+            "logoPosition": "center-absolute",
             "stickiness": "scroll-up",
             "colorScheme": "scheme-2",
             "padding": { "top": 0, "bottom": 0 },

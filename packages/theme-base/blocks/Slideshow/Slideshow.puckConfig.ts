@@ -25,7 +25,16 @@ const SlideSchema = z.object({
   // Pupa parity: per-slide layout + theme.
   image: z.string().optional(),
   container: z.enum(['true', 'false']).optional(),
-  position: z.enum(['left', 'center', 'right']).optional(),
+  // Per-slide 9-grid позиция (как Hero): размещает контент-блок слайда по сетке
+  // 3×3. `center` = середина-центр. Legacy left/center/right совместимы (резолвятся
+  // как center-left/center/center-right в Slideshow.astro).
+  position: z.enum([
+    'center',
+    'top-left', 'top-center', 'top-right',
+    'center-left', 'center-right',
+    'bottom-left', 'bottom-center', 'bottom-right',
+    'left', 'right',
+  ]).optional(),
   alignment: z.enum(['left', 'center', 'right']).optional(),
   colorScheme: z.string().optional(),
 });
@@ -132,12 +141,18 @@ export const SlideshowPuckConfig: BlockPuckConfig<SlideshowProps> = {
           ],
         },
         position: {
-          type: 'radio',
+          type: 'select',
           label: 'Позиция',
           options: [
-            { label: 'Слева', value: 'left' },
+            { label: 'Сверху слева', value: 'top-left' },
+            { label: 'Сверху в центре', value: 'top-center' },
+            { label: 'Сверху справа', value: 'top-right' },
+            { label: 'По центру слева', value: 'center-left' },
             { label: 'По центру', value: 'center' },
-            { label: 'Справа', value: 'right' },
+            { label: 'По центру справа', value: 'center-right' },
+            { label: 'Снизу слева', value: 'bottom-left' },
+            { label: 'Снизу по центру', value: 'bottom-center' },
+            { label: 'Снизу справа', value: 'bottom-right' },
           ],
         },
         alignment: { type: 'alignment', label: 'Выравнивание' },

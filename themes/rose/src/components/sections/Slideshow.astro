@@ -54,6 +54,42 @@ const SLIDE_FALLBACKS = [
 	"/images/Изображение_Галерея.webp",
 	"/images/Товар_5.webp",
 ];
+
+// Per-slide раскладка = мини-Hero (паттерн Hero.astro). Каждый слайд несёт
+// position (РАЗМЕЩЕНИЕ блока по сетке 3×3) + alignment (выравнивание КОНТЕНТА
+// внутри блока, независимо) + container (плашка-подложка boxed).
+//   Позиция: вертикаль top / center(=середина) / bottom; горизонталь left/center/
+//   right. Пустой проп = дефолт верстальщика (низ). Явное 'center' = СЕРЕДИНА.
+//   defaultItemProps пишет position:'center' → дефолтный слайд = середина-центр.
+//   Legacy left/right (3-опционная схема) → center-left/center-right.
+const slideLayoutCls = (s: any) => {
+	const posRaw = typeof s.position === "string" && s.position ? s.position : "";
+	// legacy одиночные left/right (без вертикали) → середина по вертикали.
+	const norm = posRaw === "left" ? "center-left" : posRaw === "right" ? "center-right" : posRaw;
+	const vPos = norm.startsWith("top")
+		? "top"
+		: norm.startsWith("bottom")
+			? "bottom"
+			: norm === "center" || norm.startsWith("center")
+				? "middle"
+				: ""; // пусто = дефолт верстальщика (низ)
+	const hPos = norm.endsWith("left") ? "left" : norm.endsWith("right") ? "right" : "center";
+	// Внешний контейнер слайда: vJustify = вертикаль (justify-* при flex-col),
+	// hItems = горизонталь (items-*). Top-level contentAlign 'left' = legacy старт.
+	const vJustifyCls = vPos === "top" ? "justify-start" : vPos === "middle" ? "justify-center" : "justify-end";
+	const hItemsCls =
+		hPos === "left" || (!norm && p.contentAlign === "left")
+			? "items-start"
+			: hPos === "right"
+				? "items-end"
+				: "items-center";
+	// alignment — НЕЗАВИСИМОЕ выравнивание контента внутри блока (items + text-align).
+	const alignItemsCls =
+		s.alignment === "left" ? "items-start" : s.alignment === "right" ? "items-end" : "items-center";
+	const textAlignCls =
+		s.alignment === "left" ? "text-left" : s.alignment === "right" ? "text-right" : "text-center";
+	return { vJustifyCls, hItemsCls, alignItemsCls, textAlignCls };
+};
 const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 	const ctaText =
 		(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined) ??
@@ -79,19 +115,7 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 			typeof s.colorScheme === "string" && s.colorScheme
 				? ` color-scheme-${String(s.colorScheme).replace("scheme-", "")}`
 				: "",
-		// position per-slide (приоритет) | top-level contentAlign 'left' → старт.
-		posCls:
-			s.position === "left" || (!s.position && p.contentAlign === "left")
-				? "justify-start"
-				: s.position === "right"
-					? "justify-end"
-					: "justify-center",
-		alignCls:
-			s.alignment === "left"
-				? "items-start text-left"
-				: s.alignment === "right"
-					? "items-end text-right"
-					: "items-center text-center",
+		...slideLayoutCls(s),
 		active: i === 0,
 	};
 });
@@ -102,19 +126,26 @@ const intervalMs = String(
 );
 const autoplay = p.autoplay === false || p.autoplay === "false" ? "false" : "true";
 
-// Канон size (s/m/l) — высота полотна; medium/отсутствие = высота героя манеры
-// min(70svh,560px), small/large — шаг от неё.
+// Канон size (s/m/l) — высота полотна в долях вьюпорта (паттерн Hero «Размер»):
+// small=50svh, medium(отсутствие)=75svh, large=100svh. min-h гарантирует высоту
+// при коротком контенте; раньше size игнорировался («не работал»).
 const heightCls =
 	p.size === "small"
-		? "h-[min(60svh,420px)]"
+		? "min-h-[50svh]"
 		: p.size === "large"
-			? "h-[min(80svh,720px)]"
-			: "h-[min(70svh,560px)]";
+			? "min-h-[100svh]"
+			: "min-h-[75svh]";
 
-// Канон imagePosition: fullscreen (canon-default; полотно во всю ширину секции,
-// как hero) | contained (+legacy left/right) — внутри контейнера манеры с полями
-// секции и радиусом медиа.
+// Канон imagePosition («Положение изображения»): fullscreen (canon-default;
+// полотно во всю ширину секции, как hero — без боковых полей и радиуса) |
+// contained «в окне» (+legacy left/right) — внутри контейнера манеры с полями
+// секции, max-width и радиусом медиа. Управляет обёрткой полотна (см. wrapperCls/
+// frameCls) — у contained появляется max-w + rounded, у fullscreen их нет.
 const contained = p.imagePosition === "contained" || p.imagePosition === "left" || p.imagePosition === "right";
+const wrapperCls = contained
+	? "w-full px-4 sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px]"
+	: "w-full";
+const frameCls = contained ? " max-w-[1320px] rounded-[var(--radius-media,8px)]" : "";
 
 // Канон overlay 0-100 — затемнение между фото и контентом (паттерн Hero T11).
 const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
@@ -148,15 +179,9 @@ const paddingStyle = p.padding
 	data-autoplay={autoplay}
 	style={paddingStyle}
 >
-	<div
-		class={
-			contained
-				? "w-full px-4 sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px]"
-				: "w-full"
-		}
-	>
+	<div class={wrapperCls}>
 		<div
-			class={`relative mx-auto w-full overflow-hidden ${heightCls}${contained ? " max-w-[1320px] rounded-[var(--radius-media,8px)]" : ""}`}
+			class={`relative mx-auto w-full overflow-hidden ${heightCls}${frameCls}`}
 		>
 			{
 				slides.map((s, i) => (
@@ -181,11 +206,14 @@ const paddingStyle = p.padding
 								aria-hidden="true"
 							/>
 						)}
-						{/* Контент у нижней кромки — манера hero (низ продуктовых фото темнее,
-						    белый текст читается; сверху скрим страхует светлые кадры). */}
-						<div class={`relative z-10 flex h-full w-full items-end px-6 pb-14 md:px-12 md:pb-16 ${s.posCls}`}>
+						{/* Контент-блок мини-Hero: внешний контейнер РАЗМЕЩАЕТ блок по сетке
+						    3×3 (vJustify=вертикаль, hItems=горизонталь — паттерн Hero), внутри
+						    alignItems+textAlign = НЕЗАВИСИМОЕ выравнивание контента. boxed —
+						    плашка-подложка слайда (порт Hero boxedCls: фон схемы + радиус +
+						    паддинги + тёмный текст override на светлой плашке). */}
+						<div class={`relative z-10 flex h-full w-full flex-col ${s.hItemsCls} ${s.vJustifyCls} px-6 pb-14 md:px-12 md:pb-16`}>
 							<div
-								class={`flex max-w-[640px] flex-col gap-4 ${s.alignCls}${s.boxed ? " rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-bg,255_255_255))]/90 p-6 md:p-10" : ""}`}
+								class={`flex max-w-[640px] flex-col gap-4 ${s.alignItemsCls} ${s.textAlignCls}${s.boxed ? " rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-bg,255_255_255))]/95 p-6 shadow-sm md:p-10 [&_h2]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-text,0_0_0))]" : ""}`}
 							>
 								{s.heading && (
 									<h2
@@ -274,16 +302,15 @@ const paddingStyle = p.padding
 											{i + 1}
 										</button>
 									))}
-								{pagination === "counter" &&
-									slides.map((_, i) => (
-										<span
-											data-slide-dot
-											data-active={i === 0 ? "true" : "false"}
-											class="font-manrope text-[14px] font-normal leading-none text-white data-[active=false]:hidden"
-										>
-											{i + 1} / {slides.length}
-										</span>
-									))}
+								{pagination === "counter" && (
+									<span
+										data-slide-counter
+										data-total={slides.length}
+										class="font-manrope text-[14px] font-normal leading-none text-white"
+									>
+										<span data-slide-counter-current>1</span> / {slides.length}
+									</span>
+								)}
 							</div>
 						)}
 					</>
@@ -313,6 +340,8 @@ const paddingStyle = p.padding
 		var autoplay = root.dataset.autoplay !== "false";
 		var slides = root.querySelectorAll("[data-slide]");
 		var dots = root.querySelectorAll("[data-slide-dot]");
+		// Счётчик «текущий/всего» (pagination='counter'): JS обновляет текущий номер.
+		var counterCurrent = root.querySelector("[data-slide-counter-current]");
 		if (slides.length < 2) return;
 		var idx = 0,
 			timer = null;
@@ -325,6 +354,7 @@ const paddingStyle = p.padding
 			dots.forEach(function (d, i) {
 				d.setAttribute("data-active", i === idx ? "true" : "false");
 			});
+			if (counterCurrent) counterCurrent.textContent = String(idx + 1);
 		}
 		function restart() {
 			if (timer) clearInterval(timer);

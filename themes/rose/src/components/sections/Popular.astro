@@ -149,6 +149,19 @@ const viewAllHref =
 const collectionRef =
 	typeof p.collection === "string" && p.collection.trim() ? p.collection.trim() : undefined;
 
+// Контейнер-подложка (toggle containerEnabled + containerColorScheme), паттерн
+// CollapsibleSection / Figma 314-35006: включён → обёртка-поверхность вокруг
+// контента блока (radius, surface, внутренние паддинги) + отдельная цв. схема
+// контейнера. Основная (секционная) схема остаётся на <section>.
+const containerEnabled = String(p.containerEnabled ?? "false") === "true";
+const containerSchemeCls =
+	typeof p.containerColorScheme === "string" && p.containerColorScheme
+		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
+		: "";
+const containerWrapCls = containerEnabled
+	? `flex w-full flex-col gap-8 md:gap-10 rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-surface,245_245_245))] p-6 md:p-10${containerSchemeCls}`
+	: `flex w-full flex-col gap-8 md:gap-10${containerSchemeCls}`;
+
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T11).
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
@@ -162,7 +175,8 @@ const paddingStyle = p.padding
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
+	<div class="mx-auto w-full max-w-[1320px]">
+		<div class={containerWrapCls}>
 		<div class={headWrapCls} data-animate data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">
 			<NtSectionHeading variant="rose" titleId="popular-title" title={sectionTitle} subtitle={sectionSubtitle} />
 		</div>
@@ -212,6 +226,7 @@ const paddingStyle = p.padding
 				</a>
 			</div>
 		)}
+		</div>
 	</div>
 </section>{nextPhoto && <script is:inline set:html={NEXT_PHOTO_JS} />}
 

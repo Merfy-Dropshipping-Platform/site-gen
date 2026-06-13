@@ -47,6 +47,10 @@ export const PopularProductsSchema = z.object({
     buttonText: z.string().optional(),
   }).optional(),
   containerColorScheme: z.string().optional(),
+  // Контейнер-подложка под секцией (паттерн CollapsibleSection, Figma 314-35006):
+  // toggle включает обёртку-поверхность; containerColorScheme красит её отдельно
+  // от основной (секционной) цветовой схемы.
+  containerEnabled: z.enum(['true', 'false']).optional(),
   colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
@@ -166,14 +170,22 @@ export const PopularProductsPuckConfig: BlockPuckConfig<PopularProductsProps> = 
     },
     columns: { type: 'slider', label: 'Колонки', min: 1, max: 6, step: 1 },
 
+    containerEnabled: {
+      type: 'toggle',
+      label: 'Контейнер',
+      options: [
+        { label: 'Показать', value: 'true' },
+        { label: 'Скрыть', value: 'false' },
+      ],
+    },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
     padding: { type: 'padding', label: 'Отступы' },
 
     // Hidden — данные ревизий сохраняются, но в Figma 314-34614 эти контролы
     // отсутствуют. Astro-рендер может читать их через fallback chain.
     subtitle: { type: 'hidden', label: '' },
     productCard: { type: 'hidden', label: '' },
-    containerColorScheme: { type: 'hidden', label: '' },
     quickAdd: { type: 'hidden', label: '' },
     quickAddText: { type: 'hidden', label: '' },
     viewAll: { type: 'hidden', label: '' },

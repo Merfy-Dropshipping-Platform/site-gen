@@ -73,10 +73,10 @@ const tileAspectCls =
 		: p.imageView === "wide" || p.imageView === "adaptive"
 			? " [&_li>article>div:first-child]:aspect-[16/9]"
 			: "";
-const gridBase = "grid grid-cols-1 gap-4 sm:grid-cols-3";
+const gridBase = "grid auto-rows-fr grid-cols-1 gap-4 sm:grid-cols-3";
 const gridCls =
 	(cols
-		? "grid grid-cols-1 gap-4 sm:grid-cols-[repeat(var(--cols),minmax(0,1fr))]"
+		? "grid auto-rows-fr grid-cols-1 gap-4 sm:grid-cols-[repeat(var(--cols),minmax(0,1fr))]"
 		: gridBase) + tileAspectCls;
 const gridStyle = cols ? `--cols:${cols}` : undefined;
 

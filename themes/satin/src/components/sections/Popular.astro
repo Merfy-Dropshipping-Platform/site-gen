@@ -142,10 +142,12 @@ const NEXT_PHOTO_JS = [
 	"})();",
 ].join("");
 
-// Канон viewAll {show,text,href}: у верстальщика кнопка ЕСТЬ всегда
-// (satin-button-light w-fit СЛЕВА, Popular.astro:26 — НЕ по центру!) — дефолт
-// = показана; прячет только явный show:false. Дефолты текста/ссылки = legacy
-// moreLabel/moreHref ('Смотреть больше' / '/catalog').
+// Канон viewAll {show,text,href}: кнопка под гридом — «Смотреть все товары»
+// коллекции (Figma 1-33175, контракт rose Popular). У верстальщика кнопка ЕСТЬ
+// всегда (satin-button-light w-fit СЛЕВА, Popular.astro:26 — НЕ по центру!) —
+// дефолт = показана; прячет только явный show:false. Текст по умолчанию
+// «Смотреть все товары»; href ведёт на каталог выбранной коллекции
+// (?collection=) либо в общий каталог (fallback на legacy moreHref).
 const viewAllRaw = p.viewAll;
 const viewAllShow = !(
 	viewAllRaw === false ||
@@ -160,14 +162,27 @@ const viewAllText =
 	typeof viewAllRaw.text === "string" &&
 	viewAllRaw.text.trim()
 		? viewAllRaw.text
-		: undefined) ?? moreLabel;
+		: undefined) ?? "Смотреть все товары";
+const viewAllCollection =
+	typeof p.collection === "string" && p.collection.trim() ? p.collection.trim() : "";
 const viewAllHref =
 	(!!viewAllRaw &&
 	typeof viewAllRaw === "object" &&
 	typeof viewAllRaw.href === "string" &&
 	viewAllRaw.href.trim()
 		? viewAllRaw.href
-		: undefined) ?? moreHref;
+		: undefined) ??
+	(viewAllCollection ? `/catalog?collection=${encodeURIComponent(viewAllCollection)}` : moreHref);
+// Стиль кнопки «Смотреть все» = единый «Стиль кнопки» секции (buttonStyle, Figma
+// 1195-42536): link = текстовая ссылка с подчёркиванием, secondary = контурная
+// (satin-button-light), primary/отсутствие = заливка (satin-button-dark).
+// Манера satin: классовая система .satin-button / .satin-button-md, w-fit слева.
+const viewAllCls =
+	p.buttonStyle === "link"
+		? "inline-flex w-fit items-center justify-center font-manrope text-[16px] font-normal uppercase leading-none text-[rgb(var(--color-text,0_0_0))] underline underline-offset-4 transition-opacity hover:opacity-70"
+		: p.buttonStyle === "secondary"
+			? "satin-button satin-button-md satin-button-light w-fit"
+			: "satin-button satin-button-md satin-button-dark w-fit";
 
 // Канон collection (collectionPicker, id или slug): носитель — data-collection
 // на гриде; фильтрацию делает гидрация (filterByCollection: productIds коллекции
@@ -218,7 +233,7 @@ const paddingStyle = p.padding
 		{viewAllShow && (
 			<a
 				href={viewAllHref}
-				class="satin-button satin-button-md satin-button-light w-fit"
+				class={viewAllCls}
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="102"
 				data-puck-subsection-field="viewAll"

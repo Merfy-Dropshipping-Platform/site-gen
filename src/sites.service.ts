@@ -35,6 +35,7 @@ import { BillingClient } from "./billing/billing.client";
 import { BuildQueuePublisher } from "./rabbitmq/build-queue.service";
 import { ActivityLogPublisher } from "./activity-log/activity-log.publisher";
 import { getPageResolver } from "./themes/page-resolver-instance";
+import { getThemeManifest } from "./themes/theme-manifest-loader";
 
 const USE_PAGE_RESOLVER = process.env.USE_PAGE_RESOLVER !== 'false'; // default ON, set to 'false' to disable
 
@@ -1215,6 +1216,24 @@ export class SitesDomainService {
    */
   private async buildInitialRevision(themeId: string): Promise<any> {
     if (!USE_PAGE_RESOLVER) {
+      return this.getDefaultContent(themeId);
+    }
+    // Resolver-путь годится только для тем с ПОЛНЫМ Puck-driven манифестом
+    // (ровно одна страница isHome — сейчас это лишь rose). Темы с ЧАСТИЧНЫМ
+    // manifest.pages (flux/bloom/satin/vanilla засеяны только системными
+    // catalog/collection для превью-секций — без home/about/etc) НЕ должны
+    // строить начальную ревизию через resolver: он взял бы pages[0]
+    // (page-catalog) как «домашнюю» и создал новый сайт без home-контента.
+    // Для них используем legacy seed (getDefaultContent), который несёт home.
+    // normalizeRevision (getRevision/preview) при этом всё равно домёрджит
+    // системные страницы из манифеста в существующую ревизию — превью каталога
+    // продолжает резолвиться lazy-seed'ом из pages/catalog.json.
+    const manifest = getThemeManifest(themeId) as
+      | { pages?: Array<{ isHome?: boolean }> }
+      | null;
+    const manifestPages = Array.isArray(manifest?.pages) ? manifest!.pages : [];
+    const hasHomePage = manifestPages.some((p) => p?.isHome === true);
+    if (!hasHomePage) {
       return this.getDefaultContent(themeId);
     }
     try {

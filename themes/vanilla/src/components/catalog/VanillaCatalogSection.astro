@@ -11,7 +11,7 @@ import {
 import { catalogProducts } from "../../data/products";
 
 interface Props {
-	section: "textile" | "decor";
+	section?: "textile" | "decor";
 	categoryTitle: string;
 }
 
@@ -24,12 +24,17 @@ const decorFeaturedIds = ["bag-2", "bag-6"] as const;
 
 const featuredIds = isTextile ? textileFeaturedIds : decorFeaturedIds;
 
-const displayedProducts = featuredIds
-	.map((id) => catalogProducts.find((product) => product.id === id))
-	.filter((product): product is (typeof catalogProducts)[number] => Boolean(product));
+// section задан → демо-подборка категории (textile/decor). Без section — это
+// страница /catalog: показываем весь демо-каталог. На live сетку всё равно
+// перерисовывает гидрация реальных товаров (renderCatalog ниже).
+const displayedProducts = section
+	? featuredIds
+			.map((id) => catalogProducts.find((product) => product.id === id))
+			.filter((product): product is (typeof catalogProducts)[number] => Boolean(product))
+	: catalogProducts;
 
 const totalCount = displayedProducts.length;
-const showLoadMore = isTextile;
+const showLoadMore = section ? isTextile : totalCount > 4;
 
 function pluralizeProducts(count: number): string {
 	const mod10 = count % 10;
@@ -80,7 +85,7 @@ const rowPanelClass =
 	class="vanilla-pad w-full bg-[var(--vanilla-surface)] py-16 md:py-20"
 	aria-labelledby="catalog-title"
 	data-nt="vanilla-catalog-section"
-	data-section={section}
+	data-section={section ?? "all"}
 	data-catalog-layout="side"
 >
 	{/* Переключение раскладки ДО рендера вариантов (без мигания): глобал инжектится

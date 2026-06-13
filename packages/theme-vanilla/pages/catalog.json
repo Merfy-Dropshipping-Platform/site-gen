@@ -1,0 +1,25 @@
+{
+  "content": [
+    { "type": "Header", "props": { "id": "Header-catalog" } },
+    {
+      "type": "Catalog",
+      "props": {
+        "id": "Catalog-1",
+        "categoryTitle": { "text": "Каталог" },
+        "heading": { "text": "Каталог", "size": "large" },
+        "colorScheme": "scheme-3",
+        "columns": 2,
+        "cards": 12,
+        "showFilter": "true",
+        "filterPosition": "side",
+        "showSort": "true",
+        "gridAspect": "1:1",
+        "cardCaptionStyle": "uppercase",
+        "padding": { "top": 120, "bottom": 120 }
+      }
+    },
+    { "type": "Footer", "props": { "id": "Footer-catalog" } }
+  ],
+  "root": { "props": { "title": "Каталог" } },
+  "zones": {}
+}

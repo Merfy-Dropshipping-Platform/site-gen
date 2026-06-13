@@ -1,0 +1,43 @@
+{
+  "content": [
+    {
+      "type": "Header",
+      "props": {
+        "id": "Header-catalog",
+        "siteTitle": "Bloom",
+        "logo": "/logo.svg",
+        "logoPosition": "top-center",
+        "navigationLinks": [
+          { "label": "Главная", "href": "/" },
+          { "label": "Каталог", "href": "/catalog" },
+          { "label": "О нас", "href": "/about" },
+          { "label": "Контакты", "href": "/contacts" }
+        ],
+        "actionButtons": { "showSearch": "true", "showCart": "true", "showProfile": "true" }
+      }
+    },
+    {
+      "type": "Catalog",
+      "props": {
+        "id": "Catalog-1",
+        "heading": { "text": "Каталог", "size": "large" },
+        "colorScheme": "scheme-3",
+        "columns": 3,
+        "filters": { "enabled": "true" },
+        "sort": { "enabled": "true" },
+        "pagination": { "enabled": "true", "pageSize": 12 },
+        "padding": { "top": 80, "bottom": 80 }
+      }
+    },
+    {
+      "type": "Footer",
+      "props": {
+        "id": "Footer-catalog",
+        "colorScheme": "scheme-3",
+        "padding": { "top": 80, "bottom": 80 }
+      }
+    }
+  ],
+  "root": { "props": { "title": "Каталог" } },
+  "zones": {}
+}

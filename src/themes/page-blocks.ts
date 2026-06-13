@@ -22,6 +22,7 @@ export async function extractPageBlocks(
   siteId: string,
   productIdOverride?: string,
   logger?: Logger,
+  collectionContext?: { name?: string; description?: string; image?: string },
 ): Promise<Array<{ type: string; props: Record<string, unknown> }> | null> {
   const pagesData = (data.pagesData ?? {}) as Record<string, unknown>;
   // Resolve page key with fallback variants. Constructor sends page-product,
@@ -79,6 +80,12 @@ export async function extractPageBlocks(
   const manifest = themeId ? getThemeManifest(themeId) : null;
   const themeBlocks = manifest?.blocks ?? {};
 
+  // Страница коллекции: подставляем {{COLLECTION_*}} плейсхолдеры в строковых
+  // props (зеркало substituteVars из generatePuckCollectionsSlugPage на live).
+  // Резолвится по ключу page-collection (с учётом page-/bare вариантов).
+  const isCollectionPage =
+    page === 'page-collection' || page === 'collection';
+
   return parsed
     .filter(
       (b): b is { type: string; props: Record<string, unknown> } =>
@@ -117,8 +124,55 @@ export async function extractPageBlocks(
         );
         props.productId = productIdOverride;
       }
-      return { type: b.type, props };
+      // Подстановка плейсхолдеров коллекции в строковые props (рекурсивно,
+      // включая arrayFields) — только на странице page-collection.
+      const finalProps = isCollectionPage
+        ? (substituteCollectionVars(props, collectionContext) as Record<
+            string,
+            unknown
+          >)
+        : props;
+      return { type: b.type, props: finalProps };
     });
+}
+
+/**
+ * Подстановка плейсхолдеров коллекции в строковые значения props.
+ *
+ * Зеркало `substituteVars` из `generatePuckCollectionsSlugPage`
+ * (src/generator/dynamic-pages-generator.ts) — превью и live дают идентичный
+ * результат для страницы коллекции. Дефолты повторяют live: имя →
+ * collectionTitle (title||name||'Каталог'), описание/картинка → '' при
+ * отсутствии данных коллекции (пресет `preview` или неизвестный slug), чтобы
+ * рендер не падал и не показывал сырой `{{...}}`.
+ */
+function substituteCollectionVars(
+  value: unknown,
+  ctx: { name?: string; description?: string; image?: string } | undefined,
+): unknown {
+  const name = ctx?.name && ctx.name.trim() ? ctx.name : 'Каталог';
+  const description = ctx?.description ?? '';
+  const image = ctx?.image ?? '';
+  if (typeof value === 'string') {
+    return value
+      .replace(/\{\{COLLECTION_NAME\}\}/g, name)
+      .replace(/\{\{COLLECTION_DESCRIPTION\}\}/g, description)
+      .replace(/\{\{COLLECTION_IMAGE\}\}/g, image);
+  }
+  if (Array.isArray(value)) {
+    return value.map((v) => substituteCollectionVars(v, ctx));
+  }
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const k of Object.keys(value as Record<string, unknown>)) {
+      out[k] = substituteCollectionVars(
+        (value as Record<string, unknown>)[k],
+        ctx,
+      );
+    }
+    return out;
+  }
+  return value;
 }
 
 /**

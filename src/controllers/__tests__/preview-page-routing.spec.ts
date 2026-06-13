@@ -251,8 +251,10 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
   });
 
   it('manifest-less theme + revision without page-collection resolves via SYSTEM_PAGE_ROUTES to "collections/preview"', async () => {
-    // bloom/flux/satin/vanilla theme.json have NO pages registry, so the
-    // manifest merge contributes nothing (normalizeRevision → { pages: [] }).
+    // bloom/flux/satin theme.json have NO pages registry (vanilla now has one),
+    // so for those the manifest merge contributes nothing
+    // (normalizeRevision → { pages: [] }) — here the resolver is mocked to
+    // emulate that manifest-less shape.
     // The revision also lacks page-collection (lazy-added by normalization but
     // absent from raw pages[]). Without the universal SYSTEM_PAGE_ROUTES
     // fallback, `match` is undefined and route falls back to the raw
@@ -269,7 +271,8 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
       revisionId: 'rev-manifestless',
     } as typeof REVISION;
 
-    // Theme manifest has NO system pages (matches bloom/flux/satin/vanilla).
+    // Theme manifest has NO system pages (matches bloom/flux/satin; vanilla now
+    // has a pages registry). The resolver is mocked to emulate that shape.
     getPageResolverMock.mockReturnValue({
       normalizeRevision: () => ({ pages: [] }),
     } as never);
@@ -298,12 +301,14 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
   it('manifest-less theme: page=home resolves to root route ("") via SYSTEM_PAGE_ROUTES', async () => {
     // Even with no manifest pages and a revision that omits page-home, `home`
     // must resolve to the root route '' (SYSTEM_PAGE_ROUTES.home = '').
+    // bloom still ships no pages registry (vanilla now has one), so it stays the
+    // canonical manifest-less example here.
     const MANIFESTLESS_REVISION = {
       data: {
         pages: [{ id: 'page-about', slug: '/about' }],
       },
       publicUrl: 'https://shop.example',
-      themeId: 'vanilla',
+      themeId: 'bloom',
       revisionId: 'rev-home',
     } as typeof REVISION;
 
@@ -325,7 +330,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
 
     await ctrl.getPreview('site-1', 'home', undefined, res);
 
-    expect(tryLoad).toHaveBeenCalledWith('vanilla', '');
+    expect(tryLoad).toHaveBeenCalledWith('bloom', '');
   });
 
   it('revision page slug takes precedence over the theme manifest (manifest fills gaps only)', async () => {
@@ -454,5 +459,75 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     expect(res._status).toBe(200);
     expect(res._headers['X-Preview-Mode']).toBe('v2-built-theme');
     expect(String(res._body)).toContain('BLOB');
+  });
+
+  // ——— 098 wiring: каталог/коллекции сняты с замка → идут по-секционно ———
+
+  it('v2-sections: catalog нарезанной темы идёт в renderV2ContentPage (а не в блоб)', async () => {
+    // REVISION не содержит page-catalog в pages[] → route резолвится через
+    // SYSTEM_PAGE_ROUTES['page-catalog'] = 'catalog'. Раньше catalog был в
+    // замке (isV2ComplexRoute) и уходил в блоб; теперь снят → форк секций.
+    const tryLoad = jest.fn().mockResolvedValue('<html><head></head>BLOB</html>');
+    const renderV2ContentPage = jest
+      .fn()
+      .mockResolvedValue('<html><head></head><body>V2-CATALOG</body></html>');
+    const ctrl = makeController({
+      hasV2Sections: jest.fn().mockResolvedValue(true),
+      renderV2ContentPage,
+      tryLoadBuiltThemeHtml: tryLoad,
+      firstBuiltProductRoute: jest.fn(),
+    } as any);
+    extractPageBlocksMock.mockResolvedValue([
+      { type: 'Catalog', props: { id: 'Catalog-1' } },
+    ]);
+    const res = makeRes();
+
+    await ctrl.getPreview('site-1', 'page-catalog', undefined, res);
+
+    expect(renderV2ContentPage).toHaveBeenCalledWith(
+      expect.objectContaining({ themeId: 'rose', route: 'catalog' }),
+    );
+    expect(tryLoad).not.toHaveBeenCalled();
+    expect(res._headers['X-Preview-Mode']).toBe('v2-sections');
+    expect(String(res._body)).toContain('V2-CATALOG');
+  });
+
+  it('v2-sections: collections/preview идёт по-секционно с блоками page-collection', async () => {
+    // page-collection → route 'collections/preview' (SYSTEM_PAGE_ROUTES).
+    // Снят с замка → форк секций; блоки извлекаются по ключу page-collection.
+    const tryLoad = jest.fn().mockResolvedValue('<html><head></head>BLOB</html>');
+    const renderV2ContentPage = jest
+      .fn()
+      .mockResolvedValue('<html><head></head><body>V2-COLLECTION</body></html>');
+    const ctrl = makeController({
+      hasV2Sections: jest.fn().mockResolvedValue(true),
+      renderV2ContentPage,
+      tryLoadBuiltThemeHtml: tryLoad,
+      firstBuiltProductRoute: jest.fn(),
+    } as any);
+    extractPageBlocksMock.mockResolvedValue([
+      { type: 'Catalog', props: { id: 'Catalog-1' } },
+    ]);
+    const res = makeRes();
+
+    await ctrl.getPreview('site-1', 'page-collection', undefined, res);
+
+    expect(renderV2ContentPage).toHaveBeenCalledWith(
+      expect.objectContaining({ themeId: 'rose', route: 'collections/preview' }),
+    );
+    // extractPageBlocks вызван с ключом page-collection (а не сырым маршрутом).
+    expect(extractPageBlocksMock).toHaveBeenCalledWith(
+      expect.anything(),
+      'page-collection',
+      expect.anything(),
+      'rose',
+      'site-1',
+      undefined,
+      expect.anything(),
+      expect.anything(),
+    );
+    expect(tryLoad).not.toHaveBeenCalled();
+    expect(res._headers['X-Preview-Mode']).toBe('v2-sections');
+    expect(String(res._body)).toContain('V2-COLLECTION');
   });
 });

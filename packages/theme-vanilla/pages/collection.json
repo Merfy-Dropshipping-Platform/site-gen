@@ -1,0 +1,26 @@
+{
+  "content": [
+    { "type": "Header", "props": { "id": "Header-collection" } },
+    {
+      "type": "Catalog",
+      "props": {
+        "id": "Catalog-collection",
+        "categoryTitle": { "text": "{{COLLECTION_NAME}}" },
+        "categorySubtitle": { "text": "{{COLLECTION_DESCRIPTION}}" },
+        "heading": { "text": "{{COLLECTION_NAME}}", "size": "large" },
+        "colorScheme": "scheme-3",
+        "columns": 2,
+        "cards": 24,
+        "showFilter": "true",
+        "filterPosition": "side",
+        "showSort": "true",
+        "gridAspect": "1:1",
+        "cardCaptionStyle": "uppercase",
+        "padding": { "top": 120, "bottom": 120 }
+      }
+    },
+    { "type": "Footer", "props": { "id": "Footer-collection" } }
+  ],
+  "root": { "props": { "title": "{{COLLECTION_NAME}}" } },
+  "zones": {}
+}

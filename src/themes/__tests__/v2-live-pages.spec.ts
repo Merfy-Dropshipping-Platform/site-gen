@@ -171,4 +171,71 @@ describe('composeContentPagesIntoDist', () => {
     expect(deliveryHtml).toContain('tail()'); // home-шелл как источник
     expect(deliveryHtml).toContain('<title>Доставка</title>'); // titleOverride
   });
+
+  it('098 live-паритет: page-catalog пересаживается в dist/catalog/index.html (Catalog с data-puck-component-id), поверх собственного шелла каталога', async () => {
+    const dist = await fs.mkdtemp(path.join(os.tmpdir(), 'v2live-'));
+    await fs.writeFile(path.join(dist, 'index.html'), SHELL);
+    // Каталог требует собственного шелла диста (requireOwnShell) — без него
+    // тихо пропускается. SSG генерит dist/catalog/index.html, эмулируем его.
+    const CATALOG_SHELL = SHELL.replace(/OLD/g, 'CATALOG-DIST');
+    await fs.mkdir(path.join(dist, 'catalog'), { recursive: true });
+    await fs.writeFile(path.join(dist, 'catalog', 'index.html'), CATALOG_SHELL);
+
+    const data = revisionData() as Record<string, unknown>;
+    (data as { pagesData: Record<string, unknown> }).pagesData['page-catalog'] = {
+      content: [
+        { type: 'Header', props: { id: 'Header-1' } },
+        { type: 'Catalog', props: { id: 'Catalog-1' } },
+        { type: 'Footer', props: { id: 'Footer-1' } },
+      ],
+    };
+
+    const ctx = {
+      distDir: dist,
+      siteId: 'site-1',
+      publicUrl: 'https://shop.example',
+      revisionData: data,
+    } as unknown as Parameters<typeof composeContentPagesIntoDist>[0];
+
+    const n = await composeContentPagesIntoDist(ctx, 'rose');
+    // home + catalog (collections/preview шелла нет → пропущен).
+    expect(n).toBe(2);
+
+    const catalogHtml = await fs.readFile(
+      path.join(dist, 'catalog', 'index.html'),
+      'utf8',
+    );
+    // Catalog-секция пересажена из ревизии (несёт свой component-id).
+    expect(catalogHtml).toContain('data-puck-component-id="Catalog-1"');
+    // Хвост шелла каталога сохранён, старое тело заменено целиком.
+    expect(catalogHtml).toContain('tail()');
+    expect(catalogHtml).not.toContain('CATALOG-DIST');
+  });
+
+  it('098: page-catalog БЕЗ собственного шелла диста (requireOwnShell) НЕ пересаживается через home-шелл', async () => {
+    const dist = await fs.mkdtemp(path.join(os.tmpdir(), 'v2live-'));
+    await fs.writeFile(path.join(dist, 'index.html'), SHELL);
+    // Никакого dist/catalog/index.html не создаём.
+
+    const data = revisionData() as Record<string, unknown>;
+    (data as { pagesData: Record<string, unknown> }).pagesData['page-catalog'] = {
+      content: [{ type: 'Catalog', props: { id: 'Catalog-1' } }],
+    };
+
+    const ctx = {
+      distDir: dist,
+      siteId: 'site-1',
+      publicUrl: 'https://shop.example',
+      revisionData: data,
+    } as unknown as Parameters<typeof composeContentPagesIntoDist>[0];
+
+    const n = await composeContentPagesIntoDist(ctx, 'rose');
+    // Только home; catalog без своего шелла пропущен (home-фоллбэка нет).
+    expect(n).toBe(1);
+
+    // Файл каталога не создан из home-шелла.
+    await expect(
+      fs.readFile(path.join(dist, 'catalog', 'index.html'), 'utf8'),
+    ).rejects.toThrow();
+  });
 });

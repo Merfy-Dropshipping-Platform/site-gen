@@ -1003,24 +1003,32 @@ export async function runBuildPipeline(
       // «Выбор товара» из конструктора: статичная PDP темы гидрируется по ?id=,
       // без него — по этому глобалу (зеркало injectPreviewGlobals превью).
       try {
-        const pdpContent = (ctx.revisionData as { pagesData?: Record<string, { content?: Array<{ type?: string; props?: { productId?: unknown } }> }> } | null)
+        const pdpContent = (ctx.revisionData as { pagesData?: Record<string, { content?: Array<{ type?: string; props?: { productId?: unknown; id?: unknown } }> }> } | null)
           ?.pagesData?.['page-product']?.content;
         const pdpBlock = Array.isArray(pdpContent) ? pdpContent.find((b) => b?.type === 'Product') : undefined;
         const defaultPid = typeof pdpBlock?.props?.productId === 'string' ? pdpBlock.props.productId.trim() : '';
-        if (defaultPid) {
+        // Селектируемость PDP в конструкторе: реальный динамический id блока
+        // Product (`Product-<ts>`). Зеркало injectPreviewGlobals — preview и live
+        // штампуют один и тот же id на data-puck-component-id/subsection-parent
+        // (тема: window.__MERFY_PRODUCT_BLOCK_ID__). Инертен на live (визуал не меняется).
+        const pdpBlockId = typeof pdpBlock?.props?.id === 'string' ? pdpBlock.props.id.trim() : '';
+        if (defaultPid || pdpBlockId) {
           const pdpPath = path.join(ctx.distDir, 'product', 'index.html');
           const pdpHtml = await fs.readFile(pdpPath, 'utf8').catch(() => null);
           if (pdpHtml) {
+            const injects: string[] = [];
+            if (defaultPid) injects.push(`window.__MERFY_DEFAULT_PRODUCT_ID__ = ${JSON.stringify(defaultPid)};`);
+            if (pdpBlockId) injects.push(`window.__MERFY_PRODUCT_BLOCK_ID__ = ${JSON.stringify(pdpBlockId)};`);
             await fs.writeFile(
               pdpPath,
-              pdpHtml.replace(/<head(\s[^>]*)?>/i, (m) => `${m}<script>window.__MERFY_DEFAULT_PRODUCT_ID__ = ${JSON.stringify(defaultPid)};</script>`),
+              pdpHtml.replace(/<head(\s[^>]*)?>/i, (m) => `${m}<script>${injects.join('')}</script>`),
               'utf8',
             );
-            logger.log(`[themes-v2] Injected default productId ${defaultPid} into product page for site ${params.siteId}`);
+            logger.log(`[themes-v2] Injected PDP globals (productId="${defaultPid}", blockId="${pdpBlockId}") into product page for site ${params.siteId}`);
           }
         }
       } catch (pidErr) {
-        logger.warn(`[themes-v2] default productId inject failed: ${(pidErr as Error)?.message ?? pidErr}`);
+        logger.warn(`[themes-v2] PDP globals inject failed: ${(pidErr as Error)?.message ?? pidErr}`);
       }
       // Раскладка каталога из конструктора (Catalog.filterPosition: 'side'|'top'):
       // статичные каталог-страницы тем читают window.__MERFY_CATALOG_LAYOUT__ на
@@ -2271,7 +2279,14 @@ async function validateBuildOutput(ctx: BuildContext): Promise<string | null> {
 
   const markers: Array<{ page: string; file: string; marker: string }> = [
     { page: "/cart", file: "cart/index.html", marker: "cart-page-content" },
-    { page: "/catalog", file: "catalog/index.html", marker: "catalog-page" },
+    // 098 live-паритет: после Container-рендера catalog исчезает статический
+    // SSG-маркер 'catalog-page', но корневой <section> Catalog.astro несёт
+    // стабильный атрибут data-catalog-page (рендерится и в Container, и в SSG).
+    {
+      page: "/catalog",
+      file: "catalog/index.html",
+      marker: "data-catalog-page",
+    },
     { page: "/checkout", file: "checkout/index.html", marker: "<main" },
   ];
 

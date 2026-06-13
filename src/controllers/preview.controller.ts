@@ -222,14 +222,27 @@ export class PreviewController {
     const isComplexRoute = isV2ComplexRoute(route);
     if (!isComplexRoute && (await this.preview.hasV2Sections(loaded.themeId))) {
       try {
+        // Маршруты коллекций (`collections/preview`, `collections/<slug>`) рисуют
+        // блоки страницы page-collection (а не отдельной page-<slug>): извлекаем
+        // блоки по этому ключу, а slug кладём в collectionContext, чтобы
+        // плейсхолдеры {{COLLECTION_*}} в строковых props подставились (зеркало
+        // generatePuckCollectionsSlugPage на live).
+        const collectionSlug = this.collectionSlugFromRoute(route);
+        const pageKeyForBlocks =
+          collectionSlug !== null ? 'page-collection' : page;
+        const collectionContext =
+          collectionSlug !== null
+            ? this.collectionContextFromRevision(loaded.data, collectionSlug)
+            : undefined;
         const v2Blocks = await extractPageBlocks(
           loaded.data,
-          page,
+          pageKeyForBlocks,
           loaded.publicUrl,
           loaded.themeId,
           siteId,
           productIdOverride,
           this.logger,
+          collectionContext,
         );
         if (v2Blocks && v2Blocks.length > 0) {
           const pageTitle =
@@ -242,7 +255,16 @@ export class PreviewController {
             themeSettings: (loaded.data as Record<string, unknown> | null)?.themeSettings,
           });
           if (v2Html !== null) {
-            const finalHtml = this.injectPreviewGlobals(v2Html, siteId);
+            // Паритет с блоб-путём: секционный Catalog тоже должен получить
+            // __MERFY_CATALOG_LAYOUT__ (filterPosition) и __MERFY_DEFAULT_PRODUCT_ID__,
+            // иначе превью игнорит выбранную раскладку каталога / товар.
+            const finalHtml = this.injectPreviewGlobals(
+              v2Html,
+              siteId,
+              productIdOverride ?? this.defaultProductIdFromRevision(loaded.data),
+              this.catalogLayoutFromRevision(loaded.data),
+              this.productBlockIdFromRevision(loaded.data),
+            );
             this.logger.log(
               `[preview] v2-sections page site=${siteId} route=${route || '(root)'} blocks=${v2Blocks.length}`,
             );
@@ -288,6 +310,7 @@ export class PreviewController {
         // ?productId= (клик по карточке в превью) приоритетнее настройки блока.
         productIdOverride ?? this.defaultProductIdFromRevision(loaded.data),
         this.catalogLayoutFromRevision(loaded.data),
+        this.productBlockIdFromRevision(loaded.data),
       );
       html = this.injectTokensIntoBlobPage(
         html, siteId, PreviewService.bareThemeKey(loaded.themeId!),
@@ -524,6 +547,7 @@ export class PreviewController {
     siteId: string,
     defaultProductId?: string | null,
     catalogLayout?: string | null,
+    productBlockId?: string | null,
   ): string {
     let html = htmlIn.replace(/const shopId = "";/g, `const shopId = "${siteId}";`);
     const dadataToken = process.env.DADATA_API_KEY;
@@ -545,6 +569,16 @@ export class PreviewController {
         (m) => `${m}<script>window.__MERFY_DEFAULT_PRODUCT_ID__ = ${JSON.stringify(defaultProductId)};</script>`,
       );
     }
+    // Селектируемость блока «Товар» в конструкторе: реальный динамический id
+    // блока Product (`Product-<ts>` из page-product ревизии) — тема штампует его
+    // на data-puck-component-id/data-puck-subsection-parent. Без него подсекции
+    // PDP не выделяются (handler матчит parentId с content[].props.id).
+    if (productBlockId) {
+      html = html.replace(
+        /<head(\s[^>]*)?>/i,
+        (m) => `${m}<script>window.__MERFY_PRODUCT_BLOCK_ID__ = ${JSON.stringify(productBlockId)};</script>`,
+      );
+    }
     // Раскладка каталога (Catalog.filterPosition: 'side'|'top') — статичные
     // каталог-страницы тем переключают вид по этому глобалу. Не задан —
     // тема показывает родной вид.
@@ -555,6 +589,59 @@ export class PreviewController {
       );
     }
     return html;
+  }
+
+  /**
+   * Slug коллекции из маршрута превью. Маршруты коллекций начинаются с
+   * `collections/` (`collections/preview` — системный пресет, `collections/<slug>`
+   * — конкретная коллекция). Возвращает последний сегмент как slug
+   * (`preview` для пресета) либо null, если маршрут не коллекционный.
+   */
+  private collectionSlugFromRoute(route: string): string | null {
+    const trimmed = route.replace(/^\/+|\/+$/g, '');
+    const segments = trimmed.split('/');
+    if (segments[0] !== 'collections') return null;
+    const slug = segments[segments.length - 1];
+    return slug && slug !== 'collections' ? slug : 'preview';
+  }
+
+  /**
+   * Контекст коллекции для подстановки плейсхолдеров {{COLLECTION_NAME}} /
+   * {{COLLECTION_DESCRIPTION}} / {{COLLECTION_IMAGE}} в строковых props
+   * блоков page-collection. Ищет коллекцию по slug/handle/id в
+   * storefrontData.collections ревизии (тот же источник, что live —
+   * collectionsData в generatePuckCollectionsSlugPage). Если данных нет
+   * (пресет `preview` или неизвестный slug) — undefined-поля, чтобы
+   * extractPageBlocks оставил разумные плейсхолдеры и не сломал рендер.
+   */
+  private collectionContextFromRevision(
+    data: unknown,
+    slug: string,
+  ): { name?: string; description?: string; image?: string } {
+    const storefront = (data as { storefrontData?: { collections?: unknown } } | null)
+      ?.storefrontData;
+    const cols = Array.isArray(storefront?.collections)
+      ? (storefront!.collections as Array<Record<string, unknown>>)
+      : [];
+    const match = cols.find((c) => {
+      const keys = [c?.slug, c?.handle, c?.id]
+        .filter((v) => typeof v === 'string')
+        .map((v) => String(v));
+      return keys.includes(slug);
+    });
+    if (!match) return {};
+    const name =
+      typeof match.title === 'string'
+        ? match.title
+        : typeof match.name === 'string'
+          ? match.name
+          : undefined;
+    return {
+      name,
+      description:
+        typeof match.description === 'string' ? match.description : undefined,
+      image: typeof match.image === 'string' ? match.image : undefined,
+    };
   }
 
   /** filterPosition из настроек Catalog-блока page-catalog ревизии. */
@@ -575,6 +662,22 @@ export class PreviewController {
     const productBlock = content.find((b) => b?.type === 'Product');
     const pid = productBlock?.props?.productId;
     return typeof pid === 'string' && pid.trim() ? pid.trim() : null;
+  }
+
+  /**
+   * Puck-id блока Product (page-product ревизии) — динамический `Product-<ts>`,
+   * посеянный migrateProductPage (revision-migrations) при чтении ревизии. Тема
+   * штампует его в data-puck-component-id/data-puck-subsection-parent для
+   * селектируемости PDP в конструкторе. Сиблинг defaultProductIdFromRevision,
+   * но извлекает .props.id (не .props.productId).
+   */
+  private productBlockIdFromRevision(data: unknown): string | null {
+    const pages = (data as { pagesData?: Record<string, { content?: Array<{ type?: string; props?: { id?: unknown } }> }> } | null)?.pagesData;
+    const content = pages?.['page-product']?.content;
+    if (!Array.isArray(content)) return null;
+    const productBlock = content.find((b) => b?.type === 'Product');
+    const id = productBlock?.props?.id;
+    return typeof id === 'string' && id.trim() ? id.trim() : null;
   }
 
   /** Фаза 3: сложные страницы v2 (блоб) получают tokens.css статикой +

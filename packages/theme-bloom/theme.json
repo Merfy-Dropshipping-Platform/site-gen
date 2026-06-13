@@ -248,5 +248,30 @@
       ],
       "source": "google"
     }
+  ],
+  "manifestVersion": "2.0",
+  "pages": [
+    {
+      "id": "home",
+      "name": "Главная страница",
+      "slug": "/",
+      "role": "system",
+      "contentFile": "pages/home.json",
+      "isHome": true
+    },
+    {
+      "id": "page-catalog",
+      "name": "Коллекции",
+      "slug": "/catalog",
+      "role": "system",
+      "contentFile": "pages/catalog.json"
+    },
+    {
+      "id": "page-collection",
+      "name": "Страница коллекции",
+      "slug": "/collections/preview",
+      "role": "system",
+      "contentFile": "pages/collection.json"
+    }
   ]
 }

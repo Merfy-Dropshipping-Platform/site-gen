@@ -1,46 +1,16 @@
 ---
-/**
- * На статик-хостинге query string неизвестен при сборке: редирект с `/catalog?…` делаем в браузере,
- * чтобы сохранялись `?category=` / `?collection=` и параметры поиска (`q` и т.д.).
- */
+import Layout from "../../layouts/Layout.astro";
+import VanillaCatalogSection from "../../components/catalog/VanillaCatalogSection.astro";
+
+// Реальная страница /catalog (раньше был JS-редирект на /catalog/textile).
+// Нужна как настоящий шелл (Layout → Header+Footer → есть </footer>), чтобы
+// конструктор нарезал её на выделяемые Puck-секции, а live-сборка пересаживала
+// сюда блоки ревизии (catalog out of V2_COMPLEX_ROUTE_PREFIXES, page-catalog в
+// CONTENT_PAGES). Category-подстраницы /catalog/textile и /catalog/decor остаются.
+// Без section VanillaCatalogSection показывает весь демо-каталог; на live сетку
+// перерисовывает гидрация реальных товаров.
 ---
 
-<!doctype html>
-<html lang="ru">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<meta name="robots" content="noindex" />
-		<title>Перенаправление в каталог…</title>
-		<script is:inline>
-			(function () {
-				var path = location.pathname.replace(/\/+$/, "");
-				if (path !== "/catalog") return;
-				var params = new URLSearchParams(location.search);
-				var collection = params.get("collection");
-				var dest = "/catalog/textile";
-				if (params.get("category") === "decor" || collection === "Декор") {
-					dest = "/catalog/decor";
-				}
-				if (params.get("category") === "textile" || collection === "Текстиль") {
-					dest = "/catalog/textile";
-				}
-				params.delete("category");
-				// Литералы «Декор»/«Текстиль» — demo-категории, они уже выбрали страницу выше.
-				// Реальный slug/id коллекции пробрасываем дальше — его читает фильтр «Коллекции».
-				if (collection === "Декор" || collection === "Текстиль") {
-					params.delete("collection");
-				}
-				var rest = params.toString();
-				if (rest) dest += "?" + rest;
-				location.replace(dest + location.hash);
-			})();
-		</script>
-		<noscript>
-			<meta http-equiv="refresh" content="0;url=/catalog/textile" />
-		</noscript>
-	</head>
-	<body>
-		<noscript><a href="/catalog/textile">Перейти в каталог «Текстиль»</a></noscript>
-	</body>
-</html>
+<Layout title="Каталог" description="Каталог Vanilla — все товары магазина">
+	<VanillaCatalogSection categoryTitle="Каталог" />
+</Layout>

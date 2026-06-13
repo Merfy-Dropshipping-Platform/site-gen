@@ -23,7 +23,7 @@ export const CatalogSchema = z.object({
   ]).optional(),
   /** 'muted' = текущий gray (default), 'accent' = оранжевый flux. */
   categorySubtitleColor: z.enum(['muted', 'accent']).optional(),
-  // Subtitle visibility (Figma 1:21287 убрал поле — теперь hidden).
+  // Subtitle visibility (Figma 1:34015 — toggle «Подзаголовок» под заголовком).
   subtitle: z.union([z.boolean(), z.enum(['true', 'false'])]).optional(),
 
   // 098 Figma 1:21287 — Рассылка toggle (inline newsletter section внутри
@@ -83,35 +83,45 @@ export type CatalogProps = z.infer<typeof CatalogSchema>;
 export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
   label: 'Каталог товаров',
   category: 'products',
-  // Figma 1:34017 sidebar "Группа товаров": Подзаголовок / Карточки / Колонки /
-  // [Карточка товара] Стиль кнопки / Вид изображения / Следующее фото при
-  // наведении / Быстрое добавление / [Фильтрация и сортировка] Фильтры /
-  // Вид фильтра / Сортировка / Цветовая схема / Цветовая схема контейнера /
-  // Отступы. Schema-driven, без хардкода в CustomFieldsPanel.
+  // Figma 1:34015 sidebar "Группа товаров": Выбор коллекции / Подзаголовок /
+  // Карточки / Колонки / [Содержание] Заголовок + Текст / [Карточка товара]
+  // Стиль кнопки / Вид изображения / Следующее фото при наведении / Быстрое
+  // добавление / [Фильтрация и сортировка] Фильтры / Вид фильтра / Сортировка /
+  // Цветовая схема / Цветовая схема контейнера / Отступы. Schema-driven, без
+  // хардкода в CustomFieldsPanel.
   fields: {
-    // 098 hidden by design — Figma 1:21287 sidebar не имеет fields для
-    // редактирования title/subtitle/subtitleColor. Эти props заполняются
-    // через theme.json blockDefaults (per-theme defaults — flux:
-    // "СМАРТФОНЫ"/"M Phone"/accent). Existing revisions с этими props
-    // продолжают рендериться нормально через Astro.props.
+    // hidden by design — categorySubtitleColor заполняется через theme.json
+    // blockDefaults (flux: accent); gridAspect/cardCaptionStyle — legacy
+    // (084 vanilla pilot, Figma 1:34015 их не показывает). Existing revisions
+    // с этими props продолжают рендериться нормально через Astro.props.
     categorySubtitleColor: { type: 'hidden', label: '' },
-    subtitle: { type: 'hidden', label: '' }, // hidden в новом дизайне
-    containerColorScheme: { type: 'hidden', label: '' }, // только одна Цветовая схема в Figma 1:21287
     gridAspect: { type: 'hidden', label: '' },
     cardCaptionStyle: { type: 'hidden', label: '' },
 
     // ──────────────────────────────────────────────────────────────────
-    // Figma 1:21287 order — visible fields:
+    // Figma 1:34015 order — visible fields:
     // 1. Выбор коллекции (collectionPicker)
-    // 2. Карточки (slider)
-    // 3. Колонки (slider)
-    // 4. [Рассылка] toggle
-    // 5. [Карточка товара] productCard sub-fields
-    // 6. [Фильтрация и сортировка] showFilter/filterPosition/showSort
-    // 7. Цветовая схема
-    // 8. [Отступы] padding
+    // 2. Подзаголовок (toggle)
+    // 3. Карточки (slider)
+    // 4. Колонки (slider)
+    // 5. [Содержание] categoryTitle / categorySubtitle (aiText — 098)
+    // 6. [Карточка товара] productCard sub-fields
+    // 7. [Фильтрация и сортировка] showFilter/filterPosition/showSort
+    // 8. Цветовая схема
+    // 9. Цветовая схема контейнера
+    // 10. [Отступы] padding
     // ──────────────────────────────────────────────────────────────────
     collectionSlug: { type: 'collectionPicker', label: 'Выбор коллекции' } as any,
+    // Figma 1:34015 — «Подзаголовок» идёт сразу под заголовком в верхней части
+    // сайдбара. Управляет видимостью categorySubtitle (Catalog.astro:74).
+    subtitle: {
+      type: 'toggle',
+      label: 'Подзаголовок',
+      options: [
+        { label: 'Показать', value: 'true' },
+        { label: 'Скрыть', value: 'false' },
+      ],
+    },
     cards: { type: 'slider', label: 'Карточки', min: 2, max: 24, step: 1 },
     columns: { type: 'slider', label: 'Колонки', min: 1, max: 6, step: 1 },
 
@@ -143,7 +153,7 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
           label: 'Стиль кнопки',
           options: [
             { label: 'Основная', value: 'primary' },
-            { label: 'Дополнительная', value: 'secondary' },
+            { label: 'Второстепенная', value: 'secondary' },
             { label: 'Ссылка', value: 'link' },
           ],
         },
@@ -151,6 +161,7 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
           type: 'select',
           label: 'Вид изображения',
           options: [
+            { label: 'Авто', value: 'auto' },
             { label: 'Портрет', value: 'portrait' },
             { label: 'Квадрат', value: 'square' },
             { label: 'Широкий', value: 'wide' },
@@ -215,6 +226,10 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
     },
 
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    // Figma 1:34015 — отдельная схема для внутреннего контейнера
+    // (max-width:1320px wrapper, Catalog.astro:147-150,210). 097 pattern:
+    // НЕ задаём universal default — при unset рендер фоллбечит на colorScheme.
+    containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
     padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {

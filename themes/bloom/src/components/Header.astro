@@ -110,10 +110,12 @@ const categorySearchAction =
 	DEFAULT_CATEGORY_HREF;
 const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathname === link.href);
 
-// Канон menuType: 'dropdown' (по умолчанию) / 'mega-menu' (Расширенное).
+// Канон menuType: 'dropdown' (по умолчанию) / 'mega-menu' (Расширенное) / 'sidebar' (Боковое).
 // Для mega-menu добавляем uppercase + tracking к десктопным ссылкам нав-меню.
+// Для sidebar — десктопный inline-nav скрыт, показывается hamburger → правая шторка.
 const menuType = typeof p.menuType === "string" ? p.menuType : "dropdown";
 const isMegaMenu = menuType === "mega-menu";
+const isSidebar = menuType === "sidebar";
 const megaLinkCls = isMegaMenu ? "uppercase tracking-[0.06em] font-medium" : "";
 
 // Канон menuColorScheme: опциональная отдельная цветовая схема для десктопного <nav>.
@@ -146,6 +148,7 @@ const menuSchemeClass = menuColorScheme ? `color-scheme-${menuColorScheme.replac
 			<button
 				type="button"
 				id="bloom-burger-btn"
+				data-burger-toggle
 				class="flex size-8 items-center justify-center transition-opacity hover:opacity-70"
 				aria-label="Меню"
 				aria-expanded="false"
@@ -258,10 +261,27 @@ const menuSchemeClass = menuColorScheme ? `color-scheme-${menuColorScheme.replac
 									>
 										<NtIcon name="user" sizeClass="size-5" />
 									</a>
+									{isSidebar && (
+										<button
+											type="button"
+											data-burger-toggle
+											class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
+											aria-label="Меню"
+											aria-expanded="false"
+											aria-controls="bloom-burger"
+										>
+											<span class="burger-icon" data-icon="open">
+												<NtIcon name="menu-burger" sizeClass="size-5" />
+											</span>
+											<span class="burger-icon hidden" data-icon="close">
+												<NtIcon name="menu-close" sizeClass="size-5" />
+											</span>
+										</button>
+									)}
 								</div>
 							</div>
 							<nav
-								class:list={["flex flex-wrap items-center justify-start gap-8 lg:gap-10", menuSchemeClass]}
+								class:list={["flex flex-wrap items-center justify-start gap-8 lg:gap-10", menuSchemeClass, isSidebar && "md:!hidden"]}
 								aria-label="Основная навигация"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="997"
@@ -340,11 +360,28 @@ const menuSchemeClass = menuColorScheme ? `color-scheme-${menuColorScheme.replac
 									>
 										<NtIcon name="user" sizeClass="size-5" />
 									</a>
+									{isSidebar && (
+										<button
+											type="button"
+											data-burger-toggle
+											class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
+											aria-label="Меню"
+											aria-expanded="false"
+											aria-controls="bloom-burger"
+										>
+											<span class="burger-icon" data-icon="open">
+												<NtIcon name="menu-burger" sizeClass="size-5" />
+											</span>
+											<span class="burger-icon hidden" data-icon="close">
+												<NtIcon name="menu-close" sizeClass="size-5" />
+											</span>
+										</button>
+									)}
 								</div>
 							</div>
 
 							<nav
-								class:list={["flex flex-wrap items-center justify-center gap-8 lg:gap-10", menuSchemeClass]}
+								class:list={["flex flex-wrap items-center justify-center gap-8 lg:gap-10", menuSchemeClass, isSidebar && "md:!hidden"]}
 								aria-label="Основная навигация"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="997"
@@ -379,7 +416,7 @@ const menuSchemeClass = menuColorScheme ? `color-scheme-${menuColorScheme.replac
 						/* center-absolute: nav LEFT, logo ABSOLUTE-center, icons RIGHT */
 						<>
 							<nav
-								class:list={["flex flex-wrap items-center justify-start gap-8 lg:gap-10", menuSchemeClass]}
+								class:list={["flex flex-wrap items-center justify-start gap-8 lg:gap-10", menuSchemeClass, isSidebar && "md:!hidden"]}
 								aria-label="Основная навигация"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="997"
@@ -450,6 +487,23 @@ const menuSchemeClass = menuColorScheme ? `color-scheme-${menuColorScheme.replac
 								>
 									<NtIcon name="user" sizeClass="size-5" />
 								</a>
+								{isSidebar && (
+									<button
+										type="button"
+										data-burger-toggle
+										class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
+										aria-label="Меню"
+										aria-expanded="false"
+										aria-controls="bloom-burger"
+									>
+										<span class="burger-icon" data-icon="open">
+											<NtIcon name="menu-burger" sizeClass="size-5" />
+										</span>
+										<span class="burger-icon hidden" data-icon="close">
+											<NtIcon name="menu-close" sizeClass="size-5" />
+										</span>
+									</button>
+								)}
 							</div>
 						</>
 					) : (
@@ -472,7 +526,7 @@ const menuSchemeClass = menuColorScheme ? `color-scheme-${menuColorScheme.replac
 							</a>
 
 							<nav
-								class:list={["mx-auto flex flex-wrap items-center justify-center gap-8 lg:gap-10", menuSchemeClass]}
+								class:list={["mx-auto flex flex-wrap items-center justify-center gap-8 lg:gap-10", menuSchemeClass, isSidebar && "md:!hidden"]}
 								aria-label="Основная навигация"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="997"
@@ -527,6 +581,23 @@ const menuSchemeClass = menuColorScheme ? `color-scheme-${menuColorScheme.replac
 								>
 									<NtIcon name="user" sizeClass="size-5" />
 								</a>
+								{isSidebar && (
+									<button
+										type="button"
+										data-burger-toggle
+										class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
+										aria-label="Меню"
+										aria-expanded="false"
+										aria-controls="bloom-burger"
+									>
+										<span class="burger-icon" data-icon="open">
+											<NtIcon name="menu-burger" sizeClass="size-5" />
+										</span>
+										<span class="burger-icon hidden" data-icon="close">
+											<NtIcon name="menu-close" sizeClass="size-5" />
+										</span>
+									</button>
+								)}
 							</div>
 						</>
 					)}
@@ -563,31 +634,71 @@ const menuSchemeClass = menuColorScheme ? `color-scheme-${menuColorScheme.replac
 
 	<div
 		id="bloom-burger"
-		class="fixed inset-x-0 bottom-0 z-[55] hidden w-full overflow-y-auto bg-white px-4 pt-4 pb-8 md:hidden"
+		class:list={[
+			"fixed z-[55] hidden overflow-y-auto bg-white",
+			isSidebar
+				? "inset-y-0 right-0 bottom-0 w-[360px] max-w-[90vw] px-6 pt-6 pb-8"
+				: "inset-x-0 bottom-0 w-full px-4 pt-4 pb-8 md:hidden",
+		]}
 		role="dialog"
 		aria-modal="true"
 		aria-label="Меню"
 	>
-		<div class="flex items-center gap-2">
-			<form class="flex h-10 min-h-10 flex-1 items-center justify-between rounded-[4px] border border-[#999999] bg-white pl-3 pr-2" role="search" action={categorySearchAction} method="get">
-				<input
-					type="search"
-					name="q"
-					placeholder="Поиск"
-					class="min-w-0 flex-1 bg-transparent font-inter text-[12px] font-normal leading-normal text-[#000000] placeholder:text-[#999999] outline-none"
-				/>
-				<button type="submit" class="flex h-5 w-5 shrink-0 items-center justify-center" aria-label="Найти">
-					<NtIcon name="search-sm" sizeClass="size-5" />
+		{isSidebar ? (
+			/* Sidebar drawer: logo + cart at top */
+			<div class="flex items-center justify-between">
+				<a href="/" class="flex items-center hover:opacity-90" aria-label={siteTitle}>
+					{
+						logo ? (
+							<img src={logo} alt={siteTitle} class={logoImgCls} />
+						) : (
+							<img
+								src="/icons/Bloom.svg"
+								alt={siteTitle}
+								width="65"
+								height="19"
+								class="h-[19px] w-auto"
+							/>
+						)
+					}
+				</a>
+				<button
+					type="button"
+					data-cart-open
+					class="relative flex size-8 shrink-0 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
+					aria-label="Корзина"
+				>
+					<NtIcon name="cart" sizeClass="size-5" />
+					<span
+						data-cart-count
+						data-empty="true"
+						class="absolute -right-1 -top-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#e38e9f] px-1 font-inter text-[10px] font-normal leading-none text-white data-[empty=true]:hidden"
+					>0</span>
 				</button>
-			</form>
-			<a
-				href="/auth/sign-in"
-				class="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#e38e9f]"
-				aria-label="Профиль"
-			>
-				<NtIcon name="user" sizeClass="size-5" />
-			</a>
-		</div>
+			</div>
+		) : (
+			/* Mobile drawer: search + profile */
+			<div class="flex items-center gap-2">
+				<form class="flex h-10 min-h-10 flex-1 items-center justify-between rounded-[4px] border border-[#999999] bg-white pl-3 pr-2" role="search" action={categorySearchAction} method="get">
+					<input
+						type="search"
+						name="q"
+						placeholder="Поиск"
+						class="min-w-0 flex-1 bg-transparent font-inter text-[12px] font-normal leading-normal text-[#000000] placeholder:text-[#999999] outline-none"
+					/>
+					<button type="submit" class="flex h-5 w-5 shrink-0 items-center justify-center" aria-label="Найти">
+						<NtIcon name="search-sm" sizeClass="size-5" />
+					</button>
+				</form>
+				<a
+					href="/auth/sign-in"
+					class="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#e38e9f]"
+					aria-label="Профиль"
+				>
+					<NtIcon name="user" sizeClass="size-5" />
+				</a>
+			</div>
+		)}
 
 		<nav class="mt-10 flex flex-col gap-5" aria-label="Основное меню">
 			{nav.map((link) => {
@@ -660,37 +771,42 @@ const menuSchemeClass = menuColorScheme ? `color-scheme-${menuColorScheme.replac
 		panel.style.maxHeight = `${panel.scrollHeight}px`;
 	};
 
-	const burgerBtn = document.getElementById("bloom-burger-btn");
-	const burger = document.getElementById("bloom-burger");
+	const isSidebarDrawer = () => {
+		const burger = document.getElementById("bloom-burger");
+		// Sidebar right-panel has inset-y-0 — detect via right-side positioning
+		return burger ? burger.classList.contains("inset-y-0") : false;
+	};
 
 	const syncBurgerButtonIcons = (open: boolean) => {
-		if (!burgerBtn) return;
-		burgerBtn.querySelectorAll<HTMLElement>(".burger-icon").forEach((el) => {
-			const key = el.dataset.icon;
-			if (key === "open") el.classList.toggle("hidden", open);
-			else el.classList.toggle("hidden", !open);
+		// Update ALL burger toggle buttons (mobile #bloom-burger-btn + desktop [data-burger-toggle])
+		document.querySelectorAll<HTMLElement>("[data-burger-toggle]").forEach((burgerBtn) => {
+			burgerBtn.setAttribute("aria-expanded", String(open));
+			burgerBtn.querySelectorAll<HTMLElement>(".burger-icon").forEach((el) => {
+				const key = el.dataset.icon;
+				if (key === "open") el.classList.toggle("hidden", open);
+				else el.classList.toggle("hidden", !open);
+			});
 		});
 	};
 
 	const setBurger = (open: boolean) => {
-		if (!burger || !burgerBtn) return;
+		const burger = document.getElementById("bloom-burger");
+		if (!burger) return;
 		if (open) setSearchOpen(false);
 		burger.classList.toggle("hidden", !open);
-		burgerBtn.setAttribute("aria-expanded", String(open));
 		syncBurgerButtonIcons(open);
 		document.body.style.overflow = open ? "hidden" : "";
-		if (open) positionBurger();
+		// positionBurger only for mobile bottom-sheet (not right-side panel)
+		if (open && !isSidebarDrawer()) positionBurger();
 	};
 
 	const syncHeaderChromeAfterNavigation = () => {
 		document.body.style.overflow = "";
 		setSearchOpen(false);
 		const burgerEl = document.getElementById("bloom-burger");
-		const btn = document.getElementById("bloom-burger-btn");
 		if (burgerEl) burgerEl.classList.add("hidden");
-		if (btn) btn.setAttribute("aria-expanded", "false");
 		syncBurgerButtonIcons(false);
-		positionBurger();
+		if (!isSidebarDrawer()) positionBurger();
 	};
 
 	let headerDelegatesBound = false;
@@ -703,7 +819,7 @@ const menuSchemeClass = menuColorScheme ? `color-scheme-${menuColorScheme.replac
 			const el = raw instanceof Element ? raw : null;
 			if (!el) return;
 
-			if (el.closest("#bloom-burger-btn")) {
+			if (el.closest("[data-burger-toggle]")) {
 				const burgerEl = document.getElementById("bloom-burger");
 				if (!burgerEl) return;
 				event.preventDefault();
@@ -715,8 +831,11 @@ const menuSchemeClass = menuColorScheme ? `color-scheme-${menuColorScheme.replac
 				event.preventDefault();
 				event.stopPropagation();
 				const willOpen = !isSearchPanelOpen();
-				if (willOpen && burger && !burger.classList.contains("hidden")) {
-					setBurger(false);
+				if (willOpen) {
+					const burgerEl = document.getElementById("bloom-burger");
+					if (burgerEl && !burgerEl.classList.contains("hidden")) {
+						setBurger(false);
+					}
 				}
 				setSearchOpen(willOpen);
 				return;

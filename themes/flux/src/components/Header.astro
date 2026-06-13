@@ -94,10 +94,12 @@ const mobileLogoCls = logo
 	? "flex items-center hover:opacity-80"
 	: "font-comfortaa text-[18px] font-normal uppercase text-[rgb(var(--color-heading,0_0_0))] hover:opacity-80";
 
-// Канон menuType: 'dropdown' (по умолчанию) / 'mega-menu' (Расширенное).
+// Канон menuType: 'dropdown' (по умолчанию) / 'mega-menu' (Расширенное) / 'sidebar' (Боковое).
 // Для mega-menu добавляем uppercase + tracking к десктопным ссылкам нав-меню.
+// Для sidebar — десктопный inline-nav скрыт, показывается hamburger → правая шторка.
 const menuType = typeof p.menuType === "string" ? p.menuType : "dropdown";
 const isMegaMenu = menuType === "mega-menu";
+const isSidebar = menuType === "sidebar";
 const megaLinkCls = isMegaMenu ? "uppercase tracking-[0.06em] font-medium" : "";
 
 // Канон menuColorScheme: опциональная отдельная цветовая схема для десктопного <nav>.
@@ -137,6 +139,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 		<button
 			type="button"
 			id="flux-burger-btn"
+			data-burger-toggle
 			class="flex size-8 items-center justify-center transition-opacity hover:opacity-70"
 			aria-label="Меню"
 			aria-expanded="false"
@@ -222,10 +225,27 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 								>
 									<NtIcon name="user" sizeClass="size-6" />
 								</a>
+								{isSidebar && (
+									<button
+										type="button"
+										data-burger-toggle
+										class="flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
+										aria-label="Меню"
+										aria-expanded="false"
+										aria-controls="flux-burger"
+									>
+										<span class="burger-icon" data-icon="open">
+											<NtIcon name="menu-burger" sizeClass="size-6" />
+										</span>
+										<span class="burger-icon hidden" data-icon="close">
+											<NtIcon name="menu-close" sizeClass="size-6" />
+										</span>
+									</button>
+								)}
 							</div>
 						</div>
 						<nav
-							class:list={["mt-3 flex w-full items-center justify-start gap-8 lg:gap-10", menuSchemeClass]}
+							class:list={["mt-3 flex w-full items-center justify-start gap-8 lg:gap-10", menuSchemeClass, isSidebar && "md:!hidden"]}
 							aria-label="Основная навигация"
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="997"
@@ -289,10 +309,27 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 								>
 									<NtIcon name="user" sizeClass="size-6" />
 								</a>
+								{isSidebar && (
+									<button
+										type="button"
+										data-burger-toggle
+										class="flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
+										aria-label="Меню"
+										aria-expanded="false"
+										aria-controls="flux-burger"
+									>
+										<span class="burger-icon" data-icon="open">
+											<NtIcon name="menu-burger" sizeClass="size-6" />
+										</span>
+										<span class="burger-icon hidden" data-icon="close">
+											<NtIcon name="menu-close" sizeClass="size-6" />
+										</span>
+									</button>
+								)}
 							</div>
 						</div>
 						<nav
-							class:list={["mt-3 flex w-full items-center justify-center gap-8 lg:gap-10", menuSchemeClass]}
+							class:list={["mt-3 flex w-full items-center justify-center gap-8 lg:gap-10", menuSchemeClass, isSidebar && "md:!hidden"]}
 							aria-label="Основная навигация"
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="997"
@@ -326,7 +363,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 				</a>
 
 				<nav
-					class:list={["flex items-center gap-8 lg:gap-10", menuSchemeClass]}
+					class:list={["flex items-center gap-8 lg:gap-10", menuSchemeClass, isSidebar && "md:!hidden"]}
 					aria-label="Основная навигация"
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="997"
@@ -379,6 +416,23 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 					>
 						<NtIcon name="user" sizeClass="size-6" />
 					</a>
+					{isSidebar && (
+						<button
+							type="button"
+							data-burger-toggle
+							class="flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
+							aria-label="Меню"
+							aria-expanded="false"
+							aria-controls="flux-burger"
+						>
+							<span class="burger-icon" data-icon="open">
+								<NtIcon name="menu-burger" sizeClass="size-6" />
+							</span>
+							<span class="burger-icon hidden" data-icon="close">
+								<NtIcon name="menu-close" sizeClass="size-6" />
+							</span>
+						</button>
+					)}
 				</div>
 			</div>
 		)}
@@ -408,34 +462,62 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 	</div>
 	</header>
 
-	<!-- Мобильный бургер -->
+	<!-- Мобильный бургер / Desktop sidebar drawer -->
 	<div
 		id="flux-burger"
-		class="fixed inset-x-0 top-[56px] bottom-0 z-[55] hidden w-full overflow-y-auto bg-white px-4 pt-4 pb-8 md:hidden"
+		class:list={[
+			"fixed z-[55] hidden overflow-y-auto bg-white",
+			isSidebar
+				? "inset-y-0 right-0 bottom-0 w-[360px] max-w-[90vw] px-6 pt-6 pb-8"
+				: "inset-x-0 top-[56px] bottom-0 w-full px-4 pt-4 pb-8 md:hidden",
+		]}
 		role="dialog"
 		aria-modal="true"
 		aria-label="Меню"
 	>
-		<div class="flex items-center gap-2">
-			<form class="flex h-10 min-h-10 flex-1 items-center justify-between rounded-[4px] border border-[#999999] bg-white pl-3 pr-2" role="search" action="/catalog" method="get">
-				<input
-					type="search"
-					name="q"
-					placeholder="Поиск"
-					class="min-w-0 flex-1 bg-transparent font-manrope text-[12px] font-normal leading-normal text-[#000000] placeholder:text-[#999999] outline-none"
-				/>
-				<button type="submit" class="flex h-6 w-6 shrink-0 items-center justify-center" aria-label="Найти">
-					<NtIcon name="search-sm" sizeClass="size-6" />
+		{isSidebar ? (
+			/* Sidebar drawer: logo + cart at top */
+			<div class="flex items-center justify-between">
+				<a href="/" class={mobileLogoCls} aria-label={siteTitle}>
+					{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
+				</a>
+				<button
+					type="button"
+					data-cart-open
+					class="relative flex size-10 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
+					aria-label="Корзина"
+				>
+					<NtIcon name="cart" sizeClass="size-6" />
+					<span
+						data-cart-count
+						data-empty="true"
+						class="absolute right-0 top-0 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-manrope text-[10px] font-normal leading-none text-[#000000] data-[empty=true]:hidden"
+					>0</span>
 				</button>
-			</form>
-			<a
-				href="/auth/sign-in"
-				class="flex size-10 shrink-0 items-center justify-center rounded-[4px] bg-[#FA5109]"
-				aria-label="Профиль"
-			>
-				<NtIcon name="user" sizeClass="size-6" />
-			</a>
-		</div>
+			</div>
+		) : (
+			/* Mobile drawer: search + profile */
+			<div class="flex items-center gap-2">
+				<form class="flex h-10 min-h-10 flex-1 items-center justify-between rounded-[4px] border border-[#999999] bg-white pl-3 pr-2" role="search" action="/catalog" method="get">
+					<input
+						type="search"
+						name="q"
+						placeholder="Поиск"
+						class="min-w-0 flex-1 bg-transparent font-manrope text-[12px] font-normal leading-normal text-[#000000] placeholder:text-[#999999] outline-none"
+					/>
+					<button type="submit" class="flex h-6 w-6 shrink-0 items-center justify-center" aria-label="Найти">
+						<NtIcon name="search-sm" sizeClass="size-6" />
+					</button>
+				</form>
+				<a
+					href="/auth/sign-in"
+					class="flex size-10 shrink-0 items-center justify-center rounded-[4px] bg-[#FA5109]"
+					aria-label="Профиль"
+				>
+					<NtIcon name="user" sizeClass="size-6" />
+				</a>
+			</div>
+		)}
 
 		<nav class="mt-6 flex flex-col gap-4" aria-label="Основное меню">
 			{nav.map((link) => {
@@ -464,46 +546,81 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 </div>
 
 <script>
-	const burgerBtn = document.getElementById("flux-burger-btn");
-	const burger = document.getElementById("flux-burger");
+	const isSidebarDrawer = () => {
+		const burger = document.getElementById("flux-burger");
+		return burger ? burger.classList.contains("inset-y-0") : false;
+	};
+
+	const syncBurgerButtonIcons = (open: boolean) => {
+		// Update ALL burger toggle buttons (mobile #flux-burger-btn + desktop [data-burger-toggle])
+		document.querySelectorAll<HTMLElement>("[data-burger-toggle]").forEach((btn) => {
+			btn.setAttribute("aria-expanded", String(open));
+			btn.querySelectorAll<HTMLElement>(".burger-icon").forEach((el) => {
+				const key = el.dataset.icon;
+				if (key === "open") el.classList.toggle("hidden", open);
+				else el.classList.toggle("hidden", !open);
+			});
+		});
+	};
 
 	const setBurger = (open: boolean) => {
-		if (!burger || !burgerBtn) return;
+		const burger = document.getElementById("flux-burger");
+		if (!burger) return;
 		burger.classList.toggle("hidden", !open);
-		burgerBtn.setAttribute("aria-expanded", String(open));
-		burgerBtn.querySelectorAll<HTMLElement>(".burger-icon").forEach((el) => {
-			const key = el.dataset.icon;
-			if (key === "open") el.classList.toggle("hidden", open);
-			else el.classList.toggle("hidden", !open);
-		});
+		syncBurgerButtonIcons(open);
 		document.body.style.overflow = open ? "hidden" : "";
 	};
 
-	burgerBtn?.addEventListener("click", () => {
-		const isHidden = burger?.classList.contains("hidden");
-		setBurger(Boolean(isHidden));
-	});
+	const syncFluxAfterNavigation = () => {
+		document.body.style.overflow = "";
+		const burger = document.getElementById("flux-burger");
+		if (burger) burger.classList.add("hidden");
+		syncBurgerButtonIcons(false);
+	};
 
-	burger?.querySelectorAll("a").forEach((a) => {
-		a.addEventListener("click", () => setBurger(false));
-	});
+	let fluxDelegatesBound = false;
+	const bindFluxDelegatedClicks = () => {
+		if (fluxDelegatesBound) return;
+		fluxDelegatesBound = true;
 
-	document.querySelectorAll<HTMLElement>("[data-action='toggle-search']").forEach((el) => {
-		el.addEventListener("click", (event) => {
-			event.preventDefault();
-			const panel = document.querySelector<HTMLElement>("[data-search-panel]");
-			if (!panel) return;
-			const hidden = panel.hasAttribute("hidden");
-			if (hidden) {
-				panel.removeAttribute("hidden");
-				panel.classList.remove("hidden");
-				panel.classList.add("block");
-				panel.querySelector<HTMLInputElement>("input[type='search']")?.focus();
-			} else {
-				panel.setAttribute("hidden", "");
-				panel.classList.add("hidden");
-				panel.classList.remove("block");
+		document.addEventListener("click", (event: MouseEvent) => {
+			const raw = event.target;
+			const el = raw instanceof Element ? raw : null;
+			if (!el) return;
+
+			if (el.closest("[data-burger-toggle]")) {
+				const burger = document.getElementById("flux-burger");
+				if (!burger) return;
+				event.preventDefault();
+				setBurger(burger.classList.contains("hidden"));
+				return;
+			}
+
+			if (el.closest("[data-action='toggle-search']")) {
+				event.preventDefault();
+				const panel = document.querySelector<HTMLElement>("[data-search-panel]");
+				if (!panel) return;
+				const hidden = panel.hasAttribute("hidden");
+				if (hidden) {
+					panel.removeAttribute("hidden");
+					panel.classList.remove("hidden");
+					panel.classList.add("block");
+					panel.querySelector<HTMLInputElement>("input[type='search']")?.focus();
+				} else {
+					panel.setAttribute("hidden", "");
+					panel.classList.add("hidden");
+					panel.classList.remove("block");
+				}
+				return;
+			}
+
+			if (el.closest("#flux-burger a[href]")) {
+				setBurger(false);
 			}
 		});
-	});
+	};
+
+	bindFluxDelegatedClicks();
+	document.addEventListener("astro:page-load", syncFluxAfterNavigation);
+	syncFluxAfterNavigation();
 </script>

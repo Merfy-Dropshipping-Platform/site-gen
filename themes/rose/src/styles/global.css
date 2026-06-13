@@ -20,12 +20,16 @@
 }
 
 /* Утилиты для шрифтов */
+/* Дефолтные шрифт-роли темы → CSS-var настройки «Типографика» (heading=comfortaa,
+   body=manrope по умолчанию). fallback = литерал верстальщика. Благодаря этому
+   переключатель шрифта в Theme Settings реально меняет текст блоков (раньше
+   утилиты были захардкожены и var игнорился). */
 .font-comfortaa {
-  font-family: "Comfortaa", sans-serif;
+  font-family: var(--font-heading, "Comfortaa", sans-serif);
 }
 
 .font-manrope {
-  font-family: "Manrope", sans-serif;
+  font-family: var(--font-body, "Manrope", sans-serif);
 }
 
 .font-roboto {

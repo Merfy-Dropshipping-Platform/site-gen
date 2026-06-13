@@ -20,7 +20,7 @@
 }
 
 .font-roboto-flex {
-  font-family: "Roboto Flex", "Roboto", system-ui, -apple-system, sans-serif;
+  font-family: var(--font-body, "Roboto Flex", "Roboto", system-ui, -apple-system, sans-serif);
   font-weight: 300;
 }
 

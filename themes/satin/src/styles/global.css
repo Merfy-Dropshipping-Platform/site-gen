@@ -15,7 +15,7 @@
 
 .font-comfortaa,
 .font-manrope {
-  font-family: var(--font-nt-ui);
+  font-family: var(--font-body, var(--font-nt-ui));
 }
 
 .font-inter {
@@ -23,7 +23,7 @@
 }
 
 .font-logo {
-  font-family: var(--font-nt-logo);
+  font-family: var(--font-heading, var(--font-nt-logo));
 }
 
 :root {
@@ -88,7 +88,7 @@ main {
 }
 
 .satin-title {
-  font-family: var(--font-nt-logo);
+  font-family: var(--font-heading, var(--font-nt-logo));
   font-weight: 400;
   text-transform: uppercase;
   line-height: 1.15;

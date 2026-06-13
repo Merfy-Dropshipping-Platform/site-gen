@@ -22,11 +22,11 @@
 }
 
 .font-urbanist {
-  font-family: "Urbanist", var(--font-family-sans);
+  font-family: var(--font-heading, "Urbanist", var(--font-family-sans));
 }
 
 .font-inter {
-  font-family: "Inter", var(--font-family-sans);
+  font-family: var(--font-body, "Inter", var(--font-family-sans));
 }
 
 .font-manrope {

@@ -49,11 +49,11 @@
 }
 
 .font-vanilla-arsenal {
-  font-family: var(--font-vanilla-arsenal);
+  font-family: var(--font-body, var(--font-vanilla-arsenal));
 }
 
 .font-vanilla-bitter {
-  font-family: var(--font-vanilla-bitter);
+  font-family: var(--font-heading, var(--font-vanilla-bitter));
 }
 
 #menu-line-1 {

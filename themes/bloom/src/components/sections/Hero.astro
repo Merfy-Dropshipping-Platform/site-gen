@@ -64,6 +64,14 @@ const secondaryLink =
 // Канон overlay 0-100 (число или строка) → слой затемнения между фото (z-0) и контентом (z-10).
 const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
 
+// Канон container (toggle «Контейнер» панели «Изображение») — подложка-плашка
+// ТОЛЬКО под текстовым блоком, НЕ затемнение всего экрана (overlay отдельно).
+// На светлой плашке текст переключаем на тёмный цвет схемы для читаемости.
+const boxed = String(p.container ?? "false") === "true";
+const boxedCls = boxed
+	? " rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-bg,255_255_255))]/95 p-6 shadow-sm md:p-8 [&_h1]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-text,0_0_0))]"
+	: "";
+
 // Канон position (видимое поле панели) / contentPosition (legacy hidden, те же
 // 9 значений). Позиция управляет РАЗМЕЩЕНИЕМ контент-блока по сетке 3×3:
 //   вертикаль — top / center(=середина) / bottom; горизонталь — left / center / right.
@@ -173,7 +181,7 @@ const paddingStyle = p.padding
 		}
 
 		<div class={containerCls}>
-			<div class={`flex w-full max-w-[330px] flex-col ${alignItemsCls} gap-4`}>
+			<div class={`flex w-full max-w-[330px] flex-col ${alignItemsCls} gap-4${boxedCls}`}>
 				<div class={`flex flex-col ${alignItemsCls} gap-2${textAlignCls}`}>
 					<h1
 						id="hero-title"

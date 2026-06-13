@@ -69,6 +69,14 @@ const secondaryLink =
 // Канон overlay 0-100 (число или строка) → чёрный слой между фото (z-0) и контентом (z-10).
 const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
 
+// Канон container (toggle «Контейнер» панели «Изображение») — подложка-плашка
+// ТОЛЬКО под текстовым блоком, НЕ затемнение всего экрана (overlay отдельно).
+// На светлой плашке белый текст flux не читается → переключаем на тёмный схемы.
+const boxed = String(p.container ?? "false") === "true";
+const boxedCls = boxed
+	? " rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-bg,255_255_255))]/95 p-6 shadow-sm md:p-8 [&_h1]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-text,0_0_0))]"
+	: "";
+
 // Канон position (видимое поле панели) / contentPosition (legacy, те же 9 значений).
 // Позиция управляет РАЗМЕЩЕНИЕМ контент-блока по сетке 3×3 (как rose Hero):
 //   вертикаль — top / center(=середина) / bottom; горизонталь — left / center / right.
@@ -116,7 +124,7 @@ const align = p.alignment === "center" || p.alignment === "right" ? p.alignment 
 const alignItemsCls = align === "right" ? "items-end" : align === "center" ? "items-center" : "items-start"; // ВЫРАВНИВАНИЕ
 const textAlignCls = align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
 const buttonsJustifyCls = align === "right" ? "justify-end" : align === "center" ? "justify-center" : "justify-start";
-const contentCls = `flex max-w-[432px] flex-col gap-8 ${alignItemsCls}`;
+const contentCls = `flex max-w-[432px] flex-col gap-8 ${alignItemsCls}${boxedCls}`;
 
 // Канон buttonStyle solid|outlined для основной кнопки. solid/отсутствие = белая
 // заливка верстальщика с оранжевым текстом дословно (токены кнопки-1 §7: в схемах

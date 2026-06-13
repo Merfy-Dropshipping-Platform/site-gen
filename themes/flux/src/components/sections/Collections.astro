@@ -53,14 +53,14 @@ const titleAlignCls =
 const headWrapCls = [headingSizeCls, subtitleSizeCls, headColorCls, titleAlignCls].join("").trim();
 
 // Канон columns 1-6: 3 (canon-default puckConfig) и отсутствие → дефолт-ветка
-// (литерал lg:grid-cols-3 gap-6); иное → inline-var на гриде с lg (мобильная
-// лестница верстальщика 1 → sm:2 сохраняется).
+// (1→sm:2→lg:3). Заданное значение применяется уже с sm: раньше — только с lg,
+// потому на sm-md (640-1023px) залипало 2 и слайдер игнорировался. Моб (<sm) = 1.
 const colsRaw =
 	typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : undefined;
 const cols = colsRaw && colsRaw !== 3 ? colsRaw : undefined;
 const gridBase = "grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3";
 const gridCls = cols
-	? "grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-[repeat(var(--cols),minmax(0,1fr))]"
+	? "grid grid-cols-1 gap-6 sm:grid-cols-[repeat(var(--cols),minmax(0,1fr))]"
 	: gridBase;
 const gridStyle = cols ? `--cols:${cols}` : undefined;
 

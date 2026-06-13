@@ -47,15 +47,16 @@ const headWrapCls =
 	undefined;
 
 // Канон columns 1-6: 3 (canon-default = lg:grid-cols-3 верстальщика) и
-// отсутствие → дефолт-ветка; иное → inline-var на гриде с lg (мобильная
-// лестница верстальщика 1→sm:2 сохраняется).
+// отсутствие → дефолт-ветка (1→sm:2→lg:3). Заданное значение применяется уже
+// с sm: раньше — только с lg, потому на sm-md (640-1023px) залипало 2 и слайдер
+// игнорировался. Моб (<sm) всегда 1.
 const colsRaw =
 	typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : undefined;
 const cols = colsRaw && colsRaw !== 3 ? colsRaw : undefined;
 const gridBase =
 	"grid w-full grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-[16px] lg:gap-y-10";
 const gridCls = cols
-	? "grid w-full grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-[repeat(var(--cols),minmax(0,1fr))] lg:gap-x-[16px] lg:gap-y-10"
+	? "grid w-full grid-cols-1 gap-10 sm:grid-cols-[repeat(var(--cols),minmax(0,1fr))] lg:gap-x-[16px] lg:gap-y-10"
 	: gridBase;
 const gridStyle = cols ? `--cols:${cols}` : undefined;
 

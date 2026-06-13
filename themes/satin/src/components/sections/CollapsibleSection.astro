@@ -111,9 +111,8 @@ const titleId = id && heading ? `${id}-title` : undefined;
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="heading"
-				>
-					{heading}
-				</h2>
+					set:html={heading}
+				/>
 			)
 		}
 		<div class={listWrapCls}>
@@ -132,7 +131,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 							<summary
 								class={`flex cursor-pointer list-none items-center justify-between gap-4 font-logo ${summarySizeCls} font-normal uppercase leading-[1.2] text-[rgb(var(--color-heading,0_0_0))] [&::-webkit-details-marker]:hidden`}
 							>
-								<span>{s.heading}</span>
+								<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
 								<NtIcon name="plus" sizeClass="size-8" class="shrink-0 group-open:hidden" />
 								<NtIcon name="minus" sizeClass="size-8" class="hidden shrink-0 group-open:block" />
 							</summary>

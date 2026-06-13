@@ -95,9 +95,8 @@ const titleId = id && heading ? `${id}-title` : undefined;
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="heading"
-				>
-					{heading}
-				</h2>
+					set:html={heading}
+				/>
 			)
 		}
 		<div class={listWrapCls} data-animate data-animate-delay="0.1s">
@@ -111,8 +110,8 @@ const titleId = id && heading ? `${id}-title` : undefined;
 							data-puck-subsection-field="sections"
 						>
 							<details class="group">
-								<summary class="flex w-full cursor-pointer list-none items-center justify-between gap-4 py-5 font-vanilla-arsenal text-base font-normal uppercase leading-none text-[rgb(var(--color-text,10_10_10))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
-									<span>{s.heading}</span>
+								<summary class="flex w-full cursor-pointer list-none items-center justify-between gap-4 py-5 font-vanilla-arsenal text-base font-normal uppercase leading-snug text-[rgb(var(--color-text,10_10_10))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
+									<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
 									<svg
 										aria-hidden="true"
 										viewBox="0 0 10 6"

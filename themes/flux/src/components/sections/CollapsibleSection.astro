@@ -104,9 +104,8 @@ const titleId = id && heading ? `${id}-title` : undefined;
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="heading"
-				>
-					{heading}
-				</h2>
+					set:html={heading}
+				/>
 			)
 		}
 		<div class={listWrapCls}>
@@ -121,7 +120,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 						>
 							<details class="group">
 								<summary class="flex w-full cursor-pointer list-none items-center justify-between gap-4 py-5 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
-									<span>{s.heading}</span>
+									<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
 									<NtIcon
 										name="dropdown-chevron"
 										sizeClass="size-5"

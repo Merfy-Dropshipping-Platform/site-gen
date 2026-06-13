@@ -37,12 +37,18 @@ const nav: NavLink[] = Array.isArray(p.navigationLinks) && p.navigationLinks.len
 // applyBrandLogoToAllHeaders): непустая строка → <img> вместо текстового
 // логотипа в desktop И mobile. Высота = --size-logo-width (семантика канона
 // theme-base Header.classes.ts:71 — слайдер «Размер» задаёт ВЫСОТУ лого).
-// Дефолтный плейсхолдер «/logo.svg» НЕ существует на сторфронте (404 — файла нет
-// ни в одной теме) → не рендерим <img> с битой картинкой. Кастомным логотипом
-// считаем только реальную загрузку (URL MinIO / иной путь); иначе — текстовый
-// логотип (siteTitle), как в макете верстальщика.
+// Дефолтный плейсхолдер «/logo.svg» (и его rewrite до https://<slug>.merfy.ru/logo.svg)
+// НЕ существует на сторфронте (404) → не рендерим <img> с битой картинкой. Реальные
+// загрузки лежат в /branding/<tenant>/<site>/logo-*.svg (pathname НЕ "/logo.svg"),
+// поэтому матчим именно pathname. Иначе — текстовый логотип (siteTitle), как у верстальщика.
 const rawLogo = typeof p.logo === "string" ? p.logo.trim() : "";
-const logo = rawLogo && rawLogo !== "/logo.svg" ? rawLogo : undefined;
+let logoPath = "";
+try {
+	logoPath = new URL(rawLogo, "https://_merfy_").pathname;
+} catch {
+	logoPath = rawLogo;
+}
+const logo = rawLogo && logoPath !== "/logo.svg" ? rawLogo : undefined;
 const logoImgCls = "h-[var(--size-logo-width,24px)] w-auto max-w-[160px] object-contain";
 
 // Канон logoPosition: 'top-left' (canon default) / 'center-left' / отсутствие /

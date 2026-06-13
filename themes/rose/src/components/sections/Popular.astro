@@ -126,22 +126,35 @@ const NEXT_PHOTO_JS = [
 	"})();",
 ].join("");
 
-// Канон viewAll {show,text,href} (+legacy true/'true'): кнопка под гридом,
-// манера — вторичная кнопка (классы = secondaryButton Hero T11), дефолты канона
-// 'Смотреть ещё' / '/catalog'.
+// Канон viewAll {show,text,href}: кнопка под гридом — «Смотреть все товары»
+// коллекции (Figma 1-33175). По умолчанию ПОКАЗАНА (часть дизайна секции),
+// скрыть — viewAll.show === false. Текст по умолчанию «Смотреть все товары»;
+// href ведёт на каталог выбранной коллекции (?collection=) либо в общий каталог.
 const viewAllRaw = p.viewAll;
-const viewAllShow =
-	viewAllRaw === true ||
-	viewAllRaw === "true" ||
-	(!!viewAllRaw &&
-		typeof viewAllRaw === "object" &&
-		(viewAllRaw.show === true || viewAllRaw.show === "true"));
+const viewAllShow = !(
+	viewAllRaw &&
+	typeof viewAllRaw === "object" &&
+	(viewAllRaw.show === false || viewAllRaw.show === "false")
+);
 const viewAllText =
 	(!!viewAllRaw && typeof viewAllRaw === "object" && typeof viewAllRaw.text === "string" && viewAllRaw.text) ||
-	"Смотреть ещё";
+	"Смотреть все товары";
+const viewAllCollection =
+	typeof p.collection === "string" && p.collection.trim() ? p.collection.trim() : "";
 const viewAllHref =
 	(!!viewAllRaw && typeof viewAllRaw === "object" && typeof viewAllRaw.href === "string" && viewAllRaw.href) ||
-	"/catalog";
+	(viewAllCollection ? `/catalog?collection=${encodeURIComponent(viewAllCollection)}` : "/catalog");
+// Стиль кнопки «Смотреть все» = единый «Стиль кнопки» секции (buttonStyle, Figma
+// 1195-42536): link = текстовая ссылка с подчёркиванием, secondary = кнопка-2
+// (бордер), primary/отсутствие = кнопка-1 (заливка). Standalone-CTA (без hover-reveal).
+const viewAllBase =
+	"inline-flex h-10 min-h-10 items-center justify-center font-manrope text-[14px] font-normal leading-none transition-opacity sm:h-[52px] sm:min-h-[52px] sm:text-[15px] md:text-[16px]";
+const viewAllCls =
+	p.buttonStyle === "link"
+		? `${viewAllBase} px-0 !text-[rgb(var(--color-text,0_0_0))] underline underline-offset-4 hover:opacity-70`
+		: p.buttonStyle === "secondary"
+			? `${viewAllBase} w-auto min-w-[120px] rounded border border-solid border-[rgb(var(--color-button-2-border,0_0_0))] !bg-[rgb(var(--color-button-2-bg,255_255_255))] px-3 py-2.5 !text-[rgb(var(--color-button-2-text,0_0_0))] hover:opacity-90 sm:min-w-[160px] sm:rounded-[var(--radius-button,6px)] sm:px-6 sm:py-[10px]`
+			: `${viewAllBase} w-auto min-w-[120px] rounded !border-0 !bg-[rgb(var(--color-button-bg,0_0_0))] px-3 py-2.5 !text-[rgb(var(--color-button-text,255_255_255))] hover:opacity-90 sm:min-w-[160px] sm:rounded-[var(--radius-button,6px)] sm:px-6 sm:py-[10px]`;
 
 // Канон collection (collectionPicker, id или slug): носитель — data-collection
 // на гриде; фильтрацию делает гидрация (filterByCollection: productIds коллекции
@@ -217,7 +230,7 @@ const paddingStyle = p.padding
 			<div class="flex w-full justify-center">
 				<a
 					href={viewAllHref}
-					class="inline-flex h-10 min-h-10 w-auto min-w-[120px] items-center justify-center rounded border border-solid border-[rgb(var(--color-button-2-border,0_0_0))] !bg-[rgb(var(--color-button-2-bg,255_255_255))] px-3 py-2.5 font-manrope text-[14px] font-normal leading-none !text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity hover:opacity-90 sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:rounded-[var(--radius-button,6px)] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]"
+					class={viewAllCls}
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="102"
 					data-puck-subsection-field="viewAll"

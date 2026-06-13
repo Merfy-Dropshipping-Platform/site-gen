@@ -79,8 +79,12 @@ const vPos = posRaw.startsWith("top")
 const hPos = posRaw.endsWith("left") ? "left" : posRaw.endsWith("right") ? "right" : "center";
 const vJustifyCls = vPos === "top" ? "justify-start" : vPos === "middle" ? "justify-center" : "justify-end";
 const hItemsCls = hPos === "left" ? "items-start" : hPos === "right" ? "items-end" : "items-center";
-// alignment — выравнивание ТЕКСТА внутри блока (НЕ двигает сам блок; это делает Позиция).
+// alignment — выравнивание КОНТЕНТА внутри блока (НЕ двигает сам блок — это делает
+// Позиция через items на внешнем контейнере). items-* выравнивают заголовок/текст/
+// кнопки друг относительно друга, text-align — многострочный текст.
 const textAlignCls = p.alignment === "left" ? "text-left" : p.alignment === "right" ? "text-right" : "text-center";
+const alignItemsCls = p.alignment === "left" ? "items-start" : p.alignment === "right" ? "items-end" : "items-center";
+const buttonsJustifyCls = p.alignment === "left" ? "justify-start" : p.alignment === "right" ? "justify-end" : "justify-center";
 
 // Канон buttonStyle solid|outlined: outlined = бордер/текст цвета заливки кнопки,
 // прозрачный фон; solid/отсутствие = текущий вид CTA дословно (кнопка-1 токены, T8).
@@ -92,8 +96,8 @@ const ctaCls =
 // Кнопочный ряд: дефолт (нет второй кнопки) = прежняя строка дословно; при
 // secondaryButton кнопки встают рядом (row) с зазором манеры.
 const buttonsCls = secondaryText
-	? `hero-animate-3 flex w-full flex-row flex-wrap items-center gap-3 ${hPos === "left" ? "justify-start" : hPos === "right" ? "justify-end" : "justify-center"} sm:gap-4`
-	: `hero-animate-3 flex w-full flex-col ${hItemsCls} justify-center`;
+	? `hero-animate-3 flex w-full flex-row flex-wrap items-center gap-3 ${buttonsJustifyCls} sm:gap-4`
+	: `hero-animate-3 flex w-full flex-col ${alignItemsCls} justify-center`;
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T14).
 const paddingStyle = p.padding
@@ -151,8 +155,8 @@ const paddingStyle = p.padding
 		<div
 			class={`absolute inset-0 z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} px-4 pb-10 pt-28 sm:px-5 sm:pb-11 sm:pt-32 md:px-10 md:pb-14 md:pt-36 lg:px-16 lg:pb-16 xl:px-20 xl:pb-20 2xl:px-[280px]`}
 		>
-			<div class={`flex w-full max-w-[540px] flex-col ${hItemsCls} gap-6 sm:gap-10 md:max-w-[640px]`}>
-				<div class={`flex flex-col ${hItemsCls} gap-2 ${textAlignCls} sm:gap-3 md:gap-4`}>
+			<div class={`flex w-full max-w-[540px] flex-col ${alignItemsCls} gap-6 sm:gap-10 md:max-w-[640px]`}>
+				<div class={`flex flex-col ${alignItemsCls} gap-2 ${textAlignCls} sm:gap-3 md:gap-4`}>
 					<h1
 						id="hero-title"
 						class={headingCls}

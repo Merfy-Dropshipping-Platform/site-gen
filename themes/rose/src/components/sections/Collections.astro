@@ -47,9 +47,16 @@ const cols = colsRaw && colsRaw !== 3 ? colsRaw : undefined;
 // Канон imageView: 'square' (canon-default, поле скрыто в панели) и 'portrait'
 // (== литерал верстальщика 430/500) → дефолт-ветка; 'wide' → 16/9.
 const tileAspectCls = p.imageView === "wide" ? " [&_li>a>div]:aspect-[16/9]" : "";
-const gridBase = "grid grid-cols-1 gap-6 sm:gap-5 md:grid-cols-3 md:gap-5 lg:gap-6";
-const gridCls =
-	(cols ? `${gridBase} lg:grid-cols-[repeat(var(--cols),minmax(0,1fr))]` : gridBase) + tileAspectCls;
+// Gap-лестница верстальщика — едина для всех. Колонки: дефолт (3/пусто) =
+// лестница верстальщика 1→3 (моб→планшет+); заданное значение применяется уже
+// с ПЛАНШЕТА (md), а не только с lg. Раньше md жёстко держал grid-cols-3 →
+// на планшете (768-1023px) и в превью конструктора слайдер игнорировался и
+// показывал 3 при любом выборе. Моб (<md) всегда 1 — узкие карточки.
+const gridGap = "grid grid-cols-1 gap-6 sm:gap-5 md:gap-5 lg:gap-6";
+const gridColsCls = cols
+	? "md:grid-cols-[repeat(var(--cols),minmax(0,1fr))]"
+	: "md:grid-cols-3";
+const gridCls = `${gridGap} ${gridColsCls}${tileAspectCls}`;
 const gridStyle = cols ? `--cols:${cols}` : undefined;
 
 // Канон collections[] (≤10): карточки из пропса при непустом массиве (название/

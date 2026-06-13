@@ -601,8 +601,12 @@ export class PreviewService {
             themeId: input.themeId ?? null,
           });
           const schemeId = schemeIdFromProp(b.props?.colorScheme);
+          // Header sticky: display:contents убирает бокс обёртки схемы, чтобы
+          // containing block inner sticky-дива был <body> (иначе хедер заперт
+          // в коротком родителе и не липнет). См. page-generator.ts.
+          const wrapStyle = b.type === 'Header' ? ` style="display:contents"` : '';
           const wrapped = schemeId
-            ? `<div class="color-scheme-${schemeId}" data-block-scheme="${schemeId}">${html}</div>`
+            ? `<div class="color-scheme-${schemeId}"${wrapStyle} data-block-scheme="${schemeId}">${html}</div>`
             : html;
           return { type: b.type, wrapped };
         }),

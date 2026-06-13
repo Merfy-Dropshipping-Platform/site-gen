@@ -1,0 +1,152 @@
+---
+/**
+ * NavItem — пункт десктоп-навигации rose с поддержкой вложенного подменю.
+ *
+ * Подменю раскрывается чисто по CSS :hover (group-hover) — без JS, работает на
+ * живом сторфронте (хедер верстальщика — обычный Astro, без React-острова).
+ *
+ * menuType:
+ *   - dropdown  — level-1 поп-ап под триггером; вложенный (level-2) — каскад справа.
+ *   - mega-menu — full-width лист под хедером с колонками
+ *                 (категория-заголовок + её пункты).
+ *   - sidebar   — десктоп-nav скрыт (lg:!hidden), подменю живёт в шторке (drawer),
+ *                 поэтому сюда sidebar не доходит.
+ *
+ * Глубина: до 3 уровней (level-1 триггер → level-2 → level-3). Глубже не рендерим.
+ */
+interface NavLink {
+	label: string;
+	href: string;
+	submenu?: NavLink[];
+}
+
+interface Props {
+	link: NavLink;
+	menuType?: string;
+	linkClass?: string;
+	active?: boolean;
+}
+
+const { link, menuType = "dropdown", linkClass = "", active = false } = Astro.props as Props;
+
+const subs: NavLink[] = Array.isArray(link.submenu)
+	? link.submenu.filter((s) => s && typeof s.label === "string" && s.label.trim() !== "")
+	: [];
+const hasSub = subs.length > 0;
+const isMega = menuType === "mega-menu";
+
+const activeUnderline = active
+	? "after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:bg-[rgb(var(--color-accent,0_0_0))] after:content-['']"
+	: "";
+
+const popupCardCls =
+	"flex flex-col rounded-[var(--radius-card,4px)] border border-[rgb(var(--color-text,0_0_0)/0.1)] bg-[rgb(var(--color-bg,255_255_255))] py-2 shadow-[0_8px_24px_rgba(0,0,0,0.08)]";
+const popupItemCls =
+	"flex items-center justify-between gap-2 px-4 py-2 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-colors hover:bg-[rgb(var(--color-text,0_0_0)/0.05)]";
+---
+{!hasSub ? (
+	<a
+		href={link.href}
+		aria-current={active ? "page" : undefined}
+		class:list={["relative pb-1", linkClass, activeUnderline]}
+	>
+		{link.label}
+	</a>
+) : isMega ? (
+	/* ── MEGA-MENU: full-width лист с колонками ── */
+	<div class="group/mega flex items-center">
+		<a
+			href={link.href}
+			aria-current={active ? "page" : undefined}
+			class:list={["relative inline-flex items-center gap-1 pb-1", linkClass, activeUnderline]}
+		>
+			{link.label}
+			<svg class="h-2 w-2 shrink-0 opacity-70" viewBox="0 0 8 8" fill="none" aria-hidden="true">
+				<path d="M1 2.5 4 5.5 7 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+			</svg>
+		</a>
+		<div class="invisible absolute left-0 right-0 top-full z-50 -mt-1 pt-4 opacity-0 transition-opacity duration-150 group-hover/mega:visible group-hover/mega:opacity-100">
+			<div class="border-t border-[rgb(var(--color-text,0_0_0)/0.1)] bg-[rgb(var(--color-bg,255_255_255))] shadow-[0_12px_32px_rgba(0,0,0,0.08)]">
+				<div class="mx-auto grid w-full max-w-[1320px] grid-cols-2 gap-x-8 gap-y-6 px-4 py-8 sm:px-5 md:grid-cols-3 md:px-10 lg:grid-cols-4 lg:px-16 xl:px-20 2xl:px-[280px]">
+					{subs.map((cat) => {
+						const kids: NavLink[] = Array.isArray(cat.submenu)
+							? cat.submenu.filter((s) => s && typeof s.label === "string" && s.label.trim() !== "")
+							: [];
+						return (
+							<div class="flex flex-col gap-3">
+								<a
+									href={cat.href}
+									class="font-manrope text-[14px] font-semibold uppercase tracking-wider text-[rgb(var(--color-heading,0_0_0))] opacity-70 transition-opacity hover:opacity-100"
+								>
+									{cat.label}
+								</a>
+								{kids.length > 0 && (
+									<ul class="flex flex-col gap-1">
+										{kids.map((k) => (
+											<li>
+												<a
+													href={k.href}
+													class="block py-1 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70"
+												>
+													{k.label}
+												</a>
+											</li>
+										))}
+									</ul>
+								)}
+							</div>
+						);
+					})}
+				</div>
+			</div>
+		</div>
+	</div>
+) : (
+	/* ── DROPDOWN: поп-ап под триггером, вложенное — каскад справа ── */
+	<div class="group/d1 relative flex items-center">
+		<a
+			href={link.href}
+			aria-current={active ? "page" : undefined}
+			class:list={["relative inline-flex items-center gap-1 pb-1", linkClass, activeUnderline]}
+		>
+			{link.label}
+			<svg class="h-2 w-2 shrink-0 opacity-70" viewBox="0 0 8 8" fill="none" aria-hidden="true">
+				<path d="M1 2.5 4 5.5 7 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+			</svg>
+		</a>
+		<div class="invisible absolute left-0 top-full z-50 -mt-1 min-w-[220px] pt-3 opacity-0 transition-opacity duration-150 group-hover/d1:visible group-hover/d1:opacity-100">
+			<ul class={popupCardCls}>
+				{subs.map((c2) => {
+					const kids2: NavLink[] = Array.isArray(c2.submenu)
+						? c2.submenu.filter((s) => s && typeof s.label === "string" && s.label.trim() !== "")
+						: [];
+					return (
+						<li class="group/d2 relative">
+							<a href={c2.href} class={popupItemCls}>
+								<span>{c2.label}</span>
+								{kids2.length > 0 && (
+									<svg class="h-3 w-3 shrink-0 opacity-60" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+										<path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+									</svg>
+								)}
+							</a>
+							{kids2.length > 0 && (
+								<div class="invisible absolute left-full top-0 z-50 -ml-1 min-w-[200px] pl-2 opacity-0 transition-opacity duration-150 group-hover/d2:visible group-hover/d2:opacity-100">
+									<ul class={popupCardCls}>
+										{kids2.map((k) => (
+											<li>
+												<a href={k.href} class={popupItemCls}>
+													<span>{k.label}</span>
+												</a>
+											</li>
+										))}
+									</ul>
+								</div>
+							)}
+						</li>
+					);
+				})}
+			</ul>
+		</div>
+	</div>
+)}

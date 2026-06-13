@@ -183,8 +183,15 @@ function processContentItems(
       schemeId = rawScheme.replace(/^scheme-/, "");
     }
     const schemeClass = schemeId ? `color-scheme-${schemeId}` : null;
+    // Header может быть sticky (prop stickiness). Обёртка-носитель color-scheme
+    // имеет высоту самого хедера → inner `position:sticky` запирается в коротком
+    // родителе и открепляется сразу после прокрутки. display:contents убирает
+    // бокс обёртки (CSS-переменные схемы продолжают наследоваться вниз), и
+    // containing block sticky-дива становится <body> → хедер липнет на всю
+    // страницу. Прочие блоки — без изменений.
+    const wrapperStyle = item.type === "Header" ? ` style="display:contents"` : "";
     const openWrapper = schemeClass
-      ? `${indent}<div class="${schemeClass}" data-block-scheme="${schemeId}">`
+      ? `${indent}<div class="${schemeClass}"${wrapperStyle} data-block-scheme="${schemeId}">`
       : null;
     const closeWrapper = schemeClass ? `${indent}</div>` : null;
     const innerIndent = schemeClass ? indent + "  " : indent;

@@ -56,7 +56,10 @@ export function composeV2Page(input: ComposeV2PageInput): string | null {
   const schemes = input.blockSchemes ?? [];
   const blocksHtml = rawBlocksHtml.map((h, i) => {
     const s = schemeIdFromProp(schemes[i] ?? null);
-    return s ? `<div class="color-scheme-${s}" data-block-scheme="${s}">${h}</div>` : h;
+    // Header sticky: display:contents — обёртка схемы без бокса, чтобы inner
+    // sticky-див хедера крепился к <body>, а не к короткому родителю.
+    const style = blockTypes[i] === 'Header' ? ` style="display:contents"` : '';
+    return s ? `<div class="color-scheme-${s}"${style} data-block-scheme="${s}">${h}</div>` : h;
   });
 
   const headerParts: string[] = [];

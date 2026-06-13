@@ -1,10 +1,12 @@
 ---
 import RoseNtIcon from "./icons/RoseNtIcon.astro";
+import NavItem from "./NavItem.astro";
 import { SITE_TITLE } from "../consts";
 
 interface NavLink {
 	label: string;
 	href: string;
+	submenu?: NavLink[];
 	match?: (pathname: string) => boolean;
 }
 
@@ -21,15 +23,26 @@ const p = Astro.props as Record<string, any>;
 const id = p.id;
 // Пустая строка (впрыск коэрсера live-пути) не должна гасить текстовый логотип.
 const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
+// Рекурсивно сохраняем submenu (до 3 уровней) — иначе вложенные меню теряются.
+const mapNavLink = (l: any): NavLink => ({
+	label: l.label ?? l.text ?? "",
+	href: l.href ?? l.link ?? "/",
+	submenu: Array.isArray(l.submenu) ? l.submenu.map(mapNavLink) : undefined,
+});
 const nav: NavLink[] = Array.isArray(p.navigationLinks) && p.navigationLinks.length > 0
-	? p.navigationLinks.map((l: any) => ({ label: l.label ?? l.text ?? "", href: l.href ?? l.link ?? "/" }))
+	? p.navigationLinks.map(mapNavLink)
 	: defaultNav;
 
 // Канон logo (URL картинки; панель «Логотип» пишет в props.logo через
 // applyBrandLogoToAllHeaders): непустая строка → <img> вместо текстового
 // логотипа в desktop И mobile. Высота = --size-logo-width (семантика канона
 // theme-base Header.classes.ts:71 — слайдер «Размер» задаёт ВЫСОТУ лого).
-const logo = typeof p.logo === "string" && p.logo.trim() ? p.logo : undefined;
+// Дефолтный плейсхолдер «/logo.svg» НЕ существует на сторфронте (404 — файла нет
+// ни в одной теме) → не рендерим <img> с битой картинкой. Кастомным логотипом
+// считаем только реальную загрузку (URL MinIO / иной путь); иначе — текстовый
+// логотип (siteTitle), как в макете верстальщика.
+const rawLogo = typeof p.logo === "string" ? p.logo.trim() : "";
+const logo = rawLogo && rawLogo !== "/logo.svg" ? rawLogo : undefined;
 const logoImgCls = "h-[var(--size-logo-width,24px)] w-auto max-w-[160px] object-contain";
 
 // Канон logoPosition: 'top-left' (canon default) / 'center-left' / отсутствие /
@@ -101,6 +114,12 @@ const megaLinkCls = isMegaMenu ? "uppercase tracking-[0.06em] font-medium" : "";
 // При задании — добавляем класс color-scheme-<X> к обёртке <nav>.
 const menuColorScheme = typeof p.menuColorScheme === "string" ? p.menuColorScheme : "";
 const menuSchemeClass = menuColorScheme ? `color-scheme-${menuColorScheme.replace("scheme-", "")}` : "";
+
+// Базовый класс десктоп-ссылки nav (общий для всех раскладок). Для mega — uppercase.
+const navLinkCls = [
+	"font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-all duration-200 hover:opacity-70 lg:text-[length:var(--size-nav-link,16px)]",
+	megaLinkCls,
+].filter(Boolean).join(" ");
 
 const pathname = Astro.url.pathname;
 const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathname === link.href);
@@ -229,22 +248,9 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 										data-puck-subsection-index="997"
 										data-puck-subsection-field="navigationLinks"
 									>
-										{nav.map((link) => {
-											const active = isActive(link);
-											return (
-												<a
-													href={link.href}
-													aria-current={active ? "page" : undefined}
-													class:list={[
-														"relative pb-1 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-all duration-200 hover:opacity-70 lg:text-[length:var(--size-nav-link,16px)]",
-														active && "after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:bg-[rgb(var(--color-accent,0_0_0))] after:content-['']",
-														megaLinkCls,
-													]}
-												>
-													{link.label}
-												</a>
-											);
-										})}
+										{nav.map((link) => (
+									<NavItem link={link} menuType={menuType} linkClass={navLinkCls} active={isActive(link)} />
+								))}
 									</nav>
 								</>
 							) : (
@@ -318,22 +324,9 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 										data-puck-subsection-index="997"
 										data-puck-subsection-field="navigationLinks"
 									>
-										{nav.map((link) => {
-											const active = isActive(link);
-											return (
-												<a
-													href={link.href}
-													aria-current={active ? "page" : undefined}
-													class:list={[
-														"relative pb-1 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-all duration-200 hover:opacity-70 lg:text-[length:var(--size-nav-link,16px)]",
-														active && "after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:bg-[rgb(var(--color-accent,0_0_0))] after:content-['']",
-														megaLinkCls,
-													]}
-												>
-													{link.label}
-												</a>
-											);
-										})}
+										{nav.map((link) => (
+									<NavItem link={link} menuType={menuType} linkClass={navLinkCls} active={isActive(link)} />
+								))}
 									</nav>
 								</>
 							)}
@@ -352,22 +345,9 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 								data-puck-subsection-index="997"
 								data-puck-subsection-field="navigationLinks"
 							>
-								{nav.map((link) => {
-									const active = isActive(link);
-									return (
-										<a
-											href={link.href}
-											aria-current={active ? "page" : undefined}
-											class:list={[
-												"relative pb-1 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-all duration-200 hover:opacity-70 lg:text-[length:var(--size-nav-link,16px)]",
-												active && "after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:bg-[rgb(var(--color-accent,0_0_0))] after:content-['']",
-												megaLinkCls,
-											]}
-										>
-											{link.label}
-										</a>
-									);
-								})}
+								{nav.map((link) => (
+									<NavItem link={link} menuType={menuType} linkClass={navLinkCls} active={isActive(link)} />
+								))}
 							</nav>
 
 							<div class="flex items-center gap-4 lg:gap-6">
@@ -527,19 +507,55 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 		<nav class="mt-10 flex flex-col items-start gap-5" aria-label="Основное меню">
 			{nav.map((link) => {
 				const active = isActive(link);
+				const subs = Array.isArray(link.submenu)
+					? link.submenu.filter((s) => s && typeof s.label === "string" && s.label.trim() !== "")
+					: [];
 				return (
-					<a
-						href={link.href}
-						aria-current={active ? "page" : undefined}
-						class:list={[
-							"relative inline-flex w-fit pb-1 font-manrope text-[12px] font-normal leading-none transition-colors sm:text-[14px]",
-							active &&
-								"text-rose-primary after:pointer-events-none after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:bg-rose-primary after:content-['']",
-							!active && "text-gray hover:text-rose-primary",
-						]}
-					>
-						{link.label}
-					</a>
+					<div class="flex w-full flex-col gap-3">
+						<a
+							href={link.href}
+							aria-current={active ? "page" : undefined}
+							class:list={[
+								"relative inline-flex w-fit pb-1 font-manrope text-[12px] font-normal leading-none transition-colors sm:text-[14px]",
+								active &&
+									"text-rose-primary after:pointer-events-none after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:bg-rose-primary after:content-['']",
+								!active && "text-gray hover:text-rose-primary",
+							]}
+						>
+							{link.label}
+						</a>
+						{subs.length > 0 && (
+							<div class="flex flex-col gap-2 border-l border-gray/40 pl-4">
+								{subs.map((c2) => {
+									const kids2 = Array.isArray(c2.submenu)
+										? c2.submenu.filter((s) => s && typeof s.label === "string" && s.label.trim() !== "")
+										: [];
+									return (
+										<div class="flex flex-col gap-2">
+											<a
+												href={c2.href}
+												class="inline-flex w-fit font-manrope text-[12px] font-normal leading-none text-gray transition-colors hover:text-rose-primary sm:text-[13px]"
+											>
+												{c2.label}
+											</a>
+											{kids2.length > 0 && (
+												<div class="flex flex-col gap-2 pl-4">
+													{kids2.map((k) => (
+														<a
+															href={k.href}
+															class="inline-flex w-fit font-manrope text-[11px] font-normal leading-none text-gray transition-colors hover:text-rose-primary sm:text-[12px]"
+														>
+															{k.label}
+														</a>
+													))}
+												</div>
+											)}
+										</div>
+									);
+								})}
+							</div>
+						)}
+					</div>
 				);
 			})}
 		</nav>
@@ -671,6 +687,18 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 			const tEl = target instanceof Element ? target : null;
 			if (tEl?.closest?.("[data-action='toggle-search']")) return;
 			setSearchOpen(false);
+		});
+
+		// Боковое/мобильное меню (drawer): клик ВНЕ шторки — закрыть.
+		document.addEventListener("click", (event: MouseEvent) => {
+			const burger = document.getElementById("rose-burger");
+			if (!burger || burger.classList.contains("hidden")) return;
+			const target = event.target;
+			if (!(target instanceof Node)) return;
+			if (burger.contains(target)) return; // клик внутри шторки — игнор
+			const tEl = target instanceof Element ? target : null;
+			if (tEl?.closest?.("[data-burger-toggle]")) return; // клик по бургеру — это toggle, не закрытие
+			setBurger(false);
 		});
 
 		window.addEventListener("resize", () => {

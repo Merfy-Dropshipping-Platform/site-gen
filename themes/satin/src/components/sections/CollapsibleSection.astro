@@ -128,12 +128,14 @@ const titleId = id && heading ? `${id}-title` : undefined;
 							data-puck-subsection-index={i}
 							data-puck-subsection-field="sections"
 						>
-							<summary
-								class={`flex cursor-pointer list-none items-center justify-between gap-4 font-logo ${summarySizeCls} font-normal uppercase leading-[1.2] text-[rgb(var(--color-heading,0_0_0))] [&::-webkit-details-marker]:hidden`}
-							>
-								<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
-								<NtIcon name="plus" sizeClass="size-8" class="shrink-0 group-open:hidden" />
-								<NtIcon name="minus" sizeClass="size-8" class="hidden shrink-0 group-open:block" />
+							<summary class="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+								<div
+									class={`flex w-full items-center justify-between gap-4 font-logo ${summarySizeCls} font-normal uppercase leading-[1.2] text-[rgb(var(--color-heading,0_0_0))]`}
+								>
+									<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
+									<NtIcon name="plus" sizeClass="size-8" class="shrink-0 group-open:hidden" />
+									<NtIcon name="minus" sizeClass="size-8" class="hidden shrink-0 group-open:block" />
+								</div>
 							</summary>
 							<div class="overflow-hidden" data-faq-answer>
 								<div class="satin-copy mt-3 max-w-[1100px]" set:html={s.content} />

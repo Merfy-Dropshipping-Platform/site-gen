@@ -101,16 +101,18 @@ const titleId = id && heading ? `${id}-title` : undefined;
 							data-puck-subsection-field="sections"
 						>
 							<details class="group">
-								<summary class="flex w-full cursor-pointer list-none items-center justify-between gap-4 py-5 font-comfortaa text-[14px] font-normal uppercase leading-snug text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-70 sm:text-[16px] [&::-webkit-details-marker]:hidden">
-									<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
-									<svg
-										class="size-4 shrink-0 rotate-180 transition-transform duration-200 group-open:rotate-0"
-										viewBox="0 0 16 16"
-										fill="currentColor"
-										aria-hidden="true"
-									>
-										<path d="M11.7899 10.3255C11.9111 10.1838 11.9118 9.9751 11.7916 9.83248L8.31861 5.71147C8.15213 5.51393 7.84787 5.51393 7.68139 5.71147L4.20838 9.83248C4.08819 9.9751 4.08892 10.1838 4.21011 10.3255C4.36289 10.5043 4.63951 10.5033 4.79103 10.3235L7.68139 6.89386C7.84787 6.69632 8.15213 6.69632 8.31861 6.89386L11.209 10.3235C11.3605 10.5033 11.6371 10.5043 11.7899 10.3255Z" />
-									</svg>
+								<summary class="cursor-pointer list-none py-5 [&::-webkit-details-marker]:hidden">
+									<div class="flex w-full items-center justify-between gap-4 font-comfortaa text-[14px] font-normal uppercase leading-snug text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-70 sm:text-[16px]">
+										<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
+										<svg
+											class="size-4 shrink-0 rotate-180 transition-transform duration-200 group-open:rotate-0"
+											viewBox="0 0 16 16"
+											fill="currentColor"
+											aria-hidden="true"
+										>
+											<path d="M11.7899 10.3255C11.9111 10.1838 11.9118 9.9751 11.7916 9.83248L8.31861 5.71147C8.15213 5.51393 7.84787 5.51393 7.68139 5.71147L4.20838 9.83248C4.08819 9.9751 4.08892 10.1838 4.21011 10.3255C4.36289 10.5043 4.63951 10.5033 4.79103 10.3235L7.68139 6.89386C7.84787 6.69632 8.15213 6.69632 8.31861 6.89386L11.209 10.3235C11.3605 10.5033 11.6371 10.5043 11.7899 10.3255Z" />
+										</svg>
+									</div>
 								</summary>
 								<div
 									class="pb-5 font-manrope text-[16px] font-normal leading-[1.6] text-[rgb(var(--color-text,0_0_0))]"

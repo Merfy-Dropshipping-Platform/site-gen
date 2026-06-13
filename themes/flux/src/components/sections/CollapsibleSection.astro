@@ -119,13 +119,15 @@ const titleId = id && heading ? `${id}-title` : undefined;
 							data-puck-subsection-field="sections"
 						>
 							<details class="group">
-								<summary class="flex w-full cursor-pointer list-none items-center justify-between gap-4 py-5 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
-									<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
-									<NtIcon
-										name="dropdown-chevron"
-										sizeClass="size-5"
-										class="shrink-0 transition-transform duration-300 group-open:rotate-180"
-									/>
+								<summary class="cursor-pointer list-none py-5 [&::-webkit-details-marker]:hidden">
+									<div class="flex w-full items-center justify-between gap-4 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70">
+										<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
+										<NtIcon
+											name="dropdown-chevron"
+											sizeClass="size-5"
+											class="shrink-0 transition-transform duration-300 group-open:rotate-180"
+										/>
+									</div>
 								</summary>
 								<div
 									class="pb-5 font-manrope text-[16px] font-light leading-[1.6] text-[rgb(var(--color-muted,153_153_153))]"

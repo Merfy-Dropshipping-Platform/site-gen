@@ -1648,6 +1648,9 @@ const PREVIEW_NAV_AGENT_INLINE = `
         if (sectionEl) {
           sectionEl.setAttribute('data-puck-section-selected', 'true');
           selectedSectionEl = sectionEl;
+          // Клик по СЕКЦИИ в left outline → доскролл превью к ней. Только если не
+          // выбрана вложенная подсекция (её точечный scrollIntoView ниже).
+          if (!subParent) sectionEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       }
       if (subParent && (typeof subIndex === 'number' || typeof subIndex === 'string')) {

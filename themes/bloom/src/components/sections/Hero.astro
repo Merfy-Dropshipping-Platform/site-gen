@@ -65,37 +65,48 @@ const secondaryLink =
 const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
 
 // Канон position (видимое поле панели) / contentPosition (legacy hidden, те же
-// 9 значений) + alignment. 'center' у position — canon-default (его пишет
-// defaultPagesData) → пиксель верстальщика: контент в ЛЕВОМ НИЖНЕМ углу
-// (items-start justify-end), как и отсутствие пропа. alignment 'left' —
-// canon-default из blockDefaults → тот же литерал. Контент двигают только
-// явные top-*/bottom-*/center-left/center-right и alignment center/right.
+// 9 значений). Позиция управляет РАЗМЕЩЕНИЕМ контент-блока по сетке 3×3:
+//   вертикаль — top / center(=середина) / bottom; горизонталь — left / center / right.
+// Пустой проп = дефолт верстальщика bloom (ЛЕВЫЙ НИЖНИЙ угол: items-start +
+// justify-end) — поэтому пустые ветки vPos/hPos дают "" (→ низ) и "left".
+// Явное 'center' (По центру) = СЕРЕДИНА по вертикали + центр по горизонтали
+// (раньше ошибочно сводилось к дефолту-низу — это и был баг).
+// Выравнивание (alignment) теперь НЕЗАВИСИМО и отвечает только за выравнивание
+// КОНТЕНТА (заголовок/текст/кнопки) ВНУТРИ блока, не двигая сам блок.
 const posRaw =
-	typeof p.position === "string"
+	typeof p.position === "string" && p.position
 		? p.position
 		: typeof p.contentPosition === "string"
 			? p.contentPosition
 			: "";
-const pos = posRaw === "center" ? "" : posRaw;
-const vPos = pos.startsWith("top") ? "top" : pos.startsWith("center") ? "middle" : "";
-const hPosFromPos = pos.endsWith("-left")
+const vPos = posRaw.startsWith("top")
+	? "top"
+	: posRaw.startsWith("bottom")
+		? "bottom"
+		: posRaw === "center" || posRaw.startsWith("center")
+			? "middle"
+			: ""; // пусто = дефолт bloom (низ)
+const hPos = posRaw.endsWith("left")
 	? "left"
-	: pos.endsWith("-right")
+	: posRaw.endsWith("right")
 		? "right"
-		: pos.endsWith("-center")
+		: posRaw === "center" || posRaw.endsWith("-center")
 			? "center"
-			: "";
-const hAlign =
-	p.alignment === "left" || p.alignment === "center" || p.alignment === "right"
-		? p.alignment
-		: hPosFromPos || "left";
-const hItemsCls =
-	hAlign === "center" ? "items-center" : hAlign === "right" ? "items-end" : "items-start";
-const vJustifyCls =
-	vPos === "top" ? "justify-start" : vPos === "middle" ? "justify-center" : "justify-end";
-const textAlignCls = hAlign === "center" ? " text-center" : hAlign === "right" ? " text-right" : "";
+			: "left"; // пусто = дефолт bloom (слева)
+const vJustifyCls = vPos === "top" ? "justify-start" : vPos === "middle" ? "justify-center" : "justify-end";
+const hItemsCls = hPos === "right" ? "items-end" : hPos === "center" ? "items-center" : "items-start"; // POSITION → размещение блока
+// alignment — выравнивание КОНТЕНТА внутри блока (НЕ двигает сам блок — это делает
+// Позиция через items на внешнем контейнере). items-* выравнивают заголовок/текст/
+// кнопки друг относительно друга, text-align — многострочный текст. Дефолт bloom 'left'.
+const alignItemsCls =
+	p.alignment === "center" ? "items-center" : p.alignment === "right" ? "items-end" : "items-start"; // ALIGNMENT → контент внутри блока
+const textAlignCls =
+	p.alignment === "center" ? " text-center" : p.alignment === "right" ? " text-right" : "";
+const buttonsJustifyCls =
+	p.alignment === "center" ? "justify-center" : p.alignment === "right" ? "justify-end" : "justify-start";
 // Верхний отступ контейнера нужен только при верхней/средней позиции (низ — литерал).
-const containerCls = `absolute inset-0 z-10 flex h-full w-full flex-col ${hItemsCls} ${vJustifyCls} px-4 pb-8 md:px-20 md:pb-12 xl:pb-20 2xl:px-[300px]${vPos ? " pt-8 md:pt-12 xl:pt-20" : ""}`;
+const needsTopPad = vPos === "top" || vPos === "middle";
+const containerCls = `absolute inset-0 z-10 flex h-full w-full flex-col ${hItemsCls} ${vJustifyCls} px-4 pb-8 md:px-20 md:pb-12 xl:pb-20 2xl:px-[300px]${needsTopPad ? " pt-8 md:pt-12 xl:pt-20" : ""}`;
 
 // Канон buttonStyle solid|outlined: outlined = pill с бордером/текстом цвета
 // заливки кнопки на прозрачном фоне; solid/отсутствие = розовый pill верстальщика
@@ -107,8 +118,6 @@ const ctaBtnCls =
 // Вторая кнопка — белый pill манеры (Philosophy.astro:26) на токенах кнопки-2.
 const secondaryBtnCls =
 	"inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-2-bg,255_255_255))] px-4 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity hover:opacity-90 active:scale-95";
-const rowJustifyCls =
-	hAlign === "center" ? "justify-center" : hAlign === "right" ? "justify-end" : "justify-start";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T14).
 const paddingStyle = p.padding
@@ -164,8 +173,8 @@ const paddingStyle = p.padding
 		}
 
 		<div class={containerCls}>
-			<div class={`flex w-full max-w-[330px] flex-col ${hItemsCls} gap-4`}>
-				<div class={`flex flex-col ${hItemsCls} gap-2${textAlignCls}`}>
+			<div class={`flex w-full max-w-[330px] flex-col ${alignItemsCls} gap-4`}>
+				<div class={`flex flex-col ${alignItemsCls} gap-2${textAlignCls}`}>
 					<h1
 						id="hero-title"
 						class={headingCls}
@@ -186,7 +195,7 @@ const paddingStyle = p.padding
 				</div>
 				{
 					secondaryText ? (
-						<div class={`hero-animate-3 flex w-full flex-row flex-wrap items-center gap-3 ${rowJustifyCls}`}>
+						<div class={`hero-animate-3 flex w-full flex-row flex-wrap items-center gap-3 ${buttonsJustifyCls}`}>
 							<a
 								href={ctaLink}
 								class={ctaBtnCls}

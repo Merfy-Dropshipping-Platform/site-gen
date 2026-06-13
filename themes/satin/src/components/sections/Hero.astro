@@ -67,44 +67,46 @@ const secondaryLink =
 // Канон overlay 0-100 → чёрный слой на фото-половине (у верстальщика 0 — слоя нет).
 const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
 
-// Канон position/contentPosition + alignment: 'center' (canon-default) И отсутствие =
-// ЛИТЕРАЛ — текст вертикально центр, слева в гаттере satin-bleed-left, блок
-// max-w-[420px] gap-6. Явные top-*/bottom-* двигают вертикаль (на desktop добавляется
-// md:py-12, чтобы текст не прилипал к кромке 680px-полотна); alignment center/right
-// двигает блок по горизонтали половины.
+// Канон position (видимое поле панели) / contentPosition (legacy, те же 9 значений) —
+// РАЗМЕЩЕНИЕ контент-блока по сетке: вертикаль (top/center=середина/bottom) → items-*
+// на текст-колонке satin-bleed-left; горизонталь (left/center/right) → размещение блока
+// внутри левой половины (mx-auto/ml-auto). Пустой проп = дефолт верстальщика
+// (вертикаль СЕРЕДИНА, горизонталь СЛЕВА — байт-в-байт прежним строкам).
+// Явное 'center' (По центру) = СЕРЕДИНА (раньше падало в дефолтную ветку — это и был баг).
+// Выравнивание (alignment) теперь НЕЗАВИСИМО и отвечает только за выравнивание КОНТЕНТА.
 const posRaw =
-	typeof p.position === "string"
+	typeof p.position === "string" && p.position
 		? p.position
 		: typeof p.contentPosition === "string"
 			? p.contentPosition
 			: "";
-const pos = posRaw === "center" ? "" : posRaw;
-const vPos = pos.startsWith("top") ? "top" : pos.startsWith("bottom") ? "bottom" : "";
-const hPosFromPos = pos.endsWith("-left")
-	? "left"
-	: pos.endsWith("-right")
-		? "right"
-		: pos.endsWith("-center")
-			? "center"
-			: "";
-const hAlign =
-	p.alignment === "left" || p.alignment === "center" || p.alignment === "right"
-		? p.alignment
-		: hPosFromPos || "left";
+const vPos = posRaw.startsWith("top")
+	? "top"
+	: posRaw.startsWith("bottom")
+		? "bottom"
+		: posRaw === "center" || posRaw.startsWith("center")
+			? "middle"
+			: ""; // пусто = дефолт (середина)
+const hPos = posRaw.endsWith("left") ? "left" : posRaw.endsWith("right") ? "right" : "center";
+// vJustifyCls (вертикаль ПОЗИЦИИ) → items-* на flex-колонке; дефолт/пусто = середина.
+const vJustifyCls = vPos === "top" ? "items-start" : vPos === "bottom" ? "items-end" : "items-center";
+const vPadCls = vPos === "top" || vPos === "bottom" ? "md:py-12" : "md:py-0";
+// hItemsCls (горизонталь ПОЗИЦИИ) → размещение блока в половине: пусто/дефолт = слева
+// (без margin, байт-в-байт); center = mx-auto; right = ml-auto.
+const hItemsCls = posRaw && hPos === "center" ? "mx-auto" : hPos === "right" ? "ml-auto" : "";
+// alignment — выравнивание КОНТЕНТА внутри блока (НЕ двигает сам блок — это делает
+// Позиция). items-*/text-* выравнивают заголовок/текст/кнопки друг относительно друга.
+// Дефолт/пусто = прежняя строка байт-в-байт (без items-*/text-*, слева).
+const alignItemsCls = p.alignment === "left" ? "items-start" : p.alignment === "right" ? "items-end" : p.alignment === "center" ? "items-center" : "";
+const textAlignCls = p.alignment === "left" ? "text-left" : p.alignment === "right" ? "text-right" : p.alignment === "center" ? "text-center" : "";
+const buttonsJustifyCls = p.alignment === "right" ? "justify-end" : p.alignment === "center" ? "justify-center" : "justify-start";
 const textColCls =
-	vPos === "top"
-		? "satin-bleed-left order-2 flex items-start py-12 pr-4 md:order-1 md:h-[680px] md:py-12 md:pr-0"
-		: vPos === "bottom"
-			? "satin-bleed-left order-2 flex items-end py-12 pr-4 md:order-1 md:h-[680px] md:py-12 md:pr-0"
-			: "satin-bleed-left order-2 flex items-center py-12 pr-4 md:order-1 md:h-[680px] md:py-0 md:pr-0";
+	`satin-bleed-left order-2 flex ${vJustifyCls} py-12 pr-4 md:order-1 md:h-[680px] ${vPadCls} md:pr-0`;
 const blockCls =
-	hAlign === "center"
-		? "mx-auto flex max-w-[420px] flex-col items-center gap-6 text-center"
-		: hAlign === "right"
-			? "ml-auto flex max-w-[420px] flex-col items-end gap-6 text-right"
-			: "flex max-w-[420px] flex-col gap-6";
-const rowJustifyCls =
-	hAlign === "center" ? "justify-center" : hAlign === "right" ? "justify-end" : "justify-start";
+	[hItemsCls, "flex max-w-[420px] flex-col", alignItemsCls, "gap-6", textAlignCls]
+		.filter(Boolean)
+		.join(" ");
+const rowJustifyCls = buttonsJustifyCls;
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T14).
 const paddingStyle = p.padding

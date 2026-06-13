@@ -180,20 +180,71 @@ const ctaCls =
 		? "hero-animate-3 inline-flex h-12 min-h-12 max-w-full items-center justify-center border border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80"
 		: "hero-animate-3 inline-flex h-12 min-h-12 max-w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
 
-// Канон alignment / contentAlign: 'left' (canon-default из blockDefaults) И
-// отсутствие = литерал верстальщика (блок слева, text-left, md:ml-4 lg:ml-0).
-const align =
-	p.alignment === "center" || p.alignment === "right"
-		? p.alignment
-		: p.contentAlign === "center"
-			? "center"
-			: "left";
-const copyWrapCls =
-	align === "center"
-		? "pointer-events-auto mx-auto flex w-full max-w-[min(100%,52rem)] flex-col items-center gap-5 text-center md:overflow-visible"
-		: align === "right"
-			? "pointer-events-auto ml-auto flex w-full max-w-[min(100%,52rem)] flex-col items-end gap-5 text-right md:overflow-visible"
-			: "pointer-events-auto flex w-full max-w-[min(100%,52rem)] flex-col items-start gap-5 text-left md:ml-4 md:overflow-visible lg:ml-0";
+// Канон position (видимое поле панели) / contentPosition (legacy, те же 9
+// значений) — РАЗМЕЩЕНИЕ контент-блока по сетке 3×3 (Figma 648-55404): вертикаль
+// top / center(=середина) / bottom, горизонталь left / center / right. Раньше
+// vanilla position ИГНОРИРОВАЛ (блок жёстко стоял по центру вертикали слева) —
+// здесь добавляем поддержку. Манера верстальщика vanilla якорит копию ПО ЦЕНТРУ
+// вертикали (внешний items-center), поэтому пустой проп → середина; а shipped-
+// дефолт defaults/vanilla.json пишет 'bottom-left' (стале относительно верстки —
+// верстальщик центрирует), значит ИМЕННО эту строку сводим к серединному якорю
+// верстальщика, чтобы дефолтный вид остался байт-в-байт. Прочие явные top/bottom
+// работают полноценно. Выравнивание (alignment) теперь НЕЗАВИСИМО — только текст.
+// Раскладка position+alignment считается единой функцией: single-режим зовёт от
+// top-level пропсов, карусель — от ПЕРВОГО слайда с фоллбеком на top-level (тот же
+// принцип, что у size: s.heading?.size ?? sectionSize). Возвращает три класс-строки:
+//   vItemsCls    — вертикаль блока на внешнем vanilla-pad (row-flex cross-axis);
+//   hMarginCls   — горизонталь блока (auto-margin) на copyWrapCls;
+//   copyWrapCls  — сам блок с выравниванием контента (items-* + text-*).
+const layoutFor = (posInput: unknown, alignInput: unknown, contentAlignInput: unknown) => {
+	const posRaw = typeof posInput === "string" && posInput ? posInput : "";
+	// shipped-дефолт 'bottom-left' === манерный середина-слева верстальщика vanilla
+	// (см. коммент выше): сводим строку к пустой, чтобы вертикаль упала в дефолт-ветку.
+	const posNorm = posRaw === "bottom-left" ? "" : posRaw;
+	const vPos = posNorm.startsWith("top")
+		? "top"
+		: posNorm.startsWith("bottom")
+			? "bottom"
+			: posNorm === "center" || posNorm.startsWith("center")
+				? "middle"
+				: ""; // пусто = дефолт верстальщика (середина)
+	const hPos = posNorm.endsWith("left")
+		? "left"
+		: posNorm.endsWith("right")
+			? "right"
+			: posNorm === ""
+				? "left" // дефолт верстальщика — блок слева
+				: "center";
+	// Вертикаль блока — на внешнем vanilla-pad (row-flex, cross-axis = вертикаль).
+	const vItemsCls = vPos === "top" ? "items-start" : vPos === "bottom" ? "items-end" : "items-center";
+	// Горизонталь блока — auto-margin на copyWrapCls. left = литерал верстальщика
+	// (md:ml-4 lg:ml-0, без auto), center = mx-auto, right = ml-auto.
+	const hMarginCls = hPos === "center" ? "mx-auto" : hPos === "right" ? "ml-auto" : "md:ml-4 lg:ml-0";
+	// Канон alignment / contentAlign: 'left' (canon-default) И отсутствие = литерал
+	// верстальщика (text-left). Теперь это ТОЛЬКО выравнивание контента ВНУТРИ блока
+	// (items-* + text-*), НЕЗАВИСИМО от размещения самого блока (это hPos/vPos).
+	const align =
+		alignInput === "center" || alignInput === "right"
+			? alignInput
+			: contentAlignInput === "center"
+				? "center"
+				: "left";
+	const alignItemsCls = align === "center" ? "items-center" : align === "right" ? "items-end" : "items-start";
+	const textAlignCls = align === "center" ? "text-center" : align === "right" ? "text-right" : "text-left";
+	const copyWrapCls = `pointer-events-auto flex w-full max-w-[min(100%,52rem)] flex-col gap-5 md:overflow-visible ${hMarginCls} ${alignItemsCls} ${textAlignCls}`;
+	return { vItemsCls, copyWrapCls };
+};
+
+// Карусель: раскладка от ПЕРВОГО слайда (s.position/s.alignment) с фоллбеком на
+// top-level p.position/p.alignment — манерой size-фоллбека. firstSlide — сырой проп.
+const firstSlide = Array.isArray(p.slides) && p.slides.length > 0 ? p.slides[0] : undefined;
+const carouselLayout = layoutFor(
+	firstSlide?.position ?? p.position ?? p.contentPosition,
+	firstSlide?.alignment ?? p.alignment,
+	firstSlide?.contentAlign ?? p.contentAlign,
+);
+// Single-режим: раскладка от top-level пропсов.
+const singleLayout = layoutFor(p.position ?? p.contentPosition, p.alignment, p.contentAlign);
 
 // Канон overlay 0-100: отсутствие пропа = фикс-затемнение верстальщика bg-black/25;
 // заданное число заменяет его слоем с opacity N/100.
@@ -294,9 +345,9 @@ const secondaryCls =
 					<div class="pointer-events-none absolute inset-0 z-[1] bg-black/25" aria-hidden="true" />
 				)}
 
-				<div class="vanilla-pad absolute inset-0 z-10 flex h-full w-full items-center pointer-events-none">
+				<div class:list={["vanilla-pad absolute inset-0 z-10 flex h-full w-full pointer-events-none", carouselLayout.vItemsCls]}>
 					<div class="vanilla-container pointer-events-none">
-						<div class={copyWrapCls} aria-live="polite">
+						<div class={carouselLayout.copyWrapCls} aria-live="polite">
 							<h1
 								id="hero-title"
 								data-hero-title
@@ -414,9 +465,9 @@ const secondaryCls =
 					<div class="pointer-events-none absolute inset-0 z-[1] bg-black/25" aria-hidden="true" />
 				)}
 
-				<div class="vanilla-pad absolute inset-0 z-10 flex h-full w-full items-center pointer-events-none">
+				<div class:list={["vanilla-pad absolute inset-0 z-10 flex h-full w-full pointer-events-none", singleLayout.vItemsCls]}>
 					<div class="vanilla-container pointer-events-none">
-						<div class={copyWrapCls}>
+						<div class={singleLayout.copyWrapCls}>
 							<h1
 								id="hero-title"
 								class={singleTitleCls}

@@ -69,45 +69,54 @@ const secondaryLink =
 // Канон overlay 0-100 (число или строка) → чёрный слой между фото (z-0) и контентом (z-10).
 const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
 
-// Канон position (видимое поле панели) / contentPosition (legacy hidden) + alignment.
-// 'center' (canon-default defaultPagesData) И отсутствие = ЛИТЕРАЛ flux: контент
-// СЛЕВА СВЕРХУ — блок max-w-[432px] в контейнере px-4 pb-6 pt-32 … (Hero.astro:47-50).
-// Контент двигают только явные top-*/bottom-*/center-left/center-right и
-// alignment center/right. Вертикаль — авто-маргины контент-блока: NtSearchBar
-// остаётся внизу полотна (mt-auto уходит к контенту, у middle полоса прижата
-// нижним краем контейнера).
+// Канон position (видимое поле панели) / contentPosition (legacy, те же 9 значений).
+// Позиция управляет РАЗМЕЩЕНИЕМ контент-блока по сетке 3×3 (как rose Hero):
+//   вертикаль — top / center(=середина) / bottom; горизонталь — left / center / right.
+// Выравнивание (alignment) теперь НЕЗАВИСИМО и отвечает только за выравнивание
+// КОНТЕНТА внутри блока (заголовок/текст/кнопки), НЕ двигает сам блок.
+// Раньше alignment (дефолт center) перебивал горизонталь позиции, а 'center'
+// ошибочно не давал середину — это и был баг (см. rose Hero фикс).
+//
+// СОХРАНЕНИЕ ДЕФОЛТА ВЕРСТАЛЬЩИКА flux: дефолт = position:"left" (defaults/flux.json)
+// и пустой проп (легаси-вызов index.astro <Hero title=.../>): оба = контент СЛЕВА
+// СВЕРХУ. 'left' — горизонталь-только (нет верт-префикса) → hPos="left", vPos="".
+// Пустой vPos у flux = ВЕРХ (justify-start), НЕ низ как у rose; пустой posRaw тоже
+// трактуем как left-верх (родная раскладка flux). NtSearchBar — отдельный нижний
+// слой, прижат к низу полотна во всех ветках (манера flux сохраняется).
 const posRaw =
-	typeof p.position === "string"
+	typeof p.position === "string" && p.position
 		? p.position
 		: typeof p.contentPosition === "string"
 			? p.contentPosition
 			: "";
-const pos = posRaw === "center" ? "" : posRaw;
-const vPos = pos.startsWith("bottom")
-	? "bottom"
-	: pos === "center-left" || pos === "center-right"
-		? "middle"
-		: "";
-const hPosFromPos = pos.endsWith("-left")
+const vPos = posRaw.startsWith("top")
+	? "top"
+	: posRaw.startsWith("bottom")
+		? "bottom"
+		: posRaw === "center" || posRaw.startsWith("center")
+			? "middle"
+			: ""; // пусто = верх (родной дефолт flux)
+const hPos = posRaw.endsWith("left")
 	? "left"
-	: pos.endsWith("-right")
+	: posRaw.endsWith("right")
 		? "right"
-		: pos.endsWith("-center")
-			? "center"
-			: "";
-const hAlign =
-	p.alignment === "left" || p.alignment === "center" || p.alignment === "right"
-		? p.alignment
-		: hPosFromPos || "left";
-const contentHCls =
-	hAlign === "center" ? " items-center self-center text-center" : hAlign === "right" ? " items-end self-end text-right" : "";
-const contentVCls = vPos === "middle" ? " my-auto" : vPos === "bottom" ? " mt-auto" : "";
-const contentCls = `flex max-w-[432px] flex-col gap-8${contentHCls}${contentVCls}`;
-const rowJustifyCls =
-	hAlign === "center" ? " justify-center" : hAlign === "right" ? " justify-end" : "";
-const searchWrapCls = vPos
-	? "w-full max-w-[1320px] self-center"
-	: "mt-auto w-full max-w-[1320px] self-center";
+		: posRaw === "" // пусто = left (родной дефолт flux, не center как у rose)
+			? "left"
+			: "center";
+// flux: пустой vPos = ВЕРХ (justify-start) вместо низа (rose-дефолт = bottom).
+const vJustifyCls = vPos === "top" ? "justify-start" : vPos === "middle" ? "justify-center" : vPos === "bottom" ? "justify-end" : "justify-start";
+const hItemsCls = hPos === "left" ? "items-start" : hPos === "right" ? "items-end" : "items-center"; // ПОЗИЦИЯ
+// alignment — выравнивание КОНТЕНТА внутри блока (НЕ двигает сам блок — это делает
+// Позиция через items на внешнем контейнере). items-* выравнивают заголовок/текст/
+// кнопки друг относительно друга, text-align — многострочный текст.
+// ВАЖНО flux: дефолт выравнивания (нет пропа alignment) = ВЛЕВО (родная раскладка
+// верстальщика — контент у левого края блока), НЕ по центру как у rose. Явные
+// alignment center/right двигают контент независимо от позиции.
+const align = p.alignment === "center" || p.alignment === "right" ? p.alignment : "left";
+const alignItemsCls = align === "right" ? "items-end" : align === "center" ? "items-center" : "items-start"; // ВЫРАВНИВАНИЕ
+const textAlignCls = align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
+const buttonsJustifyCls = align === "right" ? "justify-end" : align === "center" ? "justify-center" : "justify-start";
+const contentCls = `flex max-w-[432px] flex-col gap-8 ${alignItemsCls}`;
 
 // Канон buttonStyle solid|outlined для основной кнопки. solid/отсутствие = белая
 // заливка верстальщика с оранжевым текстом дословно (токены кнопки-1 §7: в схемах
@@ -179,11 +188,10 @@ const rootStyle = `min-height: clamp(500px, 80vh, 1080px)${paddingStyle ? `;${pa
 		}
 
 		<div
-			class="relative z-10 flex h-full w-full flex-col justify-between px-4 pb-6 pt-32 md:px-20 md:pb-10 md:pt-40 lg:pt-52 2xl:px-80"
-			style="min-height: clamp(500px, 80vh, 1080px)"
+			class={`absolute inset-0 z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} px-4 pb-28 pt-32 md:px-20 md:pb-32 md:pt-40 lg:pt-52 2xl:px-80`}
 		>
 			<div class={contentCls}>
-				<div class={`flex flex-col gap-2${contentHCls}`}>
+				<div class={`flex flex-col gap-2 ${alignItemsCls} ${textAlignCls}`}>
 					<h1
 						id="hero-title"
 						class={headingCls}
@@ -203,7 +211,7 @@ const rootStyle = `min-height: clamp(500px, 80vh, 1080px)${paddingStyle ? `;${pa
 					</p>
 				</div>
 
-				<div class={`flex flex-wrap gap-3${rowJustifyCls}`}>
+				<div class={`flex flex-wrap gap-3 ${buttonsJustifyCls}`}>
 					<a
 						href={ctaLink}
 						class={ctaBtnCls}
@@ -228,8 +236,12 @@ const rootStyle = `min-height: clamp(500px, 80vh, 1080px)${paddingStyle ? `;${pa
 					}
 				</div>
 			</div>
+		</div>
 
-			<div class={searchWrapCls}>
+		<div
+			class="absolute inset-x-0 bottom-0 z-10 flex w-full justify-center px-4 pb-6 md:px-20 md:pb-10 2xl:px-80"
+		>
+			<div class="w-full max-w-[1320px]">
 				<NtSearchBar />
 			</div>
 		</div>

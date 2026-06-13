@@ -219,7 +219,7 @@ const paddingStyle = p.padding
 	import {
 		loadRealProducts,
 		loadRealCollections,
-		filterByCollection,
+		resolveCollectionProducts,
 		renderCardHtml,
 		escapeHtml,
 		productHref,
@@ -240,15 +240,20 @@ const paddingStyle = p.padding
 		const needCollections = grids.some((g) => g.getAttribute("data-collection"));
 		const collections = needCollections ? await loadRealCollections() : null;
 		for (const grid of grids) {
+			const collectionRef = grid.getAttribute("data-collection");
+			// Shopify-модель: без явно выбранной коллекции секция оставляет
+			// SSR-моки (demo), а не подтягивает весь каталог магазина.
+			if (!collectionRef) continue;
+			const matched = resolveCollectionProducts(products, collections, collectionRef);
+			// Коллекция пуста / не найдена → тоже оставляем моки.
+			if (matched.length === 0) continue;
 			const limitRaw = Number(grid.getAttribute("data-cards"));
 			const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? limitRaw : 4;
 			const quickAdd = grid.getAttribute("data-quick-add");
 			const qaText = grid.getAttribute("data-qa-text") || "В корзину";
 			const qaClass = grid.getAttribute("data-qa-class") || "";
 			const wantNextPhoto = grid.hasAttribute("data-next-photo");
-			const collectionRef = grid.getAttribute("data-collection");
-			const pool = collectionRef ? filterByCollection(products, collections, collectionRef) : products;
-			const items = pool.slice(0, limit);
+			const items = matched.slice(0, limit);
 			grid.innerHTML = items
 				.map((p) => {
 					const img2 =

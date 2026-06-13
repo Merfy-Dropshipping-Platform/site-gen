@@ -200,6 +200,33 @@ export function filterByCollection(
 	return filtered.length > 0 ? filtered : products;
 }
 
+/**
+ * Строгий резолв товаров выбранной коллекции. В отличие от filterByCollection
+ * НЕ откатывается на весь каталог: пустой результат = «коллекция пуста / не
+ * найдена», и вызывающий трактует это как «оставить моки» (Shopify-модель —
+ * без явного выбора секция не подтягивает весь магазин).
+ */
+export function resolveCollectionProducts(
+	products: RealProduct[],
+	collections: RealCollection[] | null,
+	ref: string | null | undefined,
+): RealProduct[] {
+	if (!ref) return [];
+	const col = findCollection(collections, ref);
+	if (col && Array.isArray(col.productIds) && col.productIds.length > 0) {
+		const ids = new Set(col.productIds);
+		const byIds = products.filter((p) => p.id && ids.has(p.id));
+		if (byIds.length > 0) return byIds;
+	}
+	return products.filter((p) => {
+		const memb = (p as unknown as { collections?: Array<{ id?: string; slug?: string }> }).collections;
+		return (
+			Array.isArray(memb) &&
+			memb.some((m) => m && (m.id === ref || m.slug === ref || (col?.slug && m.slug === col.slug)))
+		);
+	});
+}
+
 /** Число → "2 800 ₽". Готовую строку возвращает как есть. Пусто → "". */
 export function formatPrice(value: number | string | null | undefined): string {
 	if (value === null || value === undefined || value === "") return "";

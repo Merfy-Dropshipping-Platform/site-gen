@@ -235,7 +235,7 @@ const paddingStyle = p.padding
 	import {
 		loadRealProducts,
 		loadRealCollections,
-		filterByCollection,
+		resolveCollectionProducts,
 		renderCardHtml,
 		escapeHtml,
 		productHref,
@@ -264,7 +264,11 @@ const paddingStyle = p.padding
 			const qaClass = grid.getAttribute("data-qa-class") || "";
 			const wantNextPhoto = grid.hasAttribute("data-next-photo");
 			const collectionRef = grid.getAttribute("data-collection");
-			const pool = collectionRef ? filterByCollection(products, collections, collectionRef) : products;
+			// Shopify-модель: без выбранной коллекции / пустая коллекция → оставляем
+			// SSR-моки (demo), не подтягиваем весь каталог магазина.
+			if (!collectionRef) continue;
+			const pool = resolveCollectionProducts(products, collections, collectionRef);
+			if (pool.length === 0) continue;
 			const items = pool.slice(0, limit);
 			grid.innerHTML = items
 				.map((p) => {

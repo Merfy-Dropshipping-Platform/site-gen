@@ -10,12 +10,12 @@ const id = p.id;
 
 // heading: string | { text, size }; text: string | { content, size } (canon union).
 const heading =
-	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Заголовок раздела");
+	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Расскажите о своем бренде");
 const text =
 	typeof p.text === "string"
 		? p.text
 		: (p.text?.content ??
-			"Описание вашего магазина. Поддерживает базовое HTML-форматирование: <b>жирный</b> и <i>курсив</i>.");
+			"Поделитесь информацией о вашем бренде с покупателями. Опишите продукт, сделайте объявление или пригласите покупателей в свой магазин.");
 
 // Канон headingSize (top-level hidden приоритетнее heading.size сабпанели):
 // 'medium' (canon-default) и отсутствие = .rose-title дословно (20px desktop /
@@ -23,9 +23,9 @@ const text =
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
 	headingSize === "small"
-		? " !text-[12px] sm:!text-[17px]"
+		? " [--size-section-heading:17px] [--size-section-heading-m:12px]"
 		: headingSize === "large"
-			? " !text-[17px] sm:!text-[24px]"
+			? " [--size-section-heading:24px] [--size-section-heading-m:17px]"
 			: "";
 const headingCls = `rose-title${headingSizeCls}`;
 
@@ -35,15 +35,14 @@ const textSize = p.textSize ?? p.text?.size;
 const textSizeCls =
 	textSize === "small" ? " !text-[14px]" : textSize === "large" ? " !text-[19px]" : "";
 
-// Канон position — позиция контент-колонки в контейнере; alignment — выравнивание
-// текста/элементов внутри колонки. canon-default обоих = 'center'.
+// Канон «Позиция» (Figma 1230-42143) — управляет И размещением контент-колонки,
+// И выравниванием текста/элементов внутри. Отдельного «Выравнивание» нет.
 const position = p.position === "left" || p.position === "right" ? p.position : "center";
-const alignment = p.alignment === "left" || p.alignment === "right" ? p.alignment : "center";
 const posCls = position === "left" ? "mr-auto" : position === "right" ? "ml-auto" : "mx-auto";
 const alignCls =
-	alignment === "left"
+	position === "left"
 		? "items-start text-left"
-		: alignment === "right"
+		: position === "right"
 			? "items-end text-right"
 			: "items-center text-center";
 

@@ -56,9 +56,10 @@ export type MainTextProps = z.infer<typeof MainTextSchema>;
 export const MainTextPuckConfig: BlockPuckConfig<MainTextProps> = {
   label: 'Основной текст',
   category: 'content',
-  // Figma 314-34750: 4 sections — Содержание (header) / Позиция / Выравнивание /
-  // Цветовая схема / Отступы. heading / text / button — в sub-panels через
-  // subsection click в превью.
+  // Figma 1230-42143: Содержание (header) / Позиция / Цветовая схема / Отступы.
+  // «Позиция» (Слева/По центру/Справа) управляет И размещением колонки, И
+  // выравниванием контента — отдельного «Выравнивание» в дизайне НЕТ.
+  // heading / text / button — в sub-panels через subsection click в превью.
   fields: {
     ['_contentSection' as never]: { type: 'section-header', label: 'Содержание' } as any,
     position: {
@@ -70,7 +71,6 @@ export const MainTextPuckConfig: BlockPuckConfig<MainTextProps> = {
         { label: 'Справа', value: 'right' },
       ],
     },
-    alignment: { type: 'alignment', label: 'Выравнивание' },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
 
@@ -119,16 +119,16 @@ export const MainTextPuckConfig: BlockPuckConfig<MainTextProps> = {
       },
     } as any,
 
-    // Hidden — нет в Figma 314-34750.
+    // Hidden — нет в Figma 1230-42143.
+    alignment: { type: 'hidden', label: '' },
     headingSize: { type: 'hidden', label: '' },
     cta: { type: 'hidden', label: '' },
     buttonStyle: { type: 'hidden', label: '' },
     textStyle: { type: 'hidden', label: '' },
   },
   defaults: {
-    heading: 'Заголовок раздела',
-    text: 'Описание вашего магазина. Поддерживает базовое HTML-форматирование: <b>жирный</b> и <i>курсив</i>.',
-    alignment: 'center',
+    heading: 'Расскажите о своем бренде',
+    text: 'Поделитесь информацией о вашем бренде с покупателями. Опишите продукт, сделайте объявление или пригласите покупателей в свой магазин.',
     position: 'center',
     headingSize: 'medium',
     textSize: 'medium',

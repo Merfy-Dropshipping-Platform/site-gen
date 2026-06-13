@@ -15,9 +15,9 @@ const heading =
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
 	headingSize === "small"
-		? " !text-[12px] sm:!text-[17px]"
+		? " [--size-section-heading:17px] [--size-section-heading-m:12px]"
 		: headingSize === "large"
-			? " !text-[17px] sm:!text-[24px]"
+			? " [--size-section-heading:24px] [--size-section-heading-m:17px]"
 			: "";
 const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
 const headingAlignCls =

@@ -87,7 +87,7 @@
 /* Mobile (Figma 375): section title 14px, subtitle 12px */
 @media (max-width: 639.98px) {
   .rose-title {
-    font-size: 14px !important;
+    font-size: var(--size-section-heading-m, 14px) !important;
   }
 
   .rose-subtitle {

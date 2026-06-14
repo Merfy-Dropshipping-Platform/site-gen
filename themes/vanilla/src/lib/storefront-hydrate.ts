@@ -257,6 +257,15 @@ export function escapeHtml(value: unknown): string {
  * Классы/структура 1:1 с темой vanilla: aspect-square, bg var(--vanilla-card),
  * font-vanilla-arsenal uppercase, старая цена #444444 line-through.
  */
+// Товар без фото / битый URL (MinIO 404): surface-плейсхолдер вместо битого
+// <img>. Зеркалит VanillaProductCard.astro (ветка !hasPhoto).
+const CARD_MEDIA_FALLBACK_HTML =
+	'<div class="absolute inset-0 flex items-center justify-center" aria-hidden="true">' +
+	'<svg class="size-10" style="color:rgb(var(--color-muted,153 153 153))" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+	'<rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>' +
+	"</svg></div>";
+const CARD_IMG_ONERROR_ATTR = ` onerror="this.onerror=null;this.outerHTML='${CARD_MEDIA_FALLBACK_HTML.replace(/"/g, "&quot;")}'"`;
+
 export function renderCardHtml(p: RealProduct): string {
 	const href = escapeHtml(productHref(p));
 	const name = escapeHtml(p.name);
@@ -268,7 +277,7 @@ export function renderCardHtml(p: RealProduct): string {
 		: "";
 	return `<article class="group flex flex-col gap-3" data-nt="vanilla-product-card" aria-label="${name}">
 	<a href="${href}" class="relative block aspect-square w-full overflow-hidden bg-[var(--vanilla-card)]" aria-label="${name}">
-		<img src="${image}" alt="${name}" width="429" height="429" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+		${image ? `<img src="${image}" alt="${name}" width="429" height="429" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"${CARD_IMG_ONERROR_ATTR} />` : CARD_MEDIA_FALLBACK_HTML}
 	</a>
 	<div class="flex flex-col gap-1">
 		<a href="${href}" class="font-vanilla-arsenal text-base font-normal uppercase leading-none text-black transition-opacity hover:opacity-70">${name}</a>

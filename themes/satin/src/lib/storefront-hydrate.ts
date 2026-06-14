@@ -257,6 +257,15 @@ export function escapeHtml(value: unknown): string {
  * MinIO-картинок не применяется). Кнопка «В корзину» несёт data-add-to-cart, чтобы
  * делегирование nt-cart-satin её поймало.
  */
+// Товар без фото / битый URL (MinIO 404): surface-плейсхолдер вместо битого
+// <img>. Зеркалит SatinProductCard.astro (SSR-ветка !product.image).
+const CARD_MEDIA_FALLBACK_HTML =
+	'<div class="absolute inset-0 flex items-center justify-center" aria-hidden="true">' +
+	'<svg class="size-10" style="color:rgb(var(--color-muted,153 153 153))" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+	'<rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>' +
+	"</svg></div>";
+const CARD_IMG_ONERROR_ATTR = ` onerror="this.onerror=null;this.outerHTML='${CARD_MEDIA_FALLBACK_HTML.replace(/"/g, "&quot;")}'"`;
+
 export function renderCardHtml(p: RealProduct): string {
 	const href = escapeHtml(productHref(p));
 	const name = escapeHtml(p.name);
@@ -272,7 +281,7 @@ export function renderCardHtml(p: RealProduct): string {
 	return `<article class="group flex flex-col gap-3" data-nt="satin-product-card" aria-label="${name}">
 	<div class="relative aspect-[430/564] w-full overflow-hidden bg-[#F5F5F5]">
 		<a href="${href}" class="block size-full" aria-label="${name}">
-			<img src="${image}" alt="${name}" width="430" height="564" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
+			${image ? `<img src="${image}" alt="${name}" width="430" height="564" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"${CARD_IMG_ONERROR_ATTR} />` : CARD_MEDIA_FALLBACK_HTML}
 		</a>
 		${badge}
 	</div>

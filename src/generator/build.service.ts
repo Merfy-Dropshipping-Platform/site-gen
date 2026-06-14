@@ -155,6 +155,52 @@ export async function patchShopIdInDist(
 }
 
 /**
+ * SEO: экранирование для безопасной подстановки текста в HTML-атрибуты
+ * (content="…", href="…") и текстовые узлы (<title>…</title>). Имена/описания
+ * товаров — пользовательский ввод, без экранирования рвут разметку или дают XSS.
+ */
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
+ * SEO themes-v2: pre-built dist собран с astro.config `site="https://example.com"`,
+ * который травит canonical/og:url/og:image/sitemap во ВСЕХ страницах (копируются
+ * verbatim на каждый сайт). Заменяем плейсхолдер-домен на реальный домен сайта во
+ * всех *.html и *.xml. Зеркалит обход patchShopIdInDist (recursive readdir +
+ * per-file string patch), но по двум расширениям. Возвращает число пропатченных файлов.
+ */
+async function patchDomainInDist(
+  distDir: string,
+  publicUrl: string,
+): Promise<number> {
+  const files: string[] = [];
+  async function walk(dir: string) {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    for (const e of entries) {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) await walk(full);
+      else if (e.name.endsWith(".html") || e.name.endsWith(".xml")) files.push(full);
+    }
+  }
+  await walk(distDir);
+  let patched = 0;
+  for (const file of files) {
+    const content = await fs.readFile(file, "utf8");
+    if (!content.includes("https://example.com")) continue;
+    const next = content.split("https://example.com").join(publicUrl);
+    await fs.writeFile(file, next, "utf8");
+    patched++;
+  }
+  return patched;
+}
+
+/**
  * Инжект window-глобалов во все HTML диста (после <head>). Используется для
  * настроек конструктора, которые статичные страницы тем читают на рантайме
  * (раскладка каталога и т.п.). Идемпотентно по маркеру имени глобала.
@@ -986,6 +1032,20 @@ export async function runBuildPipeline(
       t = Date.now();
       emitProgress(deps, ctx, "generate", `Deploying themes-v2 build (${bareTheme})`);
       await copyThemeV2Dist(ctx, bareTheme);
+      // SEO: pre-built dist собран с astro.config site="https://example.com" →
+      // canonical/og:url/og:image/sitemap во ВСЕХ страницах указывают на плейсхолдер.
+      // Заменяем на реальный домен сайта во всех *.html/*.xml ДО per-slug генерации
+      // (универсальная product/index.html — источник для per-slug копий, она должна
+      // быть уже с правильным доменом). Гейт на ctx.publicUrl; не должно ломать билд.
+      if (ctx.publicUrl) {
+        try {
+          const pub = ctx.publicUrl.replace(/\/+$/, "");
+          const domainPatched = await patchDomainInDist(ctx.distDir, pub);
+          logger.log(`[themes-v2][seo] Patched example.com → ${pub} in ${domainPatched} files for site ${params.siteId}`);
+        } catch (domErr) {
+          logger.warn(`[themes-v2][seo] domain patch failed: ${(domErr as Error)?.message ?? domErr}`);
+        }
+      }
       // Фаза 2 (слайсинг): контентные страницы — из Puck JSON ревизии тем же
       // движком, что превью (live = превью). Сложные страницы — verbatim из диста.
       // Lazy import: build.service ← v2-live-pages ← v2-page-composer ←
@@ -1058,32 +1118,166 @@ export async function runBuildPipeline(
         await fs.mkdir(path.dirname(v2ProductsPath), { recursive: true });
         await fs.writeFile(v2ProductsPath, JSON.stringify(v2Store.products, null, 2), "utf8");
         logger.log(`[themes-v2] Injected ${v2Store.products.length} products into data/products.json for site ${params.siteId}`);
-        // Pretty product URLs: каталог/Popular/islands линкуют на /product/<slug>,
+        // Pretty product URLs + SEO: каталог/Popular/islands линкуют на /product/<slug>,
         // но Option B держит единую страницу /product (гидрация по ?id= / slug из
         // пути). themes-v2 копирует pre-built dist без per-slug страниц → /product/<slug>
         // = 404 на nginx-minio-proxy (нет fallback). Генерим статические
-        // product/<slug>/index.html как копию универсальной product/index.html —
-        // клиент (product.astro) читает slug из location.pathname и гидрирует нужный
-        // товар. Дёшево (копия одного шелла), без re-run astro build.
+        // product/<slug>/index.html И product/<id>/index.html как копии универсальной
+        // product/index.html — клиент (product.astro) читает slug/id из
+        // location.pathname и гидрирует нужный товар. Per-id страница нужна, чтобы
+        // nginx-редиректы /product?id=<id> и /products/<id> приземлялись на реальный
+        // HTML. Дёшево (копии одного шелла), без re-run astro build.
+        //
+        // SEO-мета: pre-built product/index.html = скелет (title="Товар — Rose",
+        // generic flower-shop description, canonical/og на example.com — уже
+        // домен-пофикшено выше). В КАЖДОЙ копии патчим canonical/og/title/description/
+        // og:image под реальный товар. canonical ВСЕГДА на /product/<slug> (даже на
+        // per-id странице) → консолидируем дубликаты в один canonical URL.
         try {
           const universalPdp = path.join(ctx.distDir, "product", "index.html");
+          // Источник = УЖЕ домен-пофикшенная универсальная product/index.html.
           const pdpHtml = await fs.readFile(universalPdp, "utf8").catch(() => null);
           if (pdpHtml) {
+            // siteTitle = суффикс "— X" из скелетного <title>Товар — Rose</title>.
+            // Берём текст после последнего " — " (em-dash). Нет суффикса → ''.
+            const titleMatch = pdpHtml.match(/<title>([^<]*)<\/title>/i);
+            const rawTitle = titleMatch ? titleMatch[1] : "";
+            const dashIdx = rawTitle.lastIndexOf(" — ");
+            const siteTitle = dashIdx >= 0 ? rawTitle.slice(dashIdx + 3).trim() : "";
+            // pub без хвостового слэша (гейт на ctx.publicUrl выше по ветке; здесь
+            // может быть null — тогда canonical/og:url не патчим, остальное патчим).
+            const pub = ctx.publicUrl ? ctx.publicUrl.replace(/\/+$/, "") : "";
+
+            // Per-product патч мета. Возвращает HTML с подставленными SEO-тегами.
+            const patchPdpMeta = (
+              html: string,
+              p: Record<string, unknown>,
+              slug: string,
+            ): string => {
+              let out = html;
+              const name = typeof p.name === "string" ? p.name : "";
+              // description: предпочитаем metaDescription (явное SEO-поле), иначе description.
+              const descRaw =
+                (typeof p.metaDescription === "string" && p.metaDescription.trim()
+                  ? p.metaDescription
+                  : typeof p.description === "string"
+                    ? p.description
+                    : "") ?? "";
+              const desc = descRaw.trim();
+              // главное изображение: image / images[0] / gallery[0] (поддержка строки и {url}).
+              const pickImg = (v: unknown): string | null => {
+                if (typeof v === "string" && v.trim()) return v.trim();
+                if (v && typeof v === "object" && typeof (v as { url?: unknown }).url === "string")
+                  return (v as { url: string }).url;
+                return null;
+              };
+              const imgs = Array.isArray(p.images) ? p.images : [];
+              const gallery = Array.isArray((p as { gallery?: unknown[] }).gallery)
+                ? ((p as { gallery: unknown[] }).gallery)
+                : [];
+              const mainImage =
+                pickImg(p.image) ?? pickImg(imgs[0]) ?? pickImg(gallery[0]);
+
+              const canonical = pub ? `${pub}/product/${slug}` : "";
+              // canonical href (ВСЕГДА slug) — толерантный regex по атрибутам link.
+              if (canonical) {
+                out = out.replace(
+                  /(<link\b[^>]*\brel=["']canonical["'][^>]*\bhref=["'])[^"']*(["'])/i,
+                  `$1${escapeHtml(canonical)}$2`,
+                );
+                // og:url (та же canonical) — property до/после content, толерантно.
+                out = out.replace(
+                  /(<meta\b[^>]*\bproperty=["']og:url["'][^>]*\bcontent=["'])[^"']*(["'])/i,
+                  `$1${escapeHtml(canonical)}$2`,
+                );
+              }
+              // <title> и og:title → "<name> — <siteTitle>" (или просто name без суффикса).
+              if (name) {
+                const fullTitle = siteTitle ? `${name} — ${siteTitle}` : name;
+                out = out.replace(
+                  /<title>[^<]*<\/title>/i,
+                  `<title>${escapeHtml(fullTitle)}</title>`,
+                );
+                out = out.replace(
+                  /(<meta\b[^>]*\bproperty=["']og:title["'][^>]*\bcontent=["'])[^"']*(["'])/i,
+                  `$1${escapeHtml(fullTitle)}$2`,
+                );
+              }
+              // description / og:description / twitter:description → обрезка ~160 симв.
+              // Пусто → не трогаем (оставляем скелет, чтобы не было пустых тегов).
+              if (desc) {
+                const trimmed =
+                  desc.length > 160 ? `${desc.slice(0, 157).trimEnd()}…` : desc;
+                const ed = escapeHtml(trimmed);
+                out = out.replace(
+                  /(<meta\b[^>]*\bname=["']description["'][^>]*\bcontent=["'])[^"']*(["'])/i,
+                  `$1${ed}$2`,
+                );
+                out = out.replace(
+                  /(<meta\b[^>]*\bproperty=["']og:description["'][^>]*\bcontent=["'])[^"']*(["'])/i,
+                  `$1${ed}$2`,
+                );
+                out = out.replace(
+                  /(<meta\b[^>]*\bproperty=["']twitter:description["'][^>]*\bcontent=["'])[^"']*(["'])/i,
+                  `$1${ed}$2`,
+                );
+              }
+              // og:image → абсолютный URL главного изображения (если есть).
+              if (mainImage) {
+                out = out.replace(
+                  /(<meta\b[^>]*\bproperty=["']og:image["'][^>]*\bcontent=["'])[^"']*(["'])/i,
+                  `$1${escapeHtml(mainImage)}$2`,
+                );
+              }
+              return out;
+            };
+
             let made = 0;
+            let madeId = 0;
             for (const p of v2Store.products as unknown as Array<Record<string, unknown>>) {
               const slug = (p.slug ?? p.handle ?? p.id) as string | undefined;
               if (!slug || typeof slug !== "string") continue;
-              const dir = path.join(ctx.distDir, "product", slug);
-              await fs.mkdir(dir, { recursive: true });
-              await fs.writeFile(path.join(dir, "index.html"), pdpHtml, "utf8");
+              // canonical всегда на slug → одна и та же мета в обеих копиях.
+              const patched = patchPdpMeta(pdpHtml, p, slug);
+              const slugDir = path.join(ctx.distDir, "product", slug);
+              await fs.mkdir(slugDir, { recursive: true });
+              await fs.writeFile(path.join(slugDir, "index.html"), patched, "utf8");
               made++;
+              // Per-id страница (если id != slug): тот же patched HTML (canonical=slug).
+              const pid = typeof p.id === "string" ? p.id : undefined;
+              if (pid && pid !== slug) {
+                const idDir = path.join(ctx.distDir, "product", pid);
+                await fs.mkdir(idDir, { recursive: true });
+                await fs.writeFile(path.join(idDir, "index.html"), patched, "utf8");
+                madeId++;
+              }
             }
-            logger.log(`[themes-v2] Generated ${made} pretty product/<slug>/index.html pages for site ${params.siteId}`);
+            logger.log(`[themes-v2][seo] Generated ${made} product/<slug>/ + ${madeId} product/<id>/ pages with SEO meta for site ${params.siteId}`);
           } else {
             logger.warn(`[themes-v2] universal product/index.html not found — pretty /product/<slug> URLs will 404`);
           }
         } catch (slugErr) {
           logger.warn(`[themes-v2] per-slug product page gen failed: ${(slugErr as Error)?.message ?? slugErr}`);
+        }
+        // SEO: robots.txt + sitemap товаров. Гейт на ctx.publicUrl (без домена
+        // абсолютные URL некорректны). try/catch — не должно ломать билд.
+        if (ctx.publicUrl) {
+          try {
+            const pub = ctx.publicUrl.replace(/\/+$/, "");
+            const robots = `User-agent: *\nAllow: /\nSitemap: ${pub}/sitemap-index.xml\nSitemap: ${pub}/sitemap-products.xml\n`;
+            await fs.writeFile(path.join(ctx.distDir, "robots.txt"), robots, "utf8");
+            // sitemap товаров: <loc> только на canonical /product/<slug> (не id).
+            const urls = (v2Store.products as unknown as Array<Record<string, unknown>>)
+              .map((p) => (p.slug ?? p.handle ?? p.id) as string | undefined)
+              .filter((s): s is string => typeof s === "string" && s.length > 0)
+              .map((slug) => `  <url><loc>${escapeHtml(`${pub}/product/${slug}`)}</loc></url>`)
+              .join("\n");
+            const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
+            await fs.writeFile(path.join(ctx.distDir, "sitemap-products.xml"), sitemap, "utf8");
+            logger.log(`[themes-v2][seo] Wrote robots.txt + sitemap-products.xml (${v2Store.products.length} products) for site ${params.siteId}`);
+          } catch (seoErr) {
+            logger.warn(`[themes-v2][seo] robots/sitemap write failed: ${(seoErr as Error)?.message ?? seoErr}`);
+          }
         }
       } else {
         logger.warn(`[themes-v2] RPC returned 0 products for site ${params.siteId} — live will show demo`);

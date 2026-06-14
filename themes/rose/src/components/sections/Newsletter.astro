@@ -42,6 +42,10 @@ const buttonText =
 // inline-submit — форма подвала верстальщика дословно (кнопка-стрелка в рамке).
 const inlineSubmit = p.formLayout === "inline-submit";
 
+// Канон agreement (toggle 'true'/'false', default 'false'): при 'true' — чекбокс
+// согласия под формой (манера rose: Manrope мелкий muted); иначе ничего.
+const showAgreement = p.agreement === "true";
+
 // Канон position — позиция блока в контейнере; alignment — выравнивание текста.
 // Отсутствие = left (манера блока подписки подвала).
 // alignment живёт в под-панели «Заголовок» (heading.alignment); top-level p.alignment
@@ -144,6 +148,18 @@ const titleId = id ? `${id}-title` : undefined;
 							{buttonText}
 						</button>
 					</form>
+				)
+			}
+			{
+				showAgreement && (
+					<label class="flex w-full cursor-pointer items-start gap-2 font-manrope text-[13px] font-normal leading-snug text-[rgb(var(--color-muted,153_153_153))]">
+						<input
+							type="checkbox"
+							required
+							class="mt-0.5 size-4 shrink-0 accent-[rgb(var(--color-button-bg,0_0_0))]"
+						/>
+						<span>Согласен на обработку персональных данных</span>
+					</label>
 				)
 			}
 			<p

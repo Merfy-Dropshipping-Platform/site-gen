@@ -137,6 +137,7 @@ const headingGuardStyle = 'color:rgb(var(--color-heading));';
 const dateGuardStyle = 'color:rgb(var(--color-text) / 0.5);';
 const titleGuardStyle = 'color:rgb(var(--color-heading));';
 const excerptGuardStyle = 'color:rgb(var(--color-text) / 0.7);';
+const linkGuardStyle = 'color:rgb(var(--color-heading));text-decoration-line:underline;text-underline-offset:4px;';
 // Медиа-бокс: гарантированные пропорции + surface-фон, чтобы при битой
 // обложке (onerror прячет <img>) оставалась аккуратная плашка-сюрфейс,
 // а не схлопнутая/прозрачная дыра.
@@ -170,9 +171,10 @@ const gridGuardStyle =
               )}
             </div>
             <div class={C.cardBody}>
-              {dateTimeEnabled && item.date && <div class={C.cardDate} style={dateGuardStyle}>{item.date}</div>}
               <div class={C.cardTitle} style={titleGuardStyle}>{item.title}</div>
+              {dateTimeEnabled && item.date && <div class={C.cardDate} style={dateGuardStyle}>{item.date}</div>}
               {item.excerpt && <div class={C.cardExcerpt} style={excerptGuardStyle}>{item.excerpt}</div>}
+              <span class={C.cardLink} style={linkGuardStyle}>Подробнее</span>
             </div>
           </Wrapper>
         );

@@ -63,6 +63,11 @@ const placeholder =
 // render-only ветка на существующих данных (новых пропсов не вводим).
 const buttonText = typeof p.buttonText === "string" && p.buttonText.trim() ? p.buttonText : "";
 
+// Канон agreement (toggle 'true'/'false', default 'false'): при 'true' — чекбокс
+// согласия под формой (манера flux: Roboto Flex 300 мелкий muted, акцент
+// кнопки-2 чёрный); иначе ничего.
+const showAgreement = p.agreement === "true";
+
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
@@ -132,6 +137,18 @@ const titleId = id ? `${id}-title` : undefined;
 				)
 			}
 		</form>
+		{
+			showAgreement && (
+				<label class="flex w-full max-w-[460px] cursor-pointer items-start gap-2 font-roboto-flex text-[12px] font-light leading-snug text-[rgb(var(--color-muted,153_153_153))] md:text-[13px]">
+					<input
+						type="checkbox"
+						required
+						class="mt-0.5 size-4 shrink-0 accent-[rgb(var(--color-button-2-bg,0_0_0))]"
+					/>
+					<span>Согласен на обработку персональных данных</span>
+				</label>
+			)
+		}
 		<p
 			data-newsletter-status
 			role="status"

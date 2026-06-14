@@ -56,6 +56,11 @@ const stackedBtnCls =
 // кнопка внутри); 'stacked' = поле + тёмная md-кнопка ниже (манера §3).
 const inlineSubmit = p.formLayout !== "stacked";
 
+// Канон agreement (toggle 'true'/'false', default 'false'): при 'true' — чекбокс
+// согласия под формой (манера satin: Manrope light мелкий muted, акцент чёрный);
+// иначе ничего.
+const showAgreement = p.agreement === "true";
+
 // Канон position/alignment: canon-default left = литерал подвала (колонка
 // заголовок-над-формой max-w-[320px] слева, F:70); center/right двигают
 // колонку; alignment правит выключку текста внутри колонки.
@@ -164,6 +169,18 @@ const titleId = id && heading ? `${id}-title` : undefined;
 							{buttonText || "Подписаться"}
 						</button>
 					</form>
+				)
+			}
+			{
+				showAgreement && (
+					<label class="flex w-full cursor-pointer items-start gap-2 font-manrope text-[13px] font-light leading-snug text-[rgb(var(--color-muted,153_153_153))]">
+						<input
+							type="checkbox"
+							required
+							class="mt-0.5 size-4 shrink-0 accent-[rgb(var(--color-button-bg,0_0_0))]"
+						/>
+						<span>Согласен на обработку персональных данных</span>
+					</label>
 				)
 			}
 			<p

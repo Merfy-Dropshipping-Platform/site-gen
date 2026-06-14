@@ -3,6 +3,10 @@ import type { BlockPuckConfig } from '@merfy/theme-contract';
 
 export const VideoSchema = z.object({
   heading: z.string(),
+  // Подзаголовок (Figma-борд Video). Видимый top-level aiText — зеркалит
+  // `heading`. Рендерится строкой <p> под <h2>. Дефолт пустой →
+  // ничего не рендерится (default-preserving).
+  subheading: z.string().optional(),
   videoUrl: z.string(),
   poster: z.string(),
   position: z.enum(['contained', 'fullscreen']).optional(),
@@ -29,6 +33,13 @@ export const VideoSchema = z.object({
       alignment: z.enum(['left', 'center', 'right']).optional(),
       enabled: z.enum(['true', 'false']).optional(),
       size: z.enum(['small', 'medium', 'large']).optional(),
+    }).optional(),
+    // Подзаголовок-envelope (Figma-борд Video). Рендер читает
+    // content.subheading.text при enabled !== 'false'. Top-level
+    // `subheading` остаётся каноном для видимого aiText.
+    subheading: z.object({
+      text: z.string().optional(),
+      enabled: z.enum(['true', 'false']).optional(),
     }).optional(),
   }).optional(),
   colorScheme: z.string().optional(),
@@ -63,6 +74,12 @@ export const VideoPuckConfig: BlockPuckConfig<VideoProps> = {
       fieldType: 'title',
       placeholder: 'Ввести текст...',
     } as any,
+    subheading: {
+      type: 'aiText',
+      label: 'Подзаголовок',
+      fieldType: 'description',
+      placeholder: 'Ввести текст...',
+    } as any,
     size: {
       type: 'select',
       label: 'Размер заголовка',
@@ -84,6 +101,7 @@ export const VideoPuckConfig: BlockPuckConfig<VideoProps> = {
   },
   defaults: {
     heading: '',
+    subheading: '',
     videoUrl: '',
     poster: '',
     position: 'contained',

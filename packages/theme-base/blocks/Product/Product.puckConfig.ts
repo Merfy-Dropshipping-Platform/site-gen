@@ -239,7 +239,11 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
     text: { content: '', size: 'medium' },
     title: { size: 'medium' },
     price: { show: 'true' },
-    variants: { style: 'button', shape: 'circle' },
+    // shape: 'none' = текущий pill-чип (rounded-[6px]). Дефолт намеренно
+    // 'none', а не 'circle', чтобы существующие товары не регрессировали:
+    // эффективный дефолт = как сейчас, а 'circle'/'square' — явный выбор
+    // мерчанта (см. ProductVariants.astro SHAPE_RADIUS).
+    variants: { style: 'button', shape: 'none' },
     quantity: { enabled: 'true' },
     buttons: { addToCart: { text: 'В КОРЗИНУ' }, buyNow: { text: 'КУПИТЬ' } },
     description: { content: '', size: 'medium' },

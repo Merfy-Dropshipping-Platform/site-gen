@@ -52,6 +52,11 @@ const buttonText =
 // без радиуса).
 const inlineSubmit = p.formLayout !== "stacked";
 
+// Канон agreement (toggle 'true'/'false', default 'false'): при 'true' — чекбокс
+// согласия под формой (манера vanilla: Arsenal italic мелкий, токен text на
+// тёмном полотне); иначе ничего.
+const showAgreement = p.agreement === "true";
+
 // Канон alignment (blockDefaults 'left' = литерал FN:10 items-start text-left);
 // center/right двигают колонку по контейнеру. Выравнивание живёт в под-панели
 // «Заголовок» (heading.alignment) — основной контрол (как rose T17); top-level
@@ -151,6 +156,18 @@ const titleId = id ? `${id}-title` : undefined;
 						{buttonText}
 					</button>
 				</form>
+			)
+		}
+		{
+			showAgreement && (
+				<label class="flex w-full max-w-[652px] cursor-pointer items-start gap-2 font-vanilla-arsenal text-[13px] font-normal italic leading-snug text-[rgb(var(--color-text,240_240_240))]">
+					<input
+						type="checkbox"
+						required
+						class="mt-0.5 size-4 shrink-0 accent-[rgb(var(--color-button-2-bg,255_255_255))]"
+					/>
+					<span>Согласен на обработку персональных данных</span>
+				</label>
 			)
 		}
 		<p

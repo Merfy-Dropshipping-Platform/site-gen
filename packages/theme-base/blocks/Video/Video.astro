@@ -34,6 +34,23 @@ const heading = (() => {
   return undefined;
 })();
 
+// Подзаголовок (Figma-борд Video). Зеркалит `heading`: принимает top-level
+// string ИЛИ {text}-конверт, плюс спек-конверт content.subheading.{text,enabled}.
+// Рендерится ТОЛЬКО при непустом тексте И enabled !== 'false'.
+// Дефолт пустой → ничего не рендерится (default-preserving).
+const subContentEnvelope = (raw.content as { subheading?: { text?: string; enabled?: string } } | undefined)?.subheading;
+const subheadingEnabled = subContentEnvelope?.enabled !== 'false';
+const subheading = (() => {
+  if (!subheadingEnabled) return undefined;
+  const s = raw.subheading ?? subContentEnvelope;
+  if (typeof s === 'string') return s.trim() || undefined;
+  if (s && typeof s === 'object') {
+    const o = s as { text?: string };
+    return (o.text ?? '').trim() || undefined;
+  }
+  return undefined;
+})();
+
 // Merchant uploads go through the constructor which currently writes
 // video props as { video: { url, coverImage } } — older revisions used a
 // top-level `videoUrl` string. Accept both shapes. Critical: reject
@@ -142,6 +159,7 @@ const video = parseVideo(videoUrl);
 >
   <div class={containerClass}>
     {heading && <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]}>{heading}</h2>}
+    {subheading && <p class:list={[C.subheading, headingAlignClass]}>{subheading}</p>}
     {/* style=aspect-ratio дублирует `aspect-video` из C.media: страховка
         геометрии, если Tailwind-утилита не сгенерирована в CSS темы
         (CSS темы сканирует только свои файлы — блок не должен

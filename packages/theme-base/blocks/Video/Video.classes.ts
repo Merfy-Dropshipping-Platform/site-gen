@@ -8,6 +8,17 @@ export const VideoClasses = {
     'mx-auto max-w-[var(--container-max-width)] px-4',
   heading:
     '[font-family:var(--font-heading)] text-[length:var(--video-heading-size,14px)] leading-[16px] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] text-center mb-10',
+  /**
+   * Подзаголовок-строка под <h2>. Канон-стиль приглушённого подзаголовка
+   * (как Gallery/Collections): шрифт body темы + приглушённый цвет
+   * rgb(var(--color-text))/60. `mb-10` держит отступ до видео в одном
+   * ритме с заголовком (тоже mb-10). Без top-margin: при наличии заголовка
+   * строка стоит под его mb-10; при отсутствии — без отрицательного
+   * сдвига (устойчиво). Выравнивание наследует от heading через
+   * align-класс, добавляемый в .astro.
+   */
+  subheading:
+    '[font-family:var(--font-body)] text-[14px] leading-[17px] text-[rgb(var(--color-text))]/60 text-center mb-10',
   media:
     'relative w-full aspect-video overflow-hidden rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))]',
   iframe:

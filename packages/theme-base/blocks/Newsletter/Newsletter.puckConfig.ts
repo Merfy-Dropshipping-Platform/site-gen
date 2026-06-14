@@ -19,6 +19,12 @@ export const NewsletterSchema = z.object({
   buttonText: z.string(),
   position: z.enum(['left', 'center', 'right']).optional(),
   /**
+   * Figma Newsletter «Соглашение на рассылку» — toggle (legacy 'true'/'false'
+   * strings). При 'true' порты рендерят чекбокс согласия под формой; default
+   * 'false' (контрол выключен) сохраняет прежний вид (default-preserving).
+   */
+  agreement: z.enum(['true', 'false']).optional(),
+  /**
    * 084 vanilla pilot — additive variant. Form layout style:
    *   - `inline-submit` (default behaviour, identical pre-commit)
    *     keeps the submit button absolute-positioned inside the input
@@ -64,6 +70,9 @@ export const NewsletterPuckConfig: BlockPuckConfig<NewsletterProps> = {
         },
       },
     },
+    // Figma «Соглашение на рассылку» — toggle. При 'true' порты рендерят чекбокс
+    // согласия под формой; default 'false' (по умолчанию чекбокса нет).
+    agreement: { type: 'toggle', label: 'Соглашение на рассылку' } as any,
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
     // Sub-panel «Форма рассылки» (314:35058):
@@ -107,6 +116,7 @@ export const NewsletterPuckConfig: BlockPuckConfig<NewsletterProps> = {
     placeholder: 'Твой email',
     buttonText: 'Подписаться',
     formLayout: 'stacked',
+    agreement: 'false',
     padding: { top: 80, bottom: 80 },
   },
   schema: NewsletterSchema,

@@ -32,6 +32,8 @@ export const PublicationsClasses = {
     '[font-family:var(--font-body)] text-[14px] leading-[18px] text-[rgb(var(--color-heading))]',
   cardExcerpt:
     '[font-family:var(--font-body)] text-[12px] leading-[15px] text-[rgb(var(--color-text))]/70',
+  cardLink:
+    '[font-family:var(--font-body)] text-[13px] leading-[16px] text-[rgb(var(--color-heading))] underline underline-offset-4 mt-1',
   placeholderCard:
     'block overflow-hidden rounded-[var(--radius-card)] bg-[rgb(var(--color-surface))]',
   placeholderMedia:

@@ -2,24 +2,120 @@
 /**
  * ProductVariants — variant-group selector primitive.
  *
- * Types:
- *  - `chips` (rose, default) — each option is a pill button h-12 rounded-6.
- *    Active: bg-text/text-bg. Inactive: border-text/text-text. Out-of-stock:
- *    border-muted/text-muted strikethrough disabled.
- *  - `dropdown` (flux) — each group is a labelled `<select>` h-14 rounded-6.
+ * Types (theme LAYOUT — visual.variantsType, из theme.json):
+ *  - `chips` (rose, default) — опции кнопками-чипами.
+ *  - `dropdown` (flux) — каждая группа = labelled `<select>` h-14 rounded-6.
  *
- * Each option button/option carries `data-variant-key` and `data-variant-value`
- * so the JS island can read selection state without parsing labels.
+ * Merchant-driven controls (variants sub-panel конструктора):
+ *  - `style`: 'button' (дефолт) — чипы в ряд (исходный вид);
+ *             'list' — каждая группа отдельной строкой: лейбл группы слева +
+ *             чипы, группы вертикальным стеком.
+ *  - `shape`: 'none' (дефолт) — текущий pill-чип rounded-[6px];
+ *             'circle' — rounded-full; 'square' — rounded по --radius-button.
+ *  - Если значение опции — цвет (hex / rgb / известное имя), рендерим цветной
+ *    СВОТЧ (заливка) в выбранной форме; иначе текст-чип в выбранной форме.
+ *
+ * Default-preserving: дефолт style='button' + shape='none' = исходный вид
+ * существующих товаров. circle/square — явный выбор (puck-дефолт shape тоже
+ * переведён в 'none', см. Product.puckConfig).
+ *
+ * Each option button/option carries `data-variant-key` и `data-variant-value`
+ * чтобы JS-остров читал состояние выбора без парсинга лейблов. Свотч-чипы
+ * дополнительно несут `data-variant-swatch` — JS не перетирает их заливку
+ * (см. Product.astro hydration).
  */
-import type { VariantGroupView } from '../Product.types';
+import type { VariantGroupView, VariantOptionView } from '../Product.types';
 
 interface Props {
   groups: VariantGroupView[];
   type?: 'chips' | 'dropdown';
+  style?: 'button' | 'list';
+  shape?: 'circle' | 'square' | 'none';
 }
 
-const { groups, type = 'chips' } = Astro.props as Props;
+const {
+  groups,
+  type = 'chips',
+  style = 'button',
+  shape = 'none',
+} = Astro.props as Props;
+
 const isDropdown = type === 'dropdown';
+const isList = style === 'list';
+
+// Радиус формы опции через токены темы. 'none' = исходный pill (rounded-[6px]).
+const SHAPE_RADIUS: Record<'circle' | 'square' | 'none', string> = {
+  circle: 'rounded-full',
+  square: 'rounded-[var(--radius-button)]',
+  none: 'rounded-[6px]',
+};
+const shapeRadius = SHAPE_RADIUS[shape];
+
+// Свотч (цветная заливка) рисуется только когда форма явно выбрана
+// (circle/square). При shape='none' (дефолт) — исходные текст-чипы, без
+// свотчей, чтобы существующие товары не менялись.
+const swatchEnabled = shape !== 'none';
+
+// Карта известных имён цветов → hex. Совпадает с PopularProducts COLOR_HEX
+// (единый словарь по теме). Frontmatter-const — типизация здесь безопасна
+// (не JSX-выражение).
+const COLOR_HEX: Record<string, string> = {
+  'чёрный': '#000', 'черный': '#000', 'black': '#000',
+  'белый': '#fff', 'white': '#fff',
+  'серебро': '#c0c0c0', 'серебряный': '#c0c0c0', 'silver': '#c0c0c0',
+  'серый': '#888', 'gray': '#888', 'grey': '#888',
+  'красный': '#e00', 'red': '#e00',
+  'синий': '#33396d', 'blue': '#33396d',
+  'зелёный': '#3eb489', 'зеленый': '#3eb489', 'green': '#3eb489',
+  'жёлтый': '#f6dc58', 'желтый': '#f6dc58', 'yellow': '#f6dc58',
+  'коричневый': '#8b4513', 'brown': '#8b4513',
+  'оранжевый': '#ff7f0e', 'orange': '#ff7f0e',
+  'розовый': '#ff69b4', 'pink': '#ff69b4',
+  'фиолетовый': '#7b3fa0', 'purple': '#7b3fa0',
+  'бежевый': '#f5f0e1', 'beige': '#f5f0e1',
+  'голубой': '#5bc0de', 'cyan': '#5bc0de',
+};
+
+// Резолв значения опции в CSS-цвет: явный hex/rgb/hsl ИЛИ известное имя.
+// Возвращает null если значение не похоже на цвет (тогда — текст-чип).
+function resolveColor(value: string): string | null {
+  const raw = (value ?? '').trim();
+  if (!raw) return null;
+  if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(raw)) return raw;
+  if (/^(rgb|rgba|hsl|hsla)\(/i.test(raw)) return raw;
+  const named = COLOR_HEX[raw.toLowerCase()];
+  return named ?? null;
+}
+
+// Базовый класс чипа: текст-чип vs свотч. Свотч — квадрат/круг фиксированного
+// размера h-12 w-12 (заливка), текст-чип — h-12 с горизонтальным padding.
+const TEXT_CHIP_BASE =
+  'inline-flex items-center justify-center h-12 px-4 [font-family:var(--font-body)] text-[16px] cursor-pointer transition-colors border border-solid';
+const SWATCH_CHIP_BASE =
+  'relative inline-flex items-center justify-center h-12 w-12 p-0 cursor-pointer transition-colors border-2 border-solid overflow-hidden';
+
+// Стили (цвета) текст-чипа. Active ↔ primary button tokens; inactive ↔
+// secondary button tokens; out-of-stock — muted. Все цвета из активной схемы.
+function textChipStyle(opt: VariantOptionView, active: boolean): string {
+  if (!opt.available) {
+    return 'background:rgb(var(--color-text)/0.04); color:rgb(var(--color-muted)); border-color:rgb(var(--color-muted));';
+  }
+  return active
+    ? 'background:rgb(var(--color-button-bg, var(--color-text))); color:rgb(var(--color-button-text, var(--color-bg))); border-color:rgb(var(--color-button-border, var(--color-text)));'
+    : 'background:rgb(var(--color-button-secondary-bg, var(--color-bg))); color:rgb(var(--color-button-secondary-text, var(--color-text))); border-color:rgb(var(--color-button-secondary-border, var(--color-text)));';
+}
+
+// Стиль обводки свотча. Заливка задаётся на внутреннем элементе (не на кнопке)
+// чтобы JS active/inactive-переключение не перетирало цвет. Active —
+// акцентная обводка (button-bg), inactive — нейтральная (text/0.2).
+function swatchBorderStyle(opt: VariantOptionView, active: boolean): string {
+  if (!opt.available) {
+    return 'border-color:rgb(var(--color-muted));';
+  }
+  return active
+    ? 'border-color:rgb(var(--color-button-bg, var(--color-text)));'
+    : 'border-color:rgb(var(--color-text)/0.2);';
+}
 ---
 {groups.length > 0 && (
   <div
@@ -29,13 +125,26 @@ const isDropdown = type === 'dropdown';
     ]}
     data-product-variants
     data-variants-type={type}
+    data-variants-style={style}
+    data-variants-shape={shape}
   >
     {groups.map((g) => (
-      <div class="flex flex-col gap-3 w-full" data-variant-group data-variant-key={g.key}>
-        {isDropdown && (
+      <div
+        class:list={[
+          'w-full',
+          // list-стиль чипов: лейбл слева + чипы справа на одной строке
+          // (на узких экранах переносится в стек). Иначе — исходный вертикальный.
+          !isDropdown && isList
+            ? 'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4'
+            : 'flex flex-col gap-3',
+        ]}
+        data-variant-group
+        data-variant-key={g.key}
+      >
+        {(isDropdown || isList) && (
           <label
-            class="[font-family:var(--font-body)] text-[14px] uppercase text-[rgb(var(--color-text))] tracking-wide"
-            for={`variant-${g.key}`}
+            class="[font-family:var(--font-body)] text-[14px] uppercase text-[rgb(var(--color-text))] tracking-wide shrink-0"
+            for={isDropdown ? `variant-${g.key}` : undefined}
           >{g.key}</label>
         )}
 
@@ -63,17 +172,48 @@ const isDropdown = type === 'dropdown';
           <div class="flex flex-wrap gap-2">
             {g.options.map((opt, optIdx) => {
               const active = optIdx === 0 && opt.available;
-              const baseCls =
-                'inline-flex items-center justify-center h-12 px-4 rounded-[6px] [font-family:var(--font-body)] text-[16px] cursor-pointer transition-colors border border-solid';
-              // Active chip ↔ primary button tokens; inactive ↔ secondary button
-              // tokens; out-of-stock uses muted. All colours flow from the
-              // merchant-edited colour scheme (no per-theme hardcode).
-              const styleStr = !opt.available
-                ? 'background:rgb(var(--color-text)/0.04); color:rgb(var(--color-muted)); border-color:rgb(var(--color-muted));'
-                : active
-                ? 'background:rgb(var(--color-button-bg, var(--color-text))); color:rgb(var(--color-button-text, var(--color-bg))); border-color:rgb(var(--color-button-border, var(--color-text)));'
-                : 'background:rgb(var(--color-button-secondary-bg, var(--color-bg))); color:rgb(var(--color-button-secondary-text, var(--color-text))); border-color:rgb(var(--color-button-secondary-border, var(--color-text)));';
-              const extraCls = !opt.available ? 'line-through cursor-not-allowed' : '';
+              // Свотч только когда форма выбрана (circle/square) И значение
+              // опции распознано как цвет (hex/rgb/известное имя). Иначе —
+              // текст-чип. Ключ группы не требуется: спека гейтит по значению.
+              const colorHex = swatchEnabled ? resolveColor(opt.value) : null;
+              const asSwatch = colorHex != null;
+
+              if (asSwatch) {
+                const fill = colorHex as string;
+                return (
+                  <button
+                    type="button"
+                    data-variant-chip
+                    data-variant-swatch
+                    data-variant-key={g.key}
+                    data-variant-value={opt.value}
+                    data-variant-available={opt.available ? 'true' : 'false'}
+                    data-variant-active={active ? 'true' : 'false'}
+                    disabled={!opt.available}
+                    title={opt.value}
+                    aria-label={opt.value}
+                    class:list={[
+                      SWATCH_CHIP_BASE,
+                      shapeRadius,
+                      !opt.available ? 'cursor-not-allowed opacity-60' : '',
+                    ]}
+                    style={swatchBorderStyle(opt, active)}
+                  >
+                    <span
+                      class:list={['block w-full h-full', shapeRadius]}
+                      data-variant-swatch-fill
+                      style={`background:${fill};`}
+                    />
+                    {!opt.available && (
+                      <span
+                        aria-hidden="true"
+                        class="absolute inset-0 flex items-center justify-center text-[rgb(var(--color-muted))] text-[20px] leading-none"
+                      >×</span>
+                    )}
+                  </button>
+                );
+              }
+
               return (
                 <button
                   type="button"
@@ -83,8 +223,12 @@ const isDropdown = type === 'dropdown';
                   data-variant-available={opt.available ? 'true' : 'false'}
                   data-variant-active={active ? 'true' : 'false'}
                   disabled={!opt.available}
-                  class:list={[baseCls, extraCls]}
-                  style={styleStr}
+                  class:list={[
+                    TEXT_CHIP_BASE,
+                    shapeRadius,
+                    !opt.available ? 'line-through cursor-not-allowed' : '',
+                  ]}
+                  style={textChipStyle(opt, active)}
                 >{opt.value}</button>
               );
             })}

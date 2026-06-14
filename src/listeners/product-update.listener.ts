@@ -30,7 +30,7 @@ import { FragmentPatcher } from "./fragment-patcher.service";
 
 const PRODUCT_EVENTS_EXCHANGE = "product.events";
 const SITES_PRODUCT_EVENTS_QUEUE = "sites_product_events";
-const DEBOUNCE_MS = 2_000; // 2 seconds — fast feedback for single product updates
+const DEBOUNCE_MS = 45_000; // 45s — debounce window for the SEO FULL rebuild (batches rapid edits)
 const FRAGMENT_PATCH_DEBOUNCE_MS = 5_000; // 5 seconds — fast fragment patching
 const REBUILD_PRIORITY = 5;
 
@@ -212,9 +212,18 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
           continue;
         }
 
-        // All published sites use fragment patching for product events (fast path).
-        // Full rebuild is only used for non-product changes (design, theme, structure).
+        // Fast path: instant fragment patch (catalog/cards/PDP content).
         this.debounceFragmentPatch(site.id, tenantId, site.storageSlug ?? site.id);
+        // SEO path: debounced FULL rebuild regenerates per-slug /product/<slug> pages +
+        // canonical/title/og meta + sitemap-products.xml + robots.txt (the fragment
+        // patcher touches NONE of these — they live in build.service). The 45s debounce
+        // batches rapid edits into one build; new products also get their per-slug page
+        // generated here (closing the /product/<new-slug> 404 gap once the build lands).
+        this.debounceBuild(site.id, tenantId, {
+          event,
+          productIds,
+          timestamp: (content.timestamp as string) ?? new Date().toISOString(),
+        });
       }
 
       channel.ack(msg);

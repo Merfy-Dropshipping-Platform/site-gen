@@ -1,12 +1,19 @@
 import { z } from 'zod';
 import type { BlockPuckConfig } from '@merfy/theme-contract';
 
+// КОНТРОЛЫ (fields/schema/label/category) = КАНОН theme-base/blocks/MultiColumns
+// (inline-копия, НЕ cross-package import — иначе билд-компилятор блоков ломается).
+// Сайдбар satin идентичен другим темам. ДЕФОЛТЫ ниже — satin'овские (манера):
+// 3 фичи-колонки (ДОСТАВКА/ВОЗВРАТ/ПОДДЕРЖКА), padding 80, без heading.
+// Рендер satin (themes/satin/.../MultiColumns.astro) читает канон-пропсы и при
+// этих дефолтах даёт вид satin байт-в-байт.
+
 const MultiColumnItemSchema = z.object({
   id: z.string(),
   heading: z.string().optional(),
   text: z.string().optional(),
   imageUrl: z.string().optional(),
-  // Pupa per-column.
+  // Pupa parity per-column: image/title/headingSize/description/textSize/link.
   image: z.string().optional(),
   imageSize: z.enum(['small', 'medium', 'large']).optional(),
   title: z.string().optional(),
@@ -20,14 +27,6 @@ const MultiColumnItemSchema = z.object({
 });
 
 export const MultiColumnsSchema = z.object({
-  columns: z.array(MultiColumnItemSchema).min(1).max(10),
-  displayColumns: z.union([
-    z.literal(1),
-    z.literal(2),
-    z.literal(3),
-    z.literal(4),
-  ]),
-  // Pupa parity.
   heading: z.union([
     z.string(),
     z.object({
@@ -36,17 +35,25 @@ export const MultiColumnsSchema = z.object({
       size: z.enum(['small', 'medium', 'large']).optional(),
     }),
   ]).optional(),
+  // Pupa parity: heading object с alignment + size (legacy `heading` text — fallback).
   headingAlignment: z.enum(['left', 'center', 'right']).optional(),
   headingSize: z.enum(['small', 'medium', 'large']).optional(),
   width: z.enum(['small', 'medium', 'large', 'full']).optional(),
   imageAspectRatio: z.enum(['adapt', 'square', 'portrait', 'landscape']).optional(),
   buttonText: z.string().optional(),
   buttonLink: z.string().optional(),
+  // Pupa parity: nested heading {text,alignment,size} + textPosition + background + containerColorScheme.
   textPosition: z.enum(['left', 'center']).optional(),
   background: z.object({ enabled: z.enum(['true', 'false']) }).optional(),
   containerColorScheme: z.string().optional(),
   link: z.string().optional(),
-  button: z.string().optional(),
+  columns: z.array(MultiColumnItemSchema).min(1).max(10),
+  displayColumns: z.union([
+    z.literal(1),
+    z.literal(2),
+    z.literal(3),
+    z.literal(4),
+  ]),
   colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
@@ -59,52 +66,18 @@ export type MultiColumnsProps = z.infer<typeof MultiColumnsSchema>;
 export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
   label: 'Мультиколонны',
   category: 'layout',
+  // Figma 314-34917: Заголовок (aiText) / Размер заголовка / Ширина /
+  // Соотношение изображений / Кнопка / Ссылка / Колонки (slider) /
+  // Положение колонн (toggle) / Контейнер (toggle) / Цветовая схема / Отступы.
   fields: {
     heading: {
-      type: 'object',
+      type: 'aiText',
       label: 'Заголовок',
-      objectFields: {
-        text: { type: 'text', label: 'Текст' },
-        alignment: { type: 'alignment', label: 'Выравнивание' },
-        size: {
-          type: 'radio',
-          label: 'Размер',
-          options: [
-            { label: 'Маленький', value: 'small' },
-            { label: 'Средний', value: 'medium' },
-            { label: 'Большой', value: 'large' },
-          ],
-        },
-      },
-    },
-    textPosition: {
-      type: 'radio',
-      label: 'Положение текста',
-      options: [
-        { label: 'Слева', value: 'left' },
-        { label: 'По центру', value: 'center' },
-      ],
-    },
-    background: {
-      type: 'object',
-      label: 'Фон',
-      objectFields: {
-        enabled: {
-          type: 'radio',
-          label: 'Включён',
-          options: [
-            { label: 'Да', value: 'true' },
-            { label: 'Нет', value: 'false' },
-          ],
-        },
-      },
-    },
-    containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
-    link: { type: 'pagePicker', label: 'Ссылка секции' },
-    button: { type: 'text', label: 'Текст кнопки секции' },
-    headingAlignment: { type: 'alignment', label: 'Выравнивание заголовка' },
+      fieldType: 'title',
+      placeholder: 'Ввести текст...',
+    } as any,
     headingSize: {
-      type: 'radio',
+      type: 'select',
       label: 'Размер заголовка',
       options: [
         { label: 'Маленький', value: 'small' },
@@ -113,45 +86,95 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
       ],
     },
     width: {
-      type: 'radio',
+      type: 'select',
       label: 'Ширина',
       options: [
         { label: 'Маленькая', value: 'small' },
         { label: 'Средняя', value: 'medium' },
         { label: 'Большая', value: 'large' },
-        { label: 'Во всю', value: 'full' },
       ],
     },
     imageAspectRatio: {
-      type: 'radio',
+      type: 'select',
       label: 'Соотношение изображения',
       options: [
-        { label: 'Адаптивное', value: 'adapt' },
+        { label: 'Адаптировать', value: 'adapt' },
         { label: 'Квадрат', value: 'square' },
         { label: 'Портрет', value: 'portrait' },
         { label: 'Альбом', value: 'landscape' },
       ],
     },
-    buttonText: { type: 'text', label: 'Кнопка' },
-    buttonLink: { type: 'pagePicker', label: 'Ссылка' },
+    // user #23: buttonText/buttonLink убраны из main sidebar — не наши поля.
+    buttonText: { type: 'hidden', label: '' } as any,
+    buttonLink: { type: 'hidden', label: '' },
+    displayColumns: {
+      type: 'slider',
+      label: 'Колонки',
+      min: 1,
+      max: 4,
+      step: 1,
+    },
+    textPosition: {
+      type: 'radio',
+      label: 'Положение колонн',
+      options: [
+        { label: 'Слева', value: 'left' },
+        { label: 'Центр', value: 'center' },
+      ],
+    },
+    // user #23: Контейнер дублировался (object с вложенным toggle). Заменил
+    // на flat toggle field — рендерится FieldRenderer без nesting.
+    background: { type: 'hidden', label: '' } as any,
+    containerEnabled: {
+      type: 'toggle',
+      label: 'Контейнер',
+      options: [
+        { label: 'Показать', value: 'true' },
+        { label: 'Скрыть', value: 'false' },
+      ],
+    } as any,
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    padding: { type: 'padding', label: 'Отступы' },
+    // Hidden — нет в Figma 314-34917.
+    headingAlignment: { type: 'hidden', label: '' },
+    containerColorScheme: { type: 'hidden', label: '' },
+    link: { type: 'hidden', label: '' },
     columns: {
       type: 'array',
-      label: 'Колонки',
+      label: 'Колонки (макс 10)',
+      hiddenInMainPanel: true,
+      // Sub-panel "Колонна" — Figma 314:34941.
+      // Schema-driven: каждое поле — declarative, рендерится через FieldRenderer.
+      // Никаких hardcoded panel-компонентов. Чтобы получить Figma layout —
+      // declarative field types (section-header / image / aiText / select /
+      // text / pagePicker) + правильные labels/placeholders.
       arrayFields: {
-        image: { type: 'image', label: 'Изображение' },
+        _section_images: {
+          type: 'section-header',
+          label: 'Изображения',
+        } as any,
+        image: { type: 'image', label: '' } as any,
         imageSize: {
-          type: 'radio',
-          label: 'Размер изображения',
+          type: 'select',
+          label: 'Размер',
           options: [
             { label: 'Маленький', value: 'small' },
             { label: 'Средний', value: 'medium' },
             { label: 'Большой', value: 'large' },
           ],
         },
-        title: { type: 'text', label: 'Заголовок' },
+        _section_content: {
+          type: 'section-header',
+          label: 'Содержание',
+        } as any,
+        title: {
+          type: 'aiText',
+          label: 'Заголовок',
+          fieldType: 'title',
+          placeholder: 'Ввести текст...',
+        } as any,
         headingSize: {
-          type: 'radio',
+          type: 'select',
           label: 'Размер заголовка',
           options: [
             { label: 'Маленький', value: 'small' },
@@ -159,9 +182,14 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
             { label: 'Большой', value: 'large' },
           ],
         },
-        description: { type: 'textarea', label: 'Описание' },
+        description: {
+          type: 'aiText',
+          label: 'Текст',
+          fieldType: 'text',
+          placeholder: 'Ввести текст...',
+        } as any,
         textSize: {
-          type: 'radio',
+          type: 'select',
           label: 'Размер текста',
           options: [
             { label: 'Маленький', value: 'small' },
@@ -169,42 +197,35 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
             { label: 'Большой', value: 'large' },
           ],
         },
+        linkText: {
+          type: 'text',
+          label: 'Название ссылки',
+          placeholder: '*Оставьте пустой, чтобы скрыть',
+        } as any,
         link: {
-          type: 'object',
+          type: 'pagePicker',
           label: 'Ссылка',
-          objectFields: {
-            text: { type: 'text', label: 'Текст' },
-            href: { type: 'pagePicker', label: 'Ссылка' },
-          },
-        },
+        } as any,
       },
       defaultItemProps: {
-        id: 'col-new',
+        id: '',
         image: '',
-        title: 'Колонка',
+        imageSize: 'medium',
+        title: 'Новая колонка',
+        headingSize: 'small',
         description: '',
-        link: { text: '', href: '' },
+        textSize: 'small',
+        linkText: '',
+        link: '',
       },
       max: 10,
     },
-    displayColumns: {
-      type: 'radio',
-      label: 'Колонок в ряд',
-      options: [
-        { label: '2', value: 2 },
-        { label: '3', value: 3 },
-        { label: '4', value: 4 },
-      ],
-    },
-    padding: {
-      type: 'object',
-      label: 'Отступы',
-      objectFields: {
-        top: { type: 'number', label: 'Сверху (px)', min: 0, max: 160 },
-        bottom: { type: 'number', label: 'Снизу (px)', min: 0, max: 160 },
-      },
-    },
   },
+  // ДЕФОЛТЫ satin (манера, СОХРАНЕНЫ как есть): 3 фичи-колонки верстальщика,
+  // displayColumns 3, padding 80. Прочие канон-ключи (heading/headingSize/width/
+  // imageAspectRatio/textPosition/containerEnabled) satin НЕ задаёт намеренно —
+  // порт satin при их отсутствии рендерит манеру (heading скрыт; заголовок 20px;
+  // ширина .satin-container; иконка 56×56; колонки text-center; серая подложка).
   defaults: {
     columns: [
       { id: 'col-1', heading: 'ДОСТАВКА', text: 'Быстрая доставка по всей России.', imageUrl: '' },

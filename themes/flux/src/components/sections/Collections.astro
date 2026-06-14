@@ -64,11 +64,17 @@ const gridCls = cols
 	: gridBase;
 const gridStyle = cols ? `--cols:${cols}` : undefined;
 
-// Канон gridAspect/imageView: дефолт (и canon-default 'square' конструктора) =
-// литерал плитки aspect-[430/500] (FluxCollectionCard); gridAspect '1:1' →
-// квадрат, imageView 'wide' → 16/9.
+// Канон gridAspect/imageView: дефолт (canon-default 'portrait' конструктора) =
+// литерал плитки aspect-[430/500] (FluxCollectionCard); gridAspect '1:1' или
+// imageView 'square' → квадрат, imageView 'wide' → 16/9. Раньше ветки 'square'
+// не было → выбор «квадрат» падал в портрет 430/500 (как rose tileAspectCls).
+// Дефолт-ветка (portrait/отсутствие) остаётся 430/500 байт-в-байт.
 const tileAspect =
-	p.gridAspect === "1:1" ? "aspect-square" : p.imageView === "wide" ? "aspect-[16/9]" : "aspect-[430/500]";
+	p.gridAspect === "1:1" || p.imageView === "square"
+		? "aspect-square"
+		: p.imageView === "wide"
+			? "aspect-[16/9]"
+			: "aspect-[430/500]";
 // Канон cardCaptionStyle: 'default' и отсутствие = обычный регистр подписи
 // верстальщика; 'uppercase' — капсом.
 const captionCase = p.cardCaptionStyle === "uppercase" ? " uppercase" : "";

@@ -1,8 +1,13 @@
 import { z } from 'zod';
 import type { BlockPuckConfig } from '@merfy/theme-contract';
 
-// Satin MultiRows — same prop shape as base. Schema duplicated locally because
-// value imports from @merfy/theme-base don't resolve in compiled dist layout.
+// Satin MultiRows — КОНТРОЛЫ (fields/schema/label/category) приведены к КАНОНУ
+// theme-base/blocks/MultiRows/MultiRows.puckConfig.ts ДОСЛОВНО (inline-копия —
+// value-импорт из @merfy/theme-base не резолвится в compiled dist; cross-package
+// import ломает билд-компилятор блоков). Сайдбар satin = идентичен другим темам.
+// ДЕФОЛТЫ (объект defaults) — satin'овские СОХРАНЕНЫ как манера темы (2 ряда,
+// padding 80/80, ALL-CAPS заголовки). Рендер satin не меняется: live-порт
+// themes/satin/src/components/sections/MultiRows.astro уже читает канон-пропсы.
 
 const MultiRowItemSchema = z.object({
   id: z.string(),
@@ -15,7 +20,7 @@ const MultiRowItemSchema = z.object({
     href: z.string().optional(),
     link: z.string().optional(),
   }).optional(),
-  // Pupa per-row.
+  // Pupa parity per-row.
   image: z.string().optional(),
   size: z.enum(['small', 'medium', 'large']).optional(),
   width: z.enum(['small', 'medium', 'large', 'full']).optional(),
@@ -36,12 +41,13 @@ export const MultiRowsSchema = z.object({
       size: z.enum(['small', 'medium', 'large']).optional(),
     }),
   ]).optional(),
+  _headingLegacy: z.string().optional(),
   headingAlignment: z.enum(['left', 'center', 'right']).optional(),
   headingSize: z.enum(['small', 'medium', 'large']).optional(),
   size: z.enum(['small', 'medium', 'large']).optional(),
   width: z.enum(['small', 'medium', 'large', 'full']).optional(),
   rowsPosition: z.enum(['left', 'right', 'alternate']).optional(),
-  buttonStyle: z.enum(['primary', 'black', 'white', 'secondary']).optional(),
+  buttonStyle: z.enum(['primary', 'black', 'white']).optional(),
   alignment: z.enum(['left', 'center', 'right']).optional(),
   colorScheme: z.string().optional(),
   containerColorScheme: z.string().optional(),
@@ -56,37 +62,13 @@ export type MultiRowsProps = z.infer<typeof MultiRowsSchema>;
 export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
   label: 'Мультиряды',
   category: 'layout',
+  // Figma 314-34963: Высота / Ширина / Позиция рядов (toggle) /
+  // Содержание (header) / Заголовок (aiText) / Размер заголовка /
+  // Выбор кнопки (select) / Выравнивание / Цветовая схема /
+  // Цветовая схема (контейнер) / Отступы.
   fields: {
-    heading: {
-      type: 'object',
-      label: 'Заголовок',
-      objectFields: {
-        text: { type: 'text', label: 'Текст' },
-        alignment: { type: 'alignment', label: 'Выравнивание' },
-        size: {
-          type: 'radio',
-          label: 'Размер',
-          options: [
-            { label: 'Маленький', value: 'small' },
-            { label: 'Средний', value: 'medium' },
-            { label: 'Большой', value: 'large' },
-          ],
-        },
-      },
-    },
-    containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
-    headingAlignment: { type: 'alignment', label: 'Выравнивание заголовка' },
-    headingSize: {
-      type: 'radio',
-      label: 'Размер заголовка',
-      options: [
-        { label: 'Маленький', value: 'small' },
-        { label: 'Средний', value: 'medium' },
-        { label: 'Большой', value: 'large' },
-      ],
-    },
     size: {
-      type: 'radio',
+      type: 'select',
       label: 'Высота',
       options: [
         { label: 'Маленькая', value: 'small' },
@@ -95,13 +77,12 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
       ],
     },
     width: {
-      type: 'radio',
+      type: 'select',
       label: 'Ширина',
       options: [
         { label: 'Маленькая', value: 'small' },
         { label: 'Средняя', value: 'medium' },
         { label: 'Большая', value: 'large' },
-        { label: 'Во всю', value: 'full' },
       ],
     },
     rowsPosition: {
@@ -110,23 +91,44 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
       options: [
         { label: 'Слева', value: 'left' },
         { label: 'Справа', value: 'right' },
-        { label: 'Чередовать', value: 'alternate' },
+      ],
+    },
+    ['_contentSection' as never]: { type: 'section-header', label: 'Содержание' } as any,
+    heading: {
+      type: 'aiText',
+      label: 'Заголовок',
+      fieldType: 'title',
+      placeholder: 'Ввести текст...',
+    } as any,
+    headingSize: {
+      type: 'select',
+      label: 'Размер заголовка',
+      options: [
+        { label: 'Маленький', value: 'small' },
+        { label: 'Средний', value: 'medium' },
+        { label: 'Большой', value: 'large' },
       ],
     },
     buttonStyle: {
-      type: 'radio',
-      label: 'Стиль кнопки',
+      type: 'select',
+      label: 'Выбор кнопки',
       options: [
-        { label: 'Акцент', value: 'primary' },
+        { label: 'Основная', value: 'primary' },
         { label: 'Чёрная', value: 'black' },
         { label: 'Белая', value: 'white' },
       ],
     },
     alignment: { type: 'alignment', label: 'Выравнивание' },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
+    padding: { type: 'padding', label: 'Отступы' },
+    // Hidden — нет в Figma 314-34963.
+    headingAlignment: { type: 'hidden', label: '' },
+    _headingLegacy: { type: 'hidden', label: '' } as any,
     rows: {
       type: 'array',
-      label: 'Ряды',
+      label: 'Ряды (макс 10)',
+      hiddenInMainPanel: true,
       arrayFields: {
         image: { type: 'image', label: 'Изображение' },
         size: {
@@ -138,15 +140,10 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
             { label: 'Большая', value: 'large' },
           ],
         },
-        width: {
-          type: 'radio',
-          label: 'Ширина изображения',
-          options: [
-            { label: 'Маленькая', value: 'small' },
-            { label: 'Средняя', value: 'medium' },
-            { label: 'Большая', value: 'large' },
-          ],
-        },
+        // Hidden — per-row "Ширина изображения" не читается рендером (.astro
+        // применяет только per-row size→aspect); нет в каноне MultiColumns
+        // arrayFields. Поле схемы сохранено для совместимости данных.
+        width: { type: 'hidden', label: '' } as any,
         title: { type: 'text', label: 'Заголовок' },
         headingSize: {
           type: 'radio',
@@ -167,42 +164,29 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
             { label: 'Большой', value: 'large' },
           ],
         },
-        imagePosition: {
-          type: 'radio',
-          label: 'Позиция изображения',
-          options: [
-            { label: 'Слева', value: 'left' },
-            { label: 'Справа', value: 'right' },
-          ],
-        },
         button: {
           type: 'object',
           label: 'Кнопка',
           objectFields: {
             text: { type: 'text', label: 'Текст' },
-            href: { type: 'text', label: 'Ссылка' },
+            link: { type: 'pagePicker', label: 'Ссылка' },
           },
         },
       },
       defaultItemProps: {
-        id: 'row-new',
-        heading: 'Новый ряд',
-        text: '',
-        imageUrl: '',
-        imagePosition: 'left',
-        button: { text: 'Подробнее', href: '/' },
+        id: '',
+        image: '',
+        title: '',
+        description: '',
+        button: { text: 'Подробнее', link: '/catalog' },
       },
       max: 10,
-    },
-    padding: {
-      type: 'object',
-      label: 'Отступы',
-      objectFields: {
-        top: { type: 'number', label: 'Сверху (px)', min: 0, max: 160 },
-        bottom: { type: 'number', label: 'Снизу (px)', min: 0, max: 160 },
-      },
-    },
+    } as any,
   },
+  // ДЕФОЛТЫ satin (манера темы) — СОХРАНЕНЫ. НЕ канон-дефолты: 2 ряда с
+  // фото-плейсхолдерами и ALL-CAPS заголовками satin, padding 80/80, без
+  // top-level heading. Live-порт читает heading/text/imageUrl/imagePosition/
+  // button.href как канон-пропсы → вид satin байт-в-байт.
   defaults: {
     rows: [
       {

@@ -67,6 +67,16 @@ const secondaryLink =
 // Канон overlay 0-100 → чёрный слой на фото-половине (у верстальщика 0 — слоя нет).
 const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
 
+// Канон container (toggle «Контейнер» панели «Изображение») — подложка-плашка
+// ТОЛЬКО под текстовым блоком (фон схемы + паддинги + радиус), НЕ затемнение
+// всего экрана (это отдельная настройка «Затемнение»/overlay). Паттерн rose Hero
+// boxed: на светлой плашке текст героя переключаем на тёмный цвет схемы.
+// Дефолт/пусто = 'false' → плашки нет → рендер байт-в-байт прежним строкам.
+const boxed = String(p.container ?? "false") === "true";
+const boxedCls = boxed
+	? " rounded-[var(--radius-card,0px)] bg-[rgb(var(--color-bg,255_255_255))]/95 p-6 shadow-sm md:p-10 [&_h1]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-muted,153_153_153))]"
+	: "";
+
 // Канон position (видимое поле панели) / contentPosition (legacy, те же 9 значений) —
 // РАЗМЕЩЕНИЕ контент-блока по сетке: вертикаль (top/center=середина/bottom) → items-*
 // на текст-колонке satin-bleed-left; горизонталь (left/center/right) → размещение блока
@@ -105,7 +115,7 @@ const textColCls =
 const blockCls =
 	[hItemsCls, "flex max-w-[420px] flex-col", alignItemsCls, "gap-6", textAlignCls]
 		.filter(Boolean)
-		.join(" ");
+		.join(" ") + boxedCls;
 const rowJustifyCls = buttonsJustifyCls;
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T14).

@@ -2,19 +2,33 @@ import { z } from 'zod';
 import type { BlockPuckConfig } from '@merfy/theme-contract';
 
 // Satin Hero override.
-// Same prop SHAPE as @merfy/theme-base/blocks/Hero (schema duplicated here
-// because value imports from @merfy/theme-base don't resolve in compiled
-// flat dist/ layout — see scripts/compile-astro-blocks.mjs).
-// Pixel-matched to Figma 681:11674 (Hero Satin Deckstop).
+// КОНТРОЛЫ (fields) + Zod schema + label + category = КАНОН theme-base/blocks/Hero
+// (инлайн-копия, НЕ cross-package value-import — он не резолвится в плоском
+// dist/ после compile-astro-blocks.mjs). Сайдбар satin идентичен другим темам.
+// defaults — satin'овские (манера/редакторский настрой: STYLE'S WEAR заголовок,
+// split-вариант, padding 0). Рендер satin: themes/satin/src/components/sections/Hero.astro
+// читает канон-пропсы (heading/text/primaryButton/backgroundImages/overlay/
+// position/contentPosition/alignment/buttonStyle/container/padding) — при дефолтах
+// вид байт-в-байт.
 
+/**
+ * Hero block — supports 4 variants:
+ *   - centered  — single bg image + centered text (default)
+ *   - split     — side-by-side image + text
+ *   - overlay   — fullbleed bg image + overlay + centered text
+ *   - grid-4    — 2x2 image grid + centered text (Rose-style collage)
+ *
+ * `image` is the canonical single-image shape (used by centered/split/overlay).
+ * `images` is an optional array (4 items used by grid-4; falls back to repeating `image`).
+ */
 export const HeroSchema = z.object({
   title: z.string(),
   subtitle: z.string(),
   image: z.object({ url: z.string(), alt: z.string() }),
   images: z.array(z.object({ url: z.string(), alt: z.string() })).max(8).optional(),
   cta: z.object({ text: z.string(), href: z.string() }),
-  variant: z.enum(['centered', 'split', 'overlay', 'grid-4']),
-  // Pupa parity (nested + extended).
+  variant: z.enum(['centered', 'split', 'overlay', 'grid-4', 'split-bloom']),
+  // Pupa parity: nested heading/text + primary/secondary buttons + extended position.
   heading: z.object({
     text: z.string(),
     size: z.enum(['small', 'medium', 'large']),
@@ -23,14 +37,24 @@ export const HeroSchema = z.object({
     content: z.string(),
     size: z.enum(['small', 'medium', 'large']),
   }).optional(),
+  // link принимает обе формы: string ('/catalog') или object ({ href: '/catalog' }).
+  // Constructor defaultPagesData пишет object form — при строгом schema=string
+  // primaryButton дропался при safeParse → кнопка пропадала при изменении других
+  // props. Hero.astro и так нормализует обе формы.
   primaryButton: z.object({
     text: z.string(),
-    link: z.string(),
+    link: z.union([z.string(), z.object({ href: z.string() })]),
   }).optional(),
   secondaryButton: z.object({
     text: z.string(),
-    link: z.string(),
+    link: z.union([z.string(), z.object({ href: z.string() })]),
   }).optional(),
+  contentPosition: z.enum([
+    'center',
+    'top-left', 'top-center', 'top-right',
+    'center-left', 'center-right',
+    'bottom-left', 'bottom-center', 'bottom-right',
+  ]).optional(),
   position: z.enum([
     'center',
     'top-left', 'top-center', 'top-right',
@@ -47,16 +71,35 @@ export const HeroSchema = z.object({
   overlay: z.number().int().min(0).max(100).optional(),
   alignment: z.enum(['left', 'center', 'right']).optional(),
   container: z.enum(['true', 'false']).optional(),
-  contentPosition: z.enum([
-    'center',
-    'top-left', 'top-center', 'top-right',
-    'center-left', 'center-right',
-    'bottom-left', 'bottom-center', 'bottom-right',
-  ]).optional(),
   colorScheme: z.string().optional(),
+  // 084 vanilla pilot — additive carousel mode. Default 'single' preserves
+  // pre-edit rose render byte-for-byte. 'carousel' enables slides[] +
+  // pagination + autoplay (ported from Slideshow block).
+  mode: z.enum(['single', 'carousel']).optional(),
+  slides: z.array(z.object({
+    id: z.string(),
+    imageUrl: z.string(),
+    heading: z.object({
+      text: z.string(),
+      size: z.enum(['small', 'medium', 'large']),
+    }).optional(),
+    text: z.object({
+      content: z.string(),
+      size: z.enum(['small', 'medium', 'large']),
+    }).optional(),
+    buttonText: z.string().optional(),
+    buttonLink: z.string().optional(),
+    alignment: z.enum(['left', 'center', 'right']).optional(),
+  })).max(8).optional(),
+  pagination: z.enum(['numbers', 'dots', 'lines', 'none']).optional(),
+  autoplay: z.boolean().optional(),
+  interval: z.number().int().min(1).max(60).optional(),
+  imageFullBleed: z.boolean().optional(),
+  contentAlign: z.enum(['center', 'left']).optional(),
+  buttonStyle: z.enum(['solid', 'outlined']).optional(),
   padding: z.object({
-    top: z.number().int().min(0).max(200),
-    bottom: z.number().int().min(0).max(200),
+    top: z.number().int().min(0).max(160),
+    bottom: z.number().int().min(0).max(160),
   }),
 });
 
@@ -66,47 +109,25 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
   label: 'Изображение',
   category: 'hero',
   fields: {
-    variant: {
-      type: 'radio',
-      label: 'Вариант',
-      options: [
-        { label: 'Сплит (фото сбоку)', value: 'split' },
-        { label: 'По центру', value: 'centered' },
-        { label: 'Фон на всю ширину', value: 'overlay' },
-        { label: 'Сетка 2x2', value: 'grid-4' },
-      ],
-    },
-    title: { type: 'textarea', label: 'Заголовок' },
-    subtitle: { type: 'text', label: 'Подзаголовок (серый)' },
-    image: {
-      type: 'object',
-      label: 'Изображение',
-      objectFields: {
-        url: { type: 'text', label: 'URL' },
-        alt: { type: 'text', label: 'Alt текст' },
-      },
-    },
-    images: {
-      type: 'array',
-      label: 'Сетка изображений (grid-4)',
-      arrayFields: {
-        url: { type: 'text', label: 'URL' },
-        alt: { type: 'text', label: 'Alt текст' },
-      },
-      defaultItemProps: { url: '', alt: '' },
-      max: 8,
-    },
-    cta: {
-      type: 'object',
-      label: 'Кнопка',
-      objectFields: {
-        text: { type: 'text', label: 'Текст' },
-        href: { type: 'text', label: 'Ссылка' },
-      },
-    },
+    // Порядок по Figma 314-34815:
+    // 1. Изображения, 2. Размер, 3. Затемнение, 4. (раздел «Содержание»),
+    // 5. Позиция, 6. Выравнивание, 7. Контейнер, 8. Цветовая схема, 9. Отступы.
+    backgroundImages: { type: 'imagePair', label: 'Изображения' } as any,
+    // Hidden — нет в Figma 314-34815, данные сохраняются для рендера.
+    variant: { type: 'hidden', label: '' },
+    contentPosition: { type: 'hidden', label: '' } as any,
+    // Legacy fields — скрыты из sidebar; данные сохраняются для backward-compat,
+    // но редактирование идёт через backgroundImages (imagePair).
+    backgroundImage: { type: 'hidden', label: '' },
+    backgroundImage2: { type: 'hidden', label: '' },
+    // heading / text / primaryButton / secondaryButton — видны только в
+    // sub-panel'е при click на subsection в превью (NamedFocusedPanel).
+    // hiddenInMainPanel=true → CustomFieldsPanel dynamic renderer пропускает
+    // в main panel, но field config остаётся валидным для sub-panel.
     heading: {
       type: 'object',
       label: 'Заголовок',
+      hiddenInMainPanel: true,
       objectFields: {
         text: { type: 'aiText', label: 'Заголовок', fieldType: 'title', placeholder: 'Ввести текст...' } as any,
         size: {
@@ -119,10 +140,11 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
           ],
         },
       },
-    },
+    } as any,
     text: {
       type: 'object',
       label: 'Текст',
+      hiddenInMainPanel: true,
       objectFields: {
         content: { type: 'aiText', label: 'Текст', fieldType: 'description', placeholder: 'Ввести текст...' } as any,
         size: {
@@ -135,26 +157,46 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
           ],
         },
       },
-    },
+    } as any,
     primaryButton: {
       type: 'object',
       label: 'Кнопка основная',
+      hiddenInMainPanel: true,
       objectFields: {
         text: { type: 'text', label: 'Текст' },
         link: { type: 'pagePicker', label: 'Ссылка' },
       },
-    },
+    } as any,
     secondaryButton: {
       type: 'object',
       label: 'Кнопка вторичная',
+      hiddenInMainPanel: true,
       objectFields: {
         text: { type: 'text', label: 'Текст' },
         link: { type: 'pagePicker', label: 'Ссылка' },
       },
+    } as any,
+    // Legacy fields — скрыты, заменены на heading / text / backgroundImages /
+    // primaryButton. Данные сохраняются 1-в-1 (backward-compat при rollback).
+    title: { type: 'hidden', label: '' },
+    subtitle: { type: 'hidden', label: '' },
+    image: { type: 'hidden', label: '' },
+    images: { type: 'hidden', label: '' },
+    cta: { type: 'hidden', label: '' },
+    // Pupa parity: дополнительные параметры секции.
+    size: {
+      type: 'select',
+      label: 'Размер',
+      options: [
+        { label: 'Маленький', value: 'small' },
+        { label: 'Средний', value: 'medium' },
+        { label: 'Большой', value: 'large' },
+      ],
     },
-    backgroundImages: { type: 'imagePair', label: 'Фоновые изображения' } as any,
-    backgroundImage: { type: 'image', label: 'Фоновое изображение (legacy)' },
-    backgroundImage2: { type: 'image', label: 'Фоновое изображение 2 (legacy)' },
+    overlay: { type: 'slider', label: 'Затемнение', min: 0, max: 100, step: 5 },
+    // Раздел «Содержание» — black 16px subheader перед Позиция / Выравнивание /
+    // Контейнер. Не контрол, не сохраняется в props (decorative only).
+    ['_contentSection' as never]: { type: 'section-header', label: 'Содержание' } as any,
     position: {
       type: 'select',
       label: 'Позиция',
@@ -167,48 +209,83 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
         { label: 'По центру справа', value: 'center-right' },
         { label: 'Снизу слева', value: 'bottom-left' },
         { label: 'Снизу по центру', value: 'bottom-center' },
-        { label: 'Снизу справа', value: 'bottom-right' },
+        { label: 'Справа снизу', value: 'bottom-right' },
       ],
     },
-    size: {
-      type: 'radio',
-      label: 'Размер',
-      options: [
-        { label: 'Маленький', value: 'small' },
-        { label: 'Средний', value: 'medium' },
-        { label: 'Большой', value: 'large' },
-      ],
-    },
-    overlay: { type: 'slider', label: 'Затемнение', min: 0, max: 100, step: 5 },
     alignment: { type: 'alignment', label: 'Выравнивание' },
+    // Figma 314-34815: Контейнер = toggle switch «Скрыть/показать»,
+    // не две кнопки. FieldRenderer переключает toggle ↔ boolean,
+    // legacy 'true'/'false' strings совместимы (Hero.astro приводит).
+    // toggleLabel removed (user #7) — FieldRenderer falls through to
+    // dynamic inlineLabel = isOn ? "Показать" : "Скрыть" (mobile pattern).
     container: {
-      type: 'radio',
+      type: 'toggle',
       label: 'Контейнер',
-      options: [
-        { label: 'Показать', value: 'true' },
-        { label: 'Скрыть', value: 'false' },
-      ],
-    },
-    contentPosition: {
-      type: 'radio',
-      label: 'Положение текста',
-      options: [
-        { label: 'По центру', value: 'center' },
-        { label: 'Снизу-слева', value: 'bottom-left' },
-        { label: 'Снизу-по-центру', value: 'bottom-center' },
-        { label: 'Снизу-справа', value: 'bottom-right' },
-      ],
-    },
+    } as any,
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
-    padding: {
-      type: 'object',
-      label: 'Отступы',
-      objectFields: {
-        top: { type: 'number', label: 'Сверху (px)', min: 0, max: 200 },
-        bottom: { type: 'number', label: 'Снизу (px)', min: 0, max: 200 },
+    // Carousel mode + slides — advanced, скрыты по умолчанию в sidebar.
+    // Theme rendering обрабатывает existing data normally если есть, но
+    // редактирование slides убрано чтобы не загромождать sidebar.
+    mode: { type: 'hidden', label: '' },
+    slides: {
+      type: 'hidden',
+      label: 'Слайды (карусель)',
+      arrayFields: {
+        id: { type: 'text', label: 'ID' },
+        imageUrl: { type: 'image', label: 'Фото' },
+        heading: {
+          type: 'object',
+          label: 'Заголовок',
+          objectFields: {
+            text: { type: 'aiText', label: 'Заголовок', fieldType: 'title', placeholder: 'Ввести текст...' } as any,
+            size: {
+              type: 'select',
+              label: 'Размер заголовка',
+              options: [
+                { label: 'Маленький', value: 'small' },
+                { label: 'Средний', value: 'medium' },
+                { label: 'Большой', value: 'large' },
+              ],
+            },
+          },
+        },
+        text: {
+          type: 'object',
+          label: 'Текст',
+          objectFields: {
+            content: { type: 'aiText', label: 'Текст', fieldType: 'description', placeholder: 'Ввести текст...' } as any,
+            size: {
+              type: 'select',
+              label: 'Размер текста',
+              options: [
+                { label: 'Маленький', value: 'small' },
+                { label: 'Средний', value: 'medium' },
+                { label: 'Большой', value: 'large' },
+              ],
+            },
+          },
+        },
+        buttonText: { type: 'text', label: 'Текст кнопки' },
+        buttonLink: { type: 'pagePicker', label: 'Ссылка кнопки' },
+        alignment: { type: 'alignment', label: 'Выравнивание' },
       },
+      defaultItemProps: { id: '', imageUrl: '' },
+      max: 8,
     },
+    pagination: { type: 'hidden', label: '' },
+    autoplay: { type: 'hidden', label: '' },
+    interval: { type: 'hidden', label: '' },
+    // Hidden — нет в Figma 314-34815.
+    imageFullBleed: { type: 'hidden', label: '' },
+    contentAlign: { type: 'hidden', label: '' },
+    buttonStyle: { type: 'hidden', label: '' },
+    // В Figma 314-34815 «Отступы» нет — скрыто из sidebar. Padding в данных
+    // сохраняется (для Hero.astro), но мерчант не редактирует.
+    padding: { type: 'hidden', label: '' } as any,
   },
+  // defaults — satin'овская манера (НЕ канон-дефолты). Редакторский настрой satin:
+  // STYLE'S WEAR заголовок, серый кикер, split-вариант, padding 0 (edge-to-edge),
+  // unsplash фото. Все ключи существуют в канон-схеме выше → safeParse валиден.
   defaults: {
     title: "STYLE'S WEAR COLLECTION\nSINCE 90'",
     subtitle: 'Оставайтесь в центре внимания',
@@ -223,5 +300,5 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
   },
   schema: HeroSchema,
   maxInstances: null,
-  constraints: { padding: { min: 0, max: 200, step: 8 } },
+  constraints: { padding: { min: 0, max: 160, step: 8 } },
 };

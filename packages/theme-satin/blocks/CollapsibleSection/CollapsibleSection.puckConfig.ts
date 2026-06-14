@@ -40,51 +40,22 @@ export type CollapsibleSectionProps = z.infer<typeof CollapsibleSectionSchema>;
 export const CollapsibleSectionPuckConfig: BlockPuckConfig<CollapsibleSectionProps> = {
   label: 'Сворачиваемый раздел',
   category: 'content',
+  // КОНТРОЛЫ = канон theme-base/blocks/CollapsibleSection/CollapsibleSection.puckConfig.ts
+  // (inline-копия, без cross-package import — иначе билд-компилятор блоков ломается).
+  // Дефолты ниже — satin'овские (манера), НЕ канон.
+  // Figma 314-35006: Содержание (header) / Заголовок (aiText) /
+  // Размер заголовка / Контейнер (toggle) / Цветовая схема /
+  // Цветовая схема контейнера / Отступы. sections — sub-panel array.
   fields: {
+    ['_contentSection' as never]: { type: 'section-header', label: 'Содержание' } as any,
     heading: {
-      type: 'object',
+      type: 'aiText',
       label: 'Заголовок',
-      objectFields: {
-        text: { type: 'text', label: 'Текст' },
-        alignment: { type: 'alignment', label: 'Выравнивание' },
-        size: {
-          type: 'radio',
-          label: 'Размер',
-          options: [
-            { label: 'Маленький', value: 'small' },
-            { label: 'Средний', value: 'medium' },
-            { label: 'Большой', value: 'large' },
-          ],
-        },
-      },
-    },
-    container: {
-      type: 'object',
-      label: 'Контейнер',
-      objectFields: {
-        enabled: {
-          type: 'radio',
-          label: 'Включён',
-          options: [
-            { label: 'Да', value: 'true' },
-            { label: 'Нет', value: 'false' },
-          ],
-        },
-      },
-    },
-    items: {
-      type: 'array',
-      label: 'Элементы',
-      arrayFields: {
-        title: { type: 'text', label: 'Заголовок' },
-        content: { type: 'textarea', label: 'Содержимое' },
-      },
-      defaultItemProps: { id: '', title: 'Новый элемент', content: '' },
-      max: 10,
-    },
-    headingAlignment: { type: 'alignment', label: 'Выравнивание заголовка' },
+      fieldType: 'title',
+      placeholder: 'Ввести текст...',
+    } as any,
     headingSize: {
-      type: 'radio',
+      type: 'select',
       label: 'Размер заголовка',
       options: [
         { label: 'Маленький', value: 'small' },
@@ -93,7 +64,7 @@ export const CollapsibleSectionPuckConfig: BlockPuckConfig<CollapsibleSectionPro
       ],
     },
     containerEnabled: {
-      type: 'radio',
+      type: 'toggle',
       label: 'Контейнер',
       options: [
         { label: 'Показать', value: 'true' },
@@ -102,25 +73,26 @@ export const CollapsibleSectionPuckConfig: BlockPuckConfig<CollapsibleSectionPro
     },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
+    padding: { type: 'padding', label: 'Отступы' },
     sections: {
       type: 'array',
-      label: 'Пункты',
+      label: 'Пункты (макс 10)',
+      hiddenInMainPanel: true,
       arrayFields: {
-        id: { type: 'text', label: 'ID' },
-        heading: { type: 'text', label: 'Заголовок пункта' },
-        content: { type: 'textarea', label: 'Контент (HTML)' },
+        heading: { type: 'text', label: 'Вопрос / заголовок' },
+        content: { type: 'textarea', label: 'Ответ / содержимое' },
       },
-      defaultItemProps: { id: 'section-new', heading: 'Новый пункт', content: '' },
+      defaultItemProps: {
+        id: '',
+        heading: 'Новый пункт',
+        content: 'Содержимое пункта',
+      },
       max: 10,
-    },
-    padding: {
-      type: 'object',
-      label: 'Отступы',
-      objectFields: {
-        top: { type: 'number', label: 'Сверху (px)', min: 0, max: 160 },
-        bottom: { type: 'number', label: 'Снизу (px)', min: 0, max: 160 },
-      },
-    },
+    } as any,
+    // Hidden — нет в Figma 314-35006.
+    container: { type: 'hidden', label: '' },
+    items: { type: 'hidden', label: '' },
+    headingAlignment: { type: 'hidden', label: '' },
   },
   defaults: {
     heading: 'ВОПРОСЫ И ОТВЕТЫ',

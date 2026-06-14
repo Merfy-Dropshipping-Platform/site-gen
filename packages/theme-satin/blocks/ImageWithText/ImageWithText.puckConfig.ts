@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import type { BlockPuckConfig } from '@merfy/theme-contract';
 
+// КОНТРОЛЫ (fields / schema / label / category) = КАНОН
+// packages/theme-base/blocks/ImageWithText/ImageWithText.puckConfig.ts —
+// inline-копия (НЕ cross-package import, чтобы compile-astro-blocks.mjs не падал).
+// defaults — satin'овские (манера темы): см. объект defaults ниже.
 export const ImageWithTextSchema = z.object({
   image: z.object({ url: z.string(), alt: z.string() }),
   heading: z.union([
@@ -24,6 +28,20 @@ export const ImageWithTextSchema = z.object({
     link: z.string().optional(),
   }).optional(),
   imagePosition: z.enum(['left', 'right']).optional(),
+  /**
+   * 084 vanilla pilot — additive variant. CTA placement within the text
+   * column. `inline` (default) keeps the pre-084 inline button. `bottom-pinned`
+   * pushes the button to the bottom of the column via `mt-auto` so it
+   * aligns with the bottom edge of the image (Vanilla home parity).
+   */
+  ctaPosition: z.enum(['inline', 'bottom-pinned']).optional(),
+  /**
+   * 084 vanilla pilot Stage 2 Task 8 — additive variant. Controls italic
+   * vs normal styling of heading + body. `normal` (default) preserves
+   * pre-084 styling. `italic` applies italic to both (vanilla Figma
+   * 1:18992 demands Bitter Italic + Arsenal Italic).
+   */
+  textStyle: z.enum(['normal', 'italic']).optional(),
   // Pupa parity.
   size: z.enum(['small', 'medium', 'large']).optional(),
   width: z.enum(['small', 'medium', 'large', 'full']).optional(),
@@ -40,55 +58,34 @@ export type ImageWithTextProps = z.infer<typeof ImageWithTextSchema>;
 export const ImageWithTextPuckConfig: BlockPuckConfig<ImageWithTextProps> = {
   label: 'Изображение с текстом',
   category: 'content',
+  // Figma 314-34786: Изображения / Размер / Ширина / Позиция фото /
+  // Цветовая схема / Отступы. Заголовок / Текст / Кнопка — sub-panels.
   fields: {
     image: {
       type: 'object',
-      label: 'Изображение',
+      label: 'Изображения',
       objectFields: {
-        url: { type: 'text', label: 'URL' },
+        url: { type: 'image', label: 'Фото' },
         alt: { type: 'text', label: 'Alt текст' },
       },
     },
-    heading: {
-      type: 'object',
-      label: 'Заголовок',
-      objectFields: {
-        text: { type: 'text', label: 'Текст' },
-        alignment: { type: 'alignment', label: 'Выравнивание' },
-        size: {
-          type: 'radio',
-          label: 'Размер',
-          options: [
-            { label: 'Маленький', value: 'small' },
-            { label: 'Средний', value: 'medium' },
-            { label: 'Большой', value: 'large' },
-          ],
-        },
-      },
+    size: {
+      type: 'select',
+      label: 'Размер',
+      options: [
+        { label: 'Маленький', value: 'small' },
+        { label: 'Средний', value: 'medium' },
+        { label: 'Большой', value: 'large' },
+      ],
     },
-    text: {
-      type: 'object',
-      label: 'Текст',
-      objectFields: {
-        content: { type: 'textarea', label: 'Содержание' },
-        size: {
-          type: 'radio',
-          label: 'Размер',
-          options: [
-            { label: 'Маленький', value: 'small' },
-            { label: 'Средний', value: 'medium' },
-            { label: 'Большой', value: 'large' },
-          ],
-        },
-      },
-    },
-    button: {
-      type: 'object',
-      label: 'Кнопка',
-      objectFields: {
-        text: { type: 'text', label: 'Текст' },
-        link: { type: 'pagePicker', label: 'Ссылка' },
-      },
+    width: {
+      type: 'select',
+      label: 'Ширина',
+      options: [
+        { label: 'Маленькая', value: 'small' },
+        { label: 'Средняя', value: 'medium' },
+        { label: 'Большая', value: 'large' },
+      ],
     },
     imagePosition: {
       type: 'radio',
@@ -98,36 +95,60 @@ export const ImageWithTextPuckConfig: BlockPuckConfig<ImageWithTextProps> = {
         { label: 'Справа', value: 'right' },
       ],
     },
-    size: {
-      type: 'radio',
-      label: 'Размер',
-      options: [
-        { label: 'Маленький', value: 'small' },
-        { label: 'Средний', value: 'medium' },
-        { label: 'Большой', value: 'large' },
-      ],
-    },
-    width: {
-      type: 'radio',
-      label: 'Ширина',
-      options: [
-        { label: 'Маленькая', value: 'small' },
-        { label: 'Средняя', value: 'medium' },
-        { label: 'Большая', value: 'large' },
-        { label: 'Во всю', value: 'full' },
-      ],
-    },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
-    containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
-    padding: {
+    padding: { type: 'padding', label: 'Отступы' },
+    // Sub-panels (subsection click, NamedFocusedPanel):
+    heading: {
       type: 'object',
-      label: 'Отступы',
+      label: 'Заголовок',
+      hiddenInMainPanel: true,
       objectFields: {
-        top: { type: 'number', label: 'Сверху (px)', min: 0, max: 160 },
-        bottom: { type: 'number', label: 'Снизу (px)', min: 0, max: 160 },
+        text: { type: 'aiText', label: 'Заголовок', fieldType: 'title', placeholder: 'Ввести текст...' } as any,
+        alignment: { type: 'alignment', label: 'Выравнивание' },
+        size: {
+          type: 'select',
+          label: 'Размер заголовка',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
       },
-    },
+    } as any,
+    text: {
+      type: 'object',
+      label: 'Текст',
+      hiddenInMainPanel: true,
+      objectFields: {
+        content: { type: 'aiText', label: 'Текст', fieldType: 'description', placeholder: 'Ввести текст...' } as any,
+        size: {
+          type: 'select',
+          label: 'Размер текста',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
+      },
+    } as any,
+    button: {
+      type: 'object',
+      label: 'Кнопка',
+      hiddenInMainPanel: true,
+      objectFields: {
+        text: { type: 'text', label: 'Текст' },
+        link: { type: 'pagePicker', label: 'Ссылка' },
+      },
+    } as any,
+    // Hidden — нет в Figma 314-34786.
+    ctaPosition: { type: 'hidden', label: '' },
+    textStyle: { type: 'hidden', label: '' },
+    containerColorScheme: { type: 'hidden', label: '' },
   },
+  // defaults — МАНЕРА satin (НЕ канон-дефолты): материалы-заголовок, портретный
+  // unsplash-ассет, фото слева. Сохранены как есть при миграции контролов.
   defaults: {
     image: {
       url: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=80',

@@ -75,6 +75,7 @@ const columns = rawColumns.slice(0, 10).map((c: any) => {
 			(typeof c.imageUrl === "string" && c.imageUrl.trim()) ||
 			(typeof c.image === "string" && c.image.trim()) ||
 			"",
+		imageSize: c.imageSize,
 		headingSize: c.headingSize,
 		textSize: c.textSize,
 		link: linkText ? { text: linkText, href: linkHref } : undefined,
@@ -160,6 +161,12 @@ const itemTextCls = (s: string | undefined) =>
 			? "text-[14px] md:text-[17px]"
 			: "text-[12px] md:text-[14px]";
 
+// Per-колоночный imageSize (small/medium/large): ширина медиа-плитки внутри
+// колонки (паритет rose). medium/large/отсутствие = манера (w-full, текущий вид
+// байт-в-байт); small — сужение плитки до w-1/2, аспект/радиус/фон не меняются.
+const itemImageCls = (s: string | undefined) =>
+	s === "small" ? "w-1/2" : "w-full";
+
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
@@ -201,7 +208,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 					>
 						{c.image && (
 							<div
-								class={`w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] ${tileAspectCls}`}
+								class={`${itemImageCls(c.imageSize)} overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] ${tileAspectCls}`}
 							>
 								<img
 									src={c.image}

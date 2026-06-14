@@ -121,6 +121,11 @@ const containerSchemeCls =
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
 
+// Канон textPosition (radio «Положение колонн»): манера satin — карточка-фича
+// ВСЕГДА по центру (MANNER §4, Features.astro:33 items-center text-center), это
+// и редакторский дефолт satin → отсутствие/center = центр; left — выключка влево.
+const colAlignCls = p.textPosition === "left" ? "items-start text-left" : "items-center text-center";
+
 // Канон buttonText/buttonLink (hidden) — общая кнопка под гридом: светлая
 // контурная роль .satin-button-md LIGHT (родная роль satin §3), w-fit СЛЕВА
 // (манера «Смотреть больше» Popular — НЕ по центру). Метрики .satin-button-md
@@ -184,7 +189,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 			{
 				columns.map((c, index) => (
 					<li
-						class={`flex flex-col items-center gap-6${cardSurfaceCls} text-center`}
+						class={`flex flex-col gap-6 ${colAlignCls}${cardSurfaceCls}`}
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index={index}
 						data-puck-subsection-field="columns"

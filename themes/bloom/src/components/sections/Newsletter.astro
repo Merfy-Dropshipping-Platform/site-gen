@@ -48,8 +48,11 @@ const inlineSubmit = p.formLayout !== "stacked";
 // подвала — заголовок слева, форма max-w-[318px] справа, двухколонная
 // lg-раскладка блока (F:38) сохраняется. Явные center/right складывают блок
 // в одну колонку и двигают её по контейнеру.
+// alignment живёт в под-панели «Заголовок» (heading.alignment); top-level
+// p.alignment скрыт (type:'hidden') — читаем его лишь как fallback (как rose T17).
+const alignmentValue = p.heading?.alignment ?? p.alignment;
 const position = p.position === "center" || p.position === "right" ? p.position : "left";
-const alignment = p.alignment === "center" || p.alignment === "right" ? p.alignment : "left";
+const alignment = alignmentValue === "center" || alignmentValue === "right" ? alignmentValue : "left";
 const isDefaultLayout = position === "left" && alignment === "left";
 const posCls = position === "center" ? "mx-auto" : position === "right" ? "ml-auto" : "mr-auto";
 const alignCls =

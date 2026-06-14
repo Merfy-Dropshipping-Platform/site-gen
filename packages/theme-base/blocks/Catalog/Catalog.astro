@@ -175,6 +175,7 @@ type SsrProduct = { id?: string; name?: string; title?: string; slug?: string; h
   images?: Array<string | { url?: string }>; variants?: unknown[]; isNew?: boolean;
 };
 let ssrProducts: SsrProduct[] = [];
+let ssrCollections: unknown[] = [];
 if (siteId) {
   try {
     const internalBase =
@@ -182,8 +183,9 @@ if (siteId) {
       ?? 'http://localhost:3114';
     const ssrRes = await fetch(`${internalBase}/api/sites/${siteId}/storefront-data`).catch(() => null);
     if (ssrRes && ssrRes.ok) {
-      const data = (await ssrRes.json()) as { products?: SsrProduct[] };
+      const data = (await ssrRes.json()) as { products?: SsrProduct[]; collections?: unknown[] };
       ssrProducts = Array.isArray(data.products) ? data.products : [];
+      ssrCollections = Array.isArray(data.collections) ? data.collections : [];
     }
   } catch {
     /* fallback: placeholders */
@@ -212,6 +214,11 @@ const fmtPriceServer = (n: number | string | undefined): string => {
   data-next-photo-mode={productCard?.nextPhotoMode === 'zones' ? 'zones' : 'simple'}
   style={`background:rgb(var(--color-bg));color:rgb(var(--color-text));${paddingStyle}`}
 >
+  {/* 098 FIX фильтрация: встраиваем SSR-товары в страницу. Клиентский фетч
+      gateway.merfy.ru/storefront-data блокируется CORS в превью-iframe (origin
+      sslip.io) → state.allProducts пустой → фильтры не фильтруют. Клиент читает
+      эти embedded-данные без cross-origin фетча (работает и в превью, и на live). */}
+  <script is:inline set:html={`window.__MERFY_CATALOG_SSR__=${JSON.stringify({ products: ssrProducts, collections: ssrCollections }).replace(/</g, '\\u003c')};`}></script>
   <div
     class={containerSchemeClass}
     style="max-width: 1320px; margin: 0 auto; padding-left: 24px; padding-right: 24px; background: rgb(var(--color-bg)); color: rgb(var(--color-text));"
@@ -1154,9 +1161,16 @@ const fmtPriceServer = (n: number | string | undefined): string => {
       });
     }
 
-    fetch(apiBase + '/sites/' + effectiveSiteId + '/storefront-data', { credentials: 'omit' })
-      .catch(() => null)
-      .then((r) => r && r.ok ? r.json() : null)
+    // 098 FIX: embedded SSR-данные (window.__MERFY_CATALOG_SSR__) — в приоритете
+    // над cross-origin фетчем gateway.merfy.ru (CORS-блок в превью). Фолбэк на
+    // фетч только если embed пуст.
+    const __ssrEmbed = (typeof window !== 'undefined' && window.__MERFY_CATALOG_SSR__) || null;
+    const __dataSource = (__ssrEmbed && Array.isArray(__ssrEmbed.products) && __ssrEmbed.products.length)
+      ? Promise.resolve(__ssrEmbed)
+      : fetch(apiBase + '/sites/' + effectiveSiteId + '/storefront-data', { credentials: 'omit' })
+          .catch(() => null)
+          .then((r) => r && r.ok ? r.json() : null);
+    __dataSource
       .then((data) => {
         if (!data) return;
         const products = data.products || data.data?.products || [];

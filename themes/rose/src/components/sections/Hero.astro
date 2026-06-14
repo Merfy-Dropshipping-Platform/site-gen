@@ -25,18 +25,19 @@ const backgroundImage2 = p.backgroundImages?.url2 ?? p.backgroundImage2;
 //   заголовок large 20/28/36/40 → medium 17/24/31/34 → small 14/20/25/28
 //   текст     large 14/16/18/20 → medium 12/14/15/17 → small 10/11/13/14
 // Дефолтная ветка каждого тернарника = прежняя строка классов байт-в-байт.
-// «Размер» (p.size) — единственный размерный регулятор hero в панели (отдельных
-// «Размер заголовка/текста» у Hero нет) → масштабирует контент: заголовок+текст.
-// heading.size/text.size (если заданы точечно) приоритетнее. Дефолт 'large' (=
-// blockDefaults) → литеральная лестница. Раньше p.size игнорировался → «не работал».
-const headingSize = p.heading?.size ?? p.size;
+// «Размер» (p.size) — ЕДИНСТВЕННОЕ видимое размерное поле панели «Изображение»
+// (heading/text.size скрыты hiddenInMainPanel, у Hero нет дефолта p.size). p.size
+// ПРИОРИТЕТНЕЕ: иначе сохранённый heading.size='large' (из seed/пресета) перебивал
+// выбор «Размера» и поле не работало (баг тестера). heading.size/text.size —
+// фолбэк (точечная подсекция, когда «Размер» не задан).
+const headingSize = p.size ?? p.heading?.size;
 const headingCls =
 	headingSize === "small"
 		? "hero-animate-1 !text-[14px] !font-normal !leading-none uppercase tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:!text-[20px] md:!text-[25px] lg:!text-[28px]"
 		: headingSize === "medium"
 			? "hero-animate-1 !text-[17px] !font-normal !leading-none uppercase tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:!text-[24px] md:!text-[31px] lg:!text-[34px]"
 			: "hero-animate-1 !text-[20px] !font-normal !leading-none uppercase tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:!text-[28px] md:!text-[36px] lg:!text-[length:var(--size-hero-heading,40px)]";
-const textSize = p.text?.size ?? p.size;
+const textSize = p.size ?? p.text?.size;
 const subtitleCls =
 	textSize === "small"
 		? "hero-animate-2 max-w-xl px-1 font-manrope text-[10px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))] sm:text-[11px] md:text-[13px] lg:text-[14px]"

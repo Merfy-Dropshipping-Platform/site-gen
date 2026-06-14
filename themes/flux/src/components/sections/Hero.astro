@@ -38,14 +38,14 @@ const backgroundImage2 = nonEmpty(p.backgroundImages?.url2) ?? nonEmpty(p.backgr
 //   текст large 16/18    → medium 14/15    → small 11/13    (Roboto Flex 300)
 // Дефолтная ветка каждого тернарника = прежняя строка классов байт-в-байт
 // (цвета → токены с пиксель-фоллбеком родного белого §7).
-const headingSize = p.heading?.size ?? p.size;
+const headingSize = p.size;
 const headingCls =
 	headingSize === "small"
 		? "font-comfortaa text-[22px] font-normal leading-[1.115] text-[rgb(var(--color-heading,255_255_255))] md:text-[28px] lg:text-[34px]"
 		: headingSize === "medium"
 			? "font-comfortaa text-[27px] font-normal leading-[1.115] text-[rgb(var(--color-heading,255_255_255))] md:text-[34px] lg:text-[41px]"
 			: "font-comfortaa text-[32px] font-normal leading-[1.115] text-[rgb(var(--color-heading,255_255_255))] md:text-[40px] lg:text-[48px]";
-const textSize = p.text?.size ?? p.size;
+const textSize = p.size;
 const subtitleCls =
 	textSize === "small"
 		? "font-roboto-flex text-[11px] font-light leading-[1.5] text-[rgb(var(--color-text,255_255_255))] md:text-[13px]"

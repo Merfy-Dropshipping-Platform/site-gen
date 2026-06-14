@@ -35,14 +35,14 @@ const backgroundImage2 = p.backgroundImages?.url2 ?? p.backgroundImage2;
 //   текст     large 14/md:16 → medium 12/14 → small 10/11
 // Дефолтная ветка каждого тернарника = прежняя строка классов байт-в-байт
 // (цвета → токены с пиксель-фоллбеком родных #E38E9F по §7).
-const headingSize = p.heading?.size ?? p.size;
+const headingSize = p.size;
 const headingCls =
 	headingSize === "small"
 		? "hero-animate-1 font-urbanist text-[13px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[14px]"
 		: headingSize === "medium"
 			? "hero-animate-1 font-urbanist text-[15px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[17px]"
 			: "hero-animate-1 font-urbanist text-[18px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[20px]";
-const textSize = p.text?.size ?? p.size;
+const textSize = p.size;
 const subtitleCls =
 	textSize === "small"
 		? "hero-animate-2 font-inter text-[10px] font-light leading-[1.2] text-[rgb(var(--color-text,227_142_159))] md:text-[11px]"

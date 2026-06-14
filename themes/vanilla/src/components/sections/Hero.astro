@@ -107,8 +107,8 @@ const slideFromProps = (s: any, i: number): CanonSlide => {
 		subtitle,
 		ctaText,
 		ctaHref,
-		titleCls: headingClsFor(s.heading?.size ?? sectionSize),
-		subtitleCls: textClsFor(s.text?.size ?? sectionSize),
+		titleCls: headingClsFor(sectionSize),
+		subtitleCls: textClsFor(sectionSize),
 	};
 };
 
@@ -141,8 +141,8 @@ if (slides[0]) {
 	if (typeof ovSubtitle === "string" && ovSubtitle.trim()) slides[0].subtitle = ovSubtitle;
 	if (typeof ovCtaText === "string" && ovCtaText.trim()) slides[0].ctaText = ovCtaText;
 	if (typeof ovCtaHref === "string" && ovCtaHref.trim()) slides[0].ctaHref = ovCtaHref;
-	if (p.heading?.size) slides[0].titleCls = headingClsFor(p.heading.size);
-	if (p.text?.size) slides[0].subtitleCls = textClsFor(p.text.size);
+	// Размер управляется ТОЛЬКО секционным «Размер» (p.size → sectionSize),
+	// без точечного heading.size/text.size — единый размер во всех темах.
 }
 
 // JSON для скрипта: копия + классы лестниц (смена слайда переключает и размер).
@@ -275,8 +275,8 @@ const singleImage =
 	(typeof p.backgroundImage === "string" && p.backgroundImage.trim()) ||
 	(typeof p.image?.url === "string" && p.image.url.trim()) ||
 	toWebp(V_IMG.hero(1));
-const singleTitleCls = headingClsFor(p.heading?.size ?? sectionSize);
-const singleSubtitleCls = textClsFor(p.text?.size ?? sectionSize);
+const singleTitleCls = headingClsFor(sectionSize);
+const singleSubtitleCls = textClsFor(sectionSize);
 // Вторая кнопка (только single) — рендер при непустом тексте, белый контур манеры.
 const secondaryText =
 	typeof p.secondaryButton?.text === "string" && p.secondaryButton.text.trim()

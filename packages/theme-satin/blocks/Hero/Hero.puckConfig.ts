@@ -31,11 +31,12 @@ export const HeroSchema = z.object({
   // Pupa parity: nested heading/text + primary/secondary buttons + extended position.
   heading: z.object({
     text: z.string(),
-    size: z.enum(['small', 'medium', 'large']),
+    // size optional — поле убрано из UI (единый секционный «Размер» p.size).
+    size: z.enum(['small', 'medium', 'large']).optional(),
   }).optional(),
   text: z.object({
     content: z.string(),
-    size: z.enum(['small', 'medium', 'large']),
+    size: z.enum(['small', 'medium', 'large']).optional(),
   }).optional(),
   // link принимает обе формы: string ('/catalog') или object ({ href: '/catalog' }).
   // Constructor defaultPagesData пишет object form — при строгом schema=string
@@ -130,15 +131,7 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
       hiddenInMainPanel: true,
       objectFields: {
         text: { type: 'aiText', label: 'Заголовок', fieldType: 'title', placeholder: 'Ввести текст...' } as any,
-        size: {
-          type: 'select',
-          label: 'Размер заголовка',
-          options: [
-            { label: 'Маленький', value: 'small' },
-            { label: 'Средний', value: 'medium' },
-            { label: 'Большой', value: 'large' },
-          ],
-        },
+        // «Размер заголовка» убран — единый секционный «Размер» (p.size) во всех темах.
       },
     } as any,
     text: {
@@ -147,15 +140,7 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
       hiddenInMainPanel: true,
       objectFields: {
         content: { type: 'aiText', label: 'Текст', fieldType: 'description', placeholder: 'Ввести текст...' } as any,
-        size: {
-          type: 'select',
-          label: 'Размер текста',
-          options: [
-            { label: 'Маленький', value: 'small' },
-            { label: 'Средний', value: 'medium' },
-            { label: 'Большой', value: 'large' },
-          ],
-        },
+        // «Размер текста» убран — единый секционный «Размер» (p.size).
       },
     } as any,
     primaryButton: {

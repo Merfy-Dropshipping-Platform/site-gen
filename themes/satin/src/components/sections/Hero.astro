@@ -29,14 +29,14 @@ const backgroundImage2 = p.backgroundImages?.url2 ?? p.backgroundImage2;
 // 'large' И отсутствие → ЛИТЕРАЛЬНАЯ лестница верстальщика (MANNER.md §9):
 //   заголовок: small 18/22 → medium 22/27 → large 26/32 = литерал (Kelly Slab uppercase)
 //   кикер:     small 11    → medium 14    → large 16    = литерал (Arsenal light uppercase)
-const headingSize = p.heading?.size ?? p.size;
+const headingSize = p.size;
 const headingCls =
 	headingSize === "small"
 		? "font-logo text-[18px] font-normal uppercase leading-[1.08] text-[rgb(var(--color-heading,0_0_0))] md:text-[22px]"
 		: headingSize === "medium"
 			? "font-logo text-[22px] font-normal uppercase leading-[1.08] text-[rgb(var(--color-heading,0_0_0))] md:text-[27px]"
 			: "font-logo text-[26px] font-normal uppercase leading-[1.08] text-[rgb(var(--color-heading,0_0_0))] md:text-[32px]";
-const textSize = p.text?.size ?? p.size;
+const textSize = p.size;
 const subtitleCls =
 	textSize === "small"
 		? "font-manrope text-[11px] font-light uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]"

@@ -1058,6 +1058,33 @@ export async function runBuildPipeline(
         await fs.mkdir(path.dirname(v2ProductsPath), { recursive: true });
         await fs.writeFile(v2ProductsPath, JSON.stringify(v2Store.products, null, 2), "utf8");
         logger.log(`[themes-v2] Injected ${v2Store.products.length} products into data/products.json for site ${params.siteId}`);
+        // Pretty product URLs: каталог/Popular/islands линкуют на /product/<slug>,
+        // но Option B держит единую страницу /product (гидрация по ?id= / slug из
+        // пути). themes-v2 копирует pre-built dist без per-slug страниц → /product/<slug>
+        // = 404 на nginx-minio-proxy (нет fallback). Генерим статические
+        // product/<slug>/index.html как копию универсальной product/index.html —
+        // клиент (product.astro) читает slug из location.pathname и гидрирует нужный
+        // товар. Дёшево (копия одного шелла), без re-run astro build.
+        try {
+          const universalPdp = path.join(ctx.distDir, "product", "index.html");
+          const pdpHtml = await fs.readFile(universalPdp, "utf8").catch(() => null);
+          if (pdpHtml) {
+            let made = 0;
+            for (const p of v2Store.products as unknown as Array<Record<string, unknown>>) {
+              const slug = (p.slug ?? p.handle ?? p.id) as string | undefined;
+              if (!slug || typeof slug !== "string") continue;
+              const dir = path.join(ctx.distDir, "product", slug);
+              await fs.mkdir(dir, { recursive: true });
+              await fs.writeFile(path.join(dir, "index.html"), pdpHtml, "utf8");
+              made++;
+            }
+            logger.log(`[themes-v2] Generated ${made} pretty product/<slug>/index.html pages for site ${params.siteId}`);
+          } else {
+            logger.warn(`[themes-v2] universal product/index.html not found — pretty /product/<slug> URLs will 404`);
+          }
+        } catch (slugErr) {
+          logger.warn(`[themes-v2] per-slug product page gen failed: ${(slugErr as Error)?.message ?? slugErr}`);
+        }
       } else {
         logger.warn(`[themes-v2] RPC returned 0 products for site ${params.siteId} — live will show demo`);
       }

@@ -47,7 +47,16 @@ const skeleton = {
 		renderVariantGroupsHtml,
 	} from "../lib/storefront-hydrate";
 
-	const idFromUrl = (): string | null => new URLSearchParams(location.search).get("id");
+	const idFromUrl = (): string | null => {
+		const q = new URLSearchParams(location.search).get("id");
+		if (q) return q;
+		// Pretty URL /product/<slug> (каталог/Popular линкуют так) → slug из пути.
+		// build.service генерит статические product/<slug>/index.html (копии этой
+		// универсальной страницы); здесь резолвим товар по slug (lookup ниже
+		// матчит и по id, и по slug). Bare /product и /product?id= не затронуты.
+		const m = location.pathname.match(/\/product\/([^/]+)\/?$/);
+		return m ? decodeURIComponent(m[1]) : null;
+	};
 
 	async function hydrateProductPage() {
 		const section = document.querySelector<HTMLElement>("[data-pdp-section]");

@@ -88,7 +88,7 @@
     },
     "Catalog": {
       "filterPosition": "side",
-      "showFilter": "false",
+      "showFilter": "true",
       "showSort": "true",
       "columns": 3,
       "cards": 12,

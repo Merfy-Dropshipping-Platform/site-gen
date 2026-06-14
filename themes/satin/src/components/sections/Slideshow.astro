@@ -148,9 +148,10 @@ const pagination =
 	p.pagination === "numbers" ||
 	p.pagination === "lines" ||
 	p.pagination === "counter" ||
-	p.pagination === "none"
+	p.pagination === "none" ||
+	p.pagination === "dots"
 		? p.pagination
-		: "dots";
+		: "numbers";
 
 // Канон buttonStyle: outlined (canon-default blockDefaults satin) И отсутствие =
 // ЛИТЕРАЛ верстальщика — белый контур на фото `satin-button satin-button-md

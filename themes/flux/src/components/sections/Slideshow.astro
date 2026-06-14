@@ -137,9 +137,10 @@ const pagination =
 	p.pagination === "numbers" ||
 	p.pagination === "counter" ||
 	p.pagination === "lines" ||
-	p.pagination === "none"
+	p.pagination === "none" ||
+	p.pagination === "dots"
 		? p.pagination
-		: "dots";
+		: "numbers";
 
 // Канон buttonStyle: solid (canon-default) = CTA героя дословно — белая
 // заливка с оранжевым текстом, токены кнопки-1 (Hero.astro:66, MANNER §7);

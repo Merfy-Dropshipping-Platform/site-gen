@@ -238,6 +238,7 @@ export const SlideshowPuckConfig: BlockPuckConfig<SlideshowProps> = {
     ],
     interval: 5,
     autoplay: true,
+    pagination: 'numbers',
     padding: { top: 80, bottom: 80 },
   },
   schema: SlideshowSchema,

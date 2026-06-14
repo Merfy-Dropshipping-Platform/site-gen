@@ -224,7 +224,8 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
     displayColumns: 3,
     headingSize: 'medium',
     textSize: 'medium',
-    width: 'medium',
+    // Канон соседних секций (Collections/Gallery/MultiRows) = 1320px контейнер.
+    width: 'large',
     imageAspectRatio: 'square',
     textPosition: 'left',
     containerEnabled: 'true',

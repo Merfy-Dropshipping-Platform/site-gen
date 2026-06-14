@@ -160,14 +160,15 @@ const frameCls = contained ? " max-w-[1320px] rounded-[var(--radius-media,8px)]"
 // Канон overlay 0-100 — затемнение между фото и контентом (паттерн Hero T11).
 const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
 
-// Канон pagination: dots (отсутствие = dots) | numbers | counter | lines | none.
+// Канон pagination: numbers (отсутствие = numbers, как панель/vanilla/bloom) | dots | counter | lines | none.
 const pagination =
 	p.pagination === "numbers" ||
 	p.pagination === "counter" ||
 	p.pagination === "lines" ||
-	p.pagination === "none"
+	p.pagination === "none" ||
+	p.pagination === "dots"
 		? p.pagination
-		: "dots";
+		: "numbers";
 
 // Канон buttonStyle: solid (canon-default) = белая CTA героя §3; outlined =
 // прозрачная с белым бордером (ветка outlined героя T11).

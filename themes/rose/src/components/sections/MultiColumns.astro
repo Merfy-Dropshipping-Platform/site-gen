@@ -98,18 +98,17 @@ const aspectCls =
 // Канон textPosition: left (canon-default) | center.
 const textAlignCls = p.textPosition === "center" ? "items-center text-center" : "items-start text-left";
 
-// Канон containerEnabled ('true' canon-default; legacy background.enabled) —
-// обёртка-поверхность манеры (#F5F5F5, радиус карточки) вокруг грида.
+// Канон containerColorScheme (hidden) — класс схемы на контейнере (паритет
+// Collections/Gallery/MultiRows). Канон соседних секций rose: грид лежит прямо в
+// `mx-auto flex w-full max-w-… flex-col gap-8 md:gap-10` БЕЗ surface-обёртки
+// (#F5F5F5 / радиус / паддинг) вокруг всего грида. containerEnabled управляет
+// только наличием классa схемы (per-колоночные карточки сохраняют свой вид).
 const containerEnabled =
 	String(p.containerEnabled ?? p.background?.enabled ?? "true") !== "false";
-// Канон containerColorScheme (hidden) — класс схемы на контейнере (паритет theme-base).
 const containerSchemeCls =
-	typeof p.containerColorScheme === "string" && p.containerColorScheme
+	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
-const containerCls = containerEnabled
-	? `rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-surface,245_245_245))] p-6 md:p-10${containerSchemeCls}`
-	: containerSchemeCls.trim();
 
 // Канон buttonText/buttonLink (hidden) — кнопка манеры под гридом при непустом тексте.
 const btnText =
@@ -146,7 +145,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	<div class={`mx-auto flex w-full ${widthCls} flex-col gap-8 md:gap-10`}>
+	<div class={`mx-auto flex w-full ${widthCls} flex-col gap-8 md:gap-10${containerSchemeCls}`}>
 		{
 			heading && (
 				<h2
@@ -161,49 +160,48 @@ const titleId = id && heading ? `${id}-title` : undefined;
 				</h2>
 			)
 		}
-		<div class={containerCls} data-animate>
-			<ul
-				class="grid grid-cols-1 gap-6 sm:gap-5 md:grid-cols-2 md:gap-5 lg:grid-cols-[repeat(var(--cols),minmax(0,1fr))] lg:gap-6"
-				role="list"
-				style={gridStyle}
-			>
-				{
-					columns.map((c, i) => (
-						<li
-							class={`flex flex-col gap-4 ${textAlignCls}`}
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index={i}
-							data-puck-subsection-field="columns"
-						>
-							{c.image && (
-								<div class={`${itemImageCls(c.imageSize)} overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]${aspectCls}`}>
-									<img src={c.image} alt={c.heading || "Колонка"} loading="lazy" class="!h-full !w-full object-cover" />
-								</div>
-							)}
-							{c.heading && (
-								<h3 class={`font-manrope ${itemHeadingCls(c.headingSize)} font-normal !leading-none text-[rgb(var(--color-heading,0_0_0))]`}>
-									{c.heading}
-								</h3>
-							)}
-							{c.text && (
-								<div
-									class={`font-manrope text-[16px] font-normal leading-[1.6] text-[rgb(var(--color-text,0_0_0))]${itemTextCls(c.textSize)}`}
-									set:html={c.text}
-								/>
-							)}
-							{c.link && (
-								<a
-									href={c.link.href}
-									class="font-manrope text-[16px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))] underline underline-offset-4 transition-opacity hover:opacity-70"
-								>
-									{c.link.text}
-								</a>
-							)}
-						</li>
-					))
-				}
-			</ul>
-		</div>
+		<ul
+			class="grid grid-cols-1 gap-6 sm:gap-5 md:grid-cols-2 md:gap-5 lg:grid-cols-[repeat(var(--cols),minmax(0,1fr))] lg:gap-6"
+			role="list"
+			style={gridStyle}
+			data-animate
+		>
+			{
+				columns.map((c, i) => (
+					<li
+						class={`flex flex-col gap-4 ${textAlignCls}`}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index={i}
+						data-puck-subsection-field="columns"
+					>
+						{c.image && (
+							<div class={`${itemImageCls(c.imageSize)} overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]${aspectCls}`}>
+								<img src={c.image} alt={c.heading || "Колонка"} loading="lazy" class="!h-full !w-full object-cover" />
+							</div>
+						)}
+						{c.heading && (
+							<h3 class={`font-manrope ${itemHeadingCls(c.headingSize)} font-normal !leading-none text-[rgb(var(--color-heading,0_0_0))]`}>
+								{c.heading}
+							</h3>
+						)}
+						{c.text && (
+							<div
+								class={`font-manrope text-[16px] font-normal leading-[1.6] text-[rgb(var(--color-text,0_0_0))]${itemTextCls(c.textSize)}`}
+								set:html={c.text}
+							/>
+						)}
+						{c.link && (
+							<a
+								href={c.link.href}
+								class="font-manrope text-[16px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))] underline underline-offset-4 transition-opacity hover:opacity-70"
+							>
+								{c.link.text}
+							</a>
+						)}
+					</li>
+				))
+			}
+		</ul>
 		{
 			btnText && (
 				<div class="flex justify-center">

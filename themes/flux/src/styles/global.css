@@ -13,10 +13,18 @@
   --color-accent: #FA5109;
 }
 
-.font-comfortaa,
-.font-manrope,
+/* Заголовки — переключаемый токен (picker → --font-heading); дефолт Roboto Flex по Figma.
+   .font-comfortaa используют все заголовки + DS NtSectionHeading (хардкодит этот класс). */
+.font-comfortaa {
+  font-family: var(--font-heading, "Roboto Flex", "Roboto", system-ui, -apple-system, sans-serif);
+}
+/* Формы/UI — Manrope (фиксированная роль Figma) */
+.font-manrope {
+  font-family: "Manrope", system-ui, -apple-system, sans-serif;
+}
+/* Копирайт/мелкий текст — Inter (фиксированная роль Figma) */
 .font-inter {
-  font-family: var(--font-family-sans);
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
 }
 
 .font-roboto-flex {
@@ -37,6 +45,19 @@
 }
 .menu-open #menu-line-2 {
   transform: translate(0, -3px) rotate(-45deg);
+}
+
+/* Reveal-анимации (GSAP): прячем элементы до анимации только при активном JS,
+   чтобы без JS и при prefers-reduced-motion контент оставался видимым. */
+.has-js [data-reveal],
+.has-js [data-reveal-group] > * {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .has-js [data-reveal],
+  .has-js [data-reveal-group] > * {
+    opacity: 1;
+  }
 }
 
 html {

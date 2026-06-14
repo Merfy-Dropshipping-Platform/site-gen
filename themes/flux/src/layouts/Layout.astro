@@ -28,7 +28,9 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 		<NtCartDrawer rootId="flux-cart-drawer-root" eventPrefix="flux:cart" />
 		<script>
 			import { initCartUI } from "../lib/cart";
+			import { initAnimations } from "../lib/animations";
 			initCartUI();
+			initAnimations();
 		</script>
 	</body>
 </html>

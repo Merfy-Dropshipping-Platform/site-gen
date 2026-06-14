@@ -105,9 +105,12 @@ const textAlignCls = p.textPosition === "center" ? "items-center text-center" : 
 // только наличием классa схемы (per-колоночные карточки сохраняют свой вид).
 const containerEnabled =
 	String(p.containerEnabled ?? p.background?.enabled ?? "true") !== "false";
+// При выбранной «Цветовой схеме контейнера» рисуем ВИДИМУЮ подложку (фон схемы +
+// радиус + паддинг) вокруг грида — иначе color-scheme-* задаёт только CSS-vars, а
+// красить нечего (контейнер прозрачный) и схема «пропадала» (баг тестера).
 const containerSchemeCls =
 	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
-		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
+		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")} bg-[rgb(var(--color-bg,255_255_255))] rounded-[var(--radius-card,8px)] p-6 md:p-10`
 		: "";
 
 // Канон buttonText/buttonLink (hidden) — кнопка манеры под гридом при непустом тексте.

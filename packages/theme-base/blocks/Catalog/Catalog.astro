@@ -947,6 +947,11 @@ const fmtPriceServer = (n: number | string | undefined): string => {
       });
     }
     attachHover(root);
+    // FIX: attachSideFilters() была определена (~983), но НИКОГДА не вызывалась →
+    // stock-радио и price-инпуты (и top-дропдауны, и side) не слушались → клик по
+    // фильтру не фильтровал. Вызываем при гидрации (function declaration hoisted,
+    // листенеры вызывают rerender() при изменении). Это первопричина «фильтры не работают».
+    attachSideFilters();
     // Re-attach hover после rerender (новые кнопки в DOM).
     // Используем MutationObserver вместо переопределения rerender (что
     // ломает strict-mode function declaration reassignment).

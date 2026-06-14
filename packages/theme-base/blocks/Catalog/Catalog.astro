@@ -81,7 +81,12 @@ const filterVisible =
     : showSidebar !== undefined
       ? showSidebar !== 'false' && showSidebar !== false
       : true;
-const filterSide = (filterPosition ?? 'side') === 'side';
+// Каталог = Figma 1-34015: фильтры ВСЕГДА сверху (top-бар), во всех темах/сайтах.
+// «Сбоку» (side) прятал фильтры на ширине превью/мобилке (hidden lg:flex) → каталог
+// выглядел без фильтров (регресс после blob→секции). Форсим top глобально, не завися
+// от filterPosition в ревизии (там у многих сайтов остался legacy 'side').
+const filterSide = false;
+void filterPosition;
 const sortVisible = showSort !== 'false' && showSort !== false;
 const collFilterLegacy =
   showCollectionFilter !== 'false' && showCollectionFilter !== false;

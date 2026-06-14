@@ -1,0 +1,23 @@
+---
+/** Стрелка вправо для мобильного меню (Figma Modal 375). */
+interface Props {
+	class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<svg
+	xmlns="http://www.w3.org/2000/svg"
+	viewBox="0 0 6 10"
+	fill="none"
+	aria-hidden="true"
+	class:list={["block h-[10px] w-[6px] shrink-0 text-[var(--vanilla-dark)]", className]}
+>
+	<path
+		d="M1 1L5 5L1 9"
+		stroke="currentColor"
+		stroke-width="1.2"
+		stroke-linecap="round"
+		stroke-linejoin="round"></path>
+</svg>

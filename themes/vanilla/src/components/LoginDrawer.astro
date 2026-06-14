@@ -34,47 +34,53 @@ const passwordId = `${rootId}-password`;
 		type="button"
 		data-login-close
 		aria-label="Закрыть окно входа"
-		class="absolute inset-0 h-full w-full cursor-default bg-black/35 opacity-0 transition-opacity duration-300 data-[state=open]:opacity-100"
+		class="absolute inset-0 h-full w-full cursor-default bg-black/35 opacity-0 transition-opacity duration-300 data-[state=open]:opacity-100 max-md:hidden"
 		data-state="closed"
 	></button>
 
 	<aside
 		data-login-panel
-		class="absolute right-0 top-0 flex h-full w-[min(92vw,480px)] min-w-0 max-w-[480px] translate-x-full flex-col bg-white shadow-[0_4px_32px_rgba(0,0,0,0.08)] transition-transform duration-300 ease-out data-[state=open]:translate-x-0 sm:w-full sm:min-w-[300px] sm:max-w-[min(33.333vw,480px)]"
+		class="absolute right-0 top-0 flex h-full w-[min(92vw,480px)] min-w-0 max-w-[480px] translate-x-full flex-col bg-[var(--vanilla-surface)] transition-transform duration-300 ease-out data-[state=open]:translate-x-0 max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:left-0 max-md:w-full max-md:max-w-none max-md:translate-x-0 max-md:translate-y-full max-md:data-[state=open]:translate-y-0 md:w-full md:min-w-[300px] md:max-w-[min(33.333vw,480px)]"
 		data-state="closed"
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby={titleId}
 	>
-		<div class="flex items-start justify-end px-6 pt-6 md:px-8 md:pt-8">
+		<form
+			data-login-form
+			class="relative flex h-full flex-col overflow-y-auto px-4 pb-10 pt-6 md:px-8 md:pt-8"
+			novalidate
+		>
 			<button
 				type="button"
 				data-login-close
-				class="flex size-10 items-center justify-center text-[var(--vanilla-muted)] transition-opacity hover:opacity-80"
+				class="mb-8 w-full text-center font-manrope text-[12px] font-normal leading-normal text-[var(--vanilla-muted)] transition-opacity hover:opacity-80 md:hidden"
+			>
+				Вернуться назад
+			</button>
+
+			<button
+				type="button"
+				data-login-close
+				class="absolute right-8 top-8 hidden size-6 items-center justify-center text-[var(--vanilla-dark)] transition-opacity hover:opacity-80 md:flex"
 				aria-label="Закрыть"
 			>
 				<NtIcon name="menu-close" sizeClass="size-6" />
 			</button>
-		</div>
 
-		<form
-			data-login-form
-			class="flex flex-1 flex-col overflow-y-auto px-6 pb-10 md:px-8 md:pb-12"
-			novalidate
-		>
-			<div class="flex w-full flex-col items-start gap-2">
+			<div class="flex w-full flex-col items-center gap-3 text-center md:items-start md:pr-10 md:text-left">
 				<h2
 					id={titleId}
-					class="font-vanilla-bitter text-[20px] font-normal uppercase leading-none tracking-normal text-[var(--vanilla-dark)] md:text-[24px]"
+					class="font-vanilla-bitter text-[20px] font-normal uppercase leading-none tracking-normal text-[var(--vanilla-dark)]"
 				>
 					Вход в аккаунт
 				</h2>
-				<p class="font-manrope text-[14px] font-normal leading-normal text-[var(--vanilla-muted)] md:text-[16px]">
+				<p class="font-manrope text-[14px] font-normal leading-normal text-[var(--vanilla-muted)]">
 					Введите свои данные чтобы войти в аккаунт
 				</p>
 			</div>
 
-			<div class="mt-10 flex w-full flex-col gap-6">
+			<div class="mt-10 flex w-full max-w-[420px] flex-col gap-6 self-center md:max-w-none md:self-auto">
 				<div class="flex w-full flex-col gap-2">
 					<label for={emailId} class="font-vanilla-arsenal text-base font-normal leading-normal text-[var(--vanilla-dark)]">
 						E-mail
@@ -85,7 +91,7 @@ const passwordId = `${rootId}-password`;
 						type="email"
 						autocomplete="email"
 						placeholder=""
-						class="box-border h-14 w-full min-h-[56px] rounded-[4px] border border-solid border-[#000000] bg-white px-4 font-manrope text-[16px] font-normal leading-normal text-[var(--vanilla-dark)] outline-none placeholder:text-[#999999] focus-visible:border-[var(--vanilla-header-bg)]"
+						class="box-border h-14 w-full min-h-[56px] rounded-[4px] border border-solid border-[#000000] bg-white px-4 font-manrope text-[16px] font-normal leading-normal text-[var(--vanilla-dark)] outline-none placeholder:text-[#999999] focus-visible:border-[var(--vanilla-header-bg)] md:bg-transparent"
 					/>
 				</div>
 
@@ -99,7 +105,7 @@ const passwordId = `${rootId}-password`;
 							name="password"
 							type="password"
 							autocomplete="current-password"
-							class="box-border h-14 w-full min-h-[56px] rounded-[4px] border border-solid border-[#000000] bg-white px-4 pr-12 font-manrope text-[16px] font-normal leading-normal text-[var(--vanilla-dark)] outline-none focus-visible:border-[var(--vanilla-header-bg)]"
+							class="box-border h-14 w-full min-h-[56px] rounded-[4px] border border-solid border-[#000000] bg-white px-4 pr-12 font-manrope text-[16px] font-normal leading-normal text-[var(--vanilla-dark)] outline-none focus-visible:border-[var(--vanilla-header-bg)] md:bg-transparent"
 						/>
 						<button
 							type="button"
@@ -119,7 +125,7 @@ const passwordId = `${rootId}-password`;
 				</div>
 			</div>
 
-			<div class="mt-10 flex w-full flex-col gap-6">
+			<div class="mt-10 flex min-h-0 flex-1 flex-col justify-end md:pt-20">
 				<button
 					type="submit"
 					data-login-submit
@@ -128,19 +134,19 @@ const passwordId = `${rootId}-password`;
 					Войти
 				</button>
 
-				<div class="flex w-full flex-col items-center gap-4 text-center">
-					<p class="font-manrope text-[12px] font-normal leading-normal text-[var(--vanilla-muted)] md:text-[14px]">
+				<div class="mt-6 flex w-full flex-col items-center gap-4 text-center">
+					<p class="font-manrope text-[12px] font-normal leading-normal text-[var(--vanilla-muted)]">
 						Нет аккаунта?
-						<a href="#" data-login-visual-link class="text-[var(--vanilla-header-bg)] hover:opacity-80">
+						<a href="#" data-login-visual-link class="text-[var(--vanilla-muted)] hover:opacity-80">
 							Зарегистрироваться
 						</a>
 					</p>
 					<a
 						href="#"
 						data-login-visual-link
-						class="font-manrope text-[12px] font-normal leading-normal text-[var(--vanilla-muted)] transition-colors hover:text-[var(--vanilla-dark)] md:text-[14px]"
+						class="font-manrope text-[12px] font-normal leading-normal text-[var(--vanilla-muted)] transition-opacity hover:opacity-80"
 					>
-						Забыл пароль?
+						Забыли пароль?
 					</a>
 				</div>
 			</div>
@@ -149,6 +155,26 @@ const passwordId = `${rootId}-password`;
 </div>
 
 <script is:inline define:vars={{ rootId, evOpen, evClose, evToggle }}>
+	const headerOffsetBelowPromo = () => {
+		const promo = document.querySelector("[data-vanilla-announcement]");
+		const headerEl = document.querySelector('[data-nt="vanilla-header"]');
+		return (promo?.offsetHeight ?? 44) + (headerEl?.offsetHeight ?? 56);
+	};
+
+	const positionLoginPanel = () => {
+		const root = document.getElementById(rootId);
+		const panel = root?.querySelector("[data-login-panel]");
+		if (!(panel instanceof HTMLElement)) return;
+		if (window.matchMedia("(max-width: 767px)").matches) {
+			const top = headerOffsetBelowPromo();
+			panel.style.top = `${top}px`;
+			panel.style.height = `calc(100dvh - ${top}px)`;
+		} else {
+			panel.style.top = "";
+			panel.style.height = "";
+		}
+	};
+
 	const setState = (state) => {
 		const root = document.getElementById(rootId);
 		if (!root) return;
@@ -158,6 +184,7 @@ const passwordId = `${rootId}-password`;
 			el.dataset.state = state;
 		});
 		document.body.style.overflow = state === "open" ? "hidden" : "";
+		if (state === "open") positionLoginPanel();
 	};
 
 	const open = () => setState("open");
@@ -226,4 +253,5 @@ const passwordId = `${rootId}-password`;
 	});
 
 	document.addEventListener("astro:page-load", close);
+	window.addEventListener("resize", positionLoginPanel);
 </script>

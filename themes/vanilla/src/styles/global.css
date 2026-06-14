@@ -235,6 +235,26 @@ footer[data-vanilla-footer]::after {
   color: var(--vanilla-muted);
 }
 
+/* Заголовок секции + подзаголовок (Figma: одна строка с lg, до 1320px на desktop) */
+.vanilla-section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 1320px;
+}
+
+.vanilla-section-subtitle {
+  width: 100%;
+  max-width: 1320px;
+}
+
+@media (min-width: 1024px) {
+  .vanilla-section-subtitle {
+    white-space: nowrap;
+  }
+}
+
 /* Анимации (паритет с rose-theme) */
 @keyframes fadeInUp {
   from {

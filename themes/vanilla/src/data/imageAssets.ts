@@ -45,6 +45,25 @@ export function vanillaDemoGallery(productIndexZeroBased: number): string[] {
 /** Количество миниатюр в PDP-галерее — для вертикального скролла (как в Figma). */
 export const PDP_GALLERY_MIN_SLOTS = 6;
 
+/** Три кадра для hover-карусели карточки: [лево, центр/главный, право]. */
+export function getProductCardCarouselImages(
+	image: string,
+	gallery: string[] = [],
+): [string, string, string] {
+	const main = image;
+	const source = [...new Set([main, ...gallery.filter(Boolean)])];
+
+	if (source.length === 1) {
+		return [main, main, main];
+	}
+
+	const mainIdx = source.indexOf(main);
+	const left = source[(mainIdx - 1 + source.length) % source.length]!;
+	const right = source[(mainIdx + 1) % source.length]!;
+
+	return [left, main, right];
+}
+
 /** Главный кадр, повторённый minSlots раз — одинаковые фото для демо-скролла миниатюр. */
 export function ensureProductGallery(images: string[], minSlots = PDP_GALLERY_MIN_SLOTS): string[] {
 	const source = images.filter(Boolean);

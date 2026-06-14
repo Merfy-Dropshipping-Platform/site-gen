@@ -1,7 +1,7 @@
 ---
 import VanillaPicture from "../img/VanillaPicture.astro";
-import ChevronUpIcon from "../../icons/ChevronUpIcon.astro";
-import ChevronDownIcon from "../../icons/ChevronDownIcon.astro";
+import ArrowSlideUpIcon from "../../icons/ArrowSlideUpIcon.astro";
+import ArrowSlideDownIcon from "../../icons/ArrowSlideDownIcon.astro";
 
 interface Props {
 	images: string[];
@@ -35,7 +35,7 @@ const mainSrc = thumbs[0] ?? "";
 				aria-label="Прокрутить миниатюры вверх"
 				data-pdp-thumb-prev
 			>
-				<ChevronUpIcon class="size-2.5" />
+				<ArrowSlideUpIcon class="size-6" />
 			</button>
 
 			<div
@@ -66,7 +66,7 @@ const mainSrc = thumbs[0] ?? "";
 				aria-label="Прокрутить миниатюры вниз"
 				data-pdp-thumb-next
 			>
-				<ChevronDownIcon class="size-2.5" />
+				<ArrowSlideDownIcon class="size-6" />
 			</button>
 		</div>
 	)}

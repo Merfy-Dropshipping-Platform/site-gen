@@ -61,7 +61,6 @@ const schemeClass = colorSchemeRaw ? `color-scheme-${colorSchemeRaw.replace('sch
 const positionProp = typeof raw.position === 'string' ? raw.position : 'contained';
 
 // Pupa parity: size, overlay, content.heading.{alignment,enabled,size}.
-const sizeProp = typeof raw.size === 'string' ? raw.size : 'medium';
 const overlayPctRaw = typeof raw.overlay === 'number' ? raw.overlay : 0;
 const overlayPct = overlayPctRaw / 100;
 const overlayStyle = overlayPctRaw > 0
@@ -71,20 +70,20 @@ const overlayStyle = overlayPctRaw > 0
 const contentObj = raw.content as { heading?: { text?: string; alignment?: string; enabled?: string; size?: string } } | undefined;
 const headingAlignment = contentObj?.heading?.alignment;
 const headingEnabled = contentObj?.heading?.enabled !== 'false';
-const headingSize = contentObj?.heading?.size;
+// «Размер заголовка» — visible field `size` (Figma 314:35082). Legacy
+// `content.heading.size` kept as fallback for pre-existing revisions.
+const headingSize = typeof raw.size === 'string' ? raw.size : contentObj?.heading?.size;
 const headingAlignClass =
   headingAlignment === 'left' ? 'text-left' :
   headingAlignment === 'right' ? 'text-right' :
   headingAlignment === 'center' ? 'text-center' : '';
+// Drives the eyebrow heading size via PRIVATE --video-heading-size (default 14px
+// from C.heading). NOT global --size-section-heading: that token is set in :root=20px
+// → its fallback 14px wouldn't apply → eyebrow would regress 14px→20px. Private var
+// keeps medium/absent byte-identical (var unset → 14px fallback). small 12px, large 17px.
 const headingSizeClass =
-  headingSize === 'large' ? 'text-3xl md:text-4xl' :
-  headingSize === 'medium' ? 'text-2xl md:text-3xl' :
-  headingSize === 'small' ? 'text-xl md:text-2xl' : '';
-
-const sizeClass =
-  sizeProp === 'small' ? 'aspect-[16/8]' :
-  sizeProp === 'medium' ? 'aspect-video' :
-  sizeProp === 'large' ? 'aspect-[16/10]' : '';
+  headingSize === 'small' ? '[--video-heading-size:12px]' :
+  headingSize === 'large' ? '[--video-heading-size:17px]' : '';
 // 084 vanilla pilot: additive `align` and `padded` variants. When set,
 // they take precedence over the legacy `position` prop. Defaults preserve
 // pre-084 behaviour: `align` falls back to position-derived clamp,
@@ -142,7 +141,7 @@ const video = parseVideo(videoUrl);
   style={paddingStyle}
 >
   <div class={containerClass}>
-    {heading && <h2 class={C.heading}>{heading}</h2>}
+    {heading && <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]}>{heading}</h2>}
     {/* style=aspect-ratio дублирует `aspect-video` из C.media: страховка
         геометрии, если Tailwind-утилита не сгенерирована в CSS темы
         (CSS темы сканирует только свои файлы — блок не должен

@@ -86,6 +86,8 @@ const BASE_BLOCKS: Record<string, BaseBlockEntry> = Object.fromEntries(
     'ContactForm',
     'Video',
     'Publications',
+    // Page (Страница) — embed-карточка ссылки на другую страницу магазина (Figma 314-35117).
+    'Page',
     'CartSection',
     'CheckoutSection',
     // Cart page Puck-driven sections

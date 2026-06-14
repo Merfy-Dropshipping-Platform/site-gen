@@ -47,6 +47,15 @@ const slideHeadingCls = (s: string | undefined) =>
 			? "text-[24px] sm:text-[34px] md:text-[43px] lg:text-[48px]"
 			: "text-[20px] sm:text-[28px] md:text-[36px] lg:text-[40px]";
 
+// Текст слайда — параллельная лестница; small ≈0.85, large ≈1.2 (раньше per-slide
+// «Текст→Размер» рендером ИГНОРИРОВАЛСЯ — размер подзаголовка был захардкожен).
+const slideTextCls = (s: string | undefined) =>
+	s === "small"
+		? "text-[12px] sm:text-[14px] md:text-[16px] lg:text-[17px]"
+		: s === "large"
+			? "text-[16px] sm:text-[19px] md:text-[22px] lg:text-[24px]"
+			: "text-[14px] sm:text-[16px] md:text-[18px] lg:text-[20px]";
+
 // Канон-плейсхолдер = реальный ассет темы (принцип T15): слайд без фото получает
 // ассет верстальщика по позиции (манера hero — белый текст поверх фото).
 const SLIDE_FALLBACKS = [
@@ -101,6 +110,7 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 			SLIDE_FALLBACKS[i % SLIDE_FALLBACKS.length],
 		heading: typeof s.heading === "string" ? s.heading : (s.heading?.text ?? ""),
 		headingCls: slideHeadingCls(typeof s.heading === "object" ? s.heading?.size : undefined),
+		textCls: slideTextCls(typeof s.text === "object" ? s.text?.size : undefined),
 		subtitle:
 			(typeof s.subtitle === "string" && s.subtitle.trim() ? s.subtitle : undefined) ??
 			(typeof s.text?.content === "string" && s.text.content.trim() ? s.text.content : undefined),
@@ -226,7 +236,7 @@ const paddingStyle = p.padding
 								)}
 								{s.subtitle && (
 									<p
-										class={`font-manrope text-[14px] font-normal leading-none sm:text-[16px] md:text-[18px] lg:text-[20px] ${
+										class={`font-manrope ${s.textCls} font-normal leading-none ${
 											s.image && !s.boxed ? "text-white" : "text-[rgb(var(--color-text,0_0_0))]"
 										}`}
 									>

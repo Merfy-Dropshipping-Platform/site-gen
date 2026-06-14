@@ -34,23 +34,35 @@ const CANON_COLUMNS = [
 	{ id: "col-3", heading: "Колонка 3", text: "Описание третьей колонки.", imageUrl: "" },
 ];
 const rawColumns = Array.isArray(p.columns) && p.columns.length ? p.columns : CANON_COLUMNS;
-const columns = rawColumns.slice(0, 10).map((c: any) => ({
-	heading: (typeof c.heading === "string" && c.heading) || (typeof c.title === "string" && c.title) || "",
-	text:
-		(typeof c.text === "string" && c.text) ||
-		(typeof c.description === "string" && c.description) ||
-		"",
-	image:
-		(typeof c.imageUrl === "string" && c.imageUrl.trim()) ||
-		(typeof c.image === "string" && c.image.trim()) ||
-		"",
-	headingSize: c.headingSize,
-	textSize: c.textSize,
-	link:
-		c.link && typeof c.link === "object" && typeof c.link.text === "string" && c.link.text.trim()
-			? { text: c.link.text, href: typeof c.link.href === "string" && c.link.href ? c.link.href : "/catalog" }
-			: undefined,
-}));
+const columns = rawColumns.slice(0, 10).map((c: any) => {
+	// Ссылка колонки: canon link {text,href} ИЛИ flat-пара linkText + link
+	// (string из arrayFields конструктора — паритет flux/satin/vanilla/bloom).
+	const linkText =
+		(c.link && typeof c.link === "object" && typeof c.link.text === "string" && c.link.text.trim()
+			? c.link.text
+			: undefined) ?? (typeof c.linkText === "string" && c.linkText.trim() ? c.linkText : undefined);
+	const linkHref =
+		(c.link && typeof c.link === "object" && typeof c.link.href === "string" && c.link.href
+			? c.link.href
+			: undefined) ??
+		(typeof c.link === "string" && c.link ? c.link : undefined) ??
+		"/catalog";
+	return {
+		heading: (typeof c.heading === "string" && c.heading) || (typeof c.title === "string" && c.title) || "",
+		text:
+			(typeof c.text === "string" && c.text) ||
+			(typeof c.description === "string" && c.description) ||
+			"",
+		image:
+			(typeof c.imageUrl === "string" && c.imageUrl.trim()) ||
+			(typeof c.image === "string" && c.image.trim()) ||
+			"",
+		imageSize: c.imageSize,
+		headingSize: c.headingSize,
+		textSize: c.textSize,
+		link: linkText ? { text: linkText, href: linkHref } : undefined,
+	};
+});
 
 // Канон displayColumns 1-4: видимые колонны с lg (canon-default 3); мобильная
 // лестница манеры 1 → md:2 фиксирована.
@@ -114,6 +126,12 @@ const itemHeadingCls = (s: string | undefined) =>
 const itemTextCls = (s: string | undefined) =>
 	s === "small" ? " !text-[14px]" : s === "large" ? " !text-[19px]" : "";
 
+// Per-колоночный imageSize (small/medium/large): ширина медиа-обёртки внутри
+// колонки. medium/отсутствие = манера (w-full, текущий вид); small/large —
+// сужение блока изображения, аспект/контейнер/фон не меняются.
+const itemImageCls = (s: string | undefined) =>
+	s === "small" ? "w-1/2" : s === "large" ? "w-full" : "w-full";
+
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T11).
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
@@ -158,7 +176,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 							data-puck-subsection-field="columns"
 						>
 							{c.image && (
-								<div class={`w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]${aspectCls}`}>
+								<div class={`${itemImageCls(c.imageSize)} overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]${aspectCls}`}>
 									<img src={c.image} alt={c.heading || "Колонка"} loading="lazy" class="!h-full !w-full object-cover" />
 								</div>
 							)}

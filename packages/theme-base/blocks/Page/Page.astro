@@ -10,6 +10,15 @@ interface Props extends PageProps {
 const { id, pageId, colorScheme, padding } = Astro.props as Props;
 const raw = Astro.props as Record<string, unknown>;
 
+// pagePicker эмитит { href, text } (href = slug страницы), но ревизии могут
+// хранить и голую строку. Нормализуем к ключу-строке для page-meta lookup.
+const pageKey =
+  pageId && typeof pageId === 'object'
+    ? ((pageId as { href?: string }).href ?? '')
+    : typeof pageId === 'string'
+      ? pageId
+      : '';
+
 const schemeClass = typeof colorScheme === 'string' && colorScheme
   ? `color-scheme-${colorScheme.replace('scheme-', '')}`
   : '';
@@ -22,11 +31,11 @@ const siteIdFromRoot = typeof raw.siteId === 'string' ? raw.siteId : '';
 type PageMeta = { id: string; title: string; slug: string; path: string; url?: string };
 let pageMeta: PageMeta | null = null;
 
-if (pageId && siteIdFromRoot) {
+if (pageKey && siteIdFromRoot) {
   try {
     const internalBase = (import.meta as unknown as { env?: { SITES_INTERNAL_BASE?: string } }).env?.SITES_INTERNAL_BASE
       ?? 'http://localhost:3114';
-    const res = await fetch(`${internalBase}/api/sites/${siteIdFromRoot}/page-meta?pageId=${encodeURIComponent(pageId)}`).catch(() => null);
+    const res = await fetch(`${internalBase}/api/sites/${siteIdFromRoot}/page-meta?pageId=${encodeURIComponent(pageKey)}`).catch(() => null);
     if (res && res.ok) {
       const data = (await res.json()) as { page?: PageMeta };
       pageMeta = data.page ?? null;
@@ -38,7 +47,7 @@ if (pageId && siteIdFromRoot) {
   class:list={[C.root, schemeClass]}
   data-puck-component-id={id}
   data-page-embed
-  data-page-id={pageId || ''}
+  data-page-id={pageKey || ''}
   style={paddingStyle}
 >
   <div class={C.container}>
@@ -48,10 +57,10 @@ if (pageId && siteIdFromRoot) {
         <p class={C.text}>{pageMeta.title}</p>
         <p class="text-xs [font-family:var(--font-body)] text-[rgb(var(--color-muted))]/70">{pageMeta.path}</p>
       </a>
-    ) : pageId ? (
+    ) : pageKey ? (
       <div class={`${C.placeholder} flex-col gap-3`}>
         <div class="w-12 h-12 text-[rgb(var(--color-text))]"><Fragment set:html={PLACEHOLDER_DOC} /></div>
-        <p class={C.text}>Страница «{pageId}» не найдена</p>
+        <p class={C.text}>Страница «{pageKey}» не найдена</p>
       </div>
     ) : (
       <div class={`${C.placeholder} flex-col gap-3`}>

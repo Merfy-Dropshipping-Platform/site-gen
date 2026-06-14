@@ -11,12 +11,13 @@ const id = p.id;
 // новости».
 const heading =
 	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Подпишись на новости");
+// Размер — через --size-section-heading (её читает .rose-title); !text-[ не работает.
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
 	headingSize === "small"
-		? " !text-[12px] sm:!text-[17px]"
+		? " [--size-section-heading:17px] [--size-section-heading-m:12px]"
 		: headingSize === "large"
-			? " !text-[17px] sm:!text-[24px]"
+			? " [--size-section-heading:24px] [--size-section-heading-m:17px]"
 			: "";
 const headingCls = `rose-title${headingSizeCls}`;
 
@@ -43,8 +44,12 @@ const inlineSubmit = p.formLayout === "inline-submit";
 
 // Канон position — позиция блока в контейнере; alignment — выравнивание текста.
 // Отсутствие = left (манера блока подписки подвала).
+// alignment живёт в под-панели «Заголовок» (heading.alignment); top-level p.alignment
+// скрыт (type:'hidden') — читаем его лишь как fallback для обратной совместимости.
+const alignmentValue = p.heading?.alignment ?? p.alignment;
 const position = p.position === "center" || p.position === "right" ? p.position : "left";
-const alignment = p.alignment === "center" || p.alignment === "right" ? p.alignment : "left";
+const alignment =
+	alignmentValue === "center" || alignmentValue === "right" ? alignmentValue : "left";
 const posCls = position === "center" ? "mx-auto" : position === "right" ? "ml-auto" : "mr-auto";
 const alignCls =
 	alignment === "center"

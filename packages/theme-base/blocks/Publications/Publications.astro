@@ -106,10 +106,17 @@ const headingAlignClass =
   headingAlignment === 'left' ? 'text-left' :
   headingAlignment === 'right' ? 'text-right' :
   headingAlignment === 'center' ? 'text-center' : '';
+// Размер заголовка через блок-приватную CSS-var --pub-heading-size
+// (дефолт-fallback в Publications.classes.ts = 14px eyebrow). Берём
+// приватную var, а НЕ глобальную --size-section-heading: последняя
+// эмитится в :root со значением 20px (base-defaults), её fallback 14px
+// не сработал бы и дефолт-eyebrow поехал бы на 20px. medium/дефолт →
+// ничего → 14px; small ~12px, large ~17px. Не используем
+// text-2xl/3xl/4xl — они конфликтовали с фикс-размером на одном <h2>
+// (победитель зависел от порядка в CSS).
 const headingSizeClass =
-  headingSize === 'large' ? 'text-3xl md:text-4xl' :
-  headingSize === 'medium' ? 'text-2xl md:text-3xl' :
-  headingSize === 'small' ? 'text-xl md:text-2xl' : '';
+  headingSize === 'large' ? '[--pub-heading-size:17px]' :
+  headingSize === 'small' ? '[--pub-heading-size:12px]' : '';
 
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`

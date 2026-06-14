@@ -38,6 +38,7 @@ export const satinRegistry: Record<string, ComponentRegistryEntry> = {
     "CollapsibleSection.astro",
   ),
   Publications: staticComponent("Publications", "Publications.astro"),
+  Page: staticComponent("Page", "Page.astro"),
   Product: staticComponent("Product", "Product.astro"),
   CartSection: staticComponent("CartSection", "CartSection.astro"),
   CheckoutSection: staticComponent("CheckoutSection", "CheckoutSection.astro"),

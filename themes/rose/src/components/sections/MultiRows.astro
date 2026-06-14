@@ -10,12 +10,13 @@ const id = p.id;
 // отсутствие/пусто → шапки нет (canon-defaults heading не пишут).
 const heading =
 	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p._headingLegacy ?? "";
+// Размер — через --size-section-heading (её читает .rose-title); !text-[ не работает.
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
 	headingSize === "small"
-		? " !text-[12px] sm:!text-[17px]"
+		? " [--size-section-heading:17px] [--size-section-heading-m:12px]"
 		: headingSize === "large"
-			? " !text-[17px] sm:!text-[24px]"
+			? " [--size-section-heading:24px] [--size-section-heading-m:17px]"
 			: "";
 const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
 const headingAlignCls =
@@ -87,9 +88,9 @@ const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 		aspectCls: aspectFor(r.size ?? p.size),
 		headingSizeCls:
 			(r.headingSize ?? undefined) === "small"
-				? " !text-[12px] sm:!text-[17px]"
+				? " [--size-section-heading:17px] [--size-section-heading-m:12px]"
 				: r.headingSize === "large"
-					? " !text-[17px] sm:!text-[24px]"
+					? " [--size-section-heading:24px] [--size-section-heading-m:17px]"
 					: "",
 		textSizeCls:
 			r.textSize === "small" ? " !text-[14px]" : r.textSize === "large" ? " !text-[19px]" : "",

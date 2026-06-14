@@ -132,15 +132,10 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
             { label: 'Большая', value: 'large' },
           ],
         },
-        width: {
-          type: 'radio',
-          label: 'Ширина изображения',
-          options: [
-            { label: 'Маленькая', value: 'small' },
-            { label: 'Средняя', value: 'medium' },
-            { label: 'Большая', value: 'large' },
-          ],
-        },
+        // Hidden — per-row "Ширина изображения" не читается рендером (.astro
+        // применяет только per-row size→aspect); нет в каноне MultiColumns
+        // arrayFields. Поле схемы сохранено для совместимости данных.
+        width: { type: 'hidden', label: '' } as any,
         title: { type: 'text', label: 'Заголовок' },
         headingSize: {
           type: 'radio',

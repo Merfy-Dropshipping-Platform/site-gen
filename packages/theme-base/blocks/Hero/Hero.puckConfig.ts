@@ -199,7 +199,7 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
         { label: 'По центру справа', value: 'center-right' },
         { label: 'Снизу слева', value: 'bottom-left' },
         { label: 'Снизу по центру', value: 'bottom-center' },
-        { label: 'Снизу справа', value: 'bottom-right' },
+        { label: 'Справа снизу', value: 'bottom-right' },
       ],
     },
     alignment: { type: 'alignment', label: 'Выравнивание' },

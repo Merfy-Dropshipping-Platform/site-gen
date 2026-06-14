@@ -62,6 +62,7 @@ export const roseRegistry: Record<string, ComponentRegistryEntry> = {
     "CollapsibleSection",
   ),
   Publications: packageComponent("Publications", "Publications"),
+  Page: packageComponent("Page", "Page"),
   Product: packageComponent("Product", "Product"),
   CartSection: packageComponent("CartSection", "CartSection"),
   CheckoutSection: packageComponent("CheckoutSection", "CheckoutSection"),

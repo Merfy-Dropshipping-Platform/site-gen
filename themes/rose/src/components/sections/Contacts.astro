@@ -21,13 +21,14 @@ const emailHref = `mailto:${email}`;
 // (canon-default) и отсутствие = rose-title верстальщика дословно (20px desktop /
 // 14px mobile из global.css). small ≈0.85× (17/12), large ≈1.2× (24/17) — манера
 // T13 Collections, мобильный шаг 0.7× desktop как у верстальщика (14/20).
-// !-утилиты (layered important) перекрывают un-layered !important у .rose-title.
+// Размер заголовка — через CSS-var --size-section-heading (её читает .rose-title в
+// global.css); !text-[Npx] на .rose-title НЕ применяется (бьётся un-layered !important).
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
 	headingSize === "small"
-		? " !text-[12px] sm:!text-[17px]"
+		? " [--size-section-heading:17px] [--size-section-heading-m:12px]"
 		: headingSize === "large"
-			? " !text-[17px] sm:!text-[24px]"
+			? " [--size-section-heading:24px] [--size-section-heading-m:17px]"
 			: "";
 // Канон headingAlignment (top-level приоритетнее legacy heading.alignment):
 // отсутствие = строка верстальщика байт-в-байт (слева на desktop, мобильный

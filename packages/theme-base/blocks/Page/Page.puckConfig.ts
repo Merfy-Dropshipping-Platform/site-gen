@@ -9,7 +9,14 @@ import type { BlockPuckConfig } from '@merfy/theme-contract';
  *   - Отступы
  */
 export const PageSchema = z.object({
-  pageId: z.string().optional(),
+  // pagePicker эмитит { href, text } (href = slug); старые ревизии могут
+  // содержать голую строку — принимаем обе формы.
+  pageId: z
+    .union([
+      z.string(),
+      z.object({ href: z.string().optional(), text: z.string().optional() }),
+    ])
+    .optional(),
   colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),

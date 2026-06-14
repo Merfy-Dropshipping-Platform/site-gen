@@ -16,19 +16,25 @@ const sectionSubtitle =
 
 // Канон headingSize: 'medium' (canon-default) и отсутствие = NtSectionHeading
 // верстальщика дословно (20px). small ≈0.85× (17px), large ≈1.2× (24px) — окр. до px.
-// Перекрытие — утилитой на обёртке (внутрь DS-компонента класс не пробрасывается).
+// Размер — через --size-section-heading (её читает #collections-title в <style> ниже);
+// [&_h2]:!text-[ бьётся ID-правилом #collections-title{...!important} (особенно на
+// мобиле). Мобильный размер — через --size-section-heading-m (паттерн .rose-title /
+// Gallery): small→12px, large→17px, дефолт→14px (fallback).
 const headingSizeCls =
 	p.headingSize === "small"
-		? " [&_h2]:!text-[17px]"
+		? " [--size-section-heading:17px] [--size-section-heading-m:12px]"
 		: p.headingSize === "large"
-			? " [&_h2]:!text-[24px]"
+			? " [--size-section-heading:24px] [--size-section-heading-m:17px]"
 			: "";
 // Канон subtitleSize: 'small' (canon-default) и отсутствие = 16px верстальщика.
+// Desktop — утилита [&_p]:!text-[ (работает на десктопе); мобиле — через
+// --size-section-text-m (её читает #collections-title ~ p в <style> ниже),
+// иначе ID-правило держало 12px и слайдер на мобиле игнорировался.
 const subtitleSizeCls =
 	p.subtitleSize === "medium"
-		? " [&_p]:!text-[19px]"
+		? " [&_p]:!text-[19px] [--size-section-text-m:19px]"
 		: p.subtitleSize === "large"
-			? " [&_p]:!text-[23px]"
+			? " [&_p]:!text-[23px] [--size-section-text-m:23px]"
 			: "";
 // Канон titleAlignment: 'center'/отсутствие = строка верстальщика байт-в-байт.
 const headWrapBase = `flex w-full justify-center md:justify-center${headingSizeCls}${subtitleSizeCls}`;
@@ -44,9 +50,16 @@ const headWrapCls =
 // верстальщика 1→3 сохраняется).
 const colsRaw = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : undefined;
 const cols = colsRaw && colsRaw !== 3 ? colsRaw : undefined;
-// Канон imageView: 'square' (canon-default, поле скрыто в панели) и 'portrait'
-// (== литерал верстальщика 430/500) → дефолт-ветка; 'wide' → 16/9.
-const tileAspectCls = p.imageView === "wide" ? " [&_li>a>div]:aspect-[16/9]" : "";
+// Канон imageView: 'portrait' (== литерал верстальщика 430/500, canon-default,
+// поле скрыто в панели) → дефолт-ветка (вид НЕ меняется); 'square' → 1:1;
+// 'wide' → 16/9. Перекрытие — на li>a>div (специфичность > базового aspect-[430/500]),
+// работает и для prop-карточек, и для demo (RoseCollectionCard).
+const tileAspectCls =
+	p.imageView === "wide"
+		? " [&_li>a>div]:aspect-[16/9]"
+		: p.imageView === "square"
+			? " [&_li>a>div]:aspect-[1/1]"
+			: "";
 // Gap-лестница верстальщика — едина для всех. Колонки: дефолт (3/пусто) =
 // лестница верстальщика 1→3 (моб→планшет+); заданное значение применяется уже
 // с ПЛАНШЕТА (md), а не только с lg. Раньше md жёстко держал grid-cols-3 →
@@ -192,15 +205,22 @@ const paddingStyle = p.padding
 </script>
 
 <style>
+	/* NtSectionHeading из DS не пробрасывает class на h2/p — размер заголовка читаем
+	   из --size-section-heading (ставит class-сеттер на обёртке), fallback = 20px
+	   верстальщика. ID-правило перебивает утилиту !text-[20px] на h2. */
+	:global(#collections-title) {
+		font-size: var(--size-section-heading, 20px) !important;
+	}
+
 	/* Figma 375: section title Comfortaa 14, subtitle Manrope 12. NtSectionHeading не пробрасывает class на h2/p. */
 	@media (max-width: 639.98px) {
 		:global(#collections-title) {
-			font-size: 14px !important;
+			font-size: var(--size-section-heading-m, 14px) !important;
 			line-height: 1 !important;
 		}
 
 		:global(#collections-title ~ p) {
-			font-size: 12px !important;
+			font-size: var(--size-section-text-m, 12px) !important;
 			line-height: 1.4 !important;
 			max-width: 100% !important;
 			width: 100% !important;

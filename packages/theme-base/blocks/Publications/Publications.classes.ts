@@ -15,7 +15,7 @@ export const PublicationsClasses = {
   container:
     'mx-auto max-w-[var(--container-max-width)] px-4',
   heading:
-    '[font-family:var(--font-heading)] text-[14px] leading-[16px] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] text-center mb-10',
+    '[font-family:var(--font-heading)] text-[length:var(--pub-heading-size,14px)] leading-[16px] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] text-center mb-10',
   grid:
     'grid gap-x-[var(--spacing-grid-col-gap)] gap-y-[var(--spacing-grid-row-gap)]',
   card:

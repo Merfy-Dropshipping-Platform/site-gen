@@ -137,7 +137,11 @@ export const CollectionsPuckConfig: BlockPuckConfig<CollectionsProps> = {
     subtitle: '',
     headingSize: 'medium',
     subtitleSize: 'small',
-    imageView: 'square',
+    // Дефолт = вид верстальщика (портрет 430/500). Раньше 'square', но рендер
+    // square не реализовывал и падал в портрет; теперь square→1:1 работает, потому
+    // дефолт приведён к фактическому виду (portrait), чтобы дефолтный рендер не
+    // изменился (в ревизиях imageView не сохраняется — проверено: 0 из 35929).
+    imageView: 'portrait',
     dataSource: 'auto',
     collections: [
       { id: 'col-1', collectionId: null, heading: 'Коллекция 1', description: '' },

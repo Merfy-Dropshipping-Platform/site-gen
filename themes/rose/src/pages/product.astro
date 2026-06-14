@@ -25,6 +25,9 @@ const skeleton = {
 <Layout title="Товар">
 	<RoseProductDetail product={skeleton} />
 
+	{/* Селектируемость блока «Товар»: stamping-скрипт живёт в самом RoseProductDetail.astro
+	    (рендерится и здесь, и в demo `products/[id].astro`, который реально отдаётся в превью). */}
+
 	<div data-pdp-notfound hidden class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 py-24 text-center 2xl:px-[280px]">
 		<p class="font-comfortaa text-[24px] text-[rgb(var(--color-heading,0_0_0))]">Товар не найден</p>
 		<a

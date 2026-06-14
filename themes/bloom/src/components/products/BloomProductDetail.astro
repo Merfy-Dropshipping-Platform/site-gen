@@ -16,9 +16,19 @@ import type { CatalogProduct } from "../../data/products";
 
 interface Props {
 	product: CatalogProduct;
+	/** Puck-id блока «Товар» (page-product). Задаётся ТОЛЬКО в preview-консьюмере
+	 * (`/product`), куда build/preview инжектит реальный динамический Product-<ts>
+	 * через window.__MERFY_PRODUCT_BLOCK_ID__. На demo `[id].astro` остаётся
+	 * undefined → Astro опускает data-атрибуты (live визуально не меняется). */
+	id?: string;
+	/** Принимается для симметрии с каноном theme-base Product (preview-гидрация).
+	 * В bloom PDP гидрация идёт через `/product` inline-script, поэтому здесь не
+	 * потребляется — объявлен в Props, но не деструктурируется (strict tsconfig
+	 * без noUnusedLocals это допускает). */
+	siteId?: string;
 }
 
-const { product } = Astro.props;
+const { product, id } = Astro.props;
 
 const colorLabels: Record<string, string> = {
 	brown: "Коричневый",
@@ -47,6 +57,7 @@ const cartVariantColor = product.colors?.[0] ?? "";
 	aria-labelledby="product-title"
 	data-pdp-section
 	data-cart-color={cartVariantColor}
+	data-puck-component-id={id}
 >
 	<div class="mx-auto grid w-full max-w-[1320px] grid-cols-1 gap-8 lg:grid-cols-[600px_minmax(0,1fr)] lg:gap-10">
 		<div class="flex flex-col gap-4">
@@ -93,6 +104,9 @@ const cartVariantColor = product.colors?.[0] ?? "";
 					class="font-manrope text-[14px] font-light leading-normal text-[#999999]"
 					data-pdp-brand
 					hidden={!product.brand}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="text"
 				>
 					{product.brand}
 				</p>
@@ -100,10 +114,18 @@ const cartVariantColor = product.colors?.[0] ?? "";
 					id="product-title"
 					class="font-comfortaa text-[28px] font-normal uppercase leading-[1.115] text-[#000000] md:text-[32px] lg:text-[36px]"
 					data-pdp-name
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="101"
+					data-puck-subsection-field="title"
 				>
 					{product.name}
 				</h1>
-				<div class="flex flex-wrap items-baseline gap-2">
+				<div
+					class="flex flex-wrap items-baseline gap-2"
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="102"
+					data-puck-subsection-field="price"
+				>
 					<span class="font-manrope text-[20px] font-normal leading-normal text-[#000000] md:text-[24px]" data-pdp-price>
 						{product.price}
 					</span>
@@ -118,7 +140,13 @@ const cartVariantColor = product.colors?.[0] ?? "";
 			</div>
 
 			<div class="flex flex-col gap-6">
-				<div class="flex flex-col gap-4" data-pdp-variants>
+				<div
+					class="flex flex-col gap-4"
+					data-pdp-variants
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="103"
+					data-puck-subsection-field="variants"
+				>
 					<NtVariantTextRow
 						items={colors}
 						selectedId={colors[0]?.id}
@@ -127,7 +155,13 @@ const cartVariantColor = product.colors?.[0] ?? "";
 					/>
 				</div>
 
-				<div class="flex h-10 w-fit items-center rounded-[4px] border border-[#F5F5F5]" data-pdp-qty>
+				<div
+					class="flex h-10 w-fit items-center rounded-[4px] border border-[#F5F5F5]"
+					data-pdp-qty
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="104"
+					data-puck-subsection-field="quantity"
+				>
 					<button
 						type="button"
 						class="flex size-10 items-center justify-center transition-opacity hover:opacity-80"
@@ -155,7 +189,12 @@ const cartVariantColor = product.colors?.[0] ?? "";
 				</div>
 			</div>
 
-			<div class="flex flex-col gap-3">
+			<div
+				class="flex flex-col gap-3"
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="105"
+				data-puck-subsection-field="buttons"
+			>
 				<button
 					type="button"
 					data-add-to-cart
@@ -186,25 +225,55 @@ const cartVariantColor = product.colors?.[0] ?? "";
 			</div>
 
 			<div class="flex flex-col gap-4">
-				<h2 class="font-comfortaa text-[18px] font-normal uppercase leading-normal text-[#000000]">
-					Описание
-				</h2>
-				<p class="font-manrope text-[14px] font-light leading-[1.5] text-[#999999] md:text-[15px]" data-pdp-desc>
-					{product.description}
-				</p>
-				<button
-					type="button"
-					data-action="share"
-					class="inline-flex w-fit items-center gap-2 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-70"
-					aria-label="Поделиться"
+				<div
+					class="flex flex-col gap-4"
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="106"
+					data-puck-subsection-field="description"
 				>
-					<NtIcon name="share" sizeClass="size-5" />
-					<span>Поделиться</span>
-				</button>
+					<h2 class="font-comfortaa text-[18px] font-normal uppercase leading-normal text-[#000000]">
+						Описание
+					</h2>
+					<p class="font-manrope text-[14px] font-light leading-[1.5] text-[#999999] md:text-[15px]" data-pdp-desc>
+						{product.description}
+					</p>
+				</div>
+				<div
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="107"
+					data-puck-subsection-field="share"
+				>
+					<button
+						type="button"
+						data-action="share"
+						class="inline-flex w-fit items-center gap-2 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-70"
+						aria-label="Поделиться"
+					>
+						<NtIcon name="share" sizeClass="size-5" />
+						<span>Поделиться</span>
+					</button>
+				</div>
 			</div>
 		</div>
 	</div>
 </section>
+
+<script is:inline>
+	(function () {
+		function stampProductBlockId() {
+			var id = window.__MERFY_PRODUCT_BLOCK_ID__;
+			if (!id) return;
+			var section = document.querySelector("[data-pdp-section]");
+			if (!section) return;
+			if (!section.getAttribute("data-puck-component-id")) section.setAttribute("data-puck-component-id", id);
+			section.querySelectorAll("[data-puck-subsection-index]").forEach(function (el) {
+				if (!el.getAttribute("data-puck-subsection-parent")) el.setAttribute("data-puck-subsection-parent", id);
+			});
+		}
+		stampProductBlockId();
+		document.addEventListener("astro:page-load", stampProductBlockId);
+	})();
+</script>
 
 <script>
 	/**

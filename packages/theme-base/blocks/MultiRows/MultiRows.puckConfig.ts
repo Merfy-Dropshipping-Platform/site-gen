@@ -81,6 +81,7 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
       type: 'radio',
       label: 'Позиция рядов',
       options: [
+        { label: 'Чередовать', value: 'alternate' },
         { label: 'Слева', value: 'left' },
         { label: 'Справа', value: 'right' },
       ],
@@ -176,13 +177,16 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
     } as any,
   },
   defaults: {
+    // rowsPosition 'alternate' (по умолчанию) — ряды чередуют сторону медиа строго
+    // по индексу (0 слева, 1 справа, 2 слева…). per-row imagePosition НЕ задаём,
+    // чтобы чередование шло от индекса, а не от зафиксированной стороны ряда.
+    rowsPosition: 'alternate',
     rows: [
       {
         id: 'row-1',
         heading: 'Первый ряд',
         text: 'Описание первого ряда. Изображение слева.',
         imageUrl: '',
-        imagePosition: 'left',
         button: { text: 'Подробнее', href: '/about' },
       },
       {
@@ -190,7 +194,6 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
         heading: 'Второй ряд',
         text: 'Описание второго ряда. Изображение справа.',
         imageUrl: '',
-        imagePosition: 'right',
         button: { text: 'Узнать больше', href: '/about' },
       },
     ],

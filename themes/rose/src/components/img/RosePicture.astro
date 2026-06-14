@@ -40,8 +40,14 @@ const {
   ...rest
 } = Astro.props as Props;
 
+// WebP-source отдаём ТОЛЬКО для локальных ассетов темы (`/images/...`), рядом с
+// которыми скрипт images:optimize кладёт соимённый .webp. Загруженные пользователем
+// картинки (MinIO/абсолютный http(s):// или //, base64 data:) НЕ имеют .webp-сиблинга —
+// для них <source srcset="…webp"> вёл на 404, и WebP-браузер (~99%) показывал битое
+// фото. Такие URL рендерим как сквозной <img src> без srcset-трансформации.
+const isLocalThemeAsset = src.startsWith("/") && !src.startsWith("//");
 const webp = src.replace(/\.(png|jpe?g)$/i, ".webp");
-const hasWebp = webp !== src;
+const hasWebp = isLocalThemeAsset && webp !== src;
 ---
 
 <picture class="contents">

@@ -36,7 +36,6 @@ const CANON_ROWS = [
 		heading: "Первый ряд",
 		text: "Описание первого ряда. Изображение слева.",
 		imageUrl: "",
-		imagePosition: "left",
 		button: { text: "Подробнее", href: "/about" },
 	},
 	{
@@ -44,14 +43,16 @@ const CANON_ROWS = [
 		heading: "Второй ряд",
 		text: "Описание второго ряда. Изображение справа.",
 		imageUrl: "",
-		imagePosition: "right",
 		button: { text: "Узнать больше", href: "/about" },
 	},
 ];
 const rawRows = Array.isArray(p.rows) && p.rows.length ? p.rows : CANON_ROWS;
 
-// Канон rowsPosition: left | right — все картинки с одной стороны; alternate /
-// отсутствие — per-item imagePosition, иначе чередование по индексу.
+// Канон rowsPosition: left | right — все картинки принудительно с одной стороны;
+// alternate / отсутствие (дефолт) — СТРОГОЕ чередование по индексу (чётный → фото
+// слева, нечётный → справа), при этом явный per-item imagePosition перебивает
+// только свой ряд. left/right ниже нормализуем, всё прочее (включая 'alternate' и
+// undefined) → undefined = режим чередования.
 const rowsPosition =
 	p.rowsPosition === "left" || p.rowsPosition === "right" ? p.rowsPosition : undefined;
 

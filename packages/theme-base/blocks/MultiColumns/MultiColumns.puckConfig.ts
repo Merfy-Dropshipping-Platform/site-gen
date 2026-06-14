@@ -127,10 +127,10 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
       ],
     } as any,
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
     padding: { type: 'padding', label: 'Отступы' },
     // Hidden — нет в Figma 314-34917.
     headingAlignment: { type: 'hidden', label: '' },
-    containerColorScheme: { type: 'hidden', label: '' },
     link: { type: 'hidden', label: '' },
     columns: {
       type: 'array',

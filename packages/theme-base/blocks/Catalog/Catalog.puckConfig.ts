@@ -245,7 +245,9 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
       quickAdd: 'none',
     },
     showFilter: 'true',
-    filterPosition: 'side',
+    // Figma 1-21116 — верхний бар фильтров по умолчанию (top). Раньше 'side'
+    // (sidebar прятался на узкой ширине → каталог без видимых фильтров).
+    filterPosition: 'top',
     showSort: 'true',
     // 097 SYSTEMIC FIX: убраны colorScheme/containerColorScheme из universal
     // defaults. Pattern других блоков (Header/Hero/Footer/Collections/

@@ -244,12 +244,60 @@ const fmtPriceServer = (n: number | string | undefined): string => {
         style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgb(var(--color-text) / 0.1); align-items: center; justify-content: space-between;"
       >
         {filterVisible && !filterSide && (
-          <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center;">
-            <div style="font-size: 14px; color: rgb(var(--color-text));">Фильтры:</div>
-            <button type="button" data-filter-toggle="stock" style="background: transparent; border: 0; color: rgb(var(--color-text)); cursor: pointer; font-size: 14px;">Наличие ▾</button>
-            <button type="button" data-filter-toggle="price" style="background: transparent; border: 0; color: rgb(var(--color-text)); cursor: pointer; font-size: 14px;">Стоимость ▾</button>
-            <button type="button" data-filter-toggle="color" style="background: transparent; border: 0; color: rgb(var(--color-text)); cursor: pointer; font-size: 14px;">Цвет ▾</button>
-            <button type="button" data-filter-toggle="memory" style="background: transparent; border: 0; color: rgb(var(--color-text)); cursor: pointer; font-size: 14px;">Объём памяти ▾</button>
+          <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: center;">
+            {/* Каждый фильтр — инлайн-дропдаун: триггер + панель (position:absolute) с
+                РЕАЛЬНЫМИ контролами (те же name/data-атрибуты, что и side-панель,
+                поэтому существующая applyFilters-логика подхватывает их через root).
+                Top-дропдауны рендерятся только при !filterSide (side-aside тогда нет). */}
+            {/* Наличие */}
+            <div data-filter-dropdown="stock" style="position: relative;">
+              <button type="button" data-filter-toggle="stock" style="background: transparent; border: 0; color: rgb(var(--color-text)); cursor: pointer; font-size: 14px; font-family: var(--font-body); display: inline-flex; align-items: center; gap: 6px; padding: 0;"><span>Наличие</span><span data-filter-chevron style="font-size: 10px; line-height: 1;">▾</span></button>
+              <div data-filter-panel data-catalog-stock-filter style="display: none; position: absolute; top: calc(100% + 8px); left: 0; min-width: 180px; flex-direction: column; gap: 4px; padding: 8px; background: rgb(var(--color-bg)); border: 1px solid rgb(var(--color-text) / 0.1); border-radius: var(--radius-input); z-index: 20;">
+                <label data-stock-row="all" style="display: flex; align-items: center; justify-content: space-between; padding: 6px 4px; cursor: pointer;">
+                  <span style="display: flex; align-items: center; gap: 8px; font-size: 14px;"><input type="radio" name="cat-stock" value="all" checked /> Все</span>
+                  <span data-stock-count="all" style="font-size: 14px; color: rgb(var(--color-muted));">0</span>
+                </label>
+                <label data-stock-row="in" style="display: flex; align-items: center; justify-content: space-between; padding: 6px 4px; cursor: pointer;">
+                  <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: rgb(var(--color-muted));"><input type="radio" name="cat-stock" value="in" /> В наличии</span>
+                  <span data-stock-count="in" style="font-size: 14px; color: rgb(var(--color-muted));">0</span>
+                </label>
+                <label data-stock-row="out" style="display: flex; align-items: center; justify-content: space-between; padding: 6px 4px; cursor: pointer;">
+                  <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: rgb(var(--color-muted));"><input type="radio" name="cat-stock" value="out" /> Распродано</span>
+                  <span data-stock-count="out" style="font-size: 14px; color: rgb(var(--color-muted));">0</span>
+                </label>
+              </div>
+            </div>
+            {/* Стоимость */}
+            <div data-filter-dropdown="price" style="position: relative;">
+              <button type="button" data-filter-toggle="price" style="background: transparent; border: 0; color: rgb(var(--color-text)); cursor: pointer; font-size: 14px; font-family: var(--font-body); display: inline-flex; align-items: center; gap: 6px; padding: 0;"><span>Стоимость</span><span data-filter-chevron style="font-size: 10px; line-height: 1;">▾</span></button>
+              <div data-filter-panel data-catalog-price-filter style="display: none; position: absolute; top: calc(100% + 8px); left: 0; min-width: 200px; flex-direction: row; gap: 8px; padding: 12px; background: rgb(var(--color-bg)); border: 1px solid rgb(var(--color-text) / 0.1); border-radius: var(--radius-input); z-index: 20;">
+                <div style="position: relative; flex: 1;">
+                  <input type="text" data-cat-price-min placeholder="от" style="width: 100%; height: 44px; padding: 0 28px 0 12px; border: 1px solid rgb(var(--color-text) / 0.1); border-radius: var(--radius-input); background: rgb(var(--color-bg)); color: rgb(var(--color-text)); font-family: var(--font-body); font-size: 14px;" />
+                  <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: rgb(var(--color-muted)); font-size: 14px;">₽</span>
+                </div>
+                <div style="position: relative; flex: 1;">
+                  <input type="text" data-cat-price-max placeholder="до" style="width: 100%; height: 44px; padding: 0 28px 0 12px; border: 1px solid rgb(var(--color-text) / 0.1); border-radius: var(--radius-input); background: rgb(var(--color-bg)); color: rgb(var(--color-text)); font-family: var(--font-body); font-size: 14px;" />
+                  <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: rgb(var(--color-muted)); font-size: 14px;">₽</span>
+                </div>
+              </div>
+            </div>
+            {/* Цвет — обёртка скрыта (display:none) пока JS не наполнит data-color-options
+                и не покажет (мирроль side-логику colorFilterEl.style.display='flex'). */}
+            <div data-filter-dropdown="color" style="position: relative; display: none;">
+              <button type="button" data-filter-toggle="color" style="background: transparent; border: 0; color: rgb(var(--color-text)); cursor: pointer; font-size: 14px; font-family: var(--font-body); display: inline-flex; align-items: center; gap: 6px; padding: 0;"><span>Цвет</span><span data-filter-chevron style="font-size: 10px; line-height: 1;">▾</span></button>
+              <div data-filter-panel data-catalog-color-filter style="display: none; position: absolute; top: calc(100% + 8px); left: 0; min-width: 200px; max-width: 320px; flex-direction: column; gap: 12px; padding: 12px; background: rgb(var(--color-bg)); border: 1px solid rgb(var(--color-text) / 0.1); border-radius: var(--radius-input); z-index: 20;">
+                <div data-color-options style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+              </div>
+            </div>
+            {/* Объём памяти — обёртка скрыта (display:none); JS показывает её только
+                когда есть memory-опции (для не-электроники кнопки нет). Мирроль side
+                memFilterEl.style.display='flex' при availableMemory.length > 0. */}
+            <div data-filter-dropdown="memory" style="position: relative; display: none;">
+              <button type="button" data-filter-toggle="memory" style="background: transparent; border: 0; color: rgb(var(--color-text)); cursor: pointer; font-size: 14px; font-family: var(--font-body); display: inline-flex; align-items: center; gap: 6px; padding: 0;"><span>Объём памяти</span><span data-filter-chevron style="font-size: 10px; line-height: 1;">▾</span></button>
+              <div data-filter-panel data-catalog-attr-filter="memory" style="display: none; position: absolute; top: calc(100% + 8px); left: 0; min-width: 200px; max-width: 320px; flex-direction: column; gap: 12px; padding: 12px; background: rgb(var(--color-bg)); border: 1px solid rgb(var(--color-text) / 0.1); border-radius: var(--radius-input); z-index: 20;">
+                <div data-attr-options="memory" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+              </div>
+            </div>
           </div>
         )}
         {!filterSide && sortVisible && (
@@ -964,13 +1012,44 @@ const fmtPriceServer = (n: number | string | undefined): string => {
       }
     }
 
-    // Top-bar filter dropdown buttons (visual feedback only — actual control is in side panel)
-    root.querySelectorAll('[data-filter-toggle]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        const orig = btn.textContent;
-        btn.textContent = orig.replace('▾', '▴');
-        setTimeout(function () { btn.textContent = orig; }, 800);
+    // Top-bar filter dropdowns — реальные: клик по триггеру открывает свою
+    // панель (с настоящими контролами), закрывает остальные; клик вне — закрывает.
+    // Контролы внутри панелей переиспользуют те же name/data-атрибуты, поэтому
+    // attachSideFilters/color/memory-логика (scoped к root) уже их обслуживает.
+    function closeAllFilterPanels(exceptWrap) {
+      root.querySelectorAll('[data-filter-dropdown]').forEach(function (wrap) {
+        if (wrap === exceptWrap) return;
+        const panel = wrap.querySelector('[data-filter-panel]');
+        const chevron = wrap.querySelector('[data-filter-chevron]');
+        if (panel) panel.style.display = 'none';
+        if (chevron) chevron.textContent = '▾';
       });
+    }
+    root.querySelectorAll('[data-filter-toggle]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const wrap = btn.closest('[data-filter-dropdown]');
+        if (!wrap) return;
+        const panel = wrap.querySelector('[data-filter-panel]');
+        const chevron = wrap.querySelector('[data-filter-chevron]');
+        if (!panel) return;
+        const isOpen = panel.style.display !== 'none';
+        // Close other filter panels + любые open sort dropdowns.
+        closeAllFilterPanels(wrap);
+        root.querySelectorAll('[data-sort-options]').forEach(function (ol) { ol.style.display = 'none'; });
+        if (isOpen) {
+          panel.style.display = 'none';
+          if (chevron) chevron.textContent = '▾';
+        } else {
+          panel.style.display = 'flex';
+          if (chevron) chevron.textContent = '▴';
+        }
+      });
+    });
+    // Клик вне любого фильтр-дропдауна закрывает все панели.
+    document.addEventListener('click', function (e) {
+      if (e.target && e.target.closest && e.target.closest('[data-filter-dropdown]')) return;
+      closeAllFilterPanels(null);
     });
 
     // Mobile drawer toggle
@@ -1125,11 +1204,21 @@ const fmtPriceServer = (n: number | string | undefined): string => {
           return '<button type="button" ' + dataAttr + '="' + escAttr(val) + '" style="height:32px;padding:0 8px;border-radius:var(--radius-button);border:0;background:' + bg + ';color:' + fg + ';font-family:var(--font-body);font-size:14px;text-transform:uppercase;cursor:pointer;">' + escAttr(val) + '</button>';
         }
 
+        // Reveal a filter section. Side: el is the section <div> → display:flex.
+        // Top: el is the dropdown panel (must stay closed) → reveal its wrapper
+        // [data-filter-dropdown] вместо панели, панель открывается toggle'ом.
+        function revealFilter(el) {
+          if (!el) return;
+          const wrap = el.closest('[data-filter-dropdown]');
+          if (wrap) wrap.style.display = '';        // top: show trigger wrapper
+          else el.style.display = 'flex';           // side: show section inline
+        }
+
         // Render color pills
         const colorFilterEl = root.querySelector('[data-catalog-color-filter]');
         const colorOptionsEl = root.querySelector('[data-color-options]');
         if (colorFilterEl && availableColors.length > 0) {
-          colorFilterEl.style.display = 'flex';
+          revealFilter(colorFilterEl);
           if (colorOptionsEl) {
             colorOptionsEl.innerHTML = availableColors.map(function (c) {
               return pillHtml(c, state.colors.includes(c), 'data-color-value');
@@ -1159,7 +1248,7 @@ const fmtPriceServer = (n: number | string | undefined): string => {
         const memOptionsEl = root.querySelector('[data-attr-options="memory"]');
         if (!state.memory) state.memory = [];
         if (memFilterEl && availableMemory.length > 0) {
-          memFilterEl.style.display = 'flex';
+          revealFilter(memFilterEl);
           if (memOptionsEl) {
             memOptionsEl.innerHTML = availableMemory.map(function (m) {
               return pillHtml(m, state.memory.includes(m), 'data-memory-value');

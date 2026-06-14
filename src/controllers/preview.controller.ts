@@ -588,6 +588,12 @@ export class PreviewController {
         (m) => `${m}<script>window.__MERFY_CATALOG_LAYOUT__ = ${JSON.stringify(catalogLayout)};</script>`,
       );
     }
+    // Агент конструктора (hover/select → postMessage). На секционном пути его
+    // добавляет renderV2ContentPage; блоб-путь (product/catalog/cart/checkout)
+    // отдаёт built-theme HTML напрямую — без этого секции не выделялись (нет
+    // ни ховера, ни клика, ни правой панели). Идемпотентно: injectNavAgent
+    // пропускает вставку, если агент уже присутствует (v2-путь).
+    html = this.preview.injectNavAgent(html);
     return html;
   }
 

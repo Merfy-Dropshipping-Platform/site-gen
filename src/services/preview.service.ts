@@ -506,6 +506,26 @@ export class PreviewService {
   }
 
   /**
+   * Инжектит агента конструктора (hover/select/postMessage) перед последним
+   * </body>. Нужен для БЛОБ-пути (product/catalog/cart/checkout), который отдаёт
+   * built-theme HTML напрямую (tryLoadBuiltThemeHtml) и без этого НЕ имел
+   * интерактива выделения секций — ни ховера, ни клика, ни правой панели.
+   * Идемпотентно: на секционном пути агента уже вставил renderV2ContentPage,
+   * поэтому при наличии маркера STYLE_ID повторно не добавляем (иначе двойные
+   * слушатели → двойные postMessage).
+   */
+  injectNavAgent(html: string): string {
+    if (html.includes('__merfy_preview_overlay_styles')) return html;
+    const bodyClose = html.lastIndexOf('</body>');
+    if (bodyClose === -1) return html;
+    return (
+      html.slice(0, bodyClose) +
+      `<script>${PREVIEW_NAV_AGENT_INLINE}</script>` +
+      html.slice(bodyClose)
+    );
+  }
+
+  /**
    * Constructor v2 (Phase 1, Task 3) — resolve the product page's preview route.
    *
    * The product page's slug is `/product`, but the theme builds per-product

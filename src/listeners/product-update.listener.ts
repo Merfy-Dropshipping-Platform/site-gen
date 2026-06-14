@@ -9,6 +9,26 @@
  * Uses a dedicated queue `sites_product_events` bound to the
  * product events exchange so we don't compete with product-service's
  * own RPC consumer.
+ *
+ * COLLECTION SEO auto-rebuild (зеркало per-product SEO в build.service):
+ *   build.service генерит per-collection /collections/<slug> страницы +
+ *   sitemap-collections.xml при КАЖДОМ full rebuild. Эти rebuild'ы триггерит
+ *   debounceBuild ниже. Что покрыто из коробки:
+ *     • Добавление/удаление товара в коллекцию (collections.service
+ *       addProducts/removeProduct в product-service) ЭМИТИТ `product.updated`
+ *       → попадает сюда → full rebuild → per-collection страницы/sitemap
+ *       перегенерятся со свежим membership. ✅ ЗАВЯЗАНО.
+ *   Что НЕ покрыто (BLOCKED — нет источника события):
+ *     • create / rename / изменение description|slug / delete коллекции
+ *       (collections.service create/update/remove) НЕ эмитят НИКАКОГО события.
+ *       Это ровно те поля, что питают SEO-мету (title/description/canonical).
+ *       Поэтому при редактировании ТОЛЬКО метаданных коллекции (без правок
+ *       товаров) live-сайт НЕ перестроится автоматически — нужен эмиттер в
+ *       product-service (например `collection.updated` на отдельном exchange
+ *       ИЛИ переиспользовать product.events с типом события коллекции). Это
+ *       ВНЕ scope этой задачи: НИКАКОГО collection-exchange здесь НЕ заводим
+ *       (нечего слушать). Когда эмиттер появится — добавить bind/consume и
+ *       вызвать тот же debounceBuild для затронутых сайтов.
  */
 import {
   Injectable,
@@ -219,6 +239,14 @@ export class ProductUpdateListener implements OnModuleInit, OnModuleDestroy {
         // patcher touches NONE of these — they live in build.service). The 45s debounce
         // batches rapid edits into one build; new products also get their per-slug page
         // generated here (closing the /product/<new-slug> 404 gap once the build lands).
+        // The same rebuild ALSO regenerates per-collection /collections/<slug> pages +
+        // sitemap-collections.xml (build.service mirrors the per-product SEO for
+        // collections). Collection MEMBERSHIP changes arrive here as `product.updated`
+        // (collections.service addProducts/removeProduct emits it), so adding/removing a
+        // product in a collection refreshes that collection's SEO page automatically.
+        // NOTE: collection metadata-only edits (name/description/slug/create/delete) emit
+        // NO event today — see the class doc comment; that path is blocked on a
+        // product-service emitter and is out of scope here.
         this.debounceBuild(site.id, tenantId, {
           event,
           productIds,

@@ -1264,7 +1264,11 @@ export async function runBuildPipeline(
         if (ctx.publicUrl) {
           try {
             const pub = ctx.publicUrl.replace(/\/+$/, "");
-            const robots = `User-agent: *\nAllow: /\nSitemap: ${pub}/sitemap-index.xml\nSitemap: ${pub}/sitemap-products.xml\n`;
+            // robots ссылается на ОБА sitemap'а (товары + коллекции). Коллекционный
+            // sitemap пишется ниже (отдельный блок, гейт на collections.length); строка
+            // здесь — единственная robots.txt при наличии товаров (блок коллекций
+            // перезапишет robots только когда товаров 0, чтобы не было гонки/дубля).
+            const robots = `User-agent: *\nAllow: /\nSitemap: ${pub}/sitemap-index.xml\nSitemap: ${pub}/sitemap-products.xml\nSitemap: ${pub}/sitemap-collections.xml\n`;
             await fs.writeFile(path.join(ctx.distDir, "robots.txt"), robots, "utf8");
             // sitemap товаров: <loc> только на canonical /product/<slug> (не id).
             const urls = (v2Store.products as unknown as Array<Record<string, unknown>>)
@@ -1301,6 +1305,162 @@ export async function runBuildPipeline(
         await fs.mkdir(path.dirname(v2CollectionsPath), { recursive: true });
         await fs.writeFile(v2CollectionsPath, JSON.stringify(v2Collections, null, 2), "utf8");
         logger.log(`[themes-v2] Injected ${v2Collections.length} collections into data/collections.json for site ${params.siteId}`);
+      }
+      // SEO коллекций — ЗЕРКАЛО per-product подхода выше (patchPdpMeta + per-slug/
+      // per-id страницы + sitemap). На live тема несёт ОДНУ страницу-шаблон
+      // collections/preview/index.html (per-collection статических страниц нет —
+      // карточки коллекций линкуют на /catalog?collection=<id> и фильтруются
+      // клиентом). Pre-built шелл имеет скелетную мету (title="Коллекция RIVIERA
+      // — Rose", generic description, placeholder og:image; домен уже пофикшен
+      // выше). Генерим collections/<slug>/index.html И collections/<id>/index.html
+      // как копии шелла с реальной canonical/title/description/og под каждую
+      // коллекцию — закрывает /collections/<slug> 404 (как product/<slug>) и даёт
+      // настоящий per-collection SEO. canonical ВСЕГДА на /collections/<slug>
+      // (даже на per-id странице) → консолидация дублей в один canonical.
+      if (Array.isArray(v2Store.collections) && v2Store.collections.length > 0) {
+        try {
+          const collectionShell = path.join(ctx.distDir, "collections", "preview", "index.html");
+          // Источник = УЖЕ домен-пофикшенный шелл collections/preview/index.html.
+          const colHtml = await fs.readFile(collectionShell, "utf8").catch(() => null);
+          if (colHtml) {
+            // siteTitle = суффикс "— X" из скелетного <title> (как у PDP).
+            const cTitleMatch = colHtml.match(/<title>([^<]*)<\/title>/i);
+            const cRawTitle = cTitleMatch ? cTitleMatch[1] : "";
+            const cDashIdx = cRawTitle.lastIndexOf(" — ");
+            const cSiteTitle = cDashIdx >= 0 ? cRawTitle.slice(cDashIdx + 3).trim() : "";
+            const pub = ctx.publicUrl ? ctx.publicUrl.replace(/\/+$/, "") : "";
+
+            // Per-collection патч меты. Возвращает HTML с подставленными SEO-тегами.
+            // Зеркало patchPdpMeta (тот же escapeHtml + толерантные regex по атрибутам).
+            const patchCollectionMeta = (
+              html: string,
+              c: Record<string, unknown>,
+              slug: string,
+            ): string => {
+              let out = html;
+              const name = typeof c.name === "string" && c.name.trim()
+                ? c.name
+                : (typeof c.title === "string" ? c.title : "");
+              // description: metaDescription (явное SEO-поле) → description.
+              const descRaw =
+                (typeof c.metaDescription === "string" && c.metaDescription.trim()
+                  ? c.metaDescription
+                  : typeof c.description === "string"
+                    ? c.description
+                    : "") ?? "";
+              const desc = descRaw.trim();
+              // обложка: image / images[0] (поддержка строки и {url}) — как у PDP.
+              const pickImg = (v: unknown): string | null => {
+                if (typeof v === "string" && v.trim()) return v.trim();
+                if (v && typeof v === "object" && typeof (v as { url?: unknown }).url === "string")
+                  return (v as { url: string }).url;
+                return null;
+              };
+              const cImgs = Array.isArray((c as { images?: unknown[] }).images)
+                ? ((c as { images: unknown[] }).images)
+                : [];
+              const mainImage = pickImg(c.image) ?? pickImg(cImgs[0]);
+
+              const canonical = pub ? `${pub}/collections/${slug}` : "";
+              if (canonical) {
+                out = out.replace(
+                  /(<link\b[^>]*\brel=["']canonical["'][^>]*\bhref=["'])[^"']*(["'])/i,
+                  `$1${escapeHtml(canonical)}$2`,
+                );
+                out = out.replace(
+                  /(<meta\b[^>]*\bproperty=["']og:url["'][^>]*\bcontent=["'])[^"']*(["'])/i,
+                  `$1${escapeHtml(canonical)}$2`,
+                );
+              }
+              if (name) {
+                const fullTitle = cSiteTitle ? `${name} — ${cSiteTitle}` : name;
+                out = out.replace(
+                  /<title>[^<]*<\/title>/i,
+                  `<title>${escapeHtml(fullTitle)}</title>`,
+                );
+                out = out.replace(
+                  /(<meta\b[^>]*\bproperty=["']og:title["'][^>]*\bcontent=["'])[^"']*(["'])/i,
+                  `$1${escapeHtml(fullTitle)}$2`,
+                );
+              }
+              if (desc) {
+                const trimmed =
+                  desc.length > 160 ? `${desc.slice(0, 157).trimEnd()}…` : desc;
+                const ed = escapeHtml(trimmed);
+                out = out.replace(
+                  /(<meta\b[^>]*\bname=["']description["'][^>]*\bcontent=["'])[^"']*(["'])/i,
+                  `$1${ed}$2`,
+                );
+                out = out.replace(
+                  /(<meta\b[^>]*\bproperty=["']og:description["'][^>]*\bcontent=["'])[^"']*(["'])/i,
+                  `$1${ed}$2`,
+                );
+                out = out.replace(
+                  /(<meta\b[^>]*\bproperty=["']twitter:description["'][^>]*\bcontent=["'])[^"']*(["'])/i,
+                  `$1${ed}$2`,
+                );
+              }
+              if (mainImage) {
+                out = out.replace(
+                  /(<meta\b[^>]*\bproperty=["']og:image["'][^>]*\bcontent=["'])[^"']*(["'])/i,
+                  `$1${escapeHtml(mainImage)}$2`,
+                );
+              }
+              return out;
+            };
+
+            let cmade = 0;
+            let cmadeId = 0;
+            for (const c of v2Store.collections as unknown as Array<Record<string, unknown>>) {
+              const slug = (c.slug ?? c.handle ?? c.id) as string | undefined;
+              if (!slug || typeof slug !== "string") continue;
+              const patched = patchCollectionMeta(colHtml, c, slug);
+              const slugDir = path.join(ctx.distDir, "collections", slug);
+              await fs.mkdir(slugDir, { recursive: true });
+              await fs.writeFile(path.join(slugDir, "index.html"), patched, "utf8");
+              cmade++;
+              // Per-id страница (если id != slug): тот же patched HTML (canonical=slug).
+              const cid = typeof c.id === "string" ? c.id : undefined;
+              if (cid && cid !== slug) {
+                const idDir = path.join(ctx.distDir, "collections", cid);
+                await fs.mkdir(idDir, { recursive: true });
+                await fs.writeFile(path.join(idDir, "index.html"), patched, "utf8");
+                cmadeId++;
+              }
+            }
+            logger.log(`[themes-v2][seo] Generated ${cmade} collections/<slug>/ + ${cmadeId} collections/<id>/ pages with SEO meta for site ${params.siteId}`);
+          } else {
+            logger.warn(`[themes-v2] collections/preview/index.html shell not found — per-collection /collections/<slug> pages skipped`);
+          }
+        } catch (colSlugErr) {
+          logger.warn(`[themes-v2] per-collection page gen failed: ${(colSlugErr as Error)?.message ?? colSlugErr}`);
+        }
+        // SEO: sitemap коллекций + robots.txt. Гейт на ctx.publicUrl. robots.txt
+        // здесь пишется ТОЛЬКО когда товаров не было (иначе блок товаров уже
+        // написал robots с обеими sitemap-ссылками — не перезаписываем, чтобы не
+        // плодить дубли/гонку). sitemap-collections.xml пишется всегда при наличии
+        // коллекций. try/catch — не должно ломать билд.
+        if (ctx.publicUrl) {
+          try {
+            const pub = ctx.publicUrl.replace(/\/+$/, "");
+            // <loc> только на canonical /collections/<slug> (не id) — как у товаров.
+            const colUrls = (v2Store.collections as unknown as Array<Record<string, unknown>>)
+              .map((c) => (c.slug ?? c.handle ?? c.id) as string | undefined)
+              .filter((s): s is string => typeof s === "string" && s.length > 0)
+              .map((slug) => `  <url><loc>${escapeHtml(`${pub}/collections/${slug}`)}</loc></url>`)
+              .join("\n");
+            const colSitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${colUrls}\n</urlset>\n`;
+            await fs.writeFile(path.join(ctx.distDir, "sitemap-collections.xml"), colSitemap, "utf8");
+            // Фоллбэк robots.txt — только если товаров не было (там robots не писался).
+            if (!(v2Store.products.length > 0)) {
+              const robots = `User-agent: *\nAllow: /\nSitemap: ${pub}/sitemap-index.xml\nSitemap: ${pub}/sitemap-products.xml\nSitemap: ${pub}/sitemap-collections.xml\n`;
+              await fs.writeFile(path.join(ctx.distDir, "robots.txt"), robots, "utf8");
+            }
+            logger.log(`[themes-v2][seo] Wrote sitemap-collections.xml (${v2Store.collections.length} collections) for site ${params.siteId}`);
+          } catch (colSeoErr) {
+            logger.warn(`[themes-v2][seo] sitemap-collections write failed: ${(colSeoErr as Error)?.message ?? colSeoErr}`);
+          }
+        }
       }
       // Фаза 3: tokens.css настроек темы — статикой во все страницы диста
       // (контентные + сложные). Источник = revision.themeSettings, тот же

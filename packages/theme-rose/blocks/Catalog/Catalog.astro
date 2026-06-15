@@ -1,0 +1,490 @@
+---
+// Catalog — РОДНОЙ каталог верстальщика rose как per-theme override блока
+// Catalog (port из themes/rose/src/pages/catalog.astro). Заменяет generic
+// theme-base/blocks/Catalog/Catalog.astro на пиксель-перфектную вёрстку rose:
+// top-раскладка (details-дропдауны c NtFilterPanel) + side-раскладка
+// (NtFilterSidebar), переключение через data-catalog-layout, гидрация реальных
+// товаров через storefront-hydrate.
+//
+// Рендерится ОДИНАКОВО:
+//   • Live build — assemble-from-packages.ts (THEME PASS, overwrite=true)
+//     копирует этот файл + siblings плоско в <scaffold>/src/components/,
+//     перезаписывая base. astro build собирает client <script>.
+//   • Превью конструктора — compile-astro-blocks.mjs (Container API) компилит
+//     этот .astro в dist/astro-blocks/theme-rose__Catalog__Catalog.mjs.
+//     client <script> в превью не выполняется (это ок — initial HTML = demo-грид).
+//
+// Все импорты — siblings (./), без bare-NPM и ../../ (компилятор превью их не
+// резолвит). Корневой <section> оставлен чистым: оркестратор превью штампует
+// на него data-puck-component-id для выделяемости.
+import RoseProductCard from "./RoseProductCard.astro";
+import NtFilterSidebar from "./NtFilterSidebar.astro";
+import NtFilterPanel from "./NtFilterPanel.astro";
+import RoseNtIcon from "./RoseNtIcon.astro";
+
+// Минимальный тип карточки (зеркалит витринный shape Product).
+interface DemoProduct {
+  id: string;
+  name: string;
+  price: string;
+  oldPrice?: string;
+  image: string;
+  discount?: boolean;
+}
+
+// Совместимый с theme-base/blocks/Catalog/Catalog.puckConfig props-минимум.
+// Лишние поля puckConfig (cards/productCard/colorScheme и т.п.) принимаем, но
+// родная вёрстка использует только заголовок/подзаголовок/раскладку фильтра.
+interface Props {
+  id?: string;
+  siteId?: string;
+  categoryTitle?: string | { text?: string };
+  categorySubtitle?: string | { text?: string };
+  subtitle?: boolean | "true" | "false";
+  filterPosition?: "top" | "side";
+  showFilter?: boolean | "true" | "false";
+  showSort?: boolean | "true" | "false";
+  columns?: number;
+  colorScheme?: string;
+}
+
+const {
+  id,
+  siteId,
+  categoryTitle,
+  categorySubtitle,
+  subtitle,
+  filterPosition,
+  showFilter,
+  showSort,
+  colorScheme,
+} = Astro.props as Props;
+
+// Заголовок/подзаголовок: aiText в puck может быть строкой или { text }.
+function pickText(v: unknown, fallback: string): string {
+  if (typeof v === "string" && v.trim()) return v;
+  if (v && typeof v === "object") {
+    const t = (v as { text?: string }).text;
+    if (typeof t === "string" && t.trim()) return t;
+  }
+  return fallback;
+}
+const title = pickText(categoryTitle, "Каталог");
+const subtitleText = pickText(categorySubtitle, "Здесь начинается персональный стиль");
+const subtitleVisible = subtitle !== "false" && subtitle !== false;
+const filterVisible = showFilter !== "false" && showFilter !== false;
+const sortVisible = showSort !== "false" && showSort !== false;
+
+// Раскладка по умолчанию из настройки конструктора (родной rose = top).
+// Превью-контроллер/билд могут дополнительно инжектить window.__MERFY_CATALOG_LAYOUT__
+// (см. inline-script ниже), который перебьёт этот дефолт без мигания.
+const defaultLayout = filterPosition === "side" ? "side" : "top";
+
+// Цветовая схема секции (hot-swap токенов как у остальных блоков).
+const schemeClass =
+  typeof colorScheme === "string" && colorScheme
+    ? `color-scheme-${colorScheme.replace("scheme-", "")}`
+    : "";
+
+// SSR demo-грид (родные сумки rose). Гарантирует, что грид рендерится в initial
+// HTML и в превью (Container API), и на live до гидрации. На published-сайте
+// client-<script> (storefront-hydrate) перерисует реальными товарами.
+const demoProducts: DemoProduct[] = [
+  { id: "bag-1", name: "Сумка", price: "5 990 ₽", oldPrice: "7 990 ₽", discount: true, image: "/images/Товар_1.png" },
+  { id: "bag-2", name: "Сумка", price: "5 990 ₽", oldPrice: "7 990 ₽", discount: true, image: "/images/Товар_2.png" },
+  { id: "bag-3", name: "Сумка", price: "5 990 ₽", oldPrice: "7 990 ₽", discount: true, image: "/images/Товар_3.png" },
+  { id: "bag-4", name: "Сумка", price: "5 990 ₽", oldPrice: "7 990 ₽", discount: true, image: "/images/Товар_4.png" },
+  { id: "bag-5", name: "Сумка", price: "5 990 ₽", oldPrice: "7 990 ₽", discount: true, image: "/images/Товар_5.png" },
+  { id: "bag-6", name: "Сумка", price: "5 990 ₽", oldPrice: "7 990 ₽", discount: true, image: "/images/Товар_6.png" },
+  { id: "bag-7", name: "Сумка", price: "5 990 ₽", oldPrice: "7 990 ₽", discount: true, image: "/images/Товар_7.png" },
+  { id: "bag-8", name: "Сумка", price: "5 990 ₽", oldPrice: "7 990 ₽", discount: true, image: "/images/Товар_8.png" },
+];
+const totalCount = demoProducts.length;
+---
+
+<section
+  class={schemeClass}
+  data-block="catalog"
+  data-catalog-page
+  data-site-id={siteId}
+  aria-labelledby="catalog-title"
+  data-catalog-layout={defaultLayout}
+>
+  {/* Раскладка каталога из настройки конструктора: платформа (превью-контроллер
+      и билд) инжектит window.__MERFY_CATALOG_LAYOUT__. Скрипт стоит ДО вариантов,
+      чтобы переключение не мигало; без глобала остаётся раскладка из props. */}
+  <script is:inline>var l=window.__MERFY_CATALOG_LAYOUT__; if(l==='top'||l==='side'){document.currentScript.parentElement.setAttribute('data-catalog-layout',l);}</script>
+  <div
+    class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-14 pt-10 sm:px-5 sm:pb-16 sm:pt-12 md:px-10 md:pb-[100px] md:pt-16 lg:px-16 lg:pb-[120px] lg:pt-20 xl:px-20 xl:pb-[140px] xl:pt-24 2xl:px-[280px]"
+  >
+    <div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10 lg:gap-12">
+      <header class="flex flex-col gap-2">
+        <h1 id="catalog-title" class="rose-title">{title}</h1>
+        {subtitleVisible && (
+          <p class="rose-subtitle max-w-2xl">{subtitleText}</p>
+        )}
+      </header>
+
+      {/* Раскладка top — фильтры строкой над гридом (родной вид rose) */}
+      <div class="flex flex-col gap-6 lg:gap-8" data-catalog-variant="top">
+        <div class="relative z-30 flex flex-wrap items-center justify-between gap-3 lg:gap-4" data-nt="catalog-filters">
+          <div class="flex flex-wrap items-center gap-3">
+            {filterVisible && (
+              <>
+                <details class="relative [&[open]]:z-30">
+                  <summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
+                    <span class="flex items-center gap-2">
+                      <span>Наличие</span>
+                      <RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
+                    </span>
+                  </summary>
+                  <div class="absolute left-0 top-full z-30 mt-2 w-[180px]">
+                    <NtFilterPanel panel="stock" />
+                  </div>
+                </details>
+
+                <details class="relative [&[open]]:z-30">
+                  <summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
+                    <span class="flex items-center gap-2">
+                      <span>Стоимость</span>
+                      <RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
+                    </span>
+                  </summary>
+                  <div class="absolute left-0 top-full z-30 mt-2 w-[180px]">
+                    <NtFilterPanel panel="price" />
+                  </div>
+                </details>
+
+                <details class="relative [&[open]]:z-30">
+                  <summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
+                    <span class="flex items-center gap-2">
+                      <span>Цвет</span>
+                      <RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
+                    </span>
+                  </summary>
+                  <div class="absolute left-0 top-full z-30 mt-2 w-[180px]">
+                    <NtFilterPanel panel="color" />
+                  </div>
+                </details>
+
+                {/* Фильтр по коллекциям: скрыт на demo-сборке, гидрация показывает
+                    его при наличии коллекций магазина и уважает ?collection= из
+                    ссылок тайлов Collections/Gallery. Манера = details-дропдауны выше,
+                    открытая панель — 1:1 рецепт корня NtFilterPanel. Активное
+                    состояние синхронизируется с секцией сайдбара (side). */}
+                <details class="relative [&[open]]:z-30" data-nt="catalog-collections-filter" style="display:none;">
+                  <summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
+                    <span class="flex items-center gap-2">
+                      <span data-collections-label>Коллекции</span>
+                      <RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
+                    </span>
+                  </summary>
+                  <div class="absolute left-0 top-full z-30 mt-2 w-[180px]">
+                    <div class="flex min-h-[97px] w-[180px] flex-col justify-center gap-2 rounded-[6px] border border-[rgb(var(--color-surface,245_245_245))] bg-[rgb(var(--color-surface,255_255_255))] p-3 font-manrope text-[14px] font-normal leading-[100%]">
+                      <ul data-collections-options class="m-0 flex list-none flex-col gap-2 p-0"></ul>
+                    </div>
+                  </div>
+                </details>
+              </>
+            )}
+          </div>
+
+          {sortVisible && (
+            <details class="relative [&[open]]:z-30">
+              <summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
+                <span class="flex items-center gap-2">
+                  <span>По популярности</span>
+                  <RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
+                </span>
+              </summary>
+              <div class="absolute right-0 top-full z-30 mt-2 w-[180px]">
+                <NtFilterPanel panel="sort" />
+              </div>
+            </details>
+          )}
+        </div>
+
+        <ul
+          class="grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 md:grid-cols-3 md:gap-x-4 md:gap-y-10 xl:grid-cols-4 xl:gap-x-5"
+          role="list"
+          data-nt="catalog-grid"
+        >
+          {demoProducts.map((product) => (
+            <li data-product-id={product.id}>
+              <RoseProductCard product={product} />
+            </li>
+          ))}
+        </ul>
+
+        <div class="flex flex-wrap items-center justify-between gap-4 pt-4">
+          <button
+            type="button"
+            data-action="load-more"
+            class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 py-[10px] font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
+          >Смотреть ещё</button>
+          <span class="font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-muted,153_153_153))]" data-nt="catalog-count">
+            {totalCount} товаров
+          </span>
+        </div>
+      </div>
+
+      {/* Раскладка side — левый сайдбар фильтров (включается настройкой конструктора) */}
+      <div class="flex flex-col gap-8 lg:flex-row lg:gap-10" data-catalog-variant="side">
+        <div class="hidden w-[172px] shrink-0 flex-col gap-4 lg:flex xl:w-[294px]">
+          {filterVisible && <NtFilterSidebar class="w-full" />}
+
+          {/* Фильтр по коллекциям в манере секций сайдбара (NtFilterSidebar не трогаем):
+              скрыт на demo-сборке, гидрация показывает его при наличии коллекций
+              магазина и синхронизирует выбор с дропдауном top-раскладки. */}
+          <div
+            class="flex flex-col gap-3 rounded-[8px] p-3 font-manrope"
+            data-nt="catalog-collections-filter"
+            data-collections-style="sidebar"
+            style="display:none;"
+          >
+            <p class="text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]">Коллекции</p>
+            <ul data-collections-options class="m-0 flex list-none flex-col gap-3 p-0"></ul>
+          </div>
+        </div>
+
+        <div class="flex flex-1 flex-col gap-8">
+          <ul
+            class="grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 md:grid-cols-3 md:gap-x-4 md:gap-y-10 xl:grid-cols-4 xl:gap-x-5"
+            role="list"
+            data-nt="catalog-grid"
+          >
+            {demoProducts.map((product) => (
+              <li data-product-id={product.id}>
+                <RoseProductCard product={product} />
+              </li>
+            ))}
+          </ul>
+
+          <div class="flex flex-wrap items-center justify-between gap-4 pt-4">
+            <button
+              type="button"
+              data-action="load-more"
+              class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-manrope text-[12px] font-normal leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95 sm:text-[14px] md:text-[16px]"
+            >
+              Смотреть ещё
+            </button>
+            <span class="font-manrope text-[12px] font-normal leading-normal text-[rgb(var(--color-muted,153_153_153))] sm:text-[14px] md:text-[16px]" data-nt="catalog-count">
+              {totalCount} товаров
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style is:global>
+  /* Переключение раскладок каталога: виден только выбранный вариант.
+     data-catalog-layout ставит inline-скрипт секции из window.__MERFY_CATALOG_LAYOUT__
+     (или дефолт из настройки filterPosition). */
+  [data-catalog-layout="top"] [data-catalog-variant="side"] {
+    display: none;
+  }
+  [data-catalog-layout="side"] [data-catalog-variant="top"] {
+    display: none;
+  }
+
+  /* ── Переопределения DS-компонентов фильтров (сами DS-файлы не трогаем). ──
+     Селекторы — устойчивые data-атрибуты из исходников DS
+     (NtFilterSidebar / NtRadioField / NtFilterPriceRows / NtFilterPanel),
+     скоуп — раскладки каталога. Цвета — токены цветовых схем конструктора
+     с фоллбеками к исходным значениям DS (#000000 / #999999 / #FFFFFF /
+     #F5F5F5), чтобы вид без схем не менялся. */
+
+  /* side: убираем белую плиту сайдбара — колонка фильтров лежит прямо
+     на фоне страницы (манера satin/vanilla). */
+  [data-catalog-variant="side"] [data-nt="filter-sidebar"] {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  /* side: заголовки секций сайдбара («Сортировать/Наличие/Стоимость/Цвет») */
+  [data-catalog-variant="side"] [data-nt="filter-sidebar"] > div > p {
+    color: rgb(var(--color-text, 0 0 0));
+  }
+
+  /* side: радио DS — кольцо, точка, подпись (структура NtRadioField:
+     input.peer + span[aria-hidden] (кольцо) + span (подпись)) */
+  [data-catalog-variant="side"] [data-nt="radio-field"] > span[aria-hidden="true"] {
+    border-color: rgb(var(--color-muted, 153 153 153));
+    outline-color: rgb(var(--color-text, 0 0 0));
+  }
+  [data-catalog-variant="side"] [data-nt="radio-field"] > span[aria-hidden="true"]::after {
+    background-color: rgb(var(--color-text, 0 0 0));
+  }
+  [data-catalog-variant="side"] [data-nt="radio-field"] > input:checked ~ span[aria-hidden="true"] {
+    border-color: rgb(var(--color-text, 0 0 0));
+  }
+  [data-catalog-variant="side"] [data-nt="radio-field"] > span:last-child {
+    color: rgb(var(--color-muted, 153 153 153));
+  }
+  [data-catalog-variant="side"] [data-nt="radio-field"] > input:checked ~ span:last-child {
+    color: rgb(var(--color-text, 0 0 0));
+  }
+
+  /* обе раскладки: строки «от/до» секции «Стоимость» */
+  [data-catalog-variant="side"] [data-nt="filter-price-rows"] > div,
+  [data-catalog-variant="top"] [data-nt="filter-price-rows"] > div {
+    color: rgb(var(--color-muted, 153 153 153));
+    border-color: rgb(var(--color-muted, 153 153 153));
+  }
+  /* в панели top строка «от» — активная (в DS: #000000) */
+  [data-catalog-variant="top"] [data-nt="filter-price-rows"][data-nt-variant="panel"] > div:first-child {
+    color: rgb(var(--color-text, 0 0 0));
+    border-color: rgb(var(--color-text, 0 0 0));
+  }
+
+  /* top: открытые панели DS-дропдаунов — поверхность и кайма токенами */
+  [data-catalog-variant="top"] [data-nt="filter-panel"] {
+    background-color: rgb(var(--color-surface, 255 255 255));
+    border-color: rgb(var(--color-surface, 245 245 245));
+  }
+  /* пункты панелей: первый — активный (цвет текста), остальные — muted */
+  [data-catalog-variant="top"] [data-nt="filter-panel"] > p {
+    color: rgb(var(--color-muted, 153 153 153));
+  }
+  [data-catalog-variant="top"] [data-nt="filter-panel"] > p:first-of-type {
+    color: rgb(var(--color-text, 0 0 0));
+  }
+</style>
+
+<script>
+  document.addEventListener("click", (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-action='load-more']");
+    if (!button) return;
+    button.disabled = true;
+    button.textContent = "Больше товаров нет";
+    button.classList.add("opacity-60", "pointer-events-none");
+  });
+</script>
+
+<script>
+  import {
+    loadRealProducts,
+    loadRealCollections,
+    filterByCollection,
+    renderCardHtml,
+    escapeHtml,
+    updateCount,
+    type RealCollection,
+  } from "./storefront-hydrate";
+
+  // Реальные товары (Option B): на published-сайте /data/products.json реальный →
+  // перерисовываем demo-grid. На demo-сборке loadRealProducts() вернёт null → no-op.
+  // Фильтр по коллекциям: ?collection= (slug/id из ссылок тайлов) + контейнеры
+  // «Коллекции» обеих раскладок (дропдаун top и секция сайдбара side) — заполняются
+  // из collections.json/storefront-data и синхронизируются между собой.
+  let catalogCollections: RealCollection[] | null = null;
+
+  function currentCollectionRef(): string | null {
+    return new URLSearchParams(window.location.search).get("collection");
+  }
+
+  async function renderCatalog() {
+    const products = await loadRealProducts();
+    if (!products) return; // demo-сборка
+    const ref = currentCollectionRef();
+    const items = ref ? filterByCollection(products, catalogCollections, ref) : products;
+    const html = items
+      .map((p) => `<li data-product-id="${escapeHtml(p.id)}">${renderCardHtml(p)}</li>`)
+      .join("");
+    // Гриды ОБЕИХ раскладок (top и side) перерисовываются одинаково
+    for (const grid of Array.from(document.querySelectorAll('[data-nt="catalog-grid"]'))) {
+      grid.innerHTML = html;
+    }
+    updateCount('[data-nt="catalog-count"]', items.length);
+  }
+
+  // Опция фильтра: side — радио в манере NtRadioField 1920 (кольцо 24px, точка 10px),
+  // top — пункт в манере NtFilterPanel (активный = цвет текста, остальные = muted).
+  // Цвета — токены схем с фоллбеками к значениям DS (#000000 / #999999).
+  function collectionOptionHtml(value: string, name: string, active: boolean, sidebar: boolean): string {
+    if (sidebar) {
+      const ring = `relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${active ? "border-[rgb(var(--color-text,0_0_0))]" : "border-[rgb(var(--color-muted,153_153_153))]"} after:pointer-events-none after:absolute after:h-[10px] after:w-[10px] after:rounded-full after:bg-[rgb(var(--color-text,0_0_0))] after:content-[''] ${active ? "after:opacity-100" : "after:opacity-0"}`;
+      return `<li><button type="button" data-collection-option="${escapeHtml(value)}" aria-pressed="${active}" class="flex w-full cursor-pointer items-center gap-2 text-left font-manrope text-[16px] font-normal leading-normal"><span aria-hidden="true" class="${ring}"></span><span class="${active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,153_153_153))]"}">${escapeHtml(name)}</span></button></li>`;
+    }
+    return `<li><button type="button" data-collection-option="${escapeHtml(value)}" aria-pressed="${active}" class="w-full cursor-pointer text-left font-manrope text-[14px] font-normal leading-[100%] transition-colors ${active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,153_153_153))] hover:text-[rgb(var(--color-text,0_0_0))]"}">${escapeHtml(name)}</button></li>`;
+  }
+
+  // Перерисовывает опции и активное состояние во ВСЕХ контейнерах фильтра коллекций
+  function syncCollectionsUi(current: RealCollection | null): void {
+    const cols = catalogCollections;
+    if (!cols) return;
+    for (const box of Array.from(
+      document.querySelectorAll<HTMLElement>('[data-nt="catalog-collections-filter"]'),
+    )) {
+      const list = box.querySelector<HTMLElement>("[data-collections-options]");
+      if (!list) continue;
+      const sidebar = box.getAttribute("data-collections-style") === "sidebar";
+      list.innerHTML =
+        collectionOptionHtml("", "Все", !current, sidebar) +
+        cols
+          .map((c) =>
+            collectionOptionHtml(
+              c.slug ?? c.id,
+              c.name ?? "Коллекция",
+              !!current && current.id === c.id,
+              sidebar,
+            ),
+          )
+          .join("");
+      const label = box.querySelector<HTMLElement>("[data-collections-label]");
+      if (label) label.textContent = current?.name ?? "Коллекции";
+    }
+  }
+
+  function onCollectionOptionClick(ev: Event): void {
+    const btn = (ev.target as HTMLElement).closest<HTMLElement>("[data-collection-option]");
+    if (!btn) return;
+    const value = btn.getAttribute("data-collection-option") ?? "";
+    const params = new URLSearchParams(window.location.search);
+    if (value) params.set("collection", value);
+    else params.delete("collection");
+    const qs = params.toString();
+    window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
+    const col = catalogCollections?.find((c) => (c.slug ?? c.id) === value) ?? null;
+    syncCollectionsUi(col); // активное состояние синхронно в обоих контейнерах
+    // details-дропдаун top-раскладки закрываем; для секции сайдбара — безвредный no-op
+    btn.closest<HTMLElement>('[data-nt="catalog-collections-filter"]')?.removeAttribute("open");
+    renderCatalog();
+  }
+
+  async function initCollectionsFilter() {
+    // Контейнеры обеих раскладок: details-дропдаун (top) и секция сайдбара (side)
+    const boxes = Array.from(
+      document.querySelectorAll<HTMLElement>('[data-nt="catalog-collections-filter"]'),
+    );
+    if (boxes.length === 0) return;
+    catalogCollections = await loadRealCollections();
+    if (!catalogCollections || catalogCollections.length === 0) return;
+    const ref = currentCollectionRef();
+    const current = ref
+      ? (catalogCollections.find((c) => c.id === ref || c.slug === ref || c.name === ref) ?? null)
+      : null;
+    syncCollectionsUi(current);
+    for (const box of boxes) {
+      if (box.getAttribute("data-cf-hydrated") === "true") continue; // идемпотентность astro:page-load
+      box.setAttribute("data-cf-hydrated", "true");
+      box.style.display = "";
+      // Слушатель на ul переживает перерисовку innerHTML в syncCollectionsUi
+      box
+        .querySelector<HTMLElement>("[data-collections-options]")
+        ?.addEventListener("click", onCollectionOptionClick);
+    }
+  }
+
+  async function hydrateCatalog() {
+    await initCollectionsFilter();
+    await renderCatalog();
+  }
+
+  hydrateCatalog();
+  document.addEventListener("astro:page-load", hydrateCatalog);
+</script>

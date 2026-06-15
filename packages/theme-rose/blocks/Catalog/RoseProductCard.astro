@@ -1,0 +1,119 @@
+---
+/**
+ * RoseProductCard (порт из themes/rose/src/components/products/RoseProductCard.astro).
+ *
+ * Тип Product заинлайнен (минимальный shape витрины) вместо импорта
+ * ../../types/product — block-папка override-темы автономна (компилятор превью
+ * не резолвит пути за пределы папки). RosePicture — sibling (./).
+ */
+import RosePicture from "./RosePicture.astro";
+
+interface Product {
+  name: string;
+  price: string;
+  oldPrice?: string;
+  image: string;
+  id?: string;
+  discount?: boolean;
+}
+
+interface Props {
+  product: Product;
+  priority?: boolean;
+}
+
+const { product, priority = false } = Astro.props as Props;
+const href = `/products/${product.id}`;
+const showSaleBadge = product.discount === true;
+---
+
+<article
+  class="group flex w-full flex-col gap-5"
+  data-nt="rose-product-card"
+  aria-label={product.name}
+>
+  <a
+    href={href}
+    class="relative block aspect-[318/444] w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-white"
+    aria-label={product.name}
+  >
+    {product.image ? (
+      <RosePicture
+        src={product.image}
+        alt={product.name}
+        width="318"
+        height="444"
+        loading="eager"
+        fetchpriority={priority ? "high" : undefined}
+        class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+      />
+    ) : (
+      /* Товар без фото: surface-плейсхолдер вместо <img> (битой иконки).
+         Цвета только токенами; разметку зеркалит CARD_MEDIA_FALLBACK_HTML
+         в storefront-hydrate.ts — менять синхронно. */
+      <div
+        class="absolute inset-0 flex items-center justify-center"
+        style="background:rgb(var(--color-surface,245 245 245))"
+        aria-hidden="true"
+      >
+        <svg
+          class="size-10"
+          style="color:rgb(var(--color-muted,153 153 153))"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+          <circle cx="9" cy="9" r="2"></circle>
+          <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+        </svg>
+      </div>
+    )}
+    {showSaleBadge && (
+      <span
+        class="absolute left-3 top-3 z-10 flex h-6 min-w-12 items-center justify-center rounded-[4px] bg-[rgb(var(--color-accent,0_0_0))] px-2 font-manrope text-[12px] font-normal leading-none !text-white"
+      >
+        Скидка
+      </span>
+    )}
+  </a>
+  <div class="flex w-full flex-col gap-1 text-left">
+    <a
+      href={href}
+      class="rose-product-name block w-full font-manrope text-[14px] font-normal leading-none tracking-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70"
+    >
+      {product.name}
+    </a>
+    <div class="flex w-full flex-wrap items-baseline gap-2">
+      <span class="rose-product-price font-manrope !text-[16px] font-normal !leading-none text-[rgb(var(--color-text,0_0_0))]">
+        {product.price}
+      </span>
+      {product.oldPrice && (
+        <span class="rose-product-oldprice font-manrope !text-[14px] font-normal !leading-none text-[rgb(var(--color-muted,153_153_153))] line-through">
+          {product.oldPrice}
+        </span>
+      )}
+    </div>
+  </div>
+</article>
+
+<style>
+  /* Figma 375: name/price — Manrope 12, lh 100% */
+  @media (max-width: 639.98px) {
+    .rose-product-name {
+      font-size: 12px !important;
+    }
+
+    .rose-product-price {
+      font-size: 12px !important;
+    }
+
+    .rose-product-oldprice {
+      font-size: 12px !important;
+    }
+  }
+</style>

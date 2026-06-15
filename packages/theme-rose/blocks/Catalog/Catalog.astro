@@ -1148,21 +1148,34 @@ const skeletons = Array.from({ length: skeletonCount });
     }
   }
 
+  let hydrating = false;
   async function hydrateCatalog() {
-    await initCollectionsFilter();
-    // Загружаем товары один раз, выводим доступные цвета (для data-driven секции).
-    catalogProducts = await loadRealProducts();
-    if (catalogProducts) availableColors = collectColors(catalogProducts);
-    // Обработчики наборов top+side (идемпотентны через data-cf-* маркеры).
-    bindStock();
-    bindPrice();
-    bindColors();
-    bindSort();
-    bindLoadMore();
-    // Начальное активное состояние контролов.
-    syncStockUi();
-    syncSortUi();
-    await renderCatalog();
+    if (hydrating) return; // дедуп: не запускать две гидрации параллельно (race → дубль-fetch)
+    hydrating = true;
+    try {
+      // Товары и коллекции — ПАРАЛЛЕЛЬНО (раньше collections блокировали товары
+      // ~1.5с). Оба нужны renderCatalog (collections — для страниц коллекций).
+      await Promise.all([
+        loadRealProducts().then((r) => { catalogProducts = r; }),
+        loadRealCollections().then((r) => { catalogCollections = r; }),
+      ]);
+      if (catalogProducts) availableColors = collectColors(catalogProducts);
+      // Обработчики наборов top+side (идемпотентны через data-cf-* маркеры).
+      bindStock();
+      bindPrice();
+      bindColors();
+      bindSort();
+      bindLoadMore();
+      // Начальное активное состояние контролов.
+      syncStockUi();
+      syncSortUi();
+      // Товары + кнопка «Показать ещё» — как можно раньше.
+      await renderCatalog();
+      // UI фильтра коллекций — после товаров (collections уже в кэше, без fetch).
+      await initCollectionsFilter();
+    } finally {
+      hydrating = false;
+    }
   }
 
   hydrateCatalog();

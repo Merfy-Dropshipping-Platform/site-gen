@@ -143,14 +143,46 @@ export const PopularProductsPuckConfig: BlockPuckConfig<PopularProductsProps> = 
     } as any,
     textSize: { type: 'select', label: 'Размер текста', options: sizeOptions },
 
-    // user-confirmed (Figma 1236-42146): «Карточка товара» секция и её контролы
-    // (Стиль кнопки / Вид изображения / Следующее фото / Быстрое добавление)
-    // скрыты из панели. Данные/дефолты сохраняются, рендер использует дефолты.
-    ['_cardSection' as never]: { type: 'hidden', label: '' } as any,
-    buttonStyle: { type: 'hidden', label: '' },
-    imageView: { type: 'hidden', label: '' },
-    nextPhotoOnHover: { type: 'hidden', label: '' } as any,
-    quickAddMode: { type: 'hidden', label: '' },
+    // «Карточка товара» (Figma 314-34614, parity с Catalog) — возвращены в панель
+    // по запросу тестера. quickAddMode подключён в рендере (CTA «В корзину»);
+    // buttonStyle/imageView/nextPhotoOnHover пока декоративны (schema-parity,
+    // рендер карточки их не применяет) — оживить отдельной задачей при необходимости.
+    ['_cardSection' as never]: { type: 'section-header', label: 'Карточка товара' } as any,
+    buttonStyle: {
+      type: 'select',
+      label: 'Стиль кнопки',
+      options: [
+        { label: 'Ссылка', value: 'link' },
+        { label: 'Основная', value: 'primary' },
+        { label: 'Дополнительная', value: 'secondary' },
+      ],
+    },
+    imageView: {
+      type: 'select',
+      label: 'Вид изображения',
+      options: [
+        { label: 'Портрет', value: 'portrait' },
+        { label: 'Квадрат', value: 'square' },
+        { label: 'Широкий', value: 'wide' },
+      ],
+    },
+    nextPhotoOnHover: {
+      type: 'toggle',
+      label: 'Следующее фото при наведении',
+      options: [
+        { label: 'Вкл', value: true },
+        { label: 'Выкл', value: false },
+      ],
+    } as any,
+    quickAddMode: {
+      type: 'select',
+      label: 'Быстрое добавление',
+      options: [
+        { label: 'Нет', value: 'none' },
+        { label: 'Стандарт', value: 'standard' },
+        { label: 'Количество', value: 'cart' },
+      ],
+    },
     columns: { type: 'slider', label: 'Колонки', min: 1, max: 6, step: 1 },
 
     containerEnabled: {

@@ -987,8 +987,12 @@ const fmtPriceServer = (n: number | string | undefined): string => {
 
     // Side-bar filters — Figma 905-19049 (stock radios with values + price inputs by data-attr)
     function attachSideFilters() {
-      // Stock radios — use value="all|in|out"
+      // Stock radios — use value="all|in|out".
+      // data-filter-bound: идемпотентность — attachSideFilters() зовётся дважды
+      // (при гидрации + после загрузки данных), без гарда листенеры дублировались.
       root.querySelectorAll('input[name="cat-stock"]').forEach(function (input) {
+        if (input.getAttribute('data-filter-bound') === '1') return;
+        input.setAttribute('data-filter-bound', '1');
         input.addEventListener('change', function () {
           if (!this.checked) return;
           const v = this.value;
@@ -998,11 +1002,15 @@ const fmtPriceServer = (n: number | string | undefined): string => {
           rerender();
         });
       });
-      // Price inputs (от / до) by data-attribute
-      const priceMinEl = root.querySelector('[data-cat-price-min]');
-      const priceMaxEl = root.querySelector('[data-cat-price-max]');
-      if (priceMinEl) {
+      // Price inputs (от / до) — querySelectorAll (НЕ querySelector!): в side-режиме
+      // первый [data-cat-price-min] лежит в мобильном drawer (display:none, идёт в
+      // DOM раньше aside), поэтому querySelector брал НЕвидимый инпут → видимый
+      // sidebar-инпут оставался без листенера и фильтр по цене не работал. Вешаем
+      // на ВСЕ инпуты (как stock-радио).
+      root.querySelectorAll('[data-cat-price-min]').forEach(function (priceMinEl) {
         if (state.priceMin != null) priceMinEl.value = String(state.priceMin);
+        if (priceMinEl.getAttribute('data-filter-bound') === '1') return;
+        priceMinEl.setAttribute('data-filter-bound', '1');
         priceMinEl.addEventListener('input', function () {
           const v = parseFloat(this.value);
           state.priceMin = Number.isFinite(v) ? v : null;
@@ -1010,9 +1018,11 @@ const fmtPriceServer = (n: number | string | undefined): string => {
           syncUrlState();
           rerender();
         });
-      }
-      if (priceMaxEl) {
+      });
+      root.querySelectorAll('[data-cat-price-max]').forEach(function (priceMaxEl) {
         if (state.priceMax != null) priceMaxEl.value = String(state.priceMax);
+        if (priceMaxEl.getAttribute('data-filter-bound') === '1') return;
+        priceMaxEl.setAttribute('data-filter-bound', '1');
         priceMaxEl.addEventListener('input', function () {
           const v = parseFloat(this.value);
           state.priceMax = Number.isFinite(v) ? v : null;
@@ -1020,7 +1030,7 @@ const fmtPriceServer = (n: number | string | undefined): string => {
           syncUrlState();
           rerender();
         });
-      }
+      });
     }
 
     // Top-bar filter dropdowns — реальные: клик по триггеру открывает свою

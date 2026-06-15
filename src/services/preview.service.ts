@@ -1262,6 +1262,25 @@ const PREVIEW_NAV_AGENT_INLINE = `
         } else {
           wrap.style.position = ''; wrap.style.top = ''; wrap.style.zIndex = '';
         }
+        // «При прокрутке вверх»: scroll-up JS (прятать при скролле вниз, показывать
+        // при вверх) инжектится только при ПЕРВИЧНОМ рендере Header. При hot-смене
+        // «Статичности» в превью его нет → заводим/снимаем listener здесь, иначе в
+        // конструкторе scroll-up «не работает» (баг тестера vanilla+rose).
+        if (window.__merfyScrollUp) {
+          window.removeEventListener('scroll', window.__merfyScrollUp);
+          window.__merfyScrollUp = null;
+          wrap.style.transform = '';
+        }
+        if (newVal === 'scroll-up') {
+          var lastY = window.scrollY;
+          window.__merfyScrollUp = function () {
+            var y = window.scrollY;
+            if (y > lastY && y > wrap.offsetHeight) wrap.style.transform = 'translateY(-100%)';
+            else wrap.style.transform = '';
+            lastY = y;
+          };
+          window.addEventListener('scroll', window.__merfyScrollUp, { passive: true });
+        }
         return true;
       },
       navigationLinks: function (el, oldVal, newVal) {

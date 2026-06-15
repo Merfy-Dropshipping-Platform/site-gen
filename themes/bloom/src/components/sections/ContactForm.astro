@@ -1,68 +1,24 @@
 ---
 import NtTextField from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtTextField.astro";
 
-// Фаза B (bloom, группа misc): канон-секция ContactForm — адаптация разметки
-// pages/contacts.astro (страница остаётся inline и НЕ меняется; процесс-эталон —
-// rose T14 Contacts). Схема полей = packages/theme-base/blocks/ContactForm/
-// ContactForm.puckConfig.ts. Замены клон-ролей по манере: мёртвый font-comfortaa
-// (класс в bloom не определён, g задаёт только urbanist/inter/manrope/roboto-flex)
-// → Urbanist uppercase с акцент-токеном; чёрная rounded-[6px] кнопка страницы →
-// розовый pill h-12 манеры §3; rose@example.ru (баг клона) → example@bloom.ru.
-// Остальное тело — verbatim со страницы (dl, DS-поля, textarea, статус).
+// Канон ContactForm (bloom) — приведено к виду rose Contacts по требованию продакта:
+// секция рендерит ТОЛЬКО форму обратной связи (Имя / Email / Сообщение + кнопка).
+// Заголовок «Контакты», блок контактных данных (телефон/e-mail) и подзаголовок
+// «Остались вопросы?» убраны. Телефон в форме убран — три поля: Имя/Email/Сообщение.
+// Манера bloom сохранена: розовая pill-кнопка §3, радиус полей --radius-input.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-const heading = p.heading?.text ?? p.heading ?? "Контакты";
-// Flat-пропсы оживления: контактные данные магазина (схема описывает поля ФОРМЫ).
-const phone = p.phone ?? "+7 (000) 000-00-00";
-const email = p.email ?? "example@bloom.ru";
-const phoneHref = `tel:${phone.replace(/[^+\d]/g, "")}`;
-const emailHref = `mailto:${email}`;
 
-// Канон headingSize (top-level приоритетнее legacy heading.size). Заголовок-роль:
-// на странице мёртвый font-comfortaa 28/32/36 → в каноне Urbanist uppercase.
-// Лестница от 28/36 (≈0.85/0.7): small 20/25, medium (canon-default) 24/31,
-// large 28/36 (соответствует литералу страницы).
-const headingSize = p.headingSize ?? p.heading?.size;
-const headingSizeCls =
-	headingSize === "small"
-		? "text-[20px] md:text-[25px]"
-		: headingSize === "large"
-			? "text-[28px] md:text-[36px]"
-			: "text-[24px] md:text-[31px]";
-// Канон headingAlignment (top-level приоритетнее legacy heading.alignment).
-const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
-const headingAlignCls =
-	headingAlignment === "center"
-		? " text-center"
-		: headingAlignment === "right"
-			? " text-right"
-			: headingAlignment === "left"
-				? " text-left"
-				: "";
-const headingCls = `font-urbanist ${headingSizeCls} font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading,227_142_159))]${headingAlignCls}`;
-
-// Канон description: <p> под заголовком ТОЛЬКО при непустом пропе (у страницы
-// описания нет — дефолт-ветка пуста). Манера текста = dl-строк страницы.
-const description =
-	typeof p.description === "string" && p.description.trim() ? p.description : undefined;
-
-// Канон fields {name,email,phone,message} (каждое {enabled,required,label}) —
-// проп-ветка рендерит состав формы канон-семантикой (фоллбеки частичного
-// объекта = канон-дефолты puckConfig: phone disabled, name/email required)
-// в манере DS-полей страницы (классы NtTextField, радиус — токен input).
-// Отсутствие fields = форма страницы ДОСЛОВНО (NtTextField + textarea
-// «Ваш вопрос», включая border="error" телефона — литерал верстальщика).
 const toBool = (v: any, fb: boolean): boolean =>
 	typeof v === "boolean" ? v : v === "true" ? true : v === "false" ? false : fb;
 const CANON_FIELDS = {
 	name: { enabled: true, required: true, label: "Имя" },
 	email: { enabled: true, required: true, label: "Email" },
-	phone: { enabled: false, required: false, label: "Телефон" },
 	message: { enabled: true, required: false, label: "Сообщение" },
 };
 const fieldsProp =
 	p.fields && typeof p.fields === "object" && !Array.isArray(p.fields) ? p.fields : undefined;
-const resolveField = (key: "name" | "email" | "phone" | "message") => {
+const resolveField = (key: "name" | "email" | "message") => {
 	const def = (CANON_FIELDS as any)[key];
 	const f = fieldsProp?.[key];
 	return {
@@ -75,16 +31,13 @@ const formFields = fieldsProp
 	? {
 			name: resolveField("name"),
 			email: resolveField("email"),
-			phone: resolveField("phone"),
 			message: resolveField("message"),
 		}
 	: undefined;
 
-// Канон buttonText: текст кнопки с фоллбеком на литерал страницы.
 const buttonText =
 	typeof p.buttonText === "string" && p.buttonText.length > 0 ? p.buttonText : "Отправить";
 
-// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
@@ -92,167 +45,93 @@ const paddingStyle = p.padding
 
 <section
 	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-[60px] pt-12 md:px-20 md:pb-[80px] md:pt-20 2xl:px-[300px]"
-	aria-labelledby="contacts-title"
+	aria-label="Форма обратной связи"
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-16 md:gap-20">
-		<div class="flex flex-col gap-6">
-			<h1
-				id="contacts-title"
-				class={headingCls}
-				data-puck-subsection-parent={id}
-				data-puck-subsection-index="100"
-				data-puck-subsection-field="heading"
-			>
-				{heading}
-			</h1>{description && (
-				<p
-					class="font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[16px]"
-					data-puck-subsection-parent={id}
-					data-puck-subsection-index="101"
-					data-puck-subsection-field="description"
-				>
-					{description}
-				</p>
-			)}
-			<dl class="flex flex-col gap-3 font-manrope text-[14px] font-normal leading-normal md:text-[16px]">
-				<div class="flex flex-col gap-1 md:flex-row md:gap-16">
-					<dt class="text-[rgb(var(--color-muted,153_153_153))] md:w-[200px]">Номер телефона</dt>
-					<dd class="text-[rgb(var(--color-text,0_0_0))]">
-						<a href={phoneHref} class="hover:opacity-80 transition-opacity">
-							{phone}
-						</a>
-					</dd>
+	<div class="mx-auto flex w-full max-w-[1320px] flex-col">
+		<form
+			class="grid grid-cols-1 gap-6 lg:grid-cols-[430px_1fr] lg:items-start lg:gap-10"
+			data-contacts-form
+			novalidate
+		>
+			{formFields ? (
+				<div class="flex flex-col gap-4">
+					{formFields.name.enabled && (
+						<div
+							class="flex w-full max-w-[430px] flex-col gap-2"
+							data-nt="text-field"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index={0}
+							data-puck-subsection-field="fields"
+						>
+							<label for="nt-field-name" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
+								{formFields.name.label}{formFields.name.required && <span class="ml-1 text-[rgb(var(--color-error,255_148_148))]">*</span>}
+							</label>
+							<div class="relative w-full">
+								<input
+									id="nt-field-name"
+									name="name"
+									type="text"
+									autocomplete="name"
+									required={formFields.name.required}
+									class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-input,4px)] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
+								/>
+							</div>
+						</div>
+					)}
+					{formFields.email.enabled && (
+						<div
+							class="flex w-full max-w-[430px] flex-col gap-2"
+							data-nt="text-field"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index={1}
+							data-puck-subsection-field="fields"
+						>
+							<label for="nt-field-email" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
+								{formFields.email.label}{formFields.email.required && <span class="ml-1 text-[rgb(var(--color-error,255_148_148))]">*</span>}
+							</label>
+							<div class="relative w-full">
+								<input
+									id="nt-field-email"
+									name="email"
+									type="email"
+									autocomplete="email"
+									required={formFields.email.required}
+									class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-input,4px)] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
+								/>
+							</div>
+						</div>
+					)}
 				</div>
-				<div class="flex flex-col gap-1 md:flex-row md:gap-16">
-					<dt class="text-[rgb(var(--color-muted,153_153_153))] md:w-[200px]">E-mail</dt>
-					<dd class="text-[rgb(var(--color-text,0_0_0))]">
-						<a href={emailHref} class="hover:opacity-80 transition-opacity">
-							{email}
-						</a>
-					</dd>
-				</div>
-			</dl>
-		</div>
-
-		<div class="flex flex-col gap-8">
-			<h2 class="font-urbanist text-[24px] font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading,227_142_159))] md:text-[28px]">
-				Остались вопросы?
-			</h2>
-
-			<form
-				class="grid grid-cols-1 gap-6 lg:grid-cols-[430px_1fr] lg:items-start lg:gap-10"
-				data-contacts-form
-				novalidate
-			>
-				{formFields ? (
-					<div class="flex flex-col gap-4">
-						{formFields.name.enabled && (
-							<div
-								class="flex w-full max-w-[430px] flex-col gap-2"
-								data-nt="text-field"
-								data-puck-subsection-parent={id}
-								data-puck-subsection-index={0}
-								data-puck-subsection-field="fields"
-							>
-								<label for="nt-field-name" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
-									{formFields.name.label}{formFields.name.required && <span class="ml-1 text-[rgb(var(--color-error,255_148_148))]">*</span>}
-								</label>
-								<div class="relative w-full">
-									<input
-										id="nt-field-name"
-										name="name"
-										type="text"
-										autocomplete="name"
-										required={formFields.name.required}
-										class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-input,4px)] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
-									/>
-								</div>
-							</div>
-						)}
-						{formFields.email.enabled && (
-							<div
-								class="flex w-full max-w-[430px] flex-col gap-2"
-								data-nt="text-field"
-								data-puck-subsection-parent={id}
-								data-puck-subsection-index={1}
-								data-puck-subsection-field="fields"
-							>
-								<label for="nt-field-email" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
-									{formFields.email.label}{formFields.email.required && <span class="ml-1 text-[rgb(var(--color-error,255_148_148))]">*</span>}
-								</label>
-								<div class="relative w-full">
-									<input
-										id="nt-field-email"
-										name="email"
-										type="email"
-										autocomplete="email"
-										required={formFields.email.required}
-										class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-input,4px)] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
-									/>
-								</div>
-							</div>
-						)}
-						{formFields.phone.enabled && (
-							<div
-								class="flex w-full max-w-[430px] flex-col gap-2"
-								data-nt="text-field"
-								data-puck-subsection-parent={id}
-								data-puck-subsection-index={2}
-								data-puck-subsection-field="fields"
-							>
-								<label for="nt-field-phone" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
-									{formFields.phone.label}{formFields.phone.required && <span class="ml-1 text-[rgb(var(--color-error,255_148_148))]">*</span>}
-								</label>
-								<div class="relative w-full">
-									<input
-										id="nt-field-phone"
-										name="phone"
-										type="tel"
-										autocomplete="tel"
-										required={formFields.phone.required}
-										class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-input,4px)] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
-									/>
-								</div>
-							</div>
-						)}
-					</div>
-				) : (
+			) : (
 				<div class="flex flex-col gap-4">
 					<NtTextField label="Имя" name="name" autocomplete="name" />
 					<NtTextField label="E-mail" name="email" type="email" autocomplete="email" />
-					<NtTextField
-						label="Номер телефона"
-						name="phone"
-						type="tel"
-						autocomplete="tel"
-						border="error"
-					/>
 				</div>
-				)}
+			)}
 
-				{formFields ? (
-					formFields.message.enabled && (
-						<div
-							class="flex flex-col gap-2"
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index={3}
-							data-puck-subsection-field="fields"
-						>
-							<label for="contacts-question" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
-								{formFields.message.label}{formFields.message.required && <span class="ml-1 text-[rgb(var(--color-error,255_148_148))]">*</span>}
-							</label>
-							<textarea
-								id="contacts-question"
-								name="question"
-								rows={8}
-								required={formFields.message.required}
-								class="min-h-[232px] w-full rounded-[var(--radius-input,4px)] border border-[#000000] bg-white p-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000]"
-							></textarea>
-						</div>
-					)
-				) : (
+			{formFields ? (
+				formFields.message.enabled && (
+					<div
+						class="flex flex-col gap-2"
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index={2}
+						data-puck-subsection-field="fields"
+					>
+						<label for="contacts-question" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
+							{formFields.message.label}{formFields.message.required && <span class="ml-1 text-[rgb(var(--color-error,255_148_148))]">*</span>}
+						</label>
+						<textarea
+							id="contacts-question"
+							name="question"
+							rows={8}
+							required={formFields.message.required}
+							class="min-h-[232px] w-full rounded-[var(--radius-input,4px)] border border-[#000000] bg-white p-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000]"
+						></textarea>
+					</div>
+				)
+			) : (
 				<div class="flex flex-col gap-2">
 					<label for="contacts-question" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
 						Ваш вопрос
@@ -264,23 +143,22 @@ const paddingStyle = p.padding
 						class="min-h-[232px] w-full rounded-[var(--radius-input,4px)] border border-[#000000] bg-white p-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000]"
 					></textarea>
 				</div>
-				)}
+			)}
 
-				<div class="lg:col-start-2 lg:flex lg:justify-end">
-					<button
-						type="submit"
-						class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,227_142_159))] px-6 font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95"
-					>
-						{buttonText}
-					</button>
-				</div>
+			<div class="lg:col-start-2 lg:flex lg:justify-end">
+				<button
+					type="submit"
+					class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,227_142_159))] px-6 font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95"
+				>
+					{buttonText}
+				</button>
+			</div>
 
-				<p
-					data-contacts-status
-					role="status"
-					class="hidden lg:col-span-2 font-manrope text-[16px] font-normal leading-normal text-[#4AD300]"
-				></p>
-			</form>
-		</div>
+			<p
+				data-contacts-status
+				role="status"
+				class="hidden lg:col-span-2 font-manrope text-[16px] font-normal leading-normal text-[#4AD300]"
+			></p>
+		</form>
 	</div>
 </section>

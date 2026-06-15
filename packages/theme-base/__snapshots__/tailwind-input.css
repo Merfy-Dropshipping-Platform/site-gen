@@ -28,6 +28,15 @@
 @source "../theme-bloom/customBlocks/**/*.{astro,ts,tsx}";
 @source "../theme-flux/blocks/**/*.{astro,ts,tsx}";
 @source "../theme-flux/customBlocks/**/*.{astro,ts,tsx}";
+/* Порты верстальщиков: Header/Footer/sections рендерятся ОТСЮДА (themes/<тема>/
+ * src/components/), а не из blocks. Без этих @source классы вроде sticky/top-0
+ * из Header.astro не попадали в preview CSS → «Статичность» не работала в
+ * конструкторе (класс есть, .sticky{position:sticky} в CSS нет). Баг тестера. */
+@source "../../themes/rose/src/components/**/*.{astro,ts,tsx}";
+@source "../../themes/vanilla/src/components/**/*.{astro,ts,tsx}";
+@source "../../themes/satin/src/components/**/*.{astro,ts,tsx}";
+@source "../../themes/flux/src/components/**/*.{astro,ts,tsx}";
+@source "../../themes/bloom/src/components/**/*.{astro,ts,tsx}";
 
 /**
  * Cascade fix: physical longhand для перебития Tailwind v4 reset.

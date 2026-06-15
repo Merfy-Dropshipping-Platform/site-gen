@@ -367,64 +367,299 @@ const totalCount = demoProducts.length;
   }
 </style>
 
-<script>
-  import {
-    loadRealProducts,
-    loadRealCollections,
-    filterByCollection,
-    filterByStock,
-    filterByPrice,
-    filterByColors,
-    collectColors,
-    sortProducts,
-    renderCardHtml,
-    escapeHtml,
-    updateCount,
-    type RealCollection,
-    type RealProduct,
-    type StockFilter,
-    type SortKey,
-  } from "./storefront-hydrate";
+<script is:inline define:vars={{ siteId, pageSize }}>
+  // is:inline (НЕ module-script): module client-<script> блока НЕ компилится в
+  // live build — generatePuckCatalogPage импортит блок, но его ESM-script не
+  // попадает в bundle → на проде остаётся сырой путь Catalog.astro?astro&type=script
+  // → HTTP 404 → вся клиентская логика мертва. is:inline компилится всегда.
+  // Поэтому здесь весь клиент инлайн: функции из storefront-hydrate.ts перенесены
+  // телами 1:1 (без import/типов), данные frontmatter — через define:vars.
+  (function () {
+  // ─── Инлайн storefront-hydrate.ts (loaders + filters/sort + card render) ───
+  const PLACEHOLDER_IMAGE = "/placeholders/sweater-blue.png";
+  let cachedProducts; // undefined — не грузили; null — demo/пусто/ошибка
+  let cachedCollections;
 
+  // loadRealProducts: live — /data/products.json; превью — storefront-data по
+  // window.__MERFY_SITE_ID__ (фолбэк на siteId из define:vars). null → demo.
+  async function loadRealProducts() {
+    if (cachedProducts !== undefined) return cachedProducts;
+    try {
+      const res = await fetch("/data/products.json");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          cachedProducts = data;
+          return cachedProducts;
+        }
+      }
+    } catch {
+      /* файла нет — пробуем preview-фолбэк ниже */
+    }
+    const sid =
+      (typeof window !== "undefined" && window.__MERFY_SITE_ID__) || siteId || undefined;
+    if (sid) {
+      try {
+        const res = await fetch(`/api/sites/${encodeURIComponent(sid)}/storefront-data`);
+        if (res.ok) {
+          const payload = await res.json();
+          const products = payload && payload.products;
+          if (Array.isArray(products) && products.length > 0) {
+            cachedProducts = products;
+            return cachedProducts;
+          }
+        }
+      } catch {
+        /* preview-фолбэк не удался */
+      }
+    }
+    cachedProducts = null;
+    return cachedProducts;
+  }
+
+  // loadRealCollections: тем же двухступенчатым путём, что loadRealProducts.
+  async function loadRealCollections() {
+    if (cachedCollections !== undefined) return cachedCollections;
+    try {
+      const res = await fetch("/data/collections.json");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          cachedCollections = data;
+          return cachedCollections;
+        }
+      }
+    } catch {
+      /* файла нет — preview-фолбэк ниже */
+    }
+    const sid =
+      (typeof window !== "undefined" && window.__MERFY_SITE_ID__) || siteId || undefined;
+    if (sid) {
+      try {
+        const res = await fetch(`/api/sites/${encodeURIComponent(sid)}/storefront-data`);
+        if (res.ok) {
+          const payload = await res.json();
+          const collections = payload && payload.collections;
+          if (Array.isArray(collections) && collections.length > 0) {
+            cachedCollections = collections;
+            return cachedCollections;
+          }
+        }
+      } catch {
+        /* preview-фолбэк не удался */
+      }
+    }
+    cachedCollections = null;
+    return cachedCollections;
+  }
+
+  function findCollection(collections, ref) {
+    if (!ref || !collections) return null;
+    return (
+      collections.find((c) => c && (c.id === ref || c.slug === ref || c.name === ref)) ?? null
+    );
+  }
+
+  // filterByCollection: сперва по productIds, затем по membership товара;
+  // пустой результат → исходный список (паритет с theme-base).
+  function filterByCollection(products, collections, ref) {
+    if (!ref) return products;
+    const col = findCollection(collections, ref);
+    let filtered = [];
+    if (col && Array.isArray(col.productIds) && col.productIds.length > 0) {
+      const ids = new Set(col.productIds);
+      filtered = products.filter((p) => p.id && ids.has(p.id));
+    }
+    if (filtered.length === 0) {
+      filtered = products.filter((p) => {
+        const memb = p.collections;
+        return (
+          Array.isArray(memb) &&
+          memb.some((m) => m && (m.id === ref || m.slug === ref || (col && col.slug && m.slug === col.slug)))
+        );
+      });
+    }
+    return filtered.length > 0 ? filtered : products;
+  }
+
+  function formatPrice(value) {
+    if (value === null || value === undefined || value === "") return "";
+    if (typeof value === "string") return value;
+    return `${value.toLocaleString("ru-RU")} ₽`;
+  }
+
+  function productHref(p) {
+    return `/product?id=${encodeURIComponent(p.id)}`;
+  }
+
+  function productImageRaw(p) {
+    return (Array.isArray(p.images) && typeof p.images[0] === "string" && p.images[0]) || "";
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  // Surface-плейсхолдер медиа карточки (товар без фото / битый URL).
+  const CARD_MEDIA_FALLBACK_HTML =
+    '<div class="absolute inset-0 flex items-center justify-center" style="background:rgb(var(--color-surface,245 245 245))" aria-hidden="true">' +
+    '<svg class="size-10" style="color:rgb(var(--color-muted,153 153 153))" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>' +
+    "</svg></div>";
+  const CARD_IMG_ONERROR_ATTR = ` onerror="this.onerror=null;this.outerHTML='${CARD_MEDIA_FALLBACK_HTML.replace(/"/g, "&quot;")}'"`;
+
+  // renderCardHtml — зеркалит RoseProductCard.astro (картинка-ссылка + name + price).
+  function renderCardHtml(p) {
+    const href = escapeHtml(productHref(p));
+    const name = escapeHtml(p.name);
+    const rawImage = productImageRaw(p);
+    const media = rawImage
+      ? `<img src="${escapeHtml(rawImage)}" alt="${name}" width="318" height="444" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"${CARD_IMG_ONERROR_ATTR} />`
+      : CARD_MEDIA_FALLBACK_HTML;
+    const price = escapeHtml(formatPrice(p.price));
+    const oldRaw = formatPrice(p.oldPrice || p.compareAtPrice || null);
+    const oldPrice = oldRaw
+      ? `<span class="rose-product-oldprice font-manrope !text-[14px] font-normal !leading-none text-[#999999] line-through">${escapeHtml(oldRaw)}</span>`
+      : "";
+    return `<article class="group flex w-full flex-col gap-5" data-nt="rose-product-card" aria-label="${name}">
+  <a href="${href}" class="relative block aspect-[318/444] w-full overflow-hidden rounded-[8px] bg-white" aria-label="${name}">
+    ${media}
+  </a>
+  <div class="flex w-full flex-col gap-1 text-left">
+    <a href="${href}" class="rose-product-name block w-full font-manrope text-[14px] font-normal leading-none tracking-normal text-[#000000] transition-opacity hover:opacity-70">${name}</a>
+    <div class="flex w-full flex-wrap items-baseline gap-2">
+      <span class="rose-product-price font-manrope !text-[16px] font-normal !leading-none text-[#000000]">${price}</span>
+      ${oldPrice}
+    </div>
+  </div>
+</article>`;
+  }
+
+  function updateCount(countSelector, n) {
+    for (const el of Array.from(document.querySelectorAll(countSelector))) {
+      el.textContent = `${n} товаров`;
+    }
+  }
+
+  // parsePriceNumber: реальные сборки — number; demo-строки ("5 990 ₽") парсим.
+  function parsePriceNumber(value) {
+    if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+    if (typeof value !== "string") return 0;
+    const digits = value.replace(/[\s  ]/g, "").replace(/[^\d.,-]/g, "").replace(",", ".");
+    const n = parseFloat(digits);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  // productInStock: эвристика по variantCombinations (нет комбинаций → в наличии).
+  function productInStock(p) {
+    const combos = p.variantCombinations;
+    if (!Array.isArray(combos) || combos.length === 0) return true;
+    return combos.some((c) => c.available !== false && (c.quantity === undefined || c.quantity === null || c.quantity > 0));
+  }
+
+  function filterByStock(products, stock) {
+    if (stock === "in") return products.filter((p) => productInStock(p));
+    if (stock === "out") return products.filter((p) => !productInStock(p));
+    return products;
+  }
+
+  function filterByPrice(products, min, max) {
+    if (min === null && max === null) return products;
+    return products.filter((p) => {
+      const price = parsePriceNumber(p.price);
+      if (min !== null && price < min) return false;
+      if (max !== null && price > max) return false;
+      return true;
+    });
+  }
+
+  const COLOR_GROUP_NAMES = ["цвет", "color"];
+  function isColorGroup(name) {
+    return COLOR_GROUP_NAMES.includes(name.trim().toLowerCase());
+  }
+  function productColors(p) {
+    const combos = p.variantCombinations;
+    if (!Array.isArray(combos)) return [];
+    const out = [];
+    for (const c of combos) {
+      for (const [group, value] of Object.entries(c.options ?? {})) {
+        if (isColorGroup(group) && value && !out.includes(value)) out.push(value);
+      }
+    }
+    return out;
+  }
+
+  // collectColors: уникальные цвета по каталогу; пустой → секцию «Цвет» скрыть.
+  function collectColors(products) {
+    const out = [];
+    for (const p of products) {
+      for (const c of productColors(p)) {
+        if (!out.includes(c)) out.push(c);
+      }
+    }
+    return out;
+  }
+
+  function filterByColors(products, colors) {
+    if (!Array.isArray(colors) || colors.length === 0) return products;
+    const wanted = colors.map((c) => c.toLowerCase());
+    return products.filter((p) => productColors(p).some((c) => wanted.includes(c.toLowerCase())));
+  }
+
+  // sortProducts (новый массив): popularity — исходный; new — reverse; price-asc/desc.
+  function sortProducts(products, sort) {
+    if (sort === "new") return products.slice().reverse();
+    if (sort === "price-asc") return products.slice().sort((a, b) => parsePriceNumber(a.price) - parsePriceNumber(b.price));
+    if (sort === "price-desc") return products.slice().sort((a, b) => parsePriceNumber(b.price) - parsePriceNumber(a.price));
+    return products.slice();
+  }
+
+  // ─────────────────────── Каталог: state + orchestration ───────────────────────
   // Реальные товары (Option B): на published-сайте /data/products.json реальный →
   // перерисовываем demo-grid. На demo-сборке loadRealProducts() вернёт null → no-op.
   // Единый filter-state поверх отфильтрованного списка: коллекция (из настройки
   // конструктора ИЛИ ?collection=) + наличие/стоимость/цвет/сортировка + пагинация.
   // top- и side-раскладки = два независимых набора контролов: обработчики вешаем
   // на ОБА, пишем в общий state, перерисовываем ОБА грида.
-  let catalogCollections: RealCollection[] | null = null;
-  let catalogProducts: RealProduct[] | null = null;
-  let availableColors: string[] = [];
+  let catalogCollections = null;
+  let catalogProducts = null;
+  let availableColors = [];
 
   const filters = {
-    stock: "all" as StockFilter,
-    priceMin: null as number | null,
-    priceMax: null as number | null,
-    colors: [] as string[],
-    sort: "popularity" as SortKey,
+    stock: "all",
+    priceMin: null,
+    priceMax: null,
+    colors: [],
+    sort: "popularity",
     page: 1,
   };
 
-  // Размер «страницы» пагинации (columns*3 или 12) — из data-page-size секции.
-  function pageSize(): number {
-    const root = document.querySelector<HTMLElement>('[data-catalog-layout]');
-    const n = parseInt(root?.getAttribute("data-page-size") ?? "", 10);
-    return Number.isFinite(n) && n > 0 ? n : 12;
+  // Размер «страницы» пагинации (columns*3 или 12) — из data-page-size секции
+  // (фолбэк на pageSize из define:vars).
+  function getPageSize() {
+    const root = document.querySelector('[data-catalog-layout]');
+    const n = parseInt((root && root.getAttribute("data-page-size")) ?? "", 10);
+    if (Number.isFinite(n) && n > 0) return n;
+    return Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 12;
   }
 
   // Коллекция: СНАЧАЛА настройка конструктора (data-collection-slug на секции —
   // приходит из prop collectionSlug на page-collection), ИНАЧЕ ?collection= из URL
   // (ссылки тайлов Collections/Gallery + клики по фильтру коллекций).
-  function currentCollectionRef(): string | null {
-    const fromSetting = document
-      .querySelector<HTMLElement>('[data-catalog-layout]')
-      ?.getAttribute("data-collection-slug");
+  function currentCollectionRef() {
+    const root = document.querySelector('[data-catalog-layout]');
+    const fromSetting = root && root.getAttribute("data-collection-slug");
     if (fromSetting && fromSetting.trim()) return fromSetting.trim();
     return new URLSearchParams(window.location.search).get("collection");
   }
 
   // Применяет весь конвейер: коллекция → наличие → цена → цвет → сортировка.
-  function getFilteredSorted(products: RealProduct[]): RealProduct[] {
+  function getFilteredSorted(products) {
     const ref = currentCollectionRef();
     let items = ref ? filterByCollection(products, catalogCollections, ref) : products;
     items = filterByStock(items, filters.stock);
@@ -439,7 +674,7 @@ const totalCount = demoProducts.length;
     if (!products) return; // demo-сборка
     const items = getFilteredSorted(products);
     const total = items.length;
-    const size = pageSize();
+    const size = getPageSize();
     const shown = Math.min(items.length, filters.page * size);
     const visible = items.slice(0, shown);
     const html = visible
@@ -452,48 +687,48 @@ const totalCount = demoProducts.length;
     updateCount('[data-nt="catalog-count"]', total); // счётчик = total отфильтрованного
     // Кнопки «Смотреть ещё»: скрыты, когда показаны все товары.
     for (const btn of Array.from(
-      document.querySelectorAll<HTMLButtonElement>("[data-action='load-more']"),
+      document.querySelectorAll("[data-action='load-more']"),
     )) {
       btn.style.display = shown >= total ? "none" : "";
     }
   }
 
-  function resetPageAndRender(): void {
+  function resetPageAndRender() {
     filters.page = 1;
     renderCatalog();
   }
 
   // ─────────── Наличие (top: <p> в NtFilterPanel[stock]; side: radio) ───────────
-  const STOCK_BY_INDEX: StockFilter[] = ["all", "in", "out"]; // порядок <p> в панели
+  const STOCK_BY_INDEX = ["all", "in", "out"]; // порядок <p> в панели
   const STOCK_ACTIVE = "rgb(var(--color-text,0_0_0))";
   const STOCK_MUTED = "rgb(var(--color-muted,153_153_153))";
 
-  function syncStockUi(): void {
+  function syncStockUi() {
     // top: подсветка активного <p> в панели stock
     for (const panel of Array.from(
-      document.querySelectorAll<HTMLElement>('[data-nt="filter-panel"][data-nt-panel="stock"]'),
+      document.querySelectorAll('[data-nt="filter-panel"][data-nt-panel="stock"]'),
     )) {
-      const ps = Array.from(panel.querySelectorAll<HTMLElement>("p"));
+      const ps = Array.from(panel.querySelectorAll("p"));
       ps.forEach((p, i) => {
         p.style.color = STOCK_BY_INDEX[i] === filters.stock ? STOCK_ACTIVE : STOCK_MUTED;
       });
     }
     // side: отметить нужный radio
     for (const input of Array.from(
-      document.querySelectorAll<HTMLInputElement>('input[name^="nt-stock-side"]'),
+      document.querySelectorAll('input[name^="nt-stock-side"]'),
     )) {
       input.checked = input.value === filters.stock;
     }
   }
 
-  function bindStock(): void {
+  function bindStock() {
     // top: клики по <p> панели stock (вёрстка статична — слушаем сами пункты)
     for (const panel of Array.from(
-      document.querySelectorAll<HTMLElement>('[data-nt="filter-panel"][data-nt-panel="stock"]'),
+      document.querySelectorAll('[data-nt="filter-panel"][data-nt-panel="stock"]'),
     )) {
       if (panel.getAttribute("data-cf-stock") === "1") continue;
       panel.setAttribute("data-cf-stock", "1");
-      const ps = Array.from(panel.querySelectorAll<HTMLElement>("p"));
+      const ps = Array.from(panel.querySelectorAll("p"));
       ps.forEach((p, i) => {
         p.style.cursor = "pointer";
         p.addEventListener("click", () => {
@@ -505,7 +740,7 @@ const totalCount = demoProducts.length;
     }
     // side: radio change
     for (const input of Array.from(
-      document.querySelectorAll<HTMLInputElement>('input[name^="nt-stock-side"]'),
+      document.querySelectorAll('input[name^="nt-stock-side"]'),
     )) {
       if (input.getAttribute("data-cf-stock") === "1") continue;
       input.setAttribute("data-cf-stock", "1");
@@ -523,17 +758,17 @@ const totalCount = demoProducts.length;
   // NT-вёрстка price-rows = <span>от</span><span>{value}</span> (display, не input).
   // Чтобы не переписывать вёрстку, заменяем <span> со значением на <input> того же
   // размера при гидрации. Левая подпись «от»/«до» и «₽» сохраняются.
-  function bindPrice(): void {
+  function bindPrice() {
     for (const rows of Array.from(
-      document.querySelectorAll<HTMLElement>('[data-nt="filter-price-rows"]'),
+      document.querySelectorAll('[data-nt="filter-price-rows"]'),
     )) {
       if (rows.getAttribute("data-cf-price") === "1") continue;
       rows.setAttribute("data-cf-price", "1");
-      const lines = Array.from(rows.children) as HTMLElement[]; // [0]=от, [1]=до
+      const lines = Array.from(rows.children); // [0]=от, [1]=до
       lines.forEach((line, idx) => {
         // value-узел = первый <span> внутри вложенного контейнера значения
-        const valueWrap = line.querySelector<HTMLElement>(":scope > div");
-        const valueSpan = valueWrap?.querySelector<HTMLElement>("span");
+        const valueWrap = line.querySelector(":scope > div");
+        const valueSpan = valueWrap && valueWrap.querySelector("span");
         if (!valueWrap || !valueSpan) return;
         const input = document.createElement("input");
         input.type = "text";
@@ -549,11 +784,11 @@ const totalCount = demoProducts.length;
         input.addEventListener("input", () => {
           const raw = input.value.replace(/[^\d]/g, "");
           const v = raw ? parseInt(raw, 10) : null;
-          if (idx === 0) filters.priceMin = Number.isFinite(v as number) ? v : null;
-          else filters.priceMax = Number.isFinite(v as number) ? v : null;
+          if (idx === 0) filters.priceMin = Number.isFinite(v) ? v : null;
+          else filters.priceMax = Number.isFinite(v) ? v : null;
           // зеркалим значение в одноимённые инпуты другого набора (top↔side)
           for (const other of Array.from(
-            document.querySelectorAll<HTMLInputElement>(
+            document.querySelectorAll(
               `[data-price-input="${idx === 0 ? "min" : "max"}"]`,
             ),
           )) {
@@ -566,7 +801,7 @@ const totalCount = demoProducts.length;
   }
 
   // ─────────── Цвет (data-driven; нет данных → секция скрыта) ───────────
-  function colorOptionHtml(value: string, active: boolean, sidebar: boolean): string {
+  function colorOptionHtml(value, active, sidebar) {
     if (sidebar) {
       const ring = `relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${active ? "border-[rgb(var(--color-text,0_0_0))]" : "border-[rgb(var(--color-muted,153_153_153))]"} after:pointer-events-none after:absolute after:h-[10px] after:w-[10px] after:rounded-full after:bg-[rgb(var(--color-text,0_0_0))] after:content-[''] ${active ? "after:opacity-100" : "after:opacity-0"}`;
       return `<button type="button" data-color-option="${escapeHtml(value)}" aria-pressed="${active}" class="flex w-full cursor-pointer items-center gap-2 text-left font-manrope text-[16px] font-normal leading-normal"><span aria-hidden="true" class="${ring}"></span><span class="${active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,153_153_153))]"}">${escapeHtml(value)}</span></button>`;
@@ -574,10 +809,10 @@ const totalCount = demoProducts.length;
     return `<p data-color-option="${escapeHtml(value)}" aria-pressed="${active}" class="cursor-pointer transition-colors ${active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,153_153_153))] hover:text-[rgb(var(--color-text,0_0_0))]"}">${escapeHtml(value)}</p>`;
   }
 
-  function syncColorUi(): void {
+  function syncColorUi() {
     // top: панель color — перерисовываем <p>-список реальными цветами
     for (const panel of Array.from(
-      document.querySelectorAll<HTMLElement>('[data-nt="filter-panel"][data-nt-panel="color"]'),
+      document.querySelectorAll('[data-nt="filter-panel"][data-nt-panel="color"]'),
     )) {
       panel.innerHTML = availableColors
         .map((c) => colorOptionHtml(c, filters.colors.includes(c), false))
@@ -586,7 +821,7 @@ const totalCount = demoProducts.length;
     // side: секция цвета в NtFilterSidebar (4-я секция aside) — список радио-кнопок.
     // Реальные цвета заменяют demo black/white/gray внутри контейнера секции.
     for (const wrap of Array.from(
-      document.querySelectorAll<HTMLElement>("[data-cf-color-side]"),
+      document.querySelectorAll("[data-cf-color-side]"),
     )) {
       wrap.innerHTML = availableColors
         .map((c) => colorOptionHtml(c, filters.colors.includes(c), true))
@@ -594,8 +829,8 @@ const totalCount = demoProducts.length;
     }
   }
 
-  function onColorOptionClick(ev: Event): void {
-    const btn = (ev.target as HTMLElement).closest<HTMLElement>("[data-color-option]");
+  function onColorOptionClick(ev) {
+    const btn = ev.target.closest("[data-color-option]");
     if (!btn) return;
     const value = btn.getAttribute("data-color-option") ?? "";
     if (!value) return;
@@ -608,22 +843,22 @@ const totalCount = demoProducts.length;
     resetPageAndRender();
   }
 
-  function bindColors(): void {
+  function bindColors() {
     // top: details-обёртка фильтра «Цвет» = третий details в баре. Маркируем панель.
     const colorPanels = Array.from(
-      document.querySelectorAll<HTMLElement>('[data-nt="filter-panel"][data-nt-panel="color"]'),
+      document.querySelectorAll('[data-nt="filter-panel"][data-nt-panel="color"]'),
     );
     // side: NtFilterSidebar — найти секцию «Цвет» (последний div с <p>Цвет</p>),
     // её внутренний список значений превратить в управляемый контейнер.
-    const sideColorWraps: HTMLElement[] = [];
+    const sideColorWraps = [];
     for (const sidebar of Array.from(
-      document.querySelectorAll<HTMLElement>('[data-nt="filter-sidebar"]'),
+      document.querySelectorAll('[data-nt="filter-sidebar"]'),
     )) {
-      for (const section of Array.from(sidebar.children) as HTMLElement[]) {
-        const title = section.querySelector<HTMLElement>(":scope > p");
+      for (const section of Array.from(sidebar.children)) {
+        const title = section.querySelector(":scope > p");
         if (title && (title.textContent ?? "").trim().toLowerCase() === "цвет") {
           // контейнер значений = div после заголовка (flex flex-col gap-3)
-          const list = section.querySelector<HTMLElement>(":scope > div");
+          const list = section.querySelector(":scope > div");
           if (list) {
             list.setAttribute("data-cf-color-side", "1");
             sideColorWraps.push(list);
@@ -635,12 +870,12 @@ const totalCount = demoProducts.length;
     if (availableColors.length === 0) {
       // Цвет-данных нет → скрываем нерабочее demo: top-details «Цвет» + side-секцию.
       for (const panel of colorPanels) {
-        const details = panel.closest<HTMLElement>("details");
+        const details = panel.closest("details");
         if (details) details.style.display = "none";
       }
       for (const list of sideColorWraps) {
         const section = list.parentElement;
-        if (section) (section as HTMLElement).style.display = "none";
+        if (section) section.style.display = "none";
       }
       return;
     }
@@ -660,21 +895,21 @@ const totalCount = demoProducts.length;
 
   // ─────────── Сортировка (top: <p> в NtFilterPanel[sort]; side: radio) ───────────
   // Порядок <p> в NtFilterPanel[sort]: «По новизне» / «Сначала дешевые» / «Сначала дорогие».
-  const SORT_PANEL_BY_INDEX: SortKey[] = ["new", "price-asc", "price-desc"];
+  const SORT_PANEL_BY_INDEX = ["new", "price-asc", "price-desc"];
   const SORT_PANEL_LABELS = ["По новизне", "Сначала дешевые", "Сначала дорогие"];
 
-  function syncSortUi(): void {
+  function syncSortUi() {
     // top: подсветка активного <p> + лейбл триггера сортировки
     for (const panel of Array.from(
-      document.querySelectorAll<HTMLElement>('[data-nt="filter-panel"][data-nt-panel="sort"]'),
+      document.querySelectorAll('[data-nt="filter-panel"][data-nt-panel="sort"]'),
     )) {
-      const ps = Array.from(panel.querySelectorAll<HTMLElement>("p"));
+      const ps = Array.from(panel.querySelectorAll("p"));
       ps.forEach((p, i) => {
         p.style.color = SORT_PANEL_BY_INDEX[i] === filters.sort ? STOCK_ACTIVE : STOCK_MUTED;
       });
       // лейбл триггера (summary span перед панелью details)
-      const details = panel.closest<HTMLElement>("details");
-      const labelSpan = details?.querySelector<HTMLElement>("summary span span");
+      const details = panel.closest("details");
+      const labelSpan = details && details.querySelector("summary span span");
       if (labelSpan) {
         const idx = SORT_PANEL_BY_INDEX.indexOf(filters.sort);
         labelSpan.textContent = idx >= 0 ? SORT_PANEL_LABELS[idx] : "По популярности";
@@ -682,31 +917,32 @@ const totalCount = demoProducts.length;
     }
     // side: radio. value: popularity/new/price-desc/price-asc
     for (const input of Array.from(
-      document.querySelectorAll<HTMLInputElement>('input[name^="nt-sort-side"]'),
+      document.querySelectorAll('input[name^="nt-sort-side"]'),
     )) {
       input.checked = input.value === filters.sort;
     }
   }
 
-  function bindSort(): void {
+  function bindSort() {
     for (const panel of Array.from(
-      document.querySelectorAll<HTMLElement>('[data-nt="filter-panel"][data-nt-panel="sort"]'),
+      document.querySelectorAll('[data-nt="filter-panel"][data-nt-panel="sort"]'),
     )) {
       if (panel.getAttribute("data-cf-sort") === "1") continue;
       panel.setAttribute("data-cf-sort", "1");
-      const ps = Array.from(panel.querySelectorAll<HTMLElement>("p"));
+      const ps = Array.from(panel.querySelectorAll("p"));
       ps.forEach((p, i) => {
         p.style.cursor = "pointer";
         p.addEventListener("click", () => {
           filters.sort = SORT_PANEL_BY_INDEX[i] ?? "popularity";
           syncSortUi();
           resetPageAndRender();
-          panel.closest<HTMLElement>("details")?.removeAttribute("open");
+          const details = panel.closest("details");
+          if (details) details.removeAttribute("open");
         });
       });
     }
     for (const input of Array.from(
-      document.querySelectorAll<HTMLInputElement>('input[name^="nt-sort-side"]'),
+      document.querySelectorAll('input[name^="nt-sort-side"]'),
     )) {
       if (input.getAttribute("data-cf-sort") === "1") continue;
       input.setAttribute("data-cf-sort", "1");
@@ -722,13 +958,11 @@ const totalCount = demoProducts.length;
   }
 
   // ─────────── Пагинация «Смотреть ещё» ───────────
-  function bindLoadMore(): void {
+  function bindLoadMore() {
     if (document.body.getAttribute("data-cf-loadmore") === "1") return;
     document.body.setAttribute("data-cf-loadmore", "1");
     document.addEventListener("click", (event) => {
-      const button = (event.target as HTMLElement).closest<HTMLButtonElement>(
-        "[data-action='load-more']",
-      );
+      const button = event.target.closest("[data-action='load-more']");
       if (!button) return;
       filters.page += 1;
       renderCatalog();
@@ -738,7 +972,7 @@ const totalCount = demoProducts.length;
   // Опция фильтра: side — радио в манере NtRadioField 1920 (кольцо 24px, точка 10px),
   // top — пункт в манере NtFilterPanel (активный = цвет текста, остальные = muted).
   // Цвета — токены схем с фоллбеками к значениям DS (#000000 / #999999).
-  function collectionOptionHtml(value: string, name: string, active: boolean, sidebar: boolean): string {
+  function collectionOptionHtml(value, name, active, sidebar) {
     if (sidebar) {
       const ring = `relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${active ? "border-[rgb(var(--color-text,0_0_0))]" : "border-[rgb(var(--color-muted,153_153_153))]"} after:pointer-events-none after:absolute after:h-[10px] after:w-[10px] after:rounded-full after:bg-[rgb(var(--color-text,0_0_0))] after:content-[''] ${active ? "after:opacity-100" : "after:opacity-0"}`;
       return `<li><button type="button" data-collection-option="${escapeHtml(value)}" aria-pressed="${active}" class="flex w-full cursor-pointer items-center gap-2 text-left font-manrope text-[16px] font-normal leading-normal"><span aria-hidden="true" class="${ring}"></span><span class="${active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,153_153_153))]"}">${escapeHtml(name)}</span></button></li>`;
@@ -747,13 +981,13 @@ const totalCount = demoProducts.length;
   }
 
   // Перерисовывает опции и активное состояние во ВСЕХ контейнерах фильтра коллекций
-  function syncCollectionsUi(current: RealCollection | null): void {
+  function syncCollectionsUi(current) {
     const cols = catalogCollections;
     if (!cols) return;
     for (const box of Array.from(
-      document.querySelectorAll<HTMLElement>('[data-nt="catalog-collections-filter"]'),
+      document.querySelectorAll('[data-nt="catalog-collections-filter"]'),
     )) {
-      const list = box.querySelector<HTMLElement>("[data-collections-options]");
+      const list = box.querySelector("[data-collections-options]");
       if (!list) continue;
       const sidebar = box.getAttribute("data-collections-style") === "sidebar";
       list.innerHTML =
@@ -768,13 +1002,13 @@ const totalCount = demoProducts.length;
             ),
           )
           .join("");
-      const label = box.querySelector<HTMLElement>("[data-collections-label]");
-      if (label) label.textContent = current?.name ?? "Коллекции";
+      const label = box.querySelector("[data-collections-label]");
+      if (label) label.textContent = (current && current.name) ?? "Коллекции";
     }
   }
 
-  function onCollectionOptionClick(ev: Event): void {
-    const btn = (ev.target as HTMLElement).closest<HTMLElement>("[data-collection-option]");
+  function onCollectionOptionClick(ev) {
+    const btn = ev.target.closest("[data-collection-option]");
     if (!btn) return;
     const value = btn.getAttribute("data-collection-option") ?? "";
     const params = new URLSearchParams(window.location.search);
@@ -782,17 +1016,18 @@ const totalCount = demoProducts.length;
     else params.delete("collection");
     const qs = params.toString();
     window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
-    const col = catalogCollections?.find((c) => (c.slug ?? c.id) === value) ?? null;
+    const col = (catalogCollections && catalogCollections.find((c) => (c.slug ?? c.id) === value)) ?? null;
     syncCollectionsUi(col); // активное состояние синхронно в обоих контейнерах
     // details-дропдаун top-раскладки закрываем; для секции сайдбара — безвредный no-op
-    btn.closest<HTMLElement>('[data-nt="catalog-collections-filter"]')?.removeAttribute("open");
+    const box = btn.closest('[data-nt="catalog-collections-filter"]');
+    if (box) box.removeAttribute("open");
     resetPageAndRender();
   }
 
   async function initCollectionsFilter() {
     // Контейнеры обеих раскладок: details-дропдаун (top) и секция сайдбара (side)
     const boxes = Array.from(
-      document.querySelectorAll<HTMLElement>('[data-nt="catalog-collections-filter"]'),
+      document.querySelectorAll('[data-nt="catalog-collections-filter"]'),
     );
     if (boxes.length === 0) return;
     catalogCollections = await loadRealCollections();
@@ -807,9 +1042,8 @@ const totalCount = demoProducts.length;
       box.setAttribute("data-cf-hydrated", "true");
       box.style.display = "";
       // Слушатель на ul переживает перерисовку innerHTML в syncCollectionsUi
-      box
-        .querySelector<HTMLElement>("[data-collections-options]")
-        ?.addEventListener("click", onCollectionOptionClick);
+      const list = box.querySelector("[data-collections-options]");
+      if (list) list.addEventListener("click", onCollectionOptionClick);
     }
   }
 
@@ -832,4 +1066,5 @@ const totalCount = demoProducts.length;
 
   hydrateCatalog();
   document.addEventListener("astro:page-load", hydrateCatalog);
+  })();
 </script>

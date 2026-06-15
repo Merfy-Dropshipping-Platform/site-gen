@@ -1083,7 +1083,11 @@ const PREVIEW_NAV_AGENT_INLINE = `
       // Pupa parity = Puck native DraggableComponent overlay.
       // hover: solid azure-09 (#cfdff0) + light azure-08 background tint.
       // selected: solid azure-07 (#88b0da).
-      '[data-puck-component-id]{position:relative}',
+      // НЕ перебиваем sticky Header: этот стиль инжектится appendChild'ом ПОЗЖЕ
+      // previewTailwind, и [data-puck-component-id] (0,0,1,0) при равной специфичности
+      // с .sticky выигрывал → «Статичность Всегда»/scroll-up не липли в превью (баг
+      // тестера). Исключаем sticky-классом и inline-стилем (vanilla — inline).
+      '[data-puck-component-id]:not(.sticky):not([style*="sticky"]){position:relative}',
       // NB: НЕ ставим z-index на section-hover/selected — это перебивает sticky
       // header z-50 → Hero z-10 поднимается выше Header → submenu panel недоступен.
       // Outline это border-like rendering, в z-stack не участвует.

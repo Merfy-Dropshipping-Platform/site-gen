@@ -1254,6 +1254,14 @@ const PREVIEW_NAV_AGENT_INLINE = `
         for (var pi = 0; pi < parts.length; pi++) {
           if (parts[pi]) wrap.classList.add(parts[pi]);
         }
+        // Некоторые темы (vanilla) задают sticky inline-стилем, а не классом —
+        // class-замена выше их не трогает. Синхронизируем inline position, иначе
+        // «Статичность» не применяется в превью для этих тем (баг тестера).
+        if (newVal === 'always' || newVal === 'scroll-up') {
+          wrap.style.position = 'sticky'; wrap.style.top = '0'; wrap.style.zIndex = '50';
+        } else {
+          wrap.style.position = ''; wrap.style.top = ''; wrap.style.zIndex = '';
+        }
         return true;
       },
       navigationLinks: function (el, oldVal, newVal) {

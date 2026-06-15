@@ -110,6 +110,11 @@ const demoProducts: DemoProduct[] = [
   { id: "bag-8", name: "Сумка", price: "5 990 ₽", oldPrice: "7 990 ₽", discount: true, image: "/images/Товар_8.png" },
 ];
 const totalCount = demoProducts.length;
+// Лоадер: число скелетон-карточек, показываемых пока идёт fetch живого API
+// (одна «страница» пагинации). Demo-моки больше НЕ в начальном гриде — они
+// уходят в <template> и показываются только если магазин реально пуст.
+const skeletonCount = pageSize;
+const skeletons = Array.from({ length: skeletonCount });
 ---
 
 <section
@@ -127,6 +132,16 @@ const totalCount = demoProducts.length;
       и билд) инжектит window.__MERFY_CATALOG_LAYOUT__. Скрипт стоит ДО вариантов,
       чтобы переключение не мигало; без глобала остаётся раскладка из props. */}
   <script is:inline>var l=window.__MERFY_CATALOG_LAYOUT__; if(l==='top'||l==='side'){document.currentScript.parentElement.setAttribute('data-catalog-layout',l);}</script>
+  {/* Demo-моки для ПУСТОГО магазина (0 товаров): не в начальном гриде (там
+      скелетон-лоадер), хранятся скрытыми и подставляются клиентом ТОЛЬКО если у
+      магазина реально нет товаров — красивая заглушка нового сайта. */}
+  <template data-nt="catalog-demo">
+    {demoProducts.map((product) => (
+      <li data-product-id={product.id}>
+        <RoseProductCard product={product} />
+      </li>
+    ))}
+  </template>
   <div
     class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-14 pt-10 sm:px-5 sm:pb-16 sm:pt-12 md:px-10 md:pb-[100px] md:pt-16 lg:px-16 lg:pb-[120px] lg:pt-20 xl:px-20 xl:pb-[140px] xl:pt-24 2xl:px-[280px]"
   >
@@ -222,9 +237,15 @@ const totalCount = demoProducts.length;
           role="list"
           data-nt="catalog-grid"
         >
-          {demoProducts.map((product) => (
-            <li data-product-id={product.id}>
-              <RoseProductCard product={product} />
+          {skeletons.map(() => (
+            <li data-nt="catalog-skeleton" aria-hidden="true">
+              <div class="flex w-full flex-col gap-5">
+                <div class="aspect-[318/444] w-full animate-pulse rounded-[8px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+                <div class="flex w-full flex-col gap-1">
+                  <div class="h-4 w-2/3 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+                  <div class="h-4 w-1/3 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+                </div>
+              </div>
             </li>
           ))}
         </ul>
@@ -233,11 +254,11 @@ const totalCount = demoProducts.length;
           <button
             type="button"
             data-action="load-more"
+            style="display:none"
             class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 py-[10px] font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
           >Смотреть ещё</button>
           <span class="font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-muted,153_153_153))]" data-nt="catalog-count">
-            {totalCount} товаров
-          </span>
+                      </span>
         </div>
       </div>
 
@@ -266,9 +287,15 @@ const totalCount = demoProducts.length;
             role="list"
             data-nt="catalog-grid"
           >
-            {demoProducts.map((product) => (
-              <li data-product-id={product.id}>
-                <RoseProductCard product={product} />
+            {skeletons.map(() => (
+              <li data-nt="catalog-skeleton" aria-hidden="true">
+                <div class="flex w-full flex-col gap-5">
+                  <div class="aspect-[318/444] w-full animate-pulse rounded-[8px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+                  <div class="flex w-full flex-col gap-1">
+                    <div class="h-4 w-2/3 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+                    <div class="h-4 w-1/3 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+                  </div>
+                </div>
               </li>
             ))}
           </ul>
@@ -277,13 +304,13 @@ const totalCount = demoProducts.length;
             <button
               type="button"
               data-action="load-more"
+              style="display:none"
               class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-manrope text-[12px] font-normal leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95 sm:text-[14px] md:text-[16px]"
             >
               Смотреть ещё
             </button>
             <span class="font-manrope text-[12px] font-normal leading-normal text-[rgb(var(--color-muted,153_153_153))] sm:text-[14px] md:text-[16px]" data-nt="catalog-count">
-              {totalCount} товаров
-            </span>
+                          </span>
           </div>
         </div>
       </div>
@@ -735,7 +762,20 @@ const totalCount = demoProducts.length;
 
   async function renderCatalog() {
     const products = catalogProducts ?? (catalogProducts = await loadRealProducts());
-    if (!products) return; // demo-сборка
+    const grids = Array.from(document.querySelectorAll('[data-nt="catalog-grid"]'));
+    const loadMoreBtns = Array.from(document.querySelectorAll("[data-action='load-more']"));
+    // ── Состояние 3: магазин ПУСТ (fetch вернул 0 / demo-сборка) → demo-заглушка ──
+    // Скелетон-лоадер в гриде заменяется demo-моками из <template>; кнопки нет.
+    if (!products || products.length === 0) {
+      const demoTpl = document.querySelector('[data-nt="catalog-demo"]');
+      const demoHtml = demoTpl ? demoTpl.innerHTML : "";
+      const demoN = demoTpl ? demoTpl.content.querySelectorAll("li").length : 0;
+      for (const grid of grids) grid.innerHTML = demoHtml;
+      updateCount('[data-nt="catalog-count"]', demoN);
+      for (const btn of loadMoreBtns) btn.style.display = "none";
+      return;
+    }
+    // ── Состояние 2: есть реальные товары → показ по pageSize + «Смотреть ещё» ──
     const items = getFilteredSorted(products);
     const total = items.length;
     const size = getPageSize();
@@ -745,14 +785,11 @@ const totalCount = demoProducts.length;
       .map((p) => `<li data-product-id="${escapeHtml(p.id)}">${renderCardHtml(p)}</li>`)
       .join("");
     // Гриды ОБЕИХ раскладок (top и side) перерисовываются одинаково
-    for (const grid of Array.from(document.querySelectorAll('[data-nt="catalog-grid"]'))) {
-      grid.innerHTML = html;
-    }
+    for (const grid of grids) grid.innerHTML = html;
     updateCount('[data-nt="catalog-count"]', total); // счётчик = total отфильтрованного
-    // Кнопки «Смотреть ещё»: скрыты, когда показаны все товары.
-    for (const btn of Array.from(
-      document.querySelectorAll("[data-action='load-more']"),
-    )) {
+    // Кнопки «Смотреть ещё»: видны ТОЛЬКО когда показаны не все товары
+    // (скрыты в SSG → появляются здесь; на коллекции из 12 не появятся).
+    for (const btn of loadMoreBtns) {
       btn.style.display = shown >= total ? "none" : "";
     }
   }

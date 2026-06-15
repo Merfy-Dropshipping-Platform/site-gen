@@ -65,9 +65,10 @@ const {
   collectionSlug,
 } = Astro.props as Props;
 
-// Кол-во товаров на «страницу» пагинации: columns*3 (3 ряда) или 12 по умолчанию.
-const colsNum = Number(columns);
-const pageSize = Number.isFinite(colsNum) && colsNum > 0 ? colsNum * 3 : 12;
+// Кол-во товаров на «страницу» пагинации: фиксировано 12 (показывать по 12,
+// «Смотреть ещё» добавляет 12 — независимо от числа колонок грида). Раньше было
+// columns*3 → 6/9 в зависимости от колонок, что путало.
+const pageSize = 12;
 
 // Заголовок/подзаголовок: aiText в puck может быть строкой или { text }.
 function pickText(v: unknown, fallback: string): string {

@@ -380,10 +380,85 @@ const totalCount = demoProducts.length;
   let cachedProducts; // undefined — не грузили; null — demo/пусто/ошибка
   let cachedCollections;
 
-  // loadRealProducts: live — /data/products.json; превью — storefront-data по
-  // window.__MERFY_SITE_ID__ (фолбэк на siteId из define:vars). null → demo.
+  // ЖИВОЙ storefront API (спек 098 — «не products.json»). store_id (shopId) = siteId
+  // (storefront-data.controller: «Products are stored with shopId = siteId»).
+  // apiBase: на live (*.merfy.ru) cross-origin к gateway (CORS пропускает *.merfy.ru);
+  // в превью iframe на gateway-origin → тот же URL same-origin.
+  const apiBase =
+    (typeof window !== "undefined" && window.__MERFY_API_BASE__) || "https://gateway.merfy.ru";
+  const storeId =
+    (typeof window !== "undefined" && window.__MERFY_SITE_ID__) || siteId || undefined;
+
+  // Цена из API — в КОПЕЙКАХ (basePrice "79000.00" / variant.price 79000).
+  function toCents(v) {
+    const n = typeof v === "string" ? parseFloat(v) : v;
+    return Number.isFinite(n) ? n : null;
+  }
+  function variantMinCents(p) {
+    const vc = p.variantCombinations;
+    if (Array.isArray(vc) && vc.length) {
+      const ps = vc.map((v) => toCents(v.price)).filter((n) => n !== null && n > 0);
+      if (ps.length) return Math.min.apply(null, ps);
+    }
+    return null;
+  }
+  // Маппинг товара /api/store/products → форма клиента каталога (name/price-в-рублях/
+  // collections). Цены копейки→рубли; title→name; handle→slug; productCollections→collections.
+  function mapApiProduct(p) {
+    const cents =
+      (p.hasVariants ? variantMinCents(p) : null) ??
+      toCents(p.basePrice) ??
+      variantMinCents(p) ??
+      0;
+    const oldCents = toCents(p.compareAtPrice);
+    const coll = Array.isArray(p.productCollections)
+      ? p.productCollections.map((pc) => ({
+          id: (pc && (pc.collectionId || pc.id || (pc.collection && pc.collection.id))) || undefined,
+          slug: (pc && (pc.slug || (pc.collection && pc.collection.slug))) || undefined,
+        }))
+      : [];
+    return {
+      id: p.id,
+      name: p.title || p.name || "",
+      price: cents / 100,
+      oldPrice: oldCents && oldCents > 0 ? oldCents / 100 : null,
+      slug: p.handle || p.slug,
+      images: Array.isArray(p.images) ? p.images : [],
+      hasVariants: !!p.hasVariants,
+      variantCombinations: Array.isArray(p.variantCombinations) ? p.variantCombinations : [],
+      collections: coll,
+    };
+  }
+
+  // loadRealProducts: ЖИВОЙ API /api/store/products (постранично — все товары магазина,
+  // limit=100/стр). Фолбэк — статичный /data/products.json (resilience, если API недоступен).
   async function loadRealProducts() {
     if (cachedProducts !== undefined) return cachedProducts;
+    if (storeId) {
+      try {
+        const all = [];
+        let page = 1;
+        let total = Infinity;
+        while (all.length < total && page <= 50) {
+          const res = await fetch(
+            `${apiBase}/api/store/products?store_id=${encodeURIComponent(storeId)}&page=${page}&limit=100`,
+          );
+          if (!res.ok) break;
+          const json = await res.json();
+          const prods = Array.isArray(json.products) ? json.products.map(mapApiProduct) : [];
+          all.push.apply(all, prods);
+          total = typeof json.total === "number" ? json.total : all.length;
+          if (prods.length === 0) break;
+          page++;
+        }
+        if (all.length > 0) {
+          cachedProducts = all;
+          return cachedProducts;
+        }
+      } catch {
+        /* API недоступен — фолбэк на статичный products.json ниже */
+      }
+    }
     try {
       const res = await fetch("/data/products.json");
       if (res.ok) {
@@ -394,32 +469,37 @@ const totalCount = demoProducts.length;
         }
       }
     } catch {
-      /* файла нет — пробуем preview-фолбэк ниже */
-    }
-    const sid =
-      (typeof window !== "undefined" && window.__MERFY_SITE_ID__) || siteId || undefined;
-    if (sid) {
-      try {
-        const res = await fetch(`/api/sites/${encodeURIComponent(sid)}/storefront-data`);
-        if (res.ok) {
-          const payload = await res.json();
-          const products = payload && payload.products;
-          if (Array.isArray(products) && products.length > 0) {
-            cachedProducts = products;
-            return cachedProducts;
-          }
-        }
-      } catch {
-        /* preview-фолбэк не удался */
-      }
+      /* нет файла */
     }
     cachedProducts = null;
     return cachedProducts;
   }
 
-  // loadRealCollections: тем же двухступенчатым путём, что loadRealProducts.
+  // loadRealCollections: ЖИВОЙ API /api/store/collections. Фолбэк — collections.json.
   async function loadRealCollections() {
     if (cachedCollections !== undefined) return cachedCollections;
+    if (storeId) {
+      try {
+        const res = await fetch(
+          `${apiBase}/api/store/collections?store_id=${encodeURIComponent(storeId)}&limit=100`,
+        );
+        if (res.ok) {
+          const json = await res.json();
+          const cols = Array.isArray(json.collections) ? json.collections : [];
+          if (cols.length > 0) {
+            cachedCollections = cols.map((c) => ({
+              id: c.id,
+              name: c.title || c.name,
+              slug: c.slug || c.handle,
+              productIds: Array.isArray(c.productIds) ? c.productIds : undefined,
+            }));
+            return cachedCollections;
+          }
+        }
+      } catch {
+        /* API недоступен — фолбэк ниже */
+      }
+    }
     try {
       const res = await fetch("/data/collections.json");
       if (res.ok) {
@@ -430,24 +510,7 @@ const totalCount = demoProducts.length;
         }
       }
     } catch {
-      /* файла нет — preview-фолбэк ниже */
-    }
-    const sid =
-      (typeof window !== "undefined" && window.__MERFY_SITE_ID__) || siteId || undefined;
-    if (sid) {
-      try {
-        const res = await fetch(`/api/sites/${encodeURIComponent(sid)}/storefront-data`);
-        if (res.ok) {
-          const payload = await res.json();
-          const collections = payload && payload.collections;
-          if (Array.isArray(collections) && collections.length > 0) {
-            cachedCollections = collections;
-            return cachedCollections;
-          }
-        }
-      } catch {
-        /* preview-фолбэк не удался */
-      }
+      /* нет файла */
     }
     cachedCollections = null;
     return cachedCollections;

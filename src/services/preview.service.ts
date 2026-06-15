@@ -1088,6 +1088,15 @@ const PREVIEW_NAV_AGENT_INLINE = `
       // с .sticky выигрывал → «Статичность Всегда»/scroll-up не липли в превью (баг
       // тестера). Исключаем sticky-классом и inline-стилем (vanilla — inline).
       '[data-puck-component-id]:not(.sticky):not([style*="sticky"]){position:relative}',
+      // Sticky-классы Header портов (themes/<тема>/Header.astro): preview-tailwind
+      // scan НЕ подхватывает их в Docker (хотя @source добавлен) → .sticky/.top-0/
+      // .z-50 отсутствовали в превью-CSS, и «Статичность» (класс есть, правила нет)
+      // не работала в конструкторе. Инжектим явно — независимо от Tailwind-scan.
+      '.sticky{position:sticky}',
+      '.top-0{top:0}',
+      '.z-50{z-index:50}',
+      '.transition-transform{transition-property:transform;transition-timing-function:cubic-bezier(0.4,0,0.2,1);transition-duration:150ms}',
+      '.duration-300{transition-duration:300ms}',
       // NB: НЕ ставим z-index на section-hover/selected — это перебивает sticky
       // header z-50 → Hero z-10 поднимается выше Header → submenu panel недоступен.
       // Outline это border-like rendering, в z-stack не участвует.

@@ -28,6 +28,8 @@ export const CatalogTokens = {
     '--space-toolbar-gap',
     '--catalog-sidebar-w',
     '--catalog-grid-row-gap',
+    // Layout-токен контейнера (как у Header/Hero/Page) — край каталога = край темы.
+    '--container-max-width',
   ],
   // Sidebar / mobile breakpoints (used by class names and inline media queries)
   breakpoints: {

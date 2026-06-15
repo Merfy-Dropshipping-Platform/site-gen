@@ -81,12 +81,12 @@ const filterVisible =
     : showSidebar !== undefined
       ? showSidebar !== 'false' && showSidebar !== false
       : true;
-// Каталог = Figma 1-34015: фильтры ВСЕГДА сверху (top-бар), во всех темах/сайтах.
-// «Сбоку» (side) прятал фильтры на ширине превью/мобилке (hidden lg:flex) → каталог
-// выглядел без фильтров (регресс после blob→секции). Форсим top глобально, не завися
-// от filterPosition в ревизии (там у многих сайтов остался legacy 'side').
-const filterSide = false;
-void filterPosition;
+// «Вид фильтра» (Figma 1-34015): top → бар фильтров сверху; side → сайдбар слева.
+// Источник — проп filterPosition (theme.json blockDefaults.Catalog.filterPosition
+// или ревизия). Дефолт top, если не задан. Боковой сайдбар виден на desktop
+// (≥1024, см. media-query .catalog-sidebar ниже); на узкой ширине сворачивается
+// в мобильный drawer (известный адаптив).
+const filterSide = (filterPosition ?? 'top') === 'side';
 const sortVisible = showSort !== 'false' && showSort !== false;
 const collFilterLegacy =
   showCollectionFilter !== 'false' && showCollectionFilter !== false;
@@ -219,9 +219,12 @@ const fmtPriceServer = (n: number | string | undefined): string => {
       sslip.io) → state.allProducts пустой → фильтры не фильтруют. Клиент читает
       эти embedded-данные без cross-origin фетча (работает и в превью, и на live). */}
   <script is:inline set:html={`window.__MERFY_CATALOG_SSR__=${JSON.stringify({ products: ssrProducts, collections: ssrCollections }).replace(/</g, '\\u003c')};`}></script>
+  {/* Контейнер каталога = общий C.container (layout-токен темы), а не хардкод
+      max-width/padding — чтобы край контента совпадал с хедером и соседними
+      секциями. Схема (bg/color) остаётся инлайном: она не часть layout-класса. */}
   <div
-    class={containerSchemeClass}
-    style="max-width: 1320px; margin: 0 auto; padding-left: 24px; padding-right: 24px; background: rgb(var(--color-bg)); color: rgb(var(--color-text));"
+    class:list={[C.container, containerSchemeClass]}
+    style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));"
   >
     <div style="margin-bottom: 24px;">
       <h1

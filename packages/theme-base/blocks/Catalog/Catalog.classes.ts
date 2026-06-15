@@ -8,7 +8,11 @@
 export const CatalogClasses = {
   // Section chrome
   root: 'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
-  container: 'w-full max-w-[1320px] mx-auto px-6 lg:px-10',
+  // Контейнер каталога = тот же layout-токен, что у Header/Hero/Page/Footer
+  // (`--container-max-width` + px-4). Раньше тут был хардкод max-w-[1320px] px-6,
+  // из-за чего левый/правый край каталога не совпадал с хедером и секциями темы
+  // (юзер: «каталог не в лайауте»). Фолбэк 1320px — для тем без токена.
+  container: 'w-full max-w-[var(--container-max-width,1320px)] mx-auto px-4',
 
   // Toolbar (sort dropdown + product count)
   toolbarTop: 'flex items-center justify-between mb-[30px] flex-wrap gap-3',

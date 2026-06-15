@@ -90,47 +90,6 @@ const quickAddText =
   productCardObj?.buttonText ||
   (quickAddMode === 'cart' ? 'В КОРЗИНУ' : 'В корзину');
 
-// ── «Карточка товара» контролы (Figma 314-34614, parity с Catalog) ──
-// imageView → aspect карточки; buttonStyle → стиль CTA; nextPhotoOnHover → свап
-// на второе фото при наведении. Те же значения/механика, что productCard.* в
-// Catalog.astro (cardStyle/buttonStyle/nextPhoto), но из top-level полей панели.
-//
-// imageView: default 'portrait' = тема-натуральный вид (cardMedia класс
-// aspect-[318/444] rose / [429/529] satin). portrait НЕ переопределяет aspect
-// (сохраняет per-theme класс); square/wide задают inline aspect-ratio (inline
-// бьёт Tailwind-класс). 'adaptive' = legacy alias → 'wide'.
-const imageViewRaw = typeof raw.imageView === 'string' ? raw.imageView : undefined;
-const imageView = imageViewRaw === 'adaptive' ? 'wide' : (imageViewRaw || 'portrait');
-const cardAspectStyle =
-  imageView === 'square' ? 'aspect-ratio:1/1;'
-  : imageView === 'wide' ? 'aspect-ratio:4/3;'
-  : '';
-// Rich-card (flux) натурально квадратный (aspect-square класс), поэтому для него
-// явный override на portrait/wide, а square оставляет класс. Минимальные темы
-// натурально портретные → обратная логика (cardAspectStyle).
-const richAspectStyle =
-  imageView === 'portrait' ? 'aspect-ratio:3/4;'
-  : imageView === 'wide' ? 'aspect-ratio:4/3;'
-  : '';
-// buttonStyle: default 'primary' = текущий вид cardCta (solid button-bg). cardCta
-// класс задаёт цвета через `!important`, поэтому inline-override тоже с
-// `!important` (иначе класс перебьёт). link→прозрачная text-кнопка,
-// secondary→вторичная схема. Catalog btnBg/btnFg/btnBorder mapping 1:1.
-const cardBtnStyleRaw = typeof raw.buttonStyle === 'string' ? raw.buttonStyle : 'primary';
-const _btnBg = cardBtnStyleRaw === 'secondary' ? 'rgb(var(--color-button-secondary-bg))'
-  : cardBtnStyleRaw === 'link' ? 'transparent'
-  : 'rgb(var(--color-button-bg))';
-const _btnFg = cardBtnStyleRaw === 'secondary' ? 'rgb(var(--color-button-secondary-text))'
-  : cardBtnStyleRaw === 'link' ? 'rgb(var(--color-text))'
-  : 'rgb(var(--color-button-text))';
-const _btnBorder = cardBtnStyleRaw === 'link' ? 'none'
-  : cardBtnStyleRaw === 'secondary' ? '1px solid rgb(var(--color-button-secondary-border))'
-  : '1px solid rgb(var(--color-button-border))';
-const cardCtaStyle = `background:${_btnBg}!important;color:${_btnFg}!important;border:${_btnBorder}!important;`;
-// nextPhotoOnHover → hover-свап (simple mode, как Catalog): mouseover показывает
-// data-img-secondary, mouseout возвращает primary. No-op без второго фото.
-const nextPhotoOn = raw.nextPhotoOnHover === true || raw.nextPhotoOnHover === 'true';
-
 // Constructor legacy schema writes heading as { text } and subtitle as
 // { content }; accept both shapes so nothing renders as [object Object].
 const heading = (() => {
@@ -226,7 +185,6 @@ type RealProduct = {
   price?: string | number;
   oldPrice?: string | number;
   image?: string;
-  images?: string[];
   href?: string;
   hasVariants?: boolean;
   variants?: unknown[];
@@ -264,7 +222,6 @@ if (realProducts.length === 0 && siteId) {
           price: (p.price ?? p.basePrice) as string | number | undefined,
           oldPrice: (p.compareAtPrice ?? p.oldPrice) as string | number | undefined,
           image: typeof p.image === 'string' ? p.image : (Array.isArray(p.images) && typeof p.images[0] === 'string' ? p.images[0] as string : undefined),
-          images: Array.isArray(p.images) ? (p.images.filter((x) => typeof x === 'string') as string[]) : [],
           href: typeof p.slug === 'string' ? `/product/${p.slug}` : '/catalog',
           hasVariants: !!p.hasVariants,
           variants: Array.isArray(p.variants) && p.variants.length > 0
@@ -332,8 +289,6 @@ const productList = realProducts.length > 0
       badgeNew: false,
       badgeSale: '',
       image: p.image || '',
-      // Второе фото для nextPhotoOnHover (images[1]); '' если у товара одно фото.
-      image2: (Array.isArray(p.images) && typeof p.images[1] === 'string') ? p.images[1] : '',
       href: p.href || '/catalog',
       // 088 G3 fix — forward variant signals to SSG card so swatch overlay
       // resolves real pip count from build-time products.json.
@@ -347,7 +302,6 @@ const productList = realProducts.length > 0
       // add-to-cart blocked в click handler (PopularProducts inline-script
       // bail если pid отсутствует).
       id: undefined as string | undefined,
-      image2: '' as string,
       href: '/catalog',
       hasVariants: false as boolean,
       variants: [] as unknown[],
@@ -468,9 +422,6 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
           <PopularProductRichCard
             href={p.href}
             image={p.image}
-            image2={(nextPhotoOn && p.image2) ? p.image2 : undefined}
-            aspectStyle={richAspectStyle}
-            ctaStyle={cardCtaStyle}
             title={p.title}
             price={p.price}
             oldPrice={p.oldPrice}
@@ -490,7 +441,7 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
           aria-label="Товар"
           data-product-index={i}
         >
-          <div class={C.cardMedia} style={cardAspectStyle || undefined} aria-hidden="true">
+          <div class={C.cardMedia} aria-hidden="true">
             {p.badgeNew && <span class={C.cardBadgeNew}>Новинка</span>}
             {p.badgeSale && <span class={p.badgeNew ? C.cardBadgeSale : C.cardBadgeNew}>{p.badgeSale}</span>}
             {swatchOverlayProp && pips.length > 0 && (
@@ -504,7 +455,7 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
               </span>
             )}
             {p.image ? (
-              <img src={p.image} alt={p.title} class="absolute inset-0 w-full h-full object-cover" loading="lazy" data-img-primary={p.image} data-img-secondary={(nextPhotoOn && p.image2) ? p.image2 : undefined} />
+              <img src={p.image} alt={p.title} class="absolute inset-0 w-full h-full object-cover" loading="lazy" />
             ) : (
               <img src={PLACEHOLDER_ASSETS.sweater.blue} alt={p.title} class="absolute inset-0 w-full h-full object-contain p-[15%]" loading="lazy" />
             )}
@@ -516,7 +467,7 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
               {p.oldPrice && <div class={C.cardOldPrice}>{p.oldPrice}</div>}
             </div>
             {quickAdd && (
-              <button type="button" data-popular-cta data-product-id={p.id} class={C.cardCta} style={cardCtaStyle}>{quickAddText}</button>
+              <button type="button" data-popular-cta data-product-id={p.id} class={C.cardCta}>{quickAddText}</button>
             )}
           </div>
         </div>
@@ -549,10 +500,6 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
     swatchContainerClass: C.swatchOverlay.container,
     swatchDotClass: C.swatchOverlay.dot,
     maxSwatchPips: MAX_SWATCH_PIPS,
-    // «Карточка товара» контролы → клиентский ре-рендер (cardHtml) и hover-свап.
-    cardAspectStyle,
-    cardCtaStyle,
-    nextPhotoOn,
     // Sweater placeholder URL для client-side cardHtml fallback (когда у
     // товара нет картинки). Тот же asset что Astro server рендерит —
     // единая декорация на оба пути.
@@ -612,13 +559,6 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
       }
       return p.image || '';
     }
-    // Второе фото для nextPhotoOnHover — images[1] (или явное image2). '' если нет.
-    function getImg2(p) {
-      if (Array.isArray(p.images) && p.images[1]) {
-        return typeof p.images[1] === 'string' ? p.images[1] : (p.images[1].url || '');
-      }
-      return p.image2 || '';
-    }
 
     // 088 G3 fix — swatch pips per Figma 1:19004. Position is bottom-right
     // (handled via CSS in classes); pip count and colors derive from real
@@ -665,20 +605,18 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
       var price = fmtPrice(p.basePrice != null ? p.basePrice : p.price);
       var compare = p.compareAtPrice ? fmtPrice(p.compareAtPrice) : (p.oldPrice ? fmtPrice(p.oldPrice) : '');
       var img = getImg(p);
-      var img2 = nextPhotoOn ? getImg2(p) : '';
       var handle = p.handle || p.slug || p.id || '';
       var href = handle ? '/product/' + encodeURIComponent(handle) : '/catalog';
 
-      var secAttr = img2 ? ' data-img-secondary="' + escAttr(img2) + '"' : '';
       var mediaInner = img
-        ? '<img src="' + escAttr(img) + '" alt="' + escAttr(title) + '" class="absolute inset-0 w-full h-full object-cover" loading="lazy" data-img-primary="' + escAttr(img) + '"' + secAttr + ' />'
+        ? '<img src="' + escAttr(img) + '" alt="' + escAttr(title) + '" class="absolute inset-0 w-full h-full object-cover" loading="lazy" />'
         : '<img src="' + escAttr(placeholderImageUrl) + '" alt="' + escAttr(title) + '" class="absolute inset-0 w-full h-full object-contain p-[15%]" loading="lazy" />';
 
       // CTA — отдельный <button> с data-popular-cta (вне <a> wrapper —
       // button-in-anchor invalid HTML). Click handler в inline script ниже
       // делает cartStore.addItem(productId) → совпадает с Catalog quickAdd.
       var ctaHtml = quickAdd
-        ? '<button type="button" data-popular-cta data-product-id="' + escAttr(p.id) + '" class="' + cardCtaClass + '" style="' + cardCtaStyle + '">' + escAttr(quickAddText) + '</button>'
+        ? '<button type="button" data-popular-cta data-product-id="' + escAttr(p.id) + '" class="' + cardCtaClass + '">' + escAttr(quickAddText) + '</button>'
         : '';
 
       var oldPriceHtml = compare
@@ -692,7 +630,7 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
       return (
         '<article data-product-id="' + escAttr(p.id) + '" data-product-handle="' + escAttr(handle) + '" class="' + cardClass + '" aria-label="' + escAttr(title) + '">' +
           '<a href="' + escAttr(href) + '" style="text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:12px;">' +
-            '<div class="' + cardMediaClass + '" style="' + cardAspectStyle + '" aria-hidden="true">' + mediaInner + pipsHtml + '</div>' +
+            '<div class="' + cardMediaClass + '" aria-hidden="true">' + mediaInner + pipsHtml + '</div>' +
             '<div class="flex flex-col gap-1 items-start w-full">' +
               '<div class="' + cardTitleClass + '">' + escAttr(title) + '</div>' +
               '<div class="' + cardPriceRowClass + '">' +
@@ -738,24 +676,6 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
       btn.textContent = '✓ Добавлено';
       setTimeout(function () { btn.textContent = orig; }, 1500);
     });
-
-    // nextPhotoOnHover (simple, как Catalog): mouseover → второе фото
-    // (data-img-secondary), mouseout → primary. Делегирование на grid покрывает
-    // и SSR-карточки, и клиентский ре-рендер cardHtml. No-op без второго фото.
-    if (nextPhotoOn) {
-      grid.addEventListener('mouseover', function (ev) {
-        var im = ev.target && ev.target.closest && ev.target.closest('img[data-img-secondary]');
-        if (!im) return;
-        var sec = im.getAttribute('data-img-secondary');
-        if (sec && im.src !== sec) im.src = sec;
-      });
-      grid.addEventListener('mouseout', function (ev) {
-        var im = ev.target && ev.target.closest && ev.target.closest('img[data-img-primary]');
-        if (!im) return;
-        var prim = im.getAttribute('data-img-primary');
-        if (prim && im.src !== prim) im.src = prim;
-      });
-    }
 
     // Rich variant rendered fully SSR (Astro fetched products itself);
     // skip JS-side rebuild to avoid clobbering rich card markup with

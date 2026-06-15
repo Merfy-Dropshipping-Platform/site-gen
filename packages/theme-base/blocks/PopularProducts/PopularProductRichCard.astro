@@ -41,6 +41,12 @@ interface Badge {
 interface Props {
   href?: string;
   image?: string;
+  /** Второе фото для nextPhotoOnHover (data-img-secondary). */
+  image2?: string;
+  /** imageView override (inline aspect-ratio); '' = натуральный aspect-square. */
+  aspectStyle?: string;
+  /** buttonStyle override для CTA (inline с !important). */
+  ctaStyle?: string;
   title: string;
   price: string;
   oldPrice?: string;
@@ -57,6 +63,9 @@ interface Props {
 const {
   href = '/catalog',
   image,
+  image2,
+  aspectStyle = '',
+  ctaStyle = '',
   title,
   price,
   oldPrice,
@@ -75,9 +84,9 @@ const showOld = !!(oldPrice && oldPrice.trim());
   data-popular-card-rich
   data-product-id={productId}
 >
-  <a href={href} class="block aspect-square rounded-[12px] overflow-hidden bg-[rgb(var(--color-text)/0.04)]">
+  <a href={href} class="block aspect-square rounded-[12px] overflow-hidden bg-[rgb(var(--color-text)/0.04)]" style={aspectStyle || undefined}>
     {image ? (
-      <img src={image} alt={title} loading="lazy" class="w-full h-full object-cover block" />
+      <img src={image} alt={title} loading="lazy" class="w-full h-full object-cover block" data-img-primary={image} data-img-secondary={image2 || undefined} />
     ) : (
       <img src={PLACEHOLDER_ASSETS.sweater.blue} alt={title} loading="lazy" class="w-full h-full object-contain p-[15%] block" />
     )}
@@ -147,6 +156,7 @@ const showOld = !!(oldPrice && oldPrice.trim());
       type="button"
       data-popular-cta
       class="w-full inline-flex items-center justify-center h-11 px-3 rounded-[var(--radius-button)] [font-family:var(--font-body)] font-normal text-[14px] uppercase tracking-[0.02em] cursor-pointer transition-colors bg-[rgb(var(--color-button-bg))]! text-[rgb(var(--color-button-text))]! border border-[rgb(var(--color-button-border))] hover:bg-[rgb(var(--color-button-bg-hover))]! hover:text-[rgb(var(--color-button-text-hover))]!"
+      style={ctaStyle || undefined}
     >{ctaLabel}</button>
   </div>
 </div>

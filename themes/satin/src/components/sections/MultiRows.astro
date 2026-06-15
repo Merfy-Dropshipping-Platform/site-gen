@@ -148,9 +148,11 @@ const widthCls =
 		? "mx-auto w-full max-w-[780px]"
 		: p.width === "medium"
 			? "mx-auto w-full max-w-[1080px]"
-			: p.width === "full"
-				? "w-full"
-				: "satin-container";
+			: p.width === "large"
+				? "mx-auto w-full max-w-[1320px]"
+				: p.width === "full"
+					? "w-full"
+					: "satin-container";
 
 // Канон alignment текст-колонки: left/отсутствие = ЛИТЕРАЛ (без классов —
 // контент слева, CollectionRows.astro:62); center/right двигают содержимое.

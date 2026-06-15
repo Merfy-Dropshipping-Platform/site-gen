@@ -31,8 +31,12 @@ const {
 	...rest
 } = Astro.props as Props;
 
+// WebP-source только для ЛОКАЛЬНЫХ ассетов темы (/public/*.png рядом лежит .webp).
+// Для внешних URL (MinIO, загруженные мерчантом) соимённого .webp нет —
+// иначе <source> отдаёт битый webp и картинка не показывается (как RosePicture).
+const isLocalThemeAsset = src.startsWith("/") && !src.startsWith("//");
 const webp = src.replace(/\.(png|jpe?g)$/i, ".webp");
-const hasWebp = webp !== src;
+const hasWebp = isLocalThemeAsset && webp !== src;
 ---
 
 <picture class="contents">

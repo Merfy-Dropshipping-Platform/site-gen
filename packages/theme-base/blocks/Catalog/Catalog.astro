@@ -346,15 +346,24 @@ const fmtPriceServer = (n: number | string | undefined): string => {
     <div data-mobile-drawer class={C.mobileDrawer} style="display: none;">
     </div>
 
+    {/* Раскладка sidebar+grid — через Tailwind responsive utility (lg:grid-cols-…),
+        а НЕ через inline-<style> @media: в preview Container API media-блоки
+        inline-стиля стрипаются (1024-правило терялось → сайдбар прятался, грид
+        застывал на 3 колонках). Tailwind-классы компилятся в основной лист и
+        работают и в preview, и на live. */}
     <div
-      class={filterSide && (sortVisible || filterVisible) ? 'catalog-grid-with-sidebar' : 'catalog-grid-no-sidebar'}
-      style="display: grid; gap: 32px; align-items: start;"
+      class:list={[
+        filterSide && (sortVisible || filterVisible)
+          ? 'lg:grid-cols-[var(--catalog-sidebar-w,220px)_1fr]'
+          : '',
+      ]}
+      style="display: grid; grid-template-columns: 1fr; gap: 32px; align-items: start;"
     >
       {/* 098: sidebar показывается если filterSide AND (Sort or Фильтры). */}
       {/* "Скрыть фильтры" в Figma 1:21287 = только filter sections, Sort остаётся */}
       {filterSide && (sortVisible || filterVisible) && (
         <aside
-          class:list={['catalog-sidebar', C.sidebarBox]}
+          class:list={['catalog-sidebar', 'hidden lg:flex', C.sidebarBox]}
           style="flex-direction: column; gap: 24px; font-size: 14px; color: rgb(var(--color-text));"
         >
           {sortVisible && (
@@ -432,9 +441,13 @@ const fmtPriceServer = (n: number | string | undefined): string => {
         </aside>
       )}
 
+      {/* Колонки грида — Tailwind responsive utility (compiled list, не inline-<style>
+          @media: 1024-правило inline-стиля стрипалось в preview → desktop застывал
+          на 3 колонках). lg: использует выбранное юзером кол-во через --catalog-cols. */}
       <div
         data-catalog-grid
         data-loading={initialSlice.length === 0 ? 'true' : 'false'}
+        class="grid-cols-2 sm:grid-cols-3 lg:grid-cols-[repeat(var(--catalog-cols,4),minmax(0,1fr))]"
         style={`display: grid; --catalog-cols: ${colCount}; column-gap: 16px; row-gap: var(--catalog-grid-row-gap, 16px); align-items: stretch;`}
       >
         {initialSlice.length > 0
@@ -525,36 +538,14 @@ const fmtPriceServer = (n: number | string | undefined): string => {
 </section>
 
 <style is:inline>
-  /* Layout: sidebar OR no-sidebar */
-  .catalog-grid-with-sidebar { grid-template-columns: 1fr; }
-  .catalog-grid-no-sidebar { grid-template-columns: 1fr; }
-  .catalog-sidebar { display: none; }
-  /* Tablet/desktop (>= 1024px): show sidebar as fixed column. */
-  @media (min-width: 1024px) {
-    .catalog-grid-with-sidebar { grid-template-columns: var(--catalog-sidebar-w, 220px) 1fr; }
-    .catalog-sidebar { display: flex; }
-  }
-
-  /* 098 Mobile responsive product grid.
-     Уровни:
-     - <640px (mobile): 2 columns (compact, ~150px per card)
-     - 640-1023px (tablet): 3 columns (~200px)
-     - >=1024px (desktop): user's --cols (1-6 columns)
-     User-chosen `columns` стоит на inline style attr через --cols var.
-   */
-  [data-catalog-grid] {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-  @media (min-width: 640px) {
-    [data-catalog-grid] {
-      grid-template-columns: repeat(3, 1fr) !important;
-    }
-  }
-  @media (min-width: 1024px) {
-    [data-catalog-grid] {
-      grid-template-columns: repeat(var(--catalog-cols, 4), 1fr) !important;
-    }
-  }
+  /* Раскладка sidebar/grid и кол-во колонок грида теперь на Tailwind
+     responsive utility-классах прямо на элементах (см. div.lg:grid-cols-…,
+     aside.hidden.lg:flex, [data-catalog-grid].grid-cols-2.sm:grid-cols-3.lg:…).
+     Раньше тут были inline-<style> @media-правила, но в preview Container API
+     media-блоки inline-стиля стрипались (1024-правило терялось → сайдбар
+     прятался, грид застывал на 3 колонках). Tailwind компилит в основной лист
+     и работает идентично в preview и на live. Mobile-дефолт (grid-cols-2) и
+     планшет (sm:grid-cols-3) — там же, в классах грида. */
 </style>
 
 <script is:inline define:vars={{ siteId, apiBase, cardCount, cardBgOn, btnBg, btnFg, btnBorder, btnStyle, showQuickAdd, quickAddText, effectiveCollection, urlState, cardAspect, cardPaddingBottom, gridAspectClass, cardCaptionClass }}>

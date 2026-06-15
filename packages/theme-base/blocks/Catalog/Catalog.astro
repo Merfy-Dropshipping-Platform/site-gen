@@ -797,6 +797,7 @@ const fmtPriceServer = (n: number | string | undefined): string => {
 
     function rerender() {
       const filtered = applyFilters(state.allProducts);
+      try { console.log('[CATDBG] rerender all=' + state.allProducts.length + ' filtered=' + filtered.length + ' stock=' + state.stock + ' price=' + state.priceMin); } catch (e) {}
       const total = filtered.length;
       const ps = cardCount;
       const totalP = total === 0 ? 0 : Math.ceil(total / ps);
@@ -993,12 +994,14 @@ const fmtPriceServer = (n: number | string | undefined): string => {
 
     // Side-bar filters — Figma 905-19049 (stock radios with values + price inputs by data-attr)
     function attachSideFilters() {
+      try { console.log('[CATDBG] attachSideFilters called; cat-stock inputs=' + root.querySelectorAll('input[name="cat-stock"]').length + ' priceMinEl=' + !!root.querySelector('[data-cat-price-min]')); } catch (e) {}
       // Stock radios — use value="all|in|out"
       root.querySelectorAll('input[name="cat-stock"]').forEach(function (input) {
         input.addEventListener('change', function () {
           if (!this.checked) return;
           const v = this.value;
           state.stock = (v === 'in' || v === 'out') ? v : 'all';
+          try { console.log('[CATDBG] stock change -> ' + state.stock); } catch (e) {}
           state.page = 1;
           syncUrlState();
           rerender();
@@ -1190,6 +1193,7 @@ const fmtPriceServer = (n: number | string | undefined): string => {
           }
         }
         state.allProducts = products;
+        try { console.log('[CATDBG] hydrated allProducts=' + state.allProducts.length); } catch (e) {}
 
         // 096: Aggregate variant attributes (color, memory) — Figma 905-19049 pills
         const attrSets = { color: new Set(), memory: new Set() };

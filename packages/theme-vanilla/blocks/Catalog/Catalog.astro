@@ -1,0 +1,737 @@
+---
+// Catalog — РОДНОЙ каталог верстальщика vanilla как per-theme override блока
+// Catalog (порт из themes/vanilla/src/components/catalog/VanillaCatalogSection.astro).
+// Заменяет generic theme-base/blocks/Catalog/Catalog.astro на пиксель-перфектную
+// вёрстку vanilla: top-раскладка (details-дропдауны) + side-раскладка
+// (VanillaCatalogFilterSidebar), переключение через data-catalog-layout, гидрация
+// реальных товаров (фильтры наличие/цена/коллекция + сортировка + пагинация).
+//
+// Рендерится ОДИНАКОВО:
+//   • Live build — assemble-from-packages.ts (THEME PASS, overwrite=true)
+//     копирует этот файл + siblings плоско в <scaffold>/src/components/,
+//     перезаписывая base. astro build собирает client.
+//   • Превью конструктора — compile-astro-blocks.mjs (Container API) компилит
+//     этот .astro в dist/astro-blocks/theme-vanilla__Catalog__Catalog.mjs.
+//
+// Все импорты — siblings (./), без bare-NPM и ../../ (компилятор превью их не
+// резолвит). Корневой <section> чистый: оркестратор превью штампует на него
+// data-puck-component-id для выделяемости.
+//
+// ⚠️ Клиент — ТОЛЬКО is:inline (НЕ module-script): module client-<script> блока НЕ
+// компилится в live build (generatePuckCatalogPage импортит блок, но ESM-script не
+// попадает в bundle → 404 на проде). Поэтому весь клиент инлайн телами (без import).
+// У vanilla НЕТ фильтра по цвету (в отличие от rose) — секции «Цвет» нет.
+import VanillaCatalogFilterSidebar from "./VanillaCatalogFilterSidebar.astro";
+import {
+	CATALOG_PRICE_ROW,
+	CATALOG_PRICE_VALUE,
+	CATALOG_PRICE_WRAP,
+	CATALOG_RADIO_CIRCLE,
+	CATALOG_RADIO_TEXT,
+} from "./filter-classes";
+
+// Минимальный тип карточки демо-грида.
+interface DemoProduct {
+	id: string;
+	name: string;
+	price: string;
+	oldPrice?: string;
+	image: string;
+}
+
+// Совместимый с theme-base/blocks/Catalog/Catalog.puckConfig props-минимум.
+// Лишние поля puckConfig (cards/productCard/colorScheme и т.п.) принимаем, но
+// родная вёрстка использует только заголовок/подзаголовок/раскладку фильтра.
+interface Props {
+	id?: string;
+	siteId?: string;
+	categoryTitle?: string | { text?: string };
+	categorySubtitle?: string | { text?: string };
+	subtitle?: boolean | "true" | "false";
+	filterPosition?: "top" | "side";
+	showFilter?: boolean | "true" | "false";
+	showSort?: boolean | "true" | "false";
+	columns?: number;
+	colorScheme?: string;
+	/** Настройка «Выбор коллекции» конструктора (страница page-collection).
+	    Приходит как slug/id выбранной коллекции; null/пусто → весь каталог. */
+	collectionSlug?: string | null;
+}
+
+const {
+	id,
+	siteId,
+	categoryTitle,
+	categorySubtitle,
+	subtitle,
+	filterPosition,
+	showFilter,
+	showSort,
+	columns,
+	colorScheme,
+	collectionSlug,
+} = Astro.props as Props;
+
+// Кол-во товаров на «страницу» пагинации: columns*3 (3 ряда) или 12 по умолчанию.
+const colsNum = Number(columns);
+const pageSize = Number.isFinite(colsNum) && colsNum > 0 ? colsNum * 3 : 12;
+
+// Заголовок/подзаголовок: aiText в puck может быть строкой или { text }.
+function pickText(v: unknown, fallback: string): string {
+	if (typeof v === "string" && v.trim()) return v;
+	if (v && typeof v === "object") {
+		const t = (v as { text?: string }).text;
+		if (typeof t === "string" && t.trim()) return t;
+	}
+	return fallback;
+}
+const title = pickText(categoryTitle, "Каталог");
+const subtitleText = pickText(categorySubtitle, "");
+const subtitleVisible = subtitle !== "false" && subtitle !== false && subtitleText.trim().length > 0;
+const filterVisible = showFilter !== "false" && showFilter !== false;
+const sortVisible = showSort !== "false" && showSort !== false;
+
+// Родная раскладка vanilla = side. filterPosition='top' переключает на top.
+const defaultLayout = filterPosition === "top" ? "top" : "side";
+
+// Цветовая схема секции (hot-swap токенов как у остальных блоков).
+const schemeClass =
+	typeof colorScheme === "string" && colorScheme
+		? `color-scheme-${colorScheme.replace("scheme-", "")}`
+		: "";
+
+// SSR demo-грид (родные товары vanilla). Гарантирует, что грид рендерится в initial
+// HTML и в превью (Container API), и на live до гидрации. На published-сайте
+// is:inline-клиент (loadRealProducts) перерисует реальными товарами.
+const demoProducts: DemoProduct[] = [
+	{ id: "bag-1", name: "Подушки декоративные", price: "1 940 ₽", oldPrice: "2 290 ₽", image: "/images/vanilla-product-1.webp" },
+	{ id: "bag-2", name: "Ваза Vanilla", price: "1 490 ₽", image: "/images/vanilla-product-2.webp" },
+	{ id: "bag-3", name: "Покрывало шерстяное", price: "2 940 ₽", image: "/images/vanilla-textile-2.webp" },
+	{ id: "bag-4", name: "Мягкий плед", price: "2 940 ₽", image: "/images/vanilla-textile-3.webp" },
+	{ id: "bag-5", name: "Корзина для хранения", price: "1 290 ₽", image: "/images/vanilla-product-4.webp" },
+	{ id: "bag-6", name: "Свеча ароматическая", price: "890 ₽", image: "/images/vanilla-product-5.webp" },
+	{ id: "bag-7", name: "Полотенца набор", price: "1 590 ₽", image: "/images/vanilla-textile-1.webp" },
+	{ id: "bag-8", name: "Плед хлопковый", price: "2 190 ₽", image: "/images/vanilla-product-6.webp" },
+];
+const totalCount = demoProducts.length;
+
+function pluralizeProducts(count: number): string {
+	const mod10 = count % 10;
+	const mod100 = count % 100;
+	if (mod100 >= 11 && mod100 <= 14) return `${count} товаров`;
+	if (mod10 === 1) return `${count} товар`;
+	if (mod10 >= 2 && mod10 <= 4) return `${count} товара`;
+	return `${count} товаров`;
+}
+const productCountLabel = pluralizeProducts(totalCount);
+
+// Summary/панель дропдаунов top-вида (манера vanilla: плоские панели, фон страницы).
+const rowSummaryClass =
+	"flex cursor-pointer list-none items-center gap-2 font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden";
+const rowPanelClass =
+	"absolute top-full z-30 mt-2 flex w-[240px] flex-col gap-3 border border-[rgb(var(--color-muted,153_153_153))] bg-[rgb(var(--color-bg,238_238_238))] p-4";
+
+interface RadioOption {
+	value: string;
+	label: string;
+	checked?: boolean;
+}
+const rowSortOptions: RadioOption[] = [
+	{ value: "popularity", label: "По популярности", checked: true },
+	{ value: "new", label: "По новизне" },
+	{ value: "price-desc", label: "По убыванию цены" },
+	{ value: "price-asc", label: "По возрастанию цены" },
+];
+const rowStockOptions: RadioOption[] = [
+	{ value: "all", label: "Все", checked: true },
+	{ value: "in", label: "В наличии" },
+	{ value: "out", label: "Распродано" },
+];
+
+// Разметка SSR-карточки демо-товара — зеркалит renderCardHtml клиента (vanilla card:
+// aspect-square, font-vanilla-arsenal). Плоский <img> (без VanillaPicture/carousel —
+// избегаем ../../ резолв-барьера компилятора превью; на live грид перерисует клиент).
+---
+
+<section
+	class={schemeClass}
+	data-block="catalog"
+	data-catalog-page
+	data-puck-component-id={id}
+	data-site-id={siteId}
+	data-nt="vanilla-catalog-section"
+	aria-labelledby="catalog-title"
+	data-catalog-layout={defaultLayout}
+	data-collection-slug={collectionSlug ?? ""}
+	data-page-size={pageSize}
+>
+	{/* Раскладка каталога из настройки конструктора: платформа (превью-контроллер и
+	    билд) инжектит window.__MERFY_CATALOG_LAYOUT__. Скрипт ДО вариантов, чтобы
+	    переключение не мигало; без глобала остаётся раскладка из props. */}
+	<script is:inline>var l=window.__MERFY_CATALOG_LAYOUT__; if(l==='top'||l==='side'){document.currentScript.parentElement.setAttribute('data-catalog-layout',l);}</script>
+
+	<div class="vanilla-pad w-full bg-[var(--vanilla-surface)] py-16 md:py-20">
+		<div class="vanilla-container flex flex-col gap-10">
+			<header class="flex flex-col gap-2">
+				<h1
+					id="catalog-title"
+					class="font-vanilla-bitter text-[20px] font-normal italic uppercase leading-none tracking-normal text-black"
+				>{title}</h1>
+				{subtitleVisible && (
+					<p class="font-vanilla-arsenal text-base font-normal leading-none text-[#444444]">{subtitleText}</p>
+				)}
+			</header>
+
+			{/* ── Раскладка «top»: фильтры/сортировка строкой над гридом ── */}
+			<div class="flex flex-col gap-10" data-catalog-variant="top">
+				<div class="relative z-30 flex flex-wrap items-center justify-between gap-x-6 gap-y-4" data-nt="catalog-filters">
+					<div class="flex flex-wrap items-center gap-x-6 gap-y-4">
+						{filterVisible && (
+							<>
+								<details class="relative [&[open]]:z-30">
+									<summary class={rowSummaryClass}>
+										<span>Наличие</span>
+										<svg aria-hidden="true" viewBox="0 0 10 6" fill="none" class="h-[6px] w-[10px]"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" /></svg>
+									</summary>
+									<div class={`${rowPanelClass} left-0`}>
+										{rowStockOptions.map((option) => (
+											<label class="group flex cursor-pointer items-center gap-2">
+												<input type="radio" name="vanilla-top-stock" value={option.value} checked={option.checked} class="peer sr-only" />
+												<span aria-hidden="true" class={CATALOG_RADIO_CIRCLE} />
+												<span class={CATALOG_RADIO_TEXT}>{option.label}</span>
+											</label>
+										))}
+									</div>
+								</details>
+
+								<details class="relative [&[open]]:z-30">
+									<summary class={rowSummaryClass}>
+										<span>Стоимость</span>
+										<svg aria-hidden="true" viewBox="0 0 10 6" fill="none" class="h-[6px] w-[10px]"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" /></svg>
+									</summary>
+									<div class={`${rowPanelClass} left-0`}>
+										<div class={CATALOG_PRICE_WRAP} data-nt="catalog-price">
+											<div class={CATALOG_PRICE_ROW}>
+												<span>от</span>
+												<div class={CATALOG_PRICE_VALUE}><span>0</span><span>₽</span></div>
+											</div>
+											<div class={CATALOG_PRICE_ROW}>
+												<span>до</span>
+												<div class={CATALOG_PRICE_VALUE}><span>5 990</span><span>₽</span></div>
+											</div>
+										</div>
+									</div>
+								</details>
+
+								{/* Фильтр по коллекциям (row-ветка): дропдаун. Скрыт на demo-сборке,
+								    гидрация показывает его при наличии коллекций магазина. */}
+								<details class="relative [&[open]]:z-30" data-nt="catalog-collections-filter" data-collections-dropdown style="display:none;">
+									<summary class={rowSummaryClass}>
+										<span data-collections-label>Коллекции</span>
+										<svg aria-hidden="true" viewBox="0 0 10 6" fill="none" class="h-[6px] w-[10px]"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" /></svg>
+									</summary>
+									<div class={`${rowPanelClass} left-0`}>
+										<div data-collections-options class="flex flex-col gap-3"></div>
+									</div>
+								</details>
+							</>
+						)}
+					</div>
+
+					{sortVisible && (
+						<details class="relative [&[open]]:z-30">
+							<summary class={rowSummaryClass}>
+								<span>По популярности</span>
+								<svg aria-hidden="true" viewBox="0 0 10 6" fill="none" class="h-[6px] w-[10px]"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" /></svg>
+							</summary>
+							<div class={`${rowPanelClass} right-0`}>
+								{rowSortOptions.map((option) => (
+									<label class="group flex cursor-pointer items-center gap-2">
+										<input type="radio" name="vanilla-top-sort" value={option.value} checked={option.checked} class="peer sr-only" />
+										<span aria-hidden="true" class={CATALOG_RADIO_CIRCLE} />
+										<span class={CATALOG_RADIO_TEXT}>{option.label}</span>
+									</label>
+								))}
+							</div>
+						</details>
+					)}
+				</div>
+
+				<div class="flex flex-col gap-8">
+					<ul class="grid grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:grid-cols-3 md:gap-x-4 md:gap-y-12" role="list" data-nt="catalog-grid">
+						{demoProducts.map((product) => (
+							<li data-product-id={product.id}>
+								<article class="group flex flex-col gap-3" data-nt="vanilla-product-card" aria-label={product.name}>
+									<a href={`/product?id=${product.id}`} class="relative block aspect-square w-full overflow-hidden bg-[var(--vanilla-card)]" aria-label={product.name}>
+										<img src={product.image} alt={product.name} width="429" height="429" loading="eager" class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+									</a>
+									<div class="flex flex-col gap-1">
+										<a href={`/product?id=${product.id}`} class="font-vanilla-arsenal text-base font-normal uppercase leading-none text-black transition-opacity hover:opacity-70">{product.name}</a>
+										<div class="flex flex-wrap items-baseline gap-2">
+											<span class="font-vanilla-arsenal text-base font-normal leading-none text-black">{product.price}</span>
+											{product.oldPrice && (
+												<span class="font-vanilla-arsenal text-[14px] font-normal leading-none text-[#444444] line-through">{product.oldPrice}</span>
+											)}
+										</div>
+									</div>
+								</article>
+							</li>
+						))}
+					</ul>
+
+					<div class="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
+						<button type="button" data-action="load-more" class="inline-flex h-12 min-h-12 w-full items-center justify-center bg-[var(--vanilla-header-bg)] px-6 font-vanilla-arsenal text-base font-normal uppercase leading-none text-white transition-opacity hover:opacity-90 sm:w-auto sm:px-16">Смотреть ещё</button>
+						<span class="font-vanilla-arsenal text-base font-normal leading-none text-black" data-nt="catalog-count">{productCountLabel}</span>
+					</div>
+				</div>
+			</div>
+
+			{/* ── Раскладка «side» (родная для vanilla): левый сайдбар фильтров ── */}
+			<div class="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-6" data-catalog-variant="side">
+				{filterVisible && <VanillaCatalogFilterSidebar class="w-full lg:shrink-0" />}
+
+				<div class="flex min-w-0 flex-1 flex-col gap-8">
+					<ul class="grid grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:gap-x-4 md:gap-y-12" role="list" data-nt="catalog-grid">
+						{demoProducts.map((product) => (
+							<li data-product-id={product.id}>
+								<article class="group flex flex-col gap-3" data-nt="vanilla-product-card" aria-label={product.name}>
+									<a href={`/product?id=${product.id}`} class="relative block aspect-square w-full overflow-hidden bg-[var(--vanilla-card)]" aria-label={product.name}>
+										<img src={product.image} alt={product.name} width="429" height="429" loading="eager" class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+									</a>
+									<div class="flex flex-col gap-1">
+										<a href={`/product?id=${product.id}`} class="font-vanilla-arsenal text-base font-normal uppercase leading-none text-black transition-opacity hover:opacity-70">{product.name}</a>
+										<div class="flex flex-wrap items-baseline gap-2">
+											<span class="font-vanilla-arsenal text-base font-normal leading-none text-black">{product.price}</span>
+											{product.oldPrice && (
+												<span class="font-vanilla-arsenal text-[14px] font-normal leading-none text-[#444444] line-through">{product.oldPrice}</span>
+											)}
+										</div>
+									</div>
+								</article>
+							</li>
+						))}
+					</ul>
+
+					<div class="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
+						<button type="button" data-action="load-more" class="inline-flex h-12 min-h-12 w-full items-center justify-center bg-[var(--vanilla-header-bg)] px-6 font-vanilla-arsenal text-base font-normal uppercase leading-none text-white transition-opacity hover:opacity-90 sm:w-auto sm:px-16">Смотреть ещё</button>
+						<span class="font-vanilla-arsenal text-base font-normal leading-none text-black" data-nt="catalog-count">{productCountLabel}</span>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<style is:global>
+	/* Переключение раскладок каталога: виден только выбранный вариант.
+	   data-catalog-layout ставит inline-скрипт секции из window.__MERFY_CATALOG_LAYOUT__
+	   (или дефолт из настройки filterPosition). */
+	[data-catalog-layout="top"] [data-catalog-variant="side"] { display: none; }
+	[data-catalog-layout="side"] [data-catalog-variant="top"] { display: none; }
+</style>
+
+<script is:inline define:vars={{ siteId, pageSize }}>
+	// is:inline (НЕ module-script): module client-<script> блока НЕ компилится в live
+	// build → 404 на проде. Поэтому весь клиент инлайн: функции storefront-hydrate.ts
+	// перенесены телами 1:1 (без import/типов), данные frontmatter — через define:vars.
+	// У vanilla НЕТ фильтра по цвету.
+	(function () {
+		const PLACEHOLDER_IMAGE = "/placeholders/sweater-blue.png";
+		let cachedProducts; // undefined — не грузили; null — demo/пусто/ошибка
+		let cachedCollections;
+
+		// Классы фильтров (зеркало ./filter-classes — is:inline не поддерживает import).
+		const OPT_ACTIVE = "text-[rgb(var(--color-text,0_0_0))]";
+		const OPT_IDLE = "text-[rgb(var(--color-muted,153_153_153))] hover:text-[rgb(var(--color-text,0_0_0))]";
+		const RADIO_CIRCLE =
+			"relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-[rgb(var(--color-muted,153_153_153))] after:pointer-events-none after:absolute after:h-[10px] after:w-[10px] after:rounded-full after:bg-[rgb(var(--color-text,0_0_0))] after:opacity-0 after:content-[''] peer-checked:border-[rgb(var(--color-text,0_0_0))] peer-checked:after:opacity-100";
+		const RADIO_TEXT =
+			"font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-muted,153_153_153))] peer-checked:text-[rgb(var(--color-text,0_0_0))]";
+
+		// loadRealProducts: live — /data/products.json; превью — storefront-data по
+		// window.__MERFY_SITE_ID__ (фолбэк на siteId из define:vars). null → demo.
+		async function loadRealProducts() {
+			if (cachedProducts !== undefined) return cachedProducts;
+			try {
+				const res = await fetch("/data/products.json");
+				if (res.ok) {
+					const data = await res.json();
+					if (Array.isArray(data) && data.length > 0) { cachedProducts = data; return cachedProducts; }
+				}
+			} catch {}
+			const sid = (typeof window !== "undefined" && window.__MERFY_SITE_ID__) || siteId || undefined;
+			if (sid) {
+				try {
+					const res = await fetch(`/api/sites/${encodeURIComponent(sid)}/storefront-data`);
+					if (res.ok) {
+						const payload = await res.json();
+						const products = payload && payload.products;
+						if (Array.isArray(products) && products.length > 0) { cachedProducts = products; return cachedProducts; }
+					}
+				} catch {}
+			}
+			cachedProducts = null;
+			return cachedProducts;
+		}
+
+		async function loadRealCollections() {
+			if (cachedCollections !== undefined) return cachedCollections;
+			try {
+				const res = await fetch("/data/collections.json");
+				if (res.ok) {
+					const data = await res.json();
+					if (Array.isArray(data) && data.length > 0) { cachedCollections = data; return cachedCollections; }
+				}
+			} catch {}
+			const sid = (typeof window !== "undefined" && window.__MERFY_SITE_ID__) || siteId || undefined;
+			if (sid) {
+				try {
+					const res = await fetch(`/api/sites/${encodeURIComponent(sid)}/storefront-data`);
+					if (res.ok) {
+						const payload = await res.json();
+						const collections = payload && payload.collections;
+						if (Array.isArray(collections) && collections.length > 0) { cachedCollections = collections; return cachedCollections; }
+					}
+				} catch {}
+			}
+			cachedCollections = null;
+			return cachedCollections;
+		}
+
+		function findCollection(collections, ref) {
+			if (!ref || !collections) return null;
+			return collections.find((c) => c && (c.id === ref || c.slug === ref || c.name === ref)) ?? null;
+		}
+
+		// filterByCollection: сперва по productIds, затем по membership; пустой → исходный.
+		function filterByCollection(products, collections, ref) {
+			if (!ref) return products;
+			const col = findCollection(collections, ref);
+			let filtered = [];
+			if (col && Array.isArray(col.productIds) && col.productIds.length > 0) {
+				const ids = new Set(col.productIds);
+				filtered = products.filter((p) => p.id && ids.has(p.id));
+			}
+			if (filtered.length === 0) {
+				filtered = products.filter((p) => {
+					const memb = p.collections;
+					return Array.isArray(memb) && memb.some((m) => m && (m.id === ref || m.slug === ref || (col && col.slug && m.slug === col.slug)));
+				});
+			}
+			return filtered.length > 0 ? filtered : products;
+		}
+
+		function formatPrice(value) {
+			if (value === null || value === undefined || value === "") return "";
+			if (typeof value === "string") return value;
+			return `${value.toLocaleString("ru-RU")} ₽`;
+		}
+		function productHref(p) { return `/product?id=${encodeURIComponent(p.id)}`; }
+		function productImageRaw(p) {
+			return (Array.isArray(p.images) && typeof p.images[0] === "string" && p.images[0]) || "";
+		}
+		function escapeHtml(value) {
+			return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+		}
+
+		// Surface-плейсхолдер медиа карточки (товар без фото / битый URL).
+		const CARD_MEDIA_FALLBACK_HTML =
+			'<div class="absolute inset-0 flex items-center justify-center" style="background:rgb(var(--color-surface,245 245 245))" aria-hidden="true">' +
+			'<svg class="size-10" style="color:rgb(var(--color-muted,153 153 153))" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+			'<rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>' +
+			"</svg></div>";
+		const CARD_IMG_ONERROR_ATTR = ` onerror="this.onerror=null;this.outerHTML='${CARD_MEDIA_FALLBACK_HTML.replace(/"/g, "&quot;")}'"`;
+
+		// renderCardHtml — зеркалит vanilla-карточку (aspect-square, font-vanilla-arsenal).
+		function renderCardHtml(p) {
+			const href = escapeHtml(productHref(p));
+			const name = escapeHtml(p.name);
+			const rawImage = productImageRaw(p);
+			const media = rawImage
+				? `<img src="${escapeHtml(rawImage)}" alt="${name}" width="429" height="429" loading="eager" class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"${CARD_IMG_ONERROR_ATTR} />`
+				: CARD_MEDIA_FALLBACK_HTML;
+			const price = escapeHtml(formatPrice(p.price));
+			const oldRaw = formatPrice(p.oldPrice || p.compareAtPrice || null);
+			const oldPrice = oldRaw
+				? `<span class="font-vanilla-arsenal text-[14px] font-normal leading-none text-[#444444] line-through">${escapeHtml(oldRaw)}</span>`
+				: "";
+			return `<article class="group flex flex-col gap-3" data-nt="vanilla-product-card" aria-label="${name}">
+	<a href="${href}" class="relative block aspect-square w-full overflow-hidden bg-[var(--vanilla-card)]" aria-label="${name}">${media}</a>
+	<div class="flex flex-col gap-1">
+		<a href="${href}" class="font-vanilla-arsenal text-base font-normal uppercase leading-none text-black transition-opacity hover:opacity-70">${name}</a>
+		<div class="flex flex-wrap items-baseline gap-2">
+			<span class="font-vanilla-arsenal text-base font-normal leading-none text-black">${price}</span>
+			${oldPrice}
+		</div>
+	</div>
+</article>`;
+		}
+
+		function pluralize(count) {
+			const m10 = count % 10, m100 = count % 100;
+			if (m100 >= 11 && m100 <= 14) return `${count} товаров`;
+			if (m10 === 1) return `${count} товар`;
+			if (m10 >= 2 && m10 <= 4) return `${count} товара`;
+			return `${count} товаров`;
+		}
+		function updateCount(n) {
+			for (const el of Array.from(document.querySelectorAll('[data-nt="catalog-count"]'))) {
+				el.textContent = pluralize(n);
+			}
+		}
+
+		// parsePriceNumber: реальные сборки — number; demo-строки ("1 940 ₽") парсим.
+		function parsePriceNumber(value) {
+			if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+			if (typeof value !== "string") return 0;
+			const digits = value.replace(/[\s  ]/g, "").replace(/[^\d.,-]/g, "").replace(",", ".");
+			const n = parseFloat(digits);
+			return Number.isFinite(n) ? n : 0;
+		}
+		// productInStock: эвристика по variantCombinations (нет комбинаций → в наличии).
+		function productInStock(p) {
+			const combos = p.variantCombinations;
+			if (!Array.isArray(combos) || combos.length === 0) return true;
+			return combos.some((c) => c.available !== false && (c.quantity === undefined || c.quantity === null || c.quantity > 0));
+		}
+		function filterByStock(products, stock) {
+			if (stock === "in") return products.filter((p) => productInStock(p));
+			if (stock === "out") return products.filter((p) => !productInStock(p));
+			return products;
+		}
+		function filterByPrice(products, min, max) {
+			if (min === null && max === null) return products;
+			return products.filter((p) => {
+				const price = parsePriceNumber(p.price);
+				if (min !== null && price < min) return false;
+				if (max !== null && price > max) return false;
+				return true;
+			});
+		}
+		// sortProducts (новый массив): popularity — исходный; new — reverse; price-asc/desc.
+		function sortProducts(products, sort) {
+			if (sort === "new") return products.slice().reverse();
+			if (sort === "price-asc") return products.slice().sort((a, b) => parsePriceNumber(a.price) - parsePriceNumber(b.price));
+			if (sort === "price-desc") return products.slice().sort((a, b) => parsePriceNumber(b.price) - parsePriceNumber(a.price));
+			return products.slice();
+		}
+
+		// ─────────────────────── Каталог: state + orchestration ───────────────────────
+		let catalogCollections = null;
+		let catalogProducts = null;
+		const filters = { stock: "all", priceMin: null, priceMax: null, sort: "popularity", page: 1 };
+
+		function getPageSize() {
+			const root = document.querySelector("[data-catalog-layout]");
+			const n = parseInt((root && root.getAttribute("data-page-size")) ?? "", 10);
+			if (Number.isFinite(n) && n > 0) return n;
+			return Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 12;
+		}
+		// Коллекция: СНАЧАЛА настройка конструктора (data-collection-slug), ИНАЧЕ ?collection=.
+		function currentCollectionRef() {
+			const root = document.querySelector("[data-catalog-layout]");
+			const fromSetting = root && root.getAttribute("data-collection-slug");
+			if (fromSetting && fromSetting.trim()) return fromSetting.trim();
+			return new URLSearchParams(window.location.search).get("collection");
+		}
+		function getFilteredSorted(products) {
+			const ref = currentCollectionRef();
+			let items = ref ? filterByCollection(products, catalogCollections, ref) : products;
+			items = filterByStock(items, filters.stock);
+			items = filterByPrice(items, filters.priceMin, filters.priceMax);
+			items = sortProducts(items, filters.sort);
+			return items;
+		}
+		async function renderCatalog() {
+			const products = catalogProducts ?? (catalogProducts = await loadRealProducts());
+			if (!products) return; // demo-сборка
+			const items = getFilteredSorted(products);
+			const total = items.length;
+			const size = getPageSize();
+			const shown = Math.min(items.length, filters.page * size);
+			const visible = items.slice(0, shown);
+			const html = visible.map((p) => `<li data-product-id="${escapeHtml(p.id)}">${renderCardHtml(p)}</li>`).join("");
+			for (const grid of Array.from(document.querySelectorAll('[data-nt="catalog-grid"]'))) grid.innerHTML = html;
+			updateCount(total);
+			for (const btn of Array.from(document.querySelectorAll("[data-action='load-more']"))) {
+				btn.style.display = shown >= total ? "none" : "";
+			}
+		}
+		function resetPageAndRender() { filters.page = 1; renderCatalog(); }
+
+		// ─────────── Наличие (top: name=vanilla-top-stock; side: name=vanilla-stock) ───────────
+		function syncStockUi() {
+			for (const input of Array.from(document.querySelectorAll('input[name="vanilla-top-stock"], input[name="vanilla-stock"]'))) {
+				input.checked = input.value === filters.stock;
+			}
+		}
+		function bindStock() {
+			for (const input of Array.from(document.querySelectorAll('input[name="vanilla-top-stock"], input[name="vanilla-stock"]'))) {
+				if (input.getAttribute("data-cf-stock") === "1") continue;
+				input.setAttribute("data-cf-stock", "1");
+				input.addEventListener("change", () => {
+					if (!input.checked) return;
+					const v = input.value;
+					filters.stock = v === "in" || v === "out" ? v : "all";
+					syncStockUi();
+					resetPageAndRender();
+				});
+			}
+		}
+
+		// ─────────── Сортировка (top: name=vanilla-top-sort; side: name=vanilla-sort) ───────────
+		const SORT_LABELS = { popularity: "По популярности", new: "По новизне", "price-desc": "По убыванию цены", "price-asc": "По возрастанию цены" };
+		function syncSortUi() {
+			for (const input of Array.from(document.querySelectorAll('input[name="vanilla-top-sort"], input[name="vanilla-sort"]'))) {
+				input.checked = input.value === filters.sort;
+			}
+			// лейбл триггера дропдауна top
+			const det = document.querySelector('input[name="vanilla-top-sort"]');
+			const summarySpan = det && det.closest("details") && det.closest("details").querySelector("summary > span:first-child");
+			if (summarySpan) summarySpan.textContent = SORT_LABELS[filters.sort] ?? "По популярности";
+		}
+		function bindSort() {
+			for (const input of Array.from(document.querySelectorAll('input[name="vanilla-top-sort"], input[name="vanilla-sort"]'))) {
+				if (input.getAttribute("data-cf-sort") === "1") continue;
+				input.setAttribute("data-cf-sort", "1");
+				input.addEventListener("change", () => {
+					if (!input.checked) return;
+					const v = input.value;
+					filters.sort = v === "new" || v === "price-asc" || v === "price-desc" ? v : "popularity";
+					syncSortUi();
+					resetPageAndRender();
+					const det = input.closest("details");
+					if (det) det.removeAttribute("open");
+				});
+			}
+		}
+
+		// ─────────── Стоимость (от/до) — заменяем <span> значения на <input> ───────────
+		function bindPrice() {
+			for (const rows of Array.from(document.querySelectorAll('[data-nt="catalog-price"]'))) {
+				if (rows.getAttribute("data-cf-price") === "1") continue;
+				rows.setAttribute("data-cf-price", "1");
+				const lines = Array.from(rows.children); // [0]=от, [1]=до
+				lines.forEach((line, idx) => {
+					const valueWrap = line.querySelector(":scope > div");
+					const valueSpan = valueWrap && valueWrap.querySelector("span");
+					if (!valueWrap || !valueSpan) return;
+					const input = document.createElement("input");
+					input.type = "text";
+					input.inputMode = "numeric";
+					input.value = "";
+					input.placeholder = valueSpan.textContent?.trim() ?? "";
+					input.setAttribute("data-price-input", idx === 0 ? "min" : "max");
+					input.className = "w-[64px] bg-transparent text-right outline-none";
+					input.style.color = "inherit";
+					input.style.font = "inherit";
+					valueSpan.replaceWith(input);
+					input.addEventListener("input", () => {
+						const raw = input.value.replace(/[^\d]/g, "");
+						const v = raw ? parseInt(raw, 10) : null;
+						if (idx === 0) filters.priceMin = Number.isFinite(v) ? v : null;
+						else filters.priceMax = Number.isFinite(v) ? v : null;
+						for (const other of Array.from(document.querySelectorAll(`[data-price-input="${idx === 0 ? "min" : "max"}"]`))) {
+							if (other !== input) other.value = input.value;
+						}
+						resetPageAndRender();
+					});
+				});
+			}
+		}
+
+		// ─────────── Пагинация «Смотреть ещё» ───────────
+		function bindLoadMore() {
+			if (document.body.getAttribute("data-cf-loadmore") === "1") return;
+			document.body.setAttribute("data-cf-loadmore", "1");
+			document.addEventListener("click", (event) => {
+				const button = event.target.closest("[data-action='load-more']");
+				if (!button) return;
+				filters.page += 1;
+				renderCatalog();
+			});
+		}
+
+		// ─────────── Коллекции (top: дропдаун-кнопки; side: radio) ───────────
+		let radioNameSeq = 0;
+		function collectionOptions() {
+			return (catalogCollections ?? [])
+				.map((c) => {
+					const slug = typeof (c && c.slug) === "string" ? c.slug.trim() : "";
+					const id = typeof (c && c.id) === "string" ? c.id.trim() : "";
+					const label = typeof (c && c.name) === "string" ? c.name.trim() : "";
+					return { id, value: slug || id, label };
+				})
+				.filter((o) => o.value !== "" && o.label !== "");
+		}
+		function renderCollectionsBox(box) {
+			const list = box.querySelector("[data-collections-options]");
+			if (!list) return;
+			const options = collectionOptions();
+			if (options.length === 0) return;
+			const current = findCollection(catalogCollections, currentCollectionRef());
+			if (box.hasAttribute("data-collections-dropdown")) {
+				const label = box.querySelector("[data-collections-label]");
+				const currentLabel = typeof (current && current.name) === "string" ? current.name.trim() : "";
+				if (label) label.textContent = currentLabel || "Коллекции";
+				const optionHtml = (value, name, active) =>
+					`<button type="button" data-collection-option="${escapeHtml(value)}" class="cursor-pointer text-left font-vanilla-arsenal text-base font-normal leading-none transition-colors ${active ? OPT_ACTIVE : OPT_IDLE}">${escapeHtml(name)}</button>`;
+				list.innerHTML = optionHtml("", "Все", !current) + options.map((o) => optionHtml(o.value, o.label, !!current && current.id === o.id)).join("");
+			} else {
+				let radioName = box.getAttribute("data-cf-radio-name");
+				if (!radioName) { radioName = `vanilla-collection-${++radioNameSeq}`; box.setAttribute("data-cf-radio-name", radioName); }
+				const optionHtml = (value, name, active) =>
+					`<label class="group flex cursor-pointer items-center gap-2"><input type="radio" name="${escapeHtml(radioName)}" value="${escapeHtml(value)}" data-collection-option="${escapeHtml(value)}"${active ? " checked" : ""} class="peer sr-only" /><span aria-hidden="true" class="${RADIO_CIRCLE}"></span><span class="${RADIO_TEXT}">${escapeHtml(name)}</span></label>`;
+				list.innerHTML = optionHtml("", "Все", !current) + options.map((o) => optionHtml(o.value, o.label, !!current && current.id === o.id)).join("");
+			}
+		}
+		function applyCollectionSelection(value) {
+			const params = new URLSearchParams(window.location.search);
+			if (value) params.set("collection", value); else params.delete("collection");
+			const qs = params.toString();
+			window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
+			for (const box of Array.from(document.querySelectorAll('[data-nt="catalog-collections-filter"][data-cf-hydrated="true"]'))) {
+				renderCollectionsBox(box);
+				box.removeAttribute("open");
+			}
+			resetPageAndRender();
+		}
+		async function initCollectionsFilter() {
+			const boxes = Array.from(document.querySelectorAll('[data-nt="catalog-collections-filter"]'));
+			if (boxes.length === 0) return;
+			catalogCollections = await loadRealCollections();
+			if (collectionOptions().length === 0) return;
+			for (const box of boxes) {
+				if (box.getAttribute("data-cf-hydrated") === "true") continue;
+				const list = box.querySelector("[data-collections-options]");
+				if (!list) continue;
+				box.setAttribute("data-cf-hydrated", "true");
+				box.style.display = "";
+				renderCollectionsBox(box);
+				list.addEventListener("change", (ev) => {
+					const input = ev.target.closest("input[data-collection-option]");
+					if (input) applyCollectionSelection(input.value);
+				});
+				list.addEventListener("click", (ev) => {
+					const btn = ev.target.closest("button[data-collection-option]");
+					if (btn) applyCollectionSelection(btn.getAttribute("data-collection-option") ?? "");
+				});
+			}
+		}
+
+		async function hydrateCatalog() {
+			await initCollectionsFilter();
+			catalogProducts = await loadRealProducts();
+			bindStock();
+			bindSort();
+			bindPrice();
+			bindLoadMore();
+			syncStockUi();
+			syncSortUi();
+			await renderCatalog();
+		}
+
+		hydrateCatalog();
+		document.addEventListener("astro:page-load", hydrateCatalog);
+	})();
+</script>

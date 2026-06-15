@@ -1,0 +1,129 @@
+---
+/**
+ * Боковые фильтры каталога Vanilla (Figma Vanila / textile) — sibling блока Catalog.
+ * Разметка фильтров; гидрация (is:inline в Catalog.astro) вешает обработчики на
+ * radio наличия/сортировки и значения «Стоимости», поэтому здесь только UI.
+ *
+ * Классы радио/заголовков/«Стоимости» — общие с рядом дропдаунов top-вида
+ * (./filter-classes); цвета — токены схем конструктора rgb(var(--color-*))
+ * с фолбэками на родную палитру vanilla.
+ *
+ * Порт из themes/vanilla/src/components/catalog/VanillaCatalogFilterSidebar.astro.
+ */
+import {
+	CATALOG_FILTER_TITLE,
+	CATALOG_PRICE_ROW,
+	CATALOG_PRICE_VALUE,
+	CATALOG_PRICE_WRAP,
+	CATALOG_RADIO_CIRCLE,
+	CATALOG_RADIO_TEXT,
+} from "./filter-classes";
+
+interface RadioOption {
+	value: string;
+	label: string;
+	checked?: boolean;
+}
+
+interface Props {
+	class?: string;
+}
+
+const { class: className = "" } = Astro.props;
+
+const sortOptions: RadioOption[] = [
+	{ value: "popularity", label: "По популярности", checked: true },
+	{ value: "new", label: "По новизне" },
+	{ value: "price-desc", label: "По убыванию цены" },
+	{ value: "price-asc", label: "По возрастанию цены" },
+];
+
+const stockOptions: RadioOption[] = [
+	{ value: "all", label: "Все", checked: true },
+	{ value: "in", label: "В наличии" },
+	{ value: "out", label: "Распродано" },
+];
+---
+
+<aside
+	class:list={["flex w-full max-w-full shrink-0 flex-col gap-3 lg:w-[294px]", className]}
+	data-nt="vanilla-filter-sidebar"
+>
+	{/* Фильтр по коллекциям: скрыт на demo-сборке, гидрация (Catalog.astro)
+	    показывает его при наличии коллекций магазина и уважает ?collection= из
+	    ссылок тайлов Collections/Gallery. Манера = radio-секции сайдбара ниже. */}
+	<div class="flex flex-col gap-3 py-3" data-nt="catalog-collections-filter" style="display:none;">
+		<p class={CATALOG_FILTER_TITLE}>Коллекции</p>
+		<div data-collections-options class="flex flex-col gap-3"></div>
+	</div>
+
+	<div class="flex flex-col gap-3 py-3">
+		<p class={CATALOG_FILTER_TITLE}>Сортировать</p>
+		<div class="flex flex-col gap-3">
+			{
+				sortOptions.map((option) => {
+					const id = `vanilla-sort-${option.value}`;
+					return (
+						<label for={id} class="group flex cursor-pointer items-center gap-2">
+							<input
+								id={id}
+								type="radio"
+								name="vanilla-sort"
+								value={option.value}
+								checked={option.checked}
+								class="peer sr-only"
+							/>
+							<span aria-hidden="true" class={CATALOG_RADIO_CIRCLE} />
+							<span class={CATALOG_RADIO_TEXT}>{option.label}</span>
+						</label>
+					);
+				})
+			}
+		</div>
+	</div>
+
+	<div class="flex flex-col gap-3 py-3">
+		<p class={CATALOG_FILTER_TITLE}>Наличие</p>
+		<div class="flex flex-col gap-3">
+			{
+				stockOptions.map((option) => {
+					const id = `vanilla-stock-${option.value}`;
+					return (
+						<label for={id} class="group flex cursor-pointer items-center gap-2">
+							<input
+								id={id}
+								type="radio"
+								name="vanilla-stock"
+								value={option.value}
+								checked={option.checked}
+								class="peer sr-only"
+							/>
+							<span aria-hidden="true" class={CATALOG_RADIO_CIRCLE} />
+							<span class={CATALOG_RADIO_TEXT}>{option.label}</span>
+						</label>
+					);
+				})
+			}
+		</div>
+	</div>
+
+	<div class="flex flex-col gap-3 py-3">
+		<p class={CATALOG_FILTER_TITLE}>Стоимость</p>
+		<div class={CATALOG_PRICE_WRAP}>
+			<div class={CATALOG_PRICE_ROW}>
+				<span>от</span>
+				<div class={CATALOG_PRICE_VALUE}>
+					<span>0</span>
+					<span>₽</span>
+				</div>
+			</div>
+			<div class={CATALOG_PRICE_ROW}>
+				<span>до</span>
+				<div class={CATALOG_PRICE_VALUE}>
+					<span>5 990</span>
+					<span>₽</span>
+				</div>
+			</div>
+		</div>
+	</div>
+</aside>

@@ -45,9 +45,12 @@ const CANON_SLIDES = [
 // Подменяем расширение заранее (паттерн Collections); на сборке темы вывод тот же.
 const toWebp = (src: string) => src.replace(/\.(png|jpe?g)$/i, ".webp");
 
-// Канон mode: 'carousel' (canon-default из blockDefaults vanilla) И отсутствие →
-// карусель верстальщика; явный 'single' → одиночное полотно без контролов.
-const mode = p.mode === "single" ? "single" : "carousel";
+// Hero = ОДИНОЧНОЕ изображение (одно полотно, без контролов карусели). Карусель —
+// это ОТДЕЛЬНАЯ секция «Слайд-шоу» (Slideshow), Hero её не дублирует. Раньше
+// blockDefaults vanilla форсил mode=carousel → Hero выглядел как Слайд-шоу (баг
+// тестера «Изображение = Слайд-шоу»). Теперь Hero всегда single, даже если в
+// старых данных лежит mode=carousel (артефакт сида — карусель живёт в Slideshow).
+const mode = "single";
 
 // Канон size — canon-носитель лестниц (blockDefaults vanilla size='large').
 const sectionSize = typeof p.size === "string" ? p.size : undefined;

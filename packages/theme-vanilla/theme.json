@@ -75,7 +75,7 @@
       }
     },
     "Hero": {
-      "mode": "carousel",
+      "mode": "single",
       "imageFullBleed": true,
       "contentAlign": "left",
       "alignment": "left",

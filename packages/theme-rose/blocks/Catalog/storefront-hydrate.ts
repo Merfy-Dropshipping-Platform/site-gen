@@ -400,3 +400,112 @@ export function renderVariantGroupsHtml(
 		})
 		.join("");
 }
+
+// ─────────── Фильтры / сортировка каталога rose (Phase: live-логика) ───────────
+// Те же data-driven правила, что в theme-base/blocks/Catalog/Catalog.astro, но
+// вынесены в helper'ы (родная rose-вёрстка дёргает их из client <script>).
+
+/** 'all' (без фильтра) | 'in' (в наличии) | 'out' (распродано). */
+export type StockFilter = "all" | "in" | "out";
+/** popularity (исходный порядок) | new (reverse) | price-asc | price-desc. */
+export type SortKey = "popularity" | "new" | "price-asc" | "price-desc";
+
+/**
+ * Число из цены. На реальных сборках price — number; demo-строки ("5 990 ₽")
+ * парсим, выкидывая пробелы/неразрывные пробелы/₽. Не парсится → 0.
+ */
+export function parsePriceNumber(value: number | string | null | undefined): number {
+	if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+	if (typeof value !== "string") return 0;
+	const digits = value.replace(/[\s  ]/g, "").replace(/[^\d.,-]/g, "").replace(",", ".");
+	const n = parseFloat(digits);
+	return Number.isFinite(n) ? n : 0;
+}
+
+/**
+ * Наличие товара. Прямого поля нет → эвристика по variantCombinations:
+ * товар «в наличии», если есть хотя бы одна комбинация, у которой
+ * available !== false И (quantity не задан ИЛИ quantity > 0). Товар без
+ * комбинаций считаем «в наличии» (demo/простые товары). «Распродано» = обратное.
+ */
+export function productInStock(p: RealProduct): boolean {
+	const combos = p.variantCombinations;
+	if (!Array.isArray(combos) || combos.length === 0) return true;
+	return combos.some((c) => c.available !== false && (c.quantity === undefined || c.quantity === null || c.quantity > 0));
+}
+
+/** Фильтр по наличию. 'all' → исходный список без копии. */
+export function filterByStock(products: RealProduct[], stock: StockFilter): RealProduct[] {
+	if (stock === "in") return products.filter((p) => productInStock(p));
+	if (stock === "out") return products.filter((p) => !productInStock(p));
+	return products;
+}
+
+/** Фильтр по диапазону цены (включительно). null-границы игнорируются. */
+export function filterByPrice(
+	products: RealProduct[],
+	min: number | null,
+	max: number | null,
+): RealProduct[] {
+	if (min === null && max === null) return products;
+	return products.filter((p) => {
+		const price = parsePriceNumber(p.price);
+		if (min !== null && price < min) return false;
+		if (max !== null && price > max) return false;
+		return true;
+	});
+}
+
+/** Имена групп-цветов (регистронезависимо) в options комбинаций. */
+const COLOR_GROUP_NAMES = ["цвет", "color"];
+
+function isColorGroup(name: string): boolean {
+	return COLOR_GROUP_NAMES.includes(name.trim().toLowerCase());
+}
+
+/** Цвета одного товара (значения цвет-группы из variantCombinations). */
+function productColors(p: RealProduct): string[] {
+	const combos = p.variantCombinations;
+	if (!Array.isArray(combos)) return [];
+	const out: string[] = [];
+	for (const c of combos) {
+		for (const [group, value] of Object.entries(c.options ?? {})) {
+			if (isColorGroup(group) && value && !out.includes(value)) out.push(value);
+		}
+	}
+	return out;
+}
+
+/**
+ * Уникальные цвета по всему каталогу (в порядке появления). Пустой массив →
+ * цвет-данных нет, вызывающий код скрывает секцию «Цвет» (вместо demo
+ * black/white/gray, которые не фильтруют).
+ */
+export function collectColors(products: RealProduct[]): string[] {
+	const out: string[] = [];
+	for (const p of products) {
+		for (const c of productColors(p)) {
+			if (!out.includes(c)) out.push(c);
+		}
+	}
+	return out;
+}
+
+/** Фильтр по цвету (OR: товар проходит, если совпал ЛЮБОЙ выбранный цвет). */
+export function filterByColors(products: RealProduct[], colors: string[]): RealProduct[] {
+	if (!Array.isArray(colors) || colors.length === 0) return products;
+	const wanted = colors.map((c) => c.toLowerCase());
+	return products.filter((p) => productColors(p).some((c) => wanted.includes(c.toLowerCase())));
+}
+
+/**
+ * Сортировка (возвращает НОВЫЙ массив):
+ *   popularity — исходный порядок; new — reverse (даты нет, новые в конце);
+ *   price-asc / price-desc — по числовой цене.
+ */
+export function sortProducts(products: RealProduct[], sort: SortKey): RealProduct[] {
+	if (sort === "new") return products.slice().reverse();
+	if (sort === "price-asc") return products.slice().sort((a, b) => parsePriceNumber(a.price) - parsePriceNumber(b.price));
+	if (sort === "price-desc") return products.slice().sort((a, b) => parsePriceNumber(b.price) - parsePriceNumber(a.price));
+	return products.slice();
+}

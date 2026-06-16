@@ -262,7 +262,14 @@ export class PreviewController {
               v2Html,
               siteId,
               productIdOverride ?? this.defaultProductIdFromRevision(loaded.data),
-              this.catalogLayoutFromRevision(loaded.data),
+              // НЕ инжектим __MERFY_CATALOG_LAYOUT__ на секционном (v2) пути: блок
+              // Catalog сам рендерит data-catalog-layout из СВОЕГО filterPosition
+              // (rose/vanilla — оба варианта + CSS-switch; theme-base — один
+              // вариант условно). Глобал-override нужен только статичным built-theme
+              // страницам (blob-путь ниже). Раньше тут читался жёстко page-catalog →
+              // при превью page-collection инжектился чужой layout, и inline-override
+              // перебивал свежий рендер (баг «вид сбоку/сверху не переключается»).
+              null,
               this.productBlockIdFromRevision(loaded.data),
             );
             this.logger.log(
@@ -309,7 +316,14 @@ export class PreviewController {
         siteId,
         // ?productId= (клик по карточке в превью) приоритетнее настройки блока.
         productIdOverride ?? this.defaultProductIdFromRevision(loaded.data),
-        this.catalogLayoutFromRevision(loaded.data),
+        // Blob-путь = статичная built-theme страница; layout переключается ТОЛЬКО
+        // глобалом. Читаем filterPosition со страницы, соответствующей маршруту
+        // (collections/* → page-collection, иначе page-catalog) — НЕ жёстко
+        // page-catalog, иначе подставится чужой layout (см. фикс v2-пути выше).
+        this.catalogLayoutFromRevision(
+          loaded.data,
+          route.startsWith('collections') ? 'page-collection' : 'page-catalog',
+        ),
         this.productBlockIdFromRevision(loaded.data),
       );
       html = this.injectTokensIntoBlobPage(
@@ -650,10 +664,14 @@ export class PreviewController {
     };
   }
 
-  /** filterPosition из настроек Catalog-блока page-catalog ревизии. */
-  private catalogLayoutFromRevision(data: unknown): string | null {
+  /** filterPosition из Catalog-блока УКАЗАННОЙ страницы ревизии. pageKey — ключ в
+   *  pagesData (page-catalog | page-collection). Раньше ключ был зашит
+   *  'page-catalog' → при рендере другой страницы (page-collection) инжектился
+   *  чужой layout и inline-override перебивал свежо-отрендеренный
+   *  data-catalog-layout (баг «вид фильтра не переключается»). */
+  private catalogLayoutFromRevision(data: unknown, pageKey: string): string | null {
     const pages = (data as { pagesData?: Record<string, { content?: Array<{ type?: string; props?: { filterPosition?: unknown } }> }> } | null)?.pagesData;
-    const content = pages?.['page-catalog']?.content;
+    const content = pages?.[pageKey]?.content;
     if (!Array.isArray(content)) return null;
     const block = content.find((b) => b?.type === 'Catalog');
     const fp = block?.props?.filterPosition;

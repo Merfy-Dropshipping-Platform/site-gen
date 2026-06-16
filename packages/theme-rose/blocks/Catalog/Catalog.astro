@@ -405,8 +405,8 @@ const skeletons = Array.from({ length: skeletonCount });
   (function () {
   // ─── Инлайн storefront-hydrate.ts (loaders + filters/sort + card render) ───
   const PLACEHOLDER_IMAGE = "/placeholders/sweater-blue.png";
-  let cachedProducts; // undefined — не грузили; null — demo/пусто/ошибка
   let cachedCollections;
+  let cachedColors; // undefined — не грузили; массив имён цветов из /store/filters
 
   // ЖИВОЙ storefront API (спек 098 — «не products.json»). store_id (shopId) = siteId
   // (storefront-data.controller: «Products are stored with shopId = siteId»).
@@ -458,50 +458,10 @@ const skeletons = Array.from({ length: skeletonCount });
     };
   }
 
-  // loadRealProducts: ЖИВОЙ API /api/store/products (постранично — все товары магазина,
-  // limit=100/стр). Фолбэк — статичный /data/products.json (resilience, если API недоступен).
-  async function loadRealProducts() {
-    if (cachedProducts !== undefined) return cachedProducts;
-    if (storeId) {
-      try {
-        const all = [];
-        let page = 1;
-        let total = Infinity;
-        while (all.length < total && page <= 50) {
-          const res = await fetch(
-            `${apiBase}/api/store/products?store_id=${encodeURIComponent(storeId)}&page=${page}&limit=100`,
-          );
-          if (!res.ok) break;
-          const json = await res.json();
-          const prods = Array.isArray(json.products) ? json.products.map(mapApiProduct) : [];
-          all.push.apply(all, prods);
-          total = typeof json.total === "number" ? json.total : all.length;
-          if (prods.length === 0) break;
-          page++;
-        }
-        if (all.length > 0) {
-          cachedProducts = all;
-          return cachedProducts;
-        }
-      } catch {
-        /* API недоступен — фолбэк на статичный products.json ниже */
-      }
-    }
-    try {
-      const res = await fetch("/data/products.json");
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          cachedProducts = data;
-          return cachedProducts;
-        }
-      }
-    } catch {
-      /* нет файла */
-    }
-    cachedProducts = null;
-    return cachedProducts;
-  }
+  // СЕРВЕРНАЯ пагинация: товары больше НЕ грузятся все сразу. Каждая «страница»
+  // (12 шт) — отдельный fetch /api/store/products?page=N с серверными фильтрами
+  // (sort/price/availability/collection/variant-цвет). См. buildProductsQuery /
+  // fetchProductsPage ниже (объявлены рядом с renderCatalog).
 
   // loadRealCollections: ЖИВОЙ API /api/store/collections. Фолбэк — collections.json.
   async function loadRealCollections() {
@@ -544,33 +504,13 @@ const skeletons = Array.from({ length: skeletonCount });
     return cachedCollections;
   }
 
+  // findCollection: резолв ссылки (slug/id/name) в объект коллекции из кэша —
+  // используется buildProductsQuery для slug→collection_id серверного фильтра.
   function findCollection(collections, ref) {
     if (!ref || !collections) return null;
     return (
       collections.find((c) => c && (c.id === ref || c.slug === ref || c.name === ref)) ?? null
     );
-  }
-
-  // filterByCollection: сперва по productIds, затем по membership товара;
-  // пустой результат → исходный список (паритет с theme-base).
-  function filterByCollection(products, collections, ref) {
-    if (!ref) return products;
-    const col = findCollection(collections, ref);
-    let filtered = [];
-    if (col && Array.isArray(col.productIds) && col.productIds.length > 0) {
-      const ids = new Set(col.productIds);
-      filtered = products.filter((p) => p.id && ids.has(p.id));
-    }
-    if (filtered.length === 0) {
-      filtered = products.filter((p) => {
-        const memb = p.collections;
-        return (
-          Array.isArray(memb) &&
-          memb.some((m) => m && (m.id === ref || m.slug === ref || (col && col.slug && m.slug === col.slug)))
-        );
-      });
-    }
-    return filtered.length > 0 ? filtered : products;
   }
 
   function formatPrice(value) {
@@ -637,88 +577,18 @@ const skeletons = Array.from({ length: skeletonCount });
     }
   }
 
-  // parsePriceNumber: реальные сборки — number; demo-строки ("5 990 ₽") парсим.
-  function parsePriceNumber(value) {
-    if (typeof value === "number") return Number.isFinite(value) ? value : 0;
-    if (typeof value !== "string") return 0;
-    const digits = value.replace(/[\s  ]/g, "").replace(/[^\d.,-]/g, "").replace(",", ".");
-    const n = parseFloat(digits);
-    return Number.isFinite(n) ? n : 0;
-  }
-
-  // productInStock: эвристика по variantCombinations (нет комбинаций → в наличии).
-  function productInStock(p) {
-    const combos = p.variantCombinations;
-    if (!Array.isArray(combos) || combos.length === 0) return true;
-    return combos.some((c) => c.available !== false && (c.quantity === undefined || c.quantity === null || c.quantity > 0));
-  }
-
-  function filterByStock(products, stock) {
-    if (stock === "in") return products.filter((p) => productInStock(p));
-    if (stock === "out") return products.filter((p) => !productInStock(p));
-    return products;
-  }
-
-  function filterByPrice(products, min, max) {
-    if (min === null && max === null) return products;
-    return products.filter((p) => {
-      const price = parsePriceNumber(p.price);
-      if (min !== null && price < min) return false;
-      if (max !== null && price > max) return false;
-      return true;
-    });
-  }
-
-  const COLOR_GROUP_NAMES = ["цвет", "color"];
-  function isColorGroup(name) {
-    return COLOR_GROUP_NAMES.includes(name.trim().toLowerCase());
-  }
-  function productColors(p) {
-    const combos = p.variantCombinations;
-    if (!Array.isArray(combos)) return [];
-    const out = [];
-    for (const c of combos) {
-      for (const [group, value] of Object.entries(c.options ?? {})) {
-        if (isColorGroup(group) && value && !out.includes(value)) out.push(value);
-      }
-    }
-    return out;
-  }
-
-  // collectColors: уникальные цвета по каталогу; пустой → секцию «Цвет» скрыть.
-  function collectColors(products) {
-    const out = [];
-    for (const p of products) {
-      for (const c of productColors(p)) {
-        if (!out.includes(c)) out.push(c);
-      }
-    }
-    return out;
-  }
-
-  function filterByColors(products, colors) {
-    if (!Array.isArray(colors) || colors.length === 0) return products;
-    const wanted = colors.map((c) => c.toLowerCase());
-    return products.filter((p) => productColors(p).some((c) => wanted.includes(c.toLowerCase())));
-  }
-
-  // sortProducts (новый массив): popularity — исходный; new — reverse; price-asc/desc.
-  function sortProducts(products, sort) {
-    if (sort === "new") return products.slice().reverse();
-    if (sort === "price-asc") return products.slice().sort((a, b) => parsePriceNumber(a.price) - parsePriceNumber(b.price));
-    if (sort === "price-desc") return products.slice().sort((a, b) => parsePriceNumber(b.price) - parsePriceNumber(a.price));
-    return products.slice();
-  }
+  // Имя variant-группы цвета (рус. тема rose). Серверный API принимает variant-фильтр
+  // ключом = ИМЯ группы как есть (`&Цвет=Синий`), один value на группу.
+  const COLOR_GROUP_NAME = "Цвет";
 
   // ─────────────────────── Каталог: state + orchestration ───────────────────────
-  // Реальные товары (Option B): на published-сайте /data/products.json реальный →
-  // перерисовываем demo-grid. На demo-сборке loadRealProducts() вернёт null → no-op.
-  // Единый filter-state поверх отфильтрованного списка: коллекция (из настройки
-  // конструктора ИЛИ ?collection=) + наличие/стоимость/цвет/сортировка + пагинация.
-  // top- и side-раскладки = два независимых набора контролов: обработчики вешаем
-  // на ОБА, пишем в общий state, перерисовываем ОБА грида.
+  // СЕРВЕРНАЯ пагинация: товары грузятся ПОСТРАНИЧНО (12/стр) реальными запросами
+  // /api/store/products?page=N с серверными фильтрами. Клиент НЕ держит весь каталог.
+  // Единый filter-state: коллекция (из настройки конструктора ИЛИ ?collection=) +
+  // наличие/стоимость/цвет/сортировка + страница (page). top- и side-раскладки = два
+  // независимых набора контролов: обработчики вешаем на ОБА, пишем в общий state,
+  // перерисовываем ОБА грида.
   let catalogCollections = null;
-  let catalogProducts = null;
   let availableColors = [];
 
   const filters = {
@@ -749,54 +619,148 @@ const skeletons = Array.from({ length: skeletonCount });
     return new URLSearchParams(window.location.search).get("collection");
   }
 
-  // Применяет весь конвейер: коллекция → наличие → цена → цвет → сортировка.
-  function getFilteredSorted(products) {
-    const ref = currentCollectionRef();
-    let items = ref ? filterByCollection(products, catalogCollections, ref) : products;
-    items = filterByStock(items, filters.stock);
-    items = filterByPrice(items, filters.priceMin, filters.priceMax);
-    items = filterByColors(items, filters.colors);
-    items = sortProducts(items, filters.sort);
-    return items;
+  // Снимок скелетон-лоадера (одна «страница» <li data-nt="catalog-skeleton">) из
+  // SSG-грида — захватывается при первой гидрации, чтобы при replace-загрузке
+  // (page=1: смена фильтра/сортировки) показать лоадер вместо пустого/устаревшего
+  // грида. Append (page>1) скелетон не трогает — там индикатор на кнопке.
+  let skeletonHtml = "";
+  function captureSkeleton() {
+    if (skeletonHtml) return;
+    const grid = document.querySelector('[data-nt="catalog-grid"]');
+    if (!grid) return;
+    const sk = Array.from(grid.querySelectorAll('[data-nt="catalog-skeleton"]'));
+    if (sk.length > 0) skeletonHtml = sk.map((el) => el.outerHTML).join("");
+  }
+  function showSkeleton() {
+    if (!skeletonHtml) return;
+    for (const grid of Array.from(document.querySelectorAll('[data-nt="catalog-grid"]'))) {
+      grid.innerHTML = skeletonHtml;
+    }
   }
 
-  async function renderCatalog() {
-    const products = catalogProducts ?? (catalogProducts = await loadRealProducts());
+  // buildProductsQuery: query-строка /api/store/products из текущего filters.
+  // ВАЖНО (verified live + product.service.ts:263): min_price/max_price API трактует
+  // в РУБЛЯХ (basePrice "4990.00"), НЕ в копейках — отдаём как есть, без *100.
+  // out-of-stock в API = `sold_out` (DTO enum), НЕ `out_of_stock` (тот → 400).
+  function buildProductsQuery(page) {
+    const qp = new URLSearchParams();
+    qp.set("store_id", String(storeId ?? ""));
+    qp.set("page", String(page));
+    qp.set("limit", String(getPageSize()));
+
+    const sortMap = {
+      popularity: "popular",
+      new: "newest",
+      "price-asc": "price_asc",
+      "price-desc": "price_desc",
+    };
+    const sort = sortMap[filters.sort];
+    if (sort) qp.set("sort", sort);
+
+    // Поле цены — в РУБЛЯХ (как отображаемые цены «2 690 ₽»), а API
+    // min_price/max_price сравнивает с basePrice в КОПЕЙКАХ → рубли × 100.
+    // (Проверено: max_price=300000коп → товары до 2990₽; передача рублей без
+    // ×100 дала бы 0 результатов на ценах от 790₽.)
+    if (filters.priceMin !== null && filters.priceMin !== undefined)
+      qp.set("min_price", String(Math.round(filters.priceMin * 100)));
+    if (filters.priceMax !== null && filters.priceMax !== undefined)
+      qp.set("max_price", String(Math.round(filters.priceMax * 100)));
+
+    if (filters.stock === "in") qp.set("availability", "in_stock");
+    else if (filters.stock === "out") qp.set("availability", "sold_out");
+
+    // Цвет: один value на группу (multi-цвет API не поддерживает → берём первый).
+    if (Array.isArray(filters.colors) && filters.colors.length > 0) {
+      qp.set(COLOR_GROUP_NAME, filters.colors[0]);
+    }
+
+    // Коллекция: slug/id из настройки или ?collection= → серверный collection_id.
+    // Резолвим slug→id через кэш коллекций; если резолва нет — передаём ref как есть.
+    const ref = currentCollectionRef();
+    if (ref) {
+      const col = findCollection(catalogCollections, ref);
+      qp.set("collection_id", col && col.id ? col.id : ref);
+    }
+    return qp.toString();
+  }
+
+  // fetchProductsPage: один сетевой запрос за страницей N. Возвращает
+  // { items, total, totalPages } либо null (сеть/ошибка) — null → demo-fallback.
+  async function fetchProductsPage(page) {
+    if (!storeId) return null;
+    try {
+      const res = await fetch(`${apiBase}/api/store/products?${buildProductsQuery(page)}`);
+      if (!res.ok) return null;
+      const json = await res.json();
+      const items = Array.isArray(json.products) ? json.products.map(mapApiProduct) : [];
+      const total = typeof json.total === "number" ? json.total : 0;
+      const totalPages =
+        (json.pagination && typeof json.pagination.totalPages === "number"
+          ? json.pagination.totalPages
+          : null) ?? 1;
+      return { items, total, totalPages };
+    } catch {
+      return null; // API недоступен → demo-заглушка
+    }
+  }
+
+  // renderCatalog: СЕРВЕРНАЯ пагинация. append=false (page=1) — replace гридов;
+  // append=true (page>1) — добавление карточек в конец (реальный fetch следующей
+  // страницы по клику «Смотреть ещё»). Скелетон-лоадер на время первого/replace fetch.
+  async function renderCatalog(append) {
     const grids = Array.from(document.querySelectorAll('[data-nt="catalog-grid"]'));
     const loadMoreBtns = Array.from(document.querySelectorAll("[data-action='load-more']"));
-    // ── Состояние 3: магазин ПУСТ (fetch вернул 0 / demo-сборка) → demo-заглушка ──
-    // Скелетон-лоадер в гриде заменяется demo-моками из <template>; кнопки нет.
-    if (!products || products.length === 0) {
+
+    // Лоадер: при replace (page=1) показываем скелетон, пока идёт сетевой запрос.
+    if (!append) showSkeleton();
+    // При append индикатор — на кнопке (текст не трогаем, лишь блокируем повторный клик).
+    if (append) for (const btn of loadMoreBtns) btn.disabled = true;
+
+    const res = await fetchProductsPage(filters.page);
+
+    // ── Append-сбой (page>1, сеть упала): не затираем уже показанные товары —
+    // откатываем счётчик страницы и возвращаем кнопку (повторный клик попробует снова). ──
+    if (res === null && append && filters.page > 1) {
+      filters.page -= 1;
+      for (const btn of loadMoreBtns) btn.disabled = false;
+      return;
+    }
+
+    // ── Demo-заглушка: API недоступен ИЛИ магазин реально пуст (page=1, total=0) ──
+    // Скелетон/грид заменяется demo-моками из <template>; кнопки нет.
+    if (res === null || (filters.page === 1 && res.total === 0)) {
       const demoTpl = document.querySelector('[data-nt="catalog-demo"]');
       const demoHtml = demoTpl ? demoTpl.innerHTML : "";
       const demoN = demoTpl ? demoTpl.content.querySelectorAll("li").length : 0;
       for (const grid of grids) grid.innerHTML = demoHtml;
       updateCount('[data-nt="catalog-count"]', demoN);
-      for (const btn of loadMoreBtns) btn.style.display = "none";
+      for (const btn of loadMoreBtns) {
+        btn.style.display = "none";
+        btn.disabled = false;
+      }
       return;
     }
-    // ── Состояние 2: есть реальные товары → показ по pageSize + «Смотреть ещё» ──
-    const items = getFilteredSorted(products);
-    const total = items.length;
-    const size = getPageSize();
-    const shown = Math.min(items.length, filters.page * size);
-    const visible = items.slice(0, shown);
-    const html = visible
+
+    // ── Реальные товары: рендер страницы (append в конец / replace) ──
+    const html = res.items
       .map((p) => `<li data-product-id="${escapeHtml(p.id)}">${renderCardHtml(p)}</li>`)
       .join("");
-    // Гриды ОБЕИХ раскладок (top и side) перерисовываются одинаково
-    for (const grid of grids) grid.innerHTML = html;
-    updateCount('[data-nt="catalog-count"]', total); // счётчик = total отфильтрованного
-    // Кнопки «Смотреть ещё»: видны ТОЛЬКО когда показаны не все товары
-    // (скрыты в SSG → появляются здесь; на коллекции из 12 не появятся).
+    for (const grid of grids) {
+      if (append && filters.page > 1) grid.insertAdjacentHTML("beforeend", html);
+      else grid.innerHTML = html; // page=1 → replace (в т.ч. затирает скелетон)
+    }
+
+    updateCount('[data-nt="catalog-count"]', res.total); // счётчик = total магазина/фильтра
+    // Кнопки «Смотреть ещё»: видны пока есть следующая страница.
     for (const btn of loadMoreBtns) {
-      btn.style.display = shown >= total ? "none" : "";
+      btn.style.display = filters.page < res.totalPages ? "" : "none";
+      btn.disabled = false;
     }
   }
 
   function resetPageAndRender() {
     filters.page = 1;
-    renderCatalog();
+    renderCatalog(false); // REPLACE — смена фильтра/сортировки начинает с 1-й страницы
   }
 
   // ─────────── Наличие (top: <p> в NtFilterPanel[stock]; side: radio) ───────────
@@ -1058,15 +1022,17 @@ const skeletons = Array.from({ length: skeletonCount });
     }
   }
 
-  // ─────────── Пагинация «Смотреть ещё» ───────────
+  // ─────────── Пагинация «Смотреть ещё» (СЕРВЕРНАЯ) ───────────
+  // Каждый клик = РЕАЛЬНЫЙ сетевой запрос за следующей страницей (12 шт) с APPEND.
   function bindLoadMore() {
     if (document.body.getAttribute("data-cf-loadmore") === "1") return;
     document.body.setAttribute("data-cf-loadmore", "1");
     document.addEventListener("click", (event) => {
       const button = event.target.closest("[data-action='load-more']");
       if (!button) return;
+      if (button.disabled) return; // защита от дабл-клика во время fetch
       filters.page += 1;
-      renderCatalog();
+      renderCatalog(true); // APPEND следующей страницы
     });
   }
 
@@ -1148,18 +1114,52 @@ const skeletons = Array.from({ length: skeletonCount });
     }
   }
 
+  // loadAvailableColors: цвета фильтра берём из ЖИВОГО /api/store/filters (товары
+  // теперь грузятся частично/постранично — собрать цвета по всему каталогу нельзя).
+  // Ответ: { success, data: { groups: [{ name, values }] } }. Группа цвета = «Цвет».
+  // Endpoint недоступен/нет группы → [] (секция «Цвет» скрывается как раньше).
+  async function loadAvailableColors() {
+    if (cachedColors !== undefined) return cachedColors;
+    cachedColors = [];
+    if (!storeId) return cachedColors;
+    try {
+      const res = await fetch(
+        `${apiBase}/api/store/filters?store_id=${encodeURIComponent(storeId)}`,
+      );
+      if (res.ok) {
+        const json = await res.json();
+        const groups =
+          (json && json.data && Array.isArray(json.data.groups) && json.data.groups) ||
+          (Array.isArray(json && json.groups) && json.groups) ||
+          [];
+        const group = groups.find(
+          (g) => g && typeof g.name === "string" && g.name.trim() === COLOR_GROUP_NAME,
+        );
+        if (group && Array.isArray(group.values)) {
+          cachedColors = group.values
+            .map((v) => (typeof v === "string" ? v : v && (v.value ?? v.name)))
+            .filter((v) => typeof v === "string" && v);
+        }
+      }
+    } catch {
+      /* /store/filters недоступен — пустой список цветов */
+    }
+    return cachedColors;
+  }
+
   let hydrating = false;
   async function hydrateCatalog() {
     if (hydrating) return; // дедуп: не запускать две гидрации параллельно (race → дубль-fetch)
     hydrating = true;
     try {
-      // Товары и коллекции — ПАРАЛЛЕЛЬНО (раньше collections блокировали товары
-      // ~1.5с). Оба нужны renderCatalog (collections — для страниц коллекций).
+      // Захват скелетон-лоадера из SSG-грида ДО первой перерисовки (для replace-fetch).
+      captureSkeleton();
+      // Коллекции (для collection_id серверного фильтра) и цвета (для секции «Цвет»)
+      // — ПАРАЛЛЕЛЬНО. Товары грузит сам renderCatalog постранично (серверная пагинация).
       await Promise.all([
-        loadRealProducts().then((r) => { catalogProducts = r; }),
         loadRealCollections().then((r) => { catalogCollections = r; }),
+        loadAvailableColors().then((r) => { availableColors = r || []; }),
       ]);
-      if (catalogProducts) availableColors = collectColors(catalogProducts);
       // Обработчики наборов top+side (идемпотентны через data-cf-* маркеры).
       bindStock();
       bindPrice();
@@ -1169,8 +1169,8 @@ const skeletons = Array.from({ length: skeletonCount });
       // Начальное активное состояние контролов.
       syncStockUi();
       syncSortUi();
-      // Товары + кнопка «Показать ещё» — как можно раньше.
-      await renderCatalog();
+      // Первая страница товаров (REPLACE) + кнопка «Смотреть ещё» — реальный fetch.
+      await renderCatalog(false);
       // UI фильтра коллекций — после товаров (collections уже в кэше, без fetch).
       await initCollectionsFilter();
     } finally {

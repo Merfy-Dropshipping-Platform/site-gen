@@ -285,7 +285,39 @@ function migrateCatalogPage(pagesData: Record<string, unknown>): Record<string, 
  * Idempotent: if `page-collection` already exists, returns pagesData unchanged.
  */
 function migrateCollectionPage(pagesData: Record<string, unknown>): Record<string, unknown> {
-  if (pagesData['page-collection']) return pagesData;
+  const existingCollection = pagesData['page-collection'] as PageData | undefined;
+  if (existingCollection) {
+    // page-collection — ШАБЛОН коллекции: live-страница auto-scope по slug из
+    // URL. Страница без slug (`/collections/preview`, превью «Страницы
+    // коллекции») должна показывать ВЕСЬ каталог, а не одну коллекцию. Если у
+    // Catalog-блока захардкожен collectionSlug (старый сид / ручной выбор) —
+    // снимаем его: иначе страница «залипает» на одной коллекции (баг — «Страница
+    // коллекции» показывала только одну коллекцию вместо всех товаров каталога).
+    if (Array.isArray(existingCollection.content)) {
+      let changed = false;
+      const content = (existingCollection.content as Block[]).map((b) => {
+        const props = b?.props as Record<string, unknown> | undefined;
+        if (
+          b?.type === 'Catalog' &&
+          props &&
+          props.collectionSlug != null &&
+          props.collectionSlug !== ''
+        ) {
+          changed = true;
+          const { collectionSlug: _drop, ...rest } = props;
+          return { ...b, props: rest } as Block;
+        }
+        return b;
+      });
+      if (changed) {
+        return {
+          ...pagesData,
+          'page-collection': { ...existingCollection, content },
+        };
+      }
+    }
+    return pagesData;
+  }
 
   // Use home page header/footer as templates if available so chrome matches.
   const home = pagesData['home'] as PageData | undefined;

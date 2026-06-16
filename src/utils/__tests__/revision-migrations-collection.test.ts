@@ -78,4 +78,37 @@ describe('migrateCollectionPage', () => {
     const second = migrateRevisionData(first);
     expect(JSON.stringify(first)).toBe(JSON.stringify(second));
   });
+
+  it('strips hardcoded collectionSlug from existing page-collection Catalog', () => {
+    // Баг: «Страница коллекции» залипала на одной коллекции вместо всего
+    // каталога, т.к. у Catalog-блока был захардкожен collectionSlug.
+    const existing = {
+      content: [
+        { type: 'Header', props: { id: 'H' } },
+        { type: 'Catalog', props: { id: 'C1', collectionSlug: '864bd3e6', cards: 24, columns: 3 } },
+        { type: 'Footer', props: { id: 'F' } },
+      ],
+      root: {},
+    };
+    const result = migrateRevisionData({
+      pagesData: { home: { content: [], root: {} }, 'page-collection': existing },
+    }) as { pagesData: Record<string, any> };
+    const catalog = result.pagesData['page-collection'].content.find(
+      (b: any) => b.type === 'Catalog',
+    );
+    expect(catalog.props.collectionSlug).toBeUndefined(); // хардкод снят → авто-скоуп / весь каталог
+    expect(catalog.props.cards).toBe(24); // остальные props сохранены
+    expect(catalog.props.columns).toBe(3);
+  });
+
+  it('leaves page-collection without hardcoded collectionSlug untouched (ref-equal)', () => {
+    const existing = {
+      content: [{ type: 'Catalog', props: { id: 'C1', cards: 24 } }],
+      root: {},
+    };
+    const result = migrateRevisionData({
+      pagesData: { home: { content: [], root: {} }, 'page-collection': existing },
+    }) as { pagesData: Record<string, any> };
+    expect(result.pagesData['page-collection']).toBe(existing);
+  });
 });

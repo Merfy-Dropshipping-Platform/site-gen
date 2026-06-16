@@ -122,9 +122,13 @@ const schemeClass =
 
 // (1) Отступы СЕКЦИИ: padding-top/bottom на корневую обёртку секции (эталон
 //     paddingStyle, theme-base:70-72). Дефолт 120/120.
-const paddingStyle = padding
-  ? `padding-top:${padding.top ?? 120}px;padding-bottom:${padding.bottom ?? 120}px;`
-  : "padding-top:120px;padding-bottom:120px;";
+// Колонки грида (desktop): clamp 2..6 → CSS-var --rose-cols (mobile/планшет 2/3
+// остаются классами). Паттерн theme-base Catalog (colCount/--catalog-cols).
+const colCount = Math.max(2, Math.min(6, Number(columns) || 4));
+const paddingStyle =
+  (padding
+    ? `padding-top:${padding.top ?? 120}px;padding-bottom:${padding.bottom ?? 120}px;`
+    : "padding-top:120px;padding-bottom:120px;") + `--rose-cols:${colCount};`;
 
 // (3) Вид изображения карточки → aspect-ratio. Эталон theme-base:102-105:
 //     portrait/auto = 318/444 (родной rose), square = 1/1, wide = 4/3.
@@ -328,7 +332,7 @@ const skeletons = Array.from({ length: skeletonCount });
         </div>
 
         <ul
-          class="grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 md:grid-cols-3 md:gap-x-4 md:gap-y-10 xl:grid-cols-4 xl:gap-x-5"
+          class="grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 md:grid-cols-3 md:gap-x-4 md:gap-y-10 xl:grid-cols-[repeat(var(--rose-cols,4),minmax(0,1fr))] xl:gap-x-5"
           role="list"
           data-nt="catalog-grid"
         >
@@ -378,7 +382,7 @@ const skeletons = Array.from({ length: skeletonCount });
 
         <div class="flex flex-1 flex-col gap-8">
           <ul
-            class="grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 md:grid-cols-3 md:gap-x-4 md:gap-y-10 xl:grid-cols-4 xl:gap-x-5"
+            class="grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 md:grid-cols-3 md:gap-x-4 md:gap-y-10 xl:grid-cols-[repeat(var(--rose-cols,4),minmax(0,1fr))] xl:gap-x-5"
             role="list"
             data-nt="catalog-grid"
           >

@@ -332,7 +332,7 @@ const skeletons = Array.from({ length: skeletonCount });
         </div>
 
         <ul
-          class="grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 md:grid-cols-3 md:gap-x-4 md:gap-y-10 xl:grid-cols-[repeat(var(--rose-cols,4),minmax(0,1fr))] xl:gap-x-5"
+          class="grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 md:grid-cols-3 md:gap-x-4 md:gap-y-10 xl:grid-cols-4 xl:gap-x-5"
           role="list"
           data-nt="catalog-grid"
         >
@@ -382,7 +382,7 @@ const skeletons = Array.from({ length: skeletonCount });
 
         <div class="flex flex-1 flex-col gap-8">
           <ul
-            class="grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 md:grid-cols-3 md:gap-x-4 md:gap-y-10 xl:grid-cols-[repeat(var(--rose-cols,4),minmax(0,1fr))] xl:gap-x-5"
+            class="grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 md:grid-cols-3 md:gap-x-4 md:gap-y-10 xl:grid-cols-4 xl:gap-x-5"
             role="list"
             data-nt="catalog-grid"
           >
@@ -418,6 +418,15 @@ const skeletons = Array.from({ length: skeletonCount });
 </section>
 
 <style is:global>
+  /* «Колонки» (desktop ≥1280): число из настройки через --rose-cols (секция
+     несёт переменную, mobile/планшет — 2/3 классами grid-cols-2/md:grid-cols-3).
+     Явное media-правило вместо Tailwind arbitrary-класса
+     (xl:grid-cols-[repeat(var())] не генерится @source-сканом превью). */
+  @media (min-width: 1280px) {
+    [data-nt="catalog-grid"] {
+      grid-template-columns: repeat(var(--rose-cols, 4), minmax(0, 1fr)) !important;
+    }
+  }
   /* Переключение раскладок каталога: виден только выбранный вариант.
      data-catalog-layout ставит inline-скрипт секции из window.__MERFY_CATALOG_LAYOUT__
      (или дефолт из настройки filterPosition). */

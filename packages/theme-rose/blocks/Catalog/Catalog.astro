@@ -1148,8 +1148,15 @@ const skeletons = Array.from({ length: skeletonCount });
   }
 
   let hydrating = false;
+  let lastHydratedUrl = null;
   async function hydrateCatalog() {
     if (hydrating) return; // дедуп: не запускать две гидрации параллельно (race → дубль-fetch)
+    // Дедуп initial: и inline-вызов, и astro:page-load срабатывают на первой
+    // загрузке с ОДНИМ url → второй пропускаем (иначе дубль fetch page=1).
+    // Навигация (другой url) → ре-рендер. Работает и без ClientRouter.
+    const url = location.pathname + location.search;
+    if (url === lastHydratedUrl) return;
+    lastHydratedUrl = url;
     hydrating = true;
     try {
       // Захват скелетон-лоадера из SSG-грида ДО первой перерисовки (для replace-fetch).

@@ -170,6 +170,21 @@ const quickAddText = quickAddMode === "cart" ? "В КОРЗИНУ" : "БЫСТР
 // (5) Следующее фото при наведении (hover-swap на images[1]).
 const nextPhotoOn = productCard?.nextPhoto === "true" || productCard?.nextPhoto === true;
 
+// (8) «Контейнер» карточки (productCard.cardBackground, Figma 1:34185-34635).
+//     true  → контент карточки в подложке-контейнере: внутр. отступ 12px со всех
+//             сторон (фото inset cardW−24, заголовок/цена с отступом слева, кнопка
+//             «В корзину» inset — НЕ во всю ширину карточки), фон surface.
+//     false (ДЕФОЛТ) → флеш-вид: фото full-bleed, заголовок/цена флеш к краю,
+//             кнопка full-width край-в-край. Родной вид bloom.
+//     Механика как в эталоне theme-base: <article> = flex-col с w-full детьми,
+//     поэтому padding:12px авто-инсетит фото/заголовок/кнопку (кнопка становится
+//     full-width КОНТЕНТА, т.е. не край-в-край). Бейдж «Скидка» (left-2/top-2 = 8px)
+//     едет с инсетнутым фото → ~8px от края фото в обоих состояниях (по Figma).
+//     Применяется И в SSG (BloomProductCard через prop), И в client renderCardHtml
+//     (define:vars cardContainerOn) — parity. Цвета/радиусы — токенами bloom.
+const cardContainerOn =
+  productCard?.cardBackground === "true" || productCard?.cardBackground === true;
+
 // (7) Отдельная схема ВНУТРЕННЕГО контейнера каталога (эталон theme-base).
 //     unset → класс не задаётся, контейнер наследует схему секции.
 const containerSchemeClass =
@@ -225,6 +240,7 @@ const skeletons = Array.from({ length: skeletonCount });
         <BloomProductCard
           product={product}
           cardAspectClass={cardAspectClass}
+          cardContainerOn={cardContainerOn}
           showQuickAdd={showQuickAdd}
           quickAddText={quickAddText}
           btnStyle={btnStyle}
@@ -528,7 +544,7 @@ const skeletons = Array.from({ length: skeletonCount });
   }
 </style>
 
-<script is:inline define:vars={{ siteId, pageSize, cardAspectClass, showQuickAdd, quickAddText, btnStyle, btnBg, btnFg, btnBorder, nextPhotoOn }}>
+<script is:inline define:vars={{ siteId, pageSize, cardAspectClass, cardContainerOn, showQuickAdd, quickAddText, btnStyle, btnBg, btnFg, btnBorder, nextPhotoOn }}>
   // is:inline (НЕ module-script): module client-<script> блока НЕ компилится в
   // live build → на проде остаётся сырой путь Catalog.astro?astro&type=script
   // → HTTP 404 → вся клиентская логика мертва. is:inline компилится всегда.
@@ -676,6 +692,15 @@ const skeletons = Array.from({ length: skeletonCount });
   const CARD_ASPECT_CLASS =
     (typeof cardAspectClass === "string" && cardAspectClass) || "aspect-square";
 
+  // «Контейнер» карточки (настройка cardBackground) — inline-style из define:vars.
+  // Зеркалит BloomProductCard.astro (parity SSG↔client). Используем inline-style,
+  // т.к. arbitrary Tailwind (bg-[rgb(var())]/p-[12px]) не компилится в client-JS
+  // строках. true → подложка surface + радиус + padding 12px (авто-инсетит фото/
+  // заголовок/кнопку); false (дефолт) → пусто (флеш-вид, кнопка full-width).
+  const CARD_CONTAINER_STYLE = cardContainerOn
+    ? "background:rgb(var(--color-surface,247 247 249));border-radius:var(--radius-card,12px);padding:12px;"
+    : "";
+
   // Стиль кнопки quickAdd (настройка «Стиль кнопки») — токены bloom из define:vars.
   // Bloom = pill (--radius-button:100px). link → текст-ссылка.
   const QUICK_BTN_STYLE =
@@ -710,7 +735,7 @@ const skeletons = Array.from({ length: skeletonCount });
     const quickBtn = showQuickAdd
       ? `<button type="button" data-quick-add-id="${escapeHtml(p.id)}" style="${QUICK_BTN_STYLE}">${escapeHtml(quickAddText)}</button>`
       : "";
-    return `<article class="group flex w-full flex-col gap-4" data-nt="bloom-product-card" aria-label="${name}">
+    return `<article class="group flex w-full flex-col gap-4" data-nt="bloom-product-card" aria-label="${name}" style="${CARD_CONTAINER_STYLE}">
   <a href="${href}" class="relative block ${CARD_ASPECT_CLASS} w-full overflow-hidden rounded-[12px] bg-[#F5F5F5]" aria-label="${name}">
     ${media}
   </a>

@@ -37,6 +37,11 @@ interface Props {
   btnBg?: string;
   btnFg?: string;
   btnBorder?: string;
+  /** «Контейнер» карточки (Figma productCard.cardBackground). true → контент с
+      внутренним отступом 12px (фото/кнопка inset, surface-фон карточки);
+      false (дефолт) → флеш к краям (фото full-bleed, кнопка full-width).
+      Зеркалит client renderCardHtml для parity. */
+  cardContainerOn?: boolean;
 }
 
 const {
@@ -49,9 +54,18 @@ const {
   btnBg = "rgb(var(--color-button-bg,0 0 0))",
   btnFg = "rgb(var(--color-button-text,255 255 255))",
   btnBorder = "1px solid rgb(var(--color-button-bg,0 0 0))",
+  cardContainerOn = false,
 } = Astro.props as Props;
 const href = `/products/${product.id}`;
 const showSaleBadge = product.discount === true;
+// «Контейнер» (cardBackground): true → внутренний отступ 12px со всех сторон +
+//   surface-фон → фото/название/цена/кнопка inset (кнопка width:100% становится
+//   cardW−24, НЕ во всю ширину). false (дефолт) → флеш к краям, фон не задаётся,
+//   кнопка край-в-край. Бейдж «Скидка» остаётся ~8px от края (top-2/left-2 = 8px)
+//   в обоих состояниях. inline-style зеркалит client renderCardHtml (parity).
+const cardContainerStyle = cardContainerOn
+  ? "padding:12px;background:rgb(var(--color-surface,245 245 245));border-radius:var(--radius-media,8px);"
+  : "";
 // Стиль кнопки quickAdd (зеркалит client renderCardHtml). link → текст-ссылка.
 const quickBtnStyle =
   `width:100%;height:44px;padding:0 12px;border-radius:var(--radius-button,6px);` +
@@ -64,6 +78,8 @@ const quickBtnStyle =
 <article
   class="group flex w-full flex-col gap-3 md:gap-4"
   data-nt="flux-product-card"
+  data-card-container={cardContainerOn ? "true" : "false"}
+  style={cardContainerStyle}
   aria-label={product.name}
 >
   <a

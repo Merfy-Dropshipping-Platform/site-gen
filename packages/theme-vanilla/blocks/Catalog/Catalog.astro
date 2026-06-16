@@ -53,6 +53,12 @@ interface Props {
 	showSort?: boolean | "true" | "false";
 	columns?: number;
 	colorScheme?: string;
+	/** Под-настройки «Карточка товара» конструктора (общая Puck-схема). Родная
+	    вёрстка vanilla читает только cardBackground («Контейнер»); прочие поля
+	    (cardStyle/buttonStyle/quickAdd) принимаем, но не используем. */
+	productCard?: {
+		cardBackground?: boolean | "true" | "false";
+	};
 	/** Настройка «Выбор коллекции» конструктора (страница page-collection).
 	    Приходит как slug/id выбранной коллекции; null/пусто → весь каталог. */
 	collectionSlug?: string | null;
@@ -69,8 +75,24 @@ const {
 	showSort,
 	columns,
 	colorScheme,
+	productCard,
 	collectionSlug,
 } = Astro.props as Props;
+
+// «Контейнер» карточки (Figma 1:34185-34635, productCard.cardBackground,
+// дефолт 'false'). true → контент с внутренним отступом 12px (фото/текст inset),
+// карточка получает собственный фон (--vanilla-card). false (дефолт) → флеш к
+// краям (фото full-bleed, текст у левого края) — текущая родная вёрстка vanilla.
+// Нормализуем рядом с прочими настройками карточки, как в base Catalog.astro.
+const cardContainerOn =
+	productCard?.cardBackground === "true" || productCard?.cardBackground === true;
+// Класс-обёртка карточки (article): с контейнером добавляем фон+скругление+
+// padding 12px → весь контент (фото, заголовок, цена) уезжает inset. У vanilla
+// нет кнопки «В корзину» в карточке, поэтому единственная разница состояний —
+// внутренний отступ 12px. Без контейнера — только flex-колонка (флеш, дефолт).
+const cardWrapClass = cardContainerOn
+	? "group flex flex-col gap-3 rounded-[12px] bg-[var(--vanilla-card)] p-3"
+	: "group flex flex-col gap-3";
 
 // Кол-во товаров на «страницу» пагинации: columns*3 (3 ряда) или 12 по умолчанию.
 const colsNum = Number(columns);
@@ -163,6 +185,7 @@ const rowStockOptions: RadioOption[] = [
 	data-nt="vanilla-catalog-section"
 	aria-labelledby="catalog-title"
 	data-catalog-layout={defaultLayout}
+	data-card-bg={cardContainerOn ? "true" : "false"}
 	data-collection-slug={collectionSlug ?? ""}
 	data-page-size={pageSize}
 >
@@ -262,7 +285,7 @@ const rowStockOptions: RadioOption[] = [
 					<ul class="grid grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:grid-cols-3 md:gap-x-4 md:gap-y-12" role="list" data-nt="catalog-grid">
 						{demoProducts.map((product) => (
 							<li data-product-id={product.id}>
-								<article class="group flex flex-col gap-3" data-nt="vanilla-product-card" aria-label={product.name}>
+								<article class={cardWrapClass} data-nt="vanilla-product-card" aria-label={product.name}>
 									<a href={`/product?id=${product.id}`} class="relative block aspect-square w-full overflow-hidden bg-[var(--vanilla-card)]" aria-label={product.name}>
 										<img src={product.image} alt={product.name} width="429" height="429" loading="eager" class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
 									</a>
@@ -295,7 +318,7 @@ const rowStockOptions: RadioOption[] = [
 					<ul class="grid grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:gap-x-4 md:gap-y-12" role="list" data-nt="catalog-grid">
 						{demoProducts.map((product) => (
 							<li data-product-id={product.id}>
-								<article class="group flex flex-col gap-3" data-nt="vanilla-product-card" aria-label={product.name}>
+								<article class={cardWrapClass} data-nt="vanilla-product-card" aria-label={product.name}>
 									<a href={`/product?id=${product.id}`} class="relative block aspect-square w-full overflow-hidden bg-[var(--vanilla-card)]" aria-label={product.name}>
 										<img src={product.image} alt={product.name} width="429" height="429" loading="eager" class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
 									</a>
@@ -339,7 +362,7 @@ const rowStockOptions: RadioOption[] = [
 	}
 </style>
 
-<script is:inline define:vars={{ siteId, pageSize }}>
+<script is:inline define:vars={{ siteId, pageSize, cardContainerOn }}>
 	// is:inline (НЕ module-script): module client-<script> блока НЕ компилится в live
 	// build → 404 на проде. Поэтому весь клиент инлайн: функции storefront-hydrate.ts
 	// перенесены телами 1:1 (без import/типов), данные frontmatter — через define:vars.
@@ -474,6 +497,17 @@ const rowStockOptions: RadioOption[] = [
 			"</svg></div>";
 		const CARD_IMG_ONERROR_ATTR = ` onerror="this.onerror=null;this.outerHTML='${CARD_MEDIA_FALLBACK_HTML.replace(/"/g, "&quot;")}'"`;
 
+		// «Контейнер» карточки (parity с SSG cardWrapClass / base Catalog.astro
+		// cardChrome): cardContainerOn → фон+скругление+padding 12px (контент inset).
+		// ГОЧА: arbitrary Tailwind (rounded-[12px]/bg-[var()]) в client-JS строках НЕ
+		// компилится previewTailwind → даём через inline-style (визуально 1:1 с
+		// Tailwind `rounded-[12px] bg-[var(--vanilla-card)] p-3`, p-3 = 12px). Без
+		// контейнера — пустая строка (флеш, дефолт). Базовые flex-классы карточки —
+		// core-utility (group flex flex-col gap-3), компилятся всегда.
+		const cardChromeStyle = cardContainerOn
+			? "border-radius:12px;background:var(--vanilla-card);padding:12px;"
+			: "";
+
 		// renderCardHtml — зеркалит vanilla-карточку (aspect-square, font-vanilla-arsenal).
 		function renderCardHtml(p) {
 			const href = escapeHtml(productHref(p));
@@ -487,7 +521,7 @@ const rowStockOptions: RadioOption[] = [
 			const oldPrice = oldRaw
 				? `<span class="font-vanilla-arsenal text-[14px] font-normal leading-none text-[#444444] line-through">${escapeHtml(oldRaw)}</span>`
 				: "";
-			return `<article class="group flex flex-col gap-3" data-nt="vanilla-product-card" aria-label="${name}">
+			return `<article class="group flex flex-col gap-3" data-nt="vanilla-product-card" aria-label="${name}"${cardChromeStyle ? ` style="${cardChromeStyle}"` : ""}>
 	<a href="${href}" class="relative block aspect-square w-full overflow-hidden bg-[var(--vanilla-card)]" aria-label="${name}">${media}</a>
 	<div class="flex flex-col gap-1">
 		<a href="${href}" class="font-vanilla-arsenal text-base font-normal uppercase leading-none text-black transition-opacity hover:opacity-70">${name}</a>

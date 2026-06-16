@@ -167,6 +167,17 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
             { label: 'Широкий', value: 'wide' },
           ],
         },
+        // Figma 1:34185-34635 — «Контейнер» карточки. С контейнером = контент с
+        // внутр. отступом 12px (фото/кнопка inset, кнопка НЕ во всю ширину);
+        // Без контейнера = флеш к краям (фото full-bleed, кнопка full-width).
+        cardBackground: {
+          type: 'select',
+          label: 'Контейнер',
+          options: [
+            { label: 'Без контейнера', value: 'false' },
+            { label: 'С контейнером', value: 'true' },
+          ],
+        },
         nextPhoto: {
           type: 'toggle',
           label: 'Следующее фото при наведении',

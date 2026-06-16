@@ -32,6 +32,10 @@ interface Props {
   btnBg?: string;
   btnFg?: string;
   btnBorder?: string;
+  /** «Контейнер» карточки (настройка cardBackground). true → surface-подложка +
+      внутр. отступ 12px (фото/текст/кнопка inset); false (дефолт) → флеш-вид rose.
+      Зеркалит client renderCardHtml (parity SSG↔client). */
+  cardContainerOn?: boolean;
 }
 
 const {
@@ -44,9 +48,17 @@ const {
   btnBg = "rgb(var(--color-button-secondary-bg,255 255 255))",
   btnFg = "rgb(var(--color-button-secondary-text,0 0 0))",
   btnBorder = "1px solid rgb(var(--color-button-secondary-border,0 0 0))",
+  cardContainerOn = false,
 } = Astro.props as Props;
 const href = `/products/${product.id}`;
 const showSaleBadge = product.discount === true;
+// «Контейнер» карточки (cardBackground). true → surface-подложка + внутр. отступ
+// 12px на article: фото/заголовок/цена/кнопка автоматически inset на 12px (кнопка
+// width:100% → cardW−24). false (дефолт) → пусто, родной флеш-вид (фото full-bleed,
+// кнопка край-в-край). Зеркалит client renderCardHtml (CARD_CONTAINER_STYLE) — parity.
+const cardContainerStyle = cardContainerOn
+  ? "background:rgb(var(--color-surface,245 245 245));border-radius:var(--radius-media,8px);padding:12px;"
+  : undefined;
 // Стиль кнопки quickAdd (зеркалит client renderCardHtml). link → текст-ссылка.
 const quickBtnStyle =
   `width:100%;height:44px;padding:0 12px;border-radius:var(--radius-button,6px);` +
@@ -59,6 +71,8 @@ const quickBtnStyle =
 <article
   class="group flex w-full flex-col gap-5"
   data-nt="rose-product-card"
+  data-card-bg={cardContainerOn ? "true" : "false"}
+  style={cardContainerStyle}
   aria-label={product.name}
 >
   <a

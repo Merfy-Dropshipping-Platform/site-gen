@@ -266,7 +266,13 @@ const CARD_MEDIA_FALLBACK_HTML =
 	"</svg></div>";
 const CARD_IMG_ONERROR_ATTR = ` onerror="this.onerror=null;this.outerHTML='${CARD_MEDIA_FALLBACK_HTML.replace(/"/g, "&quot;")}'"`;
 
-export function renderCardHtml(p: RealProduct): string {
+// «Контейнер» карточки (Figma 1:34185-34635): cardContainerOn=true → внутр. отступ
+// 12px со всех сторон + фон surface (фото/кнопка inset, кнопка НЕ во всю ширину);
+// false (дефолт) → флеш к краям (фото full-bleed, кнопка full-width). ГОЧА:
+// arbitrary Tailwind (bg-[rgb(var(--color-surface))]) в этих HTML-строках не
+// компилится надёжно → контейнер задаём INLINE-стилем (та же CSS-var, что и
+// SatinProductCard.astro → паритет SSG ≡ client). 1:1 с Catalog.astro renderCardHtml.
+export function renderCardHtml(p: RealProduct, cardContainerOn = false): string {
 	const href = escapeHtml(productHref(p));
 	const name = escapeHtml(p.name);
 	const image = escapeHtml(productImage(p));
@@ -278,7 +284,10 @@ export function renderCardHtml(p: RealProduct): string {
 	const badge = oldRaw
 		? `<span class="pointer-events-none absolute left-0 top-0 inline-flex h-6 items-center bg-[#000000] px-2 font-manrope text-[12px] font-medium uppercase leading-none text-white">Скидка</span>`
 		: "";
-	return `<article class="group flex flex-col gap-3" data-nt="satin-product-card" aria-label="${name}">
+	const cardContainerStyle = cardContainerOn
+		? ' style="padding:12px;background:rgb(var(--color-surface,245 245 245))"'
+		: "";
+	return `<article class="group flex flex-col gap-3" data-nt="satin-product-card" aria-label="${name}"${cardContainerStyle}>
 	<div class="relative aspect-[430/564] w-full overflow-hidden bg-[#F5F5F5]">
 		<a href="${href}" class="block size-full" aria-label="${name}">
 			${image ? `<img src="${image}" alt="${name}" width="430" height="564" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"${CARD_IMG_ONERROR_ATTR} />` : CARD_MEDIA_FALLBACK_HTML}

@@ -39,6 +39,7 @@ interface DemoProduct {
 interface ProductCardCfg {
   buttonStyle?: "link" | "primary" | "secondary";
   cardStyle?: "auto" | "portrait" | "square" | "wide";
+  cardBackground?: boolean | "true" | "false";
   nextPhoto?: boolean | "true" | "false";
   quickAdd?: "none" | "standard" | "cart";
 }
@@ -129,6 +130,14 @@ const paddingStyle =
 const quickAddMode = productCard?.quickAdd ?? "cart";
 const showCartBtn = quickAddMode !== "none";
 
+// «Контейнер» карточки (Figma 1:34185-34635, поле productCard.cardBackground).
+// true → контент с внутренним отступом 12px со всех сторон (фото/кнопка inset,
+// кнопка НЕ во всю ширину); false (ДЕФОЛТ) → флеш к краям (фото full-bleed,
+// кнопка full-width). Единственная разница состояний — padding 12px (он же
+// делает кнопку w-full inset). Нормализуем рядом с quickAddMode (тот же паттерн).
+const cardContainerOn =
+  productCard?.cardBackground === "true" || productCard?.cardBackground === true;
+
 // (7) Отдельная схема ВНУТРЕННЕГО контейнера каталога (эталон theme-base).
 const containerSchemeClass =
   typeof containerColorScheme === "string" && containerColorScheme
@@ -179,7 +188,7 @@ const skeletons = Array.from({ length: skeletonCount });
   <template data-nt="catalog-demo">
     {demoProducts.map((product) => (
       <li data-product-id={product.id}>
-        <SatinProductCard product={product} />
+        <SatinProductCard product={product} cardContainerOn={cardContainerOn} />
       </li>
     ))}
   </template>
@@ -455,7 +464,7 @@ const skeletons = Array.from({ length: skeletonCount });
   }
 </style>
 
-<script is:inline define:vars={{ siteId, pageSize, showCartBtn }}>
+<script is:inline define:vars={{ siteId, pageSize, showCartBtn, cardContainerOn }}>
   // ⚠️ is:inline (НЕ module-script): module client-<script> блока НЕ компилится в
   // live build → 404 на проде, вся логика мертва. Поэтому весь клиент инлайн:
   // функции storefront-hydrate.ts перенесены телами 1:1 (без import/типов),
@@ -592,9 +601,19 @@ const skeletons = Array.from({ length: skeletonCount });
     "</svg></div>";
   const CARD_IMG_ONERROR_ATTR = ` onerror="this.onerror=null;this.outerHTML='${CARD_MEDIA_FALLBACK_HTML.replace(/"/g, "&quot;")}'"`;
 
+  // «Контейнер» карточки (Figma 1:34185-34635): cardContainerOn=true → внутр.
+  // отступ 12px со всех сторон + фон surface (фото/кнопка inset, кнопка НЕ во всю
+  // ширину — w-full внутри padding = inset); false → флеш (фото full-bleed,
+  // кнопка full-width). ГОЧА: arbitrary Tailwind (bg-[rgb(var(--color-surface))])
+  // в client-JS строках не компилится → контейнер задаём INLINE-стилем (padding +
+  // фон surface через ту же CSS-var, что и SSG-карточка → паритет SSG≡client).
+  const cardContainerStyle = cardContainerOn
+    ? ' style="padding:12px;background:rgb(var(--color-surface,245 245 245))"'
+    : "";
+
   // renderCardHtml — зеркалит SatinProductCard.astro + storefront-hydrate.ts
   // (article → картинка-ссылка с бэйджем + name + price + кнопка «В корзину»).
-  // Меняется СИНХРОННО с SatinProductCard.astro (parity).
+  // Меняется СИНХРОННО с SatinProductCard.astro (parity), вкл. «Контейнер».
   function renderCardHtml(p) {
     const href = escapeHtml(productHref(p));
     const name = escapeHtml(p.name);
@@ -612,7 +631,7 @@ const skeletons = Array.from({ length: skeletonCount });
     const cartBtn = showCartBtn
       ? `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${price}" data-old-price="${escapeHtml(oldRaw)}" data-image="${image}" class="mt-2 flex h-11 w-full items-center justify-center bg-[#000000] px-3 font-manrope text-[14px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-80">В корзину</button>`
       : "";
-    return `<article class="group flex h-full flex-col gap-3" data-nt="satin-product-card" aria-label="${name}">
+    return `<article class="group flex h-full flex-col gap-3" data-nt="satin-product-card" aria-label="${name}"${cardContainerStyle}>
   <div class="relative aspect-[430/564] w-full shrink-0 overflow-hidden bg-[#F5F5F5]">
     <a href="${href}" class="block size-full" aria-label="${name}">
       ${image ? `<img src="${image}" alt="${name}" width="430" height="564" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"${CARD_IMG_ONERROR_ATTR} />` : CARD_MEDIA_FALLBACK_HTML}

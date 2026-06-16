@@ -34,6 +34,11 @@ interface Props {
       квадрат. Передаётся из Catalog.astro (настройка «Вид изображения»),
       зеркалит client renderCardHtml для parity. */
   cardAspectClass?: string;
+  /** «Контейнер» карточки (настройка cardBackground). true → контент в подложке
+      surface с внутр. отступом 12px (фото/заголовок/кнопка авто-инсетятся, кнопка
+      НЕ край-в-край); false (дефолт) → флеш-вид (full-bleed фото, full-width
+      кнопка). Зеркалит client renderCardHtml для parity. */
+  cardContainerOn?: boolean;
   /** Быстрое действие: кнопка под карточкой (none → нет; иначе текст). */
   showQuickAdd?: boolean;
   quickAddText?: string;
@@ -48,6 +53,7 @@ const {
   product,
   priority = false,
   cardAspectClass = "aspect-square",
+  cardContainerOn = false,
   showQuickAdd = false,
   quickAddText = "В КОРЗИНУ",
   btnStyle = "primary",
@@ -57,6 +63,14 @@ const {
 } = Astro.props as Props;
 const href = `/products/${product.id}`;
 const showSaleBadge = product.discount === true;
+// «Контейнер» карточки (настройка cardBackground). Зеркалит client
+// renderCardHtml (CARD_CONTAINER_STYLE) в Catalog.astro — parity SSG↔гидрация.
+// true → подложка surface + радиус + padding 12px; <article> = flex-col с w-full
+// детьми, поэтому padding авто-инсетит фото/заголовок/кнопку (кнопка становится
+// full-width контента, НЕ край-в-край карточки). false (дефолт) → флеш-вид.
+const cardContainerStyle = cardContainerOn
+  ? "background:rgb(var(--color-surface,247 247 249));border-radius:var(--radius-card,12px);padding:12px;"
+  : undefined;
 // Стиль кнопки quickAdd (зеркалит client renderCardHtml). Bloom = pill
 // (--radius-button:100px). link → текст-ссылка.
 const quickBtnStyle =
@@ -71,6 +85,7 @@ const quickBtnStyle =
   class="group flex w-full flex-col gap-4"
   data-nt="bloom-product-card"
   aria-label={product.name}
+  style={cardContainerStyle}
 >
   <a
     href={href}

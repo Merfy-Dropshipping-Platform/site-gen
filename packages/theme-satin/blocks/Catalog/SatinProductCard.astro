@@ -21,14 +21,21 @@ interface Product {
 interface Props {
 	product: Product;
 	priority?: boolean;
+	/** «Контейнер» карточки (Figma 1:34185-34635): true → внутр. отступ 12px со
+	    всех сторон (фото/кнопка inset, кнопка НЕ во всю ширину) + фон surface;
+	    false (дефолт) → флеш к краям (фото full-bleed, кнопка full-width). */
+	cardContainerOn?: boolean;
 }
 
-const { product, priority = false } = Astro.props;
+const { product, priority = false, cardContainerOn = false } = Astro.props;
 const href = `/products/${product.id}`;
 ---
 
 <article
-	class="group flex h-full flex-col gap-3"
+	class:list={[
+		"group flex h-full flex-col gap-3",
+		cardContainerOn && "bg-[rgb(var(--color-surface,245_245_245))] p-3",
+	]}
 	data-nt="satin-product-card"
 	aria-label={product.name}
 >

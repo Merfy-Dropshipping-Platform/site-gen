@@ -41,6 +41,10 @@ interface ProductCardCfg {
   cardStyle?: "auto" | "portrait" | "square" | "wide";
   nextPhoto?: boolean | "true" | "false";
   quickAdd?: "none" | "standard" | "cart";
+  /** «Контейнер» карточки (Figma cardBackground). true → контент с внутренним
+      отступом 12px + surface-фон + inset-кнопка; false (дефолт) → флеш-вид,
+      фото full-bleed, кнопка край-в-край. */
+  cardBackground?: boolean | "true" | "false";
 }
 interface Props {
   id?: string;
@@ -165,6 +169,16 @@ const quickAddText = quickAddMode === "cart" ? "В КОРЗИНУ" : "БЫСТР
 // (5) Следующее фото при наведении (hover-swap на images[1]).
 const nextPhotoOn = productCard?.nextPhoto === "true" || productCard?.nextPhoto === true;
 
+// (8) «Контейнер» карточки (Figma cardBackground, дефолт 'false'). Нормализуем в
+//     boolean рядом с остальными настройками карточки. true → контент карточки в
+//     surface-подложке с внутренним отступом 12px (фото inset cardW−24, кнопка
+//     inset не-full-width); false (дефолт) → родной флеш-вид rose (фото full-bleed,
+//     кнопка край-в-край). Единственная разница состояний по Figma — внутр. отступ
+//     12px + ширина кнопки; достигается ОДНИМ padding'ом на article (см. ниже:
+//     width:100% кнопки внутри padded-контейнера = cardW−24 = inset).
+const cardContainerOn =
+  productCard?.cardBackground === "true" || productCard?.cardBackground === true;
+
 // (7) Отдельная схема ВНУТРЕННЕГО контейнера каталога (эталон theme-base:152-154).
 //     unset → класс не задаётся, контейнер наследует схему секции.
 const containerSchemeClass =
@@ -226,6 +240,7 @@ const skeletons = Array.from({ length: skeletonCount });
           btnBg={btnBg}
           btnFg={btnFg}
           btnBorder={btnBorder}
+          cardContainerOn={cardContainerOn}
         />
       </li>
     ))}
@@ -514,7 +529,7 @@ const skeletons = Array.from({ length: skeletonCount });
   }
 </style>
 
-<script is:inline define:vars={{ siteId, pageSize, cardAspectClass, showQuickAdd, quickAddText, btnStyle, btnBg, btnFg, btnBorder, nextPhotoOn }}>
+<script is:inline define:vars={{ siteId, pageSize, cardAspectClass, showQuickAdd, quickAddText, btnStyle, btnBg, btnFg, btnBorder, nextPhotoOn, cardContainerOn }}>
   // is:inline (НЕ module-script): module client-<script> блока НЕ компилится в
   // live build — generatePuckCatalogPage импортит блок, но его ESM-script не
   // попадает в bundle → на проде остаётся сырой путь Catalog.astro?astro&type=script
@@ -671,12 +686,24 @@ const skeletons = Array.from({ length: skeletonCount });
 
   // Стиль кнопки quickAdd (настройка «Стиль кнопки») — токены rose из define:vars
   // (btnBg/btnFg/btnBorder уже вычислены во frontmatter). link → текст-ссылка.
+  // width:100% — внутри обычной (флеш) карточки = край-в-край; внутри карточки с
+  // «Контейнером» (padding 12px на article) тот же width:100% = cardW−24 = inset.
   const QUICK_BTN_STYLE =
     "width:100%;height:44px;padding:0 12px;border-radius:var(--radius-button,6px);" +
     "font-family:var(--font-body);font-size:14px;text-transform:uppercase;cursor:pointer;" +
     "display:flex;align-items:center;justify-content:center;" +
     "background:" + btnBg + ";color:" + btnFg + ";border:" + btnBorder + ";" +
     (btnStyle === "link" ? "text-decoration:underline;background:transparent;" : "");
+
+  // «Контейнер» карточки (настройка cardBackground) — зеркалит RoseProductCard.astro
+  // (parity SSG↔client). true → surface-подложка + внутр. отступ 12px на article:
+  // фото/заголовок/цена/кнопка автоматически inset на 12px (кнопка width:100% →
+  // cardW−24). false (дефолт) → пусто, родной флеш-вид rose (фото full-bleed, кнопка
+  // край-в-край). Inline-style (НЕ Tailwind arbitrary) — динамика в client-JS строке
+  // не компилится Tailwind'ом; цвета через токен с фоллбеком, как в RoseProductCard.
+  const CARD_CONTAINER_STYLE = cardContainerOn
+    ? "background:rgb(var(--color-surface,245 245 245));border-radius:var(--radius-media,8px);padding:12px;"
+    : "";
 
   // renderCardHtml — зеркалит RoseProductCard.astro (картинка-ссылка + name + price
   // + опц. quickAdd-кнопка). Меняется СИНХРОННО с RoseProductCard.astro (parity).
@@ -705,7 +732,7 @@ const skeletons = Array.from({ length: skeletonCount });
     const quickBtn = showQuickAdd
       ? `<button type="button" data-quick-add-id="${escapeHtml(p.id)}" style="${QUICK_BTN_STYLE}">${escapeHtml(quickAddText)}</button>`
       : "";
-    return `<article class="group flex w-full flex-col gap-5" data-nt="rose-product-card" aria-label="${name}">
+    return `<article class="group flex w-full flex-col gap-5" data-nt="rose-product-card" data-card-bg="${cardContainerOn ? 'true' : 'false'}" style="${CARD_CONTAINER_STYLE}" aria-label="${name}">
   <a href="${href}" class="relative block ${CARD_ASPECT_CLASS} w-full overflow-hidden rounded-[8px] bg-white" aria-label="${name}">
     ${media}
   </a>

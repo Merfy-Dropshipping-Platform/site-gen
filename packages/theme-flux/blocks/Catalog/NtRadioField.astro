@@ -1,0 +1,64 @@
+---
+/**
+ * NtRadioField (порт из design-systems-theme/components/ui/NtRadioField.astro).
+ * Радио — 1920: 24px / 16px Manrope (493:5523); 1280: 20px / 12px (493:5524).
+ * Цвет в 1280: подписи 14px — задайте labelClass. Без внешних импортов — копия 1:1.
+ * Нейтральные DS-фоллбеки перекрашиваются токенами схем через <style is:global>.
+ */
+interface Props {
+  name: string;
+  value: string;
+  label: string;
+  checked?: boolean;
+  /** 1920 — крупная точка; 1280 — плотный вариант */
+  density?: "1920" | "1280";
+  /** Доп. классы для текста метки (например text-[14px] у «Цвет» 1280) */
+  labelClass?: string;
+  class?: string;
+}
+
+const {
+  name,
+  value,
+  label,
+  checked = false,
+  density = "1920",
+  labelClass = "",
+  class: className = "",
+} = Astro.props;
+
+const id = `nt-rf-${name}-${value}`.replace(/\s+/g, "-");
+const isDense = density === "1280";
+const ring = isDense
+  ? "h-5 w-5 after:h-[8px] after:w-[8px]"
+  : "h-6 w-6 after:h-[10px] after:w-[10px]";
+const textSize = isDense ? "text-[12px]" : "text-[16px]";
+---
+
+<label
+  for={id}
+  class:list={[
+    "group flex cursor-pointer items-center gap-2 font-manrope leading-normal",
+    textSize,
+    className,
+  ]}
+  data-nt="radio-field"
+  data-nt-density={density}
+>
+  <input
+    id={id}
+    type="radio"
+    name={name}
+    value={value}
+    checked={checked}
+    class="peer sr-only"
+  />
+  <span
+    aria-hidden="true"
+    class:list={[
+      "relative flex shrink-0 items-center justify-center rounded-full border-2 border-[#999999] after:pointer-events-none after:absolute after:rounded-full after:bg-[#000000] after:opacity-0 after:content-[''] peer-checked:border-[#000000] peer-checked:after:opacity-100 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#000000]",
+      ring,
+    ]}
+  />
+  <span class:list={["text-[#999999] peer-checked:text-[#000000]", labelClass]}>{label}</span>
+</label>

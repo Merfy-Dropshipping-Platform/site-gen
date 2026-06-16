@@ -102,7 +102,8 @@ const schemeClass =
 
 // SSR demo-грид (родные товары vanilla). Гарантирует, что грид рендерится в initial
 // HTML и в превью (Container API), и на live до гидрации. На published-сайте
-// is:inline-клиент (loadRealProducts) перерисует реальными товарами.
+// is:inline-клиент (renderCatalog → ЖИВОЙ /api/store/products) перерисует
+// реальными товарами; demo остаётся только если магазин пуст / API недоступен.
 const demoProducts: DemoProduct[] = [
 	{ id: "bag-1", name: "Подушки декоративные", price: "1 940 ₽", oldPrice: "2 290 ₽", image: "/images/vanilla-product-1.webp" },
 	{ id: "bag-2", name: "Ваза Vanilla", price: "1 490 ₽", image: "/images/vanilla-product-2.webp" },
@@ -345,45 +346,95 @@ const rowStockOptions: RadioOption[] = [
 	// У vanilla НЕТ фильтра по цвету.
 	(function () {
 		const PLACEHOLDER_IMAGE = "/placeholders/sweater-blue.png";
-		let cachedProducts; // undefined — не грузили; null — demo/пусто/ошибка
 		let cachedCollections;
 
 		// Классы фильтров (зеркало ./filter-classes — is:inline не поддерживает import).
+		// ⚠️ ГОЧА: в client-JS строках (innerHTML) arbitrary after:bg-[rgb(var())] НЕ
+		// генерится previewTailwind (@source не сканит themes/theme-vanilla) →
+		// точка radio была бы невидимой в превью конструктора. Цвет точки vanilla =
+		// текст (--color-text дефолт 0 0 0) → core-utility after:bg-black (как rose).
 		const OPT_ACTIVE = "text-[rgb(var(--color-text,0_0_0))]";
 		const OPT_IDLE = "text-[rgb(var(--color-muted,153_153_153))] hover:text-[rgb(var(--color-text,0_0_0))]";
 		const RADIO_CIRCLE =
-			"relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-[rgb(var(--color-muted,153_153_153))] after:pointer-events-none after:absolute after:h-[10px] after:w-[10px] after:rounded-full after:bg-[rgb(var(--color-text,0_0_0))] after:opacity-0 after:content-[''] peer-checked:border-[rgb(var(--color-text,0_0_0))] peer-checked:after:opacity-100";
+			"relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-[rgb(var(--color-muted,153_153_153))] after:pointer-events-none after:absolute after:h-[10px] after:w-[10px] after:rounded-full after:bg-black after:opacity-0 after:content-[''] peer-checked:border-[rgb(var(--color-text,0_0_0))] peer-checked:after:opacity-100";
 		const RADIO_TEXT =
 			"font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-muted,153_153_153))] peer-checked:text-[rgb(var(--color-text,0_0_0))]";
 
-		// loadRealProducts: live — /data/products.json; превью — storefront-data по
-		// window.__MERFY_SITE_ID__ (фолбэк на siteId из define:vars). null → demo.
-		async function loadRealProducts() {
-			if (cachedProducts !== undefined) return cachedProducts;
-			try {
-				const res = await fetch("/data/products.json");
-				if (res.ok) {
-					const data = await res.json();
-					if (Array.isArray(data) && data.length > 0) { cachedProducts = data; return cachedProducts; }
-				}
-			} catch {}
-			const sid = (typeof window !== "undefined" && window.__MERFY_SITE_ID__) || siteId || undefined;
-			if (sid) {
+		// ЖИВОЙ storefront API (спек 098, rose-канон — «не products.json»). store_id
+		// (shopId) = siteId (storefront-data.controller: «Products are stored with
+		// shopId = siteId»). apiBase: на live (*.merfy.ru) cross-origin к gateway
+		// (CORS пропускает *.merfy.ru); в превью iframe на gateway-origin → same-origin.
+		const apiBase =
+			(typeof window !== "undefined" && window.__MERFY_API_BASE__) || "https://gateway.merfy.ru";
+		const storeId =
+			(typeof window !== "undefined" && window.__MERFY_SITE_ID__) || siteId || undefined;
+
+		// Цена из API — в КОПЕЙКАХ (basePrice "79000.00" / variant.price 79000).
+		function toCents(v) {
+			const n = typeof v === "string" ? parseFloat(v) : v;
+			return Number.isFinite(n) ? n : null;
+		}
+		function variantMinCents(p) {
+			const vc = p.variantCombinations;
+			if (Array.isArray(vc) && vc.length) {
+				const ps = vc.map((v) => toCents(v.price)).filter((n) => n !== null && n > 0);
+				if (ps.length) return Math.min.apply(null, ps);
+			}
+			return null;
+		}
+		// mapApiProduct: товар /api/store/products → форма vanilla-карточки
+		// (name/price-в-рублях/slug/images/collections). Цены КОПЕЙКИ→рубли (/100);
+		// title→name; handle→slug; productCollections→collections.
+		function mapApiProduct(p) {
+			const cents =
+				(p.hasVariants ? variantMinCents(p) : null) ??
+				toCents(p.basePrice) ??
+				variantMinCents(p) ??
+				0;
+			const oldCents = toCents(p.compareAtPrice);
+			const coll = Array.isArray(p.productCollections)
+				? p.productCollections.map((pc) => ({
+						id: (pc && (pc.collectionId || pc.id || (pc.collection && pc.collection.id))) || undefined,
+						slug: (pc && (pc.slug || (pc.collection && pc.collection.slug))) || undefined,
+					}))
+				: [];
+			return {
+				id: p.id,
+				name: p.title || p.name || "",
+				price: cents / 100,
+				oldPrice: oldCents && oldCents > 0 ? oldCents / 100 : null,
+				slug: p.handle || p.slug,
+				images: Array.isArray(p.images) ? p.images : [],
+				hasVariants: !!p.hasVariants,
+				variantCombinations: Array.isArray(p.variantCombinations) ? p.variantCombinations : [],
+				collections: coll,
+			};
+		}
+
+		// loadRealCollections: ЖИВОЙ API /api/store/collections (rose-канон). Нормализуем
+		// в форму vanilla {id, name, slug, productIds}. Фолбэк — статичный collections.json.
+		async function loadRealCollections() {
+			if (cachedCollections !== undefined) return cachedCollections;
+			if (storeId) {
 				try {
-					const res = await fetch(`/api/sites/${encodeURIComponent(sid)}/storefront-data`);
+					const res = await fetch(
+						`${apiBase}/api/store/collections?store_id=${encodeURIComponent(storeId)}&limit=100`,
+					);
 					if (res.ok) {
-						const payload = await res.json();
-						const products = payload && payload.products;
-						if (Array.isArray(products) && products.length > 0) { cachedProducts = products; return cachedProducts; }
+						const json = await res.json();
+						const cols = Array.isArray(json.collections) ? json.collections : [];
+						if (cols.length > 0) {
+							cachedCollections = cols.map((c) => ({
+								id: c.id,
+								name: c.title || c.name,
+								slug: c.slug || c.handle,
+								productIds: Array.isArray(c.productIds) ? c.productIds : undefined,
+							}));
+							return cachedCollections;
+						}
 					}
 				} catch {}
 			}
-			cachedProducts = null;
-			return cachedProducts;
-		}
-
-		async function loadRealCollections() {
-			if (cachedCollections !== undefined) return cachedCollections;
 			try {
 				const res = await fetch("/data/collections.json");
 				if (res.ok) {
@@ -391,42 +442,15 @@ const rowStockOptions: RadioOption[] = [
 					if (Array.isArray(data) && data.length > 0) { cachedCollections = data; return cachedCollections; }
 				}
 			} catch {}
-			const sid = (typeof window !== "undefined" && window.__MERFY_SITE_ID__) || siteId || undefined;
-			if (sid) {
-				try {
-					const res = await fetch(`/api/sites/${encodeURIComponent(sid)}/storefront-data`);
-					if (res.ok) {
-						const payload = await res.json();
-						const collections = payload && payload.collections;
-						if (Array.isArray(collections) && collections.length > 0) { cachedCollections = collections; return cachedCollections; }
-					}
-				} catch {}
-			}
 			cachedCollections = null;
 			return cachedCollections;
 		}
 
+		// findCollection: резолв ссылки (slug/id/name) в объект коллекции из кэша —
+		// используется buildProductsQuery для slug→collection_id серверного фильтра.
 		function findCollection(collections, ref) {
 			if (!ref || !collections) return null;
 			return collections.find((c) => c && (c.id === ref || c.slug === ref || c.name === ref)) ?? null;
-		}
-
-		// filterByCollection: сперва по productIds, затем по membership; пустой → исходный.
-		function filterByCollection(products, collections, ref) {
-			if (!ref) return products;
-			const col = findCollection(collections, ref);
-			let filtered = [];
-			if (col && Array.isArray(col.productIds) && col.productIds.length > 0) {
-				const ids = new Set(col.productIds);
-				filtered = products.filter((p) => p.id && ids.has(p.id));
-			}
-			if (filtered.length === 0) {
-				filtered = products.filter((p) => {
-					const memb = p.collections;
-					return Array.isArray(memb) && memb.some((m) => m && (m.id === ref || m.slug === ref || (col && col.slug && m.slug === col.slug)));
-				});
-			}
-			return filtered.length > 0 ? filtered : products;
 		}
 
 		function formatPrice(value) {
@@ -488,45 +512,12 @@ const rowStockOptions: RadioOption[] = [
 			}
 		}
 
-		// parsePriceNumber: реальные сборки — number; demo-строки ("1 940 ₽") парсим.
-		function parsePriceNumber(value) {
-			if (typeof value === "number") return Number.isFinite(value) ? value : 0;
-			if (typeof value !== "string") return 0;
-			const digits = value.replace(/[\s  ]/g, "").replace(/[^\d.,-]/g, "").replace(",", ".");
-			const n = parseFloat(digits);
-			return Number.isFinite(n) ? n : 0;
-		}
-		// productInStock: эвристика по variantCombinations (нет комбинаций → в наличии).
-		function productInStock(p) {
-			const combos = p.variantCombinations;
-			if (!Array.isArray(combos) || combos.length === 0) return true;
-			return combos.some((c) => c.available !== false && (c.quantity === undefined || c.quantity === null || c.quantity > 0));
-		}
-		function filterByStock(products, stock) {
-			if (stock === "in") return products.filter((p) => productInStock(p));
-			if (stock === "out") return products.filter((p) => !productInStock(p));
-			return products;
-		}
-		function filterByPrice(products, min, max) {
-			if (min === null && max === null) return products;
-			return products.filter((p) => {
-				const price = parsePriceNumber(p.price);
-				if (min !== null && price < min) return false;
-				if (max !== null && price > max) return false;
-				return true;
-			});
-		}
-		// sortProducts (новый массив): popularity — исходный; new — reverse; price-asc/desc.
-		function sortProducts(products, sort) {
-			if (sort === "new") return products.slice().reverse();
-			if (sort === "price-asc") return products.slice().sort((a, b) => parsePriceNumber(a.price) - parsePriceNumber(b.price));
-			if (sort === "price-desc") return products.slice().sort((a, b) => parsePriceNumber(b.price) - parsePriceNumber(a.price));
-			return products.slice();
-		}
-
 		// ─────────────────────── Каталог: state + orchestration ───────────────────────
+		// СЕРВЕРНАЯ пагинация (rose-канон): товары грузятся ПОСТРАНИЧНО реальными
+		// запросами /api/store/products?page=N с серверными фильтрами (sort/price/
+		// availability/collection). Клиент НЕ держит весь каталог и НЕ слайсит.
+		// У vanilla НЕТ фильтра по цвету — variant-параметр не отправляем.
 		let catalogCollections = null;
-		let catalogProducts = null;
 		const filters = { stock: "all", priceMin: null, priceMax: null, sort: "popularity", page: 1 };
 
 		function getPageSize() {
@@ -542,30 +533,113 @@ const rowStockOptions: RadioOption[] = [
 			if (fromSetting && fromSetting.trim()) return fromSetting.trim();
 			return new URLSearchParams(window.location.search).get("collection");
 		}
-		function getFilteredSorted(products) {
+
+		// buildProductsQuery: query-строка /api/store/products из текущего filters
+		// (rose-канон). min_price/max_price API сравнивает с basePrice в КОПЕЙКАХ →
+		// рубли × 100. out-of-stock в API = `sold_out` (DTO enum). Без variant-цвета.
+		function buildProductsQuery(page) {
+			const qp = new URLSearchParams();
+			qp.set("store_id", String(storeId ?? ""));
+			qp.set("page", String(page));
+			qp.set("limit", String(getPageSize()));
+
+			const sortMap = {
+				popularity: "popular",
+				new: "newest",
+				"price-asc": "price_asc",
+				"price-desc": "price_desc",
+			};
+			const sort = sortMap[filters.sort];
+			if (sort) qp.set("sort", sort);
+
+			if (filters.priceMin !== null && filters.priceMin !== undefined)
+				qp.set("min_price", String(Math.round(filters.priceMin * 100)));
+			if (filters.priceMax !== null && filters.priceMax !== undefined)
+				qp.set("max_price", String(Math.round(filters.priceMax * 100)));
+
+			if (filters.stock === "in") qp.set("availability", "in_stock");
+			else if (filters.stock === "out") qp.set("availability", "sold_out");
+
+			// Коллекция: slug/id из настройки или ?collection= → серверный collection_id.
+			// Резолвим slug→id через кэш; если резолва нет — передаём ref как есть.
 			const ref = currentCollectionRef();
-			let items = ref ? filterByCollection(products, catalogCollections, ref) : products;
-			items = filterByStock(items, filters.stock);
-			items = filterByPrice(items, filters.priceMin, filters.priceMax);
-			items = sortProducts(items, filters.sort);
-			return items;
+			if (ref) {
+				const col = findCollection(catalogCollections, ref);
+				qp.set("collection_id", col && col.id ? col.id : ref);
+			}
+			return qp.toString();
 		}
-		async function renderCatalog() {
-			const products = catalogProducts ?? (catalogProducts = await loadRealProducts());
-			if (!products) return; // demo-сборка
-			const items = getFilteredSorted(products);
-			const total = items.length;
-			const size = getPageSize();
-			const shown = Math.min(items.length, filters.page * size);
-			const visible = items.slice(0, shown);
-			const html = visible.map((p) => `<li data-product-id="${escapeHtml(p.id)}">${renderCardHtml(p)}</li>`).join("");
-			for (const grid of Array.from(document.querySelectorAll('[data-nt="catalog-grid"]'))) grid.innerHTML = html;
-			updateCount(total);
-			for (const btn of Array.from(document.querySelectorAll("[data-action='load-more']"))) {
-				btn.style.display = shown >= total ? "none" : "";
+
+		// fetchProductsPage: один сетевой запрос за страницей N. Возвращает
+		// { items, total, totalPages } либо null (сеть/ошибка) → null прячет грид.
+		async function fetchProductsPage(page) {
+			if (!storeId) return null;
+			try {
+				const res = await fetch(`${apiBase}/api/store/products?${buildProductsQuery(page)}`);
+				if (!res.ok) return null;
+				const json = await res.json();
+				const items = Array.isArray(json.products) ? json.products.map(mapApiProduct) : [];
+				const total = typeof json.total === "number" ? json.total : 0;
+				const totalPages =
+					(json.pagination && typeof json.pagination.totalPages === "number"
+						? json.pagination.totalPages
+						: null) ?? 1;
+				return { items, total, totalPages };
+			} catch {
+				return null;
 			}
 		}
-		function resetPageAndRender() { filters.page = 1; renderCatalog(); }
+
+		// renderCatalog: СЕРВЕРНАЯ пагинация. append=false (page=1) — REPLACE гридов;
+		// append=true (page>1) — APPEND карточек в конец (fetch следующей страницы по
+		// клику «Смотреть ещё»). Кнопка видна пока page<totalPages.
+		async function renderCatalog(append) {
+			const grids = Array.from(document.querySelectorAll('[data-nt="catalog-grid"]'));
+			const loadMoreBtns = Array.from(document.querySelectorAll("[data-action='load-more']"));
+
+			// При append индикатор — на кнопке (блокируем повторный клик во время fetch).
+			if (append) for (const btn of loadMoreBtns) btn.disabled = true;
+
+			const res = await fetchProductsPage(filters.page);
+
+			// Append-сбой (page>1, сеть упала): не затираем показанные товары —
+			// откатываем счётчик страницы и возвращаем кнопку.
+			if (res === null && append && filters.page > 1) {
+				filters.page -= 1;
+				for (const btn of loadMoreBtns) btn.disabled = false;
+				return;
+			}
+
+			// API недоступен ИЛИ магазин реально пуст (page=1, total=0): SSR demo-грид
+			// остаётся как есть (vanilla хранит моки прямо в начальном гриде), кнопку прячем.
+			if (res === null || (filters.page === 1 && res.total === 0)) {
+				for (const btn of loadMoreBtns) {
+					btn.style.display = "none";
+					btn.disabled = false;
+				}
+				return;
+			}
+
+			// Реальные товары: рендер страницы (append в конец / replace).
+			const html = res.items
+				.map((p) => `<li data-product-id="${escapeHtml(p.id)}">${renderCardHtml(p)}</li>`)
+				.join("");
+			for (const grid of grids) {
+				if (append && filters.page > 1) grid.insertAdjacentHTML("beforeend", html);
+				else grid.innerHTML = html; // page=1 → replace
+			}
+
+			updateCount(res.total); // счётчик = total магазина/фильтра
+			for (const btn of loadMoreBtns) {
+				btn.style.display = filters.page < res.totalPages ? "" : "none";
+				btn.disabled = false;
+			}
+		}
+
+		function resetPageAndRender() {
+			filters.page = 1;
+			renderCatalog(false); // REPLACE — смена фильтра/сортировки начинает с 1-й страницы
+		}
 
 		// ─────────── Наличие (top: name=vanilla-top-stock; side: name=vanilla-stock) ───────────
 		function syncStockUi() {
@@ -648,15 +722,17 @@ const rowStockOptions: RadioOption[] = [
 			}
 		}
 
-		// ─────────── Пагинация «Смотреть ещё» ───────────
+		// ─────────── Пагинация «Смотреть ещё» (СЕРВЕРНАЯ) ───────────
+		// Каждый клик = РЕАЛЬНЫЙ сетевой запрос за следующей страницей с APPEND.
 		function bindLoadMore() {
 			if (document.body.getAttribute("data-cf-loadmore") === "1") return;
 			document.body.setAttribute("data-cf-loadmore", "1");
 			document.addEventListener("click", (event) => {
 				const button = event.target.closest("[data-action='load-more']");
 				if (!button) return;
+				if (button.disabled) return; // защита от дабл-клика во время fetch
 				filters.page += 1;
-				renderCatalog();
+				renderCatalog(true); // APPEND следующей страницы
 			});
 		}
 
@@ -766,17 +842,35 @@ const rowStockOptions: RadioOption[] = [
 			}
 		}
 
+		// Дедуп (rose-канон): и inline-вызов, и astro:page-load срабатывают на первой
+		// загрузке с ОДНИМ url → второй пропускаем (иначе дубль fetch page=1).
+		let hydrating = false;
+		let lastHydratedUrl = null;
+
 		async function hydrateCatalog() {
-			await initCollectionsFilter();
-			catalogProducts = await loadRealProducts();
-			bindStock();
-			bindSort();
-			bindPrice();
-			bindLoadMore();
-			bindFilterDropdowns();
-			syncStockUi();
-			syncSortUi();
-			await renderCatalog();
+			if (hydrating) return; // не запускать две гидрации параллельно (race → дубль-fetch)
+			const url = location.pathname + location.search;
+			if (url === lastHydratedUrl) return;
+			lastHydratedUrl = url;
+			hydrating = true;
+			try {
+				// Коллекции (для collection_id серверного фильтра) грузим ДО товаров,
+				// чтобы buildProductsQuery резолвил slug→id уже на первой странице.
+				catalogCollections = await loadRealCollections();
+				bindStock();
+				bindSort();
+				bindPrice();
+				bindLoadMore();
+				bindFilterDropdowns();
+				syncStockUi();
+				syncSortUi();
+				// Первая страница товаров (REPLACE) — реальный fetch /api/store/products.
+				await renderCatalog(false);
+				// UI фильтра коллекций — после товаров (collections уже в кэше, без fetch).
+				await initCollectionsFilter();
+			} finally {
+				hydrating = false;
+			}
 		}
 
 		hydrateCatalog();

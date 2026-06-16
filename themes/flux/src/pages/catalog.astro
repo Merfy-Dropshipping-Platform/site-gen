@@ -13,7 +13,8 @@ const totalCount = catalogProducts.length;
 	<section
 		class="w-full bg-white px-4 pb-[80px] pt-10 md:px-20 md:pb-[120px] md:pt-16 2xl:px-[300px]"
 		aria-labelledby="catalog-title"
-		data-catalog-layout="top"
+		data-catalog-page
+		data-catalog-layout="side"
 	>
 		{/* Раскладку каталога выбирает настройка конструктора: платформа (превью
 		    и билд) инжектит window.__MERFY_CATALOG_LAYOUT__. Скрипт стоит ДО
@@ -283,120 +284,15 @@ const totalCount = catalogProducts.length;
 	}
 </style>
 
-<script>
-	document.addEventListener("click", (event) => {
-		const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-action='load-more']");
-		if (!button) return;
-		button.disabled = true;
-		button.textContent = "Больше товаров нет";
-		button.classList.add("opacity-60", "pointer-events-none");
-	});
-</script>
-
-<script>
-	import {
-		loadRealProducts,
-		loadRealCollections,
-		filterByCollection,
-		renderCardHtml,
-		escapeHtml,
-		updateCount,
-		type RealCollection,
-	} from "../lib/storefront-hydrate";
-
-	// Реальные товары (Option B): на published-сайте /data/products.json реальный →
-	// перерисовываем demo-grid. На demo-сборке loadRealProducts() вернёт null → no-op.
-	// Фильтр по коллекциям: ?collection= (slug/id из ссылок тайлов) + контейнеры
-	// «Коллекции» обеих раскладок (дропдаун в row, секция в сайдбаре) —
-	// заполняются из collections.json/storefront-data.
-	let catalogCollections: RealCollection[] | null = null;
-
-	function currentCollectionRef(): string | null {
-		return new URLSearchParams(window.location.search).get("collection");
-	}
-
-	async function renderCatalog() {
-		const products = await loadRealProducts();
-		if (!products) return; // demo-сборка
-		const ref = currentCollectionRef();
-		const items = ref ? filterByCollection(products, catalogCollections, ref) : products;
-		const html = items
-			.map((p) => `<li data-product-id="${escapeHtml(p.id)}">${renderCardHtml(p)}</li>`)
-			.join("");
-		for (const grid of Array.from(document.querySelectorAll('[data-nt="catalog-grid"]'))) {
-			grid.innerHTML = html;
-		}
-		updateCount('[data-nt="catalog-count"]', items.length);
-	}
-
-	async function initCollectionsFilter() {
-		// Контейнеры обеих раскладок (row-дропдаун + секция сайдбара); каждый
-		// гидрируем один раз — идемпотентность astro:page-load через data-cf-hydrated.
-		const boxes = Array.from(
-			document.querySelectorAll<HTMLElement>('[data-nt="catalog-collections-filter"]'),
-		).filter((box) => box.getAttribute("data-cf-hydrated") !== "true");
-		if (boxes.length === 0) return;
-		catalogCollections = await loadRealCollections();
-		if (!catalogCollections || catalogCollections.length === 0) return;
-		const collections = catalogCollections;
-		const ref = currentCollectionRef();
-		const current = ref
-			? collections.find((c) => c.id === ref || c.slug === ref || c.name === ref) ?? null
-			: null;
-		// Опции в манере темы: top-дропдаун — текстовые строки как в NtFilterPanel,
-		// сайдбар — строки с радио-кружком 1:1 с NtRadioField. Активность хранится
-		// в data-active; цвета и кружок — в <style is:global> на токенах схем.
-		const optionHtml = (value: string, name: string, active: boolean, radio: boolean) =>
-			`<li><button type="button" data-collection-option="${escapeHtml(value)}"${active ? " data-active" : ""} class="${radio ? "flex w-full cursor-pointer items-center gap-2 text-left transition-colors" : "w-full cursor-pointer text-left transition-colors"}">${radio ? '<span data-radio-dot aria-hidden="true"></span>' : ""}<span>${escapeHtml(name)}</span></button></li>`;
-		// Выбор в любом контейнере синхронизирует активную опцию и подпись
-		// дропдауна во ВСЕХ контейнерах (label есть только в row-дропдауне).
-		const syncActive = (value: string, name: string | null) => {
-			for (const box of boxes) {
-				const label = box.querySelector<HTMLElement>("[data-collections-label]");
-				if (label) label.textContent = name ?? "Коллекции";
-				for (const b of Array.from(box.querySelectorAll<HTMLElement>("[data-collection-option]"))) {
-					const on = (b.getAttribute("data-collection-option") ?? "") === value;
-					if (on) b.setAttribute("data-active", "");
-					else b.removeAttribute("data-active");
-				}
-			}
-		};
-		for (const box of boxes) {
-			const list = box.querySelector<HTMLElement>("[data-collections-options]");
-			if (!list) continue;
-			box.setAttribute("data-cf-hydrated", "true");
-			box.style.display = "";
-			const label = box.querySelector<HTMLElement>("[data-collections-label]");
-			if (label && current?.name) label.textContent = current.name;
-			// Радио-вид — только в секции сайдбара (side-раскладка).
-			const radio = box.closest('[data-catalog-variant="side"]') !== null;
-			list.innerHTML =
-				optionHtml("", "Все", !current, radio) +
-				collections
-					.map((c) => optionHtml(c.slug ?? c.id, c.name ?? "Коллекция", !!current && current.id === c.id, radio))
-					.join("");
-			list.addEventListener("click", (ev) => {
-				const btn = (ev.target as HTMLElement).closest<HTMLElement>("[data-collection-option]");
-				if (!btn) return;
-				const value = btn.getAttribute("data-collection-option") ?? "";
-				const params = new URLSearchParams(window.location.search);
-				if (value) params.set("collection", value);
-				else params.delete("collection");
-				const qs = params.toString();
-				window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
-				const col = collections.find((c) => (c.slug ?? c.id) === value) ?? null;
-				syncActive(value, col?.name ?? null);
-				box.removeAttribute("open"); // закрыть row-дропдаун; для секции сайдбара no-op
-				renderCatalog();
-			});
-		}
-	}
-
-	async function hydrateCatalog() {
-		await initCollectionsFilter();
-		await renderCatalog();
-	}
-
-	hydrateCatalog();
-	document.addEventListener("astro:page-load", hydrateCatalog);
-</script>
+{/*
+  Legacy hydration scripts удалены (порт каталога в Puck-блок,
+  packages/theme-flux/blocks/Catalog/Catalog.astro). Живая гидрация (fetch
+  /api/store/products, фильтры наличие/стоимость/цвет, серверная пагинация,
+  коллекции) теперь живёт в is:inline клиенте блока, который рендерит live-
+  страницу /catalog (generatePuckCatalogPage → ../components/Catalog.astro).
+  Эта родная страница themes/flux/src/pages/catalog.astro — design-источник
+  для theme-preview (build-all-themes); старый module-script (load-more stub +
+  storefront-hydrate import products.json) конфликтовал бы с блоком и читал
+  устаревший products.json вместо живого API. Оставляем только разметку +
+  inline __MERFY_CATALOG_LAYOUT__ snippet (как rose).
+*/}

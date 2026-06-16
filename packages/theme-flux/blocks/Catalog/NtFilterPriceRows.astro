@@ -1,0 +1,53 @@
+---
+/**
+ * NtFilterPriceRows (порт из design-systems-theme/components/ui/NtFilterPriceRows.astro).
+ * «от / до» — panel: 493:5445; sidebar 1920: 493:5523; sidebar 1280: 493:5524 (h 36px, 14px).
+ * Без внешних импортов — копия 1:1. Цвета — нейтральные DS-фоллбеки, перекрашиваются
+ * токенами схем через <style is:global> в Catalog.astro.
+ */
+interface Props {
+  variant?: "sidebar" | "sidebar1280" | "panel";
+  fromValue?: string;
+  toValue?: string;
+  currency?: string;
+  class?: string;
+}
+
+const props = Astro.props;
+const variant = props.variant ?? "sidebar";
+const currency = props.currency ?? "₽";
+const className = props.class ?? "";
+const isPanel = variant === "panel";
+const is1280 = variant === "sidebar1280";
+const fromValue = props.fromValue ?? (isPanel ? "50" : "0");
+const toValue = props.toValue ?? "5 990";
+
+const h = isPanel ? "h-8" : is1280 ? "h-9" : "h-10";
+const text = isPanel ? "text-[14px]" : is1280 ? "text-[14px]" : "text-[16px]";
+const gapVal = is1280 ? "gap-1" : "gap-2";
+const fromBorder = isPanel ? "border-b border-[#000000]" : "border-b border-[#999999]";
+const toBorder = "border-b border-[#999999]";
+const fromText = isPanel ? "text-[#000000]" : "text-[#999999]";
+const toText = "text-[#999999]";
+---
+
+<div
+  class:list={["flex w-full flex-col font-manrope font-normal leading-normal", text, className]}
+  data-nt="filter-price-rows"
+  data-nt-variant={variant}
+>
+  <div class:list={["flex w-full items-center justify-between", fromBorder, h, fromText]}>
+    <span>от</span>
+    <div class:list={["flex items-center", gapVal]}>
+      <span>{fromValue}</span>
+      <span>{currency}</span>
+    </div>
+  </div>
+  <div class:list={["flex w-full items-center justify-between", toBorder, h, toText]}>
+    <span>до</span>
+    <div class:list={["flex items-center", gapVal]}>
+      <span>{toValue}</span>
+      <span>{currency}</span>
+    </div>
+  </div>
+</div>

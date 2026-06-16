@@ -1,0 +1,60 @@
+---
+/**
+ * BloomPicture (порт из themes/bloom/src/components/img/BloomPicture.astro,
+ * приведён к self-contained <picture>-обёртке как RosePicture для WebP-source).
+ * Без внешних импортов — block-папка override-темы автономна (компилятор превью
+ * не резолвит пути за пределы папки).
+ *
+ * Атрибут `src` указывает на PNG/JPG/WEBP в /public/. Для локальных PNG/JPG
+ * рядом подкладывается соимённый .webp (генерируется images:optimize).
+ * Загруженные пользователем картинки (http(s)/MinIO/data:) рендерятся сквозным
+ * <img> без srcset-трансформации.
+ */
+interface Props {
+  src: string;
+  alt: string;
+  width?: number | string;
+  height?: number | string;
+  class?: string;
+  /** "eager" по умолчанию. Lazy задавать явно. */
+  loading?: "eager" | "lazy";
+  fetchpriority?: "high" | "low" | "auto";
+  decoding?: "sync" | "async" | "auto";
+  sizes?: string;
+  /** Доп. data-атрибуты на <img>. */
+  [key: `data-${string}`]: string | number | boolean | undefined;
+}
+
+const {
+  src,
+  alt,
+  width,
+  height,
+  class: className,
+  loading = "eager",
+  fetchpriority,
+  decoding = "async",
+  sizes,
+  ...rest
+} = Astro.props as Props;
+
+const isLocalThemeAsset = src.startsWith("/") && !src.startsWith("//");
+const webp = src.replace(/\.(png|jpe?g)$/i, ".webp");
+const hasWebp = isLocalThemeAsset && webp !== src;
+---
+
+<picture class="contents">
+  {hasWebp && <source srcset={webp} type="image/webp" />}
+  <img
+    src={src}
+    alt={alt}
+    width={width}
+    height={height}
+    class={className}
+    loading={loading}
+    fetchpriority={fetchpriority}
+    decoding={decoding}
+    sizes={sizes}
+    {...rest}
+  />
+</picture>

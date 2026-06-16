@@ -17,6 +17,25 @@ function staticComponent(
   };
 }
 
+/**
+ * Build a registry entry that points at a packages-managed block (pattern rose).
+ *
+ * `assembleFromPackages` копирует source из
+ * `packages/theme-satin/blocks/<X>/<X>.astro` (+ siblings) в
+ * `<scaffold>/src/components/<X>.astro` перед build, поэтому relative import
+ * `../components/<X>.astro` резолвится без workspace/Vite alias.
+ */
+function packageComponent(
+  name: string,
+  blockDir: string,
+): ComponentRegistryEntry {
+  return {
+    name,
+    kind: "static",
+    importPath: `../components/${blockDir}.astro`,
+  };
+}
+
 export const satinRegistry: Record<string, ComponentRegistryEntry> = {
   Header: staticComponent("Header", "Header.astro"),
   Hero: staticComponent("Hero", "Hero.astro"),
@@ -42,9 +61,11 @@ export const satinRegistry: Record<string, ComponentRegistryEntry> = {
   Product: staticComponent("Product", "Product.astro"),
   CartSection: staticComponent("CartSection", "CartSection.astro"),
   CheckoutSection: staticComponent("CheckoutSection", "CheckoutSection.astro"),
-  // Catalog block — live-render via CatalogIslandSection.astro (mounts the
-  // pupa CatalogIsland React island). Package-level Catalog.astro stays a
-  // static placeholder for constructor preview (Astro Container API can't
-  // resolve client:only).
-  Catalog: staticComponent("Catalog", "CatalogIslandSection.astro"),
+  // Catalog block — родной каталог верстальщика satin как package-блок
+  // (packages/theme-satin/blocks/Catalog/Catalog.astro), порт по образцу rose.
+  // assembleFromPackages копирует его + siblings плоско в src/components/,
+  // client <script is:inline> гидрирует живой /api/store/products. Превью
+  // конструктора рендерит ТОТ ЖЕ файл через Container API (live ≡ превью).
+  // Старый CatalogIslandSection.astro (React island) больше не используется.
+  Catalog: packageComponent("Catalog", "Catalog"),
 };

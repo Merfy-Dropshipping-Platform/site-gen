@@ -1,0 +1,1238 @@
+---
+// Catalog — РОДНОЙ каталог верстальщика satin как per-theme override блока
+// (port из themes/satin/src/pages/catalog.astro). Заменяет generic
+// theme-base/blocks/Catalog/Catalog.astro на пиксель-перфектную вёрстку satin:
+// top-раскладка (details-дропдауны с NtFilterPanel) + side-раскладка
+// (NtFilterSidebar), переключение через data-catalog-layout, гидрация реальных
+// товаров живым storefront API.
+//
+// Рендерится ОДИНАКОВО (паттерн rose):
+//   • Live build — themes-v2 ветка build.service: copyThemeV2Dist кладёт
+//     prebuilt satin dist (с bundled satin global.css: satin-pad/satin-container/
+//     satin-button/font-logo/font-manrope), затем composeContentPagesIntoDist
+//     рендерит этот блок через renderBlock(Catalog, satin) и инжектит в
+//     dist/catalog/index.html шелл. CSS берётся из satin-шелла → классы satin-*
+//     доступны. client <script is:inline> выполняется на published-сайте.
+//   • Превью конструктора — compile-astro-blocks.mjs (Container API) компилит
+//     этот .astro в dist/astro-blocks/theme-satin__Catalog__Catalog.mjs.
+//     client <script> в превью не выполняется (ок — initial HTML = demo-грид).
+//
+// Все импорты — siblings (./), без bare-NPM и ../../ (компилятор превью их не
+// резолвит). Корневой <section> несёт data-puck-component-id из props.id для
+// выделяемости в конструкторе.
+import SatinProductCard from "./SatinProductCard.astro";
+import NtFilterSidebar from "./NtFilterSidebar.astro";
+import NtFilterPanel from "./NtFilterPanel.astro";
+import NtIcon from "./SatinNtIcon.astro";
+
+// Минимальный тип карточки (зеркалит витринный shape Product).
+interface DemoProduct {
+  id: string;
+  name: string;
+  price: string;
+  oldPrice?: string;
+  image: string;
+  discount?: boolean;
+}
+
+// Совместимый с theme-base/blocks/Catalog/Catalog.puckConfig props-минимум.
+interface ProductCardCfg {
+  buttonStyle?: "link" | "primary" | "secondary";
+  cardStyle?: "auto" | "portrait" | "square" | "wide";
+  nextPhoto?: boolean | "true" | "false";
+  quickAdd?: "none" | "standard" | "cart";
+}
+interface Props {
+  id?: string;
+  siteId?: string;
+  categoryTitle?: string | { text?: string };
+  categorySubtitle?: string | { text?: string };
+  subtitle?: boolean | "true" | "false";
+  filterPosition?: "top" | "side";
+  showFilter?: boolean | "true" | "false";
+  showSort?: boolean | "true" | "false";
+  columns?: number;
+  colorScheme?: string;
+  /** Настройка «Выбор коллекции» конструктора (страница page-collection).
+      Приходит как slug/id выбранной коллекции; null/пусто → весь каталог. */
+  collectionSlug?: string | null;
+  /** Отступы секции (Figma 1:34015 «Отступы»). Дефолт 120/120. */
+  padding?: { top?: number; bottom?: number };
+  /** Кол-во карточек на «страницу» пагинации (slider «Карточки», 2–24). */
+  cards?: number;
+  /** Под-конфиг карточки товара. */
+  productCard?: ProductCardCfg;
+  /** Отдельная цветовая схема ВНУТРЕННЕГО контейнера каталога (Figma 1:34017). */
+  containerColorScheme?: string;
+}
+
+const {
+  id,
+  siteId,
+  categoryTitle,
+  categorySubtitle,
+  subtitle,
+  filterPosition,
+  showFilter,
+  showSort,
+  columns,
+  colorScheme,
+  collectionSlug,
+  padding,
+  cards,
+  productCard,
+  containerColorScheme,
+} = Astro.props as Props;
+
+// Кол-во товаров на «страницу» пагинации: из настройки «Карточки» (cards, 2–24).
+// Дефолт 8 (puckConfig defaults.cards). Прокидывается через data-page-size и в
+// client-script через define:vars (getPageSize читает оба).
+const pageSize = Math.max(2, Math.min(24, Number(cards) || 8));
+
+// Заголовок/подзаголовок: aiText в puck может быть строкой или { text }.
+function pickText(v: unknown, fallback: string): string {
+  if (typeof v === "string" && v.trim()) return v;
+  if (v && typeof v === "object") {
+    const t = (v as { text?: string }).text;
+    if (typeof t === "string" && t.trim()) return t;
+  }
+  return fallback;
+}
+const title = pickText(categoryTitle, "Каталог");
+const subtitleText = pickText(categorySubtitle, "Здесь начинается персональный стиль");
+const subtitleVisible = subtitle !== "false" && subtitle !== false;
+const filterVisible = showFilter !== "false" && showFilter !== false;
+const sortVisible = showSort !== "false" && showSort !== false;
+
+// Раскладка по умолчанию из настройки конструктора (родной satin = top).
+// Превью-контроллер/билд могут инжектить window.__MERFY_CATALOG_LAYOUT__
+// (см. inline-script ниже), который перебьёт этот дефолт без мигания.
+const defaultLayout = filterPosition === "side" ? "side" : "top";
+
+// Цветовая схема секции (hot-swap токенов как у остальных блоков).
+const schemeClass =
+  typeof colorScheme === "string" && colorScheme
+    ? `color-scheme-${colorScheme.replace("scheme-", "")}`
+    : "";
+
+// Отступы СЕКЦИИ + колонки грида (desktop): clamp 2..6 → CSS-var --satin-cols
+// (mobile/планшет 2/3 остаются классами). Паттерн rose (--rose-cols).
+const colCount = Math.max(2, Math.min(6, Number(columns) || 4));
+const paddingStyle =
+  (padding
+    ? `padding-top:${padding.top ?? 120}px;padding-bottom:${padding.bottom ?? 120}px;`
+    : "padding-top:120px;padding-bottom:120px;") + `--satin-cols:${colCount};`;
+
+// (6) Быстрое действие в карточке: none → нет кнопки «В корзину»; иначе показ.
+// Родной satin всегда показывает «В корзину»; настройка quickAdd позволяет
+// конструктору скрыть её (none). standard/cart → показываем (текст «В КОРЗИНУ»).
+const quickAddMode = productCard?.quickAdd ?? "cart";
+const showCartBtn = quickAddMode !== "none";
+
+// (7) Отдельная схема ВНУТРЕННЕГО контейнера каталога (эталон theme-base).
+const containerSchemeClass =
+  typeof containerColorScheme === "string" && containerColorScheme
+    ? `color-scheme-${containerColorScheme.replace("scheme-", "")}`
+    : "";
+
+// SSR demo-грид (родные товары satin). Гарантирует, что грид рендерится в initial
+// HTML и в превью (Container API), и на live до гидрации. На published-сайте
+// client-<script> (renderCardHtml) перерисует реальными товарами.
+const demoProducts: DemoProduct[] = [
+  { id: "bag-1", name: "Сумка", price: "5 990 ₽", oldPrice: "7 990 ₽", discount: true, image: "/images/Товар_1.png" },
+  { id: "bag-2", name: "Сумка", price: "5 990 ₽", oldPrice: "7 990 ₽", discount: true, image: "/images/Товар_2.png" },
+  { id: "bag-3", name: "Сумка", price: "5 990 ₽", oldPrice: "7 990 ₽", discount: true, image: "/images/Товар_3.png" },
+  { id: "bag-4", name: "Сумка", price: "5 990 ₽", oldPrice: "7 990 ₽", discount: true, image: "/images/Товар_4.png" },
+  { id: "bag-5", name: "Сумка", price: "5 990 ₽", oldPrice: "7 990 ₽", discount: true, image: "/images/Товар_5.png" },
+  { id: "bag-6", name: "Сумка", price: "5 990 ₽", oldPrice: "7 990 ₽", discount: true, image: "/images/Товар_6.png" },
+  { id: "bag-7", name: "Сумка", price: "5 990 ₽", oldPrice: "7 990 ₽", discount: true, image: "/images/Товар_7.png" },
+  { id: "bag-8", name: "Сумка", price: "5 990 ₽", oldPrice: "7 990 ₽", discount: true, image: "/images/Товар_8.png" },
+];
+// Лоадер: число скелетон-карточек, показываемых пока идёт fetch живого API
+// (одна «страница» пагинации). Demo-моки уходят в <template> и показываются
+// только если магазин реально пуст.
+const skeletonCount = pageSize;
+const skeletons = Array.from({ length: skeletonCount });
+---
+
+<section
+  class={schemeClass}
+  data-block="catalog"
+  data-catalog-page
+  data-puck-component-id={id}
+  data-site-id={siteId}
+  data-nt="satin-catalog-section"
+  aria-labelledby="catalog-title"
+  data-catalog-layout={defaultLayout}
+  data-collection-slug={collectionSlug ?? ''}
+  data-page-size={pageSize}
+  style={paddingStyle}
+>
+  {/* Раскладка каталога из настройки конструктора: платформа (превью-контроллер
+      и билд) инжектит window.__MERFY_CATALOG_LAYOUT__. Скрипт ДО вариантов,
+      чтобы переключение не мигало; без глобала остаётся раскладка из props. */}
+  <script is:inline>var l=window.__MERFY_CATALOG_LAYOUT__; if(l==='top'||l==='side'){document.currentScript.parentElement.setAttribute('data-catalog-layout',l);}</script>
+
+  {/* Demo-моки для ПУСТОГО магазина (0 товаров): не в начальном гриде (там
+      скелетон-лоадер), хранятся скрытыми и подставляются клиентом ТОЛЬКО если у
+      магазина реально нет товаров — красивая заглушка нового сайта. */}
+  <template data-nt="catalog-demo">
+    {demoProducts.map((product) => (
+      <li data-product-id={product.id}>
+        <SatinProductCard product={product} />
+      </li>
+    ))}
+  </template>
+
+  {/* Фон секции и все цвета зоны фильтров — из токенов цветовых схем конструктора
+      (rgb(var(--color-*))) с фоллбеками к прежним хардкодам satin. */}
+  <div class="satin-pad w-full bg-[rgb(var(--color-bg,255_255_255))]">
+    {/* (7) Цветовая схема контейнера: класс color-scheme-N на satin-container
+        (эталон theme-base). unset → класс не добавляется, контейнер наследует
+        схему секции (прозрачный фон, родной satin-вид). */}
+    <div
+      class:list={["satin-container flex flex-col gap-8", containerSchemeClass]}
+      style={containerSchemeClass ? "background:rgb(var(--color-bg,255 255 255));color:rgb(var(--color-text,0 0 0));" : undefined}
+    >
+      <header class="flex flex-col gap-2">
+        <h1
+          id="catalog-title"
+          class="font-logo text-[20px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
+        >{title}</h1>
+        {subtitleVisible && (
+          <p class="font-manrope text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">
+            {subtitleText}
+          </p>
+        )}
+      </header>
+
+      {/* Раскладка top: фильтры/сортировка строкой над гридом (родной вид satin). */}
+      <div class="flex flex-col gap-6" data-catalog-variant="top">
+        <div class="relative z-40 flex flex-wrap items-center justify-between gap-3" data-nt="catalog-filters">
+          <div class="flex flex-wrap items-start gap-3">
+            {filterVisible && (
+              <>
+                <details class="group relative">
+                  <summary class="flex h-8 min-w-[120px] cursor-pointer list-none items-center justify-between gap-2 bg-[rgb(var(--color-bg,255_255_255))] px-0 font-manrope text-[16px] font-normal uppercase leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+                    <span>Наличие</span>
+                    <NtIcon name="dropdown-chevron" sizeClass="size-6" class="transition-transform group-open:rotate-180" />
+                  </summary>
+                  <div class="absolute left-0 top-full z-40 mt-1 w-full">
+                    <NtFilterPanel panel="stock" />
+                  </div>
+                </details>
+
+                <details class="group relative">
+                  <summary class="flex h-8 min-w-[120px] cursor-pointer list-none items-center justify-between gap-2 bg-[rgb(var(--color-bg,255_255_255))] px-0 font-manrope text-[16px] font-normal uppercase leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+                    <span>Стоимость</span>
+                    <NtIcon name="dropdown-chevron" sizeClass="size-6" class="transition-transform group-open:rotate-180" />
+                  </summary>
+                  <div class="absolute left-0 top-full z-40 mt-1 w-full">
+                    <NtFilterPanel panel="price" />
+                  </div>
+                </details>
+
+                <details class="group relative">
+                  <summary class="flex h-8 min-w-[90px] cursor-pointer list-none items-center justify-between gap-2 bg-[rgb(var(--color-bg,255_255_255))] px-0 font-manrope text-[16px] font-normal uppercase leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+                    <span>Цвет</span>
+                    <NtIcon name="dropdown-chevron" sizeClass="size-6" class="transition-transform group-open:rotate-180" />
+                  </summary>
+                  <div class="absolute left-0 top-full z-40 mt-1 w-full">
+                    <NtFilterPanel panel="color" />
+                  </div>
+                </details>
+
+                {/* Фильтр по коллекциям: скрыт на demo-сборке, гидрация показывает
+                    его при наличии коллекций магазина и уважает ?collection= из
+                    ссылок тайлов Collections. Манера = details-дропдауны выше. */}
+                <details class="group relative" data-nt="catalog-collections-filter" style="display:none;">
+                  <summary class="flex h-8 min-w-[120px] cursor-pointer list-none items-center justify-between gap-2 bg-[rgb(var(--color-bg,255_255_255))] px-0 font-manrope text-[16px] font-normal uppercase leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+                    <span data-collections-label>Коллекции</span>
+                    <NtIcon name="dropdown-chevron" sizeClass="size-6" class="transition-transform group-open:rotate-180" />
+                  </summary>
+                  {/* Открытая панель 1:1 с NtFilterPanel соседних дропдаунов (180px,
+                      min-h 97, центрирование, рамка): тот же набор классов +
+                      маркер data-nt="filter-panel", чтобы токен-переопределения ниже
+                      красили её и DS-панели одним правилом. */}
+                  <div class="absolute left-0 top-full z-40 mt-1 w-full">
+                    <div
+                      class="flex min-h-[97px] w-[180px] flex-col justify-center gap-2 rounded-[6px] border border-[rgb(var(--color-surface,245_245_245))] bg-[rgb(var(--color-surface,255_255_255))] p-3 font-manrope text-[14px] font-normal leading-[100%]"
+                      data-nt="filter-panel"
+                    >
+                      <ul data-collections-options class="m-0 flex list-none flex-col gap-2 p-0"></ul>
+                    </div>
+                  </div>
+                </details>
+              </>
+            )}
+          </div>
+
+          {sortVisible && (
+            <details class="group relative">
+              <summary class="flex h-8 min-w-[150px] cursor-pointer list-none items-center justify-end gap-2 bg-[rgb(var(--color-bg,255_255_255))] px-0 font-manrope text-[16px] font-normal uppercase leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+                <span>По популярности</span>
+                <NtIcon name="dropdown-chevron" sizeClass="size-6" class="transition-transform group-open:rotate-180" />
+              </summary>
+              <div class="absolute right-0 top-full z-40 mt-1 w-[180px]">
+                <NtFilterPanel panel="sort" />
+              </div>
+            </details>
+          )}
+        </div>
+
+        <ul
+          class="grid auto-rows-fr grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3"
+          role="list"
+          data-nt="catalog-grid"
+        >
+          {skeletons.map(() => (
+            <li data-nt="catalog-skeleton" aria-hidden="true">
+              <div class="flex h-full w-full flex-col gap-3">
+                <div class="aspect-[430/564] w-full animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+                <div class="flex w-full flex-col gap-1.5">
+                  <div class="h-4 w-3/4 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+                  <div class="h-4 w-1/3 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <button
+            type="button"
+            data-action="load-more"
+            style="display:none"
+            class="satin-button satin-button-md satin-button-light"
+          >Смотреть ещё</button>
+          <span class="font-manrope text-[16px] font-normal uppercase leading-normal text-[rgb(var(--color-muted,153_153_153))]" data-nt="catalog-count"></span>
+        </div>
+      </div>
+
+      {/* Раскладка side: левый сайдбар с фильтрами (включается настройкой конструктора). */}
+      <div class="flex flex-col gap-8 lg:flex-row lg:gap-10" data-catalog-variant="side">
+        {/* Колонка сайдбара: DS-компонент + своя секция «Коллекции» рядом. */}
+        <div class="hidden w-[172px] shrink-0 flex-col gap-4 lg:flex xl:w-[294px]">
+          {filterVisible && <NtFilterSidebar class="w-full" />}
+
+          {/* Фильтр по коллекциям в манере секций сайдбара: скрыт на demo-сборке,
+              гидрация показывает его при наличии коллекций магазина. */}
+          <div
+            class="flex flex-col gap-3 rounded-[8px] p-3 font-manrope"
+            data-nt="catalog-collections-filter"
+            data-collections-style="sidebar"
+            style="display:none;"
+          >
+            <p class="text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]">Коллекции</p>
+            <ul data-collections-options class="m-0 flex list-none flex-col gap-3 p-0"></ul>
+          </div>
+        </div>
+
+        <div class="flex flex-1 flex-col gap-8">
+          <ul
+            class="grid auto-rows-fr grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3"
+            role="list"
+            data-nt="catalog-grid"
+          >
+            {skeletons.map(() => (
+              <li data-nt="catalog-skeleton" aria-hidden="true">
+                <div class="flex h-full w-full flex-col gap-3">
+                  <div class="aspect-[430/564] w-full animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+                  <div class="flex w-full flex-col gap-1.5">
+                    <div class="h-4 w-3/4 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+                    <div class="h-4 w-1/3 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <button
+              type="button"
+              data-action="load-more"
+              style="display:none"
+              class="satin-button satin-button-light"
+            >Смотреть ещё</button>
+            <span class="font-manrope text-[16px] font-normal uppercase leading-normal text-[rgb(var(--color-muted,153_153_153))]" data-nt="catalog-count"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style is:global>
+  /* «Колонки» (desktop ≥640 где грид становится sm:grid-cols-3): число из
+     настройки через --satin-cols (секция несёт переменную, mobile — 2 классом
+     grid-cols-2). Явное media-правило вместо Tailwind arbitrary-класса. */
+  @media (min-width: 640px) {
+    [data-nt="satin-catalog-section"] [data-nt="catalog-grid"] {
+      grid-template-columns: repeat(var(--satin-cols, 3), minmax(0, 1fr)) !important;
+    }
+  }
+
+  /* Переключение раскладок каталога: виден только выбранный вариант.
+     data-catalog-layout ставит inline-скрипт секции из window.__MERFY_CATALOG_LAYOUT__
+     (или дефолт из настройки filterPosition). Desktop (≥1024) уважает выбор. */
+  @media (min-width: 1024px) {
+    [data-catalog-layout="top"] [data-catalog-variant="side"] {
+      display: none;
+    }
+    [data-catalog-layout="side"] [data-catalog-variant="top"] {
+      display: none;
+    }
+  }
+  /* Мобилка (<lg): side-сайдбар = lg-only (hidden lg:flex) → на узких экранах
+     side-фильтров нет вообще. Поэтому на <lg ВСЕГДА показываем top-вариант
+     (фильтры сверху), независимо от выбранной раскладки; side-вариант прячем.
+     Селектор [data-catalog-layout] [...] = (0,2,0) бьёт Tailwind .flex (0,1,0). */
+  @media (max-width: 1023px) {
+    [data-catalog-layout] [data-catalog-variant="side"] {
+      display: none;
+    }
+  }
+
+  /* ── Цвета DS-компонентов фильтров из токенов цветовых схем ──────────────
+     NtFilterSidebar / NtFilterPanel / NtRadioField / NtFilterPriceRows не
+     редактируем (design-systems read-only) — переопределяем снаружи по их
+     стабильным data-nt-атрибутам и структуре, скоупленно в раскладки каталога.
+     Фоллбеки = хардкоды DS (#FFFFFF/#000000/#999999/#F5F5F5): без активной схемы
+     вид прежний, на тёмных/цветных схемах — никаких белых подложек. */
+
+  /* side: плоскость сайдбара = фон страницы (манера satin «без плиты») */
+  [data-catalog-variant="side"] [data-nt="filter-sidebar"] {
+    background-color: rgb(var(--color-bg, 255 255 255));
+  }
+  /* side: заголовки секций сайдбара («Сортировать»/«Наличие»/«Стоимость»/«Цвет») */
+  [data-catalog-variant="side"] [data-nt="filter-sidebar"] > div > p {
+    color: rgb(var(--color-text, 0 0 0));
+  }
+  /* side: радио NtRadioField — ободок, точка, подпись, focus-кольцо */
+  [data-catalog-variant="side"] [data-nt="radio-field"] > span[aria-hidden="true"] {
+    border-color: rgb(var(--color-muted, 153 153 153));
+    outline-color: rgb(var(--color-text, 0 0 0));
+  }
+  [data-catalog-variant="side"] [data-nt="radio-field"] > span[aria-hidden="true"]::after {
+    background-color: rgb(var(--color-text, 0 0 0));
+  }
+  [data-catalog-variant="side"] [data-nt="radio-field"] > input:checked ~ span[aria-hidden="true"] {
+    border-color: rgb(var(--color-text, 0 0 0));
+  }
+  [data-catalog-variant="side"] [data-nt="radio-field"] > span:last-child {
+    color: rgb(var(--color-muted, 153 153 153));
+  }
+  [data-catalog-variant="side"] [data-nt="radio-field"] > input:checked ~ span:last-child {
+    color: rgb(var(--color-text, 0 0 0));
+  }
+  /* обе раскладки: строки «от/до» стоимости (подчёркивание + текст) */
+  [data-catalog-variant="side"] [data-nt="filter-price-rows"] > div,
+  [data-catalog-variant="top"] [data-nt="filter-price-rows"] > div {
+    border-color: rgb(var(--color-muted, 153 153 153));
+    color: rgb(var(--color-muted, 153 153 153));
+  }
+  /* top: в panel-варианте строка «от» активная (чёрная в DS) */
+  [data-catalog-variant="top"] [data-nt="filter-price-rows"][data-nt-variant="panel"] > div:first-child {
+    border-color: rgb(var(--color-text, 0 0 0));
+    color: rgb(var(--color-text, 0 0 0));
+  }
+  /* top: открытые панели дропдаунов (DS NtFilterPanel + панель «Коллекции») */
+  [data-catalog-variant="top"] [data-nt="filter-panel"] {
+    background-color: rgb(var(--color-surface, 255 255 255));
+    border-color: rgb(var(--color-surface, 245 245 245));
+  }
+  [data-catalog-variant="top"] [data-nt="filter-panel"] > p {
+    color: rgb(var(--color-muted, 153 153 153));
+  }
+  [data-catalog-variant="top"] [data-nt="filter-panel"] > p:first-of-type {
+    color: rgb(var(--color-text, 0 0 0));
+  }
+  /* кнопка «Смотреть ещё» каталога: satin-button-light хардкодит --satin-black —
+     в зоне каталога ведём от токена текста (фоллбек тот же чёрный). */
+  [data-catalog-layout] .satin-button-light {
+    color: rgb(var(--color-text, 0 0 0));
+    border-color: rgb(var(--color-text, 0 0 0));
+  }
+</style>
+
+<script is:inline define:vars={{ siteId, pageSize, showCartBtn }}>
+  // ⚠️ is:inline (НЕ module-script): module client-<script> блока НЕ компилится в
+  // live build → 404 на проде, вся логика мертва. Поэтому весь клиент инлайн:
+  // функции storefront-hydrate.ts перенесены телами 1:1 (без import/типов),
+  // данные frontmatter — через define:vars. У satin фильтр цвета есть.
+  (function () {
+  // ─── Инлайн storefront-hydrate (loaders + filters/sort + card render) ───
+  let cachedCollections;
+  let cachedColors; // undefined — не грузили; массив имён цветов из /store/filters
+
+  // ЖИВОЙ storefront API (спек 098 — «не products.json»). store_id (shopId) = siteId.
+  const apiBase =
+    (typeof window !== "undefined" && window.__MERFY_API_BASE__) || "https://gateway.merfy.ru";
+  const storeId =
+    (typeof window !== "undefined" && window.__MERFY_SITE_ID__) || siteId || undefined;
+
+  // Цена из API — в КОПЕЙКАХ (basePrice "79000.00" / variant.price 79000).
+  function toCents(v) {
+    const n = typeof v === "string" ? parseFloat(v) : v;
+    return Number.isFinite(n) ? n : null;
+  }
+  function variantMinCents(p) {
+    const vc = p.variantCombinations;
+    if (Array.isArray(vc) && vc.length) {
+      const ps = vc.map((v) => toCents(v.price)).filter((n) => n !== null && n > 0);
+      if (ps.length) return Math.min.apply(null, ps);
+    }
+    return null;
+  }
+  // Маппинг товара /api/store/products → форма клиента каталога.
+  function mapApiProduct(p) {
+    const cents =
+      (p.hasVariants ? variantMinCents(p) : null) ??
+      toCents(p.basePrice) ??
+      variantMinCents(p) ??
+      0;
+    const oldCents = toCents(p.compareAtPrice);
+    const coll = Array.isArray(p.productCollections)
+      ? p.productCollections.map((pc) => ({
+          id: (pc && (pc.collectionId || pc.id || (pc.collection && pc.collection.id))) || undefined,
+          slug: (pc && (pc.slug || (pc.collection && pc.collection.slug))) || undefined,
+        }))
+      : [];
+    return {
+      id: p.id,
+      name: p.title || p.name || "",
+      price: cents / 100,
+      oldPrice: oldCents && oldCents > 0 ? oldCents / 100 : null,
+      slug: p.handle || p.slug,
+      images: Array.isArray(p.images) ? p.images : [],
+      hasVariants: !!p.hasVariants,
+      variantCombinations: Array.isArray(p.variantCombinations) ? p.variantCombinations : [],
+      collections: coll,
+    };
+  }
+
+  // loadRealCollections: ЖИВОЙ API /api/store/collections. Фолбэк — collections.json.
+  async function loadRealCollections() {
+    if (cachedCollections !== undefined) return cachedCollections;
+    if (storeId) {
+      try {
+        const res = await fetch(
+          `${apiBase}/api/store/collections?store_id=${encodeURIComponent(storeId)}&limit=100`,
+        );
+        if (res.ok) {
+          const json = await res.json();
+          const cols = Array.isArray(json.collections) ? json.collections : [];
+          if (cols.length > 0) {
+            cachedCollections = cols.map((c) => ({
+              id: c.id,
+              name: c.title || c.name,
+              slug: c.slug || c.handle,
+              productIds: Array.isArray(c.productIds) ? c.productIds : undefined,
+            }));
+            return cachedCollections;
+          }
+        }
+      } catch {
+        /* API недоступен — фолбэк ниже */
+      }
+    }
+    try {
+      const res = await fetch("/data/collections.json");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          cachedCollections = data;
+          return cachedCollections;
+        }
+      }
+    } catch {
+      /* нет файла */
+    }
+    cachedCollections = null;
+    return cachedCollections;
+  }
+
+  // findCollection: резолв ссылки (slug/id/name) в объект коллекции из кэша.
+  function findCollection(collections, ref) {
+    if (!ref || !collections) return null;
+    return (
+      collections.find((c) => c && (c.id === ref || c.slug === ref || c.name === ref)) ?? null
+    );
+  }
+
+  function formatPrice(value) {
+    if (value === null || value === undefined || value === "") return "";
+    if (typeof value === "string") return value;
+    return `${value.toLocaleString("ru-RU")} ₽`;
+  }
+
+  function productHref(p) {
+    return `/product?id=${encodeURIComponent(p.id)}`;
+  }
+
+  function productImageRaw(p) {
+    return (Array.isArray(p.images) && typeof p.images[0] === "string" && p.images[0]) || "";
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  // Surface-плейсхолдер медиа карточки (товар без фото / битый URL). Зеркалит
+  // SatinProductCard.astro (SSR-ветка !product.image) + storefront-hydrate.ts.
+  const CARD_MEDIA_FALLBACK_HTML =
+    '<div class="absolute inset-0 flex items-center justify-center" aria-hidden="true">' +
+    '<svg class="size-10" style="color:rgb(var(--color-muted,153 153 153))" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>' +
+    "</svg></div>";
+  const CARD_IMG_ONERROR_ATTR = ` onerror="this.onerror=null;this.outerHTML='${CARD_MEDIA_FALLBACK_HTML.replace(/"/g, "&quot;")}'"`;
+
+  // renderCardHtml — зеркалит SatinProductCard.astro + storefront-hydrate.ts
+  // (article → картинка-ссылка с бэйджем + name + price + кнопка «В корзину»).
+  // Меняется СИНХРОННО с SatinProductCard.astro (parity).
+  function renderCardHtml(p) {
+    const href = escapeHtml(productHref(p));
+    const name = escapeHtml(p.name);
+    const image = escapeHtml(productImageRaw(p));
+    const price = escapeHtml(formatPrice(p.price));
+    const oldRaw = formatPrice(p.oldPrice || p.compareAtPrice || null);
+    const oldPrice = oldRaw
+      ? `<span class="font-manrope text-[14px] font-light leading-tight text-[#999999] line-through">${escapeHtml(oldRaw)}</span>`
+      : "";
+    const badge = oldRaw
+      ? `<span class="pointer-events-none absolute left-0 top-0 inline-flex h-6 items-center bg-[#000000] px-2 font-manrope text-[12px] font-medium uppercase leading-none text-white">Скидка</span>`
+      : "";
+    // Кнопка «В корзину» — СНАРУЖИ <a> (button-in-anchor невалиден). data-add-to-cart
+    // ловит делегирование корзины satin-диста (nt-cart-satin).
+    const cartBtn = showCartBtn
+      ? `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${price}" data-old-price="${escapeHtml(oldRaw)}" data-image="${image}" class="mt-2 flex h-11 w-full items-center justify-center bg-[#000000] px-3 font-manrope text-[14px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-80">В корзину</button>`
+      : "";
+    return `<article class="group flex h-full flex-col gap-3" data-nt="satin-product-card" aria-label="${name}">
+  <div class="relative aspect-[430/564] w-full shrink-0 overflow-hidden bg-[#F5F5F5]">
+    <a href="${href}" class="block size-full" aria-label="${name}">
+      ${image ? `<img src="${image}" alt="${name}" width="430" height="564" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"${CARD_IMG_ONERROR_ATTR} />` : CARD_MEDIA_FALLBACK_HTML}
+    </a>
+    ${badge}
+  </div>
+  <div class="flex flex-1 flex-col gap-1.5 md:gap-2">
+    <a href="${href}" class="font-manrope text-[16px] font-normal uppercase leading-tight text-[#000000] hover:opacity-80">${name}</a>
+    <div class="flex flex-wrap items-baseline gap-1.5 md:gap-2">
+      <span class="font-manrope text-[16px] font-normal leading-tight text-[#000000]">${price}</span>
+      ${oldPrice}
+    </div>
+    ${cartBtn}
+  </div>
+</article>`;
+  }
+
+  function updateCount(countSelector, n) {
+    for (const el of Array.from(document.querySelectorAll(countSelector))) {
+      el.textContent = `${n} товаров`;
+    }
+  }
+
+  // Имя variant-группы цвета (рус. тема satin). Серверный API принимает variant-фильтр
+  // ключом = ИМЯ группы как есть (`&Цвет=Синий`), один value на группу.
+  const COLOR_GROUP_NAME = "Цвет";
+
+  // ─────────────────────── Каталог: state + orchestration ───────────────────────
+  // СЕРВЕРНАЯ пагинация: товары грузятся ПОСТРАНИЧНО реальными запросами
+  // /api/store/products?page=N с серверными фильтрами. top- и side-раскладки = два
+  // независимых набора контролов: обработчики вешаем на ОБА, пишем в общий state,
+  // перерисовываем ОБА грида.
+  let catalogCollections = null;
+  let availableColors = [];
+
+  const filters = {
+    stock: "all",
+    priceMin: null,
+    priceMax: null,
+    colors: [],
+    sort: "popularity",
+    page: 1,
+  };
+
+  // Размер «страницы» пагинации — из data-page-size секции (фолбэк на pageSize).
+  function getPageSize() {
+    const root = document.querySelector('[data-catalog-layout]');
+    const n = parseInt((root && root.getAttribute("data-page-size")) ?? "", 10);
+    if (Number.isFinite(n) && n > 0) return n;
+    return Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 12;
+  }
+
+  // Коллекция: СНАЧАЛА настройка конструктора (data-collection-slug на секции),
+  // ИНАЧЕ ?collection= из URL (ссылки тайлов Collections + клики по фильтру).
+  function currentCollectionRef() {
+    const root = document.querySelector('[data-catalog-layout]');
+    const fromSetting = root && root.getAttribute("data-collection-slug");
+    if (fromSetting && fromSetting.trim()) return fromSetting.trim();
+    return new URLSearchParams(window.location.search).get("collection");
+  }
+
+  // Снимок скелетон-лоадера из SSG-грида — захватывается при первой гидрации,
+  // чтобы при replace-загрузке (page=1) показать лоадер вместо устаревшего грида.
+  let skeletonHtml = "";
+  function captureSkeleton() {
+    if (skeletonHtml) return;
+    const grid = document.querySelector('[data-nt="catalog-grid"]');
+    if (!grid) return;
+    const sk = Array.from(grid.querySelectorAll('[data-nt="catalog-skeleton"]'));
+    if (sk.length > 0) skeletonHtml = sk.map((el) => el.outerHTML).join("");
+  }
+  function showSkeleton() {
+    if (!skeletonHtml) return;
+    for (const grid of Array.from(document.querySelectorAll('[data-nt="catalog-grid"]'))) {
+      grid.innerHTML = skeletonHtml;
+    }
+  }
+
+  // buildProductsQuery: query-строка /api/store/products из текущего filters.
+  // min_price/max_price API трактует в КОПЕЙКАХ (рубли × 100). out-of-stock = `sold_out`.
+  function buildProductsQuery(page) {
+    const qp = new URLSearchParams();
+    qp.set("store_id", String(storeId ?? ""));
+    qp.set("page", String(page));
+    qp.set("limit", String(getPageSize()));
+
+    const sortMap = {
+      popularity: "popular",
+      new: "newest",
+      "price-asc": "price_asc",
+      "price-desc": "price_desc",
+    };
+    const sort = sortMap[filters.sort];
+    if (sort) qp.set("sort", sort);
+
+    if (filters.priceMin !== null && filters.priceMin !== undefined)
+      qp.set("min_price", String(Math.round(filters.priceMin * 100)));
+    if (filters.priceMax !== null && filters.priceMax !== undefined)
+      qp.set("max_price", String(Math.round(filters.priceMax * 100)));
+
+    if (filters.stock === "in") qp.set("availability", "in_stock");
+    else if (filters.stock === "out") qp.set("availability", "sold_out");
+
+    // Цвет: один value на группу (multi-цвет API не поддерживает → берём первый).
+    if (Array.isArray(filters.colors) && filters.colors.length > 0) {
+      qp.set(COLOR_GROUP_NAME, filters.colors[0]);
+    }
+
+    // Коллекция: slug/id из настройки или ?collection= → серверный collection_id.
+    const ref = currentCollectionRef();
+    if (ref) {
+      const col = findCollection(catalogCollections, ref);
+      qp.set("collection_id", col && col.id ? col.id : ref);
+    }
+    return qp.toString();
+  }
+
+  // fetchProductsPage: один сетевой запрос за страницей N. Возвращает
+  // { items, total, totalPages } либо null (сеть/ошибка) — null → demo-fallback.
+  async function fetchProductsPage(page) {
+    if (!storeId) return null;
+    try {
+      const res = await fetch(`${apiBase}/api/store/products?${buildProductsQuery(page)}`);
+      if (!res.ok) return null;
+      const json = await res.json();
+      const items = Array.isArray(json.products) ? json.products.map(mapApiProduct) : [];
+      const total = typeof json.total === "number" ? json.total : 0;
+      const totalPages =
+        (json.pagination && typeof json.pagination.totalPages === "number"
+          ? json.pagination.totalPages
+          : null) ?? 1;
+      return { items, total, totalPages };
+    } catch {
+      return null; // API недоступен → demo-заглушка
+    }
+  }
+
+  // renderCatalog: СЕРВЕРНАЯ пагинация. append=false (page=1) — replace гридов;
+  // append=true (page>1) — добавление карточек в конец. Скелетон-лоадер на время
+  // первого/replace fetch.
+  async function renderCatalog(append) {
+    const grids = Array.from(document.querySelectorAll('[data-nt="catalog-grid"]'));
+    const loadMoreBtns = Array.from(document.querySelectorAll("[data-action='load-more']"));
+
+    if (!append) showSkeleton();
+    if (append) for (const btn of loadMoreBtns) btn.disabled = true;
+
+    const res = await fetchProductsPage(filters.page);
+
+    // Append-сбой (page>1, сеть упала): не затираем показанные товары.
+    if (res === null && append && filters.page > 1) {
+      filters.page -= 1;
+      for (const btn of loadMoreBtns) btn.disabled = false;
+      return;
+    }
+
+    // Demo-заглушка: API недоступен ИЛИ магазин реально пуст (page=1, total=0).
+    if (res === null || (filters.page === 1 && res.total === 0)) {
+      const demoTpl = document.querySelector('[data-nt="catalog-demo"]');
+      const demoHtml = demoTpl ? demoTpl.innerHTML : "";
+      const demoN = demoTpl ? demoTpl.content.querySelectorAll("li").length : 0;
+      for (const grid of grids) grid.innerHTML = demoHtml;
+      updateCount('[data-nt="catalog-count"]', demoN);
+      for (const btn of loadMoreBtns) {
+        btn.style.display = "none";
+        btn.disabled = false;
+      }
+      return;
+    }
+
+    // Реальные товары: рендер страницы (append в конец / replace).
+    const html = res.items
+      .map((p) => `<li data-product-id="${escapeHtml(p.id)}">${renderCardHtml(p)}</li>`)
+      .join("");
+    for (const grid of grids) {
+      if (append && filters.page > 1) grid.insertAdjacentHTML("beforeend", html);
+      else grid.innerHTML = html; // page=1 → replace (затирает скелетон)
+    }
+
+    updateCount('[data-nt="catalog-count"]', res.total);
+    for (const btn of loadMoreBtns) {
+      btn.style.display = filters.page < res.totalPages ? "" : "none";
+      btn.disabled = false;
+    }
+  }
+
+  function resetPageAndRender() {
+    filters.page = 1;
+    renderCatalog(false); // REPLACE — смена фильтра/сортировки начинает с 1-й страницы
+  }
+
+  // ─────────── Наличие (top: <p> в NtFilterPanel[stock]; side: radio) ───────────
+  const STOCK_BY_INDEX = ["all", "in", "out"];
+  const STOCK_ACTIVE = "rgb(var(--color-text,0_0_0))";
+  const STOCK_MUTED = "rgb(var(--color-muted,153_153_153))";
+
+  function syncStockUi() {
+    for (const panel of Array.from(
+      document.querySelectorAll('[data-nt="filter-panel"][data-nt-panel="stock"]'),
+    )) {
+      const ps = Array.from(panel.querySelectorAll("p"));
+      ps.forEach((p, i) => {
+        p.style.color = STOCK_BY_INDEX[i] === filters.stock ? STOCK_ACTIVE : STOCK_MUTED;
+      });
+    }
+    for (const input of Array.from(
+      document.querySelectorAll('input[name^="nt-stock-side"]'),
+    )) {
+      input.checked = input.value === filters.stock;
+    }
+  }
+
+  function bindStock() {
+    for (const panel of Array.from(
+      document.querySelectorAll('[data-nt="filter-panel"][data-nt-panel="stock"]'),
+    )) {
+      if (panel.getAttribute("data-cf-stock") === "1") continue;
+      panel.setAttribute("data-cf-stock", "1");
+      const ps = Array.from(panel.querySelectorAll("p"));
+      ps.forEach((p, i) => {
+        p.style.cursor = "pointer";
+        p.addEventListener("click", () => {
+          filters.stock = STOCK_BY_INDEX[i] ?? "all";
+          syncStockUi();
+          resetPageAndRender();
+        });
+      });
+    }
+    for (const input of Array.from(
+      document.querySelectorAll('input[name^="nt-stock-side"]'),
+    )) {
+      if (input.getAttribute("data-cf-stock") === "1") continue;
+      input.setAttribute("data-cf-stock", "1");
+      input.addEventListener("change", () => {
+        if (!input.checked) return;
+        const v = input.value;
+        filters.stock = v === "in" || v === "out" ? v : "all";
+        syncStockUi();
+        resetPageAndRender();
+      });
+    }
+  }
+
+  // ─────────── Стоимость (от/до) ───────────
+  function bindPrice() {
+    for (const rows of Array.from(
+      document.querySelectorAll('[data-nt="filter-price-rows"]'),
+    )) {
+      if (rows.getAttribute("data-cf-price") === "1") continue;
+      rows.setAttribute("data-cf-price", "1");
+      const lines = Array.from(rows.children);
+      lines.forEach((line, idx) => {
+        const valueWrap = line.querySelector(":scope > div");
+        const valueSpan = valueWrap && valueWrap.querySelector("span");
+        if (!valueWrap || !valueSpan) return;
+        const input = document.createElement("input");
+        input.type = "text";
+        input.inputMode = "numeric";
+        input.value = "";
+        input.placeholder = valueSpan.textContent?.trim() ?? "";
+        input.setAttribute("data-price-input", idx === 0 ? "min" : "max");
+        input.className = "w-[64px] bg-transparent text-right outline-none";
+        input.style.color = "inherit";
+        input.style.font = "inherit";
+        valueSpan.replaceWith(input);
+        input.addEventListener("input", () => {
+          const raw = input.value.replace(/[^\d]/g, "");
+          const v = raw ? parseInt(raw, 10) : null;
+          if (idx === 0) filters.priceMin = Number.isFinite(v) ? v : null;
+          else filters.priceMax = Number.isFinite(v) ? v : null;
+          for (const other of Array.from(
+            document.querySelectorAll(
+              `[data-price-input="${idx === 0 ? "min" : "max"}"]`,
+            ),
+          )) {
+            if (other !== input) other.value = input.value;
+          }
+          resetPageAndRender();
+        });
+      });
+    }
+  }
+
+  // ─────────── Цвет (data-driven; нет данных → секция скрыта) ───────────
+  // ⚠️ ГОЧА #6: side-radio рисуем НЕ через after:* (arbitrary after:-варианты не
+  // гарантированы в prebuilt satin dist CSS), а через ВЛОЖЕННЫЙ span — 1:1 с
+  // родным sideOptionHtml satin (catalog.astro), чьи классы точно в satin-дисте.
+  function colorOptionHtml(value, active, sidebar) {
+    if (sidebar) {
+      const ring = `flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${active ? "border-[rgb(var(--color-text,0_0_0))]" : "border-[rgb(var(--color-muted,153_153_153))]"}`;
+      const dot = `h-[10px] w-[10px] rounded-full bg-[rgb(var(--color-text,0_0_0))] ${active ? "opacity-100" : "opacity-0"}`;
+      return `<button type="button" data-color-option="${escapeHtml(value)}" aria-pressed="${active}" class="flex w-full cursor-pointer items-center gap-2 text-left font-manrope text-[16px] font-normal leading-normal"><span aria-hidden="true" class="${ring}"><span class="${dot}"></span></span><span class="transition-colors ${active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,153_153_153))]"}">${escapeHtml(value)}</span></button>`;
+    }
+    return `<p data-color-option="${escapeHtml(value)}" aria-pressed="${active}" class="cursor-pointer transition-colors ${active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,153_153_153))] hover:text-[rgb(var(--color-text,0_0_0))]"}">${escapeHtml(value)}</p>`;
+  }
+
+  function syncColorUi() {
+    for (const panel of Array.from(
+      document.querySelectorAll('[data-nt="filter-panel"][data-nt-panel="color"]'),
+    )) {
+      panel.innerHTML = availableColors
+        .map((c) => colorOptionHtml(c, filters.colors.includes(c), false))
+        .join("");
+    }
+    for (const wrap of Array.from(
+      document.querySelectorAll("[data-cf-color-side]"),
+    )) {
+      wrap.innerHTML = availableColors
+        .map((c) => colorOptionHtml(c, filters.colors.includes(c), true))
+        .join("");
+    }
+  }
+
+  function onColorOptionClick(ev) {
+    const btn = ev.target.closest("[data-color-option]");
+    if (!btn) return;
+    const value = btn.getAttribute("data-color-option") ?? "";
+    if (!value) return;
+    if (filters.colors.includes(value)) {
+      filters.colors = filters.colors.filter((c) => c !== value);
+    } else {
+      filters.colors.push(value);
+    }
+    syncColorUi();
+    resetPageAndRender();
+  }
+
+  function bindColors() {
+    const colorPanels = Array.from(
+      document.querySelectorAll('[data-nt="filter-panel"][data-nt-panel="color"]'),
+    );
+    const sideColorWraps = [];
+    for (const sidebar of Array.from(
+      document.querySelectorAll('[data-nt="filter-sidebar"]'),
+    )) {
+      for (const section of Array.from(sidebar.children)) {
+        const title = section.querySelector(":scope > p");
+        if (title && (title.textContent ?? "").trim().toLowerCase() === "цвет") {
+          const list = section.querySelector(":scope > div");
+          if (list) {
+            list.setAttribute("data-cf-color-side", "1");
+            sideColorWraps.push(list);
+          }
+        }
+      }
+    }
+
+    if (availableColors.length === 0) {
+      // Цвет-данных нет → скрываем нерабочее demo: top-details «Цвет» + side-секцию.
+      for (const panel of colorPanels) {
+        const details = panel.closest("details");
+        if (details) details.style.display = "none";
+      }
+      for (const list of sideColorWraps) {
+        const section = list.parentElement;
+        if (section) section.style.display = "none";
+      }
+      return;
+    }
+
+    syncColorUi();
+    for (const panel of colorPanels) {
+      if (panel.getAttribute("data-cf-color") === "1") continue;
+      panel.setAttribute("data-cf-color", "1");
+      panel.addEventListener("click", onColorOptionClick);
+    }
+    for (const list of sideColorWraps) {
+      if (list.getAttribute("data-cf-color") === "1") continue;
+      list.setAttribute("data-cf-color", "1");
+      list.addEventListener("click", onColorOptionClick);
+    }
+  }
+
+  // ─────────── Сортировка (top: <p> в NtFilterPanel[sort]; side: radio) ───────────
+  const SORT_PANEL_BY_INDEX = ["new", "price-asc", "price-desc"];
+  const SORT_PANEL_LABELS = ["По новизне", "Сначала дешевые", "Сначала дорогие"];
+
+  function syncSortUi() {
+    for (const panel of Array.from(
+      document.querySelectorAll('[data-nt="filter-panel"][data-nt-panel="sort"]'),
+    )) {
+      const ps = Array.from(panel.querySelectorAll("p"));
+      ps.forEach((p, i) => {
+        p.style.color = SORT_PANEL_BY_INDEX[i] === filters.sort ? STOCK_ACTIVE : STOCK_MUTED;
+      });
+      const details = panel.closest("details");
+      const labelSpan = details && details.querySelector("summary span");
+      if (labelSpan) {
+        const idx = SORT_PANEL_BY_INDEX.indexOf(filters.sort);
+        labelSpan.textContent = idx >= 0 ? SORT_PANEL_LABELS[idx] : "По популярности";
+      }
+    }
+    for (const input of Array.from(
+      document.querySelectorAll('input[name^="nt-sort-side"]'),
+    )) {
+      input.checked = input.value === filters.sort;
+    }
+  }
+
+  function bindSort() {
+    for (const panel of Array.from(
+      document.querySelectorAll('[data-nt="filter-panel"][data-nt-panel="sort"]'),
+    )) {
+      if (panel.getAttribute("data-cf-sort") === "1") continue;
+      panel.setAttribute("data-cf-sort", "1");
+      const ps = Array.from(panel.querySelectorAll("p"));
+      ps.forEach((p, i) => {
+        p.style.cursor = "pointer";
+        p.addEventListener("click", () => {
+          filters.sort = SORT_PANEL_BY_INDEX[i] ?? "popularity";
+          syncSortUi();
+          resetPageAndRender();
+          const details = panel.closest("details");
+          if (details) details.removeAttribute("open");
+        });
+      });
+    }
+    for (const input of Array.from(
+      document.querySelectorAll('input[name^="nt-sort-side"]'),
+    )) {
+      if (input.getAttribute("data-cf-sort") === "1") continue;
+      input.setAttribute("data-cf-sort", "1");
+      input.addEventListener("change", () => {
+        if (!input.checked) return;
+        const v = input.value;
+        filters.sort =
+          v === "new" || v === "price-asc" || v === "price-desc" ? v : "popularity";
+        syncSortUi();
+        resetPageAndRender();
+      });
+    }
+  }
+
+  // ─────────── Пагинация «Смотреть ещё» (СЕРВЕРНАЯ) ───────────
+  function bindLoadMore() {
+    if (document.body.getAttribute("data-cf-loadmore") === "1") return;
+    document.body.setAttribute("data-cf-loadmore", "1");
+    document.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-action='load-more']");
+      if (!button) return;
+      if (button.disabled) return;
+      filters.page += 1;
+      renderCatalog(true); // APPEND следующей страницы
+    });
+  }
+
+  // ─────────── Дропдауны верхних (top) фильтров ───────────
+  // top-фильтры = нативные <details>. Добавляем single-open + outside-click + Esc.
+  function bindFilterDropdowns() {
+    for (const bar of Array.from(
+      document.querySelectorAll('[data-nt="catalog-filters"]'),
+    )) {
+      if (bar.getAttribute("data-cf-dropdowns") === "1") continue;
+      bar.setAttribute("data-cf-dropdowns", "1");
+      for (const d of Array.from(bar.querySelectorAll("details"))) {
+        d.addEventListener("toggle", () => {
+          if (!d.open) return;
+          for (const other of Array.from(bar.querySelectorAll("details"))) {
+            if (other !== d) other.open = false;
+          }
+        });
+      }
+    }
+    if (!window.__merfyCatalogDropdownGlobal) {
+      window.__merfyCatalogDropdownGlobal = true;
+      document.addEventListener("click", (ev) => {
+        for (const d of Array.from(
+          document.querySelectorAll('[data-nt="catalog-filters"] details[open]'),
+        )) {
+          if (!d.contains(ev.target)) d.open = false;
+        }
+      });
+      document.addEventListener("keydown", (ev) => {
+        if (ev.key !== "Escape") return;
+        for (const d of Array.from(
+          document.querySelectorAll('[data-nt="catalog-filters"] details[open]'),
+        )) {
+          d.open = false;
+        }
+      });
+    }
+  }
+
+  // ─────────── Фильтр по коллекциям ───────────
+  // top — пункт в манере NtFilterPanel; side — радио в манере NtRadioField.
+  function collectionOptionHtml(value, name, active, sidebar) {
+    if (sidebar) {
+      // Тот же нестед-span рецепт радио (без after:*) — см. ГОЧА #6 выше.
+      const ring = `flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${active ? "border-[rgb(var(--color-text,0_0_0))]" : "border-[rgb(var(--color-muted,153_153_153))]"}`;
+      const dot = `h-[10px] w-[10px] rounded-full bg-[rgb(var(--color-text,0_0_0))] ${active ? "opacity-100" : "opacity-0"}`;
+      return `<li><button type="button" data-collection-option="${escapeHtml(value)}" aria-pressed="${active}" class="flex w-full cursor-pointer items-center gap-2 text-left font-manrope text-[16px] font-normal leading-normal"><span aria-hidden="true" class="${ring}"><span class="${dot}"></span></span><span class="transition-colors ${active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,153_153_153))]"}">${escapeHtml(name)}</span></button></li>`;
+    }
+    return `<li><button type="button" data-collection-option="${escapeHtml(value)}" aria-pressed="${active}" class="w-full cursor-pointer text-left font-manrope text-[14px] font-normal leading-[100%] transition-colors ${active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,153_153_153))] hover:text-[rgb(var(--color-text,0_0_0))]"}">${escapeHtml(name)}</button></li>`;
+  }
+
+  function syncCollectionsUi(current) {
+    const cols = catalogCollections;
+    if (!cols) return;
+    for (const box of Array.from(
+      document.querySelectorAll('[data-nt="catalog-collections-filter"]'),
+    )) {
+      const list = box.querySelector("[data-collections-options]");
+      if (!list) continue;
+      const sidebar = box.getAttribute("data-collections-style") === "sidebar";
+      list.innerHTML =
+        collectionOptionHtml("", "Все", !current, sidebar) +
+        cols
+          .map((c) =>
+            collectionOptionHtml(
+              c.slug ?? c.id,
+              c.name ?? "Коллекция",
+              !!current && current.id === c.id,
+              sidebar,
+            ),
+          )
+          .join("");
+      const label = box.querySelector("[data-collections-label]");
+      if (label) label.textContent = (current && current.name) ?? "Коллекции";
+    }
+  }
+
+  function onCollectionOptionClick(ev) {
+    const btn = ev.target.closest("[data-collection-option]");
+    if (!btn) return;
+    const value = btn.getAttribute("data-collection-option") ?? "";
+    const params = new URLSearchParams(window.location.search);
+    if (value) params.set("collection", value);
+    else params.delete("collection");
+    const qs = params.toString();
+    window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
+    const col = (catalogCollections && catalogCollections.find((c) => (c.slug ?? c.id) === value)) ?? null;
+    syncCollectionsUi(col);
+    const box = btn.closest('[data-nt="catalog-collections-filter"]');
+    if (box) box.removeAttribute("open");
+    resetPageAndRender();
+  }
+
+  async function initCollectionsFilter() {
+    const boxes = Array.from(
+      document.querySelectorAll('[data-nt="catalog-collections-filter"]'),
+    );
+    if (boxes.length === 0) return;
+    catalogCollections = await loadRealCollections();
+    if (!catalogCollections || catalogCollections.length === 0) return;
+    const ref = currentCollectionRef();
+    const current = ref
+      ? (catalogCollections.find((c) => c.id === ref || c.slug === ref || c.name === ref) ?? null)
+      : null;
+    syncCollectionsUi(current);
+    for (const box of boxes) {
+      if (box.getAttribute("data-cf-hydrated") === "true") continue;
+      box.setAttribute("data-cf-hydrated", "true");
+      box.style.display = "";
+      const list = box.querySelector("[data-collections-options]");
+      if (list) list.addEventListener("click", onCollectionOptionClick);
+    }
+  }
+
+  // loadAvailableColors: цвета фильтра берём из ЖИВОГО /api/store/filters.
+  // Ответ: { success, data: { groups: [{ name, values }] } }. Группа цвета = «Цвет».
+  async function loadAvailableColors() {
+    if (cachedColors !== undefined) return cachedColors;
+    cachedColors = [];
+    if (!storeId) return cachedColors;
+    try {
+      const res = await fetch(
+        `${apiBase}/api/store/filters?store_id=${encodeURIComponent(storeId)}`,
+      );
+      if (res.ok) {
+        const json = await res.json();
+        const groups =
+          (json && json.data && Array.isArray(json.data.groups) && json.data.groups) ||
+          (Array.isArray(json && json.groups) && json.groups) ||
+          [];
+        const group = groups.find(
+          (g) => g && typeof g.name === "string" && g.name.trim() === COLOR_GROUP_NAME,
+        );
+        if (group && Array.isArray(group.values)) {
+          cachedColors = group.values
+            .map((v) => (typeof v === "string" ? v : v && (v.value ?? v.name)))
+            .filter((v) => typeof v === "string" && v);
+        }
+      }
+    } catch {
+      /* /store/filters недоступен — пустой список цветов */
+    }
+    return cachedColors;
+  }
+
+  let hydrating = false;
+  let lastHydratedUrl = null;
+
+  async function hydrateCatalog() {
+    if (hydrating) return; // дедуп
+    const url = location.pathname + location.search;
+    if (url === lastHydratedUrl) return;
+    lastHydratedUrl = url;
+    hydrating = true;
+    try {
+      captureSkeleton();
+      await Promise.all([
+        loadRealCollections().then((r) => { catalogCollections = r; }),
+        loadAvailableColors().then((r) => { availableColors = r || []; }),
+      ]);
+      bindStock();
+      bindPrice();
+      bindColors();
+      bindSort();
+      bindLoadMore();
+      bindFilterDropdowns();
+      syncStockUi();
+      syncSortUi();
+      await renderCatalog(false);
+      await initCollectionsFilter();
+    } finally {
+      hydrating = false;
+    }
+  }
+
+  hydrateCatalog();
+  document.addEventListener("astro:page-load", hydrateCatalog);
+  })();
+</script>

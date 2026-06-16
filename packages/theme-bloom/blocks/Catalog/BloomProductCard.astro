@@ -1,0 +1,161 @@
+---
+/**
+ * BloomProductCard (порт из themes/bloom/src/components/products/BloomProductCard.astro).
+ *
+ * Тип Product заинлайнен (минимальный shape витрины) вместо импорта
+ * ../../data/products — block-папка override-темы автономна (компилятор превью
+ * не резолвит пути за пределы папки). BloomPicture — sibling (./).
+ *
+ * Bloom-специфика vs RoseProductCard (родная вёрстка верстальщика bloom):
+ *   • медиа — aspect-square (НЕ портрет 318/444), скругление --radius-media:12px,
+ *     фон surface (#F5F5F5);
+ *   • типографика name/price/oldprice — font-inter font-light (НЕ font-manrope);
+ *   • кнопка quickAdd — pill (--radius-button:100px) с заливкой accent/button-bg
+ *     (родной bloom #e38e9f).
+ *
+ * Prop-контракт зеркалит RoseProductCard (cardAspectClass/showQuickAdd/btn*),
+ * чтобы client renderCardHtml в Catalog.astro оставался в parity (SSG↔гидрация).
+ */
+import BloomPicture from "./BloomPicture.astro";
+
+interface Product {
+  name: string;
+  price: string;
+  oldPrice?: string;
+  image: string;
+  id?: string;
+  discount?: boolean;
+}
+
+interface Props {
+  product: Product;
+  priority?: boolean;
+  /** Вид изображения карточки (Tailwind aspect-класс). Дефолт — родной bloom
+      квадрат. Передаётся из Catalog.astro (настройка «Вид изображения»),
+      зеркалит client renderCardHtml для parity. */
+  cardAspectClass?: string;
+  /** Быстрое действие: кнопка под карточкой (none → нет; иначе текст). */
+  showQuickAdd?: boolean;
+  quickAddText?: string;
+  /** Inline-стили кнопки quickAdd по «Стилю кнопки» (primary/secondary/link). */
+  btnStyle?: string;
+  btnBg?: string;
+  btnFg?: string;
+  btnBorder?: string;
+}
+
+const {
+  product,
+  priority = false,
+  cardAspectClass = "aspect-square",
+  showQuickAdd = false,
+  quickAddText = "В КОРЗИНУ",
+  btnStyle = "primary",
+  btnBg = "rgb(var(--color-button-bg,207 122 139))",
+  btnFg = "rgb(var(--color-button-text,255 255 255))",
+  btnBorder = "none",
+} = Astro.props as Props;
+const href = `/products/${product.id}`;
+const showSaleBadge = product.discount === true;
+// Стиль кнопки quickAdd (зеркалит client renderCardHtml). Bloom = pill
+// (--radius-button:100px). link → текст-ссылка.
+const quickBtnStyle =
+  `width:100%;height:48px;padding:0 16px;border-radius:var(--radius-button,100px);` +
+  `font-family:var(--font-body,'Inter',sans-serif);font-weight:300;font-size:16px;cursor:pointer;` +
+  `display:flex;align-items:center;justify-content:center;line-height:1;` +
+  `background:${btnBg};color:${btnFg};border:${btnBorder};` +
+  (btnStyle === "link" ? "text-decoration:underline;background:transparent;" : "");
+---
+
+<article
+  class="group flex w-full flex-col gap-4"
+  data-nt="bloom-product-card"
+  aria-label={product.name}
+>
+  <a
+    href={href}
+    class:list={[cardAspectClass, "relative block w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]"]}
+    aria-label={product.name}
+  >
+    {product.image ? (
+      <BloomPicture
+        src={product.image}
+        alt={product.name}
+        width="600"
+        height="600"
+        loading="eager"
+        fetchpriority={priority ? "high" : undefined}
+        class="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
+        data-img-primary={product.image}
+      />
+    ) : (
+      /* Товар без фото: surface-плейсхолдер вместо <img> (битой иконки).
+         Цвета только токенами; разметку зеркалит CARD_MEDIA_FALLBACK_HTML
+         в Catalog.astro client — менять синхронно. */
+      <div
+        class="absolute inset-0 flex items-center justify-center"
+        style="background:rgb(var(--color-surface,245 245 245))"
+        aria-hidden="true"
+      >
+        <svg
+          class="size-10"
+          style="color:rgb(var(--color-muted,153 153 153))"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+          <circle cx="9" cy="9" r="2"></circle>
+          <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+        </svg>
+      </div>
+    )}
+    {showSaleBadge && (
+      <span
+        class="absolute left-2 top-2 inline-flex h-6 items-center rounded-[16px] bg-[rgb(var(--color-accent,227_142_159))] px-1.5 font-inter text-[12px] font-normal leading-none !text-white"
+      >
+        Скидка
+      </span>
+    )}
+  </a>
+  <div class="flex w-full flex-col gap-2 text-left">
+    <a
+      href={href}
+      class="bloom-product-name block w-full font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70"
+    >
+      {product.name}
+    </a>
+    <div class="flex w-full flex-wrap items-baseline gap-2">
+      <span class="bloom-product-price font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))]">
+        {product.price}
+      </span>
+      {product.oldPrice && (
+        <span class="bloom-product-oldprice font-inter text-[16px] font-light leading-none text-[rgb(var(--color-muted,153_153_153))] line-through">
+          {product.oldPrice}
+        </span>
+      )}
+    </div>
+  </div>
+  {/* Быстрое действие (настройка «Быстрое добавление»). Кнопка СНАРУЖИ <a>
+      (button-in-anchor — невалидный HTML). Зеркалит client renderCardHtml. */}
+  {showQuickAdd && (
+    <button type="button" data-quick-add-id={product.id} style={quickBtnStyle}>
+      {quickAddText}
+    </button>
+  )}
+</article>
+
+<style>
+  /* Figma 375: name/price — Inter 12 на узких экранах */
+  @media (max-width: 639.98px) {
+    .bloom-product-name,
+    .bloom-product-price,
+    .bloom-product-oldprice {
+      font-size: 12px !important;
+    }
+  }
+</style>

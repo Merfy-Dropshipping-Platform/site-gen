@@ -1,0 +1,99 @@
+---
+/**
+ * NtFilterSidebar (порт из design-systems-theme/components/ui/NtFilterSidebar.astro).
+ * Боковые фильтры — 493:5523 (1920, 294px) и 493:5524 (1280, 172px).
+ * Импорты NtFilterPriceRows / NtRadioField — siblings в этой же block-папке (./).
+ * Нейтральные DS-фоллбеки перекрашиваются токенами схем через <style is:global>.
+ */
+import NtFilterPriceRows from "./NtFilterPriceRows.astro";
+import NtRadioField from "./NtRadioField.astro";
+
+interface Props {
+  density?: "1920" | "1280";
+  class?: string;
+}
+
+const { density = "1920", class: className = "" } = Astro.props;
+const is1280 = density === "1280";
+const W = is1280 ? "w-[172px]" : "w-[294px]";
+const sectionPad = is1280 ? "p-1" : "p-3";
+const sectionGap = is1280 ? "gap-2" : "gap-3";
+const titleSm = is1280 ? "text-[12px]" : "text-[16px]";
+const titlePrice = is1280 ? "text-[14px]" : "text-[16px]";
+const sortStackGap = is1280 ? "gap-1" : "gap-3";
+const nameSfx = is1280 ? "-1280" : "";
+---
+
+<aside
+  class:list={["flex max-w-full flex-col gap-4 bg-[#FFFFFF] font-manrope", W, className]}
+  data-nt="filter-sidebar"
+  data-nt-density={density}
+>
+  <div class:list={["flex flex-col rounded-[8px]", sectionPad, sectionGap]}>
+    <p class:list={["font-normal leading-normal text-[#000000]", titleSm]}>Сортировать</p>
+    <div class:list={["flex flex-col", sortStackGap]}>
+      <NtRadioField
+        name={`nt-sort-side${nameSfx}`}
+        value="popularity"
+        label="По популярности"
+        checked
+        density={density}
+      />
+      <NtRadioField name={`nt-sort-side${nameSfx}`} value="new" label="По новизне" density={density} />
+      <NtRadioField
+        name={`nt-sort-side${nameSfx}`}
+        value="price-desc"
+        label="По убыванию цены"
+        density={density}
+      />
+      <NtRadioField
+        name={`nt-sort-side${nameSfx}`}
+        value="price-asc"
+        label="По возрастанию цены"
+        density={density}
+      />
+    </div>
+  </div>
+
+  <div class:list={["flex flex-col rounded-[8px]", sectionPad, sectionGap]}>
+    <p class:list={["font-normal leading-normal text-[#000000]", titleSm]}>Наличие</p>
+    <div class:list={["flex flex-col", sortStackGap]}>
+      <NtRadioField name={`nt-stock-side${nameSfx}`} value="all" label="Все" checked density={density} />
+      <NtRadioField name={`nt-stock-side${nameSfx}`} value="in" label="В наличии" density={density} />
+      <NtRadioField name={`nt-stock-side${nameSfx}`} value="out" label="Распродано" density={density} />
+    </div>
+  </div>
+
+  <div class:list={["flex flex-col rounded-[8px]", sectionPad, sectionGap]}>
+    <p class:list={["font-normal leading-normal text-[#000000]", titlePrice]}>Стоимость</p>
+    <NtFilterPriceRows variant={is1280 ? "sidebar1280" : "sidebar"} />
+  </div>
+
+  <div class:list={["flex flex-col gap-3 rounded-[8px]", sectionPad]}>
+    <p class:list={["font-normal leading-normal text-[#000000]", titleSm]}>Цвет</p>
+    <div class="flex flex-col gap-3">
+      <NtRadioField
+        name={`nt-color-side${nameSfx}`}
+        value="black"
+        label="Черный"
+        checked
+        density={density}
+        labelClass={is1280 ? "text-[14px]" : ""}
+      />
+      <NtRadioField
+        name={`nt-color-side${nameSfx}`}
+        value="white"
+        label="Белый"
+        density={density}
+        labelClass={is1280 ? "text-[14px]" : ""}
+      />
+      <NtRadioField
+        name={`nt-color-side${nameSfx}`}
+        value="gray"
+        label="Серый"
+        density={density}
+        labelClass={is1280 ? "text-[14px]" : ""}
+      />
+    </div>
+  </div>
+</aside>

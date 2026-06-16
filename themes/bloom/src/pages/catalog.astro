@@ -125,12 +125,8 @@ function pluralizeProducts(count: number): string {
 	</section>
 </Layout>
 
-<script>
-	document.addEventListener("click", (event) => {
-		const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-action='load-more']");
-		if (!button) return;
-		button.disabled = true;
-		button.textContent = "Больше товаров нет";
-		button.classList.add("opacity-60", "pointer-events-none");
-	});
-</script>
+{/* Legacy load-more заглушка УДАЛЕНА (098 bloom Catalog port): этот хвостовой
+    <script> (composeV2Page сохраняет tail-скрипты страницы) конфликтовал с
+    пересаженным Puck-блоком Catalog — он дизейблил кнопку «Смотреть ещё» и писал
+    «Больше товаров нет», убивая серверную пагинацию блока. Вся клиентская логика
+    каталога теперь в packages/theme-bloom/blocks/Catalog/Catalog.astro (is:inline). */}

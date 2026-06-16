@@ -430,11 +430,22 @@ const skeletons = Array.from({ length: skeletonCount });
   /* Переключение раскладок каталога: виден только выбранный вариант.
      data-catalog-layout ставит inline-скрипт секции из window.__MERFY_CATALOG_LAYOUT__
      (или дефолт из настройки filterPosition). */
-  [data-catalog-layout="top"] [data-catalog-variant="side"] {
-    display: none;
+  @media (min-width: 1024px) {
+    [data-catalog-layout="top"] [data-catalog-variant="side"] {
+      display: none;
+    }
+    [data-catalog-layout="side"] [data-catalog-variant="top"] {
+      display: none;
+    }
   }
-  [data-catalog-layout="side"] [data-catalog-variant="top"] {
-    display: none;
+  /* Мобилка (<lg): side-сайдбар = lg-only (hidden lg:flex) → на узких экранах
+     side-фильтров нет вообще. Поэтому на <lg ВСЕГДА показываем top-вариант
+     (фильтры сверху), независимо от выбранной раскладки; side-вариант прячем.
+     Селектор [data-catalog-layout] [...] = (0,2,0) бьёт Tailwind .flex (0,1,0). */
+  @media (max-width: 1023px) {
+    [data-catalog-layout] [data-catalog-variant="side"] {
+      display: none;
+    }
   }
 
   /* ── Переопределения DS-компонентов фильтров (сами DS-файлы не трогаем). ──
@@ -1329,6 +1340,46 @@ const skeletons = Array.from({ length: skeletonCount });
 
   let hydrating = false;
   let lastHydratedUrl = null;
+  // ─────────── Дропдауны верхних (top) фильтров ───────────
+  // top-фильтры = нативные <details>. Нативный <details> НЕ закрывается по клику
+  // вне и не закрывает соседей → открыто несколько панелей разом (баг). Добавляем
+  // single-open (открытие закрывает другие в баре) + outside-click + Esc.
+  function bindFilterDropdowns() {
+    for (const bar of Array.from(
+      document.querySelectorAll('[data-nt="catalog-filters"]'),
+    )) {
+      if (bar.getAttribute("data-cf-dropdowns") === "1") continue;
+      bar.setAttribute("data-cf-dropdowns", "1");
+      for (const d of Array.from(bar.querySelectorAll("details"))) {
+        d.addEventListener("toggle", () => {
+          if (!d.open) return;
+          for (const other of Array.from(bar.querySelectorAll("details"))) {
+            if (other !== d) other.open = false;
+          }
+        });
+      }
+    }
+    // Глобальные слушатели — один раз на страницу (идемпотентно по флагу).
+    if (!window.__merfyCatalogDropdownGlobal) {
+      window.__merfyCatalogDropdownGlobal = true;
+      document.addEventListener("click", (ev) => {
+        for (const d of Array.from(
+          document.querySelectorAll('[data-nt="catalog-filters"] details[open]'),
+        )) {
+          if (!d.contains(ev.target)) d.open = false;
+        }
+      });
+      document.addEventListener("keydown", (ev) => {
+        if (ev.key !== "Escape") return;
+        for (const d of Array.from(
+          document.querySelectorAll('[data-nt="catalog-filters"] details[open]'),
+        )) {
+          d.open = false;
+        }
+      });
+    }
+  }
+
   async function hydrateCatalog() {
     if (hydrating) return; // дедуп: не запускать две гидрации параллельно (race → дубль-fetch)
     // Дедуп initial: и inline-вызов, и astro:page-load срабатывают на первой
@@ -1353,6 +1404,7 @@ const skeletons = Array.from({ length: skeletonCount });
       bindColors();
       bindSort();
       bindLoadMore();
+      bindFilterDropdowns();
       bindCardInteractions();
       // Начальное активное состояние контролов.
       syncStockUi();

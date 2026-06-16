@@ -33,8 +33,15 @@ interface DemoProduct {
 }
 
 // Совместимый с theme-base/blocks/Catalog/Catalog.puckConfig props-минимум.
-// Лишние поля puckConfig (cards/productCard/colorScheme и т.п.) принимаем, но
-// родная вёрстка использует только заголовок/подзаголовок/раскладку фильтра.
+// Родная вёрстка rose использует заголовок/подзаголовок/раскладку фильтра +
+// (теперь) 7 «декоративных» настроек карточки/секции, реализованных так же как
+// в эталоне theme-base/blocks/Catalog/Catalog.astro, но с сохранением rose-вида.
+interface ProductCardCfg {
+  buttonStyle?: "link" | "primary" | "secondary";
+  cardStyle?: "auto" | "portrait" | "square" | "wide";
+  nextPhoto?: boolean | "true" | "false";
+  quickAdd?: "none" | "standard" | "cart";
+}
 interface Props {
   id?: string;
   siteId?: string;
@@ -49,6 +56,16 @@ interface Props {
   /** Настройка «Выбор коллекции» конструктора (страница page-collection).
       Приходит как slug/id выбранной коллекции; null/пусто → весь каталог. */
   collectionSlug?: string | null;
+  /** Отступы секции (Figma 1:34015 «Отступы»). Дефолт 120/120. */
+  padding?: { top?: number; bottom?: number };
+  /** Кол-во карточек на «страницу» пагинации (slider «Карточки», 2–24). */
+  cards?: number;
+  /** Под-конфиг карточки товара (Стиль кнопки / Вид изображения / Следующее
+      фото при наведении / Быстрое добавление). */
+  productCard?: ProductCardCfg;
+  /** Отдельная цветовая схема ВНУТРЕННЕГО контейнера каталога (Figma 1:34017).
+      При unset наследует colorScheme секции (класс не задаётся). */
+  containerColorScheme?: string;
 }
 
 const {
@@ -63,12 +80,17 @@ const {
   columns,
   colorScheme,
   collectionSlug,
+  padding,
+  cards,
+  productCard,
+  containerColorScheme,
 } = Astro.props as Props;
 
-// Кол-во товаров на «страницу» пагинации: фиксировано 12 (показывать по 12,
-// «Смотреть ещё» добавляет 12 — независимо от числа колонок грида). Раньше было
-// columns*3 → 6/9 в зависимости от колонок, что путало.
-const pageSize = 12;
+// Кол-во товаров на «страницу» пагинации: из настройки «Карточки» (cards, 2–24).
+// «Смотреть ещё» добавляет ещё столько же. Раньше было захардкожено 12.
+// Дефолт 8 (puckConfig defaults.cards). Прокидывается на секцию через
+// data-page-size и в client-script через define:vars (getPageSize читает оба).
+const pageSize = Math.max(2, Math.min(24, Number(cards) || 8));
 
 // Заголовок/подзаголовок: aiText в puck может быть строкой или { text }.
 function pickText(v: unknown, fallback: string): string {
@@ -94,6 +116,56 @@ const defaultLayout = filterPosition === "side" ? "side" : "top";
 const schemeClass =
   typeof colorScheme === "string" && colorScheme
     ? `color-scheme-${colorScheme.replace("scheme-", "")}`
+    : "";
+
+// ── 7 настроек карточки/секции (parity с theme-base/blocks/Catalog) ──
+
+// (1) Отступы СЕКЦИИ: padding-top/bottom на корневую обёртку секции (эталон
+//     paddingStyle, theme-base:70-72). Дефолт 120/120.
+const paddingStyle = padding
+  ? `padding-top:${padding.top ?? 120}px;padding-bottom:${padding.bottom ?? 120}px;`
+  : "padding-top:120px;padding-bottom:120px;";
+
+// (3) Вид изображения карточки → aspect-ratio. Эталон theme-base:102-105:
+//     portrait/auto = 318/444 (родной rose), square = 1/1, wide = 4/3.
+//     Класс применяется И в SSG (RoseProductCard через prop), И в client
+//     renderCardHtml (через define:vars cardAspectClass) — parity.
+const cardStyleVal = productCard?.cardStyle ?? "portrait";
+const cardAspectClass =
+  cardStyleVal === "square" ? "aspect-square"
+  : cardStyleVal === "wide" ? "aspect-[4/3]"
+  : "aspect-[318/444]";
+
+// (4) Стиль кнопки quickAdd: primary = чёрная заливка; secondary = белая с
+//     бордером; link = текст-ссылка. Токены rose (эталон theme-base:126-136).
+const btnStyle = productCard?.buttonStyle ?? "secondary";
+const btnBg =
+  btnStyle === "primary" ? "rgb(var(--color-button-bg,0 0 0))"
+  : btnStyle === "secondary" ? "rgb(var(--color-button-secondary-bg,255 255 255))"
+  : "transparent";
+const btnFg =
+  btnStyle === "primary" ? "rgb(var(--color-button-text,255 255 255))"
+  : btnStyle === "secondary" ? "rgb(var(--color-button-secondary-text,0 0 0))"
+  : "rgb(var(--color-text,0 0 0))";
+const btnBorder =
+  btnStyle === "link" ? "none"
+  : btnStyle === "secondary" ? "1px solid rgb(var(--color-button-secondary-border,0 0 0))"
+  : "1px solid rgb(var(--color-button-bg,0 0 0))";
+
+// (6) Быстрое действие в карточке: none → нет кнопки; standard → «Быстрый
+//     просмотр»; cart → «В корзину» (эталон theme-base:117-119).
+const quickAddMode = productCard?.quickAdd ?? "none";
+const showQuickAdd = quickAddMode === "standard" || quickAddMode === "cart";
+const quickAddText = quickAddMode === "cart" ? "В КОРЗИНУ" : "БЫСТРЫЙ ПРОСМОТР";
+
+// (5) Следующее фото при наведении (hover-swap на images[1]).
+const nextPhotoOn = productCard?.nextPhoto === "true" || productCard?.nextPhoto === true;
+
+// (7) Отдельная схема ВНУТРЕННЕГО контейнера каталога (эталон theme-base:152-154).
+//     unset → класс не задаётся, контейнер наследует схему секции.
+const containerSchemeClass =
+  typeof containerColorScheme === "string" && containerColorScheme
+    ? `color-scheme-${containerColorScheme.replace("scheme-", "")}`
     : "";
 
 // SSR demo-грид (родные сумки rose). Гарантирует, что грид рендерится в initial
@@ -127,6 +199,9 @@ const skeletons = Array.from({ length: skeletonCount });
   data-catalog-layout={defaultLayout}
   data-collection-slug={collectionSlug ?? ''}
   data-page-size={pageSize}
+  data-next-photo={nextPhotoOn ? 'true' : 'false'}
+  data-quick-add={quickAddMode}
+  style={paddingStyle}
 >
   {/* Раскладка каталога из настройки конструктора: платформа (превью-контроллер
       и билд) инжектит window.__MERFY_CATALOG_LAYOUT__. Скрипт стоит ДО вариантов,
@@ -138,14 +213,34 @@ const skeletons = Array.from({ length: skeletonCount });
   <template data-nt="catalog-demo">
     {demoProducts.map((product) => (
       <li data-product-id={product.id}>
-        <RoseProductCard product={product} />
+        <RoseProductCard
+          product={product}
+          cardAspectClass={cardAspectClass}
+          showQuickAdd={showQuickAdd}
+          quickAddText={quickAddText}
+          btnStyle={btnStyle}
+          btnBg={btnBg}
+          btnFg={btnFg}
+          btnBorder={btnBorder}
+        />
       </li>
     ))}
   </template>
+  {/* Горизонтальные/responsive-horizontal отступы rose сохранены; вертикальные
+      (pt/pb) сняты с обёртки — ими управляет настройка «Отступы» секции
+      (paddingStyle на корневом <section>, эталон theme-base). Дефолт 120/120
+      совпадает с прежним desktop-видом rose (lg:pb-[120px]). */}
   <div
-    class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-14 pt-10 sm:px-5 sm:pb-16 sm:pt-12 md:px-10 md:pb-[100px] md:pt-16 lg:px-16 lg:pb-[120px] lg:pt-20 xl:px-20 xl:pb-[140px] xl:pt-24 2xl:px-[280px]"
+    class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px]"
   >
-    <div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10 lg:gap-12">
+    {/* (7) Цветовая схема контейнера: класс color-scheme-N на max-width wrapper
+        (эталон theme-base:152-154). unset → класс не добавляется, контейнер
+        наследует схему секции (прозрачный фон, родной rose-вид). Когда схема
+        задана — wrapper перекрашивается её токенами (фон/текст inline). */}
+    <div
+      class:list={["mx-auto flex w-full max-w-[1320px] flex-col gap-10 lg:gap-12", containerSchemeClass]}
+      style={containerSchemeClass ? "background:rgb(var(--color-bg,255 255 255));color:rgb(var(--color-text,0 0 0));" : undefined}
+    >
       <header class="flex flex-col gap-2">
         <h1 id="catalog-title" class="rose-title">{title}</h1>
         {subtitleVisible && (
@@ -240,7 +335,7 @@ const skeletons = Array.from({ length: skeletonCount });
           {skeletons.map(() => (
             <li data-nt="catalog-skeleton" aria-hidden="true">
               <div class="flex w-full flex-col gap-5">
-                <div class="aspect-[318/444] w-full animate-pulse rounded-[8px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+                <div class:list={[cardAspectClass, "w-full animate-pulse rounded-[8px] bg-[rgb(var(--color-surface,245_245_245))]"]}></div>
                 <div class="flex w-full flex-col gap-1">
                   <div class="h-4 w-2/3 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
                   <div class="h-4 w-1/3 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
@@ -290,7 +385,7 @@ const skeletons = Array.from({ length: skeletonCount });
             {skeletons.map(() => (
               <li data-nt="catalog-skeleton" aria-hidden="true">
                 <div class="flex w-full flex-col gap-5">
-                  <div class="aspect-[318/444] w-full animate-pulse rounded-[8px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+                  <div class:list={[cardAspectClass, "w-full animate-pulse rounded-[8px] bg-[rgb(var(--color-surface,245_245_245))]"]}></div>
                   <div class="flex w-full flex-col gap-1">
                     <div class="h-4 w-2/3 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
                     <div class="h-4 w-1/3 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
@@ -395,7 +490,7 @@ const skeletons = Array.from({ length: skeletonCount });
   }
 </style>
 
-<script is:inline define:vars={{ siteId, pageSize }}>
+<script is:inline define:vars={{ siteId, pageSize, cardAspectClass, showQuickAdd, quickAddText, btnStyle, btnBg, btnFg, btnBorder, nextPhotoOn }}>
   // is:inline (НЕ module-script): module client-<script> блока НЕ компилится в
   // live build — generatePuckCatalogPage импортит блок, но его ESM-script не
   // попадает в bundle → на проде остаётся сырой путь Catalog.astro?astro&type=script
@@ -544,21 +639,50 @@ const skeletons = Array.from({ length: skeletonCount });
     "</svg></div>";
   const CARD_IMG_ONERROR_ATTR = ` onerror="this.onerror=null;this.outerHTML='${CARD_MEDIA_FALLBACK_HTML.replace(/"/g, "&quot;")}'"`;
 
-  // renderCardHtml — зеркалит RoseProductCard.astro (картинка-ссылка + name + price).
+  // Вид изображения карточки (настройка «Вид изображения») — Tailwind aspect-класс
+  // из define:vars. Зеркалит RoseProductCard.astro (parity SSG↔client). Дефолт —
+  // родной rose портрет.
+  const CARD_ASPECT_CLASS =
+    (typeof cardAspectClass === "string" && cardAspectClass) || "aspect-[318/444]";
+
+  // Стиль кнопки quickAdd (настройка «Стиль кнопки») — токены rose из define:vars
+  // (btnBg/btnFg/btnBorder уже вычислены во frontmatter). link → текст-ссылка.
+  const QUICK_BTN_STYLE =
+    "width:100%;height:44px;padding:0 12px;border-radius:var(--radius-button,6px);" +
+    "font-family:var(--font-body);font-size:14px;text-transform:uppercase;cursor:pointer;" +
+    "display:flex;align-items:center;justify-content:center;" +
+    "background:" + btnBg + ";color:" + btnFg + ";border:" + btnBorder + ";" +
+    (btnStyle === "link" ? "text-decoration:underline;background:transparent;" : "");
+
+  // renderCardHtml — зеркалит RoseProductCard.astro (картинка-ссылка + name + price
+  // + опц. quickAdd-кнопка). Меняется СИНХРОННО с RoseProductCard.astro (parity).
   function renderCardHtml(p) {
     const href = escapeHtml(productHref(p));
     const name = escapeHtml(p.name);
     const rawImage = productImageRaw(p);
+    // Второе фото (настройка «Следующее фото при наведении») — images[1].
+    const rawImage2 =
+      (nextPhotoOn && Array.isArray(p.images) && typeof p.images[1] === "string" && p.images[1]) || "";
+    // data-img-primary всегда; data-img-secondary только если есть второе фото —
+    // hover-обработчик (ниже) свапит src между ними.
+    const imgDataAttrs =
+      ' data-img-primary="' + escapeHtml(rawImage) + '"' +
+      (rawImage2 ? ' data-img-secondary="' + escapeHtml(rawImage2) + '"' : "");
     const media = rawImage
-      ? `<img src="${escapeHtml(rawImage)}" alt="${name}" width="318" height="444" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"${CARD_IMG_ONERROR_ATTR} />`
+      ? `<img src="${escapeHtml(rawImage)}"${imgDataAttrs} alt="${name}" width="318" height="444" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"${CARD_IMG_ONERROR_ATTR} />`
       : CARD_MEDIA_FALLBACK_HTML;
     const price = escapeHtml(formatPrice(p.price));
     const oldRaw = formatPrice(p.oldPrice || p.compareAtPrice || null);
     const oldPrice = oldRaw
       ? `<span class="rose-product-oldprice font-manrope !text-[14px] font-normal !leading-none text-[#999999] line-through">${escapeHtml(oldRaw)}</span>`
       : "";
+    // quickAdd-кнопка — СНАРУЖИ <a> (button-in-anchor невалиден). data-quick-add-id
+    // ловит обработчик добавления в корзину.
+    const quickBtn = showQuickAdd
+      ? `<button type="button" data-quick-add-id="${escapeHtml(p.id)}" style="${QUICK_BTN_STYLE}">${escapeHtml(quickAddText)}</button>`
+      : "";
     return `<article class="group flex w-full flex-col gap-5" data-nt="rose-product-card" aria-label="${name}">
-  <a href="${href}" class="relative block aspect-[318/444] w-full overflow-hidden rounded-[8px] bg-white" aria-label="${name}">
+  <a href="${href}" class="relative block ${CARD_ASPECT_CLASS} w-full overflow-hidden rounded-[8px] bg-white" aria-label="${name}">
     ${media}
   </a>
   <div class="flex w-full flex-col gap-1 text-left">
@@ -568,6 +692,7 @@ const skeletons = Array.from({ length: skeletonCount });
       ${oldPrice}
     </div>
   </div>
+  ${quickBtn}
 </article>`;
   }
 
@@ -1036,6 +1161,48 @@ const skeletons = Array.from({ length: skeletonCount });
     });
   }
 
+  // ─────────── Карточка: quickAdd-клик + nextPhoto hover-swap ───────────
+  // Делегирование на document (грид перерисовывается innerHTML → прямые листенеры
+  // на карточках терялись бы). Скоуп — карточки внутри каталога. Идемпотентно.
+  function bindCardInteractions() {
+    if (document.body.getAttribute("data-cf-card") === "1") return;
+    document.body.setAttribute("data-cf-card", "1");
+
+    // (6) Быстрое действие: клик по кнопке → добавить в корзину (cartStore),
+    // не уводя на страницу товара (кнопка снаружи <a>, но гасим на всякий).
+    document.addEventListener("click", (event) => {
+      const btn = event.target.closest("button[data-quick-add-id]");
+      if (!btn) return;
+      if (!btn.closest('[data-nt="catalog-grid"], [data-nt="catalog-demo"]')) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const productId = btn.getAttribute("data-quick-add-id");
+      if (window.cartStore && typeof window.cartStore.addItem === "function") {
+        window.cartStore.addItem(productId, null, 1);
+      }
+      const orig = btn.textContent;
+      btn.textContent = "✓ ДОБАВЛЕНО";
+      setTimeout(() => { btn.textContent = orig; }, 1500);
+    });
+
+    // (5) Следующее фото при наведении: hover карточки → src = images[1];
+    // уход → возврат на images[0]. Активно только при nextPhotoOn (иначе у img
+    // нет data-img-secondary и swap — no-op).
+    if (!nextPhotoOn) return;
+    document.addEventListener("mouseover", (event) => {
+      const img = event.target.closest("img[data-img-secondary]");
+      if (!img || !img.closest('[data-nt="catalog-grid"]')) return;
+      const sec = img.getAttribute("data-img-secondary");
+      if (sec && img.getAttribute("src") !== sec) img.setAttribute("src", sec);
+    });
+    document.addEventListener("mouseout", (event) => {
+      const img = event.target.closest("img[data-img-primary]");
+      if (!img || !img.closest('[data-nt="catalog-grid"]')) return;
+      const prim = img.getAttribute("data-img-primary");
+      if (prim && img.getAttribute("src") !== prim) img.setAttribute("src", prim);
+    });
+  }
+
   // Опция фильтра: side — радио в манере NtRadioField 1920 (кольцо 24px, точка 10px),
   // top — пункт в манере NtFilterPanel (активный = цвет текста, остальные = muted).
   // Цвета — токены схем с фоллбеками к значениям DS (#000000 / #999999).
@@ -1173,6 +1340,7 @@ const skeletons = Array.from({ length: skeletonCount });
       bindColors();
       bindSort();
       bindLoadMore();
+      bindCardInteractions();
       // Начальное активное состояние контролов.
       syncStockUi();
       syncSortUi();

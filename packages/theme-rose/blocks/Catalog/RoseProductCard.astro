@@ -20,11 +20,40 @@ interface Product {
 interface Props {
   product: Product;
   priority?: boolean;
+  /** Вид изображения карточки (Tailwind aspect-класс). Дефолт — родной rose
+      портрет 318/444. Передаётся из Catalog.astro (настройка «Вид изображения»),
+      зеркалит client renderCardHtml для parity. */
+  cardAspectClass?: string;
+  /** Быстрое действие: кнопка под карточкой (none → нет; иначе текст). */
+  showQuickAdd?: boolean;
+  quickAddText?: string;
+  /** Inline-стили кнопки quickAdd по «Стилю кнопки» (primary/secondary/link). */
+  btnStyle?: string;
+  btnBg?: string;
+  btnFg?: string;
+  btnBorder?: string;
 }
 
-const { product, priority = false } = Astro.props as Props;
+const {
+  product,
+  priority = false,
+  cardAspectClass = "aspect-[318/444]",
+  showQuickAdd = false,
+  quickAddText = "БЫСТРЫЙ ПРОСМОТР",
+  btnStyle = "secondary",
+  btnBg = "rgb(var(--color-button-secondary-bg,255 255 255))",
+  btnFg = "rgb(var(--color-button-secondary-text,0 0 0))",
+  btnBorder = "1px solid rgb(var(--color-button-secondary-border,0 0 0))",
+} = Astro.props as Props;
 const href = `/products/${product.id}`;
 const showSaleBadge = product.discount === true;
+// Стиль кнопки quickAdd (зеркалит client renderCardHtml). link → текст-ссылка.
+const quickBtnStyle =
+  `width:100%;height:44px;padding:0 12px;border-radius:var(--radius-button,6px);` +
+  `font-family:var(--font-body);font-size:14px;text-transform:uppercase;cursor:pointer;` +
+  `display:flex;align-items:center;justify-content:center;` +
+  `background:${btnBg};color:${btnFg};border:${btnBorder};` +
+  (btnStyle === "link" ? "text-decoration:underline;background:transparent;" : "");
 ---
 
 <article
@@ -34,7 +63,7 @@ const showSaleBadge = product.discount === true;
 >
   <a
     href={href}
-    class="relative block aspect-[318/444] w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-white"
+    class:list={[cardAspectClass, "relative block w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-white"]}
     aria-label={product.name}
   >
     {product.image ? (
@@ -46,6 +75,7 @@ const showSaleBadge = product.discount === true;
         loading="eager"
         fetchpriority={priority ? "high" : undefined}
         class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+        data-img-primary={product.image}
       />
     ) : (
       /* Товар без фото: surface-плейсхолдер вместо <img> (битой иконки).
@@ -99,6 +129,13 @@ const showSaleBadge = product.discount === true;
       )}
     </div>
   </div>
+  {/* Быстрое действие (настройка «Быстрое добавление»). Кнопка СНАРУЖИ <a>
+      (button-in-anchor — невалидный HTML). Зеркалит client renderCardHtml. */}
+  {showQuickAdd && (
+    <button type="button" data-quick-add-id={product.id} style={quickBtnStyle}>
+      {quickAddText}
+    </button>
+  )}
 </article>
 
 <style>

@@ -58,9 +58,88 @@ const cartVariantColor = product.colors?.[0] ?? "";
 	data-site-id={siteId}
 	data-puck-component-id={id}
 >
+	{/*
+	  Скелетон-лоадер PDP (vanilla). Виден по умолчанию, пока живая гидрация
+	  (`hydrateProductPage`) не заполнит data-pdp-* и не раскроет `data-pdp-layout`.
+	  Зеркалит раскладку темы 1:1 (info-колонка СЛЕВА → галерея СПРАВА на xl,
+	  те же контейнеры/gap/размеры) → подмена без сдвига. Дизайн «под vanilla»:
+	  ОСТРЫЕ углы (тема без border-radius), плейсхолдеры на --vanilla-card /
+	  --vanilla-line, акцент-кнопка тоном --vanilla-header-bg, пульс `animate-pulse`.
+	  aria-hidden — чисто декоративная заглушка; скрывается из JS (skel.hidden).
+	*/}
+	<div
+		data-pdp-skeleton
+		aria-hidden="true"
+		class="mx-auto flex w-full max-w-[1320px] flex-col gap-10 xl:flex-row xl:items-start xl:justify-between xl:gap-8 min-[1536px]:gap-16"
+	>
+		{/* Инфо-колонка (зеркало реальной: gap-6 / xl:gap-8 / xl:flex-1) */}
+		<div class="flex w-full animate-pulse flex-col gap-6 xl:min-w-0 xl:flex-1 xl:gap-8 min-[1536px]:max-w-[628px]">
+			{/* Бренд → заголовок → цена */}
+			<div class="flex flex-col gap-2">
+				<div class="h-3.5 w-28 bg-[var(--vanilla-line)]"></div>
+				<div class="h-6 w-3/4 max-w-[420px] bg-[var(--vanilla-card)]"></div>
+				<div class="flex items-baseline gap-3 pt-1">
+					<div class="h-4 w-24 bg-[var(--vanilla-card)]"></div>
+					<div class="h-3.5 w-16 bg-[var(--vanilla-line)]"></div>
+				</div>
+			</div>
+
+			{/* Чипы-варианты (зеркало h-10 вариант-кнопок: 1 группа, 3 чипа) */}
+			<div class="flex flex-col gap-2">
+				<div class="h-3.5 w-16 bg-[var(--vanilla-line)]"></div>
+				<div class="flex flex-wrap gap-2">
+					<div class="h-10 w-16 bg-[var(--vanilla-card)]"></div>
+					<div class="h-10 w-16 bg-[var(--vanilla-card)]"></div>
+					<div class="h-10 w-16 bg-[var(--vanilla-card)]"></div>
+				</div>
+			</div>
+
+			{/* Счётчик количества (зеркало size-6 кнопок + поле) */}
+			<div class="flex items-center gap-3">
+				<div class="size-6 bg-[var(--vanilla-card)]"></div>
+				<div class="h-6 w-10 bg-[var(--vanilla-line)]"></div>
+				<div class="size-6 bg-[var(--vanilla-card)]"></div>
+			</div>
+
+			{/* Кнопки (зеркало двух h-14 CTA; вторая — тон акцента --vanilla-header-bg) */}
+			<div class="flex w-full max-w-[628px] flex-col gap-3">
+				<div class="h-14 w-full border border-[var(--vanilla-line)] bg-[var(--vanilla-card)]"></div>
+				<div class="h-14 w-full bg-[var(--vanilla-header-bg)] opacity-25"></div>
+			</div>
+
+			{/* Описание (заголовок + строки текста) */}
+			<div class="flex max-w-[628px] flex-col gap-3">
+				<div class="h-4 w-28 bg-[var(--vanilla-card)]"></div>
+				<div class="flex flex-col gap-2">
+					<div class="h-3 w-full bg-[var(--vanilla-line)]"></div>
+					<div class="h-3 w-full bg-[var(--vanilla-line)]"></div>
+					<div class="h-3 w-11/12 bg-[var(--vanilla-line)]"></div>
+					<div class="h-3 w-2/3 bg-[var(--vanilla-line)]"></div>
+				</div>
+				<div class="mt-1 h-3.5 w-24 bg-[var(--vanilla-line)]"></div>
+			</div>
+		</div>
+
+		{/* Галерея СПРАВА (зеркало: главное aspect-square 552 + миниатюры lg:88) */}
+		<div class="w-full xl:max-w-[660px] xl:shrink-0">
+			<div class="flex w-full flex-col gap-4 lg:flex-row lg:items-start lg:gap-5">
+				<div class="mx-auto aspect-square w-full max-w-[552px] shrink-0 animate-pulse bg-[var(--vanilla-card)] lg:mx-0 lg:size-[552px]"></div>
+				{/* Миниатюры: ряд на mobile / колонка на lg (как реальные 4 шт.) */}
+				<div class="mx-auto flex w-full max-w-[552px] flex-row items-center gap-3 lg:mx-0 lg:w-auto lg:flex-col lg:gap-2">
+					<div class="flex flex-1 animate-pulse gap-2 lg:w-[88px] lg:flex-col">
+						<div class="aspect-square w-[72px] shrink-0 bg-[var(--vanilla-card)] lg:size-[88px]"></div>
+						<div class="aspect-square w-[72px] shrink-0 bg-[var(--vanilla-line)] lg:size-[88px]"></div>
+						<div class="aspect-square w-[72px] shrink-0 bg-[var(--vanilla-line)] lg:size-[88px]"></div>
+						<div class="aspect-square w-[72px] shrink-0 bg-[var(--vanilla-line)] lg:size-[88px]"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
 	<div
 		class="mx-auto flex w-full max-w-[1320px] flex-col gap-10 xl:flex-row xl:items-start xl:justify-between xl:gap-8 min-[1536px]:gap-16"
-		data-pdp-layout style="opacity:0;transition:opacity .15s ease"
+		data-pdp-layout hidden style="opacity:0;transition:opacity .15s ease"
 	>
 		<div class="flex w-full flex-col gap-6 xl:min-w-0 xl:flex-1 xl:gap-8 min-[1536px]:max-w-[628px]">
 			<div class="flex flex-col gap-2">
@@ -554,6 +633,7 @@ const cartVariantColor = product.colors?.[0] ?? "";
 			if (!section) return;
 			var notFound = section.querySelector("[data-pdp-notfound]");
 			var layout = section.querySelector("[data-pdp-layout]");
+			var skel = section.querySelector("[data-pdp-skeleton]");
 
 			var products = await loadRealProducts();
 			if (!products) return; // demo-сборка без данных — оставляем SSR-скелетон
@@ -582,10 +662,12 @@ const cartVariantColor = product.colors?.[0] ?? "";
 			// not-found живёт ВНУТРИ секции → НЕ прячем всю секцию, тогглим
 			// внутренний layout-грид (иначе спрятали бы и сам not-found).
 			if (!p) {
+				if (skel) skel.hidden = true; // снимаем скелетон — показываем not-found
 				if (layout) layout.hidden = true;
 				if (notFound) notFound.hidden = false;
 				return;
 			}
+			if (skel) skel.hidden = true; // данные готовы — снимаем скелетон
 			if (layout) { layout.hidden = false; layout.style.opacity = "1"; }
 			if (notFound) notFound.hidden = true;
 

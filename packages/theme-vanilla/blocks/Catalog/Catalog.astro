@@ -122,10 +122,11 @@ const schemeClass =
 		? `color-scheme-${colorScheme.replace("scheme-", "")}`
 		: "";
 
-// SSR demo-грид (родные товары vanilla). Гарантирует, что грид рендерится в initial
-// HTML и в превью (Container API), и на live до гидрации. На published-сайте
-// is:inline-клиент (renderCatalog → ЖИВОЙ /api/store/products) перерисует
-// реальными товарами; demo остаётся только если магазин пуст / API недоступен.
+// Demo-товары vanilla (родные моки). Больше НЕ в видимом гриде — видимый грид
+// стартует со СКЕЛЕТОН-лоадером (skeletons ниже), а demo уходит в
+// <template data-nt="catalog-demo"> и подставляется is:inline-клиентом ТОЛЬКО если
+// магазин реально пуст / API недоступен (rose-канон). На published-сайте клиент
+// (renderCatalog → ЖИВОЙ /api/store/products) заменяет скелетон реальными товарами.
 const demoProducts: DemoProduct[] = [
 	{ id: "bag-1", name: "Подушки декоративные", price: "1 940 ₽", oldPrice: "2 290 ₽", image: "/images/vanilla-product-1.webp" },
 	{ id: "bag-2", name: "Ваза Vanilla", price: "1 490 ₽", image: "/images/vanilla-product-2.webp" },
@@ -137,6 +138,13 @@ const demoProducts: DemoProduct[] = [
 	{ id: "bag-8", name: "Плед хлопковый", price: "2 190 ₽", image: "/images/vanilla-product-6.webp" },
 ];
 const totalCount = demoProducts.length;
+// Лоадер: число скелетон-карточек, показываемых пока идёт fetch живого API (одна
+// «страница» пагинации). Demo-моки больше НЕ в видимом гриде — они уходят в
+// <template data-nt="catalog-demo"> и подставляются клиентом ТОЛЬКО если магазин
+// реально пуст (rose-канон). Сами гриды стартуют с opacity:0 (loading-гейт);
+// renderCatalog раскрывает их (opacity:1) после рендера скелетон→реальные/demo.
+const skeletonCount = pageSize;
+const skeletons = Array.from({ length: skeletonCount });
 
 function pluralizeProducts(count: number): string {
 	const mod10 = count % 10;
@@ -193,6 +201,30 @@ const rowStockOptions: RadioOption[] = [
 	    билд) инжектит window.__MERFY_CATALOG_LAYOUT__. Скрипт ДО вариантов, чтобы
 	    переключение не мигало; без глобала остаётся раскладка из props. */}
 	<script is:inline>var l=window.__MERFY_CATALOG_LAYOUT__; if(l==='top'||l==='side'){document.currentScript.parentElement.setAttribute('data-catalog-layout',l);}</script>
+
+	{/* Demo-моки для ПУСТОГО магазина (0 товаров): НЕ в видимом гриде (там скелетон-
+	    лоадер), хранятся скрытыми в <template> и подставляются клиентом ТОЛЬКО если у
+	    магазина реально нет товаров (rose-канон) — красивая заглушка нового сайта. */}
+	<template data-nt="catalog-demo">
+		{demoProducts.map((product) => (
+			<li data-product-id={product.id}>
+				<article class={cardWrapClass} data-nt="vanilla-product-card" aria-label={product.name}>
+					<a href={`/product?id=${product.id}`} class="relative block aspect-square w-full overflow-hidden bg-[var(--vanilla-card)]" aria-label={product.name}>
+						<img src={product.image} alt={product.name} width="429" height="429" loading="eager" class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+					</a>
+					<div class="flex flex-col gap-1">
+						<a href={`/product?id=${product.id}`} class="font-vanilla-arsenal text-base font-normal uppercase leading-none text-black transition-opacity hover:opacity-70">{product.name}</a>
+						<div class="flex flex-wrap items-baseline gap-2">
+							<span class="font-vanilla-arsenal text-base font-normal leading-none text-black">{product.price}</span>
+							{product.oldPrice && (
+								<span class="font-vanilla-arsenal text-[14px] font-normal leading-none text-[#444444] line-through">{product.oldPrice}</span>
+							)}
+						</div>
+					</div>
+				</article>
+			</li>
+		))}
+	</template>
 
 	<div class="vanilla-pad w-full bg-[var(--vanilla-surface)] py-16 md:py-20">
 		<div class="vanilla-container flex flex-col gap-10">
@@ -283,22 +315,15 @@ const rowStockOptions: RadioOption[] = [
 
 				<div class="flex flex-col gap-8">
 					<ul class="grid grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:grid-cols-3 md:gap-x-4 md:gap-y-12" role="list" data-nt="catalog-grid" style="opacity:0;transition:opacity .15s ease">
-						{demoProducts.map((product) => (
-							<li data-product-id={product.id}>
-								<article class={cardWrapClass} data-nt="vanilla-product-card" aria-label={product.name}>
-									<a href={`/product?id=${product.id}`} class="relative block aspect-square w-full overflow-hidden bg-[var(--vanilla-card)]" aria-label={product.name}>
-										<img src={product.image} alt={product.name} width="429" height="429" loading="eager" class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
-									</a>
+						{skeletons.map(() => (
+							<li data-nt="catalog-skeleton" aria-hidden="true">
+								<div class="flex flex-col gap-3">
+									<div class="aspect-square w-full animate-pulse bg-[var(--vanilla-card)]"></div>
 									<div class="flex flex-col gap-1">
-										<a href={`/product?id=${product.id}`} class="font-vanilla-arsenal text-base font-normal uppercase leading-none text-black transition-opacity hover:opacity-70">{product.name}</a>
-										<div class="flex flex-wrap items-baseline gap-2">
-											<span class="font-vanilla-arsenal text-base font-normal leading-none text-black">{product.price}</span>
-											{product.oldPrice && (
-												<span class="font-vanilla-arsenal text-[14px] font-normal leading-none text-[#444444] line-through">{product.oldPrice}</span>
-											)}
-										</div>
+										<div class="h-4 w-2/3 animate-pulse bg-[var(--vanilla-card)]"></div>
+										<div class="h-4 w-1/3 animate-pulse bg-[var(--vanilla-card)]"></div>
 									</div>
-								</article>
+								</div>
 							</li>
 						))}
 					</ul>
@@ -316,22 +341,15 @@ const rowStockOptions: RadioOption[] = [
 
 				<div class="flex min-w-0 flex-1 flex-col gap-8">
 					<ul class="grid grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:gap-x-4 md:gap-y-12" role="list" data-nt="catalog-grid" style="opacity:0;transition:opacity .15s ease">
-						{demoProducts.map((product) => (
-							<li data-product-id={product.id}>
-								<article class={cardWrapClass} data-nt="vanilla-product-card" aria-label={product.name}>
-									<a href={`/product?id=${product.id}`} class="relative block aspect-square w-full overflow-hidden bg-[var(--vanilla-card)]" aria-label={product.name}>
-										<img src={product.image} alt={product.name} width="429" height="429" loading="eager" class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
-									</a>
+						{skeletons.map(() => (
+							<li data-nt="catalog-skeleton" aria-hidden="true">
+								<div class="flex flex-col gap-3">
+									<div class="aspect-square w-full animate-pulse bg-[var(--vanilla-card)]"></div>
 									<div class="flex flex-col gap-1">
-										<a href={`/product?id=${product.id}`} class="font-vanilla-arsenal text-base font-normal uppercase leading-none text-black transition-opacity hover:opacity-70">{product.name}</a>
-										<div class="flex flex-wrap items-baseline gap-2">
-											<span class="font-vanilla-arsenal text-base font-normal leading-none text-black">{product.price}</span>
-											{product.oldPrice && (
-												<span class="font-vanilla-arsenal text-[14px] font-normal leading-none text-[#444444] line-through">{product.oldPrice}</span>
-											)}
-										</div>
+										<div class="h-4 w-2/3 animate-pulse bg-[var(--vanilla-card)]"></div>
+										<div class="h-4 w-1/3 animate-pulse bg-[var(--vanilla-card)]"></div>
 									</div>
-								</article>
+								</div>
 							</li>
 						))}
 					</ul>
@@ -546,6 +564,31 @@ const rowStockOptions: RadioOption[] = [
 			}
 		}
 
+		// ─────────── Скелетон-лоадер (rose-канон) ───────────
+		// Снимок скелетон-карточек (<li data-nt="catalog-skeleton">) из SSG-грида —
+		// захватывается при первой гидрации, чтобы при replace-загрузке (page=1: смена
+		// фильтра/сортировки) показать лоадер вместо устаревшего/пустого грида. Append
+		// (page>1) скелетон не трогает — там индикатор на кнопке.
+		let skeletonHtml = "";
+		function captureSkeleton() {
+			if (skeletonHtml) return;
+			const grid = document.querySelector('[data-nt="catalog-grid"]');
+			if (!grid) return;
+			const sk = Array.from(grid.querySelectorAll('[data-nt="catalog-skeleton"]'));
+			if (sk.length > 0) skeletonHtml = sk.map((el) => el.outerHTML).join("");
+		}
+		function showSkeleton() {
+			if (!skeletonHtml) return;
+			for (const grid of Array.from(document.querySelectorAll('[data-nt="catalog-grid"]'))) {
+				grid.innerHTML = skeletonHtml;
+			}
+		}
+		// pickDemo: HTML/число <li> demo-моков из <template data-nt="catalog-demo"> —
+		// подставляется ТОЛЬКО когда магазин реально пуст / API недоступен.
+		function demoTemplate() {
+			return document.querySelector('[data-nt="catalog-demo"]');
+		}
+
 		// ─────────────────────── Каталог: state + orchestration ───────────────────────
 		// СЕРВЕРНАЯ пагинация (rose-канон): товары грузятся ПОСТРАНИЧНО реальными
 		// запросами /api/store/products?page=N с серверными фильтрами (sort/price/
@@ -631,6 +674,10 @@ const rowStockOptions: RadioOption[] = [
 			const grids = Array.from(document.querySelectorAll('[data-nt="catalog-grid"]'));
 			const loadMoreBtns = Array.from(document.querySelectorAll("[data-action='load-more']"));
 
+			// Лоадер: при replace (page=1) показываем скелетон, пока идёт сетевой запрос
+			// (вместо устаревшего/пустого грида). Грид уже виден (opacity:1 после первой
+			// загрузки) либо ещё скрыт (первая загрузка) — раскрываем ниже в любом исходе.
+			if (!append) showSkeleton();
 			// При append индикатор — на кнопке (блокируем повторный клик во время fetch).
 			if (append) for (const btn of loadMoreBtns) btn.disabled = true;
 
@@ -644,14 +691,20 @@ const rowStockOptions: RadioOption[] = [
 				return;
 			}
 
-			// API недоступен ИЛИ магазин реально пуст (page=1, total=0): SSR demo-грид
-			// остаётся как есть (vanilla хранит моки прямо в начальном гриде), кнопку прячем.
+			// API недоступен ИЛИ магазин реально пуст (page=1, total=0): подставляем demo-
+			// моки из <template data-nt="catalog-demo"> (rose-канон) — красивая заглушка
+			// нового сайта вместо скелетона/пустоты; кнопку прячем.
 			if (res === null || (filters.page === 1 && res.total === 0)) {
+				const demoTpl = demoTemplate();
+				const demoHtml = demoTpl ? demoTpl.innerHTML : "";
+				const demoN = demoTpl ? demoTpl.content.querySelectorAll("li").length : 0;
+				for (const grid of grids) grid.innerHTML = demoHtml; // скелетон → demo
+				updateCount(demoN);
 				for (const btn of loadMoreBtns) {
 					btn.style.display = "none";
 					btn.disabled = false;
 				}
-				for (const g of grids) g.style.opacity = "1"; // пустой магазин/API down → показываем SSR demo-грид
+				for (const g of grids) g.style.opacity = "1"; // demo отрисованы → раскрываем грид
 				return;
 			}
 
@@ -890,6 +943,9 @@ const rowStockOptions: RadioOption[] = [
 			lastHydratedUrl = url;
 			hydrating = true;
 			try {
+				// Снимок скелетон-лоадера из SSG-грида ДО первого fetch (renderCatalog
+				// replace затрёт скелетон) — нужен для replace при смене фильтра/сортировки.
+				captureSkeleton();
 				// Коллекции (для collection_id серверного фильтра) грузим ДО товаров,
 				// чтобы buildProductsQuery резолвил slug→id уже на первой странице.
 				catalogCollections = await loadRealCollections();

@@ -61,7 +61,71 @@ const cartVariantColor = product.colors?.[0] ?? "";
 	data-site-id={siteId}
 	data-puck-component-id={id}
 >
-	<div class="mx-auto grid w-full max-w-[1320px] grid-cols-1 gap-8 lg:grid-cols-[600px_minmax(0,1fr)] lg:gap-10" data-pdp-layout style="opacity:0;transition:opacity .15s ease">
+	{/* СКЕЛЕТОН-ЛОАДЕР PDP (bloom). Зеркалит раскладку реального data-pdp-layout
+	    1:1 (та же сетка/gap/max-w/aspect) → при подмене layout (success) или показе
+	    not-found НЕТ сдвига. Виден по умолчанию, пока live-inline-script грузит товар;
+	    скрипт ставит skel.hidden = true в обеих ветках (см. ниже).
+	    Дизайн под тему: плейсхолдеры фото — bg-[#F5F5F5] БЕЗ скругления (как реальные
+	    галерейные блоки bloom: `overflow-hidden bg-[#F5F5F5]` без radius); полосы
+	    текста/чипы/кнопки — bg-[#F5F5F5] со скруглением темы (rounded-[4px]/[6px], как
+	    реальные элементы); пульс animate-pulse в манере скелетона каталога bloom. */}
+	<div
+		data-pdp-skeleton
+		aria-hidden="true"
+		class="mx-auto grid w-full max-w-[1320px] grid-cols-1 gap-8 lg:grid-cols-[600px_minmax(0,1fr)] lg:gap-10"
+	>
+		{/* Галерея: главное фото (квадрат) + ряд из 3 миниатюр — как реальная вёрстка */}
+		<div class="flex flex-col gap-4">
+			<div class="aspect-square w-full animate-pulse bg-[#F5F5F5]"></div>
+			<div class="grid grid-cols-3 gap-4">
+				<div class="aspect-square w-full animate-pulse bg-[#F5F5F5]"></div>
+				<div class="aspect-square w-full animate-pulse bg-[#F5F5F5]"></div>
+				<div class="aspect-square w-full animate-pulse bg-[#F5F5F5]"></div>
+			</div>
+		</div>
+
+		{/* Инфо-колонка: заголовок-блок → варианты+кол-во → кнопки → описание */}
+		<div class="flex flex-col gap-10">
+			{/* Бренд / заголовок / цена (соответствует gap-2 реального блока) */}
+			<div class="flex flex-col gap-2">
+				<div class="h-[14px] w-24 animate-pulse rounded-[4px] bg-[#F5F5F5]"></div>
+				<div class="mt-1 h-9 w-3/4 animate-pulse rounded-[4px] bg-[#F5F5F5] md:h-10 lg:h-11"></div>
+				<div class="mt-1 h-6 w-28 animate-pulse rounded-[4px] bg-[#F5F5F5] md:h-7"></div>
+			</div>
+
+			{/* Варианты (чипы цвета) + счётчик количества */}
+			<div class="flex flex-col gap-6">
+				<div class="flex flex-col gap-2">
+					<div class="h-[14px] w-12 animate-pulse rounded-[4px] bg-[#F5F5F5]"></div>
+					<div class="flex flex-wrap gap-2">
+						<div class="h-10 w-16 animate-pulse rounded-[4px] bg-[#F5F5F5]"></div>
+						<div class="h-10 w-20 animate-pulse rounded-[4px] bg-[#F5F5F5]"></div>
+						<div class="h-10 w-16 animate-pulse rounded-[4px] bg-[#F5F5F5]"></div>
+					</div>
+				</div>
+				<div class="h-10 w-[120px] animate-pulse rounded-[4px] bg-[#F5F5F5]"></div>
+			</div>
+
+			{/* Кнопки CTA: две полосы h-12 со скруглением кнопок темы (rounded-[6px]) */}
+			<div class="flex flex-col gap-3">
+				<div class="h-12 w-full animate-pulse rounded-[6px] bg-[#F5F5F5]"></div>
+				<div class="h-12 w-full animate-pulse rounded-[6px] bg-[#F5F5F5]"></div>
+			</div>
+
+			{/* Описание: заголовок + строки текста */}
+			<div class="flex flex-col gap-4">
+				<div class="h-[18px] w-32 animate-pulse rounded-[4px] bg-[#F5F5F5]"></div>
+				<div class="flex flex-col gap-2">
+					<div class="h-4 w-full animate-pulse rounded-[4px] bg-[#F5F5F5]"></div>
+					<div class="h-4 w-full animate-pulse rounded-[4px] bg-[#F5F5F5]"></div>
+					<div class="h-4 w-5/6 animate-pulse rounded-[4px] bg-[#F5F5F5]"></div>
+					<div class="h-4 w-2/3 animate-pulse rounded-[4px] bg-[#F5F5F5]"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="mx-auto grid w-full max-w-[1320px] grid-cols-1 gap-8 lg:grid-cols-[600px_minmax(0,1fr)] lg:gap-10" data-pdp-layout hidden style="opacity:0;transition:opacity .15s ease">
 		<div class="flex flex-col gap-4">
 			<div class="relative aspect-square w-full overflow-hidden bg-[#F5F5F5]">
 				<BloomPicture
@@ -546,9 +610,21 @@ const cartVariantColor = product.colors?.[0] ?? "";
 			var section = document.querySelector("[data-pdp-section]");
 			if (!section) return;
 			var notFound = section.querySelector("[data-pdp-notfound]");
+			var skel0 = section.querySelector("[data-pdp-skeleton]");
+			var layout0 = section.querySelector("[data-pdp-layout]");
 
 			var products = await loadRealProducts();
-			if (!products) return; // demo-сборка без данных — оставляем SSR-скелетон
+			if (!products) {
+				// Нет живых данных. Два кейса разделяет наличие siteId:
+				//  • demo-маршрут products/[id] (siteId НЕ инжектится) — SSR-layout
+				//    содержит РЕАЛЬНЫЙ demo-товар → убираем скелетон, раскрываем layout.
+				//  • live /product с пустым магазином (siteId есть, но 0 товаров) —
+				//    SSR-layout это плейсхолдер «Товар» → оставляем как было (скелетон
+				//    скрываем, чтобы не висел вечно; layout остаётся opacity:0).
+				if (skel0) skel0.hidden = true;
+				if (!resolveSiteId() && layout0) { layout0.hidden = false; layout0.style.opacity = "1"; }
+				return;
+			}
 
 			// Приоритет: pretty-slug / ?id= → выбранный в конструкторе товар
 			// (__MERFY_DEFAULT_PRODUCT_ID__) → первый.
@@ -571,12 +647,16 @@ const cartVariantColor = product.colors?.[0] ?? "";
 			}
 
 			// not-found живёт ВНУТРИ секции → прячем не всю секцию, а внутренний грид.
-			var layout = section.querySelector("[data-pdp-layout]");
+			// (layout0/skel0 уже найдены выше.)
+			var layout = layout0;
+			var skel = skel0;
 			if (!p) {
 				if (layout) layout.hidden = true;
+				if (skel) skel.hidden = true; // грузить нечего — скелетон убираем
 				if (notFound) notFound.hidden = false;
 				return;
 			}
+			if (skel) skel.hidden = true; // данные пришли — скелетон убираем
 			if (layout) { layout.hidden = false; layout.style.opacity = "1"; }
 			if (notFound) notFound.hidden = true;
 

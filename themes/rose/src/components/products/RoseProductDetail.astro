@@ -59,7 +59,69 @@ const cartVariantColor = product.colors?.[0] ?? "";
 	data-site-id={siteId}
 	data-puck-component-id={id}
 >
-	<div class="mx-auto grid w-full max-w-[1320px] grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-[1fr_1fr] lg:gap-10 xl:grid-cols-[600px_minmax(0,1fr)]" data-pdp-layout style="opacity:0;transition:opacity .15s ease">
+	{/*
+	  Скелетон-лоадер PDP (rose) — зеркалит раскладку реального `data-pdp-layout`
+	  ниже (та же грид-сетка/gap/aspect/радиусы темы), чтобы при подмене на живой
+	  товар не было сдвига. Виден по умолчанию; live-inline-script прячет его
+	  (skel.hidden=true) и в success (рядом с layout.style.opacity="1"), и в ветке
+	  not-found. Дизайн-токены темы: surface-плейсхолдеры
+	  `bg-[rgb(var(--color-surface,245_245_245))]`, скруглённые радиусы rose
+	  (--radius-media / 6px чипы-миниатюры / --radius-button), пульс `animate-pulse`
+	  в манере скелетона каталога (data-nt=catalog-skeleton). aria-hidden — чисто
+	  декоративная заглушка для скринридеров.
+	*/}
+	<div
+		data-pdp-skeleton
+		aria-hidden="true"
+		class="mx-auto grid w-full max-w-[1320px] grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-[1fr_1fr] lg:gap-10 xl:grid-cols-[600px_minmax(0,1fr)]"
+	>
+		{/* ── Колонка галереи: главное фото + ряд миниатюр (как реальный layout) ── */}
+		<div class="flex flex-col gap-3 sm:gap-4">
+			<div class="aspect-square w-full animate-pulse rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+			<div class="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4">
+				<div class="aspect-square w-full animate-pulse rounded-[6px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				<div class="aspect-square w-full animate-pulse rounded-[6px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+			</div>
+		</div>
+
+		{/* ── Инфо-колонка: бренд/заголовок/цена · варианты+кол-во · кнопки · описание ── */}
+		<div class="flex flex-col gap-8 lg:gap-10">
+			<div class="flex flex-col gap-2 sm:gap-3">
+				<div class="h-3 w-24 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				<div class="h-8 w-3/4 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))] sm:h-9"></div>
+				<div class="mt-1 h-6 w-28 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+			</div>
+
+			<div class="flex flex-col gap-5 sm:gap-6">
+				<div class="flex flex-col gap-2">
+					<div class="h-4 w-16 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+					<div class="flex flex-wrap gap-2">
+						<div class="h-10 w-24 animate-pulse rounded-[6px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+						<div class="h-10 w-24 animate-pulse rounded-[6px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+						<div class="h-10 w-20 animate-pulse rounded-[6px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+					</div>
+				</div>
+				<div class="h-10 w-32 animate-pulse rounded-[var(--radius-input,4px)] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+			</div>
+
+			<div class="flex flex-col gap-3 sm:gap-4">
+				<div class="h-12 w-full animate-pulse rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				<div class="h-12 w-full animate-pulse rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+			</div>
+
+			<div class="flex flex-col gap-3 sm:gap-4">
+				<div class="h-6 w-32 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				<div class="flex flex-col gap-2">
+					<div class="h-3.5 w-full animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+					<div class="h-3.5 w-full animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+					<div class="h-3.5 w-5/6 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+					<div class="h-3.5 w-2/3 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="mx-auto grid w-full max-w-[1320px] grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-[1fr_1fr] lg:gap-10 xl:grid-cols-[600px_minmax(0,1fr)]" data-pdp-layout hidden style="opacity:0;transition:opacity .15s ease">
 		<div class="flex flex-col gap-3 sm:gap-4">
 			<div class="relative aspect-square w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]">
 				<RosePicture
@@ -582,12 +644,17 @@ const cartVariantColor = product.colors?.[0] ?? "";
 			// not-found блок живёт ВНУТРИ секции → НЕ прячем всю секцию (иначе
 			// спрятали бы и сам not-found). Тогглим внутренний layout-грид.
 			var layout = section.querySelector("[data-pdp-layout]");
+			// Скелетон-лоадер: виден пока грузится, прячем в ОБОИХ исходах (success
+			// и not-found), чтобы он не остался поверх реального контента/заглушки.
+			var skel = section.querySelector("[data-pdp-skeleton]");
 			if (!p) {
 				if (layout) layout.hidden = true;
+				if (skel) skel.hidden = true;
 				if (notFound) notFound.hidden = false;
 				return;
 			}
 			if (layout) { layout.hidden = false; layout.style.opacity = "1"; }
+			if (skel) skel.hidden = true;
 			if (notFound) notFound.hidden = true;
 
 			function setText(sel, t) {

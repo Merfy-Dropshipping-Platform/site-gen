@@ -60,7 +60,81 @@ const cartVariantColor = product.colors?.[0] ?? "";
 	data-site-id={siteId}
 	data-puck-component-id={id}
 >
-	<div class="satin-container grid grid-cols-1 gap-10 lg:grid-cols-[652px_minmax(0,1fr)] lg:gap-10" data-pdp-layout style="opacity:0;transition:opacity .15s ease">
+	{/* Скелетон-лоадер PDP (satin). Виден ПОКА грузится реальный товар (data-pdp-layout
+	    стартует с opacity:0). is:inline-гидрация ниже прячет его (skel.hidden = true) в
+	    обеих развязках: success (рядом с layout.style.opacity = "1") и not-found. Зеркалит
+	    раскладку satin 1:1 — та же сетка `lg:grid-cols-[652px_minmax(0,1fr)] gap-10`, та же
+	    2×2-галерея с `aspect-[318/470]`, та же инфо-колонка (бренд→цена→чипы цвета→кнопки→
+	    описание). Дизайн под тему: плейсхолдеры = surface-токен `rgb(var(--color-surface,
+	    245_245_245))`, ОСТРЫЕ углы (satin без radius — как реальные ячейки/кнопки/чипы),
+	    шиммер = Tailwind animate-pulse (как catalog-skeleton темы). aria-hidden — лоадер
+	    не озвучивается скринридером. На demo-сборке без данных гидрация — no-op, но layout
+	    с opacity:0 раскрывается SSR-скелетоном этого же грида ниже → скелетон тут не мешает. */}
+	<div
+		class="satin-container grid grid-cols-1 gap-10 lg:grid-cols-[652px_minmax(0,1fr)] lg:gap-10"
+		data-pdp-skeleton
+		aria-hidden="true"
+	>
+		{/* Галерея: 2×2 surface-плитки, острые углы, пропорции реальных ячеек (318/470). */}
+		<div class="grid grid-cols-2 gap-4">
+			{Array.from({ length: 4 }).map((_, index) => (
+				<div
+					class="relative aspect-[318/470] w-full animate-pulse overflow-hidden bg-[rgb(var(--color-surface,245_245_245))]"
+					style={`animation-delay:${index * 90}ms`}
+				></div>
+			))}
+		</div>
+
+		{/* Инфо-колонка: повторяет реальный стек (gap-6, sticky), полосы = surface-токен. */}
+		<div class="flex flex-col gap-6 lg:sticky lg:top-24 lg:self-start">
+			<div class="flex flex-col gap-3">
+				{/* Бренд (одна короткая строка, высота как text-[14px] uppercase). */}
+				<div class="h-[14px] w-24 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				{/* Заголовок: две полосы под h1 font-logo text-[28px]/leading-[1.1]. */}
+				<div class="flex flex-col gap-2">
+					<div class="h-7 w-4/5 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+					<div class="h-7 w-3/5 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				</div>
+				{/* Цена + старая цена (одна строка, baseline). */}
+				<div class="flex items-baseline gap-3">
+					<div class="h-5 w-28 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+					<div class="h-4 w-16 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				</div>
+			</div>
+
+			{/* Чипы вариантов: квадратные h-10 плитки (как кнопки цвета satin). */}
+			<div class="flex flex-wrap gap-2">
+				{Array.from({ length: 3 }).map(() => (
+					<div class="h-10 w-20 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				))}
+			</div>
+
+			{/* Кнопки: ряд (h-14 «В корзину» + квадрат количества w-[120px]) + полная «Купить». */}
+			<div class="flex flex-col gap-3">
+				<div class="flex gap-3">
+					<div class="h-14 flex-1 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+					<div class="h-14 w-[120px] shrink-0 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				</div>
+				<div class="h-14 w-full animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+			</div>
+
+			{/* Описание: разделитель (как border-t pt-6) + заголовок + строки текста. */}
+			<div class="flex flex-col gap-3 border-t border-[#DDDDDD] pt-6">
+				<div class="h-5 w-32 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				<div class="flex flex-col gap-2">
+					<div class="h-4 w-full animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+					<div class="h-4 w-full animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+					<div class="h-4 w-11/12 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+					<div class="h-4 w-2/3 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				</div>
+			</div>
+
+			{/* «Поделиться»: короткая полоса. */}
+			<div class="h-[18px] w-28 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+		</div>
+	</div>
+
+	<div class="satin-container grid grid-cols-1 gap-10 lg:grid-cols-[652px_minmax(0,1fr)] lg:gap-10" data-pdp-layout hidden style="opacity:0;transition:opacity .15s ease">
 		<!-- Gallery: 2×2 portrait grid -->
 		<div class="grid grid-cols-2 gap-4" data-pdp-gallery>
 			{galleryImages.map((img, index) => (
@@ -545,12 +619,17 @@ const cartVariantColor = product.colors?.[0] ?? "";
 			// not-found блок и layout-грид живут ВНУТРИ секции → НЕ прячем всю секцию
 			// (иначе спрятали бы и сам not-found). Тогглим внутренний layout-грид.
 			var layout = section.querySelector("[data-pdp-layout]");
+			// Скелетон-лоадер виден ТОЛЬКО пока грузится товар — прячем его в обеих
+			// развязках (success + not-found), как только знаем, что показывать.
+			var skel = section.querySelector("[data-pdp-skeleton]");
 			if (!p) {
 				if (layout) layout.hidden = true;
+				if (skel) skel.hidden = true;
 				if (notFound) notFound.hidden = false;
 				return;
 			}
 			if (layout) { layout.hidden = false; layout.style.opacity = "1"; }
+			if (skel) skel.hidden = true;
 			if (notFound) notFound.hidden = true;
 
 			function setText(sel, t) {

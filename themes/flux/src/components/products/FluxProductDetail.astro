@@ -60,7 +60,76 @@ const cartVariantColor = productColors[0] ?? "";
 	data-site-id={siteId}
 	data-puck-component-id={id}
 >
-	<div class="mx-auto grid w-full max-w-[1320px] grid-cols-1 gap-8 lg:grid-cols-[600px_minmax(0,1fr)] lg:gap-10" data-pdp-layout style="opacity:0;transition:opacity .15s ease">
+	{/*
+	  СКЕЛЕТОН-ЛОАДЕР PDP (flux). Виден по умолчанию, пока live-inline-script грузит
+	  товар и заполняет data-pdp-* хуки. Зеркалит сетку реального data-pdp-layout
+	  (та же max-w/cols/gap → нет сдвига при подмене). Дизайн под тему: плейсхолдеры
+	  на нативном flux-surface `rgb(var(--color-surface,245_245_245))` (= #F5F5F5,
+	  как медиа PDP), пульс `animate-pulse` и скругления `rounded-[8px]`/`rounded`
+	  взяты 1:1 со скелетона каталога flux (data-nt=catalog-skeleton). Текст-полосы
+	  повторяют типографскую сетку инфо-колонки (заголовок/цена/описание/чипы/кнопка).
+	  Скрывается JS (skel.hidden=true) и в ветке success, и в not-found.
+	*/}
+	<div
+		data-pdp-skeleton
+		aria-hidden="true"
+		class="mx-auto grid w-full max-w-[1320px] grid-cols-1 gap-8 lg:grid-cols-[600px_minmax(0,1fr)] lg:gap-10"
+	>
+		{/* Галерея: главное фото (квадрат) + ряд из 3 миниатюр (grid-cols-3) */}
+		<div class="flex flex-col gap-4">
+			<div class="aspect-square w-full animate-pulse rounded-[8px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+			<div class="grid grid-cols-3 gap-4">
+				<div class="aspect-square w-full animate-pulse rounded-[8px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				<div class="aspect-square w-full animate-pulse rounded-[8px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				<div class="aspect-square w-full animate-pulse rounded-[8px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+			</div>
+		</div>
+
+		{/* Инфо-колонка: заголовок → варианты/кол-во → кнопки → описание (gap-10) */}
+		<div class="flex flex-col gap-10">
+			{/* Бренд / заголовок / цена */}
+			<div class="flex flex-col gap-2">
+				<div class="h-3.5 w-24 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				<div class="h-9 w-4/5 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				<div class="mt-1 flex items-baseline gap-2">
+					<div class="h-6 w-28 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+					<div class="h-4 w-16 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				</div>
+			</div>
+
+			{/* Варианты (чипы) + степпер количества (gap-6) */}
+			<div class="flex flex-col gap-6">
+				<div class="flex flex-col gap-3">
+					<div class="h-3.5 w-12 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+					<div class="flex flex-wrap gap-2">
+						<div class="h-10 w-16 animate-pulse rounded-[4px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+						<div class="h-10 w-16 animate-pulse rounded-[4px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+						<div class="h-10 w-16 animate-pulse rounded-[4px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+					</div>
+				</div>
+				<div class="h-10 w-32 animate-pulse rounded-[4px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+			</div>
+
+			{/* Кнопки CTA (gap-3): «В корзину» + «Купить сейчас» */}
+			<div class="flex flex-col gap-3">
+				<div class="h-12 w-full animate-pulse rounded-[6px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				<div class="h-12 w-full animate-pulse rounded-[6px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+			</div>
+
+			{/* Описание: заголовок + полосы текста + ссылка «Поделиться» */}
+			<div class="flex flex-col gap-4">
+				<div class="h-5 w-32 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				<div class="flex flex-col gap-2">
+					<div class="h-3.5 w-full animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+					<div class="h-3.5 w-full animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+					<div class="h-3.5 w-2/3 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				</div>
+				<div class="h-4 w-28 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+			</div>
+		</div>
+	</div>
+
+	<div class="mx-auto grid w-full max-w-[1320px] grid-cols-1 gap-8 lg:grid-cols-[600px_minmax(0,1fr)] lg:gap-10" data-pdp-layout hidden style="opacity:0;transition:opacity .15s ease">
 		<div class="flex flex-col gap-4">
 			<div class="relative aspect-square w-full overflow-hidden bg-[#F5F5F5]">
 				<FluxPicture
@@ -575,11 +644,16 @@ const cartVariantColor = productColors[0] ?? "";
 
 			// not-found живёт ВНУТРИ секции → прячем внутренний layout-грид, не секцию.
 			var layout = section.querySelector("[data-pdp-layout]");
+			// Скелетон-лоадер: виден по умолчанию (пока грузимся), прячем в ОБЕИХ
+			// финальных ветках — success (раскрытие layout) и not-found.
+			var skel = section.querySelector("[data-pdp-skeleton]");
 			if (!p) {
+				if (skel) skel.hidden = true;
 				if (layout) layout.hidden = true;
 				if (notFound) notFound.hidden = false;
 				return;
 			}
+			if (skel) skel.hidden = true;
 			if (layout) { layout.hidden = false; layout.style.opacity = "1"; }
 			if (notFound) notFound.hidden = true;
 

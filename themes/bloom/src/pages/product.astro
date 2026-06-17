@@ -1,19 +1,23 @@
 ---
 /**
- * Универсальная страница товара `/product?id=<id>` (Option B, спек 098).
+ * Универсальная страница товара `/product` (Option B, спек 098 + live-wiring).
  *
  * Реальные товары не имеют статических `/products/{id}` страниц (getStaticPaths
  * знает только demo bag-N на сборке сервиса). Эта одна страница рендерит
- * нейтральный skeleton и клиентски патчит его реальным товаром из
- * `/data/products.json` по `?id=`. Разметка — общий `BloomProductDetail` (parity
- * с demo `[id].astro`).
+ * нейтральный skeleton; вся live-гидрация (определение товара по slug пути /
+ * ?id= / __MERFY_DEFAULT_PRODUCT_ID__, заполнение data-pdp-* хуков, варианты,
+ * корзина, галерея, «Товар не найден») выполняется единым `is:inline`-скриптом
+ * ВНУТРИ `BloomProductDetail`. Источник — ЖИВОЙ `/api/store/products` (как
+ * каталог bloom), с фолбэком на per-site `/data/products.json` (копейки→цены
+ * /100) и preview storefront-data. Разметка — общий `BloomProductDetail`
+ * (parity с demo `[id].astro`).
  */
 import Layout from "../layouts/Layout.astro";
 import BloomProductDetail from "../components/products/BloomProductDetail.astro";
 import type { CatalogProduct } from "../data/products";
 
-// Нейтральный skeleton: рендерится до клиентского патча (и на demo-сборке без
-// products.json). placeholder-картинка, без галереи/бренда/старой цены/вариантов.
+// Нейтральный skeleton: рендерится до клиентской гидрации (и на demo-сборке без
+// данных). placeholder-картинка, без галереи/бренда/старой цены/вариантов.
 const skeleton = {
 	id: "",
 	name: "Товар",
@@ -28,174 +32,11 @@ const skeleton = {
 ---
 
 <Layout title="Товар">
+	{/* Вся live-гидрация PDP живёт ВНУТРИ BloomProductDetail.astro единым
+	    is:inline-скриптом — он работает на обоих маршрутах (`/product` и demo
+	    `products/[id]`) и на live (theme dist), где module-<script> страницы
+	    надёжно не компилится по универсальному маршруту. Здесь — только скелетон;
+	    дублирующий хелпер-скрипт (import storefront-hydrate) убран — иначе двойная
+	    конфликтующая гидрация. Блок «Товар не найден» тоже переехал в компонент. */}
 	<BloomProductDetail product={skeleton} />
-
-	<div data-pdp-notfound hidden class="w-full bg-white px-4 py-24 text-center 2xl:px-[300px]">
-		<p class="font-comfortaa text-[24px] uppercase text-[#000000]">Товар не найден</p>
-		<a
-			href="/skin-care"
-			class="mt-6 inline-flex h-12 items-center justify-center rounded-[6px] bg-[#000000] px-6 font-manrope text-[16px] text-white transition-opacity hover:opacity-90"
-		>В каталог</a>
-	</div>
 </Layout>
-
-<script>
-	import {
-		loadRealProducts,
-		formatPrice,
-		productImage,
-		deriveVariantGroups,
-		findCombination,
-		renderVariantGroupsHtml,
-	} from "../lib/storefront-hydrate";
-
-	const idFromUrl = (): string | null => {
-		const q = new URLSearchParams(location.search).get("id");
-		if (q) return q;
-		// Pretty URL /product/<slug> (каталог/Popular линкуют так) → slug из пути.
-		// build.service генерит статические product/<slug>/index.html (копии этой
-		// универсальной страницы); здесь резолвим товар по slug (lookup ниже
-		// матчит и по id, и по slug). Bare /product и /product?id= не затронуты.
-		const m = location.pathname.match(/\/product\/([^/]+)\/?$/);
-		return m ? decodeURIComponent(m[1]) : null;
-	};
-
-	async function hydrateProductPage() {
-		const section = document.querySelector<HTMLElement>("[data-pdp-section]");
-		const notFound = document.querySelector<HTMLElement>("[data-pdp-notfound]");
-		if (!section) return;
-
-		const products = await loadRealProducts();
-		if (!products) return; // demo-сборка без products.json — оставляем skeleton
-
-		// Приоритет: ?id= (переход с карточки) → выбранный в конструкторе товар
-		// (настройка «Выбор товара», инжектится превью/билдом как глобал) →
-		// первый товар магазина (прямой заход на /product без id).
-		const defaultId =
-			(window as unknown as { __MERFY_DEFAULT_PRODUCT_ID__?: string }).__MERFY_DEFAULT_PRODUCT_ID__ ?? null;
-		const id = idFromUrl() ?? defaultId;
-		const p = id
-			? products.find((x) => x.id === id || x.slug === id) ?? (idFromUrl() ? null : products[0] ?? null)
-			: products[0] ?? null;
-
-		if (!p) {
-			section.hidden = true;
-			if (notFound) notFound.hidden = false;
-			return;
-		}
-		section.hidden = false;
-		if (notFound) notFound.hidden = true;
-
-		const setText = (sel: string, text: string) => {
-			const el = section.querySelector<HTMLElement>(sel);
-			if (el) el.textContent = text;
-		};
-		const toggle = (sel: string, show: boolean) => {
-			const el = section.querySelector<HTMLElement>(sel);
-			if (el) el.hidden = !show;
-		};
-
-		document.title = p.name;
-		setText("[data-pdp-name]", p.name);
-		setText("[data-pdp-price]", formatPrice(p.price));
-
-		const desc = p.description ?? (p as { metaDescription?: string }).metaDescription ?? "";
-		setText("[data-pdp-desc]", desc);
-
-		// Реальные товары не несут бренд/галерею в products.json — прячем demo-остатки.
-		toggle("[data-pdp-brand]", false);
-		toggle("[data-pdp-thumbs-row]", false);
-		toggle("[data-pdp-badge]", false);
-
-		const oldRaw = formatPrice(p.oldPrice || p.compareAtPrice || null);
-		const oldEl = section.querySelector<HTMLElement>("[data-pdp-oldprice]");
-		if (oldEl) {
-			oldEl.textContent = oldRaw;
-			oldEl.hidden = !oldRaw;
-		}
-
-		const src = productImage(p);
-		const mainImg = section.querySelector<HTMLImageElement>("[data-pdp-main]");
-		if (mainImg) {
-			mainImg.src = src;
-			mainImg.alt = p.name;
-			// <source srcset> (webp) от skeleton-картинки больше не валиден — снимаем,
-			// браузер отдаёт <img src>. (BloomPicture — плоский <img>, но на всякий случай.)
-			const source = mainImg.closest("picture")?.querySelector<HTMLSourceElement>("source");
-			if (source) source.removeAttribute("srcset");
-		}
-
-		// Атрибуты корзины (делегирование в cart.ts читает их при клике).
-		const priceStr = formatPrice(p.price);
-		for (const sel of ["[data-add-to-cart]", "[data-action='buy-now']"]) {
-			const btn = section.querySelector<HTMLElement>(sel);
-			if (!btn) continue;
-			btn.setAttribute("data-product-id", p.id);
-			btn.setAttribute("data-name", p.name);
-			btn.setAttribute("data-price", priceStr);
-			btn.setAttribute("data-image", src);
-		}
-		const addBtn = section.querySelector<HTMLElement>("[data-add-to-cart]");
-		addBtn?.setAttribute("data-old-price", oldRaw);
-		addBtn?.setAttribute("data-variant-color", "");
-
-		// ── Варианты (Phase 2): реальный селектор из variantCombinations ──
-		const variantsEl = section.querySelector<HTMLElement>("[data-pdp-variants]");
-		const combos = Array.isArray(p.variantCombinations) ? p.variantCombinations : [];
-		const COLOR_KEYS = ["Цвет", "Color"];
-		const SIZE_KEYS = ["Размер", "Size"];
-		const pick = (opts: Record<string, string>, keys: string[]): string => {
-			for (const k of keys) if (opts?.[k] != null) return opts[k];
-			return "";
-		};
-
-		if (variantsEl && combos.length > 0) {
-			const groups = deriveVariantGroups(combos);
-			const firstAvailable = combos.find((c) => c.available !== false) ?? combos[0];
-			const selected: Record<string, string> = { ...(firstAvailable.options ?? {}) };
-
-			const applyCombo = () => {
-				const combo = findCombination(combos, selected);
-				const priceVal = combo && combo.price ? combo.price : p.price;
-				setText("[data-pdp-price]", formatPrice(priceVal));
-				const available = combo ? combo.available !== false && (combo.quantity ?? 1) > 0 : false;
-				for (const sel of ["[data-add-to-cart]", "[data-action='buy-now']"]) {
-					const btn = section.querySelector<HTMLElement>(sel);
-					if (!btn) continue;
-					btn.setAttribute("data-price", formatPrice(priceVal));
-					btn.setAttribute("data-variant-combination-id", combo?.id ?? "");
-					btn.setAttribute("data-variant-color", pick(combo?.options ?? {}, COLOR_KEYS));
-					btn.setAttribute("data-variant-size", pick(combo?.options ?? {}, SIZE_KEYS));
-				}
-				const addEl = section.querySelector<HTMLButtonElement>("[data-add-to-cart]");
-				if (addEl) {
-					addEl.disabled = !available;
-					addEl.classList.toggle("opacity-50", !available);
-					addEl.classList.toggle("pointer-events-none", !available);
-					addEl.textContent = available ? "Добавить в корзину" : "Нет в наличии";
-				}
-			};
-
-			variantsEl.hidden = false;
-			variantsEl.innerHTML = renderVariantGroupsHtml(groups, selected);
-			applyCombo();
-
-			variantsEl.onclick = (e) => {
-				const btn = (e.target as HTMLElement).closest<HTMLElement>("[data-variant-value]");
-				if (!btn) return;
-				const group = btn.closest<HTMLElement>("[data-pdp-variant-group]")?.getAttribute("data-pdp-variant-group");
-				const value = btn.getAttribute("data-variant-value");
-				if (!group || value == null) return;
-				selected[group] = value;
-				variantsEl.innerHTML = renderVariantGroupsHtml(groups, selected);
-				applyCombo();
-			};
-		} else if (variantsEl) {
-			// Невариативный реальный товар — прячем decorative demo color-row.
-			variantsEl.hidden = true;
-		}
-	}
-
-	hydrateProductPage();
-	document.addEventListener("astro:page-load", hydrateProductPage);
-</script>

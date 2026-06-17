@@ -4,9 +4,13 @@
  * и клиентски-гидрируемой `/product?id=` (Option B, спек 098). Единый источник
  * разметки → parity demo ↔ реальный товар (никаких дублей).
  *
- * `data-pdp-*` хуки — точки клиентского патча в `/product?id=` (имя, цена,
- * картинка, описание, атрибуты корзины, варианты). На demo-странице патча нет —
- * рендерится как было.
+ * ЖИВАЯ ГИДРАЦИЯ живёт в ЭТОМ компоненте (нижний `<script is:inline>`): грузит
+ * реальный товар из ЖИВОГО /api/store/products (store_id = window.__MERFY_SITE_ID__
+ * / data-site-id), фолбэк products.json (копейки→₽ /100) → storefront-data, и
+ * заполняет `data-pdp-*` хуки (имя, цена, старая цена, бренд, описание, галерея,
+ * варианты, атрибуты корзины). is:inline (НЕ module-import) — иначе client-script
+ * темы не компилится в live theme build → 404. На demo `[id].astro` без данных
+ * гидрация — no-op, рендерится SSR-скелетон как было.
  */
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
 import SatinPicture from "../img/SatinPicture.astro";
@@ -19,14 +23,15 @@ interface Props {
 	 * через window.__MERFY_PRODUCT_BLOCK_ID__. На demo `[id].astro` остаётся
 	 * undefined → Astro опускает data-атрибуты (live визуально не меняется). */
 	id?: string;
-	/** Принимается для симметрии с каноном theme-base Product (preview-гидрация).
-	 * В satin PDP гидрация идёт через `/product` inline-script, поэтому здесь не
-	 * потребляется — объявлен в Props, но не деструктурируется (strict tsconfig
-	 * без noUnusedLocals это допускает). */
+	/** Контекст магазина для ЖИВОЙ гидрации товара (`/api/store/products?store_id=`).
+	 * Рендерится в `data-site-id` секции; live-inline-script читает его (или глобал
+	 * превью `__MERFY_SITE_ID__`, или `data-site-id`) как store_id. На demo
+	 * `products/[id].astro` не передаётся → Astro опускает атрибут → API-путь
+	 * пропускается, остаётся demo-скелетон. */
 	siteId?: string;
 }
 
-const { product, id } = Astro.props;
+const { product, id, siteId } = Astro.props;
 
 const colorLabels: Record<string, string> = {
 	blue: "Синий",
@@ -52,9 +57,10 @@ const cartVariantColor = product.colors?.[0] ?? "";
 	aria-labelledby="product-title"
 	data-pdp-section
 	data-cart-color={cartVariantColor}
+	data-site-id={siteId}
 	data-puck-component-id={id}
 >
-	<div class="satin-container grid grid-cols-1 gap-10 lg:grid-cols-[652px_minmax(0,1fr)] lg:gap-10">
+	<div class="satin-container grid grid-cols-1 gap-10 lg:grid-cols-[652px_minmax(0,1fr)] lg:gap-10" data-pdp-layout>
 		<!-- Gallery: 2×2 portrait grid -->
 		<div class="grid grid-cols-2 gap-4" data-pdp-gallery>
 			{galleryImages.map((img, index) => (
@@ -225,6 +231,19 @@ const cartVariantColor = product.colors?.[0] ?? "";
 			</div>
 		</div>
 	</div>
+
+	{/* «Товар не найден» — показывается live-гидрацией ТОЛЬКО когда товар не
+	    резолвится (магазин пуст / неверный slug). Живёт в КОМПОНЕНТЕ, чтобы оба
+	    маршрута (`/product` и demo `products/[id]`) получили его без дублей в
+	    consumer-страницах. На demo-сборке без products.json гидрация — no-op
+	    (остаётся demo-скелетон), блок остаётся скрытым. */}
+	<div data-pdp-notfound hidden class="w-full bg-white py-24 text-center">
+		<p class="font-logo text-[24px] uppercase text-[#000000]">Товар не найден</p>
+		<a
+			href="/catalog"
+			class="mt-6 inline-flex h-12 items-center justify-center bg-[#000000] px-6 font-manrope text-[16px] uppercase text-white transition-opacity hover:opacity-90"
+		>В каталог</a>
+	</div>
 </section>
 
 <script is:inline>
@@ -244,121 +263,568 @@ const cartVariantColor = product.colors?.[0] ?? "";
 	})();
 </script>
 
-<script>
-	import { addToCart } from "../../lib/cart";
-
+<script is:inline define:vars={{ propSiteId: siteId }}>
 	/**
-	 * View Transitions подменяют <main> без полной перезагрузки — обработчики вешаем
-	 * на astro:page-load и снимаем через AbortController при уходе со страницы товара.
+	 * ЖИВАЯ ГИДРАЦИЯ PDP (satin). Грузит РЕАЛЬНЫЙ товар из ЖИВОГО
+	 * /api/store/products (как каталог satin) и заполняет существующие data-pdp-*
+	 * хуки разметки. Без живых данных (demo-сборка) — чистый no-op: остаётся
+	 * SSR-скелетон, вёрстка/цвета/шрифты не трогаются.
+	 *
+	 * ТОЛЬКО is:inline (НЕ module-<script> с import): module client-script темы НЕ
+	 * компилится в live theme build → 404 на проде → вся логика мертва. Поэтому
+	 * тела хелперов гидрации (loadRealProducts/deriveVariantGroups/findCombination/
+	 * applyCombo/cart) инлайнены 1:1 из пилота rose (RoseProductDetail).
+	 *
+	 * КОРЗИНА: НЕ зовём cart-API вручную. Тема satin вешает ГЛОБАЛЬНЫЙ
+	 * делегированный обработчик [data-add-to-cart] (nt-cart-satin.ts → initCartUI в
+	 * Layout), который читает data-product-id/-name/-price/-old-price/-image/
+	 * -quantity/-variant-color/-variant-size/-variant-combination-id, кладёт линию в
+	 * локальную корзину satin (localStorage `satin:cart:v1`) и открывает drawer.
+	 * Наша задача — заполнить эти атрибуты реальными значениями. «Купить сейчас» =
+	 * диспатч клика по [data-add-to-cart] + переход на /cart (там мост NtCart →
+	 * серверный cartStore → /checkout).
 	 */
-	let pdpUiAbort: AbortController | null = null;
+	(function () {
+		// ─── Источник данных: ЖИВОЙ storefront API (спек 098 — «не products.json»). ───
+		// apiBase: на live (*.merfy.ru) cross-origin к gateway (CORS пропускает
+		// *.merfy.ru); в превью iframe на gateway-origin → тот же URL same-origin.
+		var apiBase =
+			(typeof window !== "undefined" && window.__MERFY_API_BASE__) || "https://gateway.merfy.ru";
+		// store_id (shopId) = siteId. На live build сам siteId инжектится на секцию
+		// (data-site-id) консьюмером ИЛИ глобалом превью __MERFY_SITE_ID__.
+		function resolveSiteId() {
+			if (typeof window !== "undefined" && window.__MERFY_SITE_ID__) return window.__MERFY_SITE_ID__;
+			var sec = document.querySelector("[data-pdp-section]");
+			var fromAttr = sec && sec.getAttribute("data-site-id");
+			if (fromAttr) return fromAttr;
+			return propSiteId || undefined;
+		}
 
-	const syncQtyToAddButton = (qty: number) => {
-		document.querySelector<HTMLButtonElement>("[data-add-to-cart]")?.setAttribute("data-quantity", String(qty));
-	};
+		var PLACEHOLDER_IMAGE = "/placeholders/sweater-blue.png";
+		var __cachedProducts; // undefined — не грузили; null — данных нет (demo).
 
-	function initSatinProductPage() {
-		pdpUiAbort?.abort();
-		pdpUiAbort = null;
+		// Цена из API — в КОПЕЙКАХ (basePrice "79000.00" / variant.price 79000).
+		function toCents(v) {
+			var n = typeof v === "string" ? parseFloat(v) : v;
+			return Number.isFinite(n) ? n : null;
+		}
+		function variantMinCents(p) {
+			var vc = p.variantCombinations;
+			if (Array.isArray(vc) && vc.length) {
+				var ps = vc.map(function (v) { return toCents(v.price); }).filter(function (n) { return n !== null && n > 0; });
+				if (ps.length) return Math.min.apply(null, ps);
+			}
+			return null;
+		}
+		// mapApiProduct: товар /api/store/products → форма клиента PDP. Цены
+		// копейки→рубли; title→name; handle→slug; variantCombinations as-is (для
+		// селектора вариантов). Зеркало Catalog.mapApiProduct.
+		function mapApiProduct(p) {
+			var cents =
+				(p.hasVariants ? variantMinCents(p) : null) ??
+				toCents(p.basePrice) ??
+				variantMinCents(p) ??
+				0;
+			var oldCents = toCents(p.compareAtPrice);
+			return {
+				id: p.id,
+				name: p.title || p.name || "",
+				price: cents / 100,
+				oldPrice: oldCents && oldCents > 0 ? oldCents / 100 : null,
+				slug: p.handle || p.slug,
+				description: p.description || p.metaDescription || "",
+				images: Array.isArray(p.images) ? p.images : [],
+				hasVariants: !!p.hasVariants,
+				// variantCombinations: нормализуем price копейки→рубли, чтобы
+				// applyCombo/корзина работали в рублях (как basePrice выше).
+				variantCombinations: Array.isArray(p.variantCombinations)
+					? p.variantCombinations.map(function (vc) {
+							var vcCents = toCents(vc.price);
+							var vcOld = toCents(vc.compareAtPrice);
+							return {
+								id: vc.id,
+								title: vc.title,
+								price: vcCents !== null ? vcCents / 100 : 0,
+								compareAtPrice: vcOld && vcOld > 0 ? vcOld / 100 : null,
+								available: vc.available,
+								quantity: vc.quantity,
+								options: vc.options || {},
+							};
+						})
+					: [],
+			};
+		}
 
-		const section = document.querySelector<HTMLElement>("[data-pdp-section]");
-		if (!section) return;
+		// loadRealProducts: 1) ЖИВОЙ /api/store/products (как каталог) →
+		// 2) статический per-site /data/products.json (build.service инжектит на
+		// live, богатый shape с variantCombinations) → 3) preview storefront-data.
+		// Любой источник, давший ≥1 товар, выигрывает; иначе null (demo — no-op).
+		async function loadRealProducts() {
+			if (__cachedProducts !== undefined) return __cachedProducts;
+			var sid = resolveSiteId();
 
-		pdpUiAbort = new AbortController();
-		const { signal } = pdpUiAbort;
-
-		const qtyInput = section.querySelector<HTMLInputElement>("[data-pdp-qty-value]");
-		section.querySelector<HTMLButtonElement>("[data-action='qty-dec']")?.addEventListener(
-			"click",
-			() => {
-				if (!qtyInput) return;
-				const next = Math.max(1, Number(qtyInput.value || 1) - 1);
-				qtyInput.value = String(next);
-				syncQtyToAddButton(next);
-			},
-			{ signal }
-		);
-		section.querySelector<HTMLButtonElement>("[data-action='qty-inc']")?.addEventListener(
-			"click",
-			() => {
-				if (!qtyInput) return;
-				const next = Number(qtyInput.value || 1) + 1;
-				qtyInput.value = String(next);
-				syncQtyToAddButton(next);
-			},
-			{ signal }
-		);
-		qtyInput?.addEventListener(
-			"input",
-			() => {
-				const value = Math.max(1, Number(qtyInput.value || 1));
-				qtyInput.value = String(value);
-				syncQtyToAddButton(value);
-			},
-			{ signal }
-		);
-
-		// Demo color variants: active = solid black, inactive = white with black border.
-		// На реальном товаре (/product?id=) этот блок заменяется вариант-селектором —
-		// его кнопки несут data-variant-value (не data-id) и сюда не попадают.
-		const colorGroup = section.querySelector<HTMLElement>("[data-pdp-colors]");
-		const colorButtons = Array.from(colorGroup?.querySelectorAll<HTMLButtonElement>("button[role='radio'][data-id]") ?? []);
-		const selectColor = (active: HTMLButtonElement) => {
-			colorButtons.forEach((btn) => {
-				const isActive = btn === active;
-				btn.setAttribute("aria-checked", String(isActive));
-				btn.classList.toggle("bg-[#000000]", isActive);
-				btn.classList.toggle("text-white", isActive);
-				btn.classList.toggle("bg-white", !isActive);
-				btn.classList.toggle("text-[#000000]", !isActive);
-			});
-			section.querySelector<HTMLElement>("[data-add-to-cart]")?.setAttribute("data-variant-color", active.dataset.id ?? "");
-		};
-		colorButtons.forEach((btn) => btn.addEventListener("click", () => selectColor(btn), { signal }));
-
-		section.querySelector<HTMLButtonElement>("[data-action='share']")?.addEventListener(
-			"click",
-			async () => {
+			// 1. ЖИВОЙ API (спек 098). Тянет первую страницу — PDP ищет один товар.
+			if (sid) {
 				try {
-					if (navigator.share) {
-						await navigator.share({ title: document.title, url: location.href });
-					} else {
-						await navigator.clipboard.writeText(location.href);
-						alert("Ссылка скопирована");
+					var url =
+						apiBase + "/api/store/products?store_id=" + encodeURIComponent(sid) + "&limit=100";
+					var res = await fetch(url);
+					if (res.ok) {
+						var json = await res.json();
+						var apiItems = Array.isArray(json.products) ? json.products.map(mapApiProduct) : [];
+						if (apiItems.length > 0) {
+							__cachedProducts = apiItems;
+							return __cachedProducts;
+						}
 					}
-				} catch {
-					/* пользователь отменил */
-				}
-			},
-			{ signal }
-		);
+				} catch (e) { /* API недоступен → фолбэк ниже */ }
+			}
 
-		// "Купить сейчас": add to cart directly (no `:open` event → no drawer) then go to /cart.
-		section.querySelector<HTMLButtonElement>("[data-action='buy-now']")?.addEventListener(
-			"click",
-			() => {
-				const add = section.querySelector<HTMLElement>("[data-add-to-cart]");
-				if (add) {
-					addToCart({
-						productId: add.dataset.productId ?? "",
-						name: add.dataset.name ?? "",
-						price: add.dataset.price ?? "0",
-						oldPrice: add.dataset.oldPrice,
-						image: add.dataset.image ?? "",
-						quantity: Number(add.dataset.quantity ?? "1"),
-						variant: {
-							color: add.dataset.variantColor || undefined,
-							size: add.dataset.variantSize || undefined,
-							variantCombinationId: add.dataset.variantCombinationId || undefined,
-						},
-					});
+			// 2. Статический per-site файл — опубликованный сайт. Богатый shape
+			// (variantCombinations) пишет build.service. ⚠️ Цены в products.json — в
+			// КОПЕЙКАХ (как API basePrice: 269000 = 2690₽) → делим на 100. Фолбэк:
+			// обычно на live build.service инжектит __MERFY_SITE_ID__ → путь №1 (API).
+			try {
+				var r2 = await fetch("/data/products.json");
+				if (r2.ok) {
+					var data = await r2.json();
+					if (Array.isArray(data) && data.length > 0) {
+						var k100 = function (v) { return typeof v === "number" ? v / 100 : v; };
+						__cachedProducts = data.map(function (p) {
+							return Object.assign({}, p, {
+								price: k100(p.price),
+								compareAtPrice: k100(p.compareAtPrice),
+								oldPrice: k100(p.oldPrice),
+								variantCombinations: Array.isArray(p.variantCombinations)
+									? p.variantCombinations.map(function (vc) { return Object.assign({}, vc, { price: k100(vc.price) }); })
+									: p.variantCombinations,
+							});
+						});
+						return __cachedProducts;
+					}
 				}
-				window.location.href = "/cart";
-			},
-			{ signal }
-		);
-	}
+			} catch (e) { /* файла нет — preview-фолбэк ниже */ }
 
-	initSatinProductPage();
-	document.addEventListener("astro:page-load", initSatinProductPage);
+			// 3. Preview-фолбэк: built-theme БЕЗ products.json → storefront-data.
+			if (sid) {
+				try {
+					var r3 = await fetch("/api/sites/" + encodeURIComponent(sid) + "/storefront-data");
+					if (r3.ok) {
+						var payload = await r3.json();
+						var products = payload && payload.products;
+						if (Array.isArray(products) && products.length > 0) {
+							__cachedProducts = products;
+							return __cachedProducts;
+						}
+					}
+				} catch (e) { /* preview-фолбэк не удался */ }
+			}
+
+			__cachedProducts = null;
+			return __cachedProducts;
+		}
+
+		function formatPrice(value) {
+			if (value === null || value === undefined || value === "") return "";
+			if (typeof value === "string") return value; // demo строка "5 990 ₽"
+			return value.toLocaleString("ru-RU") + " ₽";
+		}
+		function productImageRaw(p) {
+			return (Array.isArray(p.images) && typeof p.images[0] === "string" && p.images[0]) || "";
+		}
+		function productImage(p) {
+			return productImageRaw(p) || PLACEHOLDER_IMAGE;
+		}
+		function escapeHtml(value) {
+			return String(value === null || value === undefined ? "" : value)
+				.replace(/&/g, "&amp;")
+				.replace(/</g, "&lt;")
+				.replace(/>/g, "&gt;")
+				.replace(/"/g, "&quot;")
+				.replace(/'/g, "&#39;");
+		}
+
+		// Выводит группы вариантов из combos[].options (variantGroups часто null).
+		function deriveVariantGroups(combos) {
+			var order = [];
+			var byGroup = {};
+			for (var i = 0; i < combos.length; i++) {
+				var opts = combos[i].options || {};
+				for (var group in opts) {
+					if (!Object.prototype.hasOwnProperty.call(opts, group)) continue;
+					var value = opts[group];
+					if (!byGroup[group]) { byGroup[group] = []; order.push(group); }
+					if (byGroup[group].indexOf(value) === -1) byGroup[group].push(value);
+				}
+			}
+			return order.map(function (name) { return { name: name, values: byGroup[name] }; });
+		}
+		// Находит комбинацию, у которой ВСЕ выбранные значения групп совпали.
+		function findCombination(combos, selected) {
+			for (var i = 0; i < combos.length; i++) {
+				var c = combos[i];
+				var ok = true;
+				for (var group in selected) {
+					if (!Object.prototype.hasOwnProperty.call(selected, group)) continue;
+					if (!c.options || c.options[group] !== selected[group]) { ok = false; break; }
+				}
+				if (ok) return c;
+			}
+			return null;
+		}
+
+		// Классы вариант-кнопок (satin: квадратные, выбран — чёрный фон/белый текст;
+		// невыбран — белый фон/чёрный border; высота h-10, font-manrope — как demo
+		// color-row выше). Core-utility (не arbitrary), чтобы попасть в CSS превью.
+		var VARIANT_BTN_BASE =
+			"inline-flex h-10 shrink-0 items-center justify-center px-3 font-manrope text-[14px] font-normal leading-none outline-none transition-colors";
+		var VARIANT_BTN_SEL = "border border-[#000000] !bg-[#000000] !text-white";
+		var VARIANT_BTN_UNSEL = "border border-[#000000] !bg-white !text-[#000000]";
+		function renderVariantGroupsHtml(groups, selected) {
+			return groups
+				.map(function (g) {
+					var buttons = g.values
+						.map(function (v) {
+							var isSel = selected[g.name] === v;
+							var cls = VARIANT_BTN_BASE + " " + (isSel ? VARIANT_BTN_SEL : VARIANT_BTN_UNSEL);
+							return (
+								'<button type="button" class="' + cls + '" role="radio" aria-checked="' +
+								isSel + '" data-variant-value="' + escapeHtml(v) + '">' + escapeHtml(v) + "</button>"
+							);
+						})
+						.join("");
+					return (
+						'<div class="flex w-full flex-col gap-2 font-manrope" data-pdp-variant-group="' +
+						escapeHtml(g.name) + '">' +
+						'<span class="font-manrope text-[14px] font-normal uppercase leading-none text-[#000000]">' +
+						escapeHtml(g.name) + "</span>" +
+						'<div class="flex flex-wrap gap-2" role="radiogroup" aria-label="' +
+						escapeHtml(g.name) + '">' + buttons + "</div></div>"
+					);
+				})
+				.join("");
+		}
+
+		// ─── Определение товара: slug из пути → ?id= → __MERFY_DEFAULT_PRODUCT_ID__ → первый ───
+		function lookupRefFromUrl() {
+			var m = location.pathname.match(/\/product\/([^/]+)\/?$/);
+			if (m) return decodeURIComponent(m[1]); // pretty /product/<slug>
+			var q = new URLSearchParams(location.search).get("id");
+			return q || null;
+		}
+
+		async function hydrateProductPage() {
+			var section = document.querySelector("[data-pdp-section]");
+			if (!section) return;
+			var notFound = section.querySelector("[data-pdp-notfound]");
+
+			var products = await loadRealProducts();
+			if (!products) return; // demo-сборка без данных — оставляем SSR-скелетон
+
+			// Приоритет: pretty-slug / ?id= → выбранный в конструкторе товар
+			// (__MERFY_DEFAULT_PRODUCT_ID__) → первый.
+			var urlRef = lookupRefFromUrl();
+			var defaultId =
+				(typeof window !== "undefined" && window.__MERFY_DEFAULT_PRODUCT_ID__) || null;
+			var lookupRef = urlRef || defaultId;
+			var explicit = !!urlRef;
+
+			var p = null;
+			if (lookupRef) {
+				// Матч по id ИЛИ slug ИЛИ handle: live-API даёт slug=handle||slug,
+				// а per-site products.json может нести handle без slug.
+				for (var i = 0; i < products.length; i++) {
+					var it = products[i];
+					if (it.id === lookupRef || it.slug === lookupRef || it.handle === lookupRef) { p = it; break; }
+				}
+				if (!p && !explicit) p = products[0] || null; // дефолтный/первый, но не при явном неверном slug
+			} else {
+				p = products[0] || null;
+			}
+
+			// not-found блок и layout-грид живут ВНУТРИ секции → НЕ прячем всю секцию
+			// (иначе спрятали бы и сам not-found). Тогглим внутренний layout-грид.
+			var layout = section.querySelector("[data-pdp-layout]");
+			if (!p) {
+				if (layout) layout.hidden = true;
+				if (notFound) notFound.hidden = false;
+				return;
+			}
+			if (layout) layout.hidden = false;
+			if (notFound) notFound.hidden = true;
+
+			function setText(sel, t) {
+				var el = section.querySelector(sel);
+				if (el) el.textContent = t;
+			}
+
+			// ── Заголовок / бренд / описание / цена ──
+			document.title = p.name || "Товар";
+			setText("[data-pdp-name]", p.name || "Товар");
+			setText("[data-pdp-price]", formatPrice(p.price));
+			setText("[data-pdp-desc]", p.description || p.metaDescription || "");
+
+			// Бренд: реальные товары обычно без бренда в API → прячем demo-остаток,
+			// показываем только если поле реально пришло.
+			var brandVal = p.brand || p.vendor || "";
+			var brandEl = section.querySelector("[data-pdp-brand]");
+			if (brandEl) {
+				brandEl.textContent = brandVal;
+				brandEl.hidden = !brandVal;
+			}
+
+			var oldRaw = formatPrice(p.oldPrice || p.compareAtPrice || null);
+			var oldEl = section.querySelector("[data-pdp-oldprice]");
+			if (oldEl) { oldEl.textContent = oldRaw; oldEl.hidden = !oldRaw; }
+
+			// Бейдж «Скидка»: показываем при наличии старой цены.
+			var badgeEl = section.querySelector("[data-pdp-badge]");
+			if (badgeEl) badgeEl.hidden = !oldRaw;
+
+			// ── Галерея satin (2×2 grid). Главное фото = первая ячейка
+			//    [data-pdp-main]; остальные ячейки [data-pdp-gallery-cell='extra']
+			//    заполняем из p.images или прячем (реальный товар с 1 фото). ──
+			var src = productImage(p);
+			var mainImg = section.querySelector("[data-pdp-main]");
+			if (mainImg) {
+				mainImg.src = src;
+				mainImg.alt = p.name || "";
+				// <picture><source webp> от skeleton/demo больше не валиден — снимаем.
+				var picture = mainImg.closest("picture");
+				var source = picture && picture.querySelector("source");
+				if (source) source.removeAttribute("srcset");
+			}
+			var imgs = (Array.isArray(p.images) ? p.images : []).filter(function (s) {
+				return typeof s === "string" && s;
+			});
+			// extra-ячейки 2×2 grid: индексы 1..3 из imgs. Лишние без картинки прячем.
+			var extraCells = Array.prototype.slice.call(
+				section.querySelectorAll("[data-pdp-gallery-cell='extra']")
+			);
+			var mainCell = section.querySelector("[data-pdp-gallery-cell='main']");
+			var extraUrls = imgs.slice(1, 1 + extraCells.length);
+			if (extraUrls.length === 0) {
+				// Реальный товар с одним фото — прячем demo extra-ячейки, главная на всю ширину.
+				extraCells.forEach(function (cell) { cell.hidden = true; });
+				if (mainCell) mainCell.classList.add("col-span-2");
+			} else {
+				if (mainCell) mainCell.classList.remove("col-span-2");
+				for (var ec = 0; ec < extraCells.length; ec++) {
+					var cell = extraCells[ec];
+					var u = extraUrls[ec];
+					if (!u) { cell.hidden = true; continue; }
+					cell.hidden = false;
+					cell.innerHTML =
+						'<img src="' + escapeHtml(u) + '" alt="' + escapeHtml(p.name) +
+						'" class="absolute inset-0 size-full object-cover" loading="eager" data-pdp-thumb data-image="' +
+						escapeHtml(u) + '" />';
+				}
+			}
+
+			// ── Атрибуты корзины: глобальный делегат [data-add-to-cart] (satin
+			//    nt-cart-satin) читает их при клике. Слаг кладём на секцию (buy-now). ──
+			section.setAttribute("data-product-id", p.id);
+			section.setAttribute("data-product-slug", p.slug || p.id);
+			var priceStr = formatPrice(p.price);
+			var ctas = ["[data-add-to-cart]", "[data-action='buy-now']"];
+			for (var k = 0; k < ctas.length; k++) {
+				var btn = section.querySelector(ctas[k]);
+				if (!btn) continue;
+				btn.setAttribute("data-product-id", p.id);
+				btn.setAttribute("data-name", p.name || "");
+				btn.setAttribute("data-price", priceStr);
+				btn.setAttribute("data-image", src);
+			}
+			var addBtn0 = section.querySelector("[data-add-to-cart]");
+			if (addBtn0) {
+				addBtn0.setAttribute("data-old-price", oldRaw);
+				addBtn0.setAttribute("data-variant-color", "");
+			}
+
+			// ── Варианты УСЛОВНО: селектор только если есть variantCombinations ──
+			var variantsEl = section.querySelector("[data-pdp-variants]");
+			var combos = Array.isArray(p.variantCombinations) ? p.variantCombinations : [];
+			var COLOR_KEYS = ["Цвет", "Color"];
+			var SIZE_KEYS = ["Размер", "Size"];
+			function pick(opts, keys) {
+				for (var i = 0; i < keys.length; i++) {
+					if (opts && opts[keys[i]] != null) return opts[keys[i]];
+				}
+				return "";
+			}
+
+			if (variantsEl && combos.length > 0) {
+				// Skeleton-контейнер сам был radiogroup цвета — снимаем его роль, теперь
+				// это обёртка реальных групп вариантов (вертикальный стек как rose).
+				variantsEl.removeAttribute("role");
+				variantsEl.removeAttribute("aria-label");
+				variantsEl.removeAttribute("data-pdp-colors");
+				variantsEl.classList.remove("flex-wrap", "flex-row");
+				variantsEl.classList.add("flex", "flex-col", "gap-4");
+
+				var groups = deriveVariantGroups(combos);
+				var firstAvailable = null;
+				for (var fa = 0; fa < combos.length; fa++) {
+					if (combos[fa].available !== false) { firstAvailable = combos[fa]; break; }
+				}
+				if (!firstAvailable) firstAvailable = combos[0];
+				var selected = Object.assign({}, firstAvailable.options || {});
+
+				function applyCombo() {
+					var combo = findCombination(combos, selected);
+					var priceVal = combo && combo.price ? combo.price : p.price;
+					setText("[data-pdp-price]", formatPrice(priceVal));
+					// Старая цена комбинации (если есть).
+					var comboOld = formatPrice((combo && combo.compareAtPrice) || p.oldPrice || p.compareAtPrice || null);
+					var oEl = section.querySelector("[data-pdp-oldprice]");
+					if (oEl) { oEl.textContent = comboOld; oEl.hidden = !comboOld; }
+					var available = combo
+						? combo.available !== false && (combo.quantity == null || combo.quantity > 0)
+						: false;
+					for (var c = 0; c < ctas.length; c++) {
+						var b = section.querySelector(ctas[c]);
+						if (!b) continue;
+						b.setAttribute("data-price", formatPrice(priceVal));
+						b.setAttribute("data-old-price", comboOld);
+						b.setAttribute("data-variant-combination-id", (combo && combo.id) || "");
+						b.setAttribute("data-variant-color", pick(combo && combo.options, COLOR_KEYS));
+						b.setAttribute("data-variant-size", pick(combo && combo.options, SIZE_KEYS));
+					}
+					var addEl = section.querySelector("[data-add-to-cart]");
+					if (addEl) {
+						addEl.disabled = !available;
+						addEl.classList.toggle("opacity-50", !available);
+						addEl.classList.toggle("pointer-events-none", !available);
+						addEl.textContent = available ? "Добавить в корзину" : "Нет в наличии";
+					}
+				}
+
+				variantsEl.hidden = false;
+				variantsEl.innerHTML = renderVariantGroupsHtml(groups, selected);
+				applyCombo();
+
+				variantsEl.onclick = function (e) {
+					var btn = e.target.closest("[data-variant-value]");
+					if (!btn) return;
+					var groupEl = btn.closest("[data-pdp-variant-group]");
+					var group = groupEl && groupEl.getAttribute("data-pdp-variant-group");
+					var value = btn.getAttribute("data-variant-value");
+					if (!group || value == null) return;
+					selected[group] = value;
+					variantsEl.innerHTML = renderVariantGroupsHtml(groups, selected);
+					applyCombo();
+				};
+			} else if (variantsEl) {
+				// Невариативный реальный товар — demo color-row убираем.
+				variantsEl.hidden = true;
+				variantsEl.innerHTML = "";
+			}
+		}
+
+		// ─── UI: количество (±), миниатюры (свап главного фото), поделиться, купить сейчас ───
+		function syncQtyToCtas(qty) {
+			var section = document.querySelector("[data-pdp-section]");
+			if (!section) return;
+			var ctas = section.querySelectorAll("[data-add-to-cart], [data-action='buy-now']");
+			for (var i = 0; i < ctas.length; i++) ctas[i].setAttribute("data-quantity", String(qty));
+		}
+
+		function initSatinProductUi() {
+			var section = document.querySelector("[data-pdp-section]");
+			if (!section) return;
+			// Идемпотентность при View Transitions (astro:page-load): не вешаем
+			// обработчики повторно на ту же секцию.
+			if (section.getAttribute("data-pdp-ui-bound") === "1") return;
+			section.setAttribute("data-pdp-ui-bound", "1");
+
+			// Количество (±). Делегируем на секцию.
+			var qtyInput = section.querySelector("[data-pdp-qty-value]");
+			var dec = section.querySelector("[data-action='qty-dec']");
+			var inc = section.querySelector("[data-action='qty-inc']");
+			if (dec && qtyInput) {
+				dec.addEventListener("click", function () {
+					var next = Math.max(1, Number(qtyInput.value || 1) - 1);
+					qtyInput.value = String(next);
+					syncQtyToCtas(next);
+				});
+			}
+			if (inc && qtyInput) {
+				inc.addEventListener("click", function () {
+					var next = Number(qtyInput.value || 1) + 1;
+					qtyInput.value = String(next);
+					syncQtyToCtas(next);
+				});
+			}
+			if (qtyInput) {
+				qtyInput.addEventListener("input", function () {
+					var value = Math.max(1, Number(qtyInput.value || 1));
+					qtyInput.value = String(value);
+					syncQtyToCtas(value);
+				});
+			}
+
+			// Миниатюры: делегат на секцию (extra-ячейки галереи перерисовываются
+			// гидрацией) — свапаем главное фото + синкаем data-image на CTA.
+			section.addEventListener("click", function (ev) {
+				var thumb = ev.target.closest("[data-pdp-thumb]");
+				if (!thumb || !section.contains(thumb)) return;
+				var img = thumb.getAttribute("data-image");
+				var mainEl = section.querySelector("[data-pdp-main]");
+				if (mainEl && img) {
+					mainEl.src = img;
+					var pic = mainEl.closest("picture");
+					var s = pic && pic.querySelector("source");
+					if (s) s.removeAttribute("srcset");
+				}
+				var add = section.querySelector("[data-add-to-cart]");
+				var buy = section.querySelector("[data-action='buy-now']");
+				if (add) add.setAttribute("data-image", img || "");
+				if (buy) buy.setAttribute("data-image", img || "");
+			});
+
+			// Поделиться.
+			var shareBtn = section.querySelector("[data-action='share']");
+			if (shareBtn) {
+				shareBtn.addEventListener("click", async function () {
+					try {
+						if (navigator.share) {
+							await navigator.share({ title: document.title, url: location.href });
+						} else if (navigator.clipboard) {
+							await navigator.clipboard.writeText(location.href);
+							var span = shareBtn.querySelector("span");
+							if (span) {
+								var orig = span.textContent;
+								span.textContent = "Ссылка скопирована!";
+								setTimeout(function () { span.textContent = orig; }, 1500);
+							}
+						}
+					} catch (e) { /* пользователь отменил */ }
+				});
+			}
+
+			// «Купить сейчас»: переиспользуем ГЛОБАЛЬНЫЙ делегат корзины satin —
+			// диспатчим клик по [data-add-to-cart] (тот кладёт линию в локальную
+			// корзину satin), затем идём на /cart, где живёт мост NtCart → серверный
+			// cartStore → /checkout. Не зовём cart-API напрямую (его на PDP нет).
+			var buyBtn = section.querySelector("[data-action='buy-now']");
+			if (buyBtn) {
+				buyBtn.addEventListener("click", function () {
+					if (buyBtn.disabled) return;
+					var add = section.querySelector("[data-add-to-cart]");
+					if (add && !add.disabled) {
+						add.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+					}
+					window.location.href = "/cart";
+				});
+			}
+		}
+
+		function bootProduct() {
+			hydrateProductPage();
+			initSatinProductUi();
+		}
+
+		bootProduct();
+		document.addEventListener("astro:page-load", bootProduct);
+	})();
 </script>

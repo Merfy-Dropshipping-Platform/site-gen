@@ -51,6 +51,16 @@ const galleryImages =
 	product.gallery && product.gallery.length > 0 ? product.gallery : [product.image];
 const [mainImage, ...thumbs] = galleryImages;
 const cartVariantColor = product.colors?.[0] ?? "";
+
+// Outline-сердце избранного (SSR-дефолт PDP). Геометрия = универсальный heart-path
+// (тот же, что rose public/icons/favourite.svg), зеркалит wishlist.ts heartSvg(false)
+// + BloomProductCard defaultHeartSvg (parity). Инлайн-SVG (НЕ <img>) — делегат
+// initWishlistUI переключает fill на filled.
+const pdpHeartSvg =
+	'<svg viewBox="0 0 17.4 15.4" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:block">' +
+	'<path d="M7.428 14.2615C5.172 12.5239 0.7 8.55212 0.7 4.97729C0.7 2.61547 2.384 0.7 4.7 0.7C5.9 0.7 7.1 1.11175 8.7 2.75876C10.3 1.11175 11.5 0.7 12.7 0.7C15.016 0.7 16.7 2.61547 16.7 4.97729C16.7 8.5513 12.228 12.5239 9.972 14.2615C9.212 14.8462 8.188 14.8462 7.428 14.2615Z" ' +
+	'fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>' +
+	"</svg>";
 ---
 
 <section
@@ -176,16 +186,31 @@ const cartVariantColor = product.colors?.[0] ?? "";
 				>
 					{product.brand}
 				</p>
-				<h1
-					id="product-title"
-					class="font-comfortaa text-[28px] font-normal uppercase leading-[1.115] text-[#000000] md:text-[32px] lg:text-[36px]"
-					data-pdp-name
-					data-puck-subsection-parent={id}
-					data-puck-subsection-index="101"
-					data-puck-subsection-field="title"
-				>
-					{product.name}
-				</h1>
+				{/* Заголовок + сердце избранного в одной строке. data-product-id
+				    проставляет live-гидрация (рядом где заполняет data-add-to-cart);
+				    глобальный делегат initWishlistUI ловит клик и красит filled/outline. */}
+				<div class="flex items-start justify-between gap-3">
+					<h1
+						id="product-title"
+						class="font-comfortaa text-[28px] font-normal uppercase leading-[1.115] text-[#000000] md:text-[32px] lg:text-[36px]"
+						data-pdp-name
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="101"
+						data-puck-subsection-field="title"
+					>
+						{product.name}
+					</h1>
+					<button
+						type="button"
+						data-wishlist-toggle
+						data-product-id={product.id}
+						aria-pressed="false"
+						aria-label="В избранное"
+						class="mt-1 flex size-10 shrink-0 items-center justify-center rounded-full border border-solid border-[#FFD4E5] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-80"
+					>
+						<span data-wishlist-icon class="block size-5" set:html={pdpHeartSvg}></span>
+					</button>
+				</div>
 				<div
 					class="flex flex-wrap items-baseline gap-2"
 					data-puck-subsection-parent={id}
@@ -729,6 +754,22 @@ const cartVariantColor = product.colors?.[0] ?? "";
 			//    cart.ts initCartUI) читает их при клике. Слаг кладём на секцию. ──
 			section.setAttribute("data-product-id", p.id);
 			section.setAttribute("data-product-slug", p.slug || p.id);
+
+			// ── Избранное: проставляем реальный productId на кнопку-сердце (SSR
+			//    рендерит её с demo/пустым id). Глобальный делегат initWishlistUI
+			//    (Layout) ловит клик по [data-wishlist-toggle] и красит filled/outline;
+			//    начальное состояние он же выставит на следующем тике (page-load/event).
+			var wishBtn = section.querySelector("[data-wishlist-toggle]");
+			if (wishBtn) {
+				wishBtn.setAttribute("data-product-id", p.id);
+				// Сразу отрисовать корректное состояние, если глобал уже готов.
+				if (window.__bloomWishlist) {
+					var on = window.__bloomWishlist.has(p.id);
+					wishBtn.setAttribute("aria-pressed", on ? "true" : "false");
+					var slot = wishBtn.querySelector("[data-wishlist-icon]") || wishBtn;
+					if (window.__bloomWishlist.heartSvg) slot.innerHTML = window.__bloomWishlist.heartSvg(on);
+				}
+			}
 			var priceStr = formatPrice(p.price);
 			var ctas = ["[data-add-to-cart]", "[data-action='buy-now']"];
 			for (var k = 0; k < ctas.length; k++) {

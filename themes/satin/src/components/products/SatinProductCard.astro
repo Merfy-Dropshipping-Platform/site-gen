@@ -1,7 +1,6 @@
 ---
 import type { Product } from "../../types/product";
 import SatinPicture from "../img/SatinPicture.astro";
-import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
 
 interface Props {
 	product: Product;
@@ -44,15 +43,25 @@ const href = `/products/${product.id}`;
 				Скидка
 			</span>
 		)}
+		{/* Избранное: overlay-сердце [data-wishlist-toggle] (механизм lib/wishlist.ts,
+		    общий с rose). ИНЛАЙН-SVG (геометрия favourite.svg) — NtIcon (<img>) нельзя
+		    перекрасить в 2 состояния. Острые углы satin. initWishlistUI (Layout) красит
+		    filled/aria-pressed на загрузке + ведёт делегат клика. */}
 		<button
 			type="button"
-			data-fav-toggle
+			data-wishlist-toggle
 			data-product-id={product.id}
 			aria-label="В избранное"
 			aria-pressed="false"
-			class="satin-fav absolute right-3 top-3 flex size-8 items-center justify-center opacity-70 transition hover:opacity-100"
+			class="satin-fav absolute right-3 top-3 z-20 flex size-8 items-center justify-center bg-white text-[#000000] shadow-[0_2px_8px_rgba(0,0,0,0.10)] transition-opacity hover:opacity-80"
 		>
-			<NtIcon name="favourite" sizeClass="size-6" class="transition-transform" />
+			<span data-wishlist-icon class="block size-[18px]">
+				<svg viewBox="0 0 32 32" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:block">
+					<g transform="translate(4.22 5.867)">
+						<path d="M10.0342 18.882C6.93786 16.5652 0.8 11.2695 0.8 6.50305C0.8 3.35396 3.11131 0.8 6.29004 0.8C7.93705 0.8 9.58406 1.349 11.7801 3.54502C13.9761 1.349 15.6231 0.8 17.2701 0.8C20.4488 0.8 22.7601 3.35396 22.7601 6.50305C22.7601 11.2684 16.6223 16.5652 13.5259 18.882C12.4828 19.6616 11.0773 19.6616 10.0342 18.882Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+					</g>
+				</svg>
+			</span>
 		</button>
 	</div>
 	<div class="flex flex-1 flex-col gap-1.5 md:gap-2">
@@ -87,30 +96,7 @@ const href = `/products/${product.id}`;
 	</button>
 </article>
 
-<script>
-	const KEY = "satin-favourites";
-	const load = (): Set<string> => {
-		try {
-			return new Set(JSON.parse(localStorage.getItem(KEY) || "[]"));
-		} catch {
-			return new Set<string>();
-		}
-	};
-	const favs = load();
-	const sync = () => {
-		document.querySelectorAll<HTMLButtonElement>("[data-fav-toggle]").forEach((btn) => {
-			btn.setAttribute("aria-pressed", String(favs.has(btn.dataset.productId ?? "")));
-		});
-	};
-	sync();
-	document.addEventListener("click", (event) => {
-		const btn = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-fav-toggle]");
-		if (!btn) return;
-		event.preventDefault();
-		const id = btn.dataset.productId ?? "";
-		if (favs.has(id)) favs.delete(id);
-		else favs.add(id);
-		localStorage.setItem(KEY, JSON.stringify([...favs]));
-		btn.setAttribute("aria-pressed", String(favs.has(id)));
-	});
-</script>
+{/* Избранное обслуживается ГЛОБАЛЬНО: initWishlistUI() в Layout.astro вешает
+    делегат клика по [data-wishlist-toggle] и красит сердца/бейджи. Прежний
+    локальный `satin-favourites`-скрипт удалён — один механизм (lib/wishlist.ts)
+    вместо двух (как пилот rose). */}

@@ -28,8 +28,11 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 		<NtCartDrawer rootId="satin-cart-drawer-root" eventPrefix="satin:cart" />
 		<script>
 			import { initCartUI } from "../lib/cart";
+			import { initWishlistUI } from "../lib/wishlist";
 			import "../scripts/gsap/index";
 			initCartUI();
+			// Избранное (wishlist) — глобальный делегат сердец/бейджей, зеркало корзины.
+			initWishlistUI();
 		</script>
 	</body>
 </html>

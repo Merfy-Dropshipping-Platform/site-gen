@@ -601,6 +601,17 @@ const skeletons = Array.from({ length: skeletonCount });
     "</svg></div>";
   const CARD_IMG_ONERROR_ATTR = ` onerror="this.onerror=null;this.outerHTML='${CARD_MEDIA_FALLBACK_HTML.replace(/"/g, "&quot;")}'"`;
 
+  // Outline-сердце satin (геометрия = public/icons/favourite.svg, viewBox 0 0 32
+  // 32). ⚠️ Path ДУБЛИРУЕТСЯ здесь намеренно: block-папка автономна (compile-astro-blocks
+  // НЕ резолвит пути наружу / lib/wishlist.ts). Фолбэк, пока глобал __satinWishlist
+  // не готов — после initWishlistUI кнопку перекрашивает heartSvg(active).
+  const WISHLIST_OUTLINE_SVG =
+    '<svg viewBox="0 0 32 32" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:block">' +
+    '<g transform="translate(4.22 5.867)">' +
+    '<path d="M10.0342 18.882C6.93786 16.5652 0.8 11.2695 0.8 6.50305C0.8 3.35396 3.11131 0.8 6.29004 0.8C7.93705 0.8 9.58406 1.349 11.7801 3.54502C13.9761 1.349 15.6231 0.8 17.2701 0.8C20.4488 0.8 22.7601 3.35396 22.7601 6.50305C22.7601 11.2684 16.6223 16.5652 13.5259 18.882C12.4828 19.6616 11.0773 19.6616 10.0342 18.882Z" ' +
+    'fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>' +
+    "</g></svg>";
+
   // «Контейнер» карточки (Figma 1:34185-34635): cardContainerOn=true → внутр.
   // отступ 12px со всех сторон + фон surface (фото/кнопка inset, кнопка НЕ во всю
   // ширину — w-full внутри padding = inset); false → флеш (фото full-bleed,
@@ -626,6 +637,22 @@ const skeletons = Array.from({ length: skeletonCount });
     const badge = oldRaw
       ? `<span class="pointer-events-none absolute left-0 top-0 inline-flex h-6 items-center bg-[#000000] px-2 font-manrope text-[12px] font-medium uppercase leading-none text-white">Скидка</span>`
       : "";
+    // Сердце «Избранное» — overlay поверх фото, СНАРУЖИ <a> (button-in-anchor
+    // невалиден; делегат wishlist.ts гасит клик, чтобы не открыть товар). Острые
+    // углы satin (без rounded). filled если уже в избранном (через глобал
+    // __satinWishlist; иначе outline-фолбэк — initWishlistUI перекрасит).
+    const heartInner =
+      typeof window !== "undefined" && window.__satinWishlist && window.__satinWishlist.heartSvg
+        ? window.__satinWishlist.heartSvg(window.__satinWishlist.has(p.id))
+        : WISHLIST_OUTLINE_SVG;
+    const isFav =
+      typeof window !== "undefined" && window.__satinWishlist && window.__satinWishlist.has(p.id)
+        ? "true"
+        : "false";
+    const heartBtn =
+      `<button type="button" data-wishlist-toggle data-product-id="${escapeHtml(p.id)}" aria-pressed="${isFav}" aria-label="В избранное" ` +
+      `class="satin-fav absolute right-3 top-3 z-20 flex size-8 items-center justify-center bg-white text-[#000000] shadow-[0_2px_8px_rgba(0,0,0,0.10)] transition-opacity hover:opacity-80">` +
+      `<span data-wishlist-icon class="block size-[18px]">${heartInner}</span></button>`;
     // Кнопка «В корзину» — СНАРУЖИ <a> (button-in-anchor невалиден). data-add-to-cart
     // ловит делегирование корзины satin-диста (nt-cart-satin).
     const cartBtn = showCartBtn
@@ -637,6 +664,7 @@ const skeletons = Array.from({ length: skeletonCount });
       ${image ? `<img src="${image}" alt="${name}" width="430" height="564" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"${CARD_IMG_ONERROR_ATTR} />` : CARD_MEDIA_FALLBACK_HTML}
     </a>
     ${badge}
+    ${heartBtn}
   </div>
   <div class="flex flex-1 flex-col gap-1.5 md:gap-2">
     <a href="${href}" class="font-manrope text-[16px] font-normal uppercase leading-tight text-[#000000] hover:opacity-80">${name}</a>

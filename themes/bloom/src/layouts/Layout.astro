@@ -32,7 +32,10 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 		<BloomCartAddedModal />
 		<script>
 			import { initCartUI } from "../lib/cart";
+			import { initWishlistUI } from "../lib/wishlist";
 			initCartUI();
+			// Избранное (wishlist) — глобальный делегат сердец/бейджей, зеркало корзины.
+			initWishlistUI();
 		</script>
 		<script>
 			const initScrollAnimations = () => {

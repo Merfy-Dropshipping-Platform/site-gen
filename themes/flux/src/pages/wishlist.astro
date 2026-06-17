@@ -1,0 +1,319 @@
+---
+/**
+ * Страница «Избранное» (`/wishlist`) Flux — порт rose-эталона
+ * (themes/rose/src/pages/wishlist.astro) под дизайн flux. Зеркало shell'а
+ * `cart.astro` flux (Layout + заголовок + скелетон/пусто/грид). Источник
+ * товаров — ЖИВОЙ `/api/store/products` (как каталог flux), фильтр по
+ * сохранённым в localStorage productId.
+ *
+ * Вся клиентская логика — ОДИН `is:inline`-скрипт (как PDP/Catalog flux): на live
+ * theme build module-<script> темы не компилится (404 на проде). Либа `wishlist.ts`
+ * НЕ импортится в client-блок — читаем глобал `window.__fluxWishlist` (его ставит
+ * `initWishlistUI` в Layout) и слушаем `flux:wishlist:updated`. Карточки рисуются
+ * тем же рецептом, что `renderCardHtml` каталога flux (parity вида), включая
+ * overlay-сердце [data-wishlist-toggle] — с него можно убрать товар из избранного.
+ *
+ * shopId/siteId: build.service патчит `const shopId = ""` → siteId на деплое
+ * (как cart.astro flux), плюс фолбэк на window.__MERFY_SITE_ID__ (превью) / data-site-id.
+ */
+import Layout from "../layouts/Layout.astro";
+
+// Мост к API: build.service.ts патчит `const shopId = ""` → siteId на деплое
+// (тот же приём, что cart.astro flux). apiBase — gateway (CORS пропускает *.merfy.ru).
+const shopId = "";
+const apiBase = "https://gateway.merfy.ru";
+---
+
+<Layout title="Избранное" description="Ваше избранное — Flux">
+	<section
+		class="w-full bg-white px-4 pb-[80px] pt-16 md:px-20 md:pb-[120px] md:pt-20 2xl:px-[300px]"
+		aria-labelledby="wishlist-title"
+		data-wishlist-page
+		data-site-id={shopId}
+	>
+		<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10">
+			<header class="flex flex-col gap-2">
+				<h1
+					id="wishlist-title"
+					class="font-comfortaa text-[28px] font-normal uppercase leading-[1.115] text-[#000000] md:text-[32px] lg:text-[36px]"
+				>
+					ИЗБРАННОЕ
+				</h1>
+				<p
+					class="font-manrope text-[16px] font-light leading-[1.366] text-[#999999] md:text-[18px] lg:text-[20px]"
+					data-wishlist-subtitle
+				>
+					Товары, которые вам понравились
+				</p>
+			</header>
+
+			{/* Скелетон-лоадер: показывается пока идёт fetch (как каталог/PDP flux).
+			    Виден по умолчанию; клиент скрывает его в любом исходе (грид / пусто). */}
+			<ul
+				data-wishlist-skeleton
+				aria-hidden="true"
+				class="grid w-full grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4"
+			>
+				{Array.from({ length: 4 }).map(() => (
+					<li>
+						<div class="flex w-full flex-col gap-3 md:gap-4">
+							<div class="aspect-square w-full animate-pulse rounded-[8px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+							<div class="flex w-full flex-col gap-1">
+								<div class="h-4 w-2/3 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+								<div class="h-4 w-1/3 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
+							</div>
+						</div>
+					</li>
+				))}
+			</ul>
+
+			{/* Грид избранного — заполняется клиентом карточками flux. */}
+			<ul
+				data-wishlist-grid
+				role="list"
+				hidden
+				class="grid w-full grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4"
+			></ul>
+
+			{/* Пустое состояние — «В избранном пока пусто» + ссылка в каталог. */}
+			<div
+				data-wishlist-empty
+				hidden
+				class="flex flex-col items-center gap-4 py-10 text-center md:py-16"
+			>
+				<p class="font-manrope text-[16px] font-light leading-normal text-[#999999] md:text-[18px]">
+					В избранном пока пусто
+				</p>
+				<a
+					href="/catalog"
+					class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[#000000] px-6 font-manrope text-[16px] font-normal leading-normal text-white transition-opacity hover:opacity-95"
+				>
+					Перейти в каталог
+				</a>
+			</div>
+		</div>
+	</section>
+</Layout>
+
+{/* Конфиг для inline-клиента (shopId патчится build.service на деплое). */}
+<script is:inline define:vars={{ shopId, apiBase }}>
+	window.__MERFY_WISHLIST_CFG__ = window.__MERFY_WISHLIST_CFG__ || {
+		shopId: shopId || "",
+		apiBase: apiBase || "https://gateway.merfy.ru",
+	};
+</script>
+
+<script is:inline>
+	/**
+	 * Клиент страницы «Избранное» (flux). is:inline (НЕ module): на live theme dist
+	 * module-script темы не компилится → 404. Логика автономна, без import — читает
+	 * глобал window.__fluxWishlist (initWishlistUI в Layout) и тот же ЖИВОЙ
+	 * /api/store/products, что каталог. Карточки = рецепт renderCardHtml каталога flux
+	 * (parity), включая overlay-сердце [data-wishlist-toggle] (можно убрать из избранного).
+	 */
+	(function () {
+		var cfg = window.__MERFY_WISHLIST_CFG__ || {};
+		var apiBase =
+			(typeof window !== "undefined" && window.__MERFY_API_BASE__) || cfg.apiBase || "https://gateway.merfy.ru";
+
+		function resolveSiteId() {
+			if (typeof window !== "undefined" && window.__MERFY_SITE_ID__) return window.__MERFY_SITE_ID__;
+			var sec = document.querySelector("[data-wishlist-page]");
+			var fromAttr = sec && sec.getAttribute("data-site-id");
+			if (fromAttr) return fromAttr;
+			return cfg.shopId || undefined;
+		}
+
+		// ── Маппинг товара /api/store/products → форма карточки (зеркало каталога flux) ──
+		function toCents(v) {
+			var n = typeof v === "string" ? parseFloat(v) : v;
+			return Number.isFinite(n) ? n : null;
+		}
+		function variantMinCents(p) {
+			var vc = p.variantCombinations;
+			if (Array.isArray(vc) && vc.length) {
+				var ps = vc.map(function (v) { return toCents(v.price); }).filter(function (n) { return n !== null && n > 0; });
+				if (ps.length) return Math.min.apply(null, ps);
+			}
+			return null;
+		}
+		function mapApiProduct(p) {
+			var cents =
+				(p.hasVariants ? variantMinCents(p) : null) ??
+				toCents(p.basePrice) ??
+				variantMinCents(p) ??
+				0;
+			var oldCents = toCents(p.compareAtPrice);
+			return {
+				id: p.id,
+				name: p.title || p.name || "",
+				price: cents / 100,
+				oldPrice: oldCents && oldCents > 0 ? oldCents / 100 : null,
+				slug: p.handle || p.slug,
+				images: Array.isArray(p.images) ? p.images : [],
+			};
+		}
+
+		// ── Загрузка товаров: ЖИВОЙ API → per-site products.json (фолбэк) ──
+		var __cached;
+		async function loadProducts() {
+			if (__cached !== undefined) return __cached;
+			var sid = resolveSiteId();
+			if (sid) {
+				try {
+					var res = await fetch(apiBase + "/api/store/products?store_id=" + encodeURIComponent(sid) + "&limit=100");
+					if (res.ok) {
+						var json = await res.json();
+						var items = Array.isArray(json.products) ? json.products.map(mapApiProduct) : [];
+						if (items.length > 0) { __cached = items; return __cached; }
+					}
+				} catch (e) { /* фолбэк ниже */ }
+			}
+			// Фолбэк: per-site products.json (цены в КОПЕЙКАХ → /100, как PDP flux).
+			try {
+				var r2 = await fetch("/data/products.json");
+				if (r2.ok) {
+					var data = await r2.json();
+					if (Array.isArray(data) && data.length > 0) {
+						var k100 = function (v) { return typeof v === "number" ? v / 100 : v; };
+						__cached = data.map(function (p) {
+							return {
+								id: p.id,
+								name: p.name || p.title || "",
+								price: k100(p.price),
+								oldPrice: k100(p.oldPrice || p.compareAtPrice),
+								slug: p.handle || p.slug,
+								images: Array.isArray(p.images) ? p.images : [],
+							};
+						});
+						return __cached;
+					}
+				}
+			} catch (e) { /* нет файла */ }
+			__cached = null;
+			return __cached;
+		}
+
+		function formatPrice(value) {
+			if (value === null || value === undefined || value === "") return "";
+			if (typeof value === "string") return value;
+			return value.toLocaleString("ru-RU") + " ₽";
+		}
+		function productHref(p) { return "/product?id=" + encodeURIComponent(p.id); }
+		function productImageRaw(p) {
+			return (Array.isArray(p.images) && typeof p.images[0] === "string" && p.images[0]) || "";
+		}
+		function escapeHtml(value) {
+			return String(value === null || value === undefined ? "" : value)
+				.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+				.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+		}
+
+		var CARD_MEDIA_FALLBACK_HTML =
+			'<div class="absolute inset-0 flex items-center justify-center" style="background:rgb(var(--color-surface,245 245 245))" aria-hidden="true">' +
+			'<svg class="size-10" style="color:rgb(var(--color-muted,153 153 153))" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+			'<rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>' +
+			"</svg></div>";
+		var CARD_IMG_ONERROR_ATTR = ' onerror="this.onerror=null;this.outerHTML=\'' + CARD_MEDIA_FALLBACK_HTML.replace(/"/g, "&quot;") + '\'"';
+
+		// Outline-сердце (фолбэк, если глобал __fluxWishlist ещё не готов). Зеркалит
+		// wishlist.ts heartSvg(false) + FluxProductCard defaultHeartSvg (parity).
+		var WISHLIST_OUTLINE_SVG =
+			'<svg viewBox="0 0 17.4 15.4" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:block">' +
+			'<path d="M7.428 14.2615C5.172 12.5239 0.7 8.55212 0.7 4.97729C0.7 2.61547 2.384 0.7 4.7 0.7C5.9 0.7 7.1 1.11175 8.7 2.75876C10.3 1.11175 11.5 0.7 12.7 0.7C15.016 0.7 16.7 2.61547 16.7 4.97729C16.7 8.5513 12.228 12.5239 9.972 14.2615C9.212 14.8462 8.188 14.8462 7.428 14.2615Z" ' +
+			'fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>' +
+			"</svg>";
+
+		// Карточка flux — рецепт renderCardHtml каталога flux. На странице избранного
+		// товар ВСЕГДА в избранном → сердце filled (heartSvg(true) если глобал готов).
+		function renderCardHtml(p) {
+			var href = escapeHtml(productHref(p));
+			var name = escapeHtml(p.name);
+			var rawImage = productImageRaw(p);
+			var media = rawImage
+				? '<img src="' + escapeHtml(rawImage) + '" data-img-primary="' + escapeHtml(rawImage) + '" alt="' + name + '" width="318" height="444" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"' + CARD_IMG_ONERROR_ATTR + " />"
+				: CARD_MEDIA_FALLBACK_HTML;
+			var price = escapeHtml(formatPrice(p.price));
+			var oldRaw = formatPrice(p.oldPrice || null);
+			var oldPrice = oldRaw
+				? '<span class="flux-product-oldprice font-manrope text-[12px] font-normal leading-[1.366] text-[rgb(var(--color-muted,153_153_153))] line-through md:text-[14px]">' + escapeHtml(oldRaw) + "</span>"
+				: "";
+			var heartInner =
+				(window.__fluxWishlist && window.__fluxWishlist.heartSvg) ? window.__fluxWishlist.heartSvg(true) : WISHLIST_OUTLINE_SVG;
+			var heartBtn =
+				'<button type="button" data-wishlist-toggle data-product-id="' + escapeHtml(p.id) + '" aria-pressed="true" aria-label="В избранное" ' +
+				'class="absolute right-2 top-2 z-20 flex size-9 items-center justify-center rounded-full bg-white/90 text-[#000000] shadow-[0_2px_8px_rgba(0,0,0,0.10)] backdrop-blur-sm transition-opacity hover:opacity-80">' +
+				'<span data-wishlist-icon class="block size-[18px]">' + heartInner + "</span></button>";
+			return '<article class="group flex w-full flex-col gap-3 md:gap-4" data-nt="flux-product-card" aria-label="' + name + '">' +
+				'<div class="relative w-full">' +
+				'<a href="' + href + '" class="relative block aspect-square w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[#F5F5F5]" aria-label="' + name + '">' + media + "</a>" +
+				heartBtn +
+				"</div>" +
+				'<div class="flex w-full flex-col gap-1 text-left">' +
+				'<a href="' + href + '" class="flux-product-name block w-full font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-80 md:text-[16px]">' + name + "</a>" +
+				'<div class="flex w-full flex-wrap items-baseline gap-2">' +
+				'<span class="flux-product-price font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">' + price + "</span>" + oldPrice +
+				"</div></div></article>";
+		}
+
+		function ids() {
+			if (window.__fluxWishlist && window.__fluxWishlist.getAll) return window.__fluxWishlist.getAll();
+			// Фолбэк: читаем localStorage напрямую тем же ключом (если глобал не готов).
+			try {
+				var raw = window.localStorage.getItem("flux:wishlist:v1");
+				var arr = raw ? JSON.parse(raw) : [];
+				return Array.isArray(arr) ? arr : [];
+			} catch (e) { return []; }
+		}
+
+		var skeleton = document.querySelector("[data-wishlist-skeleton]");
+		var grid = document.querySelector("[data-wishlist-grid]");
+		var empty = document.querySelector("[data-wishlist-empty]");
+		var subtitle = document.querySelector("[data-wishlist-subtitle]");
+
+		async function render() {
+			if (!grid || !empty || !skeleton) return;
+			var wishIds = ids();
+
+			// Пусто — сразу заглушка, без сетевого запроса.
+			if (!wishIds.length) {
+				skeleton.hidden = true;
+				grid.hidden = true;
+				grid.innerHTML = "";
+				empty.hidden = false;
+				if (subtitle) subtitle.hidden = true;
+				return;
+			}
+
+			var products = await loadProducts();
+			// Сохраняем порядок добавления (как лежат в localStorage), показываем только
+			// реально существующие товары (на случай удалённых из каталога).
+			var byId = {};
+			if (products) for (var i = 0; i < products.length; i++) byId[products[i].id] = products[i];
+			var picked = wishIds.map(function (id) { return byId[id]; }).filter(Boolean);
+
+			skeleton.hidden = true;
+			if (!picked.length) {
+				// Все избранные товары больше не существуют (или API недоступен).
+				grid.hidden = true;
+				grid.innerHTML = "";
+				empty.hidden = false;
+				if (subtitle) subtitle.hidden = true;
+				return;
+			}
+
+			empty.hidden = true;
+			if (subtitle) subtitle.hidden = false;
+			grid.hidden = false;
+			grid.innerHTML = picked.map(function (p) { return "<li>" + renderCardHtml(p) + "</li>"; }).join("");
+		}
+
+		render();
+		// Тоггл сердца на самой странице → перерисовать (удалённый товар исчезает).
+		window.addEventListener("flux:wishlist:updated", render);
+		document.addEventListener("astro:page-load", function () {
+			// На повторном заходе товары стабильны — просто render.
+			render();
+		});
+	})();
+</script>

@@ -209,9 +209,29 @@ const rowStockOptions: RadioOption[] = [
 		{demoProducts.map((product) => (
 			<li data-product-id={product.id}>
 				<article class={cardWrapClass} data-nt="vanilla-product-card" aria-label={product.name}>
-					<a href={`/product?id=${product.id}`} class="relative block aspect-square w-full overflow-hidden bg-[var(--vanilla-card)]" aria-label={product.name}>
-						<img src={product.image} alt={product.name} width="429" height="429" loading="eager" class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
-					</a>
+					{/* Обёртка медиа: relative-родитель для overlay-сердца избранного.
+					    Сердце — sibling <a> (НЕ внутри: button-in-anchor невалиден + клик
+					    по сердцу не должен открывать товар). Манера vanilla: квадратная
+					    плашка (острые углы темы), а не круглая. Геометрия сердца = path
+					    из public/icons/favourite.svg (тот же контур, что rose/PDP). На SSG
+					    нет window → рисуем outline; делегат initWishlistUI поставит filled
+					    на page-load если товар в избранном. SVG-строка автономна
+					    (block-папка override-темы не резолвит импорты наружу). */}
+					<div class="relative w-full">
+						<a href={`/product?id=${product.id}`} class="relative block aspect-square w-full overflow-hidden bg-[var(--vanilla-card)]" aria-label={product.name}>
+							<img src={product.image} alt={product.name} width="429" height="429" loading="eager" class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+						</a>
+						<button
+							type="button"
+							data-wishlist-toggle
+							data-product-id={product.id}
+							aria-pressed="false"
+							aria-label="В избранное"
+							class="absolute right-2 top-2 z-20 flex size-9 items-center justify-center bg-white text-[var(--vanilla-dark)] shadow-[0_2px_8px_rgba(0,0,0,0.10)] transition-opacity hover:opacity-80"
+						>
+							<span data-wishlist-icon class="block size-[18px]" set:html={'<svg viewBox="0 0 17.4 15.4" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:block"><path d="M7.428 14.2615C5.172 12.5239 0.7 8.55212 0.7 4.97729C0.7 2.61547 2.384 0.7 4.7 0.7C5.9 0.7 7.1 1.11175 8.7 2.75876C10.3 1.11175 11.5 0.7 12.7 0.7C15.016 0.7 16.7 2.61547 16.7 4.97729C16.7 8.5513 12.228 12.5239 9.972 14.2615C9.212 14.8462 8.188 14.8462 7.428 14.2615Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'}></span>
+						</button>
+					</div>
 					<div class="flex flex-col gap-1">
 						<a href={`/product?id=${product.id}`} class="font-vanilla-arsenal text-base font-normal uppercase leading-none text-black transition-opacity hover:opacity-70">{product.name}</a>
 						<div class="flex flex-wrap items-baseline gap-2">
@@ -515,6 +535,18 @@ const rowStockOptions: RadioOption[] = [
 			"</svg></div>";
 		const CARD_IMG_ONERROR_ATTR = ` onerror="this.onerror=null;this.outerHTML='${CARD_MEDIA_FALLBACK_HTML.replace(/"/g, "&quot;")}'"`;
 
+		// Outline-сердце избранного — фолбэк, когда глобал window.__vanillaWishlist ещё
+		// не готов (превью Container API без Layout-скрипта, либо ранний рендер).
+		// Зеркалит wishlist.ts heartSvg(false) + SSG demo-карточку выше (parity).
+		// Геометрия = public/icons/favourite.svg (тот же path, что rose/PDP). SVG-строка
+		// дублируется здесь — block-папка override-темы автономна (компилятор превью не
+		// резолвит импорты наружу).
+		const WISHLIST_OUTLINE_SVG =
+			'<svg viewBox="0 0 17.4 15.4" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:block">' +
+			'<path d="M7.428 14.2615C5.172 12.5239 0.7 8.55212 0.7 4.97729C0.7 2.61547 2.384 0.7 4.7 0.7C5.9 0.7 7.1 1.11175 8.7 2.75876C10.3 1.11175 11.5 0.7 12.7 0.7C15.016 0.7 16.7 2.61547 16.7 4.97729C16.7 8.5513 12.228 12.5239 9.972 14.2615C9.212 14.8462 8.188 14.8462 7.428 14.2615Z" ' +
+			'fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>' +
+			"</svg>";
+
 		// «Контейнер» карточки (parity с SSG cardWrapClass / base Catalog.astro
 		// cardChrome): cardContainerOn → фон+скругление+padding 12px (контент inset).
 		// ГОЧА: arbitrary Tailwind (rounded-[12px]/bg-[var()]) в client-JS строках НЕ
@@ -539,8 +571,27 @@ const rowStockOptions: RadioOption[] = [
 			const oldPrice = oldRaw
 				? `<span class="font-vanilla-arsenal text-[14px] font-normal leading-none text-[#444444] line-through">${escapeHtml(oldRaw)}</span>`
 				: "";
+			// Сердце избранного (overlay top-right) — зеркалит SSG demo-карточку выше
+			// (parity SSG↔client). Начальное состояние читаем из глобала
+			// window.__vanillaWishlist (initWishlistUI выставляет его в Layout) → карточка
+			// рисуется уже с правильным filled/outline без мигания; делегат всё равно
+			// перерисует на событие. Кнопка СНАРУЖИ <a> (button-in-anchor невалиден).
+			// Манера vanilla: квадратная плашка (острые углы), а не круглая (как rose).
+			const wished =
+				(typeof window !== "undefined" && window.__vanillaWishlist && window.__vanillaWishlist.has(p.id)) || false;
+			const heartInner =
+				(typeof window !== "undefined" && window.__vanillaWishlist && window.__vanillaWishlist.heartSvg)
+					? window.__vanillaWishlist.heartSvg(wished)
+					: WISHLIST_OUTLINE_SVG;
+			const heartBtn =
+				`<button type="button" data-wishlist-toggle data-product-id="${escapeHtml(p.id)}" aria-pressed="${wished ? "true" : "false"}" aria-label="В избранное" ` +
+				`class="absolute right-2 top-2 z-20 flex size-9 items-center justify-center bg-white text-[var(--vanilla-dark)] shadow-[0_2px_8px_rgba(0,0,0,0.10)] transition-opacity hover:opacity-80">` +
+				`<span data-wishlist-icon class="block size-[18px]">${heartInner}</span></button>`;
 			return `<article class="group flex flex-col gap-3" data-nt="vanilla-product-card" aria-label="${name}"${cardChromeStyle ? ` style="${cardChromeStyle}"` : ""}>
+	<div class="relative w-full">
 	<a href="${href}" class="relative block aspect-square w-full overflow-hidden bg-[var(--vanilla-card)]" aria-label="${name}">${media}</a>
+	${heartBtn}
+	</div>
 	<div class="flex flex-col gap-1">
 		<a href="${href}" class="font-vanilla-arsenal text-base font-normal uppercase leading-none text-black transition-opacity hover:opacity-70">${name}</a>
 		<div class="flex flex-wrap items-baseline gap-2">

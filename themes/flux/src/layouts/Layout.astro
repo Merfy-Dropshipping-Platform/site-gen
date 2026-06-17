@@ -29,8 +29,11 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 		<script>
 			import { initCartUI } from "../lib/cart";
 			import { initAnimations } from "../lib/animations";
+			import { initWishlistUI } from "../lib/wishlist";
 			initCartUI();
 			initAnimations();
+			// Избранное (wishlist) — глобальный делегат сердец/бейджей, зеркало корзины.
+			initWishlistUI();
 		</script>
 	</body>
 </html>

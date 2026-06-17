@@ -4,6 +4,7 @@ import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import FooterNewsletter from "../components/footer/FooterNewsletter.astro";
 import LoginDrawer from "../components/LoginDrawer.astro";
+import VanillaCartDrawer from "../components/VanillaCartDrawer.astro";
 import { SITE_DESCRIPTION, SITE_TITLE } from "../consts";
 import { ViewTransitions } from "astro:transitions";
 
@@ -31,9 +32,13 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 		{showNewsletter && <FooterNewsletter />}
 		<Footer />
 		<LoginDrawer />
+		<VanillaCartDrawer rootId="vanilla-cart-drawer-root" eventPrefix="vanilla:cart" />
 		<script>
 			import { initCartUI } from "../lib/cart";
+			import { initWishlistUI } from "../lib/wishlist";
 			initCartUI();
+			// Избранное (wishlist) — глобальный делегат сердец/бейджей, зеркало корзины.
+			initWishlistUI();
 		</script>
 
 		<script>

@@ -109,6 +109,17 @@ const menuSchemeClass = menuColorScheme ? `color-scheme-${menuColorScheme.replac
 
 const pathname = Astro.url.pathname;
 const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathname === link.href);
+
+// Сердце «Избранное» в хедере (outline-дефолт). Инлайн-SVG (НЕ NtIcon=<img> —
+// не перекрашивается): глобальный делегат initWishlistUI красит filled/outline.
+// Геометрия = public/icons/favourite.svg (тот же path); currentColor наследуется
+// от иконки-ссылки (как у иконок корзины/аккаунта flux). filled-цвет (акцент)
+// делегат подставляет на page-load, если в избранном есть товары.
+const headerHeartSvg =
+	'<svg viewBox="0 0 17.4 15.4" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:block">' +
+	'<path d="M7.428 14.2615C5.172 12.5239 0.7 8.55212 0.7 4.97729C0.7 2.61547 2.384 0.7 4.7 0.7C5.9 0.7 7.1 1.11175 8.7 2.75876C10.3 1.11175 11.5 0.7 12.7 0.7C15.016 0.7 16.7 2.61547 16.7 4.97729C16.7 8.5513 12.228 12.5239 9.972 14.2615C9.212 14.8462 8.188 14.8462 7.428 14.2615Z" ' +
+	'fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>' +
+	"</svg>";
 ---
 
 <div
@@ -159,6 +170,18 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 			<a href="#" data-action="toggle-search" class="flex size-6 items-center justify-center" aria-label="Поиск">
 				<NtIcon name="search-sm" sizeClass="size-6" />
 			</a>
+			<a
+				href="/wishlist"
+				class="relative flex size-6 items-center justify-center text-[#000000] transition-opacity hover:opacity-80"
+				aria-label="Избранное"
+			>
+				<span class="block size-4" set:html={headerHeartSvg}></span>
+				<span
+					data-wishlist-count
+					data-empty="true"
+					class="absolute -right-2 -top-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-manrope text-[10px] font-normal leading-none text-[#000000] data-[empty=true]:hidden"
+				>0</span>
+			</a>
 			<button
 				type="button"
 				data-cart-open
@@ -205,6 +228,18 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 								>
 									<NtIcon name="search-lg" sizeClass="size-6" />
 								</button>
+								<a
+									href="/wishlist"
+									class="relative flex size-8 items-center justify-center text-[#000000] transition-opacity hover:opacity-80 lg:size-10"
+									aria-label="Избранное"
+								>
+									<span class="block size-6" set:html={headerHeartSvg}></span>
+									<span
+										data-wishlist-count
+										data-empty="true"
+										class="absolute right-0 top-0 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-manrope text-[10px] font-normal leading-none text-[#000000] data-[empty=true]:hidden"
+									>0</span>
+								</a>
 								<button
 									type="button"
 									data-cart-open
@@ -289,6 +324,18 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 								</a>
 							</div>
 							<div class="flex items-center justify-end gap-4 lg:gap-5">
+								<a
+									href="/wishlist"
+									class="relative flex size-8 items-center justify-center text-[#000000] transition-opacity hover:opacity-80 lg:size-10"
+									aria-label="Избранное"
+								>
+									<span class="block size-6" set:html={headerHeartSvg}></span>
+									<span
+										data-wishlist-count
+										data-empty="true"
+										class="absolute right-0 top-0 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-manrope text-[10px] font-normal leading-none text-[#000000] data-[empty=true]:hidden"
+									>0</span>
+								</a>
 								<button
 									type="button"
 									data-cart-open
@@ -396,6 +443,18 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 					>
 						<NtIcon name="search-lg" sizeClass="size-6" />
 					</button>
+					<a
+						href="/wishlist"
+						class="relative flex size-8 items-center justify-center text-[#000000] transition-opacity hover:opacity-80 lg:size-10"
+						aria-label="Избранное"
+					>
+						<span class="block size-6" set:html={headerHeartSvg}></span>
+						<span
+							data-wishlist-count
+							data-empty="true"
+							class="absolute right-0 top-0 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-manrope text-[10px] font-normal leading-none text-[#000000] data-[empty=true]:hidden"
+						>0</span>
+					</a>
 					<button
 						type="button"
 						data-cart-open
@@ -481,19 +540,33 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 				<a href="/" class={mobileLogoCls} aria-label={siteTitle}>
 					{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
 				</a>
-				<button
-					type="button"
-					data-cart-open
-					class="relative flex size-10 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
-					aria-label="Корзина"
-				>
-					<NtIcon name="cart" sizeClass="size-6" />
-					<span
-						data-cart-count
-						data-empty="true"
-						class="absolute right-0 top-0 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-manrope text-[10px] font-normal leading-none text-[#000000] data-[empty=true]:hidden"
-					>0</span>
-				</button>
+				<div class="flex items-center gap-3">
+					<a
+						href="/wishlist"
+						class="relative flex size-10 shrink-0 items-center justify-center text-[#000000] transition-opacity hover:opacity-80"
+						aria-label="Избранное"
+					>
+						<span class="block size-6" set:html={headerHeartSvg}></span>
+						<span
+							data-wishlist-count
+							data-empty="true"
+							class="absolute right-0 top-0 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-manrope text-[10px] font-normal leading-none text-[#000000] data-[empty=true]:hidden"
+						>0</span>
+					</a>
+					<button
+						type="button"
+						data-cart-open
+						class="relative flex size-10 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
+						aria-label="Корзина"
+					>
+						<NtIcon name="cart" sizeClass="size-6" />
+						<span
+							data-cart-count
+							data-empty="true"
+							class="absolute right-0 top-0 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-manrope text-[10px] font-normal leading-none text-[#000000] data-[empty=true]:hidden"
+						>0</span>
+					</button>
+				</div>
 			</div>
 		) : (
 			/* Mobile drawer: search + profile */

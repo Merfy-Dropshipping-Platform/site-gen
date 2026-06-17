@@ -79,6 +79,18 @@ const quickBtnStyle =
   `display:flex;align-items:center;justify-content:center;line-height:1;` +
   `background:${btnBg};color:${btnFg};border:${btnBorder};` +
   (btnStyle === "link" ? "text-decoration:underline;background:transparent;" : "");
+
+// Outline-сердце избранного (SSR-дефолт). Геометрия = универсальный heart-path (тот
+// же, что rose public/icons/favourite.svg) и зеркалит wishlist.ts heartSvg(false).
+// Инлайн (НЕ <img> NtIcon) — чтобы глобальный делегат initWishlistUI мог переключать
+// fill на filled. На SSG нет window → рисуем outline; делегат поставит filled на
+// page-load если товар в избранном. SVG-строка автономна (block-папка override-темы
+// не резолвит импорты наружу).
+const defaultHeartSvg =
+  '<svg viewBox="0 0 17.4 15.4" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:block">' +
+  '<path d="M7.428 14.2615C5.172 12.5239 0.7 8.55212 0.7 4.97729C0.7 2.61547 2.384 0.7 4.7 0.7C5.9 0.7 7.1 1.11175 8.7 2.75876C10.3 1.11175 11.5 0.7 12.7 0.7C15.016 0.7 16.7 2.61547 16.7 4.97729C16.7 8.5513 12.228 12.5239 9.972 14.2615C9.212 14.8462 8.188 14.8462 7.428 14.2615Z" ' +
+  'fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>' +
+  "</svg>";
 ---
 
 <article
@@ -87,6 +99,10 @@ const quickBtnStyle =
   aria-label={product.name}
   style={cardContainerStyle}
 >
+  {/* Обёртка медиа: relative-родитель для overlay-сердца избранного. Сердце —
+      sibling <a> (НЕ внутри: button-in-anchor невалиден + клик по сердцу не должен
+      открывать товар). aspect-класс несёт сам <a>; обёртка только позиционирует. */}
+  <div class="relative w-full">
   <a
     href={href}
     class:list={[cardAspectClass, "relative block w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]"]}
@@ -137,6 +153,22 @@ const quickBtnStyle =
       </span>
     )}
   </a>
+    {/* Сердце избранного (overlay top-right). data-product-id ловит глобальный
+        делегат initWishlistUI: toggle + перерисовка состояния (filled/outline +
+        aria-pressed). Начальное состояние ставит делегат на page-load (SSG рендер
+        без window — рисуем outline-сердце по умолчанию). z-20 поверх фото/бейджа.
+        Скруглённая bloom-кнопка (rounded-full) — манера темы. */}
+    <button
+      type="button"
+      data-wishlist-toggle
+      data-product-id={product.id}
+      aria-pressed="false"
+      aria-label="В избранное"
+      class="absolute right-2 top-2 z-20 flex size-9 items-center justify-center rounded-full bg-white/90 text-[rgb(var(--color-text,0_0_0))] shadow-[0_2px_8px_rgba(0,0,0,0.10)] backdrop-blur-sm transition-opacity hover:opacity-80"
+    >
+      <span data-wishlist-icon class="block size-[18px]" set:html={defaultHeartSvg}></span>
+    </button>
+  </div>
   <div class="flex w-full flex-col gap-2 text-left">
     <a
       href={href}

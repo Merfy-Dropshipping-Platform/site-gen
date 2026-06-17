@@ -281,6 +281,26 @@ const cartVariantColor = product.colors?.[0] ?? "";
 				>
 					Купить сейчас
 				</button>
+				{/* Избранное: сердце-тоггл [data-wishlist-toggle] (механизм lib/wishlist.ts,
+				    общий с rose). Острые углы satin, бордер как у вторичной кнопки темы.
+				    data-product-id ставит гидрация (там же, где data-add-to-cart) — на
+				    demo остаётся пустым (no-op). ИНЛАЙН-SVG (не NtIcon) — 2-state fill. */}
+				<button
+					type="button"
+					data-wishlist-toggle
+					aria-pressed="false"
+					aria-label="В избранное"
+					class="satin-fav flex h-14 w-full items-center justify-center gap-2 border border-[#000000] bg-white px-4 font-manrope text-[16px] font-normal uppercase leading-none text-[#000000] transition-opacity hover:opacity-80"
+				>
+					<span data-wishlist-icon class="block size-5">
+						<svg viewBox="0 0 32 32" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:block">
+							<g transform="translate(4.22 5.867)">
+								<path d="M10.0342 18.882C6.93786 16.5652 0.8 11.2695 0.8 6.50305C0.8 3.35396 3.11131 0.8 6.29004 0.8C7.93705 0.8 9.58406 1.349 11.7801 3.54502C13.9761 1.349 15.6231 0.8 17.2701 0.8C20.4488 0.8 22.7601 3.35396 22.7601 6.50305C22.7601 11.2684 16.6223 16.5652 13.5259 18.882C12.4828 19.6616 11.0773 19.6616 10.0342 18.882Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+							</g>
+						</svg>
+					</span>
+					<span>В избранное</span>
+				</button>
 			</div>
 
 			<div
@@ -718,6 +738,21 @@ const cartVariantColor = product.colors?.[0] ?? "";
 			if (addBtn0) {
 				addBtn0.setAttribute("data-old-price", oldRaw);
 				addBtn0.setAttribute("data-variant-color", "");
+			}
+
+			// ── Избранное: стампим реальный data-product-id на сердце-тоггл (как CTA),
+			//    затем красим filled/aria-pressed через глобал __satinWishlist (его
+			//    ставит initWishlistUI в Layout). Делегат клика — там же, глобальный. ──
+			var favBtn = section.querySelector("[data-wishlist-toggle]");
+			if (favBtn) {
+				favBtn.setAttribute("data-product-id", p.id);
+				var wl = window.__satinWishlist;
+				if (wl) {
+					var fav = wl.has(p.id);
+					favBtn.setAttribute("aria-pressed", fav ? "true" : "false");
+					var iconSlot = favBtn.querySelector("[data-wishlist-icon]");
+					if (iconSlot) iconSlot.innerHTML = wl.heartSvg(fav);
+				}
 			}
 
 			// ── Варианты УСЛОВНО: селектор только если есть variantCombinations ──

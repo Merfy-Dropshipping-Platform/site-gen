@@ -198,6 +198,18 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 					<NtIcon name="search-sm" sizeClass="size-6" class="brightness-0 invert" />
 				</button>
 				<a
+					href="/wishlist"
+					class="relative flex size-6 items-center justify-center transition-opacity hover:opacity-80"
+					aria-label="Избранное"
+				>
+					<NtIcon name="favourite" sizeClass="size-4" class="brightness-0 invert" />
+					<span
+						data-wishlist-count
+						data-empty="true"
+						class="absolute -right-2 -top-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-white px-1 font-manrope text-[10px] font-normal leading-none text-[var(--vanilla-dark)] data-[empty=true]:hidden"
+					>0</span>
+				</a>
+				<a
 					href="/cart"
 					class="relative flex size-6 items-center justify-center"
 					aria-label="Корзина"
@@ -242,6 +254,18 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 								>
 									<NtIcon name="search-lg" sizeClass="size-5" class="brightness-0 invert" />
 								</button>
+								<a
+									href="/wishlist"
+									class="relative flex size-6 items-center justify-center transition-opacity hover:opacity-80"
+									aria-label="Избранное"
+								>
+									<NtIcon name="favourite" sizeClass="size-5" class="brightness-0 invert" />
+									<span
+										data-wishlist-count
+										data-empty="true"
+										class="absolute -right-1 -top-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white px-1.5 font-manrope text-[10px] font-bold leading-none text-[var(--vanilla-dark)] data-[empty=true]:hidden"
+									>0</span>
+								</a>
 								<a
 									href="/cart"
 									class="relative flex size-6 items-center justify-center transition-opacity hover:opacity-80"
@@ -331,6 +355,18 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 								</a>
 							</div>
 							<div class="flex items-center justify-end gap-5">
+								<a
+									href="/wishlist"
+									class="relative flex size-6 items-center justify-center transition-opacity hover:opacity-80"
+									aria-label="Избранное"
+								>
+									<NtIcon name="favourite" sizeClass="size-5" class="brightness-0 invert" />
+									<span
+										data-wishlist-count
+										data-empty="true"
+										class="absolute -right-1 -top-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white px-1.5 font-manrope text-[10px] font-bold leading-none text-[var(--vanilla-dark)] data-[empty=true]:hidden"
+									>0</span>
+								</a>
 								<a
 									href="/cart"
 									class="relative flex size-6 items-center justify-center transition-opacity hover:opacity-80"
@@ -449,6 +485,18 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 							<NtIcon name="search-lg" sizeClass="size-5" class="brightness-0 invert" />
 						</button>
 						<a
+							href="/wishlist"
+							class="relative flex size-6 items-center justify-center transition-opacity hover:opacity-80"
+							aria-label="Избранное"
+						>
+							<NtIcon name="favourite" sizeClass="size-5" class="brightness-0 invert" />
+							<span
+								data-wishlist-count
+								data-empty="true"
+								class="absolute -right-1 -top-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white px-1.5 font-manrope text-[10px] font-bold leading-none text-[var(--vanilla-dark)] data-[empty=true]:hidden"
+							>0</span>
+						</a>
+						<a
 							href="/cart"
 							class="relative flex size-6 items-center justify-center transition-opacity hover:opacity-80"
 							aria-label="Корзина"
@@ -543,6 +591,18 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 			<div class="flex items-center justify-between">
 				<a href="/" class="flex shrink-0 items-center text-white" aria-label={siteTitle}>
 					{logo ? <img src={logo} alt={siteTitle} class={logoImgMobileCls} /> : <VanilaLogo class="h-6 w-auto max-w-[76px]" />}
+				</a>
+				<a
+					href="/wishlist"
+					class="relative mr-3 flex size-6 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
+					aria-label="Избранное"
+				>
+					<NtIcon name="favourite" sizeClass="size-4" class="brightness-0" />
+					<span
+						data-wishlist-count
+						data-empty="true"
+						class="absolute -right-2 -top-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--vanilla-header-bg)] px-1 font-manrope text-[10px] font-normal leading-none text-white data-[empty=true]:hidden"
+					>0</span>
 				</a>
 				<a
 					href="/cart"

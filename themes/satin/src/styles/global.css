@@ -137,12 +137,12 @@ main {
   transform: rotate(180deg);
 }
 
-/* Favourited product-card heart: solid + slightly enlarged. */
+/* Сердце «Избранное» карточки (overlay). Активное состояние (filled) красит
+   инлайн-SVG сам (heartSvg fill = кнопочный токен в lib/wishlist.ts); здесь —
+   только лёгкий акцент кнопки. Прежнее правило `img { scale }` удалено: сердце
+   теперь инлайн-SVG (а не <img>), чтобы перекрашиваться в 2 состояния. */
 .satin-fav[aria-pressed="true"] {
   opacity: 1;
-}
-.satin-fav[aria-pressed="true"] img {
-  transform: scale(1.12);
 }
 
 .satin-bleed-left {

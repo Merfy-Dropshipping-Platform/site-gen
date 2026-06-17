@@ -1,0 +1,167 @@
+---
+/**
+ * VanillaCartDrawer — выдвижная панель корзины справа (оверлей + aside) под
+ * айдентику темы vanilla. Порт DS `NtCartDrawer.astro` (его же использует rose
+ * Layout), переписанный в манере vanilla:
+ *   • ОСТРЫЕ углы (тема без border-radius — drawer/кнопки без скруглений);
+ *   • токены --vanilla-* (фон панели --vanilla-surface, кнопка --vanilla-header-bg,
+ *     линии --vanilla-line, текст --vanilla-dark/--vanilla-muted);
+ *   • шрифты vanilla (заголовок font-vanilla-bitter italic как на /cart;
+ *     остальной текст font-vanilla-arsenal / font-manrope).
+ *
+ * Контракт хуков ЕДИН с DS/фабрикой корзины (`createNtCart.initCartUI` рендерит
+ * строки в эти хуки): [data-cart-empty] / [data-cart-items] / [data-cart-summary] /
+ * [data-cart-total]; открытие/закрытие — [data-cart-open] / [data-cart-close] +
+ * события `${eventPrefix}:open|close|toggle`.
+ *
+ * Строки товаров рисует фабрика `nt-cart-vanilla` (renderDrawer) — её разметка
+ * строки нейтральна (bg-[#F5F5F5]/rounded-[4px]) и в drawer vanilla выглядит
+ * органично; меняем только хром панели (заголовок/пусто/итого/CTA).
+ *
+ * is:inline-скрипт (НЕ module): зеркало DS — на live theme dist module-script
+ * темы не компилится. Логика автономна (open/close по событию/клику + Esc).
+ */
+interface Props {
+	rootId?: string;
+	eventPrefix?: string;
+	catalogHref?: string;
+	signInHref?: string;
+	cartHref?: string;
+	checkoutHref?: string;
+	title?: string;
+	dismissLabel?: string;
+	class?: string;
+}
+
+const {
+	rootId = "vanilla-cart-drawer-root",
+	eventPrefix = "vanilla:cart",
+	catalogHref = "/catalog/textile",
+	signInHref = "/auth/sign-in",
+	cartHref = "/cart",
+	checkoutHref = "/cart",
+	title = "Корзина",
+	dismissLabel = "Скрыть",
+	class: className = "",
+} = Astro.props;
+
+const evOpen = `${eventPrefix}:open`;
+const evClose = `${eventPrefix}:close`;
+const evToggle = `${eventPrefix}:toggle`;
+---
+
+<div
+	id={rootId}
+	data-state="closed"
+	class:list={["invisible fixed inset-0 z-[80] data-[state=open]:visible", className]}
+	aria-hidden="true"
+	data-nt="vanilla-cart-drawer"
+>
+	<button
+		type="button"
+		data-cart-close
+		aria-label="Закрыть панель корзины"
+		class="absolute inset-0 h-full w-full cursor-default bg-black/35 opacity-0 transition-opacity duration-300 data-[state=open]:opacity-100"
+		data-state="closed"
+	></button>
+
+	<aside
+		data-cart-panel
+		class="absolute right-0 top-0 flex h-full w-full max-w-[457px] translate-x-full flex-col bg-[var(--vanilla-surface)] shadow-[0_4px_32px_rgba(0,0,0,0.12)] transition-transform duration-300 ease-out data-[state=open]:translate-x-0"
+		data-state="closed"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby={`${rootId}-title`}
+	>
+		<div class="flex items-start justify-between border-b border-[var(--vanilla-line)] px-6 pb-5 pt-7 md:px-8">
+			<h2
+				id={`${rootId}-title`}
+				class="font-vanilla-bitter text-[20px] font-normal italic leading-none tracking-normal text-[var(--vanilla-dark)] md:text-[24px]"
+			>
+				{title}
+			</h2>
+			<button
+				type="button"
+				data-cart-close
+				class="font-vanilla-arsenal text-[14px] font-normal uppercase leading-none text-[var(--vanilla-muted)] transition-opacity hover:text-[var(--vanilla-dark)]"
+			>
+				{dismissLabel}
+			</button>
+		</div>
+
+		<div data-cart-body class="flex flex-1 flex-col gap-6 overflow-y-auto px-6 pb-8 pt-5 md:px-8">
+			<div data-cart-empty class="flex flex-col items-start gap-6">
+				<p class="font-manrope text-[14px] font-normal leading-normal text-[var(--vanilla-muted)]">
+					Вы пока не добавили товар в корзину.
+				</p>
+				<a
+					href={catalogHref}
+					class="inline-flex h-12 items-center justify-center border border-[var(--vanilla-header-bg)] bg-[var(--vanilla-header-bg)] px-6 font-vanilla-arsenal text-[12px] font-medium uppercase leading-none tracking-[0.02em] text-white transition-opacity hover:opacity-90"
+				>
+					Продолжить покупки
+				</a>
+				<p class="font-manrope text-[12px] font-normal leading-normal text-[var(--vanilla-muted)]">
+					Есть аккаунт?
+					<a href={signInHref} class="text-[var(--vanilla-header-bg)] hover:opacity-80">Войти</a>
+				</p>
+			</div>
+
+			<ul data-cart-items role="list" class="hidden flex-col gap-5"></ul>
+
+			<div data-cart-summary class="mt-auto hidden flex-col gap-4 border-t border-[var(--vanilla-line)] pt-6">
+				<div class="flex items-center justify-between font-manrope text-[16px] font-normal leading-normal text-[var(--vanilla-dark)]">
+					<span>Итого</span>
+					<span data-cart-total>0 ₽</span>
+				</div>
+				<a
+					href={checkoutHref}
+					class="inline-flex h-12 items-center justify-center border border-[var(--vanilla-header-bg)] bg-[var(--vanilla-header-bg)] px-6 font-vanilla-arsenal text-[12px] font-medium uppercase leading-none tracking-[0.02em] text-white transition-opacity hover:opacity-90"
+				>
+					Оформить заказ
+				</a>
+			</div>
+		</div>
+	</aside>
+</div>
+
+<script is:inline define:vars={{ rootId, evOpen, evClose, evToggle }}>
+	const setState = (state) => {
+		const root = document.getElementById(rootId);
+		if (!root) return;
+		root.dataset.state = state;
+		root.setAttribute("aria-hidden", state === "open" ? "false" : "true");
+		root.querySelectorAll("[data-state]").forEach((el) => {
+			el.dataset.state = state;
+		});
+		document.body.style.overflow = state === "open" ? "hidden" : "";
+	};
+
+	const open = () => setState("open");
+	const close = () => setState("closed");
+
+	document.addEventListener("click", (event) => {
+		const target = event.target;
+		if (!(target instanceof HTMLElement)) return;
+		if (target.closest("[data-cart-close]")) {
+			event.preventDefault();
+			close();
+			return;
+		}
+		if (target.closest("[data-cart-open]")) {
+			event.preventDefault();
+			open();
+		}
+	});
+
+	document.addEventListener("keydown", (event) => {
+		if (event.key === "Escape") close();
+	});
+
+	window.addEventListener(evOpen, open);
+	window.addEventListener(evClose, close);
+	window.addEventListener(evToggle, () => {
+		const root = document.getElementById(rootId);
+		if (root && root.dataset.state === "open") close();
+		else open();
+	});
+</script>

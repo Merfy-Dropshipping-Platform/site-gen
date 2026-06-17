@@ -1,0 +1,321 @@
+---
+/**
+ * Страница «Избранное» (`/wishlist`) satin — зеркало пилота rose
+ * ({@link ../../../rose/src/pages/wishlist.astro}), адаптированное под satin:
+ * Layout-shell + заголовок (font-logo uppercase, токены) + скелетон/пусто/грид.
+ * Источник товаров — ЖИВОЙ `/api/store/products` (как каталог satin), фильтр по
+ * сохранённым в localStorage productId (порядок сохраняется).
+ *
+ * Вся клиентская логика — ОДИН `is:inline`-скрипт (как PDP/Catalog): на live theme
+ * build module-<script> темы не компилится (404 на проде). Либа `wishlist.ts` НЕ
+ * импортится в client-блок — читаем глобал `window.__satinWishlist` (его ставит
+ * `initWishlistUI` в Layout) и слушаем `satin:wishlist:updated`. Карточки рисуются
+ * тем же рецептом, что `renderCardHtml` каталога satin (parity вида), включая
+ * overlay-сердце [data-wishlist-toggle] — с него можно убрать товар из избранного.
+ *
+ * shopId/siteId: build.service патчит `const shopId = ""` → siteId на деплое (как
+ * cart.astro), плюс фолбэк на window.__MERFY_SITE_ID__ (превью) / data-site-id.
+ */
+import Layout from "../layouts/Layout.astro";
+
+// Мост к API: build.service.ts патчит `const shopId = ""` → siteId на деплое
+// (тот же приём, что cart.astro). apiBase — gateway (CORS пропускает *.merfy.ru).
+const shopId = "";
+const apiBase = "https://gateway.merfy.ru";
+---
+
+<Layout title="Избранное" description="Ваше избранное — Satin">
+	<section
+		class="satin-pad w-full bg-[rgb(var(--color-bg,255_255_255))] py-10 md:py-16"
+		aria-labelledby="wishlist-title"
+		data-wishlist-page
+		data-site-id={shopId}
+	>
+		<div class="satin-container flex w-full flex-col gap-10 lg:gap-12">
+			<header class="flex flex-col gap-2">
+				<h1
+					id="wishlist-title"
+					class="font-logo text-[20px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))] md:text-[28px]"
+				>
+					Избранное
+				</h1>
+				<p
+					class="font-manrope text-[14px] font-light uppercase leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-[16px]"
+					data-wishlist-subtitle
+				>
+					Товары, которые вам понравились
+				</p>
+			</header>
+
+			{/* Скелетон-лоадер: показывается пока идёт fetch (как каталог/PDP). Виден
+			    по умолчанию; клиент скрывает его в любом исходе (грид / пусто). Острые
+			    углы satin (без radius), плейсхолдеры = surface-токен. */}
+			<ul
+				data-wishlist-skeleton
+				aria-hidden="true"
+				class="grid auto-rows-fr grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3"
+			>
+				{Array.from({ length: 3 }).map(() => (
+					<li>
+						<div class="flex w-full flex-col gap-3">
+							<div class="aspect-[430/564] w-full animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+							<div class="flex w-full flex-col gap-2">
+								<div class="h-4 w-2/3 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+								<div class="h-4 w-1/3 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+							</div>
+						</div>
+					</li>
+				))}
+			</ul>
+
+			{/* Грид избранного — заполняется клиентом карточками satin. */}
+			<ul
+				data-wishlist-grid
+				role="list"
+				hidden
+				class="grid auto-rows-fr grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3"
+			></ul>
+
+			{/* Пустое состояние — «В избранном пока пусто» + ссылка в каталог. */}
+			<div data-wishlist-empty hidden class="flex flex-col items-center gap-4 py-10 text-center md:py-16">
+				<p class="font-manrope text-[14px] font-light uppercase leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-[16px]">
+					В избранном пока пусто
+				</p>
+				<a
+					href="/catalog"
+					class="inline-flex h-12 items-center justify-center bg-[#000000] px-6 font-manrope text-[14px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-90 md:text-[16px]"
+				>
+					Перейти в каталог
+				</a>
+			</div>
+		</div>
+	</section>
+</Layout>
+
+{/* Конфиг для inline-клиента (shopId патчится build.service на деплое). */}
+<script is:inline define:vars={{ shopId, apiBase }}>
+	window.__MERFY_WISHLIST_CFG__ = window.__MERFY_WISHLIST_CFG__ || {
+		shopId: shopId || "",
+		apiBase: apiBase || "https://gateway.merfy.ru",
+	};
+</script>
+
+<script is:inline>
+	/**
+	 * Клиент страницы «Избранное» (satin). is:inline (НЕ module): на live theme dist
+	 * module-script темы не компилится → 404. Логика автономна, без import — читает
+	 * глобал window.__satinWishlist (initWishlistUI в Layout) и тот же ЖИВОЙ
+	 * /api/store/products, что каталог. Карточки = рецепт renderCardHtml каталога
+	 * satin (parity), включая overlay-сердце [data-wishlist-toggle] (убрать из избранного).
+	 */
+	(function () {
+		var cfg = window.__MERFY_WISHLIST_CFG__ || {};
+		var apiBase =
+			(typeof window !== "undefined" && window.__MERFY_API_BASE__) || cfg.apiBase || "https://gateway.merfy.ru";
+
+		function resolveSiteId() {
+			if (typeof window !== "undefined" && window.__MERFY_SITE_ID__) return window.__MERFY_SITE_ID__;
+			var sec = document.querySelector("[data-wishlist-page]");
+			var fromAttr = sec && sec.getAttribute("data-site-id");
+			if (fromAttr) return fromAttr;
+			return cfg.shopId || undefined;
+		}
+
+		// ── Маппинг товара /api/store/products → форма карточки (зеркало каталога) ──
+		function toCents(v) {
+			var n = typeof v === "string" ? parseFloat(v) : v;
+			return Number.isFinite(n) ? n : null;
+		}
+		function variantMinCents(p) {
+			var vc = p.variantCombinations;
+			if (Array.isArray(vc) && vc.length) {
+				var ps = vc.map(function (v) { return toCents(v.price); }).filter(function (n) { return n !== null && n > 0; });
+				if (ps.length) return Math.min.apply(null, ps);
+			}
+			return null;
+		}
+		function mapApiProduct(p) {
+			var cents =
+				(p.hasVariants ? variantMinCents(p) : null) ??
+				toCents(p.basePrice) ??
+				variantMinCents(p) ??
+				0;
+			var oldCents = toCents(p.compareAtPrice);
+			return {
+				id: p.id,
+				name: p.title || p.name || "",
+				price: cents / 100,
+				oldPrice: oldCents && oldCents > 0 ? oldCents / 100 : null,
+				slug: p.handle || p.slug,
+				images: Array.isArray(p.images) ? p.images : [],
+			};
+		}
+
+		// ── Загрузка товаров: ЖИВОЙ API → per-site products.json (фолбэк) ──
+		var __cached;
+		async function loadProducts() {
+			if (__cached !== undefined) return __cached;
+			var sid = resolveSiteId();
+			if (sid) {
+				try {
+					var res = await fetch(apiBase + "/api/store/products?store_id=" + encodeURIComponent(sid) + "&limit=100");
+					if (res.ok) {
+						var json = await res.json();
+						var items = Array.isArray(json.products) ? json.products.map(mapApiProduct) : [];
+						if (items.length > 0) { __cached = items; return __cached; }
+					}
+				} catch (e) { /* фолбэк ниже */ }
+			}
+			// Фолбэк: per-site products.json (цены в КОПЕЙКАХ → /100, как PDP).
+			try {
+				var r2 = await fetch("/data/products.json");
+				if (r2.ok) {
+					var data = await r2.json();
+					if (Array.isArray(data) && data.length > 0) {
+						var k100 = function (v) { return typeof v === "number" ? v / 100 : v; };
+						__cached = data.map(function (p) {
+							return {
+								id: p.id,
+								name: p.name || p.title || "",
+								price: k100(p.price),
+								oldPrice: k100(p.oldPrice || p.compareAtPrice),
+								slug: p.handle || p.slug,
+								images: Array.isArray(p.images) ? p.images : [],
+							};
+						});
+						return __cached;
+					}
+				}
+			} catch (e) { /* нет файла */ }
+			__cached = null;
+			return __cached;
+		}
+
+		function formatPrice(value) {
+			if (value === null || value === undefined || value === "") return "";
+			if (typeof value === "string") return value;
+			return value.toLocaleString("ru-RU") + " ₽";
+		}
+		function productHref(p) { return "/product?id=" + encodeURIComponent(p.id); }
+		function productImageRaw(p) {
+			return (Array.isArray(p.images) && typeof p.images[0] === "string" && p.images[0]) || "";
+		}
+		function escapeHtml(value) {
+			return String(value === null || value === undefined ? "" : value)
+				.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+				.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+		}
+
+		var CARD_MEDIA_FALLBACK_HTML =
+			'<div class="absolute inset-0 flex items-center justify-center" aria-hidden="true">' +
+			'<svg class="size-10" style="color:rgb(var(--color-muted,153 153 153))" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+			'<rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>' +
+			"</svg></div>";
+		var CARD_IMG_ONERROR_ATTR = ' onerror="this.onerror=null;this.outerHTML=\'' + CARD_MEDIA_FALLBACK_HTML.replace(/"/g, "&quot;") + '\'"';
+
+		// Outline-сердце satin (геометрия favourite.svg, viewBox 0 0 32 32). Path
+		// дублируется намеренно (страница автономна). На странице избранного товар
+		// ВСЕГДА в избранном → сердце filled (heartSvg(true) если глобал готов).
+		var WISHLIST_OUTLINE_SVG =
+			'<svg viewBox="0 0 32 32" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:block">' +
+			'<g transform="translate(4.22 5.867)">' +
+			'<path d="M10.0342 18.882C6.93786 16.5652 0.8 11.2695 0.8 6.50305C0.8 3.35396 3.11131 0.8 6.29004 0.8C7.93705 0.8 9.58406 1.349 11.7801 3.54502C13.9761 1.349 15.6231 0.8 17.2701 0.8C20.4488 0.8 22.7601 3.35396 22.7601 6.50305C22.7601 11.2684 16.6223 16.5652 13.5259 18.882C12.4828 19.6616 11.0773 19.6616 10.0342 18.882Z" ' +
+			'fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>' +
+			"</g></svg>";
+
+		// Карточка satin — рецепт renderCardHtml каталога (article → картинка-ссылка
+		// с бэйджем/сердцем + name uppercase + price). Острые углы satin.
+		function renderCardHtml(p) {
+			var href = escapeHtml(productHref(p));
+			var name = escapeHtml(p.name);
+			var rawImage = productImageRaw(p);
+			var media = rawImage
+				? '<img src="' + escapeHtml(rawImage) + '" alt="' + name + '" width="430" height="564" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"' + CARD_IMG_ONERROR_ATTR + " />"
+				: CARD_MEDIA_FALLBACK_HTML;
+			var price = escapeHtml(formatPrice(p.price));
+			var oldRaw = formatPrice(p.oldPrice || null);
+			var oldPrice = oldRaw
+				? '<span class="font-manrope text-[14px] font-light leading-tight text-[#999999] line-through">' + escapeHtml(oldRaw) + "</span>"
+				: "";
+			var badge = oldRaw
+				? '<span class="pointer-events-none absolute left-0 top-0 inline-flex h-6 items-center bg-[#000000] px-2 font-manrope text-[12px] font-medium uppercase leading-none text-white">Скидка</span>'
+				: "";
+			var heartInner =
+				(window.__satinWishlist && window.__satinWishlist.heartSvg) ? window.__satinWishlist.heartSvg(true) : WISHLIST_OUTLINE_SVG;
+			var heartBtn =
+				'<button type="button" data-wishlist-toggle data-product-id="' + escapeHtml(p.id) + '" aria-pressed="true" aria-label="В избранное" ' +
+				'class="satin-fav absolute right-3 top-3 z-20 flex size-8 items-center justify-center bg-white text-[#000000] shadow-[0_2px_8px_rgba(0,0,0,0.10)] transition-opacity hover:opacity-80">' +
+				'<span data-wishlist-icon class="block size-[18px]">' + heartInner + "</span></button>";
+			return '<article class="group flex h-full flex-col gap-3" data-nt="satin-product-card" aria-label="' + name + '">' +
+				'<div class="relative aspect-[430/564] w-full shrink-0 overflow-hidden bg-[#F5F5F5]">' +
+				'<a href="' + href + '" class="block size-full" aria-label="' + name + '">' + media + "</a>" +
+				badge + heartBtn +
+				"</div>" +
+				'<div class="flex flex-1 flex-col gap-1.5 md:gap-2">' +
+				'<a href="' + href + '" class="font-manrope text-[16px] font-normal uppercase leading-tight text-[#000000] hover:opacity-80">' + name + "</a>" +
+				'<div class="flex flex-wrap items-baseline gap-1.5 md:gap-2">' +
+				'<span class="font-manrope text-[16px] font-normal leading-tight text-[#000000]">' + price + "</span>" + oldPrice +
+				"</div></div></article>";
+		}
+
+		function ids() {
+			if (window.__satinWishlist && window.__satinWishlist.getAll) return window.__satinWishlist.getAll();
+			// Фолбэк: читаем localStorage напрямую тем же ключом (если глобал не готов).
+			try {
+				var raw = window.localStorage.getItem("satin:wishlist:v1");
+				var arr = raw ? JSON.parse(raw) : [];
+				return Array.isArray(arr) ? arr : [];
+			} catch (e) { return []; }
+		}
+
+		var skeleton = document.querySelector("[data-wishlist-skeleton]");
+		var grid = document.querySelector("[data-wishlist-grid]");
+		var empty = document.querySelector("[data-wishlist-empty]");
+		var subtitle = document.querySelector("[data-wishlist-subtitle]");
+
+		async function render() {
+			if (!grid || !empty || !skeleton) return;
+			var wishIds = ids();
+
+			// Пусто — сразу заглушка, без сетевого запроса.
+			if (!wishIds.length) {
+				skeleton.hidden = true;
+				grid.hidden = true;
+				grid.innerHTML = "";
+				empty.hidden = false;
+				if (subtitle) subtitle.hidden = true;
+				return;
+			}
+
+			var products = await loadProducts();
+			// Сохраняем порядок добавления (как лежат в localStorage), показываем только
+			// реально существующие товары (на случай удалённых из каталога).
+			var byId = {};
+			if (products) for (var i = 0; i < products.length; i++) byId[products[i].id] = products[i];
+			var picked = wishIds.map(function (id) { return byId[id]; }).filter(Boolean);
+
+			skeleton.hidden = true;
+			if (!picked.length) {
+				// Все избранные товары больше не существуют (или API недоступен).
+				grid.hidden = true;
+				grid.innerHTML = "";
+				empty.hidden = false;
+				if (subtitle) subtitle.hidden = true;
+				return;
+			}
+
+			empty.hidden = true;
+			if (subtitle) subtitle.hidden = false;
+			grid.hidden = false;
+			grid.innerHTML = picked.map(function (p) { return "<li>" + renderCardHtml(p) + "</li>"; }).join("");
+		}
+
+		render();
+		// Тоггл сердца на самой странице → перерисовать (удалённый товар исчезает).
+		window.addEventListener("satin:wishlist:updated", render);
+		document.addEventListener("astro:page-load", function () {
+			// На повторном заходе товары стабильны — просто render.
+			render();
+		});
+	})();
+</script>

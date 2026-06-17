@@ -60,7 +60,7 @@ const cartVariantColor = product.colors?.[0] ?? "";
 >
 	<div
 		class="mx-auto flex w-full max-w-[1320px] flex-col gap-10 xl:flex-row xl:items-start xl:justify-between xl:gap-8 min-[1536px]:gap-16"
-		data-pdp-layout
+		data-pdp-layout style="opacity:0;transition:opacity .15s ease"
 	>
 		<div class="flex w-full flex-col gap-6 xl:min-w-0 xl:flex-1 xl:gap-8 min-[1536px]:max-w-[628px]">
 			<div class="flex flex-col gap-2">
@@ -586,7 +586,7 @@ const cartVariantColor = product.colors?.[0] ?? "";
 				if (notFound) notFound.hidden = false;
 				return;
 			}
-			if (layout) layout.hidden = false;
+			if (layout) { layout.hidden = false; layout.style.opacity = "1"; }
 			if (notFound) notFound.hidden = true;
 
 			function setText(sel, t) {

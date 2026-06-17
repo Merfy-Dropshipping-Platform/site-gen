@@ -60,7 +60,7 @@ const cartVariantColor = product.colors?.[0] ?? "";
 	data-site-id={siteId}
 	data-puck-component-id={id}
 >
-	<div class="satin-container grid grid-cols-1 gap-10 lg:grid-cols-[652px_minmax(0,1fr)] lg:gap-10" data-pdp-layout>
+	<div class="satin-container grid grid-cols-1 gap-10 lg:grid-cols-[652px_minmax(0,1fr)] lg:gap-10" data-pdp-layout style="opacity:0;transition:opacity .15s ease">
 		<!-- Gallery: 2×2 portrait grid -->
 		<div class="grid grid-cols-2 gap-4" data-pdp-gallery>
 			{galleryImages.map((img, index) => (
@@ -550,7 +550,7 @@ const cartVariantColor = product.colors?.[0] ?? "";
 				if (notFound) notFound.hidden = false;
 				return;
 			}
-			if (layout) layout.hidden = false;
+			if (layout) { layout.hidden = false; layout.style.opacity = "1"; }
 			if (notFound) notFound.hidden = true;
 
 			function setText(sel, t) {

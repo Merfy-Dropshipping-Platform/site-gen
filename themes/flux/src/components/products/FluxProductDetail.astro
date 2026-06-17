@@ -60,7 +60,7 @@ const cartVariantColor = productColors[0] ?? "";
 	data-site-id={siteId}
 	data-puck-component-id={id}
 >
-	<div class="mx-auto grid w-full max-w-[1320px] grid-cols-1 gap-8 lg:grid-cols-[600px_minmax(0,1fr)] lg:gap-10" data-pdp-layout>
+	<div class="mx-auto grid w-full max-w-[1320px] grid-cols-1 gap-8 lg:grid-cols-[600px_minmax(0,1fr)] lg:gap-10" data-pdp-layout style="opacity:0;transition:opacity .15s ease">
 		<div class="flex flex-col gap-4">
 			<div class="relative aspect-square w-full overflow-hidden bg-[#F5F5F5]">
 				<FluxPicture
@@ -580,7 +580,7 @@ const cartVariantColor = productColors[0] ?? "";
 				if (notFound) notFound.hidden = false;
 				return;
 			}
-			if (layout) layout.hidden = false;
+			if (layout) { layout.hidden = false; layout.style.opacity = "1"; }
 			if (notFound) notFound.hidden = true;
 
 			function setText(sel, t) {

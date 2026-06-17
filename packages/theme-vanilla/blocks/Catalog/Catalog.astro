@@ -282,7 +282,7 @@ const rowStockOptions: RadioOption[] = [
 				</div>
 
 				<div class="flex flex-col gap-8">
-					<ul class="grid grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:grid-cols-3 md:gap-x-4 md:gap-y-12" role="list" data-nt="catalog-grid">
+					<ul class="grid grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:grid-cols-3 md:gap-x-4 md:gap-y-12" role="list" data-nt="catalog-grid" style="opacity:0;transition:opacity .15s ease">
 						{demoProducts.map((product) => (
 							<li data-product-id={product.id}>
 								<article class={cardWrapClass} data-nt="vanilla-product-card" aria-label={product.name}>
@@ -315,7 +315,7 @@ const rowStockOptions: RadioOption[] = [
 				{filterVisible && <VanillaCatalogFilterSidebar class="w-full lg:shrink-0" />}
 
 				<div class="flex min-w-0 flex-1 flex-col gap-8">
-					<ul class="grid grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:gap-x-4 md:gap-y-12" role="list" data-nt="catalog-grid">
+					<ul class="grid grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:gap-x-4 md:gap-y-12" role="list" data-nt="catalog-grid" style="opacity:0;transition:opacity .15s ease">
 						{demoProducts.map((product) => (
 							<li data-product-id={product.id}>
 								<article class={cardWrapClass} data-nt="vanilla-product-card" aria-label={product.name}>
@@ -651,6 +651,7 @@ const rowStockOptions: RadioOption[] = [
 					btn.style.display = "none";
 					btn.disabled = false;
 				}
+				for (const g of grids) g.style.opacity = "1"; // пустой магазин/API down → показываем SSR demo-грид
 				return;
 			}
 
@@ -662,6 +663,7 @@ const rowStockOptions: RadioOption[] = [
 				if (append && filters.page > 1) grid.insertAdjacentHTML("beforeend", html);
 				else grid.innerHTML = html; // page=1 → replace
 			}
+			for (const g of grids) g.style.opacity = "1"; // реальные товары отрисованы → раскрываем грид (демо не мелькает)
 
 			updateCount(res.total); // счётчик = total магазина/фильтра
 			for (const btn of loadMoreBtns) {

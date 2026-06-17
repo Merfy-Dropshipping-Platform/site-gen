@@ -37,7 +37,10 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 		<NtCartDrawer rootId="cart-drawer-root" eventPrefix="rose:cart" />
 		<script>
 			import { initCartUI } from "../lib/cart";
+			import { initWishlistUI } from "../lib/wishlist";
 			initCartUI();
+			// Избранное (wishlist) — глобальный делегат сердец/бейджей, зеркало корзины.
+			initWishlistUI();
 		</script>
 
 		<script>

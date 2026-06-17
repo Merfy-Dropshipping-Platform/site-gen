@@ -159,19 +159,33 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 					>
 						{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
 					</a>
-					<button
-						type="button"
-						data-cart-open
-						class="relative flex size-6 shrink-0 items-center justify-center"
-						aria-label="Корзина"
-					>
-						<RoseNtIcon name="cart-sm" sizeClass="size-6" />
-						<span
-							data-cart-count
-							data-empty="true"
-							class="absolute -right-2 -top-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-primary px-1 font-manrope text-[10px] font-normal leading-none text-white data-[empty=true]:hidden"
-						>0</span>
-					</button>
+					<div class="flex items-center gap-3">
+						<a
+							href="/wishlist"
+							class="relative flex size-6 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
+							aria-label="Избранное"
+						>
+							<RoseNtIcon name="favourite" sizeClass="size-6" />
+							<span
+								data-wishlist-count
+								data-empty="true"
+								class="absolute -right-2 -top-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-primary px-1 font-manrope text-[10px] font-normal leading-none text-white data-[empty=true]:hidden"
+							>0</span>
+						</a>
+						<button
+							type="button"
+							data-cart-open
+							class="relative flex size-6 shrink-0 items-center justify-center"
+							aria-label="Корзина"
+						>
+							<RoseNtIcon name="cart-sm" sizeClass="size-6" />
+							<span
+								data-cart-count
+								data-empty="true"
+								class="absolute -right-2 -top-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-primary px-1 font-manrope text-[10px] font-normal leading-none text-white data-[empty=true]:hidden"
+							>0</span>
+						</button>
+					</div>
 				</div>
 
 				<!-- Desktop -->
@@ -208,6 +222,18 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 											>
 												<RoseNtIcon name="search-lg" sizeClass="size-6" />
 											</button>
+											<a
+												href="/wishlist"
+												class="relative flex size-10 items-center justify-center transition-opacity hover:opacity-80"
+												aria-label="Избранное"
+											>
+												<RoseNtIcon name="favourite" sizeClass="size-6" />
+												<span
+													data-wishlist-count
+													data-empty="true"
+													class="absolute right-0 top-0 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-white data-[empty=true]:hidden"
+												>0</span>
+											</a>
 											<button
 												type="button"
 												data-cart-open
@@ -284,6 +310,18 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 											</a>
 										</div>
 										<div class="flex items-center justify-end gap-4 lg:gap-6">
+											<a
+												href="/wishlist"
+												class="relative flex size-10 items-center justify-center transition-opacity hover:opacity-80"
+												aria-label="Избранное"
+											>
+												<RoseNtIcon name="favourite" sizeClass="size-6" />
+												<span
+													data-wishlist-count
+													data-empty="true"
+													class="absolute right-0 top-0 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-white data-[empty=true]:hidden"
+												>0</span>
+											</a>
 											<button
 												type="button"
 												data-cart-open
@@ -367,6 +405,18 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 								>
 									<RoseNtIcon name="search-lg" sizeClass="size-6" />
 								</button>
+								<a
+									href="/wishlist"
+									class="relative flex size-10 items-center justify-center transition-opacity hover:opacity-80"
+									aria-label="Избранное"
+								>
+									<RoseNtIcon name="favourite" sizeClass="size-6" />
+									<span
+										data-wishlist-count
+										data-empty="true"
+										class="absolute right-0 top-0 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-white data-[empty=true]:hidden"
+									>0</span>
+								</a>
 								<button
 									type="button"
 									data-cart-open
@@ -467,19 +517,33 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 				>
 					{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
 				</a>
-				<button
-					type="button"
-					data-cart-open
-					class="relative flex size-10 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
-					aria-label="Корзина"
-				>
-					<RoseNtIcon name="cart" sizeClass="size-6" />
-					<span
-						data-cart-count
-						data-empty="true"
-						class="absolute right-0 top-0 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-primary px-1 font-manrope text-[10px] font-normal leading-none text-white data-[empty=true]:hidden"
-					>0</span>
-				</button>
+				<div class="flex items-center gap-3">
+					<a
+						href="/wishlist"
+						class="relative flex size-10 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
+						aria-label="Избранное"
+					>
+						<RoseNtIcon name="favourite" sizeClass="size-6" />
+						<span
+							data-wishlist-count
+							data-empty="true"
+							class="absolute right-0 top-0 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-primary px-1 font-manrope text-[10px] font-normal leading-none text-white data-[empty=true]:hidden"
+						>0</span>
+					</a>
+					<button
+						type="button"
+						data-cart-open
+						class="relative flex size-10 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
+						aria-label="Корзина"
+					>
+						<RoseNtIcon name="cart" sizeClass="size-6" />
+						<span
+							data-cart-count
+							data-empty="true"
+							class="absolute right-0 top-0 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-primary px-1 font-manrope text-[10px] font-normal leading-none text-white data-[empty=true]:hidden"
+						>0</span>
+					</button>
+				</div>
 			</div>
 		) : (
 			/* Mobile drawer: search + profile */

@@ -1,0 +1,822 @@
+---
+// Product — РОДНАЯ страница товара (PDP) верстальщика rose как per-theme override
+// блока Product. Порт из themes/rose/src/components/products/RoseProductDetail.astro
+// (+ pages/product.astro гидрация) по тому же принципу, что rose Catalog:
+// пиксель-перфектная вёрстка rose + живые данные товара + выделяемость подсекций.
+//
+// Рендерится ОДИНАКОВО двумя путями (зеркало Catalog):
+//   • LIVE build — assemble-from-packages.ts (THEME PASS, overwrite=true) копирует
+//     этот файл + siblings ПЛОСКО в <scaffold>/src/components/, перезаписывая base
+//     Product.astro. generatePuckProductPage рендерит <Product {...props}
+//     productId={handle} /> на /product/[handle].astro. astro build собирает
+//     client <script>.
+//   • Превью конструктора — compile-astro-blocks.mjs компилит .astro в
+//     dist/astro-blocks/theme-rose__Product__Product.mjs (cascade override base).
+//     NB: PDP в превью реально отдаётся блоб-путём (firstBuiltProductRoute →
+//     dist/theme-preview/rose/products/<id>), который рендерит RoseProductDetail —
+//     стэмпинг-скрипт там уже свой. Здесь стэмпинг продублирован для паритета
+//     контракта (инертен без window.__MERFY_PRODUCT_BLOCK_ID__).
+//
+// Все импорты — siblings (./), без bare-NPM (@merfy-…) и ../../ (компилятор превью
+// их не резолвит). Клиент ТОЛЬКО <script is:inline define:vars> — module-script
+// блока НЕ компилится в live build (404 на проде). Тела helper'ов storefront-hydrate
+// инлайнены 1:1.
+import RoseNtIcon from "./RoseNtIcon.astro";
+import RosePicture from "./RosePicture.astro";
+
+// Совместимый с theme-base/blocks/Product/Product.puckConfig props-минимум.
+// Родная вёрстка rose читает заголовок/описание/настройки 8-панельной подсистемы;
+// данные товара резолвятся клиентски (см. inline-script) — на сборке рендерится
+// нейтральный skeleton, как в themes/rose/src/pages/product.astro (Option B).
+interface Props {
+  id?: string;
+  siteId?: string;
+  /** Slug/id товара из роута /product/[handle] (generatePuckProductPage). */
+  productId?: string;
+  /** «Текст» (бренд-строка) — 8-панель, индекс 100. aiText: строка или { text }. */
+  text?: string | { content?: string; text?: string };
+  /** Заголовок-настройки (индекс 101). */
+  title?: { size?: "small" | "medium" | "large" };
+  /** Цена-настройки (индекс 102). show=false скрывает цену. */
+  price?: { show?: boolean | "true" | "false" };
+  /** Варианты-настройки (индекс 103). */
+  variants?: { style?: "button" | "list"; shape?: "circle" | "square" | "none" };
+  /** Количество (индекс 104). enabled=false скрывает counter. */
+  quantity?: { enabled?: boolean | "true" | "false" };
+  /** Кнопки (индекс 105). */
+  buttons?: {
+    addToCart?: { text?: string };
+    buyNow?: { text?: string };
+  };
+  /** Описание (индекс 106). */
+  description?: { content?: string; size?: "small" | "medium" | "large" };
+  /** Поделиться (индекс 107). */
+  share?: { text?: string };
+  /** Legacy badge (back-compat — мерджится в text.content). */
+  badge?: { text?: string };
+  colorScheme?: string;
+  /** Отступы секции (Figma «Отступы»). Дефолт 75/75 как в base Product. */
+  padding?: { top?: number; bottom?: number };
+}
+
+const {
+  id,
+  siteId,
+  productId,
+  text,
+  title: titleProp,
+  price: priceProp,
+  quantity,
+  buttons,
+  description,
+  share,
+  badge,
+  colorScheme,
+  padding,
+} = Astro.props as Props;
+
+// — Authored prop fallbacks (зеркало base Product.astro). —
+function pickContent(v: unknown): string {
+  if (typeof v === "string") return v;
+  if (v && typeof v === "object") {
+    const o = v as { content?: string; text?: string };
+    if (typeof o.content === "string" && o.content.trim()) return o.content;
+    if (typeof o.text === "string" && o.text.trim()) return o.text;
+  }
+  return "";
+}
+const brandText = pickContent(text) || badge?.text || "";
+const priceVisible = priceProp?.show !== "false" && priceProp?.show !== false;
+const quantityVisible = quantity?.enabled !== "false" && quantity?.enabled !== false;
+const addBtnText = buttons?.addToCart?.text ?? "Добавить в корзину";
+const buyBtnText = buttons?.buyNow?.text ?? "Купить сейчас";
+const shareText = share?.text ?? "Поделиться";
+const descriptionContent = description?.content ?? "";
+
+// Цветовая схема секции (hot-swap токенов как у остальных блоков rose).
+const schemeClass =
+  typeof colorScheme === "string" && colorScheme
+    ? `color-scheme-${colorScheme.replace("scheme-", "")}`
+    : "";
+
+// Отступы секции (родной rose PDP использует адаптивные px-классы; здесь добавляем
+// настраиваемые top/bottom через inline-style как в base Product, дефолт 75/75 —
+// не ломая родные горизонтальные отступы 2xl:px-[280px]).
+const paddingStyle = padding
+  ? `padding-top:${padding.top ?? 75}px;padding-bottom:${padding.bottom ?? 75}px;`
+  : "";
+
+// Нейтральный skeleton: рендерится до клиентского патча и на demo-сборке без
+// products.json. placeholder-картинка, без галереи/бренда/старой цены — 1:1 с
+// themes/rose/src/pages/product.astro.
+const skeletonImage = "/placeholders/sweater-blue.png";
+---
+
+<section
+  class:list={[
+    "w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-16 pt-10 sm:px-5 sm:pb-20 sm:pt-12 md:px-10 md:pb-[120px] md:pt-16 lg:px-16 lg:pb-[140px] lg:pt-20 xl:px-20 xl:pb-[140px] xl:pt-24 2xl:px-[280px]",
+    schemeClass,
+  ]}
+  aria-labelledby="product-title"
+  data-pdp-section
+  data-block="product"
+  data-site-id={siteId}
+  data-product-id={productId}
+  data-cart-color=""
+  data-puck-component-id={id}
+  style={paddingStyle}
+>
+  <div class="mx-auto grid w-full max-w-[1320px] grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-[1fr_1fr] lg:gap-10 xl:grid-cols-[600px_minmax(0,1fr)]">
+    {/* ── MEDIA: главное фото + миниатюры (галерея) ── */}
+    <div class="flex flex-col gap-3 sm:gap-4">
+      <div class="relative aspect-square w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]">
+        <RosePicture
+          src={skeletonImage}
+          alt="Товар"
+          loading="eager"
+          fetchpriority="high"
+          class="h-full w-full object-contain"
+          data-pdp-main
+        />
+        <span
+          class="absolute left-3 top-3 inline-flex h-6 min-w-12 items-center justify-center rounded-[4px] bg-[rgb(var(--color-accent,0_0_0))] px-2 font-manrope text-[12px] font-normal leading-none text-white"
+          data-pdp-badge
+          hidden
+        >
+          Скидка
+        </span>
+      </div>
+      {/* Миниатюры заполняются клиентски из p.images (скрыты в skeleton). */}
+      <div class="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4" data-pdp-thumbs-row hidden></div>
+    </div>
+
+    {/* ── INFO + варианты + количество + кнопки + описание + поделиться ── */}
+    <div class="flex flex-col gap-8 lg:gap-10">
+      {/* Заголовок-блок (бренд / название / цена). */}
+      <div class="flex flex-col gap-2 sm:gap-3">
+        <p
+          class="font-manrope text-[12px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] sm:text-[13px] md:text-[14px]"
+          data-pdp-brand
+          hidden={!brandText}
+          data-puck-subsection-parent={id}
+          data-puck-subsection-index="100"
+          data-puck-subsection-field="text"
+        >
+          {brandText}
+        </p>
+        <h1
+          id="product-title"
+          class="font-comfortaa text-[28px] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,0_0_0))] sm:text-[32px] md:text-[36px]"
+          data-pdp-name
+          data-puck-subsection-parent={id}
+          data-puck-subsection-index="101"
+          data-puck-subsection-field="title"
+        >
+          Товар
+        </h1>
+        {priceVisible && (
+          <div
+            class="flex flex-wrap items-baseline gap-2"
+            data-puck-subsection-parent={id}
+            data-puck-subsection-index="102"
+            data-puck-subsection-field="price"
+          >
+            <span
+              class="font-manrope text-[18px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] sm:text-[20px] md:text-[24px]"
+              data-pdp-price
+            ></span>
+            <span
+              class="font-manrope text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] line-through sm:text-[16px] md:text-[18px]"
+              data-pdp-oldprice
+              hidden
+            ></span>
+          </div>
+        )}
+      </div>
+
+      <div class="flex flex-col gap-5 sm:gap-6">
+        {/* Варианты: УСЛОВНО. Заполняется клиентски из variantCombinations; если
+            вариантов нет — контейнер скрыт (hidden ставит inline-script). */}
+        <div
+          class="flex flex-col gap-4"
+          data-pdp-variants
+          hidden
+          data-puck-subsection-parent={id}
+          data-puck-subsection-index="103"
+          data-puck-subsection-field="variants"
+        ></div>
+
+        {/* Количество (counter ±). */}
+        {quantityVisible && (
+          <div
+            class="flex h-10 w-fit items-center rounded-[var(--radius-input,4px)] border border-solid border-[#E5E5E5]"
+            data-pdp-qty
+            data-puck-subsection-parent={id}
+            data-puck-subsection-index="104"
+            data-puck-subsection-field="quantity"
+          >
+            <button
+              type="button"
+              class="flex size-10 items-center justify-center transition-opacity hover:opacity-80"
+              aria-label="Уменьшить количество"
+              data-action="qty-dec"
+            >
+              <RoseNtIcon name="minus" sizeClass="size-4" />
+            </button>
+            <input
+              type="number"
+              min="1"
+              value="1"
+              class="h-10 w-12 bg-transparent text-center font-manrope text-[12px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] outline-none sm:text-[14px]"
+              aria-label="Количество"
+              data-pdp-qty-value
+            />
+            <button
+              type="button"
+              class="flex size-10 items-center justify-center transition-opacity hover:opacity-80"
+              aria-label="Увеличить количество"
+              data-action="qty-inc"
+            >
+              <RoseNtIcon name="plus" sizeClass="size-4" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Кнопки: «Добавить в корзину» + «Купить сейчас». */}
+      <div
+        class="flex flex-col gap-3 sm:gap-4"
+        data-puck-subsection-parent={id}
+        data-puck-subsection-index="105"
+        data-puck-subsection-field="buttons"
+      >
+        <button
+          type="button"
+          data-add-to-cart
+          data-quantity="1"
+          data-variant-color=""
+          class="inline-flex h-12 w-full max-w-none items-center justify-center rounded-[var(--radius-button,6px)] border border-solid border-[rgb(var(--color-button-2-border,0_0_0))] !bg-[rgb(var(--color-button-2-bg,255_255_255))] px-4 font-manrope text-[14px] font-normal leading-normal !text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity hover:opacity-90 sm:text-[16px]"
+        >
+          {addBtnText}
+        </button>
+        <button
+          type="button"
+          data-action="buy-now"
+          data-quantity="1"
+          class="inline-flex h-12 w-full items-center justify-center rounded-[var(--radius-button,6px)] !bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-manrope text-[14px] font-normal leading-normal !text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95 sm:text-[16px]"
+        >
+          {buyBtnText}
+        </button>
+      </div>
+
+      {/* Описание + поделиться. */}
+      <div class="flex flex-col gap-3 sm:gap-4">
+        <div
+          class="flex flex-col gap-3 sm:gap-4"
+          data-puck-subsection-parent={id}
+          data-puck-subsection-index="106"
+          data-puck-subsection-field="description"
+        >
+          <h2 class="rose-title">Описание</h2>
+          <p
+            class="font-manrope text-[13px] font-light leading-[1.54] text-[rgb(var(--color-muted,153_153_153))] sm:text-[14px] md:text-[15px]"
+            data-pdp-desc
+          >{descriptionContent}</p>
+        </div>
+        <div
+          data-puck-subsection-parent={id}
+          data-puck-subsection-index="107"
+          data-puck-subsection-field="share"
+        >
+          <button
+            type="button"
+            data-action="share"
+            class="inline-flex w-fit items-center gap-2 font-manrope text-[13px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 sm:text-[14px] md:text-[16px]"
+            aria-label="Поделиться"
+          >
+            <RoseNtIcon name="share" sizeClass="size-5" />
+            <span>{shareText}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div
+    data-pdp-notfound
+    hidden
+    class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 py-24 text-center"
+  >
+    <p class="font-comfortaa text-[24px] text-[rgb(var(--color-heading,0_0_0))]">Товар не найден</p>
+    <a
+      href="/catalog"
+      class="mt-6 inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-manrope text-[16px] text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
+    >В каталог</a>
+  </div>
+</section>
+
+{/*
+  Селектируемость блока «Товар» в конструкторе. preview.controller / build.service
+  инжектят реальный динамический id блока (`Product-<ts>` из ревизии page-product)
+  в window.__MERFY_PRODUCT_BLOCK_ID__. Штампуем его на data-puck-component-id секции
+  и data-puck-subsection-parent каждой подсекции — MutationObserver конструктора
+  регистрирует overlay-portals. Без глобала (live / demo) — no-op, разметка инертна.
+  Зеркало RoseProductDetail.astro (тот рендерится на блоб-пути превью).
+*/}
+<script is:inline>
+  (function () {
+    function stampProductBlockId() {
+      var pid = window.__MERFY_PRODUCT_BLOCK_ID__;
+      if (!pid) return;
+      var section = document.querySelector("[data-pdp-section]");
+      if (!section) return;
+      if (!section.getAttribute("data-puck-component-id")) {
+        section.setAttribute("data-puck-component-id", pid);
+      }
+      section.querySelectorAll("[data-puck-subsection-index]").forEach(function (el) {
+        if (!el.getAttribute("data-puck-subsection-parent")) {
+          el.setAttribute("data-puck-subsection-parent", pid);
+        }
+      });
+    }
+    stampProductBlockId();
+    document.addEventListener("astro:page-load", stampProductBlockId);
+  })();
+</script>
+
+<script is:inline define:vars={{ siteId, productId }}>
+  // is:inline (НЕ module-script): module client-<script> блока НЕ компилится в
+  // live build → 404 на проде → вся логика мертва. Поэтому весь клиент инлайн:
+  // helper'ы storefront-hydrate.ts перенесены телами 1:1 (без import/типов),
+  // данные frontmatter — через define:vars. Зеркало pages/product.astro гидрации.
+
+  // ─── Инлайн storefront-hydrate.ts (loaders + варианты) ───
+  var PRODUCTS_URL = "/data/products.json";
+  var PLACEHOLDER_IMAGE = "/placeholders/sweater-blue.png";
+  var __cachedProducts;
+
+  function siteIdGlobal() {
+    return (typeof window !== "undefined" && window.__MERFY_SITE_ID__) || siteId || undefined;
+  }
+
+  async function loadRealProducts() {
+    if (__cachedProducts !== undefined) return __cachedProducts;
+    // 1. Статический per-site файл — опубликованный сайт (build.service инжектит).
+    try {
+      var res = await fetch(PRODUCTS_URL);
+      if (res.ok) {
+        var data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          __cachedProducts = data;
+          return __cachedProducts;
+        }
+      }
+    } catch (e) { /* файла нет — preview-фолбэк ниже */ }
+    // 2. Preview-фолбэк: built-theme БЕЗ products.json → storefront-data.
+    var sid = siteIdGlobal();
+    if (sid) {
+      try {
+        var r2 = await fetch("/api/sites/" + encodeURIComponent(sid) + "/storefront-data");
+        if (r2.ok) {
+          var payload = await r2.json();
+          var products = payload && payload.products;
+          if (Array.isArray(products) && products.length > 0) {
+            __cachedProducts = products;
+            return __cachedProducts;
+          }
+        }
+      } catch (e) { /* preview-фолбэк не удался */ }
+    }
+    __cachedProducts = null;
+    return __cachedProducts;
+  }
+
+  function formatPrice(value) {
+    if (value === null || value === undefined || value === "") return "";
+    if (typeof value === "string") return value;
+    return value.toLocaleString("ru-RU") + " ₽";
+  }
+
+  function productImageRaw(p) {
+    return (Array.isArray(p.images) && typeof p.images[0] === "string" && p.images[0]) || "";
+  }
+  function productImage(p) {
+    return productImageRaw(p) || PLACEHOLDER_IMAGE;
+  }
+
+  function escapeHtml(value) {
+    return String(value === null || value === undefined ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  // Выводит группы вариантов из combos[].options (variantGroups часто null).
+  function deriveVariantGroups(combos) {
+    var order = [];
+    var byGroup = {};
+    for (var i = 0; i < combos.length; i++) {
+      var opts = combos[i].options || {};
+      for (var group in opts) {
+        if (!Object.prototype.hasOwnProperty.call(opts, group)) continue;
+        var value = opts[group];
+        if (!byGroup[group]) {
+          byGroup[group] = [];
+          order.push(group);
+        }
+        if (byGroup[group].indexOf(value) === -1) byGroup[group].push(value);
+      }
+    }
+    return order.map(function (name) {
+      return { name: name, values: byGroup[name] };
+    });
+  }
+
+  // Находит комбинацию, у которой ВСЕ выбранные значения групп совпали.
+  function findCombination(combos, selected) {
+    for (var i = 0; i < combos.length; i++) {
+      var c = combos[i];
+      var ok = true;
+      for (var group in selected) {
+        if (!Object.prototype.hasOwnProperty.call(selected, group)) continue;
+        if (!c.options || c.options[group] !== selected[group]) { ok = false; break; }
+      }
+      if (ok) return c;
+    }
+    return null;
+  }
+
+  // Классы вариант-кнопок (core-utility, не arbitrary в innerHTML — иначе не
+  // компилятся). Стиль 1:1 с RosePdpColorVariantRow (выбран: чёрный фон/белый
+  // текст; невыбран: белый фон/чёрный border).
+  var VARIANT_BTN_BASE =
+    "inline-flex h-10 shrink-0 items-center justify-center rounded-[6px] px-3 py-2.5 text-[14px] font-normal leading-normal outline-none transition-opacity";
+  var VARIANT_BTN_SEL = "border-0 !bg-[#000000] !text-white hover:opacity-95";
+  var VARIANT_BTN_UNSEL =
+    "border border-solid border-[#000000] !bg-white !text-[#000000] hover:opacity-90";
+
+  function renderVariantGroupsHtml(groups, selected) {
+    return groups
+      .map(function (g) {
+        var buttons = g.values
+          .map(function (v) {
+            var isSel = selected[g.name] === v;
+            var cls = VARIANT_BTN_BASE + " " + (isSel ? VARIANT_BTN_SEL : VARIANT_BTN_UNSEL);
+            return (
+              '<button type="button" class="' + cls + '" role="radio" aria-checked="' +
+              isSel + '" data-variant-value="' + escapeHtml(v) + '">' + escapeHtml(v) + "</button>"
+            );
+          })
+          .join("");
+        return (
+          '<div class="flex w-full flex-col gap-2 font-manrope" data-pdp-variant-group="' +
+          escapeHtml(g.name) +
+          '">' +
+          '<span class="font-manrope text-[14px] font-normal leading-none text-[#000000]">' +
+          escapeHtml(g.name) +
+          "</span>" +
+          '<div class="flex flex-wrap gap-2" role="radiogroup" aria-label="' +
+          escapeHtml(g.name) +
+          '">' +
+          buttons +
+          "</div></div>"
+        );
+      })
+      .join("");
+  }
+
+  // ─── Гидрация страницы товара (зеркало pages/product.astro) ───
+  function idFromUrl() {
+    var q = new URLSearchParams(location.search).get("id");
+    if (q) return q;
+    // Pretty URL /product/<slug> — slug из пути (lookup матчит и по id, и по slug).
+    var m = location.pathname.match(/\/product\/([^/]+)\/?$/);
+    return m ? decodeURIComponent(m[1]) : null;
+  }
+
+  async function hydrateProductPage() {
+    var section = document.querySelector("[data-pdp-section]");
+    if (!section) return;
+    var notFound = section.querySelector("[data-pdp-notfound]");
+
+    var products = await loadRealProducts();
+    if (!products) return; // demo-сборка без products.json — оставляем skeleton
+
+    // Приоритет: ?id= / pretty-slug → productId роута (define:vars) → выбранный в
+    // конструкторе товар (глобал) → первый товар магазина.
+    var urlId = idFromUrl();
+    var routeId = productId || null;
+    var defaultId =
+      (typeof window !== "undefined" && window.__MERFY_DEFAULT_PRODUCT_ID__) || null;
+    var lookupId = urlId || routeId || defaultId;
+    var explicit = !!(urlId || routeId);
+
+    var p = null;
+    if (lookupId) {
+      for (var i = 0; i < products.length; i++) {
+        if (products[i].id === lookupId || products[i].slug === lookupId) { p = products[i]; break; }
+      }
+      if (!p && !explicit) p = products[0] || null;
+    } else {
+      p = products[0] || null;
+    }
+
+    if (!p) {
+      section.hidden = true;
+      if (notFound) notFound.hidden = false;
+      return;
+    }
+    if (notFound) notFound.hidden = true;
+
+    function setText(sel, t) {
+      var el = section.querySelector(sel);
+      if (el) el.textContent = t;
+    }
+    function toggle(sel, show) {
+      var el = section.querySelector(sel);
+      if (el) el.hidden = !show;
+    }
+
+    document.title = p.name;
+    setText("[data-pdp-name]", p.name || "Товар");
+    setText("[data-pdp-price]", formatPrice(p.price));
+
+    var desc = p.description || p.metaDescription || "";
+    setText("[data-pdp-desc]", desc);
+
+    toggle("[data-pdp-brand]", false);
+    toggle("[data-pdp-badge]", false);
+
+    var oldRaw = formatPrice(p.oldPrice || p.compareAtPrice || null);
+    var oldEl = section.querySelector("[data-pdp-oldprice]");
+    if (oldEl) {
+      oldEl.textContent = oldRaw;
+      oldEl.hidden = !oldRaw;
+    }
+
+    // Галерея: главное фото + миниатюры из p.images.
+    var src = productImage(p);
+    var mainImg = section.querySelector("[data-pdp-main]");
+    if (mainImg) {
+      mainImg.src = src;
+      mainImg.alt = p.name || "";
+      var picture = mainImg.closest("picture");
+      var source = picture && picture.querySelector("source");
+      if (source) source.removeAttribute("srcset");
+    }
+    var imgs = (Array.isArray(p.images) ? p.images : []).filter(function (s) {
+      return typeof s === "string" && s;
+    });
+    var thumbsRow = section.querySelector("[data-pdp-thumbs-row]");
+    if (thumbsRow) {
+      var thumbUrls = imgs.slice(1, 5);
+      if (thumbUrls.length > 0) {
+        thumbsRow.innerHTML = thumbUrls
+          .map(function (u) {
+            return (
+              '<button type="button" class="aspect-square w-full overflow-hidden rounded-[6px] bg-[rgb(var(--color-surface,245_245_245))] transition-opacity hover:opacity-90" data-pdp-thumb data-image="' +
+              escapeHtml(u) +
+              '" aria-label="Показать изображение"><img src="' +
+              escapeHtml(u) +
+              '" alt="' +
+              escapeHtml(p.name) +
+              '" class="h-full w-full object-contain" loading="eager" /></button>'
+            );
+          })
+          .join("");
+        thumbsRow.hidden = false;
+        thumbsRow.onclick = function (ev) {
+          var btn = ev.target.closest("[data-pdp-thumb]");
+          if (!btn) return;
+          var img = btn.getAttribute("data-image");
+          if (mainImg && img) {
+            mainImg.src = img;
+            var pic = mainImg.closest("picture");
+            var s = pic && pic.querySelector("source");
+            if (s) s.removeAttribute("srcset");
+          }
+          var add = section.querySelector("[data-add-to-cart]");
+          var buy = section.querySelector("[data-action='buy-now']");
+          if (add) add.setAttribute("data-image", img || "");
+          if (buy) buy.setAttribute("data-image", img || "");
+        };
+      } else {
+        thumbsRow.hidden = true;
+      }
+    }
+
+    // Атрибуты корзины: CTA-кнопки читают data-product-id/-quantity/
+    // -variant-combination-id при клике (см. cartArgs в initRoseProductUi).
+    // Слаг товара кладём на секцию — buy-now строит /checkout?productId=<slug>.
+    section.setAttribute("data-product-id", p.id);
+    section.setAttribute("data-product-slug", p.slug || p.id);
+    var priceStr = formatPrice(p.price);
+    var ctas = ["[data-add-to-cart]", "[data-action='buy-now']"];
+    for (var k = 0; k < ctas.length; k++) {
+      var btn = section.querySelector(ctas[k]);
+      if (!btn) continue;
+      btn.setAttribute("data-product-id", p.id);
+      btn.setAttribute("data-name", p.name || "");
+      btn.setAttribute("data-price", priceStr);
+      btn.setAttribute("data-image", src);
+    }
+    var addBtn = section.querySelector("[data-add-to-cart]");
+    if (addBtn) {
+      addBtn.setAttribute("data-old-price", oldRaw);
+      addBtn.setAttribute("data-variant-color", "");
+    }
+
+    // ── Варианты УСЛОВНО: селектор только если есть variantCombinations ──
+    var variantsEl = section.querySelector("[data-pdp-variants]");
+    var combos = Array.isArray(p.variantCombinations) ? p.variantCombinations : [];
+    var COLOR_KEYS = ["Цвет", "Color"];
+    var SIZE_KEYS = ["Размер", "Size"];
+    function pick(opts, keys) {
+      for (var i = 0; i < keys.length; i++) {
+        if (opts && opts[keys[i]] != null) return opts[keys[i]];
+      }
+      return "";
+    }
+
+    if (variantsEl && combos.length > 0) {
+      var groups = deriveVariantGroups(combos);
+      var firstAvailable = null;
+      for (var fa = 0; fa < combos.length; fa++) {
+        if (combos[fa].available !== false) { firstAvailable = combos[fa]; break; }
+      }
+      if (!firstAvailable) firstAvailable = combos[0];
+      var selected = Object.assign({}, firstAvailable.options || {});
+
+      function applyCombo() {
+        var combo = findCombination(combos, selected);
+        var priceVal = combo && combo.price ? combo.price : p.price;
+        setText("[data-pdp-price]", formatPrice(priceVal));
+        var available = combo
+          ? combo.available !== false && (combo.quantity == null || combo.quantity > 0)
+          : false;
+        for (var c = 0; c < ctas.length; c++) {
+          var b = section.querySelector(ctas[c]);
+          if (!b) continue;
+          b.setAttribute("data-price", formatPrice(priceVal));
+          b.setAttribute("data-variant-combination-id", (combo && combo.id) || "");
+          b.setAttribute("data-variant-color", pick(combo && combo.options, COLOR_KEYS));
+          b.setAttribute("data-variant-size", pick(combo && combo.options, SIZE_KEYS));
+        }
+        var addEl = section.querySelector("[data-add-to-cart]");
+        if (addEl) {
+          addEl.disabled = !available;
+          addEl.classList.toggle("opacity-50", !available);
+          addEl.classList.toggle("pointer-events-none", !available);
+          addEl.textContent = available ? "Добавить в корзину" : "Нет в наличии";
+        }
+      }
+
+      variantsEl.hidden = false;
+      variantsEl.innerHTML = renderVariantGroupsHtml(groups, selected);
+      applyCombo();
+
+      variantsEl.onclick = function (e) {
+        var btn = e.target.closest("[data-variant-value]");
+        if (!btn) return;
+        var groupEl = btn.closest("[data-pdp-variant-group]");
+        var group = groupEl && groupEl.getAttribute("data-pdp-variant-group");
+        var value = btn.getAttribute("data-variant-value");
+        if (!group || value == null) return;
+        selected[group] = value;
+        variantsEl.innerHTML = renderVariantGroupsHtml(groups, selected);
+        applyCombo();
+      };
+    } else if (variantsEl) {
+      // Невариативный реальный товар — селектор скрыт.
+      variantsEl.hidden = true;
+      variantsEl.innerHTML = "";
+    }
+  }
+
+  // ─── UI: количество (±), поделиться, купить сейчас ───
+  // Количество синкаем на ОБЕ CTA (add + buy) — обе читают data-quantity при клике.
+  function syncQtyToAddButton(qty) {
+    var section = document.querySelector("[data-pdp-section]");
+    if (!section) return;
+    var ctas = section.querySelectorAll("[data-add-to-cart], [data-action='buy-now']");
+    for (var i = 0; i < ctas.length; i++) ctas[i].setAttribute("data-quantity", String(qty));
+  }
+
+  function initRoseProductUi() {
+    var section = document.querySelector("[data-pdp-section]");
+    if (!section) return;
+
+    var qtyInput = section.querySelector("[data-pdp-qty-value]");
+    var dec = section.querySelector("[data-action='qty-dec']");
+    var inc = section.querySelector("[data-action='qty-inc']");
+    if (dec && qtyInput) {
+      dec.addEventListener("click", function () {
+        var next = Math.max(1, Number(qtyInput.value || 1) - 1);
+        qtyInput.value = String(next);
+        syncQtyToAddButton(next);
+      });
+    }
+    if (inc && qtyInput) {
+      inc.addEventListener("click", function () {
+        var next = Number(qtyInput.value || 1) + 1;
+        qtyInput.value = String(next);
+        syncQtyToAddButton(next);
+      });
+    }
+    if (qtyInput) {
+      qtyInput.addEventListener("input", function () {
+        var value = Math.max(1, Number(qtyInput.value || 1));
+        qtyInput.value = String(value);
+        syncQtyToAddButton(value);
+      });
+    }
+
+    var shareBtn = section.querySelector("[data-action='share']");
+    if (shareBtn) {
+      shareBtn.addEventListener("click", async function () {
+        try {
+          if (navigator.share) {
+            await navigator.share({ title: document.title, url: location.href });
+          } else if (navigator.clipboard) {
+            await navigator.clipboard.writeText(location.href);
+            var span = shareBtn.querySelector("span");
+            if (span) {
+              var orig = span.textContent;
+              span.textContent = "Ссылка скопирована!";
+              setTimeout(function () { span.textContent = orig; }, 1500);
+            }
+          }
+        } catch (e) { /* пользователь отменил */ }
+      });
+    }
+
+    // ── Корзина: ТА ЖЕ cart-store что в каталоге ──
+    // BaseLayout грузит /scripts/cart-store.js глобально → window.cartStore.
+    // Контракт: cartStore.addItem(productId, variantCombinationId, quantity) → boolean.
+    // Глобальной [data-add-to-cart]-делегации в rose НЕТ — вешаем handler сами
+    // (как product-detail.js для своего #add-to-cart-btn, но на наш data-хук).
+    function cartArgs(btn) {
+      return {
+        productId: btn.getAttribute("data-product-id"),
+        // variantCombinationId проставляет applyCombo() при выборе варианта;
+        // невариативный товар → "" → cart-store трактует как null.
+        variantId: btn.getAttribute("data-variant-combination-id") || null,
+        quantity: Math.max(1, Number(btn.getAttribute("data-quantity") || 1)),
+      };
+    }
+
+    var addBtn = section.querySelector("[data-add-to-cart]");
+    if (addBtn) {
+      addBtn.addEventListener("click", async function () {
+        if (addBtn.disabled) return;
+        var args = cartArgs(addBtn);
+        if (!args.productId) return;
+        var origText = addBtn.textContent;
+        addBtn.disabled = true;
+        addBtn.textContent = "Добавляем...";
+        var ok = false;
+        try {
+          if (window.cartStore && typeof window.cartStore.addItem === "function") {
+            ok = await window.cartStore.addItem(args.productId, args.variantId, args.quantity);
+          }
+        } catch (e) { /* fallback ниже */ }
+        addBtn.textContent = ok ? "Добавлено!" : origText;
+        setTimeout(function () {
+          addBtn.textContent = origText;
+          addBtn.disabled = false;
+        }, 1500);
+      });
+    }
+
+    // «Купить сейчас» — кладёт товар в ту же корзину (cart-store) и идёт в checkout.
+    // AWAIT addItem ДО навигации (без await navigation отменяет in-flight запрос →
+    // /checkout с пустой корзиной). Зеркало product-detail.js buy-now.
+    var buyBtn = section.querySelector("[data-action='buy-now']");
+    if (buyBtn) {
+      buyBtn.addEventListener("click", async function () {
+        var args = cartArgs(buyBtn);
+        if (!args.productId) return;
+        var origText = buyBtn.textContent;
+        buyBtn.disabled = true;
+        buyBtn.textContent = "Оформляем...";
+        try {
+          if (window.cartStore && typeof window.cartStore.addItem === "function") {
+            await window.cartStore.addItem(args.productId, args.variantId, args.quantity);
+          }
+        } catch (e) { /* идём в checkout всё равно */ }
+        var slug = section.getAttribute("data-product-slug") || section.getAttribute("data-product-id") || args.productId;
+        window.location.href = "/checkout?productId=" + encodeURIComponent(slug || "");
+      });
+    }
+  }
+
+  function bootProduct() {
+    hydrateProductPage();
+    initRoseProductUi();
+  }
+
+  bootProduct();
+  document.addEventListener("astro:page-load", bootProduct);
+</script>

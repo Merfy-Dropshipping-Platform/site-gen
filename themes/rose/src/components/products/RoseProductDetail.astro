@@ -417,14 +417,25 @@ const cartVariantColor = product.colors?.[0] ?? "";
 			}
 
 			// 2. Статический per-site файл — опубликованный сайт. Богатый shape
-			// (variantCombinations) пишет build.service. Цены здесь уже в форме
-			// products.json (price число-рубли ИЛИ строка demo) — НЕ домножаем.
+			// (variantCombinations) пишет build.service. ⚠️ Цены в products.json — в
+			// КОПЕЙКАХ (как API basePrice: 269000 = 2690₽) → делим на 100. Фолбэк:
+			// обычно на live build.service инжектит __MERFY_SITE_ID__ → путь №1 (API).
 			try {
 				var r2 = await fetch("/data/products.json");
 				if (r2.ok) {
 					var data = await r2.json();
 					if (Array.isArray(data) && data.length > 0) {
-						__cachedProducts = data;
+						var k100 = function (v) { return typeof v === "number" ? v / 100 : v; };
+						__cachedProducts = data.map(function (p) {
+							return Object.assign({}, p, {
+								price: k100(p.price),
+								compareAtPrice: k100(p.compareAtPrice),
+								oldPrice: k100(p.oldPrice),
+								variantCombinations: Array.isArray(p.variantCombinations)
+									? p.variantCombinations.map(function (vc) { return Object.assign({}, vc, { price: k100(vc.price) }); })
+									: p.variantCombinations,
+							});
+						});
 						return __cachedProducts;
 					}
 				}

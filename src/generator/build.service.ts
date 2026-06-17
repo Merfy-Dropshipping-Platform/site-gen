@@ -1072,11 +1072,17 @@ export async function runBuildPipeline(
         // штампуют один и тот же id на data-puck-component-id/subsection-parent
         // (тема: window.__MERFY_PRODUCT_BLOCK_ID__). Инертен на live (визуал не меняется).
         const pdpBlockId = typeof pdpBlock?.props?.id === 'string' ? pdpBlock.props.id.trim() : '';
-        if (defaultPid || pdpBlockId) {
+        {
+          // siteId инжектим ВСЕГДА: live PDP (RoseProductDetail + порты) тянет
+          // живой /api/store/products по window.__MERFY_SITE_ID__ (как каталог).
+          // Без него фолбэк на products.json (копейки→цены ×100 + неполный набор
+          // → not-found). apiBase клиент дефолтит на gateway.merfy.ru (CORS *.merfy.ru).
           const pdpPath = path.join(ctx.distDir, 'product', 'index.html');
           const pdpHtml = await fs.readFile(pdpPath, 'utf8').catch(() => null);
           if (pdpHtml) {
-            const injects: string[] = [];
+            const injects: string[] = [
+              `window.__MERFY_SITE_ID__ = ${JSON.stringify(params.siteId)};`,
+            ];
             if (defaultPid) injects.push(`window.__MERFY_DEFAULT_PRODUCT_ID__ = ${JSON.stringify(defaultPid)};`);
             if (pdpBlockId) injects.push(`window.__MERFY_PRODUCT_BLOCK_ID__ = ${JSON.stringify(pdpBlockId)};`);
             await fs.writeFile(
@@ -1084,7 +1090,7 @@ export async function runBuildPipeline(
               pdpHtml.replace(/<head(\s[^>]*)?>/i, (m) => `${m}<script>${injects.join('')}</script>`),
               'utf8',
             );
-            logger.log(`[themes-v2] Injected PDP globals (productId="${defaultPid}", blockId="${pdpBlockId}") into product page for site ${params.siteId}`);
+            logger.log(`[themes-v2] Injected PDP globals (siteId, productId="${defaultPid}", blockId="${pdpBlockId}") into product page for site ${params.siteId}`);
           }
         }
       } catch (pidErr) {

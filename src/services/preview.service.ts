@@ -1633,6 +1633,22 @@ const PREVIEW_NAV_AGENT_INLINE = `
     if (e.target && e.target.closest && e.target.closest('[data-merfy-pill]')) {
       return;
     }
+    // Кнопка «Оформить» в превью корзины — это <button data-action="checkout">,
+    // и storefront cart-store.js на её клик делает hard-навигацию
+    // window.location='/checkout'. Внутри iframe конструктора (origin = gateway,
+    // нет маршрута /checkout) это 404 «Cannot GET /checkout». Перехватываем ДО
+    // пропуска нативных кнопок ниже и просим родителя переключиться на страницу
+    // checkout — как для внутренних <a href> выше. stopPropagation глушит
+    // bubble-обработчик cart-store (capture первее), preventDefault — на случай
+    // submit-кнопки формы. Зеркалит navigate-путь: pageIdFromPath('/checkout')
+    // → page-checkout → switchPage в конструкторе.
+    var checkoutBtn = e.target && e.target.closest ? e.target.closest('[data-action="checkout"]') : null;
+    if (checkoutBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      post({ type: 'navigate', path: '/checkout' });
+      return;
+    }
     var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
     if (a) {
       var href = a.getAttribute('href') || '';

@@ -29,6 +29,7 @@
     "figma:audit": "tsx scripts/figma/audit.ts",
     "figma:theme-readiness": "tsx scripts/figma/theme-readiness.ts",
     "validate:blocks": "tsx scripts/validate-blocks.mjs",
+    "validate:page-seeds": "node scripts/validate-page-seeds.mjs",
     "smoke:sites": "node scripts/smoke-99-sites.mjs",
     "new:block": "node scripts/new-block.mjs"
   },

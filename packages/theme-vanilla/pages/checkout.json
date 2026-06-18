@@ -1,0 +1,10 @@
+{
+  "content": [
+    { "type": "CheckoutHeader", "props": { "id": "CheckoutHeader-1" } },
+    { "type": "CheckoutLayout", "props": { "id": "CheckoutLayout-1" } },
+    { "type": "CheckoutForm", "props": { "id": "CheckoutForm-1" } },
+    { "type": "CheckoutSummary", "props": { "id": "CheckoutSummary-1" } }
+  ],
+  "root": { "props": { "title": "Оформление заказа" } },
+  "zones": {}
+}

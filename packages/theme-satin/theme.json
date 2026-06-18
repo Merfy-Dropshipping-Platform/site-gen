@@ -238,6 +238,28 @@
   "manifestVersion": "2.0",
   "pages": [
     {
+      "id": "home",
+      "name": "Главная страница",
+      "slug": "/",
+      "role": "system",
+      "contentFile": "pages/home.json",
+      "isHome": true
+    },
+    {
+      "id": "page-about",
+      "name": "О нас",
+      "slug": "/about",
+      "role": "system",
+      "contentFile": "pages/about.json"
+    },
+    {
+      "id": "page-contacts",
+      "name": "Контакты",
+      "slug": "/contacts",
+      "role": "system",
+      "contentFile": "pages/contacts.json"
+    },
+    {
       "id": "page-catalog",
       "name": "Коллекции",
       "slug": "/catalog",
@@ -250,6 +272,27 @@
       "slug": "/collections/preview",
       "role": "system",
       "contentFile": "pages/collection.json"
+    },
+    {
+      "id": "page-cart",
+      "name": "Корзина",
+      "slug": "/cart",
+      "role": "system",
+      "contentFile": "pages/cart.json"
+    },
+    {
+      "id": "page-product",
+      "name": "Товар",
+      "slug": "/product",
+      "role": "system",
+      "contentFile": "pages/product.json"
+    },
+    {
+      "id": "page-checkout",
+      "name": "Оформление заказа",
+      "slug": "/checkout",
+      "role": "system",
+      "contentFile": "pages/checkout.json"
     }
   ]
 }

@@ -1,0 +1,12 @@
+{
+  "content": [
+    { "type": "Header", "props": { "id": "Header-home" } },
+    { "type": "Hero", "props": { "id": "Hero-home" } },
+    { "type": "Collections", "props": { "id": "Collections-home" } },
+    { "type": "Gallery", "props": { "id": "Gallery-home" } },
+    { "type": "PopularProducts", "props": { "id": "PopularProducts-home" } },
+    { "type": "Footer", "props": { "id": "Footer-home" } }
+  ],
+  "root": { "props": { "title": "Главная" } },
+  "zones": {}
+}

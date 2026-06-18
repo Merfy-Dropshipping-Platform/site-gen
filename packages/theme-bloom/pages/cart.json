@@ -1,0 +1,46 @@
+{
+  "content": [
+    {
+      "type": "Header",
+      "props": {
+        "id": "Header-cart",
+        "siteTitle": "Bloom",
+        "logo": "/logo.svg",
+        "logoPosition": "top-center",
+        "navigationLinks": [
+          { "label": "Главная", "href": "/" },
+          { "label": "Каталог", "href": "/catalog" },
+          { "label": "О нас", "href": "/about" },
+          { "label": "Контакты", "href": "/contacts" }
+        ],
+        "actionButtons": { "showSearch": "true", "showCart": "true", "showProfile": "true" }
+      }
+    },
+    {
+      "type": "CartBody",
+      "props": { "id": "CartBody-1" }
+    },
+    {
+      "type": "CartSummary",
+      "props": { "id": "CartSummary-1" }
+    },
+    {
+      "type": "CartTotals",
+      "props": { "id": "CartTotals-1" }
+    },
+    {
+      "type": "CartCheckoutButton",
+      "props": { "id": "CartCheckoutButton-1" }
+    },
+    {
+      "type": "Footer",
+      "props": {
+        "id": "Footer-cart",
+        "colorScheme": "scheme-3",
+        "padding": { "top": 80, "bottom": 80 }
+      }
+    }
+  ],
+  "root": { "props": { "title": "Корзина" } },
+  "zones": {}
+}

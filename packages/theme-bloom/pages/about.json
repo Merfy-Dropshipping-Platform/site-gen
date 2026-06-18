@@ -1,0 +1,42 @@
+{
+  "content": [
+    {
+      "type": "Header",
+      "props": {
+        "id": "Header-about",
+        "siteTitle": "Bloom",
+        "logo": "/logo.svg",
+        "logoPosition": "top-center",
+        "navigationLinks": [
+          { "label": "Главная", "href": "/" },
+          { "label": "Каталог", "href": "/catalog" },
+          { "label": "О нас", "href": "/about" },
+          { "label": "Контакты", "href": "/contacts" }
+        ],
+        "actionButtons": { "showSearch": "true", "showCart": "true", "showProfile": "true" }
+      }
+    },
+    {
+      "type": "MainText",
+      "props": {
+        "id": "MainText-about",
+        "heading": { "text": "О нас", "size": "large" },
+        "text": {
+          "content": "Мы создаём косметику, которая заботится о вашей коже каждый день — натуральные составы и продуманные формулы.",
+          "size": "medium"
+        },
+        "padding": { "top": 80, "bottom": 80 }
+      }
+    },
+    {
+      "type": "Footer",
+      "props": {
+        "id": "Footer-about",
+        "colorScheme": "scheme-3",
+        "padding": { "top": 80, "bottom": 80 }
+      }
+    }
+  ],
+  "root": { "props": { "title": "О нас" } },
+  "zones": {}
+}

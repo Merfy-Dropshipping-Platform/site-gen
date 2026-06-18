@@ -1,0 +1,34 @@
+{
+  "content": [
+    {
+      "type": "Header",
+      "props": {
+        "id": "Header-contacts",
+        "siteTitle": "Bloom",
+        "logo": "/logo.svg",
+        "logoPosition": "top-center",
+        "navigationLinks": [
+          { "label": "Главная", "href": "/" },
+          { "label": "Каталог", "href": "/catalog" },
+          { "label": "О нас", "href": "/about" },
+          { "label": "Контакты", "href": "/contacts" }
+        ],
+        "actionButtons": { "showSearch": "true", "showCart": "true", "showProfile": "true" }
+      }
+    },
+    {
+      "type": "ContactForm",
+      "props": { "id": "ContactForm-1" }
+    },
+    {
+      "type": "Footer",
+      "props": {
+        "id": "Footer-contacts",
+        "colorScheme": "scheme-3",
+        "padding": { "top": 80, "bottom": 80 }
+      }
+    }
+  ],
+  "root": { "props": { "title": "Контакты" } },
+  "zones": {}
+}

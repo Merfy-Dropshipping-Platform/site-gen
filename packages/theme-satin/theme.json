@@ -8,7 +8,6 @@
   "description": "Satin — elegant monochrome theme with Kelly Slab headings, Arsenal body, uppercase Manrope buttons, and flat (0px) radii for fashion and clothing stores.",
   "author": "Merfy",
   "tokens": "./tokens.json",
-
   "defaults": {
     "--font-heading": "'Kelly Slab', serif",
     "--font-body": "'Arsenal', sans-serif",
@@ -38,7 +37,6 @@
     "--card-alignment": "left",
     "--color-error": "255 148 148"
   },
-
   "blockDefaults": {
     "Header": {
       "logoPosition": "center-absolute"
@@ -55,8 +53,15 @@
       "align": "container"
     },
     "PopularProducts": {
-      "heading": { "text": "Коллекция товаров", "size": "medium", "alignment": "left" },
-      "text": { "content": "", "size": "small" },
+      "heading": {
+        "text": "Коллекция товаров",
+        "size": "medium",
+        "alignment": "left"
+      },
+      "text": {
+        "content": "",
+        "size": "small"
+      },
       "cards": 3,
       "columns": 3,
       "productCard": {
@@ -67,11 +72,97 @@
         "quickAdd": "true",
         "buttonText": "В корзину"
       },
-      "padding": { "top": 80, "bottom": 80 },
-      "viewAll": { "show": true, "text": "Смотреть ещё", "href": "/catalog" }
+      "padding": {
+        "top": 80,
+        "bottom": 80
+      },
+      "viewAll": {
+        "show": true,
+        "text": "Смотреть ещё",
+        "href": "/catalog"
+      }
+    },
+    "Hero": {
+      "backgroundImages": {
+        "url1": "https://minio.merfy.ru/product-images/d8d0bc51-183f-4509-b517-150066b71bad.png"
+      }
+    },
+    "ImageWithText": {
+      "image": {
+        "url": "https://minio.merfy.ru/product-images/2bcd0822-b566-44b3-a973-024a544bd81b.png",
+        "alt": ""
+      }
+    },
+    "Gallery": {
+      "items": [
+        {
+          "id": "item-1",
+          "type": "image",
+          "url": "https://minio.merfy.ru/product-images/42581ed8-e00c-44f7-9554-3b180e2dbbf4.png",
+          "alt": "Изображение"
+        },
+        {
+          "id": "item-2",
+          "type": "image",
+          "url": "https://minio.merfy.ru/product-images/ff8fdfad-e787-4884-91e4-68f2d9b24b68.png",
+          "alt": "Изображение"
+        },
+        {
+          "id": "item-3",
+          "type": "image",
+          "url": "https://minio.merfy.ru/product-images/c7d5a251-242a-4796-b27d-ce6378b2f50c.png",
+          "alt": "Изображение"
+        }
+      ]
+    },
+    "Slideshow": {
+      "slides": [
+        {
+          "id": "slide-1",
+          "imageUrl": "https://minio.merfy.ru/product-images/d8d0bc51-183f-4509-b517-150066b71bad.png",
+          "ctaUrl": "/catalog"
+        },
+        {
+          "id": "slide-2",
+          "imageUrl": "https://minio.merfy.ru/product-images/2bcd0822-b566-44b3-a973-024a544bd81b.png",
+          "ctaUrl": "/catalog"
+        },
+        {
+          "id": "slide-3",
+          "imageUrl": "https://minio.merfy.ru/product-images/493706c0-98af-4425-ba6b-5e4f4c451690.png",
+          "ctaUrl": "/catalog"
+        }
+      ]
+    },
+    "MultiRows": {
+      "rows": [
+        {
+          "id": "row-1",
+          "imageUrl": "https://minio.merfy.ru/product-images/ebd21164-eabe-4eaa-ab34-a87716858be7.png"
+        },
+        {
+          "id": "row-2",
+          "imageUrl": "https://minio.merfy.ru/product-images/80db2fe6-9f38-4d7f-9be8-7b7a7377f8e1.png"
+        }
+      ]
+    },
+    "MultiColumns": {
+      "columns": [
+        {
+          "id": "col-1",
+          "heading": "Колонка 1",
+          "text": "",
+          "imageUrl": "https://minio.merfy.ru/product-images/3d8e5b82-77b2-4a05-add9-d8b507b928de.png"
+        },
+        {
+          "id": "col-2",
+          "heading": "Колонка 2",
+          "text": "",
+          "imageUrl": "https://minio.merfy.ru/product-images/d237e918-2224-4823-a689-582ecda2e575.png"
+        }
+      ]
     }
   },
-
   "colorSchemes": [
     {
       "id": "scheme-1",
@@ -150,7 +241,6 @@
       }
     }
   ],
-
   "blocks": {
     "Header": {
       "override": {
@@ -216,7 +306,6 @@
     "Newsletter": {},
     "ContactForm": {}
   },
-
   "features": {
     "newsletter": true,
     "cart-drawer": true,
@@ -225,16 +314,55 @@
     "color-swatches": true,
     "filter-sidebar": true
   },
-
   "fonts": [
-    { "family": "Kelly Slab", "weights": [400],       "source": "google" },
-    { "family": "Arsenal",    "weights": [400, 700],  "source": "google" },
-    { "family": "Manrope",    "weights": [400, 500],  "source": "google" },
-    { "family": "Tinos",      "weights": [400],       "italic": true, "source": "google" },
-    { "family": "Roboto",     "weights": [300, 400],  "source": "google" },
-    { "family": "Inter",      "weights": [300, 400],  "source": "google" }
+    {
+      "family": "Kelly Slab",
+      "weights": [
+        400
+      ],
+      "source": "google"
+    },
+    {
+      "family": "Arsenal",
+      "weights": [
+        400,
+        700
+      ],
+      "source": "google"
+    },
+    {
+      "family": "Manrope",
+      "weights": [
+        400,
+        500
+      ],
+      "source": "google"
+    },
+    {
+      "family": "Tinos",
+      "weights": [
+        400
+      ],
+      "italic": true,
+      "source": "google"
+    },
+    {
+      "family": "Roboto",
+      "weights": [
+        300,
+        400
+      ],
+      "source": "google"
+    },
+    {
+      "family": "Inter",
+      "weights": [
+        300,
+        400
+      ],
+      "source": "google"
+    }
   ],
-
   "manifestVersion": "2.0",
   "pages": [
     {

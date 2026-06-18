@@ -53,37 +53,79 @@
       "navigationColumn": {
         "title": "Навигация",
         "links": [
-          { "label": "Смартфоны", "href": "/catalog" },
-          { "label": "Наушники", "href": "/catalog" },
-          { "label": "Ноутбуки", "href": "/catalog" },
-          { "label": "Аксессуары", "href": "/catalog" }
+          {
+            "label": "Смартфоны",
+            "href": "/catalog"
+          },
+          {
+            "label": "Наушники",
+            "href": "/catalog"
+          },
+          {
+            "label": "Ноутбуки",
+            "href": "/catalog"
+          },
+          {
+            "label": "Аксессуары",
+            "href": "/catalog"
+          }
         ]
       },
       "informationColumn": {
         "title": "Информация",
         "links": [
-          { "label": "Политика доставки", "href": "/legal/delivery" },
-          { "label": "Политика возврата", "href": "/legal/returns" },
-          { "label": "Условия обслуживания", "href": "/legal/terms" },
-          { "label": "Политика конфиденциальности", "href": "/legal/privacy" }
+          {
+            "label": "Политика доставки",
+            "href": "/legal/delivery"
+          },
+          {
+            "label": "Политика возврата",
+            "href": "/legal/returns"
+          },
+          {
+            "label": "Условия обслуживания",
+            "href": "/legal/terms"
+          },
+          {
+            "label": "Политика конфиденциальности",
+            "href": "/legal/privacy"
+          }
         ]
       },
       "socialColumn": {
         "title": "Социальные сети",
         "email": "flux@example.ru",
         "socialLinks": [
-          { "platform": "telegram", "href": "#" },
-          { "platform": "vk", "href": "#" },
-          { "platform": "youtube", "href": "#" },
-          { "platform": "dzen", "href": "#" },
-          { "platform": "tiktok", "href": "#" }
+          {
+            "platform": "telegram",
+            "href": "#"
+          },
+          {
+            "platform": "vk",
+            "href": "#"
+          },
+          {
+            "platform": "youtube",
+            "href": "#"
+          },
+          {
+            "platform": "dzen",
+            "href": "#"
+          },
+          {
+            "platform": "tiktok",
+            "href": "#"
+          }
         ]
       },
       "copyright": {
         "poweredBy": "Powered by Merfy",
         "showYear": true
       },
-      "padding": { "top": 64, "bottom": 64 }
+      "padding": {
+        "top": 64,
+        "bottom": 64
+      }
     },
     "Header": {
       "variant": "two-tier",
@@ -114,15 +156,104 @@
       "showSort": "true",
       "showFilter": "true",
       "columns": 3,
-      "padding": { "top": 80, "bottom": 80 }
+      "padding": {
+        "top": 80,
+        "bottom": 80
+      }
     },
     "Product": {
       "visualConfig": {
-        "gallery": { "variant": "inline-small", "showDiscountBadge": false },
+        "gallery": {
+          "variant": "inline-small",
+          "showDiscountBadge": false
+        },
         "variantsType": "dropdown",
-        "counter": { "variant": "pill" },
+        "counter": {
+          "variant": "pill"
+        },
         "showDescription": false
       }
+    },
+    "Hero": {
+      "backgroundImages": {
+        "url1": "https://minio.merfy.ru/product-images/f92e309e-009c-4e15-85cc-87a59a439dea.png"
+      }
+    },
+    "ImageWithText": {
+      "image": {
+        "url": "https://minio.merfy.ru/product-images/f76f3053-7cfa-4823-894a-ce30fee3f1e0.png",
+        "alt": ""
+      }
+    },
+    "Gallery": {
+      "items": [
+        {
+          "id": "item-1",
+          "type": "image",
+          "url": "https://minio.merfy.ru/product-images/f76f3053-7cfa-4823-894a-ce30fee3f1e0.png",
+          "alt": "Изображение"
+        },
+        {
+          "id": "item-2",
+          "type": "image",
+          "url": "https://minio.merfy.ru/product-images/cdc1fcbd-6e1e-4ac6-b734-5978ce57e2f5.png",
+          "alt": "Изображение"
+        },
+        {
+          "id": "item-3",
+          "type": "image",
+          "url": "https://minio.merfy.ru/product-images/113f237c-bc9d-4026-940f-362c34d5edef.png",
+          "alt": "Изображение"
+        }
+      ]
+    },
+    "Slideshow": {
+      "slides": [
+        {
+          "id": "slide-1",
+          "imageUrl": "https://minio.merfy.ru/product-images/f92e309e-009c-4e15-85cc-87a59a439dea.png",
+          "ctaUrl": "/catalog"
+        },
+        {
+          "id": "slide-2",
+          "imageUrl": "https://minio.merfy.ru/product-images/e901c239-7331-4421-854c-5cdbfd2200a7.png",
+          "ctaUrl": "/catalog"
+        }
+      ]
+    },
+    "MultiRows": {
+      "rows": [
+        {
+          "id": "row-1",
+          "imageUrl": "https://minio.merfy.ru/product-images/cdc1fcbd-6e1e-4ac6-b734-5978ce57e2f5.png"
+        },
+        {
+          "id": "row-2",
+          "imageUrl": "https://minio.merfy.ru/product-images/113f237c-bc9d-4026-940f-362c34d5edef.png"
+        }
+      ]
+    },
+    "MultiColumns": {
+      "columns": [
+        {
+          "id": "col-1",
+          "heading": "Колонка 1",
+          "text": "",
+          "imageUrl": "https://minio.merfy.ru/product-images/f92e309e-009c-4e15-85cc-87a59a439dea.png"
+        },
+        {
+          "id": "col-2",
+          "heading": "Колонка 2",
+          "text": "",
+          "imageUrl": "https://minio.merfy.ru/product-images/f76f3053-7cfa-4823-894a-ce30fee3f1e0.png"
+        },
+        {
+          "id": "col-3",
+          "heading": "Колонка 3",
+          "text": "",
+          "imageUrl": "https://minio.merfy.ru/product-images/cdc1fcbd-6e1e-4ac6-b734-5978ce57e2f5.png"
+        }
+      ]
     }
   },
   "colorSchemes": [

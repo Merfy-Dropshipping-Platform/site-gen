@@ -11,56 +11,155 @@
         "colorScheme": "scheme-2",
         "menuColorScheme": "scheme-1",
         "menuType": "dropdown",
-        "padding": { "top": 0, "bottom": 0 },
+        "padding": {
+          "top": 0,
+          "bottom": 0
+        },
         "navigationLinks": [
-          { "label": "Каталог", "href": "/catalog" },
-          { "label": "О нас", "href": "/about" },
-          { "label": "Контакты", "href": "/contacts" }
+          {
+            "label": "Каталог",
+            "href": "/catalog"
+          },
+          {
+            "label": "О нас",
+            "href": "/about"
+          },
+          {
+            "label": "Контакты",
+            "href": "/contacts"
+          }
         ],
-        "actionButtons": { "showSearch": "true", "showCart": "true", "showProfile": "true" }
+        "actionButtons": {
+          "showSearch": "true",
+          "showCart": "true",
+          "showProfile": "true"
+        }
       }
     },
-    { "type": "Hero", "props": { "id": "Hero-home" } },
-    { "type": "Collections", "props": { "id": "Collections-home" } },
-    { "type": "PopularProducts", "props": { "id": "PopularProducts-home" } },
-    { "type": "Gallery", "props": { "id": "Gallery-home" } },
+    {
+      "type": "Hero",
+      "props": {
+        "id": "Hero-home",
+        "backgroundImages": {
+          "url1": "https://minio.merfy.ru/product-images/f92e309e-009c-4e15-85cc-87a59a439dea.png"
+        }
+      }
+    },
+    {
+      "type": "Collections",
+      "props": {
+        "id": "Collections-home"
+      }
+    },
+    {
+      "type": "PopularProducts",
+      "props": {
+        "id": "PopularProducts-home"
+      }
+    },
+    {
+      "type": "Gallery",
+      "props": {
+        "id": "Gallery-home",
+        "items": [
+          {
+            "id": "item-1",
+            "type": "image",
+            "url": "https://minio.merfy.ru/product-images/f76f3053-7cfa-4823-894a-ce30fee3f1e0.png",
+            "alt": "Изображение"
+          },
+          {
+            "id": "item-2",
+            "type": "image",
+            "url": "https://minio.merfy.ru/product-images/cdc1fcbd-6e1e-4ac6-b734-5978ce57e2f5.png",
+            "alt": "Изображение"
+          },
+          {
+            "id": "item-3",
+            "type": "image",
+            "url": "https://minio.merfy.ru/product-images/113f237c-bc9d-4026-940f-362c34d5edef.png",
+            "alt": "Изображение"
+          }
+        ]
+      }
+    },
     {
       "type": "Footer",
       "props": {
         "id": "Footer-home",
         "colorScheme": "scheme-2",
         "copyrightColorScheme": "scheme-1",
-        "padding": { "top": 80, "bottom": 40 },
-        "newsletter": { "enabled": "false" },
+        "padding": {
+          "top": 80,
+          "bottom": 40
+        },
+        "newsletter": {
+          "enabled": "false"
+        },
         "navigationColumn": {
           "title": "Навигация",
           "links": [
-            { "label": "Каталог", "href": "/catalog" },
-            { "label": "О нас", "href": "/about" },
-            { "label": "Контакты", "href": "/contacts" }
+            {
+              "label": "Каталог",
+              "href": "/catalog"
+            },
+            {
+              "label": "О нас",
+              "href": "/about"
+            },
+            {
+              "label": "Контакты",
+              "href": "/contacts"
+            }
           ]
         },
         "informationColumn": {
           "title": "Информация",
           "links": [
-            { "label": "Политика доставки", "href": "/legal/delivery" },
-            { "label": "Политика возврата", "href": "/legal/returns" },
-            { "label": "Условия обслуживания", "href": "/legal/terms" },
-            { "label": "Политика конфиденциальности", "href": "/legal/privacy" }
+            {
+              "label": "Политика доставки",
+              "href": "/legal/delivery"
+            },
+            {
+              "label": "Политика возврата",
+              "href": "/legal/returns"
+            },
+            {
+              "label": "Условия обслуживания",
+              "href": "/legal/terms"
+            },
+            {
+              "label": "Политика конфиденциальности",
+              "href": "/legal/privacy"
+            }
           ]
         },
         "socialColumn": {
           "title": "Социальные сети",
           "email": "flux@example.ru",
           "socialLinks": [
-            { "platform": "telegram", "href": "#" },
-            { "platform": "vk", "href": "#" }
+            {
+              "platform": "telegram",
+              "href": "#"
+            },
+            {
+              "platform": "vk",
+              "href": "#"
+            }
           ]
         },
-        "copyright": { "companyName": "Flux", "showYear": "true", "poweredBy": "Powered by Merfy" }
+        "copyright": {
+          "companyName": "Flux",
+          "showYear": "true",
+          "poweredBy": "Powered by Merfy"
+        }
       }
     }
   ],
-  "root": { "props": { "title": "Главная" } },
+  "root": {
+    "props": {
+      "title": "Главная"
+    }
+  },
   "zones": {}
 }

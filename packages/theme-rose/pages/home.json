@@ -1,12 +1,70 @@
 {
   "content": [
-    { "type": "PromoBanner", "props": { "id": "PromoBanner-1" } },
-    { "type": "Header", "props": { "id": "Header-1" } },
-    { "type": "Hero", "props": { "id": "Hero-1" } },
-    { "type": "Collections", "props": { "id": "Collections-1" } },
-    { "type": "PopularProducts", "props": { "id": "PopularProducts-1" } },
-    { "type": "Gallery", "props": { "id": "Gallery-1" } },
-    { "type": "Footer", "props": { "id": "Footer-1" } }
+    {
+      "type": "PromoBanner",
+      "props": {
+        "id": "PromoBanner-1"
+      }
+    },
+    {
+      "type": "Header",
+      "props": {
+        "id": "Header-1"
+      }
+    },
+    {
+      "type": "Hero",
+      "props": {
+        "id": "Hero-1",
+        "backgroundImages": {
+          "url1": "https://minio.merfy.ru/product-images/c02b5c8c-6b9b-4f32-9edb-7df26a953236.png"
+        }
+      }
+    },
+    {
+      "type": "Collections",
+      "props": {
+        "id": "Collections-1"
+      }
+    },
+    {
+      "type": "PopularProducts",
+      "props": {
+        "id": "PopularProducts-1"
+      }
+    },
+    {
+      "type": "Gallery",
+      "props": {
+        "id": "Gallery-1",
+        "items": [
+          {
+            "id": "item-1",
+            "type": "image",
+            "url": "https://minio.merfy.ru/product-images/72b8fafa-5500-4547-b8c8-b1aeede1abe7.webp",
+            "alt": "Изображение"
+          },
+          {
+            "id": "item-2",
+            "type": "image",
+            "url": "https://minio.merfy.ru/product-images/1352e026-ad8e-40e0-82ea-313f6d28f0a8.webp",
+            "alt": "Изображение"
+          },
+          {
+            "id": "item-3",
+            "type": "image",
+            "url": "https://minio.merfy.ru/product-images/d6b22fd7-98ea-40d6-ac2c-c5d4a17ded7e.webp",
+            "alt": "Изображение"
+          }
+        ]
+      }
+    },
+    {
+      "type": "Footer",
+      "props": {
+        "id": "Footer-1"
+      }
+    }
   ],
   "root": {
     "props": {

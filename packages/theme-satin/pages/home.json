@@ -9,11 +9,23 @@
         "logoPosition": "center-absolute",
         "stickiness": "scroll-up",
         "colorScheme": "scheme-2",
-        "padding": { "top": 0, "bottom": 0 },
+        "padding": {
+          "top": 0,
+          "bottom": 0
+        },
         "navigationLinks": [
-          { "label": "КОЛЛЕКЦИИ", "href": "/catalog" },
-          { "label": "ИСТОРИЯ", "href": "/about" },
-          { "label": "КОНТАКТЫ", "href": "/contacts" }
+          {
+            "label": "КОЛЛЕКЦИИ",
+            "href": "/catalog"
+          },
+          {
+            "label": "ИСТОРИЯ",
+            "href": "/about"
+          },
+          {
+            "label": "КОНТАКТЫ",
+            "href": "/contacts"
+          }
         ],
         "menuColorScheme": "scheme-2",
         "menuType": "dropdown",
@@ -24,39 +36,86 @@
         }
       }
     },
-    { "type": "Hero", "props": { "id": "Hero-home" } },
-    { "type": "Collections", "props": { "id": "Collections-home" } },
-    { "type": "PopularProducts", "props": { "id": "PopularProducts-home" } },
+    {
+      "type": "Hero",
+      "props": {
+        "id": "Hero-home",
+        "backgroundImages": {
+          "url1": "https://minio.merfy.ru/product-images/d8d0bc51-183f-4509-b517-150066b71bad.png"
+        }
+      }
+    },
+    {
+      "type": "Collections",
+      "props": {
+        "id": "Collections-home"
+      }
+    },
+    {
+      "type": "PopularProducts",
+      "props": {
+        "id": "PopularProducts-home"
+      }
+    },
     {
       "type": "Footer",
       "props": {
         "id": "Footer-home",
-        "newsletter": { "enabled": "false" },
+        "newsletter": {
+          "enabled": "false"
+        },
         "colorScheme": "scheme-3",
         "copyrightColorScheme": "scheme-1",
-        "padding": { "top": 80, "bottom": 40 },
+        "padding": {
+          "top": 80,
+          "bottom": 40
+        },
         "navigationColumn": {
           "title": "МАГАЗИН",
           "links": [
-            { "label": "Коллекции", "href": "/catalog" },
-            { "label": "Новые поступления", "href": "/catalog" },
-            { "label": "О бренде", "href": "/about" }
+            {
+              "label": "Коллекции",
+              "href": "/catalog"
+            },
+            {
+              "label": "Новые поступления",
+              "href": "/catalog"
+            },
+            {
+              "label": "О бренде",
+              "href": "/about"
+            }
           ]
         },
         "informationColumn": {
           "title": "ИНФОРМАЦИЯ",
           "links": [
-            { "label": "Доставка", "href": "/delivery" },
-            { "label": "Возврат", "href": "/returns" },
-            { "label": "Оплата", "href": "/payment" }
+            {
+              "label": "Доставка",
+              "href": "/delivery"
+            },
+            {
+              "label": "Возврат",
+              "href": "/returns"
+            },
+            {
+              "label": "Оплата",
+              "href": "/payment"
+            }
           ]
         },
         "socialColumn": {
           "title": "СВЯЗЬ",
           "email": "hello@satin.example",
           "socialLinks": [
-            { "platform": "VK", "href": "#" },
-            { "platform": "Telegram", "href": "#" }
+            {
+              "platform": "VK",
+              "href": "#"
+            },
+            {
+              "platform": "Telegram",
+              "href": "#"
+            }
           ]
         },
         "copyright": {
@@ -67,6 +126,10 @@
       }
     }
   ],
-  "root": { "props": { "title": "Главная" } },
+  "root": {
+    "props": {
+      "title": "Главная"
+    }
+  },
   "zones": {}
 }

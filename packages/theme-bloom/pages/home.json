@@ -69,6 +69,9 @@
         "padding": {
           "top": 0,
           "bottom": 0
+        },
+        "backgroundImages": {
+          "url1": "https://minio.merfy.ru/product-images/52a3d7a3-c4ef-4cee-839a-9c3cc4138d5f.webp"
         }
       }
     },
@@ -139,7 +142,27 @@
         "padding": {
           "top": 120,
           "bottom": 120
-        }
+        },
+        "items": [
+          {
+            "id": "item-1",
+            "type": "image",
+            "url": "https://minio.merfy.ru/product-images/5065b5f2-813a-482f-955f-79d59961781d.webp",
+            "alt": "Изображение"
+          },
+          {
+            "id": "item-2",
+            "type": "image",
+            "url": "https://minio.merfy.ru/product-images/fbc737b0-c024-4b0a-8a8a-05dff445f628.webp",
+            "alt": "Изображение"
+          },
+          {
+            "id": "item-3",
+            "type": "image",
+            "url": "https://minio.merfy.ru/product-images/c35a2f11-cc45-4e3c-9c1a-6fec10024a30.webp",
+            "alt": "Изображение"
+          }
+        ]
       }
     },
     {
@@ -148,22 +171,22 @@
         "id": "MultiColumns-1",
         "columns": [
           {
-            "id": "feat-1",
-            "heading": "Натуральные ингредиенты",
-            "text": "Только органические компоненты без парабенов и сульфатов.",
-            "imageUrl": ""
+            "id": "col-1",
+            "heading": "Колонка 1",
+            "text": "",
+            "imageUrl": "https://minio.merfy.ru/product-images/fbc737b0-c024-4b0a-8a8a-05dff445f628.webp"
           },
           {
-            "id": "feat-2",
-            "heading": "Эксперты рекомендуют",
-            "text": "Формулы разработаны совместно с дерматологами.",
-            "imageUrl": ""
+            "id": "col-2",
+            "heading": "Колонка 2",
+            "text": "",
+            "imageUrl": "https://minio.merfy.ru/product-images/52a3d7a3-c4ef-4cee-839a-9c3cc4138d5f.webp"
           },
           {
-            "id": "feat-3",
-            "heading": "Качественный состав",
-            "text": "Проверенная эффективность и бережный уход каждый день.",
-            "imageUrl": ""
+            "id": "col-3",
+            "heading": "Колонка 3",
+            "text": "",
+            "imageUrl": "https://minio.merfy.ru/product-images/5065b5f2-813a-482f-955f-79d59961781d.webp"
           }
         ],
         "displayColumns": 3,

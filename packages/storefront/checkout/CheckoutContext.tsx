@@ -38,6 +38,11 @@ export interface DeliveryMethodChoice {
   etaText?: string;
   pvzCode?: string;
   customId?: string;
+  // Carried from the logistics `deliveryOptions` so the created order can build
+  // the CDEK shipment with the exact tariff/period (sent in checkout metadata).
+  cdekTariffCode?: number;
+  periodMin?: number;
+  periodMax?: number;
 }
 
 export interface CheckoutContact {

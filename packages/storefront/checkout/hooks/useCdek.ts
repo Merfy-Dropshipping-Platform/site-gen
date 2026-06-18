@@ -1,56 +1,47 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useCheckoutContext, type DeliveryMethodChoice } from '../CheckoutContext';
 
-// Backend response shape of POST /store/carts/:cartId/delivery/calculate?store_id={shopId}
-// Mirrors api-gateway store.controller.ts → store.service.calculateDelivery output.
-export interface CdekTariff {
-  tariffCode: number;
-  tariffName: string;
-  deliveryMode: 'door' | 'pickup' | string;
-  deliverySumRub: number;
-  periodMin: number;
-  periodMax: number;
-}
-
-interface CustomTariff {
+// Backend response of POST /store/carts/:cartId/delivery/calculate?store_id={shopId}.
+// The logistics service (reworked — profile + whitelist logic) returns a flat
+// `deliveryOptions[]`: each is an OWN (fixed price) or PARTNER (CDEK-calculated)
+// delivery method, already filtered by the shop's active delivery profile.
+// Mirrors logistic CalculateDeliveryResultDto → orders/gateway pass it through.
+export interface DeliveryOption {
   id: string;
   name: string;
-  description: string | null;
-  priceCents: number;
+  type: 'OWN' | 'PARTNER';
+  price: number; // RUBLES (storefront formats; order metadata carries cents)
+  minDays?: number;
+  maxDays?: number;
+  description?: string;
+  cdekTariffCode?: number;
+  deliveryMode?: 'door' | 'pickup';
 }
 
-interface CustomProfile {
-  profileId: string;
-  name: string;
-  tariffs: CustomTariff[];
+export interface DeliveryPickupPoint {
+  id: string;
+  address: string;
+  city?: string | null;
+  notificationMessage?: string | null;
+  estimatedReadyTime?: string | null;
 }
 
-interface DeliveryOptionsResponse {
-  cdekAvailable: boolean;
-  tariffs: CdekTariff[];
-  pickupAvailable: boolean;
-  pickupAddress?: string;
-  pickupNotification?: string;
-  pickupExpectedDate?: string;
-  customProfiles: CustomProfile[];
+interface DeliveryCalcResponse {
+  deliveryOptions: DeliveryOption[];
+  pickupPoints?: DeliveryPickupPoint[];
+  cdekError?: string;
 }
 
-const EMPTY: DeliveryOptionsResponse = {
-  cdekAvailable: false,
-  tariffs: [],
-  pickupAvailable: false,
-  customProfiles: [],
-};
+const EMPTY: DeliveryCalcResponse = { deliveryOptions: [] };
 
 export function useCdek() {
   const { apiBase, shopId, state } = useCheckoutContext();
-  const [data, setData] = useState<DeliveryOptionsResponse>(EMPTY);
+  const [data, setData] = useState<DeliveryCalcResponse>(EMPTY);
   const [loading, setLoading] = useState(false);
 
-  // Stable refs so the inner fetch always reads current values without
-  // putting them in fetchTariffs' deps array (otherwise every postal-code
-  // change would re-create the callback and fire a duplicate fetch via the
-  // auto-refetch effect below).
+  // Stable refs so the inner fetch always reads current values without putting
+  // them in fetchTariffs' deps (otherwise every postal-code change re-creates
+  // the callback and fires a duplicate fetch via the auto-refetch effect below).
   const cartIdRef = useRef(state.cartId);
   const postalCodeRef = useRef(state.delivery.postalCode);
   cartIdRef.current = state.cartId;
@@ -60,8 +51,7 @@ export function useCdek() {
     async (cityFiasId: string, _weightGramsUnused?: number) => {
       const cartId = cartIdRef.current;
       const postalCode = postalCodeRef.current;
-      // Cart + city are both required server-side. Bail early if either is
-      // missing — nothing to calculate.
+      // Cart + city are both required server-side. Bail early if either is missing.
       if (!cartId || !cityFiasId || !shopId) return;
       setLoading(true);
       try {
@@ -80,7 +70,7 @@ export function useCdek() {
         }
         const json = await res.json().catch(() => null);
         if (json?.success && json?.data) {
-          setData(json.data as DeliveryOptionsResponse);
+          setData(json.data as DeliveryCalcResponse);
         } else {
           setData(EMPTY);
         }
@@ -104,57 +94,51 @@ export function useCdek() {
     }
   }, [state.delivery.cityFiasId, fetchTariffs]);
 
-  // Build a unified DeliveryMethodChoice list from all sources. Order matches
-  // Figma 1:13501 grouping: CDEK first, then pickup, then custom profiles.
-  // Defensive fallbacks: arrays default to [] in case backend response is
-  // malformed — render code maps over them so a missing field would otherwise
-  // crash the whole React Island.
-  const safeTariffs = Array.isArray(data.tariffs) ? data.tariffs : [];
-  const safeProfiles = Array.isArray(data.customProfiles) ? data.customProfiles : [];
+  const etaText = (
+    min?: number,
+    max?: number,
+    desc?: string,
+  ): string | undefined => {
+    if (min == null || max == null) return desc || undefined;
+    return min === max
+      ? `${min} раб. дн.`
+      : `от ${min} до ${max} рабочих дней`;
+  };
 
-  const choices: DeliveryMethodChoice[] = [
-    ...safeTariffs.map((t) => ({
-      type: t.deliveryMode === 'door' ? ('cdek_door' as const) : ('cdek_pvz' as const),
-      label: t.tariffName ?? 'CDEK',
-      priceCents: Number.isFinite(t.deliverySumRub) ? t.deliverySumRub * 100 : 0,
-      etaText:
-        t.periodMin === t.periodMax
-          ? `${t.periodMin} раб. дн.`
-          : `от ${t.periodMin} до ${t.periodMax} рабочих дней`,
-    })),
-    ...(data.pickupAvailable
-      ? [
-          {
-            type: 'pickup' as const,
-            label: 'Самовывоз',
-            priceCents: 0,
-            etaText:
-              [data.pickupAddress, data.pickupExpectedDate].filter(Boolean).join(' • ') || undefined,
-          },
-        ]
-      : []),
-    ...safeProfiles.flatMap((profile) =>
-      (Array.isArray(profile.tariffs) ? profile.tariffs : []).map((t) => ({
-        type: 'custom' as const,
-        label: t.name ?? 'Доставка',
-        priceCents: Number.isFinite(t.priceCents) ? t.priceCents : 0,
-        etaText: t.description ?? undefined,
-        customId: t.id,
-      })),
-    ),
-  ];
-
-  // Legacy export — DeliveryMethodSection still imports `tariffs` for backwards
-  // compat. Map back to the old shape so existing rendering code works while
-  // we migrate.
-  const tariffs = safeTariffs.map((t) => ({
-    tariff_code: t.tariffCode,
-    tariff_name: t.tariffName,
-    delivery_sum: t.deliverySumRub,
-    period_min: t.periodMin,
-    period_max: t.periodMax,
-    delivery_mode: t.deliveryMode === 'door' ? 1 : 2,
+  // Map logistics `deliveryOptions` → the unified DeliveryMethodChoice list the
+  // UI renders. PARTNER door → cdek_door, PARTNER pickup → cdek_pvz, OWN → custom
+  // (merchant fixed-price). Defensive [] fallback — render code maps over it.
+  const options = Array.isArray(data.deliveryOptions) ? data.deliveryOptions : [];
+  const choices: DeliveryMethodChoice[] = options.map((o) => ({
+    type:
+      o.type === 'OWN'
+        ? ('custom' as const)
+        : o.deliveryMode === 'door'
+          ? ('cdek_door' as const)
+          : ('cdek_pvz' as const),
+    label: o.name ?? 'Доставка',
+    priceCents: Number.isFinite(o.price) ? Math.round(o.price * 100) : 0,
+    etaText: etaText(o.minDays, o.maxDays, o.description),
+    customId: o.type === 'OWN' ? o.id : undefined,
+    cdekTariffCode: o.cdekTariffCode,
+    periodMin: o.minDays,
+    periodMax: o.maxDays,
   }));
 
-  return { tariffs, choices, data, loading, fetchTariffs };
+  // Shop self-pickup (settings.isPickupEnabled) → single «Самовывоз» choice (0 ₽).
+  const pickupPoints = Array.isArray(data.pickupPoints) ? data.pickupPoints : [];
+  if (pickupPoints.length > 0) {
+    const first = pickupPoints[0];
+    choices.push({
+      type: 'pickup',
+      label: 'Самовывоз',
+      priceCents: 0,
+      etaText:
+        [first?.address, first?.notificationMessage].filter(Boolean).join(' • ') ||
+        undefined,
+      pvzCode: first?.id,
+    });
+  }
+
+  return { choices, data, loading, cdekError: data.cdekError, fetchTariffs };
 }

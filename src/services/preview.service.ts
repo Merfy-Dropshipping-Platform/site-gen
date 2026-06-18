@@ -1633,20 +1633,25 @@ const PREVIEW_NAV_AGENT_INLINE = `
     if (e.target && e.target.closest && e.target.closest('[data-merfy-pill]')) {
       return;
     }
-    // Кнопка «Оформить» в превью корзины — это <button data-action="checkout">,
-    // и storefront cart-store.js на её клик делает hard-навигацию
-    // window.location='/checkout'. Внутри iframe конструктора (origin = gateway,
-    // нет маршрута /checkout) это 404 «Cannot GET /checkout». Перехватываем ДО
-    // пропуска нативных кнопок ниже и просим родителя переключиться на страницу
-    // checkout — как для внутренних <a href> выше. stopPropagation глушит
-    // bubble-обработчик cart-store (capture первее), preventDefault — на случай
-    // submit-кнопки формы. Зеркалит navigate-путь: pageIdFromPath('/checkout')
-    // → page-checkout → switchPage в конструкторе.
-    var checkoutBtn = e.target && e.target.closest ? e.target.closest('[data-action="checkout"]') : null;
-    if (checkoutBtn) {
+    // Storefront-кнопки с hard-навигацией внутри iframe конструктора дают 404
+    // (origin = gateway, нет маршрутов /checkout, /cart):
+    //   • «Оформить» корзины = <button data-action="checkout"> → location='/checkout'
+    //   • «Купить сейчас» PDP = <button data-action="buy-now"> → add-to-cart + location='/cart'
+    // Nav-агент пропускает нативные button (чтобы работали add-to-cart/qty/варианты),
+    // поэтому эти кнопки проскакивают. Перехватываем ДО пропуска нативных кнопок
+    // и просим родителя переключиться на нужную страницу — как для внутренних
+    // <a href> выше. stopPropagation глушит bubble-обработчик storefront (capture
+    // первее) → hard-навигации не происходит; preventDefault — на случай submit.
+    // Зеркалит navigate-путь: pageIdFromPath('/checkout'|'/cart') → page-checkout|
+    // page-cart → switchPage в конструкторе.
+    var navBtn = e.target && e.target.closest
+      ? e.target.closest('[data-action="checkout"], [data-action="buy-now"]')
+      : null;
+    if (navBtn) {
       e.preventDefault();
       e.stopPropagation();
-      post({ type: 'navigate', path: '/checkout' });
+      var navPath = navBtn.getAttribute('data-action') === 'buy-now' ? '/cart' : '/checkout';
+      post({ type: 'navigate', path: navPath });
       return;
     }
     var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;

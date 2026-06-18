@@ -2392,10 +2392,19 @@ export class SitesDomainService {
     const pagesData = { ...(data.pagesData ?? {}) };
     const fs = await import("node:fs/promises");
     const path = await import("node:path");
+    // Full canonical page set — re-seed restores the designer's structure on
+    // every page (not just home/about/contacts), so a stale site (e.g. a Hero
+    // left on the collection page) is fully corrected. See spec 099 +
+    // scripts/validate-page-seeds.mjs.
     const seedFiles: Record<string, string> = {
       home: "home.json",
       "page-about": "about.json",
       "page-contacts": "contacts.json",
+      "page-catalog": "catalog.json",
+      "page-collection": "collection.json",
+      "page-product": "product.json",
+      "page-cart": "cart.json",
+      "page-checkout": "checkout.json",
     };
     const reset: string[] = [];
     for (const [key, file] of Object.entries(seedFiles)) {

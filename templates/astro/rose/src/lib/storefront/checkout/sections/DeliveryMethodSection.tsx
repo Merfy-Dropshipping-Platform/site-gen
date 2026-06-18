@@ -4,8 +4,9 @@ import { PickupPointPicker } from './PickupPointPicker';
 import type { PickupPoint } from '../hooks/usePickupPoints';
 
 // Most props are vestigial now — the unified `useCdek` hook returns CDEK
-// tariffs, pickup, and custom profiles already merged into one `choices` list.
-// We keep the prop signature so existing puckConfig + Astro SSR don't break.
+// tariffs (door/pickup), own (custom) tariffs and pickup points already merged
+// into one `choices` list. We keep the prop signature so existing puckConfig +
+// Astro SSR don't break.
 export interface DeliveryMethodSectionProps {
   heading?: string;
   cdekEnabled: boolean;
@@ -19,7 +20,7 @@ export interface DeliveryMethodSectionProps {
 
 export function DeliveryMethodSection(props: DeliveryMethodSectionProps) {
   const { state, dispatch } = useCheckoutContext();
-  const { choices, loading } = useCdek();
+  const { choices, loading, cdekError, unavailableProducts } = useCdek();
 
   const subtotalCents = state.items
     .filter((i) => !i.isBonus)
@@ -59,11 +60,16 @@ export function DeliveryMethodSection(props: DeliveryMethodSectionProps) {
       ? 'Введите адрес — мы рассчитаем стоимость доставки.'
       : loading
       ? 'Считаем варианты доставки…'
-      : 'Для этого города нет доступных вариантов доставки.';
+      : cdekError || 'Для этого города нет доступных вариантов доставки.';
     return (
       <>
         <Heading />
         <p className="text-[length:var(--size-small)] text-[rgb(var(--color-muted))]">{message}</p>
+        {unavailableProducts.length > 0 && (
+          <p className="mt-2 text-[length:var(--size-small)] text-[rgb(var(--color-muted))]">
+            Часть товаров недоступна для доставки в этот адрес.
+          </p>
+        )}
       </>
     );
   }
@@ -73,6 +79,16 @@ export function DeliveryMethodSection(props: DeliveryMethodSectionProps) {
   return (
     <>
       <Heading />
+      {cdekError && (
+        <p className="mb-3 text-[length:var(--size-small)] text-[rgb(var(--color-muted))]">
+          {cdekError}
+        </p>
+      )}
+      {unavailableProducts.length > 0 && (
+        <p className="mb-3 text-[length:var(--size-small)] text-[rgb(var(--color-muted))]">
+          Часть товаров недоступна для доставки в этот адрес.
+        </p>
+      )}
       <div className="flex flex-col gap-4">
         {displayChoices.map((c, i) => {
           const id = `dm-${c.type}-${c.customId ?? c.label}-${i}`;

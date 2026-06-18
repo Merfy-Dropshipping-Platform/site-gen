@@ -43,6 +43,12 @@ export interface DeliveryMethodChoice {
    * через selectDelivery → pickupPointAddress. */
   pvzAddress?: string;
   customId?: string;
+  /** Код тарифа СДЭК (для PARTNER) — уходит в delivery/select как `tariffCode`,
+   * далее orders.cdekTariffCode → событие order.created → создание отгрузки. */
+  cdekTariffCode?: number;
+  /** Срок доставки (раб. дни) — прокидывается в delivery/select. */
+  periodMin?: number;
+  periodMax?: number;
 }
 
 export interface CheckoutContact {

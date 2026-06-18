@@ -16,10 +16,10 @@ export function SubmitSection(props: SubmitSectionProps) {
 
   const cls =
     props.buttonStyle === 'outline'
-      ? 'w-full h-14bg-transparent text-[rgb(var(--color-accent))] border-2 border-[rgb(var(--color-accent))] rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[length:var(--size-body)] disabled:opacity-50'
+      ? 'w-full h-14 bg-transparent text-[rgb(var(--color-accent))] border-2 border-[rgb(var(--color-accent))] rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[length:var(--size-body)] disabled:opacity-50'
       : props.buttonStyle === 'gradient'
-        ? 'w-full h-14bg-gradient-to-r from-[rgb(var(--color-accent))] to-[rgb(var(--color-accent-2))] text-[rgb(var(--color-accent-fg))] rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[length:var(--size-body)] disabled:opacity-50'
-        : 'w-full h-14bg-[rgb(var(--color-accent))] text-[rgb(var(--color-accent-fg))] rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[length:var(--size-body)] disabled:opacity-50';
+        ? 'w-full h-14 bg-gradient-to-r from-[rgb(var(--color-accent))] to-[rgb(var(--color-accent-2))] text-[rgb(var(--color-accent-fg))] rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[length:var(--size-body)] disabled:opacity-50'
+        : 'w-full h-14 bg-[rgb(var(--color-accent))] text-[rgb(var(--color-accent-fg))] rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[length:var(--size-body)] disabled:opacity-50';
 
   const text = state.submitting ? props.loadingText : props.buttonText.replace('{total}', formatRub(totals.totalCents));
 
@@ -63,6 +63,12 @@ export function SubmitSection(props: SubmitSectionProps) {
           type: dm.type,
           deliveryCostCents: dm.priceCents,
         };
+        // СДЭК-тариф нужен бэку для создания отгрузки: select.tariffCode →
+        // orders.cdekTariffCode → событие order.created → buildOrderRequest
+        // определяет door/pickup. Backend ждёт поле `tariffCode` (не cdekTariffCode).
+        if (dm.cdekTariffCode != null) selectBody.tariffCode = dm.cdekTariffCode;
+        if (dm.periodMin != null) selectBody.periodMin = dm.periodMin;
+        if (dm.periodMax != null) selectBody.periodMax = dm.periodMax;
         if (dm.pvzCode) selectBody.pickupPointCode = dm.pvzCode;
         if (dm.pvzAddress) selectBody.pickupPointAddress = dm.pvzAddress;
         if (state.delivery.city || state.delivery.address) {

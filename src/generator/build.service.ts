@@ -14,6 +14,8 @@
  */
 import { Logger } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
+import { firstValueFrom } from "rxjs";
+import { timeout } from "rxjs/operators";
 import { resolveAssetUrls } from "../themes/asset-resolver";
 import * as path from "path";
 import * as fs from "fs/promises";
@@ -360,6 +362,8 @@ export interface BuildDependencies {
   db: NodePgDatabase<typeof schemaTypes>;
   schema: typeof schemaTypes;
   productClient: ClientProxy;
+  /** Optional — used to gate footer payment badges on a connected acquirer. */
+  billingClient?: ClientProxy;
   s3: S3StorageService;
   eventsEmit?: (pattern: string, payload: unknown) => void;
 }
@@ -1130,8 +1134,21 @@ export async function runBuildPipeline(
       if (v2Store.products.length > 0) {
         const v2ProductsPath = path.join(ctx.distDir, "data", "products.json");
         await fs.mkdir(path.dirname(v2ProductsPath), { recursive: true });
-        await fs.writeFile(v2ProductsPath, JSON.stringify(v2Store.products, null, 2), "utf8");
-        logger.log(`[themes-v2] Injected ${v2Store.products.length} products into data/products.json for site ${params.siteId}`);
+        // Вариантный товар: RPC product service отдаёт basePrice=null → price=0.
+        // Подставляем МИНИМАЛЬНУЮ цену варианта (паритет с gateway mapVariants
+        // effectiveBasePrice), иначе секции/PopularProducts читают products.json и
+        // показывают «0 ₽» у вариантных товаров (каталог берёт live API и потому ок).
+        const v2Products = (v2Store.products as Array<Record<string, any>>).map((p) => {
+          const cur = Number(p.price ?? p.basePrice);
+          if (Number.isFinite(cur) && cur > 0) return p;
+          const combos = Array.isArray(p.variantCombinations) ? p.variantCombinations : [];
+          const prices = combos
+            .map((c: any) => Number(c?.price))
+            .filter((n: number) => Number.isFinite(n) && n > 0);
+          return prices.length > 0 ? { ...p, price: Math.min(...prices) } : p;
+        });
+        await fs.writeFile(v2ProductsPath, JSON.stringify(v2Products, null, 2), "utf8");
+        logger.log(`[themes-v2] Injected ${v2Products.length} products into data/products.json for site ${params.siteId}`);
         // Pretty product URLs + SEO: каталог/Popular/islands линкуют на /product/<slug>,
         // но Option B держит единую страницу /product (гидрация по ?id= / slug из
         // пути). themes-v2 копирует pre-built dist без per-slug страниц → /product/<slug>
@@ -2070,71 +2087,115 @@ async function stageGenerate(
 
     if (policyPagesCount > 0) {
       logger.log(`[generate] Added ${policyPagesCount} policy page(s)`);
-
-      // Обновляем ссылки в Footer всех страниц на реальные пути политик
-      const policyLinks = policies
-        .filter((p) => p.content && p.content.trim() !== "")
-        .map((p) => ({
-          label: POLICY_TITLE_MAP[p.type] ?? p.type,
-          href: `/${POLICY_SLUG_MAP[p.type] ?? p.type}`,
-        }));
-
-      if (policyLinks.length > 0) {
-        for (const page of pages) {
-          const content = page.data.content as any[];
-          for (const component of content) {
-            if (component?.type === "Footer" && component?.props) {
-              // Обновляем informationColumn с реальными ссылками
-              const infoCol = component.props.informationColumn;
-              if (infoCol?.links && Array.isArray(infoCol.links)) {
-                component.props.informationColumn = {
-                  ...infoCol,
-                  links: policyLinks,
-                };
-              } else {
-                component.props.informationColumn = {
-                  title: "Информация",
-                  links: policyLinks,
-                };
-              }
-            }
-          }
-        }
-        logger.log(`[generate] Updated Footer policy links in ${pages.length} page(s)`);
-      }
     }
-    // ── Контактная информация компании в Footer ──
+
+    // ── Единый авторитетный проход по Footer-блокам ──
+    // Принцип: элемент футера рендерится ТОЛЬКО при настроенных данных.
+    //  • ссылки политик — лишь для заполненных (иначе пустой массив → не рендерим);
+    //  • телефон/почта — из «Информация о компании» (иначе чистим плейсхолдеры темы);
+    //  • соцсети — фильтр пустых/«#» (источник — Theme Settings конструктора);
+    //  • платёжные бейджи — только при подключённой кассе (YooKassa).
+
+    // Реальные ссылки политик (только с непустым контентом).
+    const policyLinks = policies
+      .filter((p) => p.content && p.content.trim() !== "")
+      .map((p) => ({
+        label: POLICY_TITLE_MAP[p.type] ?? p.type,
+        href: `/${POLICY_SLUG_MAP[p.type] ?? p.type}`,
+      }));
+
+    // Контактная информация компании → телефон/почта футера.
     const contactsRows = await deps.db
       .select()
       .from(deps.schema.siteContacts)
       .where(eq(deps.schema.siteContacts.siteId, ctx.siteId));
+    const contactFields = (
+      (contactsRows[0]?.fields as
+        | { id: string; label: string; value: string; order: number }[]
+        | undefined) ?? []
+    )
+      .slice()
+      .sort((a, b) => a.order - b.order)
+      .filter((f) => f && typeof f.value === "string" && f.value.trim() !== "");
+    const isEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+    const isPhone = (v: string) =>
+      !isEmail(v) && /\d/.test(v) && /^[+\d][\d\s()\-]{4,}$/.test(v.trim());
+    const labelHit = (label: string, re: RegExp) => re.test(label ?? "");
+    const contactEmail = contactFields.find(
+      (f) => isEmail(f.value) || labelHit(f.label, /e-?mail|почт/i),
+    )?.value.trim();
+    const contactPhone = contactFields.find(
+      (f) => isPhone(f.value) || labelHit(f.label, /тел|phone|моб/i),
+    )?.value.trim();
 
-    const contacts = contactsRows[0];
-    if (contacts?.fields && Array.isArray(contacts.fields) && contacts.fields.length > 0) {
-      // Ищем email и телефон среди полей контактов
-      const contactFields = contacts.fields as { id: string; label: string; value: string; order: number }[];
-      const sortedFields = [...contactFields].sort((a, b) => a.order - b.order);
-
-      // Формируем данные для socialColumn: контактные поля + соцсети
-      for (const page of pages) {
-        const content = page.data.content as any[];
-        for (const component of content) {
-          if (component?.type === "Footer" && component?.props) {
-            const existingSocial = component.props.socialColumn ?? {};
-
-            component.props.socialColumn = {
-              ...existingSocial,
-              title: existingSocial.title ?? "Контакты",
-              contactFields: sortedFields.map((f) => ({
-                label: f.label,
-                value: f.value,
-              })),
-            };
-          }
-        }
+    // Подключена ли касса магазина (YooKassa) → показывать ли платёжные бейджи.
+    // shopId == siteId на платформе. Graceful: billing недоступен ⇒ бейджи скрыты.
+    let paymentEnabled = false;
+    if (deps.billingClient) {
+      try {
+        const cred = (await firstValueFrom(
+          deps.billingClient
+            .send("billing.shop_payment_settings.get_credentials", {
+              shopId: ctx.siteId,
+            })
+            .pipe(timeout(4000)),
+        )) as { success?: boolean; yookassaShopId?: string | null } | null;
+        paymentEnabled = Boolean(cred?.success && cred?.yookassaShopId);
+      } catch (e) {
+        logger.warn(
+          `[generate] payment status check failed (badges hidden): ${e instanceof Error ? e.message : String(e)}`,
+        );
+        paymentEnabled = false;
       }
-      logger.log(`[generate] Updated Footer contacts in ${pages.length} page(s) with ${sortedFields.length} field(s)`);
     }
+
+    const SOCIAL_PLACEHOLDER = new Set(["", "#"]);
+    for (const page of pages) {
+      const content = page.data.content as any[];
+      for (const component of content) {
+        if (component?.type !== "Footer" || !component?.props) continue;
+        const props = component.props as Record<string, any>;
+
+        // Политика-ссылки: только заполненные (build авторитетен — чистит хардкод).
+        const infoCol = (props.informationColumn ?? {}) as Record<string, unknown>;
+        props.informationColumn = { ...infoCol, links: policyLinks };
+
+        // Соцсети: фильтр пустых/«#» (легаси-данные/сиды не должны рендериться).
+        const social = (props.socialColumn ?? {}) as Record<string, any>;
+        const filteredSocialLinks = Array.isArray(social.socialLinks)
+          ? social.socialLinks.filter(
+              (s: any) =>
+                s &&
+                typeof s.href === "string" &&
+                !SOCIAL_PLACEHOLDER.has(s.href.trim()),
+            )
+          : [];
+        const newSocial: Record<string, any> = {
+          ...social,
+          socialLinks: filteredSocialLinks,
+          contactFields: contactFields.map((f) => ({ label: f.label, value: f.value })),
+        };
+        // Почта/телефон авторитетно из контактов (иначе убираем плейсхолдеры темы).
+        if (contactEmail) newSocial.email = contactEmail;
+        else delete newSocial.email;
+        props.socialColumn = newSocial;
+        if (contactPhone) props.phone = contactPhone;
+        else delete props.phone;
+
+        // Платёжные бейджи — только при подключённой кассе.
+        props.paymentEnabled = paymentEnabled;
+      }
+    }
+    logger.log(
+      `[generate] Footer wired: ${policyLinks.length} policy link(s), ` +
+        `phone=${contactPhone ? "yes" : "no"}, email=${contactEmail ? "yes" : "no"}, ` +
+        `social=${
+          pages
+            .flatMap((p) => (p.data.content as any[]) ?? [])
+            .find((c) => c?.type === "Footer")?.props?.socialColumn?.socialLinks
+            ?.length ?? 0
+        }, payment=${paymentEnabled ? "on" : "off"}`,
+    );
   } catch (err) {
     logger.warn(
       `[generate] Failed to load policy pages: ${err instanceof Error ? err.message : String(err)}`,

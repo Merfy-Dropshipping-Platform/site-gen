@@ -72,51 +72,10 @@
         ]
       },
       "informationColumn": {
-        "title": "Информация",
-        "links": [
-          {
-            "label": "Политика доставки",
-            "href": "/legal/delivery"
-          },
-          {
-            "label": "Политика возврата",
-            "href": "/legal/returns"
-          },
-          {
-            "label": "Условия обслуживания",
-            "href": "/legal/terms"
-          },
-          {
-            "label": "Политика конфиденциальности",
-            "href": "/legal/privacy"
-          }
-        ]
+        "links": []
       },
       "socialColumn": {
-        "title": "Социальные сети",
-        "email": "flux@example.ru",
-        "socialLinks": [
-          {
-            "platform": "telegram",
-            "href": "#"
-          },
-          {
-            "platform": "vk",
-            "href": "#"
-          },
-          {
-            "platform": "youtube",
-            "href": "#"
-          },
-          {
-            "platform": "dzen",
-            "href": "#"
-          },
-          {
-            "platform": "tiktok",
-            "href": "#"
-          }
-        ]
+        "socialLinks": []
       },
       "copyright": {
         "poweredBy": "Powered by Merfy",

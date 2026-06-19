@@ -204,7 +204,6 @@
     },
     "Footer": {
       "siteTitle": "Rose",
-      "phone": "+7 (000) 000-00-00",
       "variant": "3-col",
       "newsletter": {
         "enabled": true,
@@ -229,49 +228,10 @@
         ]
       },
       "informationColumn": {
-        "links": [
-          {
-            "label": "Политика доставки",
-            "href": "/legal/delivery"
-          },
-          {
-            "label": "Политика возврата",
-            "href": "/legal/return"
-          },
-          {
-            "label": "Условия обслуживания",
-            "href": "/legal/terms"
-          },
-          {
-            "label": "Политика конфиденциальности",
-            "href": "/legal/privacy"
-          }
-        ]
+        "links": []
       },
       "socialColumn": {
-        "email": "rose@example.ru",
-        "socialLinks": [
-          {
-            "platform": "vk",
-            "href": "#"
-          },
-          {
-            "platform": "youtube",
-            "href": "#"
-          },
-          {
-            "platform": "dzen",
-            "href": "#"
-          },
-          {
-            "platform": "tiktok",
-            "href": "#"
-          },
-          {
-            "platform": "telegram",
-            "href": "#"
-          }
-        ]
+        "socialLinks": []
       },
       "copyright": {
         "poweredBy": "Powered by Merfy",

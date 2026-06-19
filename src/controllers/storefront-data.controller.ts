@@ -383,6 +383,20 @@ export class StorefrontDataController {
           });
           (product as Record<string, unknown>).variants = variants;
           (product as Record<string, unknown>).hasVariants = variants.length > 0;
+          // Вариантный товар: basePrice=null → price 0 (см. строку ~191). Подставляем
+          // МИНИМАЛЬНУЮ цену варианта (паритет с gateway mapVariants + build products.json),
+          // иначе превью конструктора показывает «0 ₽» у вариантных товаров.
+          const curPrice = Number((product as Record<string, unknown>).price);
+          if ((!Number.isFinite(curPrice) || curPrice <= 0) && variants.length > 0) {
+            const vp = variants
+              .map((v) => Number(v.price))
+              .filter((n) => Number.isFinite(n) && n > 0);
+            if (vp.length > 0) {
+              const minV = Math.min(...vp);
+              (product as Record<string, unknown>).price = minV;
+              (product as Record<string, unknown>).basePrice = minV;
+            }
+          }
         } catch (vErr) {
           this.logger.warn(
             `variant RPC failed for product=${(product as { id?: string }).id}: ${(vErr as Error)?.message ?? vErr}`,

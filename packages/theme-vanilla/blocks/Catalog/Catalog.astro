@@ -462,8 +462,8 @@ const rowStockOptions: RadioOption[] = [
 			return {
 				id: p.id,
 				name: p.title || p.name || "",
-				price: cents / 100,
-				oldPrice: oldCents && oldCents > 0 ? oldCents / 100 : null,
+				price: cents,
+				oldPrice: oldCents && oldCents > 0 ? oldCents : null,
 				slug: p.handle || p.slug,
 				images: Array.isArray(p.images) ? p.images : [],
 				hasVariants: !!p.hasVariants,
@@ -681,9 +681,9 @@ const rowStockOptions: RadioOption[] = [
 			if (sort) qp.set("sort", sort);
 
 			if (filters.priceMin !== null && filters.priceMin !== undefined)
-				qp.set("min_price", String(Math.round(filters.priceMin * 100)));
+				qp.set("min_price", String(Math.round(filters.priceMin)));
 			if (filters.priceMax !== null && filters.priceMax !== undefined)
-				qp.set("max_price", String(Math.round(filters.priceMax * 100)));
+				qp.set("max_price", String(Math.round(filters.priceMax)));
 
 			if (filters.stock === "in") qp.set("availability", "in_stock");
 			else if (filters.stock === "out") qp.set("availability", "sold_out");

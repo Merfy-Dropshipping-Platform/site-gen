@@ -138,8 +138,8 @@ const apiBase = "https://gateway.merfy.ru";
 			return {
 				id: p.id,
 				name: p.title || p.name || "",
-				price: cents / 100,
-				oldPrice: oldCents && oldCents > 0 ? oldCents / 100 : null,
+				price: cents,
+				oldPrice: oldCents && oldCents > 0 ? oldCents : null,
 				slug: p.handle || p.slug,
 				images: Array.isArray(p.images) ? p.images : [],
 			};

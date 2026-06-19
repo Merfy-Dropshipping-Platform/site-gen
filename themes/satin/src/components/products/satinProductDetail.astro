@@ -423,8 +423,8 @@ const cartVariantColor = product.colors?.[0] ?? "";
 			return {
 				id: p.id,
 				name: p.title || p.name || "",
-				price: cents / 100,
-				oldPrice: oldCents && oldCents > 0 ? oldCents / 100 : null,
+				price: cents,
+				oldPrice: oldCents && oldCents > 0 ? oldCents : null,
 				slug: p.handle || p.slug,
 				description: p.description || p.metaDescription || "",
 				images: Array.isArray(p.images) ? p.images : [],
@@ -438,8 +438,8 @@ const cartVariantColor = product.colors?.[0] ?? "";
 							return {
 								id: vc.id,
 								title: vc.title,
-								price: vcCents !== null ? vcCents / 100 : 0,
-								compareAtPrice: vcOld && vcOld > 0 ? vcOld / 100 : null,
+								price: vcCents !== null ? vcCents : 0,
+								compareAtPrice: vcOld && vcOld > 0 ? vcOld : null,
 								available: vc.available,
 								quantity: vc.quantity,
 								options: vc.options || {},

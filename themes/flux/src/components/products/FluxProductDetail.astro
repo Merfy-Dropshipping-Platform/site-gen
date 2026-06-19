@@ -479,6 +479,25 @@ const pdpHeartSvg =
 							};
 						})
 					: [],
+				// Медиа вариантов: опции (напр. «Цвет») несут images[]; нужны applyCombo
+				// для смены галереи при выборе варианта. API их отдаёт, но mapApiProduct
+				// раньше дропал variantGroups целиком → фото варианта не подхватывалось.
+				variantGroups: Array.isArray(p.variantGroups)
+					? p.variantGroups.map(function (g) {
+							return {
+								name: g.name,
+								options: Array.isArray(g.options)
+									? g.options.map(function (o) {
+											return {
+												value: o.value,
+												images: Array.isArray(o.images) ? o.images : [],
+												swatchHex: o.swatchHex || null,
+											};
+										})
+									: [],
+							};
+						})
+					: [],
 			};
 		}
 
@@ -710,42 +729,75 @@ const pdpHeartSvg =
 			var badgeEl = section.querySelector("[data-pdp-badge]");
 			if (badgeEl) badgeEl.hidden = !oldRaw;
 
-			// ── Галерея: главное фото + миниатюры из p.images ──
+			// ── Галерея: вынесена в applyGallery (переиспользуется applyCombo при
+			//    смене варианта). productGalleryImages — медиа уровня товара
+			//    (фолбэк, когда у выбранного варианта нет своих фото). src —
+			//    главное фото товара, используется ниже для data-image CTA. ──
 			var src = productImage(p);
-			var mainImg = section.querySelector("[data-pdp-main]");
-			if (mainImg) {
-				mainImg.src = src;
-				mainImg.alt = p.name || "";
-				// <picture><source webp> от skeleton/demo больше не валиден — снимаем.
-				var picture = mainImg.closest("picture");
-				var source = picture && picture.querySelector("source");
-				if (source) source.removeAttribute("srcset");
-			}
-			var imgs = (Array.isArray(p.images) ? p.images : []).filter(function (s) {
+			var productGalleryImages = (Array.isArray(p.images) ? p.images : []).filter(function (s) {
 				return typeof s === "string" && s;
 			});
-			var thumbsRow = section.querySelector("[data-pdp-thumbs-row]");
-			if (thumbsRow) {
-				// Flux-сетка миниатюр: grid-cols-3, до 6 кадров (вкл. главный).
-				var thumbUrls = imgs.slice(0, 6);
-				if (thumbUrls.length > 1) {
-					thumbsRow.innerHTML = thumbUrls
-						.map(function (u) {
-							return (
-								'<button type="button" class="aspect-square w-full overflow-hidden bg-[#F5F5F5] transition-opacity hover:opacity-90" data-pdp-thumb data-image="' +
-								escapeHtml(u) + '" aria-label="Показать изображение"><img src="' +
-								escapeHtml(u) + '" alt="' + escapeHtml(p.name) +
-								'" class="h-full w-full object-contain" loading="eager" /></button>'
-							);
-						})
-						.join("");
-					thumbsRow.hidden = false;
-				} else {
-					// Реальный товар с одним фото — прячем demo-миниатюры.
-					thumbsRow.hidden = true;
-					thumbsRow.innerHTML = "";
+			// Медиа выбранного варианта: первая опция группы (обычно «Цвет») с
+			// непустым images[]. null → у варианта нет своих фото (берём товара).
+			function variantImagesFor(sel) {
+				var groups = Array.isArray(p.variantGroups) ? p.variantGroups : [];
+				for (var gi = 0; gi < groups.length; gi++) {
+					var g = groups[gi];
+					var val = sel ? sel[g.name] : null;
+					if (val == null) continue;
+					var opts = g.options || [];
+					for (var oi = 0; oi < opts.length; oi++) {
+						if (opts[oi].value === val && Array.isArray(opts[oi].images) && opts[oi].images.length) {
+							return opts[oi].images;
+						}
+					}
+				}
+				return null;
+			}
+			// Рисует главное фото + миниатюры из переданного списка и синкает
+			// data-image на CTA (корзина читает текущее фото).
+			function applyGallery(list) {
+				var arr = (Array.isArray(list) ? list : []).filter(function (s) {
+					return typeof s === "string" && s;
+				});
+				var mainSrc = arr[0] || productImage(p);
+				var mainImg = section.querySelector("[data-pdp-main]");
+				if (mainImg) {
+					mainImg.src = mainSrc;
+					mainImg.alt = p.name || "";
+					// <picture><source webp> от skeleton/demo больше не валиден — снимаем.
+					var picture = mainImg.closest("picture");
+					var source = picture && picture.querySelector("source");
+					if (source) source.removeAttribute("srcset");
+				}
+				var addCta = section.querySelector("[data-add-to-cart]");
+				var buyCta = section.querySelector("[data-action='buy-now']");
+				if (addCta) addCta.setAttribute("data-image", mainSrc);
+				if (buyCta) buyCta.setAttribute("data-image", mainSrc);
+				var thumbsRow = section.querySelector("[data-pdp-thumbs-row]");
+				if (thumbsRow) {
+					// Flux-сетка миниатюр: grid-cols-3, до 6 кадров (вкл. главный).
+					var thumbUrls = arr.slice(0, 6);
+					if (thumbUrls.length > 1) {
+						thumbsRow.innerHTML = thumbUrls
+							.map(function (u) {
+								return (
+									'<button type="button" class="aspect-square w-full overflow-hidden bg-[#F5F5F5] transition-opacity hover:opacity-90" data-pdp-thumb data-image="' +
+									escapeHtml(u) + '" aria-label="Показать изображение"><img src="' +
+									escapeHtml(u) + '" alt="' + escapeHtml(p.name) +
+									'" class="h-full w-full object-contain" loading="eager" /></button>'
+								);
+							})
+							.join("");
+						thumbsRow.hidden = false;
+					} else {
+						// Реальный товар с одним фото — прячем demo-миниатюры.
+						thumbsRow.hidden = true;
+						thumbsRow.innerHTML = "";
+					}
 				}
 			}
+			applyGallery(productGalleryImages);
 
 			// ── Атрибуты корзины: глобальный делегат [data-add-to-cart] (flux
 			//    nt-cart-flux) читает их при клике. Слаг кладём на секцию (buy-now). ──
@@ -829,6 +881,10 @@ const pdpHeartSvg =
 						addEl.classList.toggle("pointer-events-none", !available);
 						addEl.textContent = available ? "Добавить в корзину" : "Нет в наличии";
 					}
+					// Свап галереи под выбранный вариант: медиа опции (цвет) при
+					// наличии, иначе медиа товара. Чинит баг «фото не меняется».
+					var vImgs = variantImagesFor(selected);
+					applyGallery(vImgs && vImgs.length ? vImgs : productGalleryImages);
 				}
 
 				variantsEl.hidden = false;

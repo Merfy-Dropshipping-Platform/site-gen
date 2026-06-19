@@ -147,7 +147,7 @@ const paddingStyle = p.padding
 			<p class={subtitleCls}>{sectionSubtitle}</p>
 		</div>
 
-		<ul class={gridCls} role="list" data-animate data-animate-delay="0.1s" style={gridStyle}>
+		<ul class={gridCls} role="list" data-animate data-animate-delay="0.1s" style={gridStyle} data-collections-autofill={!usePropCollections ? "" : undefined}>
 			{usePropCollections ? propCollections.map((c, i) => (
 				<li>
 					<a
@@ -188,7 +188,7 @@ const paddingStyle = p.padding
 </section>
 
 <script>
-	import { loadRealCollections, findCollection } from "../../lib/storefront-hydrate";
+	import { loadRealCollections, findCollection, escapeHtml } from "../../lib/storefront-hydrate";
 
 	// Резолв collectionId→имя/обложка на плитках (data-collection-ref).
 	// Паритет theme-base resolveManual: имя коллекции перебивает ручной heading;
@@ -222,6 +222,46 @@ const paddingStyle = p.padding
 		}
 	};
 
+	// АВТОПОДСТАНОВКА: пустой пикер (SSR = demo-плитки верстальщика) → реальные
+	// коллекции магазина из /data/collections.json (live) / storefront-data (превью).
+	// Прежде показывались фейк-демо, что вводило в заблуждение. Явный выбор в пикере
+	// имеет приоритет (грид не помечен data-collections-autofill). Реальных нет
+	// (demo-сборка без collections.json) → no-op, демо остаётся. Разметка плитки =
+	// propCollections-ветка vanilla (canon-default при пустом пикере: gridAspect '1:1'
+	// → aspect-[1/1], cardCaptionStyle 'uppercase'). Обложка: своя картинка коллекции,
+	// иначе дизайнерский плейсхолдер темы (пара текстиль/декор) по позиции.
+	const AUTOFILL_COVERS = ["/images/vanilla-collection-textile.webp", "/images/vanilla-collection-decor.webp"];
+	const autofillCollections = async () => {
+		const grids = Array.from(document.querySelectorAll<HTMLElement>("ul[data-collections-autofill]"));
+		if (grids.length === 0) return;
+		const collections = await loadRealCollections();
+		if (!collections || collections.length === 0) return;
+		const visible = collections.filter((c) => c && c.slug !== "general").slice(0, 6);
+		if (visible.length === 0) return;
+		const html = visible
+			.map((c, i) => {
+				const name = escapeHtml(c.name || "Коллекция");
+				const ref = c.slug || c.id || "";
+				const href = "/catalog?collection=" + encodeURIComponent(ref);
+				const cover =
+					c.image ||
+					(Array.isArray(c.images) ? c.images[0] : "") ||
+					AUTOFILL_COVERS[i % AUTOFILL_COVERS.length];
+				return `<li><a href="${href}" class="group flex w-full cursor-pointer flex-col gap-3" aria-label="${name}" data-nt="vanilla-collection-card">
+			<div class="aspect-[1/1] w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]">
+				<img src="${escapeHtml(cover)}" alt="${name}" loading="lazy" class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.08]" />
+			</div>
+			<h3 class="vanilla-collection-name font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-heading,38_49_28))] transition-opacity group-hover:opacity-70 uppercase">${name}</h3>
+		</a></li>`;
+			})
+			.join("");
+		for (const grid of grids) grid.innerHTML = html;
+	};
+
 	hydrateCollectionTiles();
-	document.addEventListener("astro:page-load", hydrateCollectionTiles);
+	autofillCollections();
+	document.addEventListener("astro:page-load", () => {
+		hydrateCollectionTiles();
+		autofillCollections();
+	});
 </script>

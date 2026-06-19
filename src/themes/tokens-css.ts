@@ -91,6 +91,16 @@ export function buildTokensCss(
   // manifest defaults always won, silently discarding merchant input.
   const themeDefaults = (manifest?.defaults ?? {}) as Record<string, string>;
 
+  // Cart variant ('drawer' | 'page'): merchant ThemeSettingsPanel choice wins,
+  // then theme manifest default, then 'drawer'. Read inline at click-time by the
+  // header script (Layout.astro) — 'page' navigates to /cart, 'drawer' opens the
+  // slide-over panel. Pre-fix this token only mirrored the manifest default, so
+  // picking "Страница" never reached :root and had no effect.
+  const cartTypeChoice =
+    s.cartType === 'page' || s.cartType === 'drawer'
+      ? s.cartType
+      : themeDefaults['--cart-type'] ?? 'drawer';
+
   const rootRules = `
 :root {
   --radius-button: ${merchantFirst(buttonRadius, buttonRadiusSet, themeDefaults['--radius-button'], '0px')};
@@ -167,9 +177,7 @@ export function buildTokensCss(
       ? `\n  --contact-form-layout: ${themeDefaults['--contact-form-layout']};`
       : ''
   }${
-    themeDefaults['--cart-type']
-      ? `\n  --cart-type: ${themeDefaults['--cart-type']};`
-      : ''
+    `\n  --cart-type: ${cartTypeChoice};`
   }${
     themeDefaults['--card-style']
       ? `\n  --card-style: ${themeDefaults['--card-style']};`
@@ -290,7 +298,21 @@ export function buildTokensCss(
       : null;
   const rootColorRules = defaultScheme ? schemeVarsInRoot(defaultScheme) : '';
 
-  return [rootRules, rootColorRules, schemeRules].filter(Boolean).join('\n');
+  // Избранное (wishlist) вкл/выкл — глобальный тумблер из ThemeSettingsPanel
+  // («Настройки темы» → «Избранное»). Когда выключено, скрываем весь wishlist UI
+  // во ВСЕХ темах одним правилом (зеркалит live+preview, т.к. эта функция —
+  // единый источник tokens.css для обоих). Селекторы универсальны:
+  //   a[href="/wishlist"]    — иконка/ссылка избранного в шапке (+ бейдж внутри)
+  //   [data-wishlist-toggle] — все сердечки (карточки каталога + PDP), в т.ч.
+  //                            добавленные initWishlistUI динамически.
+  const wishlistHideRule =
+    s.wishlistEnabled === false
+      ? 'a[href="/wishlist"],[data-wishlist-toggle]{display:none !important}'
+      : '';
+
+  return [rootRules, rootColorRules, schemeRules, wishlistHideRule]
+    .filter(Boolean)
+    .join('\n');
 }
 
 // ──────────────────────────────────────────────────────────────────────────

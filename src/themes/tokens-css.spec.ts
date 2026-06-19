@@ -105,6 +105,43 @@ describe('buildTokensCss merchant precedence', () => {
     expect(css).toContain('--text-transform-heading: none');
   });
 
+  it('merchant cartType "page" overrides manifest default drawer', () => {
+    const css = buildTokensCss({ cartType: 'page' }, 'rose');
+    expect(css).toContain('--cart-type: page');
+  });
+
+  it('manifest default --cart-type: drawer used when merchant did not set cartType', () => {
+    const css = buildTokensCss({}, 'rose');
+    expect(css).toContain('--cart-type: drawer');
+  });
+
+  it('invalid cartType ignored → falls back to manifest drawer', () => {
+    const css = buildTokensCss({ cartType: 'bogus' }, 'rose');
+    expect(css).toContain('--cart-type: drawer');
+  });
+
+  it('--cart-type always emitted even without a theme manifest', () => {
+    // No theme → no manifest defaults; merchant page choice must still emit.
+    const css = buildTokensCss({ cartType: 'page' }, null);
+    expect(css).toContain('--cart-type: page');
+  });
+
+  it('wishlistEnabled:false → инжектит правило скрытия wishlist UI (все темы)', () => {
+    const css = buildTokensCss({ wishlistEnabled: false }, 'rose');
+    expect(css).toContain(
+      'a[href="/wishlist"],[data-wishlist-toggle]{display:none !important}',
+    );
+  });
+
+  it('wishlistEnabled:true / отсутствует → wishlist UI НЕ скрывается', () => {
+    expect(buildTokensCss({ wishlistEnabled: true }, 'rose')).not.toContain(
+      '[data-wishlist-toggle]{display:none',
+    );
+    expect(buildTokensCss({}, 'rose')).not.toContain(
+      '[data-wishlist-toggle]{display:none',
+    );
+  });
+
   it(':root эмитит button-2 алиасы ≡ secondary (T9)', () => {
     const css = buildTokensCss({}, 'rose');
     // Rose manifest: secondaryButton text=#000000, border=#000000

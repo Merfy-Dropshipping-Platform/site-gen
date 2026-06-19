@@ -49,6 +49,27 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 			initCartUI();
 			// Избранное (wishlist) — глобальный делегат сердец/бейджей, зеркало корзины.
 			initWishlistUI();
+
+				// Корзина «Сайдбар»/«Страница» (--cart-type). Иконка корзины в vanilla —
+				// <a href="/cart">: для page это уже верный переход (no-op). Для drawer в
+				// capture-фазе отменяем переход и открываем панель событием vanilla:cart:open
+				// (его слушает VanillaCartDrawer). Так настройка работает на live.
+				document.addEventListener(
+					"click",
+					(e) => {
+						const el = e.target as Element | null;
+						if (!el || !el.closest('a[aria-label="Корзина"]')) return;
+						const cartType = getComputedStyle(document.documentElement)
+							.getPropertyValue("--cart-type")
+							.trim()
+							.replace(/['"]/g, "");
+						if (cartType === "page") return;
+						e.preventDefault();
+						e.stopImmediatePropagation();
+						window.dispatchEvent(new CustomEvent("vanilla:cart:open"));
+					},
+					true,
+				);
 		</script>
 
 		<script>

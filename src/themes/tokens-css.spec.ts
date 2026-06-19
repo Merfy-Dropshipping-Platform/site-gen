@@ -129,7 +129,7 @@ describe('buildTokensCss merchant precedence', () => {
   it('wishlistEnabled:false → инжектит правило скрытия wishlist UI (все темы)', () => {
     const css = buildTokensCss({ wishlistEnabled: false }, 'rose');
     expect(css).toContain(
-      'a[href="/wishlist"],[data-wishlist-toggle]{display:none !important}',
+      'a[href$="/wishlist"],[data-wishlist-toggle]{display:none !important}',
     );
   });
 

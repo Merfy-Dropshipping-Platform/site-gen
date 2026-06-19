@@ -302,12 +302,14 @@ export function buildTokensCss(
   // («Настройки темы» → «Избранное»). Когда выключено, скрываем весь wishlist UI
   // во ВСЕХ темах одним правилом (зеркалит live+preview, т.к. эта функция —
   // единый источник tokens.css для обоих). Селекторы универсальны:
-  //   a[href="/wishlist"]    — иконка/ссылка избранного в шапке (+ бейдж внутри)
+  //   a[href$="/wishlist"]   — ссылка избранного в шапке. $= (ends-with) ловит и
+  //                            live "/wishlist", и превью "/__theme/<тема>/wishlist"
+  //                            (nav-агент превью переписывает root-URL).
   //   [data-wishlist-toggle] — все сердечки (карточки каталога + PDP), в т.ч.
   //                            добавленные initWishlistUI динамически.
   const wishlistHideRule =
     s.wishlistEnabled === false
-      ? 'a[href="/wishlist"],[data-wishlist-toggle]{display:none !important}'
+      ? 'a[href$="/wishlist"],[data-wishlist-toggle]{display:none !important}'
       : '';
 
   return [rootRules, rootColorRules, schemeRules, wishlistHideRule]

@@ -1097,6 +1097,14 @@ const PREVIEW_NAV_AGENT_INLINE = `
       '.z-50{z-index:50}',
       '.transition-transform{transition-property:transform;transition-timing-function:cubic-bezier(0.4,0,0.2,1);transition-duration:150ms}',
       '.duration-300{transition-duration:300ms}',
+      // Логотип-картинка портов (themes/<тема>/Header.astro:
+      // <img class="h-[var(--size-logo-width,Npx)] w-auto max-w-[160px] object-contain">).
+      // preview-tailwind scan НЕ берёт классы theme-портов в Docker (как .sticky выше):
+      // в превью-бандле нет height-вариантов ≠24px (bloom 19 / satin 22) и НЕТ max-width:160px
+      // ни у кого → загруженное лого рендерится без ограничений = «на всю страницу».
+      // Инжектим явно для всех тем. Атрибут-селектор ловит любой fallback px;
+      // текстовый логотип (text-[length:var(--size-logo-width,…)]) не матчится.
+      '[class*="h-[var(--size-logo-width"]{height:var(--size-logo-width,24px);width:auto;max-width:160px;object-fit:contain}',
       // NB: НЕ ставим z-index на section-hover/selected — это перебивает sticky
       // header z-50 → Hero z-10 поднимается выше Header → submenu panel недоступен.
       // Outline это border-like rendering, в z-stack не участвует.

@@ -2399,6 +2399,7 @@ export class SitesDomainService {
     const seedFiles: Record<string, string> = {
       home: "home.json",
       "page-about": "about.json",
+      "page-delivery": "delivery.json",
       "page-contacts": "contacts.json",
       "page-catalog": "catalog.json",
       "page-collection": "collection.json",

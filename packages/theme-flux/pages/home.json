@@ -25,6 +25,10 @@
             "href": "/about"
           },
           {
+            "label": "Доставка",
+            "href": "/delivery"
+          },
+          {
             "label": "Контакты",
             "href": "/contacts"
           }

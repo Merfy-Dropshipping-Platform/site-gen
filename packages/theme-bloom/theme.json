@@ -347,6 +347,13 @@
       "contentFile": "pages/about.json"
     },
     {
+      "id": "page-delivery",
+      "name": "Доставка",
+      "slug": "/delivery",
+      "role": "system",
+      "contentFile": "pages/delivery.json"
+    },
+    {
       "id": "page-contacts",
       "name": "Контакты",
       "slug": "/contacts",

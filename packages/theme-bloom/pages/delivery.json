@@ -1,0 +1,42 @@
+{
+  "content": [
+    {
+      "type": "Header",
+      "props": {
+        "id": "Header-delivery",
+        "siteTitle": "Bloom",
+        "logo": "/logo.svg",
+        "logoPosition": "top-center",
+        "navigationLinks": [
+          { "label": "Каталог", "href": "/catalog" },
+          { "label": "О нас", "href": "/about" },
+          { "label": "Доставка", "href": "/delivery" },
+          { "label": "Контакты", "href": "/contacts" }
+        ],
+        "actionButtons": { "showSearch": "true", "showCart": "true", "showProfile": "true" }
+      }
+    },
+    {
+      "type": "MainText",
+      "props": {
+        "id": "MainText-delivery",
+        "heading": { "text": "Доставка", "size": "large" },
+        "text": {
+          "content": "Мы доставляем заказы по всей России. Стоимость и сроки доставки рассчитываются при оформлении заказа — в зависимости от выбранного способа и адреса. Заказы отправляем в течение 1–2 рабочих дней после оплаты.",
+          "size": "medium"
+        },
+        "padding": { "top": 80, "bottom": 80 }
+      }
+    },
+    {
+      "type": "Footer",
+      "props": {
+        "id": "Footer-delivery",
+        "colorScheme": "scheme-3",
+        "padding": { "top": 80, "bottom": 80 }
+      }
+    }
+  ],
+  "root": { "props": { "title": "Доставка" } },
+  "zones": {}
+}

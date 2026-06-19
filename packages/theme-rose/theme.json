@@ -185,16 +185,16 @@
       },
       "navigationLinks": [
         {
-          "label": "Главная",
-          "href": "/"
-        },
-        {
           "label": "Каталог",
           "href": "/catalog"
         },
         {
           "label": "О нас",
           "href": "/about"
+        },
+        {
+          "label": "Доставка",
+          "href": "/delivery"
         },
         {
           "label": "Контакты",
@@ -543,6 +543,13 @@
       "slug": "/about",
       "role": "system",
       "contentFile": "pages/about.json"
+    },
+    {
+      "id": "page-delivery",
+      "name": "Доставка",
+      "slug": "/delivery",
+      "role": "system",
+      "contentFile": "pages/delivery.json"
     },
     {
       "id": "page-contacts",

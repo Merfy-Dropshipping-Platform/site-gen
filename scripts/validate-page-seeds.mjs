@@ -25,6 +25,7 @@ const CANONICAL = [
   'page-collection',
   'page-product',
   'page-about',
+  'page-delivery',
   'page-contacts',
   'page-cart',
   'page-checkout',

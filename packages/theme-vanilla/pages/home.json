@@ -3,7 +3,13 @@
     {
       "type": "Header",
       "props": {
-        "id": "Header-home"
+        "id": "Header-home",
+        "navigationLinks": [
+          { "label": "Каталог", "href": "/catalog" },
+          { "label": "О нас", "href": "/about" },
+          { "label": "Доставка", "href": "/delivery" },
+          { "label": "Контакты", "href": "/contacts" }
+        ]
       }
     },
     {

@@ -21,7 +21,7 @@ import {
   getRetryCountFromHeaders,
   getRetryRoutingKey,
 } from "./retry-setup.service";
-import { PG_CONNECTION, PRODUCT_RMQ_SERVICE } from "../constants";
+import { PG_CONNECTION, PRODUCT_RMQ_SERVICE, BILLING_RMQ_SERVICE } from "../constants";
 import * as schema from "../db/schema";
 import {
   runBuildPipeline,
@@ -45,6 +45,8 @@ export class BuildQueueConsumer implements OnModuleInit {
     private readonly db: NodePgDatabase<typeof schema>,
     @Inject(PRODUCT_RMQ_SERVICE)
     private readonly productClient: ClientProxy,
+    @Inject(BILLING_RMQ_SERVICE)
+    private readonly billingClient: ClientProxy,
     private readonly s3: S3StorageService,
   ) {}
 
@@ -159,6 +161,7 @@ export class BuildQueueConsumer implements OnModuleInit {
             db: this.db,
             schema,
             productClient: this.productClient,
+            billingClient: this.billingClient,
             s3: this.s3,
             eventsEmit: (eventPattern, eventPayload) => {
               // Update build progress in DB

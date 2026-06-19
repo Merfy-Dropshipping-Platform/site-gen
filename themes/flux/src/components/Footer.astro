@@ -11,13 +11,6 @@ const navColumnDefault = [
 	{ label: "Аксессуары", href: "/catalog?collection=Аксессуары" },
 ];
 
-const infoColumnDefault = [
-	{ label: "Политика доставки", href: "/legal/delivery" },
-	{ label: "Политика возврата", href: "/legal/return" },
-	{ label: "Условия обслуживания", href: "/legal/terms" },
-	{ label: "Политика конфиденциальности", href: "/legal/privacy" },
-];
-
 // ОЖИВЛЕНИЕ (Фаза B, контракт bloom Footer): канон-схема theme-base Footer.puckConfig —
 // siteTitle, phone, email/socialColumn.email, newsletter, navigationColumn,
 // informationColumn, socialColumn.socialLinks, copyright, bottomStrip, padding.
@@ -29,13 +22,9 @@ const p = Astro.props as Record<string, any>;
 const id = p.id;
 // Пустая строка (canon default Puck / коэрсер) не должна ронять «Flux».
 const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
-const phone = typeof p.phone === "string" && p.phone.trim() ? p.phone : "+7 (000) 000-00-00";
-const email =
-	(typeof p.socialColumn?.email === "string" && p.socialColumn.email.trim()
-		? p.socialColumn.email
-		: undefined) ??
-	(typeof p.email === "string" && p.email.trim() ? p.email : undefined) ??
-	"flux@example.ru";
+const phone = typeof p.phone === "string" && p.phone.trim() ? p.phone.trim() : "";
+const rawEmail = p.socialColumn?.email ?? p.email ?? "";
+const email = typeof rawEmail === "string" ? rawEmail.trim() : "";
 
 // Канон newsletter.enabled — скрыть блок подписки ТОЛЬКО при явном false/'false'
 // (булево может прийти строкой). Отсутствие пропа → блок показан = пиксель.
@@ -63,7 +52,7 @@ const nlPlaceholderRaw =
 		? p.newsletter.placeholder
 		: undefined;
 const nlPlaceholder =
-	nlPlaceholderRaw && nlPlaceholderRaw !== "flux@example.ru" ? nlPlaceholderRaw : email;
+	nlPlaceholderRaw && nlPlaceholderRaw !== "flux@example.ru" ? nlPlaceholderRaw : "flux@example.ru";
 
 // Канон-колонки {title, links[]}: ссылки из пропсов с fallback на литералы; canon-набор
 // blockDefaults (те же label, hrefs '/catalog' и '/legal/returns') → литеральные hrefs.
@@ -96,8 +85,8 @@ const CANON_INFO: Array<[string, string]> = [
 ];
 const navLinksRaw = coerceColumnLinks(p.navigationColumn, navColumnDefault);
 const navLinks = isCanonColumn(navLinksRaw, CANON_NAV) ? navColumnDefault : navLinksRaw;
-const infoLinksRaw = coerceColumnLinks(p.informationColumn, infoColumnDefault);
-const infoLinks = isCanonColumn(infoLinksRaw, CANON_INFO) ? infoColumnDefault : infoLinksRaw;
+const infoLinksRaw = coerceColumnLinks(p.informationColumn, []);
+const infoLinks = isCanonColumn(infoLinksRaw, CANON_INFO) ? [] : infoLinksRaw;
 const columnTitle = (col: any, canon: string): string | undefined => {
 	const t = typeof col?.title === "string" ? col.title.trim() : "";
 	return t && t !== canon ? t : undefined;
@@ -117,28 +106,14 @@ const SOCIAL_PLATFORMS: Record<string, { platform: string; icon: string }> = {
 	youtube: { platform: "YouTube", icon: "social-youtube" },
 	dzen: { platform: "Дзен", icon: "social-yandex-dzen" },
 };
-const defaultSocials = [
-	{ platform: "Telegram", href: "#", icon: "social-telegram" },
-	{ platform: "VK", href: "#", icon: "social-vk" },
-	{ platform: "TikTok", href: "#", icon: "social-tiktok" },
-	{ platform: "YouTube", href: "#", icon: "social-youtube" },
-	{ platform: "Дзен", href: "#", icon: "social-yandex-dzen" },
-];
 const socialsRaw = Array.isArray(p.socialColumn?.socialLinks) ? p.socialColumn.socialLinks : [];
-const isCanonSocials =
-	socialsRaw.length === 5 &&
-	["telegram", "vk", "youtube", "dzen", "tiktok"].every(
-		(pl, i) => socialsRaw[i]?.platform === pl && socialsRaw[i]?.href === "#",
-	);
-const socialsFromProps = isCanonSocials
-	? []
-	: socialsRaw
-			.map((s: any) => {
-				const meta = SOCIAL_PLATFORMS[String(s?.platform ?? "")];
-				return meta ? { ...meta, href: String(s?.href ?? "#") } : null;
-			})
-			.filter((s: any) => s !== null);
-const socials = socialsFromProps.length > 0 ? socialsFromProps : defaultSocials;
+const socials = socialsRaw
+	.map((s: any) => {
+		const meta = SOCIAL_PLATFORMS[String(s?.platform ?? "")];
+		const href = String(s?.href ?? "").trim();
+		return meta && href && href !== "#" ? { ...meta, href } : null;
+	})
+	.filter((s: any) => s !== null);
 
 // Канон copyright {companyName, poweredBy, showYear} (+ legacy-строка целиком).
 // Дефолтная сборка = литерал чёрной полосы верстальщика байт-в-байт:
@@ -186,6 +161,9 @@ const footerContainerCls = footerPadStyle
 const linksSectionCls = footerPadStyle
 	? "mx-auto grid w-full max-w-[1320px] grid-cols-2 gap-8 md:grid-cols-4 md:gap-6"
 	: "mx-auto grid w-full max-w-[1320px] grid-cols-2 gap-8 pb-12 md:grid-cols-4 md:gap-6 md:pb-16";
+
+// Платёжные бейджи (Mastercard/VISA/МИР) — рендерим только при подключённой кассе.
+const paymentEnabled = p.paymentEnabled === true || p.paymentEnabled === "true";
 ---
 
 <footer class="w-full bg-[rgb(var(--color-bg,255_255_255))]" data-puck-component-id={id}>
@@ -268,6 +246,7 @@ const linksSectionCls = footerPadStyle
 			))}
 		</ul>
 
+		{(infoColTitle || infoLinks.length > 0) && (
 		<ul
 			class="flex flex-col gap-2"
 			role="list"
@@ -291,28 +270,36 @@ const linksSectionCls = footerPadStyle
 				</li>
 			))}
 		</ul>
+		)}
 
+		{(phone || email) && (
 		<div
 			class="flex flex-col gap-2"
 			data-puck-subsection-parent={id}
 			data-puck-subsection-index="994"
 			data-puck-subsection-field="socialColumn"
 		>
+			{phone && (
 			<a
 				href={`tel:${phone.replace(/[^+\d]/g, "")}`}
 				class="font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 md:text-[14px]"
 			>
 				{phone}
 			</a>
+			)}
+			{email && (
 			<a
 				href={`mailto:${email}`}
 				class="font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 md:text-[14px]"
 			>
 				{email}
 			</a>
+			)}
 		</div>
+		)}
 
 		<div class="flex flex-col items-start gap-3 md:items-end">
+			{socials.length > 0 && (
 			<div class="flex flex-wrap items-center gap-2">
 				{socials.map((s) => (
 					<a
@@ -324,11 +311,14 @@ const linksSectionCls = footerPadStyle
 					</a>
 				))}
 			</div>
+			)}
+			{paymentEnabled && (
 			<div class="flex items-center gap-2">
 				<span class="font-roboto-flex text-[10px] font-light leading-none text-[rgb(var(--color-text,0_0_0))] md:text-[12px]">Mastercard</span>
 				<span class="font-roboto-flex text-[10px] font-light leading-none text-[rgb(var(--color-text,0_0_0))] md:text-[12px]">VISA</span>
 				<span class="font-roboto-flex text-[10px] font-light leading-none text-[rgb(var(--color-text,0_0_0))] md:text-[12px]">МИР</span>
 			</div>
+			)}
 		</div>
 	</section>
 	</div>

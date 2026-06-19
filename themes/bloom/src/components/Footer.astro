@@ -10,13 +10,6 @@ const navColumnDefault = [
 	{ label: "О нас", href: "/about" },
 ];
 
-const legalLinks = [
-	{ label: "Политика доставки", href: "/legal/delivery" },
-	{ label: "Политика возврата", href: "/legal/return" },
-	{ label: "Условия обслуживания", href: "/legal/terms" },
-	{ label: "Политика конфиденциальности", href: "/legal/privacy" },
-];
-
 // ОЖИВЛЕНИЕ (Фаза B, объём rose Footer): канон-схема theme-base Footer.puckConfig —
 // siteTitle, phone, email/socialColumn.email, newsletter.enabled, navigationColumn,
 // informationColumn, socialColumn.socialLinks, copyright, bottomStrip, padding.
@@ -27,14 +20,10 @@ const p = Astro.props as Record<string, any>;
 const id = p.id;
 // Пустая строка (canon default Puck / коэрсер) не должна ронять «Bloom».
 const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
-const phone = typeof p.phone === "string" && p.phone.trim() ? p.phone : "+7 (000) 000-00-00";
-const email =
-	(typeof p.socialColumn?.email === "string" && p.socialColumn.email.trim()
-		? p.socialColumn.email
-		: undefined) ??
-	(typeof p.email === "string" && p.email.trim() ? p.email : undefined) ??
-	"example@bloom.ru";
-const emailPlaceholder = email;
+const phone = typeof p.phone === "string" && p.phone.trim() ? p.phone.trim() : "";
+const rawEmail = p.socialColumn?.email ?? p.email ?? "";
+const email = typeof rawEmail === "string" ? rawEmail.trim() : "";
+const emailPlaceholder = `example@${siteTitle.toLowerCase()}.merfy`;
 
 // Канон newsletter.enabled — скрыть блок подписки ТОЛЬКО при явном false/'false'
 // (булево может прийти строкой). Отсутствие пропа → блок показан = пиксель.
@@ -55,7 +44,7 @@ const coerceColumnLinks = (
 		? col.links.map((l: any) => ({ label: String(l?.label ?? ""), href: String(l?.href ?? "/") }))
 		: fallback;
 const navLinks = coerceColumnLinks(p.navigationColumn, navColumnDefault);
-const infoLinks = coerceColumnLinks(p.informationColumn, legalLinks);
+const infoLinks = coerceColumnLinks(p.informationColumn, []);
 const columnTitle = (col: any): string | undefined =>
 	typeof col?.title === "string" && col.title.trim() ? col.title : undefined;
 const navColTitle = columnTitle(p.navigationColumn);
@@ -72,22 +61,15 @@ const SOCIAL_PLATFORMS: Record<string, string> = {
 	tiktok: "TikTok",
 	telegram: "Telegram",
 };
-const defaultSocials = [
-	{ platform: "VK", href: "#" },
-	{ platform: "YouTube", href: "#" },
-	{ platform: "Яндекс Дзен", href: "#" },
-	{ platform: "TikTok", href: "#" },
-	{ platform: "Telegram", href: "#" },
-];
-const socialsFromProps = Array.isArray(p.socialColumn?.socialLinks)
+const socials = Array.isArray(p.socialColumn?.socialLinks)
 	? p.socialColumn.socialLinks
 			.map((s: any) => {
 				const label = SOCIAL_PLATFORMS[String(s?.platform ?? "")];
-				return label ? { platform: label, href: String(s?.href ?? "#") } : null;
+				const href = String(s?.href ?? "").trim();
+				return label && href && href !== "#" ? { platform: label, href } : null;
 			})
 			.filter((s: any) => s !== null)
 	: [];
-const socials = socialsFromProps.length > 0 ? socialsFromProps : defaultSocials;
 
 // Канон copyright {companyName, poweredBy, showYear} (+ legacy-строка целиком).
 // Дефолтная сборка = литерал блока 3 верстальщика байт-в-байт:
@@ -236,29 +218,35 @@ const footerContainerCls = footerPadStyle
 						<span class="font-inter text-[14px] font-light leading-[18px] text-[rgb(var(--color-muted,153_153_153))]">
 							Контакты:
 						</span>
-						<a
-							href={`tel:${phone.replace(/[^+\d]/g, "")}`}
-							class="font-inter text-[14px] font-light leading-[18px] text-[rgb(var(--color-muted,153_153_153))] transition-opacity hover:opacity-70"
-						>
-							{phone}
-						</a>
-						<a
-							href={`mailto:${email}`}
-							class="font-inter text-[14px] font-light leading-[18px] text-[rgb(var(--color-muted,153_153_153))] transition-opacity hover:opacity-70"
-						>
-							{email}
-						</a>
+						{phone && (
+							<a
+								href={`tel:${phone.replace(/[^+\d]/g, "")}`}
+								class="font-inter text-[14px] font-light leading-[18px] text-[rgb(var(--color-muted,153_153_153))] transition-opacity hover:opacity-70"
+							>
+								{phone}
+							</a>
+						)}
+						{email && (
+							<a
+								href={`mailto:${email}`}
+								class="font-inter text-[14px] font-light leading-[18px] text-[rgb(var(--color-muted,153_153_153))] transition-opacity hover:opacity-70"
+							>
+								{email}
+							</a>
+						)}
 					</div>
 
-					<div class="mt-6 flex flex-wrap items-center gap-2">
-						{socials.map((s) => (
-							<SocialIcon
-								href={s.href}
-								ariaLabel={s.platform}
-								platform={s.platform}
-							/>
-						))}
-					</div>
+					{socials.length > 0 && (
+						<div class="mt-6 flex flex-wrap items-center gap-2">
+							{socials.map((s) => (
+								<SocialIcon
+									href={s.href}
+									ariaLabel={s.platform}
+									platform={s.platform}
+								/>
+							))}
+						</div>
+					)}
 				</div>
 
 				<ul
@@ -300,22 +288,24 @@ const footerContainerCls = footerPadStyle
 						{copyrightText}
 					</p>
 
-					<div
-						class="flex flex-wrap items-center gap-x-4 gap-y-2"
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index="995"
-						data-puck-subsection-field="informationColumn"
-					>
-						{infoColTitle && <span class={columnTitleCls}>{infoColTitle}</span>}
-						{infoLinks.map((link) => (
-							<a
-								href={link.href}
-								class="font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] underline underline-offset-2 transition-opacity hover:opacity-70"
-							>
-								{link.label}
-							</a>
-						))}
-					</div>
+					{(infoColTitle || infoLinks.length > 0) && (
+						<div
+							class="flex flex-wrap items-center gap-x-4 gap-y-2"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="995"
+							data-puck-subsection-field="informationColumn"
+						>
+							{infoColTitle && <span class={columnTitleCls}>{infoColTitle}</span>}
+							{infoLinks.map((link) => (
+								<a
+									href={link.href}
+									class="font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] underline underline-offset-2 transition-opacity hover:opacity-70"
+								>
+									{link.label}
+								</a>
+							))}
+						</div>
+					)}
 				</div>
 			</section>
 		</div>

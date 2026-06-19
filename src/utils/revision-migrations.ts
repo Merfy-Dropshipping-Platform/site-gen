@@ -934,6 +934,104 @@ export function migrateVanillaHomePage(
  * миграция (на текущий момент только vanilla home seed). Без themeId
  * theme-specific шаги пропускаются (back-compat для legacy callers).
  */
+/** Плейсхолдер-телефон верстальщиков (засевался во все темы). */
+const FOOTER_PLACEHOLDER_PHONE = '+7 (000) 000-00-00';
+/** Плейсхолдер-почты сидов/тем: `example@*.*` и `<тема>@example.*`. */
+const FOOTER_PLACEHOLDER_EMAIL = /^(?:example@|[a-z]+@example\.)/i;
+
+/**
+ * Нормализация контактных данных футера (idempotent). Чистит демо-плейсхолдеры,
+ * чтобы конструктор и превью показывали футер как «не настроено» — зеркалит live,
+ * где build авторитетно подставляет данные из «Политика и контакты» / Theme
+ * Settings / подключённой кассы:
+ *  • телефон-плейсхолдер «+7 (000) 000-00-00» → удалить;
+ *  • placeholder-email (rose@example.ru / example@vanila.merfy и т.п.) → удалить;
+ *  • соцсети с пустым href или «#» → выкинуть;
+ *  • правовые ссылки с href «#» или «/legal/…» (ведут в никуда) → выкинуть.
+ * Реальные данные (введённые мерчантом) под паттерны не попадают и не трогаются.
+ */
+function normalizeFooterContacts(
+  pagesData: Record<string, unknown>,
+): Record<string, unknown> {
+  let changed = false;
+  const out: Record<string, unknown> = { ...pagesData };
+  for (const pageId of Object.keys(pagesData)) {
+    const page = pagesData[pageId] as PageData | undefined;
+    if (!page || !Array.isArray(page.content)) continue;
+    let pageChanged = false;
+    const content = page.content.map((block) => {
+      const b = block as { type?: string; props?: Record<string, unknown> };
+      if (!b || b.type !== 'Footer' || !b.props) return block;
+      const props = { ...b.props } as Record<string, any>;
+      let blockChanged = false;
+
+      if (
+        typeof props.phone === 'string' &&
+        props.phone.trim() === FOOTER_PLACEHOLDER_PHONE
+      ) {
+        delete props.phone;
+        blockChanged = true;
+      }
+
+      if (props.socialColumn && typeof props.socialColumn === 'object') {
+        const social = { ...(props.socialColumn as Record<string, any>) };
+        let socialChanged = false;
+        if (
+          typeof social.email === 'string' &&
+          FOOTER_PLACEHOLDER_EMAIL.test(social.email.trim())
+        ) {
+          delete social.email;
+          socialChanged = true;
+        }
+        if (Array.isArray(social.socialLinks)) {
+          const filtered = social.socialLinks.filter(
+            (s: any) =>
+              s &&
+              typeof s.href === 'string' &&
+              s.href.trim() !== '' &&
+              s.href.trim() !== '#',
+          );
+          if (filtered.length !== social.socialLinks.length) {
+            social.socialLinks = filtered;
+            socialChanged = true;
+          }
+        }
+        if (socialChanged) {
+          props.socialColumn = social;
+          blockChanged = true;
+        }
+      }
+
+      if (props.informationColumn && typeof props.informationColumn === 'object') {
+        const info = { ...(props.informationColumn as Record<string, any>) };
+        if (Array.isArray(info.links)) {
+          const filtered = info.links.filter(
+            (l: any) =>
+              l &&
+              typeof l.href === 'string' &&
+              l.href.trim() !== '#' &&
+              !l.href.trim().startsWith('/legal/'),
+          );
+          if (filtered.length !== info.links.length) {
+            info.links = filtered;
+            props.informationColumn = info;
+            blockChanged = true;
+          }
+        }
+      }
+
+      if (!blockChanged) return block;
+      pageChanged = true;
+      return { ...b, props };
+    });
+    if (pageChanged) {
+      out[pageId] = { ...(page as object), content };
+      changed = true;
+    }
+  }
+  return changed ? out : pagesData;
+}
+
 export function migrateRevisionData(
   data: Record<string, unknown> | null | undefined,
   themeId?: string | null,
@@ -958,6 +1056,9 @@ export function migrateRevisionData(
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = migrateVanillaHomePage(out.pagesData as Record<string, unknown>, themeId);
+  }
+  if (out.pagesData && typeof out.pagesData === 'object') {
+    out.pagesData = normalizeFooterContacts(out.pagesData as Record<string, unknown>);
   }
   return out;
 }

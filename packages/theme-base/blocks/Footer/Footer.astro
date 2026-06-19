@@ -8,6 +8,8 @@ interface Props extends FooterProps {
   variant?: '3-col' | '2-part' | '2-part-asymmetric' | 'minimal';
   /** 084 vanilla pilot — additive optional bottom strip ("Powered by Merfy"). */
   bottomStrip?: { enabled: boolean; text?: string };
+  /** Платёжные бейджи (MC/VISA/МИР) — только при подключённой кассе (build ставит). */
+  paymentEnabled?: boolean | string;
 }
 
 const {
@@ -24,7 +26,10 @@ const {
   colorScheme,
   padding,
   bottomStrip,
+  paymentEnabled,
 } = Astro.props as Props;
+// Платёжные бейджи показываем только при подключённой кассе.
+const showPayments = paymentEnabled === true || paymentEnabled === 'true';
 // 084 vanilla pilot: additive `2-part-asymmetric` variant has its own
 // markup branch below (LEFT items-start / RIGHT items-end + self-stretch).
 // Pre-084 variants (`3-col`/`2-part`/`minimal`) keep their existing
@@ -198,11 +203,13 @@ const CpoweredBy = (C as any).poweredBy ?? {};
               </div>
             )}
             {/* Vanilla-family signature: payment method badges (MC / VISA / МИР) */}
+            {showPayments && (
             <div class={(C as any).paymentRow}>
               <div class={(C as any).paymentBadge}><span class={(C as any).paymentBadgeText}>MC</span></div>
               <div class={(C as any).paymentBadge}><span class={(C as any).paymentBadgeText}>VISA</span></div>
               <div class={(C as any).paymentBadge}><span class={(C as any).paymentBadgeText}>МИР</span></div>
             </div>
+            )}
           </div>
         </div>
       </section>
@@ -247,6 +254,7 @@ const CpoweredBy = (C as any).poweredBy ?? {};
                 </div>
               )}
               {/* Payment badges (MC / VISA / МИР) */}
+              {showPayments && (
               <div class="flex gap-2 items-start justify-end">
                 <div class="bg-[rgb(var(--color-heading))]/95 h-6 px-1 flex items-center justify-center rounded-[4px]">
                   <span class="text-[10px] font-bold text-gray-800">MC</span>
@@ -258,6 +266,7 @@ const CpoweredBy = (C as any).poweredBy ?? {};
                   <span class="text-[10px] font-bold text-green-600">МИР</span>
                 </div>
               </div>
+              )}
             </div>
           </div>
         </div>

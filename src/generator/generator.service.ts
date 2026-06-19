@@ -16,7 +16,7 @@ import * as fsSync from "fs";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { and, eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
-import { PG_CONNECTION, PRODUCT_RMQ_SERVICE } from "../constants";
+import { PG_CONNECTION, PRODUCT_RMQ_SERVICE, BILLING_RMQ_SERVICE } from "../constants";
 import * as schema from "../db/schema";
 import { buildWithAstro } from "./astro.builder";
 import { S3StorageService } from "../storage/s3.service";
@@ -52,6 +52,8 @@ export class SiteGeneratorService {
     private readonly db: NodePgDatabase<typeof schema>,
     @Inject(PRODUCT_RMQ_SERVICE)
     private readonly productClient: ClientProxy,
+    @Inject(BILLING_RMQ_SERVICE)
+    private readonly billingClient: ClientProxy,
     private readonly s3: S3StorageService,
   ) {}
 
@@ -133,6 +135,7 @@ export class SiteGeneratorService {
         db: this.db,
         schema,
         productClient: this.productClient,
+        billingClient: this.billingClient,
         s3: this.s3,
       };
 

@@ -18,12 +18,8 @@ const navColumnDefault = [
 	{ label: "Домашняя одежда", href: "/catalog/textile" },
 ];
 
-const infoColumnDefault = [
-	"Политика доставки",
-	"Политика возврата",
-	"Условия обслуживания",
-	"Политика конфиденциальности",
-];
+// Правовые ссылки футера приходят из build (site_policy) только для заполненных
+// политик — без хардкод-фолбэка (раньше показывали 4 неактивных <span>).
 
 // ОЖИВЛЕНИЕ (Фаза B, объём bloom Footer): канон-схема theme-base Footer.puckConfig —
 // siteTitle, phone, email/socialColumn.email, newsletter.enabled, navigationColumn,
@@ -35,13 +31,13 @@ const p = Astro.props as Record<string, any>;
 const id = p.id;
 // Пустая строка (canon default Puck / коэрсер) не должна ронять «Vanilla».
 const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
-const phone = typeof p.phone === "string" && p.phone.trim() ? p.phone : "+7 (000) 000-00-00";
-const email =
-	(typeof p.socialColumn?.email === "string" && p.socialColumn.email.trim()
-		? p.socialColumn.email
-		: undefined) ??
-	(typeof p.email === "string" && p.email.trim() ? p.email : undefined) ??
-	"example@vanila.merfy";
+// Телефон/почта футера — ТОЛЬКО при настроенных контактах (build пишет их из
+// «Информация о компании»). Без данных — пусто, ссылки tel:/mailto: не рендерятся.
+const phone = typeof p.phone === "string" && p.phone.trim() ? p.phone.trim() : "";
+const rawEmail = p.socialColumn?.email ?? p.email ?? "";
+const email = typeof rawEmail === "string" ? rawEmail.trim() : "";
+// Платёжные бейджи — только при подключённой кассе (build ставит paymentEnabled).
+const paymentEnabled = p.paymentEnabled === true || p.paymentEnabled === "true";
 
 // НЮАНС vanilla (инверсия bloom): у верстальщика подписки в футере НЕТ — отдельная
 // FooterNewsletter через Layout showNewsletter. Канон newsletter.enabled: отсутствие
@@ -76,22 +72,17 @@ const SOCIAL_PLATFORMS: Record<string, { label: string; Icon: any }> = {
 	youtube: { label: "YouTube", Icon: SocialYoutubeWhite },
 	dzen: { label: "Дзен", Icon: SocialYandexDzenWhite },
 };
-const defaultSocials = [
-	{ platform: "Telegram", href: "#", Icon: SocialTelegramWhite },
-	{ platform: "VK", href: "#", Icon: SocialVkWhite },
-	{ platform: "TikTok", href: "#", Icon: SocialTiktokWhite },
-	{ platform: "YouTube", href: "#", Icon: SocialYoutubeWhite },
-	{ platform: "Дзен", href: "#", Icon: SocialYandexDzenWhite },
-];
-const socialsFromProps = Array.isArray(p.socialColumn?.socialLinks)
+// Соцсети — ТОЛЬКО настроенные в Theme Settings (непустой href ≠ "#"). Без
+// фолбэка defaultSocials: пустой набор → ряд иконок не рендерится вовсе.
+const socials = Array.isArray(p.socialColumn?.socialLinks)
 	? p.socialColumn.socialLinks
 			.map((s: any) => {
 				const meta = SOCIAL_PLATFORMS[String(s?.platform ?? "")];
-				return meta ? { platform: meta.label, href: String(s?.href ?? "#"), Icon: meta.Icon } : null;
+				const href = String(s?.href ?? "").trim();
+				return meta && href && href !== "#" ? { platform: meta.label, href, Icon: meta.Icon } : null;
 			})
 			.filter((s: any) => s !== null)
 	: [];
-const socials = socialsFromProps.length > 0 ? socialsFromProps : defaultSocials;
 
 // Канон copyright {companyName, poweredBy, showYear} (+ legacy-строка целиком).
 // Дефолтная сборка = литерал верстальщика байт-в-байт: «© 2026 Vanilla Theme Все
@@ -258,20 +249,25 @@ const footerBandCls = footerPadStyle
 						data-puck-subsection-index="994"
 						data-puck-subsection-field="socialColumn"
 					>
+						{phone && (
 						<a
 							href={`tel:${phone.replace(/[^+\d]/g, "")}`}
 							class="font-vanilla-arsenal text-base font-normal leading-none text-white transition-opacity hover:opacity-70"
 						>
 							{phone}
 						</a>
+						)}
+						{email && (
 						<a
 							href={`mailto:${email}`}
 							class="font-vanilla-arsenal text-base font-normal leading-none text-white transition-opacity hover:opacity-70"
 						>
 							{email}
 						</a>
+						)}
 					</div>
 					<div class="flex flex-col items-start gap-6 max-sm:items-center md:mt-auto md:items-end">
+						{socials.length > 0 && (
 						<div class="flex flex-wrap items-center justify-center gap-3 md:justify-end" aria-label="Социальные сети">
 							{socials.map(({ platform, href, Icon }) => (
 								<a
@@ -283,11 +279,14 @@ const footerBandCls = footerPadStyle
 								</a>
 							))}
 						</div>
+						)}
+						{paymentEnabled && (
 						<div class="flex flex-wrap items-center justify-center gap-2 md:justify-end" aria-label="Способы оплаты">
 							<PaymentMastercard />
 							<PaymentVisa />
 							<PaymentMir />
 						</div>
+						)}
 					</div>
 				</div>
 			</section>
@@ -303,6 +302,7 @@ const footerBandCls = footerPadStyle
 				>
 					{copyrightText}
 				</p>
+				{(infoColTitle || (infoLinks && infoLinks.length > 0)) && (
 				<nav
 					class="flex flex-wrap items-center justify-center gap-x-9 gap-y-2 md:justify-end"
 					aria-label="Юридическая информация"
@@ -311,21 +311,16 @@ const footerBandCls = footerPadStyle
 					data-puck-subsection-field="informationColumn"
 				>
 					{infoColTitle && <span class={columnTitleCls}>{infoColTitle}</span>}
-					{infoLinks
-						? infoLinks.map((link) => (
-								<a
-									href={link.href}
-									class="font-vanilla-arsenal text-base font-normal leading-none text-white transition-opacity hover:opacity-70"
-								>
-									{link.label}
-								</a>
-							))
-						: infoColumnDefault.map((label) => (
-								<span class="font-vanilla-arsenal text-base font-normal leading-none text-white">
-									{label}
-								</span>
-							))}
+					{(infoLinks ?? []).map((link) => (
+						<a
+							href={link.href}
+							class="font-vanilla-arsenal text-base font-normal leading-none text-white transition-opacity hover:opacity-70"
+						>
+							{link.label}
+						</a>
+					))}
 				</nav>
+				)}
 			</section>
 		</div>
 	</div>

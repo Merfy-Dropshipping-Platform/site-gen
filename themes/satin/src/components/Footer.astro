@@ -16,19 +16,6 @@ const midCol = [
 	{ label: "Весна 25'", href: "/catalog" },
 	{ label: "Лето 25'", href: "/catalog" },
 ];
-const infoColumnDefault = [
-	{ label: "Политика доставки", href: "/legal/delivery" },
-	{ label: "Политика возврата", href: "/legal/return" },
-	{ label: "Условия обслуживания", href: "/legal/terms" },
-	{ label: "Политика конфиденциальности", href: "/legal/privacy" },
-];
-const defaultSocials = [
-	{ name: "social-telegram", href: "https://t.me/", label: "Telegram" },
-	{ name: "social-vk", href: "https://vk.com/", label: "VK" },
-	{ name: "social-tiktok", href: "https://tiktok.com/", label: "TikTok" },
-	{ name: "social-youtube", href: "https://youtube.com/", label: "YouTube" },
-	{ name: "social-yandex-dzen", href: "https://dzen.ru/", label: "Дзен" },
-];
 const payments = [
 	{ src: "/icons/MasterCard.svg", alt: "Mastercard" },
 	{ src: "/icons/Visa.png", alt: "Visa" },
@@ -46,15 +33,13 @@ const p = Astro.props as Record<string, any>;
 const id = p.id;
 // Пустая строка (canon default Puck / коэрсер) не должна ронять «Satin».
 const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
-const phone = typeof p.phone === "string" && p.phone.trim() ? p.phone : "+7 (000) 000-00-00";
-const email =
-	(typeof p.socialColumn?.email === "string" && p.socialColumn.email.trim()
-		? p.socialColumn.email
-		: undefined) ??
-	(typeof p.email === "string" && p.email.trim() ? p.email : undefined) ??
-	"example@satin.merfy";
-// Email — он же placeholder поля рассылки (литерал верстальщика F:73 совпадает с F:37).
-const emailPlaceholder = email;
+const phone = typeof p.phone === "string" && p.phone.trim() ? p.phone.trim() : "";
+const rawEmail = p.socialColumn?.email ?? p.email ?? "";
+const email = typeof rawEmail === "string" ? rawEmail.trim() : "";
+// Платёжки (касса подключена) — НОВЫЙ проп.
+const paymentEnabled = p.paymentEnabled === true || p.paymentEnabled === "true";
+// Placeholder поля рассылки — не зависит от контактного email (НЕ ТРОГАТЬ).
+const emailPlaceholder = "example@satin.merfy";
 
 // Канон newsletter.enabled — скрыть блок подписки ТОЛЬКО при явном false/'false'
 // (булево может прийти строкой). Отсутствие пропа → блок показан = пиксель.
@@ -75,7 +60,7 @@ const coerceColumnLinks = (
 		? col.links.map((l: any) => ({ label: String(l?.label ?? ""), href: String(l?.href ?? "/") }))
 		: fallback;
 const navLinks = coerceColumnLinks(p.navigationColumn, leftCol);
-const infoLinks = coerceColumnLinks(p.informationColumn, infoColumnDefault);
+const infoLinks = coerceColumnLinks(p.informationColumn, []);
 const columnTitle = (col: any): string | undefined =>
 	typeof col?.title === "string" && col.title.trim() ? col.title : undefined;
 const navColTitle = columnTitle(p.navigationColumn);
@@ -94,15 +79,15 @@ const SOCIAL_PLATFORMS: Record<string, { name: string; label: string }> = {
 	youtube: { name: "social-youtube", label: "YouTube" },
 	dzen: { name: "social-yandex-dzen", label: "Дзен" },
 };
-const socialsFromProps = Array.isArray(p.socialColumn?.socialLinks)
+const socials = Array.isArray(p.socialColumn?.socialLinks)
 	? p.socialColumn.socialLinks
 			.map((s: any) => {
 				const meta = SOCIAL_PLATFORMS[String(s?.platform ?? "")];
-				return meta ? { name: meta.name, label: meta.label, href: String(s?.href ?? "#") } : null;
+				const href = String(s?.href ?? "").trim();
+				return meta && href && href !== "#" ? { name: meta.name, label: meta.label, href } : null;
 			})
 			.filter((s: any) => s !== null)
 	: [];
-const socials = socialsFromProps.length > 0 ? socialsFromProps : defaultSocials;
 
 // Канон copyright {companyName, poweredBy, showYear} (+ legacy-строка целиком).
 // Дефолтная сборка = литерал info-ряда верстальщика байт-в-байт:
@@ -216,34 +201,40 @@ const linkClassSm =
 								<p data-newsletter-status role="status" class="hidden font-manrope text-xs font-light text-[rgb(var(--color-text,0_0_0))]"></p>
 							</div>
 						)}
-						<div
-							class="flex flex-col gap-2 text-right"
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index="994"
-							data-puck-subsection-field="socialColumn"
-						>
-							<a href={`tel:${phone.replace(/[^+\d]/g, "")}`} class={linkClass}>{phone}</a>
-							<a href={`mailto:${email}`} class={linkClass}>{email}</a>
-						</div>
+						{(phone || email) && (
+							<div
+								class="flex flex-col gap-2 text-right"
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="994"
+								data-puck-subsection-field="socialColumn"
+							>
+								{phone && <a href={`tel:${phone.replace(/[^+\d]/g, "")}`} class={linkClass}>{phone}</a>}
+								{email && <a href={`mailto:${email}`} class={linkClass}>{email}</a>}
+							</div>
+						)}
 					</div>
 				</div>
 
 				<!-- C. Socials + payments -->
 				<div class="flex items-center justify-between gap-4">
-					<div class="flex items-center gap-3">
-						{socials.map((s) => (
-							<a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label} class="flex h-6 w-6 items-center justify-center transition-opacity hover:opacity-70">
-								<NtIcon name={s.name} sizeClass="size-6" />
-							</a>
-						))}
-					</div>
-					<div class="flex items-center gap-2">
-						{payments.map((p) => (
-							<span class="flex h-6 items-center justify-center rounded-[4px] bg-[#fafafa] px-1">
-								<img src={withBase(p.src)} alt={p.alt} class="h-4 w-auto object-contain" loading="lazy" />
-							</span>
-						))}
-					</div>
+					{socials.length > 0 && (
+						<div class="flex items-center gap-3">
+							{socials.map((s) => (
+								<a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label} class="flex h-6 w-6 items-center justify-center transition-opacity hover:opacity-70">
+									<NtIcon name={s.name} sizeClass="size-6" />
+								</a>
+							))}
+						</div>
+					)}
+					{paymentEnabled && (
+						<div class="flex items-center gap-2">
+							{payments.map((pay) => (
+								<span class="flex h-6 items-center justify-center rounded-[4px] bg-[#fafafa] px-1">
+									<img src={withBase(pay.src)} alt={pay.alt} class="h-4 w-auto object-contain" loading="lazy" />
+								</span>
+							))}
+						</div>
+					)}
 				</div>
 
 				<!-- D. Info row -->
@@ -256,17 +247,19 @@ const linkClassSm =
 					>
 						{copyrightText}
 					</p>
-					<div
-						class="flex flex-wrap items-center gap-x-6 gap-y-2"
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index="995"
-						data-puck-subsection-field="informationColumn"
-					>
-						{infoColTitle && <span class={columnTitleCls}>{infoColTitle}</span>}
-						{infoLinks.map((link) => (
-							<a href={link.href} class={linkClass}>{link.label}</a>
-						))}
-					</div>
+					{(infoColTitle || infoLinks.length > 0) && (
+						<div
+							class="flex flex-wrap items-center gap-x-6 gap-y-2"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="995"
+							data-puck-subsection-field="informationColumn"
+						>
+							{infoColTitle && <span class={columnTitleCls}>{infoColTitle}</span>}
+							{infoLinks.map((link) => (
+								<a href={link.href} class={linkClass}>{link.label}</a>
+							))}
+						</div>
+					)}
 				</div>
 			</div>
 		</div>
@@ -277,13 +270,15 @@ const linkClassSm =
 		<!-- Logo + socials -->
 		<div class="flex items-center justify-between">
 			<a href="/" class="font-logo text-lg font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-80">{siteTitle}</a>
-			<div class="flex items-center gap-2">
-				{socials.map((s) => (
-					<a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label} class="flex h-5 w-5 items-center justify-center transition-opacity hover:opacity-70">
-						<NtIcon name={s.name} sizeClass="size-5" />
-					</a>
-				))}
-			</div>
+			{socials.length > 0 && (
+				<div class="flex items-center gap-2">
+					{socials.map((s) => (
+						<a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label} class="flex h-5 w-5 items-center justify-center transition-opacity hover:opacity-70">
+							<NtIcon name={s.name} sizeClass="size-5" />
+						</a>
+					))}
+				</div>
+			)}
 		</div>
 
 		<!-- Menu (left: collections/seasons, right: nav) -->
@@ -316,29 +311,35 @@ const linkClassSm =
 		)}
 
 		<!-- Contacts -->
-		<div class="mt-8 flex flex-col gap-2">
-			<a href={`tel:${phone.replace(/[^+\d]/g, "")}`} class={linkClassSm}>{phone}</a>
-			<a href={`mailto:${email}`} class={linkClassSm}>{email}</a>
-		</div>
+		{(phone || email) && (
+			<div class="mt-8 flex flex-col gap-2">
+				{phone && <a href={`tel:${phone.replace(/[^+\d]/g, "")}`} class={linkClassSm}>{phone}</a>}
+				{email && <a href={`mailto:${email}`} class={linkClassSm}>{email}</a>}
+			</div>
+		)}
 
 		<!-- Divider + bottom (copyright/payments | policies) -->
 		<div class="mt-8 flex justify-between gap-4 border-t border-[rgb(var(--color-text,0_0_0)/13%)] pt-6">
 			<div class="flex flex-col gap-4">
 				<p class="font-manrope text-[12px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">{copyrightText}</p>
-				<div class="flex items-center gap-2">
-					{payments.map((p) => (
-						<span class="flex h-4 items-center justify-center rounded-[2px] bg-[#fafafa] px-1">
-							<img src={withBase(p.src)} alt={p.alt} class="h-2.5 w-auto object-contain" loading="lazy" />
-						</span>
+				{paymentEnabled && (
+					<div class="flex items-center gap-2">
+						{payments.map((pay) => (
+							<span class="flex h-4 items-center justify-center rounded-[2px] bg-[#fafafa] px-1">
+								<img src={withBase(pay.src)} alt={pay.alt} class="h-2.5 w-auto object-contain" loading="lazy" />
+							</span>
+						))}
+					</div>
+				)}
+			</div>
+			{(infoColTitle || infoLinks.length > 0) && (
+				<div class="flex flex-col gap-2">
+					{infoColTitle && <span class={columnTitleCls}>{infoColTitle}</span>}
+					{infoLinks.map((link) => (
+						<a href={link.href} class={linkClassSm}>{link.label}</a>
 					))}
 				</div>
-			</div>
-			<div class="flex flex-col gap-2">
-				{infoColTitle && <span class={columnTitleCls}>{infoColTitle}</span>}
-				{infoLinks.map((link) => (
-					<a href={link.href} class={linkClassSm}>{link.label}</a>
-				))}
-			</div>
+			)}
 		</div>
 	</div>
 

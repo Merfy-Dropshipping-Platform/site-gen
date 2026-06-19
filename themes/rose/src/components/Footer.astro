@@ -11,12 +11,8 @@ const navColumn = [
 	{ label: "Контакты", href: "/contacts" },
 ];
 
-const infoColumn = [
-	{ label: "Политика доставки", href: "/legal/delivery" },
-	{ label: "Политика возврата", href: "/legal/return" },
-	{ label: "Условия обслуживания", href: "/legal/terms" },
-	{ label: "Политика конфиденциальности", href: "/legal/privacy" },
-];
+// Правовые ссылки футера приходят из build (site_policy) только для заполненных
+// политик — без хардкод-фолбэка (раньше вели на несуществующие /legal/*).
 
 // ОЖИВЛЕНИЕ: канон-схема Footer (Фаза 2: телефон/email/название; T12: полная
 // канон-схема — newsletter.enabled, колонки, socialLinks, copyright, bottomStrip,
@@ -26,9 +22,14 @@ const p = Astro.props as Record<string, any>;
 const id = p.id;
 // Пустая строка (canon default Puck / коэрсер) не должна ронять «Rose Theme».
 const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
-const phone = p.phone ?? "+7 (000) 000-00-00";
+// Телефон/почта футера — ТОЛЬКО при настроенных контактах (build пишет их из
+// «Информация о компании»). Без данных — пусто, ссылки tel:/mailto: не рендерятся.
+const phone = typeof p.phone === "string" && p.phone.trim() ? p.phone.trim() : "";
 const emailPlaceholder = `example@${SITE_TITLE.toLowerCase()}.merfy`;
-const email = p.socialColumn?.email ?? p.email ?? emailPlaceholder;
+const rawEmail = p.socialColumn?.email ?? p.email ?? "";
+const email = typeof rawEmail === "string" ? rawEmail.trim() : "";
+// Платёжные бейджи — только при подключённой кассе (build ставит paymentEnabled).
+const paymentEnabled = p.paymentEnabled === true || p.paymentEnabled === "true";
 
 // Канон newsletter.enabled — скрыть блок подписки ТОЛЬКО при явном false/'false'
 // (булево может прийти строкой). Отсутствие пропа и rose
@@ -49,7 +50,7 @@ const coerceColumnLinks = (
 		? col.links.map((l: any) => ({ label: String(l?.label ?? ""), href: String(l?.href ?? "/") }))
 		: fallback;
 const navLinks = coerceColumnLinks(p.navigationColumn, navColumn);
-const infoLinks = coerceColumnLinks(p.informationColumn, infoColumn);
+const infoLinks = coerceColumnLinks(p.informationColumn, []);
 const columnTitle = (col: any): string | undefined =>
 	typeof col?.title === "string" && col.title.trim() ? col.title : undefined;
 const navColTitle = columnTitle(p.navigationColumn);
@@ -70,22 +71,17 @@ const SOCIAL_PLATFORMS: Record<string, { label: string; icon: SocialIconName }> 
 	tiktok: { label: "TikTok", icon: "social-tiktok" },
 	telegram: { label: "Telegram", icon: "social-telegram" },
 };
-const defaultSocials: SocialLink[] = [
-	{ platform: "VK", href: "#", icon: "social-vk" },
-	{ platform: "YouTube", href: "#", icon: "social-youtube" },
-	{ platform: "YandexDzen", href: "#", icon: "social-yandex-dzen" },
-	{ platform: "TikTok", href: "#", icon: "social-tiktok" },
-	{ platform: "Telegram", href: "#", icon: "social-telegram" },
-];
-const socialsFromProps: SocialLink[] = Array.isArray(p.socialColumn?.socialLinks)
+// Соцсети — ТОЛЬКО настроенные в Theme Settings (непустой href ≠ "#"). Без
+// фолбэка defaultSocials: пустой набор → ряд иконок не рендерится вовсе.
+const socials: SocialLink[] = Array.isArray(p.socialColumn?.socialLinks)
 	? p.socialColumn.socialLinks
 			.map((s: any): SocialLink | null => {
 				const meta = SOCIAL_PLATFORMS[String(s?.platform ?? "")];
-				return meta ? { platform: meta.label, href: String(s?.href ?? "#"), icon: meta.icon } : null;
+				const href = String(s?.href ?? "").trim();
+				return meta && href && href !== "#" ? { platform: meta.label, href, icon: meta.icon } : null;
 			})
 			.filter((s: SocialLink | null): s is SocialLink => s !== null)
 	: [];
-const socials: SocialLink[] = socialsFromProps.length > 0 ? socialsFromProps : defaultSocials;
 
 // Канон copyright {companyName, poweredBy, showYear} (+ legacy-строка целиком).
 // Дефолтная сборка = литерал верстальщика байт-в-байт:
@@ -206,6 +202,7 @@ const footerContainerCls = pad
 						))}
 					</ul>
 
+					{(infoColTitle || infoLinks.length > 0) && (
 					<ul
 						class="flex flex-col gap-3"
 						role="list"
@@ -229,6 +226,7 @@ const footerContainerCls = pad
 							</li>
 						))}
 					</ul>
+					)}
 				</div>
 
 				<div
@@ -237,20 +235,27 @@ const footerContainerCls = pad
 					data-puck-subsection-index="994"
 					data-puck-subsection-field="socialColumn"
 				>
+					{(phone || email) && (
 					<div class="flex flex-col gap-3">
+						{phone && (
 						<a
 							href={`tel:${phone.replace(/[^+\d]/g, "")}`}
 							class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#000000] lg:text-right"
 						>
 							{phone}
 						</a>
+						)}
+						{email && (
 						<a
 							href={`mailto:${email}`}
 							class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#000000] lg:text-right"
 						>
 							{email}
 						</a>
+						)}
 					</div>
+					)}
+					{socials.length > 0 && (
 					<div class="flex flex-wrap items-center gap-2 lg:justify-end">
 						{socials.map((s) => (
 							<a
@@ -262,11 +267,14 @@ const footerContainerCls = pad
 							</a>
 						))}
 					</div>
+					)}
+					{paymentEnabled && (
 					<div class="flex flex-wrap items-center gap-3 lg:justify-end" aria-label="Способы оплаты">
 						<img src={withBase("/icons/MasterCard.svg")} alt="Mastercard" class="h-6 w-auto shrink-0" decoding="async" />
 						<img src={withBase("/icons/Visa.png")} alt="Visa" class="h-6 w-auto shrink-0" decoding="async" />
 						<img src={withBase("/icons/MIR.png")} alt="МИР" class="h-6 w-auto shrink-0" decoding="async" />
 					</div>
+					)}
 				</div>
 			</section>
 		</div>

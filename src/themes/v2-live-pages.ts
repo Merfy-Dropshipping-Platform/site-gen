@@ -182,3 +182,153 @@ export async function composeContentPagesIntoDist(
   }
   return count;
 }
+
+// ── Chrome unification ──────────────────────────────────────────────────────
+// Одиночный storefront-<header> темы (несёт data-nt="<тема>-header"). Sticky-
+// обёртка и фон — СНАРУЖИ этого элемента и едины на всех страницах, поэтому
+// подменяем только внутренний <header>. Цвета шапки идут через --color-* с
+// фолбэками, отдельная color-scheme-обёртка ей не нужна.
+const HEADER_NT_RE =
+  /<header\b[^>]*\bdata-nt=["'][^"']*-header["'][^>]*>[\s\S]*?<\/header>/i;
+// Минимальная checkout-шапка темы (CheckoutHeader.astro несёт data-checkout-slot="header").
+const HEADER_CHECKOUT_RE =
+  /<header\b[^>]*\bdata-checkout-slot=["']header["'][^>]*>[\s\S]*?<\/header>/i;
+
+async function listIndexHtmlFiles(dir: string): Promise<string[]> {
+  const out: string[] = [];
+  const walk = async (d: string): Promise<void> => {
+    const entries = await fs
+      .readdir(d, { withFileTypes: true })
+      .catch(() => [] as Array<{ name: string; isDirectory(): boolean; isFile(): boolean }>);
+    for (const e of entries) {
+      const full = path.join(d, e.name);
+      if (e.isDirectory()) await walk(full);
+      else if (e.isFile() && e.name === 'index.html') out.push(full);
+    }
+  };
+  await walk(dir);
+  return out;
+}
+
+const distRoute = (distDir: string, file: string): string =>
+  path.relative(distDir, path.dirname(file)).split(path.sep).join('/');
+
+const findBlockProps = (
+  page: unknown,
+  type: string,
+): Record<string, unknown> | undefined => {
+  const content = (page as { content?: Array<{ type?: string; props?: Record<string, unknown> }> })
+    ?.content;
+  const block = Array.isArray(content) ? content.find((b) => b?.type === type) : undefined;
+  return block?.props;
+};
+
+/**
+ * Финальная унификация «шапки» live-диста (зеркало бага «Header разный на
+ * страницах»). Сложные страницы (product/cart/checkout) копируются verbatim из
+ * SSG, где `<Header/>` рендерится БЕЗ пропсов → дефолтный siteTitle темы;
+ * about/contacts могут сидеться пустой шапкой. Итог: брендинг/меню расходятся.
+ *
+ * Канон = отрендеренная шапка home (dist/index.html, прошла Puck-композицию с
+ * пропсами мерчанта). Подменяем внутренний `<header data-nt>` на всех НЕ-checkout
+ * страницах. На checkout подменяем CheckoutHeader (минимальная шапка по Figma
+ * 1:13563) с брендом мерчанта — её CSS присутствует, т.к. тема рендерит её
+ * нативно (Layout header="checkout"). Идемпотентно: повторный прогон — no-op.
+ *
+ * Запускать ПОСЛЕ composeContentPagesIntoDist (нужен собранный home-шелл) и ДО
+ * per-slug генерации product (чтобы копии унаследовали уже исправленную шапку).
+ */
+export async function unifyChromeInDist(
+  ctx: BuildContext,
+  theme: string,
+): Promise<{ header: number; checkout: number }> {
+  let header = 0;
+  let checkout = 0;
+
+  const indexHtml = await fs
+    .readFile(path.join(ctx.distDir, 'index.html'), 'utf8')
+    .catch(() => null);
+  const canonicalHeader = indexHtml?.match(HEADER_NT_RE)?.[0] ?? null;
+  if (!canonicalHeader) {
+    logger.warn(
+      '[v2-chrome] no canonical <header data-nt> in home shell — header unify skipped',
+    );
+  }
+
+  // CheckoutHeader: рендерим с брендом мерчанта (из шапки home), CSS-классы
+  // совпадают с нативным рендером темы → стили на месте.
+  const pagesData =
+    (ctx.revisionData as { pagesData?: Record<string, unknown> } | null)?.pagesData ?? {};
+  const homeHeaderProps = findBlockProps(pagesData['home'], 'Header') ?? {};
+  const checkoutProps: Record<string, unknown> = {
+    siteTitle: 'Мой магазин',
+    logoMode: 'text',
+    rightIcon: 'cart',
+    accountLink: '/account',
+    backLink: '/cart',
+    cartLink: '/cart',
+    padding: { top: 24, bottom: 24 },
+    ...(findBlockProps(pagesData['page-checkout'], 'CheckoutHeader') ??
+      findBlockProps(pagesData['checkout'], 'CheckoutHeader') ??
+      {}),
+  };
+  if (typeof homeHeaderProps['siteTitle'] === 'string' && homeHeaderProps['siteTitle']) {
+    checkoutProps['siteTitle'] = homeHeaderProps['siteTitle'];
+  }
+  if (typeof homeHeaderProps['logo'] === 'string' && homeHeaderProps['logo'] && !checkoutProps['logo']) {
+    checkoutProps['logo'] = homeHeaderProps['logo'];
+  }
+  let checkoutHeader: string | null = null;
+  try {
+    const html = await getRenderer().renderBlock({
+      blockName: 'CheckoutHeader',
+      props: checkoutProps,
+      themeId: theme,
+      isPreview: false,
+    });
+    checkoutHeader = html && html.trim() ? html.trim() : null;
+  } catch (err) {
+    logger.warn(`[v2-chrome] CheckoutHeader render failed: ${(err as Error)?.message ?? err}`);
+  }
+  if (!checkoutHeader) {
+    logger.warn('[v2-chrome] CheckoutHeader render empty — checkout keeps theme header');
+  }
+
+  for (const file of await listIndexHtmlFiles(ctx.distDir)) {
+    const route = distRoute(ctx.distDir, file);
+    if (route === '') continue; // home — источник канона
+    const html = await fs.readFile(file, 'utf8').catch(() => null);
+    if (!html) continue;
+    const isCheckout = route.split('/')[0] === 'checkout';
+
+    if (isCheckout) {
+      if (!checkoutHeader) continue;
+      // Тема рендерит CheckoutHeader (data-checkout-slot) внутри своей scheme/
+      // token-обёртки — её и подменяем; до раскатки theme-edit fallback на data-nt.
+      const re = HEADER_CHECKOUT_RE.test(html)
+        ? HEADER_CHECKOUT_RE
+        : HEADER_NT_RE.test(html)
+          ? HEADER_NT_RE
+          : null;
+      if (!re) continue;
+      if (re.exec(html)?.[0] === checkoutHeader) continue;
+      const next = html.replace(re, () => checkoutHeader as string);
+      if (next !== html) {
+        await fs.writeFile(file, next, 'utf8');
+        checkout++;
+      }
+      continue;
+    }
+
+    if (!canonicalHeader) continue;
+    const m = HEADER_NT_RE.exec(html);
+    if (!m || m[0] === canonicalHeader) continue;
+    const next = html.replace(HEADER_NT_RE, () => canonicalHeader);
+    if (next !== html) {
+      await fs.writeFile(file, next, 'utf8');
+      header++;
+    }
+  }
+
+  return { header, checkout };
+}

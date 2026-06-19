@@ -1051,10 +1051,18 @@ export async function runBuildPipeline(
       // Lazy import: build.service ← v2-live-pages ← v2-page-composer ←
       // theme-build.service ← build.service — циклический граф; динамический
       // import не материализует цикл на module-init.
-      const { composeContentPagesIntoDist } = await import("../themes/v2-live-pages");
+      const { composeContentPagesIntoDist, unifyChromeInDist } = await import("../themes/v2-live-pages");
       const composedPages = await composeContentPagesIntoDist(ctx, bareTheme);
       logger.log(
         `[themes-v2] Composed ${composedPages} content pages from revision for site ${params.siteId}`,
+      );
+      // Унификация шапки: канон home → все НЕ-checkout страницы (фикс «Header
+      // разный на страницах»); checkout → минимальный CheckoutHeader (Figma
+      // 1:13563). ПОСЛЕ compose (нужен home-шелл), ДО per-slug product (копии
+      // унаследуют исправленную шапку).
+      const chrome = await unifyChromeInDist(ctx, bareTheme);
+      logger.log(
+        `[themes-v2] Unified chrome: ${chrome.header} page headers + ${chrome.checkout} checkout for site ${params.siteId}`,
       );
       // Патч shopId (cart/checkout createCart) — themes-v2 копирует dist verbatim
       // с shopId="" из исходника, snapshot-путь патчит, а здесь раньше пропускалось.

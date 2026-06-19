@@ -2,6 +2,7 @@
 import BaseHead from "../components/BaseHead.astro";
 import PromoBanner from "../components/sections/PromoBanner.astro";
 import Header from "../components/Header.astro";
+import CheckoutHeader from "../../../../packages/theme-base/blocks/CheckoutHeader/CheckoutHeader.astro";
 import Footer from "../components/Footer.astro";
 import NtCartDrawer from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtCartDrawer.astro";
 import { SITE_DESCRIPTION, SITE_TITLE } from "../consts";
@@ -10,9 +11,13 @@ import { ViewTransitions } from "astro:transitions";
 interface Props {
 	title?: string;
 	description?: string;
+	// "checkout" → минимальная шапка оформления (CheckoutHeader, Figma 1:13563)
+	// без PromoBanner; иначе обычная шапка магазина. build.service патчит бренд
+	// CheckoutHeader под мерчанта на сборке сайта.
+	header?: "default" | "checkout";
 }
 
-const { title, description = SITE_DESCRIPTION } = Astro.props;
+const { title, description = SITE_DESCRIPTION, header = "default" } = Astro.props;
 const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 ---
 
@@ -24,12 +29,20 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 		<slot name="head" />
 	</head>
 	<body class="antialiased bg-[rgb(var(--color-bg,255_255_255))]">
-		<!-- Обёртка схемы зеркалит композер v2 (blockDefaults.PromoBanner.colorScheme=scheme-4):
-		     на сложных страницах (блоб) tokens.css задаёт :root=scheme-1, без обёртки полоса белеет. -->
-		<div class="color-scheme-4" data-block-scheme="4">
-			<PromoBanner />
-		</div>
-		<Header />
+		{header === "checkout" ? (
+			<div class="color-scheme-2" style="--size-checkout-brand:24px;--size-checkout-brand-image:32px;">
+				<CheckoutHeader siteTitle={SITE_TITLE} logoMode="text" logoImage={null} rightIcon="cart" accountLink="/account" backLink="/cart" cartLink="/cart" padding={{ top: 24, bottom: 24 }} />
+			</div>
+		) : (
+			<Fragment>
+				{/* Обёртка схемы зеркалит композер v2 (PromoBanner.colorScheme=scheme-4):
+				    на сложных страницах tokens.css задаёт :root=scheme-1, без обёртки полоса белеет. */}
+				<div class="color-scheme-4" data-block-scheme="4">
+					<PromoBanner />
+				</div>
+				<Header />
+			</Fragment>
+		)}
 		<main>
 			<slot />
 		</main>

@@ -176,6 +176,10 @@ export class StorefrontDataController {
           try {
             const prodRes = await pool.query(
               `SELECT id, title AS name, handle, description, "basePrice", "compareAtPrice",
+                      CASE WHEN "basePrice" IS NOT NULL AND "basePrice" > 0 THEN "basePrice"
+                           ELSE (SELECT MIN(pvc.price) FROM product_variant_combinations pvc
+                                  WHERE pvc."productId" = products.id AND pvc.price > 0)
+                      END AS "effectivePrice",
                       sku, weight, "weightUnit", "isPhysicalProduct",
                       "metaTitle", "metaDescription", images
                  FROM products
@@ -188,8 +192,10 @@ export class StorefrontDataController {
               id: r.id,
               name: r.name,
               description: r.description ?? undefined,
-              price: r.basePrice != null ? Number(r.basePrice) : 0,
-              basePrice: r.basePrice != null ? Number(r.basePrice) : 0,
+              // effectivePrice = basePrice, либо min цена варианта (вариантный товар
+              // имеет basePrice=null) — иначе превью конструктора показывает «0 ₽».
+              price: r.effectivePrice != null ? Number(r.effectivePrice) : 0,
+              basePrice: r.effectivePrice != null ? Number(r.effectivePrice) : 0,
               compareAtPrice: r.compareAtPrice != null ? Number(r.compareAtPrice) : undefined,
               sku: r.sku ?? null,
               weight: r.weight != null ? Number(r.weight) : null,

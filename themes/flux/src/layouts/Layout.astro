@@ -1,6 +1,7 @@
 ---
 import BaseHead from "../components/BaseHead.astro";
 import Header from "../components/Header.astro";
+import CheckoutHeader from "../../../../packages/theme-base/blocks/CheckoutHeader/CheckoutHeader.astro";
 import Footer from "../components/Footer.astro";
 import NtCartDrawer from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtCartDrawer.astro";
 import { SITE_DESCRIPTION, SITE_TITLE } from "../consts";
@@ -8,9 +9,12 @@ import { SITE_DESCRIPTION, SITE_TITLE } from "../consts";
 interface Props {
 	title?: string;
 	description?: string;
+	// "checkout" → минимальная шапка оформления (CheckoutHeader, Figma 1:13563);
+	// build.service патчит бренд CheckoutHeader под мерчанта на сборке сайта.
+	header?: "default" | "checkout";
 }
 
-const { title, description = SITE_DESCRIPTION } = Astro.props;
+const { title, description = SITE_DESCRIPTION, header = "default" } = Astro.props;
 const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 ---
 
@@ -20,7 +24,13 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 		<BaseHead title={pageTitle} description={description} />
 	</head>
 	<body class="antialiased bg-white">
-		<Header />
+		{header === "checkout" ? (
+			<div class="color-scheme-2" style="--size-checkout-brand:24px;--size-checkout-brand-image:32px;">
+				<CheckoutHeader siteTitle={SITE_TITLE} logoMode="text" logoImage={null} rightIcon="cart" accountLink="/account" backLink="/cart" cartLink="/cart" padding={{ top: 24, bottom: 24 }} />
+			</div>
+		) : (
+			<Header />
+		)}
 		<main>
 			<slot />
 		</main>

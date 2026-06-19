@@ -107,14 +107,14 @@ const apiBase = "https://gateway.merfy.ru";
 		}
 
 		// ── Маппинг товара /api/store/products → форма карточки (зеркало каталога) ──
-		function toCents(v) {
+		function toNum(v) {
 			var n = typeof v === "string" ? parseFloat(v) : v;
 			return Number.isFinite(n) ? n : null;
 		}
 		function variantMinCents(p) {
 			var vc = p.variantCombinations;
 			if (Array.isArray(vc) && vc.length) {
-				var ps = vc.map(function (v) { return toCents(v.price); }).filter(function (n) { return n !== null && n > 0; });
+				var ps = vc.map(function (v) { return toNum(v.price); }).filter(function (n) { return n !== null && n > 0; });
 				if (ps.length) return Math.min.apply(null, ps);
 			}
 			return null;
@@ -122,15 +122,15 @@ const apiBase = "https://gateway.merfy.ru";
 		function mapApiProduct(p) {
 			var cents =
 				(p.hasVariants ? variantMinCents(p) : null) ??
-				toCents(p.basePrice) ??
+				toNum(p.basePrice) ??
 				variantMinCents(p) ??
 				0;
-			var oldCents = toCents(p.compareAtPrice);
+			var oldCents = toNum(p.compareAtPrice);
 			return {
 				id: p.id,
 				name: p.title || p.name || "",
-				price: cents / 100,
-				oldPrice: oldCents && oldCents > 0 ? oldCents / 100 : null,
+				price: cents,
+				oldPrice: oldCents && oldCents > 0 ? oldCents : null,
 				slug: p.handle || p.slug,
 				images: Array.isArray(p.images) ? p.images : [],
 			};
@@ -151,13 +151,13 @@ const apiBase = "https://gateway.merfy.ru";
 					}
 				} catch (e) { /* фолбэк ниже */ }
 			}
-			// Фолбэк: per-site products.json (цены в КОПЕЙКАХ → /100, как PDP).
+			// Фолбэк: per-site products.json (цены в РУБЛЯХ, как PDP — без мутации).
 			try {
 				var r2 = await fetch("/data/products.json");
 				if (r2.ok) {
 					var data = await r2.json();
 					if (Array.isArray(data) && data.length > 0) {
-						var k100 = function (v) { return typeof v === "number" ? v / 100 : v; };
+						var k100 = function (v) { return v; }; // products.json уже в рублях
 						__cached = data.map(function (p) {
 							return {
 								id: p.id,

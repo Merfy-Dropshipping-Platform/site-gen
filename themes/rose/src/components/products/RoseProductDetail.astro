@@ -425,15 +425,16 @@ const pdpHeartSvg =
 		var PLACEHOLDER_IMAGE = "/placeholders/sweater-blue.png";
 		var __cachedProducts; // undefined — не грузили; null — данных нет (demo).
 
-		// Цена из API — в КОПЕЙКАХ (basePrice "79000.00" / variant.price 79000).
-		function toCents(v) {
+		// Цена из API — в РУБЛЯХ (basePrice/variant.price = значение, которое ввёл
+		// мерчант, как в admin «Товары»). Показываем БЕЗ мутации (не делим на 100).
+		function toNum(v) {
 			var n = typeof v === "string" ? parseFloat(v) : v;
 			return Number.isFinite(n) ? n : null;
 		}
 		function variantMinCents(p) {
 			var vc = p.variantCombinations;
 			if (Array.isArray(vc) && vc.length) {
-				var ps = vc.map(function (v) { return toCents(v.price); }).filter(function (n) { return n !== null && n > 0; });
+				var ps = vc.map(function (v) { return toNum(v.price); }).filter(function (n) { return n !== null && n > 0; });
 				if (ps.length) return Math.min.apply(null, ps);
 			}
 			return null;
@@ -444,15 +445,15 @@ const pdpHeartSvg =
 		function mapApiProduct(p) {
 			var cents =
 				(p.hasVariants ? variantMinCents(p) : null) ??
-				toCents(p.basePrice) ??
+				toNum(p.basePrice) ??
 				variantMinCents(p) ??
 				0;
-			var oldCents = toCents(p.compareAtPrice);
+			var oldCents = toNum(p.compareAtPrice);
 			return {
 				id: p.id,
 				name: p.title || p.name || "",
-				price: cents / 100,
-				oldPrice: oldCents && oldCents > 0 ? oldCents / 100 : null,
+				price: cents,
+				oldPrice: oldCents && oldCents > 0 ? oldCents : null,
 				slug: p.handle || p.slug,
 				description: p.description || p.metaDescription || "",
 				images: Array.isArray(p.images) ? p.images : [],
@@ -461,16 +462,35 @@ const pdpHeartSvg =
 				// applyCombo/корзина работали в рублях (как basePrice выше).
 				variantCombinations: Array.isArray(p.variantCombinations)
 					? p.variantCombinations.map(function (vc) {
-							var vcCents = toCents(vc.price);
-							var vcOld = toCents(vc.compareAtPrice);
+							var vcCents = toNum(vc.price);
+							var vcOld = toNum(vc.compareAtPrice);
 							return {
 								id: vc.id,
 								title: vc.title,
-								price: vcCents !== null ? vcCents / 100 : 0,
-								compareAtPrice: vcOld && vcOld > 0 ? vcOld / 100 : null,
+								price: vcCents !== null ? vcCents : 0,
+								compareAtPrice: vcOld && vcOld > 0 ? vcOld : null,
 								available: vc.available,
 								quantity: vc.quantity,
 								options: vc.options || {},
+							};
+						})
+					: [],
+				// Медиа вариантов: опции (напр. «Цвет») несут images[]; нужны applyCombo
+				// для смены галереи при выборе варианта. API их отдаёт, но mapApiProduct
+				// раньше дропал variantGroups целиком → фото варианта не подхватывалось.
+				variantGroups: Array.isArray(p.variantGroups)
+					? p.variantGroups.map(function (g) {
+							return {
+								name: g.name,
+								options: Array.isArray(g.options)
+									? g.options.map(function (o) {
+											return {
+												value: o.value,
+												images: Array.isArray(o.images) ? o.images : [],
+												swatchHex: o.swatchHex || null,
+											};
+										})
+									: [],
 							};
 						})
 					: [],
@@ -503,15 +523,15 @@ const pdpHeartSvg =
 			}
 
 			// 2. Статический per-site файл — опубликованный сайт. Богатый shape
-			// (variantCombinations) пишет build.service. ⚠️ Цены в products.json — в
-			// КОПЕЙКАХ (как API basePrice: 269000 = 2690₽) → делим на 100. Фолбэк:
+			// (variantCombinations) пишет build.service. Цены в products.json — в
+			// РУБЛЯХ (как live API и admin «Товары»), показываем БЕЗ мутации. Фолбэк:
 			// обычно на live build.service инжектит __MERFY_SITE_ID__ → путь №1 (API).
 			try {
 				var r2 = await fetch("/data/products.json");
 				if (r2.ok) {
 					var data = await r2.json();
 					if (Array.isArray(data) && data.length > 0) {
-						var k100 = function (v) { return typeof v === "number" ? v / 100 : v; };
+						var k100 = function (v) { return v; }; // products.json уже в рублях — без мутации
 						__cachedProducts = data.map(function (p) {
 							return Object.assign({}, p, {
 								price: k100(p.price),
@@ -709,41 +729,74 @@ const pdpHeartSvg =
 			var badgeEl = section.querySelector("[data-pdp-badge]");
 			if (badgeEl) badgeEl.hidden = !oldRaw;
 
-			// ── Галерея: главное фото + миниатюры из p.images ──
+			// ── Галерея: вынесена в applyGallery (переиспользуется applyCombo при
+			//    смене варианта). productGalleryImages — медиа уровня товара
+			//    (фолбэк, когда у выбранного варианта нет своих фото). src —
+			//    главное фото товара, используется ниже для data-image CTA. ──
 			var src = productImage(p);
-			var mainImg = section.querySelector("[data-pdp-main]");
-			if (mainImg) {
-				mainImg.src = src;
-				mainImg.alt = p.name || "";
-				// <picture><source webp> от skeleton/demo больше не валиден — снимаем.
-				var picture = mainImg.closest("picture");
-				var source = picture && picture.querySelector("source");
-				if (source) source.removeAttribute("srcset");
-			}
-			var imgs = (Array.isArray(p.images) ? p.images : []).filter(function (s) {
+			var productGalleryImages = (Array.isArray(p.images) ? p.images : []).filter(function (s) {
 				return typeof s === "string" && s;
 			});
-			var thumbsRow = section.querySelector("[data-pdp-thumbs-row]");
-			if (thumbsRow) {
-				var thumbUrls = imgs.slice(1, 5);
-				if (thumbUrls.length > 0) {
-					thumbsRow.innerHTML = thumbUrls
-						.map(function (u) {
-							return (
-								'<button type="button" class="aspect-square w-full overflow-hidden rounded-[6px] bg-[rgb(var(--color-surface,245_245_245))] transition-opacity hover:opacity-90" data-pdp-thumb data-image="' +
-								escapeHtml(u) + '" aria-label="Показать изображение"><img src="' +
-								escapeHtml(u) + '" alt="' + escapeHtml(p.name) +
-								'" class="h-full w-full object-contain" loading="eager" /></button>'
-							);
-						})
-						.join("");
-					thumbsRow.hidden = false;
-				} else {
-					// Реальный товар с одним фото — прячем demo-миниатюры.
-					thumbsRow.hidden = true;
-					thumbsRow.innerHTML = "";
+			// Медиа выбранного варианта: первая опция группы (обычно «Цвет») с
+			// непустым images[]. null → у варианта нет своих фото (берём товара).
+			function variantImagesFor(sel) {
+				var groups = Array.isArray(p.variantGroups) ? p.variantGroups : [];
+				for (var gi = 0; gi < groups.length; gi++) {
+					var g = groups[gi];
+					var val = sel ? sel[g.name] : null;
+					if (val == null) continue;
+					var opts = g.options || [];
+					for (var oi = 0; oi < opts.length; oi++) {
+						if (opts[oi].value === val && Array.isArray(opts[oi].images) && opts[oi].images.length) {
+							return opts[oi].images;
+						}
+					}
+				}
+				return null;
+			}
+			// Рисует главное фото + миниатюры из переданного списка и синкает
+			// data-image на CTA (корзина читает текущее фото).
+			function applyGallery(list) {
+				var arr = (Array.isArray(list) ? list : []).filter(function (s) {
+					return typeof s === "string" && s;
+				});
+				var mainSrc = arr[0] || productImage(p);
+				var mainImg = section.querySelector("[data-pdp-main]");
+				if (mainImg) {
+					mainImg.src = mainSrc;
+					mainImg.alt = p.name || "";
+					// <picture><source webp> от skeleton/demo больше не валиден — снимаем.
+					var picture = mainImg.closest("picture");
+					var source = picture && picture.querySelector("source");
+					if (source) source.removeAttribute("srcset");
+				}
+				var addCta = section.querySelector("[data-add-to-cart]");
+				var buyCta = section.querySelector("[data-action='buy-now']");
+				if (addCta) addCta.setAttribute("data-image", mainSrc);
+				if (buyCta) buyCta.setAttribute("data-image", mainSrc);
+				var thumbsRow = section.querySelector("[data-pdp-thumbs-row]");
+				if (thumbsRow) {
+					var thumbUrls = arr.slice(1, 5);
+					if (thumbUrls.length > 0) {
+						thumbsRow.innerHTML = thumbUrls
+							.map(function (u) {
+								return (
+									'<button type="button" class="aspect-square w-full overflow-hidden rounded-[6px] bg-[rgb(var(--color-surface,245_245_245))] transition-opacity hover:opacity-90" data-pdp-thumb data-image="' +
+									escapeHtml(u) + '" aria-label="Показать изображение"><img src="' +
+									escapeHtml(u) + '" alt="' + escapeHtml(p.name) +
+									'" class="h-full w-full object-contain" loading="eager" /></button>'
+								);
+							})
+							.join("");
+						thumbsRow.hidden = false;
+					} else {
+						// Реальный товар с одним фото — прячем demo-миниатюры.
+						thumbsRow.hidden = true;
+						thumbsRow.innerHTML = "";
+					}
 				}
 			}
+			applyGallery(productGalleryImages);
 
 			// ── Атрибуты корзины: глобальный делегат [data-add-to-cart] (rose
 			//    nt-cart-rose) читает их при клике. Слаг кладём на секцию (buy-now). ──
@@ -829,6 +882,10 @@ const pdpHeartSvg =
 						addEl.classList.toggle("pointer-events-none", !available);
 						addEl.textContent = available ? "Добавить в корзину" : "Нет в наличии";
 					}
+					// Свап галереи под выбранный вариант: медиа опции (цвет) при
+					// наличии, иначе медиа товара. Чинит баг «фото не меняется».
+					var vImgs = variantImagesFor(selected);
+					applyGallery(vImgs && vImgs.length ? vImgs : productGalleryImages);
 				}
 
 				variantsEl.hidden = false;

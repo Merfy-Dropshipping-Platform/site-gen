@@ -550,7 +550,7 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
     function fmtPrice(p) {
       var num = typeof p === 'number' ? p : parseFloat(p);
       if (!Number.isFinite(num)) return '';
-      var rubles = num > 1000000 ? Math.round(num / 100) : Math.round(num);
+      var rubles = Math.round(num); // цена в рублях как есть (без мутации/÷100)
       return rubles.toLocaleString('ru-RU') + ' ₽';
     }
     function getImg(p) {

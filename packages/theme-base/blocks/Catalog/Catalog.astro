@@ -571,7 +571,7 @@ const fmtPriceServer = (n: number | string | undefined): string => {
     function fmtPrice(p) {
       const num = typeof p === 'number' ? p : parseFloat(p);
       if (!Number.isFinite(num)) return '';
-      const rubles = num > 1000000 ? Math.round(num / 100) : Math.round(num);
+      const rubles = Math.round(num); // цена в рублях как есть (без мутации/÷100)
       return rubles.toLocaleString('ru-RU') + ' ₽';
     }
 

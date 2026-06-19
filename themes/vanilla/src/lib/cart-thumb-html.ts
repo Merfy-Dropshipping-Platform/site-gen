@@ -8,7 +8,11 @@ function rasterImgSrc(src: string): string {
 }
 
 export function cartLineThumbPictureHtml(imageUrl: string, alt: string): string {
-	const imgAbs = withBase(rasterImgSrc(imageUrl));
 	const safeAlt = alt.replace(/"/g, "&quot;");
-	return `<img src="${imgAbs}" alt="${safeAlt}" decoding="async" width="80" height="80" class="h-full w-full object-cover" />`;
+	// Абсолютный URL (MinIO/API товары): сырой .jpg/.png как есть — withBase ломал
+	// бы абсолютный URL, а .webp-варианта у них нет (→ 404). rasterImgSrc/.webp —
+	// только для локальных ассетов (плейсхолдер).
+	const isAbs = /^(https?:)?\/\//i.test(imageUrl) || imageUrl.startsWith("data:");
+	const imgAbs = isAbs ? imageUrl : withBase(rasterImgSrc(imageUrl));
+	return `<img src="${imgAbs}" alt="${safeAlt}" decoding="async" width="80" height="80" class="h-full w-full object-cover" onerror="this.style.visibility='hidden'" />`;
 }

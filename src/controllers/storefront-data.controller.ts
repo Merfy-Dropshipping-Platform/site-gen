@@ -272,6 +272,41 @@ export class StorefrontDataController {
           }
         }
       }
+
+      // Вариантный товар: RPC fetchProducts отдаёт price=0 (basePrice null), а
+      // варианты для СПИСКА не фетчатся (только resolved product). Доливаем
+      // МИНИМАЛЬНУЮ цену варианта одним запросом к product-пулу — иначе секции/
+      // PopularProducts и превью конструктора показывают «0 ₽» (паритет gateway).
+      try {
+        const zeroIds = (products ?? [])
+          .filter((p: any) => !(Number(p?.price ?? p?.basePrice) > 0))
+          .map((p: any) => p?.id)
+          .filter(Boolean);
+        if (zeroIds.length > 0) {
+          const vpool = this.getProductPool();
+          if (vpool) {
+            const vr = await vpool.query(
+              `SELECT "productId", MIN(price) AS minp FROM product_variant_combinations
+                WHERE "productId" = ANY($1::uuid[]) AND price > 0 GROUP BY "productId"`,
+              [zeroIds],
+            );
+            const minByProduct: Record<string, number> = {};
+            for (const row of vr.rows as Array<{ productId: string; minp: string }>) {
+              minByProduct[String(row.productId)] = Number(row.minp);
+            }
+            products = (products ?? []).map((p: any) => {
+              if (Number(p?.price ?? p?.basePrice) > 0) return p;
+              const m = minByProduct[String(p?.id)];
+              return m != null && m > 0 ? { ...p, price: m, basePrice: m } : p;
+            });
+          }
+        }
+      } catch (vminErr: unknown) {
+        this.logger.warn(
+          `variant-min enrich failed for site=${siteId}: ${(vminErr as Error)?.message ?? vminErr}`,
+        );
+      }
+
       // Нормализация формы коллекций. RPC-путь отдаёт {id,name,slug,images[]}
       // без image/productIds — build-пайплайн для live доштамповывает их в
       // collections.json, а превью/гидрация читали сырую форму: фильтр

@@ -801,7 +801,11 @@ const skeletons = Array.from({ length: skeletonCount });
     const root = document.querySelector('[data-catalog-layout]');
     const fromSetting = root && root.getAttribute("data-collection-slug");
     if (fromSetting && fromSetting.trim()) return fromSetting.trim();
-    return new URLSearchParams(window.location.search).get("collection");
+    const fromQuery = new URLSearchParams(window.location.search).get("collection");
+    if (fromQuery && fromQuery.trim()) return fromQuery.trim();
+    const fromPath = window.location.pathname.match(/\/collections\/([^/?#]+)/);
+    if (fromPath && fromPath[1] && fromPath[1] !== "_placeholder") return decodeURIComponent(fromPath[1]);
+    return null;
   }
 
   // Снимок скелетон-лоадера (одна «страница» <li data-nt="catalog-skeleton">) из

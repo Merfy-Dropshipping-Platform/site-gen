@@ -936,8 +936,13 @@ export function migrateVanillaHomePage(
  */
 /** Плейсхолдер-телефон верстальщиков (засевался во все темы). */
 const FOOTER_PLACEHOLDER_PHONE = '+7 (000) 000-00-00';
-/** Плейсхолдер-почты сидов/тем: `example@*.*` и `<тема>@example.*`. */
-const FOOTER_PLACEHOLDER_EMAIL = /^(?:example@|[a-z]+@example\.)/i;
+/**
+ * Плейсхолдер-почты сидов/тем. Покрывает: `example@…` (example@bloom.ru,
+ * example@vanila.merfy), `…@example.…` (rose@example.ru, info@example.ru) и
+ * RFC-зарезервированный TLD `.example` (hello@satin.example). Реальные адреса
+ * под эти шаблоны не попадают (`.example` не регистрируется, `example@` — явный
+ * пример). */
+const FOOTER_PLACEHOLDER_EMAIL = /(?:^example@|@example\.|\.example$)/i;
 
 /**
  * Нормализация контактных данных футера (idempotent). Чистит демо-плейсхолдеры,

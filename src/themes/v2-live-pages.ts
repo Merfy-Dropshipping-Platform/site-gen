@@ -32,6 +32,12 @@ const CONTENT_PAGES: Array<{
   { key: 'home', route: '' },
   { key: 'page-about', route: 'about' },
   { key: 'page-contacts', route: 'contacts' },
+  // Платформенный стандарт (spec 100). Темы НЕ несут delivery.astro в
+  // пред-собранном дисте → у /delivery нет своего шелла, пересаживается на
+  // home-шелл (requireOwnShell=false, как контентная страница about/contacts).
+  // Без этой записи page-delivery (role=system, не custom) не пересаживался →
+  // /delivery 404 на live (и на новых сайтах тоже).
+  { key: 'page-delivery', route: 'delivery' },
   // 098 live-паритет: каталог нарезается на секции и пересаживается в
   // dist/catalog/index.html тем же Container-движком, что превью (live ≡
   // превью). Catalog.astro Container-API-safe, несёт data-puck-component-id +

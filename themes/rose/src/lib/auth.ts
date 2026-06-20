@@ -170,9 +170,14 @@ export async function fetchMe(): Promise<CustomerProfile | null> {
     $customer.set(customer);
     $authStatus.set(customer ? 'authed' : 'guest');
     return customer;
-  } catch {
-    $token.set(null);
-    $customer.set(null);
+  } catch (err: any) {
+    // Сессию чистим ТОЛЬКО при явном 401 (невалидный токен). Сетевые ошибки и
+    // ERR_ABORTED (запрос прерван навигацией/View Transitions на не-account
+    // странице) НЕ должны разлогинивать — токен сохраняем, профиль подтянется.
+    if (err?.status === 401) {
+      $token.set(null);
+      $customer.set(null);
+    }
     $authStatus.set('guest');
     return null;
   }

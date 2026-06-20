@@ -215,11 +215,26 @@ const apiUrl = "https://gateway.merfy.ru/api";
 			void (async () => {
 				const cs = (window as any).cartStore;
 				const lines = getCart();
-				if (cs && lines.length) {
+				if (!cs) {
+					window.alert("Корзина ещё загружается. Обновите страницу и попробуйте снова.");
+					return;
+				}
+				if (lines.length) {
+					let ok = true;
 					try {
 						cs.clear();
-						for (const l of lines) await cs.addItem(l.productId, l.variant?.variantCombinationId ?? null, l.quantity);
-					} catch (e) {}
+						for (const l of lines) {
+							if ((await cs.addItem(l.productId, l.variant?.variantCombinationId ?? null, l.quantity)) === false) ok = false;
+						}
+					} catch (e) {
+						ok = false;
+					}
+					// Не уходить в пустой /checkout: cs.clear() уже очистил серверную корзину,
+					// при сбое addItem остаёмся на /cart с сообщением (иначе чекаут пуст).
+					if (!ok) {
+						window.alert("Не удалось перенести товары в оформление. Обновите страницу и попробуйте снова.");
+						return;
+					}
 				}
 				window.location.href = "/checkout"; // full load = VT-safe (checkout-скрипты стартуют свежими)
 			})();

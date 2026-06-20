@@ -34,20 +34,20 @@ const apiUrl = "https://gateway.merfy.ru/api";
   </AuthShell>
 
   <script>
-    import { verifyEmailOTP, requestEmailVerifyOTP, getToken } from '../lib/auth';
+    import { navTo, verifyEmailOTP, requestEmailVerifyOTP, getToken } from '../lib/auth';
 
     function initVerifyEmailPage() {
       const group = document.getElementById('otp-group');
       if (!group || group.dataset.bound === 'true') return;
       group.dataset.bound = 'true';
 
-      if (getToken()) { window.location.href = '/account'; return; }
+      if (getToken()) { navTo('/account'); return; }
 
       const email =
         new URLSearchParams(window.location.search).get('email') ||
         sessionStorage.getItem('verifyEmail') ||
         '';
-      if (!email) { window.location.href = '/register'; return; }
+      if (!email) { navTo('/register'); return; }
       sessionStorage.setItem('verifyEmail', email);
 
       const cells = Array.from(group.querySelectorAll<HTMLInputElement>('[data-otp-cell]'));
@@ -103,7 +103,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
           const result = await verifyEmailOTP({ email, code: value });
           if (result.success) {
             sessionStorage.removeItem('verifyEmail');
-            window.location.href = '/account';
+            navTo('/account');
             return;
           }
           throw result;

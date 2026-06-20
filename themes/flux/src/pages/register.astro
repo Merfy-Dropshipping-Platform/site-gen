@@ -52,7 +52,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
   </AuthShell>
 
   <script>
-    import { register, inviteRegister, getToken } from '../lib/auth';
+    import { navTo, register, inviteRegister, getToken } from '../lib/auth';
 
     function initRegisterPage() {
       const form = document.getElementById('register-form') as HTMLFormElement | null;
@@ -60,7 +60,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
       form.dataset.bound = 'true';
 
       if (getToken()) {
-        window.location.href = '/account';
+        navTo('/account');
         return;
       }
 
@@ -107,7 +107,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
           if (isInviteMode) {
             const ir = await inviteRegister({ token: inviteToken!, password });
             if (!ir.success) throw ir;
-            window.location.href = '/account';
+            navTo('/account');
             return;
           }
 
@@ -117,11 +117,11 @@ const apiUrl = "https://gateway.merfy.ru/api";
 
           if ((result.data as any)?.requiresEmailVerification) {
             sessionStorage.setItem('verifyEmail', email);
-            window.location.href = '/verify-email?email=' + encodeURIComponent(email);
+            navTo('/verify-email?email=' + encodeURIComponent(email));
             return;
           }
           // Легаси-путь: сессия выдана сразу.
-          window.location.href = '/account';
+          navTo('/account');
         } catch (err: any) {
           let msg = 'Не удалось зарегистрироваться. Попробуйте позже.';
           if (err?.error === 'INVITE_EXPIRED' || err?.error === 'INVITE_USED') {
@@ -129,7 +129,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
             expiredMsg.classList.remove('hidden');
             return;
           } else if (err?.error === 'ALREADY_REGISTERED') {
-            window.location.href = '/login?email=' + encodeURIComponent(inviteEmail || email);
+            navTo('/login?email=' + encodeURIComponent(inviteEmail || email));
             return;
           } else if (err?.code === 'CUSTOMER_ALREADY_EXISTS' || err?.error === 'EMAIL_EXISTS') {
             msg = 'Пользователь с таким email уже зарегистрирован';

@@ -29,21 +29,21 @@ const apiUrl = "https://gateway.merfy.ru/api";
   </div>
 
   <script>
-    import { fetchMe, fetchOrders, getToken } from '../../lib/auth';
+    import { navTo, fetchMe, fetchOrders, getToken } from '../../lib/auth';
 
     async function initOrders() {
       const root = document.getElementById('orders-list');
       if (!root || root.dataset.bound === 'true') return;
       root.dataset.bound = 'true';
 
-      if (!getToken()) { window.location.href = '/login?redirect=/account/orders'; return; }
+      if (!getToken()) { navTo('/login?redirect=/account/orders'); return; }
 
       const loadingEl = document.getElementById('orders-loading')!;
       const emptyEl = document.getElementById('orders-empty')!;
       const emailEl = document.getElementById('orders-email');
 
       const me = await fetchMe();
-      if (!me) { window.location.href = '/login?redirect=/account/orders'; return; }
+      if (!me) { navTo('/login?redirect=/account/orders'); return; }
       if (emailEl) emailEl.textContent = me.email || '';
 
       try {

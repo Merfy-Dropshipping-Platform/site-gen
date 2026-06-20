@@ -52,7 +52,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
   </div>
 
   <script>
-    import { fetchOrder, cancelOrder, getToken } from '../../lib/auth';
+    import { navTo, fetchOrder, cancelOrder, getToken } from '../../lib/auth';
 
     const STATUS_LABELS: Record<string, string> = {
       cart: 'Корзина', pending: 'Ожидает оплаты', paid: 'Оплачен', processing: 'В сборке',
@@ -67,7 +67,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
       loadingEl.dataset.bound = 'true';
 
       if (!getToken()) {
-        window.location.href = '/login?redirect=' + encodeURIComponent(location.pathname + location.search);
+        navTo('/login?redirect=' + encodeURIComponent(location.pathname + location.search));
         return;
       }
 

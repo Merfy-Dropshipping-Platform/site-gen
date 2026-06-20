@@ -49,7 +49,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
   </AuthShell>
 
   <script>
-    import { login, getToken } from '../lib/auth';
+    import { navTo, login, getToken } from '../lib/auth';
 
     function initLoginPage() {
       const form = document.getElementById('login-form') as HTMLFormElement | null;
@@ -59,7 +59,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
       // Уже вошёл → редирект.
       if (getToken()) {
         const params = new URLSearchParams(window.location.search);
-        window.location.href = params.get('redirect') || '/account';
+        navTo(params.get('redirect') || '/account');
         return;
       }
 
@@ -117,7 +117,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
           const result = await login({ email, password });
           if (result.success) {
             const params = new URLSearchParams(window.location.search);
-            window.location.href = params.get('redirect') || '/account';
+            navTo(params.get('redirect') || '/account');
           } else {
             throw result;
           }

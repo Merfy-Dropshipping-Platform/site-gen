@@ -27,7 +27,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
   </div>
 
   <script>
-    import { fetchMe, logout, getToken } from '../../lib/auth';
+    import { navTo, fetchMe, logout, getToken } from '../../lib/auth';
 
     async function initAccountPage() {
       const root = document.getElementById('account-nav');
@@ -35,7 +35,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
       root.dataset.bound = 'true';
 
       if (!getToken()) {
-        window.location.href = '/login';
+        navTo('/login');
         return;
       }
 
@@ -44,14 +44,14 @@ const apiUrl = "https://gateway.merfy.ru/api";
 
       const customer = await fetchMe();
       if (!customer) {
-        window.location.href = '/login';
+        navTo('/login');
         return;
       }
       if (emailEl) emailEl.textContent = customer.email || '';
 
       logoutBtn?.addEventListener('click', async () => {
         await logout();
-        window.location.href = '/login';
+        navTo('/login');
       });
     }
 

@@ -57,6 +57,26 @@ export const $isLoggedIn = computed($token, (t) => !!t);
 export const getToken = (): string | null => $token.get();
 export const isLoggedIn = (): boolean => !!$token.get();
 
+/**
+ * Навигация, корректная и на live, и в превью конструктора. На live — обычный
+ * location.href. В превью (iframe) hard-навигация ушла бы на gateway-origin
+ * (→ 404 «Cannot GET /verify-email»), поэтому просим родителя (конструктор)
+ * показать storefront-страницу через postMessage navigate — он умеет рендерить
+ * /account, /login, /verify-email, /reset-password в превью.
+ */
+export function navTo(path: string): void {
+  if (typeof window === 'undefined') return;
+  if (window.self !== window.top) {
+    try {
+      window.parent.postMessage({ type: 'navigate', path: path }, '*');
+      return;
+    } catch (e) {
+      /* fallthrough to hard nav */
+    }
+  }
+  window.location.href = path;
+}
+
 // ── Конфиг (apiUrl + storeId) из window ─────────────────────────────────────
 interface MerfyConfig {
   apiUrl?: string;

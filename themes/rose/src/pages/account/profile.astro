@@ -55,14 +55,14 @@ const apiUrl = "https://gateway.merfy.ru/api";
   </div>
 
   <script>
-    import { fetchMe, updateProfile, logout, getToken } from '../../lib/auth';
+    import { navTo, fetchMe, updateProfile, logout, getToken } from '../../lib/auth';
 
     async function initProfile() {
       const formEl = document.getElementById('profile-form') as HTMLFormElement | null;
       if (!formEl || formEl.dataset.bound === 'true') return;
       formEl.dataset.bound = 'true';
 
-      if (!getToken()) { window.location.href = '/login?redirect=/account/profile'; return; }
+      if (!getToken()) { navTo('/login?redirect=/account/profile'); return; }
 
       const loadingEl = document.getElementById('profile-loading')!;
       const actionsEl = document.getElementById('profile-actions')!;
@@ -72,7 +72,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
       const logoutBtn = document.getElementById('btn-logout-profile');
 
       const c = await fetchMe();
-      if (!c) { window.location.href = '/login?redirect=/account/profile'; return; }
+      if (!c) { navTo('/login?redirect=/account/profile'); return; }
 
       loadingEl.classList.add('hidden');
       formEl.classList.remove('hidden');
@@ -110,7 +110,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
 
       logoutBtn?.addEventListener('click', async () => {
         await logout();
-        window.location.href = '/login';
+        navTo('/login');
       });
     }
 

@@ -57,6 +57,19 @@ export const $isLoggedIn = computed($token, (t) => !!t);
 export const getToken = (): string | null => $token.get();
 export const isLoggedIn = (): boolean => !!$token.get();
 
+export function navTo(path: string): void {
+  if (typeof window === 'undefined') return;
+  if (window.self !== window.top) {
+    try {
+      window.parent.postMessage({ type: 'navigate', path: path }, '*');
+      return;
+    } catch (e) {
+      /* fallthrough to hard nav */
+    }
+  }
+  window.location.href = path;
+}
+
 // ── Конфиг (apiUrl + storeId) из window ─────────────────────────────────────
 interface MerfyConfig {
   apiUrl?: string;

@@ -44,10 +44,13 @@ const italicCls = p.textStyle === "italic" ? " italic" : "";
 
 // Канон image {url, alt}: canon-default url пуст → fallback = реальный ассет темы
 // (плановое требование T15; та же картинка, что у плиток галереи верстальщика).
+// Плейсхолдер (Figma 1:19335): без выбранной картинки = ПУСТАЯ surface-плитка
+// (НЕ мок-фото верстальщика). Контейнер ниже имеет bg-surface; <img> рендерится
+// только при заданной картинке.
 const imageUrl =
 	typeof p.image?.url === "string" && p.image.url.trim()
 		? p.image.url
-		: "/images/Изображение_Галерея.webp";
+		: "";
 const imageAlt =
 	typeof p.image?.alt === "string" && p.image.alt.trim() ? p.image.alt : heading;
 
@@ -116,7 +119,7 @@ const titleId = id ? `${id}-title` : undefined;
 			data-puck-subsection-index="100"
 			data-puck-subsection-field="image"
 		>
-			<img src={imageUrl} alt={imageAlt} loading="lazy" class="!h-full !w-full object-cover" />
+			{imageUrl && <img src={imageUrl} alt={imageAlt} loading="lazy" class="!h-full !w-full object-cover" />}
 		</div>
 
 		{/* h-full только при bottom-pinned (иначе ломает lg:items-center грида) */}

@@ -93,12 +93,13 @@ const propCollections = (Array.isArray(p.collections) ? p.collections : [])
 				(typeof c.heading === "string" && c.heading) ||
 				(typeof c.name === "string" && c.name) ||
 				"Коллекция",
-			// Канон-плейсхолдер = реальный ассет темы (принцип T15): карточка без
-			// выбранной картинки получает фото коллекции верстальщика по позиции.
+			// Плейсхолдер пустого состояния (Figma 1:19335): карточка без выбранной
+			// картинки = ПУСТАЯ surface-плитка (НЕ мок-фото верстальщика). На live
+			// гидрация (data-collection-ref) подставит реальное фото коллекции.
 			image:
 				typeof c.image === "string" && c.image
 					? c.image
-					: `/images/Коллекция_${(i % 3) + 1}.webp`,
+					: "",
 			hasOwnImage: !!(typeof c.image === "string" && c.image),
 			href: collectionId ? `${cardLinkBase}${collectionId}` : "#",
 		};

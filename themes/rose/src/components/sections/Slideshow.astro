@@ -107,7 +107,7 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 		image:
 			(typeof s.imageUrl === "string" && s.imageUrl.trim()) ||
 			(typeof s.image === "string" && s.image.trim()) ||
-			SLIDE_FALLBACKS[i % SLIDE_FALLBACKS.length],
+			"",
 		heading: typeof s.heading === "string" ? s.heading : (s.heading?.text ?? ""),
 		headingCls: slideHeadingCls(typeof s.heading === "object" ? s.heading?.size : undefined),
 		textCls: slideTextCls(typeof s.text === "object" ? s.text?.size : undefined),

@@ -14,7 +14,7 @@ const ctaText = p.primaryButton?.text ?? p.cta?.text ?? p.ctaText ?? "В кат�
 const ctaLink =
 	p.primaryButton?.link?.href ?? p.primaryButton?.link ?? p.cta?.href ?? p.ctaLink ?? "/catalog";
 const backgroundImage =
-	p.backgroundImages?.url1 ?? p.backgroundImage ?? p.image?.url ?? "/images/Главный_экран.png";
+	p.backgroundImages?.url1 ?? p.backgroundImage ?? p.image?.url ?? "";
 // Канон backgroundImages (imagePair url2) / legacy backgroundImage2: сплит двух
 // картинок 50/50 ТОЛЬКО когда второе фото задано; иначе одиночный рендер дословно.
 const backgroundImage2 = p.backgroundImages?.url2 ?? p.backgroundImage2;
@@ -137,7 +137,7 @@ const paddingStyle = p.padding
 					class="!size-full object-cover object-center"
 				/>
 			</div>
-		) : (
+		) : backgroundImage ? (
 			<RosePicture
 				src={backgroundImage}
 				alt={title}
@@ -145,7 +145,7 @@ const paddingStyle = p.padding
 				fetchpriority="high"
 				class="absolute inset-0 z-0 !size-full object-cover object-center"
 			/>
-		)
+		) : null
 	}
 
 	{

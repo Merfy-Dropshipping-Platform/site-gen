@@ -87,8 +87,8 @@ const gridStyle = cols ? `--cols:${cols}` : undefined;
 // быстрого добавления на карточке (в манере — появляется при hover, в потоке под
 // ценой как канон). Клик → механика rose:cart: глобальный обработчик
 // [data-add-to-cart] (initCartUI, lib/nt-cart-rose.ts) добавляет строку и
-// открывает drawer. Для реальных товаров с вариантами добавление без выбора
-// варианта невозможно — кнопка ведёт на страницу товара (фиксация решения).
+// открывает drawer. Для реальных товаров с вариантами кнопка добавляет ПЕРВУЮ
+// доступную комбинацию (combo.id+combo.price) — решение владельца.
 const qaModeRaw = p.quickAddMode === "count" ? "cart" : p.quickAddMode;
 const quickAddMode = qaModeRaw === "standard" || qaModeRaw === "cart" ? qaModeRaw : undefined;
 // Канон quickAddText (default 'В КОРЗИНУ'); без него standard → 'В корзину' (как канон).
@@ -229,7 +229,11 @@ const paddingStyle = p.padding
 			data-qa-text={quickAddMode ? quickAddText : undefined}
 			data-qa-class={quickAddMode ? quickAddCls : undefined}
 		>
-			{collectionRef ? products.map((product) => (
+			{/* SSR ВСЕГДА плейсхолдер (никогда catalogProducts/мок верстальщика) —
+			    в превью (Astro Container) гидрация не исполняется, поэтому мок-SSR
+			    «залипал». data-collection остаётся → на live гидрация ниже подменяет
+			    плейсхолдеры реальными товарами выбранной коллекции. */}
+			{false ? products.map((product) => (
 				<li data-product-id={product.id} class:list={quickAddMode ? ["group"] : undefined} data-image-2={nextPhoto ? product.gallery?.[1] : undefined}>
 					<RoseProductCard product={product} />{quickAddMode && (
 						<button
@@ -305,7 +309,7 @@ const paddingStyle = p.padding
 	// Реальные товары (Option B): первые N из /data/products.json (N = data-cards
 	// грида, дефолт 4 — поведение верстальщика). Demo-сборка → no-op. Канон-поля
 	// T13 поверх: data-quick-add/-qa-text/-qa-class → кнопка на гидрированной
-	// карточке (товары с вариантами → ссылка на PDP), data-next-photo → data-image-2
+	// карточке (товары с вариантами → добавляют первую комбинацию), data-next-photo → data-image-2
 	// (вторая картинка товара) для hover-скрипта, data-collection → фильтр по
 	// выбранной в конструкторе коллекции (раньше настройка игнорировалась).
 	const hydratePopular = async () => {
@@ -340,11 +344,24 @@ const paddingStyle = p.padding
 					const hasVariants =
 						p.hasVariants === true ||
 						(Array.isArray(p.variantCombinations) && p.variantCombinations.length > 0);
-					const qaBtn = quickAdd
-						? hasVariants
-							? `<a href="${escapeHtml(productHref(p))}" class="${qaClass}">${escapeHtml(qaText)}</a>`
-							: `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${escapeHtml(p.name)}" data-price="${escapeHtml(String(p.price))}"${p.oldPrice || p.compareAtPrice ? ` data-old-price="${escapeHtml(String(p.oldPrice || p.compareAtPrice))}"` : ""} data-image="${escapeHtml(productImage(p))}" class="${qaClass}">${escapeHtml(qaText)}</button>`
-						: "";
+					// Решение владельца: карточная «В корзину» для товара с вариантами
+						// добавляет ПЕРВУЮ доступную комбинацию (не ведёт на PDP). Без
+						// комбинаций (битый товар) — фолбэк на ссылку PDP, чтобы не дать
+						// сломанную кнопку (order_items без варианта).
+						const firstCombo = hasVariants
+							? (p.variantCombinations || []).find((c) => c && c.available !== false) ||
+								(p.variantCombinations || [])[0]
+							: null;
+						const comboOpt = (firstCombo?.options || {}) as Record<string, string>;
+						const comboColor = comboOpt["Цвет"] || comboOpt["Color"] || "";
+						const comboSize = comboOpt["Размер"] || comboOpt["Size"] || "";
+						const qaBtn = quickAdd
+							? hasVariants
+								? firstCombo
+									? `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${escapeHtml(p.name)}" data-price="${escapeHtml(String(firstCombo.price))}" data-variant-combination-id="${escapeHtml(String(firstCombo.id))}"${comboColor ? ` data-variant-color="${escapeHtml(comboColor)}"` : ""}${comboSize ? ` data-variant-size="${escapeHtml(comboSize)}"` : ""} data-image="${escapeHtml(productImage(p))}" class="${qaClass}">${escapeHtml(qaText)}</button>`
+									: `<a href="${escapeHtml(productHref(p))}" class="${qaClass}">${escapeHtml(qaText)}</a>`
+								: `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${escapeHtml(p.name)}" data-price="${escapeHtml(String(p.price))}"${p.oldPrice || p.compareAtPrice ? ` data-old-price="${escapeHtml(String(p.oldPrice || p.compareAtPrice))}"` : ""} data-image="${escapeHtml(productImage(p))}" class="${qaClass}">${escapeHtml(qaText)}</button>`
+							: "";
 					return `<li data-product-id="${escapeHtml(p.id)}"${liClass}${img2}>${renderCardHtml(p)}${qaBtn}</li>`;
 				})
 				.join("");
@@ -374,6 +391,16 @@ const paddingStyle = p.padding
 		:global([data-nt="section-heading"]) {
 			max-width: 100% !important;
 			width: 100% !important;
+		}
+	}
+
+	/* Quick-add «В корзину» на карточке = opacity-0 + group-hover:opacity-100
+	   (reveal на ховер). На тач-устройствах ховера нет → кнопка недоступна.
+	   На таких экранах показываем её всегда (десктоп hover-reveal сохраняется). */
+	@media (hover: none) {
+		:global([data-nt="popular-grid"] [data-add-to-cart]),
+		:global([data-nt="popular-grid"] li.group > a:last-child) {
+			opacity: 1 !important;
 		}
 	}
 </style>

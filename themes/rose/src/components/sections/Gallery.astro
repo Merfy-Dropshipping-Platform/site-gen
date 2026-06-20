@@ -108,8 +108,11 @@ const TILE_FALLBACKS = [
 	"/images/Товар_1.webp",
 	"/images/Коллекция_1.webp",
 ];
-galleryTiles.forEach((t, i) => {
-	if (!t.url) t.url = TILE_FALLBACKS[i % TILE_FALLBACKS.length];
+// Плейсхолдер (Figma 1:19335): плитка БЕЗ своей картинки = пустая surface-плитка
+// (НЕ мок-фото верстальщика). url остаётся пустым → tile.url-гард рендерит пустую
+// surface; на live гидрация (data-gallery-product/-collection) подставит реальное.
+galleryTiles.forEach((t) => {
+	if (!t.url) t.url = "";
 });
 // Куртка-плейсхолдер для no-items пустого состояния (Figma 1:19335). Доступна
 // на live как /placeholders/sweater-blue.png (copyPublic, assemble-from-packages);

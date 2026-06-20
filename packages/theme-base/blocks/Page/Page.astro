@@ -7,15 +7,22 @@ interface Props extends PageProps {
   id?: string;
 }
 
-const { id, colorScheme, padding } = Astro.props as Props;
+const { id, headingSize, colorScheme, padding } = Astro.props as Props;
 const raw = Astro.props as Record<string, unknown>;
 
-// Defensive read — legacy embed revisions carried `pageId` instead of `content`
-// (and possibly no `content` at all). Missing/non-string → '' → placeholder.
-// Never crash, never print "[object Object]".
+// Bound mode (pageId → platform policy content) is resolved at build time:
+// the build data-stage injects the policy title/content into heading/content.
+// So the render is unified — always heading + content. Defensive reads keep
+// legacy/empty/object props crash-safe (never "[object Object]").
+const heading = typeof raw.heading === 'string' ? raw.heading.trim() : '';
 const rawContent = typeof raw.content === 'string' ? raw.content : '';
 // Authoritative XSS gate (Constitution II): sanitize on every render.
 const safe = rawContent ? sanitizePageContent(rawContent) : '';
+
+const hSize: 'small' | 'medium' | 'large' =
+  headingSize === 'small' || headingSize === 'large' ? headingSize : 'medium';
+
+const isEmpty = !heading && !safe;
 
 const schemeClass =
   typeof colorScheme === 'string' && colorScheme
@@ -32,12 +39,18 @@ const paddingStyle = padding
 >
   <div class={C.container}>
     <div class={C.column}>
-      {safe ? (
-        <div class={C.content} set:html={safe} />
+      {isEmpty ? (
+        <>
+          <p class={C.placeholderHeading}>Страница</p>
+          <p class={C.placeholder}>Текст</p>
+        </>
       ) : (
-        <p class={C.placeholder}>
-          Здесь будет содержимое страницы. Откройте редактор и добавьте заголовки, текст, списки и ссылки.
-        </p>
+        <>
+          {heading && (
+            <h2 class:list={[C.heading, C.headingSize[hSize]]}>{heading}</h2>
+          )}
+          {safe && <div class={C.content} set:html={safe} />}
+        </>
       )}
     </div>
   </div>

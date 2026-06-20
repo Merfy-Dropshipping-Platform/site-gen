@@ -2218,6 +2218,23 @@ async function stageGenerate(
     const headerComponent = homeContent.find((c: any) => c?.type === "Header");
     const footerComponent = homeContent.find((c: any) => c?.type === "Footer");
 
+    // Plain-text политики (textarea из admin Settings) → безопасный HTML для
+    // блока «Страница» (Page.content рендерится sanitized set:html). Двойной
+    // перенос → новый <p>, одиночный → <br>. HTML-спецсимволы экранируются.
+    const policyTextToHtml = (text: string): string =>
+      text
+        .trim()
+        .split(/\n{2,}/)
+        .map(
+          (para) =>
+            `<p>${para
+              .replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;")
+              .replace(/\n/g, "<br>")}</p>`,
+        )
+        .join("");
+
     let policyPagesCount = 0;
     for (const policy of policies) {
       if (!policy.content || policy.content.trim() === "") continue;
@@ -2228,11 +2245,15 @@ async function stageGenerate(
 
       const content: any[] = [];
       if (headerComponent) content.push({ ...headerComponent });
+      // Секция «Страница» (Page) с платформенным контентом политики (живой —
+      // пересобирается из site_policy при каждой сборке). Spec 101.
       content.push({
-        type: "MainText",
+        type: "Page",
         props: {
-          heading: { text: title, size: "large" },
-          text: { text: policy.content },
+          heading: title,
+          content: policyTextToHtml(policy.content),
+          headingSize: "large",
+          colorScheme: "scheme-1",
           padding: { top: 80, bottom: 80 },
         },
       });
@@ -2244,6 +2265,35 @@ async function stageGenerate(
 
     if (policyPagesCount > 0) {
       logger.log(`[generate] Added ${policyPagesCount} policy page(s)`);
+    }
+
+    // Инжект платформенного контента политики в блоки «Страница» (Page),
+    // привязанные через pageId (свободно размещённые на любой странице). Живой
+    // контент — пересобирается из site_policy при каждой сборке. Spec 101.
+    const policyByType = new Map(policies.map((p) => [p.type, p] as const));
+    let boundPageBlocks = 0;
+    for (const pg of pages) {
+      const cont = (pg.data as { content?: unknown })?.content;
+      if (!Array.isArray(cont)) continue;
+      for (const block of cont as any[]) {
+        if (block?.type !== "Page") continue;
+        const pid =
+          typeof block.props?.pageId === "string" ? block.props.pageId : "";
+        const pol = pid ? policyByType.get(pid) : undefined;
+        if (pol?.content && pol.content.trim()) {
+          block.props = {
+            ...block.props,
+            heading: POLICY_TITLE_MAP[pol.type] ?? pol.type,
+            content: policyTextToHtml(pol.content),
+          };
+          boundPageBlocks++;
+        }
+      }
+    }
+    if (boundPageBlocks > 0) {
+      logger.log(
+        `[generate] Injected policy content into ${boundPageBlocks} «Страница» block(s)`,
+      );
     }
 
     // Данные футера (контакты/политики/касса/соцсети) инжектятся раньше —

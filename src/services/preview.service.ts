@@ -1684,6 +1684,29 @@ const PREVIEW_NAV_AGENT_INLINE = `
     var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
     if (a) {
       var href = a.getAttribute('href') || '';
+      // Системные storefront-ссылки (иконка профиля → /login|/account, избранное
+      // /wishlist; помечены data-auth-link) — функции витрины, НЕ редактируемые
+      // Puck-страницы. Клик в превью НЕ навигирует (иначе модалка «создать
+      // страницу»), а выделяет родительский блок (Header) — как клик по логотипу
+      // или меню. Учитываем /__theme/<тема>/ префикс превью-перезаписи URL.
+      var __clean = href;
+      if (href.indexOf('/__theme/') === 0) {
+        var __sl = href.indexOf('/', 9);
+        __clean = __sl >= 0 ? href.slice(__sl) : '/';
+      }
+      var __seg = __clean.split('?')[0].split('#')[0];
+      var __isSys = __seg === '/login' || __seg === '/register' ||
+        __seg === '/reset-password' || __seg === '/verify-email' ||
+        __seg === '/wishlist' || __seg === '/account' ||
+        __seg.indexOf('/account/') === 0;
+      if ((a.hasAttribute && a.hasAttribute('data-auth-link')) || __isSys) {
+        e.preventDefault();
+        var __host = a.closest ? a.closest('[data-puck-component-id]') : null;
+        if (__host) {
+          post({ type: 'select-block', blockId: __host.getAttribute('data-puck-component-id') });
+        }
+        return;
+      }
       if (href.startsWith('/') && !href.startsWith('//')) {
         e.preventDefault();
         // Product card link → extract productId from ancestor [data-product-id]

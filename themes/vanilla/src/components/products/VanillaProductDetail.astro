@@ -1031,7 +1031,8 @@ const pdpHeartSvg =
 
 			// «Купить сейчас»: переиспользуем ГЛОБАЛЬНЫЙ делегат корзины vanilla —
 			// диспатчим клик по [data-add-to-cart] (кладёт линию в локальную корзину),
-			// затем идём на /cart (там мост к серверному cartStore → /checkout).
+			// затем идём прямо на /checkout (страница наполняет серверный cartStore
+			// из nt-cart vanilla:cart:v1, без промежуточного /cart).
 			var buyBtn = section.querySelector("[data-action='buy-now']");
 			if (buyBtn) {
 				buyBtn.addEventListener("click", function () {
@@ -1040,7 +1041,7 @@ const pdpHeartSvg =
 					if (add && !add.disabled) {
 						add.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 					}
-					window.location.href = "/cart";
+					window.location.href = "/checkout";
 				});
 			}
 		}

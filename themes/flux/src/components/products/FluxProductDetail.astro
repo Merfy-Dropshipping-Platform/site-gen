@@ -992,8 +992,8 @@ const pdpHeartSvg =
 
 			// «Купить сейчас»: переиспользуем ГЛОБАЛЬНЫЙ делегат корзины flux —
 			// диспатчим клик по [data-add-to-cart] (тот кладёт линию в локальную
-			// корзину flux), затем идём на /cart, где живёт мост cartStore →
-			// серверный cart → /checkout. Не зовём cart-API напрямую (его на PDP нет).
+			// корзину flux), затем идём сразу на /checkout, где мост cartStore
+			// наполняется из nt-cart (flux:cart:v1). Не зовём cart-API напрямую (его на PDP нет).
 			var buyBtn = section.querySelector("[data-action='buy-now']");
 			if (buyBtn) {
 				buyBtn.addEventListener("click", function () {
@@ -1002,7 +1002,7 @@ const pdpHeartSvg =
 					if (add && !add.disabled) {
 						add.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 					}
-					window.location.href = "/cart";
+					window.location.href = "/checkout";
 				});
 			}
 		}

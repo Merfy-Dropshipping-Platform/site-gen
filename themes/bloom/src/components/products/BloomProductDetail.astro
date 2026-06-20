@@ -402,7 +402,7 @@ const pdpHeartSvg =
 	 * -image/-volume/-quantity/-variant-color/-variant-size/-variant-combination-id,
 	 * кладёт линию в локальную корзину bloom и открывает «added»-модалку. Наша
 	 * задача — заполнить эти атрибуты реальными значениями. «Купить сейчас» = тот
-	 * же add + переход на /cart (там мост NtCart → серверный cartStore → /checkout).
+	 * же add + переход СРАЗУ на /checkout (чекаут сам наполняет серверный cartStore из nt-cart).
 	 */
 	(function () {
 		// ─── Источник данных: ЖИВОЙ storefront API (спек 098 — «не products.json»). ───
@@ -999,8 +999,8 @@ const pdpHeartSvg =
 
 			// «Купить сейчас»: переиспользуем ГЛОБАЛЬНЫЙ делегат корзины bloom —
 			// диспатчим клик по [data-add-to-cart] (кладёт линию в локальную корзину
-			// bloom), затем идём на /cart (мост NtCart → серверный cartStore →
-			// /checkout). Не зовём cart-API напрямую (его на PDP нет).
+			// bloom), затем идём СРАЗУ на /checkout (страница чекаута сама наполняет
+			// серверный cartStore из nt-cart). Не зовём cart-API напрямую (его на PDP нет).
 			var buyBtn = section.querySelector("[data-action='buy-now']");
 			if (buyBtn) {
 				buyBtn.addEventListener("click", function () {
@@ -1009,7 +1009,7 @@ const pdpHeartSvg =
 					if (add && !add.disabled) {
 						add.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 					}
-					window.location.href = "/cart";
+					window.location.href = "/checkout";
 				});
 			}
 		}

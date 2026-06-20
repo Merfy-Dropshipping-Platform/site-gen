@@ -64,10 +64,27 @@ const dadataToken = "";
   <script is:inline type="module" src="/scripts/cart-api.js"></script>
   <script is:inline type="module" src="/scripts/cart-store.js"></script>
   <script is:inline>
+    // Чекаут наполняет серверную корзину (cartStore) из nt-cart (satin:cart:v1) —
+    // источника истины того, что в корзине у пользователя. Товар виден при ЛЮБОМ
+    // входе: «Купить сейчас»→/checkout, корзина→/checkout, прямой /checkout. Всё в
+    // try/catch: при сбое деградирует к cartStore.init() (прежнее поведение).
     document.addEventListener("DOMContentLoaded", function () {
-      if (window.cartStore && window.cartStore.init) {
-        window.cartStore.init();
-      }
+      var cs = window.cartStore;
+      if (!cs) return;
+      function fallbackInit() { try { if (cs.init) cs.init(); } catch (e) {} }
+      var lines = [];
+      try { lines = JSON.parse(localStorage.getItem("satin:cart:v1") || "[]"); } catch (e) { lines = []; }
+      if (!Array.isArray(lines) || !lines.length || !cs.clear || !cs.addItem) { fallbackInit(); return; }
+      (async function () {
+        try {
+          await cs.clear();
+          for (var i = 0; i < lines.length; i++) {
+            var l = lines[i];
+            try { await cs.addItem(l.productId, (l.variant && l.variant.variantCombinationId) || null, l.quantity); } catch (e) {}
+          }
+        } catch (e) { fallbackInit(); return; }
+        try { document.dispatchEvent(new CustomEvent("cart:updated")); } catch (e) {}
+      })();
     });
   </script>
 </Layout>

@@ -278,9 +278,11 @@ const formatPrice = (v: unknown): string => {
   return '';
 };
 
-// Use real products если есть, иначе demo. Slice to `cards` count.
-// Inline-script ниже подменит grid.innerHTML при ответе API с товарами.
-const productList = realProducts.length > 0
+// Curated-модель (Shopify): секция показывает товары ТОЛЬКО когда мерчант явно
+// выбрал коллекцию. Нет выбора (collectionRef пуст) → заглушки (DEMO_PRODUCTS),
+// даже если у магазина есть товары — секция не авто-подхватывает весь каталог.
+// Inline-script ниже тоже не подменяет grid, когда коллекция не выбрана.
+const productList = collectionRef && realProducts.length > 0
   ? realProducts.slice(0, Math.min(cards, realProducts.length)).map((p) => ({
       id: p.id,
       title: p.name || 'Товар',
@@ -681,6 +683,10 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
     // skip JS-side rebuild to avoid clobbering rich card markup with
     // minimal cardHtml template.
     if (grid.getAttribute('data-card-variant') === 'rich') return;
+
+    // Curated-модель: секция без выбранной коллекции остаётся с SSR-заглушками —
+    // не подменяем их реальными товарами (пустой выбор = моки, не весь каталог).
+    if (!collection) return;
 
     fetch(apiBase + '/sites/' + effectiveSiteId + '/storefront-data', { credentials: 'omit' })
       .catch(function () { return null; })

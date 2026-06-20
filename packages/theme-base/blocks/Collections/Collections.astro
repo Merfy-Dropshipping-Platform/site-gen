@@ -172,20 +172,17 @@ function resolveManual(item: { id?: string; heading?: string; description?: stri
   };
 }
 
+// Curated-модель (Shopify): секция показывает коллекции ТОЛЬКО когда мерчант
+// явно добавил их в список. Нет ручного выбора → заглушки (DEMO_COLLECTIONS),
+// даже если у магазина есть коллекции — секция не авто-подхватывает все.
+// (realCollections всё ещё нужен в resolveManual для имён/картинок выбранных.)
 const hasManualCollections = (collections ?? []).length > 0;
 const effectiveCollections: CollectionTile[] = hasManualCollections
   ? collections.map(resolveManual)
-  : realCollections.length > 0
-    ? realCollections.slice(0, columns).map((c) => ({
-        id: c.id,
-        heading: c.name ?? 'Коллекция',
-        image: c.imageUrl ?? c.image ?? c.images?.[0] ?? '',
-        collectionId: c.slug ?? c.id,
-      }))
-    : DEMO_COLLECTIONS.slice(0, columns).map((c, i) => ({
-        id: `demo-${i}`, heading: c.heading, image: c.image, collectionId: null,
-      }));
-const hasRealCollections = hasManualCollections || realCollections.length > 0;
+  : DEMO_COLLECTIONS.slice(0, columns).map((c, i) => ({
+      id: `demo-${i}`, heading: c.heading, image: c.image, collectionId: null,
+    }));
+const hasRealCollections = hasManualCollections;
 ---
 <section
   class:list={[C.root, schemeClass]}

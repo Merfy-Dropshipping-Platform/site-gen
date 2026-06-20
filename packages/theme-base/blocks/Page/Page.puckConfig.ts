@@ -39,8 +39,7 @@ export const PagePuckConfig: BlockPuckConfig<PageProps> = {
   fields: {
     // Главная панель. «Выбор страницы» — пикер созданных контент-страниц
     // (как товар/коллекция): привязка подгружает (transclude) заголовок+контент
-    // выбранной страницы в эту секцию при сборке. Пусто = свободный режим
-    // (heading/content редактируются здесь же).
+    // выбранной страницы в эту секцию при сборке. Без выбора — плейсхолдер.
     pageId: { type: 'pageContentPicker', label: 'Выбор страницы' } as any,
     headingSize: {
       type: 'select',
@@ -53,9 +52,9 @@ export const PagePuckConfig: BlockPuckConfig<PageProps> = {
     },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
-    // Содержимое свободного режима (редактируется здесь же).
-    heading: { type: 'text', label: 'Заголовок' },
-    content: { type: 'wysiwyg', label: 'Содержимое' } as any,
+    // heading/content НЕ в панели: секция picker-driven (как Product/Collection).
+    // Значения остаются в schema/defaults — их пишет build-side transclude из
+    // выбранной страницы; в этой панели они не редактируются.
   },
   defaults: {
     pageId: '',

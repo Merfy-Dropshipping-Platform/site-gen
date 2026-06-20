@@ -39,10 +39,12 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 		<script>
 			import { initCartUI } from "../lib/cart";
 			import { initWishlistUI } from "../lib/wishlist";
+			import { initAuthUI } from "../lib/auth";
 			import "../scripts/gsap/index";
 			initCartUI();
 			// Избранное (wishlist) — глобальный делегат сердец/бейджей, зеркало корзины.
 			initWishlistUI();
+			initAuthUI();
 
 				// Корзина «Сайдбар»/«Страница» (--cart-type): перехват клика по иконке
 				// (<button data-cart-open>) в capture-фазе, опережая bubble-обработчик

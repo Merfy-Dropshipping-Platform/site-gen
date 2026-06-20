@@ -46,9 +46,11 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 		<script>
 			import { initCartUI } from "../lib/cart";
 			import { initWishlistUI } from "../lib/wishlist";
+			import { initAuthUI } from "../lib/auth";
 			initCartUI();
 			// Избранное (wishlist) — глобальный делегат сердец/бейджей, зеркало корзины.
 			initWishlistUI();
+			initAuthUI();
 
 				// Корзина «Сайдбар»/«Страница» (--cart-type). Иконка корзины в vanilla —
 				// <a href="/cart">: для page это уже верный переход (no-op). Для drawer в

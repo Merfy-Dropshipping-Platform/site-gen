@@ -1,0 +1,82 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const shopId = "";
+const apiUrl = "https://gateway.merfy.ru/api";
+---
+<Layout title="Мои заказы">
+  <script is:inline define:vars={{ shopId, apiUrl }}>
+    window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
+      shopId: shopId || "",
+      apiUrl: apiUrl || "https://gateway.merfy.ru/api",
+    };
+  </script>
+
+  <div class="account-page-container">
+    <a href="/account" class="account-back-link">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      Вернуться назад
+    </a>
+
+    <div class="account-title">
+      <h1>Мои заказы</h1>
+      <span class="account-subtitle" id="orders-email"></span>
+    </div>
+
+    <div id="orders-loading" style="color: rgb(var(--color-text-muted)); font-family: var(--font-body);">Загрузка...</div>
+    <div id="orders-empty" class="hidden" style="font-family: var(--font-body); color: rgb(var(--color-text-muted));">У вас пока нет заказов</div>
+    <div id="orders-list" class="hidden"></div>
+  </div>
+
+  <script>
+    import { fetchMe, fetchOrders, getToken } from '../../lib/auth';
+
+    async function initOrders() {
+      const root = document.getElementById('orders-list');
+      if (!root || root.dataset.bound === 'true') return;
+      root.dataset.bound = 'true';
+
+      if (!getToken()) { window.location.href = '/login?redirect=/account/orders'; return; }
+
+      const loadingEl = document.getElementById('orders-loading')!;
+      const emptyEl = document.getElementById('orders-empty')!;
+      const emailEl = document.getElementById('orders-email');
+
+      const me = await fetchMe();
+      if (!me) { window.location.href = '/login?redirect=/account/orders'; return; }
+      if (emailEl) emailEl.textContent = me.email || '';
+
+      try {
+        const result: any = await fetchOrders({ skip: 0, take: 50 });
+        loadingEl.classList.add('hidden');
+        const orders = Array.isArray(result.data) ? result.data : result.data?.items;
+        if (!result.success || !orders?.length) { emptyEl.classList.remove('hidden'); return; }
+
+        root.classList.remove('hidden');
+        root.style.display = 'flex';
+        root.style.flexDirection = 'column';
+        root.style.gap = '1.5rem';
+
+        orders.forEach((order: any) => {
+          const date = new Date(order.createdAt).toLocaleDateString('ru-RU', {
+            day: '2-digit', month: '2-digit', year: '2-digit',
+          });
+          const row = document.createElement('div');
+          row.className = 'account-order-row';
+          row.innerHTML =
+            '<div class="order-info">' +
+              '<span class="order-number">Заказ №' + order.orderNumber + '</span>' +
+              '<span class="order-date">от ' + date + '</span>' +
+            '</div>' +
+            '<a href="/account/order?n=' + encodeURIComponent(order.orderNumber) + '" class="account-button">Перейти</a>';
+          root.appendChild(row);
+        });
+      } catch {
+        loadingEl.textContent = 'Не удалось загрузить заказы';
+      }
+    }
+
+    initOrders();
+    document.addEventListener('astro:page-load', initOrders);
+  </script>
+</Layout>

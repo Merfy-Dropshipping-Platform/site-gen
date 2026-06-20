@@ -1,0 +1,167 @@
+---
+import Layout from '../layouts/Layout.astro';
+import AuthShell from '../components/auth/AuthShell.astro';
+import AuthButton from '../components/auth/AuthButton.astro';
+import AuthSecondaryLink from '../components/auth/AuthSecondaryLink.astro';
+
+const shopId = "";
+const apiUrl = "https://gateway.merfy.ru/api";
+---
+<Layout title="Подтверждение почты">
+  <script is:inline define:vars={{ shopId, apiUrl }}>
+    window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
+      shopId: shopId || "",
+      apiUrl: apiUrl || "https://gateway.merfy.ru/api",
+    };
+  </script>
+
+  <AuthShell title="Подтверждение почты" description="Введите код подтверждения с вашего e-mail">
+    <div class="w-full flex flex-col items-center gap-20">
+      <div class="flex items-center justify-center gap-3" id="otp-group" role="group" aria-label="Код подтверждения">
+        <input class="auth-otp-cell" data-otp-cell inputmode="numeric" maxlength="1" autocomplete="one-time-code" data-filled="false" aria-label="Цифра 1" />
+        <input class="auth-otp-cell" data-otp-cell inputmode="numeric" maxlength="1" data-filled="false" aria-label="Цифра 2" />
+        <input class="auth-otp-cell" data-otp-cell inputmode="numeric" maxlength="1" data-filled="false" aria-label="Цифра 3" />
+        <input class="auth-otp-cell" data-otp-cell inputmode="numeric" maxlength="1" data-filled="false" aria-label="Цифра 4" />
+      </div>
+      <button type="button" class="account-text-link" id="otp-resend" disabled>Отправить код повторно <span id="otp-resend-timer"></span></button>
+    </div>
+
+    <div class="w-full flex flex-col items-center gap-8">
+      <div class="auth-helper-error hidden text-center" id="verify-error" role="alert"></div>
+      <AuthButton id="btn-verify-continue" type="button" loadingLabel="Проверка...">Продолжить</AuthButton>
+      <AuthSecondaryLink href="/register" id="verify-back" variant="muted">Вернуться назад</AuthSecondaryLink>
+    </div>
+  </AuthShell>
+
+  <script>
+    import { verifyEmailOTP, requestEmailVerifyOTP, getToken } from '../lib/auth';
+
+    function initVerifyEmailPage() {
+      const group = document.getElementById('otp-group');
+      if (!group || group.dataset.bound === 'true') return;
+      group.dataset.bound = 'true';
+
+      if (getToken()) { window.location.href = '/account'; return; }
+
+      const email =
+        new URLSearchParams(window.location.search).get('email') ||
+        sessionStorage.getItem('verifyEmail') ||
+        '';
+      if (!email) { window.location.href = '/register'; return; }
+      sessionStorage.setItem('verifyEmail', email);
+
+      const cells = Array.from(group.querySelectorAll<HTMLInputElement>('[data-otp-cell]'));
+      const errorEl = document.getElementById('verify-error')!;
+      const btn = document.getElementById('btn-verify-continue') as HTMLButtonElement;
+      const loadingEl = btn.querySelector('[data-loading]')!;
+      const textEl = btn.querySelector('[data-button-text]')!;
+      const resendBtn = document.getElementById('otp-resend') as HTMLButtonElement;
+      const resendTimerEl = document.getElementById('otp-resend-timer')!;
+      let submitting = false;
+
+      const code = () => cells.map((c) => c.value).join('');
+      const setCellsError = (on: boolean) =>
+        cells.forEach((c) => (c.style.borderColor = on ? '#FCA5A5' : ''));
+
+      // ── ввод OTP: авто-переход, backspace, вставка ──
+      cells.forEach((cell, i) => {
+        cell.addEventListener('input', () => {
+          errorEl.classList.add('hidden');
+          setCellsError(false);
+          cell.value = cell.value.replace(/\D/g, '').slice(0, 1);
+          cell.dataset.filled = cell.value ? 'true' : 'false';
+          if (cell.value && i < cells.length - 1) cells[i + 1].focus();
+          if (code().length === 4 && !submitting) submitVerify();
+        });
+        cell.addEventListener('keydown', (e) => {
+          if (e.key === 'Backspace' && !cell.value && i > 0) cells[i - 1].focus();
+        });
+        cell.addEventListener('paste', (e) => {
+          e.preventDefault();
+          const digits = (e.clipboardData?.getData('text') || '').replace(/\D/g, '').slice(0, 4);
+          digits.split('').forEach((d, j) => {
+            if (cells[j]) { cells[j].value = d; cells[j].dataset.filled = 'true'; }
+          });
+          if (digits.length) cells[Math.min(digits.length, 3)].focus();
+          if (digits.length === 4 && !submitting) submitVerify();
+        });
+      });
+
+      async function submitVerify() {
+        errorEl.classList.add('hidden');
+        const value = code();
+        if (value.length !== 4) {
+          errorEl.textContent = 'Введите все 4 цифры';
+          errorEl.classList.remove('hidden');
+          return;
+        }
+        submitting = true;
+        loadingEl.classList.remove('hidden');
+        textEl.classList.add('hidden');
+        btn.disabled = true;
+        try {
+          const result = await verifyEmailOTP({ email, code: value });
+          if (result.success) {
+            sessionStorage.removeItem('verifyEmail');
+            window.location.href = '/account';
+            return;
+          }
+          throw result;
+        } catch (err: any) {
+          const c = err?.error?.code || err?.code;
+          let msg = 'Неверный код';
+          if (c === 'OTP_EXPIRED') msg = 'Код устарел. Запросите новый';
+          else if (c === 'OTP_INVALIDATED') msg = 'Слишком много неверных попыток. Запросите новый код';
+          else if (err?.error?.attemptsRemaining !== undefined) msg = 'Неверный код. Осталось попыток: ' + err.error.attemptsRemaining;
+          errorEl.textContent = msg;
+          errorEl.classList.remove('hidden');
+          setCellsError(true);
+        } finally {
+          submitting = false;
+          loadingEl.classList.add('hidden');
+          textEl.classList.remove('hidden');
+          btn.disabled = false;
+        }
+      }
+
+      btn.addEventListener('click', (e) => { e.preventDefault(); if (!submitting) submitVerify(); });
+
+      // ── resend с таймером 60с ──
+      let timer = 0;
+      let handle: number | undefined;
+      const tick = () => {
+        if (timer <= 0) {
+          resendBtn.disabled = false;
+          resendTimerEl.textContent = '';
+          if (handle) window.clearInterval(handle);
+          return;
+        }
+        resendTimerEl.textContent = `(${timer})`;
+        timer -= 1;
+      };
+      const startTimer = (s: number) => {
+        timer = s;
+        resendBtn.disabled = true;
+        if (handle) window.clearInterval(handle);
+        tick();
+        handle = window.setInterval(tick, 1000);
+      };
+      resendBtn.addEventListener('click', async () => {
+        errorEl.classList.add('hidden');
+        try {
+          await requestEmailVerifyOTP({ email });
+          startTimer(60);
+        } catch {
+          errorEl.textContent = 'Не удалось отправить код повторно';
+          errorEl.classList.remove('hidden');
+        }
+      });
+
+      cells[0]?.focus();
+      startTimer(60);
+    }
+
+    initVerifyEmailPage();
+    document.addEventListener('astro:page-load', initVerifyEmailPage);
+  </script>
+</Layout>

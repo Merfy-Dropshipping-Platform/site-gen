@@ -1,0 +1,144 @@
+---
+import Layout from '../layouts/Layout.astro';
+import AuthShell from '../components/auth/AuthShell.astro';
+import AuthInput from '../components/auth/AuthInput.astro';
+import PasswordField from '../components/auth/PasswordField.astro';
+import AuthButton from '../components/auth/AuthButton.astro';
+import AuthSecondaryLink from '../components/auth/AuthSecondaryLink.astro';
+
+// Конфиг auth-стора: shopId патчит build.service (patchShopIdInDist) → siteId на деплое.
+const shopId = "";
+const apiUrl = "https://gateway.merfy.ru/api";
+---
+<Layout title="Вход">
+  <script is:inline define:vars={{ shopId, apiUrl }}>
+    window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
+      shopId: shopId || "",
+      apiUrl: apiUrl || "https://gateway.merfy.ru/api",
+    };
+  </script>
+
+  <AuthShell title="Вход в аккаунт" description="Введите свои данные чтобы войти в аккаунт">
+    <form id="login-form" class="w-full flex flex-col gap-6" novalidate>
+      <AuthInput
+        label="E-mail"
+        type="email"
+        name="email"
+        id="login-email"
+        placeholder="example@merfy.ru"
+        required
+        autocomplete="email"
+      />
+      <PasswordField
+        label="Пароль"
+        name="password"
+        id="login-password"
+        placeholder="Введите пароль"
+        required
+      />
+      <div class="auth-helper-error hidden text-center" id="login-error" role="alert"></div>
+    </form>
+
+    <div class="w-full flex flex-col items-center gap-10">
+      <AuthButton id="btn-login" form="login-form" loadingLabel="Вход...">Войти</AuthButton>
+      <div class="flex flex-col items-center gap-3">
+        <AuthSecondaryLink href="/register" helper="Нет аккаунта?">Зарегистрироваться</AuthSecondaryLink>
+        <AuthSecondaryLink href="/reset-password">Забыл пароль?</AuthSecondaryLink>
+      </div>
+    </div>
+  </AuthShell>
+
+  <script>
+    import { login, getToken } from '../lib/auth';
+
+    function initLoginPage() {
+      const form = document.getElementById('login-form') as HTMLFormElement | null;
+      if (!form || form.dataset.bound === 'true') return;
+      form.dataset.bound = 'true';
+
+      // Уже вошёл → редирект.
+      if (getToken()) {
+        const params = new URLSearchParams(window.location.search);
+        window.location.href = params.get('redirect') || '/account';
+        return;
+      }
+
+      const errorEl = document.getElementById('login-error')!;
+      const btn = document.getElementById('btn-login') as HTMLButtonElement;
+      const loadingEl = btn.querySelector('[data-loading]')!;
+      const textEl = btn.querySelector('[data-button-text]')!;
+
+      // Префилл email из ?email=... (после редиректа с invite/ALREADY_REGISTERED).
+      const prefillEmail = new URLSearchParams(window.location.search).get('email');
+      if (prefillEmail) {
+        const emailField = document.getElementById('login-email') as HTMLInputElement | null;
+        if (emailField) emailField.value = prefillEmail;
+      }
+
+      const setFieldError = (id: string, has: boolean) => {
+        const el = document.getElementById(id);
+        if (el) el.setAttribute('data-error', has ? 'true' : 'false');
+      };
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorEl.classList.add('hidden');
+        errorEl.textContent = '';
+        setFieldError('login-email', false);
+        setFieldError('login-password', false);
+
+        const email = (document.getElementById('login-email') as HTMLInputElement).value.trim();
+        const password = (document.getElementById('login-password') as HTMLInputElement).value;
+
+        if (!email) {
+          setFieldError('login-email', true);
+          errorEl.textContent = 'Введите e-mail';
+          errorEl.classList.remove('hidden');
+          return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          setFieldError('login-email', true);
+          errorEl.textContent = 'Введите корректный e-mail';
+          errorEl.classList.remove('hidden');
+          return;
+        }
+        if (!password) {
+          setFieldError('login-password', true);
+          errorEl.textContent = 'Введите пароль';
+          errorEl.classList.remove('hidden');
+          return;
+        }
+
+        loadingEl.classList.remove('hidden');
+        textEl.classList.add('hidden');
+        btn.disabled = true;
+
+        try {
+          const result = await login({ email, password });
+          if (result.success) {
+            const params = new URLSearchParams(window.location.search);
+            window.location.href = params.get('redirect') || '/account';
+          } else {
+            throw result;
+          }
+        } catch (err: any) {
+          let msg = 'Неверный email или пароль';
+          if (err?.error === 'ACCOUNT_LOCKED' || err?.code === 'RATE_LIMIT_EXCEEDED') {
+            msg = 'Слишком много попыток. Попробуйте через 30 минут';
+          } else if (err?.message) {
+            msg = err.message;
+          }
+          errorEl.textContent = msg;
+          errorEl.classList.remove('hidden');
+        } finally {
+          loadingEl.classList.add('hidden');
+          textEl.classList.remove('hidden');
+          btn.disabled = false;
+        }
+      });
+    }
+
+    initLoginPage();
+    document.addEventListener('astro:page-load', initLoginPage);
+  </script>
+</Layout>

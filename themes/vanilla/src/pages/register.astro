@@ -1,0 +1,154 @@
+---
+import Layout from '../layouts/Layout.astro';
+import AuthShell from '../components/auth/AuthShell.astro';
+import AuthInput from '../components/auth/AuthInput.astro';
+import PasswordField from '../components/auth/PasswordField.astro';
+import AuthButton from '../components/auth/AuthButton.astro';
+import AuthSecondaryLink from '../components/auth/AuthSecondaryLink.astro';
+
+const shopId = "";
+const apiUrl = "https://gateway.merfy.ru/api";
+---
+<Layout title="Регистрация">
+  <script is:inline define:vars={{ shopId, apiUrl }}>
+    window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
+      shopId: shopId || "",
+      apiUrl: apiUrl || "https://gateway.merfy.ru/api",
+    };
+  </script>
+
+  <AuthShell title="Регистрация аккаунта" description="Введите свои данные чтобы создать аккаунт">
+    <div id="invite-expired-msg" class="hidden w-full text-center flex flex-col items-center gap-4">
+      <p class="text-base" style="color: rgb(163,163,163);">Ссылка для регистрации устарела или уже была использована.</p>
+      <AuthSecondaryLink href="/register">Зарегистрироваться самостоятельно</AuthSecondaryLink>
+    </div>
+
+    <form id="register-form" class="w-full flex flex-col gap-6" novalidate>
+      <AuthInput
+        label="E-mail"
+        type="email"
+        name="email"
+        id="reg-email"
+        placeholder="example@merfy.ru"
+        required
+        autocomplete="email"
+      />
+      <PasswordField
+        label="Пароль"
+        name="password"
+        id="reg-password"
+        placeholder="Минимум 8 символов"
+        required
+        minlength={8}
+        autocomplete="new-password"
+      />
+      <div class="auth-helper-error hidden text-center" id="register-error" role="alert"></div>
+    </form>
+
+    <div class="w-full flex flex-col items-center gap-10">
+      <AuthButton id="btn-register" form="register-form" loadingLabel="Регистрация...">Зарегистрироваться</AuthButton>
+      <AuthSecondaryLink href="/login" helper="Уже есть аккаунт?">Войти</AuthSecondaryLink>
+    </div>
+  </AuthShell>
+
+  <script>
+    import { register, inviteRegister, getToken } from '../lib/auth';
+
+    function initRegisterPage() {
+      const form = document.getElementById('register-form') as HTMLFormElement | null;
+      if (!form || form.dataset.bound === 'true') return;
+      form.dataset.bound = 'true';
+
+      if (getToken()) {
+        window.location.href = '/account';
+        return;
+      }
+
+      const errorEl = document.getElementById('register-error')!;
+      const btn = document.getElementById('btn-register') as HTMLButtonElement;
+      const loadingEl = btn.querySelector('[data-loading]')!;
+      const textEl = btn.querySelector('[data-button-text]')!;
+      const emailField = document.getElementById('reg-email') as HTMLInputElement;
+      const passwordField = document.getElementById('reg-password') as HTMLInputElement;
+      const expiredMsg = document.getElementById('invite-expired-msg')!;
+
+      const params = new URLSearchParams(window.location.search);
+      const inviteToken = params.get('invite');
+      const inviteEmail = params.get('email');
+      const isInviteMode = !!(inviteToken && inviteEmail);
+      if (isInviteMode) {
+        emailField.value = inviteEmail!;
+        emailField.readOnly = true;
+      }
+
+      const mark = (field: HTMLElement | null, ok: boolean) =>
+        field?.setAttribute('data-error', ok ? 'false' : 'true');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorEl.classList.add('hidden');
+        errorEl.textContent = '';
+        mark(emailField, true);
+        mark(passwordField, true);
+
+        const email = emailField.value.trim();
+        const password = passwordField.value;
+
+        if (!email) { mark(emailField, false); errorEl.textContent = 'Введите e-mail'; errorEl.classList.remove('hidden'); return; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { mark(emailField, false); errorEl.textContent = 'Введите корректный e-mail'; errorEl.classList.remove('hidden'); return; }
+        if (!password) { mark(passwordField, false); errorEl.textContent = 'Введите пароль'; errorEl.classList.remove('hidden'); return; }
+        if (password.length < 8) { mark(passwordField, false); errorEl.textContent = 'Пароль должен содержать минимум 8 символов'; errorEl.classList.remove('hidden'); return; }
+
+        loadingEl.classList.remove('hidden');
+        textEl.classList.add('hidden');
+        btn.disabled = true;
+
+        try {
+          if (isInviteMode) {
+            const ir = await inviteRegister({ token: inviteToken!, password });
+            if (!ir.success) throw ir;
+            window.location.href = '/account';
+            return;
+          }
+
+          const derivedName = email.split('@')[0];
+          const result = await register({ email, name: derivedName, password });
+          if (!result.success) throw result;
+
+          if ((result.data as any)?.requiresEmailVerification) {
+            sessionStorage.setItem('verifyEmail', email);
+            window.location.href = '/verify-email?email=' + encodeURIComponent(email);
+            return;
+          }
+          // Легаси-путь: сессия выдана сразу.
+          window.location.href = '/account';
+        } catch (err: any) {
+          let msg = 'Не удалось зарегистрироваться. Попробуйте позже.';
+          if (err?.error === 'INVITE_EXPIRED' || err?.error === 'INVITE_USED') {
+            form.classList.add('hidden');
+            expiredMsg.classList.remove('hidden');
+            return;
+          } else if (err?.error === 'ALREADY_REGISTERED') {
+            window.location.href = '/login?email=' + encodeURIComponent(inviteEmail || email);
+            return;
+          } else if (err?.code === 'CUSTOMER_ALREADY_EXISTS' || err?.error === 'EMAIL_EXISTS') {
+            msg = 'Пользователь с таким email уже зарегистрирован';
+          } else if (err?.code === 'PASSWORD_TOO_SHORT') {
+            msg = 'Пароль должен содержать минимум 8 символов';
+          } else if (err?.message) {
+            msg = err.message;
+          }
+          errorEl.textContent = msg;
+          errorEl.classList.remove('hidden');
+        } finally {
+          loadingEl.classList.add('hidden');
+          textEl.classList.remove('hidden');
+          btn.disabled = false;
+        }
+      });
+    }
+
+    initRegisterPage();
+    document.addEventListener('astro:page-load', initRegisterPage);
+  </script>
+</Layout>

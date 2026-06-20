@@ -1,0 +1,120 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const shopId = "";
+const apiUrl = "https://gateway.merfy.ru/api";
+---
+<Layout title="Основные данные">
+  <script is:inline define:vars={{ shopId, apiUrl }}>
+    window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
+      shopId: shopId || "",
+      apiUrl: apiUrl || "https://gateway.merfy.ru/api",
+    };
+  </script>
+
+  <div class="account-page-container">
+    <a href="/account" class="account-back-link">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      Вернуться назад
+    </a>
+
+    <div class="account-title">
+      <h1>Основные данные</h1>
+      <span class="account-subtitle" id="profile-email-display"></span>
+    </div>
+
+    <div id="profile-loading" style="color: rgb(var(--color-text-muted)); font-family: var(--font-body);">Загрузка...</div>
+
+    <form id="profile-form" class="account-form hidden">
+      <div class="account-field">
+        <label for="profile-email">E-mail</label>
+        <input type="email" id="profile-email" class="auth-input" disabled />
+      </div>
+      <div class="account-field">
+        <label for="profile-phone">Телефон</label>
+        <input type="tel" id="profile-phone" class="auth-input" placeholder="+7 (000) 000-00-00" autocomplete="tel" />
+      </div>
+      <div class="account-field">
+        <label>Пароль</label>
+        <div class="auth-input" style="display: flex; align-items: center; justify-content: space-between; cursor: default;">
+          <span style="letter-spacing: 0.2em; color: rgb(var(--color-text-muted));">••••••••••••</span>
+        </div>
+        <a href="/reset-password" class="account-text-link" style="font-size: 0.875rem;">Изменить</a>
+      </div>
+    </form>
+
+    <div id="profile-status" class="hidden" style="font-family: var(--font-body); font-size: 0.875rem;"></div>
+
+    <div class="account-actions" id="profile-actions" style="display: none;">
+      <button type="submit" form="profile-form" class="account-button" id="btn-save">
+        <span class="save-text">Сохранить</span>
+        <span class="save-loading hidden">Сохранение...</span>
+      </button>
+      <button type="button" class="account-text-link" id="btn-logout-profile">Выйти из аккаунта</button>
+    </div>
+  </div>
+
+  <script>
+    import { fetchMe, updateProfile, logout, getToken } from '../../lib/auth';
+
+    async function initProfile() {
+      const formEl = document.getElementById('profile-form') as HTMLFormElement | null;
+      if (!formEl || formEl.dataset.bound === 'true') return;
+      formEl.dataset.bound = 'true';
+
+      if (!getToken()) { window.location.href = '/login?redirect=/account/profile'; return; }
+
+      const loadingEl = document.getElementById('profile-loading')!;
+      const actionsEl = document.getElementById('profile-actions')!;
+      const statusEl = document.getElementById('profile-status')!;
+      const emailDisplay = document.getElementById('profile-email-display')!;
+      const btn = document.getElementById('btn-save') as HTMLButtonElement;
+      const logoutBtn = document.getElementById('btn-logout-profile');
+
+      const c = await fetchMe();
+      if (!c) { window.location.href = '/login?redirect=/account/profile'; return; }
+
+      loadingEl.classList.add('hidden');
+      formEl.classList.remove('hidden');
+      actionsEl.style.display = '';
+      emailDisplay.textContent = c.email || '';
+      (document.getElementById('profile-email') as HTMLInputElement).value = c.email || '';
+      (document.getElementById('profile-phone') as HTMLInputElement).value = c.phone || '';
+
+      formEl.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        statusEl.classList.add('hidden');
+        btn.querySelector('.save-text')!.classList.add('hidden');
+        btn.querySelector('.save-loading')!.classList.remove('hidden');
+        btn.disabled = true;
+        try {
+          const result = await updateProfile({
+            phone: (document.getElementById('profile-phone') as HTMLInputElement).value.trim(),
+          });
+          if (result.success) {
+            statusEl.textContent = 'Сохранено!';
+            statusEl.style.color = 'green';
+            statusEl.classList.remove('hidden');
+            setTimeout(() => statusEl.classList.add('hidden'), 3000);
+          } else { throw result; }
+        } catch (err: any) {
+          statusEl.textContent = err?.message || 'Не удалось сохранить';
+          statusEl.style.color = 'rgb(var(--color-error))';
+          statusEl.classList.remove('hidden');
+        } finally {
+          btn.querySelector('.save-text')!.classList.remove('hidden');
+          btn.querySelector('.save-loading')!.classList.add('hidden');
+          btn.disabled = false;
+        }
+      });
+
+      logoutBtn?.addEventListener('click', async () => {
+        await logout();
+        window.location.href = '/login';
+      });
+    }
+
+    initProfile();
+    document.addEventListener('astro:page-load', initProfile);
+  </script>
+</Layout>

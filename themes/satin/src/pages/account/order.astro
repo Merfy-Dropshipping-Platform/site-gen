@@ -1,0 +1,192 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const shopId = "";
+const apiUrl = "https://gateway.merfy.ru/api";
+---
+<Layout title="Заказ">
+  <script is:inline define:vars={{ shopId, apiUrl }}>
+    window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
+      shopId: shopId || "",
+      apiUrl: apiUrl || "https://gateway.merfy.ru/api",
+    };
+  </script>
+
+  <div class="account-page-container">
+    <a href="/account/orders" class="account-back-link">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      Вернуться назад
+    </a>
+
+    <div class="account-title">
+      <h1>Заказ</h1>
+      <span class="account-subtitle" id="order-subtitle">Загрузка...</span>
+    </div>
+
+    <div id="order-loading" style="color: rgb(var(--color-text-muted)); font-family: var(--font-body);">Загрузка...</div>
+    <div id="order-not-found" class="hidden" style="font-family: var(--font-body); color: rgb(var(--color-text-muted));">
+      Заказ не найден. <a href="/account/orders" class="account-text-link" style="font-size: 0.875rem;">Вернуться к заказам</a>
+    </div>
+
+    <div id="order-meta" class="account-order-meta hidden"></div>
+    <div id="order-content" class="account-order-columns hidden">
+      <div id="order-products" style="display: flex; flex-direction: column; gap: 0.75rem;"></div>
+      <div id="order-info" class="account-info-container"></div>
+    </div>
+  </div>
+
+  <div id="cancel-modal" class="hidden" style="position: fixed; inset: 0; z-index: 50;">
+    <div id="cancel-modal-overlay" style="position: fixed; inset: 0; background: rgba(0,0,0,0.4);"></div>
+    <div style="position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1rem;">
+      <div style="background: rgb(var(--color-background)); border-radius: var(--radius-card); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); max-width: 28rem; width: 100%; padding: 1.5rem;">
+        <h3 style="font-family: var(--font-heading); font-size: 1.125rem; margin: 0 0 0.5rem;">Отмена заказа</h3>
+        <p style="font-family: var(--font-body); font-size: 0.875rem; color: rgb(var(--color-text-muted)); margin: 0 0 1rem;">После отмены восстановить заказ невозможно.</p>
+        <textarea id="cancel-reason" rows="3" maxlength="500" required placeholder="Укажите причину отмены" class="auth-input" style="height: auto; padding: 0.75rem 1rem; resize: none; margin-bottom: 0.5rem;"></textarea>
+        <p id="cancel-error" class="hidden" style="font-family: var(--font-body); font-size: 0.75rem; color: rgb(var(--color-error)); margin: 0 0 0.75rem;"></p>
+        <div style="display: flex; gap: 0.75rem;">
+          <button id="btn-cancel-confirm" type="button" class="account-button" style="flex: 1; background: rgb(var(--color-error));">Подтвердить отмену</button>
+          <button id="btn-cancel-close" type="button" class="account-button" style="flex: 1; background: transparent; color: rgb(var(--color-foreground)); border: 1px solid rgb(var(--color-border));">Нет, оставить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    import { fetchOrder, cancelOrder, getToken } from '../../lib/auth';
+
+    const STATUS_LABELS: Record<string, string> = {
+      cart: 'Корзина', pending: 'Ожидает оплаты', paid: 'Оплачен', processing: 'В сборке',
+      sent: 'Отправлен', delivered: 'Доставлен', cancelled: 'Отменён', refunded: 'Возврат',
+    };
+    const formatPrice = (cents?: number) =>
+      (cents || cents === 0) ? (cents / 100).toLocaleString('ru-RU') + ' ₽' : '—';
+
+    async function initOrderPage() {
+      const loadingEl = document.getElementById('order-loading');
+      if (!loadingEl || loadingEl.dataset.bound === 'true') return;
+      loadingEl.dataset.bound = 'true';
+
+      if (!getToken()) {
+        window.location.href = '/login?redirect=' + encodeURIComponent(location.pathname + location.search);
+        return;
+      }
+
+      const orderNumber = new URLSearchParams(location.search).get('n');
+      const notFoundEl = document.getElementById('order-not-found')!;
+      if (!orderNumber) { loadingEl.classList.add('hidden'); notFoundEl.classList.remove('hidden'); return; }
+
+      const subtitleEl = document.getElementById('order-subtitle')!;
+      const metaEl = document.getElementById('order-meta')!;
+      const contentEl = document.getElementById('order-content')!;
+      const productsEl = document.getElementById('order-products')!;
+      const infoEl = document.getElementById('order-info')!;
+
+      let order: any;
+      try {
+        const result: any = await fetchOrder(orderNumber);
+        loadingEl.classList.add('hidden');
+        if (!result?.success || !result?.data) { notFoundEl.classList.remove('hidden'); return; }
+        order = result.data;
+      } catch (err: any) {
+        if (err?.status === 404) { notFoundEl.classList.remove('hidden'); return; }
+        loadingEl.textContent = 'Не удалось загрузить заказ';
+        return;
+      }
+
+      subtitleEl.textContent = 'Заказ №' + order.orderNumber;
+      const date = new Date(order.createdAt).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
+      const itemsCount = order.items ? order.items.length : 0;
+      const ld = itemsCount % 10, lt = itemsCount % 100;
+      let countWord = 'товаров';
+      if (!(lt >= 11 && lt <= 19)) { if (ld === 1) countWord = 'товар'; else if (ld >= 2 && ld <= 4) countWord = 'товара'; }
+      metaEl.innerHTML = '<span>' + itemsCount + ' ' + countWord + '</span><span>от ' + date + '</span>';
+      metaEl.classList.remove('hidden');
+
+      (order.items || []).forEach((item: any) => {
+        const imgHtml = item.imageUrl
+          ? '<img src="' + item.imageUrl + '" alt="" loading="lazy">'
+          : '<div style="width: 5rem; height: 5rem; background: rgb(var(--color-surface-muted)); border-radius: var(--radius-field); flex-shrink: 0;"></div>';
+        const oldPrice = (item.comparePriceCents && item.comparePriceCents > item.priceCents)
+          ? '<span class="product-price-old">' + formatPrice(item.comparePriceCents) + '</span>' : '';
+        let variant = '';
+        if (item.variantLabel || (item.options && Object.keys(item.options).length)) {
+          variant = '<span class="product-variant">' + (item.variantLabel || Object.values(item.options || {}).join(', ')) + '</span>';
+        }
+        const card = document.createElement('div');
+        card.className = 'account-product-card';
+        card.innerHTML = imgHtml +
+          '<div class="product-info"><span class="product-name">' + (item.productName || 'Товар') + '</span>' +
+          '<span class="product-prices"><span class="product-price">' + formatPrice(item.priceCents) + '</span>' + oldPrice + '</span>' + variant + '</div>' +
+          '<span class="product-qty">' + item.quantity + ' шт.</span>';
+        productsEl.appendChild(card);
+      });
+
+      const status = STATUS_LABELS[order.status] || order.status;
+      let deliveryMethod = '—';
+      if (order.deliveryType === 'pickup') deliveryMethod = 'Самовывоз';
+      else if (order.deliveryType && order.deliveryType.includes('cdek')) deliveryMethod = 'СДЭК';
+      else if (order.deliveryProfileName) deliveryMethod = order.deliveryProfileName;
+      else if (order.deliveryType) deliveryMethod = order.deliveryType;
+      let address = '—';
+      if (order.shippingAddress) {
+        const a = order.shippingAddress;
+        const parts = [a.city, a.street, a.building ? 'д. ' + a.building : ''].filter(Boolean);
+        if (parts.length) address = parts.join(', ');
+      }
+      if (order.deliveryType === 'pickup' && order.pickupAddress) address = order.pickupAddress;
+      const deliveryDate = (order.deliveryPeriodMin && order.deliveryPeriodMax) ? order.deliveryPeriodMin + '–' + order.deliveryPeriodMax + ' дней' : '—';
+
+      infoEl.innerHTML =
+        '<div class="account-info-grid">' +
+          '<div class="account-info-cell"><span class="info-label">Статус</span><span class="info-value">' + status + '</span></div>' +
+          '<div class="account-info-cell"><span class="info-label">Номер заказа</span><span class="info-value">№' + order.orderNumber + '</span></div>' +
+          '<div class="account-info-cell"><span class="info-label">Способ доставки</span><span class="info-value">' + deliveryMethod + '</span></div>' +
+          '<div class="account-info-cell"><span class="info-label">Адрес доставки</span><span class="info-value">' + address + '</span></div>' +
+          '<div class="account-info-cell"><span class="info-label">Дата доставки</span><span class="info-value">' + deliveryDate + '</span></div>' +
+          '<div class="account-info-cell"><span class="info-label">Способ оплаты</span><span class="info-value">Онлайн</span></div>' +
+        '</div>' +
+        '<div class="account-info-cell"><span class="info-label">Итоговая стоимость</span><span class="info-value">' + formatPrice(order.totalCents) + '</span></div>';
+      contentEl.classList.remove('hidden');
+
+      // Отмена (paid/processing, не в доставке)
+      const blockedDelivery = ['IN_TRANSIT', 'DELIVERED', 'NOT_DELIVERED', 'RECEIVED', 'RETURNED'];
+      const canCancel = ['paid', 'processing'].includes(order.status) &&
+        (!order.deliveryStatus || !blockedDelivery.includes(order.deliveryStatus));
+      if (!canCancel) return;
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.type = 'button';
+      cancelBtn.className = 'account-text-link';
+      cancelBtn.style.cssText = 'color: rgb(var(--color-error)); margin-top: 1rem;';
+      cancelBtn.textContent = 'Отменить заказ';
+      contentEl.parentElement!.appendChild(cancelBtn);
+
+      const modal = document.getElementById('cancel-modal')!;
+      const reasonEl = document.getElementById('cancel-reason') as HTMLTextAreaElement;
+      const errorEl = document.getElementById('cancel-error')!;
+      const btnConfirm = document.getElementById('btn-cancel-confirm') as HTMLButtonElement;
+      const closeModal = () => { modal.classList.add('hidden'); errorEl.classList.add('hidden'); };
+      cancelBtn.addEventListener('click', () => modal.classList.remove('hidden'));
+      document.getElementById('cancel-modal-overlay')!.addEventListener('click', closeModal);
+      document.getElementById('btn-cancel-close')!.addEventListener('click', closeModal);
+
+      btnConfirm.addEventListener('click', async () => {
+        const reason = (reasonEl.value || '').trim();
+        if (!reason) { errorEl.textContent = 'Укажите причину отмены'; errorEl.classList.remove('hidden'); return; }
+        btnConfirm.disabled = true; btnConfirm.textContent = 'Отменяем...'; errorEl.classList.add('hidden');
+        try {
+          const result: any = await cancelOrder(orderNumber, reason);
+          if (result.success) { window.location.reload(); return; }
+          throw result;
+        } catch (err: any) {
+          errorEl.textContent = err?.error || 'Не удалось отменить заказ';
+          errorEl.classList.remove('hidden');
+          btnConfirm.disabled = false; btnConfirm.textContent = 'Подтвердить отмену';
+        }
+      });
+    }
+
+    initOrderPage();
+    document.addEventListener('astro:page-load', initOrderPage);
+  </script>
+</Layout>

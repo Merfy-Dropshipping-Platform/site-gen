@@ -30,6 +30,7 @@ const FILES = [
   'themes/satin/src/styles/global.css',
   'themes/vanilla/src/styles/global.css',
   'packages/theme-base/styles/global.css',
+  'packages/theme-base/styles/base.css',
 ];
 
 /** Top-level сегменты с учётом строк/комментариев (чтобы @source "..{a,b}" не ломал скобки). */

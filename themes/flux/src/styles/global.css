@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "@merfy-dropshipping-platform/design-systems-theme/tokens.css";
+/* Общий base/normalize (single source) — заменяет копипасту normalize в теме. */
+@import "../../../../packages/theme-base/styles/base.css";
 @source "../../../DesignSystemsTheme/src/**/*.{astro,ts,tsx,js,jsx}";
 @source "../../node_modules/@merfy-dropshipping-platform/design-systems-theme/src/**/*.{astro,ts,tsx,js,jsx}";
 /* Блоки theme-base (фоллбек Video/Publications/… через Container API) — без скана их утилиты (aspect-video и пр.) не попадают в CSS темы */

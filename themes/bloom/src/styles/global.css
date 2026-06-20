@@ -4,6 +4,8 @@
 @import url("https://fonts.googleapis.com/css2?family=Roboto+Flex:wght@100;200;300;400;500;600;700;800;900&display=swap");
 @import "tailwindcss";
 @import "@merfy-dropshipping-platform/design-systems-theme/tokens.css";
+/* Общий base/normalize (single source) — заменяет копипасту normalize в теме. */
+@import "../../../../packages/theme-base/styles/base.css";
 @source "../../../DesignSystemsTheme/src/**/*.{astro,ts,tsx,js,jsx}";
 @source "../../node_modules/@merfy-dropshipping-platform/design-systems-theme/src/**/*.{astro,ts,tsx,js,jsx}";
 /* Блоки theme-base (фоллбек Video/Publications/… через Container API) — без скана их утилиты (aspect-video и пр.) не попадают в CSS темы */

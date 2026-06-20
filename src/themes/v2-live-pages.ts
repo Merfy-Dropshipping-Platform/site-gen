@@ -187,7 +187,7 @@ export async function composeContentPagesIntoDist(
       blocks.map((b) =>
         getRenderer().renderBlock({
           blockName: b.type,
-          props: b.props,
+          props: { ...b.props, siteId: (b.props as Record<string, unknown>)?.siteId ?? ctx.siteId },
           themeId: theme,
           isPreview: false,
         }),
@@ -319,7 +319,7 @@ export async function composeLegalPagesIntoDist(
       blocks.map((b) =>
         getRenderer().renderBlock({
           blockName: b.type,
-          props: b.props,
+          props: { ...b.props, siteId: (b.props as Record<string, unknown>)?.siteId ?? ctx.siteId },
           themeId: theme,
           isPreview: false,
         }),

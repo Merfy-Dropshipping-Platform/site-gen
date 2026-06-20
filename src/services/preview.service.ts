@@ -471,6 +471,9 @@ export class PreviewService {
     route: string;
     blocks: Array<{ type: string; props: Record<string, unknown> }>;
     titleOverride?: string;
+    /** Site ID — инжектится в пропсы секций для SSR-фетча реальных данных
+     *  (выбранная коллекция → реальные товары прямо в статике превью). */
+    siteId?: string;
     /** revision.data.themeSettings — для tokens.css (паритет с live). */
     themeSettings?: unknown;
   }): Promise<string | null> {
@@ -480,7 +483,7 @@ export class PreviewService {
     if (!shellHtml) return null;
     const blocksHtml = await Promise.all(
       input.blocks.map((b) =>
-        this.renderBlock({ blockName: b.type, props: b.props, themeId: input.themeId }),
+        this.renderBlock({ blockName: b.type, props: { ...b.props, siteId: (b.props as Record<string, unknown>)?.siteId ?? input.siteId }, themeId: input.themeId }),
       ),
     );
     const composed = composeV2Page({
@@ -617,7 +620,7 @@ export class PreviewService {
         input.blocks.map(async (b) => {
           const html = await this.renderBlock({
             blockName: b.type,
-            props: b.props,
+            props: { ...b.props, siteId: (b.props as Record<string, unknown>)?.siteId ?? input.siteId },
             themeId: input.themeId ?? null,
           });
           const schemeId = schemeIdFromProp(b.props?.colorScheme);

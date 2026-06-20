@@ -253,6 +253,7 @@ export class PreviewController {
             typeof match?.name === 'string' ? match.name : undefined;
           const v2Html = await this.preview.renderV2ContentPage({
             themeId: loaded.themeId!,
+            siteId,
             route,
             blocks: v2Blocks,
             titleOverride: pageTitle,

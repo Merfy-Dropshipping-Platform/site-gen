@@ -117,7 +117,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
 
           if ((result.data as any)?.requiresEmailVerification) {
             sessionStorage.setItem('verifyEmail', email);
-            navTo('/verify-email?email=' + encodeURIComponent(email));
+            navTo('/verify-email');
             return;
           }
           // Легаси-путь: сессия выдана сразу.

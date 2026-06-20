@@ -270,6 +270,33 @@ export async function resendVerification(input: { email: string }) {
   });
 }
 
+// ── Заказы покупателя (/store/orders, Bearer) ──
+export interface CustomerOrderSummary {
+  orderNumber: string;
+  createdAt: string;
+  status?: string;
+  total?: number;
+}
+/** Список заказов текущего покупателя (исключая корзины). */
+export async function fetchOrders(params?: { skip?: number; take?: number }) {
+  const { storeId } = getConfig();
+  const skip = params?.skip ?? 0;
+  const take = params?.take ?? 50;
+  const qs = `?skip=${skip}&take=${take}` + (storeId ? `&store_id=${encodeURIComponent(storeId)}` : '');
+  return request<CustomerOrderSummary[] | { items: CustomerOrderSummary[] }>(`/store/orders${qs}`);
+}
+/** Детали заказа по номеру. */
+export async function fetchOrder(orderNumber: string) {
+  return request<any>(`/store/orders/${encodeURIComponent(orderNumber)}`);
+}
+/** Отмена заказа с указанием причины. */
+export async function cancelOrder(orderNumber: string, reason: string) {
+  return request(`/store/orders/${encodeURIComponent(orderNumber)}/cancel`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  });
+}
+
 // ── Глобал для inline-скриптов (зеркало window.__roseWishlist) ──────────────
 declare global {
   interface Window {
@@ -303,6 +330,9 @@ export const roseAuth = {
   requestEmailVerifyOTP,
   verifyEmailOTP,
   resendVerification,
+  fetchOrders,
+  fetchOrder,
+  cancelOrder,
 };
 
 /**

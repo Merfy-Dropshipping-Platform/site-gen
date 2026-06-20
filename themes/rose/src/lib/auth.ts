@@ -67,8 +67,14 @@ export const isLoggedIn = (): boolean => !!$token.get();
 export function navTo(path: string): void {
   if (typeof window === 'undefined') return;
   if (window.self !== window.top) {
+    // В превью конструктора (iframe) навигируем САМ iframe на нужную storefront-
+    // страницу через ?page= того же preview-URL (gateway). Надёжно: не зависит от
+    // postMessage/конструктора/перезагрузок и не уходит на 404-маршрут gateway.
+    // Query отбрасываем — email/redirect берутся из sessionStorage/дефолтов.
     try {
-      window.parent.postMessage({ type: 'navigate', path: path }, '*');
+      const u = new URL(window.location.href);
+      u.searchParams.set('page', path.split('?')[0].split('#')[0]);
+      window.location.href = u.toString();
       return;
     } catch (e) {
       /* fallthrough to hard nav */

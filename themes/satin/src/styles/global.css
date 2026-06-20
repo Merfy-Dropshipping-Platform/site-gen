@@ -61,6 +61,7 @@
 .menu-open #menu-line-2 {
   transform: translate(0, -3px) rotate(-45deg);
 }
+@layer base {
 
 html {
   scroll-behavior: smooth;
@@ -76,6 +77,8 @@ main {
   margin: 0;
   padding: 0;
 }
+}
+
 
 .satin-container {
   width: 100%;
@@ -128,6 +131,7 @@ main {
 .satin-button:hover {
   opacity: 0.78;
 }
+@layer base {
 
 /* Full-bleed split sections (hero, image banner): the text half is padded by
    the same gutter as the global container so copy lines up edge-to-edge with
@@ -136,6 +140,8 @@ main {
 [data-mega-trigger][aria-expanded="true"] .satin-mega-caret {
   transform: rotate(180deg);
 }
+}
+
 
 /* Сердце «Избранное» карточки (overlay). Активное состояние (filled) красит
    инлайн-SVG сам (heartSvg fill = кнопочный токен в lib/wishlist.ts); здесь —
@@ -175,6 +181,7 @@ main {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+@layer base {
 input[type="search"] {
   -webkit-appearance: none !important;
   -moz-appearance: none !important;
@@ -199,6 +206,8 @@ input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+}
+
 
 /* Blog styles */
 :root {
@@ -208,6 +217,7 @@ input[type="number"] {
   --gray-dark: 34, 41, 57;
   --box-shadow: 0 2px 6px rgba(var(--gray), 25%), 0 8px 24px rgba(var(--gray), 33%);
 }
+@layer base {
 code {
   padding: 2px 5px;
   background-color: rgb(var(--gray-light));
@@ -224,4 +234,5 @@ blockquote {
   border-left: 4px solid var(--accent);
   padding: 0 0 0 20px;
   margin: 0;
+}
 }

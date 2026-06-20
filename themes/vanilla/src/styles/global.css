@@ -70,6 +70,7 @@
 .menu-open #menu-line-2 {
   transform: translate(0, -3px) rotate(-45deg);
 }
+@layer base {
 
 html {
   scroll-behavior: smooth;
@@ -198,6 +199,8 @@ footer[data-vanilla-footer]::after {
   pointer-events: none;
   z-index: 10;
 }
+}
+
 
 .vanilla-page {
   background: var(--vanilla-surface);
@@ -331,6 +334,7 @@ footer[data-vanilla-footer]::after {
     animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
   }
 }
+@layer base {
 
 ::view-transition-old(root) {
   animation: fadeIn 0.25s ease reverse;
@@ -338,6 +342,8 @@ footer[data-vanilla-footer]::after {
 ::view-transition-new(root) {
   animation: fadeIn 0.25s ease;
 }
+}
+
 
 .vanilla-button {
   display: inline-flex;
@@ -388,6 +394,7 @@ footer[data-vanilla-footer]::after {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+@layer base {
 input[type="search"] {
   -webkit-appearance: none !important;
   -moz-appearance: none !important;
@@ -402,6 +409,8 @@ input[type="search"]::-webkit-search-results-button,
 input[type="search"]::-webkit-search-results-decoration {
   display: none;
 }
+}
+
 
 /* Блог (layouts/BlogPost.astro) */
 :root {
@@ -411,6 +420,7 @@ input[type="search"]::-webkit-search-results-decoration {
   --gray-dark: 34, 41, 57;
   --box-shadow: 0 2px 6px rgba(var(--gray), 25%), 0 8px 24px rgba(var(--gray), 33%);
 }
+@layer base {
 code {
   padding: 2px 5px;
   background-color: rgb(var(--gray-light));
@@ -427,4 +437,5 @@ blockquote {
   border-left: 4px solid var(--accent);
   padding: 0 0 0 20px;
   margin: 0;
+}
 }

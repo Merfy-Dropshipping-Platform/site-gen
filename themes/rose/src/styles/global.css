@@ -203,6 +203,7 @@
 .menu-open #menu-line-2 {
   transform: translate(0, -3px) rotate(-45deg);
 }
+@layer base {
 
 /* CSS Normalize */
 *,
@@ -407,6 +408,8 @@ object {
 [hidden] {
   display: none;
 }
+}
+
 
 /*
   The CSS in this style tag is based off of Bear Blog's default CSS.
@@ -440,6 +443,7 @@ object {
   font-style: normal;
   font-display: swap;
 }
+@layer base {
 html {
   scroll-behavior: smooth;
 }
@@ -459,6 +463,8 @@ body {
   font-size: 16px;
   line-height: 1.6;
 }
+}
+
 
 /* Анимации */
 @keyframes fadeInUp {
@@ -534,6 +540,7 @@ body {
     animation: fadeInUp 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.28s both;
   }
 }
+@layer base {
 
 /* Astro ViewTransitions — плавная смена страниц */
 ::view-transition-old(root) {
@@ -602,6 +609,8 @@ hr {
   border: none;
   border-top: 1px solid rgb(var(--gray-light));
 }
+}
+
 @media (max-width: 720px) {
   body {
     font-size: 18px;
@@ -628,6 +637,7 @@ hr {
   /* added line to stop words getting smushed together (as they go onto separate lines and some screen readers do not understand line feeds as a space */
   white-space: nowrap;
 }
+@layer base {
 
 /* Search input fix - override Chrome user agent styles */
 input[type="search"] {
@@ -663,6 +673,8 @@ input[type="search"]::-webkit-search-results-decoration {
 [data-nt="promo-banner"]::-webkit-scrollbar {
   display: none;
 }
+}
+
 
 @media (min-width: 768px) {
   [data-nt="promo-banner"] {
@@ -685,6 +697,7 @@ input[type="search"]::-webkit-search-results-decoration {
     padding-right: 680px;
   }
 }
+@layer base {
 
 [data-nt="promo-banner"] > p {
   display: inline-flex;
@@ -784,4 +797,5 @@ input[type="search"]::-webkit-search-results-decoration {
   background-color: rgb(var(--color-button-bg, 0 0 0));
   color: rgb(var(--color-button-text, 255 255 255));
   border-radius: var(--radius-button, 6px);
+}
 }

@@ -26,6 +26,7 @@
   --radius-card: var(--radius-card);
   --radius-field: var(--radius-field);
 }
+@layer base {
 
 /* ── Auth utility classes (login, register, reset-password, verify-email) ── */
 /* Ensure .hidden wins against inline-flex / block auth utilities */
@@ -57,6 +58,8 @@
 [data-button-text].hidden {
   display: none !important;
 }
+}
+
 
 .auth-page {
   background-color: rgb(var(--color-background));
@@ -357,6 +360,7 @@
 .menu-open #menu-line-2 {
   transform: translate(0, -3px) rotate(-45deg);
 }
+@layer base {
 
 /* ── CSS Normalize ── */
 *,
@@ -556,6 +560,8 @@ video {
 [hidden] {
   display: none;
 }
+}
+
 
 /* ── Typography (token-based, in @layer base so TW utilities can override) ── */
 @layer base {
@@ -584,12 +590,15 @@ video {
     opacity: 0.8;
   }
 }
+@layer base {
 
 main {
   width: 100%;
   margin: 0;
   padding: 0;
 }
+}
+
 
 /* ── Animations ── */
 @keyframes fadeInUp {
@@ -960,6 +969,7 @@ main {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+@layer base {
 
 /* ── Search input fix ── */
 input[type="search"] {
@@ -977,6 +987,8 @@ input[type="search"]::-webkit-search-results-button,
 input[type="search"]::-webkit-search-results-decoration {
   display: none;
 }
+}
+
 
 @media (max-width: 720px) {
   body {
@@ -986,4 +998,3 @@ input[type="search"]::-webkit-search-results-decoration {
     padding: 1em;
   }
 }
-

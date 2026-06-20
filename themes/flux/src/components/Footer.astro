@@ -304,6 +304,8 @@ const paymentEnabled = p.paymentEnabled === true || p.paymentEnabled === "true";
 				{socials.map((s) => (
 					<a
 						href={s.href}
+						target="_blank"
+						rel="noopener noreferrer"
 						aria-label={s.platform}
 						class="flex size-6 items-center justify-center transition-opacity hover:opacity-70"
 					>

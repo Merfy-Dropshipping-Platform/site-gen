@@ -1023,6 +1023,11 @@ export async function runBuildPipeline(
     let t = Date.now();
     emitProgress(deps, ctx, "merge", "Loading revision and site data");
     await stageMerge(deps, params, ctx);
+    // Инжект данных футера в ctx.revisionData.pagesData ДО ветвления: контакты
+    // (телефон/почта), ссылки политик, статус кассы, фильтр соцсетей. Должно
+    // выполняться здесь, т.к. themes-v2 (compose) рендерит футер из pagesData и
+    // НЕ заходит в stageGenerate. Идемпотентно.
+    await injectFooterData(deps, ctx);
     time("merge", t);
 
     // === Branch: themes-v2 vs legacy scaffold ===
@@ -1699,6 +1704,158 @@ async function stageMerge(
 }
 
 /**
+ * Инжект данных футера в Footer-блоки ВСЕХ страниц `ctx.revisionData.pagesData`
+ * (+ legacy `content`). Авторитетно подставляет реальные настройки магазина и
+ * чистит плейсхолдеры — элемент футера показывается ТОЛЬКО при настроенных данных:
+ *  • informationColumn.links — только заполненные политики (site_policy);
+ *  • phone / socialColumn.email — из «Информация о компании» (site_contacts);
+ *  • socialColumn.socialLinks — фильтр пустых/«#» + нормализация схемы (https://);
+ *  • paymentEnabled — только при подключённой кассе (billing.shop_payment_settings).
+ *
+ * Выполняется в runBuildPipeline СРАЗУ после stageMerge — themes-v2 (compose из
+ * pagesData) и legacy (scaffold из pagesData) оба читают эту же структуру.
+ * Идемпотентно: повторный прогон даёт тот же результат.
+ */
+async function injectFooterData(
+  deps: BuildDependencies,
+  ctx: BuildContext,
+): Promise<void> {
+  try {
+    const POLICY_SLUG_MAP: Record<string, string> = {
+      refund: "refund",
+      privacy: "privacy",
+      tos: "terms",
+      shipping: "shipping-policy",
+    };
+    const POLICY_TITLE_MAP: Record<string, string> = {
+      refund: "Политика возврата",
+      privacy: "Политика конфиденциальности",
+      tos: "Условия обслуживания",
+      shipping: "Политика доставки",
+    };
+
+    // Ссылки политик — только с непустым контентом.
+    const policies = await deps.db
+      .select()
+      .from(deps.schema.sitePolicy)
+      .where(eq(deps.schema.sitePolicy.siteId, ctx.siteId));
+    const policyLinks = policies
+      .filter((p) => p.content && p.content.trim() !== "")
+      .map((p) => ({
+        label: POLICY_TITLE_MAP[p.type] ?? p.type,
+        href: `/${POLICY_SLUG_MAP[p.type] ?? p.type}`,
+      }));
+
+    // Контакты компании → телефон/почта футера.
+    const contactsRows = await deps.db
+      .select()
+      .from(deps.schema.siteContacts)
+      .where(eq(deps.schema.siteContacts.siteId, ctx.siteId));
+    const contactFields = (
+      (contactsRows[0]?.fields as
+        | { id: string; label: string; value: string; order: number }[]
+        | undefined) ?? []
+    )
+      .slice()
+      .sort((a, b) => a.order - b.order)
+      .filter((f) => f && typeof f.value === "string" && f.value.trim() !== "");
+    const isEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+    const isPhone = (v: string) =>
+      !isEmail(v) && /\d/.test(v) && /^[+\d][\d\s()\-]{4,}$/.test(v.trim());
+    const labelHit = (label: string, re: RegExp) => re.test(label ?? "");
+    const contactEmail = contactFields.find(
+      (f) => isEmail(f.value) || labelHit(f.label, /e-?mail|почт/i),
+    )?.value.trim();
+    const contactPhone = contactFields.find(
+      (f) => isPhone(f.value) || labelHit(f.label, /тел|phone|моб/i),
+    )?.value.trim();
+
+    // Подключена ли касса (YooKassa) → показывать ли платёжные бейджи.
+    // shopId == siteId. Graceful: billing недоступен ⇒ бейджи скрыты.
+    let paymentEnabled = false;
+    if (deps.billingClient) {
+      try {
+        const cred = (await firstValueFrom(
+          deps.billingClient
+            .send("billing.shop_payment_settings.get_credentials", {
+              shopId: ctx.siteId,
+            })
+            .pipe(timeout(4000)),
+        )) as { success?: boolean; yookassaShopId?: string | null } | null;
+        paymentEnabled = Boolean(cred?.success && cred?.yookassaShopId);
+      } catch (e) {
+        logger.warn(
+          `[merge] payment status check failed (badges hidden): ${e instanceof Error ? e.message : String(e)}`,
+        );
+        paymentEnabled = false;
+      }
+    }
+
+    // Собираем все content-массивы: pagesData[*].content + legacy content.
+    const rev = ctx.revisionData as {
+      pagesData?: Record<string, { content?: unknown[] }>;
+      content?: unknown[];
+    };
+    const contentArrays: any[][] = [];
+    if (rev.pagesData && typeof rev.pagesData === "object") {
+      for (const key of Object.keys(rev.pagesData)) {
+        const c = rev.pagesData[key]?.content;
+        if (Array.isArray(c)) contentArrays.push(c as any[]);
+      }
+    }
+    if (Array.isArray(rev.content)) contentArrays.push(rev.content as any[]);
+
+    const SOCIAL_PLACEHOLDER = new Set(["", "#"]);
+    const normalizeHref = (h: string): string =>
+      /^(?:https?:\/\/|mailto:|tel:|\/)/i.test(h) ? h : `https://${h}`;
+    let footerCount = 0;
+    for (const content of contentArrays) {
+      for (const component of content) {
+        if (component?.type !== "Footer" || !component?.props) continue;
+        const props = component.props as Record<string, any>;
+
+        const infoCol = (props.informationColumn ?? {}) as Record<string, unknown>;
+        props.informationColumn = { ...infoCol, links: policyLinks };
+
+        const social = (props.socialColumn ?? {}) as Record<string, any>;
+        const filteredSocialLinks = Array.isArray(social.socialLinks)
+          ? social.socialLinks
+              .filter(
+                (s: any) =>
+                  s &&
+                  typeof s.href === "string" &&
+                  !SOCIAL_PLACEHOLDER.has(s.href.trim()),
+              )
+              .map((s: any) => ({ ...s, href: normalizeHref(String(s.href).trim()) }))
+          : [];
+        const newSocial: Record<string, any> = {
+          ...social,
+          socialLinks: filteredSocialLinks,
+          contactFields: contactFields.map((f) => ({ label: f.label, value: f.value })),
+        };
+        if (contactEmail) newSocial.email = contactEmail;
+        else delete newSocial.email;
+        props.socialColumn = newSocial;
+        if (contactPhone) props.phone = contactPhone;
+        else delete props.phone;
+
+        props.paymentEnabled = paymentEnabled;
+        footerCount++;
+      }
+    }
+    logger.log(
+      `[merge] Footer wired in ${footerCount} block(s): ${policyLinks.length} policy link(s), ` +
+        `phone=${contactPhone ? "yes" : "no"}, email=${contactEmail ? "yes" : "no"}, ` +
+        `payment=${paymentEnabled ? "on" : "off"}`,
+    );
+  } catch (err) {
+    logger.warn(
+      `[merge] injectFooterData failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+}
+
+/**
  * Extract Header and Footer component props from revision data.
  * Searches through page content arrays for Header/Footer components and
  * returns their props as site-config.json data for the Astro theme.
@@ -2089,113 +2246,11 @@ async function stageGenerate(
       logger.log(`[generate] Added ${policyPagesCount} policy page(s)`);
     }
 
-    // ── Единый авторитетный проход по Footer-блокам ──
-    // Принцип: элемент футера рендерится ТОЛЬКО при настроенных данных.
-    //  • ссылки политик — лишь для заполненных (иначе пустой массив → не рендерим);
-    //  • телефон/почта — из «Информация о компании» (иначе чистим плейсхолдеры темы);
-    //  • соцсети — фильтр пустых/«#» (источник — Theme Settings конструктора);
-    //  • платёжные бейджи — только при подключённой кассе (YooKassa).
-
-    // Реальные ссылки политик (только с непустым контентом).
-    const policyLinks = policies
-      .filter((p) => p.content && p.content.trim() !== "")
-      .map((p) => ({
-        label: POLICY_TITLE_MAP[p.type] ?? p.type,
-        href: `/${POLICY_SLUG_MAP[p.type] ?? p.type}`,
-      }));
-
-    // Контактная информация компании → телефон/почта футера.
-    const contactsRows = await deps.db
-      .select()
-      .from(deps.schema.siteContacts)
-      .where(eq(deps.schema.siteContacts.siteId, ctx.siteId));
-    const contactFields = (
-      (contactsRows[0]?.fields as
-        | { id: string; label: string; value: string; order: number }[]
-        | undefined) ?? []
-    )
-      .slice()
-      .sort((a, b) => a.order - b.order)
-      .filter((f) => f && typeof f.value === "string" && f.value.trim() !== "");
-    const isEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
-    const isPhone = (v: string) =>
-      !isEmail(v) && /\d/.test(v) && /^[+\d][\d\s()\-]{4,}$/.test(v.trim());
-    const labelHit = (label: string, re: RegExp) => re.test(label ?? "");
-    const contactEmail = contactFields.find(
-      (f) => isEmail(f.value) || labelHit(f.label, /e-?mail|почт/i),
-    )?.value.trim();
-    const contactPhone = contactFields.find(
-      (f) => isPhone(f.value) || labelHit(f.label, /тел|phone|моб/i),
-    )?.value.trim();
-
-    // Подключена ли касса магазина (YooKassa) → показывать ли платёжные бейджи.
-    // shopId == siteId на платформе. Graceful: billing недоступен ⇒ бейджи скрыты.
-    let paymentEnabled = false;
-    if (deps.billingClient) {
-      try {
-        const cred = (await firstValueFrom(
-          deps.billingClient
-            .send("billing.shop_payment_settings.get_credentials", {
-              shopId: ctx.siteId,
-            })
-            .pipe(timeout(4000)),
-        )) as { success?: boolean; yookassaShopId?: string | null } | null;
-        paymentEnabled = Boolean(cred?.success && cred?.yookassaShopId);
-      } catch (e) {
-        logger.warn(
-          `[generate] payment status check failed (badges hidden): ${e instanceof Error ? e.message : String(e)}`,
-        );
-        paymentEnabled = false;
-      }
-    }
-
-    const SOCIAL_PLACEHOLDER = new Set(["", "#"]);
-    for (const page of pages) {
-      const content = page.data.content as any[];
-      for (const component of content) {
-        if (component?.type !== "Footer" || !component?.props) continue;
-        const props = component.props as Record<string, any>;
-
-        // Политика-ссылки: только заполненные (build авторитетен — чистит хардкод).
-        const infoCol = (props.informationColumn ?? {}) as Record<string, unknown>;
-        props.informationColumn = { ...infoCol, links: policyLinks };
-
-        // Соцсети: фильтр пустых/«#» (легаси-данные/сиды не должны рендериться).
-        const social = (props.socialColumn ?? {}) as Record<string, any>;
-        const filteredSocialLinks = Array.isArray(social.socialLinks)
-          ? social.socialLinks.filter(
-              (s: any) =>
-                s &&
-                typeof s.href === "string" &&
-                !SOCIAL_PLACEHOLDER.has(s.href.trim()),
-            )
-          : [];
-        const newSocial: Record<string, any> = {
-          ...social,
-          socialLinks: filteredSocialLinks,
-          contactFields: contactFields.map((f) => ({ label: f.label, value: f.value })),
-        };
-        // Почта/телефон авторитетно из контактов (иначе убираем плейсхолдеры темы).
-        if (contactEmail) newSocial.email = contactEmail;
-        else delete newSocial.email;
-        props.socialColumn = newSocial;
-        if (contactPhone) props.phone = contactPhone;
-        else delete props.phone;
-
-        // Платёжные бейджи — только при подключённой кассе.
-        props.paymentEnabled = paymentEnabled;
-      }
-    }
-    logger.log(
-      `[generate] Footer wired: ${policyLinks.length} policy link(s), ` +
-        `phone=${contactPhone ? "yes" : "no"}, email=${contactEmail ? "yes" : "no"}, ` +
-        `social=${
-          pages
-            .flatMap((p) => (p.data.content as any[]) ?? [])
-            .find((c) => c?.type === "Footer")?.props?.socialColumn?.socialLinks
-            ?.length ?? 0
-        }, payment=${paymentEnabled ? "on" : "off"}`,
-    );
+    // Данные футера (контакты/политики/касса/соцсети) инжектятся раньше —
+    // в injectFooterData() сразу после stageMerge (мутирует ctx.revisionData
+    // .pagesData, общий источник для themes-v2 compose и legacy scaffold).
+    // Здесь дублировать НЕ нужно: policy-страницы выше уже клонируют home-Footer
+    // с уже инжектированными ссылками.
   } catch (err) {
     logger.warn(
       `[generate] Failed to load policy pages: ${err instanceof Error ? err.message : String(err)}`,

@@ -12,12 +12,32 @@ export function installPreviewNavAgent(options: PreviewNavAgentOptions): void {
     const anchor = target.closest('a[href]') as HTMLAnchorElement | null;
     if (anchor) {
       e.preventDefault();
-      let path: string;
+      const rawHref = anchor.getAttribute('href') ?? '';
+      let parsed: URL | null = null;
       try {
-        const u = new URL(anchor.href, window.location.origin);
-        path = u.pathname + u.search + u.hash;
+        parsed = new URL(anchor.href, window.location.origin);
       } catch {
-        path = anchor.getAttribute('href') ?? '/';
+        parsed = null;
+      }
+      // Внешние ссылки (соцсети и т.п.) + mailto/tel открываем в новой вкладке,
+      // чтобы в превью можно было проверить переход, не покидая конструктор
+      // (раньше любой <a> блокировался → внешние «не переходили»).
+      const isMailTel = parsed
+        ? parsed.protocol === 'mailto:' || parsed.protocol === 'tel:'
+        : /^(?:mailto:|tel:)/i.test(rawHref);
+      const isExternal =
+        !!parsed &&
+        (parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
+        parsed.origin !== window.location.origin;
+      if (isMailTel || isExternal) {
+        window.open(anchor.href, '_blank', 'noopener,noreferrer');
+        return;
+      }
+      let path: string;
+      if (parsed) {
+        path = parsed.pathname + parsed.search + parsed.hash;
+      } else {
+        path = rawHref || '/';
       }
       // Product card links (Catalog/PopularProducts/etc.) — wrapping <article>
       // имеет data-product-id с конкретным товаром. Передаём parent так чтобы

@@ -37,19 +37,11 @@ export const PagePuckConfig: BlockPuckConfig<PageProps> = {
   label: 'Страница',
   category: 'content',
   fields: {
-    // Главная панель. «Выбор страницы» = привязка к платформенной контент-
-    // странице (политике из настроек); «Свой контент» = свободный режим.
-    pageId: {
-      type: 'select',
-      label: 'Выбор страницы',
-      options: [
-        { label: 'Свой контент', value: '' },
-        { label: 'Политика возврата', value: 'refund' },
-        { label: 'Политика конфиденциальности', value: 'privacy' },
-        { label: 'Условия обслуживания', value: 'tos' },
-        { label: 'Политика доставки', value: 'shipping' },
-      ],
-    },
+    // Главная панель. «Выбор страницы» — пикер созданных контент-страниц
+    // (как товар/коллекция): привязка подгружает (transclude) заголовок+контент
+    // выбранной страницы в эту секцию при сборке. Пусто = свободный режим
+    // (heading/content редактируются здесь же).
+    pageId: { type: 'pageContentPicker', label: 'Выбор страницы' } as any,
     headingSize: {
       type: 'select',
       label: 'Размер заголовка',

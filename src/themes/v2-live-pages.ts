@@ -135,6 +135,43 @@ export async function composeContentPagesIntoDist(
       page.collectionContext,
     );
     if (!blocks || blocks.length === 0) continue;
+    // Spec 101: «Страница»-секция с привязкой (pageId) к созданной странице —
+    // подгружаем (transclude) заголовок+контент целевой страницы в эту секцию
+    // при сборке. Пусто = свободный режим (heading/content секции). Изолировано:
+    // при сбое/пустом контенте секция остаётся со своими heading/content.
+    for (const b of blocks) {
+      if (b.type !== 'Page') continue;
+      const props = b.props as { pageId?: unknown };
+      const boundId = typeof props.pageId === 'string' ? props.pageId.trim() : '';
+      if (!boundId || boundId === page.key) continue; // свободный режим / само-ссылка
+      try {
+        const targetBlocks = await extractPageBlocks(
+          ctx.revisionData,
+          boundId,
+          ctx.publicUrl,
+          theme,
+          ctx.siteId,
+          undefined,
+          logger,
+          undefined,
+        );
+        const src = targetBlocks?.find((t) => t.type === 'Page')?.props as
+          | { heading?: unknown; content?: unknown }
+          | undefined;
+        const srcContent = typeof src?.content === 'string' ? src.content : '';
+        if (srcContent.trim()) {
+          b.props = {
+            ...b.props,
+            content: srcContent,
+            ...(typeof src?.heading === 'string' ? { heading: src.heading } : {}),
+          };
+        }
+      } catch (err) {
+        logger.warn(
+          `[v2-live] page transclude failed for ${boundId} on ${page.route || '(root)'}: ${(err as Error)?.message ?? String(err)}`,
+        );
+      }
+    }
     const pagePath = path.join(ctx.distDir, page.route, 'index.html');
     // Шелл: собственная страница диста; для кастомных страниц (нет своей в
     // дисте) — чистый home-шелл как источник head/скриптов Layout. Системные

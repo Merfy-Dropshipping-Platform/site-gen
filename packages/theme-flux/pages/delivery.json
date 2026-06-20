@@ -11,27 +11,47 @@
         "colorScheme": "scheme-2",
         "menuColorScheme": "scheme-1",
         "menuType": "dropdown",
-        "padding": { "top": 0, "bottom": 0 },
+        "padding": {
+          "top": 0,
+          "bottom": 0
+        },
         "navigationLinks": [
-          { "label": "Каталог", "href": "/catalog" },
-          { "label": "О нас", "href": "/about" },
-          { "label": "Доставка", "href": "/delivery" },
-          { "label": "Контакты", "href": "/contacts" }
+          {
+            "label": "Каталог",
+            "href": "/catalog"
+          },
+          {
+            "label": "О нас",
+            "href": "/about"
+          },
+          {
+            "label": "Доставка",
+            "href": "/delivery"
+          },
+          {
+            "label": "Контакты",
+            "href": "/contacts"
+          }
         ],
-        "actionButtons": { "showSearch": "true", "showCart": "true", "showProfile": "true" }
+        "actionButtons": {
+          "showSearch": "true",
+          "showCart": "true",
+          "showProfile": "true"
+        }
       }
     },
     {
-      "type": "MainText",
+      "type": "Page",
       "props": {
-        "id": "MainText-delivery",
-        "heading": { "text": "Доставка", "size": "large" },
-        "text": {
-          "content": "Мы доставляем заказы по всей России. Стоимость и сроки доставки рассчитываются при оформлении заказа — в зависимости от выбранного способа и адреса. Заказы отправляем в течение 1–2 рабочих дней после оплаты.",
-          "size": "medium"
-        },
+        "id": "Page-delivery",
+        "heading": "Доставка",
+        "content": "<p>Мы доставляем заказы по всей России. Стоимость и сроки доставки рассчитываются при оформлении заказа — в зависимости от выбранного способа и адреса. Заказы отправляем в течение 1–2 рабочих дней после оплаты.</p>",
+        "headingSize": "large",
         "colorScheme": "scheme-2",
-        "padding": { "top": 80, "bottom": 80 }
+        "padding": {
+          "top": 80,
+          "bottom": 80
+        }
       }
     },
     {
@@ -40,37 +60,77 @@
         "id": "Footer-delivery",
         "colorScheme": "scheme-2",
         "copyrightColorScheme": "scheme-1",
-        "padding": { "top": 80, "bottom": 40 },
-        "newsletter": { "enabled": "false" },
+        "padding": {
+          "top": 80,
+          "bottom": 40
+        },
+        "newsletter": {
+          "enabled": "false"
+        },
         "navigationColumn": {
           "title": "Навигация",
           "links": [
-            { "label": "Каталог", "href": "/catalog" },
-            { "label": "О нас", "href": "/about" },
-            { "label": "Контакты", "href": "/contacts" }
+            {
+              "label": "Каталог",
+              "href": "/catalog"
+            },
+            {
+              "label": "О нас",
+              "href": "/about"
+            },
+            {
+              "label": "Контакты",
+              "href": "/contacts"
+            }
           ]
         },
         "informationColumn": {
           "title": "Информация",
           "links": [
-            { "label": "Политика доставки", "href": "/legal/delivery" },
-            { "label": "Политика возврата", "href": "/legal/returns" },
-            { "label": "Условия обслуживания", "href": "/legal/terms" },
-            { "label": "Политика конфиденциальности", "href": "/legal/privacy" }
+            {
+              "label": "Политика доставки",
+              "href": "/legal/delivery"
+            },
+            {
+              "label": "Политика возврата",
+              "href": "/legal/returns"
+            },
+            {
+              "label": "Условия обслуживания",
+              "href": "/legal/terms"
+            },
+            {
+              "label": "Политика конфиденциальности",
+              "href": "/legal/privacy"
+            }
           ]
         },
         "socialColumn": {
           "title": "Социальные сети",
           "email": "flux@example.ru",
           "socialLinks": [
-            { "platform": "telegram", "href": "#" },
-            { "platform": "vk", "href": "#" }
+            {
+              "platform": "telegram",
+              "href": "#"
+            },
+            {
+              "platform": "vk",
+              "href": "#"
+            }
           ]
         },
-        "copyright": { "companyName": "Flux", "showYear": "true", "poweredBy": "Powered by Merfy" }
+        "copyright": {
+          "companyName": "Flux",
+          "showYear": "true",
+          "poweredBy": "Powered by Merfy"
+        }
       }
     }
   ],
-  "root": { "props": { "title": "Доставка" } },
+  "root": {
+    "props": {
+      "title": "Доставка"
+    }
+  },
   "zones": {}
 }

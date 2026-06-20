@@ -5,27 +5,50 @@
       "props": {
         "id": "Header-delivery",
         "navigationLinks": [
-          { "label": "Каталог", "href": "/catalog" },
-          { "label": "О нас", "href": "/about" },
-          { "label": "Доставка", "href": "/delivery" },
-          { "label": "Контакты", "href": "/contacts" }
+          {
+            "label": "Каталог",
+            "href": "/catalog"
+          },
+          {
+            "label": "О нас",
+            "href": "/about"
+          },
+          {
+            "label": "Доставка",
+            "href": "/delivery"
+          },
+          {
+            "label": "Контакты",
+            "href": "/contacts"
+          }
         ]
       }
     },
     {
-      "type": "MainText",
+      "type": "Page",
       "props": {
-        "id": "MainText-delivery",
-        "heading": { "text": "Доставка", "size": "large" },
-        "text": {
-          "content": "Мы доставляем заказы по всей России. Стоимость и сроки доставки рассчитываются при оформлении заказа — в зависимости от выбранного способа и адреса. Заказы отправляем в течение 1–2 рабочих дней после оплаты.",
-          "size": "medium"
-        },
-        "padding": { "top": 80, "bottom": 80 }
+        "id": "Page-delivery",
+        "heading": "Доставка",
+        "content": "<p>Мы доставляем заказы по всей России. Стоимость и сроки доставки рассчитываются при оформлении заказа — в зависимости от выбранного способа и адреса. Заказы отправляем в течение 1–2 рабочих дней после оплаты.</p>",
+        "headingSize": "large",
+        "colorScheme": "scheme-1",
+        "padding": {
+          "top": 80,
+          "bottom": 80
+        }
       }
     },
-    { "type": "Footer", "props": { "id": "Footer-delivery" } }
+    {
+      "type": "Footer",
+      "props": {
+        "id": "Footer-delivery"
+      }
+    }
   ],
-  "root": { "props": { "title": "Доставка" } },
+  "root": {
+    "props": {
+      "title": "Доставка"
+    }
+  },
   "zones": {}
 }

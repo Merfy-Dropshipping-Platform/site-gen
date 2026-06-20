@@ -9,11 +9,23 @@
         "logoPosition": "center-absolute",
         "stickiness": "scroll-up",
         "colorScheme": "scheme-2",
-        "padding": { "top": 0, "bottom": 0 },
+        "padding": {
+          "top": 0,
+          "bottom": 0
+        },
         "navigationLinks": [
-          { "label": "КОЛЛЕКЦИИ", "href": "/catalog" },
-          { "label": "ИСТОРИЯ", "href": "/about" },
-          { "label": "КОНТАКТЫ", "href": "/contacts" }
+          {
+            "label": "КОЛЛЕКЦИИ",
+            "href": "/catalog"
+          },
+          {
+            "label": "ИСТОРИЯ",
+            "href": "/about"
+          },
+          {
+            "label": "КОНТАКТЫ",
+            "href": "/contacts"
+          }
         ],
         "menuColorScheme": "scheme-2",
         "menuType": "dropdown",
@@ -25,47 +37,78 @@
       }
     },
     {
-      "type": "MainText",
+      "type": "Page",
       "props": {
-        "id": "MainText-about",
-        "heading": { "text": "О нас", "size": "large" },
-        "text": {
-          "content": "Базовый гардероб, к которому хочется возвращаться: спокойные цвета, честные материалы и крой, который не подводит.",
-          "size": "medium"
-        },
-        "padding": { "top": 80, "bottom": 80 }
+        "id": "Page-about",
+        "heading": "О нас",
+        "content": "<p>Базовый гардероб, к которому хочется возвращаться: спокойные цвета, честные материалы и крой, который не подводит.</p>",
+        "headingSize": "large",
+        "colorScheme": "scheme-1",
+        "padding": {
+          "top": 80,
+          "bottom": 80
+        }
       }
     },
     {
       "type": "Footer",
       "props": {
         "id": "Footer-about",
-        "newsletter": { "enabled": "false" },
+        "newsletter": {
+          "enabled": "false"
+        },
         "colorScheme": "scheme-3",
         "copyrightColorScheme": "scheme-1",
-        "padding": { "top": 80, "bottom": 40 },
+        "padding": {
+          "top": 80,
+          "bottom": 40
+        },
         "navigationColumn": {
           "title": "МАГАЗИН",
           "links": [
-            { "label": "Коллекции", "href": "/catalog" },
-            { "label": "Новые поступления", "href": "/catalog" },
-            { "label": "О бренде", "href": "/about" }
+            {
+              "label": "Коллекции",
+              "href": "/catalog"
+            },
+            {
+              "label": "Новые поступления",
+              "href": "/catalog"
+            },
+            {
+              "label": "О бренде",
+              "href": "/about"
+            }
           ]
         },
         "informationColumn": {
           "title": "ИНФОРМАЦИЯ",
           "links": [
-            { "label": "Доставка", "href": "/delivery" },
-            { "label": "Возврат", "href": "/returns" },
-            { "label": "Оплата", "href": "/payment" }
+            {
+              "label": "Доставка",
+              "href": "/delivery"
+            },
+            {
+              "label": "Возврат",
+              "href": "/returns"
+            },
+            {
+              "label": "Оплата",
+              "href": "/payment"
+            }
           ]
         },
         "socialColumn": {
           "title": "СВЯЗЬ",
           "email": "hello@satin.example",
           "socialLinks": [
-            { "platform": "VK", "href": "#" },
-            { "platform": "Telegram", "href": "#" }
+            {
+              "platform": "VK",
+              "href": "#"
+            },
+            {
+              "platform": "Telegram",
+              "href": "#"
+            }
           ]
         },
         "copyright": {
@@ -76,6 +119,10 @@
       }
     }
   ],
-  "root": { "props": { "title": "О нас" } },
+  "root": {
+    "props": {
+      "title": "О нас"
+    }
+  },
   "zones": {}
 }

@@ -1,19 +1,24 @@
 {
   "content": [
-    { "type": "PromoBanner", "props": { "id": "PromoBanner-1" } },
-    { "type": "Header", "props": { "id": "Header-1" } },
     {
-      "type": "MainText",
+      "type": "PromoBanner",
       "props": {
-        "id": "MainText-about",
-        "heading": {
-          "text": "О нас",
-          "size": "large"
-        },
-        "text": {
-          "content": "Мы создаём вещи, которые становятся частью повседневности. Каждая коллекция — это результат внимания к деталям, поиска идеального материала и формы.",
-          "size": "medium"
-        },
+        "id": "PromoBanner-1"
+      }
+    },
+    {
+      "type": "Header",
+      "props": {
+        "id": "Header-1"
+      }
+    },
+    {
+      "type": "Page",
+      "props": {
+        "id": "Page-about",
+        "heading": "О нас",
+        "content": "<p>Мы создаём вещи, которые становятся частью повседневности. Каждая коллекция — это результат внимания к деталям, поиска идеального материала и формы.</p>",
+        "headingSize": "large",
         "colorScheme": "scheme-2",
         "padding": {
           "top": 80,
@@ -21,7 +26,12 @@
         }
       }
     },
-    { "type": "Footer", "props": { "id": "Footer-1" } }
+    {
+      "type": "Footer",
+      "props": {
+        "id": "Footer-1"
+      }
+    }
   ],
   "root": {
     "props": {

@@ -44,10 +44,13 @@ const textCls =
 // Канон textStyle (hidden): italic → курсив заголовка и текста.
 const italicCls = p.textStyle === "italic" ? " italic" : "";
 
-// Канон image {url, alt}: canon-default url пуст → фоллбек = реальный ассет
-// темы (принцип T15 rose; та же картинка, что у плитки галереи верстальщика).
+// Канон image {url, alt}: ПЛЕЙСХОЛДЕР пустого состояния (Figma 1:19335) вместо
+// мок-ассета верстальщика. Нет выбранной картинки → пустой image-rect темы
+// (bg surface #FBFBFB-эквивалент уже на контейнере), НЕ /images/milk.webp.
+// Реальный URL мерчанта рендерится <img>-ом без изменений.
 const imageUrl =
-	typeof p.image?.url === "string" && p.image.url.trim() ? p.image.url : "/images/milk.webp";
+	typeof p.image?.url === "string" && p.image.url.trim() ? p.image.url : "";
+const hasImage = imageUrl !== "";
 const imageAlt = typeof p.image?.alt === "string" && p.image.alt.trim() ? p.image.alt : heading;
 
 // Канон imagePosition: canon-default 'right' (theme.json blockDefaults) и
@@ -115,12 +118,14 @@ const titleId = id ? `${id}-title` : undefined;
 			data-puck-subsection-index="100"
 			data-puck-subsection-field="image"
 		>
-			<img
-				src={imageUrl}
-				alt={imageAlt}
-				loading="lazy"
-				class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-			/>
+			{hasImage && (
+				<img
+					src={imageUrl}
+					alt={imageAlt}
+					loading="lazy"
+					class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+				/>
+			)}
 		</div>
 
 		<div class={`flex w-full flex-col gap-6${inlineCta ? "" : " h-full"}${imageLeft ? "" : " lg:order-1"}`}>

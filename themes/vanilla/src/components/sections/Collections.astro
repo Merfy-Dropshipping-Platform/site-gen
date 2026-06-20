@@ -1,15 +1,19 @@
 ---
-import VanillaCollectionCard from "../products/VanillaCollectionCard.astro";
-import { collections } from "../../data/collections";
-
-// ОЖИВЛЕНИЕ (Фаза B, контракт rose/bloom Collections): конструкторная схема
-// theme-base Collections.puckConfig поверх разметки верстальщика. Тело +
-// demo-данные verbatim (страницы темы зовут <Collections /> без пропсов —
-// дефолт-ветка даёт прежний рендер). Канон-дефолты конструктора (headingSize
-// medium / subtitleSize small / titleAlignment 'left', gridAspect '1:1' и
-// cardCaptionStyle 'uppercase' из blockDefaults vanilla, columns 2 = срез
-// верстальщика) → пиксель верстальщика; дефолтная ветка каждого тернарника =
-// прежняя строка классов байт-в-байт (цвета → токены с пиксель-фоллбеком
+// ПЛЕЙСХОЛДЕР пустого состояния (контракт Figma 1:19335 / theme-base
+// Collections 1:33070): когда у секции НЕТ ручного выбора коллекций —
+// рендерим N пустых квадратных карточек (rounded-rect bg surface) с подписью
+// «Коллекция», а НЕ мок-демо верстальщика (реальные имена + фото текстиль/
+// декор). Это паритет theme-base DEMO_COLLECTIONS (curated-модель Shopify:
+// пустой пикер = плейсхолдер, НЕ авто-подхват всего каталога).
+//
+// Когда коллекции ВЫБРАНЫ (usePropCollections=true) — рендер реальных
+// SSR-данных + клиентская гидрация (data-collection-ref → имя/обложка
+// магазина) остаются БЕЗ изменений.
+//
+// Канон-дефолты конструктора (headingSize medium / subtitleSize small /
+// titleAlignment 'left', gridAspect '1:1', cardCaptionStyle 'uppercase' из
+// blockDefaults vanilla) → пиксель верстальщика; дефолтная ветка каждого
+// тернарника = прежняя строка классов (цвета → токены с пиксель-фоллбеком
 // родных литералов, MANNER.md §7).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
@@ -24,15 +28,6 @@ const sectionSubtitle =
 	typeof p.subtitle === "string" && p.subtitle.trim()
 		? p.subtitle
 		: "Вдохновение для каждого дня — актуальные коллекции текстиля и декора, созданные, чтобы радовать и удивлять.";
-
-// Под Container API (live/превью v2) cwd ≠ корень темы: fs-проверка
-// VanillaPicture не находит public/ и .png остался бы в src (на диске темы
-// только .webp → 404). Подменяем расширение заранее; на сборке темы вывод
-// байт-в-байт тот же (VanillaPicture/assetUrl находят тот же .webp).
-const toWebp = (src: string) => src.replace(/\.(png|jpe?g)$/i, ".webp");
-const featuredCollections = collections
-	.slice(0, 2)
-	.map((c) => ({ ...c, image: toWebp(c.image) }));
 
 // Канон headingSize (top-level приоритетнее legacy heading.size): 'medium'
 // (canon-default, MANNER §9) и отсутствие = роль «заголовок секции»
@@ -85,40 +80,48 @@ const tileAspect =
 const captionCase = p.cardCaptionStyle === "default" ? "" : " uppercase";
 
 // Канон collections[] (≤10): плитки коллекций из пропса при непустом массиве.
-// Иначе — две плитки верстальщика дословно (VanillaCollectionCard). SSR
-// рендерит сохранённые поля item, резолв collectionId→имя/обложка делает
-// гидрация ниже (data-collection-ref): live — /data/collections.json,
-// превью — storefront-data; паритет theme-base (имя коллекции перебивает
-// ручной heading, обложка — только при отсутствии своей, data-own-image).
+// Иначе — плейсхолдер (DEMO_COLLECTIONS, ниже). SSR рендерит сохранённые поля
+// item, резолв collectionId→имя/обложка делает гидрация ниже
+// (data-collection-ref): live — /data/collections.json, превью —
+// storefront-data; паритет theme-base (имя коллекции перебивает ручной
+// heading, обложка — только при отсутствии своей, data-own-image).
 const cardLinkBase =
 	typeof p.cardLinkBase === "string" && p.cardLinkBase.trim()
 		? p.cardLinkBase
 		: "/catalog?collection=";
-// Канон-плейсхолдер = ассеты верстальщика по позиции (принцип rose T15):
-// плитка без выбранной картинки получает обложку из пары текстиль/декор.
-const TILE_FALLBACKS = [
-	"/images/vanilla-collection-textile.webp",
-	"/images/vanilla-collection-decor.webp",
-];
 const propCollections = (Array.isArray(p.collections) ? p.collections : [])
 	.filter((c: any) => c && typeof c === "object")
 	.slice(0, 10)
-	.map((c: any, i: number) => {
+	.map((c: any) => {
 		const collectionId =
 			typeof c.collectionId === "string" && c.collectionId.trim() ? c.collectionId.trim() : null;
+		const hasOwnImage = !!(typeof c.image === "string" && c.image);
 		return {
 			collectionId,
 			name:
 				(typeof c.heading === "string" && c.heading) ||
 				(typeof c.name === "string" && c.name) ||
 				"Коллекция",
-			image:
-				typeof c.image === "string" && c.image ? c.image : TILE_FALLBACKS[i % TILE_FALLBACKS.length],
-			hasOwnImage: !!(typeof c.image === "string" && c.image),
+			// Своя картинка — её; иначе пусто (плитка-плейсхолдер: пустой rect).
+			// Обложку выбранной коллекции магазина подставит гидрация по
+			// collectionId. Мок-фото верстальщика здесь НЕ показываем.
+			image: hasOwnImage ? c.image : null,
+			hasOwnImage,
 			href: collectionId ? `${cardLinkBase}${collectionId}` : "#",
 		};
 	});
 const usePropCollections = propCollections.length > 0;
+
+// ПЛЕЙСХОЛДЕР пустого состояния (контракт Figma 1:19335, паритет theme-base
+// DEMO_COLLECTIONS): N пустых квадратных карточек (rounded-rect bg surface) с
+// подписью «Коллекция». Без ручного выбора показываем ИХ, а не мок верстальщика
+// и НЕ авто-подхват каталога (curated-модель Shopify). Дефолт 3 (контракт);
+// columns из конструктора уважается (1-6, как канон-грид ниже).
+const placeholderCount =
+	colsRaw && colsRaw >= 1 && colsRaw <= 6 ? colsRaw : 3;
+const demoCollections = Array.from({ length: placeholderCount }, () => ({
+	name: "Коллекция",
+}));
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
@@ -147,7 +150,7 @@ const paddingStyle = p.padding
 			<p class={subtitleCls}>{sectionSubtitle}</p>
 		</div>
 
-		<ul class={gridCls} role="list" data-animate data-animate-delay="0.1s" style={gridStyle} data-collections-autofill={!usePropCollections ? "" : undefined}>
+		<ul class={gridCls} role="list" data-animate data-animate-delay="0.1s" style={gridStyle}>
 			{usePropCollections ? propCollections.map((c, i) => (
 				<li>
 					<a
@@ -178,9 +181,19 @@ const paddingStyle = p.padding
 						</h3>
 					</a>
 				</li>
-			)) : featuredCollections.map((collection, index) => (
+			)) : demoCollections.map((c) => (
 				<li>
-					<VanillaCollectionCard collection={collection} priority={index < 2} />
+					<div class="flex w-full flex-col gap-3" data-nt="vanilla-collection-card-placeholder">
+						<div
+							class={`${tileAspect} w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]`}
+							aria-hidden="true"
+						></div>
+						<h3
+							class={`font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-heading,38_49_28))]${captionCase}`}
+						>
+							{c.name}
+						</h3>
+					</div>
 				</li>
 			))}
 		</ul>
@@ -188,12 +201,16 @@ const paddingStyle = p.padding
 </section>
 
 <script>
-	import { loadRealCollections, findCollection, escapeHtml } from "../../lib/storefront-hydrate";
+	import { loadRealCollections, findCollection } from "../../lib/storefront-hydrate";
 
-	// Резолв collectionId→имя/обложка на плитках (data-collection-ref).
+	// Резолв collectionId→имя/обложка на ВЫБРАННЫХ плитках (data-collection-ref).
 	// Паритет theme-base resolveManual: имя коллекции перебивает ручной heading;
 	// обложка коллекции подставляется, только если мерчант не загрузил свою
 	// (data-own-image). Без данных (demo-сборка) — no-op, SSG остаётся.
+	//
+	// NB: автоподстановки каталога в пустой грид НЕТ (curated-модель Shopify):
+	// пустой пикер = плейсхолдер (3 пустые карточки «Коллекция»), а не реальные
+	// коллекции магазина. Паритет theme-base Collections (hasManualCollections).
 	const hydrateCollectionTiles = async () => {
 		const tiles = Array.from(
 			document.querySelectorAll<HTMLElement>(
@@ -222,46 +239,8 @@ const paddingStyle = p.padding
 		}
 	};
 
-	// АВТОПОДСТАНОВКА: пустой пикер (SSR = demo-плитки верстальщика) → реальные
-	// коллекции магазина из /data/collections.json (live) / storefront-data (превью).
-	// Прежде показывались фейк-демо, что вводило в заблуждение. Явный выбор в пикере
-	// имеет приоритет (грид не помечен data-collections-autofill). Реальных нет
-	// (demo-сборка без collections.json) → no-op, демо остаётся. Разметка плитки =
-	// propCollections-ветка vanilla (canon-default при пустом пикере: gridAspect '1:1'
-	// → aspect-[1/1], cardCaptionStyle 'uppercase'). Обложка: своя картинка коллекции,
-	// иначе дизайнерский плейсхолдер темы (пара текстиль/декор) по позиции.
-	const AUTOFILL_COVERS = ["/images/vanilla-collection-textile.webp", "/images/vanilla-collection-decor.webp"];
-	const autofillCollections = async () => {
-		const grids = Array.from(document.querySelectorAll<HTMLElement>("ul[data-collections-autofill]"));
-		if (grids.length === 0) return;
-		const collections = await loadRealCollections();
-		if (!collections || collections.length === 0) return;
-		const visible = collections.filter((c) => c && c.slug !== "general").slice(0, 6);
-		if (visible.length === 0) return;
-		const html = visible
-			.map((c, i) => {
-				const name = escapeHtml(c.name || "Коллекция");
-				const ref = c.slug || c.id || "";
-				const href = "/catalog?collection=" + encodeURIComponent(ref);
-				const cover =
-					c.image ||
-					(Array.isArray(c.images) ? c.images[0] : "") ||
-					AUTOFILL_COVERS[i % AUTOFILL_COVERS.length];
-				return `<li><a href="${href}" class="group flex w-full cursor-pointer flex-col gap-3" aria-label="${name}" data-nt="vanilla-collection-card">
-			<div class="aspect-[1/1] w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]">
-				<img src="${escapeHtml(cover)}" alt="${name}" loading="lazy" class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.08]" />
-			</div>
-			<h3 class="vanilla-collection-name font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-heading,38_49_28))] transition-opacity group-hover:opacity-70 uppercase">${name}</h3>
-		</a></li>`;
-			})
-			.join("");
-		for (const grid of grids) grid.innerHTML = html;
-	};
-
 	hydrateCollectionTiles();
-	autofillCollections();
 	document.addEventListener("astro:page-load", () => {
 		hydrateCollectionTiles();
-		autofillCollections();
 	});
 </script>

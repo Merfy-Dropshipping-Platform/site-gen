@@ -1,7 +1,5 @@
 ---
 import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
-import FluxCollectionCard from "../products/FluxCollectionCard.astro";
-import { collections } from "../../data/collections";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт bloom Collections): конструкторная схема
 // theme-base Collections.puckConfig поверх разметки верстальщика. Тело +
@@ -80,9 +78,9 @@ const tileAspect =
 const captionCase = p.cardCaptionStyle === "uppercase" ? " uppercase" : "";
 
 // Канон collections[] (≤10): плитки коллекций из пропса при непустом массиве.
-// Иначе — три FluxCollectionCard верстальщика дословно. SSR рендерит
-// сохранённые поля item, резолв collectionId → имя/обложка делает гидрация
-// ниже (data-collection-ref): live — /data/collections.json, превью —
+// Иначе — плейсхолдер пустого состояния (PLACEHOLDER_COLLECTIONS, ниже). SSR
+// рендерит сохранённые поля item, резолв collectionId → имя/обложка делает
+// гидрация ниже (data-collection-ref): live — /data/collections.json, превью —
 // storefront-data; паритет theme-base (имя коллекции перебивает ручной
 // heading, обложка — только при пустой своей).
 const cardLinkBase =
@@ -109,6 +107,18 @@ const propCollections = (Array.isArray(p.collections) ? p.collections : [])
 		};
 	});
 const usePropCollections = propCollections.length > 0;
+
+// Плейсхолдер пустого состояния (Figma 1:19335, контракт theme-base Collections
+// DEMO_COLLECTIONS): без ручного выбора — 3 карточки с пустым rounded-rect
+// (bg #FBFBFB / rgb(var(--color-surface))) и подписью «Коллекция». НЕ мок-демо
+// верстальщика (раньше тут рендерились хардкод Смартфоны/Наушники/Ноутбуки с
+// /images/4x/Коллекция_N.png). Реальные коллекции магазина при пустом пикере
+// подтягивает autofillCollections (hydration ниже).
+const PLACEHOLDER_COLLECTIONS = [
+	{ name: "Коллекция" },
+	{ name: "Коллекция" },
+	{ name: "Коллекция" },
+];
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
@@ -168,9 +178,23 @@ const paddingStyle = p.padding
 						</h3>
 					</a>
 				</li>
-			)) : collections.map((collection, index) => (
+			)) : PLACEHOLDER_COLLECTIONS.map((c) => (
 				<li>
-					<FluxCollectionCard collection={collection} priority={index < 3} />
+					<div
+						class="group flex flex-col gap-4 md:gap-5"
+						data-nt="flux-collection-card-placeholder"
+						aria-label={c.name}
+					>
+						<div
+							class={`${tileAspect} w-full overflow-hidden bg-[rgb(var(--color-surface,251_251_251))] rounded-[var(--radius-media,8px)]`}
+							aria-hidden="true"
+						></div>
+						<h3
+							class={`flux-collection-name font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]${captionCase}`}
+						>
+							{c.name}
+						</h3>
+					</div>
 				</li>
 			))}
 		</ul>

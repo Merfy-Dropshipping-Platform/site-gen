@@ -31,26 +31,24 @@ const backgroundImage =
 // Сплит двух картинок 50/50 ТОЛЬКО когда второе фото задано; иначе одиночный рендер дословно.
 const backgroundImage2 = nonEmpty(p.backgroundImages?.url2) ?? nonEmpty(p.backgroundImage2);
 
-// Канон heading.size / text.size (+ секционный p.size как canon-носитель).
-// 'large' И отсутствующий проп → ЛИТЕРАЛЬНАЯ лестница верстальщика (MANNER §9):
-//   h1    large 32/40/48 → medium 27/34/41 → small 22/28/34 (Comfortaa БЕЗ uppercase)
-//   текст large 16/18    → medium 14/15    → small 11/13    (Roboto Flex 300)
-// Дефолтная ветка каждого тернарника = прежняя строка классов байт-в-байт
-// (цвета → токены с пиксель-фоллбеком родного белого §7).
-const headingSize = p.size;
+// «Размер» (p.size) теперь управляет ВЫСОТОЙ секции Hero (heroHeightCls ниже),
+// а не размером шрифта (тестер M$rkul: «Размер» секции «Изображение» = высота/
+// вьюпорт, как в theme-base, фикс по образцу rose Hero). Заголовок/текст рендерятся
+// фиксированным «крупным» размером темы — прежняя дефолт-ветка large байт-в-байт
+// (Comfortaa 32/40/48 БЕЗ uppercase; Roboto Flex 300 16/18; цвета → токены §7).
 const headingCls =
-	headingSize === "small"
-		? "font-comfortaa text-[22px] font-normal leading-[1.115] text-[rgb(var(--color-heading,255_255_255))] md:text-[28px] lg:text-[34px]"
-		: headingSize === "medium"
-			? "font-comfortaa text-[27px] font-normal leading-[1.115] text-[rgb(var(--color-heading,255_255_255))] md:text-[34px] lg:text-[41px]"
-			: "font-comfortaa text-[32px] font-normal leading-[1.115] text-[rgb(var(--color-heading,255_255_255))] md:text-[40px] lg:text-[48px]";
-const textSize = p.size;
+	"font-comfortaa text-[32px] font-normal leading-[1.115] text-[rgb(var(--color-heading,255_255_255))] md:text-[40px] lg:text-[48px]";
 const subtitleCls =
-	textSize === "small"
-		? "font-roboto-flex text-[11px] font-light leading-[1.5] text-[rgb(var(--color-text,255_255_255))] md:text-[13px]"
-		: textSize === "medium"
-			? "font-roboto-flex text-[14px] font-light leading-[1.5] text-[rgb(var(--color-text,255_255_255))] md:text-[15px]"
-			: "font-roboto-flex text-[16px] font-light leading-[1.5] text-[rgb(var(--color-text,255_255_255))] md:text-[18px]";
+	"font-roboto-flex text-[16px] font-light leading-[1.5] text-[rgb(var(--color-text,255_255_255))] md:text-[18px]";
+// «Размер» → высота полотна (вьюпорт-clamp). large (дефолт flux) = прежний clamp
+// верстальщика байт-в-байт; medium ≈0.82×, small ≈0.64× (нижняя/средняя/верхняя
+// границы clamp пропорционально ниже). Дефолт (p.size не задан) = large.
+const heroSize = p.size === "small" ? "small" : p.size === "medium" ? "medium" : "large";
+const heroHeightCls = {
+	large: "clamp(500px, 80vh, 1080px)",
+	medium: "clamp(410px, 66vh, 886px)",
+	small: "clamp(320px, 51vh, 691px)",
+}[heroSize];
 
 // НЮАНС flux: вторая кнопка «О нас» → #about ЕСТЬ в литерале (Hero.astro:70-75) —
 // рендерим ПО УМОЛЧАНИЮ; пустой текст ЗАДАННОГО пропа скрывает (инверсия bloom,

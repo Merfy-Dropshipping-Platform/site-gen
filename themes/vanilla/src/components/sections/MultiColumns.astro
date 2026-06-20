@@ -7,6 +7,11 @@
 // uppercase заголовки колонок), грид в ритме коллекций (1/md:2/xl:3 gap-4).
 // Процесс-эталон — bloom MultiColumns. Схема полей = packages/theme-base/
 // blocks/MultiColumns/MultiColumns.puckConfig.ts.
+// ПУСТОЕ СОСТОЯНИЕ (без columns[]) = ПЛЕЙСХОЛДЕР по контракту Figma 1:19335
+// (3 колонки: пустой rect + «Колонна» + нейтральный текст + Кнопка), НЕ
+// мок-демо верстальщика. Когда мерчант добавил columns[] — рендер реальных
+// данных без изменений (Shopify-модель, как theme-base PopularProducts/
+// Collections: пустой выбор = заглушка, выбранное = данные).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -25,27 +30,21 @@ const headingCls = `font-vanilla-bitter ${headingSizeCls} font-normal italic lea
 
 // Канон columns[] ≤10 (item: heading|title, text|description, imageUrl|image —
 // иконка-квадрат, headingSize/textSize, link {text,href} | flat linkText+link).
-// Отсутствие массива = дефолт-ветка: 3 колонки-болванки в тоне уюта (МАННЕРА
-// §11 — натуральные ткани / забота / доставка), без иконок (иконок-ассетов
-// у верстальщика нет).
-const CANON_COLUMNS = [
-	{
-		heading: "Натуральные ткани",
-		text: "Хлопок, лён и мягкий велюр — мы лично отбираем материалы, приятные коже и долговечные в уходе.",
-		imageUrl: "",
-	},
-	{
-		heading: "Забота в деталях",
-		text: "Проверяем каждую вещь: швы, мягкость и то, как ткань поведёт себя после стирки. В дом попадает только лучшее.",
-		imageUrl: "",
-	},
-	{
-		heading: "Бережная доставка",
-		text: "Аккуратно упакуем и доставим заказ по всей стране — чтобы уют поселился у вас без лишних хлопот.",
-		imageUrl: "",
-	},
+// Гейт пустого состояния: НЕТ ручных колонок → ПЛЕЙСХОЛДЕР по контракту
+// (Figma 1:19335), НЕ мок-демо верстальщика. Когда мерчант добавил колонки —
+// рендерим реальные без изменений (так же, как theme-base PopularProducts/
+// Collections: пустой выбор = заглушка, выбранное = данные).
+// Контракт Мультиколонн: 3 колонки = пустой rect + «Колонна» +
+// «Сочетай текст…» + Кнопка.
+const PLACEHOLDER_TEXT = "Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.";
+const PLACEHOLDER_COLUMNS = [
+	{ heading: "Колонна", text: PLACEHOLDER_TEXT, imageUrl: "", link: { text: "Кнопка", href: "/catalog" } },
+	{ heading: "Колонна", text: PLACEHOLDER_TEXT, imageUrl: "", link: { text: "Кнопка", href: "/catalog" } },
+	{ heading: "Колонна", text: PLACEHOLDER_TEXT, imageUrl: "", link: { text: "Кнопка", href: "/catalog" } },
 ];
-const rawColumns = Array.isArray(p.columns) && p.columns.length ? p.columns : CANON_COLUMNS;
+// hasManualColumns: мерчант явно добавил хотя бы одну колонку (Shopify-модель).
+const hasManualColumns = Array.isArray(p.columns) && p.columns.length > 0;
+const rawColumns = hasManualColumns ? p.columns : PLACEHOLDER_COLUMNS;
 const columns = rawColumns.slice(0, 10).map((c: any) => {
 	// Ссылка колонки: canon link {text,href} ИЛИ flat-пара linkText + link
 	// (string из arrayFields конструктора). Рендер при непустом тексте.
@@ -73,6 +72,8 @@ const columns = rawColumns.slice(0, 10).map((c: any) => {
 		headingSize: c.headingSize,
 		textSize: c.textSize,
 		link: linkText ? { text: linkText, href: linkHref } : undefined,
+		// Пустое состояние: рисуем нейтральный rect-плейсхолдер вместо иконки.
+		isPlaceholder: !hasManualColumns,
 	};
 });
 
@@ -188,7 +189,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 						data-puck-subsection-index={index}
 						data-puck-subsection-field="columns"
 					>
-						{c.image && (
+						{c.image ? (
 							<img
 								src={c.image}
 								alt=""
@@ -198,6 +199,13 @@ const titleId = id && heading ? `${id}-title` : undefined;
 								decoding="async"
 								class="h-11 w-11 rounded-[var(--radius-media,0px)] object-contain transition-transform duration-300 ease-out group-hover:scale-105"
 							/>
+						) : (
+							c.isPlaceholder && (
+								<div
+									class="h-[120px] w-full rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,236_235_231))]"
+									aria-hidden="true"
+								/>
+							)
 						)}
 						{c.heading && (
 							<h3

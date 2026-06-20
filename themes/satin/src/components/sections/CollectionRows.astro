@@ -1,4 +1,18 @@
 ---
+// Устаревший компонент верстальщика (вытеснён MultiRows.astro для Puck). Всё
+// ещё используется страницами темы: index.astro:26 (<CollectionRows /> — без
+// пропсов) и about.astro:62 (<CollectionRows rows={aboutRows} compact /> —
+// реальные данные «История»).
+//
+// КОНТРАКТ ПЛЕЙСХОЛДЕРОВ (Figma 1:19335 — пустое состояние секции, ЗАМЕНЯЕТ
+// мок-демо верстальщика). Эталон: theme-base PopularProducts/Collections.astro
+// (DEMO-гейт) + канон-порт MultiRows.astro этой темы. Пустое/некурированное
+// состояние (мерчант НЕ задал rows[]) = ПЛЕЙСХОЛДЕР: ряды «пустой surface-rect
+// #FBFBFB (БЕЗ иллюстрации) + "Изображение с текстом" + "Покажи и расскажи о
+// своем товаре в одном блоке" + Кнопка» с чередованием лево/право. НЕ мок-демо
+// верстальщика (Женская/Мужская коллекция, /images/4x/*.png, полные абзацы).
+// Когда rows[] заданы (about.astro) — рендер реальных данных БЕЗ изменений
+// (SatinPicture cover на тёмной подложке, compact-аспект, imageRight, satin-button).
 import SatinPicture from "../img/SatinPicture.astro";
 
 interface Row {
@@ -17,47 +31,56 @@ interface Props {
 	compact?: boolean;
 }
 
-const defaultRows: Row[] = [
+// Плейсхолдер пустого состояния (контракт Figma 1:19335) — без фото (пустой
+// rect), нейтральные лейблы, чередование стороны. Лейблы выровнены по канон-
+// порту MultiRows.astro и satin ImageWithText (тот же контракт «+ Кнопка»).
+const PLACEHOLDER_ROWS: Row[] = [
 	{
-		title: "Женская коллекция",
-		paragraphs: [
-			"Мы уверены: одежда должна быть красивой не только на фотографиях, но и на ощупь. Satin создан для тех, кто ценит эстетику и качество в каждой детали.",
-			"В ассортименте Satin вы не найдёте случайных вещей — только то, что действительно достойно стать частью вашего гардероба.",
-		],
-		image: "/images/4x/Женская_коллекция.png",
-		alt: "Женская коллекция",
-		ctaLabel: "Для женщин",
-		ctaHref: "/catalog?collection=Женское",
+		title: "Изображение с текстом",
+		paragraphs: ["Покажи и расскажи о своем товаре в одном блоке"],
+		image: "",
+		alt: "",
+		ctaLabel: "Кнопка",
+		ctaHref: "/catalog",
 	},
 	{
-		title: "Мужская коллекция",
-		paragraphs: [
-			"Минимализм, точная посадка и спокойный силуэт — мужская линия Satin собирает базовые вещи без лишних деталей.",
-			"Одежда, которая не требует усилий, чтобы выглядеть хорошо.",
-		],
-		image: "/images/4x/Мужская_коллекция.png",
-		alt: "Мужская коллекция",
-		ctaLabel: "Для мужчин",
-		ctaHref: "/catalog?collection=Мужское",
+		title: "Изображение с текстом",
+		paragraphs: ["Покажи и расскажи о своем товаре в одном блоке"],
+		image: "",
+		alt: "",
+		ctaLabel: "Кнопка",
+		ctaHref: "/catalog",
 		imageRight: true,
 	},
 ];
 
-const { rows = defaultRows, compact = false } = Astro.props;
+const { rows: rowsProp, compact = false } = Astro.props;
+// Курировано? — мерчант передал ряды (about.astro). Тогда рендерим реальные
+// данные без изменений; иначе (index.astro: <CollectionRows /> без пропсов) —
+// плейсхолдер пустого состояния (НЕ мок-демо верстальщика).
+const hasRealRows = Array.isArray(rowsProp) && rowsProp.length > 0;
+const rows: Row[] = hasRealRows ? rowsProp! : PLACEHOLDER_ROWS;
 ---
 
 <section class="satin-pad w-full bg-white py-12 md:py-16" aria-label="Коллекции">
 	<div class="satin-container flex flex-col gap-12 md:gap-20">
 		{rows.map((row) => (
 			<div class="grid grid-cols-1 items-stretch gap-8 md:grid-cols-2 md:gap-10">
+				{/* Реальное фото — cover на тёмной подложке #111111 (full-bleed фото
+				    манеры); пустой ряд (контракт плейсхолдера) — пустой image-rect
+				    #FBFBFB (surface), БЕЗ иллюстрации. */}
 				<div
 					class:list={[
-						"relative aspect-square overflow-hidden bg-[#111111]",
+						"relative aspect-square overflow-hidden",
+						row.image ? "bg-[#111111]" : "bg-[#FBFBFB]",
 						compact && "md:aspect-[652/360]",
 						row.imageRight && "md:order-2",
 					]}
+					aria-hidden={row.image ? undefined : "true"}
 				>
-					<SatinPicture src={row.image} alt={row.alt} loading="lazy" class="absolute inset-0 size-full object-cover" />
+					{row.image && (
+						<SatinPicture src={row.image} alt={row.alt} loading="lazy" class="absolute inset-0 size-full object-cover" />
+					)}
 				</div>
 				<div class:list={["flex flex-col gap-5", row.imageRight && "md:order-1"]}>
 					<h2 class="font-logo text-[20px] font-normal uppercase leading-[1.15] text-[#000000]">{row.title}</h2>

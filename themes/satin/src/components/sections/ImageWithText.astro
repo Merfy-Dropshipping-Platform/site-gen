@@ -10,11 +10,39 @@ import SatinPicture from "../img/SatinPicture.astro";
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Канон heading: string | { text, alignment, size }. Дефолт = литерал title
-// ImageBanner.astro:17. Лестница §9 «Заголовок баннера 26/32»: large/отсутствие
-// = литерал 26/32, medium 22/27, small 18/22.
-const heading =
-	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "STYLE’S WEAR COLLECTION SINCE 90’");
+// КОНТРАКТ ПЛЕЙСХОЛДЕРОВ (Figma 1:19335 — пустое состояние секции, ЗАМЕНЯЕТ
+// мок-демо верстальщика). Эталон: theme-base ImageWithText.astro
+// (PLACEHOLDER_ASSETS.landscape.iwt / пустой image-rect + заголовок секции +
+// поясняющий текст + Кнопка). Гейт = наличие реальных данных у мерчанта:
+// своё изображение (image.url), свой заголовок или свой текст. Нет ни одного
+// сигнала → пустое состояние = ПЛЕЙСХОЛДЕР (НЕ мок-демо «STYLE'S WEAR…» /
+// «Новая мужская коллекция» / /images/4x/Мужская_кампания.png верстальщика).
+const rawImageUrl =
+	typeof p.image?.url === "string" && p.image.url.trim() ? p.image.url.trim() : undefined;
+const rawHeading =
+	typeof p.heading === "string"
+		? p.heading.trim() || undefined
+		: typeof p.heading?.text === "string"
+			? p.heading.text.trim() || undefined
+			: undefined;
+const rawText =
+	typeof p.text === "string"
+		? p.text.trim() || undefined
+		: typeof p.text?.content === "string"
+			? p.text.content.trim() || undefined
+			: undefined;
+const isPlaceholder = !rawImageUrl && !rawHeading && !rawText;
+
+// Лейблы пустого состояния (контракт: заголовок секции + поясняющий текст).
+// Ассет курток лежит в packages/theme-base/public/placeholders/sweater-<color>.png
+// и доступен на сайте как /placeholders/sweater-<color>.png — но для ImageWithText
+// контракт требует ПУСТОЙ image-rect (#FBFBFB / surface), без иллюстрации.
+const PLACEHOLDER_HEADING = "Изображение с текстом";
+const PLACEHOLDER_TEXT = "Покажи и расскажи о своем товаре в одном блоке";
+
+// Канон heading: string | { text, alignment, size }. С данными — реальный
+// заголовок мерчанта; пустое состояние — лейбл-плейсхолдер.
+const heading = rawHeading ?? PLACEHOLDER_HEADING;
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingCls =
 	headingSize === "small"
@@ -30,9 +58,11 @@ const headingAlignCls =
 
 // Канон text: string | { content, size } → КИКЕР над заголовком (литеральная
 // роль ImageBanner.astro:45: Arsenal 16/md:20 light uppercase tracking-[0.04em]
-// muted). Дефолт = литерал eyebrow. Лестница §9 «Кикер 16» (canon-носитель
-// large): large/отсутствие = литерал 16/20, medium 14/17, small 11/14.
-const text = typeof p.text === "string" ? p.text : (p.text?.content ?? "Новая мужская коллекция");
+// muted). С данными — кикер мерчанта; пустое состояние — поясняющий текст-
+// плейсхолдер (НЕ мок-кикер «Новая мужская коллекция» верстальщика).
+// Лестница §9 «Кикер 16» (canon-носитель large): large/отсутствие = 16/20,
+// medium 14/17, small 11/14.
+const text = rawText ?? (isPlaceholder ? PLACEHOLDER_TEXT : "");
 const textSize = p.textSize ?? p.text?.size;
 const textCls =
 	textSize === "small"
@@ -44,16 +74,14 @@ const textCls =
 // Канон textStyle (hidden): italic → курсив кикера и заголовка.
 const italicCls = p.textStyle === "italic" ? " italic" : "";
 
-// Канон image {url, alt}: canon-default url пуст → фоллбек = ассет верстальщика
-// (принцип T15; литерал ImageBanner.astro:20). Кастомные URL (MinIO) рендерим
-// плоским <img> — SatinPicture добавил бы фантомный .webp-source (404).
-const imageUrl =
-	typeof p.image?.url === "string" && p.image.url.trim()
-		? p.image.url
-		: "/images/4x/Мужская_кампания.png";
+// Канон image {url, alt}: с данными — изображение мерчанта (кастомные MinIO-URL
+// рендерим плоским <img> — SatinPicture добавил бы фантомный .webp-source 404).
+// Пустое состояние (нет своего url) → ПУСТОЙ image-rect (#FBFBFB), а НЕ
+// мок-фото /images/4x/Мужская_кампания.png верстальщика.
+const imageUrl = rawImageUrl;
 const imageAlt =
-	typeof p.image?.alt === "string" && p.image.alt.trim() ? p.image.alt : "Новая мужская коллекция";
-const isThemeAsset = imageUrl.startsWith("/");
+	typeof p.image?.alt === "string" && p.image.alt.trim() ? p.image.alt : "";
+const isThemeAsset = !!imageUrl && imageUrl.startsWith("/");
 
 // Канон imagePosition: canon-default 'left' (его пишет коэрсер) И отсутствие =
 // ЛИТЕРАЛ imageSide='left' (фото СЛЕВА, текст справа — ImageBanner.astro:22);
@@ -83,18 +111,20 @@ const containerSchemeCls =
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
 
-// Кнопка: canon button {text, href|link}. Дефолт (проп не задан) = CTA
-// верстальщика «Перейти» → /catalog?collection=Мужское (ImageBanner.astro:18-19);
-// заданный пустой текст СКРЫВАЕТ кнопку.
+// Кнопка: canon button {text, href|link}. С данными — CTA мерчанта (заданный
+// пустой текст СКРЫВАЕТ кнопку). Пустое состояние (контракт «+ Кнопка»):
+// нейтральный лейбл «Кнопка» → /catalog, БЕЗ мок-CTA «Перейти» →
+// /catalog?collection=Мужское верстальщика.
 const btnProvided = p.button !== undefined;
 const btnTextProp =
 	typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined;
-const btnText = btnTextProp ?? (btnProvided ? undefined : "Перейти");
+const btnDefaultText = isPlaceholder ? "Кнопка" : undefined;
+const btnText = btnTextProp ?? (btnProvided ? undefined : btnDefaultText);
 const btnHref =
 	(typeof p.button?.href === "string" && p.button.href ? p.button.href : undefined) ??
 	p.button?.link?.href ??
 	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??
-	"/catalog?collection=Мужское";
+	"/catalog";
 // Канон buttonStyle: solid/отсутствие (canon-default) = тёмная CTA литерала
 // (метрики .satin-button-md + .satin-button-dark, g:106-126,155-159; цвета
 // токенами); outlined = светлая контурная .satin-button-light (§3).
@@ -126,27 +156,33 @@ const paddingStyle = p.padding
 	<div class={`mx-auto grid w-full ${widthCls} grid-cols-1 md:grid-cols-2`}>
 		<div
 			class:list={[
-				"relative order-1 aspect-[375/362] overflow-hidden bg-[#111111] md:aspect-auto",
+				"relative order-1 aspect-[375/362] overflow-hidden md:aspect-auto",
+				/* Реальное фото — на тёмной подложке #111111 (cover); пустое
+				   состояние — image-rect #FBFBFB (контракт). */
+				imageUrl ? "bg-[#111111]" : "bg-[#FBFBFB]",
 				mdHeightCls,
 				imgRight ? "md:order-2" : "md:order-1",
 			]}
+			aria-hidden={imageUrl ? undefined : "true"}
 		>
 			{
-				isThemeAsset ? (
-					<SatinPicture
-						src={imageUrl}
-						alt={imageAlt}
-						loading="lazy"
-						class="absolute inset-0 size-full object-cover object-center"
-					/>
-				) : (
-					<img
-						src={imageUrl}
-						alt={imageAlt}
-						loading="lazy"
-						class="absolute inset-0 size-full object-cover object-center"
-					/>
-				)
+				imageUrl ? (
+					isThemeAsset ? (
+						<SatinPicture
+							src={imageUrl}
+							alt={imageAlt}
+							loading="lazy"
+							class="absolute inset-0 size-full object-cover object-center"
+						/>
+					) : (
+						<img
+							src={imageUrl}
+							alt={imageAlt}
+							loading="lazy"
+							class="absolute inset-0 size-full object-cover object-center"
+						/>
+					)
+				) : null
 			}
 		</div>
 		<div
@@ -158,13 +194,15 @@ const paddingStyle = p.padding
 			]}
 		>
 			<div class={`flex max-w-[420px] flex-col items-center gap-5${bottomPinned ? " h-full" : ""}`}>
-				<p
-					class={textCls + italicCls}
-					data-puck-subsection-parent={id}
-					data-puck-subsection-index="101"
-					data-puck-subsection-field="text"
-					set:html={text}
-				/>
+				{text && (
+					<p
+						class={textCls + italicCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="101"
+						data-puck-subsection-field="text"
+						set:html={text}
+					/>
+				)}
 				<h2
 					class={headingCls + headingAlignCls + italicCls}
 					data-puck-subsection-parent={id}

@@ -1,13 +1,17 @@
 ---
-// Фаза B (vanilla, группа misc): новая канон-секция Publications в манере vanilla
+// Фаза B (vanilla, группа misc): канон-секция Publications в манере vanilla
 // (см. themes/vanilla/MANNER.md §2/§4/§9/§11; эталон — themes/bloom Publications,
 // rose-эталона нет). Схема полей = packages/theme-base/blocks/Publications/
-// Publications.puckConfig.ts. Demo-рендер — карточки-болванки в тоне уюта;
-// платформенный резолв публикаций идёт по data-атрибуту publicationType на
-// гриде, demo-карточки — его фоллбек. Обложки — ассеты верстальщика
-// vanilla-product-{1..6} (на диске только .webp — после images:optimize PNG
-// удалены, см. src/data/imageAssets.ts; прямой <img> вместо VanillaPicture,
-// чтобы пути работали и в превью Container API).
+// Publications.puckConfig.ts.
+// ПУСТОЕ СОСТОЯНИЕ (нет реальных публикаций) = ПЛЕЙСХОЛДЕР по контракту Figma
+// 1:19335 (колонки: пустой image-rect surface + «Колонна» + нейтральный текст),
+// а НЕ мок-демо верстальщика (статьи про уют/плед + /images/vanilla-product-N.webp).
+// Когда у магазина есть реальные публикации (SSR fetch /api/sites/<id>/publications
+// → fallback publications.json) — рендерим их без изменений (Shopify-модель, как
+// theme-base PopularProducts/Collections/MultiColumns: пустое = заглушка, данные =
+// реальный контент). Платформенный резолв по publicationType остаётся
+// data-атрибутом на гриде. Обложки реальных публикаций — прямой <img> (пути
+// работают и в превью Container API).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -53,44 +57,81 @@ const showDate = String(p.showDateTime ?? p.dateTime?.enabled ?? "false") === "t
 const publicationType =
 	typeof p.publicationType === "string" && p.publicationType ? p.publicationType : undefined;
 
-// Болванки в тоне §11 (уют/дом/текстиль); обложки по ротации (цикл при
-// cardsCount > 6).
-const DEMO_CARDS = [
-	{
-		date: "12 мая 2026",
-		title: "Как выбрать плед: гид по материалам",
-		excerpt: "Велюр, хлопок или лён — разбираемся, какой плед подарит вашему вечеру больше тепла.",
-	},
-	{
-		date: "28 апреля 2026",
-		title: "Уход за льном: пять простых правил",
-		excerpt: "Бережная стирка и правильная сушка — и любимое бельё служит долгие годы.",
-	},
-	{
-		date: "10 апреля 2026",
-		title: "Спальня в природных оттенках",
-		excerpt: "Собираем спокойный интерьер из песочных, оливковых и молочных тонов.",
-	},
-	{
-		date: "22 марта 2026",
-		title: "Текстиль, который создаёт уют",
-		excerpt: "Подушки, шторы и покрывала: три детали, меняющие настроение комнаты.",
-	},
-	{
-		date: "5 марта 2026",
-		title: "Дом, в который хочется возвращаться",
-		excerpt: "Маленькие ритуалы уюта — от утреннего пледа до вечерней свечи.",
-	},
-	{
-		date: "14 февраля 2026",
-		title: "История одной вазы",
-		excerpt: "Как предмет декора становится семейной традицией и украшением стола.",
-	},
-];
-const items = Array.from({ length: cards }, (_, i) => ({
-	...DEMO_CARDS[i % DEMO_CARDS.length],
-	image: `/images/vanilla-product-${(i % 6) + 1}.webp`,
-}));
+// Реальные публикации: SSR fetch storefront-data (gateway → sites-service) с
+// fallback на build-time publications.json (паттерн canonical theme-base
+// Publications.astro + порт bloom). siteId инжектит build pipeline / preview
+// controller. publications.json в теме vanilla может отсутствовать — import
+// в try/catch (тогда realPublications остаётся пустым → плейсхолдер).
+type RawPublication = {
+	id: string;
+	title?: string;
+	slug?: string;
+	excerpt?: string;
+	coverImageUrl?: string | null;
+	publishedAt?: string | null;
+};
+const siteIdFromRoot = typeof p.siteId === "string" ? p.siteId : "";
+let realPublications: RawPublication[] = [];
+if (siteIdFromRoot) {
+	try {
+		const internalBase =
+			(import.meta as unknown as { env?: { SITES_INTERNAL_BASE?: string } }).env?.SITES_INTERNAL_BASE ??
+			"http://localhost:3114";
+		const res = await fetch(`${internalBase}/api/sites/${siteIdFromRoot}/publications`).catch(() => null);
+		if (res && res.ok) {
+			const data = (await res.json()) as { publications?: RawPublication[] };
+			realPublications = data.publications ?? [];
+		}
+	} catch {
+		/* swallow */
+	}
+}
+try {
+	if (realPublications.length === 0) {
+		const pubData = await import("../data/publications.json");
+		realPublications = ((pubData as { default?: RawPublication[] }).default ??
+			(pubData as unknown as RawPublication[])) as RawPublication[];
+	}
+} catch {
+	/* swallow — publications.json отсутствует */
+}
+
+function formatPubDate(iso: string | null | undefined): string {
+	if (!iso) return "";
+	try {
+		return new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" }).format(
+			new Date(iso),
+		);
+	} catch {
+		return "";
+	}
+}
+
+// Гейт пустого состояния (Shopify-модель, паритет theme-base/blocks/Publications
+// + порт bloom): есть реальные публикации → рендерим их без изменений; нет —
+// ПЛЕЙСХОЛДЕР по контракту Figma 1:19335 (колонки: пустой image-rect surface +
+// «Колонна» + нейтральный текст), а НЕ мок-демо верстальщика (статьи про уют/
+// плед + /images/vanilla-product-N.webp). Текст-болванка в нейтральном тоне
+// публикаций (как theme-base MultiColumns), не привязан к товарам/уходу.
+const hasRealPublications = realPublications.length > 0;
+const PLACEHOLDER_TEXT = "Поделись новостями бренда, гайдами и историями в этом блоке.";
+type PubItem = { title: string; date: string; excerpt: string; image: string; slug?: string; isPlaceholder: boolean };
+const items: PubItem[] = hasRealPublications
+	? realPublications.slice(0, cards).map((pub) => ({
+			title: pub.title ?? "",
+			date: formatPubDate(pub.publishedAt),
+			excerpt: pub.excerpt ?? "",
+			image: pub.coverImageUrl ?? "",
+			slug: pub.slug,
+			isPlaceholder: false,
+		}))
+	: Array.from({ length: cards }, () => ({
+			title: "Колонна",
+			date: "",
+			excerpt: PLACEHOLDER_TEXT,
+			image: "",
+			isPlaceholder: true,
+		}));
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
@@ -131,31 +172,42 @@ const titleId = id && heading ? `${id}-title` : undefined;
 			data-animate-delay="0.1s"
 		>
 			{
-				items.map((item, i) => (
-					<article class="group flex flex-col gap-3" data-publication-index={i}>
-						<div class="relative aspect-square w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]">
-							<img
-								src={item.image}
-								alt={item.title}
-								loading="lazy"
-								class="absolute inset-0 size-full object-cover transition-transform duration-300 group-hover:scale-105"
-							/>
-						</div>
-						<div class="flex flex-col gap-1">
-							{showDate && (
-								<span class="font-vanilla-arsenal text-[14px] font-normal leading-[1.45] text-[rgb(var(--color-muted,68_68_68))]">
-									{item.date}
+				items.map((item, i) => {
+					const href = item.slug ? `/publication/${item.slug}` : undefined;
+					const Wrapper = href ? "a" : "article";
+					return (
+						<Wrapper class="group flex flex-col gap-3" href={href} data-publication-index={i}>
+							{/* Медиа: реальная обложка → <img>; пустое состояние (плейсхолдер
+							   или публикация без обложки) → пустой image-rect surface
+							   (контракт Figma 1:19335). */}
+							<div class="relative aspect-square w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]">
+								{item.image && (
+									<img
+										src={item.image}
+										alt={item.title}
+										loading="lazy"
+										class="absolute inset-0 size-full object-cover transition-transform duration-300 group-hover:scale-105"
+									/>
+								)}
+							</div>
+							<div class="flex flex-col gap-1">
+								{showDate && !item.isPlaceholder && item.date && (
+									<span class="font-vanilla-arsenal text-[14px] font-normal leading-[1.45] text-[rgb(var(--color-muted,68_68_68))]">
+										{item.date}
+									</span>
+								)}
+								<span class="font-vanilla-arsenal text-base font-normal uppercase leading-none text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70">
+									{item.title}
 								</span>
-							)}
-							<span class="font-vanilla-arsenal text-base font-normal uppercase leading-none text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70">
-								{item.title}
-							</span>
-							<span class="font-vanilla-arsenal text-[14px] font-normal leading-[1.45] text-[rgb(var(--color-muted,68_68_68))]">
-								{item.excerpt}
-							</span>
-						</div>
-					</article>
-				))
+								{item.excerpt && (
+									<span class="font-vanilla-arsenal text-[14px] font-normal leading-[1.45] text-[rgb(var(--color-muted,68_68_68))]">
+										{item.excerpt}
+									</span>
+								)}
+							</div>
+						</Wrapper>
+					);
+				})
 			}
 		</div>
 	</div>

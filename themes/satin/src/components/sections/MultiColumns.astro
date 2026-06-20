@@ -27,27 +27,29 @@ const headingCls = `font-logo ${headingSizeCls} font-normal uppercase leading-[1
 
 // Канон columns[] ≤10 (item: heading|title, text|description, imageUrl|image —
 // ИКОНКА 56×56, литерал Features.astro:34-42; headingSize/textSize per-item;
-// link {text,href} | flat-пара linkText+link). Отсутствие массива =
-// дефолт-ветка: 2 карточки Features VERBATIM (Features.astro:14-25); legacy
-// flat-проп items[] {title, body, icon} верстальщика поддержан алиасами.
-const CANON_COLUMNS = [
-	{
-		heading: "Исключительно качественные материалы",
-		text: "Мы выбираем только натуральные ткани премиум-класса: мягкий хлопок, дышащий лён и струящуюся вискозу. Вещи не теряют форму и не вызывают раздражения даже при круглосуточной носке. Ваша кожа скажет спасибо — каждый день вы будете чувствовать себя в уюте и невесомости.",
-		imageUrl: "/images/4x/feature-materials.png",
-	},
-	{
-		heading: "Быстрая доставка до любой точки России",
-		text: "Отправляем заказы по всей России ежедневно, включая отдалённые населённые пункты. Собственная упаковка гарантирует сохранность товара даже при долгой транспортировке. Средний срок доставки по стране — всего 4–5 дней.",
-		imageUrl: "/images/4x/feature-delivery.png",
-	},
-];
-const rawColumns =
-	Array.isArray(p.columns) && p.columns.length
+// link {text,href} | flat-пара linkText+link). Отсутствие массива → ПЛЕЙСХОЛДЕР
+// пустого состояния (Figma 1:19335, эталон theme-base PopularProducts/Collections
+// DEMO-гейт): НЕ мок-демо верстальщика (материалы/доставка), а 3 нейтральные
+// колонки «Колонна» с поясняющим текстом-плейсхолдером и общей кнопкой. Когда
+// мерчант реально заполнил колонки (columns[]/legacy items[]) — рендер его данных
+// без изменений. legacy flat-проп items[] {title, body, icon} поддержан алиасами.
+const hasManualColumns =
+	(Array.isArray(p.columns) && p.columns.length > 0) ||
+	(Array.isArray(p.items) && p.items.length > 0);
+
+// Плейсхолдер: пустой rect (без иконки-картинки) + «Колонна» + поясняющий текст.
+// Текст-кнопка («Перейти») не задаётся per-column — кнопка плейсхолдера общая
+// снизу (см. btnText ниже).
+const PLACEHOLDER_COLUMN = {
+	heading: "Колонна",
+	text: "Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.",
+	imageUrl: "",
+};
+const rawColumns = hasManualColumns
+	? Array.isArray(p.columns) && p.columns.length
 		? p.columns
-		: Array.isArray(p.items) && p.items.length
-			? p.items
-			: CANON_COLUMNS;
+		: p.items
+	: [];
 const columns = rawColumns.slice(0, 10).map((c: any) => {
 	// Ссылка карточки: canon link {text,href} ИЛИ flat-пара linkText + link
 	// (string из arrayFields конструктора) → текстовая ссылка-CTA манеры
@@ -82,19 +84,37 @@ const columns = rawColumns.slice(0, 10).map((c: any) => {
 	};
 });
 
+// Пустое состояние (Figma 1:19335): 3 нейтральные колонки «Колонна» с
+// поясняющим текстом — НЕ мок-демо верстальщика. Эталон theme-base: гейт по
+// наличию реальных данных (collectionRef/hasManualCollections); тут — columns[]/items[].
+const isPlaceholder = !hasManualColumns;
+const effectiveColumns = isPlaceholder
+	? Array.from({ length: 3 }, () => ({
+			heading: PLACEHOLDER_COLUMN.heading,
+			text: PLACEHOLDER_COLUMN.text,
+			image: "",
+			headingSize: undefined as string | undefined,
+			textSize: undefined as string | undefined,
+			link: undefined as { text: string; href: string } | undefined,
+		}))
+	: columns;
+
 // Канон displayColumns 1-4: canon-default 3 (его пишет коэрсер) И отсутствие =
 // ЛИТЕРАЛ md:grid-cols-2 (Features.astro:31 — у satin 2 колонки, не 3!);
 // иное значение → CSS-var на md+ (mobile-лестница grid-cols-1 сохраняется).
+// Пустое состояние форсирует РОВНО 3 видимые колонки (контракт Figma 1:19335 —
+// «3 колонки»), поэтому минует литерал md:grid-cols-2.
 const displayColumnsRaw = Number(p.displayColumns);
-const displayColumns =
-	Number.isFinite(displayColumnsRaw) && displayColumnsRaw >= 1 && displayColumnsRaw <= 4
+const displayColumns = isPlaceholder
+	? 3
+	: Number.isFinite(displayColumnsRaw) && displayColumnsRaw >= 1 && displayColumnsRaw <= 4
 		? Math.round(displayColumnsRaw)
 		: 3;
 const gridCls =
-	displayColumns === 3
+	displayColumns === 3 && !isPlaceholder
 		? "grid grid-cols-1 gap-4 md:grid-cols-2"
 		: "grid grid-cols-1 gap-4 md:grid-cols-[repeat(var(--cols),minmax(0,1fr))]";
-const gridStyle = displayColumns === 3 ? undefined : `--cols:${displayColumns}`;
+const gridStyle = displayColumns === 3 && !isPlaceholder ? undefined : `--cols:${displayColumns}`;
 
 // Канон width (s/m/l/full): large/отсутствие = .satin-container 1320 (литерал
 // Features.astro:31); medium 1080, small 780, full — на всю ширину (поля
@@ -113,7 +133,10 @@ const widthCls =
 // 245_245_245 + p-6 БЕЗ радиуса (литерал Features.astro:33); false — контент
 // без подложек прямо на фоне секции.
 const containerEnabled = String(p.containerEnabled ?? p.background?.enabled ?? "true") !== "false";
-const cardSurfaceCls = containerEnabled ? " bg-[rgb(var(--color-surface,245_245_245))] p-6" : "";
+// В пустом состоянии серую «подложечную» карточку НЕ рисуем — плейсхолдер сам
+// рендерит пустой rect (#FBFBFB), двойная подложка читалась бы как баг.
+const cardSurfaceCls =
+	containerEnabled && !isPlaceholder ? " bg-[rgb(var(--color-surface,245_245_245))] p-6" : "";
 
 // Канон containerColorScheme (hidden) — класс схемы на гриде карточек.
 const containerSchemeCls =
@@ -129,8 +152,14 @@ const colAlignCls = p.textPosition === "left" ? "items-start text-left" : "items
 // Канон buttonText/buttonLink (hidden) — общая кнопка под гридом: светлая
 // контурная роль .satin-button-md LIGHT (родная роль satin §3), w-fit СЛЕВА
 // (манера «Смотреть больше» Popular — НЕ по центру). Метрики .satin-button-md
-// (g:106-126) + токены кнопки-2. Рендер ТОЛЬКО при непустом тексте.
-const btnText = typeof p.buttonText === "string" && p.buttonText.trim() ? p.buttonText : undefined;
+// (g:106-126) + токены кнопки-2. Рендер ТОЛЬКО при непустом тексте. В пустом
+// состоянии (плейсхолдер) кнопка присутствует всегда («Перейти» → /catalog),
+// т.к. контракт Figma 1:19335 требует кнопку в каждой пустой колонке-секции.
+const btnText = isPlaceholder
+	? "Перейти"
+	: typeof p.buttonText === "string" && p.buttonText.trim()
+		? p.buttonText
+		: undefined;
 const btnHref =
 	(typeof p.buttonLink === "string" && p.buttonLink ? p.buttonLink : undefined) ??
 	(typeof p.link === "string" && p.link ? p.link : undefined) ??
@@ -187,23 +216,32 @@ const titleId = id && heading ? `${id}-title` : undefined;
 		}
 		<ul class={`${gridCls}${containerSchemeCls}`} role="list" style={gridStyle}>
 			{
-				columns.map((c, index) => (
+				effectiveColumns.map((c, index) => (
 					<li
 						class={`flex flex-col gap-6 ${colAlignCls}${cardSurfaceCls}`}
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index={index}
-						data-puck-subsection-field="columns"
+						data-puck-subsection-parent={isPlaceholder ? undefined : id}
+						data-puck-subsection-index={isPlaceholder ? undefined : index}
+						data-puck-subsection-field={isPlaceholder ? undefined : "columns"}
 					>
-						{c.image && (
-							<img
-								src={c.image.startsWith("/") ? withBase(c.image) : c.image}
-								alt=""
-								width="56"
-								height="56"
-								loading="lazy"
-								class="h-14 w-14 shrink-0 object-contain"
+						{isPlaceholder ? (
+							/* Пустой rect-плейсхолдер (Figma 1:19335): подложка #FBFBFB /
+							   rgb(var(--color-surface)) вместо иконки-картинки колонки. */
+							<div
+								class="aspect-[4/3] w-full bg-[rgb(var(--color-surface,251_251_251))]"
 								aria-hidden="true"
 							/>
+						) : (
+							c.image && (
+								<img
+									src={c.image.startsWith("/") ? withBase(c.image) : c.image}
+									alt=""
+									width="56"
+									height="56"
+									loading="lazy"
+									class="h-14 w-14 shrink-0 object-contain"
+									aria-hidden="true"
+								/>
+							)
 						)}
 						{c.heading && <h3 class={itemHeadingCls(c.headingSize)}>{c.heading}</h3>}
 						{c.text && <p class={itemTextCls(c.textSize)} set:html={c.text} />}
@@ -225,9 +263,9 @@ const titleId = id && heading ? `${id}-title` : undefined;
 				<a
 					href={btnHref}
 					class={btnCls}
-					data-puck-subsection-parent={id}
-					data-puck-subsection-index="102"
-					data-puck-subsection-field="buttonText"
+					data-puck-subsection-parent={isPlaceholder ? undefined : id}
+					data-puck-subsection-index={isPlaceholder ? undefined : "102"}
+					data-puck-subsection-field={isPlaceholder ? undefined : "buttonText"}
 				>
 					{btnText}
 				</a>

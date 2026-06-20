@@ -4,9 +4,10 @@
 // тронут — index.astro:26 и about.astro:62 его используют, включая
 // compact-вариант). Схема полей = packages/theme-base/blocks/MultiRows/
 // MultiRows.puckConfig.ts; манера — themes/satin/MANNER.md (эталон процесса —
-// bloom MultiRows). Дефолт-ветка (без rows[]) = 2 ряда верстальщика VERBATIM
-// (Женская/Мужская коллекция, чередование фото лево→право,
-// CollectionRows.astro:20-44).
+// bloom MultiRows). Пустое/некурированное состояние (без rows[]) = ПЛЕЙСХОЛДЕР
+// по контракту Figma 1:19335 (НЕ мок-демо верстальщика «Женская/Мужская
+// коллекция»): ряды «пустой rect + "Изображение с текстом" + текст + Кнопка».
+// Когда мерчант задал rows[] — рендер реальных данных без изменений.
 import SatinPicture from "../img/SatinPicture.astro";
 
 const p = Astro.props as Record<string, any>;
@@ -30,33 +31,40 @@ const headingCls = `font-logo ${headingSizeCls} font-normal uppercase leading-[1
 // Канон rows[] 1-10 (item: heading|title, text|description, imageUrl|image,
 // imagePosition, button {text, href|link}, size/headingSize/textSize
 // per-item); legacy flat-Row верстальщика {title, paragraphs[], image, alt,
-// ctaLabel, ctaHref, imageRight} поддержан алиасами. Отсутствие массива =
-// дефолт-ветка: 2 ряда CollectionRows VERBATIM.
-const CANON_ROWS = [
+// ctaLabel, ctaHref, imageRight} поддержан алиасами.
+//
+// КОНТРАКТ ПЛЕЙСХОЛДЕРОВ (Figma 1:19335 — пустое состояние секции, ЗАМЕНЯЕТ
+// мок-демо верстальщика). Эталон: theme-base MultiRows.astro + порт bloom
+// MultiRows. Пустое/некурированное состояние (мерчант НЕ задал rows) =
+// ПЛЕЙСХОЛДЕР: ряды «пустой rect + "Изображение с текстом" + "Покажи и расскажи
+// о своем товаре в одном блоке" + Кнопка» с чередованием лево/право. Без фото
+// (imageUrl пуст → пустой surface-rect), нейтральные лейблы — НЕ мок-демо
+// верстальщика (Женская/Мужская коллекция, /images/4x/*.png, полные абзацы).
+// Лейблы выровнены по satin ImageWithText (тот же контракт «+ Кнопка»).
+const PLACEHOLDER_ROWS = [
 	{
-		heading: "Женская коллекция",
-		paragraphs: [
-			"Мы уверены: одежда должна быть красивой не только на фотографиях, но и на ощупь. Satin создан для тех, кто ценит эстетику и качество в каждой детали.",
-			"В ассортименте Satin вы не найдёте случайных вещей — только то, что действительно достойно стать частью вашего гардероба.",
-		],
-		imageUrl: "/images/4x/Женская_коллекция.png",
-		alt: "Женская коллекция",
+		id: "ph-row-1",
+		heading: "Изображение с текстом",
+		paragraphs: ["Покажи и расскажи о своем товаре в одном блоке"],
+		imageUrl: "",
+		alt: "",
 		imagePosition: "left",
-		button: { text: "Для женщин", href: "/catalog?collection=Женское" },
+		button: { text: "Кнопка", href: "/catalog" },
 	},
 	{
-		heading: "Мужская коллекция",
-		paragraphs: [
-			"Минимализм, точная посадка и спокойный силуэт — мужская линия Satin собирает базовые вещи без лишних деталей.",
-			"Одежда, которая не требует усилий, чтобы выглядеть хорошо.",
-		],
-		imageUrl: "/images/4x/Мужская_коллекция.png",
-		alt: "Мужская коллекция",
+		id: "ph-row-2",
+		heading: "Изображение с текстом",
+		paragraphs: ["Покажи и расскажи о своем товаре в одном блоке"],
+		imageUrl: "",
+		alt: "",
 		imagePosition: "right",
-		button: { text: "Для мужчин", href: "/catalog?collection=Мужское" },
+		button: { text: "Кнопка", href: "/catalog" },
 	},
 ];
-const rawRows = Array.isArray(p.rows) && p.rows.length ? p.rows : CANON_ROWS;
+// Курировано? — мерчант задал ряды (есть массив rows с длиной). Тогда рендерим
+// реальные данные без изменений; иначе — плейсхолдер выше.
+const hasRealRows = Array.isArray(p.rows) && p.rows.length > 0;
+const rawRows = hasRealRows ? p.rows : PLACEHOLDER_ROWS;
 
 // Канон rowsPosition: left | right — ВСЕ фото с одной стороны;
 // alternate/отсутствие — per-item imagePosition (legacy imageRight), иначе
@@ -76,9 +84,10 @@ const aspectFor = (s: string | undefined) =>
 			? "aspect-[430/564]"
 			: "aspect-square";
 
-// Канон-плейсхолдеры фото = ассеты верстальщика по позиции (принцип T15:
-// «добавил секцию → сразу красиво»).
-const ROW_FALLBACKS = ["/images/4x/Женская_коллекция.png", "/images/4x/Мужская_коллекция.png"];
+// Ряд без фото → пустой rect (контракт плейсхолдера Figma 1:19335). НЕ
+// подставляем мок-ассеты верстальщика (/images/4x/*.png): пустое состояние =
+// пустой surface-rect, а не демо-фото. Реальный ряд без своей картинки тоже
+// получает пустой rect (секция рендерит подложку, когда image пуст).
 
 // Шкалы per-item (лестницы §9): заголовок ряда = роль «заголовок секции» 20 —
 // литерал CollectionRows.astro:63 (small 17, large 24); абзацы = body крупный
@@ -124,7 +133,7 @@ const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 		image:
 			(typeof r.imageUrl === "string" && r.imageUrl.trim()) ||
 			(typeof r.image === "string" && r.image.trim()) ||
-			ROW_FALLBACKS[i % ROW_FALLBACKS.length],
+			"",
 		alt: (typeof r.alt === "string" && r.alt.trim()) || headingText || "Ряд",
 		right: rowsPosition === "right" || (rowsPosition !== "left" && itemRight),
 		aspectCls: aspectFor(r.size ?? p.size),
@@ -219,33 +228,38 @@ const titleId = id && heading ? `${id}-title` : undefined;
 				rows.map((row, i) => (
 					<div
 						class="grid grid-cols-1 items-stretch gap-8 md:grid-cols-2 md:gap-10"
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index={i}
-						data-puck-subsection-field="rows"
+						data-puck-subsection-parent={hasRealRows ? id : undefined}
+						data-puck-subsection-index={hasRealRows ? i : undefined}
+						data-puck-subsection-field={hasRealRows ? "rows" : undefined}
 					>
-						{/* Подложка фото-плейсхолдера = родной литерал #111111 (full-bleed фото §4). */}
+						{/* Реальное фото — на тёмной подложке #111111 (cover, full-bleed
+						    фото §4); пустой ряд (контракт плейсхолдера) — пустой image-rect
+						    #FBFBFB (surface), БЕЗ иллюстрации. */}
 						<div
 							class:list={[
-								"relative overflow-hidden bg-[#111111]",
+								"relative overflow-hidden",
+								row.image ? "bg-[#111111]" : "bg-[#FBFBFB]",
 								row.aspectCls,
 								row.right && "md:order-2",
 							]}
+							aria-hidden={row.image ? undefined : "true"}
 						>
-							{row.image.startsWith("/") ? (
-								<SatinPicture
-									src={row.image}
-									alt={row.alt}
-									loading="lazy"
-									class="absolute inset-0 size-full object-cover"
-								/>
-							) : (
-								<img
-									src={row.image}
-									alt={row.alt}
-									loading="lazy"
-									class="absolute inset-0 size-full object-cover"
-								/>
-							)}
+							{row.image &&
+								(row.image.startsWith("/") ? (
+									<SatinPicture
+										src={row.image}
+										alt={row.alt}
+										loading="lazy"
+										class="absolute inset-0 size-full object-cover"
+									/>
+								) : (
+									<img
+										src={row.image}
+										alt={row.alt}
+										loading="lazy"
+										class="absolute inset-0 size-full object-cover"
+									/>
+								))}
 						</div>
 						<div class:list={[`flex flex-col gap-5${alignCls}`, row.right && "md:order-1"]}>
 							{row.heading && <h3 class={row.headingCls}>{row.heading}</h3>}

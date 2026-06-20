@@ -1,4 +1,19 @@
 ---
+// Устаревший компонент верстальщика (вытеснён канон-секцией ImageWithText.astro).
+// Не имеет data-puck-component-id — не используется как Puck-секция напрямую;
+// рендерится статически с index.astro:28 как `<ImageBanner />` (демо-главная).
+//
+// КОНТРАКТ ПЛЕЙСХОЛДЕРОВ (Figma 1:19335 — пустое состояние секции, ЗАМЕНЯЕТ
+// мок-демо верстальщика). Эталон: theme-base ImageWithText.astro + satin-порт
+// ImageWithText.astro (пустой image-rect #FBFBFB + заголовок секции + поясняющий
+// текст + Кнопка). Категория = «Изображение с текстом».
+//
+// Гейт = РЕАЛЬНЫЕ данные, переданные вызывающим: своё изображение (image),
+// свой заголовок (title) или свой кикер (eyebrow). НИ ОДНОГО сигнала (как
+// `<ImageBanner />` без пропсов) → пустое состояние = ПЛЕЙСХОЛДЕР, а НЕ мок-
+// демо «STYLE'S WEAR…» / «Новая мужская коллекция» / /images/4x/Мужская_кампания.png.
+// Когда данные ВЫБРАНЫ — рендер реальных НЕ ТРОГАЕМ (фото на #111111 + кикер/
+// заголовок/CTA верстальщика остаются как было).
 import SatinPicture from "../img/SatinPicture.astro";
 
 interface Props {
@@ -12,40 +27,98 @@ interface Props {
 	imageSide?: "left" | "right";
 }
 
+// Сырые пропсы — чтобы отличить РЕАЛЬНО переданное значение от дефолта секции
+// (дефолты ниже — мок верстальщика, их наличие НЕ считается «данными»).
+const raw = Astro.props as Record<string, unknown>;
+const rawImage =
+	typeof raw.image === "string" && raw.image.trim() ? raw.image.trim() : undefined;
+const rawTitle =
+	typeof raw.title === "string" && raw.title.trim() ? raw.title.trim() : undefined;
+const rawEyebrow =
+	typeof raw.eyebrow === "string" && raw.eyebrow.trim() ? raw.eyebrow.trim() : undefined;
+
+// Нет ни своего изображения, ни заголовка, ни кикера → пустое состояние.
+const isPlaceholder = !rawImage && !rawTitle && !rawEyebrow;
+
 const {
-	eyebrow = "Новая мужская коллекция",
-	title = "STYLE’S WEAR COLLECTION SINCE 90’",
-	ctaText = "Перейти",
-	ctaLink = "/catalog?collection=Мужское",
-	image = "/images/4x/Мужская_кампания.png",
-	alt = "Новая мужская коллекция",
 	imageSide = "left",
 } = Astro.props;
 
 const imgRight = imageSide === "right";
+
+// Лейблы пустого состояния (контракт: пустой image-rect + заголовок секции +
+// поясняющий текст + Кнопка). Без иллюстрации (image-rect #FBFBFB / surface).
+const PLACEHOLDER_HEADING = "Изображение с текстом";
+const PLACEHOLDER_TEXT = "Покажи и расскажи о своем товаре в одном блоке";
+const PLACEHOLDER_BUTTON = "Кнопка";
+
+// Реальные данные (с дефолтами верстальщика, ИСПОЛЬЗУЮТСЯ ТОЛЬКО когда
+// isPlaceholder === false — т.е. вызывающий что-то передал).
+const eyebrow = rawEyebrow ?? "Новая мужская коллекция";
+const title = rawTitle ?? "STYLE’S WEAR COLLECTION SINCE 90’";
+const ctaText =
+	typeof raw.ctaText === "string" && raw.ctaText.trim() ? raw.ctaText : "Перейти";
+const ctaLink =
+	typeof raw.ctaLink === "string" && raw.ctaLink ? raw.ctaLink : "/catalog?collection=Мужское";
+const image = rawImage ?? "/images/4x/Мужская_кампания.png";
+const alt =
+	typeof raw.alt === "string" && raw.alt.trim() ? raw.alt : "Новая мужская коллекция";
 ---
 
-<section class="relative w-full bg-white" aria-label={eyebrow}>
-	<div class="mx-auto grid w-full max-w-[1920px] grid-cols-1 md:grid-cols-2">
-		<div
-			class:list={[
-				"relative order-1 aspect-[375/362] overflow-hidden bg-[#111111] md:aspect-auto md:h-[680px]",
-				imgRight ? "md:order-2" : "md:order-1",
-			]}
-		>
-			<SatinPicture src={image} alt={alt} loading="lazy" class="absolute inset-0 size-full object-cover object-center" />
-		</div>
-		<div
-			class:list={[
-				"flex items-center justify-center px-6 py-12 text-center md:h-[680px] md:py-0",
-				imgRight ? "md:order-1" : "md:order-2",
-			]}
-		>
-			<div class="flex max-w-[420px] flex-col items-center gap-5">
-				<p class="font-manrope text-[16px] font-light uppercase tracking-[0.04em] text-[#999999] md:text-[20px]">{eyebrow}</p>
-				<h2 class="font-logo text-[26px] font-normal uppercase leading-[1.1] text-[#000000] md:text-[32px]">{title}</h2>
-				<a href={ctaLink} class="satin-button satin-button-md satin-button-dark">{ctaText}</a>
+{
+	isPlaceholder ? (
+		<section class="relative w-full bg-[rgb(var(--color-bg,255_255_255))]" aria-label={PLACEHOLDER_HEADING}>
+			<div class="mx-auto grid w-full max-w-[1920px] grid-cols-1 md:grid-cols-2">
+				<div
+					class:list={[
+						/* Пустой image-rect #FBFBFB (контракт), без иллюстрации/мок-фото. */
+						"relative order-1 aspect-[375/362] overflow-hidden bg-[#FBFBFB] md:aspect-auto md:h-[680px]",
+						imgRight ? "md:order-2" : "md:order-1",
+					]}
+					aria-hidden="true"
+				/>
+				<div
+					class:list={[
+						"flex items-center justify-center px-6 py-12 text-center md:h-[680px] md:py-0",
+						imgRight ? "md:order-1" : "md:order-2",
+					]}
+				>
+					<div class="flex max-w-[420px] flex-col items-center gap-5">
+						<p class="font-manrope text-[16px] font-light uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))] md:text-[20px]">
+							{PLACEHOLDER_TEXT}
+						</p>
+						<h2 class="font-logo text-[26px] font-normal uppercase leading-[1.1] text-[rgb(var(--color-heading,0_0_0))] md:text-[32px]">
+							{PLACEHOLDER_HEADING}
+						</h2>
+						<a href="/catalog" class="satin-button satin-button-md satin-button-dark">{PLACEHOLDER_BUTTON}</a>
+					</div>
+				</div>
 			</div>
-		</div>
-	</div>
-</section>
+		</section>
+	) : (
+		<section class="relative w-full bg-white" aria-label={eyebrow}>
+			<div class="mx-auto grid w-full max-w-[1920px] grid-cols-1 md:grid-cols-2">
+				<div
+					class:list={[
+						"relative order-1 aspect-[375/362] overflow-hidden bg-[#111111] md:aspect-auto md:h-[680px]",
+						imgRight ? "md:order-2" : "md:order-1",
+					]}
+				>
+					<SatinPicture src={image} alt={alt} loading="lazy" class="absolute inset-0 size-full object-cover object-center" />
+				</div>
+				<div
+					class:list={[
+						"flex items-center justify-center px-6 py-12 text-center md:h-[680px] md:py-0",
+						imgRight ? "md:order-1" : "md:order-2",
+					]}
+				>
+					<div class="flex max-w-[420px] flex-col items-center gap-5">
+						<p class="font-manrope text-[16px] font-light uppercase tracking-[0.04em] text-[#999999] md:text-[20px]">{eyebrow}</p>
+						<h2 class="font-logo text-[26px] font-normal uppercase leading-[1.1] text-[#000000] md:text-[32px]">{title}</h2>
+						<a href={ctaLink} class="satin-button satin-button-md satin-button-dark">{ctaText}</a>
+					</div>
+				</div>
+			</div>
+		</section>
+	)
+}

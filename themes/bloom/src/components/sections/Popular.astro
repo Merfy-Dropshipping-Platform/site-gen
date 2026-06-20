@@ -25,7 +25,31 @@ const sectionSubtitle =
 // 4 = срез верстальщика (и отсутствие пропа) → дефолт-ветка.
 const cardsN =
 	typeof p.cards === "number" && p.cards > 0 ? Math.max(1, Math.min(24, Math.round(p.cards))) : 4;
-const products = catalogProducts.slice(0, cardsN);
+
+// Канон collection (collectionPicker, id или slug): носитель — data-collection
+// на гриде; фильтрацию делает гидрация (filterByCollection: productIds коллекции
+// → membership товара → все, паритет theme-base). Demo-сборка без данных — no-op.
+const collectionRef =
+	typeof p.collection === "string" && p.collection.trim() ? p.collection.trim() : undefined;
+
+// Пустое/некурированное состояние (Figma 1:19335) = ПЛЕЙСХОЛДЕР, не мок-демо
+// верстальщика. Гейт = наличие выбранной коллекции (collectionRef). НЕТ выбора →
+// плейсхолдер-карточки (цветные куртки, «Товар», «2 500 ₽»). ЕСТЬ выбор → SSR
+// catalogProducts + клиентская гидрация подменяет грид реальными товарами
+// коллекции (поведение НЕ трогаем). Паритет theme-base PopularProducts.astro
+// (DEMO_PRODUCTS на гейте collectionRef).
+const SWEATER_PLACEHOLDERS = [
+	"/placeholders/sweater-blue.png",
+	"/placeholders/sweater-yellow.png",
+	"/placeholders/sweater-red.png",
+	"/placeholders/sweater-green.png",
+];
+const placeholderCards = Array.from({ length: cardsN }, (_, i) => ({
+	image: SWEATER_PLACEHOLDERS[i % SWEATER_PLACEHOLDERS.length],
+	title: "Товар",
+	price: "2 500 ₽",
+}));
+const products = collectionRef ? catalogProducts.slice(0, cardsN) : [];
 
 // Канон headingSize (top-level приоритетнее legacy heading.size): 'small'
 // (canon-default) и отсутствие = шапка DS NtSectionHeading верстальщика дословно
@@ -164,12 +188,6 @@ const viewAllCls =
 			? `${viewAllBase} rounded-[var(--radius-button,100px)] border border-solid border-[rgb(var(--color-button-bg,227_142_159))] bg-transparent px-6 text-[rgb(var(--color-button-bg,227_142_159))] hover:opacity-90 active:scale-95`
 			: `${viewAllBase} rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,227_142_159))] px-6 text-[rgb(var(--color-button-text,255_255_255))] hover:opacity-90 active:scale-95`;
 
-// Канон collection (collectionPicker, id или slug): носитель — data-collection
-// на гриде; фильтрацию делает гидрация (filterByCollection: productIds коллекции
-// → membership товара → все, паритет theme-base). Demo-сборка без данных — no-op.
-const collectionRef =
-	typeof p.collection === "string" && p.collection.trim() ? p.collection.trim() : undefined;
-
 // blockDefaults bloom headingAlignment/cardCaptionStyle — ключи вне канон-полей
 // Popular, игнорируются (решение аналитика).
 
@@ -211,11 +229,34 @@ const paddingStyle = p.padding
 			data-qa-text={quickAddMode ? quickAddText : undefined}
 			data-btn-style={btnStyle}
 		>
-			{products.map((product) => (
-				<li data-product-id={product.id} data-image-2={nextPhoto ? product.gallery?.[1] : undefined}>
-					<BloomProductCard product={product} />
-				</li>
-			))}
+			{collectionRef
+				? products.map((product) => (
+						<li data-product-id={product.id} data-image-2={nextPhoto ? product.gallery?.[1] : undefined}>
+							<BloomProductCard product={product} />
+						</li>
+					))
+				: placeholderCards.map((ph) => (
+						<li>
+							<article class="flex flex-col gap-4" data-nt="bloom-product-card-placeholder" aria-label={ph.title}>
+								<div class="relative block aspect-square w-full overflow-hidden rounded-[12px] bg-[#F5F5F5]">
+									<img
+										src={ph.image}
+										alt={ph.title}
+										loading="lazy"
+										class="absolute inset-0 h-full w-full object-contain p-[15%]"
+									/>
+								</div>
+								<div class="flex flex-col gap-2">
+									<span class="bloom-product-name font-inter text-[16px] font-light leading-none text-[#000000]">
+										{ph.title}
+									</span>
+									<span class="bloom-product-price font-inter text-[16px] font-light leading-none text-[#000000]">
+										{ph.price}
+									</span>
+								</div>
+							</article>
+						</li>
+					))}
 		</ul>{viewAllShow && (
 			<div class="flex w-full justify-center">
 				<a

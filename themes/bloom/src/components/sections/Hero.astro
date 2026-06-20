@@ -27,28 +27,24 @@ const backgroundImage =
 // картинок 50/50 ТОЛЬКО когда второе фото задано; иначе одиночный рендер дословно.
 const backgroundImage2 = p.backgroundImages?.url2 ?? p.backgroundImage2;
 
-// Канон heading.size / text.size (+ секционный p.size как canon-носитель:
-// blockDefaults bloom пишут size='large'). 'large' И отсутствующий проп →
-// ЛИТЕРАЛЬНАЯ лестница верстальщика (MANNER.md §9). Уменьшенные в манере
-// (medium ≈0.85×, small ≈0.7×, округление до целых px):
-//   заголовок large 18/md:20 → medium 15/17 → small 13/14
-//   текст     large 14/md:16 → medium 12/14 → small 10/11
-// Дефолтная ветка каждого тернарника = прежняя строка классов байт-в-байт
-// (цвета → токены с пиксель-фоллбеком родных #E38E9F по §7).
-const headingSize = p.size;
+// «Размер» (p.size) теперь управляет ВЫСОТОЙ секции Hero (heroHeightCls ниже),
+// а не размером шрифта (тестер M$rkul: «Размер» секции «Изображение» = высота/
+// вьюпорт, как в theme-base). Заголовок/текст рендерятся фиксированным «крупным»
+// размером темы — прежняя дефолт-ветка large байт-в-байт (цвета → токены с
+// пиксель-фоллбеком родных #E38E9F по §7).
 const headingCls =
-	headingSize === "small"
-		? "hero-animate-1 font-urbanist text-[13px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[14px]"
-		: headingSize === "medium"
-			? "hero-animate-1 font-urbanist text-[15px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[17px]"
-			: "hero-animate-1 font-urbanist text-[18px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[20px]";
-const textSize = p.size;
+	"hero-animate-1 font-urbanist text-[18px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[20px]";
 const subtitleCls =
-	textSize === "small"
-		? "hero-animate-2 font-inter text-[10px] font-light leading-[1.2] text-[rgb(var(--color-text,227_142_159))] md:text-[11px]"
-		: textSize === "medium"
-			? "hero-animate-2 font-inter text-[12px] font-light leading-[1.2] text-[rgb(var(--color-text,227_142_159))] md:text-[14px]"
-			: "hero-animate-2 font-inter text-[14px] font-light leading-[1.2] text-[rgb(var(--color-text,227_142_159))] md:text-[16px]";
+	"hero-animate-2 font-inter text-[14px] font-light leading-[1.2] text-[rgb(var(--color-text,227_142_159))] md:text-[16px]";
+// «Размер» → высота секции (вьюпорт). large (дефолт bloom blockDefaults) = прежняя
+// min-h-лестница верстальщика байт-в-байт; medium ≈0.82×, small ≈0.64×. Дефолт
+// (p.size не задан) = large. Применяется к min-height inner-контейнера полотна.
+const heroSize = p.size === "small" ? "small" : p.size === "medium" ? "medium" : "large";
+const heroHeightCls = {
+	large: "min-h-[560px]",
+	medium: "min-h-[460px]",
+	small: "min-h-[360px]",
+}[heroSize];
 
 // Канон secondaryButton {text, link: string|{href}} — рендер ТОЛЬКО при непустом
 // тексте; кнопки встают рядом в ряд с зазором gap-3 (манера §3).

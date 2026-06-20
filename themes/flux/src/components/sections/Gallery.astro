@@ -1,5 +1,4 @@
 ---
-import FluxPicture from "../img/FluxPicture.astro";
 import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт bloom Gallery): конструкторная схема theme-base
@@ -19,9 +18,6 @@ const sectionSubtitle =
 	(typeof p.text === "string" ? p.text : p.text?.content) ??
 	(typeof p.subtitle === "string" ? p.subtitle : undefined) ??
 	"Технологии, которые приятно держать в руках каждый день.";
-
-const liftLine = "Ноутбуки";
-const liftHref = `/catalog?collection=${encodeURIComponent(liftLine)}`;
 
 // Шапка — DS-компонент NtSectionHeading: размеры через перекрытия на обёртке
 // (лестница §9). Дефолт ('medium' canon-default трактуем как DS-литерал
@@ -99,16 +95,21 @@ const galleryTiles: GalleryTile[] = (Array.isArray(p.items) ? p.items : [])
 			ref: null,
 		};
 	});
-// Канон-плейсхолдер = реальный ассет темы (принцип rose T15): плитка без url
-// (image с пустым url, product/collection без выбранной сущности) получает
-// фото верстальщика по позиции — «добавил секцию → сразу красиво».
-const TILE_FALLBACKS = [
-	"/images/4x/Изображение_Галерея.png",
-	"/images/4x/Товар_5__2_.png",
-	"/images/4x/Товар_5__3_.png",
-];
-galleryTiles.forEach((t, i) => {
-	if (!t.url) t.url = TILE_FALLBACKS[i % TILE_FALLBACKS.length];
+// ПЛЕЙСХОЛДЕР пустой плитки (Figma 1:19335, контракт theme-base Gallery):
+// НЕ фото верстальщика, а нейтральная заглушка по типу плитки.
+//  • product (любой) и collection С ВЫБОРОМ → куртка-плейсхолдер blue
+//    (/placeholders/sweater-blue.png; build-пайплайн копирует ассет из
+//    packages/theme-base/public по скану .astro, assemble-from-packages.ts:376).
+//    Этот <img> служит И визуальным плейсхолдером, И целью гидрации: когда товар/
+//    коллекция ВЫБРАНЫ, скрипт ниже (data-gallery-product / -collection)
+//    подменяет src/alt реальной картинкой — поведение «данные выбраны» цело.
+//  • collection без выбора и image без url → пустой image-rect (фон
+//    --color-surface, без <img>) + лейбл «Выбери коллекцию».
+const SWEATER_BLUE = "/placeholders/sweater-blue.png";
+galleryTiles.forEach((t) => {
+	if (t.url) return;
+	if (t.kind === "product") t.url = SWEATER_BLUE;
+	else if (t.kind === "collection" && t.ref) t.url = SWEATER_BLUE;
 });
 const useItems = galleryTiles.length > 0;
 const heroTile = useItems ? galleryTiles[0] : undefined;
@@ -167,20 +168,10 @@ const paddingStyle = p.padding
 					)}
 				</a>
 			) : (
-				<a
-					href="/catalog"
-					class={`group relative block aspect-square w-full min-h-0 overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] rounded-[var(--radius-media,8px)]${heroOrderCls}`}
-					aria-label="Перейти в каталог"
-				>
-					<FluxPicture
-						src="/images/4x/Изображение_Галерея.png"
-						alt="Галерея"
-						loading="eager"
-						class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]"
-						width="875"
-						height="875"
-					/>
-				</a>
+				<div
+					class={`relative block aspect-square w-full min-h-0 overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] rounded-[var(--radius-media,8px)]${heroOrderCls}`}
+					aria-hidden="true"
+				/>
 			)}
 
 			{useItems ? sideTiles.length > 0 && (
@@ -233,50 +224,38 @@ const paddingStyle = p.padding
 				</div>
 			) : (
 				<div class={`flex flex-col gap-6 md:gap-8${sideOrderCls}`}>
-					<a
-						href="/products/m-phone-17"
-						class="group flex flex-col gap-4"
-						aria-label="M Phone 17"
-					>
+					{/* ПЛЕЙСХОЛДЕР пустого состояния (Figma 1:19335, контракт theme-base
+					    Gallery): карточка-товар (куртка blue + «Товар» / «2 500 ₽») +
+					    карточка-коллекция (пустой image-rect + «Выбери коллекцию») вместо
+					    мок-товаров верстальщика («M Phone 17» / «Ноутбуки»). */}
+					<div class="flex flex-col gap-4" aria-label="Товар">
 						<div class="relative aspect-[429/444] w-full min-h-0 overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] rounded-[var(--radius-media,8px)]">
-							<FluxPicture
-								src="/images/4x/Товар_5__2_.png"
-								alt="M Phone 17"
-								width="429"
-								height="444"
-								loading="eager"
-								class="absolute inset-0 size-full max-w-none object-cover object-center transition-transform duration-300 group-hover:scale-105"
+							<img
+								src="/placeholders/sweater-blue.png"
+								alt="Товар"
+								loading="lazy"
+								class="absolute inset-0 size-full object-contain object-center p-[15%]"
 							/>
 						</div>
 						<div class="flex flex-col gap-1">
 							<h3 class="font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">
-								M Phone 17
+								Товар
 							</h3>
 							<span class="font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">
-								140 990₽
+								2 500 ₽
 							</span>
 						</div>
-					</a>
+					</div>
 
-					<a
-						href={liftHref}
-						class="group flex flex-col gap-4"
-						aria-label={liftLine}
-					>
-						<div class="relative aspect-[429/309] w-full min-h-0 overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] rounded-[var(--radius-media,8px)]">
-							<FluxPicture
-								src="/images/4x/Товар_5__3_.png"
-								alt="Ноутбуки"
-								width="429"
-								height="309"
-								loading="eager"
-								class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-							/>
-						</div>
+					<div class="flex flex-col gap-4" aria-label="Выбери коллекцию">
+						<div
+							class="relative aspect-[429/309] w-full min-h-0 overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] rounded-[var(--radius-media,8px)]"
+							aria-hidden="true"
+						/>
 						<h3 class="font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">
-							Ноутбуки
+							Выбери коллекцию
 						</h3>
-					</a>
+					</div>
 				</div>
 			)}
 		</div>
@@ -341,11 +320,3 @@ const paddingStyle = p.padding
 	hydrateGalleryTiles();
 	document.addEventListener("astro:page-load", hydrateGalleryTiles);
 </script>
-
-<style>
-	#gallery picture img {
-		height: 100%;
-		width: 100%;
-		max-width: none;
-	}
-</style>

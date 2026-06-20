@@ -1,18 +1,133 @@
 ---
-interface Props {
-	title?: string;
-	body?: string;
-}
+// Satin: блок «Текст» (canon MainText). satinRegistry маппит MainText →
+// TextBlock.astro (registries/satin.ts:43), поэтому именно этот файл отдаётся
+// конструктору/live для секции «Текст». Раньше здесь жил мок-демо верстальщика
+// (хардкод заголовок «Одежда, в которой не нужно стараться…» + длинный абзац о
+// бренде) — он показывался даже на пустой секции. Теперь:
+//   • пустая секция (мерчант не задал ни заголовок, ни текст) → контрактный
+//     ПЛЕЙСХОЛДЕР Figma 1:19335: «Расскажи о своем бренде» + поясняющий текст +
+//     Кнопка (как theme-base DEMO, НЕ мок-демо верстальщика);
+//   • заданный контент → рендер реальных данных без изменений.
+// Логика портирована из канон-секции MainText.astro (тот же файл-сосед),
+// дополнительно добавлен data-puck-component-id (его не было в моке).
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+// Legacy direct-usage (about.astro / index.astro импортят <TextBlock /> без
+// пропсов) — поддержим старые имена пропов title/body как алиасы canon
+// heading/text, чтобы прямой рендер не сломался (пустые → плейсхолдер).
+const legacyTitle = typeof p.title === "string" ? p.title : undefined;
+const legacyBody = typeof p.body === "string" ? p.body : undefined;
 
-const {
-	title = "Одежда, в которой не нужно стараться выглядеть хорошо",
-	body = "Мы делаем вещи, которые работают на вас, а не наоборот. Хлопок и лён, которые приятно носить в жару. Крой, который не сковывает и не растягивается после третьей стирки. Палитра, где любой верх подходит к любому низу — без мучений перед зеркалом. Каждая вещь проходит три этапа примерки на реальных людях до того, как попадает в каталог. Без логомании, без кричащих принтов, без вещей-однодневок. Только базовый гардероб, к которому хочется возвращаться.",
-} = Astro.props;
+// Канон heading: string | { text, size }. Роль = заголовок секции (Kelly Slab
+// uppercase). Лестница §9 «Заголовок секции 20»: medium/отсутствие = 20,
+// small 17, large 24.
+const headingRaw =
+	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? legacyTitle;
+const textRaw =
+	(typeof p.text === "string" ? p.text : p.text?.content) ?? legacyBody;
+// Гейт пустого состояния: ни заголовка, ни текста (паттерн PopularProducts
+// collectionRef / Collections hasManualCollections).
+const isEmptyState = !(headingRaw && headingRaw.trim()) && !(textRaw && textRaw.trim());
+
+const heading = headingRaw ?? (isEmptyState ? "Расскажи о своем бренде" : "");
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingCls =
+	headingSize === "small"
+		? "font-logo text-[17px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
+		: headingSize === "large"
+			? "font-logo text-[24px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
+			: "font-logo text-[20px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]";
+
+// Канон text: string | { content, size }. Пустое состояние → контрактный
+// поясняющий текст плейсхолдера (НЕ длинная копия верстальщика).
+const text =
+	textRaw ?? (isEmptyState ? "Расскажи подробнее о своем онлайн-магазине в этом блоке" : "");
+const textSize = p.textSize ?? p.text?.size;
+const textCls =
+	textSize === "small"
+		? "text-[14px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[17px]"
+		: textSize === "large"
+			? "text-[19px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[24px]"
+			: "text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[20px]";
+
+// Канон position/alignment: отсутствие = всё СЛЕВА во всю ширину satin-container
+// (литерал верстальщика). position left/right сужает колонку до текстовой
+// ширины манеры; alignment right выравнивает содержимое вправо.
+const position = p.position === "left" || p.position === "right" ? p.position : "center";
+const posCls =
+	position === "left" ? " max-w-[600px] mr-auto" : position === "right" ? " max-w-[600px] ml-auto" : "";
+const alignment = p.alignment === "left" || p.alignment === "right" ? p.alignment : "center";
+const alignCls = alignment === "right" ? " items-end text-right" : "";
+
+// Канон textStyle (hidden): italic → курсив заголовка и текста.
+const italicCls = p.textStyle === "italic" ? " italic" : "";
+
+// Кнопка: canon-сабпанель button {text, link} приоритетнее legacy hidden cta.
+// В пустом состоянии (плейсхолдер Figma 1:19335) показываем «Кнопку» по
+// контракту. С данными рендер ТОЛЬКО при непустом тексте. Ссылка-фоллбек /catalog.
+const btnTextRaw =
+	(typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined) ??
+	(typeof p.cta?.text === "string" && p.cta.text.trim() ? p.cta.text : undefined);
+const btnText = btnTextRaw ?? (isEmptyState ? "Кнопка" : undefined);
+const btnHref =
+	p.button?.link?.href ??
+	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??
+	(typeof p.cta?.href === "string" && p.cta.href ? p.cta.href : undefined) ??
+	(typeof p.cta?.link === "string" && p.cta.link ? p.cta.link : undefined) ??
+	"/catalog";
+const btnBase =
+	"inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-6 text-[16px] font-normal uppercase leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]";
+const btnCls =
+	p.buttonStyle === "outlined"
+		? `${btnBase} border-[rgb(var(--color-button-2-text,0_0_0))] bg-transparent text-[rgb(var(--color-button-2-text,0_0_0))]`
+		: `${btnBase} border-[rgb(var(--color-button-bg,0_0_0))] bg-[rgb(var(--color-button-bg,0_0_0))] text-[rgb(var(--color-button-text,255_255_255))]`;
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
 ---
 
-<section class="satin-pad w-full bg-white py-12 md:py-16" aria-label={title}>
-	<div class="satin-container flex flex-col gap-4">
-		<h2 class="font-logo text-[20px] font-normal uppercase leading-[1.15] text-[#000000]">{title}</h2>
-		<p class="satin-copy md:text-[20px]">{body}</p>
+<section
+	class="satin-pad w-full bg-[rgb(var(--color-bg,255_255_255))] py-12 md:py-16"
+	aria-label={heading || undefined}
+	data-puck-component-id={id}
+	style={paddingStyle}
+>
+	<div class="satin-container">
+		<div class={`flex w-full flex-col gap-4${posCls}${alignCls}`}>
+			{
+				heading && (
+					<h2
+						class={headingCls + italicCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="100"
+						data-puck-subsection-field="heading"
+					>
+						{heading}
+					</h2>
+				)
+			}
+			<p
+				class={textCls + italicCls}
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="101"
+				data-puck-subsection-field="text"
+				set:html={text}
+			/>
+			{
+				btnText && (
+					<a
+						href={btnHref}
+						class={btnCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="102"
+						data-puck-subsection-field="button"
+					>
+						{btnText}
+					</a>
+				)
+			}
+		</div>
 	</div>
 </section>

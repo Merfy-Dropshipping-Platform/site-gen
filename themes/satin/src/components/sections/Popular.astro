@@ -55,7 +55,6 @@ const textCls =
 // явный cards перекрывает обе (носитель — data-cards на гриде).
 const cardsRaw =
 	typeof p.cards === "number" && p.cards > 0 ? Math.max(1, Math.min(24, Math.round(p.cards))) : undefined;
-const products: CatalogProduct[] = legacyProducts ?? catalogProducts.slice(0, cardsRaw ?? 3);
 
 // Канон columns 1-6: 3 (canon-default blockDefaults satin = sm:grid-cols-3
 // верстальщика) и отсутствие → дефолт-ветка; иное → inline-var на гриде с sm
@@ -190,6 +189,35 @@ const viewAllCls =
 const collectionRef =
 	typeof p.collection === "string" && p.collection.trim() ? p.collection.trim() : undefined;
 
+// КОНТРАКТ ПЛЕЙСХОЛДЕРОВ (Figma 1:19335 — пустое состояние секции, ЗАМЕНЯЕТ
+// мок-демо верстальщика). Эталон: theme-base PopularProducts.astro DEMO_PRODUCTS
+// (4 цветные курточки blue→yellow→red→green, /placeholders/sweater-<color>.png,
+// object-contain, «Товар» / «2 500 ₽»). Гейт на наличии данных:
+//   • есть legacyProducts (страница передала набор) → реальный рендер верстальщика;
+//   • выбрана коллекция (collectionRef) → SSR-плейсхолдер + гидрация подменит
+//     грид реальными товарами коллекции (data-collection ниже);
+//   • НЕТ ни того, ни другого → пустое состояние = ПЛЕЙСХОЛДЕР-курточки
+//     (НЕ catalogProducts/Товар_N.png верстальщика).
+// Ассеты лежат в packages/theme-base/public/placeholders/sweater-<color>.png и
+// попадают на сайт как /placeholders/sweater-<color>.png (build copyPublic) —
+// уже используются в satin (satinProductDetail.astro, storefront-hydrate.ts).
+const PLACEHOLDER_SWEATERS = [
+	"/placeholders/sweater-blue.png",
+	"/placeholders/sweater-yellow.png",
+	"/placeholders/sweater-red.png",
+	"/placeholders/sweater-green.png",
+];
+// Курированная модель (Shopify, паритет theme-base): пустое/некурированное
+// состояние = плейсхолдер, НЕ авто-подхват всего каталога. Когда коллекция
+// выбрана — рисуем плейсхолдер N-карточек как graceful default, а гидрация
+// (loadRealProducts → resolveCollectionProducts) перерисует грид реальными.
+const isPlaceholder = !legacyProducts;
+// N карточек: явный cards (1-24) перекрывает дефолт. Дефолт плейсхолдера = 4
+// (контракт + прежняя гидрация верстальщика hydrateGrid(...,4)); для реального
+// legacy-рендера сохраняем родной SSG-литерал demo slice(0,3).
+const placeholderCount = cardsRaw ?? 4;
+const products: CatalogProduct[] = legacyProducts ?? catalogProducts.slice(0, cardsRaw ?? 3);
+
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
@@ -226,9 +254,36 @@ const paddingStyle = p.padding
 			data-qa-text={quickAddMode ? quickAddText : undefined}
 			data-btn-style={btnStyle}
 		>
-			{products.map((product) => (
-				<li data-product-id={product.id} data-image-2={nextPhoto ? product.gallery?.[1] : undefined}><SatinProductCard product={product} /></li>
-			))}
+			{isPlaceholder
+				? Array.from({ length: placeholderCount }).map((_, i) => (
+						/* Пустое состояние = плейсхолдер-курточка (НЕ мок-товар верстальщика).
+						   Медиа = aspect карточки satin (430/564) на surface-фоне, куртка
+						   object-contain с паддингом (контракт: курточка не растягивается на
+						   cover). Подпись «Товар» / цена «2 500 ₽». Без data-product-id и
+						   data-image-2: гидрация (data-collection) и hover-скрипт = no-op,
+						   add-to-cart не рендерится (демо без productId). */
+						<li>
+							<article class="group flex h-full flex-col gap-3" data-nt="satin-product-card" aria-label="Товар">
+								<div class="relative aspect-[430/564] w-full shrink-0 overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]">
+									<img
+										src={PLACEHOLDER_SWEATERS[i % PLACEHOLDER_SWEATERS.length]}
+										alt="Товар"
+										loading="lazy"
+										class="absolute inset-0 h-full w-full object-contain p-[12%]"
+									/>
+								</div>
+								<div class="flex flex-1 flex-col gap-1.5 md:gap-2">
+									<span class="font-manrope text-[16px] font-normal uppercase leading-tight text-[rgb(var(--color-text,0_0_0))]">Товар</span>
+									<div class="flex flex-wrap items-baseline gap-1.5 md:gap-2">
+										<span class="font-manrope text-[16px] font-normal leading-tight text-[rgb(var(--color-text,0_0_0))]">2 500 ₽</span>
+									</div>
+								</div>
+							</article>
+						</li>
+					))
+				: products.map((product) => (
+						<li data-product-id={product.id} data-image-2={nextPhoto ? product.gallery?.[1] : undefined}><SatinProductCard product={product} /></li>
+					))}
 		</ul>
 		{viewAllShow && (
 			<a

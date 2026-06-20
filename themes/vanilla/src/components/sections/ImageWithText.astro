@@ -3,16 +3,37 @@
 // sections/Gallery.astro:82-123 («Ваш дом — наша забота», см. themes/vanilla/
 // MANNER.md §10). Тело верстальщика перенесено КОПИЕЙ — Gallery.astro НЕ
 // тронут (его используют страницы). Схема полей = packages/theme-base/blocks/
-// ImageWithText/ImageWithText.puckConfig.ts; дефолт каждого пропса = литерал
-// верстальщика, цвета → токены с пиксель-фоллбеком родных (МАННЕРА §7).
+// ImageWithText/ImageWithText.puckConfig.ts.
+//
+// ДВА РЕЖИМА (Figma 1:19335):
+//   • ФОТО ВЫБРАНО (image.url задан) = реальные данные → дефолты = литералы
+//     care-бэнда верстальщика VERBATIM, цвета → токены с пиксель-фоллбеком
+//     родных (МАННЕРА §7). Этот путь НЕ ломаем.
+//   • ФОТО НЕ ВЫБРАНО = пустое состояние → ПЛЕЙСХОЛДЕР контракта (пустой
+//     surface-rect + лейблы «Расскажите о товаре» / «Опишите преимущества…» /
+//     «Подробнее»), НЕ мок-демо верстальщика. Эталон гейта: theme-base
+//     PopularProducts (collectionRef) / Collections (hasManualCollections).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Канон heading: string | { text, alignment, size }. Дефолт = careTitle
-// VERBATIM. Роль = заголовок секции (Bitter italic 20 white на полотне №2,
-// Gal:92). Лестница §9: medium/отсутствие = литерал 20, small 17, large 24.
+// ──────────────────────────────────────────────────────────────────────────
+// Гейт пустого состояния (Figma 1:19335 — empty-state ЗАМЕНЯЕТ мок верстальщика).
+// Данные этой секции = ИЗОБРАЖЕНИЕ. Пока мерчант не выбрал фото — секция в
+// плейсхолдер-режиме: пустой surface-rect + дефолтные лейблы контракта
+// («Расскажите о товаре» / «Опишите преимущества…» / «Подробнее»), НЕ care-бэнд
+// верстальщика. Как только фото выбрано — рендер реальных данных без изменений
+// (heading/text/button мерчанта остаются), эталон гейта см. PopularProducts
+// (collectionRef) / Collections (hasManualCollections).
+const hasImage = typeof p.image?.url === "string" && p.image.url.trim().length > 0;
+
+// Канон heading: string | { text, alignment, size }. Дефолт зависит от режима:
+// есть фото → литерал care-бэнда VERBATIM (реальный контент); нет фото →
+// плейсхолдер-лейбл контракта (заголовок секции). Роль = заголовок секции
+// (Bitter italic 20 white на полотне №2, Gal:92). Лестница §9: medium/отсутствие
+// = литерал 20, small 17, large 24.
+const headingDefault = hasImage ? "Ваш дом — наша забота" : "Расскажите о товаре";
 const heading =
-	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Ваш дом — наша забота");
+	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? headingDefault);
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingCls =
 	headingSize === "small"
@@ -24,16 +45,17 @@ const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
 const headingAlignCls =
 	headingAlignment === "center" ? " text-center" : headingAlignment === "right" ? " text-right" : "";
 
-// Канон text: string | { content, size }. Дефолт = careTextLead + careTextTail
-// двумя <p> VERBATIM; шрифтовые классы — на обёртке (абзацы наследуют), зазор
-// между абзацами даёт gap-4 обёртки, как у верстальщика (Gal:95). Роль =
-// текст полотна 14 (Gal:96; лестница §9): large/отсутствие = литерал 14,
-// medium 12, small 10.
+// Канон text: string | { content, size }. Дефолт зависит от режима: есть фото →
+// careTextLead + careTextTail двумя <p> VERBATIM (реальный контент); нет фото →
+// поясняющий текст плейсхолдера контракта. Шрифтовые классы — на обёртке (абзацы
+// наследуют), зазор между абзацами даёт gap-4 обёртки, как у верстальщика
+// (Gal:95). Роль = текст полотна 14 (Gal:96; лестница §9): large/отсутствие =
+// литерал 14, medium 12, small 10.
+const textDefault = hasImage
+	? "<p>Мы уверены: дом должен быть красивым не только на фотографиях, но и на ощупь. Бренд Vanila создан для тех, кто ценит эстетику и качество в каждом квадратном метре своего пространства. Мы собираем для вас самые вдохновляющие предметы текстиля и декора, чтобы ваш интерьер обрел индивидуальность.</p><p>В ассортименте Vanila вы не найдете случайных вещей. Только то, что действительно достойно стать частью вашего дома</p>"
+	: "<p>Опишите преимущества продукта, его ценность для клиента.</p>";
 const text =
-	typeof p.text === "string"
-		? p.text
-		: (p.text?.content ??
-			"<p>Мы уверены: дом должен быть красивым не только на фотографиях, но и на ощупь. Бренд Vanila создан для тех, кто ценит эстетику и качество в каждом квадратном метре своего пространства. Мы собираем для вас самые вдохновляющие предметы текстиля и декора, чтобы ваш интерьер обрел индивидуальность.</p><p>В ассортименте Vanila вы не найдете случайных вещей. Только то, что действительно достойно стать частью вашего дома</p>");
+	typeof p.text === "string" ? p.text : (p.text?.content ?? textDefault);
 const textSize = p.textSize ?? p.text?.size;
 const textCls =
 	textSize === "small"
@@ -46,14 +68,12 @@ const textCls =
 // снимается только явным 'normal'.
 const italicCls = p.textStyle === "normal" ? "" : " italic";
 
-// Канон image {url, alt}: canon-default url пуст → фоллбек = фото care-бэнда
-// (ассет верстальщика; на диске .webp после images:optimize — прямой путь,
-// т.к. под Container API fs-проверки VanillaPicture идут от чужого cwd).
-const imageUrl =
-	typeof p.image?.url === "string" && p.image.url.trim()
-		? p.image.url
-		: "/images/vanilla-chair.webp";
-const imageAlt = typeof p.image?.alt === "string" && p.image.alt.trim() ? p.image.alt : "Стул Vanilla";
+// Канон image {url, alt}: фото мерчанта (реальные данные). Пусто → плейсхолдер-
+// режим: НЕ подставляем дизайнерский ассет верстальщика (vanilla-chair) —
+// рендерим пустой surface-rect (см. разметку ниже, эталон Collections empty-tile).
+const imageUrl = hasImage ? p.image.url : "";
+const imageAlt =
+	typeof p.image?.alt === "string" && p.image.alt.trim() ? p.image.alt : "Стул Vanilla";
 
 // Канон imagePosition: 'right' (canon-default из theme.json blockDefaults) и
 // отсутствие = литерал care-бэнда — текст слева, ФОТО СПРАВА; 'left' зеркалит
@@ -82,13 +102,15 @@ const containerSchemeCls =
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
 
-// Кнопка: canon button {text, href|link}. Дефолт (проп не задан) = CTA
-// care-бэнда VERBATIM: «Смотреть больше» → /about. Пустой текст заданного
-// пропа СКРЫВАЕТ кнопку.
+// Кнопка: canon button {text, href|link}. Дефолт (проп не задан) зависит от
+// режима: есть фото → CTA care-бэнда VERBATIM «Смотреть больше» (реальный
+// контент); нет фото → плейсхолдер-лейбл контракта «Подробнее». Пустой текст
+// заданного пропа СКРЫВАЕТ кнопку.
 const btnProvided = p.button !== undefined;
 const btnTextProp =
 	typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined;
-const btnText = btnTextProp ?? (btnProvided ? undefined : "Смотреть больше");
+const btnDefault = hasImage ? "Смотреть больше" : "Подробнее";
+const btnText = btnTextProp ?? (btnProvided ? undefined : btnDefault);
 const btnHref =
 	(typeof p.button?.href === "string" && p.button.href ? p.button.href : undefined) ??
 	p.button?.link?.href ??
@@ -168,15 +190,19 @@ const titleId = id && heading ? `${id}-title` : undefined;
 			data-puck-subsection-index="103"
 			data-puck-subsection-field="image"
 		>
-			<img
-				src={imageUrl}
-				alt={imageAlt}
-				width="652"
-				height="366"
-				loading="lazy"
-				decoding="async"
-				class="absolute inset-0 size-full object-cover"
-			/>
+			{
+				hasImage && (
+					<img
+						src={imageUrl}
+						alt={imageAlt}
+						width="652"
+						height="366"
+						loading="lazy"
+						decoding="async"
+						class="absolute inset-0 size-full object-cover"
+					/>
+				)
+			}
 		</div>
 	</div>
 </section>

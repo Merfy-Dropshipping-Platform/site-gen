@@ -1,17 +1,23 @@
 ---
 import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
-import FluxProductCard from "../products/FluxProductCard.astro";
-import { catalogProducts } from "../../data/products";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт bloom Popular / rose T13): полная конструкторная
 // схема theme-base PopularProducts.puckConfig поверх разметки верстальщика.
-// Тело + demo-данные verbatim (страницы зовут <Popular /> без пропсов —
-// дефолты дают прежний рендер). Канон-дефолты конструктора (headingSize/
-// textSize small = литерал DS, columns 4 = литерал lg:grid-cols-4, imageView
-// 'square' → литерал aspect-[318/444], quickAddMode none) → пиксель
-// верстальщика; дефолтные ветки тернарников = прежние строки байт-в-байт
-// (цвета → токены с пиксель-фоллбеком родных литералов, MANNER.md §7).
-// Скролл-анимаций нет — манера flux статична (MANNER.md §6).
+// Канон-дефолты конструктора (headingSize/textSize small = литерал DS, columns
+// 4 = литерал lg:grid-cols-4, imageView 'square' → литерал aspect-[318/444],
+// quickAddMode none) → пиксель верстальщика; дефолтные ветки тернарников =
+// прежние строки байт-в-байт (цвета → токены с пиксель-фоллбеком родных
+// литералов, MANNER.md §7). Скролл-анимаций нет — манера flux статична
+// (MANNER.md §6).
+//
+// ПЛЕЙСХОЛДЕР пустого состояния (Figma 1:19335, контракт theme-base
+// PopularProducts DEMO_PRODUCTS): без выбранной коллекции SSR рендерит НЕ
+// мок-товары верстальщика (catalogProducts «M Phone 17» / Товар_N.png), а
+// нейтральные карточки-плейсхолдеры — цветные куртки циклом blue→yellow→red→
+// green (/placeholders/sweater-<color>.png, object-contain), подпись «Товар»,
+// цена «2 500 ₽». Когда коллекция ВЫБРАНА (data-collection) — гидрация ниже
+// подменяет грид реальными товарами магазина (поведение НЕ тронуто); до её
+// отработки/при отсутствии данных тот же плейсхолдер служит graceful-дефолтом.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 const sectionTitle =
@@ -21,11 +27,24 @@ const sectionSubtitle =
 	(typeof p.subtitle === "string" ? p.subtitle : p.subtitle?.content) ??
 	"Топовые модели Flux, которые выбирают чаще всего.";
 
-// Канон cards 2-24: лимит среза demo-витрины и гидрации (data-cards на гриде
-// при ≠4). 4 = срез верстальщика (и отсутствие пропа) → дефолт-ветка.
+// Канон cards 2-24: число карточек-плейсхолдеров (дефолт 4) и лимит среза
+// гидрации (data-cards на гриде при ≠4). 4 = дефолт-ветка (и отсутствие пропа).
 const cardsN =
 	typeof p.cards === "number" && p.cards > 0 ? Math.max(1, Math.min(24, Math.round(p.cards))) : 4;
-const products = catalogProducts.slice(0, cardsN);
+
+// Плейсхолдер-карточки (контракт Figma 1:19335 = theme-base DEMO_PRODUCTS):
+// цветные куртки циклом blue→yellow→red→green из /placeholders/sweater-<color>.png
+// (build-пайплайн копирует ассеты из packages/theme-base/public по скану .astro,
+// assemble-from-packages.ts:376). object-contain + padding — куртка вписывается в
+// плитку без обрезки. Подпись «Товар», цена «2 500 ₽» — нейтральные лейблы пустого
+// состояния (НЕ названия/цены мок-товаров верстальщика).
+const PLACEHOLDER_COLORS = ["blue", "yellow", "red", "green"] as const;
+const placeholderCards = Array.from({ length: cardsN }, (_, i) => ({
+	id: `placeholder-${i}`,
+	name: "Товар",
+	price: "2 500 ₽",
+	image: `/placeholders/sweater-${PLACEHOLDER_COLORS[i % PLACEHOLDER_COLORS.length]}.png`,
+}));
 
 // Шапка — DS-компонент NtSectionHeading: класс внутрь не пробрасывается,
 // размеры — через перекрытия на обёртке (лестница §9). Дефолт и 'small' =
@@ -213,22 +232,34 @@ const paddingStyle = p.padding
 			data-qa-class={quickAddMode ? quickAddCls : undefined}
 			data-btn-style={btnStyle}
 		>
-			{products.map((product) => (
-				<li data-product-id={product.id} data-image-2={nextPhoto ? product.gallery?.[1] : undefined}>
-					<FluxProductCard product={product} />{quickAddMode && (
-						<button
-							type="button"
-							data-add-to-cart
-							data-product-id={product.id}
-							data-name={product.name}
-							data-price={product.price}
-							data-old-price={product.oldPrice}
-							data-image={product.image}
-							class={quickAddCls}
+			{placeholderCards.map((product) => (
+				<li data-product-id={product.id}>
+					<article
+						class="group flex flex-col gap-3 md:gap-4"
+						data-nt="flux-product-card"
+						aria-label={product.name}
+					>
+						<a
+							href="/catalog"
+							class="relative block aspect-[318/444] w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] rounded-[var(--radius-media,8px)]"
+							aria-label={product.name}
 						>
-							{quickAddText}
-						</button>
-					)}
+							<img
+								src={product.image}
+								alt={product.name}
+								loading="lazy"
+								class="absolute inset-0 h-full w-full object-contain p-[15%]"
+							/>
+						</a>
+						<div class="flex flex-col gap-1">
+							<span class="font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">
+								{product.name}
+							</span>
+							<span class="font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">
+								{product.price}
+							</span>
+						</div>
+					</article>
 				</li>
 			))}
 		</ul>{viewAllShow && (

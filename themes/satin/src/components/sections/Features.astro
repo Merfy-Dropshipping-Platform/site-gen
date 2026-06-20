@@ -11,38 +11,70 @@ interface Props {
 	items?: Feature[];
 }
 
-const defaultItems: Feature[] = [
-	{
-		title: "Исключительно качественные материалы",
-		body: "Мы выбираем только натуральные ткани премиум-класса: мягкий хлопок, дышащий лён и струящуюся вискозу. Вещи не теряют форму и не вызывают раздражения даже при круглосуточной носке. Ваша кожа скажет спасибо — каждый день вы будете чувствовать себя в уюте и невесомости.",
-		icon: "/images/4x/feature-materials.png",
-	},
-	{
-		title: "Быстрая доставка до любой точки России",
-		body: "Отправляем заказы по всей России ежедневно, включая отдалённые населённые пункты. Собственная упаковка гарантирует сохранность товара даже при долгой транспортировке. Средний срок доставки по стране — всего 4–5 дней.",
-		icon: "/images/4x/feature-delivery.png",
-	},
-];
+// Legacy-блок верстальщика «Преимущества» (НЕ Puck-секция конструктора — нет в
+// satinRegistry; его канон-наследник = MultiColumns.astro). Раньше при вызове
+// без пропсов рисовал мок-демо верстальщика (2 карточки материалы/доставка с
+// иконками /images/4x/feature-*.png). По контракту пустого состояния (Figma
+// 1:19335, эталон theme-base PopularProducts/Collections DEMO-гейт + соседняя
+// satin MultiColumns) мок ЗАМЕНЁН на ПЛЕЙСХОЛДЕР: 3 нейтральные колонки
+// «Колонна» (пустой rect #FBFBFB + поясняющий текст + общая кнопка). Когда
+// страница/мерчант реально передаёт items[] — рендер его данных без изменений
+// (иконка 56×56 + title + body).
+const { items } = Astro.props as Props;
+const hasItems = Array.isArray(items) && items.length > 0;
 
-const { items = defaultItems } = Astro.props;
+// Пустое состояние (Figma 1:19335): пустой rect (#FBFBFB / rgb(var(--color-surface)))
+// + «Колонна» + поясняющий текст. Текст совпадает с контрактом «Мультиколонны»
+// (паритет satin MultiColumns.astro).
+const PLACEHOLDER_COLUMN = {
+	heading: "Колонна",
+	text: "Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.",
+};
+const PLACEHOLDER_COUNT = 3;
+const PLACEHOLDER_BUTTON = { text: "Перейти", href: "/catalog" };
 ---
 
-<section class="satin-pad w-full bg-white py-10 md:py-20" aria-label="Преимущества">
-	<div class="satin-container grid grid-cols-1 gap-4 md:grid-cols-2">
-		{items.map((feature) => (
-			<div class="flex flex-col items-center gap-6 bg-[#F5F5F5] p-6 text-center">
-				<img
-					src={withBase(feature.icon)}
-					alt=""
-					width="56"
-					height="56"
-					loading="lazy"
-					class="h-14 w-14 shrink-0 object-contain"
-					aria-hidden="true"
-				/>
-				<h3 class="font-logo text-[18px] font-normal uppercase leading-[1.15] text-[#000000] md:text-[20px]">{feature.title}</h3>
-				<p class="satin-copy max-w-[560px]">{feature.body}</p>
-			</div>
-		))}
-	</div>
+<section class="satin-pad w-full bg-[rgb(var(--color-bg,255_255_255))] py-10 md:py-20" aria-label="Преимущества">
+	{hasItems ? (
+		<div class="satin-container grid grid-cols-1 gap-4 md:grid-cols-2">
+			{items!.map((feature) => (
+				<div class="flex flex-col items-center gap-6 bg-[rgb(var(--color-surface,245_245_245))] p-6 text-center">
+					<img
+						src={feature.icon.startsWith("/") ? withBase(feature.icon) : feature.icon}
+						alt=""
+						width="56"
+						height="56"
+						loading="lazy"
+						class="h-14 w-14 shrink-0 object-contain"
+						aria-hidden="true"
+					/>
+					<h3 class="font-logo text-[18px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))] md:text-[20px]">{feature.title}</h3>
+					<p class="satin-copy max-w-[560px]">{feature.body}</p>
+				</div>
+			))}
+		</div>
+	) : (
+		<div class="satin-container flex flex-col gap-8">
+			<ul class="grid grid-cols-1 gap-4 md:grid-cols-3" role="list">
+				{Array.from({ length: PLACEHOLDER_COUNT }).map(() => (
+					<li class="flex flex-col items-center gap-6 text-center">
+						{/* Пустой rect-плейсхолдер: подложка #FBFBFB / rgb(var(--color-surface))
+						    вместо иконки-картинки колонки (паритет satin MultiColumns). */}
+						<div
+							class="aspect-[4/3] w-full bg-[rgb(var(--color-surface,251_251_251))]"
+							aria-hidden="true"
+						/>
+						<h3 class="font-logo text-[18px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))] md:text-[20px]">{PLACEHOLDER_COLUMN.heading}</h3>
+						<p class="max-w-[560px] text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))]">{PLACEHOLDER_COLUMN.text}</p>
+					</li>
+				))}
+			</ul>
+			<a
+				href={PLACEHOLDER_BUTTON.href}
+				class="inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-2-text,0_0_0))] bg-transparent px-6 text-[16px] font-normal uppercase leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity duration-[180ms] hover:opacity-[0.78]"
+			>
+				{PLACEHOLDER_BUTTON.text}
+			</a>
+		</div>
+	)}
 </section>

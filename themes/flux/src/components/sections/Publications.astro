@@ -4,11 +4,18 @@ import FluxPicture from "../img/FluxPicture.astro";
 // Фаза B (flux, группа misc): новая канон-секция Publications в манере flux
 // (см. themes/flux/MANNER.md §4/§9/§11; rose-эталона НЕТ — эталон процесса
 // bloom Publications). Схема полей = packages/theme-base/blocks/Publications/
-// Publications.puckConfig.ts. Demo-рендер — карточки-болванки в тоне
-// электроники; платформенный резолв публикаций идёт по data-атрибуту
-// publicationType на гриде, demo-карточки — его фоллбек. Карточки «голые»
-// (без подложек, §4): медиа rounded-8 на surface c hover-zoom, подписи
-// Manrope/Roboto Flex. Скролл-анимаций в манере flux нет (§6) — без data-animate.
+// Publications.puckConfig.ts.
+// ПУСТОЕ СОСТОЯНИЕ (нет реальных публикаций) = ПЛЕЙСХОЛДЕР по контракту Figma
+// 1:19335 (3 колонки: пустой image-rect surface + «Колонна» + нейтральный
+// текст), НЕ мок-демо верстальщика (обзоры гаджетов + /images/4x/Товар_N.png).
+// Когда у магазина есть реальные публикации (SSR fetch /api/sites/<id>/
+// publications → fallback publications.json) — рендерим их без изменений
+// (Shopify-модель, как theme-base PopularProducts/Collections/MultiColumns:
+// пустое = заглушка, данные = реальный контент). Платформенный резолв по
+// publicationType остаётся data-атрибутом на гриде.
+// Карточки «голые» (без подложек, §4): медиа rounded-8 на surface c hover-zoom,
+// подписи Manrope/Roboto Flex. Скролл-анимаций в манере flux нет (§6) — без
+// data-animate.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -56,33 +63,81 @@ const cards = Math.max(1, Math.min(12, Math.round(cardsRaw) || 3));
 const showDate = String(p.showDateTime ?? p.dateTime?.enabled ?? "false") === "true";
 
 // Канон publicationType (pagePicker) — data-атрибут на гриде для платформенного
-// резолва публикаций (demo-карточки ниже — его фоллбек).
+// резолва публикаций.
 const publicationType =
 	typeof p.publicationType === "string" && p.publicationType ? p.publicationType : undefined;
 
-// Болванки в тоне §11 (обзоры гаджетов, новости бренда); обложки — родные
-// ассеты /images/4x/* (PLACEHOLDER_IMAGE гидрации в public отсутствует, §10),
-// цикл по позиции при cardsCount > 6.
-const DEMO_CARDS = [
-	{ date: "12 мая 2026", title: "Обзор M Phone 17: неделя с флагманом" },
-	{ date: "28 апреля 2026", title: "Как выбрать наушники с шумоподавлением" },
-	{ date: "10 апреля 2026", title: "M Laptop Air: рабочая станция в рюкзаке" },
-	{ date: "22 марта 2026", title: "Аксессуары, которые экономят время" },
-	{ date: "5 марта 2026", title: "Технологии без паузы: новинки сезона" },
-	{ date: "14 февраля 2026", title: "Гид по быстрой зарядке: ватты без мифов" },
-];
-const DEMO_IMAGES = [
-	"/images/4x/Товар_1.png",
-	"/images/4x/Товар_2.png",
-	"/images/4x/Товар_3.png",
-	"/images/4x/Товар_4.png",
-	"/images/4x/Товар_5.png",
-	"/images/4x/Коллекция_1.png",
-];
-const items = Array.from({ length: cards }, (_, i) => ({
-	...DEMO_CARDS[i % DEMO_CARDS.length],
-	image: DEMO_IMAGES[i % DEMO_IMAGES.length],
-}));
+// Реальные публикации: SSR fetch storefront-data (gateway → sites-service) c
+// fallback на build-time publications.json (паттерн canonical theme-base
+// Publications.astro и bloom-порта). siteId инжектит build pipeline / preview
+// controller.
+type RawPublication = {
+	id: string;
+	title?: string;
+	slug?: string;
+	excerpt?: string;
+	coverImageUrl?: string | null;
+	publishedAt?: string | null;
+};
+const siteIdFromRoot = typeof p.siteId === "string" ? p.siteId : "";
+let realPublications: RawPublication[] = [];
+if (siteIdFromRoot) {
+	try {
+		const internalBase =
+			(import.meta as unknown as { env?: { SITES_INTERNAL_BASE?: string } }).env?.SITES_INTERNAL_BASE ??
+			"http://localhost:3114";
+		const res = await fetch(`${internalBase}/api/sites/${siteIdFromRoot}/publications`).catch(() => null);
+		if (res && res.ok) {
+			const data = (await res.json()) as { publications?: RawPublication[] };
+			realPublications = data.publications ?? [];
+		}
+	} catch {
+		/* swallow */
+	}
+}
+try {
+	if (realPublications.length === 0) {
+		const pubData = await import("../data/publications.json");
+		realPublications = ((pubData as { default?: RawPublication[] }).default ??
+			(pubData as unknown as RawPublication[])) as RawPublication[];
+	}
+} catch {
+	/* swallow — publications.json отсутствует */
+}
+
+function formatPubDate(iso: string | null | undefined): string {
+	if (!iso) return "";
+	try {
+		return new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" }).format(
+			new Date(iso),
+		);
+	} catch {
+		return "";
+	}
+}
+
+// Гейт пустого состояния (Shopify-модель): есть реальные публикации → рендерим
+// их; нет — ПЛЕЙСХОЛДЕР по контракту Figma 1:19335 (3 колонки: пустой image-rect
+// surface + «Колонна» + нейтральный текст), НЕ мок-демо верстальщика.
+const hasRealPublications = realPublications.length > 0;
+// Текст-болванка колонок в нейтральном тоне публикаций (как theme-base
+// MultiColumns: «Сочетай текст…»); не привязан к товарам/гаджетам.
+const PLACEHOLDER_TEXT = "Поделись новостями бренда, гайдами и историями в этом блоке.";
+type PubItem = { title: string; date: string; image: string; slug?: string; isPlaceholder: boolean };
+const items: PubItem[] = hasRealPublications
+	? realPublications.slice(0, cards).map((pub) => ({
+			title: pub.title ?? "",
+			date: formatPubDate(pub.publishedAt),
+			image: pub.coverImageUrl ?? "",
+			slug: pub.slug,
+			isPlaceholder: false,
+		}))
+	: Array.from({ length: cards }, () => ({
+			title: "Колонна",
+			date: "",
+			image: "",
+			isPlaceholder: true,
+		}));
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
@@ -115,30 +170,44 @@ const titleId = id && heading ? `${id}-title` : undefined;
 
 		<div class={gridCls} style={gridStyle} data-publication-type={publicationType}>
 			{
-				items.map((item, i) => (
-					<article class="group flex flex-col gap-3 md:gap-4" data-publication-index={i}>
-						<div class="aspect-[4/3] w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]">
-							<FluxPicture
-								src={item.image}
-								alt={item.title}
-								width="800"
-								height="600"
-								loading="lazy"
-								class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-							/>
-						</div>
-						<div class="flex flex-col gap-1">
-							{showDate && (
-								<span class="font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-[14px]">
-									{item.date}
+				items.map((item, i) => {
+					const href = item.slug ? `/publication/${item.slug}` : undefined;
+					const Wrapper = href ? "a" : "article";
+					return (
+						<Wrapper class="group flex flex-col gap-3 md:gap-4" href={href} data-publication-index={i}>
+							{/* Медиа: реальная обложка → FluxPicture; пустое состояние
+							   (плейсхолдер или публикация без обложки) → пустой
+							   image-rect surface (контракт Figma 1:19335). */}
+							<div class="aspect-[4/3] w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]">
+								{item.image && (
+									<FluxPicture
+										src={item.image}
+										alt={item.title}
+										width="800"
+										height="600"
+										loading="lazy"
+										class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+									/>
+								)}
+							</div>
+							<div class="flex flex-col gap-1">
+								{showDate && !item.isPlaceholder && item.date && (
+									<span class="font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-[14px]">
+										{item.date}
+									</span>
+								)}
+								<span class="font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">
+									{item.title}
 								</span>
-							)}
-							<span class="font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">
-								{item.title}
-							</span>
-						</div>
-					</article>
-				))
+								{item.isPlaceholder && (
+									<p class="font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-[14px]">
+										{PLACEHOLDER_TEXT}
+									</p>
+								)}
+							</div>
+						</Wrapper>
+					);
+				})
 			}
 		</div>
 	</div>

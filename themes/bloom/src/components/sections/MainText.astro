@@ -3,16 +3,38 @@
 // themes/bloom/MANNER.md §10: Philosophy = текст-манифест + CTA без картинки,
 // аналог MainText). Тело верстальщика перенесено КОПИЕЙ — Philosophy.astro не
 // тронут (его используют страницы). Схема полей = packages/theme-base/blocks/
-// MainText/MainText.puckConfig.ts; дефолт каждого пропса = литерал верстальщика
-// (дефолт-ветка тернарников = прежние строки байт-в-байт).
+// MainText/MainText.puckConfig.ts.
+//
+// Пустое состояние (Figma 1:19335): когда мерчант НЕ задал контент — секция
+// рендерит ПЛЕЙСХОЛДЕР контракта («Расскажи о своем бренде» / «Расскажи
+// подробнее…» / Кнопка), а НЕ мок-манифест верстальщика Philosophy. Образец —
+// packages/theme-base/blocks/MainText/MainText.astro (гейт на наличии пропа) и
+// themes/bloom ImageWithText.astro (тот же Figma-контракт). Заданные пропы =
+// реальные данные мерчанта рендерятся без изменений.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Канон heading: string | { text, size }. У верстальщика заголовка НЕТ →
-// рендер ТОЛЬКО при непустом пропе. Роль = заголовок секции (Urbanist uppercase,
-// МАННЕРА §1), на розовом полотне — белый. Лестница §9: medium/отсутствие =
-// литерал роли 18/md:20, small 15/17, large 22/24.
-const heading = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
+// Пустое состояние (Figma 1:19335): секция БЕЗ выбранного контента мерчанта.
+// Гейт = ни одно из contentful-полей (heading/text/button|cta) не задано. В
+// этом случае рендерим полный плейсхолдер контракта (заголовок + текст + кнопка),
+// НЕ мок-манифест верстальщика. Любой заданный проп = реальные данные → рендер
+// как есть (заголовок только при непустом, кнопка только при непустой).
+const headingProvided =
+	(typeof p.heading === "string" && p.heading.trim()) ||
+	(typeof p.heading?.text === "string" && p.heading.text.trim());
+const textProvided =
+	(typeof p.text === "string" && p.text.trim()) ||
+	(typeof p.text?.content === "string" && p.text.content.trim());
+const buttonProvided = p.button !== undefined || p.cta !== undefined;
+const isEmptyState = !headingProvided && !textProvided && !buttonProvided;
+
+// Канон heading: string | { text, size }. Роль = заголовок секции (Urbanist
+// uppercase, МАННЕРА §1), на розовом полотне — белый. Лестница §9: medium/
+// отсутствие = литерал роли 18/md:20, small 15/17, large 22/24. Пустое
+// состояние → плейсхолдер-заголовок контракта; иначе рендер ТОЛЬКО при заданном.
+const heading = headingProvided
+	? (typeof p.heading === "string" ? p.heading : p.heading.text)
+	: (isEmptyState ? "Расскажи о своем бренде" : "");
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingCls =
 	headingSize === "small"
@@ -21,12 +43,12 @@ const headingCls =
 			? "font-urbanist text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,255_255_255))] md:text-[24px]"
 			: "font-urbanist text-[18px] font-normal uppercase leading-none text-[rgb(var(--color-heading,255_255_255))] md:text-[20px]";
 
-// Канон text: string | { content, size }. Дефолт = манифест Philosophy VERBATIM.
+// Канон text: string | { content, size }. Пустое состояние (Figma 1:19335) →
+// плейсхолдер-подсказка контракта, НЕ манифест Philosophy верстальщика.
 const text =
 	typeof p.text === "string"
 		? p.text
-		: (p.text?.content ??
-			"Уход за кожей и самочувствием для динамичной жизни. Мы сочетаем активные ингредиенты из моря и гор с научными знаниями о коже и опьяняющими ароматами, создавая чувственный опыт, который успокаивает и восстанавливает кожу.");
+		: (p.text?.content ?? "Расскажи подробнее о своем онлайн-магазине в этом блоке");
 
 // Канон textSize (top-level hidden приоритетнее text.size сабпанели). Лестница
 // §9 «Манифест 24»: large/отсутствие = литерал 24px, medium 20, small 17.
@@ -54,19 +76,21 @@ const textAlignCls =
 const italicCls = p.textStyle === "italic" ? " italic" : "";
 
 // Кнопка: canon-сабпанель button {text, link} приоритетнее legacy hidden cta.
-// Дефолт (пропы не заданы) = CTA Philosophy VERBATIM: «Подробнее» → /about.
-// Пустой текст заданного пропа СКРЫВАЕТ кнопку.
-const btnProvided = p.button !== undefined || p.cta !== undefined;
+// Пустое состояние (Figma 1:19335, секция вообще без контента) → плейсхолдер-
+// «Кнопка» контракта (не мок-CTA «Подробнее»→/about верстальщика). Когда мерчант
+// уже заполнил секцию, но кнопку не задал — кнопка СКРЫТА (плейсхолдер только в
+// полностью пустом состоянии). Заданный текст рендерится как есть; пустой —
+// СКРЫВАЕТ кнопку.
 const btnTextProp =
 	(typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined) ??
 	(typeof p.cta?.text === "string" && p.cta.text.trim() ? p.cta.text : undefined);
-const btnText = btnTextProp ?? (btnProvided ? undefined : "Подробнее");
+const btnText = btnTextProp ?? (isEmptyState ? "Кнопка" : undefined);
 const btnHref =
 	p.button?.link?.href ??
 	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??
 	(typeof p.cta?.href === "string" && p.cta.href ? p.cta.href : undefined) ??
 	(typeof p.cta?.link === "string" && p.cta.link ? p.cta.link : undefined) ??
-	"/about";
+	"/";
 
 // Канон buttonStyle: 'solid' (canon-default из theme.json blockDefaults) и
 // отсутствие = белый pill верстальщика дословно (МАННЕРА §3: CTA на розовом

@@ -2,6 +2,16 @@
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
 import SatinPicture from "../img/SatinPicture.astro";
 
+// Legacy-секция верстальщика «Журнал» (index.astro:32 использует <Journal/>).
+// ПУСТОЕ СОСТОЯНИЕ (нет реальных публикаций) = ПЛЕЙСХОЛДЕР по контракту Figma
+// 1:19335 («Публикации»: 3 колонки — пустой image-rect + «Колонна» + нейтральный
+// текст), НЕ мок-демо верстальщика (старые болванки про коллекции +
+// /images/4x/journal-*.png). Когда у магазина есть реальные публикации (legacy
+// flat-проп posts[] высший приоритет; иначе SSR fetch /api/sites/<id>/publications
+// → fallback publications.json) — рендерим их без изменений. Shopify-модель, как
+// theme-base PopularProducts/Collections и канон-секция Publications.astro:
+// пустое = заглушка, данные = реальный контент. Стиль/манера satin не тронуты.
+
 interface Post {
 	title: string;
 	image: string;
@@ -12,48 +22,129 @@ interface Post {
 
 interface Props {
 	posts?: Post[];
+	siteId?: string;
 }
 
-const defaultPosts: Post[] = [
-	{
-		date: "01.05, 12:41",
-		title: "Летняя коллекция уже здесь",
-		excerpt: "Лён, хлопок, свободные силуэты — 12 оттенков, которые сочетаются между собой без раздумий.",
-		image: "/images/4x/journal-1.png",
-	},
-	{
-		date: "21.04, 9:31",
-		title: "Доставка за 1 день — бесплатно",
-		excerpt: "Заказ от 5 000 ₽ по Москве — на следующий день и без доплаты. Примерка при курьере, возврат на месте.",
-		image: "/images/4x/journal-2.png",
-	},
-	{
-		date: "14.03, 8:00",
-		title: "Новая весенняя коллекция",
-		excerpt: "Тренчи, трикотаж, рубашки — остатки весенней коллекции со скидкой. До воскресенья, пока есть размеры.",
-		image: "/images/4x/journal-3.png",
-	},
-];
+const p = Astro.props as Props & Record<string, unknown>;
 
-const { posts = defaultPosts } = Astro.props;
+// Реальные публикации: legacy flat-проп posts[] (back-compat для ревизий) →
+// SSR fetch storefront publications (gateway → sites-service) → build-time
+// publications.json. Паттерн канон-секции Publications.astro.
+type RawPublication = {
+	id: string;
+	title?: string;
+	slug?: string;
+	excerpt?: string;
+	coverImageUrl?: string | null;
+	publishedAt?: string | null;
+};
+const legacyPosts = Array.isArray(p.posts) && p.posts.length ? p.posts : undefined;
+const siteIdFromRoot = typeof p.siteId === "string" ? p.siteId : "";
+let realPublications: RawPublication[] = [];
+if (!legacyPosts && siteIdFromRoot) {
+	try {
+		const internalBase =
+			(import.meta as unknown as { env?: { SITES_INTERNAL_BASE?: string } }).env?.SITES_INTERNAL_BASE ??
+			"http://localhost:3114";
+		const res = await fetch(`${internalBase}/api/sites/${siteIdFromRoot}/publications`).catch(() => null);
+		if (res && res.ok) {
+			const data = (await res.json()) as { publications?: RawPublication[] };
+			realPublications = data.publications ?? [];
+		}
+	} catch {
+		/* swallow */
+	}
+}
+try {
+	if (!legacyPosts && realPublications.length === 0) {
+		const pubData = await import("../data/publications.json");
+		realPublications = ((pubData as { default?: RawPublication[] }).default ??
+			(pubData as unknown as RawPublication[])) as RawPublication[];
+	}
+} catch {
+	/* swallow — publications.json отсутствует */
+}
+
+function formatPubDate(iso: string | null | undefined): string {
+	if (!iso) return "";
+	try {
+		return new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" }).format(
+			new Date(iso),
+		);
+	} catch {
+		return "";
+	}
+}
+
+// Гейт пустого состояния (Shopify-модель): есть реальные публикации → рендерим
+// их; нет — ПЛЕЙСХОЛДЕР по контракту Figma 1:19335 (3 колонки: пустой image-rect
+// + «Колонна» + нейтральный текст), НЕ мок-демо верстальщика. Текст-болванка в
+// нейтральном тоне публикаций (как theme-base MultiColumns / Publications.astro).
+const PLACEHOLDER_TEXT = "Поделись новостями бренда, гайдами и историями в этом блоке.";
+const PLACEHOLDER_COUNT = 3;
+type PubItem = {
+	title: string;
+	date: string;
+	excerpt: string;
+	image: string;
+	href?: string;
+	isPlaceholder: boolean;
+};
+const items: PubItem[] = legacyPosts
+	? legacyPosts.map((post) => ({
+			title: post.title ?? "",
+			date: post.date ?? "",
+			excerpt: post.excerpt ?? "",
+			image: post.image ?? "",
+			href: post.href,
+			isPlaceholder: false,
+		}))
+	: realPublications.length > 0
+		? realPublications.map((pub) => ({
+				title: pub.title ?? "",
+				date: formatPubDate(pub.publishedAt),
+				excerpt: pub.excerpt ?? "",
+				image: pub.coverImageUrl ?? "",
+				href: pub.slug ? `/publication/${pub.slug}` : undefined,
+				isPlaceholder: false,
+			}))
+		: Array.from({ length: PLACEHOLDER_COUNT }, () => ({
+				title: "Колонна",
+				date: "",
+				excerpt: PLACEHOLDER_TEXT,
+				image: "",
+				href: undefined,
+				isPlaceholder: true,
+			}));
 ---
 
 <section class="satin-pad w-full bg-white py-10 md:py-14" aria-label="Журнал">
 	<ul class="satin-container grid grid-cols-1 gap-4 sm:grid-cols-3" role="list">
-		{posts.map((post) => (
+		{items.map((post) => (
 			<li class="flex flex-col gap-6 bg-[#F5F5F5] p-4">
+				{/* Медиа: реальная обложка → <img>; пустое состояние (плейсхолдер
+				   или публикация без обложки) → пустой image-rect (контракт Figma
+				   1:19335). Родной литерал #ECECEC — тон пустой плитки satin. */}
 				<div class="relative aspect-square w-full overflow-hidden bg-[#ECECEC]">
-					<SatinPicture src={post.image} alt={post.title} loading="lazy" class="absolute inset-0 size-full object-cover" />
+					{post.image && (
+						<SatinPicture src={post.image} alt={post.title} loading="lazy" class="absolute inset-0 size-full object-cover" />
+					)}
 				</div>
 				<div class="flex flex-col gap-2">
-					<p class="font-manrope text-[14px] font-light uppercase tracking-[0.04em] text-[#999999]">{post.date}</p>
+					{!post.isPlaceholder && post.date && (
+						<p class="font-manrope text-[14px] font-light uppercase tracking-[0.04em] text-[#999999]">{post.date}</p>
+					)}
 					<h3 class="font-logo text-[16px] font-normal uppercase leading-[1.15] text-[#000000]">{post.title}</h3>
-					<p class="font-manrope text-[14px] font-light leading-[1.5] text-[#999999]">{post.excerpt}</p>
+					{post.excerpt && (
+						<p class="font-manrope text-[14px] font-light leading-[1.5] text-[#999999]">{post.excerpt}</p>
+					)}
 				</div>
-				<a href={post.href ?? "/blog"} class="inline-flex items-center gap-2 font-manrope text-[14px] font-normal uppercase leading-normal text-[#000000] transition-opacity hover:opacity-70">
-					<span>Перейти</span>
-					<NtIcon name="arrow-right" sizeClass="size-5" />
-				</a>
+				{!post.isPlaceholder && post.href && (
+					<a href={post.href} class="inline-flex items-center gap-2 font-manrope text-[14px] font-normal uppercase leading-normal text-[#000000] transition-opacity hover:opacity-70">
+						<span>Перейти</span>
+						<NtIcon name="arrow-right" sizeClass="size-5" />
+					</a>
+				)}
 			</li>
 		))}
 	</ul>

@@ -27,27 +27,32 @@ const headingCls = `font-urbanist ${headingSizeCls} font-normal uppercase leadin
 
 // Канон rows[] 1-10 (item: heading|title, text|description, imageUrl|image,
 // imagePosition, button {text, href|link}, size per-item, headingSize/textSize).
-// Отсутствие массива = canon-defaults: 2 ряда-болванки в тоне бьюти-ритуала
-// (МАННЕРА §11), чередование лево/право.
-const CANON_ROWS = [
+// Пустое/некурированное состояние (нет rows) = ПЛЕЙСХОЛДЕР по контракту Figma
+// 1:19335 (НЕ мок-демо верстальщика): ряды «пустой rect + "Изображение с текстом"
+// + нейтральный текст + Кнопка» — пара рядов с чередованием лево/право. Без фото
+// (imageUrl пуст → секция рендерит пустой surface-rect), нейтральные лейблы.
+const PLACEHOLDER_ROWS = [
 	{
-		id: "row-1",
-		heading: "Ритуал ухода",
-		text: "Расскажите о своём ритуале: лёгкие текстуры, природные экстракты и мягкое сияние кожи каждый день.",
+		id: "ph-row-1",
+		heading: "Изображение с текстом",
+		text: "Покажи и расскажи о своем товаре в одном блоке",
 		imageUrl: "",
 		imagePosition: "left",
 		button: { text: "Подробнее", href: "/about" },
 	},
 	{
-		id: "row-2",
-		heading: "Забота о себе",
-		text: "Опишите, как ваши средства питают и восстанавливают, сохраняя красоту естественно и безопасно.",
+		id: "ph-row-2",
+		heading: "Изображение с текстом",
+		text: "Покажи и расскажи о своем товаре в одном блоке",
 		imageUrl: "",
 		imagePosition: "right",
-		button: { text: "Узнать больше", href: "/about" },
+		button: { text: "Подробнее", href: "/about" },
 	},
 ];
-const rawRows = Array.isArray(p.rows) && p.rows.length ? p.rows : CANON_ROWS;
+// Курировано? — мерчант задал ряды (есть массив rows с длиной). Тогда рендерим
+// реальные данные без изменений; иначе — плейсхолдер выше.
+const hasRealRows = Array.isArray(p.rows) && p.rows.length > 0;
+const rawRows = hasRealRows ? p.rows : PLACEHOLDER_ROWS;
 
 // Канон rowsPosition: left | right — все картинки с одной стороны; alternate /
 // отсутствие — per-item imagePosition, иначе чередование по индексу.
@@ -60,9 +65,10 @@ const rowsPosition =
 const aspectFor = (s: string | undefined) =>
 	s === "small" ? "aspect-[16/9]" : s === "large" ? "aspect-square" : "aspect-[652/594]";
 
-// Канон-плейсхолдер = реальные ассеты темы (принцип T15 rose): ряд без фото
-// получает ассет верстальщика по позиции — «добавил секцию → сразу красиво».
-const ROW_FALLBACKS = ["/images/trend-1.webp", "/images/trend-2.webp"];
+// Ряд без фото → пустой rect (контракт плейсхолдера Figma 1:19335). НЕ
+// подставляем мок-ассеты верстальщика (/images/trend-*.webp): пустое состояние =
+// пустой surface-rect, а не демо-фото. Реальный ряд без картинки тоже получает
+// пустой rect (секция рендерит bg-[--color-surface] когда image пуст).
 
 // Шкалы per-item размеров: заголовок ряда = роль заголовка секции (лестница §9);
 // текст = body-роль 16 (small 14, large 19).
@@ -84,7 +90,7 @@ const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 		image:
 			(typeof r.imageUrl === "string" && r.imageUrl.trim()) ||
 			(typeof r.image === "string" && r.image.trim()) ||
-			ROW_FALLBACKS[i % ROW_FALLBACKS.length],
+			"",
 		right:
 			rowsPosition === "right" ||
 			(rowsPosition !== "left" &&
@@ -173,9 +179,9 @@ const titleId = id && heading ? `${id}-title` : undefined;
 					<li
 						class="grid w-full grid-cols-1 gap-4 lg:grid-cols-2"
 						data-animate
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index={i}
-						data-puck-subsection-field="rows"
+						data-puck-subsection-parent={hasRealRows ? id : undefined}
+						data-puck-subsection-index={hasRealRows ? i : undefined}
+						data-puck-subsection-field={hasRealRows ? "rows" : undefined}
 					>
 						<div
 							class={`group relative w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))] ${r.aspectCls}${r.right ? " lg:order-2" : ""}`}

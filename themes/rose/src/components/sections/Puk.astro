@@ -1,27 +1,106 @@
 ---
-import { pukItems } from '../../data/pukItems';
+// Puk — тестовая/отладочная секция-витрина товаров (грид карточек, манера
+// PopularProducts). Пустое состояние = ПЛЕЙСХОЛДЕР по контракту Figma 1:19335
+// (как theme-base DEMO), НЕ мок-демо верстальщика «пук 1/2/3».
+//
+// Гейт (паритет PopularProducts/Popular.astro): секция показывает реальные
+// карточки ТОЛЬКО когда мерчант явно выбрал коллекцию / передал товары
+// (collection / productIds / items). Нет выбора → курточки-плейсхолдеры
+// (blue→yellow→red→green, /placeholders/sweater-<color>.png, object-contain),
+// подпись «Товар», цена «2 500 ₽». Реальный SSR-рендер при наличии данных
+// НЕ ломаем — он идёт по той же карточной разметке.
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Заголовок/подзаголовок: при наличии — берём из пропсов конструктора
+// (union heading.text / heading; text.content / subtitle), иначе пусто
+// (мок-строки «АКЦИЯ ПУКНИ» / «ПУК ПУК ПУК» больше не показываем).
+const sectionTitle =
+  (p.heading?.text ?? (typeof p.heading === 'string' ? p.heading : undefined)) || '';
+const sectionSubtitle =
+  (p.text?.content ?? p.subtitle?.content ?? (typeof p.subtitle === 'string' ? p.subtitle : undefined)) || '';
+
+// Курточки-плейсхолдеры (Figma 1:19335): циклом blue→yellow→red→green.
+// URL `/placeholders/sweater-<color>.png` доступен на сайте (copyPublic из
+// theme-base public; rose уже использует тот же путь в RoseProductDetail).
+const SWEATER_COLORS = ['blue', 'yellow', 'red', 'green'] as const;
+const sweaterAsset = (i: number) =>
+  `/placeholders/sweater-${SWEATER_COLORS[i % SWEATER_COLORS.length]}.png`;
+
+// Дефолт 4 карточки (паритет PopularProducts cards=4). Уважаем cards, если
+// задан (2..24).
+const cardsN =
+  typeof p.cards === 'number' && p.cards > 0 ? Math.max(1, Math.min(24, Math.round(p.cards))) : 4;
+
+// Гейт реальных данных. Источники правды (как у curated-секций):
+//   - collection (collectionPicker, id/slug),
+//   - productIds (явный выбор товаров),
+//   - items (готовый массив карточек с image/title/price).
+const collectionRef =
+  typeof p.collection === 'string' && p.collection.trim() ? p.collection.trim() : undefined;
+const productIds = Array.isArray(p.productIds) ? p.productIds.filter(Boolean) : [];
+const realItems = Array.isArray(p.items)
+  ? p.items.filter((it: any) => it && (it.image || it.title))
+  : [];
+const hasRealData = !!collectionRef || productIds.length > 0 || realItems.length > 0;
+
+const formatPrice = (v: unknown): string => {
+  if (typeof v === 'number') return `${v.toLocaleString('ru-RU')} ₽`;
+  if (typeof v === 'string' && v.trim()) return v.trim();
+  return '';
+};
+
+// Карточки на рендер. Реальные данные → как есть (image/title/price), плейсхолдер
+// → курточки + «Товар» / «2 500 ₽».
+type Card = { image: string; title: string; price: string; objectContain: boolean };
+const cards: Card[] = hasRealData
+  ? realItems.slice(0, cardsN).map((it: any) => ({
+      image: typeof it.image === 'string' ? it.image : '',
+      title: (typeof it.title === 'string' && it.title) || 'Товар',
+      price: formatPrice(it.price),
+      objectContain: false,
+    }))
+  : Array.from({ length: cardsN }, (_v, i) => ({
+      image: sweaterAsset(i),
+      title: 'Товар',
+      price: '2 500 ₽',
+      objectContain: true,
+    }));
 ---
 
-<section class="puk-section">
+<section
+  class="puk-section"
+  data-puck-component-id={id}
+  data-collection={collectionRef}
+  data-puck-placeholder={hasRealData ? undefined : 'true'}
+>
   <div class="puk-container">
-    <div class="puk-header">
-      <h2 class="puk-title">АКЦИЯ ПУКНИ 3 раза</h2>
-      <p class="puk-subtitle">ПУК ПУК ПУК</p>
-    </div>
+    {(sectionTitle || sectionSubtitle) && (
+      <div class="puk-header">
+        {sectionTitle && <h2 class="puk-title">{sectionTitle}</h2>}
+        {sectionSubtitle && <p class="puk-subtitle">{sectionSubtitle}</p>}
+      </div>
+    )}
 
     <div class="puk-grid">
-      {pukItems.map((item) => (
+      {cards.map((item) => (
         <div class="puk-card">
           <div class="puk-image-wrapper">
-            <img 
-              src={item.image} 
-              alt={item.title}
-              class="puk-image"
-              decoding="async"
-            />
+            {item.image ? (
+              <img
+                src={item.image}
+                alt={item.title}
+                class:list={['puk-image', item.objectContain && 'puk-image--contain']}
+                decoding="async"
+                loading="lazy"
+              />
+            ) : (
+              <div class="puk-image-empty" aria-hidden="true"></div>
+            )}
           </div>
           <div class="puk-text">
             <p>{item.title}</p>
+            {item.price && <p class="puk-price">{item.price}</p>}
           </div>
         </div>
       ))}
@@ -100,10 +179,26 @@ import { pukItems } from '../../data/pukItems';
     display: block;
   }
 
+  /* Плейсхолдер-куртка: вписываем целиком с воздухом (как theme-base DEMO). */
+  .puk-image--contain {
+    object-fit: contain;
+    padding: 15%;
+    background: #FBFBFB;
+  }
+
+  /* Пустой image-rect плейсхолдера (нет картинки у реального товара). */
+  .puk-image-empty {
+    width: 100%;
+    height: 100%;
+    background: #FBFBFB;
+  }
+
   .puk-text {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
     justify-content: flex-start;
+    gap: 4px;
   }
 
   .puk-text p {
@@ -113,6 +208,11 @@ import { pukItems } from '../../data/pukItems';
     line-height: 1.366;
     color: #000000;
     margin: 0;
+  }
+
+  .puk-price {
+    font-size: 18px !important;
+    color: rgb(var(--color-text, 0 0 0));
   }
 
   /* Tablet */

@@ -264,20 +264,61 @@ const paddingStyle = pad
 
 // Одиночный режим (mode='single'): копия = канон heading/text/primaryButton
 // (+ legacy flat), фон — backgroundImages.url1 / backgroundImage / image.url.
-const singleTitle = p.heading?.text ?? p.title ?? CANON_SLIDES[0].title;
-const singleSubtitle = p.text?.content ?? p.subtitle ?? CANON_SLIDES[0].subtitle;
-const singleCtaText = p.primaryButton?.text ?? p.cta?.text ?? p.ctaText ?? CANON_SLIDES[0].ctaText;
+//
+// ПЛЕЙСХОЛДЕР пустого состояния (Figma 1:19335, категория «Изображение /
+// Слайд-шоу»): когда у секции НЕТ выбранных данных — рендерим контракт-
+// плейсхолдер (пустой image-rect подложки темы + заголовок секции +
+// поясняющий текст + Кнопка), а НЕ мок-демо верстальщика (CANON_SLIDES с
+// фото vanilla-hero-slide-N и копи «Искусство жить уютно»). Когда мерчант
+// задал хоть что-то (заголовок / текст / фоновое фото / CTA / slides[]) —
+// рендер реальных данных НЕ трогаем (SSR-с-данными остаётся как был).
+// Гейт = «есть ли курированные данные у секции» (паттерн theme-base
+// PopularProducts collectionRef / Collections hasManualCollections).
+const heroBgRaw =
+	(typeof p.backgroundImages?.url1 === "string" && p.backgroundImages.url1.trim()) ||
+	(typeof p.backgroundImage === "string" && p.backgroundImage.trim()) ||
+	(typeof p.image?.url === "string" && p.image.url.trim()) ||
+	"";
+const heroHeadingRaw =
+	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title ?? "";
+const heroSubtitleRaw =
+	(typeof p.text === "string" ? p.text : p.text?.content) ?? p.subtitle ?? "";
+const heroCtaRaw = p.primaryButton?.text ?? p.cta?.text ?? p.ctaText ?? "";
+const hasHeroSlides = Array.isArray(p.slides) && p.slides.length > 0;
+const hasHeroData =
+	!!heroBgRaw.trim() ||
+	!!String(heroHeadingRaw).trim() ||
+	!!String(heroSubtitleRaw).trim() ||
+	!!String(heroCtaRaw).trim() ||
+	hasHeroSlides;
+
+// Контракт-лейблы плейсхолдера (категория «Изображение / Слайд-шоу»,
+// Figma 1:19335): заголовок секции + поясняющий текст + Кнопка. Generic-
+// копи именно этой категории — НЕ мок-копи героя верстальщика и НЕ литералы
+// соседних секций (ImageWithText «Расскажите о товаре», MultiRows
+// «Изображение с текстом»).
+const PLACEHOLDER_HEADING = "Заголовок изображения";
+const PLACEHOLDER_TEXT = "Опиши изображение или коллекцию в этом блоке";
+const PLACEHOLDER_CTA = "Кнопка";
+
+const singleTitle = hasHeroData ? (heroHeadingRaw || CANON_SLIDES[0].title) : PLACEHOLDER_HEADING;
+const singleSubtitle = hasHeroData
+	? (heroSubtitleRaw || CANON_SLIDES[0].subtitle)
+	: PLACEHOLDER_TEXT;
+const singleCtaText = hasHeroData
+	? (heroCtaRaw || CANON_SLIDES[0].ctaText)
+	: PLACEHOLDER_CTA;
 const singleCtaHref =
 	p.primaryButton?.link?.href ??
 	(typeof p.primaryButton?.link === "string" ? p.primaryButton.link : undefined) ??
 	p.cta?.href ??
 	p.ctaLink ??
-	CANON_SLIDES[0].ctaHref;
-const singleImage =
-	(typeof p.backgroundImages?.url1 === "string" && p.backgroundImages.url1.trim()) ||
-	(typeof p.backgroundImage === "string" && p.backgroundImage.trim()) ||
-	(typeof p.image?.url === "string" && p.image.url.trim()) ||
-	toWebp(V_IMG.hero(1));
+	(hasHeroData ? CANON_SLIDES[0].ctaHref : "/catalog");
+// Фон рендерим ТОЛЬКО при выбранных данных. Пустое состояние = пустой
+// image-rect подложки темы (rgb(var(--color-surface)) — конвенция пустых
+// rect'ов vanilla: Collections/Gallery/ImageWithText/Video/Slideshow), без
+// мок-фото героя.
+const singleImage = hasHeroData ? (heroBgRaw || toWebp(V_IMG.hero(1))) : "";
 const singleTitleCls = headingClsFor(sectionSize);
 const singleSubtitleCls = textClsFor(sectionSize);
 // Вторая кнопка (только single) — рендер при непустом тексте, белый контур манеры.
@@ -448,15 +489,26 @@ const secondaryCls =
 				aria-label="Главный экран"
 			>
 				<div class="absolute inset-0 z-0 overflow-hidden">
-					<VanillaPicture
-						src={singleImage}
-						alt=""
-						decoding="sync"
-						loading="eager"
-						fetchpriority="high"
-						class="absolute inset-0 z-0 size-full object-cover object-center"
-						aria-hidden="true"
-					/>
+					{singleImage ? (
+						<VanillaPicture
+							src={singleImage}
+							alt=""
+							decoding="sync"
+							loading="eager"
+							fetchpriority="high"
+							class="absolute inset-0 z-0 size-full object-cover object-center"
+							aria-hidden="true"
+						/>
+					) : (
+						/* Пустое состояние (Figma 1:19335): фото не выбрано → пустой
+						   image-rect подложки темы (конвенция пустых rect'ов vanilla —
+						   Collections/Gallery/ImageWithText/Video/Slideshow используют
+						   bg-[rgb(var(--color-surface,236_235_231))]), без мок-фото героя. */
+						<div
+							class="absolute inset-0 z-0 size-full bg-[rgb(var(--color-surface,236_235_231))]"
+							aria-hidden="true"
+						/>
+					)}
 				</div>
 				{hasOverlay ? (
 					<div
@@ -464,8 +516,12 @@ const secondaryCls =
 						style={`opacity:${overlayN / 100}`}
 						aria-hidden="true"
 					/>
-				) : (
+				) : singleImage ? (
 					<div class="pointer-events-none absolute inset-0 z-[1] bg-black/25" aria-hidden="true" />
+				) : (
+					/* Лёгкий скрим над пустым image-rect — белая копи-плашка героя
+					   (text-heading/255 фоллбек) остаётся читаемой на светлой подложке. */
+					<div class="pointer-events-none absolute inset-0 z-[1] bg-black/40" aria-hidden="true" />
 				)}
 
 				<div class:list={["vanilla-pad absolute inset-0 z-10 flex h-full w-full pointer-events-none", singleLayout.vItemsCls]}>

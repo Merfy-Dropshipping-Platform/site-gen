@@ -9,18 +9,44 @@ import { SITE_TITLE } from "../../consts";
 // index.astro:17-23 зовёт секцию с ними, их рендер не меняется.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-const title = p.heading?.text ?? p.title ?? SITE_TITLE;
+
+// ── Пустое состояние (Figma 1:19335) ────────────────────────────────────────
+// Контракт плейсхолдеров: когда мерчант НИЧЕГО не настроил (секция в дефолте),
+// рендерим нейтральный ПЛЕЙСХОЛДЕР (пустой image-rect surface-тона + заголовок
+// секции + поясняющий текст + кнопка), а НЕ мок-демо верстальщика
+// («Там, где классика встречается с характером» + фото кампании). Эталон —
+// theme-base PopularProducts/Collections (гейт на наличии данных → DEMO).
+// Гейт Hero = заданное мерчантом фоновое изображение ИЛИ собственный текст
+// заголовка/кикера. Любой реальный сигнал → рендер реальных данных без изменений
+// (фото-половина с SatinPicture, overlay, split — всё как было).
+const rawBackgroundImage =
+	(typeof p.backgroundImages?.url1 === "string" && p.backgroundImages.url1.trim()
+		? p.backgroundImages.url1
+		: undefined) ??
+	(typeof p.backgroundImage === "string" && p.backgroundImage.trim() ? p.backgroundImage : undefined) ??
+	(typeof p.image?.url === "string" && p.image.url.trim() ? p.image.url : undefined);
+const hasMerchantTitle = typeof (p.heading?.text ?? p.title) === "string" && String(p.heading?.text ?? p.title).trim();
+const hasMerchantSubtitle =
+	typeof (p.text?.content ?? p.subtitle) === "string" && String(p.text?.content ?? p.subtitle).trim();
+// Реальные данные есть, если задано фоновое фото или собственный текст героя.
+const hasData = !!rawBackgroundImage || !!hasMerchantTitle || !!hasMerchantSubtitle;
+
+// Лейблы пустого состояния (нейтральные, НЕ мок верстальщика).
+const title = hasData ? (p.heading?.text ?? p.title ?? SITE_TITLE) : "Заголовок";
 // Канон text.content — КИКЕР НАД заголовком (порядок верстальщика: subtitle перед h1).
-const subtitle = p.text?.content ?? p.subtitle ?? "Там, где классика встречается с характером";
-const ctaText = p.primaryButton?.text ?? p.cta?.text ?? p.ctaText ?? "В каталог";
+const subtitle = hasData
+	? (p.text?.content ?? p.subtitle ?? "Там, где классика встречается с характером")
+	: "Поясняющий текст";
+const ctaText = hasData ? (p.primaryButton?.text ?? p.cta?.text ?? p.ctaText ?? "В каталог") : "Кнопка";
 const ctaLink =
 	p.primaryButton?.link?.href ??
 	(typeof p.primaryButton?.link === "string" ? p.primaryButton.link : undefined) ??
 	p.cta?.href ??
 	p.ctaLink ??
 	"#collections";
-const backgroundImage =
-	p.backgroundImages?.url1 ?? p.backgroundImage ?? p.image?.url ?? "/images/4x/Главный_экран.png";
+// Фоновое фото рендерим ТОЛЬКО когда мерчант его задал. Пусто → image-rect
+// surface-тона (пустое состояние), без демо-фото кампании верстальщика.
+const backgroundImage = rawBackgroundImage;
 // Канон backgroundImages.url2 (+legacy backgroundImage2): фото-половина делится на
 // 2 кадра grid-cols-2 ТОЛЬКО когда второе фото задано; иначе одиночный рендер дословно.
 const backgroundImage2 = p.backgroundImages?.url2 ?? p.backgroundImage2;
@@ -189,37 +215,46 @@ const paddingStyle = p.padding
 			</div>
 		</div>
 
-		<div class="relative order-1 aspect-[375/362] overflow-hidden bg-[#111111] md:order-2 md:aspect-auto md:h-[680px]">
+		<div
+			class:list={[
+				"relative order-1 aspect-[375/362] overflow-hidden md:order-2 md:aspect-auto md:h-[680px]",
+				// Пустое состояние — пустой image-rect surface-тона темы (Figma 1:19335);
+				// с фото — чёрная подложка верстальщика (под object-cover кадрами).
+				backgroundImage ? "bg-[#111111]" : "bg-[rgb(var(--color-surface,245_245_245))]",
+			]}
+		>
 			{
-				backgroundImage2 ? (
-					<div class="absolute inset-0 grid grid-cols-2">
+				backgroundImage ? (
+					backgroundImage2 ? (
+						<div class="absolute inset-0 grid grid-cols-2">
+							<SatinPicture
+								src={backgroundImage}
+								alt={title}
+								loading="eager"
+								fetchpriority="high"
+								class="size-full object-cover object-center"
+							/>
+							<SatinPicture
+								src={backgroundImage2}
+								alt=""
+								loading="eager"
+								fetchpriority="high"
+								class="size-full object-cover object-center"
+							/>
+						</div>
+					) : (
 						<SatinPicture
 							src={backgroundImage}
 							alt={title}
 							loading="eager"
 							fetchpriority="high"
-							class="size-full object-cover object-center"
+							class="absolute inset-0 size-full object-cover object-center"
 						/>
-						<SatinPicture
-							src={backgroundImage2}
-							alt=""
-							loading="eager"
-							fetchpriority="high"
-							class="size-full object-cover object-center"
-						/>
-					</div>
-				) : (
-					<SatinPicture
-						src={backgroundImage}
-						alt={title}
-						loading="eager"
-						fetchpriority="high"
-						class="absolute inset-0 size-full object-cover object-center"
-					/>
-				)
+					)
+				) : null
 			}
 			{
-				overlayN > 0 && (
+				backgroundImage && overlayN > 0 && (
 					<div
 						class="pointer-events-none absolute inset-0 z-[1] bg-black"
 						style={`opacity:${overlayN / 100}`}

@@ -17,40 +17,37 @@ const id = p.id;
 
 // Канон slides[] 1-5 (item: imageUrl|image, heading(string|{text,size}),
 // subtitle, text{content,size}, ctaText/ctaUrl | button{text,link}, position,
-// alignment, colorScheme). Отсутствие = canon-defaults: 3 слайда-болванки в
-// тоне уюта (MANNER §11 — мягко, «вы», CTA капсом-императивом).
-const CANON_SLIDES = [
-	{
-		id: "slide-1",
-		imageUrl: "",
-		heading: "Уют начинается с мелочей",
-		subtitle: "Текстиль и декор, которые делают дом по-настоящему вашим",
-		ctaText: "К покупкам",
-		ctaUrl: "/catalog",
-	},
-	{
-		id: "slide-2",
-		imageUrl: "",
-		heading: "Новая коллекция для тёплых вечеров",
-		subtitle: "Пледы, подушки и постельное бельё из натуральных тканей",
-		ctaText: "Смотреть коллекцию",
-		ctaUrl: "/catalog",
-	},
-	{
-		id: "slide-3",
-		imageUrl: "",
-		heading: "Дом, наполненный заботой",
-		subtitle: "Спокойные оттенки и мягкие фактуры для вашего отдыха",
-		ctaText: "Выбрать уют",
-		ctaUrl: "/catalog",
-	},
-];
-const rawSlides = Array.isArray(p.slides) && p.slides.length ? p.slides : CANON_SLIDES;
+// alignment, colorScheme).
+//
+// ПУСТОЕ СОСТОЯНИЕ (Figma 1:19335): когда мерчант НЕ добавил ни одного слайда —
+// секция рендерит ПЛЕЙСХОЛДЕР контракта (пустой image-rect = surface-полотно
+// #FBFBFB-эквивалент + заголовок секции + поясняющий текст + Кнопка +
+// точки-навигация), а НЕ мок-демо верстальщика (3 слайда-болванки «Уют
+// начинается с мелочей / Новая коллекция / Дом, наполненный заботой» с
+// фоллбек-фото vanilla-hero-slide-{1,2,3}.webp). Образец гейта — theme-base
+// Collections.astro (hasManualCollections → DEMO) и манера пустого rect темы
+// vanilla — Gallery.astro (тот же Figma-контракт: bg surface + подписи).
+// Когда слайды ВЫБРАНЫ (p.slides.length) — рендер реальных слайдов БЕЗ
+// изменений; слайд без своего фото остаётся на ассете темы (SLIDE_FALLBACKS
+// ниже), клиентская карусель (bindVanillaHeroCarousel + autoplay при ≥2
+// слайдах) не затрагивается.
+const PLACEHOLDER_SLIDE = {
+	id: "placeholder",
+	imageUrl: "", // пустой image-rect (surface) — НЕ ассет верстальщика
+	heading: "Слайд-шоу",
+	subtitle: "Покажи и расскажи о своем товаре в одном блоке",
+	ctaText: "Кнопка",
+	ctaUrl: "/catalog",
+};
+const hasSlides = Array.isArray(p.slides) && p.slides.length > 0;
+const rawSlides = hasSlides ? p.slides : [PLACEHOLDER_SLIDE];
 
-// Канон-плейсхолдер = реальный ассет верстальщика по позиции (принцип rose
-// T15): слайд без фото получает фон героя vanilla-hero-slide-{1,2,3}
-// (на диске темы .webp — PNG конвертированы, см. imageAssets.ts; под
-// Container API plain <img> на .webp — паттерн оживлённых секций vanilla).
+// Слайд мерчанта без своего фото получает фон героя vanilla-hero-slide-{1,2,3}
+// по позиции (принцип rose T15; на диске темы .webp — PNG конвертированы, см.
+// imageAssets.ts; под Container API plain <img> на .webp — паттерн оживлённых
+// секций vanilla). В ПУСТОМ состоянии (!hasSlides) фоллбек НЕ применяется —
+// плейсхолдер обязан показать пустой image-rect (surface), а не фото
+// верстальщика (см. ветку slide.image ? <img> : <div bg-surface> в разметке).
 const SLIDE_FALLBACKS = [
 	"/images/vanilla-hero-slide-1.webp",
 	"/images/vanilla-hero-slide-2.webp",
@@ -60,7 +57,7 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => ({
 	image:
 		(typeof s.imageUrl === "string" && s.imageUrl.trim()) ||
 		(typeof s.image === "string" && s.image.trim()) ||
-		SLIDE_FALLBACKS[i % SLIDE_FALLBACKS.length],
+		(hasSlides ? SLIDE_FALLBACKS[i % SLIDE_FALLBACKS.length] : ""),
 	title: (typeof s.heading === "string" ? s.heading : s.heading?.text) ?? "",
 	subtitle:
 		(typeof s.subtitle === "string" && s.subtitle.trim() ? s.subtitle : undefined) ??
@@ -119,6 +116,18 @@ const ctaCls =
 	p.buttonStyle === "outlined"
 		? "inline-flex h-12 min-h-12 max-w-full items-center justify-center border-[1.3px] border-[rgb(var(--color-primary,255_255_255))] bg-transparent px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-primary,255_255_255))] transition-opacity hover:opacity-80"
 		: "inline-flex h-12 min-h-12 max-w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
+
+// Классы копи-блока ПУСТОГО состояния (плейсхолдер, Figma 1:19335). Реальные
+// слайды лежат на тёмном фото-полотне → белый фоллбек heading/text. Плейсхолдер
+// лежит на СВЕТЛОМ surface-image-rect → токены с ТЁМНЫМ фоллбеком (heading
+// 38_49_28, text/muted 68_68_68 из светлых color-scheme темы), CTA — solid
+// заливка кнопки-1. Классы режима данных (headingCls/textCls/ctaCls) не трогаем.
+const phHeadingCls =
+	"font-vanilla-bitter text-2xl font-normal italic leading-[1.2] tracking-normal text-[rgb(var(--color-heading,38_49_28))]";
+const phTextCls =
+	"font-vanilla-arsenal text-base font-normal italic tracking-normal text-[rgb(var(--color-text,68_68_68))]";
+const phCtaCls =
+	"inline-flex h-12 min-h-12 max-w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
 
 // position слайда №1 (приоритет) | top-level contentAlign: 'left'
 // (canon-default из blockDefaults vanilla) и отсутствие = блок слева
@@ -236,15 +245,24 @@ const paddingStyle = p.padding
 								data-puck-subsection-index={i}
 								data-puck-subsection-field="slides"
 							>
-								<img
-									src={slide.image}
-									alt=""
-									decoding={i === 0 ? "sync" : "async"}
-									loading={i === 0 ? "eager" : "lazy"}
-									fetchpriority={i === 0 ? "high" : undefined}
-									class="absolute inset-0 z-0 size-full object-cover object-center"
-									aria-hidden="true"
-								/>
+								{slide.image ? (
+									<img
+										src={slide.image}
+										alt=""
+										decoding={i === 0 ? "sync" : "async"}
+										loading={i === 0 ? "eager" : "lazy"}
+										fetchpriority={i === 0 ? "high" : undefined}
+										class="absolute inset-0 z-0 size-full object-cover object-center"
+										aria-hidden="true"
+									/>
+								) : (
+									/* Пустой image-rect (Figma 1:19335 пустое состояние) — светлое
+									   surface-полотно вместо фото верстальщика. */
+									<div
+										class="absolute inset-0 z-0 size-full bg-[rgb(var(--color-surface,238_238_238))]"
+										aria-hidden="true"
+									/>
+								)}
 							</div>
 						))
 					}
@@ -264,20 +282,40 @@ const paddingStyle = p.padding
 						<div class={copyBlockCls} aria-live="polite">
 							<h2
 								data-hero-title
-								class={`hero-animate-1 vanilla-slideshow-title ${headingCls}`}
+								class={`hero-animate-1 vanilla-slideshow-title ${hasSlides ? headingCls : phHeadingCls}`}
 							>{slides[0].title}</h2>
 							<p
 								data-hero-subtitle
-								class={`hero-animate-2 vanilla-slideshow-subtitle ${textCls}`}
+								class={`hero-animate-2 vanilla-slideshow-subtitle ${hasSlides ? textCls : phTextCls}`}
 							>{slides[0].subtitle}</p>
 							<a
 								data-hero-cta
-								class={`hero-animate-3 ${ctaCls}`}
+								class={`hero-animate-3 ${hasSlides ? ctaCls : phCtaCls}`}
 								href={slides[0].ctaHref}
 							>{slides[0].ctaText}</a>
 						</div>
 					</div>
 				</div>
+
+				{
+					/* ПЛЕЙСХОЛДЕР пустого состояния (Figma 1:19335): точки-навигация —
+					   декоративные (3 точки, одна активная) поверх светлого
+					   surface-полотна, тёмный токен heading вместо белого реальных
+					   слайдов. JS-логики нет (один слайд → контролы-бар и скрипт
+					   карусели не активируются) — чисто визуальный контракт. */
+					!hasSlides && (
+						<div
+							class="pointer-events-none absolute inset-x-0 bottom-6 z-20 flex items-center justify-center gap-2"
+							aria-hidden="true"
+						>
+							{[0, 1, 2].map((i) => (
+								<span
+									class={`h-2 w-2 rounded-full transition-colors ${i === 0 ? "bg-[rgb(var(--color-heading,38_49_28))]" : "bg-[rgb(var(--color-heading,38_49_28))]/40"}`}
+								/>
+							))}
+						</div>
+					)
+				}
 			</div>
 
 			{

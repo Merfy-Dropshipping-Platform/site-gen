@@ -1,62 +1,175 @@
 ---
+// Benefits = bloom-секция «3 белые карточки-фичи на розовом полотне» (МАННЕРА
+// §10). Раньше тело было ЖЁСТКИМ мок-демо верстальщика (3 карточки про
+// косметику + /icons/benefit-*.png, без обработки пропсов). Теперь:
+//
+// ПУСТОЕ / некурированное состояние (мерчант НЕ передал items[]) =
+// ПЛЕЙСХОЛДЕР по контракту Figma 1:19335 (мультиколонны: пустой rect +
+// «Колонна» + нейтральный текст + Кнопка), НЕ мок-демо верстальщика. Когда
+// мерчант добавил карточки (items[]/columns[]/benefits[]) — рендерим реальные
+// данные без изменений (Shopify-модель, как theme-base PopularProducts/
+// Collections и соседний MultiColumns.astro). Гейт — на наличии ручных
+// карточек с непустым содержимым.
 interface Benefit {
-	title: string;
-	description: string;
-	icon: string;
+	title?: string;
+	heading?: string;
+	description?: string;
+	text?: string;
+	icon?: string;
+	image?: string;
+	imageUrl?: string;
 }
 
-const benefits: Benefit[] = [
-	{
-		title: "Натуральные ингредиенты",
-		description:
-			"Подарите своей коже лучшее. Натуральные масла и экстракты в нашей косметике питают и восстанавливают, сохраняя вашу красоту естественно и безопасно.",
-		icon: "/icons/benefit-1.png",
-	},
-	{
-		title: "Эксперты рекомендуют",
-		description:
-			"Выбор практикующих косметологов. Формула протестирована и рекомендована экспертами в области эстетической медицины. Доверьтесь профессионалам, которые знают о коже всё.",
-		icon: "/icons/benefit-2.png",
-	},
-	{
-		title: "Качественный состав",
-		description:
-			"Безупречный состав: тщательно подобранные активные ингредиенты высшей очистки. Мы выбираем лучшее, чтобы ваша кожа получала идеальный уход каждый день.",
-		icon: "/icons/benefit-3.png",
-	},
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+
+// Канон heading секции: string | { text, alignment, size }; у мок-верстальщика
+// шапки НЕТ → рендер ТОЛЬКО при непустом. На розовом полотне — белый.
+const heading = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
+const headingSize = p.headingSize ?? p.heading?.size;
+const headingSizeCls =
+	headingSize === "small"
+		? "text-[15px] md:text-[17px]"
+		: headingSize === "large"
+			? "text-[22px] md:text-[24px]"
+			: "text-[18px] md:text-[20px]";
+const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
+const headingAlignCls =
+	headingAlignment === "center" ? " text-center" : headingAlignment === "right" ? " text-right" : "";
+const headingCls = `font-urbanist ${headingSizeCls} font-normal uppercase leading-none text-[rgb(var(--color-heading,255_255_255))]${headingAlignCls}`;
+
+// Источники ручных карточек (любая форма конструктора): items / columns /
+// benefits. Карточка считается реальной только если у неё есть непустой
+// заголовок ИЛИ текст ИЛИ изображение — пустые объекты не «активируют» секцию.
+const rawItems: Benefit[] = Array.isArray(p.items)
+	? p.items
+	: Array.isArray(p.columns)
+		? p.columns
+		: Array.isArray(p.benefits)
+			? p.benefits
+			: [];
+const normalizeItem = (c: Benefit) => ({
+	heading:
+		(typeof c.heading === "string" && c.heading) || (typeof c.title === "string" && c.title) || "",
+	text:
+		(typeof c.text === "string" && c.text) ||
+		(typeof c.description === "string" && c.description) ||
+		"",
+	image:
+		(typeof c.imageUrl === "string" && c.imageUrl.trim()) ||
+		(typeof c.image === "string" && c.image.trim()) ||
+		(typeof c.icon === "string" && c.icon.trim()) ||
+		"",
+});
+const manualItems = rawItems
+	.map(normalizeItem)
+	.filter((c) => c.heading || c.text || c.image);
+const hasManualItems = manualItems.length > 0;
+
+// Контракт пустого состояния (мультиколонны, Figma 1:19335): 3 колонки =
+// пустой rect + «Колонна» + «Сочетай текст…» + Кнопка. Заменяет мок-демо.
+const PLACEHOLDER_TEXT = "Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.";
+const PLACEHOLDER_ITEMS = [
+	{ heading: "Колонна", text: PLACEHOLDER_TEXT, image: "" },
+	{ heading: "Колонна", text: PLACEHOLDER_TEXT, image: "" },
+	{ heading: "Колонна", text: PLACEHOLDER_TEXT, image: "" },
 ];
+
+// Гейт: есть ручные карточки → реальные данные; иначе → плейсхолдер по контракту.
+const items = (hasManualItems ? manualItems : PLACEHOLDER_ITEMS).map((c) => ({
+	...c,
+	isPlaceholder: !hasManualItems,
+}));
+
+// Кнопка-плейсхолдер под каждой колонкой (пустое состояние) — белый pill
+// манеры §3. Для реальных карточек кнопку не навязываем (мерчант задаёт
+// своё содержимое). href ведёт в каталог.
+const placeholderBtnText = "Кнопка";
+const placeholderBtnHref = "/catalog";
+
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
+
+const titleId = id && heading ? `${id}-title` : undefined;
 ---
 
 <section
-	id="benefits"
-	class="w-full bg-[#e38e9f] px-4 py-20 md:px-20 md:py-[120px] 2xl:px-[300px]"
+	id={id ? undefined : "benefits"}
+	class="w-full bg-[rgb(var(--color-bg,227_142_159))] px-4 py-20 md:px-20 md:py-[120px] 2xl:px-[300px]"
+	aria-labelledby={titleId}
+	data-puck-component-id={id}
+	style={paddingStyle}
 >
-	<ul
-		class="mx-auto grid w-full max-w-[1320px] grid-cols-1 justify-items-center gap-10 md:grid-cols-2 xl:grid-cols-3"
-		role="list"
-	>
-		{benefits.map((benefit, index) => (
-			<li
-				class="group flex min-h-[252px] w-full max-w-[429px] flex-col items-center gap-6 rounded-[12px] bg-white px-6 py-8 text-center transition-transform duration-300 ease-out hover:-translate-y-1"
-				data-animate
-				data-animate-delay={`${index * 0.08}s`}
-			>
-				<img
-					src={benefit.icon}
-					alt=""
-					width="44"
-					height="44"
-					loading="lazy"
-					decoding="async"
-					class="h-11 w-11 object-contain transition-transform duration-300 ease-out group-hover:scale-105"
-				/>
-				<h3 class="font-urbanist text-[20px] font-light uppercase leading-none text-black">
-					{benefit.title}
-				</h3>
-				<p class="font-inter text-[16px] font-light leading-none text-[#999999]">
-					{benefit.description}
-				</p>
-			</li>
-		))}
-	</ul>
+	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10">
+		{
+			heading && (
+				<h2
+					id={titleId}
+					class={headingCls}
+					data-animate
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="heading"
+				>
+					{heading}
+				</h2>
+			)
+		}
+		<ul
+			class="grid w-full grid-cols-1 justify-items-center gap-10 md:grid-cols-2 xl:grid-cols-3"
+			role="list"
+		>
+			{
+				items.map((c, index) => (
+					<li
+						class="group flex min-h-[252px] w-full max-w-[429px] flex-col items-center gap-6 rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,255_255_255))] px-6 py-8 text-center transition-transform duration-300 ease-out hover:-translate-y-1"
+						data-animate
+						data-animate-delay={`${index * 0.08}s`}
+						data-puck-subsection-parent={hasManualItems ? id : undefined}
+						data-puck-subsection-index={hasManualItems ? index : undefined}
+						data-puck-subsection-field={hasManualItems ? "items" : undefined}
+					>
+						{c.image ? (
+							<img
+								src={c.image}
+								alt=""
+								width="44"
+								height="44"
+								loading="lazy"
+								decoding="async"
+								class="h-11 w-11 object-contain transition-transform duration-300 ease-out group-hover:scale-105"
+							/>
+						) : (
+							c.isPlaceholder && (
+								<div
+									class="h-[120px] w-full rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-muted,153_153_153)/0.15)]"
+									aria-hidden="true"
+								/>
+							)
+						)}
+						{c.heading && (
+							<h3 class="font-urbanist text-[20px] font-light uppercase leading-none text-[rgb(var(--color-heading,0_0_0))]">
+								{c.heading}
+							</h3>
+						)}
+						{c.text && (
+							<p class="font-inter text-[16px] font-light leading-none text-[rgb(var(--color-muted,153_153_153))]">
+								{c.text}
+							</p>
+						)}
+						{c.isPlaceholder && (
+							<a
+								href={placeholderBtnHref}
+								class="font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))] underline underline-offset-4 transition-opacity hover:opacity-70"
+							>
+								{placeholderBtnText}
+							</a>
+						)}
+					</li>
+				))
+			}
+		</ul>
+	</div>
 </section>

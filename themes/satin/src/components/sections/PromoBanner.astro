@@ -9,7 +9,19 @@
 // рендерится ТОЛЬКО при непустом link.text.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-const text = p.text ?? "Скидка 10% на общую сумму заказа от 9 000₽. Перейти";
+
+// Пустое/некурированное состояние = ПЛЕЙСХОЛДЕР по контракту (Figma 1:19335 —
+// принцип «empty-state = placeholder, НЕ мок-демо верстальщика»). PromoBanner —
+// информационная полоса (нет товаров/коллекций/картинок для гейта), поэтому
+// единственные «данные» секции — сам проп text. Когда мерчант НЕ задал текст —
+// рендерим нейтральный канон-плейсхолдер (тот же дефолт, что platform-канон
+// theme-base/blocks/PromoBanner.puckConfig.ts → defaults.text), а НЕ мок-заглушку
+// верстальщика «Скидка 10% на общую сумму заказа от 9 000₽. Перейти». Когда text
+// ЗАДАН (мерчант/ревизия/puck-default) — рендер реального текста без изменений
+// (паттерн bloom PromoBanner:18-20).
+const PLACEHOLDER_TEXT = "Бесплатная доставка от 3000 ₽";
+const text =
+	typeof p.text === "string" && p.text.trim() ? p.text : PLACEHOLDER_TEXT;
 
 // Канон link {text, href} + legacy linkText/linkUrl. Дефолт href = литерал /catalog
 // (вся полоса верстальщика ведёт в каталог).

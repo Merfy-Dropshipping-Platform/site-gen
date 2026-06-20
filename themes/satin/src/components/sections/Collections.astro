@@ -1,7 +1,4 @@
 ---
-import SatinCollectionCard from "../products/SatinCollectionCard.astro";
-import { collections as defaultCollections, type Collection } from "../../data/collections";
-
 // ОЖИВЛЕНИЕ (Фаза B, рецепт bloom Collections): конструкторная схема theme-base
 // Collections.puckConfig поверх разметки верстальщика. Тело + demo-данные
 // verbatim: страницы темы зовут <Collections items={...}/> и id="collections-2"
@@ -14,8 +11,8 @@ const p = Astro.props as Record<string, any>;
 const id = p.id;
 const domId = typeof p.id === "string" && p.id ? p.id : "collections";
 
-// Legacy items[] верстальщика — страницы передают свои наборы плиток.
-const items: Collection[] = Array.isArray(p.items) ? p.items : defaultCollections;
+// Legacy p.items[] верстальщика (страницы темы передают свои наборы плиток)
+// БОЛЬШЕ НЕ рендерятся как demo — пустое состояние = плейсхолдер (см. ниже).
 
 // Шапки у верстальщика НЕТ — заголовок/текст рендерятся ТОЛЬКО при непустом
 // пропе (роль «заголовок секции» font-logo 20 / body 16 light muted, §1).
@@ -74,11 +71,25 @@ const tileAspect =
 const captionCase = p.cardCaptionStyle === "default" ? "" : " uppercase";
 
 // Канон collections[] (≤10): плитки коллекций из пропса при непустом массиве.
-// Иначе — плитки верстальщика дословно (demo-ветка, SatinCollectionCard).
 // SSR рендерит сохранённые поля item, резолв collectionId→имя/обложка делает
 // гидрация ниже (data-collection-ref): live — /data/collections.json, превью —
 // storefront-data; паритет theme-base (имя коллекции перебивает ручной heading,
 // обложка — только при пустой своей).
+//
+// КОНТРАКТ ПЛЕЙСХОЛДЕРОВ (Figma 1:19335 — пустое состояние секции, ЗАМЕНЯЕТ
+// мок-демо верстальщика). Эталон: theme-base Collections.astro DEMO_COLLECTIONS
+// — без ручного выбора рисуем N пустых карточек (rounded-rect surface-подложка,
+// БЕЗ картинки коллекции) с подписью «Коллекция», НЕ плитки верстальщика
+// (defaultCollections / legacy p.items: «Верхняя одежда» c /images/4x/Коллекция_N.png).
+// Гейт = наличие ручного выбора коллекций в пикере (usePropCollections). Грид
+// сохраняет data-collections-autofill → на live автоподстановка реальными
+// коллекциями магазина (collections.json) перерисует его; demo-сборка без
+// данных остаётся плейсхолдером. Дефолт — 3 карточки (canon-default columns 3),
+// но уважаем выбранное число колонок (cols).
+const PLACEHOLDER_COLLECTION_COUNT = cols ?? 3;
+const placeholderCollections = Array.from({ length: PLACEHOLDER_COLLECTION_COUNT }, () => ({
+	name: "Коллекция",
+}));
 const cardLinkBase =
 	typeof p.cardLinkBase === "string" && p.cardLinkBase.trim() ? p.cardLinkBase : "/catalog?collection=";
 const propCollections = (Array.isArray(p.collections) ? p.collections : [])
@@ -163,9 +174,19 @@ const paddingStyle = p.padding
 					</h3>
 				</a>
 			</li>
-		)) : items.map((collection, index) => (
+		)) : placeholderCollections.map((c, index) => (
 			<li class:list={[index === 0 && "col-span-2 sm:col-span-1"]}>
-				<SatinCollectionCard collection={collection} priority={index < 3} />
+				<div class="group flex flex-col gap-3" data-nt="satin-collection-card">
+					<div
+						class={`${tileAspect} w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,251_251_251))]`}
+						aria-hidden="true"
+					></div>
+					<h3
+						class={`satin-collection-name font-manrope text-[16px] font-normal leading-tight text-[rgb(var(--color-text,0_0_0))]${captionCase}`}
+					>
+						{c.name}
+					</h3>
+				</div>
 			</li>
 		))}
 	</ul>

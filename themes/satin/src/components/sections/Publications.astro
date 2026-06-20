@@ -6,9 +6,15 @@ import SatinPicture from "../img/SatinPicture.astro";
 // src/components/sections/Journal.astro (тело КОПИЕЙ; оригинал не тронут —
 // index.astro:32 его использует). Схема полей = packages/theme-base/blocks/
 // Publications/Publications.puckConfig.ts; манера — themes/satin/MANNER.md
-// (эталон процесса — bloom Publications). Demo-карточки — болванки Journal в
-// тоне §11; платформенный резолв публикаций идёт по data-атрибуту
-// publicationType на гриде, demo-карточки — его фоллбек.
+// (эталон процесса — bloom Publications).
+// ПУСТОЕ СОСТОЯНИЕ (нет реальных публикаций) = ПЛЕЙСХОЛДЕР по контракту Figma
+// 1:19335 (3 колонки: пустой image-rect + «Колонна» + нейтральный текст), НЕ
+// мок-демо верстальщика (Journal-болванки про коллекции + /images/4x/journal-*.png).
+// Когда у магазина есть реальные публикации (SSR fetch /api/sites/<id>/publications
+// → fallback publications.json, либо legacy flat-проп p.posts) — рендерим их без
+// изменений (Shopify-модель, как theme-base PopularProducts/Collections: пустое =
+// заглушка, данные = реальный контент). Платформенный резолв по publicationType
+// остаётся data-атрибутом на гриде.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -63,38 +69,98 @@ const showDate = String(p.showDateTime ?? p.dateTime?.enabled ?? "true") === "tr
 const publicationType =
 	typeof p.publicationType === "string" && p.publicationType ? p.publicationType : undefined;
 
-// Болванки = defaultPosts Journal VERBATIM (Journal.astro:17-36, тон §11);
-// фоллбек-обложки /images/4x/journal-{1..3}.png по позиции (цикл при cards > 3).
-const DEMO_POSTS = [
-	{
-		date: "01.05, 12:41",
-		title: "Летняя коллекция уже здесь",
-		excerpt:
-			"Лён, хлопок, свободные силуэты — 12 оттенков, которые сочетаются между собой без раздумий.",
-	},
-	{
-		date: "21.04, 9:31",
-		title: "Доставка за 1 день — бесплатно",
-		excerpt:
-			"Заказ от 5 000 ₽ по Москве — на следующий день и без доплаты. Примерка при курьере, возврат на месте.",
-	},
-	{
-		date: "14.03, 8:00",
-		title: "Новая весенняя коллекция",
-		excerpt:
-			"Тренчи, трикотаж, рубашки — остатки весенней коллекции со скидкой. До воскресенья, пока есть размеры.",
-	},
-];
-// Legacy flat-проп Journal posts[] {title,image,date,excerpt,href} — при
-// непустом массиве рендерится verbatim; иначе demo-карточки по cardsCount.
+// Реальные публикации: SSR fetch storefront publications (gateway → sites-
+// service) c fallback на build-time publications.json (паттерн canonical
+// theme-base / bloom Publications). siteId инжектит build pipeline / preview
+// controller. Legacy flat-проп Journal posts[] {title,image,date,excerpt,href}
+// — высший приоритет (back-compat для ревизий, где данные пришли так).
+type RawPublication = {
+	id: string;
+	title?: string;
+	slug?: string;
+	excerpt?: string;
+	coverImageUrl?: string | null;
+	publishedAt?: string | null;
+};
 const legacyPosts = Array.isArray(p.posts) && p.posts.length ? p.posts : undefined;
-const items =
-	legacyPosts ??
-	Array.from({ length: cards }, (_, i) => ({
-		...DEMO_POSTS[i % DEMO_POSTS.length],
-		image: `/images/4x/journal-${(i % 3) + 1}.png`,
-		href: undefined as string | undefined,
-	}));
+const siteIdFromRoot = typeof p.siteId === "string" ? p.siteId : "";
+let realPublications: RawPublication[] = [];
+if (!legacyPosts && siteIdFromRoot) {
+	try {
+		const internalBase =
+			(import.meta as unknown as { env?: { SITES_INTERNAL_BASE?: string } }).env?.SITES_INTERNAL_BASE ??
+			"http://localhost:3114";
+		const res = await fetch(`${internalBase}/api/sites/${siteIdFromRoot}/publications`).catch(() => null);
+		if (res && res.ok) {
+			const data = (await res.json()) as { publications?: RawPublication[] };
+			realPublications = data.publications ?? [];
+		}
+	} catch {
+		/* swallow */
+	}
+}
+try {
+	if (!legacyPosts && realPublications.length === 0) {
+		const pubData = await import("../data/publications.json");
+		realPublications = ((pubData as { default?: RawPublication[] }).default ??
+			(pubData as unknown as RawPublication[])) as RawPublication[];
+	}
+} catch {
+	/* swallow — publications.json отсутствует */
+}
+
+function formatPubDate(iso: string | null | undefined): string {
+	if (!iso) return "";
+	try {
+		return new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" }).format(
+			new Date(iso),
+		);
+	} catch {
+		return "";
+	}
+}
+
+// Гейт пустого состояния (Shopify-модель): есть реальные публикации (legacy
+// posts[] / SSR fetch / publications.json) → рендерим их; нет — ПЛЕЙСХОЛДЕР по
+// контракту Figma 1:19335 (3 колонки: пустой image-rect + «Колонна» +
+// нейтральный текст), НЕ мок-демо верстальщика.
+// Текст-болванка колонки в нейтральном тоне публикаций (как theme-base
+// MultiColumns: «Сочетай текст…»); не привязан к товарам/коллекциям/уходу.
+const PLACEHOLDER_TEXT = "Поделись новостями бренда, гайдами и историями в этом блоке.";
+type PubItem = {
+	title: string;
+	date: string;
+	excerpt: string;
+	image: string;
+	href?: string;
+	isPlaceholder: boolean;
+};
+const items: PubItem[] = legacyPosts
+	? legacyPosts.map((post: any) => ({
+			title: post.title ?? "",
+			date: post.date ?? "",
+			excerpt: post.excerpt ?? "",
+			image: post.image ?? "",
+			href: post.href,
+			isPlaceholder: false,
+		}))
+	: realPublications.length > 0
+		? realPublications.slice(0, cards).map((pub) => ({
+				title: pub.title ?? "",
+				date: formatPubDate(pub.publishedAt),
+				excerpt: pub.excerpt ?? "",
+				image: pub.coverImageUrl ?? "",
+				href: pub.slug ? `/publication/${pub.slug}` : undefined,
+				isPlaceholder: false,
+			}))
+		: Array.from({ length: cards }, () => ({
+				title: "Колонна",
+				date: "",
+				excerpt: PLACEHOLDER_TEXT,
+				image: "",
+				href: undefined,
+				isPlaceholder: true,
+			}));
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
@@ -133,7 +199,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 			data-publication-type={publicationType}
 		>
 			{
-				items.map((post: any, i: number) => (
+				items.map((post, i) => (
 					<li
 						class="flex flex-col gap-6 bg-[rgb(var(--color-surface,245_245_245))] p-4"
 						data-publication-index={i}
@@ -141,33 +207,42 @@ const titleId = id && heading ? `${id}-title` : undefined;
 						data-puck-subsection-index={i}
 						data-puck-subsection-field="cardsCount"
 					>
-						{/* Плейсхолдер медиа журнала — родной литерал #ECECEC (236 236 236, Journal.astro:45). */}
+						{/* Медиа: реальная обложка → <img>; пустое состояние (плейсхолдер
+						   или публикация без обложки) → пустой image-rect surface
+						   (контракт Figma 1:19335). Родной литерал #ECECEC (236 236 236,
+						   Journal.astro:45) — тон пустой плитки satin. */}
 						<div class="relative aspect-square w-full overflow-hidden bg-[#ECECEC]">
-							<SatinPicture
-								src={post.image}
-								alt={post.title}
-								loading="lazy"
-								class="absolute inset-0 size-full object-cover"
-							/>
+							{post.image && (
+								<SatinPicture
+									src={post.image}
+									alt={post.title}
+									loading="lazy"
+									class="absolute inset-0 size-full object-cover"
+								/>
+							)}
 						</div>
 						<div class="flex flex-col gap-2">
-							{showDate && (
+							{showDate && !post.isPlaceholder && post.date && (
 								<p class="font-manrope text-[14px] font-light uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]">
 									{post.date}
 								</p>
 							)}
 							<h3 class={cardTitleCls}>{post.title}</h3>
-							<p class="font-manrope text-[14px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))]">
-								{post.excerpt}
-							</p>
+							{post.excerpt && (
+								<p class="font-manrope text-[14px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))]">
+									{post.excerpt}
+								</p>
+							)}
 						</div>
-						<a
-							href={post.href ?? "/blog"}
-							class="inline-flex items-center gap-2 font-manrope text-[14px] font-normal uppercase leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70"
-						>
-							<span>Перейти</span>
-							<NtIcon name="arrow-right" sizeClass="size-5" />
-						</a>
+						{!post.isPlaceholder && post.href && (
+							<a
+								href={post.href}
+								class="inline-flex items-center gap-2 font-manrope text-[14px] font-normal uppercase leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70"
+							>
+								<span>Перейти</span>
+								<NtIcon name="arrow-right" sizeClass="size-5" />
+							</a>
+						)}
 					</li>
 				))
 			}

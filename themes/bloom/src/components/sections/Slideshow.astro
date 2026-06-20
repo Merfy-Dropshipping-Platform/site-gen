@@ -12,35 +12,29 @@ const id = p.id;
 
 // Канон slides[] 1-5 (item: imageUrl|image, heading(string|{text,size}), subtitle,
 // text{content,size}, ctaText/ctaUrl | button{text,link}, container, position,
-// alignment, colorScheme). Отсутствие = canon-defaults: 3 слайда-болванки в тоне
-// бьюти-ритуала (§11).
-const CANON_SLIDES = [
-	{
-		id: "slide-1",
-		imageUrl: "",
-		heading: "Ритуал сияния",
-		subtitle: "Уход, который превращает заботу о себе в маленький праздник",
-		ctaText: "Начать ритуал",
-		ctaUrl: "/catalog",
-	},
-	{
-		id: "slide-2",
-		imageUrl: "",
-		heading: "Коллекция HYDRO",
-		subtitle: "Интенсивное увлажнение для кожи и волос — на каждый день",
-		ctaText: "Смотреть",
-		ctaUrl: "/catalog",
-	},
-	{
-		id: "slide-3",
-		imageUrl: "",
-		heading: "Бестселлеры заботы",
-		subtitle: "Формулы, за которыми возвращаются снова и снова",
-		ctaText: "Выбрать уход",
-		ctaUrl: "/catalog",
-	},
-];
-const rawSlides = Array.isArray(p.slides) && p.slides.length ? p.slides : CANON_SLIDES;
+// alignment, colorScheme).
+//
+// ПУСТОЕ СОСТОЯНИЕ (Figma 1:19335): когда мерчант НЕ добавил ни одного слайда —
+// секция рендерит ПЛЕЙСХОЛДЕР контракта (пустой image-rect #FBFBFB-эквивалент
+// surface + заголовок секции + поясняющий текст + Кнопка + точки-навигация), а
+// НЕ мок-демо верстальщика (3 слайда-болванки «Ритуал сияния/HYDRO/Бестселлеры»
+// + фоллбек-фото /images/hero-background.webp …). Образец гейта — theme-base
+// Collections.astro (hasManualCollections → DEMO) и манера пустого rect темы
+// bloom — ImageWithText.astro (тот же Figma-контракт: bg surface + заголовок +
+// текст + розовый pill). Когда слайды ВЫБРАНЫ (p.slides.length) — рендер
+// реальных слайдов БЕЗ изменений; слайд без фото остаётся на ассете темы
+// (SLIDE_FALLBACKS ниже), клиентский слайдер (prev/next/dots при ≥2 слайдах)
+// не затрагивается.
+const PLACEHOLDER_SLIDE = {
+	id: "placeholder",
+	imageUrl: "", // пустой image-rect (surface) — НЕ ассет верстальщика
+	heading: "Слайд-шоу",
+	subtitle: "Покажи и расскажи о своем товаре в одном блоке",
+	ctaText: "Кнопка",
+	ctaUrl: "/catalog",
+};
+const hasSlides = Array.isArray(p.slides) && p.slides.length > 0;
+const rawSlides = hasSlides ? p.slides : [PLACEHOLDER_SLIDE];
 
 // Заголовок слайда — лестница hero h1 манеры (§9): large (canon-носитель
 // blockDefaults Hero) и отсутствие = литерал верстальщика 18/md:20;
@@ -59,8 +53,10 @@ const slideTextCls = (s: string | undefined) =>
 			? "font-inter text-[12px] font-light leading-[1.2] text-[rgb(var(--color-text,227_142_159))] md:text-[14px]"
 			: "font-inter text-[14px] font-light leading-[1.2] text-[rgb(var(--color-text,227_142_159))] md:text-[16px]";
 
-// Канон-плейсхолдер = реальный ассет темы (принцип rose T15): слайд без фото
-// получает ассет верстальщика по позиции.
+// Слайд мерчанта без фото получает ассет темы по позиции (принцип rose T15).
+// В ПУСТОМ состоянии (!hasSlides) фоллбек НЕ применяется — плейсхолдер обязан
+// показать пустой image-rect (surface), а не фото верстальщика (см. ветку
+// s.image ? <img> : <div bg-surface> в разметке).
 const SLIDE_FALLBACKS = ["/images/hero-background.webp", "/images/trend-1.webp", "/images/trend-2.webp"];
 const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 	const ctaText =
@@ -70,7 +66,7 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 		image:
 			(typeof s.imageUrl === "string" && s.imageUrl.trim()) ||
 			(typeof s.image === "string" && s.image.trim()) ||
-			SLIDE_FALLBACKS[i % SLIDE_FALLBACKS.length],
+			(hasSlides ? SLIDE_FALLBACKS[i % SLIDE_FALLBACKS.length] : ""),
 		heading: typeof s.heading === "string" ? s.heading : (s.heading?.text ?? ""),
 		headingCls: slideHeadingCls(typeof s.heading === "object" ? s.heading?.size : undefined),
 		subtitle:
@@ -287,6 +283,23 @@ const paddingStyle = p.padding
 							</div>
 						)}
 					</>
+				)
+			}
+
+			{
+				/* ПЛЕЙСХОЛДЕР пустого состояния (Figma 1:19335): точки-навигация —
+				   декоративные (3 точки, одна активная) на светлом surface-полотне,
+				   тёмный токен heading вместо белого реальных слайдов. JS-логики нет
+				   (один слайд) — чисто визуальный контракт пустого состояния. */
+				!hasSlides && (
+					<div class="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2">
+						{[0, 1, 2].map((i) => (
+							<span
+								class={`h-2 w-2 rounded-full transition-colors ${i === 0 ? "bg-[rgb(var(--color-heading,227_142_159))]" : "bg-[rgb(var(--color-heading,227_142_159))]/40"}`}
+								aria-hidden="true"
+							/>
+						))}
+					</div>
 				)
 			}
 		</div>

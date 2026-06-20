@@ -2,7 +2,10 @@
 // Фаза B (vanilla, группа misc): новая канон-секция CollapsibleSection в манере
 // vanilla (см. themes/vanilla/MANNER.md; эталоны — themes/bloom CollapsibleSection,
 // процесс-эталон rose T16). Схема полей = packages/theme-base/blocks/
-// CollapsibleSection/CollapsibleSection.puckConfig.ts. Секции нет у верстальщика —
+// CollapsibleSection/CollapsibleSection.puckConfig.ts.
+// ПУСТОЕ СОСТОЯНИЕ (без sections[]/items[]) = ПЛЕЙСХОЛДЕР по контракту Figma
+// 1:19335 (строки «Раздел» + «Ответь на самые популярные вопросы клиентов»),
+// НЕ мок-демо верстальщика. Секции нет у верстальщика —
 // нативный <details>/<summary> (Container-safe, без JS): заголовок = роль секции
 // §1 (Bitter italic 20, #26311C на светлом), вопрос Arsenal 16 uppercase, ответ
 // Arsenal 14/16 muted, разделители в стиле строк «Стоимость» каталога (fc:33,
@@ -30,28 +33,28 @@ const headingAlignCls =
 const headingCls = `font-vanilla-bitter ${headingSizeCls} font-normal italic leading-none tracking-normal text-[rgb(var(--color-heading,38_49_28))]${headingAlignCls}`;
 
 // Канон sections[] 1-10 {heading, content} (+ pupa items[] {title, content}).
-// Отсутствие = canon-defaults: 2 вопроса-болванки в тоне уюта §11 (доставка /
-// уход за текстилем). content — set:html (HTML канона).
-const CANON_SECTIONS = [
-	{
-		id: "section-1",
-		heading: "Какие сроки доставки?",
-		content:
-			"Доставка по России занимает от 2 до 7 рабочих дней. Как только заказ передадут в службу доставки, мы пришлём вам трек-номер для отслеживания.",
-	},
-	{
-		id: "section-2",
-		heading: "Как ухаживать за текстилем Vanila?",
-		content:
-			"Рекомендуем бережную стирку при 30 градусах и сушку в расправленном виде — так плед и постельное бельё надолго сохранят мягкость и цвет.",
-	},
+// ПУСТОЕ СОСТОЯНИЕ (без sections[]/items[]) = ПЛЕЙСХОЛДЕР по контракту
+// Figma 1:19335 (строки «Раздел» + «Ответь на самые популярные вопросы
+// клиентов»), НЕ мок-демо верстальщика (раньше — 2 вопроса про Vanila-бренд).
+// Когда мерчант добавил sections[]/items[] — рендер реальных данных без
+// изменений (Shopify-модель, как theme-base PopularProducts/Collections и
+// vanilla MultiColumns/MultiRows: пустой выбор = заглушка, выбранное = данные).
+// content — set:html.
+const PLACEHOLDER_CONTENT = "Ответь на самые популярные вопросы клиентов";
+const PLACEHOLDER_SECTIONS = [
+	{ id: "placeholder-1", heading: "Раздел", content: PLACEHOLDER_CONTENT },
+	{ id: "placeholder-2", heading: "Раздел", content: PLACEHOLDER_CONTENT },
+	{ id: "placeholder-3", heading: "Раздел", content: PLACEHOLDER_CONTENT },
 ];
-const rawSections =
-	Array.isArray(p.sections) && p.sections.length
+// hasManualSections: мерчант явно добавил хотя бы одну строку (Shopify-модель).
+const hasManualSections =
+	(Array.isArray(p.sections) && p.sections.length > 0) ||
+	(Array.isArray(p.items) && p.items.length > 0);
+const rawSections = hasManualSections
+	? Array.isArray(p.sections) && p.sections.length
 		? p.sections
-		: Array.isArray(p.items) && p.items.length
-			? p.items
-			: CANON_SECTIONS;
+		: p.items
+	: PLACEHOLDER_SECTIONS;
 const sections = rawSections.slice(0, 10).map((s: any) => ({
 	heading:
 		(typeof s.heading === "string" && s.heading) || (typeof s.title === "string" && s.title) || "",

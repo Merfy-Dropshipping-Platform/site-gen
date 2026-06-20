@@ -1032,6 +1032,22 @@ const PREVIEW_CART_STORE_INLINE = `
       } catch (e) { return false; }
       finally { state.loading = false; }
     },
+    async expressBuy(productId, variantId, quantity) {
+      // Express «Купить сейчас» в превью: свежая корзина ТОЛЬКО с этим товаром
+      // (накопленную превью-корзину не смешиваем — чекаут показывает ровно нажатый
+      // товар). Превью эфемерно, реальную корзину покупателя это не затрагивает.
+      state.cartId = null; state.items = []; save();
+      state.loading = true;
+      try {
+        var cartId = await ensureCart();
+        var body = { productId: productId, quantity: quantity || 1 };
+        if (variantId) body.variantCombinationId = variantId;
+        var r = await api('/orders/cart/' + cartId + '/items', { method: 'POST', body: JSON.stringify(body) });
+        if (r.success) { await refresh(); return true; }
+        return false;
+      } catch (e) { return false; }
+      finally { state.loading = false; }
+    },
     async removeItem(itemId) {
       if (!state.cartId) return false;
       state.items = state.items.filter(function (i) { return i.id !== itemId; });
@@ -1661,17 +1677,17 @@ const PREVIEW_NAV_AGENT_INLINE = `
       // «Купить сейчас» (buy-now) и «Оформить» (checkout) → обе ведут в оформление.
       // Раньше buy-now хардкодил '/cart' — это и был баг «купить сейчас → корзина».
       var navPath = '/checkout';
-      // На live buy-now кладёт выбранный вариант в корзину И идёт на /checkout. В превью
-      // nav-агент глушит обработчик темы (stopPropagation выше), поэтому товар надо
-      // положить здесь — иначе сводка оформления пуста («Ничего не выбрано»). Кладём в
-      // window.cartStore (тот же серверный cart, что читает превью-чекаут), затем переход.
-      if (navBtn.getAttribute('data-action') === 'buy-now' && window.cartStore && window.cartStore.addItem) {
+      // buy-now = ЭКСПРЕСС: оформляем ТОЛЬКО выбранный товар. На live это URL
+      // (?buynow=…), но nav-агент глушит обработчик темы (stopPropagation выше), а
+      // превью-чекаут читает inline window.cartStore — поэтому здесь кладём выбранный
+      // товар в СВЕЖУЮ корзину (expressBuy: сброс + один товар), иначе накопится/пусто.
+      if (navBtn.getAttribute('data-action') === 'buy-now' && window.cartStore && window.cartStore.expressBuy) {
         var addBtn = document.querySelector('[data-add-to-cart]');
         var pid = addBtn ? addBtn.getAttribute('data-product-id') : null;
         if (pid) {
           var vci = addBtn.getAttribute('data-variant-combination-id') || null;
           var qty = parseInt(addBtn.getAttribute('data-quantity') || '1', 10) || 1;
-          Promise.resolve(window.cartStore.addItem(pid, vci, qty)).then(
+          Promise.resolve(window.cartStore.expressBuy(pid, vci, qty)).then(
             function () { post({ type: 'navigate', path: navPath }); },
             function () { post({ type: 'navigate', path: navPath }); }
           );

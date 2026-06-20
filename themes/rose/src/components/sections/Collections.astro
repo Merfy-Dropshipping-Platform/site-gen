@@ -1,7 +1,5 @@
 ---
 import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
-import RoseCollectionCard from "../products/RoseCollectionCard.astro";
-import { collections } from "../../data/collections";
 
 // ОЖИВЛЕНИЕ: конструкторная схема Collections (heading/subtitle). Тело + данные verbatim.
 // T13: полная канон-схема (headingSize/subtitleSize/titleAlignment/columns/imageView/
@@ -52,13 +50,14 @@ const colsRaw = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.rou
 const cols = colsRaw && colsRaw !== 3 ? colsRaw : undefined;
 // Канон imageView: 'portrait' (== литерал верстальщика 430/500, canon-default,
 // поле скрыто в панели) → дефолт-ветка (вид НЕ меняется); 'square' → 1:1;
-// 'wide' → 16/9. Перекрытие — на li>a>div (специфичность > базового aspect-[430/500]),
-// работает и для prop-карточек, и для demo (RoseCollectionCard).
+// 'wide' → 16/9. Перекрытие — на li>a>div (prop-карточки) и li>div>div
+// (плейсхолдер-плитки пустого состояния), специфичность > базового
+// aspect-[430/500].
 const tileAspectCls =
 	p.imageView === "wide"
-		? " [&_li>a>div]:aspect-[16/9]"
+		? " [&_li>a>div]:aspect-[16/9] [&_li>div>div]:aspect-[16/9]"
 		: p.imageView === "square"
-			? " [&_li>a>div]:aspect-[1/1]"
+			? " [&_li>a>div]:aspect-[1/1] [&_li>div>div]:aspect-[1/1]"
 			: "";
 // Gap-лестница верстальщика — едина для всех. Колонки: дефолт (3/пусто) =
 // лестница верстальщика 1→3 (моб→планшет+); заданное значение применяется уже
@@ -73,9 +72,10 @@ const gridCls = `${gridGap} ${gridColsCls}${tileAspectCls}`;
 const gridStyle = cols ? `--cols:${cols}` : undefined;
 
 // Канон collections[] (≤10): карточки из пропса при непустом массиве (название/
-// картинка/ссылка по shape схемы; разметка = RoseCollectionCard, плоский <img> как
-// в гидрации; без картинки — surface-плитка как канон-плейсхолдер). Иначе —
-// демо-коллекции верстальщика дословно. SSR рендерит сохранённые поля item,
+// картинка/ссылка по shape схемы; плоский <img> как в гидрации; без картинки —
+// surface-плитка как канон-плейсхолдер). Иначе — пустое состояние (Figma 1:19335):
+// плейсхолдер-плитки DEMO_COLLECTIONS ниже, НЕ мок-демо верстальщика.
+// SSR рендерит сохранённые поля item,
 // резолв collectionId→имя/обложка делает гидрация ниже (data-collection-ref):
 // live — /data/collections.json, превью — storefront-data; паритет theme-base
 // (имя коллекции перебивает ручной heading, обложка — при пустой своей).
@@ -104,6 +104,17 @@ const propCollections = (Array.isArray(p.collections) ? p.collections : [])
 		};
 	});
 const usePropCollections = propCollections.length > 0;
+
+// Канон пустого состояния (Figma 1:19335, паритет theme-base DEMO_COLLECTIONS):
+// без ручного выбора — 3 ПЛЕЙСХОЛДЕР-карточки (пустая surface-плитка #FBFBFB +
+// подпись «Коллекция»), НЕ мок-демо верстальщика (RIVIERA/URBAN/FUTURISM из
+// data/collections.ts). При наличии реальных коллекций магазина JS-autofill
+// (data-collections-autofill ниже) подменяет их живыми данными.
+const DEMO_COLLECTIONS = [
+	{ name: "Коллекция" },
+	{ name: "Коллекция" },
+	{ name: "Коллекция" },
+];
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T11).
 const paddingStyle = p.padding
@@ -159,9 +170,18 @@ const paddingStyle = p.padding
 						</h3>
 					</a>
 				</li>
-			)) : collections.map((collection, index) => (
+			)) : DEMO_COLLECTIONS.map((collection) => (
 				<li>
-					<RoseCollectionCard collection={collection} priority={index < 3} />
+					<div
+							class="group flex w-full flex-col gap-5"
+							aria-label={collection.name}
+							data-nt="rose-collection-card"
+						>
+							<div class="aspect-[430/500] w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,251_251_251))]" aria-hidden="true"></div>
+							<h3 class="rose-collection-name w-full text-left font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-text,0_0_0))] max-sm:!text-[12px]">
+								{collection.name}
+							</h3>
+						</div>
 				</li>
 			))}
 		</ul>

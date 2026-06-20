@@ -19,6 +19,27 @@ const sectionSubtitle =
 const cardsN = typeof p.cards === "number" && p.cards > 0 ? Math.max(1, Math.min(24, Math.round(p.cards))) : 4;
 const products = catalogProducts.slice(0, cardsN);
 
+// Figma 1:19335 — пустое состояние секции. Curated-модель (Shopify, паритет
+// packages/theme-base/blocks/PopularProducts): пока мерчант НЕ выбрал коллекцию
+// (collectionRef пуст), секция показывает ПЛЕЙСХОЛДЕР (цветные куртки-заглушки
+// «Товар» / «2 500 ₽»), а НЕ мок-товары верстальщика (catalogProducts/сумки).
+// Когда коллекция выбрана — SSR рендерит catalogProducts, а гидрация ниже
+// подменяет их реальными товарами коллекции (поведение НЕ меняется).
+// Ассеты: packages/theme-base/public/placeholders/sweater-<color>.png →
+// копируются в дист (assemble-from-packages copyPublic / theme-build merge) и
+// доступны на сайте как /placeholders/sweater-<color>.png (object-contain).
+const PLACEHOLDER_SWEATERS = [
+	"/placeholders/sweater-blue.png",
+	"/placeholders/sweater-yellow.png",
+	"/placeholders/sweater-red.png",
+	"/placeholders/sweater-green.png",
+];
+const placeholderCards = Array.from({ length: cardsN }, (_, i) => ({
+	image: PLACEHOLDER_SWEATERS[i % PLACEHOLDER_SWEATERS.length],
+	name: "Товар",
+	price: "2 500 ₽",
+}));
+
 // Канон headingSize (top-level приоритетнее legacy heading.size): 'small'
 // (canon-default) и отсутствие = NtSectionHeading верстальщика дословно (20px);
 // medium → 24px, large → 29px (≈канонный ряд small 20 / medium 24, окр. до px).
@@ -208,7 +229,7 @@ const paddingStyle = p.padding
 			data-qa-text={quickAddMode ? quickAddText : undefined}
 			data-qa-class={quickAddMode ? quickAddCls : undefined}
 		>
-			{products.map((product) => (
+			{collectionRef ? products.map((product) => (
 				<li data-product-id={product.id} class:list={quickAddMode ? ["group"] : undefined} data-image-2={nextPhoto ? product.gallery?.[1] : undefined}>
 					<RoseProductCard product={product} />{quickAddMode && (
 						<button
@@ -224,6 +245,33 @@ const paddingStyle = p.padding
 							{quickAddText}
 						</button>
 					)}
+				</li>
+			)) : placeholderCards.map((card) => (
+				/* Пустое состояние (коллекция не выбрана): плейсхолдер-карточка
+				   Figma 1:19335 — куртка-заглушка (object-contain), «Товар»,
+				   «2 500 ₽». Без data-product-id / data-add-to-cart — это не
+				   реальный товар (add-to-cart недоступен, как в theme-base DEMO). */
+				<li>
+					<article class="flex w-full flex-col gap-5" aria-label={card.name}>
+						<div class="relative block aspect-[318/444] w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,251_251_251))]">
+							<img
+								src={card.image}
+								alt={card.name}
+								width="318"
+								height="444"
+								loading="lazy"
+								class="h-full w-full object-contain p-[15%]"
+							/>
+						</div>
+						<div class="flex w-full flex-col gap-1 text-left">
+							<span class="rose-product-name block w-full font-manrope text-[14px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))]">
+								{card.name}
+							</span>
+							<span class="rose-product-price font-manrope !text-[16px] font-normal !leading-none text-[rgb(var(--color-text,0_0_0))]">
+								{card.price}
+							</span>
+						</div>
+					</article>
 				</li>
 			))}
 		</ul>{viewAllShow && (

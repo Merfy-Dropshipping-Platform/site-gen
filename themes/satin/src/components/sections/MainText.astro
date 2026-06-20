@@ -8,13 +8,18 @@
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Канон heading: string | { text, size }. Дефолт = литерал TextBlock.astro:8.
-// Роль = заголовок секции (Kelly Slab uppercase, МАННЕРА §1). Лестница §9
-// «Заголовок секции 20»: medium/отсутствие = литерал 20, small 17, large 24.
-const heading =
-	typeof p.heading === "string"
-		? p.heading
-		: (p.heading?.text ?? "Одежда, в которой не нужно стараться выглядеть хорошо");
+// Канон heading: string | { text, size }. Роль = заголовок секции (Kelly Slab
+// uppercase, МАННЕРА §1). Лестница §9 «Заголовок секции 20»: medium/отсутствие =
+// 20, small 17, large 24.
+// Пустое состояние (Figma 1:19335 — НЕ мок-демо верстальщика): когда мерчант не
+// задал ни заголовок, ни текст — рендерим контрактный плейсхолдер
+// «Расскажи о своем бренде» + поясняющий текст + Кнопку. Любой заданный контент
+// → рендер реальных данных без изменений.
+const headingRaw = typeof p.heading === "string" ? p.heading : p.heading?.text;
+const textRaw = typeof p.text === "string" ? p.text : p.text?.content;
+const isEmptyState = !(headingRaw && headingRaw.trim()) && !(textRaw && textRaw.trim());
+
+const heading = headingRaw ?? (isEmptyState ? "Расскажи о своем бренде" : "");
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingCls =
 	headingSize === "small"
@@ -23,12 +28,10 @@ const headingCls =
 			? "font-logo text-[24px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
 			: "font-logo text-[20px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]";
 
-// Канон text: string | { content, size }. Дефолт = body-литерал TextBlock.astro:9.
+// Канон text: string | { content, size }. Пустое состояние → контрактный
+// поясняющий текст плейсхолдера (НЕ длинная копия верстальщика).
 const text =
-	typeof p.text === "string"
-		? p.text
-		: (p.text?.content ??
-			"Мы делаем вещи, которые работают на вас, а не наоборот. Хлопок и лён, которые приятно носить в жару. Крой, который не сковывает и не растягивается после третьей стирки. Палитра, где любой верх подходит к любому низу — без мучений перед зеркалом. Каждая вещь проходит три этапа примерки на реальных людях до того, как попадает в каталог. Без логомании, без кричащих принтов, без вещей-однодневок. Только базовый гардероб, к которому хочется возвращаться.");
+	textRaw ?? (isEmptyState ? "Расскажи подробнее о своем онлайн-магазине в этом блоке" : "");
 
 // Канон textSize (top-level hidden приоритетнее text.size сабпанели). Роль =
 // «Body крупный» .satin-copy md:text-[20px] (Arsenal 300, lh 1.5, muted —
@@ -58,11 +61,13 @@ const alignCls = alignment === "right" ? " items-end text-right" : "";
 const italicCls = p.textStyle === "italic" ? " italic" : "";
 
 // Кнопка: canon-сабпанель button {text, link} приоритетнее legacy hidden cta.
-// У верстальщика кнопки НЕТ → рендер ТОЛЬКО при непустом тексте (заданный
-// пустой скрывает). Ссылка-фоллбек /catalog (паттерн rose T15).
-const btnText =
+// В пустом состоянии (плейсхолдер Figma 1:19335) показываем «Кнопку» по контракту.
+// С данными рендер ТОЛЬКО при непустом тексте (заданный пустой скрывает).
+// Ссылка-фоллбек /catalog (паттерн rose T15).
+const btnTextRaw =
 	(typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined) ??
 	(typeof p.cta?.text === "string" && p.cta.text.trim() ? p.cta.text : undefined);
+const btnText = btnTextRaw ?? (isEmptyState ? "Кнопка" : undefined);
 const btnHref =
 	p.button?.link?.href ??
 	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??

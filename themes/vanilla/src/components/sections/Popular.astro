@@ -62,6 +62,31 @@ const products = catalogProducts
 	.slice(0, cardsN)
 	.map((prod) => ({ ...prod, image: toWebp(prod.image) }));
 
+// Figma 1:19335 — пустое состояние секции. Curated-модель (Shopify, паритет
+// packages/theme-base/blocks/PopularProducts + порт rose Popular): пока мерчант
+// НЕ выбрал коллекцию (collectionRef пуст), секция показывает ПЛЕЙСХОЛДЕР
+// (цветные куртки-заглушки «Товар» / «2 500 ₽»), а НЕ мок-товары верстальщика
+// (catalogProducts/«Подушки декоративные»/vanilla-product-N.webp). Когда
+// коллекция выбрана — SSR рендерит catalogProducts, а гидрация ниже подменяет
+// их реальными товарами коллекции (поведение НЕ меняется). Ассеты:
+// packages/theme-base/public/placeholders/sweater-<color>.png → копируются в
+// дист (assemble-from-packages copyAssets public/) и доступны на сайте как
+// /placeholders/sweater-<color>.png (object-contain). По контракту дефолт
+// плейсхолдера = 4 карточки; явный cards-проп уважается (cardsN).
+const PLACEHOLDER_SWEATERS = [
+	"/placeholders/sweater-blue.png",
+	"/placeholders/sweater-yellow.png",
+	"/placeholders/sweater-red.png",
+	"/placeholders/sweater-green.png",
+];
+const placeholderN =
+	typeof p.cards === "number" && p.cards > 0 ? Math.max(1, Math.min(24, Math.round(p.cards))) : 4;
+const placeholderCards = Array.from({ length: placeholderN }, (_, i) => ({
+	image: PLACEHOLDER_SWEATERS[i % PLACEHOLDER_SWEATERS.length],
+	name: "Товар",
+	price: "2 500 ₽",
+}));
+
 // Канон columns 1-6: 3 (canon-default из blockDefaults vanilla = литерал
 // md:grid-cols-3 верстальщика) и отсутствие → дефолт-ветка; иное →
 // inline-var на гриде с md (мобильная лестница 1→sm:2 сохраняется).
@@ -240,7 +265,7 @@ const paddingStyle = p.padding
 			data-qa-cls={quickAddMode ? QA_BTN_CLS : undefined}
 			data-btn-style={btnStyle}
 		>
-			{products.map((product) => (
+			{collectionRef ? products.map((product) => (
 				<li
 					data-product-id={product.id}
 					data-image-2={nextPhoto && product.gallery?.[1] ? toWebp(product.gallery[1]) : undefined}
@@ -259,6 +284,35 @@ const paddingStyle = p.padding
 							{quickAddText}
 						</button>
 					)}
+				</li>
+			)) : placeholderCards.map((card) => (
+				/* Пустое состояние (коллекция не выбрана): плейсхолдер-карточка
+				   Figma 1:19335 — куртка-заглушка (object-contain), «Товар»,
+				   «2 500 ₽». В манере vanilla (aspect-square, bg карточки,
+				   Arsenal uppercase). Без data-product-id / data-add-to-cart —
+				   это не реальный товар (add-to-cart недоступен, как в
+				   theme-base DEMO). */
+				<li>
+					<article class="group flex flex-col gap-3" aria-label={card.name}>
+						<div class="relative block aspect-square w-full overflow-hidden bg-[var(--vanilla-card)]">
+							<img
+								src={card.image}
+								alt={card.name}
+								width="429"
+								height="429"
+								loading="lazy"
+								class="absolute inset-0 h-full w-full object-contain p-[15%]"
+							/>
+						</div>
+						<div class="flex flex-col gap-1">
+							<span class="font-vanilla-arsenal text-base font-normal uppercase leading-none text-black">
+								{card.name}
+							</span>
+							<span class="font-vanilla-arsenal text-base font-normal leading-none text-black">
+								{card.price}
+							</span>
+						</div>
+					</article>
 				</li>
 			))}
 		</ul>{viewAllShow && (

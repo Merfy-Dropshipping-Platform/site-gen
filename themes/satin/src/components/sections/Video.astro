@@ -12,12 +12,20 @@ const id = p.id;
 const rawVideoUrl =
 	typeof p.video?.url === "string" ? p.video.url : typeof p.videoUrl === "string" ? p.videoUrl : "";
 const videoUrl = rawVideoUrl.startsWith("blob:") ? "" : rawVideoUrl;
-// Канон poster (+ video.coverImage); пусто и без видео → постер-плейсхолдер
-// /images/4x/Главный_экран.png на медиа-подложке.
+// Канон poster (+ video.coverImage). Рендерится ТОЛЬКО как постер реального
+// видео мерчанта — в пустом состоянии постер-кампанию не подставляем.
 const poster =
 	(typeof p.video?.coverImage === "string" && p.video.coverImage ? p.video.coverImage : undefined) ??
 	(typeof p.poster === "string" && p.poster ? p.poster : undefined);
-const placeholderPoster = poster ?? "/images/4x/Главный_экран.png";
+
+// КОНТРАКТ ПЛЕЙСХОЛДЕРОВ (Figma 1:19335 — пустое состояние секции «Видео»:
+// пустой image-rect + Play-иконка по центру). ЗАМЕНЯЕТ мок-демо верстальщика
+// (дизайнерское фото кампании /images/4x/Главный_экран.png + без play-кнопки).
+// Эталон: theme-base Video.astro (empty-state media-slot) + satin Slideshow/
+// ImageWithText (светлый rect surface вместо кампании). Гейт = наличие реального
+// видео мерчанта (videoUrl непустой). Нет видео → ПЛЕЙСХОЛДЕР: пустой rect
+// surface (#FBFBFB-паритет) + Play-иконка. Реальное видео рендерится как было.
+const isPlaceholder = !videoUrl;
 
 // Канон heading + pupa content.heading{text, alignment, enabled, size} — рендер
 // при непустом тексте и enabled !== 'false'. Роль = заголовок секции §1
@@ -68,11 +76,13 @@ const containerCls = fullBleed
 	: "satin-container flex w-full flex-col gap-8";
 // На full-bleed полотне заголовок остаётся в полях секции (.satin-pad).
 const headingWrapCls = fullBleed ? "satin-pad" : undefined;
-// Медиа: aspect-video на surface 245_245_245; скругление — токен с нулевым
-// фоллбеком (§4: углы прямые везде); на full-bleed радиус не применяется.
+// Медиа: aspect-video на surface; скругление — токен с нулевым фоллбеком (§4:
+// углы прямые везде); на full-bleed радиус не применяется. Фоллбек surface =
+// 251_251_251 (#FBFBFB-паритет контракта пустого состояния, как satin Slideshow/
+// ImageWithText); при заданном --color-surface темы выигрывает он.
 const mediaCls = fullBleed
-	? "relative aspect-video w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))]"
-	: "relative aspect-video w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]";
+	? "relative aspect-video w-full overflow-hidden bg-[rgb(var(--color-surface,251_251_251))]"
+	: "relative aspect-video w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,251_251_251))]";
 
 // Канон overlay 0-100 (число или строка) — слой поверх медиа; клики проходят
 // сквозь (controls видео остаются доступны).
@@ -104,7 +114,7 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 			)
 		}
 
-		<div class={mediaCls}>
+		<div class={mediaCls} aria-hidden={isPlaceholder ? "true" : undefined}>
 			{
 				videoUrl ? (
 					<video
@@ -116,13 +126,23 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 						class="absolute inset-0 size-full object-cover"
 					/>
 				) : (
-					<img
-						src={placeholderPoster}
-						alt=""
-						aria-hidden="true"
-						loading="lazy"
-						class="absolute inset-0 size-full object-cover"
-					/>
+					/* Пустое состояние = ПЛЕЙСХОЛДЕР по контракту: пустой rect surface
+					   (уже задан mediaCls bg-surface) + Play-иконка по центру. Без
+					   мок-кампании /images/4x/Главный_экран.png. */
+					<span class="pointer-events-none absolute inset-0 z-[1] flex items-center justify-center">
+						<svg
+							width="64"
+							height="64"
+							viewBox="0 0 64 64"
+							fill="none"
+							xmlns="http://www.w3.org/2000/svg"
+							class="text-[rgb(var(--color-heading,0_0_0))] opacity-[0.55]"
+							aria-hidden="true"
+						>
+							<circle cx="32" cy="32" r="32" fill="currentColor" />
+							<path d="M26 22L42 32L26 42V22Z" fill="rgb(var(--color-bg,255 255 255))" />
+						</svg>
+					</span>
 				)
 			}
 			{

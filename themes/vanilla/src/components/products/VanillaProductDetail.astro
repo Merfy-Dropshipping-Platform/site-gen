@@ -1029,19 +1029,26 @@ const pdpHeartSvg =
 				});
 			}
 
-			// «Купить сейчас»: переиспользуем ГЛОБАЛЬНЫЙ делегат корзины vanilla —
-			// диспатчим клик по [data-add-to-cart] (кладёт линию в локальную корзину),
-			// затем идём прямо на /checkout (страница наполняет серверный cartStore
-			// из nt-cart vanilla:cart:v1, без промежуточного /cart).
+			// «Купить сейчас» = ЭКСПРЕСС: оформляем ТОЛЬКО выбранный товар, корзину
+			// покупателя (nt-cart) НЕ трогаем. Передаём товар в /checkout через URL
+			// (?buynow=<id>&v=<combo>&q=<qty>); checkout-sync соберёт серверную корзину
+			// из этих параметров, а не из nt-cart. Так повторный buy-now всегда даёт
+			// именно нажатый товар, а накопленная корзина сохраняется нетронутой.
+			// На превью конструктора этот hard-nav перехватывает nav-агент iframe.
 			var buyBtn = section.querySelector("[data-action='buy-now']");
 			if (buyBtn) {
 				buyBtn.addEventListener("click", function () {
 					if (buyBtn.disabled) return;
 					var add = section.querySelector("[data-add-to-cart]");
-					if (add && !add.disabled) {
-						add.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-					}
-					window.location.href = "/checkout";
+					if (!add || add.disabled) return;
+					var pid = add.getAttribute("data-product-id") || "";
+					if (!pid) return;
+					var vci = add.getAttribute("data-variant-combination-id") || "";
+					var qty = add.getAttribute("data-quantity") || "1";
+					window.location.href =
+						"/checkout?buynow=" + encodeURIComponent(pid) +
+						(vci ? "&v=" + encodeURIComponent(vci) : "") +
+						"&q=" + encodeURIComponent(qty);
 				});
 			}
 		}

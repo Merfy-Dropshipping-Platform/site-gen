@@ -12,12 +12,13 @@ const id = p.id;
 const rawVideoUrl =
 	typeof p.video?.url === "string" ? p.video.url : typeof p.videoUrl === "string" ? p.videoUrl : "";
 const videoUrl = rawVideoUrl.startsWith("blob:") ? "" : rawVideoUrl;
-// Канон poster (+ video.coverImage); пусто и без видео → постер-плейсхолдер
-// верстальщика /images/hero-background.webp на медиа-подложке.
+// Канон poster (+ video.coverImage). Когда мерчант НЕ загрузил ни видео, ни
+// обложку — пустое состояние секции = Figma-плейсхолдер (1:19335): пустой
+// image-rect на surface-подложке (даёт mediaCls) + Play-иконка по центру.
+// НЕ мок-постер верстальщика /images/hero-background.webp.
 const poster =
 	(typeof p.video?.coverImage === "string" && p.video.coverImage ? p.video.coverImage : undefined) ??
 	(typeof p.poster === "string" && p.poster ? p.poster : undefined);
-const placeholderPoster = poster ?? "/images/hero-background.webp";
 
 // Канон heading + pupa content.heading{text, alignment, enabled, size} — рендер
 // при непустом тексте и enabled !== 'false'. Роль = заголовок секции §1
@@ -121,14 +122,29 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 						preload="metadata"
 						class="absolute inset-0 size-full object-cover"
 					/>
-				) : (
+				) : poster ? (
 					<img
-						src={placeholderPoster}
+						src={poster}
 						alt=""
 						aria-hidden="true"
 						loading="lazy"
 						class="absolute inset-0 size-full object-cover"
 					/>
+				) : (
+					/* Пустое состояние (Figma 1:19335): без видео и без обложки —
+					   пустой image-rect (surface-подложка из mediaCls) + Play-иконка
+					   по центру. Цвета — токены темы на SVG-узлах: контраст круг/
+					   стрелка гарантирован в любой схеме и не зависит от Tailwind-JIT. */
+					<div
+						class="absolute inset-0 flex items-center justify-center"
+						aria-hidden="true"
+						data-media-placeholder
+					>
+						<svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+							<circle cx="32" cy="32" r="32" style="fill:rgb(var(--color-text,17_17_17))" />
+							<path d="M27 22L43 32L27 42V22Z" style="fill:rgb(var(--color-bg,255_255_255))" />
+						</svg>
+					</div>
 				)
 			}
 			{

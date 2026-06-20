@@ -1,6 +1,5 @@
 ---
 import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
-import RosePicture from "../img/RosePicture.astro";
 
 // ОЖИВЛЕНИЕ: конструкторная схема Gallery (heading/subtitle union). Тело + данные verbatim.
 // T13: полная канон-схема (items[] ≤3, imagePosition, headingSize, textSize, padding).
@@ -46,11 +45,12 @@ const galleryGridCls = mirror
 const heroTileOrderCls = mirror ? " lg:order-2" : "";
 const sideColOrderCls = mirror ? " lg:order-1" : "";
 
-// Канон items[] (≤3, типы image/product/collection): плитки из пропсов с fallback
-// на три плитки верстальщика ДОСЛОВНО. SSR рендерит канон-плейсхолдеры
-// («Товар» 2 500 ₽ / «Выбери коллекцию»); резолв productId/collectionId→имя/
-// цена/картинка делает гидрация ниже (data-gallery-product/-collection):
-// live — /data/{products,collections}.json, превью — storefront-data.
+// Канон items[] (≤3, типы image/product/collection): плитки из пропсов.
+// SSR рендерит канон-плейсхолдеры («Товар» 2 500 ₽ / «Выбери коллекцию»);
+// резолв productId/collectionId→имя/цена/картинка делает гидрация ниже
+// (data-gallery-product/-collection): live — /data/{products,collections}.json,
+// превью — storefront-data. Пустое no-items состояние (useItems=false) рендерит
+// ПЛЕЙСХОЛДЕР Figma 1:19335 (ниже), а не мок верстальщика.
 type GalleryTile = {
 	kind: "image" | "product" | "collection";
 	url: string;
@@ -98,10 +98,11 @@ const galleryTiles: GalleryTile[] = (Array.isArray(p.items) ? p.items : [])
 			ref: null,
 		};
 	});
-// Канон-плейсхолдер = реальный ассет темы (принцип T15 ImageWithText): плитка
-// без url (image c пустым url, product/collection без выбранной сущности)
-// получает фото верстальщика по позиции — «добавил секцию → сразу красиво»,
-// подписи-плейсхолдеры (Товар/цена/Выбери коллекцию) остаются.
+// Items-path (мерчант ДОБАВИЛ плитки в конструкторе = «данные выбраны»):
+// плитка без url служит SSR-якорем под гидрацию реальной сущности
+// (data-gallery-product/-collection → имя/цена/картинка из products/collections).
+// Этот путь рендера/гидрации НЕ трогаем — контракт пустого состояния касается
+// только no-items ветки (ниже useItems=false), где раньше был мок верстальщика.
 const TILE_FALLBACKS = [
 	"/images/Изображение_Галерея.webp",
 	"/images/Товар_1.webp",
@@ -110,6 +111,10 @@ const TILE_FALLBACKS = [
 galleryTiles.forEach((t, i) => {
 	if (!t.url) t.url = TILE_FALLBACKS[i % TILE_FALLBACKS.length];
 });
+// Куртка-плейсхолдер для no-items пустого состояния (Figma 1:19335). Доступна
+// на live как /placeholders/sweater-blue.png (copyPublic, assemble-from-packages);
+// rose уже ссылается на этот путь строковым литералом (RoseProductDetail.astro).
+const PLACEHOLDER_SWEATER_BLUE = "/placeholders/sweater-blue.png";
 const useItems = galleryTiles.length > 0;
 const heroTile = useItems ? galleryTiles[0] : undefined;
 const sideTiles = useItems ? galleryTiles.slice(1) : [];
@@ -158,20 +163,14 @@ const paddingStyle = p.padding
 					)}
 				</a>
 			) : (
+			/* Плейсхолдер пустого состояния (Figma 1:19335): пустой image-rect
+			   (surface fill), без мок-картинки верстальщика «Изображение_Галерея». */
 			<a
 				href="/catalog"
 				class={`gallery-hero-tile group relative block min-h-[280px] w-full min-w-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] lg:min-h-0 lg:h-full${heroTileOrderCls}`}
 				aria-label="Перейти в каталог"
-			>
-				<RosePicture
-					src="/images/Изображение_Галерея.png"
-					alt="Галерея"
-					loading="eager"
-					class="absolute inset-0 !size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
-					width="875"
-					height="875"
-				/>
-			</a>
+				aria-hidden="true"
+			/>
 			)}
 
 			{useItems ? sideTiles.length > 0 && (
@@ -245,55 +244,42 @@ const paddingStyle = p.padding
 					)}
 				</div>
 			) : (
+			/* Плейсхолдер пустого состояния (Figma 1:19335): карточка-товар (куртка
+			   blue + «Товар»/«2 500 ₽») + карточка «Выбери коллекцию» (пустой rect).
+			   Паритет theme-base DEMO_PRODUCTS/DEMO_COLLECTIONS — НЕ мок верстальщика
+			   (Сумка/FUTURISM). Ссылки ведут в каталог (нет выбранной сущности). */
 			<div class={`flex min-h-0 min-w-0 flex-col gap-6${sideColOrderCls}`}>
 				<a
-					href="/products/bag-1"
+					href="/catalog"
 					class="group flex flex-col items-start gap-4 text-left md:gap-5"
-					aria-label="Сумка"
+					aria-label="Товар"
 				>
-					<div
-						class="gallery-bag-media relative aspect-[429/444] w-full min-h-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] leading-none"
-					>
-						<RosePicture
-							src="/images/Товар_5__2_.png"
-							alt="Сумка"
-							width="429"
-							height="444"
+					<div class="gallery-bag-media relative aspect-[429/444] w-full min-h-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] leading-none">
+						<img
+							src={PLACEHOLDER_SWEATER_BLUE}
+							alt="Товар"
 							loading="eager"
-							class="absolute inset-0 !size-full max-w-none object-cover object-center transition-transform duration-300 group-hover:scale-110"
+							class="absolute inset-0 !size-full max-w-none object-contain p-[12%] transition-transform duration-300 group-hover:scale-105"
 						/>
 					</div>
 					<div class="flex flex-col gap-[4px] bg-transparent">
-						<h3
-							class="gallery-product-title font-manrope text-[16px] font-normal leading-none text-black md:text-[16px] lg:text-[16px] xl:text-[16px]"
-						>
-							Сумка
+						<h3 class="gallery-product-title font-manrope text-[16px] font-normal leading-none text-black md:text-[16px] lg:text-[16px] xl:text-[16px]">
+							Товар
 						</h3>
-						<span
-							class="gallery-product-price font-manrope text-[16px] font-normal leading-none text-black md:text-[16px] lg:text-[16px] xl:text-[16px]"
-						>
-							5 990₽
+						<span class="gallery-product-price font-manrope text-[16px] font-normal leading-none text-black md:text-[16px] lg:text-[16px] xl:text-[16px]">
+							2 500 ₽
 						</span>
 					</div>
 				</a>
 
 				<a
-					href="/catalog?collection=FUTURISM"
+					href="/catalog"
 					class="group flex min-w-0 flex-col items-start gap-4 text-left md:gap-5"
-					aria-label="Коллекция FUTURISM"
+					aria-label="Выбери коллекцию"
 				>
-					<div class="aspect-[429/309] w-full min-h-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]">
-						<RosePicture
-							src="/images/Коллекция_3.png"
-							alt="Коллекция FUTURISM"
-							width="429"
-							height="309"
-							loading="eager"
-							class="block !size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
-						/>
-					</div>
+					<div class="aspect-[429/309] w-full min-h-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]" aria-hidden="true"></div>
 					<h3 class="gallery-collection-title font-manrope bg-transparent text-[16px] font-normal leading-[100%] text-black">
-						Коллекция FUTURISM
+						Выбери коллекцию
 					</h3>
 				</a>
 			</div>

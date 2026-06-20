@@ -49,17 +49,14 @@ const heroOrderCls = mirror ? " lg:order-2" : "";
 const sideOrderCls = mirror ? " lg:order-1" : "";
 
 // Канон items[] (≤3, типы image{url,alt} / product{productId} /
-// collection{collectionId}). Отсутствие = canon-defaults puckConfig (тройка
-// image+product+collection). SSR рендерит канон-плейсхолдеры («Товар» 2 500 ₽ /
-// «Выбери коллекцию»); резолв productId/collectionId→имя/цена/обложка/ссылка
-// делает гидрация ниже (data-gallery-product / data-gallery-collection —
-// атрибуты bloom Gallery): live — /data/{products,collections}.json, превью —
-// storefront-data по __MERFY_SITE_ID__; demo-сборка → no-op, SSG остаётся.
-const CANON_ITEMS = [
-	{ type: "image", url: "", alt: "Изображение" },
-	{ type: "product", productId: null },
-	{ type: "collection", collectionId: null },
-];
+// collection{collectionId}): плитки строго из пропсов конструктора. Пустой
+// items[] = НЕТ выбора → ниже рендерится ПЛЕЙСХОЛДЕР по контракту Figma
+// 1:19335 (паритет theme-base PopularProducts/Collections и bloom Gallery), а
+// НЕ мок-демо верстальщика. SSR-плитки выбранных сущностей несут канон-подписи
+// («Товар» 2 500 ₽ / «Выбери коллекцию»); резолв productId/collectionId→имя/
+// цена/обложка/ссылку делает гидрация ниже (data-gallery-product /
+// data-gallery-collection — атрибуты bloom Gallery): live —
+// /data/{products,collections}.json, превью — storefront-data; demo → no-op.
 type GalleryTile = {
 	kind: "image" | "product" | "collection";
 	url: string;
@@ -69,8 +66,7 @@ type GalleryTile = {
 	href: string;
 	ref: string | null;
 };
-const rawItems = Array.isArray(p.items) && p.items.length ? p.items : CANON_ITEMS;
-const galleryTiles: GalleryTile[] = rawItems
+const galleryTiles: GalleryTile[] = (Array.isArray(p.items) ? p.items : [])
 	.filter((x: any) => x && typeof x === "object")
 	.slice(0, 3)
 	.map((it: any): GalleryTile => {
@@ -108,19 +104,18 @@ const galleryTiles: GalleryTile[] = rawItems
 			ref: null,
 		};
 	});
-// Канон-плейсхолдер = реальный ассет темы (принцип T15): плитка без картинки
-// (image с пустым url, product/collection без выбранной сущности) получает
-// фото товара верстальщика по позиции.
-const TILE_FALLBACKS = [
-	"/images/4x/Товар_1.png",
-	"/images/4x/Товар_2.png",
-	"/images/4x/Товар_3.png",
-];
-galleryTiles.forEach((t, i) => {
-	if (!t.url) t.url = TILE_FALLBACKS[i % TILE_FALLBACKS.length];
-});
-const heroTile = galleryTiles[0];
-const sideTiles = galleryTiles.slice(1);
+// Куртка-плейсхолдер empty-state доступна на live как /placeholders/sweater-blue.png
+// (copyPublic theme-base/public в assemble-from-packages.ts; satin Popular уже
+// ссылается на этот путь). object-contain + padding — паритет theme-base
+// PopularProducts DEMO_PRODUCTS / bloom Gallery placeholder.
+const PLACEHOLDER_SWEATER_BLUE = "/placeholders/sweater-blue.png";
+// Гейт «выбрано/не выбрано» (паритет bloom Gallery): есть items[] → реальный
+// SSR-рендер выбранных плиток + гидрация; пусто → ПЛЕЙСХОЛДЕР по контракту
+// (пустой image-rect + карточка-товар куртка blue + карточка «Выбери коллекцию»),
+// НЕ мок-демо верстальщика.
+const useItems = galleryTiles.length > 0;
+const heroTile = useItems ? galleryTiles[0] : undefined;
+const sideTiles = useItems ? galleryTiles.slice(1) : [];
 
 // Подписи плиток — манера карточек satin (PC:48-62 / CC:31-35): имя Arsenal 16
 // 400 uppercase leading-tight; цена 16 400; старая цена 14 light muted
@@ -156,84 +151,125 @@ const paddingStyle = p.padding
 		</div>
 
 		<div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
-			{heroTile && (
-				<a
-					href={heroTile.href}
-					class={`group flex cursor-pointer flex-col gap-3${heroOrderCls}`}
-					aria-label={heroTile.label || heroTile.alt || "Перейти в каталог"}
-					data-gallery-product={heroTile.kind === "product" ? (heroTile.ref ?? undefined) : undefined}
-					data-gallery-collection={
-						heroTile.kind === "collection" ? (heroTile.ref ?? undefined) : undefined
-					}
-					data-puck-subsection-parent={id}
-					data-puck-subsection-index={0}
-					data-puck-subsection-field="items"
-				>
-					<div class="aspect-square w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]">
-						<img
-							src={heroTile.url}
-							alt={heroTile.alt}
-							loading="lazy"
-							class="!h-full !w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-						/>
-					</div>
-					{heroTile.kind === "product" && (
-						<div class="flex flex-col gap-1.5 md:gap-2">
-							<span class={`gallery-product-title ${captionNameCls} transition-opacity group-hover:opacity-80`}>
-								{heroTile.label}
-							</span>
-							<div class="flex flex-wrap items-baseline gap-1.5 md:gap-2">
-								<span class={`gallery-product-price ${captionPriceCls}`}>{heroTile.price}</span>
-								<span class={`gallery-product-oldprice ${captionOldPriceCls}`} />
-							</div>
-						</div>
-					)}
-					{heroTile.kind === "collection" && (
-						<h3 class={`gallery-collection-title ${captionNameCls}`}>{heroTile.label}</h3>
-					)}
-				</a>
-			)}
-
-			{sideTiles.length > 0 && (
-				<div class={`grid grid-cols-2 gap-4${sideOrderCls}`}>
-					{sideTiles.map((tile, i) => (
+			{useItems ? (
+				<>
+					{heroTile && (
 						<a
-							href={tile.href}
-							class="group flex cursor-pointer flex-col gap-3"
-							aria-label={tile.label || tile.alt || "Перейти в каталог"}
-							data-gallery-product={tile.kind === "product" ? (tile.ref ?? undefined) : undefined}
+							href={heroTile.href}
+							class={`group flex cursor-pointer flex-col gap-3${heroOrderCls}`}
+							aria-label={heroTile.label || heroTile.alt || "Перейти в каталог"}
+							data-gallery-product={heroTile.kind === "product" ? (heroTile.ref ?? undefined) : undefined}
 							data-gallery-collection={
-								tile.kind === "collection" ? (tile.ref ?? undefined) : undefined
+								heroTile.kind === "collection" ? (heroTile.ref ?? undefined) : undefined
 							}
 							data-puck-subsection-parent={id}
-							data-puck-subsection-index={i + 1}
+							data-puck-subsection-index={0}
 							data-puck-subsection-field="items"
 						>
-							<div class="aspect-[430/564] w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]">
+							<div class="aspect-square w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]">
 								<img
-									src={tile.url}
-									alt={tile.alt}
+									src={heroTile.url}
+									alt={heroTile.alt}
 									loading="lazy"
 									class="!h-full !w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
 								/>
 							</div>
-							{tile.kind === "product" && (
+							{heroTile.kind === "product" && (
 								<div class="flex flex-col gap-1.5 md:gap-2">
 									<span class={`gallery-product-title ${captionNameCls} transition-opacity group-hover:opacity-80`}>
-										{tile.label}
+										{heroTile.label}
 									</span>
 									<div class="flex flex-wrap items-baseline gap-1.5 md:gap-2">
-										<span class={`gallery-product-price ${captionPriceCls}`}>{tile.price}</span>
+										<span class={`gallery-product-price ${captionPriceCls}`}>{heroTile.price}</span>
 										<span class={`gallery-product-oldprice ${captionOldPriceCls}`} />
 									</div>
 								</div>
 							)}
-							{tile.kind === "collection" && (
-								<h3 class={`gallery-collection-title ${captionNameCls}`}>{tile.label}</h3>
+							{heroTile.kind === "collection" && (
+								<h3 class={`gallery-collection-title ${captionNameCls}`}>{heroTile.label}</h3>
 							)}
 						</a>
-					))}
-				</div>
+					)}
+
+					{sideTiles.length > 0 && (
+						<div class={`grid grid-cols-2 gap-4${sideOrderCls}`}>
+							{sideTiles.map((tile, i) => (
+								<a
+									href={tile.href}
+									class="group flex cursor-pointer flex-col gap-3"
+									aria-label={tile.label || tile.alt || "Перейти в каталог"}
+									data-gallery-product={tile.kind === "product" ? (tile.ref ?? undefined) : undefined}
+									data-gallery-collection={
+										tile.kind === "collection" ? (tile.ref ?? undefined) : undefined
+									}
+									data-puck-subsection-parent={id}
+									data-puck-subsection-index={i + 1}
+									data-puck-subsection-field="items"
+								>
+									<div class="aspect-[430/564] w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]">
+										<img
+											src={tile.url}
+											alt={tile.alt}
+											loading="lazy"
+											class="!h-full !w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+										/>
+									</div>
+									{tile.kind === "product" && (
+										<div class="flex flex-col gap-1.5 md:gap-2">
+											<span class={`gallery-product-title ${captionNameCls} transition-opacity group-hover:opacity-80`}>
+												{tile.label}
+											</span>
+											<div class="flex flex-wrap items-baseline gap-1.5 md:gap-2">
+												<span class={`gallery-product-price ${captionPriceCls}`}>{tile.price}</span>
+												<span class={`gallery-product-oldprice ${captionOldPriceCls}`} />
+											</div>
+										</div>
+									)}
+									{tile.kind === "collection" && (
+										<h3 class={`gallery-collection-title ${captionNameCls}`}>{tile.label}</h3>
+									)}
+								</a>
+							))}
+						</div>
+					)}
+				</>
+			) : (
+				<>
+					{/* Empty-state ПЛЕЙСХОЛДЕР (Figma 1:19335, паритет bloom Gallery / theme-base):
+					    крупная плитка слева — пустой image-rect на surface (без фото);
+					    справа — карточка-товар (куртка blue) + карточка «Выбери коллекцию». */}
+					<div
+						class={`aspect-square w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]${heroOrderCls}`}
+						aria-hidden="true"
+					/>
+
+					<div class={`grid grid-cols-2 gap-4${sideOrderCls}`}>
+						<a href="/catalog" class="group flex cursor-pointer flex-col gap-3" aria-label="Товар, 2 500 ₽">
+							<div class="aspect-[430/564] w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]">
+								<img
+									src={PLACEHOLDER_SWEATER_BLUE}
+									alt="Товар"
+									loading="lazy"
+									class="!h-full !w-full object-contain p-[15%]"
+								/>
+							</div>
+							<div class="flex flex-col gap-1.5 md:gap-2">
+								<span class={`${captionNameCls} transition-opacity group-hover:opacity-80`}>Товар</span>
+								<div class="flex flex-wrap items-baseline gap-1.5 md:gap-2">
+									<span class={captionPriceCls}>2 500 ₽</span>
+								</div>
+							</div>
+						</a>
+
+						<a href="/catalog" class="group flex cursor-pointer flex-col gap-3" aria-label="Выбери коллекцию">
+							<div
+								class="aspect-[430/564] w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]"
+								aria-hidden="true"
+							/>
+							<h3 class={captionNameCls}>Выбери коллекцию</h3>
+						</a>
+					</div>
+				</>
 			)}
 		</div>
 	</div>

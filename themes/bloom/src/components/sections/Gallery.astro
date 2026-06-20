@@ -1,13 +1,12 @@
 ---
-import BloomPicture from "../img/BloomPicture.astro";
-
 // ОЖИВЛЕНИЕ (Фаза B, контракт rose Gallery T13): конструкторная схема
-// theme-base Gallery.puckConfig поверх разметки верстальщика. Тело +
-// demo-данные verbatim (страницы зовут <Gallery /> без пропсов — дефолт-ветка
-// даёт прежний рендер, включая точки пагинации как render-only декорацию).
-// Канон-дефолты конструктора (headingSize/textSize medium, imagePosition left)
-// → пиксель верстальщика; дефолтные ветки тернарников = прежние строки
-// байт-в-байт (цвета → токены с пиксель-фоллбеком родных литералов §7).
+// theme-base Gallery.puckConfig поверх разметки верстальщика. Тело + канон-
+// дефолты (headingSize/textSize medium, imagePosition left) → пиксель
+// верстальщика. Empty-state (нет выбранных items[]) рендерит ПЛЕЙСХОЛДЕР по
+// контракту Figma 1:19335 (паритет theme-base PopularProducts/Collections):
+// пустой image-rect + карточка-товар (куртка blue + «Товар»/«2 500 ₽») +
+// карточка «Выбери коллекцию» — НЕ мок-демо верстальщика. Данные ВЫБРАНЫ
+// (useItems) → реальный рендер + гидрация по коллекции БЕЗ изменений.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 const sectionTitle =
@@ -19,15 +18,11 @@ const rawSubtitle =
 const sectionSubtitle =
 	typeof rawSubtitle === "string" && rawSubtitle.trim() ? rawSubtitle : undefined;
 
-const product = {
-	title: "Увлажняющее молочко",
-	price: "1190 ₽",
-	href: "/products/bag-4",
-	image: "/images/milk.webp",
-};
-
-const slides = 3;
-const activeSlide = 0;
+// Куртка-плейсхолдер empty-state доступна на live как /placeholders/sweater-blue.png
+// (copyPublic theme-base/public в assemble-from-packages.ts; bloom уже ссылается
+// на этот путь — BloomProductDetail.astro). object-contain + padding, паритет
+// theme-base PopularProducts DEMO_PRODUCTS.
+const PLACEHOLDER_SWEATER_BLUE = "/placeholders/sweater-blue.png";
 
 // Канон headingSize (top-level приоритетнее legacy heading.size): 'medium'
 // (canon-default) и отсутствие = роль «заголовок секции» верстальщика дословно
@@ -181,16 +176,10 @@ const paddingStyle = p.padding
 					)}
 				</a>
 			) : (
-			<div class={`group relative aspect-square w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]${heroOrderCls}`}>
-				<BloomPicture
-					src="/images/balaklava.webp"
-					alt="Галерея"
-					width={652}
-					height={652}
-					loading="lazy"
-					class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-				/>
-			</div>
+			<div
+				class={`relative aspect-square w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]${heroOrderCls}`}
+				aria-hidden="true"
+			/>
 			)}
 
 			{useItems ? sideTiles.length > 0 && (
@@ -241,46 +230,36 @@ const paddingStyle = p.padding
 				</div>
 			) : (
 			<div class={`flex w-full max-w-[652px] flex-col gap-5 lg:max-w-none${sideOrderCls}`}>
-				<a
-					href={product.href}
-					class="group block"
-					aria-label={`${product.title}, ${product.price}`}
-				>
+				<a href="/catalog" class="group block" aria-label="Товар, 2 500 ₽">
 					<div class="relative aspect-[652/594] w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]">
-						<BloomPicture
-							src={product.image}
-							alt={product.title}
-							width={652}
-							height={594}
+						<img
+							src={PLACEHOLDER_SWEATER_BLUE}
+							alt="Товар"
 							loading="lazy"
-							class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
+							class="absolute inset-0 size-full object-contain p-[12%]"
 						/>
+					</div>
+					<div class="mt-5 flex flex-col gap-1">
+						<span class="font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity group-hover:opacity-70">
+							Товар
+						</span>
+						<span class="font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))]">
+							2 500 ₽
+						</span>
 					</div>
 				</a>
 
-				<div class="flex flex-col gap-1">
-					<a href={product.href} class="font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70">
-						{product.title}
-					</a>
-					<span class="font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))]">
-						{product.price}
-					</span>
-				</div>
-
-				<div class="flex justify-end gap-2" aria-label="Навигация по галерее" role="tablist">
-					{Array.from({ length: slides }).map((_, index) => (
-						<button
-							type="button"
-							role="tab"
-							aria-selected={index === activeSlide}
-							aria-label={`Слайд ${index + 1}`}
-							class:list={[
-								"h-2 w-2 rounded-full transition-colors",
-								index === activeSlide ? "bg-[rgb(var(--color-text,0_0_0))]" : "bg-[#d9d9d9]",
-							]}
-						/>
-					))}
-				</div>
+				<a href="/catalog" class="group block" aria-label="Выбери коллекцию">
+					<div
+						class="relative aspect-[652/594] w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]"
+						aria-hidden="true"
+					/>
+					<div class="mt-5 flex flex-col gap-1">
+						<span class="font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity group-hover:opacity-70">
+							Выбери коллекцию
+						</span>
+					</div>
+				</a>
 			</div>
 			)}
 		</div>

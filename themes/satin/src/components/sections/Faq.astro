@@ -8,30 +8,42 @@ interface FaqItem {
 
 interface Props {
 	items?: FaqItem[];
+	id?: string;
 }
 
-const defaultItems: FaqItem[] = [
-	{
-		q: "Как узнать свой размер?",
-		a: "Рекомендуем воспользоваться таблицей размеров, которая есть в карточке каждого товара. Указывайте свои мерки (обхват груди, талии, бёдер) и сверяйте их с таблицей. Если сомневаетесь, напишите нашему консультанту в онлайн-чат с вашими параметрами — мы поможем подобрать подходящий размер.",
-	},
-	{
-		q: "Какой у вас срок доставки?",
-		a: "Время доставки в регионы России занимает от 3 до 10 рабочих дней в зависимости от удалённости. Точные сроки и стоимость вы увидите при оформлении заказа, выбрав свой город.",
-	},
-	{
-		q: "Можно ли вернуть или обменять товар?",
-		a: "Да, конечно. В соответствии с законом о защите прав потребителей вы можете обменять неподошедшую вещь (кроме изделий из категорий «бельё» и «носки») в течение 14 дней с момента получения при сохранении товарного вида, бирок и чека.",
-	},
+// Legacy-компонент верстальщика (вытеснён CollapsibleSection.astro для Puck;
+// остаётся в index.astro:33 / about.astro:61 как `<Faq />` без пропов).
+// Curated-модель (как theme-base PopularProducts/Collections и канон
+// CollapsibleSection.astro этой темы): секция показывает реальные пункты
+// ТОЛЬКО когда мерчант их передал. Гейт = наличие непустого items.
+// Пусто → ПЛЕЙСХОЛДЕР пустого состояния (Figma 1:19335) «Раздел» + «Ответь на
+// самые популярные вопросы клиентов», НЕ мок-демо верстальщика (3 FAQ-вопроса).
+const PLACEHOLDER_ITEMS: FaqItem[] = [
+	{ q: "Раздел", a: "Ответь на самые популярные вопросы клиентов" },
+	{ q: "Раздел", a: "Ответь на самые популярные вопросы клиентов" },
 ];
 
-const { items = defaultItems } = Astro.props;
+const { items: itemsProp, id } = Astro.props;
+const hasRealItems = Array.isArray(itemsProp) && itemsProp.length > 0;
+// Выбранные данные → рендер реальных без изменений. Пусто → плейсхолдер.
+const items: FaqItem[] = hasRealItems ? itemsProp! : PLACEHOLDER_ITEMS;
 ---
 
-<section class="satin-pad w-full bg-white py-10 md:py-14" aria-label="Частые вопросы">
+<section
+	class="satin-pad w-full bg-white py-10 md:py-14"
+	aria-label="Частые вопросы"
+	data-puck-component-id={id}
+>
 	<div class="satin-container flex flex-col divide-y divide-[#DDDDDD]">
 		{items.map((item, index) => (
-			<details class="group py-5" open={index === 0} data-faq-item>
+			<details
+				class="group py-5"
+				open={index === 0}
+				data-faq-item
+				data-puck-subsection-parent={hasRealItems ? id : undefined}
+				data-puck-subsection-index={hasRealItems ? index : undefined}
+				data-puck-subsection-field={hasRealItems ? "items" : undefined}
+			>
 				<summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-logo text-[18px] font-normal uppercase leading-[1.2] text-[#000000] md:text-[20px] [&::-webkit-details-marker]:hidden">
 					<span>{item.q}</span>
 					<NtIcon name="plus" sizeClass="size-8" class="shrink-0 group-open:hidden" />

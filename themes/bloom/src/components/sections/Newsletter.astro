@@ -1,18 +1,22 @@
 ---
-// Фаза B (bloom, группа misc): новая канон-секция Newsletter в манере bloom
+// Фаза B (bloom, группа misc): канон-секция Newsletter в манере bloom
 // (см. themes/bloom/MANNER.md; процесс-эталон — rose T17 Newsletter). Схема
 // полей = packages/theme-base/blocks/Newsletter/Newsletter.puckConfig.ts.
-// Тело = блок подписки подвала верстальщика (Footer.astro:36-79, перенесён
-// КОПИЕЙ — подвал не тронут): заголовок Urbanist 20 light uppercase, подзаголовок
-// Inter 16 light muted, pill-форма h-10 с внутренней кнопкой; сетка секций §2.
+// Манера/верстка взяты из блока подписки подвала верстальщика (Footer.astro:36-79,
+// перенесён КОПИЕЙ — подвал не тронут): заголовок Urbanist 20 light uppercase,
+// подзаголовок Inter 16 light muted, pill-форма h-10 с внутренней кнопкой; сетка §2.
+// Пустое (некурированное) состояние секции рендерит Figma-плейсхолдер 1:19335
+// («Подпишитесь на нашу рассылку» + input «email@example.com» + кнопка), а НЕ
+// мок-демо литералы подвала верстальщика. Значения, заданные мерчантом, выигрывают.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Канон heading: string | { text, alignment, size }; canon-default = литерал
-// подвала «ПОДПИШИТЕСЬ НА РАССЫЛКУ» (F:46). Роль F:44 (Urbanist 20 light
-// uppercase, чёрный) — фоллбек токена 0_0_0, как у верстальщика.
+// Канон heading: string | { text, alignment, size }. Пустое состояние секции
+// (мерчант не задал заголовок) = Figma-плейсхолдер 1:19335 «Подпишитесь на нашу
+// рассылку» — НЕ мок-демо подвала верстальщика «ПОДПИШИТЕСЬ НА РАССЫЛКУ» (F:46).
+// Когда мерчант вводит свой заголовок — он выигрывает (фоллбек ниже не используется).
 const heading =
-	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "ПОДПИШИТЕСЬ НА РАССЫЛКУ");
+	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Подпишитесь на нашу рассылку");
 // Лестница §9 от базы-литерала 20 (medium): small ≈0.7× = 14, large ≈1.2× = 24.
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingCls =
@@ -22,22 +26,25 @@ const headingCls =
 			? "font-urbanist text-[24px] font-light uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]"
 			: "font-urbanist text-[20px] font-light uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]";
 
-// Канон description (string) + text {content,size} (pupa-дубль): canon-default =
-// литерал подвала «Подпишитесь на наши акции и новости» (F:48-50, Inter 16 light
-// #999999 → токен muted). Лестница body §9: small 14, large 19.
+// Канон description (string) + text {content,size} (pupa-дубль). Пустое состояние =
+// generic Figma-плейсхолдер (поясняющий текст), НЕ мок-демо подвала верстальщика
+// «Подпишитесь на наши акции и новости» (F:48-50). Манера bloom: Inter 16 light
+// muted. Лестница body §9: small 14, large 19. Свой текст мерчанта выигрывает.
 const description =
 	(typeof p.description === "string" && p.description.trim() ? p.description : undefined) ??
 	(typeof p.text?.content === "string" && p.text.content.trim() ? p.text.content : undefined) ??
-	"Подпишитесь на наши акции и новости";
+	"Будь в курсе новинок и акций — подпишись на рассылку";
 const descSize = p.text?.size;
 const descSizeCls =
 	descSize === "small" ? " !text-[14px]" : descSize === "large" ? " !text-[19px]" : "";
 
-// Канон placeholder/buttonText: дефолты = литералы подвала (F:21-22, F:70).
+// Канон placeholder/buttonText: пустое состояние = Figma-плейсхолдер 1:19335
+// (input «email@example.com» + кнопка), НЕ литералы подвала верстальщика
+// «example@bloom.ru» / «Отправить» (F:21-22, F:70). Свои значения мерчанта выигрывают.
 const placeholder =
-	typeof p.placeholder === "string" && p.placeholder.trim() ? p.placeholder : "example@bloom.ru";
+	typeof p.placeholder === "string" && p.placeholder.trim() ? p.placeholder : "email@example.com";
 const buttonText =
-	typeof p.buttonText === "string" && p.buttonText.trim() ? p.buttonText : "Отправить";
+	typeof p.buttonText === "string" && p.buttonText.trim() ? p.buttonText : "Подписаться";
 
 // Канон formLayout: canon-default 'inline-submit' (blockDefaults темы, совпадает
 // с отсутствием пропа) = форма подвала VERBATIM (pill h-10, внутренняя кнопка

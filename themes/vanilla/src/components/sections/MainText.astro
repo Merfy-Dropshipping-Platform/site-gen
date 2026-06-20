@@ -10,14 +10,32 @@
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Канон heading: string | { text, size }. Дефолт = заголовок welcome-полотна
-// VERBATIM. Роль = заголовок секции (Bitter 400 italic 20, МАННЕРА §1), на
-// тёмном полотне — белый. Лестница §9: medium/отсутствие = литерал 20,
-// small 17, large 24. Курсив вынесен в italicCls (textStyle ниже).
-const heading =
-	typeof p.heading === "string"
-		? p.heading
-		: (p.heading?.text ?? "Добро пожаловать в нашу историю.");
+// Пустое состояние (Figma 1:19335): секция БЕЗ выбранного контента мерчанта.
+// Гейт = ни одно из contentful-полей (heading/text/button|cta) не задано. В
+// этом случае рендерим контрактный ПЛЕЙСХОЛДЕР («Расскажи о своем бренде» /
+// «Расскажи подробнее…» / Кнопка), а НЕ мок-копию welcome-полотна верстальщика
+// («Добро пожаловать в нашу историю.» + бренд-абзацы про Vanila). Образец —
+// packages/theme-base/blocks/MainText/MainText.astro (гейт на наличии пропа) и
+// sibling-темы satin/bloom MainText.astro (тот же Figma-контракт). Любой
+// заданный проп = реальные данные мерчанта → рендер БЕЗ изменений (заголовок
+// только при непустом, кнопка только при непустой).
+const headingProvided =
+	(typeof p.heading === "string" && p.heading.trim()) ||
+	(typeof p.heading?.text === "string" && p.heading.text.trim());
+const textProvided =
+	(typeof p.text === "string" && p.text.trim()) ||
+	(typeof p.text?.content === "string" && p.text.content.trim());
+const buttonProvided = p.button !== undefined || p.cta !== undefined;
+const isEmptyState = !headingProvided && !textProvided && !buttonProvided;
+
+// Канон heading: string | { text, size }. Роль = заголовок секции (Bitter 400
+// italic 20, МАННЕРА §1), на тёмном полотне — белый. Лестница §9: medium/
+// отсутствие = литерал 20, small 17, large 24. Курсив вынесен в italicCls
+// (textStyle ниже). Пустое состояние → плейсхолдер-заголовок контракта; иначе
+// рендер ТОЛЬКО при заданном (пустой проп заголовок скрывает).
+const heading = headingProvided
+	? (typeof p.heading === "string" ? p.heading : p.heading.text)
+	: (isEmptyState ? "Расскажи о своем бренде" : "");
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingCls =
 	headingSize === "small"
@@ -26,13 +44,14 @@ const headingCls =
 			? "m-0 font-vanilla-bitter text-[24px] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]"
 			: "m-0 font-vanilla-bitter text-[20px] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]";
 
-// Канон text: string | { content, size }. Дефолт = welcomeParagraphs VERBATIM
-// (два абзаца через <br/>, как у верстальщика; set:html — базовая HTML-разметка).
+// Канон text: string | { content, size }. set:html — базовая HTML-разметка.
+// Пустое состояние (Figma 1:19335) → контрактный поясняющий текст плейсхолдера,
+// НЕ длинная welcome-копия верстальщика (бренд-абзацы про Vanila).
 const text =
 	typeof p.text === "string"
 		? p.text
 		: (p.text?.content ??
-			"Мы по-прежнему лично отбираем каждый материал, вдохновляемся природными оттенками и архитектурой скандинавского дизайна. Мы не гонимся за быстрой модой. Мы создаем вещи, которые остаются с вами надолго.<br />Vanila — это история про то, как желание одного человека сделать свой дом уютнее превратилось в бренд, который помогает тысячам семей создавать интерьеры своей мечты. Добро пожаловать домой.");
+			(isEmptyState ? "Расскажи подробнее о своем онлайн-магазине в этом блоке" : ""));
 
 // Канон textSize (top-level hidden приоритетнее text.size сабпанели). Роль =
 // body-текст полотна 16 (about:153; лестница §9): medium/отсутствие = литерал
@@ -64,19 +83,21 @@ const alignCls =
 			: "items-center text-center";
 
 // Кнопка: canon-сабпанель button {text, link} приоритетнее legacy hidden cta.
-// Дефолт (пропы не заданы) = CTA welcome-полотна VERBATIM: «ПЕРЕЙТИ В КАТАЛОГ»
-// → /catalog/textile. Пустой текст заданного пропа СКРЫВАЕТ кнопку.
-const btnProvided = p.button !== undefined || p.cta !== undefined;
+// Пустое состояние (плейсхолдер Figma 1:19335, секция вообще без контента) →
+// контрактная «Кнопка» (НЕ мок-CTA «ПЕРЕЙТИ В КАТАЛОГ»→/catalog/textile
+// верстальщика). Когда мерчант заполнил секцию, но кнопку не задал — кнопка
+// СКРЫТА. Заданный текст рендерится как есть; пустой проп СКРЫВАЕТ кнопку.
+// Ссылка-фоллбек /catalog (паттерн satin/bloom T15).
 const btnTextProp =
 	(typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined) ??
 	(typeof p.cta?.text === "string" && p.cta.text.trim() ? p.cta.text : undefined);
-const btnText = btnTextProp ?? (btnProvided ? undefined : "ПЕРЕЙТИ В КАТАЛОГ");
+const btnText = btnTextProp ?? (isEmptyState ? "Кнопка" : undefined);
 const btnHref =
 	p.button?.link?.href ??
 	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??
 	(typeof p.cta?.href === "string" && p.cta.href ? p.cta.href : undefined) ??
 	(typeof p.cta?.link === "string" && p.cta.link ? p.cta.link : undefined) ??
-	"/catalog/textile";
+	"/catalog";
 
 // Канон buttonStyle: 'outlined' (canon-default из theme.json blockDefaults) и
 // отсутствие = контурная кнопка верстальщика ДОСЛОВНО (МАННЕРА §3: outlined на

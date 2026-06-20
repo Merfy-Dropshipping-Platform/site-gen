@@ -1,10 +1,7 @@
 ---
-import BloomProductCard from "../products/BloomProductCard.astro";
-import { catalogProducts } from "../../data/products";
-
 // ОЖИВЛЕНИЕ (Фаза B, контракт rose Collections T13): конструкторная схема
 // theme-base Collections.puckConfig поверх разметки верстальщика. Тело +
-// demo-данные verbatim (страницы зовут <Collections /> без пропсов — дефолты
+// плейсхолдер verbatim (страницы зовут <Collections /> без пропсов — дефолты
 // дают прежний рендер). Канон-дефолты конструктора (headingSize medium /
 // subtitleSize small / titleAlignment 'left' и gridAspect '1:1' из blockDefaults
 // bloom / columns 3) → пиксель верстальщика; дефолтная ветка каждого
@@ -18,7 +15,16 @@ const sectionTitle =
 const sectionSubtitle =
 	typeof p.subtitle === "string" && p.subtitle.trim() ? p.subtitle : undefined;
 
-const products = catalogProducts.slice(0, 6);
+// КОНТРАКТ-ПЛЕЙСХОЛДЕР (Figma 1:19335 / theme-base Collections.astro
+// DEMO_COLLECTIONS): пустой пикер → НЕ мок-товары верстальщика, а 3 пустые
+// квадратные карточки (gray fill = rgb(var(--color-surface)) ≈ #FBFBFB) с
+// лейблом «Коллекция» под каждой. Реальные коллекции магазина подменяют их
+// гидрацией autofillCollections (ниже) — паритет PopularProducts DEMO_PRODUCTS.
+const DEMO_COLLECTIONS = [
+	{ name: "Коллекция" },
+	{ name: "Коллекция" },
+	{ name: "Коллекция" },
+];
 
 // Канон headingSize: 'medium' (canon-default) и отсутствие = роль «заголовок
 // секции» верстальщика дословно (18/md:20). Лестница §9: small 15/17, large 22/24.
@@ -166,9 +172,24 @@ const paddingStyle = p.padding
 						</h3>
 					</a>
 				</li>
-			)) : products.map((product, index) => (
+			)) : DEMO_COLLECTIONS.map((c) => (
 				<li>
-					<BloomProductCard product={product} priority={index < 3} />
+					<a
+						href="#"
+						class="group flex w-full cursor-pointer flex-col gap-4"
+						aria-label={c.name}
+						data-nt="bloom-collection-card"
+					>
+						<div
+							class={`${tileAspect} w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,251_251_251))]`}
+							aria-hidden="true"
+						></div>
+						<h3
+							class={`bloom-collection-name w-full text-left font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))] transition-opacity group-hover:opacity-70 max-sm:text-[12px]${captionCase}`}
+						>
+							{c.name}
+						</h3>
+					</a>
 				</li>
 			))}
 		</ul>
@@ -208,11 +229,11 @@ const paddingStyle = p.padding
 		}
 	};
 
-	// АВТОПОДСТАНОВКА: пустой пикер (SSR = трендовый грид верстальщика) → реальные
-	// коллекции магазина из /data/collections.json (live) / storefront-data (превью).
-	// Прежде на пустом пикере показывались товары-демо, что вводило в заблуждение.
-	// Явный выбор в пикере имеет приоритет (грид не помечен data-collections-autofill).
-	// Реальных нет (demo-сборка без collections.json) → no-op, демо остаётся.
+	// АВТОПОДСТАНОВКА: пустой пикер (SSR = плейсхолдер-карточки «Коллекция») →
+	// реальные коллекции магазина из /data/collections.json (live) / storefront-data
+	// (превью). Явный выбор в пикере имеет приоритет (грид не помечен
+	// data-collections-autofill). Реальных нет (demo-сборка без collections.json) →
+	// no-op, плейсхолдер остаётся (контракт-заглушка, НЕ мок-товары верстальщика).
 	// Разметка плитки = propCollections-ветка bloom (canon-default при пустом пикере:
 	// gridAspect '1:1' → aspect-square, cardCaptionStyle 'uppercase'). Обложка: своя
 	// картинка коллекции, иначе дизайнерский плейсхолдер темы по позиции.

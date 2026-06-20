@@ -33,21 +33,22 @@ const headingAlignCls =
 const headingCls = `font-urbanist ${headingSizeCls} font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))]${headingAlignCls}`;
 
 // Канон sections[] 1-10 {heading, content} (+ pupa items[] {title, content}).
-// Отсутствие = canon-defaults (2 вопроса-болванки). content — set:html (HTML канона).
-const CANON_SECTIONS = [
-	{
-		id: "section-1",
-		heading: "Первый вопрос",
-		content: "Ответ на первый вопрос. Поддерживается базовое HTML-форматирование.",
-	},
-	{ id: "section-2", heading: "Второй вопрос", content: "Ответ на второй вопрос." },
+// Curated-модель (как theme-base PopularProducts/Collections): секция показывает
+// реальные пункты ТОЛЬКО когда мерчант их добавил. Гейт = наличие sections/items
+// в пропах. Пусто → ПЛЕЙСХОЛДЕР пустого состояния (Figma 1:19335), НЕ мок-демо
+// верстальщика. content — set:html.
+const PLACEHOLDER_SECTIONS = [
+	{ id: "placeholder-1", heading: "Раздел", content: "Ответь на самые популярные вопросы клиентов" },
+	{ id: "placeholder-2", heading: "Раздел", content: "Ответь на самые популярные вопросы клиентов" },
 ];
-const rawSections =
+const realSections =
 	Array.isArray(p.sections) && p.sections.length
 		? p.sections
 		: Array.isArray(p.items) && p.items.length
 			? p.items
-			: CANON_SECTIONS;
+			: null;
+const hasRealSections = realSections !== null;
+const rawSections = hasRealSections ? realSections : PLACEHOLDER_SECTIONS;
 const sections = rawSections.slice(0, 10).map((s: any) => ({
 	heading:
 		(typeof s.heading === "string" && s.heading) || (typeof s.title === "string" && s.title) || "",
@@ -101,9 +102,9 @@ const titleId = id && heading ? `${id}-title` : undefined;
 					sections.map((s, i) => (
 						<li
 							class="border-b border-solid border-[rgb(var(--color-border,245_245_245))] first:border-t"
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index={i}
-							data-puck-subsection-field="sections"
+							data-puck-subsection-parent={hasRealSections ? id : undefined}
+							data-puck-subsection-index={hasRealSections ? i : undefined}
+							data-puck-subsection-field={hasRealSections ? "sections" : undefined}
 						>
 							<details class="group">
 								<summary class="cursor-pointer list-none py-5 [&::-webkit-details-marker]:hidden">

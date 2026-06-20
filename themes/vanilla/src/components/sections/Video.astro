@@ -1,34 +1,39 @@
 ---
-// Фаза B (vanilla, группа misc): канон-секция Video — адаптация видео-бэнда
-// sections/Gallery.astro:52-79 (тело перенесено КОПИЕЙ — Gallery.astro не
-// тронут; эталон процесса — themes/bloom Video). Схема полей =
-// packages/theme-base/blocks/Video/Video.puckConfig.ts. Тёмное полотно №1
-// (#26311C), медиа aspect-[1319/742] на медиа-подложке без радиуса; иконка
-// play — svg src/icons/icon-video.svg ИНЛАЙНОМ (импорт `?url` не переживает
-// компиляцию секций для Container API); нюанс <style> Gallery (img/video
-// max-width:none) повторён утилитой max-w-none локально.
+// Figma 1:19335 — ПУСТОЕ СОСТОЯНИЕ секции «Видео» (заменяет мок-демо
+// верстальщика). Контракт пустого состояния: пустой image-rect (surface) +
+// Play-иконка по центру. Гейт = наличие реального видео (videoUrl / video.url):
+//   • БЕЗ видео → ПЛЕЙСХОЛДЕР: rect bg-surface + центральная Play-иконка (НЕ
+//     автоплей дизайнерского ролика /images/Video.mp4 + /images/Video.webp).
+//   • С видео → автоплей <video> + Play-overlay в манере §1 — рендер реальных
+//     данных НЕ ТРОГАЕТСЯ.
+// Тёмное полотно №1 (#26311C), медиа aspect-[1319/742] на медиа-подложке без
+// радиуса; схема полей = packages/theme-base/blocks/Video/Video.puckConfig.ts.
+// Цвета → токены темы rgb(var(--color-*)) с пиксель-фоллбеком (MANNER §7).
+// Эталон контракта пустого состояния — packages/theme-base/blocks/Video/Video.astro.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Канон videoUrl + pupa video{url, coverImage}. Отсутствие пропа = литерал
-// верстальщика V_IMG.galleryVideo (/images/Video.mp4 — при отсутствии файла
-// браузер показывает постер, поведение исходной темы); blob:-URL — временные
-// ObjectURL вкладки конструктора, на live дадут 404 — отбрасываем в постер-ветку.
+// Figma 1:19335 — ПУСТОЕ СОСТОЯНИЕ (заменяет мок-демо верстальщика). Гейт =
+// наличие реального видео (канон videoUrl / pupa video.url). БЕЗ выбора видео
+// → ПЛЕЙСХОЛДЕР по контракту: пустой image-rect (#FBFBFB / surface) + Play-
+// иконка по центру (НЕ автоплей мок-ролика /images/Video.mp4 верстальщика).
+// blob:-URL — временные ObjectURL вкладки конструктора, на live дадут 404 →
+// отбрасываем в плейсхолдер-ветку. Дефолт пустой → плейсхолдер.
 const rawVideoUrl =
 	typeof p.video?.url === "string"
 		? p.video.url
 		: typeof p.videoUrl === "string"
 			? p.videoUrl
-			: "/images/Video.mp4";
+			: "";
 const videoUrl = rawVideoUrl.startsWith("blob:") ? "" : rawVideoUrl;
-// Канон poster (+ pupa video.coverImage); дефолт = литерал верстальщика
-// V_IMG.galleryVideoPoster (/images/Video.webp).
+// Канон poster (+ pupa video.coverImage) — обложка реального видео. Дефолта
+// мок-верстальщика (/images/Video.webp) больше нет: пустое состояние = чистый
+// плейсхолдер-rect без подложки-картинки.
 const poster =
 	(typeof p.video?.coverImage === "string" && p.video.coverImage
 		? p.video.coverImage
 		: undefined) ??
-	(typeof p.poster === "string" && p.poster ? p.poster : undefined) ??
-	"/images/Video.webp";
+	(typeof p.poster === "string" && p.poster ? p.poster : undefined);
 
 // Канон heading + pupa content.heading{text, alignment, enabled, size} — рендер
 // при непустом тексте и enabled !== 'false'; у верстальщика бэнд БЕЗ заголовка →
@@ -115,6 +120,10 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 			data-puck-subsection-index="101"
 			data-puck-subsection-field="videoUrl"
 		>
+			{/* С видео → реальный автоплей-ролик (рендер реальных данных не трогаем).
+			    БЕЗ видео → пустое состояние: голый rect bg-surface (контракт Figma
+			    1:19335). poster-img показываем ТОЛЬКО если мерчант задал обложку,
+			    иначе чистый rect без подложки-картинки. */}
 			{
 				videoUrl ? (
 					<video
@@ -131,35 +140,40 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 						tabindex="-1"
 					/>
 				) : (
-					<img
-						src={poster}
-						alt=""
-						aria-hidden="true"
-						loading="lazy"
-						class="absolute inset-0 size-full max-w-none object-cover"
-					/>
+					poster && (
+						<img
+							src={poster}
+							alt=""
+							aria-hidden="true"
+							loading="lazy"
+							class="absolute inset-0 size-full max-w-none object-cover"
+						/>
+					)
 				)
 			}
+			{/* Play-иконка по центру. С видео — белая поверх ролика (как было).
+			    БЕЗ видео (пустой плейсхолдер) — обводка токеном heading (тёмная на
+			    светлом surface, читается в любой схеме) per контракт «пустой image-
+			    rect + Play-иконка по центру». */}
 			{
-				videoUrl && (
-					<svg
-						width="44"
-						height="44"
-						viewBox="0 0 44 44"
-						fill="none"
-						xmlns="http://www.w3.org/2000/svg"
-						aria-hidden="true"
-						class="pointer-events-none absolute left-1/2 top-1/2 size-11 -translate-x-1/2 -translate-y-1/2"
-					>
-						<path
-							d="M9.16772 31.7784V12.2228C9.16772 10.6103 9.16772 9.8031 9.50706 9.32599C9.80323 8.90958 10.2597 8.63618 10.7665 8.57081C11.347 8.49595 12.0589 8.87564 13.4807 9.63394L31.814 19.4117L31.8207 19.4147C33.392 20.2527 34.178 20.6719 34.4358 21.2306C34.6607 21.718 34.6607 22.2806 34.4358 22.7681C34.1776 23.3276 33.3898 23.7485 31.814 24.5889L13.4807 34.3666C12.0579 35.1255 11.3472 35.5037 10.7665 35.4288C10.2597 35.3634 9.80323 35.0901 9.50706 34.6737C9.16772 34.1966 9.16772 33.3909 9.16772 31.7784Z"
-							stroke="white"
-							stroke-width="3"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						/>
-					</svg>
-				)
+				<svg
+					width="44"
+					height="44"
+					viewBox="0 0 44 44"
+					fill="none"
+					xmlns="http://www.w3.org/2000/svg"
+					aria-hidden="true"
+					class="pointer-events-none absolute left-1/2 top-1/2 size-11 -translate-x-1/2 -translate-y-1/2"
+					style={videoUrl ? undefined : "stroke:rgb(var(--color-heading,38_49_28))"}
+				>
+					<path
+						d="M9.16772 31.7784V12.2228C9.16772 10.6103 9.16772 9.8031 9.50706 9.32599C9.80323 8.90958 10.2597 8.63618 10.7665 8.57081C11.347 8.49595 12.0589 8.87564 13.4807 9.63394L31.814 19.4117L31.8207 19.4147C33.392 20.2527 34.178 20.6719 34.4358 21.2306C34.6607 21.718 34.6607 22.2806 34.4358 22.7681C34.1776 23.3276 33.3898 23.7485 31.814 24.5889L13.4807 34.3666C12.0579 35.1255 11.3472 35.5037 10.7665 35.4288C10.2597 35.3634 9.80323 35.0901 9.50706 34.6737C9.16772 34.1966 9.16772 33.3909 9.16772 31.7784Z"
+						stroke={videoUrl ? "white" : undefined}
+						stroke-width="3"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					/>
+				</svg>
 			}
 			{
 				overlayN > 0 && (

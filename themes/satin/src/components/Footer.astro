@@ -36,6 +36,11 @@ const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.site
 const phone = typeof p.phone === "string" && p.phone.trim() ? p.phone.trim() : "";
 const rawEmail = p.socialColumn?.email ?? p.email ?? "";
 const email = typeof rawEmail === "string" ? rawEmail.trim() : "";
+// Произвольные контакт-поля (адрес/часы/ИНН и т.п.) — всё КРОМЕ phone/email,
+// build кладёт их в socialColumn.contactFields = [{label,value}].
+const contactFields: Array<{ label: string; value: string }> = Array.isArray(p.socialColumn?.contactFields)
+	? p.socialColumn.contactFields.filter((f: any) => f && typeof f.value === "string" && f.value.trim())
+	: [];
 // Платёжки (касса подключена) — НОВЫЙ проп.
 const paymentEnabled = p.paymentEnabled === true || p.paymentEnabled === "true";
 // Placeholder поля рассылки — не зависит от контактного email (НЕ ТРОГАТЬ).
@@ -201,7 +206,7 @@ const linkClassSm =
 								<p data-newsletter-status role="status" class="hidden font-manrope text-xs font-light text-[rgb(var(--color-text,0_0_0))]"></p>
 							</div>
 						)}
-						{(phone || email) && (
+						{(phone || email || contactFields.length > 0) && (
 							<div
 								class="flex flex-col gap-2 text-right"
 								data-puck-subsection-parent={id}
@@ -210,6 +215,9 @@ const linkClassSm =
 							>
 								{phone && <a href={`tel:${phone.replace(/[^+\d]/g, "")}`} class={linkClass}>{phone}</a>}
 								{email && <a href={`mailto:${email}`} class={linkClass}>{email}</a>}
+								{contactFields.map((f) => (
+									<div class={linkClass}><span class="text-[rgb(var(--color-text,0_0_0))]">{f.label}:</span> {f.value}</div>
+								))}
 							</div>
 						)}
 					</div>
@@ -311,10 +319,13 @@ const linkClassSm =
 		)}
 
 		<!-- Contacts -->
-		{(phone || email) && (
+		{(phone || email || contactFields.length > 0) && (
 			<div class="mt-8 flex flex-col gap-2">
 				{phone && <a href={`tel:${phone.replace(/[^+\d]/g, "")}`} class={linkClassSm}>{phone}</a>}
 				{email && <a href={`mailto:${email}`} class={linkClassSm}>{email}</a>}
+				{contactFields.map((f) => (
+					<div class={linkClassSm}><span class="text-[rgb(var(--color-text,0_0_0))]">{f.label}:</span> {f.value}</div>
+				))}
 			</div>
 		)}
 

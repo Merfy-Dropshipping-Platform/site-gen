@@ -23,6 +23,9 @@ const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.site
 const phone = typeof p.phone === "string" && p.phone.trim() ? p.phone.trim() : "";
 const rawEmail = p.socialColumn?.email ?? p.email ?? "";
 const email = typeof rawEmail === "string" ? rawEmail.trim() : "";
+const contactFields: Array<{ label: string; value: string }> = Array.isArray(p.socialColumn?.contactFields)
+	? p.socialColumn.contactFields.filter((f: any) => f && typeof f.value === "string" && f.value.trim())
+	: [];
 const emailPlaceholder = `example@${siteTitle.toLowerCase()}.merfy`;
 
 // Канон newsletter.enabled — скрыть блок подписки ТОЛЬКО при явном false/'false'
@@ -234,6 +237,11 @@ const footerContainerCls = footerPadStyle
 								{email}
 							</a>
 						)}
+						{contactFields.map((f) => (
+							<div class="font-inter text-[14px] font-light leading-[18px] text-[rgb(var(--color-muted,153_153_153))]">
+								<span class="text-[rgb(var(--color-text,0_0_0))]">{f.label}:</span> {f.value}
+							</div>
+						))}
 					</div>
 
 					{socials.length > 0 && (

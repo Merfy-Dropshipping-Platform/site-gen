@@ -164,6 +164,12 @@ const linksSectionCls = footerPadStyle
 
 // Платёжные бейджи (Mastercard/VISA/МИР) — рендерим только при подключённой кассе.
 const paymentEnabled = p.paymentEnabled === true || p.paymentEnabled === "true";
+
+// Произвольные контакт-поля «Информация о компании» (адрес/часы/ИНН/…). Build кладёт
+// сюда все контакт-поля КРОМЕ телефона/почты (те рендерятся как tel:/mailto: выше).
+const contactFields: Array<{ label: string; value: string }> = Array.isArray(p.socialColumn?.contactFields)
+	? p.socialColumn.contactFields.filter((f: any) => f && typeof f.value === "string" && f.value.trim())
+	: [];
 ---
 
 <footer class="w-full bg-[rgb(var(--color-bg,255_255_255))]" data-puck-component-id={id}>
@@ -272,7 +278,7 @@ const paymentEnabled = p.paymentEnabled === true || p.paymentEnabled === "true";
 		</ul>
 		)}
 
-		{(phone || email) && (
+		{(phone || email || contactFields.length > 0) && (
 		<div
 			class="flex flex-col gap-2"
 			data-puck-subsection-parent={id}
@@ -295,6 +301,11 @@ const paymentEnabled = p.paymentEnabled === true || p.paymentEnabled === "true";
 				{email}
 			</a>
 			)}
+			{contactFields.map((f) => (
+			<div class="font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-[14px]">
+				<span class="text-[rgb(var(--color-text,0_0_0))]">{f.label}:</span> {f.value}
+			</div>
+			))}
 		</div>
 		)}
 

@@ -38,6 +38,11 @@ const rawEmail = p.socialColumn?.email ?? p.email ?? "";
 const email = typeof rawEmail === "string" ? rawEmail.trim() : "";
 // Платёжные бейджи — только при подключённой кассе (build ставит paymentEnabled).
 const paymentEnabled = p.paymentEnabled === true || p.paymentEnabled === "true";
+// Произвольные контакт-поля «Информация о компании» (адрес/часы/ИНН/любая инфа) —
+// build кладёт сюда все контакт-поля КРОМЕ телефона/почты (те рендерятся tel:/mailto:).
+const contactFields: Array<{ label: string; value: string }> = Array.isArray(p.socialColumn?.contactFields)
+	? p.socialColumn.contactFields.filter((f: any) => f && typeof f.value === "string" && f.value.trim())
+	: [];
 
 // НЮАНС vanilla (инверсия bloom): у верстальщика подписки в футере НЕТ — отдельная
 // FooterNewsletter через Layout showNewsletter. Канон newsletter.enabled: отсутствие
@@ -265,6 +270,11 @@ const footerBandCls = footerPadStyle
 							{email}
 						</a>
 						)}
+						{contactFields.map((f) => (
+						<div class="font-vanilla-arsenal text-base font-normal leading-none text-white">
+							<span>{f.label}:</span> {f.value}
+						</div>
+						))}
 					</div>
 					<div class="flex flex-col items-start gap-6 max-sm:items-center md:mt-auto md:items-end">
 						{socials.length > 0 && (

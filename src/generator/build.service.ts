@@ -1780,12 +1780,20 @@ async function injectFooterData(
     const isPhone = (v: string) =>
       !isEmail(v) && /\d/.test(v) && /^[+\d][\d\s()\-]{4,}$/.test(v.trim());
     const labelHit = (label: string, re: RegExp) => re.test(label ?? "");
-    const contactEmail = contactFields.find(
+    // Телефон/почта → отдельные кликабельные слоты футера (tel:/mailto:).
+    const emailField = contactFields.find(
       (f) => isEmail(f.value) || labelHit(f.label, /e-?mail|почт/i),
-    )?.value.trim();
-    const contactPhone = contactFields.find(
-      (f) => isPhone(f.value) || labelHit(f.label, /тел|phone|моб/i),
-    )?.value.trim();
+    );
+    const phoneField = contactFields.find(
+      (f) => f !== emailField && (isPhone(f.value) || labelHit(f.label, /тел|phone|моб/i)),
+    );
+    const contactEmail = emailField?.value.trim();
+    const contactPhone = phoneField?.value.trim();
+    // Остальные поля «Информация о компании» (адрес/часы/ИНН/любая инфа) →
+    // socialColumn.contactFields, порт выводит их label/value в контакт-колонке.
+    const extraContactFields = contactFields.filter(
+      (f) => f !== emailField && f !== phoneField,
+    );
 
     // Подключена ли касса (YooKassa) → показывать ли платёжные бейджи.
     // shopId == siteId. Graceful: billing недоступен ⇒ бейджи скрыты.
@@ -1848,7 +1856,7 @@ async function injectFooterData(
         const newSocial: Record<string, any> = {
           ...social,
           socialLinks: filteredSocialLinks,
-          contactFields: contactFields.map((f) => ({ label: f.label, value: f.value })),
+          contactFields: extraContactFields.map((f) => ({ label: f.label, value: f.value })),
         };
         if (contactEmail) newSocial.email = contactEmail;
         else delete newSocial.email;

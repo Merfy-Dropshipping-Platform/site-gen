@@ -30,6 +30,11 @@ const rawEmail = p.socialColumn?.email ?? p.email ?? "";
 const email = typeof rawEmail === "string" ? rawEmail.trim() : "";
 // Платёжные бейджи — только при подключённой кассе (build ставит paymentEnabled).
 const paymentEnabled = p.paymentEnabled === true || p.paymentEnabled === "true";
+// «Информация о компании» (адрес/часы/ИНН/любая инфа) — build кладёт сюда поля
+// КРОМЕ телефона/почты. Выводим label/value в контакт-колонке.
+const contactFields: Array<{ label: string; value: string }> = Array.isArray(p.socialColumn?.contactFields)
+	? p.socialColumn.contactFields.filter((f: any) => f && typeof f.value === "string" && f.value.trim())
+	: [];
 
 // Канон newsletter.enabled — скрыть блок подписки ТОЛЬКО при явном false/'false'
 // (булево может прийти строкой). Отсутствие пропа и rose
@@ -235,7 +240,7 @@ const footerContainerCls = pad
 					data-puck-subsection-index="994"
 					data-puck-subsection-field="socialColumn"
 				>
-					{(phone || email) && (
+					{(phone || email || contactFields.length > 0) && (
 					<div class="flex flex-col gap-3">
 						{phone && (
 						<a
@@ -253,6 +258,11 @@ const footerContainerCls = pad
 							{email}
 						</a>
 						)}
+						{contactFields.map((f) => (
+						<div class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))] lg:text-right">
+							<span class="text-[rgb(var(--color-text,0_0_0))]">{f.label}:</span> {f.value}
+						</div>
+						))}
 					</div>
 					)}
 					{socials.length > 0 && (

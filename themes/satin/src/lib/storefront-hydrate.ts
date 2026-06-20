@@ -312,6 +312,25 @@ export function renderCardHtml(p: RealProduct): string {
 	const badge = oldRaw
 		? `<span class="pointer-events-none absolute left-0 top-0 inline-flex h-6 items-center bg-[#000000] px-2 font-manrope text-[12px] font-medium uppercase leading-none text-white">Скидка</span>`
 		: "";
+	// Решение владельца: карточная «В корзину» для товара с вариантами добавляет
+	// ПЕРВУЮ доступную комбинацию (combo.id + combo.price), а не товар без варианта;
+	// без комбинаций (битый товар) — ссылка на PDP.
+	const hasVariants =
+		p.hasVariants === true ||
+		(Array.isArray(p.variantCombinations) && p.variantCombinations.length > 0);
+	const firstCombo = hasVariants
+		? (p.variantCombinations || []).find((c) => c && c.available !== false) ||
+			(p.variantCombinations || [])[0]
+		: null;
+	const comboOpt = (firstCombo?.options || {}) as Record<string, string>;
+	const comboColor = comboOpt["Цвет"] || comboOpt["Color"] || "";
+	const comboSize = comboOpt["Размер"] || comboOpt["Size"] || "";
+	const cartBtnCls = "mt-2 flex h-11 w-full items-center justify-center bg-[#000000] px-3 font-manrope text-[14px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-80";
+	const cartBtn = hasVariants
+		? firstCombo
+			? `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${escapeHtml(formatPrice(firstCombo.price))}" data-variant-combination-id="${escapeHtml(String(firstCombo.id))}"${comboColor ? ` data-variant-color="${escapeHtml(comboColor)}"` : ""}${comboSize ? ` data-variant-size="${escapeHtml(comboSize)}"` : ""} data-image="${image}" class="${cartBtnCls}">В корзину</button>`
+			: `<a href="${href}" class="${cartBtnCls}">В корзину</a>`
+		: `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${price}" data-old-price="${escapeHtml(oldRaw)}" data-image="${image}" class="${cartBtnCls}">В корзину</button>`;
 	return `<article class="group flex flex-col gap-3" data-nt="satin-product-card" aria-label="${name}">
 	<div class="relative aspect-[430/564] w-full overflow-hidden bg-[#F5F5F5]">
 		<a href="${href}" class="block size-full" aria-label="${name}">
@@ -326,7 +345,7 @@ export function renderCardHtml(p: RealProduct): string {
 			<span class="font-manrope text-[16px] font-normal leading-tight text-[#000000]">${price}</span>
 			${oldPrice}
 		</div>
-		<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${price}" data-old-price="${escapeHtml(oldRaw)}" data-image="${image}" class="mt-2 flex h-11 w-full items-center justify-center bg-[#000000] px-3 font-manrope text-[14px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-80">В корзину</button>
+		${cartBtn}
 	</div>
 </article>`;
 }

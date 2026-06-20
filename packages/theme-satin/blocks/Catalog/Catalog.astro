@@ -654,9 +654,24 @@ const skeletons = Array.from({ length: skeletonCount });
       `class="satin-fav absolute right-3 top-3 z-20 flex size-8 items-center justify-center bg-white text-[#000000] shadow-[0_2px_8px_rgba(0,0,0,0.10)] transition-opacity hover:opacity-80">` +
       `<span data-wishlist-icon class="block size-[18px]">${heartInner}</span></button>`;
     // Кнопка «В корзину» — СНАРУЖИ <a> (button-in-anchor невалиден). data-add-to-cart
-    // ловит делегирование корзины satin-диста (nt-cart-satin).
+    // ловит делегирование корзины satin-диста (nt-cart-satin). Решение владельца:
+    // товар с вариантами добавляет ПЕРВУЮ доступную комбинацию (combo.id + combo.price),
+    // а не товар без варианта; без комбинаций (битый товар) — ссылка на PDP.
+    const _vc = Array.isArray(p.variantCombinations) ? p.variantCombinations : [];
+    const _hasVariants = p.hasVariants === true || _vc.length > 0;
+    const _firstCombo = _hasVariants
+      ? _vc.find((c) => c && c.available !== false) || _vc[0]
+      : null;
+    const _comboOpt = (_firstCombo && _firstCombo.options) || {};
+    const _comboColor = _comboOpt["Цвет"] || _comboOpt["Color"] || "";
+    const _comboSize = _comboOpt["Размер"] || _comboOpt["Size"] || "";
+    const _cartBtnCls = "mt-2 flex h-11 w-full items-center justify-center bg-[#000000] px-3 font-manrope text-[14px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-80";
     const cartBtn = showCartBtn
-      ? `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${price}" data-old-price="${escapeHtml(oldRaw)}" data-image="${image}" class="mt-2 flex h-11 w-full items-center justify-center bg-[#000000] px-3 font-manrope text-[14px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-80">В корзину</button>`
+      ? _hasVariants
+        ? _firstCombo
+          ? `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${escapeHtml(formatPrice(_firstCombo.price))}" data-variant-combination-id="${escapeHtml(String(_firstCombo.id))}"${_comboColor ? ` data-variant-color="${escapeHtml(_comboColor)}"` : ""}${_comboSize ? ` data-variant-size="${escapeHtml(_comboSize)}"` : ""} data-image="${image}" class="${_cartBtnCls}">В корзину</button>`
+          : `<a href="${href}" class="${_cartBtnCls}">В корзину</a>`
+        : `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${price}" data-old-price="${escapeHtml(oldRaw)}" data-image="${image}" class="${_cartBtnCls}">В корзину</button>`
       : "";
     return `<article class="group flex h-full flex-col gap-3" data-nt="satin-product-card" aria-label="${name}"${cardContainerStyle}>
   <div class="relative aspect-[430/564] w-full shrink-0 overflow-hidden bg-[#F5F5F5]">

@@ -272,8 +272,12 @@ const paddingStyle = p.padding
 				>
 					<VanillaProductCard product={product} />
 					{quickAddMode && (
+						/* SSR-кнопка несёт demo-id (bag-N) — до гидрации клик добавил бы
+						   фейковый товар (FIX #2 гонка). disabled до гидрации; hydratePopular
+						   ниже перерисовывает грид реальными товарами с рабочей кнопкой. */
 						<button
 							type="button"
+							disabled
 							data-add-to-cart
 							data-product-id={product.id}
 							data-name={product.name}
@@ -338,6 +342,7 @@ const paddingStyle = p.padding
 		resolveCollectionProducts,
 		renderCardHtml,
 		productImage,
+		productHref,
 		formatPrice,
 		escapeHtml,
 	} from "../../lib/storefront-hydrate";
@@ -388,8 +393,25 @@ const paddingStyle = p.padding
 						wantNextPhoto && Array.isArray(prod.images) && prod.images[1]
 							? ` data-image-2="${escapeHtml(prod.images[1])}"`
 							: "";
+					// Решение владельца: карточная «В корзину» для товара с вариантами
+					// добавляет ПЕРВУЮ доступную комбинацию (combo.id + combo.price),
+					// а не товар без варианта; без комбинаций (битый товар) — ссылка на PDP.
+					const hasVariants =
+						prod.hasVariants === true ||
+						(Array.isArray(prod.variantCombinations) && prod.variantCombinations.length > 0);
+					const firstCombo = hasVariants
+						? (prod.variantCombinations || []).find((c) => c && c.available !== false) ||
+							(prod.variantCombinations || [])[0]
+						: null;
+					const comboOpt = (firstCombo?.options || {}) as Record<string, string>;
+					const comboColor = comboOpt["Цвет"] || comboOpt["Color"] || "";
+					const comboSize = comboOpt["Размер"] || comboOpt["Size"] || "";
 					const qa = wantQuickAdd
-						? `<button type="button" data-add-to-cart data-product-id="${escapeHtml(prod.id)}" data-name="${escapeHtml(prod.name)}" data-price="${escapeHtml(formatPrice(prod.price))}" data-image="${escapeHtml(productImage(prod))}" class="${qaCls}">В корзину</button>`
+						? hasVariants
+							? firstCombo
+								? `<button type="button" data-add-to-cart data-product-id="${escapeHtml(prod.id)}" data-name="${escapeHtml(prod.name)}" data-price="${escapeHtml(formatPrice(firstCombo.price))}" data-variant-combination-id="${escapeHtml(String(firstCombo.id))}"${comboColor ? ` data-variant-color="${escapeHtml(comboColor)}"` : ""}${comboSize ? ` data-variant-size="${escapeHtml(comboSize)}"` : ""} data-image="${escapeHtml(productImage(prod))}" class="${qaCls}">В корзину</button>`
+								: `<a href="${escapeHtml(productHref(prod))}" class="${qaCls}">В корзину</a>`
+							: `<button type="button" data-add-to-cart data-product-id="${escapeHtml(prod.id)}" data-name="${escapeHtml(prod.name)}" data-price="${escapeHtml(formatPrice(prod.price))}" data-image="${escapeHtml(productImage(prod))}" class="${qaCls}">В корзину</button>`
 						: "";
 					return `<li data-product-id="${escapeHtml(prod.id)}"${img2}>${renderCardHtml(prod)}${qa}</li>`;
 				})

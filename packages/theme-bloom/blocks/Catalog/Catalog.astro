@@ -740,9 +740,19 @@ const skeletons = Array.from({ length: skeletonCount });
       ? `<span class="bloom-product-oldprice font-inter text-[16px] font-light leading-none text-[#999999] line-through">${escapeHtml(oldRaw)}</span>`
       : "";
     // quickAdd-кнопка — СНАРУЖИ <a> (button-in-anchor невалиден). data-quick-add-id
-    // ловит обработчик добавления в корзину.
+    // ловит обработчик добавления в корзину. Решение владельца: товар с вариантами
+    // добавляет ПЕРВУЮ доступную комбинацию (combo.id), а не товар без варианта —
+    // несём её id в data-quick-add-combo-id (handler читает и шлёт в cartStore).
+    const _vc = Array.isArray(p.variantCombinations) ? p.variantCombinations : [];
+    const _hasVariants = p.hasVariants === true || _vc.length > 0;
+    const _firstCombo = _hasVariants
+      ? _vc.find((c) => c && c.available !== false) || _vc[0]
+      : null;
+    const comboAttr = _firstCombo
+      ? ` data-quick-add-combo-id="${escapeHtml(String(_firstCombo.id))}"`
+      : "";
     const quickBtn = showQuickAdd
-      ? `<button type="button" data-quick-add-id="${escapeHtml(p.id)}" style="${QUICK_BTN_STYLE}">${escapeHtml(quickAddText)}</button>`
+      ? `<button type="button" data-quick-add-id="${escapeHtml(p.id)}"${comboAttr} style="${QUICK_BTN_STYLE}">${escapeHtml(quickAddText)}</button>`
       : "";
     // Сердце избранного (overlay top-right) — зеркалит BloomProductCard.astro (parity
     // SSG↔client). Начальное состояние читаем из глобала window.__bloomWishlist
@@ -1217,8 +1227,11 @@ const skeletons = Array.from({ length: skeletonCount });
       event.preventDefault();
       event.stopPropagation();
       const productId = btn.getAttribute("data-quick-add-id");
+      // Товар с вариантами → добавляем первую комбинацию (variantId = combo.id),
+      // иначе товар без варианта (null). Решение владельца.
+      const comboId = btn.getAttribute("data-quick-add-combo-id") || null;
       if (window.cartStore && typeof window.cartStore.addItem === "function") {
-        window.cartStore.addItem(productId, null, 1);
+        window.cartStore.addItem(productId, comboId, 1);
       }
       const orig = btn.textContent;
       btn.textContent = "✓ ДОБАВЛЕНО";

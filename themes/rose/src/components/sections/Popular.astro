@@ -183,6 +183,49 @@ const viewAllCls =
 const collectionRef =
 	typeof p.collection === "string" && p.collection.trim() ? p.collection.trim() : undefined;
 
+// SSR-фетч реальных товаров выбранной коллекции (Figma-цель: коллекция выбрана →
+// реальные товары ПРЯМО в статике, чтобы их видело и ПРЕВЬЮ конструктора — Astro
+// Container не исполняет клиентскую module-гидрацию ниже). siteId инжектит
+// рендер-пайплайн (preview.service / build). Нет коллекции / siteId / ошибка →
+// realProducts пуст → секция рендерит плейсхолдер-куртки.
+const siteId = typeof p.siteId === "string" ? p.siteId : "";
+const fmtPrice = (v: unknown): string => {
+	const n = typeof v === "number" ? v : parseFloat(String(v ?? ""));
+	return Number.isFinite(n) ? `${Math.round(n).toLocaleString("ru-RU")} ₽` : "";
+};
+let realProducts: any[] = [];
+if (collectionRef && siteId) {
+	try {
+		const base = (import.meta as any).env?.SITES_INTERNAL_BASE ?? "http://localhost:3114";
+		const res = await fetch(`${base}/api/sites/${siteId}/storefront-data`).catch(() => null);
+		if (res && res.ok) {
+			const data: any = await res.json();
+			const all: any[] = Array.isArray(data?.products) ? data.products : [];
+			const cols: any[] = Array.isArray(data?.collections) ? data.collections : [];
+			const matched = cols.find(
+				(c) => c && (c.id === collectionRef || c.slug === collectionRef || c.name === collectionRef || c.handle === collectionRef),
+			);
+			const ids = matched && Array.isArray(matched.productIds) && matched.productIds.length ? new Set(matched.productIds) : null;
+			const picked = (ids ? all.filter((pr) => pr?.id && ids.has(pr.id)) : all).slice(0, cardsN);
+			realProducts = picked.map((pr) => {
+				const img = Array.isArray(pr?.images) && pr.images[0]
+					? (typeof pr.images[0] === "string" ? pr.images[0] : pr.images[0]?.url ?? "")
+					: (pr?.image ?? "");
+				return {
+					id: String(pr?.id ?? ""),
+					name: String(pr?.name ?? pr?.title ?? "Товар"),
+					image: String(img ?? ""),
+					price: fmtPrice(pr?.basePrice ?? pr?.price),
+					oldPrice: fmtPrice(pr?.compareAtPrice ?? pr?.oldPrice),
+					discount: !!(pr?.compareAtPrice || pr?.oldPrice),
+				};
+			});
+		}
+	} catch {
+		realProducts = [];
+	}
+}
+
 // Контейнер-подложка (toggle containerEnabled + containerColorScheme), паттерн
 // CollapsibleSection / Figma 314-35006: включён → обёртка-поверхность вокруг
 // контента блока (radius, surface, внутренние паддинги) + отдельная цв. схема
@@ -229,11 +272,11 @@ const paddingStyle = p.padding
 			data-qa-text={quickAddMode ? quickAddText : undefined}
 			data-qa-class={quickAddMode ? quickAddCls : undefined}
 		>
-			{/* SSR ВСЕГДА плейсхолдер (никогда catalogProducts/мок верстальщика) —
-			    в превью (Astro Container) гидрация не исполняется, поэтому мок-SSR
-			    «залипал». data-collection остаётся → на live гидрация ниже подменяет
-			    плейсхолдеры реальными товарами выбранной коллекции. */}
-			{false ? products.map((product) => (
+			{/* SSR-цель (Figma 1:19335): коллекция ВЫБРАНА → реальные товары (фетч в
+			    frontmatter, работает и в превью-Container); НЕ выбрана/пусто →
+			    плейсхолдер-куртки. data-collection остаётся → клиентская гидрация на
+			    live освежает данные. */}
+			{realProducts.length > 0 ? realProducts.map((product: any) => (
 				<li data-product-id={product.id} class:list={quickAddMode ? ["group"] : undefined} data-image-2={nextPhoto ? product.gallery?.[1] : undefined}>
 					<RoseProductCard product={product} />{quickAddMode && (
 						<button

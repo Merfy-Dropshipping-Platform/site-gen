@@ -304,6 +304,24 @@ export function renderCardHtml(p: RealProduct): string {
 		? `<span class="bloom-product-oldprice font-inter text-[16px] font-light leading-none text-[#999999] line-through">${escapeHtml(oldRaw)}</span>`
 		: "";
 	const priceStr = escapeHtml(formatPrice(p.price));
+	// Решение владельца: карточная «В корзину» для товара с вариантами добавляет
+	// ПЕРВУЮ доступную комбинацию (combo.id + combo.price), а не ведёт на PDP и
+	// не кладёт строку без варианта. Без комбинаций (битый товар) — ссылка на PDP.
+	const hasVariants =
+		p.hasVariants === true ||
+		(Array.isArray(p.variantCombinations) && p.variantCombinations.length > 0);
+	const firstCombo = hasVariants
+		? (p.variantCombinations || []).find((c) => c && c.available !== false) ||
+			(p.variantCombinations || [])[0]
+		: null;
+	const comboOpt = (firstCombo?.options || {}) as Record<string, string>;
+	const comboColor = comboOpt["Цвет"] || comboOpt["Color"] || "";
+	const comboSize = comboOpt["Размер"] || comboOpt["Size"] || "";
+	const cartBtn = hasVariants
+		? firstCombo
+			? `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${escapeHtml(formatPrice(firstCombo.price))}" data-variant-combination-id="${escapeHtml(String(firstCombo.id))}"${comboColor ? ` data-variant-color="${escapeHtml(comboColor)}"` : ""}${comboSize ? ` data-variant-size="${escapeHtml(comboSize)}"` : ""} data-image="${image}" data-quantity="1" class="flex h-12 w-full items-center justify-center rounded-full bg-[#e38e9f] px-4 font-inter text-[16px] font-light leading-none text-white transition-opacity hover:opacity-90 active:scale-95">В корзину</button>`
+			: `<a href="${href}" class="flex h-12 w-full items-center justify-center rounded-full bg-[#e38e9f] px-4 font-inter text-[16px] font-light leading-none text-white transition-opacity hover:opacity-90 active:scale-95">В корзину</a>`
+		: `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${priceStr}" data-old-price="${escapeHtml(oldRaw)}" data-image="${image}" data-quantity="1" class="flex h-12 w-full items-center justify-center rounded-full bg-[#e38e9f] px-4 font-inter text-[16px] font-light leading-none text-white transition-opacity hover:opacity-90 active:scale-95">В корзину</button>`;
 	return `<article class="group flex flex-col gap-4" data-nt="bloom-product-card" aria-label="${name}">
 	<div class="relative w-full">
 		<a href="${href}" class="relative block aspect-square w-full overflow-hidden rounded-[12px] bg-[#F5F5F5]" aria-label="${name}">
@@ -317,7 +335,7 @@ export function renderCardHtml(p: RealProduct): string {
 			<span class="bloom-product-price font-inter text-[16px] font-light leading-none text-[#000000]">${price}</span>
 			${oldPrice}
 		</div>
-		<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${priceStr}" data-old-price="${escapeHtml(oldRaw)}" data-image="${image}" data-quantity="1" class="flex h-12 w-full items-center justify-center rounded-full bg-[#e38e9f] px-4 font-inter text-[16px] font-light leading-none text-white transition-opacity hover:opacity-90 active:scale-95">В корзину</button>
+		${cartBtn}
 	</div>
 </article>`;
 }

@@ -295,7 +295,7 @@ const paddingStyle = p.padding
 	// выбранной коллекции, data-next-photo → data-image-2 (вторая картинка
 	// товара) для hover-скрипта, data-quick-add/-qa-text/-qa-class → кнопка на
 	// перерисованной карточке (renderCardHtml кнопки не несёт; товары с
-	// вариантами → ссылка на PDP, прецедент rose T13). Demo-сборка → no-op.
+	// вариантами → добавляют первую комбинацию, решение владельца). Demo-сборка → no-op.
 	const hydratePopular = async () => {
 		const grids = Array.from(document.querySelectorAll<HTMLElement>('[data-nt="popular-grid"]'));
 		if (grids.length === 0) return;
@@ -326,9 +326,21 @@ const paddingStyle = p.padding
 					const hasVariants =
 						p.hasVariants === true ||
 						(Array.isArray(p.variantCombinations) && p.variantCombinations.length > 0);
+					// Решение владельца: карточная «В корзину» для товара с вариантами
+					// добавляет ПЕРВУЮ доступную комбинацию (combo.id + combo.price),
+					// а не ведёт на PDP. Без комбинаций (битый товар) — ссылка на PDP.
+					const firstCombo = hasVariants
+						? (p.variantCombinations || []).find((c) => c && c.available !== false) ||
+							(p.variantCombinations || [])[0]
+						: null;
+					const comboOpt = (firstCombo?.options || {}) as Record<string, string>;
+					const comboColor = comboOpt["Цвет"] || comboOpt["Color"] || "";
+					const comboSize = comboOpt["Размер"] || comboOpt["Size"] || "";
 					const qaBtn = quickAdd
 						? hasVariants
-							? `<a href="${escapeHtml(productHref(p))}" data-qa-link class="${qaClass}">${escapeHtml(qaText)}</a>`
+							? firstCombo
+								? `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${escapeHtml(p.name)}" data-price="${escapeHtml(String(firstCombo.price))}" data-variant-combination-id="${escapeHtml(String(firstCombo.id))}"${comboColor ? ` data-variant-color="${escapeHtml(comboColor)}"` : ""}${comboSize ? ` data-variant-size="${escapeHtml(comboSize)}"` : ""} data-image="${escapeHtml(productImage(p))}" class="${qaClass}">${escapeHtml(qaText)}</button>`
+								: `<a href="${escapeHtml(productHref(p))}" data-qa-link class="${qaClass}">${escapeHtml(qaText)}</a>`
 							: `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${escapeHtml(p.name)}" data-price="${escapeHtml(String(p.price))}"${p.oldPrice || p.compareAtPrice ? ` data-old-price="${escapeHtml(String(p.oldPrice || p.compareAtPrice))}"` : ""} data-image="${escapeHtml(productImage(p))}" class="${qaClass}">${escapeHtml(qaText)}</button>`
 						: "";
 					return `<li data-product-id="${escapeHtml(p.id)}"${img2}>${renderCardHtml(p)}${qaBtn}</li>`;

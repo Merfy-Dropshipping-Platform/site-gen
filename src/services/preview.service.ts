@@ -1644,21 +1644,23 @@ const PREVIEW_NAV_AGENT_INLINE = `
     // Storefront-кнопки с hard-навигацией внутри iframe конструктора дают 404
     // (origin = gateway, нет маршрутов /checkout, /cart):
     //   • «Оформить» корзины = <button data-action="checkout"> → location='/checkout'
-    //   • «Купить сейчас» PDP = <button data-action="buy-now"> → add-to-cart + location='/cart'
+    //   • «Купить сейчас» PDP = <button data-action="buy-now"> → add-to-cart + location='/checkout'
     // Nav-агент пропускает нативные button (чтобы работали add-to-cart/qty/варианты),
     // поэтому эти кнопки проскакивают. Перехватываем ДО пропуска нативных кнопок
     // и просим родителя переключиться на нужную страницу — как для внутренних
     // <a href> выше. stopPropagation глушит bubble-обработчик storefront (capture
     // первее) → hard-навигации не происходит; preventDefault — на случай submit.
-    // Зеркалит navigate-путь: pageIdFromPath('/checkout'|'/cart') → page-checkout|
-    // page-cart → switchPage в конструкторе.
+    // Зеркалит navigate-путь: pageIdFromPath('/checkout') → page-checkout →
+    // switchPage в конструкторе.
     var navBtn = e.target && e.target.closest
       ? e.target.closest('[data-action="checkout"], [data-action="buy-now"]')
       : null;
     if (navBtn) {
       e.preventDefault();
       e.stopPropagation();
-      var navPath = navBtn.getAttribute('data-action') === 'buy-now' ? '/cart' : '/checkout';
+      // «Купить сейчас» (buy-now) и «Оформить» (checkout) → обе ведут в оформление.
+      // Раньше buy-now хардкодил '/cart' — это и был баг «купить сейчас → корзина».
+      var navPath = '/checkout';
       post({ type: 'navigate', path: navPath });
       return;
     }

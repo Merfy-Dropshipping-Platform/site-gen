@@ -994,8 +994,9 @@ const pdpHeartSvg =
 
 			// «Купить сейчас»: переиспользуем ГЛОБАЛЬНЫЙ делегат корзины rose —
 			// диспатчим клик по [data-add-to-cart] (тот кладёт линию в локальную
-			// корзину rose), затем идём на /cart, где живёт мост NtCart → серверный
-			// cartStore → /checkout. Не зовём cart-API напрямую (его на PDP нет).
+			// корзину rose), затем идём на /checkout (оформление), где checkout-sync
+			// читает nt-cart → серверный cartStore. На превью конструктора этот hard-nav
+			// не выполняется — nav-агент iframe перехватывает buy-now и сам шлёт navigate.
 			var buyBtn = section.querySelector("[data-action='buy-now']");
 			if (buyBtn) {
 				buyBtn.addEventListener("click", function () {

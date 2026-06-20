@@ -1,11 +1,12 @@
-// CSS-var whitelist для Page block. Все vars читаются через theme cascade.
+// CSS-var whitelist for the Page block. All vars read through the theme cascade.
 export const PageTokens = [
   '--color-bg',
   '--color-text',
+  '--color-heading',
   '--color-muted',
-  '--color-surface',
+  '--color-accent',
   '--container-max-width',
-  '--radius-card',
   '--size-body',
   '--font-body',
+  '--font-heading',
 ] as const;

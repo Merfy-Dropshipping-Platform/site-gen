@@ -1,72 +1,44 @@
 ---
 import type { PageProps } from './Page.puckConfig';
 import { PageClasses as C } from './Page.classes';
-import { PLACEHOLDER_DOC } from '../../runtime/placeholders';
+import { sanitizePageContent } from './Page.sanitize';
 
 interface Props extends PageProps {
   id?: string;
 }
 
-const { id, pageId, colorScheme, padding } = Astro.props as Props;
+const { id, colorScheme, padding } = Astro.props as Props;
 const raw = Astro.props as Record<string, unknown>;
 
-// pagePicker эмитит { href, text } (href = slug страницы), но ревизии могут
-// хранить и голую строку. Нормализуем к ключу-строке для page-meta lookup.
-const pageKey =
-  pageId && typeof pageId === 'object'
-    ? ((pageId as { href?: string }).href ?? '')
-    : typeof pageId === 'string'
-      ? pageId
-      : '';
+// Defensive read — legacy embed revisions carried `pageId` instead of `content`
+// (and possibly no `content` at all). Missing/non-string → '' → placeholder.
+// Never crash, never print "[object Object]".
+const rawContent = typeof raw.content === 'string' ? raw.content : '';
+// Authoritative XSS gate (Constitution II): sanitize on every render.
+const safe = rawContent ? sanitizePageContent(rawContent) : '';
 
-const schemeClass = typeof colorScheme === 'string' && colorScheme
-  ? `color-scheme-${colorScheme.replace('scheme-', '')}`
-  : '';
+const schemeClass =
+  typeof colorScheme === 'string' && colorScheme
+    ? `color-scheme-${colorScheme.replace('scheme-', '')}`
+    : '';
 const paddingStyle = padding
   ? `padding-top:${padding.top}px;padding-bottom:${padding.bottom}px;`
   : '';
-
-// SSR resolve page meta (title + path) для embed-карточки.
-const siteIdFromRoot = typeof raw.siteId === 'string' ? raw.siteId : '';
-type PageMeta = { id: string; title: string; slug: string; path: string; url?: string };
-let pageMeta: PageMeta | null = null;
-
-if (pageKey && siteIdFromRoot) {
-  try {
-    const internalBase = (import.meta as unknown as { env?: { SITES_INTERNAL_BASE?: string } }).env?.SITES_INTERNAL_BASE
-      ?? 'http://localhost:3114';
-    const res = await fetch(`${internalBase}/api/sites/${siteIdFromRoot}/page-meta?pageId=${encodeURIComponent(pageKey)}`).catch(() => null);
-    if (res && res.ok) {
-      const data = (await res.json()) as { page?: PageMeta };
-      pageMeta = data.page ?? null;
-    }
-  } catch {/* swallow */}
-}
 ---
 <section
   class:list={[C.root, schemeClass]}
   data-puck-component-id={id}
-  data-page-embed
-  data-page-id={pageKey || ''}
   style={paddingStyle}
 >
   <div class={C.container}>
-    {pageMeta ? (
-      <a href={pageMeta.path} class={`${C.placeholder} hover:bg-[rgb(var(--color-surface))]/80 transition-colors no-underline flex-col gap-3`}>
-        <div class="w-12 h-12 text-[rgb(var(--color-text))]"><Fragment set:html={PLACEHOLDER_DOC} /></div>
-        <p class={C.text}>{pageMeta.title}</p>
-        <p class="text-xs [font-family:var(--font-body)] text-[rgb(var(--color-muted))]/70">{pageMeta.path}</p>
-      </a>
-    ) : pageKey ? (
-      <div class={`${C.placeholder} flex-col gap-3`}>
-        <div class="w-12 h-12 text-[rgb(var(--color-text))]"><Fragment set:html={PLACEHOLDER_DOC} /></div>
-        <p class={C.text}>Страница «{pageKey}» не найдена</p>
-      </div>
-    ) : (
-      <div class={`${C.placeholder} flex-col gap-3`}>
-        <div class="w-12 h-12 text-[rgb(var(--color-text))]"><Fragment set:html={PLACEHOLDER_DOC} /></div>
-        <p class={C.text}>Выберите страницу в правом меню</p>
-      </div>
-    )}
+    <div class={C.column}>
+      {safe ? (
+        <div class={C.content} set:html={safe} />
+      ) : (
+        <p class={C.placeholder}>
+          Здесь будет содержимое страницы. Откройте редактор и добавьте заголовки, текст, списки и ссылки.
+        </p>
+      )}
+    </div>
   </div>
 </section>

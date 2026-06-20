@@ -2,21 +2,16 @@ import { z } from 'zod';
 import type { BlockPuckConfig } from '@merfy/theme-contract';
 
 /**
- * Page — embed-блок, отображающий контент другой страницы магазина.
- * Sidebar (Figma 314-35117):
- *   - Выбор страницы (pagePicker)
- *   - Цветовая схема
- *   - Отступы
+ * Page («Страница») — WYSIWYG content section for static/asset pages
+ * (О нас, Контакты, Доставка, custom). Shopify «main-page»-style: the merchant
+ * authors the page body (headings, paragraphs, lists, emphasis, links) in a
+ * rich-text editor. Renders sanitized HTML (see Page.sanitize + Page.astro).
+ *
+ * Replaces the prior page-link embed card (pageId/pagePicker) — removed.
  */
 export const PageSchema = z.object({
-  // pagePicker эмитит { href, text } (href = slug); старые ревизии могут
-  // содержать голую строку — принимаем обе формы.
-  pageId: z
-    .union([
-      z.string(),
-      z.object({ href: z.string().optional(), text: z.string().optional() }),
-    ])
-    .optional(),
+  // Sanitized rich HTML. Empty → placeholder render.
+  content: z.string().optional(),
   colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
@@ -30,12 +25,13 @@ export const PagePuckConfig: BlockPuckConfig<PageProps> = {
   label: 'Страница',
   category: 'content',
   fields: {
-    pageId: { type: 'pagePicker', label: 'Выбор страницы' } as any,
+    // 'wysiwyg' — TipTap rich-text editor field (constructor FieldRenderer).
+    content: { type: 'wysiwyg', label: 'Содержимое' } as any,
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
-    pageId: '',
+    content: '',
     colorScheme: 'scheme-1',
     padding: { top: 80, bottom: 80 },
   },

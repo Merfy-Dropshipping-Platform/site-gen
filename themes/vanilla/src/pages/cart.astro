@@ -74,7 +74,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
 	const itemsEl = document.querySelector<HTMLElement>("[data-cart-page-items]");
 	const totalEl = document.querySelector<HTMLElement>("[data-cart-page-total]");
 
-	const trashIconHtml = `<img src="${withBase("/icons/delete.svg")}" alt="" width="24" height="24" class="size-6 object-contain opacity-60 transition-opacity group-hover:opacity-100" aria-hidden="true" />`;
+	const trashIconHtml = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="size-6 opacity-60 transition-opacity group-hover:opacity-100" aria-hidden="true"><path d="M4 7h16M10 7V5a1 1 0 011-1h2a1 1 0 011 1v2M6 7l1 14a1 1 0 001 1h8a1 1 0 001-1l1-14M10 11v6M14 11v6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 	const render = () => {
 		const lines = getCart();

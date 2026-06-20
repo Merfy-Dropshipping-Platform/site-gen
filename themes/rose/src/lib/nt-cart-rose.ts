@@ -223,7 +223,17 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 						variantCombinationId: addBtn.dataset.variantCombinationId || undefined,
 					},
 				});
-				window.dispatchEvent(new CustomEvent(evOpen));
+				// Корзина «Страница» (--cart-type=page): не открывать боковую панель при
+				// добавлении — товар просто кладётся в корзину (бейдж обновляется), на /cart
+				// уходим по клику на иконку. drawer (дефолт) — открываем панель как раньше.
+				if (
+					getComputedStyle(document.documentElement)
+						.getPropertyValue("--cart-type")
+						.trim()
+						.replace(/['"]/g, "") !== "page"
+				) {
+					window.dispatchEvent(new CustomEvent(evOpen));
+				}
 				return;
 			}
 

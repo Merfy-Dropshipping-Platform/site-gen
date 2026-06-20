@@ -229,7 +229,7 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 						variantCombinationId: addBtn.dataset.variantCombinationId || undefined,
 					},
 				});
-				window.dispatchEvent(new CustomEvent(evOpen));
+				if (getComputedStyle(document.documentElement).getPropertyValue("--cart-type").trim().replace(/['"]/g, "") !== "page") window.dispatchEvent(new CustomEvent(evOpen)); // page: не открывать drawer при добавлении
 				return;
 			}
 

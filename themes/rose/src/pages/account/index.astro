@@ -1,0 +1,61 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const shopId = "";
+const apiUrl = "https://gateway.merfy.ru/api";
+---
+<Layout title="Учётная запись">
+  <script is:inline define:vars={{ shopId, apiUrl }}>
+    window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
+      shopId: shopId || "",
+      apiUrl: apiUrl || "https://gateway.merfy.ru/api",
+    };
+  </script>
+
+  <div class="account-page-container" style="padding-top: 7rem;">
+    <div class="account-title">
+      <h1>Учётная запись</h1>
+      <span class="account-subtitle" id="account-email">Загрузка...</span>
+    </div>
+
+    <nav class="account-nav-links" id="account-nav">
+      <a href="/account/profile" class="active">Основные данные</a>
+      <a href="/account/orders">Мои заказы</a>
+    </nav>
+
+    <button type="button" class="account-text-link" id="btn-logout">Выйти из аккаунта</button>
+  </div>
+
+  <script>
+    import { fetchMe, logout, getToken } from '../../lib/auth';
+
+    async function initAccountPage() {
+      const root = document.getElementById('account-nav');
+      if (!root || root.dataset.bound === 'true') return;
+      root.dataset.bound = 'true';
+
+      if (!getToken()) {
+        window.location.href = '/login';
+        return;
+      }
+
+      const emailEl = document.getElementById('account-email');
+      const logoutBtn = document.getElementById('btn-logout');
+
+      const customer = await fetchMe();
+      if (!customer) {
+        window.location.href = '/login';
+        return;
+      }
+      if (emailEl) emailEl.textContent = customer.email || '';
+
+      logoutBtn?.addEventListener('click', async () => {
+        await logout();
+        window.location.href = '/login';
+      });
+    }
+
+    initAccountPage();
+    document.addEventListener('astro:page-load', initAccountPage);
+  </script>
+</Layout>

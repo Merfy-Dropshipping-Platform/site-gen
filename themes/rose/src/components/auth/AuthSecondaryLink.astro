@@ -1,0 +1,24 @@
+---
+/**
+ * AuthSecondaryLink — вторичный link под CTA.
+ * 2 варианта:
+ *   - composite: helper-текст (neutral-400) + подчёркнутая ссылка (black)
+ *     Пример: "Нет аккаунта? Зарегистрироваться"
+ *   - single: просто ссылка, variant="default" (black) или variant="muted" (neutral-400 font-light)
+ *     Пример: "Забыл пароль?", "Вернуться назад"
+ */
+interface Props {
+  href?: string;
+  helper?: string;
+  variant?: 'default' | 'muted';
+  id?: string;
+}
+const { href = '#', helper, variant = 'default', id } = Astro.props;
+const linkClass = variant === 'muted' ? 'auth-link-muted' : 'auth-link';
+---
+<div class="text-center">
+  {helper && <span class="auth-helper">{helper} </span>}
+  <a href={href} class={linkClass} id={id}>
+    <slot />
+  </a>
+</div>

@@ -51,9 +51,13 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 		<script>
 			import { initCartUI } from "../lib/cart";
 			import { initWishlistUI } from "../lib/wishlist";
+			import { initAuthUI } from "../lib/auth";
 			initCartUI();
 			// Избранное (wishlist) — глобальный делегат сердец/бейджей, зеркало корзины.
 			initWishlistUI();
+			// Аккаунт покупателя — красит [data-auth-link] (/account vs /login),
+			// auth/guest-only элементы; фоновая подгрузка профиля при наличии токена.
+			initAuthUI();
 
 				// Корзина «Сайдбар»/«Страница» (--cart-type): перехват клика по иконке
 				// (<button data-cart-open>) в capture-фазе, опережая bubble-обработчик

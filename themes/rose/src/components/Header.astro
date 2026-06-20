@@ -248,7 +248,8 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 												>0</span>
 											</button>
 											<a
-												href="/auth/sign-in"
+												href="/login"
+												data-auth-link
 												class="flex size-10 items-center justify-center transition-opacity hover:opacity-80"
 												aria-label="Аккаунт"
 											>
@@ -336,7 +337,8 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 												>0</span>
 											</button>
 											<a
-												href="/auth/sign-in"
+												href="/login"
+												data-auth-link
 												class="flex size-10 items-center justify-center transition-opacity hover:opacity-80"
 												aria-label="Аккаунт"
 											>
@@ -431,7 +433,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 									>0</span>
 								</button>
 								<a
-									href="/auth/sign-in"
+									href="/login" data-auth-link
 									class="flex size-10 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Аккаунт"
 								>
@@ -565,7 +567,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 					</button>
 				</form>
 				<a
-					href="/auth/sign-in"
+					href="/login" data-auth-link
 					class="flex size-10 shrink-0 items-center justify-center rounded-[4px] bg-rose-primary"
 					aria-label="Профиль"
 				>

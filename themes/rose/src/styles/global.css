@@ -597,6 +597,7 @@ input[type="search"]::-webkit-search-results-decoration {
   border-radius: var(--radius-button, 6px);
 }
 }
+@layer base {
 
 /* ════════ Auth & Account pages — перенос из templates/astro (пилот rose, без React) ════════ */
 /* ── Auth utility classes (login, register, reset-password, verify-email) ── */
@@ -629,6 +630,8 @@ input[type="search"]::-webkit-search-results-decoration {
 [data-button-text].hidden {
   display: none !important;
 }
+}
+
 
 .auth-page {
   background-color: rgb(var(--color-background));
@@ -1128,4 +1131,3 @@ input[type="search"]::-webkit-search-results-decoration {
     width: 100%;
   }
 }
-

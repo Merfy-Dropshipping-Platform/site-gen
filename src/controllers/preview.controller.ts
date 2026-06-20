@@ -16,7 +16,9 @@ import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { eq } from 'drizzle-orm';
 import { PreviewService } from '../services/preview.service';
 import * as schema from '../db/schema';
-import { PG_CONNECTION } from '../constants';
+import { PG_CONNECTION, BILLING_RMQ_SERVICE } from '../constants';
+import { ClientProxy } from '@nestjs/microservices';
+import { applyFooterData } from '../utils/footer-data';
 import { googleFontHead } from '../themes/theme-manifest-loader';
 import { getPageResolver } from '../themes/page-resolver-instance';
 import { buildTokensCss } from '../themes/tokens-css';
@@ -122,6 +124,8 @@ export class PreviewController {
     private readonly preview: PreviewService,
     @Inject(PG_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
+    @Inject(BILLING_RMQ_SERVICE)
+    private readonly billingClient: ClientProxy,
   ) {}
 
   @Get()
@@ -537,11 +541,21 @@ export class PreviewController {
       .where(eq(schema.siteRevision.id, site.currentRevisionId));
     if (!rev?.data) return null;
 
+    const migrated = migrateRevisionData(
+      rev.data as Record<string, unknown>,
+      site.themeId ?? null,
+    );
+    // Подтягиваем данные футера (контакты/политики/произвольные поля/касса) из
+    // БД в Footer-блоки — чтобы превью конструктора показывало тот же футер, что
+    // live (parity). На live это делает injectFooterData в build-пайплайне.
+    await applyFooterData(
+      { db: this.db, schema, billingClient: this.billingClient },
+      siteId,
+      migrated,
+      this.logger,
+    );
     return {
-      data: migrateRevisionData(
-        rev.data as Record<string, unknown>,
-        site.themeId ?? null,
-      ),
+      data: migrated,
       publicUrl: site.publicUrl ?? null,
       themeId: site.themeId ?? null,
       revisionId: site.currentRevisionId,

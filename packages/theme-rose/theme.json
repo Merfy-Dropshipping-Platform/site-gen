@@ -308,6 +308,11 @@
     "CollapsibleSection": {
       "colorScheme": "scheme-1"
     },
+    "Video": {
+      "video": {
+        "coverImage": "/images/Изображение_Галерея.webp"
+      }
+    },
     "Newsletter": {
       "colorScheme": "scheme-1"
     },

@@ -47,10 +47,12 @@ export interface VariantGroup {
 const PRODUCTS_URL = "/data/products.json";
 /**
  * Плейсхолдер-URL для мест, где нужен именно src (cart-thumb data-image,
- * Gallery cover, PDP). Ассет theme-base доезжает в дисты как /placeholders/*
- * (раньше тут был несуществующий /images/placeholder.png → битая иконка).
+ * Gallery cover, PDP) когда у реального товара нет фото. Демо-картинка ТЕМЫ,
+ * а не дженерик-фигма из /placeholders/ (тестер M$rkul: «не фигма-заглушки, а
+ * медиа темы»). /images/Товар_1.webp гарантированно едет в rose-дист —
+ * карточки товаров его уже используют.
  */
-const PLACEHOLDER_IMAGE = "/placeholders/sweater-blue.png";
+const PLACEHOLDER_IMAGE = "/images/Товар_1.webp";
 
 /** Кэш на страницу: undefined — не загружали, null — demo/пусто/ошибка. */
 let cached: RealProduct[] | null | undefined;

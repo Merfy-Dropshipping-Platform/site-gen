@@ -233,7 +233,7 @@ const video = parseVideo(videoUrl);
               скрыт. Если PNG не доехал в дист темы (404) — onerror прячет img
               и включает overlay: bg-surface от C.media + play + подпись. */}
           <img
-            src={PLACEHOLDER_ASSETS.landscape.video}
+            src={poster || PLACEHOLDER_ASSETS.landscape.video}
             alt=""
             class={C.placeholderImg}
             loading="lazy"

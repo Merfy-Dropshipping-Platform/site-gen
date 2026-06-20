@@ -49,8 +49,8 @@ export async function applyFooterData(
   siteId: string,
   revisionData: Record<string, unknown> | null | undefined,
   logger?: MinimalLogger,
-): Promise<void> {
-  if (!revisionData || typeof revisionData !== "object") return;
+): Promise<string> {
+  if (!revisionData || typeof revisionData !== "object") return "";
   try {
     // Ссылки политик — только с непустым контентом.
     const policies = await deps.db
@@ -169,9 +169,20 @@ export async function applyFooterData(
         `phone=${contactPhone ? "yes" : "no"}, email=${contactEmail ? "yes" : "no"}, ` +
         `extraFields=${extraContactFields.length}, payment=${paymentEnabled ? "on" : "off"}`,
     );
+
+    // Fingerprint данных футера (меняется независимо от revisionId) — для cache-key
+    // превью, чтобы смена контактов/политик/кассы инвалидировала закэшированный HTML
+    // (синхронность превью ↔ live). Источники: updatedAt контактов и политик +
+    // число policy-ссылок + статус кассы.
+    const ts = (d: unknown): number =>
+      d instanceof Date ? d.getTime() : typeof d === "string" ? Date.parse(d) || 0 : 0;
+    const contactsTs = ts(contactsRows[0]?.updatedAt);
+    const policyTs = policies.reduce((m, p) => Math.max(m, ts(p.updatedAt)), 0);
+    return `${contactsTs}.${policyTs}.${policyLinks.length}.${paymentEnabled ? 1 : 0}`;
   } catch (err) {
     logger?.warn(
       `[footer-data] applyFooterData failed: ${err instanceof Error ? err.message : String(err)}`,
     );
   }
+  return "";
 }

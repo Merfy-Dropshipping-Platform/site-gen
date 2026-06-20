@@ -350,7 +350,7 @@ export class PreviewController {
     // Cache lookup BEFORE doing extractPageBlocks/render. Key includes the
     // current revisionId so any constructor save (new revision) yields a
     // different key and the new content is rendered fresh.
-    const cacheKey = `${siteId}:${loaded.revisionId}:${page}:${productIdOverride ?? ''}`;
+    const cacheKey = `${siteId}:${loaded.revisionId}:${loaded.footerFp}:${page}:${productIdOverride ?? ''}`;
     const cachedHtml = PreviewController.getCachedHtml(cacheKey);
     if (cachedHtml !== undefined) {
       res
@@ -524,6 +524,7 @@ export class PreviewController {
     publicUrl: string | null;
     themeId: string | null;
     revisionId: string;
+    footerFp: string;
   } | null> {
     const [site] = await this.db
       .select({
@@ -548,7 +549,7 @@ export class PreviewController {
     // Подтягиваем данные футера (контакты/политики/произвольные поля/касса) из
     // БД в Footer-блоки — чтобы превью конструктора показывало тот же футер, что
     // live (parity). На live это делает injectFooterData в build-пайплайне.
-    await applyFooterData(
+    const footerFp = await applyFooterData(
       { db: this.db, schema, billingClient: this.billingClient },
       siteId,
       migrated,
@@ -559,6 +560,7 @@ export class PreviewController {
       publicUrl: site.publicUrl ?? null,
       themeId: site.themeId ?? null,
       revisionId: site.currentRevisionId,
+      footerFp,
     };
   }
 

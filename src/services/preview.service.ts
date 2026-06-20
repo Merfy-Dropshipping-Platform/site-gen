@@ -1661,6 +1661,23 @@ const PREVIEW_NAV_AGENT_INLINE = `
       // «Купить сейчас» (buy-now) и «Оформить» (checkout) → обе ведут в оформление.
       // Раньше buy-now хардкодил '/cart' — это и был баг «купить сейчас → корзина».
       var navPath = '/checkout';
+      // На live buy-now кладёт выбранный вариант в корзину И идёт на /checkout. В превью
+      // nav-агент глушит обработчик темы (stopPropagation выше), поэтому товар надо
+      // положить здесь — иначе сводка оформления пуста («Ничего не выбрано»). Кладём в
+      // window.cartStore (тот же серверный cart, что читает превью-чекаут), затем переход.
+      if (navBtn.getAttribute('data-action') === 'buy-now' && window.cartStore && window.cartStore.addItem) {
+        var addBtn = document.querySelector('[data-add-to-cart]');
+        var pid = addBtn ? addBtn.getAttribute('data-product-id') : null;
+        if (pid) {
+          var vci = addBtn.getAttribute('data-variant-combination-id') || null;
+          var qty = parseInt(addBtn.getAttribute('data-quantity') || '1', 10) || 1;
+          Promise.resolve(window.cartStore.addItem(pid, vci, qty)).then(
+            function () { post({ type: 'navigate', path: navPath }); },
+            function () { post({ type: 'navigate', path: navPath }); }
+          );
+          return;
+        }
+      }
       post({ type: 'navigate', path: navPath });
       return;
     }

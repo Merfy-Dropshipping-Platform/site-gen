@@ -85,11 +85,8 @@ body {
   background: var(--vanilla-surface);
 }
 
-img,
-picture,
-video {
-  max-width: 100%;
-}
+/* NB: img/video max-width:100% даёт Tailwind preflight в @layer base (утилиты
+   max-w-[..] перекрывают). Unlayered-дубликат бил утилиту лого max-w-[160px]. */
 
 main {
   width: 100%;

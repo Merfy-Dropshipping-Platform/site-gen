@@ -400,11 +400,9 @@ object {
   vertical-align: middle;
 }
 
-img,
-video {
-  max-width: 100%;
-  height: auto;
-}
+/* NB: НЕ дублируем здесь img{max-width:100%;height:auto} — это уже даёт
+   Tailwind preflight в @layer base (где утилиты h-[..]/max-w-[..] могут
+   перекрыть). Unlayered-дубликат бил утилиты лого → лого на всю высоту. */
 
 [hidden] {
   display: none;
@@ -581,10 +579,6 @@ b {
 
 table {
   width: 100%;
-}
-img {
-  max-width: 100%;
-  height: auto;
 }
 code {
   padding: 2px 5px;

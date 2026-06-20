@@ -73,13 +73,12 @@ const dadataToken = "";
       if (!cs) return;
       function fallbackInit() { try { if (cs.init) cs.init(); } catch (e) {} }
       var lines = [];
-      // Express «Купить сейчас»: ?buynow=<productId>&v=<combo>&q=<qty> — оформляем
-      // ТОЛЬКО этот товар; корзину покупателя (flux:cart:v1) НЕ читаем и НЕ трогаем.
-      var bp = null;
-      try { bp = new URLSearchParams(location.search); } catch (e) { bp = null; }
-      var bn = bp && bp.get("buynow");
-      if (bn) {
-        lines = [{ productId: bn, variant: { variantCombinationId: bp.get("v") || null }, quantity: parseInt(bp.get("q") || "1", 10) || 1 }];
+      // Express «Купить сейчас»: товар лежит в sessionStorage (НЕ в URL, НЕ в корзине
+      // покупателя). Есть — оформляем ТОЛЬКО его; иначе — корзину (flux:cart:v1).
+      var bn = null;
+      try { bn = JSON.parse(sessionStorage.getItem("flux:buynow") || "null"); } catch (e) { bn = null; }
+      if (bn && bn.productId) {
+        lines = [{ productId: bn.productId, variant: { variantCombinationId: bn.variantCombinationId || null }, quantity: bn.quantity || 1 }];
       } else {
         try { lines = JSON.parse(localStorage.getItem("flux:cart:v1") || "[]"); } catch (e) { lines = []; }
       }

@@ -47,6 +47,20 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 			initWishlistUI();
 			initAuthUI();
 
+			// Регулярное оформление («Оформить» корзины/drawer, data-action=checkout)
+			// сбрасывает express «Купить сейчас» (sessionStorage flux:buynow) — чтобы
+			// чекаут показал корзину покупателя, а не залипший buy-now товар.
+			document.addEventListener(
+				"click",
+				(e) => {
+					const el = e.target as Element | null;
+					if (el && el.closest("[data-action='checkout']")) {
+						try { sessionStorage.removeItem("flux:buynow"); } catch (err) {}
+					}
+				},
+				true,
+			);
+
 				// Корзина «Сайдбар»/«Страница» (--cart-type): перехват клика по иконке
 				// (<button data-cart-open>) в capture-фазе, опережая bubble-обработчик
 				// панели (DS NtCartDrawer). page → /cart (live: переход; превью: <a> →

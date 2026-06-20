@@ -1030,10 +1030,10 @@ const pdpHeartSvg =
 			}
 
 			// «Купить сейчас» = ЭКСПРЕСС: оформляем ТОЛЬКО выбранный товар, корзину
-			// покупателя (nt-cart) НЕ трогаем. Передаём товар в /checkout через URL
-			// (?buynow=<id>&v=<combo>&q=<qty>); checkout-sync соберёт серверную корзину
-			// из этих параметров, а не из nt-cart. Так повторный buy-now всегда даёт
-			// именно нажатый товар, а накопленная корзина сохраняется нетронутой.
+			// покупателя (nt-cart) НЕ трогаем. Товар кладём в sessionStorage (НЕ в URL,
+			// НЕ в корзину); чекаут читает его и собирает корзину ТОЛЬКО из него. URL
+			// остаётся чистым /checkout. Регулярное «Оформить» сбрасывает этот ключ
+			// (Layout), поэтому повторный buy-now всегда даёт именно нажатый товар.
 			// На превью конструктора этот hard-nav перехватывает nav-агент iframe.
 			var buyBtn = section.querySelector("[data-action='buy-now']");
 			if (buyBtn) {
@@ -1044,11 +1044,14 @@ const pdpHeartSvg =
 					var pid = add.getAttribute("data-product-id") || "";
 					if (!pid) return;
 					var vci = add.getAttribute("data-variant-combination-id") || "";
-					var qty = add.getAttribute("data-quantity") || "1";
-					window.location.href =
-						"/checkout?buynow=" + encodeURIComponent(pid) +
-						(vci ? "&v=" + encodeURIComponent(vci) : "") +
-						"&q=" + encodeURIComponent(qty);
+					var qty = parseInt(add.getAttribute("data-quantity") || "1", 10) || 1;
+					try {
+						sessionStorage.setItem(
+							"vanilla:buynow",
+							JSON.stringify({ productId: pid, variantCombinationId: vci || null, quantity: qty }),
+						);
+					} catch (e) {}
+					window.location.href = "/checkout";
 				});
 			}
 		}

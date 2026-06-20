@@ -266,6 +266,40 @@ const CARD_MEDIA_FALLBACK_HTML =
 	"</svg></div>";
 const CARD_IMG_ONERROR_ATTR = ` onerror="this.onerror=null;this.outerHTML='${CARD_MEDIA_FALLBACK_HTML.replace(/"/g, "&quot;")}'"`;
 
+/** Outline-сердце satin (геометрия favourite.svg, viewBox 0 0 32 32) — fallback
+ *  пока wishlist-глобал не готов. Зеркалит heartSvg(false) из lib/wishlist.ts и
+ *  инлайн-SVG SSR-карточки SatinProductCard.astro. */
+const WISHLIST_OUTLINE_SVG =
+	'<svg viewBox="0 0 32 32" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:block">' +
+	'<g transform="translate(4.22 5.867)">' +
+	'<path d="M10.0342 18.882C6.93786 16.5652 0.8 11.2695 0.8 6.50305C0.8 3.35396 3.11131 0.8 6.29004 0.8C7.93705 0.8 9.58406 1.349 11.7801 3.54502C13.9761 1.349 15.6231 0.8 17.2701 0.8C20.4488 0.8 22.7601 3.35396 22.7601 6.50305C22.7601 11.2684 16.6223 16.5652 13.5259 18.882C12.4828 19.6616 11.0773 19.6616 10.0342 18.882Z" ' +
+	'fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>' +
+	"</g></svg>";
+
+/**
+ * Wishlist toggle heart overlay для карточки листинга — зеркалит SSR-карточку
+ * SatinProductCard.astro (overlay-сердце .satin-fav, острые углы satin, sibling
+ * <a> внутри уже-relative контейнера картинки). Начальное состояние красится
+ * сразу из window.__satinWishlist (гидрация идёт после load); клик и перекраска
+ * всех сердец — глобальный делегат initWishlistUI (lib/wishlist.ts) по
+ * [data-wishlist-toggle]. SSR-гард на window.
+ */
+function wishlistHeartHtml(id: string): string {
+	const w =
+		typeof window !== "undefined"
+			? (window as unknown as {
+					__satinWishlist?: { has?(x: string): boolean; heartSvg?(f: boolean): string };
+			  }).__satinWishlist
+			: undefined;
+	const fav = !!w?.has?.(id);
+	const inner = w?.heartSvg ? w.heartSvg(fav) : WISHLIST_OUTLINE_SVG;
+	return (
+		`<button type="button" data-wishlist-toggle data-product-id="${escapeHtml(id)}" aria-pressed="${fav}" aria-label="В избранное" ` +
+		'class="satin-fav absolute right-3 top-3 z-20 flex size-8 items-center justify-center bg-white text-[#000000] shadow-[0_2px_8px_rgba(0,0,0,0.10)] transition-opacity hover:opacity-80">' +
+		`<span data-wishlist-icon class="block size-[18px]">${inner}</span></button>`
+	);
+}
+
 export function renderCardHtml(p: RealProduct): string {
 	const href = escapeHtml(productHref(p));
 	const name = escapeHtml(p.name);
@@ -284,6 +318,7 @@ export function renderCardHtml(p: RealProduct): string {
 			${image ? `<img src="${image}" alt="${name}" width="430" height="564" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"${CARD_IMG_ONERROR_ATTR} />` : CARD_MEDIA_FALLBACK_HTML}
 		</a>
 		${badge}
+		${wishlistHeartHtml(p.id)}
 	</div>
 	<div class="flex flex-col gap-1.5 md:gap-2">
 		<a href="${href}" class="font-manrope text-[16px] font-normal uppercase leading-tight text-[#000000] hover:opacity-80">${name}</a>

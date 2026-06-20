@@ -251,11 +251,48 @@ export function escapeHtml(value: unknown): string {
 }
 
 /**
+ * Outline-сердце избранного (fallback, если глобал ещё не готов). Тот же
+ * heart-path, что `wishlist.ts` heartSvg() / `BloomProductCard.astro`.
+ */
+const WISHLIST_OUTLINE_SVG =
+	'<svg viewBox="0 0 17.4 15.4" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:block">' +
+	'<path d="M7.428 14.2615C5.172 12.5239 0.7 8.55212 0.7 4.97729C0.7 2.61547 2.384 0.7 4.7 0.7C5.9 0.7 7.1 1.11175 8.7 2.75876C10.3 1.11175 11.5 0.7 12.7 0.7C15.016 0.7 16.7 2.61547 16.7 4.97729C16.7 8.5513 12.228 12.5239 9.972 14.2615C9.212 14.8462 8.188 14.8462 7.428 14.2615Z" ' +
+	'fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>' +
+	"</svg>";
+
+/**
+ * Overlay-кнопка избранного для гидрированной карточки (зеркало wishlist.astro
+ * renderCardHtml: `right-2 top-2`, `size-9`, `bg-white/90`). Начальное состояние
+ * читаем из глобала `window.__bloomWishlist` (SSR-guard); делегат initWishlistUI
+ * перекрашивает все сердца на load/тоггл. id экранируем.
+ */
+function wishlistHeartHtml(id: string): string {
+	const w =
+		typeof window !== "undefined"
+			? (window as unknown as { __bloomWishlist?: { has?(x: string): boolean; heartSvg?(f: boolean): string } })
+					.__bloomWishlist
+			: undefined;
+	const fav = !!w?.has?.(id);
+	const inner = w?.heartSvg ? w.heartSvg(fav) : WISHLIST_OUTLINE_SVG;
+	return (
+		'<button type="button" data-wishlist-toggle data-product-id="' +
+		escapeHtml(id) +
+		'" aria-pressed="' +
+		(fav ? "true" : "false") +
+		'" aria-label="В избранное" class="absolute right-2 top-2 z-20 flex size-9 items-center justify-center rounded-full bg-white/90 text-[#000000] shadow-[0_2px_8px_rgba(0,0,0,0.10)] backdrop-blur-sm transition-opacity hover:opacity-80">' +
+		'<span data-wishlist-icon class="block size-[18px]">' +
+		inner +
+		"</span></button>"
+	);
+}
+
+/**
  * Разметка карточки товара — зеркалит `BloomProductCard.astro` (article →
  * квадратная картинка-ссылка с rounded-[12px] + name + price + кнопка «В корзину»).
  * Плоский `<img>` вместо `<BloomPicture>` (визуально идентично; webp-конвейер
  * для MinIO-картинок не применяется). Свотчи цвета/бейдж «Скидка» из demo
- * опускаем — реальные товары их в products.json не несут.
+ * опускаем — реальные товары их в products.json не несут. Overlay-сердце
+ * избранного (`data-wishlist-toggle`) — поверх картинки (через relative-обёртку).
  */
 export function renderCardHtml(p: RealProduct): string {
 	const href = escapeHtml(productHref(p));
@@ -268,9 +305,12 @@ export function renderCardHtml(p: RealProduct): string {
 		: "";
 	const priceStr = escapeHtml(formatPrice(p.price));
 	return `<article class="group flex flex-col gap-4" data-nt="bloom-product-card" aria-label="${name}">
-	<a href="${href}" class="relative block aspect-square w-full overflow-hidden rounded-[12px] bg-[#F5F5F5]" aria-label="${name}">
-		<img src="${image}" alt="${name}" loading="eager" class="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105" />
-	</a>
+	<div class="relative w-full">
+		<a href="${href}" class="relative block aspect-square w-full overflow-hidden rounded-[12px] bg-[#F5F5F5]" aria-label="${name}">
+			<img src="${image}" alt="${name}" loading="eager" class="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105" />
+		</a>
+		${wishlistHeartHtml(p.id)}
+	</div>
 	<div class="flex flex-col gap-2">
 		<a href="${href}" class="bloom-product-name font-inter text-[16px] font-light leading-none text-[#000000] transition-opacity hover:opacity-70">${name}</a>
 		<div class="flex flex-wrap items-baseline gap-2">

@@ -9,6 +9,16 @@ interface Props {
 
 const { product, priority = false } = Astro.props;
 const href = `/products/${product.id}`;
+
+// Outline-сердце flux для SSR-карточки. Геометрия зеркалит wishlist.ts
+// heartSvg(false) + storefront-hydrate WISHLIST_OUTLINE_SVG (единый вид сердца
+// темы). Начальное состояние всегда outline/aria-pressed=false — делегат
+// initWishlistUI (Layout) перекрасит [data-wishlist-icon] по факту на load.
+const wishlistOutlineSvg =
+	'<svg viewBox="0 0 17.4 15.4" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:block">' +
+	'<path d="M7.428 14.2615C5.172 12.5239 0.7 8.55212 0.7 4.97729C0.7 2.61547 2.384 0.7 4.7 0.7C5.9 0.7 7.1 1.11175 8.7 2.75876C10.3 1.11175 11.5 0.7 12.7 0.7C15.016 0.7 16.7 2.61547 16.7 4.97729C16.7 8.5513 12.228 12.5239 9.972 14.2615C9.212 14.8462 8.188 14.8462 7.428 14.2615Z" ' +
+	'fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>' +
+	"</svg>";
 ---
 
 <article
@@ -16,28 +26,40 @@ const href = `/products/${product.id}`;
 	data-nt="flux-product-card"
 	aria-label={product.name}
 >
-	<a
-		href={href}
-		class="relative block aspect-[318/444] w-full overflow-hidden bg-[#F5F5F5] rounded-[8px]"
-		aria-label={product.name}
-	>
-		<FluxPicture
-			src={product.image}
-			alt={product.name}
-			width="318"
-			height="444"
-			loading="eager"
-			fetchpriority={priority ? "high" : undefined}
-			class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-		/>
-		{product.discount && (
-			<span
-				class="absolute left-2 top-2 inline-flex h-6 items-center rounded-[4px] bg-[#FA5109] px-1.5 font-roboto-flex text-[11px] font-light leading-none text-[#000000] md:text-[12px]"
-			>
-				Скидка
-			</span>
-		)}
-	</a>
+	<div class="relative w-full">
+		<a
+			href={href}
+			class="relative block aspect-[318/444] w-full overflow-hidden bg-[#F5F5F5] rounded-[8px]"
+			aria-label={product.name}
+		>
+			<FluxPicture
+				src={product.image}
+				alt={product.name}
+				width="318"
+				height="444"
+				loading="eager"
+				fetchpriority={priority ? "high" : undefined}
+				class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+			/>
+			{product.discount && (
+				<span
+					class="absolute left-2 top-2 inline-flex h-6 items-center rounded-[4px] bg-[#FA5109] px-1.5 font-roboto-flex text-[11px] font-light leading-none text-[#000000] md:text-[12px]"
+				>
+					Скидка
+				</span>
+			)}
+		</a>
+		<button
+			type="button"
+			data-wishlist-toggle
+			data-product-id={product.id}
+			aria-pressed="false"
+			aria-label="В избранное"
+			class="absolute right-2 top-2 z-20 flex size-9 items-center justify-center rounded-full bg-white/90 text-[#000000] shadow-[0_2px_8px_rgba(0,0,0,0.10)] backdrop-blur-sm transition-opacity hover:opacity-80"
+		>
+			<span data-wishlist-icon class="block size-[18px]" set:html={wishlistOutlineSvg}></span>
+		</button>
+	</div>
 	<div class="flex flex-col gap-1">
 		<a
 			href={href}

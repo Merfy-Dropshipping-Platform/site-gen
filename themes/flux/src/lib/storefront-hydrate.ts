@@ -251,6 +251,51 @@ export function escapeHtml(value: unknown): string {
 }
 
 /**
+ * Outline-сердце flux (фолбэк, если глобал `__fluxWishlist` ещё не готов на
+ * момент рендера карточки). Геометрия зеркалит `wishlist.ts` heartSvg(false)
+ * + FluxProductCard wishlistOutlineSvg (единый вид сердца темы). После любого
+ * toggle/load делегат `initWishlistUI` перерисует `[data-wishlist-icon]` через
+ * heartSvg(active), так что filled-состояние приходит из глобала.
+ */
+const WISHLIST_OUTLINE_SVG =
+	'<svg viewBox="0 0 17.4 15.4" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:block">' +
+	'<path d="M7.428 14.2615C5.172 12.5239 0.7 8.55212 0.7 4.97729C0.7 2.61547 2.384 0.7 4.7 0.7C5.9 0.7 7.1 1.11175 8.7 2.75876C10.3 1.11175 11.5 0.7 12.7 0.7C15.016 0.7 16.7 2.61547 16.7 4.97729C16.7 8.5513 12.228 12.5239 9.972 14.2615C9.212 14.8462 8.188 14.8462 7.428 14.2615Z" ' +
+	'fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>' +
+	"</svg>";
+
+/**
+ * Overlay-сердце избранного для карточки-листинга. Зеркалит кнопку из
+ * `wishlist.astro` flux: контракт `[data-wishlist-toggle][data-product-id]` +
+ * дочерний `[data-wishlist-icon]`, по которому делегат `initWishlistUI`
+ * перекрашивает состояние. Начальное состояние читаем синхронно из глобала
+ * `window.__fluxWishlist` (SSR-guard `typeof window`); если он ещё не готов —
+ * outline-фолбэк (делегат поправит на load).
+ */
+interface WishlistGlobal {
+	has?(id: string): boolean;
+	heartSvg?(filled: boolean): string;
+}
+function wishlistHeartHtml(id: string): string {
+	const w =
+		typeof window !== "undefined"
+			? (window as unknown as { __fluxWishlist?: WishlistGlobal }).__fluxWishlist
+			: undefined;
+	const fav = !!w?.has?.(id);
+	const inner = w?.heartSvg ? w.heartSvg(fav) : WISHLIST_OUTLINE_SVG;
+	return (
+		'<button type="button" data-wishlist-toggle data-product-id="' +
+		escapeHtml(id) +
+		'" aria-pressed="' +
+		(fav ? "true" : "false") +
+		'" aria-label="В избранное" ' +
+		'class="absolute right-2 top-2 z-20 flex size-9 items-center justify-center rounded-full bg-white/90 text-[#000000] shadow-[0_2px_8px_rgba(0,0,0,0.10)] backdrop-blur-sm transition-opacity hover:opacity-80">' +
+		'<span data-wishlist-icon class="block size-[18px]">' +
+		inner +
+		"</span></button>"
+	);
+}
+
+/**
  * Разметка карточки товара — зеркалит `FluxProductCard.astro` (article →
  * картинка-ссылка + name + price). Плоский `<img>` вместо `<FluxPicture>`
  * (визуально идентично; webp-конвейер для MinIO-картинок не применяется).
@@ -265,9 +310,12 @@ export function renderCardHtml(p: RealProduct): string {
 		? `<span class="font-manrope text-[12px] font-normal leading-[1.366] text-[#999999] line-through md:text-[14px]">${escapeHtml(oldRaw)}</span>`
 		: "";
 	return `<article class="group flex flex-col gap-3 md:gap-4" data-nt="flux-product-card" aria-label="${name}">
-	<a href="${href}" class="relative block aspect-[318/444] w-full overflow-hidden bg-[#F5F5F5] rounded-[8px]" aria-label="${name}">
-		<img src="${image}" alt="${name}" width="318" height="444" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
-	</a>
+	<div class="relative w-full">
+		<a href="${href}" class="relative block aspect-[318/444] w-full overflow-hidden bg-[#F5F5F5] rounded-[8px]" aria-label="${name}">
+			<img src="${image}" alt="${name}" width="318" height="444" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+		</a>
+		${wishlistHeartHtml(p.id)}
+	</div>
 	<div class="flex flex-col gap-1">
 		<a href="${href}" class="font-manrope text-[14px] font-normal leading-[1.366] text-[#000000] hover:opacity-80 md:text-[16px]">${name}</a>
 		<div class="flex flex-wrap items-baseline gap-2">

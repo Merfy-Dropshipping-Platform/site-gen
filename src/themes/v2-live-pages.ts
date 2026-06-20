@@ -189,6 +189,129 @@ export async function composeContentPagesIntoDist(
   return count;
 }
 
+// Политика (site_policy.type) → live-маршрут /legal/<slug> и заголовок.
+const POLICY_SLUG_MAP: Record<string, string> = {
+  refund: 'refund',
+  privacy: 'privacy',
+  tos: 'terms',
+  shipping: 'shipping-policy',
+};
+const POLICY_TITLE_MAP: Record<string, string> = {
+  refund: 'Политика возврата',
+  privacy: 'Политика конфиденциальности',
+  tos: 'Условия обслуживания',
+  shipping: 'Политика доставки',
+};
+const policyTextToHtml = (text: string): string =>
+  text
+    .trim()
+    .split(/\n{2,}/)
+    .map(
+      (para) =>
+        `<p>${para
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/\n/g, '<br>')}</p>`,
+    )
+    .join('');
+
+/**
+ * Spec 101: per-site генерация legal-страниц через блок «Страница» (Page) с
+ * живым контентом мерчанта из site_policy. Заменяет статичный плейсхолдер темы
+ * (themes/<t>/src/data/legal.ts) реальным текстом политик. Шапка/подвал берутся
+ * из home-блоков ревизии (как у content-страниц). Изолировано: при любом сбое
+ * (Page не резолвится / пустой рендер) страница тихо остаётся как в дисте темы.
+ * Вызывать ПОСЛЕ composeContentPagesIntoDist и ДО unifyChromeInDist (чтобы
+ * legal-страницы тоже прошли унификацию шапки). Возвращает число страниц.
+ */
+export async function composeLegalPagesIntoDist(
+  ctx: BuildContext,
+  theme: string,
+  policies: Array<{ type: string; content: string | null }>,
+): Promise<number> {
+  if (!(await getRenderer().hasV2Sections(theme))) return 0;
+  if (!Array.isArray(policies) || policies.length === 0) return 0;
+
+  // Шапка/подвал из home-ревизии (рамка для каждой legal-страницы).
+  const homeBlocks = await extractPageBlocks(
+    ctx.revisionData,
+    'home',
+    ctx.publicUrl,
+    theme,
+    ctx.siteId,
+    undefined,
+    logger,
+    undefined,
+  ).catch(() => null);
+  const promo = homeBlocks?.find((b) => b.type === 'PromoBanner');
+  const header = homeBlocks?.find((b) => b.type === 'Header');
+  const footer = homeBlocks?.find((b) => b.type === 'Footer');
+
+  const homeShell = await fs
+    .readFile(path.join(ctx.distDir, 'index.html'), 'utf8')
+    .catch(() => null);
+
+  let count = 0;
+  for (const policy of policies) {
+    if (!policy?.content || !policy.content.trim()) continue;
+    const slug = POLICY_SLUG_MAP[policy.type] ?? policy.type;
+    const route = `legal/${slug}`;
+    const pagePath = path.join(ctx.distDir, route, 'index.html');
+    // Собственный шелл legal-страницы темы (head/скрипты) либо home-шелл.
+    const ownShell = await fs.readFile(pagePath, 'utf8').catch(() => null);
+    const shellHtml = ownShell ?? homeShell;
+    if (!shellHtml) continue;
+
+    const title = POLICY_TITLE_MAP[policy.type] ?? policy.type;
+    const pageBlock = {
+      type: 'Page',
+      props: {
+        heading: title,
+        content: policyTextToHtml(policy.content),
+        headingSize: 'large',
+        colorScheme: 'scheme-1',
+        padding: { top: 80, bottom: 80 },
+      } as Record<string, unknown>,
+    };
+    const blocks = [promo, header, pageBlock, footer].filter(
+      (b): b is { type: string; props: Record<string, unknown> } => Boolean(b),
+    );
+
+    const blocksHtml = await Promise.all(
+      blocks.map((b) =>
+        getRenderer().renderBlock({
+          blockName: b.type,
+          props: b.props,
+          themeId: theme,
+          isPreview: false,
+        }),
+      ),
+    );
+    // Page-блок отрендерился пустым (не зарезолвился) → не трогаем страницу.
+    const pageIdx = blocks.findIndex((b) => b.type === 'Page');
+    if (pageIdx === -1 || !blocksHtml[pageIdx]?.trim()) continue;
+
+    const html = composeV2Page({
+      shellHtml,
+      blocksHtml,
+      blockTypes: blocks.map((b) => b.type),
+      blockSchemes: await Promise.all(
+        blocks.map((b) =>
+          getRenderer().resolveBlockScheme(b.type, b.props, theme),
+        ),
+      ),
+      assetPrefix: null,
+      titleOverride: title,
+    });
+    if (html === null) continue;
+    await fs.mkdir(path.dirname(pagePath), { recursive: true });
+    await fs.writeFile(pagePath, html, 'utf8');
+    count++;
+  }
+  return count;
+}
+
 // ── Chrome unification ──────────────────────────────────────────────────────
 // Одиночный storefront-<header> темы (несёт data-nt="<тема>-header"). Sticky-
 // обёртка и фон — СНАРУЖИ этого элемента и едины на всех страницах, поэтому

@@ -1060,11 +1060,28 @@ export async function runBuildPipeline(
       // Lazy import: build.service ← v2-live-pages ← v2-page-composer ←
       // theme-build.service ← build.service — циклический граф; динамический
       // import не материализует цикл на module-init.
-      const { composeContentPagesIntoDist, unifyChromeInDist } = await import("../themes/v2-live-pages");
+      const { composeContentPagesIntoDist, composeLegalPagesIntoDist, unifyChromeInDist } = await import("../themes/v2-live-pages");
       const composedPages = await composeContentPagesIntoDist(ctx, bareTheme);
       logger.log(
         `[themes-v2] Composed ${composedPages} content pages from revision for site ${params.siteId}`,
       );
+      // Spec 101: legal-страницы (/legal/<slug>) рендерятся блоком «Страница» с
+      // живым контентом мерчанта из site_policy (вместо статичного плейсхолдера
+      // темы). Изолировано: сбой не валит билд — страница остаётся как в дисте.
+      try {
+        const legalPolicies = await deps.db
+          .select()
+          .from(deps.schema.sitePolicy)
+          .where(eq(deps.schema.sitePolicy.siteId, ctx.siteId));
+        const legalCount = await composeLegalPagesIntoDist(ctx, bareTheme, legalPolicies);
+        logger.log(
+          `[themes-v2] Composed ${legalCount} legal page(s) via «Страница» for site ${params.siteId}`,
+        );
+      } catch (legalErr) {
+        logger.warn(
+          `[themes-v2] legal compose failed (non-fatal): ${(legalErr as Error)?.message ?? legalErr}`,
+        );
+      }
       // Унификация шапки: канон home → все НЕ-checkout страницы (фикс «Header
       // разный на страницах»); checkout → минимальный CheckoutHeader (Figma
       // 1:13563). ПОСЛЕ compose (нужен home-шелл), ДО per-slug product (копии

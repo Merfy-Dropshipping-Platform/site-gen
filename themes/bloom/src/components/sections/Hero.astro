@@ -135,47 +135,52 @@ const paddingStyle = p.padding
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	<div
-		class="relative w-full min-h-[560px] aspect-[375/812] sm:aspect-[768/968] md:aspect-[1280/968] xl:aspect-[1920/925]"
-	>
-		{
-			backgroundImage2 ? (
-				<div class="absolute inset-0 z-0 grid grid-cols-2">
-					<BloomPicture
-						src={backgroundImage}
-						alt=""
-						loading="eager"
-						fetchpriority="high"
-						class="size-full object-cover object-center"
-					/>
-					<BloomPicture
-						src={backgroundImage2}
-						alt=""
-						loading="eager"
-						fetchpriority="high"
-						class="size-full object-cover object-center"
-					/>
-				</div>
-			) : (
+	{/* Баг M$rkul «чёрные полосы сверху/снизу»: фон-картинка кроет ВСЮ секцию
+	    (absolute на уровне <section> → заполняет padding-box целиком, включая зону
+	    «Отступы») → фон цветовой схемы больше не проступает полосами. «Отступы»
+	    (padding на <section>) теперь отодвигают КОНТЕНТ (inner-div ниже в нормальном
+	    потоке), а не создают полосы. */}
+	{
+		backgroundImage2 ? (
+			<div class="absolute inset-0 z-0 grid grid-cols-2">
 				<BloomPicture
 					src={backgroundImage}
 					alt=""
 					loading="eager"
 					fetchpriority="high"
-					class="absolute inset-0 z-0 size-full object-cover object-center"
+					class="size-full object-cover object-center"
 				/>
-			)
-		}
-
-		{
-			overlayN > 0 && (
-				<div
-					class="pointer-events-none absolute inset-0 z-[1] bg-black"
-					style={`opacity:${overlayN / 100}`}
+				<BloomPicture
+					src={backgroundImage2}
+					alt=""
+					loading="eager"
+					fetchpriority="high"
+					class="size-full object-cover object-center"
 				/>
-			)
-		}
+			</div>
+		) : (
+			<BloomPicture
+				src={backgroundImage}
+				alt=""
+				loading="eager"
+				fetchpriority="high"
+				class="absolute inset-0 z-0 size-full object-cover object-center"
+			/>
+		)
+	}
 
+	{
+		overlayN > 0 && (
+			<div
+				class="pointer-events-none absolute inset-0 z-[1] bg-black"
+				style={`opacity:${overlayN / 100}`}
+			/>
+		)
+	}
+
+	<div
+		class={`relative w-full ${heroHeightCls} aspect-[375/812] sm:aspect-[768/968] md:aspect-[1280/968] xl:aspect-[1920/925]`}
+	>
 		<div class={containerCls}>
 			<div class={`flex w-full max-w-[330px] flex-col ${alignItemsCls} gap-4${boxedCls}`}>
 				<div class={`flex flex-col ${alignItemsCls} gap-2${textAlignCls}`}>

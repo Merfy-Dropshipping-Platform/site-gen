@@ -139,59 +139,62 @@ const secondaryBtnCls =
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
-const rootStyle = `min-height: clamp(500px, 80vh, 1080px)${paddingStyle ? `;${paddingStyle}` : ""}`;
+const rootStyle = `min-height: ${heroHeightCls}${paddingStyle ? `;${paddingStyle}` : ""}`;
 ---
 
 <section
-	class="relative w-full bg-[rgb(var(--color-bg,255_255_255))]"
+	class="relative w-full overflow-hidden bg-[rgb(var(--color-bg,255_255_255))]"
 	style={rootStyle}
 	aria-labelledby="hero-title"
 	data-puck-component-id={id}
 >
-	<div class="relative h-full w-full">
-		<div
-			class="absolute inset-0 z-0 w-full overflow-hidden"
-			style="min-height: clamp(500px, 80vh, 1080px)"
-		>
-			{
-				backgroundImage2 ? (
-					<div class="absolute inset-0 grid grid-cols-2">
-						<FluxPicture
-							src={backgroundImage}
-							alt={title}
-							loading="eager"
-							fetchpriority="high"
-							class="size-full object-cover object-center"
-						/>
-						<FluxPicture
-							src={backgroundImage2}
-							alt=""
-							loading="eager"
-							fetchpriority="high"
-							class="size-full object-cover object-center"
-						/>
-					</div>
-				) : (
-					<FluxPicture
-						src={backgroundImage}
-						alt={title}
-						loading="eager"
-						fetchpriority="high"
-						class="absolute inset-0 size-full object-cover object-center"
-					/>
-				)
-			}
-		</div>
-
-		{
-			overlayN > 0 && (
-				<div
-					class="pointer-events-none absolute inset-0 z-[1] bg-black"
-					style={`opacity:${overlayN / 100}`}
+	{/* Баг M$rkul «чёрные полосы сверху/снизу»: фон-картинка теперь ПРЯМОЙ ребёнок
+	    <section> с absolute inset-0 → кроет весь padding-box секции целиком (включая
+	    зону «Отступы») → фон цветовой схемы больше не проступает полосами. «Отступы»
+	    (padding в rootStyle на <section>) теперь отодвигают КОНТЕНТ (inner-div в
+	    нормальном потоке ниже), а не создают полосы (паттерн rose Hero фикс). */}
+	{
+		backgroundImage2 ? (
+			<div class="absolute inset-0 z-0 grid grid-cols-2 overflow-hidden">
+				<FluxPicture
+					src={backgroundImage}
+					alt={title}
+					loading="eager"
+					fetchpriority="high"
+					class="size-full object-cover object-center"
 				/>
-			)
-		}
+				<FluxPicture
+					src={backgroundImage2}
+					alt=""
+					loading="eager"
+					fetchpriority="high"
+					class="size-full object-cover object-center"
+				/>
+			</div>
+		) : (
+			<FluxPicture
+				src={backgroundImage}
+				alt={title}
+				loading="eager"
+				fetchpriority="high"
+				class="absolute inset-0 z-0 size-full object-cover object-center"
+			/>
+		)
+	}
 
+	{
+		overlayN > 0 && (
+			<div
+				class="pointer-events-none absolute inset-0 z-[1] bg-black"
+				style={`opacity:${overlayN / 100}`}
+			/>
+		)
+	}
+
+	<div
+		class="relative w-full"
+		style={`min-height: ${heroHeightCls}`}
+	>
 		<div
 			class={`absolute inset-0 z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} px-4 pb-28 pt-32 md:px-20 md:pb-32 md:pt-40 lg:pt-52 2xl:px-80`}
 		>
@@ -242,6 +245,5 @@ const rootStyle = `min-height: clamp(500px, 80vh, 1080px)${paddingStyle ? `;${pa
 				</div>
 			</div>
 		</div>
-
 	</div>
 </section>

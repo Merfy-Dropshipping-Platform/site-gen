@@ -39,6 +39,23 @@ export function installPreviewNavAgent(options: PreviewNavAgentOptions): void {
       } else {
         path = rawHref || '/';
       }
+      // Системные storefront-ссылки (иконка профиля → /login|/account, /wishlist
+      // и т.п.) — функции витрины, НЕ редактируемые Puck-страницы. В превью клик
+      // по такой иконке НЕ навигирует (иначе модалка «создать страницу»), а
+      // выделяет родительский блок (Header) для редактирования — как любой клик
+      // по шапке.
+      const STOREFRONT_SYSTEM =
+        /^\/(login|register|reset-password|verify-email|account|wishlist)(\/|$|\?|#)/;
+      if (anchor.hasAttribute('data-auth-link') || STOREFRONT_SYSTEM.test(path)) {
+        const host = anchor.closest('[data-puck-component-id]') as HTMLElement | null;
+        if (host) {
+          window.parent.postMessage(
+            { type: 'select-block', blockId: host.getAttribute('data-puck-component-id') },
+            origin,
+          );
+        }
+        return;
+      }
       // Product card links (Catalog/PopularProducts/etc.) — wrapping <article>
       // имеет data-product-id с конкретным товаром. Передаём parent так чтобы
       // setPreviewProductId() мог отрендерить именно выбранный товар,

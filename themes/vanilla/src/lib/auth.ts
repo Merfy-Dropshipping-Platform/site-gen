@@ -377,6 +377,9 @@ export function initAuthUI(): void {
       (e) => {
         const btn = (e.target as HTMLElement | null)?.closest?.('[data-login-open]');
         if (!btn) return;
+        // В превью конструктора (iframe) НЕ вмешиваемся — hard-навигация сломала
+        // бы превью; редактор/nav-агент сам обработает клик по иконке.
+        if (window.self !== window.top) return;
         e.preventDefault();
         e.stopImmediatePropagation();
         window.location.href = $token.get() ? '/account' : '/login';

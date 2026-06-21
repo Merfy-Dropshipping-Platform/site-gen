@@ -611,6 +611,22 @@ export class SitesDomainService {
     actorUserId?: string;
   }) {
     const updates: Partial<typeof schema.site.$inferInsert> = {};
+    // Снимок темы/статуса ДО апдейта: нужен чтобы поймать реальную смену темы у
+    // уже опубликованного сайта и запустить пересборку live (см. блок ниже).
+    const [existingSite] = await this.db
+      .select({
+        themeId: schema.site.themeId,
+        status: schema.site.status,
+      })
+      .from(schema.site)
+      .where(
+        and(
+          eq(schema.site.id, params.siteId),
+          eq(schema.site.tenantId, params.tenantId),
+        ),
+      )
+      .limit(1);
+    const prevThemeId = existingSite?.themeId ?? null;
     if (typeof params.patch?.name === "string" && params.patch.name.trim()) {
       updates.name = params.patch.name.trim();
     }
@@ -727,6 +743,35 @@ export class SitesDomainService {
           `theme-switch reseed failed for ${params.siteId}: ${e instanceof Error ? e.message : e}`,
         );
       }
+    }
+
+    // Смена темы у уже опубликованного сайта: themeId меняется только в БД, но
+    // live (статика в MinIO/nginx) собрана со старой темой и сам по себе не
+    // пересоберётся — событие sites.site.updated это no-op, а флаг needsRebuild
+    // никто не читает. Поэтому при РЕАЛЬНОЙ смене themeId опубликованного сайта
+    // запускаем пересборку через тот же publish() (URL/Coolify/build pipeline).
+    // Best-effort и неблокирующе: сборка идёт асинхронно, RPC смены темы не висит
+    // на многоминутном билде. Черновики не трогаем — они подхватят тему при явной
+    // публикации; frozen (past_due) не пересобираем.
+    if (
+      row &&
+      typeof nextThemeId === "string" &&
+      nextThemeId &&
+      nextThemeId !== prevThemeId &&
+      existingSite?.status === "published"
+    ) {
+      this.logger.log(
+        `theme-switch republish: site=${params.siteId} ${prevThemeId ?? "none"}→${nextThemeId}`,
+      );
+      void this.publish({
+        tenantId: params.tenantId,
+        siteId: params.siteId,
+        mode: "production",
+      }).catch((e) => {
+        this.logger.error(
+          `theme-switch republish failed for ${params.siteId}: ${e instanceof Error ? e.message : e}`,
+        );
+      });
     }
 
     if (row)

@@ -1089,9 +1089,12 @@ const DEMO_IMAGE_URLS = new Set<string>([
   'https://minio.merfy.ru/product-images/fff03c6b-af2d-4637-8b9a-83063c8f8155.webp',
 ]);
 
-/** Decorative (non product/collection) sections whose demo image → placeholder. */
+/**
+ * Decorative (non product/collection) sections whose demo image → placeholder.
+ * Hero is intentionally excluded — its blockDefault carries the brand title
+ * ("Rose" etc.), not a fake-product photo, so it stays as the merchant's banner.
+ */
 const DEMO_IMAGE_SECTION_TYPES = new Set<string>([
-  'Hero',
   'MultiRows',
   'ImageWithText',
   'Gallery',

@@ -87,65 +87,10 @@
         "url1": "https://minio.merfy.ru/product-images/d8d0bc51-183f-4509-b517-150066b71bad.png"
       }
     },
-    "ImageWithText": {
-      "image": {
-        "url": "https://minio.merfy.ru/product-images/2bcd0822-b566-44b3-a973-024a544bd81b.png",
-        "alt": ""
-      }
-    },
-    "Gallery": {
-      "items": [
-        {
-          "id": "item-1",
-          "type": "image",
-          "url": "https://minio.merfy.ru/product-images/42581ed8-e00c-44f7-9554-3b180e2dbbf4.png",
-          "alt": "Изображение"
-        },
-        {
-          "id": "item-2",
-          "type": "image",
-          "url": "https://minio.merfy.ru/product-images/ff8fdfad-e787-4884-91e4-68f2d9b24b68.png",
-          "alt": "Изображение"
-        },
-        {
-          "id": "item-3",
-          "type": "image",
-          "url": "https://minio.merfy.ru/product-images/c7d5a251-242a-4796-b27d-ce6378b2f50c.png",
-          "alt": "Изображение"
-        }
-      ]
-    },
-    "Slideshow": {
-      "slides": [
-        {
-          "id": "slide-1",
-          "imageUrl": "https://minio.merfy.ru/product-images/d8d0bc51-183f-4509-b517-150066b71bad.png",
-          "ctaUrl": "/catalog"
-        },
-        {
-          "id": "slide-2",
-          "imageUrl": "https://minio.merfy.ru/product-images/2bcd0822-b566-44b3-a973-024a544bd81b.png",
-          "ctaUrl": "/catalog"
-        },
-        {
-          "id": "slide-3",
-          "imageUrl": "https://minio.merfy.ru/product-images/493706c0-98af-4425-ba6b-5e4f4c451690.png",
-          "ctaUrl": "/catalog"
-        }
-      ]
-    },
-    "MultiRows": {
-      "rows": [
-        {
-          "id": "row-1",
-          "imageUrl": "https://minio.merfy.ru/product-images/ebd21164-eabe-4eaa-ab34-a87716858be7.png"
-        },
-        {
-          "id": "row-2",
-          "imageUrl": "https://minio.merfy.ru/product-images/80db2fe6-9f38-4d7f-9be8-7b7a7377f8e1.png"
-        }
-      ]
-    },
+    "ImageWithText": {},
+    "Gallery": {},
+    "Slideshow": {},
+    "MultiRows": {},
     "MultiColumns": {
       "columns": [
         {

@@ -143,34 +143,7 @@
         "content": "Найдите стиль на каждый случай — коллекции, которые помогают выразить себя вне времени и трендов."
       }
     },
-    "Gallery": {
-      "heading": {
-        "text": "Снова в наличии!"
-      },
-      "text": {
-        "content": "Сравнивайте, находите своё — от культовых моделей до свежих решений для особенных моментов"
-      },
-      "items": [
-        {
-          "id": "item-1",
-          "type": "image",
-          "url": "https://minio.merfy.ru/product-images/72b8fafa-5500-4547-b8c8-b1aeede1abe7.webp",
-          "alt": "Изображение"
-        },
-        {
-          "id": "item-2",
-          "type": "image",
-          "url": "https://minio.merfy.ru/product-images/1352e026-ad8e-40e0-82ea-313f6d28f0a8.webp",
-          "alt": "Изображение"
-        },
-        {
-          "id": "item-3",
-          "type": "image",
-          "url": "https://minio.merfy.ru/product-images/d6b22fd7-98ea-40d6-ac2c-c5d4a17ded7e.webp",
-          "alt": "Изображение"
-        }
-      ]
-    },
+    "Gallery": {},
     "ContactForm": {
       "heading": {
         "text": "Контакты"
@@ -259,11 +232,7 @@
       "colorScheme": "scheme-1"
     },
     "ImageWithText": {
-      "colorScheme": "scheme-1",
-      "image": {
-        "url": "https://minio.merfy.ru/product-images/72b8fafa-5500-4547-b8c8-b1aeede1abe7.webp",
-        "alt": ""
-      }
+      "colorScheme": "scheme-1"
     },
     "MultiColumns": {
       "colorScheme": "scheme-1",
@@ -289,21 +258,7 @@
       ]
     },
     "MultiRows": {
-      "colorScheme": "scheme-1",
-      "rows": [
-        {
-          "id": "row-1",
-          "imageUrl": "https://minio.merfy.ru/product-images/72b8fafa-5500-4547-b8c8-b1aeede1abe7.webp"
-        },
-        {
-          "id": "row-2",
-          "imageUrl": "https://minio.merfy.ru/product-images/5dd8c01f-5f9e-4e25-94e6-51a3f939f7c2.webp"
-        },
-        {
-          "id": "row-3",
-          "imageUrl": "https://minio.merfy.ru/product-images/fff03c6b-af2d-4637-8b9a-83063c8f8155.webp"
-        }
-      ]
+      "colorScheme": "scheme-1"
     },
     "CollapsibleSection": {
       "colorScheme": "scheme-1"
@@ -317,24 +272,7 @@
       "colorScheme": "scheme-1"
     },
     "Slideshow": {
-      "colorScheme": "scheme-1",
-      "slides": [
-        {
-          "id": "slide-1",
-          "imageUrl": "https://minio.merfy.ru/product-images/9e3891ac-1176-4963-a3ff-460111eec56e.webp",
-          "ctaUrl": "/catalog"
-        },
-        {
-          "id": "slide-2",
-          "imageUrl": "https://minio.merfy.ru/product-images/72b8fafa-5500-4547-b8c8-b1aeede1abe7.webp",
-          "ctaUrl": "/catalog"
-        },
-        {
-          "id": "slide-3",
-          "imageUrl": "https://minio.merfy.ru/product-images/5dd8c01f-5f9e-4e25-94e6-51a3f939f7c2.webp",
-          "ctaUrl": "/catalog"
-        }
-      ]
+      "colorScheme": "scheme-1"
     }
   },
   "colorSchemes": [

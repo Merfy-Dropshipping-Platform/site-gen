@@ -5,6 +5,11 @@ import { SITE_TITLE } from "../consts";
 
 const today = new Date();
 
+// Live-конфиг подписки: shopId патчит build.service (patchShopIdInDist) → siteId
+// на деплое (заменяет `const shopId = ""` в HTML); apiUrl — публичный gateway.
+const shopId = "";
+const apiUrl = "https://gateway.merfy.ru/api";
+
 const navColumn = [
 	{ label: "Главная", href: "/" },
 	{ label: "Каталог", href: "/catalog" },
@@ -353,15 +358,84 @@ const footerContainerCls = pad
 	}
 </style>
 
-<script>
-	document.querySelector<HTMLFormElement>("[data-newsletter-form]")?.addEventListener("submit", (event) => {
-		event.preventDefault();
-		const form = event.currentTarget as HTMLFormElement;
-		const status = document.querySelector<HTMLElement>("[data-newsletter-status]");
-		if (status) {
-			status.textContent = "Спасибо! Мы отправим вам приветственное письмо.";
-			status.classList.remove("hidden");
+<script is:inline define:vars={{ shopId, apiUrl }}>
+	// Реальная отправка подписки на gateway (раньше форма только показывала
+	// фейковое «Спасибо» без запроса). store_id берём из пропатченного shopId
+	// (на деплое) либо из window.__MERFY_SITE_ID__ (превью конструктора).
+	(function () {
+		window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
+			shopId: shopId || "",
+			apiUrl: apiUrl || "https://gateway.merfy.ru/api",
+		};
+		var cfg = window.__MERFY_CONFIG__;
+		var base = String(cfg.apiUrl || "https://gateway.merfy.ru/api").replace(/\/+$/, "");
+		var storeId = cfg.shopId || window.__MERFY_SITE_ID__ || "";
+
+		function wire(form) {
+			if (!form || form.__merfyNewsletterWired) return;
+			form.__merfyNewsletterWired = true;
+			var section = form.closest("section") || document;
+			var status = section.querySelector("[data-newsletter-status]");
+			var btn = form.querySelector('button[type="submit"]');
+
+			function show(msg, isError) {
+				if (!status) return;
+				status.textContent = msg;
+				status.style.color = isError ? "#E11D48" : "";
+				status.classList.remove("hidden");
+			}
+
+			form.addEventListener("submit", function (event) {
+				event.preventDefault();
+				var input = form.querySelector('input[type="email"]');
+				var email = input ? String(input.value || "").trim() : "";
+				if (!email) return;
+				if (btn) btn.disabled = true;
+				show("Отправляем…", false);
+
+				fetch(base + "/storefront/newsletter/subscribe", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ store_id: storeId, email: email }),
+				})
+					.then(function (res) {
+						return res
+							.json()
+							.catch(function () { return {}; })
+							.then(function (data) { return { ok: res.ok, code: res.status, data: data }; });
+					})
+					.then(function (r) {
+						if (r.ok) {
+							show(
+								r.data && r.data.alreadySubscribed
+									? "Вы уже подписаны на рассылку."
+									: "Спасибо! Мы отправим вам приветственное письмо.",
+								false,
+							);
+							form.reset();
+						} else if (r.code === 429) {
+							show("Слишком много попыток. Попробуйте позже.", true);
+						} else {
+							show("Не удалось подписаться. Попробуйте позже.", true);
+						}
+					})
+					.catch(function () {
+						show("Не удалось подписаться. Проверьте соединение.", true);
+					})
+					.finally(function () {
+						if (btn) btn.disabled = false;
+					});
+			});
 		}
-		form.reset();
-	});
+
+		function init() {
+			var forms = document.querySelectorAll("[data-newsletter-form]");
+			for (var i = 0; i < forms.length; i++) wire(forms[i]);
+		}
+		if (document.readyState === "loading") {
+			document.addEventListener("DOMContentLoaded", init);
+		} else {
+			init();
+		}
+	})();
 </script>

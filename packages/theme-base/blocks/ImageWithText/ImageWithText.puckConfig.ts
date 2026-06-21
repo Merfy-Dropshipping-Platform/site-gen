@@ -145,9 +145,9 @@ export const ImageWithTextPuckConfig: BlockPuckConfig<ImageWithTextProps> = {
   },
   defaults: {
     image: { url: '', alt: '' },
-    heading: 'Расскажите о товаре',
-    text: 'Опишите преимущества продукта, его ценность для клиента.',
-    button: { text: 'Подробнее', href: '/about' },
+    heading: 'Изображение с текстом',
+    text: 'Покажи и расскажи о своем товаре в одном блоке',
+    button: { text: 'Кнопка', href: '/about' },
     imagePosition: 'left',
     padding: { top: 80, bottom: 80 },
   },

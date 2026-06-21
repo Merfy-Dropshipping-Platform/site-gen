@@ -53,10 +53,7 @@
     "Hero": {
       "variant": "split-bloom",
       "alignment": "left",
-      "size": "large",
-      "backgroundImages": {
-        "url1": "https://minio.merfy.ru/product-images/52a3d7a3-c4ef-4cee-839a-9c3cc4138d5f.webp"
-      }
+      "size": "large"
     },
     "Slideshow": {
       "alignment": "left",
@@ -82,8 +79,7 @@
     },
     "PopularProducts": {
       "cardCaptionStyle": "uppercase",
-      "headingAlignment": "left",
-      "columns": 3
+      "headingAlignment": "left"
     },
     "Newsletter": {
       "formLayout": "inline-submit",
@@ -115,28 +111,7 @@
     },
     "Gallery": {},
     "MultiRows": {},
-    "MultiColumns": {
-      "columns": [
-        {
-          "id": "col-1",
-          "heading": "Колонка 1",
-          "text": "",
-          "imageUrl": "https://minio.merfy.ru/product-images/fbc737b0-c024-4b0a-8a8a-05dff445f628.webp"
-        },
-        {
-          "id": "col-2",
-          "heading": "Колонка 2",
-          "text": "",
-          "imageUrl": "https://minio.merfy.ru/product-images/52a3d7a3-c4ef-4cee-839a-9c3cc4138d5f.webp"
-        },
-        {
-          "id": "col-3",
-          "heading": "Колонка 3",
-          "text": "",
-          "imageUrl": "https://minio.merfy.ru/product-images/5065b5f2-813a-482f-955f-79d59961781d.webp"
-        }
-      ]
-    }
+    "MultiColumns": {}
   },
   "colorSchemes": [
     {

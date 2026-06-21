@@ -216,10 +216,11 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
   },
   defaults: {
     heading: '',
+    // Figma 1:19335 — плейсхолдер пустого состояния (3 пустые колонки «Колонна»).
     columns: [
-      { id: 'col-1', heading: 'Колонка 1', text: 'Описание первой колонки.', imageUrl: '' },
-      { id: 'col-2', heading: 'Колонка 2', text: 'Описание второй колонки.', imageUrl: '' },
-      { id: 'col-3', heading: 'Колонка 3', text: 'Описание третьей колонки.', imageUrl: '' },
+      { id: 'col-1', heading: 'Колонна', text: 'Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.', imageUrl: '' },
+      { id: 'col-2', heading: 'Колонна', text: 'Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.', imageUrl: '' },
+      { id: 'col-3', heading: 'Колонна', text: 'Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.', imageUrl: '' },
     ],
     displayColumns: 3,
     headingSize: 'medium',

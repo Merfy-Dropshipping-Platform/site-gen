@@ -127,8 +127,8 @@ export const MainTextPuckConfig: BlockPuckConfig<MainTextProps> = {
     textStyle: { type: 'hidden', label: '' },
   },
   defaults: {
-    heading: 'Расскажите о своем бренде',
-    text: 'Поделитесь информацией о вашем бренде с покупателями. Опишите продукт, сделайте объявление или пригласите покупателей в свой магазин.',
+    heading: 'Расскажи о своем бренде',
+    text: 'Расскажи подробнее о своем онлайн-магазине в этом блоке',
     position: 'center',
     headingSize: 'medium',
     textSize: 'medium',

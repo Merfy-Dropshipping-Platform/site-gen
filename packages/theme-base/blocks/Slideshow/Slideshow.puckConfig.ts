@@ -210,29 +210,22 @@ export const SlideshowPuckConfig: BlockPuckConfig<SlideshowProps> = {
     imageFullBleed: { type: 'hidden', label: '' } as any,
   },
   defaults: {
+    // Figma 1:19335 — плейсхолдер пустого состояния (слайды без картинки → landscape-плейсхолдер).
     slides: [
       {
         id: 'slide-1',
         imageUrl: '',
-        heading: 'Первый слайд',
-        subtitle: 'Описание первого слайда',
-        ctaText: 'Подробнее',
+        heading: 'Слайд-шоу',
+        subtitle: 'Добавь несколько изображений с информацией о своём бренде',
+        ctaText: 'Кнопка',
         ctaUrl: '/catalog',
       },
       {
         id: 'slide-2',
         imageUrl: '',
-        heading: 'Второй слайд',
-        subtitle: 'Описание второго слайда',
-        ctaText: 'Смотреть',
-        ctaUrl: '/catalog',
-      },
-      {
-        id: 'slide-3',
-        imageUrl: '',
-        heading: 'Третий слайд',
-        subtitle: 'Описание третьего слайда',
-        ctaText: 'Купить',
+        heading: 'Слайд-шоу',
+        subtitle: 'Добавь несколько изображений с информацией о своём бренде',
+        ctaText: 'Кнопка',
         ctaUrl: '/catalog',
       },
     ],

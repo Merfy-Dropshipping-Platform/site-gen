@@ -53,17 +53,7 @@
       "align": "container"
     },
     "PopularProducts": {
-      "heading": {
-        "text": "Коллекция товаров",
-        "size": "medium",
-        "alignment": "left"
-      },
-      "text": {
-        "content": "",
-        "size": "small"
-      },
       "cards": 3,
-      "columns": 3,
       "productCard": {
         "columns": 3,
         "buttonStyle": "primary",
@@ -82,31 +72,12 @@
         "href": "/catalog"
       }
     },
-    "Hero": {
-      "backgroundImages": {
-        "url1": "https://minio.merfy.ru/product-images/d8d0bc51-183f-4509-b517-150066b71bad.png"
-      }
-    },
+    "Hero": {},
     "ImageWithText": {},
     "Gallery": {},
     "Slideshow": {},
     "MultiRows": {},
-    "MultiColumns": {
-      "columns": [
-        {
-          "id": "col-1",
-          "heading": "Колонка 1",
-          "text": "",
-          "imageUrl": "https://minio.merfy.ru/product-images/3d8e5b82-77b2-4a05-add9-d8b507b928de.png"
-        },
-        {
-          "id": "col-2",
-          "heading": "Колонка 2",
-          "text": "",
-          "imageUrl": "https://minio.merfy.ru/product-images/d237e918-2224-4823-a689-582ecda2e575.png"
-        }
-      ]
-    }
+    "MultiColumns": {}
   },
   "colorSchemes": [
     {

@@ -103,52 +103,15 @@
   },
   "blockDefaults": {
     "PromoBanner": {
-      "text": "Скидка 10% на общую сумму заказа от 9 000₽",
-      "link": {
-        "text": "Перейти",
-        "href": "/catalog"
-      },
       "colorScheme": "scheme-4"
     },
     "Hero": {
-      "heading": {
-        "text": "Rose",
-        "size": "large"
-      },
-      "text": {
-        "content": "Там, где классика встречается с характером",
-        "size": "large"
-      },
-      "primaryButton": {
-        "text": "В каталог",
-        "link": {
-          "href": "/catalog"
-        }
-      },
-      "backgroundImage": "/images/Главный_экран.png",
-      "colorScheme": "scheme-4",
-      "backgroundImages": {
-        "url1": "https://minio.merfy.ru/product-images/c02b5c8c-6b9b-4f32-9edb-7df26a953236.png"
-      }
+      "colorScheme": "scheme-4"
     },
-    "Collections": {
-      "heading": "Коллекции, которые становятся любимыми",
-      "subtitle": "Вдохновение для каждого дня — актуальные коллекции сумок, созданные, чтобы радовать и удивлять."
-    },
-    "PopularProducts": {
-      "heading": {
-        "text": "Главные хиты"
-      },
-      "text": {
-        "content": "Найдите стиль на каждый случай — коллекции, которые помогают выразить себя вне времени и трендов."
-      }
-    },
+    "Collections": {},
+    "PopularProducts": {},
     "Gallery": {},
-    "ContactForm": {
-      "heading": {
-        "text": "Контакты"
-      }
-    },
+    "ContactForm": {},
     "Header": {
       "siteTitle": "Rose",
       "logoPosition": "center-left",
@@ -235,27 +198,7 @@
       "colorScheme": "scheme-1"
     },
     "MultiColumns": {
-      "colorScheme": "scheme-1",
-      "columns": [
-        {
-          "id": "col-1",
-          "heading": "Колонка 1",
-          "text": "",
-          "imageUrl": "https://minio.merfy.ru/product-images/c02b5c8c-6b9b-4f32-9edb-7df26a953236.png"
-        },
-        {
-          "id": "col-2",
-          "heading": "Колонка 2",
-          "text": "",
-          "imageUrl": "https://minio.merfy.ru/product-images/9e3891ac-1176-4963-a3ff-460111eec56e.webp"
-        },
-        {
-          "id": "col-3",
-          "heading": "Колонка 3",
-          "text": "",
-          "imageUrl": "https://minio.merfy.ru/product-images/2174e491-b84a-4fe9-969b-03e7cfb4c6cb.png"
-        }
-      ]
+      "colorScheme": "scheme-1"
     },
     "MultiRows": {
       "colorScheme": "scheme-1"

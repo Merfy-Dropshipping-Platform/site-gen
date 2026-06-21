@@ -1090,16 +1090,20 @@ const DEMO_IMAGE_URLS = new Set<string>([
 ]);
 
 /**
- * Decorative (non product/collection) sections whose demo image → placeholder.
- * Hero is intentionally excluded — its blockDefault carries the brand title
- * ("Rose" etc.), not a fake-product photo, so it stays as the merchant's banner.
+ * Sections whose untouched designer-demo state → Figma placeholder. All carry a
+ * known demo image in their default content (Hero/MultiColumns demo via the
+ * shared c02b5c8c.png etc.), so the demo-URL match below catches them without
+ * fragile text matching. Merchant-uploaded images (any other URL) keep the
+ * section intact.
  */
 const DEMO_IMAGE_SECTION_TYPES = new Set<string>([
+  'Hero',
   'MultiRows',
   'ImageWithText',
   'Gallery',
   'Slideshow',
   'Video',
+  'MultiColumns',
 ]);
 
 /** Content-bearing props stripped when a section is detected as untouched demo. */
@@ -1112,6 +1116,8 @@ const DEMO_CONTENT_PROPS = [
   'slides',
   'items',
   'tiles',
+  'columns',
+  'sections',
   'heading',
   'text',
   'title',

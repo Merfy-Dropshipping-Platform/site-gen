@@ -181,20 +181,21 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
     // по индексу (0 слева, 1 справа, 2 слева…). per-row imagePosition НЕ задаём,
     // чтобы чередование шло от индекса, а не от зафиксированной стороны ряда.
     rowsPosition: 'alternate',
+    // Figma 1:19335 — плейсхолдер пустого состояния (ряды без своей картинки → landscape-плейсхолдер).
     rows: [
       {
         id: 'row-1',
-        heading: 'Первый ряд',
-        text: 'Описание первого ряда. Изображение слева.',
+        heading: 'Изображение с текстом',
+        text: 'Покажи и расскажи о своем товаре в одном блоке',
         imageUrl: '',
-        button: { text: 'Подробнее', href: '/about' },
+        button: { text: 'Кнопка', href: '/about' },
       },
       {
         id: 'row-2',
-        heading: 'Второй ряд',
-        text: 'Описание второго ряда. Изображение справа.',
+        heading: 'Изображение с текстом',
+        text: 'Покажи и расскажи о своем товаре в одном блоке',
         imageUrl: '',
-        button: { text: 'Узнать больше', href: '/about' },
+        button: { text: 'Кнопка', href: '/about' },
       },
     ],
     headingSize: 'medium',

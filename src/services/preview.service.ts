@@ -1700,6 +1700,19 @@ const PREVIEW_NAV_AGENT_INLINE = `
       post({ type: 'navigate', path: navPath });
       return;
     }
+    // Превью: зеркалим «В корзину» в inline window.cartStore (его читает превью-чекаут
+    // и бейдж), НЕ глуша клик — nt-cart темы тоже отработает (drawer/«Добавлено!»). Так
+    // add-to-cart в конструкторе доходит до оформления, как на live (две корзины превью).
+    var atcBtn = e.target && e.target.closest ? e.target.closest('[data-add-to-cart]') : null;
+    if (atcBtn && window.cartStore && window.cartStore.addItem) {
+      var atcPid = atcBtn.getAttribute('data-product-id');
+      if (atcPid) {
+        var atcVci = atcBtn.getAttribute('data-variant-combination-id') || null;
+        var atcQty = parseInt(atcBtn.getAttribute('data-quantity') || '1', 10) || 1;
+        try { window.cartStore.addItem(atcPid, atcVci, atcQty); } catch (e3) {}
+      }
+      // НЕ return / НЕ preventDefault — пусть nt-cart темы тоже обработает клик
+    }
     var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
     if (a) {
       var href = a.getAttribute('href') || '';

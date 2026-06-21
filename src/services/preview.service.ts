@@ -1531,21 +1531,16 @@ const PREVIEW_NAV_AGENT_INLINE = `
       e.stopPropagation();
       // «Купить сейчас» (buy-now) и «Оформить» (checkout) → обе ведут в оформление.
       var navPath = '/checkout';
-      // buy-now = ЭКСПРЕСС: nav-агент глушит обработчик темы (stopPropagation выше),
-      // поэтому САМ кладём выбранный товар в sessionStorage["<тема>:buynow"] — ТОТ ЖЕ
-      // ключ, что читает checkout И на live, И в превью. Одна бизнес-логика, без
-      // отдельной превью-корзины. (Блок Product сам пишет ключ + postMessage, сюда
-      // попадает PDP-кнопка data-action="buy-now", чей обработчик глушится.)
-      if (navBtn.getAttribute('data-action') === 'buy-now' && window.__MERFY_THEME__) {
-        var addBtn = document.querySelector('[data-add-to-cart]');
-        var pid = addBtn ? addBtn.getAttribute('data-product-id') : null;
-        if (pid) {
-          var vci = addBtn.getAttribute('data-variant-combination-id') || null;
-          var qty = parseInt(addBtn.getAttribute('data-quantity') || '1', 10) || 1;
-          try {
-            sessionStorage.setItem(window.__MERFY_THEME__ + ':buynow', JSON.stringify({ productId: pid, variantCombinationId: vci, quantity: qty }));
-          } catch (e2) {}
-        }
+      // «Купить сейчас» = вся корзина + ЭТОТ товар (как на live). Nav-агент глушит
+      // обработчик темы (stopPropagation выше), поэтому САМ кладём кликнутый товар в
+      // nt-cart — кликом по его add-кнопке В КОНТЕКСТЕ нажатой buy-now (делегат
+      // initCartUI пишет в <тема>:cart:v1). Checkout (Spec — рендер из nt-cart) покажет
+      // всю корзину + добавленный товар. Express-buynow (sessionStorage) больше не
+      // используется — раньше из-за него кликнутый товар пропадал в превью-чекауте.
+      if (navBtn.getAttribute('data-action') === 'buy-now') {
+        var buyScope = (navBtn.closest && navBtn.closest('[data-product-id], article, section')) || document;
+        var addBtn = (buyScope.querySelector && buyScope.querySelector('[data-add-to-cart]')) || document.querySelector('[data-add-to-cart]');
+        if (addBtn) { try { addBtn.click(); } catch (e2) {} }
       }
       post({ type: 'navigate', path: navPath });
       return;

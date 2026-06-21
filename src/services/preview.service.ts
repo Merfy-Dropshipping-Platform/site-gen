@@ -503,6 +503,7 @@ export class PreviewService {
     if (bodyClose === -1) return null;
     return (
       composed.slice(0, bodyClose) +
+      `<script>${PREVIEW_CART_STORE_INLINE.replace('__SHOP_ID__', input.siteId ?? '').replace('__API_BASE__', 'https://gateway.merfy.ru/api')}</script>` +
       `<script>${PREVIEW_NAV_AGENT_INLINE}</script>` +
       composed.slice(bodyClose)
     );
@@ -523,6 +524,7 @@ export class PreviewService {
     if (bodyClose === -1) return html;
     return (
       html.slice(0, bodyClose) +
+      `<script>${PREVIEW_CART_STORE_INLINE.replace('__API_BASE__', 'https://gateway.merfy.ru/api')}</script>` +
       `<script>${PREVIEW_NAV_AGENT_INLINE}</script>` +
       html.slice(bodyClose)
     );
@@ -952,6 +954,9 @@ const PREVIEW_CART_STORE_INLINE = `
 (function () {
   if (window.cartStore) return; // не перезаписываем full live cart-store
   var SHOP_ID = '__SHOP_ID__';
+  if (!SHOP_ID || SHOP_ID === ('__SHOP' + '_ID__')) {
+    try { SHOP_ID = (window.__MERFY_SITE_ID__) || (document.querySelector('[data-site-id]') ? document.querySelector('[data-site-id]').getAttribute('data-site-id') : '') || ''; } catch (e) { SHOP_ID = ''; }
+  }
   var API_BASE = '__API_BASE__';
   var CART_ID_KEY = 'merfy:cartId';
   var CART_ITEMS_KEY = 'merfy:cartItems';

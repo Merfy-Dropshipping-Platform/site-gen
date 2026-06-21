@@ -572,20 +572,13 @@ const cartImage = view.gallery.hero?.src ?? '';
         const pid = (addBtn && addBtn.getAttribute('data-product-id')) || root.getAttribute('data-product-id') || productId || '';
         if (!pid) return;
         const vci = (addBtn && addBtn.getAttribute('data-variant-combination-id')) || getActiveVariantId() || '';
-        const inIframe = window.parent && window.parent !== window;
-        if (inIframe) {
-          // Constructor preview: hand the express item to the checkout via
-          // sessionStorage (NOT the cart). «Купить сейчас» must NOT add the item to
-          // the visible preview cart/badge — mirroring live, where express goes via
-          // sessionStorage and leaves the cart untouched. The preview cart store
-          // seeds this item for display ONLY on the checkout page and clears it on
-          // leaving (see PREVIEW_CART_STORE_INLINE). Navigate via the nav-agent.
-          try {
-            sessionStorage.setItem('__mfy_pv_express', JSON.stringify({ productId: pid, variantCombinationId: vci || null, quantity: currentQty }));
-          } catch (e) { /* sessionStorage unavailable — silent */ }
-          try { window.parent.postMessage({ type: 'navigate', path: '/checkout' }, '*'); } catch (e) { /* cross-origin — silent */ }
-          return;
-        }
+        // Express «Купить сейчас»: пишем выбранный товар в sessionStorage
+        // <тема>:buynow — тот же ключ, что читает checkout И на live, И в превью
+        // конструктора (превью-чекаут = полный theme-port checkout с тем же сидером
+        // rose:buynow → cs.clear()+cs.addItem()). Корзину НЕ трогаем → видимая
+        // корзина/бейдж остаются чисты (express сеет серверную корзину оформления,
+        // не nt-cart). Тема: на live из build-инжекта window.__MERFY_THEME__, в
+        // превью — из инжекта preview-контроллера.
         const themeKey = (window.__MERFY_THEME__ || '').trim();
         try {
           if (themeKey) {
@@ -594,8 +587,15 @@ const cartImage = view.gallery.hero?.src ?? '';
               JSON.stringify({ productId: pid, variantCombinationId: vci || null, quantity: currentQty }),
             );
           }
-        } catch (e) { /* sessionStorage unavailable — checkout falls back to cart */ }
-        window.location.href = '/checkout';
+        } catch (e) { /* sessionStorage unavailable — silent */ }
+        // Навигация: live — полный переход; превью-iframe — postMessage, который
+        // перехватывает nav-агент конструктора.
+        const inIframe = window.parent && window.parent !== window;
+        if (inIframe) {
+          try { window.parent.postMessage({ type: 'navigate', path: '/checkout' }, '*'); } catch (e) { /* cross-origin — silent */ }
+        } else {
+          window.location.href = '/checkout';
+        }
       }, true);
     }
 

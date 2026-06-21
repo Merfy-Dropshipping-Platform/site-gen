@@ -1092,42 +1092,11 @@ const PREVIEW_CART_STORE_INLINE = `
     },
   };
 
-  // Express «Купить сейчас» в превью: товар приходит через sessionStorage-хэндофф
-  // (__mfy_pv_express), НЕ через корзину — иначе бейдж пачкается и persist'ится.
-  // Показываем его ТОЛЬКО на странице оформления ([data-checkout-summary]) и убираем
-  // при уходе с неё. Зеркалит live: express идёт через sessionStorage, видимую
-  // корзину покупателя не трогает. На странице товара buy-now бейдж = 0.
-  var __pvOnCheckout = false;
-  try { __pvOnCheckout = !!document.querySelector('[data-checkout-summary]'); } catch (e) {}
-  var __pvExRaw = null;
-  try { __pvExRaw = sessionStorage.getItem('__mfy_pv_express'); } catch (e) {}
-
-  function __pvBoot() {
-    if (__pvOnCheckout && __pvExRaw) {
-      try { sessionStorage.removeItem('__mfy_pv_express'); } catch (e) {}
-      try { localStorage.setItem('merfy:cartExpress', '1'); } catch (e) {}
-      var ex = null; try { ex = JSON.parse(__pvExRaw); } catch (e) {}
-      if (ex && ex.productId) { window.cartStore.expressBuy(ex.productId, ex.variantCombinationId || null, ex.quantity || 1); return; }
-    }
-    if (!__pvOnCheckout) {
-      // Ушли со страницы оформления после express → корзина должна стать пустой
-      // (как на live: express не оставляет товар в видимой корзине).
-      try {
-        if (localStorage.getItem('merfy:cartExpress')) {
-          localStorage.removeItem('merfy:cartExpress');
-          localStorage.removeItem(CART_ID_KEY);
-          localStorage.removeItem(CART_ITEMS_KEY);
-        }
-      } catch (e) {}
-    }
-    window.cartStore.init();
-  }
-
-  // Auto-init (express-aware)
+  // Auto-init
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', __pvBoot);
+    document.addEventListener('DOMContentLoaded', function () { window.cartStore.init(); });
   } else {
-    __pvBoot();
+    window.cartStore.init();
   }
 })();
 `;

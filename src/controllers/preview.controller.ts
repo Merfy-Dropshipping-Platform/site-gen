@@ -276,6 +276,7 @@ export class PreviewController {
               // перебивал свежий рендер (баг «вид сбоку/сверху не переключается»).
               null,
               this.productBlockIdFromRevision(loaded.data),
+              PreviewService.bareThemeKey(loaded.themeId!),
             );
             this.logger.log(
               `[preview] v2-sections page site=${siteId} route=${route || '(root)'} blocks=${v2Blocks.length}`,
@@ -330,6 +331,7 @@ export class PreviewController {
           route.startsWith('collections') ? 'page-collection' : 'page-catalog',
         ),
         this.productBlockIdFromRevision(loaded.data),
+        PreviewService.bareThemeKey(loaded.themeId!),
       );
       html = this.injectTokensIntoBlobPage(
         html, siteId, PreviewService.bareThemeKey(loaded.themeId!),
@@ -579,6 +581,7 @@ export class PreviewController {
     defaultProductId?: string | null,
     catalogLayout?: string | null,
     productBlockId?: string | null,
+    themeName?: string | null,
   ): string {
     let html = htmlIn.replace(/const shopId = "";/g, `const shopId = "${siteId}";`);
     const dadataToken = process.env.DADATA_API_KEY;
@@ -592,6 +595,16 @@ export class PreviewController {
       /<head(\s[^>]*)?>/i,
       (m) => `${m}<script>window.__MERFY_SITE_ID__ = ${JSON.stringify(siteId)};</script>`,
     );
+    // Тема витрины для express «Купить сейчас»: блок Product (общий) пишет
+    // sessionStorage["<тема>:buynow"], тот же ключ читает checkout (и превью-чекаут
+    // = полный theme-port checkout). Зеркалит build-инжект window.__MERFY_THEME__ на
+    // live — в превью без него блок не знал бы префикс темы и buy-now «терялся».
+    if (themeName) {
+      html = html.replace(
+        /<head(\s[^>]*)?>/i,
+        (m) => `${m}<script>window.__MERFY_THEME__ = ${JSON.stringify(themeName)};</script>`,
+      );
+    }
     // «Выбор товара» из конструктора: статичная PDP темы (built-theme путь)
     // гидрируется по ?id=, а без него — по этому глобалу (фоллбек: первый товар).
     if (defaultProductId) {

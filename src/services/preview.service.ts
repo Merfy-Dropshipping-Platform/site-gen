@@ -73,7 +73,7 @@ export interface RenderPreviewPageInput {
   themeId?: string | null;
   /** Page key (e.g. 'home', 'checkout', 'cart'). Determines slot-based layout. */
   page?: string;
-  /** Site ID — нужен PREVIEW_CART_STORE_INLINE для API calls в правильный shop. */
+  /** Site ID — инжектится в превью (shopId, __MERFY_SITE_ID__, __MERFY_THEME__). */
   siteId?: string;
   /**
    * Site publicUrl — преview iframe должен fetch'ить static assets
@@ -503,7 +503,6 @@ export class PreviewService {
     if (bodyClose === -1) return null;
     return (
       composed.slice(0, bodyClose) +
-      `<script>${PREVIEW_CART_STORE_INLINE.replace('__SHOP_ID__', input.siteId ?? '').replace('__API_BASE__', 'https://gateway.merfy.ru/api')}</script>` +
       `<script>${PREVIEW_NAV_AGENT_INLINE}</script>` +
       composed.slice(bodyClose)
     );
@@ -524,7 +523,6 @@ export class PreviewService {
     if (bodyClose === -1) return html;
     return (
       html.slice(0, bodyClose) +
-      `<script>${PREVIEW_CART_STORE_INLINE.replace('__API_BASE__', 'https://gateway.merfy.ru/api')}</script>` +
       `<script>${PREVIEW_NAV_AGENT_INLINE}</script>` +
       html.slice(bodyClose)
     );
@@ -708,7 +706,6 @@ export class PreviewService {
     ${process.env.DADATA_API_KEY ? `window.__DADATA_TOKEN__ = ${JSON.stringify(process.env.DADATA_API_KEY)};` : ''}
   </script>
   <script>${PREVIEW_NAV_AGENT_INLINE}</script>
-  <script>${PREVIEW_CART_STORE_INLINE.replace('__SHOP_ID__', input.siteId ?? '').replace('__API_BASE__', 'https://gateway.merfy.ru/api')}</script>
 </body>
 </html>`;
   }
@@ -937,188 +934,6 @@ async function loadThemeCss(themeId: string | null): Promise<string> {
  *    editor, not a live storefront — submitting would either 404 or trigger
  *    real orders. An empty `formId` falls back to the form's index.
  */
-/**
- * Inline cart-store stub для preview iframe. Live-сайт загружает полную
- * cart-store.js (ESM module из templates/<theme>/src/scripts/) через Astro
- * pages — но preview iframe рендерится через Container API без этих
- * outer pages, поэтому window.cartStore = undefined.
- *
- * Этот мини-stub эмулирует cart-store API (init/addItem/removeItem/getItems/
- * getTotal) достаточно для что Catalog quick-add / PopularProducts CTA /
- * Product Buy Now кнопок работают в preview. localStorage + fetch к
- * gateway.merfy.ru/api/orders/cart/... — тот же endpoint что live.
- *
- * Placeholders __SHOP_ID__ / __API_BASE__ заменяются в renderPreviewPage.
- */
-const PREVIEW_CART_STORE_INLINE = `
-(function () {
-  if (window.cartStore) return; // не перезаписываем full live cart-store
-  var SHOP_ID = '__SHOP_ID__';
-  if (!SHOP_ID || SHOP_ID === ('__SHOP' + '_ID__')) {
-    try { SHOP_ID = (window.__MERFY_SITE_ID__) || (document.querySelector('[data-site-id]') ? document.querySelector('[data-site-id]').getAttribute('data-site-id') : '') || ''; } catch (e) { SHOP_ID = ''; }
-  }
-  var API_BASE = '__API_BASE__';
-  var CART_ID_KEY = 'merfy:cartId';
-  var CART_ITEMS_KEY = 'merfy:cartItems';
-
-  var state = { cartId: null, items: [], loading: false };
-
-  function load() {
-    try {
-      state.cartId = localStorage.getItem(CART_ID_KEY) || null;
-      var raw = localStorage.getItem(CART_ITEMS_KEY);
-      state.items = raw ? JSON.parse(raw) : [];
-    } catch (e) { state.items = []; state.cartId = null; }
-  }
-  function save() {
-    try {
-      if (state.cartId) localStorage.setItem(CART_ID_KEY, state.cartId);
-      else localStorage.removeItem(CART_ID_KEY);
-      localStorage.setItem(CART_ITEMS_KEY, JSON.stringify(state.items));
-    } catch (e) {}
-  }
-  function notify(eventName, detail) {
-    document.dispatchEvent(new CustomEvent(eventName, { detail: detail }));
-  }
-  function updateCartBadge() {
-    // Превью: видимый бейдж [data-cart-count] в хедере читает nt-cart, а Product.astro
-    // кладёт в этот inline cartStore → иконка не мигала. Обновляем бейдж сами, чтобы
-    // add-to-cart в конструкторе давал видимый отклик (как на live).
-    try {
-      var n = state.items.reduce(function (a, i) { return a + (i.quantity || 1); }, 0);
-      document.querySelectorAll('[data-cart-count]').forEach(function (el) {
-        el.textContent = String(n);
-        if (el.dataset) el.dataset.empty = n === 0 ? 'true' : 'false';
-      });
-    } catch (e) {}
-  }
-  function syncFromCart(cart) {
-    if (cart && Array.isArray(cart.items)) state.items = cart.items;
-    save();
-    updateCartBadge();
-    notify('cart:updated', { items: state.items });
-  }
-  async function api(path, opts) {
-    opts = opts || {};
-    opts.credentials = 'include';
-    opts.headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
-    var res = await fetch(API_BASE + path, opts);
-    if (!res.ok) return { success: false, message: 'http_' + res.status };
-    return await res.json();
-  }
-  async function ensureCart() {
-    if (state.cartId) return state.cartId;
-    var r = await api('/orders/cart', { method: 'POST', body: JSON.stringify({ shopId: SHOP_ID }) });
-    if (r.success && r.data && r.data.id) {
-      state.cartId = r.data.id;
-      save();
-      return state.cartId;
-    }
-    throw new Error('cart_create_failed');
-  }
-  async function refresh() {
-    if (!state.cartId) return;
-    var r = await api('/orders/cart/' + state.cartId);
-    if (r.success && r.data) syncFromCart(r.data);
-  }
-
-  window.cartStore = {
-    async init() {
-      load();
-      notify('cart:updated', { items: state.items });
-      if (state.cartId) {
-        try { await refresh(); } catch (e) {
-          state.cartId = null; state.items = []; save();
-          notify('cart:updated', { items: state.items });
-        }
-      }
-    },
-    getItems() { return state.items.slice(); },
-    getTotal() {
-      return state.items.reduce(function (acc, i) {
-        var p = i.unitPriceCents != null ? i.unitPriceCents : (i.priceCents || 0);
-        return acc + p * (i.quantity || 1);
-      }, 0);
-    },
-    async addItem(productId, variantId, quantity) {
-      var qty = quantity || 1;
-      state.loading = true;
-      try {
-        var cartId = await ensureCart();
-        var body = { productId: productId, quantity: qty };
-        if (variantId) body.variantCombinationId = variantId;
-        var r = await api('/orders/cart/' + cartId + '/items', { method: 'POST', body: JSON.stringify(body) });
-        if (r.success) { await refresh(); notify('cart:item-added', { productId: productId, quantity: qty }); return true; }
-        return false;
-      } catch (e) { return false; }
-      finally { state.loading = false; }
-    },
-    async expressBuy(productId, variantId, quantity) {
-      // Express «Купить сейчас» в превью: свежая корзина ТОЛЬКО с этим товаром
-      // (накопленную превью-корзину не смешиваем — чекаут показывает ровно нажатый
-      // товар). Превью эфемерно, реальную корзину покупателя это не затрагивает.
-      state.cartId = null; state.items = []; save();
-      state.loading = true;
-      try {
-        var cartId = await ensureCart();
-        var body = { productId: productId, quantity: quantity || 1 };
-        if (variantId) body.variantCombinationId = variantId;
-        var r = await api('/orders/cart/' + cartId + '/items', { method: 'POST', body: JSON.stringify(body) });
-        if (r.success) { await refresh(); return true; }
-        return false;
-      } catch (e) { return false; }
-      finally { state.loading = false; }
-    },
-    async removeItem(itemId) {
-      if (!state.cartId) return false;
-      state.items = state.items.filter(function (i) { return i.id !== itemId; });
-      notify('cart:updated', { items: state.items });
-      try {
-        await api('/orders/cart/' + state.cartId + '/items/' + itemId, { method: 'DELETE' });
-        await refresh();
-        return true;
-      } catch (e) { return false; }
-    },
-    async updateQuantity(itemId, quantity) {
-      if (!state.cartId) return false;
-      try {
-        await api('/orders/cart/' + state.cartId + '/items/' + itemId, {
-          method: 'PATCH',
-          body: JSON.stringify({ quantity: quantity }),
-        });
-        await refresh();
-        return true;
-      } catch (e) { return false; }
-    },
-  };
-
-  function __pvBoot() {
-    // Express «Купить сейчас» сеет серверную корзину оформления (merfy:cartItems)
-    // через checkout (он читает <тема>:buynow → cs.clear()+cs.addItem()). В превью
-    // бейдж [data-cart-count] читает ИМЕННО эту корзину (на live — nt-cart, которую
-    // express не трогает). Поэтому на НЕ-checkout странице чистим залипший express
-    // (stale <тема>:buynow + его серверную корзину), чтобы бейдж страницы товара был
-    // 0 — как на live. На самой странице оформления не трогаем (там товар нужен).
-    try {
-      var onCheckout = !!document.querySelector('[data-checkout-summary]');
-      var bnKey = (window.__MERFY_THEME__ || '') + ':buynow';
-      if (!onCheckout && window.__MERFY_THEME__ && sessionStorage.getItem(bnKey)) {
-        sessionStorage.removeItem(bnKey);
-        localStorage.removeItem(CART_ID_KEY);
-        localStorage.removeItem(CART_ITEMS_KEY);
-      }
-    } catch (e) {}
-    window.cartStore.init();
-  }
-
-  // Auto-init
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', __pvBoot);
-  } else {
-    __pvBoot();
-  }
-})();
-`;
 
 const PREVIEW_NAV_AGENT_INLINE = `
 (function () {
@@ -1715,41 +1530,29 @@ const PREVIEW_NAV_AGENT_INLINE = `
       e.preventDefault();
       e.stopPropagation();
       // «Купить сейчас» (buy-now) и «Оформить» (checkout) → обе ведут в оформление.
-      // Раньше buy-now хардкодил '/cart' — это и был баг «купить сейчас → корзина».
       var navPath = '/checkout';
-      // buy-now = ЭКСПРЕСС: оформляем ТОЛЬКО выбранный товар. На live это URL
-      // (?buynow=…), но nav-агент глушит обработчик темы (stopPropagation выше), а
-      // превью-чекаут читает inline window.cartStore — поэтому здесь кладём выбранный
-      // товар в СВЕЖУЮ корзину (expressBuy: сброс + один товар), иначе накопится/пусто.
-      if (navBtn.getAttribute('data-action') === 'buy-now' && window.cartStore && window.cartStore.expressBuy) {
+      // buy-now = ЭКСПРЕСС: nav-агент глушит обработчик темы (stopPropagation выше),
+      // поэтому САМ кладём выбранный товар в sessionStorage["<тема>:buynow"] — ТОТ ЖЕ
+      // ключ, что читает checkout И на live, И в превью. Одна бизнес-логика, без
+      // отдельной превью-корзины. (Блок Product сам пишет ключ + postMessage, сюда
+      // попадает PDP-кнопка data-action="buy-now", чей обработчик глушится.)
+      if (navBtn.getAttribute('data-action') === 'buy-now' && window.__MERFY_THEME__) {
         var addBtn = document.querySelector('[data-add-to-cart]');
         var pid = addBtn ? addBtn.getAttribute('data-product-id') : null;
         if (pid) {
           var vci = addBtn.getAttribute('data-variant-combination-id') || null;
           var qty = parseInt(addBtn.getAttribute('data-quantity') || '1', 10) || 1;
-          Promise.resolve(window.cartStore.expressBuy(pid, vci, qty)).then(
-            function () { post({ type: 'navigate', path: navPath }); },
-            function () { post({ type: 'navigate', path: navPath }); }
-          );
-          return;
+          try {
+            sessionStorage.setItem(window.__MERFY_THEME__ + ':buynow', JSON.stringify({ productId: pid, variantCombinationId: vci, quantity: qty }));
+          } catch (e2) {}
         }
       }
       post({ type: 'navigate', path: navPath });
       return;
     }
-    // Превью: зеркалим «В корзину» в inline window.cartStore (его читает превью-чекаут
-    // и бейдж), НЕ глуша клик — nt-cart темы тоже отработает (drawer/«Добавлено!»). Так
-    // add-to-cart в конструкторе доходит до оформления, как на live (две корзины превью).
-    var atcBtn = e.target && e.target.closest ? e.target.closest('[data-add-to-cart]') : null;
-    if (atcBtn && window.cartStore && window.cartStore.addItem) {
-      var atcPid = atcBtn.getAttribute('data-product-id');
-      if (atcPid) {
-        var atcVci = atcBtn.getAttribute('data-variant-combination-id') || null;
-        var atcQty = parseInt(atcBtn.getAttribute('data-quantity') || '1', 10) || 1;
-        try { window.cartStore.addItem(atcPid, atcVci, atcQty); } catch (e3) {}
-      }
-      // НЕ return / НЕ preventDefault — пусть nt-cart темы тоже обработает клик
-    }
+    // «В корзину» полностью обрабатывает nt-cart темы (делегат initCartUI): кладёт в
+    // «<тема>:cart:v1», обновляет бейдж, открывает дровер — ОДНА логика, как на live.
+    // Превью больше НЕ дублирует товар в отдельную серверную корзину.
     var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
     if (a) {
       var href = a.getAttribute('href') || '';

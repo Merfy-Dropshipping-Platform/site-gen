@@ -348,7 +348,14 @@ const cartImage = view.gallery.hero?.src ?? '';
   //   data-counter-value           qty display
   //   data-product-action="add-to-cart|buy-now|share"  CTA + share buttons
   (function () {
-    const root = document.querySelector('section[data-block="product"]');
+    // Скоуп к СВОЕЙ секции через document.currentScript, а НЕ querySelector-first:
+    // на странице может быть НЕСКОЛЬКО секций «Товар» — иначе скрипт каждой цеплялся
+    // бы к ПЕРВОЙ, и остальные секции были мёртвые (варианты/кол-во/кнопки). Так же
+    // корректно после hot-replace в конструкторе (executeScriptsIn пересоздаёт
+    // <script> → document.currentScript = новый скрипт своей секции).
+    var __cs = document.currentScript;
+    const root = (__cs && __cs.closest && __cs.closest('section[data-block="product"]'))
+      || document.querySelector('section[data-block="product"]');
     if (!root) return;
 
     const heroEl = root.querySelector('[data-product-hero]');
@@ -557,40 +564,25 @@ const cartImage = view.gallery.hero?.src ?? '';
     // Layouts don't load cart-store.js, so that global is undefined on storefront
     // pages, which is exactly why the old direct call silently no-oped.
 
-    // Buy now — express checkout, mirroring the live PDP. Writes ONLY the clicked
-    // product to sessionStorage `<theme>:buynow` (theme from the build-injected
-    // window.__MERFY_THEME__) and navigates to a clean /checkout, which reads that
-    // key and builds a cart from just this item; the shopper's nt-cart is left
-    // untouched. In the constructor preview iframe the hard nav is replaced by a
-    // postMessage the nav-agent intercepts.
+    // «Купить сейчас» = добавить ЭТОТ товар в корзину + перейти в оформление со ВСЕЙ
+    // корзиной (этот товар + уже добавленные ранее). НЕ express: триггерим тот же
+    // add-to-cart, что кнопка «Добавить в корзину» (делегат nt-cart кладёт строку в
+    // <тема>:cart:v1), затем навигируем в /checkout — он читает ВСЮ nt-cart. Одна
+    // логика, одна корзина — как просил владелец.
     if (buyBtn) {
       buyBtn.addEventListener('click', function (ev) {
         ev.stopPropagation();
         ev.preventDefault();
         if (buyBtn.disabled) return;
         updateCartAttrs();
-        const pid = (addBtn && addBtn.getAttribute('data-product-id')) || root.getAttribute('data-product-id') || productId || '';
-        if (!pid) return;
-        const vci = (addBtn && addBtn.getAttribute('data-variant-combination-id')) || getActiveVariantId() || '';
-        // Express «Купить сейчас»: пишем выбранный товар в sessionStorage
-        // <тема>:buynow — тот же ключ, что читает checkout И на live, И в превью
-        // конструктора (превью-чекаут = полный theme-port checkout с тем же сидером
-        // rose:buynow → cs.clear()+cs.addItem()). Корзину НЕ трогаем → видимая
-        // корзина/бейдж остаются чисты (express сеет серверную корзину оформления,
-        // не nt-cart). Тема: на live из build-инжекта window.__MERFY_THEME__, в
-        // превью — из инжекта preview-контроллера.
-        const themeKey = (window.__MERFY_THEME__ || '').trim();
-        try {
-          if (themeKey) {
-            sessionStorage.setItem(
-              themeKey + ':buynow',
-              JSON.stringify({ productId: pid, variantCombinationId: vci || null, quantity: currentQty }),
-            );
-          }
-        } catch (e) { /* sessionStorage unavailable — silent */ }
-        // Навигация: live — полный переход; превью-iframe — postMessage, который
-        // перехватывает nav-агент конструктора.
-        const inIframe = window.parent && window.parent !== window;
+        // Сбрасываем возможный залипший express-ключ прошлого поведения, чтобы чекаут
+        // показал ВСЮ корзину, а не один товар.
+        try { var __tk = (window.__MERFY_THEME__ || '').trim(); if (__tk) sessionStorage.removeItem(__tk + ':buynow'); } catch (e) {}
+        // Добавляем этот товар в nt-cart тем же путём, что «Добавить в корзину»
+        // (делегат initCartUI ловит клик по [data-add-to-cart]).
+        if (addBtn) { try { addBtn.click(); } catch (e) {} }
+        // Навигация: live — полный переход; превью-iframe — postMessage (nav-агент).
+        var inIframe = window.parent && window.parent !== window;
         if (inIframe) {
           try { window.parent.postMessage({ type: 'navigate', path: '/checkout' }, '*'); } catch (e) { /* cross-origin — silent */ }
         } else {

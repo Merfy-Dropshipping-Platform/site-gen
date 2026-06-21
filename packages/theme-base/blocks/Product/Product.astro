@@ -574,16 +574,16 @@ const cartImage = view.gallery.hero?.src ?? '';
         const vci = (addBtn && addBtn.getAttribute('data-variant-combination-id')) || getActiveVariantId() || '';
         const inIframe = window.parent && window.parent !== window;
         if (inIframe) {
-          // Constructor preview: the injected preview cartStore drives the preview
-          // checkout (the nav-agent's buy-now handler only fires for data-action,
-          // not this block's data-product-action, so we seed the cart ourselves).
-          // expressBuy resets to just this item — same semantics as live; then nav
-          // via the nav-agent postMessage once the item is in.
-          const cs = window.cartStore;
-          const go = function () { try { window.parent.postMessage({ type: 'navigate', path: '/checkout' }, '*'); } catch (e) { /* cross-origin — silent */ } };
-          if (cs && typeof cs.expressBuy === 'function') Promise.resolve(cs.expressBuy(pid, vci || null, currentQty)).then(go, go);
-          else if (cs && typeof cs.addItem === 'function') Promise.resolve(cs.addItem(pid, vci || null, currentQty)).then(go, go);
-          else go();
+          // Constructor preview: hand the express item to the checkout via
+          // sessionStorage (NOT the cart). «Купить сейчас» must NOT add the item to
+          // the visible preview cart/badge — mirroring live, where express goes via
+          // sessionStorage and leaves the cart untouched. The preview cart store
+          // seeds this item for display ONLY on the checkout page and clears it on
+          // leaving (see PREVIEW_CART_STORE_INLINE). Navigate via the nav-agent.
+          try {
+            sessionStorage.setItem('__mfy_pv_express', JSON.stringify({ productId: pid, variantCombinationId: vci || null, quantity: currentQty }));
+          } catch (e) { /* sessionStorage unavailable — silent */ }
+          try { window.parent.postMessage({ type: 'navigate', path: '/checkout' }, '*'); } catch (e) { /* cross-origin — silent */ }
           return;
         }
         const themeKey = (window.__MERFY_THEME__ || '').trim();

@@ -105,10 +105,25 @@ export class PagesService {
       // clone template — deep copy
       newContent = JSON.parse(JSON.stringify(pagesData[params.templatePageId]));
     } else {
-      // minimal: Header + Footer from theme defaults
+      // minimal: Header + контент-секция «Страница» + Footer (theme defaults).
+      // Page в свободном режиме (pageId="") — редактируемая секция-плейсхолдер,
+      // чтобы новая страница не была пустой между шапкой и подвалом. Зеркалит
+      // фронтовый createEmptyPageData в конструкторе (ConstructorContext.tsx) —
+      // оба источника дефолта должны совпадать, иначе reload до сохранения
+      // покажет иную структуру.
       newContent = {
         content: [
           { type: "Header", props: { id: `Header-${newId}` } },
+          {
+            type: "Page",
+            props: {
+              id: `Page-${newId}`,
+              pageId: "",
+              headingSize: "medium",
+              colorScheme: "scheme-1",
+              padding: { top: 80, bottom: 80 },
+            },
+          },
           { type: "Footer", props: { id: `Footer-${newId}` } },
         ],
         root: { props: { title: params.name } },

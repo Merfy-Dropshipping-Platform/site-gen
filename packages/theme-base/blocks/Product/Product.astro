@@ -571,12 +571,21 @@ const cartImage = view.gallery.hero?.src ?? '';
         updateCartAttrs();
         const pid = (addBtn && addBtn.getAttribute('data-product-id')) || root.getAttribute('data-product-id') || productId || '';
         if (!pid) return;
+        const vci = (addBtn && addBtn.getAttribute('data-variant-combination-id')) || getActiveVariantId() || '';
         const inIframe = window.parent && window.parent !== window;
         if (inIframe) {
-          try { window.parent.postMessage({ type: 'navigate', path: '/checkout' }, '*'); } catch (e) { /* cross-origin — silent */ }
+          // Constructor preview: the injected preview cartStore drives the preview
+          // checkout (the nav-agent's buy-now handler only fires for data-action,
+          // not this block's data-product-action, so we seed the cart ourselves).
+          // expressBuy resets to just this item — same semantics as live; then nav
+          // via the nav-agent postMessage once the item is in.
+          const cs = window.cartStore;
+          const go = function () { try { window.parent.postMessage({ type: 'navigate', path: '/checkout' }, '*'); } catch (e) { /* cross-origin — silent */ } };
+          if (cs && typeof cs.expressBuy === 'function') Promise.resolve(cs.expressBuy(pid, vci || null, currentQty)).then(go, go);
+          else if (cs && typeof cs.addItem === 'function') Promise.resolve(cs.addItem(pid, vci || null, currentQty)).then(go, go);
+          else go();
           return;
         }
-        const vci = (addBtn && addBtn.getAttribute('data-variant-combination-id')) || getActiveVariantId() || '';
         const themeKey = (window.__MERFY_THEME__ || '').trim();
         try {
           if (themeKey) {

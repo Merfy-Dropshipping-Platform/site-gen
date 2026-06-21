@@ -76,7 +76,7 @@ const initialLabel = buttonText.replace('{total}', '—');
       if (state.submitting) return false;
       var items = getCartItems();
       if (items.length === 0) return false;
-      if (!getCartId() || !getShopId()) return false;
+      if (!getShopId()) return false;
       if (!getField('email') || !getField('phone')) return false;
       if (!getField('city') || !getField('address')) return false;
       if (!state.deliveryMethod) return false;
@@ -134,7 +134,8 @@ const initialLabel = buttonText.replace('{total}', '—');
 
       try {
         var apiBase = getApiBase();
-        var cartId = getCartId();
+        var cartId = (window.cartStore && window.cartStore.syncToServer) ? await window.cartStore.syncToServer() : getCartId();
+        if (!cartId) throw new Error('Корзина пуста. Добавьте товары.');
 
         var paymentToken = null;
         if (state.paymentMethod === 'bank_card' && typeof window.__checkoutTokenizeCard === 'function') {

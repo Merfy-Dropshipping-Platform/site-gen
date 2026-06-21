@@ -64,36 +64,40 @@ const dadataToken = "";
   <script is:inline type="module" src="/scripts/cart-api.js"></script>
   <script is:inline type="module" src="/scripts/cart-store.js"></script>
   <script is:inline>
-    // Чекаут наполняет серверную корзину (cartStore) из nt-cart (rose:cart:v1) —
-    // источника истины того, что в корзине у пользователя. Так товар виден при
-    // ЛЮБОМ входе: «Купить сейчас»→/checkout, корзина→/checkout, прямой /checkout —
-    // без хрупкого клик-моста. Всё в try/catch: при сбое деградирует к cartStore.init()
-    // (прежнее поведение), хуже текущего не делает. Summary перерисуется на cart:updated.
+    // Чекаут рендерит «Сводку заказа» МГНОВЕННО из nt-cart (rose:cart:v1) — без
+    // серверных запросов на загрузке. Серверная корзина (cartStore) синкается
+    // позже, при «Оформить» (CheckoutSubmit → cartStore.syncToServer). Так товары
+    // появляются сразу с лоадером, а не по одному.
     document.addEventListener("DOMContentLoaded", function () {
       var cs = window.cartStore;
       if (!cs) return;
-      function fallbackInit() { try { if (cs.init) cs.init(); } catch (e) {} }
+      // express-ключ больше не используется (buy-now = вся корзина) — чистим на всякий
+      try { sessionStorage.removeItem("rose:buynow"); } catch (e) {}
       var lines = [];
-      // Express «Купить сейчас»: товар лежит в sessionStorage (НЕ в URL, НЕ в корзине
-      // покупателя). Есть — оформляем ТОЛЬКО его; иначе — корзину (rose:cart:v1).
-      var bn = null;
-      try { bn = JSON.parse(sessionStorage.getItem("rose:buynow") || "null"); } catch (e) { bn = null; }
-      if (bn && bn.productId) {
-        lines = [{ productId: bn.productId, variant: { variantCombinationId: bn.variantCombinationId || null }, quantity: bn.quantity || 1 }];
-      } else {
-        try { lines = JSON.parse(localStorage.getItem("rose:cart:v1") || "[]"); } catch (e) { lines = []; }
-      }
-      if (!Array.isArray(lines) || !lines.length || !cs.clear || !cs.addItem) { fallbackInit(); return; }
-      (async function () {
-        try {
-          await cs.clear();
-          for (var i = 0; i < lines.length; i++) {
-            var l = lines[i];
-            try { await cs.addItem(l.productId, (l.variant && l.variant.variantCombinationId) || null, l.quantity); } catch (e) {}
-          }
-        } catch (e) { fallbackInit(); return; }
-        try { document.dispatchEvent(new CustomEvent("cart:updated")); } catch (e) {}
-      })();
+      try { lines = JSON.parse(localStorage.getItem("rose:cart:v1") || "[]"); } catch (e) { lines = []; }
+      if (!Array.isArray(lines)) lines = [];
+      // nt-cart → серверная форма для дисплея (priceCents = рубли*100). Серверные
+      // запросы НЕ делаем — синк уйдёт в «Оформить» (cartStore.syncToServer).
+      var display = lines.map(function (l) {
+        var v = l.variant || {};
+        var opts = {};
+        if (v.color) opts["Цвет"] = v.color;
+        if (v.size) opts["Размер"] = v.size;
+        return {
+          id: l.id,
+          productId: l.productId,
+          name: l.name,
+          priceCents: Math.round((parseFloat(l.price) || 0) * 100),
+          compareAtPriceCents: l.oldPrice ? Math.round((parseFloat(l.oldPrice) || 0) * 100) : undefined,
+          image: l.image,
+          imageUrl: l.image,
+          quantity: l.quantity || 1,
+          options: opts,
+          variantCombinationId: (v.variantCombinationId) || null,
+        };
+      });
+      if (cs.setLocalItems) cs.setLocalItems(display);
+      else if (cs.init) cs.init();
     });
   </script>
 </Layout>

@@ -261,6 +261,35 @@ export const cartStore = {
     notify('cart:updated', { items: [] });
   },
 
+  // Spec — мгновенный рендер чекаута: ставит элементы В ПАМЯТЬ (из nt-cart),
+  // БЕЗ серверных запросов. getItems()/getTotal() читают их сразу.
+  setLocalItems(items) {
+    state.items = Array.isArray(items) ? items : [];
+    saveToStorage();
+    notify('cart:updated', { items: state.items });
+  },
+
+  // Синк серверной корзины из текущих (display) items при «Оформить» — а не на
+  // загрузке. Возвращает cartId. НЕ шлёт cart:updated лишний раз.
+  async syncToServer() {
+    const lines = state.items || [];
+    if (!lines.length) return null;
+    state.cartId = null;
+    try { localStorage.removeItem(CART_ID_KEY); } catch (e) {}
+    const cartId = await ensureCart();
+    for (let i = 0; i < lines.length; i++) {
+      const l = lines[i];
+      try { await CartAPI.addItem(cartId, l.productId, l.quantity || 1, l.variantCombinationId || null); } catch (e) {}
+    }
+    try {
+      const res = await CartAPI.getCart(cartId);
+      if (res && res.success && res.data && Array.isArray(res.data.items)) {
+        state.items = res.data.items; saveToStorage();
+      }
+    } catch (e) {}
+    return cartId;
+  },
+
   /**
    * Проверка загрузки
    * @returns {boolean}

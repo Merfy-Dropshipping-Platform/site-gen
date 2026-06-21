@@ -1,15 +1,30 @@
 /**
- * Локальная копия DS `nt-cart.ts` с превью через WebP (`cartLineThumbPictureHtml`).
- * Пакет `@merfy-dropshipping-platform/design-systems-theme` отдаёт drawer с голым PNG —
- * из‑за этого в панели корзины долго грузятся те же ~МБные картинки.
+ * nt-cart — ЕДИНАЯ бизнес-логика корзины витрины для ВСЕХ тем.
+ *
+ * Ядро (localStorage get/save, addToCart с variantCombinationId, remove, qty,
+ * count, total) + делегат кликов `initCartUI` ([data-add-to-cart] → addToCart,
+ * +/−/remove строки, бейдж, открытие дровера) — полностью theme-agnostic.
+ *
+ * Per-theme — ТОЛЬКО разметка строки дровера (`renderDrawerItem`): темы выглядят
+ * по-разному, но контракт делегата общий.
+ *
+ * Контракт делегата (что секции/дровер темы обязаны эмитить):
+ *   [data-add-to-cart] + data-product-id / -name / -price / -old-price / -image /
+ *     -quantity / -variant-color / -variant-size / -variant-combination-id
+ *       — кнопка «В корзину» в любой секции
+ *   [data-cart-count]                                — бейдж счётчика
+ *   [data-cart-empty] [data-cart-items] [data-cart-summary] [data-cart-total]
+ *       — контейнеры дровера/страницы корзины
+ *   [data-cart-remove] [data-cart-inc] [data-cart-dec] (+ data-id)
+ *       — управление строкой; их обязан нести renderDrawerItem темы
+ *
+ * Новая тема = свой renderDrawerItem + `createNtCart({prefix, renderDrawerItem})`.
  */
-
-import { cartLineThumbPictureHtml } from "./cart-thumb-html";
 
 export interface NtCartLineVariant {
 	color?: string;
 	size?: string;
-	/** combinationId реальной комбинации — уходит в backend cart → order_items (Phase 2). */
+	/** combinationId реальной комбинации — уходит в backend cart → order_items. */
 	variantCombinationId?: string;
 }
 
@@ -24,12 +39,6 @@ export interface NtCartLine {
 	variant?: NtCartLineVariant;
 }
 
-export interface NtCartCreateOptions {
-	storageKey: string;
-	eventPrefix: string;
-	productPathPrefix?: string;
-}
-
 export interface NtAddToCartOptions {
 	productId: string;
 	name: string;
@@ -38,6 +47,29 @@ export interface NtAddToCartOptions {
 	image: string;
 	quantity?: number;
 	variant?: NtCartLineVariant;
+}
+
+/** Хелперы для per-theme разметки строки дровера. */
+export interface NtDrawerItemContext {
+	/** «1 234 ₽» */
+	formatPrice: (value: number) => string;
+	/** Базовый путь карточки товара (для ссылки в строке дровера). */
+	productPathPrefix: string;
+}
+
+export interface NtCartCreateOptions {
+	/** localStorage-ключ корзины, напр. `rose:cart:v1`. */
+	storageKey: string;
+	/** Префикс событий: `${eventPrefix}:updated` | `:open` | `:close` | `:toggle`. */
+	eventPrefix: string;
+	/** Базовый путь к карточке товара в ссылках дровера (дефолт `/products`). */
+	productPathPrefix?: string;
+	/**
+	 * Per-theme разметка `<li>` строки дровера. ОБЯЗАНА нести data-line-id и
+	 * кнопки [data-cart-remove] / [data-cart-inc] / [data-cart-dec] с data-id —
+	 * иначе делегат не сможет управлять строкой.
+	 */
+	renderDrawerItem: (line: NtCartLine, ctx: NtDrawerItemContext) => string;
 }
 
 const parsePrice = (raw: string): number => {
@@ -63,7 +95,7 @@ const makeLineId = (productId: string, variant?: NtCartLineVariant) => {
 };
 
 export const createNtCart = (opts: NtCartCreateOptions) => {
-	const { storageKey, eventPrefix, productPathPrefix = "/products" } = opts;
+	const { storageKey, eventPrefix, productPathPrefix = "/products", renderDrawerItem } = opts;
 	const evUpdated = `${eventPrefix}:updated`;
 	const evOpen = `${eventPrefix}:open`;
 
@@ -170,35 +202,7 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 			summary.classList.add("flex");
 
 			items.innerHTML = lines
-				.map((line) => {
-					const variant = [line.variant?.color, line.variant?.size].filter(Boolean).join(", ");
-					const pHref = `${productPathPrefix}/${line.productId}`;
-					const thumb = cartLineThumbPictureHtml(line.image, line.name);
-					return `
-					<li class="flex items-start gap-4" data-line-id="${line.id}">
-						<a href="${pHref}" class="block size-20 shrink-0 overflow-hidden bg-[#F5F5F5]">
-							${thumb}
-						</a>
-						<div class="flex flex-1 flex-col gap-2">
-							<div class="flex items-start justify-between gap-2">
-								<div class="flex flex-col gap-1">
-									<a href="${pHref}" class="font-manrope text-[16px] font-normal leading-normal text-[#000000] hover:opacity-80">${line.name}</a>
-									${variant ? `<span class="font-manrope text-[14px] font-light leading-normal text-[#999999]">${variant}</span>` : ""}
-								</div>
-								<button type="button" data-cart-remove data-id="${line.id}" class="font-manrope text-[14px] font-normal leading-normal text-[#999999] transition-opacity hover:text-[#000000]" aria-label="Удалить">Удалить</button>
-							</div>
-							<div class="flex items-center justify-between">
-								<div class="inline-flex h-9 items-center rounded-[4px] border border-[#F5F5F5]">
-									<button type="button" data-cart-dec data-id="${line.id}" class="flex h-9 w-9 items-center justify-center" aria-label="Уменьшить">−</button>
-									<span class="min-w-[28px] text-center font-manrope text-[14px]">${line.quantity}</span>
-									<button type="button" data-cart-inc data-id="${line.id}" class="flex h-9 w-9 items-center justify-center" aria-label="Увеличить">+</button>
-								</div>
-								<span class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">${formatPrice(line.price * line.quantity)}</span>
-							</div>
-						</div>
-					</li>
-				`;
-				})
+				.map((line) => renderDrawerItem(line, { formatPrice, productPathPrefix }))
 				.join("");
 
 			total.textContent = formatPrice(getCartTotal(lines));
@@ -223,9 +227,9 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 						variantCombinationId: addBtn.dataset.variantCombinationId || undefined,
 					},
 				});
-				// Корзина «Страница» (--cart-type=page): не открывать боковую панель при
-				// добавлении — товар просто кладётся в корзину (бейдж обновляется), на /cart
-				// уходим по клику на иконку. drawer (дефолт) — открываем панель как раньше.
+				// Корзина «Страница» (--cart-type=page): не открывать дровер — товар просто
+				// кладётся (бейдж обновится), на /cart уходим по клику на иконку. drawer
+				// (дефолт) — открываем панель как раньше.
 				if (
 					getComputedStyle(document.documentElement)
 						.getPropertyValue("--cart-type")

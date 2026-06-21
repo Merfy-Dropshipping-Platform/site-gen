@@ -980,9 +980,22 @@ const PREVIEW_CART_STORE_INLINE = `
   function notify(eventName, detail) {
     document.dispatchEvent(new CustomEvent(eventName, { detail: detail }));
   }
+  function updateCartBadge() {
+    // Превью: видимый бейдж [data-cart-count] в хедере читает nt-cart, а Product.astro
+    // кладёт в этот inline cartStore → иконка не мигала. Обновляем бейдж сами, чтобы
+    // add-to-cart в конструкторе давал видимый отклик (как на live).
+    try {
+      var n = state.items.reduce(function (a, i) { return a + (i.quantity || 1); }, 0);
+      document.querySelectorAll('[data-cart-count]').forEach(function (el) {
+        el.textContent = String(n);
+        if (el.dataset) el.dataset.empty = n === 0 ? 'true' : 'false';
+      });
+    } catch (e) {}
+  }
   function syncFromCart(cart) {
     if (cart && Array.isArray(cart.items)) state.items = cart.items;
     save();
+    updateCartBadge();
     notify('cart:updated', { items: state.items });
   }
   async function api(path, opts) {

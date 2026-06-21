@@ -71,7 +71,7 @@ const schemeClass =
   (function () {
     // Spec 102 — свой корень через общий примитив (не document-level): на странице
     // «Корзина» один синглтон, но __merfyRoot переживает hot-replace конструктора.
-    var root = window.__merfyRoot(blockId);
+    var root = window.__merfyRoot(blockId) || document; // merfy-root-allow: page-singleton (один на странице), id undefined на live composed-странице
     if (!root) return;
     function fmt(cents) {
       if (!cents && cents !== 0) return '0 ₽';

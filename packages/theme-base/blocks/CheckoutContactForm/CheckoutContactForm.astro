@@ -64,7 +64,7 @@ const paddingStyle = padding
   (function () {
     // Spec 102 — свой корень через общий примитив; [data-checkout-phone] — дочерний
     // input этой секции (а не первый на странице).
-    var root = window.__merfyRoot(blockId);
+    var root = window.__merfyRoot(blockId) || document.querySelector('[data-checkout-contact]'); // merfy-root-allow: page-singleton (один на странице), id undefined на live composed-странице
     if (!root) return;
     var phoneInput = root.querySelector('[data-checkout-phone]');
     if (!phoneInput) return;

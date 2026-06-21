@@ -25,7 +25,7 @@ const initialLabel = buttonText.replace('{total}', '—');
     // Spec 102 — свой корень через общий примитив ([data-block="checkout-submit"]
     // стоит на корневом <section>); button/error — section.querySelector. Поля
     // других чекаут-блоков читаются через document (cross-block, см. merfy-root-allow).
-    var section = window.__merfyRoot(blockId);
+    var section = window.__merfyRoot(blockId) || document.querySelector('[data-block="checkout-submit"]'); // merfy-root-allow: page-singleton (один на странице), id undefined на live composed-странице
     if (!section) return;
     var button = section.querySelector('[data-checkout-submit]');
     var errorEl = section.querySelector('[data-checkout-submit-error]');

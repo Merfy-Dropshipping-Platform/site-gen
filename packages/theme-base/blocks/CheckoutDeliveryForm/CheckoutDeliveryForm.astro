@@ -135,7 +135,7 @@ const paddingStyle = padding
   function initCheckoutDelivery() {
     // Spec 102 — свой корень через общий примитив (на корневом <section> стоит
     // [data-checkout-delivery]); внутренние поля ищутся через section.querySelector.
-    var section = window.__merfyRoot(blockId);
+    var section = window.__merfyRoot(blockId) || document.querySelector('[data-checkout-delivery]'); // merfy-root-allow: page-singleton (один на странице), id undefined на live composed-странице
     // Идемпотентность + устойчивость к тому, что inline-скрипт может выполниться
     // ДО появления формы в DOM (конструктор-превью: секции рендерятся позже) или
     // форма пере-рендерится (ViewTransitions). Без этого DaData/варианты не

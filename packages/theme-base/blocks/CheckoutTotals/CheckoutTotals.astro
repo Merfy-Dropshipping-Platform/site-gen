@@ -44,7 +44,7 @@ const paddingStyle = padding
     // Spec 102 — свой корень через общий примитив ([data-checkout-totals] стоит
     // на корневом <section>); строки итогов — section.querySelector. Subtotal/
     // discount/delivery приходят через события, не из чужого DOM.
-    var section = window.__merfyRoot(blockId);
+    var section = window.__merfyRoot(blockId) || document.querySelector('[data-checkout-totals]'); // merfy-root-allow: page-singleton (один на странице), id undefined на live composed-странице
     if (!section) return;
 
     var subtotalEl = section.querySelector('[data-totals-subtotal]');

@@ -47,7 +47,7 @@ const schemeClass =
   (function () {
     // Spec 102 — фикс-id 'cart-page-checkout-section' стоит на самом корневом
     // <section>, значит корень блока и есть искомый элемент (без отдельного поиска).
-    var section = window.__merfyRoot(blockId);
+    var section = window.__merfyRoot(blockId) || document.getElementById('cart-page-checkout-section'); // merfy-root-allow: page-singleton (один на странице), id undefined на live composed-странице
     if (!section) return;
     function refresh() {
       var items = (window.cartStore && typeof window.cartStore.getItems === 'function') ? window.cartStore.getItems() : [];

@@ -145,7 +145,7 @@ const nameOnCardEnabled = cardForm?.nameOnCardEnabled !== false;
   (function () {
     // Spec 102 — свой корень через общий примитив ([data-block="checkout-payment"]
     // стоит на корневом <section>); внутренние элементы — section.querySelector.
-    var section = window.__merfyRoot(blockId);
+    var section = window.__merfyRoot(blockId) || document.querySelector('[data-block="checkout-payment"]'); // merfy-root-allow: page-singleton (один на странице), id undefined на live composed-странице
     if (!section) return;
 
     var radios = section.querySelectorAll('input[name="paymentMethod"]');

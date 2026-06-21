@@ -21,8 +21,57 @@ const ctaLink =
 	p.cta?.href ??
 	p.ctaLink ??
 	DEFAULT_CATEGORY_HREF;
+// Без мок-фолбэка «/images/hero-background.webp» — иначе пустое состояние неотличимо
+// от заданного (картинка всегда есть). Пусто → backgroundImage === "" → плейсхолдер.
 const backgroundImage =
-	p.backgroundImages?.url1 ?? p.backgroundImage ?? p.image?.url ?? "/images/hero-background.webp";
+	p.backgroundImages?.url1 ?? p.backgroundImage ?? p.image?.url ?? "";
+
+// Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния секции «Изображение»
+// (Hero). «Пусто» = мерчант НЕ задал НИ фон-картинку, НИ заголовок, НИ текст, НИ
+// кнопку (все значения берутся из bloom-дефолтов верстальщика). Тогда секция
+// рендерит пустую surface-плашку + overlay-лейбл «Изображение» + хелпер «Покажи и
+// расскажи о своем товаре в одном блоке» + кнопку «Кнопка» (ветка рендера ниже), а
+// НЕ дефолт-контент верстальщика («Искусство заботы о себе» / «Начать ритуал» /
+// мок-фон). Проверяем СЫРЫЕ пропсы (heading.text/title, text.content/subtitle,
+// primaryButton.text/cta), а не resolved-значения с фолбэками — иначе пустое
+// состояние не отличить от заданного. Когда хоть что-то задано — рендер мерчанта
+// дословно (не трогаем). Паритет rose Hero.astro.
+const rawHeadingText =
+	typeof p.heading?.text === "string"
+		? p.heading.text
+		: typeof p.title === "string"
+			? p.title
+			: "";
+const rawSubtitleText =
+	typeof p.text?.content === "string"
+		? p.text.content
+		: typeof p.subtitle === "string"
+			? p.subtitle
+			: "";
+const rawPrimaryText =
+	typeof p.primaryButton?.text === "string"
+		? p.primaryButton.text
+		: typeof p.cta?.text === "string"
+			? p.cta.text
+			: typeof p.ctaText === "string"
+				? p.ctaText
+				: "";
+const isEmpty =
+	!String(backgroundImage).trim() &&
+	!String(p.backgroundImages?.url2 ?? p.backgroundImage2 ?? "").trim() &&
+	!rawHeadingText.trim() &&
+	!rawSubtitleText.trim() &&
+	!rawPrimaryText.trim();
+// Дословные тексты Figma-плейсхолдера (тип «Изображение»).
+const PH_LABEL = "Изображение";
+const PH_HELPER = "Покажи и расскажи о своем товаре в одном блоке";
+const PH_BUTTON = "Кнопка";
+// Figma 1:19335 — фон пустого состояния Hero = дизайн-ассет landscape-image.png
+// (раздаётся на каждой теме из packages/theme-base/public/placeholders, copyPublic),
+// а НЕ пустая surface (контракт картиночных секций, эталон rose Hero.astro). Overlay-
+// лейбл/хелпер/кнопка ложатся ПОВЕРХ него; тёмная подложка-градиент даёт читаемость
+// белого текста, как у настоящего фото.
+const PH_BACKGROUND_IMAGE = "/placeholders/landscape-image.png";
 // Канон backgroundImages (imagePair url2) / legacy backgroundImage2: сплит двух
 // картинок 50/50 ТОЛЬКО когда второе фото задано; иначе одиночный рендер дословно.
 const backgroundImage2 = p.backgroundImages?.url2 ?? p.backgroundImage2;
@@ -129,6 +178,66 @@ const paddingStyle = p.padding
 	: undefined;
 ---
 
+{
+	isEmpty ? (
+		/* Пустое состояние (Figma 1:19335, тип «Изображение»): пустая surface-плашка
+		   на всю секцию + overlay-лейбл «Изображение» + хелпер-текст + кнопка
+		   «Кнопка». Без мок-картинки и без дефолт-контента верстальщика. Puck-
+		   subsection-атрибуты сохранены — блок остаётся выделяемым/редактируемым в
+		   конструкторе (heading=100, text=101, primaryButton=102). */
+		<section
+			class="relative w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))]"
+			aria-labelledby="hero-title"
+			data-puck-component-id={id}
+			style={paddingStyle}
+		>
+			{/* Figma 1:19335: фон пустого состояния = дизайн-ассет landscape-image.png
+			    (а НЕ пустая surface). Лежит на всю секцию (z-0); тёмный градиент снизу
+			    (z-[1]) даёт читаемость белого overlay-текста, как у настоящего фото. */}
+			<BloomPicture
+				src={PH_BACKGROUND_IMAGE}
+				alt=""
+				loading="eager"
+				fetchpriority="high"
+				class="absolute inset-0 z-0 size-full object-cover object-center"
+			/>
+			<div class="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-black/40 to-transparent" aria-hidden="true"></div>
+			<div
+				class={`relative w-full ${heroHeightCls} aspect-[375/812] sm:aspect-[768/968] md:aspect-[1280/968] xl:aspect-[1920/925]`}
+			>
+				<div class="absolute inset-0 z-10 flex h-full w-full flex-col items-center justify-center gap-6 px-4 text-center md:px-20 2xl:px-[300px]">
+					<div class="flex w-full max-w-[540px] flex-col items-center gap-2 text-center">
+						<h1
+							id="hero-title"
+							class="font-urbanist text-[18px] font-normal uppercase leading-none text-[rgb(var(--color-heading,255_255_255))] md:text-[20px]"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="100"
+							data-puck-subsection-field="heading"
+						>
+							{PH_LABEL}
+						</h1>
+						<p
+							class="font-inter text-[14px] font-light leading-[1.2] text-[rgb(var(--color-text,255_255_255))] md:text-[16px]"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="101"
+							data-puck-subsection-field="text"
+						>
+							{PH_HELPER}
+						</p>
+					</div>
+					<a
+						href={ctaLink}
+						class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,227_142_159))] px-4 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95"
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="102"
+						data-puck-subsection-field="primaryButton"
+					>
+						{PH_BUTTON}
+					</a>
+				</div>
+			</div>
+		</section>
+	) : (
 <section
 	class="relative w-full overflow-hidden bg-[rgb(var(--color-bg,255_255_255))]"
 	aria-labelledby="hero-title"
@@ -158,7 +267,7 @@ const paddingStyle = p.padding
 					class="size-full object-cover object-center"
 				/>
 			</div>
-		) : (
+		) : backgroundImage ? (
 			<BloomPicture
 				src={backgroundImage}
 				alt=""
@@ -166,7 +275,7 @@ const paddingStyle = p.padding
 				fetchpriority="high"
 				class="absolute inset-0 z-0 size-full object-cover object-center"
 			/>
-		)
+		) : null
 	}
 
 	{
@@ -240,3 +349,5 @@ const paddingStyle = p.padding
 		</div>
 	</div>
 </section>
+	)
+}

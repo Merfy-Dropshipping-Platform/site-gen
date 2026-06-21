@@ -3,16 +3,27 @@
 // Схема полей = packages/theme-base/blocks/PromoBanner/PromoBanner.puckConfig.ts:
 // text, link {text, href} (+ legacy linkText/linkUrl), size (thin/small/medium/large),
 // textTransform (none/uppercase), colorScheme (обёртку даёт композитор), padding {top,bottom}.
-// Тело = разметка DS NtPromoBanner verbatim (Header.astro:25-29 зовёт её без textSize → lg):
-// чёрная полоса с подчёркнутым хвостом «Перейти». В канон-композиции Header свою полосу
-// не рендерит (там она только в статик-режиме). Анимаций нет — манера flux статична (§6).
+// Тело (text задан) = разметка DS NtPromoBanner verbatim (Header.astro:25-29 зовёт её
+// без textSize → lg): чёрная полоса с подчёркнутым хвостом «Перейти». Пустое состояние
+// (text НЕ задан) = Figma-плейсхолдер на surface-полосе (см. ниже). В канон-композиции
+// Header свою полосу не рендерит (там она только в статик-режиме). Анимаций нет —
+// манера flux статична (§6).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-const text = p.text ?? "Бесплатная доставка на весь ассортимент до 30.06.2026.";
+// Figma 1:19335 — пустое состояние секции «Панель объявлений»: пока мерчант НЕ
+// задал текст объявления, секция показывает ДОСЛОВНЫЙ плейсхолдер на surface-полосе
+// («Добавь текст в объявление» + ссылка «Перейти»), а НЕ дефолт-контент верстальщика
+// (маркетинг-полосу «Бесплатная доставка…»). PromoBanner — информационная полоса
+// (нет товаров/коллекций/картинок для гейта), поэтому единственные «данные» секции —
+// сам проп text. Когда text ЗАДАН (мерчант/ревизия/puck-default) — рендер реального
+// текста на чёрной полосе верстальщика без изменений (эталон rose/bloom PromoBanner.astro).
+const rawText = typeof p.text === "string" ? p.text.trim() : "";
+const hasText = rawText.length > 0;
+const text = hasText ? p.text : "";
 
-// Канон link {text, href} + legacy linkText/linkUrl. У flux хвост-ссылка ЕСТЬ в
-// литерале (DS NtPromoBanner, linkText дефолт «Перейти») — рендерим ВСЕГДА с
-// дефолтами верстальщика H:27-28 (инверсия bloom, где хвост — новый элемент).
+// Канон link {text, href} + legacy linkText/linkUrl. Хвост-ссылка рендерится в
+// заданном состоянии (классы хвоста — из литерала DS NtPromoBanner, H:27-28). В
+// пустом состоянии label ссылки по умолчанию = «Перейти» (Figma).
 const linkText =
 	(typeof p.link?.text === "string" && p.link.text.trim() ? p.link.text : undefined) ??
 	(typeof p.linkText === "string" && p.linkText.trim() ? p.linkText : undefined) ??
@@ -51,28 +62,62 @@ const paddingStyle =
 		: undefined;
 ---
 
-<div
-	class={rootCls}
-	role="region"
-	aria-live="polite"
-	data-nt="promo-banner"
-	data-nt-text-size={ntTextSize}
-	data-puck-component-id={id}
-	style={paddingStyle}
->
-	<p
-		class={textCls}
-		data-puck-subsection-parent={id}
-		data-puck-subsection-index="100"
-		data-puck-subsection-field="text"
-	>
-		<span class="whitespace-pre-wrap">{text}</span>
-		{" "}
-		<a
-			href={linkHref}
-			class="underline underline-offset-2 [text-decoration-skip-ink:none] decoration-solid hover:opacity-90"
+{
+	hasText ? (
+		/* Текст объявления задан мерчантом → чёрная полоса верстальщика дословно
+		   (классы/токены rootCls + textCls байт-в-байт, поведение не меняется). */
+		<div
+			class={rootCls}
+			role="region"
+			aria-live="polite"
+			data-nt="promo-banner"
+			data-nt-text-size={ntTextSize}
+			data-puck-component-id={id}
+			style={paddingStyle}
 		>
-			{linkText}
-		</a>
-	</p>
-</div>
+			<p
+				class={textCls}
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="100"
+				data-puck-subsection-field="text"
+			>
+				<span class="whitespace-pre-wrap">{text}</span>
+				{" "}
+				<a
+					href={linkHref}
+					class="underline underline-offset-2 [text-decoration-skip-ink:none] decoration-solid hover:opacity-90"
+				>
+					{linkText}
+				</a>
+			</p>
+		</div>
+	) : (
+		/* Пустое состояние (Figma 1:19335): дословный плейсхолдер «Добавь текст в
+		   объявление. Перейти» на surface-полосе темы (НЕ чёрная полоса верстальщика
+		   и НЕ дефолт-акция «Бесплатная доставка…»). Эталон rose/bloom PromoBanner.astro. */
+		<div
+			class="flex min-h-12 items-center justify-center overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] px-4 text-[rgb(var(--color-text,0_0_0))] md:px-20 xl:px-[300px] 2xl:px-[680px]"
+			role="region"
+			aria-live="polite"
+			data-nt="promo-banner"
+			data-nt-text-size={ntTextSize ?? "lg"}
+			data-puck-component-id={id}
+			style={paddingStyle}
+		>
+			<p
+				class="max-w-full text-center font-roboto-flex text-[16px] font-light leading-normal"
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="100"
+				data-puck-subsection-field="text"
+			>
+				<span class="whitespace-pre-wrap">Добавь текст в объявление.</span>{" "}
+				<a
+					href={linkHref}
+					class="underline underline-offset-2 [text-decoration-skip-ink:none] decoration-solid hover:opacity-90"
+				>
+					{linkText}
+				</a>
+			</p>
+		</div>
+	)
+}

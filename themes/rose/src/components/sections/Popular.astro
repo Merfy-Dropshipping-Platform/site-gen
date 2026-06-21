@@ -1,7 +1,6 @@
 ---
 import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
 import RoseProductCard from "../products/RoseProductCard.astro";
-import { catalogProducts } from "../../data/products";
 
 // ОЖИВЛЕНИЕ: конструкторная схема PopularProducts (heading/subtitle union). Тело + данные verbatim.
 // T13: полная канон-схема (cards/columns/headingSize/textSize/imageView/nextPhotoOnHover/
@@ -10,21 +9,25 @@ import { catalogProducts } from "../../data/products";
 // впрыск коэрсера cards=4/columns=4 → пиксель верстальщика (прецедент T11 'center').
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-const sectionTitle = p.heading?.text ?? p.heading ?? "Главные хиты";
+// Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния PopularProducts:
+// заголовок «Коллекция товаров», без хелпер-подзаголовка (только заголовок +
+// карточки). Дефолт-текст верстальщика («Главные хиты» + длинный подзаголовок)
+// заменён на Figma-текст. Когда мерчант задал свой heading/text/subtitle —
+// рендерим ЕГО (?? fallback срабатывает только при пустых данных).
+const sectionTitle = p.heading?.text ?? p.heading ?? "Коллекция товаров";
 const sectionSubtitle =
-	p.text?.content ?? p.subtitle?.content ?? p.subtitle ?? "Найдите стиль на каждый случай — коллекции, которые помогают выразить себя вне времени и трендов.";
+	p.text?.content ?? p.subtitle?.content ?? p.subtitle ?? "";
 
-// Канон cards 2-24: лимит среза demo-витрины и гидрации (data-cards на гриде).
-// 4 = срез верстальщика (и впрыск коэрсера при отсутствии) → дефолт-ветка.
+// Канон cards 2-24: лимит N карточек плейсхолдера / реальных товаров (data-cards
+// на гриде). Отсутствие → 4 (канон-дефолт конструктора).
 const cardsN = typeof p.cards === "number" && p.cards > 0 ? Math.max(1, Math.min(24, Math.round(p.cards))) : 4;
-const products = catalogProducts.slice(0, cardsN);
 
 // Figma 1:19335 — пустое состояние секции. Curated-модель (Shopify, паритет
 // packages/theme-base/blocks/PopularProducts): пока мерчант НЕ выбрал коллекцию
 // (collectionRef пуст), секция показывает ПЛЕЙСХОЛДЕР (цветные куртки-заглушки
-// «Товар» / «2 500 ₽»), а НЕ мок-товары верстальщика (catalogProducts/сумки).
-// Когда коллекция выбрана — SSR рендерит catalogProducts, а гидрация ниже
-// подменяет их реальными товарами коллекции (поведение НЕ меняется).
+// «Товар» / «2 500 ₽»), а НЕ мок-товары верстальщика. Когда коллекция выбрана —
+// SSR-фетч (ниже) рендерит РЕАЛЬНЫЕ товары коллекции прямо в статике, а гидрация
+// освежает их на live.
 // Ассеты: packages/theme-base/public/placeholders/sweater-<color>.png →
 // копируются в дист (assemble-from-packages copyPublic / theme-build merge) и
 // доступны на сайте как /placeholders/sweater-<color>.png (object-contain).

@@ -4,15 +4,18 @@
 // пропсов) и about.astro:62 (<CollectionRows rows={aboutRows} compact /> —
 // реальные данные «История»).
 //
-// КОНТРАКТ ПЛЕЙСХОЛДЕРОВ (Figma 1:19335 — пустое состояние секции, ЗАМЕНЯЕТ
-// мок-демо верстальщика). Эталон: theme-base PopularProducts/Collections.astro
-// (DEMO-гейт) + канон-порт MultiRows.astro этой темы. Пустое/некурированное
-// состояние (мерчант НЕ задал rows[]) = ПЛЕЙСХОЛДЕР: ряды «пустой surface-rect
-// #FBFBFB (БЕЗ иллюстрации) + "Изображение с текстом" + "Покажи и расскажи о
-// своем товаре в одном блоке" + Кнопка» с чередованием лево/право. НЕ мок-демо
-// верстальщика (Женская/Мужская коллекция, /images/4x/*.png, полные абзацы).
-// Когда rows[] заданы (about.astro) — рендер реальных данных БЕЗ изменений
-// (SatinPicture cover на тёмной подложке, compact-аспект, imageRight, satin-button).
+// КОНТРАКТ ПЛЕЙСХОЛДЕРОВ (Figma 1:19335 — пустое состояние секции, тип
+// «MultiRows»/Мультиряды, ЗАМЕНЯЕТ мок-демо верстальщика). Эталон: канон-порт
+// MultiRows.astro этой темы (тот же контракт, тело-близнец) + rose MultiRows.astro.
+// Пустое/некурированное состояние (мерчант НЕ задал rows[]) = ПЛЕЙСХОЛДЕР:
+// ДОСЛОВНЫЙ заголовок секции «Мультиряды» (паритет MultiRows.astro:25) + ряды
+// «пустая surface-карточка bg-[rgb(var(--color-surface))] (БЕЗ иллюстрации) +
+// "Изображение с текстом" + "Покажи и расскажи о своем товаре в одном блоке" +
+// "Кнопка"» с чередованием лево/право. НЕ мок-демо верстальщика (Женская/Мужская
+// коллекция, /images/4x/*.png, полные абзацы) и НЕ дефолт-контент верстальщика.
+// Когда rows[] заданы (about.astro: «История бренда» с per-row title) — рендер
+// реальных данных БЕЗ изменений и БЕЗ шапки секции (SatinPicture cover на тёмной
+// подложке #111111, compact-аспект, imageRight, satin-button).
 import SatinPicture from "../img/SatinPicture.astro";
 
 interface Row {
@@ -31,14 +34,18 @@ interface Props {
 	compact?: boolean;
 }
 
-// Плейсхолдер пустого состояния (контракт Figma 1:19335) — без фото (пустой
-// rect), нейтральные лейблы, чередование стороны. Лейблы выровнены по канон-
-// порту MultiRows.astro и satin ImageWithText (тот же контракт «+ Кнопка»).
+// Плейсхолдер пустого состояния (контракт Figma 1:19335) — нейтральные лейблы,
+// чередование стороны. Контракт картиночных секций (правило 2): фолбэк-картинка
+// ряда = дизайн-ассет landscape-multirows-image.png
+// (/placeholders/landscape-multirows-image.png, раздаётся на каждой теме) —
+// картинка показывается ВСЕГДА, НЕ пустой surface-rect. Лейблы выровнены по
+// канон-порту MultiRows.astro и satin ImageWithText (тот же контракт «+ Кнопка»).
+const PLACEHOLDER_MULTIROWS_IMAGE = "/placeholders/landscape-multirows-image.png";
 const PLACEHOLDER_ROWS: Row[] = [
 	{
 		title: "Изображение с текстом",
 		paragraphs: ["Покажи и расскажи о своем товаре в одном блоке"],
-		image: "",
+		image: PLACEHOLDER_MULTIROWS_IMAGE,
 		alt: "",
 		ctaLabel: "Кнопка",
 		ctaHref: "/catalog",
@@ -46,7 +53,7 @@ const PLACEHOLDER_ROWS: Row[] = [
 	{
 		title: "Изображение с текстом",
 		paragraphs: ["Покажи и расскажи о своем товаре в одном блоке"],
-		image: "",
+		image: PLACEHOLDER_MULTIROWS_IMAGE,
 		alt: "",
 		ctaLabel: "Кнопка",
 		ctaHref: "/catalog",
@@ -60,30 +67,53 @@ const { rows: rowsProp, compact = false } = Astro.props;
 // плейсхолдер пустого состояния (НЕ мок-демо верстальщика).
 const hasRealRows = Array.isArray(rowsProp) && rowsProp.length > 0;
 const rows: Row[] = hasRealRows ? rowsProp! : PLACEHOLDER_ROWS;
+
+// Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер ПУСТОГО состояния секции (тип
+// «MultiRows»/Мультиряды): заголовок секции «Мультиряды» + ряды-плейсхолдеры.
+// Заголовок ТОЛЬКО в пустом состоянии — паритет канон-порту MultiRows.astro:25
+// этой темы (там `heading = hasRealRows ? raw : raw || "Мультиряды"`). При
+// реальных rows (about.astro: «История бренда» с собственными per-row title) —
+// шапка секции НЕ нужна (поведение не меняется).
+const sectionHeading = hasRealRows ? "" : "Мультиряды";
 ---
 
-<section class="satin-pad w-full bg-white py-12 md:py-16" aria-label="Коллекции">
-	<div class="satin-container flex flex-col gap-12 md:gap-20">
+<section
+	class="satin-pad w-full bg-white py-12 md:py-16"
+	aria-labelledby={sectionHeading ? "collection-rows-title" : undefined}
+	aria-label={sectionHeading ? undefined : "Коллекции"}
+>
+	<div class="satin-container flex flex-col gap-8 md:gap-12">
+		{sectionHeading && (
+			<h2 id="collection-rows-title" class="font-logo text-[20px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]">{sectionHeading}</h2>
+		)}
+		<div class="flex flex-col gap-12 md:gap-20">
 		{rows.map((row) => (
 			<div class="grid grid-cols-1 items-stretch gap-8 md:grid-cols-2 md:gap-10">
-				{/* Реальное фото — cover на тёмной подложке #111111 (full-bleed фото
-				    манеры); пустой ряд (контракт плейсхолдера) — пустой image-rect
-				    #FBFBFB (surface), БЕЗ иллюстрации. */}
+				{/* Реальное фото ИЛИ дизайн-ассет ряда пустого состояния
+				    (landscape-multirows-image.png) — cover на тёмной подложке #111111
+				    (full-bleed фото манеры). Контракт картиночных секций (правило 2):
+				    картинка показывается ВСЕГДА, surface-rect не остаётся. */}
 				<div
 					class:list={[
 						"relative aspect-square overflow-hidden",
-						row.image ? "bg-[#111111]" : "bg-[#FBFBFB]",
+						row.image ? "bg-[#111111]" : "bg-[rgb(var(--color-surface,251_251_251))]",
 						compact && "md:aspect-[652/360]",
 						row.imageRight && "md:order-2",
 					]}
 					aria-hidden={row.image ? undefined : "true"}
 				>
-					{row.image && (
-						<SatinPicture src={row.image} alt={row.alt} loading="lazy" class="absolute inset-0 size-full object-cover" />
-					)}
+					{row.image &&
+						(row.image.startsWith("/placeholders/") ? (
+							/* Плоский <img> для placeholder-PNG: соимённого .webp нет, а
+							   SatinPicture безусловно эмитит <source srcset=*.webp> → 404 +
+							   <picture> не откатывается (баг project_cart_thumb_image_bug). */
+							<img src={row.image} alt={row.alt} loading="lazy" class="absolute inset-0 size-full object-cover" />
+						) : (
+							<SatinPicture src={row.image} alt={row.alt} loading="lazy" class="absolute inset-0 size-full object-cover" />
+						))}
 				</div>
 				<div class:list={["flex flex-col gap-5", row.imageRight && "md:order-1"]}>
-					<h2 class="font-logo text-[20px] font-normal uppercase leading-[1.15] text-[#000000]">{row.title}</h2>
+					<h3 class="font-logo text-[20px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]">{row.title}</h3>
 					<div class="flex flex-col gap-3">
 						{row.paragraphs.map((p) => <p class="satin-copy max-w-[600px] md:text-[20px]">{p}</p>)}
 					</div>
@@ -91,5 +121,6 @@ const rows: Row[] = hasRealRows ? rowsProp! : PLACEHOLDER_ROWS;
 				</div>
 			</div>
 		))}
+		</div>
 	</div>
 </section>

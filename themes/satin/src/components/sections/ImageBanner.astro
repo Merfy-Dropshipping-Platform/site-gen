@@ -46,11 +46,15 @@ const {
 
 const imgRight = imageSide === "right";
 
-// Лейблы пустого состояния (контракт: пустой image-rect + заголовок секции +
-// поясняющий текст + Кнопка). Без иллюстрации (image-rect #FBFBFB / surface).
+// Лейблы пустого состояния (контракт: заголовок секции + поясняющий текст +
+// Кнопка). Контракт картиночных секций (правило 2): фолбэк-картинка пустого
+// состояния = дизайн-ассет landscape-iwt.png (/placeholders/landscape-iwt.png,
+// раздаётся на каждой теме) — картинка показывается ВСЕГДА, НЕ пустой image-rect
+// (#FBFBFB) и НЕ мок-фото. Эталон theme-base/vanilla/rose ImageWithText.astro.
 const PLACEHOLDER_HEADING = "Изображение с текстом";
 const PLACEHOLDER_TEXT = "Покажи и расскажи о своем товаре в одном блоке";
 const PLACEHOLDER_BUTTON = "Кнопка";
+const PLACEHOLDER_IMAGE = "/placeholders/landscape-iwt.png";
 
 // Реальные данные (с дефолтами верстальщика, ИСПОЛЬЗУЮТСЯ ТОЛЬКО когда
 // isPlaceholder === false — т.е. вызывающий что-то передал).
@@ -71,12 +75,19 @@ const alt =
 			<div class="mx-auto grid w-full max-w-[1920px] grid-cols-1 md:grid-cols-2">
 				<div
 					class:list={[
-						/* Пустой image-rect #FBFBFB (контракт), без иллюстрации/мок-фото. */
-						"relative order-1 aspect-[375/362] overflow-hidden bg-[#FBFBFB] md:aspect-auto md:h-[680px]",
+						/* Дизайн-ассет landscape-iwt.png на тёмной подложке #111111 (контракт
+						   картиночных секций, правило 2 — картинка показывается ВСЕГДА, НЕ
+						   пустой surface-rect). */
+						"relative order-1 aspect-[375/362] overflow-hidden bg-[#111111] md:aspect-auto md:h-[680px]",
 						imgRight ? "md:order-2" : "md:order-1",
 					]}
 					aria-hidden="true"
-				/>
+				>
+					{/* Плоский <img> (НЕ SatinPicture): у placeholder-PNG нет соимённого .webp,
+						    а SatinPicture безусловно эмитит <source srcset=*.webp> → 404 +
+						    <picture> не откатывается (баг project_cart_thumb_image_bug). */}
+						<img src={PLACEHOLDER_IMAGE} alt="" loading="lazy" class="absolute inset-0 size-full object-cover object-center" />
+				</div>
 				<div
 					class:list={[
 						"flex items-center justify-center px-6 py-12 text-center md:h-[680px] md:py-0",

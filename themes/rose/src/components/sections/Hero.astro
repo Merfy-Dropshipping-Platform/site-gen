@@ -15,6 +15,51 @@ const ctaLink =
 	p.primaryButton?.link?.href ?? p.primaryButton?.link ?? p.cta?.href ?? p.ctaLink ?? "/catalog";
 const backgroundImage =
 	p.backgroundImages?.url1 ?? p.backgroundImage ?? p.image?.url ?? "";
+
+// Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния секции «Изображение»
+// (Hero). «Пусто» = мерчант НЕ задал НИ фон-картинку, НИ заголовок, НИ текст, НИ
+// кнопку (все значения берутся из rose-дефолтов). Тогда секция рендерит пустую
+// surface-плашку + overlay-лейбл «Изображение» + хелпер «Покажи и расскажи о
+// своем товаре в одном блоке» + кнопку «Кнопка» (см. ветку рендера ниже), а НЕ
+// дефолт-контент верстальщика (SITE_TITLE / «Там, где классика…» / «В каталог»).
+// Проверяем СЫРЫЕ пропсы (heading.text/title, text.content/subtitle, primaryButton.
+// text/cta), а не resolved-значения с фолбэками — иначе пустое состояние не отличить
+// от заданного. Когда хоть что-то задано — рендер мерчанта дословно (не трогаем).
+const rawHeadingText =
+	typeof p.heading?.text === "string"
+		? p.heading.text
+		: typeof p.title === "string"
+			? p.title
+			: "";
+const rawSubtitleText =
+	typeof p.text?.content === "string"
+		? p.text.content
+		: typeof p.subtitle === "string"
+			? p.subtitle
+			: "";
+const rawPrimaryText =
+	typeof p.primaryButton?.text === "string"
+		? p.primaryButton.text
+		: typeof p.cta?.text === "string"
+			? p.cta.text
+			: typeof p.ctaText === "string"
+				? p.ctaText
+				: "";
+const isEmpty =
+	!String(backgroundImage).trim() &&
+	!String(p.backgroundImages?.url2 ?? p.backgroundImage2 ?? "").trim() &&
+	!rawHeadingText.trim() &&
+	!rawSubtitleText.trim() &&
+	!rawPrimaryText.trim();
+// Дословные тексты Figma-плейсхолдера (тип «Изображение»).
+const PH_LABEL = "Изображение";
+const PH_HELPER = "Покажи и расскажи о своем товаре в одном блоке";
+const PH_BUTTON = "Кнопка";
+// Figma 1:19335 — фон пустого состояния Hero = дизайн-ассет landscape-image.png
+// (раздаётся на каждой теме из packages/theme-base/public/placeholders, copyPublic),
+// а НЕ пустая surface. Overlay-лейбл/хелпер/кнопка ложатся поверх него (тёмная
+// подложка-градиент ниже даёт читаемость белого текста, как у настоящего фото).
+const PH_BACKGROUND_IMAGE = "/placeholders/landscape-image.png";
 // Канон backgroundImages (imagePair url2) / legacy backgroundImage2: сплит двух
 // картинок 50/50 ТОЛЬКО когда второе фото задано; иначе одиночный рендер дословно.
 const backgroundImage2 = p.backgroundImages?.url2 ?? p.backgroundImage2;
@@ -108,6 +153,70 @@ const paddingStyle = p.padding
 	: undefined;
 ---
 
+{
+	isEmpty ? (
+		/* Пустое состояние (Figma 1:19335, тип «Изображение»): пустая surface-плашка
+		   на всю секцию + overlay-лейбл «Изображение» + хелпер-текст + кнопка
+		   «Кнопка». Без мок-картинки и без дефолт-контента верстальщика. Puck-
+		   subsection-атрибуты сохранены — блок остаётся выделяемым/редактируемым в
+		   конструкторе (heading=100, text=101, primaryButton=102). */
+		<section
+			class="relative w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))]"
+			aria-labelledby="hero-title"
+			data-puck-component-id={id}
+			style={paddingStyle}
+		>
+			{/* Figma 1:19335: фон пустого состояния = landscape-image.png на всю секцию
+			    (паритет картиночного фолбэка остальных секций), + тёмный градиент снизу
+			    для читаемости белого текста плейсхолдера. */}
+			<img
+				src={PH_BACKGROUND_IMAGE}
+				alt={PH_LABEL}
+				loading="eager"
+				class="absolute inset-0 z-0 !size-full object-cover object-center"
+			/>
+			<div
+				class="pointer-events-none absolute inset-0 z-[1] bg-linear-to-t from-black/45 to-black/10"
+				aria-hidden="true"
+			></div>
+			<div
+				class={`relative w-full ${heroHeightCls} aspect-[10/15] sm:aspect-[4/5] md:aspect-[4/3] lg:aspect-[16/9] xl:aspect-[2/1] 2xl:aspect-[21/9]`}
+			>
+				<div class="absolute inset-0 z-10 flex w-full flex-col items-center justify-center gap-6 px-4 text-center sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px]">
+					<div class="flex w-full max-w-[540px] flex-col items-center gap-2 text-center sm:gap-3 md:gap-4 md:max-w-[640px]">
+						<h1
+							id="hero-title"
+							class="font-comfortaa text-[20px] font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:text-[28px] md:text-[36px] lg:text-[length:var(--size-hero-heading,40px)]"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="100"
+							data-puck-subsection-field="heading"
+						>
+							{PH_LABEL}
+						</h1>
+						<p
+							class="max-w-xl px-1 font-manrope text-[14px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))] sm:text-[16px] md:text-[18px] lg:text-[20px]"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="101"
+							data-puck-subsection-field="text"
+						>
+							{PH_HELPER}
+						</p>
+					</div>
+					<div class="flex w-full flex-col items-center justify-center">
+						<a
+							href={ctaLink}
+							class="inline-flex h-10 min-h-10 w-auto min-w-[120px] items-center justify-center rounded !border-0 !bg-[rgb(var(--color-button-bg,255_255_255))] px-3 py-2.5 font-manrope text-[14px] font-normal leading-none !text-[rgb(var(--color-button-text,0_0_0))] transition-opacity hover:opacity-90 sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:rounded-[var(--radius-button,6px)] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="102"
+							data-puck-subsection-field="primaryButton"
+						>
+							{PH_BUTTON}
+						</a>
+					</div>
+				</div>
+			</div>
+		</section>
+	) : (
 <section
 	class="relative w-full overflow-hidden bg-[rgb(var(--color-bg,255_255_255))]"
 	aria-labelledby="hero-title"
@@ -212,3 +321,5 @@ const paddingStyle = p.padding
 		</div>
 	</div>
 </section>
+	)
+}

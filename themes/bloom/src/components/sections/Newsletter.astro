@@ -27,24 +27,27 @@ const headingCls =
 			: "font-urbanist text-[20px] font-light uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]";
 
 // Канон description (string) + text {content,size} (pupa-дубль). Пустое состояние =
-// generic Figma-плейсхолдер (поясняющий текст), НЕ мок-демо подвала верстальщика
-// «Подпишитесь на наши акции и новости» (F:48-50). Манера bloom: Inter 16 light
-// muted. Лестница body §9: small 14, large 19. Свой текст мерчанта выигрывает.
+// ДОСЛОВНЫЙ Figma-плейсхолдер 1:19335 «Узнавайте первыми о новых коллекциях и
+// эксклюзивных предложениях.», НЕ мок-демо подвала верстальщика «Подпишитесь на
+// наши акции и новости» (F:48-50) и НЕ прежний дефолт-копирайт «Будь в курсе…».
+// Манера bloom: Inter 16 light muted. Лестница body §9: small 14, large 19.
+// Свой текст мерчанта выигрывает (?? fallback срабатывает лишь при пустых данных).
 const description =
 	(typeof p.description === "string" && p.description.trim() ? p.description : undefined) ??
 	(typeof p.text?.content === "string" && p.text.content.trim() ? p.text.content : undefined) ??
-	"Будь в курсе новинок и акций — подпишись на рассылку";
+	"Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.";
 const descSize = p.text?.size;
 const descSizeCls =
 	descSize === "small" ? " !text-[14px]" : descSize === "large" ? " !text-[19px]" : "";
 
-// Канон placeholder/buttonText: пустое состояние = Figma-плейсхолдер 1:19335
-// (input «email@example.com» + кнопка), НЕ литералы подвала верстальщика
-// «example@bloom.ru» / «Отправить» (F:21-22, F:70). Свои значения мерчанта выигрывают.
+// Канон placeholder/buttonText: пустое состояние = ДОСЛОВНЫЙ Figma-плейсхолдер
+// 1:19335 (input «email@example.com» + кнопка-лейбл «Кнопка»), НЕ литералы подвала
+// верстальщика «example@bloom.ru» / «Отправить» (F:21-22, F:70) и НЕ прежний
+// дефолт «Подписаться». Свои значения мерчанта выигрывают (fallback лишь при пустых).
 const placeholder =
 	typeof p.placeholder === "string" && p.placeholder.trim() ? p.placeholder : "email@example.com";
 const buttonText =
-	typeof p.buttonText === "string" && p.buttonText.trim() ? p.buttonText : "Подписаться";
+	typeof p.buttonText === "string" && p.buttonText.trim() ? p.buttonText : "Кнопка";
 
 // Канон formLayout: canon-default 'inline-submit' (blockDefaults темы, совпадает
 // с отсутствием пропа) = форма подвала VERBATIM (pill h-10, внутренняя кнопка

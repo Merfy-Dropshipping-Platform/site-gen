@@ -71,46 +71,80 @@ const tileAspect =
 const captionCase = p.cardCaptionStyle === "default" ? "" : " uppercase";
 
 // Канон collections[] (≤10): плитки коллекций из пропса при непустом массиве.
-// SSR рендерит сохранённые поля item, резолв collectionId→имя/обложка делает
-// гидрация ниже (data-collection-ref): live — /data/collections.json, превью —
-// storefront-data; паритет theme-base (имя коллекции перебивает ручной heading,
-// обложка — только при пустой своей).
+// Имя/обложку выбранной коллекции резолвим SSR-фетчем storefront-data (см. ниже,
+// паритет rose Popular.astro) → реальные данные видит и ПРЕВЬЮ конструктора;
+// гидрация ниже (data-collection-ref) ещё раз освежает на live (collections.json).
+// Паритет theme-base: имя коллекции перебивает ручной heading, обложка — только
+// при пустой своей. Картинки нет → пустая surface-плитка (НЕ мок верстальщика).
 //
 // КОНТРАКТ ПЛЕЙСХОЛДЕРОВ (Figma 1:19335 — пустое состояние секции, ЗАМЕНЯЕТ
-// мок-демо верстальщика). Эталон: theme-base Collections.astro DEMO_COLLECTIONS
-// — без ручного выбора рисуем N пустых карточек (rounded-rect surface-подложка,
-// БЕЗ картинки коллекции) с подписью «Коллекция», НЕ плитки верстальщика
-// (defaultCollections / legacy p.items: «Верхняя одежда» c /images/4x/Коллекция_N.png).
-// Гейт = наличие ручного выбора коллекций в пикере (usePropCollections). Грид
-// сохраняет data-collections-autofill → на live автоподстановка реальными
-// коллекциями магазина (collections.json) перерисует его; demo-сборка без
-// данных остаётся плейсхолдером. Дефолт — 3 карточки (canon-default columns 3),
-// но уважаем выбранное число колонок (cols).
+// мок-демо верстальщика). Эталон: rose Collections DEMO_COLLECTIONS — без
+// ручного выбора рисуем N ПУСТЫХ карточек (rounded-rect surface-подложка, БЕЗ
+// картинки) с подписью «Коллекция», НЕ плитки верстальщика (defaultCollections /
+// legacy p.items: «Верхняя одежда» c /images/4x/Коллекция_N.png). Гейт = наличие
+// ручного выбора коллекций в пикере (usePropCollections). Грид сохраняет
+// data-collections-autofill → на live автоподстановка реальными коллекциями
+// магазина (collections.json) перерисует его; demo-сборка без данных остаётся
+// плейсхолдером. Дефолт — 3 карточки (canon-default columns 3), но уважаем
+// выбранное число колонок (cols).
 const PLACEHOLDER_COLLECTION_COUNT = cols ?? 3;
 const placeholderCollections = Array.from({ length: PLACEHOLDER_COLLECTION_COUNT }, () => ({
 	name: "Коллекция",
 }));
 const cardLinkBase =
 	typeof p.cardLinkBase === "string" && p.cardLinkBase.trim() ? p.cardLinkBase : "/catalog?collection=";
+
+// SSR-фетч реальных коллекций магазина (имя/обложка) для picker-выбранных плиток
+// — паритет rose Popular.astro (Figma-цель: коллекция ВЫБРАНА → реальные данные
+// ПРЯМО в статике, чтобы их видело и ПРЕВЬЮ конструктора; Astro Container не
+// исполняет клиентскую module-гидрацию ниже). siteId инжектит рендер-пайплайн
+// (preview.service / build). Нет siteId / ошибка / коллекция без обложки →
+// image остаётся "" → пустая surface-плитка (НЕ мок /images/4x/Коллекция_N.png).
+const siteId = typeof p.siteId === "string" ? p.siteId : "";
+type RawCollection = { id?: string; name?: string; slug?: string; image?: string | null; images?: string[] };
+let ssrCollections: RawCollection[] = [];
+if (siteId && Array.isArray(p.collections) && p.collections.length) {
+	try {
+		const base = (import.meta as any).env?.SITES_INTERNAL_BASE ?? "http://localhost:3114";
+		const res = await fetch(`${base}/api/sites/${siteId}/storefront-data`).catch(() => null);
+		if (res && res.ok) {
+			const data: any = await res.json();
+			ssrCollections = Array.isArray(data?.collections) ? data.collections : [];
+		}
+	} catch {
+		ssrCollections = [];
+	}
+}
+const findSsrCollection = (ref: string | null): RawCollection | null => {
+	if (!ref) return null;
+	return (
+		ssrCollections.find((c) => c && (c.id === ref || c.slug === ref || c.name === ref)) ?? null
+	);
+};
+const ssrCover = (c: RawCollection | null): string =>
+	(c && (c.image || (Array.isArray(c.images) ? c.images[0] : ""))) || "";
+
 const propCollections = (Array.isArray(p.collections) ? p.collections : [])
 	.filter((c: any) => c && typeof c === "object")
 	.slice(0, 10)
-	.map((c: any, i: number) => {
+	.map((c: any) => {
 		const collectionId =
 			typeof c.collectionId === "string" && c.collectionId.trim() ? c.collectionId.trim() : null;
+		const ownImage = typeof c.image === "string" && c.image ? c.image : "";
+		const real = findSsrCollection(collectionId);
 		return {
 			collectionId,
 			name:
 				(typeof c.heading === "string" && c.heading) ||
 				(typeof c.name === "string" && c.name) ||
+				(real?.name && String(real.name)) ||
 				"Коллекция",
-			// Канон-плейсхолдер = реальный ассет темы (принцип T15): плитка без
-			// выбранной картинки получает фото коллекции верстальщика по позиции.
-			image:
-				typeof c.image === "string" && c.image
-					? c.image
-					: `/images/4x/Коллекция_${(i % 3) + 1}.png`,
-			hasOwnImage: !!(typeof c.image === "string" && c.image),
+			// Картинка карточки: своя выбранная мерчантом → реальная обложка коллекции
+			// из storefront-data (SSR) → "" (пустая surface-плитка, Figma 1:19335).
+			// БЕЗ мок-фото верстальщика. На live гидрация (data-collection-ref) ещё
+			// раз освежит из collections.json.
+			image: ownImage || ssrCover(real),
+			hasOwnImage: !!ownImage,
 			href: collectionId ? `${cardLinkBase}${collectionId}` : "#",
 		};
 	});
@@ -232,9 +266,9 @@ const paddingStyle = p.padding
 	// (demo-сборка без collections.json) → no-op, демо остаётся. Разметка плитки =
 	// propCollections-ветка satin (canon-default при пустом пикере: imageView
 	// 'square' → aspect-[430/564], cardCaptionStyle 'uppercase'; первая плитка =
-	// col-span-2 sm:col-span-1, как в demo/prop-ветке). Обложка: своя картинка
-	// коллекции, иначе дизайнерский плейсхолдер темы по позиции.
-	const AUTOFILL_COVERS = ["/images/4x/Коллекция_1.png", "/images/4x/Коллекция_2.png", "/images/4x/Коллекция_3.png"];
+	// col-span-2 sm:col-span-1, как в demo/prop-ветке). Обложка: реальная картинка
+	// коллекции; нет своей — ПУСТАЯ surface-плитка (Figma 1:19335), БЕЗ мок-фото
+	// верстальщика (/images/4x/Коллекция_N.png).
 	const autofillCollections = async () => {
 		const grids = Array.from(document.querySelectorAll<HTMLElement>("ul[data-collections-autofill]"));
 		if (grids.length === 0) return;
@@ -247,12 +281,13 @@ const paddingStyle = p.padding
 				const name = escapeHtml(c.name || "Коллекция");
 				const ref = c.slug || c.id || "";
 				const href = "/catalog?collection=" + encodeURIComponent(ref);
-				const cover = c.image || (Array.isArray(c.images) ? c.images[0] : "") || AUTOFILL_COVERS[i % 3];
+				const cover = c.image || (Array.isArray(c.images) ? c.images[0] : "") || "";
 				const liCls = i === 0 ? " class=\"col-span-2 sm:col-span-1\"" : "";
+				const media = cover
+					? `<img src="${escapeHtml(cover)}" alt="${name}" loading="lazy" class="!h-full !w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]" />`
+					: "";
 				return `<li${liCls}><a href="${href}" class="group flex cursor-pointer flex-col gap-3" aria-label="${name}" data-nt="satin-collection-card">
-			<div class="aspect-[430/564] w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]">
-				<img src="${escapeHtml(cover)}" alt="${name}" loading="lazy" class="!h-full !w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]" />
-			</div>
+			<div class="aspect-[430/564] w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]"${cover ? "" : ' aria-hidden="true"'}>${media}</div>
 			<h3 class="satin-collection-name font-manrope text-[16px] font-normal leading-tight text-[rgb(var(--color-text,0_0_0))] uppercase">${name}</h3>
 		</a></li>`;
 			})

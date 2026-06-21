@@ -12,12 +12,19 @@ import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/
 // манера flux статична (MANNER.md §6).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+// Пустое состояние (Figma 1:19335, контракт Gallery) — ДОСЛОВНЫЙ плейсхолдер:
+// заголовок «Галерея», БЕЗ подзаголовка (в контракте Gallery подзаголовка нет →
+// дефолт пуст). Дефолт-текст верстальщика («Вдохновение в деталях» + болванка
+// «Технологии, которые приятно держать в руках…») заменён на Figma-текст.
+// Заданный мерчантом heading/text/subtitle рендерится как есть (?? fallback
+// срабатывает только при пустых данных); пустой subtitle → NtSectionHeading его
+// не выводит.
 const sectionTitle =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title ?? "Вдохновение в деталях";
+	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title ?? "Галерея";
 const sectionSubtitle =
 	(typeof p.text === "string" ? p.text : p.text?.content) ??
 	(typeof p.subtitle === "string" ? p.subtitle : undefined) ??
-	"Технологии, которые приятно держать в руках каждый день.";
+	"";
 
 // Шапка — DS-компонент NtSectionHeading: размеры через перекрытия на обёртке
 // (лестница §9). Дефолт ('medium' canon-default трактуем как DS-литерал
@@ -105,6 +112,9 @@ const galleryTiles: GalleryTile[] = (Array.isArray(p.items) ? p.items : [])
 //    подменяет src/alt реальной картинкой — поведение «данные выбраны» цело.
 //  • collection без выбора и image без url → пустой image-rect (фон
 //    --color-surface, без <img>) + лейбл «Выбери коллекцию».
+// Полностью пустое состояние секции (нет items) рендерит ниже фикс-плейсхолдер:
+// большая плитка = /placeholders/landscape-gallery.png, карточка-товар = sweater
+// blue + «Товар»/«2 500 ₽», карточка-коллекция = пустая surface + «Выбери коллекцию».
 const SWEATER_BLUE = "/placeholders/sweater-blue.png";
 galleryTiles.forEach((t) => {
 	if (t.url) return;
@@ -168,10 +178,22 @@ const paddingStyle = p.padding
 					)}
 				</a>
 			) : (
+				/* Пустое состояние (Figma 1:19335, контракт картиночных секций):
+				   большая левая плитка = дизайн-ассет /placeholders/landscape-
+				   gallery.png (картинка показывается ВСЕГДА, НЕ пустой surface).
+				   Сырой <img> (у плейсхолдера нет соимённого .webp). */
 				<div
 					class={`relative block aspect-square w-full min-h-0 overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] rounded-[var(--radius-media,8px)]${heroOrderCls}`}
 					aria-hidden="true"
-				/>
+				>
+					<img
+						src="/placeholders/landscape-gallery.png"
+						alt=""
+						aria-hidden="true"
+						loading="lazy"
+						class="absolute inset-0 size-full object-cover"
+					/>
+				</div>
 			)}
 
 			{useItems ? sideTiles.length > 0 && (

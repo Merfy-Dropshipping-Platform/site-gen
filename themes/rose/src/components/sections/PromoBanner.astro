@@ -7,7 +7,14 @@ import NtPromoBanner from "@merfy-dropshipping-platform/design-systems-theme/com
 // Вёрстка = вызов NtPromoBanner дословно из Header.astro верстальщика.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-const text = p.text ?? "Скидка 10% на общую сумму заказа от 9 000₽";
+// Figma 1:19335 — пустое состояние секции «Панель объявлений»: пока мерчант НЕ
+// задал текст объявления, секция показывает ДОСЛОВНЫЙ плейсхолдер на surface-полосе
+// («Добавь текст в объявление» + ссылка «Перейти»), а НЕ дефолт-контент верстальщика
+// (скидочную акцию). Когда текст задан — рендерим его через NtPromoBanner (вид
+// верстальщика дословно, поведение не меняется).
+const rawText = typeof p.text === "string" ? p.text.trim() : "";
+const hasText = rawText.length > 0;
+const text = hasText ? p.text : "";
 const link =
 	p.link?.href ?? p.linkUrl ?? (typeof p.link === "string" ? p.link : undefined) ?? "/catalog";
 const linkText = p.link?.text ?? p.linkText ?? "Перейти";
@@ -42,5 +49,29 @@ const paddingStyle = p.padding
 	class={wrapCls}
 	style={paddingStyle}
 >
-	<NtPromoBanner text={text} link={link} linkText={linkText} textSize={ntTextSize} />
+	{
+		hasText ? (
+			/* Текст объявления задан мерчантом → вид верстальщика дословно. */
+			<NtPromoBanner text={text} link={link} linkText={linkText} textSize={ntTextSize} />
+		) : (
+			/* Пустое состояние (Figma 1:19335): дословный плейсхолдер «Добавь текст в
+			   объявление. Перейти» на surface-полосе темы (НЕ чёрная полоса верстальщика
+			   и НЕ дефолт-акция). */
+			<div
+				data-nt="promo-banner"
+				data-nt-text-size={ntTextSize ?? "lg"}
+				class="flex min-h-12 items-center justify-center overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] px-4 text-[rgb(var(--color-text,0_0_0))] md:px-20 xl:px-[300px] 2xl:px-[680px]"
+			>
+				<p class="max-w-full text-center font-manrope text-[16px] font-light leading-normal">
+					<span class="whitespace-pre-wrap">Добавь текст в объявление.</span>{" "}
+					<a
+						href={link}
+						class="underline decoration-solid underline-offset-2 [text-decoration-skip-ink:none] hover:opacity-90"
+					>
+						{linkText}
+					</a>
+				</p>
+			</div>
+		)
+	}
 </div>

@@ -9,11 +9,13 @@ import NtTextField from "@merfy-dropshipping-platform/design-systems-theme/compo
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Канон heading: string | { text, alignment, size }; дефолт = литерал
-// «Обратная связь» (contacts.astro:49, font-logo 20 uppercase leading-[1.15] —
-// у satin заголовок страницы УЖЕ в секционной роли §1). Токен heading 0_0_0.
+// Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния ContactForm/Contacts:
+// заголовок «Контактная форма» (без хелпер-описания). Дефолт-текст верстальщика
+// («Обратная связь» contacts.astro:49) заменён на Figma-текст. Когда мерчант
+// задал свой heading — рендерим ЕГО (?? fallback срабатывает только при пустых
+// данных). font-logo 20 uppercase leading-[1.15], токен heading 0_0_0.
 const heading =
-	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Обратная связь");
+	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Контактная форма");
 // Лестница §9 «ContactForm заголовок» (база-литерал 20 = medium): small 17, large 24.
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
@@ -28,15 +30,13 @@ const headingAlignCls =
 			: "";
 const headingCls = `font-logo ${headingSizeCls} font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
 
-// Канон description: дефолт = литерал «Оставьте контакты, чтобы нам было проще
-// связаться с вами» (contacts.astro:50, Arsenal 16 light muted); явная пустая
-// строка скрывает абзац.
+// Figma 1:19335 — пустое состояние ContactForm НЕ содержит хелпер-описания
+// (только заголовок + поля + кнопка). Дефолт-литерал верстальщика («Оставьте
+// контакты...» contacts.astro:50) убран → абзац рендерится ТОЛЬКО когда мерчант
+// задал непустой description (Arsenal 16 light muted). Явная пустая строка тоже
+// скрывает абзац.
 const description =
-	typeof p.description === "string"
-		? p.description.trim()
-			? p.description
-			: undefined
-		: "Оставьте контакты, чтобы нам было проще связаться с вами";
+	typeof p.description === "string" && p.description.trim() ? p.description : undefined;
 
 // Flat-пропсы контактов магазина (addresses/phone/email) — блок «Свяжитесь
 // с нами» (contacts.astro:12-38, dl-манера: label muted 16 / значение
@@ -55,11 +55,12 @@ const hasContacts = addresses.length > 0 || Boolean(contactPhone) || Boolean(con
 // puckConfig (name/email required, phone disabled, message enabled).
 const toBool = (v: any, fb: boolean): boolean =>
 	typeof v === "boolean" ? v : v === "true" ? true : v === "false" ? false : fb;
+// Figma 1:19335 — лейблы полей: «Имя» / «Email» / «Номер телефона» / «Комментарий».
 const CANON_FIELDS = {
 	name: { enabled: true, required: true, label: "Имя" },
 	email: { enabled: true, required: true, label: "Email" },
-	phone: { enabled: false, required: false, label: "Телефон" },
-	message: { enabled: true, required: false, label: "Сообщение" },
+	phone: { enabled: false, required: false, label: "Номер телефона" },
+	message: { enabled: true, required: false, label: "Комментарий" },
 };
 const fieldsProp =
 	p.fields && typeof p.fields === "object" && !Array.isArray(p.fields) ? p.fields : undefined;
@@ -261,7 +262,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 					<div class="flex flex-col gap-4">
 						<NtTextField label="Имя" name="name" autocomplete="name" id={fieldId("name")} />
 						<NtTextField
-							label="E-mail"
+							label="Email"
 							name="email"
 							type="email"
 							autocomplete="email"
@@ -300,7 +301,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 				) : (
 					<div class="flex flex-col gap-2">
 						<label for={questionId} class={fieldLabelCls}>
-							Ваш вопрос
+							Комментарий
 						</label>
 						<textarea id={questionId} name="question" rows={8} class={textareaCls} />
 					</div>

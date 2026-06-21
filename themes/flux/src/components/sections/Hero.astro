@@ -21,15 +21,59 @@ const ctaLink =
 	p.cta?.href ??
 	p.ctaLink ??
 	"#collections";
-// Канон backgroundImages (imagePair) / legacy backgroundImage / image.url; пустые
-// строки (впрыск коэрсера) не должны ронять фон — фоллбек на литерал верстальщика.
+// Канон backgroundImages (imagePair) / legacy backgroundImage / image.url. Картинка
+// НЕ выбрана → "" (одиночная ветка рендера ниже не рисует фон); ПОЛНОСТЬЮ пустое
+// состояние секции (isEmpty) рендерит отдельную ветку с дизайн-ассетом
+// /placeholders/landscape-image.png (см. ниже), НЕ мок /images/4x/Главный_экран.png.
 const backgroundImage =
 	nonEmpty(p.backgroundImages?.url1) ??
 	nonEmpty(p.backgroundImage) ??
 	nonEmpty(p.image?.url) ??
-	"/images/4x/Главный_экран.png";
+	"";
 // Сплит двух картинок 50/50 ТОЛЬКО когда второе фото задано; иначе одиночный рендер дословно.
 const backgroundImage2 = nonEmpty(p.backgroundImages?.url2) ?? nonEmpty(p.backgroundImage2);
+
+// Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер ПУСТОГО состояния секции «Изображение»
+// (Hero/Image). «Пусто» = мерчант НЕ задал НИ фон-картинку, НИ заголовок, НИ текст,
+// НИ кнопку (все значения берутся из flux-дефолтов: SITE_TITLE / «Там, где классика…»
+// / «В каталог»). Тогда секция рендерит фон /placeholders/landscape-image.png +
+// overlay-лейбл «Изображение» + хелпер «Покажи и расскажи о своем товаре в одном
+// блоке» + кнопку «Кнопка» (ветка рендера ниже), а НЕ дефолт-контент верстальщика.
+// Проверяем СЫРЫЕ пропсы (heading.text/title, text.content/subtitle, primaryButton.
+// text/cta), а не resolved-значения с фолбэками — иначе пустое состояние не отличить
+// от заданного. Hero/Image не имеет коллекционных данных → SSR-фетч сюда не относится
+// (он для Popular/Collections/Gallery). Когда хоть что-то задано — рендер мерчанта
+// дословно (нижняя ветка не трогается). Паттерн эталона rose Hero.astro.
+const rawHeadingText =
+	typeof p.heading?.text === "string"
+		? p.heading.text
+		: typeof p.title === "string"
+			? p.title
+			: "";
+const rawSubtitleText =
+	typeof p.text?.content === "string"
+		? p.text.content
+		: typeof p.subtitle === "string"
+			? p.subtitle
+			: "";
+const rawPrimaryText =
+	typeof p.primaryButton?.text === "string"
+		? p.primaryButton.text
+		: typeof p.cta?.text === "string"
+			? p.cta.text
+			: typeof p.ctaText === "string"
+				? p.ctaText
+				: "";
+const isEmpty =
+	!String(backgroundImage).trim() &&
+	!String(backgroundImage2 ?? "").trim() &&
+	!rawHeadingText.trim() &&
+	!rawSubtitleText.trim() &&
+	!rawPrimaryText.trim();
+// Дословные тексты Figma-плейсхолдера (тип «Изображение»).
+const PH_LABEL = "Изображение";
+const PH_HELPER = "Покажи и расскажи о своем товаре в одном блоке";
+const PH_BUTTON = "Кнопка";
 
 // «Размер» (p.size) теперь управляет ВЫСОТОЙ секции Hero (heroHeightCls ниже),
 // а не размером шрифта (тестер M$rkul: «Размер» секции «Изображение» = высота/
@@ -142,6 +186,66 @@ const paddingStyle = p.padding
 const rootStyle = `min-height: ${heroHeightCls}${paddingStyle ? `;${paddingStyle}` : ""}`;
 ---
 
+{
+	isEmpty ? (
+		/* Пустое состояние (Figma 1:19335, тип «Изображение», контракт картиночных
+		   секций): фон секции = дизайн-ассет /placeholders/landscape-image.png
+		   (картинка показывается ВСЕГДА, НЕ пустой surface и НЕ мок верстальщика) +
+		   лёгкий тёмный overlay для читаемости + overlay-лейбл «Изображение» +
+		   хелпер-текст + кнопка «Кнопка». Без дефолт-контента верстальщика (SITE_TITLE
+		   / «Там, где классика…» / «В каталог» / «О нас»). Манера flux: Comfortaa-
+		   заголовок и Roboto Flex-хелпер белым на фото (как обычный Hero на картинке),
+		   высота полотна = heroHeightCls. Сырой <img> (у плейсхолдера нет .webp). */
+		<section
+			class="relative w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))]"
+			style={rootStyle}
+			aria-labelledby="hero-title"
+			data-puck-component-id={id}
+		>
+			<img
+				src="/placeholders/landscape-image.png"
+				alt=""
+				aria-hidden="true"
+				loading="eager"
+				class="absolute inset-0 z-0 size-full object-cover object-center"
+			/>
+			<div class="pointer-events-none absolute inset-0 z-[1] bg-black/30" aria-hidden="true" />
+			<div class="relative w-full" style={`min-height: ${heroHeightCls}`}>
+				<div class="absolute inset-0 z-10 flex w-full flex-col items-center justify-center gap-8 px-4 py-16 text-center md:px-20 2xl:px-80">
+					<div class="flex max-w-[432px] flex-col items-center gap-2 text-center">
+						<h1
+							id="hero-title"
+							class="font-comfortaa text-[32px] font-normal leading-[1.115] text-[rgb(var(--color-heading,255_255_255))] md:text-[40px] lg:text-[48px]"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="100"
+							data-puck-subsection-field="heading"
+						>
+							{PH_LABEL}
+						</h1>
+						<p
+							class="font-roboto-flex text-[16px] font-light leading-[1.5] text-[rgb(var(--color-text,255_255_255))] md:text-[18px]"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="101"
+							data-puck-subsection-field="text"
+						>
+							{PH_HELPER}
+						</p>
+					</div>
+					<div class="flex flex-wrap justify-center gap-3">
+						<a
+							href={ctaLink}
+							class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] border border-[rgb(var(--color-button-bg,255_255_255))] bg-[rgb(var(--color-button-bg,255_255_255))] px-6 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-button-text,250_81_9))] transition-opacity hover:opacity-90 md:text-[16px]"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="102"
+							data-puck-subsection-field="primaryButton"
+						>
+							{PH_BUTTON}
+						</a>
+					</div>
+				</div>
+			</div>
+		</section>
+	) : (
 <section
 	class="relative w-full overflow-hidden bg-[rgb(var(--color-bg,255_255_255))]"
 	style={rootStyle}
@@ -171,7 +275,7 @@ const rootStyle = `min-height: ${heroHeightCls}${paddingStyle ? `;${paddingStyle
 					class="size-full object-cover object-center"
 				/>
 			</div>
-		) : (
+		) : backgroundImage ? (
 			<FluxPicture
 				src={backgroundImage}
 				alt={title}
@@ -179,7 +283,7 @@ const rootStyle = `min-height: ${heroHeightCls}${paddingStyle ? `;${paddingStyle
 				fetchpriority="high"
 				class="absolute inset-0 z-0 size-full object-cover object-center"
 			/>
-		)
+		) : null
 	}
 
 	{
@@ -247,3 +351,5 @@ const rootStyle = `min-height: ${heroHeightCls}${paddingStyle ? `;${paddingStyle
 		</div>
 	</div>
 </section>
+	)
+}

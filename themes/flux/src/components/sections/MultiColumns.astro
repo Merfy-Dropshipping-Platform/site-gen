@@ -12,11 +12,22 @@
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Канон heading: string | { text, alignment, size }; шапки-литерала нет →
-// рендер ТОЛЬКО при непустом. Роль = внутрисекционный h2 (Comfortaa uppercase
-// leading-[1.115], МАННЕРА §1). Лестница §9 «Внутренний h2 24/28»:
-// large/отсутствие = литерал 24/md:28, medium 20/24, small 17/20.
-const heading = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
+// Figma 1:19335 — пустое состояние секции «Мультиколонны». Признак пустоты: мерчант
+// не задал ни одной колонки (p.columns пуст/нет). Тогда секция рендерит ДОСЛОВНЫЙ
+// Figma-плейсхолдер (заголовок «Мультиколонны»; 3 пустые surface-колонки «Колонна» +
+// хелпер-текст + «Кнопка»), а НЕ дефолт-контент верстальщика (CANON_COLUMNS).
+// MultiColumns — текстово-картинная секция (схема columns[]: heading/text/imageUrl/
+// link, без collectionPicker/productPicker), поэтому SSR-фетч товаров/коллекций ей
+// не нужен (в отличие от Popular/Collections — эталон rose Popular.astro).
+const hasColumns = Array.isArray(p.columns) && p.columns.length > 0;
+
+// Канон heading: string | { text, alignment, size }. С данными мерчанта — его
+// заголовок (пусто → без шапки). В пустом состоянии — Figma-лейбл «Мультиколонны».
+// Роль = внутрисекционный h2 (Comfortaa uppercase leading-[1.115], МАННЕРА §1).
+// Лестница §9 «Внутренний h2 24/28»: large/отсутствие = литерал 24/md:28,
+// medium 20/24, small 17/20.
+const headingRaw = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
+const heading = hasColumns ? headingRaw : (headingRaw || "Мультиколонны");
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
 	headingSize === "small"
@@ -30,27 +41,38 @@ const headingAlignCls =
 const headingCls = `font-comfortaa ${headingSizeCls} font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
 
 // Канон columns[] ≤10 (item: heading|title, text|description, imageUrl|image,
-// headingSize/textSize per-item, link {text,href} | flat linkText+link).
-// Отсутствие массива = 3 колонки-болванки в тоне темы (МАННЕРА §11:
-// технологично, коротко) — без картинок, плитка появится при загрузке фото.
-const CANON_COLUMNS = [
+// headingSize/textSize per-item, link {text,href} | flat linkText+link). Пустое
+// состояние (мерчант не задал колонки) = ДОСЛОВНЫЙ Figma-плейсхолдер 1:19335:
+// 3 ПУСТЫЕ surface-колонки «Колонна» + хелпер «Сочетай текст, чтобы подчеркнуть
+// плюсы товара или коллекции.» + ссылка-плейсхолдер «Кнопка» (НЕ мок-картинки и
+// НЕ готовые тексты верстальщика). Мерчант задал columns → рендерим ИХ.
+const FIGMA_PLACEHOLDER_COLUMNS = [
 	{
-		heading: "Быстрая доставка",
-		text: "Заказ уезжает со склада в день оформления — техника не ждёт.",
+		id: "ph-1",
+		heading: "Колонна",
+		text: "Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.",
 		imageUrl: "",
+		link: { text: "Кнопка", href: "/catalog" },
+		isPlaceholder: true,
 	},
 	{
-		heading: "Официальная гарантия",
-		text: "Каждый гаджет с гарантией производителя и поддержкой сервиса.",
+		id: "ph-2",
+		heading: "Колонна",
+		text: "Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.",
 		imageUrl: "",
+		link: { text: "Кнопка", href: "/catalog" },
+		isPlaceholder: true,
 	},
 	{
-		heading: "Оплата без пауз",
-		text: "Карта, СБП или рассрочка — оплата занимает меньше минуты.",
+		id: "ph-3",
+		heading: "Колонна",
+		text: "Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.",
 		imageUrl: "",
+		link: { text: "Кнопка", href: "/catalog" },
+		isPlaceholder: true,
 	},
 ];
-const rawColumns = Array.isArray(p.columns) && p.columns.length ? p.columns : CANON_COLUMNS;
+const rawColumns = hasColumns ? p.columns : FIGMA_PLACEHOLDER_COLUMNS;
 const columns = rawColumns.slice(0, 10).map((c: any) => {
 	// Ссылка колонки: canon link {text,href} ИЛИ flat-пара linkText + link
 	// (string из arrayFields конструктора). Рендер при непустом тексте.
@@ -79,6 +101,9 @@ const columns = rawColumns.slice(0, 10).map((c: any) => {
 		headingSize: c.headingSize,
 		textSize: c.textSize,
 		link: linkText ? { text: linkText, href: linkHref } : undefined,
+		// Пустое состояние Figma: рисуем пустой surface-rect вместо <img> даже без
+		// картинки (в обычном режиме колонка без image вообще не показывает медиа-блок).
+		isPlaceholder: c.isPlaceholder === true,
 	};
 });
 
@@ -206,7 +231,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 						data-puck-subsection-index={index}
 						data-puck-subsection-field="columns"
 					>
-						{c.image && (
+						{c.image ? (
 							<div
 								class={`${itemImageCls(c.imageSize)} overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] ${tileAspectCls}`}
 							>
@@ -218,7 +243,13 @@ const titleId = id && heading ? `${id}-title` : undefined;
 									class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
 								/>
 							</div>
-						)}
+						) : c.isPlaceholder ? (
+							/* Пустое состояние Figma 1:19335: пустой surface-rect (без картинки). */
+							<div
+								class={`${itemImageCls(c.imageSize)} overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] ${tileAspectCls}`}
+								aria-hidden="true"
+							/>
+						) : null}
 						<div class="flex w-full flex-col gap-2">
 							{c.heading && (
 								<h3

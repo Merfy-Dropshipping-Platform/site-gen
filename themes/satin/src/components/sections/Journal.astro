@@ -77,19 +77,31 @@ function formatPubDate(iso: string | null | undefined): string {
 }
 
 // Гейт пустого состояния (Shopify-модель): есть реальные публикации → рендерим
-// их; нет — ПЛЕЙСХОЛДЕР по контракту Figma 1:19335 (3 колонки: пустой image-rect
-// + «Колонна» + нейтральный текст), НЕ мок-демо верстальщика. Текст-болванка в
-// нейтральном тоне публикаций (как theme-base MultiColumns / Publications.astro).
-const PLACEHOLDER_TEXT = "Поделись новостями бренда, гайдами и историями в этом блоке.";
+// их; нет — ДОСЛОВНЫЙ Figma-плейсхолдер по контракту 1:19335 (тип «Публикации»):
+// заголовок секции «Публикации» + 3 колонки = пустой surface image-rect +
+// «Колонна» + хелпер «Сочетай текст…» + ссылка-плейсхолдер «Кнопка» (стрелка).
+// НЕ мок-демо верстальщика (старые болванки про новости бренда). Эталон —
+// satin MultiColumns.astro (тот же контракт «3 колонки» 1:19335).
+const PLACEHOLDER_HEADING = "Публикации";
+const PLACEHOLDER_TEXT = "Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.";
+const PLACEHOLDER_BUTTON_TEXT = "Кнопка";
+const PLACEHOLDER_BUTTON_HREF = "/catalog";
 const PLACEHOLDER_COUNT = 3;
+// Контракт картиночных секций (правило 2): фолбэк-картинка колонки пустого
+// состояния = дизайн-ассет publication-card.png (/placeholders/publication-card.png,
+// раздаётся на каждой теме) — картинка показывается ВСЕГДА, НЕ пустой surface-rect.
+// Эталон theme-base Publications.astro (PLACEHOLDER_ASSETS.publicationCard).
+const PLACEHOLDER_IMAGE = "/placeholders/publication-card.png";
 type PubItem = {
 	title: string;
 	date: string;
 	excerpt: string;
 	image: string;
 	href?: string;
+	linkText?: string;
 	isPlaceholder: boolean;
 };
+const hasRealPublications = !!legacyPosts || realPublications.length > 0;
 const items: PubItem[] = legacyPosts
 	? legacyPosts.map((post) => ({
 			title: post.title ?? "",
@@ -97,6 +109,7 @@ const items: PubItem[] = legacyPosts
 			excerpt: post.excerpt ?? "",
 			image: post.image ?? "",
 			href: post.href,
+			linkText: "Перейти",
 			isPlaceholder: false,
 		}))
 	: realPublications.length > 0
@@ -106,29 +119,45 @@ const items: PubItem[] = legacyPosts
 				excerpt: pub.excerpt ?? "",
 				image: pub.coverImageUrl ?? "",
 				href: pub.slug ? `/publication/${pub.slug}` : undefined,
+				linkText: "Перейти",
 				isPlaceholder: false,
 			}))
 		: Array.from({ length: PLACEHOLDER_COUNT }, () => ({
 				title: "Колонна",
 				date: "",
 				excerpt: PLACEHOLDER_TEXT,
-				image: "",
-				href: undefined,
+				image: PLACEHOLDER_IMAGE,
+				href: PLACEHOLDER_BUTTON_HREF,
+				linkText: PLACEHOLDER_BUTTON_TEXT,
 				isPlaceholder: true,
 			}));
 ---
 
 <section class="satin-pad w-full bg-white py-10 md:py-14" aria-label="Журнал">
+	{!hasRealPublications && (
+		/* Пустое состояние (Figma 1:19335, тип «Публикации»): заголовок секции
+		   «Публикации» дословным лейблом — у верстальщика шапки нет, в плейсхолдере
+		   она часть контракта. С реальными данными шапку не форсируем. */
+		<h2 class="satin-container mb-8 font-logo text-[20px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]">
+			{PLACEHOLDER_HEADING}
+		</h2>
+	)}
 	<ul class="satin-container grid grid-cols-1 gap-4 sm:grid-cols-3" role="list">
 		{items.map((post) => (
-			<li class="flex flex-col gap-6 bg-[#F5F5F5] p-4">
-				{/* Медиа: реальная обложка → <img>; пустое состояние (плейсхолдер
-				   или публикация без обложки) → пустой image-rect (контракт Figma
-				   1:19335). Родной литерал #ECECEC — тон пустой плитки satin. */}
-				<div class="relative aspect-square w-full overflow-hidden bg-[#ECECEC]">
-					{post.image && (
-						<SatinPicture src={post.image} alt={post.title} loading="lazy" class="absolute inset-0 size-full object-cover" />
-					)}
+			<li class:list={["flex flex-col gap-6", !post.isPlaceholder && "bg-[#F5F5F5] p-4"]}>
+				{/* Медиа: реальная обложка → SatinPicture; пустое состояние (плейсхолдер
+				   Figma 1:19335) → дизайн-ассет publication-card.png плоским <img>
+				   (контракт картиночных секций, правило 2: картинка показывается ВСЕГДА,
+				   surface-rect не остаётся). Плоский <img> для placeholder-PNG: соимённого
+				   .webp нет, SatinPicture эмитил бы <source srcset=*.webp> → 404 +
+				   <picture> не откатывается (баг project_cart_thumb_image_bug). */}
+				<div class="relative aspect-square w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]">
+					{post.image &&
+						(post.image.startsWith("/placeholders/") ? (
+							<img src={post.image} alt="" loading="lazy" class="absolute inset-0 size-full object-cover" aria-hidden="true" />
+						) : (
+							<SatinPicture src={post.image} alt={post.title} loading="lazy" class="absolute inset-0 size-full object-cover" />
+						))}
 				</div>
 				<div class="flex flex-col gap-2">
 					{!post.isPlaceholder && post.date && (
@@ -139,9 +168,12 @@ const items: PubItem[] = legacyPosts
 						<p class="font-manrope text-[14px] font-light leading-[1.5] text-[#999999]">{post.excerpt}</p>
 					)}
 				</div>
-				{!post.isPlaceholder && post.href && (
+				{post.href && post.linkText && (
+					/* Ссылка-CTA: реальная публикация → «Перейти» на пост; плейсхолдер
+					   (Figma 1:19335) → ссылка-плейсхолдер «Кнопка» со стрелкой (как
+					   per-column «Кнопка» в satin MultiColumns.astro). */
 					<a href={post.href} class="inline-flex items-center gap-2 font-manrope text-[14px] font-normal uppercase leading-normal text-[#000000] transition-opacity hover:opacity-70">
-						<span>Перейти</span>
+						<span>{post.linkText}</span>
 						<NtIcon name="arrow-right" sizeClass="size-5" />
 					</a>
 				)}

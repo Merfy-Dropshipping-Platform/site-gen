@@ -10,11 +10,16 @@
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Канон heading: string | { text, size }. Аналога у flux нет → рендер ТОЛЬКО
-// при непустом пропе. Роль = внутрисекционный h2 (Comfortaa uppercase
-// leading-[1.115], МАННЕРА §1). Лестница §9 «Внутренний h2 24/28»:
-// large/отсутствие = литерал 24/md:28, medium 20/24, small 17/20.
-const heading = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
+// Figma 1:19335 — ПУСТОЕ состояние секции (тип "MainText"): дословный
+// плейсхолдер (НЕ дефолт-контент верстальщика). MainText — чисто текстовая
+// секция (нет товаров/коллекций для SSR-фетча, эталон rose MainText), потому
+// пустое состояние = дефолтные значения полей: заголовок «Расскажи о своем
+// бренде». Роль = внутрисекционный h2 (Comfortaa uppercase leading-[1.115],
+// МАННЕРА §1). Лестница §9 «Внутренний h2 24/28»: large/отсутствие = литерал
+// 24/md:28, medium 20/24, small 17/20. Когда мерчант задаёт heading —
+// рендерится ЕГО значение (?? fallback только при пустых данных).
+const heading =
+	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Расскажи о своем бренде");
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingCls =
 	headingSize === "small"
@@ -23,13 +28,14 @@ const headingCls =
 			? "font-comfortaa text-[20px] font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading,0_0_0))] md:text-[24px]"
 			: "font-comfortaa text-[24px] font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading,0_0_0))] md:text-[28px]";
 
-// Канон text: string | { content, size }. Дефолт = болванка-манифест в тоне
-// темы (МАННЕРА §11: технологично, коротко, без уменьшительности).
+// Канон text: string | { content, size }. Figma 1:19335 — пустое состояние:
+// дословный хелпер-текст плейсхолдера «Расскажи подробнее о своем онлайн-
+// магазине в этом блоке» (НЕ болванка-манифест верстальщика). Мерчант задал
+// text — рендерим его.
 const text =
 	typeof p.text === "string"
 		? p.text
-		: (p.text?.content ??
-			"Технологии без паузы. Мы собираем гаджеты следующего поколения — смартфоны, наушники и ноутбуки, которые работают быстрее и дольше. Будущее — в режиме онлайн, и оно уже с вами.");
+		: (p.text?.content ?? "Расскажи подробнее о своем онлайн-магазине в этом блоке");
 
 // Канон textSize (top-level hidden приоритетнее text.size сабпанели). Та же
 // роль внутреннего h2: лестница §9 large/отсутствие = литерал 24/md:28,
@@ -56,19 +62,20 @@ const textAlignCls =
 const italicCls = p.textStyle === "italic" ? " italic" : "";
 
 // Кнопка: canon-сабпанель button {text, link} приоритетнее legacy hidden cta.
-// Дефолт (пропы не заданы) = «Подробнее» → /about (прецедент bloom MainText).
-// Пустой текст заданного пропа СКРЫВАЕТ кнопку.
+// Figma 1:19335 — пустое состояние: дословный плейсхолдер «Кнопка» (НЕ
+// «Подробнее»). Мерчант задал текст пропа — рендерим его; пустой текст
+// ЗАДАННОГО пропа СКРЫВАЕТ кнопку (canon-defaults кнопку не пишут → плейсхолдер).
 const btnProvided = p.button !== undefined || p.cta !== undefined;
 const btnTextProp =
 	(typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined) ??
 	(typeof p.cta?.text === "string" && p.cta.text.trim() ? p.cta.text : undefined);
-const btnText = btnTextProp ?? (btnProvided ? undefined : "Подробнее");
+const btnText = btnTextProp ?? (btnProvided ? undefined : "Кнопка");
 const btnHref =
 	p.button?.link?.href ??
 	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??
 	(typeof p.cta?.href === "string" && p.cta.href ? p.cta.href : undefined) ??
 	(typeof p.cta?.link === "string" && p.cta.link ? p.cta.link : undefined) ??
-	"/about";
+	"/catalog";
 
 // Канон buttonStyle: 'solid'/отсутствие = чёрная CTA манеры §3 дословно
 // (contacts.astro:76: h-12 rounded-6 px-6 Manrope 16, hover:opacity-95;

@@ -4,12 +4,13 @@
 // косметику + /icons/benefit-*.png, без обработки пропсов). Теперь:
 //
 // ПУСТОЕ / некурированное состояние (мерчант НЕ передал items[]) =
-// ПЛЕЙСХОЛДЕР по контракту Figma 1:19335 (мультиколонны: пустой rect +
-// «Колонна» + нейтральный текст + Кнопка), НЕ мок-демо верстальщика. Когда
-// мерчант добавил карточки (items[]/columns[]/benefits[]) — рендерим реальные
-// данные без изменений (Shopify-модель, как theme-base PopularProducts/
-// Collections и соседний MultiColumns.astro). Гейт — на наличии ручных
-// карточек с непустым содержимым.
+// ДОСЛОВНЫЙ ПЛЕЙСХОЛДЕР по контракту Figma 1:19335 (MultiColumns): заголовок
+// «Мультиколонны» + 3 колонки (пустой surface-rect + «Колонна» + «Сочетай
+// текст, чтобы подчеркнуть плюсы товара или коллекции.» + «Кнопка»), НЕ
+// мок-демо верстальщика. Когда мерчант добавил карточки (items[]/columns[]/
+// benefits[]) — рендерим реальные данные без изменений (Shopify-модель, как
+// theme-base PopularProducts/Collections и соседний MultiColumns.astro). Гейт —
+// на наличии ручных карточек с непустым содержимым.
 interface Benefit {
 	title?: string;
 	heading?: string;
@@ -23,9 +24,10 @@ interface Benefit {
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Канон heading секции: string | { text, alignment, size }; у мок-верстальщика
-// шапки НЕТ → рендер ТОЛЬКО при непустом. На розовом полотне — белый.
-const heading = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
+// Канон heading секции: string | { text, alignment, size }. Мерчантский
+// заголовок (если задан) берём как есть; Figma-плейсхолдер «Мультиколонны»
+// (пустое состояние) добавляется ниже, после вычисления hasManualItems.
+const rawHeading = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
 	headingSize === "small"
@@ -65,6 +67,12 @@ const manualItems = rawItems
 	.map(normalizeItem)
 	.filter((c) => c.heading || c.text || c.image);
 const hasManualItems = manualItems.length > 0;
+
+// Figma 1:19335 (MultiColumns): ПУСТОЕ состояние секции имеет заголовок
+// «Мультиколонны». Мерчант задал свой heading → рендерим ЕГО; иначе при пустом
+// состоянии (нет ручных карточек) → Figma-плейсхолдер заголовка. Если карточки
+// заданы, а heading мерчант не указал — заголовок не навязываем (как было).
+const heading = rawHeading || (hasManualItems ? "" : "Мультиколонны");
 
 // Контракт пустого состояния (мультиколонны, Figma 1:19335): 3 колонки =
 // пустой rect + «Колонна» + «Сочетай текст…» + Кнопка. Заменяет мок-демо.
@@ -144,7 +152,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 						) : (
 							c.isPlaceholder && (
 								<div
-									class="h-[120px] w-full rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-muted,153_153_153)/0.15)]"
+									class="h-[120px] w-full rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,245_245_245))]"
 									aria-hidden="true"
 								/>
 							)

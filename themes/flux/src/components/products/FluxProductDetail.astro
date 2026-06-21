@@ -30,6 +30,39 @@ interface Props {
 
 const { product, id, siteId } = Astro.props;
 
+// ── Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния секции «Товар». ──
+// Когда товар НЕ выбран мерчантом (demo `[id].astro` с мок-`catalogProducts` или
+// нейтральный skeleton `/product`), секция рендерит дизайн-плейсхолдер Figma
+// (куртка-заглушка + «Новая коллекция!» + «Товар» + «2 500 ₽» + «Количество» +
+// кнопки), а НЕ demo-контент верстальщика («M Phone 17» / «Flux» / «140 990₽» /
+// `/images/4x/Товар_N.png` / demo-строку цвета). Когда мерчант ЗАДАЛ товар
+// (реальный — приходит ТОЛЬКО через live-гидрацию ниже, flux SSG в props всегда
+// держит demo) — рендерим ЕГО без изменений. Текст 1:1 с контрактом theme-base
+// Product (brand='Новая коллекция!', name='Товар', price='2 500 ₽'); ГЛАВНОЕ фото
+// PDP = /placeholders/sweater-blue-large.png (large-вариант для крупного фото
+// карточки товара; copyPublic из packages/theme-base, доступна на
+// live, паритет flux Popular). Зеркало rose RoseProductDetail.
+const PLACEHOLDER_PRODUCT_IMAGE = "/placeholders/sweater-blue-large.png";
+const PLACEHOLDER_BRAND = "Новая коллекция!";
+const PLACEHOLDER_NAME = "Товар";
+const PLACEHOLDER_PRICE = "2 500 ₽";
+
+// Пустое состояние = товар НЕ реальный мерчант-товар. Реальный определяется по
+// наличию реальных медиа (images[]/variants[] — у живого товара гидрации) либо
+// картинки вне demo-namespace. Demo-смартфоны (`/images/4x/Товар_N.png`) и
+// skeleton (`/images/placeholder.png`, пустая цена) → плейсхолдер. На live SSG
+// flux всегда отдаёт demo-`catalogProducts` → плейсхолдер; реальный товар
+// подставляет live-гидрация (заполняет data-pdp-* + снимает hidden).
+const rawImg = typeof product.image === "string" ? product.image : "";
+const isMockImage = !rawImg || /^\/images\/(4x\/)?(Товар_|placeholder)/i.test(rawImg);
+const hasRealMedia =
+	(Array.isArray((product as { images?: string[] }).images) &&
+		(product as { images?: string[] }).images!.length > 0) ||
+	(Array.isArray((product as { variants?: unknown[] }).variants) &&
+		(product as { variants?: unknown[] }).variants!.length > 0) ||
+	!isMockImage;
+const isPlaceholder = !hasRealMedia;
+
 const colorLabels: Record<string, string> = {
 	silver: "Серебро",
 	blue: "Синий",
@@ -39,15 +72,27 @@ const colorLabels: Record<string, string> = {
 };
 
 // product.colors есть только у demo CatalogProduct; у skeleton/реального — undefined.
-const productColors = (product as { colors?: string[] }).colors ?? [];
+// В пустом состоянии (Figma 1:19335) строка вариантов НЕ показывается → colors=[].
+const productColors = isPlaceholder ? [] : (product as { colors?: string[] }).colors ?? [];
 const colors = productColors.map((color, index) => ({
 	id: color,
 	label: colorLabels[color] ?? color,
 	unavailable: index === productColors.length - 1 && productColors.length > 1,
 }));
 
-const productGallery = (product as { gallery?: string[] }).gallery ?? [];
-const galleryImages = productGallery.length > 0 ? productGallery : [product.image];
+// Отображаемые значения: реальный товар → как есть; пустое состояние → Figma.
+const displayName = isPlaceholder ? PLACEHOLDER_NAME : product.name;
+const displayBrand = isPlaceholder ? PLACEHOLDER_BRAND : product.brand;
+const displayPrice = isPlaceholder ? PLACEHOLDER_PRICE : product.price;
+const displayOldPrice = isPlaceholder ? undefined : product.oldPrice;
+const displayDiscount = isPlaceholder ? false : product.discount;
+
+const productGallery = isPlaceholder ? [] : (product as { gallery?: string[] }).gallery ?? [];
+const galleryImages = isPlaceholder
+	? [PLACEHOLDER_PRODUCT_IMAGE]
+	: productGallery.length > 0
+		? productGallery
+		: [product.image];
 const [mainImage, ...thumbs] = galleryImages;
 const cartVariantColor = productColors[0] ?? "";
 
@@ -142,15 +187,32 @@ const pdpHeartSvg =
 	<div class="mx-auto grid w-full max-w-[1320px] grid-cols-1 gap-8 lg:grid-cols-[600px_minmax(0,1fr)] lg:gap-10" data-pdp-layout hidden style="opacity:0;transition:opacity .15s ease">
 		<div class="flex flex-col gap-4">
 			<div class="relative aspect-square w-full overflow-hidden bg-[#F5F5F5]">
-				<FluxPicture
-					src={mainImage}
-					alt={product.name}
-					loading="eager"
-					fetchpriority="high"
-					class="h-full w-full object-contain"
-					data-pdp-main
-				/>
-				{product.discount && (
+				{/* Главное фото: пустое состояние (Figma 1:19335) = плейсхолдер
+				    /placeholders/sweater-blue-large.png сырым <img> (у него нет
+				    соимённого .webp — FluxPicture отдал бы битый <source> и
+				    <picture> не откатился на <img>, баг корзины). Реальный/demo
+				    товар → FluxPicture; live-гидрация переписывает .src по
+				    data-pdp-main в обоих случаях. */}
+				{isPlaceholder ? (
+					<img
+						src={mainImage}
+						alt={displayName}
+						loading="eager"
+						fetchpriority="high"
+						class="h-full w-full object-contain"
+						data-pdp-main
+					/>
+				) : (
+					<FluxPicture
+						src={mainImage}
+						alt={displayName}
+						loading="eager"
+						fetchpriority="high"
+						class="h-full w-full object-contain"
+						data-pdp-main
+					/>
+				)}
+				{displayDiscount && (
 					<span class="absolute left-3 top-3 inline-flex h-6 items-center rounded-[4px] bg-[#000000] px-1.5 font-manrope text-[12px] font-normal leading-none text-white" data-pdp-badge>
 						Скидка
 					</span>
@@ -168,7 +230,7 @@ const pdpHeartSvg =
 						>
 							<FluxPicture
 								src={img}
-								alt={product.name}
+								alt={displayName}
 								loading="eager"
 								class="h-full w-full object-contain"
 							/>
@@ -183,12 +245,12 @@ const pdpHeartSvg =
 				<p
 					class="font-manrope text-[14px] font-light leading-normal text-[#999999]"
 					data-pdp-brand
-					hidden={!product.brand}
+					hidden={!displayBrand}
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="text"
 				>
-					{product.brand}
+					{displayBrand}
 				</p>
 				{/* Заголовок + сердце избранного в одной строке. data-product-id
 				    проставляет live-гидрация (рядом где заполняет data-add-to-cart);
@@ -202,12 +264,12 @@ const pdpHeartSvg =
 						data-puck-subsection-index="101"
 						data-puck-subsection-field="title"
 					>
-						{product.name}
+						{displayName}
 					</h1>
 					<button
 						type="button"
 						data-wishlist-toggle
-						data-product-id={product.id}
+						data-product-id={isPlaceholder ? "" : product.id}
 						aria-pressed="false"
 						aria-label="В избранное"
 						class="mt-1 flex size-10 shrink-0 items-center justify-center rounded-full border border-[#F5F5F5] text-[#000000] transition-opacity hover:opacity-80"
@@ -222,14 +284,14 @@ const pdpHeartSvg =
 					data-puck-subsection-field="price"
 				>
 					<span class="font-manrope text-[20px] font-normal leading-normal text-[#000000] md:text-[24px]" data-pdp-price>
-						{product.price}
+						{displayPrice}
 					</span>
 					<span
 						class="font-manrope text-[16px] font-light leading-normal text-[#999999] line-through md:text-[18px]"
 						data-pdp-oldprice
-						hidden={!product.oldPrice}
+						hidden={!displayOldPrice}
 					>
-						{product.oldPrice}
+						{displayOldPrice}
 					</span>
 				</div>
 			</div>
@@ -241,14 +303,32 @@ const pdpHeartSvg =
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="103"
 					data-puck-subsection-field="variants"
+					hidden={isPlaceholder}
 				>
-					<NtVariantTextRow
-						items={colors}
-						selectedId={colors[0]?.id}
-						groupLabel="Цвет"
-						groupName="pdp-color"
-					/>
+					{/* Пустое состояние (Figma 1:19335) не показывает строку вариантов —
+					    рендерим demo color-row ТОЛЬКО для реального demo/товара; на live
+					    гидрация заменяет её реальным селектором или скрывает контейнер. */}
+					{!isPlaceholder && (
+						<NtVariantTextRow
+							items={colors}
+							selectedId={colors[0]?.id}
+							groupLabel="Цвет"
+							groupName="pdp-color"
+						/>
+					)}
 				</div>
+
+				{/* Лейбл «Количество» (Figma 1:19335 — плейсхолдер «Товар» содержит его
+				    над счётчиком). Реальный товар сохраняет прежний вид без лейбла;
+				    live-гидрация удаляет этот SSR-лейбл при подстановке товара. */}
+				{isPlaceholder && (
+					<span
+						data-pdp-qty-placeholder-label
+						class="font-manrope text-[14px] font-normal leading-none text-[#000000]"
+					>
+						Количество
+					</span>
+				)}
 
 				<div
 					class="flex h-10 w-fit items-center rounded-[4px] border border-[#F5F5F5]"
@@ -293,12 +373,12 @@ const pdpHeartSvg =
 				<button
 					type="button"
 					data-add-to-cart
-					data-product-id={product.id}
-					data-name={product.name}
-					data-price={product.price}
-					data-old-price={product.oldPrice ?? ""}
+					data-product-id={isPlaceholder ? "" : product.id}
+					data-name={displayName}
+					data-price={displayPrice}
+					data-old-price={displayOldPrice ?? ""}
 					data-image={mainImage}
-					data-variant-color={cartVariantColor}
+					data-variant-color={isPlaceholder ? "" : cartVariantColor}
 					data-quantity="1"
 					class="inline-flex h-12 items-center justify-center rounded-[6px] border border-[#000000] bg-white px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90"
 				>
@@ -307,9 +387,9 @@ const pdpHeartSvg =
 				<button
 					type="button"
 					data-action="buy-now"
-					data-product-id={product.id}
-					data-name={product.name}
-					data-price={product.price}
+					data-product-id={isPlaceholder ? "" : product.id}
+					data-name={displayName}
+					data-price={displayPrice}
 					data-image={mainImage}
 					class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[#000000] px-4 font-manrope text-[16px] font-normal leading-normal text-white transition-opacity hover:opacity-95"
 				>
@@ -318,17 +398,21 @@ const pdpHeartSvg =
 			</div>
 
 			<div class="flex flex-col gap-4">
+				{/* Описание: Figma-плейсхолдер «Товар» (пустое состояние) описания НЕ
+				    показывает — рендерим только для реального/demo товара. Live-гидрация
+				    заполняет [data-pdp-desc] реальным текстом и снимает hidden. */}
 				<div
 					class="flex flex-col gap-4"
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="106"
 					data-puck-subsection-field="description"
+					hidden={isPlaceholder}
 				>
 					<h2 class="font-comfortaa text-[18px] font-normal uppercase leading-normal text-[#000000]">
 						Описание
 					</h2>
 					<p class="font-manrope text-[14px] font-light leading-[1.5] text-[#999999] md:text-[15px]" data-pdp-desc>
-						{product.description}
+						{isPlaceholder ? "" : (product as { description?: string }).description}
 					</p>
 				</div>
 				<div
@@ -700,6 +784,16 @@ const pdpHeartSvg =
 			if (skel) skel.hidden = true;
 			if (layout) { layout.hidden = false; layout.style.opacity = "1"; }
 			if (notFound) notFound.hidden = true;
+
+			// На live `/product` SSR-разметка стартует в ПУСТОМ состоянии (Figma-
+			// плейсхолдер: блоки описания/вариантов скрыты hidden, есть SSR-лейбл
+			// «Количество»). При успешной гидрации реального товара возвращаем рабочий
+			// вид: показываем контейнеры описания/вариантов (их видимостью дальше рулит
+			// наличие данных) и убираем плейсхолдерный лейбл «Количество».
+			var descWrap = section.querySelector("[data-puck-subsection-field='description']");
+			if (descWrap) descWrap.hidden = false;
+			var phQtyLabel = section.querySelector("[data-pdp-qty-placeholder-label]");
+			if (phQtyLabel) phQtyLabel.remove();
 
 			function setText(sel, t) {
 				var el = section.querySelector(sel);

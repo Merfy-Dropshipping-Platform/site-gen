@@ -292,13 +292,14 @@ const hasHeroData =
 	!!String(heroCtaRaw).trim() ||
 	hasHeroSlides;
 
-// Контракт-лейблы плейсхолдера (категория «Изображение / Слайд-шоу»,
-// Figma 1:19335): заголовок секции + поясняющий текст + Кнопка. Generic-
-// копи именно этой категории — НЕ мок-копи героя верстальщика и НЕ литералы
-// соседних секций (ImageWithText «Расскажите о товаре», MultiRows
-// «Изображение с текстом»).
-const PLACEHOLDER_HEADING = "Заголовок изображения";
-const PLACEHOLDER_TEXT = "Опиши изображение или коллекцию в этом блоке";
+// Контракт-лейблы плейсхолдера (тип «Изображение», Figma 1:19335): overlay
+// «Изображение» + поясняющий текст «Покажи и расскажи о своем товаре в одном
+// блоке» + Кнопка — ДОСЛОВНО как в Figma (НЕ мок-копи героя верстальщика и НЕ
+// литералы соседних секций: ImageWithText/MultiRows «Изображение с текстом»).
+// Тип «Слайд-шоу» (другой текст «Добавь несколько изображений…») реализует
+// ОТДЕЛЬНАЯ секция Slideshow — Hero его не дублирует (mode='single').
+const PLACEHOLDER_HEADING = "Изображение";
+const PLACEHOLDER_TEXT = "Покажи и расскажи о своем товаре в одном блоке";
 const PLACEHOLDER_CTA = "Кнопка";
 
 const singleTitle = hasHeroData ? (heroHeadingRaw || CANON_SLIDES[0].title) : PLACEHOLDER_HEADING;
@@ -314,11 +315,14 @@ const singleCtaHref =
 	p.cta?.href ??
 	p.ctaLink ??
 	(hasHeroData ? CANON_SLIDES[0].ctaHref : "/catalog");
-// Фон рендерим ТОЛЬКО при выбранных данных. Пустое состояние = пустой
-// image-rect подложки темы (rgb(var(--color-surface)) — конвенция пустых
-// rect'ов vanilla: Collections/Gallery/ImageWithText/Video/Slideshow), без
-// мок-фото героя.
-const singleImage = hasHeroData ? (heroBgRaw || toWebp(V_IMG.hero(1))) : "";
+// Фон: выбранные данные → фото мерчанта/верстальщика. Пустое состояние (Figma
+// 1:19335, тип «Изображение») → дизайн-ассет landscape-image.png из placeholders
+// (контракт картиночных секций: картинка показывается ВСЕГДА — фолбэк = нужный
+// landscape-*, НЕ пустой surface-rect и НЕ мок-фото героя). Ассет раздаётся на
+// каждой теме как /placeholders/landscape-image.png.
+const singleImage = hasHeroData
+	? (heroBgRaw || toWebp(V_IMG.hero(1)))
+	: "/placeholders/landscape-image.png";
 const singleTitleCls = headingClsFor(sectionSize);
 const singleSubtitleCls = textClsFor(sectionSize);
 // Вторая кнопка (только single) — рендер при непустом тексте, белый контур манеры.

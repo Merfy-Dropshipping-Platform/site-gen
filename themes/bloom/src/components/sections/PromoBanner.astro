@@ -7,24 +7,25 @@
 // канон-композиции Header свою полосу не рендерит (там она только в статик-режиме).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-// Пустое/некурированное состояние = ПЛЕЙСХОЛДЕР по контракту (Figma 1:19335 —
-// принцип «empty-state = placeholder, НЕ мок-демо верстальщика»). PromoBanner —
-// информационная полоса (нет товаров/коллекций/картинок для гейта), поэтому
-// единственные «данные» секции — сам проп text. Когда мерчант НЕ задал текст —
-// рендерим нейтральный канон-плейсхолдер (тот же дефолт, что platform-канон
-// theme-base/blocks/PromoBanner.puckConfig.ts → defaults.text), а НЕ маркетинг-
-// заглушку верстальщика «Акция на новую коллекцию. Узнать больше». Когда text
-// ЗАДАН (мерчант/ревизия/puck-default) — рендер реального текста без изменений.
-const PLACEHOLDER_TEXT = "Бесплатная доставка от 3000 ₽";
-const text =
-	typeof p.text === "string" && p.text.trim() ? p.text : PLACEHOLDER_TEXT;
+// Figma 1:19335 — пустое состояние секции «Панель объявлений»: пока мерчант НЕ
+// задал текст объявления, секция показывает ДОСЛОВНЫЙ плейсхолдер на surface-полосе
+// («Добавь текст в объявление» + ссылка «Перейти»), а НЕ дефолт-контент верстальщика
+// (маркетинг-полосу «Бесплатная доставка…»). PromoBanner — информационная полоса
+// (нет товаров/коллекций/картинок для гейта), поэтому единственные «данные» секции —
+// сам проп text. Когда text ЗАДАН (мерчант/ревизия/puck-default) — рендер реального
+// текста на цветной полосе верстальщика без изменений (эталон rose PromoBanner.astro).
+const rawText = typeof p.text === "string" ? p.text.trim() : "";
+const hasText = rawText.length > 0;
+const text = hasText ? p.text : "";
 
 // Канон link {text, href} + legacy linkText/linkUrl. Подчёркнутый хвост-ссылка —
-// НОВЫЙ элемент (у верстальщика инлайн-полоса без ссылки; классы хвоста — из
-// header/PromoBanner.astro:17), рендерится ТОЛЬКО при непустом link.text.
+// в заданном состоянии = НОВЫЙ элемент (у верстальщика инлайн-полоса без ссылки;
+// классы хвоста — из header/PromoBanner.astro:17), рендерится ТОЛЬКО при непустом
+// link.text. В пустом состоянии label ссылки по умолчанию = «Перейти» (Figma).
 const linkText =
 	(typeof p.link?.text === "string" && p.link.text.trim() ? p.link.text : undefined) ??
 	(typeof p.linkText === "string" && p.linkText.trim() ? p.linkText : undefined);
+const placeholderLinkText = linkText ?? "Перейти";
 const linkHref =
 	p.link?.href ?? p.linkUrl ?? (typeof p.link === "string" ? p.link : undefined) ?? "/";
 
@@ -60,30 +61,61 @@ const paddingStyle =
 		: undefined;
 ---
 
-<div
-	class={rootCls}
-	role="region"
-	aria-live="polite"
-	data-bloom-announcement
-	data-puck-component-id={id}
-	style={paddingStyle}
->
-	<p
-		class={textCls}
-		data-puck-subsection-parent={id}
-		data-puck-subsection-index="100"
-		data-puck-subsection-field="text"
-	>
-		{text}
-		{
-			linkText && (
+{
+	hasText ? (
+		/* Текст объявления задан мерчантом → цветная полоса верстальщика дословно
+		   (классы/токены rootCls + textCls байт-в-байт, поведение не меняется). */
+		<div
+			class={rootCls}
+			role="region"
+			aria-live="polite"
+			data-bloom-announcement
+			data-puck-component-id={id}
+			style={paddingStyle}
+		>
+			<p
+				class={textCls}
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="100"
+				data-puck-subsection-field="text"
+			>
+				{text}
+				{linkText && (
+					<a
+						href={linkHref}
+						class="ml-1 underline decoration-1 underline-offset-2 transition-opacity hover:opacity-80"
+					>
+						{linkText}
+					</a>
+				)}
+			</p>
+		</div>
+	) : (
+		/* Пустое состояние (Figma 1:19335): дословный плейсхолдер «Добавь текст в
+		   объявление. Перейти» на surface-полосе темы (НЕ цветная полоса верстальщика
+		   и НЕ дефолт-акция «Бесплатная доставка…»). Эталон rose PromoBanner.astro. */
+		<div
+			class="flex min-h-12 w-full items-center justify-center overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] px-4 py-2 text-center md:px-20 xl:px-[300px] 2xl:px-[680px]"
+			role="region"
+			aria-live="polite"
+			data-bloom-announcement
+			data-puck-component-id={id}
+			style={paddingStyle}
+		>
+			<p
+				class="max-w-full text-center font-inter text-[12px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]"
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="100"
+				data-puck-subsection-field="text"
+			>
+				<span class="whitespace-pre-wrap">Добавь текст в объявление.</span>{" "}
 				<a
 					href={linkHref}
-					class="ml-1 underline decoration-1 underline-offset-2 transition-opacity hover:opacity-80"
+					class="underline decoration-1 underline-offset-2 transition-opacity hover:opacity-80"
 				>
-					{linkText}
+					{placeholderLinkText}
 				</a>
-			)
-		}
-	</p>
-</div>
+			</p>
+		</div>
+	)
+}

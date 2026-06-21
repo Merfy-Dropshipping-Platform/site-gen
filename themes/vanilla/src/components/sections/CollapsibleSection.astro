@@ -4,21 +4,24 @@
 // процесс-эталон rose T16). Схема полей = packages/theme-base/blocks/
 // CollapsibleSection/CollapsibleSection.puckConfig.ts.
 // ПУСТОЕ СОСТОЯНИЕ (без sections[]/items[]) = ПЛЕЙСХОЛДЕР по контракту Figma
-// 1:19335 (строки «Раздел» + «Ответь на самые популярные вопросы клиентов»),
-// НЕ мок-демо верстальщика. Секции нет у верстальщика —
-// нативный <details>/<summary> (Container-safe, без JS): заголовок = роль секции
-// §1 (Bitter italic 20, #26311C на светлом), вопрос Arsenal 16 uppercase, ответ
+// 1:19335 (заголовок «Сворачиваемый раздел» + ряд «Раздел» с хелпером «Ответь
+// на самые популярные вопросы клиентов»), НЕ мок-демо верстальщика. Секции нет у
+// верстальщика — нативный <details>/<summary> (Container-safe, без JS): заголовок
+// = роль секции §1 (Bitter italic 20, #26311C на светлом), вопрос Arsenal 16
+// uppercase, ответ
 // Arsenal 14/16 muted, разделители в стиле строк «Стоимость» каталога (fc:33,
 // цвет --vanilla-line #D9D9D2); chevron — svg дропдаунов каталога (Cat:117) с
 // group-open-поворотом tailwind-классами, без <style>-блока.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Канон heading: string | { text, alignment, size }; canon-default «Часто
-// задаваемые вопросы». Роль = заголовок секции (Col:20), цвет — токен с
-// пиксель-фоллбеком #26311C (38 49 28).
+// Канон heading: string | { text, alignment, size }. Figma 1:19335 — ПУСТОЕ
+// состояние секции «Сворачиваемый раздел»: дословный заголовок-плейсхолдер
+// «Сворачиваемый раздел» (а НЕ дефолт-копирайт верстальщика «Часто задаваемые
+// вопросы»). Роль = заголовок секции (Col:20), цвет — токен с пиксель-фоллбеком
+// #26311C (38 49 28). Мерчант задал свой heading → его и рендерим.
 const heading =
-	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Часто задаваемые вопросы");
+	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Сворачиваемый раздел");
 // Лестница §9 (база-литерал 20 = canon-default medium): small 17, large 24.
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
@@ -33,23 +36,22 @@ const headingAlignCls =
 const headingCls = `font-vanilla-bitter ${headingSizeCls} font-normal italic leading-none tracking-normal text-[rgb(var(--color-heading,38_49_28))]${headingAlignCls}`;
 
 // Канон sections[] 1-10 {heading, content} (+ pupa items[] {title, content}).
-// ПУСТОЕ СОСТОЯНИЕ (без sections[]/items[]) = ПЛЕЙСХОЛДЕР по контракту
-// Figma 1:19335 (строки «Раздел» + «Ответь на самые популярные вопросы
-// клиентов»), НЕ мок-демо верстальщика (раньше — 2 вопроса про Vanila-бренд).
-// Когда мерчант добавил sections[]/items[] — рендер реальных данных без
-// изменений (Shopify-модель, как theme-base PopularProducts/Collections и
-// vanilla MultiColumns/MultiRows: пустой выбор = заглушка, выбранное = данные).
-// content — set:html.
-const PLACEHOLDER_CONTENT = "Ответь на самые популярные вопросы клиентов";
+// Когда мерчант ЗАДАЛ пункты — рендерим ИХ (content = set:html, интерактивный
+// <details>). Когда пусто — Figma 1:19335 ПУСТОЕ состояние: дословный
+// ряд-плейсхолдер «Раздел» + хелпер-текст «Ответь на самые популярные вопросы
+// клиентов» (а НЕ мок-демо верстальщика — раньше 2 вопроса про Vanila-бренд).
+// Паттерн пустого состояния как Collections/MultiRows (паритет rose/bloom T16):
+// один DEMO-ряд + лейбл/хелпер видны сразу, без интерактивного <details>
+// (реального ответа нет). Shopify-модель: пустой выбор = заглушка, выбранное =
+// данные.
 const PLACEHOLDER_SECTIONS = [
-	{ id: "placeholder-1", heading: "Раздел", content: PLACEHOLDER_CONTENT },
-	{ id: "placeholder-2", heading: "Раздел", content: PLACEHOLDER_CONTENT },
-	{ id: "placeholder-3", heading: "Раздел", content: PLACEHOLDER_CONTENT },
+	{ heading: "Раздел", content: "Ответь на самые популярные вопросы клиентов" },
 ];
 // hasManualSections: мерчант явно добавил хотя бы одну строку (Shopify-модель).
 const hasManualSections =
 	(Array.isArray(p.sections) && p.sections.length > 0) ||
 	(Array.isArray(p.items) && p.items.length > 0);
+const isPlaceholder = !hasManualSections;
 const rawSections = hasManualSections
 	? Array.isArray(p.sections) && p.sections.length
 		? p.sections
@@ -108,29 +110,53 @@ const titleId = id && heading ? `${id}-title` : undefined;
 					sections.map((s, i) => (
 						<li
 							class="border-b border-solid border-[rgb(var(--color-muted,217_217_210))]"
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index={i}
-							data-puck-subsection-field="sections"
+							data-puck-subsection-parent={isPlaceholder ? undefined : id}
+							data-puck-subsection-index={isPlaceholder ? undefined : i}
+							data-puck-subsection-field={isPlaceholder ? undefined : "sections"}
 						>
-							<details class="group">
-								<summary class="cursor-pointer list-none py-5 [&::-webkit-details-marker]:hidden">
-									<div class="flex w-full items-center justify-between gap-4 font-vanilla-arsenal text-base font-normal uppercase leading-snug text-[rgb(var(--color-text,10_10_10))] transition-opacity hover:opacity-70">
-										<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
+							{isPlaceholder ? (
+								/* Figma 1:19335 ПУСТОЕ состояние: дословный ряд-плейсхолдер —
+								   лейбл «Раздел» (роль вопроса) + хелпер-текст «Ответь на самые
+								   популярные вопросы клиентов». Без интерактивного <details>:
+								   реального ответа нет, помощь видна сразу (паттерн пустого
+								   состояния Collections/MultiRows). Шеврон сохранён для вида. */
+								<div class="flex w-full flex-col gap-2 py-5">
+									<div class="flex w-full items-center justify-between gap-4 font-vanilla-arsenal text-base font-normal uppercase leading-snug text-[rgb(var(--color-text,10_10_10))]">
+										<span class="min-w-0 flex-1 break-words">{s.heading}</span>
 										<svg
 											aria-hidden="true"
 											viewBox="0 0 10 6"
 											fill="none"
-											class="h-[6px] w-[10px] shrink-0 transition-transform duration-300 group-open:rotate-180"
+											class="h-[6px] w-[10px] shrink-0 rotate-180"
 										>
 											<path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" />
 										</svg>
 									</div>
-								</summary>
-								<div
-									class="pb-5 font-vanilla-arsenal text-[14px] font-normal leading-[1.45] text-[rgb(var(--color-muted,68_68_68))] lg:text-base"
-									set:html={s.content}
-								/>
-							</details>
+									<p class="font-vanilla-arsenal text-[14px] font-normal leading-[1.45] text-[rgb(var(--color-muted,68_68_68))] lg:text-base">
+										{s.content}
+									</p>
+								</div>
+							) : (
+								<details class="group">
+									<summary class="cursor-pointer list-none py-5 [&::-webkit-details-marker]:hidden">
+										<div class="flex w-full items-center justify-between gap-4 font-vanilla-arsenal text-base font-normal uppercase leading-snug text-[rgb(var(--color-text,10_10_10))] transition-opacity hover:opacity-70">
+											<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
+											<svg
+												aria-hidden="true"
+												viewBox="0 0 10 6"
+												fill="none"
+												class="h-[6px] w-[10px] shrink-0 transition-transform duration-300 group-open:rotate-180"
+											>
+												<path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" />
+											</svg>
+										</div>
+									</summary>
+									<div
+										class="pb-5 font-vanilla-arsenal text-[14px] font-normal leading-[1.45] text-[rgb(var(--color-muted,68_68_68))] lg:text-base"
+										set:html={s.content}
+									/>
+								</details>
+							)}
 						</li>
 					))
 				}

@@ -23,16 +23,26 @@ const poster =
 // (дизайнерское фото кампании /images/4x/Главный_экран.png + без play-кнопки).
 // Эталон: theme-base Video.astro (empty-state media-slot) + satin Slideshow/
 // ImageWithText (светлый rect surface вместо кампании). Гейт = наличие реального
-// видео мерчанта (videoUrl непустой). Нет видео → ПЛЕЙСХОЛДЕР: пустой rect
-// surface (#FBFBFB-паритет) + Play-иконка. Реальное видео рендерится как было.
+// видео мерчанта (videoUrl непустой). Нет видео → ПЛЕЙСХОЛДЕР: дизайн-ассет
+// landscape-video.png + Play-иконка (контракт картиночных секций, правило 2 —
+// картинка показывается ВСЕГДА, НЕ пустой surface-rect; эталон theme-base
+// Video.astro: poster || PLACEHOLDER_ASSETS.landscape.video). Реальное видео — как было.
 const isPlaceholder = !videoUrl;
+const PLACEHOLDER_VIDEO_IMAGE = "/placeholders/landscape-video.png";
 
 // Канон heading + pupa content.heading{text, alignment, enabled, size} — рендер
 // при непустом тексте и enabled !== 'false'. Роль = заголовок секции §1
 // (font-logo 20 uppercase leading-[1.15], токен heading 0_0_0).
 const headingRaw = p.heading ?? p.content?.heading;
-const headingText =
+const headingTextRaw =
 	typeof headingRaw === "string" ? headingRaw : ((headingRaw?.text as string | undefined) ?? "");
+// Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния секции «Видео»:
+// заголовок «Видео» (+ пустой image-rect с Play-иконкой ниже). Дефолт-заголовок
+// показываем, когда мерчант НЕ задал свой текст (паритет эталона rose Popular —
+// ?? fallback срабатывает только при пустых данных). Свой заголовок мерчанта
+// рендерим как есть. Явно отключённый заголовок (enabled === 'false') скрывает
+// его даже в пустом состоянии.
+const headingText = headingTextRaw.trim() ? headingTextRaw : "Видео";
 const headingEnabled = String(p.content?.heading?.enabled ?? "true") !== "false";
 const showHeading = Boolean(headingText.trim()) && headingEnabled;
 // Канон size (панель «Размер заголовка») + дубли headingSize / heading.size /
@@ -126,10 +136,19 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 						class="absolute inset-0 size-full object-cover"
 					/>
 				) : (
-					/* Пустое состояние = ПЛЕЙСХОЛДЕР по контракту: пустой rect surface
-					   (уже задан mediaCls bg-surface) + Play-иконка по центру. Без
-					   мок-кампании /images/4x/Главный_экран.png. */
-					<span class="pointer-events-none absolute inset-0 z-[1] flex items-center justify-center">
+					/* Пустое состояние = ПЛЕЙСХОЛДЕР по контракту: дизайн-ассет
+					   landscape-video.png (правило 2 — картинка показывается ВСЕГДА,
+					   НЕ пустой surface-rect) + Play-иконка по центру. Без мок-кампании
+					   /images/4x/Главный_экран.png. */
+					<Fragment>
+						<img
+							src={PLACEHOLDER_VIDEO_IMAGE}
+							alt=""
+							loading="lazy"
+							class="absolute inset-0 size-full object-cover"
+							aria-hidden="true"
+						/>
+						<span class="pointer-events-none absolute inset-0 z-[1] flex items-center justify-center">
 						<svg
 							width="64"
 							height="64"
@@ -143,6 +162,7 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 							<path d="M26 22L42 32L26 42V22Z" fill="rgb(var(--color-bg,255 255 255))" />
 						</svg>
 					</span>
+					</Fragment>
 				)
 			}
 			{

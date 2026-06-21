@@ -8,9 +8,12 @@ import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/
 // пиксель верстальщика (прецедент T11 'center').
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-const sectionTitle = p.heading ?? "Коллекции, которые становятся любимыми";
-const sectionSubtitle =
-	p.subtitle ?? "Вдохновение для каждого дня — актуальные коллекции сумок, созданные, чтобы радовать и удивлять.";
+// Figma 1:19335 — ПУСТОЕ состояние секции «Список коллекций»: дословный заголовок
+// «Список коллекций» (без подзаголовка), а НЕ дефолт-копирайт верстальщика
+// («Коллекции, которые становятся любимыми» / «Вдохновение для каждого дня…»).
+// Мерчант задал свой heading/subtitle → его и рендерим.
+const sectionTitle = p.heading ?? "Список коллекций";
+const sectionSubtitle = p.subtitle ?? "";
 
 // Канон headingSize: 'medium' (canon-default) и отсутствие = NtSectionHeading
 // верстальщика дословно (20px). small ≈0.85× (17px), large ≈1.2× (24px) — окр. до px.
@@ -106,6 +109,60 @@ const propCollections = (Array.isArray(p.collections) ? p.collections : [])
 	});
 const usePropCollections = propCollections.length > 0;
 
+// SSR-резолв реальных коллекций по collectionId (Figma-цель: коллекция ВЫБРАНА →
+// реальное имя/обложка ПРЯМО в статике, чтобы их видело и ПРЕВЬЮ конструктора —
+// Astro Container не исполняет клиентскую module-гидрацию ниже). Эталон —
+// rose Popular.astro (siteId инжектит рендер-пайплайн preview.service / build).
+// Нет siteId / выбранных collectionId / ошибка → resolved пуст → остаётся SSR
+// (heading/обложка из пропса), а живая гидрация ниже освежит данные на live.
+// Паритет theme-base resolveManual: имя коллекции перебивает ручной heading,
+// обложка коллекции подставляется только при пустой своей (hasOwnImage).
+const siteId = typeof p.siteId === "string" ? p.siteId : "";
+const wantResolve = usePropCollections && propCollections.some((c) => c.collectionId);
+const resolvedCols = new Map<string, { name?: string; image?: string }>();
+if (wantResolve && siteId) {
+	try {
+		const base = (import.meta as any).env?.SITES_INTERNAL_BASE ?? "http://localhost:3114";
+		const res = await fetch(`${base}/api/sites/${siteId}/storefront-data`).catch(() => null);
+		if (res && res.ok) {
+			const data: any = await res.json();
+			const cols: any[] = Array.isArray(data?.collections) ? data.collections : [];
+			for (const c of propCollections) {
+				if (!c.collectionId) continue;
+				const m = cols.find(
+					(x) =>
+						x &&
+						(x.id === c.collectionId ||
+							x.slug === c.collectionId ||
+							x.name === c.collectionId ||
+							x.handle === c.collectionId),
+				);
+				if (!m) continue;
+				const cover =
+					(typeof m.image === "string" && m.image) ||
+					(Array.isArray(m.images) && typeof m.images[0] === "string" ? m.images[0] : "");
+				resolvedCols.set(c.collectionId, {
+					name: typeof m.name === "string" ? m.name : undefined,
+					image: cover || undefined,
+				});
+			}
+		}
+	} catch {
+		/* нет данных — остаётся SSR из пропса, гидрация освежит на live */
+	}
+}
+// Применяем резолв к карточкам пропса: реальное имя перебивает ручной heading,
+// обложка — только если мерчант не загрузил свою.
+const resolvedCollections = propCollections.map((c) => {
+	const r = c.collectionId ? resolvedCols.get(c.collectionId) : undefined;
+	if (!r) return c;
+	return {
+		...c,
+		name: r.name || c.name,
+		image: c.hasOwnImage ? c.image : r.image || c.image,
+	};
+});
+
 // Канон пустого состояния (Figma 1:19335, паритет theme-base DEMO_COLLECTIONS):
 // без ручного выбора — 3 ПЛЕЙСХОЛДЕР-карточки (пустая surface-плитка #FBFBFB +
 // подпись «Коллекция»), НЕ мок-демо верстальщика (RIVIERA/URBAN/FUTURISM из
@@ -143,7 +200,7 @@ const paddingStyle = p.padding
 			style={gridStyle}
 			data-collections-autofill={!usePropCollections ? "" : undefined}
 		>
-			{usePropCollections ? propCollections.map((c, i) => (
+			{usePropCollections ? resolvedCollections.map((c, i) => (
 				<li>
 					<a
 						href={c.href}
@@ -222,14 +279,14 @@ const paddingStyle = p.padding
 		}
 	};
 
-	// АВТОПОДСТАНОВКА: пустой пикер (SSR = demo-плитки верстальщика) → реальные
+	// АВТОПОДСТАНОВКА: пустой пикер (SSR = плейсхолдер-плитки «Коллекция») → реальные
 	// коллекции магазина из /data/collections.json (live) / storefront-data (превью).
 	// Прежде показывались фейк-демо FUTURISM/RIVIERA/URBAN, что вводило в заблуждение
 	// («магазин показывает несуществующие коллекции»). Коллекций мало (curated по сути
 	// сохраняется: явный выбор в пикере имеет приоритет), потому подставляем все ≤6.
-	// Реальных нет (demo-сборка без collections.json) → no-op, демо остаются.
-	// Обложка: своя картинка коллекции, иначе дизайнерский плейсхолдер темы по позиции.
-	const AUTOFILL_COVERS = ["/images/Коллекция_1.webp", "/images/Коллекция_2.webp", "/images/Коллекция_3.webp"];
+	// Реальных нет (demo-сборка без collections.json) → no-op, плейсхолдеры остаются.
+	// Обложка: ТОЛЬКО своя картинка коллекции; без неё — пустая surface-плитка
+	// (контракт Figma 1:19335), а НЕ мок-путь /images/Коллекция_N.webp (нет в dist).
 	const autofillCollections = async () => {
 		const grids = Array.from(document.querySelectorAll<HTMLElement>("ul[data-collections-autofill]"));
 		if (grids.length === 0) return;
@@ -238,15 +295,22 @@ const paddingStyle = p.padding
 		const visible = collections.filter((c) => c && c.slug !== "general").slice(0, 6);
 		if (visible.length === 0) return;
 		const html = visible
-			.map((c, i) => {
+			.map((c) => {
 				const name = escapeHtml(c.name || "Коллекция");
 				const ref = c.slug || c.id || "";
 				const href = "/catalog?collection=" + encodeURIComponent(ref);
-				const cover = c.image || (Array.isArray(c.images) ? c.images[0] : "") || AUTOFILL_COVERS[i % 3];
+				// Обложка ТОЛЬКО своя картинка коллекции; нет своей → пустая surface-плитка
+				// (контракт Figma 1:19335, гард как у SSR-карточки), а НЕ мок-путь верстальщика
+				// /images/Коллекция_N.webp — таких файлов нет в dist (битый <img>).
+				const cover = c.image || (Array.isArray(c.images) ? c.images[0] : "");
+				// Картинка только при наличии своей обложки (гард как у SSR-карточки),
+				// иначе пустая surface-плитка #FBFBFB без <img> — контракт пустого состояния.
+				const media = cover
+					? `<img src="${escapeHtml(cover)}" alt="${name}" loading="lazy" class="!h-full !w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.08]" />`
+					: "";
+				const surfaceBg = cover ? "245_245_245" : "251_251_251";
 				return `<li><a href="${href}" class="group flex w-full cursor-pointer flex-col gap-5" aria-label="${name}" data-nt="rose-collection-card">
-		<div class="aspect-[430/500] w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]">
-			<img src="${escapeHtml(cover)}" alt="${name}" loading="lazy" class="!h-full !w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.08]" />
-		</div>
+		<div class="aspect-[430/500] w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,${surfaceBg}))]"${cover ? "" : ' aria-hidden="true"'}>${media}</div>
 		<h3 class="rose-collection-name w-full text-left font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity group-hover:opacity-70 max-sm:!text-[12px]">${name}</h3>
 	</a></li>`;
 			})

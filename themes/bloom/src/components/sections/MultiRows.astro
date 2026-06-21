@@ -7,12 +7,14 @@
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Канон top-heading: string | { text, alignment, size } (+ legacy _headingLegacy);
-// отсутствие/пусто → шапки нет (canon-defaults heading не пишут). Роль =
-// заголовок секции на белом (Urbanist uppercase, розовый токен, МАННЕРА §1).
-// Лестница §9: medium/отсутствие = 18/md:20, small 15/17, large 22/24.
+// Канон top-heading: string | { text, alignment, size } (+ legacy _headingLegacy).
+// Figma 1:19335 — ПУСТОЕ состояние секции «Мультиряды»: дословный заголовок
+// «Мультиряды» (а НЕ отсутствие шапки/дефолт-копирайт верстальщика). Мерчант задал
+// свой heading → его и рендерим. Роль = заголовок секции на белом (Urbanist
+// uppercase, розовый токен, МАННЕРА §1). Лестница §9: medium/отсутствие = 18/md:20,
+// small 15/17, large 22/24.
 const heading =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p._headingLegacy ?? "";
+	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p._headingLegacy ?? "Мультиряды";
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
 	headingSize === "small"
@@ -27,26 +29,31 @@ const headingCls = `font-urbanist ${headingSizeCls} font-normal uppercase leadin
 
 // Канон rows[] 1-10 (item: heading|title, text|description, imageUrl|image,
 // imagePosition, button {text, href|link}, size per-item, headingSize/textSize).
-// Пустое/некурированное состояние (нет rows) = ПЛЕЙСХОЛДЕР по контракту Figma
-// 1:19335 (НЕ мок-демо верстальщика): ряды «пустой rect + "Изображение с текстом"
-// + нейтральный текст + Кнопка» — пара рядов с чередованием лево/право. Без фото
-// (imageUrl пуст → секция рендерит пустой surface-rect), нейтральные лейблы.
+// Figma 1:19335 — ПУСТОЕ состояние секции: ряды-плейсхолдеры (дизайн-ассет
+// /placeholders/landscape-multirows-image.png в плитке + дословный текст
+// «Изображение с текстом» / «Покажи и расскажи о своем товаре в одном блоке» +
+// кнопка «Кнопка»), а НЕ дефолт-контент/мок верстальщика и НЕ пустая surface
+// (контракт картиночных секций, эталон rose MultiRows.astro). Ассет раздаётся на
+// каждой теме из packages/theme-base/public/placeholders (copyPublic). Пара рядов
+// с чередованием лево/право. Мерчант задал rows → его и рендерим (поведение ниже не
+// меняется); реальный ряд без картинки → пустая surface-плитка.
+const PLACEHOLDER_ROW_IMAGE = "/placeholders/landscape-multirows-image.png";
 const PLACEHOLDER_ROWS = [
 	{
 		id: "ph-row-1",
 		heading: "Изображение с текстом",
 		text: "Покажи и расскажи о своем товаре в одном блоке",
-		imageUrl: "",
+		imageUrl: PLACEHOLDER_ROW_IMAGE,
 		imagePosition: "left",
-		button: { text: "Подробнее", href: "/about" },
+		button: { text: "Кнопка", href: "/catalog" },
 	},
 	{
 		id: "ph-row-2",
 		heading: "Изображение с текстом",
 		text: "Покажи и расскажи о своем товаре в одном блоке",
-		imageUrl: "",
+		imageUrl: PLACEHOLDER_ROW_IMAGE,
 		imagePosition: "right",
-		button: { text: "Подробнее", href: "/about" },
+		button: { text: "Кнопка", href: "/catalog" },
 	},
 ];
 // Курировано? — мерчант задал ряды (есть массив rows с длиной). Тогда рендерим
@@ -65,10 +72,11 @@ const rowsPosition =
 const aspectFor = (s: string | undefined) =>
 	s === "small" ? "aspect-[16/9]" : s === "large" ? "aspect-square" : "aspect-[652/594]";
 
-// Ряд без фото → пустой rect (контракт плейсхолдера Figma 1:19335). НЕ
-// подставляем мок-ассеты верстальщика (/images/trend-*.webp): пустое состояние =
-// пустой surface-rect, а не демо-фото. Реальный ряд без картинки тоже получает
-// пустой rect (секция рендерит bg-[--color-surface] когда image пуст).
+// Плейсхолдер пустого состояния (Figma 1:19335): ряд несёт дизайн-ассет
+// landscape-multirows-image.png (PLACEHOLDER_ROWS выше), НЕ мок-ассеты верстальщика
+// (/images/trend-*.webp) и НЕ пустую surface. Реальный ряд мерчанта без картинки →
+// пустая surface-плитка (image='' → <img> не рендерится, контейнер ниже имеет
+// bg-[--color-surface]). На live мерчант грузит своё фото.
 
 // Шкалы per-item размеров: заголовок ряда = роль заголовка секции (лестница §9);
 // текст = body-роль 16 (small 14, large 19).

@@ -11,12 +11,17 @@ const p = Astro.props as Record<string, any>;
 const id = p.id;
 
 // heading: string | { text, alignment, size }; text: string | { content, size }.
+// Figma 1:19335 — ПУСТОЕ состояние секции «Изображение с текстом»: дословные
+// плейсхолдеры «Изображение с текстом» / «Покажи и расскажи о своем товаре в одном
+// блоке» / кнопка «Кнопка» (НЕ дефолт-копирайт верстальщика «Расскажите о товаре» /
+// «Опишите преимущества продукта…»). Мерчант задал свой heading/text/button → его
+// и рендерим (ветки union ниже сохраняются). Эталон: rose ImageWithText.astro.
 const heading =
-	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Расскажите о товаре");
+	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Изображение с текстом");
 const text =
 	typeof p.text === "string"
 		? p.text
-		: (p.text?.content ?? "Опишите преимущества продукта, его ценность для клиента.");
+		: (p.text?.content ?? "Покажи и расскажи о своем товаре в одном блоке");
 
 // Канон heading.size — роль внутреннего h2 (Comfortaa uppercase leading-[1.115],
 // МАННЕРА §1: contacts.astro:40). Лестница §9 «Внутренний h2 24/28»:
@@ -56,14 +61,17 @@ const alignCls =
 			? " items-end text-right"
 			: "";
 
-// Канон image {url, alt} + legacy flat imageUrl. Пустой url → фоллбек =
-// реальный ассет темы (принцип T15 rose; плитка галереи верстальщика,
-// Gallery.astro:27) — «добавил секцию → сразу красиво».
+// Канон image {url, alt} + legacy flat imageUrl. Плейсхолдер (Figma 1:19335,
+// контракт картиночных секций): без выбранной картинки = дизайн-ассет
+// /placeholders/landscape-iwt.png (НЕ мок-фото верстальщика и НЕ пустой
+// surface-rect — картинка показывается ВСЕГДА). Ассет раздаётся на каждой теме
+// как /placeholders/landscape-iwt.png (copyPublic из packages/theme-base).
+// Эталон паттерна — vanilla ImageWithText.astro:78.
 const imageUrl =
 	(typeof p.image?.url === "string" && p.image.url.trim() ? p.image.url : undefined) ??
 	(typeof p.imageUrl === "string" && p.imageUrl.trim() ? p.imageUrl : undefined) ??
 	(typeof p.image === "string" && p.image.trim() ? p.image : undefined) ??
-	"/images/4x/Изображение_Галерея.png";
+	"/placeholders/landscape-iwt.png";
 const imageAlt = typeof p.image?.alt === "string" && p.image.alt.trim() ? p.image.alt : heading;
 
 // Канон imagePosition: 'left' (canon-default из puckConfig) и отсутствие =
@@ -94,9 +102,12 @@ const containerSchemeCls =
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
 
-// Кнопка: canon button {text, href|link} — рендер ТОЛЬКО при непустом тексте
-// (canon-defaults пишут «Подробнее» → /about).
-const btnText = typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined;
+// Кнопка: canon button {text, href|link}. Мерчант задал текст → его; пусто →
+// дословный Figma-плейсхолдер «Кнопка» (1:19335). Кнопка рендерится всегда (часть
+// дизайна пустого состояния), как «Кнопка» в MainText/Slideshow/Hero плейсхолдерах
+// (эталон rose ImageWithText.astro).
+const btnText =
+	typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : "Кнопка";
 const btnHref =
 	(typeof p.button?.href === "string" && p.button.href ? p.button.href : undefined) ??
 	p.button?.link?.href ??
@@ -137,12 +148,14 @@ const titleId = id ? `${id}-title` : undefined;
 			data-puck-subsection-index="100"
 			data-puck-subsection-field="image"
 		>
-			<img
-				src={imageUrl}
-				alt={imageAlt}
-				loading="lazy"
-				class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]"
-			/>
+			{imageUrl && (
+				<img
+					src={imageUrl}
+					alt={imageAlt}
+					loading="lazy"
+					class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]"
+				/>
+			)}
 		</div>
 
 		<div class={`flex w-full flex-col gap-6${pinnedCta ? " h-full" : ""}${imageRight ? " lg:order-1" : ""}${alignCls}`}>

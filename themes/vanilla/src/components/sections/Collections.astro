@@ -17,17 +17,18 @@
 // родных литералов, MANNER.md §7).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+// Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер ПУСТОГО состояния секции «Список
+// коллекций» (тип Collections): заголовок «Список коллекций» БЕЗ подзаголовка,
+// а НЕ дефолт-копирайт верстальщика («Коллекции, которые становятся любимыми» /
+// «Вдохновение для каждого дня…»). Эталон — rose Collections.astro.
+// Мерчант задал свой heading/subtitle → рендерим ЕГО (?? срабатывает только при
+// пустых данных).
 const sectionTitle =
 	(typeof p.heading === "string" ? p.heading : p.heading?.text) ??
 	p.title ??
-	"Коллекции, которые становятся любимыми";
-// Подзаголовок у верстальщика ЕСТЬ (в отличие от bloom) — дефолт-литерал
-// рендерится и при пустом пропе (конструктор вставляет subtitle: '' из
-// canon-дефолтов, а «добавил секцию → пиксель верстальщика»).
+	"Список коллекций";
 const sectionSubtitle =
-	typeof p.subtitle === "string" && p.subtitle.trim()
-		? p.subtitle
-		: "Вдохновение для каждого дня — актуальные коллекции текстиля и декора, созданные, чтобы радовать и удивлять.";
+	typeof p.subtitle === "string" && p.subtitle.trim() ? p.subtitle : "";
 
 // Канон headingSize (top-level приоритетнее legacy heading.size): 'medium'
 // (canon-default, MANNER §9) и отсутствие = роль «заголовок секции»
@@ -112,16 +113,66 @@ const propCollections = (Array.isArray(p.collections) ? p.collections : [])
 	});
 const usePropCollections = propCollections.length > 0;
 
+// SSR-резолв реальных коллекций по collectionId (Figma-цель: коллекция ВЫБРАНА →
+// реальное имя/обложка ПРЯМО в статике, чтобы их видело и ПРЕВЬЮ конструктора —
+// Astro Container не исполняет клиентскую module-гидрацию ниже). Эталон —
+// rose Popular.astro / Collections.astro (siteId инжектит рендер-пайплайн
+// preview.service / build). Нет siteId / выбранных collectionId / ошибка →
+// resolved пуст → остаётся SSR из пропса (heading/обложка), а живая гидрация
+// ниже освежит данные на live. Паритет theme-base resolveManual: имя коллекции
+// перебивает ручной heading, обложка — только при пустой своей (hasOwnImage).
+const siteId = typeof p.siteId === "string" ? p.siteId : "";
+const wantResolve = usePropCollections && propCollections.some((c) => c.collectionId);
+const resolvedCols = new Map<string, { name?: string; image?: string }>();
+if (wantResolve && siteId) {
+	try {
+		const base = (import.meta as any).env?.SITES_INTERNAL_BASE ?? "http://localhost:3114";
+		const res = await fetch(`${base}/api/sites/${siteId}/storefront-data`).catch(() => null);
+		if (res && res.ok) {
+			const data: any = await res.json();
+			const cols: any[] = Array.isArray(data?.collections) ? data.collections : [];
+			for (const c of propCollections) {
+				if (!c.collectionId) continue;
+				const m = cols.find(
+					(x) =>
+						x &&
+						(x.id === c.collectionId ||
+							x.slug === c.collectionId ||
+							x.name === c.collectionId ||
+							x.handle === c.collectionId),
+				);
+				if (!m) continue;
+				const cover =
+					(typeof m.image === "string" && m.image) ||
+					(Array.isArray(m.images) && typeof m.images[0] === "string" ? m.images[0] : "");
+				resolvedCols.set(c.collectionId, {
+					name: typeof m.name === "string" ? m.name : undefined,
+					image: cover || undefined,
+				});
+			}
+		}
+	} catch {
+		/* нет данных — остаётся SSR из пропса, гидрация освежит на live */
+	}
+}
+// Применяем резолв к карточкам пропса: реальное имя перебивает ручной heading,
+// обложка — только если мерчант не загрузил свою (hasOwnImage).
+const resolvedCollections = propCollections.map((c) => {
+	const r = c.collectionId ? resolvedCols.get(c.collectionId) : undefined;
+	if (!r) return c;
+	return {
+		...c,
+		name: r.name || c.name,
+		image: c.hasOwnImage ? c.image : r.image || c.image,
+	};
+});
+
 // ПЛЕЙСХОЛДЕР пустого состояния (контракт Figma 1:19335, паритет theme-base
-// DEMO_COLLECTIONS): N пустых квадратных карточек (rounded-rect bg surface) с
-// подписью «Коллекция». Без ручного выбора показываем ИХ, а не мок верстальщика
-// и НЕ авто-подхват каталога (curated-модель Shopify). Дефолт 3 (контракт);
-// columns из конструктора уважается (1-6, как канон-грид ниже).
-const placeholderCount =
-	colsRaw && colsRaw >= 1 && colsRaw <= 6 ? colsRaw : 3;
-const demoCollections = Array.from({ length: placeholderCount }, () => ({
-	name: "Коллекция",
-}));
+// DEMO_COLLECTIONS / rose Collections.astro): 3 пустые квадратные карточки
+// (rounded-rect bg surface) с подписью «Коллекция». Без ручного выбора
+// показываем ИХ, а не мок верстальщика и НЕ авто-подхват каталога
+// (curated-модель Shopify). Количество — ровно 3 (контракт Figma: «3 карточки»).
+const demoCollections = [{ name: "Коллекция" }, { name: "Коллекция" }, { name: "Коллекция" }];
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
@@ -147,11 +198,11 @@ const paddingStyle = p.padding
 			<h2 id="collections-title" class={headingCls}>
 				{sectionTitle}
 			</h2>
-			<p class={subtitleCls}>{sectionSubtitle}</p>
+			{sectionSubtitle && <p class={subtitleCls}>{sectionSubtitle}</p>}
 		</div>
 
 		<ul class={gridCls} role="list" data-animate data-animate-delay="0.1s" style={gridStyle}>
-			{usePropCollections ? propCollections.map((c, i) => (
+			{usePropCollections ? resolvedCollections.map((c, i) => (
 				<li>
 					<a
 						href={c.href}

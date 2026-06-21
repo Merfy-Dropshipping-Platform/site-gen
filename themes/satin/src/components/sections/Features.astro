@@ -1,4 +1,5 @@
 ---
+import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
 import { withBase } from "../../lib/with-base";
 
 interface Feature {
@@ -15,23 +16,26 @@ interface Props {
 // satinRegistry; его канон-наследник = MultiColumns.astro). Раньше при вызове
 // без пропсов рисовал мок-демо верстальщика (2 карточки материалы/доставка с
 // иконками /images/4x/feature-*.png). По контракту пустого состояния (Figma
-// 1:19335, эталон theme-base PopularProducts/Collections DEMO-гейт + соседняя
-// satin MultiColumns) мок ЗАМЕНЁН на ПЛЕЙСХОЛДЕР: 3 нейтральные колонки
-// «Колонна» (пустой rect #FBFBFB + поясняющий текст + общая кнопка). Когда
-// страница/мерчант реально передаёт items[] — рендер его данных без изменений
-// (иконка 56×56 + title + body).
+// 1:19335, тип «MultiColumns», эталон satin MultiColumns.astro + rose
+// MultiColumns.astro) мок ЗАМЕНЁН на ДОСЛОВНЫЙ ПЛЕЙСХОЛДЕР: заголовок
+// «Мультиколонны» + 3 нейтральные surface-колонки (пустой rect
+// rgb(var(--color-surface)) + «Колонна» + хелпер «Сочетай текст…» + per-column
+// ссылка «Кнопка» в КАЖДОЙ колонке, не общая). Когда страница/мерчант реально
+// передаёт items[] — рендер его данных без изменений (иконка 56×56 + title + body).
 const { items } = Astro.props as Props;
 const hasItems = Array.isArray(items) && items.length > 0;
 
-// Пустое состояние (Figma 1:19335): пустой rect (#FBFBFB / rgb(var(--color-surface)))
-// + «Колонна» + поясняющий текст. Текст совпадает с контрактом «Мультиколонны»
-// (паритет satin MultiColumns.astro).
+// Пустое состояние (Figma 1:19335, тип «MultiColumns»): пустой rect
+// (rgb(var(--color-surface))) + «Колонна» + хелпер + per-column ссылка «Кнопка».
+// Текст ДОСЛОВНО совпадает с контрактом «Мультиколонны» (паритет satin
+// MultiColumns.astro / rose MultiColumns.astro).
+const PLACEHOLDER_HEADING = "Мультиколонны";
 const PLACEHOLDER_COLUMN = {
 	heading: "Колонна",
 	text: "Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.",
+	link: { text: "Кнопка", href: "/catalog" },
 };
 const PLACEHOLDER_COUNT = 3;
-const PLACEHOLDER_BUTTON = { text: "Перейти", href: "/catalog" };
 ---
 
 <section class="satin-pad w-full bg-[rgb(var(--color-bg,255_255_255))] py-10 md:py-20" aria-label="Преимущества">
@@ -55,10 +59,13 @@ const PLACEHOLDER_BUTTON = { text: "Перейти", href: "/catalog" };
 		</div>
 	) : (
 		<div class="satin-container flex flex-col gap-8">
+			{/* Дословный Figma-заголовок пустого состояния (контракт «MultiColumns»):
+			    «Мультиколонны» (паритет satin MultiColumns.astro / rose). */}
+			<h2 class="font-logo text-[20px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]">{PLACEHOLDER_HEADING}</h2>
 			<ul class="grid grid-cols-1 gap-4 md:grid-cols-3" role="list">
 				{Array.from({ length: PLACEHOLDER_COUNT }).map(() => (
 					<li class="flex flex-col items-center gap-6 text-center">
-						{/* Пустой rect-плейсхолдер: подложка #FBFBFB / rgb(var(--color-surface))
+						{/* Пустой rect-плейсхолдер: подложка rgb(var(--color-surface))
 						    вместо иконки-картинки колонки (паритет satin MultiColumns). */}
 						<div
 							class="aspect-[4/3] w-full bg-[rgb(var(--color-surface,251_251_251))]"
@@ -66,15 +73,18 @@ const PLACEHOLDER_BUTTON = { text: "Перейти", href: "/catalog" };
 						/>
 						<h3 class="font-logo text-[18px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))] md:text-[20px]">{PLACEHOLDER_COLUMN.heading}</h3>
 						<p class="max-w-[560px] text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))]">{PLACEHOLDER_COLUMN.text}</p>
+						{/* Per-column ссылка-плейсхолдер «Кнопка» в КАЖДОЙ колонке (Figma
+						    1:19335, дословно как rose/satin MultiColumns.astro — не общая снизу). */}
+						<a
+							href={PLACEHOLDER_COLUMN.link.href}
+							class="inline-flex items-center gap-2 font-manrope text-[14px] font-normal uppercase leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70"
+						>
+							<span>{PLACEHOLDER_COLUMN.link.text}</span>
+							<NtIcon name="arrow-right" sizeClass="size-5" />
+						</a>
 					</li>
 				))}
 			</ul>
-			<a
-				href={PLACEHOLDER_BUTTON.href}
-				class="inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-2-text,0_0_0))] bg-transparent px-6 text-[16px] font-normal uppercase leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity duration-[180ms] hover:opacity-[0.78]"
-			>
-				{PLACEHOLDER_BUTTON.text}
-			</a>
 		</div>
 	)}
 </section>

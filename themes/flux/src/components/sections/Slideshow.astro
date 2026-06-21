@@ -14,27 +14,31 @@ const id = p.id;
 
 // Канон slides[] 1-5 (item: imageUrl|image, heading(string|{text,size}),
 // subtitle, text{content,size}, ctaText/ctaUrl | button{text,link}, container,
-// position, alignment, colorScheme). Отсутствие = canon-defaults: 2
-// слайда-болванки в тоне электроники flux (MANNER §11).
-const CANON_SLIDES = [
+// position, alignment, colorScheme).
+//
+// Figma 1:19335 — ПУСТОЕ состояние секции «Слайд-шоу». Пока мерчант НЕ добавил
+// слайды (slides пуст), секция показывает ДОСЛОВНЫЙ Figma-плейсхолдер: один
+// пустой image-rect (surface) + заголовок «Слайд-шоу» + хелпер «Добавь несколько
+// изображений с информацией о своём бренде» + кнопка «Кнопка» + точки навигации.
+// Это НЕ дефолт-контент верстальщика (прежние 2 слайда-болванки темы «Технологии
+// без паузы» / «Следующее поколение уже с вами» с CTA «В каталог»/«Смотреть ещё»)
+// — он удалён. Когда слайды ЗАДАНЫ — рендерим их (поведение ниже не меняется).
+const PLACEHOLDER_SLIDES = [
 	{
-		id: "slide-1",
-		imageUrl: "",
-		heading: "Технологии без паузы",
-		subtitle: "Будущее — в режиме онлайн. Ваш новый гаджет — уже в наличии.",
-		ctaText: "В каталог",
-		ctaUrl: "/catalog",
-	},
-	{
-		id: "slide-2",
-		imageUrl: "",
-		heading: "Следующее поколение уже с вами",
-		subtitle: "Флагманские смартфоны, наушники и ноутбуки — в одном каталоге Flux.",
-		ctaText: "Смотреть ещё",
+		id: "slide-placeholder",
+		// Контракт картиночных секций (Figma 1:19335): фото слайда-плейсхолдера =
+		// дизайн-ассет /placeholders/landscape-slideshow.png (НЕ пустой surface-rect
+		// и НЕ мок верстальщика — картинка показывается ВСЕГДА). Раздаётся на каждой
+		// теме как /placeholders/landscape-slideshow.png (copyPublic из theme-base).
+		imageUrl: "/placeholders/landscape-slideshow.png",
+		heading: "Слайд-шоу",
+		subtitle: "Добавь несколько изображений с информацией о своём бренде",
+		ctaText: "Кнопка",
 		ctaUrl: "/catalog",
 	},
 ];
-const rawSlides = Array.isArray(p.slides) && p.slides.length ? p.slides : CANON_SLIDES;
+const hasSlides = Array.isArray(p.slides) && p.slides.length > 0;
+const rawSlides = hasSlides ? p.slides : PLACEHOLDER_SLIDES;
 
 // Заголовок слайда — лестница hero h1 манеры (§9): 'large' (canon-носитель) и
 // отсутствие = литерал верстальщика 32/40/48 Comfortaa БЕЗ uppercase;
@@ -55,9 +59,11 @@ const slideTextCls = (s: string | undefined) =>
 			? "font-roboto-flex text-[14px] font-light leading-[1.5] text-[rgb(var(--color-text,255_255_255))] md:text-[15px]"
 			: "font-roboto-flex text-[16px] font-light leading-[1.5] text-[rgb(var(--color-text,255_255_255))] md:text-[18px]";
 
-// Канон-плейсхолдер = реальный ассет темы (принцип rose T15): слайд без фото
-// получает hero-ассет верстальщика по позиции.
-const SLIDE_FALLBACKS = ["/images/4x/Главный_экран.png", "/images/hero-flux.png"];
+// Пустое/некурированное состояние слайда (Figma 1:19335, ветка image): слайд
+// без своего фото получает дизайн-ассет /placeholders/landscape-slideshow.png
+// (PLACEHOLDER_SLIDES выше) — НЕ мок верстальщика и НЕ пустой surface; рендер
+// ниже даёт <img> (ветка s.image) + лейбл «Слайд-шоу»/текст/кнопку поверх.
+// Реальный слайд без фото (мерчант не загрузил) остаётся image="" → surface-rect.
 const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 	const ctaText =
 		(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined) ??
@@ -66,7 +72,7 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 		image:
 			(typeof s.imageUrl === "string" && s.imageUrl.trim()) ||
 			(typeof s.image === "string" && s.image.trim()) ||
-			SLIDE_FALLBACKS[i % SLIDE_FALLBACKS.length],
+			"",
 		heading: typeof s.heading === "string" ? s.heading : (s.heading?.text ?? ""),
 		headingCls: slideHeadingCls(typeof s.heading === "object" ? s.heading?.size : undefined),
 		subtitle:
@@ -288,6 +294,24 @@ const paddingStyle = p.padding
 							</div>
 						)}
 					</>
+				)
+			}
+
+			{/* Figma 1:19335 — пустое состояние: декоративные точки навигации поверх
+			    пустой surface-карточки (реальных слайдов для пролистывания нет, поэтому
+			    статичные, без data-slide-dot). Позиция — как у реальной навигации flux
+			    (низ-право секции). Цвет — текст темы на поверхности (белые точки реальной
+			    навигации не читались бы на светлом surface). */}
+			{
+				!hasSlides && (
+					<div
+						class="absolute bottom-5 right-4 z-20 flex items-center gap-2 md:right-20 2xl:right-80"
+						aria-hidden="true"
+					>
+						<span class="h-2 w-2 !rounded-full bg-[rgb(var(--color-text,0_0_0))]/70" />
+						<span class="h-2 w-2 !rounded-full bg-[rgb(var(--color-text,0_0_0))]/25" />
+						<span class="h-2 w-2 !rounded-full bg-[rgb(var(--color-text,0_0_0))]/25" />
+					</div>
 				)
 			}
 		</div>

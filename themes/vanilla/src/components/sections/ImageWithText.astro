@@ -28,10 +28,11 @@ const hasImage = typeof p.image?.url === "string" && p.image.url.trim().length >
 
 // Канон heading: string | { text, alignment, size }. Дефолт зависит от режима:
 // есть фото → литерал care-бэнда VERBATIM (реальный контент); нет фото →
-// плейсхолдер-лейбл контракта (заголовок секции). Роль = заголовок секции
+// ДОСЛОВНЫЙ Figma-плейсхолдер (1:19335, тип ImageWithText) «Изображение с текстом»
+// (НЕ дефолт-копирайт верстальщика «Расскажите о товаре»). Роль = заголовок секции
 // (Bitter italic 20 white на полотне №2, Gal:92). Лестница §9: medium/отсутствие
 // = литерал 20, small 17, large 24.
-const headingDefault = hasImage ? "Ваш дом — наша забота" : "Расскажите о товаре";
+const headingDefault = hasImage ? "Ваш дом — наша забота" : "Изображение с текстом";
 const heading =
 	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? headingDefault);
 const headingSize = p.headingSize ?? p.heading?.size;
@@ -47,13 +48,14 @@ const headingAlignCls =
 
 // Канон text: string | { content, size }. Дефолт зависит от режима: есть фото →
 // careTextLead + careTextTail двумя <p> VERBATIM (реальный контент); нет фото →
-// поясняющий текст плейсхолдера контракта. Шрифтовые классы — на обёртке (абзацы
-// наследуют), зазор между абзацами даёт gap-4 обёртки, как у верстальщика
-// (Gal:95). Роль = текст полотна 14 (Gal:96; лестница §9): large/отсутствие =
-// литерал 14, medium 12, small 10.
+// ДОСЛОВНЫЙ Figma-плейсхолдер (1:19335, тип ImageWithText) «Покажи и расскажи о
+// своем товаре в одном блоке» (НЕ дефолт-копирайт верстальщика «Опишите
+// преимущества продукта…»). Шрифтовые классы — на обёртке (абзацы наследуют),
+// зазор между абзацами даёт gap-4 обёртки, как у верстальщика (Gal:95). Роль =
+// текст полотна 14 (Gal:96; лестница §9): large/отсутствие = литерал 14, medium 12, small 10.
 const textDefault = hasImage
 	? "<p>Мы уверены: дом должен быть красивым не только на фотографиях, но и на ощупь. Бренд Vanila создан для тех, кто ценит эстетику и качество в каждом квадратном метре своего пространства. Мы собираем для вас самые вдохновляющие предметы текстиля и декора, чтобы ваш интерьер обрел индивидуальность.</p><p>В ассортименте Vanila вы не найдете случайных вещей. Только то, что действительно достойно стать частью вашего дома</p>"
-	: "<p>Опишите преимущества продукта, его ценность для клиента.</p>";
+	: "<p>Покажи и расскажи о своем товаре в одном блоке</p>";
 const text =
 	typeof p.text === "string" ? p.text : (p.text?.content ?? textDefault);
 const textSize = p.textSize ?? p.text?.size;
@@ -69,9 +71,11 @@ const textCls =
 const italicCls = p.textStyle === "normal" ? "" : " italic";
 
 // Канон image {url, alt}: фото мерчанта (реальные данные). Пусто → плейсхолдер-
-// режим: НЕ подставляем дизайнерский ассет верстальщика (vanilla-chair) —
-// рендерим пустой surface-rect (см. разметку ниже, эталон Collections empty-tile).
-const imageUrl = hasImage ? p.image.url : "";
+// режим: дизайн-ассет Figma 1:19335 (landscape-iwt.png из placeholders), НЕ мок
+// верстальщика (vanilla-chair) и НЕ пустой surface-rect. Ассет раздаётся на
+// каждой теме как /placeholders/landscape-iwt.png (контракт картиночных секций:
+// картинка показывается всегда — фолбэк = соответствующий landscape-*).
+const imageUrl = hasImage ? p.image.url : "/placeholders/landscape-iwt.png";
 const imageAlt =
 	typeof p.image?.alt === "string" && p.image.alt.trim() ? p.image.alt : "Стул Vanilla";
 
@@ -104,12 +108,13 @@ const containerSchemeCls =
 
 // Кнопка: canon button {text, href|link}. Дефолт (проп не задан) зависит от
 // режима: есть фото → CTA care-бэнда VERBATIM «Смотреть больше» (реальный
-// контент); нет фото → плейсхолдер-лейбл контракта «Подробнее». Пустой текст
-// заданного пропа СКРЫВАЕТ кнопку.
+// контент); нет фото → ДОСЛОВНЫЙ Figma-плейсхолдер (1:19335, тип ImageWithText)
+// «Кнопка» (часть дизайна пустого состояния, как «Кнопка» в MainText/Slideshow/
+// Hero). Пустой текст заданного пропа СКРЫВАЕТ кнопку.
 const btnProvided = p.button !== undefined;
 const btnTextProp =
 	typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined;
-const btnDefault = hasImage ? "Смотреть больше" : "Подробнее";
+const btnDefault = hasImage ? "Смотреть больше" : "Кнопка";
 const btnText = btnTextProp ?? (btnProvided ? undefined : btnDefault);
 const btnHref =
 	(typeof p.button?.href === "string" && p.button.href ? p.button.href : undefined) ??
@@ -190,19 +195,15 @@ const titleId = id && heading ? `${id}-title` : undefined;
 			data-puck-subsection-index="103"
 			data-puck-subsection-field="image"
 		>
-			{
-				hasImage && (
-					<img
-						src={imageUrl}
-						alt={imageAlt}
-						width="652"
-						height="366"
-						loading="lazy"
-						decoding="async"
-						class="absolute inset-0 size-full object-cover"
-					/>
-				)
-			}
+			<img
+				src={imageUrl}
+				alt={imageAlt}
+				width="652"
+				height="366"
+				loading="lazy"
+				decoding="async"
+				class="absolute inset-0 size-full object-cover"
+			/>
 		</div>
 	</div>
 </section>

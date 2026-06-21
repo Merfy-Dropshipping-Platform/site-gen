@@ -109,6 +109,11 @@ const galleryTiles: GalleryTile[] = (Array.isArray(p.items) ? p.items : [])
 // ссылается на этот путь). object-contain + padding — паритет theme-base
 // PopularProducts DEMO_PRODUCTS / bloom Gallery placeholder.
 const PLACEHOLDER_SWEATER_BLUE = "/placeholders/sweater-blue.png";
+// Контракт картиночных секций (правило 2): крупная плитка empty-state несёт
+// дизайн-ассет landscape-gallery.png (/placeholders/landscape-gallery.png,
+// раздаётся на каждой теме) — картинка показывается ВСЕГДА, НЕ пустой
+// surface-rect. Эталон theme-base Gallery.astro (PLACEHOLDER_ASSETS.landscape.gallery).
+const PLACEHOLDER_GALLERY = "/placeholders/landscape-gallery.png";
 // Гейт «выбрано/не выбрано» (паритет bloom Gallery): есть items[] → реальный
 // SSR-рендер выбранных плиток + гидрация; пусто → ПЛЕЙСХОЛДЕР по контракту
 // (пустой image-rect + карточка-товар куртка blue + карточка «Выбери коллекцию»),
@@ -236,12 +241,21 @@ const paddingStyle = p.padding
 			) : (
 				<>
 					{/* Empty-state ПЛЕЙСХОЛДЕР (Figma 1:19335, паритет bloom Gallery / theme-base):
-					    крупная плитка слева — пустой image-rect на surface (без фото);
-					    справа — карточка-товар (куртка blue) + карточка «Выбери коллекцию». */}
+					    крупная плитка слева — дизайн-ассет landscape-gallery.png (контракт
+					    картиночных секций, правило 2: картинка показывается ВСЕГДА, НЕ
+					    пустой surface-rect); справа — карточка-товар (куртка blue) +
+					    карточка «Выбери коллекцию». */}
 					<div
 						class={`aspect-square w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]${heroOrderCls}`}
 						aria-hidden="true"
-					/>
+					>
+						<img
+							src={PLACEHOLDER_GALLERY}
+							alt=""
+							loading="lazy"
+							class="!h-full !w-full object-cover"
+						/>
+					</div>
 
 					<div class={`grid grid-cols-2 gap-4${sideOrderCls}`}>
 						<a href="/catalog" class="group flex cursor-pointer flex-col gap-3" aria-label="Товар, 2 500 ₽">

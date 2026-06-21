@@ -7,11 +7,13 @@
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Канон heading: string | {text, alignment, size}; canon-default = литерал
-// about:73 «Свяжитесь с нами». Роль about:71 — Arsenal 20 UPPERCASE прямой
-// (единственное Arsenal-исключение из Bitter-правила §1), токен heading с
-// пиксель-фоллбеком #0A0A0A.
-const heading = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Свяжитесь с нами");
+// Канон heading: string | {text, alignment, size}. Figma 1:19335 — ДОСЛОВНЫЙ
+// плейсхолдер пустого состояния ContactForm = «Контактная форма» (НЕ литерал
+// верстальщика about:73 «Свяжитесь с нами»). Когда мерчант задал свой heading —
+// рендерим ЕГО (?? fallback срабатывает только при пустых данных). Роль about:71
+// — Arsenal 20 UPPERCASE прямой (единственное Arsenal-исключение из Bitter-
+// правила §1), токен heading с пиксель-фоллбеком #0A0A0A.
+const heading = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Контактная форма");
 // Лестница §9 (about-литерал 20 = large/canon-default): small 14, medium 17.
 // headingSize/headingAlignment top-level приоритетнее legacy heading.*.
 const headingSize = p.headingSize ?? p.heading?.size;
@@ -41,8 +43,8 @@ const emailHref = email ? `mailto:${email}` : undefined;
 // Канон fields {name,email,phone,message} (каждое {enabled,required,label}) —
 // проп-ветка собирает состав формы канон-семантикой (фоллбеки частичного
 // объекта = канон-дефолты puckConfig: phone disabled, name/email required).
-// Отсутствие fields = форма about ДОСЛОВНО (Имя / E-mail / Номер телефона +
-// textarea «Ваш вопрос», без required — у верстальщика novalidate-форма).
+// Отсутствие fields = Figma-плейсхолдер 1:19335 ДОСЛОВНО (Имя / Email / Номер
+// телефона + textarea «Комментарий», без required — novalidate-форма).
 const toBool = (v: any, fb: boolean): boolean =>
 	typeof v === "boolean" ? v : v === "true" ? true : v === "false" ? false : fb;
 const CANON_FIELDS = {
@@ -225,7 +227,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 							<input type="text" name="name" autocomplete="name" class={inputCls} />
 						</label>
 						<label class="flex w-full flex-col gap-2">
-							<span class={labelCls}>E-mail</span>
+							<span class={labelCls}>Email</span>
 							<input
 								type="email"
 								name="email"
@@ -275,7 +277,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 						data-puck-subsection-index="101"
 						data-puck-subsection-field="fields"
 					>
-						<span class={labelCls}>Ваш вопрос</span>
+						<span class={labelCls}>Комментарий</span>
 						<textarea name="question" class={textareaCls} />
 					</label>
 				)

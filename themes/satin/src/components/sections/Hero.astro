@@ -30,14 +30,30 @@ const hasMerchantSubtitle =
 	typeof (p.text?.content ?? p.subtitle) === "string" && String(p.text?.content ?? p.subtitle).trim();
 // Реальные данные есть, если задано фоновое фото или собственный текст героя.
 const hasData = !!rawBackgroundImage || !!hasMerchantTitle || !!hasMerchantSubtitle;
+// Пустое состояние = инверсия hasData. Тогда секция рендерит ДОСЛОВНЫЙ
+// Figma-плейсхолдер типа «Изображение» (1:19335): пустой image-rect surface-тона
+// + overlay-лейбл «Изображение» + хелпер «Покажи и расскажи о своем товаре в одном
+// блоке» + кнопка «Кнопка». Эталон — rose Hero.astro (isEmpty-ветка). НЕ
+// split-блок верстальщика с «Заголовок»/«Поясняющий текст».
+const isEmpty = !hasData;
+// Дословные тексты Figma-плейсхолдера (тип «Изображение»).
+const PH_LABEL = "Изображение";
+const PH_HELPER = "Покажи и расскажи о своем товаре в одном блоке";
+const PH_BUTTON = "Кнопка";
+// Контракт картиночных секций (правило 2): в пустом состоянии картинка
+// показывается ВСЕГДА — фолбэк = дизайн-ассет landscape-image.png из
+// packages/theme-base/public/placeholders (раздаётся на каждой теме как
+// /placeholders/landscape-image.png), а НЕ пустой surface-rect и НЕ мок-фото
+// героя. Паритет vanilla/rose Hero.astro empty-state.
+const PH_IMAGE = "/placeholders/landscape-image.png";
 
-// Лейблы пустого состояния (нейтральные, НЕ мок верстальщика).
-const title = hasData ? (p.heading?.text ?? p.title ?? SITE_TITLE) : "Заголовок";
+// Лейблы заданного состояния (рендер мерчанта — НЕ трогаем при наличии данных).
+const title = hasData ? (p.heading?.text ?? p.title ?? SITE_TITLE) : PH_LABEL;
 // Канон text.content — КИКЕР НАД заголовком (порядок верстальщика: subtitle перед h1).
 const subtitle = hasData
 	? (p.text?.content ?? p.subtitle ?? "Там, где классика встречается с характером")
-	: "Поясняющий текст";
-const ctaText = hasData ? (p.primaryButton?.text ?? p.cta?.text ?? p.ctaText ?? "В каталог") : "Кнопка";
+	: PH_HELPER;
+const ctaText = hasData ? (p.primaryButton?.text ?? p.cta?.text ?? p.ctaText ?? "В каталог") : PH_BUTTON;
 const ctaLink =
 	p.primaryButton?.link?.href ??
 	(typeof p.primaryButton?.link === "string" ? p.primaryButton.link : undefined) ??
@@ -150,6 +166,63 @@ const paddingStyle = p.padding
 	: undefined;
 ---
 
+{
+	isEmpty ? (
+		/* Пустое состояние (Figma 1:19335, тип «Изображение»): пустой image-rect
+		   surface-тона на всю секцию + overlay-лейбл «Изображение» + хелпер-текст +
+		   кнопка «Кнопка». Без мок-фото и без split-контента верстальщика
+		   («Заголовок»/«Поясняющий текст»). Эталон — rose Hero.astro isEmpty-ветка.
+		   Puck-subsection-атрибуты сохранены (heading=100, text=101,
+		   primaryButton=102) — блок остаётся выделяемым/редактируемым в конструкторе. */
+		<section
+			class="relative w-full overflow-hidden bg-[#111111]"
+			aria-labelledby="hero-title"
+			data-puck-component-id={id}
+			style={paddingStyle}
+		>
+			<div class="relative aspect-[375/362] w-full md:aspect-auto md:h-[680px]">
+				{/* Контракт картиночной секции (правило 2): дизайн-ассет
+				    landscape-image.png показывается ВСЕГДА (object-cover) + штатное
+				    затемнение для читаемости overlay-лейбла. НЕ пустой surface-rect.
+				    Эталон vanilla/rose Hero.astro empty-state. Плоский <img> (НЕ
+				    SatinPicture): у placeholder-PNG нет соимённого .webp, а SatinPicture
+				    безусловно эмитит <source srcset=*.webp> → 404 + <picture> не
+				    откатывается (баг project_cart_thumb_image_bug). */}
+				<img src={PH_IMAGE} alt="" loading="eager" fetchpriority="high" class="absolute inset-0 size-full object-cover object-center" aria-hidden="true" />
+				<div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/30 to-black/45" aria-hidden="true"></div>
+				<div class="absolute inset-0 z-10 flex w-full flex-col items-center justify-center gap-6 px-4 text-center sm:px-5 md:px-10">
+					<div class="flex w-full max-w-[540px] flex-col items-center gap-4 text-center md:max-w-[640px]">
+						<h1
+							id="hero-title"
+							class="font-logo text-[26px] font-normal uppercase leading-[1.08] text-white md:text-[32px]"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="100"
+							data-puck-subsection-field="heading"
+						>
+							{PH_LABEL}
+						</h1>
+						<p
+							class="font-manrope text-[16px] font-light uppercase tracking-[0.04em] text-white/80"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="101"
+							data-puck-subsection-field="text"
+						>
+							{PH_HELPER}
+						</p>
+					</div>
+					<a
+						href={ctaLink}
+						class="inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-white bg-white px-6 font-manrope text-[16px] font-normal uppercase leading-none text-[#111111] transition-opacity duration-[180ms] hover:opacity-[0.78]"
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="102"
+						data-puck-subsection-field="primaryButton"
+					>
+						{PH_BUTTON}
+					</a>
+				</div>
+			</div>
+		</section>
+	) : (
 <section
 	class="relative w-full bg-[rgb(var(--color-bg,255_255_255))]"
 	aria-labelledby="hero-title"
@@ -264,3 +337,5 @@ const paddingStyle = p.padding
 		</div>
 	</div>
 </section>
+	)
+}

@@ -33,9 +33,9 @@ const id = p.id;
 // слайдах) не затрагивается.
 const PLACEHOLDER_SLIDE = {
 	id: "placeholder",
-	imageUrl: "", // пустой image-rect (surface) — НЕ ассет верстальщика
+	imageUrl: "/placeholders/landscape-slideshow.png", // дизайн-ассет Figma 1:19335 (НЕ surface, НЕ мок верстальщика)
 	heading: "Слайд-шоу",
-	subtitle: "Покажи и расскажи о своем товаре в одном блоке",
+	subtitle: "Добавь несколько изображений с информацией о своём бренде",
 	ctaText: "Кнопка",
 	ctaUrl: "/catalog",
 };
@@ -117,15 +117,15 @@ const ctaCls =
 		? "inline-flex h-12 min-h-12 max-w-full items-center justify-center border-[1.3px] border-[rgb(var(--color-primary,255_255_255))] bg-transparent px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-primary,255_255_255))] transition-opacity hover:opacity-80"
 		: "inline-flex h-12 min-h-12 max-w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
 
-// Классы копи-блока ПУСТОГО состояния (плейсхолдер, Figma 1:19335). Реальные
-// слайды лежат на тёмном фото-полотне → белый фоллбек heading/text. Плейсхолдер
-// лежит на СВЕТЛОМ surface-image-rect → токены с ТЁМНЫМ фоллбеком (heading
-// 38_49_28, text/muted 68_68_68 из светлых color-scheme темы), CTA — solid
-// заливка кнопки-1. Классы режима данных (headingCls/textCls/ctaCls) не трогаем.
+// Классы копи-блока ПУСТОГО состояния (плейсхолдер, Figma 1:19335). Плейсхолдер
+// лежит на дизайн-ассете landscape-slideshow.png с тем же bg-black-оверлеем, что
+// и реальные слайды → белый фоллбек heading/text (читаемо на затемнённом фото),
+// CTA — solid заливка кнопки-1. Классы режима данных (headingCls/textCls/ctaCls)
+// не трогаем.
 const phHeadingCls =
-	"font-vanilla-bitter text-2xl font-normal italic leading-[1.2] tracking-normal text-[rgb(var(--color-heading,38_49_28))]";
+	"font-vanilla-bitter text-2xl font-normal italic leading-[1.2] tracking-normal text-[rgb(var(--color-heading,255_255_255))]";
 const phTextCls =
-	"font-vanilla-arsenal text-base font-normal italic tracking-normal text-[rgb(var(--color-text,68_68_68))]";
+	"font-vanilla-arsenal text-base font-normal italic tracking-normal text-[rgb(var(--color-text,240_240_240))]";
 const phCtaCls =
 	"inline-flex h-12 min-h-12 max-w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
 
@@ -310,7 +310,7 @@ const paddingStyle = p.padding
 						>
 							{[0, 1, 2].map((i) => (
 								<span
-									class={`h-2 w-2 rounded-full transition-colors ${i === 0 ? "bg-[rgb(var(--color-heading,38_49_28))]" : "bg-[rgb(var(--color-heading,38_49_28))]/40"}`}
+									class={`h-2 w-2 rounded-full transition-colors ${i === 0 ? "bg-white" : "bg-white/40"}`}
 								/>
 							))}
 						</div>

@@ -19,7 +19,9 @@ const id = p.id;
 // непустом. Роль = заголовок секции на светлом (Bitter italic 20
 // #26311C = 38 49 28, Col:20). Лестница §9: medium/отсутствие = литерал 20,
 // small 17, large 24.
-const heading = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
+// Figma 1:19335 — в ПУСТОМ состоянии (мерчант не задал данные) заголовок секции
+// дословный плейсхолдер «Мультиколонны»; задал свой heading → рендерим ЕГО.
+const rawHeading = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
 	headingSize === "small" ? "text-[17px]" : headingSize === "large" ? "text-[24px]" : "text-[20px]";
@@ -44,6 +46,10 @@ const PLACEHOLDER_COLUMNS = [
 ];
 // hasManualColumns: мерчант явно добавил хотя бы одну колонку (Shopify-модель).
 const hasManualColumns = Array.isArray(p.columns) && p.columns.length > 0;
+// Заголовок секции: мерчант задал свой → ЕГО; пустое состояние → дословный
+// Figma-плейсхолдер «Мультиколонны» (контракт 1:19335). Когда мерчант добавил
+// колонки, но заголовок не ввёл — уважаем его выбор (без принудительного текста).
+const heading = rawHeading || (hasManualColumns ? "" : "Мультиколонны");
 const rawColumns = hasManualColumns ? p.columns : PLACEHOLDER_COLUMNS;
 const columns = rawColumns.slice(0, 10).map((c: any) => {
 	// Ссылка колонки: canon link {text,href} ИЛИ flat-пара linkText + link

@@ -1,46 +1,35 @@
 ---
-import BloomPicture from '../img/BloomPicture.astro';
-
-// ОЖИВЛЕНИЕ Puk (контракт rose Collections / theme-base Collections.astro).
-// Раньше секция была статическим мок-демо верстальщика (pukItems
-// «HYDRO/DAILY/LIFT» + заголовок «АКЦИЯ ПУКНИ 3 раза»). Теперь:
-// пустое/некурированное состояние (Figma 1:19335) = ПЛЕЙСХОЛДЕР по контракту
-// «Список коллекций» — 3 пустые квадратные карточки (bg #FBFBFB ≈
-// rgb(var(--color-surface))) с подписью «Коллекция». Когда мерчант ВЫБРАЛ
-// карточки (prop `collections`/`items` непустой) — рендерим реальные карточки
-// (фото + подпись) БЕЗ изменений исходного layout. Гейт = наличие выбранных
-// items (паритет theme-base Collections DEMO_COLLECTIONS на hasManualCollections).
+// ОЖИВЛЕНИЕ Puk (figmaType=Collections — контракт rose/bloom Collections.astro,
+// theme-base Collections.astro). Раньше секция была статическим мок-демо
+// верстальщика. Теперь — паритет канон-секции «Список коллекций» (Figma 1:19335):
+//
+//  • ПУСТОЕ состояние (пикер пуст) = ДОСЛОВНЫЙ плейсхолдер: заголовок «Список
+//    коллекций» (всегда, не только при заданном пропе) + 3 пустые surface-карточки
+//    (bg rgb(var(--color-surface)) ≈ #FBFBFB) с подписью «Коллекция». НЕ мок-фото
+//    верстальщика. Реальные коллекции магазина подменяют их гидрацией
+//    autofillCollections (ниже) — паритет bloom Collections.
+//  • Мерчант ВЫБРАЛ коллекции (prop `collections`[]/`items`[] с collectionId) →
+//    рендерим реальные карточки; имя/обложку резолвим SSR-фетчем по collectionId
+//    (эталон rose Popular.astro / bloom Collections.astro: p.siteId → fetch
+//    /api/sites/<id>/storefront-data), чтобы их видело и ПРЕВЬЮ конструктора.
+//    Живая гидрация (data-collection-ref) освежает данные на live.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Заголовок/подзаголовок: рендерим только при заданном пропе (мок-строки
-// «АКЦИЯ ПУКНИ…» / «ПУК ПУК ПУК» удалены как демо верстальщика).
+// Figma 1:19335 — ПУСТОЕ состояние секции «Список коллекций»: дословный заголовок
+// «Список коллекций» (рендерится ВСЕГДА). Мерчант задал свой heading/title → его.
 const sectionTitle =
   (typeof p.heading === 'string' ? p.heading : p.heading?.text) ??
-  (typeof p.title === 'string' ? p.title : undefined);
+  (typeof p.title === 'string' ? p.title : undefined) ??
+  'Список коллекций';
+// Подзаголовка у верстальщика НЕТ — рендер ТОЛЬКО при непустом пропе.
 const sectionSubtitle =
   (typeof p.subtitle === 'string' && p.subtitle.trim() ? p.subtitle : undefined) ??
-  (typeof p.text === 'string' ? p.text : p.text?.content) ??
-  undefined;
-
-// Реальные карточки (выбор мерчанта). Принимаем `collections` или `items`
-// (массив { id?, title/name/heading, image }). Непустой → курированный рендер.
-type PukCard = { id?: string; title: string; image: string };
-const rawItems: any[] = Array.isArray(p.collections)
-  ? p.collections
-  : Array.isArray(p.items)
-    ? p.items
-    : [];
-const selectedCards: PukCard[] = rawItems
-  .map((it) => ({
-    id: typeof it?.id === 'string' ? it.id : undefined,
-    title: it?.title ?? it?.name ?? it?.heading ?? '',
-    image: it?.image ?? it?.imageUrl ?? it?.images?.[0] ?? '',
-  }))
-  // карточка курирована, если у неё есть картинка (паритет «гейт на изображениях»)
-  .filter((c) => typeof c.image === 'string' && c.image.trim().length > 0);
-
-const hasCurated = selectedCards.length > 0;
+  (typeof p.text === 'string' && p.text.trim()
+    ? p.text
+    : typeof p.text?.content === 'string' && p.text.content.trim()
+      ? p.text.content
+      : undefined);
 
 // КОНТРАКТ-ПЛЕЙСХОЛДЕР (Figma 1:19335 / theme-base Collections.astro
 // DEMO_COLLECTIONS): пустой выбор → НЕ мок-фото верстальщика, а 3 пустые
@@ -51,57 +40,235 @@ const PLACEHOLDER_COLLECTIONS: { title: string }[] = [
   { title: 'Коллекция' },
   { title: 'Коллекция' },
 ];
+
+// Реальные карточки (выбор мерчанта). Принимаем `collections` или `items`
+// (массив { collectionId?/id?, title/name/heading, image }). Гейт курирования =
+// наличие collectionId (паритет Collections.astro), а не картинки.
+const cardLinkBase =
+  typeof p.cardLinkBase === 'string' && p.cardLinkBase.trim() ? p.cardLinkBase : '/catalog?collection=';
+const rawItems: any[] = Array.isArray(p.collections)
+  ? p.collections
+  : Array.isArray(p.items)
+    ? p.items
+    : [];
+const propCollections = rawItems
+  .filter((c: any) => c && typeof c === 'object')
+  .slice(0, 10)
+  .map((c: any) => {
+    const collectionId =
+      (typeof c.collectionId === 'string' && c.collectionId.trim() && c.collectionId.trim()) ||
+      (typeof c.id === 'string' && c.id.trim() && c.id.trim()) ||
+      null;
+    return {
+      collectionId,
+      title:
+        (typeof c.heading === 'string' && c.heading) ||
+        (typeof c.title === 'string' && c.title) ||
+        (typeof c.name === 'string' && c.name) ||
+        'Коллекция',
+      // Плейсхолдер пустого состояния (Figma 1:19335): карточка без выбранной
+      // картинки = ПУСТАЯ surface-плитка. На live/SSR (data-collection-ref /
+      // SSR-резолв ниже) подставится реальное фото коллекции.
+      image:
+        (typeof c.image === 'string' && c.image) ||
+        (typeof c.imageUrl === 'string' && c.imageUrl) ||
+        (Array.isArray(c.images) && typeof c.images[0] === 'string' ? c.images[0] : '') ||
+        '',
+      hasOwnImage: !!(
+        (typeof c.image === 'string' && c.image) ||
+        (typeof c.imageUrl === 'string' && c.imageUrl) ||
+        (Array.isArray(c.images) && c.images[0])
+      ),
+      href: collectionId ? `${cardLinkBase}${collectionId}` : '#',
+    };
+  });
+const usePropCollections = propCollections.length > 0;
+
+// SSR-резолв реальных коллекций по collectionId (Figma-цель: коллекция ВЫБРАНА →
+// реальное имя/обложка ПРЯМО в статике, чтобы их видело и ПРЕВЬЮ конструктора —
+// Astro Container не исполняет клиентскую module-гидрацию ниже). Эталон —
+// rose Popular.astro / bloom Collections.astro (siteId инжектит рендер-пайплайн
+// preview.service / build). Нет siteId / выбранных collectionId / ошибка →
+// resolved пуст → остаётся SSR (heading/обложка из пропса), живая гидрация ниже
+// освежит данные на live. Паритет theme-base resolveManual: имя коллекции
+// перебивает ручной heading, обложка — только при пустой своей (hasOwnImage).
+const siteId = typeof p.siteId === 'string' ? p.siteId : '';
+const wantResolve = usePropCollections && propCollections.some((c) => c.collectionId);
+const resolvedCols = new Map<string, { name?: string; image?: string }>();
+if (wantResolve && siteId) {
+  try {
+    const base = (import.meta as any).env?.SITES_INTERNAL_BASE ?? 'http://localhost:3114';
+    const res = await fetch(`${base}/api/sites/${siteId}/storefront-data`).catch(() => null);
+    if (res && res.ok) {
+      const data: any = await res.json();
+      const cols: any[] = Array.isArray(data?.collections) ? data.collections : [];
+      for (const c of propCollections) {
+        if (!c.collectionId) continue;
+        const m = cols.find(
+          (x) =>
+            x &&
+            (x.id === c.collectionId ||
+              x.slug === c.collectionId ||
+              x.name === c.collectionId ||
+              x.handle === c.collectionId),
+        );
+        if (!m) continue;
+        const cover =
+          (typeof m.image === 'string' && m.image) ||
+          (Array.isArray(m.images) && typeof m.images[0] === 'string' ? m.images[0] : '');
+        resolvedCols.set(c.collectionId, {
+          name: typeof m.name === 'string' ? m.name : undefined,
+          image: cover || undefined,
+        });
+      }
+    }
+  } catch {
+    /* нет данных — остаётся SSR из пропса, гидрация освежит на live */
+  }
+}
+// Применяем резолв к карточкам пропса: реальное имя перебивает ручной heading,
+// обложка — только если мерчант не загрузил свою.
+const resolvedCollections = propCollections.map((c) => {
+  const r = c.collectionId ? resolvedCols.get(c.collectionId) : undefined;
+  if (!r) return c;
+  return {
+    ...c,
+    title: r.name || c.title,
+    image: c.hasOwnImage ? c.image : r.image || c.image,
+  };
+});
 ---
 
 <section class="puk-section" data-puck-component-id={id} data-block="puk">
   <div class="puk-container">
-    {(sectionTitle || sectionSubtitle) && (
-      <div class="puk-header">
-        {sectionTitle && (
-          <h2
-            class="puk-title"
-            data-puck-subsection-parent={id}
-            data-puck-subsection-index="100"
-            data-puck-subsection-field="heading"
-          >{sectionTitle}</h2>
-        )}
-        {sectionSubtitle && <p class="puk-subtitle">{sectionSubtitle}</p>}
-      </div>
-    )}
+    <div class="puk-header">
+      <h2
+        class="puk-title"
+        data-puck-subsection-parent={id}
+        data-puck-subsection-index="100"
+        data-puck-subsection-field="heading"
+      >{sectionTitle}</h2>
+      {sectionSubtitle && <p class="puk-subtitle">{sectionSubtitle}</p>}
+    </div>
 
-    <div class="puk-grid">
-      {hasCurated
-        ? selectedCards.map((item, i) => (
-            <div
-              class="puk-card"
+    <div class="puk-grid" data-collections-autofill={!usePropCollections ? '' : undefined}>
+      {usePropCollections
+        ? resolvedCollections.map((item, i) => (
+            <a
+              href={item.href}
+              class="puk-card group"
+              aria-label={item.title}
+              data-nt="puk-collection-card"
+              data-collection-ref={item.collectionId ?? undefined}
+              data-own-image={item.hasOwnImage ? 'true' : undefined}
               data-puck-subsection-parent={id}
               data-puck-subsection-index={i}
               data-puck-subsection-field="collections"
             >
-              <div class="puk-image-wrapper">
-                <BloomPicture
-                  src={item.image}
-                  alt={item.title}
-                  class="puk-image"
-                  loading="lazy"
-                />
+              <div class="puk-image-wrapper" aria-hidden={item.image ? undefined : 'true'}>
+                {item.image && (
+                  <img src={item.image} alt={item.title} class="puk-image" loading="lazy" />
+                )}
               </div>
               <div class="puk-text">
-                <p>{item.title}</p>
+                <p class="puk-collection-name">{item.title}</p>
               </div>
-            </div>
+            </a>
           ))
         : PLACEHOLDER_COLLECTIONS.map((ph) => (
             <div class="puk-card" data-nt="puk-placeholder">
               <div class="puk-image-wrapper puk-image-placeholder" aria-hidden="true"></div>
               <div class="puk-text">
-                <p>{ph.title}</p>
+                <p class="puk-collection-name">{ph.title}</p>
               </div>
             </div>
           ))}
     </div>
   </div>
 </section>
+
+<script>
+  import { loadRealCollections, findCollection, escapeHtml } from '../../lib/storefront-hydrate';
+
+  // Резолв collectionId→имя/обложка на карточках (data-collection-ref).
+  // Паритет theme-base resolveManual: имя коллекции перебивает ручной heading;
+  // обложка коллекции подставляется, только если мерчант не загрузил свою
+  // (data-own-image). Без данных (demo-сборка) — no-op, SSG остаётся.
+  const hydrateCollectionTiles = async () => {
+    const tiles = Array.from(
+      document.querySelectorAll<HTMLElement>('[data-nt="puk-collection-card"][data-collection-ref]'),
+    );
+    if (tiles.length === 0) return;
+    const collections = await loadRealCollections();
+    if (!collections) return;
+    for (const tile of tiles) {
+      const col = findCollection(collections, tile.getAttribute('data-collection-ref'));
+      if (!col) continue;
+      if (col.name) {
+        const h = tile.querySelector('.puk-collection-name');
+        if (h && h.textContent !== col.name) h.textContent = col.name;
+        tile.setAttribute('aria-label', col.name);
+      }
+      const cover = col.image || (Array.isArray(col.images) ? col.images[0] : '');
+      if (cover && tile.getAttribute('data-own-image') !== 'true') {
+        const wrapper = tile.querySelector('.puk-image-wrapper');
+        if (wrapper) {
+          let img = wrapper.querySelector('img');
+          if (!img) {
+            img = document.createElement('img');
+            img.className = 'puk-image';
+            img.setAttribute('loading', 'lazy');
+            wrapper.removeAttribute('aria-hidden');
+            wrapper.appendChild(img);
+          }
+          if (img.getAttribute('src') !== cover) {
+            img.setAttribute('src', cover);
+            if (col.name) img.setAttribute('alt', col.name);
+          }
+        }
+      }
+    }
+  };
+
+  // АВТОПОДСТАНОВКА: пустой пикер (SSR = плейсхолдер-карточки «Коллекция») →
+  // реальные коллекции магазина из /data/collections.json (live) / storefront-data
+  // (превью). Явный выбор в пикере имеет приоритет (грид не помечен
+  // data-collections-autofill). Реальных нет (demo-сборка без collections.json) →
+  // no-op, плейсхолдер остаётся (контракт-заглушка Figma 1:19335, НЕ мок-фото
+  // верстальщика). Обложка: своя картинка коллекции, иначе ПУСТАЯ surface-плитка
+  // (паритет rose/bloom Collections — не дизайнерский мок верстальщика).
+  const autofillCollections = async () => {
+    const grids = Array.from(document.querySelectorAll<HTMLElement>('[data-collections-autofill]'));
+    if (grids.length === 0) return;
+    const collections = await loadRealCollections();
+    if (!collections || collections.length === 0) return;
+    const visible = collections.filter((c) => c && c.slug !== 'general').slice(0, 6);
+    if (visible.length === 0) return;
+    const html = visible
+      .map((c) => {
+        const name = escapeHtml(c.name || 'Коллекция');
+        const ref = c.slug || c.id || '';
+        const href = '/catalog?collection=' + encodeURIComponent(ref);
+        const cover = c.image || (Array.isArray(c.images) ? c.images[0] : '') || '';
+        const media = cover
+          ? `<img src="${escapeHtml(cover)}" alt="${name}" class="puk-image" loading="lazy" />`
+          : '';
+        return `<a href="${href}" class="puk-card group" aria-label="${name}" data-nt="puk-collection-card">
+        <div class="puk-image-wrapper"${cover ? '' : ' aria-hidden="true"'}>${media}</div>
+        <div class="puk-text"><p class="puk-collection-name">${name}</p></div>
+      </a>`;
+      })
+      .join('');
+    for (const grid of grids) grid.innerHTML = html;
+  };
+
+  hydrateCollectionTiles();
+  autofillCollections();
+  document.addEventListener('astro:page-load', () => {
+    hydrateCollectionTiles();
+    autofillCollections();
+  });
+</script>
 
 <style>
   .puk-section {
@@ -150,19 +317,30 @@ const PLACEHOLDER_COLLECTIONS: { title: string }[] = [
     justify-items: center;
   }
 
+  /* Карточка коллекции = ссылка (курированные / autofill) или div
+     (плейсхолдер пустого состояния). Сброс стилей ссылки. */
   .puk-card {
     display: flex;
     flex-direction: column;
     gap: 25px;
     width: 100%;
     max-width: 430px;
+    text-decoration: none;
+    color: inherit;
   }
 
+  a.puk-card {
+    cursor: pointer;
+  }
+
+  /* Surface-подложка плитки: видна и пока обложка выбранной коллекции
+     не загрузилась (паритет bloom Collections bg-[rgb(var(--color-surface))]). */
   .puk-image-wrapper {
     width: 100%;
     aspect-ratio: 430 / 500;
     overflow: hidden;
     border-radius: 10px;
+    background: rgb(var(--color-surface, 251 251 251));
   }
 
   /* Контракт-плейсхолдер «Список коллекций»: пустой rounded-rect
@@ -176,6 +354,11 @@ const PLACEHOLDER_COLLECTIONS: { title: string }[] = [
     height: 100%;
     object-fit: cover;
     display: block;
+    transition: transform 0.5s ease-out;
+  }
+
+  a.puk-card:hover .puk-image {
+    transform: scale(1.05);
   }
 
   .puk-text {
@@ -189,8 +372,13 @@ const PLACEHOLDER_COLLECTIONS: { title: string }[] = [
     font-size: 24px;
     font-weight: 400;
     line-height: 1.366;
-    color: #000000;
+    color: rgb(var(--color-text, 0 0 0));
     margin: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  a.puk-card:hover .puk-text p {
+    opacity: 0.7;
   }
 
   /* Tablet */

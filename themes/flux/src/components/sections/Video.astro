@@ -1,6 +1,4 @@
 ---
-import FluxPicture from "../img/FluxPicture.astro";
-
 // Фаза B (flux, группа misc): новая канон-секция Video в манере flux (см.
 // themes/flux/MANNER.md §2/§4; rose-эталона НЕТ — эталон процесса bloom Video).
 // Схема полей = packages/theme-base/blocks/Video/Video.puckConfig.ts. Медиа
@@ -15,25 +13,32 @@ const id = p.id;
 const rawVideoUrl =
 	typeof p.video?.url === "string" ? p.video.url : typeof p.videoUrl === "string" ? p.videoUrl : "";
 const videoUrl = rawVideoUrl.startsWith("blob:") ? "" : rawVideoUrl;
-// Канон poster (+ video.coverImage); пусто и без видео → постер-заглушка
-// /images/hero-flux.png (реальный ассет темы) на медиа-подложке.
-// FluxPicture (манера §4) — только для ассета темы: у него гарантирован
-// соимённый .webp; для пользовательского постера — простой <img> (битый
-// <source> у <picture> не фоллбечится на <img>).
+// Канон poster (+ video.coverImage). Когда мерчант НЕ загрузил ни видео, ни
+// обложку — пустое состояние = Figma-плейсхолдер (1:19335, контракт картиночных
+// секций): дизайн-ассет /placeholders/landscape-video.png (НЕ пустой surface-rect
+// и НЕ мок верстальщика — картинка показывается ВСЕГДА) + Play-иконка по центру
+// (см. ниже). Пользовательский постер/фолбэк рендерим простым <img> (битый
+// <source> у <picture> не фоллбечится на <img>; FluxPicture — только для
+// соимённых .webp ассетов темы, которых тут больше нет).
 const poster =
 	(typeof p.video?.coverImage === "string" && p.video.coverImage ? p.video.coverImage : undefined) ??
 	(typeof p.poster === "string" && p.poster ? p.poster : undefined);
-const placeholderPoster = poster ?? "/images/hero-flux.png";
-const placeholderIsThemeAsset = !poster;
+// Обложка медиа-блока без видео: постер мерчанта, иначе дизайн-плейсхолдер темы
+// (раздаётся на каждой теме как /placeholders/landscape-video.png).
+const posterFallback = poster ?? "/placeholders/landscape-video.png";
 
 // Канон heading + pupa content.heading{text, alignment, enabled, size} — рендер
-// при непустом тексте И enabled !== 'false'. Роль = внутренний h2 §1
-// (Comfortaa uppercase leading-[1.115], токен heading с фоллбеком чёрного).
+// при enabled !== 'false'. Роль = внутренний h2 §1 (Comfortaa uppercase
+// leading-[1.115], токен heading с фоллбеком чёрного). Figma 1:19335 — ДОСЛОВНЫЙ
+// плейсхолдер пустого состояния Video: заголовок «Видео» НАД медиа-блоком.
+// Дефолт = «Видео» (паттерн bloom Video / rose Popular `?? "<Figma>"`); мерчант
+// задал свой heading → рендерим ЕГО (fallback только при пустом тексте).
 const headingRaw = p.heading ?? p.content?.heading;
-const headingText =
+const headingRawText =
 	typeof headingRaw === "string" ? headingRaw : ((headingRaw?.text as string | undefined) ?? "");
+const headingText = headingRawText.trim() ? headingRawText : "Видео";
 const headingEnabled = String(p.content?.heading?.enabled ?? "true") !== "false";
-const showHeading = Boolean(headingText.trim()) && headingEnabled;
+const showHeading = headingEnabled;
 // Канон size (панель «Размер заголовка») + дубли headingSize / heading.size /
 // content.heading.size. Лестница §9 внутреннего h2 (дефолт роли — large):
 // отсутствие и large = литерал 24/md:28; medium 20/24, small 17/20.
@@ -124,21 +129,41 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 						preload="metadata"
 						class="absolute inset-0 size-full object-cover"
 					/>
-				) : placeholderIsThemeAsset ? (
-					<FluxPicture
-						src={placeholderPoster}
-						alt=""
-						loading="lazy"
-						class="absolute inset-0 size-full object-cover"
-					/>
-				) : (
+				) : poster ? (
 					<img
-						src={placeholderPoster}
+						src={poster}
 						alt=""
 						aria-hidden="true"
 						loading="lazy"
 						class="absolute inset-0 size-full object-cover"
 					/>
+				) : (
+					/* Пустое состояние (Figma 1:19335, контракт картиночных секций):
+					   без видео и без обложки — дизайн-ассет /placeholders/landscape-
+					   video.png (картинка показывается ВСЕГДА, НЕ пустой surface) +
+					   Play-иконка по центру поверх. Сырой <img> (не FluxPicture — у
+					   плейсхолдера нет соимённого .webp, <picture> не откатился бы на
+					   <img>). Цвета play-иконки — токены темы на SVG-узлах: контраст
+					   круг/стрелка гарантирован в любой схеме (не зависит от JIT). */
+					<>
+						<img
+							src={posterFallback}
+							alt=""
+							aria-hidden="true"
+							loading="lazy"
+							class="absolute inset-0 size-full object-cover"
+						/>
+						<div
+							class="pointer-events-none absolute inset-0 flex items-center justify-center"
+							aria-hidden="true"
+							data-media-placeholder
+						>
+							<svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+								<circle cx="32" cy="32" r="32" style="fill:rgb(var(--color-heading,0_0_0))" />
+								<path d="M27 22L43 32L27 42V22Z" style="fill:rgb(var(--color-bg,255_255_255))" />
+							</svg>
+						</div>
+					</>
 				)
 			}
 			{

@@ -1,26 +1,38 @@
 ---
 import NtTextField from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtTextField.astro";
+import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
 
-// Канон ContactForm (flux) — приведено к виду rose Contacts по требованию продакта:
-// секция рендерит ТОЛЬКО форму обратной связи (Имя / Email / Сообщение + кнопка).
-// Заголовок «Контакты», блок контактных данных (телефон/e-mail) и подзаголовок
-// «Остались вопросы?» убраны. Телефон в форме убран — три поля: Имя/Email/Сообщение.
+// ОЖИВЛЕНИЕ: канон-схема ContactForm (flux). Секция рендерит форму обратной связи.
+// Схема описывает поля ФОРМЫ. Когда мерчант настроил поля (fields-проп) —
+// рендерим ИХ канон-семантикой; пустое состояние = ДОСЛОВНЫЙ Figma-плейсхолдер
+// (см. ниже), а не форма-демо верстальщика. Эталон — rose Contacts.astro.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Канон fields {name,email,message} (каждое {enabled,required,label}). phone
-// больше не входит в форму (требование продакта, паритет rose). Фоллбеки —
-// канон-дефолты puckConfig: name/email required, message optional.
+// Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер ПУСТОГО состояния ContactForm: заголовок
+// «Контактная форма» + поля «Имя» / «Email» / «Номер телефона» / «Комментарий» +
+// кнопка «Отправить». Заголовок берём из пропса (heading), если мерчант задал свой,
+// иначе — дословный Figma-литерал.
+const placeholderHeading =
+	(typeof p.heading?.text === "string" && p.heading.text) ||
+	(typeof p.heading === "string" && p.heading) ||
+	"Контактная форма";
+
+// Канон fields {name,email,phone,message} (каждое {enabled,required,label}) —
+// проп-ветка рендерит поля канон-семантикой (фоллбеки частичного объекта =
+// канон-дефолты puckConfig: phone disabled, name/email required). Отсутствие
+// fields = ДОСЛОВНЫЙ Figma-плейсхолдер: Имя / Email / Номер телефона / Комментарий.
 const toBool = (v: any, fb: boolean): boolean =>
 	typeof v === "boolean" ? v : v === "true" ? true : v === "false" ? false : fb;
 const CANON_FIELDS = {
 	name: { enabled: true, required: true, label: "Имя" },
 	email: { enabled: true, required: true, label: "Email" },
+	phone: { enabled: false, required: false, label: "Телефон" },
 	message: { enabled: true, required: false, label: "Сообщение" },
 };
 const fieldsProp =
 	p.fields && typeof p.fields === "object" && !Array.isArray(p.fields) ? p.fields : undefined;
-const resolveField = (key: "name" | "email" | "message") => {
+const resolveField = (key: "name" | "email" | "phone" | "message") => {
 	const def = (CANON_FIELDS as any)[key];
 	const f = fieldsProp?.[key];
 	return {
@@ -33,6 +45,7 @@ const formFields = fieldsProp
 	? {
 			name: resolveField("name"),
 			email: resolveField("email"),
+			phone: resolveField("phone"),
 			message: resolveField("message"),
 		}
 	: undefined;
@@ -47,11 +60,16 @@ const paddingStyle = p.padding
 
 <section
 	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-[60px] pt-12 md:px-20 md:pb-[80px] md:pt-20 2xl:px-[300px]"
-	aria-label="Форма обратной связи"
+	aria-labelledby="contacts-title"
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	<div class="mx-auto flex w-full max-w-[1320px] flex-col">
+	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
+		{/* Figma 1:19335: дословный заголовок секции «Контактная форма» (раньше шапки
+		    не было). Мерчант задал свой heading → рендерим ЕГО (placeholderHeading). */}
+		<div class="flex w-full justify-center" data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">
+			<NtSectionHeading titleId="contacts-title" title={placeholderHeading} />
+		</div>
 		<form
 			class="grid grid-cols-1 gap-6 lg:grid-cols-[430px_1fr] lg:items-start lg:gap-10"
 			data-contacts-form
@@ -105,11 +123,35 @@ const paddingStyle = p.padding
 							</div>
 						</div>
 					)}
+					{formFields.phone.enabled && (
+						<div
+							class="flex w-full max-w-[430px] flex-col gap-2"
+							data-nt="text-field"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index={2}
+							data-puck-subsection-field="fields"
+						>
+							<label for="nt-field-phone" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
+								{formFields.phone.label}{formFields.phone.required && <span class="ml-1 text-[rgb(var(--color-error,255_148_148))]">*</span>}
+							</label>
+							<div class="relative w-full">
+								<input
+									id="nt-field-phone"
+									name="phone"
+									type="tel"
+									autocomplete="tel"
+									required={formFields.phone.required}
+									class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-field,4px)] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
+								/>
+							</div>
+						</div>
+					)}
 				</div>
 			) : (
 				<div class="flex flex-col gap-4">
 					<NtTextField label="Имя" name="name" autocomplete="name" />
-					<NtTextField label="E-mail" name="email" type="email" autocomplete="email" />
+					<NtTextField label="Email" name="email" type="email" autocomplete="email" />
+					<NtTextField label="Номер телефона" name="phone" type="tel" autocomplete="tel" />
 				</div>
 			)}
 
@@ -118,7 +160,7 @@ const paddingStyle = p.padding
 					<div
 						class="flex flex-col gap-2"
 						data-puck-subsection-parent={id}
-						data-puck-subsection-index={2}
+						data-puck-subsection-index={3}
 						data-puck-subsection-field="fields"
 					>
 						<label for="contacts-question" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
@@ -136,7 +178,7 @@ const paddingStyle = p.padding
 			) : (
 				<div class="flex flex-col gap-2">
 					<label for="contacts-question" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
-						Ваш вопрос
+						Комментарий
 					</label>
 					<textarea
 						id="contacts-question"
@@ -181,3 +223,19 @@ const paddingStyle = p.padding
 		form.reset();
 	});
 </script>
+
+<style>
+	/* Figma 375: section title Comfortaa 14 на мобиле (как Collections/Popular).
+	   NtSectionHeading не пробрасывает class на h2 — задаём через ID-правило. */
+	@media (max-width: 639.98px) {
+		:global(#contacts-title) {
+			font-size: 14px !important;
+			line-height: 1 !important;
+		}
+
+		:global([data-nt="section-heading"]) {
+			max-width: 100% !important;
+			width: 100% !important;
+		}
+	}
+</style>

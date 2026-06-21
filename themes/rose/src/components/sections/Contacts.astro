@@ -1,12 +1,22 @@
 ---
 import NtTextField from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtTextField.astro";
+import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
 
-// ОЖИВЛЕНИЕ: канон-схема ContactForm. Секция рендерит ТОЛЬКО форму обратной связи
-// (имя / email / сообщение + кнопка). Заголовок «Контакты», описание, контактные
-// данные (телефон/e-mail) и подзаголовок «Остались вопросы?» убраны по требованию
-// продакта — над инпутами больше ничего нет. Схема описывает поля ФОРМЫ.
+// ОЖИВЛЕНИЕ: канон-схема ContactForm. Секция рендерит форму обратной связи.
+// Схема описывает поля ФОРМЫ. Когда мерчант настроил поля (fields-проп) —
+// рендерим ИХ канон-семантикой; пустое состояние = ДОСЛОВНЫЙ Figma-плейсхолдер
+// (см. ниже), а не форма-демо верстальщика.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+
+// Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер ПУСТОГО состояния ContactForm: заголовок
+// «Контактная форма» + поля «Имя» / «Email» / «Номер телефона» / «Комментарий» +
+// кнопка «Отправить». Заголовок берём из пропса (heading), если мерчант задал свой,
+// иначе — дословный Figma-литерал.
+const placeholderHeading =
+	(typeof p.heading?.text === "string" && p.heading.text) ||
+	(typeof p.heading === "string" && p.heading) ||
+	"Контактная форма";
 
 // Канон fields {name,email,phone,message} (каждое {enabled,required,label}) —
 // проп-ветка рендерит поля канон-семантикой (фоллбеки частичного объекта =
@@ -54,11 +64,16 @@ const paddingStyle = p.padding
 
 <section
 	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-[60px] pt-12 sm:px-5 md:px-10 md:pb-[80px] md:pt-20 lg:px-16 xl:px-20 2xl:px-[280px]"
-	aria-label="Форма обратной связи"
+	aria-labelledby="contacts-title"
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	<div class="mx-auto flex w-full max-w-[1320px] flex-col">
+	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
+		{/* Figma 1:19335: дословный заголовок секции «Контактная форма» (раньше шапки
+		    не было). Мерчант задал свой heading → рендерим ЕГО (placeholderHeading). */}
+		<div class="flex w-full justify-center" data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">
+			<NtSectionHeading variant="rose" titleId="contacts-title" title={placeholderHeading} />
+		</div>
 		<div class="flex flex-col">
 			<form
 				class="grid grid-cols-1 gap-6 lg:grid-cols-[430px_1fr] lg:items-start lg:gap-10"
@@ -140,7 +155,8 @@ const paddingStyle = p.padding
 				) : (
 				<div class="flex flex-col gap-4">
 					<NtTextField label="Имя" name="name" autocomplete="name" />
-					<NtTextField label="E-mail" name="email" type="email" autocomplete="email" />
+					<NtTextField label="Email" name="email" type="email" autocomplete="email" />
+					<NtTextField label="Номер телефона" name="phone" type="tel" autocomplete="tel" />
 				</div>
 				)}
 
@@ -167,7 +183,7 @@ const paddingStyle = p.padding
 				) : (
 				<div class="flex flex-col gap-2">
 					<label for="contacts-question" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
-						Ваш вопрос
+						Комментарий
 					</label>
 					<textarea
 						id="contacts-question"
@@ -196,3 +212,19 @@ const paddingStyle = p.padding
 		</div>
 	</div>
 </section>
+
+<style>
+	/* Figma 375: section title Comfortaa 14 на мобиле (как Collections/Popular).
+	   NtSectionHeading не пробрасывает class на h2 — задаём через ID-правило. */
+	@media (max-width: 639.98px) {
+		:global(#contacts-title) {
+			font-size: 14px !important;
+			line-height: 1 !important;
+		}
+
+		:global([data-nt="section-heading"]) {
+			max-width: 100% !important;
+			width: 100% !important;
+		}
+	}
+</style>

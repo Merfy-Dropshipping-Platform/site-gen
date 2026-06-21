@@ -37,14 +37,17 @@ const textAlignCls =
 			? " text-right"
 			: "";
 
-// Канон description (string) + text {content, size} (pupa-дубль): canon-default =
-// литерал подвала «Получайте информацию от нашего бренда» (F:44, Roboto Flex 300
-// 12/14 #999999 → токен muted). Лестница §9 текста рассылки: small 10/11,
+// Канон description (string) + text {content, size} (pupa-дубль). ПУСТОЕ состояние:
+// дословный Figma-плейсхолдер 1:19335 «Узнавайте первыми о новых коллекциях и
+// эксклюзивных предложениях.» (НЕ литерал подвала верстальщика «Получайте
+// информацию от нашего бренда»). Когда мерчант задал description/text.content —
+// рендерим ЕГО (?? fallback срабатывает только при пустых данных). Roboto Flex
+// 300 12/14 #999999 → токен muted. Лестница §9 текста рассылки: small 10/11,
 // medium/отсутствие = литерал 12/14, large 14/17.
 const description =
 	(typeof p.description === "string" && p.description.trim() ? p.description : undefined) ??
 	(typeof p.text?.content === "string" && p.text.content.trim() ? p.text.content : undefined) ??
-	"Получайте информацию от нашего бренда";
+	"Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.";
 const descSize = p.text?.size;
 const descSizeCls =
 	descSize === "small"
@@ -53,15 +56,18 @@ const descSizeCls =
 			? "text-[14px] md:text-[17px]"
 			: "text-[12px] md:text-[14px]";
 
-// Канон placeholder: дефолт = литерал подвала (F:57).
+// Канон placeholder. ПУСТОЕ состояние: дословный Figma-плейсхолдер 1:19335
+// «email@example.com» (как канон theme-base Newsletter.astro), НЕ литерал подвала
+// верстальщика «flux@example.ru». Заданный мерчантом placeholder — рендерим его.
 const placeholder =
-	typeof p.placeholder === "string" && p.placeholder.trim() ? p.placeholder : "flux@example.ru";
+	typeof p.placeholder === "string" && p.placeholder.trim() ? p.placeholder : "email@example.com";
 
-// НЮАНС buttonText: у верстальщика кнопка — ИКОНКА arrow-right (F:61-67).
-// При НЕпустом buttonText рендерим текстовую чёрную кнопку манеры §3 (токены
-// кнопки-2: в схемах flux чёрная кнопка = кнопка-2), иначе иконка-литерал —
-// render-only ветка на существующих данных (новых пропсов не вводим).
-const buttonText = typeof p.buttonText === "string" && p.buttonText.trim() ? p.buttonText : "";
+// Канон buttonText. ПУСТОЕ состояние: дословный Figma-плейсхолдер 1:19335 —
+// текстовая кнопка «Кнопка» (НЕ иконка arrow-right верстальщика F:61-67).
+// Текстовая чёрная кнопка манеры §3 (токены кнопки-2: в схемах flux чёрная
+// кнопка = кнопка-2). Заданный мерчантом buttonText — рендерим его текстом.
+// Иконка-ветка ниже остаётся фолбэком, если data явно зануляет buttonText.
+const buttonText = typeof p.buttonText === "string" && p.buttonText.trim() ? p.buttonText : "Кнопка";
 
 // Канон agreement (toggle 'true'/'false', default 'false'): при 'true' — чекбокс
 // согласия под формой (манера flux: Roboto Flex 300 мелкий muted, акцент

@@ -7,9 +7,13 @@ import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/
 // конструктора (medium/medium/left) → пиксель верстальщика (прецедент T11 'center').
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-const sectionTitle = p.heading?.text ?? p.heading ?? "Снова в наличии!";
+// Пустое состояние (Figma 1:19335) — ДОСЛОВНЫЙ плейсхолдер: заголовок «Галерея»,
+// БЕЗ подзаголовка (в контракте Gallery подзаголовка нет → дефолт пуст, текст
+// верстальщика «Сравнивайте, находите своё…» убран). Заданный мерчантом heading/
+// subtitle рендерится как есть; пустой subtitle → NtSectionHeading его не выводит.
+const sectionTitle = p.heading?.text ?? p.heading ?? "Галерея";
 const sectionSubtitle =
-	p.text?.content ?? p.subtitle?.content ?? p.subtitle ?? "Сравнивайте, находите своё — от культовых моделей до свежих решений для особенных моментов";
+	p.text?.content ?? p.subtitle?.content ?? p.subtitle ?? "";
 
 // Канон headingSize (top-level приоритетнее legacy heading.size): 'medium'
 // (canon-default) и отсутствие = clamp верстальщика (14px→20px) дословно;
@@ -103,11 +107,6 @@ const galleryTiles: GalleryTile[] = (Array.isArray(p.items) ? p.items : [])
 // (data-gallery-product/-collection → имя/цена/картинка из products/collections).
 // Этот путь рендера/гидрации НЕ трогаем — контракт пустого состояния касается
 // только no-items ветки (ниже useItems=false), где раньше был мок верстальщика.
-const TILE_FALLBACKS = [
-	"/images/Изображение_Галерея.webp",
-	"/images/Товар_1.webp",
-	"/images/Коллекция_1.webp",
-];
 // Плейсхолдер (Figma 1:19335): плитка БЕЗ своей картинки = пустая surface-плитка
 // (НЕ мок-фото верстальщика). url остаётся пустым → tile.url-гард рендерит пустую
 // surface; на live гидрация (data-gallery-product/-collection) подставит реальное.
@@ -118,6 +117,10 @@ galleryTiles.forEach((t) => {
 // на live как /placeholders/sweater-blue.png (copyPublic, assemble-from-packages);
 // rose уже ссылается на этот путь строковым литералом (RoseProductDetail.astro).
 const PLACEHOLDER_SWEATER_BLUE = "/placeholders/sweater-blue.png";
+// Большая плитка галереи в пустом состоянии (Figma 1:19335): дизайн-ассет
+// landscape-gallery.png (раздаётся на каждой теме из packages/theme-base/public/
+// placeholders, copyPublic) — НЕ пустая surface и НЕ мок-фото верстальщика.
+const PLACEHOLDER_GALLERY_IMAGE = "/placeholders/landscape-gallery.png";
 const useItems = galleryTiles.length > 0;
 const heroTile = useItems ? galleryTiles[0] : undefined;
 const sideTiles = useItems ? galleryTiles.slice(1) : [];
@@ -166,14 +169,21 @@ const paddingStyle = p.padding
 					)}
 				</a>
 			) : (
-			/* Плейсхолдер пустого состояния (Figma 1:19335): пустой image-rect
-			   (surface fill), без мок-картинки верстальщика «Изображение_Галерея». */
+			/* Плейсхолдер пустого состояния (Figma 1:19335): большая плитка с
+			   дизайн-ассетом landscape-gallery.png (НЕ пустая surface и НЕ мок-картинка
+			   верстальщика «Изображение_Галерея»). */
 			<a
 				href="/catalog"
 				class={`gallery-hero-tile group relative block min-h-[280px] w-full min-w-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] lg:min-h-0 lg:h-full${heroTileOrderCls}`}
 				aria-label="Перейти в каталог"
-				aria-hidden="true"
-			/>
+			>
+				<img
+					src={PLACEHOLDER_GALLERY_IMAGE}
+					alt="Галерея"
+					loading="eager"
+					class="absolute inset-0 !size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
+				/>
+			</a>
 			)}
 
 			{useItems ? sideTiles.length > 0 && (

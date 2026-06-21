@@ -6,10 +6,12 @@
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Канон top-heading: string | { text, alignment, size } (+ legacy _headingLegacy);
-// отсутствие/пусто → шапки нет (canon-defaults heading не пишут).
+// Канон top-heading: string | { text, alignment, size } (+ legacy _headingLegacy).
+// Figma 1:19335 — ПУСТОЕ состояние секции «Мультиряды»: дословный заголовок
+// «Мультиряды» (а НЕ отсутствие шапки/дефолт-копирайт верстальщика). Мерчант задал
+// свой heading → его и рендерим.
 const heading =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p._headingLegacy ?? "";
+	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p._headingLegacy ?? "Мультиряды";
 // Размер — через --size-section-heading (её читает .rose-title); !text-[ не работает.
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
@@ -29,24 +31,31 @@ const headingCls = `rose-title${headingSizeCls}${headingAlignCls}`;
 
 // Канон rows[] 1-10 (item: heading|title, text|description, imageUrl|image,
 // imagePosition, button{text,href|link}, size/width, headingSize/textSize).
-// Отсутствие массива = canon-defaults (2 ряда-болванки, чередование).
-const CANON_ROWS = [
+// Figma 1:19335 — ПУСТОЕ состояние секции: ряды-плейсхолдеры (дизайн-ассет
+// /placeholders/landscape-multirows-image.png в плитке + дословный текст
+// «Изображение с текстом» / «Покажи и расскажи о своем товаре в одном блоке» +
+// кнопка «Кнопка»), а НЕ дефолт-контент верстальщика («Первый/Второй ряд»,
+// «Описание…», «Подробнее»/«Узнать больше») и НЕ пустая surface. Ассет раздаётся
+// на каждой теме из packages/theme-base/public/placeholders (copyPublic). Мерчант
+// задал rows → его и рендерим (поведение ниже не меняется).
+const PLACEHOLDER_ROW_IMAGE = "/placeholders/landscape-multirows-image.png";
+const PLACEHOLDER_ROWS = [
 	{
 		id: "row-1",
-		heading: "Первый ряд",
-		text: "Описание первого ряда. Изображение слева.",
-		imageUrl: "",
-		button: { text: "Подробнее", href: "/about" },
+		heading: "Изображение с текстом",
+		text: "Покажи и расскажи о своем товаре в одном блоке",
+		imageUrl: PLACEHOLDER_ROW_IMAGE,
+		button: { text: "Кнопка", href: "/catalog" },
 	},
 	{
 		id: "row-2",
-		heading: "Второй ряд",
-		text: "Описание второго ряда. Изображение справа.",
-		imageUrl: "",
-		button: { text: "Узнать больше", href: "/about" },
+		heading: "Изображение с текстом",
+		text: "Покажи и расскажи о своем товаре в одном блоке",
+		imageUrl: PLACEHOLDER_ROW_IMAGE,
+		button: { text: "Кнопка", href: "/catalog" },
 	},
 ];
-const rawRows = Array.isArray(p.rows) && p.rows.length ? p.rows : CANON_ROWS;
+const rawRows = Array.isArray(p.rows) && p.rows.length ? p.rows : PLACEHOLDER_ROWS;
 
 // Канон rowsPosition: left | right — все картинки принудительно с одной стороны;
 // alternate / отсутствие (дефолт) — СТРОГОЕ чередование по индексу (чётный → фото
@@ -61,13 +70,10 @@ const rowsPosition =
 const aspectFor = (s: string | undefined) =>
 	s === "small" ? "aspect-[429/309]" : s === "large" ? "aspect-[430/500]" : "aspect-[429/444]";
 
-// Канон-плейсхолдер = реальный ассет темы (принцип T15): ряд без фото получает
-// ассет верстальщика по позиции — «добавил секцию → сразу красиво».
-const ROW_FALLBACKS = [
-	"/images/Изображение_Галерея.webp",
-	"/images/Товар_5.webp",
-	"/images/Коллекция_2.webp",
-];
+// Плейсхолдер пустого состояния (Figma 1:19335): ряд без выбранной картинки несёт
+// дизайн-ассет landscape-multirows-image.png (PLACEHOLDER_ROWS выше), а реальный ряд
+// мерчанта без картинки → пустая surface-плитка (image='' → <img> не рендерится,
+// контейнер ниже имеет bg-surface). На live мерчант грузит своё фото.
 const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 	const btnText =
 		typeof r.button?.text === "string" && r.button.text.trim() ? r.button.text : undefined;

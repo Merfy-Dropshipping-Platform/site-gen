@@ -12,12 +12,14 @@ import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Канон heading: string | { text, alignment, size }; canon-default «Часто
-// задаваемые вопросы» (его пишет коэрсер — у верстальщика шапки НЕТ), рендер
-// при непустом. Роль = заголовок секции §1 (font-logo 20 uppercase
-// leading-[1.15], TextBlock.astro:15), токен heading с фоллбеком 0_0_0.
+// Канон heading: string | { text, alignment, size }. Figma 1:19335 — ПУСТОЕ
+// состояние секции «Сворачиваемый раздел»: дословный заголовок-плейсхолдер
+// «Сворачиваемый раздел» (а НЕ дефолт-копирайт коэрсера/верстальщика «Часто
+// задаваемые вопросы»). Роль = заголовок секции §1 (font-logo 20 uppercase
+// leading-[1.15], TextBlock.astro:15), токен heading с фоллбеком 0_0_0. Мерчант
+// задал свой heading → его и рендерим (?? срабатывает только при пустых данных).
 const heading =
-	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Часто задаваемые вопросы");
+	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Сворачиваемый раздел");
 // Лестница §9 «Заголовок секции» (база-литерал 20 = canon-default medium): small 17, large 24.
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
@@ -44,12 +46,12 @@ const summarySizeCls =
 // Канон sections[] 1-10 {heading, content} (+ pupa items[] {title, content}).
 // Curated-модель (как theme-base PopularProducts/Collections, эталон процесса —
 // bloom CollapsibleSection): секция показывает реальные пункты ТОЛЬКО когда
-// мерчант их добавил. Гейт = наличие sections/items в пропах. Пусто →
-// ПЛЕЙСХОЛДЕР пустого состояния (Figma 1:19335) «Раздел» + «Ответь на самые
-// популярные вопросы клиентов», НЕ мок-демо верстальщика (3 FAQ из Faq.astro).
-// content — set:html.
+// мерчант их добавил. Гейт = наличие sections/items в пропах. Пусто → Figma
+// 1:19335 ПУСТОЕ состояние: дословный ряд-плейсхолдер «Раздел» + хелпер-текст
+// «Ответь на самые популярные вопросы клиентов» (а НЕ мок-демо верстальщика — 3
+// FAQ из Faq.astro). Один DEMO-ряд (паритет bloom), без интерактивного
+// <details> — реального ответа нет, помощь видна сразу. content — set:html.
 const PLACEHOLDER_SECTIONS = [
-	{ heading: "Раздел", content: "Ответь на самые популярные вопросы клиентов" },
 	{ heading: "Раздел", content: "Ответь на самые популярные вопросы клиентов" },
 ];
 const realSections =
@@ -59,6 +61,7 @@ const realSections =
 			? p.items
 			: null;
 const hasRealSections = realSections !== null;
+const isPlaceholder = !hasRealSections;
 const rawSections = hasRealSections ? realSections : PLACEHOLDER_SECTIONS;
 const sections = rawSections.slice(0, 10).map((s: any) => ({
 	heading:
@@ -113,29 +116,48 @@ const titleId = id && heading ? `${id}-title` : undefined;
 			{/* Волосок #DDDDDD → канон-приём прозрачности от токена текста (≈ #DDD на белом). */}
 			<div class="flex flex-col divide-y divide-[rgb(var(--color-text,0_0_0)/13%)]">
 				{
-					sections.map((s, i) => (
-						<details
-							class="group py-5"
-							open={i === 0}
-							data-faq-item
-							data-puck-subsection-parent={hasRealSections ? id : undefined}
-							data-puck-subsection-index={hasRealSections ? i : undefined}
-							data-puck-subsection-field={hasRealSections ? "sections" : undefined}
-						>
-							<summary class="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+					sections.map((s, i) =>
+						isPlaceholder ? (
+							/* Figma 1:19335 ПУСТОЕ состояние: дословный ряд-плейсхолдер —
+							   лейбл «Раздел» (роль заголовка-аккордеона) + хелпер-текст
+							   «Ответь на самые популярные вопросы клиентов». Без
+							   интерактивного <details> / data-faq-item: реального ответа
+							   нет, помощь видна сразу (паритет bloom CollapsibleSection,
+							   паттерн пустого состояния Collections/MultiRows). Иконка plus
+							   сохранена для вида. */
+							<div class="flex w-full flex-col gap-3 py-5">
 								<div
 									class={`flex w-full items-center justify-between gap-4 font-logo ${summarySizeCls} font-normal uppercase leading-[1.2] text-[rgb(var(--color-heading,0_0_0))]`}
 								>
-									<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
-									<NtIcon name="plus" sizeClass="size-8" class="shrink-0 group-open:hidden" />
-									<NtIcon name="minus" sizeClass="size-8" class="hidden shrink-0 group-open:block" />
+									<span class="min-w-0 flex-1 break-words">{s.heading}</span>
+									<NtIcon name="plus" sizeClass="size-8" class="shrink-0" />
 								</div>
-							</summary>
-							<div class="overflow-hidden" data-faq-answer>
-								<div class="satin-copy mt-3 max-w-[1100px]" set:html={s.content} />
+								<div class="satin-copy max-w-[1100px]">{s.content}</div>
 							</div>
-						</details>
-					))
+						) : (
+							<details
+								class="group py-5"
+								open={i === 0}
+								data-faq-item
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index={i}
+								data-puck-subsection-field="sections"
+							>
+								<summary class="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+									<div
+										class={`flex w-full items-center justify-between gap-4 font-logo ${summarySizeCls} font-normal uppercase leading-[1.2] text-[rgb(var(--color-heading,0_0_0))]`}
+									>
+										<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
+										<NtIcon name="plus" sizeClass="size-8" class="shrink-0 group-open:hidden" />
+										<NtIcon name="minus" sizeClass="size-8" class="hidden shrink-0 group-open:block" />
+									</div>
+								</summary>
+								<div class="overflow-hidden" data-faq-answer>
+									<div class="satin-copy mt-3 max-w-[1100px]" set:html={s.content} />
+								</div>
+							</details>
+						),
+					)
 				}
 			</div>
 		</div>

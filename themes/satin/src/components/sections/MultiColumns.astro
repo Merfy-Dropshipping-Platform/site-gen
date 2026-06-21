@@ -3,19 +3,36 @@
 // src/components/sections/Features.astro (тело КОПИЕЙ; оригинал не тронут —
 // index.astro:31 его использует). Схема полей = packages/theme-base/blocks/
 // MultiColumns/MultiColumns.puckConfig.ts; манера — themes/satin/MANNER.md
-// (эталон процесса — bloom MultiColumns). Дефолт-ветка (без columns[]) =
-// 2 карточки-фичи верстальщика VERBATIM (материалы/доставка).
+// (эталон процесса — bloom MultiColumns). Пустое состояние (без columns[]) =
+// ДОСЛОВНЫЙ Figma-плейсхолдер 1:19335 (эталон rose MultiColumns.astro):
+// заголовок «Мультиколонны» + 3 пустые surface-колонки «Колонна» + хелпер
+// «Сочетай текст…» + per-column ссылка «Кнопка». НЕ мок верстальщика
+// (материалы/доставка) и НЕ общая кнопка «Перейти».
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
 import { withBase } from "../../lib/with-base";
 
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
+// Канон columns[] ≤10 (item: heading|title, text|description, imageUrl|image —
+// ИКОНКА 56×56; headingSize/textSize per-item; link {text,href} | flat-пара
+// linkText+link). Отсутствие массива → ПЛЕЙСХОЛДЕР пустого состояния (Figma
+// 1:19335): НЕ мок-демо верстальщика (материалы/доставка), а 3 нейтральные
+// колонки «Колонна». Гейт по наличию реальных данных нужен ещё для шапки
+// (заголовок-плейсхолдер «Мультиколонны»), поэтому объявлен выше. legacy
+// flat-проп items[] {title, body, icon} поддержан алиасами.
+const hasManualColumns =
+	(Array.isArray(p.columns) && p.columns.length > 0) ||
+	(Array.isArray(p.items) && p.items.length > 0);
+
 // Канон heading: string | { text, alignment, size } — у верстальщика шапки НЕТ
 // → рендер ТОЛЬКО при непустом. Роль = заголовок секции §1 (font-logo 20
 // uppercase leading-[1.15], токен heading). Лестница §9: medium/отсутствие =
-// литерал 20, small 17, large 24.
-const heading = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
+// литерал 20, small 17, large 24. В ПУСТОМ состоянии — дословный Figma-лейбл
+// «Мультиколонны» (контракт 1:19335, эталон rose MultiColumns.astro), а не
+// отсутствие шапки. С данными мерчанта — его заголовок (пусто → без шапки).
+const headingRaw = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
+const heading = hasManualColumns ? headingRaw : (headingRaw || "Мультиколонны");
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
 	headingSize === "small" ? "text-[17px]" : headingSize === "large" ? "text-[24px]" : "text-[20px]";
@@ -25,25 +42,14 @@ const headingAlignCls =
 	headingAlignment === "center" ? " text-center" : headingAlignment === "right" ? " text-right" : "";
 const headingCls = `font-logo ${headingSizeCls} font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
 
-// Канон columns[] ≤10 (item: heading|title, text|description, imageUrl|image —
-// ИКОНКА 56×56, литерал Features.astro:34-42; headingSize/textSize per-item;
-// link {text,href} | flat-пара linkText+link). Отсутствие массива → ПЛЕЙСХОЛДЕР
-// пустого состояния (Figma 1:19335, эталон theme-base PopularProducts/Collections
-// DEMO-гейт): НЕ мок-демо верстальщика (материалы/доставка), а 3 нейтральные
-// колонки «Колонна» с поясняющим текстом-плейсхолдером и общей кнопкой. Когда
-// мерчант реально заполнил колонки (columns[]/legacy items[]) — рендер его данных
-// без изменений. legacy flat-проп items[] {title, body, icon} поддержан алиасами.
-const hasManualColumns =
-	(Array.isArray(p.columns) && p.columns.length > 0) ||
-	(Array.isArray(p.items) && p.items.length > 0);
-
-// Плейсхолдер: пустой rect (без иконки-картинки) + «Колонна» + поясняющий текст.
-// Текст-кнопка («Перейти») не задаётся per-column — кнопка плейсхолдера общая
-// снизу (см. btnText ниже).
+// Плейсхолдер колонки (Figma 1:19335): пустой rect (без иконки-картинки) +
+// «Колонна» + поясняющий текст + per-column ссылка-плейсхолдер «Кнопка»
+// (дословно как rose MultiColumns.astro — кнопка В КАЖДОЙ колонке, не общая).
 const PLACEHOLDER_COLUMN = {
 	heading: "Колонна",
 	text: "Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.",
 	imageUrl: "",
+	link: { text: "Кнопка", href: "/catalog" },
 };
 const rawColumns = hasManualColumns
 	? Array.isArray(p.columns) && p.columns.length
@@ -95,7 +101,9 @@ const effectiveColumns = isPlaceholder
 			image: "",
 			headingSize: undefined as string | undefined,
 			textSize: undefined as string | undefined,
-			link: undefined as { text: string; href: string } | undefined,
+			// Per-column ссылка-плейсхолдер «Кнопка» (Figma 1:19335 — кнопка в
+			// КАЖДОЙ колонке, дословно как rose MultiColumns.astro), не общая снизу.
+			link: { ...PLACEHOLDER_COLUMN.link } as { text: string; href: string },
 		}))
 	: columns;
 
@@ -153,13 +161,13 @@ const colAlignCls = p.textPosition === "left" ? "items-start text-left" : "items
 // контурная роль .satin-button-md LIGHT (родная роль satin §3), w-fit СЛЕВА
 // (манера «Смотреть больше» Popular — НЕ по центру). Метрики .satin-button-md
 // (g:106-126) + токены кнопки-2. Рендер ТОЛЬКО при непустом тексте. В пустом
-// состоянии (плейсхолдер) кнопка присутствует всегда («Перейти» → /catalog),
-// т.к. контракт Figma 1:19335 требует кнопку в каждой пустой колонке-секции.
-const btnText = isPlaceholder
-	? "Перейти"
-	: typeof p.buttonText === "string" && p.buttonText.trim()
-		? p.buttonText
-		: undefined;
+// состоянии (плейсхолдер) общей кнопки НЕТ — кнопку «Кнопка» рисует КАЖДАЯ
+// колонка (per-column link выше), дословно как rose MultiColumns.astro (Figma
+// 1:19335). Двойная кнопка (per-column + общая) читалась бы как баг.
+const btnText =
+	isPlaceholder || !(typeof p.buttonText === "string" && p.buttonText.trim())
+		? undefined
+		: p.buttonText;
 const btnHref =
 	(typeof p.buttonLink === "string" && p.buttonLink ? p.buttonLink : undefined) ??
 	(typeof p.link === "string" && p.link ? p.link : undefined) ??

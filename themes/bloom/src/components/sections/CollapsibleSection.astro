@@ -10,11 +10,13 @@
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Канон heading: string | { text, alignment, size }; canon-default «Часто
-// задаваемые вопросы». Роль = заголовок секции (Collections.astro:18), цвет —
-// токен с пиксель-фоллбеком акцента #E38E9F.
+// Канон heading: string | { text, alignment, size }. Figma 1:19335 — ПУСТОЕ
+// состояние секции «Сворачиваемый раздел»: дословный заголовок-плейсхолдер
+// «Сворачиваемый раздел» (а НЕ дефолт-копирайт верстальщика «Часто задаваемые
+// вопросы»). Роль = заголовок секции (Collections.astro:18), цвет — токен с
+// пиксель-фоллбеком акцента #E38E9F. Мерчант задал свой heading → его и рендерим.
 const heading =
-	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Часто задаваемые вопросы");
+	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Сворачиваемый раздел");
 // Лестница §9 (база-литерал 18/md:20 = canon-default medium): small 15/17, large 22/24.
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
@@ -35,11 +37,12 @@ const headingCls = `font-urbanist ${headingSizeCls} font-normal uppercase leadin
 // Канон sections[] 1-10 {heading, content} (+ pupa items[] {title, content}).
 // Curated-модель (как theme-base PopularProducts/Collections): секция показывает
 // реальные пункты ТОЛЬКО когда мерчант их добавил. Гейт = наличие sections/items
-// в пропах. Пусто → ПЛЕЙСХОЛДЕР пустого состояния (Figma 1:19335), НЕ мок-демо
-// верстальщика. content — set:html.
+// в пропах. Пусто → Figma 1:19335 ПУСТОЕ состояние: дословный ряд-плейсхолдер
+// «Раздел» + хелпер-текст «Ответь на самые популярные вопросы клиентов» (а НЕ
+// мок-вопросы верстальщика). Паттерн пустого состояния как Collections/MultiRows:
+// один DEMO-ряд + лейбл/хелпер, без интерактивного <details>. content — set:html.
 const PLACEHOLDER_SECTIONS = [
-	{ id: "placeholder-1", heading: "Раздел", content: "Ответь на самые популярные вопросы клиентов" },
-	{ id: "placeholder-2", heading: "Раздел", content: "Ответь на самые популярные вопросы клиентов" },
+	{ heading: "Раздел", content: "Ответь на самые популярные вопросы клиентов" },
 ];
 const realSections =
 	Array.isArray(p.sections) && p.sections.length
@@ -48,6 +51,7 @@ const realSections =
 			? p.items
 			: null;
 const hasRealSections = realSections !== null;
+const isPlaceholder = !hasRealSections;
 const rawSections = hasRealSections ? realSections : PLACEHOLDER_SECTIONS;
 const sections = rawSections.slice(0, 10).map((s: any) => ({
 	heading:
@@ -106,25 +110,47 @@ const titleId = id && heading ? `${id}-title` : undefined;
 							data-puck-subsection-index={hasRealSections ? i : undefined}
 							data-puck-subsection-field={hasRealSections ? "sections" : undefined}
 						>
-							<details class="group">
-								<summary class="cursor-pointer list-none py-5 [&::-webkit-details-marker]:hidden">
-									<div class="flex w-full items-center justify-between gap-4 font-inter text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70">
-										<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
+							{isPlaceholder ? (
+								/* Figma 1:19335 ПУСТОЕ состояние: дословный ряд-плейсхолдер —
+								   лейбл «Раздел» (роль вопроса) + хелпер-текст «Ответь на самые
+								   популярные вопросы клиентов». Без интерактивного <details>:
+								   реального ответа нет, помощь видна сразу (паттерн пустого
+								   состояния Collections/MultiRows). Шеврон сохранён для вида. */
+								<div class="flex w-full flex-col gap-2 py-5">
+									<div class="flex w-full items-center justify-between gap-4 font-inter text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]">
+										<span class="min-w-0 flex-1 break-words">{s.heading}</span>
 										<img
 											src="/icons/dropdown-chevron.svg"
 											alt=""
 											width="10"
 											height="6"
 											aria-hidden="true"
-											class="shrink-0 transition-transform duration-300 group-open:rotate-180"
+											class="shrink-0 rotate-180"
 										/>
 									</div>
-								</summary>
-								<div
-									class="pb-5 font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]"
-									set:html={s.content}
-								/>
-							</details>
+									<p class="font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">{s.content}</p>
+								</div>
+							) : (
+								<details class="group">
+									<summary class="cursor-pointer list-none py-5 [&::-webkit-details-marker]:hidden">
+										<div class="flex w-full items-center justify-between gap-4 font-inter text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70">
+											<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
+											<img
+												src="/icons/dropdown-chevron.svg"
+												alt=""
+												width="10"
+												height="6"
+												aria-hidden="true"
+												class="shrink-0 transition-transform duration-300 group-open:rotate-180"
+											/>
+										</div>
+									</summary>
+									<div
+										class="pb-5 font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]"
+										set:html={s.content}
+									/>
+								</details>
+							)}
 						</li>
 					))
 				}

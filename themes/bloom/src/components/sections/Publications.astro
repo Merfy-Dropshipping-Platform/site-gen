@@ -4,7 +4,7 @@
 // позиций без Publications). Схема полей = packages/theme-base/blocks/
 // Publications/Publications.puckConfig.ts.
 // ПУСТОЕ СОСТОЯНИЕ (нет реальных публикаций) = ПЛЕЙСХОЛДЕР по контракту Figma
-// 1:19335 (3 колонки: пустой image-rect + «Колонна» + нейтральный текст), НЕ
+// 1:19335 (3 колонки: пустой image-rect + «Колонна» + «Сочетай текст…» + кнопка), НЕ
 // мок-демо верстальщика (статьи про уход + /images/trend-*.webp). Когда у
 // магазина есть реальные публикации (SSR fetch /api/sites/<id>/publications →
 // fallback publications.json) — рендерим их без изменений (Shopify-модель, как
@@ -110,12 +110,25 @@ function formatPubDate(iso: string | null | undefined): string {
 
 // Гейт пустого состояния (Shopify-модель): есть реальные публикации → рендерим
 // их; нет — ПЛЕЙСХОЛДЕР по контракту Figma 1:19335 (3 колонки: пустой image-rect
-// + «Колонна» + нейтральный текст), НЕ мок-демо верстальщика.
+// + «Колонна» + «Сочетай текст…» + кнопка), НЕ мок-демо верстальщика.
 const hasRealPublications = realPublications.length > 0;
-// Текст-болванка колонок в нейтральном тоне публикаций (как theme-base
-// MultiColumns: «Сочетай текст…»); не привязан к товарам/уходу.
-const PLACEHOLDER_TEXT = "Поделись новостями бренда, гайдами и историями в этом блоке.";
-type PubItem = { title: string; date: string; image: string; slug?: string; isPlaceholder: boolean };
+// ДОСЛОВНЫЙ Figma-плейсхолдер (контракт типа «Publications» 1:19335): колонка =
+// дизайн-ассет /placeholders/publication-card.png (раздаётся на каждой теме из
+// packages/theme-base/public/placeholders, copyPublic) + «Колонна» + «Сочетай
+// текст…» + кнопка (= «стрелки/кнопки» контракта, рендер как «Кнопка» в манере
+// bloom MultiColumns). Фото показывается ВСЕГДА (НЕ пустой image-rect, контракт
+// картиночных секций). Текст байт-в-байт совпадает с MultiColumns.astro PLACEHOLDER_TEXT.
+const PLACEHOLDER_IMAGE = "/placeholders/publication-card.png";
+const PLACEHOLDER_TEXT = "Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.";
+const PLACEHOLDER_LINK_TEXT = "Кнопка";
+const PLACEHOLDER_LINK_HREF = "/catalog";
+type PubItem = {
+	title: string;
+	date: string;
+	image: string;
+	slug?: string;
+	isPlaceholder: boolean;
+};
 const items: PubItem[] = hasRealPublications
 	? realPublications.slice(0, cards).map((pub) => ({
 			title: pub.title ?? "",
@@ -127,7 +140,7 @@ const items: PubItem[] = hasRealPublications
 	: Array.from({ length: cards }, () => ({
 			title: "Колонна",
 			date: "",
-			image: "",
+			image: PLACEHOLDER_IMAGE,
 			isPlaceholder: true,
 		}));
 
@@ -175,9 +188,10 @@ const titleId = id && heading ? `${id}-title` : undefined;
 					const Wrapper = href ? "a" : "article";
 					return (
 						<Wrapper class="flex flex-col gap-4" href={href} data-publication-index={i}>
-							{/* Медиа: реальная обложка → <img>; пустое состояние (плейсхолдер
-							   или публикация без обложки) → пустой image-rect surface
-							   (контракт Figma 1:19335). */}
+							{/* Медиа: реальная обложка ИЛИ дизайн-ассет publication-card.png
+							   (плейсхолдер) → <img>. Публикация без обложки → пустой image-rect
+							   surface (item.image=''). Контракт Figma 1:19335 (картиночная секция:
+							   фото плейсхолдера показывается всегда). */}
 							<div class="group relative aspect-[652/594] w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]">
 								{item.image && (
 									<img
@@ -197,10 +211,21 @@ const titleId = id && heading ? `${id}-title` : undefined;
 								<span class="font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70">
 									{item.title}
 								</span>
+								{/* Пустое состояние — ДОСЛОВНЫЙ Figma-плейсхолдер (контракт
+								   «Publications»): хелпер-текст «Сочетай текст…» + кнопка
+								   «Кнопка» (= «стрелки/кнопки» контракта), как bloom MultiColumns. */}
 								{item.isPlaceholder && (
 									<p class="font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">
 										{PLACEHOLDER_TEXT}
 									</p>
+								)}
+								{item.isPlaceholder && (
+									<a
+										href={PLACEHOLDER_LINK_HREF}
+										class="mt-2 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))] underline underline-offset-4 transition-opacity hover:opacity-70"
+									>
+										{PLACEHOLDER_LINK_TEXT}
+									</a>
 								)}
 							</div>
 						</Wrapper>

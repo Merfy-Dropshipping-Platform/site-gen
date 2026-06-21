@@ -19,13 +19,18 @@ const id = p.id;
 // кампаниями верстальщика /images/4x/*.png).
 const hasSlides = Array.isArray(p.slides) && p.slides.length > 0;
 
-// Лейблы пустого состояния (контракт «Слайд-шоу»: пустой image-rect + заголовок
-// секции + поясняющий текст + Кнопка). Один слайд-болванка, без фото-кампании.
+// Лейблы пустого состояния (контракт Figma 1:19335 «Слайд-шоу»: заголовок секции
+// + поясняющий текст + Кнопка). Один слайд-болванка. Контракт картиночных секций
+// (правило 2): фолбэк-картинка слайда = дизайн-ассет landscape-slideshow.png
+// (/placeholders/landscape-slideshow.png, раздаётся на каждой теме) — картинка
+// показывается ВСЕГДА, НЕ пустой image-rect и НЕ фото-кампания верстальщика.
+// Эталон theme-base Slideshow.astro (PLACEHOLDER_ASSETS.landscape.slideshow).
 const PLACEHOLDER_HEADING = "Слайд-шоу";
-const PLACEHOLDER_TEXT = "Расскажи о своем бренде в этом блоке";
+const PLACEHOLDER_TEXT = "Добавь несколько изображений с информацией о своём бренде";
+const PLACEHOLDER_IMAGE = "/placeholders/landscape-slideshow.png";
 const PLACEHOLDER_SLIDE = {
 	id: "placeholder",
-	imageUrl: "",
+	imageUrl: PLACEHOLDER_IMAGE,
 	heading: PLACEHOLDER_HEADING,
 	subtitle: PLACEHOLDER_TEXT,
 	ctaText: "Кнопка",
@@ -120,11 +125,13 @@ const contained =
 	(p.imagePosition === "contained" || p.imagePosition === "left" || p.imagePosition === "right") &&
 	p.imageFullBleed !== true &&
 	p.imageFullBleed !== "true";
-// Пустое состояние (нет слайдов мерчанта) = ПЛЕЙСХОЛДЕР: светлая подложка-rect
-// surface (#FBFBFB-паритет) вместо тёмного about-полотна #111111. С данными —
-// тёмное полотно фото-кампании без изменений.
+// Пустое состояние (нет слайдов мерчанта) = ПЛЕЙСХОЛДЕР: слайд-болванка несёт
+// дизайн-ассет landscape-slideshow.png (контракт картиночных секций, правило 2),
+// поэтому полотно — тёмное about-полотно #111111 (как и с реальными данными),
+// а НЕ светлая surface-подложка. isPlaceholder оставлен только для декоративных
+// точек-навигации (1 слайд — листать нечего).
 const isPlaceholder = !hasSlides;
-const canvasBg = isPlaceholder ? "bg-[rgb(var(--color-surface,251_251_251))]" : "bg-[#111111]";
+const canvasBg = "bg-[#111111]";
 const canvasCls = contained
 	? `satin-container relative w-full overflow-hidden rounded-[var(--radius-media,0px)] ${canvasBg} aspect-[375/362] md:aspect-auto ${heightCls}`
 	: `relative mx-auto w-full max-w-[1920px] overflow-hidden ${canvasBg} aspect-[375/362] md:aspect-auto ${heightCls}`;
@@ -154,16 +161,9 @@ const ctaCls =
 	p.buttonStyle === "solid"
 		? "inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-2-bg,255_255_255))] bg-[rgb(var(--color-button-2-bg,255_255_255))] px-6 font-manrope text-[16px] font-normal uppercase leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity duration-[180ms] hover:opacity-[0.78]"
 		: "satin-button satin-button-md text-white";
-// Пустое состояние: тёмная кнопка темы на светлом rect (белый контур/заливка
-// неразличимы на surface) — паттерн satin ImageWithText btnCls solid.
-const placeholderCtaCls =
-	"inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-bg,0_0_0))] bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-manrope text-[16px] font-normal uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity duration-[180ms] hover:opacity-[0.78]";
-// Пустое состояние: тёмный текст/заголовок темы на светлом rect (белый текст
-// about-полотна неразличим на surface).
-const placeholderHeadingCls =
-	"font-logo text-[26px] font-normal uppercase leading-[1.1] text-[rgb(var(--color-heading,0_0_0))] md:text-[32px]";
-const placeholderTextCls =
-	"font-manrope text-[16px] font-normal uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]";
+// (Пустое состояние теперь несёт дизайн-ассет landscape-slideshow.png → рендерится
+// как обычный фото-слайд: белый текст/контурная белая CTA = ctaCls. Отдельные
+// placeholder-классы для светлого rect больше не нужны — правило 2.)
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
@@ -192,9 +192,9 @@ const paddingStyle = p.padding
 						data-puck-subsection-field="slides"
 					>
 						{/* С данными — фото мерчанта + штатный градиент about-полотна
-						    (литерал about.astro:46). Пустое состояние — без <img>:
-						    видна светлая подложка-rect surface (плейсхолдер по
-						    контракту, НЕ затемнённая кампания верстальщика). */}
+						    (литерал about.astro:46). Пустое состояние — дизайн-ассет
+						    landscape-slideshow.png (контракт картиночных секций,
+						    правило 2: картинка показывается ВСЕГДА) + тот же градиент. */}
 						{s.image && (
 							<>
 								<img
@@ -216,11 +216,11 @@ const paddingStyle = p.padding
 						{/* Контент about-полотна: вертикальный центр, кикер → заголовок → CTA
 						    (gap-8 / gap-2.5 — литерал about.astro:48-49). */}
 						<div class={`absolute inset-0 z-10 flex items-center ${s.posCls}`}>
-							<div class={`flex flex-col gap-8 ${isPlaceholder ? "" : "text-white"} ${s.alignCls}${s.boxed ? " rounded-[var(--radius-card,0px)] bg-black/45 p-6" : ""}`}>
+							<div class={`flex flex-col gap-8 text-white ${s.alignCls}${s.boxed ? " rounded-[var(--radius-card,0px)] bg-black/45 p-6" : ""}`}>
 								<div class={`flex flex-col gap-2.5 ${s.alignCls}`}>
 									{s.subtitle && (
 										<p
-											class={isPlaceholder ? placeholderTextCls : s.textCls}
+											class={s.textCls}
 											data-puck-subsection-parent={id}
 											data-puck-subsection-index="101"
 											data-puck-subsection-field="text"
@@ -230,7 +230,7 @@ const paddingStyle = p.padding
 									)}
 									{s.heading && (
 										<h2
-											class={isPlaceholder ? placeholderHeadingCls : s.headingCls}
+											class={s.headingCls}
 											data-puck-subsection-parent={id}
 											data-puck-subsection-index="100"
 											data-puck-subsection-field="heading"
@@ -242,7 +242,7 @@ const paddingStyle = p.padding
 								{s.ctaText && (
 									<a
 										href={s.ctaHref}
-										class={isPlaceholder ? placeholderCtaCls : ctaCls}
+										class={ctaCls}
 										data-puck-subsection-parent={id}
 										data-puck-subsection-index="102"
 										data-puck-subsection-field="button"
@@ -331,15 +331,15 @@ const paddingStyle = p.padding
 			}
 
 			{/* Пустое состояние: декоративные точки-навигация по контракту
-			    «Слайд-шоу» (1 слайд — листать нечего, точки тёмные на светлом
-			    surface, без data-slide-dot чтобы скрипт их не трогал). */}
+			    «Слайд-шоу» (1 слайд — листать нечего; точки БЕЛЫЕ на фото-полотне
+			    landscape-slideshow.png, без data-slide-dot чтобы скрипт их не трогал). */}
 			{
 				isPlaceholder && pagination !== "none" && (
 					<div class="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2">
 						{[0, 1, 2].map((i) => (
 							<span
 								aria-hidden="true"
-								class={`size-2 ${i === 0 ? "bg-[rgb(var(--color-muted,153_153_153))]" : "bg-[rgb(var(--color-muted,153_153_153)/0.4)]"}`}
+								class={`size-2 ${i === 0 ? "bg-white" : "bg-white/50"}`}
 							/>
 						))}
 					</div>

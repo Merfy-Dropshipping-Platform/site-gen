@@ -12,14 +12,22 @@ import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components
 // (паттерн details-фильтров каталога catalog.astro:41-48; только conditional
 // Tailwind, без <style>-блока). Скролл-анимаций в манере flux нет (§6) —
 // data-animate не ставим.
+//
+// Figma 1:19335 — ПУСТОЕ состояние: дословный плейсхолдер (заголовок
+// «Сворачиваемый раздел» + ряд «Раздел» с хелпером «Ответь на самые популярные
+// вопросы клиентов»), а НЕ мок-вопросы верстальщика (CANON_SECTIONS про
+// доставку/возврат). Когда мерчант задал sections/items — рендерим их
+// (интерактивный <details>). Принцип паритета с Collections/MultiRows: пусто =
+// surface-карточки + лейбл/хелпер, без контента (эталон — rose CollapsibleSection).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Канон heading: string | { text, alignment, size }; canon-default «Часто
-// задаваемые вопросы». Роль = внутренний h2 (contacts.astro:40; cart.astro:76),
-// цвет — токен heading с пиксель-фоллбеком чёрного верстальщика.
+// Канон heading: string | { text, alignment, size }. Figma 1:19335 — ПУСТОЕ
+// состояние секции «Сворачиваемый раздел»: дословный заголовок-плейсхолдер
+// «Сворачиваемый раздел» (а НЕ дефолт-копирайт верстальщика «Часто задаваемые
+// вопросы»). Мерчант задал свой heading → его и рендерим.
 const heading =
-	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Часто задаваемые вопросы");
+	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Сворачиваемый раздел");
 // Лестница §9 внутреннего h2 (дефолт роли — large): отсутствие пропа и large =
 // литерал 24/md:28; medium 20/24, small 17/20.
 const headingSize = p.headingSize ?? p.heading?.size;
@@ -39,28 +47,23 @@ const headingAlignCls =
 const headingCls = `font-comfortaa ${headingSizeCls} font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
 
 // Канон sections[] 1-10 {heading, content} (+ pupa items[] {title, content}).
-// Отсутствие = 2 вопроса-болванки в тоне §11 (доставка/возврат — уместно для
-// электроники). content — set:html (HTML канона).
-const CANON_SECTIONS = [
-	{
-		id: "section-1",
-		heading: "Как быстро вы доставляете заказы?",
-		content:
-			"Отправляем в день оплаты. По Москве — 1–2 дня, по России — от 3 дней курьером или в пункт выдачи.",
-	},
-	{
-		id: "section-2",
-		heading: "Можно ли вернуть товар?",
-		content:
-			"Да, в течение 14 дней с момента получения. Техника принимается в полной комплектации.",
-	},
+// Когда мерчант ЗАДАЛ пункты — рендерим ИХ (интерактивный <details>, content =
+// set:html). Когда пусто — Figma 1:19335 ПУСТОЕ состояние: дословный
+// плейсхолдер-ряд «Раздел» + хелпер-текст «Ответь на самые популярные вопросы
+// клиентов» (а НЕ мок-вопросы верстальщика про доставку/возврат). Паттерн
+// пустого состояния как Collections/MultiRows: DEMO-массив + лейбл/хелпер,
+// без контента (эталон — rose CollapsibleSection).
+const PLACEHOLDER_SECTIONS = [
+	{ heading: "Раздел", content: "Ответь на самые популярные вопросы клиентов" },
 ];
-const rawSections =
+const merchantSections =
 	Array.isArray(p.sections) && p.sections.length
 		? p.sections
 		: Array.isArray(p.items) && p.items.length
 			? p.items
-			: CANON_SECTIONS;
+			: null;
+const isPlaceholder = !merchantSections;
+const rawSections = merchantSections ?? PLACEHOLDER_SECTIONS;
 const sections = rawSections.slice(0, 10).map((s: any) => ({
 	heading:
 		(typeof s.heading === "string" && s.heading) || (typeof s.title === "string" && s.title) || "",
@@ -118,22 +121,43 @@ const titleId = id && heading ? `${id}-title` : undefined;
 							data-puck-subsection-index={i}
 							data-puck-subsection-field="sections"
 						>
-							<details class="group">
-								<summary class="cursor-pointer list-none py-5 [&::-webkit-details-marker]:hidden">
-									<div class="flex w-full items-center justify-between gap-4 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70">
-										<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
+							{isPlaceholder ? (
+								/* Figma 1:19335 ПУСТОЕ состояние: дословный ряд-плейсхолдер —
+								   лейбл «Раздел» (роль вопроса) + хелпер-текст «Ответь на самые
+								   популярные вопросы клиентов». Без интерактивного <details>:
+								   реального ответа нет, помощь видна сразу (паттерн пустого
+								   состояния Collections/MultiRows). Шеврон сохранён для вида. */
+								<div class="flex w-full flex-col gap-2 py-5">
+									<div class="flex w-full items-center justify-between gap-4 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]">
+										<span class="min-w-0 flex-1 break-words">{s.heading}</span>
 										<NtIcon
 											name="dropdown-chevron"
 											sizeClass="size-5"
-											class="shrink-0 transition-transform duration-300 group-open:rotate-180"
+											class="shrink-0 rotate-180"
 										/>
 									</div>
-								</summary>
-								<div
-									class="pb-5 font-manrope text-[16px] font-light leading-[1.6] text-[rgb(var(--color-muted,153_153_153))]"
-									set:html={s.content}
-								/>
-							</details>
+									<p class="font-manrope text-[16px] font-light leading-[1.6] text-[rgb(var(--color-muted,153_153_153))]">
+										{s.content}
+									</p>
+								</div>
+							) : (
+								<details class="group">
+									<summary class="cursor-pointer list-none py-5 [&::-webkit-details-marker]:hidden">
+										<div class="flex w-full items-center justify-between gap-4 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70">
+											<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
+											<NtIcon
+												name="dropdown-chevron"
+												sizeClass="size-5"
+												class="shrink-0 transition-transform duration-300 group-open:rotate-180"
+											/>
+										</div>
+									</summary>
+									<div
+										class="pb-5 font-manrope text-[16px] font-light leading-[1.6] text-[rgb(var(--color-muted,153_153_153))]"
+										set:html={s.content}
+									/>
+								</details>
+							)}
 						</li>
 					))
 				}

@@ -22,14 +22,20 @@ const id = p.id;
 // Collections.astro (hasManualCollections → DEMO) и манера пустого rect темы
 // bloom — ImageWithText.astro (тот же Figma-контракт: bg surface + заголовок +
 // текст + розовый pill). Когда слайды ВЫБРАНЫ (p.slides.length) — рендер
-// реальных слайдов БЕЗ изменений; слайд без фото остаётся на ассете темы
-// (SLIDE_FALLBACKS ниже), клиентский слайдер (prev/next/dots при ≥2 слайдах)
-// не затрагивается.
+// реальных слайдов БЕЗ изменений; слайд без фото = ПУСТАЯ surface-плитка
+// (ветка s.image ? <img> : <div bg-surface> ниже), а НЕ мок-ассет верстальщика;
+// клиентский слайдер (prev/next/dots при ≥2 слайдах) не затрагивается.
+// Figma 1:19335 — слайд пустого состояния несёт дизайн-ассет landscape-slideshow.png
+// (раздаётся на каждой теме из packages/theme-base/public/placeholders, copyPublic),
+// а НЕ пустой image-rect (surface) и НЕ ассет верстальщика (контракт картиночных
+// секций, эталон rose Slideshow.astro). Текст плейсхолдера дословно по Figma:
+// «Слайд-шоу» + «Добавь несколько изображений с информацией о своём бренде» + «Кнопка».
+const PLACEHOLDER_SLIDE_IMAGE = "/placeholders/landscape-slideshow.png";
 const PLACEHOLDER_SLIDE = {
 	id: "placeholder",
-	imageUrl: "", // пустой image-rect (surface) — НЕ ассет верстальщика
+	imageUrl: PLACEHOLDER_SLIDE_IMAGE,
 	heading: "Слайд-шоу",
-	subtitle: "Покажи и расскажи о своем товаре в одном блоке",
+	subtitle: "Добавь несколько изображений с информацией о своём бренде",
 	ctaText: "Кнопка",
 	ctaUrl: "/catalog",
 };
@@ -53,11 +59,12 @@ const slideTextCls = (s: string | undefined) =>
 			? "font-inter text-[12px] font-light leading-[1.2] text-[rgb(var(--color-text,227_142_159))] md:text-[14px]"
 			: "font-inter text-[14px] font-light leading-[1.2] text-[rgb(var(--color-text,227_142_159))] md:text-[16px]";
 
-// Слайд мерчанта без фото получает ассет темы по позиции (принцип rose T15).
-// В ПУСТОМ состоянии (!hasSlides) фоллбек НЕ применяется — плейсхолдер обязан
-// показать пустой image-rect (surface), а не фото верстальщика (см. ветку
-// s.image ? <img> : <div bg-surface> в разметке).
-const SLIDE_FALLBACKS = ["/images/hero-background.webp", "/images/trend-1.webp", "/images/trend-2.webp"];
+// Реальный слайд мерчанта без фото = ПУСТАЯ surface-карточка (ветка
+// s.image ? <img> : <div bg-surface> ниже), а НЕ мок-ассет верстальщика
+// (контракт Figma 1:19335). Мок-фолбэки /images/hero-background.webp … УБРАНЫ:
+// слайд без imageUrl/image теперь даёт image="" → пустая surface-плитка. В ПУСТОМ
+// состоянии (!hasSlides) слайд-плейсхолдер несёт дизайн-ассет landscape-slideshow.png
+// (PLACEHOLDER_SLIDE выше).
 const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 	const ctaText =
 		(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined) ??
@@ -66,7 +73,7 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 		image:
 			(typeof s.imageUrl === "string" && s.imageUrl.trim()) ||
 			(typeof s.image === "string" && s.image.trim()) ||
-			(hasSlides ? SLIDE_FALLBACKS[i % SLIDE_FALLBACKS.length] : ""),
+			"",
 		heading: typeof s.heading === "string" ? s.heading : (s.heading?.text ?? ""),
 		headingCls: slideHeadingCls(typeof s.heading === "object" ? s.heading?.size : undefined),
 		subtitle:
@@ -292,12 +299,9 @@ const paddingStyle = p.padding
 				   тёмный токен heading вместо белого реальных слайдов. JS-логики нет
 				   (один слайд) — чисто визуальный контракт пустого состояния. */
 				!hasSlides && (
-					<div class="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2">
+					<div class="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2" aria-hidden="true">
 						{[0, 1, 2].map((i) => (
-							<span
-								class={`h-2 w-2 rounded-full transition-colors ${i === 0 ? "bg-[rgb(var(--color-heading,227_142_159))]" : "bg-[rgb(var(--color-heading,227_142_159))]/40"}`}
-								aria-hidden="true"
-							/>
+							<span class={`h-2 w-2 !rounded-full ${i === 0 ? "bg-white" : "bg-white/50"}`} />
 						))}
 					</div>
 				)

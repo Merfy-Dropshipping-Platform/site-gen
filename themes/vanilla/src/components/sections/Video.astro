@@ -26,10 +26,14 @@ const rawVideoUrl =
 			? p.videoUrl
 			: "";
 const videoUrl = rawVideoUrl.startsWith("blob:") ? "" : rawVideoUrl;
-// Канон poster (+ pupa video.coverImage) — обложка реального видео. Дефолта
-// мок-верстальщика (/images/Video.webp) больше нет: пустое состояние = чистый
-// плейсхолдер-rect без подложки-картинки.
-const poster =
+// Дизайн-ассет картиночного плейсхолдера видео (Figma 1:19335) — раздаётся на
+// каждой теме как /placeholders/landscape-video.png. Контракт картиночных секций:
+// картинка показывается ВСЕГДА (НЕ пустой surface-rect, НЕ мок-ролик верстальщика).
+const PLACEHOLDER_VIDEO_IMAGE = "/placeholders/landscape-video.png";
+// Канон poster (+ pupa video.coverImage) — обложка реального видео. Пустое
+// состояние (нет видео и нет своей обложки) → дизайн-ассет landscape-video.png
+// под Play-иконкой (НЕ чистый surface-rect и НЕ мок /images/Video.webp).
+const merchantPoster =
 	(typeof p.video?.coverImage === "string" && p.video.coverImage
 		? p.video.coverImage
 		: undefined) ??
@@ -129,7 +133,7 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 					<video
 						class="pointer-events-none absolute inset-0 size-full max-w-none object-cover"
 						src={videoUrl}
-						poster={poster}
+						poster={merchantPoster}
 						autoplay
 						muted
 						loop
@@ -140,15 +144,13 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 						tabindex="-1"
 					/>
 				) : (
-					poster && (
-						<img
-							src={poster}
-							alt=""
-							aria-hidden="true"
-							loading="lazy"
-							class="absolute inset-0 size-full max-w-none object-cover"
-						/>
-					)
+					<img
+						src={merchantPoster ?? PLACEHOLDER_VIDEO_IMAGE}
+						alt=""
+						aria-hidden="true"
+						loading="lazy"
+						class="absolute inset-0 size-full max-w-none object-cover"
+					/>
 				)
 			}
 			{/* Play-иконка по центру. С видео — белая поверх ролика (как было).
@@ -164,11 +166,10 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 					xmlns="http://www.w3.org/2000/svg"
 					aria-hidden="true"
 					class="pointer-events-none absolute left-1/2 top-1/2 size-11 -translate-x-1/2 -translate-y-1/2"
-					style={videoUrl ? undefined : "stroke:rgb(var(--color-heading,38_49_28))"}
 				>
 					<path
 						d="M9.16772 31.7784V12.2228C9.16772 10.6103 9.16772 9.8031 9.50706 9.32599C9.80323 8.90958 10.2597 8.63618 10.7665 8.57081C11.347 8.49595 12.0589 8.87564 13.4807 9.63394L31.814 19.4117L31.8207 19.4147C33.392 20.2527 34.178 20.6719 34.4358 21.2306C34.6607 21.718 34.6607 22.2806 34.4358 22.7681C34.1776 23.3276 33.3898 23.7485 31.814 24.5889L13.4807 34.3666C12.0579 35.1255 11.3472 35.5037 10.7665 35.4288C10.2597 35.3634 9.80323 35.0901 9.50706 34.6737C9.16772 34.1966 9.16772 33.3909 9.16772 31.7784Z"
-						stroke={videoUrl ? "white" : undefined}
+						stroke="white"
 						stroke-width="3"
 						stroke-linecap="round"
 						stroke-linejoin="round"

@@ -11,13 +11,15 @@ import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/
 // MANNER.md §7). Скролл-анимаций нет — манера flux статична (MANNER.md §6).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+// Figma 1:19335 — ПУСТОЕ состояние секции «Список коллекций»: дословный заголовок
+// «Список коллекций» (без подзаголовка), а НЕ дефолт-копирайт верстальщика
+// («Категории» / «Смартфоны, наушники, ноутбуки…»). Эталон — rose Collections.astro.
+// Мерчант задал свой heading/subtitle → его и рендерим (?? срабатывает только при
+// пустых данных; пустая строка subtitle скрывает <p> внутри DS-шапки).
 const sectionTitle =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title ?? "Категории";
-// Подзаголовок у верстальщика ЕСТЬ — отсутствие пропа = литерал; пустая строка
-// (мерчант стёр текст) скрывает <p> внутри DS-шапки (паттерн bloom Popular).
+	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title ?? "Список коллекций";
 const sectionSubtitle =
-	(typeof p.subtitle === "string" ? p.subtitle : undefined) ??
-	"Смартфоны, наушники, ноутбуки и аксессуары — всё для работы, творчества и развлечений.";
+	(typeof p.subtitle === "string" ? p.subtitle : undefined) ?? "";
 
 // Шапка — DS-компонент NtSectionHeading: класс внутрь не пробрасывается,
 // размеры — через перекрытия на обёртке (лестница §9 от lg-базы 32 / xl-базы
@@ -97,16 +99,71 @@ const propCollections = (Array.isArray(p.collections) ? p.collections : [])
 				(typeof c.heading === "string" && c.heading) ||
 				(typeof c.name === "string" && c.name) ||
 				"Коллекция",
-			// Канон-плейсхолдер = реальный ассет темы (принцип rose T15): карточка
-			// без выбранной картинки получает обложку верстальщика по позиции
-			// (/images/4x/Коллекция_{1..3}.png — папки /placeholders у flux нет).
-			image:
-				typeof c.image === "string" && c.image ? c.image : `/images/4x/Коллекция_${(i % 3) + 1}.png`,
+			// Плейсхолдер пустого состояния (Figma 1:19335, паритет rose T15):
+			// карточка без выбранной картинки = ПУСТАЯ surface-плитка (НЕ мок-фото
+			// верстальщика /images/4x/Коллекция_N.png — нарушало rose-эталон). На
+			// live гидрация (data-collection-ref) подставит реальное фото коллекции
+			// по collectionId; SSR-гард {c.image && <img>} держит surface пустой.
+			image: typeof c.image === "string" && c.image ? c.image : "",
 			hasOwnImage: !!(typeof c.image === "string" && c.image),
 			href: collectionId ? `${cardLinkBase}${collectionId}` : "#",
 		};
 	});
 const usePropCollections = propCollections.length > 0;
+
+// SSR-резолв реальных коллекций по collectionId (Figma-цель: коллекция ВЫБРАНА →
+// реальное имя/обложка ПРЯМО в статике, чтобы их видело и ПРЕВЬЮ конструктора —
+// Astro Container не исполняет клиентскую module-гидрацию ниже). Эталон —
+// rose Collections.astro / flux Popular.astro (siteId инжектит рендер-пайплайн
+// preview.service / build). Нет siteId / выбранных collectionId / ошибка →
+// resolved пуст → остаётся SSR (heading/обложка из пропса), а живая гидрация
+// ниже освежит данные на live. Паритет theme-base resolveManual: имя коллекции
+// перебивает ручной heading, обложка подставляется только при пустой своей.
+const siteId = typeof p.siteId === "string" ? p.siteId : "";
+const wantResolve = usePropCollections && propCollections.some((c) => c.collectionId);
+const resolvedCols = new Map<string, { name?: string; image?: string }>();
+if (wantResolve && siteId) {
+	try {
+		const base = (import.meta as any).env?.SITES_INTERNAL_BASE ?? "http://localhost:3114";
+		const res = await fetch(`${base}/api/sites/${siteId}/storefront-data`).catch(() => null);
+		if (res && res.ok) {
+			const data: any = await res.json();
+			const cols: any[] = Array.isArray(data?.collections) ? data.collections : [];
+			for (const c of propCollections) {
+				if (!c.collectionId) continue;
+				const m = cols.find(
+					(x) =>
+						x &&
+						(x.id === c.collectionId ||
+							x.slug === c.collectionId ||
+							x.name === c.collectionId ||
+							x.handle === c.collectionId),
+				);
+				if (!m) continue;
+				const cover =
+					(typeof m.image === "string" && m.image) ||
+					(Array.isArray(m.images) && typeof m.images[0] === "string" ? m.images[0] : "");
+				resolvedCols.set(c.collectionId, {
+					name: typeof m.name === "string" ? m.name : undefined,
+					image: cover || undefined,
+				});
+			}
+		}
+	} catch {
+		/* нет данных — остаётся SSR из пропса, гидрация освежит на live */
+	}
+}
+// Применяем резолв к карточкам пропса: реальное имя перебивает ручной heading,
+// обложка — только если мерчант не загрузил свою.
+const resolvedCollections = propCollections.map((c) => {
+	const r = c.collectionId ? resolvedCols.get(c.collectionId) : undefined;
+	if (!r) return c;
+	return {
+		...c,
+		name: r.name || c.name,
+		image: c.hasOwnImage ? c.image : r.image || c.image,
+	};
+});
 
 // Плейсхолдер пустого состояния (Figma 1:19335, контракт theme-base Collections
 // DEMO_COLLECTIONS): без ручного выбора — 3 карточки с пустым rounded-rect
@@ -145,7 +202,7 @@ const paddingStyle = p.padding
 		</div>
 
 		<ul class={gridCls} role="list" style={gridStyle} data-collections-autofill={!usePropCollections ? "" : undefined}>
-			{usePropCollections ? propCollections.map((c, i) => (
+			{usePropCollections ? resolvedCollections.map((c, i) => (
 				<li>
 					<a
 						href={c.href}
@@ -234,15 +291,16 @@ const paddingStyle = p.padding
 		}
 	};
 
-	// АВТОПОДСТАНОВКА: пустой пикер (SSR = demo-плитки верстальщика) → реальные
+	// АВТОПОДСТАНОВКА: пустой пикер (SSR = плейсхолдеры «Коллекция») → реальные
 	// коллекции магазина из /data/collections.json (live) / storefront-data (превью).
 	// Прежде показывались фейк-демо, что вводило в заблуждение. Явный выбор в пикере
 	// имеет приоритет (грид не помечен data-collections-autofill). Реальных нет
-	// (demo-сборка без collections.json) → no-op, демо остаётся. Разметка плитки =
-	// propCollections-ветка flux (canon-default при пустом пикере: imageView
+	// (demo-сборка без collections.json) → no-op, плейсхолдеры остаются. Разметка
+	// плитки = propCollections-ветка flux (canon-default при пустом пикере: imageView
 	// 'portrait' → aspect-[430/500], cardCaptionStyle 'default' → без капса).
-	// Обложка: своя картинка коллекции, иначе дизайнерский плейсхолдер темы по позиции.
-	const AUTOFILL_COVERS = ["/images/4x/Коллекция_1.png", "/images/4x/Коллекция_2.png", "/images/4x/Коллекция_3.png"];
+	// Обложка: своя картинка коллекции, иначе ПУСТАЯ surface-плитка (контракт Figma
+	// 1:19335 / rose-эталон — у секции «Список коллекций» нет плейсхолдер-ассета;
+	// мок-пути /images/4x/Коллекция_N.png убраны, паритет SSR-гарда {c.image && img}).
 	const autofillCollections = async () => {
 		const grids = Array.from(document.querySelectorAll<HTMLElement>("ul[data-collections-autofill]"));
 		if (grids.length === 0) return;
@@ -251,15 +309,16 @@ const paddingStyle = p.padding
 		const visible = collections.filter((c) => c && c.slug !== "general").slice(0, 6);
 		if (visible.length === 0) return;
 		const html = visible
-			.map((c, i) => {
+			.map((c) => {
 				const name = escapeHtml(c.name || "Коллекция");
 				const ref = c.slug || c.id || "";
 				const href = "/catalog?collection=" + encodeURIComponent(ref);
-				const cover = c.image || (Array.isArray(c.images) ? c.images[0] : "") || AUTOFILL_COVERS[i % 3];
+				const cover = c.image || (Array.isArray(c.images) ? c.images[0] : "");
+				const media = cover
+					? `<img src="${escapeHtml(cover)}" alt="${name}" loading="lazy" class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]" />`
+					: "";
 				return `<li><a href="${href}" class="group flex cursor-pointer flex-col gap-4 md:gap-5" aria-label="${name}" data-nt="flux-collection-card">
-			<div class="aspect-[430/500] w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] rounded-[var(--radius-media,8px)]">
-				<img src="${escapeHtml(cover)}" alt="${name}" loading="lazy" class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]" />
-			</div>
+			<div class="aspect-[430/500] w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] rounded-[var(--radius-media,8px)]"${cover ? "" : ' aria-hidden="true"'}>${media}</div>
 			<h3 class="flux-collection-name font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">${name}</h3>
 		</a></li>`;
 			})

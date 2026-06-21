@@ -4,19 +4,29 @@
 // основа MultiColumns). Тело верстальщика перенесено КОПИЕЙ — Benefits.astro
 // не тронут (его используют страницы). Схема полей = packages/theme-base/
 // blocks/MultiColumns/MultiColumns.puckConfig.ts.
-// ПУСТОЕ СОСТОЯНИЕ (без columns[]) = ПЛЕЙСХОЛДЕР по контракту Figma 1:19335
-// (3 колонки: пустой rect + «Колонна» + нейтральный текст + Кнопка), НЕ
-// мок-демо верстальщика. Когда мерчант добавил columns[] — рендер реальных
-// данных без изменений (Shopify-модель, как theme-base PopularProducts/
+// ПУСТОЕ СОСТОЯНИЕ (без columns[]) = ДОСЛОВНЫЙ ПЛЕЙСХОЛДЕР по контракту
+// Figma 1:19335: заголовок «Мультиколонны» + 3 колонки (пустой surface-rect +
+// «Колонна» + «Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.» +
+// «Кнопка»), НЕ мок-демо верстальщика. Когда мерчант добавил columns[] — рендер
+// реальных данных без изменений (Shopify-модель, как theme-base PopularProducts/
 // Collections).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
+// hasManualColumns: мерчант явно добавил хотя бы одну колонку (Shopify-модель).
+// Объявлено выше блока heading — fallback заголовка ниже зависит от него.
+const hasManualColumns = Array.isArray(p.columns) && p.columns.length > 0;
+
 // Канон heading: string | { text, alignment, size }; у верстальщика шапки НЕТ
-// → рендер ТОЛЬКО при непустом. Роль = заголовок секции (МАННЕРА §1), на
+// → при заданных колонках рендер ТОЛЬКО при непустом (как у верстальщика).
+// Figma 1:19335 — ПУСТОЕ состояние секции имеет ДОСЛОВНЫЙ заголовок
+// «Мультиколонны»: когда мерчант НЕ добавил колонки (плейсхолдер), показываем
+// его (как rose Collections/Popular показывают дефолт-заголовок). Мерчант задал
+// свой heading → его и рендерим. Роль = заголовок секции (МАННЕРА §1), на
 // розовом полотне — белый. Лестница §9: medium/отсутствие = 18/md:20,
 // small 15/17, large 22/24.
-const heading = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
+const headingRaw = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
+const heading = headingRaw || (!hasManualColumns ? "Мультиколонны" : "");
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
 	headingSize === "small"
@@ -43,8 +53,6 @@ const PLACEHOLDER_COLUMNS = [
 	{ heading: "Колонна", text: PLACEHOLDER_TEXT, imageUrl: "", link: { text: "Кнопка", href: "/catalog" } },
 	{ heading: "Колонна", text: PLACEHOLDER_TEXT, imageUrl: "", link: { text: "Кнопка", href: "/catalog" } },
 ];
-// hasManualColumns: мерчант явно добавил хотя бы одну колонку (Shopify-модель).
-const hasManualColumns = Array.isArray(p.columns) && p.columns.length > 0;
 const rawColumns = hasManualColumns ? p.columns : PLACEHOLDER_COLUMNS;
 const columns = rawColumns.slice(0, 10).map((c: any) => {
 	// Ссылка карточки: canon link {text,href} ИЛИ flat-пара linkText + link
@@ -188,7 +196,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 						) : (
 							c.isPlaceholder && (
 								<div
-									class="h-[120px] w-full rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-muted,153_153_153)/0.15)]"
+									class="h-[120px] w-full rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,255_255_255))]"
 									aria-hidden="true"
 								/>
 							)

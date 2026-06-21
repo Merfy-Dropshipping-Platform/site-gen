@@ -13,21 +13,28 @@ const rawVideoUrl =
 	typeof p.video?.url === "string" ? p.video.url : typeof p.videoUrl === "string" ? p.videoUrl : "";
 const videoUrl = rawVideoUrl.startsWith("blob:") ? "" : rawVideoUrl;
 // Канон poster (+ video.coverImage). Когда мерчант НЕ загрузил ни видео, ни
-// обложку — пустое состояние секции = Figma-плейсхолдер (1:19335): пустой
-// image-rect на surface-подложке (даёт mediaCls) + Play-иконка по центру.
-// НЕ мок-постер верстальщика /images/hero-background.webp.
+// обложку — пустое состояние секции = Figma-плейсхолдер (1:19335): дизайн-ассет
+// /placeholders/landscape-video.png (раздаётся на каждой теме из
+// packages/theme-base/public/placeholders, copyPublic) + Play-иконка по центру,
+// а НЕ пустая surface и НЕ мок-постер верстальщика /images/hero-background.webp
+// (контракт картиночных секций).
+const PLACEHOLDER_VIDEO_IMAGE = "/placeholders/landscape-video.png";
 const poster =
 	(typeof p.video?.coverImage === "string" && p.video.coverImage ? p.video.coverImage : undefined) ??
 	(typeof p.poster === "string" && p.poster ? p.poster : undefined);
 
 // Канон heading + pupa content.heading{text, alignment, enabled, size} — рендер
-// при непустом тексте и enabled !== 'false'. Роль = заголовок секции §1
-// (Urbanist 18/20 uppercase, акцент-токен #E38E9F).
+// при enabled !== 'false'. Роль = заголовок секции §1 (Urbanist 18/20 uppercase,
+// акцент-токен #E38E9F). Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния
+// Video: заголовок «Видео» НАД медиа-блоком. Дефолт = «Видео» (паттерн bloom
+// Gallery/Collections/MultiRows `?? "<Figma>"`); мерчант задал свой heading →
+// рендерим ЕГО (fallback срабатывает только при пустом тексте).
 const headingRaw = p.heading ?? p.content?.heading;
-const headingText =
+const headingRawText =
 	typeof headingRaw === "string" ? headingRaw : ((headingRaw?.text as string | undefined) ?? "");
+const headingText = headingRawText.trim() ? headingRawText : "Видео";
 const headingEnabled = String(p.content?.heading?.enabled ?? "true") !== "false";
-const showHeading = Boolean(headingText.trim()) && headingEnabled;
+const showHeading = headingEnabled;
 // Канон size (панель «Размер заголовка») + дубли headingSize / heading.size /
 // content.heading.size. Лестница §9: small 15/17, medium 18/20 (литерал), large 22/24.
 const headingSize =
@@ -132,19 +139,29 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 					/>
 				) : (
 					/* Пустое состояние (Figma 1:19335): без видео и без обложки —
-					   пустой image-rect (surface-подложка из mediaCls) + Play-иконка
-					   по центру. Цвета — токены темы на SVG-узлах: контраст круг/
-					   стрелка гарантирован в любой схеме и не зависит от Tailwind-JIT. */
-					<div
-						class="absolute inset-0 flex items-center justify-center"
-						aria-hidden="true"
-						data-media-placeholder
-					>
-						<svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-							<circle cx="32" cy="32" r="32" style="fill:rgb(var(--color-text,17_17_17))" />
-							<path d="M27 22L43 32L27 42V22Z" style="fill:rgb(var(--color-bg,255_255_255))" />
-						</svg>
-					</div>
+					   дизайн-ассет landscape-video.png на всю плитку + Play-иконка по
+					   центру (НЕ пустая surface). Цвета Play — токены темы на SVG-узлах:
+					   контраст круг/стрелка гарантирован в любой схеме и не зависит от
+					   Tailwind-JIT. */
+					<>
+						<img
+							src={PLACEHOLDER_VIDEO_IMAGE}
+							alt=""
+							aria-hidden="true"
+							loading="lazy"
+							class="absolute inset-0 size-full object-cover"
+						/>
+						<div
+							class="absolute inset-0 flex items-center justify-center"
+							aria-hidden="true"
+							data-media-placeholder
+						>
+							<svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+								<circle cx="32" cy="32" r="32" style="fill:rgb(var(--color-text,17_17_17))" />
+								<path d="M27 22L43 32L27 42V22Z" style="fill:rgb(var(--color-bg,255_255_255))" />
+							</svg>
+						</div>
+					</>
 				)
 			}
 			{

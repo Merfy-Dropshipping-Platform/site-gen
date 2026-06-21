@@ -5,17 +5,23 @@
 // (поля px-4…2xl:px-[280px], вертикаль 56/64/100/120/140, контейнер 1320),
 // типографика §1 (.rose-title / Manrope 16), кнопки §3 (solid чёрная, габариты
 // Contacts CTA; outlined = button-2 токены как secondaryButton Hero T11).
+//
+// Figma 1:19335 — ПУСТОЕ состояние секции (тип "MainText"): дословный плейсхолдер
+// (НЕ дефолт-контент верстальщика). MainText — чисто текстовая секция (нет
+// товаров/коллекций для SSR-фетча), потому пустое состояние = дефолтные значения
+// полей: заголовок «Расскажи о своем бренде», текст «Расскажи подробнее о своем
+// онлайн-магазине в этом блоке», кнопка «Кнопка». Когда мерчант задаёт свои
+// heading/text/button — рендерятся ИХ значения (ветки p.heading/p.text/p.button ниже).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
 // heading: string | { text, size }; text: string | { content, size } (canon union).
 const heading =
-	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Расскажите о своем бренде");
+	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Расскажи о своем бренде");
 const text =
 	typeof p.text === "string"
 		? p.text
-		: (p.text?.content ??
-			"Поделитесь информацией о вашем бренде с покупателями. Опишите продукт, сделайте объявление или пригласите покупателей в свой магазин.");
+		: (p.text?.content ?? "Расскажи подробнее о своем онлайн-магазине в этом блоке");
 
 // Канон headingSize (top-level hidden приоритетнее heading.size сабпанели):
 // 'medium' (canon-default) и отсутствие = .rose-title дословно (20px desktop /
@@ -50,11 +56,13 @@ const alignCls =
 const italicCls = p.textStyle === "italic" ? " italic" : "";
 
 // Кнопка: canon-сабпанель button {text, link} приоритетнее legacy hidden cta
-// {text, href|link, variant}. Рендер ТОЛЬКО при непустом тексте (canon-defaults
-// кнопку не пишут — дефолт секции без кнопки). Ссылка-фоллбек /catalog (паттерн T11).
+// {text, href|link, variant}. Мерчант задал текст — рендерим его; пусто (canon-
+// defaults кнопку не пишут) — дословный Figma-плейсхолдер «Кнопка» (1:19335).
+// Ссылка-фоллбек /catalog (паттерн T11).
 const btnText =
 	(typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined) ??
-	(typeof p.cta?.text === "string" && p.cta.text.trim() ? p.cta.text : undefined);
+	(typeof p.cta?.text === "string" && p.cta.text.trim() ? p.cta.text : undefined) ??
+	"Кнопка";
 const btnHref =
 	p.button?.link?.href ??
 	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??

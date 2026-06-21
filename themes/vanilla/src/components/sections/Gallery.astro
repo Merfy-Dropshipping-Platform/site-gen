@@ -17,11 +17,19 @@ const id = p.id;
 // Плейсхолдер-куртка (Figma 1:19335) — тот же URL, что VanillaProductDetail и
 // storefront-hydrate, единая декорация пустого состояния по всей теме.
 const PLACEHOLDER_SWEATER_BLUE = "/placeholders/sweater-blue.png";
+// Дизайн-ассет картиночной плитки галереи (Figma 1:19335). Картиночная плитка
+// пустого состояния показывает его (НЕ пустой surface — контракт картиночных
+// секций). Раздаётся на каждой теме как /placeholders/landscape-gallery.png.
+const PLACEHOLDER_GALLERY_IMAGE = "/placeholders/landscape-gallery.png";
 
-// Заголовок/текст шапки: рендерятся только когда мерчант их задал (пустое
-// состояние = плейсхолдер-сетка без мок-копирайта верстальщика).
+// Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния Gallery: заголовок
+// «Галерея» (раньше пустое состояние шло БЕЗ заголовка — контракт требует его).
+// Заданный мерчантом heading рендерится как есть; пустой → дефолт «Галерея».
+// Текст-подзаголовок в контракте Gallery отсутствует → дефолт пуст (мок-копирайт
+// верстальщика не возвращаем).
 const sectionTitle =
-	(typeof p.heading === "string" && p.heading.trim() ? p.heading : p.heading?.text) || "";
+	(typeof p.heading === "string" && p.heading.trim() ? p.heading : p.heading?.text) ||
+	"Галерея";
 const rawText =
 	(typeof p.text === "string" ? p.text : p.text?.content) ??
 	(typeof p.subtitle === "string" ? p.subtitle : undefined);
@@ -110,6 +118,67 @@ const galleryTiles: GalleryTile[] = (Array.isArray(p.items) ? p.items : [])
 // 1:19335); реальную обложку подставит гидрация (data-gallery-product/-collection).
 // Изображение-плитка без url тоже остаётся пустым rect (контракт пустого состояния).
 const useItems = galleryTiles.length > 0;
+
+// SSR-фетч реальных товаров/коллекций выбранных плиток (эталон rose Popular.astro:
+// p.siteId → fetch /api/sites/<id>/storefront-data). Astro-Container превью НЕ
+// исполняет клиентскую module-гидрацию ниже — поэтому имя/цену/картинку реальной
+// сущности резолвим прямо в SSR, чтобы их видело и ПРЕВЬЮ конструктора. На live
+// клиентский <script> ниже остаётся (освежает данные). Нет siteId / ошибка / нет
+// совпадения — плитка остаётся канон-плейсхолдером («Товар»/«Выбери коллекцию»).
+const siteId = typeof p.siteId === "string" ? p.siteId : "";
+const fmtPrice = (v: unknown): string => {
+	const n = typeof v === "number" ? v : parseFloat(String(v ?? ""));
+	return Number.isFinite(n) ? `${Math.round(n).toLocaleString("ru-RU")} ₽` : "";
+};
+const tileImage = (entity: any): string => {
+	const imgs = Array.isArray(entity?.images) ? entity.images : null;
+	if (imgs && imgs[0]) return typeof imgs[0] === "string" ? imgs[0] : (imgs[0]?.url ?? "");
+	return typeof entity?.image === "string" ? entity.image : "";
+};
+const needsResolve =
+	useItems && galleryTiles.some((t) => (t.kind === "product" || t.kind === "collection") && t.ref);
+if (needsResolve && siteId) {
+	try {
+		const base = (import.meta as any).env?.SITES_INTERNAL_BASE ?? "http://localhost:3114";
+		const res = await fetch(`${base}/api/sites/${siteId}/storefront-data`).catch(() => null);
+		if (res && res.ok) {
+			const data: any = await res.json();
+			const allProducts: any[] = Array.isArray(data?.products) ? data.products : [];
+			const allCollections: any[] = Array.isArray(data?.collections) ? data.collections : [];
+			for (const tile of galleryTiles) {
+				if (!tile.ref) continue;
+				if (tile.kind === "product") {
+					const prod = allProducts.find(
+						(x) => x && (x.id === tile.ref || x.slug === tile.ref),
+					);
+					if (!prod) continue;
+					if (prod.name) {
+						tile.label = String(prod.name);
+						tile.alt = String(prod.name);
+					}
+					const price = fmtPrice(prod.basePrice ?? prod.price);
+					if (price) tile.price = price;
+					const cover = tileImage(prod);
+					if (cover) tile.url = cover;
+				} else if (tile.kind === "collection") {
+					const col = allCollections.find(
+						(c) => c && (c.id === tile.ref || c.slug === tile.ref || c.name === tile.ref),
+					);
+					if (!col) continue;
+					if (col.name) {
+						tile.label = String(col.name);
+						tile.alt = String(col.name);
+					}
+					const cover = tileImage(col);
+					if (cover) tile.url = cover;
+					if (col.slug) tile.href = `/catalog?collection=${encodeURIComponent(col.slug)}`;
+				}
+			}
+		}
+	} catch {
+		/* нет данных → плитки остаются канон-плейсхолдерами */
+	}
+}
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
@@ -211,10 +280,14 @@ const paddingStyle = p.padding
 				>
 					<li>
 						<div class="flex w-full flex-col gap-3">
-							<div
-								class="relative aspect-square w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]"
-								aria-hidden="true"
-							></div>
+							<div class="relative aspect-square w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]">
+								<img
+									src={PLACEHOLDER_GALLERY_IMAGE}
+									alt="Галерея"
+									loading="lazy"
+									class="absolute inset-0 size-full object-cover"
+								/>
+							</div>
 						</div>
 					</li>
 					<li>

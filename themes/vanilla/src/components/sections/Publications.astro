@@ -109,12 +109,16 @@ function formatPubDate(iso: string | null | undefined): string {
 
 // Гейт пустого состояния (Shopify-модель, паритет theme-base/blocks/Publications
 // + порт bloom): есть реальные публикации → рендерим их без изменений; нет —
-// ПЛЕЙСХОЛДЕР по контракту Figma 1:19335 (колонки: пустой image-rect surface +
-// «Колонна» + нейтральный текст), а НЕ мок-демо верстальщика (статьи про уют/
-// плед + /images/vanilla-product-N.webp). Текст-болванка в нейтральном тоне
-// публикаций (как theme-base MultiColumns), не привязан к товарам/уходу.
+// ПЛЕЙСХОЛДЕР по контракту Figma 1:19335 (тип «Publications»): колонки = пустой
+// image-rect surface + «Колонна» + ДОСЛОВНЫЙ хелпер-текст «Сочетай текст, чтобы
+// подчеркнуть плюсы товара или коллекции.», а НЕ мок-демо верстальщика (статьи
+// про уют/плед + /images/vanilla-product-N.webp) и не вольная текст-болванка.
 const hasRealPublications = realPublications.length > 0;
-const PLACEHOLDER_TEXT = "Поделись новостями бренда, гайдами и историями в этом блоке.";
+const PLACEHOLDER_TEXT = "Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.";
+// Дизайн-ассет фото колонки публикаций (Figma 1:19335) — раздаётся на каждой
+// теме как /placeholders/publication-card.png. Контракт картиночных секций:
+// фото показывается ВСЕГДА (НЕ пустой surface-rect, НЕ мок верстальщика).
+const PLACEHOLDER_PUB_IMAGE = "/placeholders/publication-card.png";
 type PubItem = { title: string; date: string; excerpt: string; image: string; slug?: string; isPlaceholder: boolean };
 const items: PubItem[] = hasRealPublications
 	? realPublications.slice(0, cards).map((pub) => ({
@@ -129,7 +133,7 @@ const items: PubItem[] = hasRealPublications
 			title: "Колонна",
 			date: "",
 			excerpt: PLACEHOLDER_TEXT,
-			image: "",
+			image: PLACEHOLDER_PUB_IMAGE,
 			isPlaceholder: true,
 		}));
 

@@ -6,8 +6,8 @@ import FluxPicture from "../img/FluxPicture.astro";
 // bloom Publications). Схема полей = packages/theme-base/blocks/Publications/
 // Publications.puckConfig.ts.
 // ПУСТОЕ СОСТОЯНИЕ (нет реальных публикаций) = ПЛЕЙСХОЛДЕР по контракту Figma
-// 1:19335 (3 колонки: пустой image-rect surface + «Колонна» + нейтральный
-// текст), НЕ мок-демо верстальщика (обзоры гаджетов + /images/4x/Товар_N.png).
+// 1:19335 (3 колонки: фото /placeholders/publication-card.png + «Колонна» +
+// нейтральный текст), НЕ мок-демо верстальщика (обзоры гаджетов + /images/*).
 // Когда у магазина есть реальные публикации (SSR fetch /api/sites/<id>/
 // publications → fallback publications.json) — рендерим их без изменений
 // (Shopify-модель, как theme-base PopularProducts/Collections/MultiColumns:
@@ -117,13 +117,19 @@ function formatPubDate(iso: string | null | undefined): string {
 }
 
 // Гейт пустого состояния (Shopify-модель): есть реальные публикации → рендерим
-// их; нет — ПЛЕЙСХОЛДЕР по контракту Figma 1:19335 (3 колонки: пустой image-rect
-// surface + «Колонна» + нейтральный текст), НЕ мок-демо верстальщика.
+// их; нет — ПЛЕЙСХОЛДЕР по контракту Figma 1:19335 (3 колонки: фото
+// /placeholders/publication-card.png + «Колонна» + нейтральный текст), НЕ мок-демо.
 const hasRealPublications = realPublications.length > 0;
-// Текст-болванка колонок в нейтральном тоне публикаций (как theme-base
-// MultiColumns: «Сочетай текст…»); не привязан к товарам/гаджетам.
-const PLACEHOLDER_TEXT = "Поделись новостями бренда, гайдами и историями в этом блоке.";
+// Текст-болванка колонок — ДОСЛОВНО по контракту Figma 1:19335 (тип Publications:
+// «Колонна» + «Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.»),
+// не привязан к товарам/гаджетам.
+const PLACEHOLDER_TEXT = "Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.";
 type PubItem = { title: string; date: string; image: string; slug?: string; isPlaceholder: boolean };
+// Дизайн-ассет плейсхолдера колонки (контракт картиночных секций Figma 1:19335:
+// фото колонки = /placeholders/publication-card.png — картинка показывается
+// ВСЕГДА, НЕ пустой surface). Раздаётся на каждой теме как /placeholders/
+// publication-card.png (copyPublic из packages/theme-base).
+const PLACEHOLDER_PUB_IMAGE = "/placeholders/publication-card.png";
 const items: PubItem[] = hasRealPublications
 	? realPublications.slice(0, cards).map((pub) => ({
 			title: pub.title ?? "",
@@ -135,7 +141,7 @@ const items: PubItem[] = hasRealPublications
 	: Array.from({ length: cards }, () => ({
 			title: "Колонна",
 			date: "",
-			image: "",
+			image: PLACEHOLDER_PUB_IMAGE,
 			isPlaceholder: true,
 		}));
 
@@ -175,12 +181,14 @@ const titleId = id && heading ? `${id}-title` : undefined;
 					const Wrapper = href ? "a" : "article";
 					return (
 						<Wrapper class="group flex flex-col gap-3 md:gap-4" href={href} data-publication-index={i}>
-							{/* Медиа: реальная обложка → FluxPicture; пустое состояние
-							   (плейсхолдер или публикация без обложки) → пустой
-							   image-rect surface (контракт Figma 1:19335). */}
+							{/* Медиа: реальная обложка → FluxPicture (соимённый .webp);
+							   пустое состояние (плейсхолдер) → дизайн-ассет
+							   /placeholders/publication-card.png сырым <img> (у него нет
+							   соимённого .webp — <picture> отдал бы битый source и не
+							   откатился на <img>, баг корзины; паттерн Puk.astro). */}
 							<div class="aspect-[4/3] w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]">
-								{item.image && (
-									<FluxPicture
+								{item.isPlaceholder ? (
+									<img
 										src={item.image}
 										alt={item.title}
 										width="800"
@@ -188,6 +196,17 @@ const titleId = id && heading ? `${id}-title` : undefined;
 										loading="lazy"
 										class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
 									/>
+								) : (
+									item.image && (
+										<FluxPicture
+											src={item.image}
+											alt={item.title}
+											width="800"
+											height="600"
+											loading="lazy"
+											class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+										/>
+									)
 								)}
 							</div>
 							<div class="flex flex-col gap-1">

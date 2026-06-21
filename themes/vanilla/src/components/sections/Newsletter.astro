@@ -10,26 +10,33 @@
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Канон heading: string | { text, alignment, size }; canon-default = литерал
-// FN:18 «Будьте в курсе уютных новостей». Роль FN:16 (Bitter italic 20 white) —
-// фоллбек токена 255_255_255, как у верстальщика.
+// Канон heading: string | { text, alignment, size }. Figma 1:19335 — ДОСЛОВНЫЙ
+// плейсхолдер ПУСТОГО состояния Newsletter: «Подпишитесь на нашу рассылку»
+// (дефолт-текст верстальщика FN:18 «Будьте в курсе уютных новостей» заменён на
+// Figma-текст; эталон — themes/rose Newsletter.astro). Мерчант задал свой heading
+// → рендерим ЕГО (?? срабатывает лишь при пустых данных). Роль FN:16 (Bitter
+// italic 20 white) — фоллбек токена 255_255_255, как у верстальщика.
 const heading =
 	typeof p.heading === "string"
 		? p.heading
-		: (p.heading?.text ?? "Будьте в курсе уютных новостей");
+		: (p.heading?.text ?? "Подпишитесь на нашу рассылку");
 // Лестница §9 от базы-литерала 20 (medium): small 17, large 24.
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
 	headingSize === "small" ? "text-[17px]" : headingSize === "large" ? "text-[24px]" : "text-[20px]";
 const headingCls = `m-0 font-vanilla-bitter ${headingSizeCls} font-normal italic leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]`;
 
-// Канон description (string) + text {content,size} (pupa-дубль): canon-default =
-// двухстрочный литерал FN:23-24 (с <br /> — поэтому рендер через set:html).
-// Роль FN:21: Arsenal italic 14 lg:16, #F0F0F0 → токен text, фоллбек 240_240_240.
+// Канон description (string) + text {content,size} (pupa-дубль). Figma 1:19335 —
+// ДОСЛОВНЫЙ плейсхолдер ПУСТОГО состояния: «Узнавайте первыми о новых коллекциях
+// и эксклюзивных предложениях.» (дефолт-текст верстальщика FN:23-24 «Станьте
+// частью сообщества Vanila…» заменён на Figma-текст; эталон rose). Мерчант задал
+// description/text → рендерим ЕГО (?? лишь при пустых данных). Рендер через
+// set:html — поле может содержать <br />. Роль FN:21: Arsenal italic 14 lg:16,
+// #F0F0F0 → токен text, фоллбек 240_240_240.
 const description =
 	(typeof p.description === "string" && p.description.trim() ? p.description : undefined) ??
 	(typeof p.text?.content === "string" && p.text.content.trim() ? p.text.content : undefined) ??
-	"Станьте частью сообщества Vanila. Вас ждут свежие идеи для уюта,<br /> анонсы новинок, полезные советы по уходу за текстилем и специальные промокоды для подписчиков.";
+	"Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.";
 // Лестница «текст полотна» §9 (литерал 14/16 = large): small 10/11, medium 12/14.
 const descSize = p.text?.size;
 const descSizeCls =
@@ -39,11 +46,14 @@ const descSizeCls =
 			? "text-[12px] lg:text-[14px]"
 			: "text-[14px] lg:text-[16px]";
 
-// Канон placeholder/buttonText: дефолты = литералы FN:36 / FN:44.
+// Канон placeholder/buttonText. Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер ПУСТОГО
+// состояния: input «email@example.com», кнопка «Кнопка» (дефолты верстальщика
+// FN:36 «E-mail» / FN:44 «ОТПРАВИТЬ» заменены на Figma-текст; эталон rose).
+// Мерчант задал свои placeholder/buttonText → рендерим ИХ (fallback лишь при пустых данных).
 const placeholder =
-	typeof p.placeholder === "string" && p.placeholder.trim() ? p.placeholder : "E-mail";
+	typeof p.placeholder === "string" && p.placeholder.trim() ? p.placeholder : "email@example.com";
 const buttonText =
-	typeof p.buttonText === "string" && p.buttonText.trim() ? p.buttonText : "ОТПРАВИТЬ";
+	typeof p.buttonText === "string" && p.buttonText.trim() ? p.buttonText : "Кнопка";
 
 // Канон formLayout: blockDefaults темы 'inline-submit' (совпадает с отсутствием
 // пропа) = форма FN:29-46 VERBATIM (рамка border-white p-3, sm-ряд h-14 pl-4

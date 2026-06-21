@@ -8,6 +8,7 @@ interface FaqItem {
 
 interface Props {
 	items?: FaqItem[];
+	heading?: string | { text?: string };
 	id?: string;
 }
 
@@ -16,43 +17,97 @@ interface Props {
 // Curated-модель (как theme-base PopularProducts/Collections и канон
 // CollapsibleSection.astro этой темы): секция показывает реальные пункты
 // ТОЛЬКО когда мерчант их передал. Гейт = наличие непустого items.
-// Пусто → ПЛЕЙСХОЛДЕР пустого состояния (Figma 1:19335) «Раздел» + «Ответь на
-// самые популярные вопросы клиентов», НЕ мок-демо верстальщика (3 FAQ-вопроса).
+//
+// Figma 1:19335 — ДОСЛОВНОЕ ПУСТОЕ состояние секции «Сворачиваемый раздел»:
+// заголовок-плейсхолдер «Сворачиваемый раздел» + ряды-плейсхолдеры «Раздел» +
+// хелпер-текст «Ответь на самые популярные вопросы клиентов» на пустых
+// surface-карточках (bg-[rgb(var(--color-surface))]), а НЕ мок-демо
+// верстальщика (3 FAQ-вопроса). Пустое состояние НЕ интерактивно (реального
+// ответа нет — помощь видна сразу, паттерн пустого состояния rose/satin
+// CollapsibleSection). Маркеры data-faq-item / data-faq-answer GSAP-аккордеона
+// ставятся ТОЛЬКО на реальные пункты. SSR-фетч товаров/коллекций (эталон rose
+// Popular.astro) тут НЕприменим — секция текстовая, без collectionId/productId.
+const { items: itemsProp, heading: headingProp, id } = Astro.props;
+
+// Канон heading: string | { text }. Figma 1:19335 — дословный заголовок-
+// плейсхолдер «Сворачиваемый раздел» (у legacy-компонента heading-пропа не было
+// вовсе — добавлен; дефолт-копирайт верстальщика отсутствовал). Мерчант задал
+// свой heading → его и рендерим (?? срабатывает только при пустых данных).
+const heading =
+	typeof headingProp === "string"
+		? headingProp
+		: (headingProp?.text ?? "Сворачиваемый раздел");
+
+const hasRealItems = Array.isArray(itemsProp) && itemsProp.length > 0;
+
+// Figma 1:19335 — дословные ряды-плейсхолдеры пустого состояния: лейбл «Раздел»
+// (роль вопроса) + хелпер «Ответь на самые популярные вопросы клиентов».
 const PLACEHOLDER_ITEMS: FaqItem[] = [
 	{ q: "Раздел", a: "Ответь на самые популярные вопросы клиентов" },
 	{ q: "Раздел", a: "Ответь на самые популярные вопросы клиентов" },
 ];
-
-const { items: itemsProp, id } = Astro.props;
-const hasRealItems = Array.isArray(itemsProp) && itemsProp.length > 0;
 // Выбранные данные → рендер реальных без изменений. Пусто → плейсхолдер.
 const items: FaqItem[] = hasRealItems ? itemsProp! : PLACEHOLDER_ITEMS;
+
+const titleId = id && heading ? `${id}-title` : undefined;
 ---
 
 <section
 	class="satin-pad w-full bg-white py-10 md:py-14"
-	aria-label="Частые вопросы"
+	aria-labelledby={titleId}
+	aria-label={heading ? undefined : "Частые вопросы"}
 	data-puck-component-id={id}
 >
-	<div class="satin-container flex flex-col divide-y divide-[#DDDDDD]">
-		{items.map((item, index) => (
-			<details
-				class="group py-5"
-				open={index === 0}
-				data-faq-item
-				data-puck-subsection-parent={hasRealItems ? id : undefined}
-				data-puck-subsection-index={hasRealItems ? index : undefined}
-				data-puck-subsection-field={hasRealItems ? "items" : undefined}
-			>
-				<summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-logo text-[18px] font-normal uppercase leading-[1.2] text-[#000000] md:text-[20px] [&::-webkit-details-marker]:hidden">
-					<span>{item.q}</span>
-					<NtIcon name="plus" sizeClass="size-8" class="shrink-0 group-open:hidden" />
-					<NtIcon name="minus" sizeClass="size-8" class="hidden shrink-0 group-open:block" />
-				</summary>
-				<div class="overflow-hidden" data-faq-answer>
-						<p class="satin-copy mt-3 max-w-[1100px]">{item.a}</p>
-					</div>
-			</details>
-		))}
+	<div class="satin-container flex flex-col gap-8">
+		{
+			heading && (
+				<h2
+					id={titleId}
+					class="font-logo text-[20px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
+					set:html={heading}
+				/>
+			)
+		}
+		{
+			hasRealItems ? (
+				<div class="flex flex-col divide-y divide-[#DDDDDD]">
+					{items.map((item, index) => (
+						<details
+							class="group py-5"
+							open={index === 0}
+							data-faq-item
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index={index}
+							data-puck-subsection-field="items"
+						>
+							<summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-logo text-[18px] font-normal uppercase leading-[1.2] text-[#000000] md:text-[20px] [&::-webkit-details-marker]:hidden">
+								<span>{item.q}</span>
+								<NtIcon name="plus" sizeClass="size-8" class="shrink-0 group-open:hidden" />
+								<NtIcon name="minus" sizeClass="size-8" class="hidden shrink-0 group-open:block" />
+							</summary>
+							<div class="overflow-hidden" data-faq-answer>
+								<p class="satin-copy mt-3 max-w-[1100px]">{item.a}</p>
+							</div>
+						</details>
+					))}
+				</div>
+			) : (
+				/* Figma 1:19335 ПУСТОЕ состояние: пустые surface-карточки
+				   (bg-[rgb(var(--color-surface))]) с дословным лейблом «Раздел» +
+				   хелпер-текстом. Без интерактивного <details> и без GSAP-маркеров —
+				   реального ответа нет, помощь видна сразу. */
+				<div class="flex flex-col gap-3">
+					{items.map((item) => (
+						<div class="flex flex-col gap-2 bg-[rgb(var(--color-surface,245_245_245))] p-5">
+							<div class="flex w-full items-center justify-between gap-4 font-logo text-[18px] font-normal uppercase leading-[1.2] text-[rgb(var(--color-heading,0_0_0))] md:text-[20px]">
+								<span class="min-w-0 flex-1 break-words">{item.q}</span>
+								<NtIcon name="plus" sizeClass="size-8" class="shrink-0" />
+							</div>
+							<p class="satin-copy max-w-[1100px]">{item.a}</p>
+						</div>
+					))}
+				</div>
+			)
+		}
 	</div>
 </section>

@@ -7,10 +7,12 @@
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Канон heading: string | { text, alignment, size }; canon-default «Подпишись на
-// новости».
+// Канон heading: string | { text, alignment, size }. Figma 1:19335 — ДОСЛОВНЫЙ
+// плейсхолдер пустого состояния Newsletter: «Подпишитесь на нашу рассылку»
+// (дефолт-текст верстальщика «Подпишись на новости» заменён на Figma-текст).
+// Мерчант задал свой heading → рендерим ЕГО (?? срабатывает лишь при пустых данных).
 const heading =
-	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Подпишись на новости");
+	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Подпишитесь на нашу рассылку");
 // Размер — через --size-section-heading (её читает .rose-title); !text-[ не работает.
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
@@ -21,22 +23,27 @@ const headingSizeCls =
 			: "";
 const headingCls = `rose-title${headingSizeCls}`;
 
-// Канон description (string) + text {content,size} (pupa-дубль): canon-default
-// «Узнавай о новинках и акциях первым». Манера = подзаголовок подписки подвала
-// (Manrope 16 muted).
+// Канон description (string) + text {content,size} (pupa-дубль). Figma 1:19335 —
+// ДОСЛОВНЫЙ плейсхолдер: «Узнавайте первыми о новых коллекциях и эксклюзивных
+// предложениях.» (дефолт-текст верстальщика «Узнавай о новинках и акциях первым»
+// заменён на Figma-текст). Манера = подзаголовок подписки подвала (Manrope 16 muted).
+// Мерчант задал description/text → рендерим ЕГО (?? лишь при пустых данных).
 const description =
 	(typeof p.description === "string" && p.description.trim() ? p.description : undefined) ??
 	(typeof p.text?.content === "string" && p.text.content.trim() ? p.text.content : undefined) ??
-	"Узнавай о новинках и акциях первым";
+	"Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.";
 const descSize = p.text?.size;
 const descSizeCls =
 	descSize === "small" ? " !text-[14px]" : descSize === "large" ? " !text-[19px]" : "";
 
-// Канон placeholder/buttonText: canon-defaults «Твой email» / «Подписаться».
+// Канон placeholder/buttonText. Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого
+// состояния: input «email@example.com», кнопка «Кнопка» (дефолты верстальщика
+// «Твой email» / «Подписаться» заменены на Figma-текст). Мерчант задал свои
+// placeholder/buttonText → рендерим ИХ (fallback лишь при пустых данных).
 const placeholder =
-	typeof p.placeholder === "string" && p.placeholder.trim() ? p.placeholder : "Твой email";
+	typeof p.placeholder === "string" && p.placeholder.trim() ? p.placeholder : "email@example.com";
 const buttonText =
-	typeof p.buttonText === "string" && p.buttonText.trim() ? p.buttonText : "Подписаться";
+	typeof p.buttonText === "string" && p.buttonText.trim() ? p.buttonText : "Кнопка";
 
 // Канон formLayout: stacked (canon-default) — поле + чёрная CTA манеры §3 под ним;
 // inline-submit — форма подвала верстальщика дословно (кнопка-стрелка в рамке).

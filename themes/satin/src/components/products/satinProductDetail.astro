@@ -33,6 +33,36 @@ interface Props {
 
 const { product, id, siteId } = Astro.props;
 
+// ── Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния секции «Товар». ──
+// Когда товар НЕ выбран мерчантом (preview/skeleton `/product` без products.json
+// или нейтральный skeleton-консьюмер), секция рендерит дизайн-плейсхолдер Figma
+// (куртка-заглушка + «Новая коллекция!» + «Товар» + «2 500 ₽» + «Количество» +
+// кнопки + «Поделиться»), а НЕ demo-контент верстальщика («Джинсы женские» /
+// «Satin» / «6 990 ₽» / `/images/4x/Товар_N.png` / demo-строку цвета). Когда
+// мерчант ЗАДАЛ товар (реальный demo catalogProduct / гидрация live API) —
+// рендерим ЕГО без изменений. Текст 1:1 с контрактом theme-base Product
+// (text='Новая коллекция!', name='Товар', price='2 500 ₽'); главное фото PDP =
+// /placeholders/sweater-blue-large.png (Figma 1:19335 — крупный кадр товара;
+// copyPublic из packages/theme-base, доступна на live, паритет rose
+// Popular/RoseProductDetail).
+const PLACEHOLDER_PRODUCT_IMAGE = "/placeholders/sweater-blue-large.png";
+const PLACEHOLDER_BRAND = "Новая коллекция!";
+const PLACEHOLDER_NAME = "Товар";
+const PLACEHOLDER_PRICE = "2 500 ₽";
+
+// Пустое состояние = товар НЕ реальный мерчант-товар. Реальный определяется по
+// наличию реальных медиа (gallery с реальными кадрами / http-MinIO-URL картинки)
+// либо реальных цветов-вариантов. Demo-скелетон (`/images/placeholder.png`,
+// пустая цена, colors=[]) → плейсхолдер; demo catalogProducts (`/images/4x/...`,
+// gallery+colors) — НЕ плейсхолдер (видны их данные). Зеркало RoseProductDetail.
+const rawImg = typeof product.image === "string" ? product.image : "";
+const isMockImage = !rawImg || /\/(placeholder)\b/i.test(rawImg);
+const hasRealMedia =
+	(product.gallery && product.gallery.length > 0) ||
+	(Array.isArray(product.colors) && product.colors.length > 0) ||
+	!isMockImage;
+const isPlaceholder = !hasRealMedia;
+
 const colorLabels: Record<string, string> = {
 	blue: "Синий",
 	black: "Чёрный",
@@ -42,14 +72,27 @@ const colorLabels: Record<string, string> = {
 	beige: "Бежевый",
 };
 
-const colors = (product.colors ?? []).map((color) => ({
-	id: color,
-	label: colorLabels[color] ?? color,
-}));
+// В пустом состоянии (Figma-плейсхолдер) строка цвета НЕ показывается — только
+// реальный/demo товар несёт чипы цвета (live-гидрация заменит их селектором или
+// скроет контейнер [data-pdp-variants]).
+const colors = isPlaceholder
+	? []
+	: (product.colors ?? []).map((color) => ({
+			id: color,
+			label: colorLabels[color] ?? color,
+		}));
 
-const galleryImages = (product.gallery && product.gallery.length > 0 ? product.gallery : [product.image]).slice(0, 4);
+// Отображаемые значения: реальный товар → как есть; пустое состояние → Figma.
+const displayName = isPlaceholder ? PLACEHOLDER_NAME : product.name;
+const displayBrand = isPlaceholder ? PLACEHOLDER_BRAND : product.brand;
+const displayPrice = isPlaceholder ? PLACEHOLDER_PRICE : product.price;
+const displayOldPrice = isPlaceholder ? undefined : product.oldPrice;
+
+const galleryImages = (
+	isPlaceholder ? [PLACEHOLDER_PRODUCT_IMAGE] : product.gallery && product.gallery.length > 0 ? product.gallery : [product.image]
+).slice(0, 4);
 const single = galleryImages.length === 1;
-const cartVariantColor = product.colors?.[0] ?? "";
+const cartVariantColor = isPlaceholder ? "" : (product.colors?.[0] ?? "");
 ---
 
 <section
@@ -60,19 +103,20 @@ const cartVariantColor = product.colors?.[0] ?? "";
 	data-site-id={siteId}
 	data-puck-component-id={id}
 >
-	{/* Скелетон-лоадер PDP (satin). Виден ПОКА грузится реальный товар (data-pdp-layout
-	    стартует с opacity:0). is:inline-гидрация ниже прячет его (skel.hidden = true) в
-	    обеих развязках: success (рядом с layout.style.opacity = "1") и not-found. Зеркалит
-	    раскладку satin 1:1 — та же сетка `lg:grid-cols-[652px_minmax(0,1fr)] gap-10`, та же
-	    2×2-галерея с `aspect-[318/470]`, та же инфо-колонка (бренд→цена→чипы цвета→кнопки→
-	    описание). Дизайн под тему: плейсхолдеры = surface-токен `rgb(var(--color-surface,
-	    245_245_245))`, ОСТРЫЕ углы (satin без radius — как реальные ячейки/кнопки/чипы),
-	    шиммер = Tailwind animate-pulse (как catalog-skeleton темы). aria-hidden — лоадер
-	    не озвучивается скринридером. На demo-сборке без данных гидрация — no-op, но layout
-	    с opacity:0 раскрывается SSR-скелетоном этого же грида ниже → скелетон тут не мешает. */}
+	{/* Скелетон-лоадер PDP (satin) — РЕЗЕРВ на время живой гидрации реального
+	    API-товара. По умолчанию СКРЫТ (hidden): видимое пустое состояние — это
+	    Figma-плейсхолдер в `data-pdp-layout` ниже (куртка-заглушка / «Новая
+	    коллекция!» / «Товар» / «2 500 ₽» / «Количество»), а НЕ pulse-скелетон, и
+	    реальный/demo товар сразу виден в layout (без мелькания pulse). Гидрация
+	    держит skel.hidden = true в обеих развязках (success/not-found) — здесь
+	    стартуем уже скрытым. Зеркалит раскладку satin 1:1 (сетка
+	    `lg:grid-cols-[652px_minmax(0,1fr)] gap-10`, 2×2-галерея `aspect-[318/470]`,
+	    инфо-колонка): surface-токен `rgb(var(--color-surface,245_245_245))`, ОСТРЫЕ
+	    углы, шиммер animate-pulse. aria-hidden — не озвучивается скринридером. */}
 	<div
 		class="satin-container grid grid-cols-1 gap-10 lg:grid-cols-[652px_minmax(0,1fr)] lg:gap-10"
 		data-pdp-skeleton
+		hidden
 		aria-hidden="true"
 	>
 		{/* Галерея: 2×2 surface-плитки, острые углы, пропорции реальных ячеек (318/470). */}
@@ -134,23 +178,46 @@ const cartVariantColor = product.colors?.[0] ?? "";
 		</div>
 	</div>
 
-	<div class="satin-container grid grid-cols-1 gap-10 lg:grid-cols-[652px_minmax(0,1fr)] lg:gap-10" data-pdp-layout hidden style="opacity:0;transition:opacity .15s ease">
-		<!-- Gallery: 2×2 portrait grid -->
+	{/* Основной layout PDP — ВИДИМ по умолчанию (opacity:1): рендерит либо данные
+	    реального/demo товара (isPlaceholder=false), либо ДОСЛОВНЫЙ Figma-плейсхолдер
+	    пустого состояния (isPlaceholder=true). Гидрация (skel-резерв выше скрыт)
+	    перезаписывает значения реальным товаром и оставляет layout видимым. */}
+	<div class="satin-container grid grid-cols-1 gap-10 lg:grid-cols-[652px_minmax(0,1fr)] lg:gap-10" data-pdp-layout style="opacity:1;transition:opacity .15s ease">
+		<!-- Gallery: 2×2 portrait grid. Пустое состояние (Figma 1:19335) — пустая
+		     surface-карточка с курткой-плейсхолдером (object-contain), без скидки. -->
 		<div class="grid grid-cols-2 gap-4" data-pdp-gallery>
 			{galleryImages.map((img, index) => (
 				<div
-					class:list={["relative aspect-[318/470] w-full overflow-hidden bg-[#F5F5F5]", single && "col-span-2"]}
+					class:list={["relative aspect-[318/470] w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))]", single && "col-span-2"]}
 					data-pdp-gallery-cell={index === 0 ? "main" : "extra"}
 				>
-					<SatinPicture
-						src={img}
-						alt={product.name}
-						loading="eager"
-						fetchpriority={index === 0 ? "high" : undefined}
-						class="absolute inset-0 size-full object-cover"
-						{...(index === 0 ? { "data-pdp-main": true } : {})}
-					/>
-					{product.discount && index === 0 && (
+					{/* Пустое состояние (Figma 1:19335) — куртка-плейсхолдер раздаётся
+					    ТОЛЬКО как PNG (/placeholders/sweater-blue-large.png, .webp нет),
+					    поэтому рендерим ПЛОСКИЙ <img>, как остальные секции satin
+					    (Hero/Gallery/ImageWithText). SatinPicture эмитит <source srcset
+					    type="image/webp">, который для PNG-only плейсхолдера даёт 404 и
+					    <picture> НЕ откатывается к <img> → битый кадр (project_cart_thumb
+					    _image_bug). SatinPicture оставляем для реальных MinIO-URL мерчанта. */}
+					{isPlaceholder ? (
+						<img
+							src={img}
+							alt={displayName}
+							loading="eager"
+							fetchpriority={index === 0 ? "high" : undefined}
+							class="absolute inset-0 size-full object-contain p-[15%]"
+							{...(index === 0 ? { "data-pdp-main": true } : {})}
+						/>
+					) : (
+						<SatinPicture
+							src={img}
+							alt={displayName}
+							loading="eager"
+							fetchpriority={index === 0 ? "high" : undefined}
+							class="absolute inset-0 size-full object-cover"
+							{...(index === 0 ? { "data-pdp-main": true } : {})}
+						/>
+					)}
+					{!isPlaceholder && product.discount && index === 0 && (
 						<span class="absolute left-0 top-0 inline-flex h-5 items-center bg-[#000000] px-2 font-manrope text-[9px] font-normal uppercase leading-none text-white" data-pdp-badge>
 							Скидка
 						</span>
@@ -165,12 +232,12 @@ const cartVariantColor = product.colors?.[0] ?? "";
 				<p
 					class="font-manrope text-[12px] font-light uppercase leading-normal text-[#999999] md:text-[14px]"
 					data-pdp-brand
-					hidden={!product.brand}
+					hidden={!displayBrand}
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="text"
 				>
-					{product.brand}
+					{displayBrand}
 				</p>
 				<h1
 					id="product-title"
@@ -180,7 +247,7 @@ const cartVariantColor = product.colors?.[0] ?? "";
 					data-puck-subsection-index="101"
 					data-puck-subsection-field="title"
 				>
-					{product.name}
+					{displayName}
 				</h1>
 				<div
 					class="flex flex-wrap items-baseline gap-2"
@@ -188,13 +255,13 @@ const cartVariantColor = product.colors?.[0] ?? "";
 					data-puck-subsection-index="102"
 					data-puck-subsection-field="price"
 				>
-					<span class="font-manrope text-[20px] font-normal leading-normal text-[#000000]" data-pdp-price>{product.price}</span>
+					<span class="font-manrope text-[20px] font-normal leading-normal text-[#000000]" data-pdp-price>{displayPrice}</span>
 					<span
 						class="font-manrope text-[16px] font-light leading-normal text-[#999999] line-through"
 						data-pdp-oldprice
-						hidden={!product.oldPrice}
+						hidden={!displayOldPrice}
 					>
-						{product.oldPrice}
+						{displayOldPrice}
 					</span>
 				</div>
 			</div>
@@ -205,12 +272,15 @@ const cartVariantColor = product.colors?.[0] ?? "";
 				aria-label="Цвет"
 				data-pdp-variants
 				data-pdp-colors
-				hidden={colors.length === 0}
+				hidden={colors.length === 0 || isPlaceholder}
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="103"
 				data-puck-subsection-field="variants"
 			>
-				{colors.map((color, index) => (
+				{/* Пустое состояние (Figma 1:19335) строку вариантов НЕ показывает —
+				    рендерим чипы цвета ТОЛЬКО для реального/demo товара; на live
+				    гидрация заменяет их реальным селектором или скрывает контейнер. */}
+				{!isPlaceholder && colors.map((color, index) => (
 					<button
 						type="button"
 						role="radio"
@@ -226,6 +296,18 @@ const cartVariantColor = product.colors?.[0] ?? "";
 				))}
 			</div>
 
+			{/* Лейбл «Количество» (Figma 1:19335 — плейсхолдер «Товар» содержит его
+			    над счётчиком). Реальный товар сохраняет прежний вид без лейбла;
+			    live-гидрация удаляет этот SSR-лейбл при подстановке товара. */}
+			{isPlaceholder && (
+				<span
+					data-pdp-qty-placeholder-label
+					class="font-manrope text-[14px] font-normal uppercase leading-none text-[#000000]"
+				>
+					Количество
+				</span>
+			)}
+
 			<div
 				class="flex flex-col gap-3"
 				data-puck-subsection-parent={id}
@@ -236,11 +318,11 @@ const cartVariantColor = product.colors?.[0] ?? "";
 					<button
 						type="button"
 						data-add-to-cart
-						data-product-id={product.id}
-						data-name={product.name}
-						data-price={product.price}
-						data-old-price={product.oldPrice ?? ""}
-						data-image={product.image}
+						data-product-id={isPlaceholder ? "" : product.id}
+						data-name={displayName}
+						data-price={displayPrice}
+						data-old-price={displayOldPrice ?? ""}
+						data-image={galleryImages[0]}
 						data-variant-color={cartVariantColor}
 						data-quantity="1"
 						class="flex h-14 flex-1 items-center justify-center border border-[#000000] bg-white px-4 font-manrope text-[16px] font-normal uppercase leading-none text-[#000000] transition-opacity hover:opacity-80"
@@ -273,10 +355,10 @@ const cartVariantColor = product.colors?.[0] ?? "";
 				<button
 					type="button"
 					data-action="buy-now"
-					data-product-id={product.id}
-					data-name={product.name}
-					data-price={product.price}
-					data-image={product.image}
+					data-product-id={isPlaceholder ? "" : product.id}
+					data-name={displayName}
+					data-price={displayPrice}
+					data-image={galleryImages[0]}
 					class="flex h-14 w-full items-center justify-center bg-[#000000] px-4 font-manrope text-[16px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-90"
 				>
 					Купить сейчас
@@ -288,6 +370,7 @@ const cartVariantColor = product.colors?.[0] ?? "";
 				<button
 					type="button"
 					data-wishlist-toggle
+					data-product-id={isPlaceholder ? "" : product.id}
 					aria-pressed="false"
 					aria-label="В избранное"
 					class="satin-fav flex h-14 w-full items-center justify-center gap-2 border border-[#000000] bg-white px-4 font-manrope text-[16px] font-normal uppercase leading-none text-[#000000] transition-opacity hover:opacity-80"
@@ -303,14 +386,18 @@ const cartVariantColor = product.colors?.[0] ?? "";
 				</button>
 			</div>
 
+			{/* Описание: Figma-плейсхолдер «Товар» (пустое состояние) описания НЕ
+			    показывает — рендерим только для реального/demo товара. Live-гидрация
+			    заполняет [data-pdp-desc] реальным текстом и раскрывает контейнер. */}
 			<div
 				class="flex flex-col gap-3 border-t border-[#DDDDDD] pt-6"
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="106"
 				data-puck-subsection-field="description"
+				hidden={isPlaceholder}
 			>
 				<h2 class="font-logo text-[18px] font-normal uppercase leading-normal text-[#000000] md:text-[20px]">Описание</h2>
-				<p class="font-manrope text-[16px] font-light leading-[1.55] text-[#999999]" data-pdp-desc>{product.description}</p>
+				<p class="font-manrope text-[16px] font-light leading-[1.55] text-[#999999]" data-pdp-desc>{isPlaceholder ? "" : product.description}</p>
 			</div>
 
 			<div

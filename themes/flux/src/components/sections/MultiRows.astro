@@ -12,13 +12,15 @@
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Канон top-heading: string | { text, alignment, size } (+ legacy _headingLegacy);
-// отсутствие/пусто → шапки нет (canon-defaults heading не пишут). Роль =
+// Канон top-heading: string | { text, alignment, size } (+ legacy _headingLegacy).
+// Figma 1:19335 — ПУСТОЕ состояние секции «Мультиряды»: дословный заголовок
+// «Мультиряды» (а НЕ отсутствие шапки/дефолт-копирайт верстальщика; зеркало rose
+// MultiRows.astro). Мерчант задал свой heading → его и рендерим. Роль =
 // внутрисекционный h2 (Comfortaa uppercase leading-[1.115], МАННЕРА §1).
 // Лестница §9 «Внутренний h2 24/28»: large/отсутствие = литерал 24/md:28,
 // medium 20/24, small 17/20.
 const heading =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p._headingLegacy ?? "";
+	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p._headingLegacy ?? "Мультиряды";
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
 	headingSize === "small"
@@ -33,27 +35,29 @@ const headingCls = `font-comfortaa ${headingSizeCls} font-normal uppercase leadi
 
 // Канон rows[] 1-10 (item: heading|title, text|description, imageUrl|image,
 // imagePosition, button {text, href|link}, size per-item, headingSize/textSize).
-// Отсутствие массива = 2 ряда-болванки в тоне темы (МАННЕРА §11: технологично,
-// без уменьшительности), чередование лево/право.
-const CANON_ROWS = [
+// Figma 1:19335 — ПУСТОЕ состояние секции: ряды-плейсхолдеры (пустая surface-плитка
+// + дословный текст «Изображение с текстом» / «Покажи и расскажи о своем товаре в
+// одном блоке» + кнопка «Кнопка»), а НЕ дефолт-контент верстальщика («Новое
+// поколение звука» / «Мощность в каждом пикселе», описания, «Подробнее»/«Узнать
+// больше») и НЕ мок-картинки (зеркало rose MultiRows.astro). Мерчант задал rows →
+// его и рендерим (поведение ниже не меняется).
+const PLACEHOLDER_ROWS = [
 	{
 		id: "row-1",
-		heading: "Новое поколение звука",
-		text: "Расскажите о флагмане: автономность, шумоподавление и звук без компромиссов.",
-		imageUrl: "",
-		imagePosition: "left",
-		button: { text: "Подробнее", href: "/about" },
+		heading: "Изображение с текстом",
+		text: "Покажи и расскажи о своем товаре в одном блоке",
+		imageUrl: "/placeholders/landscape-multirows-image.png",
+		button: { text: "Кнопка", href: "/catalog" },
 	},
 	{
 		id: "row-2",
-		heading: "Мощность в каждом пикселе",
-		text: "Опишите технологию: дисплей, камера и процессор, которые работают без паузы.",
-		imageUrl: "",
-		imagePosition: "right",
-		button: { text: "Узнать больше", href: "/about" },
+		heading: "Изображение с текстом",
+		text: "Покажи и расскажи о своем товаре в одном блоке",
+		imageUrl: "/placeholders/landscape-multirows-image.png",
+		button: { text: "Кнопка", href: "/catalog" },
 	},
 ];
-const rawRows = Array.isArray(p.rows) && p.rows.length ? p.rows : CANON_ROWS;
+const rawRows = Array.isArray(p.rows) && p.rows.length ? p.rows : PLACEHOLDER_ROWS;
 
 // Канон rowsPosition: left | right — все картинки с одной стороны; alternate /
 // отсутствие — per-item imagePosition, иначе чередование по индексу.
@@ -67,11 +71,11 @@ const rowsPosition =
 const aspectFor = (s: string | undefined) =>
 	s === "small" ? "aspect-[16/9]" : s === "large" ? "aspect-[430/500]" : "aspect-square";
 
-// Канон-плейсхолдеры = реальные ассеты темы (принцип T15 rose; плитки галереи
-// верстальщика, Gallery.astro:69,44) — «добавил секцию → сразу красиво».
-// PLACEHOLDER_IMAGE гидрации (/placeholders/sweater-blue.png) в public НЕТ —
-// берём родные /images/4x/* (МАННЕРА §10).
-const ROW_FALLBACKS = ["/images/4x/Товар_5__2_.png", "/images/4x/Товар_5__3_.png"];
+// Плейсхолдер пустого состояния (Figma 1:19335, контракт картиночных секций):
+// ряды-плейсхолдеры показывают дизайн-ассет /placeholders/landscape-multirows-
+// image.png (PLACEHOLDER_ROWS выше), а НЕ пустую surface и НЕ мок верстальщика —
+// картинка показывается ВСЕГДА (гард {r.image && <img>} истинен, т.к. фолбэк
+// imageUrl задан). На live мерчант грузит своё фото поверх.
 
 // Шкалы per-item размеров: заголовок ряда = роль внутреннего h2 (лестница §9,
 // large/отсутствие = литерал 24/28); текст = body-роль Manrope light
@@ -99,7 +103,7 @@ const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 		image:
 			(typeof r.imageUrl === "string" && r.imageUrl.trim()) ||
 			(typeof r.image === "string" && r.image.trim()) ||
-			ROW_FALLBACKS[i % ROW_FALLBACKS.length],
+			"",
 		right:
 			rowsPosition === "right" ||
 			(rowsPosition !== "left" &&

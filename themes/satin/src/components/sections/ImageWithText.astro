@@ -34,11 +34,15 @@ const rawText =
 const isPlaceholder = !rawImageUrl && !rawHeading && !rawText;
 
 // Лейблы пустого состояния (контракт: заголовок секции + поясняющий текст).
-// Ассет курток лежит в packages/theme-base/public/placeholders/sweater-<color>.png
-// и доступен на сайте как /placeholders/sweater-<color>.png — но для ImageWithText
-// контракт требует ПУСТОЙ image-rect (#FBFBFB / surface), без иллюстрации.
+// Контракт картиночных секций (правило 2): фолбэк-картинка пустого состояния =
+// дизайн-ассет landscape-iwt.png из packages/theme-base/public/placeholders
+// (раздаётся на каждой теме как /placeholders/landscape-iwt.png) — картинка
+// показывается ВСЕГДА, НЕ пустой image-rect (#FBFBFB) и НЕ мок-фото кампании.
+// Эталон: theme-base ImageWithText.astro (PLACEHOLDER_ASSETS.landscape.iwt) +
+// vanilla/rose ImageWithText.astro empty-state.
 const PLACEHOLDER_HEADING = "Изображение с текстом";
 const PLACEHOLDER_TEXT = "Покажи и расскажи о своем товаре в одном блоке";
+const PLACEHOLDER_IMAGE = "/placeholders/landscape-iwt.png";
 
 // Канон heading: string | { text, alignment, size }. С данными — реальный
 // заголовок мерчанта; пустое состояние — лейбл-плейсхолдер.
@@ -76,9 +80,10 @@ const italicCls = p.textStyle === "italic" ? " italic" : "";
 
 // Канон image {url, alt}: с данными — изображение мерчанта (кастомные MinIO-URL
 // рендерим плоским <img> — SatinPicture добавил бы фантомный .webp-source 404).
-// Пустое состояние (нет своего url) → ПУСТОЙ image-rect (#FBFBFB), а НЕ
-// мок-фото /images/4x/Мужская_кампания.png верстальщика.
-const imageUrl = rawImageUrl;
+// Пустое состояние (нет своего url) → дизайн-ассет landscape-iwt.png (контракт
+// картиночных секций, правило 2 — картинка показывается ВСЕГДА), а НЕ пустой
+// image-rect (#FBFBFB) и НЕ мок-фото /images/4x/Мужская_кампания.png верстальщика.
+const imageUrl = rawImageUrl ?? (isPlaceholder ? PLACEHOLDER_IMAGE : undefined);
 const imageAlt =
 	typeof p.image?.alt === "string" && p.image.alt.trim() ? p.image.alt : "";
 const isThemeAsset = !!imageUrl && imageUrl.startsWith("/");
@@ -157,13 +162,14 @@ const paddingStyle = p.padding
 		<div
 			class:list={[
 				"relative order-1 aspect-[375/362] overflow-hidden md:aspect-auto",
-				/* Реальное фото — на тёмной подложке #111111 (cover); пустое
-				   состояние — image-rect #FBFBFB (контракт). */
-				imageUrl ? "bg-[#111111]" : "bg-[#FBFBFB]",
+				/* Реальное фото ИЛИ дизайн-ассет пустого состояния (landscape-iwt.png) —
+				   на тёмной подложке #111111 (cover). Контракт картиночных секций
+				   (правило 2): картинка показывается ВСЕГДА, surface-rect не остаётся. */
+				"bg-[#111111]",
 				mdHeightCls,
 				imgRight ? "md:order-2" : "md:order-1",
 			]}
-			aria-hidden={imageUrl ? undefined : "true"}
+			aria-hidden={isPlaceholder ? "true" : undefined}
 		>
 			{
 				imageUrl ? (

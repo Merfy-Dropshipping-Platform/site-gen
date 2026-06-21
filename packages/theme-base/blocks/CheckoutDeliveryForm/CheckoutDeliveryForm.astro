@@ -151,21 +151,6 @@ const paddingStyle = padding
       });
     }
 
-    // Logistics: при смене города на ДРУГОЙ старый индекс от прежнего города
-    // больше не валиден. Если его не очистить — он «прилипает»: витрина шлёт
-    // старый postalCode, а бэкенд при наличии индекса игнорирует city fias и
-    // считает СДЭК по прежнему городу (стоимость дальнего города уходит как у
-    // ближнего). Чистим ТОЛЬКО при реальной смене — старый и новый fias оба
-    // заданы и различаются, — чтобы не стереть вручную введённый индекс при
-    // ПЕРВОМ выборе города. После очистки CheckoutDeliveryMethod до-резолвит
-    // индекс из НОВОГО fias (resolvePostalFromFiasId).
-    function clearPostalOnCityChange(newFias) {
-      var prevFias = section.getAttribute('data-selected-city-fias-id') || '';
-      if (!newFias || !prevFias || newFias === prevFias) return;
-      var postalInput = section.querySelector('[data-checkout-field="postalCode"] input');
-      if (postalInput && postalInput.value) postalInput.value = '';
-    }
-
     // Logistics: эмитим checkout:address-changed когда меняется
     // city/postal — CheckoutDeliveryMethod слушает и пересчитывает тарифы.
     var dispatchAddressTimer;
@@ -419,6 +404,18 @@ const paddingStyle = padding
         // для фильтрации адресных подсказок. Очищаем.
         if (kind === 'city') {
           section.removeAttribute('data-selected-city-fias-id');
+          // …и старый ИНДЕКС от прежнего города тоже невалиден. Без очистки он
+          // «прилипает»: при наличии индекса бэкенд игнорирует city fias и
+          // считает СДЭК по прежнему городу (дальний город уходит по цене
+          // ближнего — цена не меняется при смене города). После очистки
+          // CheckoutDeliveryMethod до-резолвит индекс из нового города
+          // (resolvePostalFromFiasId), либо юзер выберет конкретный адрес.
+          // ВАЖНО: чистим именно ЗДЕСЬ (при наборе города), а не в момент выбора
+          // — этот листенер удаляет fias РАНЬШЕ клика по подсказке, поэтому
+          // проверка «город сменился» в обработчике выбора уже не видит старый
+          // fias и не срабатывает.
+          var postalEl = section.querySelector('[data-checkout-field="postalCode"] input');
+          if (postalEl && postalEl.value) postalEl.value = '';
         }
         clearTimeout(debounce);
         debounce = setTimeout(function () { fetchSuggestions(q); }, 200);
@@ -459,7 +456,6 @@ const paddingStyle = padding
           var first = json && json.suggestions && json.suggestions[0];
           var fiasId = first && first.data && (first.data.city_fias_id || first.data.settlement_fias_id);
           if (!fiasId) return;
-          clearPostalOnCityChange(fiasId);
           section.setAttribute('data-selected-city-fias-id', fiasId);
           if (first.value && first.value !== q) {
             input.value = first.value;
@@ -511,10 +507,8 @@ const paddingStyle = padding
 
         if (kind === 'city') {
           // Сохраняем city_fias_id — точная фильтрация для address-подсказок.
-          if (fiasId) {
-            clearPostalOnCityChange(fiasId);
-            section.setAttribute('data-selected-city-fias-id', fiasId);
-          } else section.removeAttribute('data-selected-city-fias-id');
+          if (fiasId) section.setAttribute('data-selected-city-fias-id', fiasId);
+          else section.removeAttribute('data-selected-city-fias-id');
           // City selection — dropdown закрывается (нет progressive для города)
           list.hidden = true;
           list.innerHTML = '';

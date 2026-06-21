@@ -20,12 +20,36 @@ interface Props {
   buyNowLabel?: string;
   /** Layout: 'compact' = h-14 16px (rose), 'tall' = h-16 20px UPPERCASE (flux). */
   size?: 'compact' | 'tall';
+  /**
+   * nt-cart payload (SSR initial values). The "Добавить в корзину" button is
+   * declarative — the theme's global `[data-add-to-cart]` delegate (rose:
+   * nt-cart-rose.ts, etc.) reads these data-* attributes on click and writes
+   * the line into the theme's nt-cart (`<theme>:cart:v1`), opening the drawer +
+   * updating the badge. Identical contract to PopularProducts / the live PDP —
+   * this is what unifies the single "Товар" section with the product group.
+   * Product.astro hydration keeps these attributes current as the shopper
+   * changes variant / quantity.
+   */
+  productId?: string;
+  productName?: string;
+  /** Unit price (rubles). nt-cart multiplies by quantity for the line total. */
+  price?: string | number;
+  oldPrice?: string | number;
+  image?: string;
+  /** Default variant combination id → backend cart → order_items. */
+  variantCombinationId?: string;
 }
 
 const {
   addToCartLabel = 'Добавить в корзину',
   buyNowLabel = 'Купить сейчас',
   size = 'compact',
+  productId = '',
+  productName = '',
+  price,
+  oldPrice,
+  image = '',
+  variantCombinationId = '',
 } = Astro.props as Props;
 
 const isTall = size === 'tall';
@@ -33,11 +57,25 @@ const heightCls = isTall ? 'h-16' : 'h-14';
 const textCls = isTall ? 'text-[20px] uppercase' : 'text-[16px]';
 const baseCls =
   'w-full inline-flex items-center justify-center px-5 rounded-[var(--radius-button)] [font-family:var(--font-body)] cursor-pointer transition-colors border border-solid';
+
+// SSR data-* for the nt-cart delegate. Empty values are omitted so the
+// delegate's `dataset.x || undefined` fallbacks behave as on the PDP.
+const priceAttr = price != null && String(price) !== '' ? String(price) : '0';
+const oldPriceAttr =
+  oldPrice != null && Number(oldPrice) > 0 ? String(oldPrice) : undefined;
 ---
 <div class="flex flex-col gap-3 w-full" data-product-actions data-actions-size={size}>
   <button
     type="button"
     data-product-action="add-to-cart"
+    data-add-to-cart
+    data-product-id={productId}
+    data-name={productName}
+    data-price={priceAttr}
+    data-old-price={oldPriceAttr}
+    data-image={image}
+    data-quantity="1"
+    data-variant-combination-id={variantCombinationId || undefined}
     class:list={[baseCls, heightCls, textCls]}
     style="background:rgb(var(--color-button-bg, var(--color-text))); color:rgb(var(--color-button-text, var(--color-bg))); border-color:rgb(var(--color-button-border, var(--color-text)));"
     onmouseover="this.style.background='rgb(var(--color-button-bg-hover))'; this.style.color='rgb(var(--color-button-text-hover))';"

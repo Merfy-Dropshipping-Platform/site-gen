@@ -177,6 +177,23 @@ const view: ProductView = resolved
 // layer learns to extract brand from the raw product (vendor/category) this
 // fallback chain is the single place to change.
 const brandText = textContent || view.brand || '';
+
+// — nt-cart SSR payload (declarative `[data-add-to-cart]`). —
+// On live SSG the product is resolved server-side, so the add-to-cart button
+// ships with real data baked in and works on first paint (before hydration).
+// Hydration (inline script below) refreshes these as variant/qty change.
+// Default variant = first combination, mirroring the live PDP.
+const defaultVariantId = resolved
+  ? String(
+      resolved.variants?.[0]?.id ??
+        resolved.variantCombinations?.[0]?.id ??
+        '',
+    )
+  : '';
+const cartProductId = view.id || productId || '';
+const cartUnitPrice = view.price.amount > 0 ? Math.round(view.price.amount) : '';
+const cartOldPrice = view.hasDiscount ? Math.round(view.oldPrice.amount) : '';
+const cartImage = view.gallery.hero?.src ?? '';
 ---
 <section
   class:list={[schemeClass]}
@@ -283,6 +300,12 @@ const brandText = textContent || view.brand || '';
             addToCartLabel={addBtnText}
             buyNowLabel={buyBtnText}
             size={visual.gallery.variant === 'inline-small' ? 'tall' : 'compact'}
+            productId={cartProductId}
+            productName={view.name || ''}
+            price={cartUnitPrice}
+            oldPrice={cartOldPrice}
+            image={cartImage}
+            variantCombinationId={defaultVariantId}
           />
         </div>
 
@@ -383,20 +406,60 @@ const brandText = textContent || view.brand || '';
       return v ? v.id : null;
     }
     function refreshPriceFromVariant() {
-      if (!priceCur) return;
-      const v = getActiveVariant();
-      const total = (v && v.price != null ? parseFloat(String(v.price)) : null);
-      const base = total != null ? total : (productData ? parseFloat(String(productData.basePrice ?? productData.price ?? 0)) : 0);
-      priceCur.textContent = fmtPrice(base * currentQty);
-      if (priceOld) {
-        const old = productData ? parseFloat(String(productData.compareAtPrice ?? productData.oldPrice ?? 0)) : 0;
-        if (old > 0) {
-          priceOld.textContent = fmtPrice(old * currentQty);
-          priceOld.style.display = '';
-        } else {
-          priceOld.style.display = 'none';
+      if (priceCur) {
+        const v = getActiveVariant();
+        const total = (v && v.price != null ? parseFloat(String(v.price)) : null);
+        const base = total != null ? total : (productData ? parseFloat(String(productData.basePrice ?? productData.price ?? 0)) : 0);
+        priceCur.textContent = fmtPrice(base * currentQty);
+        if (priceOld) {
+          const old = productData ? parseFloat(String(productData.compareAtPrice ?? productData.oldPrice ?? 0)) : 0;
+          if (old > 0) {
+            priceOld.textContent = fmtPrice(old * currentQty);
+            priceOld.style.display = '';
+          } else {
+            priceOld.style.display = 'none';
+          }
         }
       }
+      // Keep the declarative add-to-cart payload in sync (nt-cart delegate reads
+      // it on click). Runs even when price is hidden — `if (priceCur)` only
+      // guards the price DOM update, not the cart contract.
+      updateCartAttrs();
+    }
+
+    // Sync the add-to-cart button's data-* with the active variant + quantity so
+    // the theme's `[data-add-to-cart]` delegate (and Buy Now, which reads them)
+    // always get the current line. Mirrors how the live PDP populates the same
+    // attributes. Unit price (not ×qty): nt-cart multiplies by data-quantity.
+    function updateCartAttrs() {
+      if (!addBtn) return;
+      const v = getActiveVariant();
+      let unit = (v && v.price != null) ? parseFloat(String(v.price))
+        : (productData ? parseFloat(String(productData.basePrice ?? productData.price ?? 0)) : 0);
+      if (!Number.isFinite(unit) || unit < 0) unit = 0;
+      const old = productData ? parseFloat(String(productData.compareAtPrice ?? productData.oldPrice ?? 0)) : 0;
+      const pid = (productData && productData.id) || root.getAttribute('data-product-id') || productId || '';
+      const name = (productData && (productData.name || productData.title)) || (titleEl ? titleEl.textContent : '') || '';
+      const heroSrc = (heroImg && heroImg.getAttribute('src')) || '';
+      if (pid) addBtn.setAttribute('data-product-id', pid);
+      if (name) addBtn.setAttribute('data-name', name);
+      addBtn.setAttribute('data-price', String(Math.round(unit)));
+      if (Number.isFinite(old) && old > 0) addBtn.setAttribute('data-old-price', String(Math.round(old)));
+      else addBtn.removeAttribute('data-old-price');
+      if (heroSrc) addBtn.setAttribute('data-image', heroSrc);
+      addBtn.setAttribute('data-quantity', String(currentQty));
+      const vid = getActiveVariantId();
+      if (vid) addBtn.setAttribute('data-variant-combination-id', vid);
+      else addBtn.removeAttribute('data-variant-combination-id');
+      // Map selected options → color/size (nt-cart line label + identity).
+      let col = '', sz = '';
+      for (const k in selectedOptions) {
+        const kl = k.toLowerCase();
+        if (kl === 'цвет' || kl === 'color') col = selectedOptions[k];
+        else if (kl === 'размер' || kl === 'size') sz = selectedOptions[k];
+      }
+      if (col) addBtn.setAttribute('data-variant-color', col); else addBtn.removeAttribute('data-variant-color');
+      if (sz) addBtn.setAttribute('data-variant-size', sz); else addBtn.removeAttribute('data-variant-size');
     }
 
     // Apply product (preview re-render). Assumes primitive structure exists.
@@ -486,52 +549,44 @@ const brandText = textContent || view.brand || '';
       }, true);
     }
 
-    // Add to cart.
-    if (addBtn) {
-      addBtn.addEventListener('click', function (ev) {
-        ev.stopPropagation();
-        const cs = window.cartStore;
-        const defaultLabel = addBtn.textContent;
-        const cartProductId = root.getAttribute('data-product-id') || productId;
-        if (cs && typeof cs.addItem === 'function') {
-          try { cs.addItem(cartProductId, getActiveVariantId(), currentQty); } catch {}
-        }
-        addBtn.textContent = 'Добавлено!';
-        setTimeout(function () { addBtn.textContent = defaultLabel; }, 1500);
-      }, true);
-    }
+    // Add to cart — declarative, unified with the product group + live PDP.
+    // The button carries `data-add-to-cart` + nt-cart data-* (kept current by
+    // updateCartAttrs). The theme's global delegate (rose: nt-cart-rose.ts via
+    // initCartUI) handles the click: writes the line into `<theme>:cart:v1`,
+    // opens the drawer, updates the badge. No window.cartStore here — storefront
+    // Layouts don't load cart-store.js, so that global is undefined on storefront
+    // pages, which is exactly why the old direct call silently no-oped.
 
-    // Buy now.
+    // Buy now — express checkout, mirroring the live PDP. Writes ONLY the clicked
+    // product to sessionStorage `<theme>:buynow` (theme from the build-injected
+    // window.__MERFY_THEME__) and navigates to a clean /checkout, which reads that
+    // key and builds a cart from just this item; the shopper's nt-cart is left
+    // untouched. In the constructor preview iframe the hard nav is replaced by a
+    // postMessage the nav-agent intercepts.
     if (buyBtn) {
-      buyBtn.addEventListener('click', async function (ev) {
+      buyBtn.addEventListener('click', function (ev) {
         ev.stopPropagation();
         ev.preventDefault();
-        const cartProductId = root.getAttribute('data-product-id') || productId;
-        const slug = root.getAttribute('data-product-slug') || productId;
-        const cs = window.cartStore;
-        // AWAIT addItem чтобы cart-store + backend получили товар ДО навигации.
-        // Без await navigation отменяет in-flight API request → /checkout
-        // показывает empty cart. Disabled button во время processing предотвращает
-        // double-click и даёт visual feedback.
-        const origText = buyBtn.textContent;
-        buyBtn.disabled = true;
-        buyBtn.textContent = '...';
-        if (cs && typeof cs.addItem === 'function') {
-          try { await cs.addItem(cartProductId, getActiveVariantId(), currentQty); } catch (e) { /* silent */ }
-        }
-        // iframe-aware navigation
-        const target = '/checkout?productId=' + encodeURIComponent(slug || '');
+        if (buyBtn.disabled) return;
+        updateCartAttrs();
+        const pid = (addBtn && addBtn.getAttribute('data-product-id')) || root.getAttribute('data-product-id') || productId || '';
+        if (!pid) return;
         const inIframe = window.parent && window.parent !== window;
         if (inIframe) {
-          try {
-            window.parent.postMessage({ type: 'navigate', path: target }, '*');
-          } catch (e) { /* cross-origin postMessage may fail — silent */ }
-          // Restore button в preview (нет full reload как на live)
-          buyBtn.disabled = false;
-          buyBtn.textContent = origText;
-        } else {
-          window.location.href = target;
+          try { window.parent.postMessage({ type: 'navigate', path: '/checkout' }, '*'); } catch (e) { /* cross-origin — silent */ }
+          return;
         }
+        const vci = (addBtn && addBtn.getAttribute('data-variant-combination-id')) || getActiveVariantId() || '';
+        const themeKey = (window.__MERFY_THEME__ || '').trim();
+        try {
+          if (themeKey) {
+            sessionStorage.setItem(
+              themeKey + ':buynow',
+              JSON.stringify({ productId: pid, variantCombinationId: vci || null, quantity: currentQty }),
+            );
+          }
+        } catch (e) { /* sessionStorage unavailable — checkout falls back to cart */ }
+        window.location.href = '/checkout';
       }, true);
     }
 

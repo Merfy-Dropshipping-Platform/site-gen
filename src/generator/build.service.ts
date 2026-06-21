@@ -1131,6 +1131,17 @@ export async function runBuildPipeline(
       } catch (pidErr) {
         logger.warn(`[themes-v2] PDP globals inject failed: ${(pidErr as Error)?.message ?? pidErr}`);
       }
+      // Тема витрины для express «Купить сейчас»: секция «Товар» (общий theme-base
+      // блок Product) пишет sessionStorage["<тема>:buynow"] — тот же ключ, что
+      // читает checkout.astro. Блок один на все темы, поэтому префикс берём из
+      // инжектнутого глобала window.__MERFY_THEME__ (зеркало __MERFY_SITE_ID__).
+      // Инжектим во ВСЕ HTML (товар может стоять секцией на любой странице).
+      try {
+        const themeGlobals = await injectGlobalsIntoDist(ctx.distDir, { __MERFY_THEME__: bareTheme });
+        logger.log(`[themes-v2] Injected __MERFY_THEME__="${bareTheme}" into ${themeGlobals} HTML files for site ${params.siteId}`);
+      } catch (thErr) {
+        logger.warn(`[themes-v2] theme global inject failed: ${(thErr as Error)?.message ?? thErr}`);
+      }
       // Раскладка каталога из конструктора (Catalog.filterPosition: 'side'|'top'):
       // статичные каталог-страницы тем читают window.__MERFY_CATALOG_LAYOUT__ на
       // рантайме. Без явного выбора мерчанта глобал не инжектится — тема

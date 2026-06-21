@@ -40,7 +40,17 @@ const schemeClass =
   data-block="checkout-form"
   style={paddingStyle}
 >
+  {/*
+    Spec 102: каждый интерактивный под-блок ОБЯЗАН получить стабильный id —
+    он рендерится как data-puck-component-id, по которому инлайн-скрипт находит
+    свой корень через window.__merfyRoot(blockId). Без id (как было) __merfyRoot
+    на отложенном init (DOMContentLoaded/astro:page-load, где currentScript=null)
+    возвращает null → скрипт выходит рано, и DaData-подсказки/расчёт тарифов/
+    кнопка оплаты НЕ навешиваются. Чекаут — синглтон, поэтому фиксированные id
+    безопасны. НЕ удалять.
+  */}
   <CheckoutContactForm
+    id="checkout-contact"
     heading="Контакты"
     showAuthLink={true}
     authLinkText="Войти в аккаунт"
@@ -52,6 +62,7 @@ const schemeClass =
   />
 
   <CheckoutDeliveryForm
+    id="checkout-delivery"
     heading="Доставка"
     country={{ enabled: true, default: 'Российская Федерация', selectable: true }}
     nameField={{ enabled: true, splitFirstLast: true }}
@@ -63,6 +74,7 @@ const schemeClass =
   />
 
   <CheckoutDeliveryMethod
+    id="checkout-delivery-method"
     heading="Способ доставки"
     cdekEnabled={true}
     cdekDoorLabel="Курьер до двери"
@@ -75,6 +87,7 @@ const schemeClass =
   />
 
   <CheckoutPayment
+    id="checkout-payment"
     heading="Платёжная система"
     subheading="Все транзакции безопасны и зашифрованы"
     methods={[
@@ -88,6 +101,7 @@ const schemeClass =
   />
 
   <CheckoutSubmit
+    id="checkout-submit"
     buttonText="Оплатить {total}"
     buttonStyle="fill"
     loadingText="Обработка платежа…"

@@ -30,7 +30,15 @@ const schemeClass =
   data-block="checkout-summary"
   style={paddingStyle}
 >
+  {/*
+    Spec 102: стабильный id для под-блоков обязателен — рендерится как
+    data-puck-component-id, по нему инлайн-скрипт находит корень через
+    window.__merfyRoot(blockId). Без id __merfyRoot на отложенном init
+    (currentScript=null) возвращает null → промокод/итоги не навешиваются.
+    Чекаут — синглтон, фиксированные id безопасны. НЕ удалять.
+  */}
   <CheckoutOrderSummary
+    id="checkout-order-summary"
     heading="Сводка заказа"
     itemImageSize="compact"
     showVariantLabels={true}
@@ -41,6 +49,7 @@ const schemeClass =
   />
 
   <CheckoutTotals
+    id="checkout-totals"
     deliveryLabel="Доставка"
     freeText="Бесплатно"
     totalLabel="Итого"

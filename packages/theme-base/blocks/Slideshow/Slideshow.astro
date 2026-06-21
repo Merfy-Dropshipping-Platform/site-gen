@@ -160,19 +160,22 @@ const imageFullBleed = raw.imageFullBleed === true;
   </div>
 </section>
 
-<script is:inline>
+<script is:inline define:vars={{ blockId: id }}>
   // Pupa parity: simple carousel rotation (vanilla JS, no React island).
   // is:inline — script emitted as-is в HTML без Astro/Vite bundling.
-  // Без is:inline preview iframe (Astro Container renderToString) не получает
-  // client JS → buttons "1 2 3" не работали.
-  document.querySelectorAll('[data-merfy-slideshow]').forEach(function (root) {
+  // Spec 102 — скоуп к СВОЕЙ секции через __merfyRoot: при 2+ «Слайд-шоу» прежний
+  // querySelectorAll(ВСЕ).forEach двоил обработчики (hot-replace перезапускает скрипт).
+  (function () {
+    var section = window.__merfyRoot(blockId);
+    if (!section) return;
+    var root = section.querySelector('[data-merfy-slideshow]');
+    if (!root) return;
     var slides = root.querySelectorAll('[data-slide-index]');
     var pagination = root.querySelectorAll('[data-slide-target]');
     if (slides.length <= 1) return;
 
-    var section = root.closest('section');
-    var autoplay = section && section.dataset.autoplay === 'true';
-    var intervalSec = parseInt((section && section.dataset.interval) || '5', 10);
+    var autoplay = section.dataset.autoplay === 'true';
+    var intervalSec = parseInt(section.dataset.interval || '5', 10);
 
     var current = 0;
     function show(idx) {
@@ -194,5 +197,5 @@ const imageFullBleed = raw.imageFullBleed === true;
     if (autoplay) {
       setInterval(function () { show((current + 1) % slides.length); }, intervalSec * 1000);
     }
-  });
+  })();
 </script>

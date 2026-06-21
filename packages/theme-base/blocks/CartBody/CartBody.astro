@@ -67,8 +67,12 @@ const schemeClass =
   }
 </style>
 
-<script is:inline>
+<script is:inline define:vars={{ blockId: id }}>
   (function () {
+    // Spec 102 — свой корень через общий примитив (не document-level): на странице
+    // «Корзина» один синглтон, но __merfyRoot переживает hot-replace конструктора.
+    var root = window.__merfyRoot(blockId);
+    if (!root) return;
     function fmt(cents) {
       if (!cents && cents !== 0) return '0 ₽';
       return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 }).format(cents / 100);
@@ -84,10 +88,10 @@ const schemeClass =
       return lines;
     }
     function renderCart() {
-      var emptyEl = document.getElementById('cart-page-empty');
-      var contentEl = document.getElementById('cart-page-content');
-      var headingEl = document.getElementById('cart-page-heading');
-      var itemsContainer = document.getElementById('cart-page-items');
+      var emptyEl = root.querySelector('#cart-page-empty');
+      var contentEl = root.querySelector('#cart-page-content');
+      var headingEl = root.querySelector('#cart-page-heading');
+      var itemsContainer = root.querySelector('#cart-page-items');
       if (!emptyEl || !contentEl) return;
 
       var items = (window.cartStore && typeof window.cartStore.getItems === 'function') ? window.cartStore.getItems() : [];

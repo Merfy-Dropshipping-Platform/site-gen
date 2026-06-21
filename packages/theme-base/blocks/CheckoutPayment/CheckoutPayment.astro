@@ -141,9 +141,11 @@ const nameOnCardEnabled = cardForm?.nameOnCardEnabled !== false;
   </div>
 </section>
 
-<script is:inline>
+<script is:inline define:vars={{ blockId: id }}>
   (function () {
-    var section = document.querySelector('[data-block="checkout-payment"]');
+    // Spec 102 — свой корень через общий примитив ([data-block="checkout-payment"]
+    // стоит на корневом <section>); внутренние элементы — section.querySelector.
+    var section = window.__merfyRoot(blockId);
     if (!section) return;
 
     var radios = section.querySelectorAll('input[name="paymentMethod"]');
@@ -305,7 +307,7 @@ const nameOnCardEnabled = cardForm?.nameOnCardEnabled !== false;
           yookassaShopId = yk;
           window.__YOOKASSA_SHOP_ID__ = yk;
 
-          var existing = document.querySelector('script[src="https://yookassa.ru/checkout-widget/v1/checkout-widget.js"]');
+          var existing = document.querySelector('script[src="https://yookassa.ru/checkout-widget/v1/checkout-widget.js"]'); // merfy-root-allow: глобальный SDK <script> в <head>, не элемент блока
           if (existing) {
             window.__YOOKASSA_SDK_READY__ = true;
             window.__YOOKASSA_SDK_LOADING__ = false;

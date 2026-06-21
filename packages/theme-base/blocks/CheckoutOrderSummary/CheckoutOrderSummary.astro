@@ -70,9 +70,11 @@ const imageSize = itemImageSize === 'expanded' ? 120 : 96;
   )}
 </section>
 
-<script is:inline>
+<script is:inline define:vars={{ blockId: id }}>
   (function () {
-    var section = document.querySelector('[data-checkout-summary]');
+    // Spec 102 — свой корень через общий примитив ([data-checkout-summary] стоит
+    // на корневом <section>); внутренние элементы — section.querySelector.
+    var section = window.__merfyRoot(blockId);
     if (!section) return;
 
     var emptyEl = section.querySelector('[data-checkout-empty]');

@@ -65,9 +65,11 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
   <div class={C.list} data-checkout-delivery-list hidden></div>
 </section>
 
-<script is:inline>
+<script is:inline define:vars={{ blockId: id }}>
   (function () {
-    var section = document.querySelector('[data-checkout-delivery-method]');
+    // Spec 102 — свой корень через общий примитив ([data-checkout-delivery-method]
+    // стоит на корневом <section>); внутренние элементы — section.querySelector.
+    var section = window.__merfyRoot(blockId);
     if (!section) return;
 
     var listEl = section.querySelector('[data-checkout-delivery-list]');
@@ -381,7 +383,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
         postalCode = await resolvePostalFromFiasId(cityFiasId);
         if (postalCode) {
           // Заполняем поле "Индекс" если оно пустое — для UX consistency
-          var pInputEl = document.querySelector('[data-checkout-field="postalCode"] input');
+          var pInputEl = document.querySelector('[data-checkout-field="postalCode"] input'); // merfy-root-allow: cross-block, поле CheckoutDeliveryForm, page-singleton checkout
           if (pInputEl && !pInputEl.value) pInputEl.value = postalCode;
         }
       }

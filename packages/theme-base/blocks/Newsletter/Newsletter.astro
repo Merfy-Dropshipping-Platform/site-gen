@@ -158,7 +158,7 @@ const innerOverrideClass =
     </div>
   </div>
 </section>
-<script is:inline>
+<script is:inline define:vars={{ blockId: id }}>
   // Wire newsletter form to the storefront gateway endpoint.
   // - store_id comes from window.__MERFY_CONFIG__.shopId (set by BaseLayout).
   // - When __MERFY_CONFIG__.apiUrl differs from prod (preview / staging),
@@ -183,8 +183,11 @@ const innerOverrideClass =
       }
     }
     function init() {
-      var forms = document.querySelectorAll('form[data-newsletter-form]');
-      for (var i = 0; i < forms.length; i++) wire(forms[i]);
+      // Spec 102 — своя секция через __merfyRoot (не querySelectorAll по всем формам).
+      var section = window.__merfyRoot(blockId);
+      if (!section) return;
+      var form = section.querySelector('form[data-newsletter-form]');
+      if (form) wire(form);
     }
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', init);

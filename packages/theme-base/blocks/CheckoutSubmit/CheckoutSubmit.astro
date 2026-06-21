@@ -20,9 +20,12 @@ const initialLabel = buttonText.replace('{total}', '—');
   </button>
 </section>
 
-<script is:inline define:vars={{ buttonText, loadingText, successRedirectUrl }}>
+<script is:inline define:vars={{ buttonText, loadingText, successRedirectUrl, blockId: id }}>
   (function () {
-    var section = document.querySelector('[data-block="checkout-submit"]');
+    // Spec 102 — свой корень через общий примитив ([data-block="checkout-submit"]
+    // стоит на корневом <section>); button/error — section.querySelector. Поля
+    // других чекаут-блоков читаются через document (cross-block, см. merfy-root-allow).
+    var section = window.__merfyRoot(blockId);
     if (!section) return;
     var button = section.querySelector('[data-checkout-submit]');
     var errorEl = section.querySelector('[data-checkout-submit-error]');
@@ -61,11 +64,11 @@ const initialLabel = buttonText.replace('{total}', '—');
       return rub.toLocaleString('ru-RU') + '₽';
     }
     function getField(name) {
-      var el = document.querySelector('[data-checkout-field="' + name + '"] input');
+      var el = document.querySelector('[data-checkout-field="' + name + '"] input'); // merfy-root-allow: cross-block, поля Contact/Delivery форм, page-singleton checkout
       return el ? (el.value || '').trim() : '';
     }
     function getFiasId() {
-      var f = document.querySelector('[data-checkout-delivery]');
+      var f = document.querySelector('[data-checkout-delivery]'); // merfy-root-allow: cross-block, секция CheckoutDeliveryForm, page-singleton checkout
       return f ? (f.getAttribute('data-selected-city-fias-id') || '') : '';
     }
 
@@ -109,7 +112,7 @@ const initialLabel = buttonText.replace('{total}', '—');
     });
 
     ['email','phone','firstName','lastName','fullName','city','postalCode','address'].forEach(function (f) {
-      var el = document.querySelector('[data-checkout-field="' + f + '"] input');
+      var el = document.querySelector('[data-checkout-field="' + f + '"] input'); // merfy-root-allow: cross-block, поля Contact/Delivery форм, page-singleton checkout
       if (!el) return;
       el.addEventListener('input', refresh);
       el.addEventListener('change', refresh);
@@ -155,7 +158,7 @@ const initialLabel = buttonText.replace('{total}', '—');
         // 2. PATCH cart с address (backend DTO ожидает street/building/apartment
         // ОТДЕЛЬНО, не fullAddress). Структурированный адрес сохранён в
         // data-addr-* атрибутах после выбора DaData address suggestion.
-        var deliveryForm = document.querySelector('[data-checkout-delivery]');
+        var deliveryForm = document.querySelector('[data-checkout-delivery]'); // merfy-root-allow: cross-block, читает data-addr-* CheckoutDeliveryForm, page-singleton checkout
         var addrStreet = deliveryForm ? (deliveryForm.getAttribute('data-addr-street') || '') : '';
         var addrBuilding = deliveryForm ? (deliveryForm.getAttribute('data-addr-building') || '') : '';
         var addrApartment = deliveryForm ? (deliveryForm.getAttribute('data-addr-apartment') || '') : '';

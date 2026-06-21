@@ -23,6 +23,32 @@ blocks/X/
 - Tailwind class strings directly in `.astro` — only from `X.classes.ts`
 - CSS vars not declared in `X.tokens.ts`
 - Hardcoded fonts — must flow through theme.fonts + `fonts/loader.ts`
+- `document.querySelector` / `document.querySelectorAll` / `document.getElementById` to locate a block's OWN root or elements — first-match silently breaks pages with 2+ identical sections (only the first hydrates). See below.
+
+## Inline hydration scripts — block root (Spec 102)
+
+Every `<script is:inline>` that hydrates a block MUST resolve its own root via the
+shared `window.__merfyRoot(blockId)` primitive — never a document-level lookup.
+
+```astro
+<section data-block="x" data-puck-component-id={id}> … </section>
+<script is:inline define:vars={{ blockId: id, /* siteId, … */ }}>
+  (function () {
+    var root = window.__merfyRoot(blockId);   // by data-puck-component-id; survives hot-replace
+    if (!root) return;
+    // ALL element access via root.querySelector(...) / root.addEventListener(...)
+  })();
+</script>
+```
+
+- `__merfyRoot` is injected into `<head>` for both live (`build.service.injectBlockRootHelper`)
+  and preview (`preview.controller.injectPreviewGlobals`); source: `src/common/block-root-inline.ts`.
+- Allowed at document level (not element-finding): `document.addEventListener`, `document.body`, `document.cookie`.
+- Genuine cross-block / page-singleton coordination (e.g. checkout blocks reading another
+  block's field by fixed id) may keep a document lookup IF the line is annotated
+  `// merfy-root-allow: <reason>`.
+- Guard: `__tests__/block-root-scoping.test.ts` fails the build on any unannotated
+  document-level element lookup in a block.
 
 ## Adding a new block
 

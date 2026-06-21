@@ -36,11 +36,14 @@ const schemeClass =
   </div>
 </section>
 
-<script is:inline>
+<script is:inline define:vars={{ blockId: id }}>
   (function () {
-    var section = document.getElementById('cart-page-totals-section');
-    var totalEl = document.getElementById('cart-page-total');
-    if (!section || !totalEl) return;
+    // Spec 102 — свой корень через общий примитив. Фикс-id 'cart-page-totals-section'
+    // стоит на корневом <section> → корень = section; totalEl — дочерний элемент.
+    var section = window.__merfyRoot(blockId);
+    if (!section) return;
+    var totalEl = section.querySelector('#cart-page-total');
+    if (!totalEl) return;
 
     function fmt(cents) {
       if (!cents && cents !== 0) return '0 ₽';

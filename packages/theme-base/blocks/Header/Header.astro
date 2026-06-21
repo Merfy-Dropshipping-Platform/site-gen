@@ -374,7 +374,7 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
   {/* Phase 1c: React island handles — mobile menu toggle, submenu expand, scroll-up stickiness, cart badge, cart-store integration */}
 </div>
 
-<script is:inline>
+<script is:inline define:vars={{ blockId: id }}>
   // Vanilla burger-menu toggle for preview iframe (where the React island
   // doesn't run). Live SSG sites bundle the React island so this script
   // double-binds harmlessly. NB: do NOT add a <style> block to this .astro
@@ -382,7 +382,12 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
   // .mjs which then ENOENT-fails at runtime on Linux Docker images.
   // Use inline style.display toggle instead of CSS rule.
   (function () {
-    document.querySelectorAll('#mobile-menu-button').forEach(function (btn) {
+    // Spec 102 — скоуп к своему wrapper ([data-header-wrapper] = корневой <div>
+    // с data-puck-component-id) через общий примитив. Все элементы хедера
+    // (кнопки, submenu, search panel, cart links) живут внутри него.
+    var root = window.__merfyRoot(blockId);
+    if (!root) return;
+    root.querySelectorAll('#mobile-menu-button').forEach(function (btn) {
       btn.addEventListener('click', function () {
         const expanded = btn.getAttribute('aria-expanded') === 'true';
         btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
@@ -400,12 +405,12 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
     const isTouch = window.matchMedia('(hover: none)').matches;
     if (isTouch) {
       // Touch: click toggle.
-      document.querySelectorAll('[data-submenu-trigger]').forEach(function (trigger) {
+      root.querySelectorAll('[data-submenu-trigger]').forEach(function (trigger) {
         trigger.addEventListener('click', function (e) {
           const host = trigger.closest('[data-submenu-host]');
           if (!host) return;
           const isOpen = host.getAttribute('data-open') === 'true';
-          document.querySelectorAll('[data-submenu-host][data-open="true"]').forEach(function (h) {
+          root.querySelectorAll('[data-submenu-host][data-open="true"]').forEach(function (h) {
             if (h !== host) h.setAttribute('data-open', 'false');
           });
           if (!isOpen) {
@@ -417,7 +422,7 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
       document.addEventListener('click', function (e) {
         if (!(e.target instanceof Element)) return;
         if (e.target.closest('[data-submenu-host]')) return;
-        document.querySelectorAll('[data-submenu-host][data-open="true"]').forEach(function (h) {
+        root.querySelectorAll('[data-submenu-host][data-open="true"]').forEach(function (h) {
           h.setAttribute('data-open', 'false');
         });
       });
@@ -429,7 +434,7 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
     // Mobile drawer recursive accordion: каждая [data-mobile-toggle] кнопка
     // toggle'ит ближайший [data-mobile-submenu] sibling. Работает для любого
     // уровня вложенности (1/2/3+).
-    document.querySelectorAll('[data-mobile-toggle]').forEach(function (toggle) {
+    root.querySelectorAll('[data-mobile-toggle]').forEach(function (toggle) {
       toggle.addEventListener('click', function () {
         const submenu = toggle.nextElementSibling;
         if (!submenu || !submenu.matches('[data-mobile-submenu]')) return;
@@ -446,13 +451,13 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
     // Search button click — toggle slide-down panel. Эталон rose.merfy.ru.
     // Multiple search buttons (в каждой layout-ветке) sync через
     // [data-action="toggle-search"]. Panel max-height: 80px ⇄ 0.
-    document.querySelectorAll('[data-action="toggle-search"]').forEach(function (btn) {
+    root.querySelectorAll('[data-action="toggle-search"]').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        var panel = document.getElementById('header-search-panel');
+        var panel = root.querySelector('#header-search-panel');
         if (!panel) return;
         var expanded = btn.getAttribute('aria-expanded') === 'true';
         var newState = !expanded;
-        document.querySelectorAll('[data-action="toggle-search"]').forEach(function (b) {
+        root.querySelectorAll('[data-action="toggle-search"]').forEach(function (b) {
           b.setAttribute('aria-expanded', newState ? 'true' : 'false');
         });
         panel.style.maxHeight = newState ? '80px' : '0';
@@ -472,7 +477,7 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
     // 'page' (или unset) → нативная навигация на /cart (page mode)
     // Theme Settings → Корзина (Сайдбар/Страница) меняет --cart-type через
     // CSS-var в iframe head; этот обработчик читает live значение на click.
-    document.querySelectorAll('a[data-action="cart"]').forEach(function (cartLink) {
+    root.querySelectorAll('a[data-action="cart"]').forEach(function (cartLink) {
       cartLink.addEventListener('click', function (e) {
         var cartType = getComputedStyle(document.documentElement)
           .getPropertyValue('--cart-type')

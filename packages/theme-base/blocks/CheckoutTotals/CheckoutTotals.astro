@@ -39,9 +39,12 @@ const paddingStyle = padding
   </div>
 </section>
 
-<script is:inline>
+<script is:inline define:vars={{ blockId: id }}>
   (function () {
-    var section = document.querySelector('[data-checkout-totals]');
+    // Spec 102 — свой корень через общий примитив ([data-checkout-totals] стоит
+    // на корневом <section>); строки итогов — section.querySelector. Subtotal/
+    // discount/delivery приходят через события, не из чужого DOM.
+    var section = window.__merfyRoot(blockId);
     if (!section) return;
 
     var subtotalEl = section.querySelector('[data-totals-subtotal]');

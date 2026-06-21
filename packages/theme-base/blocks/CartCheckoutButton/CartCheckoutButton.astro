@@ -43,9 +43,11 @@ const schemeClass =
   </div>
 </section>
 
-<script is:inline>
+<script is:inline define:vars={{ blockId: id }}>
   (function () {
-    var section = document.getElementById('cart-page-checkout-section');
+    // Spec 102 — фикс-id 'cart-page-checkout-section' стоит на самом корневом
+    // <section>, значит корень блока и есть искомый элемент (без отдельного поиска).
+    var section = window.__merfyRoot(blockId);
     if (!section) return;
     function refresh() {
       var items = (window.cartStore && typeof window.cartStore.getItems === 'function') ? window.cartStore.getItems() : [];

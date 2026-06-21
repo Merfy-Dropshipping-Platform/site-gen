@@ -60,9 +60,13 @@ const paddingStyle = padding
   </div>
 </section>
 
-<script is:inline>
+<script is:inline define:vars={{ blockId: id }}>
   (function () {
-    var phoneInput = document.querySelector('[data-checkout-phone]');
+    // Spec 102 — свой корень через общий примитив; [data-checkout-phone] — дочерний
+    // input этой секции (а не первый на странице).
+    var root = window.__merfyRoot(blockId);
+    if (!root) return;
+    var phoneInput = root.querySelector('[data-checkout-phone]');
     if (!phoneInput) return;
 
     var format = (phoneInput.closest('[data-format]') && phoneInput.closest('[data-format]').getAttribute('data-format')) || '';

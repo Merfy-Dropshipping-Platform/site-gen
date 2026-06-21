@@ -56,3 +56,5 @@ Run `validateBlock(dirOfMyBlock)` — errors must be empty.
 **Writing a `.tsx` file** → validateBlock will fail.
 
 **Inline hex color in .astro** → validateBlock will fail.
+
+**`document.querySelector('section[data-block="x"]')` in an `<script is:inline>` to find the block's own root** → first-match; breaks pages with 2+ identical sections. Use `var root = window.__merfyRoot(blockId); if (!root) return;` (pass `blockId: id` via `define:vars`) + `root.querySelector(...)`. The `__tests__/block-root-scoping.test.ts` guard will fail the build otherwise. See `@merfy/theme-base/CLAUDE.md` → "Inline hydration scripts — block root (Spec 102)".

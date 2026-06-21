@@ -1075,16 +1075,11 @@ const pdpHeartSvg =
 					if (buyBtn.disabled) return;
 					var add = section.querySelector("[data-add-to-cart]");
 					if (!add || add.disabled) return;
-					var pid = add.getAttribute("data-product-id") || "";
-					if (!pid) return;
-					var vci = add.getAttribute("data-variant-combination-id") || "";
-					var qty = parseInt(add.getAttribute("data-quantity") || "1", 10) || 1;
-					try {
-						sessionStorage.setItem(
-							"rose:buynow",
-							JSON.stringify({ productId: pid, variantCombinationId: vci || null, quantity: qty }),
-						);
-					} catch (e) {}
+					// «Купить сейчас» = ВСЯ корзина + этот товар (как везде): чистим express-ключ,
+					// добавляем этот товар в nt-cart (делегат [data-add-to-cart]), уходим в
+					// /checkout — он собирает корзину из rose:cart:v1 (весь nt-cart, не один товар).
+					try { sessionStorage.removeItem("rose:buynow"); } catch (e) {}
+					add.click();
 					window.location.href = "/checkout";
 				});
 			}

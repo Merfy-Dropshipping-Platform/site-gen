@@ -1104,6 +1104,10 @@ const DEMO_IMAGE_SECTION_TYPES = new Set<string>([
   'Slideshow',
   'Video',
   'MultiColumns',
+  // Collections only stripped when it carries a demo image (e.g. satin unsplash
+  // covers with collectionId:null). Real picked collections use merchant/minio
+  // covers → not matched → kept.
+  'Collections',
 ]);
 
 /** Content-bearing props stripped when a section is detected as untouched demo. */
@@ -1118,6 +1122,7 @@ const DEMO_CONTENT_PROPS = [
   'tiles',
   'columns',
   'sections',
+  'collections',
   'heading',
   'text',
   'title',
@@ -1134,7 +1139,11 @@ const DEMO_CONTENT_PROPS = [
 ];
 
 function valueContainsDemoImage(value: unknown): boolean {
-  if (typeof value === 'string') return DEMO_IMAGE_URLS.has(value);
+  if (typeof value === 'string') {
+    // satin's theme defaults ship unsplash demo photos; any other host is
+    // treated as a real merchant upload and left intact.
+    return DEMO_IMAGE_URLS.has(value) || value.includes('images.unsplash.com');
+  }
   if (Array.isArray(value)) return value.some(valueContainsDemoImage);
   if (value && typeof value === 'object') {
     return Object.values(value as Record<string, unknown>).some(

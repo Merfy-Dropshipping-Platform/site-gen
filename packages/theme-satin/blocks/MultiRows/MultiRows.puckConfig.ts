@@ -188,22 +188,23 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
   // top-level heading. Live-порт читает heading/text/imageUrl/imagePosition/
   // button.href как канон-пропсы → вид satin байт-в-байт.
   defaults: {
+    // Figma 1:19335 — плейсхолдер пустого состояния (ряды без картинки → landscape-плейсхолдер).
     rows: [
       {
         id: 'row-1',
-        heading: 'ЛУЧШИЕ ТКАНИ ДЛЯ ВАС',
-        text: 'Мы используем только натуральные материалы высочайшего качества. Каждая коллекция создаётся с вниманием к деталям.',
-        imageUrl: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1200&q=80',
+        heading: 'Изображение с текстом',
+        text: 'Покажи и расскажи о своем товаре в одном блоке',
+        imageUrl: '',
         imagePosition: 'left',
-        button: { text: 'Подробнее', href: '/about' },
+        button: { text: 'Кнопка', href: '/about' },
       },
       {
         id: 'row-2',
-        heading: 'ФИЛОСОФИЯ БРЕНДА',
-        text: 'Элегантность в каждой детали. Наша миссия — создавать одежду, которая подчёркивает индивидуальность.',
-        imageUrl: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=80',
+        heading: 'Изображение с текстом',
+        text: 'Покажи и расскажи о своем товаре в одном блоке',
+        imageUrl: '',
         imagePosition: 'right',
-        button: { text: 'О нас', href: '/about' },
+        button: { text: 'Кнопка', href: '/about' },
       },
     ],
     padding: { top: 80, bottom: 80 },

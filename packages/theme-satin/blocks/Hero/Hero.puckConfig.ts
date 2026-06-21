@@ -271,15 +271,16 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
   // defaults — satin'овская манера (НЕ канон-дефолты). Редакторский настрой satin:
   // STYLE'S WEAR заголовок, серый кикер, split-вариант, padding 0 (edge-to-edge),
   // unsplash фото. Все ключи существуют в канон-схеме выше → safeParse валиден.
+  // Figma 1:19335 — пустое состояние Hero → порт рендерит плейсхолдер «Изображение».
   defaults: {
-    title: "STYLE'S WEAR COLLECTION\nSINCE 90'",
-    subtitle: 'Оставайтесь в центре внимания',
+    title: '',
+    subtitle: '',
     image: {
-      url: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1200&q=80',
-      alt: 'Модель в платке',
+      url: '',
+      alt: '',
     },
     images: undefined,
-    cta: { text: 'Новые поступления', href: '/catalog' },
+    cta: { text: 'Кнопка', href: '/catalog' },
     variant: 'split',
     padding: { top: 0, bottom: 0 },
   },

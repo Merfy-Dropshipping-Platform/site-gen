@@ -227,10 +227,11 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
   // порт satin при их отсутствии рендерит манеру (heading скрыт; заголовок 20px;
   // ширина .satin-container; иконка 56×56; колонки text-center; серая подложка).
   defaults: {
+    // Figma 1:19335 — плейсхолдер пустого состояния (3 пустые колонки «Колонна»).
     columns: [
-      { id: 'col-1', heading: 'ДОСТАВКА', text: 'Быстрая доставка по всей России.', imageUrl: '' },
-      { id: 'col-2', heading: 'ВОЗВРАТ', text: 'Лёгкий возврат в течение 14 дней.', imageUrl: '' },
-      { id: 'col-3', heading: 'ПОДДЕРЖКА', text: 'Наша команда всегда на связи.', imageUrl: '' },
+      { id: 'col-1', heading: 'Колонна', text: 'Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.', imageUrl: '' },
+      { id: 'col-2', heading: 'Колонна', text: 'Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.', imageUrl: '' },
+      { id: 'col-3', heading: 'Колонна', text: 'Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.', imageUrl: '' },
     ],
     displayColumns: 3,
     padding: { top: 80, bottom: 80 },

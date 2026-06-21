@@ -148,15 +148,15 @@ export const ImageWithTextPuckConfig: BlockPuckConfig<ImageWithTextProps> = {
     containerColorScheme: { type: 'hidden', label: '' },
   },
   // defaults — МАНЕРА satin (НЕ канон-дефолты): материалы-заголовок, портретный
-  // unsplash-ассет, фото слева. Сохранены как есть при миграции контролов.
+  // Figma 1:19335 — плейсхолдер пустого состояния (картинка пустая → landscape-плейсхолдер).
   defaults: {
     image: {
-      url: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=80',
-      alt: 'Satin коллекция',
+      url: '',
+      alt: '',
     },
-    heading: 'НАШИ МАТЕРИАЛЫ',
-    text: 'Каждый элемент коллекции создан из тщательно отобранных натуральных тканей. Минимализм и элегантность — наши главные принципы.',
-    button: { text: 'Подробнее', href: '/about' },
+    heading: 'Изображение с текстом',
+    text: 'Покажи и расскажи о своем товаре в одном блоке',
+    button: { text: 'Кнопка', href: '/about' },
     imagePosition: 'left',
     padding: { top: 80, bottom: 80 },
   },

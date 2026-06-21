@@ -147,10 +147,11 @@ export const CollectionsPuckConfig: BlockPuckConfig<CollectionsProps> = {
   // 430/564, лейбл слева) → дефолтный рендер satin байт-в-байт.
   defaults: {
     heading: '',
+    // Figma 1:19335 — плейсхолдер пустого состояния (пустые surface-карточки «Коллекция»).
     collections: [
-      { id: 'col-1', collectionId: null, heading: 'Верхняя одежда', description: '', image: 'https://images.unsplash.com/photo-1551232864-3f0890e580d9?auto=format&fit=crop&w=800&q=80' },
-      { id: 'col-2', collectionId: null, heading: 'Джемперы и кардиганы', description: '', image: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?auto=format&fit=crop&w=800&q=80' },
-      { id: 'col-3', collectionId: null, heading: 'Футболки и топы', description: '', image: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=800&q=80' },
+      { id: 'col-1', collectionId: null, heading: 'Коллекция', description: '', image: '' },
+      { id: 'col-2', collectionId: null, heading: 'Коллекция', description: '', image: '' },
+      { id: 'col-3', collectionId: null, heading: 'Коллекция', description: '', image: '' },
     ],
     columns: 3,
     padding: { top: 40, bottom: 40 },

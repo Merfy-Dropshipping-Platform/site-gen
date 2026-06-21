@@ -13,7 +13,7 @@
     "--font-body": "'Manrope', sans-serif",
     "--weight-heading": "400",
     "--weight-body": "400",
-    "--container-max-width": "1920px",
+    "--container-max-width": "1320px",
     "--header-container-px-2xl": "280px",
     "--radius-button": "6px",
     "--radius-input": "4px",

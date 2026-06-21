@@ -538,6 +538,79 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
 }
 
 /**
+ * Spec 103: thank-you страница `/checkout-result` (CheckoutHeader +
+ * OrderConfirmation «Спасибо за заказ»). Системная страница добавлена в
+ * theme.json ПОСЛЕ того как существующие сайты достигли ревизии 2.0, поэтому
+ * version-миграции её не бэкфилят. Аддитивно добавляем в pages[] + pagesData
+ * (идемпотентно). Оперирует полной ревизией (нужен pages[]), а не только
+ * pagesData. Вызывается ТОЛЬКО для rose — единственной темы с зарегистрированным
+ * блоком OrderConfirmation.
+ */
+function seedCheckoutResultPage(
+  out: Record<string, unknown>,
+): Record<string, unknown> {
+  const pagesData = (out.pagesData ?? {}) as Record<string, unknown>;
+  const pages = Array.isArray(out.pages)
+    ? (out.pages as Array<{ id?: string; slug?: string }>)
+    : [];
+  const hasContent =
+    !!pagesData['page-checkout-result'] || !!pagesData['checkout-result'];
+  const hasMeta = pages.some(
+    (p) =>
+      p?.id === 'page-checkout-result' ||
+      (p?.slug ?? '').replace(/^\/+|\/+$/g, '') === 'checkout-result',
+  );
+  if (hasContent && hasMeta) return out; // already present — no-op (idempotent)
+
+  const ts = Date.now();
+  const seedPage: PageData = {
+    content: [
+      {
+        type: 'CheckoutHeader',
+        props: {
+          id: `CheckoutHeader-${ts}`,
+          siteTitle: 'Мой магазин',
+          logoMode: 'text',
+          logoImage: null,
+          rightIcon: 'cart',
+          accountLink: '/account',
+          backLink: '/cart',
+          cartLink: '/cart',
+          padding: { top: 24, bottom: 24 },
+        } as Record<string, unknown>,
+      },
+      {
+        type: 'OrderConfirmation',
+        props: {
+          id: `OrderConfirmation-${ts + 1}`,
+          colorScheme: 'scheme-2',
+          padding: { top: 0, bottom: 0 },
+        } as Record<string, unknown>,
+      },
+    ],
+    root: { props: { title: 'Спасибо за заказ' } },
+    zones: {},
+  };
+
+  const newPagesData = hasContent
+    ? pagesData
+    : { ...pagesData, 'page-checkout-result': seedPage };
+  const newPages = hasMeta
+    ? pages
+    : [
+        ...pages,
+        {
+          id: 'page-checkout-result',
+          name: 'Спасибо за заказ',
+          slug: '/checkout-result',
+          role: 'system',
+          contentFile: 'pages/checkout-result.json',
+        },
+      ];
+  return { ...out, pages: newPages, pagesData: newPagesData };
+}
+
+/**
  * 084 Stage 1: vanilla home seed migration (T025 v2).
  *
  * Если `themeId === 'vanilla'` AND текущая версия миграции на pagesData
@@ -1211,6 +1284,11 @@ export function migrateRevisionData(
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = clearDemoImageSections(out.pagesData as Record<string, unknown>);
+  }
+  // Spec 103: rose thank-you `/checkout-result`. Оперирует полной ревизией
+  // (touches pages[] + pagesData), поэтому после pagesData-сидеров. Rose-only.
+  if (themeId === 'rose') {
+    return seedCheckoutResultPage(out);
   }
   return out;
 }

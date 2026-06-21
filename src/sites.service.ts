@@ -2451,6 +2451,7 @@ export class SitesDomainService {
       "page-product": "product.json",
       "page-cart": "cart.json",
       "page-checkout": "checkout.json",
+      "page-checkout-result": "checkout-result.json",
     };
     const reset: string[] = [];
     for (const [key, file] of Object.entries(seedFiles)) {

@@ -44,6 +44,7 @@ const SYSTEM_PAGE_ROUTES: Record<string, string> = {
   'page-cart': 'cart',
   'page-product': 'product',
   'page-checkout': 'checkout',
+  'page-checkout-result': 'checkout-result',
 };
 
 /**

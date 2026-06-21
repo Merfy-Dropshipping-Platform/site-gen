@@ -227,6 +227,19 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 						variantCombinationId: addBtn.dataset.variantCombinationId || undefined,
 					},
 				});
+				// In-button фидбек («показывайся прямо в кнопке»): кнопка кратко
+				// показывает «Добавлено ✓», затем возвращает исходный текст. Работает в
+				// любом режиме корзины и на всех add-кнопках (Product, PopularProducts, каталог).
+				if (addBtn.dataset.ntFeedback !== "1") {
+					const originalHtml = addBtn.innerHTML;
+					addBtn.dataset.ntFeedback = "1";
+					addBtn.innerHTML =
+						'<span style="display:inline-flex;align-items:center;gap:8px;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Добавлено</span>';
+					window.setTimeout(() => {
+						addBtn.innerHTML = originalHtml;
+						addBtn.removeAttribute("data-nt-feedback");
+					}, 1600);
+				}
 				// Корзина «Страница» (--cart-type=page): не открывать дровер — товар просто
 				// кладётся (бейдж обновится), на /cart уходим по клику на иконку. drawer
 				// (дефолт) — открываем панель как раньше.

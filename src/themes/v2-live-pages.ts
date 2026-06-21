@@ -49,6 +49,12 @@ const CONTENT_PAGES: Array<{
   // диста есть такой шелл (иначе тихо пропускается — см. ниже). Per-slug
   // пересадка отложена (см. deferred).
   { key: 'page-collection', route: 'collections/preview', collectionContext: {} },
+  // Spec 103: thank-you `/checkout-result` (CheckoutHeader + OrderConfirmation).
+  // role=system, своего shell в порте темы нет → пересаживается на home-шелл
+  // (requireOwnShell=false, как about/contacts/delivery). Контент берётся из
+  // ревизии через seedCheckoutResultPage (migrateRevisionData). Без этой записи
+  // /checkout-result 404 на live (превью/новые сайты уже работают).
+  { key: 'page-checkout-result', route: 'checkout-result' },
 ];
 
 /**

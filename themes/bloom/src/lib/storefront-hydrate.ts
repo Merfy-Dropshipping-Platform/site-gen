@@ -45,7 +45,7 @@ export interface VariantGroup {
 }
 
 const PRODUCTS_URL = "/data/products.json";
-const PLACEHOLDER_IMAGE = "/placeholders/sweater-blue.png";
+const PLACEHOLDER_IMAGE = "/placeholders/sweater-blue.svg";
 
 /** Кэш на страницу: undefined — не загружали, null — demo/пусто/ошибка. */
 let cached: RealProduct[] | null | undefined;

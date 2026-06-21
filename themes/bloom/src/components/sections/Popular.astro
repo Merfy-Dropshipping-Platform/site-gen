@@ -43,10 +43,10 @@ const collectionRef =
 // клиентская гидрация ниже освежает грид на live. Паритет theme-base
 // PopularProducts.astro (DEMO_PRODUCTS на гейте collectionRef).
 const SWEATER_PLACEHOLDERS = [
-	"/placeholders/sweater-blue.png",
-	"/placeholders/sweater-yellow.png",
-	"/placeholders/sweater-red.png",
-	"/placeholders/sweater-green.png",
+	"/placeholders/sweater-blue.svg",
+	"/placeholders/sweater-yellow.svg",
+	"/placeholders/sweater-red.svg",
+	"/placeholders/sweater-green.svg",
 ];
 const placeholderCards = Array.from({ length: cardsN }, (_, i) => ({
 	image: SWEATER_PLACEHOLDERS[i % SWEATER_PLACEHOLDERS.length],

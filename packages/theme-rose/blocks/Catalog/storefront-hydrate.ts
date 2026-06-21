@@ -50,7 +50,7 @@ const PRODUCTS_URL = "/data/products.json";
  * Gallery cover, PDP). Ассет theme-base доезжает в дисты как /placeholders/*
  * (раньше тут был несуществующий /images/placeholder.png → битая иконка).
  */
-const PLACEHOLDER_IMAGE = "/placeholders/sweater-blue.png";
+const PLACEHOLDER_IMAGE = "/placeholders/sweater-blue.svg";
 
 /** Кэш на страницу: undefined — не загружали, null — demo/пусто/ошибка. */
 let cached: RealProduct[] | null | undefined;

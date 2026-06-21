@@ -105,7 +105,7 @@ const galleryTiles: GalleryTile[] = (Array.isArray(p.items) ? p.items : [])
 // ПЛЕЙСХОЛДЕР пустой плитки (Figma 1:19335, контракт theme-base Gallery):
 // НЕ фото верстальщика, а нейтральная заглушка по типу плитки.
 //  • product (любой) и collection С ВЫБОРОМ → куртка-плейсхолдер blue
-//    (/placeholders/sweater-blue.png; build-пайплайн копирует ассет из
+//    (/placeholders/sweater-blue.svg; build-пайплайн копирует ассет из
 //    packages/theme-base/public по скану .astro, assemble-from-packages.ts:376).
 //    Этот <img> служит И визуальным плейсхолдером, И целью гидрации: когда товар/
 //    коллекция ВЫБРАНЫ, скрипт ниже (data-gallery-product / -collection)
@@ -115,7 +115,7 @@ const galleryTiles: GalleryTile[] = (Array.isArray(p.items) ? p.items : [])
 // Полностью пустое состояние секции (нет items) рендерит ниже фикс-плейсхолдер:
 // большая плитка = /placeholders/landscape-gallery.png, карточка-товар = sweater
 // blue + «Товар»/«2 500 ₽», карточка-коллекция = пустая surface + «Выбери коллекцию».
-const SWEATER_BLUE = "/placeholders/sweater-blue.png";
+const SWEATER_BLUE = "/placeholders/sweater-blue.svg";
 galleryTiles.forEach((t) => {
 	if (t.url) return;
 	if (t.kind === "product") t.url = SWEATER_BLUE;
@@ -253,7 +253,7 @@ const paddingStyle = p.padding
 					<div class="flex flex-col gap-4" aria-label="Товар">
 						<div class="relative aspect-[429/444] w-full min-h-0 overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] rounded-[var(--radius-media,8px)]">
 							<img
-								src="/placeholders/sweater-blue.png"
+								src="/placeholders/sweater-blue.svg"
 								alt="Товар"
 								loading="lazy"
 								class="absolute inset-0 size-full object-contain object-center p-[15%]"

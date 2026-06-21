@@ -42,10 +42,10 @@ const { product, id, siteId } = Astro.props;
 // мерчант ЗАДАЛ товар (реальный demo catalogProduct / гидрация live API) —
 // рендерим ЕГО без изменений. Текст 1:1 с контрактом theme-base Product
 // (text='Новая коллекция!', name='Товар', price='2 500 ₽'); главное фото PDP =
-// /placeholders/sweater-blue-large.png (Figma 1:19335 — крупный кадр товара;
+// /placeholders/sweater-blue-large.svg (Figma 1:19335 — крупный кадр товара;
 // copyPublic из packages/theme-base, доступна на live, паритет rose
 // Popular/RoseProductDetail).
-const PLACEHOLDER_PRODUCT_IMAGE = "/placeholders/sweater-blue-large.png";
+const PLACEHOLDER_PRODUCT_IMAGE = "/placeholders/sweater-blue-large.svg";
 const PLACEHOLDER_BRAND = "Новая коллекция!";
 const PLACEHOLDER_NAME = "Товар";
 const PLACEHOLDER_PRICE = "2 500 ₽";
@@ -192,7 +192,7 @@ const cartVariantColor = isPlaceholder ? "" : (product.colors?.[0] ?? "");
 					data-pdp-gallery-cell={index === 0 ? "main" : "extra"}
 				>
 					{/* Пустое состояние (Figma 1:19335) — куртка-плейсхолдер раздаётся
-					    ТОЛЬКО как PNG (/placeholders/sweater-blue-large.png, .webp нет),
+					    ТОЛЬКО как PNG (/placeholders/sweater-blue-large.svg, .webp нет),
 					    поэтому рендерим ПЛОСКИЙ <img>, как остальные секции satin
 					    (Hero/Gallery/ImageWithText). SatinPicture эмитит <source srcset
 					    type="image/webp">, который для PNG-only плейсхолдера даёт 404 и
@@ -481,7 +481,7 @@ const cartVariantColor = isPlaceholder ? "" : (product.colors?.[0] ?? "");
 			return propSiteId || undefined;
 		}
 
-		var PLACEHOLDER_IMAGE = "/placeholders/sweater-blue.png";
+		var PLACEHOLDER_IMAGE = "/placeholders/sweater-blue.svg";
 		var __cachedProducts; // undefined — не грузили; null — данных нет (demo).
 
 		// Цена из API — в КОПЕЙКАХ (basePrice "79000.00" / variant.price 79000).

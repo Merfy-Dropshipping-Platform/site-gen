@@ -18,11 +18,11 @@ const rawSubtitle =
 const sectionSubtitle =
 	typeof rawSubtitle === "string" && rawSubtitle.trim() ? rawSubtitle : undefined;
 
-// Куртка-плейсхолдер empty-state доступна на live как /placeholders/sweater-blue.png
+// Куртка-плейсхолдер empty-state доступна на live как /placeholders/sweater-blue.svg
 // (copyPublic theme-base/public в assemble-from-packages.ts; bloom уже ссылается
 // на этот путь — BloomProductDetail.astro). object-contain + padding, паритет
 // theme-base PopularProducts DEMO_PRODUCTS.
-const PLACEHOLDER_SWEATER_BLUE = "/placeholders/sweater-blue.png";
+const PLACEHOLDER_SWEATER_BLUE = "/placeholders/sweater-blue.svg";
 // Большая плитка галереи в пустом состоянии (Figma 1:19335): дизайн-ассет
 // landscape-gallery.png (раздаётся на каждой теме из packages/theme-base/public/
 // placeholders, copyPublic) — НЕ пустая surface и НЕ мок-фото верстальщика

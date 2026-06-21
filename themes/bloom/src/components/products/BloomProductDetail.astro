@@ -41,10 +41,10 @@ const { product, id, siteId } = Astro.props;
 // (реальный из products.json / гидрация live API) — рендерим ЕГО без изменений.
 // Текст 1:1 с контрактом theme-base Product (text='Новая коллекция!',
 // name='Товар', price='2 500 ₽'); главное фото галереи плейсхолдера =
-// /placeholders/sweater-blue-large.png (под главную галерею товара, НЕ мелкая
+// /placeholders/sweater-blue-large.svg (под главную галерею товара, НЕ мелкая
 // карточная sweater-blue.png — паритет rose/vanilla ProductDetail). copyPublic из
 // packages/theme-base, доступна на live.
-const PLACEHOLDER_PRODUCT_IMAGE = "/placeholders/sweater-blue-large.png";
+const PLACEHOLDER_PRODUCT_IMAGE = "/placeholders/sweater-blue-large.svg";
 const PLACEHOLDER_BRAND = "Новая коллекция!";
 const PLACEHOLDER_NAME = "Товар";
 const PLACEHOLDER_PRICE = "2 500 ₽";
@@ -485,7 +485,7 @@ const pdpHeartSvg =
 			return propSiteId || undefined;
 		}
 
-		var PLACEHOLDER_IMAGE = "/placeholders/sweater-blue.png";
+		var PLACEHOLDER_IMAGE = "/placeholders/sweater-blue.svg";
 		var __cachedProducts; // undefined — не грузили; null — данных нет (demo).
 
 		// Цена из API — в КОПЕЙКАХ (basePrice "79000.00" / variant.price 79000).

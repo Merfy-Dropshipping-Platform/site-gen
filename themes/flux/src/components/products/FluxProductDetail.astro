@@ -39,10 +39,10 @@ const { product, id, siteId } = Astro.props;
 // (реальный — приходит ТОЛЬКО через live-гидрацию ниже, flux SSG в props всегда
 // держит demo) — рендерим ЕГО без изменений. Текст 1:1 с контрактом theme-base
 // Product (brand='Новая коллекция!', name='Товар', price='2 500 ₽'); ГЛАВНОЕ фото
-// PDP = /placeholders/sweater-blue-large.png (large-вариант для крупного фото
+// PDP = /placeholders/sweater-blue-large.svg (large-вариант для крупного фото
 // карточки товара; copyPublic из packages/theme-base, доступна на
 // live, паритет flux Popular). Зеркало rose RoseProductDetail.
-const PLACEHOLDER_PRODUCT_IMAGE = "/placeholders/sweater-blue-large.png";
+const PLACEHOLDER_PRODUCT_IMAGE = "/placeholders/sweater-blue-large.svg";
 const PLACEHOLDER_BRAND = "Новая коллекция!";
 const PLACEHOLDER_NAME = "Товар";
 const PLACEHOLDER_PRICE = "2 500 ₽";
@@ -188,7 +188,7 @@ const pdpHeartSvg =
 		<div class="flex flex-col gap-4">
 			<div class="relative aspect-square w-full overflow-hidden bg-[#F5F5F5]">
 				{/* Главное фото: пустое состояние (Figma 1:19335) = плейсхолдер
-				    /placeholders/sweater-blue-large.png сырым <img> (у него нет
+				    /placeholders/sweater-blue-large.svg сырым <img> (у него нет
 				    соимённого .webp — FluxPicture отдал бы битый <source> и
 				    <picture> не откатился на <img>, баг корзины). Реальный/demo
 				    товар → FluxPicture; live-гидрация переписывает .src по
@@ -513,7 +513,7 @@ const pdpHeartSvg =
 			return propSiteId || undefined;
 		}
 
-		var PLACEHOLDER_IMAGE = "/placeholders/sweater-blue.png";
+		var PLACEHOLDER_IMAGE = "/placeholders/sweater-blue.svg";
 		var __cachedProducts; // undefined — не грузили; null — данных нет (demo).
 
 		// Цена из API — в КОПЕЙКАХ (basePrice "79000.00" / variant.price 79000).

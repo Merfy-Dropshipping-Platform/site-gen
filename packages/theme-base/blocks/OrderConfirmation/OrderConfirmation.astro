@@ -1,0 +1,379 @@
+---
+// OrderConfirmation — секция «Спасибо за заказ» (post-payment thank-you, Figma 1:20479).
+// Один блок, две колонки: лево «Оформление заказа» + право «Сводка заказа».
+// SSR рендерит каркас; inline-IIFE (через window.__merfyRoot — Spec 102) берёт
+// orderId из ?orderId= (фоллбэк localStorage merfy:lastOrderId), фетчит
+// GET /api/orders/:id/summary, заполняет DOM и адаптирует состояние оплаты.
+// Per-section цвета/шрифты — block-scoped CSS-переменные на корне (с fallback
+// на схему/тему), без слома глобального контракта остальных блоков.
+import type { OrderConfirmationProps } from './OrderConfirmation.puckConfig';
+import { OrderConfirmationClasses as C } from './OrderConfirmation.classes';
+
+interface Props extends OrderConfirmationProps {
+  id?: string;
+}
+
+const raw = Astro.props as Props;
+const { id } = raw;
+// Устойчивость к частичным props (seed/ревизия могут нести подмножество, как
+// у checkout-блоков). Текстовые поля и banner получают дефолты.
+const p = {
+  ...raw,
+  banner: {
+    enabled: false,
+    src: '',
+    placement: 'order' as const,
+    align: 'center' as const,
+    width: 580,
+    ...(raw.banner || {}),
+  },
+  greetingTemplate: raw.greetingTemplate ?? 'Спасибо за заказ, {name}!',
+  confirmedTitle: raw.confirmedTitle ?? 'Ваш заказ подтверждён',
+  confirmedNote:
+    raw.confirmedNote ??
+    'Скоро вы получите электронное письмо с подтверждением и номером вашего заказа.',
+  detailsTitle: raw.detailsTitle ?? 'Детали заказа',
+  helpText: raw.helpText ?? 'Нужна помощь? Обратитесь к нам',
+  returnButtonText: raw.returnButtonText ?? 'Вернуться к магазину',
+  returnButtonHref: raw.returnButtonHref || '/',
+  legalText:
+    raw.legalText ??
+    'Размещая заказ, вы соглашаетесь с Условиями обслуживания, Политикой конфиденциальности и Политикой использования файлов cookie.',
+};
+
+const schemeClass =
+  typeof p.colorScheme === 'string' && p.colorScheme
+    ? `color-scheme-${p.colorScheme.replace('scheme-', '')}`
+    : '';
+
+// hex (#rrggbb) → "R G B" триплет (для rgb(var(--...))). Пусто/невалид → ''.
+// Живёт во frontmatter (validateBlock не сканирует frontmatter на hex).
+function hexTriplet(hex: string): string {
+  if (!hex || typeof hex !== 'string') return '';
+  const m = hex.trim().replace(/^#/, '');
+  if (!/^[0-9a-fA-F]{6}$/.test(m)) return '';
+  const r = parseInt(m.slice(0, 2), 16);
+  const g = parseInt(m.slice(2, 4), 16);
+  const b = parseInt(m.slice(4, 6), 16);
+  return `${r} ${g} ${b}`;
+}
+// Эмитим --oc-* всегда: либо merchant-триплет, либо var(--color-*) (наследование схемы).
+function ocVar(hex: string, fallbackToken: string): string {
+  const t = hexTriplet(hex);
+  return t ? t : `var(${fallbackToken})`;
+}
+
+const styleParts: string[] = [
+  `--oc-order-bg:${ocVar(p.orderBg, '--color-bg')}`,
+  `--oc-summary-bg:${ocVar(p.summaryBg, '--color-input-bg')}`,
+  `--oc-accent:${ocVar(p.accentColor, '--color-accent')}`,
+  `--oc-button-bg:${ocVar(p.buttonColor, '--color-button-bg')}`,
+  `--oc-error:${ocVar(p.errorColor, '--color-error')}`,
+];
+// Типографика — только когда merchant выбрал (иначе наследует тему).
+if (p.headingFont) styleParts.push(`--font-heading:'${p.headingFont}', sans-serif`);
+if (p.headingWeight) styleParts.push(`--weight-heading:${p.headingWeight}`);
+if (p.bodyFont) styleParts.push(`--font-body:'${p.bodyFont}', sans-serif`);
+if (p.bodyWeight) styleParts.push(`--weight-body:${p.bodyWeight}`);
+if (p.padding) {
+  styleParts.push(`padding-top:${p.padding.top}px`);
+  styleParts.push(`padding-bottom:${p.padding.bottom}px`);
+}
+const rootStyle = styleParts.join(';');
+
+// Баннер: положение (full/order/summary) + выравнивание + ширина.
+const banner = p.banner ?? { enabled: false, src: '', placement: 'order', align: 'center', width: 580 };
+const bannerAlignStyle =
+  banner.align === 'center'
+    ? 'margin-left:auto;margin-right:auto'
+    : banner.align === 'right'
+      ? 'margin-left:auto'
+      : '';
+const bannerWrapStyle = `max-width:${banner.width}px;${bannerAlignStyle}`;
+const showBannerLeft = banner.enabled && (banner.placement === 'order' || banner.placement === 'full');
+const showBannerSummary = banner.enabled && banner.placement === 'summary';
+
+const apiBase = 'https://gateway.merfy.ru/api';
+---
+<section
+  class:list={[C.root, schemeClass]}
+  data-block="order-confirmation"
+  data-puck-component-id={id}
+  style={rootStyle}
+>
+  {/* Состояние ошибки / обработки (скрыто; показывает inline-скрипт) */}
+  <div data-oc-state class={C.stateBox} hidden>
+    <p data-oc-state-title class={C.stateTitle}></p>
+    <p data-oc-state-text class={C.stateText}></p>
+    <a href={p.returnButtonHref || '/'} class={C.returnBtn}>{p.returnButtonText}</a>
+  </div>
+
+  <div data-oc-content class={C.container}>
+    {/* ============ ЛЕВО: Оформление заказа ============ */}
+    <div class={C.orderCol}>
+      <div class={C.head}>
+        <svg class={C.acceptIcon} width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" />
+        </svg>
+        <div class={C.headText}>
+          <p data-oc-greeting class={C.greeting}>{p.greetingTemplate.replace('{name}', '')}</p>
+          <p data-oc-number class={C.orderNumber}>Заказ #—</p>
+        </div>
+      </div>
+
+      {showBannerLeft && (
+        <div class={C.banner} style={bannerWrapStyle}>
+          {banner.src ? (
+            <img src={banner.src} alt="" class={C.bannerImg} loading="lazy" />
+          ) : (
+            <div class={C.bannerImg} aria-hidden="true"></div>
+          )}
+        </div>
+      )}
+
+      <div class={C.confirmed}>
+        <p data-oc-confirmed-title class={C.confirmedTitle}>{p.confirmedTitle}</p>
+        <p data-oc-confirmed-note class={C.confirmedNote}>{p.confirmedNote}</p>
+      </div>
+
+      <div class={C.detailsBox}>
+        <p class={C.detailsTitle}>{p.detailsTitle}</p>
+        <div class={C.detailRow}>
+          <span class={C.detailLabel}>Контактная информация</span>
+          <span data-oc-contact class={C.detailValue}>—</span>
+        </div>
+        <div class={C.detailRow}>
+          <span class={C.detailLabel}>Адрес</span>
+          <span data-oc-address class={C.detailValue}>—</span>
+        </div>
+        <div class={C.detailRow}>
+          <span class={C.detailLabel}>Способ доставки</span>
+          <span data-oc-delivery class={C.detailValue}>—</span>
+        </div>
+      </div>
+
+      <div class={C.footerRow}>
+        <span class={C.help}>{p.helpText}</span>
+        <a href={p.returnButtonHref || '/'} class={C.returnBtn}>{p.returnButtonText}</a>
+      </div>
+
+      <p class={C.legal}>{p.legalText}</p>
+    </div>
+
+    {/* ============ ПРАВО: Сводка заказа ============ */}
+    <div class={C.summaryCol}>
+      {showBannerSummary && (
+        <div class={C.banner} style={bannerWrapStyle}>
+          {banner.src ? (
+            <img src={banner.src} alt="" class={C.bannerImg} loading="lazy" />
+          ) : (
+            <div class={C.bannerImg} aria-hidden="true"></div>
+          )}
+        </div>
+      )}
+      <div data-oc-items class={C.items}></div>
+      <div class={C.conclusion}>
+        <div class={C.deliveryRow}>
+          <span>Доставка</span>
+          <span data-oc-delivery-cost>—</span>
+        </div>
+        <div class={C.totalRow}>
+          <span class={C.totalLabel}>Итого</span>
+          <div class={C.totalValueCol}>
+            <span data-oc-total class={C.totalValue}>—</span>
+            <span data-oc-total-old class={C.totalOld} hidden></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script is:inline define:vars={{ blockId: id, apiBase, greetingTpl: p.greetingTemplate, confTitle: p.confirmedTitle, confNote: p.confirmedNote }}>
+  (function () {
+    // Spec 102 — корень через общий примитив; thank-you — синглтон страницы.
+    var root = window.__merfyRoot(blockId) || document.querySelector('[data-block="order-confirmation"]'); // merfy-root-allow: page-singleton (один thank-you на странице; id может быть undefined на live composed-странице)
+    if (!root) return;
+
+    var apiUrl = (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.apiUrl) || apiBase;
+    var q = function (s) { return root.querySelector(s); };
+    var contentEl = q('[data-oc-content]');
+    var stateEl = q('[data-oc-state]');
+
+    function fmt(cents) {
+      if (cents == null) return '';
+      try {
+        return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 }).format(cents / 100);
+      } catch (e) { return Math.round(cents / 100) + ' ₽'; }
+    }
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+    function setText(sel, txt) { var el = q(sel); if (el) el.textContent = txt; }
+
+    function showState(title, text) {
+      if (contentEl) contentEl.hidden = true;
+      if (!stateEl) return;
+      stateEl.hidden = false;
+      var t = stateEl.querySelector('[data-oc-state-title]');
+      var x = stateEl.querySelector('[data-oc-state-text]');
+      if (t) t.textContent = title;
+      if (x) x.textContent = text;
+    }
+
+    function variantLines(opts) {
+      if (!opts || typeof opts !== 'object') return '';
+      var html = '';
+      var keys = Object.keys(opts);
+      for (var i = 0; i < keys.length; i++) {
+        html += '<div class="text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]">'
+          + '<span>' + esc(keys[i]) + ':</span> ' + esc(opts[keys[i]]) + '</div>';
+      }
+      return html ? '<div class="flex flex-col gap-0.5">' + html + '</div>' : '';
+    }
+
+    function renderItem(it) {
+      var img = it.imageUrl || '';
+      var name = it.name || 'Товар';
+      var qty = it.quantity || 1;
+      var unit = it.unitPriceCents || 0;
+      var disc = it.discountCents || 0;
+      // Старая цена позиции деривируется из скидки (compare-at в снапшоте нет).
+      var oldUnit = disc > 0 ? unit + Math.round(disc / qty) : null;
+
+      var imgHtml = '<div class="relative shrink-0">'
+        + (img
+            ? '<img src="' + esc(img) + '" alt="' + esc(name) + '" class="h-20 w-20 rounded-[var(--radius-media)] border border-[rgb(var(--color-border))] object-cover" loading="lazy" onerror="this.style.visibility=\'hidden\'"/>'
+            : '<div class="h-20 w-20 rounded-[var(--radius-media)] border border-[rgb(var(--color-border))] bg-[rgb(var(--color-input-bg))]"></div>')
+        + '<span class="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[rgb(var(--color-text))] text-[10px] text-[rgb(var(--color-bg))]">' + qty + '</span>'
+        + '</div>';
+
+      var priceHtml = '<div class="flex flex-col items-end gap-0.5 text-right">'
+        + '<div class="text-[length:var(--size-small)] text-[rgb(var(--color-heading))]">' + fmt(unit) + '</div>'
+        + (oldUnit ? '<div class="text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))] line-through">' + fmt(oldUnit) + '</div>' : '')
+        + '</div>';
+
+      return '<div class="flex items-start gap-4">'
+        + imgHtml
+        + '<div class="flex flex-1 flex-col gap-1 min-w-0">'
+          + '<div class="text-[length:var(--size-small)] [font-family:var(--font-heading)] text-[rgb(var(--color-heading))]">' + esc(name) + '</div>'
+          + variantLines(it.options)
+        + '</div>'
+        + priceHtml
+        + '</div>';
+    }
+
+    function firstName(full) {
+      if (!full) return '';
+      var s = String(full).trim();
+      var sp = s.indexOf(' ');
+      return sp > 0 ? s.slice(0, sp) : s;
+    }
+
+    function fillContent(d) {
+      if (stateEl) stateEl.hidden = true;
+      if (contentEl) contentEl.hidden = false;
+
+      var name = firstName(d.customerName);
+      setText('[data-oc-greeting]', (greetingTpl || 'Спасибо за заказ{name}!').replace('{name}', name ? ', ' + name : ''));
+      setText('[data-oc-number]', 'Заказ #' + (d.orderNumber || ''));
+
+      // Состояние оплаты → заголовок/примечание подтверждения.
+      var ps = d.paymentStatus;
+      if (ps === 'failed' || ps === 'cancelled') {
+        setText('[data-oc-confirmed-title]', 'Оплата не прошла');
+        setText('[data-oc-confirmed-note]', 'Заказ не оплачен. Попробуйте оформить снова.');
+      } else if (ps && ps !== 'succeeded') {
+        setText('[data-oc-confirmed-title]', 'Оплата обрабатывается');
+        setText('[data-oc-confirmed-note]', 'Мы подтвердим заказ, как только платёж пройдёт.');
+      } else {
+        setText('[data-oc-confirmed-title]', confTitle);
+        setText('[data-oc-confirmed-note]', confNote);
+      }
+
+      var contactParts = [];
+      if (d.customerPhone) contactParts.push(d.customerPhone);
+      if (d.customerEmail) contactParts.push(d.customerEmail);
+      setText('[data-oc-contact]', contactParts.join(' · ') || '—');
+
+      var addr = (d.shippingAddress && (d.shippingAddress.fullAddress || [d.shippingAddress.country, d.shippingAddress.city, d.shippingAddress.street, d.shippingAddress.building].filter(Boolean).join(', '))) || d.cdekPickupPointAddress || '—';
+      setText('[data-oc-address]', addr);
+      setText('[data-oc-delivery]', d.deliveryLabel || d.deliveryType || '—');
+
+      var itemsEl = q('[data-oc-items]');
+      if (itemsEl) itemsEl.innerHTML = (d.items || []).map(renderItem).join('');
+
+      setText('[data-oc-delivery-cost]', d.deliveryCostCents ? fmt(d.deliveryCostCents) : 'Бесплатно');
+      setText('[data-oc-total]', fmt(d.totalCents));
+      var oldTotal = (d.discountCents || 0) + (d.promoDiscountCents || 0);
+      var totalOldEl = q('[data-oc-total-old]');
+      if (totalOldEl) {
+        if (oldTotal > 0) { totalOldEl.textContent = fmt((d.totalCents || 0) + oldTotal); totalOldEl.hidden = false; }
+        else totalOldEl.hidden = true;
+      }
+    }
+
+    // Дизайн-тайм плейсхолдер (превью конструктора, без реального заказа).
+    function placeholder() {
+      fillContent({
+        orderNumber: '000000000',
+        paymentStatus: 'succeeded',
+        customerName: 'Иван',
+        customerPhone: '+7 (000) 000-00-00',
+        shippingAddress: { fullAddress: 'Российская Федерация, г. Москва, ул. Пушкина, д. 0, кв. 0' },
+        deliveryLabel: 'Эконом',
+        deliveryCostCents: 0,
+        items: [
+          { name: 'Сумка Guess', options: { 'Цвет': 'Бежевый', 'Размер': 'One-size' }, quantity: 1, unitPriceCents: 549000, discountCents: 350000 },
+          { name: 'Сумка Guess', options: { 'Цвет': 'Чёрный', 'Размер': 'One-size' }, quantity: 1, unitPriceCents: 599000, discountCents: 200000 },
+        ],
+        subtotalCents: 1698000, discountCents: 510000, promoDiscountCents: 0, totalCents: 1188000,
+      });
+    }
+
+    function load() {
+      var params = new URLSearchParams(location.search);
+      var orderId = params.get('orderId') || (function () { try { return localStorage.getItem('merfy:lastOrderId'); } catch (e) { return null; } })();
+      var inPreview = (window.self !== window.top) || /customize\.merfy\.ru/.test(document.referrer || '');
+
+      if (!orderId) {
+        if (inPreview) { placeholder(); return; }
+        showState('Заказ не найден', 'Проверьте ссылку или вернитесь в магазин.');
+        return;
+      }
+
+      var attempts = 0;
+      function fetchSummary() {
+        fetch(apiUrl + '/orders/' + encodeURIComponent(orderId) + '/summary')
+          .then(function (r) { return r.json(); })
+          .then(function (json) {
+            if (!json || !json.success || !json.data) {
+              showState('Заказ не найден', 'Проверьте ссылку или вернитесь в магазин.');
+              return;
+            }
+            fillContent(json.data);
+            // Если платёж ещё в обработке — поллим до 30с и обновляем.
+            var ps = json.data.paymentStatus;
+            if ((ps === 'pending' || ps === 'processing') && attempts < 15) {
+              attempts++;
+              setTimeout(fetchSummary, 2000);
+            }
+          })
+          .catch(function () {
+            if (contentEl && contentEl.hidden && stateEl && stateEl.hidden) {
+              showState('Не удалось загрузить заказ', 'Попробуйте обновить страницу.');
+            }
+          });
+      }
+      fetchSummary();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', load);
+    } else {
+      load();
+    }
+  })();
+</script>

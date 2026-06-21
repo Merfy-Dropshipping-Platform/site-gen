@@ -40,6 +40,9 @@ export * as CheckoutTotals from './blocks/CheckoutTotals';
 export * as CheckoutSubmit from './blocks/CheckoutSubmit';
 export * as CheckoutTerms from './blocks/CheckoutTerms';
 
+// Thank-you / order confirmation (Spec 103 — post-payment секция)
+export * as OrderConfirmation from './blocks/OrderConfirmation';
+
 // SEO TS modules (Phase 1b)
 export { buildSitemap } from './seo/SitemapBuilder';
 export type { SitemapUrl } from './seo/SitemapBuilder';

@@ -98,6 +98,8 @@ const BASE_BLOCKS: Record<string, BaseBlockEntry> = Object.fromEntries(
     // Checkout page mega-blocks (Figma 1:19998 — 2 секции вместо 11)
     'CheckoutForm',
     'CheckoutSummary',
+    // Thank-you / order confirmation (Spec 103) — Figma 1:20389/1:20698
+    'OrderConfirmation',
     // Catalog page-only block (filter sidebar + product grid + pagination)
     'Catalog',
     // 7 chrome blocks

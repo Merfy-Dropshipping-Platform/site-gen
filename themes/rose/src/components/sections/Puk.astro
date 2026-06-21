@@ -28,7 +28,7 @@ const sectionSubtitle =
 // theme-base public; rose уже использует тот же путь в RoseProductDetail).
 const SWEATER_COLORS = ['blue', 'yellow', 'red', 'green'] as const;
 const sweaterAsset = (i: number) =>
-  `/placeholders/sweater-${SWEATER_COLORS[i % SWEATER_COLORS.length]}.png`;
+  `/placeholders/sweater-${SWEATER_COLORS[i % SWEATER_COLORS.length]}.svg`;
 
 // Дефолт 4 карточки (паритет PopularProducts cards=4). Уважаем cards, если
 // задан (2..24).

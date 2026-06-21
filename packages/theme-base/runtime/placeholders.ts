@@ -25,12 +25,12 @@ const A = '/placeholders';
 
 export const PLACEHOLDER_ASSETS = {
   sweater: {
-    blue: `${A}/sweater-blue.png`,
-    yellow: `${A}/sweater-yellow.png`,
-    red: `${A}/sweater-red.png`,
-    green: `${A}/sweater-green.png`,
+    blue: `${A}/sweater-blue.svg`,
+    yellow: `${A}/sweater-yellow.svg`,
+    red: `${A}/sweater-red.svg`,
+    green: `${A}/sweater-green.svg`,
     /** 200x200 — для Product hero. Остальные 132x132 для cards. */
-    blueLarge: `${A}/sweater-blue-large.png`,
+    blueLarge: `${A}/sweater-blue-large.svg`,
   },
   landscape: {
     /** Slideshow / Hero (большой 16:9). */

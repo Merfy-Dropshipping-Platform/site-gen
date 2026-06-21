@@ -208,9 +208,13 @@ const video = parseVideo(videoUrl);
               <path d="M18 14L30 22L18 30Z" fill="currentColor"/>
             </svg>
           </button>
-          <script is:inline>
+          <script is:inline define:vars={{ blockId: id }}>
             (() => {
-              const wraps = document.querySelectorAll('[data-media-target]');
+              // Spec 102 — скоуп к своей секции: при 2+ «Видео» иначе двоились бы
+              // play-обработчики (querySelectorAll по всем [data-media-target]).
+              const root = window.__merfyRoot(blockId);
+              if (!root) return;
+              const wraps = root.querySelectorAll('[data-media-target]');
               wraps.forEach((wrap) => {
                 const v = wrap.querySelector('video[data-media-video]');
                 const btn = wrap.querySelector('[data-media-play-overlay]');
@@ -262,9 +266,7 @@ const video = parseVideo(videoUrl);
   // Video.
   (function () {
     if (!blockId) return;
-    var section = document.querySelector(
-      'section[data-media-slot="video"][data-media-block-id="' + blockId + '"]'
-    );
+    var section = window.__merfyRoot(blockId); // Spec 102 — свой корень по id
     if (!section) return;
     var target = section.querySelector('[data-media-target]');
     if (!target) return;

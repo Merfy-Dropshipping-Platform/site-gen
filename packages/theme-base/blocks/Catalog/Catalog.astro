@@ -548,7 +548,7 @@ const fmtPriceServer = (n: number | string | undefined): string => {
      планшет (sm:grid-cols-3) — там же, в классах грида. */
 </style>
 
-<script is:inline define:vars={{ siteId, apiBase, cardCount, cardBgOn, btnBg, btnFg, btnBorder, btnStyle, showQuickAdd, quickAddText, effectiveCollection, urlState, cardAspect, cardPaddingBottom, gridAspectClass, cardCaptionClass }}>
+<script is:inline define:vars={{ siteId, apiBase, cardCount, cardBgOn, btnBg, btnFg, btnBorder, btnStyle, showQuickAdd, quickAddText, effectiveCollection, urlState, cardAspect, cardPaddingBottom, gridAspectClass, cardCaptionClass, blockId: id }}>
   // Mirror live storefront in constructor preview: fetch real products and
   // replace placeholder grid with actual cards. Honor productCard.* settings
   // so user changes (cardBackground, buttonStyle, quickAdd, etc) reflect.
@@ -561,7 +561,9 @@ const fmtPriceServer = (n: number | string | undefined): string => {
       || (typeof window !== 'undefined' && window.__MERFY_CONFIG__ && (window.__MERFY_CONFIG__.shopId || window.__MERFY_CONFIG__.siteId))
       || '';
     if (!effectiveSiteId) return;
-    const root = document.querySelector('section[data-block="catalog"]');
+    // Spec 102 — свой корень через общий примитив (не first-match): на странице
+    // может быть 2+ «Каталога», иначе оживал бы только первый.
+    const root = window.__merfyRoot(blockId);
     if (!root) return;
     const grid = root.querySelector('[data-catalog-grid]');
     const count = root.querySelector('[data-catalog-count]');

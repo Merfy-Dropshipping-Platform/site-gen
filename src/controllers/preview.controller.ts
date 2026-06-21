@@ -27,6 +27,7 @@ import { extractPageBlocks } from '../themes/page-blocks';
 import { isV2ComplexRoute } from '../themes/v2-routes';
 import { migrateRevisionData } from '../utils/revision-migrations';
 import { rewriteRootUrlsToPrefix } from '../generator/theme-build.service';
+import { BLOCK_ROOT_INLINE, BLOCK_ROOT_MARKER } from '../common/block-root-inline';
 
 /**
  * Canonical system page id → build route. Universal across themes (the 8 system
@@ -584,6 +585,15 @@ export class PreviewController {
     themeName?: string | null,
   ): string {
     let html = htmlIn.replace(/const shopId = "";/g, `const shopId = "${siteId}";`);
+    // Универсальный резолвер корня блока window.__merfyRoot (Spec 102) — ДО любого
+    // блочного скрипта, чтобы любая секция (в т.ч. 2+ одинаковых) находила свой
+    // корень, а не «первую». Зеркалит live-инжект build.service.injectBlockRootHelper.
+    if (!html.includes(BLOCK_ROOT_MARKER)) {
+      html = html.replace(
+        /<head(\s[^>]*)?>/i,
+        (m) => `${m}${BLOCK_ROOT_INLINE}`,
+      );
+    }
     const dadataToken = process.env.DADATA_API_KEY;
     if (dadataToken) {
       html = html.replace(

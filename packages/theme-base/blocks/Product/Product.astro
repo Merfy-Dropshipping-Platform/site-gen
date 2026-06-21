@@ -348,14 +348,10 @@ const cartImage = view.gallery.hero?.src ?? '';
   //   data-counter-value           qty display
   //   data-product-action="add-to-cart|buy-now|share"  CTA + share buttons
   (function () {
-    // Скоуп к СВОЕЙ секции по уникальному blockId (data-puck-component-id), а НЕ
-    // querySelector-first: на странице может быть НЕСКОЛЬКО секций «Товар» — иначе
-    // скрипт каждой цеплялся бы к ПЕРВОЙ, и остальные секции мёртвые (варианты/кол-во/
-    // кнопки). Скрипт стоит ПОСЛЕ </section> (sibling), поэтому currentScript.closest
-    // секцию не находит — адресуем по id. Корректно и после hot-replace в конструкторе
-    // (id блока не меняется, executeScriptsIn пересоздаёт <script>).
-    const root = (blockId && document.querySelector('[data-puck-component-id="' + blockId + '"]'))
-      || document.querySelector('section[data-block="product"]');
+    // Скоуп к СВОЕЙ секции через общий примитив (Spec 102): на странице может быть
+    // НЕСКОЛЬКО секций «Товар», first-match оживлял бы только первую. __merfyRoot
+    // ищет по уникальному blockId (переживает hot-replace конструктора).
+    const root = window.__merfyRoot(blockId);
     if (!root) return;
 
     const heroEl = root.querySelector('[data-product-hero]');

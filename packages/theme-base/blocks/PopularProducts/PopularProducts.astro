@@ -506,6 +506,7 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
     // товара нет картинки). Тот же asset что Astro server рендерит —
     // единая декорация на оба пути.
     placeholderImageUrl: PLACEHOLDER_ASSETS.sweater.blue,
+    blockId: id,
   }}
 >
   // 088 T008 — runtime fetch (mirror Catalog.astro Stage 3 pattern).
@@ -528,18 +529,11 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
     }
     if (!effectiveSiteId) return;
 
-    // Find THIS section (in case multiple PopularProducts blocks exist on page,
-    // each script invocation targets the nearest unhydrated section).
-    var sections = document.querySelectorAll('section[data-block="popular-products"]');
-    var root = null;
-    for (var i = 0; i < sections.length; i++) {
-      if (!sections[i].hasAttribute('data-pop-hydrated')) {
-        root = sections[i];
-        break;
-      }
-    }
+    // Spec 102 — свой корень через общий примитив (не claim-unhydrated/first-match):
+    // при 2+ «Популярных товарах» каждый скрипт гидрирует ИМЕННО свою секцию,
+    // корректно и после hot-replace в конструкторе.
+    var root = window.__merfyRoot(blockId);
     if (!root) return;
-    root.setAttribute('data-pop-hydrated', 'true');
 
     var grid = root.querySelector('[data-pop-grid]');
     if (!grid) return;

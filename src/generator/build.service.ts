@@ -17,6 +17,7 @@ import { ClientProxy } from "@nestjs/microservices";
 import { firstValueFrom } from "rxjs";
 import { timeout } from "rxjs/operators";
 import { resolveAssetUrls } from "../themes/asset-resolver";
+import { BLOCK_ROOT_INLINE, BLOCK_ROOT_MARKER } from "../common/block-root-inline";
 import * as path from "path";
 import * as fs from "fs/promises";
 import * as fsSync from "fs";
@@ -236,6 +237,36 @@ export async function injectGlobalsIntoDist(
     const html = await fs.readFile(file, "utf8");
     if (html.includes(marker)) continue; // уже инжектировано
     const next = html.replace(/<head(\s[^>]*)?>/i, (m) => `${m}<script>${script}</script>`);
+    if (next !== html) {
+      await fs.writeFile(file, next, "utf8");
+      patched++;
+    }
+  }
+  return patched;
+}
+
+/**
+ * Инжект универсального резолвера корня блока `window.__merfyRoot` в <head>
+ * всех собранных HTML. Должен стоять ДО блочных `<script is:inline>`, чтобы
+ * любая секция (в т.ч. 2+ одинаковых на странице) находила СВОЙ корень.
+ * Идемпотентно (маркер — определение функции, не её вызовы). Spec 102.
+ */
+export async function injectBlockRootHelper(distDir: string): Promise<number> {
+  const htmlFiles: string[] = [];
+  async function findHtml(dir: string) {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    for (const e of entries) {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) await findHtml(full);
+      else if (e.name.endsWith(".html")) htmlFiles.push(full);
+    }
+  }
+  await findHtml(distDir);
+  let patched = 0;
+  for (const file of htmlFiles) {
+    const html = await fs.readFile(file, "utf8");
+    if (html.includes(BLOCK_ROOT_MARKER)) continue; // уже инжектировано
+    const next = html.replace(/<head(\s[^>]*)?>/i, (m) => `${m}${BLOCK_ROOT_INLINE}`);
     if (next !== html) {
       await fs.writeFile(file, next, "utf8");
       patched++;
@@ -1141,6 +1172,15 @@ export async function runBuildPipeline(
         logger.log(`[themes-v2] Injected __MERFY_THEME__="${bareTheme}" into ${themeGlobals} HTML files for site ${params.siteId}`);
       } catch (thErr) {
         logger.warn(`[themes-v2] theme global inject failed: ${(thErr as Error)?.message ?? thErr}`);
+      }
+      // Универсальный резолвер корня блока window.__merfyRoot (Spec 102) — чтобы
+      // любая секция (в т.ч. 2+ одинаковых на странице) находила свой корень, а не
+      // «первую». Один общий примитив для всех блоков; зеркалит превью-инжект.
+      try {
+        const rootHelpers = await injectBlockRootHelper(ctx.distDir);
+        logger.log(`[themes-v2] Injected __merfyRoot block-root helper into ${rootHelpers} HTML files for site ${params.siteId}`);
+      } catch (rhErr) {
+        logger.warn(`[themes-v2] block-root helper inject failed: ${(rhErr as Error)?.message ?? rhErr}`);
       }
       // Раскладка каталога из конструктора (Catalog.filterPosition: 'side'|'top'):
       // статичные каталог-страницы тем читают window.__MERFY_CATALOG_LAYOUT__ на

@@ -331,7 +331,7 @@ const cartImage = view.gallery.hero?.src ?? '';
   </div>
 </section>
 
-<script is:inline define:vars={{ siteId, apiBase, productId }}>
+<script is:inline define:vars={{ siteId, apiBase, productId, blockId: id }}>
   // Hydration: live SSG already rendered real data via headless normaliser.
   // In preview mode (siteId set) we re-fetch storefront-data and patch DOM
   // through the same primitive selectors. The contract:
@@ -348,13 +348,13 @@ const cartImage = view.gallery.hero?.src ?? '';
   //   data-counter-value           qty display
   //   data-product-action="add-to-cart|buy-now|share"  CTA + share buttons
   (function () {
-    // Скоуп к СВОЕЙ секции через document.currentScript, а НЕ querySelector-first:
-    // на странице может быть НЕСКОЛЬКО секций «Товар» — иначе скрипт каждой цеплялся
-    // бы к ПЕРВОЙ, и остальные секции были мёртвые (варианты/кол-во/кнопки). Так же
-    // корректно после hot-replace в конструкторе (executeScriptsIn пересоздаёт
-    // <script> → document.currentScript = новый скрипт своей секции).
-    var __cs = document.currentScript;
-    const root = (__cs && __cs.closest && __cs.closest('section[data-block="product"]'))
+    // Скоуп к СВОЕЙ секции по уникальному blockId (data-puck-component-id), а НЕ
+    // querySelector-first: на странице может быть НЕСКОЛЬКО секций «Товар» — иначе
+    // скрипт каждой цеплялся бы к ПЕРВОЙ, и остальные секции мёртвые (варианты/кол-во/
+    // кнопки). Скрипт стоит ПОСЛЕ </section> (sibling), поэтому currentScript.closest
+    // секцию не находит — адресуем по id. Корректно и после hot-replace в конструкторе
+    // (id блока не меняется, executeScriptsIn пересоздаёт <script>).
+    const root = (blockId && document.querySelector('[data-puck-component-id="' + blockId + '"]'))
       || document.querySelector('section[data-block="product"]');
     if (!root) return;
 

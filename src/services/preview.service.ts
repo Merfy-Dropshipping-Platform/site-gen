@@ -1092,11 +1092,30 @@ const PREVIEW_CART_STORE_INLINE = `
     },
   };
 
+  function __pvBoot() {
+    // Express «Купить сейчас» сеет серверную корзину оформления (merfy:cartItems)
+    // через checkout (он читает <тема>:buynow → cs.clear()+cs.addItem()). В превью
+    // бейдж [data-cart-count] читает ИМЕННО эту корзину (на live — nt-cart, которую
+    // express не трогает). Поэтому на НЕ-checkout странице чистим залипший express
+    // (stale <тема>:buynow + его серверную корзину), чтобы бейдж страницы товара был
+    // 0 — как на live. На самой странице оформления не трогаем (там товар нужен).
+    try {
+      var onCheckout = !!document.querySelector('[data-checkout-summary]');
+      var bnKey = (window.__MERFY_THEME__ || '') + ':buynow';
+      if (!onCheckout && window.__MERFY_THEME__ && sessionStorage.getItem(bnKey)) {
+        sessionStorage.removeItem(bnKey);
+        localStorage.removeItem(CART_ID_KEY);
+        localStorage.removeItem(CART_ITEMS_KEY);
+      }
+    } catch (e) {}
+    window.cartStore.init();
+  }
+
   // Auto-init
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () { window.cartStore.init(); });
+    document.addEventListener('DOMContentLoaded', __pvBoot);
   } else {
-    window.cartStore.init();
+    __pvBoot();
   }
 })();
 `;

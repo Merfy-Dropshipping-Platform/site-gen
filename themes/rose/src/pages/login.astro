@@ -2,9 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import AuthShell from '../components/auth/AuthShell.astro';
 import AuthInput from '../components/auth/AuthInput.astro';
-import PasswordField from '../components/auth/PasswordField.astro';
 import AuthButton from '../components/auth/AuthButton.astro';
-import AuthSecondaryLink from '../components/auth/AuthSecondaryLink.astro';
 
 // Конфиг auth-стора: shopId патчит build.service (patchShopIdInDist) → siteId на деплое.
 const shopId = "";
@@ -18,7 +16,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
     };
   </script>
 
-  <AuthShell title="Вход в аккаунт" description="Введите e-mail — войдём в аккаунт или создадим новый. Пароль не нужен.">
+  <AuthShell title="Вход в аккаунт" description="Введите e-mail — пришлём ссылку для входа. Войдём в аккаунт или создадим новый.">
     <form id="magic-form" class="w-full flex flex-col gap-6" novalidate>
       <AuthInput
         label="E-mail"
@@ -34,25 +32,11 @@ const apiUrl = "https://gateway.merfy.ru/api";
 
     <div class="w-full flex flex-col items-center gap-8">
       <AuthButton id="btn-magic" form="magic-form" loadingLabel="Отправляем...">Получить ссылку для входа</AuthButton>
-
-      <details id="password-fallback" class="w-full">
-        <summary class="account-text-link" style="cursor:pointer;text-align:center;list-style:none">Войти по паролю</summary>
-        <form id="password-form" class="w-full flex flex-col gap-6" style="margin-top:1.25rem" novalidate>
-          <PasswordField
-            label="Пароль"
-            name="password"
-            id="login-password"
-            placeholder="Введите пароль"
-          />
-          <AuthButton id="btn-login" form="password-form" loadingLabel="Вход...">Войти</AuthButton>
-          <AuthSecondaryLink href="/reset-password" variant="muted">Забыл пароль?</AuthSecondaryLink>
-        </form>
-      </details>
     </div>
   </AuthShell>
 
   <script>
-    import { navTo, login, requestMagicLink, getToken } from '../lib/auth';
+    import { navTo, requestMagicLink, getToken } from '../lib/auth';
 
     function initLoginPage() {
       const magicForm = document.getElementById('magic-form') as HTMLFormElement | null;
@@ -72,28 +56,26 @@ const apiUrl = "https://gateway.merfy.ru/api";
       const prefillEmail = new URLSearchParams(window.location.search).get('email');
       if (prefillEmail) emailField.value = prefillEmail;
 
-      const setFieldError = (id: string, has: boolean) => {
-        const el = document.getElementById(id);
-        if (el) el.setAttribute('data-error', has ? 'true' : 'false');
-      };
       const validEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
-      const showError = (msg: string) => { errorEl.textContent = msg; errorEl.classList.remove('hidden'); };
-      const btnBusy = (btn: HTMLButtonElement, on: boolean) => {
-        const l = btn.querySelector('[data-loading]'); const t = btn.querySelector('[data-button-text]');
-        if (on) { l?.classList.remove('hidden'); t?.classList.add('hidden'); btn.disabled = true; }
-        else { l?.classList.add('hidden'); t?.classList.remove('hidden'); btn.disabled = false; }
+      const showError = (msg: string) => {
+        errorEl.textContent = msg;
+        errorEl.classList.remove('hidden');
       };
 
-      // ── Magic-link (основной путь) ──
       const magicBtn = document.getElementById('btn-magic') as HTMLButtonElement;
       magicForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        errorEl.classList.add('hidden'); setFieldError('login-email', false);
+        errorEl.classList.add('hidden');
+        emailField.setAttribute('data-error', 'false');
         const email = emailField.value.trim();
         if (!email || !validEmail(email)) {
-          setFieldError('login-email', true); showError('Введите корректный e-mail'); return;
+          emailField.setAttribute('data-error', 'true');
+          showError('Введите корректный e-mail');
+          return;
         }
-        btnBusy(magicBtn, true);
+        const l = magicBtn.querySelector('[data-loading]');
+        const t = magicBtn.querySelector('[data-button-text]');
+        l?.classList.remove('hidden'); t?.classList.add('hidden'); magicBtn.disabled = true;
         try {
           const result = await requestMagicLink({ email });
           if (result.success) {
@@ -104,32 +86,9 @@ const apiUrl = "https://gateway.merfy.ru/api";
           let msg = err?.error || err?.message || 'Не удалось отправить ссылку';
           if (err?.code === 'RATE_LIMIT_EXCEEDED') msg = 'Письмо уже отправлено. Проверьте почту.';
           showError(msg);
-        } finally { btnBusy(magicBtn, false); }
-      });
-
-      // ── Пароль (fallback) ──
-      const passwordForm = document.getElementById('password-form') as HTMLFormElement;
-      const loginBtn = document.getElementById('btn-login') as HTMLButtonElement;
-      passwordForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        errorEl.classList.add('hidden'); setFieldError('login-password', false);
-        const email = emailField.value.trim();
-        const password = (document.getElementById('login-password') as HTMLInputElement).value;
-        if (!email || !validEmail(email)) { setFieldError('login-email', true); showError('Введите корректный e-mail'); return; }
-        if (!password) { setFieldError('login-password', true); showError('Введите пароль'); return; }
-        btnBusy(loginBtn, true);
-        try {
-          const result = await login({ email, password });
-          if (result.success) {
-            const params = new URLSearchParams(window.location.search);
-            navTo(params.get('redirect') || '/account');
-          } else { throw result; }
-        } catch (err: any) {
-          let msg = 'Неверный email или пароль';
-          if (err?.error === 'ACCOUNT_LOCKED' || err?.code === 'RATE_LIMIT_EXCEEDED') msg = 'Слишком много попыток. Попробуйте через 30 минут';
-          else if (err?.message) msg = err.message;
-          showError(msg);
-        } finally { btnBusy(loginBtn, false); }
+        } finally {
+          l?.classList.add('hidden'); t?.classList.remove('hidden'); magicBtn.disabled = false;
+        }
       });
     }
 

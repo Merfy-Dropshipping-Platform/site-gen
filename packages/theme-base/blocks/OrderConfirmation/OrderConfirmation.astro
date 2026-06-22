@@ -239,9 +239,13 @@ const apiBase = 'https://gateway.merfy.ru/api';
       var name = it.name || 'Товар';
       var qty = it.quantity || 1;
       var unit = it.unitPriceCents || 0;
+      var line = it.totalCents || unit * qty;
       var disc = it.discountCents || 0;
-      // Старая цена позиции деривируется из скидки (compare-at в снапшоте нет).
-      var oldUnit = disc > 0 ? unit + Math.round(disc / qty) : null;
+      // Старая цена: compare-at из карточки товара (приоритет), иначе деривация из скидки.
+      var oldUnit = (it.compareAtPriceCents && it.compareAtPriceCents > unit)
+        ? it.compareAtPriceCents
+        : (disc > 0 ? unit + Math.round(disc / qty) : null);
+      var oldLine = oldUnit ? oldUnit * qty : null;
 
       var imgHtml = '<div class="relative shrink-0">'
         + (img
@@ -250,16 +254,30 @@ const apiBase = 'https://gateway.merfy.ru/api';
         + '<span class="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[rgb(var(--color-text))] text-[10px] text-[rgb(var(--color-bg))]">' + qty + '</span>'
         + '</div>';
 
-      var priceHtml = '<div class="flex flex-col items-end gap-0.5 text-right">'
-        + '<div class="text-[length:var(--size-small)] text-[rgb(var(--color-heading))]">' + fmt(unit) + '</div>'
-        + (oldUnit ? '<div class="text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))] line-through">' + fmt(oldUnit) + '</div>' : '')
+      // Полная инфа о товаре: варианты + описание + артикул + «N × цена за шт».
+      var meta = variantLines(it.options);
+      if (it.description) {
+        var descr = String(it.description).replace(/\s+/g, ' ').trim();
+        if (descr.length > 90) descr = descr.slice(0, 90) + '…';
+        if (descr) meta += '<div class="text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]">' + esc(descr) + '</div>';
+      }
+      if (it.sku) {
+        meta += '<div class="text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]">Артикул: ' + esc(it.sku) + '</div>';
+      }
+      if (qty > 1) {
+        meta += '<div class="text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]">' + qty + ' × ' + fmt(unit) + '</div>';
+      }
+
+      var priceHtml = '<div class="flex flex-col items-end gap-0.5 text-right shrink-0">'
+        + '<div class="text-[length:var(--size-small)] text-[rgb(var(--color-heading))]">' + fmt(line) + '</div>'
+        + (oldLine ? '<div class="text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))] line-through">' + fmt(oldLine) + '</div>' : '')
         + '</div>';
 
       return '<div class="flex items-start gap-4">'
         + imgHtml
         + '<div class="flex flex-1 flex-col gap-1 min-w-0">'
           + '<div class="text-[length:var(--size-small)] [font-family:var(--font-heading)] text-[rgb(var(--color-heading))]">' + esc(name) + '</div>'
-          + variantLines(it.options)
+          + meta
         + '</div>'
         + priceHtml
         + '</div>';
@@ -277,7 +295,12 @@ const apiBase = 'https://gateway.merfy.ru/api';
       if (contentEl) contentEl.hidden = false;
 
       var name = firstName(d.customerName);
-      setText('[data-oc-greeting]', (greetingTpl || 'Спасибо за заказ{name}!').replace('{name}', name ? ', ' + name : ''));
+      // Шаблон уже содержит запятую перед {name} ("Спасибо за заказ, {name}!").
+      // Есть имя → подставляем имя; нет имени → срезаем ", {name}" целиком.
+      var greeting = name
+        ? (greetingTpl || 'Спасибо за заказ, {name}!').replace('{name}', name)
+        : (greetingTpl || 'Спасибо за заказ!').replace(/[\s,]*\{name\}/, '');
+      setText('[data-oc-greeting]', greeting);
       setText('[data-oc-number]', 'Заказ #' + (d.orderNumber || ''));
 
       // Состояние оплаты → заголовок/примечание подтверждения.
@@ -326,8 +349,8 @@ const apiBase = 'https://gateway.merfy.ru/api';
         deliveryLabel: 'Эконом',
         deliveryCostCents: 0,
         items: [
-          { name: 'Сумка Guess', options: { 'Цвет': 'Бежевый', 'Размер': 'One-size' }, quantity: 1, unitPriceCents: 549000, discountCents: 350000 },
-          { name: 'Сумка Guess', options: { 'Цвет': 'Чёрный', 'Размер': 'One-size' }, quantity: 1, unitPriceCents: 599000, discountCents: 200000 },
+          { name: 'Сумка Guess', options: { 'Цвет': 'Бежевый', 'Размер': 'One-size', 'Материал': 'Кожа' }, quantity: 1, unitPriceCents: 549000, totalCents: 549000, compareAtPriceCents: 899000, sku: 'GUESS-BG-01', description: 'Классическая сумка из натуральной кожи' },
+          { name: 'Сумка Guess', options: { 'Цвет': 'Чёрный', 'Размер': 'One-size', 'Материал': 'Кожа' }, quantity: 2, unitPriceCents: 599000, totalCents: 1198000, compareAtPriceCents: 799000, sku: 'GUESS-BK-02' },
         ],
         subtotalCents: 1698000, discountCents: 510000, promoDiscountCents: 0, totalCents: 1188000,
       });

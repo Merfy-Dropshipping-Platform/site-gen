@@ -1,0 +1,211 @@
+---
+import Layout from '../layouts/Layout.astro';
+import AuthShell from '../components/auth/AuthShell.astro';
+import AuthButton from '../components/auth/AuthButton.astro';
+import AuthSecondaryLink from '../components/auth/AuthSecondaryLink.astro';
+
+// Конфиг auth-стора: shopId патчит build.service (patchShopIdInDist) → siteId на деплое.
+const shopId = "";
+const apiUrl = "https://gateway.merfy.ru/api";
+---
+<Layout title="Вход">
+  <script is:inline define:vars={{ shopId, apiUrl }}>
+    window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
+      shopId: shopId || "",
+      apiUrl: apiUrl || "https://gateway.merfy.ru/api",
+    };
+  </script>
+
+  <AuthShell title="Вход в аккаунт" description="Подтвердите вход — по ссылке из письма или введите код">
+    <!-- Состояние: проверка ссылки (?token) -->
+    <div id="magic-loading" class="w-full text-center hidden">
+      <p class="text-base" style="color:#999;font-weight:300">Проверяем ссылку…</p>
+    </div>
+
+    <!-- Состояние: ввод 6-значного кода -->
+    <div id="magic-code-view" class="w-full flex flex-col items-center gap-20 hidden">
+      <div class="flex items-center justify-center gap-3" id="otp-group" role="group" aria-label="Код для входа">
+        <input class="auth-otp-cell" data-otp-cell inputmode="numeric" maxlength="1" autocomplete="one-time-code" data-filled="false" aria-label="Цифра 1" />
+        <input class="auth-otp-cell" data-otp-cell inputmode="numeric" maxlength="1" data-filled="false" aria-label="Цифра 2" />
+        <input class="auth-otp-cell" data-otp-cell inputmode="numeric" maxlength="1" data-filled="false" aria-label="Цифра 3" />
+        <input class="auth-otp-cell" data-otp-cell inputmode="numeric" maxlength="1" data-filled="false" aria-label="Цифра 4" />
+        <input class="auth-otp-cell" data-otp-cell inputmode="numeric" maxlength="1" data-filled="false" aria-label="Цифра 5" />
+        <input class="auth-otp-cell" data-otp-cell inputmode="numeric" maxlength="1" data-filled="false" aria-label="Цифра 6" />
+      </div>
+      <button type="button" class="account-text-link" id="otp-resend" disabled>Отправить письмо повторно <span id="otp-resend-timer"></span></button>
+    </div>
+
+    <div class="w-full flex flex-col items-center gap-8" id="magic-actions">
+      <div class="auth-helper-error hidden text-center" id="verify-error" role="alert"></div>
+      <AuthButton id="btn-verify-continue" type="button" loadingLabel="Проверка...">Войти</AuthButton>
+      <AuthSecondaryLink href="/login" id="verify-back" variant="muted">Вернуться назад</AuthSecondaryLink>
+    </div>
+  </AuthShell>
+
+  <script>
+    import { navTo, verifyMagicLink, requestMagicLink, getToken } from '../lib/auth';
+
+    function initVerifyPage() {
+      const root = document.getElementById('magic-actions');
+      if (!root || root.dataset.bound === 'true') return;
+      root.dataset.bound = 'true';
+
+      // Уже вошёл → редирект.
+      if (getToken()) { navTo('/account'); return; }
+
+      const loadingEl = document.getElementById('magic-loading')!;
+      const codeView = document.getElementById('magic-code-view')!;
+      const actions = document.getElementById('magic-actions')!;
+      const errorEl = document.getElementById('verify-error')!;
+      const btn = document.getElementById('btn-verify-continue') as HTMLButtonElement;
+      const btnLoading = btn.querySelector('[data-loading]')!;
+      const btnText = btn.querySelector('[data-button-text]')!;
+      const resendBtn = document.getElementById('otp-resend') as HTMLButtonElement;
+      const resendTimerEl = document.getElementById('otp-resend-timer')!;
+
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token');
+      const email =
+        params.get('email') || sessionStorage.getItem('magicEmail') || '';
+      if (email) sessionStorage.setItem('magicEmail', email);
+
+      const showError = (msg: string) => {
+        errorEl.textContent = msg;
+        errorEl.classList.remove('hidden');
+      };
+
+      // ── Путь ссылки: ?token → авто-вход ──
+      if (token) {
+        loadingEl.classList.remove('hidden');
+        codeView.classList.add('hidden');
+        actions.classList.add('hidden');
+        verifyMagicLink({ token })
+          .then((result) => {
+            if (result.success) {
+              sessionStorage.removeItem('magicEmail');
+              navTo('/account');
+            } else {
+              throw result;
+            }
+          })
+          .catch((err: any) => {
+            loadingEl.classList.add('hidden');
+            actions.classList.remove('hidden');
+            showError(err?.error || err?.message || 'Ссылка недействительна или истекла. Запросите новую.');
+            // Если знаем email — даём ввести код вручную.
+            if (email) startCodeEntry();
+          });
+        return;
+      }
+
+      // ── Путь кода: нет токена, нужен email ──
+      if (!email) { navTo('/login'); return; }
+      startCodeEntry();
+
+      function startCodeEntry() {
+        let submitting = false;
+        codeView.classList.remove('hidden');
+        actions.classList.remove('hidden');
+        loadingEl.classList.add('hidden');
+
+        const cells = Array.from(codeView.querySelectorAll<HTMLInputElement>('[data-otp-cell]'));
+        const code = () => cells.map((c) => c.value).join('');
+        const setCellsError = (on: boolean) =>
+          cells.forEach((c) => (c.style.borderColor = on ? '#FCA5A5' : ''));
+
+        cells.forEach((cell, i) => {
+          cell.addEventListener('input', () => {
+            errorEl.classList.add('hidden');
+            setCellsError(false);
+            cell.value = cell.value.replace(/\D/g, '').slice(0, 1);
+            cell.dataset.filled = cell.value ? 'true' : 'false';
+            if (cell.value && i < cells.length - 1) cells[i + 1].focus();
+            if (code().length === 6 && !submitting) submitCode();
+          });
+          cell.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && !cell.value && i > 0) cells[i - 1].focus();
+          });
+          cell.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const digits = (e.clipboardData?.getData('text') || '').replace(/\D/g, '').slice(0, 6);
+            digits.split('').forEach((d, j) => {
+              if (cells[j]) { cells[j].value = d; cells[j].dataset.filled = 'true'; }
+            });
+            if (digits.length) cells[Math.min(digits.length, 5)].focus();
+            if (digits.length === 6 && !submitting) submitCode();
+          });
+        });
+
+        async function submitCode() {
+          errorEl.classList.add('hidden');
+          const value = code();
+          if (value.length !== 6) {
+            showError('Введите все 6 цифр');
+            return;
+          }
+          submitting = true;
+          btnLoading.classList.remove('hidden');
+          btnText.classList.add('hidden');
+          btn.disabled = true;
+          try {
+            const result = await verifyMagicLink({ email, code: value });
+            if (result.success) {
+              sessionStorage.removeItem('magicEmail');
+              navTo('/account');
+              return;
+            }
+            throw result;
+          } catch (err: any) {
+            const ar = err?.attemptsRemaining ?? err?.error?.attemptsRemaining;
+            let msg = err?.error || err?.message || 'Неверный код';
+            if (typeof ar === 'number') msg = `Неверный код. Осталось попыток: ${ar}`;
+            showError(msg);
+            setCellsError(true);
+          } finally {
+            submitting = false;
+            btnLoading.classList.add('hidden');
+            btnText.classList.remove('hidden');
+            btn.disabled = false;
+          }
+        }
+
+        btn.addEventListener('click', (e) => { e.preventDefault(); if (!submitting) submitCode(); });
+        cells[0]?.focus();
+
+        // ── resend с таймером 60с ──
+        let timer = 0;
+        let handle: number | undefined;
+        const tick = () => {
+          if (timer <= 0) {
+            resendBtn.disabled = false;
+            resendTimerEl.textContent = '';
+            if (handle) window.clearInterval(handle);
+            return;
+          }
+          resendTimerEl.textContent = `(${timer})`;
+          timer -= 1;
+        };
+        const startTimer = (s: number) => {
+          timer = s;
+          resendBtn.disabled = true;
+          if (handle) window.clearInterval(handle);
+          tick();
+          handle = window.setInterval(tick, 1000);
+        };
+        resendBtn.addEventListener('click', async () => {
+          errorEl.classList.add('hidden');
+          try {
+            await requestMagicLink({ email });
+            startTimer(60);
+          } catch {
+            showError('Не удалось отправить письмо повторно');
+          }
+        });
+        startTimer(60);
+      }
+    }
+
+    initVerifyPage();
+    document.addEventListener('astro:page-load', initVerifyPage);
+  </script>
+</Layout>

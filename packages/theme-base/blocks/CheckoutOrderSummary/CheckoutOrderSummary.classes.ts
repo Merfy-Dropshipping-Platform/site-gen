@@ -8,4 +8,11 @@ export const CheckoutOrderSummaryClasses = {
   // Use button-bg/button-text (always emitted by theme generator) — accent vars are missing from current scheme CSS.
   // Trailing `!` forces important to beat Tailwind preflight `button,[type=submit]{background-color:#0000}`.
   promoApply: 'px-3 bg-[rgb(var(--color-button-bg))]! text-[rgb(var(--color-button-text))]! text-[length:var(--size-small)] rounded-[var(--radius-button)]',
+  // Applied-state row: показывает код + кнопку «убрать» вместо поля ввода.
+  promoApplied: 'mt-6 flex items-center justify-between gap-3 h-14 border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] bg-[rgb(var(--color-input-bg))] px-3',
+  promoAppliedCode: 'flex-1 truncate [font-family:var(--font-body)] text-[length:var(--size-body)] text-[rgb(var(--color-text))]',
+  // Кнопка снятия промокода (×). text-decoration-less, наследует muted.
+  promoRemove: 'shrink-0 px-2 bg-transparent! [font-family:var(--font-body)] text-[length:var(--size-small)] text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-text))]',
+  // Ошибка применения промокода (RU-текст от бэка). Паттерн как AuthModal.error.
+  promoError: 'mt-2 [font-family:var(--font-body)] text-[length:var(--size-small)] text-[rgb(var(--color-error))]',
 } as const;

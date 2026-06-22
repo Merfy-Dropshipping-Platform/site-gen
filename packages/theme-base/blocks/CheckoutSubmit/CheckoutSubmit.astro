@@ -35,6 +35,7 @@ const initialLabel = buttonText.replace('{total}', '—');
       deliveryMethod: null,
       paymentMethod: 'bank_card',
       submitting: false,
+      discountCents: 0,
     };
 
     function getApiBase() {
@@ -56,8 +57,12 @@ const initialLabel = buttonText.replace('{total}', '—');
     function getDeliveryCents() {
       return state.deliveryMethod ? (state.deliveryMethod.costCents || 0) : 0;
     }
+    function getDiscountCents() {
+      return state.discountCents || 0;
+    }
     function getTotalCents() {
-      return Math.max(0, getSubtotalCents() + getDeliveryCents());
+      // Итог со скидкой: max(0, subtotal − discount + delivery).
+      return Math.max(0, getSubtotalCents() - getDiscountCents() + getDeliveryCents());
     }
     function fmtRub(cents) {
       var rub = Math.round(cents / 100);
@@ -92,6 +97,11 @@ const initialLabel = buttonText.replace('{total}', '—');
 
     document.addEventListener('cart:updated', refresh);
     document.addEventListener('checkout:address-changed', refresh);
+    document.addEventListener('checkout:discount-applied', function (e) {
+      // Кнопка «Оформить — {total}» должна показывать сумму со скидкой.
+      state.discountCents = (e && e.detail && e.detail.discountCents) || 0;
+      refresh();
+    });
     document.addEventListener('checkout:delivery-changed', function (e) {
       var d = e && e.detail;
       if (!d) return;
@@ -136,6 +146,27 @@ const initialLabel = buttonText.replace('{total}', '—');
         var apiBase = getApiBase();
         var cartId = (window.cartStore && window.cartStore.syncToServer) ? await window.cartStore.syncToServer() : getCartId();
         if (!cartId) throw new Error('Корзина пуста. Добавьте товары.');
+
+        // Переприменить промокод на пересозданной корзине (rose: syncToServer
+        // очищает merfy:cartId и пересоздаёт корзину → промокод, применённый до
+        // сабмита, потерян). Если код протух к моменту оплаты — ПРЕРЫВАЕМ
+        // оформление (не списываем полную сумму молча).
+        var promoCode = (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('merfy:promoCode')) || '';
+        if (promoCode) {
+          var promoRes = await fetch(apiBase + '/orders/cart/' + cartId + '/promo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ promoCode: promoCode }),
+          });
+          if (!promoRes.ok) {
+            var promoJson = await promoRes.json().catch(function () { return null; });
+            var promoMsg = (promoJson && (typeof promoJson.message === 'string' ? promoJson.message
+              : (Array.isArray(promoJson.message) ? promoJson.message[0] : promoJson.error)))
+              || 'Промокод больше недействителен — обновите заказ';
+            throw new Error(promoMsg);
+          }
+        }
 
         var paymentToken = null;
         if (state.paymentMethod === 'bank_card' && typeof window.__checkoutTokenizeCard === 'function') {
@@ -248,6 +279,9 @@ const initialLabel = buttonText.replace('{total}', '—');
           // delivery quote видит cartId=null → 'Добавьте товар').
           localStorage.removeItem('merfy:cartId');
           localStorage.removeItem('merfy:cartItems');
+          // Промокод применён к заказу — очищаем, чтобы не переприменялся к
+          // следующей корзине.
+          if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('merfy:promoCode');
         } catch (e) {}
         window.location.href = confirmationUrl;
       } catch (err) {

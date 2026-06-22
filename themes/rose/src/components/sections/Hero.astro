@@ -94,9 +94,9 @@ const subtitleCls =
 // px-кэпы пропорционально ниже). Дефолт (p.size не задан) = large.
 const heroSize = p.size === "small" ? "small" : p.size === "medium" ? "medium" : "large";
 const heroHeightCls = {
-	large: "min-h-[min(70svh,560px)] sm:min-h-[560px] md:min-h-[420px] lg:min-h-[460px]",
-	medium: "min-h-[min(58svh,460px)] sm:min-h-[460px] md:min-h-[345px] lg:min-h-[380px]",
-	small: "min-h-[min(45svh,360px)] sm:min-h-[360px] md:min-h-[270px] lg:min-h-[295px]",
+	large: "min-h-[min(80svh,620px)] sm:min-h-[600px] md:min-h-[560px] lg:min-h-[600px] xl:min-h-[640px]",
+	medium: "min-h-[min(62svh,500px)] sm:min-h-[480px] md:min-h-[440px] lg:min-h-[470px] xl:min-h-[500px]",
+	small: "min-h-[min(46svh,380px)] sm:min-h-[360px] md:min-h-[320px] lg:min-h-[340px] xl:min-h-[360px]",
 }[heroSize];
 
 // Канон secondaryButton {text, link: string|{href}} — рендер ТОЛЬКО при непустом тексте.
@@ -197,7 +197,7 @@ const paddingStyle = p.padding
 				aria-hidden="true"
 			></div>
 			<div
-				class={`relative w-full ${heroHeightCls} aspect-[10/15] sm:aspect-[4/5] md:aspect-[4/3] lg:aspect-[16/9] xl:aspect-[2/1] 2xl:aspect-[21/9]`}
+				class={`relative w-full ${heroHeightCls}`}
 			>
 				<div class="absolute inset-0 z-10 flex w-full flex-col items-center justify-center gap-6 px-4 text-center sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px]">
 					<div class="flex w-full max-w-[540px] flex-col items-center gap-2 text-center sm:gap-3 md:gap-4 md:max-w-[640px]">

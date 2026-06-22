@@ -131,7 +131,18 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
       hiddenInMainPanel: true,
       objectFields: {
         text: { type: 'aiText', label: 'Заголовок', fieldType: 'title', placeholder: 'Ввести текст...' } as any,
-        // «Размер заголовка» убран — единый секционный «Размер» (p.size) во всех темах.
+        // «Размер заголовка» (heading.size) — отдельный кегль ШРИФТА заголовка,
+        // НЕ путать с секционным «Размер» (p.size = высота). Возвращено по решению
+        // владельца (откат unify ee611471). Опционально → отсутствие = дефолт темы.
+        size: {
+          type: 'select',
+          label: 'Размер заголовка',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
       },
     } as any,
     text: {
@@ -140,7 +151,17 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
       hiddenInMainPanel: true,
       objectFields: {
         content: { type: 'aiText', label: 'Текст', fieldType: 'description', placeholder: 'Ввести текст...' } as any,
-        // «Размер текста» убран — единый секционный «Размер» (p.size).
+        // «Размер текста» (text.size) — отдельный кегль ШРИФТА текста, независимо
+        // от секционного «Размер» (p.size = высота). Возвращено по решению владельца.
+        size: {
+          type: 'select',
+          label: 'Размер текста',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
       },
     } as any,
     primaryButton: {

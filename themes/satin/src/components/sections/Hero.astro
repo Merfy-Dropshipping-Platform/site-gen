@@ -67,17 +67,29 @@ const backgroundImage = rawBackgroundImage;
 // 2 кадра grid-cols-2 ТОЛЬКО когда второе фото задано; иначе одиночный рендер дословно.
 const backgroundImage2 = p.backgroundImages?.url2 ?? p.backgroundImage2;
 
-// «Размер» (p.size) теперь управляет ВЫСОТОЙ секции Hero (heroHeightCls ниже),
-// КАНОН rose/bloom/flux (коммит 61f925e1 + unify ee611471): единый секционный
-// «Размер» = высота/масштаб полотна во ВСЕХ темах, а НЕ размер шрифта. Прежняя
-// satin-привязка size→шрифт (small 18/22 → medium 22/27 → large 26/32) убрана,
-// чтобы «Размер» делал одно и то же везде. Заголовок/кикер теперь фиксированы на
-// прежнем «large»-литерале верстальщика (MANNER.md §9) — дефолтный вид (size не
-// задан или 'large') байт-в-байт прежнему.
+// ДВА НЕЗАВИСИМЫХ размера у Hero:
+//   • p.size — ВЫСОТА фото-половины/текст-колонки (heroHeightCls ниже). НЕ шрифт.
+//   • heading.size / text.size — размер ШРИФТА заголовка/кикера (поля «Размер
+//     заголовка»/«Размер текста»). Возвращены по решению владельца (откат unify
+//     ee611471). font-size берётся ТОЛЬКО из heading.size/text.size, БЕЗ фолбэка на
+//     p.size (иначе регулятор высоты снова менял бы кегль). Отсутствие → дефолт-
+//     ветка large = ЛИТЕРАЛ верстальщика (MANNER.md §9) байт-в-байт прежнему виду.
+//   заголовок: small 18/22 → medium 22/27 → large 26/32 (Kelly Slab uppercase)
+//   кикер:     small 11    → medium 14    → large 16    (Arsenal light uppercase)
+const headingSize = p.heading?.size;
 const headingCls =
-	"font-logo text-[26px] font-normal uppercase leading-[1.08] text-[rgb(var(--color-heading,0_0_0))] md:text-[32px]";
+	headingSize === "small"
+		? "font-logo text-[18px] font-normal uppercase leading-[1.08] text-[rgb(var(--color-heading,0_0_0))] md:text-[22px]"
+		: headingSize === "medium"
+			? "font-logo text-[22px] font-normal uppercase leading-[1.08] text-[rgb(var(--color-heading,0_0_0))] md:text-[27px]"
+			: "font-logo text-[26px] font-normal uppercase leading-[1.08] text-[rgb(var(--color-heading,0_0_0))] md:text-[32px]";
+const textSize = p.text?.size;
 const subtitleCls =
-	"font-manrope text-[16px] font-light uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]";
+	textSize === "small"
+		? "font-manrope text-[11px] font-light uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]"
+		: textSize === "medium"
+			? "font-manrope text-[14px] font-light uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]"
+			: "font-manrope text-[16px] font-light uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]";
 // «Размер» → высота фото-половины/текст-колонки (md:h-*). large (дефолт satin) =
 // прежняя h-[680px] байт-в-байт; medium ≈0.82×, small ≈0.64×. Дефолт (p.size не
 // задан) = large. Mobile aspect-[375/362] остаётся неизменным (портретный кадр).

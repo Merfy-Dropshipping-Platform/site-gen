@@ -64,14 +64,31 @@ const PH_BACKGROUND_IMAGE = "/placeholders/landscape-image.png";
 // картинок 50/50 ТОЛЬКО когда второе фото задано; иначе одиночный рендер дословно.
 const backgroundImage2 = p.backgroundImages?.url2 ?? p.backgroundImage2;
 
-// «Размер» (p.size) теперь управляет ВЫСОТОЙ секции Hero (heroHeightCls ниже),
-// а не размером шрифта (тестер M$rkul: «Размер» секции «Изображение» = высота/
-// вьюпорт, как в theme-base). Заголовок/текст рендерятся фиксированным «крупным»
-// размером темы — прежняя дефолт-ветка large байт-в-байт.
+// ДВА НЕЗАВИСИМЫХ размера у Hero:
+//   • p.size (small/medium/large) — ВЫСОТА секции (heroHeightCls ниже). НЕ шрифт.
+//   • heading.size / text.size — размер ШРИФТА заголовка/текста (поля «Размер
+//     заголовка»/«Размер текста» панели «Изображение»). Возвращены по решению
+//     владельца (откат unify ee611471). КЛЮЧЕВОЕ: font-size берётся ТОЛЬКО из
+//     heading.size/text.size, БЕЗ фолбэка на p.size — иначе регулятор высоты
+//     снова менял бы кегль (та самая путаница, которую убираем). Отсутствие
+//     heading.size/text.size → дефолтная (крупная) ветка байт-в-байт прежнему
+//     рендеру (старые ревизии без size не меняются).
+//   заголовок large 20/28/36/40 → medium 17/24/31/34 → small 14/20/25/28
+//   текст     large 14/16/18/20 → medium 12/14/15/17 → small 10/11/13/14
+const headingSize = p.heading?.size;
 const headingCls =
-	"hero-animate-1 !text-[20px] !font-normal !leading-none uppercase tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:!text-[28px] md:!text-[36px] lg:!text-[length:var(--size-hero-heading,40px)]";
+	headingSize === "small"
+		? "hero-animate-1 !text-[14px] !font-normal !leading-none uppercase tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:!text-[20px] md:!text-[25px] lg:!text-[28px]"
+		: headingSize === "medium"
+			? "hero-animate-1 !text-[17px] !font-normal !leading-none uppercase tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:!text-[24px] md:!text-[31px] lg:!text-[34px]"
+			: "hero-animate-1 !text-[20px] !font-normal !leading-none uppercase tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:!text-[28px] md:!text-[36px] lg:!text-[length:var(--size-hero-heading,40px)]";
+const textSize = p.text?.size;
 const subtitleCls =
-	"hero-animate-2 max-w-xl px-1 font-manrope text-[14px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))] sm:text-[16px] md:text-[18px] lg:text-[20px]";
+	textSize === "small"
+		? "hero-animate-2 max-w-xl px-1 font-manrope text-[10px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))] sm:text-[11px] md:text-[13px] lg:text-[14px]"
+		: textSize === "medium"
+			? "hero-animate-2 max-w-xl px-1 font-manrope text-[12px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))] sm:text-[14px] md:text-[15px] lg:text-[17px]"
+			: "hero-animate-2 max-w-xl px-1 font-manrope text-[14px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))] sm:text-[16px] md:text-[18px] lg:text-[20px]";
 // «Размер» → высота секции (вьюпорт). large (дефолт rose blockDefaults) = прежняя
 // лестница верстальщика байт-в-байт; medium ≈0.82×, small ≈0.64× (вьюпорт-доля и
 // px-кэпы пропорционально ниже). Дефолт (p.size не задан) = large.

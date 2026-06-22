@@ -122,8 +122,20 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
       hiddenInMainPanel: true,
       objectFields: {
         text: { type: 'aiText', label: 'Заголовок', fieldType: 'title', placeholder: 'Ввести текст...' } as any,
-        // «Размер заголовка» убран — размер контента Hero (заголовок+текст) задаётся
-        // ЕДИНЫМ секционным полем «Размер» (p.size). Один регулятор во всех темах.
+        // «Размер заголовка» (heading.size) — ОТДЕЛЬНОЕ поле размера ШРИФТА заголовка,
+        // НЕ путать с секционным «Размер» (p.size = ВЫСОТА секции). Возвращено по
+        // решению владельца (откат unify ee611471): два независимых регулятора —
+        // высота секции (p.size) и кегль заголовка (heading.size). Опционально:
+        // отсутствие → дефолтный (крупный) шрифт темы, старые ревизии без size не меняются.
+        size: {
+          type: 'select',
+          label: 'Размер заголовка',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
       },
     } as any,
     text: {
@@ -132,7 +144,18 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
       hiddenInMainPanel: true,
       objectFields: {
         content: { type: 'aiText', label: 'Текст', fieldType: 'description', placeholder: 'Ввести текст...' } as any,
-        // «Размер текста» убран — задаётся единым секционным «Размер» (p.size).
+        // «Размер текста» (text.size) — ОТДЕЛЬНОЕ поле размера ШРИФТА текста,
+        // независимо от секционного «Размер» (p.size = высота). Возвращено по решению
+        // владельца. Опционально → отсутствие = дефолтный размер темы (совместимость).
+        size: {
+          type: 'select',
+          label: 'Размер текста',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
       },
     } as any,
     primaryButton: {

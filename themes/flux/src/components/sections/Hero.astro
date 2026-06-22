@@ -75,15 +75,30 @@ const PH_LABEL = "Изображение";
 const PH_HELPER = "Покажи и расскажи о своем товаре в одном блоке";
 const PH_BUTTON = "Кнопка";
 
-// «Размер» (p.size) теперь управляет ВЫСОТОЙ секции Hero (heroHeightCls ниже),
-// а не размером шрифта (тестер M$rkul: «Размер» секции «Изображение» = высота/
-// вьюпорт, как в theme-base, фикс по образцу rose Hero). Заголовок/текст рендерятся
-// фиксированным «крупным» размером темы — прежняя дефолт-ветка large байт-в-байт
-// (Comfortaa 32/40/48 БЕЗ uppercase; Roboto Flex 300 16/18; цвета → токены §7).
+// ДВА НЕЗАВИСИМЫХ размера у Hero:
+//   • p.size — ВЫСОТА полотна (heroHeightCls ниже). НЕ шрифт.
+//   • heading.size / text.size — размер ШРИФТА заголовка/текста (поля «Размер
+//     заголовка»/«Размер текста»). Возвращены по решению владельца (откат unify
+//     ee611471). font-size берётся ТОЛЬКО из heading.size/text.size, БЕЗ фолбэка на
+//     p.size (иначе регулятор высоты снова менял бы кегль). Отсутствие → дефолт-
+//     ветка large байт-в-байт (Comfortaa 32/40/48 БЕЗ uppercase; Roboto Flex 300
+//     16/18; цвета → токены §7).
+//   заголовок large 32/40/48 → medium 27/34/41 → small 22/28/34
+//   текст     large 16/18    → medium 14/15    → small 11/13
+const headingSize = p.heading?.size;
 const headingCls =
-	"font-comfortaa text-[32px] font-normal leading-[1.115] text-[rgb(var(--color-heading,255_255_255))] md:text-[40px] lg:text-[48px]";
+	headingSize === "small"
+		? "font-comfortaa text-[22px] font-normal leading-[1.115] text-[rgb(var(--color-heading,255_255_255))] md:text-[28px] lg:text-[34px]"
+		: headingSize === "medium"
+			? "font-comfortaa text-[27px] font-normal leading-[1.115] text-[rgb(var(--color-heading,255_255_255))] md:text-[34px] lg:text-[41px]"
+			: "font-comfortaa text-[32px] font-normal leading-[1.115] text-[rgb(var(--color-heading,255_255_255))] md:text-[40px] lg:text-[48px]";
+const textSize = p.text?.size;
 const subtitleCls =
-	"font-roboto-flex text-[16px] font-light leading-[1.5] text-[rgb(var(--color-text,255_255_255))] md:text-[18px]";
+	textSize === "small"
+		? "font-roboto-flex text-[11px] font-light leading-[1.5] text-[rgb(var(--color-text,255_255_255))] md:text-[13px]"
+		: textSize === "medium"
+			? "font-roboto-flex text-[14px] font-light leading-[1.5] text-[rgb(var(--color-text,255_255_255))] md:text-[15px]"
+			: "font-roboto-flex text-[16px] font-light leading-[1.5] text-[rgb(var(--color-text,255_255_255))] md:text-[18px]";
 // «Размер» → высота полотна (вьюпорт-clamp). large (дефолт flux) = прежний clamp
 // верстальщика байт-в-байт; medium ≈0.82×, small ≈0.64× (нижняя/средняя/верхняя
 // границы clamp пропорционально ниже). Дефолт (p.size не задан) = large.

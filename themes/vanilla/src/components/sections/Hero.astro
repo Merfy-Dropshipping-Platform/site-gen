@@ -55,18 +55,29 @@ const mode = "single";
 // Канон size — canon-носитель «Размера» (blockDefaults vanilla size='large').
 const sectionSize = typeof p.size === "string" ? p.size : undefined;
 
-// «Размер» (p.size) теперь управляет ВЫСОТОЙ секции Hero (heroHeightCls ниже),
-// КАНОН rose/bloom/flux (коммит 61f925e1 + unify ee611471): единый секционный
-// «Размер» = высота/масштаб полотна во ВСЕХ темах, а НЕ размер шрифта. Прежняя
-// vanilla-привязка size→шрифт (h1: small 17 → medium 20 → large 24; текст: small
-// 11 → medium 14 → large 16) убрана, чтобы «Размер» делал одно и то же везде.
-// Заголовок/текст теперь фиксированы на прежнем «large»-литерале верстальщика
-// (§9) — дефолтный вид (size не задан или 'large') байт-в-байт прежнему.
-const headingClsFor = (_s?: string) =>
-	"hero-animate-1 vanilla-hero-slide-title font-vanilla-bitter text-2xl font-normal italic tracking-normal text-[rgb(var(--color-heading,255_255_255))] md:whitespace-nowrap";
+// ДВА НЕЗАВИСИМЫХ размера у Hero:
+//   • p.size (= sectionSize) — ВЫСОТА полотна (heroHeightCls ниже). НЕ шрифт.
+//   • heading.size / text.size — размер ШРИФТА заголовка/текста (поля «Размер
+//     заголовка»/«Размер текста»). Возвращены по решению владельца (откат unify
+//     ee611471). font-size берётся ТОЛЬКО из heading.size/text.size (аргумент этих
+//     функций), БЕЗ фолбэка на sectionSize — иначе регулятор высоты снова менял бы
+//     кегль (та самая путаница). Отсутствие (undefined) → дефолт-ветка large =
+//     ЛИТЕРАЛ верстальщика (§9) байт-в-байт прежнему виду.
+// Лестница hero h1 (§9): large/отсутствие = text-2xl (24px); medium 20, small 17.
+const headingClsFor = (s?: string) =>
+	s === "small"
+		? "hero-animate-1 vanilla-hero-slide-title font-vanilla-bitter text-[17px] font-normal italic tracking-normal text-[rgb(var(--color-heading,255_255_255))] md:whitespace-nowrap"
+		: s === "medium"
+			? "hero-animate-1 vanilla-hero-slide-title font-vanilla-bitter text-[20px] font-normal italic tracking-normal text-[rgb(var(--color-heading,255_255_255))] md:whitespace-nowrap"
+			: "hero-animate-1 vanilla-hero-slide-title font-vanilla-bitter text-2xl font-normal italic tracking-normal text-[rgb(var(--color-heading,255_255_255))] md:whitespace-nowrap";
 
-const textClsFor = (_s?: string) =>
-	"hero-animate-2 vanilla-hero-slide-subtitle font-vanilla-arsenal text-base font-normal italic tracking-normal text-[rgb(var(--color-text,240_240_240))] md:whitespace-nowrap";
+// Лестница hero-текста (§9): large/отсутствие = text-base (16); medium 14, small 11.
+const textClsFor = (s?: string) =>
+	s === "small"
+		? "hero-animate-2 vanilla-hero-slide-subtitle font-vanilla-arsenal text-[11px] font-normal italic tracking-normal text-[rgb(var(--color-text,240_240_240))] md:whitespace-nowrap"
+		: s === "medium"
+			? "hero-animate-2 vanilla-hero-slide-subtitle font-vanilla-arsenal text-[14px] font-normal italic tracking-normal text-[rgb(var(--color-text,240_240_240))] md:whitespace-nowrap"
+			: "hero-animate-2 vanilla-hero-slide-subtitle font-vanilla-arsenal text-base font-normal italic tracking-normal text-[rgb(var(--color-text,240_240_240))] md:whitespace-nowrap";
 
 // «Размер» → высота полотна (min-height viewport). large (canon-default vanilla) =
 // прежняя лестница min-h-[520px] md:620 xl:790 байт-в-байт; medium ≈0.82×,
@@ -115,8 +126,10 @@ const slideFromProps = (s: any, i: number): CanonSlide => {
 		subtitle,
 		ctaText,
 		ctaHref,
-		titleCls: headingClsFor(sectionSize),
-		subtitleCls: textClsFor(sectionSize),
+		// Кегль слайда — из ЕГО heading.size/text.size (НЕ sectionSize=высота).
+		// Отсутствие → дефолт (large) внутри headingClsFor/textClsFor.
+		titleCls: headingClsFor(s.heading?.size),
+		subtitleCls: textClsFor(s.text?.size),
 	};
 };
 
@@ -126,8 +139,9 @@ const slides: CanonSlide[] =
 		: CANON_SLIDES.map((s) => ({
 				...s,
 				image: toWebp(s.image),
-				titleCls: headingClsFor(sectionSize),
-				subtitleCls: textClsFor(sectionSize),
+				// Демо-слайды без per-slide size → дефолт (large) кегль, НЕ sectionSize.
+				titleCls: headingClsFor(undefined),
+				subtitleCls: textClsFor(undefined),
 			}));
 
 // Канон top-level heading/text/primaryButton (+ legacy flat) в карусели правят
@@ -149,8 +163,11 @@ if (slides[0]) {
 	if (typeof ovSubtitle === "string" && ovSubtitle.trim()) slides[0].subtitle = ovSubtitle;
 	if (typeof ovCtaText === "string" && ovCtaText.trim()) slides[0].ctaText = ovCtaText;
 	if (typeof ovCtaHref === "string" && ovCtaHref.trim()) slides[0].ctaHref = ovCtaHref;
-	// Размер управляется ТОЛЬКО секционным «Размер» (p.size → sectionSize),
-	// без точечного heading.size/text.size — единый размер во всех темах.
+	// Top-level «Размер заголовка»/«Размер текста» (heading.size/text.size) правят
+	// кегль ПЕРВОГО слайда (на него указывает сайдбар v2). Только при заданном поле —
+	// иначе остаётся дефолт/per-slide размер. Это кегль ШРИФТА, НЕ высота (p.size).
+	if (p.heading?.size) slides[0].titleCls = headingClsFor(p.heading.size);
+	if (p.text?.size) slides[0].subtitleCls = textClsFor(p.text.size);
 }
 
 // JSON для скрипта: копия + классы лестниц (смена слайда переключает и размер).
@@ -328,8 +345,10 @@ const singleCtaHref =
 const singleImage = hasHeroData
 	? (heroBgRaw || toWebp(V_IMG.hero(1)))
 	: "/placeholders/landscape-image.png";
-const singleTitleCls = headingClsFor(sectionSize);
-const singleSubtitleCls = textClsFor(sectionSize);
+// Single-режим: кегль из top-level heading.size/text.size (НЕ sectionSize=высота).
+// Отсутствие → дефолт (large) внутри headingClsFor/textClsFor.
+const singleTitleCls = headingClsFor(p.heading?.size);
+const singleSubtitleCls = textClsFor(p.text?.size);
 // Вторая кнопка (только single) — рендер при непустом тексте, белый контур манеры.
 const secondaryText =
 	typeof p.secondaryButton?.text === "string" && p.secondaryButton.text.trim()

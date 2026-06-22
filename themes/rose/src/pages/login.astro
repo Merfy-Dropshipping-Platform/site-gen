@@ -18,7 +18,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
     };
   </script>
 
-  <AuthShell title="Вход в аккаунт" description="Войдите по ссылке из письма — пароль не нужен">
+  <AuthShell title="Вход в аккаунт" description="Введите e-mail — войдём в аккаунт или создадим новый. Пароль не нужен.">
     <form id="magic-form" class="w-full flex flex-col gap-6" novalidate>
       <AuthInput
         label="E-mail"
@@ -45,13 +45,9 @@ const apiUrl = "https://gateway.merfy.ru/api";
             placeholder="Введите пароль"
           />
           <AuthButton id="btn-login" form="password-form" loadingLabel="Вход...">Войти</AuthButton>
+          <AuthSecondaryLink href="/reset-password" variant="muted">Забыл пароль?</AuthSecondaryLink>
         </form>
       </details>
-
-      <div class="flex flex-col items-center gap-3">
-        <AuthSecondaryLink href="/register" helper="Нет аккаунта?">Зарегистрироваться</AuthSecondaryLink>
-        <AuthSecondaryLink href="/reset-password">Забыл пароль?</AuthSecondaryLink>
-      </div>
     </div>
   </AuthShell>
 

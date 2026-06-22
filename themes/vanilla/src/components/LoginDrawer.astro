@@ -1,6 +1,4 @@
 ---
-import EyeIcon from "../icons/EyeIcon.astro";
-import EyeOffIcon from "../icons/EyeOffIcon.astro";
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
 
 interface Props {
@@ -20,7 +18,7 @@ const evClose = `${eventPrefix}:close`;
 const evToggle = `${eventPrefix}:toggle`;
 const titleId = `${rootId}-title`;
 const emailId = `${rootId}-email`;
-const passwordId = `${rootId}-password`;
+const errorId = `${rootId}-error`;
 ---
 
 <div
@@ -76,11 +74,11 @@ const passwordId = `${rootId}-password`;
 					Вход в аккаунт
 				</h2>
 				<p class="font-manrope text-[14px] font-normal leading-normal text-[var(--vanilla-muted)]">
-					Введите свои данные чтобы войти в аккаунт
+					Введите e-mail — пришлём ссылку для входа. Войдём в аккаунт или создадим новый.
 				</p>
 			</div>
 
-			<div class="mt-10 flex w-full max-w-[420px] flex-col gap-6 self-center md:max-w-none md:self-auto">
+			<div class="mt-10 flex w-full max-w-[420px] flex-col gap-4 self-center md:max-w-none md:self-auto">
 				<div class="flex w-full flex-col gap-2">
 					<label for={emailId} class="font-vanilla-arsenal text-base font-normal leading-normal text-[var(--vanilla-dark)]">
 						E-mail
@@ -90,71 +88,27 @@ const passwordId = `${rootId}-password`;
 						name="email"
 						type="email"
 						autocomplete="email"
-						placeholder=""
+						placeholder="example@merfy.ru"
 						class="box-border h-14 w-full min-h-[56px] rounded-[4px] border border-solid border-[#000000] bg-white px-4 font-manrope text-[16px] font-normal leading-normal text-[var(--vanilla-dark)] outline-none placeholder:text-[#999999] focus-visible:border-[var(--vanilla-header-bg)] md:bg-transparent"
 					/>
 				</div>
-
-				<div class="flex w-full flex-col gap-2">
-					<label for={passwordId} class="font-vanilla-arsenal text-base font-normal leading-normal text-[var(--vanilla-dark)]">
-						Пароль
-					</label>
-					<div class="relative w-full">
-						<input
-							id={passwordId}
-							name="password"
-							type="password"
-							autocomplete="current-password"
-							class="box-border h-14 w-full min-h-[56px] rounded-[4px] border border-solid border-[#000000] bg-white px-4 pr-12 font-manrope text-[16px] font-normal leading-normal text-[var(--vanilla-dark)] outline-none focus-visible:border-[var(--vanilla-header-bg)] md:bg-transparent"
-						/>
-						<button
-							type="button"
-							data-login-toggle-password
-							class="absolute right-4 top-1/2 flex -translate-y-1/2 items-center justify-center transition-opacity hover:opacity-80"
-							aria-label="Показать пароль"
-							aria-pressed="false"
-						>
-							<span data-login-eye-on class="hidden">
-								<EyeOffIcon />
-							</span>
-							<span data-login-eye-off>
-								<EyeIcon />
-							</span>
-						</button>
-					</div>
-				</div>
+				<p id={errorId} class="hidden text-center font-manrope text-[13px] font-normal leading-normal text-red-500" role="alert"></p>
 			</div>
 
 			<div class="mt-10 flex min-h-0 flex-1 flex-col justify-end md:pt-20">
 				<button
 					type="submit"
 					data-login-submit
-					class="inline-flex h-12 w-full min-h-12 items-center justify-center bg-[var(--vanilla-header-bg)] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-white transition-opacity hover:opacity-90"
+					class="inline-flex h-12 w-full min-h-12 items-center justify-center bg-[var(--vanilla-header-bg)] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-white transition-opacity hover:opacity-90 disabled:opacity-60"
 				>
-					Войти
+					Получить ссылку для входа
 				</button>
-
-				<div class="mt-6 flex w-full flex-col items-center gap-4 text-center">
-					<p class="font-manrope text-[12px] font-normal leading-normal text-[var(--vanilla-muted)]">
-						Нет аккаунта?
-						<a href="#" data-login-visual-link class="text-[var(--vanilla-muted)] hover:opacity-80">
-							Зарегистрироваться
-						</a>
-					</p>
-					<a
-						href="#"
-						data-login-visual-link
-						class="font-manrope text-[12px] font-normal leading-normal text-[var(--vanilla-muted)] transition-opacity hover:opacity-80"
-					>
-						Забыли пароль?
-					</a>
-				</div>
 			</div>
 		</form>
 	</aside>
 </div>
 
-<script is:inline define:vars={{ rootId, evOpen, evClose, evToggle }}>
+<script is:inline define:vars={{ rootId, evOpen, evClose, evToggle, errorId }}>
 	const headerOffsetBelowPromo = () => {
 		const promo = document.querySelector("[data-vanilla-announcement]");
 		const headerEl = document.querySelector('[data-nt="vanilla-header"]');
@@ -190,15 +144,6 @@ const passwordId = `${rootId}-password`;
 	const open = () => setState("open");
 	const close = () => setState("closed");
 
-	const syncPasswordToggle = (btn, input) => {
-		if (!btn || !input) return;
-		const visible = input.type === "text";
-		btn.setAttribute("aria-pressed", String(visible));
-		btn.setAttribute("aria-label", visible ? "Скрыть пароль" : "Показать пароль");
-		btn.querySelector("[data-login-eye-on]")?.classList.toggle("hidden", !visible);
-		btn.querySelector("[data-login-eye-off]")?.classList.toggle("hidden", visible);
-	};
-
 	document.addEventListener("click", (event) => {
 		const target = event.target;
 		if (!(target instanceof HTMLElement)) return;
@@ -214,30 +159,52 @@ const passwordId = `${rootId}-password`;
 			open();
 			return;
 		}
-
-		const togglePwd = target.closest("[data-login-toggle-password]");
-		if (togglePwd) {
-			event.preventDefault();
-			const root = document.getElementById(rootId);
-			const input = root?.querySelector("[data-login-form] input[name='password']");
-			if (!(input instanceof HTMLInputElement)) return;
-			input.type = input.type === "password" ? "text" : "password";
-			syncPasswordToggle(togglePwd, input);
-			return;
-		}
-
-		if (target.closest("[data-login-visual-link]")) {
-			event.preventDefault();
-		}
 	});
 
-	document.addEventListener("submit", (event) => {
+	// Passwordless magic-link: email -> requestMagicLink -> /verify (код/ссылка).
+	document.addEventListener("submit", async (event) => {
 		const form = event.target;
 		if (!(form instanceof HTMLFormElement) || !form.matches("[data-login-form]")) return;
 		event.preventDefault();
-		alert("Демо-вход: авторизация ещё не подключена.");
-		document.documentElement.dataset.vanillaLoggedIn = "true";
-		close();
+
+		const root = document.getElementById(rootId);
+		const emailInput = root?.querySelector("[data-login-form] input[name='email']");
+		const errorEl = document.getElementById(errorId);
+		const submitBtn = root?.querySelector("[data-login-submit]");
+		const email = (emailInput instanceof HTMLInputElement ? emailInput.value : "").trim();
+		if (errorEl) errorEl.classList.add("hidden");
+
+		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+			if (errorEl) { errorEl.textContent = "Введите корректный e-mail"; errorEl.classList.remove("hidden"); }
+			return;
+		}
+
+		const auth = window.__vanillaAuth;
+		if (!auth || typeof auth.requestMagicLink !== "function") {
+			// Фолбэк: уводим на полноценную страницу входа с префиллом.
+			window.location.href = "/login?email=" + encodeURIComponent(email);
+			return;
+		}
+
+		if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = true;
+		try {
+			const result = await auth.requestMagicLink({ email });
+			if (result && result.success) {
+				sessionStorage.setItem("magicEmail", email);
+				window.location.href = "/verify";
+			} else {
+				throw result;
+			}
+		} catch (err) {
+			if (errorEl) {
+				let msg = (err && (err.error || err.message)) || "Не удалось отправить ссылку";
+				if (err && err.code === "RATE_LIMIT_EXCEEDED") msg = "Письмо уже отправлено. Проверьте почту.";
+				errorEl.textContent = msg;
+				errorEl.classList.remove("hidden");
+			}
+		} finally {
+			if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = false;
+		}
 	});
 
 	document.addEventListener("keydown", (event) => {

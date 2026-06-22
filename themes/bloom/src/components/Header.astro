@@ -261,14 +261,14 @@ const headerHeartSvg =
 										aria-expanded="false"
 										aria-controls="bloom-search-panel"
 									>
-										<NtIcon name="search-sm" sizeClass="size-8" />
+										<NtIcon name="search-sm" sizeClass="size-6" />
 									</button>
 									<a
 										href="/wishlist"
 										class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 										aria-label="Избранное"
 									>
-										<span data-wishlist-icon class="block size-8 text-[#000000]" set:html={headerHeartSvg}></span>
+										<span data-wishlist-icon class="block size-6 text-[#000000]" set:html={headerHeartSvg}></span>
 										<span
 											data-wishlist-count
 											data-empty="true"
@@ -281,7 +281,7 @@ const headerHeartSvg =
 										class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 										aria-label="Корзина"
 									>
-										<NtIcon name="cart" sizeClass="size-8" />
+										<NtIcon name="cart" sizeClass="size-6" />
 										<span
 											data-cart-count
 											data-empty="true"
@@ -293,7 +293,7 @@ const headerHeartSvg =
 										class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 										aria-label="Аккаунт"
 									>
-										<NtIcon name="user" sizeClass="size-8" />
+										<NtIcon name="user" sizeClass="size-6" />
 									</a>
 									{isSidebar && (
 										<button
@@ -353,7 +353,7 @@ const headerHeartSvg =
 										aria-expanded="false"
 										aria-controls="bloom-search-panel"
 									>
-										<NtIcon name="search-sm" sizeClass="size-8" />
+										<NtIcon name="search-sm" sizeClass="size-6" />
 									</button>
 								</div>
 
@@ -379,7 +379,7 @@ const headerHeartSvg =
 										class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 										aria-label="Избранное"
 									>
-										<span data-wishlist-icon class="block size-8 text-[#000000]" set:html={headerHeartSvg}></span>
+										<span data-wishlist-icon class="block size-6 text-[#000000]" set:html={headerHeartSvg}></span>
 										<span
 											data-wishlist-count
 											data-empty="true"
@@ -392,7 +392,7 @@ const headerHeartSvg =
 										class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 										aria-label="Корзина"
 									>
-										<NtIcon name="cart" sizeClass="size-8" />
+										<NtIcon name="cart" sizeClass="size-6" />
 										<span
 											data-cart-count
 											data-empty="true"
@@ -404,7 +404,7 @@ const headerHeartSvg =
 										class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 										aria-label="Аккаунт"
 									>
-										<NtIcon name="user" sizeClass="size-8" />
+										<NtIcon name="user" sizeClass="size-6" />
 									</a>
 									{isSidebar && (
 										<button
@@ -511,14 +511,14 @@ const headerHeartSvg =
 									aria-expanded="false"
 									aria-controls="bloom-search-panel"
 								>
-									<NtIcon name="search-sm" sizeClass="size-8" />
+									<NtIcon name="search-sm" sizeClass="size-6" />
 								</button>
 								<a
 									href="/wishlist"
 									class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 									aria-label="Избранное"
 								>
-									<span data-wishlist-icon class="block size-8 text-[#000000]" set:html={headerHeartSvg}></span>
+									<span data-wishlist-icon class="block size-6 text-[#000000]" set:html={headerHeartSvg}></span>
 									<span
 										data-wishlist-count
 										data-empty="true"
@@ -531,7 +531,7 @@ const headerHeartSvg =
 									class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 									aria-label="Корзина"
 								>
-									<NtIcon name="cart" sizeClass="size-8" />
+									<NtIcon name="cart" sizeClass="size-6" />
 									<span
 										data-cart-count
 										data-empty="true"
@@ -543,7 +543,7 @@ const headerHeartSvg =
 									class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 									aria-label="Аккаунт"
 								>
-									<NtIcon name="user" sizeClass="size-8" />
+									<NtIcon name="user" sizeClass="size-6" />
 								</a>
 								{isSidebar && (
 									<button
@@ -565,9 +565,9 @@ const headerHeartSvg =
 							</div>
 						</>
 					) : (
-						/* center-left: logo LEFT, nav CENTER, icons RIGHT */
+						/* center-left: logo LEFT, nav CENTER ПО СТРАНИЦЕ (равные flex-1 фланги logo+icons), icons RIGHT */
 						<>
-							<a href="/" class="flex shrink-0 items-center hover:opacity-90" aria-label={siteTitle}>
+							<a href="/" class="flex flex-1 items-center hover:opacity-90" aria-label={siteTitle}>
 								{
 									logo ? (
 										<img src={logo} alt={siteTitle} class={logoImgCls} />
@@ -584,7 +584,7 @@ const headerHeartSvg =
 							</a>
 
 							<nav
-								class:list={["mx-auto flex flex-wrap items-center justify-center gap-8 lg:gap-10", menuSchemeClass, isSidebar && "md:!hidden"]}
+								class:list={["flex flex-wrap items-center justify-center gap-8 lg:gap-10", menuSchemeClass, isSidebar && "md:!hidden"]}
 								aria-label="Основная навигация"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="997"
@@ -608,7 +608,7 @@ const headerHeartSvg =
 								})}
 							</nav>
 
-							<div class="flex shrink-0 items-center gap-4">
+							<div class="flex flex-1 items-center justify-end gap-4">
 								<button
 									type="button"
 									data-action="toggle-search"
@@ -617,14 +617,14 @@ const headerHeartSvg =
 									aria-expanded="false"
 									aria-controls="bloom-search-panel"
 								>
-									<NtIcon name="search-sm" sizeClass="size-8" />
+									<NtIcon name="search-sm" sizeClass="size-6" />
 								</button>
 								<a
 									href="/wishlist"
 									class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 									aria-label="Избранное"
 								>
-									<span data-wishlist-icon class="block size-8 text-[#000000]" set:html={headerHeartSvg}></span>
+									<span data-wishlist-icon class="block size-6 text-[#000000]" set:html={headerHeartSvg}></span>
 									<span
 										data-wishlist-count
 										data-empty="true"
@@ -637,7 +637,7 @@ const headerHeartSvg =
 									class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 									aria-label="Корзина"
 								>
-									<NtIcon name="cart" sizeClass="size-8" />
+									<NtIcon name="cart" sizeClass="size-6" />
 									<span
 										data-cart-count
 										data-empty="true"
@@ -649,7 +649,7 @@ const headerHeartSvg =
 									class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 									aria-label="Аккаунт"
 								>
-									<NtIcon name="user" sizeClass="size-8" />
+									<NtIcon name="user" sizeClass="size-6" />
 								</a>
 								{isSidebar && (
 									<button

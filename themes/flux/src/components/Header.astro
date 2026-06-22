@@ -44,6 +44,10 @@ const logoPosition = typeof p.logoPosition === "string" ? p.logoPosition : "";
 const isTwoRow = logoPosition === "top-left" || logoPosition === "top-center";
 // center-absolute: лого absolute по центру single-row
 const isAbsoluteCenter = logoPosition === "center-absolute";
+// center-left («Слева»): лого в потоке слева, nav центрируется ПО СТРАНИЦЕ через
+// равные flex-1 фланги (лого + блок иконок), nav (auto) садится по центру —
+// паттерн эталона rose Header. Взаимоисключающе с center-absolute.
+const logoLeft = logoPosition === "center-left";
 
 // Канон stickiness: литерал верстальщика УЖЕ sticky top-0 z-50 (H:24) — 'none' /
 // 'always' / canon-default / отсутствие → sticky остаётся. 'scroll-up' → прячем при
@@ -223,17 +227,17 @@ const headerHeartSvg =
 								<button
 									type="button"
 									data-action="toggle-search"
-									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
+									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Поиск"
 								>
-									<NtIcon name="search-lg" sizeClass="size-8" />
+									<NtIcon name="search-lg" sizeClass="size-6" />
 								</button>
 								<a
 									href="/wishlist"
-									class="relative flex size-8 items-center justify-center text-[#000000] transition-opacity hover:opacity-80 lg:size-10"
+									class="relative flex size-8 items-center justify-center text-[#000000] transition-opacity hover:opacity-80"
 									aria-label="Избранное"
 								>
-									<span class="block size-8" set:html={headerHeartSvg}></span>
+									<span class="block size-6" set:html={headerHeartSvg}></span>
 									<span
 										data-wishlist-count
 										data-empty="true"
@@ -243,10 +247,10 @@ const headerHeartSvg =
 								<button
 									type="button"
 									data-cart-open
-									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
+									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Корзина"
 								>
-									<NtIcon name="cart" sizeClass="size-8" />
+									<NtIcon name="cart" sizeClass="size-6" />
 									<span
 										data-cart-count
 										data-empty="true"
@@ -255,10 +259,10 @@ const headerHeartSvg =
 								</button>
 								<a
 									href="/login" data-auth-link
-									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
+									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Аккаунт"
 								>
-									<NtIcon name="user" sizeClass="size-8" />
+									<NtIcon name="user" sizeClass="size-6" />
 								</a>
 								{isSidebar && (
 									<button
@@ -312,10 +316,10 @@ const headerHeartSvg =
 								<button
 									type="button"
 									data-action="toggle-search"
-									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
+									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Поиск"
 								>
-									<NtIcon name="search-lg" sizeClass="size-8" />
+									<NtIcon name="search-lg" sizeClass="size-6" />
 								</button>
 							</div>
 							<div class="flex items-center justify-center">
@@ -326,10 +330,10 @@ const headerHeartSvg =
 							<div class="flex items-center justify-end gap-4 lg:gap-5">
 								<a
 									href="/wishlist"
-									class="relative flex size-8 items-center justify-center text-[#000000] transition-opacity hover:opacity-80 lg:size-10"
+									class="relative flex size-8 items-center justify-center text-[#000000] transition-opacity hover:opacity-80"
 									aria-label="Избранное"
 								>
-									<span class="block size-8" set:html={headerHeartSvg}></span>
+									<span class="block size-6" set:html={headerHeartSvg}></span>
 									<span
 										data-wishlist-count
 										data-empty="true"
@@ -339,10 +343,10 @@ const headerHeartSvg =
 								<button
 									type="button"
 									data-cart-open
-									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
+									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Корзина"
 								>
-									<NtIcon name="cart" sizeClass="size-8" />
+									<NtIcon name="cart" sizeClass="size-6" />
 									<span
 										data-cart-count
 										data-empty="true"
@@ -351,10 +355,10 @@ const headerHeartSvg =
 								</button>
 								<a
 									href="/login" data-auth-link
-									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
+									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Аккаунт"
 								>
-									<NtIcon name="user" sizeClass="size-8" />
+									<NtIcon name="user" sizeClass="size-6" />
 								</a>
 								{isSidebar && (
 									<button
@@ -405,7 +409,7 @@ const headerHeartSvg =
 		) : (
 			/* ── SINGLE-ROW LAYOUTS: center-left / center-absolute ── */
 			<div class={singleRowCls} style={headerPadStyle}>
-				<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
+				<a href="/" class:list={[desktopLogoCls, logoLeft && "flex-1"]} aria-label={siteTitle}>
 					{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
 				</a>
 
@@ -434,21 +438,21 @@ const headerHeartSvg =
 					})}
 				</nav>
 
-				<div class="flex items-center gap-4 lg:gap-5">
+				<div class:list={["flex items-center gap-4 lg:gap-5", logoLeft && "flex-1 justify-end"]}>
 					<button
 						type="button"
 						data-action="toggle-search"
-						class="flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
+						class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 						aria-label="Поиск"
 					>
-						<NtIcon name="search-lg" sizeClass="size-8" />
+						<NtIcon name="search-lg" sizeClass="size-6" />
 					</button>
 					<a
 						href="/wishlist"
-						class="relative flex size-8 items-center justify-center text-[#000000] transition-opacity hover:opacity-80 lg:size-10"
+						class="relative flex size-8 items-center justify-center text-[#000000] transition-opacity hover:opacity-80"
 						aria-label="Избранное"
 					>
-						<span class="block size-8" set:html={headerHeartSvg}></span>
+						<span class="block size-6" set:html={headerHeartSvg}></span>
 						<span
 							data-wishlist-count
 							data-empty="true"
@@ -458,10 +462,10 @@ const headerHeartSvg =
 					<button
 						type="button"
 						data-cart-open
-						class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
+						class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 						aria-label="Корзина"
 					>
-						<NtIcon name="cart" sizeClass="size-8" />
+						<NtIcon name="cart" sizeClass="size-6" />
 						<span
 							data-cart-count
 							data-empty="true"
@@ -470,10 +474,10 @@ const headerHeartSvg =
 					</button>
 					<a
 						href="/login" data-auth-link
-						class="flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
+						class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 						aria-label="Аккаунт"
 					>
-						<NtIcon name="user" sizeClass="size-8" />
+						<NtIcon name="user" sizeClass="size-6" />
 					</a>
 					{isSidebar && (
 						<button

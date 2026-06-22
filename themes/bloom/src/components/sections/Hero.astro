@@ -100,14 +100,17 @@ const subtitleCls =
 		: textSize === "medium"
 			? "hero-animate-2 font-inter text-[12px] font-light leading-[1.2] text-[rgb(var(--color-text,227_142_159))] md:text-[14px]"
 			: "hero-animate-2 font-inter text-[14px] font-light leading-[1.2] text-[rgb(var(--color-text,227_142_159))] md:text-[16px]";
-// «Размер» → высота секции (вьюпорт). large (дефолт bloom blockDefaults) = прежняя
-// min-h-лестница верстальщика байт-в-байт; medium ≈0.82×, small ≈0.64×. Дефолт
-// (p.size не задан) = large. Применяется к min-height inner-контейнера полотна.
+// «Размер» → высота секции (вьюпорт). Раньше высоту Hero диктовал aspect-[...] на
+// height-div'е, перебивая min-h от size → регулятор «Размер» не влиял (паритет бага
+// rose). Фикс: aspect убран с обоих height-div'ов (empty + filled), высоту ведёт
+// ТОЛЬКО heroHeightCls. large (дефолт bloom blockDefaults) ≈ прежней высоте полотна
+// (aspect 1920/925 на десктопе) — подняты значения и добавлены брейкпоинты; medium/
+// small заметно ниже. Дефолт (p.size не задан) = large.
 const heroSize = p.size === "small" ? "small" : p.size === "medium" ? "medium" : "large";
 const heroHeightCls = {
-	large: "min-h-[560px]",
-	medium: "min-h-[460px]",
-	small: "min-h-[360px]",
+	large: "min-h-[min(80svh,620px)] sm:min-h-[600px] md:min-h-[620px] xl:min-h-[680px] 2xl:min-h-[720px]",
+	medium: "min-h-[min(62svh,500px)] sm:min-h-[480px] md:min-h-[500px] xl:min-h-[540px]",
+	small: "min-h-[min(46svh,380px)] sm:min-h-[360px] md:min-h-[380px] xl:min-h-[400px]",
 }[heroSize];
 
 // Канон secondaryButton {text, link: string|{href}} — рендер ТОЛЬКО при непустом
@@ -218,7 +221,7 @@ const paddingStyle = p.padding
 			/>
 			<div class="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-black/40 to-transparent" aria-hidden="true"></div>
 			<div
-				class={`relative w-full ${heroHeightCls} aspect-[375/812] sm:aspect-[768/968] md:aspect-[1280/968] xl:aspect-[1920/925]`}
+				class={`relative w-full ${heroHeightCls}`}
 			>
 				<div class="absolute inset-0 z-10 flex h-full w-full flex-col items-center justify-center gap-6 px-4 text-center md:px-20 2xl:px-[300px]">
 					<div class="flex w-full max-w-[540px] flex-col items-center gap-2 text-center">
@@ -303,7 +306,7 @@ const paddingStyle = p.padding
 	}
 
 	<div
-		class={`relative w-full ${heroHeightCls} aspect-[375/812] sm:aspect-[768/968] md:aspect-[1280/968] xl:aspect-[1920/925]`}
+		class={`relative w-full ${heroHeightCls}`}
 	>
 		<div class={containerCls}>
 			<div class={`flex w-full max-w-[330px] flex-col ${alignItemsCls} gap-4${boxedCls}`}>

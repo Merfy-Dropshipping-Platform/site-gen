@@ -68,10 +68,13 @@ const logoLeft = logoPosition === "center-left";
 const isTwoRow = logoPosition === "top-left" || logoPosition === "top-center";
 
 // Single-row: лого-класс зависит от logoLeft (center-left vs center-absolute default).
+// center-left («Слева»): лого в потоке слева, nav центрируется ПО СТРАНИЦЕ через
+// равные flex-1 фланги (лого order-first flex-1 + блок иконок flex-1 justify-end),
+// nav (auto-ширина) садится по центру. Эталон rose Header (logoLeft flex-1 фланги).
 const desktopLogoCls = logoLeft
-	? "order-first font-logo text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90"
+	? "order-first flex-1 font-logo text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90"
 	: "font-logo absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90";
-const desktopIconsCls = logoLeft ? "ml-auto flex items-center gap-5" : "flex items-center gap-5";
+const desktopIconsCls = logoLeft ? "flex-1 flex items-center justify-end gap-5" : "flex items-center gap-5";
 
 // Канон stickiness: литерал верстальщика УЖЕ sticky top-0 z-50 (H:42) — 'none' /
 // 'always' / отсутствие → sticky остаётся (правило canon-default → пиксель).
@@ -209,14 +212,14 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 								</a>
 								<div class="flex items-center gap-5">
 									<button type="button" data-action="toggle-search" class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Поиск">
-										<NtIcon name="search-lg" sizeClass="size-8" />
+										<NtIcon name="search-lg" sizeClass="size-6" />
 									</button>
 									<a href="/wishlist" class="relative flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Избранное">
-										<NtIcon name="favourite" sizeClass="size-8" />
+										<NtIcon name="favourite" sizeClass="size-6" />
 										<span data-wishlist-count data-empty="true" class="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-white data-[empty=true]:hidden">0</span>
 									</a>
 									<button type="button" data-cart-open class="relative flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Корзина">
-										<NtIcon name="cart" sizeClass="size-8" />
+										<NtIcon name="cart" sizeClass="size-6" />
 										<span data-cart-count data-empty="true" class="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-white data-[empty=true]:hidden">0</span>
 									</button>
 									{isSidebar && (
@@ -279,7 +282,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 							<div class="grid w-full grid-cols-[1fr_auto_1fr] items-center">
 								<div class="flex items-center">
 									<button type="button" data-action="toggle-search" class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Поиск">
-										<NtIcon name="search-lg" sizeClass="size-8" />
+										<NtIcon name="search-lg" sizeClass="size-6" />
 									</button>
 								</div>
 								<div class="flex items-center justify-center">
@@ -292,11 +295,11 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 								</div>
 								<div class="flex items-center justify-end gap-5">
 									<a href="/wishlist" class="relative flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Избранное">
-										<NtIcon name="favourite" sizeClass="size-8" />
+										<NtIcon name="favourite" sizeClass="size-6" />
 										<span data-wishlist-count data-empty="true" class="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-white data-[empty=true]:hidden">0</span>
 									</a>
 									<button type="button" data-cart-open class="relative flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Корзина">
-										<NtIcon name="cart" sizeClass="size-8" />
+										<NtIcon name="cart" sizeClass="size-6" />
 										<span data-cart-count data-empty="true" class="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-white data-[empty=true]:hidden">0</span>
 									</button>
 									{isSidebar && (
@@ -399,14 +402,14 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 
 					<div class={desktopIconsCls}>
 						<button type="button" data-action="toggle-search" class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Поиск">
-							<NtIcon name="search-lg" sizeClass="size-8" />
+							<NtIcon name="search-lg" sizeClass="size-6" />
 						</button>
 						<a href="/wishlist" class="relative flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Избранное">
-							<NtIcon name="favourite" sizeClass="size-8" />
+							<NtIcon name="favourite" sizeClass="size-6" />
 							<span data-wishlist-count data-empty="true" class="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-white data-[empty=true]:hidden">0</span>
 						</a>
 						<button type="button" data-cart-open class="relative flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Корзина">
-							<NtIcon name="cart" sizeClass="size-8" />
+							<NtIcon name="cart" sizeClass="size-6" />
 							<span data-cart-count data-empty="true" class="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-white data-[empty=true]:hidden">0</span>
 						</button>
 						{isSidebar && (

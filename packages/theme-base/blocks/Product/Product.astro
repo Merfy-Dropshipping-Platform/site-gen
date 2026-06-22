@@ -413,11 +413,14 @@ const cartImage = view.gallery.hero?.src ?? '';
         const v = getActiveVariant();
         const total = (v && v.price != null ? parseFloat(String(v.price)) : null);
         const base = total != null ? total : (productData ? parseFloat(String(productData.basePrice ?? productData.price ?? 0)) : 0);
-        priceCur.textContent = fmtPrice(base * currentQty);
+        // Цена на карточке товара — за ЕДИНИЦУ, не умножается на количество.
+        // Количество влияет только на корзину (cartUnitPrice + qty считают сумму
+        // отдельно). Раньше тут было base * currentQty → цена росла при +кол-ва.
+        priceCur.textContent = fmtPrice(base);
         if (priceOld) {
           const old = productData ? parseFloat(String(productData.compareAtPrice ?? productData.oldPrice ?? 0)) : 0;
           if (old > 0) {
-            priceOld.textContent = fmtPrice(old * currentQty);
+            priceOld.textContent = fmtPrice(old);
             priceOld.style.display = '';
           } else {
             priceOld.style.display = 'none';

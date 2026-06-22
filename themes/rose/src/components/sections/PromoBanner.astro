@@ -1,44 +1,40 @@
 ---
-import NtPromoBanner from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtPromoBanner.astro";
-
 // ОЖИВЛЕНИЕ: канон-схема PromoBanner (theme-base PromoBanner.puckConfig).
-// Поля канона: text, link {text, href}, size (thin/small/medium/large),
-// textTransform (none/uppercase), padding {top,bottom}; legacy linkText/linkUrl.
-// Вёрстка = вызов NtPromoBanner дословно из Header.astro верстальщика.
+// Поля канона: text, link {text, href}, size (small/medium/large), textTransform
+// (none/uppercase), padding {top,bottom}; legacy linkText/linkUrl.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 // Figma 1:19335 — пустое состояние секции «Панель объявлений»: пока мерчант НЕ
-// задал текст объявления, секция показывает ДОСЛОВНЫЙ плейсхолдер на surface-полосе
-// («Добавь текст в объявление» + ссылка «Перейти»), а НЕ дефолт-контент верстальщика
-// (скидочную акцию). Когда текст задан — рендерим его через NtPromoBanner (вид
-// верстальщика дословно, поведение не меняется).
+// задал текст, показываем дословный плейсхолдер на surface-полосе.
 const rawText = typeof p.text === "string" ? p.text.trim() : "";
 const hasText = rawText.length > 0;
-const text = hasText ? p.text : "";
+const text = hasText ? p.text : "Добавь текст в объявление.";
 const link =
 	p.link?.href ?? p.linkUrl ?? (typeof p.link === "string" ? p.link : undefined) ?? "/catalog";
 const linkText = p.link?.text ?? p.linkText ?? "Перейти";
 
-// Канон size → DS-сетка NtPromoBanner (макет «Панель объявлений»: sm h32 / md h40 / lg h48).
-// Canon default 'medium' и отсутствующий проп = текущий вызов верстальщика без textSize
-// (DS-дефолт "lg", min-h-12 = 48px — дословно прежняя полоса); thin → "sm" (32px),
-// small → "md" (40px); large продолжает DS-ряд шагом 8px → 56px (min-h-14 перекрытием
-// на полосе; шрифт не меняем — манера: rose-clamp в global.css задаёт размер текста).
-const size = p.size;
-const ntTextSize = size === "thin" ? "sm" : size === "small" ? "md" : undefined;
-// Канон textTransform: 'uppercase' → класс на обёртке (text-transform наследуется
-// внутрь полосы); 'none'/отсутствие = текущий вид.
-const wrapCls =
-	[
-		size === "large" ? "[&_[data-nt=promo-banner]]:min-h-14" : "",
-		p.textTransform === "uppercase" ? "uppercase" : "",
-	]
-		.filter(Boolean)
-		.join(" ") || undefined;
-// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T14).
+// Канон «Размер текста» (Figma 648:57318) — меняет И ШРИФТ, И высоту полосы:
+//   Маленький: h32 / 12px · Средний: h40 / 14px · Большой: h48 / 16px.
+// Дефолт (нет пропа) = large (48/16) — дословно прежняя полоса верстальщика.
+const size = typeof p.size === "string" ? p.size : "large";
+const SIZE_MAP: Record<string, { mh: string; text: string }> = {
+	small: { mh: "min-h-8", text: "text-[12px]" },
+	medium: { mh: "min-h-10", text: "text-[14px]" },
+	large: { mh: "min-h-12", text: "text-[16px]" },
+};
+const sz = SIZE_MAP[size] ?? SIZE_MAP.large;
+const upper = p.textTransform === "uppercase";
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
+
+// Заполнено → цвета цветовой схемы (Цветовая схема секции); пусто → surface-полоса
+// плейсхолдера. Шрифт/высота от «Размер текста» в обоих состояниях.
+const barCls = hasText
+	? `flex ${sz.mh} w-full items-center justify-center overflow-hidden bg-[rgb(var(--color-bg,0_0_0))] px-4 text-[rgb(var(--color-text,255_255_255))] md:px-20 xl:px-[300px] 2xl:px-[680px]`
+	: `flex ${sz.mh} w-full items-center justify-center overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] px-4 text-[rgb(var(--color-text,0_0_0))] md:px-20 xl:px-[300px] 2xl:px-[680px]`;
+const pCls = `max-w-full text-center font-manrope ${sz.text} font-light leading-normal${upper ? " uppercase" : ""}`;
 ---
 
 <div
@@ -46,32 +42,17 @@ const paddingStyle = p.padding
 	data-puck-subsection-parent={id}
 	data-puck-subsection-index="100"
 	data-puck-subsection-field="text"
-	class={wrapCls}
 	style={paddingStyle}
 >
-	{
-		hasText ? (
-			/* Текст объявления задан мерчантом → вид верстальщика дословно. */
-			<NtPromoBanner text={text} link={link} linkText={linkText} textSize={ntTextSize} />
-		) : (
-			/* Пустое состояние (Figma 1:19335): дословный плейсхолдер «Добавь текст в
-			   объявление. Перейти» на surface-полосе темы (НЕ чёрная полоса верстальщика
-			   и НЕ дефолт-акция). */
-			<div
-				data-nt="promo-banner"
-				data-nt-text-size={ntTextSize ?? "lg"}
-				class="flex min-h-12 items-center justify-center overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] px-4 text-[rgb(var(--color-text,0_0_0))] md:px-20 xl:px-[300px] 2xl:px-[680px]"
+	<div data-nt="promo-banner" class={barCls}>
+		<p class={pCls}>
+			<span class="whitespace-pre-wrap">{text}</span>{" "}
+			<a
+				href={link}
+				class="underline decoration-solid underline-offset-2 [text-decoration-skip-ink:none] hover:opacity-90"
 			>
-				<p class="max-w-full text-center font-manrope text-[16px] font-light leading-normal">
-					<span class="whitespace-pre-wrap">Добавь текст в объявление.</span>{" "}
-					<a
-						href={link}
-						class="underline decoration-solid underline-offset-2 [text-decoration-skip-ink:none] hover:opacity-90"
-					>
-						{linkText}
-					</a>
-				</p>
-			</div>
-		)
-	}
+				{linkText}
+			</a>
+		</p>
+	</div>
 </div>

@@ -31,28 +31,27 @@ const placeholderLinkText = linkText ?? "Перейти";
 const linkHref =
 	p.link?.href ?? p.linkUrl ?? (typeof p.link === "string" ? p.link : undefined) ?? "/catalog";
 
-// Канон size: 'thin' (canon-default будущих blockDefaults) И отсутствие → ЛИТЕРАЛ
-// верстальщика py-2. Увеличенные варианты — флекс-центрирование лестницей шагом 8px:
-// small → min-h-10 (40px), medium → min-h-12 (48px), large → min-h-14 (56px).
-// Дефолтная ветка = прежняя строка классов байт-в-байт (цвета чёрной полосы → токены
-// с пиксель-фоллбеком §7: bg 0_0_0, text 255_255_255).
-const size = p.size;
-const rootCls =
-	size === "small"
-		? "flex min-h-10 w-full items-center justify-center bg-[rgb(var(--color-bg,0_0_0))] py-2 text-center"
-		: size === "medium"
-			? "flex min-h-12 w-full items-center justify-center bg-[rgb(var(--color-bg,0_0_0))] py-2 text-center"
-			: size === "large"
-				? "flex min-h-14 w-full items-center justify-center bg-[rgb(var(--color-bg,0_0_0))] py-2 text-center"
-				: "w-full bg-[rgb(var(--color-bg,0_0_0))] py-2 text-center";
+// Канон «Размер текста» (Figma 648:57318) — меняет И ШРИФТ, И высоту полосы:
+//   Маленький: h32 / 12px · Средний: h40 / 14px · Большой: h48 / 16px.
+// Дефолт (нет пропа) = large (48/16) — флекс-центрирование лестницей шагом 8px:
+// small → min-h-8 (32px), medium → min-h-10 (40px), large → min-h-12 (48px).
+// Цвета чёрной полосы → токены с пиксель-фоллбеком §7: bg 0_0_0, text 255_255_255.
+const size = typeof p.size === "string" ? p.size : "large";
+const SIZE_MAP: Record<string, { mh: string; text: string }> = {
+	small: { mh: "min-h-8", text: "text-[12px]" },
+	medium: { mh: "min-h-10", text: "text-[14px]" },
+	large: { mh: "min-h-12", text: "text-[16px]" },
+};
+const sz = SIZE_MAP[size] ?? SIZE_MAP.large;
+const rootCls = `flex ${sz.mh} w-full items-center justify-center bg-[rgb(var(--color-bg,0_0_0))] py-2 text-center`;
 
 // Канон textTransform: 'uppercase' (canon-default) И отсутствие = литерал верстальщика
-// uppercase; явный 'none' снимает капс. Типографика полосы — Arsenal 11/md:14 400
-// tracking-[0.04em] (MANNER.md §1, H:43).
+// uppercase; явный 'none' снимает капс. Типографика полосы — Arsenal 400 tracking-[0.04em]
+// (MANNER.md §1, H:43); размер шрифта от «Размер текста» (sz.text: 12/14/16px).
 const typoCls =
 	p.textTransform === "none"
-		? "font-manrope text-[11px] font-normal tracking-[0.04em] text-[rgb(var(--color-text,255_255_255))] md:text-[14px]"
-		: "font-manrope text-[11px] font-normal uppercase tracking-[0.04em] text-[rgb(var(--color-text,255_255_255))] md:text-[14px]";
+		? `font-manrope ${sz.text} font-normal tracking-[0.04em] text-[rgb(var(--color-text,255_255_255))]`
+		: `font-manrope ${sz.text} font-normal uppercase tracking-[0.04em] text-[rgb(var(--color-text,255_255_255))]`;
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе; {12,12} =
 // canon-default коэрсера → трактуем как литерал py-2 (паттерн bloom PromoBanner: isCanonPad).

@@ -33,27 +33,27 @@ const linkHref =
 	(typeof p.link === "string" && p.link ? p.link : undefined) ??
 	"/";
 
-// Канон size: 'thin' (canon-default из theme.json blockDefaults vanilla) И
-// отсутствие → ЛИТЕРАЛ верстальщика h-11 md:h-12. Лестница вверх в манере (шаг 4px,
-// флекс-центровка остаётся): small → min-h-12 (48px), medium → min-h-14 (56px),
-// large → min-h-16 (64px).
-const size = typeof p.size === "string" ? p.size : "";
-const sizeCls =
-	size === "small"
-		? "min-h-12"
-		: size === "medium"
-			? "min-h-14"
-			: size === "large"
-				? "min-h-16"
-				: "h-11 md:h-12";
+// Канон «Размер текста» (Figma 648:57318) — меняет И ШРИФТ, И высоту полосы:
+//   Маленький: h32 / 12px · Средний: h40 / 14px · Большой: h48 / 16px.
+// Дефолт (нет пропа / canon-default 'thin') = large (48/16) — манера vanilla, но
+// высота и шрифт теперь масштабируются от size (раньше шрифт был фиксирован).
+const size = typeof p.size === "string" ? p.size : "large";
+const SIZE_MAP: Record<string, { mh: string; text: string }> = {
+	small: { mh: "min-h-8", text: "text-[12px]" },
+	medium: { mh: "min-h-10", text: "text-[14px]" },
+	large: { mh: "min-h-12", text: "text-[16px]" },
+};
+const sz = SIZE_MAP[size] ?? SIZE_MAP.large;
+const sizeCls = sz.mh;
 
 // Канон textTransform: 'uppercase' (canon-default из blockDefaults) И отсутствие =
 // литерал верстальщика uppercase; явный 'none' снимает капс.
 const caseCls = p.textTransform === "none" ? "" : " uppercase";
 
-// Полоса верстальщика дословно: Arsenal 14/md:16, центр; цвета — токены с
-// пиксель-фоллбеком родных литералов (§7): полоса #26311C → 38 49 28, текст white.
-const rootCls = `m-0 flex ${sizeCls} w-full shrink-0 items-center justify-center border-0 bg-[rgb(var(--color-bg,38_49_28))] px-4 text-center font-vanilla-arsenal text-[14px] font-normal${caseCls} leading-none tracking-normal text-[rgb(var(--color-text,255_255_255))] md:text-base`;
+// Полоса верстальщика дословно: Arsenal, центр; цвета — токены с пиксель-фоллбеком
+// родных литералов (§7): полоса #26311C → 38 49 28, текст white. Шрифт (sz.text)
+// масштабируется от «Размер текста» — small 12 / medium 14 / large 16.
+const rootCls = `m-0 flex ${sizeCls} w-full shrink-0 items-center justify-center border-0 bg-[rgb(var(--color-bg,38_49_28))] px-4 text-center font-vanilla-arsenal ${sz.text} font-normal${caseCls} leading-none tracking-normal text-[rgb(var(--color-text,255_255_255))]`;
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе; {12,12} =
 // canon-default puckConfig (его пишет seed/конструктор) → литерал высоты полосы.
@@ -103,7 +103,7 @@ const paddingStyle =
 		   и НЕ дефолт-акция «Бесплатная доставка…»). Эталон bloom PromoBanner.astro,
 		   манера vanilla (font-vanilla-arsenal 14/md:16, токены surface/text §7). */
 		<div
-			class={`m-0 flex ${sizeCls} w-full shrink-0 items-center justify-center overflow-hidden border-0 bg-[rgb(var(--color-surface,245_245_245))] px-4 text-center font-vanilla-arsenal text-[14px] font-normal${caseCls} leading-none tracking-normal text-[rgb(var(--color-text,38_49_28))] md:text-base`}
+			class={`m-0 flex ${sizeCls} w-full shrink-0 items-center justify-center overflow-hidden border-0 bg-[rgb(var(--color-surface,245_245_245))] px-4 text-center font-vanilla-arsenal ${sz.text} font-normal${caseCls} leading-none tracking-normal text-[rgb(var(--color-text,38_49_28))]`}
 			role="region"
 			aria-live="polite"
 			data-vanilla-announcement

@@ -29,27 +29,27 @@ const placeholderLinkText = linkText ?? "Перейти";
 const linkHref =
 	p.link?.href ?? p.linkUrl ?? (typeof p.link === "string" ? p.link : undefined) ?? "/";
 
-// Канон size: 'thin' (canon-default из theme.json blockDefaults) И отсутствие →
-// ЛИТЕРАЛ верстальщика py-2 (полоса ≈33px). Увеличенные варианты — лестница манеры
-// шагом 8px: small → min-h-10 (40px), medium → min-h-12 (48px), large → min-h-14
-// (56px); текст центрируется флексом. Дефолтная ветка = прежняя строка классов
-// байт-в-байт (цвет → токен с пиксель-фоллбеком §7).
-const size = p.size;
-const rootCls =
-	size === "small"
-		? "flex min-h-10 w-full items-center justify-center bg-[rgb(var(--color-bg,227_142_159))] py-2 text-center"
-		: size === "medium"
-			? "flex min-h-12 w-full items-center justify-center bg-[rgb(var(--color-bg,227_142_159))] py-2 text-center"
-			: size === "large"
-				? "flex min-h-14 w-full items-center justify-center bg-[rgb(var(--color-bg,227_142_159))] py-2 text-center"
-				: "w-full bg-[rgb(var(--color-bg,227_142_159))] py-2 text-center";
+// Канон «Размер текста» (Figma 648:57318) — меняет И ШРИФТ, И высоту полосы:
+//   Маленький: h32 / 12px · Средний: h40 / 14px · Большой: h48 / 16px.
+// Дефолт (нет пропа) = large (48/16) — эталон rose PromoBanner.astro SIZE_MAP.
+// Высоты — лестница шагом 8px (min-h-8/10/12), текст центрируется флексом; шрифт
+// масштабируется (text-[12px]/[14px]/[16px]) и применяется к тексту полосы.
+const size = typeof p.size === "string" ? p.size : "large";
+const SIZE_MAP: Record<string, { mh: string; text: string }> = {
+	small: { mh: "min-h-8", text: "text-[12px]" },
+	medium: { mh: "min-h-10", text: "text-[14px]" },
+	large: { mh: "min-h-12", text: "text-[16px]" },
+};
+const sz = SIZE_MAP[size] ?? SIZE_MAP.large;
+const rootCls = `flex ${sz.mh} w-full items-center justify-center bg-[rgb(var(--color-bg,227_142_159))] py-2 text-center`;
 
 // Канон textTransform: 'uppercase' (canon-default из blockDefaults) И отсутствие =
-// литерал верстальщика uppercase; явный 'none' снимает капс.
+// литерал верстальщика uppercase; явный 'none' снимает капс. Размер шрифта (sz.text)
+// от «Размер текста».
 const textCls =
 	p.textTransform === "none"
-		? "font-inter text-[12px] font-normal leading-normal text-[rgb(var(--color-text,255_255_255))]"
-		: "font-inter text-[12px] font-normal uppercase leading-normal text-[rgb(var(--color-text,255_255_255))]";
+		? `font-inter ${sz.text} font-normal leading-normal text-[rgb(var(--color-text,255_255_255))]`
+		: `font-inter ${sz.text} font-normal uppercase leading-normal text-[rgb(var(--color-text,255_255_255))]`;
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose
 // T14). {12,12} = canon-default puckConfig (его впрыскивает коэрсер) → литерал py-2.

@@ -52,26 +52,31 @@ const toWebp = (src: string) => src.replace(/\.(png|jpe?g)$/i, ".webp");
 // старых данных лежит mode=carousel (артефакт сида — карусель живёт в Slideshow).
 const mode = "single";
 
-// Канон size — canon-носитель лестниц (blockDefaults vanilla size='large').
+// Канон size — canon-носитель «Размера» (blockDefaults vanilla size='large').
 const sectionSize = typeof p.size === "string" ? p.size : undefined;
 
-// Лестница hero h1 (§9): large (canon-default) и отсутствие = ЛИТЕРАЛ верстальщика
-// text-2xl (24px, lh 1.2 + pb 0.125em в <style> ниже); medium 20, small 17.
-const headingClsFor = (s?: string) =>
-	s === "small"
-		? "hero-animate-1 vanilla-hero-slide-title font-vanilla-bitter text-[17px] font-normal italic tracking-normal text-[rgb(var(--color-heading,255_255_255))] md:whitespace-nowrap"
-		: s === "medium"
-			? "hero-animate-1 vanilla-hero-slide-title font-vanilla-bitter text-[20px] font-normal italic tracking-normal text-[rgb(var(--color-heading,255_255_255))] md:whitespace-nowrap"
-			: "hero-animate-1 vanilla-hero-slide-title font-vanilla-bitter text-2xl font-normal italic tracking-normal text-[rgb(var(--color-heading,255_255_255))] md:whitespace-nowrap";
+// «Размер» (p.size) теперь управляет ВЫСОТОЙ секции Hero (heroHeightCls ниже),
+// КАНОН rose/bloom/flux (коммит 61f925e1 + unify ee611471): единый секционный
+// «Размер» = высота/масштаб полотна во ВСЕХ темах, а НЕ размер шрифта. Прежняя
+// vanilla-привязка size→шрифт (h1: small 17 → medium 20 → large 24; текст: small
+// 11 → medium 14 → large 16) убрана, чтобы «Размер» делал одно и то же везде.
+// Заголовок/текст теперь фиксированы на прежнем «large»-литерале верстальщика
+// (§9) — дефолтный вид (size не задан или 'large') байт-в-байт прежнему.
+const headingClsFor = (_s?: string) =>
+	"hero-animate-1 vanilla-hero-slide-title font-vanilla-bitter text-2xl font-normal italic tracking-normal text-[rgb(var(--color-heading,255_255_255))] md:whitespace-nowrap";
 
-// Лестница hero-текста (§9): large/отсутствие = литерал text-base (16, lh 1.35);
-// medium 14, small 11. Цвет — токен с фоллбеком родного #F0F0F0.
-const textClsFor = (s?: string) =>
-	s === "small"
-		? "hero-animate-2 vanilla-hero-slide-subtitle font-vanilla-arsenal text-[11px] font-normal italic tracking-normal text-[rgb(var(--color-text,240_240_240))] md:whitespace-nowrap"
-		: s === "medium"
-			? "hero-animate-2 vanilla-hero-slide-subtitle font-vanilla-arsenal text-[14px] font-normal italic tracking-normal text-[rgb(var(--color-text,240_240_240))] md:whitespace-nowrap"
-			: "hero-animate-2 vanilla-hero-slide-subtitle font-vanilla-arsenal text-base font-normal italic tracking-normal text-[rgb(var(--color-text,240_240_240))] md:whitespace-nowrap";
+const textClsFor = (_s?: string) =>
+	"hero-animate-2 vanilla-hero-slide-subtitle font-vanilla-arsenal text-base font-normal italic tracking-normal text-[rgb(var(--color-text,240_240_240))] md:whitespace-nowrap";
+
+// «Размер» → высота полотна (min-height viewport). large (canon-default vanilla) =
+// прежняя лестница min-h-[520px] md:620 xl:790 байт-в-байт; medium ≈0.82×,
+// small ≈0.64×. Дефолт (p.size не задан) = large.
+const heroSize = sectionSize === "small" ? "small" : sectionSize === "medium" ? "medium" : "large";
+const heroHeightCls = {
+	large: "min-h-[520px] md:min-h-[620px] xl:min-h-[790px]",
+	medium: "min-h-[430px] md:min-h-[510px] xl:min-h-[650px]",
+	small: "min-h-[335px] md:min-h-[400px] xl:min-h-[505px]",
+}[heroSize];
 
 type CanonSlide = {
 	image: string;
@@ -353,7 +358,7 @@ const secondaryCls =
 		>
 			<div
 				id="hero-carousel-viewport"
-				class="relative w-full min-h-[520px] md:min-h-[620px] xl:min-h-[790px]"
+				class={`relative w-full ${heroHeightCls}`}
 				role="region"
 				aria-roledescription="карусель"
 				aria-label="Главный экран"
@@ -488,7 +493,7 @@ const secondaryCls =
 			style={paddingStyle}
 		>
 			<div
-				class="relative w-full min-h-[520px] md:min-h-[620px] xl:min-h-[790px]"
+				class={`relative w-full ${heroHeightCls}`}
 				role="region"
 				aria-label="Главный экран"
 			>

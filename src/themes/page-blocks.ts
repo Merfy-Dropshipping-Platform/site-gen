@@ -93,6 +93,15 @@ export async function extractPageBlocks(
         typeof b === 'object' &&
         typeof (b as { type?: unknown }).type === 'string',
     )
+    // Скрытые секции («глаз» в outline конструктора → props.hidden=true) не
+    // попадают ни в превью, ни в live-сборку. Зеркало item-уровневого
+    // `hidden` (см. coerceCollectionsProps: raw.hidden===true → drop). Строгая
+    // проверка `=== true`: legacy-ревизии без поля (undefined) рендерятся как
+    // раньше — обратная совместимость со старыми сайтами.
+    .filter(
+      (b) =>
+        (b.props as { hidden?: unknown } | undefined)?.hidden !== true,
+    )
     .map((b) => {
       const props = adaptLegacyProps(
         (b.props ?? {}) as Record<string, unknown>,

@@ -67,24 +67,26 @@ const backgroundImage = rawBackgroundImage;
 // 2 кадра grid-cols-2 ТОЛЬКО когда второе фото задано; иначе одиночный рендер дословно.
 const backgroundImage2 = p.backgroundImages?.url2 ?? p.backgroundImage2;
 
-// Канон heading.size / text.size (+ секционный p.size как canon-носитель 'large').
-// 'large' И отсутствие → ЛИТЕРАЛЬНАЯ лестница верстальщика (MANNER.md §9):
-//   заголовок: small 18/22 → medium 22/27 → large 26/32 = литерал (Kelly Slab uppercase)
-//   кикер:     small 11    → medium 14    → large 16    = литерал (Arsenal light uppercase)
-const headingSize = p.size;
+// «Размер» (p.size) теперь управляет ВЫСОТОЙ секции Hero (heroHeightCls ниже),
+// КАНОН rose/bloom/flux (коммит 61f925e1 + unify ee611471): единый секционный
+// «Размер» = высота/масштаб полотна во ВСЕХ темах, а НЕ размер шрифта. Прежняя
+// satin-привязка size→шрифт (small 18/22 → medium 22/27 → large 26/32) убрана,
+// чтобы «Размер» делал одно и то же везде. Заголовок/кикер теперь фиксированы на
+// прежнем «large»-литерале верстальщика (MANNER.md §9) — дефолтный вид (size не
+// задан или 'large') байт-в-байт прежнему.
 const headingCls =
-	headingSize === "small"
-		? "font-logo text-[18px] font-normal uppercase leading-[1.08] text-[rgb(var(--color-heading,0_0_0))] md:text-[22px]"
-		: headingSize === "medium"
-			? "font-logo text-[22px] font-normal uppercase leading-[1.08] text-[rgb(var(--color-heading,0_0_0))] md:text-[27px]"
-			: "font-logo text-[26px] font-normal uppercase leading-[1.08] text-[rgb(var(--color-heading,0_0_0))] md:text-[32px]";
-const textSize = p.size;
+	"font-logo text-[26px] font-normal uppercase leading-[1.08] text-[rgb(var(--color-heading,0_0_0))] md:text-[32px]";
 const subtitleCls =
-	textSize === "small"
-		? "font-manrope text-[11px] font-light uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]"
-		: textSize === "medium"
-			? "font-manrope text-[14px] font-light uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]"
-			: "font-manrope text-[16px] font-light uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]";
+	"font-manrope text-[16px] font-light uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]";
+// «Размер» → высота фото-половины/текст-колонки (md:h-*). large (дефолт satin) =
+// прежняя h-[680px] байт-в-байт; medium ≈0.82×, small ≈0.64×. Дефолт (p.size не
+// задан) = large. Mobile aspect-[375/362] остаётся неизменным (портретный кадр).
+const heroSize = p.size === "small" ? "small" : p.size === "medium" ? "medium" : "large";
+const heroHeightCls = {
+	large: "md:h-[680px]",
+	medium: "md:h-[560px]",
+	small: "md:h-[440px]",
+}[heroSize];
 
 // Кнопки манеры §3 на токенах — реплика .satin-button.satin-button-md (литеральные
 // --satin-* тех классов не реагируют на смену схемы, поэтому утилиты с токенами):
@@ -153,7 +155,7 @@ const alignItemsCls = p.alignment === "left" ? "items-start" : p.alignment === "
 const textAlignCls = p.alignment === "left" ? "text-left" : p.alignment === "right" ? "text-right" : p.alignment === "center" ? "text-center" : "";
 const buttonsJustifyCls = p.alignment === "right" ? "justify-end" : p.alignment === "center" ? "justify-center" : "justify-start";
 const textColCls =
-	`satin-bleed-left order-2 flex ${vJustifyCls} py-12 pr-4 md:order-1 md:h-[680px] ${vPadCls} md:pr-0`;
+	`satin-bleed-left order-2 flex ${vJustifyCls} py-12 pr-4 md:order-1 ${heroHeightCls} ${vPadCls} md:pr-0`;
 const blockCls =
 	[hItemsCls, "flex max-w-[420px] flex-col", alignItemsCls, "gap-6", textAlignCls]
 		.filter(Boolean)
@@ -180,7 +182,7 @@ const paddingStyle = p.padding
 			data-puck-component-id={id}
 			style={paddingStyle}
 		>
-			<div class="relative aspect-[375/362] w-full md:aspect-auto md:h-[680px]">
+			<div class={`relative aspect-[375/362] w-full md:aspect-auto ${heroHeightCls}`}>
 				{/* Контракт картиночной секции (правило 2): дизайн-ассет
 				    landscape-image.png показывается ВСЕГДА (object-cover) + штатное
 				    затемнение для читаемости overlay-лейбла. НЕ пустой surface-rect.
@@ -290,7 +292,7 @@ const paddingStyle = p.padding
 
 		<div
 			class:list={[
-				"relative order-1 aspect-[375/362] overflow-hidden md:order-2 md:aspect-auto md:h-[680px]",
+				`relative order-1 aspect-[375/362] overflow-hidden md:order-2 md:aspect-auto ${heroHeightCls}`,
 				// Пустое состояние — пустой image-rect surface-тона темы (Figma 1:19335);
 				// с фото — чёрная подложка верстальщика (под object-cover кадрами).
 				backgroundImage ? "bg-[#111111]" : "bg-[rgb(var(--color-surface,245_245_245))]",

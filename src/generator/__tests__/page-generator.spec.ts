@@ -408,4 +408,55 @@ describe("generateAstroPage", () => {
     expect(result).toContain("<Section");
     expect(result).toContain("</Section>");
   });
+
+  describe("скрытые секции (props.hidden)", () => {
+    const registry: Record<string, ComponentRegistryEntry> = {
+      Hero: STATIC_HERO,
+      Footer: STATIC_FOOTER,
+    };
+
+    it("пропускает секцию с props.hidden===true", () => {
+      const page: PuckPageData = {
+        content: [
+          { type: "Hero", props: { id: "h1", title: "Видимый" } },
+          { type: "Hero", props: { id: "h2", title: "Скрытый", hidden: true } },
+          { type: "Footer", props: { id: "f1" } },
+        ],
+      };
+
+      const result = generateAstroPage(page, registry);
+
+      expect(result).toContain('title="Видимый"');
+      expect(result).not.toContain('title="Скрытый"');
+      // Footer всё ещё рендерится
+      expect(result).toContain("<Footer");
+    });
+
+    it("рендерит секцию когда hidden=false или отсутствует (обратная совместимость)", () => {
+      const page: PuckPageData = {
+        content: [
+          { type: "Hero", props: { id: "h1", title: "БезФлага" } },
+          { type: "Hero", props: { id: "h2", title: "ЯвноFalse", hidden: false } },
+        ],
+      };
+
+      const result = generateAstroPage(page, registry);
+
+      expect(result).toContain('title="БезФлага"');
+      expect(result).toContain('title="ЯвноFalse"');
+    });
+
+    it("не скрывает при truthy не-true значениях (строгая проверка === true)", () => {
+      const page: PuckPageData = {
+        content: [
+          { type: "Hero", props: { id: "h1", title: "Строка", hidden: "true" } },
+        ],
+      };
+
+      const result = generateAstroPage(page, registry);
+
+      // hidden:"true" (строка) ≠ true (boolean) → секция рендерится
+      expect(result).toContain('title="Строка"');
+    });
+  });
 });

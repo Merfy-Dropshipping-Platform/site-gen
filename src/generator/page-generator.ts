@@ -113,6 +113,14 @@ function processContentItems(
   const lines: string[] = [];
 
   for (const rawItem of items) {
+    // Скрытые секции («глаз» в outline конструктора → props.hidden=true) не
+    // эмитятся в .astro — секция исчезает с собранной страницы. Зеркало
+    // фильтра в extractPageBlocks (v2-путь). Строгая проверка `=== true`:
+    // legacy-ревизии без поля рендерятся как раньше (обратная совместимость).
+    if ((rawItem.props as { hidden?: unknown } | undefined)?.hidden === true) {
+      continue;
+    }
+
     const entry = registry[rawItem.type];
     if (!entry) {
       // Unknown component — render a placeholder comment

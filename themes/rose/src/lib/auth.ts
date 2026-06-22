@@ -301,6 +301,26 @@ export async function resendVerification(input: { email: string }) {
   });
 }
 
+// ── Magic Link (passwordless вход/регистрация) ──────────────────────────────
+/** Запросить magic-ссылку + 6-значный код на email (для новых и существующих). */
+export async function requestMagicLink(input: { email: string; shopName?: string }) {
+  const { storeId } = getConfig();
+  return request('/store/auth/magic/request', {
+    method: 'POST',
+    body: JSON.stringify({ store_id: storeId, ...input }),
+  });
+}
+/** Подтвердить вход по ссылке (token) ИЛИ по коду (email+code) → выдаёт sessionToken. */
+export async function verifyMagicLink(input: { token?: string; email?: string; code?: string }) {
+  const { storeId } = getConfig();
+  const result = await request<{ sessionToken?: string; isNew?: boolean }>(
+    '/store/auth/magic/verify',
+    { method: 'POST', body: JSON.stringify({ store_id: storeId, ...input }) },
+  );
+  captureSession(result);
+  return result;
+}
+
 // ── Заказы покупателя (/store/orders, Bearer) ──
 export interface CustomerOrderSummary {
   orderNumber: string;
@@ -361,6 +381,8 @@ export const roseAuth = {
   requestEmailVerifyOTP,
   verifyEmailOTP,
   resendVerification,
+  requestMagicLink,
+  verifyMagicLink,
   fetchOrders,
   fetchOrder,
   cancelOrder,

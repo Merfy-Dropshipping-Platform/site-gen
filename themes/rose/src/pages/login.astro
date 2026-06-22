@@ -18,8 +18,8 @@ const apiUrl = "https://gateway.merfy.ru/api";
     };
   </script>
 
-  <AuthShell title="Вход в аккаунт" description="Введите свои данные чтобы войти в аккаунт">
-    <form id="login-form" class="w-full flex flex-col gap-6" novalidate>
+  <AuthShell title="Вход в аккаунт" description="Войдите по ссылке из письма — пароль не нужен">
+    <form id="magic-form" class="w-full flex flex-col gap-6" novalidate>
       <AuthInput
         label="E-mail"
         type="email"
@@ -29,18 +29,25 @@ const apiUrl = "https://gateway.merfy.ru/api";
         required
         autocomplete="email"
       />
-      <PasswordField
-        label="Пароль"
-        name="password"
-        id="login-password"
-        placeholder="Введите пароль"
-        required
-      />
       <div class="auth-helper-error hidden text-center" id="login-error" role="alert"></div>
     </form>
 
-    <div class="w-full flex flex-col items-center gap-10">
-      <AuthButton id="btn-login" form="login-form" loadingLabel="Вход...">Войти</AuthButton>
+    <div class="w-full flex flex-col items-center gap-8">
+      <AuthButton id="btn-magic" form="magic-form" loadingLabel="Отправляем...">Получить ссылку для входа</AuthButton>
+
+      <details id="password-fallback" class="w-full">
+        <summary class="account-text-link" style="cursor:pointer;text-align:center;list-style:none">Войти по паролю</summary>
+        <form id="password-form" class="w-full flex flex-col gap-6" style="margin-top:1.25rem" novalidate>
+          <PasswordField
+            label="Пароль"
+            name="password"
+            id="login-password"
+            placeholder="Введите пароль"
+          />
+          <AuthButton id="btn-login" form="password-form" loadingLabel="Вход...">Войти</AuthButton>
+        </form>
+      </details>
+
       <div class="flex flex-col items-center gap-3">
         <AuthSecondaryLink href="/register" helper="Нет аккаунта?">Зарегистрироваться</AuthSecondaryLink>
         <AuthSecondaryLink href="/reset-password">Забыл пароль?</AuthSecondaryLink>
@@ -49,12 +56,12 @@ const apiUrl = "https://gateway.merfy.ru/api";
   </AuthShell>
 
   <script>
-    import { navTo, login, getToken } from '../lib/auth';
+    import { navTo, login, requestMagicLink, getToken } from '../lib/auth';
 
     function initLoginPage() {
-      const form = document.getElementById('login-form') as HTMLFormElement | null;
-      if (!form || form.dataset.bound === 'true') return;
-      form.dataset.bound = 'true';
+      const magicForm = document.getElementById('magic-form') as HTMLFormElement | null;
+      if (!magicForm || magicForm.dataset.bound === 'true') return;
+      magicForm.dataset.bound = 'true';
 
       // Уже вошёл → редирект.
       if (getToken()) {
@@ -64,77 +71,69 @@ const apiUrl = "https://gateway.merfy.ru/api";
       }
 
       const errorEl = document.getElementById('login-error')!;
-      const btn = document.getElementById('btn-login') as HTMLButtonElement;
-      const loadingEl = btn.querySelector('[data-loading]')!;
-      const textEl = btn.querySelector('[data-button-text]')!;
+      const emailField = document.getElementById('login-email') as HTMLInputElement;
 
-      // Префилл email из ?email=... (после редиректа с invite/ALREADY_REGISTERED).
       const prefillEmail = new URLSearchParams(window.location.search).get('email');
-      if (prefillEmail) {
-        const emailField = document.getElementById('login-email') as HTMLInputElement | null;
-        if (emailField) emailField.value = prefillEmail;
-      }
+      if (prefillEmail) emailField.value = prefillEmail;
 
       const setFieldError = (id: string, has: boolean) => {
         const el = document.getElementById(id);
         if (el) el.setAttribute('data-error', has ? 'true' : 'false');
       };
+      const validEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+      const showError = (msg: string) => { errorEl.textContent = msg; errorEl.classList.remove('hidden'); };
+      const btnBusy = (btn: HTMLButtonElement, on: boolean) => {
+        const l = btn.querySelector('[data-loading]'); const t = btn.querySelector('[data-button-text]');
+        if (on) { l?.classList.remove('hidden'); t?.classList.add('hidden'); btn.disabled = true; }
+        else { l?.classList.add('hidden'); t?.classList.remove('hidden'); btn.disabled = false; }
+      };
 
-      form.addEventListener('submit', async (e) => {
+      // ── Magic-link (основной путь) ──
+      const magicBtn = document.getElementById('btn-magic') as HTMLButtonElement;
+      magicForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        errorEl.classList.add('hidden');
-        errorEl.textContent = '';
-        setFieldError('login-email', false);
-        setFieldError('login-password', false);
+        errorEl.classList.add('hidden'); setFieldError('login-email', false);
+        const email = emailField.value.trim();
+        if (!email || !validEmail(email)) {
+          setFieldError('login-email', true); showError('Введите корректный e-mail'); return;
+        }
+        btnBusy(magicBtn, true);
+        try {
+          const result = await requestMagicLink({ email });
+          if (result.success) {
+            sessionStorage.setItem('magicEmail', email);
+            navTo('/verify');
+          } else { throw result; }
+        } catch (err: any) {
+          let msg = err?.error || err?.message || 'Не удалось отправить ссылку';
+          if (err?.code === 'RATE_LIMIT_EXCEEDED') msg = 'Письмо уже отправлено. Проверьте почту.';
+          showError(msg);
+        } finally { btnBusy(magicBtn, false); }
+      });
 
-        const email = (document.getElementById('login-email') as HTMLInputElement).value.trim();
+      // ── Пароль (fallback) ──
+      const passwordForm = document.getElementById('password-form') as HTMLFormElement;
+      const loginBtn = document.getElementById('btn-login') as HTMLButtonElement;
+      passwordForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorEl.classList.add('hidden'); setFieldError('login-password', false);
+        const email = emailField.value.trim();
         const password = (document.getElementById('login-password') as HTMLInputElement).value;
-
-        if (!email) {
-          setFieldError('login-email', true);
-          errorEl.textContent = 'Введите e-mail';
-          errorEl.classList.remove('hidden');
-          return;
-        }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-          setFieldError('login-email', true);
-          errorEl.textContent = 'Введите корректный e-mail';
-          errorEl.classList.remove('hidden');
-          return;
-        }
-        if (!password) {
-          setFieldError('login-password', true);
-          errorEl.textContent = 'Введите пароль';
-          errorEl.classList.remove('hidden');
-          return;
-        }
-
-        loadingEl.classList.remove('hidden');
-        textEl.classList.add('hidden');
-        btn.disabled = true;
-
+        if (!email || !validEmail(email)) { setFieldError('login-email', true); showError('Введите корректный e-mail'); return; }
+        if (!password) { setFieldError('login-password', true); showError('Введите пароль'); return; }
+        btnBusy(loginBtn, true);
         try {
           const result = await login({ email, password });
           if (result.success) {
             const params = new URLSearchParams(window.location.search);
             navTo(params.get('redirect') || '/account');
-          } else {
-            throw result;
-          }
+          } else { throw result; }
         } catch (err: any) {
           let msg = 'Неверный email или пароль';
-          if (err?.error === 'ACCOUNT_LOCKED' || err?.code === 'RATE_LIMIT_EXCEEDED') {
-            msg = 'Слишком много попыток. Попробуйте через 30 минут';
-          } else if (err?.message) {
-            msg = err.message;
-          }
-          errorEl.textContent = msg;
-          errorEl.classList.remove('hidden');
-        } finally {
-          loadingEl.classList.add('hidden');
-          textEl.classList.remove('hidden');
-          btn.disabled = false;
-        }
+          if (err?.error === 'ACCOUNT_LOCKED' || err?.code === 'RATE_LIMIT_EXCEEDED') msg = 'Слишком много попыток. Попробуйте через 30 минут';
+          else if (err?.message) msg = err.message;
+          showError(msg);
+        } finally { btnBusy(loginBtn, false); }
       });
     }
 

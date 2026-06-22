@@ -64,11 +64,16 @@ const paddingStyle = padding
 
     // Сигнатура состава корзины — чтобы сбрасывать скидку только при реальной
     // правке корзины (синхронно с CheckoutOrderSummary), а не на служебных
-    // cart:updated (initial render / server-refresh без изменения состава).
+    // cart:updated (initial render / фоновый серверный синк без изменения состава).
+    // Ключ — productId+variant+qty (НЕ line id): локальный first-paint и серверная
+    // корзина дают разные id одной позиции. isBonus (авто-BOGO «Подарок» 0₽)
+    // исключаем — подарок добавляет сервер, не юзер; его появление не должно
+    // обнулять discountCents применённого промокода. Держать ИДЕНТИЧНО
+    // CheckoutOrderSummary.cartSignature.
     function cartSignature() {
       var items = (window.cartStore && typeof window.cartStore.getItems === 'function') ? window.cartStore.getItems() : [];
-      return items.map(function (it) {
-        return (it.id || it.productId || '') + ':' + (it.variantCombinationId || '') + ':' + (it.quantity || 1);
+      return items.filter(function (it) { return !it.isBonus; }).map(function (it) {
+        return (it.productId || it.id || '') + ':' + (it.variantCombinationId || '') + ':' + (it.quantity || 1);
       }).join('|');
     }
     var lastCartSig = cartSignature();

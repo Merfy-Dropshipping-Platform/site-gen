@@ -98,6 +98,21 @@ const dadataToken = "";
       });
       if (cs.setLocalItems) cs.setLocalItems(display);
       else if (cs.init) cs.init();
+
+      // Фоновый синк серверной корзины ПОСЛЕ мгновенного локального first-paint.
+      // Сервер при пересчёте сам добавляет авто-BOGO «Подарок» (0₽-позиция,
+      // isBonus) — без синка он не виден до сабмита. syncToServer({notify:true})
+      // создаёт серверную корзину из локальных items, кладёт серверные items
+      // (с подарком) в state и шлёт cart:updated → сводка/итоги перерисуются.
+      // Локальный рендер уже на экране — это второй проход, не теряем first-paint.
+      // debounce: уступаем место мгновенному рендеру и не воюем с apply-промокода
+      // (in-flight guard в syncToServer дедуплицирует параллельные синки).
+      if (display.length && cs.syncToServer) {
+        setTimeout(function () {
+          try { cs.syncToServer({ notify: true }).catch(function () {}); }
+          catch (e) { /* сеть/корзина недоступны — остаёмся на локальном рендере */ }
+        }, 250);
+      }
     });
   </script>
 </Layout>

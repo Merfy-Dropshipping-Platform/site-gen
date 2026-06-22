@@ -8,11 +8,15 @@ import { CartAPI } from './cart-api.js';
 const CART_ID_KEY = 'merfy:cartId';
 const CART_ITEMS_KEY = 'merfy:cartItems';
 
-/** @type {{ items: Array<any>, cartId: string|null, loading: boolean }} */
+/** @type {{ items: Array<any>, cartId: string|null, loading: boolean, syncPromise: Promise<string|null>|null }} */
 const state = {
   items: [],
   cartId: null,
   loading: false,
+  // In-flight serverka-sync. Дедуплицирует параллельные syncToServer (фоновый
+  // синк на чекауте + apply-промокода + сабмит): все ждут ОДНУ корзину, иначе
+  // получаем 2-3 серверные корзины на один заказ.
+  syncPromise: null,
 };
 
 function saveToStorage() {
@@ -269,25 +273,58 @@ export const cartStore = {
     notify('cart:updated', { items: state.items });
   },
 
-  // Синк серверной корзины из текущих (display) items при «Оформить» — а не на
-  // загрузке. Возвращает cartId. НЕ шлёт cart:updated лишний раз.
-  async syncToServer() {
+  // Синк серверной корзины из текущих (display) items. Используется и при
+  // «Оформить», и для ФОНОВОГО синка на чекауте (чтобы показать серверные данные —
+  // в т.ч. авто-BOGO-подарок 0₽-позицией — ДО сабмита).
+  //
+  // opts.notify=true → после синка шлёт cart:updated, чтобы сводка/итоги
+  //   пере-рендерились из серверных items (с подарком). Сабмит зовёт без notify
+  //   (он сразу уходит на оплату — лишний рендер не нужен).
+  //
+  // Дедупликация: параллельные вызовы (фоновый + apply-промокода + сабмит)
+  //   получают ОДНУ in-flight корзину через state.syncPromise — иначе плодим
+  //   2-3 серверные корзины на один заказ.
+  //
+  // Возвращает cartId (или null если корзина пуста).
+  async syncToServer(opts) {
+    const notify_ = !!(opts && opts.notify);
+    if (state.syncPromise) {
+      // Уже идёт синк — переиспользуем его cartId. notify предыдущего вызова
+      // отрендерит сводку; если этот вызов тоже хочет notify, дёрнем после.
+      const existing = await state.syncPromise;
+      if (notify_ && existing) notify('cart:updated', { items: state.items });
+      return existing;
+    }
     const lines = state.items || [];
     if (!lines.length) return null;
-    state.cartId = null;
-    try { localStorage.removeItem(CART_ID_KEY); } catch (e) {}
-    const cartId = await ensureCart();
-    for (let i = 0; i < lines.length; i++) {
-      const l = lines[i];
-      try { await CartAPI.addItem(cartId, l.productId, l.quantity || 1, l.variantCombinationId || null); } catch (e) {}
-    }
-    try {
-      const res = await CartAPI.getCart(cartId);
-      if (res && res.success && res.data && Array.isArray(res.data.items)) {
-        state.items = res.data.items; saveToStorage();
+
+    const run = (async () => {
+      state.cartId = null;
+      try { localStorage.removeItem(CART_ID_KEY); } catch (e) {}
+      const cartId = await ensureCart();
+      for (let i = 0; i < lines.length; i++) {
+        const l = lines[i];
+        try { await CartAPI.addItem(cartId, l.productId, l.quantity || 1, l.variantCombinationId || null); } catch (e) {}
       }
-    } catch (e) {}
-    return cartId;
+      try {
+        const res = await CartAPI.getCart(cartId);
+        if (res && res.success && res.data && Array.isArray(res.data.items)) {
+          // Серверные items могут включать 0₽-bonus-позицию (авто-BOGO «Подарок»).
+          state.items = res.data.items; saveToStorage();
+        }
+      } catch (e) {}
+      return cartId;
+    })();
+
+    state.syncPromise = run;
+    try {
+      const cartId = await run;
+      // Фоновый синк: перерисовать сводку серверными items (с подарком).
+      if (notify_) notify('cart:updated', { items: state.items });
+      return cartId;
+    } finally {
+      state.syncPromise = null;
+    }
   },
 
   /**

@@ -316,12 +316,19 @@ const imageSize = itemImageSize === 'expanded' ? 120 : 96;
       });
     }
 
-    // Сигнатура состава корзины (id+qty), чтобы отличать реальную правку корзины
-    // от служебных cart:updated (initial render, server-refresh без изменений).
+    // Сигнатура состава корзины, чтобы отличать реальную правку корзины
+    // (юзер добавил/убрал товар, сменил qty) от служебных cart:updated
+    // (initial render, фоновый серверный синк без изменения СОСТАВА).
+    // Ключ — productId+variant+qty (НЕ line id): локальный first-paint и
+    // серверная корзина дают РАЗНЫЕ id одной позиции (сервер генерит свой id),
+    // и keying по id ложно срабатывал бы на фоновом синке.
+    // isBonus-строки (авто-BOGO «Подарок» 0₽) ИСКЛЮЧАЕМ: подарок добавляет сервер
+    // при пересчёте (не действие юзера). Иначе фоновый синк, проявивший подарок,
+    // менял бы сигнатуру и ЛОЖНО сбрасывал только что применённый промокод.
     function cartSignature() {
       var items = (window.cartStore && typeof window.cartStore.getItems === 'function') ? window.cartStore.getItems() : [];
-      return items.map(function (it) {
-        return (it.id || it.productId || '') + ':' + (it.variantCombinationId || '') + ':' + (it.quantity || 1);
+      return items.filter(function (it) { return !it.isBonus; }).map(function (it) {
+        return (it.productId || it.id || '') + ':' + (it.variantCombinationId || '') + ':' + (it.quantity || 1);
       }).join('|');
     }
     var lastCartSig = cartSignature();

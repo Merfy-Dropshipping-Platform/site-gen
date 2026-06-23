@@ -13,6 +13,7 @@ import {
   BILLING_RMQ_SERVICE,
   COOLIFY_RMQ_SERVICE,
   DOMAIN_RMQ_SERVICE,
+  CENTRAL_PROXY_APP_SENTINEL,
 } from "../../constants";
 import * as schema from "../../db/schema";
 import {
@@ -33,6 +34,7 @@ import {
   type BulkItemResult,
 } from "./bulk.dto";
 import { SiteGeneratorService } from "../../generator/generator.service";
+import { TraefikRouterService } from "../../deployments/traefik-router.service";
 
 type SiteRow = typeof schema.site.$inferSelect;
 type SiteDomainRow = typeof schema.siteDomain.$inferSelect;
@@ -54,6 +56,7 @@ export class BulkOperationsService {
     @Inject(DOMAIN_RMQ_SERVICE)
     private readonly domainClient: ClientProxy,
     private readonly generator: SiteGeneratorService,
+    private readonly traefik: TraefikRouterService,
   ) {}
 
   /**
@@ -549,7 +552,15 @@ export class BulkOperationsService {
               }
 
               if (params.deleteCoolifyApp !== false && site.coolifyAppUuid) {
-                await this.deleteCoolifyApp(site.coolifyAppUuid);
+                if (site.coolifyAppUuid === CENTRAL_PROXY_APP_SENTINEL) {
+                  // central proxy: контейнера нет — снимаем Traefik-роутер,
+                  // иначе домен осиротеет на общем прокси.
+                  if (site.storageSlug) {
+                    await this.traefik.removeSiteRouter(site.storageSlug);
+                  }
+                } else {
+                  await this.deleteCoolifyApp(site.coolifyAppUuid);
+                }
               }
             });
 
@@ -937,9 +948,12 @@ export class BulkOperationsService {
     site: SiteRow,
     enabled: boolean,
   ): Promise<void> {
-    if (!site.coolifyAppUuid) {
+    if (
+      !site.coolifyAppUuid ||
+      site.coolifyAppUuid === CENTRAL_PROXY_APP_SENTINEL
+    ) {
       this.logger.warn(
-        `No Coolify app UUID for site ${site.id}, skipping maintenance toggle`,
+        `No dedicated Coolify app for site ${site.id} (central proxy or unprovisioned), skipping maintenance toggle`,
       );
       return;
     }

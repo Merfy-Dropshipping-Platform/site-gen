@@ -5,3 +5,12 @@ export const DOMAIN_RMQ_SERVICE = "DOMAIN_RMQ_SERVICE";
 export const COOLIFY_RMQ_SERVICE = "COOLIFY_RMQ_SERVICE";
 export const PG_CONNECTION = "PG_CONNECTION";
 export const USER_RMQ_SERVICE = "USER_RMQ_SERVICE";
+
+/**
+ * Sentinel-значение `site.coolifyAppUuid` для сайтов, обслуживаемых ОБЩИМ
+ * центральным прокси (Phase 3 миграции), а НЕ собственным per-site Coolify-app.
+ * Инвариант: `coolifyAppUuid === CENTRAL_PROXY_APP_SENTINEL` ⇒ контейнера нет,
+ * вместо него Traefik dynamic-роутер (`site-<slug>.yml`). Любой код, который
+ * шлёт `appUuid` в Coolify, должен исключать это значение.
+ */
+export const CENTRAL_PROXY_APP_SENTINEL = "central-proxy";

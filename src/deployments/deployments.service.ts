@@ -8,7 +8,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { randomUUID } from "crypto";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "../db/schema";
-import { PG_CONNECTION } from "../constants";
+import { PG_CONNECTION, CENTRAL_PROXY_APP_SENTINEL } from "../constants";
 import { eq } from "drizzle-orm";
 import { CoolifyProvider } from "./coolify.provider";
 import { TraefikRouterService } from "./traefik-router.service";
@@ -22,6 +22,25 @@ export class DeploymentsService {
     private readonly coolify: CoolifyProvider,
     private readonly traefik: TraefikRouterService,
   ) {}
+
+  /**
+   * Включён ли режим центрального прокси (флаг SITES_USE_CENTRAL_PROXY=true).
+   * Обёртка, чтобы SitesDomainService гейтил провижн через уже инжектнутый
+   * `deployments` (без нового параметра конструктора, ломающего тест-харнессы).
+   */
+  get centralProxyEnabled(): boolean {
+    return this.traefik.enabled;
+  }
+
+  /** Idempotent: пишет Traefik-роутер сайта на общий прокси. Возвращает URL. */
+  async ensureCentralRouter(slug: string): Promise<string> {
+    return this.traefik.ensureSiteRouter(slug);
+  }
+
+  /** Удаляет Traefik-роутер сайта (при удалении сайта). Не бросает если нет. */
+  async removeCentralRouter(slug: string): Promise<void> {
+    return this.traefik.removeSiteRouter(slug);
+  }
 
   async deploy(params: {
     tenantId: string;
@@ -46,7 +65,7 @@ export class DeploymentsService {
           id,
           siteId: params.siteId,
           buildId: params.buildId,
-          coolifyAppId: "central-proxy",
+          coolifyAppId: CENTRAL_PROXY_APP_SENTINEL,
           coolifyEnvId: "",
           status: "deployed",
           url,

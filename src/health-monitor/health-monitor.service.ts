@@ -17,7 +17,11 @@ import { firstValueFrom, timeout, catchError, of } from "rxjs";
 import { randomUUID } from "crypto";
 import { and, eq, gt, sql, isNull } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { COOLIFY_RMQ_SERVICE, PG_CONNECTION } from "../constants";
+import {
+  COOLIFY_RMQ_SERVICE,
+  PG_CONNECTION,
+  CENTRAL_PROXY_APP_SENTINEL,
+} from "../constants";
 import * as schema from "../db/schema";
 import { BuildQueuePublisher } from "../rabbitmq/build-queue.service";
 import {
@@ -280,9 +284,14 @@ export class HealthMonitorService {
       .where(eq(schema.site.id, check.siteId))
       .then((r) => r[0]);
 
-    if (!site?.coolifyAppUuid) {
+    if (
+      !site?.coolifyAppUuid ||
+      site.coolifyAppUuid === CENTRAL_PROXY_APP_SENTINEL
+    ) {
+      // central proxy: своего контейнера нет — restart неприменим. Repair всё
+      // равно сработает через rebuild (обновит контент в MinIO).
       this.logger.warn(
-        `HealthMonitor: no coolifyAppUuid for ${check.storageSlug}, skipping restart`,
+        `HealthMonitor: no dedicated container for ${check.storageSlug} (central proxy or unprovisioned), skipping restart`,
       );
       return;
     }

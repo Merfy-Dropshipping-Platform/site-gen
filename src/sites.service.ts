@@ -22,7 +22,11 @@ import * as path from "path";
 import * as fsp from "fs/promises";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { and, eq, ilike, or, sql } from "drizzle-orm";
-import { COOLIFY_RMQ_SERVICE, PG_CONNECTION } from "./constants";
+import {
+  COOLIFY_RMQ_SERVICE,
+  PG_CONNECTION,
+  CENTRAL_PROXY_APP_SENTINEL,
+} from "./constants";
 import { migrateRevisionData } from "./utils/revision-migrations";
 import { resolveAssetUrls } from "./themes/asset-resolver";
 import * as schema from "./db/schema";
@@ -975,7 +979,33 @@ export class SitesDomainService {
 
     // 2. Fire Coolify app creation in background (parallel with build)
     let coolifyPromise: Promise<void> | null = null;
-    if (!coolifyAppUuid && finalUrl) {
+    if (!coolifyAppUuid && finalUrl && this.deployments.centralProxyEnabled) {
+      // Phase 3: central proxy — никакого per-site Coolify-app. Пишем Traefik
+      // dynamic-роутер на общий прокси и помечаем сайт sentinel'ом, чтобы
+      // провижн-шедулер не считал его «осиротевшим» и не плодил контейнер.
+      coolifyPromise = (async () => {
+        try {
+          await this.deployments.ensureCentralRouter(effectiveStorageSlug);
+          coolifyAppUuid = CENTRAL_PROXY_APP_SENTINEL;
+          await this.db
+            .update(schema.site)
+            .set({ coolifyAppUuid, updatedAt: new Date() })
+            .where(
+              and(
+                eq(schema.site.id, params.siteId),
+                eq(schema.site.tenantId, params.tenantId),
+              ),
+            );
+          this.logger.log(
+            `Central proxy: ensured Traefik router for ${effectiveStorageSlug}.merfy.ru (no per-site app)`,
+          );
+        } catch (e) {
+          this.logger.warn(
+            `Central proxy router ensure failed: ${e instanceof Error ? e.message : e}`,
+          );
+        }
+      })();
+    } else if (!coolifyAppUuid && finalUrl) {
       coolifyPromise = (async () => {
         try {
           const projectUuid =
@@ -1404,7 +1434,11 @@ export class SitesDomainService {
     this.events.emit("sites.tenant.frozen", { tenantId, count: res.length });
 
     // Best-effort включить maintenance у провайдера для всех сайтов (параллельно)
-    const sitesWithCoolify = res.filter((row) => row.coolifyAppUuid);
+    const sitesWithCoolify = res.filter(
+      (row) =>
+        row.coolifyAppUuid &&
+        row.coolifyAppUuid !== CENTRAL_PROXY_APP_SENTINEL,
+    );
     if (sitesWithCoolify.length > 0) {
       const results = await Promise.allSettled(
         sitesWithCoolify.map((row) =>
@@ -1453,7 +1487,11 @@ export class SitesDomainService {
     this.events.emit("sites.tenant.unfrozen", { tenantId, count: res.length });
 
     // Best-effort: отключить maintenance mode и перезапустить контейнеры
-    const sitesWithCoolify = res.filter((row) => row.coolifyAppUuid);
+    const sitesWithCoolify = res.filter(
+      (row) =>
+        row.coolifyAppUuid &&
+        row.coolifyAppUuid !== CENTRAL_PROXY_APP_SENTINEL,
+    );
     if (sitesWithCoolify.length > 0) {
       // 1. Сначала отключаем maintenance mode (включённый при заморозке)
       const maintenanceResults = await Promise.allSettled(
@@ -1995,9 +2033,10 @@ export class SitesDomainService {
           );
         }
 
-        // 2. Создаём Coolify проект если нет
+        // 2. Создаём Coolify проект если нет (в central-proxy режиме проект не
+        // нужен — у сайта нет своего app, поэтому пропускаем).
         let projectUuid = site.coolifyProjectUuid;
-        if (!projectUuid) {
+        if (!projectUuid && !this.deployments.centralProxyEnabled) {
           projectUuid = await this.getOrCreateTenantProject(
             site.tenantId,
             site.name,
@@ -2020,7 +2059,21 @@ export class SitesDomainService {
         const finalPublicUrl = site.publicUrl || updates.publicUrl;
         const slug = site.storageSlug || updates.storageSlug
           || (finalPublicUrl ? this.storage.extractSubdomainSlug(finalPublicUrl) : null);
-        if (!currentCoolifyAppUuid && slug && projectUuid) {
+        if (!currentCoolifyAppUuid && slug && this.deployments.centralProxyEnabled) {
+          // Phase 3: central proxy — Traefik dynamic-роутер вместо per-site
+          // контейнера. Sentinel закрывает сайт от повторного провижна.
+          try {
+            await this.deployments.ensureCentralRouter(slug);
+            updates.coolifyAppUuid = CENTRAL_PROXY_APP_SENTINEL;
+            this.logger.log(
+              `Site ${site.id}: central proxy router ensured for ${slug}.merfy.ru (no per-site app)`,
+            );
+          } catch (e) {
+            this.logger.warn(
+              `Site ${site.id}: central proxy router ensure error: ${e instanceof Error ? e.message : e}`,
+            );
+          }
+        } else if (!currentCoolifyAppUuid && slug && projectUuid) {
           try {
             const sitePath = `sites/${slug}`;
 
@@ -2707,7 +2760,10 @@ export class SitesDomainService {
     );
 
     // 5. Update Coolify domain (best-effort)
-    if (siteRow.coolifyAppUuid) {
+    if (
+      siteRow.coolifyAppUuid &&
+      siteRow.coolifyAppUuid !== CENTRAL_PROXY_APP_SENTINEL
+    ) {
       this.logger.log(
         `[switchDomain] calling coolify.set_domain: appUuid=${siteRow.coolifyAppUuid}, domain=${domainName}`,
       );

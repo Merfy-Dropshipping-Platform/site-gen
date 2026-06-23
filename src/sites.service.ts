@@ -2005,7 +2005,7 @@ export class SitesDomainService {
       })
       .from(schema.site)
       .where(
-        sql`${schema.site.deletedAt} IS NULL AND (${schema.site.domainId} IS NULL OR ${schema.site.coolifyProjectUuid} IS NULL OR ${schema.site.coolifyAppUuid} IS NULL)`,
+        sql`${schema.site.deletedAt} IS NULL AND ${schema.site.coolifyAppUuid} IS DISTINCT FROM ${CENTRAL_PROXY_APP_SENTINEL} AND (${schema.site.domainId} IS NULL OR ${schema.site.coolifyProjectUuid} IS NULL OR ${schema.site.coolifyAppUuid} IS NULL)`,
       );
 
     this.logger.log(
@@ -2033,10 +2033,12 @@ export class SitesDomainService {
           );
         }
 
-        // 2. Создаём Coolify проект если нет (в central-proxy режиме проект не
-        // нужен — у сайта нет своего app, поэтому пропускаем).
+        // 2. Создаём Coolify проект если нет. NB: project — это лишь группировка
+        // в Coolify (без контейнера), безвреден и в central-proxy режиме. Back-fill
+        // реального project'а ГАСИТ churn от clearMockCache: иначе mock-project
+        // сайты вечно числятся орфанами по `coolify_project_uuid IS NULL`.
         let projectUuid = site.coolifyProjectUuid;
-        if (!projectUuid && !this.deployments.centralProxyEnabled) {
+        if (!projectUuid) {
           projectUuid = await this.getOrCreateTenantProject(
             site.tenantId,
             site.name,

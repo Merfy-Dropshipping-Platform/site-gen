@@ -44,6 +44,7 @@ import { BillingEventsConsumer } from "./billing/billing-events.consumer";
 import { UserListenerController } from "./user/user.listener";
 import { CoolifyProvider } from "./deployments/coolify.provider";
 import { DeploymentsService } from "./deployments/deployments.service";
+import { TraefikRouterService } from "./deployments/traefik-router.service";
 import { S3StorageService } from "./storage/s3.service";
 import { ScheduleModule } from "@nestjs/schedule";
 import { RetentionScheduler } from "./scheduler/retention.scheduler";
@@ -115,6 +116,7 @@ import { PagesModule } from "./pages/pages.module";
     SiteGeneratorService,
     CoolifyProvider,
     DeploymentsService,
+    TraefikRouterService,
     S3StorageService,
     RetentionScheduler,
     BillingSyncScheduler,

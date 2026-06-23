@@ -9,7 +9,9 @@ import { randomUUID } from "crypto";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "../db/schema";
 import { PG_CONNECTION } from "../constants";
+import { eq } from "drizzle-orm";
 import { CoolifyProvider } from "./coolify.provider";
+import { TraefikRouterService } from "./traefik-router.service";
 
 @Injectable()
 export class DeploymentsService {
@@ -18,6 +20,7 @@ export class DeploymentsService {
   constructor(
     @Inject(PG_CONNECTION) private readonly db: NodePgDatabase<typeof schema>,
     private readonly coolify: CoolifyProvider,
+    private readonly traefik: TraefikRouterService,
   ) {}
 
   async deploy(params: {
@@ -26,6 +29,37 @@ export class DeploymentsService {
     buildId: string;
     artifactUrl: string;
   }) {
+    // Phase 3: при включённом центральном прокси деплой = запись Traefik-роутера
+    // (домен → прокси), БЕЗ создания per-site Coolify-app/контейнера. Покрывает
+    // ре-деплой мигрированных сайтов (правка → rebuild → deploy) без re-inflation.
+    if (this.traefik.enabled) {
+      const [siteRow] = await this.db
+        .select({ slug: schema.site.storageSlug })
+        .from(schema.site)
+        .where(eq(schema.site.id, params.siteId))
+        .limit(1);
+      if (siteRow?.slug) {
+        const url = await this.traefik.ensureSiteRouter(siteRow.slug);
+        const id = randomUUID();
+        const now = new Date();
+        await this.db.insert(schema.siteDeployment).values({
+          id,
+          siteId: params.siteId,
+          buildId: params.buildId,
+          coolifyAppId: "central-proxy",
+          coolifyEnvId: "",
+          status: "deployed",
+          url,
+          createdAt: now,
+          updatedAt: now,
+        });
+        return { deploymentId: id, url };
+      }
+      this.logger.warn(
+        `deploy: central proxy включён, но нет storageSlug для site ${params.siteId} — fallback на per-site app`,
+      );
+    }
+
     const ensure = await this.coolify.ensureApp(params.siteId);
     const { url } = await this.coolify.deployBuild({
       siteId: params.siteId,

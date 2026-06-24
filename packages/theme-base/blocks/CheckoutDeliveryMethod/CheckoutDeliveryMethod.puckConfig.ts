@@ -51,7 +51,7 @@ export const CheckoutDeliveryMethodPuckConfig: BlockPuckConfig<CheckoutDeliveryM
     cdekEnabled: true,
     cdekDoorLabel: 'Курьер до двери',
     cdekPvzLabel: 'До пункта выдачи',
-    pickupEnabled: false,
+    pickupEnabled: true,
     pickupLabel: 'Самовывоз',
     customMethods: [],
     freeShippingThresholdCents: null,

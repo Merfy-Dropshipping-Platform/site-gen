@@ -167,8 +167,9 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       var pickupPoints = (data && Array.isArray(data.pickupPoints)) ? data.pickupPoints : [];
 
       // Самовывоз из магазина — точки самовывоза из логистики.
-      // Без адреса самовывоз НЕ показываем (адрес-зависимая фаза — позже).
-      if (addressKnown && pickupEnabled && pickupPoints.length > 0) {
+      // Адрес-независим (как OWN): бэк отдаёт pickupPoints при isPickupEnabled
+      // без города, поэтому показываем и без адреса.
+      if (pickupEnabled && pickupPoints.length > 0) {
         var pp = pickupPoints[0];
         options.push({
           type: 'self_pickup',

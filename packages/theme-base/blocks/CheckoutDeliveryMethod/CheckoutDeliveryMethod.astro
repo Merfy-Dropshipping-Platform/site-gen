@@ -484,12 +484,19 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
     document.addEventListener('checkout:address-changed', function (e) {
       recalculate(e && e.detail);
     });
-    // Cart updates — пересчитать free shipping threshold + актуальные веса
+    // Cart updates — пересчитать free shipping threshold + актуальные веса.
+    // cart:updated прилетает ПОСЛЕ того, как страница создала серверную корзину
+    // (rose: cartStore.syncToServer на загрузке) — значит cartId/конфиг уже готовы.
     document.addEventListener('cart:updated', function () {
-      var section2 = section;
-      var lastFiasId = section2.getAttribute('data-last-fias-id') || '';
-      var lastPostal = section2.getAttribute('data-last-postal') || '';
-      if (lastFiasId) recalculate({ cityFiasId: lastFiasId, postalCode: lastPostal });
+      var lastFiasId = section.getAttribute('data-last-fias-id') || '';
+      var lastPostal = section.getAttribute('data-last-postal') || '';
+      if (lastFiasId) {
+        recalculate({ cityFiasId: lastFiasId, postalCode: lastPostal });
+      } else if (getShopId() && (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId'))) {
+        // Адрес ещё не вводили, но корзина готова → показываем адрес-независимые
+        // опции (OWN + самовывоз) сразу, не дожидаясь ввода города.
+        recalculate(null);
+      }
     });
 
     // Запомним последний адрес для cart:updated триггера
@@ -500,11 +507,21 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       }
     });
 
-    // Первый расчёт без ожидания checkout:address-changed — чтобы OWN-доставка
-    // показалась сразу на первой отрисовке (адрес ещё не введён → addressKnown=false).
-    // recalculate сам отвалится в empty-state, если cartId/shopId ещё нет.
-    if (getShopId() && (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId'))) {
-      recalculate(null);
+    // Первый расчёт без ожидания checkout:address-changed — чтобы OWN-доставка и
+    // самовывоз показались сразу. ВАЖНО про тайминг: конфиг (__MERFY_CONFIG__)
+    // инжектится ПОСЛЕ блоков, а серверная корзина (merfy:cartId) на rose создаётся
+    // асинхронно уже после загрузки — поэтому СИНХРОННО здесь вызывать нельзя.
+    // Делаем отложенно (после DOMContentLoaded); если cartId ещё не готов — добьёт
+    // обработчик cart:updated выше (событие прилетит после syncToServer).
+    function initialDeliveryRender() {
+      if (!getShopId()) return;
+      var cid = (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')) || '';
+      if (cid) recalculate(null);
+    }
+    if (typeof document !== 'undefined' && document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function () { setTimeout(initialDeliveryRender, 300); });
+    } else {
+      setTimeout(initialDeliveryRender, 300);
     }
   })();
 </script>

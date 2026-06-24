@@ -997,7 +997,11 @@ const PREVIEW_NAV_AGENT_INLINE = `
       '.__merfy_pill_action{appearance:none;background:transparent;border:none;color:#c3c3c3;cursor:pointer;padding:6px 8px;margin:0 4px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;transition:color .15s}',
       '.__merfy_pill_action:hover{color:#6499cf;transition:none}',
       '.__merfy_pill_action:active{color:#3479be;transition:none}',
-      '.__merfy_pill_action svg{width:16px;height:16px;display:block;pointer-events:none}'
+      '.__merfy_pill_action svg{width:16px;height:16px;display:block;pointer-events:none}',
+      // 106 systemic: скрытие хром-блоков (Header/Footer/PromoBanner вне <main>) —
+      // reconcile тогглит data-rc-hidden. !important переживает inline
+      // display:contents Header-обёртки (иначе сбил бы раскладку при показе).
+      '[data-rc-hidden="1"]{display:none !important}'
     ].join('');
     document.head.appendChild(s);
   }
@@ -1980,6 +1984,24 @@ const PREVIEW_NAV_AGENT_INLINE = `
         return;
       }
       RC_APPLIED_VERSION = rcVersion;
+      // 106 systemic: хром-блоки (Header/Footer/PromoBanner вне <main>) — только
+      // hide/show (не reorder/add/delete). Единый CSS-toggle по тому же видимому
+      // target: блок вне target → скрыть (data-rc-hidden), в target → показать.
+      // Body-секции уже сведены morph выше. Self-heal: видимый хром чистится от
+      // случайного data-rc-hidden.
+      var rcVisible = {};
+      for (var rvi = 0; rvi < rcTarget.length; rvi++) { if (rcTarget[rvi] && rcTarget[rvi].id) rcVisible[rcTarget[rvi].id] = 1; }
+      var rcAll = document.querySelectorAll('[data-puck-component-id]');
+      for (var rai = 0; rai < rcAll.length; rai++) {
+        var rael = rcAll[rai];
+        if (rcMain.contains(rael)) continue; // body-секции — уже morph
+        var raid = rael.getAttribute('data-puck-component-id');
+        if (!raid) continue;
+        var ratop = rael; // top-level элемент хрома (scheme-обёртка = прямой ребёнок body)
+        while (ratop.parentElement && ratop.parentElement !== document.body) ratop = ratop.parentElement;
+        if (rcVisible[raid]) ratop.removeAttribute('data-rc-hidden');
+        else ratop.setAttribute('data-rc-hidden', '1');
+      }
       var rcFinal = [];
       var rcKids2 = rcMain.children;
       for (var rfi = 0; rfi < rcKids2.length; rfi++) {

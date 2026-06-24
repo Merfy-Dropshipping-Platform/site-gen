@@ -720,6 +720,24 @@ const pdpHeartSvg =
 		async function hydrateProductPage() {
 			var section = document.querySelector("[data-pdp-section]");
 			if (!section) return;
+			// ── Унификация с конструктором (Figma 1236-42145): секция «Товар» управляет
+			//    кнопками. window.__MERFY_PRODUCT_SECTION__ инжектится билдом
+			//    (build.service) и превью (preview.controller). Зеркало theme-base
+			//    ProductActions: dynamicButton=выкл → скрыть «Купить сейчас»; пустой
+			//    текст «Основной кнопки» → скрыть «Добавить в корзину» (+ кастомный
+			//    лейбл). Дефолт (нет глобала) — обе кнопки видны. ──
+			var _ps = (typeof window !== "undefined" && window.__MERFY_PRODUCT_SECTION__) || {};
+			var _psShowBuyNow = _ps.showBuyNow !== false;
+			var _psShowAddToCart = _ps.showAddToCart !== false;
+			var _psAddLabel =
+				(typeof _ps.addToCartLabel === "string" && _ps.addToCartLabel.trim()) || "Добавить в корзину";
+			var _psBuyEl = section.querySelector("[data-action='buy-now']");
+			if (_psBuyEl && !_psShowBuyNow) _psBuyEl.style.display = "none";
+			var _psAddEl = section.querySelector("[data-add-to-cart]");
+			if (_psAddEl) {
+				if (!_psShowAddToCart) _psAddEl.style.display = "none";
+				else _psAddEl.textContent = _psAddLabel;
+			}
 			var notFound = section.querySelector("[data-pdp-notfound]");
 
 			var products = await loadRealProducts();
@@ -951,7 +969,7 @@ const pdpHeartSvg =
 						addEl.disabled = !available;
 						addEl.classList.toggle("opacity-50", !available);
 						addEl.classList.toggle("pointer-events-none", !available);
-						addEl.textContent = available ? "Добавить в корзину" : "Нет в наличии";
+						addEl.textContent = available ? _psAddLabel : "Нет в наличии";
 					}
 					// Свап галереи под выбранный вариант: медиа опции (цвет) при
 					// наличии, иначе медиа товара. Чинит баг «фото не меняется».

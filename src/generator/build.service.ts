@@ -1129,7 +1129,7 @@ export async function runBuildPipeline(
       // «Выбор товара» из конструктора: статичная PDP темы гидрируется по ?id=,
       // без него — по этому глобалу (зеркало injectPreviewGlobals превью).
       try {
-        const pdpContent = (ctx.revisionData as { pagesData?: Record<string, { content?: Array<{ type?: string; props?: { productId?: unknown; id?: unknown } }> }> } | null)
+        const pdpContent = (ctx.revisionData as { pagesData?: Record<string, { content?: Array<{ type?: string; props?: { productId?: unknown; id?: unknown; dynamicButton?: unknown; buttons?: { addToCart?: { text?: unknown } } } }> }> } | null)
           ?.pagesData?.['page-product']?.content;
         const pdpBlock = Array.isArray(pdpContent) ? pdpContent.find((b) => b?.type === 'Product') : undefined;
         const defaultPid = typeof pdpBlock?.props?.productId === 'string' ? pdpBlock.props.productId.trim() : '';
@@ -1138,6 +1138,18 @@ export async function runBuildPipeline(
         // штампуют один и тот же id на data-puck-component-id/subsection-parent
         // (тема: window.__MERFY_PRODUCT_BLOCK_ID__). Инертен на live (визуал не меняется).
         const pdpBlockId = typeof pdpBlock?.props?.id === 'string' ? pdpBlock.props.id.trim() : '';
+        // Унификация секции «Товар» (theme-base) с живым rose-PDP (Figma 1236-42145):
+        // dynamicButton → видимость «Купить сейчас»; пустой текст «Основной кнопки» →
+        // скрыть «Добавить в корзину» (+ кастомный лейбл). Зеркало логики
+        // theme-base ProductActions.astro. RoseProductDetail читает это из
+        // window.__MERFY_PRODUCT_SECTION__ (дефолт — обе кнопки видны).
+        const pdpDynRaw = pdpBlock?.props?.dynamicButton;
+        const pdpDynVal = pdpDynRaw && typeof pdpDynRaw === 'object' ? (pdpDynRaw as { enabled?: unknown }).enabled : pdpDynRaw;
+        const pdpShowBuyNow = pdpDynVal !== 'false' && pdpDynVal !== false;
+        const pdpAddRaw = pdpBlock?.props?.buttons?.addToCart?.text;
+        const pdpShowAddToCart = pdpAddRaw === undefined || String(pdpAddRaw).trim() !== '';
+        const pdpAddLabel = pdpAddRaw !== undefined && String(pdpAddRaw).trim() !== '' ? String(pdpAddRaw) : 'Добавить в корзину';
+        const pdpProductSection = { showBuyNow: pdpShowBuyNow, showAddToCart: pdpShowAddToCart, addToCartLabel: pdpAddLabel };
         {
           // siteId инжектим ВСЕГДА: live PDP (RoseProductDetail + порты) тянет
           // живой /api/store/products по window.__MERFY_SITE_ID__ (как каталог).
@@ -1151,12 +1163,13 @@ export async function runBuildPipeline(
             ];
             if (defaultPid) injects.push(`window.__MERFY_DEFAULT_PRODUCT_ID__ = ${JSON.stringify(defaultPid)};`);
             if (pdpBlockId) injects.push(`window.__MERFY_PRODUCT_BLOCK_ID__ = ${JSON.stringify(pdpBlockId)};`);
+            injects.push(`window.__MERFY_PRODUCT_SECTION__ = ${JSON.stringify(pdpProductSection)};`);
             await fs.writeFile(
               pdpPath,
               pdpHtml.replace(/<head(\s[^>]*)?>/i, (m) => `${m}<script>${injects.join('')}</script>`),
               'utf8',
             );
-            logger.log(`[themes-v2] Injected PDP globals (siteId, productId="${defaultPid}", blockId="${pdpBlockId}") into product page for site ${params.siteId}`);
+            logger.log(`[themes-v2] Injected PDP globals (siteId, productId="${defaultPid}", blockId="${pdpBlockId}", section=${JSON.stringify(pdpProductSection)}) into product page for site ${params.siteId}`);
           }
         }
       } catch (pidErr) {

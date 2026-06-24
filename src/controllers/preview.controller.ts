@@ -279,6 +279,7 @@ export class PreviewController {
               null,
               this.productBlockIdFromRevision(loaded.data),
               PreviewService.bareThemeKey(loaded.themeId!),
+              this.productSectionFromRevision(loaded.data),
             );
             this.logger.log(
               `[preview] v2-sections page site=${siteId} route=${route || '(root)'} blocks=${v2Blocks.length}`,
@@ -334,6 +335,7 @@ export class PreviewController {
         ),
         this.productBlockIdFromRevision(loaded.data),
         PreviewService.bareThemeKey(loaded.themeId!),
+        this.productSectionFromRevision(loaded.data),
       );
       html = this.injectTokensIntoBlobPage(
         html, siteId, PreviewService.bareThemeKey(loaded.themeId!),
@@ -584,6 +586,7 @@ export class PreviewController {
     catalogLayout?: string | null,
     productBlockId?: string | null,
     themeName?: string | null,
+    productSection?: { showBuyNow: boolean; showAddToCart: boolean; addToCartLabel: string } | null,
   ): string {
     let html = htmlIn.replace(/const shopId = "";/g, `const shopId = "${siteId}";`);
     // Универсальный резолвер корня блока window.__merfyRoot (Spec 102) — ДО любого
@@ -632,6 +635,16 @@ export class PreviewController {
       html = html.replace(
         /<head(\s[^>]*)?>/i,
         (m) => `${m}<script>window.__MERFY_PRODUCT_BLOCK_ID__ = ${JSON.stringify(productBlockId)};</script>`,
+      );
+    }
+    // Унификация кнопок секции «Товар» с живым PDP (Figma 1236-42145): зеркало
+    // build.service инжекта __MERFY_PRODUCT_SECTION__ — RoseProductDetail скрывает
+    // «Купить сейчас»/«Добавить в корзину» и ставит лейбл по настройкам секции,
+    // чтобы превью /product = live /product.
+    if (productSection) {
+      html = html.replace(
+        /<head(\s[^>]*)?>/i,
+        (m) => `${m}<script>window.__MERFY_PRODUCT_SECTION__ = ${JSON.stringify(productSection)};</script>`,
       );
     }
     // Раскладка каталога (Catalog.filterPosition: 'side'|'top') — статичные
@@ -743,6 +756,29 @@ export class PreviewController {
     const productBlock = content.find((b) => b?.type === 'Product');
     const id = productBlock?.props?.id;
     return typeof id === 'string' && id.trim() ? id.trim() : null;
+  }
+
+  /**
+   * Настройки кнопок секции «Товар» (page-product ревизии) для унификации с
+   * живым PDP (Figma 1236-42145). Зеркало extract-логики build.service:
+   * dynamicButton → showBuyNow; пустой buttons.addToCart.text → !showAddToCart
+   * (+ кастомный лейбл). null если page-product без Product-блока.
+   */
+  private productSectionFromRevision(
+    data: unknown,
+  ): { showBuyNow: boolean; showAddToCart: boolean; addToCartLabel: string } | null {
+    const pages = (data as { pagesData?: Record<string, { content?: Array<{ type?: string; props?: { dynamicButton?: unknown; buttons?: { addToCart?: { text?: unknown } } } }> }> } | null)?.pagesData;
+    const content = pages?.['page-product']?.content;
+    if (!Array.isArray(content)) return null;
+    const productBlock = content.find((b) => b?.type === 'Product');
+    if (!productBlock) return null;
+    const dynRaw = productBlock.props?.dynamicButton;
+    const dynVal = dynRaw && typeof dynRaw === 'object' ? (dynRaw as { enabled?: unknown }).enabled : dynRaw;
+    const showBuyNow = dynVal !== 'false' && dynVal !== false;
+    const addRaw = productBlock.props?.buttons?.addToCart?.text;
+    const showAddToCart = addRaw === undefined || String(addRaw).trim() !== '';
+    const addToCartLabel = addRaw !== undefined && String(addRaw).trim() !== '' ? String(addRaw) : 'Добавить в корзину';
+    return { showBuyNow, showAddToCart, addToCartLabel };
   }
 
   /** Фаза 3: сложные страницы v2 (блоб) получают tokens.css статикой +

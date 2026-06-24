@@ -45,7 +45,8 @@ export const PromoBannerPuckConfig = {
   // редактируются через sub-panel «Объявление» при subsection click.
   fields: {
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
-    padding: { type: 'padding', label: 'Отступы' },
+    // Отступы убраны из main panel: высота баннера задаётся «Размером» (32/40/48px).
+    padding: { type: 'padding', label: 'Отступы', hiddenInMainPanel: true } as any,
     // Sub-panel «Объявление» (314:34600) — text + link + size editable.
     text: { type: 'text', label: 'Текст', hiddenInMainPanel: true } as any,
     link: {
@@ -74,7 +75,7 @@ export const PromoBannerPuckConfig = {
     text: 'Бесплатная доставка от 3000 ₽',
     link: { text: 'Подробнее', href: '/delivery' },
     size: 'medium',
-    padding: { top: 12, bottom: 12 },
+    padding: { top: 0, bottom: 0 },
   },
   schema: PromoBannerSchema,
   maxInstances: null,

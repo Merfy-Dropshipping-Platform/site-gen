@@ -55,14 +55,9 @@ const caseCls = p.textTransform === "none" ? "" : " uppercase";
 // масштабируется от «Размер текста» — small 12 / medium 14 / large 16.
 const rootCls = `m-0 flex ${sizeCls} w-full shrink-0 items-center justify-center border-0 bg-[rgb(var(--color-bg,38_49_28))] px-4 text-center font-vanilla-arsenal ${sz.text} font-normal${caseCls} leading-none tracking-normal text-[rgb(var(--color-text,255_255_255))]`;
 
-// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе; {12,12} =
-// canon-default puckConfig (его пишет seed/конструктор) → литерал высоты полосы.
-const pad = p.padding && typeof p.padding === "object" ? p.padding : undefined;
-const isCanonPad = pad && Number(pad.top) === 12 && Number(pad.bottom) === 12;
-const paddingStyle =
-	pad && !isCanonPad
-		? `padding-top:${Number(pad.top) || 0}px;padding-bottom:${Number(pad.bottom) || 0}px;`
-		: undefined;
+// «Отступы» убраны (Figma 648:57318): высоту полосы задаёт ТОЛЬКО «Размер»
+// (min-h 32/40/48). padding из ревизии НЕ применяется — иначе старые баннеры
+// с padding {12,12} выходят за макетную высоту (полоса толще макета).
 ---
 
 {
@@ -78,10 +73,9 @@ const paddingStyle =
 			aria-live="polite"
 			data-vanilla-announcement
 			data-puck-component-id={id}
-			style={paddingStyle}
 		>
 			<span
-				class="min-w-0 shrink"
+				class={`min-w-0 shrink ${sz.text}`}
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="100"
 				data-puck-subsection-field="text"
@@ -108,10 +102,9 @@ const paddingStyle =
 			aria-live="polite"
 			data-vanilla-announcement
 			data-puck-component-id={id}
-			style={paddingStyle}
 		>
 			<span
-				class="min-w-0 shrink"
+				class={`min-w-0 shrink ${sz.text}`}
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="100"
 				data-puck-subsection-field="text"

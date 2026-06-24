@@ -24,10 +24,9 @@ const SIZE_MAP: Record<string, { mh: string; text: string }> = {
 };
 const sz = SIZE_MAP[size] ?? SIZE_MAP.large;
 const upper = p.textTransform === "uppercase";
-// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
-const paddingStyle = p.padding
-	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
-	: undefined;
+// «Отступы» убраны (Figma 648:57318): высоту полосы задаёт ТОЛЬКО «Размер»
+// (min-h 32/40/48). padding из ревизии НЕ применяется — иначе старые баннеры
+// с padding {12,12} выходят за макетную высоту (полоса толще макета).
 
 // Заполнено → цвета цветовой схемы (Цветовая схема секции); пусто → surface-полоса
 // плейсхолдера. Шрифт/высота от «Размер текста» в обоих состояниях.
@@ -42,7 +41,6 @@ const pCls = `max-w-full text-center font-manrope ${sz.text} font-light leading-
 	data-puck-subsection-parent={id}
 	data-puck-subsection-index="100"
 	data-puck-subsection-field="text"
-	style={paddingStyle}
 >
 	<div data-nt="promo-banner" class={barCls}>
 		<p class={pCls}>

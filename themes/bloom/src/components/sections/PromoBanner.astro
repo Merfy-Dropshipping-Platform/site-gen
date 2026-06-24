@@ -51,14 +51,9 @@ const textCls =
 		? `font-inter ${sz.text} font-normal leading-normal text-[rgb(var(--color-text,255_255_255))]`
 		: `font-inter ${sz.text} font-normal uppercase leading-normal text-[rgb(var(--color-text,255_255_255))]`;
 
-// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose
-// T14). {12,12} = canon-default puckConfig (его впрыскивает коэрсер) → литерал py-2.
-const pad = p.padding && typeof p.padding === "object" ? p.padding : undefined;
-const isCanonPad = pad && Number(pad.top) === 12 && Number(pad.bottom) === 12;
-const paddingStyle =
-	pad && !isCanonPad
-		? `padding-top:${Number(pad.top) || 0}px;padding-bottom:${Number(pad.bottom) || 0}px;`
-		: undefined;
+// «Отступы» убраны (Figma 648:57318): высоту полосы задаёт ТОЛЬКО «Размер»
+// (min-h 32/40/48). padding из ревизии НЕ применяется — иначе старые баннеры
+// с padding {12,12} выходят за макетную высоту (полоса толще макета). Эталон rose.
 ---
 
 {
@@ -71,7 +66,6 @@ const paddingStyle =
 			aria-live="polite"
 			data-bloom-announcement
 			data-puck-component-id={id}
-			style={paddingStyle}
 		>
 			<p
 				class={textCls}
@@ -100,7 +94,6 @@ const paddingStyle =
 			aria-live="polite"
 			data-bloom-announcement
 			data-puck-component-id={id}
-			style={paddingStyle}
 		>
 			<p
 				class="max-w-full text-center font-inter text-[12px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]"

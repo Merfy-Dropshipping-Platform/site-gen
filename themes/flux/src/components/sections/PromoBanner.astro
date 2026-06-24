@@ -51,15 +51,9 @@ const textCls =
 		? `text-center font-roboto-flex font-light leading-normal max-w-full uppercase ${textSizeCls}`
 		: `text-center font-roboto-flex font-light leading-normal max-w-full ${textSizeCls}`;
 
-// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн bloom
-// PromoBanner:43-50). {12,12} = canon-default puckConfig (его впрыскивает коэрсер) →
-// игнор: высоту дефолта держит родной min-h-12.
-const pad = p.padding && typeof p.padding === "object" ? p.padding : undefined;
-const isCanonPad = pad && Number(pad.top) === 12 && Number(pad.bottom) === 12;
-const paddingStyle =
-	pad && !isCanonPad
-		? `padding-top:${Number(pad.top) || 0}px;padding-bottom:${Number(pad.bottom) || 0}px;`
-		: undefined;
+// «Отступы» убраны (Figma 648:57318): высоту полосы задаёт ТОЛЬКО «Размер»
+// (min-h 32/40/48 = heightCls). padding из ревизии НЕ применяется — иначе старые
+// баннеры с padding {12,12} выходят за макетную высоту (полоса толще макета).
 ---
 
 {
@@ -73,7 +67,6 @@ const paddingStyle =
 			data-nt="promo-banner"
 			data-nt-text-size={ntTextSize}
 			data-puck-component-id={id}
-			style={paddingStyle}
 		>
 			<p
 				class={textCls}
@@ -102,7 +95,6 @@ const paddingStyle =
 			data-nt="promo-banner"
 			data-nt-text-size={ntTextSize ?? "lg"}
 			data-puck-component-id={id}
-			style={paddingStyle}
 		>
 			<p
 				class="max-w-full text-center font-roboto-flex text-[16px] font-light leading-normal"

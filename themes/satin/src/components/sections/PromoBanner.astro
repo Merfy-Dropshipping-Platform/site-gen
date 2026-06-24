@@ -43,7 +43,7 @@ const SIZE_MAP: Record<string, { mh: string; text: string }> = {
 	large: { mh: "min-h-12", text: "text-[16px]" },
 };
 const sz = SIZE_MAP[size] ?? SIZE_MAP.large;
-const rootCls = `flex ${sz.mh} w-full items-center justify-center bg-[rgb(var(--color-bg,0_0_0))] py-2 text-center`;
+const rootCls = `flex ${sz.mh} w-full items-center justify-center bg-[rgb(var(--color-bg,0_0_0))] text-center`;
 
 // Канон textTransform: 'uppercase' (canon-default) И отсутствие = литерал верстальщика
 // uppercase; явный 'none' снимает капс. Типографика полосы — Arsenal 400 tracking-[0.04em]
@@ -53,14 +53,9 @@ const typoCls =
 		? `font-manrope ${sz.text} font-normal tracking-[0.04em] text-[rgb(var(--color-text,255_255_255))]`
 		: `font-manrope ${sz.text} font-normal uppercase tracking-[0.04em] text-[rgb(var(--color-text,255_255_255))]`;
 
-// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе; {12,12} =
-// canon-default коэрсера → трактуем как литерал py-2 (паттерн bloom PromoBanner: isCanonPad).
-const pad = p.padding && typeof p.padding === "object" ? p.padding : undefined;
-const isCanonPad = pad && Number(pad.top) === 12 && Number(pad.bottom) === 12;
-const paddingStyle =
-	pad && !isCanonPad
-		? `padding-top:${Number(pad.top) || 0}px;padding-bottom:${Number(pad.bottom) || 0}px;`
-		: undefined;
+// «Отступы» убраны (Figma 648:57318): высоту полосы задаёт ТОЛЬКО «Размер»
+// (min-h 32/40/48). padding из ревизии НЕ применяется — иначе старые баннеры
+// с padding {12,12} выходят за макетную высоту (полоса толще макета). Эталон rose.
 ---
 
 {
@@ -73,7 +68,6 @@ const paddingStyle =
 			aria-live="polite"
 			data-satin-announcement
 			data-puck-component-id={id}
-			style={paddingStyle}
 		>
 			{linkText ? (
 				<p
@@ -112,7 +106,6 @@ const paddingStyle =
 			aria-live="polite"
 			data-satin-announcement
 			data-puck-component-id={id}
-			style={paddingStyle}
 		>
 			<p
 				class="max-w-full text-center font-manrope text-[11px] font-normal tracking-[0.04em] text-[rgb(var(--color-text,0_0_0))] md:text-[14px]"

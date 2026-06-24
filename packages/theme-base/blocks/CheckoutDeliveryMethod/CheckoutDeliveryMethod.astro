@@ -168,16 +168,27 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
 
       // Самовывоз из магазина — точки самовывоза из логистики.
       // Адрес-независим (как OWN): бэк отдаёт pickupPoints при isPickupEnabled
-      // без города, поэтому показываем и без адреса.
+      // без города, поэтому показываем и без адреса. Одна карточка на КАЖДУЮ
+      // точку (у магазина их может быть несколько); выбранную тащим в заказ по id.
       if (pickupEnabled && pickupPoints.length > 0) {
-        var pp = pickupPoints[0];
-        options.push({
-          type: 'self_pickup',
-          tariffCode: null,
-          label: pickupLabel,
-          meta: (pp && pp.address) || 'Заберите из нашего магазина',
-          priceCents: 0,
-        });
+        var multiPickup = pickupPoints.length > 1;
+        for (var pi = 0; pi < pickupPoints.length; pi++) {
+          var pp = pickupPoints[pi];
+          if (!pp) continue;
+          // При нескольких точках уточняем подпись городом/адресом, чтобы и
+          // покупатель, и заказ (cdekTariffName=label) различали точки.
+          var pickupName = multiPickup
+            ? pickupLabel + ' — ' + (pp.city || pp.address || ('точка ' + (pi + 1)))
+            : pickupLabel;
+          options.push({
+            type: 'self_pickup',
+            tariffCode: null,
+            pickupPointId: pp.id || null,
+            label: pickupName,
+            meta: pp.address || 'Заберите из нашего магазина',
+            priceCents: 0,
+          });
+        }
       }
 
       // Опции доставки: PARTNER (CDEK) → дверь/ПВЗ, OWN → свой тариф магазина.
@@ -256,6 +267,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
           + ' data-delivery-type="' + esc(opt.type) + '"'
           + ' data-delivery-tariff-code="' + esc(opt.tariffCode == null ? '' : String(opt.tariffCode)) + '"'
           + ' data-delivery-custom-id="' + esc(opt.customTariffId || '') + '"'
+          + ' data-delivery-pickup-id="' + esc(opt.pickupPointId || '') + '"'
           + ' data-delivery-price-cents="' + esc(String(opt.priceCents)) + '"'
           + ' data-delivery-period-min="' + esc(opt.periodMin != null ? String(opt.periodMin) : '') + '"'
           + ' data-delivery-period-max="' + esc(opt.periodMax != null ? String(opt.periodMax) : '') + '"'
@@ -286,6 +298,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
           type: opt.type,
           tariffCode: opt.tariffCode,
           customTariffId: opt.customTariffId || null,
+          pickupPointId: opt.pickupPointId || null,
           costCents: opt.priceCents,
           periodMin: opt.periodMin || null,
           periodMax: opt.periodMax || null,
@@ -330,6 +343,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
         type: card.getAttribute('data-delivery-type') || '',
         tariffCode: card.getAttribute('data-delivery-tariff-code') ? parseInt(card.getAttribute('data-delivery-tariff-code'), 10) : null,
         customTariffId: card.getAttribute('data-delivery-custom-id') || null,
+        pickupPointId: card.getAttribute('data-delivery-pickup-id') || null,
         priceCents: parseInt(card.getAttribute('data-delivery-price-cents') || '0', 10),
         periodMin: card.getAttribute('data-delivery-period-min') ? parseInt(card.getAttribute('data-delivery-period-min'), 10) : null,
         periodMax: card.getAttribute('data-delivery-period-max') ? parseInt(card.getAttribute('data-delivery-period-max'), 10) : null,

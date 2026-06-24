@@ -2,6 +2,7 @@ import { Injectable, Optional } from '@nestjs/common';
 import { rewriteHtmlAssets } from '../themes/asset-resolver';
 import { composeV2Page, schemeIdFromProp } from '../themes/v2-page-composer';
 import { buildTokensCss } from '../themes/tokens-css';
+import { IDIOMORPH_INLINE } from '../common/idiomorph-inline';
 
 const HTML_ESCAPE_MAP: Record<string, string> = {
   '&': '&amp;',
@@ -705,6 +706,7 @@ export class PreviewService {
     };
     ${process.env.DADATA_API_KEY ? `window.__DADATA_TOKEN__ = ${JSON.stringify(process.env.DADATA_API_KEY)};` : ''}
   </script>
+  ${IDIOMORPH_INLINE}
   <script>${PREVIEW_NAV_AGENT_INLINE}</script>
 </body>
 </html>`;
@@ -1027,6 +1029,11 @@ const PREVIEW_NAV_AGENT_INLINE = `
   var UPDATE_SEQ = {};
   var APPLIED_SEQ = {};
 
+  // 106 reconcile: stash удалённых/скрытых body-секций (id → outerHTML) для
+  // мгновенного показа без сети; RC_APPLIED_VERSION — stale-guard монотонной версии.
+  var RC_STASH = {};
+  var RC_APPLIED_VERSION = 0;
+
   // 098-fix: валидация ответа /preview/block перед заменой DOM. Раньше тело
   // ЛЮБОГО ответа (JSON-ошибка gateway, 5xx-комментарий, SPA-шелл) вставлялось
   // как outerHTML/innerHTML — секция молча «исчезала». Теперь: парсим в
@@ -1088,6 +1095,50 @@ const PREVIEW_NAV_AGENT_INLINE = `
       document.dispatchEvent(new Event('astro:after-swap'));
       document.dispatchEvent(new Event('astro:page-load'));
     }, 60);
+  }
+
+  // 106 reconcile helpers. idiomorph ключуется по id → зеркалим
+  // data-puck-component-id→id на корнях body-секций (scheme-обёртку id-set
+  // ловит по id вложенного блока).
+  function __rcMirrorIds(container) {
+    var els = container.querySelectorAll('[data-puck-component-id]');
+    for (var i = 0; i < els.length; i++) {
+      var bid = els[i].getAttribute('data-puck-component-id');
+      if (bid && els[i].id !== bid) els[i].id = bid;
+    }
+  }
+  // Прямой ребёнок container, который содержит/является блоком id (учёт scheme-обёртки).
+  function __rcTopChild(id, container) {
+    var el = container.querySelector('[data-puck-component-id="' + id + '"]');
+    if (!el) return null;
+    var node = el;
+    while (node.parentElement && node.parentElement !== container) node = node.parentElement;
+    return node.parentElement === container ? node : null;
+  }
+  // beforeNodeRemoved: складываем outerHTML удаляемой body-секции в stash
+  // (мгновенный показ без сети). Только прямые дети main.
+  function __rcStash(node, container) {
+    if (!node || node.nodeType !== 1 || node.parentNode !== container) return;
+    var idEl = node.hasAttribute('data-puck-component-id')
+      ? node
+      : node.querySelector('[data-puck-component-id]');
+    if (!idEl) return;
+    var bid = idEl.getAttribute('data-puck-component-id');
+    if (bid) RC_STASH[bid] = node.outerHTML;
+  }
+  // afterNodeAdded: зеркалим id на вставленный блок + переисполняем inline-скрипты
+  // (HTML5 не выполняет <script> при innerHTML/morph; гидрация идемпотентна на
+  // стороне блока через data-*-hydrated / __merfyHydrated).
+  function __rcAfterAdd(node) {
+    if (!node || node.nodeType !== 1) return;
+    var idEl = node.hasAttribute && node.hasAttribute('data-puck-component-id')
+      ? node
+      : (node.querySelector ? node.querySelector('[data-puck-component-id]') : null);
+    if (idEl) {
+      var bid = idEl.getAttribute('data-puck-component-id');
+      if (bid && idEl.id !== bid) idEl.id = bid;
+    }
+    executeScriptsIn(node);
   }
 
   // Spec 090 — runtime kill switch. Можно выключить через console:
@@ -1878,6 +1929,65 @@ const PREVIEW_NAV_AGENT_INLINE = `
         .catch(function (err) {
           console.error('[preview] update-tokens fetch failed', err);
         });
+    } else if (ev.data.type === 'reconcile') {
+      // 106: идемпотентно сводим <main> к целевому списку видимых body-секций.
+      // Header/PromoBanner (до <main>) и Footer (после) — хром, вне main → не
+      // трогаются. mainBlockIds = живые дети main ∪ stash. Блок не из main
+      // (хром) — пропускаем; новый блок (US2, ещё не реализован) → missing → reload.
+      var rcVersion = Number(ev.data.version) || 0;
+      if (rcVersion <= RC_APPLIED_VERSION) return; // stale — новее уже применён
+      var rcTarget = ev.data.blocks || [];
+      var rcMain = document.querySelector('main');
+      if (typeof Idiomorph === 'undefined' || !rcMain) {
+        post({ type: 'reconcile-ack', version: rcVersion, ok: false, applied: [], missing: rcTarget.map(function (b) { return b && b.id; }) });
+        return; // нет движка/контейнера → агрессивный режим: parent перезагрузит iframe
+      }
+      __rcMirrorIds(rcMain);
+      var rcMainIds = {};
+      var rcKids = rcMain.children;
+      for (var rli = 0; rli < rcKids.length; rli++) {
+        var rcCh = rcKids[rli];
+        var rcChIdEl = rcCh.hasAttribute('data-puck-component-id') ? rcCh : rcCh.querySelector('[data-puck-component-id]');
+        if (rcChIdEl) rcMainIds[rcChIdEl.getAttribute('data-puck-component-id')] = 1;
+      }
+      for (var rsk in RC_STASH) { if (RC_STASH.hasOwnProperty(rsk)) rcMainIds[rsk] = 1; }
+      var rcParts = [];
+      var rcMissing = [];
+      var rcApplied = [];
+      for (var rti = 0; rti < rcTarget.length; rti++) {
+        var rtb = rcTarget[rti];
+        if (!rtb || !rtb.id || !rcMainIds[rtb.id]) continue; // хром/чужой контейнер — не трогаем
+        var rcLive = __rcTopChild(rtb.id, rcMain);
+        if (rcLive) { rcParts.push(rcLive.outerHTML); rcApplied.push(rtb.id); }
+        else if (RC_STASH[rtb.id]) { rcParts.push(RC_STASH[rtb.id]); rcApplied.push(rtb.id); }
+        else { rcMissing.push(rtb.id); } // новый блок — US2
+      }
+      if (rcMissing.length) {
+        post({ type: 'reconcile-ack', version: rcVersion, ok: false, applied: rcApplied, missing: rcMissing });
+        return;
+      }
+      try {
+        Idiomorph.morph(rcMain, rcParts.join(''), {
+          morphStyle: 'innerHTML',
+          callbacks: {
+            beforeNodeRemoved: function (n) { __rcStash(n, rcMain); },
+            afterNodeAdded: function (n) { __rcAfterAdd(n); }
+          }
+        });
+      } catch (rcErr) {
+        console.error('[preview] reconcile morph failed', rcErr);
+        post({ type: 'reconcile-ack', version: rcVersion, ok: false, applied: [], missing: rcTarget.map(function (b) { return b && b.id; }) });
+        return;
+      }
+      RC_APPLIED_VERSION = rcVersion;
+      var rcFinal = [];
+      var rcKids2 = rcMain.children;
+      for (var rfi = 0; rfi < rcKids2.length; rfi++) {
+        var rfEl = rcKids2[rfi];
+        var rfIdEl = rfEl.hasAttribute('data-puck-component-id') ? rfEl : rfEl.querySelector('[data-puck-component-id]');
+        if (rfIdEl) rcFinal.push(rfIdEl.getAttribute('data-puck-component-id'));
+      }
+      post({ type: 'reconcile-ack', version: rcVersion, ok: true, applied: rcFinal, missing: [] });
     }
   });
 

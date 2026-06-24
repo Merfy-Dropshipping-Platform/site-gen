@@ -56,9 +56,6 @@ const logoImgCls = "h-[var(--size-logo-width,24px)] w-auto max-w-[160px] object-
 // и 'center-absolute' → лого absolute по центру строки (nav остаётся слева).
 const logoPosition = typeof p.logoPosition === "string" ? p.logoPosition : "";
 const logoCentered = logoPosition === "top-center" || logoPosition === "center-absolute";
-// center-left («Слева»): лого в потоке слева, nav центрируется ПО СТРАНИЦЕ через
-// равные flex-1 фланги (logo и блок иконок), nav (auto) садится по центру.
-const logoLeft = logoPosition === "center-left";
 const desktopLogoCls = logoCentered
 	? "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-comfortaa text-[length:var(--size-logo-width,24px)] font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90"
 	: "shrink-0 font-comfortaa text-[length:var(--size-logo-width,24px)] font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90";
@@ -109,7 +106,11 @@ const desktopRowCls = [
 	.filter(Boolean)
 	.join(" ");
 
-const isTwoRow = logoPosition === "top-left" || logoPosition === "top-center";
+// «Слева» (center-left) теперь ДВУХрядно: ряд 1 = лого слева + иконки справа,
+// ряд 2 = навигация ПОД лого, прижатая к левому краю → «лого и навигация
+// друг под другом у левого края» (по требованию). Отличие от top-left только
+// в выравнивании nav: center-left = justify-start, top-left = justify-center.
+const isTwoRow = logoPosition === "top-left" || logoPosition === "top-center" || logoPosition === "center-left";
 
 // Канон menuType: 'dropdown' (по умолчанию) / 'mega-menu' (Расширенное) / 'sidebar' (Боковое).
 // Для mega-menu добавляем uppercase + tracking к десктопным ссылкам нав-меню.
@@ -204,8 +205,8 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 							].filter(Boolean).join(" ")}
 							style={headerPadStyle}
 						>
-							{logoPosition === "top-left" ? (
-								/* top-left: Row1=[logo LEFT + actions RIGHT], Row2=[nav LEFT] */
+							{(logoPosition === "top-left" || logoPosition === "center-left") ? (
+								/* top-left / center-left: Row1=[logo LEFT + actions RIGHT], Row2=[nav — LEFT для center-left, CENTER для top-left] */
 								<>
 									<div class="flex w-full items-center justify-between">
 										<a
@@ -278,7 +279,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 										</div>
 									</div>
 									<nav
-										class:list={["mt-3 flex w-full items-center justify-center gap-8 lg:gap-12", menuSchemeClass, isSidebar && "lg:!hidden"]}
+										class:list={["mt-3 flex w-full items-center gap-8 lg:gap-12", logoPosition === "center-left" ? "justify-start" : "justify-center", menuSchemeClass, isSidebar && "lg:!hidden"]}
 										aria-label="Основная навигация"
 										data-puck-subsection-parent={id}
 										data-puck-subsection-index="997"
@@ -367,7 +368,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 										</div>
 									</div>
 									<nav
-										class:list={["mt-3 flex w-full items-center justify-center gap-8 lg:gap-12", menuSchemeClass, isSidebar && "lg:!hidden"]}
+										class:list={["mt-3 flex w-full items-center gap-8 lg:gap-12", logoPosition === "center-left" ? "justify-start" : "justify-center", menuSchemeClass, isSidebar && "lg:!hidden"]}
 										aria-label="Основная навигация"
 										data-puck-subsection-parent={id}
 										data-puck-subsection-index="997"
@@ -383,7 +384,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 					) : (
 						/* ── SINGLE-ROW LAYOUTS: center-left / center-absolute ── */
 						<div class={desktopRowCls} style={headerPadStyle}>
-							<a href="/" class:list={[desktopLogoCls, logoLeft && "flex-1"]}>
+							<a href="/" class={desktopLogoCls}>
 								{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
 							</a>
 
@@ -399,7 +400,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 								))}
 							</nav>
 
-							<div class:list={["flex items-center gap-4 lg:gap-6", logoLeft && "flex-1 justify-end"]}>
+							<div class="flex items-center gap-4 lg:gap-6">
 								<button
 									type="button"
 									data-action="toggle-search"

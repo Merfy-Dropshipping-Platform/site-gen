@@ -3,7 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { PreviewController } from '../controllers/preview.controller';
 import { PreviewService } from '../services/preview.service';
-import { PG_CONNECTION } from '../constants';
+import { PG_CONNECTION, BILLING_RMQ_SERVICE } from '../constants';
 
 /**
  * Spec 082 Stage 2a N4: hot-update tokens.css via POST endpoint.
@@ -33,6 +33,13 @@ describe('POST /api/sites/:siteId/preview/tokens-css', () => {
         {
           provide: PG_CONNECTION,
           useValue: { select: () => ({ from: () => ({ where: () => [] }) }) },
+        },
+        {
+          // PreviewController конструктор инжектит BILLING_RMQ_SERVICE (footer-
+          // data в page-render). tokens-css эндпоинт его не вызывает — presence-
+          // мок ClientProxy достаточно для разрешения DI.
+          provide: BILLING_RMQ_SERVICE,
+          useValue: { send: jest.fn(), emit: jest.fn() },
         },
       ],
     }).compile();

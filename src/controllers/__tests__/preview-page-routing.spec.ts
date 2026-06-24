@@ -96,11 +96,18 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     // Тест, которому нужна v2-ветка, передаёт свой hasV2Sections явно.
     const withDefaults: Partial<PreviewService> = {
       hasV2Sections: jest.fn().mockResolvedValue(false),
+      // injectNavAgent вызывается БЕЗУСЛОВНО в конце getPreview
+      // (injectPreviewGlobals). Роутинг-тесты не проверяют вставку агента —
+      // identity-passthrough (до ...preview, чтобы тест мог переопределить).
+      injectNavAgent: (html: string) => html,
       ...preview,
     };
     const ctrl = new PreviewController(
       withDefaults as PreviewService,
       {} as never,
+      // billingClient (BILLING_RMQ_SERVICE) — роутинг-тесты стабят loadRevisionData
+      // и до applyFooterData не доходят; presence-мока ClientProxy достаточно.
+      { send: jest.fn(), emit: jest.fn() } as never,
     );
     // loadRevisionData is private and hits the DB — stub it on the instance.
     jest

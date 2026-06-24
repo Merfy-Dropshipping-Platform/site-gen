@@ -25,27 +25,11 @@ import { buildTokensCss } from '../themes/tokens-css';
 import { injectTokensCssIntoHtml } from '../themes/tokens-inject';
 import { extractPageBlocks } from '../themes/page-blocks';
 import { isV2ComplexRoute } from '../themes/v2-routes';
+import { getSystemPageRoute, getChromeKind } from '../themes/page-registry';
+import { assembleChrome, injectChromeIntoHtml } from '../themes/chrome-assembler';
 import { migrateRevisionData } from '../utils/revision-migrations';
 import { rewriteRootUrlsToPrefix } from '../generator/theme-build.service';
 import { BLOCK_ROOT_INLINE, BLOCK_ROOT_MARKER } from '../common/block-root-inline';
-
-/**
- * Canonical system page id → build route. Universal across themes (the 8 system
- * pages have fixed slugs). Used as the final route fallback when a page is in
- * neither the raw revision nor the theme manifest (legacy revisions + themes
- * whose theme.json has no `pages` registry, e.g. bloom/flux/satin/vanilla).
- */
-const SYSTEM_PAGE_ROUTES: Record<string, string> = {
-  home: '',
-  'page-about': 'about',
-  'page-contacts': 'contacts',
-  'page-catalog': 'catalog',
-  'page-collection': 'collections/preview',
-  'page-cart': 'cart',
-  'page-product': 'product',
-  'page-checkout': 'checkout',
-  'page-checkout-result': 'checkout-result',
-};
 
 /**
  * Body for POST /api/sites/:id/preview/block — single-block hot-render
@@ -206,7 +190,10 @@ export class PreviewController {
       // No revision/manifest page → universal system-page route map (covers themes
       // without a pages manifest + legacy revisions missing the page).
       const sysKey = page.startsWith('page-') ? page : `page-${page}`;
-      route = SYSTEM_PAGE_ROUTES[page] ?? SYSTEM_PAGE_ROUTES[sysKey] ?? page;
+      // Spec 108: единый реестр страниц вместо локального SYSTEM_PAGE_ROUTES.
+      // getSystemPageRoute(id) → route | undefined (как obj[missing]); '' (home)
+      // не nullish → ?? сохраняет точную семантику прежней карты.
+      route = getSystemPageRoute(page) ?? getSystemPageRoute(sysKey) ?? page;
     }
     if (route === 'home') route = '';
     this.logger.log(
@@ -315,13 +302,40 @@ export class PreviewController {
       route,
     );
     if (builtThemeHtml !== null) {
+      // Spec 108 (US2/T013): NON-checkout verbatim-страницы (товар/корзина) в
+      // превью получают мерчантский header/footer ИЗ ТОГО ЖЕ источника, что live
+      // — assembleChrome (общий renderBlock с пропсами home-Header/Footer
+      // ревизии) + injectChromeIntoHtml. До этого блоб отдавал дефолтную шапку
+      // темы → превью≠live. ⛔ checkout НЕ трогаем (его шапку правит build-сторона
+      // unifyChromeInDist; checkout на React, унификация хрома вне 108):
+      // getChromeKind('checkout')==='checkout' → пропуск. Изолировано: пустой/
+      // упавший рендер → {null,null} → injectChromeIntoHtml = no-op (блоб как был).
+      let chromedHtml = builtThemeHtml;
+      if (getChromeKind(route) === 'full') {
+        try {
+          const chrome = await assembleChrome({
+            pagesData:
+              ((loaded.data as { pagesData?: Record<string, unknown> } | null)
+                ?.pagesData) ?? {},
+            theme: loaded.themeId ?? 'base',
+            chrome: 'full',
+            renderBlock: (input) => this.preview.renderBlock(input),
+            isPreview: true,
+          });
+          chromedHtml = injectChromeIntoHtml(builtThemeHtml, chrome);
+        } catch (chromeErr) {
+          this.logger.warn(
+            `[preview] chrome assemble/inject failed for site=${siteId} route=${route || '(root)'} — serving blob chrome as-is: ${(chromeErr as Error)?.message ?? chromeErr}`,
+          );
+        }
+      }
       // Инжектим реальный shopId (= siteId) + DaData-токен + siteId-глобал в
       // отдаваемый preview-HTML — зеркалим патч build.service.ts на деплое
       // (`const shopId = ""` → siteId), токен DaData (как легаси render-путь) и
       // __MERFY_SITE_ID__ для гидрации товаров (built-theme отдаётся БЕЗ
       // per-site products.json → storefront-hydrate фолбэчит на storefront-data).
       let html = this.injectPreviewGlobals(
-        builtThemeHtml,
+        chromedHtml,
         siteId,
         // ?productId= (клик по карточке в превью) приоритетнее настройки блока.
         productIdOverride ?? this.defaultProductIdFromRevision(loaded.data),

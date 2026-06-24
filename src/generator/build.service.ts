@@ -1092,7 +1092,7 @@ export async function runBuildPipeline(
       // Lazy import: build.service ← v2-live-pages ← v2-page-composer ←
       // theme-build.service ← build.service — циклический граф; динамический
       // import не материализует цикл на module-init.
-      const { composeContentPagesIntoDist, composeLegalPagesIntoDist, unifyChromeInDist } = await import("../themes/v2-live-pages");
+      const { composeContentPagesIntoDist, composeLegalPagesIntoDist, applyChromeToDist, unifyChromeInDist } = await import("../themes/v2-live-pages");
       const composedPages = await composeContentPagesIntoDist(ctx, bareTheme);
       logger.log(
         `[themes-v2] Composed ${composedPages} content pages from revision for site ${params.siteId}`,
@@ -1114,13 +1114,17 @@ export async function runBuildPipeline(
           `[themes-v2] legal compose failed (non-fatal): ${(legalErr as Error)?.message ?? legalErr}`,
         );
       }
-      // Унификация шапки: канон home → все НЕ-checkout страницы (фикс «Header
-      // разный на страницах»); checkout → минимальный CheckoutHeader (Figma
-      // 1:13563). ПОСЛЕ compose (нужен home-шелл), ДО per-slug product (копии
-      // унаследуют исправленную шапку).
-      const chrome = await unifyChromeInDist(ctx, bareTheme);
+      // Унификация хрома (Spec 108 US2): NON-checkout страницы — единый
+      // мерчантский header/footer через applyChromeToDist (assembleChrome +
+      // injectChromeIntoHtml, тот же renderBlock, что превью → паритет);
+      // checkout — минимальный CheckoutHeader (Figma 1:13563) через
+      // unifyChromeInDist (БАЙТ-В-БАЙТ как до 108; checkout на React).
+      // ПОСЛЕ compose (нужен home-шелл-источник), ДО per-slug product (копии
+      // унаследуют исправленную шапку). Порядок стадий не меняется.
+      const chromeNon = await applyChromeToDist(ctx, bareTheme);
+      const chromeCheckout = await unifyChromeInDist(ctx, bareTheme);
       logger.log(
-        `[themes-v2] Unified chrome: ${chrome.header} page headers + ${chrome.checkout} checkout for site ${params.siteId}`,
+        `[themes-v2] Unified chrome: ${chromeNon.header} page headers + ${chromeCheckout.checkout} checkout for site ${params.siteId}`,
       );
       // Патч shopId (cart/checkout createCart) — themes-v2 копирует dist verbatim
       // с shopId="" из исходника, snapshot-путь патчит, а здесь раньше пропускалось.

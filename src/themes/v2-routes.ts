@@ -4,25 +4,12 @@
  * на live). Общий список для превью-форка (preview.controller) и
  * publish-пересадки (v2-live-pages): расхождение списков = превью и live
  * по-разному решают, какая страница «сложная».
+ *
+ * Spec 108: единственный источник этого решения — реестр страниц
+ * (`page-registry.ts`). Здесь сохранён только публичный псевдоним
+ * `isV2ComplexRoute` (= `isVerbatimRoute` реестра), чтобы импортеры
+ * (`v2-live-pages.ts`, `preview.controller.ts`) не ломались. Прежние локальные
+ * `V2_COMPLEX_ROUTE_PREFIXES` + тело `isV2ComplexRoute` удалены — их значения
+ * теперь дают `VERBATIM_PREFIXES` + verbatim-записи реестра.
  */
-export const V2_COMPLEX_ROUTE_PREFIXES = new Set([
-  // catalog/collection/collections СНЯТЫ из замка (098 wiring): Catalog.astro
-  // Container-API-safe и несёт data-puck-component-id на корневом <section>,
-  // поэтому каталог/коллекции теперь нарезаются на секции в превью (выделяемы
-  // и hot-replace), а не отдаются блобом. См. preview.controller v2-форк.
-  'product',
-  'products',
-  'cart',
-  'checkout',
-  'auth',
-  'blog',
-  'legal',
-  'account',
-  'design-system',
-  'puck-editor',
-]);
-
-/** Сложный ли маршрут (по первому сегменту). Пустой маршрут (home) — контентный. */
-export function isV2ComplexRoute(route: string): boolean {
-  return V2_COMPLEX_ROUTE_PREFIXES.has(route.split('/')[0]);
-}
+export { isVerbatimRoute as isV2ComplexRoute } from './page-registry';

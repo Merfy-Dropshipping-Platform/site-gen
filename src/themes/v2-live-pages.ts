@@ -5,6 +5,8 @@ import { PreviewService } from '../services/preview.service';
 import { composeV2Page } from './v2-page-composer';
 import { extractPageBlocks } from './page-blocks';
 import { isV2ComplexRoute } from './v2-routes';
+import { getContentPages, getChromeKind } from './page-registry';
+import { assembleChrome, injectChromeIntoHtml } from './chrome-assembler';
 // import type → стирается при компиляции, цикла на module-init не создаёт.
 import type { BuildContext } from '../generator/build.service';
 
@@ -15,47 +17,6 @@ const logger = new Logger('V2LivePages');
 // Container factory + v2-резолвер секций (через defaultComponentResolver).
 let renderer: PreviewService | null = null;
 const getRenderer = (): PreviewService => (renderer ??= new PreviewService());
-
-/**
- * Системные контентные страницы: ключ ревизии → live-маршрут.
- *
- * `collectionContext` — опциональный контекст подстановки {{COLLECTION_*}} для
- * страницы-шаблона коллекции (page-collection): на live-шаблоне конкретной
- * коллекции нет, поэтому контекст пустой → дефолты substituteCollectionVars
- * (name='Каталог', description='', image='') как в превью неизвестного slug.
- */
-const CONTENT_PAGES: Array<{
-  key: string;
-  route: string;
-  collectionContext?: { name?: string; description?: string; image?: string };
-}> = [
-  { key: 'home', route: '' },
-  { key: 'page-about', route: 'about' },
-  { key: 'page-contacts', route: 'contacts' },
-  // Платформенный стандарт (spec 100). Темы НЕ несут delivery.astro в
-  // пред-собранном дисте → у /delivery нет своего шелла, пересаживается на
-  // home-шелл (requireOwnShell=false, как контентная страница about/contacts).
-  // Без этой записи page-delivery (role=system, не custom) не пересаживался →
-  // /delivery 404 на live (и на новых сайтах тоже).
-  { key: 'page-delivery', route: 'delivery' },
-  // 098 live-паритет: каталог нарезается на секции и пересаживается в
-  // dist/catalog/index.html тем же Container-движком, что превью (live ≡
-  // превью). Catalog.astro Container-API-safe, несёт data-puck-component-id +
-  // data-catalog-page на корневом <section>.
-  { key: 'page-catalog', route: 'catalog' },
-  // Шаблон страницы коллекции. На live конкретный slug рендерит Astro SSG
-  // (dist/collections/<slug>/index.html, getStaticPaths по collections.json);
-  // сюда пересаживается только шаблонный маршрут collections/preview, если у
-  // диста есть такой шелл (иначе тихо пропускается — см. ниже). Per-slug
-  // пересадка отложена (см. deferred).
-  { key: 'page-collection', route: 'collections/preview', collectionContext: {} },
-  // Spec 103: thank-you `/checkout-result` (CheckoutHeader + OrderConfirmation).
-  // role=system, своего shell в порте темы нет → пересаживается на home-шелл
-  // (requireOwnShell=false, как about/contacts/delivery). Контент берётся из
-  // ревизии через seedCheckoutResultPage (migrateRevisionData). Без этой записи
-  // /checkout-result 404 на live (превью/новые сайты уже работают).
-  { key: 'page-checkout-result', route: 'checkout-result' },
-];
 
 /**
  * Фаза 2: после copyThemeV2Dist перезаписывает контентные страницы live-диста
@@ -93,13 +54,13 @@ export async function composeContentPagesIntoDist(
     // шелла в дисте нет — страница тихо пропускается (для collections/preview,
     // у которого на live нет собственного маршрута — его рендерит SSG per-slug).
     requireOwnShell?: boolean;
-  }> = CONTENT_PAGES.map((p) => ({
+    // Spec 108: список + флаг requireOwnShell приходят из единого реестра
+    // (getContentPages). Каталог/коллекция несут requireOwnShell=true из
+    // реестра → пересаживаются ТОЛЬКО поверх собственного шелла диста (никакого
+    // home-фоллбэка); прочие контентные страницы — без флага (фоллбэк на home).
+  }> = getContentPages().map((p) => ({
     ...p,
     title: pageName(p.key),
-    // Каталог/коллекция пересаживаются ТОЛЬКО поверх собственного шелла диста
-    // (никакого home-фоллбэка): иначе при отсутствии маршрута мы бы создали
-    // чужую страницу из home-шелла.
-    requireOwnShell: p.key === 'page-catalog' || p.key === 'page-collection',
   }));
 
   // Кастомные страницы мерчанта — ТОЛЬКО позитивный opt-in. В прод-ревизиях
@@ -396,36 +357,86 @@ const findBlockProps = (
 };
 
 /**
- * Финальная унификация «шапки» live-диста (зеркало бага «Header разный на
- * страницах»). Сложные страницы (product/cart/checkout) копируются verbatim из
- * SSG, где `<Header/>` рендерится БЕЗ пропсов → дефолтный siteTitle темы;
+ * Spec 108 (US2/T011) — единый хром НЕ-checkout страниц live-диста.
+ *
+ * Сложные страницы (product/cart) копируются verbatim из SSG, где `<Header/>`/
+ * `<Footer/>` рендерятся БЕЗ пропсов мерчанта → дефолтный siteTitle темы;
  * about/contacts могут сидеться пустой шапкой. Итог: брендинг/меню расходятся.
  *
- * Канон = отрендеренная шапка home (dist/index.html, прошла Puck-композицию с
- * пропсами мерчанта). Подменяем внутренний `<header data-nt>` на всех НЕ-checkout
- * страницах. На checkout подменяем CheckoutHeader (минимальная шапка по Figma
- * 1:13563) с брендом мерчанта — её CSS присутствует, т.к. тема рендерит её
- * нативно (Layout header="checkout"). Идемпотентно: повторный прогон — no-op.
+ * Раньше это правил источниковый код `unifyChromeInDist` (regex-канон шапки из
+ * dist/index.html). Теперь источник хрома — общий `assembleChrome` (тот же
+ * renderBlock с пропсами мерчанта, что превью и контентные страницы), а
+ * применение — идемпотентный `injectChromeIntoHtml`. Это даёт паритет
+ * превью↔live: шапка/подвал verbatim-страницы == мерчантский хром (как на home).
  *
- * Запускать ПОСЛЕ composeContentPagesIntoDist (нужен собранный home-шелл) и ДО
- * per-slug генерации product (чтобы копии унаследовали уже исправленную шапку).
+ * Обрабатываются ВСЕ index.html, кроме home (`getChromeKind('')==='none'` —
+ * источник канона, не трогаем) и checkout (`'checkout'` — его CheckoutHeader
+ * правит `unifyChromeInDist`, не трогаем здесь; checkout на React, унификация
+ * его хрома вне 108). Footer подменяется только там, где он есть (last
+ * `</footer>`); home-Footer пропсы — источник (как было: канон с home).
+ *
+ * Запускать ПОСЛЕ composeContentPagesIntoDist (нужен собранный home-шелл-источник
+ * пропсов в ревизии) и ДО per-slug генерации product (копии унаследуют шапку).
+ * Возвращает число изменённых non-checkout страниц.
+ */
+export async function applyChromeToDist(
+  ctx: BuildContext,
+  theme: string,
+): Promise<{ header: number }> {
+  let header = 0;
+
+  // Единый источник хрома: header/footer из блоков ревизии (home-Header/Footer
+  // props) через общий renderBlock — ОДИН раз на дист (как канон-шапка раньше).
+  const pagesData =
+    (ctx.revisionData as { pagesData?: Record<string, unknown> } | null)
+      ?.pagesData ?? {};
+  const chrome = await assembleChrome({
+    pagesData,
+    theme,
+    chrome: 'full',
+    // Bound: модуль chrome-assembler не создаёт свой Container — переиспользует
+    // общий getRenderer() (как контентные страницы live-цикла).
+    renderBlock: (input) => getRenderer().renderBlock(input),
+    isPreview: false,
+  });
+  if (!chrome.headerHtml) {
+    logger.warn(
+      '[v2-chrome] assembleChrome gave no canonical header — non-checkout header unify skipped',
+    );
+  }
+
+  for (const file of await listIndexHtmlFiles(ctx.distDir)) {
+    const route = distRoute(ctx.distDir, file);
+    // home — источник канона; checkout — отдельный путь (unifyChromeInDist).
+    if (getChromeKind(route) !== 'full') continue;
+    const html = await fs.readFile(file, 'utf8').catch(() => null);
+    if (!html) continue;
+    const next = injectChromeIntoHtml(html, chrome);
+    if (next !== html) {
+      await fs.writeFile(file, next, 'utf8');
+      header++;
+    }
+  }
+
+  return { header };
+}
+
+/**
+ * Финальная унификация checkout-«шапки» live-диста. ⛔ Spec 108: ТОЛЬКО checkout
+ * (non-checkout вынесен в applyChromeToDist). Checkout на React — его хром
+ * правится здесь БАЙТ-В-БАЙТ как до 108 (унификация checkout-хрома → 109).
+ *
+ * На checkout подменяем CheckoutHeader (минимальная шапка по Figma 1:13563) с
+ * брендом мерчанта — её CSS присутствует, т.к. тема рендерит её нативно
+ * (Layout header="checkout"). Идемпотентно: повторный прогон — no-op.
+ *
+ * Запускать ПОСЛЕ composeContentPagesIntoDist и ДО per-slug генерации product.
  */
 export async function unifyChromeInDist(
   ctx: BuildContext,
   theme: string,
-): Promise<{ header: number; checkout: number }> {
-  let header = 0;
+): Promise<{ checkout: number }> {
   let checkout = 0;
-
-  const indexHtml = await fs
-    .readFile(path.join(ctx.distDir, 'index.html'), 'utf8')
-    .catch(() => null);
-  const canonicalHeader = indexHtml?.match(HEADER_NT_RE)?.[0] ?? null;
-  if (!canonicalHeader) {
-    logger.warn(
-      '[v2-chrome] no canonical <header data-nt> in home shell — header unify skipped',
-    );
-  }
 
   // CheckoutHeader: рендерим с брендом мерчанта (из шапки home), CSS-классы
   // совпадают с нативным рендером темы → стили на месте.
@@ -491,16 +502,7 @@ export async function unifyChromeInDist(
       }
       continue;
     }
-
-    if (!canonicalHeader) continue;
-    const m = HEADER_NT_RE.exec(html);
-    if (!m || m[0] === canonicalHeader) continue;
-    const next = html.replace(HEADER_NT_RE, () => canonicalHeader);
-    if (next !== html) {
-      await fs.writeFile(file, next, 'utf8');
-      header++;
-    }
   }
 
-  return { header, checkout };
+  return { checkout };
 }

@@ -1,4 +1,4 @@
-import { isV2ComplexRoute, V2_COMPLEX_ROUTE_PREFIXES } from '../v2-routes';
+import { isV2ComplexRoute } from '../v2-routes';
 
 /**
  * 098 wiring: catalog / collection / collections СНЯТЫ из замка сложных
@@ -34,11 +34,14 @@ describe('isV2ComplexRoute — замок сложных маршрутов', ()
     expect(isV2ComplexRoute('products/prod-123')).toBe(true);
   });
 
+  // Spec 108: V2_COMPLEX_ROUTE_PREFIXES удалён (источник — реестр). Состав
+  // замка проверяем через публичный isV2ComplexRoute (= isVerbatimRoute):
+  // для одиночного сегмента .has(x) ≡ isV2ComplexRoute(x) — поведение то же.
   it('набор замка не содержит каталога/коллекций, но содержит сложные', () => {
-    expect(V2_COMPLEX_ROUTE_PREFIXES.has('catalog')).toBe(false);
-    expect(V2_COMPLEX_ROUTE_PREFIXES.has('collection')).toBe(false);
-    expect(V2_COMPLEX_ROUTE_PREFIXES.has('collections')).toBe(false);
-    expect(V2_COMPLEX_ROUTE_PREFIXES.has('product')).toBe(true);
-    expect(V2_COMPLEX_ROUTE_PREFIXES.has('checkout')).toBe(true);
+    expect(isV2ComplexRoute('catalog')).toBe(false);
+    expect(isV2ComplexRoute('collection')).toBe(false);
+    expect(isV2ComplexRoute('collections')).toBe(false);
+    expect(isV2ComplexRoute('product')).toBe(true);
+    expect(isV2ComplexRoute('checkout')).toBe(true);
   });
 });

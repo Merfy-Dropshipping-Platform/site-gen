@@ -307,7 +307,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 							</div>
 						</div>
 						<nav
-							class:list={["mt-3 flex w-full items-center justify-center gap-[40px]", menuSchemeClass, isSidebar && "md:!hidden"]}
+							class:list={["mt-3 flex w-full items-center justify-start gap-[40px]", menuSchemeClass, isSidebar && "md:!hidden"]}
 							aria-label="Основная навигация"
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="997"

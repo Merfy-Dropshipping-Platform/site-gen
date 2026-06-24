@@ -68,13 +68,13 @@ const logoLeft = logoPosition === "center-left";
 const isTwoRow = logoPosition === "top-left" || logoPosition === "top-center";
 
 // Single-row: лого-класс зависит от logoLeft (center-left vs center-absolute default).
-// center-left («Слева»): лого в потоке слева, nav центрируется ПО СТРАНИЦЕ через
-// равные flex-1 фланги (лого order-first flex-1 + блок иконок flex-1 justify-end),
-// nav (auto-ширина) садится по центру. Эталон rose Header (logoLeft flex-1 фланги).
+// center-left («Слева»): лого в потоке ПЕРВЫМ слева, nav центрируется ПО СТРАНИЦЕ
+// через равные flex-1 фланги (лого flex-1 + блок иконок flex-1 justify-end),
+// nav (auto-ширина) садится по центру. Эталон rose Header (logoLeft flex-1 фланги,
+// порядок DOM logo→nav→icons; flex-1 навешиваем в разметке class:list, без order-*).
 const desktopLogoCls = logoLeft
-	? "order-first flex-1 font-logo text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90"
+	? "font-logo text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90"
 	: "font-logo absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90";
-const desktopIconsCls = logoLeft ? "flex-1 flex items-center justify-end gap-5" : "flex items-center gap-5";
 
 // Канон stickiness: литерал верстальщика УЖЕ sticky top-0 z-50 (H:42) — 'none' /
 // 'always' / отсутствие → sticky остаётся (правило canon-default → пиксель).
@@ -242,7 +242,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 								</div>
 							</div>
 							<nav
-								class:list={["mt-3 flex w-full items-center justify-center gap-8", menuSchemeClass, isSidebar && "md:!hidden"]}
+								class:list={["mt-3 flex w-full items-center justify-start gap-8", menuSchemeClass, isSidebar && "md:!hidden"]}
 								aria-label="Основная навигация"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="997"
@@ -361,6 +361,10 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 			) : (
 				/* ── SINGLE-ROW LAYOUTS: center-left / center-absolute ── */
 				<div class={desktopRowCls} style={headerPadStyle}>
+					<a href="/" class:list={[desktopLogoCls, logoLeft && "flex-1"]}>
+						{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
+					</a>
+
 					<nav
 						class:list={["flex items-center gap-8", menuSchemeClass, isSidebar && "md:!hidden"]}
 						aria-label="Основная навигация"
@@ -396,11 +400,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 						})}
 					</nav>
 
-					<a href="/" class={desktopLogoCls}>
-						{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
-					</a>
-
-					<div class={desktopIconsCls}>
+					<div class:list={["flex items-center gap-5", logoLeft && "flex-1 justify-end"]}>
 						<button type="button" data-action="toggle-search" class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Поиск">
 							<NtIcon name="search-lg" sizeClass="size-6" />
 						</button>

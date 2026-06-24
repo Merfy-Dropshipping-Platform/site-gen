@@ -284,7 +284,7 @@ const headerHeartSvg =
 							</div>
 						</div>
 						<nav
-							class:list={["mt-3 flex w-full items-center justify-center gap-8 lg:gap-10", menuSchemeClass, isSidebar && "md:!hidden"]}
+							class:list={["mt-3 flex w-full items-center gap-8 lg:gap-10", logoPosition === "top-left" || logoPosition === "" ? "justify-start" : "justify-center", menuSchemeClass, isSidebar && "md:!hidden"]}
 							aria-label="Основная навигация"
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="997"

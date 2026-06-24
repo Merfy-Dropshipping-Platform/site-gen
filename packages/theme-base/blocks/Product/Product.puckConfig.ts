@@ -41,7 +41,13 @@ export const ProductSchema = z.object({
     text: z.string().optional(),
     textSize: z.enum(['small', 'medium', 'large']).optional(),
   }).optional(),
-  dynamicButton: z.object({ enabled: z.enum(['true', 'false']).optional() }).optional(),
+  // Figma 1236-42145: тоггл «Динамическая кнопка» теперь скалярный ('true'/'false').
+  // Union сохраняет back-compat со старыми ревизиями (объект { enabled }).
+  dynamicButton: z.union([
+    z.boolean(),
+    z.enum(['true', 'false']),
+    z.object({ enabled: z.enum(['true', 'false']).optional() }),
+  ]).optional(),
   colorScheme: z.string().optional(),
   /**
    * Theme-driven visual variants (gallery layout, chips/dropdown, mono/accent
@@ -74,11 +80,12 @@ const sizeOptions = [
 export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
   label: 'Товар',
   category: 'products',
-  // Figma 314-34639: 7 visible fields в порядке —
-  // Выбор товара → Макет → Размер → Позиция фото → Увеличение → Цветовая схема → Отступы.
+  // Figma 1236-42145: 8 visible fields в порядке —
+  // Выбор товара → Макет → Размер → Позиция фото → Увеличение →
+  // Динамическая кнопка → Цветовая схема → Отступы.
   // Остальные (text/title/price/variants/quantity/buttons/description/share/
-  // badge/dynamicButton) — hiddenInMainPanel: редактируются через outline-click
-  // на subsection в превью.
+  // badge) — hiddenInMainPanel: редактируются через outline-click на subsection
+  // в превью.
   fields: {
     productId: { type: 'productPicker', label: 'Выбор товара' },
     // Figma 314-34639: Макет → Размер.
@@ -88,8 +95,10 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
       options: [
         { label: 'Сложенный', value: 'stacked' },
         { label: '2 колонки', value: 'two-columns' },
-        { label: 'Карусель снизу', value: 'carousel' },
-        { label: 'Карусель слева', value: 'split' },
+        // Figma 1236-42145: «Карусель» (был «Карусель снизу») + «Миниатюрный»
+        // (был «Карусель слева» = split: thumbs col сбоку).
+        { label: 'Карусель', value: 'carousel' },
+        { label: 'Миниатюрный', value: 'split' },
       ],
     },
     size: {
@@ -113,6 +122,19 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
         { label: 'Наведение', value: 'hover' },
       ],
     },
+    // Figma 1236-42145: тоггл «Динамическая кнопка» (Скрыть/показать) между
+    // «Увеличение» и «Цветовая схема». Управляет видимостью express-кнопки
+    // «Купить сейчас» в секции. Топ-левел toggle: label рисует FieldGroup,
+    // toggleLabel — статичная строка в самой строке тумблера.
+    dynamicButton: {
+      type: 'toggle',
+      label: 'Динамическая кнопка',
+      toggleLabel: 'Скрыть/показать',
+      options: [
+        { label: 'Показать', value: 'true' },
+        { label: 'Скрыть', value: 'false' },
+      ],
+    } as any,
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
 
@@ -123,8 +145,9 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
       label: 'Текст',
       hiddenInMainPanel: true,
       objectFields: {
-        content: { type: 'textarea', label: 'Содержание' },
-        size: { type: 'radio', label: 'Размер', options: sizeOptions },
+        // Figma 1236-42145: rich-text c AI-генерацией (✨) + тулбар Ж/И.
+        content: { type: 'aiText', label: 'Текст', placeholder: 'Ввести текст...', fieldType: 'description' },
+        size: { type: 'select', label: 'Размер текста', options: sizeOptions },
       },
     } as any,
     title: {
@@ -132,23 +155,20 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
       label: 'Название',
       hiddenInMainPanel: true,
       objectFields: {
-        size: { type: 'radio', label: 'Размер', options: sizeOptions },
+        // Figma 1236-42145: «Размер» как dropdown (был radio).
+        size: { type: 'select', label: 'Размер', options: sizeOptions },
       },
     } as any,
+    // Figma 1236-42145: Стоимость — «Настройка недоступна / Изменения
+    // проводятся на странице Товары». Цена берётся из БД товара.
     price: {
-      type: 'object',
+      type: 'disabledHint',
       label: 'Стоимость',
       hiddenInMainPanel: true,
-      objectFields: {
-        show: {
-          type: 'toggle',
-          label: 'Показать',
-          options: [
-            { label: 'Показать', value: 'true' },
-            { label: 'Скрыть', value: 'false' },
-          ],
-        },
-      },
+      hintTitle: 'Настройка недоступна',
+      hintBody: 'Изменения проводятся на странице',
+      hintLinkText: 'Товары',
+      hintLinkHref: '/products',
     } as any,
     variants: {
       type: 'object',
@@ -175,21 +195,20 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
         },
       },
     } as any,
+    // Figma 1236-42145: Количество — «Настройка недоступна / Изменения
+    // проводятся на странице Товары».
     quantity: {
-      type: 'object',
+      type: 'disabledHint',
       label: 'Количество',
       hiddenInMainPanel: true,
-      objectFields: {
-        enabled: {
-          type: 'toggle',
-          label: 'Показать',
-          options: [
-            { label: 'Показать', value: 'true' },
-            { label: 'Скрыть', value: 'false' },
-          ],
-        },
-      },
+      hintTitle: 'Настройка недоступна',
+      hintBody: 'Изменения проводятся на странице',
+      hintLinkText: 'Товары',
+      hintLinkHref: '/products',
     } as any,
+    // Figma 1236-42145: подпанель «Кнопки» = одна «Основная кнопка» с полем
+    // «Текст» (пусто = скрыть кнопку). Вторая кнопка «Купить сейчас»
+    // управляется тоглом «Динамическая кнопка» в основном сайдбаре.
     buttons: {
       type: 'object',
       label: 'Кнопки',
@@ -197,13 +216,10 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
       objectFields: {
         addToCart: {
           type: 'object',
-          label: 'В корзину',
-          objectFields: { text: { type: 'text', label: 'Текст' } },
-        },
-        buyNow: {
-          type: 'object',
-          label: 'Купить сейчас',
-          objectFields: { text: { type: 'text', label: 'Текст' } },
+          label: 'Основная кнопка',
+          objectFields: {
+            text: { type: 'text', label: 'Текст', placeholder: '*Оставьте пустой, чтобы скрыть' },
+          },
         },
       },
     } as any,
@@ -227,8 +243,8 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
     } as any,
 
     // Legacy/internal — hidden совсем, данные сохраняются.
+    // dynamicButton теперь видимый toggle (см. выше, между zoomMode и colorScheme).
     badge: { type: 'hidden', label: '' },
-    dynamicButton: { type: 'hidden', label: '' },
     visualConfig: { type: 'hidden', label: '' },
   },
   defaults: {
@@ -238,14 +254,17 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
     zoomMode: 'hover',
     text: { content: '', size: 'medium' },
     title: { size: 'medium' },
-    price: { show: 'true' },
+    // price/quantity больше не имеют тоггла (Figma 1236-42145 → disabledHint):
+    // рендер показывает их всегда (priceProp/quantity === undefined → visible).
     // shape: 'none' = текущий pill-чип (rounded-[6px]). Дефолт намеренно
     // 'none', а не 'circle', чтобы существующие товары не регрессировали:
     // эффективный дефолт = как сейчас, а 'circle'/'square' — явный выбор
     // мерчанта (см. ProductVariants.astro SHAPE_RADIUS).
     variants: { style: 'button', shape: 'none' },
-    quantity: { enabled: 'true' },
-    buttons: { addToCart: { text: 'В КОРЗИНУ' }, buyNow: { text: 'КУПИТЬ' } },
+    // «Основная кнопка» (addToCart). Пусто = скрыть. «Купить сейчас» —
+    // фиксированный лейбл, видимость через dynamicButton.
+    buttons: { addToCart: { text: 'Добавить в корзину' } },
+    dynamicButton: 'true',
     description: { content: '', size: 'medium' },
     share: { text: 'Поделиться' },
     size: 'medium',

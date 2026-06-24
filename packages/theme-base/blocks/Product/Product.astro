@@ -49,6 +49,7 @@ const {
   share,
   variants: variantsProp,
   badge,
+  dynamicButton,
   colorScheme,
   padding,
   visualConfig: visualConfigProp,
@@ -118,8 +119,20 @@ const photoOnLeft = photoPosition !== 'right';
 const priceVisible = priceProp?.show !== 'false' && priceProp?.show !== false;
 const quantityVisible = quantity?.enabled !== 'false' && quantity?.enabled !== false;
 const textContent = text?.content ?? badge?.text ?? '';
-const addBtnText = buttons?.addToCart?.text ?? 'Добавить в корзину';
-const buyBtnText = buttons?.buyNow?.text ?? 'Купить сейчас';
+// Figma 1236-42145 модель кнопок:
+//  • «Основная кнопка» (buttons.addToCart.text) — пусто = скрыть «Добавить в корзину».
+//  • «Динамическая кнопка» (dynamicButton toggle) — видимость express-кнопки
+//    «Купить сейчас» (фиксированный лейбл). Дефолт on (как в превью). Back-compat:
+//    старые ревизии могли хранить объект { enabled }.
+const addBtnTextRaw = buttons?.addToCart?.text;
+const addBtnText = addBtnTextRaw === undefined ? 'Добавить в корзину' : addBtnTextRaw;
+const showAddToCart = String(addBtnText).trim() !== '';
+const buyBtnText = 'Купить сейчас';
+const dynVal =
+  dynamicButton && typeof dynamicButton === 'object'
+    ? (dynamicButton as { enabled?: string }).enabled
+    : (dynamicButton as unknown);
+const showBuyNow = dynVal !== 'false' && dynVal !== false;
 const shareText = share?.text ?? 'Поделиться';
 const fallbackDescription = description?.content ?? '';
 
@@ -299,6 +312,8 @@ const cartImage = view.gallery.hero?.src ?? '';
           <ProductActions
             addToCartLabel={addBtnText}
             buyNowLabel={buyBtnText}
+            showAddToCart={showAddToCart}
+            showBuyNow={showBuyNow}
             size={visual.gallery.variant === 'inline-small' ? 'tall' : 'compact'}
             productId={cartProductId}
             productName={view.name || ''}

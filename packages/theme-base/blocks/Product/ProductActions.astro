@@ -18,6 +18,13 @@
 interface Props {
   addToCartLabel?: string;
   buyNowLabel?: string;
+  /**
+   * Figma 1236-42145 button visibility:
+   *  • showAddToCart — «Основная кнопка»: false when the merchant clears the text.
+   *  • showBuyNow    — «Динамическая кнопка» toggle (express «Купить сейчас»).
+   */
+  showAddToCart?: boolean;
+  showBuyNow?: boolean;
   /** Layout: 'compact' = h-14 16px (rose), 'tall' = h-16 20px UPPERCASE (flux). */
   size?: 'compact' | 'tall';
   /**
@@ -43,6 +50,8 @@ interface Props {
 const {
   addToCartLabel = 'Добавить в корзину',
   buyNowLabel = 'Купить сейчас',
+  showAddToCart = true,
+  showBuyNow = true,
   size = 'compact',
   productId = '',
   productName = '',
@@ -65,6 +74,7 @@ const oldPriceAttr =
   oldPrice != null && Number(oldPrice) > 0 ? String(oldPrice) : undefined;
 ---
 <div class="flex flex-col gap-3 w-full" data-product-actions data-actions-size={size}>
+  {showAddToCart && (
   <button
     type="button"
     data-product-action="add-to-cart"
@@ -81,6 +91,8 @@ const oldPriceAttr =
     onmouseover="this.style.background='rgb(var(--color-button-bg-hover))'; this.style.color='rgb(var(--color-button-text-hover))';"
     onmouseout="this.style.background='rgb(var(--color-button-bg, var(--color-text)))'; this.style.color='rgb(var(--color-button-text, var(--color-bg)))';"
   >{addToCartLabel}</button>
+  )}
+  {showBuyNow && (
   <button
     type="button"
     data-product-action="buy-now"
@@ -89,4 +101,5 @@ const oldPriceAttr =
     onmouseover="this.style.background='rgb(var(--color-button-secondary-bg-hover))'; this.style.color='rgb(var(--color-button-secondary-text-hover))';"
     onmouseout="this.style.background='rgb(var(--color-button-secondary-bg, var(--color-bg)))'; this.style.color='rgb(var(--color-button-secondary-text, var(--color-text)))';"
   >{buyNowLabel}</button>
+  )}
 </div>

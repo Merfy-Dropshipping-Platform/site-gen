@@ -268,6 +268,16 @@ export const cartStore = {
   isLoading() {
     return state.loading;
   },
+
+  // Публичная ре-синхронизация позиций из ответа сервера (плоский order с items).
+  // Нужна хендлерам apply/remove промокода на чекауте: после применения
+  // промокод-BOGO в ответе появляется 0₽-подарок (item.isBonus=true), после
+  // снятия — исчезает. Перекладываем cartData.items в state и шлём cart:updated,
+  // чтобы сводка/итоги перерисовались с подарком. cartSignature (на чекауте)
+  // исключает isBonus → появление/снятие подарка НЕ сбросит applied-state.
+  syncFromCartData(cartData) {
+    syncFromCartData(cartData);
+  },
 };
 
 // Make available globally for inline onclick handlers in Astro templates

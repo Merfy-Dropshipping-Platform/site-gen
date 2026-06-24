@@ -283,6 +283,14 @@ const imageSize = itemImageSize === 'expanded' ? 120 : 96;
             ? json.data.discountCents : 0;
           try { if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('merfy:promoCode', code); } catch (e) {}
           setPromoApplied(true, code);
+          // Промокод-BOGO («1+1=3» по коду) добавляет 0₽-подарок ПОЗИЦИЕЙ —
+          // ре-синхронизируем список из ответа (плоский order с items), чтобы
+          // подарок отрисовался. cartSignature исключает isBonus, а applied-state
+          // мы только что выставили явно ВЫШЕ → cart:updated от синка его НЕ сбросит.
+          if (json && json.data && Array.isArray(json.data.items)
+              && window.cartStore && typeof window.cartStore.syncFromCartData === 'function') {
+            window.cartStore.syncFromCartData(json.data);
+          }
           document.dispatchEvent(new CustomEvent('checkout:discount-applied', { detail: { code: code, discountCents: discountCents } }));
         } catch (e) {
           showPromoError('Не удалось применить промокод');
@@ -296,12 +304,15 @@ const imageSize = itemImageSize === 'expanded' ? 120 : 96;
       promoRemove.addEventListener('click', async function () {
         var cartId = (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')) || null;
         promoRemove.disabled = true;
+        var removeData = null;
         try {
           if (cartId) {
-            await fetch(getApiBase() + '/orders/cart/' + cartId + '/promo', {
+            var delRes = await fetch(getApiBase() + '/orders/cart/' + cartId + '/promo', {
               method: 'DELETE',
               credentials: 'include',
             });
+            var delJson = await delRes.json().catch(function () { return null; });
+            if (delRes.ok && delJson && delJson.data) removeData = delJson.data;
           }
         } catch (e) {
           // best-effort: даже при сетевой ошибке снимаем скидку в UI,
@@ -310,6 +321,14 @@ const imageSize = itemImageSize === 'expanded' ? 120 : 96;
           try { if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('merfy:promoCode'); } catch (e) {}
           clearPromoError();
           setPromoApplied(false, '');
+          // Снятие промокод-BOGO убирает его 0₽-подарок из ответа — ре-синкаем
+          // список (codeless авто-BOGO подарок сервер сохранит, он останется).
+          // applied-state уже снят ВЫШЕ; cartSignature исключает isBonus → синк
+          // не вызовет ложного сброса.
+          if (removeData && Array.isArray(removeData.items)
+              && window.cartStore && typeof window.cartStore.syncFromCartData === 'function') {
+            window.cartStore.syncFromCartData(removeData);
+          }
           document.dispatchEvent(new CustomEvent('checkout:discount-applied', { detail: { code: '', discountCents: 0 } }));
           promoRemove.disabled = false;
         }

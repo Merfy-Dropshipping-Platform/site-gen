@@ -158,7 +158,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
      *      description,cdekTariffCode,deliveryMode:'door'|'pickup'}], pickupPoints[] }
      * type карточки: 'self_pickup' | 'cdek_door' | 'cdek_pickup' | 'custom'
      */
-    function buildOptions(data) {
+    function buildOptions(data, addressKnown) {
       var options = [];
       var subtotal = cartTotalCents();
       var freeShipping = freeShippingThreshold != null && subtotal >= freeShippingThreshold;
@@ -167,7 +167,8 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       var pickupPoints = (data && Array.isArray(data.pickupPoints)) ? data.pickupPoints : [];
 
       // Самовывоз из магазина — точки самовывоза из логистики.
-      if (pickupEnabled && pickupPoints.length > 0) {
+      // Без адреса самовывоз НЕ показываем (адрес-зависимая фаза — позже).
+      if (addressKnown && pickupEnabled && pickupPoints.length > 0) {
         var pp = pickupPoints[0];
         options.push({
           type: 'self_pickup',
@@ -187,6 +188,9 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
           : (o.description || '');
 
         if (o.type === 'PARTNER') {
+          // CDEK (PARTNER) — адрес-зависимая служба. Без адреса не показываем,
+          // появится сама после ввода адреса (checkout:address-changed).
+          if (!addressKnown) continue;
           var isDoor = o.deliveryMode === 'door';
           // Заголовок карточки — настройка темы (cdekDoorLabel / cdekPvzLabel),
           // срок/описание — meta.
@@ -227,15 +231,22 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       return options;
     }
 
-    function render(data) {
-      var options = buildOptions(data);
+    function render(data, addressKnown) {
+      var options = buildOptions(data, addressKnown);
       if (options.length === 0) {
+        if (!addressKnown) {
+          // Без адреса показывать нечего (у магазина нет OWN-тарифов) — оставшиеся
+          // методы адрес-зависимы и появятся после ввода адреса. Block-level empty.
+          showEmpty('Заполните адрес доставки чтобы увидеть варианты.');
+          return;
+        }
         showError(data && data.cdekError ? data.cdekError : 'Нет доступных вариантов доставки для этого адреса');
         return;
       }
 
       listEl.innerHTML = options.map(function (opt, idx) {
-        var selected = idx === 0;
+        // Без адреса — показ без предвыбора (ни одна карточка не selected).
+        var selected = addressKnown && idx === 0;
         var cls = OPTION_CLS + (selected ? ' ' + OPTION_SELECTED_CLS : '');
         var priceText = opt.priceCents === 0 ? 'Бесплатно' : fmt(opt.priceCents);
         var radioOuterCls = RADIO_OUTER_BASE + ' ' + (selected ? RADIO_OUTER_SELECTED : RADIO_OUTER_UNSELECTED);
@@ -263,7 +274,9 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       showList();
 
       // По умолчанию выбран первый — диспатчим событие чтобы Totals обновился.
-      dispatchSelection(options[0]);
+      // Без адреса предвыбора нет: показываем карточки, но Totals не трогаем,
+      // пока пользователь сам не выберет метод.
+      if (addressKnown) dispatchSelection(options[0]);
     }
 
     function dispatchSelection(opt) {
@@ -364,21 +377,17 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
         showEmpty('Добавьте товар в корзину чтобы рассчитать доставку');
         return;
       }
-      if (!cityFiasId) {
-        // address-changed event пришёл без fiasId — но универсальный resolver
-        // в CheckoutDeliveryForm должен резолвить из текста города. Если до
-        // сюда дошли — либо ещё не отрезолвилось (юзер допечатывает), либо
-        // DaData не нашёл город. Не reset существующий list если он уже есть.
-        if (!listEl || listEl.hidden) {
-          showEmpty('Заполните адрес доставки чтобы увидеть варианты.');
-        }
-        return;
-      }
+
+      // addressKnown=false → запрос всё равно уходит (gateway принимает запрос
+      // без cityFiasId/postalCode), но рендерим ТОЛЬКО OWN-карточки без предвыбора.
+      // Адрес-зависимые службы (CDEK/самовывоз) появятся после ввода адреса.
+      var addressKnown = !!cityFiasId;
 
       // Last-resort: если postal не пришёл от формы — резолвим по fiasId.
       // Покрывает кеш браузера / autofill / случаи когда city click отработал
-      // но postal field остался пустым.
-      if (!postalCode) {
+      // но postal field остался пустым. Без cityFiasId (address-less) резолвить
+      // нечего — пропускаем, чтобы не делать пустой DaData-запрос и сразу показать OWN.
+      if (cityFiasId && !postalCode) {
         showLoading();
         postalCode = await resolvePostalFromFiasId(cityFiasId);
         if (postalCode) {
@@ -390,7 +399,10 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
 
       showLoading();
       var url = apiBase + '/store/carts/' + encodeURIComponent(cartId) + '/delivery/calculate?store_id=' + encodeURIComponent(shopId);
-      var body = { cityFiasId: cityFiasId };
+      // Без адреса шлём пустой body — gateway DTO принимает запрос без
+      // cityFiasId/postalCode (оба @IsOptional) и logistic вернёт OWN-варианты.
+      var body = {};
+      if (cityFiasId) body.cityFiasId = cityFiasId;
       if (postalCode) body.postalCode = postalCode;
 
       if (calcInFlight && calcInFlight.abort) {
@@ -420,14 +432,18 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
             var data = lastJson.data || {};
             var options = (data.deliveryOptions && data.deliveryOptions.length) || 0;
             var points = (data.pickupPoints && data.pickupPoints.length) || 0;
-            // Backend сообщил что CDEK upstream упал → finalized, retry не поможет
-            if (data.cdekError) {
+            // cdekError не прячет OWN: при запросе без адреса CDEK всегда падает,
+            // но OWN-варианты уже в deliveryOptions. Фатальной ошибку считаем
+            // только если адрес введён И нет ни одной видимой опции (render сам
+            // покажет cdekError при addressKnown && options.length === 0).
+            if (data.cdekError && addressKnown && options === 0 && points === 0) {
               showError(data.cdekError);
               return;
             }
-            // Если что-то пришло — отрисуем; иначе — следующая попытка
+            // Если что-то пришло — отрисуем; иначе — следующая попытка.
+            // Без адреса достаточно дождаться OWN (deliveryOptions).
             if (options > 0 || points > 0) {
-              render(data);
+              render(data, addressKnown);
               return;
             }
           } else {
@@ -445,8 +461,9 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
         }
       }
 
-      // Все попытки вернули пустые опции — рендерим (render сам покажет error)
-      render((lastJson && lastJson.data) || {});
+      // Все попытки вернули пустые опции — рендерим (render сам покажет error
+      // при addressKnown, либо вернёт empty-state без адреса).
+      render((lastJson && lastJson.data) || {}, addressKnown);
     }
 
     document.addEventListener('checkout:address-changed', function (e) {
@@ -467,5 +484,12 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
         section.setAttribute('data-last-postal', e.detail.postalCode || '');
       }
     });
+
+    // Первый расчёт без ожидания checkout:address-changed — чтобы OWN-доставка
+    // показалась сразу на первой отрисовке (адрес ещё не введён → addressKnown=false).
+    // recalculate сам отвалится в empty-state, если cartId/shopId ещё нет.
+    if (getShopId() && (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId'))) {
+      recalculate(null);
+    }
   })();
 </script>

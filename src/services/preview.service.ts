@@ -1894,73 +1894,9 @@ const PREVIEW_NAV_AGENT_INLINE = `
         .catch(function (err) {
           console.error('[preview] update-block fetch failed', err);
         });
-    } else if (ev.data.type === 'add-block') {
-      // Structural insert without iframe reload. Parent посылает blockId,
-      // blockType, props, и beforeBlockId (вставить перед этим блоком,
-      // null = в конец). Fetch HTML и insertAdjacentHTML.
-      if (!currentSiteId) return;
-      var addBlockType = ev.data.blockType;
-      var addBlockId = ev.data.blockId;
-      var addBeforeId = ev.data.beforeBlockId;
-      if (!addBlockType || !addBlockId) return;
-      fetch('/api/sites/' + currentSiteId + '/preview/block', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ blockType: addBlockType, props: ev.data.props, themeId: currentThemeId }),
-      })
-        .then(function (r) {
-          if (!r.ok) {
-            console.error('[preview] add-block HTTP ' + r.status + ' for ' + addBlockId + ' — skip insert');
-            return null;
-          }
-          return r.text();
-        })
-        .then(function (html) {
-          if (html === null) return;
-          // 098-fix: не вставляем мусор (JSON-ошибка/комментарий/SPA-шелл).
-          if (!isValidBlockHtml(html, null)) {
-            console.error('[preview] add-block invalid HTML for ' + addBlockId + ' — skip insert:', String(html).slice(0, 120));
-            return;
-          }
-          // Найти точку вставки.
-          var insertedAtRef = false;
-          if (addBeforeId) {
-            var ref = document.querySelector('[data-puck-component-id="' + addBeforeId + '"]');
-            // Если у ref есть color-scheme wrapper — вставлять перед ним.
-            var refSchemeAttr = 'data-block-' + 'scheme';
-            var refTarget = ref && ref.parentElement && ref.parentElement.hasAttribute(refSchemeAttr) ? ref.parentElement : ref;
-            if (refTarget && refTarget.parentElement) {
-              refTarget.insertAdjacentHTML('beforebegin', html);
-              // 098: execute <script> tags из inserted HTML.
-              var prevSibling = refTarget.previousElementSibling;
-              if (prevSibling) executeScriptsIn(prevSibling);
-              insertedAtRef = true;
-            }
-          }
-          if (!insertedAtRef) {
-            // Append в конец main.
-            var container = document.querySelector('main') || document.body;
-            container.insertAdjacentHTML('beforeend', html);
-            // 098: execute scripts из last child.
-            if (container.lastElementChild) executeScriptsIn(container.lastElementChild);
-          }
-        })
-        .catch(function (err) { console.error('[preview] add-block fetch failed', err); });
-    } else if (ev.data.type === 'remove-block') {
-      // Удалить блок из DOM по blockId.
-      var rmId = ev.data.blockId;
-      if (!rmId) return;
-      var rmEl = document.querySelector('[data-puck-component-id="' + rmId + '"]');
-      if (rmEl) {
-        // Если есть color-scheme wrapper — удалить его тоже.
-        var rmParent = rmEl.parentElement;
-        var rmSchemeAttr = 'data-block-' + 'scheme';
-        if (rmParent && rmParent.hasAttribute(rmSchemeAttr)) {
-          rmParent.parentElement && rmParent.parentElement.removeChild(rmParent);
-        } else {
-          rmEl.parentElement && rmEl.parentElement.removeChild(rmEl);
-        }
-      }
+      // 106 T021: ветки add-block/remove-block удалены — структурные изменения
+      // (add/remove/hide/show/reorder) идут единым каналом reconcile (idiomorph).
+      // Конструктор их больше не шлёт (PreviewFrame.test.tsx проверяет length 0).
     } else if (ev.data.type === 'update-tokens') {
       // Hot-replace tokens.css включён для всех тем после консолидации
       // на packages/theme-base (2026-05-10). До этого был allowlist

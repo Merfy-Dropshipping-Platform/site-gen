@@ -263,8 +263,10 @@ describe('PreviewService', () => {
       expect(html).toContain('if (!r.ok)');
       // Пачка hot-replace → одна ре-инициализация astro-событий
       expect(html).toContain('dispatchAstroNavEventsDebounced');
-      // add-block тоже валидирует ответ перед вставкой
-      expect(html).toContain('add-block invalid HTML');
+      // 106 T021: ветка add-block удалена; структурная вставка нового блока идёт
+      // через reconnect-fetch, который так же валидирует фрагмент перед morph
+      // (невалидный → id в missing → аварийный reload, а не вставка мусора).
+      expect(html).toContain('html === null || !isValidBlockHtml(html, null)');
     });
 
     it('init handler сохраняет themeId и siteId из parent', async () => {

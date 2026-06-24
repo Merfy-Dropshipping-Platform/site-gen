@@ -505,8 +505,9 @@ input[type="search"]::-webkit-search-results-decoration {
   gap: 0.25rem;
   white-space: nowrap;
   max-width: none;
-  /* Плавное уменьшение на узких вьюпортах, до 16px на десктопе */
-  font-size: clamp(10px, 2vw + 5px, 16px) !important;
+  /* Кегль задаёт «Размер текста» (text-[12/14/16px] от size). НЕ перебиваем
+     font-size!important-ом — раньше тут был clamp(10px,2vw+5px,16px)!important,
+     из-за которого «Размер» менял только высоту полосы, а шрифт всегда был 16px. */
 }
 
 [data-nt="promo-banner"] > p > span {

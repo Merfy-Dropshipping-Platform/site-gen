@@ -504,7 +504,7 @@ export class PreviewService {
     if (bodyClose === -1) return null;
     return (
       composed.slice(0, bodyClose) +
-      `<script>${PREVIEW_NAV_AGENT_INLINE}</script>` +
+      `${IDIOMORPH_INLINE}<script>${PREVIEW_NAV_AGENT_INLINE}</script>` +
       composed.slice(bodyClose)
     );
   }
@@ -524,7 +524,7 @@ export class PreviewService {
     if (bodyClose === -1) return html;
     return (
       html.slice(0, bodyClose) +
-      `<script>${PREVIEW_NAV_AGENT_INLINE}</script>` +
+      `${IDIOMORPH_INLINE}<script>${PREVIEW_NAV_AGENT_INLINE}</script>` +
       html.slice(bodyClose)
     );
   }

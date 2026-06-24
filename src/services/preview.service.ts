@@ -1037,6 +1037,10 @@ const PREVIEW_NAV_AGENT_INLINE = `
   // мгновенного показа без сети; RC_APPLIED_VERSION — stale-guard монотонной версии.
   var RC_STASH = {};
   var RC_APPLIED_VERSION = 0;
+  // 106 US2 renderedPropsHash: какой propsHash сейчас отрисован/в stash для
+  // блока. Совпал с дескриптором → reuse (живой узел/stash, без сети); изменился
+  // (правка скрытой секции) или нет вовсе (новый блок) → server fetch.
+  var RC_RENDERED_HASH = {};
 
   // 098-fix: валидация ответа /preview/block перед заменой DOM. Раньше тело
   // ЛЮБОГО ответа (JSON-ошибка gateway, 5xx-комментарий, SPA-шелл) вставлялось
@@ -1143,6 +1147,50 @@ const PREVIEW_NAV_AGENT_INLINE = `
       if (bid && idEl.id !== bid) idEl.id = bid;
     }
     executeScriptsIn(node);
+  }
+  // 106 reconcile apply: morph <main> к собранному target-HTML body-секций +
+  // CSS-toggle хрома (Header/Footer/PromoBanner вне main) + ack. Вынесено из
+  // handler'а — US2-путь применяет асинхронно после fetch новых блоков, US1/US3
+  // (hide/show/reorder/delete) — синхронно без сети.
+  function __rcApply(rcVersion, rcTarget, rcMain, rcParts) {
+    try {
+      Idiomorph.morph(rcMain, rcParts.join(''), {
+        morphStyle: 'innerHTML',
+        callbacks: {
+          beforeNodeRemoved: function (n) { __rcStash(n, rcMain); },
+          afterNodeAdded: function (n) { __rcAfterAdd(n); }
+        }
+      });
+    } catch (rcErr) {
+      console.error('[preview] reconcile morph failed', rcErr);
+      post({ type: 'reconcile-ack', version: rcVersion, ok: false, applied: [], missing: rcTarget.map(function (b) { return b && b.id; }) });
+      return;
+    }
+    RC_APPLIED_VERSION = rcVersion;
+    // Хром (Header/Footer/PromoBanner вне <main>) — только hide/show (не reorder/
+    // add/delete). Единый CSS-toggle по тому же видимому target: блок вне target →
+    // скрыть (data-rc-hidden), в target → показать. Body-секции уже сведены morph.
+    var rcVisible = {};
+    for (var rvi = 0; rvi < rcTarget.length; rvi++) { if (rcTarget[rvi] && rcTarget[rvi].id) rcVisible[rcTarget[rvi].id] = 1; }
+    var rcAll = document.querySelectorAll('[data-puck-component-id]');
+    for (var rai = 0; rai < rcAll.length; rai++) {
+      var rael = rcAll[rai];
+      if (rcMain.contains(rael)) continue; // body-секции — уже morph
+      var raid = rael.getAttribute('data-puck-component-id');
+      if (!raid) continue;
+      var ratop = rael; // top-level элемент хрома (scheme-обёртка = прямой ребёнок body)
+      while (ratop.parentElement && ratop.parentElement !== document.body) ratop = ratop.parentElement;
+      if (rcVisible[raid]) ratop.removeAttribute('data-rc-hidden');
+      else ratop.setAttribute('data-rc-hidden', '1');
+    }
+    var rcFinal = [];
+    var rcKids2 = rcMain.children;
+    for (var rfi = 0; rfi < rcKids2.length; rfi++) {
+      var rfEl = rcKids2[rfi];
+      var rfIdEl = rfEl.hasAttribute('data-puck-component-id') ? rfEl : rfEl.querySelector('[data-puck-component-id]');
+      if (rfIdEl) rcFinal.push(rfIdEl.getAttribute('data-puck-component-id'));
+    }
+    post({ type: 'reconcile-ack', version: rcVersion, ok: true, applied: rcFinal, missing: [] });
   }
 
   // Spec 090 — runtime kill switch. Можно выключить через console:
@@ -1935,9 +1983,10 @@ const PREVIEW_NAV_AGENT_INLINE = `
         });
     } else if (ev.data.type === 'reconcile') {
       // 106: идемпотентно сводим <main> к целевому списку видимых body-секций.
-      // Header/PromoBanner (до <main>) и Footer (после) — хром, вне main → не
-      // трогаются. mainBlockIds = живые дети main ∪ stash. Блок не из main
-      // (хром) — пропускаем; новый блок (US2, ещё не реализован) → missing → reload.
+      // Header/PromoBanner (до <main>) и Footer (после) — хром, вне main, только
+      // hide/show. Источник разметки каждого блока: живой узел main (reuse, DOM
+      // авторитетен) → stash при совпадении propsHash (показ без сети) → server
+      // fetch (НОВЫЙ блок US2 ИЛИ скрытая секция, отредактированная пока скрыта).
       var rcVersion = Number(ev.data.version) || 0;
       if (rcVersion <= RC_APPLIED_VERSION) return; // stale — новее уже применён
       var rcTarget = ev.data.blocks || [];
@@ -1947,69 +1996,69 @@ const PREVIEW_NAV_AGENT_INLINE = `
         return; // нет движка/контейнера → агрессивный режим: parent перезагрузит iframe
       }
       __rcMirrorIds(rcMain);
-      var rcMainIds = {};
-      var rcKids = rcMain.children;
-      for (var rli = 0; rli < rcKids.length; rli++) {
-        var rcCh = rcKids[rli];
-        var rcChIdEl = rcCh.hasAttribute('data-puck-component-id') ? rcCh : rcCh.querySelector('[data-puck-component-id]');
-        if (rcChIdEl) rcMainIds[rcChIdEl.getAttribute('data-puck-component-id')] = 1;
-      }
-      for (var rsk in RC_STASH) { if (RC_STASH.hasOwnProperty(rsk)) rcMainIds[rsk] = 1; }
-      var rcParts = [];
-      var rcMissing = [];
-      var rcApplied = [];
+      var rcParts = [];      // body-блоки в целевом порядке (HTML); fetch заполняет плейсхолдеры
+      var rcFetchJobs = [];  // { partIndex, id, type, props, propsHash } — новые/изменённые body
+      var rcNewChrome = [];  // новый хром-блок без DOM — вне инкрементального пути → reload
       for (var rti = 0; rti < rcTarget.length; rti++) {
         var rtb = rcTarget[rti];
-        if (!rtb || !rtb.id || !rcMainIds[rtb.id]) continue; // хром/чужой контейнер — не трогаем
+        if (!rtb || !rtb.id) continue;
         var rcLive = __rcTopChild(rtb.id, rcMain);
-        if (rcLive) { rcParts.push(rcLive.outerHTML); rcApplied.push(rtb.id); }
-        else if (RC_STASH[rtb.id]) { rcParts.push(RC_STASH[rtb.id]); rcApplied.push(rtb.id); }
-        else { rcMissing.push(rtb.id); } // новый блок — US2
+        if (rcLive) {
+          // Живой узел main — DOM авторитетен (update-block держит видимые свежими).
+          RC_RENDERED_HASH[rtb.id] = rtb.propsHash;
+          rcParts.push(rcLive.outerHTML);
+          continue;
+        }
+        var rcDomEl = document.querySelector('[data-puck-component-id="' + rtb.id + '"]');
+        if (rcDomEl && !rcMain.contains(rcDomEl)) continue; // хром (вне main) — CSS-toggle в __rcApply
+        if (RC_STASH[rtb.id] && RC_RENDERED_HASH[rtb.id] === rtb.propsHash) {
+          rcParts.push(RC_STASH[rtb.id]); // stash + контент не менялся → мгновенно без сети
+          continue;
+        }
+        // Новый body-блок ИЛИ скрытый отредактированный → серверный фрагмент (US2).
+        if (rtb.type === 'Header' || rtb.type === 'Footer' || rtb.type === 'PromoBanner') {
+          rcNewChrome.push(rtb.id); // новый хром-блок без DOM — редкость → аварийный reload
+          continue;
+        }
+        rcFetchJobs.push({ partIndex: rcParts.length, id: rtb.id, type: rtb.type, props: rtb.props, propsHash: rtb.propsHash });
+        rcParts.push(''); // плейсхолдер; заполнит fetch
       }
-      if (rcMissing.length) {
-        post({ type: 'reconcile-ack', version: rcVersion, ok: false, applied: rcApplied, missing: rcMissing });
+      if (rcNewChrome.length) {
+        post({ type: 'reconcile-ack', version: rcVersion, ok: false, applied: [], missing: rcNewChrome });
+        return; // parent сделает один тихий reload (T009)
+      }
+      if (!rcFetchJobs.length) {
+        __rcApply(rcVersion, rcTarget, rcMain, rcParts); // быстрый путь: hide/show/reorder/delete — без сети
         return;
       }
-      try {
-        Idiomorph.morph(rcMain, rcParts.join(''), {
-          morphStyle: 'innerHTML',
-          callbacks: {
-            beforeNodeRemoved: function (n) { __rcStash(n, rcMain); },
-            afterNodeAdded: function (n) { __rcAfterAdd(n); }
-          }
-        });
-      } catch (rcErr) {
-        console.error('[preview] reconcile morph failed', rcErr);
-        post({ type: 'reconcile-ack', version: rcVersion, ok: false, applied: [], missing: rcTarget.map(function (b) { return b && b.id; }) });
+      // US2: дофетчить новые/изменённые body-блоки параллельно, затем применить.
+      if (!currentSiteId) {
+        post({ type: 'reconcile-ack', version: rcVersion, ok: false, applied: [], missing: rcFetchJobs.map(function (j) { return j.id; }) });
         return;
       }
-      RC_APPLIED_VERSION = rcVersion;
-      // 106 systemic: хром-блоки (Header/Footer/PromoBanner вне <main>) — только
-      // hide/show (не reorder/add/delete). Единый CSS-toggle по тому же видимому
-      // target: блок вне target → скрыть (data-rc-hidden), в target → показать.
-      // Body-секции уже сведены morph выше. Self-heal: видимый хром чистится от
-      // случайного data-rc-hidden.
-      var rcVisible = {};
-      for (var rvi = 0; rvi < rcTarget.length; rvi++) { if (rcTarget[rvi] && rcTarget[rvi].id) rcVisible[rcTarget[rvi].id] = 1; }
-      var rcAll = document.querySelectorAll('[data-puck-component-id]');
-      for (var rai = 0; rai < rcAll.length; rai++) {
-        var rael = rcAll[rai];
-        if (rcMain.contains(rael)) continue; // body-секции — уже morph
-        var raid = rael.getAttribute('data-puck-component-id');
-        if (!raid) continue;
-        var ratop = rael; // top-level элемент хрома (scheme-обёртка = прямой ребёнок body)
-        while (ratop.parentElement && ratop.parentElement !== document.body) ratop = ratop.parentElement;
-        if (rcVisible[raid]) ratop.removeAttribute('data-rc-hidden');
-        else ratop.setAttribute('data-rc-hidden', '1');
-      }
-      var rcFinal = [];
-      var rcKids2 = rcMain.children;
-      for (var rfi = 0; rfi < rcKids2.length; rfi++) {
-        var rfEl = rcKids2[rfi];
-        var rfIdEl = rfEl.hasAttribute('data-puck-component-id') ? rfEl : rfEl.querySelector('[data-puck-component-id]');
-        if (rfIdEl) rcFinal.push(rfIdEl.getAttribute('data-puck-component-id'));
-      }
-      post({ type: 'reconcile-ack', version: rcVersion, ok: true, applied: rcFinal, missing: [] });
+      var rcMissing = [];
+      Promise.all(rcFetchJobs.map(function (job) {
+        return fetch('/api/sites/' + currentSiteId + '/preview/block', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ blockType: job.type, props: job.props, themeId: currentThemeId }),
+        })
+          .then(function (r) { return r.ok ? r.text() : null; })
+          .then(function (html) {
+            if (html === null || !isValidBlockHtml(html, null)) { rcMissing.push(job.id); return; }
+            rcParts[job.partIndex] = html;
+            RC_RENDERED_HASH[job.id] = job.propsHash;
+          })
+          .catch(function () { rcMissing.push(job.id); });
+      })).then(function () {
+        if (rcVersion <= RC_APPLIED_VERSION) return; // вытеснен более новым reconcile, пока фетчили
+        if (rcMissing.length) {
+          // fetch фрагмента провалился / невалиден → parent сделает один тихий reload (T015→T009)
+          post({ type: 'reconcile-ack', version: rcVersion, ok: false, applied: [], missing: rcMissing });
+          return;
+        }
+        __rcApply(rcVersion, rcTarget, rcMain, rcParts);
+      });
     }
   });
 

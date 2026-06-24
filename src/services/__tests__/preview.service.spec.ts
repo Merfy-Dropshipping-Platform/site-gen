@@ -170,6 +170,47 @@ describe('PreviewService', () => {
       expect(html).toContain('update-block');
     });
 
+    it('106 US2: reconcile-агент фетчит НОВЫЕ body-блоки и валит в missing при сбое', async () => {
+      // US2 (T014/T015): новый блок (нет в DOM и stash) → server fetch /preview/block;
+      // несколько новых → параллельно (Promise.all); сбой/невалидный HTML → id в
+      // missing → reconcile-ack ok:false → parent делает один тихий reload.
+      const html = await svc.renderPreviewPage({
+        blocks: [{ type: 'Hero', props: { id: 'Hero-1' } }],
+        tokensCss: '',
+        fontHead: '',
+        themeId: 'rose',
+      });
+      // Reconcile-handler присутствует.
+      expect(html).toContain("ev.data.type === 'reconcile'");
+      // Новые/изменённые body-блоки собираются в очередь fetch и тянутся параллельно.
+      expect(html).toContain('rcFetchJobs');
+      expect(html).toContain('Promise.all(rcFetchJobs');
+      // Fetch идёт на существующий single-block эндпоинт.
+      expect(html).toContain("'/api/sites/' + currentSiteId + '/preview/block'");
+      // Сбой/невалидный фрагмент → блок в missing.
+      expect(html).toContain('rcMissing.push(job.id)');
+      // Непустой missing → ack ok:false (агрессивная страховка на стороне parent).
+      expect(html).toContain('ok: false, applied: [], missing: rcMissing');
+    });
+
+    it('106 US2: reuse без сети — живой узел/stash при совпадении propsHash; новый хром → reload', async () => {
+      const html = await svc.renderPreviewPage({
+        blocks: [{ type: 'Hero', props: { id: 'Hero-1' } }],
+        tokensCss: '',
+        fontHead: '',
+        themeId: 'rose',
+      });
+      // renderedPropsHash сравнивается с дескриптором → решение reuse / fetch.
+      expect(html).toContain('RC_RENDERED_HASH');
+      // Stash переиспользуется только при совпадении propsHash (мгновенно, без сети).
+      expect(html).toContain('RC_STASH[rtb.id] && RC_RENDERED_HASH[rtb.id] === rtb.propsHash');
+      // Живой узел main — DOM авторитетен, reuse без сети.
+      expect(html).toContain('rcParts.push(rcLive.outerHTML)');
+      // Новый хром-блок без DOM (Header/Footer/PromoBanner) → аварийный reload.
+      expect(html).toContain('rcNewChrome');
+      expect(html).toContain("rtb.type === 'Header' || rtb.type === 'Footer' || rtb.type === 'PromoBanner'");
+    });
+
     it('update-block агент создаёт scheme-обёртку on demand и снимает её симметрично', async () => {
       // Hot-replace: если у блока не было scheme-обёртки, а colorScheme выбран —
       // агент оборачивает HTML в <div class="color-scheme-N" data-block-scheme="N">

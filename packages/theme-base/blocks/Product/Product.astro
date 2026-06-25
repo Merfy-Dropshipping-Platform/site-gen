@@ -451,7 +451,11 @@ const cartImage = view.gallery.hero?.src ?? '';
     function refreshPriceFromVariant() {
       if (priceCur) {
         const v = getActiveVariant();
-        const total = (v && v.price != null ? parseFloat(String(v.price)) : null);
+        // Цена варианта берётся только если она положительная; 0/null/NaN →
+        // базовая цена товара (зеркало rose applyCombo: combo.price ? combo.price
+        // : p.price). Без этого вариант с нулём/пустой ценой обнулял всю цену.
+        const _vp = v ? parseFloat(String(v.price)) : NaN;
+        const total = Number.isFinite(_vp) && _vp > 0 ? _vp : null;
         const base = total != null ? total : (productData ? parseFloat(String(productData.basePrice ?? productData.price ?? 0)) : 0);
         // Цена на карточке товара — за ЕДИНИЦУ, не умножается на количество.
         // Количество влияет только на корзину (cartUnitPrice + qty считают сумму
@@ -499,7 +503,8 @@ const cartImage = view.gallery.hero?.src ?? '';
     function updateCartAttrs() {
       if (!addBtn) return;
       const v = getActiveVariant();
-      let unit = (v && v.price != null) ? parseFloat(String(v.price))
+      const _vu = v ? parseFloat(String(v.price)) : NaN;
+      let unit = Number.isFinite(_vu) && _vu > 0 ? _vu
         : (productData ? parseFloat(String(productData.basePrice ?? productData.price ?? 0)) : 0);
       if (!Number.isFinite(unit) || unit < 0) unit = 0;
       const old = productData ? parseFloat(String(productData.compareAtPrice ?? productData.oldPrice ?? 0)) : 0;
@@ -817,12 +822,16 @@ const cartImage = view.gallery.hero?.src ?? '';
       document.body.appendChild(overlay);
     }
 
-    // ─── Initial hydration: resolve THIS page's product, fetch live, apply. ───
-    // На выделенной странице товара (/product/<slug> или ?id=) товар берётся из
-    // URL — так PDP показывает нужный товар; на контентной странице (нет такого
-    // URL) фолбэк на productId блока, заданный в конструкторе. Живой источник —
-    // тот же /api/store/products, что и каталог (рубли, свежие цена/сток);
-    // graceful-фолбэки: __MERFY_PRODUCTS__ глобал → storefront-data прокси.
+    // ─── Initial hydration: резолв товара ЭТОЙ страницы из самого надёжного
+    //     источника, затем рефреш живым API. ───
+    // PDP (/product/<slug> или ?id=) берёт товар из URL; контентная секция — из
+    // productId блока. Источники по убыванию надёжности:
+    //   0) __MERFY_PRODUCTS__ глобал (если запечён) — мгновенно;
+    //   1) /data/products.json — SAME-ORIGIN, богатый shape (variantCombinations);
+    //      работает даже когда cross-origin gateway тормозит/недоступен (раньше
+    //      пропускался → при таймауте API цена/варианты ломались);
+    //   2) живой /api/store/products — свежие сток/цена (рефреш поверх);
+    //   3) storefront-data — последний фолбэк (превью).
     function pdpRefFromUrl() {
       try {
         const m = location.pathname.match(/\/product\/([^/]+)\/?$/);
@@ -844,6 +853,13 @@ const cartImage = view.gallery.hero?.src ?? '';
       }
       return null;
     }
+    function listFrom(data) {
+      if (Array.isArray(data)) return data;
+      return (data && (data.products || (data.data && data.data.products))) || [];
+    }
+    function pickFromList(list) {
+      return matchRef(list, resolveRef) || (isPdp ? null : (Array.isArray(list) ? list[0] : null)) || null;
+    }
     function onResolved(p) {
       if (!p) return;
       applyProduct(p);
@@ -854,36 +870,30 @@ const cartImage = view.gallery.hero?.src ?? '';
     }
 
     // 0) Мгновенно: товары, запечённые в глобал страницы (если есть).
-    try {
-      const g = window.__MERFY_PRODUCTS__ || [];
-      const hit = matchRef(g, resolveRef) || (isPdp ? null : g[0]);
-      if (hit) onResolved(hit);
-    } catch (e) {}
+    try { const hit = pickFromList(window.__MERFY_PRODUCTS__ || []); if (hit) onResolved(hit); } catch (e) {}
 
-    // 1) Живой API (как каталог — свежие цена/сток), затем прокси-фолбэк.
-    if (siteId) {
-      fetch(apiBase + '/store/products?store_id=' + encodeURIComponent(siteId) + '&limit=100', { credentials: 'omit' })
-        .then((r) => (r && r.ok ? r.json() : null))
-        .then((data) => {
-          const list = (data && (data.products || (data.data && data.data.products))) || [];
-          const hit = matchRef(list, resolveRef) || (isPdp ? null : list[0]);
-          if (hit) { onResolved(hit); return true; }
-          return false;
-        })
-        .catch(() => false)
-        .then((done) => {
-          if (done) return;
-          const qs = resolveRef ? '?product=' + encodeURIComponent(resolveRef) : '';
-          return fetch(apiBase + '/sites/' + siteId + '/storefront-data' + qs, { credentials: 'omit' })
-            .then((r) => (r && r.ok ? r.json() : null))
-            .then((data) => {
-              if (!data) return;
-              const single = data.product;
-              const list = data.products || (data.data && data.data.products) || [];
-              onResolved(single || matchRef(list, resolveRef) || list[0]);
-            })
-            .catch(() => {});
-        });
-    }
+    let __resolved = false;
+    // 1) /data/products.json (same-origin, надёжно, богато) →
+    fetch('/data/products.json', { credentials: 'omit' })
+      .then((r) => (r && r.ok ? r.json() : null))
+      .then((d) => { const hit = pickFromList(listFrom(d)); if (hit) { onResolved(hit); __resolved = true; } })
+      .catch(() => {})
+      // 2) живой API — рефреш свежих цены/стока поверх (не блокирует первичный показ).
+      .then(() => {
+        if (!siteId) return;
+        return fetch(apiBase + '/store/products?store_id=' + encodeURIComponent(siteId) + '&limit=100', { credentials: 'omit' })
+          .then((r) => (r && r.ok ? r.json() : null))
+          .then((d) => { const hit = pickFromList(listFrom(d)); if (hit) { onResolved(hit); __resolved = true; } })
+          .catch(() => {});
+      })
+      // 3) storefront-data — последний фолбэк, только если выше ничего не дали.
+      .then(() => {
+        if (__resolved || !siteId) return;
+        const qs = resolveRef ? '?product=' + encodeURIComponent(resolveRef) : '';
+        return fetch(apiBase + '/sites/' + siteId + '/storefront-data' + qs, { credentials: 'omit' })
+          .then((r) => (r && r.ok ? r.json() : null))
+          .then((d) => { if (!d) return; onResolved(d.product || pickFromList(listFrom(d))); })
+          .catch(() => {});
+      });
   })();
 </script>

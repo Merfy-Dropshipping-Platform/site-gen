@@ -1,35 +1,20 @@
 ---
 /**
- * Универсальная страница товара `/product` (Option B, спек 098 + live-wiring).
+ * Страница товара `/product` — ЕДИНЫЙ рендер (PRODUCT_UNIFIED_THEMES).
  *
- * Реальные товары не имеют статических `/products/{id}` страниц (getStaticPaths
- * знает только demo bag-N на сборке сервиса). Эта одна страница рендерит
- * нейтральный skeleton; вся live-гидрация (определение товара по slug пути /
- * ?id= / __MERFY_DEFAULT_PRODUCT_ID__, заполнение data-pdp-* хуков, варианты,
- * корзина, галерея, «Товар не найден») выполняется единым `is:inline`-скриптом
- * ВНУТРИ `RoseProductDetail`. Источник — ЖИВОЙ `/api/store/products` (как
- * каталог rose), с фолбэком на per-site `/data/products.json` и preview
- * storefront-data. Разметка — общий `RoseProductDetail` (parity с demo `[id].astro`).
+ * Этот файл даёт только ШЕЛЛ страницы (Layout: <head>, шапка/подвал, скрипты
+ * Layout). Тело секции «Товар» инжектит sites на сборке/в превью через
+ * renderBlock(theme-base `Product.astro`) — composeContentPagesIntoDist (live)
+ * и preview.controller (превью) заменяют <main> отрендеренной секцией с
+ * настройками из page-product ревизии. Per-slug `/product/<slug>` собирается
+ * тем же путём (build.service `renderProductSectionForId`).
+ *
+ * Порт `RoseProductDetail.astro` удалён: рендер PDP унифицирован с конструктором
+ * и контентными секциями (один `Product.astro` везде — live, превью, главная).
+ * Фолбэк при сбое compose — пустой шелл (compose — основной путь ВСЕХ контентных
+ * страниц темы, надёжен).
  */
 import Layout from "../layouts/Layout.astro";
-import RoseProductDetail from "../components/products/RoseProductDetail.astro";
-import type { Product } from "../types/product";
-
-// Нейтральный skeleton: рендерится до клиентской гидрации (и на demo-сборке без
-// данных). placeholder-картинка, без галереи/бренда/старой цены.
-const skeleton = {
-	id: "",
-	name: "Товар",
-	price: "",
-	image: "/images/placeholder.png",
-} as Product;
 ---
 
-<Layout title="Товар">
-	{/* Вся live-гидрация PDP живёт ВНУТРИ RoseProductDetail.astro единым
-	    is:inline-скриптом — он работает на обоих маршрутах (`/product` и demo
-	    `products/[id]`) и на live (theme dist), где module-<script> страницы не
-	    компилится. Здесь — только скелетон; дублирующий хелпер-скрипт убран
-	    (иначе двойная конфликтующая гидрация). */}
-	<RoseProductDetail product={skeleton} />
-</Layout>
+<Layout title="Товар"></Layout>

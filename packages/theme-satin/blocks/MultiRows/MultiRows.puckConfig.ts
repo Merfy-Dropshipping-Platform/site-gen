@@ -132,7 +132,7 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
       arrayFields: {
         image: { type: 'image', label: 'Изображение' },
         size: {
-          type: 'radio',
+          type: 'select',
           label: 'Размер',
           options: [
             { label: 'Маленькая', value: 'small' },
@@ -146,9 +146,9 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
         width: { type: 'hidden', label: '' } as any,
         // Figma 1:33349 — divider «Содержание» в панели ряда (перед контентом).
         ['_contentSection' as never]: { type: 'section-header', label: 'Содержание' } as any,
-        title: { type: 'text', label: 'Заголовок' },
+        title: { type: 'aiText', label: 'Заголовок', fieldType: 'title', placeholder: 'Ввести текст...' } as any,
         headingSize: {
-          type: 'radio',
+          type: 'select',
           label: 'Размер заголовка',
           options: [
             { label: 'Маленький', value: 'small' },
@@ -156,9 +156,9 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
             { label: 'Большой', value: 'large' },
           ],
         },
-        description: { type: 'textarea', label: 'Текст' },
+        description: { type: 'aiText', label: 'Текст', fieldType: 'description', placeholder: 'Ввести текст...' } as any,
         textSize: {
-          type: 'radio',
+          type: 'select',
           label: 'Размер текста',
           options: [
             { label: 'Маленький', value: 'small' },

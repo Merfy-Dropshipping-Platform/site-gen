@@ -2,10 +2,10 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { Logger } from '@nestjs/common';
 import { PreviewService } from '../services/preview.service';
-import { composeV2Page } from './v2-page-composer';
+import { composeV2Page, schemeIdFromProp } from './v2-page-composer';
 import { extractPageBlocks } from './page-blocks';
 import { isV2ComplexRoute } from './v2-routes';
-import { getContentPages, getChromeKind } from './page-registry';
+import { getContentPages, getChromeKind, PRODUCT_UNIFIED_THEMES } from './page-registry';
 import { assembleChrome, injectChromeIntoHtml } from './chrome-assembler';
 // import type → стирается при компиляции, цикла на module-init не создаёт.
 import type { BuildContext } from '../generator/build.service';
@@ -62,6 +62,21 @@ export async function composeContentPagesIntoDist(
     ...p,
     title: pageName(p.key),
   }));
+
+  // Унификация PDP (rose-first): для тем из PRODUCT_UNIFIED_THEMES выделенная
+  // страница товара /product рендерится тем же renderBlock-движком, что и
+  // контентные секции — настройки секции «Товар» (макет/размер/позиция/зум/
+  // схема/отступы/варианты) запекаются в SSR из page-product Product-блока,
+  // вместо verbatim-порта темы (RoseProductDetail.astro и аналоги). Свой шелл
+  // product/index.html (requireOwnShell) → composeV2Page заменяет тело →
+  // applyChromeToDist унифицирует хром (как все non-checkout). Универсальная
+  // страница показывает дефолтный товар (productId из конструктора); per-slug
+  // /product/<slug> под конкретный товар собирает build.service, переиспользуя
+  // этот шелл (renderProductSectionForId). Гейт по theme → нерелевантные темы
+  // не затронуты (страница остаётся verbatim).
+  if (PRODUCT_UNIFIED_THEMES.has(theme)) {
+    pages.push({ key: 'page-product', route: 'product', requireOwnShell: true, title: pageName('page-product') });
+  }
 
   // Кастомные страницы мерчанта — ТОЛЬКО позитивный opt-in. В прод-ревизиях
   // у системных страниц role=null/isCustom=false (а НЕ role='system'), поэтому
@@ -191,6 +206,53 @@ export async function composeContentPagesIntoDist(
     count++;
   }
   return count;
+}
+
+/**
+ * Рендер секции «Товар» (theme-base блок Product) под КОНКРЕТНЫЙ productId —
+ * для per-slug страницы /product/<slug> (унификация PDP, см. PRODUCT_UNIFIED_THEMES).
+ * Возвращает scheme-обёрнутый HTML секции (как делает composeV2Page) для
+ * подстановки в <main> уже-собранного универсального product-шелла (хром,
+ * глобалы, head/скрипты Layout сохраняются — заменяется только тело <main>).
+ * productId прокидывается через extractPageBlocks(productIdOverride) → Product.astro
+ * на SSR резолвит реальный товар (storefront-data). null при сбое/пустом
+ * рендере → зовущий оставит копию универсальной страницы (graceful).
+ */
+export async function renderProductSectionForId(
+  ctx: BuildContext,
+  theme: string,
+  productId: string,
+): Promise<string | null> {
+  try {
+    const blocks = await extractPageBlocks(
+      ctx.revisionData,
+      'page-product',
+      ctx.publicUrl,
+      theme,
+      ctx.siteId,
+      productId,
+      logger,
+      undefined,
+    );
+    const prod = blocks?.find((b) => b.type === 'Product');
+    if (!prod) return null;
+    const html = await getRenderer().renderBlock({
+      blockName: 'Product',
+      props: { ...prod.props, siteId: (prod.props as Record<string, unknown>)?.siteId ?? ctx.siteId },
+      themeId: theme,
+      isPreview: false,
+    });
+    if (!html || !html.trim()) return null;
+    const scheme = schemeIdFromProp((prod.props as Record<string, unknown>)?.colorScheme);
+    return scheme
+      ? `<div class="color-scheme-${scheme}" data-block-scheme="${scheme}">${html}</div>`
+      : html;
+  } catch (err) {
+    logger.warn(
+      `[v2-live] renderProductSectionForId(${productId}) failed: ${(err as Error)?.message ?? String(err)}`,
+    );
+    return null;
+  }
 }
 
 // Политика (site_policy.type) → live-маршрут /legal/<slug> и заголовок.

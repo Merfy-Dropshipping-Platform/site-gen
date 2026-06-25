@@ -96,6 +96,18 @@ export const PAGE_REGISTRY: readonly PageEntry[] = [
 ];
 
 /**
+ * Темы, чья ВЫДЕЛЕННАЯ страница товара (/product) рендерится единым theme-base
+ * блоком `Product` (как контентная секция через renderBlock/composeV2Page —
+ * настройки секции запекаются в SSR), а НЕ verbatim-портом темы
+ * (RoseProductDetail.astro и аналоги). Rose-first раскатка унификации PDP:
+ * расширять множество по мере верификации каждой темы. Откат темы = убрать её
+ * отсюда (страница снова берётся verbatim из dist). Гейт читают
+ * `composeContentPagesIntoDist` (универсальный /product) и build.service
+ * (per-slug /product/<slug>).
+ */
+export const PRODUCT_UNIFIED_THEMES: ReadonlySet<string> = new Set<string>(['rose']);
+
+/**
  * Плоские verbatim-префиксы без собственной страницы-id (маршруты-исключения,
  * не «системные страницы»). Вместе с verbatim-записями реестра дают полное
  * множество прежнего V2_COMPLEX_ROUTE_PREFIXES.

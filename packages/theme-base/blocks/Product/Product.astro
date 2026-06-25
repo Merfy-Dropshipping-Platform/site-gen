@@ -381,6 +381,8 @@ const cartImage = view.gallery.hero?.src ?? '';
     const addBtn = root.querySelector('[data-product-action="add-to-cart"]');
     const buyBtn = root.querySelector('[data-product-action="buy-now"]');
     const shareBtn = root.querySelector('[data-product-action="share"]');
+    // Оригинальный лейбл основной кнопки (SSR) — чтобы вернуть после «Нет в наличии».
+    const addBtnOrigLabel = addBtn ? (addBtn.textContent || '').trim() : '';
 
     let currentQty = 1;
     let productData = null;
@@ -423,6 +425,29 @@ const cartImage = view.gallery.hero?.src ?? '';
       const v = getActiveVariant();
       return v ? v.id : null;
     }
+    // Доступность активного варианта (сток): нет вариантов → доступно; иначе
+    // available !== false && quantity (null = не отслеживается). Зеркало
+    // RoseProductDetail.applyCombo — блокирует покупку out-of-stock комбинации.
+    function isActiveAvailable() {
+      const v = getActiveVariant();
+      if (!v) return true;
+      return v.available !== false && (v.quantity == null || Number(v.quantity) > 0);
+    }
+    // Фото под выбранный вариант: опция (напр. «Цвет») несёт images[] → меняем
+    // hero. Нет медиа у опции → null (оставляем текущее фото товара).
+    function variantImageFor(sel) {
+      if (!productData || !Array.isArray(productData.variantGroups)) return null;
+      for (const g of productData.variantGroups) {
+        const val = sel[g.name];
+        if (!val || !Array.isArray(g.options)) continue;
+        const opt = g.options.find((o) => o && o.value === val);
+        if (opt && Array.isArray(opt.images) && opt.images.length) {
+          const im = opt.images[0];
+          return typeof im === 'string' ? im : (im && im.url) || null;
+        }
+      }
+      return null;
+    }
     function refreshPriceFromVariant() {
       if (priceCur) {
         const v = getActiveVariant();
@@ -441,6 +466,25 @@ const cartImage = view.gallery.hero?.src ?? '';
             priceOld.style.display = 'none';
           }
         }
+      }
+      // Доступность по стоку: блокируем покупку out-of-stock варианта (+ лейбл
+      // «Нет в наличии»). Невариативный товар → доступен.
+      const _avail = isActiveAvailable();
+      if (addBtn) {
+        addBtn.disabled = !_avail;
+        addBtn.classList.toggle('opacity-50', !_avail);
+        addBtn.classList.toggle('pointer-events-none', !_avail);
+        addBtn.textContent = _avail ? (addBtnOrigLabel || addBtn.textContent) : 'Нет в наличии';
+      }
+      if (buyBtn) {
+        buyBtn.disabled = !_avail;
+        buyBtn.classList.toggle('opacity-50', !_avail);
+        buyBtn.classList.toggle('pointer-events-none', !_avail);
+      }
+      // Свотч-вариант с фото → меняем hero под выбранный цвет.
+      if (heroImg) {
+        const _vimg = variantImageFor(selectedOptions);
+        if (_vimg) heroImg.setAttribute('src', _vimg);
       }
       // Keep the declarative add-to-cart payload in sync (nt-cart delegate reads
       // it on click). Runs even when price is hidden — `if (priceCur)` only
@@ -773,30 +817,73 @@ const cartImage = view.gallery.hero?.src ?? '';
       document.body.appendChild(overlay);
     }
 
-    // Initial hydration.
-    function initFromGlobalProducts() {
+    // ─── Initial hydration: resolve THIS page's product, fetch live, apply. ───
+    // На выделенной странице товара (/product/<slug> или ?id=) товар берётся из
+    // URL — так PDP показывает нужный товар; на контентной странице (нет такого
+    // URL) фолбэк на productId блока, заданный в конструкторе. Живой источник —
+    // тот же /api/store/products, что и каталог (рубли, свежие цена/сток);
+    // graceful-фолбэки: __MERFY_PRODUCTS__ глобал → storefront-data прокси.
+    function pdpRefFromUrl() {
       try {
-        const slug = root.getAttribute('data-product-slug') || productId;
-        const fromGlobal = (window.__MERFY_PRODUCTS__ || []).find((p) =>
-          p && (p.slug === slug || p.handle === slug || p.id === slug),
-        );
-        if (fromGlobal) applyProduct(fromGlobal);
-      } catch {}
+        const m = location.pathname.match(/\/product\/([^/]+)\/?$/);
+        if (m) return decodeURIComponent(m[1]); // pretty /product/<slug>
+        return new URLSearchParams(location.search).get('id') || null; // ?id=<id>
+      } catch (e) { return null; }
     }
-    initFromGlobalProducts();
+    const urlRef = pdpRefFromUrl();
+    // __MERFY_DEFAULT_PRODUCT_ID__ инжектится build.service ТОЛЬКО в product/index.html
+    // → его наличие = «мы на выделенной странице товара» (а не секция на главной).
+    const defaultPid = (typeof window !== 'undefined' && window.__MERFY_DEFAULT_PRODUCT_ID__) || null;
+    const resolveRef = urlRef || productId || defaultPid;
+    const isPdp = !!(urlRef || defaultPid);
+    function matchRef(list, ref) {
+      if (!Array.isArray(list) || !ref) return null;
+      for (let i = 0; i < list.length; i++) {
+        const p = list[i];
+        if (p && (p.id === ref || p.slug === ref || p.handle === ref)) return p;
+      }
+      return null;
+    }
+    function onResolved(p) {
+      if (!p) return;
+      applyProduct(p);
+      if (isPdp) {
+        const nm = p.title || p.name;
+        if (nm) { try { document.title = nm; } catch (e) {} }
+      }
+    }
 
+    // 0) Мгновенно: товары, запечённые в глобал страницы (если есть).
+    try {
+      const g = window.__MERFY_PRODUCTS__ || [];
+      const hit = matchRef(g, resolveRef) || (isPdp ? null : g[0]);
+      if (hit) onResolved(hit);
+    } catch (e) {}
+
+    // 1) Живой API (как каталог — свежие цена/сток), затем прокси-фолбэк.
     if (siteId) {
-      const qs = productId ? '?product=' + encodeURIComponent(productId) : '';
-      fetch(apiBase + '/sites/' + siteId + '/storefront-data' + qs, { credentials: 'omit' })
-        .catch(() => null)
+      fetch(apiBase + '/store/products?store_id=' + encodeURIComponent(siteId) + '&limit=100', { credentials: 'omit' })
         .then((r) => (r && r.ok ? r.json() : null))
         .then((data) => {
-          if (!data) return;
-          const single = data.product;
-          const list = data.products || (data.data && data.data.products) || [];
-          applyProduct(single || list[0]);
+          const list = (data && (data.products || (data.data && data.data.products))) || [];
+          const hit = matchRef(list, resolveRef) || (isPdp ? null : list[0]);
+          if (hit) { onResolved(hit); return true; }
+          return false;
         })
-        .catch(() => {});
+        .catch(() => false)
+        .then((done) => {
+          if (done) return;
+          const qs = resolveRef ? '?product=' + encodeURIComponent(resolveRef) : '';
+          return fetch(apiBase + '/sites/' + siteId + '/storefront-data' + qs, { credentials: 'omit' })
+            .then((r) => (r && r.ok ? r.json() : null))
+            .then((data) => {
+              if (!data) return;
+              const single = data.product;
+              const list = data.products || (data.data && data.data.products) || [];
+              onResolved(single || matchRef(list, resolveRef) || list[0]);
+            })
+            .catch(() => {});
+        });
     }
   })();
 </script>

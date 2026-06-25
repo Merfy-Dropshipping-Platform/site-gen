@@ -17,6 +17,7 @@ import { ClientProxy } from "@nestjs/microservices";
 import { firstValueFrom } from "rxjs";
 import { timeout } from "rxjs/operators";
 import { resolveAssetUrls } from "../themes/asset-resolver";
+import { PRODUCT_UNIFIED_THEMES } from "../themes/page-registry";
 import { BLOCK_ROOT_INLINE, BLOCK_ROOT_MARKER } from "../common/block-root-inline";
 import * as path from "path";
 import * as fs from "fs/promises";
@@ -1092,7 +1093,7 @@ export async function runBuildPipeline(
       // Lazy import: build.service ← v2-live-pages ← v2-page-composer ←
       // theme-build.service ← build.service — циклический граф; динамический
       // import не материализует цикл на module-init.
-      const { composeContentPagesIntoDist, composeLegalPagesIntoDist, applyChromeToDist, unifyChromeInDist } = await import("../themes/v2-live-pages");
+      const { composeContentPagesIntoDist, composeLegalPagesIntoDist, applyChromeToDist, unifyChromeInDist, renderProductSectionForId } = await import("../themes/v2-live-pages");
       const composedPages = await composeContentPagesIntoDist(ctx, bareTheme);
       logger.log(
         `[themes-v2] Composed ${composedPages} content pages from revision for site ${params.siteId}`,
@@ -1356,17 +1357,38 @@ export async function runBuildPipeline(
 
             let made = 0;
             let madeId = 0;
+            let ssrMains = 0;
+            // Унификация PDP (PRODUCT_UNIFIED_THEMES, rose-first): per-slug
+            // страница под КОНКРЕТНЫЙ товар = универсальный шелл (хром/глобалы/
+            // head/скрипты Layout) с подменённым телом <main> на SSR-секцию
+            // Product(productId=p.id) — правильные галерея/варианты/цена + все
+            // настройки секции. Verbatim-темы — прежнее поведение (копия
+            // универсальной страницы, товар определяется клиентом по URL-slug).
+            const unifyProduct = PRODUCT_UNIFIED_THEMES.has(bareTheme);
             for (const p of v2Store.products as unknown as Array<Record<string, unknown>>) {
               const slug = (p.slug ?? p.handle ?? p.id) as string | undefined;
               if (!slug || typeof slug !== "string") continue;
+              const pid = typeof p.id === "string" ? p.id : undefined;
+              // База: для unify-тем подменяем <main> на секцию под этот товар;
+              // фолбэк на универсальный шелл, если рендер не удался (graceful).
+              let baseHtml = pdpHtml;
+              if (unifyProduct && pid) {
+                const section = await renderProductSectionForId(ctx, bareTheme, pid);
+                if (section) {
+                  baseHtml = pdpHtml.replace(
+                    /(<main\b[^>]*>)[\s\S]*?(<\/main>)/i,
+                    (_m, open, close) => `${open}${section}${close}`,
+                  );
+                  ssrMains++;
+                }
+              }
               // canonical всегда на slug → одна и та же мета в обеих копиях.
-              const patched = patchPdpMeta(pdpHtml, p, slug);
+              const patched = patchPdpMeta(baseHtml, p, slug);
               const slugDir = path.join(ctx.distDir, "product", slug);
               await fs.mkdir(slugDir, { recursive: true });
               await fs.writeFile(path.join(slugDir, "index.html"), patched, "utf8");
               made++;
               // Per-id страница (если id != slug): тот же patched HTML (canonical=slug).
-              const pid = typeof p.id === "string" ? p.id : undefined;
               if (pid && pid !== slug) {
                 const idDir = path.join(ctx.distDir, "product", pid);
                 await fs.mkdir(idDir, { recursive: true });
@@ -1374,7 +1396,7 @@ export async function runBuildPipeline(
                 madeId++;
               }
             }
-            logger.log(`[themes-v2][seo] Generated ${made} product/<slug>/ + ${madeId} product/<id>/ pages with SEO meta for site ${params.siteId}`);
+            logger.log(`[themes-v2][seo] Generated ${made} product/<slug>/ + ${madeId} product/<id>/ pages with SEO meta for site ${params.siteId}${unifyProduct ? ` (${ssrMains} SSR per-product mains)` : ""}`);
           } else {
             logger.warn(`[themes-v2] universal product/index.html not found — pretty /product/<slug> URLs will 404`);
           }

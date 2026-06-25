@@ -1281,27 +1281,48 @@ const PREVIEW_NAV_AGENT_INLINE = `
       navigationLinks: function (el, oldVal, newVal) {
         var oa = Array.isArray(oldVal) ? oldVal : [];
         var na = Array.isArray(newVal) ? newVal : [];
+        // Кол-во пунктов изменилось (добавили/удалили) → структурная правка,
+        // надёжнее полный server fetch (newer DOM с правильным числом узлов).
         if (oa.length !== na.length) return false;
+        // Есть подменю где-либо (или его размер изменился) → server fetch:
+        // вложенные структуры (inline popup + drawer) патчить точечно рискованно,
+        // полный ре-рендер надёжнее. Local-patch берём ТОЛЬКО для плоского меню.
         for (var i = 0; i < na.length; i++) {
-          var oldSub = (oa[i] && Array.isArray(oa[i].submenu)) ? oa[i].submenu : [];
-          var newSub = (na[i] && Array.isArray(na[i].submenu)) ? na[i].submenu : [];
-          if (oldSub.length !== newSub.length) return false;
+          var oSub = (oa[i] && Array.isArray(oa[i].submenu)) ? oa[i].submenu : [];
+          var nSub = (na[i] && Array.isArray(na[i].submenu)) ? na[i].submenu : [];
+          if (oSub.length !== nSub.length) return false;
+          if (nSub.length > 0) return false;
         }
-        var topLinks = el.querySelectorAll('[data-nav-inline] > div > a, [data-nav-inline] > a');
-        if (topLinks.length !== na.length) return false;
-        for (var j = 0; j < na.length; j++) {
-          var a = topLinks[j];
-          a.textContent = na[j].label || '';
-          a.href = na[j].href || '/';
-          var parent = a.parentElement;
-          var subAs = parent ? parent.querySelectorAll('[data-submenu-panel] a, [data-submenu-panel] > div > a') : [];
-          var subs = Array.isArray(na[j].submenu) ? na[j].submenu : [];
-          for (var k = 0; k < subs.length && k < subAs.length; k++) {
-            subAs[k].textContent = subs[k].label || '';
-            subAs[k].href = subs[k].href || '/';
+        // Плоское меню: точечно правим label/href БЕЗ ре-рендера всего Header
+        // (иначе sticky/drawer/скрипты перестраиваются на каждую букву и меню
+        // мигает/пропадает). Обновляем ОБА представления меню, если они есть:
+        // десктоп-inline (data-nav-inline) и шторку-drawer (data-nav-drawer,
+        // напр. rose menuType=sidebar: видимое меню живёт в шторке, inline скрыт).
+        var patched = false;
+        // Десктоп inline: пункт = прямой a (без подменю) ИЛИ div > a (триггер).
+        var inlineNav = el.querySelector('[data-nav-inline]');
+        if (inlineNav) {
+          var inlineLinks = inlineNav.querySelectorAll(':scope > a, :scope > div > a');
+          if (inlineLinks.length !== na.length) return false;
+          for (var j = 0; j < na.length; j++) {
+            inlineLinks[j].textContent = na[j].label || '';
+            inlineLinks[j].href = na[j].href || '/';
           }
+          patched = true;
         }
-        return true;
+        // Шторка drawer: пункт = <div> > <a> (первый <a> в каждой группе).
+        var drawerNav = el.querySelector('[data-nav-drawer]');
+        if (drawerNav) {
+          var drawerLinks = drawerNav.querySelectorAll(':scope > div > a');
+          if (drawerLinks.length !== na.length) return false;
+          for (var d = 0; d < na.length; d++) {
+            drawerLinks[d].textContent = na[d].label || '';
+            drawerLinks[d].href = na[d].href || '/';
+          }
+          patched = true;
+        }
+        // Ни одного носителя меню не нашли (тема без маркеров) → server fetch.
+        return patched;
       }
     },
     // 091 — Hero local-patch: heading/text text changes БЕЗ outerHTML replace.

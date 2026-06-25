@@ -82,7 +82,8 @@ export const NewsletterPuckConfig: BlockPuckConfig<NewsletterProps> = {
       hiddenInMainPanel: true,
       objectFields: {
         text: { type: 'aiText', label: 'Заголовок', fieldType: 'title', placeholder: 'Ввести текст...' } as any,
-        alignment: { type: 'alignment', label: 'Выравнивание' },
+        // Выравнивание заголовка убрано — секционное «Выравнивание» (position)
+        // управляет всем содержимым, включая заголовок (см. Newsletter.astro).
         size: {
           type: 'select',
           label: 'Размер заголовка',
@@ -96,15 +97,10 @@ export const NewsletterPuckConfig: BlockPuckConfig<NewsletterProps> = {
     } as any,
     placeholder: { type: 'text', label: 'Плейсхолдер', hiddenInMainPanel: true } as any,
     buttonText: { type: 'text', label: 'Кнопка', hiddenInMainPanel: true } as any,
-    // User #28: добавить параметр "Форма" (variant выбор) — Figma 1:19891/1:17346
-    formLayout: {
-      type: 'select',
-      label: 'Форма',
-      options: [
-        { label: 'Стек (вертикально)', value: 'stacked' },
-        { label: 'Inline-submit', value: 'inline-submit' },
-      ],
-    } as any,
+    // Поле «Форма» (formLayout) убрано из UI — «не наше». Делаем hidden (не
+    // удаляем: тип fields = Record<keyof Props> требует запись на каждый проп).
+    // Проп остаётся: default 'stacked', vanilla inline-submit через blockDefaults.
+    formLayout: { type: 'hidden', label: '' },
     // Hidden — нет в Figma 314-35034.
     description: { type: 'hidden', label: '' },
     position: { type: 'hidden', label: '' },

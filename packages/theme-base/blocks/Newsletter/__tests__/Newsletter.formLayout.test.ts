@@ -42,9 +42,13 @@ describe('Newsletter.formLayout (additive variant)', () => {
     expect(NewsletterSchema.safeParse(baseValid).success).toBe(true);
   });
 
-  it('PuckConfig exposes formLayout field', () => {
-    const fields = NewsletterPuckConfig.fields as Record<string, unknown>;
-    expect(fields.formLayout).toBeDefined();
+  // Поле «Форма» убрано из UI-панели по требованию («не наше»). Проп formLayout
+  // остаётся в schema/defaults/рендере (vanilla inline-submit через blockDefaults)
+  // и в fields как hidden (тип fields = Record<keyof Props> требует запись), но
+  // UI-выбора больше нет — поэтому field.type должен быть 'hidden'.
+  it('formLayout field скрыт из UI (hidden)', () => {
+    const fields = NewsletterPuckConfig.fields as Record<string, { type?: string }>;
+    expect(fields.formLayout?.type).toBe('hidden');
   });
 
   it('Classes export formWrapper mapping with both variants', () => {

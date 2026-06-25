@@ -32,9 +32,10 @@ const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
 
-// Pupa parity: heading.alignment, heading.size, position, colorScheme.
+// Pupa parity: heading.size, position, colorScheme.
+// heading.alignment убран — заголовок наследует text-align от секционного
+// `position` (positionClass на C.inner), чтобы одно «Выравнивание» рулило всем.
 const headingObj = headingProp ?? raw.heading;
-const headingAlignment = typeof headingObj === 'object' ? (headingObj as { alignment?: string })?.alignment : undefined;
 const headingSize = typeof headingObj === 'object' ? (headingObj as { size?: string })?.size : undefined;
 const textObj = raw.text;
 const textSize = typeof textObj === 'object' ? (textObj as { size?: string })?.size : undefined;
@@ -51,10 +52,6 @@ const position = typeof raw.position === 'string'
 const colorScheme = raw.colorScheme as string | undefined;
 const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
 
-const headingAlignClass =
-  headingAlignment === 'left' ? 'text-left' :
-  headingAlignment === 'right' ? 'text-right' :
-  headingAlignment === 'center' ? 'text-center' : '';
 const headingSizeClass =
   headingSize === 'large' ? 'text-3xl md:text-4xl' :
   headingSize === 'medium' ? 'text-2xl md:text-3xl' :
@@ -120,7 +117,7 @@ const innerOverrideClass =
   <div class={C.container}>
     <div class:list={[C.inner, positionClass, innerOverrideClass]}>
       {heading && (
-        <h2 class:list={[headingClass, formLayoutProp === 'inline-submit' ? '' : headingAlignClass, formLayoutProp === 'inline-submit' ? '' : headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{heading}</h2>
+        <h2 class:list={[headingClass, formLayoutProp === 'inline-submit' ? '' : headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{heading}</h2>
       )}
       {description && (
         <p class:list={[descriptionClass, formLayoutProp === 'inline-submit' ? '' : textSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{description}</p>

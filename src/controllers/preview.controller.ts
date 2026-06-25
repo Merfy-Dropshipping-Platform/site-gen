@@ -25,7 +25,7 @@ import { buildTokensCss } from '../themes/tokens-css';
 import { injectTokensCssIntoHtml } from '../themes/tokens-inject';
 import { extractPageBlocks } from '../themes/page-blocks';
 import { isV2ComplexRoute } from '../themes/v2-routes';
-import { getSystemPageRoute, getChromeKind } from '../themes/page-registry';
+import { getSystemPageRoute, getChromeKind, PRODUCT_UNIFIED_THEMES } from '../themes/page-registry';
 import { assembleChrome, injectChromeIntoHtml } from '../themes/chrome-assembler';
 import { migrateRevisionData } from '../utils/revision-migrations';
 import { rewriteRootUrlsToPrefix } from '../generator/theme-build.service';
@@ -199,20 +199,33 @@ export class PreviewController {
     this.logger.log(
       `[preview] siteId=${siteId} page=${page} → route=${route || '(root)'}`,
     );
+    // Унификация PDP (PRODUCT_UNIFIED_THEMES): страница «Товар» в превью
+    // рендерится тем же v2-секционным путём (renderBlock Product.astro), что и
+    // контентные секции — настройки секции применяются в превью, как на live и
+    // как на главной (зеркало composeContentPagesIntoDist). Шелл —
+    // theme-preview/<тема>/product/index.html, route оставляем 'product'.
+    // Раньше page-product шёл verbatim-блобом (порт темы игнорил настройки) →
+    // «настройки на странице Товар не работают». Verbatim-темы — без изменений.
+    const bareThemeKey = PreviewService.bareThemeKey(loaded.themeId ?? '');
+    const isProductPage = route === 'product' || match?.id === 'page-product';
+    const unifiedProduct = isProductPage && PRODUCT_UNIFIED_THEMES.has(bareThemeKey);
+
     // The product page's slug is `/product`, but the theme builds per-product
     // pages at <template>/products/<id>/index.html. Resolve to the first built
     // product; if none, the literal 'product' route will miss → fall through.
-    if (route === 'product' || match?.id === 'page-product') {
+    // Только для verbatim-тем (блоб-путь); unified-темы рендерят 'product' шелл.
+    if (isProductPage && !unifiedProduct) {
       route =
         (await this.preview.firstBuiltProductRoute(loaded.themeId)) ?? 'product';
     }
 
     // Фаза 2 (слайсинг): контентные страницы v2-темы идут по-секционно,
     // чтобы конструктор мог выделять/править/таскать секции. Сложные
-    // страницы (catalog/product/cart/checkout/…) остаются на блоб-пути.
+    // страницы (catalog/cart/checkout/…) остаются на блоб-пути; page-product —
+    // на v2-пути для unified-тем (unifiedProduct снимает complex-гейт).
     // Любой сбой v2-ветки ОБЯЗАН деградировать в блоб-путь, не в 500 —
     // отсюда try/catch-ремень вокруг всей ветки.
-    const isComplexRoute = isV2ComplexRoute(route);
+    const isComplexRoute = isV2ComplexRoute(route) && !unifiedProduct;
     if (!isComplexRoute && (await this.preview.hasV2Sections(loaded.themeId))) {
       try {
         // Маршруты коллекций (`collections/preview`, `collections/<slug>`) рисуют

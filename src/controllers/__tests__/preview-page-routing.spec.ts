@@ -187,24 +187,38 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     expect(res._headers['X-Preview-Mode']).toBeUndefined();
   });
 
-  it('product page resolves to the first built product route', async () => {
-    const tryLoad = jest
+  it('product page (PRODUCT_UNIFIED_THEMES) renders via v2-sections renderBlock path, not verbatim blob', async () => {
+    // Унификация PDP: rose входит в PRODUCT_UNIFIED_THEMES → страница «Товар» в
+    // превью идёт тем же v2-секционным путём (renderBlock Product.astro), что и
+    // контентные секции — чтобы настройки секции применялись в превью (как live
+    // и как на главной). Прежде page-product шёл блоб-путём (firstBuiltProductRoute
+    // → tryLoadBuiltThemeHtml('products/<id>')), который игнорил настройки.
+    const renderV2ContentPage = jest
       .fn()
-      .mockResolvedValue('<!DOCTYPE html><html>PRODUCT</html>');
+      .mockResolvedValue('<!DOCTYPE html><html><head></head><body><main>PRODUCT V2</main></body></html>');
+    const tryLoad = jest.fn().mockResolvedValue('<html>BLOB</html>');
     const firstBuiltProductRoute = jest
       .fn()
       .mockResolvedValue('products/prod-aaa');
     const ctrl = makeController({
+      hasV2Sections: jest.fn().mockResolvedValue(true),
+      renderV2ContentPage,
       tryLoadBuiltThemeHtml: tryLoad,
       firstBuiltProductRoute,
     } as any);
+    extractPageBlocksMock.mockResolvedValue([{ type: 'Product', props: {} }]);
     const res = makeRes();
 
     await ctrl.getPreview('site-1', '/product', undefined, res);
 
-    expect(firstBuiltProductRoute).toHaveBeenCalledWith('rose');
-    expect(tryLoad).toHaveBeenCalledWith('rose', 'products/prod-aaa');
-    expect(res._body).toBe('<!DOCTYPE html><html>PRODUCT</html>');
+    // unified-тема: НЕ remap в firstBuiltProductRoute, НЕ блоб-путь.
+    expect(firstBuiltProductRoute).not.toHaveBeenCalled();
+    expect(extractPageBlocksMock).toHaveBeenCalled();
+    expect(renderV2ContentPage).toHaveBeenCalledWith(
+      expect.objectContaining({ route: 'product' }),
+    );
+    expect(String(res._body)).toContain('PRODUCT V2');
+    expect(res._headers['X-Preview-Mode']).toBe('v2-sections');
   });
 
   it('legacy revision missing page-collection from raw pages[] resolves via theme manifest to "collections/preview"', async () => {

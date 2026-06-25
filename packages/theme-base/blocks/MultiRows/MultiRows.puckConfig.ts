@@ -161,9 +161,11 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
         },
         button: {
           type: 'object',
-          label: 'Кнопка',
+          // Figma 1:33349 — плоско: «Кнопка» (текст) + «Ссылка» (пейдж-пикер),
+          // без тёмного заголовка-объекта. Форма данных {text,link} не меняется.
+          label: '',
           objectFields: {
-            text: { type: 'text', label: 'Текст' },
+            text: { type: 'text', label: 'Кнопка' },
             link: { type: 'pagePicker', label: 'Ссылка' },
           },
         },

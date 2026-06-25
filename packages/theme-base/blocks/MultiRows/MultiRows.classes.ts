@@ -1,6 +1,10 @@
 export const MultiRowsClasses = {
   root: 'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
-  container: 'mx-auto max-w-[var(--container-max-width)] px-4',
+  // bg/text класс на container нужны чтобы containerColorScheme (отдельная схема
+  // для контейнера рядов) реально проявлялась визуально. Без них color-scheme-N
+  // wrapper менял только CSS-vars в inner scope, но container не имел bg/text
+  // utility которые читают эти vars (паттерн CollapsibleSection / Catalog).
+  container: 'mx-auto max-w-[var(--container-max-width)] px-4 bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
   stack: 'flex flex-col gap-y-[var(--spacing-grid-row-gap)]',
   row: {
     imageLeft:
@@ -16,12 +20,36 @@ export const MultiRowsClasses = {
     imageLeft: 'order-2',
     imageRight: 'order-2 md:order-1',
   },
+  // aspect НЕ фиксирован здесь — задаётся per-row (row.size ?? секционная size)
+  // через imageAspect[] ниже (мирроль rose aspectFor: small/medium/large).
   image:
-    'w-full aspect-video object-cover rounded-[var(--radius-media)]',
+    'w-full object-cover rounded-[var(--radius-media)]',
+  // Высота/size ряда → aspect медиа (rose-порт aspectFor 1:1):
+  // small='aspect-[429/309]', large='aspect-[430/500]', default(medium)='aspect-[429/444]'.
+  imageAspect: {
+    small: 'aspect-[429/309]',
+    medium: 'aspect-[429/444]',
+    large: 'aspect-[430/500]',
+  },
+  // rowHeading без фикс-размера — размер per-row (row.headingSize) через
+  // rowHeadingSize[] ниже. rose маппит size→--size-section-heading px;
+  // theme-base маппит size→Tailwind-классы (как секционный headingSize).
   rowHeading:
-    '[font-family:var(--font-heading)] text-[length:var(--size-hero-heading)] leading-tight text-[rgb(var(--color-heading))] mb-4',
+    '[font-family:var(--font-heading)] leading-tight text-[rgb(var(--color-heading))] mb-4',
+  rowHeadingSize: {
+    small: 'text-2xl md:text-3xl',
+    medium: 'text-3xl md:text-4xl',
+    large: 'text-4xl md:text-5xl',
+  },
+  // rowText без фикс-размера — размер per-row (row.textSize) через rowTextSize[]
+  // ниже (мирроль rose: small/medium/large → Tailwind text-sm/base/lg).
   rowText:
-    '[font-family:var(--font-body)] text-base text-[rgb(var(--color-text))] leading-relaxed mb-6',
+    '[font-family:var(--font-body)] text-[rgb(var(--color-text))] leading-relaxed mb-6',
+  rowTextSize: {
+    small: 'text-sm',
+    medium: 'text-base',
+    large: 'text-lg',
+  },
   button:
     'inline-flex items-center justify-center h-[var(--size-hero-button-h)] rounded-[var(--radius-button)] px-8 border border-[rgb(var(--color-button-border))] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] hover:bg-[rgb(var(--color-button-bg-hover))] hover:text-[rgb(var(--color-button-text-hover))] transition-colors no-underline',
 } as const;

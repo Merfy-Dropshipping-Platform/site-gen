@@ -17,6 +17,23 @@ const {
 const colorScheme = raw.colorScheme as string | undefined;
 const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
 
+// containerColorScheme (hidden в Figma) — отдельная схема на контейнере рядов
+// (мирроль rose-порта + паттерн CollapsibleSection / Catalog). Когда не задана —
+// контейнер наследует схему секции (визуально не отличается).
+const containerColorScheme = raw.containerColorScheme as string | undefined;
+const containerSchemeClass = containerColorScheme
+  ? `color-scheme-${String(containerColorScheme).replace('scheme-', '')}`
+  : '';
+
+// size секционный (Высота) → aspect медиа ряда; per-row size приоритетнее
+// (мирроль rose aspectFor(r.size ?? p.size)). Нормализуем к ключу C.imageAspect.
+const sectionSize = (raw.size === 'small' || raw.size === 'large' ? raw.size : 'medium') as
+  | 'small'
+  | 'medium'
+  | 'large';
+const aspectKey = (s: unknown, fallback: 'small' | 'medium' | 'large') =>
+  s === 'small' || s === 'medium' || s === 'large' ? s : fallback;
+
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
@@ -43,7 +60,7 @@ const rowsPosition = typeof raw.rowsPosition === 'string' ? raw.rowsPosition : '
   data-puck-component-id={id}
   style={paddingStyle}
 >
-  <div class={C.container}>
+  <div class:list={[C.container, containerSchemeClass]}>
     {headingText && (
       <h2 class:list={['[font-family:var(--font-heading)] text-[rgb(var(--color-heading))]', headingAlignClass, headingSizeClass, 'mb-8 font-medium']} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{headingText}</h2>
     )}
@@ -58,6 +75,11 @@ const rowsPosition = typeof raw.rowsPosition === 'string' ? raw.rowsPosition : '
         const rowImage = row.image || row.imageUrl;
         const rowTitle = row.title ?? row.heading;
         const rowDescription = row.description ?? row.text;
+        // Per-row size/headingSize/textSize (мирроль rose-порта). Per-row size
+        // приоритетнее секционной Высоты; размеры заголовка/текста — per-row.
+        const rowAspectClass = C.imageAspect[aspectKey(row.size, sectionSize)];
+        const rowHeadingSizeClass = C.rowHeadingSize[aspectKey(row.headingSize, 'medium')];
+        const rowTextSizeClass = C.rowTextSize[aspectKey(row.textSize, 'medium')];
         const buttonHref =
           (row.button && typeof row.button === 'object' && 'link' in row.button && typeof row.button.link === 'string')
             ? row.button.link
@@ -73,14 +95,14 @@ const rowsPosition = typeof raw.rowsPosition === 'string' ? raw.rowsPosition : '
           >
             <div class={C.imageCol[variantKey]}>
               {rowImage ? (
-                <img src={rowImage} alt={rowTitle ?? ''} class={C.image} />
+                <img src={rowImage} alt={rowTitle ?? ''} class:list={[C.image, rowAspectClass]} loading="lazy" />
               ) : (
-                <img src={PLACEHOLDER_ASSETS.landscape.multirows} alt="" class={`${C.image} w-full aspect-[4/3] rounded-[var(--radius-media)] object-cover`} aria-hidden="true" loading="lazy" />
+                <img src={PLACEHOLDER_ASSETS.landscape.multirows} alt="" class:list={[C.image, rowAspectClass]} aria-hidden="true" loading="lazy" />
               )}
             </div>
             <div class={C.textCol[variantKey]}>
-              {rowTitle && <h3 class={C.rowHeading}>{rowTitle}</h3>}
-              {rowDescription && <p class={C.rowText}>{rowDescription}</p>}
+              {rowTitle && <h3 class:list={[C.rowHeading, rowHeadingSizeClass]}>{rowTitle}</h3>}
+              {rowDescription && <p class:list={[C.rowText, rowTextSizeClass]}>{rowDescription}</p>}
               {row.button?.text && (
                 <a href={buttonHref ?? '#'} class={C.button}>{row.button.text}</a>
               )}

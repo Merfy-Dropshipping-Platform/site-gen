@@ -335,7 +335,22 @@ export class PreviewController {
             renderBlock: (input) => this.preview.renderBlock(input),
             isPreview: true,
           });
-          chromedHtml = injectChromeIntoHtml(builtThemeHtml, chrome);
+          // Переписываем корневые URL хрома (/icons/x.svg, /scripts/*, …) под
+          // /__theme/<тема> — как preview/block (rewriteRootUrlsToPrefix) и
+          // assetPrefix slice-страниц. БЕЗ этого Header/Footer из assembleChrome
+          // тянут /icons/x.svg → 404 в превью-iframe (gateway origin) → битые
+          // иконки на блоб-страницах ('full': корзина и т.п.). Товар/каталог не
+          // идут этим путём — их родной dist-Header уже с /__theme/.
+          const chromePrefix = `/__theme/${PreviewService.bareThemeKey(loaded.themeId ?? 'base')}`;
+          const themedChrome = {
+            headerHtml: chrome.headerHtml
+              ? rewriteRootUrlsToPrefix(chrome.headerHtml, chromePrefix)
+              : null,
+            footerHtml: chrome.footerHtml
+              ? rewriteRootUrlsToPrefix(chrome.footerHtml, chromePrefix)
+              : null,
+          };
+          chromedHtml = injectChromeIntoHtml(builtThemeHtml, themedChrome);
         } catch (chromeErr) {
           this.logger.warn(
             `[preview] chrome assemble/inject failed for site=${siteId} route=${route || '(root)'} — serving blob chrome as-is: ${(chromeErr as Error)?.message ?? chromeErr}`,

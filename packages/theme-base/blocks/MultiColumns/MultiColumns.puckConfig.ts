@@ -97,9 +97,10 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
         { label: 'Альбом', value: 'landscape' },
       ],
     },
-    // user #23: buttonText/buttonLink убраны из main sidebar — не наши поля.
-    buttonText: { type: 'hidden', label: '' } as any,
-    buttonLink: { type: 'hidden', label: '' },
+    // Figma 1236-42153: «Кнопка» (поле ввода) + «Ссылка» (page picker) в сайдбаре
+    // секции — общая CTA под колоннами (возврат по дизайну, перекрывает #23).
+    buttonText: { type: 'text', label: 'Кнопка', placeholder: '*Оставьте пустой, чтобы скрыть' } as any,
+    buttonLink: { type: 'pagePicker', label: 'Ссылка' } as any,
     displayColumns: {
       type: 'slider',
       label: 'Колонки',
@@ -109,7 +110,7 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
     },
     textPosition: {
       type: 'radio',
-      label: 'Положение колонн',
+      label: 'Положение текста',
       options: [
         { label: 'Слева', value: 'left' },
         { label: 'Центр', value: 'center' },
@@ -120,14 +121,16 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
     background: { type: 'hidden', label: '' } as any,
     containerEnabled: {
       type: 'toggle',
-      label: 'Контейнер',
+      label: 'Фон',
       options: [
         { label: 'Показать', value: 'true' },
         { label: 'Скрыть', value: 'false' },
       ],
     } as any,
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
-    containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
+    // Figma 1236-42153 показывает ОДНУ «Цветовую схему» в сайдбаре секции →
+    // «Цветовая схема контейнера» скрыта из main panel.
+    containerColorScheme: { type: 'hidden', label: '' } as any,
     padding: { type: 'padding', label: 'Отступы' },
     // Hidden — нет в Figma 314-34917.
     headingAlignment: { type: 'hidden', label: '' },

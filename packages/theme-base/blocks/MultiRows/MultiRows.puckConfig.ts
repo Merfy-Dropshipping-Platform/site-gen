@@ -126,7 +126,7 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
         image: { type: 'image', label: 'Изображение' },
         size: {
           type: 'radio',
-          label: 'Высота',
+          label: 'Размер',
           options: [
             { label: 'Маленькая', value: 'small' },
             { label: 'Средняя', value: 'medium' },
@@ -137,6 +137,8 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
         // применяет только per-row size→aspect); нет в каноне MultiColumns
         // arrayFields. Поле схемы сохранено для совместимости данных.
         width: { type: 'hidden', label: '' } as any,
+        // Figma 1:33349 — divider «Содержание» в панели ряда (перед контентом).
+        ['_contentSection' as never]: { type: 'section-header', label: 'Содержание' } as any,
         title: { type: 'text', label: 'Заголовок' },
         headingSize: {
           type: 'radio',
@@ -147,7 +149,7 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
             { label: 'Большой', value: 'large' },
           ],
         },
-        description: { type: 'textarea', label: 'Описание' },
+        description: { type: 'textarea', label: 'Текст' },
         textSize: {
           type: 'radio',
           label: 'Размер текста',

@@ -105,7 +105,7 @@ export const PAGE_REGISTRY: readonly PageEntry[] = [
  * `composeContentPagesIntoDist` (универсальный /product) и build.service
  * (per-slug /product/<slug>).
  */
-export const PRODUCT_UNIFIED_THEMES: ReadonlySet<string> = new Set<string>(['rose']);
+export const PRODUCT_UNIFIED_THEMES: ReadonlySet<string> = new Set<string>(['rose', 'vanilla', 'bloom', 'flux', 'satin']);
 
 /**
  * Плоские verbatim-префиксы без собственной страницы-id (маршруты-исключения,

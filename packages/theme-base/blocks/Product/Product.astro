@@ -548,13 +548,21 @@ const cartImage = view.gallery.hero?.src ?? '';
       refreshPriceFromVariant();
     }
 
-    // Thumb click → swap hero src.
+    // Клик по миниатюре → SWAP hero ↔ миниатюра: кликнутое фото встаёт в hero,
+    // а СТАРОЕ hero-фото — на место кликнутой миниатюры (обмен), чтобы первое
+    // фото не пропадало из галереи. Раньше был copy (thumb→hero) → старое hero
+    // нигде не оставалось и исчезало («основной пропадает»).
     if (thumbsEl) {
       thumbsEl.addEventListener('click', function (ev) {
         const btn = ev.target && ev.target.closest('[data-product-thumb]');
         if (!btn) return;
         const img = btn.querySelector('img');
-        if (img && heroImg) heroImg.setAttribute('src', img.getAttribute('src') || '');
+        if (!img || !heroImg || img === heroImg) return;
+        const heroSrc = heroImg.getAttribute('src') || '';
+        const thumbSrc = img.getAttribute('src') || '';
+        if (!thumbSrc) return;
+        heroImg.setAttribute('src', thumbSrc);
+        img.setAttribute('src', heroSrc); // старое hero-фото → слот миниатюры
       });
     }
 

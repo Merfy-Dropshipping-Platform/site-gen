@@ -20,7 +20,9 @@ const id = p.id;
 // вопросы»). Мерчант задал свой heading → его и рендерим.
 const heading =
 	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Сворачиваемый раздел");
-const headingSize = p.headingSize ?? p.heading?.size;
+// heading.size (куда пишет hardcoded-панель конструктора) ПРИОРИТЕТНЕЕ top-level
+// headingSize (у которого дефолт 'medium' — он перебивал правку размера в превью).
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small"
 		? " [--size-section-heading:17px] [--size-section-heading-m:12px]"

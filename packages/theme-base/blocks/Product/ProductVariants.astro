@@ -132,10 +132,14 @@ function swatchBorderStyle(opt: VariantOptionView, active: boolean): string {
       <div
         class:list={[
           'w-full',
-          // list-стиль чипов: лейбл слева + чипы справа на одной строке
-          // (на узких экранах переносится в стек). Иначе — исходный вертикальный.
+          // list-стиль чипов: лейбл слева + чипы СРАЗУ за ним на одной строке
+          // (на узких экранах переносится в стек). БЕЗ justify-between — иначе на
+          // широкой колонке товара (~790px) чипы вылетали к правому краю и
+          // «пропадали» от лейбла (баг «список не работает / сбрасываются по
+          // положению»). Лейбл выравнивается фиксированной min-width (ниже), чтобы
+          // ряды чипов начинались с одного x.
           !isDropdown && isList
-            ? 'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4'
+            ? 'flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4'
             : 'flex flex-col gap-3',
         ]}
         data-variant-group
@@ -143,7 +147,12 @@ function swatchBorderStyle(opt: VariantOptionView, active: boolean): string {
       >
         {(isDropdown || isList) && (
           <label
-            class="[font-family:var(--font-body)] text-[14px] uppercase text-[rgb(var(--color-text))] tracking-wide shrink-0"
+            class:list={[
+              '[font-family:var(--font-body)] text-[14px] uppercase text-[rgb(var(--color-text))] tracking-wide shrink-0',
+              // list: фикс. min-width лейбла → ряды чипов разных групп выровнены
+              // по одному левому краю (аккуратный список-строка). dropdown — без.
+              !isDropdown && isList ? 'sm:min-w-[96px]' : '',
+            ]}
             for={isDropdown ? `variant-${g.key}` : undefined}
           >{g.key}</label>
         )}

@@ -128,9 +128,9 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
           type: 'select',
           label: 'Размер',
           options: [
-            { label: 'Маленькая', value: 'small' },
-            { label: 'Средняя', value: 'medium' },
-            { label: 'Большая', value: 'large' },
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
           ],
         },
         // Hidden — per-row "Ширина изображения" не читается рендером (.astro

@@ -180,6 +180,10 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
         image: '',
         title: '',
         description: '',
+        // Figma 1:33349 — дропдауны по умолчанию «Маленький».
+        size: 'small',
+        headingSize: 'small',
+        textSize: 'small',
         button: { text: 'Подробнее', link: '/catalog' },
       },
       max: 10,

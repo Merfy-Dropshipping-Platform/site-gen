@@ -77,8 +77,11 @@ export const CollapsibleSectionPuckConfig: BlockPuckConfig<CollapsibleSectionPro
       label: 'Пункты (макс 10)',
       hiddenInMainPanel: true,
       arrayFields: {
-        heading: { type: 'text', label: 'Вопрос / заголовок' },
-        content: { type: 'textarea', label: 'Ответ / содержимое' },
+        // Figma 1236-42153 (правый сайдбар «Раздел»): divider «Содержание» +
+        // Заголовок (aiText) + Текст (aiText) — вместо старых Вопрос/Ответ text/textarea.
+        ['_contentSection' as never]: { type: 'section-header', label: 'Содержание' } as any,
+        heading: { type: 'aiText', label: 'Заголовок', fieldType: 'title', placeholder: 'Ввести текст...' } as any,
+        content: { type: 'aiText', label: 'Текст', fieldType: 'description', placeholder: 'Ввести текст...' } as any,
       },
       defaultItemProps: {
         id: '',

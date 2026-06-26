@@ -35,7 +35,7 @@ const hasImage = typeof p.image?.url === "string" && p.image.url.trim().length >
 const headingDefault = hasImage ? "Ваш дом — наша забота" : "Изображение с текстом";
 const heading =
 	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? headingDefault);
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
 	headingSize === "small"
 		? "font-vanilla-bitter text-[17px] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]"

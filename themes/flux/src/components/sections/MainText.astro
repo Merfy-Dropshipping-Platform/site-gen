@@ -20,7 +20,7 @@ const id = p.id;
 // рендерится ЕГО значение (?? fallback только при пустых данных).
 const heading =
 	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Расскажи о своем бренде");
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
 	headingSize === "small"
 		? "font-comfortaa text-[17px] font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading,0_0_0))] md:text-[20px]"

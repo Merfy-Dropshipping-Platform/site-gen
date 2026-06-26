@@ -47,7 +47,7 @@ const PLACEHOLDER_IMAGE = "/placeholders/landscape-iwt.png";
 // Канон heading: string | { text, alignment, size }. С данными — реальный
 // заголовок мерчанта; пустое состояние — лейбл-плейсхолдер.
 const heading = rawHeading ?? PLACEHOLDER_HEADING;
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
 	headingSize === "small"
 		? "font-logo text-[18px] font-normal uppercase leading-[1.1] text-[rgb(var(--color-heading,0_0_0))] md:text-[22px]"

@@ -26,7 +26,7 @@ const text =
 // Канон headingSize (top-level hidden приоритетнее heading.size сабпанели):
 // 'medium' (canon-default) и отсутствие = .rose-title дословно (20px desktop /
 // 14px mobile). small 17/12, large 24/17 — шкала T14 ContactForm.
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small"
 		? " [--size-section-heading:17px] [--size-section-heading-m:12px]"

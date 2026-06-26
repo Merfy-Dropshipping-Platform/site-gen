@@ -16,7 +16,7 @@ const id = p.id;
 const heading = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Контактная форма");
 // Лестница §9 (about-литерал 20 = large/canon-default): small 14, medium 17.
 // headingSize/headingAlignment top-level приоритетнее legacy heading.*.
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small" ? "text-[14px]" : headingSize === "medium" ? "text-[17px]" : "text-[20px]";
 const headingAlignment = p.headingAlignment ?? p.heading?.alignment;

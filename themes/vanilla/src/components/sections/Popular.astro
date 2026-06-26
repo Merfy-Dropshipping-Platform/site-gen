@@ -34,7 +34,7 @@ const sectionSubtitle = typeof rawSubtitle === "string" && rawSubtitle.trim() ? 
 // Канон headingSize (top-level приоритетнее legacy heading.size): 'medium' и
 // отсутствие = роль «заголовок секции» верстальщика дословно (Bitter italic
 // 20). Лестница §9: small 17, large 24.
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
 	headingSize === "small"
 		? "font-vanilla-bitter text-[17px] font-normal italic leading-none tracking-normal text-[rgb(var(--color-heading,38_49_28))]"

@@ -38,7 +38,7 @@ const sectionText = typeof rawText === "string" && rawText.trim() ? rawText : ""
 // Канон headingSize (top-level приоритетнее legacy heading.size): 'medium'
 // (canon-default) и отсутствие = УЗКАЯ роль верстальщика дословно (Bitter
 // italic 16, Gal:34). Лестница §9: small 14, large 20.
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
 	headingSize === "small"
 		? "font-vanilla-bitter text-[14px] font-normal italic leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]"

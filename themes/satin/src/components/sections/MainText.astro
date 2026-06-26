@@ -20,7 +20,7 @@ const textRaw = typeof p.text === "string" ? p.text : p.text?.content;
 const isEmptyState = !(headingRaw && headingRaw.trim()) && !(textRaw && textRaw.trim());
 
 const heading = headingRaw ?? (isEmptyState ? "Расскажи о своем бренде" : "");
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
 	headingSize === "small"
 		? "font-logo text-[17px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"

@@ -25,7 +25,7 @@ const id = p.id;
 const heading = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Публикации");
 // Лестница §9 внутреннего h2 (дефолт роли — large): отсутствие пропа и large =
 // литерал 24/md:28; medium 20/24, small 17/20.
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small"
 		? "text-[17px] md:text-[20px]"

@@ -24,7 +24,7 @@ const sectionSubtitle =
 // Шапка — DS-компонент NtSectionHeading: класс внутрь не пробрасывается,
 // размеры — через перекрытия на обёртке (лестница §9 от lg-базы 32 / xl-базы
 // 24). Дефолт и 'small' = литерал DS (20/24/32 + 14/18/24) без перекрытий.
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "medium"
 		? " [&_h2]:!text-[38px]"

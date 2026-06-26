@@ -18,7 +18,7 @@ const id = p.id;
 // large 24.
 const heading =
 	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p._headingLegacy ?? "Мультиряды";
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small" ? "text-[17px]" : headingSize === "large" ? "text-[24px]" : "text-[20px]";
 const headingAlignment = p.headingAlignment ?? p.heading?.alignment;

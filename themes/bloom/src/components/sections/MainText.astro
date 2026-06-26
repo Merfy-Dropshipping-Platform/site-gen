@@ -35,7 +35,7 @@ const isEmptyState = !headingProvided && !textProvided && !buttonProvided;
 const heading = headingProvided
 	? (typeof p.heading === "string" ? p.heading : p.heading.text)
 	: (isEmptyState ? "Расскажи о своем бренде" : "");
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
 	headingSize === "small"
 		? "font-urbanist text-[15px] font-normal uppercase leading-none text-[rgb(var(--color-heading,255_255_255))] md:text-[17px]"

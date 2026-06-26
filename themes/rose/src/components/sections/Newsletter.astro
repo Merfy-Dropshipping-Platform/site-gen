@@ -19,7 +19,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
 const heading =
 	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Подпишитесь на нашу рассылку");
 // Размер — через --size-section-heading (её читает .rose-title); !text-[ не работает.
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small"
 		? " [--size-section-heading:17px] [--size-section-heading-m:12px]"

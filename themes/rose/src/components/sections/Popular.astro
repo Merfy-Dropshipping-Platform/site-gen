@@ -46,7 +46,7 @@ const placeholderCards = Array.from({ length: cardsN }, (_, i) => ({
 // Канон headingSize (top-level приоритетнее legacy heading.size): 'small'
 // (canon-default) и отсутствие = NtSectionHeading верстальщика дословно (20px);
 // medium → 24px, large → 29px (≈канонный ряд small 20 / medium 24, окр. до px).
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "medium"
 		? " [&_h2]:!text-[24px]"

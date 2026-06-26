@@ -18,7 +18,7 @@ const id = p.id;
 const heading =
 	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Сворачиваемый раздел");
 // Лестница §9 (база-литерал 18/md:20 = canon-default medium): small 15/17, large 22/24.
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small"
 		? "text-[15px] md:text-[17px]"

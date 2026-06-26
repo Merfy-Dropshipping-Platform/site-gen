@@ -27,7 +27,7 @@ const hasManualColumns = Array.isArray(p.columns) && p.columns.length > 0;
 // small 15/17, large 22/24.
 const headingRaw = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
 const heading = headingRaw || (!hasManualColumns ? "Мультиколонны" : "");
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small"
 		? "text-[15px] md:text-[17px]"

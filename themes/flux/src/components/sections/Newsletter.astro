@@ -19,7 +19,7 @@ const heading =
 	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Подпишитесь на нашу рассылку");
 // Лестница §9 заголовка рассылки (дефолт роли — medium): отсутствие пропа и
 // medium = литерал 16/md:18; small 11/13, large 19/22.
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small"
 		? "text-[11px] md:text-[13px]"

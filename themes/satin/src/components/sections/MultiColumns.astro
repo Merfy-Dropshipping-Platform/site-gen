@@ -33,7 +33,7 @@ const hasManualColumns =
 // отсутствие шапки. С данными мерчанта — его заголовок (пусто → без шапки).
 const headingRaw = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
 const heading = hasManualColumns ? headingRaw : (headingRaw || "Мультиколонны");
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small" ? "text-[17px]" : headingSize === "large" ? "text-[24px]" : "text-[20px]";
 const headingAlignment =

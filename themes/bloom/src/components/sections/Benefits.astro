@@ -28,7 +28,7 @@ const id = p.id;
 // заголовок (если задан) берём как есть; Figma-плейсхолдер «Мультиколонны»
 // (пустое состояние) добавляется ниже, после вычисления hasManualItems.
 const rawHeading = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small"
 		? "text-[15px] md:text-[17px]"

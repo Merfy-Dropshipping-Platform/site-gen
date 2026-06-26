@@ -18,7 +18,7 @@ const id = p.id;
 const heading =
 	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Подпишитесь на нашу рассылку");
 // Лестница §9 от базы-литерала 20 (medium): small ≈0.7× = 14, large ≈1.2× = 24.
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
 	headingSize === "small"
 		? "font-urbanist text-[14px] font-light uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]"

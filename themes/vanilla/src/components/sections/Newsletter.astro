@@ -21,7 +21,7 @@ const heading =
 		? p.heading
 		: (p.heading?.text ?? "Подпишитесь на нашу рассылку");
 // Лестница §9 от базы-литерала 20 (medium): small 17, large 24.
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small" ? "text-[17px]" : headingSize === "large" ? "text-[24px]" : "text-[20px]";
 const headingCls = `m-0 font-vanilla-bitter ${headingSizeCls} font-normal italic leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]`;

@@ -22,7 +22,7 @@ const text =
 
 // Канон heading.size: 'medium'/отсутствие = .rose-title дословно (20/14).
 // small 17/12, large 24/17 — шкала T14.
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small"
 		? " [--size-section-heading:17px] [--size-section-heading-m:12px]"

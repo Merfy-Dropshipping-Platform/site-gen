@@ -28,7 +28,7 @@ const hasColumns = Array.isArray(p.columns) && p.columns.length > 0;
 // medium 20/24, small 17/20.
 const headingRaw = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
 const heading = hasColumns ? headingRaw : (headingRaw || "Мультиколонны");
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small"
 		? "text-[17px] md:text-[20px]"

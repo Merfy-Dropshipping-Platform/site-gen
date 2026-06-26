@@ -25,7 +25,7 @@ const placeholderHeading =
 
 // Лестница §9 заголовка bloom (Urbanist uppercase, color-heading): base medium = 20,
 // small ≈ 0.9× = 18, large ≈ 1.2× = 24. Совпадает с манерой Collections/Popular.
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
 	headingSize === "small"
 		? "font-urbanist text-[15px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[17px]"

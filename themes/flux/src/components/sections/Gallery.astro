@@ -30,7 +30,7 @@ const sectionSubtitle =
 // (лестница §9). Дефолт ('medium' canon-default трактуем как DS-литерал
 // 20/24/32 + 14/18/24, прецедент bloom «canon-default → пиксель верстальщика»);
 // large → 46px (small оставляет литерал — меньше базы DS не уходим).
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls = headingSize === "large" ? " [&_h2]:!text-[46px]" : "";
 const textSize = p.textSize ?? p.text?.size;
 const textSizeCls = textSize === "large" ? " [&_p]:!text-[35px]" : "";

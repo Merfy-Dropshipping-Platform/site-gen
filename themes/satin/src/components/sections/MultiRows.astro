@@ -23,7 +23,7 @@ const hasRealRows = Array.isArray(p.rows) && p.rows.length > 0;
 const headingRaw =
 	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p._headingLegacy ?? "";
 const heading = hasRealRows ? headingRaw : headingRaw || "Мультиряды";
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small" ? "text-[17px]" : headingSize === "large" ? "text-[24px]" : "text-[20px]";
 const headingAlignment =

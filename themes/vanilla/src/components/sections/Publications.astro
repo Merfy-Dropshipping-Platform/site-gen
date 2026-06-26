@@ -19,7 +19,7 @@ const id = p.id;
 // Роль = заголовок секции §1 (Col:20, Bitter italic 20), токен heading 38_49_28.
 const heading = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Публикации");
 // Лестница §9 (база-литерал 20 = canon-default medium): small 17, large 24.
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small" ? "text-[17px]" : headingSize === "large" ? "text-[24px]" : "text-[20px]";
 const headingAlignment = p.headingAlignment ?? p.heading?.alignment;

@@ -24,7 +24,7 @@ const text =
 // Канон heading.size — роль «заголовок секции» (Urbanist uppercase, розовый на
 // белом, МАННЕРА §1). Лестница §9: medium/отсутствие = литерал роли 18/md:20,
 // small 15/17, large 22/24.
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
 	headingSize === "small"
 		? "font-urbanist text-[15px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[17px]"

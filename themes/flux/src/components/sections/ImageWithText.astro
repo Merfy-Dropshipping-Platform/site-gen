@@ -26,7 +26,7 @@ const text =
 // Канон heading.size — роль внутреннего h2 (Comfortaa uppercase leading-[1.115],
 // МАННЕРА §1: contacts.astro:40). Лестница §9 «Внутренний h2 24/28»:
 // large/отсутствие = литерал 24/md:28, medium 20/24, small 17/20.
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
 	headingSize === "small"
 		? "font-comfortaa text-[17px] font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading,0_0_0))] md:text-[20px]"

@@ -25,7 +25,7 @@ const sectionText = typeof rawText === "string" && rawText.trim() ? rawText : un
 // Канон headingSize (top-level приоритетнее heading.size): 'medium'
 // (canon-default puckConfig) и отсутствие = роль «заголовок секции» дословно
 // (font-logo 20, TextBlock.astro:15). Лестница §9: small 17, large 24.
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
 	headingSize === "small"
 		? "font-logo text-[17px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"

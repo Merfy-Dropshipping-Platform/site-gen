@@ -21,7 +21,7 @@ const sectionSubtitle =
 // Размер — через ПРИВАТНУЮ --gallery-heading-size (её читает #gallery-title ниже).
 // НЕ глобальная --size-section-heading: она задана в :root=20px → fallback clamp не
 // сработал бы и адаптивный дефолт-clamp поехал бы в фикс. 20px (регресс на мобиле).
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small"
 		? " [--gallery-heading-size:clamp(12px,3.2vw,17px)]"

@@ -111,7 +111,7 @@ if (collectionRef && siteId) {
 // (canon-default) и отсутствие = шапка DS NtSectionHeading верстальщика дословно
 // (20/24/32); medium → 38px, large → 46px (§9, перекрытие утилитой на обёртке —
 // внутрь DS-компонента класс не пробрасывается).
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "medium"
 		? " [&_h2]:!text-[38px]"

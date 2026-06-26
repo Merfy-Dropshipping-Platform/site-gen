@@ -89,8 +89,14 @@ function resolveColor(value: string): string | null {
 
 // Базовый класс чипа: текст-чип vs свотч. Свотч — квадрат/круг фиксированного
 // размера h-12 w-12 (заливка), текст-чип — h-12 с горизонтальным padding.
-const TEXT_CHIP_BASE =
-  'inline-flex items-center justify-center h-12 px-4 [font-family:var(--font-body)] text-[16px] cursor-pointer transition-colors border border-solid';
+// Текст-чип (размер и пр. не-цветовые опции). При ВЫБРАННОЙ форме (circle/square)
+// — фиксированный квадрат h-12 min-w-12 с border-2, ЧТОБЫ совпадать со свотч-чипом
+// цвета (одинаковый размер/обводка → «круги сверху (цвет) = круги снизу (размер)»,
+// и стиль «Кнопка» применяется единообразно ко всем параметрам, не только к цвету).
+// При shape='none' (дефолт) — исходный pill h-12 px-4 border, без изменений.
+const TEXT_CHIP_BASE = swatchEnabled
+  ? 'inline-flex items-center justify-center h-12 min-w-12 px-2 [font-family:var(--font-body)] text-[16px] cursor-pointer transition-colors border-2 border-solid'
+  : 'inline-flex items-center justify-center h-12 px-4 [font-family:var(--font-body)] text-[16px] cursor-pointer transition-colors border border-solid';
 const SWATCH_CHIP_BASE =
   'relative inline-flex items-center justify-center h-12 w-12 p-0 cursor-pointer transition-colors border-2 border-solid overflow-hidden';
 

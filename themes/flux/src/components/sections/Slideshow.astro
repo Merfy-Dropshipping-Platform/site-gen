@@ -92,12 +92,30 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 				: "",
 		// position per-slide (приоритет) | top-level contentAlign; 'left' и
 		// отсутствие = контент-блок героя слева (Hero.astro:50).
-		posCls:
-			s.position === "center" || (!s.position && p.contentAlign === "center")
-				? "justify-center"
-				: s.position === "right"
+		// 9-grid позиция слайда: hPos → justify (горизонталь main-axis flex-row),
+		// vPos → items (вертикаль cross-axis). Раньше вертикаль терялась (items-start).
+		posCls: (() => {
+			const raw = typeof s.position === "string" && s.position ? s.position : "";
+			const norm = raw === "left" ? "center-left" : raw === "right" ? "center-right" : raw;
+			const hPos = norm.endsWith("left") ? "left" : norm.endsWith("right") ? "right" : "center";
+			return hPos === "left" || (!norm && p.contentAlign === "left")
+				? "justify-start"
+				: hPos === "right"
 					? "justify-end"
-					: "justify-start",
+					: "justify-center";
+		})(),
+		vItemsCls: (() => {
+			const raw = typeof s.position === "string" && s.position ? s.position : "";
+			const norm = raw === "left" ? "center-left" : raw === "right" ? "center-right" : raw;
+			const vPos = norm.startsWith("top")
+				? "top"
+				: norm.startsWith("bottom")
+					? "bottom"
+					: norm === "center" || norm.startsWith("center")
+						? "middle"
+						: "";
+			return vPos === "top" ? "items-start" : vPos === "middle" ? "items-center" : "items-end";
+		})(),
 		// alignment per-slide; 'left' и отсутствие = items-start героя.
 		alignCls:
 			s.alignment === "center"
@@ -206,7 +224,7 @@ const paddingStyle = p.padding
 						    px-4 pb-6 pt-32 md:px-20 md:pb-10 md:pt-40 lg:pt-52 2xl:px-80
 						    (Hero.astro:47-50); внутренний зазор текст→кнопка gap-8. */}
 						<div
-							class={`relative z-10 flex h-full w-full items-start px-4 pb-6 pt-32 md:px-20 md:pb-10 md:pt-40 lg:pt-52 2xl:px-80 ${s.posCls}`}
+							class={`relative z-10 flex h-full w-full ${s.vItemsCls} px-4 pb-6 pt-32 md:px-20 md:pb-10 md:pt-40 lg:pt-52 2xl:px-80 ${s.posCls}`}
 						>
 							<div
 								class={`flex max-w-[432px] flex-col gap-8 ${s.alignCls}${s.boxed ? " rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-bg,255_255_255))]/90 p-6 [&_h2]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-text,0_0_0))]" : ""}`}

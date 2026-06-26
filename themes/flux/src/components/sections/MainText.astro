@@ -41,22 +41,25 @@ const text =
 // роль внутреннего h2: лестница §9 large/отсутствие = литерал 24/md:28,
 // medium 20/24, small 17/20; цвет — text-токен с чёрным фоллбеком (§7).
 const textSize = p.textSize ?? p.text?.size;
+// Тело текста — body-стиль (Manrope, leading 1.6), НЕ заголовочный Comfortaa
+// uppercase. «Размер» меняет только кегль (паритет rose).
 const textCls =
 	textSize === "small"
-		? "font-comfortaa text-[17px] font-normal uppercase leading-[1.115] text-[rgb(var(--color-text,0_0_0))] md:text-[20px]"
+		? "font-manrope text-[14px] font-light leading-[1.6] text-[rgb(var(--color-text,0_0_0))] md:text-[15px]"
 		: textSize === "medium"
-			? "font-comfortaa text-[20px] font-normal uppercase leading-[1.115] text-[rgb(var(--color-text,0_0_0))] md:text-[24px]"
-			: "font-comfortaa text-[24px] font-normal uppercase leading-[1.115] text-[rgb(var(--color-text,0_0_0))] md:text-[28px]";
+			? "font-manrope text-[15px] font-light leading-[1.6] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]"
+			: "font-manrope text-[16px] font-light leading-[1.6] text-[rgb(var(--color-text,0_0_0))] md:text-[18px]";
 
 // Канон position — позиция контент-колонки; alignment — выравнивание внутри.
 // canon-default обоих = 'center'.
 const position = p.position === "left" || p.position === "right" ? p.position : "center";
-const alignment = p.alignment === "left" || p.alignment === "right" ? p.alignment : "center";
 const posCls = position === "left" ? "mr-auto" : position === "right" ? "ml-auto" : "mx-auto";
+// Выравнивание контента следует позиции колонки (паритет rose) — было из мёртвого
+// hidden p.alignment (всегда center → текст не выравнивался при position=left/right).
 const itemsCls =
-	alignment === "left" ? "items-start" : alignment === "right" ? "items-end" : "items-center";
+	position === "left" ? "items-start" : position === "right" ? "items-end" : "items-center";
 const textAlignCls =
-	alignment === "left" ? "text-left" : alignment === "right" ? "text-right" : "text-center";
+	position === "left" ? "text-left" : position === "right" ? "text-right" : "text-center";
 
 // Канон textStyle (hidden): italic → курсив заголовка и текста.
 const italicCls = p.textStyle === "italic" ? " italic" : "";

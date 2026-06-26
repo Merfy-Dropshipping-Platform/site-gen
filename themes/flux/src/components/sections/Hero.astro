@@ -109,13 +109,13 @@ const heroHeightCls = {
 	small: "clamp(320px, 51vh, 691px)",
 }[heroSize];
 
-// НЮАНС flux: вторая кнопка «О нас» → #about ЕСТЬ в литерале (Hero.astro:70-75) —
-// рендерим ПО УМОЛЧАНИЮ; пустой текст ЗАДАННОГО пропа скрывает (инверсия bloom,
-// где secondary — новый элемент). Legacy flat-пропсы aboutText/aboutLink поддержаны.
+// Вторая кнопка — ТОЛЬКО если мерчант задал (паритет с rose, FR-010): не
+// подставляем дефолт «О нас», когда secondaryButton/aboutText не заданы.
+// Пустой текст заданного пропа также скрывает. Legacy flat aboutText/aboutLink поддержаны.
 const secondaryGiven = p.secondaryButton !== undefined && p.secondaryButton !== null;
 const secondaryText = secondaryGiven
 	? nonEmpty(p.secondaryButton?.text)
-	: (nonEmpty(p.aboutText) ?? "О нас");
+	: nonEmpty(p.aboutText);
 const secondaryLink =
 	p.secondaryButton?.link?.href ??
 	(typeof p.secondaryButton?.link === "string" ? p.secondaryButton.link : undefined) ??

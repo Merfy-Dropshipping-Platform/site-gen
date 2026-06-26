@@ -215,9 +215,8 @@ const titleId = id && heading ? `${id}-title` : undefined;
 							{r.heading && (
 								<h3
 									class={`font-comfortaa ${r.headingCls} font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading,0_0_0))]`}
-								>
-									{r.heading}
-								</h3>
+									set:html={r.heading}
+								/>
 							)}
 							{r.text && (
 								<div

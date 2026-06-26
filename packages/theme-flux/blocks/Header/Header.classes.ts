@@ -13,10 +13,11 @@ export const HeaderClasses = {
   navJustified: 'justify-between',
   hamburger: 'md:hidden w-10 h-10 flex items-center justify-center hover:opacity-70 transition-opacity text-[rgb(var(--color-text))]',
   logoWrap: {
-    'top-left': 'absolute left-1/2 -translate-x-1/2 md:relative md:left-auto md:transform-none',
+    'top-left': 'absolute left-1/2 -translate-x-1/2 md:relative md:left-auto md:translate-x-0',
     'top-center': 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2',
     'top-right': 'hidden md:flex',
     'center-left': '',
+    'center-absolute': 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2',
   },
   logoLink: 'flex items-center hover:opacity-80 transition-opacity',
   logoImg: 'h-5 sm:h-6 md:h-[28px] w-auto max-w-[var(--size-logo-width)]',

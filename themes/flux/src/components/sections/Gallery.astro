@@ -31,9 +31,9 @@ const sectionSubtitle =
 // 20/24/32 + 14/18/24, прецедент bloom «canon-default → пиксель верстальщика»);
 // large → 46px (small оставляет литерал — меньше базы DS не уходим).
 const headingSize = p.heading?.size ?? p.headingSize;
-const headingSizeCls = headingSize === "large" ? " [&_h2]:!text-[46px]" : "";
+const headingSizeCls = headingSize === "large" ? " [&_h2]:!text-[46px]" : headingSize === "small" ? " [&_h2]:!text-[18px] md:[&_h2]:!text-[20px]" : "";
 const textSize = p.textSize ?? p.text?.size;
-const textSizeCls = textSize === "large" ? " [&_p]:!text-[35px]" : "";
+const textSizeCls = textSize === "large" ? " [&_p]:!text-[35px]" : textSize === "small" ? " [&_p]:!text-[12px] md:[&_p]:!text-[14px]" : "";
 // Схемы flux включают ТЁМНЫЕ (scheme-1 bg 0 0 0) — хардкоды DS-шапки
 // (#000000/#999999) всегда перекрываются токенами; фоллбеки = литералы DS →
 // без схемы пиксель не меняется (MANNER.md §7).

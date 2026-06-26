@@ -309,10 +309,13 @@ export function renderCardHtml(p: RealProduct): string {
 	const oldPrice = oldRaw
 		? `<span class="font-manrope text-[12px] font-normal leading-[1.366] text-[#999999] line-through md:text-[14px]">${escapeHtml(oldRaw)}</span>`
 		: "";
+	const imageHtml = image
+		? `<img src="${image}" alt="${name}" width="318" height="444" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />`
+		: `<span class="flex h-full w-full items-center justify-center text-[rgb(var(--color-muted,153_153_153))]"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></span>`;
 	return `<article class="group flex flex-col gap-3 md:gap-4" data-nt="flux-product-card" aria-label="${name}">
 	<div class="relative w-full">
 		<a href="${href}" class="relative block aspect-[318/444] w-full overflow-hidden bg-[#F5F5F5] rounded-[8px]" aria-label="${name}">
-			<img src="${image}" alt="${name}" width="318" height="444" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+			${imageHtml}
 		</a>
 		${wishlistHeartHtml(p.id)}
 	</div>

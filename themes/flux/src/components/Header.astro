@@ -285,7 +285,7 @@ const headerHeartSvg =
 						</div>
 						<nav
 							class:list={["mt-3 flex w-full items-center gap-8 lg:gap-10", logoPosition === "top-left" || logoPosition === "" ? "justify-start" : "justify-center", menuSchemeClass, isSidebar && "md:!hidden"]}
-							aria-label="Основная навигация"
+							aria-label="Основная навигация" data-nav-inline
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="997"
 							data-puck-subsection-field="navigationLinks"
@@ -381,7 +381,7 @@ const headerHeartSvg =
 						</div>
 						<nav
 							class:list={["mt-3 flex w-full items-center justify-center gap-8 lg:gap-10", menuSchemeClass, isSidebar && "md:!hidden"]}
-							aria-label="Основная навигация"
+							aria-label="Основная навигация" data-nav-inline
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="997"
 							data-puck-subsection-field="navigationLinks"
@@ -415,7 +415,7 @@ const headerHeartSvg =
 
 				<nav
 					class:list={["flex items-center gap-8 lg:gap-10", menuSchemeClass, isSidebar && "md:!hidden"]}
-					aria-label="Основная навигация"
+					aria-label="Основная навигация" data-nav-inline
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="997"
 					data-puck-subsection-field="navigationLinks"
@@ -596,7 +596,7 @@ const headerHeartSvg =
 			</div>
 		)}
 
-		<nav class="mt-6 flex flex-col gap-4" aria-label="Основное меню">
+		<nav class="mt-6 flex flex-col gap-4" aria-label="Основное меню" data-nav-drawer>
 			{nav.map((link) => {
 				const active = isActive(link);
 				return (

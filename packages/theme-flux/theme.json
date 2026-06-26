@@ -134,11 +134,16 @@
       }
     },
     "Hero": {},
-    "ImageWithText": {},
-    "Gallery": {},
+    "ImageWithText": { "colorScheme": "scheme-1" },
+    "Gallery": { "colorScheme": "scheme-1" },
     "Slideshow": {},
-    "MultiRows": {},
-    "MultiColumns": {}
+    "MultiRows": { "colorScheme": "scheme-1" },
+    "MultiColumns": { "colorScheme": "scheme-1" },
+    "MainText": { "colorScheme": "scheme-1" },
+    "CollapsibleSection": { "colorScheme": "scheme-1" },
+    "Newsletter": { "colorScheme": "scheme-1" },
+    "PromoBanner": { "colorScheme": "scheme-1" },
+    "Video": { "colorScheme": "scheme-1" }
   },
   "colorSchemes": [
     {

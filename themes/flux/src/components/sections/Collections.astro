@@ -69,12 +69,20 @@ const gridStyle = cols ? `--cols:${cols}` : undefined;
 // imageView 'square' → квадрат, imageView 'wide' → 16/9. Раньше ветки 'square'
 // не было → выбор «квадрат» падал в портрет 430/500 (как rose tileAspectCls).
 // Дефолт-ветка (portrait/отсутствие) остаётся 430/500 байт-в-байт.
+// Канон variant (flux blockDefault 'tile', Figma 1:26298): квадрат + font-light
+// названия. 'standard' → портрет 430/500. Раньше variant не читался → live всегда
+// портрет, расходясь с превью (theme-base tile).
+const variant = p.variant === "standard" ? "standard" : "tile";
+const isTile = variant === "tile";
+const nameWeightCls = isTile ? "font-light" : "font-normal";
 const tileAspect =
 	p.gridAspect === "1:1" || p.imageView === "square"
 		? "aspect-square"
 		: p.imageView === "wide"
 			? "aspect-[16/9]"
-			: "aspect-[430/500]";
+			: isTile
+				? "aspect-square"
+				: "aspect-[430/500]";
 // Канон cardCaptionStyle: 'default' и отсутствие = обычный регистр подписи
 // верстальщика; 'uppercase' — капсом.
 const captionCase = p.cardCaptionStyle === "uppercase" ? " uppercase" : "";
@@ -229,7 +237,7 @@ const paddingStyle = p.padding
 							)}
 						</div>
 						<h3
-							class={`flux-collection-name font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]${captionCase}`}
+							class={`flux-collection-name font-manrope text-[14px] ${nameWeightCls} leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]${captionCase}`}
 						>
 							{c.name}
 						</h3>
@@ -247,7 +255,7 @@ const paddingStyle = p.padding
 							aria-hidden="true"
 						></div>
 						<h3
-							class={`flux-collection-name font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]${captionCase}`}
+							class={`flux-collection-name font-manrope text-[14px] ${nameWeightCls} leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]${captionCase}`}
 						>
 							{c.name}
 						</h3>

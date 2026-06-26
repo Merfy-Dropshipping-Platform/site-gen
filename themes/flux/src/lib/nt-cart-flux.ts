@@ -113,11 +113,9 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 		const lines = getCart();
 		const line = lines.find((l) => l.id === id);
 		if (!line) return;
-		if (quantity <= 0) {
-			saveCart(lines.filter((l) => l.id !== id));
-			return;
-		}
-		line.quantity = quantity;
+		// Удаление — только через removeFromCart (явная кнопка «Удалить»);
+		// «−» при qty=1 оставляет 1, не удаляет товар.
+		line.quantity = Math.max(1, quantity);
 		saveCart(lines);
 	};
 

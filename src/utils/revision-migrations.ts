@@ -1285,9 +1285,9 @@ export function migrateRevisionData(
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = clearDemoImageSections(out.pagesData as Record<string, unknown>);
   }
-  // Spec 103: rose thank-you `/checkout-result`. Оперирует полной ревизией
-  // (touches pages[] + pagesData), поэтому после pagesData-сидеров. Rose-only.
-  if (themeId === 'rose') {
+  // Spec 103/109: thank-you `/checkout-result`. Оперирует полной ревизией
+  // (touches pages[] + pagesData), поэтому после pagesData-сидеров.
+  if (themeId === 'rose' || themeId === 'flux') {
     return seedCheckoutResultPage(out);
   }
   return out;

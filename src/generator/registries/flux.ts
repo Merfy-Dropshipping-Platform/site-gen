@@ -47,5 +47,6 @@ export const fluxRegistry: Record<string, ComponentRegistryEntry> = {
   Product: packageComponent("Product", "Product"),
   CartSection: packageComponent("CartSection", "CartSection"),
   CheckoutSection: packageComponent("CheckoutSection", "CheckoutSection"),
+  OrderConfirmation: packageComponent("OrderConfirmation", "OrderConfirmation"),
   Catalog: packageComponent("Catalog", "Catalog"),
 };

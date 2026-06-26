@@ -90,7 +90,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
 </Layout>
 
 <script>
-	import { getCart, getCartTotal, formatCartPrice, updateQuantity, removeFromCart } from "../lib/cart";
+	import { getCart, getCartTotal, formatCartPrice } from "../lib/cart";
 	import { cartLineThumbPictureHtml } from "../lib/cart-thumb-html";
 
 	const emptyBlock = document.querySelector<HTMLElement>("[data-cart-page-empty]");
@@ -147,24 +147,12 @@ const apiUrl = "https://gateway.merfy.ru/api";
 	render();
 	window.addEventListener("flux:cart:updated", render);
 
+	// Кол-во (+/−) и «Удалить» обрабатывает ОДИН общий делегат initCartUI
+	// (nt-cart-flux.ts, document-level). Свои обработчики здесь УДАЛЕНЫ: иначе
+	// клик ловился ДВАЖДЫ (страница + делегат) → «+»/«−» меняли количество на 2,
+	// «Удалить» дёргался дважды.
 	document.addEventListener("click", (event) => {
 		const target = event.target as HTMLElement;
-		const inc = target.closest<HTMLButtonElement>("[data-cart-inc]");
-		if (inc) {
-			const id = inc.dataset.id ?? "";
-			const line = getCart().find((l) => l.id === id);
-			if (line) updateQuantity(id, line.quantity + 1);
-			return;
-		}
-		const dec = target.closest<HTMLButtonElement>("[data-cart-dec]");
-		if (dec) {
-			const id = dec.dataset.id ?? "";
-			const line = getCart().find((l) => l.id === id);
-			if (line) updateQuantity(id, line.quantity - 1);
-			return;
-		}
-		const remove = target.closest<HTMLButtonElement>("[data-cart-remove]");
-		if (remove) removeFromCart(remove.dataset.id ?? "");
 		const checkout = target.closest<HTMLButtonElement>("[data-action='checkout']");
 		if (checkout) {
 			// Мост NtCart → backend cart: строим серверную корзину из локальных линий,

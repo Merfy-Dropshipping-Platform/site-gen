@@ -222,6 +222,17 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 						variantCombinationId: addBtn.dataset.variantCombinationId || undefined,
 					},
 				});
+				// Краткий фидбек «Добавлено ✓» в кнопке (паттерн общего nt-cart 07696c0e).
+				if (!addBtn.dataset.ntFeedback) {
+					addBtn.dataset.ntFeedback = "1";
+					const originalHtml = addBtn.innerHTML;
+					addBtn.innerHTML =
+						'<span style="display:inline-flex;align-items:center;gap:8px;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Добавлено</span>';
+					window.setTimeout(() => {
+						addBtn.innerHTML = originalHtml;
+						delete addBtn.dataset.ntFeedback;
+					}, 1600);
+				}
 				if (getComputedStyle(document.documentElement).getPropertyValue("--cart-type").trim().replace(/['"]/g, "") !== "page") window.dispatchEvent(new CustomEvent(evOpen)); // page: не открывать drawer при добавлении
 				return;
 			}

@@ -38,8 +38,14 @@ if (nextThemeId === 'flux' && nextThemeId !== prevThemeId) {
 - **flux→flux** (re-save, `prevThemeId===flux`): reseed НЕ срабатывает → правки на flux не теряются.
 - **Идемпотентность:** условие `nextThemeId !== prevThemeId` = один проход на реальный свитч.
 
+## Расширение на все темы (2026-06-27, «давай все»)
+`THEMES_RESEED_ON_SWITCH = {rose, vanilla, bloom, satin, flux}` — свитч на любую из 5 тем применяет её канон. Каноны проверены:
+- vanilla/bloom/flux — `defaults/<t>.json` с colorSchemes + product `dataSource:auto` ✓.
+- **rose** — PageResolver отдаёт `themeSettings:{}` (пусто), но `buildTokensCss` фоллбэчит на `theme.json.colorSchemes` (5 схем) → палитра корректна ✓.
+- **satin** — colorSchemes ок, но product-секции с **запечённым демо** (collectionId:null «ВЕРХНЯЯ ОДЕЖДА»), а не `dataSource:auto` → проверить live, при необходимости поправить канон на auto («товары с нуля»).
+- Неизвестная тема (typo/кастом) — НЕ пересеивается (allowlist).
+
 ## Вне scope
-- Другие темы (rose/vanilla/bloom/satin) — тот же баг, фиксим **только Flux** (паттерн расширяемый: позже `THEMES_RESEED_ON_SWITCH = ['flux', ...]`).
 - Сохранение кастомной раскладки при свитче — осознанно НЕТ (противоречит «1-в-1 как у верстальщиков»).
 - Per-section парити секций (Hero/Popular/Catalog) — отдельные пункты `FLUX_PARITY_PLAN.md`.
 

@@ -1,48 +1,64 @@
-import { shouldReseedOnThemeSwitch } from "../sites.service";
+import {
+  shouldReseedOnThemeSwitch,
+  THEMES_RESEED_ON_SWITCH,
+} from "../sites.service";
 
 /**
- * Spec 109-flux-parity / flux-theme-switch-settings (подход B):
- * при переключении темы НА flux ревизия пересеивается в полный канон
- * верстальщиков (defaults/flux.json) — палитра/раскладка/хром + товарные
- * секции с dataSource:auto заполняются с нуля. Прочие темы — без изменений.
+ * Spec 109-flux-parity / flux-theme-switch-settings (подход B, расширено на все темы):
+ * при переключении темы НА любую тему верстальщиков ревизия пересеивается в полный
+ * канон этой темы (defaults/<theme>.json или PageResolver для rose) — палитра/
+ * раскладка/хром + товарные секции наполняются с нуля. Re-save той же темы — без сброса.
  *
  * shouldReseedOnThemeSwitch — чистое решение «пересеивать ли ревизию».
  */
-describe("shouldReseedOnThemeSwitch (109 flux)", () => {
+describe("shouldReseedOnThemeSwitch (109)", () => {
   const base = {
     hasCurrentRevision: true,
     hasThemeSettings: true,
     resetContent: false,
-    prevThemeId: "vanilla",
-    nextThemeId: "vanilla",
+    prevThemeId: "rose",
+    nextThemeId: "rose",
   };
 
-  it("reseeds when switching TO flux from another theme (apply verstalshchiki canon)", () => {
-    expect(
-      shouldReseedOnThemeSwitch({
-        ...base,
-        prevThemeId: "vanilla",
-        nextThemeId: "flux",
-      }),
-    ).toBe(true);
+  const ALL_THEMES = ["rose", "vanilla", "bloom", "satin", "flux"];
+
+  it("allowlist contains all 5 verstalshchiki themes", () => {
+    expect([...THEMES_RESEED_ON_SWITCH].sort()).toEqual([...ALL_THEMES].sort());
   });
 
-  it("does NOT reseed on flux->flux re-save (preserve flux edits)", () => {
-    expect(
-      shouldReseedOnThemeSwitch({
-        ...base,
-        prevThemeId: "flux",
-        nextThemeId: "flux",
-      }),
-    ).toBe(false);
-  });
+  it.each(ALL_THEMES)(
+    "reseeds when switching TO %s from a different theme (apply canon)",
+    (theme) => {
+      const prev = theme === "rose" ? "flux" : "rose";
+      expect(
+        shouldReseedOnThemeSwitch({
+          ...base,
+          prevThemeId: prev,
+          nextThemeId: theme,
+        }),
+      ).toBe(true);
+    },
+  );
 
-  it("does NOT reseed when switching to a NON-flux theme that already has settings (scope: flux-only)", () => {
+  it.each(ALL_THEMES)(
+    "does NOT reseed on %s->%s re-save (preserve edits)",
+    (theme) => {
+      expect(
+        shouldReseedOnThemeSwitch({
+          ...base,
+          prevThemeId: theme,
+          nextThemeId: theme,
+        }),
+      ).toBe(false);
+    },
+  );
+
+  it("does NOT reseed when switching to an UNKNOWN theme that already has settings", () => {
     expect(
       shouldReseedOnThemeSwitch({
         ...base,
-        prevThemeId: "flux",
-        nextThemeId: "rose",
+        prevThemeId: "rose",
+        nextThemeId: "totally-custom-theme",
       }),
     ).toBe(false);
   });
@@ -53,7 +69,8 @@ describe("shouldReseedOnThemeSwitch (109 flux)", () => {
         ...base,
         hasCurrentRevision: false,
         hasThemeSettings: false,
-        nextThemeId: "rose",
+        prevThemeId: null,
+        nextThemeId: "totally-custom-theme",
       }),
     ).toBe(true);
   });
@@ -63,7 +80,7 @@ describe("shouldReseedOnThemeSwitch (109 flux)", () => {
       shouldReseedOnThemeSwitch({
         ...base,
         hasThemeSettings: false,
-        nextThemeId: "rose",
+        nextThemeId: "totally-custom-theme",
       }),
     ).toBe(true);
   });
@@ -73,7 +90,7 @@ describe("shouldReseedOnThemeSwitch (109 flux)", () => {
       shouldReseedOnThemeSwitch({
         ...base,
         resetContent: true,
-        nextThemeId: "rose",
+        nextThemeId: "totally-custom-theme",
       }),
     ).toBe(true);
   });

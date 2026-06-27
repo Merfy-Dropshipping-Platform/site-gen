@@ -54,11 +54,18 @@ function slugify(input: string) {
 
 /**
  * Темы, для которых переключение НА них применяет полный канон верстальщиков
- * (defaults/<theme>.json): дизайн/раскладка/палитра/хром + товарные секции
- * (dataSource:auto) заполняются с нуля. Spec 109-flux-parity (подход B).
- * Расширяемо: добавить тему в Set, чтобы включить тот же reset-on-switch.
+ * (defaults/<theme>.json, либо PageResolver+theme.json fallback для rose):
+ * дизайн/раскладка/палитра/хром + товарные секции заполняются с нуля.
+ * Spec 109-flux-parity (подход B). Только известные темы с валидным каноном —
+ * неизвестная тема (typo/кастом) НЕ пересеивается.
  */
-export const THEMES_RESEED_ON_SWITCH = new Set<string>(["flux"]);
+export const THEMES_RESEED_ON_SWITCH = new Set<string>([
+  "rose",
+  "vanilla",
+  "bloom",
+  "satin",
+  "flux",
+]);
 
 /**
  * Чистое решение «пересеивать ли ревизию при апдейте темы» (без БД — тестируется

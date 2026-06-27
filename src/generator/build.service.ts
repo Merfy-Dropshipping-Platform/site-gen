@@ -1550,6 +1550,31 @@ export async function runBuildPipeline(
                   `$1${escapeHtml(mainImage)}$2`,
                 );
               }
+              // --- BODY (не только SEO): per-collection страница = копия шелла
+              // collections/preview, поэтому тело показывает хардкод «Каталог» и
+              // не скоуплено. Патчим тело под коллекцию. No-op если тема рендерит
+              // иначе (regex не совпал) — безопасно. ---
+              // 1. Скоуп Catalog на товары коллекции (клиент читает data-collection-slug).
+              out = out.replace(
+                /(\bdata-collection-slug=["'])[^"']*(["'])/gi,
+                `$1${escapeHtml(slug)}$2`,
+              );
+              if (name) {
+                // 2. Заголовок каталога → имя коллекции (id="catalog-title" —
+                //    цель aria-labelledby секции Catalog во всех темах).
+                out = out.replace(
+                  /(<(h1|h2)\b[^>]*\bid=["']catalog-title["'][^>]*>)[\s\S]*?(<\/\2>)/i,
+                  `$1${escapeHtml(name)}$3`,
+                );
+              }
+              if (desc) {
+                // 3. Подзаголовок каталога → описание коллекции (замена известных
+                //    тема-хардкодов; vanilla подзаголовок пуст).
+                const edSub = escapeHtml(desc);
+                out = out
+                  .replace("Здесь начинается персональный стиль", () => edSub)
+                  .replace("Следующее поколение уже с вами", () => edSub);
+              }
               return out;
             };
 

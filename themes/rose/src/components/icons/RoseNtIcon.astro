@@ -1,7 +1,8 @@
 ---
-import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+import { getNtIconUrl } from "@merfy-dropshipping-platform/design-systems-theme/lib/icon-paths";
 import type { NtIconName } from "@merfy-dropshipping-platform/design-systems-theme/lib/icon-paths";
 import { withBase } from "../../lib/with-base";
+import { ROSE_ICON_SVGS } from "./rose-icon-svgs";
 
 interface Props {
 	name: NtIconName;
@@ -10,8 +11,31 @@ interface Props {
 	sizeClass?: string;
 }
 
-const { name, class: className, iconBasePath: iconBaseProp, sizeClass } = Astro.props as Props;
-const iconBasePath = iconBaseProp ?? withBase("/icons");
+const { name, class: className = "", iconBasePath: iconBaseProp, sizeClass = "size-[24px]" } = Astro.props as Props;
+
+// Канон Nikita: иконки следуют цвету текста активной схемы (--color-text), не
+// хардкод. Старый NtIcon рендерил <img src="/icons/X.svg"> — <img> нельзя
+// перекрасить CSS-цветом (схемы не применялись), а SVG'шки экспортнуты с
+// preserveAspectRatio="none" (квадратный контейнер искажал бургер с НЕ-квадратным
+// viewBox) и stroke/fill="...black" (всегда чёрный). Решение: инлайн SVG с
+// currentColor из ROSE_ICON_SVGS. <img>-fallback для иконок не из карты (footer/др.).
+const raw = ROSE_ICON_SVGS[name];
+const iconCls = `shrink-0 text-[rgb(var(--color-text,0_0_0))] ${sizeClass} ${className}`.trim();
+const inlined = raw ? raw.replace("<svg ", `<svg class="${iconCls}" aria-hidden="true" `) : null;
+const fallbackSrc = getNtIconUrl(name, iconBaseProp ?? withBase("/icons"));
 ---
 
-<NtIcon name={name} class={className} sizeClass={sizeClass} iconBasePath={iconBasePath} />
+{
+	inlined ? (
+		<Fragment set:html={inlined} />
+	) : (
+		<img
+			src={fallbackSrc}
+			alt=""
+			class={`shrink-0 object-contain pointer-events-none ${sizeClass} ${className}`}
+			width="24"
+			height="24"
+			aria-hidden="true"
+		/>
+	)
+}

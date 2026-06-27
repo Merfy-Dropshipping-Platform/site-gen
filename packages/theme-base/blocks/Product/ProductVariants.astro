@@ -66,9 +66,12 @@ function resolveColor(value: string): string | null {
   return named ?? null;
 }
 
-// Текст-кнопка (Figma 1:21387): h-12 px-4 border, скруглена по shapeRadius. В формах
-// circle/square не-цветовые чипы — фикс. квадрат h-12 min-w-12 border-2 (= размер свотча).
-const TEXT_CHIP_BASE = isShaped
+// Не-цветовые (размер) чипы по mode: «Нет»(button) = широкая текст-КНОПКА
+// (h-12 px-4 border, rounded по shapeRadius); «Круг»/«Квадрат» = узкий чип формы
+// свотча (h-12 min-w-12 border-2, rounded-full/none). Раньше было `isShaped`
+// (=!isDropdown, true для button) → широкий вариант не достигался, и «Нет» выглядел
+// как «Квадрат». Цветные значения — ВСЕГДА свотч (isShaped/!isDropdown ниже).
+const TEXT_CHIP_BASE = (mode === 'circle' || mode === 'square')
   ? 'inline-flex items-center justify-center h-12 min-w-12 px-2 [font-family:var(--font-body)] text-[16px] cursor-pointer transition-colors border-2 border-solid'
   : 'inline-flex items-center justify-center h-12 px-4 [font-family:var(--font-body)] text-[16px] cursor-pointer transition-colors border border-solid';
 const SWATCH_CHIP_BASE =

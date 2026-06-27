@@ -3,7 +3,10 @@ export const CheckoutHeaderClasses = {
   // Figma spec: 1920 viewport, padding 300/300 → content 1320. Rose container is 1280
   // (~40px diff, не визуально). Layout's summary bg extends past header right edge
   // (full-bleed) — это by design Figma 1:13398.
-  root: 'relative w-full bg-[rgb(var(--color-bg))]',
+  // Spec 109 — sticky к верху (как основная шапка). Обёртка схемы на checkout
+  // должна быть display:contents (Layout header="checkout"), иначе containing-block
+  // голодает и sticky не работает.
+  root: 'sticky top-0 z-50 w-full bg-[rgb(var(--color-bg))]',
   container: 'mx-auto max-w-[var(--container-max-width)] px-4 md:px-8 py-6 flex items-center justify-between',
   // Logo per Figma — Comfortaa display font; theme `--font-heading` остаётся fallback.
   brand: "[font-family:'Comfortaa',var(--font-heading)] text-[length:var(--size-checkout-brand)] text-[rgb(var(--color-heading))] no-underline tracking-wide",

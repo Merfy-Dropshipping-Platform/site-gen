@@ -20,9 +20,11 @@ export const ProductSchema = z.object({
     show: z.union([z.boolean(), z.enum(['true', 'false'])]).optional(),
   }).optional(),
   variants: z.object({
-    // Единое поле формы (Figma 1:21330): button=Кнопка, circle=Круг, square=Квадрат,
-    // list=Список. `shape` оставлен optional для back-compat старых ревизий.
+    // Figma 1:21431 — 2 поля: displayStyle «Стиль» (button/list) + shape «Вариации»
+    // (circle/square/none). `style` (button/list/circle/square) — legacy merged, оставлен
+    // optional для back-compat старых ревизий (рендер выводит mode из обоих).
     style: z.enum(['button', 'list', 'circle', 'square']).optional(),
+    displayStyle: z.enum(['button', 'list']).optional(),
     shape: z.enum(['circle', 'square', 'none']).optional(),
   }).optional(),
   quantity: z.object({
@@ -177,21 +179,24 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
       label: 'Варианты',
       hiddenInMainPanel: true,
       objectFields: {
-        // Единый выбор формы вариантов (Figma 1:21330): «Кнопка» = прямоугольные
-        // текст-кнопки (значение текстом); «Круг»/«Квадрат» = цветные свотчи-плашки;
-        // «Список» = выпадающий <select>. Раньше было 2 поля (Стиль+Вариации) —
-        // объединено, иначе они конфликтовали (баг M$rkul «Кнопка не делает кнопки»).
-        // 4 опции не влезают в сегментированный radio узкого сайдбара (лейблы
-        // обрезались «Кно…/Ква…/Спи…»). По Figma многоопционные поля — выпадающий
-        // список (как «Макет»/«Размер»), а не сегменты. Поэтому type: 'select'.
-        style: {
-          type: 'select',
-          label: 'Вариации',
+        // Figma 1:21431 — 2 сегментированных свитчера. «Стиль» = button(чипы)/list(выпадающий
+        // <select>). «Вариации» = форма свотча circle/square или none(прямоугольная кнопка).
+        // Рендер выводит единый mode из обоих (Product.astro). 2+3 опции влезают в свитчер.
+        displayStyle: {
+          type: 'radio',
+          label: 'Стиль',
           options: [
             { label: 'Кнопка', value: 'button' },
+            { label: 'Список', value: 'list' },
+          ],
+        },
+        shape: {
+          type: 'radio',
+          label: 'Вариации',
+          options: [
             { label: 'Круг', value: 'circle' },
             { label: 'Квадрат', value: 'square' },
-            { label: 'Список', value: 'list' },
+            { label: 'Нет', value: 'none' },
           ],
         },
       },
@@ -259,7 +264,7 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
     // рендер показывает их всегда (priceProp/quantity === undefined → visible).
     // Единое поле формы: дефолт 'button' = прямоугольные текст-кнопки (Figma).
     // 'circle'/'square'/'list' — явный выбор мерчанта.
-    variants: { style: 'button' },
+    variants: { displayStyle: 'button', shape: 'circle' },
     // «Основная кнопка» (addToCart). Пусто = скрыть. «Купить сейчас» —
     // фиксированный лейбл, видимость через dynamicButton.
     buttons: { addToCart: { text: 'Добавить в корзину' } },

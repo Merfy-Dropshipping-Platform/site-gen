@@ -137,24 +137,25 @@ const shareText = share?.text ?? 'Поделиться';
 const fallbackDescription = description?.content ?? '';
 
 // — Variant display controls (variants sub-panel: «Стиль» + «Вариации»). —
-//   style: 'button' (дефолт) — опции чипами в ряд (текущий вид);
-//          'list'           — каждая группа отдельной строкой (лейбл + чипы).
-//   shape: 'none' (дефолт)  — текущий pill-чип; 'circle' / 'square' — явный
-//          выбор формы. Дефолт 'none' (а не puck-дефолт 'circle') гарантирует
-//          неизменный вид существующих товаров — см. Product.puckConfig defaults.
-// Единый выбор формы вариантов (Figma 1:21330): Кнопка(button) / Круг(circle) /
-// Квадрат(square) / Список(list). Хранится в variants.style. Back-compat: старые
-// ревизии держат style(button/list) + shape(circle/square/none) — выводим mode.
+//   displayStyle: button (опции чипами/свотчами) / list (выпадающий <select>).
+//   shape: circle / square (форма свотча) / none (прямоугольная текст-кнопка).
+const vDisplayStyle = (variantsProp?.displayStyle ?? '') as string;
 const vStyle = (variantsProp?.style ?? '') as string;
 const vShape = (variantsProp?.shape ?? '') as string;
+// Figma 1:21431 — новая 2-польная модель: displayStyle(button/list) + shape(circle/square/none).
+// Back-compat: старые ревизии держат merged `style`(button/circle/square/list) без displayStyle.
 const variantsMode: 'button' | 'circle' | 'square' | 'list' =
-  vStyle === 'circle' || vStyle === 'square'
-    ? (vStyle as 'circle' | 'square')
-    : vShape === 'circle' || vShape === 'square'
-      ? (vShape as 'circle' | 'square')
-      : vStyle === 'list'
-        ? 'list'
-        : 'button';
+  vDisplayStyle === 'list'
+    ? 'list'
+    : vDisplayStyle === 'button'
+      ? (vShape === 'circle' || vShape === 'square' ? (vShape as 'circle' | 'square') : 'button')
+      : vStyle === 'circle' || vStyle === 'square'
+        ? (vStyle as 'circle' | 'square')
+        : vStyle === 'list'
+          ? 'list'
+          : vShape === 'circle' || vShape === 'square'
+            ? (vShape as 'circle' | 'square')
+            : 'button';
 
 // — Resolve product → ProductView (single source of truth). —
 //

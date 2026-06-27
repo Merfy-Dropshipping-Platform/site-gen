@@ -1254,6 +1254,51 @@ function clearDemoImageSections(
   return mutated ? out : pagesData;
 }
 
+/**
+ * Figma 1:21431 — подсекция «Варианты» секции Product разделена на 2 свитчера:
+ * displayStyle (Стиль: button/list) + shape (Вариации: circle/square/none). Старые
+ * ревизии держат merged `style` (button/circle/square/list) без displayStyle →
+ * конструктор-свитчеры показали бы пустую выборку. Read-time backfill displayStyle+
+ * shape из legacy style/shape, сохраняя итоговый mode (та же деривация что в
+ * Product.astro). Идемпотентно: если displayStyle уже задан — блок не трогаем.
+ */
+function backfillProductVariants(pagesData: Record<string, unknown>): Record<string, unknown> {
+  let changed = false;
+  const out: Record<string, unknown> = { ...pagesData };
+  for (const [pageId, page] of Object.entries(pagesData)) {
+    const pd = page as PageData | undefined;
+    const content = Array.isArray(pd?.content) ? (pd!.content as Block[]) : null;
+    if (!content) continue;
+    let pageChanged = false;
+    const newContent = content.map((block) => {
+      if (block?.type !== 'Product') return block;
+      const props = (block.props ?? {}) as Record<string, unknown>;
+      const variants = (props.variants ?? {}) as Record<string, unknown>;
+      if (typeof variants.displayStyle === 'string') return block; // уже новая модель
+      const style = typeof variants.style === 'string' ? variants.style : '';
+      const shape = typeof variants.shape === 'string' ? variants.shape : '';
+      // Legacy-деривация итогового mode (зеркало Product.astro).
+      const mode =
+        style === 'circle' || style === 'square'
+          ? style
+          : style === 'list'
+            ? 'list'
+            : shape === 'circle' || shape === 'square'
+              ? shape
+              : 'button';
+      const displayStyle = mode === 'list' ? 'list' : 'button';
+      const newShape = mode === 'circle' || mode === 'square' ? mode : 'none';
+      pageChanged = true;
+      return { ...block, props: { ...props, variants: { ...variants, displayStyle, shape: newShape } } };
+    });
+    if (pageChanged) {
+      out[pageId] = { ...(pd as object), content: newContent };
+      changed = true;
+    }
+  }
+  return changed ? out : pagesData;
+}
+
 export function migrateRevisionData(
   data: Record<string, unknown> | null | undefined,
   themeId?: string | null,
@@ -1284,6 +1329,9 @@ export function migrateRevisionData(
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = clearDemoImageSections(out.pagesData as Record<string, unknown>);
+  }
+  if (out.pagesData && typeof out.pagesData === 'object') {
+    out.pagesData = backfillProductVariants(out.pagesData as Record<string, unknown>);
   }
   // Spec 103/109: thank-you `/checkout-result`. Оперирует полной ревизией
   // (touches pages[] + pagesData), поэтому после pagesData-сидеров.

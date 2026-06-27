@@ -65,4 +65,7 @@ export const bloomRegistry: Record<string, ComponentRegistryEntry> = {
   CartSection: packageComponent("CartSection", "CartSection"),
   CheckoutSection: packageComponent("CheckoutSection", "CheckoutSection"),
   Catalog: packageComponent("Catalog", "Catalog"),
+  // Bespoke designer section ported into a theme-bloom block (no theme-base
+  // equivalent). Render lives in packages/theme-bloom/blocks/Benefits/Benefits.astro.
+  Benefits: packageComponent("Benefits", "Benefits"),
 };

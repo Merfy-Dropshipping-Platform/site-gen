@@ -1,0 +1,51 @@
+---
+import type { BenefitsProps } from './Benefits.puckConfig';
+import { BENEFITS_DEFAULT_ITEMS } from './Benefits.puckConfig';
+
+interface Props extends BenefitsProps {
+  id?: string;
+}
+
+const { id, items, padding } = Astro.props as Props;
+const list = items && items.length ? items : BENEFITS_DEFAULT_ITEMS;
+const pad = padding ?? { top: 80, bottom: 120 };
+const padStyle = `padding-top:${pad.top}px;padding-bottom:${pad.bottom}px;`;
+---
+
+<section
+  id={id ?? 'benefits'}
+  class="w-full bg-[rgb(var(--color-bg,227_142_159))] px-4 md:px-20 2xl:px-[300px]"
+  data-puck-component-id={id}
+  style={padStyle}
+>
+  <ul
+    class="mx-auto grid w-full max-w-[1320px] grid-cols-1 justify-items-center gap-10 md:grid-cols-2 xl:grid-cols-3"
+    role="list"
+  >
+    {list.map((benefit, index) => (
+      <li
+        class="group flex min-h-[252px] w-full max-w-[429px] flex-col items-center gap-6 rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,255_255_255))] px-6 py-8 text-center transition-transform duration-300 ease-out hover:-translate-y-1"
+        data-animate
+        data-animate-delay={`${index * 0.08}s`}
+      >
+        {benefit.icon && (
+          <img
+            src={benefit.icon}
+            alt=""
+            width="44"
+            height="44"
+            loading="lazy"
+            decoding="async"
+            class="h-11 w-11 object-contain transition-transform duration-300 ease-out group-hover:scale-105"
+          />
+        )}
+        <h3 class="font-urbanist text-[20px] font-light uppercase leading-none text-[rgb(var(--color-heading,0_0_0))]">
+          {benefit.title}
+        </h3>
+        <p class="font-inter text-[16px] font-light leading-none text-[rgb(var(--color-muted,153_153_153))]">
+          {benefit.description}
+        </p>
+      </li>
+    ))}
+  </ul>
+</section>

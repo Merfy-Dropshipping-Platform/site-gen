@@ -232,7 +232,7 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
     width: 'large',
     imageAspectRatio: 'square',
     textPosition: 'left',
-    containerEnabled: 'true',
+    containerEnabled: 'false',
     padding: { top: 80, bottom: 80 },
   },
   schema: MultiColumnsSchema,

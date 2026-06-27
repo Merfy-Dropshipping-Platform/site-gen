@@ -114,18 +114,22 @@ const widthCls =
 const centered = p.textPosition === "center";
 const colAlignCls = centered ? "items-center text-center" : "items-start text-left";
 
-// Канон containerEnabled ('true' canon-default; legacy background.enabled).
-// «Контейнер» в манере vanilla = плоская подложка карточки тона
-// медиа-плейсхолдера (#ECEBE7 = 236 235 231) — различимость колонок на
-// surface-фоне секции; false — голые колонки прямо на фоне.
-const containerEnabled = String(p.containerEnabled ?? p.background?.enabled ?? "true") !== "false";
+// Канон containerEnabled (toggle; legacy background.enabled). Canon-default
+// отсутствует → false = голые колонки прямо на фоне секции (флип дефолта:
+// раньше ON по умолчанию делал тоггл-ВЫКЛ невидимым). «Контейнер» в манере
+// vanilla = плоская подложка карточки тона медиа-плейсхолдера (#ECEBE7 =
+// 236 235 231) — различимость колонок на surface-фоне секции при ВКЛ.
+const containerEnabled = String(p.containerEnabled ?? p.background?.enabled ?? "false") === "true";
+// Канон Nikita: тоггл «Фон»/«Контейнер» САМ показывает подложку-бокс (surface +
+// паддинг) на каждой колонке. При ВЫКЛ — ни бокса, ни схемы (основная схема секции).
 const cardSurfaceCls = containerEnabled
 	? " rounded-[var(--radius-card,0px)] bg-[rgb(var(--color-surface,236_235_231))] px-6 py-8"
 	: "";
 
-// Канон containerColorScheme (hidden) — класс схемы на гриде колонок.
+// Канон containerColorScheme (hidden) — класс схемы на гриде колонок ТОЛЬКО при
+// включённом контейнере (при ВЫКЛ работает основная схема секции).
 const containerSchemeCls =
-	typeof p.containerColorScheme === "string" && p.containerColorScheme
+	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
 

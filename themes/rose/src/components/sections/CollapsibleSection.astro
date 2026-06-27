@@ -64,9 +64,10 @@ const sections = rawSections.slice(0, 10).map((s: any) => ({
 // манеры (#F5F5F5, радиус карточки) вокруг списка. Canon-default отсутствует →
 // без контейнера (голый список в манере «голых карточек» §4).
 const containerEnabled = String(p.containerEnabled ?? p.container?.enabled ?? "false") === "true";
-// Канон containerColorScheme (hidden) — класс схемы на контейнере.
+// Канон Nikita: класс схемы контейнера вешаем ТОЛЬКО при включённом контейнере.
+// При ВЫКЛ контейнеров нет → работает основная (секционная) цв. схема.
 const containerSchemeCls =
-	typeof p.containerColorScheme === "string" && p.containerColorScheme
+	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
 const listWrapCls = containerEnabled

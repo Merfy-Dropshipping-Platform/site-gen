@@ -140,15 +140,21 @@ const textAlignCls = p.textPosition === "center" ? "items-center text-center" : 
 // `mx-auto flex w-full max-w-… flex-col gap-8 md:gap-10` БЕЗ surface-обёртки
 // (#F5F5F5 / радиус / паддинг) вокруг всего грида. containerEnabled управляет
 // только наличием классa схемы (per-колоночные карточки сохраняют свой вид).
+// Канон Nikita: дефолт «Фон» — ВЫКЛ (как у Сворачиваемого/Коллекции), бокс по
+// явному включению тоггла.
 const containerEnabled =
-	String(p.containerEnabled ?? p.background?.enabled ?? "true") !== "false";
-// При выбранной «Цветовой схеме контейнера» рисуем ВИДИМУЮ подложку (фон схемы +
-// радиус + паддинг) вокруг грида — иначе color-scheme-* задаёт только CSS-vars, а
-// красить нечего (контейнер прозрачный) и схема «пропадала» (баг тестера).
-const containerSchemeCls =
-	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
-		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")} bg-[rgb(var(--color-bg,255_255_255))] rounded-[var(--radius-card,8px)] p-6 md:p-10`
-		: "";
+	String(p.containerEnabled ?? p.background?.enabled ?? "false") === "true";
+// Канон Nikita: тоггл «Фон»/«Контейнер» САМ показывает подложку-бокс (surface +
+// радиус + паддинг) — раньше бокс висел на наличии скрытой «Цв. схемы контейнера»,
+// поэтому тоггл был пустышкой. Цв. схема контейнера (если задана) — отдельный класс
+// поверх, перекрашивает бокс. При ВЫКЛ — ни бокса, ни схемы (основная схема секции).
+const containerSchemeCls = containerEnabled
+	? ` rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-surface,245_245_245))] p-6 md:p-10${
+			typeof p.containerColorScheme === "string" && p.containerColorScheme
+				? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
+				: ""
+		}`
+	: "";
 
 // Канон buttonText/buttonLink (hidden) — кнопка манеры под гридом при непустом тексте.
 const btnText =

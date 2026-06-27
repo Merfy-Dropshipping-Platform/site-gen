@@ -234,8 +234,10 @@ if (collectionRef && siteId) {
 // контента блока (radius, surface, внутренние паддинги) + отдельная цв. схема
 // контейнера. Основная (секционная) схема остаётся на <section>.
 const containerEnabled = String(p.containerEnabled ?? "false") === "true";
+// Канон Nikita: класс схемы контейнера — ТОЛЬКО при включённом контейнере
+// (при ВЫКЛ работает основная схема секции).
 const containerSchemeCls =
-	typeof p.containerColorScheme === "string" && p.containerColorScheme
+	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
 const containerWrapCls = containerEnabled

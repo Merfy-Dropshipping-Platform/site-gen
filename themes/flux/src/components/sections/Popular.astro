@@ -253,8 +253,10 @@ const paddingStyle = p.padding
 // Контейнер-подложка (toggle containerEnabled + containerColorScheme), паттерн rose.
 // Раньше оба поля не читались → настройки «Контейнер»/«Схема контейнера» мёртвые.
 const containerEnabled = String(p.containerEnabled ?? "false") === "true";
+// Канон Nikita: класс схемы контейнера — ТОЛЬКО при включённом контейнере
+// (при ВЫКЛ работает основная схема секции).
 const containerSchemeCls =
-	typeof p.containerColorScheme === "string" && p.containerColorScheme
+	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
 const containerCls = containerEnabled

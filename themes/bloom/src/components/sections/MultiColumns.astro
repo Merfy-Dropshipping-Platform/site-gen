@@ -111,17 +111,19 @@ const widthCls =
 				? "max-w-none"
 				: "max-w-[1320px]";
 
-// Канон containerEnabled ('true' canon-default; legacy background.enabled).
-// «Контейнер» в манере bloom = белая подложка карточки на цветном полотне
-// (МАННЕРА §4). true/отсутствие = карточки Benefits verbatim; false — содержимое
-// без подложки прямо на полотне.
-const containerEnabled = String(p.containerEnabled ?? p.background?.enabled ?? "true") !== "false";
+// Канон containerEnabled (canon-default ВЫКЛ — контракт дизайнера/паритет rose;
+// legacy background.enabled). «Контейнер» в манере bloom = белая подложка карточки
+// на цветном полотне (МАННЕРА §4): ВКЛ → карточки Benefits с подложкой; ВЫКЛ
+// (дефолт) → содержимое без подложки прямо на полотне.
+const containerEnabled = String(p.containerEnabled ?? p.background?.enabled ?? "false") === "true";
 const cardSurfaceCls = containerEnabled
 	? " rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,255_255_255))] px-6 py-8"
 	: "";
 // Канон containerColorScheme (hidden) — класс схемы на контейнере карточек.
+// Канон Nikita: класс схемы вешаем ТОЛЬКО при включённом контейнере (при ВЫКЛ
+// боксов-карточек нет → работает основная секционная схема).
 const containerSchemeCls =
-	typeof p.containerColorScheme === "string" && p.containerColorScheme
+	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
 

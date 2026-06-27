@@ -247,6 +247,22 @@ const viewAllCls =
 // blockDefaults bloom headingAlignment/cardCaptionStyle — ключи вне канон-полей
 // Popular, игнорируются (решение аналитика).
 
+// Контейнер-подложка (toggle containerEnabled + containerColorScheme), контракт
+// rose Popular / CollapsibleSection: включён → обёртка-поверхность вокруг контента
+// блока (radius карточки манеры 12px, surface, внутренние паддинги) + отдельная
+// цв. схема контейнера. Основная (секционная) схема остаётся на <section>.
+// Canon-default отсутствует → false = голый контент без подложки.
+const containerEnabled = String(p.containerEnabled ?? "false") === "true";
+// Канон Nikita: класс схемы контейнера — ТОЛЬКО при включённом контейнере
+// (при ВЫКЛ работает основная схема секции).
+const containerSchemeCls =
+	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
+		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
+		: "";
+const containerWrapCls = containerEnabled
+	? `flex w-full flex-col gap-10 rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,245_245_245))] p-6 md:p-10${containerSchemeCls}`
+	: `flex w-full flex-col gap-10${containerSchemeCls}`;
+
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
@@ -260,7 +276,8 @@ const paddingStyle = p.padding
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10">
+	<div class="mx-auto w-full max-w-[1320px]">
+		<div class={containerWrapCls}>
 		<div
 			data-animate
 			class={headWrapCls}
@@ -330,6 +347,7 @@ const paddingStyle = p.padding
 				</a>
 			</div>
 		)}
+		</div>
 	</div>
 </section>{nextPhoto && <script is:inline set:html={NEXT_PHOTO_JS} />}
 

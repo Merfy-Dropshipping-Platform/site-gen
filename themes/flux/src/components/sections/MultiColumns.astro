@@ -149,15 +149,23 @@ const widthCls =
 // center — по центру.
 const colAlignCls = p.textPosition === "center" ? " items-center text-center" : "";
 
-// Канон containerEnabled — в манере flux НЕ применяется: колонки ГОЛЫЕ, без
-// подложек и бордеров (МАННЕРА §4: «карточки голые»), toggle «Контейнер» не
-// добавляет поверхность — рендер одинаков в обоих положениях.
-
-// Канон containerColorScheme (hidden) — класс схемы на гриде колонок.
-const containerSchemeCls =
-	typeof p.containerColorScheme === "string" && p.containerColorScheme
-		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")} bg-[rgb(var(--color-bg,255_255_255))] rounded-[var(--radius-card,12px)] p-6 md:p-10`
-		: "";
+// Канон containerEnabled — тоггл «Фон»/«Контейнер». ФЛИП дефолта на ВЫКЛ: раньше
+// flux MultiColumns был «голым» (бокса не было вовсе), теперь по канону дефолт
+// false = голые колонки, ВКЛ = подложка-бокс.
+const containerEnabled =
+	String(p.containerEnabled ?? p.background?.enabled ?? "false") === "true";
+// Канон Nikita: тоггл «Фон»/«Контейнер» САМ показывает подложку-бокс (surface +
+// радиус + паддинг, СОХРАНЁН flux-радиус 12px) — раньше бокс висел на наличии
+// скрытой «Цв. схемы контейнера», поэтому тоггл был пустышкой. Цв. схема контейнера
+// (если задана) — отдельный класс поверх, перекрашивает бокс. При ВЫКЛ — ни бокса,
+// ни схемы (работает основная схема секции).
+const containerSchemeCls = containerEnabled
+	? ` rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,245_245_245))] p-6 md:p-10${
+			typeof p.containerColorScheme === "string" && p.containerColorScheme
+				? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
+				: ""
+		}`
+	: "";
 
 // Канон buttonText/buttonLink (hidden) — общая кнопка под гридом, чёрная CTA
 // манеры §3 (contacts.astro:76; кнопка-2 в схемах flux, МАННЕРА §7), рендер
@@ -208,7 +216,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	<div class={`mx-auto flex w-full ${widthCls} flex-col gap-8 md:gap-12`}>
+	<div class={`mx-auto flex w-full ${widthCls} flex-col gap-8 md:gap-12${containerSchemeCls}`}>
 		{
 			heading && (
 				<h2
@@ -222,7 +230,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 				</h2>
 			)
 		}
-		<ul class={`${gridCls}${containerSchemeCls}`} role="list" style={gridStyle}>
+		<ul class={gridCls} role="list" style={gridStyle}>
 			{
 				columns.map((c, index) => (
 					<li

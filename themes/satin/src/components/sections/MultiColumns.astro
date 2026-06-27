@@ -136,19 +136,20 @@ const widthCls =
 				? "w-full"
 				: "satin-container";
 
-// Канон containerEnabled ('true' canon-default; legacy background.enabled):
-// true/отсутствие = «подложечная» карточка §4 — СЕРАЯ подложка bg surface
-// 245_245_245 + p-6 БЕЗ радиуса (литерал Features.astro:33); false — контент
-// без подложек прямо на фоне секции.
-const containerEnabled = String(p.containerEnabled ?? p.background?.enabled ?? "true") !== "false";
+// Канон containerEnabled (toggle «Контейнер»/«Фон»; legacy background.enabled):
+// дефолт ВЫКЛ (паритет rose/CollapsibleSection) — контент без подложек прямо на
+// фоне секции, работает основная цв. схема секции. ВКЛ = «подложечная» карточка §4
+// — СЕРАЯ подложка bg surface 245_245_245 + p-6 БЕЗ радиуса (литерал Features.astro:33).
+const containerEnabled = String(p.containerEnabled ?? p.background?.enabled ?? "false") === "true";
 // В пустом состоянии серую «подложечную» карточку НЕ рисуем — плейсхолдер сам
 // рендерит пустой rect (#FBFBFB), двойная подложка читалась бы как баг.
 const cardSurfaceCls =
 	containerEnabled && !isPlaceholder ? " bg-[rgb(var(--color-surface,245_245_245))] p-6" : "";
 
-// Канон containerColorScheme (hidden) — класс схемы на гриде карточек.
+// Канон Nikita: класс схемы контейнера — ТОЛЬКО при включённом контейнере
+// (при ВЫКЛ работает основная схема секции).
 const containerSchemeCls =
-	typeof p.containerColorScheme === "string" && p.containerColorScheme
+	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
 

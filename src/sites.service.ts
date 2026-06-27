@@ -60,10 +60,10 @@ function slugify(input: string) {
  * неизвестная тема (typo/кастом) НЕ пересеивается.
  */
 export const THEMES_RESEED_ON_SWITCH = new Set<string>([
-  // rose ВРЕМЕННО исключён: его defaults/rose.json не несёт собственных
-  // colorSchemes → reseed получает LEGACY_SEED_SCHEMES (scheme-1=чёрный) +
-  // минимальный контент → тёмный hero («сайт чернеет»). Вернуть после
-  // починки канона rose (свои light-схемы в defaults/rose.json).
+  // rose возвращён: defaults/rose.json теперь несёт собственные light-схемы
+  // (scheme-1=белый, из rose theme.json) → reseed больше не получает
+  // LEGACY_SEED_SCHEMES (scheme-1=чёрный) → нет «сайт чернеет».
+  "rose",
   "vanilla",
   "bloom",
   "satin",

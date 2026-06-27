@@ -20,12 +20,27 @@
             "logoPosition": "center-left",
             "stickiness": "scroll-up",
             "colorScheme": "scheme-2",
-            "padding": { "top": 32, "bottom": 32 },
+            "padding": {
+              "top": 32,
+              "bottom": 32
+            },
             "navigationLinks": [
-              { "label": "Каталог", "href": "/catalog" },
-              { "label": "О нас", "href": "/about" },
-              { "label": "Доставка", "href": "/delivery" },
-              { "label": "Контакты", "href": "/contacts" }
+              {
+                "label": "Каталог",
+                "href": "/catalog"
+              },
+              {
+                "label": "О нас",
+                "href": "/about"
+              },
+              {
+                "label": "Доставка",
+                "href": "/delivery"
+              },
+              {
+                "label": "Контакты",
+                "href": "/contacts"
+              }
             ],
             "menuColorScheme": "scheme-2",
             "menuType": "dropdown",
@@ -48,10 +63,26 @@
             "alignment": "center",
             "container": "false",
             "colorScheme": "scheme-1",
-            "heading": { "text": "Добро пожаловать", "size": "large" },
-            "text": { "content": "Откройте для себя нашу коллекцию товаров", "size": "large" },
-            "primaryButton": { "text": "В КАТАЛОГ", "link": { "href": "/catalog" } },
-            "secondaryButton": { "text": "", "link": { "href": "#" } }
+            "heading": {
+              "text": "Добро пожаловать",
+              "size": "large"
+            },
+            "text": {
+              "content": "Откройте для себя нашу коллекцию товаров",
+              "size": "large"
+            },
+            "primaryButton": {
+              "text": "В КАТАЛОГ",
+              "link": {
+                "href": "/catalog"
+              }
+            },
+            "secondaryButton": {
+              "text": "",
+              "link": {
+                "href": "#"
+              }
+            }
           }
         },
         {
@@ -61,8 +92,14 @@
             "dataSource": "auto",
             "collection": "",
             "cards": 8,
-            "heading": { "text": "ПОПУЛЯРНЫЕ ТОВАРЫ", "size": "small" },
-            "text": { "content": "Лучшие товары нашего магазина", "size": "small" },
+            "heading": {
+              "text": "ПОПУЛЯРНЫЕ ТОВАРЫ",
+              "size": "small"
+            },
+            "text": {
+              "content": "Лучшие товары нашего магазина",
+              "size": "small"
+            },
             "productCard": {
               "buttonStyle": "primary",
               "cardStyle": "portrait",
@@ -71,7 +108,10 @@
               "columns": 4
             },
             "colorScheme": "scheme-2",
-            "padding": { "top": 80, "bottom": 80 }
+            "padding": {
+              "top": 80,
+              "bottom": 80
+            }
           }
         },
         {
@@ -83,7 +123,10 @@
               "size": "small"
             },
             "colorScheme": "scheme-2",
-            "padding": { "top": 80, "bottom": 80 }
+            "padding": {
+              "top": 80,
+              "bottom": 80
+            }
           }
         },
         {
@@ -96,35 +139,74 @@
               "description": "Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.",
               "placeholder": "email@example.com"
             },
-            "heading": { "text": "Подпишитесь на нашу рассылку", "size": "small" },
-            "text": { "content": "Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.", "size": "small" },
+            "heading": {
+              "text": "Подпишитесь на нашу рассылку",
+              "size": "small"
+            },
+            "text": {
+              "content": "Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.",
+              "size": "small"
+            },
             "colorScheme": "scheme-2",
             "copyrightColorScheme": "scheme-1",
-            "padding": { "top": 80, "bottom": 80 },
+            "padding": {
+              "top": 80,
+              "bottom": 80
+            },
             "navigationColumn": {
               "title": "Навигация",
               "links": [
-                { "label": "Каталог", "href": "/catalog" },
-                { "label": "О нас", "href": "/about" },
-                { "label": "Доставка", "href": "/delivery" },
-                { "label": "Контакты", "href": "/contacts" }
+                {
+                  "label": "Каталог",
+                  "href": "/catalog"
+                },
+                {
+                  "label": "О нас",
+                  "href": "/about"
+                },
+                {
+                  "label": "Доставка",
+                  "href": "/delivery"
+                },
+                {
+                  "label": "Контакты",
+                  "href": "/contacts"
+                }
               ]
             },
             "informationColumn": {
               "title": "Информация",
               "links": [
-                { "label": "Политика доставки", "href": "#" },
-                { "label": "Политика возврата", "href": "#" },
-                { "label": "Условия обслуживания", "href": "#" },
-                { "label": "Политика конфиденциальности", "href": "#" }
+                {
+                  "label": "Политика доставки",
+                  "href": "#"
+                },
+                {
+                  "label": "Политика возврата",
+                  "href": "#"
+                },
+                {
+                  "label": "Условия обслуживания",
+                  "href": "#"
+                },
+                {
+                  "label": "Политика конфиденциальности",
+                  "href": "#"
+                }
               ]
             },
             "socialColumn": {
               "title": "Социальные сети",
               "email": "info@example.ru",
               "socialLinks": [
-                { "platform": "VK", "href": "#" },
-                { "platform": "Telegram", "href": "#" }
+                {
+                  "platform": "VK",
+                  "href": "#"
+                },
+                {
+                  "platform": "Telegram",
+                  "href": "#"
+                }
               ]
             },
             "copyright": {
@@ -143,5 +225,119 @@
       "zones": {}
     }
   },
-  "currentPageId": "home"
+  "currentPageId": "home",
+  "themeSettings": {
+    "colorSchemes": [
+      {
+        "id": "scheme-1",
+        "name": "Схема 1",
+        "text": "#000000",
+        "heading": "#000000",
+        "surfaceBg": "#f5f5f5",
+        "background": "#ffffff",
+        "primaryButton": {
+          "text": "#ffffff",
+          "border": "#000000",
+          "textHover": "#ffffff",
+          "background": "#000000",
+          "backgroundHover": "#000000"
+        },
+        "secondaryButton": {
+          "text": "#000000",
+          "border": "#000000",
+          "textHover": "#000000",
+          "background": "#ffffff",
+          "backgroundHover": "#ffffff"
+        }
+      },
+      {
+        "id": "scheme-2",
+        "name": "Схема 2",
+        "text": "#121212",
+        "heading": "#121212",
+        "surfaceBg": "#f5f5f5",
+        "background": "#ffffff",
+        "primaryButton": {
+          "text": "#ffffff",
+          "border": "#000000",
+          "textHover": "#ffffff",
+          "background": "#000000",
+          "backgroundHover": "#000000"
+        },
+        "secondaryButton": {
+          "text": "#000000",
+          "border": "#000000",
+          "textHover": "#000000",
+          "background": "#ffffff",
+          "backgroundHover": "#ffffff"
+        }
+      },
+      {
+        "id": "scheme-3",
+        "name": "Схема 3",
+        "text": "#1a1a1a",
+        "heading": "#1a1a1a",
+        "surfaceBg": "#e6e1dc",
+        "background": "#f5f0eb",
+        "primaryButton": {
+          "text": "#f5f0eb",
+          "border": "#000000",
+          "textHover": "#f5f0eb",
+          "background": "#000000",
+          "backgroundHover": "#000000"
+        },
+        "secondaryButton": {
+          "text": "#1a1a1a",
+          "border": "#1a1a1a",
+          "textHover": "#1a1a1a",
+          "background": "#f5f0eb",
+          "backgroundHover": "#f5f0eb"
+        }
+      },
+      {
+        "id": "scheme-4",
+        "name": "Схема 4",
+        "text": "#ffffff",
+        "heading": "#ffffff",
+        "surfaceBg": "#1a1a1a",
+        "background": "#000000",
+        "primaryButton": {
+          "text": "#000000",
+          "border": "#ffffff",
+          "textHover": "#000000",
+          "background": "#ffffff",
+          "backgroundHover": "#ffffff"
+        },
+        "secondaryButton": {
+          "text": "#ffffff",
+          "border": "#ffffff",
+          "textHover": "#ffffff",
+          "background": "#000000",
+          "backgroundHover": "#000000"
+        }
+      },
+      {
+        "id": "scheme-5",
+        "name": "Схема 5",
+        "text": "#000000",
+        "heading": "#000000",
+        "surfaceBg": "#ffffff",
+        "background": "#f5f5f5",
+        "primaryButton": {
+          "text": "#f5f5f5",
+          "border": "#000000",
+          "textHover": "#f5f5f5",
+          "background": "#000000",
+          "backgroundHover": "#000000"
+        },
+        "secondaryButton": {
+          "text": "#000000",
+          "border": "#000000",
+          "textHover": "#000000",
+          "background": "#f5f5f5",
+          "backgroundHover": "#f5f5f5"
+        }
+      }
+    ]
+  }
 }

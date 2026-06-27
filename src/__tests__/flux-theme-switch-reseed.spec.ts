@@ -20,32 +20,22 @@ describe("shouldReseedOnThemeSwitch (109)", () => {
     nextThemeId: "rose",
   };
 
-  // rose ВРЕМЕННО исключён — его defaults-канон не несёт light-схем (см. sites.service).
-  const ALLOWED_THEMES = ["vanilla", "bloom", "satin", "flux"];
+  const ALLOWED_THEMES = ["rose", "vanilla", "bloom", "satin", "flux"];
 
-  it("allowlist = 4 темы с валидным каноном (rose исключён до починки)", () => {
+  it("allowlist = 5 тем верстальщиков с валидным каноном", () => {
     expect([...THEMES_RESEED_ON_SWITCH].sort()).toEqual(
       [...ALLOWED_THEMES].sort(),
     );
   });
 
-  it("does NOT reseed when switching to rose (excluded pending canon fix)", () => {
-    expect(
-      shouldReseedOnThemeSwitch({
-        ...base,
-        prevThemeId: "flux",
-        nextThemeId: "rose",
-      }),
-    ).toBe(false);
-  });
-
   it.each(ALLOWED_THEMES)(
     "reseeds when switching TO %s from a different theme (apply canon)",
     (theme) => {
+      const prev = theme === "rose" ? "flux" : "rose";
       expect(
         shouldReseedOnThemeSwitch({
           ...base,
-          prevThemeId: "rose",
+          prevThemeId: prev,
           nextThemeId: theme,
         }),
       ).toBe(true);

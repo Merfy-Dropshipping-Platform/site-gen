@@ -83,6 +83,20 @@ const headingAlignCls =
 			: "";
 const headingCls = `font-comfortaa ${headingSizeCls} font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
 
+// Канон subheading «Подзаголовок» — string | {text} | content.subheading.{text,enabled}.
+// Рендер ТОЛЬКО при непустом тексте И enabled !== 'false' (default-preserving,
+// паритет theme-base Video.astro). Стиль — flux body (manrope, muted).
+const subEnvelope = p.content?.subheading as { text?: string; enabled?: string } | undefined;
+const subEnabled = String(subEnvelope?.enabled ?? "true") !== "false";
+const subheadingText = (() => {
+	if (!subEnabled) return "";
+	const s = p.subheading ?? subEnvelope;
+	if (typeof s === "string") return s.trim();
+	if (s && typeof s === "object") return String((s as { text?: string }).text ?? "").trim();
+	return "";
+})();
+const subheadingCls = `font-manrope text-[15px] font-light leading-[1.6] text-[rgb(var(--color-muted,102_102_102))] md:text-[16px]${headingAlignCls}`;
+
 // Канон position contained|fullscreen + padded + align container|fullbleed
 // (паттерн bloom Video; align приоритетнее position — паттерн theme-base).
 // Canon-default ветка = контейнер 1320 c полями/вертикалью главной §2;
@@ -121,17 +135,20 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 <section class={sectionCls} aria-labelledby={titleId} data-puck-component-id={id} style={paddingStyle}>
 	<div class={containerCls}>
 		{
-			showHeading && (
+			(showHeading || subheadingText) && (
 				<div class={headingWrapCls}>
-					<h2
-						id={titleId}
-						class={headingCls}
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index="100"
-						data-puck-subsection-field="heading"
-					>
-						{headingText}
-					</h2>
+					{showHeading && (
+						<h2
+							id={titleId}
+							class={headingCls}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="100"
+							data-puck-subsection-field="heading"
+						>
+							{headingText}
+						</h2>
+					)}
+					{subheadingText && <p class={`${subheadingCls} mt-3`}>{subheadingText}</p>}
 				</div>
 			)
 		}

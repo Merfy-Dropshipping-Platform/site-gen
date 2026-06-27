@@ -157,11 +157,22 @@ const btnCls =
 			? `${btnBase} bg-[rgb(var(--color-button-2-bg,255_255_255))] text-[rgb(var(--color-button-2-text,58_69_48))]`
 			: `${btnBase} bg-[rgb(var(--color-button-bg,58_69_48))] text-[rgb(var(--color-button-text,255_255_255))]`;
 
-// Канон containerColorScheme (hidden) — класс схемы на контейнере рядов.
+// Канон containerEnabled (toggle; puckConfig готов). ИСПРАВЛЕНИЕ (per-element,
+// эталон bloom MultiColumns): ВКЛ → surface-бокс манеры vanilla (#ECEBE7,
+// плоский — radius-card 0) на КАЖДЫЙ ряд (<li>); класс схемы — на ОБЁРТКЕ
+// СПИСКА (<ul>), внешний div с заголовком без бокса/схемы. ВЫКЛ — без бокса/
+// схемы (работает основная секционная схема). Canon-default отсутствует → false.
+const containerEnabled = String(p.containerEnabled ?? "false") === "true";
+// Канон Nikita: класс схемы контейнера — ТОЛЬКО при ВКЛ, на <ul> (обёртка рядов),
+// НЕ на внешнем div/заголовке.
 const containerSchemeCls =
-	typeof p.containerColorScheme === "string" && p.containerColorScheme
+	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
+// per-item: surface-бокс на КАЖДЫЙ ряд при ВКЛ; ВЫКЛ — голый ряд.
+const rowBoxCls = containerEnabled
+	? " rounded-[var(--radius-card,0px)] bg-[rgb(var(--color-surface,236_235_231))] p-6 md:p-10"
+	: "";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
 const paddingStyle = p.padding
@@ -179,7 +190,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	<div class={`vanilla-container flex ${widthCls} flex-col gap-8${containerSchemeCls}`}>
+	<div class={`vanilla-container flex ${widthCls} flex-col gap-8`}>
 		{
 			heading && (
 				<h2
@@ -194,11 +205,11 @@ const titleId = id && heading ? `${id}-title` : undefined;
 				</h2>
 			)
 		}
-		<ul class="flex w-full flex-col gap-10" role="list">
+		<ul class={`flex w-full flex-col gap-10${containerSchemeCls}`} role="list">
 			{
 				rows.map((r, i) => (
 					<li
-						class="grid w-full grid-cols-1 gap-4 md:gap-10 lg:grid-cols-2"
+						class={`grid w-full grid-cols-1 gap-4 md:gap-10 lg:grid-cols-2${rowBoxCls}`}
 						data-animate
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index={i}

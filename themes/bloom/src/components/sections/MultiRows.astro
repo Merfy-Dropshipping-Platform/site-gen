@@ -146,11 +146,21 @@ const btnCls =
 			? `${btnBase} bg-[rgb(var(--color-button-2-bg,255_255_255))] text-[rgb(var(--color-button-2-text,0_0_0))]`
 			: `${btnBase} bg-[rgb(var(--color-button-bg,227_142_159))] text-[rgb(var(--color-button-text,255_255_255))]`;
 
-// Канон containerColorScheme (hidden) — класс схемы на контейнере рядов.
+// Канон containerEnabled (toggle; puckConfig готов). ИСПРАВЛЕНИЕ канона (Nikita):
+// «контейнер» = surface-бокс манеры §4 (surface #F5F5F5, радиус карточки 12px) НА
+// КАЖДЫЙ ряд (<li>), а НЕ общий бокс/схема на внешнем div. Canon-default отсутствует
+// → false = голые ряды без бокса/схемы.
+const containerEnabled = String(p.containerEnabled ?? "false") === "true";
+// Канон Nikita: класс схемы контейнера — ТОЛЬКО при ВКЛ и вешается на ОБЁРТКУ
+// СПИСКА (<ul>), НЕ на внешний div с заголовком. При ВЫКЛ → основная схема секции.
 const containerSchemeCls =
-	typeof p.containerColorScheme === "string" && p.containerColorScheme
+	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
+// Per-element surface-бокс на КАЖДЫЙ ряд при ВКЛ; при ВЫКЛ — голый ряд.
+const rowBoxCls = containerEnabled
+	? " rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,245_245_245))] p-6 md:p-8"
+	: "";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
 const paddingStyle = p.padding
@@ -166,7 +176,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	<div class={`mx-auto flex w-full ${widthCls} flex-col gap-10${containerSchemeCls}`}>
+	<div class={`mx-auto flex w-full ${widthCls} flex-col gap-10`}>
 		{
 			heading && (
 				<h2
@@ -181,11 +191,11 @@ const titleId = id && heading ? `${id}-title` : undefined;
 				</h2>
 			)
 		}
-		<ul class="flex w-full flex-col gap-10" role="list">
+		<ul class={`flex w-full flex-col gap-10${containerSchemeCls}`} role="list">
 			{
 				rows.map((r, i) => (
 					<li
-						class="grid w-full grid-cols-1 gap-4 lg:grid-cols-2"
+						class={`grid w-full grid-cols-1 gap-4 lg:grid-cols-2${rowBoxCls}`}
 						data-animate
 						data-puck-subsection-parent={hasRealRows ? id : undefined}
 						data-puck-subsection-index={hasRealRows ? i : undefined}

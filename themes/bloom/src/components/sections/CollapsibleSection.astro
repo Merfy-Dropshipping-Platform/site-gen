@@ -59,19 +59,24 @@ const sections = rawSections.slice(0, 10).map((s: any) => ({
 	content: typeof s.content === "string" ? s.content : "",
 }));
 
-// Канон containerEnabled (toggle; legacy container.enabled) — подложка-поверхность
-// манеры §4 (surface #F5F5F5, радиус карточки 12px) вокруг списка. Canon-default
-// отсутствует → false = голый список.
+// Канон containerEnabled (toggle; legacy container.enabled). ИСПРАВЛЕНИЕ канона
+// (Nikita): «контейнер» = surface-бокс манеры §4 (surface #F5F5F5, радиус карточки
+// 12px) НА КАЖДЫЙ вопрос (<li>), а НЕ общий бокс вокруг всего списка. Canon-default
+// отсутствует → false = голый список (border-divider верстальщика).
 const containerEnabled = String(p.containerEnabled ?? p.container?.enabled ?? "false") === "true";
-// Канон Nikita: класс схемы контейнера вешаем ТОЛЬКО при включённом контейнере.
-// При ВЫКЛ контейнеров нет → работает основная (секционная) цв. схема.
+// Канон Nikita: класс схемы контейнера — ТОЛЬКО при ВКЛ и вешается на ОБЁРТКУ
+// СПИСКА (<ul>), НЕ на внешний div с заголовком. При ВЫКЛ → основная (секционная) схема.
 const containerSchemeCls =
 	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
-const listWrapCls = containerEnabled
-	? `rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,245_245_245))] p-6 md:p-10${containerSchemeCls}`
-	: containerSchemeCls.trim();
+// listWrapCls на <ul> = ТОЛЬКО класс схемы (без бокса); бокс ушёл на каждый <li>.
+const listWrapCls = containerSchemeCls.trim();
+// Per-element surface-бокс на КАЖДЫЙ вопрос при ВКЛ (px — горизонтальный паддинг,
+// вертикальный даёт py-5 внутри); при ВЫКЛ — border-divider верстальщика (current).
+const liBoxCls = containerEnabled
+	? "rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,245_245_245))] px-6"
+	: "border-b border-solid border-[rgb(var(--color-border,245_245_245))] first:border-t";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
@@ -101,12 +106,12 @@ const titleId = id && heading ? `${id}-title` : undefined;
 				/>
 			)
 		}
-		<div class={listWrapCls} data-animate data-animate-delay="0.1s">
-			<ul class="flex w-full flex-col" role="list">
+		<div data-animate data-animate-delay="0.1s">
+			<ul class={`flex w-full flex-col${containerEnabled ? " gap-4" : ""}${listWrapCls ? ` ${listWrapCls}` : ""}`} role="list">
 				{
 					sections.map((s, i) => (
 						<li
-							class="border-b border-solid border-[rgb(var(--color-border,245_245_245))] first:border-t"
+							class={liBoxCls}
 							data-puck-subsection-parent={hasRealSections ? id : undefined}
 							data-puck-subsection-index={hasRealSections ? i : undefined}
 							data-puck-subsection-field={hasRealSections ? "sections" : undefined}

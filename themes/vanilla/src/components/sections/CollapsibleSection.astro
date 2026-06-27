@@ -64,18 +64,28 @@ const sections = rawSections.slice(0, 10).map((s: any) => ({
 }));
 
 // Канон containerEnabled (toggle; legacy container.enabled) — подложка манеры §4
-// (медиа-подложка #ECEBE7, БЕЗ радиуса — у vanilla всё плоское) вокруг списка.
-// Canon-default отсутствует → false = голый список.
+// (медиа-подложка #ECEBE7, БЕЗ радиуса — у vanilla всё плоское). ИСПРАВЛЕНИЕ
+// (per-element, эталон bloom MultiColumns): ВКЛ → surface-бокс на КАЖДЫЙ вопрос
+// (<li>), а НЕ общий бокс вокруг списка; класс схемы — на ОБЁРТКЕ СПИСКА (<ul>),
+// внешний div с заголовком без бокса/схемы. Canon-default отсутствует → false =
+// голый список (divider'ы).
 const containerEnabled = String(p.containerEnabled ?? p.container?.enabled ?? "false") === "true";
 // Канон Nikita: класс схемы контейнера вешаем ТОЛЬКО при включённом контейнере.
-// При ВЫКЛ контейнеров нет → работает основная (секционная) цв. схема.
+// При ВЫКЛ контейнеров нет → работает основная (секционная) цв. схема. Вешается
+// на <ul> (обёртку списка), НЕ на внешний div/заголовок.
 const containerSchemeCls =
 	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
-const listWrapCls = containerEnabled
-	? `bg-[rgb(var(--color-surface,236_235_231))] p-6 md:p-10${containerSchemeCls}`
-	: containerSchemeCls.trim();
+// listWrapCls — ТОЛЬКО класс схемы (без бокса), вешается на <ul>.
+const listWrapCls = containerSchemeCls;
+// Зазор между боксами вопросов — только при ВКЛ (в divider-режиме строки впритык).
+const listGapCls = containerEnabled ? " gap-4" : "";
+// per-item: surface-бокс манеры vanilla (#ECEBE7, плоский — radius-card 0) на
+// КАЖДЫЙ <li> при ВКЛ; ВЫКЛ — прежний divider (нижняя рамка).
+const itemBoxCls = containerEnabled
+	? "rounded-[var(--radius-card,0px)] bg-[rgb(var(--color-surface,236_235_231))] px-6"
+	: "border-b border-solid border-[rgb(var(--color-muted,217_217_210))]";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
@@ -105,12 +115,12 @@ const titleId = id && heading ? `${id}-title` : undefined;
 				/>
 			)
 		}
-		<div class={listWrapCls} data-animate data-animate-delay="0.1s">
-			<ul class="flex w-full flex-col" role="list">
+		<div data-animate data-animate-delay="0.1s">
+			<ul class={`flex w-full flex-col${listGapCls}${listWrapCls}`} role="list">
 				{
 					sections.map((s, i) => (
 						<li
-							class="border-b border-solid border-[rgb(var(--color-muted,217_217_210))]"
+							class={itemBoxCls}
 							data-puck-subsection-parent={isPlaceholder ? undefined : id}
 							data-puck-subsection-index={isPlaceholder ? undefined : i}
 							data-puck-subsection-field={isPlaceholder ? undefined : "sections"}

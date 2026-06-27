@@ -60,9 +60,9 @@ const sections = rawSections.slice(0, 10).map((s: any) => ({
 	content: typeof s.content === "string" ? s.content : "",
 }));
 
-// Канон containerEnabled (toggle; legacy container.enabled) — обёртка-поверхность
-// манеры (#F5F5F5, радиус карточки) вокруг списка. Canon-default отсутствует →
-// без контейнера (голый список в манере «голых карточек» §4).
+// Канон containerEnabled (toggle; legacy container.enabled) — per-element: surface-
+// бокс (#F5F5F5, радиус карточки) на КАЖДЫЙ вопрос, НЕ один общий бокс вокруг
+// списка. Canon-default отсутствует → без контейнера (голые вопросы-разделители §7).
 const containerEnabled = String(p.containerEnabled ?? p.container?.enabled ?? "false") === "true";
 // Канон Nikita: класс схемы контейнера вешаем ТОЛЬКО при включённом контейнере.
 // При ВЫКЛ контейнеров нет → работает основная (секционная) цв. схема.
@@ -70,9 +70,17 @@ const containerSchemeCls =
 	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
-const listWrapCls = containerEnabled
-	? `rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-surface,245_245_245))] p-6 md:p-10${containerSchemeCls}`
-	: containerSchemeCls.trim();
+// Класс схемы — на обёртке списка (красит боксы вопросов), БЕЗ бокса/паддинга.
+// Внешний div с заголовком — без бокса и без класса схемы контейнера.
+const listWrapCls = containerSchemeCls.trim();
+// При ВКЛ контейнере боксы вопросов отделяются зазором gap-3; при ВЫКЛ — сплошной
+// список с разделителями (текущий вид §7).
+const ulCls = containerEnabled ? "flex w-full flex-col gap-3" : "flex w-full flex-col";
+// Бокс вопроса (per-element): ВКЛ → surface-карточка манеры (radius 8 / #F5F5F5 /
+// px-5; верт. отступ из py-5 контента); ВЫКЛ → разделители #E5E5E5 §7.
+const itemCls = containerEnabled
+	? "rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-surface,245_245_245))] px-5"
+	: "border-b border-solid border-[rgb(var(--color-border,229_229_229))] first:border-t";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T11).
 const paddingStyle = p.padding
@@ -103,11 +111,11 @@ const titleId = id && heading ? `${id}-title` : undefined;
 			)
 		}
 		<div class={listWrapCls} data-animate>
-			<ul class="flex w-full flex-col" role="list">
+			<ul class={ulCls} role="list">
 				{
 					sections.map((s, i) => (
 						<li
-							class="border-b border-solid border-[rgb(var(--color-border,229_229_229))] first:border-t"
+							class={itemCls}
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index={i}
 							data-puck-subsection-field="sections"

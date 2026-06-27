@@ -71,18 +71,27 @@ const sections = rawSections.slice(0, 10).map((s: any) => ({
 
 // Канон containerEnabled (toggle; legacy container.enabled) — surface-подложка
 // манеры §4 (245_245_245, p-6, БЕЗ радиуса — «подложечные» карточки satin только
-// на сером) вокруг списка. Canon-default отсутствует → false = голый divide-y
+// на сером). ИСПРАВЛЕНИЕ канона Nikita (общий бокс вокруг списка был НЕПРАВИЛЬНО):
+// ВКЛ рисует surface-бокс на КАЖДЫЙ вопрос (per-element, эталон bloom MultiColumns),
+// НЕ один общий вокруг списка. Canon-default отсутствует → false = голый divide-y
 // список (литерал Faq).
 const containerEnabled = String(p.containerEnabled ?? p.container?.enabled ?? "false") === "true";
-// Канон Nikita: класс схемы контейнера вешаем ТОЛЬКО при включённом контейнере.
-// При ВЫКЛ контейнеров нет → работает основная (секционная) цв. схема.
+// Канон Nikita: класс схемы контейнера — на ОБЁРТКЕ СПИСКА (<ul>), НЕ на
+// заголовке/внешнем div, и ТОЛЬКО при включённом контейнере (при ВЫКЛ работает
+// основная секционная цв. схема).
 const containerSchemeCls =
 	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
+// Обёртка списка (<ul>): БЕЗ бокса — только класс схемы + структура. ВКЛ → gap
+// между box-вопросами (divider не нужен — каждый вопрос в своём боксе); ВЫКЛ →
+// текущий голый divide-y список.
 const listWrapCls = containerEnabled
-	? `bg-[rgb(var(--color-surface,245_245_245))] p-6${containerSchemeCls}`
-	: containerSchemeCls.trim();
+	? `flex flex-col gap-4${containerSchemeCls}`
+	: "flex flex-col divide-y divide-[rgb(var(--color-text,0_0_0)/13%)]";
+// Per-element подложка вопроса (satin §4: surface 245_245_245 + p-6, БЕЗ радиуса)
+// при ВКЛ; ВЫКЛ — текущий вертикальный divider-паддинг py-5.
+const itemBoxCls = containerEnabled ? "bg-[rgb(var(--color-surface,245_245_245))] p-6" : "py-5";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
@@ -113,54 +122,52 @@ const titleId = id && heading ? `${id}-title` : undefined;
 				/>
 			)
 		}
+		{/* Волосок #DDDDDD → канон-приём прозрачности от токена текста (≈ #DDD на белом). */}
 		<div class={listWrapCls}>
-			{/* Волосок #DDDDDD → канон-приём прозрачности от токена текста (≈ #DDD на белом). */}
-			<div class="flex flex-col divide-y divide-[rgb(var(--color-text,0_0_0)/13%)]">
-				{
-					sections.map((s, i) =>
-						isPlaceholder ? (
-							/* Figma 1:19335 ПУСТОЕ состояние: дословный ряд-плейсхолдер —
-							   лейбл «Раздел» (роль заголовка-аккордеона) + хелпер-текст
-							   «Ответь на самые популярные вопросы клиентов». Без
-							   интерактивного <details> / data-faq-item: реального ответа
-							   нет, помощь видна сразу (паритет bloom CollapsibleSection,
-							   паттерн пустого состояния Collections/MultiRows). Иконка plus
-							   сохранена для вида. */
-							<div class="flex w-full flex-col gap-3 py-5">
+			{
+				sections.map((s, i) =>
+					isPlaceholder ? (
+						/* Figma 1:19335 ПУСТОЕ состояние: дословный ряд-плейсхолдер —
+						   лейбл «Раздел» (роль заголовка-аккордеона) + хелпер-текст
+						   «Ответь на самые популярные вопросы клиентов». Без
+						   интерактивного <details> / data-faq-item: реального ответа
+						   нет, помощь видна сразу (паритет bloom CollapsibleSection,
+						   паттерн пустого состояния Collections/MultiRows). Иконка plus
+						   сохранена для вида. */
+						<div class={`flex w-full flex-col gap-3 ${itemBoxCls}`}>
+							<div
+								class={`flex w-full items-center justify-between gap-4 font-logo ${summarySizeCls} font-normal uppercase leading-[1.2] text-[rgb(var(--color-heading,0_0_0))]`}
+							>
+								<span class="min-w-0 flex-1 break-words">{s.heading}</span>
+								<NtIcon name="plus" sizeClass="size-8" class="shrink-0" />
+							</div>
+							<div class="satin-copy max-w-[1100px]">{s.content}</div>
+						</div>
+					) : (
+						<details
+							class={`group ${itemBoxCls}`}
+							open={i === 0}
+							data-faq-item
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index={i}
+							data-puck-subsection-field="sections"
+						>
+							<summary class="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
 								<div
 									class={`flex w-full items-center justify-between gap-4 font-logo ${summarySizeCls} font-normal uppercase leading-[1.2] text-[rgb(var(--color-heading,0_0_0))]`}
 								>
-									<span class="min-w-0 flex-1 break-words">{s.heading}</span>
-									<NtIcon name="plus" sizeClass="size-8" class="shrink-0" />
+									<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
+									<NtIcon name="plus" sizeClass="size-8" class="shrink-0 group-open:hidden" />
+									<NtIcon name="minus" sizeClass="size-8" class="hidden shrink-0 group-open:block" />
 								</div>
-								<div class="satin-copy max-w-[1100px]">{s.content}</div>
+							</summary>
+							<div class="overflow-hidden" data-faq-answer>
+								<div class="satin-copy mt-3 max-w-[1100px]" set:html={s.content} />
 							</div>
-						) : (
-							<details
-								class="group py-5"
-								open={i === 0}
-								data-faq-item
-								data-puck-subsection-parent={id}
-								data-puck-subsection-index={i}
-								data-puck-subsection-field="sections"
-							>
-								<summary class="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-									<div
-										class={`flex w-full items-center justify-between gap-4 font-logo ${summarySizeCls} font-normal uppercase leading-[1.2] text-[rgb(var(--color-heading,0_0_0))]`}
-									>
-										<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
-										<NtIcon name="plus" sizeClass="size-8" class="shrink-0 group-open:hidden" />
-										<NtIcon name="minus" sizeClass="size-8" class="hidden shrink-0 group-open:block" />
-									</div>
-								</summary>
-								<div class="overflow-hidden" data-faq-answer>
-									<div class="satin-copy mt-3 max-w-[1100px]" set:html={s.content} />
-								</div>
-							</details>
-						),
-					)
-				}
-			</div>
+						</details>
+					),
+				)
+			}
 		</div>
 	</div>
 </section>

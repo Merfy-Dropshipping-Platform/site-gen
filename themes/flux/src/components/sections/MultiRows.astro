@@ -153,9 +153,19 @@ const btnCls =
 		? `${btnBase} border border-solid border-[rgb(var(--color-button-2-bg,0_0_0))] bg-transparent text-[rgb(var(--color-button-2-bg,0_0_0))] hover:opacity-90`
 		: `${btnBase} bg-[rgb(var(--color-button-2-bg,0_0_0))] text-[rgb(var(--color-button-2-text,255_255_255))] hover:opacity-95`;
 
-// Канон containerColorScheme (hidden) — класс схемы на контейнере рядов.
+// Канон containerEnabled — тоггл «Фон»/«Контейнер» (puckConfig готов). Дефолт ВЫКЛ:
+// ряды без подложки. ВКЛ → surface-бокс на КАЖДЫЙ ряд (<li>, эталон bloom MultiColumns
+// cardSurfaceCls), НЕ общий бокс вокруг секции. СОХРАНЁН flux-радиус 12px / surface
+// 245_245_245.
+const containerEnabled = String(p.containerEnabled ?? "false") === "true";
+const cardSurfaceCls = containerEnabled
+	? " rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,245_245_245))] p-6 md:p-10"
+	: "";
+// Канон Nikita: класс схемы контейнера — ТОЛЬКО при включённом контейнере, вешается на
+// ОБЁРТКУ СПИСКА (<ul>); внешний div (с заголовком) без бокса и без схемы. ВЫКЛ → без
+// бокса/схемы (работает основная секционная схема).
 const containerSchemeCls =
-	typeof p.containerColorScheme === "string" && p.containerColorScheme
+	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
 
@@ -175,7 +185,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	<div class={`mx-auto flex w-full ${widthCls} flex-col gap-8 md:gap-12${containerSchemeCls}`}>
+	<div class={`mx-auto flex w-full ${widthCls} flex-col gap-8 md:gap-12`}>
 		{
 			heading && (
 				<h2
@@ -189,11 +199,11 @@ const titleId = id && heading ? `${id}-title` : undefined;
 				</h2>
 			)
 		}
-		<ul class="flex w-full flex-col gap-8 md:gap-12" role="list">
+		<ul class={`flex w-full flex-col gap-8 md:gap-12${containerSchemeCls}`} role="list">
 			{
 				rows.map((r, i) => (
 					<li
-						class="grid w-full grid-cols-1 gap-6 md:gap-8 lg:grid-cols-2"
+						class={`grid w-full grid-cols-1 gap-6 md:gap-8 lg:grid-cols-2${cardSurfaceCls}`}
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index={i}
 						data-puck-subsection-field="rows"

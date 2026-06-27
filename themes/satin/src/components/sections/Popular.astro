@@ -218,20 +218,6 @@ const isPlaceholder = !legacyProducts;
 const placeholderCount = cardsRaw ?? 4;
 const products: CatalogProduct[] = legacyProducts ?? catalogProducts.slice(0, cardsRaw ?? 3);
 
-// Контейнер-подложка (toggle containerEnabled + containerColorScheme), паритет
-// rose Popular / CollapsibleSection: ВКЛ → surface-бокс §4 (245_245_245 + p-6 БЕЗ
-// радиуса — манера satin) вокруг ВСЕГО контента секции (шапка + грид + кнопка) +
-// отдельная цв. схема контейнера. ВЫКЛ (дефолт) → голый контент, основная
-// (секционная) схема. Канон Nikita: класс схемы — ТОЛЬКО при включённом контейнере.
-const containerEnabled = String(p.containerEnabled ?? p.background?.enabled ?? "false") === "true";
-const containerSchemeCls =
-	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
-		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
-		: "";
-const containerWrapCls = containerEnabled
-	? `flex flex-col gap-8 bg-[rgb(var(--color-surface,245_245_245))] p-6${containerSchemeCls}`
-	: `flex flex-col gap-8${containerSchemeCls}`;
-
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
@@ -244,7 +230,7 @@ const paddingStyle = p.padding
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	<div class={`satin-container ${containerWrapCls}`}>
+	<div class="satin-container flex flex-col gap-8">
 		{(sectionTitle || sectionText) && (
 			<div
 				class="flex flex-col gap-2"

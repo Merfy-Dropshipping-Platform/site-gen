@@ -196,11 +196,19 @@ const btnCls =
 			? `${btnBase} border-[rgb(var(--color-button-2-bg,255_255_255))] bg-[rgb(var(--color-button-2-bg,255_255_255))] text-[rgb(var(--color-button-2-text,0_0_0))]`
 			: `${btnBase} border-[rgb(var(--color-button-2-text,0_0_0))] bg-transparent text-[rgb(var(--color-button-2-text,0_0_0))]`;
 
-// Канон containerColorScheme — класс схемы на контейнере рядов.
+// Канон containerEnabled (toggle «Контейнер»; canon-default ВЫКЛ — паритет
+// rose/MultiColumns). ИСПРАВЛЕНИЕ канона Nikita: ВКЛ рисует surface-бокс §4
+// (245_245_245 + p-6, БЕЗ радиуса) на КАЖДЫЙ ряд (per-element, эталон bloom
+// MultiColumns), НЕ один общий. ВЫКЛ — ряды голо на фоне секции, без бокса/схемы.
+const containerEnabled = String(p.containerEnabled ?? "false") === "true";
+// Канон Nikita: класс схемы контейнера — на ОБЁРТКЕ РЯДОВ (<ul>), НЕ на внешнем
+// div, и ТОЛЬКО при включённом контейнере (при ВЫКЛ работает основная схема секции).
 const containerSchemeCls =
-	typeof p.containerColorScheme === "string" && p.containerColorScheme
+	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
+// Per-element подложка ряда (satin §4: surface 245_245_245 + p-6, БЕЗ радиуса) при ВКЛ.
+const rowBoxCls = containerEnabled ? "bg-[rgb(var(--color-surface,245_245_245))] p-6" : "";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
 const paddingStyle = p.padding
@@ -218,7 +226,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	<div class={`${widthCls} flex flex-col gap-8${containerSchemeCls}`}>
+	<div class={`${widthCls} flex flex-col gap-8`}>
 		{
 			heading && (
 				<h2
@@ -233,11 +241,14 @@ const titleId = id && heading ? `${id}-title` : undefined;
 			)
 		}
 		{/* Ряды: внешний gap-12 md:gap-20, ряд grid items-stretch gap-8 md:grid-cols-2 md:gap-10 (литерал CollectionRows.astro:50-52). */}
-		<div class="flex flex-col gap-12 md:gap-20">
+		<div class={`flex flex-col gap-12 md:gap-20${containerSchemeCls}`}>
 			{
 				rows.map((row, i) => (
 					<div
-						class="grid grid-cols-1 items-stretch gap-8 md:grid-cols-2 md:gap-10"
+						class:list={[
+							"grid grid-cols-1 items-stretch gap-8 md:grid-cols-2 md:gap-10",
+							rowBoxCls,
+						]}
 						data-puck-subsection-parent={hasRealRows ? id : undefined}
 						data-puck-subsection-index={hasRealRows ? i : undefined}
 						data-puck-subsection-field={hasRealRows ? "rows" : undefined}

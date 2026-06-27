@@ -174,16 +174,11 @@ export const PopularProductsPuckConfig: BlockPuckConfig<PopularProductsProps> = 
     },
     columns: { type: 'slider', label: 'Колонки', min: 1, max: 6, step: 1 },
 
-    containerEnabled: {
-      type: 'toggle',
-      label: 'Контейнер',
-      options: [
-        { label: 'Показать', value: 'true' },
-        { label: 'Скрыть', value: 'false' },
-      ],
-    },
+    // user feedback: «в коллекциях не должно быть контейнера» — секция-контейнер
+    // убрана (карточки товаров сами по себе боксы). Поля скрыты.
+    containerEnabled: { type: 'hidden', label: '' } as any,
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
-    containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
+    containerColorScheme: { type: 'hidden', label: '' } as any,
     padding: { type: 'padding', label: 'Отступы' },
 
     // Hidden — данные ревизий сохраняются, но в Figma 314-34614 эти контролы

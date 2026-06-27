@@ -135,26 +135,23 @@ const aspectCls =
 // Канон textPosition: left (canon-default) | center.
 const textAlignCls = p.textPosition === "center" ? "items-center text-center" : "items-start text-left";
 
-// Канон containerColorScheme (hidden) — класс схемы на контейнере (паритет
-// Collections/Gallery/MultiRows). Канон соседних секций rose: грид лежит прямо в
-// `mx-auto flex w-full max-w-… flex-col gap-8 md:gap-10` БЕЗ surface-обёртки
-// (#F5F5F5 / радиус / паддинг) вокруг всего грида. containerEnabled управляет
-// только наличием классa схемы (per-колоночные карточки сохраняют свой вид).
-// Канон Nikita: дефолт «Фон» — ВЫКЛ (как у Сворачиваемого/Коллекции), бокс по
-// явному включению тоггла.
+// Канон containerEnabled (toggle; legacy background.enabled) — per-element: surface-
+// бокс (#F5F5F5 / радиус / паддинг) на КАЖДУЮ колонку (паритет bloom MultiColumns
+// cardSurfaceCls), НЕ один общий бокс вокруг грида. Внешний div и грид — без бокса.
+// Канон Nikita: дефолт ВЫКЛ (как у Сворачиваемого/Коллекции), бокс по явному
+// включению тоггла.
 const containerEnabled =
 	String(p.containerEnabled ?? p.background?.enabled ?? "false") === "true";
-// Канон Nikita: тоггл «Фон»/«Контейнер» САМ показывает подложку-бокс (surface +
-// радиус + паддинг) — раньше бокс висел на наличии скрытой «Цв. схемы контейнера»,
-// поэтому тоггл был пустышкой. Цв. схема контейнера (если задана) — отдельный класс
-// поверх, перекрашивает бокс. При ВЫКЛ — ни бокса, ни схемы (основная схема секции).
-const containerSchemeCls = containerEnabled
-	? ` rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-surface,245_245_245))] p-6 md:p-10${
-			typeof p.containerColorScheme === "string" && p.containerColorScheme
-				? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
-				: ""
-		}`
+// Бокс КОЛОНКИ: ВКЛ → surface-карточка манеры на каждом <li>; ВЫКЛ → голая колонка.
+const cardSurfaceCls = containerEnabled
+	? " rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-surface,245_245_245))] p-6"
 	: "";
+// Класс схемы контейнера — на обёртке СПИСКА (<ul>), красит боксы колонок. ВКЛ
+// только при включённом контейнере (при ВЫКЛ — основная секционная схема).
+const containerSchemeCls =
+	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
+		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
+		: "";
 
 // Канон buttonText/buttonLink (hidden) — кнопка манеры под гридом при непустом тексте.
 const btnText =
@@ -191,7 +188,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	<div class={`mx-auto flex w-full ${widthCls} flex-col gap-8 md:gap-10${containerSchemeCls}`}>
+	<div class={`mx-auto flex w-full ${widthCls} flex-col gap-8 md:gap-10`}>
 		{
 			heading && (
 				<h2
@@ -207,7 +204,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 			)
 		}
 		<ul
-			class="grid grid-cols-1 gap-6 sm:gap-5 md:grid-cols-2 md:gap-5 lg:grid-cols-[repeat(var(--cols),minmax(0,1fr))] lg:gap-6"
+			class={`grid grid-cols-1 gap-6 sm:gap-5 md:grid-cols-2 md:gap-5 lg:grid-cols-[repeat(var(--cols),minmax(0,1fr))] lg:gap-6${containerSchemeCls}`}
 			role="list"
 			style={gridStyle}
 			data-animate
@@ -215,7 +212,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 			{
 				columns.map((c, i) => (
 					<li
-						class={`flex flex-col gap-4 ${textAlignCls}`}
+						class={`flex flex-col gap-4 ${textAlignCls}${cardSurfaceCls}`}
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index={i}
 						data-puck-subsection-field="columns"

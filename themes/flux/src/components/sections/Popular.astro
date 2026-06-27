@@ -250,18 +250,9 @@ const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 
-// Контейнер-подложка (toggle containerEnabled + containerColorScheme), паттерн rose.
-// Раньше оба поля не читались → настройки «Контейнер»/«Схема контейнера» мёртвые.
-const containerEnabled = String(p.containerEnabled ?? "false") === "true";
-// Канон Nikita: класс схемы контейнера — ТОЛЬКО при включённом контейнере
-// (при ВЫКЛ работает основная схема секции).
-const containerSchemeCls =
-	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
-		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
-		: "";
-const containerCls = containerEnabled
-	? ` rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,245_245_245))] p-6 md:p-10${containerSchemeCls}`
-	: "";
+// Канон Nikita (ИСПРАВЛЕНИЕ): у flux Popular контейнер-бокс УБРАН полностью — контент
+// (шапка + грид карточек + «Смотреть все») сразу в max-width-обёртке, без подложки/схемы
+// контейнера. Карточки остаются как были.
 ---
 
 <section
@@ -271,7 +262,7 @@ const containerCls = containerEnabled
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	<div class={`mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-12${containerCls}`}>
+	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-12">
 		<div
 			class={headWrapCls}
 			data-puck-subsection-parent={id}

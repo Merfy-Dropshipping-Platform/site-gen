@@ -50,6 +50,7 @@ export const MultiRowsSchema = z.object({
   buttonStyle: z.enum(['primary', 'black', 'white']).optional(),
   alignment: z.enum(['left', 'center', 'right']).optional(),
   colorScheme: z.string().optional(),
+  containerEnabled: z.enum(['true', 'false']).optional(),
   containerColorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
@@ -120,6 +121,14 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
     },
     alignment: { type: 'alignment', label: 'Выравнивание' },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    containerEnabled: {
+      type: 'toggle',
+      label: 'Контейнер',
+      options: [
+        { label: 'Показать', value: 'true' },
+        { label: 'Скрыть', value: 'false' },
+      ],
+    } as any,
     containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
     padding: { type: 'padding', label: 'Отступы' },
     // Hidden — нет в Figma 314-34963.

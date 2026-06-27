@@ -121,7 +121,7 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
     background: { type: 'hidden', label: '' } as any,
     containerEnabled: {
       type: 'toggle',
-      label: 'Фон',
+      label: 'Контейнер',
       options: [
         { label: 'Показать', value: 'true' },
         { label: 'Скрыть', value: 'false' },

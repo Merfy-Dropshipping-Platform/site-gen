@@ -269,25 +269,10 @@ const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 
-// Контейнер-подложка (toggle containerEnabled + containerColorScheme), паттерн
-// CollapsibleSection / эталон rose Popular: включён → обёртка-поверхность вокруг
-// контента блока (surface + внутренние паддинги; vanilla плоский — без радиуса) +
-// отдельная цв. схема контейнера. Основная (секционная) схема остаётся на <section>.
-// Canon-default отсутствует → false = голый контент.
-const containerEnabled = String(p.containerEnabled ?? "false") === "true";
-// Канон Nikita: класс схемы контейнера — ТОЛЬКО при включённом контейнере
-// (при ВЫКЛ работает основная схема секции).
-const containerSchemeCls =
-	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
-		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
-		: "";
-// База макета (vanilla-container, ширина, flex-колонка) неизменна; при ВКЛ
-// добавляется surface-бокс манеры vanilla (#ECEBE7, плоский — surface 236_235_231)
-// + внутренние паддинги. vanilla-container без собственных паддингов → бокс на нём
-// эквивалентен двойной обёртке rose (бокс на всю ширину контейнера).
-const containerWrapCls = containerEnabled
-	? `vanilla-container flex max-w-[1180px] flex-col gap-8 bg-[rgb(var(--color-surface,236_235_231))] p-6 md:p-10${containerSchemeCls}`
-	: `vanilla-container flex max-w-[1180px] flex-col gap-8${containerSchemeCls}`;
+// ИСПРАВЛЕНИЕ: контейнер-подложка УБРАНА (агент ранее ошибочно навесил surface-бокс
+// на .vanilla-container). PopularProducts vanilla — БЕЗ контейнер-бокса: контент
+// прямо в .vanilla-container (карточки остаются). Per-element контейнер не
+// применим к товарной сетке (паритет rose Popular: контейнера нет).
 ---
 
 <section
@@ -297,7 +282,7 @@ const containerWrapCls = containerEnabled
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	<div class={containerWrapCls}>
+	<div class="vanilla-container flex max-w-[1180px] flex-col gap-8">
 		<div
 			class="flex max-w-[760px] flex-col gap-2"
 			data-animate

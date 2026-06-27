@@ -81,9 +81,20 @@ const containerSchemeCls =
 	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
-const listWrapCls = containerEnabled
-	? `rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,245_245_245))] p-6 md:p-10${containerSchemeCls}`
-	: containerSchemeCls.trim();
+// Канон Nikita (ИСПРАВЛЕНИЕ: общий бокс вокруг списка был неверен): «Контейнер» ВКЛ →
+// surface-бокс на КАЖДЫЙ вопрос (<li>), НЕ общий бокс вокруг <ul>. Класс схемы — на
+// ОБЁРТКЕ СПИСКА (<ul>), внешний div (с заголовком) без бокса и без схемы. Эталон
+// per-element — bloom MultiColumns (cardSurfaceCls на каждом <li>). Сохранены
+// flux-значения (radius-card 12px, surface 245_245_245).
+// listWrapCls = ТОЛЬКО класс схемы (без бокса), вешается на <ul>.
+const listWrapCls = containerSchemeCls.trim();
+// При ВКЛ <ul> получает зазор между боксами-вопросами; при ВЫКЛ список слитный.
+const listGapCls = containerEnabled ? "gap-3 md:gap-4" : "";
+// Каждый <li>-вопрос: ВКЛ — surface-бокс (radius 12px + горизонтальный px, вертикаль —
+// от внутренних py-5); ВЫКЛ — текущий border-divider (first:border-t).
+const itemBoxCls = containerEnabled
+	? "rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,245_245_245))] px-6 md:px-8"
+	: "border-b border-solid border-[rgb(var(--color-surface,245_245_245))] first:border-t";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
@@ -112,57 +123,55 @@ const titleId = id && heading ? `${id}-title` : undefined;
 				/>
 			)
 		}
-		<div class={listWrapCls}>
-			<ul class="flex w-full flex-col" role="list">
-				{
-					sections.map((s, i) => (
-						<li
-							class="border-b border-solid border-[rgb(var(--color-surface,245_245_245))] first:border-t"
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index={i}
-							data-puck-subsection-field="sections"
-						>
-							{isPlaceholder ? (
-								/* Figma 1:19335 ПУСТОЕ состояние: дословный ряд-плейсхолдер —
-								   лейбл «Раздел» (роль вопроса) + хелпер-текст «Ответь на самые
-								   популярные вопросы клиентов». Без интерактивного <details>:
-								   реального ответа нет, помощь видна сразу (паттерн пустого
-								   состояния Collections/MultiRows). Шеврон сохранён для вида. */
-								<div class="flex w-full flex-col gap-2 py-5">
-									<div class="flex w-full items-center justify-between gap-4 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]">
-										<span class="min-w-0 flex-1 break-words">{s.heading}</span>
+		<ul class={["flex w-full flex-col", listGapCls, listWrapCls].filter(Boolean).join(" ")} role="list">
+			{
+				sections.map((s, i) => (
+					<li
+						class={itemBoxCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index={i}
+						data-puck-subsection-field="sections"
+					>
+						{isPlaceholder ? (
+							/* Figma 1:19335 ПУСТОЕ состояние: дословный ряд-плейсхолдер —
+							   лейбл «Раздел» (роль вопроса) + хелпер-текст «Ответь на самые
+							   популярные вопросы клиентов». Без интерактивного <details>:
+							   реального ответа нет, помощь видна сразу (паттерн пустого
+							   состояния Collections/MultiRows). Шеврон сохранён для вида. */
+							<div class="flex w-full flex-col gap-2 py-5">
+								<div class="flex w-full items-center justify-between gap-4 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]">
+									<span class="min-w-0 flex-1 break-words">{s.heading}</span>
+									<NtIcon
+										name="dropdown-chevron"
+										sizeClass="size-5"
+										class="shrink-0 rotate-180"
+									/>
+								</div>
+								<p class="font-manrope text-[16px] font-light leading-[1.6] text-[rgb(var(--color-muted,153_153_153))]">
+									{s.content}
+								</p>
+							</div>
+						) : (
+							<details class="group">
+								<summary class="cursor-pointer list-none py-5 [&::-webkit-details-marker]:hidden">
+									<div class="flex w-full items-center justify-between gap-4 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70">
+										<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
 										<NtIcon
 											name="dropdown-chevron"
 											sizeClass="size-5"
-											class="shrink-0 rotate-180"
+											class="shrink-0 transition-transform duration-300 group-open:rotate-180"
 										/>
 									</div>
-									<p class="font-manrope text-[16px] font-light leading-[1.6] text-[rgb(var(--color-muted,153_153_153))]">
-										{s.content}
-									</p>
-								</div>
-							) : (
-								<details class="group">
-									<summary class="cursor-pointer list-none py-5 [&::-webkit-details-marker]:hidden">
-										<div class="flex w-full items-center justify-between gap-4 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70">
-											<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
-											<NtIcon
-												name="dropdown-chevron"
-												sizeClass="size-5"
-												class="shrink-0 transition-transform duration-300 group-open:rotate-180"
-											/>
-										</div>
-									</summary>
-									<div
-										class="pb-5 font-manrope text-[16px] font-light leading-[1.6] text-[rgb(var(--color-muted,153_153_153))]"
-										set:html={s.content}
-									/>
-								</details>
-							)}
-						</li>
-					))
-				}
-			</ul>
-		</div>
+								</summary>
+								<div
+									class="pb-5 font-manrope text-[16px] font-light leading-[1.6] text-[rgb(var(--color-muted,153_153_153))]"
+									set:html={s.content}
+								/>
+							</details>
+						)}
+					</li>
+				))
+			}
+		</ul>
 	</div>
 </section>

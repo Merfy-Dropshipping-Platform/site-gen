@@ -20,7 +20,9 @@ export const ProductSchema = z.object({
     show: z.union([z.boolean(), z.enum(['true', 'false'])]).optional(),
   }).optional(),
   variants: z.object({
-    style: z.enum(['button', 'list']).optional(),
+    // Единое поле формы (Figma 1:21330): button=Кнопка, circle=Круг, square=Квадрат,
+    // list=Список. `shape` оставлен optional для back-compat старых ревизий.
+    style: z.enum(['button', 'list', 'circle', 'square']).optional(),
     shape: z.enum(['circle', 'square', 'none']).optional(),
   }).optional(),
   quantity: z.object({
@@ -175,22 +177,18 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
       label: 'Варианты',
       hiddenInMainPanel: true,
       objectFields: {
+        // Единый выбор формы вариантов (Figma 1:21330): «Кнопка» = прямоугольные
+        // текст-кнопки (значение текстом); «Круг»/«Квадрат» = цветные свотчи-плашки;
+        // «Список» = выпадающий <select>. Раньше было 2 поля (Стиль+Вариации) —
+        // объединено, иначе они конфликтовали (баг M$rkul «Кнопка не делает кнопки»).
         style: {
-          type: 'radio',
-          label: 'Стиль',
-          options: [
-            { label: 'Кнопка', value: 'button' },
-            { label: 'Список', value: 'list' },
-          ],
-        },
-        // Figma 314-34673: «Вариации» (не «Форма»), последняя опция «Нет».
-        shape: {
           type: 'radio',
           label: 'Вариации',
           options: [
+            { label: 'Кнопка', value: 'button' },
             { label: 'Круг', value: 'circle' },
             { label: 'Квадрат', value: 'square' },
-            { label: 'Нет', value: 'none' },
+            { label: 'Список', value: 'list' },
           ],
         },
       },
@@ -256,11 +254,9 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
     title: { size: 'medium' },
     // price/quantity больше не имеют тоггла (Figma 1236-42145 → disabledHint):
     // рендер показывает их всегда (priceProp/quantity === undefined → visible).
-    // shape: 'none' = текущий pill-чип (rounded-[6px]). Дефолт намеренно
-    // 'none', а не 'circle', чтобы существующие товары не регрессировали:
-    // эффективный дефолт = как сейчас, а 'circle'/'square' — явный выбор
-    // мерчанта (см. ProductVariants.astro SHAPE_RADIUS).
-    variants: { style: 'button', shape: 'none' },
+    // Единое поле формы: дефолт 'button' = прямоугольные текст-кнопки (Figma).
+    // 'circle'/'square'/'list' — явный выбор мерчанта.
+    variants: { style: 'button' },
     // «Основная кнопка» (addToCart). Пусто = скрыть. «Купить сейчас» —
     // фиксированный лейбл, видимость через dynamicButton.
     buttons: { addToCart: { text: 'Добавить в корзину' } },

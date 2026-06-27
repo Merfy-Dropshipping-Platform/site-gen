@@ -142,12 +142,19 @@ const fallbackDescription = description?.content ?? '';
 //   shape: 'none' (дефолт)  — текущий pill-чип; 'circle' / 'square' — явный
 //          выбор формы. Дефолт 'none' (а не puck-дефолт 'circle') гарантирует
 //          неизменный вид существующих товаров — см. Product.puckConfig defaults.
-const variantsStyle: 'button' | 'list' =
-  variantsProp?.style === 'list' ? 'list' : 'button';
-const variantsShape: 'circle' | 'square' | 'none' =
-  variantsProp?.shape === 'circle' || variantsProp?.shape === 'square'
-    ? variantsProp.shape
-    : 'none';
+// Единый выбор формы вариантов (Figma 1:21330): Кнопка(button) / Круг(circle) /
+// Квадрат(square) / Список(list). Хранится в variants.style. Back-compat: старые
+// ревизии держат style(button/list) + shape(circle/square/none) — выводим mode.
+const vStyle = (variantsProp?.style ?? '') as string;
+const vShape = (variantsProp?.shape ?? '') as string;
+const variantsMode: 'button' | 'circle' | 'square' | 'list' =
+  vStyle === 'circle' || vStyle === 'square'
+    ? (vStyle as 'circle' | 'square')
+    : vShape === 'circle' || vShape === 'square'
+      ? (vShape as 'circle' | 'square')
+      : vStyle === 'list'
+        ? 'list'
+        : 'button';
 
 // — Resolve product → ProductView (single source of truth). —
 //
@@ -288,8 +295,7 @@ const cartImage = view.gallery.hero?.src ?? '';
             <ProductVariants
               groups={view.variantGroups}
               type={visual.variantsType}
-              style={variantsStyle}
-              shape={variantsShape}
+              mode={variantsMode}
             />
           </div>
         )}

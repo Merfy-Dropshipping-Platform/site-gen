@@ -14,11 +14,10 @@ const id = p.id;
 // «Опишите преимущества продукта…»). Мерчант задал свой heading/text/button → его
 // и рендерим (ветки union ниже сохраняются).
 const heading =
-	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Изображение с текстом");
+	(typeof p.heading === "string" ? p.heading : p.heading?.text)?.trim() || "Изображение с текстом";
 const text =
-	typeof p.text === "string"
-		? p.text
-		: (p.text?.content ?? "Покажи и расскажи о своем товаре в одном блоке");
+	(typeof p.text === "string" ? p.text : p.text?.content)?.trim() ||
+	"Покажи и расскажи о своем товаре в одном блоке";
 
 // Канон heading.size: 'medium'/отсутствие = .rose-title дословно (20/14).
 // small 17/12, large 24/17 — шкала T14.

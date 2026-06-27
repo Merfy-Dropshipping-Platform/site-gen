@@ -34,7 +34,7 @@ const hasImage = typeof p.image?.url === "string" && p.image.url.trim().length >
 // = литерал 20, small 17, large 24.
 const headingDefault = hasImage ? "Ваш дом — наша забота" : "Изображение с текстом";
 const heading =
-	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? headingDefault);
+	(typeof p.heading === "string" ? p.heading : p.heading?.text)?.trim() || headingDefault;
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
 	headingSize === "small"
@@ -57,7 +57,7 @@ const textDefault = hasImage
 	? "<p>Мы уверены: дом должен быть красивым не только на фотографиях, но и на ощупь. Бренд Vanila создан для тех, кто ценит эстетику и качество в каждом квадратном метре своего пространства. Мы собираем для вас самые вдохновляющие предметы текстиля и декора, чтобы ваш интерьер обрел индивидуальность.</p><p>В ассортименте Vanila вы не найдете случайных вещей. Только то, что действительно достойно стать частью вашего дома</p>"
 	: "<p>Покажи и расскажи о своем товаре в одном блоке</p>";
 const text =
-	typeof p.text === "string" ? p.text : (p.text?.content ?? textDefault);
+	(typeof p.text === "string" ? p.text : p.text?.content)?.trim() || textDefault;
 const textSize = p.textSize ?? p.text?.size;
 const textCls =
 	textSize === "small"

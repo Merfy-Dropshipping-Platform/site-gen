@@ -38,12 +38,16 @@ if (nextThemeId === 'flux' && nextThemeId !== prevThemeId) {
 - **flux→flux** (re-save, `prevThemeId===flux`): reseed НЕ срабатывает → правки на flux не теряются.
 - **Идемпотентность:** условие `nextThemeId !== prevThemeId` = один проход на реальный свитч.
 
-## Расширение на все темы (2026-06-27, «давай все»)
-`THEMES_RESEED_ON_SWITCH = {rose, vanilla, bloom, satin, flux}` — свитч на любую из 5 тем применяет её канон. Каноны проверены:
-- vanilla/bloom/flux — `defaults/<t>.json` с colorSchemes + product `dataSource:auto` ✓.
-- **rose** — PageResolver отдаёт `themeSettings:{}` (пусто), но `buildTokensCss` фоллбэчит на `theme.json.colorSchemes` (5 схем) → палитра корректна ✓.
-- **satin** — colorSchemes ок, но product-секции с **запечённым демо** (collectionId:null «ВЕРХНЯЯ ОДЕЖДА»), а не `dataSource:auto` → проверить live, при необходимости поправить канон на auto («товары с нуля»).
-- Неизвестная тема (typo/кастом) — НЕ пересеивается (allowlist).
+## Расширение на темы (2026-06-27, «давай все») — VERIFIED LIVE
+`THEMES_RESEED_ON_SWITCH = {vanilla, bloom, satin, flux}` — свитч на эти 4 темы применяет её канон. **Verified live** (тест-акк `10caf133`, свитч через UI как юзер):
+- **vanilla** ✓ — «Искусство жить уютно», olive `#eee`, demoColl=нет.
+- **bloom** ✓ — «ИСКУССТВО ЗАБОТЫ О СЕБЕ», демо нет.
+- **satin** ✓ — header «SATIN», демо-коллекция «ВЕРХНЯЯ ОДЕЖДА» НЕ протекла (demoColl=false) → товары с нуля ок.
+- **flux** ✓ — чёрн/оранж `#fa5109`, «НОВИНКИ ТЕХНОЛОГИЙ».
+- Неизвестная тема — НЕ пересеивается (allowlist).
+
+### ⚠️ rose ИСКЛЮЧЁН (canon-долг)
+Гипотеза «theme.json fallback спасёт rose» **опровергнута live**: `defaults/rose.json` не несёт своих colorSchemes → downstream инжектит `LEGACY_SEED_SCHEMES` (`scheme-1`=чёрный `#000000`), а rose-контент (Hero `colorScheme:scheme-1`) → **тёмный hero «сайт чернеет»**. Плюс канон rose минимальный (5 блоков: Header/Hero/PopularProducts/ContactForm/Footer), а не богатый rose. **Фикс rose (отдельно):** добавить в `defaults/rose.json` собственные light-схемы (`scheme-1`=белый, role-correct по rose `theme.json`/`themeSchemeToMerchantShape`) + при желании богатый канон; затем вернуть `rose` в allowlist и ре-верифицировать. Трогает хрупкую pupa/colorSchemes-систему — делать осознанно.
 
 ## Вне scope
 - Сохранение кастомной раскладки при свитче — осознанно НЕТ (противоречит «1-в-1 как у верстальщиков»).

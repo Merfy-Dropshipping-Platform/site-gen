@@ -122,7 +122,10 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
         { label: 'Скрыть', value: 'false' },
       ],
     } as any,
-    containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
+    // «Цветовая схема контейнера» вырезана из MultiRows (паритет с MultiColumns,
+    // Figma 1236-42153 — одна цв. схема в сайдбаре секции). Поле скрыто, форма
+    // данных сохранена для совместимости ревизий.
+    containerColorScheme: { type: 'hidden', label: '' } as any,
     padding: { type: 'padding', label: 'Отступы' },
     // Hidden — нет в Figma 314-34963.
     headingAlignment: { type: 'hidden', label: '' },

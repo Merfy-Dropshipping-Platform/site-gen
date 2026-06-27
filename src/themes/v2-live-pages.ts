@@ -419,6 +419,29 @@ const findBlockProps = (
 };
 
 /**
+ * Spec 109 — sticky-хедер на verbatim-страницах (корзина).
+ *
+ * Verbatim-страница (cart) рендерит ДЕФОЛТНЫЙ Header без пропсов мерчанта →
+ * stickiness undefined → rootCls="w-full" (НЕ sticky). `injectChromeIntoHtml`
+ * затем подменяет внутренний <header> каноническим sticky-хедером мерчанта,
+ * и тот оказывается ВНУТРИ дефолтных коробок `<div class="w-full"><div
+ * class="overflow-visible bg-…">` (высотой ~133px). У `position:sticky`
+ * containing-block = ближайший предок-бокс → он голодает, шапка уезжает при
+ * скролле. На home/контентных страницах обёртка схемы несёт `display:contents`
+ * (composeV2Page) и containing-block = <body> → шапка липнет.
+ *
+ * Фикс: после инъекции снимаем бокс с этих двух дефолтных обёрток
+ * (`display:contents`) — ТОЛЬКО когда они оборачивают именно канонический
+ * sticky-хедер. Идемпотентно, точечно (другие страницы не матчатся).
+ */
+export function freeStickyHeaderWrapper(html: string): string {
+  return html.replace(
+    /(<div class="w-full")(>\s*<div class="overflow-visible bg-\[[^"]*")(>\s*<div class="sticky top-0 z-50 w-full)/,
+    '$1 style="display:contents"$2 style="display:contents"$3',
+  );
+}
+
+/**
  * Spec 108 (US2/T011) — единый хром НЕ-checkout страниц live-диста.
  *
  * Сложные страницы (product/cart) копируются verbatim из SSG, где `<Header/>`/
@@ -473,7 +496,9 @@ export async function applyChromeToDist(
     if (getChromeKind(route) !== 'full') continue;
     const html = await fs.readFile(file, 'utf8').catch(() => null);
     if (!html) continue;
-    const next = injectChromeIntoHtml(html, chrome);
+    // Sticky-хедер на verbatim (cart): снять бокс с дефолтных w-full/overflow
+    // обёрток, иначе containing-block sticky голодает (см. freeStickyHeaderWrapper).
+    const next = freeStickyHeaderWrapper(injectChromeIntoHtml(html, chrome));
     if (next !== html) {
       await fs.writeFile(file, next, 'utf8');
       header++;

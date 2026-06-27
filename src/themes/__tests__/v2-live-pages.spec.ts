@@ -19,7 +19,35 @@ jest.mock('../../services/preview.service', () => {
   };
 });
 
-import { composeContentPagesIntoDist } from '../v2-live-pages';
+import { composeContentPagesIntoDist, freeStickyHeaderWrapper } from '../v2-live-pages';
+
+describe('freeStickyHeaderWrapper (Spec 109 — sticky на verbatim/cart)', () => {
+  const STICKY = '<div class="sticky top-0 z-50 w-full" data-puck-component-id="Header-1">X</div>';
+
+  it('снимает бокс с дефолтных w-full/overflow обёрток вокруг канонического sticky-хедера', () => {
+    const input =
+      '<div class="w-full"> <div class="overflow-visible bg-[rgb(var(--color-bg,255_255_255))]"> ' +
+      STICKY;
+    const out = freeStickyHeaderWrapper(input);
+    expect(out).toContain('<div class="w-full" style="display:contents">');
+    expect(out).toContain(
+      'overflow-visible bg-[rgb(var(--color-bg,255_255_255))]" style="display:contents"',
+    );
+    // сам sticky-div не тронут
+    expect(out).toContain(STICKY);
+  });
+
+  it('идемпотентна и не трогает home (обёртка схемы уже display:contents, нет w-full-бокса)', () => {
+    const home =
+      '<div class="color-scheme-1" style="display:contents" data-block-scheme="1">' + STICKY;
+    expect(freeStickyHeaderWrapper(home)).toBe(home);
+  });
+
+  it('не трогает не-sticky хедер (stickiness=none → нет sticky top-0 обёртки)', () => {
+    const plain = '<div class="w-full"> <div class="overflow-visible bg-[rgb(var(--color-bg))]"> <header>x</header>';
+    expect(freeStickyHeaderWrapper(plain)).toBe(plain);
+  });
+});
 
 // Доступ к shared-мокам для per-test toggle: любой инстанс делит одни fns.
 const getMockFns = () => {

@@ -104,9 +104,12 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
         { label: 'Альбом', value: 'landscape' },
       ],
     },
-    // user #23: buttonText/buttonLink убраны из main sidebar — не наши поля.
-    buttonText: { type: 'hidden', label: '' } as any,
-    buttonLink: { type: 'hidden', label: '' },
+    // Figma 1236-42153 (канон theme-base): «Кнопка» (поле ввода) + «Ссылка» (page
+    // picker) в сайдбаре секции — общая CTA под колоннами (возврат по дизайну,
+    // перекрывает прежнее скрытие #23). Рендер satin (MultiColumns.astro btnText/
+    // btnHref) уже читает buttonText/buttonLink → кнопка появляется при непустом тексте.
+    buttonText: { type: 'text', label: 'Кнопка', placeholder: '*Оставьте пустой, чтобы скрыть' } as any,
+    buttonLink: { type: 'pagePicker', label: 'Ссылка' } as any,
     displayColumns: {
       type: 'slider',
       label: 'Колонки',
@@ -134,10 +137,12 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
       ],
     } as any,
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    // Figma 1236-42153 показывает ОДНУ «Цветовую схему» в сайдбаре секции →
+    // «Цветовая схема контейнера» скрыта из main panel (канон theme-base).
+    containerColorScheme: { type: 'hidden', label: '' } as any,
     padding: { type: 'padding', label: 'Отступы' },
     // Hidden — нет в Figma 314-34917.
     headingAlignment: { type: 'hidden', label: '' },
-    containerColorScheme: { type: 'hidden', label: '' },
     link: { type: 'hidden', label: '' },
     columns: {
       type: 'array',

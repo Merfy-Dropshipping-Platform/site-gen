@@ -51,6 +51,59 @@ const contactFields: Array<{ label: string; value: string }> = Array.isArray(p.s
 const newsletterEnabled =
 	p.newsletter?.enabled === true || p.newsletter?.enabled === "true";
 
+// Канон «Заголовок»/«Текст» рассылки — ВИДИМЫЕ sub-панели heading.{text,size,
+// alignment} / text.{content,size} (Figma 314-34558). theme-base Footer.astro:56-57
+// читает `heading?.text || newsletter?.heading` и `text?.content ||
+// newsletter?.description`; legacy newsletter.heading/description в puckConfig СКРЫТЫ →
+// раньше vanilla читал только их (мёртвые поля — правки «Заголовок»/«Текст» в панели
+// ни на что не влияли). Порядок: видимое поле → legacy hidden → литерал манеры.
+const newsletterHeading =
+	(typeof p.heading?.text === "string" && p.heading.text.trim() ? p.heading.text : undefined) ??
+	(typeof p.newsletter?.heading === "string" && p.newsletter.heading.trim()
+		? p.newsletter.heading
+		: undefined) ??
+	"Будьте в курсе уютных новостей";
+const newsletterDescription =
+	(typeof p.text?.content === "string" && p.text.content.trim() ? p.text.content : undefined) ??
+	(typeof p.newsletter?.description === "string" && p.newsletter.description.trim()
+		? p.newsletter.description
+		: undefined) ??
+	"Станьте частью сообщества Vanila. Вас ждут свежие идеи для уюта, анонсы новинок, полезные советы по уходу за текстилем и специальные промокоды для подписчиков.";
+// Размер/выравнивание «Заголовка» рассылки (heading.size/alignment). Канон-дефолт
+// puckConfig/сида = {size:'small', alignment:'center'}, но манерный дизайн рассылки
+// vanilla (footer/FooterNewsletter.astro:10,16) = Bitter 20 СЛЕВА. Правило «canon-
+// default → пиксель» (как isCanonPad ниже для {80,80}): нетронутую канон-пару
+// small+center трактуем как литерал манеры (20px, слева); ЛЮБОЕ отклонение размера/
+// выравнивания → честно применяем оба поля. Лестница §9: small 17 / large 24 /
+// medium|отсутствие 20.
+const nlSize = p.heading?.size;
+const nlAlign = p.heading?.alignment;
+const nlIsCanonHeading = nlSize === "small" && nlAlign === "center";
+const newsletterHeadingSizeCls = nlIsCanonHeading
+	? "text-[20px]"
+	: nlSize === "small"
+		? "text-[17px]"
+		: nlSize === "large"
+			? "text-[24px]"
+			: "text-[20px]";
+const newsletterHeadingAlignCls = nlIsCanonHeading
+	? ""
+	: nlAlign === "center"
+		? " items-center text-center"
+		: nlAlign === "right"
+			? " items-end text-right"
+			: "";
+// Размер «Текста» рассылки (text.size) — канон-дефолт 'small' = литерал манеры
+// (14/16 респонсив); medium/large — модерат-шаги вверх (манера не уменьшает body
+// ниже литерала).
+const nlTextSize = p.text?.size;
+const newsletterTextSizeCls =
+	nlTextSize === "large"
+		? "text-[16px] lg:text-[18px]"
+		: nlTextSize === "medium"
+			? "text-[15px] lg:text-[17px]"
+			: "text-[14px] lg:text-[16px]";
+
 // Канон-колонки {title, links:[{label,href}]}: ссылки из пропсов с fallback на
 // литералы верстальщика. Заголовок колонки — НОВЫЙ элемент, рендерится только при
 // непустом title (в вёрстке верстальщика заголовков колонок нет). Правовые пункты
@@ -158,22 +211,18 @@ const footerBandCls = footerPadStyle
 				aria-labelledby="footer-newsletter-heading"
 			>
 				<div class="mx-auto flex w-full max-w-[1280px] min-[1920px]:max-w-[1320px] flex-col items-start gap-10 text-left">
-					<div class="flex w-full flex-col gap-2">
+					<div class={`flex w-full flex-col gap-2${newsletterHeadingAlignCls}`}>
 						<h2
 							id="footer-newsletter-heading"
-							class="m-0 font-vanilla-bitter text-[20px] font-normal italic leading-none tracking-normal text-white"
+							class={`m-0 font-vanilla-bitter ${newsletterHeadingSizeCls} font-normal italic leading-none tracking-normal text-white`}
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="100"
 							data-puck-subsection-field="newsletter"
 						>
-							{typeof p.newsletter?.heading === "string" && p.newsletter.heading.trim()
-								? p.newsletter.heading
-								: "Будьте в курсе уютных новостей"}
+							{newsletterHeading}
 						</h2>
-						<p class="m-0 w-full font-vanilla-arsenal text-[14px] font-normal italic leading-none text-[var(--vanilla-hero-subtle)] lg:text-[16px]">
-							{typeof p.newsletter?.description === "string" && p.newsletter.description.trim()
-								? p.newsletter.description
-								: "Станьте частью сообщества Vanila. Вас ждут свежие идеи для уюта, анонсы новинок, полезные советы по уходу за текстилем и специальные промокоды для подписчиков."}
+						<p class={`m-0 w-full font-vanilla-arsenal ${newsletterTextSizeCls} font-normal italic leading-none text-[var(--vanilla-hero-subtle)]`}>
+							{newsletterDescription}
 						</p>
 					</div>
 

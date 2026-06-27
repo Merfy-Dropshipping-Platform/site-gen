@@ -349,6 +349,16 @@ const singleImage = hasHeroData
 // Отсутствие → дефолт (large) внутри headingClsFor/textClsFor.
 const singleTitleCls = headingClsFor(p.heading?.size);
 const singleSubtitleCls = textClsFor(p.text?.size);
+// Канон container (toggle «Контейнер») — порт rose Hero:120-123. Подложка-плашка
+// ТОЛЬКО под текстовым блоком одиночного героя: полупрозрачный светлый фон манеры +
+// паддинги + радиус карточки vanilla (0). На светлой плашке белая копи героя не
+// читается → переключаем h1/p на тёмные токены манеры (паттерн rose boxedCls).
+// blockDefaults vanilla container='false' → дефолт без плашки (рендер байт-в-байт);
+// только явный true → плашка. Раньше vanilla тоггл игнорировал (мёртвая настройка).
+const heroBoxed = String(p.container ?? "false") === "true";
+const heroBoxedCls = heroBoxed
+	? " rounded-[var(--radius-card,0px)] bg-[rgb(var(--color-bg,238_238_238))]/95 p-6 md:p-10 [&_h1]:!text-[rgb(var(--color-heading,38_49_28))] [&_p]:!text-[rgb(var(--color-text,68_68_68))]"
+	: "";
 // Вторая кнопка (только single) — рендер при непустом тексте, белый контур манеры.
 const secondaryText =
 	typeof p.secondaryButton?.text === "string" && p.secondaryButton.text.trim()
@@ -554,7 +564,7 @@ const secondaryCls =
 
 				<div class:list={["vanilla-pad absolute inset-0 z-10 flex h-full w-full pointer-events-none", singleLayout.vItemsCls]}>
 					<div class="vanilla-container pointer-events-none">
-						<div class={singleLayout.copyWrapCls}>
+						<div class={`${singleLayout.copyWrapCls}${heroBoxedCls}`}>
 							<h1
 								id="hero-title"
 								class={singleTitleCls}

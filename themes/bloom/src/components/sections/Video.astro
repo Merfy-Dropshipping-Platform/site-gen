@@ -60,6 +60,23 @@ const headingAlignCls =
 			: "";
 const headingCls = `font-urbanist ${headingSizeCls} font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))]${headingAlignCls}`;
 
+// Канон subheading (Figma-борд Video) — подзаголовок-строка под <h2>. Зеркалит
+// heading: top-level string ИЛИ {text}-конверт + спек-конверт
+// content.subheading.{text,enabled} (порт theme-base Video.astro:41-52). Рендер
+// ТОЛЬКО при непустом тексте И enabled !== 'false'; дефолт пустой → ничего не
+// рендерится (default-preserving). Раньше bloom subheading вообще не читал.
+// Стиль — приглушённый body §1 манеры bloom (font-inter, токен muted).
+const subContentEnvelope = p.content?.subheading;
+const subheadingEnabled = subContentEnvelope?.enabled !== "false";
+const subheading = (() => {
+	if (!subheadingEnabled) return undefined;
+	const s = p.subheading ?? subContentEnvelope;
+	if (typeof s === "string") return s.trim() || undefined;
+	if (s && typeof s === "object") return (s.text ?? "").trim() || undefined;
+	return undefined;
+})();
+const subheadingCls = `font-inter text-[14px] font-light leading-[17px] text-[rgb(var(--color-muted,153_153_153))]${headingAlignCls}`;
+
 // Канон position contained|fullscreen + padded (blockDefaults true) + align
 // container|fullbleed (blockDefaults 'container'). Canon-default ветка =
 // контейнер 1320 с горизонтальными полями §2; fullscreen/fullbleed → full-bleed
@@ -103,17 +120,22 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 >
 	<div class={containerCls}>
 		{
-			showHeading && (
+			(showHeading || subheading) && (
 				<div class={headingWrapCls} data-animate>
-					<h2
-						id={titleId}
-						class={headingCls}
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index="100"
-						data-puck-subsection-field="heading"
-					>
-						{headingText}
-					</h2>
+					{showHeading && (
+						<h2
+							id={titleId}
+							class={headingCls}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="100"
+							data-puck-subsection-field="heading"
+						>
+							{headingText}
+						</h2>
+					)}
+					{subheading && (
+						<p class={`${showHeading ? "mt-3 " : ""}${subheadingCls}`}>{subheading}</p>
+					)}
 				</div>
 			)
 		}

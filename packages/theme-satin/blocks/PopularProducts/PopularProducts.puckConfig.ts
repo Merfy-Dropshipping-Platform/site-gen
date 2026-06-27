@@ -144,9 +144,10 @@ export const PopularProductsPuckConfig: BlockPuckConfig<PopularProductsProps> = 
     textSize: { type: 'select', label: 'Размер текста', options: sizeOptions },
 
     // «Карточка товара» (Figma 314-34614, parity с Catalog) — возвращены в панель
-    // по запросу тестера. quickAddMode подключён в рендере (CTA «В корзину»);
-    // buttonStyle/imageView/nextPhotoOnHover пока декоративны (schema-parity,
-    // рендер карточки их не применяет) — оживить отдельной задачей при необходимости.
+    // по запросу тестера. ВСЕ поля ОЖИВЛЕНЫ в рендере Popular.astro (паритет rose):
+    // quickAddMode (CTA «В корзину»), buttonStyle (data-btn-style → стиль кнопки
+    // карточки + viewAll), imageView (tileAspectCls → аспект медиа карточки
+    // portrait/wide), nextPhotoOnHover (data-next-photo → смена фото на 2-ю при ховере).
     ['_cardSection' as never]: { type: 'section-header', label: 'Карточка товара' } as any,
     buttonStyle: {
       type: 'select',

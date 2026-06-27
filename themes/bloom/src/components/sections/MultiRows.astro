@@ -134,8 +134,10 @@ const alignCls =
 			? "items-end text-right"
 			: "items-start text-left";
 
-// Канон buttonStyle: solid/primary/black/отсутствие = розовый pill манеры §3
-// (единственная solid-кнопка bloom на белом); white = белый pill (button-2
+// Канон buttonStyle: solid/primary/отсутствие = розовый pill манеры §3 (родная
+// solid-кнопка bloom на белом); black = тёмная кнопка (инверсия text↔bg —
+// паритет rose MultiRows «чёрная заливка», отлична и от white, и от розового
+// дефолта; раньше 'black' проваливался в розовый); white = белый pill (button-2
 // токены, CTA Philosophy); outlined = бордер цвета заливки на прозрачном.
 const btnBase =
 	"inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] px-6 font-inter text-[16px] font-light leading-none transition-opacity hover:opacity-90 active:scale-95";
@@ -144,7 +146,9 @@ const btnCls =
 		? `${btnBase} border border-solid border-[rgb(var(--color-button-bg,227_142_159))] bg-transparent text-[rgb(var(--color-button-bg,227_142_159))]`
 		: p.buttonStyle === "white"
 			? `${btnBase} bg-[rgb(var(--color-button-2-bg,255_255_255))] text-[rgb(var(--color-button-2-text,0_0_0))]`
-			: `${btnBase} bg-[rgb(var(--color-button-bg,227_142_159))] text-[rgb(var(--color-button-text,255_255_255))]`;
+			: p.buttonStyle === "black"
+				? `${btnBase} bg-[rgb(var(--color-text,0_0_0))] text-[rgb(var(--color-bg,255_255_255))]`
+				: `${btnBase} bg-[rgb(var(--color-button-bg,227_142_159))] text-[rgb(var(--color-button-text,255_255_255))]`;
 
 // Канон containerEnabled (toggle; puckConfig готов). ИСПРАВЛЕНИЕ канона (Nikita):
 // «контейнер» = surface-бокс манеры §4 (surface #F5F5F5, радиус карточки 12px) НА

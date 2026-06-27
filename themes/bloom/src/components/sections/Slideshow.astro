@@ -65,6 +65,43 @@ const slideTextCls = (s: string | undefined) =>
 // слайд без imageUrl/image теперь даёт image="" → пустая surface-плитка. В ПУСТОМ
 // состоянии (!hasSlides) слайд-плейсхолдер несёт дизайн-ассет landscape-slideshow.png
 // (PLACEHOLDER_SLIDE выше).
+
+// Канон position (9 точек сетки 3×3) — РАЗМЕЩЕНИЕ контент-блока на полотне слайда.
+// Нормализуем полную строку position в вертикаль + горизонталь (порт rose
+// Slideshow:61-90 slideLayoutCls). Раньше рендером парсилась ТОЛЬКО горизонталь, а
+// вертикаль была захардкожена items-end (низ). legacy одиночные left/right →
+// center-left/center-right (середина по вертикали). Контейнер контента = row-flex
+// bloom: вертикаль через items-*, горизонталь через justify-*.
+const slidePosCls = (s: any) => {
+	const posRaw = typeof s.position === "string" && s.position ? s.position : "";
+	const norm = posRaw === "left" ? "center-left" : posRaw === "right" ? "center-right" : posRaw;
+	const vPos = norm.startsWith("top")
+		? "top"
+		: norm.startsWith("bottom")
+			? "bottom"
+			: norm === "center" || norm.startsWith("center")
+				? "middle"
+				: "";
+	const hPos = norm.endsWith("left")
+		? "left"
+		: norm.endsWith("right")
+			? "right"
+			: norm.endsWith("center") || norm === "center"
+				? "center"
+				: "";
+	// Вертикаль (cross-axis row-flex): top → верх, middle → центр, bottom/отсутствие
+	// → низ (дефолт манеры — нижний угол героя).
+	const vItemsCls = vPos === "top" ? "items-start" : vPos === "middle" ? "items-center" : "items-end";
+	// Горизонталь (main-axis): сохраняем дефолт bloom — левый угол (justify-start);
+	// top-level contentAlign='center' центрирует при отсутствии явной горизонтали.
+	const hJustifyCls =
+		hPos === "left" || (!hPos && p.contentAlign !== "center")
+			? "justify-start"
+			: hPos === "right"
+				? "justify-end"
+				: "justify-center";
+	return `${vItemsCls} ${hJustifyCls}`;
+};
 const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 	const ctaText =
 		(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined) ??
@@ -91,14 +128,9 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 			typeof s.colorScheme === "string" && s.colorScheme
 				? ` color-scheme-${String(s.colorScheme).replace("scheme-", "")}`
 				: "",
-		// position per-slide (приоритет) | top-level contentAlign; 'left'
-		// (canon-default blockDefaults) и отсутствие = левый нижний угол героя.
-		posCls:
-			s.position === "center" || (!s.position && p.contentAlign === "center")
-				? "justify-center"
-				: s.position === "right"
-					? "justify-end"
-					: "justify-start",
+		// position per-slide — вертикаль + горизонталь (slidePosCls выше). Раньше
+		// вертикаль игнорировалась (контент был захардкожен внизу = items-end).
+		posCls: slidePosCls(s),
 		// alignment per-slide; 'left' (canon-default blockDefaults) и отсутствие =
 		// items-start героя.
 		alignCls:
@@ -200,7 +232,7 @@ const paddingStyle = p.padding
 						{/* Контент в нижнем углу полотна — манера героя bloom (блок 330px,
 						    поля px-4 md:px-20 2xl:px-[300px], pb-8/12/20). */}
 						<div
-							class={`relative z-10 flex h-full w-full items-end px-4 pb-8 md:px-20 md:pb-12 xl:pb-20 2xl:px-[300px] ${s.posCls}`}
+							class={`relative z-10 flex h-full w-full px-4 pb-8 md:px-20 md:pb-12 xl:pb-20 2xl:px-[300px] ${s.posCls}`}
 						>
 							<div
 								class={`flex max-w-[330px] flex-col gap-4 ${s.alignCls}${s.boxed ? " rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-bg,255_255_255))]/90 p-6" : ""}`}

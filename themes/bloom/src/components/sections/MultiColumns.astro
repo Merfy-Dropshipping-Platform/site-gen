@@ -78,6 +78,7 @@ const columns = rawColumns.slice(0, 10).map((c: any) => {
 			(typeof c.imageUrl === "string" && c.imageUrl.trim()) ||
 			(typeof c.image === "string" && c.image.trim()) ||
 			"",
+		imageSize: c.imageSize,
 		headingSize: c.headingSize,
 		textSize: c.textSize,
 		link: linkText ? { text: linkText, href: linkHref } : undefined,
@@ -142,6 +143,30 @@ const itemHeadingCls = (s: string | undefined) =>
 const itemTextCls = (s: string | undefined) =>
 	s === "small" ? "text-[14px]" : s === "large" ? "text-[19px]" : "text-[16px]";
 
+// Канон imageAspectRatio (adapt/square/portrait/landscape) — аспект медиа-обёртки
+// колонки (порт rose MultiColumns:126-133): square (canon-default/отсутствие) |
+// adapt (нативный) | portrait 430/500 | landscape 429/309. Раньше рендером
+// ИГНОРИРОВАЛСЯ (изображение было захардкожено иконкой 44×44).
+const aspectCls =
+	p.imageAspectRatio === "adapt"
+		? ""
+		: p.imageAspectRatio === "portrait"
+			? " aspect-[430/500]"
+			: p.imageAspectRatio === "landscape"
+				? " aspect-[429/309]"
+				: " aspect-square";
+
+// Per-колоночный imageSize (small/medium/large) — ширина медиа-обёртки внутри
+// колонки (порт rose MultiColumns:174): medium/отсутствие = w-full, small = w-1/2.
+// Раньше c.imageSize рендером ИГНОРИРОВАЛСЯ.
+const itemImageCls = (s: string | undefined) =>
+	s === "small" ? "w-1/2" : s === "large" ? "w-full" : "w-full";
+
+// Канон textPosition (radio «Положение текста»): center → контент по центру,
+// left/отсутствие → влево (порт rose MultiColumns:136). Раньше рендером
+// ИГНОРИРОВАЛСЯ — карточка была захардкожена по центру (items-center text-center).
+const textAlignCls = p.textPosition === "center" ? "items-center text-center" : "items-start text-left";
+
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
@@ -178,7 +203,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 			{
 				columns.map((c, index) => (
 					<li
-						class={`group flex min-h-[252px] w-full max-w-[429px] flex-col items-center gap-6${cardSurfaceCls} text-center transition-transform duration-300 ease-out hover:-translate-y-1`}
+						class={`group flex min-h-[252px] w-full max-w-[429px] flex-col ${textAlignCls} gap-6${cardSurfaceCls} transition-transform duration-300 ease-out hover:-translate-y-1`}
 						data-animate
 						data-animate-delay={`${index * 0.08}s`}
 						data-puck-subsection-parent={id}
@@ -186,19 +211,21 @@ const titleId = id && heading ? `${id}-title` : undefined;
 						data-puck-subsection-field="columns"
 					>
 						{c.image ? (
-							<img
-								src={c.image}
-								alt=""
-								width="44"
-								height="44"
-								loading="lazy"
-								decoding="async"
-								class="h-11 w-11 object-contain transition-transform duration-300 ease-out group-hover:scale-105"
-							/>
+							<div
+								class={`${itemImageCls(c.imageSize)} overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,255_255_255))]${aspectCls}`}
+							>
+								<img
+									src={c.image}
+									alt=""
+									loading="lazy"
+									decoding="async"
+									class="!h-full !w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
+								/>
+							</div>
 						) : (
 							c.isPlaceholder && (
 								<div
-									class="h-[120px] w-full rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,255_255_255))]"
+									class={`${itemImageCls(c.imageSize)} overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,255_255_255))]${aspectCls}`}
 									aria-hidden="true"
 								/>
 							)

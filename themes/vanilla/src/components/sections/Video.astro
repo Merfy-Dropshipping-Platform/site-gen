@@ -68,6 +68,25 @@ const headingAlignCls =
 			: "";
 const headingCls = `font-vanilla-bitter ${headingSizeCls} font-normal italic leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]${headingAlignCls}`;
 
+// Канон subheading (видимый aiText «Подзаголовок», Figma-борд Video) — порт логики
+// theme-base Video.astro:41-52. Зеркалит heading: top-level string `subheading` ИЛИ
+// legacy-конверт content.subheading.{text,enabled}. Рендер ТОЛЬКО при непустом тексте
+// и enabled !== 'false'; дефолт пустой → ничего (default-preserving). Раньше vanilla
+// рендерил лишь heading → поле было мёртвым. Стиль — приглушённый body манеры (Arsenal)
+// под белым Bitter-заголовком, наследует выравнивание заголовка (headingAlignCls).
+const subContentEnvelope =
+	p.content && typeof p.content === "object" ? p.content.subheading : undefined;
+const subheadingEnabled = !(subContentEnvelope && subContentEnvelope.enabled === "false");
+const subheadingRaw = p.subheading ?? subContentEnvelope;
+const subheading = !subheadingEnabled
+	? undefined
+	: typeof subheadingRaw === "string"
+		? subheadingRaw.trim() || undefined
+		: subheadingRaw && typeof subheadingRaw === "object"
+			? String(subheadingRaw.text ?? "").trim() || undefined
+			: undefined;
+const subheadingCls = `mt-3 font-vanilla-arsenal text-base font-normal leading-[1.45] text-[rgb(var(--color-text,240_240_240))]${headingAlignCls}`;
+
 // Канон position contained|fullscreen + padded (blockDefaults темы true) + align
 // container|fullbleed (blockDefaults 'container'; align приоритетнее position —
 // паттерн theme-base). Canon-default ветка = ЛИТЕРАЛ бэнда Gal:54-59: полотно
@@ -101,17 +120,20 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 <section class={sectionCls} aria-labelledby={titleId} data-puck-component-id={id} style={paddingStyle}>
 	<div class={containerCls}>
 		{
-			showHeading && (
+			(showHeading || subheading) && (
 				<div class={headingWrapCls} data-animate>
-					<h2
-						id={titleId}
-						class={headingCls}
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index="100"
-						data-puck-subsection-field="heading"
-					>
-						{headingText}
-					</h2>
+					{showHeading && (
+						<h2
+							id={titleId}
+							class={headingCls}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="100"
+							data-puck-subsection-field="heading"
+						>
+							{headingText}
+						</h2>
+					)}
+					{subheading && <p class={subheadingCls}>{subheading}</p>}
 				</div>
 			)
 		}

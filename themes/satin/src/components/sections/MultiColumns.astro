@@ -136,6 +136,26 @@ const widthCls =
 				? "w-full"
 				: "satin-container";
 
+// Канон imageAspectRatio (select «Соотношение изображения»): adapt (нативный) |
+// square | portrait 430/500 | landscape 429/309 — ЛИТЕРАЛЫ манеры rose §4
+// (паритет rose MultiColumns.astro). Применяется per-value: при ЯВНОМ выборе
+// картинка колонки рендерится медиа-боксом (object-cover, surface-подложка,
+// satin sharp-radius var). ОТСУТСТВИЕ выбора (unset) сохраняет НАТИВНУЮ иконку
+// satin 56×56 (features-ряд верстальщика Features.astro:43, MANNER) — «keep
+// satin's visual design where it doesn't conflict». До фикса поле было мёртвым
+// (рендер всегда рисовал иконку, игнорируя соотношение).
+const useImageBox =
+	typeof p.imageAspectRatio === "string" &&
+	["adapt", "square", "portrait", "landscape"].includes(p.imageAspectRatio);
+const aspectCls =
+	p.imageAspectRatio === "portrait"
+		? " aspect-[430/500]"
+		: p.imageAspectRatio === "landscape"
+			? " aspect-[429/309]"
+			: p.imageAspectRatio === "square"
+				? " aspect-square"
+				: ""; // adapt → без аспект-класса (нативное соотношение, h-auto)
+
 // Канон containerEnabled (toggle «Контейнер»/«Фон»; legacy background.enabled):
 // дефолт ВЫКЛ (паритет rose/CollapsibleSection) — контент без подложек прямо на
 // фоне секции, работает основная цв. схема секции. ВКЛ = «подложечная» карточка §4
@@ -240,7 +260,28 @@ const titleId = id && heading ? `${id}-title` : undefined;
 								aria-hidden="true"
 							/>
 						) : (
-							c.image && (
+							c.image &&
+							(useImageBox ? (
+								/* Соотношение изображения ВЫБРАНО → медиа-бокс манеры rose
+								   (object-cover, surface-подложка, satin sharp-radius). adapt =
+								   без аспекта → h-auto (нативное соотношение). */
+								<div
+									class={`w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,251_251_251))]${aspectCls}`}
+									aria-hidden="true"
+								>
+									<img
+										src={c.image.startsWith("/") ? withBase(c.image) : c.image}
+										alt=""
+										loading="lazy"
+										class={
+											aspectCls
+												? "h-full w-full object-cover"
+												: "block h-auto w-full object-cover"
+										}
+									/>
+								</div>
+							) : (
+								/* Соотношение НЕ выбрано → нативная иконка satin 56×56 (MANNER). */
 								<img
 									src={c.image.startsWith("/") ? withBase(c.image) : c.image}
 									alt=""
@@ -250,7 +291,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 									class="h-14 w-14 shrink-0 object-contain"
 									aria-hidden="true"
 								/>
-							)
+							))
 						)}
 						{c.heading && <h3 class={itemHeadingCls(c.headingSize)}>{c.heading}</h3>}
 						{c.text && <p class={itemTextCls(c.textSize)} set:html={c.text} />}

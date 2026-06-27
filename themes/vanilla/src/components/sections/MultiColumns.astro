@@ -75,6 +75,7 @@ const columns = rawColumns.slice(0, 10).map((c: any) => {
 			(typeof c.imageUrl === "string" && c.imageUrl.trim()) ||
 			(typeof c.image === "string" && c.image.trim()) ||
 			"",
+		imageSize: c.imageSize,
 		headingSize: c.headingSize,
 		textSize: c.textSize,
 		link: linkText ? { text: linkText, href: linkHref } : undefined,
@@ -157,6 +158,26 @@ const itemHeadingCls = (s: string | undefined) =>
 const itemTextCls = (s: string | undefined) =>
 	s === "small" ? "text-[14px]" : s === "large" ? "text-[19px]" : "text-base";
 
+// Канон imageAspectRatio (square/adapt/portrait/landscape) — форма медиа-обёртки
+// колонки. Литералы аспекта тема-независимы, портированы из rose MultiColumns:126-133:
+// square (canon-default из puckConfig defaults / отсутствие) | adapt (нативный, без
+// аспекта) | portrait 430/500 | landscape 429/309. Раньше vanilla рисовал картинку
+// фиксированной иконкой h-11 w-11 → выбор аспекта был мёртв; теперь обёртка следует
+// настройке (радиус/фон — токены манеры vanilla §4).
+const aspectCls =
+	p.imageAspectRatio === "adapt"
+		? ""
+		: p.imageAspectRatio === "portrait"
+			? " aspect-[430/500]"
+			: p.imageAspectRatio === "landscape"
+				? " aspect-[429/309]"
+				: " aspect-square";
+
+// Per-колоночный imageSize (small/medium/large) — ширина медиа-обёртки внутри колонки
+// (rose MultiColumns:174-175): small w-1/2, medium/large/отсутствие w-full. Аспект и
+// подложка не меняются — сужается только блок изображения.
+const itemImageCls = (s: string | undefined) => (s === "small" ? "w-1/2" : "w-full");
+
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
@@ -200,19 +221,21 @@ const titleId = id && heading ? `${id}-title` : undefined;
 						data-puck-subsection-field="columns"
 					>
 						{c.image ? (
-							<img
-								src={c.image}
-								alt=""
-								width="44"
-								height="44"
-								loading="lazy"
-								decoding="async"
-								class="h-11 w-11 rounded-[var(--radius-media,0px)] object-contain transition-transform duration-300 ease-out group-hover:scale-105"
-							/>
+							<div
+								class={`${itemImageCls(c.imageSize)} overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,236_235_231))]${aspectCls}`}
+							>
+								<img
+									src={c.image}
+									alt=""
+									loading="lazy"
+									decoding="async"
+									class="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
+								/>
+							</div>
 						) : (
 							c.isPlaceholder && (
 								<div
-									class="h-[120px] w-full rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,236_235_231))]"
+									class={`${itemImageCls(c.imageSize)} overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,236_235_231))]${aspectCls}`}
 									aria-hidden="true"
 								/>
 							)

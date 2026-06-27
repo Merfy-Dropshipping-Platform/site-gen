@@ -51,10 +51,11 @@ const SHAPE_RADIUS: Record<'circle' | 'square' | 'none', string> = {
 };
 const shapeRadius = SHAPE_RADIUS[shape];
 
-// Свотч (цветная заливка) рисуется только когда форма явно выбрана
-// (circle/square). При shape='none' (дефолт) — исходные текст-чипы, без
-// свотчей, чтобы существующие товары не менялись.
-const swatchEnabled = shape !== 'none';
+// Цветные значения ВСЕГДА рендерятся свотчем (заливкой) — даже при shape='none',
+// иначе при «Нет» цвета спадают в простой текст (баг M$rkul «при Нет спадает
+// внешка»). isShaped = выбрана форма (circle/square): влияет только на размер/форму
+// текст-чипов НЕ-цветовых опций (фикс. квадрат vs исходный pill).
+const isShaped = shape !== 'none';
 
 // Карта известных имён цветов → hex. Совпадает с PopularProducts COLOR_HEX
 // (единый словарь по теме). Frontmatter-const — типизация здесь безопасна
@@ -94,7 +95,7 @@ function resolveColor(value: string): string | null {
 // цвета (одинаковый размер/обводка → «круги сверху (цвет) = круги снизу (размер)»,
 // и стиль «Кнопка» применяется единообразно ко всем параметрам, не только к цвету).
 // При shape='none' (дефолт) — исходный pill h-12 px-4 border, без изменений.
-const TEXT_CHIP_BASE = swatchEnabled
+const TEXT_CHIP_BASE = isShaped
   ? 'inline-flex items-center justify-center h-12 min-w-12 px-2 [font-family:var(--font-body)] text-[16px] cursor-pointer transition-colors border-2 border-solid'
   : 'inline-flex items-center justify-center h-12 px-4 [font-family:var(--font-body)] text-[16px] cursor-pointer transition-colors border border-solid';
 const SWATCH_CHIP_BASE =
@@ -187,10 +188,10 @@ function swatchBorderStyle(opt: VariantOptionView, active: boolean): string {
           <div class="flex flex-wrap gap-2">
             {g.options.map((opt, optIdx) => {
               const active = optIdx === 0 && opt.available;
-              // Свотч только когда форма выбрана (circle/square) И значение
-              // опции распознано как цвет (hex/rgb/известное имя). Иначе —
-              // текст-чип. Ключ группы не требуется: спека гейтит по значению.
-              const colorHex = swatchEnabled ? resolveColor(opt.value) : null;
+              // Свотч когда значение опции — цвет (hex/rgb/известное имя), ВСЕГДА
+              // вне зависимости от shape (иначе при «Нет» цвета спадают в текст).
+              // Иначе текст-чип. shapeRadius задаёт форму свотча (none=pill rounded-6).
+              const colorHex = resolveColor(opt.value);
               const asSwatch = colorHex != null;
 
               if (asSwatch) {

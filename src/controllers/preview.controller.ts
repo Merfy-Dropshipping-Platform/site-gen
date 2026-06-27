@@ -119,6 +119,7 @@ export class PreviewController {
     @Param('id') siteId: string,
     @Query('page') page: string = 'home',
     @Query('productId') productIdOverride: string | undefined,
+    @Query('collectionName') collectionNameOverride: string | undefined,
     @Res() res: Response,
   ): Promise<void> {
     // pagesData uses inconsistent keys depending on migration:
@@ -238,7 +239,16 @@ export class PreviewController {
           collectionSlug !== null ? 'page-collection' : page;
         const collectionContext =
           collectionSlug !== null
-            ? this.collectionContextFromRevision(loaded.data, collectionSlug)
+            ? {
+                ...this.collectionContextFromRevision(loaded.data, collectionSlug),
+                // Конструктор знает название коллекции (useSiteContext) и передаёт
+                // его как ?collectionName=… — ревизия НЕ содержит storefrontData,
+                // поэтому без override превью подставляло плейсхолдер «Каталог»
+                // вместо реального имени. Имя из query имеет приоритет.
+                ...(collectionNameOverride && collectionNameOverride.trim()
+                  ? { name: collectionNameOverride.trim() }
+                  : {}),
+              }
             : undefined;
         const v2Blocks = await extractPageBlocks(
           loaded.data,

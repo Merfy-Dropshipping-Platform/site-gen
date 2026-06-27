@@ -321,7 +321,16 @@ const siteId = '${config.shopId}';
   {blocks.map((block) => {
     if (block.type === 'Header') return <Header {...block.props} />;
     if (block.type === 'Hero') return <Hero {...block.props} />;
-    if (block.type === 'Catalog') return <Catalog {...block.props} siteId={siteId} collectionSlug={slug} />;
+    if (block.type === 'Catalog') {
+      // На странице коллекции заголовок/подзаголовок берём из самой коллекции
+      // (collection.name / .description), если мерчант не задал свои в секции.
+      // Иначе Catalog падает на хардкод «КАТАЛОГ» / «Здесь начинается...».
+      const _ct = block.props.categoryTitle;
+      const _ctText = typeof _ct === 'string' ? _ct : (_ct && _ct.text) || '';
+      const _cs = block.props.categorySubtitle;
+      const _csText = typeof _cs === 'string' ? _cs : (_cs && _cs.text) || '';
+      return <Catalog {...block.props} siteId={siteId} collectionSlug={slug} categoryTitle={_ctText.trim() ? _ct : collectionTitle} categorySubtitle={_csText.trim() ? _cs : collectionDescription} />;
+    }
     if (block.type === 'Footer') return <Footer {...block.props} />;
     if (block.type === 'PromoBanner') return <PromoBanner {...block.props} />;
     if (block.type === 'Newsletter') return <Newsletter {...block.props} />;

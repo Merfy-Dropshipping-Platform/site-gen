@@ -141,6 +141,30 @@ export async function extractPageBlocks(
             unknown
           >)
         : props;
+      // Catalog на странице коллекции: заголовок/подзаголовок из самой коллекции
+      // (collection.name / .description), если мерчант не задал свои в секции.
+      // Иначе Catalog падает на хардкод «КАТАЛОГ». Зеркало dynamic-pages-generator.
+      if (isCollectionPage && b.type === 'Catalog') {
+        const ct = finalProps.categoryTitle;
+        const ctText =
+          typeof ct === 'string'
+            ? ct
+            : (ct && typeof ct === 'object' && (ct as { text?: string }).text) ||
+              '';
+        const cs = finalProps.categorySubtitle;
+        const csText =
+          typeof cs === 'string'
+            ? cs
+            : (cs && typeof cs === 'object' && (cs as { text?: string }).text) ||
+              '';
+        const collName =
+          collectionContext?.name && collectionContext.name.trim()
+            ? collectionContext.name
+            : 'Каталог';
+        if (!String(ctText).trim()) finalProps.categoryTitle = collName;
+        if (!String(csText).trim())
+          finalProps.categorySubtitle = collectionContext?.description ?? '';
+      }
       return { type: b.type, props: finalProps };
     });
 }

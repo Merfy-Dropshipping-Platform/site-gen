@@ -117,7 +117,10 @@ const galleryTiles: GalleryTile[] = (Array.isArray(p.items) ? p.items : [])
 // Плитка product/collection без своей картинки = пустой surface-rect (Figma
 // 1:19335); реальную обложку подставит гидрация (data-gallery-product/-collection).
 // Изображение-плитка без url тоже остаётся пустым rect (контракт пустого состояния).
-const useItems = galleryTiles.length > 0;
+// Гейт пустого состояния (Figma 1:19335): true ТОЛЬКО при реальном контенте плитки
+// (image с непустым url, product/collection с выбранным ref). Пустые seed-плитки
+// (url='' / ref=null) → false → рендерится empty-state плейсхолдер ниже.
+const useItems = galleryTiles.some((t) => (t.kind === "image" ? !!t.url : !!t.ref));
 
 // SSR-фетч реальных товаров/коллекций выбранных плиток (эталон rose Popular.astro:
 // p.siteId → fetch /api/sites/<id>/storefront-data). Astro-Container превью НЕ

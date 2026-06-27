@@ -121,7 +121,11 @@ galleryTiles.forEach((t) => {
 	if (t.kind === "product") t.url = SWEATER_BLUE;
 	else if (t.kind === "collection" && t.ref) t.url = SWEATER_BLUE;
 });
-const useItems = galleryTiles.length > 0;
+// Гейт пустого состояния (Figma 1:19335): true ТОЛЬКО при реальном контенте плитки
+// (image с непустым url, product/collection с выбранным ref). Пустые seed-плитки
+// (url='' / ref=null) → false → рендерится empty-state плейсхолдер ниже. Читаем ref
+// для product/collection (не url): forEach выше присваивает product url=SWEATER_BLUE.
+const useItems = galleryTiles.some((t) => (t.kind === "image" ? !!t.url : !!t.ref));
 const heroTile = useItems ? galleryTiles[0] : undefined;
 const sideTiles = useItems ? galleryTiles.slice(1) : [];
 

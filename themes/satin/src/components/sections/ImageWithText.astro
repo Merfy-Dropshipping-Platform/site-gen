@@ -83,7 +83,7 @@ const italicCls = p.textStyle === "italic" ? " italic" : "";
 // Пустое состояние (нет своего url) → дизайн-ассет landscape-iwt.png (контракт
 // картиночных секций, правило 2 — картинка показывается ВСЕГДА), а НЕ пустой
 // image-rect (#FBFBFB) и НЕ мок-фото /images/4x/Мужская_кампания.png верстальщика.
-const imageUrl = rawImageUrl ?? (isPlaceholder ? PLACEHOLDER_IMAGE : undefined);
+const imageUrl = rawImageUrl ?? PLACEHOLDER_IMAGE;
 const imageAlt =
 	typeof p.image?.alt === "string" && p.image.alt.trim() ? p.image.alt : "";
 const isThemeAsset = !!imageUrl && imageUrl.startsWith("/");

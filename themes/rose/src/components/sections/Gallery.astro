@@ -121,7 +121,10 @@ const PLACEHOLDER_SWEATER_BLUE = "/placeholders/sweater-blue.svg";
 // landscape-gallery.png (раздаётся на каждой теме из packages/theme-base/public/
 // placeholders, copyPublic) — НЕ пустая surface и НЕ мок-фото верстальщика.
 const PLACEHOLDER_GALLERY_IMAGE = "/placeholders/landscape-gallery.png";
-const useItems = galleryTiles.length > 0;
+// Гейт пустого состояния (Figma 1:19335): true ТОЛЬКО при реальном контенте плитки
+// (image с непустым url, product/collection с выбранным ref). Пустые seed-плитки
+// (url='' / ref=null) → false → рендерится empty-state плейсхолдер ниже.
+const useItems = galleryTiles.some((t) => (t.kind === "image" ? !!t.url : !!t.ref));
 const heroTile = useItems ? galleryTiles[0] : undefined;
 const sideTiles = useItems ? galleryTiles.slice(1) : [];
 

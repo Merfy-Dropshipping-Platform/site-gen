@@ -87,7 +87,7 @@ const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 		image:
 			(typeof r.imageUrl === "string" && r.imageUrl.trim()) ||
 			(typeof r.image === "string" && r.image.trim()) ||
-			"",
+			PLACEHOLDER_ROW_IMAGE,
 		right:
 			rowsPosition === "right" ||
 			(rowsPosition !== "left" &&

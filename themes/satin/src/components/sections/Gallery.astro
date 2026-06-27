@@ -118,7 +118,10 @@ const PLACEHOLDER_GALLERY = "/placeholders/landscape-gallery.png";
 // SSR-рендер выбранных плиток + гидрация; пусто → ПЛЕЙСХОЛДЕР по контракту
 // (пустой image-rect + карточка-товар куртка blue + карточка «Выбери коллекцию»),
 // НЕ мок-демо верстальщика.
-const useItems = galleryTiles.length > 0;
+// Гейт пустого состояния (Figma 1:19335): true ТОЛЬКО при реальном контенте плитки
+// (image с непустым url, product/collection с выбранным ref). Пустые seed-плитки
+// (url='' / ref=null) → false → рендерится empty-state плейсхолдер ниже.
+const useItems = galleryTiles.some((t) => (t.kind === "image" ? !!t.url : !!t.ref));
 const heroTile = useItems ? galleryTiles[0] : undefined;
 const sideTiles = useItems ? galleryTiles.slice(1) : [];
 

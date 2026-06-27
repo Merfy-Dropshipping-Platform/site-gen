@@ -2,13 +2,13 @@
 /**
  * ProductVariants — variant-group selector (Figma 1:21330 «Товар», 314-34673).
  *
- * Единый выбор формы `mode` (поле «Вариации» конструктора):
- *  - 'button'  — прямоугольные ТЕКСТ-кнопки (значение текстом): выбранная залита,
- *                доступная — обводка, недоступная — серая обводка. Цвета тоже текстом
- *                (Figma 1:21387 «Коричневый/Чёрный/Белый»). Это дефолт.
- *  - 'circle'  — цветные значения = круглый СВОТЧ (заливка); не-цветовые = круг с текстом.
- *  - 'square'  — то же, квадрат (rounded по --radius-button).
- *  - 'list'    — выпадающий <select> на группу.
+ * Единый выбор формы `mode` (поле «Вариации» конструктора). Во ВСЕХ чип-режимах
+ * цветные значения = СВОТЧ с реальным назначенным цветом, не-цветовые (размер) =
+ * текст-чип; различается только форма:
+ *  - 'button'  — скруглённый прямоугольник (--radius-button). Дефолт.
+ *  - 'circle'  — круг (rounded-full).
+ *  - 'square'  — квадрат (острый угол).
+ *  - 'list'    — выпадающий <select> на группу (без свотчей).
  * Тема flux (visual.variantsType='dropdown') тоже форсит dropdown.
  *
  * Чипы несут data-variant-key/value; свотч-чипы дополнительно data-variant-swatch
@@ -25,15 +25,18 @@ interface Props {
 const { groups, type = 'chips', mode = 'button' } = Astro.props as Props;
 
 const isDropdown = type === 'dropdown' || mode === 'list';
-// Свотч-формы (Круг/Квадрат): цвет = заливка, не-цвет = чип фикс. размера.
-// В режиме «Кнопка» (дефолт) свотчей нет — все значения текст-кнопками (Figma).
-const isShaped = mode === 'circle' || mode === 'square';
+// Цветные значения ВСЕГДА рендерятся свотчем (реальный назначенный цвет) во всех
+// чип-режимах — Кнопка/Круг/Квадрат (M$rkul: «цвета должны быть назначенные, не
+// текст»). Не-цветовые (размер) — текст-чип. Список = dropdown (без свотчей).
+const isShaped = !isDropdown;
+// Форма чипа = mode: Кнопка = скруглённый прямоугольник (--radius-button),
+// Круг = полный круг, Квадрат = острый угол.
 const shapeRadius =
   mode === 'circle'
     ? 'rounded-full'
     : mode === 'square'
-      ? 'rounded-[var(--radius-button)]'
-      : 'rounded-[6px]';
+      ? 'rounded-none'
+      : 'rounded-[var(--radius-button)]';
 
 // Карта известных имён цветов → hex. Совпадает с PopularProducts COLOR_HEX.
 const COLOR_HEX: Record<string, string> = {
@@ -132,8 +135,8 @@ function swatchBorderStyle(opt: VariantOptionView, active: boolean): string {
           <div class="flex flex-wrap gap-2">
             {g.options.map((opt, optIdx) => {
               const active = optIdx === 0 && opt.available;
-              // Свотч (цветная заливка) ТОЛЬКО в формах Круг/Квадрат. В режиме
-              // «Кнопка» цвет рендерится текст-кнопкой (Figma 1:21387).
+              // Цвет → свотч (реальный назначенный цвет) во всех чип-режимах;
+              // не-цвет (размер) → текст-чип. shapeRadius задаёт форму.
               const colorHex = isShaped ? resolveColor(opt.value) : null;
               const asSwatch = colorHex != null;
 

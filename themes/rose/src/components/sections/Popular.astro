@@ -64,11 +64,14 @@ const textSizeCls =
 			: "";
 const headWrapCls = `flex w-full justify-center${headingSizeCls}${textSizeCls}`;
 
-// Канон columns 1-6: 4 (canon-default = xl:grid-cols-4 верстальщика, впрыск коэрсера)
-// и отсутствие → дефолт-ветка; иное → inline-var, действует с lg (мобильная лестница
-// верстальщика 2→3 сохраняется).
-const colsRaw = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : undefined;
-const cols = colsRaw && colsRaw !== 4 ? colsRaw : undefined;
+// Колонки 1-6 (дефолт 4). Применяются с md (768px) и выше через CSS-переменную
+// --cols + media-query в <style> ниже (моб = 2 колонки, канон верстальщика).
+// Раньше число колонок жило только на lg/xl, а превью конструктора уже lg-ширины:
+// дефолт columns=4 спец-кейсился на gridBase (4 только на xl=1280) → превью
+// показывало md:grid-cols-3 = 3 («Колонки не применяются»). Переменная + media-
+// query работают идентично на live и в превью (Container API) и не зависят от
+// генерации Tailwind arbitrary-класса grid-cols-[...].
+const colsN = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : 4;
 // Канон imageView square/portrait/wide (+legacy alias adaptive→wide): 'square'
 // (canon-default) и отсутствие = литерал верстальщика 318/444 байт-в-байт;
 // portrait → 430/500 (канонный портрет), wide → 16/9.
@@ -78,13 +81,11 @@ const tileAspectCls =
 		: p.imageView === "wide" || p.imageView === "adaptive"
 			? " [&_li>article>a]:aspect-[16/9]"
 			: "";
-const gridBase =
-	"grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-9 md:grid-cols-3 md:gap-x-4 md:gap-y-10 xl:grid-cols-4 xl:gap-x-5";
+// Моб = 2 колонки (grid-cols-2); с md и выше grid-template-columns задаёт <style>
+// по --cols. Гэпы оставляем как у верстальщика.
 const gridCls =
-	(cols
-		? "grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-9 md:grid-cols-3 md:gap-x-4 md:gap-y-10 lg:grid-cols-[repeat(var(--cols),minmax(0,1fr))] xl:grid-cols-[repeat(var(--cols),minmax(0,1fr))] xl:gap-x-5"
-		: gridBase) + tileAspectCls;
-const gridStyle = cols ? `--cols:${cols}` : undefined;
+	"grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-9 md:gap-x-4 md:gap-y-10 xl:gap-x-5" + tileAspectCls;
+const gridStyle = `--cols:${colsN}`;
 
 // Канон quickAddMode none/standard/cart (+legacy alias count→cart): кнопка
 // быстрого добавления на карточке (в манере — появляется при hover, в потоке под
@@ -253,6 +254,7 @@ const paddingStyle = p.padding
 			class={gridCls}
 			role="list"
 			data-nt="popular-grid"
+			data-cols={String(colsN)}
 			style={gridStyle}
 			data-cards={cardsN !== 4 ? String(cardsN) : undefined}
 			data-collection={collectionRef}
@@ -432,6 +434,17 @@ const paddingStyle = p.padding
 		:global([data-nt="popular-grid"] [data-add-to-cart]),
 		:global([data-nt="popular-grid"] li.group > a:last-child) {
 			opacity: 1 !important;
+		}
+	}
+
+	/* Слайдер «Колонки» (1-6) → grid-template-columns с md (768px) и выше.
+	   --cols ставится inline на сетке (data-cols — хук-маркер). Селектор с двумя
+	   атрибутами (специфичность 0,2,0) перебивает tailwind .grid-cols-2 (0,1,0)
+	   без !important и независимо от порядка стилей. Оживляет слайдер и в превью
+	   конструктора (lg-ширина), и на live. Моб (<768) остаётся 2 колонки. */
+	@media (min-width: 768px) {
+		:global([data-nt="popular-grid"][data-cols]) {
+			grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
 		}
 	}
 </style>

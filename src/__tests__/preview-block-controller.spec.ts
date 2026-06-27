@@ -3,7 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { PreviewController } from '../controllers/preview.controller';
 import { PreviewService } from '../services/preview.service';
-import { PG_CONNECTION, BILLING_RMQ_SERVICE } from '../constants';
+import { PG_CONNECTION, BILLING_RMQ_SERVICE, PRODUCT_RMQ_SERVICE } from '../constants';
 
 describe('POST /api/sites/:siteId/preview/block', () => {
   let app: INestApplication;
@@ -32,6 +32,13 @@ describe('POST /api/sites/:siteId/preview/block', () => {
           // data в page-render через applyFooterData). Block-эндпоинт его не
           // вызывает — presence-мок ClientProxy достаточно для разрешения DI.
           provide: BILLING_RMQ_SERVICE,
+          useValue: { send: jest.fn(), emit: jest.fn() },
+        },
+        {
+          // PreviewController инжектит PRODUCT_RMQ_SERVICE (fetchCollections для
+          // имени/описания коллекции на странице page-collection). Block-эндпоинт
+          // его не вызывает — presence-мок ClientProxy достаточен для DI.
+          provide: PRODUCT_RMQ_SERVICE,
           useValue: { send: jest.fn(), emit: jest.fn() },
         },
       ],

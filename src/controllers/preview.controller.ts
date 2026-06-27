@@ -16,8 +16,13 @@ import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { eq } from 'drizzle-orm';
 import { PreviewService } from '../services/preview.service';
 import * as schema from '../db/schema';
-import { PG_CONNECTION, BILLING_RMQ_SERVICE } from '../constants';
+import { PG_CONNECTION, BILLING_RMQ_SERVICE, PRODUCT_RMQ_SERVICE } from '../constants';
 import { ClientProxy } from '@nestjs/microservices';
+import { fetchCollections } from '../generator/data-fetcher';
+import {
+  resolveCollectionContext,
+  type CollectionContext,
+} from '../themes/collection-context';
 import { applyFooterData } from '../utils/footer-data';
 import { googleFontHead } from '../themes/theme-manifest-loader';
 import { getPageResolver } from '../themes/page-resolver-instance';
@@ -112,6 +117,8 @@ export class PreviewController {
     private readonly db: NodePgDatabase<typeof schema>,
     @Inject(BILLING_RMQ_SERVICE)
     private readonly billingClient: ClientProxy,
+    @Inject(PRODUCT_RMQ_SERVICE)
+    private readonly productClient: ClientProxy,
   ) {}
 
   @Get()
@@ -239,16 +246,13 @@ export class PreviewController {
           collectionSlug !== null ? 'page-collection' : page;
         const collectionContext =
           collectionSlug !== null
-            ? {
-                ...this.collectionContextFromRevision(loaded.data, collectionSlug),
-                // Конструктор знает название коллекции (useSiteContext) и передаёт
-                // его как ?collectionName=… — ревизия НЕ содержит storefrontData,
-                // поэтому без override превью подставляло плейсхолдер «Каталог»
-                // вместо реального имени. Имя из query имеет приоритет.
-                ...(collectionNameOverride && collectionNameOverride.trim()
-                  ? { name: collectionNameOverride.trim() }
-                  : {}),
-              }
+            ? await this.resolveCollectionContextForPreview(
+                loaded.data,
+                collectionSlug,
+                siteId,
+                loaded.tenantId,
+                collectionNameOverride,
+              )
             : undefined;
         const v2Blocks = await extractPageBlocks(
           loaded.data,
@@ -582,6 +586,7 @@ export class PreviewController {
     data: Record<string, unknown>;
     publicUrl: string | null;
     themeId: string | null;
+    tenantId: string | null;
     revisionId: string;
     footerFp: string;
   } | null> {
@@ -590,6 +595,7 @@ export class PreviewController {
         currentRevisionId: schema.site.currentRevisionId,
         publicUrl: schema.site.publicUrl,
         themeId: schema.site.themeId,
+        tenantId: schema.site.tenantId,
       })
       .from(schema.site)
       .where(eq(schema.site.id, siteId));
@@ -618,6 +624,7 @@ export class PreviewController {
       data: migrated,
       publicUrl: site.publicUrl ?? null,
       themeId: site.themeId ?? null,
+      tenantId: site.tenantId ?? null,
       revisionId: site.currentRevisionId,
       footerFp,
     };
@@ -740,34 +747,46 @@ export class PreviewController {
    * (пресет `preview` или неизвестный slug) — undefined-поля, чтобы
    * extractPageBlocks оставил разумные плейсхолдеры и не сломал рендер.
    */
-  private collectionContextFromRevision(
+  private async resolveCollectionContextForPreview(
     data: unknown,
     slug: string,
-  ): { name?: string; description?: string; image?: string } {
+    siteId: string,
+    tenantId: string | null,
+    nameOverride: string | undefined,
+  ): Promise<CollectionContext> {
+    // 1) Ревизия (storefrontData.collections) — как было. Обычно ПУСТО в превью
+    //    (наполняется только на live из product-сервиса при сборке).
     const storefront = (data as { storefrontData?: { collections?: unknown } } | null)
       ?.storefrontData;
-    const cols = Array.isArray(storefront?.collections)
+    const revCols = Array.isArray(storefront?.collections)
       ? (storefront!.collections as Array<Record<string, unknown>>)
       : [];
-    const match = cols.find((c) => {
-      const keys = [c?.slug, c?.handle, c?.id]
-        .filter((v) => typeof v === 'string')
-        .map((v) => String(v));
-      return keys.includes(slug);
-    });
-    if (!match) return {};
-    const name =
-      typeof match.title === 'string'
-        ? match.title
-        : typeof match.name === 'string'
-          ? match.name
-          : undefined;
-    return {
-      name,
-      description:
-        typeof match.description === 'string' ? match.description : undefined,
-      image: typeof match.image === 'string' ? match.image : undefined,
-    };
+    let ctx = resolveCollectionContext(revCols, slug);
+
+    // 2) Фолбэк: тянем коллекции из ТОГО ЖЕ источника, что live-сборка
+    //    (fetchCollections → product.collections.list) — паритет превью↔live.
+    //    Даёт имя И описание (заголовок + подзаголовок), без зависимости от того,
+    //    передал ли конструктор ?collectionName=.
+    if (!ctx.name && tenantId) {
+      try {
+        const fetched = await fetchCollections(this.productClient, tenantId, siteId);
+        ctx = resolveCollectionContext(
+          fetched as unknown as Array<Record<string, unknown>>,
+          slug,
+        );
+      } catch (e) {
+        this.logger.warn(
+          `[preview] fetchCollections failed for ${siteId}/${slug}: ${(e as Error)?.message ?? e}`,
+        );
+      }
+    }
+
+    // 3) Имя из query (?collectionName=) имеет приоритет — конструктор знает,
+    //    какую коллекцию показывает редактор.
+    if (nameOverride && nameOverride.trim()) {
+      ctx = { ...ctx, name: nameOverride.trim() };
+    }
+    return ctx;
   }
 
   /** filterPosition из Catalog-блока УКАЗАННОЙ страницы ревизии. pageKey — ключ в

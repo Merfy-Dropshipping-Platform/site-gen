@@ -465,11 +465,14 @@ export async function buildScaffold(
     // after migration. Themes still on legacy templates (satin, flux)
     // simply omit the flag — their shipped pages stay untouched.
     if (puckDrivenPages) {
-      // /collections/[slug].astro
+      // /collections/[slug].astro — ВСЕГДА перегенерируем (тема не несёт свой
+      // [slug].astro). Иначе старый кэш-артефакт в outputDir застревает без
+      // collectionSlug/categoryTitle → страница коллекции не скоупится на товары
+      // коллекции и показывает хардкод «Каталог» вместо имени коллекции.
       const collectionsSlugPath = path.join(
         outputDir, "src", "pages", "collections", "[slug].astro",
       );
-      if (!(await fileExists(collectionsSlugPath))) {
+      {
         const collectionsPage = generatePuckCollectionsSlugPage({
           apiUrl: config.dynamicPages.apiUrl,
           shopId: config.dynamicPages.shopId,

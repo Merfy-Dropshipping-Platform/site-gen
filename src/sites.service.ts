@@ -52,6 +52,43 @@ function slugify(input: string) {
     .replace(/-+/g, "-");
 }
 
+/**
+ * Темы, для которых переключение НА них применяет полный канон верстальщиков
+ * (defaults/<theme>.json): дизайн/раскладка/палитра/хром + товарные секции
+ * (dataSource:auto) заполняются с нуля. Spec 109-flux-parity (подход B).
+ * Расширяемо: добавить тему в Set, чтобы включить тот же reset-on-switch.
+ */
+export const THEMES_RESEED_ON_SWITCH = new Set<string>(["flux"]);
+
+/**
+ * Чистое решение «пересеивать ли ревизию при апдейте темы» (без БД — тестируется
+ * изолированно). Сохраняет legacy-правила (новый сайт / нет themeSettings /
+ * resetContent) и добавляет правило 109: реальный свитч НА тему из allowlist.
+ */
+export function shouldReseedOnThemeSwitch(p: {
+  hasCurrentRevision: boolean;
+  hasThemeSettings: boolean;
+  resetContent: boolean;
+  prevThemeId: string | null;
+  nextThemeId: string;
+}): boolean {
+  // Новый сайт без ревизии — посеять дефолты.
+  if (!p.hasCurrentRevision) return true;
+  // Ревизия без themeSettings (legacy-сид) — посеять, чтобы появились colorSchemes.
+  if (!p.hasThemeSettings) return true;
+  // Явный запрос сброса контента.
+  if (p.resetContent) return true;
+  // Spec 109: реальный свитч НА тему из allowlist → полный канон верстальщиков.
+  // Тот же themeId (re-save) правки НЕ сбрасывает.
+  if (
+    THEMES_RESEED_ON_SWITCH.has(p.nextThemeId) &&
+    p.prevThemeId !== p.nextThemeId
+  ) {
+    return true;
+  }
+  return false;
+}
+
 @Injectable()
 export class SitesDomainService {
   private readonly logger = new Logger(SitesDomainService.name);
@@ -707,25 +744,30 @@ export class SitesDomainService {
           .from(schema.site)
           .where(eq(schema.site.id, params.siteId))
           .limit(1);
-        let shouldReseed = !current?.currentRevisionId;
-        if (current?.currentRevisionId) {
+        const currentRevId = current?.currentRevisionId;
+        let hasThemeSettings = false;
+        if (currentRevId) {
           const [rev] = await this.db
             .select({ data: schema.siteRevision.data })
             .from(schema.siteRevision)
-            .where(eq(schema.siteRevision.id, current.currentRevisionId))
+            .where(eq(schema.siteRevision.id, currentRevId))
             .limit(1);
           const d = (rev?.data ?? {}) as Record<string, unknown>;
           const ts = (d as any).themeSettings;
-          const hasThemeSettings =
+          hasThemeSettings = Boolean(
             ts &&
-            typeof ts === "object" &&
-            Array.isArray((ts as any).colorSchemes) &&
-            (ts as any).colorSchemes.length > 0;
-          shouldReseed = !hasThemeSettings;
+              typeof ts === "object" &&
+              Array.isArray((ts as any).colorSchemes) &&
+              (ts as any).colorSchemes.length > 0,
+          );
         }
-        if ((params.patch as any)?.resetContent === true) {
-          shouldReseed = true;
-        }
+        const shouldReseed = shouldReseedOnThemeSwitch({
+          hasCurrentRevision: Boolean(currentRevId),
+          hasThemeSettings,
+          resetContent: (params.patch as any)?.resetContent === true,
+          prevThemeId,
+          nextThemeId,
+        });
         if (shouldReseed) {
           const defaultContent = await this.buildInitialRevision(nextThemeId);
           if (defaultContent) {

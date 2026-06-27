@@ -25,10 +25,11 @@ interface Props {
 const { groups, type = 'chips', mode = 'button' } = Astro.props as Props;
 
 const isDropdown = type === 'dropdown' || mode === 'list';
-// Цветные значения ВСЕГДА рендерятся свотчем (реальный назначенный цвет) во всех
-// чип-режимах — Кнопка/Круг/Квадрат (M$rkul: «цвета должны быть назначенные, не
-// текст»). Не-цветовые (размер) — текст-чип. Список = dropdown (без свотчей).
-const isShaped = !isDropdown;
+// Figma 1:21387 «Кнопка -- Нет»: при mode='button' (Вариации=Нет) ВСЕ значения —
+// цвета И размеры — рендерятся ТЕКСТ-КНОПКАМИ (имя цвета текстом; fill=выбран,
+// outline=остальные), БЕЗ свотчей. Свотч (реальный назначенный цвет) — ТОЛЬКО при
+// Круг/Квадрат. Список = dropdown. `isShaped` драйвит и свотч-решение, и форму чипа.
+const isShaped = mode === 'circle' || mode === 'square';
 // Форма чипа = mode: Кнопка = скруглённый прямоугольник (--radius-button),
 // Круг = полный круг, Квадрат = острый угол.
 const shapeRadius =
@@ -66,12 +67,10 @@ function resolveColor(value: string): string | null {
   return named ?? null;
 }
 
-// Не-цветовые (размер) чипы по mode: «Нет»(button) = широкая текст-КНОПКА
-// (h-12 px-4 border, rounded по shapeRadius); «Круг»/«Квадрат» = узкий чип формы
-// свотча (h-12 min-w-12 border-2, rounded-full/none). Раньше было `isShaped`
-// (=!isDropdown, true для button) → широкий вариант не достигался, и «Нет» выглядел
-// как «Квадрат». Цветные значения — ВСЕГДА свотч (isShaped/!isDropdown ниже).
-const TEXT_CHIP_BASE = (mode === 'circle' || mode === 'square')
+// Текст-чип по mode: «Нет»(button) = текст-КНОПКА по ширине контента (h-12 px-4
+// border, rounded по shapeRadius — Figma 1:21387 Button sm Fill/Outline); «Круг»/
+// «Квадрат» = узкий чип формы свотча (h-12 min-w-12 border-2, rounded-full/none).
+const TEXT_CHIP_BASE = isShaped
   ? 'inline-flex items-center justify-center h-12 min-w-12 px-2 [font-family:var(--font-body)] text-[16px] cursor-pointer transition-colors border-2 border-solid'
   : 'inline-flex items-center justify-center h-12 px-4 [font-family:var(--font-body)] text-[16px] cursor-pointer transition-colors border border-solid';
 const SWATCH_CHIP_BASE =

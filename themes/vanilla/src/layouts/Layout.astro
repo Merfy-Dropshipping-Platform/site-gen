@@ -2,6 +2,7 @@
 import BaseHead from "../components/BaseHead.astro";
 import Header from "../components/Header.astro";
 import CheckoutHeader from "../../../../packages/theme-base/blocks/CheckoutHeader/CheckoutHeader.astro";
+import CheckoutFooterStrip from "../../../../packages/theme-base/blocks/CheckoutFooterStrip/CheckoutFooterStrip.astro";
 import Footer from "../components/Footer.astro";
 import FooterNewsletter from "../components/footer/FooterNewsletter.astro";
 import LoginDrawer from "../components/LoginDrawer.astro";
@@ -41,7 +42,13 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 		</main>
 		{showNewsletter && <FooterNewsletter />}
 		{/* Чекаут — без футера (header="checkout"), паритет с rose. */}
-		{header !== "checkout" && <Footer />}
+		{header !== "checkout" ? (
+			<Footer />
+		) : (
+			<div class="color-scheme-2" style="display:contents;">
+				<CheckoutFooterStrip siteTitle={SITE_TITLE} />
+			</div>
+		)}
 		<LoginDrawer />
 		<VanillaCartDrawer rootId="vanilla-cart-drawer-root" eventPrefix="vanilla:cart" />
 		<script>

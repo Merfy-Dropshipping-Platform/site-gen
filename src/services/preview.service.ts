@@ -1648,13 +1648,17 @@ const PREVIEW_NAV_AGENT_INLINE = `
     // Зеркалит navigate-путь: pageIdFromPath('/checkout') → page-checkout →
     // switchPage в конструкторе.
     var navBtn = e.target && e.target.closest
-      ? e.target.closest('[data-action="checkout"], [data-action="buy-now"]')
+      ? e.target.closest('[data-action="checkout"], [data-action="buy-now"], [data-cart-open]')
       : null;
     if (navBtn) {
       e.preventDefault();
       e.stopPropagation();
-      // «Купить сейчас» (buy-now) и «Оформить» (checkout) → обе ведут в оформление.
-      var navPath = '/checkout';
+      // «Купить сейчас» (buy-now) и «Оформить» (checkout) → в оформление (/checkout).
+      // Иконка корзины (<button data-cart-open>) → /cart (как на live в page-режиме):
+      // без этого она проваливалась ниже как «нативная кнопка» (return) и в превью
+      // НЕ делала ничего (Layout-рантайма initCartUI в превью нет) — «иконка чекаута
+      // не кликается» в конструкторе (баг тестера). Зеркалит navigate-путь <a href>.
+      var navPath = navBtn.hasAttribute('data-cart-open') ? '/cart' : '/checkout';
       // «Купить сейчас» = вся корзина + ЭТОТ товар (как на live). Nav-агент глушит
       // обработчик темы (stopPropagation выше), поэтому САМ кладём кликнутый товар в
       // nt-cart — кликом по его add-кнопке В КОНТЕКСТЕ нажатой buy-now (делегат

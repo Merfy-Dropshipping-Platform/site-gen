@@ -1,0 +1,47 @@
+---
+/**
+ * CheckoutFooterStrip — общая секция «чёрная полоса копирайта» для страницы
+ * оформления заказа.
+ *
+ * Контекст (spec 109, checkout chrome): live-checkout — verbatim порт-страница
+ * с chrome='checkout' (CheckoutHeader, БЕЗ секции Footer), поэтому полный футер
+ * (рассылка/меню/копирайт) на checkout не рендерится. Эта секция возвращает
+ * ТОЛЬКО нижнюю чёрную полосу копирайта — «чистый» checkout без рассылки/меню,
+ * но с легальной строкой. Подключается в checkout-ветке Layout каждой темы
+ * (как общий CheckoutHeader).
+ *
+ * Цвета — из активной color-scheme через токены (checkout = scheme-2, светлая
+ * → --color-heading чёрный фон, --color-bg белый текст). Разметка зеркалит
+ * bottom-strip из Footer.astro тем.
+ *
+ * Текст 1:1 с дефолтом Footer.astro:
+ *   «© {год} {siteTitle} Theme Все права защищены. Powered by Merfy».
+ *
+ * NB (стопгап): не читает merchant-override копирайта из ревизии — это прилетит,
+ * когда checkout перейдёт на section-рендер (унификация checkout-хрома, 109).
+ */
+interface Props {
+  /** Название магазина (Layout прокидывает SITE_TITLE, build.service патчит). */
+  siteTitle?: string;
+  /** Полная замена строки копирайта (если задана). */
+  text?: string;
+}
+const { siteTitle = "", text } = Astro.props;
+const year = new Date().getFullYear();
+const copyright =
+  text && text.trim()
+    ? text
+    : `© ${year} ${siteTitle ? `${siteTitle} Theme ` : ""}Все права защищены. Powered by Merfy`;
+---
+
+<footer class="w-full" data-checkout-footer-strip>
+  <div
+    class="flex h-16 w-full items-center justify-center bg-[rgb(var(--color-heading,0_0_0))] px-4"
+  >
+    <p
+      class="text-center text-[14px] font-normal leading-none text-[rgb(var(--color-bg,255_255_255))]"
+    >
+      {copyright}
+    </p>
+  </div>
+</footer>

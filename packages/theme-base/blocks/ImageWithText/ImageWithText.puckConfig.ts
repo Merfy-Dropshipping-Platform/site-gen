@@ -24,6 +24,10 @@ export const ImageWithTextSchema = z.object({
     link: z.string().optional(),
   }).optional(),
   imagePosition: z.enum(['left', 'right']).optional(),
+  // Bug-2: выравнивание вынесено на уровень секции (Figma 1:17086). Применяется
+  // к заголовку + тексту + кнопке. heading.alignment ниже остаётся для back-compat
+  // (старые данные), но в UI больше не показывается.
+  alignment: z.enum(['left', 'center', 'right']).optional(),
   /**
    * 084 vanilla pilot — additive variant. CTA placement within the text
    * column. `inline` (default) keeps the pre-084 inline button. `bottom-pinned`
@@ -91,6 +95,9 @@ export const ImageWithTextPuckConfig: BlockPuckConfig<ImageWithTextProps> = {
         { label: 'Справа', value: 'right' },
       ],
     },
+    // Bug-2: «Выравнивание» отдельной строкой секции между «Позиция фото» и
+    // «Цветовая схема» (Figma 1:17086). Применяется к заголовку/тексту/кнопке.
+    alignment: { type: 'alignment', label: 'Выравнивание' },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
     // Sub-panels (subsection click, NamedFocusedPanel):
@@ -100,7 +107,6 @@ export const ImageWithTextPuckConfig: BlockPuckConfig<ImageWithTextProps> = {
       hiddenInMainPanel: true,
       objectFields: {
         text: { type: 'aiText', label: 'Заголовок', fieldType: 'title', placeholder: 'Ввести текст...' } as any,
-        alignment: { type: 'alignment', label: 'Выравнивание' },
         size: {
           type: 'select',
           label: 'Размер заголовка',

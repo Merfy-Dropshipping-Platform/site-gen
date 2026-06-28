@@ -28,8 +28,10 @@ const headingSizeCls =
 		: headingSize === "large"
 			? " [--size-section-heading:24px] [--size-section-heading-m:17px]"
 			: "";
-// Канон heading.alignment: отсутствие = left (текстовая колонка манеры).
-const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
+// Bug-2: выравнивание стало секция-уровневым (Figma 1:17086) → применяется к
+// заголовку + тексту + кнопке. Back-compat: читаем старые headingAlignment /
+// heading.alignment как fallback (старые ревизии хранили выравнивание в заголовке).
+const headingAlignment = p.alignment ?? p.headingAlignment ?? p.heading?.alignment;
 const headingAlignCls =
 	headingAlignment === "center"
 		? " !text-center"
@@ -141,7 +143,7 @@ const titleId = id ? `${id}-title` : undefined;
 				{heading}
 			</h2>
 			<div
-				class={`font-manrope text-[16px] font-normal leading-[1.6] text-[rgb(var(--color-text,0_0_0))]${textSizeCls}${italicCls}`}
+				class={`font-manrope text-[16px] font-normal leading-[1.6] text-[rgb(var(--color-text,0_0_0))]${textSizeCls}${italicCls}${headingAlignCls}`}
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="102"
 				data-puck-subsection-field="text"
@@ -149,7 +151,7 @@ const titleId = id ? `${id}-title` : undefined;
 			/>
 			{
 				btnText && (
-					<div class={bottomPinned ? "mt-auto" : "mt-2"}>
+					<div class={`${bottomPinned ? "mt-auto" : "mt-2"}${headingAlignCls}`}>
 						<a
 							href={btnHref}
 							class="inline-flex h-12 w-auto min-w-[200px] items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-8 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"

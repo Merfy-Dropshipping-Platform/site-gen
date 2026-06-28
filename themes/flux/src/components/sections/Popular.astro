@@ -83,18 +83,15 @@ const tileAspectCls =
 		: p.imageView === "wide" || p.imageView === "adaptive"
 			? " [&_li>article>a]:aspect-[16/9]"
 			: "";
-// Канон columns 1-6: 4 (canon-default puckConfig = литерал lg:grid-cols-4) и
-// отсутствие → дефолт-ветка; иное → inline-var на гриде с lg (мобильная
-// лестница верстальщика 2 → sm:3 сохраняется).
-const colsRaw =
-	typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : undefined;
-const cols = colsRaw && colsRaw !== 4 ? colsRaw : undefined;
-const gridBase = "grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-4";
-const gridCls =
-	(cols
-		? "grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-[repeat(var(--cols),minmax(0,1fr))]"
-		: gridBase) + tileAspectCls;
-const gridStyle = cols ? `--cols:${cols}` : undefined;
+// Колонки 1-6 (дефолт 4). Применяются с md (768px) и выше через CSS-переменную
+// --cols + media-query в <style> ниже (моб 2 → sm:3 — лестница верстальщика).
+// Раньше число жило только на lg (var) и дефолт спец-кейсился на lg:grid-cols-4,
+// а превью конструктора уже lg-ширины → слайдер «не применялся». Переменная +
+// media-query идентичны на live и в превью (Container API).
+const colsN = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : 4;
+// Моб 2 кол → sm:3; с md и выше grid-template-columns задаёт <style> по --cols.
+const gridCls = "grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6" + tileAspectCls;
+const gridStyle = `--cols:${colsN}`;
 
 // Канон quickAddMode none/standard/cart (+legacy alias count→cart). НЮАНС
 // flux: карточка верстальщика БЕЗ кнопки — none/отсутствие = карточка
@@ -277,6 +274,7 @@ const paddingStyle = p.padding
 			class={gridCls}
 			role="list"
 			data-nt="popular-grid"
+			data-cols={String(colsN)}
 			style={gridStyle}
 			data-cards={cardsN !== 4 ? String(cardsN) : undefined}
 			data-collection={collectionRef}
@@ -475,5 +473,14 @@ const paddingStyle = p.padding
 		color: rgb(var(--color-text, 0 0 0)) !important;
 		text-decoration: underline;
 		text-underline-offset: 4px;
+	}
+
+	/* Слайдер «Колонки» (1-6) → grid-template-columns с md (768px) и выше.
+	   --cols ставится inline на сетке (data-cols — хук). Селектор с двумя
+	   атрибутами (0,2,0) бьёт tailwind .grid-cols-* (0,1,0) без !important. */
+	@media (min-width: 768px) {
+		[data-nt="popular-grid"][data-cols] {
+			grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
+		}
 	}
 </style>

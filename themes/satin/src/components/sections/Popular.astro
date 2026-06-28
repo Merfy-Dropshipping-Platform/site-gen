@@ -56,12 +56,12 @@ const textCls =
 const cardsRaw =
 	typeof p.cards === "number" && p.cards > 0 ? Math.max(1, Math.min(24, Math.round(p.cards))) : undefined;
 
-// Канон columns 1-6: 3 (canon-default blockDefaults satin = sm:grid-cols-3
-// верстальщика) и отсутствие → дефолт-ветка; иное → inline-var на гриде с sm
-// (mobile-лестница grid-cols-1 сохраняется).
-const colsRaw =
-	typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : undefined;
-const cols = colsRaw && colsRaw !== 3 ? colsRaw : undefined;
+// Колонки 1-6 (дефолт 3). Применяются с md (768px) и выше через CSS-переменную
+// --cols + media-query в <style> ниже (моб 1 → sm:3 — лестница верстальщика).
+// Раньше число жило только на sm (var) и дефолт спец-кейсился на sm:grid-cols-3,
+// а превью бывает уже → слайдер «не применялся». Переменная + media-query
+// идентичны на live и в превью (Container API).
+const colsN = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : 3;
 // Канон imageView square/portrait/wide (+legacy alias adaptive→wide):
 // canon-default ('square' puckConfig) и отсутствие = медиа карточки
 // верстальщика 430/564 дословно; portrait → 430/500, wide → 16/9
@@ -72,12 +72,9 @@ const tileAspectCls =
 		: p.imageView === "wide" || p.imageView === "adaptive"
 			? " [&_li>article>div:first-child]:aspect-[16/9]"
 			: "";
-const gridBase = "grid auto-rows-fr grid-cols-1 gap-4 sm:grid-cols-3";
-const gridCls =
-	(cols
-		? "grid auto-rows-fr grid-cols-1 gap-4 sm:grid-cols-[repeat(var(--cols),minmax(0,1fr))]"
-		: gridBase) + tileAspectCls;
-const gridStyle = cols ? `--cols:${cols}` : undefined;
+// Моб 1 кол → sm:3; с md и выше grid-template-columns задаёт <style> по --cols.
+const gridCls = "grid auto-rows-fr grid-cols-1 gap-4 sm:grid-cols-3" + tileAspectCls;
+const gridStyle = `--cols:${colsN}`;
 
 // Канон quickAddMode none/standard/cart (+legacy alias count→cart). НЮАНС
 // satin: карточка верстальщика УЖЕ несёт чёрную CTA «В корзину»
@@ -246,6 +243,7 @@ const paddingStyle = p.padding
 			class={gridCls}
 			role="list"
 			data-nt="popular-grid"
+			data-cols={String(colsN)}
 			style={gridStyle}
 			data-cards={cardsRaw ? String(cardsRaw) : undefined}
 			data-collection={collectionRef}
@@ -378,5 +376,14 @@ const paddingStyle = p.padding
 		color: rgb(var(--color-text, 0 0 0));
 		text-decoration: underline;
 		text-underline-offset: 4px;
+	}
+
+	/* Слайдер «Колонки» (1-6) → grid-template-columns с md (768px) и выше.
+	   --cols ставится inline на сетке (data-cols — хук). Селектор с двумя
+	   атрибутами (0,2,0) бьёт tailwind .grid-cols-* (0,1,0) без !important. */
+	@media (min-width: 768px) {
+		[data-nt="popular-grid"][data-cols] {
+			grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
+		}
 	}
 </style>

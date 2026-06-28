@@ -130,12 +130,12 @@ const textSizeCls =
 // Дефолт = прежний `<div data-animate>` без class байт-в-байт.
 const headWrapCls = `${headingSizeCls}${textSizeCls}`.trim() || undefined;
 
-// Канон columns 1-6: 3 (canon-default из blockDefaults bloom) и отсутствие →
-// дефолт-ветка (литерал lg:grid-cols-4); иное → inline-var на гриде с lg
-// (мобильная лестница верстальщика 2→sm:3 сохраняется).
-const colsRaw =
-	typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : undefined;
-const cols = colsRaw && colsRaw !== 3 ? colsRaw : undefined;
+// Колонки 1-6 (дефолт 3). Применяются с md (768px) и выше через CSS-переменную
+// --cols + media-query в <style> ниже (моб 2 → sm:3 — лестница верстальщика).
+// Раньше число жило только на lg (var) и дефолт спец-кейсился на lg:grid-cols-4,
+// а превью конструктора уже lg-ширины → слайдер «не применялся». Переменная +
+// media-query идентичны на live и в превью (Container API).
+const colsN = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : 3;
 // Канон imageView square/portrait/wide (+legacy alias adaptive→wide): 'square'
 // (canon-default) и отсутствие = aspect-square карточки верстальщика;
 // portrait → 430/500, wide → 16/9 (перекрытие медиа-ссылки карточки).
@@ -145,12 +145,9 @@ const tileAspectCls =
 		: p.imageView === "wide" || p.imageView === "adaptive"
 			? " [&_li>article>a]:aspect-[16/9]"
 			: "";
-const gridBase = "grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4";
-const gridCls =
-	(cols
-		? "grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-[repeat(var(--cols),minmax(0,1fr))]"
-		: gridBase) + tileAspectCls;
-const gridStyle = cols ? `--cols:${cols}` : undefined;
+// Моб 2 кол → sm:3; с md и выше grid-template-columns задаёт <style> по --cols.
+const gridCls = "grid grid-cols-2 gap-4 sm:grid-cols-3" + tileAspectCls;
+const gridStyle = `--cols:${colsN}`;
 
 // Канон quickAddMode none/standard/cart (+legacy alias count→cart). НЮАНС bloom:
 // карточка верстальщика УЖЕ несёт pill «В корзину» (data-add-to-cart) — дефолт
@@ -277,6 +274,7 @@ const paddingStyle = p.padding
 			data-animate
 			data-animate-delay="0.1s"
 			data-nt="popular-grid"
+			data-cols={String(colsN)}
 			style={gridStyle}
 			data-cards={cardsN !== 4 ? String(cardsN) : undefined}
 			data-collection={collectionRef}
@@ -411,5 +409,14 @@ const paddingStyle = p.padding
 		color: rgb(var(--color-text, 0 0 0));
 		text-decoration: underline;
 		text-underline-offset: 4px;
+	}
+
+	/* Слайдер «Колонки» (1-6) → grid-template-columns с md (768px) и выше.
+	   --cols ставится inline на сетке (data-cols — хук). Селектор с двумя
+	   атрибутами (0,2,0) бьёт tailwind .grid-cols-* (0,1,0) без !important. */
+	@media (min-width: 768px) {
+		[data-nt="popular-grid"][data-cols] {
+			grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
+		}
 	}
 </style>

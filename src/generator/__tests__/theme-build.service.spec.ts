@@ -24,7 +24,29 @@ import {
   themePreviewDirFor,
   themeLiveDirFor,
   copyDir,
+  rewriteRootUrlsToPrefix,
 } from "../theme-build.service";
+
+describe("rewriteRootUrlsToPrefix — CSS comment safety", () => {
+  it("rewrites root-relative asset URLs but does NOT corrupt CSS comment openers (/*)", () => {
+    // Catalog.astro <style> shape: real asset url + a comment immediately before
+    // an @media toggle block. The `/` of `/*` is delimiter-led (whitespace) and
+    // NOT followed by `/`, so the old regex rewrote `/*` → `/__theme/rose/*`,
+    // leaving a stray `/__theme/rose` token that makes the CSS parser swallow the
+    // adjacent @media block (the catalog top/side display:none toggles vanish).
+    const input =
+      '<style>.a{background:url(/img/x.png)}\n  /* Переключение раскладок */\n  @media (max-width: 1023px){[data-catalog-variant="side"]{display:none}}</style>';
+    const out = rewriteRootUrlsToPrefix(input, "/__theme/rose");
+
+    // real asset URL still rewritten
+    expect(out).toContain("url(/__theme/rose/img/x.png)");
+    // CSS comment opener must stay intact — corruption breaks @media parsing
+    expect(out).not.toContain("/__theme/rose/*");
+    expect(out).toContain("/* Переключение раскладок */");
+    // the @media toggle block must survive intact (delimiter before it untouched)
+    expect(out).toContain("@media (max-width: 1023px)");
+  });
+});
 
 let sandbox: string;
 let originalCwd: string;

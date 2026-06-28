@@ -2031,5 +2031,41 @@ const PREVIEW_NAV_AGENT_INLINE = `
 
   // Signal readiness so the parent can send 'init'.
   post({ type: 'ready' });
+
+  // ── Inline (in-canvas) editing (Spec 101) — секция «Страница» heading/content.
+  // [data-edit-field] → contenteditable; на blur постим в конструктор → Puck
+  // props (edit-field). РЕАЛЬНЫЙ превью-агент = ЭТА строка, НЕ runtime/preview-nav-agent.ts.
+  (function () {
+    var esId = '__merfy_edit_style';
+    if (document.head && !document.getElementById(esId)) {
+      var es = document.createElement('style');
+      es.id = esId;
+      es.textContent = '[data-edit-field][contenteditable]:empty:before{content:attr(data-edit-placeholder);color:rgb(var(--color-muted));opacity:.55;pointer-events:none}';
+      document.head.appendChild(es);
+    }
+    function applyEditable() {
+      var els = document.querySelectorAll('[data-edit-field]');
+      for (var i = 0; i < els.length; i++) {
+        if (els[i].getAttribute('contenteditable') !== 'true') els[i].setAttribute('contenteditable', 'true');
+      }
+    }
+    applyEditable();
+    var sched = false;
+    function schedule() {
+      if (sched) return; sched = true;
+      Promise.resolve().then(function () { sched = false; try { applyEditable(); } catch (e) {} });
+    }
+    try { if (document.body) new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
+    document.addEventListener('focusout', function (e) {
+      var t = e.target;
+      var el = t && t.closest ? t.closest('[data-edit-field]') : null;
+      if (!el) return;
+      var f = el.getAttribute('data-edit-field');
+      var v = f === 'content' ? el.innerHTML : (el.textContent || '').trim();
+      var host = el.closest('[data-puck-component-id]');
+      var bid = host ? host.getAttribute('data-puck-component-id') : null;
+      if (bid && f) post({ type: 'edit-field', blockId: bid, field: f, value: v });
+    }, true);
+  })();
 })();
 `;

@@ -170,12 +170,12 @@ const linkClassSm =
 									<li><span class={columnTitleCls}>{navColTitle}</span></li>
 								)}
 								{navLinks.map((link) => (
-									<li><a href={link.href} class={`${linkClass} uppercase`}>{link.label}</a></li>
+									<li><a href={link.href} class={linkClass}>{link.label}</a></li>
 								))}
 							</ul>
 							<ul class="flex flex-col gap-2.5" role="list">
 								{midCol.map((link) => (
-									<li><a href={link.href} class={`${linkClass} uppercase`}>{link.label}</a></li>
+									<li><a href={link.href} class={linkClass}>{link.label}</a></li>
 								))}
 							</ul>
 						</div>
@@ -293,7 +293,7 @@ const linkClassSm =
 		<div class="mt-10 grid grid-cols-2 gap-x-8 gap-y-6">
 			<ul class="flex flex-col gap-2.5" role="list">
 				{midCol.map((link) => (
-					<li><a href={link.href} class={`${linkClass} uppercase`}>{link.label}</a></li>
+					<li><a href={link.href} class={linkClass}>{link.label}</a></li>
 				))}
 			</ul>
 			<ul class="flex flex-col gap-2.5" role="list">
@@ -301,7 +301,7 @@ const linkClassSm =
 					<li><span class={columnTitleCls}>{navColTitle}</span></li>
 				)}
 				{navLinks.map((link) => (
-					<li><a href={link.href} class={`${linkClass} uppercase`}>{link.label}</a></li>
+					<li><a href={link.href} class={linkClass}>{link.label}</a></li>
 				))}
 			</ul>
 		</div>
